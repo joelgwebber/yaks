@@ -1,0 +1,21 @@
+{
+  "name": "yaks-marketplace",
+  "description": "Filesystem-native task tracker for AI agents",
+  "version": "1.0.0",
+  "owner": {
+    "name": "Joel"
+  },
+  "plugins": [
+    {
+      "name": "yaks",
+      "source": "./",
+      "description": "Filesystem-native task tracker. Plain YAML files, no yak left unshaved.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Joel"
+      },
+      "category": "Productivity",
+      "keywords": ["yaks", "tasks", "tracking", "yaml", "dependencies"]
+    }
+  ]
+}
