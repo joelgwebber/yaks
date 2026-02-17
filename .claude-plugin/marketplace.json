@@ -7,7 +7,7 @@
   },
   "plugins": [
     {
-      "name": "yaks",
+      "name": "yak",
       "source": "./",
       "description": "Filesystem-native task tracker. Plain YAML files, no yak left unshaved.",
       "version": "0.1.0",

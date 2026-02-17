@@ -16,6 +16,26 @@ import yaml
 
 
 # ---------------------------------------------------------------------------
+# Status constants
+# ---------------------------------------------------------------------------
+
+HAIRY = "hairy"
+SHAVING = "shaving"
+SHORN = "shorn"
+STATUSES = (HAIRY, SHAVING, SHORN)
+
+# Aliases (old names → canonical)
+_STATUS_ALIASES = {
+    "open": HAIRY, "working": SHAVING, "closed": SHORN,
+    HAIRY: HAIRY, SHAVING: SHAVING, SHORN: SHORN,
+}
+
+
+def _resolve_status(name: str) -> str:
+    return _STATUS_ALIASES.get(name, name)
+
+
+# ---------------------------------------------------------------------------
 # YAML helpers
 # ---------------------------------------------------------------------------
 
@@ -72,12 +92,9 @@ def save_task(path: Path, task: dict) -> None:
 def all_tasks(root: Path, status: str | None = None) -> list[tuple[str, dict]]:
     """Return list of (status, task_dict) for tasks in the given status dir(s)."""
     dirs = []
-    if status in (None, "open"):
-        dirs.append(("open", root / "open"))
-    if status in (None, "working"):
-        dirs.append(("working", root / "working"))
-    if status in (None, "closed"):
-        dirs.append(("closed", root / "closed"))
+    for s in STATUSES:
+        if status is None or status == s:
+            dirs.append((s, root / s))
     results = []
     for s, d in dirs:
         if not d.exists():
@@ -90,8 +107,8 @@ def all_tasks(root: Path, status: str | None = None) -> list[tuple[str, dict]]:
 
 
 def find_task_file(root: Path, task_id: str) -> tuple[str, Path] | None:
-    """Locate a task file by ID, searching both dirs. Returns (status, path)."""
-    for status_dir in ("open", "working", "closed"):
+    """Locate a task file by ID, searching all dirs. Returns (status, path)."""
+    for status_dir in STATUSES:
         p = root / status_dir / f"{task_id}.yaml"
         if p.exists():
             return status_dir, p
@@ -101,7 +118,7 @@ def find_task_file(root: Path, task_id: str) -> tuple[str, Path] | None:
 def generate_id(root: Path, prefix: str) -> str:
     """Generate a collision-free task ID."""
     existing = set()
-    for d in (root / "open", root / "working", root / "closed"):
+    for d in (root / s for s in STATUSES):
         if d.exists():
             for f in d.glob("*.yaml"):
                 existing.add(f.stem)
@@ -129,9 +146,8 @@ def cmd_init(args):
         return
     prefix = args.prefix or Path.cwd().name.lower()
     target.mkdir()
-    (target / "open").mkdir()
-    (target / "working").mkdir()
-    (target / "closed").mkdir()
+    for s in STATUSES:
+        (target / s).mkdir()
     config = {"prefix": prefix}
     (target / "config.yaml").write_text(dump_yaml(config))
     print(f"Initialized .yaks/ in {Path.cwd()} (prefix: {prefix})")
@@ -159,14 +175,14 @@ def cmd_create(args):
     if args.description:
         task["description"] = args.description
 
-    path = root / "open" / f"{tid}.yaml"
+    path = root / HAIRY / f"{tid}.yaml"
     save_task(path, task)
     print(f"Created {tid}: {args.title}")
 
 
 def cmd_list(args):
     root = find_tasks_root()
-    status_filter = args.status
+    status_filter = _resolve_status(args.status) if args.status else None
     tasks = all_tasks(root, status_filter)
 
     # Apply filters
@@ -186,6 +202,7 @@ def cmd_list(args):
         print("No tasks found.")
         return
 
+    _status_char = {HAIRY: "H", SHAVING: "S", SHORN: "N"}
     for status, t in tasks:
         pri = t.get("priority", "-")
         ttype = t.get("type", "-")
@@ -193,7 +210,8 @@ def cmd_list(args):
         deps = t.get("depends_on", [])
         dep_str = f" (deps: {','.join(deps)})" if deps else ""
         label_str = f" [{labels}]" if labels else ""
-        print(f"  [{status[0].upper()}] {t['id']}  p{pri} {ttype:8s} {t.get('title', '')}{label_str}{dep_str}")
+        ch = _status_char.get(status, status[0].upper())
+        print(f"  [{ch}] {t['id']}  p{pri} {ttype:8s} {t.get('title', '')}{label_str}{dep_str}")
 
 
 def cmd_show(args):
@@ -260,69 +278,46 @@ def cmd_update(args):
         print("No changes specified.")
 
 
-def cmd_work(args):
+def _move_task(args, dest_status: str, already_msg: str, done_msg: str):
+    """Shared logic for shave/shorn/regrow."""
     root = find_tasks_root()
     result = find_task_file(root, args.id)
     if not result:
         print(f"error: task {args.id} not found", file=sys.stderr)
         sys.exit(1)
     status, path = result
-    if status == "working":
-        print(f"{args.id} is already in working")
+    if status == dest_status:
+        print(f"{args.id} is {already_msg}")
         return
-    dest = root / "working" / path.name
+    dest = root / dest_status / path.name
     path.rename(dest)
     task = load_task(dest)
     task["updated"] = now_iso()
     save_task(dest, task)
-    print(f"Working on {args.id}")
+    print(f"{done_msg} {args.id}")
 
 
-def cmd_close(args):
+def cmd_shave(args):
+    _move_task(args, SHAVING, "already being shaved", "Shaving")
+
+
+def cmd_shorn(args):
+    _move_task(args, SHORN, "already shorn", "Shorn!")
+
+
+def cmd_regrow(args):
+    _move_task(args, HAIRY, "already hairy", "Regrown:")
+
+
+def cmd_next(args):
     root = find_tasks_root()
-    result = find_task_file(root, args.id)
-    if not result:
-        print(f"error: task {args.id} not found", file=sys.stderr)
-        sys.exit(1)
-    status, path = result
-    if status == "closed":
-        print(f"{args.id} is already closed")
-        return
-    dest = root / "closed" / path.name
-    path.rename(dest)
-    task = load_task(dest)
-    task["updated"] = now_iso()
-    save_task(dest, task)
-    print(f"Closed {args.id}")
-
-
-def cmd_reopen(args):
-    root = find_tasks_root()
-    result = find_task_file(root, args.id)
-    if not result:
-        print(f"error: task {args.id} not found", file=sys.stderr)
-        sys.exit(1)
-    status, path = result
-    if status == "open":
-        print(f"{args.id} is already open")
-        return
-    dest = root / "open" / path.name
-    path.rename(dest)
-    task = load_task(dest)
-    task["updated"] = now_iso()
-    save_task(dest, task)
-    print(f"Reopened {args.id}")
-
-
-def cmd_ready(args):
-    root = find_tasks_root()
-    open_tasks = all_tasks(root, "open")
-    closed_ids = {t["id"] for _, t in all_tasks(root, "closed")}
+    hairy_tasks = all_tasks(root, HAIRY)
+    shorn_ids = {t["id"] for _, t in all_tasks(root, SHORN)}
 
     ready = []
-    for _, task in open_tasks:
+    for _, task in hairy_tasks:
         deps = task.get("depends_on", [])
-        if not deps or all(d in closed_ids for d in deps):
+        if not deps or all(d in shorn_ids for d in deps):
             ready.append(task)
 
     if args.json:
@@ -330,40 +325,40 @@ def cmd_ready(args):
         return
 
     if not ready:
-        print("No ready tasks.")
+        print("No yaks ready to shave.")
         return
 
-    print("Ready tasks (all dependencies met):")
+    print("Ready to shave (all dependencies met):")
     for t in ready:
         pri = t.get("priority", "-")
         print(f"  {t['id']}  p{pri} {t.get('type', '-'):8s} {t.get('title', '')}")
 
 
-def cmd_blocked(args):
+def cmd_tangled(args):
     root = find_tasks_root()
-    open_tasks = all_tasks(root, "open")
-    closed_ids = {t["id"] for _, t in all_tasks(root, "closed")}
+    hairy_tasks = all_tasks(root, HAIRY)
+    shorn_ids = {t["id"] for _, t in all_tasks(root, SHORN)}
 
-    blocked = []
-    for _, task in open_tasks:
+    tangled = []
+    for _, task in hairy_tasks:
         deps = task.get("depends_on", [])
-        open_deps = [d for d in deps if d not in closed_ids]
-        if open_deps:
-            blocked.append({**task, "_open_deps": open_deps})
+        unshorn = [d for d in deps if d not in shorn_ids]
+        if unshorn:
+            tangled.append({**task, "_unshorn_deps": unshorn})
 
     if args.json:
-        out = [{"open_deps": t.pop("_open_deps"), **t} for t in blocked]
+        out = [{"unshorn_deps": t.pop("_unshorn_deps"), **t} for t in tangled]
         print(json.dumps(out, indent=2))
         return
 
-    if not blocked:
-        print("No blocked tasks.")
+    if not tangled:
+        print("No tangled yaks.")
         return
 
-    print("Blocked tasks:")
-    for t in blocked:
-        open_deps = t.pop("_open_deps")
-        print(f"  {t['id']}  {t.get('title', '')}  (waiting on: {', '.join(open_deps)})")
+    print("Tangled yaks:")
+    for t in tangled:
+        unshorn = t.pop("_unshorn_deps")
+        print(f"  {t['id']}  {t.get('title', '')}  (waiting on: {', '.join(unshorn)})")
 
 
 def cmd_dep(args):
@@ -409,9 +404,9 @@ def cmd_stats(args):
     root = find_tasks_root()
     tasks = all_tasks(root)
 
-    open_count = sum(1 for s, _ in tasks if s == "open")
-    working_count = sum(1 for s, _ in tasks if s == "working")
-    closed_count = sum(1 for s, _ in tasks if s == "closed")
+    hairy_count = sum(1 for s, _ in tasks if s == HAIRY)
+    shaving_count = sum(1 for s, _ in tasks if s == SHAVING)
+    shorn_count = sum(1 for s, _ in tasks if s == SHORN)
 
     by_type: dict[str, int] = {}
     by_priority: dict[int, int] = {}
@@ -424,15 +419,15 @@ def cmd_stats(args):
     if args.json:
         print(json.dumps({
             "total": len(tasks),
-            "open": open_count,
-            "working": working_count,
-            "closed": closed_count,
+            "hairy": hairy_count,
+            "shaving": shaving_count,
+            "shorn": shorn_count,
             "by_type": by_type,
             "by_priority": dict(sorted(by_priority.items())),
         }, indent=2))
         return
 
-    print(f"Total: {len(tasks)}  Open: {open_count}  Working: {working_count}  Closed: {closed_count}")
+    print(f"Total: {len(tasks)}  Hairy: {hairy_count}  Shaving: {shaving_count}  Shorn: {shorn_count}")
     if by_type:
         print("By type:")
         for k, v in sorted(by_type.items()):
@@ -470,7 +465,7 @@ def cmd_import_beads(args):
 
     # Collect existing task IDs so we can skip duplicates
     existing_ids: set[str] = set()
-    for d in (root / "open", root / "working", root / "closed"):
+    for d in (root / s for s in STATUSES):
         if d.exists():
             for f in d.glob("*.yaml"):
                 existing_ids.add(f.stem)
@@ -480,7 +475,13 @@ def cmd_import_beads(args):
     priority_map = {0: 1, 1: 1, 2: 2, 3: 3, 4: 3}
     type_map = {"bug": "bug", "feature": "feature"}
 
-    created = {"open": 0, "working": 0, "closed": 0}
+    # Map beads status → yaks directory
+    _bead_status_map = {
+        "in_progress": SHAVING,
+        "closed": SHORN,
+    }
+
+    created = {s: 0 for s in STATUSES}
     skipped = 0
 
     for line in jsonl_path.read_text().splitlines():
@@ -507,16 +508,10 @@ def cmd_import_beads(args):
             skipped += 1
             continue
 
-        # Map status to yak directory
-        bead_status = bead.get("status", "open")
-        if bead_status == "in_progress":
-            yak_dir = "working"
-        elif bead_status == "closed":
-            yak_dir = "closed"
-        else:
-            yak_dir = "open"
+        # Map status to yaks directory
+        yak_dir = _bead_status_map.get(bead.get("status", ""), HAIRY)
 
-        # Build yak task
+        # Build task
         task: dict = {"id": bead_id}
         if bead.get("title"):
             task["title"] = bead["title"]
@@ -558,20 +553,23 @@ def cmd_import_beads(args):
 
     total = sum(created.values())
     prefix = "[dry-run] " if args.dry_run else ""
-    print(f"{prefix}Imported {total} tasks (open: {created['open']}, working: {created['working']}, closed: {created['closed']}), skipped {skipped}")
+    print(f"{prefix}Imported {total} tasks (hairy: {created[HAIRY]}, shaving: {created[SHAVING]}, shorn: {created[SHORN]}), skipped {skipped}")
 
 
 # ---------------------------------------------------------------------------
 # Argument parser
 # ---------------------------------------------------------------------------
 
+_ALL_STATUS_NAMES = sorted(_STATUS_ALIASES.keys())
+
+
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="yaks", description="Filesystem-native task tracker")
+    p = argparse.ArgumentParser(prog="yak", description="Filesystem-native task tracker")
     sub = p.add_subparsers(dest="command")
 
     # init
     sp = sub.add_parser("init", help="Initialize .yaks/ in the current directory")
-    sp.add_argument("--prefix", help="Task ID prefix (default: yak)")
+    sp.add_argument("--prefix", help="Task ID prefix (default: directory name)")
 
     # create
     sp = sub.add_parser("create", help="Create a new task")
@@ -584,7 +582,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # list
     sp = sub.add_parser("list", help="List tasks")
-    sp.add_argument("--status", choices=["open", "working", "closed"], help="Filter by status")
+    sp.add_argument("--status", choices=_ALL_STATUS_NAMES, help="Filter by status")
     sp.add_argument("--type", help="Filter by type")
     sp.add_argument("--priority", type=int, help="Filter by priority")
     sp.add_argument("--label", help="Filter by label")
@@ -605,25 +603,30 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--add-label", nargs="+", help="Add labels")
     sp.add_argument("--remove-label", nargs="+", help="Remove labels")
 
-    # work
-    sp = sub.add_parser("work", help="Start working on a task")
-    sp.add_argument("id", help="Task ID")
+    # shave (+ alias: work)
+    for name in ("shave", "work"):
+        sp = sub.add_parser(name, help="Start shaving a yak")
+        sp.add_argument("id", help="Task ID")
 
-    # close
-    sp = sub.add_parser("close", help="Close a task")
-    sp.add_argument("id", help="Task ID")
+    # shorn (+ alias: close)
+    for name in ("shorn", "close"):
+        sp = sub.add_parser(name, help="Mark a yak as shorn")
+        sp.add_argument("id", help="Task ID")
 
-    # reopen
-    sp = sub.add_parser("reopen", help="Reopen a closed task")
-    sp.add_argument("id", help="Task ID")
+    # regrow (+ alias: reopen)
+    for name in ("regrow", "reopen"):
+        sp = sub.add_parser(name, help="Regrow a shorn yak")
+        sp.add_argument("id", help="Task ID")
 
-    # ready
-    sp = sub.add_parser("ready", help="Show tasks ready to work on")
-    sp.add_argument("--json", action="store_true", help="JSON output")
+    # next (+ alias: ready)
+    for name in ("next", "ready"):
+        sp = sub.add_parser(name, help="Show yaks ready to shave")
+        sp.add_argument("--json", action="store_true", help="JSON output")
 
-    # blocked
-    sp = sub.add_parser("blocked", help="Show blocked tasks")
-    sp.add_argument("--json", action="store_true", help="JSON output")
+    # tangled (+ alias: blocked)
+    for name in ("tangled", "blocked"):
+        sp = sub.add_parser(name, help="Show tangled yaks")
+        sp.add_argument("--json", action="store_true", help="JSON output")
 
     # dep
     sp = sub.add_parser("dep", help="Manage dependencies")
@@ -656,11 +659,16 @@ def main():
         "list": cmd_list,
         "show": cmd_show,
         "update": cmd_update,
-        "work": cmd_work,
-        "close": cmd_close,
-        "reopen": cmd_reopen,
-        "ready": cmd_ready,
-        "blocked": cmd_blocked,
+        "shave": cmd_shave,
+        "work": cmd_shave,
+        "shorn": cmd_shorn,
+        "close": cmd_shorn,
+        "regrow": cmd_regrow,
+        "reopen": cmd_regrow,
+        "next": cmd_next,
+        "ready": cmd_next,
+        "tangled": cmd_tangled,
+        "blocked": cmd_tangled,
         "dep": cmd_dep,
         "stats": cmd_stats,
         "import-beads": cmd_import_beads,

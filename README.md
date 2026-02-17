@@ -20,21 +20,21 @@ Once installed, initialize tracking in any project:
 /yak:init
 ```
 
-This creates a `.yaks/` directory with `open/`, `working/`, and `closed/` subdirectories, plus a `config.yaml`. From there, your coding assistant can create and manage tasks using slash commands:
+This creates a `.yaks/` directory with `hairy/`, `shaving/`, and `shorn/` subdirectories, plus a `config.yaml`. From there, your coding assistant can create and manage tasks using slash commands:
 
 ```
 /yak:create --title "Add retry logic to API client" --type feature --priority 1
 /yak:list
-/yak:ready
-/yak:work yak-a1b2
-/yak:close yak-a1b2
+/yak:next
+/yak:shave yak-a1b2
+/yak:shorn yak-a1b2
 ```
 
 ## How it works
 
-- **Status is a directory.** A task in `.yaks/open/` is open. Move it to `.yaks/working/` and it's in progress. Move it to `.yaks/closed/` and it's done. No status field in the YAML — the filesystem is the source of truth.
+- **Status is a directory.** A task in `.yaks/hairy/` needs shaving. Move it to `.yaks/shaving/` and it's in progress. Move it to `.yaks/shorn/` and it's done. No status field in the YAML — the filesystem is the source of truth.
 - **Tasks are plain YAML.** Every task is a single `.yaml` file with an ID, title, type, priority, timestamps, optional dependencies, labels, and description.
-- **Dependencies are first-class.** Tasks can depend on other tasks. `/yak:ready` shows only tasks whose dependencies are all closed. `/yak:blocked` shows what's stuck.
+- **Dependencies are first-class.** Tasks can depend on other tasks. `/yak:next` shows only tasks whose dependencies are all shorn. `/yak:tangled` shows what's stuck.
 - **Git-friendly.** Task files are small, human-readable, and merge cleanly. Git history is your audit log.
 
 ## Commands
@@ -46,13 +46,14 @@ This creates a `.yaks/` directory with `open/`, `working/`, and `closed/` subdir
 | `/yak:list` | List tasks with optional filters |
 | `/yak:show` | Show full details of a task |
 | `/yak:update` | Update a task's fields |
-| `/yak:work` | Move a task to working status |
-| `/yak:close` | Close a completed task |
-| `/yak:reopen` | Reopen a closed task |
-| `/yak:ready` | Show tasks ready to work on (all deps met) |
-| `/yak:blocked` | Show tasks blocked by open dependencies |
+| `/yak:shave` | Start shaving a yak |
+| `/yak:shorn` | Mark a yak as shorn |
+| `/yak:regrow` | Regrow a shorn yak |
+| `/yak:next` | Show yaks ready to shave (all deps met) |
+| `/yak:tangled` | Show tangled yaks (unshorn dependencies) |
 | `/yak:dep` | Add or remove dependencies between tasks |
 | `/yak:stats` | Show task statistics |
+| `/yak:import-beads` | Import tasks from a beads JSONL export |
 
 ## Task format
 
@@ -74,12 +75,12 @@ description: |
 
 Fields:
 
-- **id** — Auto-generated as `{prefix}-{4 hex chars}` (prefix is configurable)
+- **id** — Auto-generated as `{prefix}-{4 hex chars}` (prefix defaults to directory name)
 - **title** — Short description of the task
 - **type** — `bug`, `feature`, or `task`
 - **priority** — `1` (highest) through `3` (lowest)
 - **created** / **updated** — ISO 8601 timestamps
-- **depends_on** — Optional list of task IDs that must be closed first
+- **depends_on** — Optional list of task IDs that must be shorn first
 - **labels** — Optional list of string tags
 - **description** — Optional longer description (block scalar)
 
@@ -95,17 +96,17 @@ This project uses Yaks for task tracking. Tasks are stored as YAML files in `.ya
 When working on multi-step or multi-session work:
 
 - Run `/yak:list` at the start of a session to see current tasks.
-- Run `/yak:ready` to find unblocked work.
-- Before starting a task, run `/yak:work TASK_ID` to mark it in progress.
-- After completing a task, run `/yak:close TASK_ID`.
+- Run `/yak:next` to find yaks ready to shave.
+- Before starting a task, run `/yak:shave TASK_ID` to mark it in progress.
+- After completing a task, run `/yak:shorn TASK_ID`.
 - When planning work, use `/yak:create` to break it into trackable tasks with dependencies.
 - Use `/yak:dep add TASK_ID DEP_ID` to express ordering constraints.
-- Prefer checking `/yak:blocked` before starting new work to avoid picking up tasks with unmet dependencies.
+- Prefer checking `/yak:tangled` before starting new work to avoid picking up tasks with unmet dependencies.
 ```
 
 ### Custom prefix
 
-If you want task IDs to match your project (e.g., `api-f3a1` instead of `yak-f3a1`), initialize with a custom prefix:
+If you want task IDs to match your project (e.g., `api-f3a1` instead of the default), initialize with a custom prefix:
 
 ```
 /yak:init --prefix api

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What is this?
 
-Yaks is a filesystem-native task tracker distributed as a Claude Code plugin. Tasks are plain YAML files stored in `.yaks/` directories within projects — no database, no daemon. Task status is implicit from the directory the file lives in (`open/`, `working/`, `closed/`).
+Yaks is a filesystem-native task tracker distributed as a Claude Code plugin. Tasks are plain YAML files stored in `.yaks/` directories within projects — no database, no daemon. Task status is implicit from the directory the file lives in (`hairy/`, `shaving/`, `shorn/`).
 
 ## Architecture
 
@@ -20,7 +20,7 @@ Yaks is a filesystem-native task tracker distributed as a Claude Code plugin. Ta
 python3 scripts/yak.py <subcommand> [args]
 ```
 
-Subcommands: `init`, `create`, `list`, `show`, `update`, `work`, `close`, `reopen`, `ready`, `blocked`, `dep`, `stats`. All support `--json` where applicable.
+Subcommands: `init`, `create`, `list`, `show`, `update`, `shave`, `shorn`, `regrow`, `next`, `tangled`, `dep`, `stats`, `import-beads`. Old names (`work`, `close`, `reopen`, `ready`, `blocked`) are accepted as aliases. All support `--json` where applicable.
 
 ## Task YAML schema
 
@@ -39,7 +39,7 @@ description: |         # optional, block scalar
 
 ## Key design decisions
 
-- Status is never stored in the YAML file — it's determined by which directory (`open/`, `working/`, `closed/`) the file is in. Moving a task between statuses means renaming the file to a different directory.
+- Status is never stored in the YAML file — it's determined by which directory (`hairy/`, `shaving/`, `shorn/`) the file is in. Moving a task between statuses means renaming the file to a different directory.
 - Task IDs are `{prefix}-{4 hex chars}`, generated collision-free against existing files.
 - The YAML dumper uses block scalars (`|`) for multiline strings via a custom `_BlockScalarDumper`.
-- `ready` checks that all `depends_on` IDs exist in `closed/`; `blocked` shows tasks with at least one non-closed dependency.
+- `next` checks that all `depends_on` IDs exist in `shorn/`; `tangled` shows tasks with at least one unshorn dependency.
