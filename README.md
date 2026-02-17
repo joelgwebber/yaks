@@ -17,43 +17,43 @@ Or, if published to a registry, follow the standard plugin installation instruct
 Once installed, initialize tracking in any project:
 
 ```
-/yak:init
+/yaks:init
 ```
 
 This creates a `.yaks/` directory with `hairy/`, `shaving/`, and `shorn/` subdirectories, plus a `config.yaml`. From there, your coding assistant can create and manage tasks using slash commands:
 
 ```
-/yak:create --title "Add retry logic to API client" --type feature --priority 1
-/yak:list
-/yak:next
-/yak:shave yak-a1b2
-/yak:shorn yak-a1b2
+/yaks:create --title "Add retry logic to API client" --type feature --priority 1
+/yaks:list
+/yaks:next
+/yaks:shave yak-a1b2
+/yaks:shorn yak-a1b2
 ```
 
 ## How it works
 
 - **Status is a directory.** A task in `.yaks/hairy/` needs shaving. Move it to `.yaks/shaving/` and it's in progress. Move it to `.yaks/shorn/` and it's done. No status field in the YAML — the filesystem is the source of truth.
 - **Tasks are plain YAML.** Every task is a single `.yaml` file with an ID, title, type, priority, timestamps, optional dependencies, labels, and description.
-- **Dependencies are first-class.** Tasks can depend on other tasks. `/yak:next` shows only tasks whose dependencies are all shorn. `/yak:tangled` shows what's stuck.
+- **Dependencies are first-class.** Tasks can depend on other tasks. `/yaks:next` shows only tasks whose dependencies are all shorn. `/yaks:tangled` shows what's stuck.
 - **Git-friendly.** Task files are small, human-readable, and merge cleanly. Git history is your audit log.
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `/yak:init` | Initialize `.yaks/` in the current project |
-| `/yak:create` | Create a new task |
-| `/yak:list` | List tasks with optional filters |
-| `/yak:show` | Show full details of a task |
-| `/yak:update` | Update a task's fields |
-| `/yak:shave` | Start shaving a yak |
-| `/yak:shorn` | Mark a yak as shorn |
-| `/yak:regrow` | Regrow a shorn yak |
-| `/yak:next` | Show yaks ready to shave (all deps met) |
-| `/yak:tangled` | Show tangled yaks (unshorn dependencies) |
-| `/yak:dep` | Add or remove dependencies between tasks |
-| `/yak:stats` | Show task statistics |
-| `/yak:import-beads` | Import tasks from a beads JSONL export |
+| `/yaks:init` | Initialize `.yaks/` in the current project |
+| `/yaks:create` | Create a new task |
+| `/yaks:list` | List tasks with optional filters |
+| `/yaks:show` | Show full details of a task |
+| `/yaks:update` | Update a task's fields |
+| `/yaks:shave` | Start shaving a yak |
+| `/yaks:shorn` | Mark a yak as shorn |
+| `/yaks:regrow` | Regrow a shorn yak |
+| `/yaks:next` | Show yaks ready to shave (all deps met) |
+| `/yaks:tangled` | Show tangled yaks (unshorn dependencies) |
+| `/yaks:dep` | Add or remove dependencies between tasks |
+| `/yaks:stats` | Show task statistics |
+| `/yaks:import-beads` | Import tasks from a beads JSONL export |
 
 ## Task format
 
@@ -95,13 +95,13 @@ This project uses Yaks for task tracking. Tasks are stored as YAML files in `.ya
 
 When working on multi-step or multi-session work:
 
-- Run `/yak:list` at the start of a session to see current tasks.
-- Run `/yak:next` to find yaks ready to shave.
-- Before starting a task, run `/yak:shave TASK_ID` to mark it in progress.
-- After completing a task, run `/yak:shorn TASK_ID`.
-- When planning work, use `/yak:create` to break it into trackable tasks with dependencies.
-- Use `/yak:dep add TASK_ID DEP_ID` to express ordering constraints.
-- Prefer checking `/yak:tangled` before starting new work to avoid picking up tasks with unmet dependencies.
+- Run `/yaks:list` at the start of a session to see current tasks.
+- Run `/yaks:next` to find yaks ready to shave.
+- Before starting a task, run `/yaks:shave TASK_ID` to mark it in progress.
+- After completing a task, run `/yaks:shorn TASK_ID`.
+- When planning work, use `/yaks:create` to break it into trackable tasks with dependencies.
+- Use `/yaks:dep add TASK_ID DEP_ID` to express ordering constraints.
+- Prefer checking `/yaks:tangled` before starting new work to avoid picking up tasks with unmet dependencies.
 ```
 
 ### Custom prefix
@@ -109,7 +109,7 @@ When working on multi-step or multi-session work:
 If you want task IDs to match your project (e.g., `api-f3a1` instead of the default), initialize with a custom prefix:
 
 ```
-/yak:init --prefix api
+/yaks:init --prefix api
 ```
 
 ## Requirements

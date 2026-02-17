@@ -564,7 +564,7 @@ _ALL_STATUS_NAMES = sorted(_STATUS_ALIASES.keys())
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="yak", description="Filesystem-native task tracker")
+    p = argparse.ArgumentParser(prog="yaks", description="Filesystem-native task tracker")
     sub = p.add_subparsers(dest="command")
 
     # init
