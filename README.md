@@ -68,6 +68,7 @@ depends_on:
   - yak-c3d4
 labels:
   - auth
+commit: a1b2c3d
 description: |
   Users see a crash on the login screen when
   submitting with an empty password field.
@@ -82,6 +83,7 @@ Fields:
 - **created** / **updated** — ISO 8601 timestamps
 - **depends_on** — Optional list of task IDs that must be shorn first
 - **labels** — Optional list of string tags
+- **commit** — Short git hash, auto-populated from HEAD when shorn (override with `--commit`)
 - **description** — Optional longer description (block scalar)
 
 ## Configuring your AI assistant to use Yaks
@@ -92,13 +94,12 @@ Add the following to your project's `CLAUDE.md` (or `AGENTS.md` for other tools)
 ## Task tracking
 
 This project uses Yaks for task tracking. Tasks are stored as YAML files in `.yaks/`.
-
-When working on multi-step or multi-session work:
+All significant tasks should be reflected as yaks with their status updated appropriately.
 
 - Run `/yaks:list` at the start of a session to see current tasks.
 - Run `/yaks:next` to find yaks ready to shave.
-- Before starting a task, run `/yaks:shave TASK_ID` to mark it in progress.
-- After completing a task, run `/yaks:shorn TASK_ID`.
+- Before starting a task, create one with `/yaks:create` if it doesn't exist, then `/yaks:shave TASK_ID`.
+- After completing a task, run `/yaks:shorn TASK_ID` — this auto-records the git commit hash.
 - When planning work, use `/yaks:create` to break it into trackable tasks with dependencies.
 - Use `/yaks:dep add TASK_ID DEP_ID` to express ordering constraints.
 - Prefer checking `/yaks:tangled` before starting new work to avoid picking up tasks with unmet dependencies.

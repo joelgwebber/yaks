@@ -41,6 +41,7 @@ depends_on:
   - yak-c3d4
 labels:
   - auth
+commit: a1b2c3d          # added when shorn; git HEAD by default
 description: |
   Details go here. Git tracks the history.
 ```
@@ -49,6 +50,6 @@ description: |
 
 - Before starting work, run `/yaks:next` to see what's ready to shave
 - When picking up a task, run `/yaks:shave TASK_ID` to mark it in progress
-- After finishing, run `/yaks:shorn TASK_ID`
+- After finishing, run `/yaks:shorn TASK_ID` — this auto-records the git commit hash (override with `--commit HASH`)
 - Use `/yaks:dep add` to express "do X before Y" relationships
 - Use `/yaks:tangled` to see what's waiting on other work

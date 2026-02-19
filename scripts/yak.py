@@ -8,6 +8,7 @@ import argparse
 import json
 import random
 import string
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -132,6 +133,20 @@ def generate_id(root: Path, prefix: str) -> str:
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def git_head_short() -> str | None:
+    """Return the short hash of HEAD, or None if not in a git repo."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -277,7 +292,8 @@ def cmd_update(args):
         print("No changes specified.")
 
 
-def _move_task(args, dest_status: str, already_msg: str, done_msg: str):
+def _move_task(args, dest_status: str, already_msg: str, done_msg: str,
+               extra_fields: dict | None = None):
     """Shared logic for shave/shorn/regrow."""
     root = find_tasks_root()
     result = find_task_file(root, args.id)
@@ -292,6 +308,8 @@ def _move_task(args, dest_status: str, already_msg: str, done_msg: str):
     path.rename(dest)
     task = load_task(dest)
     task["updated"] = now_iso()
+    if extra_fields:
+        task.update(extra_fields)
     save_task(dest, task)
     print(f"{done_msg} {args.id}")
 
@@ -301,7 +319,13 @@ def cmd_shave(args):
 
 
 def cmd_shorn(args):
-    _move_task(args, SHORN, "already shorn", "Shorn!")
+    commit = getattr(args, "commit", None)
+    if commit is None:
+        commit = git_head_short()
+        if commit:
+            print(f"(using HEAD commit: {commit})")
+    extra = {"commit": commit} if commit else {}
+    _move_task(args, SHORN, "already shorn", "Shorn!", extra_fields=extra)
 
 
 def cmd_regrow(args):
@@ -611,6 +635,7 @@ def build_parser() -> argparse.ArgumentParser:
     for name in ("shorn", "close"):
         sp = sub.add_parser(name, help="Mark a yak as shorn")
         sp.add_argument("id", help="Task ID")
+        sp.add_argument("--commit", help="Commit hash (default: git HEAD)")
 
     # regrow (+ alias: reopen)
     for name in ("regrow", "reopen"):

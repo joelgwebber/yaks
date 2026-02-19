@@ -33,9 +33,19 @@ created: ISO8601
 updated: ISO8601
 depends_on: [task-ids] # optional
 labels: [strings]      # optional
+commit: short-hash     # optional, auto-populated from git HEAD when shorn
 description: |         # optional, block scalar
   multiline text
 ```
+
+## Task tracking
+
+This project uses Yaks to track its own work. All significant tasks should be reflected as yaks with their status updated appropriately:
+
+- Before starting work, create a yak with `/yaks:create` (or check `/yaks:list` for an existing one).
+- Run `/yaks:shave TASK_ID` when you begin working on a task.
+- Run `/yaks:shorn TASK_ID` when the task is complete — this auto-records the commit hash.
+- At the start of a session, run `/yaks:list` and `/yaks:next` to see what's in flight and what's ready.
 
 ## Key design decisions
 
