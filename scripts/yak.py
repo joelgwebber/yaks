@@ -562,9 +562,11 @@ def cmd_import_beads(args):
         if bead.get("labels"):
             task["labels"] = bead["labels"]
 
-        # Description
+        # Description — unescape literal \n sequences left by beads export
         if bead.get("description"):
-            task["description"] = bead["description"]
+            desc = bead["description"]
+            desc = desc.replace("\\n", "\n").replace("\\t", "\t")
+            task["description"] = desc
 
         if args.dry_run:
             print(f"  [dry-run] {yak_dir}/{bead_id}.yaml  {task.get('title', '')}")

@@ -1,0 +1,9 @@
+id: yak-9711
+title: Beads conversion leaves bad descriptions
+type: bug
+priority: 1
+created: '2026-02-20T00:42:38Z'
+updated: '2026-02-20T01:55:00Z'
+description: |
+  Beads-converted yaks use string descriptions with embedded backslashes and \n characters. This doesn't work in yaml. We need to convert it to the yaml multiline string | thing.
+commit: cc04e85
