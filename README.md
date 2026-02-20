@@ -88,21 +88,14 @@ Fields:
 
 ## Configuring your AI assistant to use Yaks
 
-Add the following to your project's `CLAUDE.md` (or `AGENTS.md` for other tools) so that your coding assistant knows to use Yaks for task management:
+Once `.yaks/` exists in a project, the Yaks plugin skill activates automatically and instructs Claude to follow the tracking workflow. No additional `CLAUDE.md` configuration is required.
+
+If you want to reinforce the behavior, you can add a brief note to your project's `CLAUDE.md`:
 
 ```markdown
 ## Task tracking
 
-This project uses Yaks for task tracking. Tasks are stored as YAML files in `.yaks/`.
-All significant tasks should be reflected as yaks with their status updated appropriately.
-
-- Run `/yaks:list` at the start of a session to see current tasks.
-- Run `/yaks:next` to find yaks ready to shave.
-- Before starting a task, create one with `/yaks:create` if it doesn't exist, then `/yaks:shave TASK_ID`.
-- After completing a task, run `/yaks:shorn TASK_ID` — this auto-records the git commit hash.
-- When planning work, use `/yaks:create` to break it into trackable tasks with dependencies.
-- Use `/yaks:dep add TASK_ID DEP_ID` to express ordering constraints.
-- Prefer checking `/yaks:tangled` before starting new work to avoid picking up tasks with unmet dependencies.
+This project uses Yaks to track work. The Yaks skill (activated by the `.yaks/` directory) defines the required workflow — follow it.
 ```
 
 ### Custom prefix
