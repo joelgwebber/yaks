@@ -44,7 +44,7 @@ Do not skip these steps. If you finish work without marking the yak shorn, or st
 Tasks live in `.yaks/hairy/`, `.yaks/shaving/`, or `.yaks/shorn/`. Status is implicit from the directory.
 
 ```yaml
-id: yak-a1b2
+id: yak-a1b2              # or yak-a1b2.1 for a child task
 title: Fix the login crash
 type: bug
 priority: 2
@@ -58,3 +58,5 @@ commit: a1b2c3d          # added when shorn; git HEAD by default
 description: |
   Details go here.
 ```
+
+Child tasks use `--parent TASK_ID` on create. The hierarchy is implicit from the ID (dot-suffixed integers). `/yaks:show` displays parent and children automatically.

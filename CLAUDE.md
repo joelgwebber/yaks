@@ -25,7 +25,7 @@ Subcommands: `init`, `create`, `list`, `show`, `update`, `shave`, `shorn`, `regr
 ## Task YAML schema
 
 ```yaml
-id: prefix-hex4       # e.g. yak-a1b2
+id: prefix-hex4       # e.g. yak-a1b2, or parent-id.N for children
 title: string
 type: bug | feature | task
 priority: 1-3         # 1=highest
@@ -41,7 +41,8 @@ description: |         # optional, block scalar
 ## Key design decisions
 
 - Status is never stored in the YAML file — it's determined by which directory (`hairy/`, `shaving/`, `shorn/`) the file is in. Moving a task between statuses means renaming the file to a different directory.
-- Task IDs are `{prefix}-{4 hex chars}`, generated collision-free against existing files.
+- Task IDs are `{prefix}-{4 hex chars}`, generated collision-free against existing files. Child tasks use `{parent-id}.N` (dot-suffixed integers, arbitrary depth). Prefixes must not contain dots.
+- Parent/child relationships are implicit from IDs — no YAML field needed. `show` displays parent and children automatically.
 - The YAML dumper uses block scalars (`|`) for multiline strings via a custom `_BlockScalarDumper`.
 - `next` checks that all `depends_on` IDs exist in `shorn/`; `tangled` shows tasks with at least one unshorn dependency.
 

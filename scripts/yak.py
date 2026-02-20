@@ -135,6 +135,52 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def parent_id(task_id: str) -> str | None:
+    """Return the parent ID if task_id is a child (e.g. 'foo-abc.2' → 'foo-abc'), else None."""
+    dot = task_id.rfind(".")
+    if dot < 0:
+        return None
+    suffix = task_id[dot + 1:]
+    if suffix.isdigit():
+        return task_id[:dot]
+    return None
+
+
+def find_children(root: Path, task_id: str) -> list[tuple[str, dict]]:
+    """Return (status, task_dict) for all direct children of task_id, sorted by child number."""
+    prefix = task_id + "."
+    children = []
+    for s in STATUSES:
+        d = root / s
+        if not d.exists():
+            continue
+        for f in d.glob(f"{prefix}*.yaml"):
+            # Only direct children: stem after prefix must be a plain integer
+            suffix = f.stem[len(prefix):]
+            if suffix.isdigit():
+                task = load_task(f)
+                if task:
+                    children.append((s, task, int(suffix)))
+    children.sort(key=lambda x: x[2])
+    return [(s, t) for s, t, _ in children]
+
+
+def next_child_number(root: Path, task_id: str) -> int:
+    """Return the next available child number for task_id."""
+    prefix = task_id + "."
+    max_n = 0
+    for s in STATUSES:
+        d = root / s
+        if not d.exists():
+            continue
+        for f in d.glob(f"{prefix}*.yaml"):
+            suffix = f.stem[len(prefix):]
+            # Only count direct children (plain integer suffix)
+            if suffix.isdigit():
+                max_n = max(max_n, int(suffix))
+    return max_n + 1
+
+
 def git_head_short() -> str | None:
     """Return the short hash of HEAD, or None if not in a git repo."""
     try:
@@ -159,6 +205,9 @@ def cmd_init(args):
         print(f".yaks/ already exists at {target}")
         return
     prefix = args.prefix or Path.cwd().name.lower()
+    if "." in prefix:
+        print("error: prefix must not contain dots (dots are used for parent/child IDs)", file=sys.stderr)
+        sys.exit(1)
     target.mkdir()
     for s in STATUSES:
         (target / s).mkdir()
@@ -172,7 +221,16 @@ def cmd_create(args):
     cfg = load_config(root)
     prefix = cfg.get("prefix", "yak")
 
-    tid = generate_id(root, prefix)
+    parent = getattr(args, "parent", None)
+    if parent:
+        # Verify parent exists
+        if not find_task_file(root, parent):
+            print(f"error: parent task {parent} not found", file=sys.stderr)
+            sys.exit(1)
+        tid = f"{parent}.{next_child_number(root, parent)}"
+    else:
+        tid = generate_id(root, prefix)
+
     now = now_iso()
     task = {
         "id": tid,
@@ -238,11 +296,34 @@ def cmd_show(args):
     task = load_task(path)
 
     if args.json:
-        print(json.dumps({"status": status, **task}, indent=2))
+        out = {"status": status, **task}
+        pid = parent_id(args.id)
+        if pid and find_task_file(root, pid):
+            out["parent"] = pid
+        children = find_children(root, args.id)
+        if children:
+            out["children"] = [{"id": t["id"], "status": s, "title": t.get("title", "")} for s, t in children]
+        print(json.dumps(out, indent=2))
         return
 
     print(f"Status: {status}")
     print(dump_yaml(task), end="")
+
+    _status_char = {HAIRY: "H", SHAVING: "S", SHORN: "N"}
+    pid = parent_id(args.id)
+    parent_result = find_task_file(root, pid) if pid else None
+    if parent_result:
+        ps, pp = parent_result
+        pt = load_task(pp)
+        ch = _status_char.get(ps, ps[0].upper())
+        print(f"\nParent:\n  [{ch}] {pid}  {pt.get('title', '')}")
+
+    children = find_children(root, args.id)
+    if children:
+        print(f"\nChildren:")
+        for cs, ct in children:
+            ch = _status_char.get(cs, cs[0].upper())
+            print(f"  [{ch}] {ct['id']}  {ct.get('title', '')}")
 
 
 def cmd_update(args):
@@ -562,10 +643,12 @@ def cmd_import_beads(args):
         if bead.get("labels"):
             task["labels"] = bead["labels"]
 
-        # Description — unescape literal \n sequences left by beads export
+        # Description — unescape literal \n sequences left by beads export,
+        # and strip trailing whitespace so the YAML dumper uses block scalars.
         if bead.get("description"):
             desc = bead["description"]
             desc = desc.replace("\\n", "\n").replace("\\t", "\t")
+            desc = "\n".join(line.rstrip() for line in desc.split("\n"))
             task["description"] = desc
 
         if args.dry_run:
@@ -604,6 +687,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--description", help="Task description")
     sp.add_argument("--labels", nargs="+", help="Labels")
     sp.add_argument("--depends-on", nargs="+", help="Dependency task IDs")
+    sp.add_argument("--parent", help="Parent task ID (creates a child task)")
 
     # list
     sp = sub.add_parser("list", help="List tasks")

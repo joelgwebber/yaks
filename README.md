@@ -34,6 +34,7 @@ This creates a `.yaks/` directory with `hairy/`, `shaving/`, and `shorn/` subdir
 
 - **Status is a directory.** A task in `.yaks/hairy/` needs shaving. Move it to `.yaks/shaving/` and it's in progress. Move it to `.yaks/shorn/` and it's done. No status field in the YAML — the filesystem is the source of truth.
 - **Tasks are plain YAML.** Every task is a single `.yaml` file with an ID, title, type, priority, timestamps, optional dependencies, labels, and description.
+- **Parent/child tasks.** Create subtasks with `--parent TASK_ID`. Children get dot-suffixed IDs (`yak-a1b2.1`, `yak-a1b2.2`). The relationship is implicit from the ID — no extra YAML field. `show` displays the hierarchy automatically.
 - **Dependencies are first-class.** Tasks can depend on other tasks. `/yaks:next` shows only tasks whose dependencies are all shorn. `/yaks:tangled` shows what's stuck.
 - **Git-friendly.** Task files are small, human-readable, and merge cleanly. Git history is your audit log.
 
@@ -76,7 +77,7 @@ description: |
 
 Fields:
 
-- **id** — Auto-generated as `{prefix}-{4 hex chars}` (prefix defaults to directory name)
+- **id** — Auto-generated as `{prefix}-{4 hex chars}` (prefix defaults to directory name), or `{parent-id}.N` for child tasks
 - **title** — Short description of the task
 - **type** — `bug`, `feature`, or `task`
 - **priority** — `1` (highest) through `3` (lowest)
