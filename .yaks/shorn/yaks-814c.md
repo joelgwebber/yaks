@@ -1,6 +1,8 @@
+---
 id: yaks-814c
 title: Push to a remote repo and ensure the marketplace can be installed
 type: task
 priority: 2
 created: '2026-02-16T23:58:12Z'
 updated: '2026-02-18T15:27:52Z'
+---

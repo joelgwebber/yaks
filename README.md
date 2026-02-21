@@ -1,8 +1,8 @@
 # Yaks
 
-Filesystem-native task tracker for AI coding agents. Plain YAML files, no database, no daemon.
+Filesystem-native task tracker for AI coding agents. Markdown files with YAML frontmatter, no database, no daemon.
 
-Yaks is a [Claude Code plugin](https://docs.anthropic.com/en/docs/claude-code/plugins) that gives your coding assistant persistent task tracking across sessions. Tasks are stored as YAML files in a `.yaks/` directory within your project — readable, diffable, and version-controlled alongside your code.
+Yaks is a [Claude Code plugin](https://docs.anthropic.com/en/docs/claude-code/plugins) that gives your coding assistant persistent task tracking across sessions. Tasks are stored as markdown files (with YAML frontmatter for metadata) in a `.yaks/` directory within your project — readable, diffable, and version-controlled alongside your code.
 
 ## Install
 
@@ -33,7 +33,7 @@ This creates a `.yaks/` directory with `hairy/`, `shaving/`, and `shorn/` subdir
 ## How it works
 
 - **Status is a directory.** A task in `.yaks/hairy/` needs shaving. Move it to `.yaks/shaving/` and it's in progress. Move it to `.yaks/shorn/` and it's done. No status field in the YAML — the filesystem is the source of truth.
-- **Tasks are plain YAML.** Every task is a single `.yaml` file with an ID, title, type, priority, timestamps, optional dependencies, labels, and description.
+- **Tasks are markdown with frontmatter.** Every task is a single `.md` file. Structured metadata (ID, title, type, priority, timestamps, dependencies, labels) lives in YAML frontmatter. The markdown body is the description.
 - **Parent/child tasks.** Create subtasks with `--parent TASK_ID`. Children get dot-suffixed IDs (`yak-a1b2.1`, `yak-a1b2.2`). The relationship is implicit from the ID — no extra YAML field. `show` displays the hierarchy automatically.
 - **Dependencies are first-class.** Tasks can depend on other tasks. `/yaks:next` shows only tasks whose dependencies are all shorn. `/yaks:tangled` shows what's stuck.
 - **Git-friendly.** Task files are small, human-readable, and merge cleanly. Git history is your audit log.
@@ -59,7 +59,10 @@ This creates a `.yaks/` directory with `hairy/`, `shaving/`, and `shorn/` subdir
 
 ## Task format
 
-```yaml
+Tasks are `.md` files with YAML frontmatter for metadata. The markdown body is the description.
+
+```markdown
+---
 id: yak-a1b2
 title: Fix the login crash
 type: bug
@@ -71,12 +74,13 @@ depends_on:
 labels:
   - auth
 commit: a1b2c3d
-description: |
-  Users see a crash on the login screen when
-  submitting with an empty password field.
+---
+
+Users see a crash on the login screen when
+submitting with an empty password field.
 ```
 
-Fields:
+Frontmatter fields:
 
 - **id** — Auto-generated as `{prefix}-{4 hex chars}` (prefix defaults to directory name), or `{parent-id}.N` for child tasks
 - **title** — Short description of the task
@@ -86,7 +90,8 @@ Fields:
 - **depends_on** — Optional list of task IDs that must be shorn first
 - **labels** — Optional list of string tags
 - **commit** — Short git hash, auto-populated from HEAD when shorn (override with `--commit`)
-- **description** — Optional longer description (block scalar)
+
+The markdown body after the closing `---` is the description (optional).
 
 ## Configuring your AI assistant to use Yaks
 

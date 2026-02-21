@@ -2,7 +2,7 @@
 # requires-python = ">=3.10"
 # dependencies = ["pyyaml>=6.0"]
 # ///
-"""Filesystem-native task tracker. Plain YAML files, no database, no daemon."""
+"""Filesystem-native task tracker. Markdown files with YAML frontmatter, no database, no daemon."""
 
 import argparse
 import json
@@ -67,12 +67,42 @@ def find_tasks_root(start: Path | None = None) -> Path:
     while True:
         candidate = p / ".yaks"
         if candidate.is_dir():
+            _auto_migrate(candidate)
             return candidate
         if p.parent == p:
             break
         p = p.parent
     print("error: no .yaks/ directory found (run /yaks:init first)", file=sys.stderr)
     sys.exit(1)
+
+
+def _auto_migrate(root: Path) -> None:
+    """Migrate legacy .yaml task files to .md with frontmatter."""
+    migrated = []
+    for s in STATUSES:
+        d = root / s
+        if not d.exists():
+            continue
+        for f in sorted(d.glob("*.yaml")):
+            task = yaml.safe_load(f.read_text()) or {}
+            if not task:
+                continue
+            md_path = f.with_suffix(".md")
+            description = task.pop("description", None)
+            fm = dump_yaml(task)
+            parts = ["---\n", fm, "---\n"]
+            if description:
+                parts.append("\n")
+                parts.append(description)
+                if not description.endswith("\n"):
+                    parts.append("\n")
+            md_path.write_text("".join(parts))
+            f.unlink()
+            migrated.append(f"{s}/{f.stem}")
+    if migrated:
+        print(f"Migrated {len(migrated)} task(s) from .yaml to .md:")
+        for name in migrated:
+            print(f"  {name}")
 
 
 def load_config(root: Path) -> dict:
@@ -83,11 +113,36 @@ def load_config(root: Path) -> dict:
 
 
 def load_task(path: Path) -> dict:
-    return yaml.safe_load(path.read_text()) or {}
+    text = path.read_text()
+    if path.suffix == ".md":
+        # Parse frontmatter between --- fences
+        if not text.startswith("---"):
+            return {}
+        end = text.find("\n---", 3)
+        if end < 0:
+            return {}
+        fm = text[4:end]  # skip opening "---\n"
+        body = text[end + 4:]  # skip closing "\n---"
+        task = yaml.safe_load(fm) or {}
+        body = body.strip()
+        if body:
+            task["description"] = body
+        return task
+    # Legacy .yaml fallback (for migration)
+    return yaml.safe_load(text) or {}
 
 
 def save_task(path: Path, task: dict) -> None:
-    path.write_text(dump_yaml(task))
+    task = dict(task)  # shallow copy
+    description = task.pop("description", None)
+    fm = dump_yaml(task)
+    parts = ["---\n", fm, "---\n"]
+    if description:
+        parts.append("\n")
+        parts.append(description)
+        if not description.endswith("\n"):
+            parts.append("\n")
+    path.write_text("".join(parts))
 
 
 def all_tasks(root: Path, status: str | None = None) -> list[tuple[str, dict]]:
@@ -100,7 +155,7 @@ def all_tasks(root: Path, status: str | None = None) -> list[tuple[str, dict]]:
     for s, d in dirs:
         if not d.exists():
             continue
-        for f in sorted(d.glob("*.yaml")):
+        for f in sorted(d.glob("*.md")):
             task = load_task(f)
             if task:
                 results.append((s, task))
@@ -110,7 +165,7 @@ def all_tasks(root: Path, status: str | None = None) -> list[tuple[str, dict]]:
 def find_task_file(root: Path, task_id: str) -> tuple[str, Path] | None:
     """Locate a task file by ID, searching all dirs. Returns (status, path)."""
     for status_dir in STATUSES:
-        p = root / status_dir / f"{task_id}.yaml"
+        p = root / status_dir / f"{task_id}.md"
         if p.exists():
             return status_dir, p
     return None
@@ -121,7 +176,7 @@ def generate_id(root: Path, prefix: str) -> str:
     existing = set()
     for d in (root / s for s in STATUSES):
         if d.exists():
-            for f in d.glob("*.yaml"):
+            for f in d.glob("*.md"):
                 existing.add(f.stem)
     for _ in range(100):
         suffix = "".join(random.choices(string.hexdigits[:16], k=4))
@@ -155,7 +210,7 @@ def find_children(root: Path, task_id: str) -> list[tuple[str, dict]]:
         d = root / s
         if not d.exists():
             continue
-        for f in d.glob(f"{prefix}*.yaml"):
+        for f in d.glob(f"{prefix}*.md"):
             # Only direct children: stem after prefix must be a plain integer
             suffix = f.stem[len(prefix):]
             if suffix.isdigit():
@@ -174,7 +229,7 @@ def next_child_number(root: Path, task_id: str) -> int:
         d = root / s
         if not d.exists():
             continue
-        for f in d.glob(f"{prefix}*.yaml"):
+        for f in d.glob(f"{prefix}*.md"):
             suffix = f.stem[len(prefix):]
             # Only count direct children (plain integer suffix)
             if suffix.isdigit():
@@ -190,7 +245,7 @@ def find_descendants(root: Path, task_id: str) -> list[tuple[str, Path]]:
         d = root / s
         if not d.exists():
             continue
-        for f in d.glob(f"{prefix}*.yaml"):
+        for f in d.glob(f"{prefix}*.md"):
             descendants.append((s, f))
     return descendants
 
@@ -261,7 +316,7 @@ def cmd_create(args):
     if args.description:
         task["description"] = args.description
 
-    path = root / HAIRY / f"{tid}.yaml"
+    path = root / HAIRY / f"{tid}.md"
     save_task(path, task)
     print(f"Created {tid}: {args.title}")
 
@@ -574,7 +629,7 @@ def cmd_reparent(args):
         deps = task.get("depends_on", [])
         if deps:
             task["depends_on"] = [id_map.get(d, d) for d in deps]
-        save_task(path.parent / f"{new}.yaml", task)
+        save_task(path.parent / f"{new}.md", task)
         path.unlink()
 
     # Scan all remaining tasks for depends_on references to renamed IDs
@@ -583,7 +638,7 @@ def cmd_reparent(args):
         d = root / s
         if not d.exists():
             continue
-        for f in d.glob("*.yaml"):
+        for f in d.glob("*.md"):
             if f.stem in renamed_stems:
                 continue
             task = load_task(f)
@@ -671,7 +726,7 @@ def cmd_import_beads(args):
     existing_ids: set[str] = set()
     for d in (root / s for s in STATUSES):
         if d.exists():
-            for f in d.glob("*.yaml"):
+            for f in d.glob("*.md"):
                 existing_ids.add(f.stem)
 
     skip_types = {"message", "molecule", "merge-request"}
@@ -752,9 +807,9 @@ def cmd_import_beads(args):
             task["description"] = desc
 
         if args.dry_run:
-            print(f"  [dry-run] {yak_dir}/{bead_id}.yaml  {task.get('title', '')}")
+            print(f"  [dry-run] {yak_dir}/{bead_id}.md  {task.get('title', '')}")
         else:
-            dest = root / yak_dir / f"{bead_id}.yaml"
+            dest = root / yak_dir / f"{bead_id}.md"
             save_task(dest, task)
 
         created[yak_dir] += 1

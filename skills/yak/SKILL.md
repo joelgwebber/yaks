@@ -5,7 +5,7 @@ activation:
 
 # Yaks — Task tracking workflow
 
-This project tracks work with Yaks. Tasks are plain YAML files in `.yaks/`. You MUST follow this workflow to keep task state accurate.
+This project tracks work with Yaks. Tasks are markdown files with YAML frontmatter in `.yaks/`. You MUST follow this workflow to keep task state accurate.
 
 ## Required workflow
 
@@ -42,9 +42,10 @@ Do not skip these steps. If you finish work without marking the yak shorn, or st
 
 ## Task format
 
-Tasks live in `.yaks/hairy/`, `.yaks/shaving/`, or `.yaks/shorn/`. Status is implicit from the directory.
+Tasks live in `.yaks/hairy/`, `.yaks/shaving/`, or `.yaks/shorn/` as `.md` files. Status is implicit from the directory. Metadata is YAML frontmatter; the markdown body is the description.
 
-```yaml
+```markdown
+---
 id: yak-a1b2              # or yak-a1b2.1 for a child task
 title: Fix the login crash
 type: bug
@@ -56,8 +57,9 @@ depends_on:
 labels:
   - auth
 commit: a1b2c3d          # added when shorn; git HEAD by default
-description: |
-  Details go here.
+---
+
+Details go here.
 ```
 
 Child tasks use `--parent TASK_ID` on create. The hierarchy is implicit from the ID (dot-suffixed integers). `/yaks:show` displays parent and children automatically.

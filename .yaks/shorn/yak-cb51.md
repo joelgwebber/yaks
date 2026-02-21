@@ -1,10 +1,12 @@
+---
 id: yak-cb51
 title: Add an nvim plugin
 type: feature
 priority: 2
 created: '2026-02-18T15:31:50Z'
 updated: '2026-02-18T19:04:47Z'
-description: |
-  Task: yak-cb51 — Add an nvim plugin
-  Type: feature
-  Priority: 2
+---
+
+Task: yak-cb51 — Add an nvim plugin
+Type: feature
+Priority: 2
