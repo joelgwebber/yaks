@@ -10,12 +10,18 @@
       "name": "yaks",
       "source": "./",
       "description": "Filesystem-native task tracker. Plain YAML files, no yak left unshaved.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "author": {
         "name": "Joel"
       },
       "category": "Productivity",
-      "keywords": ["yaks", "tasks", "tracking", "yaml", "dependencies"]
+      "keywords": [
+        "yaks",
+        "tasks",
+        "tracking",
+        "yaml",
+        "dependencies"
+      ]
     }
   ]
 }
