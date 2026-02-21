@@ -53,7 +53,8 @@ _BlockScalarDumper.add_representer(str, _str_representer)
 
 
 def dump_yaml(data: dict) -> str:
-    return yaml.dump(data, Dumper=_BlockScalarDumper, default_flow_style=False, sort_keys=False)
+    return yaml.dump(data, Dumper=_BlockScalarDumper, default_flow_style=False,
+                     sort_keys=False, allow_unicode=True)
 
 
 # ---------------------------------------------------------------------------
