@@ -37,6 +37,7 @@ Do not skip these steps. If you finish work without marking the yak shorn, or st
 | `/yaks:next` | Show yaks ready to shave (all deps met) |
 | `/yaks:tangled` | Show tangled yaks (unshorn dependencies) |
 | `/yaks:dep` | Add/remove dependencies between tasks |
+| `/yaks:reparent` | Move task to new parent or top-level |
 | `/yaks:stats` | Show task statistics |
 
 ## Task format

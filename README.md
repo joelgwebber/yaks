@@ -53,6 +53,7 @@ This creates a `.yaks/` directory with `hairy/`, `shaving/`, and `shorn/` subdir
 | `/yaks:next` | Show yaks ready to shave (all deps met) |
 | `/yaks:tangled` | Show tangled yaks (unshorn dependencies) |
 | `/yaks:dep` | Add or remove dependencies between tasks |
+| `/yaks:reparent` | Move a task to a new parent or promote to top-level |
 | `/yaks:stats` | Show task statistics |
 | `/yaks:import-beads` | Import tasks from a beads JSONL export |
 

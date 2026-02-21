@@ -182,6 +182,19 @@ def next_child_number(root: Path, task_id: str) -> int:
     return max_n + 1
 
 
+def find_descendants(root: Path, task_id: str) -> list[tuple[str, Path]]:
+    """Return (status, path) for all descendants of task_id at any depth."""
+    prefix = task_id + "."
+    descendants = []
+    for s in STATUSES:
+        d = root / s
+        if not d.exists():
+            continue
+        for f in d.glob(f"{prefix}*.yaml"):
+            descendants.append((s, f))
+    return descendants
+
+
 def git_head_short() -> str | None:
     """Return the short hash of HEAD, or None if not in a git repo."""
     try:
@@ -505,6 +518,92 @@ def cmd_dep(args):
         print(f"Removed dependency: {args.id} -> {args.dep_id}")
 
 
+def cmd_reparent(args):
+    root = find_tasks_root()
+    old_id = args.id
+
+    result = find_task_file(root, old_id)
+    if not result:
+        print(f"error: task {old_id} not found", file=sys.stderr)
+        sys.exit(1)
+
+    new_parent = getattr(args, "parent", None)
+    unparent = getattr(args, "unparent", False)
+
+    if new_parent:
+        # Can't reparent under self or own descendant
+        if new_parent == old_id or new_parent.startswith(old_id + "."):
+            print(f"error: cannot reparent under own descendant", file=sys.stderr)
+            sys.exit(1)
+        # Already a child of this parent?
+        if parent_id(old_id) == new_parent:
+            print(f"{old_id} is already a child of {new_parent}")
+            return
+        if not find_task_file(root, new_parent):
+            print(f"error: parent task {new_parent} not found", file=sys.stderr)
+            sys.exit(1)
+        new_id = f"{new_parent}.{next_child_number(root, new_parent)}"
+    elif unparent:
+        if parent_id(old_id) is None:
+            print(f"error: {old_id} is already a top-level task", file=sys.stderr)
+            sys.exit(1)
+        cfg = load_config(root)
+        prefix = cfg.get("prefix", "yak")
+        new_id = generate_id(root, prefix)
+    else:
+        print("error: specify --parent TASK_ID or --unparent", file=sys.stderr)
+        sys.exit(1)
+
+    # Build old→new ID mapping for target + all descendants
+    id_map = {old_id: new_id}
+    for _, path in find_descendants(root, old_id):
+        desc_old = path.stem
+        desc_new = new_id + desc_old[len(old_id):]
+        id_map[desc_old] = desc_new
+
+    # Rename files, update id fields and internal deps
+    now = now_iso()
+    for old, new in id_map.items():
+        res = find_task_file(root, old)
+        if not res:
+            continue
+        _, path = res
+        task = load_task(path)
+        task["id"] = new
+        task["updated"] = now
+        deps = task.get("depends_on", [])
+        if deps:
+            task["depends_on"] = [id_map.get(d, d) for d in deps]
+        save_task(path.parent / f"{new}.yaml", task)
+        path.unlink()
+
+    # Scan all remaining tasks for depends_on references to renamed IDs
+    renamed_stems = set(id_map.values())
+    for s in STATUSES:
+        d = root / s
+        if not d.exists():
+            continue
+        for f in d.glob("*.yaml"):
+            if f.stem in renamed_stems:
+                continue
+            task = load_task(f)
+            deps = task.get("depends_on", [])
+            if not deps:
+                continue
+            new_deps = [id_map.get(d, d) for d in deps]
+            if new_deps != deps:
+                task["depends_on"] = new_deps
+                task["updated"] = now
+                save_task(f, task)
+                print(f"  updated dep in {task['id']}")
+
+    print(f"Reparented {old_id} → {new_id}")
+    if len(id_map) > 1:
+        for old, new in sorted(id_map.items()):
+            if old != old_id:
+                print(f"  {old} → {new}")
+
+
 def cmd_stats(args):
     root = find_tasks_root()
     tasks = all_tasks(root)
@@ -745,6 +844,13 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("id", help="Task ID")
     sp.add_argument("dep_id", help="Dependency task ID")
 
+    # reparent
+    sp = sub.add_parser("reparent", help="Move a task to a new parent or to top-level")
+    sp.add_argument("id", help="Task ID to reparent")
+    group = sp.add_mutually_exclusive_group(required=True)
+    group.add_argument("--parent", help="New parent task ID")
+    group.add_argument("--unparent", action="store_true", help="Promote to top-level task")
+
     # stats
     sp = sub.add_parser("stats", help="Show task statistics")
     sp.add_argument("--json", action="store_true", help="JSON output")
@@ -781,6 +887,7 @@ def main():
         "tangled": cmd_tangled,
         "blocked": cmd_tangled,
         "dep": cmd_dep,
+        "reparent": cmd_reparent,
         "stats": cmd_stats,
         "import-beads": cmd_import_beads,
     }
