@@ -9,19 +9,13 @@ This project tracks work with Yaks. Tasks are markdown files with YAML frontmatt
 
 ## Required workflow
 
-**At the start of every session**, run `/yaks:list` to see what exists and `/yaks:next` to see what's ready.
+Every piece of work MUST be bracketed by shave/shorn. No exceptions.
 
-**Before starting any significant work:**
+1. **Session start** — run `/yaks:list` and `/yaks:next` to see current state.
+2. **Before writing code** — `/yaks:shave TASK_ID` (create the yak first if needed).
+3. **After the commit** — `/yaks:shorn TASK_ID` immediately. Do this right after committing, not later.
 
-1. Check if a yak already exists for the work (`/yaks:list`).
-2. If not, create one with `/yaks:create`.
-3. Run `/yaks:shave TASK_ID` to mark it in progress.
-
-**After completing work:**
-
-1. Run `/yaks:shorn TASK_ID` — this auto-records the git commit hash.
-
-Do not skip these steps. If you finish work without marking the yak shorn, or start work without shaving a yak, the tracker becomes stale and loses its value.
+If you are about to write code and haven't shaved a yak, stop and shave one first. If you just committed and haven't marked a yak shorn, do it now before moving on.
 
 ## Commands
 
