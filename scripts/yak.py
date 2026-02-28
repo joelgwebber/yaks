@@ -659,6 +659,40 @@ def cmd_reparent(args):
                 print(f"  {old} → {new}")
 
 
+def cmd_search(args):
+    root = find_tasks_root()
+    status_filter = _resolve_status(args.status) if args.status else None
+    tasks = all_tasks(root, status_filter)
+
+    query = args.query.lower()
+    matches = []
+    for s, t in tasks:
+        title = t.get("title", "").lower()
+        desc = t.get("description", "").lower()
+        if query in title or query in desc:
+            matches.append((s, t))
+
+    if args.json:
+        out = [{"status": s, **t} for s, t in matches]
+        print(json.dumps(out, indent=2))
+        return
+
+    if not matches:
+        print("No tasks found.")
+        return
+
+    _status_char = {HAIRY: "H", SHAVING: "S", SHORN: "N"}
+    for status, t in matches:
+        pri = t.get("priority", "-")
+        ttype = t.get("type", "-")
+        labels = ",".join(t.get("labels", []))
+        deps = t.get("depends_on", [])
+        dep_str = f" (deps: {','.join(deps)})" if deps else ""
+        label_str = f" [{labels}]" if labels else ""
+        ch = _status_char.get(status, status[0].upper())
+        print(f"  [{ch}] {t['id']}  p{pri} {ttype:8s} {t.get('title', '')}{label_str}{dep_str}")
+
+
 def cmd_stats(args):
     root = find_tasks_root()
     tasks = all_tasks(root)
@@ -906,6 +940,12 @@ def build_parser() -> argparse.ArgumentParser:
     group.add_argument("--parent", help="New parent task ID")
     group.add_argument("--unparent", action="store_true", help="Promote to top-level task")
 
+    # search
+    sp = sub.add_parser("search", help="Search tasks by keyword")
+    sp.add_argument("query", help="Search term")
+    sp.add_argument("--status", choices=_ALL_STATUS_NAMES, help="Filter by status")
+    sp.add_argument("--json", action="store_true", help="JSON output")
+
     # stats
     sp = sub.add_parser("stats", help="Show task statistics")
     sp.add_argument("--json", action="store_true", help="JSON output")
@@ -943,6 +983,7 @@ def main():
         "blocked": cmd_tangled,
         "dep": cmd_dep,
         "reparent": cmd_reparent,
+        "search": cmd_search,
         "stats": cmd_stats,
         "import-beads": cmd_import_beads,
     }

@@ -30,6 +30,7 @@ If you are about to write code and haven't shaved a yak, stop and shave one firs
 | `/yaks:regrow` | Regrow a shorn yak |
 | `/yaks:next` | Show yaks ready to shave (all deps met) |
 | `/yaks:tangled` | Show tangled yaks (unshorn dependencies) |
+| `/yaks:search` | Search tasks by keyword |
 | `/yaks:dep` | Add/remove dependencies between tasks |
 | `/yaks:reparent` | Move task to new parent or top-level |
 | `/yaks:stats` | Show task statistics |

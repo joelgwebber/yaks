@@ -4,7 +4,7 @@ title: Switch task format from YAML to markdown with frontmatter
 type: feature
 priority: 1
 created: '2026-02-20T12:00:00Z'
-updated: '2026-02-21T02:34:48Z'
+updated: '2026-02-28T17:11:06Z'
 labels:
 - format
 - breaking
