@@ -13,7 +13,7 @@ Every piece of work MUST be bracketed by shave/shorn. No exceptions.
 
 1. **Session start** — run `/yaks:list` and `/yaks:next` to see current state.
 2. **Before writing code** — `/yaks:shave TASK_ID` (create the yak first if needed).
-3. **After the commit** — `/yaks:shorn TASK_ID` immediately. Do this right after committing, not later.
+3. **After the commit** — `/yaks:shorn TASK_ID` immediately. Do this right after committing, not later. The `commit` field auto-captures the current HEAD (the work commit). Do not amend or update it — the shorn yak file gets included in the next commit as-is.
 
 If you are about to write code and haven't shaved a yak, stop and shave one first. If you just committed and haven't marked a yak shorn, do it now before moving on.
 

@@ -20,7 +20,7 @@ Yaks is a filesystem-native task tracker distributed as a Claude Code plugin. Ta
 python3 scripts/yak.py <subcommand> [args]
 ```
 
-Subcommands: `init`, `create`, `list`, `show`, `update`, `shave`, `shorn`, `regrow`, `next`, `tangled`, `dep`, `reparent`, `stats`, `import-beads`. Old names (`work`, `close`, `reopen`, `ready`, `blocked`) are accepted as aliases. All support `--json` where applicable.
+Subcommands: `init`, `create`, `list`, `show`, `update`, `shave`, `shorn`, `regrow`, `next`, `tangled`, `dep`, `reparent`, `search`, `stats`, `import-beads`. Old names (`work`, `close`, `reopen`, `ready`, `blocked`) are accepted as aliases. All support `--json` where applicable.
 
 ## Task file format
 
@@ -49,6 +49,10 @@ Optional description as markdown body.
 - Parent/child relationships are implicit from IDs — no YAML field needed. `show` displays parent and children automatically.
 - Task files are `.md` with YAML frontmatter. The `description` field is not stored in frontmatter — the markdown body after the closing `---` is the description. Legacy `.yaml` task files are auto-migrated on first access.
 - `next` checks that all `depends_on` IDs exist in `shorn/`; `tangled` shows tasks with at least one unshorn dependency.
+
+## Releasing
+
+Bump the plugin version in `.claude-plugin/marketplace.json` whenever making changes that affect the plugin (commands, skills, yak.py). Without a version bump, claude plugins installations will use a stale cached version.
 
 ## Task tracking
 
