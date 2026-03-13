@@ -28,6 +28,8 @@ A parent yak's state should reflect its children:
 
 ## Commands
 
+**Always use the Skill tool to invoke these commands.** Do not run `yak.py` directly via Bash — the slash commands handle tool permissions and argument passing automatically.
+
 | Command | What it does |
 |---------|-------------|
 | `/yaks:create` | Create a new task |
