@@ -950,6 +950,9 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("stats", help="Show task statistics")
     sp.add_argument("--json", action="store_true", help="JSON output")
 
+    # tui
+    sub.add_parser("tui", help="Open interactive TUI")
+
     # import-beads
     sp = sub.add_parser("import-beads", help="Import tasks from a beads issues.jsonl file")
     sp.add_argument("--file", help="Path to issues.jsonl (default: auto-detect .beads/issues.jsonl)")
@@ -964,6 +967,10 @@ def main():
     if not args.command:
         parser.print_help()
         sys.exit(1)
+
+    if args.command == "tui":
+        import subprocess as _sp
+        _sp.execvp(sys.executable, [sys.executable, str(Path(__file__).parent / "tui.py")])
 
     commands = {
         "init": cmd_init,
