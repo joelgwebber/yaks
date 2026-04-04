@@ -593,7 +593,7 @@ class TUI:
         if self.focus == "detail":
             keys = "h:list  j/k:move  Tab:next link  Enter:follow  Bksp:back  /:search  Esc:clear  q:quit"
         else:
-            keys = "Tab:tab  j/k:move  l:detail  c/C:new  e:edit  s/x/r:shave/shorn/regrow  n/t/a:filter  /:search  ?:help"
+            keys = "Tab:tab  j/k:move  l:detail  c/C:new  e:edit  D:del  s/x/r:shave/shorn/regrow  n/t/a:filter  /:search  ?:help"
         self._safe_addstr(y, 0, " " * w, curses.color_pair(C_HELP))
         self._safe_addstr(y, 0, keys[:w], curses.color_pair(C_HELP))
 
@@ -606,6 +606,7 @@ class TUI:
                 "l / Right / Enter     Focus detail pane",
                 "c / C                 New root / child task",
                 "e                     Edit task in $EDITOR",
+                "D                     Delete task (confirm)",
                 "s / x / r             Shave / shorn / regrow",
                 "n / t / a             Next / tangled / all",
                 "/                     Search all tasks",
@@ -619,6 +620,7 @@ class TUI:
                 "Enter                 Follow link",
                 "Backspace / Ctrl-O    Navigate back",
                 "e                     Edit task in $EDITOR",
+                "D                     Delete task (confirm)",
                 "/                     Search detail text",
                 "Esc                   Clear search / back",
             ]),
@@ -849,6 +851,12 @@ class TUI:
             if tid:
                 self._edit_task(tid)
 
+        # Delete
+        elif key == ord("D"):
+            tid = self._current_task_id()
+            if tid:
+                self._delete_task(tid)
+
         return True
 
     def _handle_detail_key(self, key):
@@ -901,6 +909,12 @@ class TUI:
             tid = self._current_task_id()
             if tid:
                 self._edit_task(tid)
+
+        # Delete the task being displayed
+        elif key == ord("D"):
+            tid = self._current_task_id()
+            if tid:
+                self._delete_task(tid)
 
         # Detail search
         elif key == ord("/"):
@@ -1142,6 +1156,46 @@ class TUI:
                 self._rebuild_detail()
                 break
         self.notification = f"edited {tid}"
+
+    def _delete_task(self, tid):
+        """Delete a task file with confirmation. Refuses if task has children."""
+        result = yak.find_task_file(self.root, tid)
+        if not result:
+            self.notification = f"{tid} not found"
+            return
+
+        _, path = result
+        children = yak.find_children(self.root, tid)
+        if children:
+            self.notification = f"{tid} has {len(children)} child(ren); delete them first"
+            return
+
+        task = yak.load_task(path)
+        title = task.get("title", "")[:40]
+        prompt = f"Delete {tid} ({title})? (y/N): "
+        if not self._confirm(prompt):
+            self.notification = "delete cancelled"
+            return
+
+        try:
+            path.unlink()
+        except OSError as e:
+            self.notification = f"delete failed: {e}"
+            return
+
+        self.reload()
+        self.notification = f"deleted {tid}"
+
+    def _confirm(self, prompt):
+        """Show a yes/no prompt at the bottom. Returns True only on 'y' or 'Y'."""
+        h, w = self.stdscr.getmaxyx()
+        y = h - 1
+        self._safe_addstr(y, 0, " " * w, 0)
+        self._safe_addstr(y, 0, prompt[:w],
+                          curses.color_pair(C_SEARCH) | curses.A_BOLD)
+        self.stdscr.refresh()
+        ch = self.stdscr.getch()
+        return ch in (ord("y"), ord("Y"))
 
     def _edit_file_in_editor(self, path):
         """Suspend curses, run $EDITOR directly on an existing file."""
