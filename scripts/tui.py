@@ -5,8 +5,13 @@
 """Yaks TUI — curses-based terminal interface for the Yaks task tracker."""
 
 import curses
+import os
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
+
+import yaml
 
 sys.path.insert(0, str(Path(__file__).parent))
 import yak
@@ -298,6 +303,7 @@ class TUI:
         # UI state
         self.show_help = False
         self.message = ""
+        self.notification = ""  # top-right transient notice; clears on next key
 
         curses.curs_set(0)
         init_colors()
@@ -420,6 +426,12 @@ class TUI:
         elif self.filter_mode != "all":
             indicator = f"  {self.filter_mode}"
             self._safe_addstr(y, x, indicator, curses.color_pair(C_SEARCH))
+
+        # Top-right notification (transient)
+        if self.notification:
+            nx = max(x + 2, w - len(self.notification) - 2)
+            self._safe_addstr(y, nx, self.notification,
+                              curses.color_pair(C_SEARCH) | curses.A_BOLD)
 
     def _draw_list(self, y_start, x_start, height, width):
         if not self.tasks:
@@ -581,7 +593,7 @@ class TUI:
         if self.focus == "detail":
             keys = "h:list  j/k:move  Tab:next link  Enter:follow  Bksp:back  /:search  Esc:clear  q:quit"
         else:
-            keys = "Tab:tab  j/k:move  l/Enter:detail  s:shave  x:shorn  r:regrow  n/t/a:filter  /:search  q:quit  ?:help"
+            keys = "Tab:tab  j/k:move  l:detail  c/C:new  s/x/r:shave/shorn/regrow  n/t/a:filter  /:search  ?:help"
         self._safe_addstr(y, 0, " " * w, curses.color_pair(C_HELP))
         self._safe_addstr(y, 0, keys[:w], curses.color_pair(C_HELP))
 
@@ -592,6 +604,7 @@ class TUI:
                 "g / G                 First / last task",
                 "Tab / Shift-Tab       Switch status tab",
                 "l / Right / Enter     Focus detail pane",
+                "c / C                 New root / child task",
                 "s / x / r             Shave / shorn / regrow",
                 "n / t / a             Next / tangled / all",
                 "/                     Search all tasks",
@@ -738,6 +751,9 @@ class TUI:
     # -- Input handling ----------------------------------------------------
 
     def handle_key(self, key):
+        # Clear transient notification on any input
+        self.notification = ""
+
         if key == ord("q"):
             return False
         if key == ord("?"):
@@ -816,6 +832,14 @@ class TUI:
             self._move_current("shorn")
         elif key == ord("r"):
             self._move_current("regrow")
+
+        # Create
+        elif key == ord("c"):
+            self._create_task(parent=None)
+        elif key == ord("C"):
+            parent = self._current_task_id()
+            if parent:
+                self._create_task(parent=parent)
 
         return True
 
@@ -998,6 +1022,143 @@ class TUI:
             self.message = f"Error: could not {action} {tid}"
 
         self.reload()
+
+    def _current_task_id(self):
+        if not self.tasks or self.cursor >= len(self.tasks):
+            return None
+        return self.tasks[self.cursor][1]["id"]
+
+    def _create_task(self, parent=None):
+        """Spawn $EDITOR on a template and create the task on save."""
+        template = self._build_template(parent)
+        edited = self._edit_in_editor(template)
+        if edited is None or edited.strip() == template.strip():
+            self.notification = "create cancelled"
+            return
+
+        data = self._parse_template(edited)
+        if not data or not data.get("title", "").strip():
+            self.notification = "create cancelled"
+            return
+
+        # Create the task
+        cfg = yak.load_config(self.root)
+        prefix = cfg.get("prefix", "yak")
+        if parent:
+            if not yak.find_task_file(self.root, parent):
+                self.notification = f"parent {parent} not found"
+                return
+            tid = f"{parent}.{yak.next_child_number(self.root, parent)}"
+        else:
+            tid = yak.generate_id(self.root, prefix)
+
+        now = yak.now_iso()
+        task = {
+            "id": tid,
+            "title": data["title"].strip(),
+            "type": data.get("type") or "task",
+            "priority": data.get("priority") if data.get("priority") is not None else 2,
+            "created": now,
+            "updated": now,
+        }
+        if data.get("depends_on"):
+            task["depends_on"] = data["depends_on"]
+        if data.get("labels"):
+            task["labels"] = data["labels"]
+        if data.get("description"):
+            task["description"] = data["description"]
+
+        path = self.root / yak.HAIRY / f"{tid}.md"
+        yak.save_task(path, task)
+
+        # Switch to Hairy tab and select the new task
+        self.tab = 0
+        self.filter_mode = "all"
+        self.search_query = ""
+        self.reload()
+        for i, (_, t, _, _) in enumerate(self.tasks):
+            if t["id"] == tid:
+                self.cursor = i
+                self._fix_scroll()
+                self._rebuild_detail()
+                break
+        self.notification = f"created {tid}"
+
+    def _build_template(self, parent):
+        lines = ["---"]
+        if parent:
+            presult = yak.find_task_file(self.root, parent)
+            ptitle = ""
+            if presult:
+                pt = yak.load_task(presult[1])
+                ptitle = pt.get("title", "")
+            lines.append(f"# Child of {parent}: {ptitle}")
+        lines.append("# Fill in the title. Save and exit to create, or exit without")
+        lines.append("# saving (or leave title blank) to cancel.")
+        lines.append("title: ")
+        lines.append("# type: task | bug | feature")
+        lines.append("type: task")
+        lines.append("# priority: 1 (high) .. 3 (low)")
+        lines.append("priority: 2")
+        lines.append("# Optional:")
+        lines.append("# labels: [foo, bar]")
+        lines.append("# depends_on: [yak-xxxx]")
+        lines.append("---")
+        lines.append("")
+        lines.append("")
+        return "\n".join(lines)
+
+    def _parse_template(self, text):
+        """Parse the edited template into a task dict. Returns None on failure."""
+        if not text.startswith("---"):
+            return None
+        # Skip opening ---
+        rest = text[3:].lstrip("\n")
+        end = rest.find("\n---")
+        if end < 0:
+            return None
+        fm = rest[:end]
+        body = rest[end + 4:].strip()
+        try:
+            data = yaml.safe_load(fm) or {}
+        except yaml.YAMLError:
+            return None
+        if not isinstance(data, dict):
+            return None
+        if body:
+            data["description"] = body
+        return data
+
+    def _edit_in_editor(self, initial_content):
+        """Suspend curses, run $EDITOR on a temp file, return edited content."""
+        editor = os.environ.get("EDITOR", "vi")
+        tmp = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".yak.md", delete=False, encoding="utf-8")
+        try:
+            tmp.write(initial_content)
+            tmp.close()
+
+            curses.def_prog_mode()
+            curses.endwin()
+            try:
+                result = subprocess.call([editor, tmp.name])
+            except FileNotFoundError:
+                curses.reset_prog_mode()
+                self.stdscr.refresh()
+                self.notification = f"editor '{editor}' not found"
+                return None
+            curses.reset_prog_mode()
+            self.stdscr.refresh()
+
+            if result != 0:
+                return None
+            with open(tmp.name, "r", encoding="utf-8") as f:
+                return f.read()
+        finally:
+            try:
+                os.unlink(tmp.name)
+            except OSError:
+                pass
 
     def _input_prompt(self, prompt):
         """Read a line from the bottom bar. Escape cancels (returns "")."""
