@@ -4,7 +4,8 @@ title: Fix TUI bugs and polish interactions
 type: task
 priority: 2
 created: '2026-04-04T15:18:33Z'
-updated: '2026-04-04T15:25:50Z'
+updated: '2026-04-04T15:26:02Z'
+commit: ad3b89f
 ---
 
 Fix multiple TUI issues uncovered in initial testing:
