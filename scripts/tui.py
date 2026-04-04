@@ -9,6 +9,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import textwrap
 from pathlib import Path
 
 import yaml
@@ -36,6 +37,9 @@ C_SEARCH = 12
 C_LINK = 13
 C_LINK_SEL = 14
 C_MATCH = 15
+C_GHOST_HAIRY = 16
+C_GHOST_SHAVING = 17
+C_GHOST_SHORN = 18
 
 
 def init_colors():
@@ -47,14 +51,23 @@ def init_colors():
     curses.init_pair(C_TAB_ACTIVE, curses.COLOR_BLACK, curses.COLOR_WHITE)
     curses.init_pair(C_GHOST, 8, -1)
     curses.init_pair(C_TYPE, curses.COLOR_CYAN, -1)
-    curses.init_pair(C_SELECTED, curses.COLOR_BLACK, curses.COLOR_CYAN)
+    # Selection: subtle dark gray bg on 256-color terminals, else plain blue
+    if curses.COLORS >= 256:
+        curses.init_pair(C_SELECTED, -1, 237)  # default fg on dark gray
+        curses.init_pair(C_LINK_SEL, curses.COLOR_BLUE, 237)
+    else:
+        curses.init_pair(C_SELECTED, curses.COLOR_WHITE, curses.COLOR_BLUE)
+        curses.init_pair(C_LINK_SEL, curses.COLOR_CYAN, curses.COLOR_BLUE)
     curses.init_pair(C_LABEL, curses.COLOR_MAGENTA, -1)
     curses.init_pair(C_HEADER, curses.COLOR_WHITE, -1)
     curses.init_pair(C_HELP, curses.COLOR_BLACK, curses.COLOR_WHITE)
     curses.init_pair(C_SEARCH, curses.COLOR_YELLOW, -1)
     curses.init_pair(C_LINK, curses.COLOR_BLUE, -1)
-    curses.init_pair(C_LINK_SEL, curses.COLOR_BLACK, curses.COLOR_BLUE)
     curses.init_pair(C_MATCH, curses.COLOR_BLACK, curses.COLOR_YELLOW)
+    # Ghost state badges — distinct prominence by completion state
+    curses.init_pair(C_GHOST_HAIRY, curses.COLOR_YELLOW, -1)   # attention: undone
+    curses.init_pair(C_GHOST_SHAVING, 8, -1)                    # faded: in progress
+    curses.init_pair(C_GHOST_SHORN, curses.COLOR_GREEN, -1)     # done
 
 
 # ---------------------------------------------------------------------------
@@ -174,6 +187,15 @@ def _child_sort_key(tid):
     return 0
 
 
+def _ghost_badge_attr(status):
+    """Return the color pair + attributes for a ghost badge of the given state."""
+    if status == yak.HAIRY:
+        return curses.color_pair(C_GHOST_HAIRY) | curses.A_BOLD
+    if status == yak.SHORN:
+        return curses.color_pair(C_GHOST_SHORN)
+    return curses.color_pair(C_GHOST_SHAVING) | curses.A_DIM
+
+
 # ---------------------------------------------------------------------------
 # Detail line model
 # ---------------------------------------------------------------------------
@@ -188,14 +210,41 @@ class DetailLine:
         self.task_id = task_id  # non-None means this line is navigable
 
 
-def build_detail_lines(root, task, status) -> list[DetailLine]:
-    """Build the detail pane content for a task."""
+def _wrap(text, width) -> list[str]:
+    """Wrap a string to the given width, preserving leading indentation.
+    Continuation lines use the same lead as the original."""
+    if width <= 10 or not text:
+        return [text]
+    if len(text) <= width:
+        return [text]
+    stripped = text.lstrip(" ")
+    lead = text[:len(text) - len(stripped)]
+    wrapped = textwrap.wrap(
+        stripped, width=max(1, width - len(lead)),
+        break_long_words=False, break_on_hyphens=False)
+    if not wrapped:
+        return [text]
+    return [lead + w for w in wrapped]
+
+
+def build_detail_lines(root, task, status, width=80) -> list[DetailLine]:
+    """Build the detail pane content for a task, wrapped to `width`."""
+    def emit(text, kind="", task_id=None):
+        """Append a line, wrapping text to width. Only the first chunk is a link."""
+        chunks = _wrap(text, width)
+        lines.append(DetailLine(chunks[0], kind, task_id))
+        for chunk in chunks[1:]:
+            lines.append(DetailLine(chunk, kind))  # continuation, not a link
+
     lines = []
-    lines.append(DetailLine(f"Task: {task['id']}", "header"))
+    emit(f"Task: {task['id']}", "header")
     lines.append(DetailLine(""))
 
+    # Title gets wrapped on its own line so long titles are readable
+    title = task.get("title", "")
+    emit(f"  {'Title:':<12s} {title}", "field")
+
     fields = [
-        ("Title", task.get("title", "")),
         ("Status", status.capitalize()),
         ("Type", task.get("type", "-")),
         ("Priority", str(task.get("priority", "-"))),
@@ -208,7 +257,7 @@ def build_detail_lines(root, task, status) -> list[DetailLine]:
         fields.append(("Labels", ", ".join(task["labels"])))
 
     for label, value in fields:
-        lines.append(DetailLine(f"  {label + ':':<12s} {value}", "field"))
+        emit(f"  {label + ':':<12s} {value}", "field")
 
     # Dependencies as links
     for dep_id in task.get("depends_on", []):
@@ -217,11 +266,10 @@ def build_detail_lines(root, task, status) -> list[DetailLine]:
             ds, dp = dep_result
             dt = yak.load_task(dp)
             sc = {yak.HAIRY: "H", yak.SHAVING: "S", yak.SHORN: "N"}.get(ds, "?")
-            lines.append(DetailLine(
-                f"  {'Depends on:':<12s} [{sc}] {dep_id}  {dt.get('title', '')}",
-                "link", task_id=dep_id))
+            emit(f"  {'Depends on:':<12s} [{sc}] {dep_id}  {dt.get('title', '')}",
+                 "link", task_id=dep_id)
         else:
-            lines.append(DetailLine(f"  {'Depends on:':<12s} {dep_id} (not found)", "field"))
+            emit(f"  {'Depends on:':<12s} {dep_id} (not found)", "field")
 
     # Parent as link
     pid = yak.parent_id(task["id"])
@@ -231,9 +279,8 @@ def build_detail_lines(root, task, status) -> list[DetailLine]:
             ps, pp = presult
             pt = yak.load_task(pp)
             sc = {yak.HAIRY: "H", yak.SHAVING: "S", yak.SHORN: "N"}.get(ps, "?")
-            lines.append(DetailLine(
-                f"  {'Parent:':<12s} [{sc}] {pid}  {pt.get('title', '')}",
-                "link", task_id=pid))
+            emit(f"  {'Parent:':<12s} [{sc}] {pid}  {pt.get('title', '')}",
+                 "link", task_id=pid)
 
     # Children as links
     children = yak.find_children(root, task["id"])
@@ -243,9 +290,8 @@ def build_detail_lines(root, task, status) -> list[DetailLine]:
         sc = {yak.HAIRY: "H", yak.SHAVING: "S", yak.SHORN: "N"}
         for cs, ct in children:
             ch = sc.get(cs, "?")
-            lines.append(DetailLine(
-                f"    [{ch}] {ct['id']}  {ct.get('title', '')}",
-                "link", task_id=ct["id"]))
+            emit(f"    [{ch}] {ct['id']}  {ct.get('title', '')}",
+                 "link", task_id=ct["id"])
 
     # Description
     desc = task.get("description", "")
@@ -253,13 +299,17 @@ def build_detail_lines(root, task, status) -> list[DetailLine]:
         lines.append(DetailLine(""))
         lines.append(DetailLine("  Description:", "subheader"))
         for dline in desc.split("\n"):
-            lines.append(DetailLine(f"    {dline}", "desc"))
+            if not dline.strip():
+                lines.append(DetailLine("    "))
+                continue
+            for chunk in _wrap(f"    {dline}", width):
+                lines.append(DetailLine(chunk, "desc"))
 
     # File path
     result = yak.find_task_file(root, task["id"])
     if result:
         lines.append(DetailLine(""))
-        lines.append(DetailLine(f"  {'File:':<12s} {result[1]}", "field"))
+        emit(f"  {'File:':<12s} {result[1]}", "field")
 
     return lines
 
@@ -295,6 +345,7 @@ class TUI:
         self.detail_scroll = 0
         self.detail_search = ""
         self.detail_matches = []  # line indices matching search
+        self._detail_build_width = 0  # width lines were wrapped for
 
         # Navigation history: list of task IDs
         self.nav_history = []
@@ -365,15 +416,20 @@ class TUI:
             self._fs_sig = sig
             self._reload_preserving_position()
 
-    def _rebuild_detail(self):
+    def _rebuild_detail(self, width=None):
         if not self.tasks or self.cursor >= len(self.tasks):
             self.detail_lines = []
             self.detail_line_cursor = 0
             self.detail_scroll = 0
+            self._detail_build_width = width or 0
             return
 
+        if width is None:
+            width = self._detail_build_width or 80
+        self._detail_build_width = width
+
         status, task, _, _ = self.tasks[self.cursor]
-        self.detail_lines = build_detail_lines(self.root, task, status)
+        self.detail_lines = build_detail_lines(self.root, task, status, width)
         # Start cursor on the first link, or line 0 if no links
         self.detail_line_cursor = 0
         for i, dl in enumerate(self.detail_lines):
@@ -445,13 +501,25 @@ class TUI:
             self.stdscr.refresh()
             return
 
-        list_w = min(max(w * 3 // 5, 50), w - 30)
-        detail_x = list_w + 1
-
         self._draw_tabs(0, w)
-        self._draw_list(2, 0, h - 3, list_w)
-        self._draw_separator(1, list_w, h - 2)
-        self._draw_detail(1, detail_x, h - 2, w - detail_x)
+
+        if self.focus == "detail":
+            # Detail pane takes ~2/3, list takes ~1/3
+            detail_w = max(w * 2 // 3, 40)
+            list_w = w - detail_w - 1
+            detail_x = list_w + 1
+
+            # If the cached detail was built for a different width, rebuild
+            if self._detail_build_width != detail_w:
+                self._rebuild_detail(detail_w)
+
+            self._draw_list(2, 0, h - 3, list_w)
+            self._draw_separator(1, list_w, h - 2)
+            self._draw_detail(1, detail_x, h - 2, detail_w)
+        else:
+            # List takes the full width
+            self._draw_list(2, 0, h - 3, w)
+
         self._draw_help_bar(h - 1, w)
 
         if self.show_help:
@@ -495,8 +563,6 @@ class TUI:
             max_id_len = max(max_id_len, id_len)
         id_col = max_id_len + 1
 
-        list_focused = self.focus == "list"
-
         for i in range(height):
             idx = self.scroll + i
             if idx >= len(self.tasks):
@@ -505,10 +571,8 @@ class TUI:
             y = y_start + i
             is_selected = idx == self.cursor
 
-            if is_selected and list_focused:
+            if is_selected:
                 self._safe_addstr(y, x_start, " " * width, curses.color_pair(C_SELECTED))
-            elif is_selected:
-                self._safe_addstr(y, x_start, " " * width, curses.A_UNDERLINE)
 
             indent = "  " * depth
             tid = task["id"]
@@ -519,12 +583,7 @@ class TUI:
             x = x_start
             ghost_attr = curses.A_DIM if ghost else 0
 
-            if is_selected and list_focused:
-                base_attr = curses.color_pair(C_SELECTED)
-            elif is_selected:
-                base_attr = curses.A_UNDERLINE
-            else:
-                base_attr = 0
+            base_attr = curses.color_pair(C_SELECTED) if is_selected else 0
 
             id_text = f" {indent}{tid}"
             id_text = id_text.ljust(id_col + 1)
@@ -564,7 +623,8 @@ class TUI:
                 badge = f" [{sc}]"
                 bx = x_start + width - len(badge) - 1
                 if bx > x:
-                    self._safe_addstr(y, bx, badge, curses.A_DIM | base_attr)
+                    badge_attr = _ghost_badge_attr(status) | base_attr
+                    self._safe_addstr(y, bx, badge, badge_attr)
 
     def _draw_separator(self, y_start, x, height):
         for y in range(y_start, y_start + height):
@@ -654,7 +714,7 @@ class TUI:
                 "j / k / Up / Down     Move cursor",
                 "g / G                 First / last task",
                 "Tab / Shift-Tab       Switch status tab",
-                "l / Right / Enter     Focus detail pane",
+                "l / Right / Enter     Show detail pane",
                 "c / C                 New root / child task",
                 "e                     Edit task in $EDITOR",
                 "D                     Delete task (confirm)",
@@ -664,7 +724,7 @@ class TUI:
                 "Esc                   Clear search",
             ]),
             ("Detail pane", [
-                "h / Left              Back to list pane",
+                "h / Left              Hide detail pane",
                 "j / k / Up / Down     Move line cursor",
                 "g / G                 First / last line",
                 "Tab / Shift-Tab       Jump between links",
