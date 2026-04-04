@@ -305,9 +305,14 @@ class TUI:
         self.message = ""
         self.notification = ""  # top-right transient notice; clears on next key
 
+        # Auto-refresh state
+        self._fs_sig = None
+
         curses.curs_set(0)
+        self.stdscr.timeout(500)  # poll filesystem every 500ms when idle
         init_colors()
         self.reload()
+        self._fs_sig = self._scan_fs()
 
     def reload(self):
         status = TABS[self.tab][0]
@@ -317,6 +322,48 @@ class TUI:
             self.cursor = max(0, len(self.tasks) - 1)
         self._fix_scroll()
         self._rebuild_detail()
+        self._fs_sig = self._scan_fs()
+
+    def _reload_preserving_position(self):
+        """Reload while keeping the cursor on the same task id if possible."""
+        current_id = None
+        if self.tasks and 0 <= self.cursor < len(self.tasks):
+            current_id = self.tasks[self.cursor][1]["id"]
+        self.reload()
+        if current_id:
+            for i, (_, t, _, _) in enumerate(self.tasks):
+                if t["id"] == current_id:
+                    self.cursor = i
+                    self._fix_scroll()
+                    self._rebuild_detail()
+                    break
+
+    def _scan_fs(self):
+        """Return a signature that changes when task files change."""
+        total_mtime = 0.0
+        count = 0
+        for s in yak.STATUSES:
+            d = self.root / s
+            if not d.exists():
+                continue
+            try:
+                total_mtime += d.stat().st_mtime
+            except OSError:
+                pass
+            for f in d.glob("*.md"):
+                try:
+                    total_mtime += f.stat().st_mtime
+                    count += 1
+                except OSError:
+                    pass
+        return (count, total_mtime)
+
+    def _check_fs_changes(self):
+        """Called on idle poll. Reloads if filesystem changed."""
+        sig = self._scan_fs()
+        if sig != self._fs_sig:
+            self._fs_sig = sig
+            self._reload_preserving_position()
 
     def _rebuild_detail(self):
         if not self.tasks or self.cursor >= len(self.tasks):
@@ -376,6 +423,10 @@ class TUI:
         while True:
             self.draw()
             key = self.stdscr.getch()
+            if key == -1:
+                # Idle timeout — poll for filesystem changes
+                self._check_fs_changes()
+                continue
             if key == curses.KEY_RESIZE:
                 continue
             if self.show_help:
@@ -1194,8 +1245,11 @@ class TUI:
         self._safe_addstr(y, 0, prompt[:w],
                           curses.color_pair(C_SEARCH) | curses.A_BOLD)
         self.stdscr.refresh()
-        ch = self.stdscr.getch()
-        return ch in (ord("y"), ord("Y"))
+        while True:
+            ch = self.stdscr.getch()
+            if ch == -1:
+                continue  # idle timeout, keep waiting
+            return ch in (ord("y"), ord("Y"))
 
     def _edit_file_in_editor(self, path):
         """Suspend curses, run $EDITOR directly on an existing file."""
@@ -1309,6 +1363,8 @@ class TUI:
                 self.stdscr.refresh()
 
                 ch = self.stdscr.getch()
+                if ch == -1:
+                    continue  # idle timeout, just redraw
                 if ch == 27:  # Escape
                     return ""
                 elif ch in (ord("\n"), curses.KEY_ENTER, 10, 13):
