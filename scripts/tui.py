@@ -593,7 +593,7 @@ class TUI:
         if self.focus == "detail":
             keys = "h:list  j/k:move  Tab:next link  Enter:follow  Bksp:back  /:search  Esc:clear  q:quit"
         else:
-            keys = "Tab:tab  j/k:move  l:detail  c/C:new  s/x/r:shave/shorn/regrow  n/t/a:filter  /:search  ?:help"
+            keys = "Tab:tab  j/k:move  l:detail  c/C:new  e:edit  s/x/r:shave/shorn/regrow  n/t/a:filter  /:search  ?:help"
         self._safe_addstr(y, 0, " " * w, curses.color_pair(C_HELP))
         self._safe_addstr(y, 0, keys[:w], curses.color_pair(C_HELP))
 
@@ -605,6 +605,7 @@ class TUI:
                 "Tab / Shift-Tab       Switch status tab",
                 "l / Right / Enter     Focus detail pane",
                 "c / C                 New root / child task",
+                "e                     Edit task in $EDITOR",
                 "s / x / r             Shave / shorn / regrow",
                 "n / t / a             Next / tangled / all",
                 "/                     Search all tasks",
@@ -617,6 +618,7 @@ class TUI:
                 "Tab / Shift-Tab       Jump between links",
                 "Enter                 Follow link",
                 "Backspace / Ctrl-O    Navigate back",
+                "e                     Edit task in $EDITOR",
                 "/                     Search detail text",
                 "Esc                   Clear search / back",
             ]),
@@ -841,6 +843,12 @@ class TUI:
             if parent:
                 self._create_task(parent=parent)
 
+        # Edit
+        elif key == ord("e"):
+            tid = self._current_task_id()
+            if tid:
+                self._edit_task(tid)
+
         return True
 
     def _handle_detail_key(self, key):
@@ -887,6 +895,12 @@ class TUI:
         # Back in history
         elif key in (curses.KEY_BACKSPACE, 127, 8, 15):  # BS, DEL, ^H, ^O
             self._nav_back()
+
+        # Edit the task being displayed
+        elif key == ord("e"):
+            tid = self._current_task_id()
+            if tid:
+                self._edit_task(tid)
 
         # Detail search
         elif key == ord("/"):
@@ -1083,6 +1097,69 @@ class TUI:
                 self._rebuild_detail()
                 break
         self.notification = f"created {tid}"
+
+    def _edit_task(self, tid):
+        """Open the task's file in $EDITOR, reload on save."""
+        result = yak.find_task_file(self.root, tid)
+        if not result:
+            self.notification = f"{tid} not found"
+            return
+
+        status, path = result
+        original = yak.load_task(path)
+        original_id = original.get("id")
+        original_created = original.get("created")
+
+        # Read the file content as-is for editing
+        content = path.read_text()
+        edited = self._edit_file_in_editor(path)
+        if edited is None:
+            self.notification = "edit cancelled"
+            return
+        if edited == content:
+            self.notification = "no changes"
+            return
+
+        # Re-parse and normalize: preserve id + created, bump updated
+        data = self._parse_template(edited)
+        if not data or not data.get("title", "").strip():
+            self.notification = "edit cancelled (invalid)"
+            return
+
+        data["id"] = original_id
+        if original_created:
+            data["created"] = original_created
+        data["updated"] = yak.now_iso()
+
+        # Re-serialize cleanly
+        yak.save_task(path, data)
+        self.reload()
+        # Re-select the edited task
+        for i, (_, t, _, _) in enumerate(self.tasks):
+            if t["id"] == tid:
+                self.cursor = i
+                self._fix_scroll()
+                self._rebuild_detail()
+                break
+        self.notification = f"edited {tid}"
+
+    def _edit_file_in_editor(self, path):
+        """Suspend curses, run $EDITOR directly on an existing file."""
+        editor = os.environ.get("EDITOR", "vi")
+        curses.def_prog_mode()
+        curses.endwin()
+        try:
+            result = subprocess.call([editor, str(path)])
+        except FileNotFoundError:
+            curses.reset_prog_mode()
+            self.stdscr.refresh()
+            self.notification = f"editor '{editor}' not found"
+            return None
+        curses.reset_prog_mode()
+        self.stdscr.refresh()
+        if result != 0:
+            return None
+        return path.read_text()
 
     def _build_template(self, parent):
         lines = ["---"]
