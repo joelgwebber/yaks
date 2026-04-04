@@ -4,7 +4,8 @@ title: Different colors for ghost nodes in different states
 type: task
 priority: 2
 created: '2026-04-04T22:49:19Z'
-updated: '2026-04-04T23:20:08Z'
+updated: '2026-04-04T23:20:28Z'
+commit: 35f6794
 ---
 
 The [H] / [S] / [N] labels are a little subtle when making sense of a group of ghost yaks

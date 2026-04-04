@@ -4,7 +4,8 @@ title: Stateful detail UI (show/hide)
 type: task
 priority: 1
 created: '2026-04-04T22:38:42Z'
-updated: '2026-04-04T22:54:10Z'
+updated: '2026-04-04T23:20:28Z'
+commit: 35f6794
 ---
 
 I frequently run short on horizontal screen real estate, because the list is obscured by the
