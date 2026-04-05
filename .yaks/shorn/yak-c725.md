@@ -4,7 +4,8 @@ title: 'TUI: add/remove dependencies in-UI'
 type: task
 priority: 2
 created: '2026-04-05T14:34:18Z'
-updated: '2026-04-05T14:42:56Z'
+updated: '2026-04-05T14:43:43Z'
+commit: c6e1079
 ---
 
 Currently deps can only be managed via slash commands or $EDITOR. Add quick affordances:
