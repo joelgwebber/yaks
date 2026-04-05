@@ -273,7 +273,8 @@ def _humanize_date(value) -> str:
     return f"{rel} ({time_str})"
 
 
-def build_detail_lines(root, task, status, width=80) -> list[DetailLine]:
+def build_detail_lines(root, task, status, width=80,
+                       reverse_deps=None) -> list[DetailLine]:
     """Build the detail pane content for a task, wrapped to `width`."""
     def emit(text, kind="", task_id=None):
         """Append a line, wrapping text to width. Only the first chunk is a link."""
@@ -330,14 +331,27 @@ def build_detail_lines(root, task, status, width=80) -> list[DetailLine]:
 
     # Children as links
     children = yak.find_children(root, task["id"])
+    sc = {yak.HAIRY: "H", yak.SHAVING: "S", yak.SHORN: "N"}
     if children:
         lines.append(DetailLine(""))
         lines.append(DetailLine("  Children:", "subheader"))
-        sc = {yak.HAIRY: "H", yak.SHAVING: "S", yak.SHORN: "N"}
         for cs, ct in children:
             ch = sc.get(cs, "?")
             emit(f"    [{ch}] {ct['id']}  {ct.get('title', '')}",
                  "link", task_id=ct["id"])
+
+    # Reverse deps: tasks that depend on this one ("Blocks:")
+    if reverse_deps:
+        blockers = reverse_deps.get(task["id"]) or []
+        # Sort by id for stable rendering
+        blockers = sorted(blockers, key=lambda p: p[1]["id"])
+        if blockers:
+            lines.append(DetailLine(""))
+            lines.append(DetailLine("  Blocks:", "subheader"))
+            for bs, bt in blockers:
+                ch = sc.get(bs, "?")
+                emit(f"    [{ch}] {bt['id']}  {bt.get('title', '')}",
+                     "link", task_id=bt["id"])
 
     # Description
     desc = task.get("description", "")
@@ -401,6 +415,8 @@ class TUI:
 
         # Dep state
         self.blocked_ids: set[str] = set()
+        # Reverse-dep map: task id -> list of (status, task) that depend on it
+        self.reverse_deps: dict[str, list[tuple[str, dict]]] = {}
 
         curses.curs_set(0)
         self.stdscr.timeout(500)  # poll filesystem every 500ms when idle
@@ -420,14 +436,19 @@ class TUI:
         self._fs_sig = self._scan_fs()
 
     def _recompute_blocked(self):
-        """Update the set of hairy task ids with at least one unshorn dep."""
-        shorn_ids = {t["id"] for _, t in yak.all_tasks(self.root, yak.SHORN)}
+        """Update blocked_ids and reverse_deps from all tasks on disk."""
+        all_tasks = yak.all_tasks(self.root)
+        shorn_ids = {t["id"] for s, t in all_tasks if s == yak.SHORN}
         blocked = set()
-        for _, t in yak.all_tasks(self.root, yak.HAIRY):
+        reverse: dict[str, list[tuple[str, dict]]] = {}
+        for s, t in all_tasks:
             deps = t.get("depends_on") or []
-            if any(d not in shorn_ids for d in deps):
+            if s == yak.HAIRY and any(d not in shorn_ids for d in deps):
                 blocked.add(t["id"])
+            for d in deps:
+                reverse.setdefault(d, []).append((s, t))
         self.blocked_ids = blocked
+        self.reverse_deps = reverse
 
     def _reload_preserving_position(self):
         """Reload while keeping the cursor on the same task id if possible."""
@@ -483,7 +504,8 @@ class TUI:
         self._detail_build_width = width
 
         status, task, _, _ = self.tasks[self.cursor]
-        self.detail_lines = build_detail_lines(self.root, task, status, width)
+        self.detail_lines = build_detail_lines(
+            self.root, task, status, width, reverse_deps=self.reverse_deps)
         # Start cursor on the first link, or line 0 if no links
         self.detail_line_cursor = 0
         for i, dl in enumerate(self.detail_lines):
