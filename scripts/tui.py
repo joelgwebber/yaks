@@ -762,6 +762,7 @@ class TUI:
                 "e                     Edit task in $EDITOR",
                 "D                     Delete task (confirm)",
                 "s / x / r             Shave / shorn / regrow",
+                "P                     Quick adjust priority",
                 "n / t / a             Next / tangled / all",
                 "/                     Search all tasks",
                 "Esc                   Clear search",
@@ -1020,6 +1021,12 @@ class TUI:
             tid = self._current_task_id()
             if tid:
                 self._delete_task(tid)
+
+        # Quick adjust: priority
+        elif key == ord("P"):
+            tid = self._current_task_id()
+            if tid:
+                self._quick_adjust_priority(tid)
 
         return True
 
@@ -1414,6 +1421,47 @@ class TUI:
 
         self.reload()
         self.notification = f"deleted {tid}"
+
+    def _pick(self, prompt, choices):
+        """Show a single-key picker at the bottom. Returns the chosen char
+        or None on Esc. `choices` is a string of valid chars (case-sensitive).
+        """
+        h, w = self.stdscr.getmaxyx()
+        y = h - 1
+        self._safe_addstr(y, 0, " " * w, 0)
+        self._safe_addstr(y, 0, prompt[:w],
+                          curses.color_pair(C_SEARCH) | curses.A_BOLD)
+        self.stdscr.refresh()
+        while True:
+            ch = self.stdscr.getch()
+            if ch == -1:
+                continue
+            if ch == 27:
+                return None
+            c = chr(ch) if 0 <= ch < 256 else ""
+            if c in choices:
+                return c
+
+    def _quick_adjust_priority(self, tid):
+        result = yak.find_task_file(self.root, tid)
+        if not result:
+            return
+        _, path = result
+        choice = self._pick(
+            f"Priority for {tid}: 1=high 2=med 3=low  (Esc=cancel)", "123")
+        if choice is None:
+            self.notification = "priority unchanged"
+            return
+        task = yak.load_task(path)
+        new_p = int(choice)
+        if task.get("priority") == new_p:
+            self.notification = f"{tid} already p{new_p}"
+            return
+        task["priority"] = new_p
+        task["updated"] = yak.now_iso()
+        yak.save_task(path, task)
+        self.reload()
+        self.notification = f"{tid} -> p{new_p}"
 
     def _confirm(self, prompt):
         """Show a yes/no prompt at the bottom. Returns True only on 'y' or 'Y'."""
