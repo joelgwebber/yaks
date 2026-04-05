@@ -399,6 +399,9 @@ class TUI:
         # Auto-refresh state
         self._fs_sig = None
 
+        # Dep state
+        self.blocked_ids: set[str] = set()
+
         curses.curs_set(0)
         self.stdscr.timeout(500)  # poll filesystem every 500ms when idle
         init_colors()
@@ -409,11 +412,22 @@ class TUI:
         status = TABS[self.tab][0]
         self.tasks = build_tree(self.root, status, self.filter_mode,
                                 self.search_query)
+        self._recompute_blocked()
         if self.cursor >= len(self.tasks):
             self.cursor = max(0, len(self.tasks) - 1)
         self._fix_scroll()
         self._rebuild_detail()
         self._fs_sig = self._scan_fs()
+
+    def _recompute_blocked(self):
+        """Update the set of hairy task ids with at least one unshorn dep."""
+        shorn_ids = {t["id"] for _, t in yak.all_tasks(self.root, yak.SHORN)}
+        blocked = set()
+        for _, t in yak.all_tasks(self.root, yak.HAIRY):
+            deps = t.get("depends_on") or []
+            if any(d not in shorn_ids for d in deps):
+                blocked.add(t["id"])
+        self.blocked_ids = blocked
 
     def _reload_preserving_position(self):
         """Reload while keeping the cursor on the same task id if possible."""
@@ -625,10 +639,20 @@ class TUI:
 
             base_attr = curses.color_pair(C_SELECTED) if is_selected else 0
 
-            id_text = f" {indent}{tid}"
+            # Blocked marker: replace the leading space with '*' for any
+            # hairy task whose deps aren't all shorn.
+            blocked = tid in self.blocked_ids and status == yak.HAIRY
+            lead = "*" if blocked else " "
+            id_text = f"{lead}{indent}{tid}"
             id_text = id_text.ljust(id_col + 1)
             id_attr = base_attr if is_selected else (curses.color_pair(C_ID) | ghost_attr)
-            self._safe_addstr(y, x, id_text, id_attr)
+            if blocked and not is_selected:
+                # Highlight just the leading '*' in the warning color
+                block_attr = curses.color_pair(C_P2) | curses.A_BOLD
+                self._safe_addstr(y, x, lead, block_attr)
+                self._safe_addstr(y, x + 1, id_text[1:], id_attr)
+            else:
+                self._safe_addstr(y, x, id_text, id_attr)
             x += len(id_text)
 
             pri_text = f"p{pri} "
