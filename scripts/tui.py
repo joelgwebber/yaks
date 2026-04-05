@@ -809,6 +809,7 @@ class TUI:
                 "D                     Delete task (confirm)",
                 "s / x / r             Shave / shorn / regrow",
                 "P / T / N             Adjust priority / type / title",
+                "b / B                 Add / remove dependency",
                 "n / t / a             Next / tangled / all",
                 "/                     Search all tasks",
                 "Esc                   Clear search",
@@ -1086,6 +1087,16 @@ class TUI:
             tid = self._current_task_id()
             if tid:
                 self._quick_adjust_title(tid)
+
+        # Add / remove dependency
+        elif key == ord("b"):
+            tid = self._current_task_id()
+            if tid:
+                self._add_dependency(tid)
+        elif key == ord("B"):
+            tid = self._current_task_id()
+            if tid:
+                self._remove_dependency(tid)
 
         return True
 
@@ -1550,6 +1561,89 @@ class TUI:
         yak.save_task(path, task)
         self.reload()
         self.notification = f"{tid} -> p{new_p}"
+
+    def _add_dependency(self, tid):
+        result = yak.find_task_file(self.root, tid)
+        if not result:
+            return
+        _, path = result
+        target = self._edit_prompt(f"{tid} depends on: ")
+        if target is None or not target:
+            self.notification = "add dep cancelled"
+            return
+        if target == tid:
+            self.notification = "cannot depend on self"
+            return
+        tresult = yak.find_task_file(self.root, target)
+        if not tresult:
+            self.notification = f"{target} not found"
+            return
+        # Basic cycle check: refuse if `target` already (transitively) depends
+        # on `tid`. Walk the forward-dep graph from target.
+        if self._depends_on_transitively(target, tid):
+            self.notification = f"refused: would create a cycle ({target} -> {tid})"
+            return
+        task = yak.load_task(path)
+        deps = list(task.get("depends_on") or [])
+        if target in deps:
+            self.notification = f"{tid} already depends on {target}"
+            return
+        deps.append(target)
+        task["depends_on"] = deps
+        task["updated"] = yak.now_iso()
+        yak.save_task(path, task)
+        self.reload()
+        self.notification = f"{tid} -> depends on {target}"
+
+    def _remove_dependency(self, tid):
+        result = yak.find_task_file(self.root, tid)
+        if not result:
+            return
+        _, path = result
+        task = yak.load_task(path)
+        deps = list(task.get("depends_on") or [])
+        if not deps:
+            self.notification = f"{tid} has no deps"
+            return
+        # Build a digit-keyed picker (up to 9 deps)
+        display = deps[:9]
+        picker = "  ".join(f"({i + 1}){d}" for i, d in enumerate(display))
+        prompt = f"Remove dep: {picker}  (Esc=cancel)"
+        choices = "".join(str(i + 1) for i in range(len(display)))
+        choice = self._pick(prompt, choices)
+        if choice is None:
+            self.notification = "remove dep cancelled"
+            return
+        idx = int(choice) - 1
+        removed = display[idx]
+        deps.remove(removed)
+        if deps:
+            task["depends_on"] = deps
+        else:
+            task.pop("depends_on", None)
+        task["updated"] = yak.now_iso()
+        yak.save_task(path, task)
+        self.reload()
+        self.notification = f"{tid} -/-> {removed}"
+
+    def _depends_on_transitively(self, start_id, target_id):
+        """True if start_id depends (directly or transitively) on target_id."""
+        seen = set()
+        stack = [start_id]
+        while stack:
+            cur = stack.pop()
+            if cur in seen:
+                continue
+            seen.add(cur)
+            result = yak.find_task_file(self.root, cur)
+            if not result:
+                continue
+            t = yak.load_task(result[1])
+            for d in t.get("depends_on") or []:
+                if d == target_id:
+                    return True
+                stack.append(d)
+        return False
 
     def _quick_adjust_title(self, tid):
         result = yak.find_task_file(self.root, tid)
