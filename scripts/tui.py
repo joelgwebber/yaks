@@ -762,7 +762,7 @@ class TUI:
                 "e                     Edit task in $EDITOR",
                 "D                     Delete task (confirm)",
                 "s / x / r             Shave / shorn / regrow",
-                "P / T                 Adjust priority / type",
+                "P / T / N             Adjust priority / type / title",
                 "n / t / a             Next / tangled / all",
                 "/                     Search all tasks",
                 "Esc                   Clear search",
@@ -1033,6 +1033,12 @@ class TUI:
             tid = self._current_task_id()
             if tid:
                 self._quick_adjust_type(tid)
+
+        # Quick adjust: title
+        elif key == ord("N"):
+            tid = self._current_task_id()
+            if tid:
+                self._quick_adjust_title(tid)
 
         return True
 
@@ -1469,6 +1475,28 @@ class TUI:
         self.reload()
         self.notification = f"{tid} -> p{new_p}"
 
+    def _quick_adjust_title(self, tid):
+        result = yak.find_task_file(self.root, tid)
+        if not result:
+            return
+        _, path = result
+        task = yak.load_task(path)
+        current = task.get("title", "")
+        new_title = self._edit_prompt(f"Title ({tid}): ", initial=current)
+        if new_title is None:
+            self.notification = "title unchanged"
+            return
+        if not new_title:
+            self.notification = "title cannot be empty"
+            return
+        if new_title == current:
+            return
+        task["title"] = new_title
+        task["updated"] = yak.now_iso()
+        yak.save_task(path, task)
+        self.reload()
+        self.notification = f"{tid} title updated"
+
     def _quick_adjust_type(self, tid):
         result = yak.find_task_file(self.root, tid)
         if not result:
@@ -1598,6 +1626,74 @@ class TUI:
                 os.unlink(tmp.name)
             except OSError:
                 pass
+
+    def _edit_prompt(self, prompt, initial=""):
+        """Read a line from the bottom bar, pre-populated with `initial`.
+        Returns the edited string on Enter, or None on Escape.
+        Supports Home/End/arrows/Ctrl-A/Ctrl-E/Ctrl-K/Ctrl-U.
+        """
+        h, w = self.stdscr.getmaxyx()
+        y = h - 1
+        buf = initial
+        pos = len(buf)
+        curses.curs_set(1)
+        try:
+            while True:
+                max_vis = max(1, w - len(prompt) - 1)
+                # Simple scroll: if pos exceeds visible window, shift
+                offset = max(0, pos - max_vis + 1)
+                visible = buf[offset:offset + max_vis]
+                self._safe_addstr(y, 0, " " * w, 0)
+                self._safe_addstr(y, 0, prompt,
+                                  curses.color_pair(C_SEARCH) | curses.A_BOLD)
+                self._safe_addstr(y, len(prompt), visible, 0)
+                try:
+                    self.stdscr.move(y, len(prompt) + (pos - offset))
+                except curses.error:
+                    pass
+                self.stdscr.refresh()
+
+                ch = self.stdscr.getch()
+                if ch == -1:
+                    continue
+                if ch == 27:
+                    return None
+                if ch in (ord("\n"), curses.KEY_ENTER, 10, 13):
+                    return buf.strip()
+                if ch in (curses.KEY_BACKSPACE, 127, 8):
+                    if pos > 0:
+                        buf = buf[:pos - 1] + buf[pos:]
+                        pos -= 1
+                elif ch == curses.KEY_DC:  # Delete
+                    if pos < len(buf):
+                        buf = buf[:pos] + buf[pos + 1:]
+                elif ch == curses.KEY_LEFT:
+                    pos = max(0, pos - 1)
+                elif ch == curses.KEY_RIGHT:
+                    pos = min(len(buf), pos + 1)
+                elif ch in (curses.KEY_HOME, 1):  # Home, Ctrl-A
+                    pos = 0
+                elif ch in (curses.KEY_END, 5):   # End, Ctrl-E
+                    pos = len(buf)
+                elif ch == 11:  # Ctrl-K: kill to end of line
+                    buf = buf[:pos]
+                elif ch == 21:  # Ctrl-U: kill to start of line
+                    buf = buf[pos:]
+                    pos = 0
+                elif ch == 23:  # Ctrl-W: delete previous word
+                    # Strip trailing spaces, then non-spaces
+                    i = pos
+                    while i > 0 and buf[i - 1] == " ":
+                        i -= 1
+                    while i > 0 and buf[i - 1] != " ":
+                        i -= 1
+                    buf = buf[:i] + buf[pos:]
+                    pos = i
+                elif 32 <= ch < 127:
+                    buf = buf[:pos] + chr(ch) + buf[pos:]
+                    pos += 1
+        finally:
+            curses.curs_set(0)
 
     def _input_prompt(self, prompt):
         """Read a line from the bottom bar. Escape cancels (returns "")."""
