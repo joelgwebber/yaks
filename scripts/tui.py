@@ -762,7 +762,7 @@ class TUI:
                 "e                     Edit task in $EDITOR",
                 "D                     Delete task (confirm)",
                 "s / x / r             Shave / shorn / regrow",
-                "P                     Quick adjust priority",
+                "P / T                 Adjust priority / type",
                 "n / t / a             Next / tangled / all",
                 "/                     Search all tasks",
                 "Esc                   Clear search",
@@ -1027,6 +1027,12 @@ class TUI:
             tid = self._current_task_id()
             if tid:
                 self._quick_adjust_priority(tid)
+
+        # Quick adjust: type
+        elif key == ord("T"):
+            tid = self._current_task_id()
+            if tid:
+                self._quick_adjust_type(tid)
 
         return True
 
@@ -1462,6 +1468,28 @@ class TUI:
         yak.save_task(path, task)
         self.reload()
         self.notification = f"{tid} -> p{new_p}"
+
+    def _quick_adjust_type(self, tid):
+        result = yak.find_task_file(self.root, tid)
+        if not result:
+            return
+        _, path = result
+        type_map = {"t": "task", "b": "bug", "f": "feature"}
+        choice = self._pick(
+            f"Type for {tid}: t=task b=bug f=feature  (Esc=cancel)", "tbf")
+        if choice is None:
+            self.notification = "type unchanged"
+            return
+        task = yak.load_task(path)
+        new_t = type_map[choice]
+        if task.get("type") == new_t:
+            self.notification = f"{tid} already {new_t}"
+            return
+        task["type"] = new_t
+        task["updated"] = yak.now_iso()
+        yak.save_task(path, task)
+        self.reload()
+        self.notification = f"{tid} -> {new_t}"
 
     def _confirm(self, prompt):
         """Show a yes/no prompt at the bottom. Returns True only on 'y' or 'Y'."""
