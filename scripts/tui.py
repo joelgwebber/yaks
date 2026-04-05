@@ -824,7 +824,7 @@ class TUI:
                 "d / u                 Half-page down / up",
                 "PgDn / PgUp           Full-page down / up",
                 "g / G                 First / last line",
-                "Tab / Shift-Tab       Cycle between links",
+                "Tab / ] / Shift-Tab / [   Cycle between links",
                 "Enter                 Follow link",
                 "i                     Nav forward in jumplist",
                 "o / Backspace         Nav back in jumplist",
@@ -1136,9 +1136,9 @@ class TUI:
             self._fix_detail_scroll()
 
         # Cycle between link lines
-        elif key == ord("\t"):
+        elif key in (ord("\t"), ord("]")):
             self._jump_link(+1)
-        elif key == curses.KEY_BTAB:
+        elif key in (curses.KEY_BTAB, ord("[")):
             self._jump_link(-1)
 
         # Nav forward / back in the jumplist. 'i'/'o' mirror vim, Backspace
