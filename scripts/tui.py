@@ -788,7 +788,7 @@ class TUI:
             self.message = ""
             return
         if self.focus == "detail":
-            keys = "h:list  j/k:move  Tab:next link  Enter:follow  o/i:back/fwd  /:search  Esc:clear  q:quit"
+            keys = "h:list  j/k:move  Enter:follow  Tab/Shift-Tab:fwd/back  /:search  Esc:clear  q:quit"
         else:
             keys = "Tab:tab  j/k:move  l:detail  c/C:new  e:edit  D:del  s/x/r:shave/shorn/regrow  n/t/a:filter  /:search  ?:help"
         self._safe_addstr(y, 0, " " * w, curses.color_pair(C_HELP))
@@ -820,11 +820,10 @@ class TUI:
                 "Ctrl-D / Ctrl-U       Half-page down / up",
                 "PgDn / PgUp           Full-page down / up",
                 "g / G                 First / last line",
-                "Tab / Shift-Tab       Jump between links",
-                "[ / ]                 Previous / next tab",
                 "Enter                 Follow link",
-                "Backspace / o / ^O    Navigate back",
-                "i                     Navigate forward",
+                "Tab / ] / i           Nav forward in jumplist",
+                "Shift-Tab / [ / o     Nav back in jumplist",
+                "Backspace             Nav back (alias)",
                 "e                     Edit task in $EDITOR",
                 "D                     Delete task (confirm)",
                 "/                     Search detail text",
@@ -1002,7 +1001,7 @@ class TUI:
         # Focus detail
         elif key in (ord("l"), curses.KEY_RIGHT, ord("\n"), curses.KEY_ENTER):
             if self.detail_lines:
-                self.focus = "detail"
+                self._enter_detail()
 
         # Tab switching
         elif key == ord("\t") or key == ord("]"):
@@ -1131,19 +1130,15 @@ class TUI:
             self.detail_line_cursor = max(0, len(self.detail_lines) - 1)
             self._fix_detail_scroll()
 
-        # Tab/Shift-Tab jump between links
-        elif key == ord("\t"):
-            self._jump_link(1)
-        elif key == curses.KEY_BTAB:
-            self._jump_link(-1)
-
-        # [ / ] switch status tabs from detail as well
-        elif key == ord("]"):
-            self.focus = "list"
-            self._switch_tab(1)
-        elif key == ord("["):
-            self.focus = "list"
-            self._switch_tab(-1)
+        # Nav forward / back in the detail context stack.
+        # Tab and Ctrl-I are the same byte in terminals, so Tab carries
+        # the vim Ctrl-I role here (forward in jumplist). Shift-Tab and
+        # ]/[ are aliases; Backspace and 'o'/'i' work for browser/vim folks.
+        elif key in (ord("\t"), ord("]"), ord("i")):
+            self._nav_forward()
+        elif key in (curses.KEY_BTAB, ord("["), ord("o"),
+                     curses.KEY_BACKSPACE, 127, 8):
+            self._nav_back()
 
         # Page scrolling in detail
         elif key in (curses.KEY_NPAGE, 4):  # PageDown, Ctrl-D
@@ -1162,14 +1157,6 @@ class TUI:
         # Follow link on current line
         elif key in (ord("\n"), curses.KEY_ENTER):
             self._follow_link()
-
-        # Back / forward in nav history
-        # Ctrl-I collides with Tab in most terminals, so we use plain 'i'/'o'
-        # (vim-ish minus the Ctrl) alongside Backspace/Ctrl-O for back.
-        elif key in (curses.KEY_BACKSPACE, 127, 8, 15, ord("o")):
-            self._nav_back()
-        elif key == ord("i"):
-            self._nav_forward()
 
         # Edit the task being displayed
         elif key == ord("e"):
@@ -1239,27 +1226,6 @@ class TUI:
             self.detail_line_cursor = self.detail_matches[-1]
         self._fix_detail_scroll()
 
-    def _jump_link(self, direction):
-        """Jump to the next/previous navigable link line."""
-        link_lines = [i for i, dl in enumerate(self.detail_lines) if dl.task_id]
-        if not link_lines:
-            return
-        if direction > 0:
-            for li in link_lines:
-                if li > self.detail_line_cursor:
-                    self.detail_line_cursor = li
-                    self._fix_detail_scroll()
-                    return
-            self.detail_line_cursor = link_lines[0]
-        else:
-            for li in reversed(link_lines):
-                if li < self.detail_line_cursor:
-                    self.detail_line_cursor = li
-                    self._fix_detail_scroll()
-                    return
-            self.detail_line_cursor = link_lines[-1]
-        self._fix_detail_scroll()
-
     def _switch_tab(self, direction):
         self.tab = (self.tab + direction) % len(TABS)
         self.filter_mode = "all"
@@ -1271,6 +1237,15 @@ class TUI:
         self.scroll = 0
         self.detail_search = ""
         self.reload()
+
+    def _enter_detail(self):
+        """Focus the detail pane and reset its nav stack.
+        The stack is scoped to a single detail context, so every fresh entry
+        starts empty.
+        """
+        self.nav_history = []
+        self.nav_pos = -1
+        self.focus = "detail"
 
     def _follow_link(self):
         if not (0 <= self.detail_line_cursor < len(self.detail_lines)):
