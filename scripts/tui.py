@@ -365,6 +365,10 @@ def build_detail_lines(root, task, status, width=80,
             for chunk in _wrap(f"    {dline}", width):
                 lines.append(DetailLine(chunk, "desc"))
 
+    # Trailing padding so the last content line can scroll above the bottom.
+    lines.append(DetailLine(""))
+    lines.append(DetailLine(""))
+
     return lines
 
 
