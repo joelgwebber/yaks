@@ -4,7 +4,8 @@ title: Ctrl+i/o navigation aren't working in details
 type: bug
 priority: 1
 created: '2026-04-05T14:55:17Z'
-updated: '2026-04-05T15:16:57Z'
+updated: '2026-04-05T15:18:32Z'
+commit: bff6737
 ---
 
 Ctrl+o doesn't seem to do anything. Ctrl+i seems to just switch among the children. My intent was
