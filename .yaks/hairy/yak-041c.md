@@ -1,10 +1,10 @@
 ---
 id: yak-041c
 title: Consider leveraging filesystem for created/modified
-type: task
+type: idea
 priority: 3
 created: '2026-04-05T15:50:01Z'
-updated: '2026-04-05T16:07:38Z'
+updated: '2026-04-05T16:15:11Z'
 ---
 
 This would clean up the metadata frontmatter a good bit, but could be flaky. We should think
