@@ -305,12 +305,6 @@ def build_detail_lines(root, task, status, width=80) -> list[DetailLine]:
             for chunk in _wrap(f"    {dline}", width):
                 lines.append(DetailLine(chunk, "desc"))
 
-    # File path
-    result = yak.find_task_file(root, task["id"])
-    if result:
-        lines.append(DetailLine(""))
-        emit(f"  {'File:':<12s} {result[1]}", "field")
-
     return lines
 
 
