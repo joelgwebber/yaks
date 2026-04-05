@@ -4,7 +4,8 @@ title: Tweak vim-esque shortcuts
 type: task
 priority: 2
 created: '2026-04-05T15:40:18Z'
-updated: '2026-04-05T15:41:38Z'
+updated: '2026-04-05T15:42:03Z'
+commit: daa9984
 ---
 
 I think all the cases where we have ctrl-u/d, et al can be simplified to be just u/d and so forth.
