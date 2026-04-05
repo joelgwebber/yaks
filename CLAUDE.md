@@ -20,7 +20,7 @@ Yaks is a filesystem-native task tracker distributed as a Claude Code plugin. Ta
 python3 scripts/yak.py <subcommand> [args]
 ```
 
-Subcommands: `init`, `create`, `list`, `show`, `update`, `shave`, `shorn`, `regrow`, `next`, `tangled`, `dep`, `reparent`, `search`, `stats`, `import-beads`. Old names (`work`, `close`, `reopen`, `ready`, `blocked`) are accepted as aliases. All support `--json` where applicable.
+Subcommands: `init`, `create`, `list`, `show`, `update`, `shave`, `shorn`, `regrow`, `slaughter`, `revive`, `next`, `tangled`, `dep`, `reparent`, `search`, `stats`, `import-beads`. Old names (`work`, `close`, `reopen`, `ready`, `blocked`) are accepted as aliases. All support `--json` where applicable.
 
 ## Task file format
 
@@ -44,7 +44,8 @@ Optional description as markdown body.
 
 ## Key design decisions
 
-- Status is never stored in the YAML file — it's determined by which directory (`hairy/`, `shaving/`, `shorn/`) the file is in. Moving a task between statuses means renaming the file to a different directory.
+- Status is never stored in the YAML file — it's determined by which directory (`hairy/`, `shaving/`, `shorn/`, or `dead/`) the file is in. Moving a task between statuses means renaming the file to a different directory.
+- `dead/` is a hidden state for slaughtered yaks (ideas you won't pursue, obviated tasks). Dead yaks are excluded from every default query and from the TUI, but remain on disk. Dead deps count as "resolved" in `next`/`tangled`/blocked computations — slaughtering a dep unblocks its dependents.
 - Task IDs are `{prefix}-{4 hex chars}`, generated collision-free against existing files. Child tasks use `{parent-id}.N` (dot-suffixed integers, arbitrary depth). Prefixes must not contain dots.
 - Parent/child relationships are implicit from IDs — no YAML field needed. `show` displays parent and children automatically.
 - Task files are `.md` with YAML frontmatter. The `description` field is not stored in frontmatter — the markdown body after the closing `---` is the description. Legacy `.yaml` task files are auto-migrated on first access.

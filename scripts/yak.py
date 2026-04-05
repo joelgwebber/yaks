@@ -22,12 +22,17 @@ import yaml
 HAIRY = "hairy"
 SHAVING = "shaving"
 SHORN = "shorn"
+DEAD = "dead"
+# Normal statuses visible to the UI and default queries. "dead" is hidden;
+# slaughtered yaks exist on disk but are excluded unless explicitly requested.
 STATUSES = (HAIRY, SHAVING, SHORN)
+_ALL_STATUSES = (HAIRY, SHAVING, SHORN, DEAD)
 
 # Aliases (old names → canonical)
 _STATUS_ALIASES = {
     "open": HAIRY, "working": SHAVING, "closed": SHORN,
-    HAIRY: HAIRY, SHAVING: SHAVING, SHORN: SHORN,
+    "slaughtered": DEAD,
+    HAIRY: HAIRY, SHAVING: SHAVING, SHORN: SHORN, DEAD: DEAD,
 }
 
 
@@ -146,13 +151,17 @@ def save_task(path: Path, task: dict) -> None:
 
 
 def all_tasks(root: Path, status: str | None = None) -> list[tuple[str, dict]]:
-    """Return list of (status, task_dict) for tasks in the given status dir(s)."""
-    dirs = []
-    for s in STATUSES:
-        if status is None or status == s:
-            dirs.append((s, root / s))
+    """Return list of (status, task_dict) for tasks in the given status dir(s).
+    When status is None, only the visible STATUSES are scanned — dead yaks are
+    excluded. Pass status=DEAD (or "dead") to inspect slaughtered tasks.
+    """
+    if status is not None:
+        scan = (status,)
+    else:
+        scan = STATUSES
     results = []
-    for s, d in dirs:
+    for s in scan:
+        d = root / s
         if not d.exists():
             continue
         for f in sorted(d.glob("*.md")):
@@ -163,8 +172,10 @@ def all_tasks(root: Path, status: str | None = None) -> list[tuple[str, dict]]:
 
 
 def find_task_file(root: Path, task_id: str) -> tuple[str, Path] | None:
-    """Locate a task file by ID, searching all dirs. Returns (status, path)."""
-    for status_dir in STATUSES:
+    """Locate a task file by ID. Searches all dirs, including dead, so
+    slaughter/revive and post-mortem lookups keep working.
+    """
+    for status_dir in _ALL_STATUSES:
         p = root / status_dir / f"{task_id}.md"
         if p.exists():
             return status_dir, p
@@ -172,9 +183,9 @@ def find_task_file(root: Path, task_id: str) -> tuple[str, Path] | None:
 
 
 def generate_id(root: Path, prefix: str) -> str:
-    """Generate a collision-free task ID."""
+    """Generate a collision-free task ID (against all dirs, including dead)."""
     existing = set()
-    for d in (root / s for s in STATUSES):
+    for d in (root / s for s in _ALL_STATUSES):
         if d.exists():
             for f in d.glob("*.md"):
                 existing.add(f.stem)
@@ -238,10 +249,12 @@ def next_child_number(root: Path, task_id: str) -> int:
 
 
 def find_descendants(root: Path, task_id: str) -> list[tuple[str, Path]]:
-    """Return (status, path) for all descendants of task_id at any depth."""
+    """Return (status, path) for all descendants of task_id at any depth.
+    Includes dead descendants so a reparent updates them too.
+    """
     prefix = task_id + "."
     descendants = []
-    for s in STATUSES:
+    for s in _ALL_STATUSES:
         d = root / s
         if not d.exists():
             continue
@@ -278,7 +291,7 @@ def cmd_init(args):
         print("error: prefix must not contain dots (dots are used for parent/child IDs)", file=sys.stderr)
         sys.exit(1)
     target.mkdir()
-    for s in STATUSES:
+    for s in _ALL_STATUSES:
         (target / s).mkdir()
     config = {"prefix": prefix}
     (target / "config.yaml").write_text(dump_yaml(config))
@@ -343,7 +356,7 @@ def cmd_list(args):
         print("No tasks found.")
         return
 
-    _status_char = {HAIRY: "H", SHAVING: "S", SHORN: "N"}
+    _status_char = {HAIRY: "H", SHAVING: "S", SHORN: "N", DEAD: "X"}
     for status, t in tasks:
         pri = t.get("priority", "-")
         ttype = t.get("type", "-")
@@ -378,7 +391,7 @@ def cmd_show(args):
     print(f"Status: {status}")
     print(dump_yaml(task), end="")
 
-    _status_char = {HAIRY: "H", SHAVING: "S", SHORN: "N"}
+    _status_char = {HAIRY: "H", SHAVING: "S", SHORN: "N", DEAD: "X"}
     pid = parent_id(args.id)
     parent_result = find_task_file(root, pid) if pid else None
     if parent_result:
@@ -454,7 +467,9 @@ def _move_task(args, dest_status: str, already_msg: str, done_msg: str,
     if status == dest_status:
         print(f"{args.id} is {already_msg}")
         return
-    dest = root / dest_status / path.name
+    dest_dir = root / dest_status
+    dest_dir.mkdir(exist_ok=True)
+    dest = dest_dir / path.name
     path.rename(dest)
     task = load_task(dest)
     task["updated"] = now_iso()
@@ -482,15 +497,35 @@ def cmd_regrow(args):
     _move_task(args, HAIRY, "already hairy", "Regrown:")
 
 
+def cmd_slaughter(args):
+    """Move a yak to the hidden 'dead' state.
+
+    Dead yaks stay on disk so history is preserved, but they are excluded
+    from every default query and don't appear in the TUI. Use this for
+    ideas you won't pursue and tasks that have been obviated.
+    """
+    _move_task(args, DEAD, "already dead", "Slaughtered:")
+
+
+def cmd_revive(args):
+    """Bring a dead yak back to the hairy state."""
+    _move_task(args, HAIRY, "already hairy", "Revived:")
+
+
 def cmd_next(args):
     root = find_tasks_root()
     hairy_tasks = all_tasks(root, HAIRY)
-    shorn_ids = {t["id"] for _, t in all_tasks(root, SHORN)}
+    # Dead deps are treated as resolved — slaughtering a dep should unblock
+    # anything that was waiting on it.
+    resolved_ids = (
+        {t["id"] for _, t in all_tasks(root, SHORN)}
+        | {t["id"] for _, t in all_tasks(root, DEAD)}
+    )
 
     ready = []
     for _, task in hairy_tasks:
         deps = task.get("depends_on", [])
-        if not deps or all(d in shorn_ids for d in deps):
+        if not deps or all(d in resolved_ids for d in deps):
             ready.append(task)
 
     if args.json:
@@ -510,12 +545,15 @@ def cmd_next(args):
 def cmd_tangled(args):
     root = find_tasks_root()
     hairy_tasks = all_tasks(root, HAIRY)
-    shorn_ids = {t["id"] for _, t in all_tasks(root, SHORN)}
+    resolved_ids = (
+        {t["id"] for _, t in all_tasks(root, SHORN)}
+        | {t["id"] for _, t in all_tasks(root, DEAD)}
+    )
 
     tangled = []
     for _, task in hairy_tasks:
         deps = task.get("depends_on", [])
-        unshorn = [d for d in deps if d not in shorn_ids]
+        unshorn = [d for d in deps if d not in resolved_ids]
         if unshorn:
             tangled.append({**task, "_unshorn_deps": unshorn})
 
@@ -681,7 +719,7 @@ def cmd_search(args):
         print("No tasks found.")
         return
 
-    _status_char = {HAIRY: "H", SHAVING: "S", SHORN: "N"}
+    _status_char = {HAIRY: "H", SHAVING: "S", SHORN: "N", DEAD: "X"}
     for status, t in matches:
         pri = t.get("priority", "-")
         ttype = t.get("type", "-")
@@ -917,6 +955,15 @@ def build_parser() -> argparse.ArgumentParser:
         sp = sub.add_parser(name, help="Regrow a shorn yak")
         sp.add_argument("id", help="Task ID")
 
+    # slaughter: move a yak to the hidden 'dead' state
+    sp = sub.add_parser("slaughter",
+                        help="Slaughter a yak (move to hidden 'dead' state)")
+    sp.add_argument("id", help="Task ID")
+
+    # revive: bring a dead yak back
+    sp = sub.add_parser("revive", help="Revive a dead yak (back to hairy)")
+    sp.add_argument("id", help="Task ID")
+
     # next (+ alias: ready)
     for name in ("next", "ready"):
         sp = sub.add_parser(name, help="Show yaks ready to shave")
@@ -984,6 +1031,8 @@ def main():
         "close": cmd_shorn,
         "regrow": cmd_regrow,
         "reopen": cmd_regrow,
+        "slaughter": cmd_slaughter,
+        "revive": cmd_revive,
         "next": cmd_next,
         "ready": cmd_next,
         "tangled": cmd_tangled,

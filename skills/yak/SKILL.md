@@ -39,6 +39,8 @@ A parent yak's state should reflect its children:
 | `/yaks:shave` | Start shaving a yak (move to shaving) |
 | `/yaks:shorn` | Mark a yak as shorn |
 | `/yaks:regrow` | Regrow a shorn yak |
+| `/yaks:slaughter` | Slaughter a yak (hide in `.yaks/dead/`) — for ideas you won't pursue or tasks that have been obviated |
+| `/yaks:revive` | Revive a dead yak back to hairy |
 | `/yaks:next` | Show yaks ready to shave (all deps met) |
 | `/yaks:tangled` | Show tangled yaks (unshorn dependencies) |
 | `/yaks:search` | Search tasks by keyword |
@@ -48,7 +50,7 @@ A parent yak's state should reflect its children:
 
 ## Task format
 
-Tasks live in `.yaks/hairy/`, `.yaks/shaving/`, or `.yaks/shorn/` as `.md` files. Status is implicit from the directory. Metadata is YAML frontmatter; the markdown body is the description.
+Tasks live in `.yaks/hairy/`, `.yaks/shaving/`, or `.yaks/shorn/` as `.md` files. Slaughtered tasks live in `.yaks/dead/` and are excluded from every default query — you can still grep that directory or pass `--status dead` to `list` to find them. Status is implicit from the directory. Metadata is YAML frontmatter; the markdown body is the description.
 
 ```markdown
 ---

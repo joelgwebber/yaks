@@ -440,14 +440,21 @@ class TUI:
         self._fs_sig = self._scan_fs()
 
     def _recompute_blocked(self):
-        """Update blocked_ids and reverse_deps from all tasks on disk."""
-        all_tasks = yak.all_tasks(self.root)
-        shorn_ids = {t["id"] for s, t in all_tasks if s == yak.SHORN}
+        """Update blocked_ids and reverse_deps from all tasks on disk.
+        Dead deps are treated as resolved (slaughtering a dep unblocks its
+        dependents).
+        """
+        visible = yak.all_tasks(self.root)
+        dead = yak.all_tasks(self.root, yak.DEAD)
+        resolved_ids = (
+            {t["id"] for s, t in visible if s == yak.SHORN}
+            | {t["id"] for _, t in dead}
+        )
         blocked = set()
         reverse: dict[str, list[tuple[str, dict]]] = {}
-        for s, t in all_tasks:
+        for s, t in visible:
             deps = t.get("depends_on") or []
-            if s == yak.HAIRY and any(d not in shorn_ids for d in deps):
+            if s == yak.HAIRY and any(d not in resolved_ids for d in deps):
                 blocked.add(t["id"])
             for d in deps:
                 reverse.setdefault(d, []).append((s, t))

@@ -4,7 +4,7 @@ title: Add hidden "trash" state
 type: task
 priority: 2
 created: '2026-04-05T16:05:54Z'
-updated: '2026-04-05T16:06:45Z'
+updated: '2026-04-05T16:09:35Z'
 ---
 
 So we can retire ideas and obviated tasks, without losing them, or having them clutter up the UI. No
