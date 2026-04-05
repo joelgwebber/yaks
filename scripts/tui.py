@@ -788,7 +788,7 @@ class TUI:
             self.message = ""
             return
         if self.focus == "detail":
-            keys = "h:list  j/k:move  Enter:follow  Tab/Shift-Tab:fwd/back  /:search  Esc:clear  q:quit"
+            keys = "h:list  j/k:move  Tab:next link  Enter:follow  i/o:fwd/back  /:search  Esc:clear  q:quit"
         else:
             keys = "Tab:tab  j/k:move  l:detail  c/C:new  e:edit  D:del  s/x/r:shave/shorn/regrow  n/t/a:filter  /:search  ?:help"
         self._safe_addstr(y, 0, " " * w, curses.color_pair(C_HELP))
@@ -820,10 +820,10 @@ class TUI:
                 "Ctrl-D / Ctrl-U       Half-page down / up",
                 "PgDn / PgUp           Full-page down / up",
                 "g / G                 First / last line",
+                "Tab / Shift-Tab       Cycle between links",
                 "Enter                 Follow link",
-                "Tab / ] / i           Nav forward in jumplist",
-                "Shift-Tab / [ / o     Nav back in jumplist",
-                "Backspace             Nav back (alias)",
+                "i                     Nav forward in jumplist",
+                "o / Backspace         Nav back in jumplist",
                 "e                     Edit task in $EDITOR",
                 "D                     Delete task (confirm)",
                 "/                     Search detail text",
@@ -1130,14 +1130,17 @@ class TUI:
             self.detail_line_cursor = max(0, len(self.detail_lines) - 1)
             self._fix_detail_scroll()
 
-        # Nav forward / back in the detail context stack.
-        # Tab and Ctrl-I are the same byte in terminals, so Tab carries
-        # the vim Ctrl-I role here (forward in jumplist). Shift-Tab and
-        # ]/[ are aliases; Backspace and 'o'/'i' work for browser/vim folks.
-        elif key in (ord("\t"), ord("]"), ord("i")):
+        # Cycle between link lines
+        elif key == ord("\t"):
+            self._jump_link(+1)
+        elif key == curses.KEY_BTAB:
+            self._jump_link(-1)
+
+        # Nav forward / back in the jumplist. 'i'/'o' mirror vim, Backspace
+        # is the browser-style back alias.
+        elif key == ord("i"):
             self._nav_forward()
-        elif key in (curses.KEY_BTAB, ord("["), ord("o"),
-                     curses.KEY_BACKSPACE, 127, 8):
+        elif key in (ord("o"), curses.KEY_BACKSPACE, 127, 8):
             self._nav_back()
 
         # Page scrolling in detail
@@ -1224,6 +1227,28 @@ class TUI:
                     self._fix_detail_scroll()
                     return
             self.detail_line_cursor = self.detail_matches[-1]
+        self._fix_detail_scroll()
+
+    def _jump_link(self, direction):
+        """Cycle the detail cursor to the next/previous navigable link line."""
+        link_lines = [i for i, dl in enumerate(self.detail_lines) if dl.task_id]
+        if not link_lines:
+            return
+        cur = self.detail_line_cursor
+        if direction > 0:
+            for li in link_lines:
+                if li > cur:
+                    self.detail_line_cursor = li
+                    self._fix_detail_scroll()
+                    return
+            self.detail_line_cursor = link_lines[0]
+        else:
+            for li in reversed(link_lines):
+                if li < cur:
+                    self.detail_line_cursor = li
+                    self._fix_detail_scroll()
+                    return
+            self.detail_line_cursor = link_lines[-1]
         self._fix_detail_scroll()
 
     def _switch_tab(self, direction):
