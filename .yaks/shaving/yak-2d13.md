@@ -4,7 +4,7 @@ title: Forward/back navigation affordance in details
 type: task
 priority: 2
 created: '2026-04-05T14:27:44Z'
-updated: '2026-04-05T14:27:44Z'
+updated: '2026-04-05T14:38:03Z'
 ---
 
 When you're navigating among parents, children, blockers, and blocked, it would be useful to keep

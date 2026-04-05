@@ -742,7 +742,7 @@ class TUI:
             self.message = ""
             return
         if self.focus == "detail":
-            keys = "h:list  j/k:move  Tab:next link  Enter:follow  Bksp:back  /:search  Esc:clear  q:quit"
+            keys = "h:list  j/k:move  Tab:next link  Enter:follow  o/i:back/fwd  /:search  Esc:clear  q:quit"
         else:
             keys = "Tab:tab  j/k:move  l:detail  c/C:new  e:edit  D:del  s/x/r:shave/shorn/regrow  n/t/a:filter  /:search  ?:help"
         self._safe_addstr(y, 0, " " * w, curses.color_pair(C_HELP))
@@ -776,7 +776,8 @@ class TUI:
                 "Tab / Shift-Tab       Jump between links",
                 "[ / ]                 Previous / next tab",
                 "Enter                 Follow link",
-                "Backspace / Ctrl-O    Navigate back",
+                "Backspace / o / ^O    Navigate back",
+                "i                     Navigate forward",
                 "e                     Edit task in $EDITOR",
                 "D                     Delete task (confirm)",
                 "/                     Search detail text",
@@ -1105,9 +1106,13 @@ class TUI:
         elif key in (ord("\n"), curses.KEY_ENTER):
             self._follow_link()
 
-        # Back in history
-        elif key in (curses.KEY_BACKSPACE, 127, 8, 15):  # BS, DEL, ^H, ^O
+        # Back / forward in nav history
+        # Ctrl-I collides with Tab in most terminals, so we use plain 'i'/'o'
+        # (vim-ish minus the Ctrl) alongside Backspace/Ctrl-O for back.
+        elif key in (curses.KEY_BACKSPACE, 127, 8, 15, ord("o")):
             self._nav_back()
+        elif key == ord("i"):
+            self._nav_forward()
 
         # Edit the task being displayed
         elif key == ord("e"):
@@ -1216,25 +1221,44 @@ class TUI:
         target_id = self.detail_lines[self.detail_line_cursor].task_id
         if not target_id:
             return
-
-        # Save current task in history
-        if self.tasks and self.cursor < len(self.tasks):
-            current_id = self.tasks[self.cursor][1]["id"]
-            # Truncate forward history if we're navigating from the middle
-            self.nav_history = self.nav_history[:self.nav_pos + 1]
-            self.nav_history.append(current_id)
-            self.nav_pos = len(self.nav_history) - 1
-
+        self._nav_push(target_id)
         self._navigate_to(target_id)
+
+    def _nav_push(self, target_id):
+        """Push a new entry onto the nav stack, truncating any forward
+        history. Ensures the current task is recorded as the prior entry
+        so 'back' returns to where we came from.
+        """
+        current_id = self._current_task_id()
+        # Re-sync history with current task if it's drifted (cold start,
+        # user scrolled, etc.)
+        if (self.nav_pos < 0 or
+                self.nav_pos >= len(self.nav_history) or
+                (current_id and self.nav_history[self.nav_pos] != current_id)):
+            if current_id:
+                self.nav_history = [current_id]
+                self.nav_pos = 0
+            else:
+                self.nav_history = []
+                self.nav_pos = -1
+        # Truncate forward, append target
+        self.nav_history = self.nav_history[:self.nav_pos + 1]
+        self.nav_history.append(target_id)
+        self.nav_pos = len(self.nav_history) - 1
 
     def _nav_back(self):
-        if self.nav_pos < 0 or not self.nav_history:
-            self.message = "No history"
+        if self.nav_pos <= 0:
+            self.notification = "no previous task"
             return
-
-        target_id = self.nav_history[self.nav_pos]
         self.nav_pos -= 1
-        self._navigate_to(target_id)
+        self._navigate_to(self.nav_history[self.nav_pos])
+
+    def _nav_forward(self):
+        if self.nav_pos < 0 or self.nav_pos >= len(self.nav_history) - 1:
+            self.notification = "no next task"
+            return
+        self.nav_pos += 1
+        self._navigate_to(self.nav_history[self.nav_pos])
 
     def _navigate_to(self, task_id):
         """Navigate to a task by ID — find it in any tab."""
