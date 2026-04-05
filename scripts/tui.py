@@ -802,7 +802,7 @@ class TUI:
         sections = [
             ("List pane", [
                 "j / k / Up / Down     Move cursor",
-                "Ctrl-D / Ctrl-U       Half-page down / up",
+                "d / u                 Half-page down / up",
                 "PgDn / PgUp           Full-page down / up",
                 "g / G                 First / last task",
                 "Tab / Shift-Tab       Switch status tab",
@@ -821,7 +821,7 @@ class TUI:
             ("Detail pane", [
                 "h / Left              Hide detail pane",
                 "j / k / Up / Down     Move line cursor",
-                "Ctrl-D / Ctrl-U       Half-page down / up",
+                "d / u                 Half-page down / up",
                 "PgDn / PgUp           Full-page down / up",
                 "g / G                 First / last line",
                 "Tab / Shift-Tab       Cycle between links",
@@ -1013,11 +1013,12 @@ class TUI:
         elif key == curses.KEY_BTAB or key == ord("["):
             self._switch_tab(-1)
 
-        # Page scrolling in list
-        elif key in (curses.KEY_NPAGE, 4):  # PageDown, Ctrl-D
-            self._list_page(+1, half=(key == 4))
-        elif key in (curses.KEY_PPAGE, 21):  # PageUp, Ctrl-U
-            self._list_page(-1, half=(key == 21))
+        # Page scrolling in list. 'd'/'u' are the documented keys;
+        # Ctrl-D/Ctrl-U are undocumented vim aliases.
+        elif key in (curses.KEY_NPAGE, ord("d"), 4):
+            self._list_page(+1, half=(key in (ord("d"), 4)))
+        elif key in (curses.KEY_PPAGE, ord("u"), 21):
+            self._list_page(-1, half=(key in (ord("u"), 21)))
 
         # Filters
         elif key == ord("n"):
@@ -1147,11 +1148,12 @@ class TUI:
         elif key in (ord("o"), curses.KEY_BACKSPACE, 127, 8):
             self._nav_back()
 
-        # Page scrolling in detail
-        elif key in (curses.KEY_NPAGE, 4):  # PageDown, Ctrl-D
-            self._detail_page(+1, half=(key == 4))
-        elif key in (curses.KEY_PPAGE, 21):  # PageUp, Ctrl-U
-            self._detail_page(-1, half=(key == 21))
+        # Page scrolling in detail. 'd'/'u' are the documented keys;
+        # Ctrl-D/Ctrl-U are undocumented vim aliases.
+        elif key in (curses.KEY_NPAGE, ord("d"), 4):
+            self._detail_page(+1, half=(key in (ord("d"), 4)))
+        elif key in (curses.KEY_PPAGE, ord("u"), 21):
+            self._detail_page(-1, half=(key in (ord("u"), 21)))
 
         # Find next / prev match
         elif key == ord("n"):
