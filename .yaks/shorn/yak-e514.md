@@ -4,7 +4,8 @@ title: More keyboard shortcuts
 type: task
 priority: 2
 created: '2026-04-05T14:15:24Z'
-updated: '2026-04-05T14:26:07Z'
+updated: '2026-04-05T14:27:29Z'
+commit: 2c17ea0
 ---
 
 Feel free to fill in more for consistency, or adjust if I've inadvertently suggested conflicts.
