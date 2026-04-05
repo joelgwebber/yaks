@@ -30,7 +30,7 @@ Tasks are `.md` files with YAML frontmatter. The markdown body (after the closin
 ---
 id: prefix-hex4       # e.g. yak-a1b2, or parent-id.N for children
 title: string
-type: bug | feature | task
+type: bug | feature | task | idea
 priority: 1-3         # 1=highest
 created: ISO8601
 updated: ISO8601

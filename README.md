@@ -84,7 +84,7 @@ Frontmatter fields:
 
 - **id** — Auto-generated as `{prefix}-{4 hex chars}` (prefix defaults to directory name), or `{parent-id}.N` for child tasks
 - **title** — Short description of the task
-- **type** — `bug`, `feature`, or `task`
+- **type** — `bug`, `feature`, `task`, or `idea` (for "might/might-not do")
 - **priority** — `1` (highest) through `3` (lowest)
 - **created** / **updated** — ISO 8601 timestamps
 - **depends_on** — Optional list of task IDs that must be shorn first

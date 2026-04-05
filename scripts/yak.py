@@ -871,7 +871,7 @@ def build_parser() -> argparse.ArgumentParser:
     # create
     sp = sub.add_parser("create", help="Create a new task")
     sp.add_argument("--title", required=True, help="Task title")
-    sp.add_argument("--type", help="Task type (bug, feature, task, etc.)")
+    sp.add_argument("--type", help="Task type (bug, feature, task, idea, etc.)")
     sp.add_argument("--priority", type=int, help="Priority (1=highest)")
     sp.add_argument("--description", help="Task description")
     sp.add_argument("--labels", nargs="+", help="Labels")

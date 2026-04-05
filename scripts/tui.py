@@ -1678,9 +1678,10 @@ class TUI:
         if not result:
             return
         _, path = result
-        type_map = {"t": "task", "b": "bug", "f": "feature"}
+        type_map = {"t": "task", "b": "bug", "f": "feature", "i": "idea"}
         choice = self._pick(
-            f"Type for {tid}: t=task b=bug f=feature  (Esc=cancel)", "tbf")
+            f"Type for {tid}: t=task b=bug f=feature i=idea  (Esc=cancel)",
+            "tbfi")
         if choice is None:
             self.notification = "type unchanged"
             return
@@ -1747,7 +1748,7 @@ class TUI:
         lines.append("# Fill in the title. Save and exit to create, or exit without")
         lines.append("# saving (or leave title blank) to cancel.")
         lines.append("title: ")
-        lines.append("# type: task | bug | feature")
+        lines.append("# type: task | bug | feature | idea")
         lines.append("type: task")
         lines.append("# priority: 1 (high) .. 3 (low)")
         lines.append("priority: 2")
