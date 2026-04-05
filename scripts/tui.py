@@ -752,8 +752,11 @@ class TUI:
         sections = [
             ("List pane", [
                 "j / k / Up / Down     Move cursor",
+                "Ctrl-D / Ctrl-U       Half-page down / up",
+                "PgDn / PgUp           Full-page down / up",
                 "g / G                 First / last task",
                 "Tab / Shift-Tab       Switch status tab",
+                "[ / ]                 Previous / next tab",
                 "l / Right / Enter     Show detail pane",
                 "c / C                 New root / child task",
                 "e                     Edit task in $EDITOR",
@@ -766,13 +769,17 @@ class TUI:
             ("Detail pane", [
                 "h / Left              Hide detail pane",
                 "j / k / Up / Down     Move line cursor",
+                "Ctrl-D / Ctrl-U       Half-page down / up",
+                "PgDn / PgUp           Full-page down / up",
                 "g / G                 First / last line",
                 "Tab / Shift-Tab       Jump between links",
+                "[ / ]                 Previous / next tab",
                 "Enter                 Follow link",
                 "Backspace / Ctrl-O    Navigate back",
                 "e                     Edit task in $EDITOR",
                 "D                     Delete task (confirm)",
                 "/                     Search detail text",
+                "n / N                 Next / prev match",
                 "Esc                   Clear search / back",
             ]),
             ("General", [
@@ -949,10 +956,16 @@ class TUI:
                 self.focus = "detail"
 
         # Tab switching
-        elif key == ord("\t"):
+        elif key == ord("\t") or key == ord("]"):
             self._switch_tab(1)
-        elif key == curses.KEY_BTAB:
+        elif key == curses.KEY_BTAB or key == ord("["):
             self._switch_tab(-1)
+
+        # Page scrolling in list
+        elif key in (curses.KEY_NPAGE, 4):  # PageDown, Ctrl-D
+            self._list_page(+1, half=(key == 4))
+        elif key in (curses.KEY_PPAGE, 21):  # PageUp, Ctrl-U
+            self._list_page(-1, half=(key == 21))
 
         # Filters
         elif key == ord("n"):
@@ -1047,6 +1060,28 @@ class TUI:
         elif key == curses.KEY_BTAB:
             self._jump_link(-1)
 
+        # [ / ] switch status tabs from detail as well
+        elif key == ord("]"):
+            self.focus = "list"
+            self._switch_tab(1)
+        elif key == ord("["):
+            self.focus = "list"
+            self._switch_tab(-1)
+
+        # Page scrolling in detail
+        elif key in (curses.KEY_NPAGE, 4):  # PageDown, Ctrl-D
+            self._detail_page(+1, half=(key == 4))
+        elif key in (curses.KEY_PPAGE, 21):  # PageUp, Ctrl-U
+            self._detail_page(-1, half=(key == 21))
+
+        # Find next / prev match
+        elif key == ord("n"):
+            if self.detail_matches:
+                self._jump_match(+1)
+        elif key == ord("N"):
+            if self.detail_matches:
+                self._jump_match(-1)
+
         # Follow link on current line
         elif key in (ord("\n"), curses.KEY_ENTER):
             self._follow_link()
@@ -1079,6 +1114,49 @@ class TUI:
                     self._fix_detail_scroll()
 
         return True
+
+    def _list_page(self, direction, half=False):
+        if not self.tasks:
+            return
+        h = self._list_height()
+        step = max(1, h // 2 if half else h - 1)
+        self.cursor = max(0, min(len(self.tasks) - 1,
+                                 self.cursor + direction * step))
+        self._fix_scroll()
+        self._rebuild_detail()
+
+    def _detail_page(self, direction, half=False):
+        if not self.detail_lines:
+            return
+        h = self._detail_height()
+        if self.detail_search:
+            h = max(1, h - 1)
+        step = max(1, h // 2 if half else h - 1)
+        self.detail_line_cursor = max(
+            0, min(len(self.detail_lines) - 1,
+                   self.detail_line_cursor + direction * step))
+        self._fix_detail_scroll()
+
+    def _jump_match(self, direction):
+        """Jump to the next/previous search match in the detail pane."""
+        if not self.detail_matches:
+            return
+        cur = self.detail_line_cursor
+        if direction > 0:
+            for m in self.detail_matches:
+                if m > cur:
+                    self.detail_line_cursor = m
+                    self._fix_detail_scroll()
+                    return
+            self.detail_line_cursor = self.detail_matches[0]
+        else:
+            for m in reversed(self.detail_matches):
+                if m < cur:
+                    self.detail_line_cursor = m
+                    self._fix_detail_scroll()
+                    return
+            self.detail_line_cursor = self.detail_matches[-1]
+        self._fix_detail_scroll()
 
     def _jump_link(self, direction):
         """Jump to the next/previous navigable link line."""
