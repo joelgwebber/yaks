@@ -1276,6 +1276,12 @@ class TUI:
             return
 
         tid = task["id"]
+        title = task.get("title", "")[:40]
+        verb = {"shave": "Shave", "shorn": "Shorn", "regrow": "Regrow"}[action]
+        prompt = f"{verb} {tid} ({title})? (Y/n): "
+        if not self._confirm(prompt, default_yes=True):
+            self.notification = f"{action} cancelled"
+            return
 
         class FakeArgs:
             pass
@@ -1519,8 +1525,11 @@ class TUI:
         self.reload()
         self.notification = f"{tid} -> {new_t}"
 
-    def _confirm(self, prompt):
-        """Show a yes/no prompt at the bottom. Returns True only on 'y' or 'Y'."""
+    def _confirm(self, prompt, default_yes=False):
+        """Show a yes/no prompt at the bottom.
+        y/Y = yes, n/N/Esc = no. Enter follows `default_yes`.
+        Unrecognized keys keep waiting.
+        """
         h, w = self.stdscr.getmaxyx()
         y = h - 1
         self._safe_addstr(y, 0, " " * w, 0)
@@ -1531,7 +1540,12 @@ class TUI:
             ch = self.stdscr.getch()
             if ch == -1:
                 continue  # idle timeout, keep waiting
-            return ch in (ord("y"), ord("Y"))
+            if ch in (ord("y"), ord("Y")):
+                return True
+            if ch in (ord("n"), ord("N"), 27):
+                return False
+            if ch in (ord("\n"), curses.KEY_ENTER, 10, 13):
+                return default_yes
 
     def _edit_file_in_editor(self, path):
         """Suspend curses, run $EDITOR directly on an existing file."""
