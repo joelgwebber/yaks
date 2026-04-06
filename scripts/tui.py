@@ -126,9 +126,9 @@ def build_tree(root: Path, status_filter: str | None, filter_mode: str,
                 nodes[pid] = TaskNode(ps, pt, ghost=True)
             pid = yak.parent_id(pid) if pid else None
 
-    # Ghost descendants: include children (recursively) of primaries so mixed
-    # parent/child states stay visible when filtering by one status.
-    child_prefixes = {tid + "." for tid in primary_ids}
+    # Ghost descendants: include children (recursively) of all visible nodes
+    # (primaries + ghost ancestors) so mixed parent/child states stay visible.
+    child_prefixes = {tid + "." for tid in nodes}
     for other_id, (os_, ot) in all_by_id.items():
         if other_id in nodes:
             continue
@@ -147,7 +147,7 @@ def build_tree(root: Path, status_filter: str | None, filter_mode: str,
             roots.append(node)
 
     def sort_children(node: TaskNode):
-        node.children.sort(key=lambda n: _child_sort_key(n.task["id"]))
+        node.children.sort(key=lambda n: (n.status == yak.SHORN, _child_sort_key(n.task["id"])))
         for c in node.children:
             sort_children(c)
 
@@ -1365,10 +1365,6 @@ class TUI:
         if not self.tasks or self.cursor >= len(self.tasks):
             return
         _, task, _, ghost = self.tasks[self.cursor]
-        if ghost:
-            self.message = "Cannot modify ghost tasks"
-            return
-
         tid = task["id"]
         title = task.get("title", "")[:40]
         verb = {"shave": "Shave", "shorn": "Shorn", "regrow": "Regrow"}[action]
