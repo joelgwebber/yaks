@@ -50,6 +50,8 @@ This creates a `.yaks/` directory with `hairy/`, `shaving/`, and `shorn/` subdir
 | `/yaks:shave` | Start shaving a yak |
 | `/yaks:shorn` | Mark a yak as shorn |
 | `/yaks:regrow` | Regrow a shorn yak |
+| `/yaks:slaughter` | Slaughter a yak (move to hidden `dead/` state) |
+| `/yaks:revive` | Revive a dead yak back to hairy |
 | `/yaks:next` | Show yaks ready to shave (all deps met) |
 | `/yaks:tangled` | Show tangled yaks (unshorn dependencies) |
 | `/yaks:dep` | Add or remove dependencies between tasks |
@@ -95,15 +97,23 @@ The markdown body after the closing `---` is the description (optional).
 
 ## Configuring your AI assistant to use Yaks
 
-Once `.yaks/` exists in a project, the Yaks plugin skill activates automatically and instructs Claude to follow the tracking workflow. No additional `CLAUDE.md` configuration is required.
+`/yaks:init` automatically appends a workflow mandate to your project's `CLAUDE.md` (or `AGENTS.md` if one exists). Use `--agents` to force writing to `AGENTS.md`.
 
-If you want to reinforce the behavior, you can add a brief note to your project's `CLAUDE.md`:
+If you already have `.yaks/` set up and didn't get the guidance via init, add this block to your `CLAUDE.md` (or `AGENTS.md`) manually:
 
 ```markdown
 ## Task tracking
 
-This project uses Yaks to track its own work. Every piece of work must be bracketed: `/yaks:shave` before coding, `/yaks:shorn` right after committing. The Yaks skill has the full workflow — follow it.
+This project uses Yaks. The Yaks skill has the full workflow.
+
+1. Never start coding without a shaving yak. No exceptions.
+2. Shorn immediately after committing, before anything else.
+3. Check existing yaks before creating new ones.
+4. Append progress notes to yak descriptions as you work.
+5. When unsure what's next, run `/yaks:next` — don't freelance.
 ```
+
+The Yaks plugin skill activates automatically when `.yaks/` exists and carries the full workflow details, command reference, and task format documentation. The block above is the behavioral mandate that ensures your assistant actually follows it.
 
 ### Custom prefix
 
