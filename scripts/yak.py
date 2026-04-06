@@ -281,6 +281,55 @@ def git_head_short() -> str | None:
 # Subcommands
 # ---------------------------------------------------------------------------
 
+_YAKS_MANDATE = """\
+
+## Task tracking
+
+This project uses Yaks. The Yaks skill has the full workflow.
+
+1. Never start coding without a shaving yak. No exceptions.
+2. Shorn immediately after committing, before anything else.
+3. Check existing yaks before creating new ones.
+4. Append progress notes to yak descriptions as you work.
+5. When unsure what's next, run `/yaks:next` — don't freelance.
+"""
+
+
+def _inject_mandate(force_agents: bool = False):
+    """Append the yaks mandate block to CLAUDE.md or AGENTS.md.
+
+    Precedence:
+    - --agents flag → always use AGENTS.md (create if needed)
+    - AGENTS.md exists → append there
+    - CLAUDE.md exists → append there
+    - Neither → create CLAUDE.md
+    """
+    cwd = Path.cwd()
+    agents = cwd / "AGENTS.md"
+    claude = cwd / "CLAUDE.md"
+
+    if force_agents:
+        target = agents
+    elif agents.exists():
+        target = agents
+    elif claude.exists():
+        target = claude
+    else:
+        target = claude
+
+    # Don't inject twice
+    if target.exists():
+        content = target.read_text()
+        if "Yaks skill" in content or "yaks:next" in content:
+            print(f"Yaks guidance already present in {target.name}, skipping")
+            return
+        target.write_text(content.rstrip() + "\n" + _YAKS_MANDATE)
+        print(f"Appended yaks guidance to {target.name}")
+    else:
+        target.write_text(_YAKS_MANDATE.lstrip())
+        print(f"Created {target.name} with yaks guidance")
+
+
 def cmd_init(args):
     target = Path.cwd() / ".yaks"
     if target.exists():
@@ -296,6 +345,7 @@ def cmd_init(args):
     config = {"prefix": prefix}
     (target / "config.yaml").write_text(dump_yaml(config))
     print(f"Initialized .yaks/ in {Path.cwd()} (prefix: {prefix})")
+    _inject_mandate(force_agents=getattr(args, "agents", False))
 
 
 def cmd_create(args):
@@ -445,6 +495,14 @@ def cmd_update(args):
         task["labels"] = labels if labels else []
         if not task["labels"]:
             del task["labels"]
+        changed = True
+    if getattr(args, "note", None):
+        # Append a timestamped note to the markdown body
+        ts = now_iso()
+        heading = f"### {ts}"
+        note_block = f"\n\n{heading}\n{args.note}\n"
+        desc = task.get("description", "") or ""
+        task["description"] = desc + note_block
         changed = True
 
     if changed:
@@ -905,6 +963,8 @@ def build_parser() -> argparse.ArgumentParser:
     # init
     sp = sub.add_parser("init", help="Initialize .yaks/ in the current directory")
     sp.add_argument("--prefix", help="Task ID prefix (default: directory name)")
+    sp.add_argument("--agents", action="store_true",
+                    help="Write guidance to AGENTS.md instead of CLAUDE.md")
 
     # create
     sp = sub.add_parser("create", help="Create a new task")
@@ -938,6 +998,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--description", help="New description")
     sp.add_argument("--add-label", nargs="+", help="Add labels")
     sp.add_argument("--remove-label", nargs="+", help="Remove labels")
+    sp.add_argument("--note", help="Append a timestamped progress note to the description")
 
     # shave (+ alias: work)
     for name in ("shave", "work"):
