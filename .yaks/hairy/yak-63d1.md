@@ -2,9 +2,9 @@
 id: yak-63d1
 title: Have some fun with yak ascii art
 type: idea
-priority: 2
+priority: 3
 created: '2026-04-05T17:50:23Z'
-updated: '2026-04-05T17:50:23Z'
+updated: '2026-04-06T23:22:18Z'
 ---
 
 Let's find some good examples of yak ascii art out there, and see if we can use them as source
