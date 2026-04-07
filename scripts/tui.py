@@ -146,12 +146,22 @@ def build_tree(root: Path, status_filter: str | None, filter_mode: str,
         else:
             roots.append(node)
 
+    def _child_status_rank(status):
+        if status == yak.SHAVING:
+            return 0
+        if status == yak.SHORN:
+            return 2
+        return 1
+
     def sort_children(node: TaskNode):
-        node.children.sort(key=lambda n: (n.status == yak.SHORN, _child_sort_key(n.task["id"])))
+        node.children.sort(key=lambda n: (_child_status_rank(n.status), _child_sort_key(n.task["id"])))
         for c in node.children:
             sort_children(c)
 
-    roots.sort(key=lambda n: (n.task.get("priority", 9), n.task["id"]))
+    if status_filter == yak.SHORN:
+        roots.sort(key=lambda n: n.task.get("updated", ""), reverse=True)
+    else:
+        roots.sort(key=lambda n: (n.task.get("priority", 9), n.task["id"]))
     for r in roots:
         sort_children(r)
 
