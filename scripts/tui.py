@@ -843,6 +843,7 @@ class TUI:
                 "g / G                 First / last line",
                 "Tab / ] / Shift-Tab / [   Cycle between links",
                 "Enter                 Follow link",
+                "J / K                 Next / prev task in list",
                 "i                     Nav forward in jumplist",
                 "o / Backspace         Nav back in jumplist",
                 "e                     Edit task in $EDITOR",
@@ -1196,6 +1197,12 @@ class TUI:
             if tid:
                 self._delete_task(tid)
 
+        # Next / prev task in list
+        elif key == ord("J"):
+            self._detail_next_task(+1)
+        elif key == ord("K"):
+            self._detail_next_task(-1)
+
         # Detail search
         elif key == ord("/"):
             query = self._input_prompt("Detail search: ")
@@ -1285,6 +1292,20 @@ class TUI:
         self.scroll = 0
         self.detail_search = ""
         self.reload()
+
+    def _detail_next_task(self, direction):
+        """Move to the next/prev task in the list while staying in detail view."""
+        if not self.tasks:
+            return
+        new = self.cursor + direction
+        if new < 0 or new >= len(self.tasks):
+            self.notification = "no more tasks"
+            return
+        self.cursor = new
+        self._fix_scroll()
+        self._rebuild_detail()
+        self.nav_history = []
+        self.nav_pos = -1
 
     def _enter_detail(self):
         """Focus the detail pane and reset its nav stack.
