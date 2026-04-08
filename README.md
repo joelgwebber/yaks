@@ -6,8 +6,16 @@ Yaks is a [Claude Code plugin](https://docs.anthropic.com/en/docs/claude-code/pl
 
 ## Install
 
+Via claude:
 ```
-claude plugin add --from /path/to/yaks
+/plugin marketplace add joelgwebber/yaks
+/plugin install yaks@joelgwebber
+```
+
+Via terminal:
+```
+claude plugin marketplace add joelgwebber/yaks
+claude plugin install yaks
 ```
 
 Or, if published to a registry, follow the standard plugin installation instructions.
