@@ -158,7 +158,7 @@ def build_tree(root: Path, status_filter: str | None, filter_mode: str,
         return 1
 
     def sort_children(node: TaskNode):
-        node.children.sort(key=lambda n: (_child_status_rank(n.status), _child_sort_key(n.task["id"])))
+        node.children.sort(key=lambda n: (_child_status_rank(n.status), n.task.get("priority", 9), _child_sort_key(n.task["id"])))
         for c in node.children:
             sort_children(c)
 
