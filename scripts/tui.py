@@ -858,8 +858,8 @@ class TUI:
                 "e                     Edit task in $EDITOR",
                 "D                     Delete task (confirm)",
                 "s / x / r             Shave / shorn / regrow",
-                "P / T / N             Adjust priority / type / title",
-                "b / B                 Add / remove dependency",
+                "P / T / N / L         Adjust priority / type / title / labels",
+                "b / B                 Add / remove dependency (fuzzy search)",
                 "n / t / a             Next / tangled / all",
                 "/                     Search all tasks",
                 "Esc                   Clear search",
@@ -1144,6 +1144,12 @@ class TUI:
             tid = self._current_task_id()
             if tid:
                 self._quick_adjust_title(tid)
+
+        # Quick adjust: labels
+        elif key == ord("L"):
+            tid = self._current_task_id()
+            if tid:
+                self._quick_adjust_labels(tid)
 
         # Add / remove dependency
         elif key == ord("b"):
@@ -1666,27 +1672,18 @@ class TUI:
         if not result:
             return
         _, path = result
-        target = self._edit_prompt(f"{tid} depends on: ")
-        if target is None or not target:
+        task = yak.load_task(path)
+        existing_deps = set(task.get("depends_on") or [])
+        target = self._fuzzy_pick_task(
+            f"{tid} depends on: ", exclude_ids={tid} | existing_deps)
+        if target is None:
             self.notification = "add dep cancelled"
             return
-        if target == tid:
-            self.notification = "cannot depend on self"
-            return
-        tresult = yak.find_task_file(self.root, target)
-        if not tresult:
-            self.notification = f"{target} not found"
-            return
-        # Basic cycle check: refuse if `target` already (transitively) depends
-        # on `tid`. Walk the forward-dep graph from target.
+        # Cycle check: refuse if `target` already (transitively) depends on `tid`
         if self._depends_on_transitively(target, tid):
             self.notification = f"refused: would create a cycle ({target} -> {tid})"
             return
-        task = yak.load_task(path)
-        deps = list(task.get("depends_on") or [])
-        if target in deps:
-            self.notification = f"{tid} already depends on {target}"
-            return
+        deps = list(existing_deps)
         deps.append(target)
         task["depends_on"] = deps
         task["updated"] = yak.now_iso()
@@ -1765,6 +1762,34 @@ class TUI:
         yak.save_task(path, task)
         self.reload()
         self.notification = f"{tid} title updated"
+
+    def _quick_adjust_labels(self, tid):
+        result = yak.find_task_file(self.root, tid)
+        if not result:
+            return
+        _, path = result
+        task = yak.load_task(path)
+        current = task.get("labels") or []
+        initial = ", ".join(current)
+        edited = self._edit_prompt(f"Labels for {tid}: ", initial)
+        if edited is None:
+            self.notification = "labels unchanged"
+            return
+        if edited.strip():
+            new_labels = [l.strip() for l in edited.split(",") if l.strip()]
+        else:
+            new_labels = []
+        if new_labels == current:
+            self.notification = "labels unchanged"
+            return
+        if new_labels:
+            task["labels"] = new_labels
+        else:
+            task.pop("labels", None)
+        task["updated"] = yak.now_iso()
+        yak.save_task(path, task)
+        self.reload()
+        self.notification = f"{tid} labels: {', '.join(new_labels) if new_labels else '(none)'}"
 
     def _quick_adjust_type(self, tid):
         result = yak.find_task_file(self.root, tid)
@@ -1950,6 +1975,118 @@ class TUI:
                 os.unlink(tmp.name)
             except OSError:
                 pass
+
+    def _fuzzy_pick_task(self, prompt, exclude_ids=None):
+        """Interactive fuzzy search over all tasks. Returns task ID or None.
+        Shows a floating results list that updates as you type.
+        """
+        exclude = set(exclude_ids or [])
+        # Load all tasks once
+        all_tasks = []
+        for s in yak.STATUSES:
+            for st, t in yak.all_tasks(self.root, s):
+                if t["id"] not in exclude:
+                    all_tasks.append((st, t))
+
+        def _match(query, tasks):
+            if not query:
+                return tasks[:20]
+            q = query.lower()
+            scored = []
+            for st, t in tasks:
+                tid = t["id"].lower()
+                title = t.get("title", "").lower()
+                if q in tid or q in title:
+                    # Prefer ID prefix matches, then title matches
+                    score = 0 if tid.startswith(q) else (1 if q in tid else 2)
+                    scored.append((score, st, t))
+            scored.sort(key=lambda x: (x[0], x[2].get("priority", 9), x[2]["id"]))
+            return [(s, t) for _, s, t in scored[:20]]
+
+        h, w = self.stdscr.getmaxyx()
+        buf = ""
+        pos = 0
+        sel = 0
+        max_visible = min(10, h - 4)
+        curses.curs_set(1)
+        try:
+            while True:
+                matches = _match(buf, all_tasks)
+                sel = max(0, min(sel, len(matches) - 1))
+
+                # Draw matches above the prompt
+                list_y = h - 2 - max_visible
+                sc_map = {yak.HAIRY: "H", yak.SHAVING: "S", yak.SHORN: "N"}
+                for i in range(max_visible):
+                    y = list_y + i
+                    if y < 1:
+                        continue
+                    self._safe_addstr(y, 0, " " * w, 0)
+                    if i < len(matches):
+                        ms, mt = matches[i]
+                        badge = sc_map.get(ms, "?")
+                        line = f"  [{badge}] {mt['id']}  {mt.get('title', '')}"
+                        attr = curses.color_pair(C_SELECTED) | curses.A_BOLD if i == sel else 0
+                        self._safe_addstr(y, 0, line[:w], attr)
+
+                # Draw prompt
+                prompt_y = h - 1
+                max_vis = max(1, w - len(prompt) - 1)
+                offset = max(0, pos - max_vis + 1)
+                visible = buf[offset:offset + max_vis]
+                count_str = f" ({len(matches)} matches)" if buf else ""
+                self._safe_addstr(prompt_y, 0, " " * w, 0)
+                self._safe_addstr(prompt_y, 0, prompt,
+                                  curses.color_pair(C_SEARCH) | curses.A_BOLD)
+                self._safe_addstr(prompt_y, len(prompt), visible, 0)
+                cs = len(prompt) + len(visible)
+                if cs + len(count_str) < w:
+                    self._safe_addstr(prompt_y, cs, count_str, curses.A_DIM)
+                try:
+                    self.stdscr.move(prompt_y, len(prompt) + (pos - offset))
+                except curses.error:
+                    pass
+                self.stdscr.refresh()
+
+                ch = self.stdscr.getch()
+                if ch == -1:
+                    continue
+                if ch == 27:
+                    return None
+                if ch in (ord("\n"), curses.KEY_ENTER, 10, 13):
+                    if matches and 0 <= sel < len(matches):
+                        return matches[sel][1]["id"]
+                    return None
+                if ch in (curses.KEY_UP, 16):  # Up, Ctrl-P
+                    sel = max(0, sel - 1)
+                elif ch in (curses.KEY_DOWN, 14):  # Down, Ctrl-N
+                    sel = min(len(matches) - 1, sel + 1) if matches else 0
+                elif ch == 9:  # Tab — also move down
+                    sel = min(len(matches) - 1, sel + 1) if matches else 0
+                elif ch in (curses.KEY_BACKSPACE, 127, 8):
+                    if pos > 0:
+                        buf = buf[:pos - 1] + buf[pos:]
+                        pos -= 1
+                        sel = 0
+                elif ch == 21:  # Ctrl-U
+                    buf = ""
+                    pos = 0
+                    sel = 0
+                elif ch == 23:  # Ctrl-W
+                    i = pos
+                    while i > 0 and buf[i - 1] == " ":
+                        i -= 1
+                    while i > 0 and buf[i - 1] != " ":
+                        i -= 1
+                    buf = buf[:i] + buf[pos:]
+                    pos = i
+                    sel = 0
+                elif 32 <= ch < 127:
+                    buf = buf[:pos] + chr(ch) + buf[pos:]
+                    pos += 1
+                    sel = 0
+        finally:
+            curses.curs_set(0)
 
     def _edit_prompt(self, prompt, initial=""):
         """Read a line from the bottom bar, pre-populated with `initial`.
