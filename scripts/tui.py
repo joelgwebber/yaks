@@ -41,6 +41,8 @@ C_MATCH = 15
 C_GHOST_HAIRY = 16
 C_GHOST_SHAVING = 17
 C_GHOST_SHORN = 18
+C_CODE = 19
+C_MD_HEADING = 20
 
 
 def init_colors():
@@ -69,6 +71,8 @@ def init_colors():
     curses.init_pair(C_GHOST_HAIRY, curses.COLOR_YELLOW, -1)   # attention: undone
     curses.init_pair(C_GHOST_SHAVING, 8, -1)                    # faded: in progress
     curses.init_pair(C_GHOST_SHORN, curses.COLOR_GREEN, -1)     # done
+    curses.init_pair(C_CODE, curses.COLOR_CYAN, -1)
+    curses.init_pair(C_MD_HEADING, curses.COLOR_WHITE, -1)
 
 
 # ---------------------------------------------------------------------------
@@ -363,17 +367,33 @@ def build_detail_lines(root, task, status, width=80,
                 emit(f"    [{ch}] {bt['id']}  {bt.get('title', '')}",
                      "link", task_id=bt["id"])
 
-    # Description
+    # Description (with basic markdown styling)
     desc = task.get("description", "")
     if desc:
         lines.append(DetailLine(""))
         lines.append(DetailLine("  Description:", "subheader"))
+        in_code_block = False
         for dline in desc.split("\n"):
-            if not dline.strip():
-                lines.append(DetailLine("    "))
+            stripped = dline.strip()
+            if stripped.startswith("```"):
+                in_code_block = not in_code_block
+                for chunk in _wrap(f"    {dline}", width):
+                    lines.append(DetailLine(chunk, "code"))
                 continue
-            for chunk in _wrap(f"    {dline}", width):
-                lines.append(DetailLine(chunk, "desc"))
+            if in_code_block:
+                for chunk in _wrap(f"    {dline}", width):
+                    lines.append(DetailLine(chunk, "code"))
+            elif not stripped:
+                lines.append(DetailLine("    "))
+            elif stripped.startswith("#"):
+                for chunk in _wrap(f"    {dline}", width):
+                    lines.append(DetailLine(chunk, "md_heading"))
+            elif stripped.startswith("> "):
+                for chunk in _wrap(f"    {dline}", width):
+                    lines.append(DetailLine(chunk, "quote"))
+            else:
+                for chunk in _wrap(f"    {dline}", width):
+                    lines.append(DetailLine(chunk, "desc"))
 
     # Trailing padding so the last content line can scroll above the bottom.
     lines.append(DetailLine(""))
@@ -781,6 +801,13 @@ class TUI:
                                   curses.color_pair(C_HEADER) | curses.A_BOLD)
             elif dl.kind == "desc":
                 self._safe_addstr(y, x_start, text, curses.A_DIM)
+            elif dl.kind == "code":
+                self._safe_addstr(y, x_start, text, curses.color_pair(C_CODE))
+            elif dl.kind == "md_heading":
+                self._safe_addstr(y, x_start, text,
+                                  curses.color_pair(C_MD_HEADING) | curses.A_BOLD)
+            elif dl.kind == "quote":
+                self._safe_addstr(y, x_start, text, curses.A_DIM | curses.A_ITALIC)
             else:
                 self._safe_addstr(y, x_start, text, 0)
 
@@ -827,6 +854,7 @@ class TUI:
                 "l / Right / Enter     Show detail pane",
                 "c / C                 New root / child task (picks type)",
                 "y                     Copy yak ID to clipboard",
+                "m                     Add comment/note",
                 "e                     Edit task in $EDITOR",
                 "D                     Delete task (confirm)",
                 "s / x / r             Shave / shorn / regrow",
@@ -848,6 +876,7 @@ class TUI:
                 "i                     Nav forward in jumplist",
                 "o / Backspace         Nav back in jumplist",
                 "y                     Copy yak ID to clipboard",
+                "m                     Add comment/note",
                 "e                     Edit task in $EDITOR",
                 "D                     Delete task (confirm)",
                 "/                     Search detail text",
@@ -1132,6 +1161,12 @@ class TUI:
             if tid:
                 self._copy_to_clipboard(tid)
 
+        # Add comment/note
+        elif key == ord("m"):
+            tid = self._current_task_id()
+            if tid:
+                self._add_comment(tid)
+
         return True
 
     def _handle_detail_key(self, key):
@@ -1220,6 +1255,12 @@ class TUI:
             tid = self._current_task_id()
             if tid:
                 self._copy_to_clipboard(tid)
+
+        # Add comment/note
+        elif key == ord("m"):
+            tid = self._current_task_id()
+            if tid:
+                self._add_comment(tid)
 
         # Detail search
         elif key == ord("/"):
@@ -1747,6 +1788,27 @@ class TUI:
         yak.save_task(path, task)
         self.reload()
         self.notification = f"{tid} -> {new_t}"
+
+    def _add_comment(self, tid):
+        """Append a timestamped comment to the task's description."""
+        text = self._input_prompt("Comment: ")
+        if not text:
+            self.notification = "comment cancelled"
+            return
+        result = yak.find_task_file(self.root, tid)
+        if not result:
+            return
+        _, path = result
+        task = yak.load_task(path)
+        now = yak.now_iso()
+        note_block = f"\n### {now}\n\n{text}"
+        desc = task.get("description", "") or ""
+        task["description"] = desc + note_block
+        task["updated"] = now
+        yak.save_task(path, task)
+        self.reload()
+        self._rebuild_detail()
+        self.notification = f"comment added to {tid}"
 
     def _pick_type_for_create(self):
         """Pick a yak type before creation. Returns type string or None."""
