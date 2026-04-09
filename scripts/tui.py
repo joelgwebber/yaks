@@ -825,7 +825,8 @@ class TUI:
                 "Tab / Shift-Tab       Switch status tab",
                 "[ / ]                 Previous / next tab",
                 "l / Right / Enter     Show detail pane",
-                "c / C                 New root / child task",
+                "c / C                 New root / child task (picks type)",
+                "y                     Copy yak ID to clipboard",
                 "e                     Edit task in $EDITOR",
                 "D                     Delete task (confirm)",
                 "s / x / r             Shave / shorn / regrow",
@@ -846,6 +847,7 @@ class TUI:
                 "J / K                 Next / prev task in list",
                 "i                     Nav forward in jumplist",
                 "o / Backspace         Nav back in jumplist",
+                "y                     Copy yak ID to clipboard",
                 "e                     Edit task in $EDITOR",
                 "D                     Delete task (confirm)",
                 "/                     Search detail text",
@@ -1072,13 +1074,17 @@ class TUI:
         elif key == ord("r"):
             self._move_current("regrow")
 
-        # Create
+        # Create (with type picker)
         elif key == ord("c"):
-            self._create_task(parent=None)
+            yak_type = self._pick_type_for_create()
+            if yak_type:
+                self._create_task(parent=None, yak_type=yak_type)
         elif key == ord("C"):
             parent = self._current_task_id()
             if parent:
-                self._create_task(parent=parent)
+                yak_type = self._pick_type_for_create()
+                if yak_type:
+                    self._create_task(parent=parent, yak_type=yak_type)
 
         # Edit
         elif key == ord("e"):
@@ -1119,6 +1125,12 @@ class TUI:
             tid = self._current_task_id()
             if tid:
                 self._remove_dependency(tid)
+
+        # Copy yak ID to clipboard
+        elif key == ord("y"):
+            tid = self._current_task_id()
+            if tid:
+                self._copy_to_clipboard(tid)
 
         return True
 
@@ -1202,6 +1214,12 @@ class TUI:
             self._detail_next_task(+1)
         elif key == ord("K"):
             self._detail_next_task(-1)
+
+        # Copy yak ID to clipboard
+        elif key == ord("y"):
+            tid = self._current_task_id()
+            if tid:
+                self._copy_to_clipboard(tid)
 
         # Detail search
         elif key == ord("/"):
@@ -1431,9 +1449,9 @@ class TUI:
             return None
         return self.tasks[self.cursor][1]["id"]
 
-    def _create_task(self, parent=None):
+    def _create_task(self, parent=None, yak_type="task"):
         """Spawn $EDITOR on a template and create the task on save."""
-        template = self._build_template(parent)
+        template = self._build_template(parent, yak_type=yak_type)
         edited = self._edit_in_editor(template)
         if edited is None or edited.strip() == template.strip():
             self.notification = "create cancelled"
@@ -1730,6 +1748,31 @@ class TUI:
         self.reload()
         self.notification = f"{tid} -> {new_t}"
 
+    def _pick_type_for_create(self):
+        """Pick a yak type before creation. Returns type string or None."""
+        type_map = {"t": "task", "b": "bug", "f": "feature", "i": "idea"}
+        choice = self._pick(
+            "New yak type: t=task b=bug f=feature i=idea  (Esc=cancel)",
+            "tbfi")
+        if choice is None:
+            self.notification = "create cancelled"
+            return None
+        return type_map[choice]
+
+    def _copy_to_clipboard(self, text):
+        """Copy text to system clipboard."""
+        import subprocess as _sp
+        import platform as _pl
+        try:
+            if _pl.system() == "Darwin":
+                proc = _sp.Popen(["pbcopy"], stdin=_sp.PIPE)
+            else:
+                proc = _sp.Popen(["xclip", "-selection", "clipboard"], stdin=_sp.PIPE)
+            proc.communicate(text.encode())
+            self.notification = f"copied {text}"
+        except FileNotFoundError:
+            self.notification = "clipboard not available"
+
     def _confirm(self, prompt, default_yes=False):
         """Show a yes/no prompt at the bottom.
         y/Y = yes, n/N/Esc = no. Enter follows `default_yes`.
@@ -1770,7 +1813,7 @@ class TUI:
             return None
         return path.read_text()
 
-    def _build_template(self, parent):
+    def _build_template(self, parent, yak_type="task"):
         lines = ["---"]
         if parent:
             presult = yak.find_task_file(self.root, parent)
@@ -1783,7 +1826,7 @@ class TUI:
         lines.append("# saving (or leave title blank) to cancel.")
         lines.append("title: ")
         lines.append("# type: task | bug | feature | idea")
-        lines.append("type: task")
+        lines.append(f"type: {yak_type}")
         lines.append("# priority: 1 (high) .. 3 (low)")
         lines.append("priority: 2")
         lines.append("# Optional:")
