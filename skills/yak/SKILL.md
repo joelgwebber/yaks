@@ -11,7 +11,7 @@ This project tracks work with Yaks. Tasks are markdown files with YAML frontmatt
 
 **NEVER write code without an active shaving yak.** Before touching any code — even a one-line fix — you must have a yak in shaving state. If you don't, stop and `/yaks:shave` one first (create it if needed). No exceptions.
 
-**ALWAYS shorn immediately after committing.** Run `/yaks:shorn TASK_ID` right after the commit, before doing anything else. The `commit` field auto-captures the current HEAD (the work commit). Do not amend or update it — the shorn yak file gets included in the next commit as-is.
+**ALWAYS shear immediately after committing.** Run `/yaks:shorn TASK_ID` right after the commit, before doing anything else. The `commit` field auto-captures the current HEAD (the work commit). Do not amend or update it — the shorn yak file gets included in the next commit as-is.
 
 ## Workflow
 
@@ -24,7 +24,7 @@ This project tracks work with Yaks. Tasks are markdown files with YAML frontmatt
 
 A parent yak's state should reflect its children:
 - When you shave a child, shave the parent too (if it's still hairy).
-- When you shorn the last unshorn child, shorn the parent too.
+- When you shear the last unshear child, shear the parent too.
 - NEVER leave a hairy parent with shorn children — that means work was done but the parent doesn't reflect it.
 
 ## Commands
