@@ -217,12 +217,17 @@ def _ghost_badge_attr(status):
 
 class DetailLine:
     """A single line in the detail pane, optionally a navigable link."""
-    __slots__ = ("text", "kind", "task_id")
+    __slots__ = ("text", "kind", "task_id", "open_path")
 
-    def __init__(self, text, kind="", task_id=None):
+    def __init__(self, text, kind="", task_id=None, open_path=None):
         self.text = text
         self.kind = kind       # header, subheader, field, child, desc, link, ""
         self.task_id = task_id  # non-None means this line is navigable
+        self.open_path = open_path  # non-None means Enter opens this file externally
+
+    @property
+    def is_link(self):
+        return self.task_id is not None or self.open_path is not None
 
 
 def _wrap(text, width) -> list[str]:
@@ -367,8 +372,18 @@ def build_detail_lines(root, task, status, width=80,
                 emit(f"    [{ch}] {bt['id']}  {bt.get('title', '')}",
                      "link", task_id=bt["id"])
 
-    # Description (with basic markdown styling)
+    # Artifacts as openable links
     desc = task.get("description", "")
+    artifacts = yak.parse_artifacts(desc, task["id"])
+    if artifacts:
+        lines.append(DetailLine(""))
+        lines.append(DetailLine("  Artifacts:", "subheader"))
+        for alt, aname in artifacts:
+            apath = yak.artifacts_dir(root, task["id"]) / aname
+            label = f"{aname}" if not alt or alt == Path(aname).stem else f"{aname}  ({alt})"
+            lines.append(DetailLine(f"    {label}", "link", open_path=apath))
+
+    # Description (with basic markdown styling)
     if desc:
         lines.append(DetailLine(""))
         lines.append(DetailLine("  Description:", "subheader"))
@@ -550,7 +565,7 @@ class TUI:
         # Start cursor on the first link, or line 0 if no links
         self.detail_line_cursor = 0
         for i, dl in enumerate(self.detail_lines):
-            if dl.task_id:
+            if dl.is_link:
                 self.detail_line_cursor = i
                 break
         self.detail_scroll = 0
@@ -787,11 +802,11 @@ class TUI:
 
             if is_cursor:
                 # Fill line with cursor color
-                fill_attr = (curses.color_pair(C_LINK_SEL) if dl.task_id
+                fill_attr = (curses.color_pair(C_LINK_SEL) if dl.is_link
                              else curses.color_pair(C_SELECTED))
                 self._safe_addstr(y, x_start, " " * width, fill_attr)
                 self._safe_addstr(y, x_start, text, fill_attr | curses.A_BOLD)
-            elif dl.task_id:
+            elif dl.is_link:
                 self._safe_addstr(y, x_start, text, curses.color_pair(C_LINK))
             elif dl.kind == "header":
                 self._safe_addstr(y, x_start, text,
@@ -855,6 +870,7 @@ class TUI:
                 "c / C                 New root / child task (picks type)",
                 "y                     Copy yak ID to clipboard",
                 "m                     Add comment/note",
+                "A                     Attach file / clipboard image",
                 "e                     Edit task in $EDITOR",
                 "D                     Delete task (confirm)",
                 "s / x / r             Shave / shorn / regrow",
@@ -871,12 +887,14 @@ class TUI:
                 "PgDn / PgUp           Full-page down / up",
                 "g / G                 First / last line",
                 "Tab / ] / Shift-Tab / [   Cycle between links",
-                "Enter                 Follow link",
+                "Enter                 Follow link / open artifact",
+                "O                     Open artifact externally",
                 "J / K                 Next / prev task in list",
                 "i                     Nav forward in jumplist",
                 "o / Backspace         Nav back in jumplist",
                 "y                     Copy yak ID to clipboard",
                 "m                     Add comment/note",
+                "A                     Attach file / clipboard image",
                 "e                     Edit task in $EDITOR",
                 "D                     Delete task (confirm)",
                 "/                     Search detail text",
@@ -1173,6 +1191,12 @@ class TUI:
             if tid:
                 self._add_comment(tid)
 
+        # Attach artifact (file or clipboard image)
+        elif key == ord("A"):
+            tid = self._current_task_id()
+            if tid:
+                self._attach_file(tid)
+
         return True
 
     def _handle_detail_key(self, key):
@@ -1238,6 +1262,13 @@ class TUI:
         elif key in (ord("\n"), curses.KEY_ENTER):
             self._follow_link()
 
+        # Open artifact externally (also available via Enter)
+        elif key == ord("O"):
+            if 0 <= self.detail_line_cursor < len(self.detail_lines):
+                dl = self.detail_lines[self.detail_line_cursor]
+                if dl.open_path:
+                    self._open_externally(dl.open_path)
+
         # Edit the task being displayed
         elif key == ord("e"):
             tid = self._current_task_id()
@@ -1267,6 +1298,12 @@ class TUI:
             tid = self._current_task_id()
             if tid:
                 self._add_comment(tid)
+
+        # Attach artifact
+        elif key == ord("A"):
+            tid = self._current_task_id()
+            if tid:
+                self._attach_file(tid)
 
         # Detail search
         elif key == ord("/"):
@@ -1326,7 +1363,7 @@ class TUI:
 
     def _jump_link(self, direction):
         """Cycle the detail cursor to the next/previous navigable link line."""
-        link_lines = [i for i, dl in enumerate(self.detail_lines) if dl.task_id]
+        link_lines = [i for i, dl in enumerate(self.detail_lines) if dl.is_link]
         if not link_lines:
             return
         cur = self.detail_line_cursor
@@ -1384,11 +1421,27 @@ class TUI:
     def _follow_link(self):
         if not (0 <= self.detail_line_cursor < len(self.detail_lines)):
             return
-        target_id = self.detail_lines[self.detail_line_cursor].task_id
-        if not target_id:
+        dl = self.detail_lines[self.detail_line_cursor]
+        if dl.task_id:
+            self._nav_push(dl.task_id)
+            self._navigate_to(dl.task_id)
+        elif dl.open_path:
+            self._open_externally(dl.open_path)
+
+    def _open_externally(self, path):
+        """Open a file using the system's default handler."""
+        import subprocess as _sp
+        import platform as _pl
+        if not Path(path).exists():
+            self.notification = f"missing: {path}"
             return
-        self._nav_push(target_id)
-        self._navigate_to(target_id)
+        try:
+            opener = "open" if _pl.system() == "Darwin" else "xdg-open"
+            _sp.Popen([opener, str(path)],
+                      stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
+            self.notification = f"opened {Path(path).name}"
+        except FileNotFoundError:
+            self.notification = "no system opener available"
 
     def _nav_push(self, target_id):
         """Push a new entry onto the nav stack, truncating any forward
@@ -1834,6 +1887,60 @@ class TUI:
         self.reload()
         self._rebuild_detail()
         self.notification = f"comment added to {tid}"
+
+    def _attach_file(self, tid):
+        """Attach a file or clipboard image to a task."""
+        result = yak.find_task_file(self.root, tid)
+        if not result:
+            return
+        _, path = result
+
+        src_input = self._input_prompt("Attach path (empty = clipboard PNG): ")
+        if src_input is None:
+            self.notification = "attach cancelled"
+            return
+
+        adir = yak.artifacts_dir(self.root, tid)
+        adir.mkdir(parents=True, exist_ok=True)
+
+        if src_input.strip() == "":
+            data = yak.read_clipboard_png()
+            if not data:
+                self.notification = "no PNG image on clipboard"
+                return
+            name = f"paste-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.png"
+            dest = adir / name
+            dest.write_bytes(data)
+        else:
+            import shutil as _sh
+            src = Path(src_input.strip()).expanduser()
+            if not src.is_file():
+                self.notification = f"not a file: {src}"
+                return
+            name = src.name
+            dest = adir / name
+            if dest.exists():
+                self.notification = f"{name} already attached"
+                return
+            _sh.copy2(src, dest)
+
+        desc = self._input_prompt(f"Description for {name} (empty = filename): ")
+        if desc is None:
+            desc = ""
+        alt = desc.strip() or Path(name).stem
+        link = f"![{alt}](artifacts/{tid}/{name})"
+
+        task = yak.load_task(path)
+        body = task.get("description", "") or ""
+        if body and not body.endswith("\n"):
+            body += "\n"
+        body += "\n" + link + "\n"
+        task["description"] = body
+        task["updated"] = yak.now_iso()
+        yak.save_task(path, task)
+        self.reload()
+        self._rebuild_detail()
+        self.notification = f"attached {name}"
 
     def _pick_type_for_create(self):
         """Pick a yak type before creation. Returns type string or None."""

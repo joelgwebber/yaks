@@ -7,6 +7,8 @@
 import argparse
 import json
 import random
+import re
+import shutil
 import string
 import subprocess
 import sys
@@ -261,6 +263,67 @@ def find_descendants(root: Path, task_id: str) -> list[tuple[str, Path]]:
         for f in d.glob(f"{prefix}*.md"):
             descendants.append((s, f))
     return descendants
+
+
+_ARTIFACT_LINE_RE = re.compile(
+    r"^\s*!\[([^\]]*)\]\(artifacts/([^/)]+)/([^)]+)\)\s*$"
+)
+
+
+def artifacts_dir(root: Path, yak_id: str) -> Path:
+    return root / "artifacts" / yak_id
+
+
+def parse_artifacts(body: str, yak_id: str) -> list[tuple[str, str]]:
+    """Return [(desc, filename)] for artifact links belonging to yak_id.
+
+    Only matches links that occupy a line on their own and are outside
+    fenced code blocks — this avoids matching prose examples.
+    """
+    out = []
+    in_fence = False
+    for line in (body or "").split("\n"):
+        if line.lstrip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        m = _ARTIFACT_LINE_RE.match(line)
+        if m and m.group(2) == yak_id:
+            out.append((m.group(1), m.group(3)))
+    return out
+
+
+def read_clipboard_png() -> bytes | None:
+    """Attempt to read a PNG image from the system clipboard."""
+    if sys.platform == "darwin":
+        try:
+            r = subprocess.run(
+                ["osascript", "-e",
+                 'try\nset png to (the clipboard as «class PNGf»)\nset fp to open for access '
+                 '(POSIX file "/tmp/yak-clip.png") with write permission\nset eof of fp to 0\n'
+                 'write png to fp\nclose access fp\nend try'],
+                capture_output=True, timeout=5,
+            )
+            p = Path("/tmp/yak-clip.png")
+            if r.returncode == 0 and p.exists() and p.stat().st_size > 0:
+                data = p.read_bytes()
+                p.unlink()
+                return data
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            pass
+        return None
+    # Linux: xclip
+    try:
+        r = subprocess.run(
+            ["xclip", "-selection", "clipboard", "-t", "image/png", "-o"],
+            capture_output=True, timeout=5,
+        )
+        if r.returncode == 0 and r.stdout:
+            return r.stdout
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+    return None
 
 
 def git_head_short() -> str | None:
@@ -755,6 +818,90 @@ def cmd_reparent(args):
                 print(f"  {old} → {new}")
 
 
+def cmd_attach(args):
+    root = find_tasks_root()
+    loc = find_task_file(root, args.id)
+    if loc is None:
+        print(f"error: task {args.id} not found", file=sys.stderr)
+        sys.exit(1)
+    status, path = loc
+    task = load_task(path)
+
+    adir = artifacts_dir(root, args.id)
+    adir.mkdir(parents=True, exist_ok=True)
+
+    if args.paste:
+        data = read_clipboard_png()
+        if not data:
+            print("error: no PNG image found on clipboard", file=sys.stderr)
+            sys.exit(1)
+        name = args.name or f"paste-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.png"
+        dest = adir / name
+        if dest.exists() and not args.force:
+            print(f"error: {dest} exists (use --force to overwrite)", file=sys.stderr)
+            sys.exit(1)
+        dest.write_bytes(data)
+    else:
+        if not args.path:
+            print("error: provide <path> or --paste", file=sys.stderr)
+            sys.exit(1)
+        src = Path(args.path).expanduser()
+        if not src.is_file():
+            print(f"error: {src} is not a file", file=sys.stderr)
+            sys.exit(1)
+        name = args.name or src.name
+        dest = adir / name
+        if dest.exists() and not args.force:
+            print(f"error: {dest} exists (use --force to overwrite)", file=sys.stderr)
+            sys.exit(1)
+        shutil.copy2(src, dest)
+
+    desc = args.desc or Path(name).stem
+    link = f"![{desc}](artifacts/{args.id}/{name})"
+    body = task.get("description", "")
+    if body and not body.endswith("\n"):
+        body += "\n"
+    body += "\n" + link + "\n"
+    task["description"] = body
+    task["updated"] = now_iso()
+    save_task(path, task)
+    print(f"Attached {dest.relative_to(root)} to {args.id}")
+
+
+def cmd_detach(args):
+    root = find_tasks_root()
+    loc = find_task_file(root, args.id)
+    if loc is None:
+        print(f"error: task {args.id} not found", file=sys.stderr)
+        sys.exit(1)
+    _, path = loc
+    task = load_task(path)
+    body = task.get("description", "")
+
+    target = args.name
+    pat = re.compile(
+        r"[ \t]*!\[[^\]]*\]\(artifacts/" + re.escape(args.id) + "/" + re.escape(target) + r"\)[ \t]*\n?"
+    )
+    new_body, n = pat.subn("", body)
+    if n == 0:
+        print(f"warning: no reference to {target} found in description", file=sys.stderr)
+
+    afile = artifacts_dir(root, args.id) / target
+    if afile.exists():
+        afile.unlink()
+        print(f"Removed {afile.relative_to(root)}")
+    else:
+        print(f"warning: {afile} did not exist", file=sys.stderr)
+
+    task["description"] = new_body
+    task["updated"] = now_iso()
+    save_task(path, task)
+
+    adir = artifacts_dir(root, args.id)
+    if adir.exists() and not any(adir.iterdir()):
+        adir.rmdir()
+
+
 def cmd_search(args):
     root = find_tasks_root()
     status_filter = _resolve_status(args.status) if args.status else None
@@ -1048,6 +1195,20 @@ def build_parser() -> argparse.ArgumentParser:
     group.add_argument("--parent", help="New parent task ID")
     group.add_argument("--unparent", action="store_true", help="Promote to top-level task")
 
+    # attach
+    sp = sub.add_parser("attach", help="Attach a file (or clipboard image) to a yak")
+    sp.add_argument("id", help="Task ID")
+    sp.add_argument("path", nargs="?", help="Path to file (omit with --paste)")
+    sp.add_argument("--paste", action="store_true", help="Read PNG image from clipboard")
+    sp.add_argument("--name", help="Override stored filename")
+    sp.add_argument("--desc", help="Alt text / description for the markdown link")
+    sp.add_argument("--force", action="store_true", help="Overwrite if file already exists")
+
+    # detach
+    sp = sub.add_parser("detach", help="Detach an artifact from a yak")
+    sp.add_argument("id", help="Task ID")
+    sp.add_argument("name", help="Artifact filename")
+
     # search
     sp = sub.add_parser("search", help="Search tasks by keyword")
     sp.add_argument("query", help="Search term")
@@ -1100,6 +1261,8 @@ def main():
         "blocked": cmd_tangled,
         "dep": cmd_dep,
         "reparent": cmd_reparent,
+        "attach": cmd_attach,
+        "detach": cmd_detach,
         "search": cmd_search,
         "stats": cmd_stats,
         "import-beads": cmd_import_beads,
