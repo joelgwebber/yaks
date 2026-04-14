@@ -10,7 +10,7 @@
       "name": "yaks",
       "source": "./",
       "description": "Filesystem-native task tracker. Plain YAML files, no yak left unshaved.",
-      "version": "0.1.26",
+      "version": "0.1.27",
       "author": {
         "name": "Joel"
       },
