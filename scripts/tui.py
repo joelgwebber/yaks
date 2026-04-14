@@ -17,6 +17,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).parent))
 import yak
+from yaklib.format import humanize_date, status_char
 
 
 # ---------------------------------------------------------------------------
@@ -247,51 +248,6 @@ def _wrap(text, width) -> list[str]:
     return [lead + w for w in wrapped]
 
 
-def _humanize_date(value) -> str:
-    """Render an ISO8601 timestamp as a relative + absolute local string.
-
-    Examples: '5 minutes ago (14:16)', 'yesterday at 14:16',
-    '3 days ago (Apr 2, 14:16)', 'Jan 15, 2025 14:16'.
-    """
-    if not value or not isinstance(value, str):
-        return str(value) if value else "-"
-    try:
-        # Handle trailing Z (Zulu/UTC)
-        s = value.replace("Z", "+00:00")
-        dt = datetime.fromisoformat(s)
-    except ValueError:
-        return value
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    local = dt.astimezone()
-    now = datetime.now(local.tzinfo)
-    delta = now - local
-    secs = delta.total_seconds()
-
-    time_str = local.strftime("%H:%M")
-    if secs < 0:
-        # Future timestamp — just show absolute
-        return local.strftime("%b %-d, %Y %H:%M")
-    if secs < 60:
-        rel = "just now"
-    elif secs < 3600:
-        m = int(secs // 60)
-        rel = f"{m} minute{'s' if m != 1 else ''} ago"
-    elif secs < 86400 and local.date() == now.date():
-        h = int(secs // 3600)
-        rel = f"{h} hour{'s' if h != 1 else ''} ago"
-    else:
-        days = (now.date() - local.date()).days
-        if days == 1:
-            return f"yesterday at {time_str}"
-        if days < 7:
-            return f"{days} days ago ({local.strftime('%b %-d')}, {time_str})"
-        if local.year == now.year:
-            return local.strftime("%b %-d, %H:%M")
-        return local.strftime("%b %-d, %Y %H:%M")
-    return f"{rel} ({time_str})"
-
-
 def build_detail_lines(root, task, status, width=80,
                        reverse_deps=None) -> list[DetailLine]:
     """Build the detail pane content for a task, wrapped to `width`."""
@@ -314,8 +270,8 @@ def build_detail_lines(root, task, status, width=80,
         ("Status", status.capitalize()),
         ("Type", task.get("type", "-")),
         ("Priority", str(task.get("priority", "-"))),
-        ("Created", _humanize_date(task.get("created"))),
-        ("Updated", _humanize_date(task.get("updated"))),
+        ("Created", humanize_date(task.get("created"))),
+        ("Updated", humanize_date(task.get("updated"))),
     ]
     if task.get("commit"):
         fields.append(("Commit", task["commit"]))
@@ -331,7 +287,7 @@ def build_detail_lines(root, task, status, width=80,
         if dep_result:
             ds, dp = dep_result
             dt = yak.load_task(dp)
-            sc = {yak.HAIRY: "H", yak.SHAVING: "S", yak.SHORN: "N"}.get(ds, "?")
+            sc = status_char(ds)
             emit(f"  {'Depends on:':<12s} [{sc}] {dep_id}  {dt.get('title', '')}",
                  "link", task_id=dep_id)
         else:
@@ -344,19 +300,17 @@ def build_detail_lines(root, task, status, width=80,
         if presult:
             ps, pp = presult
             pt = yak.load_task(pp)
-            sc = {yak.HAIRY: "H", yak.SHAVING: "S", yak.SHORN: "N"}.get(ps, "?")
+            sc = status_char(ps)
             emit(f"  {'Parent:':<12s} [{sc}] {pid}  {pt.get('title', '')}",
                  "link", task_id=pid)
 
     # Children as links
     children = yak.find_children(root, task["id"])
-    sc = {yak.HAIRY: "H", yak.SHAVING: "S", yak.SHORN: "N"}
     if children:
         lines.append(DetailLine(""))
         lines.append(DetailLine("  Children:", "subheader"))
         for cs, ct in children:
-            ch = sc.get(cs, "?")
-            emit(f"    [{ch}] {ct['id']}  {ct.get('title', '')}",
+            emit(f"    [{status_char(cs)}] {ct['id']}  {ct.get('title', '')}",
                  "link", task_id=ct["id"])
 
     # Reverse deps: tasks that depend on this one ("Blocks:")
@@ -368,8 +322,7 @@ def build_detail_lines(root, task, status, width=80,
             lines.append(DetailLine(""))
             lines.append(DetailLine("  Blocks:", "subheader"))
             for bs, bt in blockers:
-                ch = sc.get(bs, "?")
-                emit(f"    [{ch}] {bt['id']}  {bt.get('title', '')}",
+                emit(f"    [{status_char(bs)}] {bt['id']}  {bt.get('title', '')}",
                      "link", task_id=bt["id"])
 
     # Artifacts as openable links
@@ -761,7 +714,7 @@ class TUI:
                 self._safe_addstr(y, x, display_title, title_attr)
 
             if ghost and not self.search_query:
-                sc = {yak.HAIRY: "H", yak.SHAVING: "S", yak.SHORN: "N"}.get(status, "?")
+                sc = status_char(status)
                 badge = f" [{sc}]"
                 bx = x_start + width - len(badge) - 1
                 if bx > x:
@@ -2123,7 +2076,6 @@ class TUI:
 
                 # Draw matches above the prompt
                 list_y = h - 2 - max_visible
-                sc_map = {yak.HAIRY: "H", yak.SHAVING: "S", yak.SHORN: "N"}
                 for i in range(max_visible):
                     y = list_y + i
                     if y < 1:
@@ -2131,7 +2083,7 @@ class TUI:
                     self._safe_addstr(y, 0, " " * w, 0)
                     if i < len(matches):
                         ms, mt = matches[i]
-                        badge = sc_map.get(ms, "?")
+                        badge = status_char(ms)
                         line = f"  [{badge}] {mt['id']}  {mt.get('title', '')}"
                         attr = curses.color_pair(C_SELECTED) | curses.A_BOLD if i == sel else 0
                         self._safe_addstr(y, 0, line[:w], attr)
