@@ -9,7 +9,6 @@ import os
 import subprocess
 import sys
 import tempfile
-import textwrap
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -21,356 +20,32 @@ from yaklib import artifacts as _artifacts
 from yaklib import clipboard as _clipboard
 from yaklib import deps as _deps
 from yaklib.format import humanize_date, status_char
-
-
-# ---------------------------------------------------------------------------
-# Color pairs
-# ---------------------------------------------------------------------------
-
-C_ID = 1
-C_P1 = 2
-C_P2 = 3
-C_P3 = 4
-C_TAB_ACTIVE = 5
-C_GHOST = 6
-C_TYPE = 7
-C_SELECTED = 8
-C_LABEL = 9
-C_HEADER = 10
-C_HELP = 11
-C_SEARCH = 12
-C_LINK = 13
-C_LINK_SEL = 14
-C_MATCH = 15
-C_GHOST_HAIRY = 16
-C_GHOST_SHAVING = 17
-C_GHOST_SHORN = 18
-C_CODE = 19
-C_MD_HEADING = 20
-
-
-def init_colors():
-    curses.use_default_colors()
-    curses.init_pair(C_ID, curses.COLOR_BLUE, -1)
-    curses.init_pair(C_P1, curses.COLOR_RED, -1)
-    curses.init_pair(C_P2, curses.COLOR_YELLOW, -1)
-    curses.init_pair(C_P3, curses.COLOR_GREEN, -1)
-    curses.init_pair(C_TAB_ACTIVE, curses.COLOR_BLACK, curses.COLOR_WHITE)
-    curses.init_pair(C_GHOST, 8, -1)
-    curses.init_pair(C_TYPE, curses.COLOR_CYAN, -1)
-    # Selection: subtle dark gray bg on 256-color terminals, else plain blue
-    if curses.COLORS >= 256:
-        curses.init_pair(C_SELECTED, -1, 237)  # default fg on dark gray
-        curses.init_pair(C_LINK_SEL, curses.COLOR_BLUE, 237)
-    else:
-        curses.init_pair(C_SELECTED, curses.COLOR_WHITE, curses.COLOR_BLUE)
-        curses.init_pair(C_LINK_SEL, curses.COLOR_CYAN, curses.COLOR_BLUE)
-    curses.init_pair(C_LABEL, curses.COLOR_MAGENTA, -1)
-    curses.init_pair(C_HEADER, curses.COLOR_WHITE, -1)
-    curses.init_pair(C_HELP, curses.COLOR_BLACK, curses.COLOR_WHITE)
-    curses.init_pair(C_SEARCH, curses.COLOR_YELLOW, -1)
-    curses.init_pair(C_LINK, curses.COLOR_BLUE, -1)
-    curses.init_pair(C_MATCH, curses.COLOR_BLACK, curses.COLOR_YELLOW)
-    # Ghost state badges — distinct prominence by completion state
-    curses.init_pair(C_GHOST_HAIRY, curses.COLOR_YELLOW, -1)   # attention: undone
-    curses.init_pair(C_GHOST_SHAVING, 8, -1)                    # faded: in progress
-    curses.init_pair(C_GHOST_SHORN, curses.COLOR_GREEN, -1)     # done
-    curses.init_pair(C_CODE, curses.COLOR_CYAN, -1)
-    curses.init_pair(C_MD_HEADING, curses.COLOR_WHITE, -1)
-
-
-# ---------------------------------------------------------------------------
-# Tree building
-# ---------------------------------------------------------------------------
-
-class TaskNode:
-    __slots__ = ("status", "task", "children", "ghost")
-
-    def __init__(self, status, task, ghost=False):
-        self.status = status
-        self.task = task
-        self.children = []
-        self.ghost = ghost
-
-
-def build_tree(root: Path, status_filter: str | None, filter_mode: str,
-               search_query: str) -> list[tuple[str, dict, int, bool]]:
-    """Return flat list of (status, task, depth, ghost) for display."""
-    if search_query:
-        return _build_search_results(root, search_query)
-
-    all_by_id: dict[str, tuple[str, dict]] = {}
-    for s in yak.STATUSES:
-        for st, t in yak.all_tasks(root, s):
-            all_by_id[t["id"]] = (st, t)
-
-    if status_filter and filter_mode in ("all", "next", "tangled"):
-        primary = [(s, t) for s, t in all_by_id.values() if s == status_filter]
-    else:
-        primary = list(all_by_id.values())
-
-    if filter_mode == "next" and status_filter == yak.HAIRY:
-        shorn_ids = {t["id"] for s, t in all_by_id.values() if s == yak.SHORN}
-        primary = [(s, t) for s, t in primary
-                   if not t.get("depends_on") or
-                   all(d in shorn_ids for d in t.get("depends_on", []))]
-    elif filter_mode == "tangled" and status_filter == yak.HAIRY:
-        shorn_ids = {t["id"] for s, t in all_by_id.values() if s == yak.SHORN}
-        primary = [(s, t) for s, t in primary
-                   if any(d not in shorn_ids for d in t.get("depends_on", []))]
-
-    primary_ids = {t["id"] for _, t in primary}
-
-    nodes: dict[str, TaskNode] = {}
-    for s, t in primary:
-        nodes[t["id"]] = TaskNode(s, t, ghost=False)
-
-    # Ghost ancestors: walk up from primaries to keep tree rooted
-    for tid in list(primary_ids):
-        pid = yak.parent_id(tid)
-        while pid and pid not in nodes:
-            if pid in all_by_id:
-                ps, pt = all_by_id[pid]
-                nodes[pid] = TaskNode(ps, pt, ghost=True)
-            pid = yak.parent_id(pid) if pid else None
-
-    # Ghost descendants: include children (recursively) of all visible nodes
-    # (primaries + ghost ancestors) so mixed parent/child states stay visible.
-    child_prefixes = {tid + "." for tid in nodes}
-    for other_id, (os_, ot) in all_by_id.items():
-        if other_id in nodes:
-            continue
-        # If any prefix is an ancestor of other_id, include it as a ghost
-        for prefix in child_prefixes:
-            if other_id.startswith(prefix):
-                nodes[other_id] = TaskNode(os_, ot, ghost=True)
-                break
-
-    roots = []
-    for tid, node in nodes.items():
-        pid = yak.parent_id(tid)
-        if pid and pid in nodes:
-            nodes[pid].children.append(node)
-        else:
-            roots.append(node)
-
-    def _child_status_rank(status):
-        if status == yak.SHAVING:
-            return 0
-        if status == yak.SHORN:
-            return 2
-        return 1
-
-    def sort_children(node: TaskNode):
-        node.children.sort(key=lambda n: (_child_status_rank(n.status), n.task.get("priority", 9), _child_sort_key(n.task["id"])))
-        for c in node.children:
-            sort_children(c)
-
-    if status_filter == yak.SHORN:
-        roots.sort(key=lambda n: n.task.get("updated", ""), reverse=True)
-    else:
-        roots.sort(key=lambda n: (n.task.get("priority", 9), n.task["id"]))
-    for r in roots:
-        sort_children(r)
-
-    flat = []
-    def flatten(node: TaskNode, depth: int):
-        flat.append((node.status, node.task, depth, node.ghost))
-        for c in node.children:
-            flatten(c, depth + 1)
-    for r in roots:
-        flatten(r, 0)
-    return flat
-
-
-def _build_search_results(root, query):
-    q = query.lower()
-    results = []
-    for s in yak.STATUSES:
-        for st, t in yak.all_tasks(root, s):
-            title = t.get("title", "").lower()
-            desc = t.get("description", "").lower()
-            if q in title or q in desc or q in t.get("id", "").lower():
-                results.append((st, t, 0, False))
-    results.sort(key=lambda x: (x[0] != yak.HAIRY, x[0] != yak.SHAVING,
-                                x[1].get("priority", 9)))
-    return results
-
-
-def _child_sort_key(tid):
-    dot = tid.rfind(".")
-    if dot >= 0:
-        suffix = tid[dot + 1:]
-        if suffix.isdigit():
-            return int(suffix)
-    return 0
-
-
-def _ghost_badge_attr(status):
-    """Return the color pair + attributes for a ghost badge of the given state."""
-    if status == yak.HAIRY:
-        return curses.color_pair(C_GHOST_HAIRY) | curses.A_BOLD
-    if status == yak.SHORN:
-        return curses.color_pair(C_GHOST_SHORN)
-    return curses.color_pair(C_GHOST_SHAVING) | curses.A_DIM
-
-
-# ---------------------------------------------------------------------------
-# Detail line model
-# ---------------------------------------------------------------------------
-
-class DetailLine:
-    """A single line in the detail pane, optionally a navigable link."""
-    __slots__ = ("text", "kind", "task_id", "open_path")
-
-    def __init__(self, text, kind="", task_id=None, open_path=None):
-        self.text = text
-        self.kind = kind       # header, subheader, field, child, desc, link, ""
-        self.task_id = task_id  # non-None means this line is navigable
-        self.open_path = open_path  # non-None means Enter opens this file externally
-
-    @property
-    def is_link(self):
-        return self.task_id is not None or self.open_path is not None
-
-
-def _wrap(text, width) -> list[str]:
-    """Wrap a string to the given width, preserving leading indentation.
-    Continuation lines use the same lead as the original."""
-    if width <= 10 or not text:
-        return [text]
-    if len(text) <= width:
-        return [text]
-    stripped = text.lstrip(" ")
-    lead = text[:len(text) - len(stripped)]
-    wrapped = textwrap.wrap(
-        stripped, width=max(1, width - len(lead)),
-        break_long_words=False, break_on_hyphens=False)
-    if not wrapped:
-        return [text]
-    return [lead + w for w in wrapped]
-
-
-def build_detail_lines(root, task, status, width=80,
-                       reverse_deps=None) -> list[DetailLine]:
-    """Build the detail pane content for a task, wrapped to `width`."""
-    def emit(text, kind="", task_id=None):
-        """Append a line, wrapping text to width. Only the first chunk is a link."""
-        chunks = _wrap(text, width)
-        lines.append(DetailLine(chunks[0], kind, task_id))
-        for chunk in chunks[1:]:
-            lines.append(DetailLine(chunk, kind))  # continuation, not a link
-
-    lines = []
-    emit(f"Task: {task['id']}", "header")
-    lines.append(DetailLine(""))
-
-    # Title gets wrapped on its own line so long titles are readable
-    title = task.get("title", "")
-    emit(f"  {'Title:':<12s} {title}", "field")
-
-    fields = [
-        ("Status", status.capitalize()),
-        ("Type", task.get("type", "-")),
-        ("Priority", str(task.get("priority", "-"))),
-        ("Created", humanize_date(task.get("created"))),
-        ("Updated", humanize_date(task.get("updated"))),
-    ]
-    if task.get("commit"):
-        fields.append(("Commit", task["commit"]))
-    if task.get("labels"):
-        fields.append(("Labels", ", ".join(task["labels"])))
-
-    for label, value in fields:
-        emit(f"  {label + ':':<12s} {value}", "field")
-
-    # Dependencies as links
-    for dep_id in task.get("depends_on", []):
-        dep_result = yak.find_task_file(root, dep_id)
-        if dep_result:
-            ds, dp = dep_result
-            dt = yak.load_task(dp)
-            sc = status_char(ds)
-            emit(f"  {'Depends on:':<12s} [{sc}] {dep_id}  {dt.get('title', '')}",
-                 "link", task_id=dep_id)
-        else:
-            emit(f"  {'Depends on:':<12s} {dep_id} (not found)", "field")
-
-    # Parent as link
-    pid = yak.parent_id(task["id"])
-    if pid:
-        presult = yak.find_task_file(root, pid)
-        if presult:
-            ps, pp = presult
-            pt = yak.load_task(pp)
-            sc = status_char(ps)
-            emit(f"  {'Parent:':<12s} [{sc}] {pid}  {pt.get('title', '')}",
-                 "link", task_id=pid)
-
-    # Children as links
-    children = yak.find_children(root, task["id"])
-    if children:
-        lines.append(DetailLine(""))
-        lines.append(DetailLine("  Children:", "subheader"))
-        for cs, ct in children:
-            emit(f"    [{status_char(cs)}] {ct['id']}  {ct.get('title', '')}",
-                 "link", task_id=ct["id"])
-
-    # Reverse deps: tasks that depend on this one ("Blocks:")
-    if reverse_deps:
-        blockers = reverse_deps.get(task["id"]) or []
-        # Sort by id for stable rendering
-        blockers = sorted(blockers, key=lambda p: p[1]["id"])
-        if blockers:
-            lines.append(DetailLine(""))
-            lines.append(DetailLine("  Blocks:", "subheader"))
-            for bs, bt in blockers:
-                emit(f"    [{status_char(bs)}] {bt['id']}  {bt.get('title', '')}",
-                     "link", task_id=bt["id"])
-
-    # Artifacts as openable links
-    desc = task.get("description", "")
-    artifacts = _artifacts.parse_artifacts(desc, task["id"])
-    if artifacts:
-        lines.append(DetailLine(""))
-        lines.append(DetailLine("  Artifacts:", "subheader"))
-        for alt, aname in artifacts:
-            apath = _artifacts.artifacts_dir(root, task["id"]) / aname
-            label = f"{aname}" if not alt or alt == Path(aname).stem else f"{aname}  ({alt})"
-            lines.append(DetailLine(f"    {label}", "link", open_path=apath))
-
-    # Description (with basic markdown styling)
-    if desc:
-        lines.append(DetailLine(""))
-        lines.append(DetailLine("  Description:", "subheader"))
-        in_code_block = False
-        for dline in desc.split("\n"):
-            stripped = dline.strip()
-            if stripped.startswith("```"):
-                in_code_block = not in_code_block
-                for chunk in _wrap(f"    {dline}", width):
-                    lines.append(DetailLine(chunk, "code"))
-                continue
-            if in_code_block:
-                for chunk in _wrap(f"    {dline}", width):
-                    lines.append(DetailLine(chunk, "code"))
-            elif not stripped:
-                lines.append(DetailLine("    "))
-            elif stripped.startswith("#"):
-                for chunk in _wrap(f"    {dline}", width):
-                    lines.append(DetailLine(chunk, "md_heading"))
-            elif stripped.startswith("> "):
-                for chunk in _wrap(f"    {dline}", width):
-                    lines.append(DetailLine(chunk, "quote"))
-            else:
-                for chunk in _wrap(f"    {dline}", width):
-                    lines.append(DetailLine(chunk, "desc"))
-
-    # Trailing padding so the last content line can scroll above the bottom.
-    lines.append(DetailLine(""))
-    lines.append(DetailLine(""))
-
-    return lines
+from yaktui.colors import (
+    C_CODE,
+    C_GHOST,
+    C_GHOST_HAIRY,
+    C_GHOST_SHAVING,
+    C_GHOST_SHORN,
+    C_HEADER,
+    C_HELP,
+    C_ID,
+    C_LABEL,
+    C_LINK,
+    C_LINK_SEL,
+    C_MATCH,
+    C_MD_HEADING,
+    C_P1,
+    C_P2,
+    C_P3,
+    C_SEARCH,
+    C_SELECTED,
+    C_TAB_ACTIVE,
+    C_TYPE,
+    ghost_badge_attr as _ghost_badge_attr,
+    init_colors,
+)
+from yaktui.detail import DetailLine, build_detail_lines
+from yaktui.tree import build_tree
 
 
 # ---------------------------------------------------------------------------
