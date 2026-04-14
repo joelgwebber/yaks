@@ -17,6 +17,8 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).parent))
 import yak
+from yaklib import artifacts as _artifacts
+from yaklib import clipboard as _clipboard
 from yaklib.format import humanize_date, status_char
 
 
@@ -327,12 +329,12 @@ def build_detail_lines(root, task, status, width=80,
 
     # Artifacts as openable links
     desc = task.get("description", "")
-    artifacts = yak.parse_artifacts(desc, task["id"])
+    artifacts = _artifacts.parse_artifacts(desc, task["id"])
     if artifacts:
         lines.append(DetailLine(""))
         lines.append(DetailLine("  Artifacts:", "subheader"))
         for alt, aname in artifacts:
-            apath = yak.artifacts_dir(root, task["id"]) / aname
+            apath = _artifacts.artifacts_dir(root, task["id"]) / aname
             label = f"{aname}" if not alt or alt == Path(aname).stem else f"{aname}  ({alt})"
             lines.append(DetailLine(f"    {label}", "link", open_path=apath))
 
@@ -1853,11 +1855,11 @@ class TUI:
             self.notification = "attach cancelled"
             return
 
-        adir = yak.artifacts_dir(self.root, tid)
+        adir = _artifacts.artifacts_dir(self.root, tid)
         adir.mkdir(parents=True, exist_ok=True)
 
         if src_input.strip() == "":
-            data = yak.read_clipboard_png()
+            data = _clipboard.read_png()
             if not data:
                 self.notification = "no PNG image on clipboard"
                 return
@@ -1908,16 +1910,9 @@ class TUI:
 
     def _copy_to_clipboard(self, text):
         """Copy text to system clipboard."""
-        import subprocess as _sp
-        import platform as _pl
-        try:
-            if _pl.system() == "Darwin":
-                proc = _sp.Popen(["pbcopy"], stdin=_sp.PIPE)
-            else:
-                proc = _sp.Popen(["xclip", "-selection", "clipboard"], stdin=_sp.PIPE)
-            proc.communicate(text.encode())
+        if _clipboard.copy_text(text):
             self.notification = f"copied {text}"
-        except FileNotFoundError:
+        else:
             self.notification = "clipboard not available"
 
     def _confirm(self, prompt, default_yes=False):

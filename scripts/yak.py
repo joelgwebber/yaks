@@ -265,65 +265,11 @@ def find_descendants(root: Path, task_id: str) -> list[tuple[str, Path]]:
     return descendants
 
 
-_ARTIFACT_LINE_RE = re.compile(
-    r"^\s*!\[([^\]]*)\]\(artifacts/([^/)]+)/([^)]+)\)\s*$"
-)
-
-
-def artifacts_dir(root: Path, yak_id: str) -> Path:
-    return root / "artifacts" / yak_id
-
-
-def parse_artifacts(body: str, yak_id: str) -> list[tuple[str, str]]:
-    """Return [(desc, filename)] for artifact links belonging to yak_id.
-
-    Only matches links that occupy a line on their own and are outside
-    fenced code blocks — this avoids matching prose examples.
-    """
-    out = []
-    in_fence = False
-    for line in (body or "").split("\n"):
-        if line.lstrip().startswith("```"):
-            in_fence = not in_fence
-            continue
-        if in_fence:
-            continue
-        m = _ARTIFACT_LINE_RE.match(line)
-        if m and m.group(2) == yak_id:
-            out.append((m.group(1), m.group(3)))
-    return out
-
-
-def read_clipboard_png() -> bytes | None:
-    """Attempt to read a PNG image from the system clipboard."""
-    if sys.platform == "darwin":
-        try:
-            r = subprocess.run(
-                ["osascript", "-e",
-                 'try\nset png to (the clipboard as «class PNGf»)\nset fp to open for access '
-                 '(POSIX file "/tmp/yak-clip.png") with write permission\nset eof of fp to 0\n'
-                 'write png to fp\nclose access fp\nend try'],
-                capture_output=True, timeout=5,
-            )
-            p = Path("/tmp/yak-clip.png")
-            if r.returncode == 0 and p.exists() and p.stat().st_size > 0:
-                data = p.read_bytes()
-                p.unlink()
-                return data
-        except (FileNotFoundError, subprocess.TimeoutExpired):
-            pass
-        return None
-    # Linux: xclip
-    try:
-        r = subprocess.run(
-            ["xclip", "-selection", "clipboard", "-t", "image/png", "-o"],
-            capture_output=True, timeout=5,
-        )
-        if r.returncode == 0 and r.stdout:
-            return r.stdout
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        pass
-    return None
+# Artifact + clipboard helpers moved to yaklib/. Re-export here so existing
+# `yak.X` callers (notably tui.py) keep working until the model split lands.
+sys.path.insert(0, str(Path(__file__).parent))
+from yaklib.artifacts import artifacts_dir, parse_artifacts  # noqa: E402
+from yaklib.clipboard import read_png as read_clipboard_png  # noqa: E402
 
 
 def git_head_short() -> str | None:
