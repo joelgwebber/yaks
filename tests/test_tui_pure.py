@@ -95,6 +95,56 @@ def test_build_detail_lines_artifact_is_openable(yak, yak_root, tmp_path):
     assert open_lines[0].is_link
 
 
+def test_build_detail_lines_picks_up_implicit_references(yak, yak_root):
+    """Bare yak-IDs in the body become navigable References entries."""
+    other = yak("create", "--title", "sidecar", "--type", "task").stdout
+    other_id = other.splitlines()[0].split()[1].rstrip(":")
+
+    tid = yak("create", "--title", "host", "--type", "task",
+              "--description", f"see {other_id} for details").stdout
+    tid = tid.splitlines()[0].split()[1].rstrip(":")
+
+    _, path = find_task_file(_yaks(yak_root), tid)
+    t = load_task(path)
+    lines = build_detail_lines(_yaks(yak_root), t, "hairy", width=100)
+
+    ref_ids = [l.task_id for l in lines if l.task_id]
+    assert other_id in ref_ids
+    assert any("References:" in l.text for l in lines)
+
+
+def test_build_detail_lines_skips_references_already_tracked(yak, yak_root):
+    """A referenced ID that's already a dep shouldn't be double-listed."""
+    dep = yak("create", "--title", "dep", "--type", "task").stdout
+    dep_id = dep.splitlines()[0].split()[1].rstrip(":")
+
+    tid = yak("create", "--title", "host", "--type", "task",
+              "--description", f"blocked on {dep_id}").stdout
+    tid = tid.splitlines()[0].split()[1].rstrip(":")
+    yak("dep", "add", tid, dep_id)
+
+    _, path = find_task_file(_yaks(yak_root), tid)
+    t = load_task(path)
+    lines = build_detail_lines(_yaks(yak_root), t, "hairy", width=100)
+
+    assert not any("References:" in l.text for l in lines)
+    # Still shows up once as Depends on.
+    dep_lines = [l for l in lines if l.task_id == dep_id]
+    assert len(dep_lines) == 1
+
+
+def test_build_detail_lines_skips_nonexistent_references(yak, yak_root):
+    """References to unknown IDs silently drop."""
+    tid = yak("create", "--title", "host", "--type", "task",
+              "--description", "compare with test-ffff (doesn't exist)").stdout
+    tid = tid.splitlines()[0].split()[1].rstrip(":")
+
+    _, path = find_task_file(_yaks(yak_root), tid)
+    t = load_task(path)
+    lines = build_detail_lines(_yaks(yak_root), t, "hairy", width=100)
+    assert not any("References:" in l.text for l in lines)
+
+
 def test_build_detail_lines_blocks_reverse_deps(yak, yak_root):
     blocker = create_task(yak, "block", type="task")
     waiter = create_task(yak, "wait", type="task")

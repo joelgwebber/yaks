@@ -12,6 +12,7 @@ import textwrap
 from pathlib import Path
 
 from yaklib import artifacts as _artifacts
+from yaklib import links as _links
 from yaklib.format import humanize_date, status_emoji
 from yaklib.model import find_children, find_task_file, load_task, parent_id
 
@@ -118,6 +119,25 @@ def build_detail_lines(root, task, status, width=80,
                      "link", task_id=bt["id"])
 
     desc = task.get("description", "")
+
+    # Implicit references: yak-ID tokens in the body that aren't already
+    # tracked as explicit deps / parent / children / blockers.
+    explicit_ids: set[str] = set(task.get("depends_on") or [])
+    if pid:
+        explicit_ids.add(pid)
+    for _, ct in children:
+        explicit_ids.add(ct["id"])
+    if reverse_deps:
+        for _, bt in reverse_deps.get(task["id"]) or []:
+            explicit_ids.add(bt["id"])
+    refs = _links.resolve_references(root, task, exclude=explicit_ids)
+    if refs:
+        lines.append(DetailLine(""))
+        lines.append(DetailLine("  References:", "subheader"))
+        for rs, rt in refs:
+            emit(f"    {status_emoji(rs)} {rt['id']}  {rt.get('title', '')}",
+                 "link", task_id=rt["id"])
+
     artifacts = _artifacts.parse_artifacts(desc, task["id"])
     if artifacts:
         lines.append(DetailLine(""))
