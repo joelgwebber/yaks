@@ -267,6 +267,31 @@ def find_descendants(root: Path, task_id: str) -> list[tuple[str, Path]]:
 # Git integration
 # ---------------------------------------------------------------------------
 
+def move_task(root: Path, task_id: str, dest_status: str,
+              extra_fields: dict | None = None) -> tuple[bool, str]:
+    """Move a task's file into *dest_status* and update timestamps.
+
+    Returns (ok, message) where `ok` is False if the task is missing or
+    already at dest_status. No stdout/stderr — callers render the message.
+    """
+    result = find_task_file(root, task_id)
+    if not result:
+        return False, f"task {task_id} not found"
+    status, path = result
+    if status == dest_status:
+        return False, f"{task_id} already at {dest_status}"
+    dest_dir = root / dest_status
+    dest_dir.mkdir(exist_ok=True)
+    dest = dest_dir / path.name
+    path.rename(dest)
+    task = load_task(dest)
+    task["updated"] = now_iso()
+    if extra_fields:
+        task.update(extra_fields)
+    save_task(dest, task)
+    return True, f"{task_id} → {dest_status}"
+
+
 def git_head_short() -> str | None:
     """Return the short hash of HEAD, or None if not in a git repo."""
     try:

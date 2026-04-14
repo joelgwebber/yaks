@@ -28,6 +28,7 @@ from yaklib.model import (
     git_head_short,
     load_config,
     load_task,
+    move_task,
     next_child_number,
     now_iso,
     parent_id,
@@ -283,23 +284,13 @@ def cmd_update(args):
 def _move_task(args, dest_status: str, already_msg: str, done_msg: str,
                extra_fields: dict | None = None):
     root = find_tasks_root()
-    result = find_task_file(root, args.id)
-    if not result:
+    if not find_task_file(root, args.id):
         print(f"error: task {args.id} not found", file=sys.stderr)
         sys.exit(1)
-    status, path = result
-    if status == dest_status:
+    ok, _ = move_task(root, args.id, dest_status, extra_fields=extra_fields)
+    if not ok:
         print(f"{args.id} is {already_msg}")
         return
-    dest_dir = root / dest_status
-    dest_dir.mkdir(exist_ok=True)
-    dest = dest_dir / path.name
-    path.rename(dest)
-    task = load_task(dest)
-    task["updated"] = now_iso()
-    if extra_fields:
-        task.update(extra_fields)
-    save_task(dest, task)
     print(f"{done_msg} {args.id}")
 
 

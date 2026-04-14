@@ -8,11 +8,25 @@ Yaks is a filesystem-native task tracker distributed as a Claude Code plugin. Ta
 
 ## Architecture
 
-- **`scripts/yak.py`** — The entire tracker is a single Python script (PEP 723 inline metadata, requires `pyyaml>=6.0`). It uses argparse with subcommands that map 1:1 to the commands below.
-- **`commands/*.md`** — Each file defines a slash command for the Claude Code plugin. Frontmatter specifies `description`, `argument-hint`, and `allowed-tools`. The body tells Claude how to invoke `yak.py` using `${CLAUDE_PLUGIN_ROOT}/scripts/yak.py`.
-- **`skills/yak/SKILL.md`** — The skill definition that activates when `.yaks/` exists. Carries the prescriptive workflow instructions that tell Claude when and how to track tasks.
-- **`.claude-plugin/plugin.json`** and **`marketplace.json`** — Plugin and marketplace metadata.
-- **`.yaks/config.yaml`** — Per-project config (currently just `prefix` for task ID generation).
+Two entry scripts (both carry PEP 723 inline metadata, require `pyyaml>=6.0`) plus two supporting packages:
+
+- **`scripts/yak.py`** — CLI entry. Thin shim that imports `COMMANDS` and `build_parser` from `yaklib` and dispatches. The plugin invokes it as `${CLAUDE_PLUGIN_ROOT}/scripts/yak.py`.
+- **`scripts/tui.py`** — TUI entry. Holds the `TUI` class (state, main loop, scroll/nav helpers); the actual work delegates to `yaktui.*` modules.
+- **`scripts/yaklib/`** — CLI-side library:
+  - `model.py` — status constants, YAML I/O, `.yaks/` layout, task load/save, ID generation, parent/child arithmetic, `move_task`, git integration.
+  - `commands.py` — every `cmd_*` function + `COMMANDS` dispatch table + mandate injection.
+  - `parser.py` — `build_parser()`.
+  - `deps.py` — shared dep resolution: `ready_tasks`, `tangled_tasks`, `compute_blocked`, `depends_on_transitively`.
+  - `artifacts.py` — artifact link parsing + `artifacts_dir`.
+  - `clipboard.py` — `copy_text` + `read_png` (macOS + Linux).
+  - `format.py` — `humanize_date` + `status_char`.
+- **`scripts/yaktui/`** — TUI-side library. All functions take the `App` instance (or just `stdscr`) as the first argument:
+  - `colors.py`, `tree.py`, `detail.py`, `dialogs.py`, `mutate.py`, `render.py`, `keys_list.py`, `keys_detail.py`.
+- **`commands/*.md`** — Slash commands for the Claude Code plugin. Each invokes `${CLAUDE_PLUGIN_ROOT}/scripts/yak.py`.
+- **`skills/yak/SKILL.md`** — Skill definition that activates when `.yaks/` exists.
+- **`tests/`** — pytest suite (subprocess CLI tests + unit tests for `deps` and the TUI pure functions). Run with `uv run pytest`.
+- **`.claude-plugin/plugin.json`** and **`marketplace.json`** — Plugin / marketplace metadata.
+- **`.yaks/config.yaml`** — Per-project config (currently just `prefix`).
 
 ## Running the script
 
@@ -53,7 +67,7 @@ Optional description as markdown body.
 
 ## Releasing
 
-Bump the plugin version in `.claude-plugin/marketplace.json` whenever making changes that affect the plugin (commands, skills, yak.py). Without a version bump, claude plugins installations will use a stale cached version.
+Bump the plugin version in `.claude-plugin/marketplace.json` whenever making changes that affect the plugin (commands, skills, `scripts/**`). Without a version bump, claude plugins installations will use a stale cached version.
 
 ## Task tracking
 

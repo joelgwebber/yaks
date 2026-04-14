@@ -9,11 +9,20 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-import yak
 from yaklib import artifacts as _artifacts
 from yaklib import clipboard as _clipboard
 from yaklib import deps as _deps
 from yaklib.format import humanize_date, status_char
+from yaklib.model import (
+    HAIRY,
+    SHAVING,
+    SHORN,
+    STATUSES,
+    find_task_file,
+    find_tasks_root,
+    git_head_short,
+    move_task,
+)
 from yaktui.colors import (
     C_CODE,
     C_GHOST,
@@ -130,7 +139,7 @@ class TUI:
         """Return a signature that changes when task files change."""
         total_mtime = 0.0
         count = 0
-        for s in yak.STATUSES:
+        for s in STATUSES:
             d = self.root / s
             if not d.exists():
                 continue
@@ -420,7 +429,7 @@ class TUI:
 
     def _navigate_to(self, task_id):
         """Navigate to a task by ID — find it in any tab."""
-        result = yak.find_task_file(self.root, task_id)
+        result = find_task_file(self.root, task_id)
         if not result:
             self.message = f"Task {task_id} not found"
             return
@@ -461,26 +470,19 @@ class TUI:
             self.notification = f"{action} cancelled"
             return
 
-        class FakeArgs:
-            pass
+        if action == "shave":
+            dest = SHAVING
+            extra = None
+        elif action == "shorn":
+            dest = SHORN
+            commit = git_head_short()
+            extra = {"commit": commit} if commit else None
+        else:  # regrow
+            dest = HAIRY
+            extra = None
 
-        args = FakeArgs()
-        args.id = tid
-
-        try:
-            if action == "shave":
-                yak._move_task(args, yak.SHAVING, "already being shaved", "Shaving")
-            elif action == "shorn":
-                commit = yak.git_head_short()
-                extra = {"commit": commit} if commit else {}
-                yak._move_task(args, yak.SHORN, "already shorn", "Shorn!",
-                               extra_fields=extra)
-            elif action == "regrow":
-                yak._move_task(args, yak.HAIRY, "already hairy", "Regrown:")
-            self.message = f"{action}: {tid}"
-        except SystemExit:
-            self.message = f"Error: could not {action} {tid}"
-
+        ok, msg = move_task(self.root, tid, dest, extra_fields=extra)
+        self.message = f"{action}: {tid}" if ok else msg
         self.reload()
 
     def _current_task_id(self):
@@ -555,7 +557,7 @@ class TUI:
 # ---------------------------------------------------------------------------
 
 def main(stdscr):
-    root = yak.find_tasks_root()
+    root = find_tasks_root()
     tui = TUI(stdscr, root)
     tui.run()
 
