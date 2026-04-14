@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 # Core model (status consts, YAML I/O, fs layout, ID arithmetic, git).
 # Re-exported as `yak.X` for back-compat with tui.py until the final step.
+from yaklib import deps as deps_mod  # noqa: E402
 from yaklib.artifacts import artifacts_dir, parse_artifacts  # noqa: E402
 from yaklib.clipboard import read_png as read_clipboard_png  # noqa: E402
 from yaklib.model import (  # noqa: E402
@@ -347,19 +348,7 @@ def cmd_revive(args):
 
 def cmd_next(args):
     root = find_tasks_root()
-    hairy_tasks = all_tasks(root, HAIRY)
-    # Dead deps are treated as resolved — slaughtering a dep should unblock
-    # anything that was waiting on it.
-    resolved_ids = (
-        {t["id"] for _, t in all_tasks(root, SHORN)}
-        | {t["id"] for _, t in all_tasks(root, DEAD)}
-    )
-
-    ready = []
-    for _, task in hairy_tasks:
-        deps = task.get("depends_on", [])
-        if not deps or all(d in resolved_ids for d in deps):
-            ready.append(task)
+    ready = deps_mod.ready_tasks(root)
 
     if args.json:
         print(json.dumps(ready, indent=2))
@@ -377,21 +366,10 @@ def cmd_next(args):
 
 def cmd_tangled(args):
     root = find_tasks_root()
-    hairy_tasks = all_tasks(root, HAIRY)
-    resolved_ids = (
-        {t["id"] for _, t in all_tasks(root, SHORN)}
-        | {t["id"] for _, t in all_tasks(root, DEAD)}
-    )
-
-    tangled = []
-    for _, task in hairy_tasks:
-        deps = task.get("depends_on", [])
-        unshorn = [d for d in deps if d not in resolved_ids]
-        if unshorn:
-            tangled.append({**task, "_unshorn_deps": unshorn})
+    tangled = deps_mod.tangled_tasks(root)
 
     if args.json:
-        out = [{"unshorn_deps": t.pop("_unshorn_deps"), **t} for t in tangled]
+        out = [{"unshorn_deps": unshorn, **t} for t, unshorn in tangled]
         print(json.dumps(out, indent=2))
         return
 
@@ -399,6 +377,8 @@ def cmd_tangled(args):
         print("No tangled yaks.")
         return
 
+    # Unpack to the list-of-dict form legacy text output used.
+    tangled = [{**t, "_unshorn_deps": unshorn} for t, unshorn in tangled]
     print("Tangled yaks:")
     for t in tangled:
         unshorn = t.pop("_unshorn_deps")

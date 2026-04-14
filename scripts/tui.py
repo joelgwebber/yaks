@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import yak
 from yaklib import artifacts as _artifacts
 from yaklib import clipboard as _clipboard
+from yaklib import deps as _deps
 from yaklib.format import humanize_date, status_char
 
 
@@ -440,26 +441,8 @@ class TUI:
         self._fs_sig = self._scan_fs()
 
     def _recompute_blocked(self):
-        """Update blocked_ids and reverse_deps from all tasks on disk.
-        Dead deps are treated as resolved (slaughtering a dep unblocks its
-        dependents).
-        """
-        visible = yak.all_tasks(self.root)
-        dead = yak.all_tasks(self.root, yak.DEAD)
-        resolved_ids = (
-            {t["id"] for s, t in visible if s == yak.SHORN}
-            | {t["id"] for _, t in dead}
-        )
-        blocked = set()
-        reverse: dict[str, list[tuple[str, dict]]] = {}
-        for s, t in visible:
-            deps = t.get("depends_on") or []
-            if s == yak.HAIRY and any(d not in resolved_ids for d in deps):
-                blocked.add(t["id"])
-            for d in deps:
-                reverse.setdefault(d, []).append((s, t))
-        self.blocked_ids = blocked
-        self.reverse_deps = reverse
+        """Update blocked_ids and reverse_deps from all tasks on disk."""
+        self.blocked_ids, self.reverse_deps = _deps.compute_blocked(self.root)
 
     def _reload_preserving_position(self):
         """Reload while keeping the cursor on the same task id if possible."""
@@ -1732,22 +1715,7 @@ class TUI:
 
     def _depends_on_transitively(self, start_id, target_id):
         """True if start_id depends (directly or transitively) on target_id."""
-        seen = set()
-        stack = [start_id]
-        while stack:
-            cur = stack.pop()
-            if cur in seen:
-                continue
-            seen.add(cur)
-            result = yak.find_task_file(self.root, cur)
-            if not result:
-                continue
-            t = yak.load_task(result[1])
-            for d in t.get("depends_on") or []:
-                if d == target_id:
-                    return True
-                stack.append(d)
-        return False
+        return _deps.depends_on_transitively(self.root, start_id, target_id)
 
     def _quick_adjust_title(self, tid):
         result = yak.find_task_file(self.root, tid)
