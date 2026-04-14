@@ -20,6 +20,20 @@ def status_char(status: str) -> str:
     return STATUS_CHAR.get(status, "?")
 
 
+# Matches the TUI tab row: yak / scissors / sheep / skull.
+STATUS_EMOJI = {
+    "hairy": "\U0001f9ac",     # 🦬 bison
+    "shaving": "\u2702\ufe0f",  # ✂️ scissors + VS16
+    "shorn": "\U0001f411",      # 🐑 sheep
+    "dead": "\U0001f480",       # 💀 skull
+}
+
+
+def status_emoji(status: str) -> str:
+    """Return the emoji tag for a status, or '?' if unknown."""
+    return STATUS_EMOJI.get(status, "?")
+
+
 def humanize_date(value) -> str:
     """Render an ISO8601 timestamp as a relative + absolute local string.
 

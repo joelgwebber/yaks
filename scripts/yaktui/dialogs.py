@@ -12,7 +12,7 @@ from pathlib import Path
 
 import curses
 
-from yaklib.format import status_char
+from yaklib.format import status_emoji
 from yaklib.model import STATUSES, all_tasks
 from yaktui.colors import C_SEARCH, C_SELECTED
 
@@ -227,7 +227,7 @@ def fuzzy_pick_task(stdscr, root: Path, prompt: str,
                 safe_addstr(stdscr, y, 0, " " * w, 0)
                 if i < len(matches):
                     ms, mt = matches[i]
-                    line = f"  [{status_char(ms)}] {mt['id']}  {mt.get('title', '')}"
+                    line = f"  {status_emoji(ms)} {mt['id']}  {mt.get('title', '')}"
                     attr = (curses.color_pair(C_SELECTED) | curses.A_BOLD
                             if i == sel else 0)
                     safe_addstr(stdscr, y, 0, line[:w], attr)

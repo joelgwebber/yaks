@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import curses
 
-from yaklib.format import status_char
+from yaklib.format import status_emoji
 from yaklib.model import HAIRY, SHAVING, SHORN
 from yaktui.colors import (
     C_CODE,
@@ -170,12 +170,11 @@ def draw_list(app, y_start, x_start, height, width):
             display_title = title[:remaining]
             title_attr = base_attr | ghost_attr
             if app.search_query:
-                sc = {"hairy": "[H]", "shaving": "[S]", "shorn": "[N]"}.get(status, "")
-                display_title = f"{sc} {display_title}"[:remaining]
+                display_title = f"{status_emoji(status)} {display_title}"[:remaining]
             safe_addstr(stdscr, y, x, display_title, title_attr)
 
         if ghost and not app.search_query:
-            badge = f" [{status_char(status)}]"
+            badge = f" {status_emoji(status)}"
             bx = x_start + width - len(badge) - 1
             if bx > x:
                 badge_attr = ghost_badge_attr(status) | base_attr

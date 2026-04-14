@@ -12,7 +12,7 @@ import textwrap
 from pathlib import Path
 
 from yaklib import artifacts as _artifacts
-from yaklib.format import humanize_date, status_char
+from yaklib.format import humanize_date, status_emoji
 from yaklib.model import find_children, find_task_file, load_task, parent_id
 
 
@@ -85,7 +85,7 @@ def build_detail_lines(root, task, status, width=80,
         if dep_result:
             ds, dp = dep_result
             dt = load_task(dp)
-            emit(f"  {'Depends on:':<12s} [{status_char(ds)}] {dep_id}  {dt.get('title', '')}",
+            emit(f"  {'Depends on:':<12s} {status_emoji(ds)} {dep_id}  {dt.get('title', '')}",
                  "link", task_id=dep_id)
         else:
             emit(f"  {'Depends on:':<12s} {dep_id} (not found)", "field")
@@ -96,7 +96,7 @@ def build_detail_lines(root, task, status, width=80,
         if presult:
             ps, pp = presult
             pt = load_task(pp)
-            emit(f"  {'Parent:':<12s} [{status_char(ps)}] {pid}  {pt.get('title', '')}",
+            emit(f"  {'Parent:':<12s} {status_emoji(ps)} {pid}  {pt.get('title', '')}",
                  "link", task_id=pid)
 
     children = find_children(root, task["id"])
@@ -104,7 +104,7 @@ def build_detail_lines(root, task, status, width=80,
         lines.append(DetailLine(""))
         lines.append(DetailLine("  Children:", "subheader"))
         for cs, ct in children:
-            emit(f"    [{status_char(cs)}] {ct['id']}  {ct.get('title', '')}",
+            emit(f"    {status_emoji(cs)} {ct['id']}  {ct.get('title', '')}",
                  "link", task_id=ct["id"])
 
     if reverse_deps:
@@ -114,7 +114,7 @@ def build_detail_lines(root, task, status, width=80,
             lines.append(DetailLine(""))
             lines.append(DetailLine("  Blocks:", "subheader"))
             for bs, bt in blockers:
-                emit(f"    [{status_char(bs)}] {bt['id']}  {bt.get('title', '')}",
+                emit(f"    {status_emoji(bs)} {bt['id']}  {bt.get('title', '')}",
                      "link", task_id=bt["id"])
 
     desc = task.get("description", "")
