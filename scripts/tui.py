@@ -5,14 +5,8 @@
 """Yaks TUI — curses-based terminal interface for the Yaks task tracker."""
 
 import curses
-import os
-import subprocess
 import sys
-import tempfile
-from datetime import datetime, timezone
 from pathlib import Path
-
-import yaml
 
 sys.path.insert(0, str(Path(__file__).parent))
 import yak
@@ -45,6 +39,7 @@ from yaktui.colors import (
     init_colors,
 )
 from yaktui import dialogs as _dialogs
+from yaktui import mutate as _mutate
 from yaktui.detail import DetailLine, build_detail_lines
 from yaktui.tree import build_tree
 
@@ -1158,365 +1153,43 @@ class TUI:
         return self.tasks[self.cursor][1]["id"]
 
     def _create_task(self, parent=None, yak_type="task"):
-        """Spawn $EDITOR on a template and create the task on save."""
-        template = self._build_template(parent, yak_type=yak_type)
-        edited = self._edit_in_editor(template)
-        if edited is None or edited.strip() == template.strip():
-            self.notification = "create cancelled"
-            return
-
-        data = self._parse_template(edited)
-        if not data or not data.get("title", "").strip():
-            self.notification = "create cancelled"
-            return
-
-        # Create the task
-        cfg = yak.load_config(self.root)
-        prefix = cfg.get("prefix", "yak")
-        if parent:
-            if not yak.find_task_file(self.root, parent):
-                self.notification = f"parent {parent} not found"
-                return
-            tid = f"{parent}.{yak.next_child_number(self.root, parent)}"
-        else:
-            tid = yak.generate_id(self.root, prefix)
-
-        now = yak.now_iso()
-        task = {
-            "id": tid,
-            "title": data["title"].strip(),
-            "type": data.get("type") or "task",
-            "priority": data.get("priority") if data.get("priority") is not None else 2,
-            "created": now,
-            "updated": now,
-        }
-        if data.get("depends_on"):
-            task["depends_on"] = data["depends_on"]
-        if data.get("labels"):
-            task["labels"] = data["labels"]
-        if data.get("description"):
-            task["description"] = data["description"]
-
-        path = self.root / yak.HAIRY / f"{tid}.md"
-        yak.save_task(path, task)
-
-        # Switch to Hairy tab and select the new task
-        self.tab = 0
-        self.filter_mode = "all"
-        self.search_query = ""
-        self.reload()
-        for i, (_, t, _, _) in enumerate(self.tasks):
-            if t["id"] == tid:
-                self.cursor = i
-                self._fix_scroll()
-                self._rebuild_detail()
-                break
-        self.notification = f"created {tid}"
+        _mutate.create_task(self, parent=parent, yak_type=yak_type)
 
     def _edit_task(self, tid):
-        """Open the task's file in $EDITOR, reload on save."""
-        result = yak.find_task_file(self.root, tid)
-        if not result:
-            self.notification = f"{tid} not found"
-            return
-
-        status, path = result
-        original = yak.load_task(path)
-        original_id = original.get("id")
-        original_created = original.get("created")
-
-        # Read the file content as-is for editing
-        content = path.read_text()
-        edited = self._edit_file_in_editor(path)
-        if edited is None:
-            self.notification = "edit cancelled"
-            return
-        if edited == content:
-            self.notification = "no changes"
-            return
-
-        # Re-parse and normalize: preserve id + created, bump updated
-        data = self._parse_template(edited)
-        if not data or not data.get("title", "").strip():
-            self.notification = "edit cancelled (invalid)"
-            return
-
-        data["id"] = original_id
-        if original_created:
-            data["created"] = original_created
-        data["updated"] = yak.now_iso()
-
-        # Re-serialize cleanly
-        yak.save_task(path, data)
-        self.reload()
-        # Re-select the edited task
-        for i, (_, t, _, _) in enumerate(self.tasks):
-            if t["id"] == tid:
-                self.cursor = i
-                self._fix_scroll()
-                self._rebuild_detail()
-                break
-        self.notification = f"edited {tid}"
+        _mutate.edit_task(self, tid)
 
     def _delete_task(self, tid):
-        """Delete a task file with confirmation. Refuses if task has children."""
-        result = yak.find_task_file(self.root, tid)
-        if not result:
-            self.notification = f"{tid} not found"
-            return
-
-        _, path = result
-        children = yak.find_children(self.root, tid)
-        if children:
-            self.notification = f"{tid} has {len(children)} child(ren); delete them first"
-            return
-
-        task = yak.load_task(path)
-        title = task.get("title", "")[:40]
-        prompt = f"Delete {tid} ({title})? (y/N): "
-        if not self._confirm(prompt):
-            self.notification = "delete cancelled"
-            return
-
-        try:
-            path.unlink()
-        except OSError as e:
-            self.notification = f"delete failed: {e}"
-            return
-
-        self.reload()
-        self.notification = f"deleted {tid}"
+        _mutate.delete_task(self, tid)
 
     def _pick(self, prompt, choices):
         return _dialogs.pick(self.stdscr, prompt, choices)
 
     def _quick_adjust_priority(self, tid):
-        result = yak.find_task_file(self.root, tid)
-        if not result:
-            return
-        _, path = result
-        choice = self._pick(
-            f"Priority for {tid}: 1=high 2=med 3=low  (Esc=cancel)", "123")
-        if choice is None:
-            self.notification = "priority unchanged"
-            return
-        task = yak.load_task(path)
-        new_p = int(choice)
-        if task.get("priority") == new_p:
-            self.notification = f"{tid} already p{new_p}"
-            return
-        task["priority"] = new_p
-        task["updated"] = yak.now_iso()
-        yak.save_task(path, task)
-        self.reload()
-        self.notification = f"{tid} -> p{new_p}"
-
-    def _add_dependency(self, tid):
-        result = yak.find_task_file(self.root, tid)
-        if not result:
-            return
-        _, path = result
-        task = yak.load_task(path)
-        existing_deps = set(task.get("depends_on") or [])
-        target = self._fuzzy_pick_task(
-            f"{tid} depends on: ", exclude_ids={tid} | existing_deps)
-        if target is None:
-            self.notification = "add dep cancelled"
-            return
-        # Cycle check: refuse if `target` already (transitively) depends on `tid`
-        if self._depends_on_transitively(target, tid):
-            self.notification = f"refused: would create a cycle ({target} -> {tid})"
-            return
-        deps = list(existing_deps)
-        deps.append(target)
-        task["depends_on"] = deps
-        task["updated"] = yak.now_iso()
-        yak.save_task(path, task)
-        self.reload()
-        self.notification = f"{tid} -> depends on {target}"
-
-    def _remove_dependency(self, tid):
-        result = yak.find_task_file(self.root, tid)
-        if not result:
-            return
-        _, path = result
-        task = yak.load_task(path)
-        deps = list(task.get("depends_on") or [])
-        if not deps:
-            self.notification = f"{tid} has no deps"
-            return
-        # Build a digit-keyed picker (up to 9 deps)
-        display = deps[:9]
-        picker = "  ".join(f"({i + 1}){d}" for i, d in enumerate(display))
-        prompt = f"Remove dep: {picker}  (Esc=cancel)"
-        choices = "".join(str(i + 1) for i in range(len(display)))
-        choice = self._pick(prompt, choices)
-        if choice is None:
-            self.notification = "remove dep cancelled"
-            return
-        idx = int(choice) - 1
-        removed = display[idx]
-        deps.remove(removed)
-        if deps:
-            task["depends_on"] = deps
-        else:
-            task.pop("depends_on", None)
-        task["updated"] = yak.now_iso()
-        yak.save_task(path, task)
-        self.reload()
-        self.notification = f"{tid} -/-> {removed}"
-
-    def _depends_on_transitively(self, start_id, target_id):
-        """True if start_id depends (directly or transitively) on target_id."""
-        return _deps.depends_on_transitively(self.root, start_id, target_id)
-
-    def _quick_adjust_title(self, tid):
-        result = yak.find_task_file(self.root, tid)
-        if not result:
-            return
-        _, path = result
-        task = yak.load_task(path)
-        current = task.get("title", "")
-        new_title = self._edit_prompt(f"Title ({tid}): ", initial=current)
-        if new_title is None:
-            self.notification = "title unchanged"
-            return
-        if not new_title:
-            self.notification = "title cannot be empty"
-            return
-        if new_title == current:
-            return
-        task["title"] = new_title
-        task["updated"] = yak.now_iso()
-        yak.save_task(path, task)
-        self.reload()
-        self.notification = f"{tid} title updated"
-
-    def _quick_adjust_labels(self, tid):
-        result = yak.find_task_file(self.root, tid)
-        if not result:
-            return
-        _, path = result
-        task = yak.load_task(path)
-        current = task.get("labels") or []
-        initial = ", ".join(current)
-        edited = self._edit_prompt(f"Labels for {tid}: ", initial)
-        if edited is None:
-            self.notification = "labels unchanged"
-            return
-        if edited.strip():
-            new_labels = [l.strip() for l in edited.split(",") if l.strip()]
-        else:
-            new_labels = []
-        if new_labels == current:
-            self.notification = "labels unchanged"
-            return
-        if new_labels:
-            task["labels"] = new_labels
-        else:
-            task.pop("labels", None)
-        task["updated"] = yak.now_iso()
-        yak.save_task(path, task)
-        self.reload()
-        self.notification = f"{tid} labels: {', '.join(new_labels) if new_labels else '(none)'}"
+        _mutate.quick_adjust_priority(self, tid)
 
     def _quick_adjust_type(self, tid):
-        result = yak.find_task_file(self.root, tid)
-        if not result:
-            return
-        _, path = result
-        type_map = {"t": "task", "b": "bug", "f": "feature", "i": "idea"}
-        choice = self._pick(
-            f"Type for {tid}: t=task b=bug f=feature i=idea  (Esc=cancel)",
-            "tbfi")
-        if choice is None:
-            self.notification = "type unchanged"
-            return
-        task = yak.load_task(path)
-        new_t = type_map[choice]
-        if task.get("type") == new_t:
-            self.notification = f"{tid} already {new_t}"
-            return
-        task["type"] = new_t
-        task["updated"] = yak.now_iso()
-        yak.save_task(path, task)
-        self.reload()
-        self.notification = f"{tid} -> {new_t}"
+        _mutate.quick_adjust_type(self, tid)
+
+    def _quick_adjust_title(self, tid):
+        _mutate.quick_adjust_title(self, tid)
+
+    def _quick_adjust_labels(self, tid):
+        _mutate.quick_adjust_labels(self, tid)
+
+    def _add_dependency(self, tid):
+        _mutate.add_dependency(self, tid)
+
+    def _remove_dependency(self, tid):
+        _mutate.remove_dependency(self, tid)
+
+    def _depends_on_transitively(self, start_id, target_id):
+        return _deps.depends_on_transitively(self.root, start_id, target_id)
 
     def _add_comment(self, tid):
-        """Append a timestamped comment to the task's description."""
-        text = self._input_prompt("Comment: ")
-        if not text:
-            self.notification = "comment cancelled"
-            return
-        result = yak.find_task_file(self.root, tid)
-        if not result:
-            return
-        _, path = result
-        task = yak.load_task(path)
-        now = yak.now_iso()
-        note_block = f"\n### {now}\n\n{text}"
-        desc = task.get("description", "") or ""
-        task["description"] = desc + note_block
-        task["updated"] = now
-        yak.save_task(path, task)
-        self.reload()
-        self._rebuild_detail()
-        self.notification = f"comment added to {tid}"
+        _mutate.add_comment(self, tid)
 
     def _attach_file(self, tid):
-        """Attach a file or clipboard image to a task."""
-        result = yak.find_task_file(self.root, tid)
-        if not result:
-            return
-        _, path = result
-
-        src_input = self._input_prompt("Attach path (empty = clipboard PNG): ")
-        if src_input is None:
-            self.notification = "attach cancelled"
-            return
-
-        adir = _artifacts.artifacts_dir(self.root, tid)
-        adir.mkdir(parents=True, exist_ok=True)
-
-        if src_input.strip() == "":
-            data = _clipboard.read_png()
-            if not data:
-                self.notification = "no PNG image on clipboard"
-                return
-            name = f"paste-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.png"
-            dest = adir / name
-            dest.write_bytes(data)
-        else:
-            import shutil as _sh
-            src = Path(src_input.strip()).expanduser()
-            if not src.is_file():
-                self.notification = f"not a file: {src}"
-                return
-            name = src.name
-            dest = adir / name
-            if dest.exists():
-                self.notification = f"{name} already attached"
-                return
-            _sh.copy2(src, dest)
-
-        desc = self._input_prompt(f"Description for {name} (empty = filename): ")
-        if desc is None:
-            desc = ""
-        alt = desc.strip() or Path(name).stem
-        link = f"![{alt}](artifacts/{tid}/{name})"
-
-        task = yak.load_task(path)
-        body = task.get("description", "") or ""
-        if body and not body.endswith("\n"):
-            body += "\n"
-        body += "\n" + link + "\n"
-        task["description"] = body
-        task["updated"] = yak.now_iso()
-        yak.save_task(path, task)
-        self.reload()
-        self._rebuild_detail()
-        self.notification = f"attached {name}"
+        _mutate.attach_file(self, tid)
 
     def _pick_type_for_create(self):
         choice = _dialogs.pick_type_for_create(self.stdscr)
@@ -1525,108 +1198,10 @@ class TUI:
         return choice
 
     def _copy_to_clipboard(self, text):
-        """Copy text to system clipboard."""
-        if _clipboard.copy_text(text):
-            self.notification = f"copied {text}"
-        else:
-            self.notification = "clipboard not available"
+        _mutate.copy_to_clipboard(self, text)
 
     def _confirm(self, prompt, default_yes=False):
         return _dialogs.confirm(self.stdscr, prompt, default_yes)
-
-    def _edit_file_in_editor(self, path):
-        """Suspend curses, run $EDITOR directly on an existing file."""
-        editor = os.environ.get("EDITOR", "vi")
-        curses.def_prog_mode()
-        curses.endwin()
-        try:
-            result = subprocess.call([editor, str(path)])
-        except FileNotFoundError:
-            curses.reset_prog_mode()
-            self.stdscr.refresh()
-            self.notification = f"editor '{editor}' not found"
-            return None
-        curses.reset_prog_mode()
-        self.stdscr.refresh()
-        if result != 0:
-            return None
-        return path.read_text()
-
-    def _build_template(self, parent, yak_type="task"):
-        lines = ["---"]
-        if parent:
-            presult = yak.find_task_file(self.root, parent)
-            ptitle = ""
-            if presult:
-                pt = yak.load_task(presult[1])
-                ptitle = pt.get("title", "")
-            lines.append(f"# Child of {parent}: {ptitle}")
-        lines.append("# Fill in the title. Save and exit to create, or exit without")
-        lines.append("# saving (or leave title blank) to cancel.")
-        lines.append("title: ")
-        lines.append("# type: task | bug | feature | idea")
-        lines.append(f"type: {yak_type}")
-        lines.append("# priority: 1 (high) .. 3 (low)")
-        lines.append("priority: 2")
-        lines.append("# Optional:")
-        lines.append("# labels: [foo, bar]")
-        lines.append("# depends_on: [yak-xxxx]")
-        lines.append("---")
-        lines.append("")
-        lines.append("")
-        return "\n".join(lines)
-
-    def _parse_template(self, text):
-        """Parse the edited template into a task dict. Returns None on failure."""
-        if not text.startswith("---"):
-            return None
-        # Skip opening ---
-        rest = text[3:].lstrip("\n")
-        end = rest.find("\n---")
-        if end < 0:
-            return None
-        fm = rest[:end]
-        body = rest[end + 4:].strip()
-        try:
-            data = yaml.safe_load(fm) or {}
-        except yaml.YAMLError:
-            return None
-        if not isinstance(data, dict):
-            return None
-        if body:
-            data["description"] = body
-        return data
-
-    def _edit_in_editor(self, initial_content):
-        """Suspend curses, run $EDITOR on a temp file, return edited content."""
-        editor = os.environ.get("EDITOR", "vi")
-        tmp = tempfile.NamedTemporaryFile(
-            mode="w", suffix=".yak.md", delete=False, encoding="utf-8")
-        try:
-            tmp.write(initial_content)
-            tmp.close()
-
-            curses.def_prog_mode()
-            curses.endwin()
-            try:
-                result = subprocess.call([editor, tmp.name])
-            except FileNotFoundError:
-                curses.reset_prog_mode()
-                self.stdscr.refresh()
-                self.notification = f"editor '{editor}' not found"
-                return None
-            curses.reset_prog_mode()
-            self.stdscr.refresh()
-
-            if result != 0:
-                return None
-            with open(tmp.name, "r", encoding="utf-8") as f:
-                return f.read()
-        finally:
-            try:
-                os.unlink(tmp.name)
-            except OSError:
-                pass
 
     def _fuzzy_pick_task(self, prompt, exclude_ids=None):
         return _dialogs.fuzzy_pick_task(self.stdscr, self.root, prompt,
