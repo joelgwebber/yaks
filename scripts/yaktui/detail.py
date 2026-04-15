@@ -96,7 +96,7 @@ def build_detail_lines(root, task, status, width=80,
             ds, dp = dep_result
             dt = load_task(dp)
             emit(f"  {'Depends on:':<12s} {status_emoji(ds)} {dep_id}  {dt.get('title', '')}",
-                 "link", task_id=dep_id)
+                 "dep_link", task_id=dep_id)
         else:
             emit(f"  {'Depends on:':<12s} {dep_id} (not found)", "field")
 

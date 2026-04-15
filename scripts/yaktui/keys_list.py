@@ -5,6 +5,7 @@ from __future__ import annotations
 import curses
 
 from yaktui import dialogs as _dialogs
+from yaktui import mutate as _mutate
 
 
 def handle(app, key) -> bool:
@@ -123,15 +124,10 @@ def handle(app, key) -> bool:
         if tid:
             app._quick_adjust_labels(tid)
 
-    # Dependencies
-    elif key == ord("b"):
-        tid = app._current_task_id()
-        if tid:
-            app._add_dependency(tid)
+    # Dependencies: B is context-aware (list view always adds, since there's
+    # no way to disambiguate which dep to remove without seeing them).
     elif key == ord("B"):
-        tid = app._current_task_id()
-        if tid:
-            app._remove_dependency(tid)
+        _mutate.handle_dep_key(app)
 
     # Clipboard / comment / attach
     elif key == ord("y"):

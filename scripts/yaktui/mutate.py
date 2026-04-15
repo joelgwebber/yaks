@@ -400,25 +400,17 @@ def add_dependency(app, tid: str) -> None:
     app.notification = f"{tid} -> depends on {target}"
 
 
-def remove_dependency(app, tid: str) -> None:
+def remove_dependency(app, tid: str, dep_id: str) -> None:
+    """Remove *dep_id* from *tid*'s depends_on list. Caller has already
+    identified the specific dep to remove (e.g. via the detail cursor)."""
     path, task = _load(app, tid)
     if path is None:
         return
     deps = list(task.get("depends_on") or [])
-    if not deps:
-        app.notification = f"{tid} has no deps"
+    if dep_id not in deps:
+        app.notification = f"{tid} does not depend on {dep_id}"
         return
-    display = deps[:9]
-    picker = "  ".join(f"({i + 1}){d}" for i, d in enumerate(display))
-    prompt = f"Remove dep: {picker}  (Esc=cancel)"
-    choices = "".join(str(i + 1) for i in range(len(display)))
-    choice = _dialogs.pick(app.stdscr, prompt, choices)
-    if choice is None:
-        app.notification = "remove dep cancelled"
-        return
-    idx = int(choice) - 1
-    removed = display[idx]
-    deps.remove(removed)
+    deps.remove(dep_id)
     if deps:
         task["depends_on"] = deps
     else:
@@ -426,7 +418,28 @@ def remove_dependency(app, tid: str) -> None:
     task["updated"] = now_iso()
     save_task(path, task)
     app.reload()
-    app.notification = f"{tid} -/-> {removed}"
+    app.notification = f"{tid} -/-> {dep_id}"
+
+
+def handle_dep_key(app) -> None:
+    """Context-aware dispatcher for the `B` dep hotkey.
+
+    - In the detail pane, if the cursor is sitting on a 'Depends on:' row,
+      remove that specific dep.
+    - Anywhere else (list pane, or detail with cursor not on a dep row),
+      add a new dep to the current task via the fuzzy picker.
+    """
+    tid = app._current_task_id()
+    if not tid:
+        return
+
+    if app.focus == "detail" and 0 <= app.detail_line_cursor < len(app.detail_lines):
+        dl = app.detail_lines[app.detail_line_cursor]
+        if dl.kind == "dep_link" and dl.task_id:
+            remove_dependency(app, tid, dl.task_id)
+            return
+
+    add_dependency(app, tid)
 
 
 # ---------------------------------------------------------------------------

@@ -4,7 +4,7 @@ title: Web UI pointing at git repo
 type: idea
 priority: 2
 created: '2026-04-14T14:24:05Z'
-updated: '2026-04-14T14:24:05Z'
+updated: '2026-04-15T00:43:09Z'
 ---
 
 You could run it locally, or host it with access to a github repo. Similar feature set to the TUI,

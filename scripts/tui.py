@@ -558,9 +558,6 @@ class TUI:
     def _add_dependency(self, tid):
         _mutate.add_dependency(self, tid)
 
-    def _remove_dependency(self, tid):
-        _mutate.remove_dependency(self, tid)
-
     def _depends_on_transitively(self, start_id, target_id):
         return _deps.depends_on_transitively(self.root, start_id, target_id)
 

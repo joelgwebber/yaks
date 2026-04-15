@@ -5,6 +5,7 @@ from __future__ import annotations
 import curses
 
 from yaktui import dialogs as _dialogs
+from yaktui import mutate as _mutate
 
 
 def handle(app, key) -> bool:
@@ -110,6 +111,10 @@ def handle(app, key) -> bool:
         tid = app._current_task_id()
         if tid:
             app._reparent_task(tid)
+
+    # Dependencies: B adds or (if cursor is on a Depends-on row) removes.
+    elif key == ord("B"):
+        _mutate.handle_dep_key(app)
 
     # Detail search
     elif key == ord("/"):

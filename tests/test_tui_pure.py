@@ -176,6 +176,24 @@ def test_build_detail_lines_inline_link_independent_of_explicit_dep(yak, yak_roo
     assert len(dep_rows) == 1
 
 
+def test_build_detail_lines_tags_depends_on_rows(yak, yak_root):
+    """Depends-on rows are kind='dep_link' so the B hotkey can distinguish
+    them from Parent / Children / Blocks / Artifacts links."""
+    dep = yak("create", "--title", "blocker", "--type", "task").stdout
+    dep_id = dep.splitlines()[0].split()[1].rstrip(":")
+    tid = yak("create", "--title", "waiter", "--type", "task").stdout
+    tid = tid.splitlines()[0].split()[1].rstrip(":")
+    yak("dep", "add", tid, dep_id)
+
+    _, path = find_task_file(_yaks(yak_root), tid)
+    t = load_task(path)
+    lines = build_detail_lines(_yaks(yak_root), t, "hairy", width=100)
+
+    dep_rows = [l for l in lines if l.task_id == dep_id]
+    assert len(dep_rows) == 1
+    assert dep_rows[0].kind == "dep_link"
+
+
 def test_build_detail_lines_blocks_reverse_deps(yak, yak_root):
     blocker = create_task(yak, "block", type="task")
     waiter = create_task(yak, "wait", type="task")
