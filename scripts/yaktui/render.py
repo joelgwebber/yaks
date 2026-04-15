@@ -213,13 +213,19 @@ def draw_detail(app, y_start, x_start, height, width):
 
         is_cursor = detail_focused and line_idx == app.detail_line_cursor
         is_match = line_idx in app.detail_matches
+        has_inline_links = bool(dl.links)
+
+        # Whole-line link highlight only applies to sectioned links
+        # (task_id / open_path) — not to description lines with inline spans.
+        whole_line_link = (dl.task_id is not None or dl.open_path is not None) \
+            and not has_inline_links
 
         if is_cursor:
-            fill_attr = (curses.color_pair(C_LINK_SEL) if dl.is_link
+            fill_attr = (curses.color_pair(C_LINK_SEL) if whole_line_link
                          else curses.color_pair(C_SELECTED))
             safe_addstr(stdscr, y, x_start, " " * width, fill_attr)
             safe_addstr(stdscr, y, x_start, text, fill_attr | curses.A_BOLD)
-        elif dl.is_link:
+        elif whole_line_link:
             safe_addstr(stdscr, y, x_start, text, curses.color_pair(C_LINK))
         elif dl.kind == "header":
             safe_addstr(stdscr, y, x_start, text,
@@ -238,6 +244,22 @@ def draw_detail(app, y_start, x_start, height, width):
             safe_addstr(stdscr, y, x_start, text, curses.A_DIM | curses.A_ITALIC)
         else:
             safe_addstr(stdscr, y, x_start, text, 0)
+
+        # Overlay inline link spans. Active span (when this line is the
+        # detail cursor) gets C_LINK_SEL + BOLD; others get C_LINK underline.
+        if has_inline_links:
+            active = app.detail_span_cursor if is_cursor else -1
+            active = max(0, min(active, len(dl.links) - 1)) if is_cursor else -1
+            for si, (start, end, _) in enumerate(dl.links):
+                if start >= width:
+                    break
+                end_clip = min(end, width)
+                span_text = text[start:end_clip]
+                if si == active:
+                    attr = curses.color_pair(C_LINK_SEL) | curses.A_BOLD
+                else:
+                    attr = curses.color_pair(C_LINK) | curses.A_UNDERLINE
+                safe_addstr(stdscr, y, x_start + start, span_text, attr)
 
         if is_match and not is_cursor:
             highlight_matches(app, y, x_start, text, width)

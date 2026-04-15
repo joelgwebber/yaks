@@ -95,8 +95,12 @@ def test_build_detail_lines_artifact_is_openable(yak, yak_root, tmp_path):
     assert open_lines[0].is_link
 
 
-def test_build_detail_lines_picks_up_implicit_references(yak, yak_root):
-    """Bare yak-IDs in the body become navigable References entries."""
+def _inline_link_ids(lines):
+    return [tid for l in lines for _, _, tid in l.links]
+
+
+def test_build_detail_lines_inline_link_bare_mention(yak, yak_root):
+    """A bare yak-ID in the body becomes a navigable inline span."""
     other = yak("create", "--title", "sidecar", "--type", "task").stdout
     other_id = other.splitlines()[0].split()[1].rstrip(":")
 
@@ -108,13 +112,52 @@ def test_build_detail_lines_picks_up_implicit_references(yak, yak_root):
     t = load_task(path)
     lines = build_detail_lines(_yaks(yak_root), t, "hairy", width=100)
 
-    ref_ids = [l.task_id for l in lines if l.task_id]
-    assert other_id in ref_ids
-    assert any("References:" in l.text for l in lines)
+    assert other_id in _inline_link_ids(lines)
+    # No dedicated References subheader anymore.
+    assert not any("References:" in l.text for l in lines)
 
 
-def test_build_detail_lines_skips_references_already_tracked(yak, yak_root):
-    """A referenced ID that's already a dep shouldn't be double-listed."""
+def test_build_detail_lines_inline_link_wiki_form(yak, yak_root):
+    """[[yak-xxxx]] is stripped for display but still resolves to a span."""
+    other = yak("create", "--title", "wiki target", "--type", "task").stdout
+    other_id = other.splitlines()[0].split()[1].rstrip(":")
+
+    tid = yak("create", "--title", "host", "--type", "task",
+              "--description", f"ref: [[{other_id}]] here").stdout
+    tid = tid.splitlines()[0].split()[1].rstrip(":")
+
+    _, path = find_task_file(_yaks(yak_root), tid)
+    t = load_task(path)
+    lines = build_detail_lines(_yaks(yak_root), t, "hairy", width=100)
+
+    # Brackets gone from displayed text.
+    assert all("[[" not in l.text for l in lines)
+    assert all("]]" not in l.text for l in lines)
+    # Link still picked up.
+    assert other_id in _inline_link_ids(lines)
+
+
+def test_build_detail_lines_inline_link_skips_self_and_unknown(yak, yak_root):
+    """Self-references and nonexistent IDs do not produce spans."""
+    tid = yak("create", "--title", "solo", "--type", "task",
+              "--description", "mentions test-ffff (nope) and self below").stdout
+    tid = tid.splitlines()[0].split()[1].rstrip(":")
+
+    # Amend the description to include its own id
+    from yaklib.model import save_task
+    _, path = find_task_file(_yaks(yak_root), tid)
+    t = load_task(path)
+    t["description"] = f"self {tid} and test-ffff"
+    save_task(path, t)
+
+    t = load_task(path)
+    lines = build_detail_lines(_yaks(yak_root), t, "hairy", width=100)
+    assert _inline_link_ids(lines) == []
+
+
+def test_build_detail_lines_inline_link_independent_of_explicit_dep(yak, yak_root):
+    """An ID that's also an explicit dep still shows up inline in the body —
+    the dep is in its own section; we're not suppressing mentions."""
     dep = yak("create", "--title", "dep", "--type", "task").stdout
     dep_id = dep.splitlines()[0].split()[1].rstrip(":")
 
@@ -127,22 +170,10 @@ def test_build_detail_lines_skips_references_already_tracked(yak, yak_root):
     t = load_task(path)
     lines = build_detail_lines(_yaks(yak_root), t, "hairy", width=100)
 
-    assert not any("References:" in l.text for l in lines)
-    # Still shows up once as Depends on.
-    dep_lines = [l for l in lines if l.task_id == dep_id]
-    assert len(dep_lines) == 1
-
-
-def test_build_detail_lines_skips_nonexistent_references(yak, yak_root):
-    """References to unknown IDs silently drop."""
-    tid = yak("create", "--title", "host", "--type", "task",
-              "--description", "compare with test-ffff (doesn't exist)").stdout
-    tid = tid.splitlines()[0].split()[1].rstrip(":")
-
-    _, path = find_task_file(_yaks(yak_root), tid)
-    t = load_task(path)
-    lines = build_detail_lines(_yaks(yak_root), t, "hairy", width=100)
-    assert not any("References:" in l.text for l in lines)
+    assert dep_id in _inline_link_ids(lines)
+    # And also appears as a whole-line Depends on row.
+    dep_rows = [l for l in lines if l.task_id == dep_id]
+    assert len(dep_rows) == 1
 
 
 def test_build_detail_lines_blocks_reverse_deps(yak, yak_root):

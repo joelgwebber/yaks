@@ -78,6 +78,7 @@ class TUI:
         self.focus = "list"  # "list" or "detail"
         self.detail_lines = []
         self.detail_line_cursor = 0  # index into detail_lines
+        self.detail_span_cursor = 0  # index into current line's links[]
         self.detail_scroll = 0
         self.detail_search = ""
         self.detail_matches = []  # line indices matching search
@@ -309,26 +310,60 @@ class TUI:
             self.detail_line_cursor = self.detail_matches[-1]
         self._fix_detail_scroll()
 
+    def _link_targets(self):
+        """Flat list of (line_idx, span_idx_or_None) for every navigable
+        target in the detail pane. Whole-line task/artifact links contribute
+        (line, None); description lines contribute one entry per inline span.
+        """
+        out = []
+        for i, dl in enumerate(self.detail_lines):
+            if dl.links:
+                for si in range(len(dl.links)):
+                    out.append((i, si))
+            elif dl.task_id is not None or dl.open_path is not None:
+                out.append((i, None))
+        return out
+
+    def _current_target_index(self, targets):
+        """Return the best index into *targets* for the current cursor.
+        If the cursor sits on a target exactly, that one; else the first
+        target at or after the current line.
+        """
+        if not targets:
+            return -1
+        line = self.detail_line_cursor
+        span = self.detail_span_cursor
+        dl = self.detail_lines[line] if 0 <= line < len(self.detail_lines) else None
+        if dl and dl.links:
+            for i, (li, si) in enumerate(targets):
+                if li == line and si == span:
+                    return i
+        elif dl and (dl.task_id is not None or dl.open_path is not None):
+            for i, (li, si) in enumerate(targets):
+                if li == line and si is None:
+                    return i
+        for i, (li, _) in enumerate(targets):
+            if li >= line:
+                return i
+        return len(targets) - 1
+
     def _jump_link(self, direction):
-        """Cycle the detail cursor to the next/previous navigable link line."""
-        link_lines = [i for i, dl in enumerate(self.detail_lines) if dl.is_link]
-        if not link_lines:
+        """Cycle the detail cursor to the next/previous navigable target."""
+        targets = self._link_targets()
+        if not targets:
             return
-        cur = self.detail_line_cursor
-        if direction > 0:
-            for li in link_lines:
-                if li > cur:
-                    self.detail_line_cursor = li
-                    self._fix_detail_scroll()
-                    return
-            self.detail_line_cursor = link_lines[0]
+        cur = self._current_target_index(targets)
+        dl = self.detail_lines[self.detail_line_cursor]
+        on_target = bool(dl.links) or (dl.task_id is not None or dl.open_path is not None)
+        if on_target:
+            nxt = (cur + direction) % len(targets)
         else:
-            for li in reversed(link_lines):
-                if li < cur:
-                    self.detail_line_cursor = li
-                    self._fix_detail_scroll()
-                    return
-            self.detail_line_cursor = link_lines[-1]
+            # Cursor is off-target — the fallback already picked "next";
+            # direction > 0 commits it, direction < 0 steps one back.
+            nxt = cur if direction > 0 else (cur - 1) % len(targets)
+        li, si = targets[nxt]
+        self.detail_line_cursor = li
+        self.detail_span_cursor = si if si is not None else 0
         self._fix_detail_scroll()
 
     def _switch_tab(self, direction):
@@ -370,7 +405,12 @@ class TUI:
         if not (0 <= self.detail_line_cursor < len(self.detail_lines)):
             return
         dl = self.detail_lines[self.detail_line_cursor]
-        if dl.task_id:
+        if dl.links:
+            idx = max(0, min(self.detail_span_cursor, len(dl.links) - 1))
+            _, _, tid = dl.links[idx]
+            self._nav_push(tid)
+            self._navigate_to(tid)
+        elif dl.task_id:
             self._nav_push(dl.task_id)
             self._navigate_to(dl.task_id)
         elif dl.open_path:

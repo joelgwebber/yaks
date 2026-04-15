@@ -18,19 +18,28 @@ from yaklib.model import find_children, find_task_file, load_task, parent_id
 
 
 class DetailLine:
-    """A single line in the detail pane, optionally a navigable link."""
+    """A single line in the detail pane, optionally a navigable link.
 
-    __slots__ = ("text", "kind", "task_id", "open_path")
+    A line can be navigable in two flavors:
+    - whole-line: task_id or open_path is set (used for Depends on / Parent /
+      Children / Blocks / Artifacts section rows).
+    - inline spans: `links` is a list of (start_col, end_col, task_id)
+      tuples pointing at yak-ID mentions within the description text.
+    """
 
-    def __init__(self, text, kind="", task_id=None, open_path=None):
+    __slots__ = ("text", "kind", "task_id", "open_path", "links")
+
+    def __init__(self, text, kind="", task_id=None, open_path=None, links=None):
         self.text = text
         self.kind = kind
         self.task_id = task_id
         self.open_path = open_path
+        self.links = links or []  # list[(start, end, task_id)]
 
     @property
     def is_link(self):
-        return self.task_id is not None or self.open_path is not None
+        return (self.task_id is not None or self.open_path is not None
+                or bool(self.links))
 
 
 def _wrap(text, width) -> list[str]:
@@ -120,24 +129,6 @@ def build_detail_lines(root, task, status, width=80,
 
     desc = task.get("description", "")
 
-    # Implicit references: yak-ID tokens in the body that aren't already
-    # tracked as explicit deps / parent / children / blockers.
-    explicit_ids: set[str] = set(task.get("depends_on") or [])
-    if pid:
-        explicit_ids.add(pid)
-    for _, ct in children:
-        explicit_ids.add(ct["id"])
-    if reverse_deps:
-        for _, bt in reverse_deps.get(task["id"]) or []:
-            explicit_ids.add(bt["id"])
-    refs = _links.resolve_references(root, task, exclude=explicit_ids)
-    if refs:
-        lines.append(DetailLine(""))
-        lines.append(DetailLine("  References:", "subheader"))
-        for rs, rt in refs:
-            emit(f"    {status_emoji(rs)} {rt['id']}  {rt.get('title', '')}",
-                 "link", task_id=rt["id"])
-
     artifacts = _artifacts.parse_artifacts(desc, task["id"])
     if artifacts:
         lines.append(DetailLine(""))
@@ -150,28 +141,38 @@ def build_detail_lines(root, task, status, width=80,
     if desc:
         lines.append(DetailLine(""))
         lines.append(DetailLine("  Description:", "subheader"))
+
+        def _emit_desc(chunk: str, kind: str, scan_links: bool):
+            link_spans = []
+            if scan_links:
+                link_spans = _links.resolve_spans(root, chunk, task["id"])
+            lines.append(DetailLine(chunk, kind, links=link_spans))
+
         in_code_block = False
         for dline in desc.split("\n"):
+            # Pre-strip explicit [[yak-xxxx]] brackets so wrapping + scanning
+            # work against one canonical text form.
+            dline = _links.strip_explicit_brackets(dline)
             stripped = dline.strip()
             if stripped.startswith("```"):
                 in_code_block = not in_code_block
                 for chunk in _wrap(f"    {dline}", width):
-                    lines.append(DetailLine(chunk, "code"))
+                    _emit_desc(chunk, "code", scan_links=False)
                 continue
             if in_code_block:
                 for chunk in _wrap(f"    {dline}", width):
-                    lines.append(DetailLine(chunk, "code"))
+                    _emit_desc(chunk, "code", scan_links=False)
             elif not stripped:
                 lines.append(DetailLine("    "))
             elif stripped.startswith("#"):
                 for chunk in _wrap(f"    {dline}", width):
-                    lines.append(DetailLine(chunk, "md_heading"))
+                    _emit_desc(chunk, "md_heading", scan_links=True)
             elif stripped.startswith("> "):
                 for chunk in _wrap(f"    {dline}", width):
-                    lines.append(DetailLine(chunk, "quote"))
+                    _emit_desc(chunk, "quote", scan_links=True)
             else:
                 for chunk in _wrap(f"    {dline}", width):
-                    lines.append(DetailLine(chunk, "desc"))
+                    _emit_desc(chunk, "desc", scan_links=True)
 
     # Trailing padding so the last content line can scroll above the bottom.
     lines.append(DetailLine(""))
