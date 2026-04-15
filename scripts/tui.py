@@ -569,6 +569,9 @@ class TUI:
     def _attach_file(self, tid):
         _mutate.attach_file(self, tid)
 
+    def _reparent_task(self, tid):
+        _mutate.reparent_task(self, tid)
+
     def _pick_type_for_create(self):
         choice = _dialogs.pick_type_for_create(self.stdscr)
         if choice is None:

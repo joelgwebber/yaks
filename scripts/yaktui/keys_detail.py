@@ -105,6 +105,12 @@ def handle(app, key) -> bool:
         if tid:
             app._attach_file(tid)
 
+    # Reparent (move in the tree)
+    elif key == ord("M"):
+        tid = app._current_task_id()
+        if tid:
+            app._reparent_task(tid)
+
     # Detail search
     elif key == ord("/"):
         query = _dialogs.input_prompt(app.stdscr, "Detail search: ")

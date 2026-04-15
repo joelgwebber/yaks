@@ -21,6 +21,7 @@ import yaml
 from yaklib import artifacts as _artifacts
 from yaklib import clipboard as _clipboard
 from yaklib import deps as _deps
+from yaklib import reparent as _reparent
 from yaklib.model import (
     HAIRY,
     find_children,
@@ -431,6 +432,65 @@ def remove_dependency(app, tid: str) -> None:
 # ---------------------------------------------------------------------------
 # Comments + artifact attach
 # ---------------------------------------------------------------------------
+
+def reparent_task(app, tid: str) -> None:
+    """Move *tid* under a new parent (or to the top level).
+
+    Flow: pick action (p=pick parent / u=unparent) → fuzzy-pick new parent if
+    needed → plan + confirm with a rename summary → apply → reload and move
+    the cursor to the renamed yak.
+    """
+    choice = _dialogs.pick(
+        app.stdscr,
+        f"Reparent {tid}: p=pick parent, u=unparent  (Esc=cancel)",
+        "pu")
+    if choice is None:
+        app.notification = "reparent cancelled"
+        return
+
+    if choice == "u":
+        new_parent = None
+    else:
+        new_parent = _dialogs.fuzzy_pick_task(
+            app.stdscr, app.root, f"New parent for {tid}: ",
+            exclude_ids={tid})
+        if new_parent is None:
+            app.notification = "reparent cancelled"
+            return
+
+    try:
+        plan = _reparent.plan_reparent(app.root, tid, new_parent)
+    except _reparent.ReparentError as e:
+        app.notification = f"reparent refused: {e}"
+        return
+
+    n = len(plan.id_map)
+    art = len(plan.artifact_dirs)
+    target = new_parent or "top level"
+    parts = [f"{n} rename" + ("s" if n != 1 else "")]
+    if art:
+        parts.append(f"{art} artifact dir" + ("s" if art != 1 else ""))
+    summary = f"Reparent {tid} → {target}? ({', '.join(parts)}) (y/N): "
+    if not _dialogs.confirm(app.stdscr, summary):
+        app.notification = "reparent cancelled"
+        return
+
+    try:
+        _reparent.apply(plan, app.root)
+    except _reparent.ReparentError as e:
+        app.notification = f"reparent failed: {e}"
+        return
+
+    app.reload()
+    # Try to move the cursor onto the renamed yak.
+    for i, (_, t, _, _) in enumerate(app.tasks):
+        if t["id"] == plan.new_id:
+            app.cursor = i
+            app._fix_scroll()
+            app._rebuild_detail()
+            break
+    app.notification = f"{plan.old_id} → {plan.new_id}"
+
 
 def add_comment(app, tid: str) -> None:
     text = _dialogs.input_prompt(app.stdscr, "Comment: ")
