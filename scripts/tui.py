@@ -549,9 +549,6 @@ class TUI:
     def _quick_adjust_type(self, tid):
         _mutate.quick_adjust_type(self, tid)
 
-    def _quick_adjust_title(self, tid):
-        _mutate.quick_adjust_title(self, tid)
-
     def _quick_adjust_labels(self, tid):
         _mutate.quick_adjust_labels(self, tid)
 

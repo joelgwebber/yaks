@@ -327,27 +327,6 @@ def quick_adjust_type(app, tid: str) -> None:
     app.notification = f"{tid} -> {new_t}"
 
 
-def quick_adjust_title(app, tid: str) -> None:
-    path, task = _load(app, tid)
-    if path is None:
-        return
-    current = task.get("title", "")
-    new_title = _dialogs.edit_prompt(app.stdscr, f"Title ({tid}): ", initial=current)
-    if new_title is None:
-        app.notification = "title unchanged"
-        return
-    if not new_title:
-        app.notification = "title cannot be empty"
-        return
-    if new_title == current:
-        return
-    task["title"] = new_title
-    task["updated"] = now_iso()
-    save_task(path, task)
-    app.reload()
-    app.notification = f"{tid} title updated"
-
-
 def quick_adjust_labels(app, tid: str) -> None:
     path, task = _load(app, tid)
     if path is None:

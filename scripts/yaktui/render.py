@@ -312,7 +312,7 @@ _HELP_SECTIONS = [
         "e                     Edit task in $EDITOR",
         "X                     Delete task (confirm)",
         "s / x / r             Shave / shorn / regrow",
-        "P / T / N / L         Adjust priority / type / title / labels",
+        "P / T / L             Adjust priority / type / labels",
         "R                     Reparent (move in the tree)",
         "D                     Add dependency (fuzzy search)",
         "n / t / a             Next / tangled / all",

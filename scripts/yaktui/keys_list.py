@@ -115,10 +115,6 @@ def handle(app, key) -> bool:
         tid = app._current_task_id()
         if tid:
             app._quick_adjust_type(tid)
-    elif key == ord("N"):
-        tid = app._current_task_id()
-        if tid:
-            app._quick_adjust_title(tid)
     elif key == ord("L"):
         tid = app._current_task_id()
         if tid:
