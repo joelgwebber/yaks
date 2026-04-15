@@ -343,9 +343,17 @@ _HELP_SECTIONS = [
 ]
 
 
+_PANE_SECTIONS = {"List pane", "Detail pane"}
+
+
 def draw_help_popup(app, h, w):
-    sections = _HELP_SECTIONS
-    title = "Yaks TUI - Keyboard shortcuts"
+    # Show every section except the pane the user isn't currently in. The
+    # always-shown sections (Movement, Search, Editing, General) apply in
+    # both contexts, so they stay regardless.
+    keep_pane = "List pane" if app.focus == "list" else "Detail pane"
+    sections = [(name, lines) for name, lines in _HELP_SECTIONS
+                if name not in _PANE_SECTIONS or name == keep_pane]
+    title = f"Yaks TUI — {keep_pane} shortcuts"
     footer = "Press any key to close"
 
     vertical_h = 4 + sum(len(lines) + 2 for _, lines in sections)
