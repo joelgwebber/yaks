@@ -410,6 +410,10 @@ def remove_dependency(app, tid: str, dep_id: str) -> None:
     if dep_id not in deps:
         app.notification = f"{tid} does not depend on {dep_id}"
         return
+    if not _dialogs.confirm(app.stdscr,
+                            f"Remove dep {tid} -/-> {dep_id}? (y/N): "):
+        app.notification = "remove dep cancelled"
+        return
     deps.remove(dep_id)
     if deps:
         task["depends_on"] = deps

@@ -101,7 +101,7 @@ def handle(app, key) -> bool:
         tid = app._current_task_id()
         if tid:
             app._edit_task(tid)
-    elif key == ord("D"):
+    elif key == ord("X"):
         tid = app._current_task_id()
         if tid:
             app._delete_task(tid)
@@ -126,7 +126,7 @@ def handle(app, key) -> bool:
 
     # Dependencies: B is context-aware (list view always adds, since there's
     # no way to disambiguate which dep to remove without seeing them).
-    elif key == ord("B"):
+    elif key == ord("D"):
         _mutate.handle_dep_key(app)
 
     # Clipboard / comment / attach

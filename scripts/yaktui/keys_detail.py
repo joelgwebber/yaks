@@ -81,7 +81,7 @@ def handle(app, key) -> bool:
         tid = app._current_task_id()
         if tid:
             app._edit_task(tid)
-    elif key == ord("D"):
+    elif key == ord("X"):
         tid = app._current_task_id()
         if tid:
             app._delete_task(tid)
@@ -112,8 +112,8 @@ def handle(app, key) -> bool:
         if tid:
             app._reparent_task(tid)
 
-    # Dependencies: B adds or (if cursor is on a Depends-on row) removes.
-    elif key == ord("B"):
+    # Dependencies: D adds or (if cursor is on a Depends-on row) removes.
+    elif key == ord("D"):
         _mutate.handle_dep_key(app)
 
     # Detail search
