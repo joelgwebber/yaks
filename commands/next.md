@@ -1,6 +1,6 @@
 ---
 description: "Show yaks ready to shave (all dependencies met)"
-argument-hint: "[--json]"
+argument-hint: "[--type T] [--priority P] [--label L] [--search Q] [--parent-of ID] [--json]"
 allowed-tools:
   - Bash
 ---

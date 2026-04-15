@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
-from yaklib.model import STATUSES, all_tasks
+from yaklib.model import STATUSES, all_tasks, _ALL_STATUSES
 
 
 @dataclass
@@ -30,7 +30,9 @@ class FilterSpec:
                     or self.labels or self.search or self.ready_only
                     or self.tangled_only or self.parent)
 
-    def matches(self, status: str, task: dict, shorn_ids: set) -> bool:
+    def matches(self, status: str, task: dict, resolved: set) -> bool:
+        """Apply every predicate. *resolved* = shorn+dead ids (canonical
+        "dep satisfied" set; see yaklib.deps.resolved_ids)."""
         if self.statuses and status not in self.statuses:
             return False
         if self.types and task.get("type") not in self.types:
@@ -49,10 +51,10 @@ class FilterSpec:
             if q not in blob:
                 return False
         deps = task.get("depends_on") or []
-        unshorn = [d for d in deps if d not in shorn_ids]
-        if self.ready_only and unshorn:
+        unresolved = [d for d in deps if d not in resolved]
+        if self.ready_only and unresolved:
             return False
-        if self.tangled_only and not unshorn:
+        if self.tangled_only and not unresolved:
             return False
         if self.parent:
             tid = task.get("id", "")
@@ -88,11 +90,6 @@ class FilterSpec:
         return replace(self, statuses=frozenset(statuses))
 
 
-def collect_shorn_ids(root: Path) -> set:
-    from yaklib.model import SHORN
-    return {t["id"] for _, t in all_tasks(root, SHORN)}
-
-
 def collect_all_labels(root: Path) -> list:
     seen = set()
     for s in STATUSES:
@@ -100,3 +97,30 @@ def collect_all_labels(root: Path) -> list:
             for lab in (t.get("labels") or []):
                 seen.add(lab)
     return sorted(seen)
+
+
+def filter_tasks(root: Path, spec: "FilterSpec",
+                 include_dead: bool = False) -> list:
+    """Apply *spec* across every visible status. Returns [(status, task), ...].
+    Shared filter path for CLI `list`/`search`/`next`/`tangled`.
+
+    Dead tasks are excluded unless *include_dead* is true or the spec's
+    statuses field explicitly names DEAD.
+    """
+    from yaklib.deps import resolved_ids as _resolved
+    from yaklib.model import DEAD
+    resolved = _resolved(root)
+
+    if spec.statuses:
+        statuses = tuple(spec.statuses)
+    elif include_dead:
+        statuses = _ALL_STATUSES
+    else:
+        statuses = STATUSES
+
+    out = []
+    for s in statuses:
+        for st, t in all_tasks(root, s):
+            if spec.matches(st, t, resolved):
+                out.append((st, t))
+    return out

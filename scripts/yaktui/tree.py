@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from yaklib import deps as _deps
 from yaklib.filter import FilterSpec
 from yaklib.model import (
     HAIRY,
@@ -60,7 +61,7 @@ def build_tree(root: Path, tab_status: str | None,
         for st, t in all_tasks(root, s):
             all_by_id[t["id"]] = (st, t)
 
-    shorn_ids = {t["id"] for s, t in all_by_id.values() if s == SHORN}
+    resolved = _deps.resolved_ids(root)
 
     # Effective status scope: spec.statuses overrides tab; else tab.
     if spec.statuses:
@@ -78,7 +79,7 @@ def build_tree(root: Path, tab_status: str | None,
             if s not in effective_statuses:
                 continue
             # Reuse spec.matches but ignore its own statuses (already scoped).
-            if spec.matches(s, t, shorn_ids):
+            if spec.matches(s, t, resolved):
                 results.append((s, t, 0, False))
         results.sort(key=lambda x: (x[0] != HAIRY, x[0] != SHAVING,
                                     x[1].get("priority", 9)))
@@ -86,7 +87,7 @@ def build_tree(root: Path, tab_status: str | None,
 
     # Scope then filter.
     primary = [(s, t) for s, t in all_by_id.values()
-               if s in effective_statuses and spec.matches(s, t, shorn_ids)]
+               if s in effective_statuses and spec.matches(s, t, resolved)]
 
     primary_ids = {t["id"] for _, t in primary}
 

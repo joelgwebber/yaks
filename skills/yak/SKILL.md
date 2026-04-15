@@ -42,9 +42,9 @@ A parent yak's state should reflect its children:
 | `/yaks:regrow` | Regrow a shorn yak |
 | `/yaks:slaughter` | Slaughter a yak (hide in `.yaks/dead/`) — for ideas you won't pursue or tasks that have been obviated |
 | `/yaks:revive` | Revive a dead yak back to hairy |
-| `/yaks:next` | Show yaks ready to shave (all deps met) |
-| `/yaks:tangled` | Show tangled yaks (unshorn dependencies) |
-| `/yaks:search` | Search tasks by keyword |
+| `/yaks:next` | Shortcut for `list --status hairy --ready` |
+| `/yaks:tangled` | Shortcut for `list --status hairy --tangled` |
+| `/yaks:search` | Shortcut for `list --search QUERY` |
 | `/yaks:dep` | Add/remove dependencies between tasks |
 | `/yaks:reparent` | Move task to new parent or top-level |
 | `/yaks:stats` | Show task statistics |
@@ -72,3 +72,17 @@ Details go here.
 ```
 
 Child tasks use `--parent TASK_ID` on create. The hierarchy is implicit from the ID (dot-suffixed integers). `/yaks:show` displays parent and children automatically.
+
+## Filtering
+
+Every query command (`list`, `search`, `next`, `tangled`) shares the same filter flags. AND across dimensions; within a repeatable flag, OR:
+
+- `--status S` / `--type T` / `--priority P` / `--label L` (all repeatable)
+- `--search Q` — substring match on title/description/id
+- `--ready` / `--tangled` — dep-state filters
+- `--parent-of ID` — only descendants of ID
+
+Examples:
+- `list --type bug --type feature --priority 1` — urgent bugs or features
+- `list --label auth --search retry` — auth-labeled tasks mentioning "retry"
+- `next --type bug` — ready bugs only

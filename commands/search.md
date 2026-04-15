@@ -1,6 +1,6 @@
 ---
 description: "Search tasks by keyword"
-argument-hint: "<query> [--status open|closed] [--json]"
+argument-hint: "<query> [--status S] [--type T] [--priority P] [--label L] [--ready] [--tangled] [--parent-of ID] [--json]"
 allowed-tools:
   - Bash
 ---

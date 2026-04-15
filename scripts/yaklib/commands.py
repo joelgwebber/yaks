@@ -12,6 +12,7 @@ from pathlib import Path
 from yaklib import deps as deps_mod
 from yaklib import reparent as reparent_mod
 from yaklib.artifacts import artifacts_dir
+from yaklib.filter import FilterSpec, filter_tasks
 from yaklib.clipboard import read_png as read_clipboard_png
 from yaklib.model import (
     DEAD,
@@ -157,17 +158,37 @@ def _fmt_task_row(status, t):
     return f"  [{ch}] {t['id']}  p{pri} {ttype:8s} {t.get('title', '')}{label_str}{dep_str}"
 
 
+def _spec_from_args(args, defaults: dict | None = None) -> FilterSpec:
+    """Build a FilterSpec from argparse args populated by _add_filter_flags.
+    *defaults* lets a command inject baseline constraints (e.g. cmd_next
+    hard-codes ready_only=True)."""
+    d = defaults or {}
+
+    def _get(name, default=None):
+        return getattr(args, name, None) if hasattr(args, name) else default
+
+    statuses = _get("status") or []
+    statuses = [resolve_status(s) for s in statuses]
+    types = _get("type") or []
+    priorities = _get("priority") or []
+    labels = _get("label") or []
+
+    return FilterSpec(
+        statuses=frozenset(d.get("statuses", statuses)),
+        types=frozenset(types),
+        priorities=frozenset(priorities),
+        labels=tuple(labels),
+        search=_get("search") or d.get("search", "") or "",
+        ready_only=d.get("ready_only", bool(_get("ready"))),
+        tangled_only=d.get("tangled_only", bool(_get("tangled"))),
+        parent=_get("parent_of") or d.get("parent", "") or "",
+    )
+
+
 def cmd_list(args):
     root = find_tasks_root()
-    status_filter = resolve_status(args.status) if args.status else None
-    tasks = all_tasks(root, status_filter)
-
-    if args.type:
-        tasks = [(s, t) for s, t in tasks if t.get("type") == args.type]
-    if args.priority is not None:
-        tasks = [(s, t) for s, t in tasks if t.get("priority") == args.priority]
-    if args.label:
-        tasks = [(s, t) for s, t in tasks if args.label in t.get("labels", [])]
+    spec = _spec_from_args(args)
+    tasks = filter_tasks(root, spec)
 
     if args.json:
         out = [{"status": s, **t} for s, t in tasks]
@@ -326,35 +347,44 @@ def cmd_revive(args):
 
 def cmd_next(args):
     root = find_tasks_root()
-    ready = deps_mod.ready_tasks(root)
+    spec = _spec_from_args(args, defaults={
+        "statuses": [HAIRY], "ready_only": True,
+    })
+    tasks = [t for _, t in filter_tasks(root, spec)]
 
     if args.json:
-        print(json.dumps(ready, indent=2))
+        print(json.dumps(tasks, indent=2))
         return
-    if not ready:
+    if not tasks:
         print("No yaks ready to shave.")
         return
 
     print("Ready to shave (all dependencies met):")
-    for t in ready:
+    for t in tasks:
         pri = t.get("priority", "-")
         print(f"  {t['id']}  p{pri} {t.get('type', '-'):8s} {t.get('title', '')}")
 
 
 def cmd_tangled(args):
     root = find_tasks_root()
-    tangled = deps_mod.tangled_tasks(root)
+    spec = _spec_from_args(args, defaults={
+        "statuses": [HAIRY], "tangled_only": True,
+    })
+    tasks = [t for _, t in filter_tasks(root, spec)]
+    resolved = deps_mod.resolved_ids(root)
 
     if args.json:
-        out = [{"unshorn_deps": unshorn, **t} for t, unshorn in tangled]
+        out = [{"unshorn_deps": deps_mod.unresolved_deps(t, resolved), **t}
+               for t in tasks]
         print(json.dumps(out, indent=2))
         return
-    if not tangled:
+    if not tasks:
         print("No tangled yaks.")
         return
 
     print("Tangled yaks:")
-    for t, unshorn in tangled:
+    for t in tasks:
+        unshorn = deps_mod.unresolved_deps(t, resolved)
         print(f"  {t['id']}  {t.get('title', '')}  (waiting on: {', '.join(unshorn)})")
 
 
@@ -516,16 +546,8 @@ def cmd_detach(args):
 
 def cmd_search(args):
     root = find_tasks_root()
-    status_filter = resolve_status(args.status) if args.status else None
-    tasks = all_tasks(root, status_filter)
-
-    query = args.query.lower()
-    matches = []
-    for s, t in tasks:
-        title = t.get("title", "").lower()
-        desc = (t.get("description") or "").lower()
-        if query in title or query in desc:
-            matches.append((s, t))
+    spec = _spec_from_args(args, defaults={"search": args.query})
+    matches = filter_tasks(root, spec)
 
     if args.json:
         out = [{"status": s, **t} for s, t in matches]

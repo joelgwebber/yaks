@@ -1,6 +1,6 @@
 ---
 description: "Show tangled yaks (blocked by unshorn dependencies)"
-argument-hint: "[--json]"
+argument-hint: "[--type T] [--priority P] [--label L] [--search Q] [--parent-of ID] [--json]"
 allowed-tools:
   - Bash
 ---

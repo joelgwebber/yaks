@@ -7,6 +7,33 @@ import argparse
 from yaklib.model import ALL_STATUS_NAMES
 
 
+def _add_filter_flags(sp, exclude: tuple = ()) -> None:
+    """Attach the unified FilterSpec flags to a subparser."""
+    if "status" not in exclude:
+        sp.add_argument("--status", choices=ALL_STATUS_NAMES,
+                        action="append", help="Filter by status (repeatable)")
+    if "type" not in exclude:
+        sp.add_argument("--type", action="append",
+                        help="Filter by type (repeatable)")
+    if "priority" not in exclude:
+        sp.add_argument("--priority", type=int, action="append",
+                        help="Filter by priority (repeatable)")
+    if "label" not in exclude:
+        sp.add_argument("--label", action="append",
+                        help="Filter by label — OR within labels (repeatable)")
+    if "search" not in exclude:
+        sp.add_argument("--search", help="Substring match on title/description/id")
+    if "ready" not in exclude:
+        sp.add_argument("--ready", action="store_true",
+                        help="Only tasks whose deps are all resolved")
+    if "tangled" not in exclude:
+        sp.add_argument("--tangled", action="store_true",
+                        help="Only tasks with at least one unresolved dep")
+    if "parent" not in exclude:
+        sp.add_argument("--parent-of", dest="parent_of",
+                        help="Only descendants of the given task ID")
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="yaks", description="Filesystem-native task tracker")
     sub = p.add_subparsers(dest="command")
@@ -26,10 +53,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--parent", help="Parent task ID (creates a child task)")
 
     sp = sub.add_parser("list", help="List tasks")
-    sp.add_argument("--status", choices=ALL_STATUS_NAMES, help="Filter by status")
-    sp.add_argument("--type", help="Filter by type")
-    sp.add_argument("--priority", type=int, help="Filter by priority")
-    sp.add_argument("--label", help="Filter by label")
+    _add_filter_flags(sp)
     sp.add_argument("--json", action="store_true", help="JSON output")
 
     sp = sub.add_parser("show", help="Show a task")
@@ -67,11 +91,15 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("id", help="Task ID")
 
     for name in ("next", "ready"):
-        sp = sub.add_parser(name, help="Show yaks ready to shave")
+        sp = sub.add_parser(name, help="Show yaks ready to shave "
+                            "(shortcut for `list --status hairy --ready`)")
+        _add_filter_flags(sp, exclude=("ready", "tangled", "status"))
         sp.add_argument("--json", action="store_true", help="JSON output")
 
     for name in ("tangled", "blocked"):
-        sp = sub.add_parser(name, help="Show tangled yaks")
+        sp = sub.add_parser(name, help="Show tangled yaks "
+                            "(shortcut for `list --status hairy --tangled`)")
+        _add_filter_flags(sp, exclude=("ready", "tangled", "status"))
         sp.add_argument("--json", action="store_true", help="JSON output")
 
     sp = sub.add_parser("dep", help="Manage dependencies")
@@ -97,9 +125,10 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("id", help="Task ID")
     sp.add_argument("name", help="Artifact filename")
 
-    sp = sub.add_parser("search", help="Search tasks by keyword")
+    sp = sub.add_parser("search", help="Search tasks by keyword "
+                        "(shortcut for `list --search QUERY`)")
     sp.add_argument("query", help="Search term")
-    sp.add_argument("--status", choices=ALL_STATUS_NAMES, help="Filter by status")
+    _add_filter_flags(sp, exclude=("search",))
     sp.add_argument("--json", action="store_true", help="JSON output")
 
     sp = sub.add_parser("stats", help="Show task statistics")
