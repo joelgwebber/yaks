@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from yaklib.filter import FilterSpec
 from yaklib.model import (
     HAIRY,
     SHAVING,
@@ -47,45 +48,45 @@ def _child_status_rank(status: str) -> int:
     return 1
 
 
-def _build_search_results(root: Path, query: str):
-    q = query.lower()
-    results = []
-    for s in STATUSES:
-        for st, t in all_tasks(root, s):
-            title = t.get("title", "").lower()
-            desc = (t.get("description") or "").lower()
-            if q in title or q in desc or q in t.get("id", "").lower():
-                results.append((st, t, 0, False))
-    results.sort(key=lambda x: (x[0] != HAIRY, x[0] != SHAVING,
-                                x[1].get("priority", 9)))
-    return results
+def build_tree(root: Path, tab_status: str | None,
+               spec: FilterSpec) -> list[tuple[str, dict, int, bool]]:
+    """Flat list of (status, task, depth, ghost) for display.
 
-
-def build_tree(root: Path, status_filter: str | None, filter_mode: str,
-               search_query: str) -> list[tuple[str, dict, int, bool]]:
-    """Flat list of (status, task, depth, ghost) for display."""
-    if search_query:
-        return _build_search_results(root, search_query)
-
+    *tab_status* is the currently selected tab's status; it scopes the
+    primary set unless the spec explicitly overrides with its own statuses.
+    """
     all_by_id: dict[str, tuple[str, dict]] = {}
     for s in STATUSES:
         for st, t in all_tasks(root, s):
             all_by_id[t["id"]] = (st, t)
 
-    if status_filter and filter_mode in ("all", "next", "tangled"):
-        primary = [(s, t) for s, t in all_by_id.values() if s == status_filter]
-    else:
-        primary = list(all_by_id.values())
+    shorn_ids = {t["id"] for s, t in all_by_id.values() if s == SHORN}
 
-    if filter_mode == "next" and status_filter == HAIRY:
-        shorn_ids = {t["id"] for s, t in all_by_id.values() if s == SHORN}
-        primary = [(s, t) for s, t in primary
-                   if not t.get("depends_on") or
-                   all(d in shorn_ids for d in t.get("depends_on", []))]
-    elif filter_mode == "tangled" and status_filter == HAIRY:
-        shorn_ids = {t["id"] for s, t in all_by_id.values() if s == SHORN}
-        primary = [(s, t) for s, t in primary
-                   if any(d not in shorn_ids for d in t.get("depends_on", []))]
+    # Effective status scope: spec.statuses overrides tab; else tab.
+    if spec.statuses:
+        effective_statuses = set(spec.statuses)
+    elif tab_status:
+        effective_statuses = {tab_status}
+    else:
+        effective_statuses = set(STATUSES)
+
+    # If search is active, flatten globally (no tree context) — matches
+    # across all statuses the user allowed.
+    if spec.search:
+        results = []
+        for s, t in all_by_id.values():
+            if s not in effective_statuses:
+                continue
+            # Reuse spec.matches but ignore its own statuses (already scoped).
+            if spec.matches(s, t, shorn_ids):
+                results.append((s, t, 0, False))
+        results.sort(key=lambda x: (x[0] != HAIRY, x[0] != SHAVING,
+                                    x[1].get("priority", 9)))
+        return results
+
+    # Scope then filter.
+    primary = [(s, t) for s, t in all_by_id.values()
+               if s in effective_statuses and spec.matches(s, t, shorn_ids)]
 
     primary_ids = {t["id"] for _, t in primary}
 
@@ -129,7 +130,7 @@ def build_tree(root: Path, status_filter: str | None, filter_mode: str,
         for c in node.children:
             sort_children(c)
 
-    if status_filter == SHORN:
+    if tab_status == SHORN and not spec.statuses:
         roots.sort(key=lambda n: n.task.get("updated", ""), reverse=True)
     else:
         roots.sort(key=lambda n: (n.task.get("priority", 9), n.task["id"]))

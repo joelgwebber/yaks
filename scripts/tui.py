@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from yaklib import artifacts as _artifacts
 from yaklib import clipboard as _clipboard
 from yaklib import deps as _deps
+from yaklib.filter import FilterSpec
 from yaklib.format import humanize_date, status_char
 from yaklib.model import (
     STATUSES,
@@ -65,8 +66,7 @@ class TUI:
         self.tab = 0
         self.cursor = 0
         self.scroll = 0
-        self.filter_mode = "all"
-        self.search_query = ""
+        self.filter_spec = FilterSpec()
         self.tasks = []
 
         # Detail state
@@ -104,8 +104,7 @@ class TUI:
 
     def reload(self):
         status = TABS[self.tab][0]
-        self.tasks = build_tree(self.root, status, self.filter_mode,
-                                self.search_query)
+        self.tasks = build_tree(self.root, status, self.filter_spec)
         self._recompute_blocked()
         if self.cursor >= len(self.tasks):
             self.cursor = max(0, len(self.tasks) - 1)
@@ -364,8 +363,6 @@ class TUI:
 
     def _switch_tab(self, direction):
         self.tab = (self.tab + direction) % len(TABS)
-        self.filter_mode = "all"
-        self.search_query = ""
         self._reset_list()
 
     def _reset_list(self):
@@ -479,10 +476,9 @@ class TUI:
                 break
 
         # Reload with no filters to ensure the task is visible
-        self.filter_mode = "all"
-        self.search_query = ""
+        self.filter_spec = FilterSpec()
         self.detail_search = ""
-        self.tasks = build_tree(self.root, target_status, "all", "")
+        self.tasks = build_tree(self.root, target_status, self.filter_spec)
 
         # Find and select the task
         for i, (_, t, _, _) in enumerate(self.tasks):
@@ -559,6 +555,15 @@ class TUI:
 
     def _input_prompt(self, prompt):
         return _dialogs.input_prompt(self.stdscr, prompt)
+
+    def _edit_filter(self, focus_search=False):
+        new = _dialogs.filter_editor(self.stdscr, self.filter_spec,
+                                     focus_search=focus_search)
+        if new is None:
+            self.notification = "filter unchanged"
+            return
+        self.filter_spec = new
+        self._reset_list()
 
 
 # ---------------------------------------------------------------------------

@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from conftest import create_task
+from yaklib.filter import FilterSpec
 from yaklib.model import find_task_file, load_task, save_task
 from yaktui.detail import build_detail_lines
 from yaktui.tree import build_tree
@@ -21,8 +22,7 @@ def _yaks(root: Path) -> Path:
 def test_build_tree_shows_primary_tasks(yak, yak_root):
     a = create_task(yak, "alpha", type="task")
     b = create_task(yak, "beta", type="task")
-    flat = build_tree(_yaks(yak_root), status_filter="hairy",
-                      filter_mode="all", search_query="")
+    flat = build_tree(_yaks(yak_root), "hairy", FilterSpec())
     ids = [t["id"] for _, t, _, _ in flat]
     assert a in ids and b in ids
 
@@ -36,8 +36,7 @@ def test_build_tree_includes_ghost_descendants(yak, yak_root):
 
     yak("shave", parent)
 
-    flat = build_tree(_yaks(yak_root), status_filter="shaving",
-                      filter_mode="all", search_query="")
+    flat = build_tree(_yaks(yak_root), "shaving", FilterSpec())
     by_id = {t["id"]: (s, ghost) for s, t, _, ghost in flat}
     assert parent in by_id and by_id[parent][1] is False
     assert child_id in by_id and by_id[child_id][1] is True
@@ -48,8 +47,8 @@ def test_build_tree_search_matches_across_statuses(yak, yak_root):
     b = create_task(yak, "beta thing", type="task")
     yak("shave", a)
 
-    flat = build_tree(_yaks(yak_root), status_filter=None,
-                      filter_mode="all", search_query="widget")
+    flat = build_tree(_yaks(yak_root), None,
+                      FilterSpec(search="widget"))
     ids = [t["id"] for _, t, _, _ in flat]
     assert a in ids
     assert b not in ids

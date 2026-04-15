@@ -50,30 +50,19 @@ def handle(app, key) -> bool:
     elif key in (curses.KEY_PPAGE, ord("u"), 21):
         app._list_page(-1, half=(key in (ord("u"), 21)))
 
-    # Filters
-    elif key == ord("n"):
-        if app.tab == 0:
-            app.filter_mode = "next" if app.filter_mode != "next" else "all"
-            app._reset_list()
-    elif key == ord("t"):
-        if app.tab == 0:
-            app.filter_mode = "tangled" if app.filter_mode != "tangled" else "all"
-            app._reset_list()
-    elif key == ord("a"):
-        app.filter_mode = "all"
-        app.search_query = ""
-        app._reset_list()
-
-    # Search
+    # Filter editor (subsumes search + next/tangled toggles)
+    elif key == ord("f"):
+        app._edit_filter()
     elif key == ord("/"):
-        query = _dialogs.input_prompt(app.stdscr, "Search: ")
-        if query:
-            app.search_query = query
-            app.filter_mode = "all"
-            app._reset_list()
-    elif key == 27:  # Escape
-        if app.search_query:
-            app.search_query = ""
+        app._edit_filter(focus_search=True)
+    elif key == ord("\\"):
+        from yaklib.filter import FilterSpec as _FS
+        app.filter_spec = _FS()
+        app._reset_list()
+    elif key == 27:  # Escape clears filter
+        if not app.filter_spec.is_empty():
+            from yaklib.filter import FilterSpec as _FS
+            app.filter_spec = _FS()
             app._reset_list()
 
     # Status change via single-key picker.

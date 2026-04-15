@@ -37,10 +37,26 @@ TABS = [
 
 
 def tab_counts(app):
+    """Filtered counts per tab status. When a filter is active, each tab
+    shows how many tasks would appear under it given the spec (ignoring
+    the spec's own `statuses` override)."""
+    from dataclasses import replace
+    from yaktui.tree import build_tree
+    spec = app.filter_spec
+    if spec.is_empty():
+        counts = {}
+        for status, _ in TABS:
+            d = app.root / status
+            counts[status] = len(list(d.glob("*.md"))) if d.exists() else 0
+        return counts
+    # Clear statuses in spec so each tab can scope independently.
+    per_tab_spec = replace(spec, statuses=frozenset())
     counts = {}
     for status, _ in TABS:
-        d = app.root / status
-        counts[status] = len(list(d.glob("*.md"))) if d.exists() else 0
+        counts[status] = sum(
+            1 for _, _, _, ghost in build_tree(app.root, status, per_tab_spec)
+            if not ghost
+        )
     return counts
 
 
@@ -89,11 +105,9 @@ def draw_tabs(app, y, w):
             pass
         x += len(text) + 1
 
-    if app.search_query:
-        safe_addstr(app.stdscr, y, x, f'  search: "{app.search_query}"',
-                    curses.color_pair(C_SEARCH))
-    elif app.filter_mode != "all":
-        safe_addstr(app.stdscr, y, x, f"  {app.filter_mode}",
+    chip = app.filter_spec.summary()
+    if chip:
+        safe_addstr(app.stdscr, y, x, f"  filter: {chip}",
                     curses.color_pair(C_SEARCH))
 
     if app.notification:
@@ -169,11 +183,11 @@ def draw_list(app, y_start, x_start, height, width):
         if remaining > 0:
             display_title = title[:remaining]
             title_attr = base_attr | ghost_attr
-            if app.search_query:
+            if app.filter_spec.search:
                 display_title = f"{status_emoji(status)} {display_title}"[:remaining]
             safe_addstr(stdscr, y, x, display_title, title_attr)
 
-        if ghost and not app.search_query:
+        if ghost and not app.filter_spec.search:
             badge = f" {status_emoji(status)}"
             bx = x_start + width - len(badge) - 1
             if bx > x:
@@ -288,10 +302,10 @@ def draw_help_bar(app, y, w):
         return
     if app.focus == "detail":
         keys = ("h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  "
-                "E:edit  D:dep  S:state  /:search  q:quit  ?:help")
+                "E:edit  D:dep  S:state  f:filter  /:search  q:quit  ?:help")
     else:
         keys = ("Tab:tab  j/k:move  l:detail  c/C:new  E:edit  X:del  "
-                "S:state  D:dep  P/T/L:adjust  /:search  ?:help")
+                "S:state  D:dep  P/T/L:adjust  f:filter  /:search  ?:help")
     safe_addstr(app.stdscr, y, 0, " " * w, curses.color_pair(C_HELP))
     safe_addstr(app.stdscr, y, 0, keys[:w], curses.color_pair(C_HELP))
 
@@ -304,9 +318,11 @@ _HELP_SECTIONS = [
         "g / G                 Top / bottom",
         "Esc                   Clear search / back",
     ]),
-    ("Search", [
-        "/                     Search tasks / detail text",
-        "n / N                 Next / prev match",
+    ("Search & filter", [
+        "f                     Open filter editor",
+        "/                     Filter editor focused on search",
+        "\\ or Esc              Clear all filters",
+        "n / N                 Next / prev detail match",
         "y                     Copy yak ID to clipboard",
     ]),
     ("Editing", [
@@ -323,7 +339,6 @@ _HELP_SECTIONS = [
         "[ / ]                 Previous / next tab",
         "l / → / Enter         Show detail pane",
         "c / C                 New root / child task",
-        "n / t / a             Next / tangled / all (filter)",
     ]),
     ("Detail pane", [
         "h / ←                 Hide detail pane",
