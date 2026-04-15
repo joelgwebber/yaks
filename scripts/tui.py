@@ -259,7 +259,8 @@ class TUI:
         if key == ord("?"):
             self.show_help = True
             return True
-        if key == ord("R"):
+        # Refresh: F (re-Fresh) or Ctrl-L (terminal convention for redraw).
+        if key == ord("F") or key == 12:
             self.reload()
             return True
 

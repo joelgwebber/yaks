@@ -148,7 +148,7 @@ def handle(app, key) -> bool:
             app._attach_file(tid)
 
     # Reparent (move in the tree)
-    elif key == ord("M"):
+    elif key == ord("R"):
         tid = app._current_task_id()
         if tid:
             app._reparent_task(tid)
