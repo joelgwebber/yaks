@@ -335,6 +335,7 @@ _HELP_SECTIONS = [
         "m                     Add comment/note",
         "A                     Attach file / clipboard image",
         "D                     Add dep (or remove if cursor on one)",
+        "P / T / L             Adjust priority / type / labels",
         "R                     Reparent (move in the tree)",
         "e                     Edit task in $EDITOR",
         "X                     Delete task (confirm)",

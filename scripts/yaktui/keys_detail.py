@@ -116,6 +116,20 @@ def handle(app, key) -> bool:
     elif key == ord("D"):
         _mutate.handle_dep_key(app)
 
+    # Quick adjusts mirrored from the list pane.
+    elif key == ord("P"):
+        tid = app._current_task_id()
+        if tid:
+            app._quick_adjust_priority(tid)
+    elif key == ord("T"):
+        tid = app._current_task_id()
+        if tid:
+            app._quick_adjust_type(tid)
+    elif key == ord("L"):
+        tid = app._current_task_id()
+        if tid:
+            app._quick_adjust_labels(tid)
+
     # Detail search
     elif key == ord("/"):
         query = _dialogs.input_prompt(app.stdscr, "Detail search: ")
