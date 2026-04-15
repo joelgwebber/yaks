@@ -77,7 +77,7 @@ def handle(app, key) -> bool:
                 app._open_externally(dl.open_path)
 
     # Edit / delete the displayed task
-    elif key == ord("e"):
+    elif key == ord("E"):
         tid = app._current_task_id()
         if tid:
             app._edit_task(tid)
@@ -97,7 +97,7 @@ def handle(app, key) -> bool:
         tid = app._current_task_id()
         if tid:
             app._copy_to_clipboard(tid)
-    elif key == ord("m"):
+    elif key == ord("M"):
         tid = app._current_task_id()
         if tid:
             app._add_comment(tid)

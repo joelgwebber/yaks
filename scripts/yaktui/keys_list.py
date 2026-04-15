@@ -95,7 +95,7 @@ def handle(app, key) -> bool:
                 app._create_task(parent=parent, yak_type=yak_type)
 
     # Edit / delete
-    elif key == ord("e"):
+    elif key == ord("E"):
         tid = app._current_task_id()
         if tid:
             app._edit_task(tid)
@@ -128,7 +128,7 @@ def handle(app, key) -> bool:
         tid = app._current_task_id()
         if tid:
             app._copy_to_clipboard(tid)
-    elif key == ord("m"):
+    elif key == ord("M"):
         tid = app._current_task_id()
         if tid:
             app._add_comment(tid)

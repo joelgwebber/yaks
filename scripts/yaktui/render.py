@@ -287,61 +287,53 @@ def draw_help_bar(app, y, w):
         app.message = ""
         return
     if app.focus == "detail":
-        keys = ("h:list  j/k:move  Tab:next link  Enter:follow  i/o:fwd/back  "
-                "/:search  Esc:clear  q:quit")
+        keys = ("h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  "
+                "E:edit  D:dep  S:state  /:search  q:quit  ?:help")
     else:
-        keys = ("Tab:tab  j/k:move  l:detail  c/C:new  e:edit  D:del  "
-                "s/x/r:shave/shorn/regrow  n/t/a:filter  /:search  ?:help")
+        keys = ("Tab:tab  j/k:move  l:detail  c/C:new  E:edit  X:del  "
+                "S:state  D:dep  P/T/L:adjust  /:search  ?:help")
     safe_addstr(app.stdscr, y, 0, " " * w, curses.color_pair(C_HELP))
     safe_addstr(app.stdscr, y, 0, keys[:w], curses.color_pair(C_HELP))
 
 
 _HELP_SECTIONS = [
-    ("List pane", [
-        "j / k / Up / Down     Move cursor",
+    ("Movement", [
+        "j / k / ↓ / ↑         Move cursor",
         "d / u                 Half-page down / up",
         "PgDn / PgUp           Full-page down / up",
-        "g / G                 First / last task",
-        "Tab / Shift-Tab       Switch status tab",
-        "[ / ]                 Previous / next tab",
-        "l / Right / Enter     Show detail pane",
-        "c / C                 New root / child task (picks type)",
+        "g / G                 Top / bottom",
+        "Esc                   Clear search / back",
+    ]),
+    ("Search", [
+        "/                     Search tasks / detail text",
+        "n / N                 Next / prev match",
         "y                     Copy yak ID to clipboard",
-        "m                     Add comment/note",
-        "A                     Attach file / clipboard image",
-        "e                     Edit task in $EDITOR",
+    ]),
+    ("Editing", [
+        "E                     Edit task in $EDITOR",
+        "M                     Add comment / note",
+        "A                     Attach artifact",
         "X                     Delete task (confirm)",
-        "P / T / L / S         Adjust priority / type / labels / state",
+        "D                     Add dep (or remove if cursor on one)",
+        "P / T / L / S         Change priority / type / labels / state",
         "R                     Reparent (move in the tree)",
-        "D                     Add dependency (fuzzy search)",
-        "n / t / a             Next / tangled / all",
-        "/                     Search all tasks",
-        "Esc                   Clear search",
+    ]),
+    ("List pane", [
+        "Tab / Shift-Tab       Next / previous status tab",
+        "[ / ]                 Previous / next tab",
+        "l / → / Enter         Show detail pane",
+        "c / C                 New root / child task",
+        "n / t / a             Next / tangled / all (filter)",
     ]),
     ("Detail pane", [
-        "h / Left              Hide detail pane",
-        "j / k / Up / Down     Move line cursor",
-        "d / u                 Half-page down / up",
-        "PgDn / PgUp           Full-page down / up",
-        "g / G                 First / last line",
-        "Tab / ] / Shift-Tab / [   Cycle between links",
+        "h / ←                 Hide detail pane",
+        "Tab / Shift-Tab       Next / previous link",
+        "[ / ]                 Previous / next link",
         "Enter                 Follow link / open artifact",
         "O                     Open artifact externally",
         "J / K                 Next / prev task in list",
-        "i                     Nav forward in jumplist",
-        "o / Backspace         Nav back in jumplist",
-        "y                     Copy yak ID to clipboard",
-        "m                     Add comment/note",
-        "c / C                 New root / child task (picks type)",
-        "A                     Attach file / clipboard image",
-        "D                     Add dep (or remove if cursor on one)",
-        "P / T / L / S         Adjust priority / type / labels / state",
-        "R                     Reparent (move in the tree)",
-        "e                     Edit task in $EDITOR",
-        "X                     Delete task (confirm)",
-        "/                     Search detail text",
-        "n / N                 Next / prev match",
-        "Esc                   Clear search / back",
+        "i / o                 Nav forward / back in jumplist",
+        "Backspace             Nav back (alt)",
     ]),
     ("General", [
         "F / Ctrl-L            Refresh",
