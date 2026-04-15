@@ -23,12 +23,17 @@ from yaklib import clipboard as _clipboard
 from yaklib import deps as _deps
 from yaklib import reparent as _reparent
 from yaklib.model import (
+    DEAD,
     HAIRY,
+    SHAVING,
+    SHORN,
     find_children,
     find_task_file,
     generate_id,
+    git_head_short,
     load_config,
     load_task,
+    move_task,
     next_child_number,
     now_iso,
     save_task,
@@ -325,6 +330,44 @@ def quick_adjust_type(app, tid: str) -> None:
     save_task(path, task)
     app.reload()
     app.notification = f"{tid} -> {new_t}"
+
+
+_STATE_PICKER = {
+    "h": HAIRY,
+    "s": SHAVING,
+    "n": SHORN,
+    "x": DEAD,  # slaughter
+}
+
+
+def quick_adjust_state(app, tid: str) -> None:
+    """Move *tid* to a new status via a single-key picker (h/s/n/x)."""
+    res = find_task_file(app.root, tid)
+    if not res:
+        return
+    cur_status, _ = res
+    choice = _dialogs.pick(
+        app.stdscr,
+        f"State for {tid}: h=hairy s=shaving n=shorn x=slaughter  (Esc=cancel)",
+        "hsnx")
+    if choice is None:
+        app.notification = "state unchanged"
+        return
+    dest = _STATE_PICKER[choice]
+    if dest == cur_status:
+        app.notification = f"{tid} already {dest}"
+        return
+    extra = None
+    if dest == SHORN:
+        commit = git_head_short()
+        if commit:
+            extra = {"commit": commit}
+    ok, msg = move_task(app.root, tid, dest, extra_fields=extra)
+    if not ok:
+        app.notification = msg
+        return
+    app.reload()
+    app.notification = f"{tid} → {dest}"
 
 
 def quick_adjust_labels(app, tid: str) -> None:

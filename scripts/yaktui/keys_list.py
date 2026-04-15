@@ -76,13 +76,11 @@ def handle(app, key) -> bool:
             app.search_query = ""
             app._reset_list()
 
-    # Status changes
-    elif key == ord("s"):
-        app._move_current("shave")
-    elif key == ord("x"):
-        app._move_current("shorn")
-    elif key == ord("r"):
-        app._move_current("regrow")
+    # Status change via single-key picker.
+    elif key == ord("S"):
+        tid = app._current_task_id()
+        if tid:
+            app._quick_adjust_state(tid)
 
     # Create (with type picker)
     elif key == ord("c"):

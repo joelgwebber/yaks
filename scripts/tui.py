@@ -14,14 +14,9 @@ from yaklib import clipboard as _clipboard
 from yaklib import deps as _deps
 from yaklib.format import humanize_date, status_char
 from yaklib.model import (
-    HAIRY,
-    SHAVING,
-    SHORN,
     STATUSES,
     find_task_file,
     find_tasks_root,
-    git_head_short,
-    move_task,
 )
 from yaktui.colors import (
     C_CODE,
@@ -499,33 +494,6 @@ class TUI:
         self._rebuild_detail()
         self.focus = "detail"
 
-    def _move_current(self, action):
-        if not self.tasks or self.cursor >= len(self.tasks):
-            return
-        _, task, _, ghost = self.tasks[self.cursor]
-        tid = task["id"]
-        title = task.get("title", "")[:40]
-        verb = {"shave": "Shave", "shorn": "Shorn", "regrow": "Regrow"}[action]
-        prompt = f"{verb} {tid} ({title})? (Y/n): "
-        if not self._confirm(prompt, default_yes=True):
-            self.notification = f"{action} cancelled"
-            return
-
-        if action == "shave":
-            dest = SHAVING
-            extra = None
-        elif action == "shorn":
-            dest = SHORN
-            commit = git_head_short()
-            extra = {"commit": commit} if commit else None
-        else:  # regrow
-            dest = HAIRY
-            extra = None
-
-        ok, msg = move_task(self.root, tid, dest, extra_fields=extra)
-        self.message = f"{action}: {tid}" if ok else msg
-        self.reload()
-
     def _current_task_id(self):
         if not self.tasks or self.cursor >= len(self.tasks):
             return None
@@ -551,6 +519,9 @@ class TUI:
 
     def _quick_adjust_labels(self, tid):
         _mutate.quick_adjust_labels(self, tid)
+
+    def _quick_adjust_state(self, tid):
+        _mutate.quick_adjust_state(self, tid)
 
     def _add_dependency(self, tid):
         _mutate.add_dependency(self, tid)

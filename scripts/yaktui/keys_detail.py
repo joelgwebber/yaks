@@ -141,6 +141,10 @@ def handle(app, key) -> bool:
         tid = app._current_task_id()
         if tid:
             app._quick_adjust_labels(tid)
+    elif key == ord("S"):
+        tid = app._current_task_id()
+        if tid:
+            app._quick_adjust_state(tid)
 
     # Detail search
     elif key == ord("/"):
