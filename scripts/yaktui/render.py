@@ -333,6 +333,7 @@ _HELP_SECTIONS = [
         "o / Backspace         Nav back in jumplist",
         "y                     Copy yak ID to clipboard",
         "m                     Add comment/note",
+        "c / C                 New root / child task (picks type)",
         "A                     Attach file / clipboard image",
         "D                     Add dep (or remove if cursor on one)",
         "P / T / L             Adjust priority / type / labels",

@@ -116,6 +116,18 @@ def handle(app, key) -> bool:
     elif key == ord("D"):
         _mutate.handle_dep_key(app)
 
+    # Create (with type picker) — c at root, C as child of the displayed task.
+    elif key == ord("c"):
+        yak_type = app._pick_type_for_create()
+        if yak_type:
+            app._create_task(parent=None, yak_type=yak_type)
+    elif key == ord("C"):
+        parent = app._current_task_id()
+        if parent:
+            yak_type = app._pick_type_for_create()
+            if yak_type:
+                app._create_task(parent=parent, yak_type=yak_type)
+
     # Quick adjusts mirrored from the list pane.
     elif key == ord("P"):
         tid = app._current_task_id()
