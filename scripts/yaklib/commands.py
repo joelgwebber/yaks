@@ -264,9 +264,9 @@ def cmd_update(args):
         changed = True
     if getattr(args, "note", None):
         ts = now_iso()
-        note_block = f"\n\n### {ts}\n{args.note}\n"
-        desc = task.get("description", "") or ""
-        task["description"] = desc + note_block
+        desc = (task.get("description") or "").rstrip()
+        sep = "\n\n" if desc else ""
+        task["description"] = f"{desc}{sep}### {ts}\n{args.note}"
         changed = True
 
     if changed:

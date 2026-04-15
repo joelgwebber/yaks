@@ -518,9 +518,11 @@ def add_comment(app, tid: str) -> None:
     if path is None:
         return
     now = now_iso()
-    note_block = f"\n### {now}\n\n{text}"
-    desc = task.get("description", "") or ""
-    task["description"] = desc + note_block
+    # One blank line before the heading, none between heading and body —
+    # comments are usually one-liners, keep them tight but separated.
+    desc = (task.get("description") or "").rstrip()
+    sep = "\n\n" if desc else ""
+    task["description"] = f"{desc}{sep}### {now}\n{text}"
     task["updated"] = now
     save_task(path, task)
     app.reload()

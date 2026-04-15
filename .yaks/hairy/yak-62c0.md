@@ -4,7 +4,7 @@ title: Add a blank line before new comments
 type: task
 priority: 1
 created: '2026-04-15T00:45:12Z'
-updated: '2026-04-15T01:11:56Z'
+updated: '2026-04-15T13:50:46Z'
 ---
 
 And no line after the timestamp. These tend to be single-line comments, so best to keep them tight,
