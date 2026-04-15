@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from yaklib import deps as deps_mod
+from yaklib import reparent as reparent_mod
 from yaklib.artifacts import artifacts_dir
 from yaklib.clipboard import read_png as read_clipboard_png
 from yaklib.model import (
@@ -21,7 +22,6 @@ from yaklib.model import (
     all_tasks,
     dump_yaml,
     find_children,
-    find_descendants,
     find_task_file,
     find_tasks_root,
     generate_id,
@@ -402,83 +402,23 @@ def cmd_dep(args):
 
 def cmd_reparent(args):
     root = find_tasks_root()
-    old_id = args.id
-
-    result = find_task_file(root, old_id)
-    if not result:
-        print(f"error: task {old_id} not found", file=sys.stderr)
-        sys.exit(1)
-
     new_parent = getattr(args, "parent", None)
-    unparent = getattr(args, "unparent", False)
-
-    if new_parent:
-        if new_parent == old_id or new_parent.startswith(old_id + "."):
-            print("error: cannot reparent under own descendant", file=sys.stderr)
-            sys.exit(1)
-        if parent_id(old_id) == new_parent:
-            print(f"{old_id} is already a child of {new_parent}")
-            return
-        if not find_task_file(root, new_parent):
-            print(f"error: parent task {new_parent} not found", file=sys.stderr)
-            sys.exit(1)
-        new_id = f"{new_parent}.{next_child_number(root, new_parent)}"
-    elif unparent:
-        if parent_id(old_id) is None:
-            print(f"error: {old_id} is already a top-level task", file=sys.stderr)
-            sys.exit(1)
-        cfg = load_config(root)
-        prefix = cfg.get("prefix", "yak")
-        new_id = generate_id(root, prefix)
-    else:
+    if getattr(args, "unparent", False):
+        new_parent = None
+    elif not new_parent:
         print("error: specify --parent TASK_ID or --unparent", file=sys.stderr)
         sys.exit(1)
 
-    id_map = {old_id: new_id}
-    for _, path in find_descendants(root, old_id):
-        desc_old = path.stem
-        desc_new = new_id + desc_old[len(old_id):]
-        id_map[desc_old] = desc_new
+    try:
+        plan = reparent_mod.reparent(root, args.id, new_parent)
+    except reparent_mod.ReparentError as e:
+        print(f"error: {e}", file=sys.stderr)
+        sys.exit(1)
 
-    now = now_iso()
-    for old, new in id_map.items():
-        res = find_task_file(root, old)
-        if not res:
-            continue
-        _, path = res
-        task = load_task(path)
-        task["id"] = new
-        task["updated"] = now
-        deps = task.get("depends_on", [])
-        if deps:
-            task["depends_on"] = [id_map.get(d, d) for d in deps]
-        save_task(path.parent / f"{new}.md", task)
-        path.unlink()
-
-    renamed_stems = set(id_map.values())
-    for s in STATUSES:
-        d = root / s
-        if not d.exists():
-            continue
-        for f in d.glob("*.md"):
-            if f.stem in renamed_stems:
-                continue
-            task = load_task(f)
-            deps = task.get("depends_on", [])
-            if not deps:
-                continue
-            new_deps = [id_map.get(d, d) for d in deps]
-            if new_deps != deps:
-                task["depends_on"] = new_deps
-                task["updated"] = now
-                save_task(f, task)
-                print(f"  updated dep in {task['id']}")
-
-    print(f"Reparented {old_id} → {new_id}")
-    if len(id_map) > 1:
-        for old, new in sorted(id_map.items()):
-            if old != old_id:
-                print(f"  {old} → {new}")
+    print(f"Reparented {plan.old_id} → {plan.new_id}")
+    for old, new in sorted(plan.id_map.items()):
+        if old != plan.old_id:
+            print(f"  {old} → {new}")
 
 
 # ---------------------------------------------------------------------------
