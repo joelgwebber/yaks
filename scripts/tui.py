@@ -18,6 +18,7 @@ from yaklib.model import (
     STATUSES,
     find_task_file,
     find_tasks_root,
+    load_config,
 )
 from yaktui.colors import (
     C_CODE,
@@ -44,7 +45,8 @@ from yaktui.colors import (
     init_colors,
 )
 from yaktui import dialogs as _dialogs
-from yaktui.dialogs import _text_edit
+from yaktui import vim_edit as _vim_edit
+from yaktui.vim_edit import LineEditor
 from yaktui import mutate as _mutate
 from yaktui import keys_detail as _keys_detail
 from yaktui import keys_list as _keys_list
@@ -88,39 +90,46 @@ def _drawer_chip_choices(kind):
 
 class _DrawerState:
     __slots__ = ("saved", "statuses", "types", "priorities",
-                 "labels_buf", "labels_pos", "search_buf", "search_pos",
-                 "parent_buf", "parent_pos", "ready", "tangled",
-                 "row", "chip_idx")
+                 "labels", "search", "parent",
+                 "ready", "tangled", "row", "chip_idx", "vim")
 
-    def __init__(self, spec: FilterSpec):
+    def __init__(self, spec: FilterSpec, vim: bool = False):
         self.saved = spec  # for revert-on-Esc
         self.statuses = set(spec.statuses)
         self.types = set(spec.types)
         self.priorities = set(spec.priorities)
-        self.labels_buf = ", ".join(spec.labels)
-        self.labels_pos = len(self.labels_buf)
-        self.search_buf = spec.search
-        self.search_pos = len(self.search_buf)
-        self.parent_buf = spec.parent
-        self.parent_pos = len(self.parent_buf)
+        self.labels = LineEditor(", ".join(spec.labels), vim=vim)
+        self.search = LineEditor(spec.search, vim=vim)
+        self.parent = LineEditor(spec.parent, vim=vim)
         self.ready = spec.ready_only
         self.tangled = spec.tangled_only
         self.row = 0
         self.chip_idx = 0
+        self.vim = vim
 
     def build_spec(self) -> FilterSpec:
-        lbls = tuple(s.strip() for s in self.labels_buf.split(",")
+        lbls = tuple(s.strip() for s in self.labels.buf.split(",")
                      if s.strip())
         return FilterSpec(
             statuses=frozenset(self.statuses),
             types=frozenset(self.types),
             priorities=frozenset(self.priorities),
             labels=lbls,
-            search=self.search_buf.strip(),
+            search=self.search.buf.strip(),
             ready_only=self.ready,
             tangled_only=self.tangled,
-            parent=self.parent_buf.strip(),
+            parent=self.parent.buf.strip(),
         )
+
+    def editor_for(self, kind: str) -> LineEditor | None:
+        return {"labels_text": self.labels,
+                "search_text": self.search,
+                "parent_text": self.parent}.get(kind)
+
+    def close(self) -> None:
+        self.labels.close()
+        self.search.close()
+        self.parent.close()
 
     @property
     def height(self) -> int:
@@ -135,6 +144,8 @@ class TUI:
     def __init__(self, stdscr, root):
         self.stdscr = stdscr
         self.root = root
+        self.config = load_config(root)
+        self.vim_mode = bool(self.config.get("vim_mode", False))
 
         # List state
         self.tab = 0
@@ -378,7 +389,36 @@ class TUI:
         d = self._drawer
         kind = _DRAWER_ROWS[d.row][0]
 
-        # Commit / revert / clear
+        is_text = kind.endswith("_text")
+        if is_text:
+            ed = d.editor_for(kind)
+            # Row-nav keys always escape the text field — otherwise you
+            # can't Tab/arrow out. Tab=9, BTab, Up/Down, Ctrl-N/P (14/16).
+            # In vim normal mode, j/k also exit and navigate rows.
+            row_nav_down = key in (curses.KEY_DOWN, 9, 14) or (
+                ed.mode == "normal" and key == ord("j"))
+            row_nav_up = key in (curses.KEY_UP, curses.KEY_BTAB, 16) or (
+                ed.mode == "normal" and key == ord("k"))
+            if row_nav_down:
+                d.row = (d.row + 1) % len(_DRAWER_ROWS)
+                d.chip_idx = 0
+                return
+            if row_nav_up:
+                d.row = (d.row - 1) % len(_DRAWER_ROWS)
+                d.chip_idx = 0
+                return
+
+            r = ed.step(key)
+            if r == _vim_edit.COMMIT:
+                self._close_filter_drawer(commit=True)
+                return
+            if r == _vim_edit.CANCEL:
+                self._close_filter_drawer(commit=False)
+                return
+            self._drawer_live_preview()
+            return
+
+        # Non-text rows: classic drawer-level handling.
         if key in (ord("\n"), curses.KEY_ENTER, 10, 13):
             self._close_filter_drawer(commit=True)
             return
@@ -389,27 +429,21 @@ class TUI:
             d.statuses.clear()
             d.types.clear()
             d.priorities.clear()
-            d.labels_buf = ""
-            d.labels_pos = 0
-            d.search_buf = ""
-            d.search_pos = 0
-            d.parent_buf = ""
-            d.parent_pos = 0
+            d.labels = LineEditor("", vim=self.vim_mode)
+            d.search = LineEditor("", vim=self.vim_mode)
+            d.parent = LineEditor("", vim=self.vim_mode)
             d.ready = False
             d.tangled = False
             self._drawer_live_preview()
             return
 
-        # Row navigation. Ctrl-N/P always work. j/k only work outside
-        # text fields — otherwise they'd block typing.
-        is_text = kind.endswith("_text")
-        if key in (curses.KEY_DOWN, ord("\t"), 14) or (
-                not is_text and key == ord("j")):
+        # Row navigation. Ctrl-N/P always work; j/k work on chip rows
+        # (text rows are already handled above and don't fall through).
+        if key in (curses.KEY_DOWN, ord("\t"), 14, ord("j")):
             d.row = (d.row + 1) % len(_DRAWER_ROWS)
             d.chip_idx = 0
             return
-        if key in (curses.KEY_UP, curses.KEY_BTAB, 16) or (
-                not is_text and key == ord("k")):
+        if key in (curses.KEY_UP, curses.KEY_BTAB, 16, ord("k")):
             d.row = (d.row - 1) % len(_DRAWER_ROWS)
             d.chip_idx = 0
             return
@@ -436,46 +470,33 @@ class TUI:
                     else:
                         d.tangled = not d.tangled
                 changed = True
-        elif kind == "labels_text":
-            d.labels_buf, d.labels_pos = _text_edit(
-                d.labels_buf, d.labels_pos, key)
-            changed = True
-        elif kind == "search_text":
-            d.search_buf, d.search_pos = _text_edit(
-                d.search_buf, d.search_pos, key)
-            changed = True
-        elif kind == "parent_text":
-            d.parent_buf, d.parent_pos = _text_edit(
-                d.parent_buf, d.parent_pos, key)
-            changed = True
 
         if changed:
             self._drawer_live_preview()
 
     def _handle_inline_search_key(self, key):
-        buf, pos = self._inline_search
-        if key in (ord("\n"), curses.KEY_ENTER, 10, 13):
+        ed = self._inline_search
+        r = ed.step(key)
+        if r == _vim_edit.COMMIT:
             self._close_inline_search(commit=True)
             return
-        if key == 27:
+        if r == _vim_edit.CANCEL:
             self._close_inline_search(commit=False)
             return
-        # Escalate to full drawer, carrying the typed text forward.
-        if key == ord("\t"):
+        if r == _vim_edit.ESCALATE:
+            # Tab: escalate to full drawer, carrying the typed text forward.
             from dataclasses import replace as _replace
-            spec = _replace(self.filter_spec, search=buf.strip())
+            spec = _replace(self.filter_spec, search=ed.buf.strip())
+            ed.close()
             self._inline_search = None
             curses.curs_set(0)
             self.filter_spec = spec
             self._open_filter_drawer()
-            # Park cursor on the search row so typing continues naturally.
             self._drawer.row = 4  # search_text
             return
-        buf, pos = _text_edit(buf, pos, key)
-        self._inline_search = (buf, pos)
         # Live preview — cache-only, no disk scan.
         from dataclasses import replace as _replace
-        self.filter_spec = _replace(self.filter_spec, search=buf.strip())
+        self.filter_spec = _replace(self.filter_spec, search=ed.buf.strip())
         status = TABS[self.tab][0]
         self.tasks = build_tree(self.root, status, self.filter_spec,
                                 tasks_cache=self._task_cache,
@@ -773,16 +794,18 @@ class TUI:
 
     def _fuzzy_pick_task(self, prompt, exclude_ids=None):
         return _dialogs.fuzzy_pick_task(self.stdscr, self.root, prompt,
-                                        exclude_ids=exclude_ids)
+                                        exclude_ids=exclude_ids,
+                                        vim=self.vim_mode)
 
     def _edit_prompt(self, prompt, initial=""):
-        return _dialogs.edit_prompt(self.stdscr, prompt, initial)
+        return _dialogs.edit_prompt(self.stdscr, prompt, initial,
+                                    vim=self.vim_mode)
 
     def _input_prompt(self, prompt):
-        return _dialogs.input_prompt(self.stdscr, prompt)
+        return _dialogs.input_prompt(self.stdscr, prompt, vim=self.vim_mode)
 
     def _open_filter_drawer(self):
-        self._drawer = _DrawerState(self.filter_spec)
+        self._drawer = _DrawerState(self.filter_spec, vim=self.vim_mode)
         self._available_labels = collect_all_labels(self.root)
 
     def _close_filter_drawer(self, commit: bool):
@@ -792,6 +815,7 @@ class TUI:
             self.filter_spec = self._drawer.build_spec()
         else:
             self.filter_spec = self._drawer.saved
+        self._drawer.close()
         self._drawer = None
         curses.curs_set(0)
         self._reset_list()
@@ -812,15 +836,17 @@ class TUI:
         self._rebuild_detail()
 
     def _open_inline_search(self):
-        self._inline_search = (self.filter_spec.search, len(self.filter_spec.search))
+        self._inline_search = LineEditor(
+            self.filter_spec.search, vim=self.vim_mode, allow_escalate=True)
 
     def _close_inline_search(self, commit: bool):
         if self._inline_search is None:
             return
         if commit:
-            buf, _ = self._inline_search
             from dataclasses import replace as _replace
-            self.filter_spec = _replace(self.filter_spec, search=buf.strip())
+            self.filter_spec = _replace(
+                self.filter_spec, search=self._inline_search.buf.strip())
+        self._inline_search.close()
         self._inline_search = None
         curses.curs_set(0)
         self._reset_list()

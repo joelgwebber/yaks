@@ -138,11 +138,16 @@ def draw_tabs(app, y, w):
         x += len(text) + 1
 
     if app._inline_search is not None:
-        buf, pos = app._inline_search
-        prompt = "  search: "
-        safe_addstr(app.stdscr, y, x, prompt,
+        ed = app._inline_search
+        badge = ed.mode_badge()
+        label = "  search: "
+        safe_addstr(app.stdscr, y, x, label,
                     curses.color_pair(C_SEARCH) | curses.A_BOLD)
-        safe_addstr(app.stdscr, y, x + len(prompt), buf,
+        cx = x + len(label)
+        if badge:
+            safe_addstr(app.stdscr, y, cx, badge + " ", curses.A_DIM)
+            cx += len(badge) + 1
+        safe_addstr(app.stdscr, y, cx, ed.buf,
                     curses.color_pair(C_SEARCH))
     else:
         chip = app.filter_spec.summary()
@@ -226,14 +231,13 @@ def draw_filter_drawer(app, y0, w):
                 safe_addstr(stdscr, y, cx, chip, attr)
                 cx += len(chip)
         elif kind.endswith("_text"):
-            if kind == "labels_text":
-                buf, pos = d.labels_buf, d.labels_pos
-            elif kind == "search_text":
-                buf, pos = d.search_buf, d.search_pos
-            else:
-                buf, pos = d.parent_buf, d.parent_pos
+            ed = d.editor_for(kind)
             field_w = min(content_w, max(20, content_w))
-            _draw_text_field(stdscr, y, cx, buf, pos, is_active, field_w)
+            _draw_text_field(stdscr, y, cx, ed.buf, ed.pos, is_active, field_w)
+            badge = ed.mode_badge()
+            if badge:
+                safe_addstr(stdscr, y, 2 + len(label) + 1, badge,
+                            curses.A_DIM)
             # Labels hint
             if is_active and kind == "labels_text":
                 avail = getattr(app, "_available_labels", [])
@@ -273,17 +277,12 @@ def _position_drawer_cursor(app, y0, w):
     d = app._drawer
     kind = _DRAWER_ROWS[d.row][0]
     if kind.endswith("_text"):
+        ed = d.editor_for(kind)
         cx = 2 + _DRAWER_LABEL_COL
         field_w = min(w - cx - 2, max(20, w - cx - 2))
         inner_w = field_w - 2
-        if kind == "labels_text":
-            pos = d.labels_pos
-        elif kind == "search_text":
-            pos = d.search_pos
-        else:
-            pos = d.parent_pos
-        offset = max(0, pos - inner_w + 1)
-        screen_x = cx + 1 + (pos - offset)
+        offset = max(0, ed.pos - inner_w + 1)
+        screen_x = cx + 1 + (ed.pos - offset)
         screen_y = y0 + d.row
         curses.curs_set(1)
         try:
@@ -299,17 +298,18 @@ def _position_inline_search_cursor(app, y, w):
     if app._inline_search is None:
         curses.curs_set(0)
         return
-    buf, pos = app._inline_search
-    # Find the x of the search area — after the tab texts.
+    ed = app._inline_search
     counts = tab_counts(app)
     x = 0
     for i, (status, label) in enumerate(TABS):
         text = f" {label} ({counts[status]}) "
         x += len(text) + 1
+    badge = ed.mode_badge()
+    badge_w = len(badge) + 1 if badge else 0
     prompt = "  search: "
     curses.curs_set(1)
     try:
-        app.stdscr.move(y, x + len(prompt) + pos)
+        app.stdscr.move(y, x + len(prompt) + badge_w + ed.pos)
     except curses.error:
         pass
 

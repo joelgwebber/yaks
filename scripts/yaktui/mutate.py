@@ -376,7 +376,8 @@ def quick_adjust_labels(app, tid: str) -> None:
         return
     current = task.get("labels") or []
     initial = ", ".join(current)
-    edited = _dialogs.edit_prompt(app.stdscr, f"Labels for {tid}: ", initial)
+    edited = _dialogs.edit_prompt(app.stdscr, f"Labels for {tid}: ", initial,
+                                  vim=app.vim_mode)
     if edited is None:
         app.notification = "labels unchanged"
         return
@@ -405,7 +406,7 @@ def add_dependency(app, tid: str) -> None:
     existing_deps = set(task.get("depends_on") or [])
     target = _dialogs.fuzzy_pick_task(
         app.stdscr, app.root, f"{tid} depends on: ",
-        exclude_ids={tid} | existing_deps)
+        exclude_ids={tid} | existing_deps, vim=app.vim_mode)
     if target is None:
         app.notification = "add dep cancelled"
         return
@@ -492,7 +493,7 @@ def reparent_task(app, tid: str) -> None:
     else:
         new_parent = _dialogs.fuzzy_pick_task(
             app.stdscr, app.root, f"New parent for {tid}: ",
-            exclude_ids={tid})
+            exclude_ids={tid}, vim=app.vim_mode)
         if new_parent is None:
             app.notification = "reparent cancelled"
             return
@@ -532,7 +533,7 @@ def reparent_task(app, tid: str) -> None:
 
 
 def add_comment(app, tid: str) -> None:
-    text = _dialogs.input_prompt(app.stdscr, "Comment: ")
+    text = _dialogs.input_prompt(app.stdscr, "Comment: ", vim=app.vim_mode)
     if not text:
         app.notification = "comment cancelled"
         return
@@ -557,7 +558,8 @@ def attach_file(app, tid: str) -> None:
     if path is None:
         return
 
-    src_input = _dialogs.input_prompt(app.stdscr, "Attach path (empty = clipboard PNG): ")
+    src_input = _dialogs.input_prompt(app.stdscr, "Attach path (empty = clipboard PNG): ",
+                                      vim=app.vim_mode)
     if src_input is None:
         app.notification = "attach cancelled"
         return
@@ -586,7 +588,8 @@ def attach_file(app, tid: str) -> None:
         shutil.copy2(src, dest)
 
     desc = _dialogs.input_prompt(
-        app.stdscr, f"Description for {name} (empty = filename): ")
+        app.stdscr, f"Description for {name} (empty = filename): ",
+        vim=app.vim_mode)
     if desc is None:
         desc = ""
     alt = desc.strip() or Path(name).stem

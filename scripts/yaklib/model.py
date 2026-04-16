@@ -110,10 +110,16 @@ def _auto_migrate(root: Path) -> None:
 
 
 def load_config(root: Path) -> dict:
-    cfg_path = root / "config.yaml"
-    if cfg_path.exists():
-        return yaml.safe_load(cfg_path.read_text()) or {}
-    return {}
+    """Load config with user-global → per-project layering.
+    Per-project keys override user-global keys (shallow merge)."""
+    merged: dict = {}
+    user_cfg = Path.home() / ".config" / "yaks" / "config.yaml"
+    if user_cfg.exists():
+        merged.update(yaml.safe_load(user_cfg.read_text()) or {})
+    project_cfg = root / "config.yaml"
+    if project_cfg.exists():
+        merged.update(yaml.safe_load(project_cfg.read_text()) or {})
+    return merged
 
 
 # ---------------------------------------------------------------------------

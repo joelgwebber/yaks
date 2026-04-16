@@ -15,6 +15,8 @@ import curses
 from yaklib.format import status_emoji
 from yaklib.model import STATUSES, all_tasks
 from yaktui.colors import C_SEARCH, C_SELECTED
+from yaktui import vim_edit as _vim_edit
+from yaktui.vim_edit import LineEditor
 
 
 def safe_addstr(stdscr, y, x, text, attr=0):
@@ -28,60 +30,37 @@ def safe_addstr(stdscr, y, x, text, attr=0):
         pass
 
 
-def input_prompt(stdscr, prompt: str) -> str:
-    """Read a line from the bottom bar. Escape cancels (returns "")."""
-    h, w = stdscr.getmaxyx()
-    y = h - 1
-    buf = ""
-    curses.curs_set(1)
-    try:
-        while True:
-            safe_addstr(stdscr, y, 0, " " * w, 0)
-            safe_addstr(stdscr, y, 0, prompt,
-                        curses.color_pair(C_SEARCH) | curses.A_BOLD)
-            safe_addstr(stdscr, y, len(prompt), buf, 0)
-            try:
-                stdscr.move(y, min(len(prompt) + len(buf), w - 1))
-            except curses.error:
-                pass
-            stdscr.refresh()
-
-            ch = stdscr.getch()
-            if ch == -1:
-                continue
-            if ch == 27:
-                return ""
-            if ch in (ord("\n"), curses.KEY_ENTER, 10, 13):
-                return buf.strip()
-            if ch in (curses.KEY_BACKSPACE, 127, 8):
-                buf = buf[:-1]
-            elif 32 <= ch < 127:
-                if len(prompt) + len(buf) < w - 1:
-                    buf += chr(ch)
-    finally:
-        curses.curs_set(0)
+def input_prompt(stdscr, prompt: str, vim: bool = False) -> str:
+    """Read a line from the bottom bar. Escape cancels (returns "").
+    Empty string on cancel mirrors the pre-vim behavior."""
+    r = edit_prompt(stdscr, prompt, "", vim=vim)
+    return r or ""
 
 
-def edit_prompt(stdscr, prompt: str, initial: str = "") -> str | None:
+def edit_prompt(stdscr, prompt: str, initial: str = "",
+                vim: bool = False) -> str | None:
     """Read a line pre-populated with *initial*. Returns the string on
-    Enter, or None on Escape. Supports Home/End/arrows/Ctrl-A/E/K/U/W.
-    """
+    Enter, or None on cancel."""
     h, w = stdscr.getmaxyx()
     y = h - 1
-    buf = initial
-    pos = len(buf)
+    ed = LineEditor(initial, vim=vim)
     curses.curs_set(1)
     try:
         while True:
-            max_vis = max(1, w - len(prompt) - 1)
-            offset = max(0, pos - max_vis + 1)
-            visible = buf[offset:offset + max_vis]
+            badge = ed.mode_badge()
+            badge_w = len(badge) + 1 if badge else 0
+            total_prefix = len(prompt) + badge_w
+            max_vis = max(1, w - total_prefix - 1)
+            offset = max(0, ed.pos - max_vis + 1)
+            visible = ed.buf[offset:offset + max_vis]
             safe_addstr(stdscr, y, 0, " " * w, 0)
             safe_addstr(stdscr, y, 0, prompt,
                         curses.color_pair(C_SEARCH) | curses.A_BOLD)
-            safe_addstr(stdscr, y, len(prompt), visible, 0)
+            if badge:
+                safe_addstr(stdscr, y, len(prompt), badge + " ", curses.A_DIM)
+            safe_addstr(stdscr, y, total_prefix, visible, 0)
             try:
-                stdscr.move(y, len(prompt) + (pos - offset))
+                stdscr.move(y, total_prefix + (ed.pos - offset))
             except curses.error:
                 pass
             stdscr.refresh()
@@ -89,42 +68,13 @@ def edit_prompt(stdscr, prompt: str, initial: str = "") -> str | None:
             ch = stdscr.getch()
             if ch == -1:
                 continue
-            if ch == 27:
+            r = ed.step(ch)
+            if r == _vim_edit.COMMIT:
+                return ed.buf.strip()
+            if r == _vim_edit.CANCEL:
                 return None
-            if ch in (ord("\n"), curses.KEY_ENTER, 10, 13):
-                return buf.strip()
-            if ch in (curses.KEY_BACKSPACE, 127, 8):
-                if pos > 0:
-                    buf = buf[:pos - 1] + buf[pos:]
-                    pos -= 1
-            elif ch == curses.KEY_DC:
-                if pos < len(buf):
-                    buf = buf[:pos] + buf[pos + 1:]
-            elif ch == curses.KEY_LEFT:
-                pos = max(0, pos - 1)
-            elif ch == curses.KEY_RIGHT:
-                pos = min(len(buf), pos + 1)
-            elif ch in (curses.KEY_HOME, 1):
-                pos = 0
-            elif ch in (curses.KEY_END, 5):
-                pos = len(buf)
-            elif ch == 11:  # Ctrl-K
-                buf = buf[:pos]
-            elif ch == 21:  # Ctrl-U
-                buf = buf[pos:]
-                pos = 0
-            elif ch == 23:  # Ctrl-W
-                i = pos
-                while i > 0 and buf[i - 1] == " ":
-                    i -= 1
-                while i > 0 and buf[i - 1] != " ":
-                    i -= 1
-                buf = buf[:i] + buf[pos:]
-                pos = i
-            elif 32 <= ch < 127:
-                buf = buf[:pos] + chr(ch) + buf[pos:]
-                pos += 1
     finally:
+        ed.close()
         curses.curs_set(0)
 
 
@@ -181,11 +131,14 @@ def pick_type_for_create(stdscr) -> str | None:
 
 
 def fuzzy_pick_task(stdscr, root: Path, prompt: str,
-                    exclude_ids: set[str] | None = None) -> str | None:
+                    exclude_ids: set[str] | None = None,
+                    vim: bool = False) -> str | None:
     """Interactive fuzzy search over all tasks. Returns task ID or None.
 
     Shows a floating results list above the prompt that updates as the
-    user types. Arrow keys / Ctrl-N/P / Tab cycle, Enter selects, Esc cancels.
+    user types. Arrow keys / Ctrl-N/P / Tab cycle, Enter selects.
+    When *vim* is true the input line uses vim mode; j/k in normal mode
+    also move the list selection.
     """
     exclude = set(exclude_ids or [])
     tasks: list[tuple[str, dict]] = []
@@ -209,14 +162,17 @@ def fuzzy_pick_task(stdscr, root: Path, prompt: str,
         return [(s, t) for _, s, t in scored[:20]]
 
     h, w = stdscr.getmaxyx()
-    buf = ""
-    pos = 0
+    ed = LineEditor("", vim=vim)
     sel = 0
     max_visible = min(10, h - 4)
+    prev_buf = None
     curses.curs_set(1)
     try:
         while True:
-            matches = _match(buf)
+            if ed.buf != prev_buf:
+                matches = _match(ed.buf)
+                sel = 0
+                prev_buf = ed.buf
             sel = max(0, min(sel, len(matches) - 1))
 
             list_y = h - 2 - max_visible
@@ -233,19 +189,25 @@ def fuzzy_pick_task(stdscr, root: Path, prompt: str,
                     safe_addstr(stdscr, y, 0, line[:w], attr)
 
             prompt_y = h - 1
-            max_vis = max(1, w - len(prompt) - 1)
-            offset = max(0, pos - max_vis + 1)
-            visible = buf[offset:offset + max_vis]
-            count_str = f" ({len(matches)} matches)" if buf else ""
+            badge = ed.mode_badge()
+            badge_w = len(badge) + 1 if badge else 0
+            total_prefix = len(prompt) + badge_w
+            max_vis = max(1, w - total_prefix - 1)
+            offset = max(0, ed.pos - max_vis + 1)
+            visible = ed.buf[offset:offset + max_vis]
+            count_str = f" ({len(matches)} matches)" if ed.buf else ""
             safe_addstr(stdscr, prompt_y, 0, " " * w, 0)
             safe_addstr(stdscr, prompt_y, 0, prompt,
                         curses.color_pair(C_SEARCH) | curses.A_BOLD)
-            safe_addstr(stdscr, prompt_y, len(prompt), visible, 0)
-            cs = len(prompt) + len(visible)
+            if badge:
+                safe_addstr(stdscr, prompt_y, len(prompt), badge + " ",
+                            curses.A_DIM)
+            safe_addstr(stdscr, prompt_y, total_prefix, visible, 0)
+            cs = total_prefix + len(visible)
             if cs + len(count_str) < w:
                 safe_addstr(stdscr, prompt_y, cs, count_str, curses.A_DIM)
             try:
-                stdscr.move(prompt_y, len(prompt) + (pos - offset))
+                stdscr.move(prompt_y, total_prefix + (ed.pos - offset))
             except curses.error:
                 pass
             stdscr.refresh()
@@ -253,41 +215,27 @@ def fuzzy_pick_task(stdscr, root: Path, prompt: str,
             ch = stdscr.getch()
             if ch == -1:
                 continue
-            if ch == 27:
-                return None
-            if ch in (ord("\n"), curses.KEY_ENTER, 10, 13):
+
+            # List navigation: always-on keys + vim-normal j/k.
+            list_nav = ch in (curses.KEY_UP, 16, curses.KEY_DOWN, 14, 9)
+            if vim and ed.mode == "normal" and ch in (ord("j"), ord("k")):
+                list_nav = True
+            if list_nav:
+                if ch in (curses.KEY_UP, 16) or ch == ord("k"):
+                    sel = max(0, sel - 1)
+                else:
+                    sel = min(len(matches) - 1, sel + 1) if matches else 0
+                continue
+
+            r = ed.step(ch)
+            if r == _vim_edit.COMMIT:
                 if matches and 0 <= sel < len(matches):
                     return matches[sel][1]["id"]
                 return None
-            if ch in (curses.KEY_UP, 16):
-                sel = max(0, sel - 1)
-            elif ch in (curses.KEY_DOWN, 14):
-                sel = min(len(matches) - 1, sel + 1) if matches else 0
-            elif ch == 9:
-                sel = min(len(matches) - 1, sel + 1) if matches else 0
-            elif ch in (curses.KEY_BACKSPACE, 127, 8):
-                if pos > 0:
-                    buf = buf[:pos - 1] + buf[pos:]
-                    pos -= 1
-                    sel = 0
-            elif ch == 21:
-                buf = ""
-                pos = 0
-                sel = 0
-            elif ch == 23:
-                i = pos
-                while i > 0 and buf[i - 1] == " ":
-                    i -= 1
-                while i > 0 and buf[i - 1] != " ":
-                    i -= 1
-                buf = buf[:i] + buf[pos:]
-                pos = i
-                sel = 0
-            elif 32 <= ch < 127:
-                buf = buf[:pos] + chr(ch) + buf[pos:]
-                pos += 1
-                sel = 0
+            if r == _vim_edit.CANCEL:
+                return None
     finally:
+        ed.close()
         curses.curs_set(0)
 
 

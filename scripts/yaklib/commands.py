@@ -92,19 +92,33 @@ def cmd_init(args):
     target = Path.cwd() / ".yaks"
     if target.exists():
         print(f".yaks/ already exists at {target}")
-        return
-    prefix = args.prefix or Path.cwd().name.lower()
-    if "." in prefix:
-        print("error: prefix must not contain dots (dots are used for parent/child IDs)",
-              file=sys.stderr)
-        sys.exit(1)
-    target.mkdir()
-    for s in _ALL_STATUSES:
-        (target / s).mkdir()
-    config = {"prefix": prefix}
-    (target / "config.yaml").write_text(dump_yaml(config))
-    print(f"Initialized .yaks/ in {Path.cwd()} (prefix: {prefix})")
-    _inject_mandate(force_agents=getattr(args, "agents", False))
+    else:
+        prefix = args.prefix or Path.cwd().name.lower()
+        if "." in prefix:
+            print("error: prefix must not contain dots "
+                  "(dots are used for parent/child IDs)", file=sys.stderr)
+            sys.exit(1)
+        target.mkdir()
+        for s in _ALL_STATUSES:
+            (target / s).mkdir()
+        config = {"prefix": prefix}
+        (target / "config.yaml").write_text(dump_yaml(config))
+        print(f"Initialized .yaks/ in {Path.cwd()} (prefix: {prefix})")
+        _inject_mandate(force_agents=getattr(args, "agents", False))
+
+    # Seed the user-global config with documented defaults on first run.
+    user_cfg = Path.home() / ".config" / "yaks" / "config.yaml"
+    if not user_cfg.exists():
+        user_cfg.parent.mkdir(parents=True, exist_ok=True)
+        user_cfg.write_text(
+            "# yaks user-global config. Per-project .yaks/config.yaml\n"
+            "# keys override anything set here.\n"
+            "\n"
+            "# Vim-style line editing in all text inputs (insert/normal\n"
+            "# modes, double-Esc to cancel). Set to true if you want it.\n"
+            "vim_mode: false\n"
+        )
+        print(f"Wrote user-global config: {user_cfg}")
 
 
 def cmd_create(args):

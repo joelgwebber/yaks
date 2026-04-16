@@ -152,7 +152,8 @@ def handle(app, key) -> bool:
 
     # Detail search
     elif key == ord("/"):
-        query = _dialogs.input_prompt(app.stdscr, "Detail search: ")
+        query = _dialogs.input_prompt(app.stdscr, "Detail search: ",
+                                      vim=app.vim_mode)
         if query:
             app.detail_search = query
             app._apply_detail_search()
