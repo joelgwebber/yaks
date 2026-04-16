@@ -50,18 +50,27 @@ def _child_status_rank(status: str) -> int:
 
 
 def build_tree(root: Path, tab_status: str | None,
-               spec: FilterSpec) -> list[tuple[str, dict, int, bool]]:
+               spec: FilterSpec,
+               tasks_cache: list | None = None,
+               resolved_cache: set | None = None
+               ) -> list[tuple[str, dict, int, bool]]:
     """Flat list of (status, task, depth, ghost) for display.
 
     *tab_status* is the currently selected tab's status; it scopes the
     primary set unless the spec explicitly overrides with its own statuses.
+    *tasks_cache* / *resolved_cache* let the caller avoid rescanning disk
+    on every filter keypress.
     """
     all_by_id: dict[str, tuple[str, dict]] = {}
-    for s in STATUSES:
-        for st, t in all_tasks(root, s):
+    if tasks_cache is not None:
+        for st, t in tasks_cache:
             all_by_id[t["id"]] = (st, t)
+    else:
+        for s in STATUSES:
+            for st, t in all_tasks(root, s):
+                all_by_id[t["id"]] = (st, t)
 
-    resolved = _deps.resolved_ids(root)
+    resolved = resolved_cache if resolved_cache is not None else _deps.resolved_ids(root)
 
     # Effective status scope: spec.statuses overrides tab; else tab.
     if spec.statuses:

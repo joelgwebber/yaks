@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from yaklib import artifacts as _artifacts
 from yaklib import clipboard as _clipboard
 from yaklib import deps as _deps
-from yaklib.filter import FilterSpec
+from yaklib.filter import FilterSpec, collect_all_labels
 from yaklib.format import humanize_date, status_char
 from yaklib.model import (
     STATUSES,
@@ -44,6 +44,7 @@ from yaktui.colors import (
     init_colors,
 )
 from yaktui import dialogs as _dialogs
+from yaktui.dialogs import _text_edit
 from yaktui import mutate as _mutate
 from yaktui import keys_detail as _keys_detail
 from yaktui import keys_list as _keys_list
@@ -51,6 +52,79 @@ from yaktui import render as _render
 from yaktui.detail import DetailLine, build_detail_lines
 from yaktui.render import TABS
 from yaktui.tree import build_tree
+
+
+# ---------------------------------------------------------------------------
+# Filter drawer state
+# ---------------------------------------------------------------------------
+
+_DRAWER_ROWS = [
+    ("status_chips", "status"),
+    ("type_chips", "type"),
+    ("pri_chips", "priority"),
+    ("labels_text", "labels"),
+    ("search_text", "search"),
+    ("parent_text", "parent"),
+    ("deps_chips", "deps"),
+]
+
+_DRAWER_STATUS_CHOICES = ["hairy", "shaving", "shorn", "dead"]
+_DRAWER_TYPE_CHOICES = ["task", "bug", "feature", "idea"]
+_DRAWER_PRI_CHOICES = [1, 2, 3]
+_DRAWER_DEPS_CHOICES = ["ready only", "tangled only"]
+
+
+def _drawer_chip_choices(kind):
+    if kind == "status_chips":
+        return _DRAWER_STATUS_CHOICES
+    if kind == "type_chips":
+        return _DRAWER_TYPE_CHOICES
+    if kind == "pri_chips":
+        return [f"p{p}" for p in _DRAWER_PRI_CHOICES]
+    if kind == "deps_chips":
+        return _DRAWER_DEPS_CHOICES
+    return []
+
+
+class _DrawerState:
+    __slots__ = ("saved", "statuses", "types", "priorities",
+                 "labels_buf", "labels_pos", "search_buf", "search_pos",
+                 "parent_buf", "parent_pos", "ready", "tangled",
+                 "row", "chip_idx")
+
+    def __init__(self, spec: FilterSpec):
+        self.saved = spec  # for revert-on-Esc
+        self.statuses = set(spec.statuses)
+        self.types = set(spec.types)
+        self.priorities = set(spec.priorities)
+        self.labels_buf = ", ".join(spec.labels)
+        self.labels_pos = len(self.labels_buf)
+        self.search_buf = spec.search
+        self.search_pos = len(self.search_buf)
+        self.parent_buf = spec.parent
+        self.parent_pos = len(self.parent_buf)
+        self.ready = spec.ready_only
+        self.tangled = spec.tangled_only
+        self.row = 0
+        self.chip_idx = 0
+
+    def build_spec(self) -> FilterSpec:
+        lbls = tuple(s.strip() for s in self.labels_buf.split(",")
+                     if s.strip())
+        return FilterSpec(
+            statuses=frozenset(self.statuses),
+            types=frozenset(self.types),
+            priorities=frozenset(self.priorities),
+            labels=lbls,
+            search=self.search_buf.strip(),
+            ready_only=self.ready,
+            tangled_only=self.tangled,
+            parent=self.parent_buf.strip(),
+        )
+
+    @property
+    def height(self) -> int:
+        return len(_DRAWER_ROWS) + 1  # rows + separator line
 
 
 # ---------------------------------------------------------------------------
@@ -88,6 +162,10 @@ class TUI:
         self.message = ""
         self.notification = ""  # top-right transient notice; clears on next key
 
+        # Filter drawer state (None = closed)
+        self._drawer = None       # _DrawerState | None
+        self._inline_search = None  # (buf, pos) | None
+
         # Auto-refresh state
         self._fs_sig = None
 
@@ -97,14 +175,24 @@ class TUI:
         self.reverse_deps: dict[str, list[tuple[str, dict]]] = {}
 
         curses.curs_set(0)
+        try:
+            curses.set_escdelay(25)  # quick Esc; default is ~1s
+        except AttributeError:
+            pass
         self.stdscr.timeout(500)  # poll filesystem every 500ms when idle
         init_colors()
+        self._task_cache: list[tuple[str, dict]] | None = None
+        self._resolved_cache: set[str] | None = None
         self.reload()
         self._fs_sig = self._scan_fs()
 
     def reload(self):
+        """Full reload — re-reads disk. Use when task files may have changed."""
+        self._refresh_task_cache()
         status = TABS[self.tab][0]
-        self.tasks = build_tree(self.root, status, self.filter_spec)
+        self.tasks = build_tree(self.root, status, self.filter_spec,
+                                tasks_cache=self._task_cache,
+                                resolved_cache=self._resolved_cache)
         self._recompute_blocked()
         if self.cursor >= len(self.tasks):
             self.cursor = max(0, len(self.tasks) - 1)
@@ -115,6 +203,17 @@ class TUI:
     def _recompute_blocked(self):
         """Update blocked_ids and reverse_deps from all tasks on disk."""
         self.blocked_ids, self.reverse_deps = _deps.compute_blocked(self.root)
+
+    def _refresh_task_cache(self):
+        """Re-read every task from disk into in-memory caches. Expensive —
+        call only when the filesystem has changed."""
+        from yaklib.model import STATUSES as _STATUSES, all_tasks as _all_tasks
+        cache = []
+        for s in _STATUSES:
+            for st, t in _all_tasks(self.root, s):
+                cache.append((st, t))
+        self._task_cache = cache
+        self._resolved_cache = _deps.resolved_ids(self.root)
 
     def _reload_preserving_position(self):
         """Reload while keeping the cursor on the same task id if possible."""
@@ -209,13 +308,16 @@ class TUI:
         if self.detail_scroll < 0:
             self.detail_scroll = 0
 
+    def _drawer_height(self):
+        return self._drawer.height + 1 if self._drawer else 0
+
     def _list_height(self):
         h, _ = self.stdscr.getmaxyx()
-        return max(1, h - 3)
+        return max(1, h - 3 - self._drawer_height())
 
     def _detail_height(self):
         h, _ = self.stdscr.getmaxyx()
-        return max(1, h - 2)  # tab line + help bar
+        return max(1, h - 2 - self._drawer_height())
 
     def run(self):
         while True:
@@ -248,6 +350,16 @@ class TUI:
         # Clear transient notification on any input
         self.notification = ""
 
+        # Filter drawer captures all input when open.
+        if self._drawer is not None:
+            self._handle_drawer_key(key)
+            return True
+
+        # Inline search captures all input when active.
+        if self._inline_search is not None:
+            self._handle_inline_search_key(key)
+            return True
+
         if key == ord("q"):
             return False
         if key == ord("?"):
@@ -261,6 +373,117 @@ class TUI:
         if self.focus == "detail":
             return _keys_detail.handle(self, key)
         return _keys_list.handle(self, key)
+
+    def _handle_drawer_key(self, key):
+        d = self._drawer
+        kind = _DRAWER_ROWS[d.row][0]
+
+        # Commit / revert / clear
+        if key in (ord("\n"), curses.KEY_ENTER, 10, 13):
+            self._close_filter_drawer(commit=True)
+            return
+        if key == 27:
+            self._close_filter_drawer(commit=False)
+            return
+        if key == ord("C"):
+            d.statuses.clear()
+            d.types.clear()
+            d.priorities.clear()
+            d.labels_buf = ""
+            d.labels_pos = 0
+            d.search_buf = ""
+            d.search_pos = 0
+            d.parent_buf = ""
+            d.parent_pos = 0
+            d.ready = False
+            d.tangled = False
+            self._drawer_live_preview()
+            return
+
+        # Row navigation. Ctrl-N/P always work. j/k only work outside
+        # text fields — otherwise they'd block typing.
+        is_text = kind.endswith("_text")
+        if key in (curses.KEY_DOWN, ord("\t"), 14) or (
+                not is_text and key == ord("j")):
+            d.row = (d.row + 1) % len(_DRAWER_ROWS)
+            d.chip_idx = 0
+            return
+        if key in (curses.KEY_UP, curses.KEY_BTAB, 16) or (
+                not is_text and key == ord("k")):
+            d.row = (d.row - 1) % len(_DRAWER_ROWS)
+            d.chip_idx = 0
+            return
+
+        changed = False
+        if kind.endswith("_chips"):
+            choices = _drawer_chip_choices(kind)
+            if key == curses.KEY_LEFT or key == ord("h"):
+                d.chip_idx = (d.chip_idx - 1) % len(choices)
+            elif key == curses.KEY_RIGHT or key == ord("l"):
+                d.chip_idx = (d.chip_idx + 1) % len(choices)
+            elif key == ord(" "):
+                val = choices[d.chip_idx]
+                if kind == "status_chips":
+                    d.statuses.symmetric_difference_update({val})
+                elif kind == "type_chips":
+                    d.types.symmetric_difference_update({val})
+                elif kind == "pri_chips":
+                    p = int(val[1:])
+                    d.priorities.symmetric_difference_update({p})
+                elif kind == "deps_chips":
+                    if val == "ready only":
+                        d.ready = not d.ready
+                    else:
+                        d.tangled = not d.tangled
+                changed = True
+        elif kind == "labels_text":
+            d.labels_buf, d.labels_pos = _text_edit(
+                d.labels_buf, d.labels_pos, key)
+            changed = True
+        elif kind == "search_text":
+            d.search_buf, d.search_pos = _text_edit(
+                d.search_buf, d.search_pos, key)
+            changed = True
+        elif kind == "parent_text":
+            d.parent_buf, d.parent_pos = _text_edit(
+                d.parent_buf, d.parent_pos, key)
+            changed = True
+
+        if changed:
+            self._drawer_live_preview()
+
+    def _handle_inline_search_key(self, key):
+        buf, pos = self._inline_search
+        if key in (ord("\n"), curses.KEY_ENTER, 10, 13):
+            self._close_inline_search(commit=True)
+            return
+        if key == 27:
+            self._close_inline_search(commit=False)
+            return
+        # Escalate to full drawer, carrying the typed text forward.
+        if key == ord("\t"):
+            from dataclasses import replace as _replace
+            spec = _replace(self.filter_spec, search=buf.strip())
+            self._inline_search = None
+            curses.curs_set(0)
+            self.filter_spec = spec
+            self._open_filter_drawer()
+            # Park cursor on the search row so typing continues naturally.
+            self._drawer.row = 4  # search_text
+            return
+        buf, pos = _text_edit(buf, pos, key)
+        self._inline_search = (buf, pos)
+        # Live preview — cache-only, no disk scan.
+        from dataclasses import replace as _replace
+        self.filter_spec = _replace(self.filter_spec, search=buf.strip())
+        status = TABS[self.tab][0]
+        self.tasks = build_tree(self.root, status, self.filter_spec,
+                                tasks_cache=self._task_cache,
+                                resolved_cache=self._resolved_cache)
+        if self.cursor >= len(self.tasks):
+            self.cursor = max(0, len(self.tasks) - 1)
+        self._fix_scroll()
+        self._rebuild_detail()
 
     def _list_page(self, direction, half=False):
         if not self.tasks:
@@ -478,7 +701,9 @@ class TUI:
         # Reload with no filters to ensure the task is visible
         self.filter_spec = FilterSpec()
         self.detail_search = ""
-        self.tasks = build_tree(self.root, target_status, self.filter_spec)
+        self.tasks = build_tree(self.root, target_status, self.filter_spec,
+                                tasks_cache=self._task_cache,
+                                resolved_cache=self._resolved_cache)
 
         # Find and select the task
         for i, (_, t, _, _) in enumerate(self.tasks):
@@ -556,13 +781,48 @@ class TUI:
     def _input_prompt(self, prompt):
         return _dialogs.input_prompt(self.stdscr, prompt)
 
-    def _edit_filter(self, focus_search=False):
-        new = _dialogs.filter_editor(self.stdscr, self.filter_spec,
-                                     focus_search=focus_search)
-        if new is None:
-            self.notification = "filter unchanged"
+    def _open_filter_drawer(self):
+        self._drawer = _DrawerState(self.filter_spec)
+        self._available_labels = collect_all_labels(self.root)
+
+    def _close_filter_drawer(self, commit: bool):
+        if self._drawer is None:
             return
-        self.filter_spec = new
+        if commit:
+            self.filter_spec = self._drawer.build_spec()
+        else:
+            self.filter_spec = self._drawer.saved
+        self._drawer = None
+        curses.curs_set(0)
+        self._reset_list()
+
+    def _drawer_live_preview(self):
+        """Rebuild list from the drawer's working spec (live update).
+        Uses the in-memory task cache — no disk scan."""
+        if self._drawer is None:
+            return
+        self.filter_spec = self._drawer.build_spec()
+        status = TABS[self.tab][0]
+        self.tasks = build_tree(self.root, status, self.filter_spec,
+                                tasks_cache=self._task_cache,
+                                resolved_cache=self._resolved_cache)
+        if self.cursor >= len(self.tasks):
+            self.cursor = max(0, len(self.tasks) - 1)
+        self._fix_scroll()
+        self._rebuild_detail()
+
+    def _open_inline_search(self):
+        self._inline_search = (self.filter_spec.search, len(self.filter_spec.search))
+
+    def _close_inline_search(self, commit: bool):
+        if self._inline_search is None:
+            return
+        if commit:
+            buf, _ = self._inline_search
+            from dataclasses import replace as _replace
+            self.filter_spec = _replace(self.filter_spec, search=buf.strip())
+        self._inline_search = None
+        curses.curs_set(0)
         self._reset_list()
 
 

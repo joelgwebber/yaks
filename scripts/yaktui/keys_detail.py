@@ -146,9 +146,9 @@ def handle(app, key) -> bool:
         if tid:
             app._quick_adjust_state(tid)
 
-    # Filter editor (list scope) — same as list pane.
+    # Filter drawer (list scope) — same as list pane.
     elif key == ord("f"):
-        app._edit_filter()
+        app._open_filter_drawer()
 
     # Detail search
     elif key == ord("/"):

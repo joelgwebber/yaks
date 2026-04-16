@@ -8,7 +8,7 @@ from __future__ import annotations
 import curses
 
 from yaklib.format import status_emoji
-from yaklib.model import HAIRY, SHAVING, SHORN
+from yaklib.model import HAIRY, SHAVING, SHORN, DEAD
 from yaktui.colors import (
     C_CODE,
     C_HEADER,
@@ -53,8 +53,16 @@ def tab_counts(app):
     per_tab_spec = replace(spec, statuses=frozenset())
     counts = {}
     for status, _ in TABS:
+        # If the spec explicitly narrows statuses and this tab isn't in scope,
+        # the tab will show nothing — count=0 is the honest number.
+        if spec.statuses and status not in spec.statuses:
+            counts[status] = 0
+            continue
         counts[status] = sum(
-            1 for _, _, _, ghost in build_tree(app.root, status, per_tab_spec)
+            1 for _, _, _, ghost in build_tree(
+                app.root, status, per_tab_spec,
+                tasks_cache=app._task_cache,
+                resolved_cache=app._resolved_cache)
             if not ghost
         )
     return counts
@@ -70,21 +78,39 @@ def draw(app):
 
     draw_tabs(app, 0, w)
 
+    # Drawer occupies lines between tab row and the list.
+    drawer_h = 0
+    if app._drawer is not None:
+        drawer_h = app._drawer.height
+        draw_filter_drawer(app, 1, w)
+
+    list_y = 1 + drawer_h + 1  # tab + drawer + separator/gap
+
     if app.focus == "detail":
         detail_w = max(w * 2 // 3, 40)
         list_w = w - detail_w - 1
         detail_x = list_w + 1
+        list_h = max(1, h - list_y - 1)
 
         if app._detail_build_width != detail_w:
             app._rebuild_detail(detail_w)
 
-        draw_list(app, 2, 0, h - 3, list_w)
-        draw_separator(app, 1, list_w, h - 2)
-        draw_detail(app, 1, detail_x, h - 2, detail_w)
+        draw_list(app, list_y, 0, list_h, list_w)
+        draw_separator(app, list_y - 1, list_w, list_h + 1)
+        draw_detail(app, list_y - 1, detail_x, list_h + 1, detail_w)
     else:
-        draw_list(app, 2, 0, h - 3, w)
+        list_h = max(1, h - list_y - 1)
+        draw_list(app, list_y, 0, list_h, w)
 
     draw_help_bar(app, h - 1, w)
+
+    # Cursor positioning for inline search / drawer text fields.
+    if app._inline_search is not None:
+        _position_inline_search_cursor(app, 0, w)
+    elif app._drawer is not None:
+        _position_drawer_cursor(app, 1, w)
+    else:
+        curses.curs_set(0)
 
     if app.show_help:
         draw_help_popup(app, h, w)
@@ -95,25 +121,197 @@ def draw(app):
 def draw_tabs(app, y, w):
     x = 0
     counts = tab_counts(app)
+    spec_statuses = app.filter_spec.statuses
     for i, (status, label) in enumerate(TABS):
-        text = f" {label} ({counts[status]}) "
-        attr = (curses.color_pair(C_TAB_ACTIVE) | curses.A_BOLD
-                if i == app.tab else curses.A_DIM)
+        # When the filter explicitly overrides statuses, mark which tabs
+        # are still in scope so the tab row honestly reflects what'll show.
+        marker = "*" if (spec_statuses and status in spec_statuses) else ""
+        text = f" {label}{marker} ({counts[status]}) "
+        if i == app.tab:
+            attr = curses.color_pair(C_TAB_ACTIVE) | curses.A_BOLD
+        else:
+            attr = curses.A_DIM
         try:
             app.stdscr.addstr(y, x, text, attr)
         except curses.error:
             pass
         x += len(text) + 1
 
-    chip = app.filter_spec.summary()
-    if chip:
-        safe_addstr(app.stdscr, y, x, f"  filter: {chip}",
+    if app._inline_search is not None:
+        buf, pos = app._inline_search
+        prompt = "  search: "
+        safe_addstr(app.stdscr, y, x, prompt,
+                    curses.color_pair(C_SEARCH) | curses.A_BOLD)
+        safe_addstr(app.stdscr, y, x + len(prompt), buf,
                     curses.color_pair(C_SEARCH))
+    else:
+        chip = app.filter_spec.summary()
+        if chip:
+            # Total across in-scope statuses (or the current tab if
+            # statuses aren't overridden). Reuses the cached counts.
+            spec_statuses = app.filter_spec.statuses
+            if spec_statuses:
+                total = sum(counts[s] for s, _ in TABS if s in spec_statuses)
+            else:
+                total = counts[TABS[app.tab][0]]
+            text = f"  filter: {chip}  ({total})"
+            safe_addstr(app.stdscr, y, x, text,
+                        curses.color_pair(C_SEARCH))
 
     if app.notification:
         nx = max(x + 2, w - len(app.notification) - 2)
         safe_addstr(app.stdscr, y, nx, app.notification,
                     curses.color_pair(C_SEARCH) | curses.A_BOLD)
+
+
+# ---------------------------------------------------------------------------
+# Filter drawer
+# ---------------------------------------------------------------------------
+
+_DRAWER_LABEL_COL = 12
+
+_DRAWER_CHIP_MAP = {
+    "status_chips": [HAIRY, SHAVING, SHORN, DEAD],
+    "type_chips": ["task", "bug", "feature", "idea"],
+    "pri_chips": ["p1", "p2", "p3"],
+    "deps_chips": ["ready only", "tangled only"],
+}
+
+
+def _drawer_selected_set(d, kind):
+    if kind == "status_chips":
+        return d.statuses
+    if kind == "type_chips":
+        return d.types
+    if kind == "pri_chips":
+        return {f"p{p}" for p in d.priorities}
+    if kind == "deps_chips":
+        sel = set()
+        if d.ready:
+            sel.add("ready only")
+        if d.tangled:
+            sel.add("tangled only")
+        return sel
+    return set()
+
+
+def draw_filter_drawer(app, y0, w):
+    """Render the filter drawer starting at row y0."""
+    from tui import _DRAWER_ROWS
+    d = app._drawer
+    if d is None:
+        return
+    stdscr = app.stdscr
+    cx_start = 2 + _DRAWER_LABEL_COL
+    content_w = w - cx_start - 2
+
+    for ri, (kind, label) in enumerate(_DRAWER_ROWS):
+        y = y0 + ri
+        is_active = (ri == d.row)
+        label_attr = curses.A_BOLD if is_active else curses.A_DIM
+        safe_addstr(stdscr, y, 2, label, label_attr)
+        cx = cx_start
+
+        if kind.endswith("_chips"):
+            choices = _DRAWER_CHIP_MAP[kind]
+            selected = _drawer_selected_set(d, kind)
+            for ci, c in enumerate(choices):
+                mark = "x" if c in selected else " "
+                chip = f"[{mark}] {c}  "
+                attr = 0
+                if is_active and ci == d.chip_idx:
+                    attr = curses.color_pair(C_SELECTED) | curses.A_BOLD
+                elif c in selected:
+                    attr = curses.A_BOLD
+                safe_addstr(stdscr, y, cx, chip, attr)
+                cx += len(chip)
+        elif kind.endswith("_text"):
+            if kind == "labels_text":
+                buf, pos = d.labels_buf, d.labels_pos
+            elif kind == "search_text":
+                buf, pos = d.search_buf, d.search_pos
+            else:
+                buf, pos = d.parent_buf, d.parent_pos
+            field_w = min(content_w, max(20, content_w))
+            _draw_text_field(stdscr, y, cx, buf, pos, is_active, field_w)
+            # Labels hint
+            if is_active and kind == "labels_text":
+                avail = getattr(app, "_available_labels", [])
+                if avail:
+                    hint = "available: " + ", ".join(avail[:12])
+                    if len(avail) > 12:
+                        hint += f" +{len(avail) - 12}"
+                    safe_addstr(stdscr, y, cx + field_w + 2,
+                                hint[:w - cx - field_w - 4], curses.A_DIM)
+
+    # Separator line under the drawer.
+    sep_y = y0 + len(_DRAWER_ROWS)
+    safe_addstr(stdscr, sep_y, 0, "\u2500" * w, curses.A_DIM)
+    # Key hints on the separator.
+    hints = " Enter:commit  Esc:revert  C:clear "
+    hx = w - len(hints) - 1
+    if hx > 0:
+        safe_addstr(stdscr, sep_y, hx, hints, curses.A_DIM)
+
+
+def _draw_text_field(stdscr, y, x, buf, pos, active, field_w):
+    """Render a text input with bracket boundaries."""
+    inner_w = field_w - 2  # inside the [ ]
+    safe_addstr(stdscr, y, x, "[", curses.A_DIM)
+    safe_addstr(stdscr, y, x + field_w - 1, "]", curses.A_DIM)
+    # Scroll offset
+    offset = max(0, pos - inner_w + 1)
+    vis = buf[offset:offset + inner_w]
+    pad = " " * max(0, inner_w - len(vis))
+    attr = curses.A_BOLD if active else curses.A_DIM
+    safe_addstr(stdscr, y, x + 1, vis + pad, attr)
+
+
+def _position_drawer_cursor(app, y0, w):
+    """Place the terminal cursor on the active text field in the drawer."""
+    from tui import _DRAWER_ROWS
+    d = app._drawer
+    kind = _DRAWER_ROWS[d.row][0]
+    if kind.endswith("_text"):
+        cx = 2 + _DRAWER_LABEL_COL
+        field_w = min(w - cx - 2, max(20, w - cx - 2))
+        inner_w = field_w - 2
+        if kind == "labels_text":
+            pos = d.labels_pos
+        elif kind == "search_text":
+            pos = d.search_pos
+        else:
+            pos = d.parent_pos
+        offset = max(0, pos - inner_w + 1)
+        screen_x = cx + 1 + (pos - offset)
+        screen_y = y0 + d.row
+        curses.curs_set(1)
+        try:
+            app.stdscr.move(screen_y, screen_x)
+        except curses.error:
+            pass
+    else:
+        curses.curs_set(0)
+
+
+def _position_inline_search_cursor(app, y, w):
+    """Place the terminal cursor on the inline search in the tab row."""
+    if app._inline_search is None:
+        curses.curs_set(0)
+        return
+    buf, pos = app._inline_search
+    # Find the x of the search area — after the tab texts.
+    counts = tab_counts(app)
+    x = 0
+    for i, (status, label) in enumerate(TABS):
+        text = f" {label} ({counts[status]}) "
+        x += len(text) + 1
+    prompt = "  search: "
+    curses.curs_set(1)
+    try:
+        app.stdscr.move(y, x + len(prompt) + pos)
+    except curses.error:
+        pass
 
 
 def draw_list(app, y_start, x_start, height, width):
@@ -300,12 +498,14 @@ def draw_help_bar(app, y, w):
         safe_addstr(app.stdscr, y, 0, app.message[:w], curses.color_pair(C_SEARCH))
         app.message = ""
         return
+    filter_active = not app.filter_spec.is_empty()
+    filter_hint = "f:filter  Esc:clear" if filter_active else "f:filter  /:search"
     if app.focus == "detail":
         keys = ("h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  "
-                "E:edit  D:dep  S:state  f:filter  /:search  q:quit  ?:help")
+                f"E:edit  D:dep  S:state  {filter_hint}  q:quit  ?:help")
     else:
         keys = ("Tab:tab  j/k:move  l:detail  c/C:new  E:edit  X:del  "
-                "S:state  D:dep  P/T/L:adjust  f:filter  /:search  ?:help")
+                f"S:state  D:dep  P/T/L:adjust  {filter_hint}  ?:help")
     safe_addstr(app.stdscr, y, 0, " " * w, curses.color_pair(C_HELP))
     safe_addstr(app.stdscr, y, 0, keys[:w], curses.color_pair(C_HELP))
 
@@ -321,7 +521,7 @@ _HELP_SECTIONS = [
     ("Search & filter", [
         "f                     Open filter editor",
         "/                     Filter editor focused on search",
-        "\\ or Esc              Clear all filters",
+        "Esc                   Clear all filters (when active)",
         "n / N                 Next / prev detail match",
         "y                     Copy yak ID to clipboard",
     ]),

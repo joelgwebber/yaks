@@ -50,15 +50,11 @@ def handle(app, key) -> bool:
     elif key in (curses.KEY_PPAGE, ord("u"), 21):
         app._list_page(-1, half=(key in (ord("u"), 21)))
 
-    # Filter editor (subsumes search + next/tangled toggles)
+    # Filter drawer / inline search
     elif key == ord("f"):
-        app._edit_filter()
+        app._open_filter_drawer()
     elif key == ord("/"):
-        app._edit_filter(focus_search=True)
-    elif key == ord("\\"):
-        from yaklib.filter import FilterSpec as _FS
-        app.filter_spec = _FS()
-        app._reset_list()
+        app._open_inline_search()
     elif key == 27:  # Escape clears filter
         if not app.filter_spec.is_empty():
             from yaklib.filter import FilterSpec as _FS
