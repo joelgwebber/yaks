@@ -4,7 +4,8 @@ title: Quote markdown rendering.
 type: feature
 priority: 2
 created: '2026-04-17T22:53:22Z'
-updated: '2026-04-17T22:56:43Z'
+updated: '2026-04-17T22:56:53Z'
+commit: 22d9ed5
 ---
 
 It would be nice if quotes like this rendered clearly:
