@@ -6,11 +6,23 @@ Yaks is a [Claude Code plugin](https://docs.anthropic.com/en/docs/claude-code/pl
 
 ## Install
 
+### As a Claude Code plugin
+
 ```
 claude plugin add --from /path/to/yaks
 ```
 
-Or, if published to a registry, follow the standard plugin installation instructions.
+### As a CLI tool
+
+```bash
+# From GitHub
+uv tool install git+https://github.com/joelgwebber/yaks
+
+# Or from a local clone
+uv tool install /path/to/yaks
+```
+
+This puts `yaks` on your `$PATH`. All subcommands work: `yaks list`, `yaks create`, `yaks tui`, etc. Upgrade with `uv tool upgrade yaks`.
 
 ## Quick start
 
@@ -91,7 +103,7 @@ Examples:
 Yaks includes a curses-based terminal UI for interactive task management:
 
 ```
-python3 scripts/yak.py tui
+yaks tui
 ```
 
 The TUI provides:

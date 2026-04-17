@@ -340,22 +340,22 @@ name = "yaks"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "black" },
-    { name = "isort" },
     { name = "pyyaml" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "black" },
+    { name = "isort" },
     { name = "pytest" },
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "black", specifier = ">=26.1.0" },
-    { name = "isort", specifier = ">=7.0.0" },
-    { name = "pyyaml", specifier = ">=6.0" },
-]
+requires-dist = [{ name = "pyyaml", specifier = ">=6.0" }]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=8.0" }]
+dev = [
+    { name = "black", specifier = ">=26.1.0" },
+    { name = "isort", specifier = ">=7.0.0" },
+    { name = "pytest", specifier = ">=8.0" },
+]

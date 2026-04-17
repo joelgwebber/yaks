@@ -21,6 +21,7 @@ Two entry scripts (both carry PEP 723 inline metadata, require `pyyaml>=6.0`) pl
   - `clipboard.py` — `copy_text` + `read_png` (macOS + Linux).
   - `format.py` — `humanize_date` + `status_char`.
   - `filter.py` — `FilterSpec` dataclass + `filter_tasks()`, shared across CLI and TUI.
+  - `cli.py` — `main()` entry point for the installed `yaks` command (`uv tool install`).
 - **`scripts/yaktui/`** — TUI-side library. All functions take the `App` instance (or just `stdscr`) as the first argument:
   - `colors.py`, `tree.py`, `detail.py`, `dialogs.py`, `mutate.py`, `render.py`, `keys_list.py`, `keys_detail.py`, `vim_edit.py`.
 - **`commands/*.md`** — Slash commands for the Claude Code plugin. Each invokes `${CLAUDE_PLUGIN_ROOT}/scripts/yak.py`.

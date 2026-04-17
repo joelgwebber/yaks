@@ -4,15 +4,27 @@ version = "0.1.0"
 description = "Filesystem-native task tracker"
 requires-python = ">=3.10"
 dependencies = [
-    "black>=26.1.0",
-    "isort>=7.0.0",
     "pyyaml>=6.0",
 ]
 
+[project.scripts]
+yaks = "yaklib.cli:main"
+
 [dependency-groups]
 dev = [
+    "black>=26.1.0",
+    "isort>=7.0.0",
     "pytest>=8.0",
 ]
+
+[tool.setuptools.package-dir]
+"" = "scripts"
+
+[tool.setuptools.packages.find]
+where = ["scripts"]
+
+[tool.setuptools]
+py-modules = ["yak", "tui"]
 
 [tool.ruff]
 target-version = "py310"

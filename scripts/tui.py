@@ -8,7 +8,9 @@ import curses
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
+_scripts = str(Path(__file__).parent)
+if _scripts not in sys.path:
+    sys.path.insert(0, _scripts)
 from yaklib import artifacts as _artifacts
 from yaklib import clipboard as _clipboard
 from yaklib import deps as _deps

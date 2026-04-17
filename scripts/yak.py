@@ -11,11 +11,13 @@ dispatch table and is the only thing the plugin invokes directly.
 
 from __future__ import annotations
 
-import subprocess as _sp
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
+# Allow direct invocation via `python3 scripts/yak.py` (plugin compat)
+_scripts = str(Path(__file__).parent)
+if _scripts not in sys.path:
+    sys.path.insert(0, _scripts)
 
 from yaklib.commands import COMMANDS  # noqa: E402
 from yaklib.parser import build_parser  # noqa: E402
@@ -29,7 +31,13 @@ def main():
         sys.exit(1)
 
     if args.command == "tui":
-        _sp.execvp(sys.executable, [sys.executable, str(Path(__file__).parent / "tui.py")])
+        import curses
+        from tui import main as tui_main
+        try:
+            curses.wrapper(tui_main)
+        except KeyboardInterrupt:
+            pass
+        return
 
     COMMANDS[args.command](args)
 
