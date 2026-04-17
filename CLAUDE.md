@@ -20,13 +20,14 @@ Two entry scripts (both carry PEP 723 inline metadata, require `pyyaml>=6.0`) pl
   - `artifacts.py` — artifact link parsing + `artifacts_dir`.
   - `clipboard.py` — `copy_text` + `read_png` (macOS + Linux).
   - `format.py` — `humanize_date` + `status_char`.
+  - `filter.py` — `FilterSpec` dataclass + `filter_tasks()`, shared across CLI and TUI.
 - **`scripts/yaktui/`** — TUI-side library. All functions take the `App` instance (or just `stdscr`) as the first argument:
-  - `colors.py`, `tree.py`, `detail.py`, `dialogs.py`, `mutate.py`, `render.py`, `keys_list.py`, `keys_detail.py`.
+  - `colors.py`, `tree.py`, `detail.py`, `dialogs.py`, `mutate.py`, `render.py`, `keys_list.py`, `keys_detail.py`, `vim_edit.py`.
 - **`commands/*.md`** — Slash commands for the Claude Code plugin. Each invokes `${CLAUDE_PLUGIN_ROOT}/scripts/yak.py`.
 - **`skills/yak/SKILL.md`** — Skill definition that activates when `.yaks/` exists.
 - **`tests/`** — pytest suite (subprocess CLI tests + unit tests for `deps` and the TUI pure functions). Run with `uv run pytest`.
 - **`.claude-plugin/plugin.json`** and **`marketplace.json`** — Plugin / marketplace metadata.
-- **`.yaks/config.yaml`** — Per-project config (currently just `prefix`).
+- **`.yaks/config.yaml`** — Per-project config (`prefix`, `vim_mode`). User-global config at `~/.config/yaks/config.yaml` is merged under per-project values.
 
 ## Running the script
 
@@ -34,7 +35,7 @@ Two entry scripts (both carry PEP 723 inline metadata, require `pyyaml>=6.0`) pl
 python3 scripts/yak.py <subcommand> [args]
 ```
 
-Subcommands: `init`, `create`, `list`, `show`, `update`, `shave`, `shorn`, `regrow`, `slaughter`, `revive`, `next`, `tangled`, `dep`, `reparent`, `search`, `stats`, `import-beads`. Old names (`work`, `close`, `reopen`, `ready`, `blocked`) are accepted as aliases. All support `--json` where applicable.
+Subcommands: `init`, `create`, `list`, `show`, `update`, `shave`, `shorn`, `regrow`, `slaughter`, `revive`, `next`, `tangled`, `dep`, `reparent`, `attach`, `detach`, `search`, `stats`, `tui`, `import-beads`. Old names (`work`, `close`, `reopen`, `ready`, `blocked`) are accepted as aliases. Most support `--json` where applicable.
 
 ## Task file format
 

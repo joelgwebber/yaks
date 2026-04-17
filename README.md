@@ -20,7 +20,9 @@ Once installed, initialize tracking in any project:
 /yaks:init
 ```
 
-This creates a `.yaks/` directory with `hairy/`, `shaving/`, and `shorn/` subdirectories, plus a `config.yaml`. From there, your coding assistant can create and manage tasks using slash commands:
+This creates a `.yaks/` directory with `hairy/`, `shaving/`, and `shorn/` subdirectories, plus a `config.yaml`. It also appends a workflow mandate to your project's `CLAUDE.md` (or `AGENTS.md` if one exists).
+
+From there, your coding assistant can create and manage tasks using slash commands:
 
 ```
 /yaks:create --title "Add retry logic to API client" --type feature --priority 1
@@ -36,6 +38,7 @@ This creates a `.yaks/` directory with `hairy/`, `shaving/`, and `shorn/` subdir
 - **Tasks are markdown with frontmatter.** Every task is a single `.md` file. Structured metadata (ID, title, type, priority, timestamps, dependencies, labels) lives in YAML frontmatter. The markdown body is the description.
 - **Parent/child tasks.** Create subtasks with `--parent TASK_ID`. Children get dot-suffixed IDs (`yak-a1b2.1`, `yak-a1b2.2`). The relationship is implicit from the ID — no extra YAML field. `show` displays the hierarchy automatically.
 - **Dependencies are first-class.** Tasks can depend on other tasks. `/yaks:next` shows only tasks whose dependencies are all shorn. `/yaks:tangled` shows what's stuck.
+- **Artifacts.** Attach files or clipboard images to tasks with `attach`. They're stored in `.yaks/artifacts/{task-id}/` and linked from the task body.
 - **Git-friendly.** Task files are small, human-readable, and merge cleanly. Git history is your audit log.
 
 ## Commands
@@ -54,10 +57,52 @@ This creates a `.yaks/` directory with `hairy/`, `shaving/`, and `shorn/` subdir
 | `/yaks:revive` | Revive a dead yak back to hairy |
 | `/yaks:next` | Show yaks ready to shave (all deps met) |
 | `/yaks:tangled` | Show tangled yaks (unshorn dependencies) |
+| `/yaks:search` | Search tasks by keyword |
 | `/yaks:dep` | Add or remove dependencies between tasks |
 | `/yaks:reparent` | Move a task to a new parent or promote to top-level |
 | `/yaks:stats` | Show task statistics |
 | `/yaks:import-beads` | Import tasks from a beads JSONL export |
+
+Additionally, `attach` and `detach` are available via the CLI (`yak.py attach`/`yak.py detach`) for managing file artifacts on tasks.
+
+## Filtering
+
+All query commands (`list`, `search`, `next`, `tangled`) share the same filter flags. Filters AND across dimensions; within a repeatable flag, values are OR'd:
+
+- `--status S` — filter by status (repeatable): `hairy`, `shaving`, `shorn`, `dead`
+- `--type T` — filter by type (repeatable): `bug`, `feature`, `task`, `idea`
+- `--priority P` — filter by priority (repeatable): `1`, `2`, `3`
+- `--label L` — match any listed label (repeatable)
+- `--search Q` — substring match on title, description, or id
+- `--ready` — only tasks whose dependencies are all resolved
+- `--tangled` — only tasks with at least one unresolved dependency
+- `--parent-of ID` — only descendants of a given task
+
+Examples:
+
+```
+/yaks:list --type bug --type feature --priority 1
+/yaks:list --label auth --search retry
+/yaks:next --type bug
+```
+
+## TUI
+
+Yaks includes a curses-based terminal UI for interactive task management:
+
+```
+python3 scripts/yak.py tui
+```
+
+The TUI provides:
+
+- **Tab-based status views** — switch between hairy, shaving, and shorn tabs
+- **Tree display** — parent/child tasks rendered as a collapsible tree
+- **Detail pane** — full task view with rendered markdown, metadata, dependencies, and artifacts
+- **Inline mutations** — change status, priority, type, title, labels, and dependencies without leaving the TUI
+- **Filter drawer** — drop-down filter panel (press `/` for search, `f` for full filter) with live preview as you type
+- **Help overlay** — press `?` for a full keybinding reference
+- **Vim-style editing** — optional vim keybindings in all text inputs (see Configuration below)
 
 ## Task format
 
@@ -84,16 +129,28 @@ submitting with an empty password field.
 
 Frontmatter fields:
 
-- **id** — Auto-generated as `{prefix}-{4 hex chars}` (prefix defaults to directory name), or `{parent-id}.N` for child tasks
+- **id** — Auto-generated as `{prefix}-{4 hex chars}` (prefix from config), or `{parent-id}.N` for child tasks
 - **title** — Short description of the task
-- **type** — `bug`, `feature`, `task`, or `idea` (for "might/might-not do")
+- **type** — `bug`, `feature`, `task`, or `idea`
 - **priority** — `1` (highest) through `3` (lowest)
 - **created** / **updated** — ISO 8601 timestamps
 - **depends_on** — Optional list of task IDs that must be shorn first
 - **labels** — Optional list of string tags
-- **commit** — Short git hash, auto-populated from HEAD when shorn (override with `--commit`)
+- **commit** — Short git hash, auto-populated from HEAD when shorn
 
-The markdown body after the closing `---` is the description (optional).
+## Configuration
+
+Yaks reads configuration from two levels, with per-project values overriding user-global ones:
+
+1. **User-global** — `~/.config/yaks/config.yaml` (created by `yaks init` if it doesn't exist)
+2. **Per-project** — `.yaks/config.yaml`
+
+Available settings:
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `prefix` | directory name | ID prefix for new tasks (e.g., `api` → `api-f3a1`) |
+| `vim_mode` | `false` | Vim-style insert/normal mode editing in TUI text inputs |
 
 ## Configuring your AI assistant to use Yaks
 
@@ -115,14 +172,6 @@ This project uses Yaks. The Yaks skill has the full workflow.
 
 The Yaks plugin skill activates automatically when `.yaks/` exists and carries the full workflow details, command reference, and task format documentation. The block above is the behavioral mandate that ensures your assistant actually follows it.
 
-### Custom prefix
-
-If you want task IDs to match your project (e.g., `api-f3a1` instead of the default), initialize with a custom prefix:
-
-```
-/yaks:init --prefix api
-```
-
 ## Requirements
 
 - Python 3.10+
@@ -132,4 +181,4 @@ The script uses [PEP 723](https://peps.python.org/pep-0723/) inline metadata, so
 
 ## License
 
-MIT
+Apache 2.0
