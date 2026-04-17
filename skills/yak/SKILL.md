@@ -18,7 +18,7 @@ This project tracks work with Yaks. Tasks are markdown files with YAML frontmatt
 1. **Session start** — run `/yaks:list` and `/yaks:next` to see current state.
 2. **Before writing code** — `/yaks:shave TASK_ID` (create the yak first if needed).
 3. **While working** — append progress notes with `/yaks:update TASK_ID --note "what you found / decided / changed"`. This builds a running log in the markdown body so future sessions have context.
-4. **After the commit** — `/yaks:shorn TASK_ID` immediately. Include a brief shorn summary noting what was done, what was learned, and any yaks spawned as a result.
+4. **After the commit** — `/yaks:update TASK_ID --note "..."` with a brief shorn summary (what was done, what was learned, any yaks spawned), then `/yaks:shorn TASK_ID` immediately.
 
 ## Parent/child state rules
 
