@@ -4,7 +4,8 @@ title: 'Rethink layout: kanban is wrong for read-only'
 type: task
 priority: 1
 created: '2026-04-17T23:13:29Z'
-updated: '2026-04-17T23:47:43Z'
+updated: '2026-04-17T23:48:02Z'
+commit: 26aaf54
 ---
 
 The kanban view generates a ton of scrolling (72 shorn tasks in one column). Since this is read-only, the interactive nature of kanban is pointless. Consider a TUI-like stateful approach — tabbed status views, or a list with a detail pane. Something more familiar to yaks users and more compact.
