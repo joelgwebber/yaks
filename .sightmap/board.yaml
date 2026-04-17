@@ -1,0 +1,84 @@
+version: 1
+
+views:
+  - name: YakBoard
+    route: "/**"
+    description: Kanban-style task board for a GitHub-hosted yaks project
+    source: docs/index.html
+    components:
+      - name: RepoBar
+        selector: "header.repo-bar"
+        description: Sticky header with repo input, branch picker, and load button
+        children:
+          - name: RepoInput
+            selector: "input#repo-input"
+          - name: BranchPicker
+            selector: "select#branch-select"
+          - name: LoadButton
+            selector: "button[type='submit']"
+
+      - name: StatusBar
+        selector: "div#status-bar"
+        description: Status message bar showing load state or errors
+
+      - name: EmptyState
+        selector: "div#empty-state"
+        description: Placeholder shown before a repo is loaded
+
+      - name: Board
+        selector: "div#board"
+        description: Three-column kanban grid
+        children:
+          - name: HairyColumn
+            selector: "div#col-hairy"
+          - name: ShavingColumn
+            selector: "div#col-shaving"
+          - name: ShornColumn
+            selector: "div#col-shorn"
+          - name: ColumnCount
+            selector: "span.count"
+
+      - name: TaskCard
+        selector: "div.card"
+        description: A single yak task card with metadata badges
+        children:
+          - name: CardId
+            selector: "span.card-id"
+          - name: CardTitle
+            selector: "div.card-title"
+          - name: PriorityBadge
+            selector: ".badge-p1, .badge-p2, .badge-p3"
+          - name: TypeBadge
+            selector: ".badge-bug, .badge-feature, .badge-task, .badge-idea"
+          - name: LabelBadge
+            selector: "span.badge-label"
+          - name: DepBadge
+            selector: "span.badge-dep"
+          - name: ChildrenList
+            selector: "div.card-children"
+          - name: ChildRow
+            selector: "div.child-row"
+
+      - name: DetailModal
+        selector: "div#modal.modal-overlay"
+        description: Expanded task detail overlay with full metadata and rendered markdown
+        children:
+          - name: ModalContent
+            selector: "div#modal-content"
+          - name: ModalClose
+            selector: "button.modal-close"
+          - name: ModalBody
+            selector: "div.modal-body"
+          - name: DepLink
+            selector: "code.dep-link"
+
+requests:
+  - name: FetchTree
+    route: "/repos/*/git/trees/*"
+    method: GET
+    description: Fetch the full file tree for a repo/branch to discover .yaks/ task files
+
+  - name: FetchBranches
+    route: "/repos/*/branches"
+    method: GET
+    description: List branches for the branch picker
