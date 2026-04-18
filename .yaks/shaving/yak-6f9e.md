@@ -4,7 +4,7 @@ title: Web UI pointing at git repo
 type: idea
 priority: 2
 created: '2026-04-14T14:24:05Z'
-updated: '2026-04-18T00:08:07Z'
+updated: '2026-04-18T00:43:32Z'
 ---
 
 You could run it locally, or host it with access to a github repo. Similar feature set to the TUI, but in a way that makes it available to other users. If allowed to be mutative, it would just commit to the git repo.
@@ -53,3 +53,5 @@ MVP implemented in docs/index.html. Single self-contained HTML file using pico.c
 ![V2 UI: shaving tab with light header, bison logo, refresh icon](artifacts/yak-6f9e/v2-shaving-tab.png)
 
 ![V2 UI: shorn tab with slide-in detail panel, human-readable dates, commit link](artifacts/yak-6f9e/v2-detail-panel.png)
+
+![After polish: bumped text, consistent badges, better contrast](artifacts/yak-6f9e/v2-polish.png)
