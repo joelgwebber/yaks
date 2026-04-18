@@ -4,7 +4,7 @@ title: Web UI pointing at git repo
 type: idea
 priority: 2
 created: '2026-04-14T14:24:05Z'
-updated: '2026-04-17T01:50:16Z'
+updated: '2026-04-18T00:08:07Z'
 ---
 
 You could run it locally, or host it with access to a github repo. Similar feature set to the TUI, but in a way that makes it available to other users. If allowed to be mutative, it would just commit to the git repo.
@@ -49,3 +49,7 @@ Total API cost: ~2 calls per page load. 60/hr unauthenticated is plenty.
 
 ### 2026-04-17T01:50:16Z
 MVP implemented in docs/index.html. Single self-contained HTML file using pico.css, js-yaml, and marked from CDN. Fetches via GitHub Trees API (1 call) + raw.githubusercontent.com (CDN). Three-column kanban with parent/child nesting, click-to-expand modal with rendered markdown, branch picker, shareable URL hash. Tested against joelgwebber/yaks — loads 99 tasks successfully. Polish ideas: sort shorn by updated date, add filter bar, dark mode toggle.
+
+![V2 UI: shaving tab with light header, bison logo, refresh icon](artifacts/yak-6f9e/v2-shaving-tab.png)
+
+![V2 UI: shorn tab with slide-in detail panel, human-readable dates, commit link](artifacts/yak-6f9e/v2-detail-panel.png)
