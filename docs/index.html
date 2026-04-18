@@ -1,833 +1,1084 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-theme="light">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Yaks Board</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-<script src="https://cdn.jsdelivr.net/npm/js-yaml@4/dist/js-yaml.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
-<style>
-:root {
-  --pico-font-size: 15px;
-}
-body { margin: 0; padding: 0; }
-
-/* --- Header --- */
-header.repo-bar {
-  padding: 0.4rem 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--pico-background-color);
-}
-.logo { font-size: 1.4rem; line-height: 1; cursor: default; }
-header.repo-bar form {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  margin: 0;
-}
-header.repo-bar input, header.repo-bar select {
-  margin: 0;
-  padding: 0.25rem 0.5rem;
-  font-size: 0.8rem;
-  height: 1.8rem;
-  border-radius: 4px;
-  line-height: 1;
-}
-header.repo-bar input {
-  width: 160px;
-}
-header.repo-bar select {
-  max-width: 120px;
-}
-.refresh-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.1rem;
-  padding: 0.1rem 0.3rem;
-  color: var(--pico-muted-color);
-  margin: 0;
-  line-height: 1;
-  border-radius: 4px;
-}
-.refresh-btn:hover { color: var(--pico-color); }
-.header-status {
-  font-size: 0.75rem;
-  color: var(--pico-muted-color);
-  margin-left: auto;
-  white-space: nowrap;
-}
-.header-status.error { color: var(--pico-del-color); }
-.header-status.loading::after {
-  content: "";
-  display: inline-block;
-  width: 0.7em;
-  height: 0.7em;
-  border: 1.5px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-  margin-left: 0.4rem;
-  vertical-align: middle;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* --- Tabs --- */
-.tab-bar {
-  display: flex;
-  gap: 0;
-  border-bottom: 1px solid var(--pico-muted-border-color);
-  padding: 0 1.25rem;
-}
-.tab {
-  padding: 0.5rem 1rem;
-  font-size: 0.85rem;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  color: var(--pico-muted-color) !important;
-  white-space: nowrap;
-  background: none !important;
-  border-top: none;
-  border-left: none;
-  border-right: none;
-  margin: 0;
-  outline: none !important;
-  box-shadow: none !important;
-}
-.tab:hover { color: #1b2832 !important; }
-.tab:focus-visible { color: #1b2832 !important; }
-.tab.active {
-  color: #1b2832 !important;
-  border-bottom-color: var(--pico-primary);
-  font-weight: 600;
-}
-.tab .count {
-  font-size: 0.7rem;
-  background: var(--pico-muted-border-color);
-  border-radius: 8px;
-  padding: 0.05rem 0.4rem;
-  margin-left: 0.3rem;
-  font-weight: normal;
-}
-
-/* --- Main layout --- */
-.main-layout {
-  display: flex;
-  height: calc(100vh - 85px);
-  overflow: hidden;
-}
-.task-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0.5rem 0;
-}
-.detail-panel {
-  width: 0;
-  overflow-y: auto;
-  border-left: 1px solid var(--pico-muted-border-color);
-  transition: width 0.2s ease;
-  flex-shrink: 0;
-}
-.detail-panel.open {
-  width: 55%;
-  min-width: 350px;
-}
-.detail-inner {
-  padding: 1.25rem;
-}
-
-/* --- Task rows --- */
-.task-row {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.35rem 1.25rem;
-  cursor: pointer;
-  border-left: 3px solid transparent;
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-.task-row:hover { background: rgba(0,0,0,0.02); }
-.task-row.selected {
-  background: rgba(0,0,0,0.04);
-  border-left-color: var(--pico-primary);
-}
-.task-row .task-id {
-  font-family: var(--pico-font-family-monospace);
-  font-size: 0.75rem;
-  color: var(--pico-muted-color);
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-.task-row .task-title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.task-row .task-meta {
-  display: flex;
-  gap: 0.3rem;
-  flex-shrink: 0;
-  flex-wrap: nowrap;
-}
-.child-indent {
-  padding-left: 2rem;
-}
-.child-indent .task-id { width: auto; }
-.child-status-icon {
-  font-size: 0.7rem;
-  flex-shrink: 0;
-}
-
-/* --- Badges --- */
-.badge {
-  font-size: 0.7rem;
-  padding: 0.1rem 0.4rem;
-  border-radius: 3px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.badge-p1 { background: #fee2e2; color: #991b1b; }
-.badge-p2 { background: #fef3c7; color: #7c2d12; }
-.badge-p3 { background: #e0e7ff; color: #3730a3; }
-.badge-bug { background: #fecaca; color: #991b1b; }
-.badge-feature { background: #d1fae5; color: #065f46; }
-.badge-task { background: #dbeafe; color: #1e40af; }
-.badge-idea { background: #f3e8ff; color: #6b21a8; }
-.badge-label {
-  background: #f1f5f9;
-  color: #475569;
-}
-.badge-dep {
-  background: #fef3c7;
-  color: #7c2d12;
-}
-
-/* --- Detail panel content --- */
-.detail-header {
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-}
-.detail-header h2 {
-  margin: 0;
-  font-size: 1.1rem;
-  line-height: 1.3;
-}
-.detail-close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.2rem;
-  color: var(--pico-muted-color);
-  padding: 0;
-  margin: 0;
-  line-height: 1;
-  flex-shrink: 0;
-}
-.detail-meta {
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.75rem;
-}
-.detail-field {
-  font-size: 0.85rem;
-  margin-bottom: 0.2rem;
-  color: var(--pico-muted-color);
-}
-.detail-field strong { color: var(--pico-color); }
-.detail-field a { color: var(--pico-primary); text-decoration: none; }
-.detail-field a:hover { text-decoration: underline; }
-.detail-body {
-  border-top: 1px solid var(--pico-muted-border-color);
-  padding-top: 0.75rem;
-  margin-top: 0.5rem;
-  font-size: 0.95rem;
-  line-height: 1.6;
-}
-.detail-body h1, .detail-body h2, .detail-body h3 {
-  font-size: 0.95rem;
-  margin-top: 0.8rem;
-  margin-bottom: 0.3rem;
-}
-.detail-body blockquote {
-  border-left: 3px solid var(--pico-muted-border-color);
-  margin: 0.5rem 0;
-  padding: 0.4rem 0.8rem;
-  color: var(--pico-muted-color);
-  background: rgba(0,0,0,0.02);
-  border-radius: 0 4px 4px 0;
-}
-.detail-body blockquote p { margin: 0; }
-.detail-body code {
-  font-size: 0.8rem;
-}
-.detail-body pre {
-  font-size: 0.78rem;
-  overflow-x: auto;
-}
-.yak-link {
-  color: var(--pico-primary);
-  cursor: pointer;
-  text-decoration: none;
-}
-.yak-link:hover { text-decoration: underline; }
-
-/* --- Empty state --- */
-.empty-state {
-  text-align: center;
-  padding: 4rem 2rem;
-  color: var(--pico-muted-color);
-}
-.empty-state .logo { font-size: 3rem; display: block; margin-bottom: 1rem; }
-.empty-state h2 { color: var(--pico-muted-color); }
-
-@media (max-width: 768px) {
-  .detail-panel.open { width: 100%; position: fixed; inset: 0; z-index: 50; background: var(--pico-background-color); }
-  header.repo-bar input { width: 120px; }
-}
-</style>
-</head>
-<body>
-
-<header class="repo-bar">
-  <span class="logo" title="Yaks">&#x1F9AC;</span>
-  <form id="repo-form">
-    <input id="repo-input" type="text" placeholder="owner/repo" autocomplete="off">
-    <select id="branch-select" style="display:none"></select>
-    <button type="button" class="refresh-btn" id="refresh-btn" title="Reload" style="display:none">&#x21bb;</button>
-  </form>
-  <span id="status" class="header-status"></span>
-</header>
-
-<div id="tab-bar" class="tab-bar" style="display:none">
-  <button class="tab active" data-status="hairy">Hairy <span class="count" id="count-hairy">0</span></button>
-  <button class="tab" data-status="shaving">Shaving <span class="count" id="count-shaving">0</span></button>
-  <button class="tab" data-status="shorn">Shorn <span class="count" id="count-shorn">0</span></button>
-</div>
-
-<div id="empty-state" class="empty-state">
-  <span class="logo">&#x1F9AC;</span>
-  <h2>Yak Board</h2>
-  <p>Enter a GitHub repository above to view its yak board.</p>
-  <p style="font-size: 0.85rem">The repo must have a <code>.yaks/</code> directory at its root.</p>
-</div>
-
-<div id="main" class="main-layout" style="display:none">
-  <div id="task-list" class="task-list"></div>
-  <div id="detail-panel" class="detail-panel">
-    <div id="detail-inner" class="detail-inner"></div>
-  </div>
-</div>
-
-<script>
-const STATUSES = ["hairy", "shaving", "shorn"];
-const STATUS_EMOJI = { hairy: "\u{1F9AC}", shaving: "\u2702\uFE0F", shorn: "\u{1F411}", dead: "\u{1F480}" };
-
-let state = { owner: "", repo: "", branch: "", tasks: [], taskMap: {}, activeTab: "hairy", selectedId: null };
-
-// --- Dates ---
-function humanDate(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d)) return String(iso);
-  const now = new Date();
-  const diff = now - d;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  if (days < 30) return `${Math.floor(days / 7)}w ago`;
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const sameYear = d.getFullYear() === now.getFullYear();
-  return sameYear
-    ? `${months[d.getMonth()]} ${d.getDate()}`
-    : `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
-}
-
-// --- URL hash ---
-// Hash format: #owner/repo[/branch[/tab[/taskId]]]
-function readHash() {
-  const h = location.hash.replace(/^#/, "");
-  if (!h) return null;
-  const parts = h.split("/");
-  if (parts.length < 2) return null;
-  return { owner: parts[0], repo: parts[1], branch: parts[2] || "", tab: parts[3] || "", taskId: parts.slice(4).join("/") || "" };
-}
-
-function buildHash(owner, repo, branch, tab, taskId) {
-  let h = branch ? `${owner}/${repo}/${branch}` : `${owner}/${repo}`;
-  if (tab) h += `/${tab}`;
-  if (taskId) h += `/${taskId}`;
-  return h;
-}
-
-function writeHash(owner, repo, branch) {
-  const h = buildHash(owner, repo, branch, "", "");
-  if (location.hash !== "#" + h) location.hash = h;
-}
-
-function pushNav(tab, taskId) {
-  const h = buildHash(state.owner, state.repo, state.branch, tab || "", taskId || "");
-  if (location.hash !== "#" + h) {
-    history.pushState(null, "", "#" + h);
-  }
-}
-
-// --- Auto-detect repo from GH Pages URL ---
-function detectRepo() {
-  const host = location.hostname;
-  const m = host.match(/^(.+)\.github\.io$/);
-  if (m) {
-    const owner = m[1];
-    const repo = location.pathname.replace(/^\//, "").replace(/\/.*$/, "");
-    if (repo) return `${owner}/${repo}`;
-  }
-  return "";
-}
-
-// --- GitHub API ---
-async function apiFetch(url) {
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error(`GitHub API ${resp.status}: ${resp.statusText}`);
-  return resp.json();
-}
-
-async function fetchBranches(owner, repo) {
-  try {
-    const data = await apiFetch(`https://api.github.com/repos/${owner}/${repo}/branches?per_page=100`);
-    return data.map(b => b.name);
-  } catch { return []; }
-}
-
-async function fetchTree(owner, repo, branch) {
-  const data = await apiFetch(
-    `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`
-  );
-  return data.tree || [];
-}
-
-async function fetchRaw(owner, repo, branch, path) {
-  const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
-  const resp = await fetch(url);
-  if (!resp.ok) return null;
-  return resp.text();
-}
-
-// --- Parsing ---
-function parseFrontmatter(text) {
-  const m = text.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-  if (!m) return { meta: {}, body: text };
-  try {
-    const meta = jsyaml.load(m[1]) || {};
-    return { meta, body: m[2] };
-  } catch { return { meta: {}, body: text }; }
-}
-
-function parentId(id) {
-  const dot = id.lastIndexOf(".");
-  return dot === -1 ? null : id.substring(0, dot);
-}
-
-// --- Yak ID linking in markdown ---
-function linkifyYakIds(html) {
-  return html.replace(/\[\[(yak[a-z]*-[a-z0-9.]+)\]\]/gi, (_, id) => {
-    return `<span class="yak-link" data-id="${esc(id)}">${esc(id)}</span>`;
-  }).replace(/(?<![\/\w-])(yak[a-z]*-[a-f0-9]{4}(?:\.\d+)*)\b/gi, (match, id) => {
-    if (state.taskMap[id]) {
-      return `<span class="yak-link" data-id="${esc(id)}">${esc(id)}</span>`;
-    }
-    return match;
-  });
-}
-
-// --- Data loading ---
-async function loadBoard(owner, repo, branch) {
-  state = { ...state, owner, repo, branch, tasks: [], taskMap: {}, selectedId: null };
-  showStatus("Loading...", false, true);
-  closeDetail();
-
-  const tree = await fetchTree(owner, repo, branch);
-  const yakFiles = [];
-  for (const entry of tree) {
-    if (entry.type !== "blob") continue;
-    const m = entry.path.match(/^\.yaks\/(hairy|shaving|shorn|dead)\/(.+\.md)$/);
-    if (m) yakFiles.push({ status: m[1], path: entry.path });
-  }
-
-  if (yakFiles.length === 0) {
-    showStatus("No .yaks/ tasks found.", true);
-    return;
-  }
-
-  showStatus(`Fetching ${yakFiles.length} tasks...`, false, true);
-
-  const results = await Promise.all(
-    yakFiles.map(async (f) => {
-      const text = await fetchRaw(owner, repo, branch, f.path);
-      if (!text) return null;
-      const { meta, body } = parseFrontmatter(text);
-      return { ...meta, _status: f.status, _body: body, _path: f.path };
-    })
-  );
-
-  const tasks = results.filter(Boolean);
-  const taskMap = {};
-  for (const t of tasks) { if (t.id) taskMap[t.id] = t; }
-
-  state.tasks = tasks;
-  state.taskMap = taskMap;
-
-  document.getElementById("empty-state").style.display = "none";
-  document.getElementById("main").style.display = "flex";
-  document.getElementById("tab-bar").style.display = "flex";
-  document.getElementById("refresh-btn").style.display = "";
-
-  updateCounts();
-  renderList();
-  showStatus(`${tasks.length} tasks`, false);
-}
-
-// --- Tabs ---
-function updateCounts() {
-  for (const s of STATUSES) {
-    const count = state.tasks.filter(t => t._status === s).length;
-    document.getElementById(`count-${s}`).textContent = count;
-  }
-}
-
-function setTab(status, pushHistory = true) {
-  state.activeTab = status;
-  state.selectedId = null;
-  closeDetail(false);
-  for (const btn of document.querySelectorAll(".tab")) {
-    btn.classList.toggle("active", btn.dataset.status === status);
-  }
-  renderList();
-  if (pushHistory) pushNav(status, "");
-}
-
-// --- List rendering ---
-function renderList() {
-  const list = document.getElementById("task-list");
-  list.innerHTML = "";
-
-  const isChildInTab = (t) => {
-    const pid = parentId(t.id);
-    return pid && state.taskMap[pid] && state.taskMap[pid]._status === state.activeTab;
-  };
-
-  // Top-level tasks in this tab
-  const topLevel = state.tasks
-    .filter(t => t._status === state.activeTab && !isChildInTab(t))
-    .sort(sortFn);
-
-  // Children grouped by parent
-  const childrenOf = {};
-  for (const t of state.tasks) {
-    if (t._status !== state.activeTab) continue;
-    const pid = parentId(t.id);
-    if (pid && state.taskMap[pid] && state.taskMap[pid]._status === state.activeTab) {
-      if (!childrenOf[pid]) childrenOf[pid] = [];
-      childrenOf[pid].push(t);
-    }
-  }
-
-  for (const t of topLevel) {
-    list.appendChild(makeRow(t, false));
-    const children = (childrenOf[t.id] || []).sort((a, b) => (a.id || "").localeCompare(b.id || ""));
-    for (const c of children) {
-      list.appendChild(makeRow(c, true));
-    }
-  }
-
-  if (topLevel.length === 0) {
-    const empty = document.createElement("div");
-    empty.style.cssText = "padding:2rem;text-align:center;color:var(--pico-muted-color)";
-    empty.textContent = `No ${state.activeTab} tasks.`;
-    list.appendChild(empty);
-  }
-}
-
-const sortFn = (a, b) => {
-  if (state.activeTab === "shorn") {
-    // Shorn: most recently updated first
-    const da = new Date(a.updated || a.created || 0);
-    const db = new Date(b.updated || b.created || 0);
-    return db - da;
-  }
-  return (a.priority || 9) - (b.priority || 9) || (a.id || "").localeCompare(b.id || "");
-};
-
-function makeRow(t, isChild) {
-  const row = document.createElement("div");
-  row.className = "task-row" + (isChild ? " child-indent" : "");
-  if (t.id === state.selectedId) row.classList.add("selected");
-  row.onclick = () => selectTask(t);
-
-  let html = "";
-  if (isChild) {
-    const parentStatus = state.taskMap[parentId(t.id)]?._status;
-    if (parentStatus !== t._status) {
-      html += `<span class="child-status-icon">${STATUS_EMOJI[t._status] || ""}</span>`;
-    }
-  }
-  html += `<span class="task-id">${esc(t.id || "?")}</span>`;
-  html += `<span class="task-title">${esc(t.title || "(untitled)")}</span>`;
-  html += `<span class="task-meta">`;
-  if (t.priority) html += `<span class="badge badge-p${t.priority}">P${t.priority}</span>`;
-  if (t.type) html += `<span class="badge badge-${t.type}">${esc(t.type)}</span>`;
-  if (t.labels && t.labels.length) {
-    for (const l of t.labels) html += `<span class="badge badge-label">${esc(l)}</span>`;
-  }
-  if (t.depends_on && t.depends_on.length) {
-    html += `<span class="badge badge-dep">${t.depends_on.length} dep${t.depends_on.length > 1 ? "s" : ""}</span>`;
-  }
-  html += `</span>`;
-
-  row.innerHTML = html;
-  return row;
-}
-
-// --- Detail panel ---
-function selectTask(t, pushHistory = true) {
-  state.selectedId = t.id;
-  // Update selection highlight
-  for (const r of document.querySelectorAll(".task-row")) {
-    r.classList.toggle("selected", r.querySelector(".task-id")?.textContent === t.id);
-  }
-  openDetail(t);
-  if (pushHistory) pushNav(state.activeTab, t.id);
-}
-
-function openDetail(t) {
-  const panel = document.getElementById("detail-panel");
-  const inner = document.getElementById("detail-inner");
-
-  let html = `<div class="detail-header">`;
-  html += `<h2>${STATUS_EMOJI[t._status] || ""} ${esc(t.title || "(untitled)")}</h2>`;
-  html += `<button class="detail-close" onclick="closeDetail()" title="Close">&times;</button>`;
-  html += `</div>`;
-
-  html += `<div class="detail-meta">`;
-  html += `<span class="badge badge-p${t.priority || 3}">P${t.priority || "?"}</span>`;
-  if (t.type) html += `<span class="badge badge-${t.type}">${esc(t.type)}</span>`;
-  if (t.labels && t.labels.length) {
-    for (const l of t.labels) html += `<span class="badge badge-label">${esc(l)}</span>`;
-  }
-  html += `</div>`;
-
-  html += `<div class="detail-field"><strong>ID:</strong> <code>${esc(t.id || "?")}</code></div>`;
-  if (t.created) html += `<div class="detail-field"><strong>Created:</strong> ${humanDate(t.created)} <span title="${esc(String(t.created))}"></span></div>`;
-  if (t.updated) html += `<div class="detail-field"><strong>Updated:</strong> ${humanDate(t.updated)} <span title="${esc(String(t.updated))}"></span></div>`;
-  if (t.commit) {
-    const commitUrl = `https://github.com/${esc(state.owner)}/${esc(state.repo)}/commit/${esc(t.commit)}`;
-    html += `<div class="detail-field"><strong>Commit:</strong> <a href="${commitUrl}" target="_blank" rel="noopener"><code>${esc(t.commit)}</code></a></div>`;
-  }
-
-  if (t.depends_on && t.depends_on.length) {
-    html += `<div class="detail-field"><strong>Depends on:</strong> `;
-    html += t.depends_on.map(d => {
-      const dep = state.taskMap[d];
-      const emo = dep ? (STATUS_EMOJI[dep._status] || "") : "";
-      return `<span class="yak-link" data-id="${esc(d)}">${emo} ${esc(d)}</span>`;
-    }).join(", ");
-    html += `</div>`;
-  }
-
-  const pid = parentId(t.id);
-  if (pid && state.taskMap[pid]) {
-    html += `<div class="detail-field"><strong>Parent:</strong> `;
-    html += `<span class="yak-link" data-id="${esc(pid)}">${esc(pid)} ${esc(state.taskMap[pid].title || "")}</span>`;
-    html += `</div>`;
-  }
-
-  const children = state.tasks.filter(c => parentId(c.id) === t.id);
-  if (children.length) {
-    html += `<div class="detail-field"><strong>Children:</strong></div>`;
-    for (const c of children) {
-      const emo = STATUS_EMOJI[c._status] || "";
-      html += `<div class="detail-field" style="padding-left:1rem">`;
-      html += `<span class="yak-link" data-id="${esc(c.id)}">${emo} ${esc(c.id)}</span> ${esc(c.title || "")}`;
-      html += `</div>`;
-    }
-  }
-
-  if (t._body && t._body.trim()) {
-    let bodyHtml = marked.parse(t._body);
-    bodyHtml = linkifyYakIds(bodyHtml);
-    html += `<div class="detail-body">${bodyHtml}</div>`;
-  }
-
-  inner.innerHTML = html;
-  panel.classList.add("open");
-
-  // Wire up yak links
-  for (const link of inner.querySelectorAll(".yak-link")) {
-    link.onclick = (e) => {
-      e.stopPropagation();
-      const id = link.dataset.id;
-      if (state.taskMap[id]) {
-        // Switch tab if needed
-        const targetStatus = state.taskMap[id]._status;
-        if (STATUSES.includes(targetStatus) && targetStatus !== state.activeTab) {
-          setTab(targetStatus, false);
-        }
-        selectTask(state.taskMap[id]);
-      }
-    };
-  }
-}
-
-function closeDetail(pushHistory = true) {
-  document.getElementById("detail-panel").classList.remove("open");
-  state.selectedId = null;
-  for (const r of document.querySelectorAll(".task-row.selected")) {
-    r.classList.remove("selected");
-  }
-  if (pushHistory) pushNav(state.activeTab, "");
-}
-
-// --- UI helpers ---
-function esc(s) {
-  const d = document.createElement("div");
-  d.textContent = s;
-  return d.innerHTML;
-}
-
-function showStatus(msg, isError, isLoading) {
-  const el = document.getElementById("status");
-  el.className = "header-status" + (isError ? " error" : "") + (isLoading ? " loading" : "");
-  el.textContent = msg;
-}
-
-// --- Branch picker ---
-async function setupBranches(owner, repo, currentBranch) {
-  const sel = document.getElementById("branch-select");
-  const branches = await fetchBranches(owner, repo);
-  if (branches.length === 0) { sel.style.display = "none"; return; }
-  sel.innerHTML = "";
-  for (const b of branches) {
-    const opt = document.createElement("option");
-    opt.value = b;
-    opt.textContent = b;
-    if (b === currentBranch) opt.selected = true;
-    sel.appendChild(opt);
-  }
-  sel.style.display = "";
-  sel.onchange = () => {
-    const b = sel.value;
-    writeHash(owner, repo, b);
-    loadBoard(owner, repo, b).catch(e => showStatus(e.message, true));
-  };
-}
-
-// --- Init ---
-document.getElementById("repo-form").onsubmit = async (e) => {
-  e.preventDefault();
-  const val = document.getElementById("repo-input").value.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\/$/, "");
-  const parts = val.split("/");
-  if (parts.length < 2) { showStatus("Enter owner/repo", true); return; }
-  const [owner, repo] = parts;
-  writeHash(owner, repo, "");
-  await boot(owner, repo, "");
-};
-
-document.getElementById("refresh-btn").onclick = () => {
-  if (state.owner && state.repo && state.branch) {
-    loadBoard(state.owner, state.repo, state.branch).catch(e => showStatus(e.message, true));
-  }
-};
-
-for (const btn of document.querySelectorAll(".tab")) {
-  btn.onclick = () => setTab(btn.dataset.status);
-}
-
-async function boot(owner, repo, branch) {
-  document.getElementById("repo-input").value = `${owner}/${repo}`;
-  try {
-    if (!branch) {
-      const data = await apiFetch(`https://api.github.com/repos/${owner}/${repo}`);
-      branch = data.default_branch || "main";
-    }
-    state.branch = branch;
-    writeHash(owner, repo, branch);
-    setupBranches(owner, repo, branch);
-    await loadBoard(owner, repo, branch);
-  } catch (e) { showStatus(e.message, true); }
-}
-
-// Escape closes detail
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeDetail();
-});
-
-// Restore tab/task from hash after board loads
-function restoreFromHash() {
-  const h = readHash();
-  if (!h) return;
-  if (h.tab && STATUSES.includes(h.tab) && h.tab !== state.activeTab) {
-    setTab(h.tab, false);
-  }
-  if (h.taskId && state.taskMap[h.taskId]) {
-    selectTask(state.taskMap[h.taskId], false);
-  }
-}
-
-// Handle back/forward
-window.addEventListener("popstate", () => {
-  const h = readHash();
-  if (!h) return;
-  if (h.owner !== state.owner || h.repo !== state.repo || h.branch !== state.branch) {
-    boot(h.owner, h.repo, h.branch);
-    return;
-  }
-  const tab = h.tab || "hairy";
-  if (tab !== state.activeTab) setTab(tab, false);
-  if (h.taskId && state.taskMap[h.taskId]) {
-    selectTask(state.taskMap[h.taskId], false);
-  } else {
-    closeDetail(false);
-  }
-});
-
-// Boot from hash, or auto-detect from GH Pages URL
-window.addEventListener("hashchange", () => {
-  const h = readHash();
-  if (h && (h.owner !== state.owner || h.repo !== state.repo)) {
-    boot(h.owner, h.repo, h.branch);
-  }
-});
-
-async function bootAndRestore(owner, repo, branch) {
-  await boot(owner, repo, branch);
-  restoreFromHash();
-}
-
-const initial = readHash();
-if (initial) {
-  bootAndRestore(initial.owner, initial.repo, initial.branch);
-} else {
-  const detected = detectRepo();
-  if (detected) {
-    document.getElementById("repo-input").value = detected;
-    const [owner, repo] = detected.split("/");
-    bootAndRestore(owner, repo, "");
-  }
-}
-</script>
-</body>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Yaks Board</title>
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+        />
+        <script src="https://cdn.jsdelivr.net/npm/js-yaml@4/dist/js-yaml.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+        <style>
+            :root {
+                --pico-font-size: 15px;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+            }
+
+            /* --- Header --- */
+            header.repo-bar {
+                padding: 1rem 1.25rem 1.5rem 1.25rem;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                background: var(--pico-background-color);
+            }
+            .logo {
+                font-size: 2rem;
+                line-height: 1;
+                cursor: default;
+            }
+            header.repo-bar form {
+                display: flex;
+                gap: 0.5rem;
+                align-items: center;
+                margin: 0;
+            }
+            header.repo-bar input,
+            header.repo-bar select {
+                margin: 0;
+                padding: 0.25rem 0.5rem;
+                font-size: 0.8rem;
+                height: 1.8rem;
+                border-radius: 4px;
+                line-height: 1;
+            }
+            header.repo-bar input {
+                width: 160px;
+            }
+            header.repo-bar select {
+                max-width: 120px;
+            }
+            .refresh-btn {
+                background: none;
+                border: none;
+                cursor: pointer;
+                font-size: 1.1rem;
+                padding: 0.1rem 0.3rem;
+                color: var(--pico-muted-color);
+                margin: 0;
+                line-height: 1;
+                border-radius: 4px;
+            }
+            .refresh-btn:hover {
+                color: var(--pico-color);
+            }
+            .header-status {
+                font-size: 0.75rem;
+                color: var(--pico-muted-color);
+                margin-left: auto;
+                white-space: nowrap;
+            }
+            .header-status.error {
+                color: var(--pico-del-color);
+            }
+            .header-status.loading::after {
+                content: "";
+                display: inline-block;
+                width: 0.7em;
+                height: 0.7em;
+                border: 1.5px solid currentColor;
+                border-right-color: transparent;
+                border-radius: 50%;
+                animation: spin 0.6s linear infinite;
+                margin-left: 0.4rem;
+                vertical-align: middle;
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            /* --- Tabs --- */
+            .tab-bar {
+                display: flex;
+                gap: 0;
+                border-bottom: 1px solid var(--pico-muted-border-color);
+                padding: 0 1.25rem;
+            }
+            .tab {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+                cursor: pointer;
+                border-bottom: 2px solid transparent;
+                color: var(--pico-muted-color) !important;
+                white-space: nowrap;
+                background: none !important;
+                border-top: none;
+                border-left: none;
+                border-right: none;
+                margin: 0;
+                outline: none !important;
+                box-shadow: none !important;
+            }
+            .tab:hover {
+                color: #1b2832 !important;
+            }
+            .tab:focus-visible {
+                color: #1b2832 !important;
+            }
+            .tab.active {
+                color: #1b2832 !important;
+                border-bottom-color: var(--pico-primary);
+                font-weight: 600;
+            }
+            .tab .count {
+                font-size: 0.7rem;
+                background: var(--pico-muted-border-color);
+                border-radius: 8px;
+                padding: 0.05rem 0.4rem;
+                margin-left: 0.3rem;
+                font-weight: normal;
+            }
+
+            /* --- Main layout --- */
+            .main-layout {
+                display: flex;
+                height: calc(100vh - 85px);
+                overflow: hidden;
+            }
+            .task-list {
+                flex: 1;
+                overflow-y: auto;
+                padding: 0.5rem 0;
+            }
+            .detail-panel {
+                width: 0;
+                overflow-y: auto;
+                border-left: 1px solid var(--pico-muted-border-color);
+                transition: width 0.2s ease;
+                flex-shrink: 0;
+            }
+            .detail-panel.open {
+                width: 55%;
+                min-width: 350px;
+            }
+            .detail-inner {
+                padding: 1.25rem;
+            }
+
+            /* --- Task rows --- */
+            .task-row {
+                display: flex;
+                align-items: baseline;
+                gap: 0.5rem;
+                padding: 0.35rem 1.25rem;
+                cursor: pointer;
+                border-left: 3px solid transparent;
+                font-size: 0.9rem;
+                line-height: 1.4;
+            }
+            .task-row:hover {
+                background: rgba(0, 0, 0, 0.02);
+            }
+            .task-row.selected {
+                background: rgba(0, 0, 0, 0.04);
+                border-left-color: var(--pico-primary);
+            }
+            .task-row .task-id {
+                font-family: var(--pico-font-family-monospace);
+                font-size: 0.75rem;
+                color: var(--pico-muted-color);
+                flex-shrink: 0;
+                white-space: nowrap;
+            }
+            .task-row .task-title {
+                flex: 1;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .task-row .task-meta {
+                display: flex;
+                gap: 0.3rem;
+                flex-shrink: 0;
+                flex-wrap: nowrap;
+            }
+            .child-indent {
+                padding-left: 2rem;
+            }
+            .child-indent .task-id {
+                width: auto;
+            }
+            .child-status-icon {
+                font-size: 0.7rem;
+                flex-shrink: 0;
+            }
+
+            /* --- Badges --- */
+            .badge {
+                font-size: 0.7rem;
+                padding: 0.1rem 0.4rem;
+                border-radius: 3px;
+                font-weight: 500;
+                white-space: nowrap;
+            }
+            .badge-p1 {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+            .badge-p2 {
+                background: #fef3c7;
+                color: #7c2d12;
+            }
+            .badge-p3 {
+                background: #e0e7ff;
+                color: #3730a3;
+            }
+            .badge-bug {
+                background: #fecaca;
+                color: #991b1b;
+            }
+            .badge-feature {
+                background: #d1fae5;
+                color: #065f46;
+            }
+            .badge-task {
+                background: #dbeafe;
+                color: #1e40af;
+            }
+            .badge-idea {
+                background: #f3e8ff;
+                color: #6b21a8;
+            }
+            .badge-label {
+                background: #f1f5f9;
+                color: #475569;
+            }
+            .badge-dep {
+                background: #fef3c7;
+                color: #7c2d12;
+            }
+
+            /* --- Detail panel content --- */
+            .detail-header {
+                display: flex;
+                align-items: start;
+                justify-content: space-between;
+                margin-bottom: 0.5rem;
+            }
+            .detail-header h2 {
+                margin: 0;
+                font-size: 1.1rem;
+                line-height: 1.3;
+            }
+            .detail-close {
+                background: none;
+                border: none;
+                cursor: pointer;
+                font-size: 1.2rem;
+                color: var(--pico-muted-color);
+                padding: 0;
+                margin: 0;
+                line-height: 1;
+                flex-shrink: 0;
+            }
+            .detail-meta {
+                display: flex;
+                gap: 0.4rem;
+                flex-wrap: wrap;
+                margin-bottom: 0.75rem;
+            }
+            .detail-field {
+                font-size: 0.85rem;
+                margin-bottom: 0.2rem;
+                color: var(--pico-muted-color);
+            }
+            .detail-field strong {
+                color: var(--pico-color);
+            }
+            .detail-field a {
+                color: var(--pico-primary);
+                text-decoration: none;
+            }
+            .detail-field a:hover {
+                text-decoration: underline;
+            }
+            .detail-body {
+                border-top: 1px solid var(--pico-muted-border-color);
+                padding-top: 0.75rem;
+                margin-top: 0.5rem;
+                font-size: 0.95rem;
+                line-height: 1.6;
+            }
+            .detail-body h1,
+            .detail-body h2,
+            .detail-body h3 {
+                font-size: 0.95rem;
+                margin-top: 0.8rem;
+                margin-bottom: 0.3rem;
+            }
+            .detail-body blockquote {
+                border-left: 3px solid var(--pico-muted-border-color);
+                margin: 0.5rem 0;
+                padding: 0.4rem 0.8rem;
+                color: var(--pico-muted-color);
+                background: rgba(0, 0, 0, 0.02);
+                border-radius: 0 4px 4px 0;
+            }
+            .detail-body blockquote p {
+                margin: 0;
+            }
+            .detail-body code {
+                font-size: 0.8rem;
+            }
+            .detail-body pre {
+                font-size: 0.78rem;
+                overflow-x: auto;
+            }
+            .yak-link {
+                color: var(--pico-primary);
+                cursor: pointer;
+                text-decoration: none;
+            }
+            .yak-link:hover {
+                text-decoration: underline;
+            }
+
+            /* --- Empty state --- */
+            .empty-state {
+                text-align: center;
+                padding: 4rem 2rem;
+                color: var(--pico-muted-color);
+            }
+            .empty-state .logo {
+                font-size: 3rem;
+                display: block;
+                margin-bottom: 1rem;
+            }
+            .empty-state h2 {
+                color: var(--pico-muted-color);
+            }
+
+            @media (max-width: 768px) {
+                .detail-panel.open {
+                    width: 100%;
+                    position: fixed;
+                    inset: 0;
+                    z-index: 50;
+                    background: var(--pico-background-color);
+                }
+                header.repo-bar input {
+                    width: 120px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <header class="repo-bar">
+            <span class="logo" title="Yaks">&#x1F9AC;</span>
+            <form id="repo-form">
+                <input
+                    id="repo-input"
+                    type="text"
+                    placeholder="owner/repo"
+                    autocomplete="off"
+                />
+                <select id="branch-select" style="display: none"></select>
+                <button
+                    type="button"
+                    class="refresh-btn"
+                    id="refresh-btn"
+                    title="Reload"
+                    style="display: none"
+                >
+                    &#x21bb;
+                </button>
+            </form>
+            <span id="status" class="header-status"></span>
+        </header>
+
+        <div id="tab-bar" class="tab-bar" style="display: none">
+            <button class="tab active" data-status="hairy">
+                Hairy <span class="count" id="count-hairy">0</span>
+            </button>
+            <button class="tab" data-status="shaving">
+                Shaving <span class="count" id="count-shaving">0</span>
+            </button>
+            <button class="tab" data-status="shorn">
+                Shorn <span class="count" id="count-shorn">0</span>
+            </button>
+        </div>
+
+        <div id="empty-state" class="empty-state">
+            <span class="logo">&#x1F9AC;</span>
+            <h2>Yak Board</h2>
+            <p>Enter a GitHub repository above to view its yak board.</p>
+            <p style="font-size: 0.85rem">
+                The repo must have a <code>.yaks/</code> directory at its root.
+            </p>
+        </div>
+
+        <div id="main" class="main-layout" style="display: none">
+            <div id="task-list" class="task-list"></div>
+            <div id="detail-panel" class="detail-panel">
+                <div id="detail-inner" class="detail-inner"></div>
+            </div>
+        </div>
+
+        <script>
+            const STATUSES = ["hairy", "shaving", "shorn"];
+            const STATUS_EMOJI = {
+                hairy: "\u{1F9AC}",
+                shaving: "\u2702\uFE0F",
+                shorn: "\u{1F411}",
+                dead: "\u{1F480}",
+            };
+
+            let state = {
+                owner: "",
+                repo: "",
+                branch: "",
+                tasks: [],
+                taskMap: {},
+                activeTab: "hairy",
+                selectedId: null,
+            };
+
+            // --- Dates ---
+            function humanDate(iso) {
+                if (!iso) return "";
+                const d = new Date(iso);
+                if (isNaN(d)) return String(iso);
+                const now = new Date();
+                const diff = now - d;
+                const mins = Math.floor(diff / 60000);
+                if (mins < 1) return "just now";
+                if (mins < 60) return `${mins}m ago`;
+                const hrs = Math.floor(mins / 60);
+                if (hrs < 24) return `${hrs}h ago`;
+                const days = Math.floor(hrs / 24);
+                if (days < 7) return `${days}d ago`;
+                if (days < 30) return `${Math.floor(days / 7)}w ago`;
+                const months = [
+                    "Jan",
+                    "Feb",
+                    "Mar",
+                    "Apr",
+                    "May",
+                    "Jun",
+                    "Jul",
+                    "Aug",
+                    "Sep",
+                    "Oct",
+                    "Nov",
+                    "Dec",
+                ];
+                const sameYear = d.getFullYear() === now.getFullYear();
+                return sameYear
+                    ? `${months[d.getMonth()]} ${d.getDate()}`
+                    : `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+            }
+
+            // --- URL hash ---
+            // Hash format: #owner/repo[/branch[/tab[/taskId]]]
+            function readHash() {
+                const h = location.hash.replace(/^#/, "");
+                if (!h) return null;
+                const parts = h.split("/");
+                if (parts.length < 2) return null;
+                return {
+                    owner: parts[0],
+                    repo: parts[1],
+                    branch: parts[2] || "",
+                    tab: parts[3] || "",
+                    taskId: parts.slice(4).join("/") || "",
+                };
+            }
+
+            function buildHash(owner, repo, branch, tab, taskId) {
+                let h = branch
+                    ? `${owner}/${repo}/${branch}`
+                    : `${owner}/${repo}`;
+                if (tab) h += `/${tab}`;
+                if (taskId) h += `/${taskId}`;
+                return h;
+            }
+
+            function writeHash(owner, repo, branch) {
+                const h = buildHash(owner, repo, branch, "", "");
+                if (location.hash !== "#" + h) location.hash = h;
+            }
+
+            function pushNav(tab, taskId) {
+                const h = buildHash(
+                    state.owner,
+                    state.repo,
+                    state.branch,
+                    tab || "",
+                    taskId || "",
+                );
+                if (location.hash !== "#" + h) {
+                    history.pushState(null, "", "#" + h);
+                }
+            }
+
+            // --- Auto-detect repo from GH Pages URL ---
+            function detectRepo() {
+                const host = location.hostname;
+                const m = host.match(/^(.+)\.github\.io$/);
+                if (m) {
+                    const owner = m[1];
+                    const repo = location.pathname
+                        .replace(/^\//, "")
+                        .replace(/\/.*$/, "");
+                    if (repo) return `${owner}/${repo}`;
+                }
+                return "";
+            }
+
+            // --- GitHub API ---
+            async function apiFetch(url) {
+                const resp = await fetch(url);
+                if (!resp.ok)
+                    throw new Error(
+                        `GitHub API ${resp.status}: ${resp.statusText}`,
+                    );
+                return resp.json();
+            }
+
+            async function fetchBranches(owner, repo) {
+                try {
+                    const data = await apiFetch(
+                        `https://api.github.com/repos/${owner}/${repo}/branches?per_page=100`,
+                    );
+                    return data.map((b) => b.name);
+                } catch {
+                    return [];
+                }
+            }
+
+            async function fetchTree(owner, repo, branch) {
+                const data = await apiFetch(
+                    `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`,
+                );
+                return data.tree || [];
+            }
+
+            async function fetchRaw(owner, repo, branch, path) {
+                const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
+                const resp = await fetch(url);
+                if (!resp.ok) return null;
+                return resp.text();
+            }
+
+            // --- Parsing ---
+            function parseFrontmatter(text) {
+                const m = text.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+                if (!m) return { meta: {}, body: text };
+                try {
+                    const meta = jsyaml.load(m[1]) || {};
+                    return { meta, body: m[2] };
+                } catch {
+                    return { meta: {}, body: text };
+                }
+            }
+
+            function parentId(id) {
+                const dot = id.lastIndexOf(".");
+                return dot === -1 ? null : id.substring(0, dot);
+            }
+
+            // --- Yak ID linking in markdown ---
+            function linkifyYakIds(html) {
+                return html
+                    .replace(/\[\[(yak[a-z]*-[a-z0-9.]+)\]\]/gi, (_, id) => {
+                        return `<span class="yak-link" data-id="${esc(id)}">${esc(id)}</span>`;
+                    })
+                    .replace(
+                        /(?<![\/\w-])(yak[a-z]*-[a-f0-9]{4}(?:\.\d+)*)\b/gi,
+                        (match, id) => {
+                            if (state.taskMap[id]) {
+                                return `<span class="yak-link" data-id="${esc(id)}">${esc(id)}</span>`;
+                            }
+                            return match;
+                        },
+                    );
+            }
+
+            // --- Data loading ---
+            async function loadBoard(owner, repo, branch) {
+                state = {
+                    ...state,
+                    owner,
+                    repo,
+                    branch,
+                    tasks: [],
+                    taskMap: {},
+                    selectedId: null,
+                };
+                showStatus("Loading...", false, true);
+                closeDetail();
+
+                const tree = await fetchTree(owner, repo, branch);
+                const yakFiles = [];
+                for (const entry of tree) {
+                    if (entry.type !== "blob") continue;
+                    const m = entry.path.match(
+                        /^\.yaks\/(hairy|shaving|shorn|dead)\/(.+\.md)$/,
+                    );
+                    if (m) yakFiles.push({ status: m[1], path: entry.path });
+                }
+
+                if (yakFiles.length === 0) {
+                    showStatus("No .yaks/ tasks found.", true);
+                    return;
+                }
+
+                showStatus(`Fetching ${yakFiles.length} tasks...`, false, true);
+
+                const results = await Promise.all(
+                    yakFiles.map(async (f) => {
+                        const text = await fetchRaw(
+                            owner,
+                            repo,
+                            branch,
+                            f.path,
+                        );
+                        if (!text) return null;
+                        const { meta, body } = parseFrontmatter(text);
+                        return {
+                            ...meta,
+                            _status: f.status,
+                            _body: body,
+                            _path: f.path,
+                        };
+                    }),
+                );
+
+                const tasks = results.filter(Boolean);
+                const taskMap = {};
+                for (const t of tasks) {
+                    if (t.id) taskMap[t.id] = t;
+                }
+
+                state.tasks = tasks;
+                state.taskMap = taskMap;
+
+                document.getElementById("empty-state").style.display = "none";
+                document.getElementById("main").style.display = "flex";
+                document.getElementById("tab-bar").style.display = "flex";
+                document.getElementById("refresh-btn").style.display = "";
+
+                updateCounts();
+                renderList();
+                showStatus(`${tasks.length} tasks`, false);
+            }
+
+            // --- Tabs ---
+            function updateCounts() {
+                for (const s of STATUSES) {
+                    const count = state.tasks.filter(
+                        (t) => t._status === s,
+                    ).length;
+                    document.getElementById(`count-${s}`).textContent = count;
+                }
+            }
+
+            function setTab(status, pushHistory = true) {
+                state.activeTab = status;
+                state.selectedId = null;
+                closeDetail(false);
+                for (const btn of document.querySelectorAll(".tab")) {
+                    btn.classList.toggle(
+                        "active",
+                        btn.dataset.status === status,
+                    );
+                }
+                renderList();
+                if (pushHistory) pushNav(status, "");
+            }
+
+            // --- List rendering ---
+            function renderList() {
+                const list = document.getElementById("task-list");
+                list.innerHTML = "";
+
+                const isChildInTab = (t) => {
+                    const pid = parentId(t.id);
+                    return (
+                        pid &&
+                        state.taskMap[pid] &&
+                        state.taskMap[pid]._status === state.activeTab
+                    );
+                };
+
+                // Top-level tasks in this tab
+                const topLevel = state.tasks
+                    .filter(
+                        (t) =>
+                            t._status === state.activeTab && !isChildInTab(t),
+                    )
+                    .sort(sortFn);
+
+                // Children grouped by parent
+                const childrenOf = {};
+                for (const t of state.tasks) {
+                    if (t._status !== state.activeTab) continue;
+                    const pid = parentId(t.id);
+                    if (
+                        pid &&
+                        state.taskMap[pid] &&
+                        state.taskMap[pid]._status === state.activeTab
+                    ) {
+                        if (!childrenOf[pid]) childrenOf[pid] = [];
+                        childrenOf[pid].push(t);
+                    }
+                }
+
+                for (const t of topLevel) {
+                    list.appendChild(makeRow(t, false));
+                    const children = (childrenOf[t.id] || []).sort((a, b) =>
+                        (a.id || "").localeCompare(b.id || ""),
+                    );
+                    for (const c of children) {
+                        list.appendChild(makeRow(c, true));
+                    }
+                }
+
+                if (topLevel.length === 0) {
+                    const empty = document.createElement("div");
+                    empty.style.cssText =
+                        "padding:2rem;text-align:center;color:var(--pico-muted-color)";
+                    empty.textContent = `No ${state.activeTab} tasks.`;
+                    list.appendChild(empty);
+                }
+            }
+
+            const sortFn = (a, b) => {
+                if (state.activeTab === "shorn") {
+                    // Shorn: most recently updated first
+                    const da = new Date(a.updated || a.created || 0);
+                    const db = new Date(b.updated || b.created || 0);
+                    return db - da;
+                }
+                return (
+                    (a.priority || 9) - (b.priority || 9) ||
+                    (a.id || "").localeCompare(b.id || "")
+                );
+            };
+
+            function makeRow(t, isChild) {
+                const row = document.createElement("div");
+                row.className = "task-row" + (isChild ? " child-indent" : "");
+                if (t.id === state.selectedId) row.classList.add("selected");
+                row.onclick = () => selectTask(t);
+
+                let html = "";
+                if (isChild) {
+                    const parentStatus = state.taskMap[parentId(t.id)]?._status;
+                    if (parentStatus !== t._status) {
+                        html += `<span class="child-status-icon">${STATUS_EMOJI[t._status] || ""}</span>`;
+                    }
+                }
+                html += `<span class="task-id">${esc(t.id || "?")}</span>`;
+                html += `<span class="task-title">${esc(t.title || "(untitled)")}</span>`;
+                html += `<span class="task-meta">`;
+                if (t.priority)
+                    html += `<span class="badge badge-p${t.priority}">P${t.priority}</span>`;
+                if (t.type)
+                    html += `<span class="badge badge-${t.type}">${esc(t.type)}</span>`;
+                if (t.labels && t.labels.length) {
+                    for (const l of t.labels)
+                        html += `<span class="badge badge-label">${esc(l)}</span>`;
+                }
+                if (t.depends_on && t.depends_on.length) {
+                    html += `<span class="badge badge-dep">${t.depends_on.length} dep${t.depends_on.length > 1 ? "s" : ""}</span>`;
+                }
+                html += `</span>`;
+
+                row.innerHTML = html;
+                return row;
+            }
+
+            // --- Detail panel ---
+            function selectTask(t, pushHistory = true) {
+                state.selectedId = t.id;
+                // Update selection highlight
+                for (const r of document.querySelectorAll(".task-row")) {
+                    r.classList.toggle(
+                        "selected",
+                        r.querySelector(".task-id")?.textContent === t.id,
+                    );
+                }
+                openDetail(t);
+                if (pushHistory) pushNav(state.activeTab, t.id);
+            }
+
+            function openDetail(t) {
+                const panel = document.getElementById("detail-panel");
+                const inner = document.getElementById("detail-inner");
+
+                let html = `<div class="detail-header">`;
+                html += `<h2>${STATUS_EMOJI[t._status] || ""} ${esc(t.title || "(untitled)")}</h2>`;
+                html += `<button class="detail-close" onclick="closeDetail()" title="Close">&times;</button>`;
+                html += `</div>`;
+
+                html += `<div class="detail-meta">`;
+                html += `<span class="badge badge-p${t.priority || 3}">P${t.priority || "?"}</span>`;
+                if (t.type)
+                    html += `<span class="badge badge-${t.type}">${esc(t.type)}</span>`;
+                if (t.labels && t.labels.length) {
+                    for (const l of t.labels)
+                        html += `<span class="badge badge-label">${esc(l)}</span>`;
+                }
+                html += `</div>`;
+
+                html += `<div class="detail-field"><strong>ID:</strong> <code>${esc(t.id || "?")}</code></div>`;
+                if (t.created)
+                    html += `<div class="detail-field"><strong>Created:</strong> ${humanDate(t.created)} <span title="${esc(String(t.created))}"></span></div>`;
+                if (t.updated)
+                    html += `<div class="detail-field"><strong>Updated:</strong> ${humanDate(t.updated)} <span title="${esc(String(t.updated))}"></span></div>`;
+                if (t.commit) {
+                    const commitUrl = `https://github.com/${esc(state.owner)}/${esc(state.repo)}/commit/${esc(t.commit)}`;
+                    html += `<div class="detail-field"><strong>Commit:</strong> <a href="${commitUrl}" target="_blank" rel="noopener"><code>${esc(t.commit)}</code></a></div>`;
+                }
+                if (t.source) {
+                    html += `<div class="detail-field"><strong>Source:</strong> <a href="${esc(t.source)}" target="_blank" rel="noopener">${esc(t.source)}</a></div>`;
+                }
+
+                if (t.depends_on && t.depends_on.length) {
+                    html += `<div class="detail-field"><strong>Depends on:</strong> `;
+                    html += t.depends_on
+                        .map((d) => {
+                            const dep = state.taskMap[d];
+                            const emo = dep
+                                ? STATUS_EMOJI[dep._status] || ""
+                                : "";
+                            return `<span class="yak-link" data-id="${esc(d)}">${emo} ${esc(d)}</span>`;
+                        })
+                        .join(", ");
+                    html += `</div>`;
+                }
+
+                const pid = parentId(t.id);
+                if (pid && state.taskMap[pid]) {
+                    html += `<div class="detail-field"><strong>Parent:</strong> `;
+                    html += `<span class="yak-link" data-id="${esc(pid)}">${esc(pid)} ${esc(state.taskMap[pid].title || "")}</span>`;
+                    html += `</div>`;
+                }
+
+                const children = state.tasks.filter(
+                    (c) => parentId(c.id) === t.id,
+                );
+                if (children.length) {
+                    html += `<div class="detail-field"><strong>Children:</strong></div>`;
+                    for (const c of children) {
+                        const emo = STATUS_EMOJI[c._status] || "";
+                        html += `<div class="detail-field" style="padding-left:1rem">`;
+                        html += `<span class="yak-link" data-id="${esc(c.id)}">${emo} ${esc(c.id)}</span> ${esc(c.title || "")}`;
+                        html += `</div>`;
+                    }
+                }
+
+                if (t._body && t._body.trim()) {
+                    let bodyHtml = marked.parse(t._body);
+                    bodyHtml = linkifyYakIds(bodyHtml);
+                    html += `<div class="detail-body">${bodyHtml}</div>`;
+                }
+
+                inner.innerHTML = html;
+                panel.classList.add("open");
+
+                // Wire up yak links
+                for (const link of inner.querySelectorAll(".yak-link")) {
+                    link.onclick = (e) => {
+                        e.stopPropagation();
+                        const id = link.dataset.id;
+                        if (state.taskMap[id]) {
+                            // Switch tab if needed
+                            const targetStatus = state.taskMap[id]._status;
+                            if (
+                                STATUSES.includes(targetStatus) &&
+                                targetStatus !== state.activeTab
+                            ) {
+                                setTab(targetStatus, false);
+                            }
+                            selectTask(state.taskMap[id]);
+                        }
+                    };
+                }
+            }
+
+            function closeDetail(pushHistory = true) {
+                document
+                    .getElementById("detail-panel")
+                    .classList.remove("open");
+                state.selectedId = null;
+                for (const r of document.querySelectorAll(
+                    ".task-row.selected",
+                )) {
+                    r.classList.remove("selected");
+                }
+                if (pushHistory) pushNav(state.activeTab, "");
+            }
+
+            // --- UI helpers ---
+            function esc(s) {
+                const d = document.createElement("div");
+                d.textContent = s;
+                return d.innerHTML;
+            }
+
+            function showStatus(msg, isError, isLoading) {
+                const el = document.getElementById("status");
+                el.className =
+                    "header-status" +
+                    (isError ? " error" : "") +
+                    (isLoading ? " loading" : "");
+                el.textContent = msg;
+            }
+
+            // --- Branch picker ---
+            async function setupBranches(owner, repo, currentBranch) {
+                const sel = document.getElementById("branch-select");
+                const branches = await fetchBranches(owner, repo);
+                if (branches.length === 0) {
+                    sel.style.display = "none";
+                    return;
+                }
+                sel.innerHTML = "";
+                for (const b of branches) {
+                    const opt = document.createElement("option");
+                    opt.value = b;
+                    opt.textContent = b;
+                    if (b === currentBranch) opt.selected = true;
+                    sel.appendChild(opt);
+                }
+                sel.style.display = "";
+                sel.onchange = () => {
+                    const b = sel.value;
+                    writeHash(owner, repo, b);
+                    loadBoard(owner, repo, b).catch((e) =>
+                        showStatus(e.message, true),
+                    );
+                };
+            }
+
+            // --- Init ---
+            document.getElementById("repo-form").onsubmit = async (e) => {
+                e.preventDefault();
+                const val = document
+                    .getElementById("repo-input")
+                    .value.trim()
+                    .replace(/^https?:\/\/github\.com\//, "")
+                    .replace(/\/$/, "");
+                const parts = val.split("/");
+                if (parts.length < 2) {
+                    showStatus("Enter owner/repo", true);
+                    return;
+                }
+                const [owner, repo] = parts;
+                writeHash(owner, repo, "");
+                await boot(owner, repo, "");
+            };
+
+            document.getElementById("refresh-btn").onclick = () => {
+                if (state.owner && state.repo && state.branch) {
+                    loadBoard(state.owner, state.repo, state.branch).catch(
+                        (e) => showStatus(e.message, true),
+                    );
+                }
+            };
+
+            for (const btn of document.querySelectorAll(".tab")) {
+                btn.onclick = () => setTab(btn.dataset.status);
+            }
+
+            async function boot(owner, repo, branch) {
+                document.getElementById("repo-input").value =
+                    `${owner}/${repo}`;
+                try {
+                    if (!branch) {
+                        const data = await apiFetch(
+                            `https://api.github.com/repos/${owner}/${repo}`,
+                        );
+                        branch = data.default_branch || "main";
+                    }
+                    state.branch = branch;
+                    writeHash(owner, repo, branch);
+                    setupBranches(owner, repo, branch);
+                    await loadBoard(owner, repo, branch);
+                } catch (e) {
+                    showStatus(e.message, true);
+                }
+            }
+
+            // Escape closes detail
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") closeDetail();
+            });
+
+            // Restore tab/task from hash after board loads
+            function restoreFromHash() {
+                const h = readHash();
+                if (!h) return;
+                if (
+                    h.tab &&
+                    STATUSES.includes(h.tab) &&
+                    h.tab !== state.activeTab
+                ) {
+                    setTab(h.tab, false);
+                }
+                if (h.taskId && state.taskMap[h.taskId]) {
+                    selectTask(state.taskMap[h.taskId], false);
+                }
+            }
+
+            // Handle back/forward
+            window.addEventListener("popstate", () => {
+                const h = readHash();
+                if (!h) return;
+                if (
+                    h.owner !== state.owner ||
+                    h.repo !== state.repo ||
+                    h.branch !== state.branch
+                ) {
+                    boot(h.owner, h.repo, h.branch);
+                    return;
+                }
+                const tab = h.tab || "hairy";
+                if (tab !== state.activeTab) setTab(tab, false);
+                if (h.taskId && state.taskMap[h.taskId]) {
+                    selectTask(state.taskMap[h.taskId], false);
+                } else {
+                    closeDetail(false);
+                }
+            });
+
+            // Boot from hash, or auto-detect from GH Pages URL
+            window.addEventListener("hashchange", () => {
+                const h = readHash();
+                if (h && (h.owner !== state.owner || h.repo !== state.repo)) {
+                    boot(h.owner, h.repo, h.branch);
+                }
+            });
+
+            async function bootAndRestore(owner, repo, branch) {
+                await boot(owner, repo, branch);
+                restoreFromHash();
+            }
+
+            const initial = readHash();
+            if (initial) {
+                bootAndRestore(initial.owner, initial.repo, initial.branch);
+            } else {
+                const detected = detectRepo();
+                if (detected) {
+                    document.getElementById("repo-input").value = detected;
+                    const [owner, repo] = detected.split("/");
+                    bootAndRestore(owner, repo, "");
+                }
+            }
+        </script>
+    </body>
 </html>

@@ -151,6 +151,8 @@ def cmd_create(args):
         task["labels"] = args.labels
     if args.description:
         task["description"] = args.description
+    if getattr(args, "source", None):
+        task["source"] = args.source
 
     path = root / HAIRY / f"{tid}.md"
     save_task(path, task)
@@ -296,6 +298,9 @@ def cmd_update(args):
         task["labels"] = labels if labels else []
         if not task["labels"]:
             del task["labels"]
+        changed = True
+    if getattr(args, "source", None):
+        task["source"] = args.source
         changed = True
     if getattr(args, "note", None):
         ts = now_iso()

@@ -66,12 +66,17 @@ depends_on:
 labels:
   - auth
 commit: a1b2c3d          # added when shorn; git HEAD by default
+source: https://jira.example.com/browse/PROJ-123  # optional external issue URL
 ---
 
 Details go here.
 ```
 
 Child tasks use `--parent TASK_ID` on create. The hierarchy is implicit from the ID (dot-suffixed integers). `/yaks:show` displays parent and children automatically.
+
+### External source linking
+
+Use `--source URL` on create or update to link a yak to an external issue (Jira, GitHub Issues, Linear, etc.). The URL is stored in the `source` frontmatter field. When a yak has a source, the agent should check the external system for context when starting work, and update it when the yak is shorn.
 
 ## Filtering
 

@@ -51,6 +51,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--labels", nargs="+", help="Labels")
     sp.add_argument("--depends-on", nargs="+", help="Dependency task IDs")
     sp.add_argument("--parent", help="Parent task ID (creates a child task)")
+    sp.add_argument("--source", help="External issue URL (e.g. Jira, GitHub, Linear)")
 
     sp = sub.add_parser("list", help="List tasks")
     _add_filter_flags(sp)
@@ -69,6 +70,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--add-label", nargs="+", help="Add labels")
     sp.add_argument("--remove-label", nargs="+", help="Remove labels")
     sp.add_argument("--note", help="Append a timestamped progress note to the description")
+    sp.add_argument("--source", help="External issue URL")
 
     for name in ("shave", "work"):
         sp = sub.add_parser(name, help="Start shaving a yak")

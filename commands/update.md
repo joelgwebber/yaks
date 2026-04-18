@@ -1,6 +1,6 @@
 ---
 description: "Update a task's fields"
-argument-hint: "TASK_ID [--title T] [--type T] [--priority P] [--description D] [--note TEXT] [--add-label L ...] [--remove-label L ...]"
+argument-hint: "TASK_ID [--title T] [--type T] [--priority P] [--description D] [--note TEXT] [--add-label L ...] [--remove-label L ...] [--source URL]"
 allowed-tools:
   - Bash
 ---

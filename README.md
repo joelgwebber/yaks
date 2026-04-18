@@ -133,6 +133,7 @@ depends_on:
 labels:
   - auth
 commit: a1b2c3d
+source: https://jira.example.com/browse/PROJ-123
 ---
 
 Users see a crash on the login screen when
@@ -149,6 +150,7 @@ Frontmatter fields:
 - **depends_on** — Optional list of task IDs that must be shorn first
 - **labels** — Optional list of string tags
 - **commit** — Short git hash, auto-populated from HEAD when shorn
+- **source** — Optional URL linking to an external issue (Jira, GitHub Issues, Linear, etc.)
 
 ## Configuration
 

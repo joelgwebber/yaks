@@ -84,6 +84,8 @@ def build_detail_lines(root, task, status, width=80,
     ]
     if task.get("commit"):
         fields.append(("Commit", task["commit"]))
+    if task.get("source"):
+        fields.append(("Source", task["source"]))
     if task.get("labels"):
         fields.append(("Labels", ", ".join(task["labels"])))
 
