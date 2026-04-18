@@ -90,19 +90,20 @@ header.repo-bar select {
   font-size: 0.85rem;
   cursor: pointer;
   border-bottom: 2px solid transparent;
-  color: var(--pico-muted-color);
+  color: var(--pico-muted-color) !important;
   white-space: nowrap;
-  background: none;
+  background: none !important;
   border-top: none;
   border-left: none;
   border-right: none;
   margin: 0;
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
 }
-.tab:hover { color: var(--pico-color); }
-.tab:focus-visible { color: var(--pico-color); }
+.tab:hover { color: #1b2832 !important; }
+.tab:focus-visible { color: #1b2832 !important; }
 .tab.active {
-  color: var(--pico-color);
+  color: #1b2832 !important;
   border-bottom-color: var(--pico-primary);
   font-weight: 600;
 }
@@ -162,7 +163,7 @@ header.repo-bar select {
   font-size: 0.75rem;
   color: var(--pico-muted-color);
   flex-shrink: 0;
-  width: 6em;
+  white-space: nowrap;
 }
 .task-row .task-title {
   flex: 1;
@@ -175,6 +176,7 @@ header.repo-bar select {
   display: flex;
   gap: 0.3rem;
   flex-shrink: 0;
+  flex-wrap: nowrap;
 }
 .child-indent {
   padding-left: 2rem;

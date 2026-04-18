@@ -4,7 +4,8 @@ title: Web UI pointing at git repo
 type: idea
 priority: 2
 created: '2026-04-14T14:24:05Z'
-updated: '2026-04-18T00:43:32Z'
+updated: '2026-04-18T00:46:10Z'
+commit: b698f33
 ---
 
 You could run it locally, or host it with access to a github repo. Similar feature set to the TUI, but in a way that makes it available to other users. If allowed to be mutative, it would just commit to the git repo.
