@@ -84,13 +84,15 @@ def build_detail_lines(root, task, status, width=80,
     ]
     if task.get("commit"):
         fields.append(("Commit", task["commit"]))
-    if task.get("source"):
-        fields.append(("Source", task["source"]))
     if task.get("labels"):
         fields.append(("Labels", ", ".join(task["labels"])))
 
     for label, value in fields:
         emit(f"  {label + ':':<12s} {value}", "field")
+
+    if task.get("source"):
+        src = task["source"]
+        lines.append(DetailLine(f"  {'Source:':<12s} {src}", "link", open_path=src))
 
     for dep_id in task.get("depends_on", []):
         dep_result = find_task_file(root, dep_id)

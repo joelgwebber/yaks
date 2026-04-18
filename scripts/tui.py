@@ -656,17 +656,20 @@ class TUI:
             self._open_externally(dl.open_path)
 
     def _open_externally(self, path):
-        """Open a file using the system's default handler."""
+        """Open a file or URL using the system's default handler."""
         import subprocess as _sp
         import platform as _pl
-        if not Path(path).exists():
+        is_url = isinstance(path, str) and (
+            path.startswith("http://") or path.startswith("https://"))
+        if not is_url and not Path(path).exists():
             self.notification = f"missing: {path}"
             return
         try:
             opener = "open" if _pl.system() == "Darwin" else "xdg-open"
             _sp.Popen([opener, str(path)],
                       stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
-            self.notification = f"opened {Path(path).name}"
+            label = path if is_url else Path(path).name
+            self.notification = f"opened {label}"
         except FileNotFoundError:
             self.notification = "no system opener available"
 
