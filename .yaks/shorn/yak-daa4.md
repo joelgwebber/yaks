@@ -4,7 +4,8 @@ title: Source field missing in tui
 type: bug
 priority: 2
 created: '2026-04-18T23:05:08Z'
-updated: '2026-04-18T23:07:51Z'
+updated: '2026-04-18T23:08:10Z'
+commit: 92b5895
 ---
 
 If present in the source, it should be shown as a clickable link in the detail view.
