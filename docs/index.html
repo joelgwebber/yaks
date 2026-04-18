@@ -9,7 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
 <style>
 :root {
-  --pico-font-size: 14px;
+  --pico-font-size: 15px;
 }
 body { margin: 0; padding: 0; }
 
@@ -97,8 +97,10 @@ header.repo-bar select {
   border-left: none;
   border-right: none;
   margin: 0;
+  outline: none;
 }
 .tab:hover { color: var(--pico-color); }
+.tab:focus-visible { color: var(--pico-color); }
 .tab.active {
   color: var(--pico-color);
   border-bottom-color: var(--pico-primary);
@@ -147,7 +149,7 @@ header.repo-bar select {
   padding: 0.35rem 1.25rem;
   cursor: pointer;
   border-left: 3px solid transparent;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   line-height: 1.4;
 }
 .task-row:hover { background: rgba(0,0,0,0.02); }
@@ -185,26 +187,26 @@ header.repo-bar select {
 
 /* --- Badges --- */
 .badge {
-  font-size: 0.65rem;
-  padding: 0.05rem 0.35rem;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
   border-radius: 3px;
   font-weight: 500;
   white-space: nowrap;
 }
 .badge-p1 { background: #fee2e2; color: #991b1b; }
-.badge-p2 { background: #fef3c7; color: #92400e; }
+.badge-p2 { background: #fef3c7; color: #7c2d12; }
 .badge-p3 { background: #e0e7ff; color: #3730a3; }
 .badge-bug { background: #fecaca; color: #991b1b; }
 .badge-feature { background: #d1fae5; color: #065f46; }
-.badge-task { background: #e0e7ff; color: #3730a3; }
+.badge-task { background: #dbeafe; color: #1e40af; }
 .badge-idea { background: #f3e8ff; color: #6b21a8; }
 .badge-label {
-  background: var(--pico-muted-border-color);
-  color: var(--pico-color);
+  background: #f1f5f9;
+  color: #475569;
 }
 .badge-dep {
   background: #fef3c7;
-  color: #92400e;
+  color: #7c2d12;
 }
 
 /* --- Detail panel content --- */
@@ -237,7 +239,7 @@ header.repo-bar select {
   margin-bottom: 0.75rem;
 }
 .detail-field {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   margin-bottom: 0.2rem;
   color: var(--pico-muted-color);
 }
@@ -248,7 +250,7 @@ header.repo-bar select {
   border-top: 1px solid var(--pico-muted-border-color);
   padding-top: 0.75rem;
   margin-top: 0.5rem;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   line-height: 1.6;
 }
 .detail-body h1, .detail-body h2, .detail-body h3 {
@@ -355,17 +357,32 @@ function humanDate(iso) {
 }
 
 // --- URL hash ---
+// Hash format: #owner/repo[/branch[/tab[/taskId]]]
 function readHash() {
   const h = location.hash.replace(/^#/, "");
   if (!h) return null;
   const parts = h.split("/");
   if (parts.length < 2) return null;
-  return { owner: parts[0], repo: parts[1], branch: parts[2] || "" };
+  return { owner: parts[0], repo: parts[1], branch: parts[2] || "", tab: parts[3] || "", taskId: parts.slice(4).join("/") || "" };
+}
+
+function buildHash(owner, repo, branch, tab, taskId) {
+  let h = branch ? `${owner}/${repo}/${branch}` : `${owner}/${repo}`;
+  if (tab) h += `/${tab}`;
+  if (taskId) h += `/${taskId}`;
+  return h;
 }
 
 function writeHash(owner, repo, branch) {
-  const h = branch ? `${owner}/${repo}/${branch}` : `${owner}/${repo}`;
+  const h = buildHash(owner, repo, branch, "", "");
   if (location.hash !== "#" + h) location.hash = h;
+}
+
+function pushNav(tab, taskId) {
+  const h = buildHash(state.owner, state.repo, state.branch, tab || "", taskId || "");
+  if (location.hash !== "#" + h) {
+    history.pushState(null, "", "#" + h);
+  }
 }
 
 // --- Auto-detect repo from GH Pages URL ---
@@ -490,14 +507,15 @@ function updateCounts() {
   }
 }
 
-function setTab(status) {
+function setTab(status, pushHistory = true) {
   state.activeTab = status;
   state.selectedId = null;
-  closeDetail();
+  closeDetail(false);
   for (const btn of document.querySelectorAll(".tab")) {
     btn.classList.toggle("active", btn.dataset.status === status);
   }
   renderList();
+  if (pushHistory) pushNav(status, "");
 }
 
 // --- List rendering ---
@@ -583,13 +601,14 @@ function makeRow(t, isChild) {
 }
 
 // --- Detail panel ---
-function selectTask(t) {
+function selectTask(t, pushHistory = true) {
   state.selectedId = t.id;
   // Update selection highlight
   for (const r of document.querySelectorAll(".task-row")) {
     r.classList.toggle("selected", r.querySelector(".task-id")?.textContent === t.id);
   }
   openDetail(t);
+  if (pushHistory) pushNav(state.activeTab, t.id);
 }
 
 function openDetail(t) {
@@ -663,7 +682,7 @@ function openDetail(t) {
         // Switch tab if needed
         const targetStatus = state.taskMap[id]._status;
         if (STATUSES.includes(targetStatus) && targetStatus !== state.activeTab) {
-          setTab(targetStatus);
+          setTab(targetStatus, false);
         }
         selectTask(state.taskMap[id]);
       }
@@ -671,12 +690,13 @@ function openDetail(t) {
   }
 }
 
-function closeDetail() {
+function closeDetail(pushHistory = true) {
   document.getElementById("detail-panel").classList.remove("open");
   state.selectedId = null;
   for (const r of document.querySelectorAll(".task-row.selected")) {
     r.classList.remove("selected");
   }
+  if (pushHistory) pushNav(state.activeTab, "");
 }
 
 // --- UI helpers ---
@@ -753,21 +773,57 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeDetail();
 });
 
+// Restore tab/task from hash after board loads
+function restoreFromHash() {
+  const h = readHash();
+  if (!h) return;
+  if (h.tab && STATUSES.includes(h.tab) && h.tab !== state.activeTab) {
+    setTab(h.tab, false);
+  }
+  if (h.taskId && state.taskMap[h.taskId]) {
+    selectTask(state.taskMap[h.taskId], false);
+  }
+}
+
+// Handle back/forward
+window.addEventListener("popstate", () => {
+  const h = readHash();
+  if (!h) return;
+  if (h.owner !== state.owner || h.repo !== state.repo || h.branch !== state.branch) {
+    boot(h.owner, h.repo, h.branch);
+    return;
+  }
+  const tab = h.tab || "hairy";
+  if (tab !== state.activeTab) setTab(tab, false);
+  if (h.taskId && state.taskMap[h.taskId]) {
+    selectTask(state.taskMap[h.taskId], false);
+  } else {
+    closeDetail(false);
+  }
+});
+
 // Boot from hash, or auto-detect from GH Pages URL
 window.addEventListener("hashchange", () => {
   const h = readHash();
-  if (h) boot(h.owner, h.repo, h.branch);
+  if (h && (h.owner !== state.owner || h.repo !== state.repo)) {
+    boot(h.owner, h.repo, h.branch);
+  }
 });
+
+async function bootAndRestore(owner, repo, branch) {
+  await boot(owner, repo, branch);
+  restoreFromHash();
+}
 
 const initial = readHash();
 if (initial) {
-  boot(initial.owner, initial.repo, initial.branch);
+  bootAndRestore(initial.owner, initial.repo, initial.branch);
 } else {
   const detected = detectRepo();
   if (detected) {
     document.getElementById("repo-input").value = detected;
     const [owner, repo] = detected.split("/");
-    boot(owner, repo, "");
+    bootAndRestore(owner, repo, "");
   }
 }
 </script>
