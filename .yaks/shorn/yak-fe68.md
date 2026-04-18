@@ -4,7 +4,8 @@ title: External task reference
 type: feature
 priority: 2
 created: '2026-04-18T19:05:46Z'
-updated: '2026-04-18T20:32:56Z'
+updated: '2026-04-18T20:33:18Z'
+commit: 1c40806
 ---
 
 Use-case: I have an external issue tracker I'm forced to use (ahem... JIRA?), but don't actually want to. It's pretty easy to get claude to read them by external MCP request, and populate a yak, but then we lose the connection.
