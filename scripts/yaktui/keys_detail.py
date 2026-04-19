@@ -94,9 +94,21 @@ def handle(app, key) -> bool:
 
     # Clipboard / comment / attach
     elif key == ord("y"):
-        tid = app._current_task_id()
-        if tid:
-            app._copy_to_clipboard(tid)
+        # If cursor is on a link line, copy the link target; otherwise the task ID.
+        target = None
+        if 0 <= app.detail_line_cursor < len(app.detail_lines):
+            dl = app.detail_lines[app.detail_line_cursor]
+            if dl.links:
+                idx = max(0, min(app.detail_span_cursor, len(dl.links) - 1))
+                target = dl.links[idx][2]
+            elif dl.task_id:
+                target = dl.task_id
+            elif dl.open_path:
+                target = str(dl.open_path)
+        if target is None:
+            target = app._current_task_id()
+        if target:
+            app._copy_to_clipboard(target)
     elif key == ord("M"):
         tid = app._current_task_id()
         if tid:
