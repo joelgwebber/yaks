@@ -328,6 +328,13 @@
             .detail-body blockquote p {
                 margin: 0;
             }
+            .detail-body img {
+                max-width: 100%;
+                height: auto;
+                border-radius: 4px;
+                border: 1px solid var(--pico-muted-border-color);
+                margin: 0.5rem 0;
+            }
             .detail-body code {
                 font-size: 0.8rem;
             }
@@ -586,6 +593,21 @@
             function parentId(id) {
                 const dot = id.lastIndexOf(".");
                 return dot === -1 ? null : id.substring(0, dot);
+            }
+
+            // --- Artifact path rewriting ---
+            // Yak task descriptions reference artifacts with relative paths like
+            // "artifacts/yak-xxxx/foo.png". Those paths resolve against the .yaks/
+            // directory in the repo, so we rewrite them to raw.githubusercontent.com
+            // URLs so the browser can fetch them on GH Pages.
+            function rewriteArtifactPaths(html) {
+                if (!state.owner || !state.repo || !state.branch) return html;
+                const base = `https://raw.githubusercontent.com/${state.owner}/${state.repo}/${state.branch}/.yaks/`;
+                // Rewrite both src= and href= attributes pointing at artifacts/...
+                return html.replace(
+                    /(src|href)="(artifacts\/[^"]+)"/gi,
+                    (_, attr, path) => `${attr}="${base}${path}"`,
+                );
             }
 
             // --- Yak ID linking in markdown ---
@@ -880,9 +902,24 @@
                     }
                 }
 
+                // Blocks: tasks that depend on this one (reverse deps)
+                const blockers = state.tasks.filter((b) =>
+                    (b.depends_on || []).includes(t.id),
+                );
+                if (blockers.length) {
+                    html += `<div class="detail-field"><strong>Blocks:</strong></div>`;
+                    for (const b of blockers) {
+                        const emo = STATUS_EMOJI[b._status] || "";
+                        html += `<div class="detail-field" style="padding-left:1rem">`;
+                        html += `<span class="yak-link" data-id="${esc(b.id)}">${emo} ${esc(b.id)}</span> ${esc(b.title || "")}`;
+                        html += `</div>`;
+                    }
+                }
+
                 if (t._body && t._body.trim()) {
                     let bodyHtml = marked.parse(t._body);
                     bodyHtml = linkifyYakIds(bodyHtml);
+                    bodyHtml = rewriteArtifactPaths(bodyHtml);
                     html += `<div class="detail-body">${bodyHtml}</div>`;
                 }
 
