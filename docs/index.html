@@ -319,15 +319,17 @@
             color: var(--fg);
             border-color: var(--border-strong);
         }
-        .filter-btn .dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--p2);
-            display: none;
+        .filter-btn .summary {
+            color: var(--p2);
+            font-family: var(--mono);
+            font-size: 11.5px;
+            max-width: 360px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
-        .filter-btn.active .dot {
-            display: inline-block;
+        .filter-btn .summary:empty {
+            display: none;
         }
 
         /* --- List --- */
@@ -1006,7 +1008,7 @@
 
         <nav class="tabs" id="tabs" style="display: none">
             <button class="tab active" data-status="hairy" type="button">
-                <span class="tab-icon">&#x1F9F6;</span>
+                <span class="tab-icon">&#x1F9AC;</span>
                 <span>Hairy</span>
                 <span class="tab-count" id="count-hairy">0</span>
             </button>
@@ -1031,7 +1033,7 @@
                     />
                 </svg>
                 <span>Filters</span>
-                <span class="dot"></span>
+                <span class="summary" id="filter-summary"></span>
             </button>
         </nav>
 
@@ -1138,7 +1140,7 @@
     <script>
         const STATUSES = ["hairy", "shaving", "shorn"];
         const STATUS_EMOJI = {
-            hairy: "\u{1F9F6}", // yarn ball 🧶
+            hairy: "\u{1F9AC}", // bison 🦬
             shaving: "\u{1FA92}", // razor 🪒
             shorn: "\u{1F411}", // sheep 🐑
             dead: "\u{1F480}", // skull 💀
@@ -1153,6 +1155,7 @@
             activeTab: "hairy",
             selectedId: null,
             filters: emptyFilters(),
+            visibleList: [],
         };
 
         function emptyFilters() {
@@ -1464,6 +1467,28 @@
             );
         }
 
+        function filterSummaryString() {
+            const f = state.filters;
+            const parts = [];
+            if (f.type.length) parts.push(`type:${f.type.join(",")}`);
+            if (f.prio.length)
+                parts.push(
+                    `p:${f.prio.map((p) => "p" + p).join(",")}`,
+                );
+            if (f.labels.trim()) parts.push(`labels:${f.labels.trim()}`);
+            if (f.search.trim()) {
+                const s = f.search.trim();
+                const clipped =
+                    s.length > 20 ? s.substring(0, 20) + "…" : s;
+                parts.push(`"${clipped}"`);
+            }
+            if (f.parent.trim())
+                parts.push(`parent:${f.parent.trim()}`);
+            if (f.readyOnly) parts.push("ready");
+            if (f.tangledOnly) parts.push("tangled");
+            return parts.join(" ");
+        }
+
         function isShornOrDead(t) {
             return t && (t._status === "shorn" || t._status === "dead");
         }
@@ -1534,6 +1559,7 @@
                 (t) => t._status === state.activeTab,
             );
             const filterIsActive = filtersActive();
+            const summaryEl = document.getElementById("filter-summary");
 
             if (filterIsActive) {
                 // Flat list of matching tasks — parent/child grouping would
@@ -1541,6 +1567,7 @@
                 const matching = tasksInTab
                     .filter(taskMatchesFilter)
                     .sort(sortFn);
+                summaryEl.textContent = `${filterSummaryString()} (${matching.length})`;
                 for (const t of matching) list.appendChild(makeRow(t, false));
                 if (matching.length === 0) {
                     const empty = document.createElement("div");
@@ -1548,8 +1575,10 @@
                     empty.innerHTML = `<span>&#x1F9AC;</span> No yaks match the current filter.`;
                     list.appendChild(empty);
                 }
+                state.visibleList = matching;
                 return;
             }
+            summaryEl.textContent = "";
 
             const isChildInTab = (t) => {
                 const pid = parentId(t.id);
@@ -1581,13 +1610,17 @@
                 });
             }
 
+            const visible = [];
             for (const t of topLevel) {
                 list.appendChild(makeRow(t, false));
+                visible.push(t);
                 const children = childrenOf[t.id] || [];
                 for (const c of children) {
                     list.appendChild(makeRow(c, true));
+                    visible.push(c);
                 }
             }
+            state.visibleList = visible;
 
             if (topLevel.length === 0) {
                 const empty = document.createElement("div");
@@ -2043,16 +2076,139 @@
         }
 
         // --- Keyboard ---
+        function isTextField(el) {
+            if (!el) return false;
+            const tag = el.tagName;
+            if (tag === "TEXTAREA") return true;
+            if (tag === "INPUT") {
+                const t = (el.type || "text").toLowerCase();
+                return t === "text" || t === "search" || t === "url";
+            }
+            return el.isContentEditable;
+        }
+
+        function moveSelection(delta) {
+            const list = state.visibleList;
+            if (!list.length) return;
+            let idx = list.findIndex((t) => t.id === state.selectedId);
+            if (idx < 0) idx = delta > 0 ? -1 : list.length;
+            let next = idx + delta;
+            next = Math.max(0, Math.min(list.length - 1, next));
+            const target = list[next];
+            if (target) {
+                selectTask(target);
+                // Scroll the newly-selected row into view if needed.
+                const row = document
+                    .getElementById("task-list")
+                    .querySelectorAll(".list-row")[next];
+                if (row) row.scrollIntoView({ block: "nearest" });
+            }
+        }
+
+        function selectAt(index) {
+            const list = state.visibleList;
+            if (!list.length) return;
+            const i = Math.max(0, Math.min(list.length - 1, index));
+            selectTask(list[i]);
+            const row = document
+                .getElementById("task-list")
+                .querySelectorAll(".list-row")[i];
+            if (row) row.scrollIntoView({ block: "nearest" });
+        }
+
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                flashStatus(`copied ${text}`);
+            } catch {
+                flashStatus("copy failed", true);
+            }
+        }
+
+        function flashStatus(msg, isError) {
+            const el = document.getElementById("status");
+            el.className = "status-msg" + (isError ? " error" : "");
+            el.textContent = msg;
+            clearTimeout(flashStatus._t);
+            flashStatus._t = setTimeout(() => {
+                if (el.textContent === msg) el.textContent = "";
+            }, 1500);
+        }
+
         document.addEventListener("keydown", (e) => {
+            const filterOpen = document
+                .getElementById("filter-dialog-backdrop")
+                .classList.contains("open");
+
             if (e.key === "Escape") {
-                const filterOpen = document
-                    .getElementById("filter-dialog-backdrop")
-                    .classList.contains("open");
                 if (filterOpen) {
                     closeFilterDialog();
                     return;
                 }
+                if (isTextField(e.target)) {
+                    e.target.blur();
+                    return;
+                }
                 closeDetail();
+                return;
+            }
+
+            // Don't trigger shortcuts while typing into a text field or
+            // while the filter dialog is open.
+            if (filterOpen || isTextField(e.target)) return;
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+            switch (e.key) {
+                case "j":
+                case "ArrowDown":
+                    moveSelection(+1);
+                    e.preventDefault();
+                    break;
+                case "k":
+                case "ArrowUp":
+                    moveSelection(-1);
+                    e.preventDefault();
+                    break;
+                case "g":
+                    selectAt(0);
+                    e.preventDefault();
+                    break;
+                case "G":
+                    selectAt(state.visibleList.length - 1);
+                    e.preventDefault();
+                    break;
+                case "Enter":
+                case "l":
+                case "ArrowRight": {
+                    if (!state.selectedId && state.visibleList.length) {
+                        selectAt(0);
+                    } else if (state.selectedId) {
+                        selectTask(state.taskMap[state.selectedId]);
+                    }
+                    e.preventDefault();
+                    break;
+                }
+                case "h":
+                case "ArrowLeft":
+                    closeDetail();
+                    e.preventDefault();
+                    break;
+                case "1":
+                    setTab("hairy");
+                    break;
+                case "2":
+                    setTab("shaving");
+                    break;
+                case "3":
+                    setTab("shorn");
+                    break;
+                case "f":
+                    openFilterDialog();
+                    e.preventDefault();
+                    break;
+                case "y":
+                    if (state.selectedId) copyToClipboard(state.selectedId);
+                    break;
             }
         });
 
