@@ -354,9 +354,26 @@
         .list-row:hover {
             background: var(--bg-row-hover);
         }
+        .list-row.cursor {
+            background: var(--bg-row-hover);
+        }
         .list-row.selected {
             background: var(--bg-row-selected);
             border-left-color: var(--fg);
+        }
+        .list-row.selected.cursor {
+            background: var(--bg-row-selected);
+        }
+        .list-row.cursor::before {
+            content: "";
+            position: absolute;
+            inset: 0 0 0 -2px;
+            border-left: 2px dashed var(--border-strong);
+            pointer-events: none;
+        }
+        .list-row.selected.cursor::before {
+            border-left-color: var(--fg);
+            border-left-style: solid;
         }
         .list-row.selected .row-id {
             color: var(--fg);
@@ -813,9 +830,7 @@
             cursor: pointer;
             background: var(--bg);
             user-select: none;
-        }
-        .check input {
-            display: none;
+            font-family: inherit;
         }
         .check:hover {
             color: var(--fg);
@@ -824,6 +839,10 @@
             background: var(--fg);
             color: var(--bg);
             border-color: var(--fg);
+        }
+        .check:focus-visible {
+            outline: 2px solid var(--fg);
+            outline-offset: 2px;
         }
         .filter-row input[type="text"] {
             width: 100%;
@@ -1053,7 +1072,7 @@
         <div class="panel-backdrop" id="panel-backdrop"></div>
         <aside class="panel" id="panel" aria-hidden="true"></aside>
 
-        <div class="filter-dialog-backdrop" id="filter-dialog-backdrop">
+        <div class="filter-dialog-backdrop" id="filter-dialog-backdrop" inert>
             <div class="filter-dialog" id="filter-dialog">
                 <h2>
                     Filters
@@ -1062,32 +1081,18 @@
                 <div class="filter-row">
                     <label class="key">type</label>
                     <div class="value-row" data-group="type">
-                        <label class="check" data-value="task"
-                            ><input type="checkbox" />task</label
-                        >
-                        <label class="check" data-value="bug"
-                            ><input type="checkbox" />bug</label
-                        >
-                        <label class="check" data-value="feature"
-                            ><input type="checkbox" />feature</label
-                        >
-                        <label class="check" data-value="idea"
-                            ><input type="checkbox" />idea</label
-                        >
+                        <button type="button" class="check" data-value="task">task</button>
+                        <button type="button" class="check" data-value="bug">bug</button>
+                        <button type="button" class="check" data-value="feature">feature</button>
+                        <button type="button" class="check" data-value="idea">idea</button>
                     </div>
                 </div>
                 <div class="filter-row">
                     <label class="key">priority</label>
                     <div class="value-row" data-group="prio">
-                        <label class="check" data-value="1"
-                            ><input type="checkbox" />p1</label
-                        >
-                        <label class="check" data-value="2"
-                            ><input type="checkbox" />p2</label
-                        >
-                        <label class="check" data-value="3"
-                            ><input type="checkbox" />p3</label
-                        >
+                        <button type="button" class="check" data-value="1">p1</button>
+                        <button type="button" class="check" data-value="2">p2</button>
+                        <button type="button" class="check" data-value="3">p3</button>
                     </div>
                 </div>
                 <div class="filter-row">
@@ -1117,12 +1122,8 @@
                 <div class="filter-row">
                     <label class="key">deps</label>
                     <div class="value-row" data-group="deps">
-                        <label class="check" data-value="ready"
-                            ><input type="checkbox" />ready only</label
-                        >
-                        <label class="check" data-value="tangled"
-                            ><input type="checkbox" />tangled only</label
-                        >
+                        <button type="button" class="check" data-value="ready">ready only</button>
+                        <button type="button" class="check" data-value="tangled">tangled only</button>
                     </div>
                 </div>
                 <div class="filter-foot">
@@ -1154,6 +1155,7 @@
             taskMap: {},
             activeTab: "hairy",
             selectedId: null,
+            cursorId: null,
             filters: emptyFilters(),
             visibleList: [],
         };
@@ -1647,6 +1649,7 @@
             row.className = "list-row";
             if (isChild) row.classList.add("is-child");
             if (t.id === state.selectedId) row.classList.add("selected");
+            if (t.id === state.cursorId) row.classList.add("cursor");
             row.onclick = () => selectTask(t);
 
             let idCell = `<div class="row-id">`;
@@ -1681,12 +1684,12 @@
         // --- Detail panel ---
         function selectTask(t, pushHistory = true) {
             state.selectedId = t.id;
+            state.cursorId = t.id;
             for (const r of document.querySelectorAll(".list-row")) {
                 const idSpan = r.querySelector(".row-id span:last-child");
-                r.classList.toggle(
-                    "selected",
-                    idSpan && idSpan.textContent === t.id,
-                );
+                const isMe = idSpan && idSpan.textContent === t.id;
+                r.classList.toggle("selected", isMe);
+                r.classList.toggle("cursor", isMe);
             }
             openDetail(t);
             if (pushHistory) pushNav(state.activeTab, t.id);
@@ -1902,14 +1905,14 @@
         // --- Filter dialog wiring ---
         function openFilterDialog() {
             syncFilterDialogFromState();
-            document
-                .getElementById("filter-dialog-backdrop")
-                .classList.add("open");
+            const b = document.getElementById("filter-dialog-backdrop");
+            b.classList.add("open");
+            b.inert = false;
         }
         function closeFilterDialog() {
-            document
-                .getElementById("filter-dialog-backdrop")
-                .classList.remove("open");
+            const b = document.getElementById("filter-dialog-backdrop");
+            b.classList.remove("open");
+            b.inert = true;
         }
 
         function syncFilterDialogFromState() {
@@ -1934,11 +1937,7 @@
             );
             if (!row) return;
             for (const c of row.querySelectorAll(".check")) {
-                const v = c.dataset.value;
-                const on = values.includes(v);
-                c.classList.toggle("on", on);
-                const cb = c.querySelector("input");
-                if (cb) cb.checked = on;
+                c.classList.toggle("on", values.includes(c.dataset.value));
             }
         }
 
@@ -1981,11 +1980,7 @@
                 .addEventListener("click", (e) => {
                     const chk = e.target.closest(".check");
                     if (!chk) return;
-                    // Prevent label from double-toggling via its nested input.
-                    e.preventDefault();
                     chk.classList.toggle("on");
-                    const cb = chk.querySelector("input");
-                    if (cb) cb.checked = chk.classList.contains("on");
                     applyFilters();
                 });
 
@@ -2087,33 +2082,43 @@
             return el.isContentEditable;
         }
 
-        function moveSelection(delta) {
+        function setCursorAt(index) {
+            const list = state.visibleList;
+            if (!list.length) {
+                state.cursorId = null;
+                return;
+            }
+            const i = Math.max(0, Math.min(list.length - 1, index));
+            state.cursorId = list[i].id;
+            const rows = document
+                .getElementById("task-list")
+                .querySelectorAll(".list-row");
+            rows.forEach((r, j) => r.classList.toggle("cursor", j === i));
+            if (rows[i]) rows[i].scrollIntoView({ block: "nearest" });
+        }
+
+        function moveCursor(delta) {
             const list = state.visibleList;
             if (!list.length) return;
-            let idx = list.findIndex((t) => t.id === state.selectedId);
+            let idx = list.findIndex((t) => t.id === state.cursorId);
             if (idx < 0) idx = delta > 0 ? -1 : list.length;
-            let next = idx + delta;
-            next = Math.max(0, Math.min(list.length - 1, next));
-            const target = list[next];
-            if (target) {
-                selectTask(target);
-                // Scroll the newly-selected row into view if needed.
-                const row = document
-                    .getElementById("task-list")
-                    .querySelectorAll(".list-row")[next];
-                if (row) row.scrollIntoView({ block: "nearest" });
+            setCursorAt(idx + delta);
+        }
+
+        function openCursor() {
+            const id = state.cursorId;
+            if (id && state.taskMap[id]) {
+                selectTask(state.taskMap[id]);
+            } else if (state.visibleList.length) {
+                setCursorAt(0);
+                selectTask(state.visibleList[0]);
             }
         }
 
-        function selectAt(index) {
-            const list = state.visibleList;
-            if (!list.length) return;
-            const i = Math.max(0, Math.min(list.length - 1, index));
-            selectTask(list[i]);
-            const row = document
-                .getElementById("task-list")
-                .querySelectorAll(".list-row")[i];
-            if (row) row.scrollIntoView({ block: "nearest" });
+        function cycleTab(delta) {
+            const i = STATUSES.indexOf(state.activeTab);
+            const next = (i + delta + STATUSES.length) % STATUSES.length;
+            setTab(STATUSES[next]);
         }
 
         async function copyToClipboard(text) {
@@ -2161,54 +2166,50 @@
             switch (e.key) {
                 case "j":
                 case "ArrowDown":
-                    moveSelection(+1);
+                    moveCursor(+1);
                     e.preventDefault();
                     break;
                 case "k":
                 case "ArrowUp":
-                    moveSelection(-1);
+                    moveCursor(-1);
                     e.preventDefault();
                     break;
                 case "g":
-                    selectAt(0);
+                    setCursorAt(0);
                     e.preventDefault();
                     break;
                 case "G":
-                    selectAt(state.visibleList.length - 1);
+                    setCursorAt(state.visibleList.length - 1);
                     e.preventDefault();
                     break;
                 case "Enter":
                 case "l":
-                case "ArrowRight": {
-                    if (!state.selectedId && state.visibleList.length) {
-                        selectAt(0);
-                    } else if (state.selectedId) {
-                        selectTask(state.taskMap[state.selectedId]);
-                    }
+                case "ArrowRight":
+                    openCursor();
                     e.preventDefault();
                     break;
-                }
                 case "h":
                 case "ArrowLeft":
                     closeDetail();
                     e.preventDefault();
                     break;
-                case "1":
-                    setTab("hairy");
+                case "[":
+                    cycleTab(-1);
+                    e.preventDefault();
                     break;
-                case "2":
-                    setTab("shaving");
-                    break;
-                case "3":
-                    setTab("shorn");
+                case "]":
+                    cycleTab(+1);
+                    e.preventDefault();
                     break;
                 case "f":
                     openFilterDialog();
                     e.preventDefault();
                     break;
-                case "y":
-                    if (state.selectedId) copyToClipboard(state.selectedId);
+                case "y": {
+                    const id = state.cursorId || state.selectedId;
+                    if (id) copyToClipboard(id);
                     break;
+                }
             }
         });
 
