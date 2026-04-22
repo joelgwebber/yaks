@@ -157,3 +157,27 @@ def build_tree(root: Path, tab_status: str | None,
     for r in roots:
         flatten(r, 0)
     return flat
+
+
+def apply_collapse(flat: list[tuple[str, dict, int, bool]],
+                   collapsed_ids: set[str],
+                   filter_active: bool
+                   ) -> tuple[list[tuple[str, dict, int, bool]], dict[str, int]]:
+    """Drop descendants of collapsed ids and report per-parent hidden counts.
+
+    Returns (visible_rows, counts). When a filter/search is active, collapse
+    is ignored — the flattened filter view wins. Counts are keyed only by ids
+    that are currently collapsed AND have at least one row hidden underneath
+    them; the renderer uses that as the "show chevron + N" signal."""
+    if filter_active or not collapsed_ids:
+        return flat, {}
+    counts: dict[str, int] = {}
+    for _, task, _, _ in flat:
+        tid = task["id"]
+        for cid in collapsed_ids:
+            if tid.startswith(cid + "."):
+                counts[cid] = counts.get(cid, 0) + 1
+    visible = [row for row in flat
+               if not any(row[1]["id"].startswith(cid + ".")
+                          for cid in collapsed_ids)]
+    return visible, counts

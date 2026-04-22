@@ -385,7 +385,14 @@ def draw_list(app, y_start, x_start, height, width):
                 display_title = f"{status_emoji(status)} {display_title}"[:remaining]
             safe_addstr(stdscr, y, x, display_title, title_attr)
 
-        if ghost and not app.filter_spec.search:
+        hidden = app.collapsed_counts.get(tid, 0)
+        if hidden:
+            badge = f" ▶ {hidden} "
+            bx = x_start + width - len(badge) - 1
+            if bx > x:
+                badge_attr = (curses.A_DIM | base_attr) if not is_selected else base_attr
+                safe_addstr(stdscr, y, bx, badge, badge_attr)
+        elif ghost and not app.filter_spec.search:
             badge = f" {status_emoji(status)}"
             bx = x_start + width - len(badge) - 1
             if bx > x:
@@ -514,7 +521,7 @@ def draw_help_bar(app, y, w):
         keys = ("h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  "
                 f"E:edit  D:dep  S:state  {filter_hint}  q:quit  ?:help")
     else:
-        keys = ("Tab:tab  j/k:move  l:detail  c/C:new  E:edit  X:del  "
+        keys = ("Tab:tab  j/k:move  l:detail  Space:collapse  c/C:new  E:edit  X:del  "
                 f"S:state  D:dep  P/T/L:adjust  {filter_hint}  ?:help")
     safe_addstr(app.stdscr, y, 0, " " * w, curses.color_pair(C_HELP))
     safe_addstr(app.stdscr, y, 0, keys[:w], curses.color_pair(C_HELP))
@@ -548,6 +555,7 @@ _HELP_SECTIONS = [
         "Tab / Shift-Tab       Next / previous status tab",
         "[ / ]                 Previous / next tab",
         "l / → / Enter         Show detail pane",
+        "Space                 Collapse / expand subtree",
         "c / C                 New root / child task",
     ]),
     ("Detail pane", [

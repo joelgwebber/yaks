@@ -128,4 +128,10 @@ def handle(app, key) -> bool:
         if tid:
             app._reparent_task(tid)
 
+    # Space toggles collapse/expand of the current row's subtree.
+    elif key == ord(" "):
+        tid = app._current_task_id()
+        if tid:
+            app._toggle_collapse(tid)
+
     return True

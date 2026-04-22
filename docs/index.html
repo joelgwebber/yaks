@@ -477,6 +477,27 @@
             background: var(--type-task-bg);
         }
 
+        .chevron {
+            font: inherit;
+            font-size: 11px;
+            line-height: 1;
+            color: var(--fg-muted);
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 9999px;
+            padding: 2px 8px;
+            cursor: pointer;
+            letter-spacing: 0.02em;
+        }
+        .chevron:hover {
+            color: var(--fg);
+            background: var(--bg-row-hover);
+        }
+        .chevron:focus-visible {
+            outline: 2px solid var(--fg);
+            outline-offset: 2px;
+        }
+
         /* --- Detail slide-in panel --- */
         .panel-backdrop {
             position: absolute;
@@ -1158,7 +1179,49 @@
             cursorId: null,
             filters: emptyFilters(),
             visibleList: [],
+            collapsedIds: new Set(),
         };
+
+        function collapseStorageKey() {
+            return `yaks:collapsed:${state.owner}/${state.repo}@${state.branch}`;
+        }
+
+        function loadCollapseState() {
+            try {
+                const raw = localStorage.getItem(collapseStorageKey());
+                if (!raw) return new Set();
+                const arr = JSON.parse(raw);
+                return new Set(Array.isArray(arr) ? arr : []);
+            } catch (e) {
+                return new Set();
+            }
+        }
+
+        function saveCollapseState() {
+            try {
+                localStorage.setItem(collapseStorageKey(),
+                    JSON.stringify(Array.from(state.collapsedIds)));
+            } catch (e) {}
+        }
+
+        function toggleCollapse(tid) {
+            if (!tid) return;
+            const hasChildren = state.tasks.some(
+                (t) => t.id !== tid && t.id.startsWith(tid + "."));
+            let target = tid;
+            if (!hasChildren) {
+                target = parentId(tid);
+                if (!target || !state.taskMap[target]) return;
+            }
+            if (state.collapsedIds.has(target)) {
+                state.collapsedIds.delete(target);
+            } else {
+                state.collapsedIds.add(target);
+                state.cursorId = target;
+            }
+            saveCollapseState();
+            renderList();
+        }
 
         function emptyFilters() {
             return {
@@ -1363,6 +1426,7 @@
                 taskMap: {},
                 selectedId: null,
             };
+            state.collapsedIds = loadCollapseState();
             showStatus("Loading…", false, true);
             closeDetail(false);
 
@@ -1612,13 +1676,23 @@
                 });
             }
 
+            const hiddenCount = (tid) => {
+                if (!state.collapsedIds.has(tid)) return 0;
+                let n = 0;
+                for (const t of state.tasks) {
+                    if (t.id.startsWith(tid + ".")) n++;
+                }
+                return n;
+            };
+
             const visible = [];
             for (const t of topLevel) {
-                list.appendChild(makeRow(t, false));
+                list.appendChild(makeRow(t, false, hiddenCount(t.id)));
                 visible.push(t);
+                if (state.collapsedIds.has(t.id)) continue;
                 const children = childrenOf[t.id] || [];
                 for (const c of children) {
-                    list.appendChild(makeRow(c, true));
+                    list.appendChild(makeRow(c, true, hiddenCount(c.id)));
                     visible.push(c);
                 }
             }
@@ -1644,7 +1718,7 @@
             );
         };
 
-        function makeRow(t, isChild) {
+        function makeRow(t, isChild, hiddenCount) {
             const row = document.createElement("div");
             row.className = "list-row";
             if (isChild) row.classList.add("is-child");
@@ -1656,14 +1730,15 @@
             if (isChild)
                 idCell += `<span class="row-indent" aria-hidden="true"></span>`;
             idCell += `<span class="yak-glyph">&#x1F9AC;</span>`;
-            // Child row status glyph when parent is in a different status
-            // (shouldn't happen here since we only render children-in-tab).
             idCell += `<span>${esc(t.id || "?")}</span>`;
             idCell += `</div>`;
 
             let titleCell = `<div class="row-title">${esc(t.title || "(untitled)")}</div>`;
 
             let metaCell = `<div class="row-meta">`;
+            if (hiddenCount) {
+                metaCell += `<button type="button" class="chevron" data-collapsed-for="${esc(t.id)}" aria-label="Expand subtree">&#x25B6; ${hiddenCount}</button>`;
+            }
             if (t.priority)
                 metaCell += `<span class="badge prio badge-P${t.priority}">P${t.priority}</span>`;
             if (t.type)
@@ -1678,6 +1753,13 @@
             metaCell += `</div>`;
 
             row.innerHTML = idCell + titleCell + metaCell;
+            const chev = row.querySelector(".chevron");
+            if (chev) {
+                chev.onclick = (ev) => {
+                    ev.stopPropagation();
+                    toggleCollapse(chev.dataset.collapsedFor);
+                };
+            }
             return row;
         }
 
@@ -2210,6 +2292,12 @@
                     if (id) copyToClipboard(id);
                     break;
                 }
+                case " ": {
+                    const id = state.cursorId;
+                    if (id) toggleCollapse(id);
+                    e.preventDefault();
+                    break;
+                }
             }
         });
 
@@ -2226,6 +2314,17 @@
                 setTab(h.tab, false);
             }
             if (h.taskId && state.taskMap[h.taskId]) {
+                // Expand collapsed ancestors so the deep-linked row is visible.
+                let pid = parentId(h.taskId);
+                let changed = false;
+                while (pid) {
+                    if (state.collapsedIds.delete(pid)) changed = true;
+                    pid = parentId(pid);
+                }
+                if (changed) {
+                    saveCollapseState();
+                    renderList();
+                }
                 selectTask(state.taskMap[h.taskId], false);
             }
         }

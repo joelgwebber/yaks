@@ -5,6 +5,9 @@
 """Yaks TUI — curses-based terminal interface for the Yaks task tracker."""
 
 import curses
+import hashlib
+import json
+import os
 import sys
 from pathlib import Path
 
@@ -55,7 +58,14 @@ from yaktui import keys_list as _keys_list
 from yaktui import render as _render
 from yaktui.detail import DetailLine, build_detail_lines
 from yaktui.render import TABS
-from yaktui.tree import build_tree
+from yaktui.tree import apply_collapse, build_tree
+
+
+def _ui_state_path_for(root: Path) -> Path:
+    """Where per-project UI state (collapsed tree ids) lives on disk."""
+    slug = hashlib.sha1(str(root.resolve()).encode("utf-8")).hexdigest()[:12]
+    cache_home = os.environ.get("XDG_CACHE_HOME") or str(Path.home() / ".cache")
+    return Path(cache_home) / "yaks" / f"{slug}.json"
 
 
 # ---------------------------------------------------------------------------
@@ -155,6 +165,12 @@ class TUI:
         self.scroll = 0
         self.filter_spec = FilterSpec()
         self.tasks = []
+        # Tree collapse: ids whose descendants are hidden from the list view.
+        # Loaded from ~/.cache/yaks/<slug>.json; persisted on every toggle.
+        self.collapsed_ids: set[str] = set()
+        self.collapsed_counts: dict[str, int] = {}
+        self._ui_state_path = _ui_state_path_for(root)
+        self._load_ui_state()
 
         # Detail state
         self.focus = "list"  # "list" or "detail"
@@ -203,16 +219,68 @@ class TUI:
     def reload(self):
         """Full reload — re-reads disk. Use when task files may have changed."""
         self._refresh_task_cache()
-        status = TABS[self.tab][0]
-        self.tasks = build_tree(self.root, status, self.filter_spec,
-                                tasks_cache=self._task_cache,
-                                resolved_cache=self._resolved_cache)
+        self._rebuild_task_list()
         self._recompute_blocked()
         if self.cursor >= len(self.tasks):
             self.cursor = max(0, len(self.tasks) - 1)
         self._fix_scroll()
         self._rebuild_detail()
         self._fs_sig = self._scan_fs()
+
+    def _rebuild_task_list(self):
+        """Re-run build_tree for the current tab/filter, then apply collapse."""
+        status = TABS[self.tab][0]
+        flat = build_tree(self.root, status, self.filter_spec,
+                          tasks_cache=self._task_cache,
+                          resolved_cache=self._resolved_cache)
+        filter_active = not self.filter_spec.is_empty()
+        self.tasks, self.collapsed_counts = apply_collapse(
+            flat, self.collapsed_ids, filter_active)
+
+    def _toggle_collapse(self, tid: str):
+        """Toggle collapse at the nearest parent with children. If cursor is
+        inside the subtree being collapsed, snap it to the collapsed row."""
+        all_ids = {t["id"] for _, t in (self._task_cache or [])}
+        target = tid if any(o.startswith(tid + ".") for o in all_ids) else None
+        if target is None:
+            from yaklib.model import parent_id as _pid
+            target = _pid(tid)
+            if target is None or target not in all_ids:
+                return
+        if target in self.collapsed_ids:
+            self.collapsed_ids.discard(target)
+        else:
+            self.collapsed_ids.add(target)
+        self._rebuild_task_list()
+        # Snap cursor to the target row if present (keeps it visible after
+        # collapsing from inside a subtree).
+        for i, (_, t, _, _) in enumerate(self.tasks):
+            if t["id"] == target:
+                self.cursor = i
+                break
+        else:
+            if self.cursor >= len(self.tasks):
+                self.cursor = max(0, len(self.tasks) - 1)
+        self._fix_scroll()
+        self._rebuild_detail()
+        self._save_ui_state()
+
+    def _load_ui_state(self):
+        try:
+            data = json.loads(self._ui_state_path.read_text())
+            ids = data.get("collapsed") or []
+            if isinstance(ids, list):
+                self.collapsed_ids = {s for s in ids if isinstance(s, str)}
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            pass
+
+    def _save_ui_state(self):
+        try:
+            self._ui_state_path.parent.mkdir(parents=True, exist_ok=True)
+            self._ui_state_path.write_text(json.dumps(
+                {"collapsed": sorted(self.collapsed_ids)}))
+        except OSError:
+            pass
 
     def _recompute_blocked(self):
         """Update blocked_ids and reverse_deps from all tasks on disk."""
@@ -501,10 +569,7 @@ class TUI:
         # Live preview — cache-only, no disk scan.
         from dataclasses import replace as _replace
         self.filter_spec = _replace(self.filter_spec, search=ed.buf.strip())
-        status = TABS[self.tab][0]
-        self.tasks = build_tree(self.root, status, self.filter_spec,
-                                tasks_cache=self._task_cache,
-                                resolved_cache=self._resolved_cache)
+        self._rebuild_task_list()
         if self.cursor >= len(self.tasks):
             self.cursor = max(0, len(self.tasks) - 1)
         self._fix_scroll()
@@ -726,12 +791,17 @@ class TUI:
                 self.tab = i
                 break
 
-        # Reload with no filters to ensure the task is visible
+        # Reload with no filters to ensure the task is visible. Also expand
+        # any collapsed ancestors so we can actually see the target row.
         self.filter_spec = FilterSpec()
         self.detail_search = ""
-        self.tasks = build_tree(self.root, target_status, self.filter_spec,
-                                tasks_cache=self._task_cache,
-                                resolved_cache=self._resolved_cache)
+        from yaklib.model import parent_id as _pid
+        pid = _pid(task_id)
+        while pid:
+            if pid in self.collapsed_ids:
+                self.collapsed_ids.discard(pid)
+            pid = _pid(pid)
+        self._rebuild_task_list()
 
         # Find and select the task
         for i, (_, t, _, _) in enumerate(self.tasks):
@@ -833,10 +903,7 @@ class TUI:
         if self._drawer is None:
             return
         self.filter_spec = self._drawer.build_spec()
-        status = TABS[self.tab][0]
-        self.tasks = build_tree(self.root, status, self.filter_spec,
-                                tasks_cache=self._task_cache,
-                                resolved_cache=self._resolved_cache)
+        self._rebuild_task_list()
         if self.cursor >= len(self.tasks):
             self.cursor = max(0, len(self.tasks) - 1)
         self._fix_scroll()

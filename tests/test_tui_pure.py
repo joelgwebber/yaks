@@ -13,7 +13,7 @@ from yaklib.filter import FilterSpec
 from yaklib.model import find_task_file, load_task, save_task
 from yaktui.detail import build_detail_lines
 from yaktui.keys_detail import dedent_block
-from yaktui.tree import build_tree
+from yaktui.tree import apply_collapse, build_tree
 
 
 def _yaks(root: Path) -> Path:
@@ -225,3 +225,40 @@ def test_dedent_block_handles_no_common_indent():
 def test_dedent_block_ignores_blank_lines():
     lines = ["", "  foo", "", "  bar", ""]
     assert dedent_block(lines) == ["", "foo", "", "bar", ""]
+
+
+def _row(tid, depth=0):
+    return ("hairy", {"id": tid, "title": tid}, depth, False)
+
+
+def test_apply_collapse_hides_descendants_and_counts():
+    flat = [_row("yak-1"), _row("yak-1.1", 1), _row("yak-1.1.2", 2),
+            _row("yak-2")]
+    visible, counts = apply_collapse(flat, {"yak-1"}, filter_active=False)
+    assert [r[1]["id"] for r in visible] == ["yak-1", "yak-2"]
+    assert counts == {"yak-1": 2}
+
+
+def test_apply_collapse_skipped_when_filter_active():
+    flat = [_row("yak-1"), _row("yak-1.1", 1), _row("yak-2")]
+    visible, counts = apply_collapse(flat, {"yak-1"}, filter_active=True)
+    assert [r[1]["id"] for r in visible] == ["yak-1", "yak-1.1", "yak-2"]
+    assert counts == {}
+
+
+def test_apply_collapse_noop_when_empty():
+    flat = [_row("yak-1"), _row("yak-1.1", 1)]
+    visible, counts = apply_collapse(flat, set(), filter_active=False)
+    assert visible == flat and counts == {}
+
+
+def test_apply_collapse_nested_counts_outer_not_double_inner():
+    """When both ancestor and descendant are collapsed, the ancestor's count
+    is the whole subtree — we don't hide rows twice or drop the inner."""
+    flat = [_row("yak-1"), _row("yak-1.1", 1), _row("yak-1.1.2", 2)]
+    visible, counts = apply_collapse(flat, {"yak-1", "yak-1.1"},
+                                     filter_active=False)
+    assert [r[1]["id"] for r in visible] == ["yak-1"]
+    # Outer counts 2 descendants (child + grandchild); inner still logs its 1.
+    assert counts["yak-1"] == 2
+    assert counts["yak-1.1"] == 1
