@@ -40,6 +40,19 @@ from yaklib.model import (
 _STATUS_CHAR = {HAIRY: "H", SHAVING: "S", SHORN: "N", DEAD: "X"}
 
 
+def _split_labels(tokens: list[str] | None) -> list[str]:
+    """Flatten label tokens so users can type `--labels foo bar` or
+    `--labels foo,bar` or `--labels "foo bar,baz"` and get the obvious thing."""
+    if not tokens:
+        return []
+    out: list[str] = []
+    for t in tokens:
+        for piece in re.split(r"[,\s]+", t):
+            if piece and piece not in out:
+                out.append(piece)
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Mandate injection
 # ---------------------------------------------------------------------------
@@ -147,8 +160,9 @@ def cmd_create(args):
     }
     if args.depends_on:
         task["depends_on"] = args.depends_on
-    if args.labels:
-        task["labels"] = args.labels
+    labels = _split_labels(args.labels)
+    if labels:
+        task["labels"] = labels
     if args.description:
         task["description"] = args.description
     if getattr(args, "source", None):
@@ -187,7 +201,7 @@ def _spec_from_args(args, defaults: dict | None = None) -> FilterSpec:
     statuses = [resolve_status(s) for s in statuses]
     types = _get("type") or []
     priorities = _get("priority") or []
-    labels = _get("label") or []
+    labels = _split_labels(_get("label") or [])
 
     return FilterSpec(
         statuses=frozenset(d.get("statuses", statuses)),
@@ -283,16 +297,18 @@ def cmd_update(args):
     if args.description is not None:
         task["description"] = args.description
         changed = True
-    if args.add_label:
+    add = _split_labels(args.add_label)
+    if add:
         labels = task.get("labels", [])
-        for lbl in args.add_label:
+        for lbl in add:
             if lbl not in labels:
                 labels.append(lbl)
         task["labels"] = labels
         changed = True
-    if args.remove_label:
+    remove = _split_labels(args.remove_label)
+    if remove:
         labels = task.get("labels", [])
-        for lbl in args.remove_label:
+        for lbl in remove:
             if lbl in labels:
                 labels.remove(lbl)
         task["labels"] = labels if labels else []
