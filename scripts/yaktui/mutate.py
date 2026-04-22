@@ -30,7 +30,6 @@ from yaklib.model import (
     find_children,
     find_task_file,
     generate_id,
-    git_head_short,
     load_config,
     load_task,
     move_task,
@@ -357,12 +356,7 @@ def quick_adjust_state(app, tid: str) -> None:
     if dest == cur_status:
         app.notification = f"{tid} already {dest}"
         return
-    extra = None
-    if dest == SHORN:
-        commit = git_head_short()
-        if commit:
-            extra = {"commit": commit}
-    ok, msg = move_task(app.root, tid, dest, extra_fields=extra)
+    ok, msg = move_task(app.root, tid, dest)
     if not ok:
         app.notification = msg
         return

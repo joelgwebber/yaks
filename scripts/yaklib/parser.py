@@ -79,7 +79,6 @@ def build_parser() -> argparse.ArgumentParser:
     for name in ("shorn", "close"):
         sp = sub.add_parser(name, help="Mark a yak as shorn")
         sp.add_argument("id", help="Task ID")
-        sp.add_argument("--commit", help="Commit hash (default: git HEAD)")
 
     for name in ("regrow", "reopen"):
         sp = sub.add_parser(name, help="Regrow a shorn yak")

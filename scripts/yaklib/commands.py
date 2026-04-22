@@ -12,8 +12,8 @@ from pathlib import Path
 from yaklib import deps as deps_mod
 from yaklib import reparent as reparent_mod
 from yaklib.artifacts import artifacts_dir
-from yaklib.filter import FilterSpec, filter_tasks
 from yaklib.clipboard import read_png as read_clipboard_png
+from yaklib.filter import FilterSpec, filter_tasks
 from yaklib.model import (
     DEAD,
     HAIRY,
@@ -26,7 +26,6 @@ from yaklib.model import (
     find_task_file,
     find_tasks_root,
     generate_id,
-    git_head_short,
     load_config,
     load_task,
     move_task,
@@ -64,7 +63,7 @@ _YAKS_MANDATE = """\
 This project uses Yaks. The Yaks skill has the full workflow.
 
 1. Never start coding without a shaving yak. No exceptions.
-2. Shorn immediately after committing, before anything else.
+2. Shear a yak as soon as its work is done. When using git, prefer to commit the shorn yak alongside the code changes that completed it.
 3. Check existing yaks before creating new ones.
 4. Append progress notes to yak descriptions as you work.
 5. When unsure what's next, run `/yaks:next` — don't freelance.
@@ -99,6 +98,7 @@ def _inject_mandate(force_agents: bool = False):
 # Init / create
 # ---------------------------------------------------------------------------
 
+
 def cmd_init(args):
     from yaklib.model import _ALL_STATUSES  # avoid leaking into module API
 
@@ -108,8 +108,7 @@ def cmd_init(args):
     else:
         prefix = args.prefix or Path.cwd().name.lower()
         if "." in prefix:
-            print("error: prefix must not contain dots "
-                  "(dots are used for parent/child IDs)", file=sys.stderr)
+            print("error: prefix must not contain dots (dots are used for parent/child IDs)", file=sys.stderr)
             sys.exit(1)
         target.mkdir()
         for s in _ALL_STATUSES:
@@ -153,8 +152,7 @@ def cmd_create(args):
         "id": tid,
         "title": args.title,
         "type": args.type or cfg.get("default_type", "task"),
-        "priority": args.priority if args.priority is not None
-        else cfg.get("default_priority", 2),
+        "priority": args.priority if args.priority is not None else cfg.get("default_priority", 2),
         "created": now,
         "updated": now,
     }
@@ -176,6 +174,7 @@ def cmd_create(args):
 # ---------------------------------------------------------------------------
 # List / show / update
 # ---------------------------------------------------------------------------
+
 
 def _fmt_task_row(status, t):
     pri = t.get("priority", "-")
@@ -249,10 +248,7 @@ def cmd_show(args):
             out["parent"] = pid
         children = find_children(root, args.id)
         if children:
-            out["children"] = [
-                {"id": t["id"], "status": s, "title": t.get("title", "")}
-                for s, t in children
-            ]
+            out["children"] = [{"id": t["id"], "status": s, "title": t.get("title", "")} for s, t in children]
         print(json.dumps(out, indent=2))
         return
 
@@ -337,8 +333,8 @@ def cmd_update(args):
 # Status transitions
 # ---------------------------------------------------------------------------
 
-def _move_task(args, dest_status: str, already_msg: str, done_msg: str,
-               extra_fields: dict | None = None):
+
+def _move_task(args, dest_status: str, already_msg: str, done_msg: str, extra_fields: dict | None = None):
     root = find_tasks_root()
     if not find_task_file(root, args.id):
         print(f"error: task {args.id} not found", file=sys.stderr)
@@ -355,13 +351,7 @@ def cmd_shave(args):
 
 
 def cmd_shorn(args):
-    commit = getattr(args, "commit", None)
-    if commit is None:
-        commit = git_head_short()
-        if commit:
-            print(f"(using HEAD commit: {commit})")
-    extra = {"commit": commit} if commit else {}
-    _move_task(args, SHORN, "already shorn", "Shorn!", extra_fields=extra)
+    _move_task(args, SHORN, "already shorn", "Shorn!")
 
 
 def cmd_regrow(args):
@@ -380,11 +370,16 @@ def cmd_revive(args):
 # Queries: next, tangled
 # ---------------------------------------------------------------------------
 
+
 def cmd_next(args):
     root = find_tasks_root()
-    spec = _spec_from_args(args, defaults={
-        "statuses": [HAIRY], "ready_only": True,
-    })
+    spec = _spec_from_args(
+        args,
+        defaults={
+            "statuses": [HAIRY],
+            "ready_only": True,
+        },
+    )
     tasks = [t for _, t in filter_tasks(root, spec)]
 
     if args.json:
@@ -402,15 +397,18 @@ def cmd_next(args):
 
 def cmd_tangled(args):
     root = find_tasks_root()
-    spec = _spec_from_args(args, defaults={
-        "statuses": [HAIRY], "tangled_only": True,
-    })
+    spec = _spec_from_args(
+        args,
+        defaults={
+            "statuses": [HAIRY],
+            "tangled_only": True,
+        },
+    )
     tasks = [t for _, t in filter_tasks(root, spec)]
     resolved = deps_mod.resolved_ids(root)
 
     if args.json:
-        out = [{"unshorn_deps": deps_mod.unresolved_deps(t, resolved), **t}
-               for t in tasks]
+        out = [{"unshorn_deps": deps_mod.unresolved_deps(t, resolved), **t} for t in tasks]
         print(json.dumps(out, indent=2))
         return
     if not tasks:
@@ -426,6 +424,7 @@ def cmd_tangled(args):
 # ---------------------------------------------------------------------------
 # Dependency + reparent
 # ---------------------------------------------------------------------------
+
 
 def cmd_dep(args):
     root = find_tasks_root()
@@ -490,6 +489,7 @@ def cmd_reparent(args):
 # Artifact attach / detach
 # ---------------------------------------------------------------------------
 
+
 def cmd_attach(args):
     root = find_tasks_root()
     loc = find_task_file(root, args.id)
@@ -551,10 +551,7 @@ def cmd_detach(args):
     body = task.get("description", "")
 
     target = args.name
-    pat = re.compile(
-        r"[ \t]*!\[[^\]]*\]\(artifacts/" + re.escape(args.id)
-        + "/" + re.escape(target) + r"\)[ \t]*\n?"
-    )
+    pat = re.compile(r"[ \t]*!\[[^\]]*\]\(artifacts/" + re.escape(args.id) + "/" + re.escape(target) + r"\)[ \t]*\n?")
     new_body, n = pat.subn("", body)
     if n == 0:
         print(f"warning: no reference to {target} found in description", file=sys.stderr)
@@ -578,6 +575,7 @@ def cmd_detach(args):
 # ---------------------------------------------------------------------------
 # Search / stats
 # ---------------------------------------------------------------------------
+
 
 def cmd_search(args):
     root = find_tasks_root()
@@ -613,14 +611,19 @@ def cmd_stats(args):
         by_priority[pri] = by_priority.get(pri, 0) + 1
 
     if args.json:
-        print(json.dumps({
-            "total": len(tasks),
-            "hairy": hairy_count,
-            "shaving": shaving_count,
-            "shorn": shorn_count,
-            "by_type": by_type,
-            "by_priority": dict(sorted(by_priority.items())),
-        }, indent=2))
+        print(
+            json.dumps(
+                {
+                    "total": len(tasks),
+                    "hairy": hairy_count,
+                    "shaving": shaving_count,
+                    "shorn": shorn_count,
+                    "by_type": by_type,
+                    "by_priority": dict(sorted(by_priority.items())),
+                },
+                indent=2,
+            )
+        )
         return
 
     print(f"Total: {len(tasks)}  Hairy: {hairy_count}  Shaving: {shaving_count}  Shorn: {shorn_count}")
@@ -637,6 +640,7 @@ def cmd_stats(args):
 # ---------------------------------------------------------------------------
 # Beads import
 # ---------------------------------------------------------------------------
+
 
 def cmd_import_beads(args):
     root = find_tasks_root()
@@ -655,8 +659,7 @@ def cmd_import_beads(args):
                 break
             p = p.parent
         if not jsonl_path:
-            print("error: no .beads/issues.jsonl found (use --file to specify)",
-                  file=sys.stderr)
+            print("error: no .beads/issues.jsonl found (use --file to specify)", file=sys.stderr)
             sys.exit(1)
 
     if not jsonl_path.is_file():
@@ -713,8 +716,7 @@ def cmd_import_beads(args):
 
         deps = bead.get("dependencies", [])
         if deps:
-            dep_ids = [d["depends_on_id"] for d in deps
-                       if d.get("type") == "blocks" and d.get("depends_on_id")]
+            dep_ids = [d["depends_on_id"] for d in deps if d.get("type") == "blocks" and d.get("depends_on_id")]
             if dep_ids:
                 task["depends_on"] = dep_ids
 
@@ -737,8 +739,10 @@ def cmd_import_beads(args):
 
     total = sum(created.values())
     prefix = "[dry-run] " if args.dry_run else ""
-    print(f"{prefix}Imported {total} tasks (hairy: {created[HAIRY]}, "
-          f"shaving: {created[SHAVING]}, shorn: {created[SHORN]}), skipped {skipped}")
+    print(
+        f"{prefix}Imported {total} tasks (hairy: {created[HAIRY]}, "
+        f"shaving: {created[SHAVING]}, shorn: {created[SHORN]}), skipped {skipped}"
+    )
 
 
 # ---------------------------------------------------------------------------

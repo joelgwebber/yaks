@@ -52,7 +52,6 @@ created: ISO8601
 updated: ISO8601
 depends_on: [task-ids] # optional
 labels: [strings]      # optional
-commit: short-hash     # optional, auto-populated from git HEAD when shorn
 ---
 
 Optional description as markdown body.
@@ -73,4 +72,4 @@ Bump the plugin version in `.claude-plugin/marketplace.json` whenever making cha
 
 ## Task tracking
 
-This project uses Yaks to track its own work. Every piece of work must be bracketed: `/yaks:shave` before coding, `/yaks:shorn` right after committing. The Yaks skill has the full workflow — follow it.
+This project uses Yaks to track its own work. Every piece of work must be bracketed: `/yaks:shave` before coding, `/yaks:shorn` once the work is done — and when practical, land the shorn yak file in the same commit as the code that completed it. The Yaks skill has the full workflow — follow it.

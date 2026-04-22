@@ -11,14 +11,14 @@ This project tracks work with Yaks. Tasks are markdown files with YAML frontmatt
 
 **NEVER write code without an active shaving yak.** Before touching any code — even a one-line fix — you must have a yak in shaving state. If you don't, stop and `/yaks:shave` one first (create it if needed). No exceptions.
 
-**ALWAYS shear immediately after committing.** Run `/yaks:shorn TASK_ID` right after the commit, before doing anything else. The `commit` field auto-captures the current HEAD (the work commit). Do not amend or update it — the shorn yak file gets included in the next commit as-is.
+**ALWAYS shear when a yak's work is done.** Run `/yaks:shorn TASK_ID` as soon as the task is complete. When the project uses git, prefer to stage the shorn yak file alongside the code changes that completed it and commit them together rather than as a separate commit.
 
 ## Workflow
 
 1. **Session start** — run `/yaks:list` and `/yaks:next` to see current state.
 2. **Before writing code** — `/yaks:shave TASK_ID` (create the yak first if needed).
 3. **While working** — append progress notes with `/yaks:update TASK_ID --note "what you found / decided / changed"`. This builds a running log in the markdown body so future sessions have context.
-4. **After the commit** — `/yaks:update TASK_ID --note "..."` with a brief shorn summary (what was done, what was learned, any yaks spawned), then `/yaks:shorn TASK_ID` immediately.
+4. **When the work is done** — `/yaks:update TASK_ID --note "..."` with a brief shorn summary (what was done, what was learned, any yaks spawned), then `/yaks:shorn TASK_ID`. If using git, stage the shorn yak move together with the code changes and commit them in one commit whenever practical.
 
 ## Parent/child state rules
 
@@ -65,7 +65,6 @@ depends_on:
   - yak-c3d4
 labels:
   - auth
-commit: a1b2c3d          # added when shorn; git HEAD by default
 source: https://jira.example.com/browse/PROJ-123  # optional external issue URL
 ---
 

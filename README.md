@@ -132,7 +132,6 @@ depends_on:
   - yak-c3d4
 labels:
   - auth
-commit: a1b2c3d
 source: https://jira.example.com/browse/PROJ-123
 ---
 
@@ -149,7 +148,6 @@ Frontmatter fields:
 - **created** / **updated** — ISO 8601 timestamps
 - **depends_on** — Optional list of task IDs that must be shorn first
 - **labels** — Optional list of string tags
-- **commit** — Short git hash, auto-populated from HEAD when shorn
 - **source** — Optional URL linking to an external issue (Jira, GitHub Issues, Linear, etc.)
 
 ## Configuration
@@ -178,7 +176,7 @@ If you already have `.yaks/` set up and didn't get the guidance via init, add th
 This project uses Yaks. The Yaks skill has the full workflow.
 
 1. Never start coding without a shaving yak. No exceptions.
-2. Shorn immediately after committing, before anything else.
+2. Shear a yak as soon as its work is done. When using git, prefer to commit the shorn yak alongside the code changes that completed it.
 3. Check existing yaks before creating new ones.
 4. Append progress notes to yak descriptions as you work.
 5. When unsure what's next, run `/yaks:next` — don't freelance.

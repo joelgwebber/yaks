@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import random
 import string
-import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -296,17 +295,3 @@ def move_task(root: Path, task_id: str, dest_status: str,
         task.update(extra_fields)
     save_task(dest, task)
     return True, f"{task_id} → {dest_status}"
-
-
-def git_head_short() -> str | None:
-    """Return the short hash of HEAD, or None if not in a git repo."""
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
-            capture_output=True, text=True, timeout=5,
-        )
-        if result.returncode == 0:
-            return result.stdout.strip()
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        pass
-    return None
