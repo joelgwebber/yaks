@@ -165,6 +165,7 @@ class TUI:
         self.detail_search = ""
         self.detail_matches = []  # line indices matching search
         self._detail_build_width = 0  # width lines were wrapped for
+        self.detail_select_anchor = None  # line idx when in visual select mode
 
         # Navigation history: list of task IDs
         self.nav_history = []
@@ -270,6 +271,7 @@ class TUI:
             self._reload_preserving_position()
 
     def _rebuild_detail(self, width=None):
+        self.detail_select_anchor = None
         if not self.tasks or self.cursor >= len(self.tasks):
             self.detail_lines = []
             self.detail_line_cursor = 0

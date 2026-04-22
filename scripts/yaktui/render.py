@@ -415,6 +415,11 @@ def draw_detail(app, y_start, x_start, height, width):
         y_start += 1
         height -= 1
 
+    sel_lo = sel_hi = -1
+    if detail_focused and app.detail_select_anchor is not None:
+        a, c = app.detail_select_anchor, app.detail_line_cursor
+        sel_lo, sel_hi = (a, c) if a <= c else (c, a)
+
     for i in range(height):
         line_idx = app.detail_scroll + i
         if line_idx >= len(app.detail_lines):
@@ -424,6 +429,7 @@ def draw_detail(app, y_start, x_start, height, width):
         text = dl.text[:width]
 
         is_cursor = detail_focused and line_idx == app.detail_line_cursor
+        is_selected = sel_lo <= line_idx <= sel_hi
         is_match = line_idx in app.detail_matches
         has_inline_links = bool(dl.links)
 
@@ -437,6 +443,10 @@ def draw_detail(app, y_start, x_start, height, width):
                          else curses.color_pair(C_SELECTED))
             safe_addstr(stdscr, y, x_start, " " * width, fill_attr)
             safe_addstr(stdscr, y, x_start, text, fill_attr | curses.A_BOLD)
+        elif is_selected:
+            fill_attr = curses.color_pair(C_SELECTED) | curses.A_DIM
+            safe_addstr(stdscr, y, x_start, " " * width, fill_attr)
+            safe_addstr(stdscr, y, x_start, text, fill_attr)
         elif whole_line_link:
             safe_addstr(stdscr, y, x_start, text, curses.color_pair(C_LINK))
         elif dl.kind == "header":
@@ -549,6 +559,7 @@ _HELP_SECTIONS = [
         "J / K                 Next / prev task in list",
         "i / o                 Nav forward / back in jumplist",
         "Backspace             Nav back (alt)",
+        "v / Shift-↑↓          Visual select; y/Enter copies",
     ]),
     ("General", [
         "F / Ctrl-L            Refresh",

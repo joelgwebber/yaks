@@ -12,6 +12,7 @@ from conftest import create_task
 from yaklib.filter import FilterSpec
 from yaklib.model import find_task_file, load_task, save_task
 from yaktui.detail import build_detail_lines
+from yaktui.keys_detail import dedent_block
 from yaktui.tree import build_tree
 
 
@@ -209,3 +210,18 @@ def test_build_detail_lines_blocks_reverse_deps(yak, yak_root):
     assert any("Blocks:" in l.text for l in lines)
     link_ids = [l.task_id for l in lines if l.task_id]
     assert waiter in link_ids
+
+
+def test_dedent_block_strips_common_indent():
+    lines = ["    foo", "    bar", "", "      baz"]
+    assert dedent_block(lines) == ["foo", "bar", "", "  baz"]
+
+
+def test_dedent_block_handles_no_common_indent():
+    lines = ["foo", "  bar"]
+    assert dedent_block(lines) == ["foo", "  bar"]
+
+
+def test_dedent_block_ignores_blank_lines():
+    lines = ["", "  foo", "", "  bar", ""]
+    assert dedent_block(lines) == ["", "foo", "", "bar", ""]
