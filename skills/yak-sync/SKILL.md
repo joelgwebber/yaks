@@ -1,0 +1,94 @@
+---
+activation:
+  - User asks to sync a yak with its external issue tracker
+  - User invokes /yaks:sync
+---
+
+# Yak ↔ external tracker sync
+
+This skill performs a **single-yak, bidirectional, merge-with-prompts** sync
+between a yak and its external issue (Jira, Linear, GitHub Issues, etc.).
+It is intentionally manual. Automating bidirectional sync across arbitrary
+trackers is a fool's errand — the goal here is to make it *easy to keep one
+yak in sync when you want to*, not to run a daemon.
+
+## Hard rules
+
+- **Never touch the external tracker without confirming with the user first.** Every upstream write (field update, comment post, attachment upload, issue creation) is preceded by a prompt that shows the exact change.
+- **Never silently drop a local note or a remote comment.** If in doubt whether two items are the same, keep both — conservative duplication beats data loss.
+- **Never annotate upstream content with yak-specific markers.** The user may be working in a shared tracker where yaks are a private tool. Comments ferried yak→external post as plain content, no `[yaks:…]` prefix. Only the local yak body may carry provenance annotations.
+- **Never create an upstream issue automatically.** If a yak has no `source:`, ask the user whether to create one and *where* (project + issue type for Jira, team for Linear, repo for GitHub, etc.) before doing anything.
+- **You must have the necessary MCP tools available.** If the yak's source points at a tracker whose MCP is not connected, stop and tell the user.
+
+## Workflow
+
+1. **Resolve the yak.** Read the yak file. If it has no `source:` field, jump to *Creating a new upstream issue* below. Otherwise, parse the URL to determine the tracker.
+
+2. **Fetch the upstream issue.** Use the appropriate MCP tool to pull: title, description, status, priority, labels, comments, attachments, and timestamps. See *Tracker hints* below for efficient per-tool invocations.
+
+3. **Diff structured fields.** For each of (title, description, status, priority, labels), show the user a short "local vs upstream" view and ask which side wins, or whether to merge. Don't assume — priorities and statuses in particular don't map cleanly across trackers, and a naive rewrite destroys work.
+
+4. **Diff notes against comments.** Treat each `### <iso>` block in the yak's markdown body as one note. Normalize both sides (strip leading `### <iso>` headers on yak notes, strip whitespace, lowercase) and hash. Then:
+   - **Identical hashes** → same item, skip.
+   - **Close-but-not-identical** (one is a prefix of the other, or differs only by trivial edits) → prompt the user: merge / duplicate / skip.
+   - **No match** → ferry across, confirming direction per item.
+
+   When ferrying **yak → external**, post the note body as-is, with no provenance marker. When ferrying **external → yak**, append a block to the description body in the form:
+
+   ```
+   ### <iso> @<author> (from <tracker>:<issue-key>)
+   <comment body>
+   ```
+
+   The `(from …)` footer only lives locally; it makes the origin obvious to future readers and lets subsequent syncs recognize re-imported comments.
+
+5. **Diff artifacts.** Match `(filename, size)` between local `.yaks/artifacts/<yak-id>/` and upstream attachments. Matches are skipped. Non-matches are ferried with confirmation. On name collisions with different content, keep both: local keeps its name, imported file gets a numeric suffix (`foo.png` → `foo.1.png`). If the tracker's MCP doesn't expose attachment upload or download, print the file path and tell the user to handle it manually — don't silently skip.
+
+6. **Apply agreed changes.** Update the local yak via `yak.py update` (or by editing the file directly for body changes). Update the upstream via its MCP tool. Batch where you can; confirm any batch that exceeds ~3 changes.
+
+7. **Report.** End with a short summary: what changed locally, what changed upstream, what the user declined.
+
+## Creating a new upstream issue
+
+If the yak has no `source:` and the user wants to push it upstream:
+
+1. Ask *where*. This varies per tracker and there is no default:
+   - **Jira:** project key + issue type (Bug, Task, Story, …).
+   - **Linear:** team.
+   - **GitHub Issues:** owner/repo.
+   - **Others:** ask for whatever identifier the MCP tool requires.
+2. Show the payload (title, description, type-mapped, priority-mapped) and confirm.
+3. Create the issue. Capture the returned URL.
+4. Stamp it into the yak: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/yak.py update <id> --source <URL>`.
+5. On subsequent syncs the yak has a source, so the normal workflow applies.
+
+## Field mapping rubric
+
+Don't treat any of these as hard rules — every tracker names things differently, and the agent is expected to use judgment. These are the patterns we've seen:
+
+| Field | Usually easy? | Notes |
+|-------|---------------|-------|
+| title | yes | Direct copy. |
+| description | yes | Markdown / rich text; trackers vary, usually close enough. |
+| status (hairy/shaving/shorn/dead) | lossy | Map per-tracker: shaving ≈ In Progress, shorn ≈ Done, dead ≈ Won't Do / Closed-not-planned. Confirm with user before applying. |
+| priority | lossy | Yak 1/2/3 ≈ Highest/High/Medium-or-Low. Ask which slot the user wants. |
+| labels | hard | Taxonomies differ. Propose 1:1 by name, ferry unmatched with confirmation, never delete. |
+| depends_on | hard | Most trackers have issue-link semantics but the link types vary. Best-effort; confirm per link. |
+| comments / notes | per-item | See step 4 above. |
+| attachments | per-item | See step 5 above. |
+
+## Tracker hints
+
+Keep this short and tracker-agnostic — the agent should use whatever MCP is connected. These are *hints* for efficient calls, not specifications.
+
+- **Jira (Atlassian MCP):** `getJiraIssue` returns fields + comments in one call. `createJiraIssue` needs project key + issue type (use `getVisibleJiraProjects` + `getJiraProjectIssueTypesMetadata` to enumerate). `addCommentToJiraIssue` for ferrying notes up. Issue `updated` timestamps are exposed but per-comment timestamps require a separate fetch — don't rely on them yet, just diff the full comment list.
+- **Linear:** issue + comments are usually one GraphQL query. `updatedAt` is exposed per comment; safe to filter. Attachments are first-class.
+- **GitHub Issues:** issue body + comments are separate list calls. No native "issue status" beyond open/closed; map `shorn` → closed, otherwise open. Labels are global to the repo.
+- **Anything else:** fetch everything up front, diff locally, confirm every write.
+
+## Things this skill deliberately does *not* do
+
+- No sweep mode ("sync everything"). One yak at a time.
+- No automatic `last_synced:` timestamp. We rely on full-diff each sync. If a future investigation determines reliable per-item timestamps are available across trackers, we may add one — see yak-bf54.1.
+- No silent dedup without a provenance marker upstream. Given the silent-upstream rule, lightly-edited comments may duplicate on next sync; that is preferred to dropping them. If this becomes painful in practice, revisit.
+- No opinion on whether `.yaks/` is committed. This skill works equally well whether yaks are in-repo or gitignored.
