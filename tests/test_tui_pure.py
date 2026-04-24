@@ -13,6 +13,7 @@ from yaklib.filter import FilterSpec
 from yaklib.model import find_task_file, load_task, save_task
 from yaktui.detail import build_detail_lines
 from yaktui.keys_detail import dedent_block
+from yaktui.mutate import TemplateParseError, parse_template
 from yaktui.tree import apply_collapse, build_tree
 
 
@@ -262,3 +263,51 @@ def test_apply_collapse_nested_counts_outer_not_double_inner():
     # Outer counts 2 descendants (child + grandchild); inner still logs its 1.
     assert counts["yak-1"] == 2
     assert counts["yak-1.1"] == 1
+
+
+def test_parse_template_happy_path():
+    text = ("---\n"
+            "title: plain title\n"
+            "type: task\n"
+            "priority: 2\n"
+            "---\n"
+            "body text\n")
+    data = parse_template(text)
+    assert data["title"] == "plain title"
+    assert data["type"] == "task"
+    assert data["description"] == "body text"
+
+
+def test_parse_template_empty_cancelled_returns_none():
+    # No fence at all → cancelled, not an error.
+    assert parse_template("") is None
+    # Truncated: no closing fence.
+    assert parse_template("---\ntitle: foo\n") is None
+
+
+def test_parse_template_raises_on_unquoted_colon_in_title():
+    """Regression for yak-7321: an unquoted ':' in the title used to be
+    swallowed as 'create cancelled', silently dropping the user's work."""
+    text = ("---\n"
+            "title: Handle foo: bar edge case\n"
+            "type: bug\n"
+            "priority: 2\n"
+            "---\n")
+    try:
+        parse_template(text)
+    except TemplateParseError as e:
+        # Single-line, suitable for a notification.
+        assert "\n" not in str(e)
+        assert str(e)
+    else:
+        raise AssertionError("expected TemplateParseError")
+
+
+def test_parse_template_accepts_quoted_colon():
+    text = ("---\n"
+            "title: \"Handle foo: bar\"\n"
+            "type: bug\n"
+            "priority: 2\n"
+            "---\n")
+    data = parse_template(text)
+    assert data["title"] == "Handle foo: bar"

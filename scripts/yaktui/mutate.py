@@ -54,7 +54,8 @@ def build_template(root: Path, parent: str | None, yak_type: str = "task") -> st
             ptitle = pt.get("title", "")
         lines.append(f"# Child of {parent}: {ptitle}")
     lines.append("# Fill in the title. Save and exit to create, or exit without")
-    lines.append("# saving (or leave title blank) to cancel.")
+    lines.append("# saving (or leave title blank) to cancel. Quote values that")
+    lines.append("# contain ':' or other YAML special chars, e.g. title: \"foo: bar\".")
     lines.append("title: ")
     lines.append("# type: task | bug | feature | idea")
     lines.append(f"type: {yak_type}")
@@ -69,8 +70,20 @@ def build_template(root: Path, parent: str | None, yak_type: str = "task") -> st
     return "\n".join(lines)
 
 
+class TemplateParseError(Exception):
+    """Raised when a template's frontmatter is not valid YAML. Distinct from
+    the 'cancelled / empty' case so callers can surface the error instead of
+    silently dropping the user's work."""
+
+
 def parse_template(text: str) -> dict | None:
-    """Parse a templated frontmatter + body into a task dict. None on failure."""
+    """Parse a templated frontmatter + body into a task dict.
+
+    Returns None when the template looks blank / cancelled (no ``---`` fence,
+    truncated, or empty mapping). Raises :class:`TemplateParseError` when the
+    frontmatter is present but invalid YAML — e.g. an unquoted colon in the
+    title — so callers can surface the error.
+    """
     if not text.startswith("---"):
         return None
     rest = text[3:].lstrip("\n")
@@ -81,8 +94,11 @@ def parse_template(text: str) -> dict | None:
     body = rest[end + 4:].strip()
     try:
         data = yaml.safe_load(fm) or {}
-    except yaml.YAMLError:
-        return None
+    except yaml.YAMLError as e:
+        # yaml errors are multi-line with a caret diagram; the first line
+        # carries the gist and fits in a one-line notification.
+        msg = str(e).splitlines()[0] if str(e) else "invalid YAML"
+        raise TemplateParseError(msg) from e
     if not isinstance(data, dict):
         return None
     if body:
@@ -170,7 +186,11 @@ def create_task(app, parent: str | None = None, yak_type: str = "task") -> None:
         app.notification = "create cancelled"
         return
 
-    data = parse_template(edited)
+    try:
+        data = parse_template(edited)
+    except TemplateParseError as e:
+        app.notification = f"invalid YAML, not saved: {e}"
+        return
     if not data or not data.get("title", "").strip():
         app.notification = "create cancelled"
         return
@@ -231,7 +251,11 @@ def edit_task(app, tid: str) -> None:
         app.notification = "no changes"
         return
 
-    data = parse_template(edited)
+    try:
+        data = parse_template(edited)
+    except TemplateParseError as e:
+        app.notification = f"invalid YAML, not saved: {e}"
+        return
     if not data or not data.get("title", "").strip():
         app.notification = "edit cancelled (invalid)"
         return
