@@ -4,7 +4,7 @@ title: External issue tracker sync
 type: feature
 priority: 2
 created: '2026-04-24T02:12:56Z'
-updated: '2026-04-25T17:29:50Z'
+updated: '2026-04-25T17:47:03Z'
 ---
 
 We have a "source" slot that can be used for external issue trackers -- JIRA, Linear, etc. But there's no formal mechanism for syncing yaks with the source issues.
@@ -29,3 +29,6 @@ Test scenario 2 (local edit → propose upstream → deny) ran on jira-302. Edit
 
 ### 2026-04-25T17:29:50Z
 Test scenario 3 (external→yak comment ferry) ran on jira-301. Setup: rolled last_synced back to before Clint's comment + removed the ferried block from local body, simulating 'we synced before he commented; now he has.' Diff correctly identified the missing comment via hash-match (no local match for upstream's comment body). Prompt direction was external→yak (safe — no upstream write). Accept applied a '### <iso> @author (from jira:KEY)' block to body. Zero upstream-mutating MCP calls made. Implementation hygiene caught: stamping last_synced with an explicit older timestamp (rather than 'now') leaves local.updated > last_synced, causing spurious 'drift' on next sync — added a one-liner to skill step 7 clarifying always-use-'now'.
+
+### 2026-04-25T17:47:03Z
+Attachment finding (raised by user): Atlassian MCP has no upload tool; only writes are comment/worklog/issue-link/createJiraIssue/editJiraIssue/transitionJiraIssue. Read returns filename + URL but no MCP path to fetch bytes either. GitHub Issues image upload is UI-only via an undocumented endpoint — REST API only does release assets. Linear is the only common tracker with clean attachment mutations. Skill sharpened: attachments are now flagged as best-effort with explicit per-tracker reality, and the skill must enumerate manual files rather than silently skipping. Skipping attachment scenarios for the SUBTEXT scratch since the MCP can't ferry; revisit when Linear MCP is in play. Bootstrap.py also skips attachments — fine for now since none of the 50 SUBTEXT issues sampled had any.

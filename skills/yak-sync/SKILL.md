@@ -43,7 +43,9 @@ yak in sync when you want to*, not to run a daemon.
 
    The `(from …)` footer only lives locally; it makes the origin obvious to future readers and lets subsequent syncs recognize re-imported comments.
 
-5. **Diff artifacts.** Match `(filename, size)` between local `.yaks/artifacts/<yak-id>/` and upstream attachments. Matches are skipped. Non-matches are ferried with confirmation. On name collisions with different content, keep both: local keeps its name, imported file gets a numeric suffix (`foo.png` → `foo.1.png`). If the tracker's MCP doesn't expose attachment upload or download, print the file path and tell the user to handle it manually — don't silently skip.
+5. **Diff artifacts (best-effort).** Match `(filename, size)` between local `.yaks/artifacts/<yak-id>/` and upstream attachments. Matches are skipped. Non-matches are ferried with confirmation. On name collisions with different content, keep both: local keeps its name, imported file gets a numeric suffix (`foo.png` → `foo.1.png`).
+
+   **Reality check before you try:** attachment APIs are uneven across trackers and most MCPs don't expose them at all. Do not assume the operation is possible. Concretely (as of writing): the Atlassian MCP has no attachment upload or content-download tool; GitHub Issues has no public REST endpoint for image attachments; Linear has clean attachment mutations and is the only one of the three where ferry actually works programmatically. When the MCP can't do what's needed, **list the affected files explicitly** (filename + local path or upstream URL) and tell the user to handle the transfer manually — never silently skip an attachment, that hides a real divergence.
 
 6. **Apply agreed changes.** Update the local yak via `yak.py update` (or by editing the file directly for body changes). Update the upstream via its MCP tool. Batch where you can; confirm any batch that exceeds ~3 changes.
 
@@ -84,10 +86,10 @@ Don't treat any of these as hard rules — every tracker names things differentl
 
 Keep this short and tracker-agnostic — the agent should use whatever MCP is connected. These are *hints* for efficient calls, not specifications.
 
-- **Jira (Atlassian MCP):** `getJiraIssue` returns fields + comments in one call. `createJiraIssue` needs project key + issue type (use `getVisibleJiraProjects` + `getJiraProjectIssueTypesMetadata` to enumerate). `addCommentToJiraIssue` for ferrying notes up. Issue `updated` timestamps are exposed but per-comment timestamps require a separate fetch — don't rely on them yet, just diff the full comment list.
-- **Linear:** issue + comments are usually one GraphQL query. `updatedAt` is exposed per comment; safe to filter. Attachments are first-class.
-- **GitHub Issues:** issue body + comments are separate list calls. No native "issue status" beyond open/closed; map `shorn` → closed, otherwise open. Labels are global to the repo.
-- **Anything else:** fetch everything up front, diff locally, confirm every write.
+- **Jira (Atlassian MCP):** `getJiraIssue` returns fields, comments (with `created` and `updated` per comment), and attachment metadata in one call. `createJiraIssue` needs project key + issue type (use `getVisibleJiraProjects` + `getJiraProjectIssueTypesMetadata` to enumerate). `addCommentToJiraIssue` for ferrying notes up. **Attachments: read-metadata only** — the MCP exposes filename / mimeType / URL on read, but provides no upload tool and no content-download tool. Treat attachments as manual on this MCP.
+- **Linear:** issue + comments are usually one GraphQL query, `updatedAt` per comment. Attachments are first-class — `attachmentCreate` and friends work.
+- **GitHub Issues:** issue body + comments are separate list calls. No native "issue status" beyond open/closed; map `shorn` → closed, otherwise open. Labels are global to the repo. **Attachments: no public API** — image uploads in the GitHub web UI go through an undocumented IDP-protected endpoint, and the REST API only supports release-asset uploads, not issues. Treat attachments as manual.
+- **Anything else:** fetch everything up front, diff locally, confirm every write. Verify the MCP's attachment surface before assuming you can ferry.
 
 ## Things this skill deliberately does *not* do
 
