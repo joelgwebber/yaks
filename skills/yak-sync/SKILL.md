@@ -169,17 +169,46 @@ These are *hints* for efficient calls, not specifications. The agent should use 
 - **GitHub Issues:** issue body + comments are separate list calls. No native "issue status" beyond open/closed; map `shorn` → closed, otherwise open. Labels are global to the repo. **Attachments: no public API** — image uploads in the GitHub web UI go through an undocumented IDP-protected endpoint, and the REST API only supports release-asset uploads, not issues. Treat attachments as manual.
 - **Anything else:** fetch everything up front, diff locally, confirm every write. Verify the MCP's attachment surface before assuming you can ferry.
 
+## Sweep / drift check
+
+Triggered by `/yaks:sync-check` or natural-language asks like "which of my yaks might need syncing?". This is **detection only** — never auto-plan, never auto-apply. The whole point is to surface candidates so the user can pick what to sync.
+
+1. **Enumerate** source-linked yaks:
+
+   ```
+   yak sync check --json
+   ```
+
+   Returns a list of `{id, status, tracker, key, source, last_synced, local_updated, has_pending}`. Already classified by tracker; already aware of pending sidecars.
+
+2. **Bucket by tracker.** Skip yaks where `has_pending: true` — they're already in the pipeline; surfacing them again as "might need syncing" is noise.
+
+3. **Per-tracker batch query** for upstream `updated`:
+   - **Jira** — one JQL call: `issuekey IN (KEY1, KEY2, ..., KEYN) AND updated > "<oldest_last_synced>"`. The `updated >` clause filters to yaks that *might* be drifted; client-side, compare each result's `updated` against that yak's specific `last_synced`. Fields: `["updated"]` is enough.
+   - **Linear** — single GraphQL `issues(filter: { id: { in: [...] }, updatedAt: { gt: <iso> } })`.
+   - **GitHub** — no batch endpoint for issues across multiple repos; iterate per repo.
+4. **Classify each yak's drift:**
+   - `upstream-newer` — `upstream.updated > yak.last_synced`. The tracker has changes you haven't pulled.
+   - `local-newer` — `yak.updated > yak.last_synced`. You've edited the yak and haven't pushed.
+   - `both` — both predicates fire.
+   - `none` — fast-path: `upstream.updated <= last_synced` and `yak.updated <= last_synced`. No action needed.
+
+5. **Report** as a concise table grouped by drift kind. Don't write sidecars; just tell the user what's worth their attention. They invoke `/yaks:sync <id>` per yak they want to plan.
+
+If a yak's `last_synced` is missing (never synced), treat it as `upstream-newer` for reporting — first sync needs to happen.
+
 ## CLI gestures
 
 - `yak sync ls` — list yaks with pending sidecars.
 - `yak sync show <id>` — print a sidecar's YAML for inspection.
 - `yak sync clear <id>` — remove a sidecar (after a successful apply, or to discard a plan).
+- `yak sync check [--tracker X] [--json]` — enumerate source-linked yaks; input for the sweep flow above.
 
-The plan and apply phases are skill-driven (they need MCP access); the CLI is bookkeeping only. In `yak list` and the TUI, yaks with a pending sidecar render with a leading `~` so you can spot them at a glance.
+The plan, apply, and upstream-drift query are skill-driven (they need MCP access); the CLI is bookkeeping only. In `yak list` and the TUI, yaks with a pending sidecar render with a leading `~` so you can spot them at a glance.
 
 ## Things this skill deliberately does *not* do
 
-- No sweep mode ("sync everything"). One yak at a time. (See yak-bf54.2 for a future "which yaks might need syncing?" view that uses `last_synced` as the predicate.)
+- No automation: even with sweep, the goal is to *identify* what may need syncing, not to act on it. The user always picks per-yak whether to plan, apply, or ignore.
 - No silent dedup without a provenance marker upstream. Given the silent-upstream rule, lightly-edited comments may duplicate on next sync; that is preferred to dropping them.
 - No opinion on whether `.yaks/` is committed. This skill works equally well whether yaks are in-repo or gitignored.
 - No interactive TUI for sidecar review yet. Use `yak sync show` and a text editor — sidecars are plain YAML by design.

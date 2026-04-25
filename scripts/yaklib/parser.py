@@ -150,6 +150,13 @@ def build_parser() -> argparse.ArgumentParser:
                                    help="Remove a sidecar (after a successful "
                                         "apply, or to discard a plan)")
     sp_clear.add_argument("id", help="Yak ID")
+    sp_check = sync_sub.add_parser("check",
+                                   help="Enumerate yaks with a `source:` URL "
+                                        "(input for sweep / drift-check; "
+                                        "upstream query is skill-driven)")
+    sp_check.add_argument("--json", action="store_true", help="JSON output")
+    sp_check.add_argument("--tracker",
+                          help="Filter by tracker (jira|linear|github|other)")
 
     sp = sub.add_parser("import-beads", help="Import tasks from a beads issues.jsonl file")
     sp.add_argument("--file", help="Path to issues.jsonl (default: auto-detect .beads/issues.jsonl)")

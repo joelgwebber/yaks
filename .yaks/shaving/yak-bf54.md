@@ -4,7 +4,7 @@ title: External issue tracker sync
 type: feature
 priority: 2
 created: '2026-04-24T02:12:56Z'
-updated: '2026-04-25T18:25:35Z'
+updated: '2026-04-25T20:02:36Z'
 ---
 
 We have a "source" slot that can be used for external issue trackers -- JIRA, Linear, etc. But there's no formal mechanism for syncing yaks with the source issues.
@@ -53,3 +53,6 @@ bf54.5 + bf54.6 shorn. SKILL.md step 3 now states per-field policies explicitly 
 
 ### 2026-04-25T18:25:35Z
 bf54.4 shorn (v1 sidecar pipeline). Plumbing landed: yaklib/sync.py, 'yak sync ls/show/clear' CLI, '~' marker in list views, .gitignore for sidecars, 15 new tests. Skill rewritten end-to-end with plan/apply/discard, sidecar YAML schema, snapshot-drift abort, suppress-residual-drift prompt. Deferred to bf54.9: TUI interactive review dialog. Outstanding: bf54.2 (sweep) and the user-side bf54.7/bf54.8.
+
+### 2026-04-25T20:02:36Z
+bf54.2 shorn (sweep mode). 'yak sync check' CLI + /yaks:sync-check skill flow validated against the SUBTEXT scratch (50 yaks, batched JQL, drift classification correct in both no-drift and demo-drift cases). Outstanding bf54 children: bf54.7 (Linear test, blocked on MCP), bf54.8 (GitHub test, blocked on MCP), bf54.9 (TUI interactive review, p3 polish). v1 sync feature is functionally complete: plan/apply/discard, namespaced labels + upstream-wins priority + per-field policy table, suppress-residual-drift prompt, sweep/check, sidecar-marker in list views. Ready to ship; further work is exercising on more trackers or adding TUI ergonomics.

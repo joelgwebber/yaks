@@ -788,6 +788,32 @@ def cmd_sync(args):
             print(f"No pending sync for {args.id}")
         return
 
+    if args.sync_action == "check":
+        rows = _sync.iter_synced_yaks(root)
+        if args.tracker:
+            rows = [r for r in rows if r["tracker"] == args.tracker]
+        if args.json:
+            print(json.dumps(rows, indent=2))
+            return
+        if not rows:
+            print("No yaks with a `source:` URL.")
+            return
+        # Two-line header + one row per yak.
+        id_w = max(len(r["id"]) for r in rows)
+        key_w = max(len(r["key"] or "?") for r in rows)
+        print(f"  {'ID':<{id_w}}  {'TRACKER':<7s}  {'KEY':<{key_w}}  "
+              f"{'LAST_SYNCED':<20s}  {'LOCAL_UPDATED':<20s}  PENDING  LOCAL_DRIFT")
+        for r in rows:
+            ls = (r["last_synced"] or "-")[:19]
+            lu = (r["local_updated"] or "-")[:19]
+            local_drift = "yes" if (r["last_synced"] and r["local_updated"]
+                                    and r["local_updated"] > r["last_synced"]) else "no"
+            pending = "yes" if r["has_pending"] else "no"
+            print(f"  {r['id']:<{id_w}}  {r['tracker']:<7s}  "
+                  f"{r['key'] or '?':<{key_w}}  {ls:<20s}  {lu:<20s}  "
+                  f"{pending:<7s}  {local_drift}")
+        return
+
 
 # ---------------------------------------------------------------------------
 # Dispatch table (used by the CLI entry point)

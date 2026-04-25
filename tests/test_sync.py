@@ -145,3 +145,98 @@ def test_pending_dir_does_not_pollute_status_walks(yak, yak_root):
     ids = [t["id"] for t in out]
     # Only the real task — no phantom from the sidecar.
     assert ids == [tid]
+
+
+# ---------------------------------------------------------------------------
+# Sweep / drift-check helpers (bf54.2)
+# ---------------------------------------------------------------------------
+
+
+def test_tracker_for_classifies_known_hosts():
+    from yaklib.sync import tracker_for
+    assert tracker_for("https://fullstory.atlassian.net/browse/PROJ-1") == "jira"
+    assert tracker_for("https://linear.app/team/issue/SUB-42/foo") == "linear"
+    assert tracker_for("https://github.com/owner/repo/issues/7") == "github"
+    assert tracker_for("https://example.com/issue/1") == "other"
+    assert tracker_for("") == "other"
+    assert tracker_for(None) == "other"
+
+
+def test_upstream_key_for_extracts_jira_key():
+    from yaklib.sync import upstream_key_for
+    assert upstream_key_for("https://fullstory.atlassian.net/browse/SUBTEXT-301") == "SUBTEXT-301"
+    # No match if the path doesn't include /browse/.
+    assert upstream_key_for("https://fullstory.atlassian.net/projects/SUBTEXT") is None
+
+
+def test_upstream_key_for_extracts_linear_key():
+    from yaklib.sync import upstream_key_for
+    assert upstream_key_for("https://linear.app/team/issue/SUB-42/foo") == "SUB-42"
+
+
+def test_upstream_key_for_extracts_github_owner_repo_num():
+    from yaklib.sync import upstream_key_for
+    assert upstream_key_for("https://github.com/owner/repo/issues/7") == "owner/repo#7"
+
+
+def test_iter_synced_yaks_skips_yaks_without_source(yak, yak_root):
+    """Sweep only cares about yaks that link to something."""
+    from yaklib.sync import iter_synced_yaks
+    create_task(yak, "no source", type="task")
+    yak("create", "--title", "linked", "--type", "task",
+        "--source", "https://fullstory.atlassian.net/browse/PROJ-1")
+    rows = iter_synced_yaks(yak_root / ".yaks")
+    assert len(rows) == 1
+    assert rows[0]["tracker"] == "jira"
+    assert rows[0]["key"] == "PROJ-1"
+    assert rows[0]["source"] == "https://fullstory.atlassian.net/browse/PROJ-1"
+
+
+def test_iter_synced_yaks_flags_pending_sidecar(yak, yak_root):
+    from yaklib.sync import iter_synced_yaks
+    out = yak("create", "--title", "linked", "--type", "task",
+              "--source", "https://fullstory.atlassian.net/browse/PROJ-2").stdout
+    tid = out.splitlines()[0].split()[1].rstrip(":")
+    _write_sidecar(yak_root, tid, {"yak_id": tid})
+
+    rows = iter_synced_yaks(yak_root / ".yaks")
+    assert len(rows) == 1
+    assert rows[0]["has_pending"] is True
+
+
+def test_cli_sync_check_json(yak):
+    yak("create", "--title", "tracked", "--type", "task",
+        "--source", "https://fullstory.atlassian.net/browse/PROJ-9")
+    rows = yak("sync", "check", "--json").json()
+    assert len(rows) == 1
+    assert rows[0]["tracker"] == "jira"
+    assert rows[0]["key"] == "PROJ-9"
+
+
+def test_cli_sync_check_filters_by_tracker(yak):
+    yak("create", "--title", "j", "--type", "task",
+        "--source", "https://fullstory.atlassian.net/browse/J-1")
+    yak("create", "--title", "g", "--type", "task",
+        "--source", "https://github.com/o/r/issues/1")
+    rows = yak("sync", "check", "--json", "--tracker", "jira").json()
+    keys = [r["key"] for r in rows]
+    assert keys == ["J-1"]
+
+
+def test_cli_sync_check_empty_message_when_no_source_yaks(yak):
+    create_task(yak, "no source", type="task")
+    out = yak("sync", "check").stdout
+    assert "No yaks with a `source:`" in out
+
+
+def test_cli_sync_check_table_includes_local_drift_column(yak):
+    """A yak whose updated > last_synced shows local_drift=yes."""
+    out = yak("create", "--title", "drifted", "--type", "task",
+              "--source", "https://fullstory.atlassian.net/browse/D-1").stdout
+    tid = out.splitlines()[0].split()[1].rstrip(":")
+    yak("update", tid, "--last-synced", "2020-01-01T00:00:00Z")
+    yak("update", tid, "--note", "force updated bump after the stamp")
+
+    table = yak("sync", "check").stdout
+    line = next(ln for ln in table.splitlines() if tid in ln)
+    assert line.endswith("yes")
