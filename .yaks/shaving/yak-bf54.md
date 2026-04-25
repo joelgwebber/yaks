@@ -4,7 +4,7 @@ title: External issue tracker sync
 type: feature
 priority: 2
 created: '2026-04-24T02:12:56Z'
-updated: '2026-04-25T17:47:03Z'
+updated: '2026-04-25T17:51:56Z'
 ---
 
 We have a "source" slot that can be used for external issue trackers -- JIRA, Linear, etc. But there's no formal mechanism for syncing yaks with the source issues.
@@ -32,3 +32,6 @@ Test scenario 3 (external→yak comment ferry) ran on jira-301. Setup: rolled la
 
 ### 2026-04-25T17:47:03Z
 Attachment finding (raised by user): Atlassian MCP has no upload tool; only writes are comment/worklog/issue-link/createJiraIssue/editJiraIssue/transitionJiraIssue. Read returns filename + URL but no MCP path to fetch bytes either. GitHub Issues image upload is UI-only via an undocumented endpoint — REST API only does release assets. Linear is the only common tracker with clean attachment mutations. Skill sharpened: attachments are now flagged as best-effort with explicit per-tracker reality, and the skill must enumerate manual files rather than silently skipping. Skipping attachment scenarios for the SUBTEXT scratch since the MCP can't ferry; revisit when Linear MCP is in play. Bootstrap.py also skips attachments — fine for now since none of the 50 SUBTEXT issues sampled had any.
+
+### 2026-04-25T17:51:56Z
+Test scenario 4 (two-sided drift on jira-301) ran. Setup: added local note via update --note, removed Clint's ferry from body, rolled last_synced to 05:00Z. Skill produced two distinct prompts as designed (one per direction). Accepted external→yak (Clint re-ferried), denied yak→external (local note stays unique). Stamped last_synced=now. Result: structurally clean two-bucket ferry; uncovered a real design hole around last_synced semantics on partial-deny outcomes — bf54.6 is now load-bearing, not polish. All three prior tests still pass; no upstream writes made in any scenario.
