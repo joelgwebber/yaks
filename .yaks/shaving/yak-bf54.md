@@ -4,7 +4,7 @@ title: External issue tracker sync
 type: feature
 priority: 2
 created: '2026-04-24T02:12:56Z'
-updated: '2026-04-25T17:54:37Z'
+updated: '2026-04-25T18:07:06Z'
 ---
 
 We have a "source" slot that can be used for external issue trackers -- JIRA, Linear, etc. But there's no formal mechanism for syncing yaks with the source issues.
@@ -47,3 +47,6 @@ Net of the dry-run pass:
 - Bootstrap scaffold (/tmp/yaks-sync-test/bootstrap.py) demonstrates a working external→yak import path; if 'yaks:import' becomes a real feature (bf54.x), this script is the seed.
 
 Checkpointing here. Next session can take on bf54.5 and bf54.6 implementation.
+
+### 2026-04-25T18:07:06Z
+bf54.5 + bf54.6 shorn. SKILL.md step 3 now states per-field policies explicitly (title/desc/status: prompt; priority: upstream-wins silent; labels: namespaced with bare = local-only). Step 7 handles partial-deny correctly via the 'suppress remaining drift?' prompt. bf54.4 description updated to YAML-formatted sidecar (per project preference). Outstanding: bf54.2 (sweep) and bf54.4 (sidecar pipeline). v1 sync skill is now consistent and dry-run-validated; first real /yaks:sync against live Jira is credible whenever the user wants to attempt it.

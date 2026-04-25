@@ -27,7 +27,10 @@ yak in sync when you want to*, not to run a daemon.
 
 2. **Fetch the upstream issue.** Use the appropriate MCP tool to pull: title, description, status, priority, labels, comments, attachments, and timestamps. See *Tracker hints* below for efficient per-tool invocations.
 
-3. **Diff structured fields.** For each of (title, description, status, priority, labels), show the user a short "local vs upstream" view and ask which side wins, or whether to merge. Don't assume — priorities and statuses in particular don't map cleanly across trackers, and a naive rewrite destroys work.
+3. **Diff structured fields.** Each field has its own policy — see the *Field mapping rubric* below for the full table. In short:
+   - **title, description, status** — show a short local-vs-upstream view and ask the user which side wins. Status mapping is lossy across trackers; never auto-resolve.
+   - **priority** — upstream-wins, no prompt. PMs/Engs re-tune priority frequently; the yak's priority is more "how I plan my queue" than shared truth.
+   - **labels** — namespaced. Split each side's label list into "synced" (matching `<tracker>-*`) and "local-only" (everything else). Diff only the synced bucket; local-only labels never ferry. Strip the prefix on yak→external, add it on external→yak.
 
 4. **Diff notes against comments.** Treat each `### <iso>` block in the yak's markdown body as one note. Normalize both sides (strip leading `### <iso>` headers on yak notes, strip whitespace, lowercase) and hash. Then:
    - **Identical hashes** → same item, skip.
@@ -49,7 +52,14 @@ yak in sync when you want to*, not to run a daemon.
 
 6. **Apply agreed changes.** Update the local yak via `yak.py update` (or by editing the file directly for body changes). Update the upstream via its MCP tool. Batch where you can; confirm any batch that exceeds ~3 changes.
 
-7. **Stamp `last_synced`.** As the *final* step of a successful sync, run `yak.py update <id> --last-synced now`. This is the watermark for "yak and upstream agreed at this point." Future syncs use it to short-circuit: if `upstream.updated <= last_synced`, nothing has drifted and we can stop early. Always pass the literal `now` (not an explicit timestamp) — the same `update` call also bumps `updated` to now, so `last_synced` and `updated` end up aligned and the predicate `local.updated > last_synced` doesn't fire spuriously on the next sync.
+7. **Resolve `last_synced`.** This is the watermark for "yak and upstream agreed at this point" — future syncs use it to short-circuit when `upstream.updated <= last_synced`.
+
+   - **All proposed changes accepted (or none proposed)** — stamp via `yak.py update <id> --last-synced now`. No prompt; there's nothing residual to discuss.
+   - **Any proposed change was denied** — ask: *"Suppress remaining drift until upstream changes? [Y/n]"*. Default Y because the user just reviewed everything explicitly.
+     - **Y / suppress** — stamp `last_synced` to now. The fast-path predicate will short-circuit until upstream actually changes again.
+     - **N / re-prompt next time** — leave `last_synced` alone. The denied drift surfaces again on the next sync.
+
+   Always pass the literal `now` to `--last-synced` — that same `update` call also bumps `updated`, so `last_synced` and `updated` end up aligned and the predicate `local.updated > last_synced` doesn't fire spuriously on the next sync.
 
 8. **Report.** End with a short summary: what changed locally, what changed upstream, what the user declined.
 

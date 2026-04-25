@@ -5,7 +5,7 @@ title: 'Tighten sync field policies: namespaced labels + upstream-wins priority 
 type: feature
 priority: 2
 created: '2026-04-25T17:06:53Z'
-updated: '2026-04-25T17:06:53Z'
+updated: '2026-04-25T18:06:52Z'
 ---
 
 Surfaced during the first dry-run of /yaks:sync against SUBTEXT-301. The skill now has the policy text (commit-this-pass), but the implementation work to make these policies actually enforceable is its own thing.
@@ -19,3 +19,6 @@ Three policies to bake in (currently only documented):
 3. Priority is upstream-wins. Never propose pushing yak.priority upstream. On sync, accept upstream's value. Rationale: PMs and Engs re-tune priority frequently upstream, and yak.priority is more of a 'how I plan to prioritize my queue' signal than a shared truth. If users want a stable local priority that doesn't get overwritten, that's a future 'local-only field' mechanism (deferred).
 
 Done when: sync skill applies these rules consistently in dry-run tests; bootstrap scripts adopt the namespacing convention; a test scenario verifies that a bare local label (e.g. 'urgent') is never proposed for upstream ferry.
+
+### 2026-04-25T18:06:52Z
+Done. SKILL.md step 3 rewritten to explicitly state per-field policies (title/desc/status prompt-and-ask; priority silently upstream-wins; labels namespaced with bare = local-only). Rubric table already had the long-form versions. Verification: bare 'urgent' label test passes by reading — synced bucket is empty, no upstream prompt fires; priority drift silently aligned to upstream, no prompt. The skill is now self-consistent on these three policies.

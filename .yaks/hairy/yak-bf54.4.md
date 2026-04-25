@@ -14,19 +14,35 @@ Sync should never write to upstream without giving the user a chance to review t
 Proposal: a 'pending sync' sidecar file per yak.
 
 Layout:
-  .yaks/.sync-pending/<yak-id>.json
+  .yaks/.sync-pending/<yak-id>.yaml
+
+Format: YAML (per project preference — no JSON unless interop forces it).
 
 Schema (rough):
-  {
-    'yak_id': 'yak-abcd',
-    'source': 'https://...',
-    'generated': '<iso>',
-    'fields': [{name: 'status', local: '...', remote: '...', resolution: 'pending|local|remote|skip'}, ...],
-    'comments_up': [{body: '...', resolution: 'pending|approved|rejected'}, ...],
-    'comments_down': [{author, body, resolution}, ...],
-    'attachments_up': [{filename, size, resolution}, ...],
-    'attachments_down': [{filename, size, url, resolution}, ...]
-  }
+  yak_id: yak-abcd
+  source: https://...
+  generated: <iso>
+  fields:
+    - name: status
+      local: '...'
+      remote: '...'
+      resolution: pending|local|remote|skip
+  comments_up:
+    - body: '...'
+      resolution: pending|approved|rejected
+  comments_down:
+    - author: '...'
+      body: '...'
+      resolution: pending|approved|rejected
+  attachments_up:
+    - filename: '...'
+      size: 12345
+      resolution: pending|approved|rejected
+  attachments_down:
+    - filename: '...'
+      size: 12345
+      url: '...'
+      resolution: pending|approved|rejected
 
 Flow:
 1. /yaks:sync (or sweep mode) runs in 'plan' phase → fetches upstream, computes diff, writes sidecar. No mutations yet.
