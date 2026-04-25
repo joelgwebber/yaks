@@ -47,7 +47,7 @@ yak in sync when you want to*, not to run a daemon.
 
 6. **Apply agreed changes.** Update the local yak via `yak.py update` (or by editing the file directly for body changes). Update the upstream via its MCP tool. Batch where you can; confirm any batch that exceeds ~3 changes.
 
-7. **Stamp `last_synced`.** As the *final* step of a successful sync, run `yak.py update <id> --last-synced now`. This is the watermark for "yak and upstream agreed at this point." Future syncs use it to short-circuit: if `upstream.updated <= last_synced`, nothing has drifted and we can stop early.
+7. **Stamp `last_synced`.** As the *final* step of a successful sync, run `yak.py update <id> --last-synced now`. This is the watermark for "yak and upstream agreed at this point." Future syncs use it to short-circuit: if `upstream.updated <= last_synced`, nothing has drifted and we can stop early. Always pass the literal `now` (not an explicit timestamp) — the same `update` call also bumps `updated` to now, so `last_synced` and `updated` end up aligned and the predicate `local.updated > last_synced` doesn't fire spuriously on the next sync.
 
 8. **Report.** End with a short summary: what changed locally, what changed upstream, what the user declined.
 

@@ -4,7 +4,7 @@ title: External issue tracker sync
 type: feature
 priority: 2
 created: '2026-04-24T02:12:56Z'
-updated: '2026-04-25T17:14:28Z'
+updated: '2026-04-25T17:29:50Z'
 ---
 
 We have a "source" slot that can be used for external issue trackers -- JIRA, Linear, etc. But there's no formal mechanism for syncing yaks with the source issues.
@@ -23,3 +23,9 @@ bf54.1 shorn: confirmed Jira exposes everything we need (issue + per-comment + p
 
 ### 2026-04-25T17:14:28Z
 Test scenario 1 (no-op sync) ran on jira-301 against /tmp/yaks-sync-test scratch repo. First pass surfaced three drifts caused by incomplete bootstrap (priority defaulted, comments not pulled, jira marker label proposed for upstream push). Three policy decisions baked into SKILL.md: 'when in doubt do not sync', namespaced labels (jira-* round-trips, bare = local-only), priority is upstream-wins (PMs/Engs re-tune frequently). bf54.5 filed for the policy implementation work. Bootstrap re-run with priority + comments + namespaced labels — second pass on jira-301 is a true no-op. Next: test scenario 2 (local edit → propose upstream → deny).
+
+### 2026-04-25T17:18:14Z
+Test scenario 2 (local edit → propose upstream → deny) ran on jira-302. Edited local title with ' [test edit]' suffix. Skill detected local drift (local.updated > last_synced) and one-sided title diff vs upstream. At the proposed-push prompt, denied. Re-fetch confirmed upstream summary + updated unchanged — no leak. Hard rule 'never touch the external tracker without confirming' held under denial. Subtle finding: skill currently leaves last_synced alone after denial (drift re-surfaces next sync, which is correct default behavior); a 'mark drift as intentional' opt-in could be a future affordance but not worth a yak yet. Local title reverted for hygiene.
+
+### 2026-04-25T17:29:50Z
+Test scenario 3 (external→yak comment ferry) ran on jira-301. Setup: rolled last_synced back to before Clint's comment + removed the ferried block from local body, simulating 'we synced before he commented; now he has.' Diff correctly identified the missing comment via hash-match (no local match for upstream's comment body). Prompt direction was external→yak (safe — no upstream write). Accept applied a '### <iso> @author (from jira:KEY)' block to body. Zero upstream-mutating MCP calls made. Implementation hygiene caught: stamping last_synced with an explicit older timestamp (rather than 'now') leaves local.updated > last_synced, causing spurious 'drift' on next sync — added a one-liner to skill step 7 clarifying always-use-'now'.
