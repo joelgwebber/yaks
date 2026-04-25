@@ -4,7 +4,7 @@ title: External issue tracker sync
 type: feature
 priority: 2
 created: '2026-04-24T02:12:56Z'
-updated: '2026-04-25T17:51:56Z'
+updated: '2026-04-25T17:54:37Z'
 ---
 
 We have a "source" slot that can be used for external issue trackers -- JIRA, Linear, etc. But there's no formal mechanism for syncing yaks with the source issues.
@@ -35,3 +35,15 @@ Attachment finding (raised by user): Atlassian MCP has no upload tool; only writ
 
 ### 2026-04-25T17:51:56Z
 Test scenario 4 (two-sided drift on jira-301) ran. Setup: added local note via update --note, removed Clint's ferry from body, rolled last_synced to 05:00Z. Skill produced two distinct prompts as designed (one per direction). Accepted external→yak (Clint re-ferried), denied yak→external (local note stays unique). Stamped last_synced=now. Result: structurally clean two-bucket ferry; uncovered a real design hole around last_synced semantics on partial-deny outcomes — bf54.6 is now load-bearing, not polish. All three prior tests still pass; no upstream writes made in any scenario.
+
+### 2026-04-25T17:54:37Z
+Test scenario 5 (no source → create upstream → deny) ran on a fresh sourceless yak. Skill's 'Creating a new upstream issue' branch correctly prescribes asking user for tracker + project + issue type before showing payload, and gates the createJiraIssue call behind explicit confirmation. Denied at confirmation; zero Atlassian write-tool invocations across the entire 5-scenario test arc (verified by session call audit). The yak is correctly left sourceless on deny — no half-state.
+
+Net of the dry-run pass:
+- All 5 test scenarios pass structurally.
+- 4/5 surfaced no design issues; scenario 4 surfaced the last_synced-on-partial-deny hole that promotes bf54.6 from polish to required.
+- bf54.5 (namespaced labels + upstream-wins priority + per-field policy) and bf54.6 (suppress-residual-drift prompt) are the next concrete coding work.
+- Attachments remain a known per-tracker limitation; skill text now reflects.
+- Bootstrap scaffold (/tmp/yaks-sync-test/bootstrap.py) demonstrates a working external→yak import path; if 'yaks:import' becomes a real feature (bf54.x), this script is the seed.
+
+Checkpointing here. Next session can take on bf54.5 and bf54.6 implementation.
