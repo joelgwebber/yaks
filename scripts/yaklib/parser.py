@@ -140,6 +140,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("tui", help="Open interactive TUI")
 
+    sp = sub.add_parser("sync", help="Manage pending-sync sidecars (plan and "
+                        "apply are skill-driven; this surface is bookkeeping)")
+    sync_sub = sp.add_subparsers(dest="sync_action", required=True)
+    sync_sub.add_parser("ls", help="List yak IDs with pending sync sidecars")
+    sp_show = sync_sub.add_parser("show", help="Print a sidecar's contents")
+    sp_show.add_argument("id", help="Yak ID")
+    sp_clear = sync_sub.add_parser("clear",
+                                   help="Remove a sidecar (after a successful "
+                                        "apply, or to discard a plan)")
+    sp_clear.add_argument("id", help="Yak ID")
+
     sp = sub.add_parser("import-beads", help="Import tasks from a beads issues.jsonl file")
     sp.add_argument("--file", help="Path to issues.jsonl (default: auto-detect .beads/issues.jsonl)")
     sp.add_argument("--dry-run", action="store_true",

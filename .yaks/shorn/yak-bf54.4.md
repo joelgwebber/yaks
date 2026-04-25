@@ -4,7 +4,7 @@ title: 'Pending-sync review pipeline: sidecar + TUI approval before upstream wri
 type: feature
 priority: 2
 created: '2026-04-25T15:47:45Z'
-updated: '2026-04-25T15:47:45Z'
+updated: '2026-04-25T18:25:29Z'
 depends_on:
 - yak-bf54.3
 ---
@@ -58,3 +58,6 @@ Open questions for when this gets shaved:
 - How do we surface 'someone changed upstream between plan and apply'? Re-fetch on apply, compare against snapshot, abort with a 'remote changed, re-plan' message.
 
 Depends on bf54.3 (last_synced) for atomic apply.
+
+### 2026-04-25T18:25:28Z
+Done (v1). Sidecar IO + CLI bookkeeping landed: yaklib/sync.py, 'yak sync ls/show/clear' subcommands, '~' marker in CLI list and TUI list, .gitignore for .sync-pending, 15 new tests. Skill rewritten end-to-end: plan/apply/discard model, sidecar schema, snapshot-drift abort path, partial-apply suppress-residual-drift prompt — replaces the old one-shot workflow entirely. End-to-end smoke against /tmp/yaks-sync-test scratch: ls/show/clear/marker all work. Deferred to followup yak: TUI interactive review dialog (currently you 'yak sync show id' + edit YAML).

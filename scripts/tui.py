@@ -203,6 +203,8 @@ class TUI:
         self.blocked_ids: set[str] = set()
         # Reverse-dep map: task id -> list of (status, task) that depend on it
         self.reverse_deps: dict[str, list[tuple[str, dict]]] = {}
+        # Yaks with a pending-sync sidecar (.yaks/.sync-pending/<id>.yaml)
+        self.pending_ids: set[str] = set()
 
         curses.curs_set(0)
         try:
@@ -221,6 +223,7 @@ class TUI:
         self._refresh_task_cache()
         self._rebuild_task_list()
         self._recompute_blocked()
+        self._recompute_pending()
         if self.cursor >= len(self.tasks):
             self.cursor = max(0, len(self.tasks) - 1)
         self._fix_scroll()
@@ -285,6 +288,11 @@ class TUI:
     def _recompute_blocked(self):
         """Update blocked_ids and reverse_deps from all tasks on disk."""
         self.blocked_ids, self.reverse_deps = _deps.compute_blocked(self.root)
+
+    def _recompute_pending(self):
+        """Update pending_ids from .yaks/.sync-pending/."""
+        from yaklib import sync as _sync
+        self.pending_ids = set(_sync.list_pending(self.root))
 
     def _refresh_task_cache(self):
         """Re-read every task from disk into in-memory caches. Expensive —

@@ -176,7 +176,7 @@ def cmd_create(args):
 # ---------------------------------------------------------------------------
 
 
-def _fmt_task_row(status, t):
+def _fmt_task_row(status, t, pending_ids: set[str] | None = None):
     pri = t.get("priority", "-")
     ttype = t.get("type", "-")
     labels = ",".join(t.get("labels", []))
@@ -184,7 +184,8 @@ def _fmt_task_row(status, t):
     dep_str = f" (deps: {','.join(deps)})" if deps else ""
     label_str = f" [{labels}]" if labels else ""
     ch = _STATUS_CHAR.get(status, status[0].upper())
-    return f"  [{ch}] {t['id']}  p{pri} {ttype:8s} {t.get('title', '')}{label_str}{dep_str}"
+    marker = "~" if pending_ids and t["id"] in pending_ids else " "
+    return f"  [{ch}] {marker}{t['id']}  p{pri} {ttype:8s} {t.get('title', '')}{label_str}{dep_str}"
 
 
 def _spec_from_args(args, defaults: dict | None = None) -> FilterSpec:
@@ -215,6 +216,8 @@ def _spec_from_args(args, defaults: dict | None = None) -> FilterSpec:
 
 
 def cmd_list(args):
+    from yaklib import sync as _sync
+
     root = find_tasks_root()
     spec = _spec_from_args(args)
     tasks = filter_tasks(root, spec)
@@ -228,8 +231,9 @@ def cmd_list(args):
         print("No tasks found.")
         return
 
+    pending = set(_sync.list_pending(root))
     for status, t in tasks:
-        print(_fmt_task_row(status, t))
+        print(_fmt_task_row(status, t, pending))
 
 
 def cmd_show(args):
@@ -594,8 +598,10 @@ def cmd_search(args):
         print("No tasks found.")
         return
 
+    from yaklib import sync as _sync
+    pending = set(_sync.list_pending(root))
     for status, t in matches:
-        print(_fmt_task_row(status, t))
+        print(_fmt_task_row(status, t, pending))
 
 
 def cmd_stats(args):
@@ -750,6 +756,40 @@ def cmd_import_beads(args):
 
 
 # ---------------------------------------------------------------------------
+# Pending-sync sidecar bookkeeping
+# ---------------------------------------------------------------------------
+
+
+def cmd_sync(args):
+    from yaklib import sync as _sync
+    root = find_tasks_root()
+
+    if args.sync_action == "ls":
+        ids = _sync.list_pending(root)
+        if not ids:
+            print("No pending sync sidecars.")
+            return
+        for tid in ids:
+            print(tid)
+        return
+
+    if args.sync_action == "show":
+        path = _sync.sidecar_path(root, args.id)
+        if not path.exists():
+            print(f"error: no sidecar for {args.id}", file=sys.stderr)
+            sys.exit(1)
+        print(path.read_text(), end="")
+        return
+
+    if args.sync_action == "clear":
+        if _sync.clear_sidecar(root, args.id):
+            print(f"Cleared pending sync for {args.id}")
+        else:
+            print(f"No pending sync for {args.id}")
+        return
+
+
+# ---------------------------------------------------------------------------
 # Dispatch table (used by the CLI entry point)
 # ---------------------------------------------------------------------------
 
@@ -777,5 +817,6 @@ COMMANDS = {
     "detach": cmd_detach,
     "search": cmd_search,
     "stats": cmd_stats,
+    "sync": cmd_sync,
     "import-beads": cmd_import_beads,
 }

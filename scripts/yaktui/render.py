@@ -349,7 +349,10 @@ def draw_list(app, y_start, x_start, height, width):
         base_attr = curses.color_pair(C_SELECTED) if is_selected else 0
 
         blocked = tid in app.blocked_ids and status == HAIRY
-        lead = "*" if blocked else " "
+        pending = tid in app.pending_ids
+        # blocked beats pending — same column, different meaning, but blocked
+        # is more urgent (something to do); pending is informational.
+        lead = "*" if blocked else ("~" if pending else " ")
         id_text = f"{lead}{indent}{tid}".ljust(id_col + 1)
         id_attr = base_attr if is_selected else (curses.color_pair(C_ID) | ghost_attr)
         if blocked and not is_selected:
