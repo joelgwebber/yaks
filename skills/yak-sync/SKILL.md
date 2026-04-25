@@ -15,6 +15,7 @@ yak in sync when you want to*, not to run a daemon.
 ## Hard rules
 
 - **Never touch the external tracker without confirming with the user first.** Every upstream write (field update, comment post, attachment upload, issue creation) is preceded by a prompt that shows the exact change.
+- **When in doubt, do not sync.** A field, comment, or label whose mapping isn't clearly 1:1 should be left alone rather than guessed. False sync is worse than no sync — data loss is hard to reverse, missed drift is easy.
 - **Never silently drop a local note or a remote comment.** If in doubt whether two items are the same, keep both — conservative duplication beats data loss.
 - **Never annotate upstream content with yak-specific markers.** The user may be working in a shared tracker where yaks are a private tool. Comments ferried yak→external post as plain content, no `[yaks:…]` prefix. Only the local yak body may carry provenance annotations.
 - **Never create an upstream issue automatically.** If a yak has no `source:`, ask the user whether to create one and *where* (project + issue type for Jira, team for Linear, repo for GitHub, etc.) before doing anything.
@@ -73,8 +74,8 @@ Don't treat any of these as hard rules — every tracker names things differentl
 | title | yes | Direct copy. |
 | description | yes | Markdown / rich text; trackers vary, usually close enough. |
 | status (hairy/shaving/shorn/dead) | lossy | Map per-tracker: shaving ≈ In Progress, shorn ≈ Done, dead ≈ Won't Do / Closed-not-planned. Confirm with user before applying. |
-| priority | lossy | Yak 1/2/3 ≈ Highest/High/Medium-or-Low. Ask which slot the user wants. |
-| labels | hard | Taxonomies differ. Propose 1:1 by name, ferry unmatched with confirmation, never delete. |
+| priority | upstream-wins | Priorities are subjective and frequently re-tuned by PMs/Engs upstream — never propose pushing the yak's priority. On a sync, accept the upstream value. If the user wants a stable local priority, that's a future "local-only field" feature. |
+| labels | namespaced | Synced labels are stored locally as `<tracker>-<name>` (e.g. upstream `bug-fix` → yak `jira-bug-fix`). Strip the prefix when ferrying yak→external; add it on external→yak. Bare labels (no `<tracker>-` prefix) are local-only — they never travel upstream. This sidesteps schema conflicts (some trackers require pre-defined label sets) and keeps user-chosen taxonomies separate. |
 | depends_on | hard | Most trackers have issue-link semantics but the link types vary. Best-effort; confirm per link. |
 | comments / notes | per-item | See step 4 above. |
 | attachments | per-item | See step 5 above. |

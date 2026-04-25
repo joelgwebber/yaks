@@ -4,7 +4,7 @@ title: External issue tracker sync
 type: feature
 priority: 2
 created: '2026-04-24T02:12:56Z'
-updated: '2026-04-25T15:47:58Z'
+updated: '2026-04-25T17:14:28Z'
 ---
 
 We have a "source" slot that can be used for external issue trackers -- JIRA, Linear, etc. But there's no formal mechanism for syncing yaks with the source issues.
@@ -20,3 +20,6 @@ Drafted skill + command. Decisions locked: single-yak only, merge-with-prompts, 
 
 ### 2026-04-25T15:47:58Z
 bf54.1 shorn: confirmed Jira exposes everything we need (issue + per-comment + per-attachment timestamps, batched JQL drift query). Locked in 'add last_synced to frontmatter, write it after successful sync'. Spawned bf54.3 (last_synced field + holistic timestamp audit) and bf54.4 (pending-sync sidecar + TUI review pipeline). bf54.2 now depends on both. Linear research deferred — no yak filed yet, will create when we actually wire it up. Sync skill itself remains as drafted; once bf54.3 and bf54.4 land, the skill's interactive-only confirmation loop gets replaced (or augmented) by the sidecar pipeline.
+
+### 2026-04-25T17:14:28Z
+Test scenario 1 (no-op sync) ran on jira-301 against /tmp/yaks-sync-test scratch repo. First pass surfaced three drifts caused by incomplete bootstrap (priority defaulted, comments not pulled, jira marker label proposed for upstream push). Three policy decisions baked into SKILL.md: 'when in doubt do not sync', namespaced labels (jira-* round-trips, bare = local-only), priority is upstream-wins (PMs/Engs re-tune frequently). bf54.5 filed for the policy implementation work. Bootstrap re-run with priority + comments + namespaced labels — second pass on jira-301 is a true no-op. Next: test scenario 2 (local edit → propose upstream → deny).
