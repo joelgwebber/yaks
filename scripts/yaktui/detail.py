@@ -82,6 +82,8 @@ def build_detail_lines(root, task, status, width=80,
         ("Created", humanize_date(task.get("created"))),
         ("Updated", humanize_date(task.get("updated"))),
     ]
+    if task.get("last_synced"):
+        fields.append(("Synced", humanize_date(task["last_synced"])))
     if task.get("commit"):
         fields.append(("Commit", task["commit"]))
     if task.get("labels"):

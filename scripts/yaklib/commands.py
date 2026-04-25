@@ -314,6 +314,10 @@ def cmd_update(args):
     if getattr(args, "source", None):
         task["source"] = args.source
         changed = True
+    if getattr(args, "last_synced", None):
+        ls = args.last_synced
+        task["last_synced"] = now_iso() if ls == "now" else ls
+        changed = True
     if getattr(args, "note", None):
         ts = now_iso()
         desc = (task.get("description") or "").rstrip()

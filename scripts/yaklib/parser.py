@@ -71,6 +71,9 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--remove-label", nargs="+", help="Remove labels")
     sp.add_argument("--note", help="Append a timestamped progress note to the description")
     sp.add_argument("--source", help="External issue URL")
+    sp.add_argument("--last-synced",
+                    help="Stamp last_synced timestamp (ISO8601, or 'now'). "
+                         "Written by /yaks:sync after a successful merge.")
 
     for name in ("shave", "work"):
         sp = sub.add_parser(name, help="Start shaving a yak")

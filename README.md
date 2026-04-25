@@ -149,6 +149,7 @@ Frontmatter fields:
 - **depends_on** — Optional list of task IDs that must be shorn first
 - **labels** — Optional list of string tags
 - **source** — Optional URL linking to an external issue (Jira, GitHub Issues, Linear, etc.)
+- **last_synced** — Optional ISO 8601 timestamp written by `/yaks:sync` after a successful bidirectional merge with the external issue
 
 ## Configuration
 

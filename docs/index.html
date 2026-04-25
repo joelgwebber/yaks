@@ -1814,6 +1814,8 @@
                 body += `<dt>Created</dt><dd class="plain" title="${esc(String(t.created))}">${esc(humanDate(t.created))}</dd>`;
             if (t.updated)
                 body += `<dt>Updated</dt><dd class="plain" title="${esc(String(t.updated))}">${esc(humanDate(t.updated))}</dd>`;
+            if (t.last_synced)
+                body += `<dt>Synced</dt><dd class="plain" title="${esc(String(t.last_synced))}">${esc(humanDate(t.last_synced))}</dd>`;
             if (t.commit) {
                 const commitUrl = `https://github.com/${esc(state.owner)}/${esc(state.repo)}/commit/${esc(t.commit)}`;
                 body += `<dt>Commit</dt><dd><a href="${commitUrl}" target="_blank" rel="noopener"><span class="commit-chip">${esc(t.commit)}</span></a></dd>`;

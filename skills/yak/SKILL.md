@@ -66,6 +66,7 @@ depends_on:
 labels:
   - auth
 source: https://jira.example.com/browse/PROJ-123  # optional external issue URL
+last_synced: "2026-02-16T10:30:00Z"               # written by /yaks:sync after a successful merge
 ---
 
 Details go here.
@@ -76,6 +77,8 @@ Child tasks use `--parent TASK_ID` on create. The hierarchy is implicit from the
 ### External source linking
 
 Use `--source URL` on create or update to link a yak to an external issue (Jira, GitHub Issues, Linear, etc.). The URL is stored in the `source` frontmatter field. When a yak has a source, the agent should check the external system for context when starting work, and update it when the yak is shorn.
+
+The companion `/yaks:sync TASK_ID` command (see the **yak-sync** skill) performs bidirectional merge with the linked external issue, and stamps `last_synced` on the yak after a successful merge so future syncs can short-circuit when nothing has drifted.
 
 ## Filtering
 

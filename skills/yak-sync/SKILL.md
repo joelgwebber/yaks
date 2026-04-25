@@ -46,7 +46,9 @@ yak in sync when you want to*, not to run a daemon.
 
 6. **Apply agreed changes.** Update the local yak via `yak.py update` (or by editing the file directly for body changes). Update the upstream via its MCP tool. Batch where you can; confirm any batch that exceeds ~3 changes.
 
-7. **Report.** End with a short summary: what changed locally, what changed upstream, what the user declined.
+7. **Stamp `last_synced`.** As the *final* step of a successful sync, run `yak.py update <id> --last-synced now`. This is the watermark for "yak and upstream agreed at this point." Future syncs use it to short-circuit: if `upstream.updated <= last_synced`, nothing has drifted and we can stop early.
+
+8. **Report.** End with a short summary: what changed locally, what changed upstream, what the user declined.
 
 ## Creating a new upstream issue
 
@@ -88,7 +90,6 @@ Keep this short and tracker-agnostic — the agent should use whatever MCP is co
 
 ## Things this skill deliberately does *not* do
 
-- No sweep mode ("sync everything"). One yak at a time.
-- No automatic `last_synced:` timestamp. We rely on full-diff each sync. If a future investigation determines reliable per-item timestamps are available across trackers, we may add one — see yak-bf54.1.
+- No sweep mode ("sync everything"). One yak at a time. (See yak-bf54.2 for a future "which yaks might need syncing?" view that uses `last_synced` as the predicate.)
 - No silent dedup without a provenance marker upstream. Given the silent-upstream rule, lightly-edited comments may duplicate on next sync; that is preferred to dropping them. If this becomes painful in practice, revisit.
 - No opinion on whether `.yaks/` is committed. This skill works equally well whether yaks are in-repo or gitignored.

@@ -50,8 +50,10 @@ type: bug | feature | task | idea
 priority: 1-3         # 1=highest
 created: ISO8601
 updated: ISO8601
-depends_on: [task-ids] # optional
-labels: [strings]      # optional
+depends_on: [task-ids]   # optional
+labels: [strings]        # optional
+source: URL              # optional, external issue URL
+last_synced: ISO8601     # optional, written by /yaks:sync
 ---
 
 Optional description as markdown body.
