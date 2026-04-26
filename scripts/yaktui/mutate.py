@@ -59,8 +59,8 @@ def build_template(root: Path, parent: str | None, yak_type: str = "task") -> st
     lines.append("title: ")
     lines.append("# type: task | bug | feature | idea")
     lines.append(f"type: {yak_type}")
-    lines.append("# priority: 1 (high) .. 3 (low)")
-    lines.append("priority: 2")
+    lines.append("# priority: 1 (urgent) .. 5 (lowest); 3 = medium")
+    lines.append("priority: 3")
     lines.append("# Optional:")
     lines.append("# labels: [foo, bar]")
     lines.append("# depends_on: [yak-xxxx]")
@@ -210,7 +210,7 @@ def create_task(app, parent: str | None = None, yak_type: str = "task") -> None:
         "id": tid,
         "title": data["title"].strip(),
         "type": data.get("type") or "task",
-        "priority": data.get("priority") if data.get("priority") is not None else 2,
+        "priority": data.get("priority") if data.get("priority") is not None else 3,
         "created": now,
         "updated": now,
     }
@@ -316,8 +316,8 @@ def quick_adjust_priority(app, tid: str) -> None:
     if path is None:
         return
     choice = _dialogs.pick(app.stdscr,
-                           f"Priority for {tid}: 1=high 2=med 3=low  (Esc=cancel)",
-                           "123")
+                           f"Priority for {tid}: 1=urgent 2=high 3=med 4=low 5=lowest  (Esc=cancel)",
+                           "12345")
     if choice is None:
         app.notification = "priority unchanged"
         return

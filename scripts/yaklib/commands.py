@@ -152,7 +152,7 @@ def cmd_create(args):
         "id": tid,
         "title": args.title,
         "type": args.type or cfg.get("default_type", "task"),
-        "priority": args.priority if args.priority is not None else cfg.get("default_priority", 2),
+        "priority": args.priority if args.priority is not None else cfg.get("default_priority", 3),
         "created": now,
         "updated": now,
     }
@@ -684,7 +684,7 @@ def cmd_import_beads(args):
 
     skip_types = {"message", "molecule", "merge-request"}
     skip_statuses = {"tombstone", "pinned"}
-    priority_map = {0: 1, 1: 1, 2: 2, 3: 3, 4: 3}
+    priority_map = {0: 1, 1: 2, 2: 3, 3: 4, 4: 5}
     type_map = {"bug": "bug", "feature": "feature"}
     bead_status_map = {"in_progress": SHAVING, "closed": SHORN}
 
@@ -719,7 +719,7 @@ def cmd_import_beads(args):
         if bead.get("title"):
             task["title"] = bead["title"]
         task["type"] = type_map.get(bead.get("issue_type", ""), "task")
-        task["priority"] = priority_map.get(bead.get("priority", 2), 2)
+        task["priority"] = priority_map.get(bead.get("priority", 2), 3)
 
         task["created"] = bead.get("created_at") or now_iso()
         task["updated"] = bead.get("updated_at") or task["created"]

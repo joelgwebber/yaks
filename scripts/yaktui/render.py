@@ -21,6 +21,8 @@ from yaktui.colors import (
     C_P1,
     C_P2,
     C_P3,
+    C_P4,
+    C_P5,
     C_SEARCH,
     C_SELECTED,
     C_TAB_ACTIVE,
@@ -34,6 +36,20 @@ TABS = [
     (SHAVING, "\u2702\ufe0f  Shaving"),
     (SHORN, "\U0001f411 Shorn"),
 ]
+
+
+_PRIORITY_PAIRS = {
+    1: (C_P1, curses.A_BOLD),
+    2: (C_P2, 0),
+    3: (C_P3, 0),
+    4: (C_P4, 0),
+    5: (C_P5, curses.A_DIM),
+}
+
+
+def _priority_attr(pri, ghost_attr):
+    pair, extra = _PRIORITY_PAIRS.get(pri, (C_P3, 0))
+    return curses.color_pair(pair) | extra | ghost_attr
 
 
 def tab_counts(app):
@@ -178,7 +194,7 @@ _DRAWER_LABEL_COL = 12
 _DRAWER_CHIP_MAP = {
     "status_chips": [HAIRY, SHAVING, SHORN, DEAD],
     "type_chips": ["task", "bug", "feature", "idea"],
-    "pri_chips": ["p1", "p2", "p3"],
+    "pri_chips": ["p1", "p2", "p3", "p4", "p5"],
     "deps_chips": ["ready only", "tangled only"],
 }
 
@@ -370,12 +386,8 @@ def draw_list(app, y_start, x_start, height, width):
         pri_text = f"p{pri} "
         if is_selected:
             pri_attr = base_attr
-        elif pri == 1:
-            pri_attr = curses.color_pair(C_P1) | curses.A_BOLD | ghost_attr
-        elif pri == 3:
-            pri_attr = curses.color_pair(C_P3) | ghost_attr
         else:
-            pri_attr = curses.color_pair(C_P2) | ghost_attr
+            pri_attr = _priority_attr(pri, ghost_attr)
         safe_addstr(stdscr, y, x, pri_text, pri_attr)
         x += len(pri_text)
 

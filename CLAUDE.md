@@ -47,7 +47,7 @@ Tasks are `.md` files with YAML frontmatter. The markdown body (after the closin
 id: prefix-hex4       # e.g. yak-a1b2, or parent-id.N for children
 title: string
 type: bug | feature | task | idea
-priority: 1-3         # 1=highest
+priority: 1-5         # 1=urgent, 3=medium (default), 5=lowest
 created: ISO8601
 updated: ISO8601
 depends_on: [task-ids]   # optional

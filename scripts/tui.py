@@ -84,7 +84,7 @@ _DRAWER_ROWS = [
 
 _DRAWER_STATUS_CHOICES = ["hairy", "shaving", "shorn", "dead"]
 _DRAWER_TYPE_CHOICES = ["task", "bug", "feature", "idea"]
-_DRAWER_PRI_CHOICES = [1, 2, 3]
+_DRAWER_PRI_CHOICES = [1, 2, 3, 4, 5]
 _DRAWER_DEPS_CHOICES = ["ready only", "tangled only"]
 
 

@@ -26,14 +26,19 @@ C_GHOST_SHAVING = 17
 C_GHOST_SHORN = 18
 C_CODE = 19
 C_MD_HEADING = 20
+C_P4 = 21
+C_P5 = 22
 
 
 def init_colors():
     curses.use_default_colors()
     curses.init_pair(C_ID, curses.COLOR_BLUE, -1)
+    # 5-level priority palette: P1 Urgent, P2 High, P3 Medium, P4 Low, P5 Lowest.
     curses.init_pair(C_P1, curses.COLOR_RED, -1)
-    curses.init_pair(C_P2, curses.COLOR_YELLOW, -1)
-    curses.init_pair(C_P3, curses.COLOR_GREEN, -1)
+    curses.init_pair(C_P2, curses.COLOR_MAGENTA, -1)
+    curses.init_pair(C_P3, curses.COLOR_YELLOW, -1)
+    curses.init_pair(C_P4, curses.COLOR_GREEN, -1)
+    curses.init_pair(C_P5, curses.COLOR_BLUE, -1)
     curses.init_pair(C_TAB_ACTIVE, curses.COLOR_BLACK, curses.COLOR_WHITE)
     curses.init_pair(C_GHOST, 8, -1)
     curses.init_pair(C_TYPE, curses.COLOR_CYAN, -1)
