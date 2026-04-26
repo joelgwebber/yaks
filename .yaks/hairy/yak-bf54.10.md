@@ -4,7 +4,7 @@ title: Unified attachment sync strategy
 type: idea
 priority: 3
 created: '2026-04-26T16:09:14Z'
-updated: '2026-04-26T16:09:14Z'
+updated: '2026-04-26T19:04:51Z'
 ---
 
 ## Problem
@@ -30,3 +30,17 @@ The current sync v1 is intentionally narrow. Punting attachments to "list paths 
 - A user asks for it explicitly.
 - We discover the manual-handoff path is producing real bugs (lost attachments, duplicate uploads).
 - We decide to deepen Linear support (where ferry works) and want a consistent UX with the others.
+
+---
+▸ 2026-04-26T19:04:51Z
+Real attachment test (2026-04-26):
+
+Linear: `create_attachment` (base64 upload) and `get_attachment` (binary download) both work via MCP. Uploaded a 135-byte PNG to ROC-5 from yak linear-f77a; round-tripped pull verified the bytes. Linear is the only of the three trackers where attachment ferry actually works.
+
+GitHub: confirmed there is *no* attachment surface on `gh` CLI. `gh issue comment` and `gh issue edit` accept only body text. The REST API supports release-asset uploads but not issue attachments. Only path forward: web UI manual upload.
+
+Two structural findings that need fixing now (not later):
+
+1. The skill must parse `![alt](artifacts/<id>/<filename>)` lines out of the description before description-diff, otherwise every yak with a local attachment shows phantom drift forever. Already added to SKILL.md.
+
+2. Linear does NOT bump `issue.updatedAt` when an attachment is added or removed. /yaks:sync-check (sweep mode) is updatedAt-keyed, so it WILL miss attachment-only drift on Linear. Apply-time snapshot diff catches it (we track attachment_ids in the snapshot). Worth surfacing: when sweep returns 'no drift,' a user with a recently-attached image won't be told to look. Already noted in SKILL.md's Linear hint.
