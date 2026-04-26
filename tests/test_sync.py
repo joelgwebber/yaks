@@ -240,3 +240,103 @@ def test_cli_sync_check_table_includes_local_drift_column(yak):
     table = yak("sync", "check").stdout
     line = next(ln for ln in table.splitlines() if tid in ln)
     assert line.endswith("yes")
+
+
+# ---------------------------------------------------------------------------
+# apply_sidecar_locally — TUI sidecar review (bf54.9)
+# ---------------------------------------------------------------------------
+
+
+def test_apply_sidecar_locally_overwrites_field_when_direction_upstream():
+    from yaklib.sync import apply_sidecar_locally
+    yak = {"id": "x-0001", "title": "old", "priority": 2}
+    sidecar = {
+        "fields": [
+            {"name": "title", "local": "old", "upstream": "new",
+             "direction": "upstream", "resolution": "approve"},
+            {"name": "priority", "local": 2, "upstream": 1,
+             "direction": "upstream", "resolution": "auto"},
+        ],
+    }
+    out = apply_sidecar_locally(yak, sidecar)
+    assert out["title"] == "new"
+    assert out["priority"] == 1
+
+
+def test_apply_sidecar_locally_skips_skipped_rows():
+    from yaklib.sync import apply_sidecar_locally
+    yak = {"id": "x-0001", "title": "old"}
+    sidecar = {"fields": [
+        {"name": "title", "local": "old", "upstream": "new",
+         "direction": "upstream", "resolution": "skip"},
+    ]}
+    assert apply_sidecar_locally(yak, sidecar) == yak
+
+
+def test_apply_sidecar_locally_refuses_pending_resolution():
+    from yaklib.sync import apply_sidecar_locally, SidecarApplyError
+    sidecar = {"fields": [
+        {"name": "title", "direction": "upstream", "resolution": "pending"},
+    ]}
+    try:
+        apply_sidecar_locally({"title": "x"}, sidecar)
+    except SidecarApplyError as e:
+        assert "unresolved" in str(e)
+    else:
+        raise AssertionError("expected SidecarApplyError")
+
+
+def test_apply_sidecar_locally_refuses_local_direction():
+    """direction: local needs an MCP write — TUI must defer to /yaks:sync."""
+    from yaklib.sync import apply_sidecar_locally, SidecarApplyError
+    sidecar = {"fields": [
+        {"name": "title", "direction": "local", "resolution": "approve"},
+    ]}
+    try:
+        apply_sidecar_locally({"title": "x"}, sidecar)
+    except SidecarApplyError as e:
+        assert "/yaks:sync" in str(e)
+    else:
+        raise AssertionError("expected SidecarApplyError")
+
+
+def test_apply_sidecar_locally_refuses_status_field():
+    """status mapping is lossy — defer to /yaks:sync."""
+    from yaklib.sync import apply_sidecar_locally, SidecarApplyError
+    sidecar = {"fields": [
+        {"name": "status", "direction": "upstream", "resolution": "approve",
+         "local": "hairy", "upstream": "In Progress"},
+    ]}
+    try:
+        apply_sidecar_locally({"id": "x-1"}, sidecar)
+    except SidecarApplyError as e:
+        assert "/yaks:sync" in str(e)
+    else:
+        raise AssertionError("expected SidecarApplyError")
+
+
+def test_apply_sidecar_locally_refuses_when_buckets_present():
+    """Any comments/attachments → defer to /yaks:sync (TUI is field-only)."""
+    from yaklib.sync import apply_sidecar_locally, SidecarApplyError
+    sidecar = {
+        "fields": [],
+        "comments_down": [{"body": "hi", "resolution": "auto"}],
+    }
+    try:
+        apply_sidecar_locally({"id": "x"}, sidecar)
+    except SidecarApplyError as e:
+        assert "comments_down" in str(e)
+    else:
+        raise AssertionError("expected SidecarApplyError")
+
+
+def test_apply_sidecar_locally_drops_field_when_upstream_empty():
+    """Upstream cleared a label list / description → yak loses the field."""
+    from yaklib.sync import apply_sidecar_locally
+    yak = {"id": "x-1", "labels": ["a", "b"]}
+    sidecar = {"fields": [
+        {"name": "labels", "local": ["a", "b"], "upstream": [],
+         "direction": "upstream", "resolution": "auto"},
+    ]}
+    out = apply_sidecar_locally(yak, sidecar)
+    assert "labels" not in out

@@ -874,6 +874,13 @@ class TUI:
     def _copy_to_clipboard(self, text):
         _mutate.copy_to_clipboard(self, text)
 
+    def _open_sync_review(self, tid):
+        if tid not in self.pending_ids:
+            self.notification = f"no pending sidecar for {tid}"
+            return
+        from yaktui import sync_review as _sr
+        _sr.open_review(self, tid)
+
     def _confirm(self, prompt, default_yes=False):
         return _dialogs.confirm(self.stdscr, prompt, default_yes)
 

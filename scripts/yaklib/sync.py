@@ -126,6 +126,70 @@ def upstream_key_for(source_url: str, tracker: str | None = None) -> str | None:
     return m.group(1)
 
 
+# ---------------------------------------------------------------------------
+# Local-only apply (bf54.9) — used by the TUI sidecar review dialog.
+# ---------------------------------------------------------------------------
+
+# Field names the TUI knows how to apply locally. `status` is excluded on
+# purpose: upstream→local status mapping is lossy (e.g. "In Progress" ≈
+# shaving) and the agent-driven /yaks:sync flow handles it more carefully.
+_TUI_APPLIABLE_FIELDS = {"title", "description", "priority", "labels"}
+
+
+class SidecarApplyError(Exception):
+    """Raised by :func:`apply_sidecar_locally` when the sidecar cannot be
+    safely applied without an MCP-aware flow. The message is suitable for
+    surfacing to the user as-is."""
+
+
+def apply_sidecar_locally(yak: dict, sidecar: dict) -> dict:
+    """Return a new yak dict with sidecar field resolutions applied.
+
+    Local-only: refuses (raises :class:`SidecarApplyError`) if any item
+    requires an MCP write or a status migration. Caller still has to write
+    the yak file, stamp ``last_synced``, and clear the sidecar.
+
+    Conservative on purpose — the TUI v1 only applies the no-brainers; the
+    skill handles everything else.
+    """
+    for bucket in ("comments_up", "comments_down",
+                   "attachments_up", "attachments_down"):
+        if sidecar.get(bucket):
+            raise SidecarApplyError(
+                f"sidecar has {bucket} — apply via /yaks:sync")
+
+    new_yak = dict(yak)
+    for f in sidecar.get("fields") or []:
+        name = f.get("name")
+        res = f.get("resolution")
+        direction = f.get("direction")
+        if res == "skip":
+            continue
+        if res == "pending" or direction == "pending":
+            raise SidecarApplyError(f"field {name!r} is unresolved")
+        if res not in ("auto", "approve"):
+            raise SidecarApplyError(
+                f"field {name!r} has unknown resolution {res!r}")
+        if direction == "local":
+            raise SidecarApplyError(
+                f"field {name!r} pushes upstream — use /yaks:sync")
+        if direction != "upstream":
+            raise SidecarApplyError(
+                f"field {name!r} has unknown direction {direction!r}")
+        if name not in _TUI_APPLIABLE_FIELDS:
+            raise SidecarApplyError(
+                f"field {name!r} needs /yaks:sync (TUI handles only "
+                f"{', '.join(sorted(_TUI_APPLIABLE_FIELDS))})")
+
+        upstream = f.get("upstream")
+        if upstream in (None, [], ""):
+            new_yak.pop(name, None)
+        else:
+            new_yak[name] = upstream
+
+    return new_yak
+
+
 def iter_synced_yaks(root: Path) -> list[dict]:
     """Enumerate yaks that have a ``source:`` URL.
 

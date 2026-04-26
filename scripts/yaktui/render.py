@@ -359,6 +359,10 @@ def draw_list(app, y_start, x_start, height, width):
             block_attr = curses.color_pair(C_P2) | curses.A_BOLD
             safe_addstr(stdscr, y, x, lead, block_attr)
             safe_addstr(stdscr, y, x + 1, id_text[1:], id_attr)
+        elif pending and not is_selected:
+            pend_attr = curses.color_pair(C_SEARCH) | curses.A_BOLD
+            safe_addstr(stdscr, y, x, lead, pend_attr)
+            safe_addstr(stdscr, y, x + 1, id_text[1:], id_attr)
         else:
             safe_addstr(stdscr, y, x, id_text, id_attr)
         x += len(id_text)
@@ -518,6 +522,14 @@ def draw_help_bar(app, y, w):
         safe_addstr(app.stdscr, y, 0, app.message[:w], curses.color_pair(C_SEARCH))
         app.message = ""
         return
+    cur_id = app._current_task_id() if hasattr(app, "_current_task_id") else None
+    if cur_id and cur_id in app.pending_ids:
+        hint = f"  ~ pending sync sidecar — press ~ to review {cur_id}"
+        safe_addstr(app.stdscr, y, 0, " " * w,
+                    curses.color_pair(C_SEARCH) | curses.A_BOLD)
+        safe_addstr(app.stdscr, y, 0, hint[:w],
+                    curses.color_pair(C_SEARCH) | curses.A_BOLD)
+        return
     filter_active = not app.filter_spec.is_empty()
     filter_hint = "f:filter  Esc:clear" if filter_active else "f:filter  /:search"
     if app.focus == "detail":
@@ -571,6 +583,9 @@ _HELP_SECTIONS = [
         "i / o                 Nav forward / back in jumplist",
         "Backspace             Nav back (alt)",
         "v / Shift-↑↓          Visual select; y/Enter copies",
+    ]),
+    ("Sync", [
+        "~                     Open sidecar review (yaks marked ~)",
     ]),
     ("General", [
         "F / Ctrl-L            Refresh",

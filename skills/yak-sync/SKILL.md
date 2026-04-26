@@ -206,9 +206,11 @@ If a yak's `last_synced` is missing (never synced), treat it as `upstream-newer`
 
 The plan, apply, and upstream-drift query are skill-driven (they need MCP access); the CLI is bookkeeping only. In `yak list` and the TUI, yaks with a pending sidecar render with a leading `~` so you can spot them at a glance.
 
+In the TUI, `~` on a yak with a pending sidecar opens a review dialog where the user can cycle each field's resolution (approve / skip / pending) and apply locally. The dialog deliberately handles only the no-brainers: title / description / priority / labels with `direction: upstream`. Anything that needs an MCP write (`direction: local`, comments, attachments) or a lossy mapping (`status`) is shown read-only and the user is told to apply via `/yaks:sync`.
+
 ## Things this skill deliberately does *not* do
 
 - No automation: even with sweep, the goal is to *identify* what may need syncing, not to act on it. The user always picks per-yak whether to plan, apply, or ignore.
 - No silent dedup without a provenance marker upstream. Given the silent-upstream rule, lightly-edited comments may duplicate on next sync; that is preferred to dropping them.
 - No opinion on whether `.yaks/` is committed. This skill works equally well whether yaks are in-repo or gitignored.
-- No interactive TUI for sidecar review yet. Use `yak sync show` and a text editor — sidecars are plain YAML by design.
+- No comment / attachment apply from the TUI sidecar dialog. Those buckets show up as counts only — the agent-driven `/yaks:sync` flow is what actually ferries them.

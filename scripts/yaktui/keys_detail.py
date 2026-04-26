@@ -190,6 +190,12 @@ def handle(app, key) -> bool:
     elif key == ord("f"):
         app._open_filter_drawer()
 
+    # Sidecar review.
+    elif key == ord("~"):
+        tid = app._current_task_id()
+        if tid:
+            app._open_sync_review(tid)
+
     # Detail search
     elif key == ord("/"):
         query = _dialogs.input_prompt(app.stdscr, "Detail search: ",
