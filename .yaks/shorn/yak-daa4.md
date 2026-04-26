@@ -10,5 +10,6 @@ commit: 92b5895
 
 If present in the source, it should be shown as a clickable link in the detail view.
 
-### 2026-04-18T23:07:51Z
+---
+▸ 2026-04-18T23:07:51Z
 Fixed: source field now renders as a navigable 'link' DetailLine in the TUI detail pane. Relaxed _open_externally to skip the existence check for http(s):// URLs and dispatch them via open/xdg-open. Pressing Enter or O on the Source line opens the URL in the default browser.

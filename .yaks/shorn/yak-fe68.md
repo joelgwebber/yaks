@@ -12,7 +12,8 @@ Use-case: I have an external issue tracker I'm forced to use (ahem... JIRA?), bu
 
 I'm thinking we could just add a single "external task" field, which can be understood from URL context, so that the calling agent can know how to deal with it (assuming it has the right tools). Then we can create a simple skill for synchronizing them semantically (i.e., without rigid schema mapping problems).
 
-### 2026-04-18T20:27:23Z
+---
+▸ 2026-04-18T20:27:23Z
 Design decisions:
 - Field name: 'source' (single string, URL format)
 - Just a URL — agent infers system from domain (github.com, atlassian.net, linear.app, etc.)
@@ -28,5 +29,6 @@ Implementation plan:
 5. Create a sync skill
 6. Update SKILL.md / docs
 
-### 2026-04-18T20:32:56Z
+---
+▸ 2026-04-18T20:32:56Z
 Implemented: source field in frontmatter, --source flag on create/update, rendered in TUI detail pane and web UI as clickable link. Updated SKILL.md, README, command docs.

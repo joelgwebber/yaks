@@ -12,7 +12,8 @@ It would be nice if quotes like this rendered clearly:
 > This is a quote
 > with multiple lines.
 
-### 2026-04-17T22:56:43Z
+---
+▸ 2026-04-17T22:56:43Z
 Added blockquote CSS to modal-body in docs/index.html. Left border, subtle background, muted text, rounded corners.
 
 ![Blockquote rendering in task detail modal](artifacts/yak-39ea/blockquote.png)

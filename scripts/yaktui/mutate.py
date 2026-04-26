@@ -559,11 +559,12 @@ def add_comment(app, tid: str) -> None:
     if path is None:
         return
     now = now_iso()
-    # One blank line before the heading, none between heading and body —
-    # comments are usually one-liners, keep them tight but separated.
+    # Comment block: thematic break + sigil-and-iso line + body. Sigil ▸
+    # is the unambiguous parse marker; thematic break gives raw-markdown
+    # viewers a visible delimiter.
     desc = (task.get("description") or "").rstrip()
     sep = "\n\n" if desc else ""
-    task["description"] = f"{desc}{sep}### {now}\n{text}"
+    task["description"] = f"{desc}{sep}---\n▸ {now}\n{text}"
     task["updated"] = now
     save_task(path, task)
     app.reload()

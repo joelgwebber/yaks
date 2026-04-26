@@ -42,6 +42,10 @@ yak_id: jira-301                   # local yak ID
 source: https://...                # upstream URL
 generated: 2026-04-25T18:00:00Z    # ISO8601 timestamp of plan phase
 
+notes:                             # plan-output annotations the user should see
+  - "priority: github source — local-only, not diffed"
+  - "attachments: github source — manual ferry only"
+
 upstream_snapshot:                 # all diffed fields as observed at plan time
   updated: <iso>
   status: <upstream status name>
@@ -93,6 +97,15 @@ attachments_down:
 
 `direction` (on `fields` items only) indicates which side wins: `local` ferries the yak value upstream; `upstream` overwrites the yak with the upstream value; `pending` means the user hasn't decided yet.
 
+`notes` is an optional list of plain-text annotations describing things the user should know about the *plan itself* — not field-level decisions. The skill emits a note when:
+
+- A field has been excluded from the diff because the tracker doesn't support it (e.g. priority on GitHub).
+- A bucket can't be ferried via MCP and requires a manual hand-off (e.g. attachments on Jira/GitHub).
+- The transport is degraded or cached (e.g. MCP unreachable; plan generated from snapshot).
+- A normalizer was applied during diff (e.g. Linear markdown canonicalization).
+
+Notes live only in the sidecar — they do not write back to the yak. The TUI surfaces them above the field table.
+
 ## Plan phase
 
 1. **Resolve the yak.** Read the yak file. If it has no `source:`, jump to *Creating a new upstream issue*. Otherwise parse the URL to determine the tracker.
@@ -101,7 +114,15 @@ attachments_down:
    - `priority` always: `direction: upstream`, `resolution: auto`.
    - `labels` (synced bucket): `direction: upstream` for new upstream labels, `direction: local` for new yak-side labels, `resolution: auto` either way (label changes are usually safe).
    - `title` / `description` / `status`: `direction: pending`, `resolution: pending` — user must decide.
-4. **Bucket comments.** Hash-match yak `### <iso>` blocks against upstream comments (normalize: strip headers, whitespace, lowercase). Anything matched is dropped. Yak-side leftovers go in `comments_up` with `resolution: pending`. Upstream-side leftovers go in `comments_down` with `resolution: auto` (external→yak ferry is a safe local write).
+4. **Bucket comments.** Yak comments live as blocks in the description body, fenced by a thematic break and a sigil header:
+
+   ```markdown
+   ---
+   ▸ <iso8601> [@<author>] [(from <tracker>:<key>)]
+   <body>
+   ```
+
+   The `▸` sigil at column 0 immediately after a `---` line is the unambiguous parse marker. A block extends from the `▸` line until the next `---\n▸` block or end of file. Hash-match yak comment bodies against upstream comments (normalize: strip headers, whitespace, lowercase). Anything matched is dropped. Yak-side leftovers go in `comments_up` with `resolution: pending`. Upstream-side leftovers go in `comments_down` with `resolution: auto` (external→yak ferry is a safe local write).
 5. **Bucket attachments.** Match `(filename, size)` between local `.yaks/artifacts/<yak-id>/` and upstream attachments. Leftovers go in the appropriate bucket with `resolution: pending` (attachments are uneven across trackers — never auto-ferry).
 6. **Write the sidecar.** Use the Write tool to put the YAML into `.yaks/.sync-pending/<yak-id>.yaml`. Include the `upstream_snapshot` so apply can detect drift later.
 7. **Summarize for the user.** Tell them how many auto items, how many pending items, and how to review (`yak sync show <id>`) and apply (`/yaks:sync <id>`).
@@ -114,7 +135,7 @@ attachments_down:
 4. **Apply each `auto` and `approve` item.**
    - Field with `direction: upstream` → update local via `yak.py update <id>` (or for description/comments, edit the body directly).
    - Field with `direction: local` → push upstream via the appropriate MCP write tool.
-   - `comments_down` → append `### <iso> @<author> (from <tracker>:<key>)\n<body>` block to the yak body.
+   - `comments_down` → append `---\n▸ <iso> @<author> (from <tracker>:<key>)\n<body>` block to the yak body.
    - `comments_up` → post via the tracker's add-comment MCP tool, content as-is, no provenance prefix.
    - `attachments_down` → download and place in `.yaks/artifacts/<yak-id>/`, append a body link. If the MCP can't fetch bytes, list the URL and stop — don't silently skip.
    - `attachments_up` → upload via the tracker's MCP tool. If the MCP can't upload (Atlassian, GitHub Issues), list the local path and stop — don't silently skip.

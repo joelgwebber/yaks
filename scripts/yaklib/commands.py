@@ -326,7 +326,7 @@ def cmd_update(args):
         ts = now_iso()
         desc = (task.get("description") or "").rstrip()
         sep = "\n\n" if desc else ""
-        task["description"] = f"{desc}{sep}### {ts}\n{args.note}"
+        task["description"] = f"{desc}{sep}---\n▸ {ts}\n{args.note}"
         changed = True
 
     if changed:

@@ -100,5 +100,6 @@ Scratch dir: `/tmp/yaks-sync-gh/` (prefix `gh`).
 
 Linear is the closest to "easy bidirectional sync." GitHub is the simplest shape but has the biggest gaps. Jira is the messiest but the most expressive.
 
-### 2026-04-26T17:15:56Z
+---
+▸ 2026-04-26T17:15:56Z
 Linear's own docs (per [github-to-linear](https://linear.app/docs/github-to-linear)) state the OPEN/CLOSED mapping verbatim: 'If an issue is unstarted or started in Linear, it's considered open in GitHub. If completed in Linear, it's considered closed in GitHub.' Validates our binary mapping lean (a) word-for-word. Priority is explicitly not in their sync field set — same as our lean. Their 'synced thread' UI segregates GitHub-originated comments visually rather than algorithmically — our '### iso author (from tracker:key)' header is the textual equivalent.

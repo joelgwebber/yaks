@@ -48,7 +48,8 @@ Total API cost: ~2 calls per page load. 60/hr unauthenticated is plenty.
 - Styling: minimal custom CSS vs. a tiny CSS framework (pico, water.css)?
 - Do we want periodic auto-refresh, or manual only?
 
-### 2026-04-17T01:50:16Z
+---
+▸ 2026-04-17T01:50:16Z
 MVP implemented in docs/index.html. Single self-contained HTML file using pico.css, js-yaml, and marked from CDN. Fetches via GitHub Trees API (1 call) + raw.githubusercontent.com (CDN). Three-column kanban with parent/child nesting, click-to-expand modal with rendered markdown, branch picker, shareable URL hash. Tested against joelgwebber/yaks — loads 99 tasks successfully. Polish ideas: sort shorn by updated date, add filter bar, dark mode toggle.
 
 ![V2 UI: shaving tab with light header, bison logo, refresh icon](artifacts/yak-6f9e/v2-shaving-tab.png)

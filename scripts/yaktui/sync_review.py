@@ -157,6 +157,7 @@ def open_review(app, yak_id: str) -> None:
 
     sidecar = _sync.load_sidecar(sidecar_path)
     fields = list(sidecar.get("fields") or [])
+    notes = [str(n) for n in (sidecar.get("notes") or []) if str(n).strip()]
 
     buckets = [(k, len(sidecar.get(k) or []))
                for k in ("comments_up", "comments_down",
@@ -184,16 +185,29 @@ def open_review(app, yak_id: str) -> None:
         if src:
             safe_addstr(app.stdscr, 1, 0, src[:w], curses.A_DIM)
 
+        # Plan-level notes (skipped fields, manual handoffs, transport caveats).
+        notes_y0 = 3
+        notes_drawn = 0
+        for note in notes:
+            if notes_y0 + notes_drawn >= h - 6:
+                break
+            safe_addstr(app.stdscr, notes_y0 + notes_drawn, 0,
+                        f"⚠ {note}"[:w],
+                        curses.color_pair(C_SEARCH))
+            notes_drawn += 1
+        notes_block_h = notes_drawn + (1 if notes_drawn else 0)
+
         # Reserve space: title (1) + source (1) + blank (1) +
-        # buckets summary (variable) + message (1) + footer (1).
+        # notes block (variable) + buckets summary (variable) +
+        # message (1) + footer (1).
         bucket_lines = (1 + sum(1 for _, n in buckets if n) + 1
                         if has_buckets else 0)
-        chrome = 3 + bucket_lines + (1 if message else 0) + 1
+        chrome = 3 + notes_block_h + bucket_lines + (1 if message else 0) + 1
 
         # Split remaining space: ~40% table, ~60% diff panel.
         avail = max(6, h - chrome)
         table_max_h = min(len(fields) + 1 + 1, max(3, avail // 2))
-        table_y0 = 3
+        table_y0 = 3 + notes_block_h
         table_y_end = _draw_table(app.stdscr, fields, sel,
                                   table_y0, table_y0 + table_max_h, w)
 

@@ -10,5 +10,6 @@ commit: ab70a7e
 
 Badge sizes are inconsistent between the list rows and detail panel. Make them uniform.
 
-### 2026-04-18T00:42:48Z
+---
+▸ 2026-04-18T00:42:48Z
 Fixed in v2 polish pass.

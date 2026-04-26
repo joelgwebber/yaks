@@ -18,7 +18,8 @@ Mechanics:
 
 Holistic review (per user direction): existing 'created' and 'updated' fields earn varying amounts of keep — 'updated' is used by TUI sort and 'recent' filter; 'created' is decorative. With last_synced joining the family, audit whether all three are pulling weight, or whether one can be dropped/folded. Likely outcome: keep all three but document semantics clearly. Don't touch behavior unless audit surfaces something genuinely confusing.
 
-### 2026-04-25T15:57:19Z
+---
+▸ 2026-04-25T15:57:19Z
 Done. Changes:
 
 - parser.py: added --last-synced flag to the `update` subcommand. Accepts an ISO8601 string or the literal 'now'.

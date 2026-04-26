@@ -10,7 +10,8 @@ updated: '2026-04-25T15:47:17Z'
 
 Blocks a 'last_synced' field on yaks and any sweep/check mode. For each tracker's MCP: can we cheaply fetch (issue updated_at, per-comment updated_at, per-attachment created_at)? If the data isn't exposed uniformly enough, a local last_synced buys us nothing and we stick with full-diff sync. Deliverable: a short writeup appended here with what each MCP exposes and a recommendation.
 
-### 2026-04-25T15:40:58Z
+---
+▸ 2026-04-25T15:40:58Z
 Jira investigation (live MCP probe against fullstory.atlassian.net).
 
 **Issue-level `updated`:** present, ISO8601 with TZ + ms (e.g. `2026-04-25T06:59:16.876-0400`). Returned by both `searchJiraIssuesUsingJql` and `getJiraIssue`.
@@ -29,5 +30,6 @@ Jira investigation (live MCP probe against fullstory.atlassian.net).
 
 **Out of scope here, deferred:** Linear / GitHub equivalents. Per directional call, Jira having what we need is sufficient to greenlight `last_synced` for v1; Linear research can land when we actually wire Linear up. If Linear's API turns out to be uncooperative we revisit, but the field design itself is tracker-agnostic so the risk is low.
 
-### 2026-04-25T15:47:17Z
+---
+▸ 2026-04-25T15:47:17Z
 Shorn summary: Jira gives us issue-level updated, per-comment created/updated, per-attachment created, and a clean batched JQL for 'which of these drifted?'. Added last_synced field is greenlit for v1. Linear deferred until we actually need it (no yak filed yet — will create when work starts). Spawned bf54.3 (last_synced field + holistic timestamp audit) and bf54.4 (pending-sync review pipeline).

@@ -78,5 +78,6 @@ Relations: see item 5.
 
 Scratch dir: `/tmp/yaks-sync-linear/` (prefix `linear`).
 
-### 2026-04-26T17:15:53Z
+---
+▸ 2026-04-26T17:15:53Z
 Linear native GitHub Issues sync (per [github-to-linear](https://linear.app/docs/github-to-linear)) drops priority from its sync field set entirely — fields synced are title, description, labels, projects, comments, sub-issue. Validates our 'never push priority' lean. Linear's docs are silent on markdown normalization, conflict resolution, and attachments — confirming the gaps we identified are real-world. Linear's own caveat: 'Bidirectional sync is generally recommended as a temporary transition tool rather than a permanent solution' — strong validation of our one-shot, plan-then-apply shape.

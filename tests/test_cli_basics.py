@@ -88,8 +88,8 @@ def test_update_note_appends_block(yak):
     body = yak("show", tid, "--json").json()["description"]
     assert "first observation" in body
     assert "second observation" in body
-    # Each note gets its own timestamped heading
-    assert body.count("###") == 2
+    # Each note gets its own sigil-marked block (preceded by a thematic break).
+    assert body.count("---\n▸ ") == 2
 
 
 def test_ids_are_unique_across_batch(yak):

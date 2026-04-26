@@ -15,5 +15,6 @@ Consolidation of several comments on the header area:
 - Make header banner less obtrusive and dark — no need for heavy background or separator, just spacing
 - Generally tighten up the top panel
 
-### 2026-04-17T23:47:43Z
+---
+▸ 2026-04-17T23:47:43Z
 Implemented in docs/index.html v2 rewrite.

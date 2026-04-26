@@ -20,5 +20,6 @@ Three policies to bake in (currently only documented):
 
 Done when: sync skill applies these rules consistently in dry-run tests; bootstrap scripts adopt the namespacing convention; a test scenario verifies that a bare local label (e.g. 'urgent') is never proposed for upstream ferry.
 
-### 2026-04-25T18:06:52Z
+---
+▸ 2026-04-25T18:06:52Z
 Done. SKILL.md step 3 rewritten to explicitly state per-field policies (title/desc/status prompt-and-ask; priority silently upstream-wins; labels namespaced with bare = local-only). Rubric table already had the long-form versions. Verification: bare 'urgent' label test passes by reading — synced bucket is empty, no upstream prompt fires; priority drift silently aligned to upstream, no prompt. The skill is now self-consistent on these three policies.

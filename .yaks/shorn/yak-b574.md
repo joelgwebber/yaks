@@ -11,7 +11,8 @@ commit: 6139ef5
 Even simple readline() style vim handling would be helpful, perhaps as an option controlled by config.yaml so it doesn't confuse everyone.
 The trickiest part might be figuring out how best to handle cancelling input. Maybe double-esc when in vim mode?
 
-### 2026-04-16T20:56:28Z
+---
+▸ 2026-04-16T20:56:28Z
 Research + design notes (not yet committed).
 
 ## Feasibility
@@ -88,7 +89,8 @@ Proceed as a dedicated future yak, not something to squeeze into polish. Suggest
 2. Phase 2: expand to all text inputs; add config.yaml support.
 3. Phase 3 (optional): counts, `.`, more normal-mode verbs.
 
-### 2026-04-16T22:06:41Z
+---
+▸ 2026-04-16T22:06:41Z
 I think double-esc is good for cancellation, especially if we have the cursor right.
 Agreed on "all inputs" and per-project + per-user config (I see no need for the env var). Let's leave another yak for in-app configuration to follow up later.
 Open questions:

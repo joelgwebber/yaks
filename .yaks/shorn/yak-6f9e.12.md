@@ -10,5 +10,6 @@ commit: ab70a7e
 
 Main body text of yak descriptions and detail content is too small. Bump font sizes up a notch for readability.
 
-### 2026-04-18T00:42:48Z
+---
+▸ 2026-04-18T00:42:48Z
 Fixed in v2 polish pass.
