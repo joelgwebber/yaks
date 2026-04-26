@@ -95,3 +95,57 @@ def test_update_note_appends_block(yak):
 def test_ids_are_unique_across_batch(yak):
     ids = {create_task(yak, f"t{i}", type="task") for i in range(10)}
     assert len(ids) == 10
+
+
+def test_migrate_comment_blocks_pure_helper():
+    from yaklib.model import _migrate_comment_blocks
+    src = (
+        "---\n"
+        "id: x-1\n"
+        "title: t\n"
+        "---\n"
+        "\n"
+        "Body paragraph.\n"
+        "\n"
+        "### 2026-04-25T18:25:28Z\n"
+        "Local note.\n"
+        "\n"
+        "### 2026-04-25T18:30:00Z @alice (from linear:ROC-9)\n"
+        "Ferried comment.\n"
+    )
+    out = _migrate_comment_blocks(src)
+    assert "### 2026-04-25" not in out
+    assert "---\n▸ 2026-04-25T18:25:28Z\n" in out
+    assert "---\n▸ 2026-04-25T18:30:00Z @alice (from linear:ROC-9)\n" in out
+    # Idempotent: running again is a no-op.
+    assert _migrate_comment_blocks(out) == out
+
+
+def test_migrate_comment_blocks_leaves_date_only_headings_alone():
+    """A bare `### 2026-04-25` (date, no time) is not a comment marker."""
+    from yaklib.model import _migrate_comment_blocks
+    src = (
+        "---\n"
+        "id: x-1\n"
+        "---\n"
+        "\n"
+        "### 2026-04-25 Meeting notes\n"
+        "User-authored heading; do not migrate.\n"
+    )
+    assert _migrate_comment_blocks(src) == src
+
+
+def test_auto_migrate_rewrites_md_files_on_load(yak, yak_root):
+    """find_tasks_root → _auto_migrate must rewrite legacy `### <iso>` blocks
+    in any .md file under the .yaks/ directory."""
+    tid = create_task(yak, "needs migration", type="task")
+    path = yak_root / ".yaks" / "hairy" / f"{tid}.md"
+    text = path.read_text()
+    # Hand-write a legacy comment block (simulating an old yak file).
+    legacy = text.rstrip() + "\n\n### 2026-04-25T18:25:28Z\nLegacy note.\n"
+    path.write_text(legacy)
+    # Any subsequent yak invocation triggers find_tasks_root → _auto_migrate.
+    yak("list")
+    rewritten = path.read_text()
+    assert "### 2026-04-25" not in rewritten
+    assert "---\n▸ 2026-04-25T18:25:28Z\nLegacy note." in rewritten

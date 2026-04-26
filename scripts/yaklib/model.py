@@ -3,12 +3,24 @@
 from __future__ import annotations
 
 import random
+import re
 import string
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
+
+
+# Strict ISO8601 timestamp at column 0 inside an h3 heading. Matches the
+# old yak comment-block format (`### <iso> [@author] [(from tracker:key)]`)
+# and captures the iso + the rest-of-line for replacement. Only date+time
+# with timezone matches; a bare `### 2026-04-25` stays untouched.
+_LEGACY_COMMENT_RE = re.compile(
+    r"^### (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?"
+    r"(?:Z|[+-]\d{2}:?\d{2})?)(.*)$",
+    re.MULTILINE,
+)
 
 # ---------------------------------------------------------------------------
 # Status constants
@@ -80,9 +92,18 @@ def find_tasks_root(start: Path | None = None) -> Path:
 
 
 def _auto_migrate(root: Path) -> None:
-    """Migrate legacy .yaml task files to .md with frontmatter."""
-    migrated = []
-    for s in STATUSES:
+    """Run on-disk migrations:
+
+    1. Legacy ``.yaml`` task files → ``.md`` with frontmatter.
+    2. Legacy ``### <iso>`` comment-block headings → ``---\\n▸ <iso>``
+       (introduced when the comment format gained a thematic-break +
+       sigil to disambiguate from user-authored headings).
+
+    Both are idempotent — already-migrated files pass through unchanged.
+    """
+    yaml_migrated = []
+    comment_migrated = []
+    for s in _ALL_STATUSES:
         d = root / s
         if not d.exists():
             continue
@@ -101,11 +122,49 @@ def _auto_migrate(root: Path) -> None:
                     parts.append("\n")
             md_path.write_text("".join(parts))
             f.unlink()
-            migrated.append(f"{s}/{f.stem}")
-    if migrated:
-        print(f"Migrated {len(migrated)} task(s) from .yaml to .md:")
-        for name in migrated:
+            yaml_migrated.append(f"{s}/{f.stem}")
+        for f in sorted(d.glob("*.md")):
+            text = f.read_text()
+            new = _migrate_comment_blocks(text)
+            if new != text:
+                f.write_text(new)
+                comment_migrated.append(f"{s}/{f.stem}")
+    if yaml_migrated:
+        print(f"Migrated {len(yaml_migrated)} task(s) from .yaml to .md:")
+        for name in yaml_migrated:
             print(f"  {name}")
+    if comment_migrated:
+        print(f"Migrated {len(comment_migrated)} task(s) to new comment format:")
+        for name in comment_migrated:
+            print(f"  {name}")
+
+
+def _migrate_comment_blocks(text: str) -> str:
+    """Rewrite ``### <iso8601>`` comment headings to ``---\\n▸ <iso8601>``.
+
+    Pure function (no IO). Only operates on the description body — the
+    frontmatter never carries h3 headings, but we slice it off explicitly
+    so the regex can't be fooled by an iso-shaped value buried in YAML.
+    Idempotent: if no headings match, returns *text* unchanged.
+    """
+    if not text.startswith("---\n"):
+        return text
+    end = text.find("\n---\n", 4)
+    if end < 0:
+        return text
+    head = text[:end + 5]
+    body = text[end + 5:]
+
+    def repl(m: re.Match) -> str:
+        return f"---\n▸ {m.group(1)}{m.group(2)}"
+
+    new_body = _LEGACY_COMMENT_RE.sub(repl, body)
+    if new_body == body:
+        return text
+    # Collapse `---\n---\n` runs in case the user already had a thematic
+    # break right above an old `### iso` heading.
+    new_body = re.sub(r"(?m)^---\n---\n", "---\n", new_body)
+    return head + new_body
 
 
 def load_config(root: Path) -> dict:
