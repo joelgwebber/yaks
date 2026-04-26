@@ -4,7 +4,7 @@ title: Test sync against Linear
 type: task
 priority: 2
 created: '2026-04-25T17:46:57Z'
-updated: '2026-04-26T17:15:53Z'
+updated: '2026-04-26T18:34:33Z'
 ---
 
 ## Idiosyncrasies + tradeoffs to decide
@@ -81,3 +81,7 @@ Scratch dir: `/tmp/yaks-sync-linear/` (prefix `linear`).
 ---
 ▸ 2026-04-26T17:15:53Z
 Linear native GitHub Issues sync (per [github-to-linear](https://linear.app/docs/github-to-linear)) drops priority from its sync field set entirely — fields synced are title, description, labels, projects, comments, sub-issue. Validates our 'never push priority' lean. Linear's docs are silent on markdown normalization, conflict resolution, and attachments — confirming the gaps we identified are real-world. Linear's own caveat: 'Bidirectional sync is generally recommended as a temporary transition tool rather than a permanent solution' — strong validation of our one-shot, plan-then-apply shape.
+
+---
+▸ 2026-04-26T18:34:33Z
+Five-scenario validation against Linear ROC-5/6/7 passed: (1) no-op fast-path, (2) local edit + deny + suppress, (3) comment ferry auto-apply with provenance, (4) two-sided drift with mixed accept-upstream/deny-push (description rewritten from upstream while all 4 comment blocks preserved), (5) sourceless → create-upstream + deny (no new ROC issue created). Net upstream writes from the skill itself: 0. Setup writes (3) for fixture state are not skill writes. Markdown normalization didn't bite during scenarios because fixtures were carefully aligned, but the post-read normalizer remains required for real-world use.

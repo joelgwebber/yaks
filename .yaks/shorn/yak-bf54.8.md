@@ -4,7 +4,7 @@ title: Test sync against Github issues
 type: task
 priority: 2
 created: '2026-04-25T17:47:09Z'
-updated: '2026-04-26T17:15:56Z'
+updated: '2026-04-26T18:34:33Z'
 ---
 
 ## Idiosyncrasies + tradeoffs to decide
@@ -103,3 +103,7 @@ Linear is the closest to "easy bidirectional sync." GitHub is the simplest shape
 ---
 ▸ 2026-04-26T17:15:56Z
 Linear's own docs (per [github-to-linear](https://linear.app/docs/github-to-linear)) state the OPEN/CLOSED mapping verbatim: 'If an issue is unstarted or started in Linear, it's considered open in GitHub. If completed in Linear, it's considered closed in GitHub.' Validates our binary mapping lean (a) word-for-word. Priority is explicitly not in their sync field set — same as our lean. Their 'synced thread' UI segregates GitHub-originated comments visually rather than algorithmically — our '### iso author (from tracker:key)' header is the textual equivalent.
+
+---
+▸ 2026-04-26T18:34:33Z
+Five-scenario validation against joelgwebber/yaks #2/#3/#4 via gh CLI shellout passed: (1) no-op fast-path, (2) local edit + deny + suppress, (3) comment ferry auto-apply with @author + (from github:owner/repo#N) provenance, (4) two-sided drift with mixed accept-upstream/deny-push (body rewritten from upstream while all 4 comment blocks preserved), (5) sourceless → create-upstream + deny (no new GH issue created). Net upstream writes from the skill itself: 0. gh CLI is a clean transport — no surprises in read or write paths. priority excluded from diff entirely (notes plan-output line emitted).
