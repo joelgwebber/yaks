@@ -127,67 +127,96 @@ def upstream_key_for(source_url: str, tracker: str | None = None) -> str | None:
 
 
 # ---------------------------------------------------------------------------
-# Local-only apply (bf54.9) — used by the TUI sidecar review dialog.
+# Local apply (bf54.9 / bf54.11) — used by the TUI sidecar review dialog.
 # ---------------------------------------------------------------------------
 
 # Field names the TUI knows how to apply locally. `status` is excluded on
-# purpose: upstream→local status mapping is lossy (e.g. "In Progress" ≈
-# shaving) and the agent-driven /yaks:sync flow handles it more carefully.
+# purpose: upstream→local status mapping is lossy and the agent-driven
+# /yaks:sync flow handles it more carefully.
 _TUI_APPLIABLE_FIELDS = {"title", "description", "priority", "labels"}
 
 
-class SidecarApplyError(Exception):
-    """Raised by :func:`apply_sidecar_locally` when the sidecar cannot be
-    safely applied without an MCP-aware flow. The message is suitable for
-    surfacing to the user as-is."""
+class LocalApplyResult:
+    """Outcome of a :func:`apply_sidecar_locally` call.
 
-
-def apply_sidecar_locally(yak: dict, sidecar: dict) -> dict:
-    """Return a new yak dict with sidecar field resolutions applied.
-
-    Local-only: refuses (raises :class:`SidecarApplyError`) if any item
-    requires an MCP write or a status migration. Caller still has to write
-    the yak file, stamp ``last_synced``, and clear the sidecar.
-
-    Conservative on purpose — the TUI v1 only applies the no-brainers; the
-    skill handles everything else.
+    - ``new_yak``: yak dict with applied field rows merged in.
+    - ``applied``: field rows the TUI just wrote to the yak.
+    - ``skipped``: field rows the user explicitly resolved as ``skip``.
+    - ``deferred``: field rows that need ``/yaks:sync`` (status, direction:
+      local, unresolved). These stay in the sidecar.
+    - ``bucket_remaining``: count of bucket items still in the sidecar
+      (TUI doesn't ferry comments / attachments).
     """
-    for bucket in ("comments_up", "comments_down",
-                   "attachments_up", "attachments_down"):
-        if sidecar.get(bucket):
-            raise SidecarApplyError(
-                f"sidecar has {bucket} — apply via /yaks:sync")
 
+    __slots__ = ("new_yak", "applied", "skipped", "deferred", "bucket_remaining")
+
+    def __init__(self, new_yak, applied, skipped, deferred, bucket_remaining):
+        self.new_yak = new_yak
+        self.applied = applied
+        self.skipped = skipped
+        self.deferred = deferred
+        self.bucket_remaining = bucket_remaining
+
+
+def _row_is_tui_appliable(row: dict) -> bool:
+    """True for field rows the TUI may apply locally on `A`."""
+    name = row.get("name")
+    direction = row.get("direction")
+    resolution = row.get("resolution")
+    return (
+        name in _TUI_APPLIABLE_FIELDS
+        and direction == "upstream"
+        and resolution in ("auto", "approve")
+    )
+
+
+def apply_sidecar_locally(yak: dict, sidecar: dict) -> LocalApplyResult:
+    """Apply the TUI-resolvable subset of a sidecar to ``yak``.
+
+    Permissive: doesn't raise. Bucket items and fields needing an MCP
+    write or status migration are returned as ``deferred`` (still
+    require ``/yaks:sync``). Skipped rows are dropped from both the
+    applied and deferred lists.
+
+    The caller (TUI ``A`` handler) is responsible for: writing the new
+    yak file, stamping ``last_synced``, and either clearing the sidecar
+    (when nothing remains) or rewriting it with only the deferred rows.
+    """
     new_yak = dict(yak)
-    for f in sidecar.get("fields") or []:
-        name = f.get("name")
-        res = f.get("resolution")
-        direction = f.get("direction")
-        if res == "skip":
-            continue
-        if res == "pending" or direction == "pending":
-            raise SidecarApplyError(f"field {name!r} is unresolved")
-        if res not in ("auto", "approve"):
-            raise SidecarApplyError(
-                f"field {name!r} has unknown resolution {res!r}")
-        if direction == "local":
-            raise SidecarApplyError(
-                f"field {name!r} pushes upstream — use /yaks:sync")
-        if direction != "upstream":
-            raise SidecarApplyError(
-                f"field {name!r} has unknown direction {direction!r}")
-        if name not in _TUI_APPLIABLE_FIELDS:
-            raise SidecarApplyError(
-                f"field {name!r} needs /yaks:sync (TUI handles only "
-                f"{', '.join(sorted(_TUI_APPLIABLE_FIELDS))})")
+    applied: list[dict] = []
+    skipped: list[dict] = []
+    deferred: list[dict] = []
 
+    for f in sidecar.get("fields") or []:
+        if f.get("resolution") == "skip":
+            skipped.append(f)
+            continue
+        if not _row_is_tui_appliable(f):
+            deferred.append(f)
+            continue
         upstream = f.get("upstream")
+        name = f.get("name")
         if upstream in (None, [], ""):
             new_yak.pop(name, None)
         else:
             new_yak[name] = upstream
+        applied.append(f)
 
-    return new_yak
+    bucket_remaining = 0
+    for bucket in ("comments_up", "comments_down",
+                   "attachments_up", "attachments_down"):
+        for item in sidecar.get(bucket) or []:
+            if item.get("resolution") == "skip":
+                continue
+            bucket_remaining += 1
+
+    return LocalApplyResult(
+        new_yak=new_yak,
+        applied=applied,
+        skipped=skipped,
+        deferred=deferred,
+        bucket_remaining=bucket_remaining,
+    )
 
 
 def iter_synced_yaks(root: Path) -> list[dict]:

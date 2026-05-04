@@ -311,3 +311,57 @@ def test_parse_template_accepts_quoted_colon():
             "---\n")
     data = parse_template(text)
     assert data["title"] == "Handle foo: bar"
+
+
+# ---------------------------------------------------------------------------
+# Sync-review dialog helpers (bf54.11 Phase 1) — pure, curses-free.
+# ---------------------------------------------------------------------------
+
+
+def test_sync_review_build_rows_unifies_fields_and_buckets():
+    from yaktui.sync_review import _build_rows
+    sidecar = {
+        "fields": [{"name": "title"}, {"name": "priority"}],
+        "comments_up": [{"body": "a"}, {"body": "b"}],
+        "attachments_down": [{"filename": "x.png"}],
+    }
+    rows = _build_rows(sidecar)
+    kinds = [r.kind for r in rows]
+    assert kinds == ["field", "field", "comments_up", "comments_up",
+                     "attachments_down"]
+    assert rows[2].bucket_idx == 1 and rows[2].bucket_n == 2
+    assert rows[3].bucket_idx == 2 and rows[3].bucket_n == 2
+
+
+def test_sync_review_jump_bucket_skips_to_next_kind():
+    from yaktui.sync_review import _build_rows, _jump_bucket
+    sidecar = {
+        "fields": [{"name": "title"}, {"name": "priority"}],
+        "comments_up": [{"body": "a"}, {"body": "b"}],
+        "attachments_down": [{"filename": "x.png"}],
+    }
+    rows = _build_rows(sidecar)
+    assert _jump_bucket(rows, 0, +1) == 2
+    assert _jump_bucket(rows, 3, +1) == 4
+    assert _jump_bucket(rows, 4, +1) == 4
+    assert _jump_bucket(rows, 2, -1) == 0
+
+
+def test_sync_review_next_direction_cycles():
+    from yaktui.sync_review import _next_direction
+    assert _next_direction("upstream") == "local"
+    assert _next_direction("local") == "pending"
+    assert _next_direction("pending") == "upstream"
+    assert _next_direction("garbage") == "upstream"
+
+
+def test_sync_review_row_capability_prefers_sidecar_value():
+    from yaktui.sync_review import Row, _row_capability
+    row = Row(kind="field", item={"name": "description", "capability": "ok"})
+    assert _row_capability(row, "jira") == "ok"
+    # Missing → fall back to the matrix (jira description = lossy).
+    row = Row(kind="field", item={"name": "description"})
+    assert _row_capability(row, "jira") == "lossy"
+    # Comments_down on any tracker is always "ok" — safe local write.
+    row = Row(kind="comments_down", item={"body": "x"})
+    assert _row_capability(row, "github") == "ok"
