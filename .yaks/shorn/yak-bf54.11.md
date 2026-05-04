@@ -4,7 +4,7 @@ title: Support bidirectional sync
 type: feature
 priority: 1
 created: '2026-05-01T15:40:38Z'
-updated: '2026-05-03T16:39:22Z'
+updated: '2026-05-04T03:40:44Z'
 ---
 
 After using the external issue tracker sync for a while, I'm finding that I really do need
@@ -15,3 +15,7 @@ edit affordance for merging by hand.
 ---
 ▸ 2026-05-03T16:39:22Z
 Design doc landed at docs/design/sync.md — covers full bidirectional flow, capability matrix, mutation gating, and per-tracker hints. Implementation order: Phase 0 (sync_caps) → 4 (plan-time notes) → 1 (TUI direction toggle) → 2 (TUI merged_value edit) → 3 (skill apply) → 5 (mutation gating).
+
+---
+▸ 2026-05-04T03:40:44Z
+Implementation landed across Phases 0/4/1/2/5/3. All 166 tests pass. Plugin 0.1.71. End-to-end: capability matrix (sync_caps.py) → plan-time notes (SKILL recipes) → TUI dialog with direction toggle/bucket nav/capability column → manual edit (e → merged_value/merged_body) → mutation gating (warn-and-re-plan with slaughter/last_synced carve-outs) → skill upstream-push cookbook with comment-up provenance round-trip.
