@@ -174,6 +174,84 @@ Emit one note per non-`ok` capability for the relevant tracker, regardless of wh
 6. **Clear the sidecar** via `yak sync clear <id>`.
 7. **Report.** Brief summary: applied locally / applied upstream / skipped.
 
+## Pushing upstream (per-tracker cookbook)
+
+`direction: local` rows + `comments_up: approve` items + `attachments_up: approve` items all push to upstream during the apply phase. The push path is tracker-specific; consult `scripts/yaklib/sync_caps.py` to know whether a push is even attempted, then follow the recipe below.
+
+**Always honor `merged_value` (fields) and `merged_body` (comments).** When set, that's the authoritative content to push — supersedes the `local` value the plan captured. The TUI's manual-edit affordance produces these.
+
+### Jira
+
+- **Title / labels / priority** → `editJiraIssue` with the relevant field. Priority maps 1↔1.
+- **Description** → **disabled by capability (`lossy`).** ADF round-trip degrades formatting (tables, status macros, code-block highlighting). Refuse the push: emit a hand-off note (`"description: edit upstream manually at <URL>"`) and skip. Mark the row's resolution as `skip` after surfacing the note.
+- **Status** → `getTransitionsForJiraIssue` to enumerate transitions; pick the one whose target name matches the desired state (e.g. shorn → "Done"). If no transition matches the workflow's current allowed paths, surface to the user — *don't* try alternative transitions to coerce a path. Then `transitionJiraIssue`.
+- **`comments_up`** → `addCommentToJiraIssue` with `merged_body` if set, else `body`. Plain markdown — Atlassian MCP accepts it.
+- **`attachments_up`** → **manual.** No upload tool exists on the MCP. Emit a hand-off list: `<filename> at <local_path> — upload via Jira web UI`. Skip the row.
+
+### Linear
+
+- **Title / labels / priority** → `save_issue` with the relevant fields in one call (Linear batches naturally). Priority pushes 1–5 → 0–4 (Urgent=1, Low=4, None=0; map yak P3 → Linear 3 unless the user has explicitly chosen None elsewhere).
+- **Description** → push as-is via `save_issue`. Linear's silent normalization happens on save; we already neutralize the diff at read time, so round-trip is clean.
+- **Status** → `save_issue` with `stateId`. Look up via the team's `WorkflowState` list; pick by `statusType` matching the target (`backlog`/`unstarted`/`started`/`completed`/`canceled`). If multiple states share a `statusType`, prefer the one whose `name` best matches the prior upstream display name from `upstream_snapshot.status`.
+- **`comments_up`** → `save_comment` with `merged_body` if set, else `body`.
+- **`attachments_up`** → `create_attachment` with base64-encoded bytes. Read the file from `local_path` and base64 it. **Linear doesn't bump `issue.updatedAt` on attachment changes** — sync-check won't surface attachment-only drift.
+
+### GitHub Issues (`gh` CLI)
+
+- **Title** → `gh issue edit <N> --repo <owner/repo> --title "..."`.
+- **Description (body)** → `gh issue edit <N> --body-file <tmp>` (write `merged_value` or `local` to a tempfile; multi-line bodies don't survive shell quoting).
+- **Labels** → `gh issue edit <N> --add-label "x,y" --remove-label "z"`. Strip the `gh-` prefix before pushing.
+- **Status** → `gh issue close <N>` or `gh issue reopen <N>`. Binary: yak hairy/shaving both map to OPEN; shorn/dead both map to CLOSED. Pushing local "shaving" upstream is a no-op when the issue is already OPEN — record the push as silently successful, but emit a `notes:` line at plan time so the user knows the local intermediate is invisible.
+- **Priority** → not pushable (`n/a`). Field is excluded from the diff entirely; nothing to do.
+- **`comments_up`** → `gh issue comment <N> --body-file <tmp>` (or `--body "..."` for short single-line). Plain markdown.
+- **`attachments_up`** → **manual.** No API. Emit a hand-off: `<filename> at <local_path> — drag into the GitHub issue web UI`. Skip the row.
+
+### Comment-up provenance round-trip
+
+When a `comments_up` push succeeds, the upstream tracker assigns the comment an ID. To prevent the comment from coming back as `comments_down` on the next sync, **rewrite the local comment block header in place** to include the upstream ID:
+
+```markdown
+---
+▸ 2026-04-25T18:30:00Z @joel (synced linear:abc-12345)
+<body>
+```
+
+The `(synced <tracker>:<id>)` suffix is parsed alongside `(from ...)` by the comment scanner — both mark a block as already-ferried so the hash-match drops it. The format is `(synced <tracker>:<comment-id>)` with no spaces around the colon.
+
+If the push succeeds but the upstream ID can't be captured (some MCPs return only success), use `(synced <tracker>:?)` as a placeholder. The hash-match will still dedupe on body content.
+
+### What "skip" means at push time
+
+- **Field row, `direction: local`, `resolution: skip`** → don't push, don't fall back to upstream-overwrite. The user explicitly said "leave both sides as-is."
+- **`comments_up`, `resolution: skip`** → don't post; drop from the sidecar. The note stays in the local yak body.
+- **`attachments_up`, `resolution: skip`** → don't push; drop from the sidecar. The file stays in `.yaks/artifacts/<id>/`.
+
+A `manual` capability that the user can't `approve` (because no API exists) becomes `skip` at apply time after the hand-off note is surfaced — the row resolves cleanly without a push.
+
+## Mutation gating
+
+Once a sidecar exists, local mutations to the yak (`yak update`, `yak attach`, `yak shave`, `yak shorn`, `yak regrow`, `yak revive`, `yak reparent`, `yak dep`, `yak detach`, plus the corresponding TUI mutate operations) prompt:
+
+```
+yak <id> has a pending sync plan (N unresolved items).
+Editing will invalidate the plan and discard it.
+Continue? [y/N]:
+```
+
+Default N. Y backs up the sidecar to `.yaks/.sync-pending/<id>.yaml.bak` and discards it; the edit then proceeds. Scripted callers pass `--force-discard-pending` (CLI) to bypass the prompt.
+
+**Carve-outs (no prompt):**
+- **`yak slaughter`** auto-clears the sidecar. The yak is being killed; the plan is moot.
+- **`yak update --last-synced`** when no other field is being changed — that's the apply-phase stamp itself.
+- **`/yaks:sync` and the sidecar review dialog** — re-planning *is* the resolution path.
+
+This exists because mid-flight local edits silently corrupt the sidecar:
+- `direction: upstream` row → apply overwrites your intervening edit. Lost.
+- `direction: local` row → apply pushes the plan-time local value, not your fresh edit. Silently dropped.
+- `pending` row → dialog shows stale local. Confusing.
+
+Don't try to defeat the gate by editing the yak file directly to avoid the prompt — re-plan instead.
+
 ## Discard phase
 
 If the user wants to throw away the plan: `yak sync clear <id>`. Sidecar is gone, yak is unchanged, `last_synced` is unchanged.

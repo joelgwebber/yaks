@@ -7,6 +7,14 @@ import argparse
 from yaklib.model import ALL_STATUS_NAMES
 
 
+def _add_pending_gate_flag(sp) -> None:
+    """Attach --force-discard-pending to a mutating subparser."""
+    sp.add_argument("--force-discard-pending", action="store_true",
+                    dest="force_discard_pending",
+                    help="Discard a pending sync sidecar without prompting "
+                         "(for scripted callers).")
+
+
 def _add_filter_flags(sp, exclude: tuple = ()) -> None:
     """Attach the unified FilterSpec flags to a subparser."""
     if "status" not in exclude:
@@ -74,25 +82,31 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--last-synced",
                     help="Stamp last_synced timestamp (ISO8601, or 'now'). "
                          "Written by /yaks:sync after a successful merge.")
+    _add_pending_gate_flag(sp)
 
     for name in ("shave", "work"):
         sp = sub.add_parser(name, help="Start shaving a yak")
         sp.add_argument("id", help="Task ID")
+        _add_pending_gate_flag(sp)
 
     for name in ("shorn", "close"):
         sp = sub.add_parser(name, help="Mark a yak as shorn")
         sp.add_argument("id", help="Task ID")
+        _add_pending_gate_flag(sp)
 
     for name in ("regrow", "reopen"):
         sp = sub.add_parser(name, help="Regrow a shorn yak")
         sp.add_argument("id", help="Task ID")
+        _add_pending_gate_flag(sp)
 
     sp = sub.add_parser("slaughter",
                         help="Slaughter a yak (move to hidden 'dead' state)")
     sp.add_argument("id", help="Task ID")
+    # No gate flag: slaughter auto-clears the sidecar silently.
 
     sp = sub.add_parser("revive", help="Revive a dead yak (back to hairy)")
     sp.add_argument("id", help="Task ID")
+    _add_pending_gate_flag(sp)
 
     for name in ("next", "ready"):
         sp = sub.add_parser(name, help="Show yaks ready to shave "
@@ -110,12 +124,14 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("action", choices=["add", "remove"], help="Add or remove dependency")
     sp.add_argument("id", help="Task ID")
     sp.add_argument("dep_id", help="Dependency task ID")
+    _add_pending_gate_flag(sp)
 
     sp = sub.add_parser("reparent", help="Move a task to a new parent or to top-level")
     sp.add_argument("id", help="Task ID to reparent")
     group = sp.add_mutually_exclusive_group(required=True)
     group.add_argument("--parent", help="New parent task ID")
     group.add_argument("--unparent", action="store_true", help="Promote to top-level task")
+    _add_pending_gate_flag(sp)
 
     sp = sub.add_parser("attach", help="Attach a file (or clipboard image) to a yak")
     sp.add_argument("id", help="Task ID")
@@ -124,10 +140,12 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--name", help="Override stored filename")
     sp.add_argument("--desc", help="Alt text / description for the markdown link")
     sp.add_argument("--force", action="store_true", help="Overwrite if file already exists")
+    _add_pending_gate_flag(sp)
 
     sp = sub.add_parser("detach", help="Detach an artifact from a yak")
     sp.add_argument("id", help="Task ID")
     sp.add_argument("name", help="Artifact filename")
+    _add_pending_gate_flag(sp)
 
     sp = sub.add_parser("search", help="Search tasks by keyword "
                         "(shortcut for `list --search QUERY`)")

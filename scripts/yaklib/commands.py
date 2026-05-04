@@ -39,6 +39,24 @@ from yaklib.model import (
 _STATUS_CHAR = {HAIRY: "H", SHAVING: "S", SHORN: "N", DEAD: "X"}
 
 
+def _gate_pending(args, root: Path) -> bool:
+    """Return True if the caller may proceed; False on user-aborted prompt.
+
+    Prints a brief message to stderr and exits the command early when the
+    user declines. Honors --force-discard-pending.
+    """
+    from yaklib import sync as _sync
+    force = bool(getattr(args, "force_discard_pending", False))
+    yak_id = getattr(args, "id", None)
+    if not yak_id:
+        return True
+    if _sync.confirm_discard_pending(root, yak_id, force=force):
+        return True
+    print(f"Aborted: {yak_id} has a pending sync plan; left untouched.",
+          file=sys.stderr)
+    return False
+
+
 def _split_labels(tokens: list[str] | None) -> list[str]:
     """Flatten label tokens so users can type `--labels foo bar` or
     `--labels foo,bar` or `--labels "foo bar,baz"` and get the obvious thing."""
@@ -281,6 +299,16 @@ def cmd_update(args):
     if not result:
         print(f"error: task {args.id} not found", file=sys.stderr)
         sys.exit(1)
+    # Skip the pending-sidecar gate when only stamping last_synced — that's
+    # the sidecar-resolution path itself and must not prompt to discard.
+    only_last_synced = (
+        getattr(args, "last_synced", None)
+        and not any(getattr(args, n, None) for n in (
+            "title", "type", "priority", "description",
+            "add_label", "remove_label", "note", "source"))
+    )
+    if not only_last_synced and not _gate_pending(args, root):
+        return
     _, path = result
     task = load_task(path)
 
@@ -342,11 +370,14 @@ def cmd_update(args):
 # ---------------------------------------------------------------------------
 
 
-def _move_task(args, dest_status: str, already_msg: str, done_msg: str, extra_fields: dict | None = None):
+def _move_task(args, dest_status: str, already_msg: str, done_msg: str,
+               extra_fields: dict | None = None, gate_pending: bool = True):
     root = find_tasks_root()
     if not find_task_file(root, args.id):
         print(f"error: task {args.id} not found", file=sys.stderr)
         sys.exit(1)
+    if gate_pending and not _gate_pending(args, root):
+        return
     ok, _ = move_task(root, args.id, dest_status, extra_fields=extra_fields)
     if not ok:
         print(f"{args.id} is {already_msg}")
@@ -367,7 +398,12 @@ def cmd_regrow(args):
 
 
 def cmd_slaughter(args):
-    _move_task(args, DEAD, "already dead", "Slaughtered:")
+    # Carve-out: slaughter never prompts. The yak is being killed, the
+    # plan is moot — silently back up + clear any pending sidecar.
+    from yaklib import sync as _sync
+    root = find_tasks_root()
+    _sync.auto_clear_pending(root, args.id)
+    _move_task(args, DEAD, "already dead", "Slaughtered:", gate_pending=False)
 
 
 def cmd_revive(args):
@@ -440,6 +476,8 @@ def cmd_dep(args):
     if not result:
         print(f"error: task {args.id} not found", file=sys.stderr)
         sys.exit(1)
+    if not _gate_pending(args, root):
+        return
     _, path = result
     task = load_task(path)
 
@@ -481,6 +519,9 @@ def cmd_reparent(args):
         print("error: specify --parent TASK_ID or --unparent", file=sys.stderr)
         sys.exit(1)
 
+    if not _gate_pending(args, root):
+        return
+
     try:
         plan = reparent_mod.reparent(root, args.id, new_parent)
     except reparent_mod.ReparentError as e:
@@ -504,6 +545,8 @@ def cmd_attach(args):
     if loc is None:
         print(f"error: task {args.id} not found", file=sys.stderr)
         sys.exit(1)
+    if not _gate_pending(args, root):
+        return
     _, path = loc
     task = load_task(path)
 
@@ -554,6 +597,8 @@ def cmd_detach(args):
     if loc is None:
         print(f"error: task {args.id} not found", file=sys.stderr)
         sys.exit(1)
+    if not _gate_pending(args, root):
+        return
     _, path = loc
     task = load_task(path)
     body = task.get("description", "")

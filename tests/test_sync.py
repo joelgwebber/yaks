@@ -381,6 +381,130 @@ def test_apply_sidecar_locally_uses_merged_value_when_set():
     assert res.new_yak["title"] == "merged result"
 
 
+# ---------------------------------------------------------------------------
+# Mutation gating (bf54.11 Phase 5) — warn-and-re-plan
+# ---------------------------------------------------------------------------
+
+
+def test_confirm_discard_pending_returns_true_with_no_sidecar(yak, yak_root):
+    from yaklib.sync import confirm_discard_pending
+    tid = create_task(yak, "no sidecar")
+    # Should return True without prompting (prompt_fn would assert otherwise).
+    assert confirm_discard_pending(
+        _yaks(yak_root), tid,
+        prompt_fn=lambda _msg: (_ for _ in ()).throw(
+            AssertionError("should not prompt without sidecar"))) is True
+
+
+def test_confirm_discard_pending_force_clears_silently(yak, yak_root):
+    from yaklib.sync import confirm_discard_pending, has_pending
+    tid = create_task(yak, "with sidecar")
+    _write_sidecar(yak_root, tid, {"yak_id": tid, "fields": [{"name": "x"}]})
+    called = []
+    res = confirm_discard_pending(
+        _yaks(yak_root), tid, force=True,
+        prompt_fn=lambda _msg: called.append("prompt") or False)
+    assert res is True
+    assert called == []  # force skips the prompt
+    assert not has_pending(_yaks(yak_root), tid)
+    # Backup file should exist.
+    bak = sidecar_path(_yaks(yak_root), tid).with_suffix(".yaml.bak")
+    assert bak.exists()
+
+
+def test_confirm_discard_pending_yes_clears(yak, yak_root):
+    from yaklib.sync import confirm_discard_pending, has_pending
+    tid = create_task(yak, "with sidecar")
+    _write_sidecar(yak_root, tid, {"yak_id": tid})
+    res = confirm_discard_pending(_yaks(yak_root), tid,
+                                  prompt_fn=lambda _msg: True)
+    assert res is True
+    assert not has_pending(_yaks(yak_root), tid)
+
+
+def test_confirm_discard_pending_no_keeps_sidecar(yak, yak_root):
+    from yaklib.sync import confirm_discard_pending, has_pending
+    tid = create_task(yak, "with sidecar")
+    _write_sidecar(yak_root, tid, {"yak_id": tid})
+    res = confirm_discard_pending(_yaks(yak_root), tid,
+                                  prompt_fn=lambda _msg: False)
+    assert res is False
+    assert has_pending(_yaks(yak_root), tid)
+
+
+def test_auto_clear_pending_silently_backs_up(yak, yak_root):
+    from yaklib.sync import auto_clear_pending, has_pending
+    tid = create_task(yak, "with sidecar")
+    _write_sidecar(yak_root, tid, {"yak_id": tid, "fields": []})
+    assert auto_clear_pending(_yaks(yak_root), tid) is True
+    assert not has_pending(_yaks(yak_root), tid)
+    bak = sidecar_path(_yaks(yak_root), tid).with_suffix(".yaml.bak")
+    assert bak.exists()
+    # Idempotent — running again is a no-op.
+    assert auto_clear_pending(_yaks(yak_root), tid) is False
+
+
+def test_cli_update_aborts_on_pending_sidecar_without_force(yak, yak_root):
+    """An interactive `yak update` against a yak with a pending sidecar
+    refuses (since stdin isn't a tty in tests — the non-interactive
+    refusal path)."""
+    tid = create_task(yak, "with sidecar")
+    _write_sidecar(yak_root, tid, {"yak_id": tid})
+    res = yak("update", tid, "--title", "renamed", check=False)
+    # Returns 0 (graceful abort, not error), but the title is unchanged
+    # and the sidecar still exists.
+    assert res.returncode == 0
+    t = yak("show", tid, "--json").json()
+    assert t["title"] == "with sidecar"
+    assert has_pending(_yaks(yak_root), tid)
+
+
+def test_cli_update_with_force_discards_pending(yak, yak_root):
+    tid = create_task(yak, "before")
+    _write_sidecar(yak_root, tid, {"yak_id": tid})
+    yak("update", tid, "--title", "after", "--force-discard-pending")
+    t = yak("show", tid, "--json").json()
+    assert t["title"] == "after"
+    assert not has_pending(_yaks(yak_root), tid)
+    # Sidecar backup is preserved.
+    bak = sidecar_path(_yaks(yak_root), tid).with_suffix(".yaml.bak")
+    assert bak.exists()
+
+
+def test_cli_update_last_synced_only_skips_gate(yak, yak_root):
+    """The gate must NOT fire when the only change is --last-synced —
+    that's the sidecar-resolution path itself (skill apply stamps it)."""
+    tid = create_task(yak, "syncing")
+    _write_sidecar(yak_root, tid, {"yak_id": tid})
+    # No --force-discard-pending; should still succeed.
+    yak("update", tid, "--last-synced", "2026-04-25T12:00:00Z")
+    t = yak("show", tid, "--json").json()
+    assert t["last_synced"] == "2026-04-25T12:00:00Z"
+    # And the sidecar is still there (not discarded).
+    assert has_pending(_yaks(yak_root), tid)
+
+
+def test_cli_slaughter_auto_clears_pending(yak, yak_root):
+    """slaughter is a carve-out: silently drops the sidecar."""
+    tid = create_task(yak, "doomed")
+    _write_sidecar(yak_root, tid, {"yak_id": tid})
+    yak("slaughter", tid)
+    assert not has_pending(_yaks(yak_root), tid)
+    # Backup left for safety.
+    bak = sidecar_path(_yaks(yak_root), tid).with_suffix(".yaml.bak")
+    assert bak.exists()
+
+
+def test_cli_shave_aborts_on_pending_without_force(yak, yak_root):
+    tid = create_task(yak, "still hairy")
+    _write_sidecar(yak_root, tid, {"yak_id": tid})
+    res = yak("shave", tid, check=False)
+    assert res.returncode == 0
+    # Yak still hairy, sidecar still present.
+    assert (yak_root / ".yaks" / "hairy" / f"{tid}.md").exists()
+    assert has_pending(_yaks(yak_root), tid)
+
+
 def test_apply_sidecar_locally_merged_value_none_falls_through():
     """merged_value: null (the schema default) shouldn't suppress upstream."""
     from yaklib.sync import apply_sidecar_locally

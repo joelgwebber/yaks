@@ -84,6 +84,106 @@ def clear_sidecar(root: Path, yak_id: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Mutation gating (Phase 5 of bf54.11) — warn-and-re-plan helper.
+# ---------------------------------------------------------------------------
+
+
+def _backup_and_clear(root: Path, yak_id: str) -> bool:
+    """Move the sidecar to ``<id>.yaml.bak`` and remove the original.
+
+    Returns True if a sidecar existed and was backed up, False otherwise.
+    The .bak file is overwritten if one already exists.
+    """
+    p = sidecar_path(root, yak_id)
+    if not p.exists():
+        return False
+    bak = p.with_suffix(".yaml.bak")
+    if bak.exists():
+        bak.unlink()
+    p.rename(bak)
+    return True
+
+
+def auto_clear_pending(root: Path, yak_id: str) -> bool:
+    """Silently back up + remove a pending sidecar (used by slaughter).
+
+    Returns True if a sidecar was cleared.
+    """
+    return _backup_and_clear(root, yak_id)
+
+
+def _count_pending_items(sidecar_data: dict) -> int:
+    n = 0
+    for f in sidecar_data.get("fields") or []:
+        if f.get("resolution") in (None, "pending"):
+            n += 1
+    for bucket in ("comments_up", "comments_down",
+                   "attachments_up", "attachments_down"):
+        for item in sidecar_data.get(bucket) or []:
+            if item.get("resolution") in (None, "pending"):
+                n += 1
+    return n
+
+
+def confirm_discard_pending(
+    root: Path,
+    yak_id: str,
+    *,
+    force: bool = False,
+    prompt_fn=None,
+) -> bool:
+    """Gate a yak mutation when a pending sidecar exists.
+
+    Returns True when the caller may proceed (no sidecar, force=True, or
+    user said yes — in which case the sidecar has been backed up + cleared).
+    Returns False when the caller should abort.
+
+    ``prompt_fn(message) -> bool`` is the I/O hook. Defaults to a stdin-
+    based y/N prompt (refuses non-interactively unless ``force`` is set).
+    """
+    if not has_pending(root, yak_id):
+        return True
+    if force:
+        _backup_and_clear(root, yak_id)
+        return True
+
+    sidecar_data: dict = {}
+    try:
+        sidecar_data = load_sidecar(sidecar_path(root, yak_id)) or {}
+    except Exception:
+        pass
+    n = _count_pending_items(sidecar_data)
+    detail = f" ({n} unresolved item{'s' if n != 1 else ''})" if n else ""
+    msg = (f"yak {yak_id} has a pending sync plan{detail}.\n"
+           f"Editing will invalidate the plan and discard it.\n"
+           f"Continue? [y/N]: ")
+
+    if prompt_fn is None:
+        prompt_fn = _stdin_yn_prompt
+    if not prompt_fn(msg):
+        return False
+    _backup_and_clear(root, yak_id)
+    return True
+
+
+def _stdin_yn_prompt(message: str) -> bool:
+    """Default prompt: write to stderr, read y/N from stdin. Refuses if
+    stdin isn't a tty (so scripted callers must pass --force-discard-pending)."""
+    import sys
+    if not sys.stdin.isatty():
+        sys.stderr.write(
+            message + "(non-interactive; pass --force-discard-pending to proceed)\n")
+        return False
+    sys.stderr.write(message)
+    sys.stderr.flush()
+    try:
+        line = sys.stdin.readline().strip().lower()
+    except (KeyboardInterrupt, EOFError):
+        return False
+    return line in ("y", "yes")
+
+
+# ---------------------------------------------------------------------------
 # Sweep helpers (bf54.2)
 # ---------------------------------------------------------------------------
 

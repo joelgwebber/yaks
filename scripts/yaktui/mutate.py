@@ -22,6 +22,7 @@ from yaklib import artifacts as _artifacts
 from yaklib import clipboard as _clipboard
 from yaklib import deps as _deps
 from yaklib import reparent as _reparent
+from yaklib import sync as _sync
 from yaklib.model import (
     DEAD,
     HAIRY,
@@ -165,6 +166,30 @@ def edit_file_in_editor(app, path: Path) -> str | None:
 # Selection helper shared by create/edit
 # ---------------------------------------------------------------------------
 
+def _gate_pending_tui(app, tid: str) -> bool:
+    """TUI wrapper for the pending-sidecar gate. Returns True to proceed.
+
+    Uses ``_dialogs.confirm`` so the prompt is consistent with other TUI
+    confirmations. On yes, backs up + clears the sidecar. On no, sets a
+    notification and returns False.
+    """
+    if not _sync.has_pending(app.root, tid):
+        return True
+    n = 0
+    try:
+        sd = _sync.load_sidecar(_sync.sidecar_path(app.root, tid)) or {}
+        n = _sync._count_pending_items(sd)
+    except Exception:
+        pass
+    detail = f" ({n} unresolved)" if n else ""
+    msg = (f"{tid}: pending sync plan{detail}. Discard and edit? (y/N): ")
+    if _dialogs.confirm(app.stdscr, msg):
+        _sync.auto_clear_pending(app.root, tid)
+        return True
+    app.notification = f"{tid}: edit cancelled (pending sync plan kept)"
+    return False
+
+
 def _select_task(app, tid: str) -> None:
     """After reload, move the cursor to *tid* and rebuild detail."""
     for i, (_, t, _, _) in enumerate(app.tasks):
@@ -236,6 +261,8 @@ def edit_task(app, tid: str) -> None:
     if not result:
         app.notification = f"{tid} not found"
         return
+    if not _gate_pending_tui(app, tid):
+        return
 
     _, path = result
     original = load_task(path)
@@ -289,6 +316,10 @@ def delete_task(app, tid: str) -> None:
         app.notification = "delete cancelled"
         return
 
+    # Sidecar would be orphaned by the delete — drop it silently. The
+    # delete confirm above already serves as the destructive-action prompt.
+    _sync.auto_clear_pending(app.root, tid)
+
     try:
         path.unlink()
     except OSError as e:
@@ -325,6 +356,8 @@ def quick_adjust_priority(app, tid: str) -> None:
     if task.get("priority") == new_p:
         app.notification = f"{tid} already p{new_p}"
         return
+    if not _gate_pending_tui(app, tid):
+        return
     task["priority"] = new_p
     task["updated"] = now_iso()
     save_task(path, task)
@@ -347,6 +380,8 @@ def quick_adjust_type(app, tid: str) -> None:
     new_t = type_map[choice]
     if task.get("type") == new_t:
         app.notification = f"{tid} already {new_t}"
+        return
+    if not _gate_pending_tui(app, tid):
         return
     task["type"] = new_t
     task["updated"] = now_iso()
@@ -380,6 +415,11 @@ def quick_adjust_state(app, tid: str) -> None:
     if dest == cur_status:
         app.notification = f"{tid} already {dest}"
         return
+    if dest == DEAD:
+        # Slaughter carve-out: silently drop any pending sidecar.
+        _sync.auto_clear_pending(app.root, tid)
+    elif not _gate_pending_tui(app, tid):
+        return
     ok, msg = move_task(app.root, tid, dest)
     if not ok:
         app.notification = msg
@@ -402,6 +442,8 @@ def quick_adjust_labels(app, tid: str) -> None:
     new_labels = [l.strip() for l in edited.split(",") if l.strip()] if edited.strip() else []
     if new_labels == current:
         app.notification = "labels unchanged"
+        return
+    if not _gate_pending_tui(app, tid):
         return
     if new_labels:
         task["labels"] = new_labels
@@ -432,6 +474,8 @@ def add_dependency(app, tid: str) -> None:
     if _deps.depends_on_transitively(app.root, target, tid):
         app.notification = f"refused: would create a cycle ({target} -> {tid})"
         return
+    if not _gate_pending_tui(app, tid):
+        return
     deps = list(existing_deps)
     deps.append(target)
     task["depends_on"] = deps
@@ -454,6 +498,8 @@ def remove_dependency(app, tid: str, dep_id: str) -> None:
     if not _dialogs.confirm(app.stdscr,
                             f"Remove dep {tid} -/-> {dep_id}? (y/N): "):
         app.notification = "remove dep cancelled"
+        return
+    if not _gate_pending_tui(app, tid):
         return
     deps.remove(dep_id)
     if deps:
@@ -532,6 +578,8 @@ def reparent_task(app, tid: str) -> None:
     if not _dialogs.confirm(app.stdscr, summary):
         app.notification = "reparent cancelled"
         return
+    if not _gate_pending_tui(app, tid):
+        return
 
     try:
         _reparent.apply(plan, app.root)
@@ -558,6 +606,8 @@ def add_comment(app, tid: str) -> None:
     path, task = _load(app, tid)
     if path is None:
         return
+    if not _gate_pending_tui(app, tid):
+        return
     now = now_iso()
     # Comment block: thematic break + sigil-and-iso line + body. Sigil ▸
     # is the unambiguous parse marker; thematic break gives raw-markdown
@@ -581,6 +631,8 @@ def attach_file(app, tid: str) -> None:
                                       vim=app.vim_mode)
     if src_input is None:
         app.notification = "attach cancelled"
+        return
+    if not _gate_pending_tui(app, tid):
         return
 
     adir = _artifacts.artifacts_dir(app.root, tid)
