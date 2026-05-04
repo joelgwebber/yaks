@@ -62,11 +62,13 @@ fields:                            # one entry per field that differs
     upstream: 1
     direction: upstream            # which side wins for this field
     resolution: auto               # auto | pending | approve | skip
+    capability: ok                 # informational; from sync_caps
   - name: title
     local: "...local edit..."
     upstream: "...original..."
     direction: pending             # user must pick local or upstream
     resolution: pending
+    capability: ok
 
 comments_up:                       # local notes not present upstream
   - body: "..."
@@ -100,11 +102,28 @@ attachments_down:
 `notes` is an optional list of plain-text annotations describing things the user should know about the *plan itself* — not field-level decisions. The skill emits a note when:
 
 - A field has been excluded from the diff because the tracker doesn't support it (e.g. priority on GitHub).
+- A field's `direction: local` push is disabled by capability and would require manual upstream editing (e.g. Jira description ADF round-trip).
 - A bucket can't be ferried via MCP and requires a manual hand-off (e.g. attachments on Jira/GitHub).
 - The transport is degraded or cached (e.g. MCP unreachable; plan generated from snapshot).
 - A normalizer was applied during diff (e.g. Linear markdown canonicalization).
+- A status mapping is binary or compressed (e.g. GitHub OPEN/CLOSED; "shaving" has no upstream representation).
 
 Notes live only in the sidecar — they do not write back to the yak. The TUI surfaces them above the field table.
+
+### Capability-driven `notes:` recipes
+
+Drive these from the per-tracker matrix in `scripts/yaklib/sync_caps.py` (`TRACKER_CAPS`). At plan time, walk each `(tracker, field)` and emit the matching note when the capability isn't `ok`:
+
+| Capability | Note template |
+|---|---|
+| `n/a` | `"<field>: <tracker> source — local-only, not diffed"` |
+| `lossy` | `"<field>: <tracker> source — local→upstream push disabled (round-trip lossy); edit upstream manually"` |
+| `normalizer` | `"<field>: <tracker> silently normalizes content; round-trip neutralized at diff time"` |
+| `binary` (status) | `"status: <tracker> source — only OPEN/CLOSED upstream; intermediate yak states (e.g. shaving) are invisible"` |
+| `transition` (status) | `"status: <tracker> source — push needs a workflow transition; may be rejected if no path exists"` |
+| `manual` (any bucket) | `"<bucket>: <tracker> source — manual ferry only (no API)"` |
+
+Emit one note per non-`ok` capability for the relevant tracker, regardless of whether the field actually differs in this plan — the user benefits from knowing the constraint up front, not just when it bites. Skip the note for `ok` and for fields that aren't in scope (e.g. don't emit a "labels" note when the matrix says `ok`).
 
 ## Plan phase
 
@@ -114,6 +133,8 @@ Notes live only in the sidecar — they do not write back to the yak. The TUI su
    - `priority` always: `direction: upstream`, `resolution: auto`.
    - `labels` (synced bucket): `direction: upstream` for new upstream labels, `direction: local` for new yak-side labels, `resolution: auto` either way (label changes are usually safe).
    - `title` / `description` / `status`: `direction: pending`, `resolution: pending` — user must decide.
+
+   For each field row, also stamp `capability:` from `sync_caps.push_capability(tracker, field)`. Skip fields whose capability is `n/a` entirely — they're documented in `notes:` instead.
 4. **Bucket comments.** Yak comments live as blocks in the description body, fenced by a thematic break and a sigil header:
 
    ```markdown
@@ -124,8 +145,9 @@ Notes live only in the sidecar — they do not write back to the yak. The TUI su
 
    The `▸` sigil at column 0 immediately after a `---` line is the unambiguous parse marker. A block extends from the `▸` line until the next `---\n▸` block or end of file. Hash-match yak comment bodies against upstream comments (normalize: strip headers, whitespace, lowercase). Anything matched is dropped. Yak-side leftovers go in `comments_up` with `resolution: pending`. Upstream-side leftovers go in `comments_down` with `resolution: auto` (external→yak ferry is a safe local write).
 5. **Bucket attachments.** Local attachments live as `![alt](artifacts/<yak-id>/<filename>)` lines in the yak description body and as files under `.yaks/artifacts/<yak-id>/`. **Parse these `![...](artifacts/...)` lines out of the description before computing the description-diff** — otherwise every yak with a local attachment shows phantom description drift. Match `(filename, size)` between local artifacts and upstream attachments. Leftovers go in the appropriate bucket with `resolution: pending` (attachments are uneven across trackers — never auto-ferry).
-6. **Write the sidecar.** Use the Write tool to put the YAML into `.yaks/.sync-pending/<yak-id>.yaml`. Include the `upstream_snapshot` so apply can detect drift later.
-7. **Summarize for the user.** Tell them how many auto items, how many pending items, and how to review (`yak sync show <id>`) and apply (`/yaks:sync <id>`).
+6. **Emit capability `notes:`.** Walk the per-tracker capability matrix (`sync_caps.TRACKER_CAPS[tracker]`) and emit one entry in the `notes:` list per non-`ok` capability, using the templates in *Capability-driven `notes:` recipes* above. Do this even for fields that don't differ in this plan — knowing the constraint up front beats hitting it later.
+7. **Write the sidecar.** Use the Write tool to put the YAML into `.yaks/.sync-pending/<yak-id>.yaml`. Include the `upstream_snapshot` so apply can detect drift later.
+8. **Summarize for the user.** Tell them how many auto items, how many pending items, and how to review (`yak sync show <id>`) and apply (`/yaks:sync <id>`).
 
 ## Apply phase
 
