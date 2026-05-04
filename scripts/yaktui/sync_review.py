@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from yaklib import sync as _sync
 from yaklib import sync_caps as _caps
 from yaklib.model import find_task_file, load_task, now_iso, save_task
+from yaktui import mutate as _mutate
 from yaktui.colors import (
     C_GHOST,
     C_HEADER,
@@ -147,18 +148,33 @@ def _build_rows(sidecar: dict) -> list[Row]:
 
 
 def _row_label(row: Row) -> str:
+    name = (str(row.item.get("name", "?")) if row.kind == "field"
+            else f"{_bucket_label(row.kind)} {row.bucket_idx}/{row.bucket_n}")
+    if _row_is_merged(row):
+        return f"*{name}"
+    return name
+
+
+def _row_is_merged(row: Row) -> bool:
+    """True when the user has authored a merged_value/merged_body for this row."""
     if row.kind == "field":
-        return str(row.item.get("name", "?"))
-    return f"{_bucket_label(row.kind)} {row.bucket_idx}/{row.bucket_n}"
+        return row.item.get("merged_value") is not None
+    if row.kind in ("comments_up", "comments_down"):
+        return row.item.get("merged_body") is not None
+    return False
 
 
 def _row_summary(row: Row) -> str:
     if row.kind == "field":
         local = _preview(row.item.get("local"))
         upstream = _preview(row.item.get("upstream"))
+        if row.item.get("merged_value") is not None:
+            merged = _preview(row.item.get("merged_value"))
+            return f"merged: {merged}"
         return f"{local} → {upstream}"
     if row.kind in ("comments_up", "comments_down"):
-        body = (row.item.get("body") or "").replace("\n", " ⏎ ")
+        body = row.item.get("merged_body") or row.item.get("body") or ""
+        body = body.replace("\n", " ⏎ ")
         author = row.item.get("author")
         prefix = f"@{author}: " if author else ""
         return f"{prefix}{body}"[:200]
@@ -322,6 +338,139 @@ def _drop_skipped_buckets(sidecar: dict) -> None:
             sidecar.pop(bucket, None)
 
 
+# ---------------------------------------------------------------------------
+# Manual edit (`e`) — produces merged_value / merged_body in the sidecar.
+# ---------------------------------------------------------------------------
+
+
+def _editor_seed_for_field(row: Row) -> tuple[str, str]:
+    """Return (initial_buffer, target_label) for a field row.
+
+    Buffer format depends on direction:
+    - upstream: pre-fill with upstream value (this is what'd be written locally).
+    - local: pre-fill with local value (this is what'd be pushed upstream).
+    - pending: two-up — local on top, divider, upstream on bottom; everything
+      after the divider line is taken as the merged value (or, if the user
+      removes the divider, the entire buffer).
+    """
+    item = row.item
+    direction = item.get("direction", "pending")
+    name = item.get("name", "?")
+    seed = item.get("merged_value")
+    if seed is not None:
+        return str(seed), f"merged value for {name} ({direction})"
+
+    if direction == "upstream":
+        val = item.get("upstream")
+        return _serialize_field(val), f"merged value for {name} (would be applied locally)"
+    if direction == "local":
+        val = item.get("local")
+        return _serialize_field(val), f"merged value for {name} (would be pushed upstream)"
+    # pending: two-up
+    local = _serialize_field(item.get("local"))
+    upstream = _serialize_field(item.get("upstream"))
+    seed = (
+        "# Merged value below the divider becomes merged_value.\n"
+        "# Above-divider content is shown only for reference.\n"
+        f"# === LOCAL ({name}) ===\n"
+        f"{local}\n"
+        "# === UPSTREAM ===\n"
+        f"{upstream}\n"
+        "# === MERGED (write your reconciliation below) ===\n"
+    )
+    return seed, f"merged value for {name} (pending — pick a side or merge)"
+
+
+def _serialize_field(val) -> str:
+    if val is None:
+        return ""
+    if isinstance(val, list):
+        return "\n".join(str(v) for v in val)
+    return str(val)
+
+
+def _deserialize_field(name: str, text: str, original):
+    """Convert editor text back to the appropriate Python type for *name*.
+
+    Matches the type of *original* (or a sensible default per field name).
+    """
+    text = text.rstrip("\n")
+    if name == "priority":
+        try:
+            return int(text.strip())
+        except (TypeError, ValueError):
+            return text.strip() or None
+    if name == "labels" or isinstance(original, list):
+        items = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        return items
+    return text
+
+
+def _parse_pending_merge(text: str) -> str:
+    """Pull the post-MERGED-divider text out of a two-up pending buffer.
+
+    If the divider is missing (user reformatted), return the buffer minus
+    any leading `# `-prefixed comment lines.
+    """
+    sentinel = "# === MERGED"
+    idx = text.find(sentinel)
+    if idx >= 0:
+        nl = text.find("\n", idx)
+        if nl >= 0:
+            return text[nl + 1:]
+        return ""
+    # No sentinel: strip leading comment lines and return.
+    lines = text.splitlines()
+    while lines and lines[0].startswith("#"):
+        lines.pop(0)
+    return "\n".join(lines)
+
+
+def _open_merged_editor(app, row: Row, tracker: str) -> str | None:
+    """Open $EDITOR for the row. Returns the message to display."""
+    cap = row.item.get("_cap_display", _caps.OK)
+    if row.kind == "field":
+        if cap == _caps.MANUAL:
+            return f"can't edit: {tracker} can't push this field (manual handoff)"
+        seed, label = _editor_seed_for_field(row)
+        if cap == _caps.LOSSY:
+            seed = (f"# WARNING: pushing this field to {tracker} is lossy "
+                    f"(round-trip degrades formatting).\n" + seed)
+        text = _mutate.edit_in_editor(app, seed)
+        if text is None:
+            return "edit cancelled"
+        if row.item.get("direction") == "pending":
+            text = _parse_pending_merge(text)
+        # Strip leading WARNING/comment lines if user kept them.
+        text = "\n".join(
+            ln for ln in text.splitlines()
+            if not ln.startswith("# WARNING")
+        )
+        merged = _deserialize_field(
+            row.item.get("name", ""), text, row.item.get("local"))
+        if merged in (None, "", []):
+            row.item.pop("merged_value", None)
+            return f"cleared merged value for {label}"
+        row.item["merged_value"] = merged
+        return f"set merged value for {row.item.get('name')}"
+
+    if row.kind in ("comments_up", "comments_down"):
+        if row.kind == "comments_up" and cap == _caps.MANUAL:
+            return f"can't edit: {tracker} can't post comments (manual handoff)"
+        seed = row.item.get("merged_body") or row.item.get("body") or ""
+        text = _mutate.edit_in_editor(app, seed)
+        if text is None:
+            return "edit cancelled"
+        text = text.rstrip("\n")
+        if not text:
+            row.item.pop("merged_body", None)
+            return "cleared merged body"
+        row.item["merged_body"] = text
+        return "set merged body"
+
+    return "can't edit attachment metadata"
+
+
 def open_review(app, yak_id: str) -> None:
     """Open the sidecar review dialog for *yak_id*."""
     sidecar_path = _sync.sidecar_path(app.root, yak_id)
@@ -384,8 +533,8 @@ def open_review(app, yak_id: str) -> None:
             safe_addstr(app.stdscr, h - 2, 0, message[:w],
                         curses.color_pair(C_SEARCH) | curses.A_BOLD)
 
-        footer = ("space/Enter: cycle res  d: cycle dir  s: skip  p: pending  "
-                  "[/]: jump bucket  A: apply  D: discard  q/Esc: leave")
+        footer = ("space: res  d: dir  e: edit  s: skip  p: pending  "
+                  "[/]: bucket  A: apply  D: discard  q/Esc: leave")
         safe_addstr(app.stdscr, h - 1, 0, footer[:w],
                     curses.color_pair(C_HELP))
 
@@ -438,7 +587,19 @@ def open_review(app, yak_id: str) -> None:
                                    f"to {tracker} (n/a)")
                     else:
                         row.item["direction"] = nxt
-                        message = ""
+                        # Direction change invalidates a merged_value:
+                        # the merge target is implicit in direction, so
+                        # the prior reconciliation no longer maps.
+                        if row.item.pop("merged_value", None) is not None:
+                            message = (f"{row.item.get('name')}: direction "
+                                       f"→ {nxt}; cleared merged value")
+                        else:
+                            message = ""
+        elif key == ord("e"):
+            if rows and 0 <= sel < len(rows):
+                message = _open_merged_editor(app, rows[sel], tracker) or ""
+                # Editor exits curses temporarily; redraw cleanly.
+                app.stdscr.clear()
         elif key == ord("D"):
             if confirm(app.stdscr,
                        f"Discard sidecar for {yak_id}? (y/N): "):

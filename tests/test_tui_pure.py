@@ -365,3 +365,60 @@ def test_sync_review_row_capability_prefers_sidecar_value():
     # Comments_down on any tracker is always "ok" — safe local write.
     row = Row(kind="comments_down", item={"body": "x"})
     assert _row_capability(row, "github") == "ok"
+
+
+def test_sync_review_row_summary_prefers_merged_value():
+    from yaktui.sync_review import Row, _row_summary
+    row = Row(kind="field", item={"name": "title", "local": "L", "upstream": "U",
+                                  "merged_value": "M"})
+    assert _row_summary(row) == "merged: M"
+    # When merged_value is None, falls through to local → upstream.
+    row = Row(kind="field", item={"name": "title", "local": "L", "upstream": "U"})
+    assert _row_summary(row) == "L → U"
+
+
+def test_sync_review_row_label_marks_merged_with_star():
+    from yaktui.sync_review import Row, _row_label
+    plain = Row(kind="field", item={"name": "title"})
+    edited = Row(kind="field", item={"name": "title", "merged_value": "x"})
+    assert _row_label(plain) == "title"
+    assert _row_label(edited) == "*title"
+
+
+def test_sync_review_parse_pending_merge_extracts_post_divider():
+    from yaktui.sync_review import _parse_pending_merge
+    text = (
+        "# === LOCAL (title) ===\n"
+        "old title\n"
+        "# === UPSTREAM ===\n"
+        "raw upstream title\n"
+        "# === MERGED (write your reconciliation below) ===\n"
+        "reconciled title\n"
+        "second line\n"
+    )
+    out = _parse_pending_merge(text)
+    assert out == "reconciled title\nsecond line\n"
+
+
+def test_sync_review_parse_pending_merge_handles_missing_divider():
+    """User stripped the divider — return everything after leading comments."""
+    from yaktui.sync_review import _parse_pending_merge
+    text = "# leading comment\n# more\nactual content\nmore content\n"
+    assert _parse_pending_merge(text) == "actual content\nmore content"
+
+
+def test_sync_review_deserialize_field_handles_priority_int():
+    from yaktui.sync_review import _deserialize_field
+    assert _deserialize_field("priority", "2\n", 3) == 2
+    # Non-numeric reverts to string (caller can validate).
+    assert _deserialize_field("priority", "high", 3) == "high"
+
+
+def test_sync_review_deserialize_field_handles_labels_list():
+    from yaktui.sync_review import _deserialize_field
+    assert _deserialize_field("labels", "bug\nurgent\n\n", ["x"]) == ["bug", "urgent"]
+
+
+def test_sync_review_deserialize_field_default_is_string():
+    from yaktui.sync_review import _deserialize_field
+    assert _deserialize_field("title", "new title\n", "old") == "new title"

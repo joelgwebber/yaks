@@ -194,12 +194,17 @@ def apply_sidecar_locally(yak: dict, sidecar: dict) -> LocalApplyResult:
         if not _row_is_tui_appliable(f):
             deferred.append(f)
             continue
-        upstream = f.get("upstream")
+        # merged_value (if set by the TUI editor) supersedes upstream —
+        # it's the user's authored reconciliation.
+        if "merged_value" in f and f["merged_value"] is not None:
+            value = f["merged_value"]
+        else:
+            value = f.get("upstream")
         name = f.get("name")
-        if upstream in (None, [], ""):
+        if value in (None, [], ""):
             new_yak.pop(name, None)
         else:
-            new_yak[name] = upstream
+            new_yak[name] = value
         applied.append(f)
 
     bucket_remaining = 0

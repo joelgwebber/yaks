@@ -366,3 +366,29 @@ def test_apply_sidecar_locally_drops_field_when_upstream_empty():
     res = apply_sidecar_locally(yak, sidecar)
     assert "labels" not in res.new_yak
     assert len(res.applied) == 1
+
+
+def test_apply_sidecar_locally_uses_merged_value_when_set():
+    """merged_value supersedes upstream — it's the user's reconciliation."""
+    from yaklib.sync import apply_sidecar_locally
+    yak = {"id": "x-1", "title": "old"}
+    sidecar = {"fields": [
+        {"name": "title", "local": "old", "upstream": "raw upstream",
+         "merged_value": "merged result",
+         "direction": "upstream", "resolution": "approve"},
+    ]}
+    res = apply_sidecar_locally(yak, sidecar)
+    assert res.new_yak["title"] == "merged result"
+
+
+def test_apply_sidecar_locally_merged_value_none_falls_through():
+    """merged_value: null (the schema default) shouldn't suppress upstream."""
+    from yaklib.sync import apply_sidecar_locally
+    yak = {"id": "x-1", "title": "old"}
+    sidecar = {"fields": [
+        {"name": "title", "local": "old", "upstream": "new",
+         "merged_value": None,
+         "direction": "upstream", "resolution": "approve"},
+    ]}
+    res = apply_sidecar_locally(yak, sidecar)
+    assert res.new_yak["title"] == "new"

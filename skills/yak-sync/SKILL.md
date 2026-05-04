@@ -69,11 +69,15 @@ fields:                            # one entry per field that differs
     direction: pending             # user must pick local or upstream
     resolution: pending
     capability: ok
+    merged_value: null             # optional: user-authored reconciliation;
+                                   # supersedes both local and upstream when set
 
 comments_up:                       # local notes not present upstream
   - body: "..."
     timestamp: <iso>
     resolution: pending            # default pending; user accepts or skips
+    merged_body: null              # optional: user-edited body; supersedes
+                                   # `body` when set
 
 comments_down:                     # upstream comments not present locally
   - author: "Clint Ayres"
@@ -154,11 +158,11 @@ Emit one note per non-`ok` capability for the relevant tracker, regardless of wh
 1. **Load the sidecar** via `yak sync show <id>` (or read it directly).
 2. **Re-fetch upstream** with the same fields used at plan time.
 3. **Verify the snapshot.** Compare the current upstream against `upstream_snapshot` field-by-field. If anything changed: abort. Tell the user "upstream drifted since plan — discard and re-plan via `yak sync clear <id>` then re-run /yaks:sync." Do not apply anything.
-4. **Apply each `auto` and `approve` item.**
-   - Field with `direction: upstream` → update local via `yak.py update <id>` (or for description/comments, edit the body directly).
-   - Field with `direction: local` → push upstream via the appropriate MCP write tool.
+4. **Apply each `auto` and `approve` item.** When a row has `merged_value` (fields) or `merged_body` (comments) set, that's the authoritative content to write — supersedes both `local` and `upstream`. The TUI's manual-edit affordance produces these.
+   - Field with `direction: upstream` → update local via `yak.py update <id>` (or for description/comments, edit the body directly). Use `merged_value` if present, else `upstream`.
+   - Field with `direction: local` → push upstream via the appropriate MCP write tool. Use `merged_value` if present, else `local`. Check capability first: `manual` (e.g. Jira description) → emit a hand-off note and skip the push.
    - `comments_down` → append `---\n▸ <iso> @<author> (from <tracker>:<key>)\n<body>` block to the yak body.
-   - `comments_up` → post via the tracker's add-comment MCP tool, content as-is, no provenance prefix.
+   - `comments_up` → post via the tracker's add-comment MCP tool, content as-is (use `merged_body` if set), no provenance prefix. **After successful post, rewrite the local comment block header to include `(synced <tracker>:<comment-id>)` so next plan's hash-match dedupes it.**
    - `attachments_down` → download and place in `.yaks/artifacts/<yak-id>/`, append a body link. If the MCP can't fetch bytes, list the URL and stop — don't silently skip.
    - `attachments_up` → upload via the tracker's MCP tool. If the MCP can't upload (Atlassian, GitHub Issues), list the local path and stop — don't silently skip.
 5. **Resolve `last_synced`.** This is the watermark for "yak and upstream agreed at this point" — future syncs use it to short-circuit when `upstream.updated <= last_synced`.
