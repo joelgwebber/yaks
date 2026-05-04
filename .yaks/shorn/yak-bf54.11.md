@@ -4,7 +4,7 @@ title: Support bidirectional sync
 type: feature
 priority: 1
 created: '2026-05-01T15:40:38Z'
-updated: '2026-05-04T03:40:44Z'
+updated: '2026-05-04T15:30:44Z'
 ---
 
 After using the external issue tracker sync for a while, I'm finding that I really do need
@@ -19,3 +19,7 @@ Design doc landed at docs/design/sync.md — covers full bidirectional flow, cap
 ---
 ▸ 2026-05-04T03:40:44Z
 Implementation landed across Phases 0/4/1/2/5/3. All 166 tests pass. Plugin 0.1.71. End-to-end: capability matrix (sync_caps.py) → plan-time notes (SKILL recipes) → TUI dialog with direction toggle/bucket nav/capability column → manual edit (e → merged_value/merged_body) → mutation gating (warn-and-re-plan with slaughter/last_synced carve-outs) → skill upstream-push cookbook with comment-up provenance round-trip.
+
+---
+▸ 2026-05-04T15:30:44Z
+Live-tracker validation 2026-05-04: GH (label down + comment up + provenance dedup), Linear (title up via merged_value + comment up + provenance dedup), mutation gating refusal + --force-discard-pending + --last-synced carve-out + slaughter carve-out — all green on real /tmp/yaks-sync-{gh,linear} scratch repos. Closing bf54.11.
