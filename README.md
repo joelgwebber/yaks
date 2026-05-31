@@ -1,5 +1,7 @@
 # Yaks
 
+[![skills.sh](https://skills.sh/b/joelgwebber/yaks)](https://skills.sh/joelgwebber/yaks)
+
 Filesystem-native task tracker for AI coding agents. Markdown files with YAML frontmatter, no database, no daemon.
 
 Yaks gives your AI coding assistant persistent task tracking across sessions. Tasks are stored as markdown files (with YAML frontmatter for metadata) in a `.yaks/` directory within your project — readable, diffable, and version-controlled alongside your code. It ships as a plugin for Claude Code and OpenAI Codex, as an installable skill for Zed, and as a standalone CLI for any other agent.
@@ -26,10 +28,17 @@ The `.claude-plugin/marketplace.json` legacy path also works if Codex picks it u
 
 ### Zed
 
-Yaks ships a `skills/yak/` skill directory that follows the [Agent Skills spec](https://zed.dev/docs/ai/skills). Copy it into Zed's skills directory:
+Yaks ships a `skills/yak/` skill directory that follows the [Agent Skills spec](https://zed.dev/docs/ai/skills). Install via [skills.sh](https://skills.sh/joelgwebber/yaks):
 
 ```bash
 # Global (available in all projects)
+npx skills add joelgwebber/yaks
+```
+
+Or copy manually from a local clone:
+
+```bash
+# Global
 cp -r /path/to/yaks/skills/yak ~/.agents/skills/yak
 cp -r /path/to/yaks/skills/yak-sync ~/.agents/skills/yak-sync
 
