@@ -2,17 +2,51 @@
 
 Filesystem-native task tracker for AI coding agents. Markdown files with YAML frontmatter, no database, no daemon.
 
-Yaks is a [Claude Code plugin](https://docs.anthropic.com/en/docs/claude-code/plugins) that gives your coding assistant persistent task tracking across sessions. Tasks are stored as markdown files (with YAML frontmatter for metadata) in a `.yaks/` directory within your project — readable, diffable, and version-controlled alongside your code.
+Yaks gives your AI coding assistant persistent task tracking across sessions. Tasks are stored as markdown files (with YAML frontmatter for metadata) in a `.yaks/` directory within your project — readable, diffable, and version-controlled alongside your code. It ships as a plugin for Claude Code and OpenAI Codex, as an installable skill for Zed, and as a standalone CLI for any other agent.
 
 ## Install
 
-### As a Claude Code plugin
+### Claude Code
 
 ```
 claude plugin add --from /path/to/yaks
 ```
 
-### As a CLI tool
+The plugin bundles slash commands (`/yaks:create`, `/yaks:list`, etc.) and the `yak` skill, which activates automatically when `.yaks/` exists in a project.
+
+### OpenAI Codex
+
+Yaks ships a `.codex-plugin/plugin.json` manifest. Install it from the Codex plugin browser, or point Codex at a local clone:
+
+```bash
+codex plugin marketplace add ./path/to/yaks
+```
+
+The `.claude-plugin/marketplace.json` legacy path also works if Codex picks it up automatically from a project root.
+
+### Zed
+
+Yaks ships a `skills/yak/` skill directory that follows the [Agent Skills spec](https://zed.dev/docs/ai/skills). Copy it into Zed's skills directory:
+
+```bash
+# Global (available in all projects)
+cp -r /path/to/yaks/skills/yak ~/.agents/skills/yak
+cp -r /path/to/yaks/skills/yak-sync ~/.agents/skills/yak-sync
+
+# Project-local (inside your project, requires trusted worktree)
+cp -r /path/to/yaks/skills/yak  .agents/skills/yak
+cp -r /path/to/yaks/skills/yak-sync  .agents/skills/yak-sync
+```
+
+Once installed, the `yak` skill appears in Zed's skill catalog and activates automatically when the agent detects a `.yaks/` directory. You can also invoke it with `/yak` in the message editor. The `yak-sync` skill handles external issue tracker sync.
+
+The skills instruct Zed's agent to use the `yaks` CLI, so install that too:
+
+```bash
+uv tool install git+https://github.com/joelgwebber/yaks
+```
+
+### CLI tool (any agent)
 
 ```bash
 # From GitHub
@@ -24,17 +58,25 @@ uv tool install /path/to/yaks
 
 This puts `yaks` on your `$PATH`. All subcommands work: `yaks list`, `yaks create`, `yaks tui`, etc. Upgrade with `uv tool upgrade yaks`.
 
+For agents that don't have a Yaks plugin (Cursor, GitHub Copilot, Gemini CLI, Windsurf, Aider, etc.), the CLI is the integration point — see [Configuring your AI assistant](#configuring-your-ai-assistant-to-use-yaks) below.
+
 ## Quick start
 
-Once installed, initialize tracking in any project:
+Initialize task tracking in any project. If you're using the Claude Code plugin:
 
 ```
 /yaks:init
 ```
 
-This creates a `.yaks/` directory with `hairy/`, `shaving/`, and `shorn/` subdirectories, plus a `config.yaml`. It also appends a workflow mandate to your project's `CLAUDE.md` (or `AGENTS.md` if one exists).
+For any other agent (or directly from a terminal):
 
-From there, your coding assistant can create and manage tasks using slash commands:
+```bash
+yaks init
+```
+
+Both create a `.yaks/` directory with `hairy/`, `shaving/`, and `shorn/` subdirectories, plus a `config.yaml`. They also append a workflow mandate to `CLAUDE.md` or `AGENTS.md` (use `--agents` to force `AGENTS.md`).
+
+From there your coding assistant can create and manage tasks. With the Claude Code or Codex plugin:
 
 ```
 /yaks:create --title "Add retry logic to API client" --type feature --priority 1
@@ -43,6 +85,8 @@ From there, your coding assistant can create and manage tasks using slash comman
 /yaks:shave yak-a1b2
 /yaks:shorn yak-a1b2
 ```
+
+With any other agent, the same operations run via the `yaks` CLI — your agent calls it through Bash/shell tool access.
 
 ## How it works
 
@@ -167,9 +211,11 @@ Available settings:
 
 ## Configuring your AI assistant to use Yaks
 
-`/yaks:init` automatically appends a workflow mandate to your project's `CLAUDE.md` (or `AGENTS.md` if one exists). Use `--agents` to force writing to `AGENTS.md`.
+`yaks init` (or `/yaks:init`) automatically appends a workflow mandate to your project's `CLAUDE.md` or `AGENTS.md`. Use `--agents` to force writing to `AGENTS.md`.
 
-If you already have `.yaks/` set up and didn't get the guidance via init, add this block to your `CLAUDE.md` (or `AGENTS.md`) manually:
+`AGENTS.md` is the most portable choice — it's recognized by Claude Code, OpenAI Codex, GitHub Copilot, Gemini CLI, Zed, Cursor, Windsurf, and Aider without any extra configuration.
+
+If you already have `.yaks/` set up and want to add the mandate manually, add this block to your context file:
 
 ```markdown
 ## Task tracking
@@ -180,10 +226,24 @@ This project uses Yaks. The Yaks skill has the full workflow.
 2. Shear a yak as soon as its work is done. When using git, prefer to commit the shorn yak alongside the code changes that completed it.
 3. Check existing yaks before creating new ones.
 4. Append progress notes to yak descriptions as you work.
-5. When unsure what's next, run `/yaks:next` — don't freelance.
+5. When unsure what's next, run `yaks next` — don't freelance.
 ```
 
-The Yaks plugin skill activates automatically when `.yaks/` exists and carries the full workflow details, command reference, and task format documentation. The block above is the behavioral mandate that ensures your assistant actually follows it.
+### Platform-specific context files
+
+For agents that have their own context file convention, you can also create platform-specific files. Each file should contain the mandate above plus a note that the `yaks` CLI is available:
+
+| Platform | File | Notes |
+|----------|------|-------|
+| Claude Code | `CLAUDE.md` | Plugin handles skill injection automatically |
+| OpenAI Codex | `AGENTS.md` | Plugin handles skill injection automatically |
+| GitHub Copilot | `.github/copilot-instructions.md` | Highest-priority slot for Copilot |
+| Gemini CLI | `GEMINI.md` | Also read by Zed as a fallback |
+| Cursor | `.cursor/rules/yaks.mdc` | Use `alwaysApply: true` in frontmatter |
+| Windsurf | `.windsurfrules` | |
+| Zed | `AGENTS.md` or install the skill | Skill gives richer activation; see [Install](#install) |
+
+For Claude Code and Codex, the skill activates automatically when `.yaks/` exists and carries the full workflow details, command reference, and task format documentation. The mandate block above is what ensures your assistant actually follows the workflow.
 
 ## Requirements
 
