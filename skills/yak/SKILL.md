@@ -1,4 +1,6 @@
 ---
+name: yak
+description: Yaks task tracking workflow. Use when a .yaks/ directory exists in the project. Provides commands and guidance for managing filesystem-native tasks stored as markdown files with YAML frontmatter.
 activation:
   - .yaks/ directory exists in the project
 ---

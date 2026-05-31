@@ -1,4 +1,6 @@
 ---
+name: yak-sync
+description: Yaks sync skill for bidirectional synchronization between a yak task and its linked external issue tracker (Jira, Linear, GitHub Issues). Use when asked to sync a yak with an external tracker.
 activation:
   - User asks to sync a yak with its external issue tracker
   - User invokes /yaks:sync
