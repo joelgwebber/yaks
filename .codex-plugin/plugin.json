@@ -1,0 +1,12 @@
+{
+  "name": "yaks",
+  "version": "0.1.71",
+  "description": "Filesystem-native task tracker. Plain markdown files, no yak left unshaved.",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Yaks",
+    "shortDescription": "Filesystem-native task tracker for AI agents",
+    "longDescription": "Yaks tracks work as markdown files with YAML frontmatter in a .yaks/ directory within your project. No database, no daemon — tasks are readable, diffable, and version-controlled alongside your code.",
+    "category": "Productivity"
+  }
+}
