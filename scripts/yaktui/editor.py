@@ -38,14 +38,15 @@ def edit_multiline(
     curses.def_prog_mode()
     curses.endwin()
 
+    # Clear the terminal so the frozen TUI frame (and any previous editor
+    # sessions) don't appear as detritus above the new editor.
+    sys.stdout.write("\033[2J\033[H")
+    if label:
+        sys.stdout.write(f"\033[1m  {label}\033[0m\n\n")
+    sys.stdout.flush()
+
     result: str | None = None
     try:
-        sys.stdout.write("\n")
-        if label:
-            sys.stdout.write(f"  \033[1m{label}\033[0m  ")
-        sys.stdout.write("(Ctrl-S: save  |  Esc Esc: cancel)\n\n")
-        sys.stdout.flush()
-
         kb = KeyBindings()
 
         @kb.add("c-s")
@@ -63,6 +64,7 @@ def edit_multiline(
             vi_mode=vim,
             key_bindings=kb,
             cursor=ModalCursorShapeConfig() if vim else None,
+            bottom_toolbar="Ctrl-S: save  │  Esc Esc: cancel",
         )
     except (KeyboardInterrupt, EOFError):
         result = None
