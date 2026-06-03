@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 _scripts = str(Path(__file__).parent)
@@ -59,6 +60,7 @@ from yaktui.colors import (
 )
 from yaktui.detail import DetailLine, build_detail_lines
 from yaktui.render import TABS
+from yaktui.render import tab_counts as _tab_counts
 from yaktui.tree import apply_collapse, build_tree
 from yaktui.vim_edit import LineEditor
 
@@ -196,6 +198,7 @@ class TUI:
         self.detail_select_anchor = None  # line idx when in visual select mode
 
         # Navigation history: list of task IDs
+        self._last_click: tuple[float, int, int] = (0.0, -1, -1)  # time, my, mx
         self.nav_history = []
         self.nav_pos = -1
 
@@ -224,6 +227,12 @@ class TUI:
         except AttributeError:
             pass
         curses.mousemask(curses.ALL_MOUSE_EVENTS)
+        curses.mouseinterval(0)  # deliver BUTTON_PRESSED immediately; no held-event delay
+        # SGR extended mouse mode: ncurses on macOS only sends \033[?1000h (X10);
+        # kitty, Zed, and other modern terminals also need \033[?1006h to forward
+        # scroll-wheel events to the app instead of consuming them for scrollback.
+        sys.stdout.write("\033[?1006h")
+        sys.stdout.flush()
         self.stdscr.timeout(500)  # poll filesystem every 500ms when idle
         init_colors()
         self._task_cache: list[tuple[str, dict]] | None = None
@@ -672,15 +681,36 @@ class TUI:
                 self._scroll_viewport(+_SCROLL_STEP)
             return
 
-        # Only handle left-button events from here.
-        if not (bstate & (curses.BUTTON1_CLICKED | curses.BUTTON1_DOUBLE_CLICKED | curses.BUTTON1_PRESSED)):
+        # Only handle left-button press from here (mouseinterval=0 means
+        # CLICKED is never synthesised; we detect double-click manually).
+        if not (bstate & curses.BUTTON1_PRESSED):
             return
 
-        double = bool(bstate & curses.BUTTON1_DOUBLE_CLICKED)
-        list_y = self._list_y_start()
+        # Manual double-click: two presses on the same spot within 500 ms.
+        now = time.monotonic()
+        last_t, last_my, last_mx = self._last_click
+        double = now - last_t < 0.5 and last_my == my and abs(last_mx - mx) < 4
+        self._last_click = (now, my, mx)
 
+        # --- Tab row (y == 0) ---
+        if my == 0:
+            x = 0
+            counts = _tab_counts(self)
+            spec_statuses = self.filter_spec.statuses
+            for i, (status, label) in enumerate(TABS):
+                marker = "*" if (spec_statuses and status in spec_statuses) else ""
+                text = f" {label}{marker} ({counts[status]}) "
+                if mx < x + len(text):
+                    if i != self.tab:
+                        self.tab = i
+                        self._reset_list()
+                    break
+                x += len(text) + 1
+            return
+
+        list_y = self._list_y_start()
         if my < list_y:
-            return  # tab row, drawer, or gap — ignore
+            return  # drawer or gap row — ignore
 
         # Determine list vs. detail pane geometry.
         detail_x = None
