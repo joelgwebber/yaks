@@ -65,7 +65,8 @@ def edit_multiline(
     try:
         kb = KeyBindings()
 
-        @kb.add("c-s")
+        @kb.add("c-s", eager=True)  # eager: fires before vi normal-mode catch-all
+        @kb.add("escape", "enter")  # Alt/Meta+Enter: PT-native, can't be intercepted
         def _save(event):
             event.app.exit(result=event.app.current_buffer.text)
 
@@ -80,7 +81,7 @@ def edit_multiline(
             vi_mode=vim,
             key_bindings=kb,
             cursor=ModalCursorShapeConfig() if vim else None,
-            bottom_toolbar="Ctrl-S: save  │  Esc Esc: cancel",
+            bottom_toolbar="Ctrl-S / Alt+Enter: save  │  Esc Esc: cancel",
         )
     except (KeyboardInterrupt, EOFError):
         result = None
