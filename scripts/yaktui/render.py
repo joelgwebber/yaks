@@ -8,12 +8,14 @@ from __future__ import annotations
 import curses
 
 from yaklib.format import status_emoji
-from yaklib.model import HAIRY, SHAVING, SHORN, DEAD
+from yaklib.model import DEAD, HAIRY, SHAVING, SHORN
+
 from yaktui.colors import (
     C_CODE,
     C_HEADER,
     C_HELP,
     C_ID,
+    C_LABEL,
     C_LINK,
     C_LINK_SEL,
     C_MATCH,
@@ -57,7 +59,9 @@ def tab_counts(app):
     shows how many tasks would appear under it given the spec (ignoring
     the spec's own `statuses` override)."""
     from dataclasses import replace
+
     from yaktui.tree import build_tree
+
     spec = app.filter_spec
     if spec.is_empty():
         counts = {}
@@ -75,10 +79,10 @@ def tab_counts(app):
             counts[status] = 0
             continue
         counts[status] = sum(
-            1 for _, _, _, ghost in build_tree(
-                app.root, status, per_tab_spec,
-                tasks_cache=app._task_cache,
-                resolved_cache=app._resolved_cache)
+            1
+            for _, _, _, ghost in build_tree(
+                app.root, status, per_tab_spec, tasks_cache=app._task_cache, resolved_cache=app._resolved_cache
+            )
             if not ghost
         )
     return counts
@@ -157,14 +161,12 @@ def draw_tabs(app, y, w):
         ed = app._inline_search
         badge = ed.mode_badge()
         label = "  search: "
-        safe_addstr(app.stdscr, y, x, label,
-                    curses.color_pair(C_SEARCH) | curses.A_BOLD)
+        safe_addstr(app.stdscr, y, x, label, curses.color_pair(C_SEARCH) | curses.A_BOLD)
         cx = x + len(label)
         if badge:
             safe_addstr(app.stdscr, y, cx, badge + " ", curses.A_DIM)
             cx += len(badge) + 1
-        safe_addstr(app.stdscr, y, cx, ed.buf,
-                    curses.color_pair(C_SEARCH))
+        safe_addstr(app.stdscr, y, cx, ed.buf, curses.color_pair(C_SEARCH))
     else:
         chip = app.filter_spec.summary()
         if chip:
@@ -176,13 +178,11 @@ def draw_tabs(app, y, w):
             else:
                 total = counts[TABS[app.tab][0]]
             text = f"  filter: {chip}  ({total})"
-            safe_addstr(app.stdscr, y, x, text,
-                        curses.color_pair(C_SEARCH))
+            safe_addstr(app.stdscr, y, x, text, curses.color_pair(C_SEARCH))
 
     if app.notification:
         nx = max(x + 2, w - len(app.notification) - 2)
-        safe_addstr(app.stdscr, y, nx, app.notification,
-                    curses.color_pair(C_SEARCH) | curses.A_BOLD)
+        safe_addstr(app.stdscr, y, nx, app.notification, curses.color_pair(C_SEARCH) | curses.A_BOLD)
 
 
 # ---------------------------------------------------------------------------
@@ -219,6 +219,7 @@ def _drawer_selected_set(d, kind):
 def draw_filter_drawer(app, y0, w):
     """Render the filter drawer starting at row y0."""
     from tui import _DRAWER_ROWS
+
     d = app._drawer
     if d is None:
         return
@@ -228,7 +229,7 @@ def draw_filter_drawer(app, y0, w):
 
     for ri, (kind, label) in enumerate(_DRAWER_ROWS):
         y = y0 + ri
-        is_active = (ri == d.row)
+        is_active = ri == d.row
         label_attr = curses.A_BOLD if is_active else curses.A_DIM
         safe_addstr(stdscr, y, 2, label, label_attr)
         cx = cx_start
@@ -252,8 +253,7 @@ def draw_filter_drawer(app, y0, w):
             _draw_text_field(stdscr, y, cx, ed.buf, ed.pos, is_active, field_w)
             badge = ed.mode_badge()
             if badge:
-                safe_addstr(stdscr, y, 2 + len(label) + 1, badge,
-                            curses.A_DIM)
+                safe_addstr(stdscr, y, 2 + len(label) + 1, badge, curses.A_DIM)
             # Labels hint
             if is_active and kind == "labels_text":
                 avail = getattr(app, "_available_labels", [])
@@ -261,8 +261,7 @@ def draw_filter_drawer(app, y0, w):
                     hint = "available: " + ", ".join(avail[:12])
                     if len(avail) > 12:
                         hint += f" +{len(avail) - 12}"
-                    safe_addstr(stdscr, y, cx + field_w + 2,
-                                hint[:w - cx - field_w - 4], curses.A_DIM)
+                    safe_addstr(stdscr, y, cx + field_w + 2, hint[: w - cx - field_w - 4], curses.A_DIM)
 
     # Separator line under the drawer.
     sep_y = y0 + len(_DRAWER_ROWS)
@@ -281,7 +280,7 @@ def _draw_text_field(stdscr, y, x, buf, pos, active, field_w):
     safe_addstr(stdscr, y, x + field_w - 1, "]", curses.A_DIM)
     # Scroll offset
     offset = max(0, pos - inner_w + 1)
-    vis = buf[offset:offset + inner_w]
+    vis = buf[offset : offset + inner_w]
     pad = " " * max(0, inner_w - len(vis))
     attr = curses.A_BOLD if active else curses.A_DIM
     safe_addstr(stdscr, y, x + 1, vis + pad, attr)
@@ -290,6 +289,7 @@ def _draw_text_field(stdscr, y, x, buf, pos, active, field_w):
 def _position_drawer_cursor(app, y0, w):
     """Place the terminal cursor on the active text field in the drawer."""
     from tui import _DRAWER_ROWS
+
     d = app._drawer
     kind = _DRAWER_ROWS[d.row][0]
     if kind.endswith("_text"):
@@ -351,8 +351,7 @@ def draw_list(app, y_start, x_start, height, width):
         is_selected = idx == app.cursor
 
         if is_selected:
-            safe_addstr(stdscr, y, x_start, " " * width,
-                        curses.color_pair(C_SELECTED))
+            safe_addstr(stdscr, y, x_start, " " * width, curses.color_pair(C_SELECTED))
 
         indent = "  " * depth
         tid = task["id"]
@@ -396,7 +395,25 @@ def draw_list(app, y_start, x_start, height, width):
         safe_addstr(stdscr, y, x, type_text, type_attr)
         x += len(type_text)
 
-        remaining = width - (x - x_start) - 1
+        # Compute right-side elements: badge (collapsed/ghost) and labels.
+        right_badge = ""
+        hidden = app.collapsed_counts.get(tid, 0)
+        if hidden:
+            right_badge = f" ▶ {hidden} "
+        elif ghost and not app.filter_spec.search:
+            right_badge = f" {status_emoji(status)}"
+
+        right_label = ""
+        if getattr(app, "show_labels", True):
+            labels = task.get("labels") or []
+            if labels:
+                max_lw = min(30, max(8, width // 4))
+                label_str = "[" + ", ".join(labels) + "]"
+                right_label = label_str[:max_lw]
+
+        # Reserve right-side space: badge + (gap + label) if label present.
+        right_w = len(right_badge) + (len(right_label) + 1 if right_label else 0)
+        remaining = width - (x - x_start) - 1 - right_w
         if remaining > 0:
             display_title = title[:remaining]
             title_attr = base_attr | ghost_attr
@@ -404,19 +421,23 @@ def draw_list(app, y_start, x_start, height, width):
                 display_title = f"{status_emoji(status)} {display_title}"[:remaining]
             safe_addstr(stdscr, y, x, display_title, title_attr)
 
-        hidden = app.collapsed_counts.get(tid, 0)
-        if hidden:
-            badge = f" ▶ {hidden} "
-            bx = x_start + width - len(badge) - 1
+        # Draw label to the left of the badge.
+        if right_label:
+            badge_w = len(right_badge)
+            lx = x_start + width - 1 - badge_w - len(right_label)
+            if lx > x:
+                label_attr = base_attr if is_selected else (curses.color_pair(C_LABEL) | curses.A_DIM)
+                safe_addstr(stdscr, y, lx, right_label, label_attr)
+
+        # Draw badge at far right.
+        if right_badge:
+            bx = x_start + width - len(right_badge) - 1
             if bx > x:
-                badge_attr = (curses.A_DIM | base_attr) if not is_selected else base_attr
-                safe_addstr(stdscr, y, bx, badge, badge_attr)
-        elif ghost and not app.filter_spec.search:
-            badge = f" {status_emoji(status)}"
-            bx = x_start + width - len(badge) - 1
-            if bx > x:
-                badge_attr = ghost_badge_attr(status) | base_attr
-                safe_addstr(stdscr, y, bx, badge, badge_attr)
+                if hidden:
+                    badge_attr = (curses.A_DIM | base_attr) if not is_selected else base_attr
+                else:
+                    badge_attr = ghost_badge_attr(status) | base_attr
+                safe_addstr(stdscr, y, bx, right_badge, badge_attr)
 
 
 def draw_separator(app, y_start, x, height):
@@ -436,8 +457,7 @@ def draw_detail(app, y_start, x_start, height, width):
 
     if app.detail_search:
         match_info = f"  /{app.detail_search}  ({len(app.detail_matches)} matches)"
-        safe_addstr(stdscr, y_start, x_start, match_info[:width],
-                    curses.color_pair(C_SEARCH))
+        safe_addstr(stdscr, y_start, x_start, match_info[:width], curses.color_pair(C_SEARCH))
         y_start += 1
         height -= 1
 
@@ -461,12 +481,10 @@ def draw_detail(app, y_start, x_start, height, width):
 
         # Whole-line link highlight only applies to sectioned links
         # (task_id / open_path) — not to description lines with inline spans.
-        whole_line_link = (dl.task_id is not None or dl.open_path is not None) \
-            and not has_inline_links
+        whole_line_link = (dl.task_id is not None or dl.open_path is not None) and not has_inline_links
 
         if is_cursor:
-            fill_attr = (curses.color_pair(C_LINK_SEL) if whole_line_link
-                         else curses.color_pair(C_SELECTED))
+            fill_attr = curses.color_pair(C_LINK_SEL) if whole_line_link else curses.color_pair(C_SELECTED)
             safe_addstr(stdscr, y, x_start, " " * width, fill_attr)
             safe_addstr(stdscr, y, x_start, text, fill_attr | curses.A_BOLD)
         elif is_selected:
@@ -476,18 +494,15 @@ def draw_detail(app, y_start, x_start, height, width):
         elif whole_line_link:
             safe_addstr(stdscr, y, x_start, text, curses.color_pair(C_LINK))
         elif dl.kind == "header":
-            safe_addstr(stdscr, y, x_start, text,
-                        curses.color_pair(C_HEADER) | curses.A_BOLD)
+            safe_addstr(stdscr, y, x_start, text, curses.color_pair(C_HEADER) | curses.A_BOLD)
         elif dl.kind == "subheader":
-            safe_addstr(stdscr, y, x_start, text,
-                        curses.color_pair(C_HEADER) | curses.A_BOLD)
+            safe_addstr(stdscr, y, x_start, text, curses.color_pair(C_HEADER) | curses.A_BOLD)
         elif dl.kind == "desc":
             safe_addstr(stdscr, y, x_start, text, curses.A_DIM)
         elif dl.kind == "code":
             safe_addstr(stdscr, y, x_start, text, curses.color_pair(C_CODE))
         elif dl.kind == "md_heading":
-            safe_addstr(stdscr, y, x_start, text,
-                        curses.color_pair(C_MD_HEADING) | curses.A_BOLD)
+            safe_addstr(stdscr, y, x_start, text, curses.color_pair(C_MD_HEADING) | curses.A_BOLD)
         elif dl.kind == "quote":
             safe_addstr(stdscr, y, x_start, text, curses.A_DIM | curses.A_ITALIC)
         else:
@@ -524,8 +539,7 @@ def highlight_matches(app, y, x_start, text, width):
         if idx < 0 or idx >= width:
             break
         end = min(idx + len(q), width)
-        safe_addstr(app.stdscr, y, x_start + idx, text[idx:end],
-                    curses.color_pair(C_MATCH) | curses.A_BOLD)
+        safe_addstr(app.stdscr, y, x_start + idx, text[idx:end], curses.color_pair(C_MATCH) | curses.A_BOLD)
         pos = idx + 1
 
 
@@ -537,73 +551,96 @@ def draw_help_bar(app, y, w):
     cur_id = app._current_task_id() if hasattr(app, "_current_task_id") else None
     if cur_id and cur_id in app.pending_ids:
         hint = f"  ~ pending sync sidecar — press ~ to review {cur_id}"
-        safe_addstr(app.stdscr, y, 0, " " * w,
-                    curses.color_pair(C_SEARCH) | curses.A_BOLD)
-        safe_addstr(app.stdscr, y, 0, hint[:w],
-                    curses.color_pair(C_SEARCH) | curses.A_BOLD)
+        safe_addstr(app.stdscr, y, 0, " " * w, curses.color_pair(C_SEARCH) | curses.A_BOLD)
+        safe_addstr(app.stdscr, y, 0, hint[:w], curses.color_pair(C_SEARCH) | curses.A_BOLD)
         return
     filter_active = not app.filter_spec.is_empty()
     filter_hint = "f:filter  Esc:clear" if filter_active else "f:filter  /:search"
     if app.focus == "detail":
-        keys = ("h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  "
-                f"E:edit  D:dep  S:state  {filter_hint}  q:quit  ?:help")
+        keys = (
+            "h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  "
+            f"E:edit  D:dep  S:state  {filter_hint}  q:quit  ?:help"
+        )
     else:
-        keys = ("Tab:tab  j/k:move  l:detail  Space:collapse  c/C:new  E:edit  X:del  "
-                f"S:state  D:dep  P/T/L:adjust  {filter_hint}  ?:help")
+        keys = (
+            "Tab:tab  j/k:move  l:detail  Space:collapse  c/C:new  E:edit  X:del  "
+            f"S:state  D:dep  P/T/L:adjust  {filter_hint}  ?:help"
+        )
     safe_addstr(app.stdscr, y, 0, " " * w, curses.color_pair(C_HELP))
     safe_addstr(app.stdscr, y, 0, keys[:w], curses.color_pair(C_HELP))
 
 
 _HELP_SECTIONS = [
-    ("Movement", [
-        "j / k / ↓ / ↑         Move cursor",
-        "d / u                 Half-page down / up",
-        "PgDn / PgUp           Full-page down / up",
-        "g / G                 Top / bottom",
-        "Esc                   Clear search / back",
-    ]),
-    ("Search & filter", [
-        "f                     Open filter editor",
-        "/                     Filter editor focused on search",
-        "Esc                   Clear all filters (when active)",
-        "n / N                 Next / prev detail match",
-        "y                     Copy yak ID to clipboard",
-    ]),
-    ("Editing", [
-        "E                     Edit task in $EDITOR",
-        "M                     Add comment / note",
-        "A                     Attach artifact",
-        "X                     Delete task (confirm)",
-        "D                     Add dep (or remove if cursor on one)",
-        "P / T / L / S         Change priority / type / labels / state",
-        "R                     Reparent (move in the tree)",
-    ]),
-    ("List pane", [
-        "Tab / Shift-Tab       Next / previous status tab",
-        "[ / ]                 Previous / next tab",
-        "l / → / Enter         Show detail pane",
-        "Space                 Collapse / expand subtree",
-        "c / C                 New root / child task",
-    ]),
-    ("Detail pane", [
-        "h / ←                 Hide detail pane",
-        "Tab / Shift-Tab       Next / previous link",
-        "[ / ]                 Previous / next link",
-        "Enter                 Follow link / open artifact",
-        "O                     Open artifact externally",
-        "J / K                 Next / prev task in list",
-        "i / o                 Nav forward / back in jumplist",
-        "Backspace             Nav back (alt)",
-        "v / Shift-↑↓          Visual select; y/Enter copies",
-    ]),
-    ("Sync", [
-        "~                     Open sidecar review (yaks marked ~)",
-    ]),
-    ("General", [
-        "F / Ctrl-L            Refresh",
-        "?                     Toggle this help",
-        "q                     Quit",
-    ]),
+    (
+        "Movement",
+        [
+            "j / k / ↓ / ↑         Move cursor",
+            "d / u                 Half-page down / up",
+            "PgDn / PgUp           Full-page down / up",
+            "g / G                 Top / bottom",
+            "Esc                   Clear search / back",
+        ],
+    ),
+    (
+        "Search & filter",
+        [
+            "f                     Open filter editor",
+            "/                     Filter editor focused on search",
+            "Esc                   Clear all filters (when active)",
+            "n / N                 Next / prev detail match",
+            "y                     Copy yak ID to clipboard",
+        ],
+    ),
+    (
+        "Editing",
+        [
+            "E                     Edit task in $EDITOR",
+            "M                     Add comment / note",
+            "A                     Attach artifact",
+            "X                     Delete task (confirm)",
+            "D                     Add dep (or remove if cursor on one)",
+            "P / T / L / S         Change priority / type / labels / state",
+            "R                     Reparent (move in the tree)",
+        ],
+    ),
+    (
+        "List pane",
+        [
+            "Tab / Shift-Tab       Next / previous status tab",
+            "[ / ]                 Previous / next tab",
+            "l / → / Enter         Show detail pane",
+            "Space                 Collapse / expand subtree",
+            "c / C                 New root / child task",
+        ],
+    ),
+    (
+        "Detail pane",
+        [
+            "h / ←                 Hide detail pane",
+            "Tab / Shift-Tab       Next / previous link",
+            "[ / ]                 Previous / next link",
+            "Enter                 Follow link / open artifact",
+            "O                     Open artifact externally",
+            "J / K                 Next / prev task in list",
+            "i / o                 Nav forward / back in jumplist",
+            "Backspace             Nav back (alt)",
+            "v / Shift-↑↓          Visual select; y/Enter copies",
+        ],
+    ),
+    (
+        "Sync",
+        [
+            "~                     Open sidecar review (yaks marked ~)",
+        ],
+    ),
+    (
+        "General",
+        [
+            "F / Ctrl-L            Refresh",
+            "?                     Toggle this help",
+            "q                     Quit",
+        ],
+    ),
 ]
 
 
@@ -615,8 +652,7 @@ def draw_help_popup(app, h, w):
     # always-shown sections (Movement, Search, Editing, General) apply in
     # both contexts, so they stay regardless.
     keep_pane = "List pane" if app.focus == "list" else "Detail pane"
-    sections = [(name, lines) for name, lines in _HELP_SECTIONS
-                if name not in _PANE_SECTIONS or name == keep_pane]
+    sections = [(name, lines) for name, lines in _HELP_SECTIONS if name not in _PANE_SECTIONS or name == keep_pane]
     title = f"Yaks TUI — {keep_pane} shortcuts"
     footer = "Press any key to close"
 
@@ -639,11 +675,15 @@ def _draw_help_vertical(app, h, w, title, footer, sections, max_line):
     lines.append(footer)
     box_w = max(len(l) for l in lines) + 4
     box_h = len(lines) + 2
-    _render_popup(app, h, w, box_w, box_h, lines,
-                  bold_lines={0} | {
-                      i for i, l in enumerate(lines)
-                      if l in {name for name, _ in sections}
-                  })
+    _render_popup(
+        app,
+        h,
+        w,
+        box_w,
+        box_h,
+        lines,
+        bold_lines={0} | {i for i, l in enumerate(lines) if l in {name for name, _ in sections}},
+    )
 
 
 def _draw_help_horizontal(app, h, w, title, footer, sections, max_line):
@@ -662,35 +702,29 @@ def _draw_help_horizontal(app, h, w, title, footer, sections, max_line):
         y = start_y + i
         if y >= h:
             break
-        safe_addstr(stdscr, y, start_x, " " * box_w,
-                    curses.color_pair(C_TAB_ACTIVE))
+        safe_addstr(stdscr, y, start_x, " " * box_w, curses.color_pair(C_TAB_ACTIVE))
         if i == 0 or i == box_h - 1:
             border = "\u2500" * (box_w - 2)
             corner = "\u250c" if i == 0 else "\u2514"
             end = "\u2510" if i == 0 else "\u2518"
-            safe_addstr(stdscr, y, start_x, corner + border + end,
-                        curses.color_pair(C_TAB_ACTIVE))
+            safe_addstr(stdscr, y, start_x, corner + border + end, curses.color_pair(C_TAB_ACTIVE))
         else:
-            safe_addstr(stdscr, y, start_x, "\u2502",
-                        curses.color_pair(C_TAB_ACTIVE))
-            safe_addstr(stdscr, y, start_x + box_w - 1, "\u2502",
-                        curses.color_pair(C_TAB_ACTIVE))
+            safe_addstr(stdscr, y, start_x, "\u2502", curses.color_pair(C_TAB_ACTIVE))
+            safe_addstr(stdscr, y, start_x + box_w - 1, "\u2502", curses.color_pair(C_TAB_ACTIVE))
 
-    safe_addstr(stdscr, start_y + 1, start_x + 2, title[:box_w - 4],
-                curses.color_pair(C_TAB_ACTIVE) | curses.A_BOLD)
+    safe_addstr(stdscr, start_y + 1, start_x + 2, title[: box_w - 4], curses.color_pair(C_TAB_ACTIVE) | curses.A_BOLD)
 
     for si, (name, entries) in enumerate(sections):
         col_x = start_x + 2 + si * col_w
         if col_x + col_w > start_x + box_w - 1:
             break
-        safe_addstr(stdscr, start_y + 3, col_x, name,
-                    curses.color_pair(C_TAB_ACTIVE) | curses.A_BOLD)
+        safe_addstr(stdscr, start_y + 3, col_x, name, curses.color_pair(C_TAB_ACTIVE) | curses.A_BOLD)
         for ei, entry in enumerate(entries):
-            safe_addstr(stdscr, start_y + 4 + ei, col_x, entry[:col_w - 2],
-                        curses.color_pair(C_TAB_ACTIVE))
+            safe_addstr(stdscr, start_y + 4 + ei, col_x, entry[: col_w - 2], curses.color_pair(C_TAB_ACTIVE))
 
-    safe_addstr(stdscr, start_y + box_h - 2, start_x + 2, footer[:box_w - 4],
-                curses.color_pair(C_TAB_ACTIVE) | curses.A_DIM)
+    safe_addstr(
+        stdscr, start_y + box_h - 2, start_x + 2, footer[: box_w - 4], curses.color_pair(C_TAB_ACTIVE) | curses.A_DIM
+    )
 
 
 def _render_popup(app, h, w, box_w, box_h, lines, bold_lines=None):
@@ -703,21 +737,17 @@ def _render_popup(app, h, w, box_w, box_h, lines, bold_lines=None):
         y = start_y + i
         if y >= h:
             break
-        safe_addstr(stdscr, y, start_x, " " * box_w,
-                    curses.color_pair(C_TAB_ACTIVE))
+        safe_addstr(stdscr, y, start_x, " " * box_w, curses.color_pair(C_TAB_ACTIVE))
         if i == 0 or i == box_h - 1:
             border = "\u2500" * (box_w - 2)
             corner = "\u250c" if i == 0 else "\u2514"
             end = "\u2510" if i == 0 else "\u2518"
-            safe_addstr(stdscr, y, start_x, corner + border + end,
-                        curses.color_pair(C_TAB_ACTIVE))
+            safe_addstr(stdscr, y, start_x, corner + border + end, curses.color_pair(C_TAB_ACTIVE))
         elif i - 1 < len(lines):
             line = lines[i - 1]
             attr = curses.color_pair(C_TAB_ACTIVE)
             if (i - 1) in bold_lines:
                 attr |= curses.A_BOLD
-            safe_addstr(stdscr, y, start_x, "\u2502",
-                        curses.color_pair(C_TAB_ACTIVE))
-            safe_addstr(stdscr, y, start_x + 2, line[:box_w - 4], attr)
-            safe_addstr(stdscr, y, start_x + box_w - 1, "\u2502",
-                        curses.color_pair(C_TAB_ACTIVE))
+            safe_addstr(stdscr, y, start_x, "\u2502", curses.color_pair(C_TAB_ACTIVE))
+            safe_addstr(stdscr, y, start_x + 2, line[: box_w - 4], attr)
+            safe_addstr(stdscr, y, start_x + box_w - 1, "\u2502", curses.color_pair(C_TAB_ACTIVE))

@@ -25,6 +25,12 @@ from yaklib.model import (
     find_tasks_root,
     load_config,
 )
+from yaktui import dialogs as _dialogs
+from yaktui import keys_detail as _keys_detail
+from yaktui import keys_list as _keys_list
+from yaktui import mutate as _mutate
+from yaktui import render as _render
+from yaktui import vim_edit as _vim_edit
 from yaktui.colors import (
     C_CODE,
     C_GHOST,
@@ -46,19 +52,15 @@ from yaktui.colors import (
     C_SELECTED,
     C_TAB_ACTIVE,
     C_TYPE,
-    ghost_badge_attr as _ghost_badge_attr,
     init_colors,
 )
-from yaktui import dialogs as _dialogs
-from yaktui import vim_edit as _vim_edit
-from yaktui.vim_edit import LineEditor
-from yaktui import mutate as _mutate
-from yaktui import keys_detail as _keys_detail
-from yaktui import keys_list as _keys_list
-from yaktui import render as _render
+from yaktui.colors import (
+    ghost_badge_attr as _ghost_badge_attr,
+)
 from yaktui.detail import DetailLine, build_detail_lines
 from yaktui.render import TABS
 from yaktui.tree import apply_collapse, build_tree
+from yaktui.vim_edit import LineEditor
 
 
 def _ui_state_path_for(root: Path) -> Path:
@@ -101,9 +103,20 @@ def _drawer_chip_choices(kind):
 
 
 class _DrawerState:
-    __slots__ = ("saved", "statuses", "types", "priorities",
-                 "labels", "search", "parent",
-                 "ready", "tangled", "row", "chip_idx", "vim")
+    __slots__ = (
+        "saved",
+        "statuses",
+        "types",
+        "priorities",
+        "labels",
+        "search",
+        "parent",
+        "ready",
+        "tangled",
+        "row",
+        "chip_idx",
+        "vim",
+    )
 
     def __init__(self, spec: FilterSpec, vim: bool = False):
         self.saved = spec  # for revert-on-Esc
@@ -120,8 +133,7 @@ class _DrawerState:
         self.vim = vim
 
     def build_spec(self) -> FilterSpec:
-        lbls = tuple(s.strip() for s in self.labels.buf.split(",")
-                     if s.strip())
+        lbls = tuple(s.strip() for s in self.labels.buf.split(",") if s.strip())
         return FilterSpec(
             statuses=frozenset(self.statuses),
             types=frozenset(self.types),
@@ -134,9 +146,7 @@ class _DrawerState:
         )
 
     def editor_for(self, kind: str) -> LineEditor | None:
-        return {"labels_text": self.labels,
-                "search_text": self.search,
-                "parent_text": self.parent}.get(kind)
+        return {"labels_text": self.labels, "search_text": self.search, "parent_text": self.parent}.get(kind)
 
     def close(self) -> None:
         self.labels.close()
@@ -152,12 +162,14 @@ class _DrawerState:
 # TUI
 # ---------------------------------------------------------------------------
 
+
 class TUI:
     def __init__(self, stdscr, root):
         self.stdscr = stdscr
         self.root = root
         self.config = load_config(root)
         self.vim_mode = bool(self.config.get("vim_mode", False))
+        self.show_labels = bool(self.config.get("show_labels", True))
 
         # List state
         self.tab = 0
@@ -193,7 +205,7 @@ class TUI:
         self.notification = ""  # top-right transient notice; clears on next key
 
         # Filter drawer state (None = closed)
-        self._drawer = None       # _DrawerState | None
+        self._drawer = None  # _DrawerState | None
         self._inline_search = None  # (buf, pos) | None
 
         # Auto-refresh state
@@ -233,12 +245,11 @@ class TUI:
     def _rebuild_task_list(self):
         """Re-run build_tree for the current tab/filter, then apply collapse."""
         status = TABS[self.tab][0]
-        flat = build_tree(self.root, status, self.filter_spec,
-                          tasks_cache=self._task_cache,
-                          resolved_cache=self._resolved_cache)
+        flat = build_tree(
+            self.root, status, self.filter_spec, tasks_cache=self._task_cache, resolved_cache=self._resolved_cache
+        )
         filter_active = not self.filter_spec.is_empty()
-        self.tasks, self.collapsed_counts = apply_collapse(
-            flat, self.collapsed_ids, filter_active)
+        self.tasks, self.collapsed_counts = apply_collapse(flat, self.collapsed_ids, filter_active)
 
     def _toggle_collapse(self, tid: str):
         """Toggle collapse at the nearest parent with children. If cursor is
@@ -247,6 +258,7 @@ class TUI:
         target = tid if any(o.startswith(tid + ".") for o in all_ids) else None
         if target is None:
             from yaklib.model import parent_id as _pid
+
             target = _pid(tid)
             if target is None or target not in all_ids:
                 return
@@ -280,8 +292,7 @@ class TUI:
     def _save_ui_state(self):
         try:
             self._ui_state_path.parent.mkdir(parents=True, exist_ok=True)
-            self._ui_state_path.write_text(json.dumps(
-                {"collapsed": sorted(self.collapsed_ids)}))
+            self._ui_state_path.write_text(json.dumps({"collapsed": sorted(self.collapsed_ids)}))
         except OSError:
             pass
 
@@ -292,12 +303,15 @@ class TUI:
     def _recompute_pending(self):
         """Update pending_ids from .yaks/.sync-pending/."""
         from yaklib import sync as _sync
+
         self.pending_ids = set(_sync.list_pending(self.root))
 
     def _refresh_task_cache(self):
         """Re-read every task from disk into in-memory caches. Expensive —
         call only when the filesystem has changed."""
-        from yaklib.model import STATUSES as _STATUSES, all_tasks as _all_tasks
+        from yaklib.model import STATUSES as _STATUSES
+        from yaklib.model import all_tasks as _all_tasks
+
         cache = []
         for s in _STATUSES:
             for st, t in _all_tasks(self.root, s):
@@ -360,8 +374,7 @@ class TUI:
         self._detail_build_width = width
 
         status, task, _, _ = self.tasks[self.cursor]
-        self.detail_lines = build_detail_lines(
-            self.root, task, status, width, reverse_deps=self.reverse_deps)
+        self.detail_lines = build_detail_lines(self.root, task, status, width, reverse_deps=self.reverse_deps)
         # Start cursor on the first link, or line 0 if no links
         self.detail_line_cursor = 0
         for i, dl in enumerate(self.detail_lines):
@@ -376,8 +389,7 @@ class TUI:
             self.detail_matches = []
             return
         q = self.detail_search.lower()
-        self.detail_matches = [i for i, dl in enumerate(self.detail_lines)
-                               if q in dl.text.lower()]
+        self.detail_matches = [i for i, dl in enumerate(self.detail_lines) if q in dl.text.lower()]
 
     def _fix_scroll(self):
         h = self._list_height()
@@ -431,7 +443,6 @@ class TUI:
     def draw(self):
         _render.draw(self)
 
-
     def _safe_addstr(self, y, x, text, attr=0):
         _dialogs.safe_addstr(self.stdscr, y, x, text, attr)
 
@@ -475,10 +486,8 @@ class TUI:
             # Row-nav keys always escape the text field — otherwise you
             # can't Tab/arrow out. Tab=9, BTab, Up/Down, Ctrl-N/P (14/16).
             # In vim normal mode, j/k also exit and navigate rows.
-            row_nav_down = key in (curses.KEY_DOWN, 9, 14) or (
-                ed.mode == "normal" and key == ord("j"))
-            row_nav_up = key in (curses.KEY_UP, curses.KEY_BTAB, 16) or (
-                ed.mode == "normal" and key == ord("k"))
+            row_nav_down = key in (curses.KEY_DOWN, 9, 14) or (ed.mode == "normal" and key == ord("j"))
+            row_nav_up = key in (curses.KEY_UP, curses.KEY_BTAB, 16) or (ed.mode == "normal" and key == ord("k"))
             if row_nav_down:
                 d.row = (d.row + 1) % len(_DRAWER_ROWS)
                 d.chip_idx = 0
@@ -566,6 +575,7 @@ class TUI:
         if r == _vim_edit.ESCALATE:
             # Tab: escalate to full drawer, carrying the typed text forward.
             from dataclasses import replace as _replace
+
             spec = _replace(self.filter_spec, search=ed.buf.strip())
             ed.close()
             self._inline_search = None
@@ -576,6 +586,7 @@ class TUI:
             return
         # Live preview — cache-only, no disk scan.
         from dataclasses import replace as _replace
+
         self.filter_spec = _replace(self.filter_spec, search=ed.buf.strip())
         self._rebuild_task_list()
         if self.cursor >= len(self.tasks):
@@ -588,8 +599,7 @@ class TUI:
             return
         h = self._list_height()
         step = max(1, h // 2 if half else h - 1)
-        self.cursor = max(0, min(len(self.tasks) - 1,
-                                 self.cursor + direction * step))
+        self.cursor = max(0, min(len(self.tasks) - 1, self.cursor + direction * step))
         self._fix_scroll()
         self._rebuild_detail()
 
@@ -600,9 +610,7 @@ class TUI:
         if self.detail_search:
             h = max(1, h - 1)
         step = max(1, h // 2 if half else h - 1)
-        self.detail_line_cursor = max(
-            0, min(len(self.detail_lines) - 1,
-                   self.detail_line_cursor + direction * step))
+        self.detail_line_cursor = max(0, min(len(self.detail_lines) - 1, self.detail_line_cursor + direction * step))
         self._fix_detail_scroll()
 
     def _jump_match(self, direction):
@@ -732,17 +740,16 @@ class TUI:
 
     def _open_externally(self, path):
         """Open a file or URL using the system's default handler."""
-        import subprocess as _sp
         import platform as _pl
-        is_url = isinstance(path, str) and (
-            path.startswith("http://") or path.startswith("https://"))
+        import subprocess as _sp
+
+        is_url = isinstance(path, str) and (path.startswith("http://") or path.startswith("https://"))
         if not is_url and not Path(path).exists():
             self.notification = f"missing: {path}"
             return
         try:
             opener = "open" if _pl.system() == "Darwin" else "xdg-open"
-            _sp.Popen([opener, str(path)],
-                      stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
+            _sp.Popen([opener, str(path)], stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
             label = path if is_url else Path(path).name
             self.notification = f"opened {label}"
         except FileNotFoundError:
@@ -756,9 +763,11 @@ class TUI:
         current_id = self._current_task_id()
         # Re-sync history with current task if it's drifted (cold start,
         # user scrolled, etc.)
-        if (self.nav_pos < 0 or
-                self.nav_pos >= len(self.nav_history) or
-                (current_id and self.nav_history[self.nav_pos] != current_id)):
+        if (
+            self.nav_pos < 0
+            or self.nav_pos >= len(self.nav_history)
+            or (current_id and self.nav_history[self.nav_pos] != current_id)
+        ):
             if current_id:
                 self.nav_history = [current_id]
                 self.nav_pos = 0
@@ -766,7 +775,7 @@ class TUI:
                 self.nav_history = []
                 self.nav_pos = -1
         # Truncate forward, append target
-        self.nav_history = self.nav_history[:self.nav_pos + 1]
+        self.nav_history = self.nav_history[: self.nav_pos + 1]
         self.nav_history.append(target_id)
         self.nav_pos = len(self.nav_history) - 1
 
@@ -804,6 +813,7 @@ class TUI:
         self.filter_spec = FilterSpec()
         self.detail_search = ""
         from yaklib.model import parent_id as _pid
+
         pid = _pid(task_id)
         while pid:
             if pid in self.collapsed_ids:
@@ -879,19 +889,17 @@ class TUI:
             self.notification = f"no pending sidecar for {tid}"
             return
         from yaktui import sync_review as _sr
+
         _sr.open_review(self, tid)
 
     def _confirm(self, prompt, default_yes=False):
         return _dialogs.confirm(self.stdscr, prompt, default_yes)
 
     def _fuzzy_pick_task(self, prompt, exclude_ids=None):
-        return _dialogs.fuzzy_pick_task(self.stdscr, self.root, prompt,
-                                        exclude_ids=exclude_ids,
-                                        vim=self.vim_mode)
+        return _dialogs.fuzzy_pick_task(self.stdscr, self.root, prompt, exclude_ids=exclude_ids, vim=self.vim_mode)
 
     def _edit_prompt(self, prompt, initial=""):
-        return _dialogs.edit_prompt(self.stdscr, prompt, initial,
-                                    vim=self.vim_mode)
+        return _dialogs.edit_prompt(self.stdscr, prompt, initial, vim=self.vim_mode)
 
     def _input_prompt(self, prompt):
         return _dialogs.input_prompt(self.stdscr, prompt, vim=self.vim_mode)
@@ -925,16 +933,15 @@ class TUI:
         self._rebuild_detail()
 
     def _open_inline_search(self):
-        self._inline_search = LineEditor(
-            self.filter_spec.search, vim=self.vim_mode, allow_escalate=True)
+        self._inline_search = LineEditor(self.filter_spec.search, vim=self.vim_mode, allow_escalate=True)
 
     def _close_inline_search(self, commit: bool):
         if self._inline_search is None:
             return
         if commit:
             from dataclasses import replace as _replace
-            self.filter_spec = _replace(
-                self.filter_spec, search=self._inline_search.buf.strip())
+
+            self.filter_spec = _replace(self.filter_spec, search=self._inline_search.buf.strip())
         self._inline_search.close()
         self._inline_search = None
         curses.curs_set(0)
@@ -944,6 +951,7 @@ class TUI:
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+
 
 def main(stdscr):
     root = find_tasks_root()
