@@ -49,6 +49,12 @@ def handle(app, key) -> bool:
         app._list_page(+1, half=(key in (ord("d"), 4)))
     elif key in (curses.KEY_PPAGE, ord("u"), 21):
         app._list_page(-1, half=(key in (ord("u"), 21)))
+    # Viewport scroll (Ctrl-E / Ctrl-Y): move the viewport without moving
+    # the cursor; cursor is pulled to the edge if it goes off-screen.
+    elif key == 5:  # Ctrl-E
+        app._scroll_viewport(+1)
+    elif key == 25:  # Ctrl-Y
+        app._scroll_viewport(-1)
 
     # Filter drawer / inline search
     elif key == ord("f"):

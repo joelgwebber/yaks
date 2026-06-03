@@ -223,6 +223,7 @@ class TUI:
             curses.set_escdelay(25)  # quick Esc; default is ~1s
         except AttributeError:
             pass
+        curses.mousemask(curses.ALL_MOUSE_EVENTS)
         self.stdscr.timeout(500)  # poll filesystem every 500ms when idle
         init_colors()
         self._task_cache: list[tuple[str, dict]] | None = None
@@ -452,6 +453,16 @@ class TUI:
         # Clear transient notification on any input
         self.notification = ""
 
+        # Mouse events are handled before any modal capture so scroll/click
+        # work even when the filter drawer is open.
+        if key == curses.KEY_MOUSE:
+            try:
+                _, mx, my, _, bstate = curses.getmouse()
+                self._handle_mouse(bstate, mx, my)
+            except curses.error:
+                pass
+            return True
+
         # Filter drawer captures all input when open.
         if self._drawer is not None:
             self._handle_drawer_key(key)
@@ -593,6 +604,112 @@ class TUI:
             self.cursor = max(0, len(self.tasks) - 1)
         self._fix_scroll()
         self._rebuild_detail()
+
+    # -- Mouse support -------------------------------------------------------
+
+    def _list_y_start(self) -> int:
+        """Row index where the list pane begins (mirrors render.py's list_y)."""
+        drawer_h = self._drawer.height if self._drawer else 0
+        return 1 + drawer_h + 1
+
+    def _scroll_viewport(self, delta: int) -> None:
+        """Scroll the list viewport by *delta* rows without moving the cursor.
+
+        The cursor stays on the same task if it remains visible.  If scrolling
+        would hide it, the cursor is pulled to the nearest visible edge
+        (vim Ctrl-E / Ctrl-Y semantics).
+        """
+        n = len(self.tasks)
+        if n == 0:
+            return
+        h = self._list_height()
+        self.scroll = max(0, min(max(0, n - h), self.scroll + delta))
+        changed = False
+        if self.cursor < self.scroll:
+            self.cursor = self.scroll
+            changed = True
+        elif self.cursor >= self.scroll + h:
+            self.cursor = self.scroll + h - 1
+            changed = True
+        if changed:
+            self._rebuild_detail()
+
+    def _scroll_detail_viewport(self, delta: int) -> None:
+        """Scroll the detail viewport by *delta* rows without moving the cursor."""
+        n = len(self.detail_lines)
+        if n == 0:
+            return
+        h = self._detail_height()
+        if self.detail_search:
+            h = max(1, h - 1)
+        self.detail_scroll = max(0, min(max(0, n - h), self.detail_scroll + delta))
+        if self.detail_line_cursor < self.detail_scroll:
+            self.detail_line_cursor = self.detail_scroll
+        elif self.detail_line_cursor >= self.detail_scroll + h:
+            self.detail_line_cursor = max(0, self.detail_scroll + h - 1)
+
+    def _handle_mouse(self, bstate: int, mx: int, my: int) -> None:
+        """Dispatch a mouse event decoded from curses.getmouse()."""
+        _, w = self.stdscr.getmaxyx()
+        _SCROLL_STEP = 3
+
+        # Scroll wheel up — BUTTON4_PRESSED is reliable across terminals.
+        # Scroll wheel down: BUTTON5_PRESSED is absent on older ncurses builds
+        # (macOS ships ncurses 5.x where that constant isn't defined).  We use
+        # getattr so we get the real constant on systems that have it and fall
+        # back gracefully elsewhere (j/k/arrow-down still work).
+        _B5 = getattr(curses, "BUTTON5_PRESSED", None)
+        if bstate & curses.BUTTON4_PRESSED:
+            if self.focus == "detail":
+                self._scroll_detail_viewport(-_SCROLL_STEP)
+            else:
+                self._scroll_viewport(-_SCROLL_STEP)
+            return
+        if _B5 and (bstate & _B5):
+            if self.focus == "detail":
+                self._scroll_detail_viewport(+_SCROLL_STEP)
+            else:
+                self._scroll_viewport(+_SCROLL_STEP)
+            return
+
+        # Only handle left-button events from here.
+        if not (bstate & (curses.BUTTON1_CLICKED | curses.BUTTON1_DOUBLE_CLICKED | curses.BUTTON1_PRESSED)):
+            return
+
+        double = bool(bstate & curses.BUTTON1_DOUBLE_CLICKED)
+        list_y = self._list_y_start()
+
+        if my < list_y:
+            return  # tab row, drawer, or gap — ignore
+
+        # Determine list vs. detail pane geometry.
+        detail_x = None
+        if self.focus == "detail":
+            detail_w = max(w * 2 // 3, 40)
+            list_w = w - detail_w - 1
+            detail_x = list_w + 1
+
+        in_detail = detail_x is not None and mx >= detail_x
+
+        if in_detail:
+            # Click in detail pane: move detail_line_cursor.
+            # draw_detail starts at list_y - 1; search bar consumes one row.
+            content_y = (list_y - 1) + (1 if self.detail_search else 0)
+            dl_idx = self.detail_scroll + (my - content_y)
+            if 0 <= dl_idx < len(self.detail_lines):
+                self.detail_line_cursor = dl_idx
+                self._fix_detail_scroll()
+                if double:
+                    self._follow_link()
+        else:
+            # Click in list pane: move cursor.
+            idx = self.scroll + (my - list_y)
+            if 0 <= idx < len(self.tasks):
+                if idx == self.cursor and double and self.detail_lines:
+                    self._enter_detail()
+                elif idx != self.cursor:
+                    self.cursor = idx
+                    self._rebuild_detail()
 
     def _list_page(self, direction, half=False):
         if not self.tasks:

@@ -78,6 +78,11 @@ def handle(app, key) -> bool:
         app._detail_page(+1, half=(key in (ord("d"), 4)))
     elif key in (curses.KEY_PPAGE, ord("u"), 21):
         app._detail_page(-1, half=(key in (ord("u"), 21)))
+    # Viewport scroll (Ctrl-E / Ctrl-Y)
+    elif key == 5:  # Ctrl-E
+        app._scroll_detail_viewport(+1)
+    elif key == 25:  # Ctrl-Y
+        app._scroll_detail_viewport(-1)
 
     # Find next / prev match
     elif key == ord("n"):
