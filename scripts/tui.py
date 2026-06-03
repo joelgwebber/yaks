@@ -227,12 +227,11 @@ class TUI:
         except AttributeError:
             pass
         curses.mousemask(curses.ALL_MOUSE_EVENTS)
-        curses.mouseinterval(0)  # deliver BUTTON_PRESSED immediately; no held-event delay
-        # SGR extended mouse mode: ncurses on macOS only sends \033[?1000h (X10);
-        # kitty, Zed, and other modern terminals also need \033[?1006h to forward
-        # scroll-wheel events to the app instead of consuming them for scrollback.
-        sys.stdout.write("\033[?1006h")
-        sys.stdout.flush()
+        # mouseinterval(0): deliver BUTTON_PRESSED immediately without waiting
+        # for a release event. The default (~167ms) holds PRESSED until release
+        # arrives — scroll-wheel buttons (B4/B5) never send a release, so
+        # scroll events were silently dropped. 0 also eliminates click latency.
+        curses.mouseinterval(0)
         self.stdscr.timeout(500)  # poll filesystem every 500ms when idle
         init_colors()
         self._task_cache: list[tuple[str, dict]] | None = None
