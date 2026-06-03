@@ -197,6 +197,11 @@ class TUI:
         self._detail_build_width = 0  # width lines were wrapped for
         self.detail_select_anchor = None  # line idx when in visual select mode
 
+        # SGR mouse state (for terminals that need SGR rather than X10)
+        self._sgr_enabled: bool = False  # set in curses-init block below
+        self._sgr_pending: str | None = None  # accumulating an SGR sequence
+        self._peek_buf: list[int] = []  # re-queue from SGR prefix peek-ahead
+
         # Navigation history: list of task IDs
         self._last_click: tuple[float, int, int] = (0.0, -1, -1)  # time, my, mx
         self.nav_history = []
@@ -232,6 +237,19 @@ class TUI:
         # arrives — scroll-wheel buttons (B4/B5) never send a release, so
         # scroll events were silently dropped. 0 also eliminates click latency.
         curses.mouseinterval(0)
+        # SGR extended mouse mode: when ncurses has no XM terminfo capability
+        # (macOS ships ncurses 5.x; tigetstr('XM') is None), it only enables
+        # X10 tracking.  Terminals like Zed don't implement X10 properly and
+        # kitty/Zed both send scroll events only in SGR encoding.  We enable
+        # SGR manually and intercept the raw \033[<...M sequences in handle_key
+        # rather than relying on KEY_MOUSE (which ncurses won't fire for SGR).
+        try:
+            self._sgr_enabled = curses.tigetstr("XM") is None
+        except Exception:
+            self._sgr_enabled = False
+        if self._sgr_enabled:
+            sys.stdout.write("\033[?1006h")
+            sys.stdout.flush()
         self.stdscr.timeout(500)  # poll filesystem every 500ms when idle
         init_colors()
         self._task_cache: list[tuple[str, dict]] | None = None
@@ -432,20 +450,25 @@ class TUI:
         return max(1, h - 2 - self._drawer_height())
 
     def run(self):
-        while True:
-            self.draw()
-            key = self.stdscr.getch()
-            if key == -1:
-                # Idle timeout — poll for filesystem changes
-                self._check_fs_changes()
-                continue
-            if key == curses.KEY_RESIZE:
-                continue
-            if self.show_help:
-                self.show_help = False
-                continue
-            if not self.handle_key(key):
-                break
+        try:
+            while True:
+                self.draw()
+                key = self.stdscr.getch()
+                if key == -1:
+                    # Idle timeout — poll for filesystem changes
+                    self._check_fs_changes()
+                    continue
+                if key == curses.KEY_RESIZE:
+                    continue
+                if self.show_help:
+                    self.show_help = False
+                    continue
+                if not self.handle_key(key):
+                    break
+        finally:
+            if self._sgr_enabled:
+                sys.stdout.write("\033[?1006l")
+                sys.stdout.flush()
 
     # -- Drawing -----------------------------------------------------------
 
@@ -461,8 +484,44 @@ class TUI:
         # Clear transient notification on any input
         self.notification = ""
 
-        # Mouse events are handled before any modal capture so scroll/click
-        # work even when the filter drawer is open.
+        # --- SGR mouse handling ---
+        # Drain peek-ahead buffer (chars re-queued after SGR prefix detection).
+        if self._peek_buf:
+            if key not in (-1, curses.KEY_MOUSE):
+                self._peek_buf.append(key)
+            key = self._peek_buf.pop(0)
+
+        # Accumulate subsequent characters of an in-progress SGR sequence.
+        if self._sgr_pending is not None:
+            if 0 < key < 128:
+                self._sgr_pending += chr(key)
+                end = self._sgr_pending[-1]
+                if end in ("M", "m") or len(self._sgr_pending) > 30:
+                    seq, self._sgr_pending = self._sgr_pending, None
+                    if seq and seq[-1] in ("M", "m"):
+                        self._dispatch_sgr_mouse(seq)
+            else:
+                self._sgr_pending = None  # abort on unexpected char
+            return True
+
+        # Detect SGR sequence start: \033[< arrives as ESC then '[' then '<'.
+        # Use a non-blocking peek so we don't block if it's a bare Escape.
+        if key == 27 and self._sgr_enabled:
+            self.stdscr.timeout(0)
+            c1 = self.stdscr.getch()
+            c2 = self.stdscr.getch() if c1 == ord("[") else -1
+            self.stdscr.timeout(500)
+            if c1 == ord("[") and c2 == ord("<"):
+                self._sgr_pending = ""  # start accumulating after \033[<
+                return True
+            # Not an SGR sequence — re-queue the peeked chars.
+            if c1 != -1:
+                self._peek_buf.append(c1)
+            if c2 != -1:
+                self._peek_buf.append(c2)
+            # Fall through for normal ESC handling.
+
+        # X10 mouse events from ncurses (fires on terminals with native X10).
         if key == curses.KEY_MOUSE:
             try:
                 _, mx, my, _, bstate = curses.getmouse()
@@ -739,6 +798,41 @@ class TUI:
                 elif idx != self.cursor:
                     self.cursor = idx
                     self._rebuild_detail()
+
+    def _dispatch_sgr_mouse(self, seq: str) -> None:
+        """Dispatch an SGR mouse event from the sequence after \\033[<.
+
+        *seq* is the part after the literal prefix, e.g. ``"64;13;7M"``.
+        Columns and rows are 1-indexed in the SGR protocol.
+        """
+        # seq = "button;col;row(M|m)": M = press, m = release.
+        released = seq[-1] == "m"
+        if released:
+            return  # act only on press
+        try:
+            btn_s, col_s, row_s = seq[:-1].split(";")
+            btn = int(btn_s)
+            mx = int(col_s) - 1  # 1-indexed → 0-indexed
+            my = int(row_s) - 1
+        except (ValueError, AttributeError):
+            return
+
+        _SCROLL_STEP = 3
+        # Strip Shift/Alt/Ctrl modifier bits to get the base button number.
+        btn_base = btn & ~(4 | 8 | 16)
+
+        if btn_base == 64:  # scroll up
+            if self.focus == "detail":
+                self._scroll_detail_viewport(-_SCROLL_STEP)
+            else:
+                self._scroll_viewport(-_SCROLL_STEP)
+        elif btn_base == 65:  # scroll down
+            if self.focus == "detail":
+                self._scroll_detail_viewport(+_SCROLL_STEP)
+            else:
+                self._scroll_viewport(+_SCROLL_STEP)
+        elif btn_base == 0:  # left button
+            self._handle_mouse(curses.BUTTON1_PRESSED, mx, my)
 
     def _list_page(self, direction, half=False):
         if not self.tasks:
