@@ -161,17 +161,13 @@ def handle(app, key) -> bool:
     elif key == ord("D"):
         _mutate.handle_dep_key(app)
 
-    # Create (with type picker) — c at root, C as child of the displayed task.
+    # Create — type is selected inside the form itself
     elif key == ord("c"):
-        yak_type = app._pick_type_for_create()
-        if yak_type:
-            app._create_task(parent=None, yak_type=yak_type)
+        app._create_task(parent=None)
     elif key == ord("C"):
         parent = app._current_task_id()
         if parent:
-            yak_type = app._pick_type_for_create()
-            if yak_type:
-                app._create_task(parent=parent, yak_type=yak_type)
+            app._create_task(parent=parent)
 
     # Quick adjusts mirrored from the list pane.
     elif key == ord("P"):
@@ -203,8 +199,7 @@ def handle(app, key) -> bool:
 
     # Detail search
     elif key == ord("/"):
-        query = _dialogs.input_prompt(app.stdscr, "Detail search: ",
-                                      vim=app.vim_mode)
+        query = _dialogs.input_prompt(app.stdscr, "Detail search: ", vim=app.vim_mode)
         if query:
             app.detail_search = query
             app._apply_detail_search()

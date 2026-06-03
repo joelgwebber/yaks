@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["pyyaml>=6.0"]
+# dependencies = ["pyyaml>=6.0", "prompt-toolkit>=3.0"]
 # ///
 """Yaks TUI — curses-based terminal interface for the Yaks task tracker."""
 

@@ -2,9 +2,9 @@
 id: yak-bf54
 title: External issue tracker sync
 type: feature
-priority: 2
+priority: 4
 created: '2026-04-24T02:12:56Z'
-updated: '2026-04-25T20:02:36Z'
+updated: '2026-06-03T19:03:11Z'
 ---
 
 We have a "source" slot that can be used for external issue trackers -- JIRA, Linear, etc. But there's no formal mechanism for syncing yaks with the source issues.

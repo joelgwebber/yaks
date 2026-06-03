@@ -64,6 +64,7 @@ def handle(app, key) -> bool:
     elif key == 27:  # Escape clears filter
         if not app.filter_spec.is_empty():
             from yaklib.filter import FilterSpec as _FS
+
             app.filter_spec = _FS()
             app._reset_list()
 
@@ -73,17 +74,13 @@ def handle(app, key) -> bool:
         if tid:
             app._quick_adjust_state(tid)
 
-    # Create (with type picker)
+    # Create — type is selected inside the form itself
     elif key == ord("c"):
-        yak_type = app._pick_type_for_create()
-        if yak_type:
-            app._create_task(parent=None, yak_type=yak_type)
+        app._create_task(parent=None)
     elif key == ord("C"):
         parent = app._current_task_id()
         if parent:
-            yak_type = app._pick_type_for_create()
-            if yak_type:
-                app._create_task(parent=parent, yak_type=yak_type)
+            app._create_task(parent=parent)
 
     # Edit / delete
     elif key == ord("E"):

@@ -215,18 +215,16 @@ def _select_task(app, tid: str) -> None:
 
 
 def create_task(app, parent: str | None = None, yak_type: str = "task") -> None:
-    template = build_template(app.root, parent, yak_type=yak_type)
-    edited = edit_in_editor(app, template)
-    if edited is None or edited.strip() == template.strip():
-        app.notification = "create cancelled"
-        return
+    from yaktui import task_form as _form
 
-    try:
-        data = parse_template(edited)
-    except TemplateParseError as e:
-        app.notification = f"invalid YAML, not saved: {e}"
-        return
-    if not data or not data.get("title", "").strip():
+    data = _form.run_task_form(
+        app.stdscr,
+        app.root,
+        vim=app.vim_mode,
+        yak_type=yak_type,
+        parent=parent,
+    )
+    if not data or not data.get("title"):
         app.notification = "create cancelled"
         return
 
@@ -243,14 +241,12 @@ def create_task(app, parent: str | None = None, yak_type: str = "task") -> None:
     now = now_iso()
     task = {
         "id": tid,
-        "title": data["title"].strip(),
+        "title": data["title"],
         "type": data.get("type") or "task",
         "priority": data.get("priority") if data.get("priority") is not None else 3,
         "created": now,
         "updated": now,
     }
-    if data.get("depends_on"):
-        task["depends_on"] = data["depends_on"]
     if data.get("labels"):
         task["labels"] = data["labels"]
     if data.get("description"):
@@ -267,6 +263,8 @@ def create_task(app, parent: str | None = None, yak_type: str = "task") -> None:
 
 
 def edit_task(app, tid: str) -> None:
+    from yaktui import task_form as _form
+
     result = find_task_file(app.root, tid)
     if not result:
         app.notification = f"{tid} not found"
@@ -276,33 +274,28 @@ def edit_task(app, tid: str) -> None:
 
     _, path = result
     original = load_task(path)
-    original_id = original.get("id")
-    original_created = original.get("created")
 
-    content = path.read_text()
-    edited = edit_file_in_editor(app, path)
-    if edited is None:
+    data = _form.run_task_form(app.stdscr, app.root, vim=app.vim_mode, task=original)
+    if data is None:
         app.notification = "edit cancelled"
         return
-    if edited == content:
-        app.notification = "no changes"
-        return
 
-    try:
-        data = parse_template(edited)
-    except TemplateParseError as e:
-        app.notification = f"invalid YAML, not saved: {e}"
-        return
-    if not data or not data.get("title", "").strip():
-        app.notification = "edit cancelled (invalid)"
-        return
+    # Merge form output back into the task, preserving id/created/depends_on/source.
+    updated = {**original}
+    updated["title"] = data["title"]
+    updated["type"] = data["type"] or "task"
+    updated["priority"] = data["priority"] if data["priority"] is not None else 3
+    if data.get("labels"):
+        updated["labels"] = data["labels"]
+    else:
+        updated.pop("labels", None)
+    if data.get("description"):
+        updated["description"] = data["description"]
+    else:
+        updated.pop("description", None)
+    updated["updated"] = now_iso()
 
-    data["id"] = original_id
-    if original_created:
-        data["created"] = original_created
-    data["updated"] = now_iso()
-
-    save_task(path, data)
+    save_task(path, updated)
     app.reload()
     _select_task(app, tid)
     app.notification = f"edited {tid}"
@@ -601,8 +594,10 @@ def reparent_task(app, tid: str) -> None:
 
 
 def add_comment(app, tid: str) -> None:
-    text = _dialogs.input_prompt(app.stdscr, "Comment: ", vim=app.vim_mode)
-    if not text:
+    from yaktui import editor as _editor
+
+    text = _editor.edit_multiline(app.stdscr, vim=app.vim_mode, label="comment")
+    if not text or not text.strip():
         app.notification = "comment cancelled"
         return
     path, task = _load(app, tid)
