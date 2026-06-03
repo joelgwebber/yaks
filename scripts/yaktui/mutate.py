@@ -8,6 +8,7 @@ _rebuild_detail, notification. Everything else goes through yaklib.
 
 from __future__ import annotations
 
+import curses
 import os
 import shutil
 import subprocess
@@ -15,9 +16,7 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-import curses
 import yaml
-
 from yaklib import artifacts as _artifacts
 from yaklib import clipboard as _clipboard
 from yaklib import deps as _deps
@@ -38,12 +37,13 @@ from yaklib.model import (
     now_iso,
     save_task,
 )
-from yaktui import dialogs as _dialogs
 
+from yaktui import dialogs as _dialogs
 
 # ---------------------------------------------------------------------------
 # Template for `create` flow
 # ---------------------------------------------------------------------------
+
 
 def build_template(root: Path, parent: str | None, yak_type: str = "task") -> str:
     lines = ["---"]
@@ -92,7 +92,7 @@ def parse_template(text: str) -> dict | None:
     if end < 0:
         return None
     fm = rest[:end]
-    body = rest[end + 4:].strip()
+    body = rest[end + 4 :].strip()
     try:
         data = yaml.safe_load(fm) or {}
     except yaml.YAMLError as e:
@@ -104,6 +104,14 @@ def parse_template(text: str) -> dict | None:
         return None
     if body:
         data["description"] = body
+    # Normalize labels: YAML parses `labels: foo` as a string, but we always
+    # want a list. Split on commas the same way the CLI's _split_labels does.
+    if "labels" in data:
+        raw = data["labels"]
+        if isinstance(raw, str):
+            data["labels"] = [l.strip() for l in raw.split(",") if l.strip()]
+        elif not isinstance(raw, list):
+            del data["labels"]
     return data
 
 
@@ -111,11 +119,11 @@ def parse_template(text: str) -> dict | None:
 # Editor integration
 # ---------------------------------------------------------------------------
 
+
 def edit_in_editor(app, initial_content: str) -> str | None:
     """Suspend curses, edit *initial_content* in $EDITOR, return the result."""
     editor = os.environ.get("EDITOR", "vi")
-    tmp = tempfile.NamedTemporaryFile(
-        mode="w", suffix=".yak.md", delete=False, encoding="utf-8")
+    tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".yak.md", delete=False, encoding="utf-8")
     try:
         tmp.write(initial_content)
         tmp.close()
@@ -166,6 +174,7 @@ def edit_file_in_editor(app, path: Path) -> str | None:
 # Selection helper shared by create/edit
 # ---------------------------------------------------------------------------
 
+
 def _gate_pending_tui(app, tid: str) -> bool:
     """TUI wrapper for the pending-sidecar gate. Returns True to proceed.
 
@@ -182,7 +191,7 @@ def _gate_pending_tui(app, tid: str) -> bool:
     except Exception:
         pass
     detail = f" ({n} unresolved)" if n else ""
-    msg = (f"{tid}: pending sync plan{detail}. Discard and edit? (y/N): ")
+    msg = f"{tid}: pending sync plan{detail}. Discard and edit? (y/N): "
     if _dialogs.confirm(app.stdscr, msg):
         _sync.auto_clear_pending(app.root, tid)
         return True
@@ -203,6 +212,7 @@ def _select_task(app, tid: str) -> None:
 # ---------------------------------------------------------------------------
 # Create / edit / delete
 # ---------------------------------------------------------------------------
+
 
 def create_task(app, parent: str | None = None, yak_type: str = "task") -> None:
     template = build_template(app.root, parent, yak_type=yak_type)
@@ -334,6 +344,7 @@ def delete_task(app, tid: str) -> None:
 # Quick adjusts
 # ---------------------------------------------------------------------------
 
+
 def _load(app, tid: str):
     result = find_task_file(app.root, tid)
     if not result:
@@ -346,9 +357,9 @@ def quick_adjust_priority(app, tid: str) -> None:
     path, task = _load(app, tid)
     if path is None:
         return
-    choice = _dialogs.pick(app.stdscr,
-                           f"Priority for {tid}: 1=urgent 2=high 3=med 4=low 5=lowest  (Esc=cancel)",
-                           "12345")
+    choice = _dialogs.pick(
+        app.stdscr, f"Priority for {tid}: 1=urgent 2=high 3=med 4=low 5=lowest  (Esc=cancel)", "12345"
+    )
     if choice is None:
         app.notification = "priority unchanged"
         return
@@ -370,10 +381,7 @@ def quick_adjust_type(app, tid: str) -> None:
     if path is None:
         return
     type_map = {"t": "task", "b": "bug", "f": "feature", "i": "idea"}
-    choice = _dialogs.pick(
-        app.stdscr,
-        f"Type for {tid}: t=task b=bug f=feature i=idea  (Esc=cancel)",
-        "tbfi")
+    choice = _dialogs.pick(app.stdscr, f"Type for {tid}: t=task b=bug f=feature i=idea  (Esc=cancel)", "tbfi")
     if choice is None:
         app.notification = "type unchanged"
         return
@@ -404,10 +412,7 @@ def quick_adjust_state(app, tid: str) -> None:
     if not res:
         return
     cur_status, _ = res
-    choice = _dialogs.pick(
-        app.stdscr,
-        f"State for {tid}: h=hairy s=shaving n=shorn x=slaughter  (Esc=cancel)",
-        "hsnx")
+    choice = _dialogs.pick(app.stdscr, f"State for {tid}: h=hairy s=shaving n=shorn x=slaughter  (Esc=cancel)", "hsnx")
     if choice is None:
         app.notification = "state unchanged"
         return
@@ -434,8 +439,7 @@ def quick_adjust_labels(app, tid: str) -> None:
         return
     current = task.get("labels") or []
     initial = ", ".join(current)
-    edited = _dialogs.edit_prompt(app.stdscr, f"Labels for {tid}: ", initial,
-                                  vim=app.vim_mode)
+    edited = _dialogs.edit_prompt(app.stdscr, f"Labels for {tid}: ", initial, vim=app.vim_mode)
     if edited is None:
         app.notification = "labels unchanged"
         return
@@ -459,14 +463,15 @@ def quick_adjust_labels(app, tid: str) -> None:
 # Dependencies
 # ---------------------------------------------------------------------------
 
+
 def add_dependency(app, tid: str) -> None:
     path, task = _load(app, tid)
     if path is None:
         return
     existing_deps = set(task.get("depends_on") or [])
     target = _dialogs.fuzzy_pick_task(
-        app.stdscr, app.root, f"{tid} depends on: ",
-        exclude_ids={tid} | existing_deps, vim=app.vim_mode)
+        app.stdscr, app.root, f"{tid} depends on: ", exclude_ids={tid} | existing_deps, vim=app.vim_mode
+    )
     if target is None:
         app.notification = "add dep cancelled"
         return
@@ -495,8 +500,7 @@ def remove_dependency(app, tid: str, dep_id: str) -> None:
     if dep_id not in deps:
         app.notification = f"{tid} does not depend on {dep_id}"
         return
-    if not _dialogs.confirm(app.stdscr,
-                            f"Remove dep {tid} -/-> {dep_id}? (y/N): "):
+    if not _dialogs.confirm(app.stdscr, f"Remove dep {tid} -/-> {dep_id}? (y/N): "):
         app.notification = "remove dep cancelled"
         return
     if not _gate_pending_tui(app, tid):
@@ -537,6 +541,7 @@ def handle_dep_key(app) -> None:
 # Comments + artifact attach
 # ---------------------------------------------------------------------------
 
+
 def reparent_task(app, tid: str) -> None:
     """Move *tid* under a new parent (or to the top level).
 
@@ -544,10 +549,7 @@ def reparent_task(app, tid: str) -> None:
     needed → plan + confirm with a rename summary → apply → reload and move
     the cursor to the renamed yak.
     """
-    choice = _dialogs.pick(
-        app.stdscr,
-        f"Reparent {tid}: p=pick parent, u=unparent  (Esc=cancel)",
-        "pu")
+    choice = _dialogs.pick(app.stdscr, f"Reparent {tid}: p=pick parent, u=unparent  (Esc=cancel)", "pu")
     if choice is None:
         app.notification = "reparent cancelled"
         return
@@ -556,8 +558,8 @@ def reparent_task(app, tid: str) -> None:
         new_parent = None
     else:
         new_parent = _dialogs.fuzzy_pick_task(
-            app.stdscr, app.root, f"New parent for {tid}: ",
-            exclude_ids={tid}, vim=app.vim_mode)
+            app.stdscr, app.root, f"New parent for {tid}: ", exclude_ids={tid}, vim=app.vim_mode
+        )
         if new_parent is None:
             app.notification = "reparent cancelled"
             return
@@ -627,8 +629,7 @@ def attach_file(app, tid: str) -> None:
     if path is None:
         return
 
-    src_input = _dialogs.input_prompt(app.stdscr, "Attach path (empty = clipboard PNG): ",
-                                      vim=app.vim_mode)
+    src_input = _dialogs.input_prompt(app.stdscr, "Attach path (empty = clipboard PNG): ", vim=app.vim_mode)
     if src_input is None:
         app.notification = "attach cancelled"
         return
@@ -658,9 +659,7 @@ def attach_file(app, tid: str) -> None:
             return
         shutil.copy2(src, dest)
 
-    desc = _dialogs.input_prompt(
-        app.stdscr, f"Description for {name} (empty = filename): ",
-        vim=app.vim_mode)
+    desc = _dialogs.input_prompt(app.stdscr, f"Description for {name} (empty = filename): ", vim=app.vim_mode)
     if desc is None:
         desc = ""
     alt = desc.strip() or Path(name).stem
