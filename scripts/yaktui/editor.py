@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import curses
 import sys
+import termios
 
 
 def edit_multiline(
@@ -37,6 +38,21 @@ def edit_multiline(
 
     curses.def_prog_mode()
     curses.endwin()
+
+    # curses.endwin() restores the shell terminal state, which typically
+    # has IXON (XON/XOFF flow control) enabled.  That means Ctrl-S is
+    # intercepted by the tty driver and never reaches the application.
+    # Disable it for the duration of the PT session; reset_prog_mode()
+    # restores the curses state (which had it off) on the way back.
+    _old_tc = None
+    try:
+        fd = sys.stdin.fileno()
+        _old_tc = termios.tcgetattr(fd)
+        _new_tc = termios.tcgetattr(fd)
+        _new_tc[0] &= ~termios.IXON  # iflag: disable start/stop output ctrl
+        termios.tcsetattr(fd, termios.TCSADRAIN, _new_tc)
+    except (termios.error, AttributeError, OSError):
+        _old_tc = None
 
     # Clear the terminal so the frozen TUI frame (and any previous editor
     # sessions) don't appear as detritus above the new editor.
@@ -69,6 +85,11 @@ def edit_multiline(
     except (KeyboardInterrupt, EOFError):
         result = None
     finally:
+        if _old_tc is not None:
+            try:
+                termios.tcsetattr(fd, termios.TCSADRAIN, _old_tc)
+            except (termios.error, OSError):
+                pass
         curses.reset_prog_mode()
         stdscr.refresh()
 
