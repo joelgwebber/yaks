@@ -1,58 +1,109 @@
 """Structured task create/edit form for the yaks TUI.
 
-Provides run_task_form() which renders a full-screen modal form with:
-  - LineEditor for title and labels
-  - Chip selectors for type and priority
-  - A description field that opens prompt_toolkit for multi-line editing
-  - Ctrl-S to save, Esc / double-Esc (vim) to cancel
+Layout
+------
+  Line 0    form title bar
+  Line 1    ─── separator
+  Line 2    title      [...]          ─┐
+  Line 3    type        task ●bug …   │ compact metadata zone (1-row pitch)
+  Line 4    priority    1 2 ●3 4 5   │
+  Line 5    labels     [...]          ─┘
+  Line 6    ─── separator
+  Line 7…   content zone (scrollable):
+              ─ description ──────────────────
+                First line of description…
+                …
+              ─ ▸ 2026-06-03T12:00:00Z ──────
+                Comment text…
+  h-2       ─── separator
+  h-1       help bar
+
+Navigation: Tab/j/k move between all rows (meta + description + each comment).
+Metadata rows use LineEditor / chip pickers. Content rows open PT on Enter.
+Comments support x (delete) and n (new comment) from anywhere outside a
+text-editing row.
 """
 
 from __future__ import annotations
 
 import curses
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-from yaktui.colors import C_HEADER, C_HELP, C_P2, C_SEARCH, C_SELECTED, C_TYPE
+from yaklib.model import now_iso
+
+from yaktui.colors import C_HEADER, C_HELP, C_P2, C_SELECTED, C_TYPE
 from yaktui.dialogs import safe_addstr
-from yaktui.vim_edit import CANCEL, COMMIT, CONTINUE, LineEditor
+from yaktui.vim_edit import CANCEL, COMMIT, LineEditor
+
+# ---------------------------------------------------------------------------
+# Layout constants
+# ---------------------------------------------------------------------------
+
+_META_Y = 2  # first metadata row (after title + separator)
+_META_H = 4  # title / type / priority / labels
+_META_SEP_Y = _META_Y + _META_H  # = 6
+_CONTENT_Y = _META_SEP_Y + 1  # = 7
+_FOOTER_H = 2  # separator + help bar
+
+# Row indices
+_ROW_TITLE = 0
+_ROW_TYPE = 1
+_ROW_PRIORITY = 2
+_ROW_LABELS = 3
+_ROW_DESC = 4  # description — content zone starts here
+# Comments: _ROW_DESC + 1 + i  for comment[i]
 
 _TYPE_CHOICES = ["task", "bug", "feature", "idea"]
 _PRI_CHOICES = [1, 2, 3, 4, 5]
 
-# Display order of form rows
-_ROWS = ["title", "type", "priority", "labels", "description"]
-
-# Left-column labels (padded to the same width)
-_ROW_LABEL = {
-    "title": "title     ",
-    "type": "type      ",
-    "priority": "priority  ",
-    "labels": "labels    ",
-    "description": "desc      ",
+_META_LABELS = {
+    _ROW_TITLE: "title     ",
+    _ROW_TYPE: "type      ",
+    _ROW_PRIORITY: "priority  ",
+    _ROW_LABELS: "labels    ",
 }
+_LABEL_W = max(len(v) for v in _META_LABELS.values())
+_FIELD_X = 2
 
-_TEXT_ROWS = {"title", "labels"}
-_CHIP_ROWS = {"type", "priority"}
-_LABEL_W = max(len(v) for v in _ROW_LABEL.values())
-_FIELD_X = 2  # left margin for field labels
+_PREVIEW_DESC = 3  # max lines shown for description preview
+_PREVIEW_COMMENT = 2  # max lines shown per comment preview
 
 
 # ---------------------------------------------------------------------------
-# Body splitting helpers
+# Comment parsing helpers
 # ---------------------------------------------------------------------------
 
 
 def _split_desc(body: str) -> tuple[str, str]:
-    """Split a task body into (description, comments_tail).
+    """Split body at the first ``---\\n▸`` comment marker.
 
-    Comments begin at the first ``---\\n▸`` marker.  The tail (including
-    that marker) is preserved verbatim so comments are never disturbed.
+    Returns ``(description, tail)`` where *tail* starts with the marker.
     """
     marker = "\n---\n▸"
     idx = body.find(marker)
-    if idx < 0:
-        return body, ""
-    return body[:idx], body[idx:]
+    return (body, "") if idx < 0 else (body[:idx], body[idx:])
+
+
+def _parse_comments(tail: str) -> list[tuple[str, str]]:
+    """Parse the comment tail into [(timestamp, text), …]."""
+    if not tail:
+        return []
+    sep = "\n---\n▸"
+    raw = tail[len(sep) :]  # strip the leading separator
+    parts = raw.split(sep)
+    result = []
+    for part in parts:
+        first_nl = part.find("\n")
+        if first_nl < 0:
+            result.append((part.strip(), ""))
+        else:
+            result.append((part[:first_nl].strip(), part[first_nl + 1 :].strip()))
+    return result
+
+
+def _build_tail(comments: list[tuple[str, str]]) -> str:
+    """Rebuild the raw comment tail from a list of (timestamp, text) pairs."""
+    return "".join(f"\n---\n▸ {ts}\n{text}" for ts, text in comments)
 
 
 # ---------------------------------------------------------------------------
@@ -66,10 +117,11 @@ class _FormState:
     yak_type: str  # "task" | "bug" | "feature" | "idea"
     priority: int  # 1-5
     labels: LineEditor
-    description: str  # description text only (no comment blocks)
-    _comments: str  # raw "---\n▸…" suffix, preserved unchanged
-    row: int  # index into _ROWS for the currently focused field
+    description: str  # description body (no comment blocks)
+    comments: list  # [(timestamp, text), …]
+    row: int  # current focused row (see _ROW_* constants)
     vim: bool
+    content_scroll: int = 0  # visual lines scrolled in the content zone
 
     @classmethod
     def from_task(
@@ -82,19 +134,14 @@ class _FormState:
         body = task.get("description", "") or ""
         desc, tail = _split_desc(body)
         lbls = task.get("labels", [])
-        if isinstance(lbls, list):
-            lbls_str = ", ".join(lbls)
-        elif isinstance(lbls, str):
-            lbls_str = lbls
-        else:
-            lbls_str = ""
+        lbls_str = ", ".join(lbls) if isinstance(lbls, list) else str(lbls) if lbls else ""
         return cls(
             title=LineEditor(task.get("title", "") or "", vim=vim),
             yak_type=task.get("type", yak_type) or yak_type,
             priority=task.get("priority", 3) or 3,
             labels=LineEditor(lbls_str, vim=vim),
             description=desc.strip(),
-            _comments=tail,
+            comments=_parse_comments(tail),
             row=0,
             vim=vim,
         )
@@ -106,39 +153,86 @@ class _FormState:
     def is_valid(self) -> bool:
         return bool(self.title.buf.strip())
 
+    def total_rows(self) -> int:
+        """Total number of navigable rows."""
+        return _ROW_DESC + 1 + len(self.comments)
+
+    def comment_idx(self) -> int | None:
+        """Index into self.comments for the current row, or None."""
+        if self.row > _ROW_DESC:
+            return self.row - _ROW_DESC - 1
+        return None
+
     def to_dict(self) -> dict:
-        """Return form values as a plain dict ready for task construction."""
         raw = self.labels.buf.strip()
         labels = [l.strip() for l in raw.split(",") if l.strip()] if raw else []
-        # Re-join description with any preserved comment tail
         desc = self.description.strip()
-        if self._comments:
-            desc = desc + self._comments
+        tail = _build_tail(self.comments)
         return {
             "title": self.title.buf.strip(),
             "type": self.yak_type,
             "priority": self.priority,
             "labels": labels,
-            "description": desc or None,
+            "description": (desc + tail) or None,
         }
 
 
 # ---------------------------------------------------------------------------
-# Rendering
+# Content-zone geometry helpers
+# ---------------------------------------------------------------------------
+
+
+def _section_specs(state: _FormState) -> list[tuple[int, str | None, str, int]]:
+    """Return (row, timestamp_or_None, text, max_preview) for every content section."""
+    specs = [(_ROW_DESC, None, state.description, _PREVIEW_DESC)]
+    for i, (ts, text) in enumerate(state.comments):
+        specs.append((_ROW_DESC + 1 + i, ts, text, _PREVIEW_COMMENT))
+    return specs
+
+
+def _section_height(text: str, max_p: int) -> int:
+    """Visual height of one content section (header + content + more + blank gap)."""
+    lines = text.strip().split("\n") if text and text.strip() else []
+    shown = min(max_p, len(lines)) if lines else 1  # at least 1 for placeholder
+    more = max(0, len(lines) - shown)
+    return 1 + shown + (1 if more else 0) + 1  # header + content + [more] + gap
+
+
+def _compute_vis_starts(state: _FormState) -> dict[int, int]:
+    """Map each content row index → visual start line within the content zone."""
+    starts: dict[int, int] = {}
+    y = 0
+    for row, ts, text, max_p in _section_specs(state):
+        starts[row] = y
+        y += _section_height(text, max_p)
+    return starts
+
+
+def _fix_content_scroll(state: _FormState, zone_h: int) -> None:
+    """Ensure the active content-zone section's header is visible."""
+    if state.row < _ROW_DESC:
+        return
+    starts = _compute_vis_starts(state)
+    vis = starts.get(state.row, 0)
+    if vis < state.content_scroll:
+        state.content_scroll = vis
+    elif vis >= state.content_scroll + zone_h:
+        state.content_scroll = max(0, vis - zone_h + 1)
+
+
+# ---------------------------------------------------------------------------
+# Rendering helpers
 # ---------------------------------------------------------------------------
 
 
 def _draw_text_field(stdscr, ed: LineEditor, y: int, x: int, width: int, active: bool) -> None:
-    """Render a LineEditor inside bracket delimiters; position cursor if active."""
     inner_w = max(1, width - 2)
     offset = max(0, ed.pos - inner_w + 1)
     visible = ed.buf[offset : offset + inner_w]
     padded = visible.ljust(inner_w)[:inner_w]
-    dim = curses.A_DIM
-    bold = curses.A_BOLD if active else curses.A_DIM
-    safe_addstr(stdscr, y, x, "[", dim)
-    safe_addstr(stdscr, y, x + 1, padded, bold)
-    safe_addstr(stdscr, y, x + 1 + inner_w, "]", dim)
+    safe_addstr(stdscr, y, x, "[", curses.A_DIM)
+    safe_addstr(stdscr, y, x + 1, padded, curses.A_BOLD if active else curses.A_DIM)
+    safe_addstr(stdscr, y, x + 1 + inner_w, "]", curses.A_DIM)
     if active:
         try:
             stdscr.move(y, x + 1 + (ed.pos - offset))
@@ -146,37 +240,24 @@ def _draw_text_field(stdscr, ed: LineEditor, y: int, x: int, width: int, active:
             pass
 
 
-def draw_task_form(stdscr, state: _FormState, form_title: str) -> None:
-    """Render the full form onto stdscr (erases first)."""
-    stdscr.erase()
-    h, w = stdscr.getmaxyx()
-
-    # Title row
-    header = f"  {form_title}"
-    safe_addstr(stdscr, 0, 0, header, curses.color_pair(C_HEADER) | curses.A_BOLD)
-    safe_addstr(stdscr, 1, 0, "\u2500" * w, curses.A_DIM)
-
+def _draw_meta_zone(stdscr, state: _FormState, w: int) -> None:
+    """Render the four compact metadata rows."""
     value_x = _FIELD_X + _LABEL_W + 1
 
-    for ri, row_name in enumerate(_ROWS):
-        y = 3 + ri * 2  # 2-row pitch keeps things airy
-        if y >= h - 3:
-            break
-
+    for ri in range(_META_H):
+        y = _META_Y + ri
         active = ri == state.row
-        label = _ROW_LABEL[row_name]
+        label = _META_LABELS[ri]
         safe_addstr(stdscr, y, _FIELD_X, label, curses.A_BOLD if active else curses.A_DIM)
 
-        if row_name in _TEXT_ROWS:
-            ed = state.title if row_name == "title" else state.labels
+        if ri == _ROW_TITLE:
             field_w = max(10, w - value_x - 2)
-            _draw_text_field(stdscr, ed, y, value_x, field_w, active)
-            # vim mode badge
+            _draw_text_field(stdscr, state.title, y, value_x, field_w, active)
             if state.vim and active:
-                badge = f"[{'N' if ed.mode == 'normal' else 'I'}]"
+                badge = f"[{'N' if state.title.mode == 'normal' else 'I'}]"
                 safe_addstr(stdscr, y, w - len(badge) - 1, badge, curses.A_DIM)
 
-        elif row_name == "type":
+        elif ri == _ROW_TYPE:
             cx = value_x
             for choice in _TYPE_CHOICES:
                 sel = choice == state.yak_type
@@ -190,7 +271,7 @@ def draw_task_form(stdscr, state: _FormState, form_title: str) -> None:
                 safe_addstr(stdscr, y, cx, chip, attr)
                 cx += len(chip) + 1
 
-        elif row_name == "priority":
+        elif ri == _ROW_PRIORITY:
             cx = value_x
             for p in _PRI_CHOICES:
                 sel = p == state.priority
@@ -204,24 +285,108 @@ def draw_task_form(stdscr, state: _FormState, form_title: str) -> None:
                 safe_addstr(stdscr, y, cx, chip, attr)
                 cx += len(chip) + 1
 
-        elif row_name == "description":
-            if state.description:
-                first_line = state.description.split("\n")[0]
-                max_w = w - value_x - 4
-                preview = first_line[:max_w]
-                if len(first_line) > max_w or "\n" in state.description:
-                    preview += "\u2026"
-            else:
-                preview = "(empty \u2014 Enter to add)"
-            attr = curses.A_BOLD if active else curses.A_DIM
-            safe_addstr(stdscr, y, value_x, preview, attr)
+        elif ri == _ROW_LABELS:
+            field_w = max(10, w - value_x - 2)
+            _draw_text_field(stdscr, state.labels, y, value_x, field_w, active)
+            if state.vim and active:
+                badge = f"[{'N' if state.labels.mode == 'normal' else 'I'}]"
+                safe_addstr(stdscr, y, w - len(badge) - 1, badge, curses.A_DIM)
 
-    # Separator + help bar
+
+def _draw_content_zone(stdscr, state: _FormState, y_start: int, zone_h: int, w: int) -> None:
+    """Render the scrollable description + comments zone."""
+    specs = _section_specs(state)
+    starts = _compute_vis_starts(state)
+
+    for row, ts, text, max_p in specs:
+        vis_y = starts[row]
+        active = row == state.row
+        lines = text.strip().split("\n") if text and text.strip() else []
+        shown = min(max_p, len(lines))
+        more = max(0, len(lines) - shown)
+
+        # Build the renderable lines for this section
+        is_comment = ts is not None
+
+        # ── header ──
+        if is_comment:
+            hint = "  Enter:edit  x:del" if active else ""
+            avail = w - len(hint)
+            head_label = f"\u2500 \u25b8 {ts} "
+            head_dashes = "\u2500" * max(0, avail - len(head_label))
+            header_text = (head_label + head_dashes)[:avail]
+        else:
+            hint = "  Enter:edit" if active else ""
+            avail = w - len(hint)
+            head_label = "\u2500 description "
+            head_dashes = "\u2500" * max(0, avail - len(head_label))
+            header_text = (head_label + head_dashes)[:avail]
+
+        head_attr = curses.A_BOLD if active else curses.A_DIM
+
+        def _try_draw(vis_local: int, text_str: str, attr: int) -> None:
+            vy = vis_y + vis_local
+            sy = y_start + vy - state.content_scroll
+            if y_start <= sy < y_start + zone_h:
+                safe_addstr(stdscr, sy, 0, text_str[:w], attr)
+
+        _try_draw(0, header_text, head_attr)
+        if hint and active:
+            vy = vis_y
+            sy = y_start + vy - state.content_scroll
+            if y_start <= sy < y_start + zone_h:
+                safe_addstr(stdscr, sy, len(header_text), hint, curses.A_BOLD)
+
+        # ── content lines ──
+        if lines:
+            content_attr = curses.A_BOLD if active else 0
+            for i, line in enumerate(lines[:shown]):
+                _try_draw(1 + i, "  " + line, content_attr)
+        else:
+            placeholder = "  (empty \u2014 Enter to add)"
+            _try_draw(1, placeholder, curses.A_DIM)
+
+        # ── more indicator ──
+        if more > 0:
+            more_text = f"  \u2026 {more} more line{'s' if more > 1 else ''}"
+            _try_draw(1 + shown, more_text, curses.A_DIM)
+
+
+def draw_task_form(stdscr, state: _FormState, form_title: str) -> None:
+    stdscr.erase()
+    h, w = stdscr.getmaxyx()
+
+    # Title bar
+    safe_addstr(stdscr, 0, 0, f"  {form_title}", curses.color_pair(C_HEADER) | curses.A_BOLD)
+    safe_addstr(stdscr, 1, 0, "\u2500" * w, curses.A_DIM)
+
+    # Metadata zone
+    _draw_meta_zone(stdscr, state, w)
+
+    # Separator between meta and content
+    safe_addstr(stdscr, _META_SEP_Y, 0, "\u2500" * w, curses.A_DIM)
+
+    # Content zone
+    zone_h = max(1, h - _CONTENT_Y - _FOOTER_H)
+    _draw_content_zone(stdscr, state, _CONTENT_Y, zone_h, w)
+
+    # Footer
     sep_y = h - 2
-    if sep_y > 0:
-        safe_addstr(stdscr, sep_y, 0, "\u2500" * w, curses.A_DIM)
+    safe_addstr(stdscr, sep_y, 0, "\u2500" * w, curses.A_DIM)
+
     save_part = "Ctrl-S:save" if state.is_valid() else "(need title)"
-    hints = f"  Tab/\u2191\u2193:move  \u2190\u2192:pick  Enter:edit  {save_part}  Esc:cancel"
+    on_comment = state.comment_idx() is not None
+    hints_parts = [
+        "Tab/j/k:move",
+        "\u2190\u2192:pick",
+        "Enter:edit",
+        "n:comment",
+    ]
+    if on_comment:
+        hints_parts.append("x:delete")
+    hints_parts.append(save_part)
+    hints_parts.append("Esc:cancel")
+    hints = "  " + "  ".join(hints_parts)
     safe_addstr(stdscr, h - 1, 0, " " * w, curses.color_pair(C_HELP))
     safe_addstr(stdscr, h - 1, 0, hints[:w], curses.color_pair(C_HELP))
 
@@ -241,11 +406,7 @@ def run_task_form(
 ) -> dict | None:
     """Run the task create/edit form modal.
 
-    *task* — pre-populate for edit mode; None for creation.
-    *yak_type* — default type for new tasks.
-    *parent* — parent task ID when creating a child.
-
-    Returns a dict of field values on save, or None on cancel.
+    Returns a field dict on save (Ctrl-S), or None on cancel (Esc).
     """
     from yaktui import editor as _editor
 
@@ -258,55 +419,68 @@ def run_task_form(
 
     state = _FormState.from_task(task, yak_type=yak_type, vim=vim)
 
+    def _zone_h() -> int:
+        h, _ = stdscr.getmaxyx()
+        return max(1, h - _CONTENT_Y - _FOOTER_H)
+
+    def _nav(delta: int) -> None:
+        state.row = (state.row + delta) % state.total_rows()
+        _fix_content_scroll(state, _zone_h())
+
     curses.curs_set(1)
     try:
         while True:
             draw_task_form(stdscr, state, form_title)
-            cur_row = _ROWS[state.row]
-            if cur_row not in _TEXT_ROWS:
-                curses.curs_set(0)
-            else:
-                curses.curs_set(1)
+
+            # Cursor visibility
+            on_text = state.row in (_ROW_TITLE, _ROW_LABELS)
+            curses.curs_set(1 if on_text else 0)
             stdscr.refresh()
 
             key = stdscr.getch()
             if key == -1:
                 continue
 
-            # Ctrl-S: save from anywhere
-            if key == 19:
+            # ── global ────────────────────────────────────────────────────
+            if key == 19:  # Ctrl-S: save
                 if state.is_valid():
                     return state.to_dict()
                 continue
 
-            # --- Text rows ---
-            if cur_row in _TEXT_ROWS:
-                ed = state.title if cur_row == "title" else state.labels
+            # New comment from anywhere outside a text-editing row
+            ed_active = state.row in (_ROW_TITLE, _ROW_LABELS)
+            if key == ord("n") and not ed_active:
+                curses.curs_set(0)
+                text = _editor.edit_multiline(stdscr, vim=vim, label="new comment")
+                curses.curs_set(1)
+                if text and text.strip():
+                    state.comments.append((now_iso(), text.strip()))
+                    state.row = _ROW_DESC + len(state.comments)
+                    _fix_content_scroll(state, _zone_h())
+                continue
 
-                # Row navigation: Tab / arrows, and j/k in vim normal mode
+            # ── metadata rows ─────────────────────────────────────────────
+            if state.row == _ROW_TITLE:
+                ed = state.title
                 nav_down = key in (9, curses.KEY_DOWN) or (vim and ed.mode == "normal" and key == ord("j"))
                 nav_up = key in (curses.KEY_BTAB, curses.KEY_UP) or (vim and ed.mode == "normal" and key == ord("k"))
                 if nav_down:
-                    state.row = (state.row + 1) % len(_ROWS)
+                    _nav(+1)
                     continue
                 if nav_up:
-                    state.row = (state.row - 1) % len(_ROWS)
+                    _nav(-1)
                     continue
-
                 r = ed.step(key)
                 if r == COMMIT:
-                    # Enter moves to the next field
-                    state.row = (state.row + 1) % len(_ROWS)
+                    _nav(+1)
                 elif r == CANCEL:
-                    # double-Esc (vim) or single Esc (non-vim) → cancel form
                     return None
 
-            # --- Chip rows ---
-            elif cur_row == "type":
+            elif state.row == _ROW_TYPE:
                 if key in (9, curses.KEY_DOWN, ord("j")):
-                    state.row = (state.row + 1) % len(_ROWS)
+                    _nav(+1)
                 elif key in (curses.KEY_BTAB, curses.KEY_UP, ord("k")):
-                    state.row = (state.row - 1) % len(_ROWS)
+                    _nav(-1)
                 elif key in (curses.KEY_LEFT, ord("h")):
                     idx = _TYPE_CHOICES.index(state.yak_type)
                     state.yak_type = _TYPE_CHOICES[(idx - 1) % len(_TYPE_CHOICES)]
@@ -321,11 +495,11 @@ def run_task_form(
                             state.yak_type = t
                             break
 
-            elif cur_row == "priority":
+            elif state.row == _ROW_PRIORITY:
                 if key in (9, curses.KEY_DOWN, ord("j")):
-                    state.row = (state.row + 1) % len(_ROWS)
+                    _nav(+1)
                 elif key in (curses.KEY_BTAB, curses.KEY_UP, ord("k")):
-                    state.row = (state.row - 1) % len(_ROWS)
+                    _nav(-1)
                 elif key in (curses.KEY_LEFT, ord("h")):
                     state.priority = max(1, state.priority - 1)
                 elif key in (curses.KEY_RIGHT, ord("l"), ord(" "), 10, 13):
@@ -335,23 +509,60 @@ def run_task_form(
                 elif ord("1") <= key <= ord("5"):
                     state.priority = key - ord("0")
 
-            # --- Description row ---
-            elif cur_row == "description":
+            elif state.row == _ROW_LABELS:
+                ed = state.labels
+                nav_down = key in (9, curses.KEY_DOWN) or (vim and ed.mode == "normal" and key == ord("j"))
+                nav_up = key in (curses.KEY_BTAB, curses.KEY_UP) or (vim and ed.mode == "normal" and key == ord("k"))
+                if nav_down:
+                    _nav(+1)
+                    continue
+                if nav_up:
+                    _nav(-1)
+                    continue
+                r = ed.step(key)
+                if r == COMMIT:
+                    _nav(+1)
+                elif r == CANCEL:
+                    return None
+
+            # ── description ───────────────────────────────────────────────
+            elif state.row == _ROW_DESC:
                 if key in (9, curses.KEY_DOWN, ord("j")):
-                    state.row = (state.row + 1) % len(_ROWS)
+                    _nav(+1)
                 elif key in (curses.KEY_BTAB, curses.KEY_UP, ord("k")):
-                    state.row = (state.row - 1) % len(_ROWS)
+                    _nav(-1)
                 elif key in (10, 13, curses.KEY_ENTER, ord("e"), ord("i")):
                     curses.curs_set(0)
-                    edited = _editor.edit_multiline(
-                        stdscr,
-                        initial=state.description,
-                        vim=vim,
-                        label="description",
-                    )
+                    edited = _editor.edit_multiline(stdscr, initial=state.description, vim=vim, label="description")
                     curses.curs_set(1)
                     if edited is not None:
                         state.description = edited.strip()
+                elif key == 27:
+                    return None
+
+            # ── individual comment rows ───────────────────────────────────
+            else:
+                cidx = state.comment_idx()
+                if key in (9, curses.KEY_DOWN, ord("j")):
+                    _nav(+1)
+                elif key in (curses.KEY_BTAB, curses.KEY_UP, ord("k")):
+                    _nav(-1)
+                elif key in (10, 13, curses.KEY_ENTER, ord("e"), ord("i")):
+                    ts, text = state.comments[cidx]
+                    curses.curs_set(0)
+                    edited = _editor.edit_multiline(stdscr, initial=text, vim=vim, label=f"comment ▸ {ts}")
+                    curses.curs_set(1)
+                    if edited is not None:
+                        state.comments[cidx] = (ts, edited.strip())
+                elif key == ord("x"):
+                    # Delete this comment (no confirm — form not saved yet)
+                    state.comments.pop(cidx)
+                    new_len = len(state.comments)
+                    if new_len == 0:
+                        state.row = _ROW_DESC
+                    elif cidx >= new_len:
+                        state.row = _ROW_DESC + new_len
+                    _fix_content_scroll(state, _zone_h())
                 elif key == 27:
                     return None
 
