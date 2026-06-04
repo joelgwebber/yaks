@@ -231,6 +231,20 @@ class TUI:
             curses.set_escdelay(25)  # quick Esc; default is ~1s
         except AttributeError:
             pass
+        # curses.wrapper() calls cbreak(), which the Python docs describe as
+        # retaining "flow control" — meaning IXON (XON/XOFF) stays enabled and
+        # the tty driver swallows Ctrl-S before it ever reaches getch().
+        # Disable it once here so Ctrl-S works throughout the TUI session.
+        # curses.endwin() restores the original terminal state on exit.
+        try:
+            import termios as _termios
+
+            _fd = sys.stdin.fileno()
+            _tc = _termios.tcgetattr(_fd)
+            _tc[0] &= ~_termios.IXON
+            _termios.tcsetattr(_fd, _termios.TCSADRAIN, _tc)
+        except Exception:
+            pass
         curses.mousemask(curses.ALL_MOUSE_EVENTS)
         # mouseinterval(0): deliver BUTTON_PRESSED immediately without waiting
         # for a release event. The default (~167ms) holds PRESSED until release
