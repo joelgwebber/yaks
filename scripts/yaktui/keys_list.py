@@ -137,10 +137,4 @@ def handle(app, key) -> bool:
         if tid:
             app._toggle_collapse(tid)
 
-    # Sidecar review (matches the `~` marker in the list).
-    elif key == ord("~"):
-        tid = app._current_task_id()
-        if tid:
-            app._open_sync_review(tid)
-
     return True

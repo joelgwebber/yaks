@@ -4,7 +4,7 @@ title: 'Pending-sync review pipeline: sidecar + TUI approval before upstream wri
 type: feature
 priority: 2
 created: '2026-04-25T15:47:45Z'
-updated: '2026-04-25T18:25:29Z'
+updated: '2026-06-19T16:47:10Z'
 depends_on:
 - yak-bf54.3
 ---

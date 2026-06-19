@@ -43,42 +43,12 @@ def test_list_filters_by_status(yak):
 
 def test_update_fields(yak):
     tid = create_task(yak, "original", type="task", priority=3)
-    yak("update", tid, "--title", "renamed", "--priority", "1",
-        "--add-label", "urgent", "core")
+    yak("update", tid, "--title", "renamed", "--priority", "1", "--add-label", "urgent", "core")
 
     t = yak("show", tid, "--json").json()
     assert t["title"] == "renamed"
     assert t["priority"] == 1
     assert set(t["labels"]) == {"urgent", "core"}
-
-
-def test_update_last_synced_explicit_iso(yak):
-    tid = create_task(yak, "synced-task", type="task")
-    stamp = "2026-04-25T12:00:00Z"
-    yak("update", tid, "--last-synced", stamp)
-    t = yak("show", tid, "--json").json()
-    assert t["last_synced"] == stamp
-
-
-def test_update_last_synced_now_uses_current_time(yak):
-    tid = create_task(yak, "synced-now", type="task")
-    yak("update", tid, "--last-synced", "now")
-    t = yak("show", tid, "--json").json()
-    assert t["last_synced"]
-    # Looks like an ISO timestamp.
-    assert t["last_synced"].startswith("20")
-    assert "T" in t["last_synced"]
-
-
-def test_update_preserves_last_synced_across_routine_edits(yak):
-    """Routine field edits (--note, --add-label, etc.) must not trample
-    last_synced — only an explicit --last-synced rewrites it."""
-    tid = create_task(yak, "preserve", type="task")
-    yak("update", tid, "--last-synced", "2026-04-25T12:00:00Z")
-    yak("update", tid, "--note", "did some work")
-    yak("update", tid, "--add-label", "urgent")
-    t = yak("show", tid, "--json").json()
-    assert t["last_synced"] == "2026-04-25T12:00:00Z"
 
 
 def test_update_note_appends_block(yak):
@@ -99,6 +69,7 @@ def test_ids_are_unique_across_batch(yak):
 
 def test_migrate_comment_blocks_pure_helper():
     from yaklib.model import _migrate_comment_blocks
+
     src = (
         "---\n"
         "id: x-1\n"
@@ -124,14 +95,8 @@ def test_migrate_comment_blocks_pure_helper():
 def test_migrate_comment_blocks_leaves_date_only_headings_alone():
     """A bare `### 2026-04-25` (date, no time) is not a comment marker."""
     from yaklib.model import _migrate_comment_blocks
-    src = (
-        "---\n"
-        "id: x-1\n"
-        "---\n"
-        "\n"
-        "### 2026-04-25 Meeting notes\n"
-        "User-authored heading; do not migrate.\n"
-    )
+
+    src = "---\nid: x-1\n---\n\n### 2026-04-25 Meeting notes\nUser-authored heading; do not migrate.\n"
     assert _migrate_comment_blocks(src) == src
 
 

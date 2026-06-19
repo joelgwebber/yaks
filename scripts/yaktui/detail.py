@@ -38,8 +38,7 @@ class DetailLine:
 
     @property
     def is_link(self):
-        return (self.task_id is not None or self.open_path is not None
-                or bool(self.links))
+        return self.task_id is not None or self.open_path is not None or bool(self.links)
 
 
 def _wrap(text, width) -> list[str]:
@@ -49,17 +48,14 @@ def _wrap(text, width) -> list[str]:
     if len(text) <= width:
         return [text]
     stripped = text.lstrip(" ")
-    lead = text[:len(text) - len(stripped)]
-    wrapped = textwrap.wrap(
-        stripped, width=max(1, width - len(lead)),
-        break_long_words=False, break_on_hyphens=False)
+    lead = text[: len(text) - len(stripped)]
+    wrapped = textwrap.wrap(stripped, width=max(1, width - len(lead)), break_long_words=False, break_on_hyphens=False)
     if not wrapped:
         return [text]
     return [lead + w for w in wrapped]
 
 
-def build_detail_lines(root, task, status, width=80,
-                       reverse_deps=None) -> list[DetailLine]:
+def build_detail_lines(root, task, status, width=80, reverse_deps=None) -> list[DetailLine]:
     """Build the detail pane content for a task, wrapped to *width*."""
     lines: list[DetailLine] = []
 
@@ -82,8 +78,6 @@ def build_detail_lines(root, task, status, width=80,
         ("Created", humanize_date(task.get("created"))),
         ("Updated", humanize_date(task.get("updated"))),
     ]
-    if task.get("last_synced"):
-        fields.append(("Synced", humanize_date(task["last_synced"])))
     if task.get("commit"):
         fields.append(("Commit", task["commit"]))
     if task.get("labels"):
@@ -101,8 +95,9 @@ def build_detail_lines(root, task, status, width=80,
         if dep_result:
             ds, dp = dep_result
             dt = load_task(dp)
-            emit(f"  {'Depends on:':<12s} {status_emoji(ds)} {dep_id}  {dt.get('title', '')}",
-                 "dep_link", task_id=dep_id)
+            emit(
+                f"  {'Depends on:':<12s} {status_emoji(ds)} {dep_id}  {dt.get('title', '')}", "dep_link", task_id=dep_id
+            )
         else:
             emit(f"  {'Depends on:':<12s} {dep_id} (not found)", "field")
 
@@ -112,26 +107,22 @@ def build_detail_lines(root, task, status, width=80,
         if presult:
             ps, pp = presult
             pt = load_task(pp)
-            emit(f"  {'Parent:':<12s} {status_emoji(ps)} {pid}  {pt.get('title', '')}",
-                 "link", task_id=pid)
+            emit(f"  {'Parent:':<12s} {status_emoji(ps)} {pid}  {pt.get('title', '')}", "link", task_id=pid)
 
     children = find_children(root, task["id"])
     if children:
         lines.append(DetailLine(""))
         lines.append(DetailLine("  Children:", "subheader"))
         for cs, ct in children:
-            emit(f"    {status_emoji(cs)} {ct['id']}  {ct.get('title', '')}",
-                 "link", task_id=ct["id"])
+            emit(f"    {status_emoji(cs)} {ct['id']}  {ct.get('title', '')}", "link", task_id=ct["id"])
 
     if reverse_deps:
-        blockers = sorted(reverse_deps.get(task["id"]) or [],
-                          key=lambda p: p[1]["id"])
+        blockers = sorted(reverse_deps.get(task["id"]) or [], key=lambda p: p[1]["id"])
         if blockers:
             lines.append(DetailLine(""))
             lines.append(DetailLine("  Blocks:", "subheader"))
             for bs, bt in blockers:
-                emit(f"    {status_emoji(bs)} {bt['id']}  {bt.get('title', '')}",
-                     "link", task_id=bt["id"])
+                emit(f"    {status_emoji(bs)} {bt['id']}  {bt.get('title', '')}", "link", task_id=bt["id"])
 
     desc = task.get("description", "")
 

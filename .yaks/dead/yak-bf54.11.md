@@ -4,7 +4,7 @@ title: Support bidirectional sync
 type: feature
 priority: 1
 created: '2026-05-01T15:40:38Z'
-updated: '2026-05-04T15:30:44Z'
+updated: '2026-06-19T16:47:10Z'
 ---
 
 After using the external issue tracker sync for a while, I'm finding that I really do need

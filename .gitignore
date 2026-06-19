@@ -5,6 +5,3 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-
-# Pending-sync sidecars are working artifacts, not source of truth.
-.yaks/.sync-pending/

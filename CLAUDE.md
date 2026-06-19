@@ -21,6 +21,7 @@ Two entry scripts (both carry PEP 723 inline metadata, require `pyyaml>=6.0`) pl
   - `clipboard.py` — `copy_text` + `read_png` (macOS + Linux).
   - `format.py` — `humanize_date` + `status_char`.
   - `filter.py` — `FilterSpec` dataclass + `filter_tasks()`, shared across CLI and TUI.
+  - `rollup.py` — one-way yak→external projection: `tracker_and_key()` URL classification, `effective_source()` ancestor inheritance, `build_rollup()` grouping. Read-only, no network.
   - `cli.py` — `main()` entry point for the installed `yaks` command (`uv tool install`).
 - **`scripts/yaktui/`** — TUI-side library. All functions take the `App` instance (or just `stdscr`) as the first argument:
   - `colors.py`, `tree.py`, `detail.py`, `dialogs.py`, `mutate.py`, `render.py`, `keys_list.py`, `keys_detail.py`, `vim_edit.py`.
@@ -36,7 +37,7 @@ Two entry scripts (both carry PEP 723 inline metadata, require `pyyaml>=6.0`) pl
 python3 scripts/yak.py <subcommand> [args]
 ```
 
-Subcommands: `init`, `create`, `list`, `show`, `update`, `shave`, `shorn`, `regrow`, `slaughter`, `revive`, `next`, `tangled`, `dep`, `reparent`, `attach`, `detach`, `search`, `stats`, `tui`, `import-beads`. Old names (`work`, `close`, `reopen`, `ready`, `blocked`) are accepted as aliases. Most support `--json` where applicable.
+Subcommands: `init`, `create`, `list`, `show`, `update`, `shave`, `shorn`, `regrow`, `slaughter`, `revive`, `next`, `tangled`, `dep`, `reparent`, `attach`, `detach`, `search`, `stats`, `rollup`, `tui`, `import-beads`. Old names (`work`, `close`, `reopen`, `ready`, `blocked`) are accepted as aliases. Most support `--json` where applicable.
 
 ## Task file format
 
@@ -53,7 +54,6 @@ updated: ISO8601
 depends_on: [task-ids]   # optional
 labels: [strings]        # optional
 source: URL              # optional, external issue URL
-last_synced: ISO8601     # optional, written by /yaks:sync
 ---
 
 Optional description as markdown body.

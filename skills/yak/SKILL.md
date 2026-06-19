@@ -50,6 +50,7 @@ A parent yak's state should reflect its children:
 | `/yaks:dep` | Add/remove dependencies between tasks |
 | `/yaks:reparent` | Move task to new parent or top-level |
 | `/yaks:stats` | Show task statistics |
+| `/yaks:rollup` | Group yaks by the external issue they roll up to |
 
 ## Task format
 
@@ -68,7 +69,6 @@ depends_on:
 labels:
   - auth
 source: https://jira.example.com/browse/PROJ-123  # optional external issue URL
-last_synced: "2026-02-16T10:30:00Z"               # written by /yaks:sync after a successful merge
 ---
 
 Details go here.
@@ -78,9 +78,9 @@ Child tasks use `--parent TASK_ID` on create. The hierarchy is implicit from the
 
 ### External source linking
 
-Use `--source URL` on create or update to link a yak to an external issue (Jira, GitHub Issues, Linear, etc.). The URL is stored in the `source` frontmatter field. When a yak has a source, the agent should check the external system for context when starting work, and update it when the yak is shorn.
+Use `--source URL` on create or update to link a yak to an external issue (Jira, GitHub Issues, Linear, etc.). The URL is stored in the `source` frontmatter field. The relationship is a **one-way projection**: the yak points at the external issue, never the reverse, and the external tracker stays unaware of yaks.
 
-The companion `/yaks:sync TASK_ID` command (see the **yak-sync** skill) performs bidirectional merge with the linked external issue, and stamps `last_synced` on the yak after a successful merge so future syncs can short-circuit when nothing has drifted.
+Many yaks can roll up to one external issue. `/yaks:rollup` groups yaks by their source (a yak with no `source:` inherits its nearest ancestor's, so one stamp on an umbrella yak covers the subtree); `yaks rollup --keys` lists the external keys to paste into a PR body. For seeding a yak from an external issue or drafting a status update back to one, see the **yak-tracker** skill.
 
 ## Filtering
 

@@ -40,14 +40,14 @@ Or copy manually from a local clone:
 ```bash
 # Global
 cp -r /path/to/yaks/skills/yak ~/.agents/skills/yak
-cp -r /path/to/yaks/skills/yak-sync ~/.agents/skills/yak-sync
+cp -r /path/to/yaks/skills/yak-tracker ~/.agents/skills/yak-tracker
 
 # Project-local (inside your project, requires trusted worktree)
 cp -r /path/to/yaks/skills/yak  .agents/skills/yak
-cp -r /path/to/yaks/skills/yak-sync  .agents/skills/yak-sync
+cp -r /path/to/yaks/skills/yak-tracker  .agents/skills/yak-tracker
 ```
 
-Once installed, the `yak` skill appears in Zed's skill catalog and activates automatically when the agent detects a `.yaks/` directory. You can also invoke it with `/yak` in the message editor. The `yak-sync` skill handles external issue tracker sync.
+Once installed, the `yak` skill appears in Zed's skill catalog and activates automatically when the agent detects a `.yaks/` directory. You can also invoke it with `/yak` in the message editor. The `yak-tracker` skill relates yaks to external issue trackers as a one-way projection (rollup, import-once, outbound draft).
 
 The skills instruct Zed's agent to use the `yaks` CLI, so install that too:
 
@@ -201,8 +201,7 @@ Frontmatter fields:
 - **created** / **updated** — ISO 8601 timestamps
 - **depends_on** — Optional list of task IDs that must be shorn first
 - **labels** — Optional list of string tags
-- **source** — Optional URL linking to an external issue (Jira, GitHub Issues, Linear, etc.)
-- **last_synced** — Optional ISO 8601 timestamp written by `/yaks:sync` after a successful bidirectional merge with the external issue
+- **source** — Optional URL linking to an external issue (Jira, GitHub Issues, Linear, etc.). Many yaks can roll up to one external issue; `yaks rollup` groups them, and a yak with no `source:` inherits its nearest ancestor's.
 
 ## Configuration
 

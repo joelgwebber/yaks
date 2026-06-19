@@ -4,7 +4,7 @@ title: After-denial 'ignore drift until upstream changes' affordance
 type: feature
 priority: 2
 created: '2026-04-25T17:28:26Z'
-updated: '2026-04-25T18:06:59Z'
+updated: '2026-06-19T16:47:10Z'
 ---
 
 Surfaced during test scenario 2 (deny path). When the user denies a proposed sync change, the divergence currently re-surfaces on every subsequent sync. Often the user's actual intent is 'leave it alone — my local version is what I want.' Re-prompting them every time is annoying.

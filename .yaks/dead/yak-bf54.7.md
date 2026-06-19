@@ -4,7 +4,7 @@ title: Test sync against Linear
 type: task
 priority: 2
 created: '2026-04-25T17:46:57Z'
-updated: '2026-04-26T18:34:33Z'
+updated: '2026-06-19T16:47:10Z'
 ---
 
 ## Idiosyncrasies + tradeoffs to decide

@@ -4,7 +4,7 @@ title: 'Sync check mode: identify yaks that likely need syncing'
 type: feature
 priority: 2
 created: '2026-04-24T03:01:50Z'
-updated: '2026-04-25T20:02:36Z'
+updated: '2026-06-19T16:47:10Z'
 depends_on:
 - yak-bf54.1
 - yak-bf54.3

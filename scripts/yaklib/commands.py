@@ -39,24 +39,6 @@ from yaklib.model import (
 _STATUS_CHAR = {HAIRY: "H", SHAVING: "S", SHORN: "N", DEAD: "X"}
 
 
-def _gate_pending(args, root: Path) -> bool:
-    """Return True if the caller may proceed; False on user-aborted prompt.
-
-    Prints a brief message to stderr and exits the command early when the
-    user declines. Honors --force-discard-pending.
-    """
-    from yaklib import sync as _sync
-    force = bool(getattr(args, "force_discard_pending", False))
-    yak_id = getattr(args, "id", None)
-    if not yak_id:
-        return True
-    if _sync.confirm_discard_pending(root, yak_id, force=force):
-        return True
-    print(f"Aborted: {yak_id} has a pending sync plan; left untouched.",
-          file=sys.stderr)
-    return False
-
-
 def _split_labels(tokens: list[str] | None) -> list[str]:
     """Flatten label tokens so users can type `--labels foo bar` or
     `--labels foo,bar` or `--labels "foo bar,baz"` and get the obvious thing."""
@@ -194,7 +176,7 @@ def cmd_create(args):
 # ---------------------------------------------------------------------------
 
 
-def _fmt_task_row(status, t, pending_ids: set[str] | None = None):
+def _fmt_task_row(status, t):
     pri = t.get("priority", "-")
     ttype = t.get("type", "-")
     labels = ",".join(t.get("labels", []))
@@ -202,8 +184,7 @@ def _fmt_task_row(status, t, pending_ids: set[str] | None = None):
     dep_str = f" (deps: {','.join(deps)})" if deps else ""
     label_str = f" [{labels}]" if labels else ""
     ch = _STATUS_CHAR.get(status, status[0].upper())
-    marker = "~" if pending_ids and t["id"] in pending_ids else " "
-    return f"  [{ch}] {marker}{t['id']}  p{pri} {ttype:8s} {t.get('title', '')}{label_str}{dep_str}"
+    return f"  [{ch}] {t['id']}  p{pri} {ttype:8s} {t.get('title', '')}{label_str}{dep_str}"
 
 
 def _spec_from_args(args, defaults: dict | None = None) -> FilterSpec:
@@ -234,8 +215,6 @@ def _spec_from_args(args, defaults: dict | None = None) -> FilterSpec:
 
 
 def cmd_list(args):
-    from yaklib import sync as _sync
-
     root = find_tasks_root()
     spec = _spec_from_args(args)
     tasks = filter_tasks(root, spec)
@@ -249,9 +228,8 @@ def cmd_list(args):
         print("No tasks found.")
         return
 
-    pending = set(_sync.list_pending(root))
     for status, t in tasks:
-        print(_fmt_task_row(status, t, pending))
+        print(_fmt_task_row(status, t))
 
 
 def cmd_show(args):
@@ -299,16 +277,6 @@ def cmd_update(args):
     if not result:
         print(f"error: task {args.id} not found", file=sys.stderr)
         sys.exit(1)
-    # Skip the pending-sidecar gate when only stamping last_synced — that's
-    # the sidecar-resolution path itself and must not prompt to discard.
-    only_last_synced = (
-        getattr(args, "last_synced", None)
-        and not any(getattr(args, n, None) for n in (
-            "title", "type", "priority", "description",
-            "add_label", "remove_label", "note", "source"))
-    )
-    if not only_last_synced and not _gate_pending(args, root):
-        return
     _, path = result
     task = load_task(path)
 
@@ -346,10 +314,6 @@ def cmd_update(args):
     if getattr(args, "source", None):
         task["source"] = args.source
         changed = True
-    if getattr(args, "last_synced", None):
-        ls = args.last_synced
-        task["last_synced"] = now_iso() if ls == "now" else ls
-        changed = True
     if getattr(args, "note", None):
         ts = now_iso()
         desc = (task.get("description") or "").rstrip()
@@ -370,14 +334,11 @@ def cmd_update(args):
 # ---------------------------------------------------------------------------
 
 
-def _move_task(args, dest_status: str, already_msg: str, done_msg: str,
-               extra_fields: dict | None = None, gate_pending: bool = True):
+def _move_task(args, dest_status: str, already_msg: str, done_msg: str, extra_fields: dict | None = None):
     root = find_tasks_root()
     if not find_task_file(root, args.id):
         print(f"error: task {args.id} not found", file=sys.stderr)
         sys.exit(1)
-    if gate_pending and not _gate_pending(args, root):
-        return
     ok, _ = move_task(root, args.id, dest_status, extra_fields=extra_fields)
     if not ok:
         print(f"{args.id} is {already_msg}")
@@ -398,12 +359,7 @@ def cmd_regrow(args):
 
 
 def cmd_slaughter(args):
-    # Carve-out: slaughter never prompts. The yak is being killed, the
-    # plan is moot — silently back up + clear any pending sidecar.
-    from yaklib import sync as _sync
-    root = find_tasks_root()
-    _sync.auto_clear_pending(root, args.id)
-    _move_task(args, DEAD, "already dead", "Slaughtered:", gate_pending=False)
+    _move_task(args, DEAD, "already dead", "Slaughtered:")
 
 
 def cmd_revive(args):
@@ -476,8 +432,6 @@ def cmd_dep(args):
     if not result:
         print(f"error: task {args.id} not found", file=sys.stderr)
         sys.exit(1)
-    if not _gate_pending(args, root):
-        return
     _, path = result
     task = load_task(path)
 
@@ -519,9 +473,6 @@ def cmd_reparent(args):
         print("error: specify --parent TASK_ID or --unparent", file=sys.stderr)
         sys.exit(1)
 
-    if not _gate_pending(args, root):
-        return
-
     try:
         plan = reparent_mod.reparent(root, args.id, new_parent)
     except reparent_mod.ReparentError as e:
@@ -545,8 +496,6 @@ def cmd_attach(args):
     if loc is None:
         print(f"error: task {args.id} not found", file=sys.stderr)
         sys.exit(1)
-    if not _gate_pending(args, root):
-        return
     _, path = loc
     task = load_task(path)
 
@@ -597,8 +546,6 @@ def cmd_detach(args):
     if loc is None:
         print(f"error: task {args.id} not found", file=sys.stderr)
         sys.exit(1)
-    if not _gate_pending(args, root):
-        return
     _, path = loc
     task = load_task(path)
     body = task.get("description", "")
@@ -643,10 +590,8 @@ def cmd_search(args):
         print("No tasks found.")
         return
 
-    from yaklib import sync as _sync
-    pending = set(_sync.list_pending(root))
     for status, t in matches:
-        print(_fmt_task_row(status, t, pending))
+        print(_fmt_task_row(status, t))
 
 
 def cmd_stats(args):
@@ -801,63 +746,70 @@ def cmd_import_beads(args):
 
 
 # ---------------------------------------------------------------------------
-# Pending-sync sidecar bookkeeping
+# Rollup: project yaks onto the external issues they point at
 # ---------------------------------------------------------------------------
 
 
-def cmd_sync(args):
-    from yaklib import sync as _sync
+def cmd_rollup(args):
+    from yaklib import rollup as _rollup
+
     root = find_tasks_root()
+    spec = _spec_from_args(args)
+    groups, unsourced = _rollup.build_rollup(root, spec)
 
-    if args.sync_action == "ls":
-        ids = _sync.list_pending(root)
-        if not ids:
-            print("No pending sync sidecars.")
-            return
-        for tid in ids:
-            print(tid)
-        return
-
-    if args.sync_action == "show":
-        path = _sync.sidecar_path(root, args.id)
-        if not path.exists():
-            print(f"error: no sidecar for {args.id}", file=sys.stderr)
-            sys.exit(1)
-        print(path.read_text(), end="")
-        return
-
-    if args.sync_action == "clear":
-        if _sync.clear_sidecar(root, args.id):
-            print(f"Cleared pending sync for {args.id}")
-        else:
-            print(f"No pending sync for {args.id}")
-        return
-
-    if args.sync_action == "check":
-        rows = _sync.iter_synced_yaks(root)
-        if args.tracker:
-            rows = [r for r in rows if r["tracker"] == args.tracker]
+    if getattr(args, "keys", False):
+        keys = []
+        seen = set()
+        for g in groups:
+            k = g["key"] or g["source"]
+            if k not in seen:
+                seen.add(k)
+                keys.append(k)
         if args.json:
-            print(json.dumps(rows, indent=2))
-            return
-        if not rows:
-            print("No yaks with a `source:` URL.")
-            return
-        # Two-line header + one row per yak.
-        id_w = max(len(r["id"]) for r in rows)
-        key_w = max(len(r["key"] or "?") for r in rows)
-        print(f"  {'ID':<{id_w}}  {'TRACKER':<7s}  {'KEY':<{key_w}}  "
-              f"{'LAST_SYNCED':<20s}  {'LOCAL_UPDATED':<20s}  PENDING  LOCAL_DRIFT")
-        for r in rows:
-            ls = (r["last_synced"] or "-")[:19]
-            lu = (r["local_updated"] or "-")[:19]
-            local_drift = "yes" if (r["last_synced"] and r["local_updated"]
-                                    and r["local_updated"] > r["last_synced"]) else "no"
-            pending = "yes" if r["has_pending"] else "no"
-            print(f"  {r['id']:<{id_w}}  {r['tracker']:<7s}  "
-                  f"{r['key'] or '?':<{key_w}}  {ls:<20s}  {lu:<20s}  "
-                  f"{pending:<7s}  {local_drift}")
+            print(json.dumps(keys, indent=2))
+        else:
+            for k in keys:
+                print(k)
         return
+
+    if args.json:
+        out = [
+            {
+                "source": g["source"],
+                "tracker": g["tracker"],
+                "key": g["key"],
+                "yaks": [
+                    {
+                        "id": y["task"]["id"],
+                        "status": y["status"],
+                        "title": y["task"].get("title", ""),
+                        "inherited": y["inherited"],
+                        "inherited_from": y["inherited_from"],
+                    }
+                    for y in g["yaks"]
+                ],
+            }
+            for g in groups
+        ]
+        print(json.dumps(out, indent=2))
+        return
+
+    if not groups:
+        print("No yaks with an external source.")
+        return
+
+    for g in groups:
+        head = g["key"] or g["source"]
+        print(f"{head}  ({g['tracker']})  {g['source']}")
+        for y in g["yaks"]:
+            row = _fmt_task_row(y["status"], y["task"])
+            if y["inherited"]:
+                row += f"  (via {y['inherited_from']})"
+            print(row)
+        print()
+    if unsourced:
+        noun = "yak" if unsourced == 1 else "yaks"
+        print(f"{unsourced} {noun} in scope with no external source (omitted).")
 
 
 # ---------------------------------------------------------------------------
@@ -888,6 +840,6 @@ COMMANDS = {
     "detach": cmd_detach,
     "search": cmd_search,
     "stats": cmd_stats,
-    "sync": cmd_sync,
+    "rollup": cmd_rollup,
     "import-beads": cmd_import_beads,
 }

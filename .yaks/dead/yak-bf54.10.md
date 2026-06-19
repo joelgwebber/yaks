@@ -4,7 +4,7 @@ title: Unified attachment sync strategy
 type: idea
 priority: 3
 created: '2026-04-26T16:09:14Z'
-updated: '2026-04-26T19:04:51Z'
+updated: '2026-06-19T16:47:10Z'
 ---
 
 ## Problem
