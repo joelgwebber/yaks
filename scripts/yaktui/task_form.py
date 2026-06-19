@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 from yaklib.model import now_iso
 
 from yaktui.colors import C_HEADER, C_HELP, C_P2, C_SELECTED, C_TYPE
-from yaktui.dialogs import safe_addstr
+from yaktui.dialogs import line_editor_window, safe_addstr
 from yaktui.vim_edit import CANCEL, COMMIT, LineEditor
 
 # ---------------------------------------------------------------------------
@@ -225,24 +225,24 @@ def _fix_content_scroll(state: _FormState, zone_h: int) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _draw_text_field(stdscr, ed: LineEditor, y: int, x: int, width: int, active: bool) -> None:
+def _draw_text_field(stdscr, ed: LineEditor, y: int, x: int, width: int, active: bool) -> tuple[int, int] | None:
+    """Draw a bracketed single-line field. When *active*, return the (y, x)
+    where the caret belongs so the caller can place it as the final pre-refresh
+    step (placing it inline here would be clobbered by later draws)."""
     inner_w = max(1, width - 2)
-    offset = max(0, ed.pos - inner_w + 1)
-    visible = ed.buf[offset : offset + inner_w]
+    visible, cur = line_editor_window(ed, inner_w)
     padded = visible.ljust(inner_w)[:inner_w]
     safe_addstr(stdscr, y, x, "[", curses.A_DIM)
     safe_addstr(stdscr, y, x + 1, padded, curses.A_BOLD if active else curses.A_DIM)
     safe_addstr(stdscr, y, x + 1 + inner_w, "]", curses.A_DIM)
-    if active:
-        try:
-            stdscr.move(y, x + 1 + (ed.pos - offset))
-        except curses.error:
-            pass
+    return (y, x + 1 + cur) if active else None
 
 
-def _draw_meta_zone(stdscr, state: _FormState, w: int) -> None:
-    """Render the four compact metadata rows."""
+def _draw_meta_zone(stdscr, state: _FormState, w: int) -> tuple[int, int] | None:
+    """Render the four compact metadata rows. Returns the caret (y, x) for the
+    active text field (Title/Labels), or None on a non-text row."""
     value_x = _FIELD_X + _LABEL_W + 1
+    cursor = None
 
     for ri in range(_META_H):
         y = _META_Y + ri
@@ -252,7 +252,9 @@ def _draw_meta_zone(stdscr, state: _FormState, w: int) -> None:
 
         if ri == _ROW_TITLE:
             field_w = max(10, w - value_x - 2)
-            _draw_text_field(stdscr, state.title, y, value_x, field_w, active)
+            c = _draw_text_field(stdscr, state.title, y, value_x, field_w, active)
+            if active:
+                cursor = c
             if state.vim and active:
                 badge = f"[{'N' if state.title.mode == 'normal' else 'I'}]"
                 safe_addstr(stdscr, y, w - len(badge) - 1, badge, curses.A_DIM)
@@ -287,10 +289,14 @@ def _draw_meta_zone(stdscr, state: _FormState, w: int) -> None:
 
         elif ri == _ROW_LABELS:
             field_w = max(10, w - value_x - 2)
-            _draw_text_field(stdscr, state.labels, y, value_x, field_w, active)
+            c = _draw_text_field(stdscr, state.labels, y, value_x, field_w, active)
+            if active:
+                cursor = c
             if state.vim and active:
                 badge = f"[{'N' if state.labels.mode == 'normal' else 'I'}]"
                 safe_addstr(stdscr, y, w - len(badge) - 1, badge, curses.A_DIM)
+
+    return cursor
 
 
 def _draw_content_zone(stdscr, state: _FormState, y_start: int, zone_h: int, w: int) -> None:
@@ -361,7 +367,7 @@ def draw_task_form(stdscr, state: _FormState, form_title: str) -> None:
     safe_addstr(stdscr, 1, 0, "\u2500" * w, curses.A_DIM)
 
     # Metadata zone
-    _draw_meta_zone(stdscr, state, w)
+    cursor = _draw_meta_zone(stdscr, state, w)
 
     # Separator between meta and content
     safe_addstr(stdscr, _META_SEP_Y, 0, "\u2500" * w, curses.A_DIM)
@@ -389,6 +395,8 @@ def draw_task_form(stdscr, state: _FormState, form_title: str) -> None:
     hints = "  " + "  ".join(hints_parts)
     safe_addstr(stdscr, h - 1, 0, " " * w, curses.color_pair(C_HELP))
     safe_addstr(stdscr, h - 1, 0, hints[:w], curses.color_pair(C_HELP))
+
+    return cursor
 
 
 # ---------------------------------------------------------------------------
@@ -430,11 +438,20 @@ def run_task_form(
     curses.curs_set(1)
     try:
         while True:
-            draw_task_form(stdscr, state, form_title)
+            cursor = draw_task_form(stdscr, state, form_title)
 
-            # Cursor visibility
-            on_text = state.row in (_ROW_TITLE, _ROW_LABELS)
-            curses.curs_set(1 if on_text else 0)
+            # Cursor visibility: only the text rows (Title/Labels) show a caret,
+            # and it must be positioned as the *last* op before refresh — drawing
+            # the content zone + footer afterward would otherwise leave the
+            # hardware cursor parked at the bottom of the screen.
+            if cursor is not None:
+                curses.curs_set(1)
+                try:
+                    stdscr.move(*cursor)
+                except curses.error:
+                    pass
+            else:
+                curses.curs_set(0)
             stdscr.refresh()
 
             key = stdscr.getch()

@@ -8,12 +8,12 @@ matches, just context."
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from yaklib import deps as _deps
 from yaklib.filter import FilterSpec
 from yaklib.model import (
-    HAIRY,
     SHAVING,
     SHORN,
     STATUSES,
@@ -35,7 +35,7 @@ class TaskNode:
 def _child_sort_key(tid: str) -> int:
     dot = tid.rfind(".")
     if dot >= 0:
-        suffix = tid[dot + 1:]
+        suffix = tid[dot + 1 :]
         if suffix.isdigit():
             return int(suffix)
     return 0
@@ -49,11 +49,13 @@ def _child_status_rank(status: str) -> int:
     return 1
 
 
-def build_tree(root: Path, tab_status: str | None,
-               spec: FilterSpec,
-               tasks_cache: list | None = None,
-               resolved_cache: set | None = None
-               ) -> list[tuple[str, dict, int, bool]]:
+def build_tree(
+    root: Path,
+    tab_status: str | None,
+    spec: FilterSpec,
+    tasks_cache: list | None = None,
+    resolved_cache: set | None = None,
+) -> list[tuple[str, dict, int, bool]]:
     """Flat list of (status, task, depth, ghost) for display.
 
     *tab_status* is the currently selected tab's status; it scopes the
@@ -80,48 +82,51 @@ def build_tree(root: Path, tab_status: str | None,
     else:
         effective_statuses = set(STATUSES)
 
-    # If search is active, flatten globally (no tree context) — matches
-    # across all statuses the user allowed.
-    if spec.search:
-        results = []
-        for s, t in all_by_id.values():
-            if s not in effective_statuses:
-                continue
-            # Reuse spec.matches but ignore its own statuses (already scoped).
-            if spec.matches(s, t, resolved):
-                results.append((s, t, 0, False))
-        results.sort(key=lambda x: (x[0] != HAIRY, x[0] != SHAVING,
-                                    x[1].get("priority", 9)))
-        return results
+    def ancestors_of(tid: str) -> list[str]:
+        out = []
+        pid = parent_id(tid)
+        while pid:
+            if pid in all_by_id:
+                out.append(pid)
+            pid = parent_id(pid)
+        return out
 
-    # Scope then filter.
-    primary = [(s, t) for s, t in all_by_id.values()
-               if s in effective_statuses and spec.matches(s, t, resolved)]
+    # The current tab anchors the view: yaks in the effective status scope,
+    # plus the family they hold on screen (ancestors walked up, descendants
+    # walked down — any status). This `universe` is exactly what the tab shows
+    # unfiltered; filtering only re-colors and prunes within it.
+    anchor_ids = {tid for tid, (s, _t) in all_by_id.items() if s in effective_statuses}
+    universe = set(anchor_ids)
+    for tid in anchor_ids:
+        universe.update(ancestors_of(tid))
+    anchor_prefixes = tuple(tid + "." for tid in anchor_ids)
+    if anchor_prefixes:
+        for other in all_by_id:
+            if other not in universe and other.startswith(anchor_prefixes):
+                universe.add(other)
 
-    primary_ids = {t["id"] for _, t in primary}
+    # Content predicates only — status is the tab's job (above). A match may
+    # therefore live in a different status than the tab, as long as the tab's
+    # family is already holding it in view (i.e. it's in `universe`).
+    content_spec = replace(spec, statuses=frozenset())
+    match_active = not content_spec.is_empty()
+
+    if match_active:
+        # Matches anywhere in the tab's family light up bright; non-matching
+        # ancestors come along dimmed to root them. Everything else is pruned.
+        focus = {tid for tid in universe if content_spec.matches(all_by_id[tid][0], all_by_id[tid][1], resolved)}
+        members = set(focus)
+        for tid in focus:
+            members.update(ancestors_of(tid))
+    else:
+        # No content filter: the tab's own yaks are primary, family is context.
+        focus = set(anchor_ids)
+        members = set(universe)
 
     nodes: dict[str, TaskNode] = {}
-    for s, t in primary:
-        nodes[t["id"]] = TaskNode(s, t, ghost=False)
-
-    # Ghost ancestors: walk up from primaries to keep tree rooted.
-    for tid in list(primary_ids):
-        pid = parent_id(tid)
-        while pid and pid not in nodes:
-            if pid in all_by_id:
-                ps, pt = all_by_id[pid]
-                nodes[pid] = TaskNode(ps, pt, ghost=True)
-            pid = parent_id(pid) if pid else None
-
-    # Ghost descendants: include any descendant of an already-visible node.
-    child_prefixes = {tid + "." for tid in nodes}
-    for other_id, (os_, ot) in all_by_id.items():
-        if other_id in nodes:
-            continue
-        for prefix in child_prefixes:
-            if other_id.startswith(prefix):
-                nodes[other_id] = TaskNode(os_, ot, ghost=True)
-                break
+    for tid in members:
+        s, t = all_by_id[tid]
+        nodes[tid] = TaskNode(s, t, ghost=(tid not in focus))
 
     roots = []
     for tid, node in nodes.items():
@@ -132,11 +137,13 @@ def build_tree(root: Path, tab_status: str | None,
             roots.append(node)
 
     def sort_children(node: TaskNode):
-        node.children.sort(key=lambda n: (
-            _child_status_rank(n.status),
-            n.task.get("priority", 9),
-            _child_sort_key(n.task["id"]),
-        ))
+        node.children.sort(
+            key=lambda n: (
+                _child_status_rank(n.status),
+                n.task.get("priority", 9),
+                _child_sort_key(n.task["id"]),
+            )
+        )
         for c in node.children:
             sort_children(c)
 
@@ -159,10 +166,9 @@ def build_tree(root: Path, tab_status: str | None,
     return flat
 
 
-def apply_collapse(flat: list[tuple[str, dict, int, bool]],
-                   collapsed_ids: set[str],
-                   filter_active: bool
-                   ) -> tuple[list[tuple[str, dict, int, bool]], dict[str, int]]:
+def apply_collapse(
+    flat: list[tuple[str, dict, int, bool]], collapsed_ids: set[str], filter_active: bool
+) -> tuple[list[tuple[str, dict, int, bool]], dict[str, int]]:
     """Drop descendants of collapsed ids and report per-parent hidden counts.
 
     Returns (visible_rows, counts). When a filter/search is active, collapse
@@ -177,7 +183,5 @@ def apply_collapse(flat: list[tuple[str, dict, int, bool]],
         for cid in collapsed_ids:
             if tid.startswith(cid + "."):
                 counts[cid] = counts.get(cid, 0) + 1
-    visible = [row for row in flat
-               if not any(row[1]["id"].startswith(cid + ".")
-                          for cid in collapsed_ids)]
+    visible = [row for row in flat if not any(row[1]["id"].startswith(cid + ".") for cid in collapsed_ids)]
     return visible, counts

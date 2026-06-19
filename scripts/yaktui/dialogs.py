@@ -8,14 +8,14 @@ depending on the dialog's convention).
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import curses
+from pathlib import Path
 
 from yaklib.format import status_emoji
 from yaklib.model import STATUSES, all_tasks
-from yaktui.colors import C_SEARCH, C_SELECTED
+
 from yaktui import vim_edit as _vim_edit
+from yaktui.colors import C_SEARCH, C_SELECTED
 from yaktui.vim_edit import LineEditor
 
 
@@ -30,6 +30,18 @@ def safe_addstr(stdscr, y, x, text, attr=0):
         pass
 
 
+def line_editor_window(ed: LineEditor, inner_w: int) -> tuple[str, int]:
+    """Window a LineEditor to *inner_w* visible columns.
+
+    Returns (visible_text, cursor_col): the buffer slice to draw and the column
+    of the caret within that slice. Shared by every single-line input so the
+    text-windowing + caret math lives in exactly one place.
+    """
+    inner_w = max(1, inner_w)
+    offset = max(0, ed.pos - inner_w + 1)
+    return ed.buf[offset : offset + inner_w], ed.pos - offset
+
+
 def input_prompt(stdscr, prompt: str, vim: bool = False) -> str:
     """Read a line from the bottom bar. Escape cancels (returns "").
     Empty string on cancel mirrors the pre-vim behavior."""
@@ -37,8 +49,7 @@ def input_prompt(stdscr, prompt: str, vim: bool = False) -> str:
     return r or ""
 
 
-def edit_prompt(stdscr, prompt: str, initial: str = "",
-                vim: bool = False) -> str | None:
+def edit_prompt(stdscr, prompt: str, initial: str = "", vim: bool = False) -> str | None:
     """Read a line pre-populated with *initial*. Returns the string on
     Enter, or None on cancel."""
     h, w = stdscr.getmaxyx()
@@ -51,16 +62,14 @@ def edit_prompt(stdscr, prompt: str, initial: str = "",
             badge_w = len(badge) + 1 if badge else 0
             total_prefix = len(prompt) + badge_w
             max_vis = max(1, w - total_prefix - 1)
-            offset = max(0, ed.pos - max_vis + 1)
-            visible = ed.buf[offset:offset + max_vis]
+            visible, cur = line_editor_window(ed, max_vis)
             safe_addstr(stdscr, y, 0, " " * w, 0)
-            safe_addstr(stdscr, y, 0, prompt,
-                        curses.color_pair(C_SEARCH) | curses.A_BOLD)
+            safe_addstr(stdscr, y, 0, prompt, curses.color_pair(C_SEARCH) | curses.A_BOLD)
             if badge:
                 safe_addstr(stdscr, y, len(prompt), badge + " ", curses.A_DIM)
             safe_addstr(stdscr, y, total_prefix, visible, 0)
             try:
-                stdscr.move(y, total_prefix + (ed.pos - offset))
+                stdscr.move(y, total_prefix + cur)
             except curses.error:
                 pass
             stdscr.refresh()
@@ -85,8 +94,7 @@ def pick(stdscr, prompt: str, choices: str) -> str | None:
     h, w = stdscr.getmaxyx()
     y = h - 1
     safe_addstr(stdscr, y, 0, " " * w, 0)
-    safe_addstr(stdscr, y, 0, prompt[:w],
-                curses.color_pair(C_SEARCH) | curses.A_BOLD)
+    safe_addstr(stdscr, y, 0, prompt[:w], curses.color_pair(C_SEARCH) | curses.A_BOLD)
     stdscr.refresh()
     while True:
         ch = stdscr.getch()
@@ -104,8 +112,7 @@ def confirm(stdscr, prompt: str, default_yes: bool = False) -> bool:
     h, w = stdscr.getmaxyx()
     y = h - 1
     safe_addstr(stdscr, y, 0, " " * w, 0)
-    safe_addstr(stdscr, y, 0, prompt[:w],
-                curses.color_pair(C_SEARCH) | curses.A_BOLD)
+    safe_addstr(stdscr, y, 0, prompt[:w], curses.color_pair(C_SEARCH) | curses.A_BOLD)
     stdscr.refresh()
     while True:
         ch = stdscr.getch()
@@ -122,17 +129,15 @@ def confirm(stdscr, prompt: str, default_yes: bool = False) -> bool:
 def pick_type_for_create(stdscr) -> str | None:
     """Pick a yak type. Returns 'task'|'bug'|'feature'|'idea', or None on Esc."""
     type_map = {"t": "task", "b": "bug", "f": "feature", "i": "idea"}
-    choice = pick(stdscr,
-                  "New yak type: t=task b=bug f=feature i=idea  (Esc=cancel)",
-                  "tbfi")
+    choice = pick(stdscr, "New yak type: t=task b=bug f=feature i=idea  (Esc=cancel)", "tbfi")
     if choice is None:
         return None
     return type_map[choice]
 
 
-def fuzzy_pick_task(stdscr, root: Path, prompt: str,
-                    exclude_ids: set[str] | None = None,
-                    vim: bool = False) -> str | None:
+def fuzzy_pick_task(
+    stdscr, root: Path, prompt: str, exclude_ids: set[str] | None = None, vim: bool = False
+) -> str | None:
     """Interactive fuzzy search over all tasks. Returns task ID or None.
 
     Shows a floating results list above the prompt that updates as the
@@ -184,8 +189,7 @@ def fuzzy_pick_task(stdscr, root: Path, prompt: str,
                 if i < len(matches):
                     ms, mt = matches[i]
                     line = f"  {status_emoji(ms)} {mt['id']}  {mt.get('title', '')}"
-                    attr = (curses.color_pair(C_SELECTED) | curses.A_BOLD
-                            if i == sel else 0)
+                    attr = curses.color_pair(C_SELECTED) | curses.A_BOLD if i == sel else 0
                     safe_addstr(stdscr, y, 0, line[:w], attr)
 
             prompt_y = h - 1
@@ -194,14 +198,12 @@ def fuzzy_pick_task(stdscr, root: Path, prompt: str,
             total_prefix = len(prompt) + badge_w
             max_vis = max(1, w - total_prefix - 1)
             offset = max(0, ed.pos - max_vis + 1)
-            visible = ed.buf[offset:offset + max_vis]
+            visible = ed.buf[offset : offset + max_vis]
             count_str = f" ({len(matches)} matches)" if ed.buf else ""
             safe_addstr(stdscr, prompt_y, 0, " " * w, 0)
-            safe_addstr(stdscr, prompt_y, 0, prompt,
-                        curses.color_pair(C_SEARCH) | curses.A_BOLD)
+            safe_addstr(stdscr, prompt_y, 0, prompt, curses.color_pair(C_SEARCH) | curses.A_BOLD)
             if badge:
-                safe_addstr(stdscr, prompt_y, len(prompt), badge + " ",
-                            curses.A_DIM)
+                safe_addstr(stdscr, prompt_y, len(prompt), badge + " ", curses.A_DIM)
             safe_addstr(stdscr, prompt_y, total_prefix, visible, 0)
             cs = total_prefix + len(visible)
             if cs + len(count_str) < w:
@@ -239,16 +241,14 @@ def fuzzy_pick_task(stdscr, root: Path, prompt: str,
         curses.curs_set(0)
 
 
-
-
 def _text_edit(buf: str, pos: int, ch: int) -> tuple[str, int]:
     if ch in (curses.KEY_BACKSPACE, 127, 8):
         if pos > 0:
-            buf = buf[:pos - 1] + buf[pos:]
+            buf = buf[: pos - 1] + buf[pos:]
             pos -= 1
     elif ch == curses.KEY_DC:
         if pos < len(buf):
-            buf = buf[:pos] + buf[pos + 1:]
+            buf = buf[:pos] + buf[pos + 1 :]
     elif ch == curses.KEY_LEFT:
         pos = max(0, pos - 1)
     elif ch == curses.KEY_RIGHT:

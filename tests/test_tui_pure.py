@@ -32,8 +32,7 @@ def test_build_tree_shows_primary_tasks(yak, yak_root):
 def test_build_tree_includes_ghost_descendants(yak, yak_root):
     """A shaving parent should still reveal its hairy child as a ghost."""
     parent = create_task(yak, "parent", type="feature")
-    child_out = yak("create", "--title", "kid", "--type", "task",
-                    "--parent", parent).stdout
+    child_out = yak("create", "--title", "kid", "--type", "task", "--parent", parent).stdout
     child_id = child_out.splitlines()[0].split()[1].rstrip(":")
 
     yak("shave", parent)
@@ -49,11 +48,70 @@ def test_build_tree_search_matches_across_statuses(yak, yak_root):
     b = create_task(yak, "beta thing", type="task")
     yak("shave", a)
 
-    flat = build_tree(_yaks(yak_root), None,
-                      FilterSpec(search="widget"))
+    flat = build_tree(_yaks(yak_root), None, FilterSpec(search="widget"))
     ids = [t["id"] for _, t, _, _ in flat]
     assert a in ids
     assert b not in ids
+
+
+def test_build_tree_filter_surfaces_cross_status_child(yak, yak_root):
+    """On the shaving tab, a hairy child held in view by its shaving parent
+    lights up bright when it matches the filter; the non-matching parent stays
+    as a dim ghost to root it (yak-7668)."""
+    parent = create_task(yak, "parent feature", type="feature")
+    child = create_task(yak, "kid", type="task", parent=parent, labels=["foo"])
+    yak("shave", parent)  # parent -> shaving; child stays hairy
+
+    flat = build_tree(_yaks(yak_root), "shaving", FilterSpec(labels=("foo",)))
+    by_id = {t["id"]: ghost for _, t, _, ghost in flat}
+    assert by_id.get(child) is False  # matching child is bright
+    assert by_id.get(parent) is True  # non-matching parent is ghost context
+
+
+def test_build_tree_search_child_keeps_parent_context(yak, yak_root):
+    """A search that matches only a child shows it nested under a dim parent,
+    not flattened to a detached top-level row (yak-7668)."""
+    parent = create_task(yak, "umbrella alpha", type="feature")
+    child = create_task(yak, "child widget", type="task", parent=parent)
+
+    flat = build_tree(_yaks(yak_root), "hairy", FilterSpec(search="widget"))
+    by_id = {t["id"]: (depth, ghost) for _, t, depth, ghost in flat}
+    assert by_id[child] == (1, False)  # nested (depth 1), bright
+    assert by_id[parent][1] is True  # parent present, dimmed
+
+
+def test_build_tree_filter_skips_yaks_with_no_relative_in_tab(yak, yak_root):
+    """Filtering re-colors the current tab's tree; it is not a global search.
+    A match with no family in the tab's status stays hidden (yak-7668)."""
+    loner = create_task(yak, "loner foo", type="task", labels=["foo"])  # hairy, standalone
+    anchor = create_task(yak, "shaving anchor", type="task")
+    yak("shave", anchor)
+
+    flat = build_tree(_yaks(yak_root), "shaving", FilterSpec(labels=("foo",)))
+    ids = [t["id"] for _, t, _, _ in flat]
+    assert loner not in ids
+
+
+def test_line_editor_window_no_scroll():
+    from yaktui.dialogs import line_editor_window
+    from yaktui.vim_edit import LineEditor
+
+    ed = LineEditor("hello")
+    ed.pos = 3
+    vis, cur = line_editor_window(ed, 20)
+    assert vis == "hello"
+    assert cur == 3
+
+
+def test_line_editor_window_scrolls_to_keep_caret_visible():
+    from yaktui.dialogs import line_editor_window
+    from yaktui.vim_edit import LineEditor
+
+    ed = LineEditor("abcdefghij")  # 10 chars
+    ed.pos = 9  # caret on the last char
+    vis, cur = line_editor_window(ed, 4)
+    assert vis == "ghij"  # windowed to the trailing 4 columns
+    assert cur == 3  # caret sits inside the window, not off-screen
 
 
 def test_build_detail_lines_has_sections(yak, yak_root, tmp_path):
@@ -105,8 +163,7 @@ def test_build_detail_lines_inline_link_bare_mention(yak, yak_root):
     other = yak("create", "--title", "sidecar", "--type", "task").stdout
     other_id = other.splitlines()[0].split()[1].rstrip(":")
 
-    tid = yak("create", "--title", "host", "--type", "task",
-              "--description", f"see {other_id} for details").stdout
+    tid = yak("create", "--title", "host", "--type", "task", "--description", f"see {other_id} for details").stdout
     tid = tid.splitlines()[0].split()[1].rstrip(":")
 
     _, path = find_task_file(_yaks(yak_root), tid)
@@ -123,8 +180,7 @@ def test_build_detail_lines_inline_link_wiki_form(yak, yak_root):
     other = yak("create", "--title", "wiki target", "--type", "task").stdout
     other_id = other.splitlines()[0].split()[1].rstrip(":")
 
-    tid = yak("create", "--title", "host", "--type", "task",
-              "--description", f"ref: [[{other_id}]] here").stdout
+    tid = yak("create", "--title", "host", "--type", "task", "--description", f"ref: [[{other_id}]] here").stdout
     tid = tid.splitlines()[0].split()[1].rstrip(":")
 
     _, path = find_task_file(_yaks(yak_root), tid)
@@ -140,12 +196,14 @@ def test_build_detail_lines_inline_link_wiki_form(yak, yak_root):
 
 def test_build_detail_lines_inline_link_skips_self_and_unknown(yak, yak_root):
     """Self-references and nonexistent IDs do not produce spans."""
-    tid = yak("create", "--title", "solo", "--type", "task",
-              "--description", "mentions test-ffff (nope) and self below").stdout
+    tid = yak(
+        "create", "--title", "solo", "--type", "task", "--description", "mentions test-ffff (nope) and self below"
+    ).stdout
     tid = tid.splitlines()[0].split()[1].rstrip(":")
 
     # Amend the description to include its own id
     from yaklib.model import save_task
+
     _, path = find_task_file(_yaks(yak_root), tid)
     t = load_task(path)
     t["description"] = f"self {tid} and test-ffff"
@@ -162,8 +220,7 @@ def test_build_detail_lines_inline_link_independent_of_explicit_dep(yak, yak_roo
     dep = yak("create", "--title", "dep", "--type", "task").stdout
     dep_id = dep.splitlines()[0].split()[1].rstrip(":")
 
-    tid = yak("create", "--title", "host", "--type", "task",
-              "--description", f"blocked on {dep_id}").stdout
+    tid = yak("create", "--title", "host", "--type", "task", "--description", f"blocked on {dep_id}").stdout
     tid = tid.splitlines()[0].split()[1].rstrip(":")
     yak("dep", "add", tid, dep_id)
 
@@ -202,11 +259,11 @@ def test_build_detail_lines_blocks_reverse_deps(yak, yak_root):
 
     # Render the blocker's detail with reverse_deps populated.
     from yaklib import deps as _deps
+
     _, reverse = _deps.compute_blocked(_yaks(yak_root))
     _, path = find_task_file(_yaks(yak_root), blocker)
     t = load_task(path)
-    lines = build_detail_lines(_yaks(yak_root), t, "hairy", width=100,
-                               reverse_deps=reverse)
+    lines = build_detail_lines(_yaks(yak_root), t, "hairy", width=100, reverse_deps=reverse)
 
     assert any("Blocks:" in l.text for l in lines)
     link_ids = [l.task_id for l in lines if l.task_id]
@@ -233,8 +290,7 @@ def _row(tid, depth=0):
 
 
 def test_apply_collapse_hides_descendants_and_counts():
-    flat = [_row("yak-1"), _row("yak-1.1", 1), _row("yak-1.1.2", 2),
-            _row("yak-2")]
+    flat = [_row("yak-1"), _row("yak-1.1", 1), _row("yak-1.1.2", 2), _row("yak-2")]
     visible, counts = apply_collapse(flat, {"yak-1"}, filter_active=False)
     assert [r[1]["id"] for r in visible] == ["yak-1", "yak-2"]
     assert counts == {"yak-1": 2}
@@ -257,8 +313,7 @@ def test_apply_collapse_nested_counts_outer_not_double_inner():
     """When both ancestor and descendant are collapsed, the ancestor's count
     is the whole subtree — we don't hide rows twice or drop the inner."""
     flat = [_row("yak-1"), _row("yak-1.1", 1), _row("yak-1.1.2", 2)]
-    visible, counts = apply_collapse(flat, {"yak-1", "yak-1.1"},
-                                     filter_active=False)
+    visible, counts = apply_collapse(flat, {"yak-1", "yak-1.1"}, filter_active=False)
     assert [r[1]["id"] for r in visible] == ["yak-1"]
     # Outer counts 2 descendants (child + grandchild); inner still logs its 1.
     assert counts["yak-1"] == 2
@@ -266,12 +321,7 @@ def test_apply_collapse_nested_counts_outer_not_double_inner():
 
 
 def test_parse_template_happy_path():
-    text = ("---\n"
-            "title: plain title\n"
-            "type: task\n"
-            "priority: 2\n"
-            "---\n"
-            "body text\n")
+    text = "---\ntitle: plain title\ntype: task\npriority: 2\n---\nbody text\n"
     data = parse_template(text)
     assert data["title"] == "plain title"
     assert data["type"] == "task"
@@ -288,11 +338,7 @@ def test_parse_template_empty_cancelled_returns_none():
 def test_parse_template_raises_on_unquoted_colon_in_title():
     """Regression for yak-7321: an unquoted ':' in the title used to be
     swallowed as 'create cancelled', silently dropping the user's work."""
-    text = ("---\n"
-            "title: Handle foo: bar edge case\n"
-            "type: bug\n"
-            "priority: 2\n"
-            "---\n")
+    text = "---\ntitle: Handle foo: bar edge case\ntype: bug\npriority: 2\n---\n"
     try:
         parse_template(text)
     except TemplateParseError as e:
@@ -304,10 +350,6 @@ def test_parse_template_raises_on_unquoted_colon_in_title():
 
 
 def test_parse_template_accepts_quoted_colon():
-    text = ("---\n"
-            "title: \"Handle foo: bar\"\n"
-            "type: bug\n"
-            "priority: 2\n"
-            "---\n")
+    text = '---\ntitle: "Handle foo: bar"\ntype: bug\npriority: 2\n---\n'
     data = parse_template(text)
     assert data["title"] == "Handle foo: bar"
