@@ -114,6 +114,28 @@ def test_line_editor_window_scrolls_to_keep_caret_visible():
     assert cur == 3  # caret sits inside the window, not off-screen
 
 
+def test_nav_keys_shared_across_dialogs():
+    """Ctrl-N/P, Tab/Shift-Tab, and the arrows navigate identically in the
+    fuzzy picker and the task form because both reference one shared key set
+    rather than hardcoding their own (yak-b589)."""
+    import curses
+
+    from yaktui import dialogs, task_form
+
+    # Ctrl-N (14) advances, Ctrl-P (16) goes back — the bug was these doing
+    # nothing in the create/edit form while working in the fuzzy picker.
+    assert 14 in dialogs.NAV_NEXT_KEYS
+    assert 16 in dialogs.NAV_PREV_KEYS
+    # Tab / Shift-Tab and the arrows round out each direction.
+    assert ord("\t") in dialogs.NAV_NEXT_KEYS
+    assert curses.KEY_DOWN in dialogs.NAV_NEXT_KEYS
+    assert curses.KEY_BTAB in dialogs.NAV_PREV_KEYS
+    assert curses.KEY_UP in dialogs.NAV_PREV_KEYS
+    # The form binds the very same objects, not a divergent copy.
+    assert task_form.NAV_NEXT_KEYS is dialogs.NAV_NEXT_KEYS
+    assert task_form.NAV_PREV_KEYS is dialogs.NAV_PREV_KEYS
+
+
 def test_build_detail_lines_has_sections(yak, yak_root, tmp_path):
     parent = create_task(yak, "parent", type="feature")
     blocker = create_task(yak, "blocker", type="task")

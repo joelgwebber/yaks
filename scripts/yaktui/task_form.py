@@ -18,7 +18,8 @@ Layout
   h-2       ─── separator
   h-1       help bar
 
-Navigation: Tab/j/k move between all rows (meta + description + each comment).
+Navigation: Tab/Shift-Tab, arrows, Ctrl-N/P, and j/k all move between rows
+(meta + description + each comment) — the same set the fuzzy picker uses.
 Metadata rows use LineEditor / chip pickers. Content rows open PT on Enter.
 Comments support x (delete) and n (new comment) from anywhere outside a
 text-editing row.
@@ -32,7 +33,7 @@ from dataclasses import dataclass, field
 from yaklib.model import now_iso
 
 from yaktui.colors import C_HEADER, C_HELP, C_P2, C_SELECTED, C_TYPE
-from yaktui.dialogs import line_editor_window, safe_addstr
+from yaktui.dialogs import NAV_NEXT_KEYS, NAV_PREV_KEYS, line_editor_window, safe_addstr
 from yaktui.vim_edit import CANCEL, COMMIT, LineEditor
 
 # ---------------------------------------------------------------------------
@@ -479,8 +480,8 @@ def run_task_form(
             # ── metadata rows ─────────────────────────────────────────────
             if state.row == _ROW_TITLE:
                 ed = state.title
-                nav_down = key in (9, curses.KEY_DOWN) or (vim and ed.mode == "normal" and key == ord("j"))
-                nav_up = key in (curses.KEY_BTAB, curses.KEY_UP) or (vim and ed.mode == "normal" and key == ord("k"))
+                nav_down = key in NAV_NEXT_KEYS or (vim and ed.mode == "normal" and key == ord("j"))
+                nav_up = key in NAV_PREV_KEYS or (vim and ed.mode == "normal" and key == ord("k"))
                 if nav_down:
                     _nav(+1)
                     continue
@@ -494,9 +495,9 @@ def run_task_form(
                     return None
 
             elif state.row == _ROW_TYPE:
-                if key in (9, curses.KEY_DOWN, ord("j")):
+                if key in NAV_NEXT_KEYS or key == ord("j"):
                     _nav(+1)
-                elif key in (curses.KEY_BTAB, curses.KEY_UP, ord("k")):
+                elif key in NAV_PREV_KEYS or key == ord("k"):
                     _nav(-1)
                 elif key in (curses.KEY_LEFT, ord("h")):
                     idx = _TYPE_CHOICES.index(state.yak_type)
@@ -513,9 +514,9 @@ def run_task_form(
                             break
 
             elif state.row == _ROW_PRIORITY:
-                if key in (9, curses.KEY_DOWN, ord("j")):
+                if key in NAV_NEXT_KEYS or key == ord("j"):
                     _nav(+1)
-                elif key in (curses.KEY_BTAB, curses.KEY_UP, ord("k")):
+                elif key in NAV_PREV_KEYS or key == ord("k"):
                     _nav(-1)
                 elif key in (curses.KEY_LEFT, ord("h")):
                     state.priority = max(1, state.priority - 1)
@@ -528,8 +529,8 @@ def run_task_form(
 
             elif state.row == _ROW_LABELS:
                 ed = state.labels
-                nav_down = key in (9, curses.KEY_DOWN) or (vim and ed.mode == "normal" and key == ord("j"))
-                nav_up = key in (curses.KEY_BTAB, curses.KEY_UP) or (vim and ed.mode == "normal" and key == ord("k"))
+                nav_down = key in NAV_NEXT_KEYS or (vim and ed.mode == "normal" and key == ord("j"))
+                nav_up = key in NAV_PREV_KEYS or (vim and ed.mode == "normal" and key == ord("k"))
                 if nav_down:
                     _nav(+1)
                     continue
@@ -544,9 +545,9 @@ def run_task_form(
 
             # ── description ───────────────────────────────────────────────
             elif state.row == _ROW_DESC:
-                if key in (9, curses.KEY_DOWN, ord("j")):
+                if key in NAV_NEXT_KEYS or key == ord("j"):
                     _nav(+1)
-                elif key in (curses.KEY_BTAB, curses.KEY_UP, ord("k")):
+                elif key in NAV_PREV_KEYS or key == ord("k"):
                     _nav(-1)
                 elif key in (10, 13, curses.KEY_ENTER, ord("e"), ord("i")):
                     curses.curs_set(0)
@@ -560,9 +561,9 @@ def run_task_form(
             # ── individual comment rows ───────────────────────────────────
             else:
                 cidx = state.comment_idx()
-                if key in (9, curses.KEY_DOWN, ord("j")):
+                if key in NAV_NEXT_KEYS or key == ord("j"):
                     _nav(+1)
-                elif key in (curses.KEY_BTAB, curses.KEY_UP, ord("k")):
+                elif key in NAV_PREV_KEYS or key == ord("k"):
                     _nav(-1)
                 elif key in (10, 13, curses.KEY_ENTER, ord("e"), ord("i")):
                     ts, text = state.comments[cidx]

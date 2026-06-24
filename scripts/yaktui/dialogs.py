@@ -18,6 +18,12 @@ from yaktui import vim_edit as _vim_edit
 from yaktui.colors import C_SEARCH, C_SELECTED
 from yaktui.vim_edit import LineEditor
 
+# Shared row/list navigation keys, used by every multi-row dialog (the fuzzy
+# picker and the task form) so Ctrl-N/P, Tab/Shift-Tab, and the arrow keys all
+# move selection identically no matter which dialog you're in.
+NAV_NEXT_KEYS = (curses.KEY_DOWN, 14, ord("\t"))  # Down / Ctrl-N / Tab
+NAV_PREV_KEYS = (curses.KEY_UP, 16, curses.KEY_BTAB)  # Up / Ctrl-P / Shift-Tab
+
 
 def safe_addstr(stdscr, y, x, text, attr=0):
     """Guarded addnstr: clips to screen, swallows curses errors."""
@@ -219,11 +225,11 @@ def fuzzy_pick_task(
                 continue
 
             # List navigation: always-on keys + vim-normal j/k.
-            list_nav = ch in (curses.KEY_UP, 16, curses.KEY_DOWN, 14, 9)
+            list_nav = ch in NAV_NEXT_KEYS or ch in NAV_PREV_KEYS
             if vim and ed.mode == "normal" and ch in (ord("j"), ord("k")):
                 list_nav = True
             if list_nav:
-                if ch in (curses.KEY_UP, 16) or ch == ord("k"):
+                if ch in NAV_PREV_KEYS or ch == ord("k"):
                     sel = max(0, sel - 1)
                 else:
                     sel = min(len(matches) - 1, sel + 1) if matches else 0
