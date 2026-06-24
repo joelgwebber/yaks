@@ -70,7 +70,14 @@ Optional description as markdown body.
 
 ## Releasing
 
-Bump the plugin version in `.claude-plugin/marketplace.json` whenever making changes that affect the plugin (commands, skills, `scripts/**`). Without a version bump, claude plugins installations will use a stale cached version.
+Whenever you make changes that affect the plugin (commands, skills, `scripts/**`), bump the version. Without a bump, Claude Code plugin installs use a stale cached version.
+
+Keep these two manifests in lockstep — bump **both** to the same new version in the same commit:
+
+- `.claude-plugin/marketplace.json` — the `version` under `plugins[0]` (not the top-level `"version": "1.0.0"`, which is the marketplace schema version and stays put).
+- `.codex-plugin/plugin.json` — the top-level `version`.
+
+`.claude-plugin/plugin.json` deliberately carries no version field (the marketplace entry is authoritative for Claude), so there's nothing to bump there. Versions are plain `MAJOR.MINOR.PATCH`; increment the patch for ordinary changes.
 
 ## Task tracking
 
