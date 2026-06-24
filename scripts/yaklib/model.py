@@ -228,7 +228,14 @@ def all_tasks(root: Path, status: str | None = None) -> list[tuple[str, dict]]:
         if not d.exists():
             continue
         for f in sorted(d.glob("*.md")):
-            task = load_task(f)
+            try:
+                task = load_task(f)
+            except (OSError, yaml.YAMLError):
+                # The file vanished or was mid-write between the glob and the
+                # read — e.g. an agent moved/removed a yak directly while a
+                # live `yaks tui` scan was running. Skip it instead of crashing
+                # the whole scan; the next reload sees the settled state.
+                continue
             if task:
                 results.append((s, task))
     return results

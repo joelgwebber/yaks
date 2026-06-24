@@ -136,6 +136,33 @@ def test_nav_keys_shared_across_dialogs():
     assert task_form.NAV_PREV_KEYS is dialogs.NAV_PREV_KEYS
 
 
+def test_all_tasks_skips_files_that_vanish_mid_scan(yak, yak_root, monkeypatch):
+    """A yak file removed/moved out from under a live scan (e.g. an agent
+    editing files directly while `yaks tui` polls the filesystem) must not
+    crash the scan. The vanished file is skipped; survivors still load
+    (yak-b535)."""
+    from yaklib import model
+
+    a = create_task(yak, "alpha", type="task")
+    b = create_task(yak, "beta", type="task")
+    doomed = _yaks(yak_root) / "hairy" / f"{a}.md"
+
+    real_load = model.load_task
+
+    def racy_load(path):
+        # Simulate the file disappearing between the directory glob and the read.
+        if Path(path) == doomed:
+            raise FileNotFoundError(2, "No such file or directory", str(path))
+        return real_load(path)
+
+    monkeypatch.setattr(model, "load_task", racy_load)
+
+    tasks = model.all_tasks(_yaks(yak_root), "hairy")  # must not raise
+    ids = [t["id"] for _, t in tasks]
+    assert b in ids       # survivor still loads
+    assert a not in ids   # vanished file silently skipped
+
+
 def test_build_detail_lines_has_sections(yak, yak_root, tmp_path):
     parent = create_task(yak, "parent", type="feature")
     blocker = create_task(yak, "blocker", type="task")
