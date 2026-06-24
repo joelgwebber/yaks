@@ -4,7 +4,7 @@
 
 Filesystem-native task tracker for AI coding agents. Markdown files with YAML frontmatter, no database, no daemon.
 
-Yaks gives your AI coding assistant persistent task tracking across sessions. Tasks are stored as markdown files (with YAML frontmatter for metadata) in a `.yaks/` directory within your project — readable, diffable, and version-controlled alongside your code. It ships as a plugin for Claude Code and OpenAI Codex, as an installable skill for Zed, and as a standalone CLI for any other agent.
+Yaks gives your AI coding assistant persistent task tracking across sessions. Tasks are stored as markdown files (with YAML frontmatter for metadata) in a `.yaks/` directory within your project — readable, diffable, and friendly to version control. Use it two ways: **commit `.yaks/`** to share a tracker with your team, or **gitignore it** to keep a private, local-only scratchpad. It ships as a plugin for Claude Code and OpenAI Codex, as an installable skill for Zed, and as a standalone CLI for any other agent.
 
 ## Install
 
@@ -105,6 +105,7 @@ With any other agent, the same operations run via the `yaks` CLI — your agent 
 - **Dependencies are first-class.** Tasks can depend on other tasks. `/yaks:next` shows only tasks whose dependencies are all shorn. `/yaks:tangled` shows what's stuck.
 - **Artifacts.** Attach files or clipboard images to tasks with `attach`. They're stored in `.yaks/artifacts/{task-id}/` and linked from the task body.
 - **Git-friendly.** Task files are small, human-readable, and merge cleanly. Git history is your audit log.
+- **Local or team.** Commit `.yaks/` to share tasks with collaborators (team mode), or gitignore it for a private local-only scratchpad. In local-only mode, keep yak files — and their IDs — out of commits, PRs, and external trackers; the skill spells out the distinction so your agent doesn't leak private planning notes.
 
 ## Commands
 
@@ -231,7 +232,7 @@ If you already have `.yaks/` set up and want to add the mandate manually, add th
 This project uses Yaks. The Yaks skill has the full workflow.
 
 1. Never start coding without a shaving yak. No exceptions.
-2. Shear a yak as soon as its work is done. When using git, prefer to commit the shorn yak alongside the code changes that completed it.
+2. Shear a yak as soon as its work is done. If the project commits its yaks (`.yaks/` is tracked by git), commit the shorn yak alongside the code that completed it; if `.yaks/` is gitignored, keep yak files — and their IDs — out of commits, PRs, and anything external.
 3. Check existing yaks before creating new ones.
 4. Append progress notes to yak descriptions as you work.
 5. When unsure what's next, run `yaks next` — don't freelance.

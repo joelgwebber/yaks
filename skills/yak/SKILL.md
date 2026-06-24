@@ -13,7 +13,25 @@ This project tracks work with Yaks. Tasks are markdown files with YAML frontmatt
 
 **NEVER write code without an active shaving yak.** Before touching any code — even a one-line fix — you must have a yak in shaving state. If you don't, stop and `/yaks:shave` one first (create it if needed). No exceptions.
 
-**ALWAYS shear when a yak's work is done.** Run `/yaks:shorn TASK_ID` as soon as the task is complete. When the project uses git, prefer to stage the shorn yak file alongside the code changes that completed it and commit them together rather than as a separate commit.
+**ALWAYS shear when a yak's work is done.** Run `/yaks:shorn TASK_ID` as soon as the task is complete. In **team mode** (see below), prefer to stage the shorn yak file alongside the code changes that completed it and commit them together rather than as a separate commit. In **local-only mode**, never commit yak files at all.
+
+## Two workflows: local or team
+
+Yaks runs in one of two modes, and they call for different habits. **Figure out which mode you're in before you commit anything** — the signal is whether `.yaks/` is tracked by git:
+
+- `.yaks/` is gitignored or otherwise untracked → **local-only** (a private scratchpad).
+- `.yaks/` is committed alongside the code → **team** (a shared tracker).
+
+To check: `git check-ignore .yaks` printing a path means local-only; `git ls-files .yaks` listing files means team. If a fresh checkout is genuinely ambiguous, default to local-only — it's the safer assumption.
+
+**Local-only.** The yak files live only on this machine; they're your planning memory, not part of the project's shared history.
+- Never `git add` yak files or include them in commits.
+- Keep yaks invisible to everyone else: do **not** mention them — or their IDs — in commit messages, PR titles/descriptions, code comments, or external trackers. Describe the change in plain terms ("add retry logic"), not as "shorn yak-1234".
+- The `commit:` field still gets stamped on shorn yaks; that's fine, it stays in the local file.
+
+**Team.** The yak files are part of the repo — treat them like code.
+- Commit the shorn yak move together with the code that completed it (hard rule 2).
+- Referencing yak IDs in commit messages and PRs is welcome; everyone can resolve them.
 
 ## Workflow
 
