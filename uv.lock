@@ -357,9 +357,9 @@ wheels = [
 ]
 
 [[package]]
-name = "yaks"
-version = "0.1.0"
-source = { virtual = "." }
+name = "yakherder"
+version = "0.1.78"
+source = { editable = "." }
 dependencies = [
     { name = "prompt-toolkit" },
     { name = "pyyaml" },

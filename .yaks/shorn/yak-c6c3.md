@@ -4,7 +4,7 @@ title: Revisit commands/cli structure and skills
 type: task
 priority: 1
 created: '2026-07-25T20:32:55Z'
-updated: '2026-07-25T21:14:10Z'
+updated: '2026-07-25T21:23:13Z'
 ---
 
 I'm finding that agents often get confused about the CLI tools, perhaps because they don't all support "commands"?
@@ -18,3 +18,7 @@ Plan agreed: go skill+uvx, no MCP. Root cause = instructions are Claude-shaped (
 ---
 ▸ 2026-07-25T21:05:05Z
 FINAL NAME: yakherder (distribution) / yaks (command). Supersedes the earlier yakshave placeholder. Register yaks + yakherder console-script aliases. Recommend 'uv tool install yakherder' for humans so 'yaks tui' stays on PATH.
+
+---
+▸ 2026-07-25T21:23:13Z
+All four children shorn. Outcome: yaks now uses a single cross-harness model — direct CLI via the rewritten yak skill (no slash commands, no CLAUDE_PLUGIN_ROOT), packaged as 'yakherder' on PyPI (command stays 'yaks'), commands/ deleted, docs updated, versions unified in lockstep. Remaining hand-off (tracked separately, owner-gated): create the PyPI pending publisher for 'yakherder' and push a v0.1.78 tag to publish; users on Claude/Codex/Zed should reinstall/re-sync the plugin to pick up the new skill.

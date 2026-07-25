@@ -66,7 +66,7 @@ This project uses Yaks. The Yaks skill has the full workflow.
 2. Shear a yak as soon as its work is done. If the project commits its yaks (`.yaks/` is tracked by git), commit the shorn yak alongside the code that completed it; if `.yaks/` is gitignored, keep yak files — and their IDs — out of commits, PRs, and anything external.
 3. Check existing yaks before creating new ones.
 4. Append progress notes to yak descriptions as you work.
-5. When unsure what's next, run `/yaks:next` — don't freelance.
+5. When unsure what's next, run `yaks next` — don't freelance.
 """
 
 
@@ -84,7 +84,7 @@ def _inject_mandate(force_agents: bool = False):
 
     if target.exists():
         content = target.read_text()
-        if "Yaks skill" in content or "yaks:next" in content:
+        if "Yaks skill" in content or "yaks next" in content:
             print(f"Yaks guidance already present in {target.name}, skipping")
             return
         target.write_text(content.rstrip() + "\n" + _YAKS_MANDATE)

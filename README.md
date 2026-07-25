@@ -14,7 +14,7 @@ Yaks gives your AI coding assistant persistent task tracking across sessions. Ta
 claude plugin add --from /path/to/yaks
 ```
 
-The plugin bundles slash commands (`/yaks:create`, `/yaks:list`, etc.) and the `yak` skill, which activates automatically when `.yaks/` exists in a project.
+The plugin bundles the `yak` and `yak-tracker` skills, which activate automatically when `.yaks/` exists in a project. The skills teach the agent to drive the `yaks` CLI directly (see [CLI tool](#cli-tool-any-agent) below to install it).
 
 ### OpenAI Codex
 
@@ -49,60 +49,59 @@ cp -r /path/to/yaks/skills/yak-tracker  .agents/skills/yak-tracker
 
 Once installed, the `yak` skill appears in Zed's skill catalog and activates automatically when the agent detects a `.yaks/` directory. You can also invoke it with `/yak` in the message editor. The `yak-tracker` skill relates yaks to external issue trackers as a one-way projection (rollup, import-once, outbound draft).
 
-The skills instruct Zed's agent to use the `yaks` CLI, so install that too:
-
-```bash
-uv tool install git+https://github.com/joelgwebber/yaks
-```
+The skills instruct Zed's agent to use the `yaks` CLI, so install that too (see [CLI tool](#cli-tool-any-agent) below).
 
 ### CLI tool (any agent)
 
-```bash
-# From GitHub
-uv tool install git+https://github.com/joelgwebber/yaks
+The distribution is published on PyPI as **`yakherder`**; the command it installs is **`yaks`** (the name `yaks` was already taken on PyPI):
 
-# Or from a local clone
+```bash
+# From PyPI (recommended) — puts `yaks` on your $PATH
+uv tool install yakherder
+
+# Or straight from GitHub / a local clone
+uv tool install git+https://github.com/joelgwebber/yaks
 uv tool install /path/to/yaks
 ```
 
-This puts `yaks` on your `$PATH`. All subcommands work: `yaks list`, `yaks create`, `yaks tui`, etc. Upgrade with `uv tool upgrade yaks`.
+All subcommands work: `yaks list`, `yaks create`, `yaks tui`, etc. Upgrade with `uv tool upgrade yakherder`.
+
+Prefer not to install anything? Run it zero-install in an isolated environment:
+
+```bash
+uvx yakherder tui          # or any subcommand: uvx yakherder list, uvx yakherder next, ...
+```
 
 For agents that don't have a Yaks plugin (Cursor, GitHub Copilot, Gemini CLI, Windsurf, Aider, etc.), the CLI is the integration point — see [Configuring your AI assistant](#configuring-your-ai-assistant-to-use-yaks) below.
 
 ## Quick start
 
-Initialize task tracking in any project. If you're using the Claude Code plugin:
-
-```
-/yaks:init
-```
-
-For any other agent (or directly from a terminal):
+Initialize task tracking in any project, from a terminal or via your agent:
 
 ```bash
 yaks init
 ```
 
-Both create a `.yaks/` directory with `hairy/`, `shaving/`, and `shorn/` subdirectories, plus a `config.yaml`. They also append a workflow mandate to `CLAUDE.md` or `AGENTS.md` (use `--agents` to force `AGENTS.md`).
+This creates a `.yaks/` directory with `hairy/`, `shaving/`, and `shorn/` subdirectories, plus a `config.yaml`. It also appends a workflow mandate to `CLAUDE.md` or `AGENTS.md` (defaults to `AGENTS.md`; use `--agents` to force it even when a `CLAUDE.md` exists).
 
-From there your coding assistant can create and manage tasks. With the Claude Code or Codex plugin:
+From there your coding assistant creates and manages tasks by calling the `yaks` CLI:
 
+```bash
+yaks create --title "Add retry logic to API client" --type feature --priority 1
+yaks list
+yaks next
+yaks shave yak-a1b2
+yaks shorn yak-a1b2
 ```
-/yaks:create --title "Add retry logic to API client" --type feature --priority 1
-/yaks:list
-/yaks:next
-/yaks:shave yak-a1b2
-/yaks:shorn yak-a1b2
-```
 
-With any other agent, the same operations run via the `yaks` CLI — your agent calls it through Bash/shell tool access.
+Agents drive these through shell/Bash tool access — there are no editor-specific slash commands to learn.
 
 ## How it works
 
 - **Status is a directory.** A task in `.yaks/hairy/` needs shaving. Move it to `.yaks/shaving/` and it's in progress. Move it to `.yaks/shorn/` and it's done. No status field in the YAML — the filesystem is the source of truth.
 - **Tasks are markdown with frontmatter.** Every task is a single `.md` file. Structured metadata (ID, title, type, priority, timestamps, dependencies, labels) lives in YAML frontmatter. The markdown body is the description.
 - **Parent/child tasks.** Create subtasks with `--parent TASK_ID`. Children get dot-suffixed IDs (`yak-a1b2.1`, `yak-a1b2.2`). The relationship is implicit from the ID — no extra YAML field. `show` displays the hierarchy automatically.
-- **Dependencies are first-class.** Tasks can depend on other tasks. `/yaks:next` shows only tasks whose dependencies are all shorn. `/yaks:tangled` shows what's stuck.
+- **Dependencies are first-class.** Tasks can depend on other tasks. `yaks next` shows only tasks whose dependencies are all shorn. `yaks tangled` shows what's stuck.
 - **Artifacts.** Attach files or clipboard images to tasks with `attach`. They're stored in `.yaks/artifacts/{task-id}/` and linked from the task body.
 - **Git-friendly.** Task files are small, human-readable, and merge cleanly. Git history is your audit log.
 - **Local or team.** Commit `.yaks/` to share tasks with collaborators (team mode), or gitignore it for a private local-only scratchpad. In local-only mode, keep yak files — and their IDs — out of commits, PRs, and external trackers; the skill spells out the distinction so your agent doesn't leak private planning notes.
@@ -111,25 +110,26 @@ With any other agent, the same operations run via the `yaks` CLI — your agent 
 
 | Command | Description |
 |---------|-------------|
-| `/yaks:init` | Initialize `.yaks/` in the current project |
-| `/yaks:create` | Create a new task |
-| `/yaks:list` | List tasks with optional filters |
-| `/yaks:show` | Show full details of a task |
-| `/yaks:update` | Update a task's fields |
-| `/yaks:shave` | Start shaving a yak |
-| `/yaks:shorn` | Mark a yak as shorn |
-| `/yaks:regrow` | Regrow a shorn yak |
-| `/yaks:slaughter` | Slaughter a yak (move to hidden `dead/` state) |
-| `/yaks:revive` | Revive a dead yak back to hairy |
-| `/yaks:next` | Show yaks ready to shave (all deps met) |
-| `/yaks:tangled` | Show tangled yaks (unshorn dependencies) |
-| `/yaks:search` | Search tasks by keyword |
-| `/yaks:dep` | Add or remove dependencies between tasks |
-| `/yaks:reparent` | Move a task to a new parent or promote to top-level |
-| `/yaks:stats` | Show task statistics |
-| `/yaks:import-beads` | Import tasks from a beads JSONL export |
+| `yaks init` | Initialize `.yaks/` in the current project |
+| `yaks create` | Create a new task |
+| `yaks list` | List tasks with optional filters |
+| `yaks show` | Show full details of a task |
+| `yaks update` | Update a task's fields |
+| `yaks shave` | Start shaving a yak |
+| `yaks shorn` | Mark a yak as shorn |
+| `yaks regrow` | Regrow a shorn yak |
+| `yaks slaughter` | Slaughter a yak (move to hidden `dead/` state) |
+| `yaks revive` | Revive a dead yak back to hairy |
+| `yaks next` | Show yaks ready to shave (all deps met) |
+| `yaks tangled` | Show tangled yaks (unshorn dependencies) |
+| `yaks search` | Search tasks by keyword |
+| `yaks dep` | Add or remove dependencies between tasks |
+| `yaks reparent` | Move a task to a new parent or promote to top-level |
+| `yaks stats` | Show task statistics |
+| `yaks attach` / `yaks detach` | Attach or remove file/image artifacts on a task |
+| `yaks import-beads` | Import tasks from a beads JSONL export |
 
-Additionally, `attach` and `detach` are available via the CLI (`yak.py attach`/`yak.py detach`) for managing file artifacts on tasks.
+Every command accepts `--json` where applicable for machine-readable output.
 
 ## Filtering
 
@@ -146,10 +146,10 @@ All query commands (`list`, `search`, `next`, `tangled`) share the same filter f
 
 Examples:
 
-```
-/yaks:list --type bug --type feature --priority 1
-/yaks:list --label auth --search retry
-/yaks:next --type bug
+```bash
+yaks list --type bug --type feature --priority 1
+yaks list --label auth --search retry
+yaks next --type bug
 ```
 
 ## TUI
@@ -220,7 +220,7 @@ Available settings:
 
 ## Configuring your AI assistant to use Yaks
 
-`yaks init` (or `/yaks:init`) automatically appends a workflow mandate to your project's `CLAUDE.md` or `AGENTS.md`. Use `--agents` to force writing to `AGENTS.md`.
+`yaks init` automatically appends a workflow mandate to your project's `AGENTS.md` (or an existing `CLAUDE.md`). Use `--agents` to force writing to `AGENTS.md` even when a `CLAUDE.md` is present.
 
 `AGENTS.md` is the most portable choice — it's recognized by Claude Code, OpenAI Codex, GitHub Copilot, Gemini CLI, Zed, Cursor, Windsurf, and Aider without any extra configuration.
 
@@ -257,9 +257,9 @@ For Claude Code and Codex, the skill activates automatically when `.yaks/` exist
 ## Requirements
 
 - Python 3.10+
-- PyYAML (`pyyaml>=6.0`)
+- PyYAML (`pyyaml>=6.0`) and prompt-toolkit (`prompt-toolkit>=3.0.52`, for the TUI)
 
-The script uses [PEP 723](https://peps.python.org/pep-0723/) inline metadata, so package managers like `uv` can run it directly without manual dependency installation.
+Installing via `uv tool install yakherder` (or running `uvx yakherder`) pulls these in automatically into an isolated environment — nothing is added to your system or project Python.
 
 ## License
 

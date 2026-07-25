@@ -87,7 +87,7 @@ def find_tasks_root(start: Path | None = None) -> Path:
         if p.parent == p:
             break
         p = p.parent
-    print("error: no .yaks/ directory found (run /yaks:init first)", file=sys.stderr)
+    print("error: no .yaks/ directory found (run 'yaks init' first)", file=sys.stderr)
     sys.exit(1)
 
 
