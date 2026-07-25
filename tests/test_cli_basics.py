@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from conftest import create_task
+from conftest import _make_runner, create_task
 
 
 def test_init_creates_structure(yak_root: Path):
@@ -12,6 +12,32 @@ def test_init_creates_structure(yak_root: Path):
     assert (yak_root / ".yaks" / "config.yaml").is_file()
     for sub in ("hairy", "shaving", "shorn"):
         assert (yak_root / ".yaks" / sub).is_dir()
+
+
+def test_init_creates_agents_md_by_default(yak_root: Path):
+    """With no existing guidance file, init prefers AGENTS.md (not CLAUDE.md)."""
+    agents = yak_root / "AGENTS.md"
+    assert agents.is_file()
+    assert "Yaks skill" in agents.read_text()
+    assert not (yak_root / "CLAUDE.md").exists()
+
+
+def test_init_appends_to_existing_claude_md(tmp_path: Path):
+    """An existing CLAUDE.md is used as-is; no AGENTS.md is created."""
+    claude = tmp_path / "CLAUDE.md"
+    claude.write_text("# Project\n")
+    _make_runner(tmp_path)("init", "--prefix", "test")
+    assert "Yaks skill" in claude.read_text()
+    assert not (tmp_path / "AGENTS.md").exists()
+
+
+def test_init_agents_flag_forces_agents_md_over_claude(tmp_path: Path):
+    """--agents writes to AGENTS.md even when a CLAUDE.md is present."""
+    claude = tmp_path / "CLAUDE.md"
+    claude.write_text("# Project\n")
+    _make_runner(tmp_path)("init", "--prefix", "test", "--agents")
+    assert "Yaks skill" in (tmp_path / "AGENTS.md").read_text()
+    assert "Yaks skill" not in claude.read_text()
 
 
 def test_create_and_show(yak, yak_root):

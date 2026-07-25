@@ -80,7 +80,7 @@ def _inject_mandate(force_agents: bool = False):
     elif claude.exists():
         target = claude
     else:
-        target = claude
+        target = agents
 
     if target.exists():
         content = target.read_text()

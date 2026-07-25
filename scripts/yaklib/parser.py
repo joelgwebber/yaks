@@ -33,7 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("init", help="Initialize .yaks/ in the current directory")
     sp.add_argument("--prefix", help="Task ID prefix (default: directory name)")
-    sp.add_argument("--agents", action="store_true", help="Write guidance to AGENTS.md instead of CLAUDE.md")
+    sp.add_argument("--agents", action="store_true", help="Force guidance into AGENTS.md even if a CLAUDE.md exists")
 
     sp = sub.add_parser("create", help="Create a new task")
     sp.add_argument("--title", required=True, help="Task title")
