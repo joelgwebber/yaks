@@ -1,0 +1,39 @@
+name: Publish to PyPI
+
+# Publishes the `yakherder` distribution to PyPI on a version tag.
+#
+# Uses PyPI Trusted Publishing (OIDC) — no API tokens/secrets required.
+# One-time setup on PyPI (project owner):
+#   1. Create a "pending publisher" at https://pypi.org/manage/account/publishing/
+#      - PyPI project name: yakherder
+#      - Owner: joelgwebber   Repository: yaks
+#      - Workflow name: publish.yml
+#      - Environment name: pypi
+#   2. (Optional) protect the `pypi` environment in the repo settings.
+#
+# Release flow:
+#   - Bump the version in pyproject.toml AND the two plugin manifests (in lockstep),
+#     then push a matching tag, e.g. `git tag v0.1.78 && git push origin v0.1.78`.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write # required for Trusted Publishing (OIDC)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Publish to PyPI
+        run: uv publish --trusted-publishing always

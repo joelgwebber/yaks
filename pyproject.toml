@@ -1,15 +1,37 @@
 [project]
-name = "yaks"
-version = "0.1.0"
-description = "Filesystem-native task tracker"
+name = "yakherder"
+version = "0.1.78"
+description = "Filesystem-native task tracker for humans and AI agents"
+readme = "README.md"
 requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Joel" }]
+keywords = ["task-tracker", "cli", "tui", "agents", "productivity"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development",
+    "Topic :: Utilities",
+]
 dependencies = [
     "prompt-toolkit>=3.0.52",
     "pyyaml>=6.0",
 ]
 
+# The distribution is published as `yakherder` (the name `yaks` is taken on
+# PyPI by an unrelated, abandoned project). The command stays `yaks`; the
+# `yakherder` alias lets `uvx yakherder <cmd>` work without `--from`.
 [project.scripts]
 yaks = "yaklib.cli:main"
+yakherder = "yaklib.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/joelgwebber/yaks"
+Repository = "https://github.com/joelgwebber/yaks"
+Issues = "https://github.com/joelgwebber/yaks/issues"
 
 [dependency-groups]
 dev = [
@@ -26,6 +48,10 @@ where = ["scripts"]
 
 [tool.setuptools]
 py-modules = ["yak", "tui"]
+
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
 
 [tool.ruff]
 target-version = "py310"
