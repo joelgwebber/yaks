@@ -47,7 +47,15 @@ To check: `git check-ignore .yaks` printing a path means local-only; `git ls-fil
 
 **Team.** The yak files are part of the repo — treat them like code.
 - Commit the shorn yak move together with the code that completed it (hard rule 2).
-- Referencing yak IDs in commit messages and PRs is welcome; everyone can resolve them.
+- Yak IDs are fine in commit messages and other in-repo references — collaborators can resolve them from the committed files.
+
+## Keep yaks out of external-facing surfaces
+
+Whichever mode you're in, yaks are a **private, fine-grained layer**. By default, keep yak IDs and `[yaks:…]` markers out of anything a broader audience reads — **pull-request titles/descriptions and external issue trackers** (Jira, Linear, GitHub Issues).
+
+Most projects that use an external tracker don't use yaks team-wide; yaks roll **up** to those issues. So when a PR or issue needs a reference, use the **external** key, not the yak ID: run `yaks rollup --keys` over the shipping set and paste that — the forge links the PR to the issue natively. Describe the change itself in plain terms ("add retry logic"), not as "shorn yak-1234".
+
+Referencing yaks externally is fine **only when the user opts in** — e.g. a yaks-native repo like this one, where mentioning yak IDs in PRs is expected. The **yak-tracker** skill covers this projection in full.
 
 ## Workflow
 
