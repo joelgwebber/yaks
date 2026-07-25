@@ -4,7 +4,7 @@
 
 Filesystem-native task tracker for AI coding agents. Markdown files with YAML frontmatter, no database, no daemon.
 
-Yaks gives your AI coding assistant persistent task tracking across sessions. Tasks are stored as markdown files (with YAML frontmatter for metadata) in a `.yaks/` directory within your project — readable, diffable, and friendly to version control. Use it two ways: **commit `.yaks/`** to share a tracker with your team, or **gitignore it** to keep a private, local-only scratchpad. It ships as a plugin for Claude Code and OpenAI Codex, as an installable skill for Zed, and as a standalone CLI for any other agent.
+Yaks gives your AI coding assistant persistent task tracking across sessions. Tasks are stored as markdown files (with YAML frontmatter for metadata) in a `.yaks/` directory within your project — readable, diffable, and friendly to version control. Use it two ways: **commit `.yaks/`** to share a tracker with your team, or **gitignore it** to keep a private, local-only scratchpad. It ships as a plugin for Claude Code and OpenAI Codex, as an installable skill for Zed, and as a standalone CLI (on PyPI as `yakherder`, exposing the `yaks` command) for any other agent.
 
 ## Install
 
@@ -169,6 +169,10 @@ The TUI provides:
 - **Filter drawer** — drop-down filter panel (press `/` for search, `f` for full filter) with live preview as you type
 - **Help overlay** — press `?` for a full keybinding reference
 - **Vim-style editing** — optional vim keybindings in all text inputs (see Configuration below)
+
+## Web board
+
+A read-only web viewer for any repo's yaks is published at **https://joelgwebber.github.io/yaks/**. Enter a GitHub `owner/repo` that has a committed `.yaks/` directory and it renders the board: status tabs, the parent/child tree, per-task detail, and the same filters as the CLI/TUI. It reads public repos through the GitHub API — no install, nothing written back. (Source: `docs/index.html`, served via GitHub Pages.)
 
 ## Task format
 

@@ -17,7 +17,7 @@ issues, the pointer runs **yak → external** only (each yak's `source:` URL), a
 **the external tracker never knows yaks exist.** There is no shared state, no
 field merge, nothing to reconcile.
 
-See `docs/design/sync.md` for the full rationale. This skill covers the three
+See `docs/design/projection.md` for the full rationale. This skill covers the three
 things that need judgment; the rollup itself is just a CLI command.
 
 ## Hard rules
