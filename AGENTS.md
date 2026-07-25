@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents (Claude Code, OpenAI Codex, Zed, and others) working in this repository. It replaces the former `CLAUDE.md`; Claude Code, Codex, and Zed all read `AGENTS.md` natively.
 
 ## What is this?
 
@@ -74,19 +74,42 @@ Optional description as markdown body.
 - Task files are `.md` with YAML frontmatter. The `description` field is not stored in frontmatter — the markdown body after the closing `---` is the description. Legacy `.yaml` task files are auto-migrated on first access.
 - `next` checks that all `depends_on` IDs exist in `shorn/`; `tangled` shows tasks with at least one unshorn dependency.
 
-## Releasing
+## Distribution & releasing
 
-Whenever you make changes that affect the plugin or the published package (skills, `scripts/**`, `pyproject.toml`), bump the version. Without a bump, plugin installs use a stale cached version.
+Yaks ships through four surfaces, all built from this one repo:
 
-Keep these three manifests in lockstep — bump **all** to the same new version in the same commit:
+| Surface | What ships | How users get updates |
+|---------|-----------|-----------------------|
+| PyPI package | `yakherder` distribution (exposes the `yaks`/`yakherder` commands) | `uv tool upgrade yakherder`, or `uvx yakherder` re-resolves |
+| Claude Code plugin | `.claude-plugin/` + `skills/` | marketplace re-pulls when `plugins[0].version` bumps |
+| Codex plugin | `.codex-plugin/` + `skills/` | re-pulls when the top-level `version` bumps |
+| Zed skill | `skills/yak/`, `skills/yak-tracker/` | skills.sh, or a manual re-sync of `~/.agents/skills/` from the repo |
 
-- `pyproject.toml` — the `[project] version` (this is the PyPI/`yakherder` package version).
-- `.claude-plugin/marketplace.json` — the `version` under `plugins[0]` (not the top-level `"version": "1.0.0"`, which is the marketplace schema version and stays put).
+The `skills/` directory is shared by the plugin surfaces, so a skill edit is a change to all of them at once.
+
+### Version bumps
+
+Whenever you change anything that ships (skills, `scripts/**`, `pyproject.toml`), bump the version. Plugin marketplaces and `uv`'s cache key on the version string, so an unchanged number means users keep a stale copy. Pure-docs changes that don't touch the shipped payload (e.g. this file, top-level `README.md` is an exception — it's the packaged long description, so treat README edits as shipping) don't strictly need a bump.
+
+Bump these three in lockstep — same value, same commit:
+
+- `pyproject.toml` — the `[project] version` (the PyPI/`yakherder` package version).
+- `.claude-plugin/marketplace.json` — the `version` under `plugins[0]` (NOT the top-level `"version": "1.0.0"`, which is the marketplace-schema version and stays put).
 - `.codex-plugin/plugin.json` — the top-level `version`.
 
 `.claude-plugin/plugin.json` deliberately carries no version field (the marketplace entry is authoritative for Claude), so there's nothing to bump there. Versions are plain `MAJOR.MINOR.PATCH`; increment the patch for ordinary changes.
 
-To publish the CLI to PyPI: push a matching tag (e.g. `git tag v0.1.78 && git push origin v0.1.78`). `.github/workflows/publish.yml` builds and uploads `yakherder` via PyPI Trusted Publishing (OIDC — no tokens). First-time setup requires creating a PyPI pending publisher for `yakherder` (repo `joelgwebber/yaks`, workflow `publish.yml`, environment `pypi`).
+### Publishing to PyPI
+
+Publishing is automated by `.github/workflows/publish.yml` via PyPI Trusted Publishing (OIDC — no tokens or secrets). The pending publisher is configured on PyPI (project `yakherder`, repo `joelgwebber/yaks`, workflow `publish.yml`, environment `pypi`).
+
+To cut a release:
+
+1. Bump the three versions in lockstep and commit.
+2. Tag that commit `vX.Y.Z`, matching `pyproject.toml` (e.g. `git tag v0.1.78`).
+3. `git push origin v0.1.78`. The workflow builds the sdist + wheel and uploads to PyPI.
+
+The plugin and Zed-skill surfaces do **not** need the tag — they update from the committed manifest versions. The `v*` tag exists solely to trigger the PyPI publish.
 
 ## Task tracking
 
