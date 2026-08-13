@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>yaks — demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
+    <link rel="stylesheet" href="vendor/asciinema-player/asciinema-player.css" />
+    <style>
+        :root {
+            --bg: #fafaf7;
+            --bg-elev: #ffffff;
+            --bg-sunken: #f5f4ef;
+            --fg: #1a1916;
+            --fg-muted: #6b6a63;
+            --fg-faint: #94938b;
+            --border: #e6e3da;
+            --border-strong: #d6d2c5;
+            --link: #8f5a2b;
+            --link-hover: #6e4420;
+            --radius: 6px;
+            --radius-lg: 10px;
+            --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+            --sans: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #111110;
+                --bg-elev: #17171c;
+                --bg-sunken: #0c0c0b;
+                --fg: #eceae2;
+                --fg-muted: #9a978c;
+                --fg-faint: #6b6a62;
+                --border: #26241f;
+                --border-strong: #32302a;
+                --link: #d6a56a;
+                --link-hover: #e8ba7e;
+            }
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--fg);
+            font-family: var(--sans);
+            font-size: 15px;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 0 20px;
+            height: 56px;
+            border-bottom: 1px solid var(--border);
+        }
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand-mark { font-size: 28px; line-height: 1; user-select: none; }
+        .brand-name { font-weight: 700; letter-spacing: -0.01em; }
+        .header-spacer { flex: 1; }
+        .header a {
+            color: var(--fg-muted);
+            text-decoration: none;
+            font-size: 13.5px;
+            padding: 6px 10px;
+            border-radius: var(--radius);
+        }
+        .header a:hover { color: var(--fg); background: var(--bg-sunken); }
+        main {
+            max-width: 1140px;
+            margin: 0 auto;
+            padding: 34px 20px 64px;
+        }
+        h1 {
+            font-size: 26px;
+            letter-spacing: -0.02em;
+            margin: 0 0 10px;
+        }
+        .lede {
+            color: var(--fg-muted);
+            font-size: 16px;
+            line-height: 1.55;
+            max-width: 68ch;
+            margin: 0 0 26px;
+        }
+        .player-frame {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            background: #101010;
+            box-shadow: 0 6px 30px -12px rgba(0, 0, 0, 0.35);
+        }
+        .caption {
+            color: var(--fg-faint);
+            font-size: 13px;
+            margin: 12px 2px 0;
+            font-family: var(--mono);
+        }
+        .notes {
+            margin-top: 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 18px;
+        }
+        .note {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+            background: var(--bg-elev);
+        }
+        .note h3 { margin: 0 0 6px; font-size: 15px; }
+        .note p { margin: 0; color: var(--fg-muted); line-height: 1.5; font-size: 14px; }
+        a.inline { color: var(--link); text-decoration: none; }
+        a.inline:hover { color: var(--link-hover); text-decoration: underline; }
+        code {
+            font-family: var(--mono);
+            font-size: 0.88em;
+            background: var(--bg-sunken);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 5px;
+        }
+        /* Give the player a comfortable monospace + size. */
+        .ap-player { font-family: var(--mono) !important; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="brand">
+            <span class="brand-mark" title="yaks">&#x1F9AC;</span>
+            <span class="brand-name">yaks</span>
+        </div>
+        <div class="header-spacer"></div>
+        <a href="./">Board</a>
+        <a href="https://github.com/joelgwebber/yaks">GitHub</a>
+        <a href="https://pypi.org/project/yakherder/">PyPI</a>
+    </header>
+
+    <main>
+        <h1>An agent and its human, herding yaks together</h1>
+        <p class="lede">
+            This is a scripted walkthrough, not a live session. It shows a coding
+            agent and the <code>yaks</code> TUI side by side: as work is discussed,
+            yaks are created, shaved, and shorn — and the board tracks the shared
+            state in lockstep. The point isn't agent autonomy; it's
+            <strong>communication and structure</strong> — a durable, legible plan
+            both of you can see and steer.
+        </p>
+
+        <div class="player-frame">
+            <div id="player"></div>
+        </div>
+        <p class="caption">
+            drag the scrubber · jump between chapters · text is selectable
+        </p>
+
+        <div class="notes">
+            <div class="note">
+                <h3>Status is where the file lives</h3>
+                <p>
+                    A yak's status is the directory it sits in —
+                    <code>hairy</code>, <code>shaving</code>, <code>shorn</code>.
+                    Moving a yak is just a rename, so the plan is plain files in
+                    git, not a database.
+                </p>
+            </div>
+            <div class="note">
+                <h3>Bracket every change</h3>
+                <p>
+                    Shave a yak before touching code, shear it when the work lands.
+                    The board is always an honest reflection of what's in flight.
+                </p>
+            </div>
+            <div class="note">
+                <h3>Try it yourself</h3>
+                <p>
+                    <code>uvx yakherder tui</code> opens this board over any
+                    <code>.yaks/</code> directory. See the
+                    <a class="inline" href="https://github.com/joelgwebber/yaks#readme">README</a>
+                    to get started.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <script src="vendor/asciinema-player/asciinema-player.min.js"></script>
+    <script>
+        // @license magnet:?xt=urn:btih:8e4f440f4c65981c5bf93c76d35135ba5064d8b7&dn=apache-2.0.txt Apache-2.0
+        AsciinemaPlayer.create("demo.cast", document.getElementById("player"), {
+            autoPlay: true,
+            loop: true,
+            preload: true,
+            theme: "asciinema",
+            fit: "width",
+            terminalFontSize: "small",
+            terminalFontFamily: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
+            idleTimeLimit: 2,
+        });
+        // @license-end
+    </script>
+</body>
+</html>
