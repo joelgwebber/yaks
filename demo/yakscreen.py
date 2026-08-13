@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pathlib
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 # Make the shipped package importable so we can pull real constants/helpers.
 _SCRIPTS = pathlib.Path(__file__).resolve().parent.parent / "scripts"
@@ -61,6 +61,22 @@ S_SEL_BG = bg256(237)  # selected-row background (C_SELECTED)
 S_DIVIDER = sgr(DIM)
 S_PANE_HEAD = sgr(DIM, BOLD)
 S_MUTED = fg256(245)
+S_HELP = sgr(30, 47)  # black on white, the app's bottom key strip (C_HELP)
+
+# Focus stances for the variable divider (fraction of width given to the agent).
+FOCUS_AGENT = 0.60
+FOCUS_BALANCED = 0.42
+FOCUS_BOARD = 0.0  # agent hidden; board gets the full terminal (real app view)
+
+# Bottom help-bar key strips, mirroring draw_help_bar in render.py.
+HELP_LIST = (
+    "Tab:tab  j/k:move  l:detail  Space:collapse  c/C:new  E:edit  X:del  "
+    "S:state  D:dep  P/T/L:adjust  f:filter  ?:help"
+)
+HELP_DETAIL = (
+    "h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  D:dep  "
+    "S:state  f:filter  q:quit  ?:help"
+)
 S_AGENT = {
     "user": sgr(FG_GREEN, BOLD),
     "assistant": sgr(FG_CYAN, BOLD),
@@ -467,25 +483,61 @@ def _wrap_words(text: str, width: int) -> list[str]:
 # --- layout ----------------------------------------------------------------
 
 
+def render_help_bar(screen: Screen, x0: int, width: int, y: int, keys: str) -> None:
+    screen.fill(y, x0, width, " ", S_HELP)
+    screen.put_clipped(y, x0 + 1, keys, width - 1, S_HELP)
+
+
+def render_board_pane(
+    screen: Screen,
+    x0: int,
+    width: int,
+    top: int,
+    height: int,
+    board: Board,
+    active_status: str,
+    cursor_id: str | None,
+    detail_id: str | None,
+    detail_cursor: int | None,
+    mode: str,
+) -> None:
+    """Tabs on top, then list, full-pane detail, or the real list|detail split."""
+    render_tabs(screen, x0, board, active_status, top)
+    content_y = top + 2
+    content_h = height - 2
+    bottom = top + height
+
+    split = detail_id is not None and (mode == "split" or (mode == "auto" and width >= 84))
+    if split:
+        list_w = max(24, width // 3)
+        sep_x = x0 + list_w
+        det_x = sep_x + 2
+        det_w = width - (det_x - x0)
+        render_list(screen, x0, list_w - 1, board.tree_rows(active_status), cursor_id, content_y)
+        # Separator runs the content height only — the tabs span full width.
+        screen.vline(sep_x, top + 1, bottom, "\u2502", S_DIVIDER)
+        lines = build_detail_lines(board, board.get(detail_id), det_w - 1)
+        render_detail(screen, det_x, det_w - 1, lines, content_y, content_h, detail_cursor)
+    elif detail_id is not None:
+        lines = build_detail_lines(board, board.get(detail_id), width - 1)
+        render_detail(screen, x0, width - 1, lines, content_y, content_h, detail_cursor)
+    else:
+        render_list(screen, x0, width - 1, board.tree_rows(active_status), cursor_id, content_y)
+
+
 @dataclass
 class Layout:
-    """Two-pane composition: agent transcript | divider | yaks board."""
+    """Two-pane composition with a variable focus divider.
+
+    The agent transcript occupies a left fraction of the width; the board gets
+    the rest. The fraction is supplied per-frame so the Director can slide focus
+    between the agent and the board (down to 0, which hides the agent entirely
+    and gives the board the full terminal — the real app view).
+    """
 
     cols: int
     rows: int
-    agent_frac: float = 0.42
-    title: str = ""
-
-    agent_w: int = field(init=False)
-    div_x: int = field(init=False)
-    board_x: int = field(init=False)
-    board_w: int = field(init=False)
-
-    def __post_init__(self) -> None:
-        self.agent_w = int(self.cols * self.agent_frac)
-        self.div_x = self.agent_w
-        self.board_x = self.agent_w + 2
-        self.board_w = self.cols - self.board_x
+    agent_frac: float = FOCUS_BALANCED
 
     def compose(
         self,
@@ -494,32 +546,36 @@ class Layout:
         active_status: str,
         cursor_id: str | None = None,
         *,
+        agent_frac: float | None = None,
         detail_id: str | None = None,
         detail_cursor: int | None = None,
+        board_mode: str = "auto",
+        help_keys: str | None = None,
     ) -> Screen:
-        screen = Screen(self.cols, self.rows)
-        top = 0
-        if self.title:
-            screen.put(0, 0, self.title, S_MUTED)
-            top = 2
+        frac = self.agent_frac if agent_frac is None else agent_frac
+        cols, rows = self.cols, self.rows
+        agent_w = round(cols * frac)
+        agent_visible = agent_w >= 6
+        if not agent_visible:
+            agent_w = 0
+        div_x = agent_w
+        board_x = agent_w + (2 if agent_visible else 0)
+        board_w = cols - board_x
 
-        screen.put(top, 0, "agent", S_PANE_HEAD)
-        board_head = f"yaks \u2014 {'detail' if detail_id else 'board'}"
-        screen.put(top, self.board_x, board_head, S_PANE_HEAD)
-        screen.vline(self.div_x, top, self.rows, "\u2502", S_DIVIDER)
+        screen = Screen(cols, rows)
+        help_y = rows - 1
+        body_h = help_y  # content rows 0 .. help_y-1
 
-        body_y = top + 1
-        body_h = self.rows - body_y
-        render_agent(screen, 0, self.agent_w - 1, messages, body_y, body_h)
+        if agent_visible:
+            render_agent(screen, 0, agent_w - 1, messages, 0, body_h)
+            screen.vline(div_x, 0, help_y, "\u2502", S_DIVIDER)
 
-        # Board pane: tabs on top, then either the list or a detail view.
-        render_tabs(screen, self.board_x, board, active_status, body_y)
-        content_y = body_y + 2
-        content_h = self.rows - content_y
-        if detail_id is not None:
-            lines = build_detail_lines(board, board.get(detail_id), self.board_w - 1)
-            render_detail(screen, self.board_x, self.board_w - 1, lines, content_y, content_h, detail_cursor)
-        else:
-            rows = board.tree_rows(active_status)
-            render_list(screen, self.board_x, self.board_w - 1, rows, cursor_id, content_y)
+        render_board_pane(
+            screen, board_x, board_w, 0, body_h, board,
+            active_status, cursor_id, detail_id, detail_cursor, board_mode,
+        )
+
+        keys = help_keys if help_keys is not None else (HELP_DETAIL if detail_id else HELP_LIST)
+        hx = board_x if agent_visible else 0
+        render_help_bar(screen, hx, cols - hx, help_y, keys)
         return screen
