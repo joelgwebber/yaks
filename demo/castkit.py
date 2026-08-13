@@ -20,6 +20,7 @@ Design notes
 from __future__ import annotations
 
 import json
+import unicodedata as _ud
 from dataclasses import dataclass, field
 
 # --- ANSI / SGR helpers ----------------------------------------------------
@@ -57,20 +58,24 @@ _CONT = "\x00"
 
 
 def char_width(ch: str) -> int:
-    """Approximate terminal display width of a single code point.
+    """Display width of a code point, matching the player's terminal.
 
-    Good enough for our content: emoji + dingbats render double-width, the
-    variation selector is zero-width, everything else is single-width.
+    asciinema-player's terminal (avt) follows the unicode-width rules, so we
+    mirror them exactly rather than guessing by block:
+      * variation selector / ZWJ / combining marks -> 0,
+      * East Asian Wide + Fullwidth -> 2 (true emoji like bison/sheep),
+      * everything else -> 1, INCLUDING narrow dingbats like scissors (U+2702)
+        and East Asian Ambiguous.
+    Getting this exactly right is what keeps structural columns (dividers) from
+    drifting when the player advances the cursor differently than we assumed.
     """
     o = ord(ch)
-    if o == 0xFE0F:  # VARIATION SELECTOR-16 (emoji presentation)
+    if o in (0xFE0F, 0x200D):  # VS16, zero-width joiner
         return 0
-    if 0x1F000 <= o <= 0x1FAFF:  # emoji blocks
+    if _ud.combining(ch):
+        return 0
+    if _ud.east_asian_width(ch) in ("W", "F"):
         return 2
-    if 0x2600 <= o <= 0x27BF:  # misc symbols + dingbats (e.g. scissors ✂)
-        return 2
-    if 0x1100 <= o <= 0x115F or 0x2E80 <= o <= 0xA4CF or 0xAC00 <= o <= 0xD7A3:
-        return 2  # CJK / Hangul ranges
     return 1
 
 

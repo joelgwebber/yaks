@@ -49,6 +49,7 @@ class Director:
         self.board_x = BOARD_SPLIT_X
         self.board_mode = "auto"
         self.annotation: str | None = None
+        self.annotation_anchor = "board"
 
     def _frame(self, extra_last: str | None = None) -> None:
         msgs = self.messages
@@ -64,21 +65,24 @@ class Director:
             detail_cursor=self.detail_cursor,
             board_mode=self.board_mode,
             annotation=self.annotation,
+            annotation_anchor=self.annotation_anchor,
         )
         self.cast.frame(screen)
 
     def beat(self, seconds: float) -> None:
         self.cast.wait(seconds)
 
-    def mark(self, label: str, note: str | None = None) -> None:
+    def mark(self, label: str, note: str | None = None, anchor: str = "board") -> None:
         """Drop a chapter marker (the player auto-pauses here) + optional caption."""
         if note is not None:
             self.annotation = note
+            self.annotation_anchor = anchor
         self.cast.marker(label)
         self._frame()
 
-    def annotate(self, note: str | None) -> None:
+    def annotate(self, note: str | None, anchor: str = "board") -> None:
         self.annotation = note
+        self.annotation_anchor = anchor
         self._frame()
 
     # --- focus (occluding divider) ---
@@ -138,11 +142,10 @@ def screenplay() -> Cast:
     d.add("yak-4e08", "dark-mode polish pass", type="task", priority=4, labels=("ui",))
     d.tab(HAIRY)
     d.say("assistant", "Ready. What should we work on?", hold=0.2)
-    d.annotate("A coding agent and the yaks board, side by side. Watch them stay in lockstep.")
-    d.beat(1.4)
+    d.annotate("A coding agent and the yaks board, side by side - watch them stay in lockstep.", anchor="center")
+    d.beat(1.6)
 
-    # The ask.
-    d.annotate(None)
+    # The ask (caption stays up while the human types).
     d.say("user", "Add OAuth login to the settings page.", typing=True)
     d.say("assistant", "Bigger than one commit - let me break it into a small herd first.")
 
@@ -155,33 +158,30 @@ def screenplay() -> Cast:
           depends_on=("yak-1a2b.1",), blocked=True,
           created="2026-07-25T20:01:00Z", updated="2026-07-25T20:01:00Z")
     d.focus_yak("yak-1a2b")
-    d.mark("The ask", "One request becomes a small herd: a parent feature with two child tasks.")
-    d.beat(1.0)
+    d.mark("The ask", "One request becomes a small herd: a parent feature with two child tasks.", anchor="board")
+    d.beat(1.6)
 
     # Shave.
-    d.annotate(None)
     d.tool("$ yaks shave yak-1a2b")
     d.move("yak-1a2b", SHAVING)
     d.tab(SHAVING)
-    d.mark("Shave", "Shaving a yak before coding moves it to the Shaving column - the plan is always honest.")
-    d.beat(1.0)
+    d.mark("Shave", "Shaving a yak before coding moves it to the Shaving column - the plan stays honest.", anchor="board")
+    d.beat(1.6)
 
     # Detail - hand the whole screen to the board: real tabs + list|detail split.
-    d.annotate(None)
     d.say("assistant", "Here's the breakdown - .2 is blocked on the provider config.")
     d.detail("yak-1a2b")
     d.reveal_to(BOARD_FULL_X)
-    d.mark("Detail", "Full board view: the .2 task depends on .1, so it's blocked until .1 is shorn.")
-    d.beat(1.2)
+    d.mark("Detail", "Full board view: task .2 depends on .1, so it's blocked until .1 is shorn.", anchor="center")
+    d.beat(1.6)
 
     # Unblock.
     d.move("yak-1a2b.1", SHORN)
     d.board.set("yak-1a2b.2", blocked=False)
-    d.mark("Unblock", "Shear .1 and .2 is automatically unblocked - dependencies are just yak ids.")
-    d.beat(1.4)
+    d.mark("Unblock", "Shear .1 and .2 unblocks automatically - dependencies are just yak ids.", anchor="center")
+    d.beat(1.6)
 
     # Shorn - back to the split for the closing line.
-    d.annotate(None)
     d.detail(None)
     d.move("yak-1a2b.2", SHORN)
     d.move("yak-1a2b", SHORN)
@@ -189,8 +189,8 @@ def screenplay() -> Cast:
     d.focus_yak("yak-1a2b")
     d.reveal_to(BOARD_SPLIT_X)
     d.say("assistant", "Herd shorn - login works and the toggle persists.")
-    d.mark("Shorn", "Work bracketed start to finish. The board and the conversation never drifted apart.")
-    d.beat(2.0)
+    d.mark("Shorn", "Work bracketed start to finish - the board and the conversation never drifted apart.", anchor="center")
+    d.beat(2.2)
 
     return cast
 

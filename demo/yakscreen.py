@@ -48,7 +48,19 @@ TAB_STATUSES = (HAIRY, SHAVING, SHORN)
 
 
 def _tab_label(status: str) -> str:
-    return f"{status_emoji(status)} {status.capitalize()}"
+    return f"{emoji_slot(status)} {status.capitalize()}"
+
+
+def emoji_slot(status: str) -> str:
+    """A status emoji normalized to a fixed 2-column slot.
+
+    Narrow-but-drawn-wide emoji (scissors: width 1 + VS16) get a trailing space
+    so every status glyph advances exactly two columns in both our grid and the
+    player's terminal — no drift where an emoji sits next to a divider.
+    """
+    e = status_emoji(status)
+    w = text_width(e)
+    return e + (" " * (2 - w)) if w < 2 else e
 
 
 # Priority -> SGR foreground codes, matching curses pairs C_P1..C_P5.
@@ -61,9 +73,12 @@ S_SEL_BG = bg256(237)  # selected-row background (C_SELECTED)
 S_DIVIDER = sgr(DIM)
 S_PANE_HEAD = sgr(DIM, BOLD)
 S_MUTED = fg256(245)
-S_HELP = sgr(30, 47)  # black on white, the app's bottom key strip (C_HELP)
-S_ANNOTATE = sgr(FG_CYAN, BOLD)
-S_ANNOTATE_RULE = sgr(DIM)
+
+# Floating annotation card (a tinted panel that occludes what's beneath it).
+S_CARD_BG = bg256(238)
+S_CARD_TEXT = bg256(238) + fg256(253)
+S_CARD_TITLE = bg256(238) + sgr(FG_CYAN, BOLD)
+S_CARD_ACCENT = bg256(38)  # cyan spine down the left edge
 
 # Occlusion focus model: the agent is laid out at a FIXED width and the board
 # slides OVER it. board_x is the board's left edge; as it decreases the board
@@ -75,14 +90,7 @@ BOARD_SPLIT_X = AGENT_LAYOUT_W + 2   # board left edge when the agent is fully s
 BOARD_FULL_X = 0             # board covers the whole terminal (agent hidden)
 
 # Bottom help-bar key strips, mirroring draw_help_bar in render.py.
-HELP_LIST = (
-    "Tab:tab  j/k:move  l:detail  Space:collapse  c/C:new  E:edit  X:del  "
-    "S:state  D:dep  P/T/L:adjust  f:filter  ?:help"
-)
-HELP_DETAIL = (
-    "h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  D:dep  "
-    "S:state  f:filter  q:quit  ?:help"
-)
+
 S_AGENT = {
     "user": sgr(FG_GREEN, BOLD),
     "assistant": sgr(FG_CYAN, BOLD),
@@ -281,7 +289,7 @@ def render_list(
         x += len(type_text)
 
         # Right side: ghost status badge, and labels to its left.
-        badge = f" {status_emoji(y.status)}" if ghost else ""
+        badge = f" {emoji_slot(y.status)}" if ghost else ""
         label_str = "[" + ", ".join(y.labels) + "]" if y.labels else ""
 
         right_w = text_width(badge) + (text_width(label_str) + 1 if label_str else 0)
@@ -375,28 +383,28 @@ def build_detail_lines(board: Board, yak: Yak, width: int) -> list[DetailLine]:
     for dep_id in yak.depends_on:
         if dep_id in board._yaks:
             d = board.get(dep_id)
-            emit(f"  {'Depends on:':<12s} {status_emoji(d.status)} {dep_id}  {d.title}", "link", link=True)
+            emit(f"  {'Depends on:':<12s} {emoji_slot(d.status)} {dep_id}  {d.title}", "link", link=True)
         else:
             emit(f"  {'Depends on:':<12s} {dep_id} (not found)", "field")
 
     pid = parent_id(yak.id)
     if pid and pid in board._yaks:
         p = board.get(pid)
-        emit(f"  {'Parent:':<12s} {status_emoji(p.status)} {pid}  {p.title}", "link", link=True)
+        emit(f"  {'Parent:':<12s} {emoji_slot(p.status)} {pid}  {p.title}", "link", link=True)
 
     kids = board.children_of(yak.id)
     if kids:
         lines.append(DetailLine(""))
         lines.append(DetailLine("  Children:", "subheader"))
         for c in kids:
-            emit(f"    {status_emoji(c.status)} {c.id}  {c.title}", "link", link=True)
+            emit(f"    {emoji_slot(c.status)} {c.id}  {c.title}", "link", link=True)
 
     blockers = board.blockers_of(yak.id)
     if blockers:
         lines.append(DetailLine(""))
         lines.append(DetailLine("  Blocks:", "subheader"))
         for b in blockers:
-            emit(f"    {status_emoji(b.status)} {b.id}  {b.title}", "link", link=True)
+            emit(f"    {emoji_slot(b.status)} {b.id}  {b.title}", "link", link=True)
 
     if yak.description:
         lines.append(DetailLine(""))
@@ -495,27 +503,42 @@ def _wrap_words(text: str, width: int) -> list[str]:
 # --- layout ----------------------------------------------------------------
 
 
-def render_help_bar(screen: Screen, x0: int, width: int, y: int, keys: str) -> None:
-    screen.fill(y, x0, width, " ", S_HELP)
-    screen.put_clipped(y, x0 + 1, keys, width - 1, S_HELP)
+OVERLAY_W = 36  # narrow-but-tall floating card
 
 
-def render_annotation(screen: Screen, width: int, help_y: int, text: str) -> int:
-    """Draw a caption band across the bottom (above the help bar).
+def render_overlay(
+    screen: Screen,
+    cols: int,
+    rows: int,
+    text: str,
+    anchor: str,
+    board_x: int,
+) -> None:
+    """Draw a floating caption card that narrates a beat.
 
-    Used to narrate a beat. Returns the top row of the band. The band clears
-    its rows first, so it reads as a clean overlay over whatever is beneath.
+    It's a tinted panel (with a cyan left spine) that occludes what's beneath,
+    positioned near the area it's talking about: 'agent' floats over the left
+    pane, 'board' over the board pane, 'center' spans the middle.
     """
-    wrapped = _wrap(text, width - 4)
-    band_h = len(wrapped) + 1  # a top rule + the caption lines
-    y0 = max(0, help_y - band_h)
-    for y in range(y0, help_y):
-        screen.fill(y, 0, width, " ", "")
-    screen.put(y0, 0, "\u2500" * width, S_ANNOTATE_RULE)
+    inner = OVERLAY_W - 5
+    wrapped = _wrap(text, inner)
+    height = len(wrapped) + 2
+    y = rows - height - 2
+
+    if anchor == "agent":
+        region_l, region_r = 0, max(2, board_x - 1)
+    elif anchor == "board":
+        region_l, region_r = (board_x if board_x >= 8 else 0), cols
+    else:  # center
+        region_l, region_r = 0, cols
+    x = region_l + max(2, (region_r - region_l - OVERLAY_W) // 2)
+    x = max(1, min(x, cols - OVERLAY_W - 1))
+
+    for r in range(y, y + height):
+        screen.fill(r, x, OVERLAY_W, " ", S_CARD_BG)
+        screen.put(r, x, " ", S_CARD_ACCENT)
     for i, ln in enumerate(wrapped):
-        prefix = "  > " if i == 0 else "    "
-        screen.put(y0 + 1 + i, 0, prefix + ln, S_ANNOTATE if i == 0 else sgr(FG_CYAN))
-    return y0
+        screen.put(y + 1 + i, x + 3, ln, S_CARD_TITLE if i == 0 else S_CARD_TEXT)
 
 
 def render_board_pane(
@@ -581,8 +604,8 @@ class Layout:
         detail_id: str | None = None,
         detail_cursor: int | None = None,
         board_mode: str = "auto",
-        help_keys: str | None = None,
         annotation: str | None = None,
+        annotation_anchor: str = "board",
     ) -> Screen:
         cols, rows = self.cols, self.rows
         bx = self.board_split_x if board_x is None else board_x
@@ -590,13 +613,12 @@ class Layout:
         agent_visible = bx >= 8
 
         screen = Screen(cols, rows)
-        help_y = rows - 1
-        body_h = help_y  # content rows 0 .. help_y-1
+        body_h = rows  # no help bar — content uses the full height
 
         if agent_visible:
             div_x = bx - 1
             render_agent(screen, AGENT_LAYOUT_W, div_x - 1, messages, 0, body_h)
-            screen.vline(div_x, 0, help_y, "\u2502", S_DIVIDER)
+            screen.vline(div_x, 0, rows, "\u2502", S_DIVIDER)
             board_x0 = bx
         else:
             board_x0 = 0
@@ -607,8 +629,5 @@ class Layout:
         )
 
         if annotation:
-            render_annotation(screen, cols, help_y, annotation)
-
-        keys = help_keys if help_keys is not None else (HELP_DETAIL if detail_id else HELP_LIST)
-        render_help_bar(screen, 0, cols, help_y, keys)
+            render_overlay(screen, cols, rows, annotation, annotation_anchor, board_x0)
         return screen

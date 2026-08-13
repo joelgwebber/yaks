@@ -4,7 +4,7 @@ title: Divider break from a mismeasured glyph
 type: bug
 priority: 2
 created: '2026-08-13T01:24:51Z'
-updated: '2026-08-13T01:56:51Z'
+updated: '2026-08-13T03:46:03Z'
 ---
 
 A character (candidate: the U+23BF tool angle, or em-dash) mismeasures and breaks the vertical divider on some rows. Find the offending glyph and fix char_width / emission.
@@ -12,3 +12,7 @@ A character (candidate: the U+23BF tool angle, or em-dash) mismeasures and break
 ---
 ▸ 2026-08-13T01:56:51Z
 Root cause: East Asian Ambiguous glyphs in agent text (em dash, curly quote) + the U+23BF tool angle render width-2 in avt but width-1 in my grid, cumulative overshoot walks into the divider. Fix: ASCII-sanitize all agent text (straight punctuation, dropped the angle -> plain '  $ cmd'), plus occlusion gives a gap. Verified: 0 non-ASCII in agent text; divider continuous at every board_x.
+
+---
+▸ 2026-08-13T03:46:03Z
+Round 2 (emoji): the remaining glyph mismeasurement was char_width force-widening the whole 0x2600-0x27BF dingbat range, so scissors U+2702 was width-2 in our grid but width-1 in avt (its VS16 is width-0). Rewrote char_width to match avt's unicode-width rules exactly (VS16/ZWJ/combining=0, East Asian W/F=2, else 1 incl. narrow dingbats + Ambiguous). Added emoji_slot(): pads a status emoji to a fixed 2-col slot (scissors gets a trailing space, matching the app's double-space) so no emoji drifts next to a divider. Applied to tabs, list ghost badge, and detail parent/children/deps. Verified 0 wide-emoji-without-continuation across all frames. NOTE: bison/sheep are East Asian W (width 2) in a modern Unicode DB and in our grid; if a very old avt build still renders them width-1, we'll slot-pad those too — worth a quick in-browser check.
