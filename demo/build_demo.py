@@ -9,9 +9,10 @@ A *build tool*, not part of the shipped package. It deterministically emits a
 recorder, no real terminal. Re-run whenever the story or board styling changes.
 
 NOTE: the screenplay below is an intentionally-simplified PLACEHOLDER that
-exercises the rendering tools (variable focus divider, tree list with ghosts,
-board-focused list|detail split, help bar). The full "herd evolving over time"
-story lands in a follow-up.
+exercises the rendering tools (occluding focus divider, tree list with ghosts,
+board-focused list|detail split, help bar, annotation band). Keep agent text
+ASCII — ambiguous-width glyphs drift into the divider. The full "herd evolving
+over time" story lands in a follow-up.
 """
 
 from __future__ import annotations
@@ -21,9 +22,8 @@ import pathlib
 
 from castkit import Cast
 from yakscreen import (
-    FOCUS_AGENT,
-    FOCUS_BALANCED,
-    FOCUS_BOARD,
+    BOARD_FULL_X,
+    BOARD_SPLIT_X,
     HAIRY,
     SHAVING,
     SHORN,
@@ -46,8 +46,9 @@ class Director:
         self.cursor: str | None = None
         self.detail_id: str | None = None
         self.detail_cursor: int | None = None
-        self.frac = FOCUS_BALANCED
+        self.board_x = BOARD_SPLIT_X
         self.board_mode = "auto"
+        self.annotation: str | None = None
 
     def _frame(self, extra_last: str | None = None) -> None:
         msgs = self.messages
@@ -58,46 +59,55 @@ class Director:
             self.board,
             self.active,
             self.cursor,
-            agent_frac=self.frac,
+            board_x=self.board_x,
             detail_id=self.detail_id,
             detail_cursor=self.detail_cursor,
             board_mode=self.board_mode,
+            annotation=self.annotation,
         )
         self.cast.frame(screen)
 
     def beat(self, seconds: float) -> None:
         self.cast.wait(seconds)
 
-    def mark(self, label: str) -> None:
+    def mark(self, label: str, note: str | None = None) -> None:
+        """Drop a chapter marker (the player auto-pauses here) + optional caption."""
+        if note is not None:
+            self.annotation = note
         self.cast.marker(label)
+        self._frame()
 
-    # --- focus (variable divider) ---
-    def focus_to(self, target: float, *, steps: int = 8, dt: float = 0.035) -> None:
-        """Slide the divider from the current focus to *target* over N frames."""
-        start = self.frac
-        if abs(target - start) < 1e-6:
+    def annotate(self, note: str | None) -> None:
+        self.annotation = note
+        self._frame()
+
+    # --- focus (occluding divider) ---
+    def reveal_to(self, target_x: int, *, steps: int = 10, dt: float = 0.03) -> None:
+        """Slide the board's left edge to *target_x*, occluding/revealing the agent."""
+        start = self.board_x
+        if start == target_x:
             self._frame()
             return
         for i in range(1, steps + 1):
-            self.frac = start + (target - start) * i / steps
+            self.board_x = round(start + (target_x - start) * i / steps)
             self._frame()
             self.cast.wait(dt)
-        self.frac = target
+        self.board_x = target_x
 
     # --- chat ---
-    def say(self, role: str, text: str, *, typing: bool = False, hold: float = 0.7) -> None:
+    def say(self, role: str, text: str, *, typing: bool = False, hold: float = 0.9) -> None:
         self.messages.append((role, text if not typing else ""))
         if typing:
             partial = ""
             for w in text.split():
                 partial = (partial + " " + w).strip()
                 self._frame(extra_last=partial)
-                self.cast.wait(0.08)
+                self.cast.wait(0.075)
             self.messages[-1] = (role, text)
         self._frame()
         self.cast.wait(hold)
 
-    def tool(self, cmd: str, hold: float = 0.6) -> None:
+    def tool(self, cmd: str, hold: float = 0.8) -> None:
         self.say("tool", cmd, hold=hold)
 
     # --- board ---
@@ -119,22 +129,22 @@ class Director:
 
 
 def screenplay() -> Cast:
-    cast = Cast(COLS, ROWS, title="yaks — agent + board in lockstep")
-    layout = Layout(COLS, ROWS, agent_frac=FOCUS_BALANCED)
+    cast = Cast(COLS, ROWS, title="yaks - agent + board in lockstep")
+    layout = Layout(COLS, ROWS)
     d = Director(cast, layout)
 
-    # Seed an existing herd so the tree + ghosts have something to show.
+    # Seed context so the first frame isn't a blank agent panel.
     d.add("yak-7c31", "rate-limit the webhook intake", type="bug", priority=2)
     d.add("yak-4e08", "dark-mode polish pass", type="task", priority=4, labels=("ui",))
     d.tab(HAIRY)
-    d._frame()
-    d.beat(1.0)
+    d.say("assistant", "Ready. What should we work on?", hold=0.2)
+    d.annotate("A coding agent and the yaks board, side by side. Watch them stay in lockstep.")
+    d.beat(1.4)
 
-    # The ask — lean toward the agent while the human + agent talk it through.
-    d.mark("The ask")
-    d.focus_to(FOCUS_AGENT)
+    # The ask.
+    d.annotate(None)
     d.say("user", "Add OAuth login to the settings page.", typing=True)
-    d.say("assistant", "Bigger than one commit — let me break it into a small herd first.")
+    d.say("assistant", "Bigger than one commit - let me break it into a small herd first.")
 
     d.add("yak-1a2b", "add OAuth login to settings", type="feature", priority=2,
           created="2026-07-25T20:00:00Z", updated="2026-07-25T20:00:00Z",
@@ -145,38 +155,42 @@ def screenplay() -> Cast:
           depends_on=("yak-1a2b.1",), blocked=True,
           created="2026-07-25T20:01:00Z", updated="2026-07-25T20:01:00Z")
     d.focus_yak("yak-1a2b")
+    d.mark("The ask", "One request becomes a small herd: a parent feature with two child tasks.")
+    d.beat(1.0)
 
-    # Shave — back to balanced so the board move is visible.
-    d.mark("Shave")
+    # Shave.
+    d.annotate(None)
     d.tool("$ yaks shave yak-1a2b")
     d.move("yak-1a2b", SHAVING)
     d.tab(SHAVING)
-    d.focus_to(FOCUS_BALANCED)
-    d.beat(0.7)
+    d.mark("Shave", "Shaving a yak before coding moves it to the Shaving column - the plan is always honest.")
+    d.beat(1.0)
 
-    # Detail — hand the whole screen to the board: real tabs + list|detail split.
-    d.mark("Detail")
-    d.say("assistant", "Here's the breakdown — .2 is blocked on the provider config.")
+    # Detail - hand the whole screen to the board: real tabs + list|detail split.
+    d.annotate(None)
+    d.say("assistant", "Here's the breakdown - .2 is blocked on the provider config.")
     d.detail("yak-1a2b")
-    d.focus_to(FOCUS_BOARD)
-    d.beat(2.2)
+    d.reveal_to(BOARD_FULL_X)
+    d.mark("Detail", "Full board view: the .2 task depends on .1, so it's blocked until .1 is shorn.")
+    d.beat(1.2)
 
-    # Unblock — resolve the dependency in place.
-    d.mark("Unblock")
+    # Unblock.
     d.move("yak-1a2b.1", SHORN)
     d.board.set("yak-1a2b.2", blocked=False)
-    d._frame()
-    d.beat(1.6)
+    d.mark("Unblock", "Shear .1 and .2 is automatically unblocked - dependencies are just yak ids.")
+    d.beat(1.4)
 
-    # Shorn — come back to balanced for the closing line.
-    d.mark("Shorn")
+    # Shorn - back to the split for the closing line.
+    d.annotate(None)
     d.detail(None)
     d.move("yak-1a2b.2", SHORN)
     d.move("yak-1a2b", SHORN)
     d.tab(SHORN)
     d.focus_yak("yak-1a2b")
-    d.focus_to(FOCUS_BALANCED)
-    d.say("assistant", "Herd shorn — login works and the toggle persists.", hold=2.2)
+    d.reveal_to(BOARD_SPLIT_X)
+    d.say("assistant", "Herd shorn - login works and the toggle persists.")
+    d.mark("Shorn", "Work bracketed start to finish. The board and the conversation never drifted apart.")
+    d.beat(2.0)
 
     return cast
 

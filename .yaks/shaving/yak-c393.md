@@ -4,7 +4,7 @@ title: 'Demo foundation: variable-focus divider, headroom, help bar'
 type: feature
 priority: 2
 created: '2026-08-13T00:57:25Z'
-updated: '2026-08-13T01:01:21Z'
+updated: '2026-08-13T01:25:00Z'
 ---
 
 Foundational rendering primitives for the demo, agreed with the user. Unblocks the full screenplay + modal primitives. Three parts as children.

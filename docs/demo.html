@@ -158,7 +158,7 @@
             <div id="player"></div>
         </div>
         <p class="caption">
-            drag the scrubber · jump between chapters · text is selectable
+            press play · it auto-pauses at each chapter — resume when you're ready · text is selectable
         </p>
 
         <div class="notes">
@@ -194,9 +194,12 @@
     <script>
         // @license magnet:?xt=urn:btih:8e4f440f4c65981c5bf93c76d35135ba5064d8b7&dn=apache-2.0.txt Apache-2.0
         AsciinemaPlayer.create("demo.cast", document.getElementById("player"), {
-            autoPlay: true,
-            loop: true,
+            autoPlay: false,
+            loop: false,
             preload: true,
+            pauseOnMarkers: true,
+            speed: 0.85,
+            poster: "npt:0:01",
             theme: "asciinema",
             fit: "width",
             terminalFontSize: "small",

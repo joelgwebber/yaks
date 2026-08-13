@@ -62,11 +62,17 @@ S_DIVIDER = sgr(DIM)
 S_PANE_HEAD = sgr(DIM, BOLD)
 S_MUTED = fg256(245)
 S_HELP = sgr(30, 47)  # black on white, the app's bottom key strip (C_HELP)
+S_ANNOTATE = sgr(FG_CYAN, BOLD)
+S_ANNOTATE_RULE = sgr(DIM)
 
-# Focus stances for the variable divider (fraction of width given to the agent).
-FOCUS_AGENT = 0.60
-FOCUS_BALANCED = 0.42
-FOCUS_BOARD = 0.0  # agent hidden; board gets the full terminal (real app view)
+# Occlusion focus model: the agent is laid out at a FIXED width and the board
+# slides OVER it. board_x is the board's left edge; as it decreases the board
+# covers more of the agent. The agent never reflows — it is simply clipped at
+# the moving divider, so narrowing can't produce the vertical letter-stacking
+# that reflowing to a tiny width did.
+AGENT_LAYOUT_W = 52          # fixed agent layout width (never reflows)
+BOARD_SPLIT_X = AGENT_LAYOUT_W + 2   # board left edge when the agent is fully shown
+BOARD_FULL_X = 0             # board covers the whole terminal (agent hidden)
 
 # Bottom help-bar key strips, mirroring draw_help_bar in render.py.
 HELP_LIST = (
@@ -438,20 +444,26 @@ def render_detail(
 
 def render_agent(
     screen: Screen,
-    x0: int,
-    width: int,
+    layout_w: int,
+    visible_w: int,
     messages: list[tuple[str, str]],
     y0: int,
     height: int,
 ) -> None:
-    """Render a chat transcript, bottom-anchored. *messages* is (role, text)."""
-    role_prefix = {"user": "user", "assistant": "assistant", "tool": "  \u23bf"}
+    """Render a chat transcript, bottom-anchored, at column 0.
+
+    Text is wrapped to the FIXED *layout_w* and then painted clipped to
+    *visible_w*. That separation is the occlusion trick: as the board slides
+    over the agent, only *visible_w* shrinks — the wrap (and therefore the line
+    breaks) never change, so nothing reflows. Keep the content ASCII: East
+    Asian Ambiguous glyphs (em dash, curly quotes, box angles) can be sized
+    width-2 by the player's terminal and drift into the divider.
+    """
     lines: list[tuple[str, str]] = []
     for role, text in messages:
         style = S_AGENT.get(role, "")
-        prefix = role_prefix.get(role, role)
-        head = f"{prefix} " if role == "tool" else f"{prefix}  "
-        wrap_w = max(4, width - len(head))
+        head = "  " if role == "tool" else f"{role}  "
+        wrap_w = max(4, layout_w - len(head))
         for j, seg in enumerate(_wrap_words(text, wrap_w)):
             if j == 0:
                 lines.append((style, head + seg))
@@ -462,7 +474,7 @@ def render_agent(
 
     visible = lines[-height:] if len(lines) > height else lines
     for i, (style, text) in enumerate(visible):
-        screen.put_clipped(y0 + i, x0, text, width, style)
+        screen.put_clipped(y0 + i, 0, text, visible_w, style)
 
 
 def _wrap_words(text: str, width: int) -> list[str]:
@@ -486,6 +498,24 @@ def _wrap_words(text: str, width: int) -> list[str]:
 def render_help_bar(screen: Screen, x0: int, width: int, y: int, keys: str) -> None:
     screen.fill(y, x0, width, " ", S_HELP)
     screen.put_clipped(y, x0 + 1, keys, width - 1, S_HELP)
+
+
+def render_annotation(screen: Screen, width: int, help_y: int, text: str) -> int:
+    """Draw a caption band across the bottom (above the help bar).
+
+    Used to narrate a beat. Returns the top row of the band. The band clears
+    its rows first, so it reads as a clean overlay over whatever is beneath.
+    """
+    wrapped = _wrap(text, width - 4)
+    band_h = len(wrapped) + 1  # a top rule + the caption lines
+    y0 = max(0, help_y - band_h)
+    for y in range(y0, help_y):
+        screen.fill(y, 0, width, " ", "")
+    screen.put(y0, 0, "\u2500" * width, S_ANNOTATE_RULE)
+    for i, ln in enumerate(wrapped):
+        prefix = "  > " if i == 0 else "    "
+        screen.put(y0 + 1 + i, 0, prefix + ln, S_ANNOTATE if i == 0 else sgr(FG_CYAN))
+    return y0
 
 
 def render_board_pane(
@@ -527,17 +557,18 @@ def render_board_pane(
 
 @dataclass
 class Layout:
-    """Two-pane composition with a variable focus divider.
+    """Two-pane composition with an occluding focus divider.
 
-    The agent transcript occupies a left fraction of the width; the board gets
-    the rest. The fraction is supplied per-frame so the Director can slide focus
-    between the agent and the board (down to 0, which hides the agent entirely
-    and gives the board the full terminal — the real app view).
+    The agent transcript is laid out at a fixed width; the board slides over it
+    from the right. board_x (the board's left edge) is supplied per-frame: at
+    BOARD_SPLIT_X the agent is fully shown, at BOARD_FULL_X (0) the board covers
+    the whole terminal (the real app view). Intermediate values just clip the
+    agent — it never reflows.
     """
 
     cols: int
     rows: int
-    agent_frac: float = FOCUS_BALANCED
+    board_split_x: int = BOARD_SPLIT_X
 
     def compose(
         self,
@@ -546,36 +577,38 @@ class Layout:
         active_status: str,
         cursor_id: str | None = None,
         *,
-        agent_frac: float | None = None,
+        board_x: int | None = None,
         detail_id: str | None = None,
         detail_cursor: int | None = None,
         board_mode: str = "auto",
         help_keys: str | None = None,
+        annotation: str | None = None,
     ) -> Screen:
-        frac = self.agent_frac if agent_frac is None else agent_frac
         cols, rows = self.cols, self.rows
-        agent_w = round(cols * frac)
-        agent_visible = agent_w >= 6
-        if not agent_visible:
-            agent_w = 0
-        div_x = agent_w
-        board_x = agent_w + (2 if agent_visible else 0)
-        board_w = cols - board_x
+        bx = self.board_split_x if board_x is None else board_x
+        bx = max(0, min(bx, cols))
+        agent_visible = bx >= 8
 
         screen = Screen(cols, rows)
         help_y = rows - 1
         body_h = help_y  # content rows 0 .. help_y-1
 
         if agent_visible:
-            render_agent(screen, 0, agent_w - 1, messages, 0, body_h)
+            div_x = bx - 1
+            render_agent(screen, AGENT_LAYOUT_W, div_x - 1, messages, 0, body_h)
             screen.vline(div_x, 0, help_y, "\u2502", S_DIVIDER)
+            board_x0 = bx
+        else:
+            board_x0 = 0
 
         render_board_pane(
-            screen, board_x, board_w, 0, body_h, board,
+            screen, board_x0, cols - board_x0, 0, body_h, board,
             active_status, cursor_id, detail_id, detail_cursor, board_mode,
         )
 
+        if annotation:
+            render_annotation(screen, cols, help_y, annotation)
+
         keys = help_keys if help_keys is not None else (HELP_DETAIL if detail_id else HELP_LIST)
-        hx = board_x if agent_visible else 0
-        render_help_bar(screen, hx, cols - hx, help_y, keys)
+        render_help_bar(screen, 0, cols, help_y, keys)
         return screen
