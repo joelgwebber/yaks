@@ -91,11 +91,42 @@
             margin: 0 0 26px;
         }
         .player-frame {
+            position: relative;
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
             overflow: hidden;
             background: #101010;
             box-shadow: 0 6px 30px -12px rgba(0, 0, 0, 0.35);
+        }
+        /* Click-to-advance overlay: only active while auto-paused at a chapter. */
+        .advance {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: flex-start;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 5;
+        }
+        .player-frame.paused .advance {
+            display: flex;
+        }
+        .advance .pill {
+            margin-top: 14px;
+            padding: 7px 14px;
+            border-radius: 999px;
+            background: rgba(16, 16, 16, 0.82);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            color: #eaeaea;
+            font-family: var(--mono);
+            font-size: 12.5px;
+            letter-spacing: 0.02em;
+            backdrop-filter: blur(2px);
+            animation: pulse 1.8s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.65; }
+            50% { opacity: 1; }
         }
         .caption {
             color: var(--fg-faint);
@@ -154,8 +185,11 @@
             both of you can see and steer.
         </p>
 
-        <div class="player-frame">
+        <div class="player-frame" id="player-frame">
             <div id="player"></div>
+            <div class="advance" id="advance" title="Continue">
+                <span class="pill">Click anywhere to continue &rarr;</span>
+            </div>
         </div>
         <p class="caption">
             press play · it auto-pauses at each chapter — resume when you're ready · text is selectable
@@ -193,7 +227,7 @@
     <script src="vendor/asciinema-player/asciinema-player.min.js"></script>
     <script>
         // @license magnet:?xt=urn:btih:8e4f440f4c65981c5bf93c76d35135ba5064d8b7&dn=apache-2.0.txt Apache-2.0
-        AsciinemaPlayer.create("demo.cast", document.getElementById("player"), {
+        const player = AsciinemaPlayer.create("demo.cast", document.getElementById("player"), {
             autoPlay: false,
             loop: false,
             preload: true,
@@ -206,6 +240,16 @@
             terminalFontFamily: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
             idleTimeLimit: 2,
         });
+
+        // Click-to-advance: reveal a hint whenever the player auto-pauses at a
+        // chapter marker; a click anywhere resumes to the next one.
+        const frame = document.getElementById("player-frame");
+        const advance = document.getElementById("advance");
+        let started = false;
+        player.addEventListener("play", () => { started = true; frame.classList.remove("paused"); });
+        player.addEventListener("pause", () => { if (started) frame.classList.add("paused"); });
+        player.addEventListener("ended", () => { started = false; frame.classList.remove("paused"); });
+        advance.addEventListener("click", () => { frame.classList.remove("paused"); player.play(); });
         // @license-end
     </script>
 </body>

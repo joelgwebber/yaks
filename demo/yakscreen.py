@@ -20,7 +20,7 @@ _SCRIPTS = pathlib.Path(__file__).resolve().parent.parent / "scripts"
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
-from yaklib.format import humanize_date, status_emoji  # noqa: E402
+from yaklib.format import humanize_date, status_char, status_emoji  # noqa: E402
 from yaklib.model import HAIRY, SHAVING, SHORN, parent_id  # noqa: E402
 
 from castkit import (  # noqa: E402
@@ -288,8 +288,10 @@ def render_list(
         screen.put(row, x, type_text, _style((FG_CYAN,), dim=ghost, sel=selected))
         x += len(type_text)
 
-        # Right side: ghost status badge, and labels to its left.
-        badge = f" {emoji_slot(y.status)}" if ghost else ""
+        # Right side: ghost status badge (single-width ASCII — an emoji here sits
+        # against the separator and newer glyphs mis-advance in the player), and
+        # labels to its left.
+        badge = f" {status_char(y.status)}" if ghost else ""
         label_str = "[" + ", ".join(y.labels) + "]" if y.labels else ""
 
         right_w = text_width(badge) + (text_width(label_str) + 1 if label_str else 0)
