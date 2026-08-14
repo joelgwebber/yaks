@@ -11,10 +11,10 @@ from __future__ import annotations
 import textwrap
 from pathlib import Path
 
-from yaklib import artifacts as _artifacts
 from yaklib import links as _links
 from yaklib.format import humanize_date, status_emoji
-from yaklib.model import find_children, find_task_file, load_task, parent_id
+from yaklib.model import parent_id
+from yaklib.repo import FsTaskRepo
 
 
 class DetailLine:
@@ -55,8 +55,15 @@ def _wrap(text, width) -> list[str]:
     return [lead + w for w in wrapped]
 
 
-def build_detail_lines(root, task, status, width=80, reverse_deps=None) -> list[DetailLine]:
-    """Build the detail pane content for a task, wrapped to *width*."""
+def build_detail_lines(source, task, status, width=80, reverse_deps=None, status_glyph=status_emoji) -> list[DetailLine]:
+    """Build the detail pane content for a task, wrapped to *width*.
+
+    *source* is a TaskRepo (see yaklib.repo). For backward-compatibility a
+    ``Path`` to a ``.yaks/`` root is also accepted and wrapped in an
+    ``FsTaskRepo``. *status_glyph* maps a status to its badge (emoji for the
+    curses TUI, ASCII for the demo renderer).
+    """
+    repo = FsTaskRepo(source) if isinstance(source, Path) else source
     lines: list[DetailLine] = []
 
     def emit(text, kind="", task_id=None):
@@ -91,30 +98,28 @@ def build_detail_lines(root, task, status, width=80, reverse_deps=None) -> list[
         lines.append(DetailLine(f"  {'Source:':<12s} {src}", "link", open_path=src))
 
     for dep_id in task.get("depends_on", []):
-        dep_result = find_task_file(root, dep_id)
+        dep_result = repo.find(dep_id)
         if dep_result:
-            ds, dp = dep_result
-            dt = load_task(dp)
+            ds, dt = dep_result
             emit(
-                f"  {'Depends on:':<12s} {status_emoji(ds)} {dep_id}  {dt.get('title', '')}", "dep_link", task_id=dep_id
+                f"  {'Depends on:':<12s} {status_glyph(ds)} {dep_id}  {dt.get('title', '')}", "dep_link", task_id=dep_id
             )
         else:
             emit(f"  {'Depends on:':<12s} {dep_id} (not found)", "field")
 
     pid = parent_id(task["id"])
     if pid:
-        presult = find_task_file(root, pid)
+        presult = repo.find(pid)
         if presult:
-            ps, pp = presult
-            pt = load_task(pp)
-            emit(f"  {'Parent:':<12s} {status_emoji(ps)} {pid}  {pt.get('title', '')}", "link", task_id=pid)
+            ps, pt = presult
+            emit(f"  {'Parent:':<12s} {status_glyph(ps)} {pid}  {pt.get('title', '')}", "link", task_id=pid)
 
-    children = find_children(root, task["id"])
+    children = repo.children(task["id"])
     if children:
         lines.append(DetailLine(""))
         lines.append(DetailLine("  Children:", "subheader"))
         for cs, ct in children:
-            emit(f"    {status_emoji(cs)} {ct['id']}  {ct.get('title', '')}", "link", task_id=ct["id"])
+            emit(f"    {status_glyph(cs)} {ct['id']}  {ct.get('title', '')}", "link", task_id=ct["id"])
 
     if reverse_deps:
         blockers = sorted(reverse_deps.get(task["id"]) or [], key=lambda p: p[1]["id"])
@@ -122,18 +127,16 @@ def build_detail_lines(root, task, status, width=80, reverse_deps=None) -> list[
             lines.append(DetailLine(""))
             lines.append(DetailLine("  Blocks:", "subheader"))
             for bs, bt in blockers:
-                emit(f"    {status_emoji(bs)} {bt['id']}  {bt.get('title', '')}", "link", task_id=bt["id"])
+                emit(f"    {status_glyph(bs)} {bt['id']}  {bt.get('title', '')}", "link", task_id=bt["id"])
 
     desc = task.get("description", "")
 
-    artifacts = _artifacts.parse_artifacts(desc, task["id"])
+    artifacts = repo.artifacts(task["id"], desc)
     if artifacts:
         lines.append(DetailLine(""))
         lines.append(DetailLine("  Artifacts:", "subheader"))
-        for alt, aname in artifacts:
-            apath = _artifacts.artifacts_dir(root, task["id"]) / aname
-            label = aname if not alt or alt == Path(aname).stem else f"{aname}  ({alt})"
-            lines.append(DetailLine(f"    {label}", "link", open_path=apath))
+        for label, open_target in artifacts:
+            lines.append(DetailLine(f"    {label}", "link", open_path=open_target))
 
     if desc:
         lines.append(DetailLine(""))
@@ -142,7 +145,7 @@ def build_detail_lines(root, task, status, width=80, reverse_deps=None) -> list[
         def _emit_desc(chunk: str, kind: str, scan_links: bool):
             link_spans = []
             if scan_links:
-                link_spans = _links.resolve_spans(root, chunk, task["id"])
+                link_spans = repo.resolve_link_spans(chunk, task["id"])
             lines.append(DetailLine(chunk, kind, links=link_spans))
 
         in_code_block = False

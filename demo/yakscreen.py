@@ -1,12 +1,12 @@
 """yaks-flavored rendering for the demo: a two-pane composition of an agent
 chat transcript (left) and the yaks TUI board (right).
 
-To resist drift from the real tool, this module imports the yaks source for the
-bits most likely to change — the status set, the per-status emoji, id/parent
-arithmetic, and date humanization — and mirrors the TUI's layout
-(``scripts/yaktui/render.py`` + ``detail.py``) and color semantics
-(``scripts/yaktui/colors.py``) in ANSI. It deliberately does NOT import
-curses-bound UI code.
+The *view-model* is shared with the real tool: this module calls the actual
+``yaktui.tree.build_tree`` and ``yaktui.detail.build_detail_lines`` (fed by an
+in-memory BoardRepo) so the list tree, ghosts, detail sections, deps and links
+stay in lockstep with the TUI automatically. What stays forked is only the
+*painter* — turning that view-model into ANSI for the cast instead of curses
+attributes. Both are curses-free.
 """
 
 from __future__ import annotations
@@ -20,8 +20,11 @@ _SCRIPTS = pathlib.Path(__file__).resolve().parent.parent / "scripts"
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
-from yaklib.format import humanize_date, status_char  # noqa: E402
+from yaklib.filter import FilterSpec  # noqa: E402
+from yaklib.format import status_char  # noqa: E402
 from yaklib.model import HAIRY, SHAVING, SHORN, parent_id  # noqa: E402
+from yaktui.detail import DetailLine, build_detail_lines  # noqa: E402
+from yaktui.tree import build_tree  # noqa: E402
 
 from castkit import (  # noqa: E402
     BOLD,
@@ -158,67 +161,9 @@ class Board:
                 c[y.status] += 1
         return c
 
-    def children_of(self, id: str) -> list[Yak]:
-        kids = [y for y in self._yaks.values() if parent_id(y.id) == id]
-        kids.sort(key=lambda y: (_child_status_rank(y.status), y.priority, y.id))
-        return kids
-
-    def blockers_of(self, id: str) -> list[Yak]:
-        """Yaks that depend on *id* (i.e. this yak blocks them)."""
-        out = [y for y in self._yaks.values() if id in y.depends_on]
-        out.sort(key=lambda y: y.id)
-        return out
-
-    def tree_rows(self, active_status: str) -> list[tuple[Yak, int, bool]]:
-        """(yak, depth, ghost) rows for a tab, mirroring render.build_tree.
-
-        Yaks in the active status are the bright *focus*; their ancestors and
-        descendants come along as dimmed *ghosts* to keep the tree rooted.
-        """
-        by_id = self._yaks
-
-        def ancestors(tid: str) -> list[str]:
-            out, pid = [], parent_id(tid)
-            while pid:
-                if pid in by_id:
-                    out.append(pid)
-                pid = parent_id(pid)
-            return out
-
-        anchor = {tid for tid, y in by_id.items() if y.status == active_status}
-        universe = set(anchor)
-        for tid in anchor:
-            universe.update(ancestors(tid))
-        prefixes = tuple(tid + "." for tid in anchor)
-        if prefixes:
-            for other in by_id:
-                if other not in universe and other.startswith(prefixes):
-                    universe.add(other)
-
-        children: dict[str, list[str]] = {tid: [] for tid in universe}
-        roots: list[str] = []
-        for tid in universe:
-            pid = parent_id(tid)
-            if pid and pid in universe:
-                children[pid].append(tid)
-            else:
-                roots.append(tid)
-
-        def sort_key(tid: str) -> tuple:
-            y = by_id[tid]
-            return (_child_status_rank(y.status), y.priority, tid)
-
-        roots.sort(key=lambda t: (by_id[t].priority, t))
-        rows: list[tuple[Yak, int, bool]] = []
-
-        def walk(tid: str, depth: int) -> None:
-            rows.append((by_id[tid], depth, tid not in anchor))
-            for c in sorted(children[tid], key=sort_key):
-                walk(c, depth + 1)
-
-        for r in roots:
-            walk(r, 0)
-        return rows
+    def blocked_ids(self) -> set[str]:
+        """Hairy yaks flagged blocked — the TUI's overlay set (app.blocked_ids)."""
+        return {y.id for y in self._yaks.values() if y.blocked and y.status == HAIRY}
 
 
 def _child_status_rank(status: str) -> int:
@@ -227,6 +172,64 @@ def _child_status_rank(status: str) -> int:
     if status == SHORN:
         return 2
     return 1
+
+
+def _yak_to_task(y: Yak) -> dict:
+    """Project a demo Yak into the frontmatter-style dict the shared builders
+    (build_tree / build_detail_lines) expect."""
+    return {
+        "id": y.id,
+        "title": y.title,
+        "type": y.type,
+        "priority": y.priority,
+        "labels": list(y.labels),
+        "depends_on": list(y.depends_on),
+        "created": y.created or "",
+        "updated": y.updated or "",
+        "commit": y.commit,
+        "source": y.source,
+        "description": y.description,
+    }
+
+
+class BoardRepo:
+    """TaskRepo (yaklib.repo) over an in-memory Board, so the demo can drive the
+    real view-model builders with no filesystem."""
+
+    def __init__(self, board: Board):
+        self.board = board
+
+    def all_tasks(self) -> list[tuple[str, dict]]:
+        return [(y.status, _yak_to_task(y)) for y in self.board._yaks.values()]
+
+    def resolved_ids(self) -> set[str]:
+        return {y.id for y in self.board._yaks.values() if y.status == SHORN}
+
+    def find(self, task_id: str):
+        y = self.board._yaks.get(task_id)
+        return (y.status, _yak_to_task(y)) if y else None
+
+    def children(self, task_id: str) -> list[tuple[str, dict]]:
+        kids = [y for y in self.board._yaks.values() if parent_id(y.id) == task_id]
+        kids.sort(key=lambda y: (_child_status_rank(y.status), y.priority, y.id))
+        return [(y.status, _yak_to_task(y)) for y in kids]
+
+    def resolve_link_spans(self, text: str, self_id: str):
+        from yaklib.links import find_link_spans
+        return [(s, e, tid) for (s, e, tid) in find_link_spans(text)
+                if tid != self_id and tid in self.board._yaks]
+
+    def artifacts(self, task_id: str, body: str):
+        return []
+
+
+def board_reverse_deps(board: Board) -> dict[str, list[tuple[str, dict]]]:
+    """{dep_id: [(status, task), ...]} for the detail pane's Blocks section."""
+    rev: dict[str, list[tuple[str, dict]]] = {}
+    for y in board._yaks.values():
+        for dep in y.depends_on:
+            rev.setdefault(dep, []).append((y.status, _yak_to_task(y)))
+    return rev
 
 
 # --- rendering: tabs / list ------------------------------------------------
@@ -246,49 +249,60 @@ def render_list(
     screen: Screen,
     x0: int,
     width: int,
-    rows: list[tuple[Yak, int, bool]],
+    rows: list[tuple[str, dict, int, bool]],
+    blocked_ids: set[str],
     cursor_id: str | None,
     y0: int,
 ) -> None:
+    """Paint the shared build_tree output: (status, task, depth, ghost) rows.
+
+    Mirrors the geometry + colors of yaktui/render.py draw_list, but the *data*
+    (which rows, depth, ghost) comes from the shared builder.
+    """
     if not rows:
         screen.put(y0, x0 + 2, "No yaks.", sgr(DIM))
         return
-    id_col = max([4] + [len(y.id) + d * 2 for y, d, _ in rows]) + 1
-    for i, (y, depth, ghost) in enumerate(rows):
+    id_col = max([4] + [len(t["id"]) + d * 2 for _, t, d, _ in rows]) + 1
+    for i, (status, task, depth, ghost) in enumerate(rows):
+        tid = task["id"]
+        pri = task.get("priority", "-")
+        ttype = task.get("type", "-")
+        title = task.get("title", "")
+        labels = task.get("labels") or []
+        blocked = tid in blocked_ids and status == HAIRY
+
         row = y0 + i
-        selected = y.id == cursor_id
+        selected = tid == cursor_id
         if selected:
             screen.fill(row, x0, width, " ", S_SEL_BG)
 
         indent = "  " * depth
         x = x0
-        lead = "*" if (y.blocked and y.status == HAIRY) else " "
-        id_text = f"{lead}{indent}{y.id}".ljust(id_col + 1)
-        if y.blocked and y.status == HAIRY and not selected:
+        lead = "*" if blocked else " "
+        id_text = f"{lead}{indent}{tid}".ljust(id_col + 1)
+        if blocked and not selected:
             screen.put(row, x, lead, sgr(FG_MAGENTA, BOLD))
             screen.put(row, x + 1, id_text[1:], _style((FG_BLUE,), dim=ghost))
         else:
             screen.put(row, x, id_text, _style((FG_BLUE,), dim=ghost, sel=selected))
         x += len(id_text)
 
-        pri_text = f"p{y.priority} "
-        screen.put(row, x, pri_text, _style((_PRIORITY_FG.get(y.priority, FG_YELLOW),), dim=ghost, sel=selected))
+        pri_text = f"p{pri} "
+        screen.put(row, x, pri_text, _style((_PRIORITY_FG.get(pri, FG_YELLOW),), dim=ghost, sel=selected))
         x += len(pri_text)
 
-        type_text = f"{y.type:8s} "
+        type_text = f"{ttype:8s} "
         screen.put(row, x, type_text, _style((FG_CYAN,), dim=ghost, sel=selected))
         x += len(type_text)
 
-        # Right side: ghost status badge (single-width ASCII — an emoji here sits
-        # against the separator and newer glyphs mis-advance in the player), and
-        # labels to its left.
-        badge = f" {status_char(y.status)}" if ghost else ""
-        label_str = "[" + ", ".join(y.labels) + "]" if y.labels else ""
+        # Right side: ghost status badge (single-width ASCII) + labels to its left.
+        badge = f" {status_char(status)}" if ghost else ""
+        label_str = "[" + ", ".join(labels) + "]" if labels else ""
 
         right_w = text_width(badge) + (text_width(label_str) + 1 if label_str else 0)
         avail = width - (x - x0) - 1 - right_w
         if avail > 0:
-            screen.put_clipped(row, x, y.title, avail, _style((), dim=ghost, sel=selected))
+            screen.put_clipped(row, x, title, avail, _style((), dim=ghost, sel=selected))
         if label_str:
             lx = x0 + width - 1 - text_width(badge) - text_width(label_str)
             if lx > x:
@@ -296,24 +310,19 @@ def render_list(
         if badge:
             bx = x0 + width - text_width(badge) - 1
             if bx > x:
-                screen.put(row, bx, badge, _ghost_badge_style(y.status))
+                screen.put(row, bx, badge, _ghost_badge_style(status))
 
 
 # --- rendering: detail pane ------------------------------------------------
 
 
-@dataclass
-class DetailLine:
-    text: str
-    kind: str = ""  # header|subheader|field|link|desc|code|md_heading|quote|""
-    link: bool = False
-
-
+# Style per DetailLine.kind, mirroring draw_detail in yaktui/render.py.
 _DETAIL_STYLE = {
     "header": sgr(FG_WHITE, BOLD),
     "subheader": sgr(FG_WHITE, BOLD),
     "field": "",
     "link": sgr(FG_BLUE),
+    "dep_link": sgr(FG_BLUE),
     "desc": sgr(DIM),
     "code": sgr(FG_CYAN),
     "md_heading": sgr(FG_WHITE, BOLD),
@@ -342,80 +351,6 @@ def _wrap(text: str, width: int) -> list[str]:
     return out or [text]
 
 
-def build_detail_lines(board: Board, yak: Yak, width: int) -> list[DetailLine]:
-    """A demo-scale port of detail.build_detail_lines."""
-    lines: list[DetailLine] = []
-
-    def emit(text: str, kind: str = "", link: bool = False) -> None:
-        for chunk in _wrap(text, width):
-            lines.append(DetailLine(chunk, kind, link))
-
-    emit(f"Task: {yak.id}", "header")
-    lines.append(DetailLine(""))
-    emit(f"  {'Title:':<12s} {yak.title}", "field")
-
-    fields = [
-        ("Status", yak.status.capitalize()),
-        ("Type", yak.type),
-        ("Priority", str(yak.priority)),
-    ]
-    if yak.created:
-        fields.append(("Created", humanize_date(yak.created)))
-    if yak.updated:
-        fields.append(("Updated", humanize_date(yak.updated)))
-    if yak.commit:
-        fields.append(("Commit", yak.commit))
-    if yak.labels:
-        fields.append(("Labels", ", ".join(yak.labels)))
-    for label, value in fields:
-        emit(f"  {label + ':':<12s} {value}", "field")
-
-    if yak.source:
-        emit(f"  {'Source:':<12s} {yak.source}", "link", link=True)
-
-    for dep_id in yak.depends_on:
-        if dep_id in board._yaks:
-            d = board.get(dep_id)
-            emit(f"  {'Depends on:':<12s} {status_char(d.status)} {dep_id}  {d.title}", "link", link=True)
-        else:
-            emit(f"  {'Depends on:':<12s} {dep_id} (not found)", "field")
-
-    pid = parent_id(yak.id)
-    if pid and pid in board._yaks:
-        p = board.get(pid)
-        emit(f"  {'Parent:':<12s} {status_char(p.status)} {pid}  {p.title}", "link", link=True)
-
-    kids = board.children_of(yak.id)
-    if kids:
-        lines.append(DetailLine(""))
-        lines.append(DetailLine("  Children:", "subheader"))
-        for c in kids:
-            emit(f"    {status_char(c.status)} {c.id}  {c.title}", "link", link=True)
-
-    blockers = board.blockers_of(yak.id)
-    if blockers:
-        lines.append(DetailLine(""))
-        lines.append(DetailLine("  Blocks:", "subheader"))
-        for b in blockers:
-            emit(f"    {status_char(b.status)} {b.id}  {b.title}", "link", link=True)
-
-    if yak.description:
-        lines.append(DetailLine(""))
-        lines.append(DetailLine("  Description:", "subheader"))
-        for dline in yak.description.split("\n"):
-            stripped = dline.strip()
-            if not stripped:
-                lines.append(DetailLine("    "))
-            elif stripped.startswith("#"):
-                emit(f"    {dline}", "md_heading")
-            elif stripped.startswith("> "):
-                emit(f"    {dline}", "quote")
-            else:
-                emit(f"    {dline}", "desc")
-
-    return lines
-
-
 def render_detail(
     screen: Screen,
     x0: int,
@@ -425,19 +360,25 @@ def render_detail(
     height: int,
     cursor_line: int | None = None,
 ) -> None:
+    """Paint a list of the real yaktui DetailLine objects."""
     for i in range(min(height, len(lines))):
         dl = lines[i]
         row = y0 + i
-        is_cursor = cursor_line is not None and i == cursor_line
-        if is_cursor:
+        has_inline = bool(dl.links)
+        whole_line_link = (dl.task_id is not None or dl.open_path is not None) and not has_inline
+
+        if cursor_line is not None and i == cursor_line:
             screen.fill(row, x0, width, " ", S_SEL_BG)
-            style = (S_SEL_BG + sgr(FG_BLUE, BOLD)) if dl.link else (S_SEL_BG + sgr(BOLD))
+            style = (S_SEL_BG + sgr(FG_BLUE, BOLD)) if whole_line_link else (S_SEL_BG + sgr(BOLD))
             screen.put_clipped(row, x0, dl.text, width, style)
             continue
-        style = _DETAIL_STYLE.get(dl.kind, "")
-        if dl.link:
-            style = sgr(FG_BLUE, UNDERLINE) if dl.kind != "link" else sgr(FG_BLUE)
-        screen.put_clipped(row, x0, dl.text, width, style)
+
+        base = sgr(FG_BLUE) if whole_line_link else _DETAIL_STYLE.get(dl.kind, "")
+        screen.put_clipped(row, x0, dl.text, width, base)
+        # Inline yak-id mentions in description text render underlined.
+        for start, end, _tid in dl.links:
+            if start < width:
+                screen.put(row, x0 + start, dl.text[start:end], sgr(FG_BLUE, UNDERLINE))
 
 
 # --- rendering: agent pane -------------------------------------------------
@@ -547,7 +488,26 @@ def render_board_pane(
     detail_cursor: int | None,
     mode: str,
 ) -> None:
-    """Tabs on top, then list, full-pane detail, or the real list|detail split."""
+    """Tabs on top, then list, full-pane detail, or the real list|detail split.
+
+    The list tree and detail lines come from the SHARED builders
+    (yaktui.tree.build_tree / yaktui.detail.build_detail_lines) via a BoardRepo,
+    so content stays in lockstep with the TUI; only the painting is local.
+    """
+    repo = BoardRepo(board)
+    tree_rows = build_tree(
+        None, active_status, FilterSpec(),
+        tasks_cache=repo.all_tasks(), resolved_cache=repo.resolved_ids(),
+    )
+    blocked = board.blocked_ids()
+
+    def detail_lines_for(tid: str, w: int) -> list[DetailLine]:
+        status, task = repo.find(tid)
+        return build_detail_lines(
+            repo, task, status, w,
+            reverse_deps=board_reverse_deps(board), status_glyph=status_char,
+        )
+
     render_tabs(screen, x0, board, active_status, top)
     content_y = top + 2
     content_h = height - 2
@@ -559,16 +519,14 @@ def render_board_pane(
         sep_x = x0 + list_w
         det_x = sep_x + 2
         det_w = width - (det_x - x0)
-        render_list(screen, x0, list_w - 1, board.tree_rows(active_status), cursor_id, content_y)
+        render_list(screen, x0, list_w - 1, tree_rows, blocked, cursor_id, content_y)
         # Separator runs the content height only — the tabs span full width.
         screen.vline(sep_x, top + 1, bottom, "\u2502", S_DIVIDER)
-        lines = build_detail_lines(board, board.get(detail_id), det_w - 1)
-        render_detail(screen, det_x, det_w - 1, lines, content_y, content_h, detail_cursor)
+        render_detail(screen, det_x, det_w - 1, detail_lines_for(detail_id, det_w - 1), content_y, content_h, detail_cursor)
     elif detail_id is not None:
-        lines = build_detail_lines(board, board.get(detail_id), width - 1)
-        render_detail(screen, x0, width - 1, lines, content_y, content_h, detail_cursor)
+        render_detail(screen, x0, width - 1, detail_lines_for(detail_id, width - 1), content_y, content_h, detail_cursor)
     else:
-        render_list(screen, x0, width - 1, board.tree_rows(active_status), cursor_id, content_y)
+        render_list(screen, x0, width - 1, tree_rows, blocked, cursor_id, content_y)
 
 
 @dataclass
