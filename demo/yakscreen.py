@@ -20,7 +20,7 @@ _SCRIPTS = pathlib.Path(__file__).resolve().parent.parent / "scripts"
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
-from yaklib.format import humanize_date, status_char, status_emoji  # noqa: E402
+from yaklib.format import humanize_date, status_char  # noqa: E402
 from yaklib.model import HAIRY, SHAVING, SHORN, parent_id  # noqa: E402
 
 from castkit import (  # noqa: E402
@@ -48,19 +48,10 @@ TAB_STATUSES = (HAIRY, SHAVING, SHORN)
 
 
 def _tab_label(status: str) -> str:
-    return f"{emoji_slot(status)} {status.capitalize()}"
-
-
-def emoji_slot(status: str) -> str:
-    """A status emoji normalized to a fixed 2-column slot.
-
-    Narrow-but-drawn-wide emoji (scissors: width 1 + VS16) get a trailing space
-    so every status glyph advances exactly two columns in both our grid and the
-    player's terminal — no drift where an emoji sits next to a divider.
-    """
-    e = status_emoji(status)
-    w = text_width(e)
-    return e + (" " * (2 - w)) if w < 2 else e
+    # ASCII-only for now: color-emoji glyphs don't advance exactly 2 monospace
+    # cells in the player's DOM renderer, so they nudge alignment. The tab name
+    # alone is unambiguous. See yak-c393.5 for the full diagnosis.
+    return status.capitalize()
 
 
 # Priority -> SGR foreground codes, matching curses pairs C_P1..C_P5.
@@ -385,28 +376,28 @@ def build_detail_lines(board: Board, yak: Yak, width: int) -> list[DetailLine]:
     for dep_id in yak.depends_on:
         if dep_id in board._yaks:
             d = board.get(dep_id)
-            emit(f"  {'Depends on:':<12s} {emoji_slot(d.status)} {dep_id}  {d.title}", "link", link=True)
+            emit(f"  {'Depends on:':<12s} {status_char(d.status)} {dep_id}  {d.title}", "link", link=True)
         else:
             emit(f"  {'Depends on:':<12s} {dep_id} (not found)", "field")
 
     pid = parent_id(yak.id)
     if pid and pid in board._yaks:
         p = board.get(pid)
-        emit(f"  {'Parent:':<12s} {emoji_slot(p.status)} {pid}  {p.title}", "link", link=True)
+        emit(f"  {'Parent:':<12s} {status_char(p.status)} {pid}  {p.title}", "link", link=True)
 
     kids = board.children_of(yak.id)
     if kids:
         lines.append(DetailLine(""))
         lines.append(DetailLine("  Children:", "subheader"))
         for c in kids:
-            emit(f"    {emoji_slot(c.status)} {c.id}  {c.title}", "link", link=True)
+            emit(f"    {status_char(c.status)} {c.id}  {c.title}", "link", link=True)
 
     blockers = board.blockers_of(yak.id)
     if blockers:
         lines.append(DetailLine(""))
         lines.append(DetailLine("  Blocks:", "subheader"))
         for b in blockers:
-            emit(f"    {emoji_slot(b.status)} {b.id}  {b.title}", "link", link=True)
+            emit(f"    {status_char(b.status)} {b.id}  {b.title}", "link", link=True)
 
     if yak.description:
         lines.append(DetailLine(""))

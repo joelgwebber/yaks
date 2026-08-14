@@ -4,7 +4,7 @@ title: Divider break from a mismeasured glyph
 type: bug
 priority: 2
 created: '2026-08-13T01:24:51Z'
-updated: '2026-08-13T04:02:56Z'
+updated: '2026-08-14T03:14:04Z'
 ---
 
 A character (candidate: the U+23BF tool angle, or em-dash) mismeasures and breaks the vertical divider on some rows. Find the offending glyph and fix char_width / emission.
@@ -20,3 +20,7 @@ Round 2 (emoji): the remaining glyph mismeasurement was char_width force-widenin
 ---
 ▸ 2026-08-13T04:02:56Z
 Round 3 (bison): verified via raw emitted bytes that the inner separator CHA is identical on every row (ESC[41G) - my layout is correct, so the offset is avt mis-advancing on the emoji glyph itself (bison U+1F9AC / razor U+1FA92 are newer Unicode 12-13 emoji whose width avt's table may disagree with). It only breaks visibly where an emoji sits directly against a separator = the list ghost badge. Fix: use the app's single-width STATUS_CHAR (format.py, built for tight layouts) for the list badge; keep emoji in tabs + detail (not separator-adjacent).
+
+---
+▸ 2026-08-14T03:14:04Z
+Resolved for now: went ALL-ASCII for status glyphs (dropped emoji from tabs + detail; list badge already ASCII). Definitive diagnosis via library teardown: asciinema-player renders lines as flowing DOM (createElement/insertBefore, ch units - no canvas), and the terminal (avt) is a Rust->WASM blob with an inlined width table we can't edit. Our layout is provably correct (separator CHA identical per row); the offset is color-emoji glyphs not advancing exactly 2 monospace cells in the DOM renderer - unfixable from the cast. Filed yak-fa3b (replace the player) and yak-f64b (shared rendering abstraction).
