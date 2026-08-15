@@ -4,7 +4,7 @@ title: Divider break from a mismeasured glyph
 type: bug
 priority: 2
 created: '2026-08-13T01:24:51Z'
-updated: '2026-08-14T03:14:04Z'
+updated: '2026-08-15T03:27:27Z'
 ---
 
 A character (candidate: the U+23BF tool angle, or em-dash) mismeasures and breaks the vertical divider on some rows. Find the offending glyph and fix char_width / emission.

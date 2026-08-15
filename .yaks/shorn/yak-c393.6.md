@@ -4,7 +4,7 @@ title: Overlay/annotation affordance (bottom band)
 type: feature
 priority: 2
 created: '2026-08-13T01:24:51Z'
-updated: '2026-08-13T03:46:03Z'
+updated: '2026-08-15T03:27:27Z'
 ---
 
 An overlay primitive to narrate what's happening — use the empty space at the bottom (above the help bar) for a caption/annotation band tied to beats/markers.
