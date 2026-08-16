@@ -33,9 +33,10 @@ from yaktui.colors import (
     init_colors,
 )
 from yaktui.detail import build_detail_lines
-from yaktui.render import TABS
-from yaktui.render import tab_counts as _tab_counts
+from yaktui.render import view_counts as _view_counts
+from yaktui.render import view_tab_text
 from yaktui.tree import apply_collapse, build_tree
+from yaktui.view import builtin_status_views
 from yaktui.vim_edit import LineEditor
 
 
@@ -147,8 +148,11 @@ class TUI:
         self.vim_mode = bool(self.config.get("vim_mode", False))
         self.show_labels = bool(self.config.get("show_labels", True))
 
-        # List state
-        self.tab = 0
+        # List state. Views generalize the old fixed status tabs (yak-4473):
+        # self.view indexes an ordered self.views list; the three built-in
+        # status Views are seeded here and, for now, are the only ones.
+        self.views = builtin_status_views()
+        self.view = 0
         self.cursor = 0
         self.scroll = 0
         self.filter_spec = FilterSpec()
@@ -259,7 +263,7 @@ class TUI:
 
     def _rebuild_task_list(self):
         """Re-run build_tree for the current tab/filter, then apply collapse."""
-        status = TABS[self.tab][0]
+        status = self.views[self.view].status
         flat = build_tree(
             self.root, status, self.filter_spec, tasks_cache=self._task_cache, resolved_cache=self._resolved_cache
         )
@@ -738,14 +742,13 @@ class TUI:
         # --- Tab row (y == 0) ---
         if my == 0:
             x = 0
-            counts = _tab_counts(self)
+            counts = _view_counts(self)
             spec_statuses = self.filter_spec.statuses
-            for i, (status, label) in enumerate(TABS):
-                marker = "*" if (spec_statuses and status in spec_statuses) else ""
-                text = f" {label}{marker} ({counts[status]}) "
+            for i in range(len(self.views)):
+                text = view_tab_text(self, i, counts, spec_statuses)
                 if mx < x + len(text):
-                    if i != self.tab:
-                        self.tab = i
+                    if i != self.view:
+                        self.view = i
                         self._reset_list()
                     break
                 x += len(text) + 1
@@ -916,7 +919,7 @@ class TUI:
         self._fix_detail_scroll()
 
     def _switch_tab(self, direction):
-        self.tab = (self.tab + direction) % len(TABS)
+        self.view = (self.view + direction) % len(self.views)
         self._reset_list()
 
     def _reset_list(self):
@@ -1027,10 +1030,10 @@ class TUI:
 
         target_status, _ = result
 
-        # Switch to the right tab
-        for i, (status, _) in enumerate(TABS):
-            if status == target_status:
-                self.tab = i
+        # Switch to the view whose status holds the target task.
+        for i, v in enumerate(self.views):
+            if v.status == target_status:
+                self.view = i
                 break
 
         # Reload with no filters to ensure the task is visible. Also expand

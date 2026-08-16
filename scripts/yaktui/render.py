@@ -33,13 +33,6 @@ from yaktui.colors import (
 )
 from yaktui.dialogs import safe_addstr
 
-TABS = [
-    (HAIRY, "\U0001f9ac Hairy"),
-    (SHAVING, "\u2702\ufe0f  Shaving"),
-    (SHORN, "\U0001f411 Shorn"),
-]
-
-
 _PRIORITY_PAIRS = {
     1: (C_P1, curses.A_BOLD),
     2: (C_P2, 0),
@@ -70,54 +63,70 @@ def _spec_key(spec):
             spec.search, spec.ready_only, spec.tangled_only, spec.parent)
 
 
-def _compute_tab_counts(app, cache, spec):
+def _compute_view_counts(app, cache, spec):
+    """Per-view counts as a list aligned to app.views. Each status View counts
+    the tasks in its status dir that match the spec's content predicates."""
     from dataclasses import replace
 
     from yaktui.tree import build_tree
 
-    if spec.is_empty():
-        # Straight per-status tally over the in-memory cache — no disk glob.
-        counts = {status: 0 for status, _ in TABS}
-        for st, _ in cache:
-            if st in counts:
-                counts[st] += 1
-        return counts
-    # Clear statuses in spec so each tab can scope independently.
-    per_tab_spec = replace(spec, statuses=frozenset())
-    counts = {}
-    for status, _ in TABS:
-        # If the spec explicitly narrows statuses and this tab isn't in scope,
-        # the tab will show nothing — count=0 is the honest number.
-        if spec.statuses and status not in spec.statuses:
-            counts[status] = 0
+    empty = spec.is_empty()
+    per_view_spec = None if empty else replace(spec, statuses=frozenset())
+    counts = []
+    for view in app.views:
+        st = view.status
+        if empty:
+            # Straight per-status tally over the in-memory cache — no disk glob.
+            counts.append(sum(1 for s, _ in cache if s == st))
             continue
-        counts[status] = sum(
+        # If the spec explicitly narrows statuses and this view isn't in scope,
+        # it will show nothing — count=0 is the honest number.
+        if spec.statuses and st not in spec.statuses:
+            counts.append(0)
+            continue
+        counts.append(sum(
             1
             for _, _, _, ghost in build_tree(
-                app.root, status, per_tab_spec, tasks_cache=cache, resolved_cache=app._resolved_cache
+                app.root, st, per_view_spec, tasks_cache=cache, resolved_cache=app._resolved_cache
             )
             if not ghost
-        )
+        ))
     return counts
 
 
-def tab_counts(app):
-    """Filtered counts per tab status, computed from the in-memory task cache.
-    When a filter is active, each tab shows how many tasks would appear under it
-    given the spec (ignoring the spec's own `statuses` override).
+def _views_sig(app):
+    """Cheap signature of the View list, so the count memo invalidates when the
+    set of Views changes (not just when data or the filter changes)."""
+    return tuple((v.name, v.status) for v in app.views)
 
-    Memoized against (task-cache version, filter spec): idle 500ms polls and
-    plain re-renders recompute nothing, so cost stays off the render path until
-    the data or the filter actually changes (yak-3fd4.4).
+
+def view_counts(app):
+    """Per-view task counts (list aligned to app.views), from the in-memory
+    cache. When a filter is active, each view shows how many tasks would appear
+    under it given the spec (ignoring the spec's own `statuses` override).
+
+    Memoized against (task-cache version, filter spec, views signature): idle
+    500ms polls and plain re-renders recompute nothing, so cost stays off the
+    render path until the data, the filter, or the View list changes.
     """
     cache = app._task_cache or []
-    key = (getattr(app, "_task_cache_version", 0), _spec_key(app.filter_spec))
+    key = (getattr(app, "_task_cache_version", 0), _spec_key(app.filter_spec),
+           _views_sig(app))
     memo = getattr(app, "_counts_memo", None)
     if memo is not None and memo[0] == key:
         return memo[1]
-    counts = _compute_tab_counts(app, cache, app.filter_spec)
+    counts = _compute_view_counts(app, cache, app.filter_spec)
     app._counts_memo = (key, counts)
     return counts
+
+
+def view_tab_text(app, i, counts, spec_statuses):
+    """The exact tab-strip text for view *i*, so drawing, mouse hit-testing, and
+    inline-search cursor placement all agree on width (counts are capped, and a
+    status override adds a `*` marker)."""
+    view = app.views[i]
+    marker = "*" if (spec_statuses and view.status in spec_statuses) else ""
+    return f" {view.name}{marker} ({format_count(counts[i])}) "
 
 
 def draw(app):
@@ -172,14 +181,11 @@ def draw(app):
 
 def draw_tabs(app, y, w):
     x = 0
-    counts = tab_counts(app)
+    counts = view_counts(app)
     spec_statuses = app.filter_spec.statuses
-    for i, (status, label) in enumerate(TABS):
-        # When the filter explicitly overrides statuses, mark which tabs
-        # are still in scope so the tab row honestly reflects what'll show.
-        marker = "*" if (spec_statuses and status in spec_statuses) else ""
-        text = f" {label}{marker} ({format_count(counts[status])}) "
-        if i == app.tab:
+    for i in range(len(app.views)):
+        text = view_tab_text(app, i, counts, spec_statuses)
+        if i == app.view:
             attr = curses.color_pair(C_TAB_ACTIVE) | curses.A_BOLD
         else:
             attr = curses.A_DIM
@@ -206,9 +212,10 @@ def draw_tabs(app, y, w):
             # statuses aren't overridden). Reuses the cached counts.
             spec_statuses = app.filter_spec.statuses
             if spec_statuses:
-                total = sum(counts[s] for s, _ in TABS if s in spec_statuses)
+                total = sum(counts[i] for i, v in enumerate(app.views)
+                            if v.status in spec_statuses)
             else:
-                total = counts[TABS[app.tab][0]]
+                total = counts[app.view]
             text = f"  filter: {chip}  ({format_count(total)})"
             safe_addstr(app.stdscr, y, x, text, curses.color_pair(C_SEARCH))
 
@@ -347,11 +354,11 @@ def _position_inline_search_cursor(app, y, w):
         curses.curs_set(0)
         return
     ed = app._inline_search
-    counts = tab_counts(app)
+    counts = view_counts(app)
+    spec_statuses = app.filter_spec.statuses
     x = 0
-    for i, (status, label) in enumerate(TABS):
-        text = f" {label} ({format_count(counts[status])}) "
-        x += len(text) + 1
+    for i in range(len(app.views)):
+        x += len(view_tab_text(app, i, counts, spec_statuses)) + 1
     badge = ed.mode_badge()
     badge_w = len(badge) + 1 if badge else 0
     prompt = "  search: "
