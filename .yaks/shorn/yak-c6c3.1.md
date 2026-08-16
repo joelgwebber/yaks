@@ -4,7 +4,7 @@ title: 'Packaging & release: publish yakherder to PyPI'
 type: task
 priority: 1
 created: '2026-07-25T20:48:14Z'
-updated: '2026-07-25T21:16:55Z'
+updated: '2026-07-26T17:40:49Z'
 ---
 
 Make the repo publish-ready under a NEW PyPI distribution name (yaks is taken by an abandoned ADLINK/zenoh package). Keep the command name 'yaks'; publish as 'yakshave'. Tasks: rename [project.name] to yakshave; add readme/license/classifiers/project.urls; add a 'yakshave' console-script alias alongside 'yaks' (so 'uvx yakshave' works with no --from); unify version with the plugin manifests; verify 'uv build' and 'uvx --from ./dist/*.whl yaks ...'; add a GitHub Actions release workflow using PyPI trusted publishing on tag. NOTE: the actual first upload is user-gated (needs PyPI account / trusted-publisher config).

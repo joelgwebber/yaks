@@ -126,17 +126,44 @@ def test_migrate_comment_blocks_leaves_date_only_headings_alone():
     assert _migrate_comment_blocks(src) == src
 
 
-def test_auto_migrate_rewrites_md_files_on_load(yak, yak_root):
-    """find_tasks_root → _auto_migrate must rewrite legacy `### <iso>` blocks
-    in any .md file under the .yaks/ directory."""
+def test_auto_migrate_runs_when_schema_behind(yak, yak_root):
+    """When the herd's schema version is behind, the next invocation rewrites
+    legacy `### <iso>` comment blocks and re-stamps the schema to current."""
+    from yaklib.model import CURRENT_SCHEMA_VERSION
+
     tid = create_task(yak, "needs migration", type="task")
     path = yak_root / ".yaks" / "hairy" / f"{tid}.md"
-    text = path.read_text()
-    # Hand-write a legacy comment block (simulating an old yak file).
-    legacy = text.rstrip() + "\n\n### 2026-04-25T18:25:28Z\nLegacy note.\n"
+    legacy = path.read_text().rstrip() + "\n\n### 2026-04-25T18:25:28Z\nLegacy note.\n"
     path.write_text(legacy)
-    # Any subsequent yak invocation triggers find_tasks_root → _auto_migrate.
+    # Roll the schema back so the comment-block step (v2) re-runs.
+    schema = yak_root / ".yaks" / "schema"
+    schema.write_text("1\n")
+
     yak("list")
+
     rewritten = path.read_text()
     assert "### 2026-04-25" not in rewritten
     assert "---\n▸ 2026-04-25T18:25:28Z\nLegacy note." in rewritten
+    assert schema.read_text().strip() == str(CURRENT_SCHEMA_VERSION)
+
+
+def test_auto_migrate_skipped_when_schema_current(yak, yak_root):
+    """The version gate skips the O(N) scan when the herd is already current,
+    so a hand-injected legacy block is left untouched (the intended tradeoff:
+    migrations run on version bumps, not on every invocation)."""
+    tid = create_task(yak, "already current", type="task")
+    path = yak_root / ".yaks" / "hairy" / f"{tid}.md"
+    legacy = path.read_text().rstrip() + "\n\n### 2026-04-25T18:25:28Z\nLegacy note.\n"
+    path.write_text(legacy)
+
+    yak("list")  # init stamped the current version -> gate skips migration
+
+    assert "### 2026-04-25T18:25:28Z" in path.read_text()
+
+
+def test_init_stamps_current_schema_version(yak_root):
+    from yaklib.model import CURRENT_SCHEMA_VERSION
+
+    schema = yak_root / ".yaks" / "schema"
+    assert schema.is_file()
+    assert schema.read_text().strip() == str(CURRENT_SCHEMA_VERSION)

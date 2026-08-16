@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
+import os
 import random
 import re
 import string
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
-
 
 # Strict ISO8601 timestamp at column 0 inside an h3 heading. Matches the
 # old yak comment-block format (`### <iso> [@author] [(from tracker:key)]`)
@@ -73,6 +74,50 @@ def dump_yaml(data: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Atomic writes + schema versioning
+# ---------------------------------------------------------------------------
+
+def atomic_write(path: Path, text: str) -> None:
+    """Write *text* to *path* atomically: a temp file in the same directory is
+    written, then os.replace()'d over the target. A crash can leave a stray
+    .tmp file (harmless) but never a torn or half-written target. Keeping the
+    temp in the same directory guarantees the rename stays on one filesystem.
+    """
+    path = Path(path)
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=path.name + ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(text)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+# Bump when a new on-disk migration step is added; each step's version must be
+# <= this. v1: legacy .yaml -> .md. v2: `### <iso>` comment blocks -> sigil
+# format. (v3, drop dot-hierarchy -> parent field, lands with yak-3fd4.6.)
+CURRENT_SCHEMA_VERSION = 2
+
+_SCHEMA_FILE = "schema"
+
+
+def read_schema_version(root: Path) -> int:
+    """Herd schema version; 0 when unmarked, unreadable, or legacy."""
+    try:
+        return int((root / _SCHEMA_FILE).read_text().strip())
+    except (OSError, ValueError):
+        return 0
+
+
+def write_schema_version(root: Path, version: int) -> None:
+    atomic_write(root / _SCHEMA_FILE, f"{version}\n")
+
+
+# ---------------------------------------------------------------------------
 # Filesystem layout
 # ---------------------------------------------------------------------------
 
@@ -92,51 +137,22 @@ def find_tasks_root(start: Path | None = None) -> Path:
 
 
 def _auto_migrate(root: Path) -> None:
-    """Run on-disk migrations:
+    """Version-gated on-disk migration, run once from find_tasks_root().
 
-    1. Legacy ``.yaml`` task files → ``.md`` with frontmatter.
-    2. Legacy ``### <iso>`` comment-block headings → ``---\\n▸ <iso>``
-       (introduced when the comment format gained a thematic-break +
-       sigil to disambiguate from user-authored headings).
-
-    Both are idempotent — already-migrated files pass through unchanged.
+    Cheap no-op when the herd is already at CURRENT_SCHEMA_VERSION (a single
+    small read of the schema file). Otherwise it runs the ordered, idempotent
+    migration steps whose version is newer than the herd's, stamping the schema
+    file after each step so an interrupted run resumes where it left off. An
+    unmarked herd reads as version 0, so every step runs once (each is a no-op
+    on already-current content) and the herd is then stamped.
     """
-    yaml_migrated = []
-    comment_migrated = []
-    for s in _ALL_STATUSES:
-        d = root / s
-        if not d.exists():
-            continue
-        for f in sorted(d.glob("*.yaml")):
-            task = yaml.safe_load(f.read_text()) or {}
-            if not task:
-                continue
-            md_path = f.with_suffix(".md")
-            description = task.pop("description", None)
-            fm = dump_yaml(task)
-            parts = ["---\n", fm, "---\n"]
-            if description:
-                parts.append("\n")
-                parts.append(description)
-                if not description.endswith("\n"):
-                    parts.append("\n")
-            md_path.write_text("".join(parts))
-            f.unlink()
-            yaml_migrated.append(f"{s}/{f.stem}")
-        for f in sorted(d.glob("*.md")):
-            text = f.read_text()
-            new = _migrate_comment_blocks(text)
-            if new != text:
-                f.write_text(new)
-                comment_migrated.append(f"{s}/{f.stem}")
-    if yaml_migrated:
-        print(f"Migrated {len(yaml_migrated)} task(s) from .yaml to .md:")
-        for name in yaml_migrated:
-            print(f"  {name}")
-    if comment_migrated:
-        print(f"Migrated {len(comment_migrated)} task(s) to new comment format:")
-        for name in comment_migrated:
-            print(f"  {name}")
+    current = read_schema_version(root)
+    if current >= CURRENT_SCHEMA_VERSION:
+        return
+    for version, step in _MIGRATIONS:
+        if version > current:
+            step(root)
+            write_schema_version(root, version)
 
 
 def _migrate_comment_blocks(text: str) -> str:
@@ -165,6 +181,63 @@ def _migrate_comment_blocks(text: str) -> str:
     # break right above an old `### iso` heading.
     new_body = re.sub(r"(?m)^---\n---\n", "---\n", new_body)
     return head + new_body
+
+
+def _migrate_v1_yaml_to_md(root: Path) -> None:
+    """v1: convert legacy ``.yaml`` task files to ``.md`` with frontmatter."""
+    migrated = []
+    for s in _ALL_STATUSES:
+        d = root / s
+        if not d.exists():
+            continue
+        for f in sorted(d.glob("*.yaml")):
+            task = yaml.safe_load(f.read_text()) or {}
+            if not task:
+                continue
+            md_path = f.with_suffix(".md")
+            description = task.pop("description", None)
+            fm = dump_yaml(task)
+            parts = ["---\n", fm, "---\n"]
+            if description:
+                parts.append("\n")
+                parts.append(description)
+                if not description.endswith("\n"):
+                    parts.append("\n")
+            atomic_write(md_path, "".join(parts))
+            f.unlink()
+            migrated.append(f"{s}/{f.stem}")
+    if migrated:
+        print(f"Migrated {len(migrated)} task(s) from .yaml to .md:")
+        for name in migrated:
+            print(f"  {name}")
+
+
+def _migrate_v2_comment_blocks(root: Path) -> None:
+    """v2: rewrite legacy ``### <iso>`` comment headings to the sigil format."""
+    migrated = []
+    for s in _ALL_STATUSES:
+        d = root / s
+        if not d.exists():
+            continue
+        for f in sorted(d.glob("*.md")):
+            text = f.read_text()
+            new = _migrate_comment_blocks(text)
+            if new != text:
+                atomic_write(f, new)
+                migrated.append(f"{s}/{f.stem}")
+    if migrated:
+        print(f"Migrated {len(migrated)} task(s) to new comment format:")
+        for name in migrated:
+            print(f"  {name}")
+
+
+# Ordered migration steps: (schema_version, step_fn). Each step is idempotent
+# and advances the herd to its version. Append new steps here and bump
+# CURRENT_SCHEMA_VERSION in lockstep.
+_MIGRATIONS = [
+    (1, _migrate_v1_yaml_to_md),
+    (2, _migrate_v2_comment_blocks),
+]
 
 
 def load_config(root: Path) -> dict:
@@ -212,7 +285,7 @@ def save_task(path: Path, task: dict) -> None:
         parts.append(description)
         if not description.endswith("\n"):
             parts.append("\n")
-    path.write_text("".join(parts))
+    atomic_write(path, "".join(parts))
 
 
 def all_tasks(root: Path, status: str | None = None) -> list[tuple[str, dict]]:

@@ -15,6 +15,7 @@ from yaklib.artifacts import artifacts_dir
 from yaklib.clipboard import read_png as read_clipboard_png
 from yaklib.filter import FilterSpec, filter_tasks
 from yaklib.model import (
+    CURRENT_SCHEMA_VERSION,
     DEAD,
     HAIRY,
     SHAVING,
@@ -34,6 +35,7 @@ from yaklib.model import (
     parent_id,
     resolve_status,
     save_task,
+    write_schema_version,
 )
 
 _STATUS_CHAR = {HAIRY: "H", SHAVING: "S", SHORN: "N", DEAD: "X"}
@@ -115,6 +117,7 @@ def cmd_init(args):
             (target / s).mkdir()
         config = {"prefix": prefix}
         (target / "config.yaml").write_text(dump_yaml(config))
+        write_schema_version(target, CURRENT_SCHEMA_VERSION)
         print(f"Initialized .yaks/ in {Path.cwd()} (prefix: {prefix})")
         _inject_mandate(force_agents=getattr(args, "agents", False))
 
