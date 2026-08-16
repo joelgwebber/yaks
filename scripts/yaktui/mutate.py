@@ -227,9 +227,8 @@ def create_task(app, parent: str | None = None, yak_type: str = "task") -> None:
 
     save_task(app.root / HAIRY / f"{tid}.md", task)
 
-    app.view = 0
-    app.filter_mode = "all"
-    app.search_query = ""
+    # Land on the Hairy view (unmodified) so the new task is visible.
+    app._set_view(0)
     app.reload()
     _select_task(app, tid)
     app.notification = f"created {tid}"

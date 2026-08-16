@@ -61,12 +61,8 @@ def handle(app, key) -> bool:
         app._open_filter_drawer()
     elif key == ord("/"):
         app._open_inline_search()
-    elif key == 27:  # Escape clears filter
-        if not app.filter_spec.is_empty():
-            from yaklib.filter import FilterSpec as _FS
-
-            app.filter_spec = _FS()
-            app._reset_list()
+    elif key == 27:  # Escape reverts the live filter to the active view's spec
+        app._revert_filter_to_view()
 
     # Status change via single-key picker.
     elif key == ord("S"):

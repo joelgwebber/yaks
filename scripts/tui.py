@@ -155,7 +155,11 @@ class TUI:
         self.view = 0
         self.cursor = 0
         self.scroll = 0
-        self.filter_spec = FilterSpec()
+        # The single live filter. It starts as the active view's saved spec;
+        # activating a view loads that view's spec here, and editing it forks
+        # an ephemeral 'modified' state (yak-1b89).
+        from dataclasses import replace as _replace
+        self.filter_spec = _replace(self.views[self.view].spec)
         self.tasks = []
         # Tree collapse: ids whose descendants are hidden from the list view.
         # Loaded from ~/.cache/yaks/<slug>.json; persisted on every toggle.
@@ -263,11 +267,17 @@ class TUI:
 
     def _rebuild_task_list(self):
         """Re-run build_tree for the current tab/filter, then apply collapse."""
-        status = self.views[self.view].status
+        # Status now lives in the live filter (loaded from the active view), so
+        # it is the sole list driver — no separate tab-status axis. build_tree
+        # derives the status scope from the spec (all statuses when unset).
         flat = build_tree(
-            self.root, status, self.filter_spec, tasks_cache=self._task_cache, resolved_cache=self._resolved_cache
+            self.root, None, self.filter_spec, tasks_cache=self._task_cache, resolved_cache=self._resolved_cache
         )
-        filter_active = not self.filter_spec.is_empty()
+        # Collapse (tree folding) applies only when there is no CONTENT filter;
+        # a bare status scope (the view's own spec) still folds like before.
+        from dataclasses import replace as _replace
+        content_spec = _replace(self.filter_spec, statuses=frozenset())
+        filter_active = not content_spec.is_empty()
         self.tasks, self.collapsed_counts = apply_collapse(flat, self.collapsed_ids, filter_active)
 
     def _toggle_collapse(self, tid: str):
@@ -743,13 +753,11 @@ class TUI:
         if my == 0:
             x = 0
             counts = _view_counts(self)
-            spec_statuses = self.filter_spec.statuses
             for i in range(len(self.views)):
-                text = view_tab_text(self, i, counts, spec_statuses)
+                text = view_tab_text(self, i, counts)
                 if mx < x + len(text):
                     if i != self.view:
-                        self.view = i
-                        self._reset_list()
+                        self._activate_view(i)
                     break
                 x += len(text) + 1
             return
@@ -918,9 +926,29 @@ class TUI:
         self.detail_span_cursor = si if si is not None else 0
         self._fix_detail_scroll()
 
-    def _switch_tab(self, direction):
-        self.view = (self.view + direction) % len(self.views)
+    def _set_view(self, i):
+        """Make view *i* active and load its saved spec into the live filter.
+        Does not reload — callers that need a redraw call _reset_list."""
+        from dataclasses import replace as _replace
+        self.view = i
+        self.filter_spec = _replace(self.views[i].spec)
+
+    def _activate_view(self, i):
+        self._set_view(i)
         self._reset_list()
+
+    def _is_view_modified(self):
+        """True when the live filter has been edited away from the active view's
+        saved spec (the ephemeral 'modified' fork; shown with a * on the tab)."""
+        return self.filter_spec != self.views[self.view].spec
+
+    def _revert_filter_to_view(self):
+        """Esc: revert the live filter to the active view's saved spec."""
+        if self._is_view_modified():
+            self._activate_view(self.view)
+
+    def _switch_tab(self, direction):
+        self._activate_view((self.view + direction) % len(self.views))
 
     def _reset_list(self):
         self.cursor = 0
@@ -1030,15 +1058,13 @@ class TUI:
 
         target_status, _ = result
 
-        # Switch to the view whose status holds the target task.
+        # Activate the view whose status holds the target task, loading its
+        # (unmodified) spec so the target is visible under that view.
         for i, v in enumerate(self.views):
             if v.status == target_status:
-                self.view = i
+                self._set_view(i)
                 break
 
-        # Reload with no filters to ensure the task is visible. Also expand
-        # any collapsed ancestors so we can actually see the target row.
-        self.filter_spec = FilterSpec()
         self.detail_search = ""
         parent_by_id = {t["id"]: t.get("parent") for _, t in (self._task_cache or [])}
         pid = parent_by_id.get(task_id)

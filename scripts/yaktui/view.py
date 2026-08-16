@@ -10,8 +10,9 @@ pinnable, and persistent.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+from yaklib.filter import FilterSpec
 from yaklib.model import HAIRY, SHAVING, SHORN
 
 
@@ -20,6 +21,10 @@ class View:
     name: str                  # tab-strip label (may include an emoji)
     status: str | None = None  # status Views scope to one status dir
     builtin: bool = False      # built-in Views can't be deleted, only reordered
+    # The View's saved filter. Activating a View loads this into the single
+    # live filter (yak-1b89); status Views carry a spec that scopes to their
+    # status, so status is just another (removable) filter axis at runtime.
+    spec: FilterSpec = field(default_factory=FilterSpec)
 
     @property
     def is_status(self) -> bool:
@@ -36,6 +41,9 @@ _STATUS_VIEWS = [
 
 
 def builtin_status_views() -> list[View]:
-    """The three always-present, un-deletable, first-in-order status Views."""
-    return [View(name=name, status=status, builtin=True)
+    """The three always-present, un-deletable, first-in-order status Views.
+    Each carries a spec scoping to its status, so activating it loads that
+    status into the live filter."""
+    return [View(name=name, status=status, builtin=True,
+                 spec=FilterSpec(statuses=frozenset({status})))
             for name, status in _STATUS_VIEWS]
