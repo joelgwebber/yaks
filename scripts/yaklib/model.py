@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import random
 import re
@@ -408,14 +409,54 @@ def save_task(path: Path, task: dict) -> None:
         if not description.endswith("\n"):
             parts.append("\n")
     atomic_write(path, "".join(parts))
+    _mark_index_stale()
 
 
-def all_tasks(root: Path, status: str | None = None) -> list[tuple[str, dict]]:
-    """Return (status, task_dict) for tasks in the given status dir(s).
+# ---------------------------------------------------------------------------
+# Per-user derived cache (index + UI state). Never committed; rebuildable.
+# ---------------------------------------------------------------------------
 
-    When status is None, only the visible STATUSES are scanned — dead yaks
-    are excluded. Pass status=DEAD to inspect slaughtered tasks.
-    """
+def cache_dir(root: Path) -> Path:
+    """Per-project cache directory under XDG_CACHE_HOME (default ~/.cache).
+    Keyed by a hash of the absolute root so distinct herds never collide."""
+    slug = hashlib.sha1(str(root.resolve()).encode("utf-8")).hexdigest()[:12]
+    cache_home = os.environ.get("XDG_CACHE_HOME") or str(Path.home() / ".cache")
+    return Path(cache_home) / "yaks" / slug
+
+
+# Process-lifetime index singletons, keyed by resolved root. One stat-validated
+# sync per read phase; mutations mark it stale so the next scan re-validates.
+_INDEX_CACHE: dict[str, object] = {}
+
+
+def _shared_index(root: Path):
+    from yaklib.index import Index
+    key = str(root.resolve())
+    idx = _INDEX_CACHE.get(key)
+    if idx is None:
+        idx = Index(root, cache_dir(root) / "index.json").load()
+        _INDEX_CACHE[key] = idx
+    idx.ensure_synced()
+    return idx
+
+
+def _mark_index_stale() -> None:
+    """Invalidate every loaded index so the next all_tasks re-validates. Called
+    after any task-file mutation that goes through save_task/move_task."""
+    for idx in _INDEX_CACHE.values():
+        idx.mark_stale()
+
+
+def refresh_index(root: Path) -> None:
+    """Force a re-validation of *root*'s index on the next scan. The TUI calls
+    this before a reload so externally-made changes (including direct file
+    deletes) are picked up."""
+    _mark_index_stale()
+
+
+def _all_tasks_direct(root: Path, status: str | None = None) -> list[tuple[str, dict]]:
+    """Reference full scan: read + parse every task file. Used when the index
+    is disabled (YAKS_NO_INDEX) and by tests to cross-check the index."""
     scan = (status,) if status is not None else STATUSES
     results = []
     for s in scan:
@@ -434,6 +475,23 @@ def all_tasks(root: Path, status: str | None = None) -> list[tuple[str, dict]]:
             if task:
                 results.append((s, task))
     return results
+
+
+def all_tasks(root: Path, status: str | None = None) -> list[tuple[str, dict]]:
+    """Return (status, task_dict) for tasks in the given status dir(s).
+
+    When status is None, only the visible STATUSES are scanned — dead yaks
+    are excluded. Pass status=DEAD to inspect slaughtered tasks.
+
+    Backed by the persistent stat-validated index (yaklib.index): the first
+    call in a process loads + reconciles it, later calls reuse it until a
+    mutation marks it stale. Task dicts are shared cache objects — treat the
+    results as read-only (mutating commands re-read via find_task_file +
+    load_task). Set YAKS_NO_INDEX=1 to force the direct scan.
+    """
+    if os.environ.get("YAKS_NO_INDEX"):
+        return _all_tasks_direct(root, status)
+    return _shared_index(root).tasks(status)
 
 
 def find_task_file(root: Path, task_id: str) -> tuple[str, Path] | None:

@@ -30,6 +30,14 @@ class YakResult:
         return json.loads(self.stdout)
 
 
+@pytest.fixture(autouse=True)
+def _isolate_cache(tmp_path: Path, monkeypatch):
+    """Point the per-user cache (index + UI state) at a temp dir so tests never
+    read or pollute the real ~/.cache/yaks, and stay isolated from each other.
+    Inherited by the CLI subprocess runner via os.environ."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / ".cache"))
+
+
 @pytest.fixture
 def yak_root(tmp_path: Path):
     """A temp dir with an initialized .yaks/ using prefix 'test'."""

@@ -312,11 +312,14 @@ class TUI:
         self.blocked_ids, self.reverse_deps = _deps.compute_blocked(self.root)
 
     def _refresh_task_cache(self):
-        """Re-read every task from disk into in-memory caches. Expensive —
-        call only when the filesystem has changed."""
+        """Refresh the in-memory caches from the stat-validated index, which
+        reparses only the task files that actually changed. Force a re-validation
+        first so external edits (and direct file deletes) are picked up."""
         from yaklib.model import STATUSES as _STATUSES
         from yaklib.model import all_tasks as _all_tasks
+        from yaklib.model import refresh_index as _refresh_index
 
+        _refresh_index(self.root)
         cache = []
         for s in _STATUSES:
             for st, t in _all_tasks(self.root, s):
