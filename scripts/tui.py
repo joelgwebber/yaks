@@ -240,6 +240,9 @@ class TUI:
         init_colors()
         self._task_cache: list[tuple[str, dict]] | None = None
         self._resolved_cache: set[str] | None = None
+        # Bumped whenever _task_cache is rebuilt; keys the tab-count memo.
+        self._task_cache_version = 0
+        self._counts_memo = None
         self.reload()
         self._fs_sig = self._scan_fs()
 
@@ -326,6 +329,7 @@ class TUI:
                 cache.append((st, t))
         self._task_cache = cache
         self._resolved_cache = _deps.resolved_ids(self.root)
+        self._task_cache_version += 1
 
     def _reload_preserving_position(self):
         """Reload while keeping the cursor on the same task id if possible."""

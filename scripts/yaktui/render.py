@@ -54,20 +54,33 @@ def _priority_attr(pri, ghost_attr):
     return curses.color_pair(pair) | extra | ghost_attr
 
 
-def tab_counts(app):
-    """Filtered counts per tab status. When a filter is active, each tab
-    shows how many tasks would appear under it given the spec (ignoring
-    the spec's own `statuses` override)."""
+# Above this, tab counts read as noise and eat tab width, so unbounded views
+# (chiefly shorn) display as "NNN+". Small active counts stay exact.
+_COUNT_CAP = 999
+
+
+def format_count(n: int, cap: int = _COUNT_CAP) -> str:
+    """Displayed count, capped for unbounded views (yak-3fd4.4)."""
+    return str(n) if n <= cap else f"{cap}+"
+
+
+def _spec_key(spec):
+    """Hashable snapshot of every FilterSpec field that affects counts."""
+    return (spec.statuses, spec.types, spec.priorities, spec.labels,
+            spec.search, spec.ready_only, spec.tangled_only, spec.parent)
+
+
+def _compute_tab_counts(app, cache, spec):
     from dataclasses import replace
 
     from yaktui.tree import build_tree
 
-    spec = app.filter_spec
     if spec.is_empty():
-        counts = {}
-        for status, _ in TABS:
-            d = app.root / status
-            counts[status] = len(list(d.glob("*.md"))) if d.exists() else 0
+        # Straight per-status tally over the in-memory cache — no disk glob.
+        counts = {status: 0 for status, _ in TABS}
+        for st, _ in cache:
+            if st in counts:
+                counts[st] += 1
         return counts
     # Clear statuses in spec so each tab can scope independently.
     per_tab_spec = replace(spec, statuses=frozenset())
@@ -81,10 +94,29 @@ def tab_counts(app):
         counts[status] = sum(
             1
             for _, _, _, ghost in build_tree(
-                app.root, status, per_tab_spec, tasks_cache=app._task_cache, resolved_cache=app._resolved_cache
+                app.root, status, per_tab_spec, tasks_cache=cache, resolved_cache=app._resolved_cache
             )
             if not ghost
         )
+    return counts
+
+
+def tab_counts(app):
+    """Filtered counts per tab status, computed from the in-memory task cache.
+    When a filter is active, each tab shows how many tasks would appear under it
+    given the spec (ignoring the spec's own `statuses` override).
+
+    Memoized against (task-cache version, filter spec): idle 500ms polls and
+    plain re-renders recompute nothing, so cost stays off the render path until
+    the data or the filter actually changes (yak-3fd4.4).
+    """
+    cache = app._task_cache or []
+    key = (getattr(app, "_task_cache_version", 0), _spec_key(app.filter_spec))
+    memo = getattr(app, "_counts_memo", None)
+    if memo is not None and memo[0] == key:
+        return memo[1]
+    counts = _compute_tab_counts(app, cache, app.filter_spec)
+    app._counts_memo = (key, counts)
     return counts
 
 
@@ -146,7 +178,7 @@ def draw_tabs(app, y, w):
         # When the filter explicitly overrides statuses, mark which tabs
         # are still in scope so the tab row honestly reflects what'll show.
         marker = "*" if (spec_statuses and status in spec_statuses) else ""
-        text = f" {label}{marker} ({counts[status]}) "
+        text = f" {label}{marker} ({format_count(counts[status])}) "
         if i == app.tab:
             attr = curses.color_pair(C_TAB_ACTIVE) | curses.A_BOLD
         else:
@@ -177,7 +209,7 @@ def draw_tabs(app, y, w):
                 total = sum(counts[s] for s, _ in TABS if s in spec_statuses)
             else:
                 total = counts[TABS[app.tab][0]]
-            text = f"  filter: {chip}  ({total})"
+            text = f"  filter: {chip}  ({format_count(total)})"
             safe_addstr(app.stdscr, y, x, text, curses.color_pair(C_SEARCH))
 
     if app.notification:
@@ -318,7 +350,7 @@ def _position_inline_search_cursor(app, y, w):
     counts = tab_counts(app)
     x = 0
     for i, (status, label) in enumerate(TABS):
-        text = f" {label} ({counts[status]}) "
+        text = f" {label} ({format_count(counts[status])}) "
         x += len(text) + 1
     badge = ed.mode_badge()
     badge_w = len(badge) + 1 if badge else 0
