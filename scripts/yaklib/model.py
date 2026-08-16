@@ -13,6 +13,17 @@ from pathlib import Path
 
 import yaml
 
+try:  # libyaml C bindings: 2-4x faster, identical semantics. Not always built.
+    from yaml import CSafeLoader as _SafeLoader
+except ImportError:  # pragma: no cover - depends on the local libyaml build
+    from yaml import SafeLoader as _SafeLoader
+
+
+def _yaml_load(text: str):
+    """safe_load via the fastest available loader (libyaml when present)."""
+    return yaml.load(text, Loader=_SafeLoader)
+
+
 # Strict ISO8601 timestamp at column 0 inside an h3 heading. Matches the
 # old yak comment-block format (`### <iso> [@author] [(from tracker:key)]`)
 # and captures the iso + the rest-of-line for replacement. Only date+time
@@ -273,16 +284,98 @@ def load_config(root: Path) -> dict:
     merged: dict = {}
     user_cfg = Path.home() / ".config" / "yaks" / "config.yaml"
     if user_cfg.exists():
-        merged.update(yaml.safe_load(user_cfg.read_text()) or {})
+        merged.update(_yaml_load(user_cfg.read_text()) or {})
     project_cfg = root / "config.yaml"
     if project_cfg.exists():
-        merged.update(yaml.safe_load(project_cfg.read_text()) or {})
+        merged.update(_yaml_load(project_cfg.read_text()) or {})
     return merged
 
 
 # ---------------------------------------------------------------------------
 # Task I/O
 # ---------------------------------------------------------------------------
+
+# --- fast-path frontmatter parser -----------------------------------------
+#
+# Our writer (dump_yaml) emits a tiny, regular subset of YAML for frontmatter:
+# top-level `key: scalar` lines and `key:` + `- item` block lists, where each
+# scalar is either plain or single-quoted (strings that could be mistyped are
+# single-quoted by PyYAML, so a *plain* token is genuinely its resolved type).
+# _fast_frontmatter parses exactly that subset and returns None on anything
+# else (long-line folds, block/flow scalars, nesting, comments, exotic types),
+# so load_task can defer to the full loader. Scalar typing reuses PyYAML's own
+# implicit resolver, so accepted results are identical to safe_load.
+
+_BAIL = object()
+_STR_TAG = "tag:yaml.org,2002:str"
+_INT_TAG = "tag:yaml.org,2002:int"
+_FM_KEY_RE = re.compile(r"([A-Za-z0-9_-]+):(?: (.*))?$")
+_FM_INT_RE = re.compile(r"-?\d+$")
+_fm_resolver = yaml.resolver.Resolver()
+
+
+def _fast_scalar(tok: str):
+    """Parse one plain/single-quoted scalar, or return _BAIL to force fallback."""
+    tok = tok.rstrip()
+    if not tok:
+        return _BAIL
+    if tok[0] == "'":
+        # Single-quoted: only escape is '' -> '. Reject unterminated (wrapped
+        # onto the next line) or malformed values.
+        if len(tok) < 2 or tok[-1] != "'":
+            return _BAIL
+        inner = tok[1:-1]
+        if "'" in inner.replace("''", ""):
+            return _BAIL
+        return inner.replace("''", "'")
+    # Anything with a leading indicator or comment/mapping punctuation is beyond
+    # the plain-scalar subset (double-quote, flow, block, alias, tag, etc.).
+    if tok[0] in "\"[]{}|>*&!%@`," or " #" in tok or ": " in tok:
+        return _BAIL
+    tag = _fm_resolver.resolve(yaml.ScalarNode, tok, (True, False))
+    if tag == _STR_TAG:
+        return tok
+    if tag == _INT_TAG and _FM_INT_RE.fullmatch(tok):
+        return int(tok)
+    return _BAIL  # bool/null/float/timestamp/exotic-int -> let the loader type it
+
+
+def _fast_frontmatter(fm: str):
+    """Parse the writer's YAML subset; return a dict, or None to fall back."""
+    result: dict = {}
+    lines = fm.split("\n")
+    i, n = 0, len(lines)
+    while i < n:
+        line = lines[i]
+        if not line or line.isspace():
+            i += 1
+            continue
+        m = _FM_KEY_RE.match(line)
+        if not m:
+            return None
+        key, val = m.group(1), m.group(2)
+        if val is None:
+            # `key:` with no inline value: expect a block list on following
+            # lines. A bare key (null/empty) is rare here; defer to the loader.
+            items = []
+            i += 1
+            while i < n and lines[i].startswith("- "):
+                sval = _fast_scalar(lines[i][2:])
+                if sval is _BAIL:
+                    return None
+                items.append(sval)
+                i += 1
+            if not items:
+                return None
+            result[key] = items
+            continue
+        sval = _fast_scalar(val)
+        if sval is _BAIL:
+            return None
+        result[key] = sval
+        i += 1
+    return result
+
 
 def load_task(path: Path) -> dict:
     text = path.read_text()
@@ -294,12 +387,14 @@ def load_task(path: Path) -> dict:
             return {}
         fm = text[4:end]
         body = text[end + 4:]
-        task = yaml.safe_load(fm) or {}
+        task = _fast_frontmatter(fm)
+        if task is None:  # subset miss -> full loader (same result, just slower)
+            task = _yaml_load(fm) or {}
         body = body.strip()
         if body:
             task["description"] = body
         return task
-    return yaml.safe_load(text) or {}
+    return _yaml_load(text) or {}
 
 
 def save_task(path: Path, task: dict) -> None:
