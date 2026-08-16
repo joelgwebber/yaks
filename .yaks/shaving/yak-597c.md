@@ -1,24 +1,24 @@
 ---
 id: yak-597c
-title: Recent + Working-set views
+title: 'Working set: user-pinned yaks (ordered)'
 type: feature
 priority: 2
 created: '2026-08-11T20:52:19Z'
-updated: '2026-08-15T16:13:42Z'
+updated: '2026-08-16T23:16:57Z'
 labels:
 - ui
+parent: yak-4473
 depends_on:
-- yak-4473
+- yak-6b51
 ---
 
-It would be really helpful to be able to quickly get back to "recently viewed" yaks. Eg, when you do some searching, find something, go back to what you were doing, and need to find it again, it's a PITA to do the search again.
+Child of yak-4473 (deps yak-6b51 for the pin infra). Originally 'Recent + Working-set'; Recent moved to the substrate sorting tranche yak-b601 (it is nearly free once sorting exists and serves as the pinned-by-default discoverability view). This yak is now the Working set only.
 
-Bonus points: additional affordance to "pin" yaks to the top of the history, for a kind of "working set".
+Motivation: quickly get back to a small hand-curated set of yaks you're actively juggling — a 'working set' distinct from whatever the tab/filter shows.
 
----
-▸ 2026-08-15T16:13:41Z
-DESIGN (locked). Split the original 'viewing history' idea into two built-in Views on the View-list substrate yak-4473, and spun the true 'recently viewed' history out to yak-c404 (global back/forward nav).
-- Recent view: derived purely from the updated: frontmatter field. Query = all tasks, sort updated desc, limit N, flat. Zero new persistence; navigating TO a yak does NOT bump updated, so the list does not churn under you. Captures human edits and programmatic moves (shave/shorn/dep/etc.) alike. Pinned by default (also covers substrate discoverability).
-- Working set: explicit user-pinned yaks, stored as an ORDERED id list in user-specific UI state, NOT as labels/tags (tags are unordered, and a pin toggle in frontmatter would bump updated and pollute Recent). Pin/unpin affordance on a list row; a built-in 'Working set' view reads the list. Spiritually identical to collapsed_ids.
-- Honest gap by design: Recent is not recently-viewed. 'Looked at but did not change' is covered by yak-c404, not here.
-- Generalization note: reserved-namespace tags + a view remain the right pattern for FUTURE shared, intrinsic, unordered booleans (e.g. needs-review); pinning does not use that pattern because it needs order + personal scope.
+DESIGN (locked):
+- Explicit user-pinned yaks, stored as an ORDERED id list in user-specific state, NOT as labels/tags. Tags are unordered, and a pin toggle in frontmatter would bump updated: and pollute Recent. Spiritually identical to collapsed_ids, but DURABLE user intent -> lives under ~/.config/yaks/<slug>/ (with the view defs from yak-6b51), not the rebuildable ~/.cache.
+- A pin/unpin affordance on a list row; a built-in 'Working set' View reads the ordered list (flat, in pin order).
+- Generalization note: reserved-namespace tags + a View remain the right pattern for FUTURE shared, intrinsic, unordered booleans (e.g. needs-review); pinning does not use that pattern because it needs order + personal scope.
+
+Honest gap (unchanged): 'looked at but did not change' recently-viewed is yak-c404, not here.
