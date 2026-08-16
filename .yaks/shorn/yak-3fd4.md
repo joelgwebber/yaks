@@ -4,7 +4,7 @@ title: Filesystem storage & performance design at scale
 type: task
 priority: 2
 created: '2026-08-15T16:13:12Z'
-updated: '2026-08-15T19:35:53Z'
+updated: '2026-08-16T16:57:58Z'
 labels:
 - perf
 ---
@@ -99,3 +99,14 @@ RESOLVED: Path A (not B); keep existing ids + inert dots (minimal migration, no 
 ---
 ▸ 2026-08-15T19:35:53Z
 NUMBERING CORRECTION: children came out as 3fd4.5 = migration framework, 3fd4.6 = parent-as-field (my prior note had the two numbers swapped). Dependency chain is: 3fd4.6 (parent-as-field) depends on 3fd4.5 (framework); 3fd4.2 (index) depends on 3fd4.6; 3fd4.4 (counts) depends on 3fd4.2. 3fd4.3 (parser) is independent.
+
+---
+▸ 2026-08-16T16:57:58Z
+ARC COMPLETE — all children shorn; shearing the umbrella. The fs-native storage model is validated at scale with no external DB, no sharding, no symlinks. What landed:
+- .1 benchmarks: parsing was ~100% of cost; readdir+stat negligible; find_task_file O(1). Drove every decision below.
+- .5 migration framework: version-gated (.yaks/schema), ordered idempotent steps, atomic writes, resumable. Replaced the O(N)-per-invocation _auto_migrate.
+- .6 parent-as-field (Path A): status stays directory-partitioned; hierarchy moved to a frontmatter parent: field; IDs now flat + stable; reparent is a one-field rewrite. Inert legacy dots.
+- .3 faster parse: libyaml CSafeLoader + conservative hand-rolled fast-path (resolver-typed, PyYAML fallback). ~34x vs pure PyYAML on real corpus; covers 211/213.
+- .2 persistent stat-validated index (linchpin): per-user ~/.cache/yaks/<slug>/index.json, git-index-shaped, self-healing, atomic, lazy, description stored so search stays in-memory. 50k cold start 5.06s->0.31s warm (~40x vs original 12.6s baseline).
+- .4 view counts: memoized against cache version + spec; removed per-render fs glob; capped display (NNN+).
+WITHIN-REASON verdict holds: comfortable to 100k+; revisit sharding/Rust only well beyond. Follow-ups noted (not blocking): unify TUI _scan_fs poll with index.sync()/fs-events; optional Rust rewrite (yak-2219). UI arc (yak-4473 View-list substrate + a373/597c/c404) is unblocked and can build on the flat-id + index foundation.
