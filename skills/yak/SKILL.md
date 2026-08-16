@@ -68,7 +68,7 @@ Referencing yaks externally is fine **only when the user opts in** — e.g. a ya
 
 A parent yak's state should reflect its children:
 - When you shave a child, shave the parent too (if it's still hairy).
-- When you shear the last unshear child, shear the parent too.
+- When you shear the last unshorn child, shear the parent too.
 - NEVER leave a hairy parent with shorn children — that means work was done but the parent doesn't reflect it.
 
 ## Commands
@@ -101,14 +101,15 @@ Tasks live in `.yaks/hairy/`, `.yaks/shaving/`, or `.yaks/shorn/` as `.md` files
 
 ```markdown
 ---
-id: yak-a1b2              # or yak-a1b2.1 for a child task
+id: yak-a1b2              # flat, opaque, and stable — never encodes hierarchy
 title: Fix the login crash
 type: bug
 priority: 2
 created: "2026-02-16T10:00:00Z"
 updated: "2026-02-16T10:30:00Z"
+parent: yak-c3d4         # optional; present only on child tasks
 depends_on:
-  - yak-c3d4
+  - yak-e5f6
 labels:
   - auth
 source: https://jira.example.com/browse/PROJ-123  # optional external issue URL
@@ -117,7 +118,9 @@ source: https://jira.example.com/browse/PROJ-123  # optional external issue URL
 Details go here.
 ```
 
-Child tasks use `--parent TASK_ID` on create. The hierarchy is implicit from the ID (dot-suffixed integers). `yaks show` displays parent and children automatically.
+Child tasks use `--parent TASK_ID` on create. Every ID is flat (`{prefix}-{4hex}`) and stable for the task's whole life; the parent/child relationship lives in the `parent:` frontmatter field, not in the ID. Move a task with `yaks reparent ID --parent NEW` (or `--unparent`), which just rewrites that one field. `yaks show` displays parent and children automatically.
+
+> Older herds may still contain dotted IDs (e.g. `yak-a1b2.1`) created before this change. Those dots are now just opaque characters — the `parent:` field is authoritative — so don't parse IDs to infer hierarchy.
 
 ### External source linking
 
