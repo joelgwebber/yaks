@@ -6,6 +6,7 @@ type: feature
 priority: 2
 created: '2026-04-25T17:06:53Z'
 updated: '2026-06-19T16:47:10Z'
+parent: yak-bf54
 ---
 
 Surfaced during the first dry-run of /yaks:sync against SUBTEXT-301. The skill now has the policy text (commit-this-pass), but the implementation work to make these policies actually enforceable is its own thing.

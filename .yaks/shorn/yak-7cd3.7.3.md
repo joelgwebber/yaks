@@ -8,6 +8,7 @@ updated: '2026-04-14T16:37:14Z'
 depends_on:
 - yak-7cd3.7.2
 commit: c117764
+parent: yak-7cd3.7
 ---
 
 Pull drawing methods: draw, _draw_tabs, _draw_list, _draw_separator, _draw_detail, _safe_addstr, _highlight_matches, help bars. These are pure readers of App state — take App instance + stdscr, no mutation.

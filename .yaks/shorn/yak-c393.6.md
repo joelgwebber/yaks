@@ -5,6 +5,7 @@ type: feature
 priority: 2
 created: '2026-08-13T01:24:51Z'
 updated: '2026-08-15T03:27:27Z'
+parent: yak-c393
 ---
 
 An overlay primitive to narrate what's happening — use the empty space at the bottom (above the help bar) for a caption/annotation band tied to beats/markers.

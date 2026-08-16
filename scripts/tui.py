@@ -15,11 +15,8 @@ from pathlib import Path
 _scripts = str(Path(__file__).parent)
 if _scripts not in sys.path:
     sys.path.insert(0, _scripts)
-from yaklib import artifacts as _artifacts
-from yaklib import clipboard as _clipboard
 from yaklib import deps as _deps
 from yaklib.filter import FilterSpec, collect_all_labels
-from yaklib.format import humanize_date, status_char
 from yaklib.model import (
     STATUSES,
     find_task_file,
@@ -33,32 +30,9 @@ from yaktui import mutate as _mutate
 from yaktui import render as _render
 from yaktui import vim_edit as _vim_edit
 from yaktui.colors import (
-    C_CODE,
-    C_GHOST,
-    C_GHOST_HAIRY,
-    C_GHOST_SHAVING,
-    C_GHOST_SHORN,
-    C_HEADER,
-    C_HELP,
-    C_ID,
-    C_LABEL,
-    C_LINK,
-    C_LINK_SEL,
-    C_MATCH,
-    C_MD_HEADING,
-    C_P1,
-    C_P2,
-    C_P3,
-    C_SEARCH,
-    C_SELECTED,
-    C_TAB_ACTIVE,
-    C_TYPE,
     init_colors,
 )
-from yaktui.colors import (
-    ghost_badge_attr as _ghost_badge_attr,
-)
-from yaktui.detail import DetailLine, build_detail_lines
+from yaktui.detail import build_detail_lines
 from yaktui.render import TABS
 from yaktui.render import tab_counts as _tab_counts
 from yaktui.tree import apply_collapse, build_tree
@@ -292,14 +266,13 @@ class TUI:
     def _toggle_collapse(self, tid: str):
         """Toggle collapse at the nearest parent with children. If cursor is
         inside the subtree being collapsed, snap it to the collapsed row."""
-        all_ids = {t["id"] for _, t in (self._task_cache or [])}
-        target = tid if any(o.startswith(tid + ".") for o in all_ids) else None
-        if target is None:
-            from yaklib.model import parent_id as _pid
-
-            target = _pid(tid)
-            if target is None or target not in all_ids:
-                return
+        cache = self._task_cache or []
+        parent_by_id = {t["id"]: t.get("parent") for _, t in cache}
+        all_ids = set(parent_by_id)
+        has_children = any(p == tid for p in parent_by_id.values())
+        target = tid if has_children else parent_by_id.get(tid)
+        if not target or target not in all_ids:
+            return
         if target in self.collapsed_ids:
             self.collapsed_ids.discard(target)
         else:
@@ -1057,13 +1030,13 @@ class TUI:
         # any collapsed ancestors so we can actually see the target row.
         self.filter_spec = FilterSpec()
         self.detail_search = ""
-        from yaklib.model import parent_id as _pid
-
-        pid = _pid(task_id)
-        while pid:
-            if pid in self.collapsed_ids:
-                self.collapsed_ids.discard(pid)
-            pid = _pid(pid)
+        parent_by_id = {t["id"]: t.get("parent") for _, t in (self._task_cache or [])}
+        pid = parent_by_id.get(task_id)
+        seen: set[str] = set()
+        while pid and pid not in seen:
+            seen.add(pid)
+            self.collapsed_ids.discard(pid)
+            pid = parent_by_id.get(pid)
         self._rebuild_task_list()
 
         # Find and select the task

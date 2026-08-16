@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from conftest import create_task
 
 
@@ -89,19 +87,16 @@ def test_dep_remove(yak):
     assert b in ready
 
 
-def test_child_task_ids_use_parent_prefix(yak):
+def test_child_task_records_parent_field(yak):
     parent = create_task(yak, "parent", type="feature")
     child_out = yak("create", "--title", "kid", "--type", "task",
                     "--parent", parent).stdout
     child_id = child_out.splitlines()[0].split()[1].rstrip(":")
-    assert child_id.startswith(parent + ".")
-    assert child_id == f"{parent}.1"
-
-    # Second child increments
-    child2 = yak("create", "--title", "kid2", "--type", "task",
-                 "--parent", parent).stdout
-    child2_id = child2.splitlines()[0].split()[1].rstrip(":")
-    assert child2_id == f"{parent}.2"
+    # Children get a fresh flat ID, not a dotted suffix of the parent.
+    assert not child_id.startswith(parent + ".")
+    # Parentage lives in the frontmatter field, surfaced by show --json.
+    shown = yak("show", child_id, "--json").json()
+    assert shown["parent"] == parent
 
 
 def test_search_finds_by_title_and_description(yak):

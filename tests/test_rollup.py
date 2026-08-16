@@ -38,18 +38,20 @@ def test_tracker_and_key_none():
 
 
 def test_effective_source_own_beats_inherited():
-    by_id = {"x-1": "PARENT-URL", "x-1.2": "OWN-URL"}
-    assert effective_source("x-1.2", by_id) == ("OWN-URL", None)
+    by_id = {"x-1": "PARENT-URL", "x-2": "OWN-URL"}
+    parents = {"x-2": "x-1"}
+    assert effective_source("x-2", by_id, parents) == ("OWN-URL", None)
 
 
 def test_effective_source_inherits_from_nearest_ancestor():
     by_id = {"x-1": "GRANDPARENT-URL"}
-    # x-1.2.3 has no own source; nearest ancestor with one is x-1.
-    assert effective_source("x-1.2.3", by_id) == ("GRANDPARENT-URL", "x-1")
+    parents = {"x-3": "x-2", "x-2": "x-1"}
+    # x-3 has no own source; nearest ancestor with one is x-1.
+    assert effective_source("x-3", by_id, parents) == ("GRANDPARENT-URL", "x-1")
 
 
 def test_effective_source_none_when_no_ancestor_has_source():
-    assert effective_source("x-1.2", {}) == (None, None)
+    assert effective_source("x-2", {}, {"x-2": "x-1"}) == (None, None)
 
 
 # ---------------------------------------------------------------------------

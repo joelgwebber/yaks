@@ -7,6 +7,7 @@ created: '2026-08-15T17:25:30Z'
 updated: '2026-08-15T17:26:07Z'
 labels:
 - perf
+parent: yak-3fd4
 ---
 
 Measure the operations that dominate CLI/TUI cost so storage decisions rest on numbers. bench/fs_bench.py generates synthetic corpora (1k/10k/50k, realistic 93%-shorn mix) and times: all_tasks scan+parse, readdir+stat only, PyYAML vs libyaml vs hand-rolled parse, single-id find_task_file, children glob, and persistent-index build + load+validate. Results + interpretation recorded on the parent yak-3fd4. Headline: parsing dominates; a stat-validated index cuts 50k cold start 12.6s -> 0.15s; find_task_file is O(1); sharding + symlinks unnecessary at realistic scale.

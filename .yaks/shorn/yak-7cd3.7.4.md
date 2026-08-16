@@ -8,6 +8,7 @@ updated: '2026-04-14T16:39:03Z'
 depends_on:
 - yak-7cd3.7.3
 commit: 682b66b
+parent: yak-7cd3.7
 ---
 
 Pull the two key handlers (_handle_list_key, _handle_detail_key) into their own modules. Once this lands, the App class is left with just state + the main run() loop + a handful of small helpers. Sets up step .8 nicely.

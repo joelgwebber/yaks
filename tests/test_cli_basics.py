@@ -167,3 +167,25 @@ def test_init_stamps_current_schema_version(yak_root):
     schema = yak_root / ".yaks" / "schema"
     assert schema.is_file()
     assert schema.read_text().strip() == str(CURRENT_SCHEMA_VERSION)
+
+
+def test_migrate_v3_backfills_parent_field(yak, yak_root):
+    """A legacy dotted child with no parent field gains one when the schema is
+    behind, and the herd is re-stamped to current."""
+    import yaml
+    from yaklib.model import CURRENT_SCHEMA_VERSION
+
+    parent = create_task(yak, "umbrella", type="feature")
+    child_id = f"{parent}.1"
+    child_path = yak_root / ".yaks" / "hairy" / f"{child_id}.md"
+    child_path.write_text(
+        f"---\nid: {child_id}\ntitle: legacy child\ntype: task\npriority: 3\n---\n\nbody\n"
+    )
+    # Roll the schema back so the v3 step re-runs on the next invocation.
+    (yak_root / ".yaks" / "schema").write_text("2\n")
+
+    yak("list")
+
+    fm = yaml.safe_load(child_path.read_text().split("---")[1])
+    assert fm["parent"] == parent
+    assert (yak_root / ".yaks" / "schema").read_text().strip() == str(CURRENT_SCHEMA_VERSION)

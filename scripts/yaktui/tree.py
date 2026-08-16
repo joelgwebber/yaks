@@ -18,7 +18,7 @@ from yaklib.model import (
     SHORN,
     STATUSES,
     all_tasks,
-    parent_id,
+    parent_of,
 )
 
 
@@ -30,15 +30,6 @@ class TaskNode:
         self.task = task
         self.children = []
         self.ghost = ghost
-
-
-def _child_sort_key(tid: str) -> int:
-    dot = tid.rfind(".")
-    if dot >= 0:
-        suffix = tid[dot + 1 :]
-        if suffix.isdigit():
-            return int(suffix)
-    return 0
 
 
 def _child_status_rank(status: str) -> int:
@@ -82,13 +73,33 @@ def build_tree(
     else:
         effective_statuses = set(STATUSES)
 
+    children_of: dict[str, list[str]] = {}
+    for _tid, (_s, _t) in all_by_id.items():
+        _p = parent_of(_t)
+        if _p:
+            children_of.setdefault(_p, []).append(_tid)
+
     def ancestors_of(tid: str) -> list[str]:
         out = []
-        pid = parent_id(tid)
-        while pid:
+        entry = all_by_id.get(tid)
+        pid = parent_of(entry[1]) if entry else None
+        seen: set[str] = set()
+        while pid and pid not in seen:
+            seen.add(pid)
             if pid in all_by_id:
                 out.append(pid)
-            pid = parent_id(pid)
+            entry = all_by_id.get(pid)
+            pid = parent_of(entry[1]) if entry else None
+        return out
+
+    def descendants_of(tid: str) -> set[str]:
+        out: set[str] = set()
+        stack = list(children_of.get(tid, []))
+        while stack:
+            cur = stack.pop()
+            if cur not in out:
+                out.add(cur)
+                stack.extend(children_of.get(cur, []))
         return out
 
     # The current tab anchors the view: yaks in the effective status scope,
@@ -99,11 +110,13 @@ def build_tree(
     universe = set(anchor_ids)
     for tid in anchor_ids:
         universe.update(ancestors_of(tid))
-    anchor_prefixes = tuple(tid + "." for tid in anchor_ids)
-    if anchor_prefixes:
-        for other in all_by_id:
-            if other not in universe and other.startswith(anchor_prefixes):
-                universe.add(other)
+    stack = list(anchor_ids)
+    while stack:
+        cur = stack.pop()
+        for c in children_of.get(cur, []):
+            if c not in universe:
+                universe.add(c)
+                stack.append(c)
 
     # Content predicates only — status is the tab's job (above). A match may
     # therefore live in a different status than the tab, as long as the tab's
@@ -111,10 +124,19 @@ def build_tree(
     content_spec = replace(spec, statuses=frozenset())
     match_active = not content_spec.is_empty()
 
+    # `--parent-of` is a descendant graph query, applied here rather than in
+    # the per-task predicate (see FilterSpec.matches).
+    parent_scope = descendants_of(spec.parent) if spec.parent else None
+
     if match_active:
         # Matches anywhere in the tab's family light up bright; non-matching
         # ancestors come along dimmed to root them. Everything else is pruned.
-        focus = {tid for tid in universe if content_spec.matches(all_by_id[tid][0], all_by_id[tid][1], resolved)}
+        focus = {
+            tid
+            for tid in universe
+            if (parent_scope is None or tid in parent_scope)
+            and content_spec.matches(all_by_id[tid][0], all_by_id[tid][1], resolved)
+        }
         members = set(focus)
         for tid in focus:
             members.update(ancestors_of(tid))
@@ -130,7 +152,7 @@ def build_tree(
 
     roots = []
     for tid, node in nodes.items():
-        pid = parent_id(tid)
+        pid = parent_of(node.task)
         if pid and pid in nodes:
             nodes[pid].children.append(node)
         else:
@@ -141,7 +163,8 @@ def build_tree(
             key=lambda n: (
                 _child_status_rank(n.status),
                 n.task.get("priority", 9),
-                _child_sort_key(n.task["id"]),
+                n.task.get("created", ""),
+                n.task["id"],
             )
         )
         for c in node.children:
@@ -178,10 +201,17 @@ def apply_collapse(
     if filter_active or not collapsed_ids:
         return flat, {}
     counts: dict[str, int] = {}
-    for _, task, _, _ in flat:
-        tid = task["id"]
-        for cid in collapsed_ids:
-            if tid.startswith(cid + "."):
+    visible: list[tuple[str, dict, int, bool]] = []
+    hide_stack: list[tuple[str, int]] = []  # (collapsed_id, depth) hiding rows
+    for row in flat:
+        _s, task, depth, _g = row
+        while hide_stack and depth <= hide_stack[-1][1]:
+            hide_stack.pop()
+        if hide_stack:
+            for cid, _d in hide_stack:
                 counts[cid] = counts.get(cid, 0) + 1
-    visible = [row for row in flat if not any(row[1]["id"].startswith(cid + ".") for cid in collapsed_ids)]
+        else:
+            visible.append(row)
+        if task["id"] in collapsed_ids:
+            hide_stack.append((task["id"], depth))
     return visible, counts

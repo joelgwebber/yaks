@@ -68,12 +68,18 @@ def test_matches_tangled_only():
     assert spec.matches("hairy", _task(depends_on=["a"]), set())
 
 
-def test_matches_parent_descendants():
-    spec = FilterSpec(parent="yak-abcd")
-    assert spec.matches("hairy", _task(id="yak-abcd.1"), set())
-    assert spec.matches("hairy", _task(id="yak-abcd.1.2"), set())
-    assert not spec.matches("hairy", _task(id="yak-abcd"), set())
-    assert not spec.matches("hairy", _task(id="yak-beef"), set())
+def test_filter_tasks_parent_of_returns_descendants(yak, yak_root):
+    """--parent-of X returns X's descendants at any depth (via parent pointers,
+    not ID prefixes), excluding X itself and unrelated yaks."""
+    parent = create_task(yak, "umbrella", type="feature")
+    child = create_task(yak, "child", type="task", parent=parent)
+    gc_out = yak("create", "--title", "gc", "--type", "task", "--parent", child).stdout
+    grandchild = gc_out.splitlines()[0].split()[1].rstrip(":")
+    other = create_task(yak, "unrelated", type="task")
+
+    ids = {t["id"] for _, t in filter_tasks(_yaks(yak_root), FilterSpec(parent=parent))}
+    assert child in ids and grandchild in ids
+    assert parent not in ids and other not in ids
 
 
 def test_matches_combination_is_and():

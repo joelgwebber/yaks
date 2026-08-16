@@ -5,6 +5,7 @@ type: idea
 priority: 3
 created: '2026-04-26T16:09:14Z'
 updated: '2026-06-19T16:47:10Z'
+parent: yak-bf54
 ---
 
 ## Problem

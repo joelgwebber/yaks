@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
-from yaklib.model import STATUSES, all_tasks, _ALL_STATUSES
+from yaklib.model import _ALL_STATUSES, STATUSES, all_tasks
 
 
 @dataclass
@@ -56,11 +56,9 @@ class FilterSpec:
             return False
         if self.tangled_only and not unresolved:
             return False
-        if self.parent:
-            tid = task.get("id", "")
-            prefix = self.parent + "."
-            if not tid.startswith(prefix):
-                return False
+        # NOTE: the `parent` (descendant-of) constraint is a graph query over
+        # the whole set, so callers (filter_tasks / build_tree) apply it against
+        # parent pointers; it is not evaluated in this per-task predicate.
         return True
 
     def summary(self) -> str:
@@ -108,7 +106,7 @@ def filter_tasks(root: Path, spec: "FilterSpec",
     statuses field explicitly names DEAD.
     """
     from yaklib.deps import resolved_ids as _resolved
-    from yaklib.model import DEAD
+    from yaklib.model import DEAD, descendant_ids
     resolved = _resolved(root)
 
     if spec.statuses:
@@ -118,9 +116,16 @@ def filter_tasks(root: Path, spec: "FilterSpec",
     else:
         statuses = STATUSES
 
+    scope = None
+    if spec.parent:
+        scope = descendant_ids(root, spec.parent,
+                               include_dead=(DEAD in spec.statuses))
+
     out = []
     for s in statuses:
         for st, t in all_tasks(root, s):
+            if scope is not None and t.get("id") not in scope:
+                continue
             if spec.matches(st, t, resolved):
                 out.append((st, t))
     return out

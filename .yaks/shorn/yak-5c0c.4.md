@@ -6,6 +6,7 @@ priority: 2
 created: '2026-04-04T15:18:33Z'
 updated: '2026-04-04T15:26:02Z'
 commit: ad3b89f
+parent: yak-5c0c
 ---
 
 Fix multiple TUI issues uncovered in initial testing:

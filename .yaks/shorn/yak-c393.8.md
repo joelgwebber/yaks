@@ -5,6 +5,7 @@ type: task
 priority: 3
 created: '2026-08-13T01:24:52Z'
 updated: '2026-08-15T03:27:27Z'
+parent: yak-c393
 ---
 
 Opening on an empty agent pane is confusing. Seed an initial line / prompt so the first frame reads clearly.

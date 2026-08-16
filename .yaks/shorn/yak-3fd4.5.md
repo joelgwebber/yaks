@@ -7,6 +7,7 @@ created: '2026-08-15T19:35:17Z'
 updated: '2026-08-16T05:21:31Z'
 labels:
 - perf
+parent: yak-3fd4
 ---
 
 Replace the migration mechanism (foundational; prerequisite for 3fd4.6). Today find_tasks_root() runs _auto_migrate() unconditionally on every process start; _migrate_comment_blocks reads EVERY .md each time (O(N) reads per CLI call, worst for agent/CLI loops) and rewrites via non-atomic write_text (crash -> corruption). Replace with:

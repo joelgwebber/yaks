@@ -9,6 +9,7 @@ labels:
 - perf
 depends_on:
 - yak-3fd4.6
+parent: yak-3fd4
 ---
 
 The linchpin from yak-3fd4 benchmarking: a per-user, derived, never-committed index that makes cold start flat (12.6s -> 0.15s at 50k) and speeds full-scan CLI commands.

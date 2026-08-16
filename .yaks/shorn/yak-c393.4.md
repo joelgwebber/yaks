@@ -5,6 +5,7 @@ type: bug
 priority: 2
 created: '2026-08-13T01:24:51Z'
 updated: '2026-08-15T03:27:27Z'
+parent: yak-c393
 ---
 
 When the focus divider narrows the agent pane (esp. mid-animation toward board-full), the agent text reflows to a tiny column -> vertical letter-stacking. Fix: lay the agent out at a FIXED width and slide the board OVER it (occlusion), clipping the agent at the moving divider instead of re-wrapping.

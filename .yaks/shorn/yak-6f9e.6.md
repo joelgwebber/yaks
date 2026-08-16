@@ -6,6 +6,7 @@ priority: 3
 created: '2026-04-17T23:13:48Z'
 updated: '2026-04-17T23:48:02Z'
 commit: 26aaf54
+parent: yak-6f9e
 ---
 
 The commit hash in the detail view should link directly to the GitHub commit page: https://github.com/{owner}/{repo}/commit/{hash}

@@ -9,6 +9,7 @@ depends_on:
 - yak-7cd3.7
 - yak-7cd3.5
 commit: df730db
+parent: yak-7cd3
 ---
 
 Switch tui.py (or yaktui/app.py) to import directly from yaklib instead of going through 'import yak'. Remove the re-exports left in yak.py. yak.py is purely a CLI entry point after this. Final cleanup pass: remove dead code, run ruff/black, update CLAUDE.md with the new layout.

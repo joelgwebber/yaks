@@ -13,7 +13,7 @@ from pathlib import Path
 
 from yaklib import links as _links
 from yaklib.format import humanize_date, status_emoji
-from yaklib.model import parent_id
+from yaklib.model import parent_of
 from yaklib.repo import FsTaskRepo
 
 
@@ -107,7 +107,7 @@ def build_detail_lines(source, task, status, width=80, reverse_deps=None, status
         else:
             emit(f"  {'Depends on:':<12s} {dep_id} (not found)", "field")
 
-    pid = parent_id(task["id"])
+    pid = parent_of(task)
     if pid:
         presult = repo.find(pid)
         if presult:

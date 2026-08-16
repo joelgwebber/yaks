@@ -5,6 +5,7 @@ type: feature
 priority: 3
 created: '2026-04-25T18:25:28Z'
 updated: '2026-06-19T16:47:10Z'
+parent: yak-bf54
 ---
 
 v1 of bf54.4 ships only a list-view marker (~ before the ID). Reviewing a sidecar still requires 'yak sync show id' + a text editor.

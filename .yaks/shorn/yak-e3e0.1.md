@@ -6,6 +6,7 @@ priority: 2
 created: '2026-04-14T21:36:47Z'
 updated: '2026-04-15T00:25:06Z'
 commit: eea0143
+parent: yak-e3e0
 ---
 
 Rework of the References-section approach. Make yak-ID mentions navigable *in place* within description text, no dedicated section. Rationale: a 'References:' header implies dependency-like semantics the bare token doesn't carry; free-form mentions should render where the author wrote them.

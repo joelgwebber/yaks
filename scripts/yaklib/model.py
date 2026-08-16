@@ -99,8 +99,8 @@ def atomic_write(path: Path, text: str) -> None:
 
 # Bump when a new on-disk migration step is added; each step's version must be
 # <= this. v1: legacy .yaml -> .md. v2: `### <iso>` comment blocks -> sigil
-# format. (v3, drop dot-hierarchy -> parent field, lands with yak-3fd4.6.)
-CURRENT_SCHEMA_VERSION = 2
+# format. v3: backfill the `parent` field from legacy dotted IDs.
+CURRENT_SCHEMA_VERSION = 3
 
 _SCHEMA_FILE = "schema"
 
@@ -231,12 +231,39 @@ def _migrate_v2_comment_blocks(root: Path) -> None:
             print(f"  {name}")
 
 
+def _migrate_v3_dot_to_parent(root: Path) -> None:
+    """v3: record parentage in a ``parent`` field derived from legacy dotted
+    IDs, so hierarchy no longer depends on the filename. IDs are left as-is
+    (their dots become inert); only the field is added, and only when absent."""
+    migrated = []
+    for s in _ALL_STATUSES:
+        d = root / s
+        if not d.exists():
+            continue
+        for f in sorted(d.glob("*.md")):
+            stem = f.stem
+            dot = stem.rfind(".")
+            if dot < 0 or not stem[dot + 1:].isdigit():
+                continue  # not a legacy child id
+            task = load_task(f)
+            if not task or task.get("parent"):
+                continue  # already has explicit parentage
+            task["parent"] = stem[:dot]
+            save_task(f, task)
+            migrated.append(f"{s}/{stem}")
+    if migrated:
+        print(f"Migrated {len(migrated)} task(s) to parent-field hierarchy:")
+        for name in migrated:
+            print(f"  {name}")
+
+
 # Ordered migration steps: (schema_version, step_fn). Each step is idempotent
 # and advances the herd to its version. Append new steps here and bump
 # CURRENT_SCHEMA_VERSION in lockstep.
 _MIGRATIONS = [
     (1, _migrate_v1_yaml_to_md),
     (2, _migrate_v2_comment_blocks),
+    (3, _migrate_v3_dot_to_parent),
 ]
 
 
@@ -347,64 +374,42 @@ def now_iso() -> str:
 # Parent / child ID arithmetic
 # ---------------------------------------------------------------------------
 
-def parent_id(task_id: str) -> str | None:
-    """Return the parent ID if task_id is a child (e.g. 'foo-abc.2' → 'foo-abc')."""
-    dot = task_id.rfind(".")
-    if dot < 0:
-        return None
-    suffix = task_id[dot + 1:]
-    if suffix.isdigit():
-        return task_id[:dot]
-    return None
+def parent_of(task: dict) -> str | None:
+    """Return a task's parent ID from its ``parent`` field, or None if it is
+    top-level. Hierarchy lives in the frontmatter, not the ID (yak-3fd4.6)."""
+    return task.get("parent") or None
 
 
 def find_children(root: Path, task_id: str) -> list[tuple[str, dict]]:
-    """Return (status, task) for all direct children, sorted by child number."""
-    prefix = task_id + "."
+    """Return (status, task) for all direct children (tasks whose ``parent``
+    field is *task_id*), sorted by creation time then ID."""
     children = []
     for s in STATUSES:
-        d = root / s
-        if not d.exists():
-            continue
-        for f in d.glob(f"{prefix}*.md"):
-            suffix = f.stem[len(prefix):]
-            if suffix.isdigit():
-                task = load_task(f)
-                if task:
-                    children.append((s, task, int(suffix)))
-    children.sort(key=lambda x: x[2])
-    return [(s, t) for s, t, _ in children]
+        for st, t in all_tasks(root, s):
+            if (t.get("parent") or None) == task_id:
+                children.append((st, t))
+    children.sort(key=lambda x: (x[1].get("created", ""), x[1].get("id", "")))
+    return children
 
 
-def next_child_number(root: Path, task_id: str) -> int:
-    """Return the next available child number for task_id."""
-    prefix = task_id + "."
-    max_n = 0
-    for s in STATUSES:
-        d = root / s
-        if not d.exists():
-            continue
-        for f in d.glob(f"{prefix}*.md"):
-            suffix = f.stem[len(prefix):]
-            if suffix.isdigit():
-                max_n = max(max_n, int(suffix))
-    return max_n + 1
-
-
-def find_descendants(root: Path, task_id: str) -> list[tuple[str, Path]]:
-    """Return (status, path) for all descendants at any depth.
-
-    Includes dead descendants so reparenting updates them too.
-    """
-    prefix = task_id + "."
-    descendants = []
-    for s in _ALL_STATUSES:
-        d = root / s
-        if not d.exists():
-            continue
-        for f in d.glob(f"{prefix}*.md"):
-            descendants.append((s, f))
-    return descendants
+def descendant_ids(root: Path, task_id: str, include_dead: bool = False) -> set[str]:
+    """IDs of all descendants of *task_id* at any depth, following ``parent``
+    pointers. include_dead extends the walk into slaughtered yaks."""
+    statuses = _ALL_STATUSES if include_dead else STATUSES
+    children_of: dict[str, list[str]] = {}
+    for s in statuses:
+        for _st, t in all_tasks(root, s):
+            p = t.get("parent")
+            if p:
+                children_of.setdefault(p, []).append(t.get("id", ""))
+    out: set[str] = set()
+    stack = list(children_of.get(task_id, []))
+    while stack:
+        cur = stack.pop()
+        if cur and cur not in out:
+            out.add(cur)
+            stack.extend(children_of.get(cur, []))
+    return out
 
 
 # ---------------------------------------------------------------------------

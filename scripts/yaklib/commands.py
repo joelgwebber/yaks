@@ -30,9 +30,8 @@ from yaklib.model import (
     load_config,
     load_task,
     move_task,
-    next_child_number,
     now_iso,
-    parent_id,
+    parent_of,
     resolve_status,
     save_task,
     write_schema_version,
@@ -142,13 +141,10 @@ def cmd_create(args):
     prefix = cfg.get("prefix", "yak")
 
     parent = getattr(args, "parent", None)
-    if parent:
-        if not find_task_file(root, parent):
-            print(f"error: parent task {parent} not found", file=sys.stderr)
-            sys.exit(1)
-        tid = f"{parent}.{next_child_number(root, parent)}"
-    else:
-        tid = generate_id(root, prefix)
+    if parent and not find_task_file(root, parent):
+        print(f"error: parent task {parent} not found", file=sys.stderr)
+        sys.exit(1)
+    tid = generate_id(root, prefix)
 
     now = now_iso()
     task = {
@@ -159,6 +155,8 @@ def cmd_create(args):
         "created": now,
         "updated": now,
     }
+    if parent:
+        task["parent"] = parent
     if args.depends_on:
         task["depends_on"] = args.depends_on
     labels = _split_labels(args.labels)
@@ -246,8 +244,8 @@ def cmd_show(args):
 
     if args.json:
         out = {"status": status, **task}
-        pid = parent_id(args.id)
-        if pid and find_task_file(root, pid):
+        pid = parent_of(task)
+        if pid:
             out["parent"] = pid
         children = find_children(root, args.id)
         if children:
@@ -258,7 +256,7 @@ def cmd_show(args):
     print(f"Status: {status}")
     print(dump_yaml(task), end="")
 
-    pid = parent_id(args.id)
+    pid = parent_of(task)
     parent_result = find_task_file(root, pid) if pid else None
     if parent_result:
         ps, pp = parent_result
@@ -477,15 +475,15 @@ def cmd_reparent(args):
         sys.exit(1)
 
     try:
-        plan = reparent_mod.reparent(root, args.id, new_parent)
+        result = reparent_mod.reparent(root, args.id, new_parent)
     except reparent_mod.ReparentError as e:
         print(f"error: {e}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Reparented {plan.old_id} → {plan.new_id}")
-    for old, new in sorted(plan.id_map.items()):
-        if old != plan.old_id:
-            print(f"  {old} → {new}")
+    if result.new_parent is None:
+        print(f"Promoted {result.task_id} to top-level")
+    else:
+        print(f"Reparented {result.task_id} under {result.new_parent}")
 
 
 # ---------------------------------------------------------------------------

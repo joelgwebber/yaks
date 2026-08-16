@@ -7,6 +7,7 @@ created: '2026-04-25T15:47:45Z'
 updated: '2026-06-19T16:47:10Z'
 depends_on:
 - yak-bf54.3
+parent: yak-bf54
 ---
 
 Sync should never write to upstream without giving the user a chance to review the proposed changes. The current skill puts that on the agent's prompts, which is fine in interactive runs but fragile (and impossible in headless / sweep contexts).

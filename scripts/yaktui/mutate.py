@@ -32,7 +32,6 @@ from yaklib.model import (
     load_config,
     load_task,
     move_task,
-    next_child_number,
     now_iso,
     save_task,
 )
@@ -205,13 +204,10 @@ def create_task(app, parent: str | None = None, yak_type: str = "task") -> None:
 
     cfg = load_config(app.root)
     prefix = cfg.get("prefix", "yak")
-    if parent:
-        if not find_task_file(app.root, parent):
-            app.notification = f"parent {parent} not found"
-            return
-        tid = f"{parent}.{next_child_number(app.root, parent)}"
-    else:
-        tid = generate_id(app.root, prefix)
+    if parent and not find_task_file(app.root, parent):
+        app.notification = f"parent {parent} not found"
+        return
+    tid = generate_id(app.root, prefix)
 
     now = now_iso()
     task = {
@@ -222,6 +218,8 @@ def create_task(app, parent: str | None = None, yak_type: str = "task") -> None:
         "created": now,
         "updated": now,
     }
+    if parent:
+        task["parent"] = parent
     if data.get("labels"):
         task["labels"] = data["labels"]
     if data.get("description"):
@@ -511,38 +509,26 @@ def reparent_task(app, tid: str) -> None:
             app.notification = "reparent cancelled"
             return
 
-    try:
-        plan = _reparent.plan_reparent(app.root, tid, new_parent)
-    except _reparent.ReparentError as e:
-        app.notification = f"reparent refused: {e}"
-        return
-
-    n = len(plan.id_map)
-    art = len(plan.artifact_dirs)
     target = new_parent or "top level"
-    parts = [f"{n} rename" + ("s" if n != 1 else "")]
-    if art:
-        parts.append(f"{art} artifact dir" + ("s" if art != 1 else ""))
-    summary = f"Reparent {tid} → {target}? ({', '.join(parts)}) (y/N): "
-    if not _dialogs.confirm(app.stdscr, summary):
+    if not _dialogs.confirm(app.stdscr, f"Reparent {tid} → {target}? (y/N): "):
         app.notification = "reparent cancelled"
         return
 
     try:
-        _reparent.apply(plan, app.root)
+        _reparent.reparent(app.root, tid, new_parent)
     except _reparent.ReparentError as e:
-        app.notification = f"reparent failed: {e}"
+        app.notification = f"reparent refused: {e}"
         return
 
     app.reload()
-    # Try to move the cursor onto the renamed yak.
+    # The ID is unchanged; keep the cursor on it.
     for i, (_, t, _, _) in enumerate(app.tasks):
-        if t["id"] == plan.new_id:
+        if t["id"] == tid:
             app.cursor = i
             app._fix_scroll()
             app._rebuild_detail()
             break
-    app.notification = f"{plan.old_id} → {plan.new_id}"
+    app.notification = f"reparented {tid} → {target}"
 
 
 def add_comment(app, tid: str) -> None:

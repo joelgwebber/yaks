@@ -15,7 +15,7 @@ import re
 from pathlib import Path
 
 from yaklib.filter import FilterSpec, filter_tasks
-from yaklib.model import all_tasks, parent_id
+from yaklib.model import all_tasks
 
 # Tracker URL -> (tracker, key) recognizers. First match wins; anything
 # unrecognized falls through to ("other", <url>).
@@ -47,11 +47,16 @@ def tracker_and_key(source: str | None) -> tuple[str, str | None]:
     return ("other", s)
 
 
-def effective_source(task_id: str, source_by_id: dict[str, str]) -> tuple[str | None, str | None]:
+def effective_source(
+    task_id: str,
+    source_by_id: dict[str, str],
+    parent_by_id: dict[str, str],
+) -> tuple[str | None, str | None]:
     """Resolve a yak's effective source, walking up the parent chain.
 
     Returns (source, inherited_from). ``inherited_from`` is None when the yak
     carries its own ``source:``, otherwise the ancestor ID the source came from.
+    Ancestry is followed via *parent_by_id* (id -> parent id).
     """
     cur: str | None = task_id
     seen: set[str] = set()
@@ -60,7 +65,7 @@ def effective_source(task_id: str, source_by_id: dict[str, str]) -> tuple[str | 
         src = source_by_id.get(cur)
         if src:
             return src, (None if cur == task_id else cur)
-        cur = parent_id(cur)
+        cur = parent_by_id.get(cur)
     return None, None
 
 
@@ -78,12 +83,18 @@ def build_rollup(root: Path, spec: FilterSpec) -> tuple[list[dict], int]:
     """
     # Inheritance must see every visible yak, not just the filtered set: a
     # matched child may inherit from an unmatched ancestor.
-    source_by_id = {t["id"]: t["source"] for _s, t in all_tasks(root) if t.get("source")}
+    source_by_id: dict[str, str] = {}
+    parent_by_id: dict[str, str] = {}
+    for _s, t in all_tasks(root):
+        if t.get("source"):
+            source_by_id[t["id"]] = t["source"]
+        if t.get("parent"):
+            parent_by_id[t["id"]] = t["parent"]
 
     groups: dict[str, dict] = {}
     unsourced = 0
     for status, t in filter_tasks(root, spec):
-        src, inherited_from = effective_source(t["id"], source_by_id)
+        src, inherited_from = effective_source(t["id"], source_by_id, parent_by_id)
         if not src:
             unsourced += 1
             continue

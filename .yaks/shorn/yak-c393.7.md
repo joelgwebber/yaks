@@ -5,6 +5,7 @@ type: task
 priority: 2
 created: '2026-08-13T01:24:52Z'
 updated: '2026-08-15T03:27:27Z'
+parent: yak-c393
 ---
 
 docs/demo.html: disable autoPlay + loop (jarring); slow playback; ideally auto-pause at chapter/annotation boundaries so the viewer absorbs each beat and advances when ready. Investigate asciinema-player pause-at-marker options; fall back to a custom control if needed.

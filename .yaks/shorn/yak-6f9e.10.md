@@ -6,6 +6,7 @@ priority: 2
 created: '2026-04-18T00:15:17Z'
 updated: '2026-04-18T01:10:02Z'
 commit: ab70a7e
+parent: yak-6f9e
 ---
 
 One or more badge colors are invisible or near-invisible against the background. Need to check all badge variants and ensure sufficient contrast.

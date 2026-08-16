@@ -5,6 +5,7 @@ type: task
 priority: 3
 created: '2026-08-14T03:28:20Z'
 updated: '2026-08-14T03:37:14Z'
+parent: yak-f64b
 ---
 
 Decouple build_tree + build_detail_lines from the filesystem via a small TaskRepo protocol (find/children/resolve_link_spans/artifacts + resolved_ids). FsTaskRepo wraps root; a demo BoardRepo serves the in-memory Board. Then the demo calls the REAL builders and deletes its forked tree_rows + build_detail_lines. Painters stay bifurcated (curses vs virtual grid) but consume the same view-model. Keep the shipping TUI green (run pytest).

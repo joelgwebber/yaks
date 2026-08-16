@@ -8,6 +8,7 @@ updated: '2026-07-25T21:23:06Z'
 depends_on:
 - yak-c6c3.2
 - yak-c6c3.3
+parent: yak-c6c3
 ---
 
 Update CLAUDE.md (Running the script / subcommand list / invocation model), README, and the _inject_mandate() text in scripts/yaklib/commands.py to reflect: direct-CLI invocation via uvx yakshave / yaks, no slash commands, no CLAUDE_PLUGIN_ROOT. Document the unified version scheme (pyproject + marketplace.json + .codex-plugin move in lockstep). Depends on c6c3.2 and c6c3.3.

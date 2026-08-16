@@ -6,6 +6,7 @@ priority: 2
 created: '2026-04-17T23:13:23Z'
 updated: '2026-04-17T23:53:15Z'
 commit: 46326de
+parent: yak-6f9e
 ---
 
 When hosted on GitHub Pages (e.g. joelgwebber.github.io/yaks), the repo is implicit from the URL. Auto-populate the repo field from the hosting domain so users don't have to type it. The input should still be editable for pointing at other repos.

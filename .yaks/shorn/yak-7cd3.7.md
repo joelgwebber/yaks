@@ -8,6 +8,7 @@ updated: '2026-04-14T16:39:03Z'
 depends_on:
 - yak-7cd3.6
 commit: 682b66b
+parent: yak-7cd3
 ---
 
 Highest-risk step. Pull dialogs (input_prompt, edit_prompt, pick, confirm, fuzzy_pick) → yaktui/dialogs.py. Pull state mutations (_create_task, _edit_task, _delete_task, quick-adjusts, _add_dependency, _attach_file) → yaktui/mutate.py. Pull drawing (draw, _draw_tabs, _draw_list, _draw_separator, _draw_detail) → yaktui/render.py. Pull key dispatch → yaktui/keys_list.py + yaktui/keys_detail.py. App class in yaktui/app.py becomes a thin coordinator holding state + wiring. Pass App instance into helpers rather than methods-on-App to avoid circular imports.
