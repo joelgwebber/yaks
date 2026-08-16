@@ -378,6 +378,51 @@ def _fast_frontmatter(fm: str):
     return result
 
 
+def _lenient_scalar(tok: str):
+    """Best-effort scalar for recovery parsing; never raises. Strips matching
+    surrounding quotes and coerces plain integers; everything else is raw."""
+    tok = tok.strip()
+    if len(tok) >= 2 and tok[0] == tok[-1] and tok[0] in "'\"":
+        inner = tok[1:-1]
+        return inner.replace("''", "'") if tok[0] == "'" else inner
+    if _FM_INT_RE.fullmatch(tok):
+        return int(tok)
+    return tok
+
+
+def _lenient_frontmatter(fm: str) -> dict:
+    """Recover top-level ``key: value`` scalars and ``key:`` / ``- item`` lists
+    from frontmatter that strict YAML rejects (e.g. an unescaped colon in a
+    title). Never raises; unreadable lines are skipped. This keeps one bad file
+    from bricking the tool and keeps the yak visible so it can be fixed.
+    Priority is coerced to int so mixed-type sorts stay safe."""
+    out: dict = {}
+    lines = fm.split("\n")
+    i, n = 0, len(lines)
+    while i < n:
+        line = lines[i]
+        if not line.strip():
+            i += 1
+            continue
+        m = _FM_KEY_RE.match(line)
+        if not m:
+            i += 1
+            continue
+        key, val = m.group(1), m.group(2)
+        if val is None:
+            items = []
+            i += 1
+            while i < n and lines[i].startswith("- "):
+                items.append(_lenient_scalar(lines[i][2:]))
+                i += 1
+            if items:
+                out[key] = items
+            continue
+        out[key] = _lenient_scalar(val)
+        i += 1
+    return out
+
+
 def load_task(path: Path) -> dict:
     text = path.read_text()
     if path.suffix == ".md":
@@ -390,7 +435,18 @@ def load_task(path: Path) -> dict:
         body = text[end + 4:]
         task = _fast_frontmatter(fm)
         if task is None:  # subset miss -> full loader (same result, just slower)
-            task = _yaml_load(fm) or {}
+            try:
+                task = _yaml_load(fm) or {}
+            except yaml.YAMLError as e:
+                # Malformed frontmatter (e.g. an unescaped colon). Recover what
+                # we can instead of raising: a single bad file must never crash
+                # a scan or a point read (yak-cae6). Flag it so the UI can say
+                # so; the id comes from the filename when unparseable.
+                task = _lenient_frontmatter(fm)
+                # The filename is authoritative for the id (the index and
+                # find_task_file key on it); a recovered id may be garbage.
+                task["id"] = path.stem
+                task["_error"] = getattr(e, "problem", None) or e.__class__.__name__
         body = body.strip()
         if body:
             task["description"] = body
@@ -399,7 +455,9 @@ def load_task(path: Path) -> dict:
 
 
 def save_task(path: Path, task: dict) -> None:
-    task = dict(task)
+    # Drop private, derived keys (e.g. the _error recovery flag) so they never
+    # get written back into the file.
+    task = {k: v for k, v in task.items() if not k.startswith("_")}
     description = task.pop("description", None)
     fm = dump_yaml(task)
     parts = ["---\n", fm, "---\n"]

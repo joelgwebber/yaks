@@ -77,6 +77,9 @@ def build_detail_lines(source, task, status, width=80, reverse_deps=None, status
 
     title = task.get("title", "")
     emit(f"  {'Title:':<12s} {title}", "field")
+    if task.get("_error"):
+        emit(f"  ⚠ Unparseable frontmatter ({task['_error']}) — showing "
+             "best-effort recovery; edit the file to fix.", "field")
 
     fields = [
         ("Status", status.capitalize()),

@@ -4,7 +4,7 @@ title: Crash on unescaped colons in frontmatter
 type: bug
 priority: 1
 created: '2026-08-15T17:24:32Z'
-updated: '2026-08-15T17:24:32Z'
+updated: '2026-08-16T18:40:45Z'
 ---
 
 Any unescaped colon in yak frontmatter dies with this stack:
@@ -79,3 +79,7 @@ yaml.scanner.ScannerError: mapping values are not allowed here
   in "<unicode string>", line 2, column 88:
      ... s-matched entities; add messages:
 ```
+
+---
+▸ 2026-08-16T18:40:45Z
+Fixed. Root cause: load_task called the strict YAML loader on frontmatter and let yaml.YAMLError (ScannerError on an unescaped colon) propagate, so a single bad file crashed both full scans and point reads. Post-3fd4 the index's except-skip stopped the scan crash but then silently DROPPED the file (yak vanished, incl. from its parent's children). Fix at the load_task chokepoint (covers every caller at once): on YAMLError, recover via new _lenient_frontmatter (never raises; extracts top-level key: value scalars and key:/- item lists, coerces priority to int for sort-safety) — which usually recovers the intended value anyway since YAML only choked on the second colon; force id = path.stem (filename is authoritative; the index + find_task_file key on it); set a private _error flag. save_task now strips _-prefixed keys so the flag (and any future private field) never gets written back. detail pane shows a '⚠ Unparseable frontmatter (...)' line so the recovered yak visibly signals it needs a fix. Net: no crash on scans OR point reads; malformed yaks stay visible, attached, and editable; fixing + saving clears the flag. Tests: tests/test_malformed.py (recovery-not-raise, stays-visible-in-scans, point-read, id-from-filename, save strips flag, CLI show/list survive). Full suite 143 pass.
