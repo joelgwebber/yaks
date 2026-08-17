@@ -423,25 +423,30 @@ def draw_list(app, y_start, x_start, height, width):
         safe_addstr(stdscr, y, x, type_text, type_attr)
         x += len(type_text)
 
-        # Compute right-side elements: badge (collapsed/ghost) and labels.
+        # Right-side elements, laid out from the right edge inward:
+        #   [labels]  [star slot: 2 cells]  [badge]
+        # The star slot is ALWAYS reserved (2 cells), so a row's labels never
+        # shift when it is (un)starred; the star (a double-width glyph) sits at
+        # the far right of the labels, blank when absent (yak-488b).
         right_badge = ""
         hidden = app.collapsed_counts.get(tid, 0)
         if hidden:
             right_badge = f" ▶ {hidden} "
 
-        # Right-side tags: a star for working-set membership, then any labels.
-        star_mark = "\u2b50 " if tid in starred_ids else ""
         label_str = ""
         if getattr(app, "show_labels", True):
             labels = task.get("labels") or []
             if labels:
                 max_lw = min(30, max(8, width // 4))
                 label_str = ("[" + ", ".join(labels) + "]")[:max_lw]
-        right_label = (star_mark + label_str).rstrip()
 
-        # Reserve right-side space: badge + (gap + label) if label present.
-        right_w = len(right_badge) + (len(right_label) + 1 if right_label else 0)
-        remaining = width - (x - x_start) - 1 - right_w
+        badge_w = len(right_badge)
+        star_slot_w = 2  # reserved for the double-width star, present or not
+        star_x = x_start + width - 1 - badge_w - star_slot_w
+        label_x = star_x - 1 - len(label_str)
+        left_bound = label_x if label_str else star_x
+
+        remaining = left_bound - x - 1
         if remaining > 0:
             # Always lead the title with the row's state emoji (yak-8e44), so
             # state is legible in every view (esp. the mixed-status flat ones).
@@ -449,13 +454,15 @@ def draw_list(app, y_start, x_start, height, width):
             title_attr = base_attr | ghost_attr
             safe_addstr(stdscr, y, x, display_title, title_attr)
 
-        # Draw label to the left of the badge.
-        if right_label:
-            badge_w = len(right_badge)
-            lx = x_start + width - 1 - badge_w - len(right_label)
-            if lx > x:
-                label_attr = base_attr if is_selected else (curses.color_pair(C_LABEL) | curses.A_DIM)
-                safe_addstr(stdscr, y, lx, right_label, label_attr)
+        # Labels, right-aligned just left of the star slot.
+        if label_str and label_x > x:
+            label_attr = base_attr if is_selected else (curses.color_pair(C_LABEL) | curses.A_DIM)
+            safe_addstr(stdscr, y, label_x, label_str, label_attr)
+
+        # Star at its fixed slot (far right of the labels); blank when unstarred.
+        if tid in starred_ids and star_x > x:
+            star_attr = base_attr if is_selected else ghost_attr
+            safe_addstr(stdscr, y, star_x, "\u2b50", star_attr)
 
         # Draw badge at far right.
         if right_badge:
