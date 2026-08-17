@@ -158,6 +158,9 @@ class TUI:
         # Load the user's persisted View list (order + pins + custom Views),
         # reconciled with the built-ins; falls back to defaults (yak-6b51).
         self.views = _views_store.load_views(root)
+        # Working set: an ordered list of starred yak ids backing the built-in
+        # Working set View (yak-597c).
+        self.working_set = _views_store.load_working_set(root)
         self.view = 0
         self.cursor = 0
         self.scroll = 0
@@ -276,6 +279,11 @@ class TUI:
         (flat) view lists matches in sort order; a status (tree) view builds the
         parent/child tree and applies collapse."""
         view = self.views[self.view]
+        if view.key == "working-set":
+            # Explicit, ordered membership — not a filter (yak-597c).
+            self.tasks = self._working_set_rows()
+            self.collapsed_counts = {}
+            return
         if view.is_flat:
             self.tasks = build_flat(
                 self.root, self.filter_spec, view.sort_by, view.sort_dir, view.limit,
@@ -970,6 +978,34 @@ class TUI:
             return
         cur = pinned.index(self.view) if self.view in pinned else 0
         self._activate_view(pinned[(cur + direction) % len(pinned)])
+
+    def _working_set_rows(self):
+        """Rows for the Working set View: the starred ids that still exist, in
+        star order, flat."""
+        by_id = {t["id"]: (s, t) for s, t in (self._task_cache or [])}
+        rows = []
+        for tid in self.working_set:
+            hit = by_id.get(tid)
+            if hit:
+                rows.append((hit[0], hit[1], 0, False))
+        return rows
+
+    def _toggle_working_set(self, tid):
+        """Star/unstar a yak into the ordered working set (yak-597c)."""
+        if not tid:
+            return
+        was = tid in self.working_set
+        self.working_set = _views_store.toggle_working_set(self.working_set, tid)
+        _views_store.save_working_set(self.root, self.working_set)
+        self.notification = f"{'removed from' if was else 'added to'} working set"
+        # The tab count refreshes via the memo; rebuild the list only if the
+        # working set is what's on screen.
+        if self.views[self.view].key == "working-set":
+            self._rebuild_task_list()
+            if self.cursor >= len(self.tasks):
+                self.cursor = max(0, len(self.tasks) - 1)
+            self._fix_scroll()
+            self._rebuild_detail()
 
     def _save_current_filter_as_view(self):
         """Save the live filter as a new named View (yak-a373). The new View

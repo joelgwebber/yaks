@@ -77,8 +77,9 @@ def test_recent_view_shape():
     assert rv.spec == FilterSpec()  # all tasks
 
 
-def test_default_views_is_status_tabs_plus_recent():
+def test_default_views_is_status_tabs_plus_recent_and_working_set():
     views = default_views()
-    assert [v.status for v in views] == [HAIRY, "shaving", SHORN, None]
+    assert [v.status for v in views] == [HAIRY, "shaving", SHORN, None, None]
     assert not any(v.is_flat for v in views[:3])  # status views stay tree
     assert views[3].is_flat                       # Recent is flat
+    assert views[4].key == "working-set"          # id-list view (special-cased)

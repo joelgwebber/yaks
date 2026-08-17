@@ -15,9 +15,12 @@ from yaktui.view import View, custom_view, default_views
 from yaktui.views_store import (
     can_unpin,
     load_views,
+    load_working_set,
     move,
     reconcile,
     save_views,
+    save_working_set,
+    toggle_working_set,
     views_path,
 )
 
@@ -26,13 +29,14 @@ def test_save_load_roundtrip_preserves_order_and_pins(tmp_path):
     root = tmp_path / ".yaks"
     root.mkdir()
     views = default_views()
-    # Reorder (Recent first) and unpin Shorn.
-    views = [views[3], views[0], views[1], views[2]]
-    views[3] = replace(views[3], pinned=False)  # unpin Shorn
+    # Reorder (Recent first) and unpin Shorn; keep Working set last.
+    views = [views[3], views[0], views[1], views[2], views[4]]
+    views[3] = replace(views[3], pinned=False)  # unpin Shorn (now at index 3)
     save_views(root, views)
 
     loaded = load_views(root)
-    assert [v.key for v in loaded] == ["recent", "status:hairy", "status:shaving", "status:shorn"]
+    assert [v.key for v in loaded] == ["recent", "status:hairy", "status:shaving",
+                                       "status:shorn", "working-set"]
     assert loaded[0].key == "recent" and loaded[0].pinned
     assert loaded[3].key == "status:shorn" and not loaded[3].pinned
     # Structural bits still come from code (not overlaid).
@@ -68,8 +72,8 @@ def test_new_builtins_are_appended_even_if_overlay_predates_them():
     stored = [{"key": f"status:{s}", "pinned": True}
               for s in ("hairy", "shaving", "shorn")]
     out = reconcile(stored, default_views())
-    assert [v.key for v in out][-1] == "recent"  # appended
-    assert len(out) == 4
+    assert [v.key for v in out][-2:] == ["recent", "working-set"]  # appended in default order
+    assert len(out) == 5
 
 
 def test_custom_view_roundtrips(tmp_path):
@@ -126,10 +130,35 @@ def test_move_reorders_and_clamps():
     vs = default_views()
     keys = [v.key for v in vs]
     assert move(vs, 0, +1) == 1
-    assert [v.key for v in vs] == [keys[1], keys[0], keys[2], keys[3]]
+    assert [v.key for v in vs] == [keys[1], keys[0], keys[2], keys[3], keys[4]]
     # Clamp at the top.
     assert move(vs, 0, -1) == 0
     assert [v.key for v in vs][0] == keys[1]
+
+
+def test_default_views_include_recent_and_working_set():
+    keys = [v.key for v in default_views()]
+    assert keys == ["status:hairy", "status:shaving", "status:shorn",
+                    "recent", "working-set"]
+
+
+def test_toggle_working_set_adds_removes_and_keeps_order():
+    ids = []
+    ids = toggle_working_set(ids, "yak-a")
+    ids = toggle_working_set(ids, "yak-b")
+    assert ids == ["yak-a", "yak-b"]           # new stars append
+    ids = toggle_working_set(ids, "yak-a")      # toggle off
+    assert ids == ["yak-b"]
+    ids = toggle_working_set(ids, "yak-a")      # re-add -> goes to the end
+    assert ids == ["yak-b", "yak-a"]
+
+
+def test_working_set_roundtrip_and_fallback(tmp_path):
+    root = tmp_path / ".yaks"
+    root.mkdir()
+    assert load_working_set(root) == []          # missing -> empty
+    save_working_set(root, ["yak-1", "yak-2", "yak-3"])
+    assert load_working_set(root) == ["yak-1", "yak-2", "yak-3"]
 
 
 def test_can_unpin_guards_last_pinned():

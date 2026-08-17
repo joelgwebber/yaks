@@ -73,6 +73,12 @@ def _compute_view_counts(app, cache):
 
     counts = []
     for view in app.views:
+        if view.key == "working-set":
+            # Membership is an explicit id list, not a spec (yak-597c).
+            ws = getattr(app, "working_set", None) or []
+            existing = {t["id"] for _s, t in cache}
+            counts.append(sum(1 for tid in ws if tid in existing))
+            continue
         counts.append(sum(
             1
             for _, _, _, ghost in build_tree(
@@ -99,7 +105,8 @@ def view_counts(app):
     definition changes.
     """
     cache = app._task_cache or []
-    key = (getattr(app, "_task_cache_version", 0), _views_sig(app))
+    key = (getattr(app, "_task_cache_version", 0), _views_sig(app),
+           tuple(getattr(app, "working_set", ()) or ()))
     memo = getattr(app, "_counts_memo", None)
     if memo is not None and memo[0] == key:
         return memo[1]
@@ -601,6 +608,7 @@ _HELP_SECTIONS = [
             "/                     Filter editor focused on search",
             "Esc                   Revert filter to the active view",
             "V                     Save current filter as a view",
+            "*                     Star / unstar yak (working set)",
             "n / N                 Next / prev detail match",
             "y                     Copy yak ID to clipboard",
         ],

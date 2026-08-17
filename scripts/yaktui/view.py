@@ -82,10 +82,19 @@ def recent_view() -> View:
                 limit=RECENT_LIMIT)
 
 
+def working_set_view() -> View:
+    """The built-in Working set View (yak-597c): the yaks you've explicitly
+    starred, in star order, flat. Membership is an ordered id list in user
+    config (app.working_set) — not a filter or labels — so rendering + counting
+    are special-cased by this key rather than driven by spec."""
+    return View(name="\u2b50 Working set", key="working-set", status=None,
+                builtin=True, pinned=True)
+
+
 def default_views() -> list[View]:
-    """The Views a fresh TUI starts with: the three status Views plus Recent.
-    (Once yak-6b51 lands, user-defined/pinned Views merge in from storage.)"""
-    return [*builtin_status_views(), recent_view()]
+    """The Views a fresh TUI starts with: the three status Views, Recent, and
+    Working set. User-defined/pinned Views merge in from storage (yak-6b51)."""
+    return [*builtin_status_views(), recent_view(), working_set_view()]
 
 
 def custom_view(name: str, spec: FilterSpec, sort_by: str | None = None,

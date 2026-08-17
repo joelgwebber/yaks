@@ -165,3 +165,39 @@ def can_unpin(views: list[View], i: int) -> bool:
     if not views[i].pinned:
         return True
     return sum(1 for v in views if v.pinned) > 1
+
+
+# -- working set: an ordered list of starred yak ids (yak-597c) -----------------
+#
+# Durable, user-specific, and ORDERED, so it is a plain id list in config rather
+# than labels (which are unordered) or a frontmatter flag (which would bump
+# `updated` and pollute the Recent view). Backs the built-in Working set View.
+
+def working_set_path(root: Path) -> Path:
+    return config_dir(root) / "working_set.json"
+
+
+def load_working_set(root: Path) -> list[str]:
+    """The ordered starred-id list for *root*; [] when absent/corrupt. Never raises."""
+    try:
+        data = json.loads(working_set_path(root).read_text())
+    except (OSError, json.JSONDecodeError, ValueError):
+        return []
+    if isinstance(data, dict) and isinstance(data.get("ids"), list):
+        return [str(x) for x in data["ids"]]
+    return []
+
+
+def save_working_set(root: Path, ids: list[str]) -> None:
+    payload = {"v": _VERSION, "ids": list(ids)}
+    path = working_set_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    atomic_write(path, json.dumps(payload, indent=2))
+
+
+def toggle_working_set(ids: list[str], tid: str) -> list[str]:
+    """Return a new list with *tid* removed if present, else appended to the end
+    (new stars go to the bottom, preserving existing order)."""
+    if tid in ids:
+        return [i for i in ids if i != tid]
+    return [*ids, tid]

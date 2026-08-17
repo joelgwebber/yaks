@@ -13,7 +13,7 @@ from pathlib import Path
 from yaklib.filter import FilterSpec
 from yaklib.model import HAIRY, SHAVING, SHORN
 from yaktui.render import format_count, view_counts, view_tab_text
-from yaktui.view import builtin_status_views
+from yaktui.view import builtin_status_views, default_views
 
 
 class _App:
@@ -77,6 +77,15 @@ def test_memoized_on_version_and_views_not_filter():
 
     app._task_cache_version += 1              # a data reload does
     assert view_counts(app) is not first
+
+
+def test_working_set_view_counts_present_starred_ids():
+    cache = [(HAIRY, _task("yak-1")), (SHORN, _task("yak-2")), (HAIRY, _task("yak-3"))]
+    app = _App(cache)
+    app.views = default_views()               # [.., recent, working-set(idx 4)]
+    app.working_set = ["yak-2", "ghost", "yak-3"]
+    counts = view_counts(app)
+    assert counts[4] == 2                       # yak-2 + yak-3 present; ghost ignored
 
 
 def test_view_tab_text_caps_and_marks_modified_active_view():
