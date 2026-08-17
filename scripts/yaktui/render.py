@@ -375,6 +375,8 @@ def draw_list(app, y_start, x_start, height, width):
         max_id_len = max(max_id_len, id_len)
     id_col = max_id_len + 1
 
+    starred_ids = set(getattr(app, "working_set", ()) or ())
+
     for i in range(height):
         idx = app.scroll + i
         if idx >= len(app.tasks):
@@ -426,25 +428,25 @@ def draw_list(app, y_start, x_start, height, width):
         hidden = app.collapsed_counts.get(tid, 0)
         if hidden:
             right_badge = f" ▶ {hidden} "
-        elif ghost and not app.filter_spec.search:
-            right_badge = f" {status_emoji(status)}"
 
-        right_label = ""
+        # Right-side tags: a star for working-set membership, then any labels.
+        star_mark = "\u2b50 " if tid in starred_ids else ""
+        label_str = ""
         if getattr(app, "show_labels", True):
             labels = task.get("labels") or []
             if labels:
                 max_lw = min(30, max(8, width // 4))
-                label_str = "[" + ", ".join(labels) + "]"
-                right_label = label_str[:max_lw]
+                label_str = ("[" + ", ".join(labels) + "]")[:max_lw]
+        right_label = (star_mark + label_str).rstrip()
 
         # Reserve right-side space: badge + (gap + label) if label present.
         right_w = len(right_badge) + (len(right_label) + 1 if right_label else 0)
         remaining = width - (x - x_start) - 1 - right_w
         if remaining > 0:
-            display_title = title[:remaining]
+            # Always lead the title with the row's state emoji (yak-8e44), so
+            # state is legible in every view (esp. the mixed-status flat ones).
+            display_title = f"{status_emoji(status)} {title}"[:remaining]
             title_attr = base_attr | ghost_attr
-            if app.filter_spec.search:
-                display_title = f"{status_emoji(status)} {display_title}"[:remaining]
             safe_addstr(stdscr, y, x, display_title, title_attr)
 
         # Draw label to the left of the badge.

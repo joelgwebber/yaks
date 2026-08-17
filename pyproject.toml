@@ -1,6 +1,6 @@
 [project]
 name = "yakherder"
-version = "0.1.94"
+version = "0.1.95"
 description = "Filesystem-native task tracker for humans and AI agents"
 readme = "README.md"
 requires-python = ">=3.10"
