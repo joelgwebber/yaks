@@ -51,6 +51,32 @@ def test_rename_of_builtin_persists():
     assert hairy.status == "hairy"  # structure intact
 
 
+def test_unrenamed_builtin_name_follows_code_default():
+    # A null stored name means "never renamed" -> use the current code default,
+    # so label/emoji changes propagate to already-customized herds.
+    stored = [{"key": "status:shaving", "name": None, "pinned": True}]
+    out = reconcile(stored, default_views())
+    shaving = next(v for v in out if v.key == "status:shaving")
+    code_default = next(v for v in default_views() if v.key == "status:shaving")
+    assert shaving.name == code_default.name
+
+
+def test_save_nulls_unrenamed_builtin_names_but_keeps_renames(tmp_path):
+    import json
+    root = tmp_path / ".yaks"
+    root.mkdir()
+
+    save_views(root, default_views())  # nothing renamed
+    names = {e["key"]: e["name"] for e in json.loads(views_path(root).read_text())["views"]}
+    assert names["status:hairy"] is None  # un-renamed built-in -> null (tracks code)
+
+    vs = default_views()
+    vs[0] = replace(vs[0], name="Custom")  # user renames Hairy
+    save_views(root, vs)
+    names = {e["key"]: e["name"] for e in json.loads(views_path(root).read_text())["views"]}
+    assert names["status:hairy"] == "Custom"  # explicit rename preserved
+
+
 def test_missing_file_falls_back_to_defaults(tmp_path):
     root = tmp_path / ".yaks"
     root.mkdir()

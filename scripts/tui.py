@@ -1000,7 +1000,7 @@ class TUI:
         was = tid in self.working_set
         self.working_set = _views_store.toggle_working_set(self.working_set, tid)
         _views_store.save_working_set(self.root, self.working_set)
-        self.notification = f"{'removed from' if was else 'added to'} working set"
+        self.notification = "unstarred" if was else "starred"
         # The tab count refreshes via the memo; rebuild the list only if the
         # working set is what's on screen, and always refresh the detail pane so
         # the starred affordance updates when toggled from detail.

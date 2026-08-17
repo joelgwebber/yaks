@@ -610,7 +610,7 @@ _HELP_SECTIONS = [
             "/                     Filter editor focused on search",
             "Esc                   Revert filter to the active view",
             "V                     Save current filter as a view",
-            "*                     Star / unstar yak (working set)",
+            "*                     Star / unstar (Starred view)",
             "n / N                 Next / prev detail match",
             "y                     Copy yak ID to clipboard",
         ],
@@ -650,7 +650,7 @@ _HELP_SECTIONS = [
             "i / o                 Nav forward / back in jumplist",
             "Backspace             Nav back (alt)",
             "v / Shift-↑↓          Visual select; y/Enter copies",
-            "*                     Star / unstar (working set)",
+            "*                     Star / unstar (Starred view)",
         ],
     ),
     (

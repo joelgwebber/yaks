@@ -113,9 +113,16 @@ def reconcile(entries: list[dict], defaults: list[View]) -> list[View]:
             continue
         seen.add(key)
         base = by_key.get(key)
-        if base is not None:  # built-in: canonical structure + overlaid name/pin
-            out.append(replace(base, name=e.get("name", base.name),
-                               pinned=bool(e.get("pinned", base.pinned))))
+        if base is not None:  # built-in: canonical structure + overlaid pin.
+            # Name follows the code default unless the user actually renamed it
+            # (un-renamed built-ins store a null name), so code-side label/emoji
+            # changes reach already-customized herds, not just fresh installs.
+            stored_name = e.get("name")
+            out.append(replace(
+                base,
+                name=base.name if stored_name is None else stored_name,
+                pinned=bool(e.get("pinned", base.pinned)),
+            ))
         elif not e.get("builtin"):  # custom View
             out.append(_view_from_dict(e))
         # else: a built-in key we no longer ship -> drop it
@@ -140,8 +147,17 @@ def load_views(root: Path) -> list[View]:
 
 
 def save_views(root: Path, views: list[View]) -> None:
-    """Persist the View list (order + pins + custom defs) atomically."""
-    payload = {"v": _VERSION, "views": [_view_to_dict(v) for v in views]}
+    """Persist the View list (order + pins + custom defs) atomically. An
+    un-renamed built-in stores a null name so it tracks the code default."""
+    defaults = {v.key: v for v in default_views()}
+    entries = []
+    for v in views:
+        d = _view_to_dict(v)
+        base = defaults.get(v.key)
+        if base is not None and v.builtin and d.get("name") == base.name:
+            d["name"] = None
+        entries.append(d)
+    payload = {"v": _VERSION, "views": entries}
     path = views_path(root)
     path.parent.mkdir(parents=True, exist_ok=True)
     atomic_write(path, json.dumps(payload, indent=2))

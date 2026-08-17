@@ -53,7 +53,7 @@ class View:
 # renders exactly as before.
 _STATUS_VIEWS = [
     ("\U0001f9ac Hairy", HAIRY),
-    ("\u2702\ufe0f  Shaving", SHAVING),
+    ("\U0001fa92 Shaving", SHAVING),
     ("\U0001f411 Shorn", SHORN),
 ]
 
@@ -87,7 +87,7 @@ def working_set_view() -> View:
     starred, in star order, flat. Membership is an ordered id list in user
     config (app.working_set) — not a filter or labels — so rendering + counting
     are special-cased by this key rather than driven by spec."""
-    return View(name="\u2b50 Working set", key="working-set", status=None,
+    return View(name="\u2b50 Starred", key="working-set", status=None,
                 builtin=True, pinned=True)
 
 

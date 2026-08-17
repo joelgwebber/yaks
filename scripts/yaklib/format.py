@@ -23,7 +23,7 @@ def status_char(status: str) -> str:
 # Matches the TUI tab row: yak / scissors / sheep / skull.
 STATUS_EMOJI = {
     "hairy": "\U0001f9ac",     # 🦬 bison
-    "shaving": "\u2702\ufe0f",  # ✂️ scissors + VS16
+    "shaving": "\U0001fa92",    # 🪒 razor
     "shorn": "\U0001f411",      # 🐑 sheep
     "dead": "\U0001f480",       # 💀 skull
 }
