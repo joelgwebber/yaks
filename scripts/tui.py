@@ -424,7 +424,10 @@ class TUI:
         self._detail_build_width = width
 
         status, task, _, _ = self.tasks[self.cursor]
-        self.detail_lines = build_detail_lines(self.root, task, status, width, reverse_deps=self.reverse_deps)
+        self.detail_lines = build_detail_lines(
+            self.root, task, status, width, reverse_deps=self.reverse_deps,
+            starred=(task["id"] in self.working_set),
+        )
         # Start cursor on the first link, or line 0 if no links
         self.detail_line_cursor = 0
         for i, dl in enumerate(self.detail_lines):
@@ -999,13 +1002,14 @@ class TUI:
         _views_store.save_working_set(self.root, self.working_set)
         self.notification = f"{'removed from' if was else 'added to'} working set"
         # The tab count refreshes via the memo; rebuild the list only if the
-        # working set is what's on screen.
+        # working set is what's on screen, and always refresh the detail pane so
+        # the starred affordance updates when toggled from detail.
         if self.views[self.view].key == "working-set":
             self._rebuild_task_list()
             if self.cursor >= len(self.tasks):
                 self.cursor = max(0, len(self.tasks) - 1)
             self._fix_scroll()
-            self._rebuild_detail()
+        self._rebuild_detail()
 
     def _save_current_filter_as_view(self):
         """Save the live filter as a new named View (yak-a373). The new View

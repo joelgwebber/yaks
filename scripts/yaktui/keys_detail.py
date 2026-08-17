@@ -115,6 +115,10 @@ def handle(app, key) -> bool:
         tid = app._current_task_id()
         if tid:
             app._delete_task(tid)
+    elif key == ord("*"):
+        tid = app._current_task_id()
+        if tid:
+            app._toggle_working_set(tid)
 
     # Next / prev task in list
     elif key == ord("J"):

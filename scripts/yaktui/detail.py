@@ -55,7 +55,7 @@ def _wrap(text, width) -> list[str]:
     return [lead + w for w in wrapped]
 
 
-def build_detail_lines(source, task, status, width=80, reverse_deps=None, status_glyph=status_emoji) -> list[DetailLine]:
+def build_detail_lines(source, task, status, width=80, reverse_deps=None, status_glyph=status_emoji, starred=False) -> list[DetailLine]:
     """Build the detail pane content for a task, wrapped to *width*.
 
     *source* is a TaskRepo (see yaklib.repo). For backward-compatibility a
@@ -80,6 +80,8 @@ def build_detail_lines(source, task, status, width=80, reverse_deps=None, status
     if task.get("_error"):
         emit(f"  ⚠ Unparseable frontmatter ({task['_error']}) — showing "
              "best-effort recovery; edit the file to fix.", "field")
+    if starred:
+        emit("  \u2b50 Starred", "field")
 
     fields = [
         ("Status", status.capitalize()),

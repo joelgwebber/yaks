@@ -1,6 +1,6 @@
 {
   "name": "yaks",
-  "version": "0.1.95",
+  "version": "0.1.96",
   "description": "Filesystem-native task tracker. Plain markdown files, no yak left unshaved.",
   "skills": "./skills/",
   "interface": {

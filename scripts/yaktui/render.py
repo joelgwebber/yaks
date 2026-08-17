@@ -650,6 +650,7 @@ _HELP_SECTIONS = [
             "i / o                 Nav forward / back in jumplist",
             "Backspace             Nav back (alt)",
             "v / Shift-↑↓          Visual select; y/Enter copies",
+            "*                     Star / unstar (working set)",
         ],
     ),
     (
