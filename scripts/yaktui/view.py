@@ -15,6 +15,10 @@ from dataclasses import dataclass, field
 from yaklib.filter import FilterSpec
 from yaklib.model import HAIRY, SHAVING, SHORN
 
+# Fields a View may sort by (yak-b601). ISO timestamps sort chronologically as
+# plain strings, so date sorts need no parsing.
+SORT_FIELDS = ("updated", "created", "priority", "title", "id")
+
 
 @dataclass
 class View:
@@ -25,10 +29,21 @@ class View:
     # live filter (yak-1b89); status Views carry a spec that scopes to their
     # status, so status is just another (removable) filter axis at runtime.
     spec: FilterSpec = field(default_factory=FilterSpec)
+    # Sorting (yak-b601). A View that sorts renders FLAT (a sort order can't
+    # coexist with the parent/child tree); status Views leave sort_by None and
+    # stay tree views. limit caps the rows shown (None = unlimited).
+    sort_by: str | None = None
+    sort_dir: str = "desc"     # "asc" | "desc"
+    limit: int | None = None
 
     @property
     def is_status(self) -> bool:
         return self.status is not None
+
+    @property
+    def is_flat(self) -> bool:
+        """Sorted Views are flat; unsorted (status) Views render as a tree."""
+        return self.sort_by is not None
 
 
 # Label strings are byte-identical to the former render.TABS so the tab row
@@ -47,3 +62,24 @@ def builtin_status_views() -> list[View]:
     return [View(name=name, status=status, builtin=True,
                  spec=FilterSpec(statuses=frozenset({status})))
             for name, status in _STATUS_VIEWS]
+
+
+# How many rows the Recent view shows. Recent is a working list, not an
+# archive, so it is capped; the exact number is a tunable presentation choice.
+RECENT_LIMIT = 50
+
+
+def recent_view() -> View:
+    """The built-in Recent View (yak-b601): every task, most-recently-updated
+    first, flat, capped. Derived purely from the `updated` field — navigating
+    TO a yak does not bump `updated`, so the list does not churn under you.
+    Pinned by default, so a new user meets the View affordance on day one."""
+    return View(name="\U0001f552 Recent", status=None, builtin=True,
+                spec=FilterSpec(), sort_by="updated", sort_dir="desc",
+                limit=RECENT_LIMIT)
+
+
+def default_views() -> list[View]:
+    """The Views a fresh TUI starts with: the three status Views plus Recent.
+    (Once yak-6b51 lands, user-defined/pinned Views merge in from storage.)"""
+    return [*builtin_status_views(), recent_view()]

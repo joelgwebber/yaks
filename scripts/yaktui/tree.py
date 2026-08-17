@@ -215,3 +215,63 @@ def apply_collapse(
         if task["id"] in collapsed_ids:
             hide_stack.append((task["id"], depth))
     return visible, counts
+
+
+def _sort_key(task: dict, sort_by: str):
+    """Sort key for one field. Priority is numeric; the rest compare as strings
+    (ISO timestamps sort chronologically). Within a single build_flat call the
+    field is fixed, so keys stay homogeneous."""
+    if sort_by == "priority":
+        return task.get("priority", 9)
+    if sort_by == "title":
+        return (task.get("title") or "").lower()
+    return task.get(sort_by) or ""
+
+
+def build_flat(
+    root: Path,
+    spec: FilterSpec,
+    sort_by: str,
+    sort_dir: str = "desc",
+    limit: int | None = None,
+    tasks_cache: list | None = None,
+    resolved_cache: set | None = None,
+) -> list[tuple[str, dict, int, bool]]:
+    """Flat, sorted rows for a sorted View (yak-b601): every matching task is a
+    top-level row at depth 0 with no ghosts — no parent/child nesting, since a
+    sort order can't coexist with the tree. Matching reuses FilterSpec (content
+    + status); `--parent-of` is applied as a descendant-set membership test.
+    """
+    if tasks_cache is not None:
+        items = list(tasks_cache)
+    else:
+        items = []
+        for s in STATUSES:
+            for st, t in all_tasks(root, s):
+                items.append((st, t))
+
+    resolved = resolved_cache if resolved_cache is not None else _deps.resolved_ids(root)
+
+    scope = None
+    if spec.parent:
+        children_of: dict[str, list[str]] = {}
+        for _s, t in items:
+            p = parent_of(t)
+            if p:
+                children_of.setdefault(p, []).append(t.get("id", ""))
+        scope = set()
+        stack = list(children_of.get(spec.parent, []))
+        while stack:
+            cur = stack.pop()
+            if cur and cur not in scope:
+                scope.add(cur)
+                stack.extend(children_of.get(cur, []))
+
+    matched = [
+        (s, t) for s, t in items
+        if (scope is None or t.get("id") in scope) and spec.matches(s, t, resolved)
+    ]
+    matched.sort(key=lambda it: _sort_key(it[1], sort_by), reverse=(sort_dir == "desc"))
+    if limit is not None:
+        matched = matched[:limit]
+    return [(s, t, 0, False) for s, t in matched]

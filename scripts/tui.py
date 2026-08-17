@@ -35,8 +35,8 @@ from yaktui.colors import (
 from yaktui.detail import build_detail_lines
 from yaktui.render import view_counts as _view_counts
 from yaktui.render import view_tab_text
-from yaktui.tree import apply_collapse, build_tree
-from yaktui.view import builtin_status_views
+from yaktui.tree import apply_collapse, build_flat, build_tree
+from yaktui.view import default_views
 from yaktui.vim_edit import LineEditor
 
 
@@ -151,7 +151,7 @@ class TUI:
         # List state. Views generalize the old fixed status tabs (yak-4473):
         # self.view indexes an ordered self.views list; the three built-in
         # status Views are seeded here and, for now, are the only ones.
-        self.views = builtin_status_views()
+        self.views = default_views()
         self.view = 0
         self.cursor = 0
         self.scroll = 0
@@ -266,7 +266,17 @@ class TUI:
         self._fs_sig = self._scan_fs()
 
     def _rebuild_task_list(self):
-        """Re-run build_tree for the current tab/filter, then apply collapse."""
+        """Rebuild the visible rows for the active view + live filter. A sorted
+        (flat) view lists matches in sort order; a status (tree) view builds the
+        parent/child tree and applies collapse."""
+        view = self.views[self.view]
+        if view.is_flat:
+            self.tasks = build_flat(
+                self.root, self.filter_spec, view.sort_by, view.sort_dir, view.limit,
+                tasks_cache=self._task_cache, resolved_cache=self._resolved_cache,
+            )
+            self.collapsed_counts = {}
+            return
         # Status now lives in the live filter (loaded from the active view), so
         # it is the sole list driver — no separate tab-status axis. build_tree
         # derives the status scope from the spec (all statuses when unset).
