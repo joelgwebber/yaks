@@ -474,12 +474,24 @@ def save_task(path: Path, task: dict) -> None:
 # Per-user derived cache (index + UI state). Never committed; rebuildable.
 # ---------------------------------------------------------------------------
 
+def _project_slug(root: Path) -> str:
+    return hashlib.sha1(str(root.resolve()).encode("utf-8")).hexdigest()[:12]
+
+
 def cache_dir(root: Path) -> Path:
-    """Per-project cache directory under XDG_CACHE_HOME (default ~/.cache).
-    Keyed by a hash of the absolute root so distinct herds never collide."""
-    slug = hashlib.sha1(str(root.resolve()).encode("utf-8")).hexdigest()[:12]
+    """Per-project cache directory under XDG_CACHE_HOME (default ~/.cache), for
+    rebuildable/derived state (the index, collapsed ids). Keyed by a hash of the
+    absolute root so distinct herds never collide."""
     cache_home = os.environ.get("XDG_CACHE_HOME") or str(Path.home() / ".cache")
-    return Path(cache_home) / "yaks" / slug
+    return Path(cache_home) / "yaks" / _project_slug(root)
+
+
+def config_dir(root: Path) -> Path:
+    """Per-project config directory under XDG_CONFIG_HOME (default ~/.config),
+    for DURABLE user intent (saved/pinned Views, working-set pins) that must
+    survive a cache wipe. Distinct from cache_dir on purpose."""
+    config_home = os.environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config")
+    return Path(config_home) / "yaks" / _project_slug(root)
 
 
 # Process-lifetime index singletons, keyed by resolved root. One stat-validated

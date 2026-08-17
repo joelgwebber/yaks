@@ -23,8 +23,10 @@ SORT_FIELDS = ("updated", "created", "priority", "title", "id")
 @dataclass
 class View:
     name: str                  # tab-strip label (may include an emoji)
+    key: str = ""              # stable id for persistence (e.g. status:hairy)
     status: str | None = None  # status Views scope to one status dir
     builtin: bool = False      # built-in Views can't be deleted, only reordered
+    pinned: bool = True        # pinned Views appear on the tab bar (yak-6b51)
     # The View's saved filter. Activating a View loads this into the single
     # live filter (yak-1b89); status Views carry a spec that scopes to their
     # status, so status is just another (removable) filter axis at runtime.
@@ -59,7 +61,7 @@ def builtin_status_views() -> list[View]:
     """The three always-present, un-deletable, first-in-order status Views.
     Each carries a spec scoping to its status, so activating it loads that
     status into the live filter."""
-    return [View(name=name, status=status, builtin=True,
+    return [View(name=name, key=f"status:{status}", status=status, builtin=True,
                  spec=FilterSpec(statuses=frozenset({status})))
             for name, status in _STATUS_VIEWS]
 
@@ -74,7 +76,7 @@ def recent_view() -> View:
     first, flat, capped. Derived purely from the `updated` field — navigating
     TO a yak does not bump `updated`, so the list does not churn under you.
     Pinned by default, so a new user meets the View affordance on day one."""
-    return View(name="\U0001f552 Recent", status=None, builtin=True,
+    return View(name="\U0001f552 Recent", key="recent", status=None, builtin=True,
                 spec=FilterSpec(), sort_by="updated", sort_dir="desc",
                 limit=RECENT_LIMIT)
 

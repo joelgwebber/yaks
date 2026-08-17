@@ -1,0 +1,128 @@
+"""Persistent View list: reconcile / load / save + list mutations (yak-6b51).
+
+The store is an overlay on the code-defined built-ins; these pin down that it
+round-trips, self-heals from missing/corrupt/old files, always keeps the
+built-ins, and restores custom Views.
+"""
+
+from __future__ import annotations
+
+from dataclasses import replace
+
+from yaklib.filter import FilterSpec
+from yaklib.model import config_dir
+from yaktui.view import View, default_views
+from yaktui.views_store import (
+    can_unpin,
+    load_views,
+    move,
+    reconcile,
+    save_views,
+    views_path,
+)
+
+
+def test_save_load_roundtrip_preserves_order_and_pins(tmp_path):
+    root = tmp_path / ".yaks"
+    root.mkdir()
+    views = default_views()
+    # Reorder (Recent first) and unpin Shorn.
+    views = [views[3], views[0], views[1], views[2]]
+    views[3] = replace(views[3], pinned=False)  # unpin Shorn
+    save_views(root, views)
+
+    loaded = load_views(root)
+    assert [v.key for v in loaded] == ["recent", "status:hairy", "status:shaving", "status:shorn"]
+    assert loaded[0].key == "recent" and loaded[0].pinned
+    assert loaded[3].key == "status:shorn" and not loaded[3].pinned
+    # Structural bits still come from code (not overlaid).
+    assert loaded[0].is_flat and loaded[0].sort_by == "updated"
+
+
+def test_rename_of_builtin_persists():
+    stored = [{"key": "status:hairy", "name": "🦬 Todo", "pinned": True}]
+    out = reconcile(stored, default_views())
+    hairy = next(v for v in out if v.key == "status:hairy")
+    assert hairy.name == "🦬 Todo"
+    assert hairy.status == "hairy"  # structure intact
+
+
+def test_missing_file_falls_back_to_defaults(tmp_path):
+    root = tmp_path / ".yaks"
+    root.mkdir()
+    assert not views_path(root).exists()
+    assert [v.key for v in load_views(root)] == [v.key for v in default_views()]
+
+
+def test_corrupt_file_falls_back_to_defaults(tmp_path):
+    root = tmp_path / ".yaks"
+    root.mkdir()
+    p = views_path(root)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text("}{ not json")
+    assert [v.key for v in load_views(root)] == [v.key for v in default_views()]
+
+
+def test_new_builtins_are_appended_even_if_overlay_predates_them():
+    # Overlay only knows the three status views; Recent (newer) must still show.
+    stored = [{"key": f"status:{s}", "pinned": True}
+              for s in ("hairy", "shaving", "shorn")]
+    out = reconcile(stored, default_views())
+    assert [v.key for v in out][-1] == "recent"  # appended
+    assert len(out) == 4
+
+
+def test_custom_view_roundtrips(tmp_path):
+    root = tmp_path / ".yaks"
+    root.mkdir()
+    custom = View(name="Auth bugs", key="view:auth", builtin=False, pinned=True,
+                  spec=FilterSpec(labels=("auth",), types=frozenset({"bug"})),
+                  sort_by="priority", sort_dir="asc", limit=None)
+    save_views(root, [*default_views(), custom])
+
+    loaded = load_views(root)
+    got = next(v for v in loaded if v.key == "view:auth")
+    assert got.name == "Auth bugs" and not got.builtin
+    assert got.spec.labels == ("auth",) and got.spec.types == frozenset({"bug"})
+    assert got.sort_by == "priority" and got.sort_dir == "asc"
+
+
+def test_stale_builtin_key_is_dropped_not_resurrected():
+    # An overlay entry marked builtin whose key we no longer ship is discarded.
+    stored = [
+        {"key": "status:hairy", "pinned": True},
+        {"key": "status:ancient", "name": "gone", "builtin": True, "pinned": True},
+    ]
+    out = reconcile(stored, default_views())
+    keys = [v.key for v in out]
+    assert "status:ancient" not in keys
+    assert "status:hairy" in keys and "recent" in keys  # rest intact
+
+
+def test_config_dir_is_under_xdg_config(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "cfg"))
+    root = tmp_path / "proj" / ".yaks"
+    assert str(config_dir(root)).startswith(str(tmp_path / "cfg" / "yaks"))
+
+
+# -- pure list mutations -------------------------------------------------------
+
+def test_move_reorders_and_clamps():
+    vs = default_views()
+    keys = [v.key for v in vs]
+    assert move(vs, 0, +1) == 1
+    assert [v.key for v in vs] == [keys[1], keys[0], keys[2], keys[3]]
+    # Clamp at the top.
+    assert move(vs, 0, -1) == 0
+    assert [v.key for v in vs][0] == keys[1]
+
+
+def test_can_unpin_guards_last_pinned():
+    vs = default_views()
+    # All pinned initially -> any can be unpinned.
+    assert can_unpin(vs, 0)
+    # Unpin all but one; the last pinned cannot be unpinned.
+    for i in range(1, len(vs)):
+        vs[i] = replace(vs[i], pinned=False)
+    assert not can_unpin(vs, 0)
+    assert can_unpin(vs, 1)  # already unpinned -> trivially fine

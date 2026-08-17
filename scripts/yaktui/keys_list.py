@@ -61,6 +61,8 @@ def handle(app, key) -> bool:
         app._open_filter_drawer()
     elif key == ord("/"):
         app._open_inline_search()
+    elif key == ord("v"):
+        app._open_view_picker()
     elif key == 27:  # Escape reverts the live filter to the active view's spec
         app._revert_filter_to_view()
 

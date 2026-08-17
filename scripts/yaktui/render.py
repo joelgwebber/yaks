@@ -108,6 +108,12 @@ def view_counts(app):
     return counts
 
 
+def pinned_indices(app):
+    """Indices into app.views of the pinned Views — exactly the tabs shown on
+    the tab bar, in order. Unpinned Views live only in the picker (yak-6b51)."""
+    return [i for i, v in enumerate(app.views) if v.pinned]
+
+
 def view_tab_text(app, i, counts):
     """The exact tab-strip text for view *i*, so drawing, mouse hit-testing, and
     inline-search cursor placement all agree on width. The active view gets a
@@ -171,7 +177,7 @@ def draw(app):
 def draw_tabs(app, y, w):
     x = 0
     counts = view_counts(app)
-    for i in range(len(app.views)):
+    for i in pinned_indices(app):
         text = view_tab_text(app, i, counts)
         if i == app.view:
             attr = curses.color_pair(C_TAB_ACTIVE) | curses.A_BOLD
@@ -338,7 +344,7 @@ def _position_inline_search_cursor(app, y, w):
     ed = app._inline_search
     counts = view_counts(app)
     x = 0
-    for i in range(len(app.views)):
+    for i in pinned_indices(app):
         x += len(view_tab_text(app, i, counts)) + 1
     badge = ed.mode_badge()
     badge_w = len(badge) + 1 if badge else 0

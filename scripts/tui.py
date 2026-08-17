@@ -28,15 +28,18 @@ from yaktui import keys_detail as _keys_detail
 from yaktui import keys_list as _keys_list
 from yaktui import mutate as _mutate
 from yaktui import render as _render
+from yaktui import views_store as _views_store
 from yaktui import vim_edit as _vim_edit
 from yaktui.colors import (
+    C_SEARCH,
+    C_SELECTED,
     init_colors,
 )
 from yaktui.detail import build_detail_lines
+from yaktui.render import format_count, view_tab_text
+from yaktui.render import pinned_indices as _pinned_indices
 from yaktui.render import view_counts as _view_counts
-from yaktui.render import view_tab_text
 from yaktui.tree import apply_collapse, build_flat, build_tree
-from yaktui.view import default_views
 from yaktui.vim_edit import LineEditor
 
 
@@ -151,7 +154,9 @@ class TUI:
         # List state. Views generalize the old fixed status tabs (yak-4473):
         # self.view indexes an ordered self.views list; the three built-in
         # status Views are seeded here and, for now, are the only ones.
-        self.views = default_views()
+        # Load the user's persisted View list (order + pins + custom Views),
+        # reconciled with the built-ins; falls back to defaults (yak-6b51).
+        self.views = _views_store.load_views(root)
         self.view = 0
         self.cursor = 0
         self.scroll = 0
@@ -763,7 +768,7 @@ class TUI:
         if my == 0:
             x = 0
             counts = _view_counts(self)
-            for i in range(len(self.views)):
+            for i in _pinned_indices(self):
                 text = view_tab_text(self, i, counts)
                 if mx < x + len(text):
                     if i != self.view:
@@ -958,7 +963,83 @@ class TUI:
             self._activate_view(self.view)
 
     def _switch_tab(self, direction):
-        self._activate_view((self.view + direction) % len(self.views))
+        # Cycle through the pinned Views (the visible tabs) only.
+        pinned = _pinned_indices(self)
+        if not pinned:
+            return
+        cur = pinned.index(self.view) if self.view in pinned else 0
+        self._activate_view(pinned[(cur + direction) % len(pinned)])
+
+    def _open_view_picker(self):
+        """Modal View manager (key `v`): open/activate, pin/unpin, reorder,
+        rename, delete. All Views are listed (pinned and not); mutations persist
+        immediately. Built-in Views can be pinned/reordered/renamed but not
+        deleted."""
+        from dataclasses import replace as _replace
+
+        sel = self.view if 0 <= self.view < len(self.views) else 0
+        help_line = (" Views — Enter: open  p: pin/unpin  J/K: move  "
+                     "r: rename  d: delete  Esc: close ")
+        while True:
+            counts = _view_counts(self)
+            h, w = self.stdscr.getmaxyx()
+            self.stdscr.erase()
+            _dialogs.safe_addstr(self.stdscr, 0, 0, help_line[:w],
+                                 curses.color_pair(C_SEARCH) | curses.A_BOLD)
+            for idx, v in enumerate(self.views):
+                y = 2 + idx
+                if y >= h - 1:
+                    break
+                pin = "\U0001f4cc" if v.pinned else "  "
+                active = "\u25b6" if idx == self.view else " "
+                lock = "  \U0001f512" if v.builtin else ""
+                line = f" {active} {pin} {v.name}  ({format_count(counts[idx])}){lock}"
+                attr = (curses.color_pair(C_SELECTED) | curses.A_BOLD
+                        if idx == sel else 0)
+                _dialogs.safe_addstr(self.stdscr, y, 0, line[:w], attr)
+            self.stdscr.refresh()
+
+            ch = self.stdscr.getch()
+            if ch == -1:
+                continue
+            if ch in (27, ord("q")):
+                break
+            elif ch in (curses.KEY_DOWN, 14, ord("j")):
+                sel = min(len(self.views) - 1, sel + 1)
+            elif ch in (curses.KEY_UP, 16, ord("k")):
+                sel = max(0, sel - 1)
+            elif ch in (curses.KEY_ENTER, 10, 13):
+                self._activate_view(sel)
+                break
+            elif ch in (ord("p"), ord(" ")):
+                v = self.views[sel]
+                if v.pinned and not _views_store.can_unpin(self.views, sel):
+                    self.notification = "can't unpin the last tab"
+                else:
+                    self.views[sel] = _replace(v, pinned=not v.pinned)
+                    _views_store.save_views(self.root, self.views)
+            elif ch == ord("J"):
+                sel = _views_store.move(self.views, sel, +1)
+                _views_store.save_views(self.root, self.views)
+            elif ch == ord("K"):
+                sel = _views_store.move(self.views, sel, -1)
+                _views_store.save_views(self.root, self.views)
+            elif ch == ord("r"):
+                new = _dialogs.edit_prompt(self.stdscr, "Rename view: ",
+                                           self.views[sel].name, vim=self.vim_mode)
+                if new:
+                    self.views[sel] = _replace(self.views[sel], name=new)
+                    _views_store.save_views(self.root, self.views)
+            elif ch == ord("d"):
+                if self.views[sel].builtin:
+                    self.notification = "can't delete a built-in view"
+                else:
+                    del self.views[sel]
+                    _views_store.save_views(self.root, self.views)
+                    if self.view >= len(self.views):
+                        self.view = len(self.views) - 1
+                    sel = min(sel, len(self.views) - 1)
+        self.stdscr.erase()
 
     def _reset_list(self):
         self.cursor = 0
