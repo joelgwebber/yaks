@@ -576,8 +576,8 @@ def draw_help_bar(app, y, w):
         )
     else:
         keys = (
-            "Tab:tab  j/k:move  l:detail  Space:collapse  c/C:new  E:edit  X:del  "
-            f"S:state  D:dep  P/T/L:adjust  {filter_hint}  ?:help"
+            "Tab:view  j/k:move  l:detail  v:views  c/C:new  E:edit  X:del  "
+            f"S:state  D:dep  {filter_hint}  ?:help"
         )
     safe_addstr(app.stdscr, y, 0, " " * w, curses.color_pair(C_HELP))
     safe_addstr(app.stdscr, y, 0, keys[:w], curses.color_pair(C_HELP))
@@ -599,7 +599,8 @@ _HELP_SECTIONS = [
         [
             "f                     Open filter editor",
             "/                     Filter editor focused on search",
-            "Esc                   Clear all filters (when active)",
+            "Esc                   Revert filter to the active view",
+            "V                     Save current filter as a view",
             "n / N                 Next / prev detail match",
             "y                     Copy yak ID to clipboard",
         ],
@@ -619,8 +620,9 @@ _HELP_SECTIONS = [
     (
         "List pane",
         [
-            "Tab / Shift-Tab       Next / previous status tab",
-            "[ / ]                 Previous / next tab",
+            "Tab / Shift-Tab       Next / previous view (pinned tab)",
+            "[ / ]                 Previous / next view",
+            "v                     View picker (pin / reorder / rename)",
             "l / → / Enter         Show detail pane",
             "Space                 Collapse / expand subtree",
             "c / C                 New root / child task",

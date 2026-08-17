@@ -358,7 +358,7 @@ wheels = [
 
 [[package]]
 name = "yakherder"
-version = "0.1.92"
+version = "0.1.93"
 source = { editable = "." }
 dependencies = [
     { name = "prompt-toolkit" },

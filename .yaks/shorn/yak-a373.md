@@ -4,7 +4,7 @@ title: 'Saved views: pinnable, sortable filter presets'
 type: feature
 priority: 3
 created: '2026-08-12T16:28:50Z'
-updated: '2026-08-16T23:17:06Z'
+updated: '2026-08-17T01:50:47Z'
 labels:
 - ui
 parent: yak-4473
@@ -27,3 +27,13 @@ DESIGN (locked). Reframed from 'saved search lists' to Saved Views, built on the
 ---
 ▸ 2026-08-16T23:17:06Z
 Reorg (View-list arc): reparented under umbrella yak-4473; dependency re-pointed from the umbrella to the substrate tranches it actually needs — yak-1b89 (activate/edit/save flow) + yak-6b51 (picker management). RESOLVED the open storage sub-decision: user-authored view defs are DURABLE intent, so they live under $XDG_CONFIG_HOME/yaks/<slug>/ (default ~/.config/yaks), alongside working-set pins (yak-597c) and view pins/order (yak-6b51) — NOT the rebuildable ~/.cache (index, collapsed_ids). This is the durable-vs-rebuildable line we drew for the index. Everything else in the design below stands.
+
+---
+▸ 2026-08-17T01:50:47Z
+Done. Saved Views — the producer that closes the custom-view loop from T2.
+
+- view.custom_view(name, spec, sort_by, sort_dir, limit): builds a non-builtin, pinned View with a generated stable key (view:<8hex>).
+- tui._save_current_filter_as_view (key V, pairs with v=picker): prompts a name, snapshots the live filter, inherits the ACTIVE view's sort/layout (so saving while in a flat/sorted view yields a flat view; in a status/tree view yields a tree), appends + persists via views_store.save_views, then pins & activates it. The T2 picker already renames/deletes/reorders it; persistence + reconcile already round-trip it.
+- Help updated: documented v (picker) and V (save view), fixed the now-stale 'Esc clears filters' line (T3 made Esc revert to the active view), and refreshed the tab wording (view, not status tab) + status-bar hint.
+
+Storage decision was resolved in T2 (~/.config). Tests: test_views_store.test_custom_view_factory_and_roundtrip (unique keys, is_flat, save/load round-trip). Full suite 161 pass; view.py/tests ruff-clean; only the structural +1 E402 for the new import. 'V' is curses UI -> wants a live smoke (filter with f or /, press V, name it; it appears as a pinned tab; the picker can rename/delete it; restart confirms it persisted).

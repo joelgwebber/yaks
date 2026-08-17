@@ -10,6 +10,7 @@ pinnable, and persistent.
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 
 from yaklib.filter import FilterSpec
@@ -85,3 +86,13 @@ def default_views() -> list[View]:
     """The Views a fresh TUI starts with: the three status Views plus Recent.
     (Once yak-6b51 lands, user-defined/pinned Views merge in from storage.)"""
     return [*builtin_status_views(), recent_view()]
+
+
+def custom_view(name: str, spec: FilterSpec, sort_by: str | None = None,
+                sort_dir: str = "desc", limit: int | None = None) -> View:
+    """A user-created (saved) View with a generated stable key (yak-a373).
+    Pinned by default so it lands on the tab bar; not built-in, so the picker
+    can rename or delete it."""
+    return View(name=name, key=f"view:{uuid.uuid4().hex[:8]}", builtin=False,
+                pinned=True, spec=spec, sort_by=sort_by, sort_dir=sort_dir,
+                limit=limit)

@@ -11,7 +11,7 @@ from dataclasses import replace
 
 from yaklib.filter import FilterSpec
 from yaklib.model import config_dir
-from yaktui.view import View, default_views
+from yaktui.view import View, custom_view, default_views
 from yaktui.views_store import (
     can_unpin,
     load_views,
@@ -85,6 +85,21 @@ def test_custom_view_roundtrips(tmp_path):
     assert got.name == "Auth bugs" and not got.builtin
     assert got.spec.labels == ("auth",) and got.spec.types == frozenset({"bug"})
     assert got.sort_by == "priority" and got.sort_dir == "asc"
+
+
+def test_custom_view_factory_and_roundtrip(tmp_path):
+    root = tmp_path / ".yaks"
+    root.mkdir()
+    v1 = custom_view("My filter", FilterSpec(search="foo"),
+                     sort_by="updated", sort_dir="desc", limit=20)
+    v2 = custom_view("Other", FilterSpec())
+    assert not v1.builtin and v1.pinned and v1.key.startswith("view:")
+    assert v1.key != v2.key  # generated keys are unique
+    assert v1.is_flat and v1.sort_by == "updated"
+
+    save_views(root, [*default_views(), v1])
+    got = next(v for v in load_views(root) if v.key == v1.key)
+    assert got.name == "My filter" and got.spec.search == "foo" and got.limit == 20
 
 
 def test_stale_builtin_key_is_dropped_not_resurrected():

@@ -40,6 +40,7 @@ from yaktui.render import format_count, view_tab_text
 from yaktui.render import pinned_indices as _pinned_indices
 from yaktui.render import view_counts as _view_counts
 from yaktui.tree import apply_collapse, build_flat, build_tree
+from yaktui.view import custom_view
 from yaktui.vim_edit import LineEditor
 
 
@@ -969,6 +970,24 @@ class TUI:
             return
         cur = pinned.index(self.view) if self.view in pinned else 0
         self._activate_view(pinned[(cur + direction) % len(pinned)])
+
+    def _save_current_filter_as_view(self):
+        """Save the live filter as a new named View (yak-a373). The new View
+        inherits the active view's sort/layout, so saving while in a flat
+        (sorted) view yields a flat view. Persists, pins, and activates it."""
+        from dataclasses import replace as _replace
+
+        name = _dialogs.edit_prompt(self.stdscr, "Save view as: ", "", vim=self.vim_mode)
+        if not name:
+            return
+        active = self.views[self.view]
+        view = custom_view(name, _replace(self.filter_spec),
+                           sort_by=active.sort_by, sort_dir=active.sort_dir,
+                           limit=active.limit)
+        self.views.append(view)
+        _views_store.save_views(self.root, self.views)
+        self._activate_view(len(self.views) - 1)
+        self.notification = f"saved view: {name}"
 
     def _open_view_picker(self):
         """Modal View manager (key `v`): open/activate, pin/unpin, reorder,
