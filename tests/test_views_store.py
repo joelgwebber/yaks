@@ -77,6 +77,28 @@ def test_save_nulls_unrenamed_builtin_names_but_keeps_renames(tmp_path):
     assert names["status:hairy"] == "Custom"  # explicit rename preserved
 
 
+def test_v1_file_ignores_baked_builtin_names(tmp_path):
+    # Reproduces an existing herd: a v1 views.json with OLD default labels baked
+    # into built-in names. Current code labels must win (yak-6c15).
+    import json
+    root = tmp_path / ".yaks"
+    root.mkdir()
+    p = views_path(root)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({"v": 1, "views": [
+        {"key": "working-set", "name": "\u2b50 Working set", "status": None,
+         "builtin": True, "pinned": True, "spec": {}},
+        {"key": "status:shaving", "name": "\u2702\ufe0f  Shaving",
+         "status": "shaving", "builtin": True, "pinned": True,
+         "spec": {"statuses": ["shaving"]}},
+    ]}))
+    loaded = {v.key: v for v in load_views(root)}
+    assert loaded["working-set"].name == "\u2b50 Starred"       # not 'Working set'
+    assert loaded["status:shaving"].name == "\U0001fa92 Shaving"  # razor, not scissors
+    # File order is still honored; missing built-ins are appended.
+    assert [v.key for v in load_views(root)][:2] == ["working-set", "status:shaving"]
+
+
 def test_missing_file_falls_back_to_defaults(tmp_path):
     root = tmp_path / ".yaks"
     root.mkdir()

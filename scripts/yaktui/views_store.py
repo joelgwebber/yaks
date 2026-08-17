@@ -27,7 +27,11 @@ from yaklib.model import atomic_write, config_dir
 
 from yaktui.view import View, default_views
 
-_VERSION = 1
+# v1 stored built-in names as resolved strings (so an old default label got
+# baked in); v2 stores a null name for un-renamed built-ins. On load we treat
+# v1 built-in names as un-renamed (ignore them) so code-side label changes
+# reach existing herds; the next save rewrites as v2.
+_VERSION = 2
 
 
 def views_path(root: Path) -> Path:
@@ -93,7 +97,8 @@ def _view_from_dict(d: dict) -> View:
 
 # -- reconcile / load / save ---------------------------------------------------
 
-def reconcile(entries: list[dict], defaults: list[View]) -> list[View]:
+def reconcile(entries: list[dict], defaults: list[View],
+              ignore_builtin_names: bool = False) -> list[View]:
     """Merge a stored overlay with the code-defined default Views.
 
     Order follows the overlay; built-in structure always comes from code (only
@@ -117,7 +122,9 @@ def reconcile(entries: list[dict], defaults: list[View]) -> list[View]:
             # Name follows the code default unless the user actually renamed it
             # (un-renamed built-ins store a null name), so code-side label/emoji
             # changes reach already-customized herds, not just fresh installs.
-            stored_name = e.get("name")
+            # For legacy v1 files the stored name is an old default baked in, so
+            # ignore it entirely.
+            stored_name = None if ignore_builtin_names else e.get("name")
             out.append(replace(
                 base,
                 name=base.name if stored_name is None else stored_name,
@@ -140,9 +147,13 @@ def load_views(root: Path) -> list[View]:
     except (OSError, json.JSONDecodeError, ValueError):
         data = None
     defaults = default_views()
-    if (isinstance(data, dict) and data.get("v") == _VERSION
-            and isinstance(data.get("views"), list)):
-        return reconcile(data["views"], defaults)
+    if isinstance(data, dict) and isinstance(data.get("views"), list):
+        version = data.get("v")
+        if version in (1, 2):
+            # v1 baked old default labels into built-in names; treat them as
+            # un-renamed so current code labels win.
+            return reconcile(data["views"], defaults,
+                             ignore_builtin_names=(version == 1))
     return defaults
 
 
