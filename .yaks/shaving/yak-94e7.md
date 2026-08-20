@@ -4,7 +4,7 @@ title: 'Phase 0 spike: bootstrap yaks-rs, port read-only commands over existing 
 type: task
 priority: 2
 created: '2026-08-20T02:18:28Z'
-updated: '2026-08-20T02:54:24Z'
+updated: '2026-08-20T03:01:59Z'
 labels:
 - rust
 ---
@@ -24,3 +24,12 @@ Exit: go/no-go for the full port (CLI parity -> ratatui + edtui TUI -> demo via 
 ---
 ▸ 2026-08-20T02:54:24Z
 Starting Phase 0. Bootstrapping a sibling repo ../yaks-rs (separate repo per yak-0446 decision) with a Cargo workspace + placeholder CLI (clap skeleton, show/list/next stubs) that will read the same .yaks/ files. Distribution scaffolding (cargo-dist + npm installer) and the startup benchmark come next.
+
+---
+▸ 2026-08-20T03:01:59Z
+Placeholder project bootstrapped in ../yaks-rs (git init + initial commit b39f2ed). Landed:
+- Cargo project (edition 2024): clap + anyhow; release profile (thin LTO, strip).
+- src/model.rs (Status, Task); src/store.rs (.yaks discovery + hand-rolled frontmatter fast-path parser); src/main.rs (clap CLI: list/show/next).
+- Reads the SAME .yaks/ files as the Python tool. list default matches Python (non-dead); id-set parity confirmed (213 == 213, empty symmetric diff); show/next verified against the live herd.
+- MEASURED cold start on this herd: rust ~4.7ms median vs python ~48.6ms median (~10x). Confirms the core hypothesis (yak-0446 predicted ~10-20x; ~10x realized here, and Rust build is unoptimized for startup so far).
+Remaining for Phase 0 exit: wire cargo-dist + npm installer skeleton; add assert_cmd smoke tests + an in-repo hyperfine bench; then go/no-go for Phase 1 (full CLI parity with --json byte-parity).
