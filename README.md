@@ -1,3 +1,8 @@
+> [!IMPORTANT]
+> **This repository is deprecated and archived.** Yaks has been rewritten in Rust and now lives at **[rocketsurgery-games/yaks](https://github.com/rocketsurgery-games/yaks)**. Please head there for the current implementation, installation instructions, and ongoing development. Everything below is retained for historical reference only and is no longer maintained.
+
+---
+
 # Yaks
 
 [![skills.sh](https://skills.sh/b/joelgwebber/yaks)](https://skills.sh/joelgwebber/yaks)
