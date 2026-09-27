@@ -1,14 +1,15 @@
 ---
 source: tests/cli.rs
+assertion_line: 64
 expression: out
 ---
 === frame 0 · 72x12 · focus=list · view=🦬 Hairy · cursor=0 · rows=4 · sel=fix-0001 · blocked=[fix-0004] · collapsed=0 · filter=(all) · overlay=none ===
- 🦬  Hairy (3)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (5)   ⭐  Starr
+ 🦬 Hairy (3)   🪒 Shaving (1)   🐑 Shorn (1)   🕒 Recent (5)   ⭐ Starr
 
- fix-0001   p2 task     🦬  Alpha task                             [core]
- fix-0003   p3 bug      🐑  Gamma done
-*  fix-0004 p2 feature  🦬  Delta child
- fix-0005   p3 task     🦬  Epsilon ready
+ fix-0001   p2 task     🦬 Alpha task                             [core]
+ fix-0003   p3 bug      🐑 Gamma done
+*  fix-0004 p2 feature  🦬 Delta child
+ fix-0005   p3 task     🦬 Epsilon ready
 
 
 
@@ -17,12 +18,12 @@ expression: out
 Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del
 === end ===
 === frame 1 · 72x12 · focus=list · view=🦬 Hairy · cursor=1 · rows=4 · sel=fix-0003 · blocked=[fix-0004] · collapsed=0 · filter=(all) · overlay=none ===
- 🦬  Hairy (3)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (5)   ⭐  Starr
+ 🦬 Hairy (3)   🪒 Shaving (1)   🐑 Shorn (1)   🕒 Recent (5)   ⭐ Starr
 
- fix-0001   p2 task     🦬  Alpha task                             [core]
- fix-0003   p3 bug      🐑  Gamma done
-*  fix-0004 p2 feature  🦬  Delta child
- fix-0005   p3 task     🦬  Epsilon ready
+ fix-0001   p2 task     🦬 Alpha task                             [core]
+ fix-0003   p3 bug      🐑 Gamma done
+*  fix-0004 p2 feature  🦬 Delta child
+ fix-0005   p3 task     🦬 Epsilon ready
 
 
 

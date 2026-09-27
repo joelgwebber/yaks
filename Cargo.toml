@@ -1,6 +1,4 @@
 [workspace]
-members = ["crates/toque"]
-# The root `yaks` package is implicitly a workspace member alongside crates/*.
 # `.edtui` is a local, gitignored working clone of the forked edtui repo (for
 # developing upstream PRs); it is its own repo/workspace, not a yaks member.
 exclude = [".edtui"]
@@ -28,7 +26,9 @@ ratatui = "0.30"
 # more as we add it). CI fetches this from GitHub; the local ./.edtui checkout is
 # just where those branches are authored. Cargo.lock pins the exact commit.
 edtui = { git = "https://github.com/rocketsurgery-games/edtui", branch = "yaks-integration", default-features = false, features = ["arboard"] }
-toque = { path = "crates/toque" }
+# Headless ratatui driver, extracted from yaks into its own repo. Not on
+# crates.io yet; Cargo.lock pins the exact commit.
+toque = { git = "https://github.com/rocketsurgery-games/toque", branch = "main" }
 notify = "6"
 arboard = "3"
 png = "0.17"

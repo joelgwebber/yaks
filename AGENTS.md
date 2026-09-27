@@ -35,8 +35,8 @@ task's status is implicit in which subdirectory it lives in.
 
 ## Layout
 
-A Cargo workspace: the root is the `yaks` binary package *and* the workspace
-root; reusable pieces live under `crates/`.
+A single Cargo package (the `yaks` binary). The root keeps a `[workspace]`
+table only to exclude the local `.edtui` clone.
 
 - `src/model.rs` — `Status`, `Task`.
 - `src/store.rs` — `.yaks/` discovery + frontmatter parsing (hand-rolled fast path).
@@ -56,18 +56,18 @@ root; reusable pieces live under `crates/`.
   whole-frame integration tests + their insta snapshots are central in
   `src/tui/tests.rs` + `src/tui/snapshots/`; shared test helpers live in
   `src/tui/test_support.rs`.
-- `crates/toque/` — publishable library: drive any ratatui app headlessly
-  (inject keys, capture LLM-/test-legible plain-text snapshots, and render frames
-  to SVG for visual inspection). yaks is its first consumer. See
-  `crates/toque/README.md`; `docs/research/tui-style-eval.md` archives the
-  now-retired text style-encoding research.
+- `toque` — library to drive any ratatui app headlessly (inject keys, capture
+  LLM-/test-legible plain-text snapshots, and render frames to SVG for visual
+  inspection). Extracted from yaks; now lives at
+  <https://github.com/rocketsurgery-games/toque> and is a git dependency (fix it
+  there, then `cargo update -p toque`). `docs/research/tui-style-eval.md`
+  archives the now-retired text style-encoding research.
 
 ## Build
 
 ```sh
 cargo build --release
-cargo test --workspace   # --workspace is required: `cargo test` alone only
-                         # tests the root `yaks` package, not crates/toque
+cargo test
 ```
 
 ## Verifying changes

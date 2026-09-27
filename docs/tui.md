@@ -153,7 +153,7 @@ as a one-key picker.
 
 # Screenshots
 
-These are generated headlessly: the [`toque`](../crates/toque/README.md) crate
+These are generated headlessly: the [`toque`](https://github.com/rocketsurgery-games/toque) crate
 drives the TUI into an in-memory ratatui buffer and renders it to a self-contained
 color SVG (`toque::render_to_svg`). They are deterministic and regenerate with the
 UI (no live-terminal capture), via:
