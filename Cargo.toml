@@ -9,7 +9,7 @@ version = "0.0.11"
 edition = "2024"
 description = "Filesystem-native task tracker: a fast single-binary CLI + TUI over markdown task files"
 license = "Apache-2.0"
-repository = "https://github.com/rocketsurgery-games/yaks"
+repository = "https://github.com/joelgwebber/yaks"
 default-run = "yaks"
 
 [[bin]]
@@ -25,10 +25,10 @@ ratatui = "0.30"
 # Our fork, consuming the `yaks-integration` branch (r / counts / W-B-E, plus
 # more as we add it). CI fetches this from GitHub; the local ./.edtui checkout is
 # just where those branches are authored. Cargo.lock pins the exact commit.
-edtui = { git = "https://github.com/rocketsurgery-games/edtui", branch = "yaks-integration", default-features = false, features = ["arboard"] }
+edtui = { git = "https://github.com/joelgwebber/edtui", branch = "yaks-integration", default-features = false, features = ["arboard"] }
 # Headless ratatui driver, extracted from yaks into its own repo. Not on
 # crates.io yet; Cargo.lock pins the exact commit.
-toque = { git = "https://github.com/rocketsurgery-games/toque", branch = "main" }
+toque = { git = "https://github.com/joelgwebber/toque", branch = "main" }
 notify = "6"
 arboard = "3"
 png = "0.17"

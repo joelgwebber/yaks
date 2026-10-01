@@ -4,7 +4,7 @@
 // Expects binaries under artifacts/<rust-target-triple>/yaks[.exe] and emits
 // dist/npm/yaks/ (the launcher) + dist/npm/yaks-<npm-target>/ (one per
 // platform, each carrying its binary). Dist dir names are flat so the publish
-// glob works; the package names inside are scoped (@rocketsurgery/yaks[-*]).
+// glob works; the package names inside are scoped (@j15r/yaks[-*]).
 // Publish each dist/npm/* with `npm publish`. Usage: node scripts/build-npm.mjs <version>
 import { existsSync, mkdirSync, copyFileSync, readFileSync, writeFileSync, chmodSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -35,7 +35,7 @@ const template = readFileSync(join(root, "npm", "platform-template", "package.js
 
 for (const [triple, m] of Object.entries(MAP)) {
   const src = join(root, "artifacts", triple, m.exe);
-  const pkgName = `@rocketsurgery/yaks-${m.t}`;
+  const pkgName = `@j15r/yaks-${m.t}`;
   const dirName = `yaks-${m.t}`; // flat dist dir; scoped name lives in package.json
   optionalDeps[pkgName] = version;
   if (!existsSync(src)) {
@@ -64,5 +64,5 @@ const ldir = join(out, "yaks");
 mkdirSync(join(ldir, "bin"), { recursive: true });
 writeFileSync(join(ldir, "package.json"), JSON.stringify(launcher, null, 2) + "\n");
 copyFileSync(join(root, "npm", "yaks", "bin", "yaks.js"), join(ldir, "bin", "yaks.js"));
-console.log(`built launcher @rocketsurgery/yaks@${version}`);
+console.log(`built launcher @j15r/yaks@${version}`);
 console.log(`\nPublish: for d in dist/npm/*/; do (cd "$d" && npm publish --access public); done`);

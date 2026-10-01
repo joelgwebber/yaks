@@ -1,6 +1,6 @@
 ---
 id: yaks-c913
-title: 'Release CI: GitHub Actions workflow to build 5-platform binaries and publish @rocketsurgery/yaks to npm'
+title: 'Release CI: GitHub Actions workflow to build 5-platform binaries and publish @j15r/yaks to npm'
 type: feature
 priority: 1
 created: '2026-08-23T14:17:24Z'

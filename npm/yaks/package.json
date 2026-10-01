@@ -1,16 +1,16 @@
 {
-  "name": "@rocketsurgery/yaks",
+  "name": "@j15r/yaks",
   "version": "0.0.11",
   "description": "Filesystem-native task tracker (Rust) — npm launcher for the `yaks` binary",
   "bin": { "yaks": "bin/yaks.js" },
   "files": ["bin/"],
   "license": "Apache-2.0",
-  "repository": { "type": "git", "url": "git+https://github.com/rocketsurgery-games/yaks.git" },
+  "repository": { "type": "git", "url": "git+https://github.com/joelgwebber/yaks.git" },
   "optionalDependencies": {
-    "@rocketsurgery/yaks-darwin-arm64": "0.0.1",
-    "@rocketsurgery/yaks-darwin-x64": "0.0.1",
-    "@rocketsurgery/yaks-linux-x64": "0.0.1",
-    "@rocketsurgery/yaks-linux-arm64": "0.0.1",
-    "@rocketsurgery/yaks-win32-x64": "0.0.1"
+    "@j15r/yaks-darwin-arm64": "0.0.1",
+    "@j15r/yaks-darwin-x64": "0.0.1",
+    "@j15r/yaks-linux-x64": "0.0.1",
+    "@j15r/yaks-linux-arm64": "0.0.1",
+    "@j15r/yaks-win32-x64": "0.0.1"
   }
 }

@@ -542,7 +542,7 @@ dependencies = [
 [[package]]
 name = "edtui"
 version = "0.11.7"
-source = "git+https://github.com/rocketsurgery-games/edtui?branch=yaks-integration#9fbee79dc580f7fdb2a34c2fec64227358ea1303"
+source = "git+https://github.com/joelgwebber/edtui?branch=yaks-integration#9fbee79dc580f7fdb2a34c2fec64227358ea1303"
 dependencies = [
  "arboard",
  "crossterm",
@@ -2085,7 +2085,7 @@ checksum = "8b36ee98fd31ec7426d599183e8fe26932a8dc1fb76ddb6214d05493377d34ca"
 [[package]]
 name = "toque"
 version = "0.1.0"
-source = "git+https://github.com/rocketsurgery-games/toque?branch=main#792624f038622036f7feb3cde0ffef75bc878224"
+source = "git+https://github.com/joelgwebber/toque?branch=main#792624f038622036f7feb3cde0ffef75bc878224"
 dependencies = [
  "ratatui",
  "unicode-width",

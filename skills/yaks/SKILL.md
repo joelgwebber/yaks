@@ -11,11 +11,11 @@ This project tracks work with Yaks. Tasks are markdown files with YAML frontmatt
 
 Yaks is a single self-contained binary — a plain command-line tool. Run it directly from your shell; there are **no slash commands**. Use the first invocation that works in your environment:
 
-1. **`yaks <cmd>`** — if `yaks` is on `PATH` (installed via `npm i -g @rocketsurgery/yaks`, or a cargo-dist shell/Homebrew installer). Prefer this.
-2. **`npx @rocketsurgery/yaks <cmd>`** — zero-install, if Node is available.
+1. **`yaks <cmd>`** — if `yaks` is on `PATH` (installed via `npm i -g @j15r/yaks`, or a cargo-dist shell/Homebrew installer). Prefer this.
+2. **`npx @j15r/yaks <cmd>`** — zero-install, if Node is available.
 3. **`./target/release/yaks <cmd>`** — when working inside a checkout you've built with `cargo build --release`.
 
-The npm package is `@rocketsurgery/yaks` (the unscoped `yaks` was taken, so it's published under the `rocketsurgery` org); the command it installs is `yaks`. Every example below is written as `yaks <cmd>` — substitute whichever invocation works for you. The CLI is stateless: each call is independent, there's nothing to keep running.
+The npm package is `@j15r/yaks` (the unscoped `yaks` was taken, so it's published under the `j15r` scope); the command it installs is `yaks`. Every example below is written as `yaks <cmd>` — substitute whichever invocation works for you. The CLI is stateless: each call is independent, there's nothing to keep running.
 
 **Starting a fresh farm.** If there's no `.yaks/` directory yet, create one with `yaks init` (run in the repo root). It scaffolds `.yaks/{hairy,shaving,shorn,dead}/` plus a `config.yaml`; tune the defaults with `--herd`, `--type`, and `--priority`. It refuses to clobber an existing farm, so it's safe to run.
 

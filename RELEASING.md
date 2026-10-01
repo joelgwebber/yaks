@@ -4,11 +4,11 @@
 
 ## npm (primary; esbuild/Biome-style)
 
-A thin `@rocketsurgery/yaks` launcher package declares one prebuilt binary per
-platform as `optionalDependencies` (each `@rocketsurgery/yaks-<os>-<arch>`); npm
+A thin `@j15r/yaks` launcher package declares one prebuilt binary per
+platform as `optionalDependencies` (each `@j15r/yaks-<os>-<arch>`); npm
 installs only the one matching the host's os/cpu, and `bin/yaks.js` execs it.
-Users get it via `npm i -g @rocketsurgery/yaks` (command stays `yaks`) or
-`npx @rocketsurgery/yaks`.
+Users get it via `npm i -g @j15r/yaks` (command stays `yaks`) or
+`npx @j15r/yaks`.
 
 ### Automated (primary): the `release` workflow
 
@@ -38,13 +38,13 @@ runners, and each package's `repository.url` matching the GitHub repo.
 Trusted publishing is configured **per package** on npmjs.com
 (Package -> Settings -> Trusted Publisher -> GitHub Actions):
 
-- Organization or user: `rocketsurgery-games`
+- Organization or user: `joelgwebber`
 - Repository: `yaks`
 - Workflow filename: `release.yml` (filename only, with the extension)
 - Environment: leave blank
 
-We publish six packages, so this is done six times — for `@rocketsurgery/yaks`
-and each `@rocketsurgery/yaks-<os>-<arch>`.
+We publish six packages, so this is done six times — for `@j15r/yaks`
+and each `@j15r/yaks-<os>-<arch>`.
 
 ### First release is a bootstrap (one-time token)
 
@@ -52,7 +52,7 @@ Trusted publishing can only be configured on a package that **already exists**,
 and only CI can build all five platform binaries — so the very first publish
 can't use OIDC. Bootstrap it once:
 
-1. Create a granular npm token (publish rights to the `@rocketsurgery` scope;
+1. Create a granular npm token (publish rights to the `@j15r` scope;
    "bypass 2FA" is required for CI use). Add it as the **`NPM_TOKEN`** repo
    secret (Settings -> Secrets and variables -> Actions).
 2. Tag `vX.Y.Z` and push it. OIDC isn't configured yet, so npm falls back to the

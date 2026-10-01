@@ -22,15 +22,15 @@ which matters because the workflow is lots of small command invocations.
 **npm** (prebuilt binary for your platform; the command is `yaks`):
 
 ```sh
-npm i -g @rocketsurgery/yaks     # then: yaks --help
+npm i -g @j15r/yaks     # then: yaks --help
 # or zero-install:
-npx @rocketsurgery/yaks list
+npx @j15r/yaks list
 ```
 
 **From source** (needs a Rust toolchain):
 
 ```sh
-git clone https://github.com/rocketsurgery-games/yaks
+git clone https://github.com/joelgwebber/yaks
 cd yaks
 cargo build --release
 ./target/release/yaks --help
@@ -166,7 +166,7 @@ exception**: it reads `~/.claude/skills` and does *not* scan `.agents`, so
 install there explicitly with `--dir`.
 
 It activates when a `.yaks/` directory is present, and shells out to the `yaks`
-binary (or `npx @rocketsurgery/yaks`), so make sure one of those is on the
+binary (or `npx @j15r/yaks`), so make sure one of those is on the
 agent's `PATH`.
 
 Prefer a universal, multi-agent skills manager? The skills are plain
@@ -175,7 +175,7 @@ installs them too (note it uses `.agent/` — singular — for its `--universal`
 mode, which is its own convention rather than the `.agents/` one above):
 
 ```sh
-npx openskills install rocketsurgery-games/yaks
+npx openskills install joelgwebber/yaks
 ```
 
 ## Public and private farms

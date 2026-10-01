@@ -59,7 +59,7 @@ table only to exclude the local `.edtui` clone.
 - `toque` — library to drive any ratatui app headlessly (inject keys, capture
   LLM-/test-legible plain-text snapshots, and render frames to SVG for visual
   inspection). Extracted from yaks; now lives at
-  <https://github.com/rocketsurgery-games/toque> and is a git dependency (fix it
+  <https://github.com/joelgwebber/toque> and is a git dependency (fix it
   there, then `cargo update -p toque`). `docs/research/tui-style-eval.md`
   archives the now-retired text style-encoding research.
 
@@ -127,7 +127,7 @@ description matches the shipped behavior.
 ## Releasing
 
 `.github/workflows/release.yml` builds the 5-platform binaries and publishes the
-`@rocketsurgery/yaks` npm packages on a `vX.Y.Z` tag (dry-run on manual
+`@j15r/yaks` npm packages on a `vX.Y.Z` tag (dry-run on manual
 dispatch). See `RELEASING.md`.
 
 ## Task tracking

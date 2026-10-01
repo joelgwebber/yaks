@@ -1,6 +1,6 @@
 name: release
 
-# Build the 5-platform `yaks` binaries and publish the @rocketsurgery/yaks npm
+# Build the 5-platform `yaks` binaries and publish the @j15r/yaks npm
 # packages.
 #
 #   - push a tag `vX.Y.Z`  -> real publish to npm (needs the NPM_TOKEN secret)

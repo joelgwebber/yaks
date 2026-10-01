@@ -9,7 +9,7 @@ labels:
 - dist
 ---
 
-npm publish --dry-run warns it auto-corrects repository from a string to an object. Use the object form {type:git, url:git+https://github.com/rocketsurgery-games/yaks.git} in npm/yaks/package.json and npm/platform-template/package.json so the release is warning-clean. Cargo.toml keeps its string form (correct for Cargo).
+npm publish --dry-run warns it auto-corrects repository from a string to an object. Use the object form {type:git, url:git+https://github.com/joelgwebber/yaks.git} in npm/yaks/package.json and npm/platform-template/package.json so the release is warning-clean. Cargo.toml keeps its string form (correct for Cargo).
 
 ---
 ▸ 2026-08-23T05:00:29Z
