@@ -1,0 +1,139 @@
+=== frame 0 · 96x32 · focus=list · view=🦬 Hairy · cursor=0 · rows=3 · sel=yaks-3901 · blocked=[yaks-70e5] · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (2)   🪒 Shaving (3)   🐑 Shorn (1)   🕒 Recent (6)   ⭐ Starred (0)
+
+ yaks-3901   p1 task     🪒 Coordination substrate for parallel yak-shaving         [coord, git]
+*  yaks-70e5 p3 feature  🦬 yaks diff <refA> <refB>: ref-generic farm diff                 [cli]
+ yaks-10fb   p3 idea     🦬 Coordination follow-ups (post-3901)                          [agent]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filte
+=== end ===
+> key Tab
+=== frame 1 · 96x32 · focus=list · view=🪒 Shaving · cursor=0 · rows=4 · sel=yaks-3901 · blocked=[yaks-70e5] · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (2)   🪒 Shaving (3)   🐑 Shorn (1)   🕒 Recent (6)   ⭐ Starred (0)
+
+ yaks-3901   p1 task     🪒 Coordination substrate for parallel yak-shaving         [coord, git]
+   yaks-b517 p2 feature  🪒 HITL: needs-human frontmatter + inbox surfacing         [cli, ui] ⏳
+   yaks-3677 p3 feature  🪒 TUI doc screenshots via headless buffer->SVG              [ui, docs]
+*  yaks-70e5 p3 feature  🦬 yaks diff <refA> <refB>: ref-generic farm diff                 [cli]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filte
+=== end ===
+> key j
+=== frame 2 · 96x32 · focus=list · view=🪒 Shaving · cursor=1 · rows=4 · sel=yaks-b517 · blocked=[yaks-70e5] · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (2)   🪒 Shaving (3)   🐑 Shorn (1)   🕒 Recent (6)   ⭐ Starred (0)
+
+ yaks-3901   p1 task     🪒 Coordination substrate for parallel yak-shaving         [coord, git]
+   yaks-b517 p2 feature  🪒 HITL: needs-human frontmatter + inbox surfacing         [cli, ui] ⏳
+   yaks-3677 p3 feature  🪒 TUI doc screenshots via headless buffer->SVG              [ui, docs]
+*  yaks-70e5 p3 feature  🦬 yaks diff <refA> <refB>: ref-generic farm diff                 [cli]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filte
+=== end ===
+> key l
+=== frame 3 · 96x32 · focus=detail · view=🪒 Shaving · cursor=1 · rows=4 · sel=yaks-b517 · blocked=[yaks-70e5] · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (2)   🪒 Shaving (3)   🐑 Shorn (1)   🕒 Recent (6)   ⭐ Starred (0)
+
+◂ Task: yaks-b517
+│
+│ Title:       HITL: needs-human frontmatter + inbox surfacing
+│ Status:      shaving
+│ Needs:       human
+│ Type:        feature
+│ Priority:    p2
+│ Created:     Sep 1, 2026 10:00
+│ Updated:     Sep 6, 2026 12:00
+│ Labels:      cli, ui
+│
+│ Blocks:
+│   🦬 yaks-70e5  yaks diff <refA> <refB>: ref-generic farm diff
+│
+│ Parent:
+│   🪒 yaks-3901  Coordination substrate for parallel yak-shaving
+│
+│ Add a `needs:` block agents raise via `ask` and a human clears via `answer`; surface blocked
+│ yaks in an Inbox view.
+│
+│ ---
+│ ▸ 2026-09-06T11:40:00Z [wtA]
+│ Proposal drafted — see the drawer `inbox` chip. Which glyph should mark a blocked row?
+│
+│ ---
+│ ▸ 2026-09-06T12:00:00Z [joel]
+│ Go with the hourglass; ship it.
+│
+│
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  D:dep  S:state  f:filter  /:sear
+=== end ===

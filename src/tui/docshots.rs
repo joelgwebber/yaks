@@ -243,3 +243,31 @@ fn docshots() {
     press(&mut app, 'E');
     write_svg("tui-edit-herd", &app, w, h);
 }
+
+/// Regenerate the agent-session example used by toque's README: drive the real
+/// protocol (`Session::step`), writing the text transcript plus an SVG of every
+/// frame to `docs/assets/session*`. Ignored by default; run explicitly:
+/// `cargo test -p yaks docshots_session -- --ignored`.
+#[test]
+#[ignore = "asset generator; run with --ignored to refresh docs/assets/session*"]
+fn docshots_session() {
+    use toque::{DriverOpts, Session};
+
+    let (w, h) = (96u16, 32u16);
+    let mut s = Session::new(App::new(farm()), DriverOpts { width: w, height: h, diff: false });
+    let mut transcript = Vec::new();
+    let mut shot = |s: &Session<App>, n: usize| {
+        let svg = toque::render_to_svg(s.app(), w, h);
+        std::fs::write(format!("docs/assets/session-{n}.svg"), svg).unwrap();
+    };
+
+    s.emit(&mut transcript).unwrap();
+    shot(&s, 0);
+    for (n, line) in ["key Tab", "key j", "key l"].into_iter().enumerate() {
+        transcript.extend_from_slice(format!("> {line}\n").as_bytes());
+        s.step(line, &mut transcript).unwrap();
+        shot(&s, n + 1);
+    }
+    std::fs::write("docs/assets/session.txt", transcript).unwrap();
+    eprintln!("wrote docs/assets/session-{{0..3}}.svg + session.txt");
+}

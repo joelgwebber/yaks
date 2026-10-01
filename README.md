@@ -144,6 +144,17 @@ change over the selection; `a` raises or clears a `needs` block (ask / answer);
 and an **Inbox** view lists every yak awaiting a human, each flagged inline with
 a ⏳ badge and a warning accent.
 
+![The yaks TUI list view: a parent yak with children across statuses, labels, a dependency, and a ⏳ needs badge](docs/assets/tui-list.svg)
+
+Open a yak (`l`) for its metadata, relations, description and attributed notes:
+
+![The yaks TUI detail pane for a yak awaiting a human, with attributed notes](docs/assets/tui-detail.svg)
+
+These screenshots are rendered headlessly, and the same machinery lets an agent
+drive the TUI: `yaks tui --headless` reads one action per line on stdin and prints a
+text snapshot after each, via [toque](https://github.com/joelgwebber/toque) (its
+README walks through a short session). See [docs/tui.md](docs/tui.md) for the keys.
+
 ## Use with an AI coding agent
 
 yaks includes an **agent skill** so assistants drive it correctly (shave before

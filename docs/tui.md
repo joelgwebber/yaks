@@ -162,6 +162,12 @@ UI (no live-terminal capture), via:
 cargo test -p yaks docshots -- --ignored   # writes docs/assets/*.svg
 ```
 
+`docshots_session` (same command, it matches the filter) also scripts a real protocol
+session (`key Tab`, `key j`, `key l`) and writes `docs/assets/session.txt` (the text
+transcript) plus `session-N.svg` for each frame. [toque](https://github.com/joelgwebber/toque)'s
+README embeds copies of those frames (as `docs/assets/yaks-session-N.svg`) — refresh them
+there when the TUI's look changes.
+
 ## Rasterizing an SVG to view it
 
 The frames render **color emoji**, so view them with a real **browser engine** — a
