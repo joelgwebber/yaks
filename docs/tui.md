@@ -1,3 +1,5 @@
+**SLOP ALERT: I haven't gotten around to rewriting this properly yet**
+
 # TUI guide
 
 `yaks tui` opens an interactive terminal UI over the same farm the CLI operates

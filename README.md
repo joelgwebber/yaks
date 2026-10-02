@@ -1,21 +1,28 @@
-# yaks
+# Yaks
 
-A filesystem-native task tracker. Tasks are plain markdown files with YAML
-frontmatter, kept in a `.yaks/` directory inside your project — no database, no
-daemon, no server. A task's status is implicit in *which folder it lives in*, so
-your task list is just files you can read, grep, edit, and commit alongside your
-code.
-
-yaks ships as a single self-contained binary. Startup is effectively instant,
-which matters because the workflow is lots of small command invocations.
+A filesystem-native task tracker, for humans and their agents to get shit done together. Yaks are
+aggressively simple. Each is a plain markdown file with YAML frontmatter, kept in a `.yaks/`
+directory inside your project -- no database, no daemon, no server. A task's status is implicit in
+*which folder it lives in*, so your task list is just files you can read, grep, edit, and commit
+alongside your code.
 
 ```text
 .yaks/
-  hairy/     todo          (a hairy yak, not yet shaved)
+  hairy/     todo          (a hairy yak)
   shaving/   in progress   (you're shaving it)
   shorn/     done          (shorn)
-  dead/      abandoned     (slaughtered; hidden from normal queries)
+  dead/      abandoned     (slaughtered)
 ```
+
+## Why Yaks?
+
+Because [yak-shaving](). We all do it, for good or ill -- and coding assistants only make each hairy
+yak more tempting. This tool aims to at least make the endless shearing manageable.
+
+## Why Rust?
+
+Overkill? Maybe. But I love a fast, self-contained binary. Like the gods and Ken Thompson intended.
+It's also nice for CLI tools to be fast.
 
 ## Install
 
@@ -23,6 +30,7 @@ which matters because the workflow is lots of small command invocations.
 
 ```sh
 npm i -g @j15r/yaks     # then: yaks --help
+
 # or zero-install:
 npx @j15r/yaks list
 ```
@@ -38,124 +46,84 @@ cargo build --release
 
 ## Quick start
 
-A farm is just a `.yaks/` directory. Create one at your project root and start
-tracking:
+A farm is just a `.yaks/` directory. Create one at your project root and start tracking:
 
-Within a farm, yaks group into **herds** by id prefix — a farm can hold several
-(`yaks create --herd <herd>`), so one (typically private) farm can track
-several projects at once — and a parent yak with its descendants forms a
-**family**.
+Within a farm, yaks group into **herds** by id prefix — a farm can hold several (`yaks create --herd
+<herd>`), so one (typically private) farm can track several projects at once — and a parent yak with
+its descendants forms a **family**.
 
 ```sh
-mkdir .yaks
+yaks init --herd myherd
 yaks create --title "Wire up the login form" --type feature --priority 2
 yaks list
 yaks shave <id>     # start work  (hairy -> shaving)
 yaks shorn <id>     # finish      (shaving -> shorn)
 ```
 
-That's the whole loop: **shave** a yak before you work on it, **shear** it
-(`shorn`) when it's done.
+## Yak files
 
-## Concepts
-
-**States are adjectives, verbs are transitions.** A yak is *hairy* (todo),
-*shaving* (in progress), or *shorn* (done); *slaughtered* yaks go to a hidden
-`dead/`. You **shave** (hairy→shaving), **shear** / mark **shorn**
-(shaving→shorn), **regrow** (shorn→hairy), **slaughter**, and **revive**.
+Each task is a simple markdown file, with metadata in frontmatter.
 
 **Task file.** Frontmatter for metadata, the markdown body for the description:
 
 ```markdown
 ---
-id: yak-a1b2
+id: myherd-a1b2
 title: Wire up the login form
 type: feature          # bug | feature | task | idea
 priority: 2            # 1 urgent … 5 lowest (default 3)
 created: "2026-02-16T10:00:00Z"
 updated: "2026-02-16T10:30:00Z"
-parent: yak-c3d4       # optional; only on child tasks
-depends_on: [yak-e5f6] # optional
+parent: myherd-c3d4       # optional; only on child tasks
+depends_on: [myherd-e5f6] # optional
 labels: [auth]         # optional
 source: https://…      # optional external issue URL
 ---
 
-Longer description goes here.
+Lots more to say here in the description.
+
+They can also have comments. Frank will demonstrate:
+
+---
+▸ 2026-09-24T01:33:44Z [Frank Zappa]
+Forget yaks. Gonna raise me up a crop of dental floss!
 ```
 
-IDs are flat and stable (`{prefix}-{4hex}`). Hierarchy lives in the `parent:`
-field, not in the ID. Dependencies are ids in `depends_on:`; a yak is *ready*
-when all of them are shorn (or dead), and *tangled* otherwise.
+IDs are flat and stable (`{prefix}-{4hex}`). Yaks can have a parent and children, which of course makes them a family. Yaks are stolid, reliable creatures -- so they can depend upon one another. A yak that depends upon another yak is "tangled", and can't be shorn until the other is.
 
-## Commands
+And while it's a sad day when we most occasionally slaughter a yak, sometimes we must for the good of the herd.
+Slaughtered yaks are no longer seen in the herd, but we never forget that they're with us in spirit (and in the
+`.yaks/dead` directory).
 
-| Command | What it does |
-|---------|--------------|
-| `yaks create` | Create a task; the title is positional (`yaks create "Fix login"`). Flags: `--type`, `--priority`, `--parent`, `--labels` (comma- or space-separated), `--depends-on`, `--source`, `--description`, `--json` (emit the new id + file path) |
-| `yaks list` | List tasks; filter by `--status/--type/--priority/--label/--search`, `--ready`, `--tangled`, `--parent-of`, `--all` |
-| `yaks show <id>` | Full detail for one task, with parent + children |
-| `yaks refs <id>` | List what a task points at (parent, deps, id mentions in its text), flagging any that dangle |
-| `yaks commits <id>` | Show the git commits linked to a yak — those naming its id and those that touched its file across status moves |
-| `yaks update <id>` | Change fields/labels, set `--description`, or append a `--note` |
-| `yaks ask <id>` / `answer <id>` | Block a yak on a human (sets `needs`, drops it from `next`) / clear that block, each recording a `--note` |
-| `yaks inbox` | List yaks awaiting a human (the `needs` queue) |
-| `yaks shave <id>` | hairy → shaving (alias: `work`) |
-| `yaks shorn <id>` | shaving → shorn (alias: `close`) |
-| `yaks regrow <id>` | shorn → hairy (alias: `reopen`) |
-| `yaks slaughter <id>` / `revive <id>` | move to / from the hidden `dead/` (`slaughter --family` also takes live descendants) |
-| `yaks next` / `tangled` | ready tasks / dependency-blocked tasks |
-| `yaks search <q>` | substring search over id/title/description |
-| `yaks log` | timestamped notes across a filtered set, oldest first (an activity log); `--since`/`--by` narrow it |
-| `yaks dep` / `reparent` | edit dependencies / move under a new parent |
-| `yaks bulk` | Apply one field edit (and/or reparent) to every yak matching a filter. **Dry-run by default** — pass `--commit` to apply. Requires a filter *and* a mutation flag |
-| `yaks rollup` | group yaks by the external issue they roll up to (`--keys` for a PR body) |
-| `yaks stats` | task statistics |
-| `yaks doctor` | read-only farm-integrity check (duplicate-status ids, dangling parent/dep refs); exits non-zero on problems, so it's CI-usable. `--json` for machine output |
-| `yaks doctor --strict` | also flags shorn yaks with no recorded note — a shear without evidence (the evidence-before-shear rule) |
-| `yaks scan-ids [file]` | flag real yak-ids in text (file and/or stdin) — a leak check for a pre-commit / PR gate; exits non-zero if any are found |
-| `yaks tui` | open the interactive terminal UI |
+## The `yaks` CLI
 
-Add `--json` to any query command for machine-readable output. The
-state-transition verbs (`shave`, `shorn`, `regrow`, `slaughter`, `revive`) plus
-`update` and `reparent` accept **multiple ids** and apply the same change to
-each. Note-writing commands (`update`, `ask`, `answer`) take `--as <actor>` to
-attribute the note (falling back to `$YAKS_ACTOR`, then the git user).
+Agents and scripts will use the CLI to do most everything. You, thankfully, do not, terminal-nerd
+though you may be. Hopefully you'll be using it once for `yaks init`, then `yaks tui` (see below).
 
-`yaks bulk` is a filter-driven mass edit: the standard query filters
-(`--status`, `--type`, `--priority`, `--label`, `--search`, `--ready`,
-`--tangled`, `--needs`, `--parent-of`) *select* the set, and a mutation flag
-(`--add-label`, `--remove-label`, `--set-priority`, `--set-type`, `--reparent`,
-`--unparent`) *applies* the change to each. It is **dry-run by default**:
-without `--commit` it just prints the matched set and the intended mutation,
-changing nothing. It refuses to run without at least one filter flag (so it
-never touches the whole farm) and without at least one mutation flag. It only
-edits fields and reparents — no state transitions (use `shave`/`shorn`/etc. for
-those). Example: `yaks bulk --label auth --set-priority 1 --commit`.
+But if you're a glutton for punishment (or an agent), then the CLI is documented in some detail
+[here](./docs/cli.md). Or you could just run `yaks --help` like a normal person.
 
-## Interactive TUI
+## The Yaks TUI
 
-`yaks tui` opens a full-screen browser over the farm — views by state, a detail
-pane, inline create/edit, dependency and reparent pickers, search, and an
-embedded modal editor (vim or emacs keybindings, per `.yaks/config.yaml`). It
-auto-refreshes when the files change underneath it, so it stays in sync if you
-(or an agent) edit yaks from elsewhere. It takes the mouse too (wheel scroll,
-click to select / open / switch view). Mark rows with `m` for a bulk state
-change over the selection; `a` raises or clears a `needs` block (ask / answer);
-and an **Inbox** view lists every yak awaiting a human, each flagged inline with
-a ⏳ badge and a warning accent.
+Even hardened terminal junkies accept that sometimes a UI is more effective than invoking everything
+from the CLI like an old unix greybeard. But no fancy pixels for us! No sir, if we're going to have
+a fancy UI, it's going to be stuffed into a beautiful grid of perfect little boxes.
 
+The `yaks tui` gives you everything you could possibly want for your yak-herding needs. You can even
+point your mouse at it, but don't let your keyboard-wielding neighbors see you do that. If you're
+lost, try hitting `?` to see what you can do. And if for some unfathomable reason you want to close
+this amazing work of interactive beauty, you can just hit `Q`. See, already so much friendlier than
+`vi`! You can of course read [these docs](./docs/tui.md) if you absolutely must.
+
+**Behold your beautiful herd**
 ![The yaks TUI list view: a parent yak with children across statuses, labels, a dependency, and a ⏳ needs badge](docs/assets/tui-list.svg)
 
-Open a yak (`l`) for its metadata, relations, description and attributed notes:
-
+**Peer into a yak's soul**
 ![The yaks TUI detail pane for a yak awaiting a human, with attributed notes](docs/assets/tui-detail.svg)
 
-These screenshots are rendered headlessly, and the same machinery lets an agent
-drive the TUI: `yaks tui --headless` reads one action per line on stdin and prints a
-text snapshot after each, via [toque](https://github.com/joelgwebber/toque) (its
-README walks through a short session). See [docs/tui.md](docs/tui.md) for the keys.
+## Hire an agent for your yaks
 
-## Use with an AI coding agent
+... todo ...
 
 yaks includes an **agent skill** so assistants drive it correctly (shave before
 coding, shear when done, keep task state honest). It's a plain skill — it just
@@ -179,15 +147,6 @@ install there explicitly with `--dir`.
 It activates when a `.yaks/` directory is present, and shells out to the `yaks`
 binary (or `npx @j15r/yaks`), so make sure one of those is on the
 agent's `PATH`.
-
-Prefer a universal, multi-agent skills manager? The skills are plain
-spec-compliant `SKILL.md` files, so [openskills](https://github.com/numman-ali/openskills)
-installs them too (note it uses `.agent/` — singular — for its `--universal`
-mode, which is its own convention rather than the `.agents/` one above):
-
-```sh
-npx openskills install joelgwebber/yaks
-```
 
 ## Public and private farms
 

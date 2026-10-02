@@ -1,3 +1,5 @@
+**SLOP ALERT: I haven't gotten around to rewriting this properly yet**
+
 # Skills & workflows
 
 Skills are prose guidance that rides *on top of* the tools — the least direction

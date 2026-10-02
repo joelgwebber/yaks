@@ -1,3 +1,5 @@
+**SLOP ALERT: I haven't gotten around to rewriting this properly yet**
+
 # CLI reference
 
 Run `yaks <command> --help` for full flags. Most read commands accept the shared
@@ -38,6 +40,19 @@ Run `yaks <command> --help` for full flags. Most read commands accept the shared
 | `rename-herd <old> <new>` | Rename a whole herd: migrate every id from one prefix to another (e.g. `yaksrs` → `yaks`). (`rename-prefix` still works as an alias.) |
 | `merge <path> [--dry-run]` | Merge another farm's yaks (all statuses + artifacts) into this one, preserving ids and status, and declaring any incoming herd in this farm's `herds:` config so it shows up in the pickers. Non-destructive (source left intact); refuses on id collisions — reconcile the source's herd with `rename-herd` first. |
 | `bulk <filter> <mutation>` | Filter-driven field edit. **Dry-run by default** — prints the matched set + the mutation and changes nothing without `--commit`. Requires ≥1 filter flag (never the whole farm) and ≥1 mutation flag (`--add-label`/`--remove-label`/`--set-priority`/`--set-type`/`--reparent`/`--unparent`). Field edits + reparent only — no state transitions. |
+
+### Bulk filters
+
+`yaks bulk` is a filter-driven mass edit: the standard query filters
+(`--status`, `--type`, `--priority`, `--label`, `--search`, `--ready`,
+`--tangled`, `--needs`, `--parent-of`) *select* the set, and a mutation flag
+(`--add-label`, `--remove-label`, `--set-priority`, `--set-type`, `--reparent`,
+`--unparent`) *applies* the change to each. It is **dry-run by default**:
+without `--commit` it just prints the matched set and the intended mutation,
+changing nothing. It refuses to run without at least one filter flag (so it
+never touches the whole farm) and without at least one mutation flag. It only
+edits fields and reparents — no state transitions (use `shave`/`shorn`/etc. for
+those). Example: `yaks bulk --label auth --set-priority 1 --commit`.
 
 ## Verification
 
