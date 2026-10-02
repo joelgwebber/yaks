@@ -126,11 +126,11 @@ impl App {
         if n == 0 {
             return;
         }
-        let vh = self.detail_page.max(1) as usize;
-        let max = n.saturating_sub(vh) as i32;
+        let max = self.detail_max_scroll() as i32;
         self.detail_scroll = (self.detail_scroll as i32 + delta).clamp(0, max) as u16;
         let top = self.detail_scroll as usize;
-        self.detail_line = self.detail_line.clamp(top, (top + vh - 1).min(n - 1));
+        let shown = self.detail_rows_shown(self.detail_scroll);
+        self.detail_line = self.detail_line.clamp(top, (top + shown - 1).min(n - 1));
     }
 }
 

@@ -1,0 +1,20 @@
+--- after G (yaks-15c7) ---
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)
+
+◂  🦬  d0  task     p3  Long
+│ line 29
+│ line 30
+│ line 31
+│ line 32
+│ line 33
+│ line 34
+│ line 35
+│ line 36
+│ line 37
+│ line 38
+│ line 39
+│
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  D:dep  S:state
+
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 322 filtered out; finished in 0.09s
