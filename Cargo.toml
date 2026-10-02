@@ -30,7 +30,7 @@ edtui = { git = "https://github.com/joelgwebber/edtui", branch = "yaks-integrati
 # crates.io yet; Cargo.lock pins the exact commit.
 toque = { git = "https://github.com/joelgwebber/toque", branch = "main" }
 notify = "6"
-arboard = "3"
+arboard = { version = "3", features = ["wayland-data-control"] }
 png = "0.17"
 unicode-width = "0.2"
 

@@ -9,6 +9,7 @@ pub fn run(mut app: App) -> Result<()> {
     let (mut term, kitty) = setup()?;
     let res = event_loop(&mut term, &mut app);
     let _ = restore(kitty);
+    crate::clipboard::release();
     res
 }
 
