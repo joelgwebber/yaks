@@ -1049,18 +1049,80 @@ fn detail_visual_selection_and_esc_clears() {
     );
 }
 
+/// A single yak whose body makes a long detail, entered with the detail focused.
+fn long_detail_app(body_lines: usize) -> App {
+    let mut t = task("d0", "Long", Status::Hairy, 3, None);
+    t.body = (0..body_lines)
+        .map(|i| format!("line {i}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let mut app = App::new(vec![t]);
+    enter_key(&mut app);
+    app
+}
+
 #[test]
 fn scroll_into_view_is_stable_and_minimal() {
-    let mut app = App::new(vec![]);
-    app.detail_page = 10; // viewport shows 10 rows
-    app.detail_scroll = 5; // currently rows 5..15
+    let mut app = long_detail_app(60);
+    draw(&app, 80, 13); // capture the detail width
+    app.detail_page = 10; // viewport shows 10 rows (9 once the header is pinned)
+    app.detail_scroll = 5; // currently rows 5..14
     app.scroll_line_into_view(8); // already visible -> unchanged
     assert_eq!(app.detail_scroll, 5);
     app.scroll_line_into_view(2); // above -> scroll up to it
     assert_eq!(app.detail_scroll, 2);
     app.detail_scroll = 5;
-    app.scroll_line_into_view(20); // below -> land it on the last row
-    assert_eq!(app.detail_scroll, 20 - (10 - 1));
+    // Below -> land it on the last row that is actually visible: the pinned
+    // header costs a row, so only 9 content rows show (yaks-15c7).
+    app.scroll_line_into_view(20);
+    assert_eq!(app.detail_scroll, 20 - (9 - 1));
+}
+
+#[test]
+fn detail_last_line_is_visible_with_a_blank_row_below() {
+    // yaks-15c7: scrolling to the end must show the last line, and leave a
+    // blank row beneath it rather than abutting the viewport edge.
+    let mut app = long_detail_app(40);
+    let (w, h) = (80, 16);
+    app.detail_page = h - 3; // as runtime sets it
+    draw(&app, w, h);
+    handle_key(&mut app, key('G'));
+    let frame = draw(&app, w, h);
+    println!("--- after G (yaks-15c7) ---\n{frame}");
+    let rows: Vec<&str> = frame.lines().collect();
+    // Rows: tabs, gap, detail area (h - 3 rows), help bar.
+    let last = rows
+        .iter()
+        .position(|l| l.contains("line 39"))
+        .unwrap_or_else(|| panic!("last line not on screen:\n{frame}"));
+    let area_bottom = 2 + (h as usize - 3); // exclusive
+    assert!(
+        last + 1 < area_bottom,
+        "last line abuts the bottom edge (row {last} of area ending {area_bottom}):\n{frame}"
+    );
+    assert!(
+        rows[last + 1]
+            .trim_start_matches(['\u{2502}', ' '])
+            .is_empty(),
+        "expected a blank row under the last line:\n{frame}"
+    );
+    // Stepping down from the top one line at a time also never loses the cursor.
+    let mut app = long_detail_app(40);
+    app.detail_page = h - 3;
+    draw(&app, w, h);
+    for _ in 0..80 {
+        handle_key(&mut app, key('j'));
+        let f = draw(&app, w, h);
+        let cursor_row = app.detail_line as isize - app.detail_scroll as isize;
+        let shown = app.detail_rows_shown(app.detail_scroll) as isize;
+        assert!(
+            (0..shown).contains(&cursor_row),
+            "cursor off-screen at line {} scroll {}:\n{f}",
+            app.detail_line,
+            app.detail_scroll
+        );
+    }
+    assert_eq!(app.detail_scroll, app.detail_max_scroll());
 }
 
 // -- view substrate (6b-i) --------------------------------------------

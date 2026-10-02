@@ -168,14 +168,47 @@ impl App {
         });
     }
 
+    /// Detail content rows visible at `scroll`: the whole pane at the top, one
+    /// fewer once scrolled (the sticky header takes the top row).
+    pub(crate) fn detail_rows_shown(&self, scroll: u16) -> usize {
+        let page = self.detail_page.max(1) as usize;
+        if scroll == 0 {
+            page
+        } else {
+            page.saturating_sub(1).max(1)
+        }
+    }
+
+    /// Furthest the detail can scroll: far enough that a blank row sits below
+    /// the last line (so it never abuts the viewport edge). Content that fits
+    /// the pane doesn't scroll at all.
+    pub(crate) fn detail_max_scroll(&self) -> u16 {
+        let n = self.detail_line_count();
+        if n <= self.detail_page.max(1) as usize {
+            return 0;
+        }
+        (n + 1).saturating_sub(self.detail_rows_shown(1)) as u16
+    }
+
     /// Move `detail_scroll` the minimum needed so `line` sits inside the detail
-    /// viewport; leave it untouched when the line is already visible.
+    /// viewport; leave it untouched when the line is already visible. The last
+    /// line also keeps a blank row beneath it, and the viewport shrinks by one
+    /// row once scrolled (sticky header), which this accounts for.
     pub(crate) fn scroll_line_into_view(&mut self, line: u16) {
-        let vh = self.detail_page.max(1);
-        if line < self.detail_scroll {
-            self.detail_scroll = line;
-        } else if line >= self.detail_scroll.saturating_add(vh) {
-            self.detail_scroll = line.saturating_sub(vh - 1);
+        let n = self.detail_line_count();
+        if n <= self.detail_page.max(1) as usize {
+            self.detail_scroll = 0;
+            return;
+        }
+        let line = line as usize;
+        let top = self.detail_scroll as usize;
+        // The last line wants the blank row under it on screen too.
+        let bottom = if line + 1 >= n { n } else { line };
+        if line < top {
+            self.detail_scroll = line as u16;
+        } else if bottom >= top + self.detail_rows_shown(self.detail_scroll) {
+            let vp = self.detail_rows_shown(1);
+            self.detail_scroll = (bottom + 1 - vp).min(self.detail_max_scroll() as usize) as u16;
         }
     }
 
@@ -327,7 +360,7 @@ impl App {
         }
         let last = self.detail_dlines().len().saturating_sub(1);
         self.detail_line = e.line.min(last);
-        self.detail_scroll = e.scroll.min(last as u16);
+        self.detail_scroll = e.scroll.min(self.detail_max_scroll());
     }
 
     /// Jump to the Hairy view (where new tasks land) and select `id`.
