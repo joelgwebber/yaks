@@ -363,6 +363,25 @@ fn x_and_shift_x_delete_chars() {
 }
 
 #[test]
+fn join_lines_vim_adds_space() {
+    // Vim's J joins the next line onto this one with a single space, dropping
+    // the next line's indent (yaks-7fa0).
+    let enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+    let mut app = editable();
+    app.open_comment();
+    typ(&mut app, "hello");
+    handle_key(&mut app, enter);
+    typ(&mut app, "    world");
+    handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)); // Normal
+    typ(&mut app, "gg"); // first line
+    handle_key(
+        &mut app,
+        KeyEvent::new(KeyCode::Char('J'), KeyModifiers::SHIFT),
+    );
+    assert_eq!(editor_state(&app).1, "hello world");
+}
+
+#[test]
 fn single_line_vim_reaches_normal_mode() {
     // In vim mode a single-line field is modal: Esc switches to Normal and
     // never cancels, so the normal-mode keymap is usable; cancel is Ctrl-C

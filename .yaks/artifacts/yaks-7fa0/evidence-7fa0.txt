@@ -1,0 +1,24 @@
+yaks-7fa0 evidence: vim `J` joins with one space, strips next-line indent.
+
+Test: tui::tests::join_lines_vim_adds_space
+  Types "hello", Enter, "    world" in the comment editor; Esc; gg; J.
+  Expect "hello world".
+
+BEFORE (edtui yaks-integration @ 9fbee79, the previously pinned commit):
+  assertion `left == right` failed
+    left: "hello    world"
+   right: "hello world"
+
+AFTER (edtui yaks-integration @ 6ba0dbf, merge of yaks/join-lines 19100c3;
+Cargo.lock bumped via `cargo update -p edtui`, plain git dependency, no overrides):
+  cargo test -p yaks
+  test tui::tests::join_lines_vim_adds_space ... ok
+  test result: ok. 321 passed; 0 failed; 3 ignored
+  test result: ok. 28 passed; 0 failed
+
+edtui side (cargo +1.95.0 test): 164 lib + 22 integration pass. New unit tests:
+  test_join_line_inserts_single_space  (also cursor lands on join point)
+  test_join_line_strips_next_indent
+  test_join_line_no_extra_space_cases  (trailing ws, next starts ')', next blank, current empty)
+  test_join_line_last_line_is_noop
+  test_backspace_and_delete_join_add_no_space  (guards the other join_lines callers)
