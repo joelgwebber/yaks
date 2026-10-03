@@ -4,7 +4,7 @@ title: 'Spike: human-in-the-loop questions from Delta workers'
 type: idea
 priority: 3
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-03T21:22:16Z'
+updated: '2026-10-03T22:17:47Z'
 parent: yaks-b5a0
 labels:
 - agent
@@ -16,3 +16,7 @@ Today a worker that hits a human decision runs yaks ask and returns control. Tha
 ---
 ▸ 2026-10-03T21:22:16Z [delta-lead]
 Findings (log O23, O18, O24): (b) YES, a finished worker can be resumed with send_agent_message and keeps its context and worktree (trial 1A: answered a scope question, it completed the brief); (a)/(c) partly: the worker's yaks ask reached me as a needs:human yak file in my working tree and showed in yaks inbox and not in next; I also learned of it from the completion message. Open: how long a finished worker stays resumable, repeated resumes, and who may clear an ask (O24). Suggested Delta workflow: ask and return, coordinator answers to the SAME worker rather than re-briefing.
+
+---
+▸ 2026-10-03T22:17:47Z [delta-lead]
+Joel (2026-10-03): coordinators answering a worker's ask is fine and preferred over ephemeral message passing, because it leaves a durable, attributed decision in the yak. A coordinator can often resolve what a worker cannot (capability, wider context) and may leave a question unanswered, or ask another party, for the human. Skills should say: coordinator answers scope/mechanics, records that it was the coordinator, and routes real design forks to the human.

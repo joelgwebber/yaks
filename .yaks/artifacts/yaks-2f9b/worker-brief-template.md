@@ -79,3 +79,28 @@ Learned in trial 1 (log O2, O22, O25):
    status dirs (stage the deleted side too).
 6. If the worker asked: answer scope/mechanics yourself (record that you did),
    route design forks to the human, then `send_agent_message` the worker.
+7. Right after any landing (before any `git add`), compute the correct result:
+   `git merge-tree --write-tree HEAD <worker-sha>` and compare it with the
+   working tree (`git diff <tree>`); Delta's applied state has silently reverted
+   newer parent changes once (O31) and wrote conflict markers once (O33).
+8. Land workers ONE AT A TIME by SHA (from each final message): `git merge
+   --abort`, `git checkout -- <that worker's files>`, `git merge --no-ff <sha>`.
+   Parallel workers land in different shapes (fast-forward, pending merge, plain
+   file edits, WIP files; O30), so never `git add -A` after a landing. Do not
+   hand-revert an applied landing and then expect the same worker's next landing
+   to merge cleanly (O33): use the by-SHA procedure for that one too.
+
+## 9. Private-farm variant (Delta x private, trial 3)
+Used for a repo whose `.yaks/` is gitignored (the checkout has no `.yaks/`; every
+`yaks` command resolves the one LIVE farm by walk-up, O27):
+- Claim LIVE before spawning; there is nothing to commit. The brief gives the
+  absolute path of a built binary (the checkout has no `target/`), `YAKS_ACTOR=`
+  on every command, and the farm location for reference only.
+- No yak ids and no `yaks` wording in commit messages, code or comments; stage
+  only the one source file, never `git add -A`; never edit yak files by hand.
+- Evidence attaches to the shared farm (no `git add` rule applies); verify with a
+  stored `verify:` command.
+- Ask / answer is live: the coordinator may answer directly in the farm while the
+  worker is idle (single writer at a time), then `send_agent_message` to wake it;
+  the note is the record, the message is the nudge (O34).
+- Same-yak contention loses notes (yaks-800d): keep one writer per yak.

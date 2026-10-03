@@ -4,7 +4,7 @@ title: 'Delta skill: layers on top of the farm-mode coordination skills'
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-03T21:22:16Z'
+updated: '2026-10-03T22:28:05Z'
 parent: yaks-b5a0
 depends_on:
 - yaks-5c9f
@@ -32,3 +32,7 @@ Correction to the requirements note above: project skills ARE loadable via the s
 ---
 ▸ 2026-10-03T21:22:16Z [delta-lead]
 Brief template revised after trial 1 (v2): glob pathspec for git add, blocked-worker rule (no revert, no TMPDIR), docs-parity grep in the final message, and a new coordinator checklist (section 8) from O2/O22/O25. Same artifact, edited in place.
+
+---
+▸ 2026-10-03T22:28:05Z [delta-lead]
+Template v2 extended after trials 2/3: coordinator checklist items 7-8 (merge-tree check, land by SHA one at a time, do not hand-revert an applied landing) and a private-farm variant (section 9). Evidence in log O30-O34.

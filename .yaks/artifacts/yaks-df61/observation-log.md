@@ -465,3 +465,113 @@ Implication: the "update every surface" rule needs the grep recipe in the brief
 Compare yaks-7fa0 (first run, Haiku, weak brief): path dependency committed,
 unpushed edtui edit, inconsistent "tests pass", no evidence, one fix-up thread.
 n=2 here; the brief is the plausible cause but the model also differed (O16).
+
+## O26 [cli] Concurrent writes to ONE yak can lose notes  (delta-lead, yaks-800d)
+Stress test against throwaway farms, built binary, N parallel `yaks update <id> --note`:
+4 writers x 25 (same yak): 100/100. 16 parallel x 400: 400/400. 32 parallel x 800:
+796/800, exit codes 0, `doctor` clean. No locking exists in yaks (grep), so
+update is a read-modify-write whose lost-update window is narrow but real.
+Different yaks written concurrently were always safe (4 x 25 -> 25 each).
+Relevance to Delta: private/out-of-tree farms are one LIVE farm shared by every
+thread (O11), so a coordinator and workers touching one yak can race; the
+one-writer-per-yak rule in yaks-working is what keeps this theoretical.
+
+# Trial 2 (yaks-0576, skills move) and Trial 3 (Delta x private farm)  (delta-lead)
+
+## O27 [ok] Delta x private: the walk-up works exactly as predicted  (delta-lead)
+The toy repo `/tmp/yaks-private-trial` (private farm in `.git/info/exclude`) was
+attached as a Delta worktree. Its checkout
+(`<repo>/.delta/worktrees/<id>/yaks-private-trial`) had NO `.yaks/`: Delta did not
+copy the ignored farm. `yaks list` from that checkout resolved the live farm at
+`<repo>/.yaks`. All four workers reported the same: `.yaks` absent in the
+checkout, `yaks show <id>` working, status `Shaving` (the claim I made live
+before spawning, with nothing to commit). Zero setup, which is the point, and
+also the hazard of yaks-b4dc.
+
+## O28 [ok] Live visibility in private mode  (delta-lead)
+45 s after spawning, from my own checkout and with no merge, I saw every
+worker's attributed notes (`[p-add]` etc.) and the div worker's `needs:human`;
+`yaks inbox` listed the ask the moment it was made. In team mode the same ask
+reaches the coordinator only when the worker's commit/file landing arrives
+(O18). Private mode therefore gives real-time HITL across threads for free.
+
+## O29 [ok] Private-mode privacy rules held  (delta-lead)
+Three worker commits: `git log --format=%B | yaks scan-ids` exit 0; no `.yaks`
+path in any commit; zero tracked yak files. The brief's "no ids in commit
+messages, stage only your source file" worked (the checkout also had stray
+`__pycache__` dirs that a `git add -A` would have swept in).
+
+## O30 [skill] Parallel landings arrive in different shapes  (delta-lead)
+Three workers finished within ~10 s of each other and one more returned blocked.
+In the toy repo that produced: worker 1 fast-forwarded into HEAD; worker 2 a
+pending merge (`MERGE_HEAD`); worker 3 only a modified file in the working tree
+(its commit existed only as an object, since only one MERGE_HEAD can be pending);
+worker 4's uncommitted WIP also as a modified file. A blanket `git add -A` would
+have committed worker 3's change as part of worker 2's merge, and the unfinished
+WIP with it. Fix used: `git merge --abort`, `git checkout -- <the worker files>`,
+then `git merge --no-ff <worker sha>` once per worker SHA (from each final
+message). Rule: land workers one at a time by SHA; never `git add -A` after a
+landing; verify each file against its worker commit first (`git show <sha>:<path>
+| cmp - <path>`).
+
+## O31 [skill] A landing can silently revert newer parent changes  (delta-lead)
+Trial 2: after the worker returned, my working tree had four yak files I had
+committed AFTER spawning (`da942b0`, notes recording Joel's decisions) reset to
+their older merge-base content, though the worker never touched them. HEAD was
+fine; only the working tree was wrong, so `git add -A` plus commit would have
+reverted the notes. Found because Delta's external-edits notice showed the files
+and `git status` listed them modified. Resolution: `git merge-tree --write-tree
+HEAD <worker-sha>` computes the correct merge; `git diff <that-tree>` showed the
+four files as the ONLY content difference; then `git merge --abort`, clear the
+untracked residue (verified byte-identical to the worker's commit), and a real
+`git merge --no-ff <sha>`; the result tree equalled the computed one.
+Not seen in trial 1B, where my post-spawn commits (`e664f2c`) were not reverted;
+the cause is unknown. Mitigation (add to the coordinator checklist, 2f9b §8): after
+every landing run `git merge-tree --write-tree HEAD <sha>` and compare the
+working tree with it BEFORE any `git add`; never trust the post-landing working
+tree as a merge result.
+
+## O32 [ok] Trial 2 verified; Delta discovers the four real skills  (delta-lead)
+Gate reproduced in my checkout (324 + 28 pass); install/status transcripts
+reproduced (fresh dir gets exactly yaks + yaks-tracker; `.agents/skills`
+refused with and without `--force`, tree unchanged); a fresh scout saw all four
+as `source=project`, no symlinks. I fixed three stale `skills/ source` strings
+in `src/main.rs` the worker flagged (out of its scope). Worker timing: ~3.3 min,
+cold build 15.5 s, no `target/`, no blocks, no ask.
+
+## O33 [skill] How Delta's landing bookkeeping behaves (explains the conflict markers)  (delta-lead)
+The toy repo's last landing (worker p-div) wrote a diff3 conflict into
+`calc/div.py` (`current` = stub, `base` = `return a / b`, `incoming` = final).
+`base` was the WIP version Delta had applied when the worker first returned
+blocked; I had since reverted that applied WIP by hand (`git checkout --
+calc/div.py`) to untangle the other landings, so on the next landing `current`
+no longer matched `base`. Delta therefore merges against what it LAST APPLIED to
+my tree, not against my HEAD. Consequences:
+- Hand-reverting an applied landing makes the same worker's next landing conflict.
+- Whatever is applied to the working tree is Delta's bookkeeping, not a merge I
+  own; the reliable path is by SHA: `git merge --abort`, `git checkout -- <files>`,
+  `git merge --no-ff <worker sha>` (SHA from the worker's final message). That
+  worked for every landing in trials 1-3; the content check `git show <sha>:<path>
+  | cmp - <path>` and `git merge-tree --write-tree HEAD <sha>` guard it.
+- The O31 revert may be the same mechanism (a base that was not what I assumed);
+  still unexplained for trial 1B.
+
+## O34 [ok] Trial 3 (Delta x private farm) result  (delta-lead)
+Four Sonnet 5.5 workers (add, sub, mul, div) on disjoint yaks of a throwaway repo
+with a private farm; the div yak had a deliberately unspecified behaviour.
+| | result |
+|---|---|
+| Farm access | all 4 found the live farm with zero setup (O27) |
+| Time to result | 10-14 s each for the 3 plain yaks (tiny tasks); div blocked at ~9 s |
+| Live visibility | notes, claim and the ask visible to me within seconds, no merge (O28) |
+| Ask / answer | div asked via `yaks ask`; I answered IN the shared farm; worker saw the note with no sync step, before my wake-up message arrived (message = wake-up, farm = record) |
+| Resume | worker kept its context and edits, finished, committed (`2124ca0`) |
+| Privacy | 4 commits, scan-ids clean, 0 yak paths, 0 tracked yak files (O29) |
+| Attribution | notes stamped `[p-add]` etc.; commits authored by the human (git identity) |
+| Landing | ff / pending merge / file-only / WIP-file / conflict markers: all five shapes in one run (O30, O33); resolved by SHA, history shows every worker commit |
+| Concurrency | 4 workers writing notes to their own yaks at once: no loss (cf. O26: only same-yak contention loses) |
+| Gate (my own run) | `python3 -m unittest discover -s tests` 4/4; zero-divisor demo reproduced |
+Verdict: private mode in Delta works well for the farm (live, shared, no merge
+for yak state), and the work product is still limited by the git landing
+mechanics. The hazard (yaks-b4dc) is not an accident here but the mechanism;
+decide whether to keep it as a documented feature, bound it, or both.
