@@ -4,7 +4,7 @@ title: Restructure coordinator/worker skills by farm mode (public / private / ou
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-03T23:21:00Z'
+updated: '2026-10-03T23:32:45Z'
 parent: yaks-b5a0
 depends_on:
 - yaks-80d5
@@ -49,3 +49,7 @@ Cold-read of the three drafts (fresh Haiku scout, drafts only, 8 scenarios): 6 r
 ---
 ▸ 2026-10-03T23:14:04Z [Joel Webber]
 Agreed on A for the skill layering. I'm fine waiting on pushing them into the binary; I believe we have another yak to revisit the init/skill installation structure.
+
+---
+▸ 2026-10-03T23:32:45Z [delta-lead]
+Trial 4 done (log O38-O41): two short-brief workers followed the new skills on every point the brief omitted; a YAML flaw in my descriptions kept five skills from loading through the skill tool, fixed and guarded (O39). Landed as three squash commits (yaks-aa49, yaks-5c9f, yaks-800d claim) on the human's main. Remaining: yaks-2f9b is now largely superseded by yaks-coordinating-delta (review and close or trim), the second guard idea (a cold-read gate per skill change), and the follow-ups in yaks-3859/814a for install/init. Not shipped in the binary, per Joel.

@@ -648,3 +648,49 @@ named. All are skill bugs, not reader errors:
 The check is cheap (one scout, ~2 minutes) and found real gaps in a fresh draft;
 make it a gate for every skill change, and run a second pass on the full set before
 the old yaks-coordinating is replaced.
+
+# Trial 4 (yaks-5c9f): short briefs, workers load yaks-working themselves  (delta-lead)
+
+## O38 [ok][skill] What the skills did without the brief, and the bug that hid them
+Two Sonnet 5.5 workers, briefs of ~10 lines (yak id, name, scope, evidence, "load the
+project skill yaks-working"), real yaks: 4A yaks-aa49 (`yaks path`), 4B yaks-800d (lock).
+| behaviour the old briefs spelled out | 4A | 4B |
+|---|---|---|
+| built its own binary, no npx / PATH copy | yes | yes (noted the PATH copy and skipped it) |
+| `YAKS_ACTOR` on every command | yes, notes `[t4-path]` | yes, `[t4-lock]` |
+| stopped at a real design fork and asked, edits left alone, nothing parked | n/a | yes (lock location, `.gitignore`) |
+| stayed in scope | yes (reverted `cargo fmt` ripple in 3 files) | yes |
+| ONE commit incl. shorn move + artifact, pathspec ok | yes (`a46d866`) | n/a (parked) |
+| evidence: tests + attached transcript of the built binary | yes | baseline reproduced: 554 of 25600 notes lost |
+| reported what the skill lacked | yes (see below) | yes |
+My re-run: 331 + 28 pass; scenario reproduced; code review clean; the gap was
+update-every-surface (README table, the shipped skill's command list), which I fixed
+as a follow-up. Landing: 4A was a clean fast-forward; 4B (no commit) arrived as a
+modified yak file, committed byte-for-byte so a later landing merges against it.
+Both workers followed the skill, NOT a brief, on every point the brief omitted.
+
+## O39 [skill] The guard could not see what the harness could
+Both workers reported `yaks-working` failed to load via the skill tool ("mapping values
+are not allowed ... line 3 column 121"): my new description contained `: `, invalid in a
+plain YAML scalar. Four of the five new skills had the same flaw. My guard test read
+frontmatter line by line and passed. They read the file directly and followed it, which is
+why behaviour did not suffer, but any reader relying on the catalog would not have got
+the skill. Fixed by quoting, plus a guard rule (verified to fail on the unquoted form), and
+all eight repo skills now load through the real tool. Lesson: validate a harness-facing
+format with the harness (or a real parser), not a convenience read; and make loading the
+skill through the real tool part of every skill change's evidence.
+
+## O40 [skill] Delta merges against what it last applied: how to use that
+Corollary of O33. A parked worker's applied edits are safe to COMMIT byte-for-byte (current
+equals Delta's base, so its next landing merges cleanly) and unsafe to edit on top of
+(current differs from base, so it comes back as conflict markers). So for a design-fork ask
+on a parked worker's yak: commit its file as-is so the ask reaches the human's inbox, and
+state the coordinator's lean in chat, not as a second note on that yak. Done for yaks-800d.
+
+## O41 [skill] A human's uncommitted yak edits are a landing blocker  (Joel: "commit aggressively in public mode")
+Joel's answers to three asks sat uncommitted in his checkout, so (a) his tree was dirty and
+`git push local main:main` would be refused, and (b) my clone could not see the answers;
+I could only read them from his working tree, read-only. Habit to adopt in public mode:
+commit yak edits promptly (his "Yak herding." commits). Agent side: when his tree is dirty,
+keep working on a branch and do not touch the yaks he has edited (a second writer produces a
+merge conflict later; I touched one anyway and resolved the trivial append). Tool idea filed.
