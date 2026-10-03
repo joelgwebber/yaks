@@ -575,3 +575,29 @@ Verdict: private mode in Delta works well for the farm (live, shared, no merge
 for yak state), and the work product is still limited by the git landing
 mechanics. The hazard (yaks-b4dc) is not an accident here but the mechanism;
 decide whether to keep it as a documented feature, bound it, or both.
+
+## O35 [open] What Delta's diff view compares against  (delta-lead, 2026-10-03)
+Context: after trial 3 I merged a squashed PR branch to `local/main`; Joel then saw
+the thread's diff vanish after changing the branch in Delta's project button, and
+it did not come back.
+Facts gathered (git only; I cannot see Delta's UI state):
+- This clone's `origin/main` moved `3a1e5ec -> fb5cf3f` (reflog) without any push
+  from me: GitHub's `main` is now `fb5cf3f` (`git ls-remote origin`), so the human
+  pushed it and Delta refreshed `origin/main` here. The clone's `main` tracks
+  `origin/main`.
+- At that moment this clone's HEAD == `main` == `origin/main` == `local/main`
+  (`fb5cf3f`): the thread had no changes relative to any of them.
+- Differences from HEAD: vs the thread's original base `7551425` 49 files; vs
+  `local/delta/yaks-b5a0` 27 files; vs `local/docs` 50 files.
+Hypothesis: the thread diff is "this clone's HEAD (plus uncommitted changes)
+against the project's/remote's branch tip", so it was non-empty until the squash
+landed and the tip caught up, and it is empty for `main` now. This does not by
+itself explain why other branches show nothing.
+Experiment: this commit exists only in this clone (not pushed anywhere). If the
+diff view is HEAD vs `main`/`origin/main`, it should show exactly this commit's
+changes (this file and three yak files) and nothing else. Then switch the
+project branch and see whether the view follows (compare `git for-each-ref` and
+`git rev-parse origin/main` here before and after). Result to be appended below.
+Rule for the Delta skill meanwhile: tell the human what "landed" means for the
+diff view (a thread's diff is empty once its work is on the branch it is compared
+with), and never describe a thread as "unmerged" from the diff view alone.
