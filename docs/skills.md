@@ -6,7 +6,16 @@ and puts methodology in skills, so different working styles fit the same core.
 
 Two skills ship in the binary and install via `yaks skills install` (into
 `~/.agents/skills` by default); two more are experimental and repo-internal
-(under `skills/dev/`, not shipped).
+(not shipped).
+
+This repo's own skills live in `.agents/skills/<name>/SKILL.md` — real files,
+the single source of truth (no `skills/` directory, no symlinks; agent harnesses
+such as Delta discover project skills there but skip symlinked skill dirs). What
+ships is decided by the **explicit `BUNDLED` list** in `src/skills.rs`, *not* by
+what sits in that directory: only `yaks` and `yaks-tracker` are embedded in the
+binary and installed. `yaks-coordinating`, `yaks-working`, and any other
+project-local skill placed in `.agents/skills/` are never embedded or installed
+unless someone adds them to that list on purpose.
 
 ## Installing, updating, and staying honest
 
@@ -32,7 +41,7 @@ this" instead of just clobbering. `yaks skills status` reports the verdict:
 | `held` | Untouched, but installed by a yaks **not older** than this one | nothing — refuses to downgrade |
 | `modified` | Edited after install | nothing without `--force` |
 | `unmanaged` | Unstamped and not ours — hand-written or another tool's | nothing without `--force` |
-| `source` | Resolves onto a yaks checkout's own `skills/` (often a symlink) | nothing, **even with `--force`** |
+| `source` | Resolves onto a yaks checkout's own `.agents/skills/` (often via a symlink) | nothing, **even with `--force`** |
 
 **Ordinary `yaks` commands top this up automatically.** The common failure is an
 agent running against a stale skill and nobody remembering to re-run the
@@ -48,10 +57,12 @@ users until the next release — two binaries at the same version never fight ov
 an install (that's the `held` rule). When iterating locally, use
 `yaks skills install --force`.
 
-> **If you develop yaks:** symlinking `~/.agents/skills/yaks` at this repo's
-> `skills/yaks` is a handy way to run the live skill — but it means the
-> "installed" skill *is* the source. yaks detects that (`source`) and refuses to
-> write through the link, with or without `--force`. Without that guard, an
+> **If you develop yaks:** this repo's `.agents/skills/` *is* the source of the
+> skills (and what agents working in the repo load). Symlinking
+> `~/.agents/skills/yaks` at `.agents/skills/yaks` is a handy way to run the live
+> skill everywhere — but it means the "installed" skill *is* the source. yaks
+> detects both cases (`source`) and refuses to write into `.agents/skills/`
+> directly or through a link, with or without `--force`. Without that guard, an
 > older `yaks` on your `PATH` would silently revert your edits to its baked-in
 > copy, which looks exactly like an authored change in `git status`.
 

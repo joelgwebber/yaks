@@ -1,0 +1,49 @@
+# built binary: /Users/joel/src/yaks/.delta/worktrees/y2pm7fbez96t/yaks/target/release/yaks   (HOME and YAKS_SKILLS_AUTOSYNC overridden so nothing can touch the real ~/.agents)
+$ git status --short   (before)
+RM skills/dev/README.md -> .agents/skills/README.md
+D  .agents/skills/yaks
+D  .agents/skills/yaks-coordinating
+R  skills/dev/yaks-coordinating/SKILL.md -> .agents/skills/yaks-coordinating/SKILL.md
+D  .agents/skills/yaks-tracker
+R  skills/yaks-tracker/SKILL.md -> .agents/skills/yaks-tracker/SKILL.md
+D  .agents/skills/yaks-working
+R  skills/dev/yaks-working/SKILL.md -> .agents/skills/yaks-working/SKILL.md
+R  skills/yaks/SKILL.md -> .agents/skills/yaks/SKILL.md
+ M .yaks/shaving/yaks-0576.md
+ M AGENTS.md
+ M docs/skills.md
+ M src/skills.rs
+?? .yaks/artifacts/yaks-0576/
+
+$ yaks skills install --dir <fresh tmp>/fresh
+installed yaks -> /var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-zPQ6Gx/yaks0576.umb4/fresh/yaks/SKILL.md
+installed yaks-tracker -> /var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-zPQ6Gx/yaks0576.umb4/fresh/yaks-tracker/SKILL.md
+
+The skill activates when a .yaks/ directory is present. For another agent, re-run with --dir pointing at its skills directory (e.g. --dir ~/.claude/skills).
+exit=0
+$ ls <fresh tmp>/fresh
+yaks
+yaks-tracker
+
+$ yaks skills status --dir .agents/skills
+.agents/skills
+  source    yaks  (resolves onto yaks' own skills/ source — nothing to install)
+  source    yaks-tracker  (resolves onto yaks' own skills/ source — nothing to install)
+exit=0
+
+$ yaks skills install --dir .agents/skills
+Error: refusing to install into .agents/skills — that is yaks' own .agents/skills/ source, and overwriting it would revert the real files to this binary's baked-in copy (yaks-d8e9). Pick a skills directory instead, e.g. `yaks skills install` or `--dir ~/.claude/skills`.
+exit=1
+
+$ yaks skills install --dir .agents/skills --force
+Error: refusing to install into .agents/skills — that is yaks' own .agents/skills/ source, and overwriting it would revert the real files to this binary's baked-in copy (yaks-d8e9). Pick a skills directory instead, e.g. `yaks skills install` or `--dir ~/.claude/skills`.
+exit=1
+
+$ git status --short   (after) ; diff vs before
+UNCHANGED
+
+$ grep -c yaks-version .agents/skills/*/SKILL.md  (no stamp leaked)
+.agents/skills/yaks-coordinating/SKILL.md:0
+.agents/skills/yaks-tracker/SKILL.md:0
+.agents/skills/yaks-working/SKILL.md:0
+.agents/skills/yaks/SKILL.md:0

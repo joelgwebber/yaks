@@ -493,7 +493,7 @@ enum SkillsAction {
         #[arg(long)]
         dir: Option<String>,
         /// Overwrite skills that were edited after they were installed. (Never
-        /// permits writing into yaks' own skills/ source.)
+        /// permits writing into yaks' own .agents/skills/ source.)
         #[arg(long)]
         force: bool,
     },
@@ -1589,7 +1589,7 @@ fn run_skills(action: &SkillsAction) -> Result<()> {
                 } else if i.blocked() {
                     let why = match &i.before {
                         skills::SkillState::SourceLinked => "it resolves into yaks' own \
-                             skills/ source (a symlink?) \u{2014} the installed skill IS the \
+                             .agents/skills/ source \u{2014} the installed skill IS the \
                              source, so there is nothing to install"
                             .to_string(),
                         skills::SkillState::Held { installed } => format!(
@@ -1649,7 +1649,7 @@ fn run_skills(action: &SkillsAction) -> Result<()> {
                         "  (no yaks stamp \u{2014} hand-written or another tool's)".to_string()
                     }
                     skills::SkillState::SourceLinked => {
-                        "  (resolves onto yaks' own skills/ source \u{2014} nothing to install)"
+                        "  (resolves onto yaks' own .agents/skills/ source \u{2014} nothing to install)"
                             .to_string()
                     }
                     _ => String::new(),

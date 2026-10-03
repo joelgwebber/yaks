@@ -15,12 +15,19 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 
 /// `(name, SKILL.md content)` for each bundled skill. Paths are relative to this
-/// source file (`src/skills.rs`), i.e. the repo-root `skills/` directory.
+/// source file (`src/skills.rs`), i.e. the repo's own `.agents/skills/`
+/// directory — the single, real source of this repo's skills (yaks-0576).
+///
+/// **This explicit list, not the contents of `.agents/skills/`, decides what is
+/// embedded and installed.** The directory also holds repo-internal skills
+/// (`yaks-coordinating`, `yaks-working`) and may hold any other project-local
+/// skill; none of them is ever embedded or installed by `yaks skills install`
+/// unless it is added here on purpose.
 const BUNDLED: &[(&str, &str)] = &[
-    ("yaks", include_str!("../skills/yaks/SKILL.md")),
+    ("yaks", include_str!("../.agents/skills/yaks/SKILL.md")),
     (
         "yaks-tracker",
-        include_str!("../skills/yaks-tracker/SKILL.md"),
+        include_str!("../.agents/skills/yaks-tracker/SKILL.md"),
     ),
 ];
 
@@ -260,9 +267,9 @@ pub enum SkillState {
     /// another tool's. Treated like `Modified`: never overwritten without an
     /// explicit force.
     Unmanaged,
-    /// The target resolves into a yaks checkout's own `skills/` — typically a
-    /// `~/.agents/skills/yaks` symlink pointing at the repo, a common dev
-    /// setup. There is nothing to install: the installed skill *is* the source.
+    /// The target resolves into a yaks checkout's own `.agents/skills/` —
+    /// the repo itself, or a `~/.agents/skills/yaks` symlink pointing at it, a
+    /// common dev setup. There is nothing to install: the installed skill *is* the source.
     /// Never written, not even with `--force` (yaks-d8e9).
     SourceLinked,
 }
@@ -363,13 +370,25 @@ pub fn status(base: &Path) -> Vec<Status> {
 
 // -- the source-tree guard ------------------------------------------------
 
-/// True when `dir` is a `skills/` directory belonging to a yaks source tree.
+/// True when `dir` is the skills directory of a yaks source tree: either
+/// `<checkout>/.agents/skills` (where this repo's skills live and the source of
+/// truth — yaks-0576) or a plain `<checkout>/skills` (the layout before
+/// yaks-0576; still recognised so an older checkout or branch stays protected).
+/// `<checkout>` is identified by a `Cargo.toml` naming the package `yaks`.
 fn is_yaks_skills_dir(dir: &Path) -> bool {
     if dir.file_name().and_then(|s| s.to_str()) != Some("skills") {
         return false;
     }
-    let Some(root) = dir.parent() else {
+    let Some(parent) = dir.parent() else {
         return false;
+    };
+    let root = if parent.file_name().and_then(|s| s.to_str()) == Some(".agents") {
+        match parent.parent() {
+            Some(root) => root,
+            None => return false,
+        }
+    } else {
+        parent
     };
     let Ok(text) = std::fs::read_to_string(root.join("Cargo.toml")) else {
         return false;
@@ -379,14 +398,14 @@ fn is_yaks_skills_dir(dir: &Path) -> bool {
 }
 
 /// True when `path` — **after following symlinks** — lives inside a yaks source
-/// tree's `skills/` directory.
+/// tree's skills directory (see [`is_yaks_skills_dir`]: `.agents/skills/`).
 ///
 /// Writing there overwrites the *source of truth* with the binary's baked-in
 /// copy: it silently reverts real edits and, in `git status`, looks exactly
 /// like an authored change (yaks-d8e9, which happened twice).
 ///
 /// Resolving symlinks is the whole point. A common dev setup symlinks
-/// `~/.agents/skills/yaks` at the repo's `skills/yaks`, so a perfectly
+/// `~/.agents/skills/yaks` at the repo's `.agents/skills/yaks`, so a perfectly
 /// innocent-looking `yaks skills install` (default dir, no `--dir` at all)
 /// lands on the source through the link. Checking only the path we were handed
 /// misses that entirely — which is exactly how the original incident happened.
@@ -437,11 +456,11 @@ fn write_atomic(path: &Path, content: &str) -> Result<()> {
 ///
 /// Files we wrote and that are still untouched are upgraded freely. A
 /// `Modified` or `Unmanaged` file is left alone unless `force` is set. Writing
-/// into this repo's own `skills/` is refused outright (see [`is_source_tree`]).
+/// into this repo's own `.agents/skills/` is refused outright (see [`is_source_tree`]).
 pub fn install(base: &Path, force: bool) -> Result<Vec<Installed>> {
     if is_source_tree(base) {
         anyhow::bail!(
-            "refusing to install into {} — that is yaks' own skills/ source, \
+            "refusing to install into {} — that is yaks' own .agents/skills/ source, \
              and overwriting it would revert the real files to this binary's \
              baked-in copy (yaks-d8e9). Pick a skills directory instead, e.g. \
              `yaks skills install` or `--dir ~/.claude/skills`.",
@@ -589,7 +608,7 @@ mod tests {
     #[test]
     fn bundled_source_is_never_itself_stamped() {
         // The embedded skills must be PRISTINE: a stamp belongs only to an
-        // installed copy. If a stamp ever leaks back into skills/*/SKILL.md,
+        // installed copy. If a stamp ever leaks back into .agents/skills/*/SKILL.md,
         // the build embeds it, every install double-stamps, and `inspect`
         // starts comparing stamped content against stamped content. It has
         // happened (a stray install pointed at the repo), so assert it loudly
@@ -597,12 +616,12 @@ mod tests {
         for (name, content) in BUNDLED {
             assert!(
                 read_stamp(content).is_none(),
-                "skills/{name}/SKILL.md carries a provenance stamp; the source \
-                 must stay unstamped \u{2014} run `git checkout -- skills/`"
+                ".agents/skills/{name}/SKILL.md carries a provenance stamp; the source \
+                 must stay unstamped \u{2014} run `git checkout -- .agents/skills/`"
             );
             assert!(
                 !content.contains(K_VERSION) && !content.contains(K_DIGEST),
-                "skills/{name}/SKILL.md mentions a stamp key; the source must stay pristine"
+                ".agents/skills/{name}/SKILL.md mentions a stamp key; the source must stay pristine"
             );
         }
     }
@@ -764,20 +783,39 @@ mod tests {
     #[test]
     fn refuses_to_install_into_the_yaks_source_tree() {
         // yaks-d8e9: not bypassable by --force, since --force caused it.
-        let base = temp_base("srctree").join("skills");
+        // `.agents/skills` is this repo's source of truth (yaks-0576); the
+        // pre-0576 plain `skills/` layout stays protected too.
+        for layout in [".agents/skills", "skills"] {
+            let root = temp_base("srctree");
+            let base = root.join(layout);
+            std::fs::create_dir_all(&base).unwrap();
+            std::fs::write(
+                root.join("Cargo.toml"),
+                "[package]\nname = \"yaks\"\nversion = \"0.0.1\"\n",
+            )
+            .unwrap();
+            assert!(is_source_tree(&base), "{layout} is a yaks source tree");
+            assert!(install(&base, false).is_err(), "{layout}");
+            assert!(
+                install(&base, true).is_err(),
+                "--force must NOT be the escape hatch here ({layout})"
+            );
+            let _ = std::fs::remove_dir_all(&root);
+        }
+    }
+
+    #[test]
+    fn a_skills_dir_outside_a_yaks_checkout_is_not_the_source_tree() {
+        // `.agents/skills` is also the normal install target (home dir, other
+        // projects): only a parent Cargo.toml naming the package `yaks` makes
+        // it the source.
+        let root = temp_base("notsrc");
+        let base = root.join(".agents").join("skills");
         std::fs::create_dir_all(&base).unwrap();
-        std::fs::write(
-            base.parent().unwrap().join("Cargo.toml"),
-            "[package]\nname = \"yaks\"\nversion = \"0.0.1\"\n",
-        )
-        .unwrap();
-        assert!(is_source_tree(&base));
-        assert!(install(&base, false).is_err());
-        assert!(
-            install(&base, true).is_err(),
-            "--force must NOT be the escape hatch here"
-        );
-        let _ = std::fs::remove_dir_all(base.parent().unwrap());
+        assert!(!is_source_tree(&base), "no Cargo.toml");
+        std::fs::write(root.join("Cargo.toml"), "[package]\nname = \"other\"\n").unwrap();
+        assert!(!is_source_tree(&base), "a different package");
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]
@@ -819,9 +857,10 @@ mod symlink_guard_tests {
     use super::*;
 
     /// The real mechanism behind yaks-d8e9, found the hard way: a dev setup
-    /// symlinks `~/.agents/skills/yaks` at the repo's `skills/yaks`, so a plain
-    /// install with **no `--dir`** lands on the source through the link.
-    /// Guarding only the literal path we were handed misses this entirely.
+    /// symlinks `~/.agents/skills/yaks` at the repo's copy of the skill (then
+    /// `skills/yaks`, now `.agents/skills/yaks`), so a plain install with **no
+    /// `--dir`** lands on the source through the link. Guarding only the
+    /// literal path we were handed misses this entirely.
     #[test]
     fn a_symlink_onto_the_source_tree_is_never_written() {
         let mut tmp = std::env::temp_dir();
@@ -829,7 +868,7 @@ mod symlink_guard_tests {
         let _ = std::fs::remove_dir_all(&tmp);
 
         // A fake yaks checkout, with a precious source file.
-        let src_dir = tmp.join("repo").join("skills").join("yaks");
+        let src_dir = tmp.join("repo").join(".agents").join("skills").join("yaks");
         std::fs::create_dir_all(&src_dir).unwrap();
         std::fs::write(
             tmp.join("repo").join("Cargo.toml"),

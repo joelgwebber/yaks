@@ -81,7 +81,7 @@ snapshots in `src/tui.rs`). If a change has no lever to see its effect,
 
 Don't keep that frame to yourself: `yaks attach` the rendered frame (or a
 headless text serialization) to the yak as evidence, so a reviewer sees what you
-saw — the shipped `skills/yaks` "Evidence before you shear" rule, applied here.
+saw — the shipped `.agents/skills/yaks` "Evidence before you shear" rule, applied here.
 For a durable UI state, prefer a `docshots` scene + a `docs/` embed over a
 one-off frame.
 
@@ -97,7 +97,9 @@ workflow, update every surface that describes it, in the **same** change — nev
 a follow-up:
 
 - `docs/` (`docs/cli.md`, `docs/tui.md`, `docs/README.md`) and `README.md`.
-- the bundled skills (`skills/yaks`, `skills/yaks-tracker`).
+- the bundled skills (`.agents/skills/yaks`, `.agents/skills/yaks-tracker`) and
+  the repo-internal ones beside them (`.agents/skills/yaks-working`,
+  `.agents/skills/yaks-coordinating`).
 - for a CLI change: the clap `--help` text — the `///` doc comments and
   `#[arg(...)]`/`#[command(...)]` help on the command/flag in `src/main.rs`.
 - for a TUI key/behavior: the `?` help overlay (`help_content` in
@@ -106,22 +108,28 @@ a follow-up:
   not in `help_content` is invisible to users (this is how yaks-71d1's `H`
   shipped half-done).
 
-**Careful with the skills source.** `skills/{yaks,yaks-tracker}/SKILL.md` are
-embedded via `include_str!`, and `~/.agents/skills/<name>` is commonly a symlink
-back at them — so a `yaks skills install` (even with no `--dir`) used to write
-*through the link* and revert your edits to the binary's baked-in copy, looking
-exactly like an authored change in `git status`. That's yaks-d8e9; it bit twice.
-The installer now refuses any target that resolves into a yaks checkout
-(`source` state, not overridable by `--force`), the test suite sets
+**Careful with the skills source.** This repo's skills live in `.agents/skills/`
+— real files, the only copy (no `skills/` dir, no symlinks: Delta discovers
+project skills there but skips symlinked skill dirs; yaks-0576).
+`.agents/skills/{yaks,yaks-tracker}/SKILL.md` are embedded via `include_str!`,
+and the explicit `BUNDLED` list in `src/skills.rs` — not the directory contents
+— decides what is embedded and installed, so `yaks-working`, `yaks-coordinating`
+and any other project-local skill are never shipped. `~/.agents/skills/<name>`
+is sometimes a symlink back at the source — so a `yaks skills install` (even
+with no `--dir`) used to write *through the link* and revert your edits to the
+binary's baked-in copy, looking exactly like an authored change in `git status`.
+That's yaks-d8e9; it bit twice. The installer now refuses any target that
+resolves into a yaks checkout's `.agents/skills/` (or the pre-0576 `skills/`;
+`source` state, not overridable by `--force`), the test suite sets
 `YAKS_SKILLS_AUTOSYNC=0` so `cargo test` can't touch your real skills, and a test
 asserts the embedded source is never itself stamped. If `git status` ever shows
-an unexplained `metadata:` stamp in `skills/`, that's the symptom —
-`git checkout -- skills/`.
+an unexplained `metadata:` stamp in `.agents/skills/`, that's the symptom —
+`git checkout -- .agents/skills/`.
 
 The bundled skills are embedded in the binary (`src/skills.rs`), so
 `cargo test -p yaks skills` guards them; the other surfaces have no gate, so
 treat docs/help↔reality parity as part of the change's evidence — grep for the
-old name/key across `docs/`, `skills/`, `README.md`, and `src/` and confirm every
+old name/key across `docs/`, `.agents/skills/`, `README.md`, and `src/` and confirm every
 description matches the shipped behavior.
 
 ## Releasing

@@ -1,0 +1,6 @@
+Guard deliberately broken: `== Some(".agents")` -> `== Some(".agentsX")` in is_yaks_skills_dir; `cargo test -p yaks skills`:
+test skills::tests::refuses_to_install_into_the_yaks_source_tree ... FAILED
+test skills::symlink_guard_tests::a_symlink_onto_the_source_tree_is_never_written ... FAILED
+panicked at src/skills.rs:797:13: .agents/skills is a yaks source tree
+test result: FAILED. 10 passed; 2 failed
+Restored: test result: ok. 12 passed; 0 failed
