@@ -1,10 +1,10 @@
 ---
 id: yaks-2f9b
-title: 'Delta environment: coordinator + worker skill'
+title: 'Delta skill: layers on top of the farm-mode coordination skills'
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-03T20:14:31Z'
+updated: '2026-10-03T20:27:55Z'
 parent: yaks-b5a0
 depends_on:
 - yaks-5c9f
