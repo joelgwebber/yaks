@@ -1,0 +1,17 @@
+# MUTANT (goto_task's selected_id guard disabled) - what the bug looked like
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starr
+→ d0
+◂ Task: a0
+│
+│ Title:       Root A
+│ Status:      hairy
+│ Type:        task
+│ Priority:    p2
+│ Created:     -
+│ Updated:     -
+│ Labels:      -
+│
+│ see d0 for the old plan
+│
+│
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  D:dep  S

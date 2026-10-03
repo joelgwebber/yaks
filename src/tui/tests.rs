@@ -950,6 +950,29 @@ fn follow_link_reveals_collapsed_target() {
 }
 
 #[test]
+fn follow_link_to_yak_outside_any_view_says_so() {
+    // yaks-cc52: d0 is Dead and no pinned view shows Dead, so the cursor can't
+    // land on it. Following the link must not leave the detail pane silently
+    // showing a0 under a "→ d0" notice: goto_task says d0 isn't shown, and
+    // records no nav history for the failed jump.
+    let mut a0 = task("a0", "Root A", Status::Hairy, 2, None);
+    a0.body = "see d0 for the old plan".into();
+    let mut app = App::new(vec![a0, task("d0", "Dead plan", Status::Dead, 3, None)]);
+    assert!(
+        app.views.iter().all(|v| v.status != Some(Status::Dead)),
+        "no pinned view for Dead"
+    );
+    enter_key(&mut app); // focus detail on a0
+    tab_key(&mut app); // -> the d0 link line
+    enter_key(&mut app); // follow it
+    let frame = draw(&app, 72, 16);
+    assert_eq!(app.notification.as_deref(), Some("d0 isn't shown in any view"));
+    assert!(frame.contains("d0 isn't shown in any view"), "{frame}");
+    assert!(!frame.contains("→ d0"), "{frame}");
+    assert!(app.nav_back.is_empty(), "failed jump records no history");
+}
+
+#[test]
 fn nav_history_back_and_forward() {
     // o/i retrace the link-follow chain (yaksrs-5d63).
     let mut app = linked();
