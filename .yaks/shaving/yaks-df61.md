@@ -4,7 +4,7 @@ title: 'Delta observation log: how threads, worktrees, clones and the farm inter
 type: task
 priority: 2
 created: '2026-10-03T20:35:54Z'
-updated: '2026-10-03T20:40:03Z'
+updated: '2026-10-03T23:04:20Z'
 parent: yaks-b5a0
 labels:
 - delta
@@ -26,3 +26,7 @@ Added O9 result, O10-O13 (private-mode walk-up in Delta, landing into the user's
 ---
 ▸ 2026-10-03T20:40:03Z [delta-lead]
 O12 resolved: push to local main is refused while the user's checkout has unstaged changes (human yak drift counts). Options and recommendation in the log.
+
+---
+▸ 2026-10-03T23:04:20Z [delta-lead]
+O35 resolved and O36 added: Delta mirrors every thread commit as refs/delta/<thread>/<repo>/<sha> in the user's repo; nothing reaches the user's main without an explicit push; asks reach the human's inbox only when main moves.

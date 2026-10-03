@@ -601,3 +601,31 @@ project branch and see whether the view follows (compare `git for-each-ref` and
 Rule for the Delta skill meanwhile: tell the human what "landed" means for the
 diff view (a thread's diff is empty once its work is on the branch it is compared
 with), and never describe a thread as "unmerged" from the diff view alone.
+
+## O36 [ok][skill] Where a thread's commits live, and what lands them  (delta-lead)
+Answer to Joel's question about the Delta UI after a turn.
+- Every commit made in any thread or worker clone is mirrored into the USER's repo as
+  its own ref, `refs/delta/<thread-id>/<repo>/<full-sha>` (56 such refs at the time).
+  My commit `d697c89` appeared there seconds after I committed it, under my thread's
+  id; worker commits `1029c20`, `d2833d3`, `8fd40f8` each have a ref under their own
+  worker thread's id. None of them is on a branch in the user's repo, so the user's
+  `main` did not move: the thread's HEAD is, from the user's side, a detached commit.
+  (The human's inference was right.)
+- Correction to what I told Joel earlier: worker SHAs cited in squash messages do NOT
+  depend on my `delta/*` archive branches; Delta's refs keep them reachable in his
+  repo. Whether those refs outlive a deleted or archived thread is unknown, so the
+  archive branches remain a cheap belt-and-braces, not a necessity.
+- What moves the user's `main`: in every case so far an explicit `git push local
+  <branch>:main` by an agent (the user's checkout accepts it when it is on that
+  branch and clean; any push to a branch that is not checked out always works). I
+  know of no agent-side "accept" tool; `merge_thread` only moves changes between a
+  parent and its child thread. Whether the UI has an accept/apply control is for the
+  human to say.
+- Visibility consequence (team mode): asks and notes made in a thread reach the
+  human's `yaks inbox` only after `main` moves. Joel could not see the two new asks
+  until I pushed `d697c89`; afterwards `yaks inbox` read from his checkout listed
+  them (5 entries).
+- GitHub `main` moved to `fb5cf3f` without any push from me: the human pushed, and
+  Delta refreshed this clone's `origin/main` (reflog `3a1e5ec -> fb5cf3f`).
+- Standing permission (Joel): branches I created on `local` that are merged and no
+  longer needed (`pr/*`) may be deleted by me without asking.
