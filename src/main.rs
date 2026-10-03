@@ -226,8 +226,10 @@ enum Command {
         priority: Option<u8>,
         #[arg(long)]
         parent: Option<String>,
-        /// Which herd (id prefix) the new yak joins; defaults to the farm's
-        /// configured herd. Lets one farm hold several herds.
+        /// Which herd (id prefix) the new yak joins; defaults to this repo's
+        /// `.yaks` pointer herd, else the farm's configured `herd:`. Errors if
+        /// neither is set (no silent `yak-` fallback). Lets one farm hold
+        /// several herds.
         #[arg(long = "herd")]
         prefix: Option<String>,
         /// Labels for the new yak. Commas and spaces separate labels (a label

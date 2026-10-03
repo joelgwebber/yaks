@@ -122,6 +122,9 @@ pub(crate) fn temp_farm(tasks: &[Task]) -> (PathBuf, Farm) {
         fs::create_dir_all(root.join(st.dir())).unwrap();
     }
     fs::write(root.join("schema"), SCHEMA.to_string()).unwrap();
+    // A default herd, so TUI creates have somewhere to go (`create` errors
+    // rather than fall back to an implicit `yak-`; yaks-b47b).
+    fs::write(root.join("config.yaml"), "herd: yak\n").unwrap();
     for t in tasks {
         store::write::save(&root, t).unwrap();
     }

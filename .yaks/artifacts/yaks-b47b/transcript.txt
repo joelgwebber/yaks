@@ -1,0 +1,30 @@
+# (a) farm with NO herd configured (hand-built .yaks, no config.yaml)
+$ yaks create "orphan"
+Error: no herd to create the yak in: pass `--herd <prefix>` or set a default herd (`herd: <prefix>` in .yaks/config.yaml, or `herd:` in the `.yaks` pointer file)
+exit=1
+$ ls .yaks/hairy | wc -l
+       0
+$ yaks create --herd proj "explicit"
+Created proj-6d59: explicit
+exit=0
+
+# (b) farm with a default herd (yaks init --herd core)
+Initialized empty yaks farm in /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/tmp.OoQiTScOGX/withhd/.yaks
+  herd core  ·  default type task  ·  default priority 3
+Create your first yak with: yaks create --title "…"
+$ cat .yaks/config.yaml
+herd: core
+default_type: task
+default_priority: 3
+vim_mode: true
+$ yaks create "uses default"
+Created core-95f0: uses default
+exit=0
+$ yaks create --herd web "explicit"
+Created web-d080: explicit
+exit=0
+
+# (c) .yaks pointer file with herd: (out-of-tree farm has no config)
+$ yaks create "via pointer"
+Created ptr-326c: via pointer
+exit=0

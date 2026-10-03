@@ -9,7 +9,7 @@
 
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use chrono::Utc;
 
 use crate::filter::{self, FilterSpec};
@@ -44,8 +44,9 @@ pub struct Farm {
 /// Fields for a new task (defaults resolved from config inside `create`).
 pub struct NewTask {
     pub title: String,
-    /// Which herd (id prefix) the new yak joins. `None` uses the farm's default
-    /// prefix, so one farm can hold several herds.
+    /// Which herd (id prefix) the new yak joins. `None` uses the repo's pointer
+    /// herd, else the farm's configured default herd; with neither, `create`
+    /// errors rather than guess. One farm can hold several herds.
     pub prefix: Option<String>,
     pub kind: Option<String>,
     pub priority: Option<u8>,
@@ -980,9 +981,9 @@ impl Farm {
             }
         }
         // Route to a specific herd (id prefix): an explicit `--prefix` wins,
-        // else this repo's pointer-file herd, else the farm's config default.
-        // A chosen prefix is validated via the reference grammar so we never
-        // mint an un-referenceable id.
+        // else this repo's pointer-file herd, else the farm's config default
+        // (erroring if there is none). A chosen prefix is validated via the
+        // reference grammar so we never mint an un-referenceable id.
         let prefix = match new
             .prefix
             .as_deref()
@@ -991,7 +992,15 @@ impl Farm {
         {
             Some(p) if refs::has_ref_shape(&format!("{p}-0000")) => p.to_string(),
             Some(p) => return Ok(CreateOutcome::InvalidPrefix(p.to_string())),
-            None => cfg.prefix.clone(),
+            // No `--herd`, no pointer herd: only a herd the farm's config
+            // actually declares is a default. `cfg.prefix` alone isn't enough:
+            // it is seeded with the built-in "yak" when config is silent, which
+            // would silently mint an unintended `yak-` herd (yaks-b47b).
+            None if cfg.prefix_declared => cfg.prefix.clone(),
+            None => bail!(
+                "no herd to create the yak in: pass `--herd <prefix>` or set a default herd \
+                 (`herd: <prefix>` in .yaks/config.yaml, or `herd:` in the `.yaks` pointer file)"
+            ),
         };
         let id = store::generate_id(&self.root, &prefix)?;
         let now = store::now_iso();
@@ -1534,9 +1543,38 @@ mod tests {
     }
 
     #[test]
+    fn create_with_no_explicit_or_default_herd_errors() {
+        // Regression (yaks-b47b): with no `--herd`, no pointer herd and no
+        // `herd:` in config, `create` used to silently mint a `yak-` id (and so
+        // an accidental new herd). It must fail and write nothing.
+        let (root, farm) = temp_farm();
+        let err = farm
+            .create(new_task("orphan", None))
+            .err()
+            .expect("create with no herd must error");
+        let msg = err.to_string();
+        assert!(msg.contains("--herd"), "error should name --herd: {msg}");
+        assert!(
+            msg.contains("default herd"),
+            "error should name the default herd: {msg}"
+        );
+        assert!(
+            store::all_ids(&root).is_empty(),
+            "no yak may be written on error"
+        );
+        // An empty `herd:` value is not a default either.
+        std::fs::write(root.join("config.yaml"), "herd:\n").unwrap();
+        assert!(farm.create(new_task("orphan", None)).is_err());
+        // But an explicit herd still works with no default configured.
+        assert!(farm.create(new_task("ok", Some("proj"))).is_ok());
+    }
+
+    #[test]
     fn create_without_a_prefix_uses_the_config_default() {
-        let (_root, farm) = temp_farm();
+        let (root, farm) = temp_farm();
+        std::fs::write(root.join("config.yaml"), "herd: core\n").unwrap();
         let default = farm.config().prefix;
+        assert_eq!(default, "core");
         match farm.create(new_task("local yak", None)).unwrap() {
             CreateOutcome::Created(t) => assert!(
                 t.id.starts_with(&format!("{default}-")),

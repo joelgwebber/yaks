@@ -471,6 +471,11 @@ pub struct HerdConfig {
 #[derive(Clone)]
 pub struct Config {
     pub prefix: String,
+    /// True only when `config.yaml` actually names a default herd (`herd:` or
+    /// the legacy `prefix:`). `prefix` alone can't say: it holds the built-in
+    /// "yak" when config is silent, which is indistinguishable from an explicit
+    /// `herd: yak`. `create` needs the difference (yaks-b47b).
+    pub prefix_declared: bool,
     pub default_type: String,
     pub default_priority: u8,
     /// When true, embedded editors use vim keybindings; otherwise emacs.
@@ -540,6 +545,7 @@ impl Config {
 pub fn read_config(root: &Path) -> Config {
     let mut c = Config {
         prefix: "yak".to_string(),
+        prefix_declared: false,
         default_type: "task".to_string(),
         default_priority: 3,
         vim_mode: true,
@@ -625,7 +631,10 @@ pub fn read_config(root: &Path) -> Config {
             match key.as_str() {
                 // `herd:` is the current name for the default id prefix;
                 // `prefix:` is the legacy alias kept for on-disk farms.
-                "herd" | "prefix" if !val.is_empty() => c.prefix = val,
+                "herd" | "prefix" if !val.is_empty() => {
+                    c.prefix = val;
+                    c.prefix_declared = true;
+                }
                 "default_type" if !val.is_empty() => c.default_type = val,
                 "default_priority" => {
                     if let Ok(n) = val.parse() {

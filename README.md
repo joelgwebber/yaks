@@ -248,7 +248,7 @@ one.
 Optional per-project config lives in `.yaks/config.yaml`:
 
 ```yaml
-herd: yak              # default herd / id prefix (default "yak")
+herd: yak              # default herd / id prefix (`yaks init` writes it; `create` errors without one)
 default_type: task     # default --type
 default_priority: 3    # default --priority
 vim_mode: true         # TUI editor keybindings: vim (true) or emacs (false)
