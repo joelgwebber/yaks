@@ -16,8 +16,10 @@ is no yak state to merge. An out-of-tree farm is reached by a `.yaks` pointer fi
 kept out of git with `.git/info/exclude`; a worktree OUTSIDE the repo tree needs the pointer or
 `ln -s <repo>/.yaks <worktree>/.yaks`. `yaks merge` consolidates separate farms.
 **Hazard:** the walk-up has no stop at the git top-level, so a checkout that lacks the farm
-for any reason reads and WRITES whatever farm sits above it (yaks-b4dc; an explicit pointer
-will bound it). Check which farm you are in before the first write.
+for any reason reads and WRITES whatever farm sits above it. This is being changed (yaks-b4dc):
+discovery will stop at the git top-level unless a `.yaks` pointer file or `YAKS_DIR` names the
+farm, and `yaks init --mode private` will write that pointer. Until then the walk-up applies, so
+check which farm you are in before the first write.
 
 ## Claim
 `shave` the yaks and add the assignment notes. They are visible to everyone instantly and there
@@ -32,8 +34,11 @@ only the nudge. Do not chase the worker with edits to its yak while it is runnin
 ## One writer per yak
 Writes to DIFFERENT yaks are safe at any concurrency. Concurrent updates to the SAME yak can
 silently drop a note, because the update is a read-modify-write with no lock (32 parallel
-writers lost 4 of 800 notes; yaks-800d). So the coordinator does not write a yak a worker is
-actively using, and no yak has two writers.
+writers lost 4 of 800 notes; yaks-800d). **An append is a write**: `yaks update --note`
+rewrites the whole file, so "it only appends" does not make two writers safe. So no yak has
+two writers, and the coordinator does not write a yak a worker is actively using.
+The trap is a shared parent yak that several workers report to: give each worker its own yak,
+and summarise onto the parent yourself after they finish.
 
 ## Nothing about yaks reaches git or the outside
 Yak ids and the word "yaks" stay out of commit messages, code, comments, PR titles and bodies,

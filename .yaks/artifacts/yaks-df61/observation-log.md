@@ -629,3 +629,22 @@ Answer to Joel's question about the Delta UI after a turn.
   Delta refreshed this clone's `origin/main` (reflog `3a1e5ec -> fb5cf3f`).
 - Standing permission (Joel): branches I created on `local` that are merged and no
   longer needed (`pr/*`) may be deleted by me without asking.
+
+## O37 [skill] First cold-read of the restructured skills  (delta-lead)
+A fresh Haiku scout was given ONLY the three draft skills (core, team, private) and
+eight scenarios, told to answer from the text and quote it, and to say NOT COVERED
+otherwise. Result: 6 right, 1 partly right, 1 NOT COVERED, plus 3 ambiguities it
+named. All are skill bugs, not reader errors:
+- Two workers appending notes to one shared yak: NOT COVERED. The draft said "one writer
+  per yak" but never that an append IS a write (the update rewrites the file), nor
+  named the shared-parent-yak trap. Fixed in private.
+- Who decides a worker's question: "scope and mechanics" vs "design fork" had no
+  boundary, so the scout could not say which a test-helper edit is. Added a rule and
+  examples to core; "if unsure, treat it as a fork".
+- "An explicit pointer will bound it" did not say what it bounds or that it is not
+  built yet. Reworded with the planned behaviour (yaks-b4dc) and what applies today.
+- The scout also blurred "answer in the note says you are the coordinator" with "the
+  worker is told by message"; both are in the text, in different places.
+The check is cheap (one scout, ~2 minutes) and found real gaps in a fresh draft;
+make it a gate for every skill change, and run a second pass on the full set before
+the old yaks-coordinating is replaced.

@@ -4,7 +4,7 @@ title: Restructure coordinator/worker skills by farm mode (public / private / ou
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-03T23:04:20Z'
+updated: '2026-10-03T23:05:14Z'
 parent: yaks-b5a0
 depends_on:
 - yaks-80d5
@@ -38,3 +38,7 @@ Two forks, both with a lean (details in restructure-plan.md section 9). (1) Laye
 ---
 ▸ 2026-10-03T23:04:20Z [delta-lead]
 Progress: plan attached; drafts of core (111 lines), team (64) and private (57) attached as artifacts, kept out of .agents/skills until the forks are answered. Cold-read check running (a fresh scout with only the three drafts answers 8 scenarios). Next: worktrees and delta environment skills, then yaks-working fold-in (0a87, 75cc), guards, trial 4.
+
+---
+▸ 2026-10-03T23:05:14Z [delta-lead]
+Cold-read of the three drafts (fresh Haiku scout, drafts only, 8 scenarios): 6 right, 1 partly, 1 NOT COVERED, 3 ambiguities. Fixed: an append is a write (shared parent yak trap), the boundary between scope/mechanics and design forks with examples, and the pointer wording with what is planned vs true today. Logged as yaks-df61 O37. Remaining: worktrees and delta environment skills, yaks-working fold-in, guards, second cold-read on the full set, trial 4.

@@ -90,6 +90,11 @@ The environment skill carries a fill-in template.
   are the coordinator. You route **real design forks** to the human, with your lean stated,
   and may leave an ask open for them. The answer is the record; a message to the worker is
   only the wake-up.
+- **Where the line is.** *Scope and mechanics* are reversible, local to the yak's stated goal,
+  and nothing a reviewer would argue about later: may a worker touch one more file, which
+  command stages a path, which of two equivalent test shapes to use. A *design fork* changes
+  behaviour or semantics a user sees, a data format, a dependency, a shipped surface, or
+  anything a reasonable reviewer would want a say in. If you are unsure, treat it as a fork.
 - Raise a genuine design fork through `ask` even when you hold a clear lean: the decision
   becomes an attributed thread on the yak. Do not settle it in chat only.
 
