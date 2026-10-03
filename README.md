@@ -104,6 +104,7 @@ when all of them are shorn (or dead), and *tangled* otherwise.
 | `yaks regrow <id>` | shorn → hairy (alias: `reopen`) |
 | `yaks slaughter <id>` / `revive <id>` | move to / from the hidden `dead/` (`slaughter --family` also takes live descendants) |
 | `yaks next` / `tangled` | ready tasks / dependency-blocked tasks |
+| `yaks path <id>…` / `path <filters>` | each yak's current absolute file path (for a precise `git add`) |
 | `yaks search <q>` | substring search over id/title/description |
 | `yaks log` | timestamped notes across a filtered set, oldest first (an activity log); `--since`/`--by` narrow it |
 | `yaks dep` / `reparent` | edit dependencies / move under a new parent |

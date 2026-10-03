@@ -146,6 +146,7 @@ Run these directly from the shell (see **Running yaks** above for the exact invo
 | `yaks create` | Create a new task (in hairy). Title is positional (`yaks create "Fix the login crash"`; `--title` still works for back-compat); `--type`, `--priority`, `--parent`, `--herd` (herd / id prefix for this yak; defaults to the config herd — lets one `.yaks/` hold several herds), `--labels`, `--depends-on`, `--source`, `--description`, `--verify`, `--json` (print the new id + path) |
 | `yaks list` | List tasks with optional filters (`--all` also includes dead) |
 | `yaks show` | Show full details of a task |
+| `yaks path` | Print the current absolute file path of yaks, by id or by the filter flags. A state move relocates the file, so stage a yak precisely with `git add $(yaks path <id>)` instead of hand-building `.yaks/<status>/<id>.md` |
 | `yaks refs` | List what a task points at (parent, deps, id mentions), flagging danglers |
 | `yaks commits` | Show the git commits linked to a yak — those naming its id and those that touched its file across status moves |
 | `yaks update` | Update fields, labels (`--add-label`/`--remove-label`), or append a `--note`. Accepts multiple ids (same edit to each); `--as <actor>` attributes a note; `--verify '<cmd>'` sets/clears the yak's verification command; `--source <url>` sets/clears the external source |

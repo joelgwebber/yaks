@@ -566,6 +566,24 @@ impl Farm {
         Ok(Some(Show { task, children }))
     }
 
+    /// The current on-disk file of the yak `id`, wherever its status put it, or
+    /// `None` if there is no such yak. Backs `yaks path`: a state transition
+    /// moves the file between status directories, so callers (e.g. `git add`)
+    /// should ask rather than hand-build `.yaks/<status>/<id>.md`.
+    pub fn path_of(&self, id: &str) -> Option<PathBuf> {
+        store::find_task_file(&self.root, id).map(|(_, p)| p)
+    }
+
+    /// The on-disk files of every yak `spec` selects (the `list` view: dead yaks
+    /// only with `include_dead` or an explicit `--status dead`), in `list` order.
+    pub fn paths(&self, spec: FilterSpec, include_dead: bool) -> Result<Vec<PathBuf>> {
+        Ok(self
+            .list(spec, include_dead)?
+            .iter()
+            .map(|t| self.root.join(t.status.dir()).join(format!("{}.md", t.id)))
+            .collect())
+    }
+
     pub fn rollup(&self, spec: &FilterSpec) -> Result<(Vec<rollup::Group>, usize)> {
         let tasks = store::load(&self.root, &NON_DEAD)?;
         Ok(rollup::build(&tasks, spec))

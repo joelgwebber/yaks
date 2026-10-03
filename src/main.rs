@@ -115,6 +115,22 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
+    /// Print the current on-disk file path of yaks, one per line: by id
+    /// (`yaks path yaks-1a2b ...`) or by the shared filter flags
+    /// (`yaks path --status shorn --label cli`). A transition moves a yak's file
+    /// between status directories, so use this instead of hand-building
+    /// `.yaks/<status>/<id>.md` for `git add`. Paths are absolute. An unknown
+    /// id is reported on stderr and the exit status is non-zero (known ids are
+    /// still printed). Give ids or filter flags, not both.
+    Path {
+        /// Yak ids to resolve.
+        ids: Vec<String>,
+        #[command(flatten)]
+        filter: FilterFlags,
+        /// With filter flags, also include dead yaks (as `list --all`).
+        #[arg(long)]
+        all: bool,
+    },
     /// List the yaks a task points at (parent, deps, and id mentions in its
     /// text), flagging any formal reference that dangles.
     Refs { id: String },
@@ -592,6 +608,19 @@ fn main() -> Result<()> {
                 }
             }
         },
+        Command::Path { ids, filter, all } => {
+            let code = run_path(
+                &farm,
+                &ids,
+                filter,
+                all,
+                &mut std::io::stdout().lock(),
+                &mut std::io::stderr().lock(),
+            )?;
+            if code != 0 {
+                std::process::exit(code);
+            }
+        }
         Command::Rename { old, new, dry_run } => report_rename(farm.rename(&old, &new, dry_run)?),
         Command::RenamePrefix { old, new, dry_run } => {
             report_rename(farm.rename_prefix(&old, &new, dry_run)?)
@@ -1186,6 +1215,43 @@ fn parse_size(s: Option<&str>) -> (u16, u16) {
 }
 
 // -- CLI arg mapping ------------------------------------------------------
+
+/// `yaks path`: print the file path of each yak named by `ids`, or selected by
+/// `filter`. Returns the process exit code (non-zero on a usage error or an
+/// unknown id); writers are injected so the exit behavior is testable.
+fn run_path(
+    farm: &Farm,
+    ids: &[String],
+    filter: FilterFlags,
+    all: bool,
+    out: &mut impl std::io::Write,
+    err: &mut impl std::io::Write,
+) -> Result<i32> {
+    if ids.is_empty() == !filter.any_set() {
+        writeln!(
+            err,
+            "error: path takes yak ids or filter flags (not both, not neither)"
+        )?;
+        return Ok(1);
+    }
+    if ids.is_empty() {
+        for p in farm.paths(build_spec(filter), all)? {
+            writeln!(out, "{}", p.display())?;
+        }
+        return Ok(0);
+    }
+    let mut code = 0;
+    for id in ids {
+        match farm.path_of(id) {
+            Some(p) => writeln!(out, "{}", p.display())?,
+            None => {
+                writeln!(err, "no such task: {id}")?;
+                code = 1;
+            }
+        }
+    }
+    Ok(code)
+}
 
 fn build_spec(f: FilterFlags) -> FilterSpec {
     FilterSpec {
@@ -1873,6 +1939,165 @@ mod tests {
         let (ok, verdict) = run_verify_command("exit 3").unwrap();
         assert!(!ok);
         assert_eq!(verdict, "FAIL (exit 3)");
+    }
+
+    /// A temp farm with one yak per status directory (`yak-0001` hairy,
+    /// `-0002` shaving, `-0003` shorn, `-0004` dead; 0003 carries label `cli`).
+    fn path_farm(tag: &str) -> (PathBuf, Farm) {
+        let parent = env::temp_dir().join(format!("yaks-path-{tag}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&parent);
+        let root = parent.join(".yaks");
+        for st in [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead] {
+            std::fs::create_dir_all(root.join(st.dir())).unwrap();
+        }
+        for (n, st) in [
+            (1, Status::Hairy),
+            (2, Status::Shaving),
+            (3, Status::Shorn),
+            (4, Status::Dead),
+        ] {
+            let mut t = task();
+            t.id = format!("yak-000{n}");
+            t.status = st;
+            if n == 3 {
+                t.labels = vec!["cli".into()];
+            }
+            store::write::save(&root, &t).unwrap();
+        }
+        let farm = match Farm::open(&parent) {
+            Ok(f) => f,
+            Err(_) => panic!("failed to open temp farm"),
+        };
+        (root, farm)
+    }
+
+    /// Run `run_path`; returns (exit code, stdout lines, stderr).
+    fn path_cmd(
+        farm: &Farm,
+        ids: &[&str],
+        filter: FilterFlags,
+        all: bool,
+    ) -> (i32, Vec<String>, String) {
+        let ids: Vec<String> = ids.iter().map(|s| s.to_string()).collect();
+        let (mut out, mut err) = (Vec::new(), Vec::new());
+        let code = run_path(farm, &ids, filter, all, &mut out, &mut err).unwrap();
+        let lines = String::from_utf8(out)
+            .unwrap()
+            .lines()
+            .map(str::to_string)
+            .collect();
+        (code, lines, String::from_utf8(err).unwrap())
+    }
+
+    #[test]
+    fn path_resolves_a_yak_in_each_status_dir() {
+        let (root, farm) = path_farm("each");
+        for (id, dir) in [
+            ("yak-0001", "hairy"),
+            ("yak-0002", "shaving"),
+            ("yak-0003", "shorn"),
+            ("yak-0004", "dead"),
+        ] {
+            let (code, out, _) = path_cmd(&farm, &[id], FilterFlags::default(), false);
+            let want = root.join(dir).join(format!("{id}.md"));
+            assert_eq!(code, 0);
+            assert_eq!(out, vec![want.display().to_string()]);
+            assert!(want.is_file());
+        }
+    }
+
+    #[test]
+    fn path_follows_a_transition() {
+        let (root, farm) = path_farm("move");
+        let before = farm.path_of("yak-0001").unwrap();
+        std::fs::rename(&before, root.join("shorn/yak-0001.md")).unwrap();
+        assert_eq!(
+            farm.path_of("yak-0001").unwrap(),
+            root.join("shorn/yak-0001.md")
+        );
+    }
+
+    #[test]
+    fn path_takes_several_ids_in_order() {
+        let (root, farm) = path_farm("many");
+        let (code, out, _) = path_cmd(
+            &farm,
+            &["yak-0003", "yak-0001"],
+            FilterFlags::default(),
+            false,
+        );
+        assert_eq!(code, 0);
+        assert_eq!(
+            out,
+            vec![
+                root.join("shorn/yak-0003.md").display().to_string(),
+                root.join("hairy/yak-0001.md").display().to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn path_unknown_id_fails_but_still_prints_known_ones() {
+        let (root, farm) = path_farm("unknown");
+        let (code, out, err) = path_cmd(
+            &farm,
+            &["yak-0001", "yak-nope"],
+            FilterFlags::default(),
+            false,
+        );
+        assert_eq!(code, 1);
+        assert_eq!(
+            out,
+            vec![root.join("hairy/yak-0001.md").display().to_string()]
+        );
+        assert!(err.contains("no such task: yak-nope"), "{err}");
+    }
+
+    #[test]
+    fn path_filter_form_selects_like_list() {
+        let (root, farm) = path_farm("filter");
+        let by = |f: FilterFlags, all| path_cmd(&farm, &[], f, all);
+        let label = FilterFlags {
+            label: vec!["cli".into()],
+            ..Default::default()
+        };
+        let (code, out, _) = by(label, false);
+        assert_eq!(code, 0);
+        assert_eq!(
+            out,
+            vec![root.join("shorn/yak-0003.md").display().to_string()]
+        );
+
+        // Dead yaks are excluded by default, included with --all, and always
+        // reachable by an explicit --status dead.
+        let herd = || FilterFlags {
+            herd: vec!["yak".into()],
+            ..Default::default()
+        };
+        assert_eq!(by(herd(), false).1.len(), 3);
+        assert_eq!(by(herd(), true).1.len(), 4);
+        let dead = FilterFlags {
+            status: vec!["dead".into()],
+            ..Default::default()
+        };
+        assert_eq!(
+            by(dead, false).1,
+            vec![root.join("dead/yak-0004.md").display().to_string()]
+        );
+    }
+
+    #[test]
+    fn path_needs_ids_xor_filter() {
+        let (_root, farm) = path_farm("xor");
+        let (code, out, err) = path_cmd(&farm, &[], FilterFlags::default(), false);
+        assert_eq!((code, out.len()), (1, 0));
+        assert!(err.contains("ids or filter flags"), "{err}");
+        let label = FilterFlags {
+            label: vec!["cli".into()],
+            ..Default::default()
+        };
+        let (code, out, _) = path_cmd(&farm, &["yak-0001"], label, false);
+        assert_eq!((code, out.len()), (1, 0));
     }
 
     fn task() -> Task {

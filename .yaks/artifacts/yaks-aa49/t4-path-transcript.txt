@@ -1,0 +1,38 @@
+# hairy=demo-db6f shaving=demo-bc29 shorn=demo-717e (+ demo-2507)
+  [H] demo-db6f  p3 task     alpha [cli]
+  [S] demo-bc29  p3 task     beta
+  [N] demo-717e  p3 task     gamma
+  [X] demo-2507  p3 task     delta
+$ yaks path demo-db6f demo-bc29 demo-717e
+/private$TMP/.yaks/hairy/demo-db6f.md
+/private$TMP/.yaks/shaving/demo-bc29.md
+/private$TMP/.yaks/shorn/demo-717e.md
+[exit=0]
+$ yaks path --label cli
+/private$TMP/.yaks/hairy/demo-db6f.md
+[exit=0]
+$ yaks path --status shorn
+/private$TMP/.yaks/shorn/demo-717e.md
+[exit=0]
+$ yaks path --all
+error: path takes yak ids or filter flags (not both, not neither)
+[exit=1]
+$ yaks path --status dead
+/private$TMP/.yaks/dead/demo-2507.md
+[exit=0]
+$ yaks path demo-db6f nope-0000
+/private$TMP/.yaks/hairy/demo-db6f.md
+no such task: nope-0000
+[exit=1]
+$ yaks path
+error: path takes yak ids or filter flags (not both, not neither)
+[exit=1]
+$ yaks path demo-db6f --label cli
+error: path takes yak ids or filter flags (not both, not neither)
+[exit=1]
+$ (from a subdirectory) git add $(yaks path A B)
+A  ../.yaks/hairy/demo-db6f.md
+A  ../.yaks/shaving/demo-bc29.md
+?? ../.yaks/config.yaml
+?? ../.yaks/dead/
+?? ../.yaks/shorn/

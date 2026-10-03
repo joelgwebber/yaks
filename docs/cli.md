@@ -16,6 +16,7 @@ Run `yaks <command> --help` for full flags. Most read commands accept the shared
 |---|---|
 | `list` | List tasks (non-dead by default; `--all` includes dead). Status renders as `[H]`/`[S]`/`[N]`/`[X]` — hairy / shaving / shor**n** / dead. |
 | `show <id>` | Show one yak: fields, references, children, body + notes. |
+| `path <id>...` / `path <filters>` | Print each yak's current file path (absolute, one per line), by id or by the shared filter flags (`--all` adds dead yaks). A transition moves a yak's file between status directories, so `git add $(yaks path <id>)` replaces hand-built `.yaks/<status>/<id>.md` paths. An unknown id goes to stderr with a non-zero exit (known ids still print). Ids or filters, not both. |
 | `next` (alias `ready`) | Hairy yaks whose dependencies are all resolved — the work queue. |
 | `tangled` (alias `blocked`) | Hairy yaks with at least one unresolved dependency. |
 | `search <text>` | Substring search over id / title / description. |
