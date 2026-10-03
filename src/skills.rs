@@ -908,4 +908,78 @@ mod symlink_guard_tests {
 
         let _ = std::fs::remove_dir_all(&tmp);
     }
+
+    /// The repo's own skills (`.agents/skills`) stay consistent, since agents load
+    /// them by name and follow the references between them (yaks-5c9f).
+    #[test]
+    fn repo_skills_are_well_formed() {
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join(".agents/skills");
+        let mut names: Vec<String> = std::fs::read_dir(&dir)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().is_dir())
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .collect();
+        names.sort();
+        assert!(!names.is_empty(), "no skills found in {}", dir.display());
+
+        let field = |front: &str, key: &str| -> Option<String> {
+            front
+                .lines()
+                .find_map(|l| l.strip_prefix(&format!("{key}:")))
+                .map(|v| v.trim().to_string())
+        };
+        for n in &names {
+            let text = std::fs::read_to_string(dir.join(n).join("SKILL.md"))
+                .unwrap_or_else(|_| panic!("{n}: missing SKILL.md"));
+            let rest = text
+                .strip_prefix("---\n")
+                .unwrap_or_else(|| panic!("{n}: SKILL.md must start with frontmatter"));
+            let (front, _body) = rest
+                .split_once("\n---\n")
+                .unwrap_or_else(|| panic!("{n}: frontmatter is not closed"));
+            assert_eq!(field(front, "name").as_deref(), Some(n.as_str()), "{n}: name must equal its directory");
+            let desc = field(front, "description").unwrap_or_default();
+            assert!(
+                desc.to_lowercase().contains("when"),
+                "{n}: description must say when to use the skill"
+            );
+            // A plain (unquoted) YAML scalar may not contain `: ` or ` #`. The harness
+            // refuses to load such a skill ("mapping values are not allowed"), and a
+            // line-based read like this one cannot see that, so check it explicitly.
+            if !(desc.starts_with('"') || desc.starts_with('\'')) {
+                assert!(
+                    !desc.contains(": ") && !desc.contains(" #"),
+                    "{n}: an unquoted description may not contain ': ' or ' #' (invalid YAML, \
+                     the skill will not load); wrap it in double quotes"
+                );
+            }
+            // A skill another skill must be able to load alongside others stays short.
+            if n.starts_with("yaks-coordinating") || n == "yaks-working" {
+                assert!(text.lines().count() <= 200, "{n}: over the 200-line budget");
+            }
+            // Every skill-shaped reference (`yaks-` + 5 or more letters, so not a
+            // 4-character yak id) must name a skill that exists.
+            let bytes = text.as_bytes();
+            let mut i = 0;
+            while let Some(p) = text[i..].find("yaks-") {
+                let start = i + p + 5;
+                let mut end = start;
+                while end < bytes.len() && (bytes[end].is_ascii_lowercase() || bytes[end] == b'-') {
+                    end += 1;
+                }
+                let tok = text[start..end].trim_end_matches('-');
+                if tok.len() >= 5 {
+                    let full = format!("yaks-{tok}");
+                    assert!(names.contains(&full), "{n}: refers to unknown skill `{full}`");
+                }
+                i = end.max(start);
+            }
+        }
+        // The core's router must name every companion it routes to.
+        let core = std::fs::read_to_string(dir.join("yaks-coordinating").join("SKILL.md")).unwrap();
+        for n in names.iter().filter(|n| n.starts_with("yaks-coordinating-")) {
+            assert!(core.contains(n.as_str()), "yaks-coordinating does not route to {n}");
+        }
+    }
 }

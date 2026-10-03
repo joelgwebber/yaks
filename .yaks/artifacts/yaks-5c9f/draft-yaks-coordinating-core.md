@@ -80,16 +80,18 @@ The environment skill carries a fill-in template.
   intact.
 - Update-every-surface check: grep for the old behaviour across docs, skills, README and
   `--help` text before accepting.
-- `yaks doctor` after every landing.
+- `yaks doctor` after every landing. It checks farm integrity (for example a yak present in two
+  status directories, or a broken reference). "All clear" is a pass; any issue it lists is yours
+  to fix before you move on.
 - Never write a claim into a yak that you did not observe.
 
 ## 8. Ask and answer
 - A worker that needs a human decision runs `yaks ask <id> --note "..."`, leaves its edits
   in place, and returns. It does not block.
 - You answer **scope and mechanics** yourself (`yaks answer`), and say in the note that you
-  are the coordinator. You route **real design forks** to the human, with your lean stated,
-  and may leave an ask open for them. The answer is the record; a message to the worker is
-  only the wake-up.
+  are the coordinator. For a **real design fork** you do NOT run `yaks answer`: leave the ask
+  open (it sits in the human's `yaks inbox`), add your lean as a note, and tell the human. The
+  answer is the record; a message to the worker is only the wake-up.
 - **Where the line is.** *Scope and mechanics* are reversible, local to the yak's stated goal,
   and nothing a reviewer would argue about later: may a worker touch one more file, which
   command stages a path, which of two equivalent test shapes to use. A *design fork* changes

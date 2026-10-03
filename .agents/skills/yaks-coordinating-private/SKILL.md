@@ -1,6 +1,6 @@
 ---
 name: yaks-coordinating-private
-description: Farm-mode companion to yaks-coordinating for a PRIVATE or OUT-OF-TREE farm (`.yaks/` gitignored, a `.yaks` pointer file, or a symlink): one live farm shared by every lane, live claims, no yak ids in anything shared, PR-driven landing. Load after yaks-coordinating when `git ls-files .yaks` prints nothing. Repo-internal; not shipped.
+description: "Farm-mode companion to yaks-coordinating for a PRIVATE or OUT-OF-TREE farm (`.yaks/` gitignored, a `.yaks` pointer file, or a symlink): one live farm shared by every lane, live claims, no yak ids in anything shared, PR-driven landing. Load after yaks-coordinating when `git ls-files .yaks` prints nothing. Repo-internal; not shipped."
 ---
 
 # Coordinating a private or out-of-tree farm

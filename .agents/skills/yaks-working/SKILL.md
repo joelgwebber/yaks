@@ -1,6 +1,6 @@
 ---
 name: yaks-working
-description: Minimal, harness-agnostic conventions for taking one yak from hairy to shorn with a legible trail. Experimental and repo-internal (yaks dogfooding); not shipped.
+description: "Use when you are taking one yak from hairy to shorn, as a worker handed one by a coordinator or on your own: re-read it, claim it, keep notes, gather evidence, shear, commit. Minimal and harness-agnostic. Repo-internal (yaks dogfooding); not shipped."
 ---
 
 # Working a yak (experimental)
@@ -9,8 +9,9 @@ Repo-internal conventions for working a single yak with a trail a human or
 another agent can trust later. Deliberately minimal. Prefer the smallest habit
 that keeps the farm honest; do not grow this into a heavyweight flow.
 
-Run the yaks CLI directly. In this checkout use `./target/release/yaks` (the
-`yaks` on `PATH` may be older); elsewhere use `yaks`.
+Run the yaks CLI directly, with a binary you trust. In a checkout of this repo build your
+own (`cargo build --release`, then `./target/release/yaks`; a `yaks` on `PATH` may be older
+or absent); if your brief gives an absolute path, use that. Never `npx` or install one.
 
 ## Before you start
 
@@ -27,9 +28,12 @@ Run the yaks CLI directly. In this checkout use `./target/release/yaks` (the
 **When a decision needs a human, ask and hand back — don't block-and-wait.**
 `yaks ask <id> --note "<question>"` records the question, sets the yak's `needs`
 block, and drops it from `yaks next` until it is resolved; then return control
-rather than spinning. Pending questions surface in the human's `yaks inbox`.
-Clearing the block is human-reserved (`yaks answer <id>`) — never answer your own
-ask.
+rather than spinning. Pending questions surface in the human's `yaks inbox`. Leave your
+edits in the working tree when you return: do not revert them and do not park them in
+`$TMPDIR` (deleted when your session ends), and say which you did in your final message.
+Never answer your own ask. A coordinator may answer scope or mechanics and have you run
+`yaks answer` on its stated authority, then wake you; you keep your context. A design fork
+waits for the human.
 
 **Ask to *record* a judgment call, not only when you're stuck.** Beyond "ask when
 you can't judge," raise a genuine design fork through `ask`/`answer` even when you
@@ -41,6 +45,12 @@ semantics, scope), not trivia.
 
 ## While you work
 
+- **Name yourself on every command.** `YAKS_ACTOR=<name> yaks ...` or `--as <name>`; an
+  `export` does not survive between terminal calls in some harnesses. Without it your notes
+  are stamped with the git user, which is the human.
+- **Changes you did not make are signal, not an error.** A touched `updated:`, a yak that
+  moved, a new file, a dirty working tree: a person or another agent is working in the same
+  farm. Do not investigate, revert or announce it unless it changes your task.
 - **Append progress as you go.** `yaks update <id> --note "what you found /
   decided / changed"`. Short, factual, one event per note. This running log is
   what future sessions and agents rely on.
@@ -97,18 +107,23 @@ semantics, scope), not trivia.
 - Write a short shorn summary (what was done, what was learned, any yaks spawned,
   the evidence), then `yaks shorn <id>`.
 - **Team mode:** stage the shorn yak move together with the code that completed
-  it and commit them in one commit. That commit is also what later lets you trace
+  it and commit them in one commit. `yaks attach` creates a NEW directory under
+  `.yaks/artifacts/<id>/` that must be added too. Stage only paths that exist: `git add`
+  aborts and stages nothing if one pathspec does not match (a transient `shaving/` path after
+  the move is the usual culprit), so use `git add $(yaks path <id>)` or `':(glob).yaks/*/<id>.md'` and check `git show --stat`
+  lists every file you expect before you rely on the commit. That commit is also what later
+  lets you trace
   the change back to this yak (provenance, `yaks-2610`).
+- **Private farm** (`git ls-files .yaks` prints nothing): the yak files are not in git. Never
+  put yak ids or the word yaks in a commit message, code or comments, and stage only your own
+  source files.
 - **The repo's own commit hooks are not yours.** A repo may run pre-commit hooks
   (husky/lint-staged, formatters, test gates) on your commit. Their output — and
   any failure they raise — is the repo's, not a yaks problem: fix the flagged
   code and re-commit; don't mistake hook noise for a yaks error.
 
-## Optional: attribution (multi-agent)
+## Many workers
 
-When more than one agent shares a farm, name yourself in notes so others can
-trace who did what. Attribution is first-class: `yaks update <id> --as <actor>
---note "..."` stamps the note `[actor]` (the actor resolves `--as` →
-`$YAKS_ACTOR` → git `user.name`). Attribution, never ownership — the yak still
-belongs to no one. Single-agent work can ignore it. See yaks-coordinating for
-the multi-worker picture.
+When a coordinator hands yaks to several workers, `yaks-coordinating` (the core, which routes to
+the farm-mode and environment skills) is the multi-worker picture. As a worker you need only this file
+and your brief.
