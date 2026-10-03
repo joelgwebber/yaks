@@ -4,13 +4,12 @@ title: Restructure coordinator/worker skills by farm mode (public / private / ou
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-03T23:05:14Z'
+updated: '2026-10-03T23:14:04Z'
 parent: yaks-b5a0
 depends_on:
 - yaks-80d5
 labels:
 - skills
-needs: human
 ---
 
 Replace today's mixed public/private, harness-agnostic prose with a small shared core (claim, lanes, evidence, ask/answer) plus one coordinator + worker pair per environment (git worktrees; Delta), each followable without reading the others. Fold in pending guidance from yaks-0a87 and yaks-75cc. Embed and test-guard them like the yaks skill.
@@ -42,3 +41,7 @@ Progress: plan attached; drafts of core (111 lines), team (64) and private (57) 
 ---
 ▸ 2026-10-03T23:05:14Z [delta-lead]
 Cold-read of the three drafts (fresh Haiku scout, drafts only, 8 scenarios): 6 right, 1 partly, 1 NOT COVERED, 3 ambiguities. Fixed: an append is a write (shared parent yak trap), the boundary between scope/mechanics and design forks with examples, and the pointer wording with what is planned vs true today. Logged as yaks-df61 O37. Remaining: worktrees and delta environment skills, yaks-working fold-in, guards, second cold-read on the full set, trial 4.
+
+---
+▸ 2026-10-03T23:14:04Z [Joel Webber]
+Agreed on A for the skill layering. I'm fine waiting on pushing them into the binary; I believe we have another yak to revisit the init/skill installation structure.
