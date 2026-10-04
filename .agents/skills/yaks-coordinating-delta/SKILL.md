@@ -9,8 +9,13 @@ Read `yaks-coordinating` and your farm-mode skill first. This file is how work M
 
 ## The model
 Your thread is the coordinator. Each worker (`spawn_subagent`) is its own thread with a thin git
-clone (`<repo>/.delta/clones/<id>/<repo>.git`) and a checkout (`<repo>/.delta/worktrees/<id>/<repo>`);
-those finished clones stay on disk. A fresh checkout has no `target/`: building takes 15-25 s.
+clone plus a checkout; those finished clones stay on disk. Where they live depends on the machine:
+on the human's own machine `<repo>/.delta/clones/<id>/<repo>.git` and `<repo>/.delta/worktrees/<id>/<repo>`;
+on a machine that only has the thread shared to it, `~/.local/share/delta/worktrees/<id>/<repo>` with the
+git dir as its sibling `<repo>.git` and NO `.delta/`. Either way a checkout is `<root>/<id>/<repo>`, and
+`git worktree list` inside it shows only that clone: do not use it to find siblings. Your clone's
+`objects/info/alternates` names the repo that holds Delta's `refs/delta/<id>/<repo>/<sha>` pins. A worker can
+read your checkout and your `target/` (it is not isolated), so the brief forbids touching them. A fresh checkout has no `target/`: building takes 15-25 s.
 Extra repos are attached to the thread by the human as more Delta worktrees; with several attached,
 file tools and `skill` need the worktree argument. Never clone a repo or add a path dependency.
 Project skills load only from REAL files under `.agents/skills/` (symlinked skill dirs are skipped),
@@ -19,8 +24,10 @@ and `skill` needs the `worktree` argument; still put the critical rules in the b
 ## Before you spawn
 - Claim in the farm (mode skill). A worker's checkout is a snapshot of your WORKING TREE,
   uncommitted changes included, so it sees an uncommitted claim; in a team farm commit it anyway.
-- Read the model from the spawn confirmation and record it in the claim note. The profile default
-  has changed between runs; pass `model` only when the human asked for one.
+- Read the model from the spawn confirmation and record it AFTER spawning, on the umbrella yak or in the
+  landing note, never on the worker's own yak: the worker moves that file, and your edit then conflicts with
+  its landing. Once spawned, do not edit a worker's yak at all. The profile default has changed between
+  runs; pass `model` only when the human asked for one.
 - Scope disjointly and give each worker its own yak (core sections 3-4). Parallel workers on one
   repo are fine: four landed within 10 seconds of each other.
 
@@ -91,11 +98,18 @@ message is the nudge; the note is the record. Ask the worker whether it saw the 
 Every commit in every thread is mirrored into the human's repo as `refs/delta/<thread>/<repo>/<sha>`, on no
 branch, so their `main` does not move by itself and there is no agent-side accept tool. Moving it is your
 explicit `git push local <branch>:main`: refused if the human's checkout is on that branch and dirty (their
-yak drift counts), always possible to a branch that is not checked out. Team-mode asks and notes reach their
+yak drift counts), always possible to a branch that is not checked out.
+Team-mode asks and notes reach their
 `yaks inbox` only once `main` moves. Default flow: form logical per-lane commits on a PR-style branch, push the
 branch, then fast-forward `main` (and do not reset your own branch to it while workers are parked: step 7); put the yak id and the checks run in each message. Never push `origin` or open
 a PR without the human's say-so; GitHub needs `origin`, not `local`. You may delete your own merged `pr/*`
 branches on `local`.
+
+**Before any push to `main`, check that `local` is the human's checkout.** On a thread shared to another machine `local` is a
+Delta-managed BARE repo with no branches (workers' clones always are); a push there is accepted and lands where
+the human never looks. Check: `git ls-remote --heads local main` prints a line, and `git -C "$(git remote get-url
+local)" rev-parse --is-bare-repository` says `false`. If not, never push `main`: push `pr/<name>` to `local`, and
+give the human the command `git fetch <managed repo path> pr/<name>` (or ask them to repoint `local`).
 
 ## One landing point, and when your clone goes stale
 Land from ONE place: the coordinator's thread. If another thread (a human-created subthread, a second

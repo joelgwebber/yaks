@@ -4,7 +4,7 @@ title: 'Parallel development: finish and harden coordinator/worker skills + tool
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-03T20:39:31Z'
+updated: '2026-10-04T20:53:04Z'
 labels:
 - agent
 - skills
@@ -23,3 +23,7 @@ Direction (Joel, 2026-10-03): Delta is NOT a fourth farm mode. Farm mode (public
 ---
 ▸ 2026-10-03T20:39:31Z [delta-lead]
 Progress (delta-lead): resynced from local/main (61ec995); yaks-80d5 shorn with the environment x farm-mode matrix (artifact skills-matrix.md); observation log yaks-df61 open with O1-O13; new bug yaks-b4dc (discover walk-up hazard) filed. Headline findings: private/out-of-tree + Delta shares one live farm (reproduced); skill tool did not load project skills after the reset (O1); my own first brief and acceptance were the main failures (O5, O6). Next: yaks-fe33 trial 1, which needs a decision on the worker model. Proposing to fold into this family: yaks-0a87 and yaks-75cc (feed 5c9f), yaks-c061 (feeds e87e); leaving 10fb, 5f12 and 77a5 related, since they are about archaeology and the store model, not skills.
+
+---
+▸ 2026-10-04T20:53:04Z [delta-lead]
+Spawned (base ca6d595, model anthropic/claude-sonnet-5-5 for both, read from the spawn confirmations): lanes-1 (agent cf3d8487f2a446d5) on yaks-e545; attr-1 (agent d5432b27565a40aa) on yaks-7149. Decisions behind them: yaks-99ec (git worktrees plus a sibling-directory scan, no Delta database; skills stop assuming 'local' is a checkout) and yaks-7149 (option A). Per yaks-df61 O52 the coordinator does not edit a worker's yak after spawn.

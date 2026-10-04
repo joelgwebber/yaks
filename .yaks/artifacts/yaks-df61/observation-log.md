@@ -806,3 +806,83 @@ the edit, --force-discard, dry run, rewritten-history cherry-pick); `cargo test`
 (`delta_land_script_selftest_passes`, skipped on git older than 2.38). The first selftest run caught two bugs in the
 test itself (macOS `wc` padding; a setup that did not really rewrite history) and one in the script (running doctor with
 no farm). Not yet exercised on a real landing; use it on the next one and compare with the manual checklist.
+
+# Cross-machine threads (yaks-99ec)
+
+## O50 [open][skill][cli] A thread shared to another machine gets managed bare clones, not the user's checkout  (delta-lead, from Joel's handoff subthread)
+Source: read-only inspection plus one probe by the handoff subthread; the first three facts below I re-checked on the
+Linux machine, the rest are as reported and not yet re-run by me. (The relay called this O56; the log's next number is O50.)
+Setup: Joel shared this thread from his laptop to a Linux machine. The thread has two Delta worktrees (yaks, edtui). On the
+laptop `local` is `~/src/yaks/.git` (a real checkout) and worktrees live in `~/src/yaks/.delta/worktrees/<ns>/`. On the
+Linux machine the same thread got clones under `~/.local/share/delta/worktrees/<dir>/{yaks,edtui}` and `local` was a
+Delta-managed BARE repo (`~/.local/share/delta/user_*/managed-repositories/<uuid>/repository.git`).
+1. Cause (reported): Delta keeps a per-machine "user checkout" per repository record. When none is known ("No user checkout
+   is known for LocalRepositoryId(...)") it falls back to a managed bare clone of GitHub `origin/main`. It does not link
+   `~/src/edtui` by remote URL even though the URL is identical.
+2. The managed `local` is bare (`core.bare=true`): only `origin/*`, Delta's `refs/delta/<dir>/<repo>/<sha>` pins and tags.
+   The `receivepack ... updateInstead` config is still written into the clone but means nothing for a bare repo.
+3. NOT carried to the other machine: the laptop's local-only refs (`delta/trial23|4|5|6`, `delta/yaks-b5a0` archives) and any
+   uncommitted yak answers in the laptop checkout. Only what is on `origin` crosses. Consequence for the skills: "to
+   reach my main, `git push local <branch>:main`" assumes a real checkout, which is false for an imported thread.
+4. Directory names are opaque: the `<dir>` names are Delta's per-mount names (SQLite `app_worktree_mounts`); the tool
+   worktree UUIDs are per-thread handles and a fork reuses them, so one UUID maps to different directories in parent and
+   fork. Reliable lookups: `pwd` from a terminal call with the `worktree` parameter, or `git for-each-ref refs/delta`
+   (lists dirs, not owners).
+5. Repointing `local` works at the git level only. Joel ran `git remote set-url local /home/joel/src/yaks/.git` in the yaks
+   worktrees (parent and subthread): fetch and push --dry-run reach his real checkout (I re-checked here: `git fetch local`
+   works, the checkout is non-bare, on `main`, equal to `origin/main`). But a probe commit was pinned as `refs/delta/...` in
+   the MANAGED repo, not in `~/src/yaks`: Delta's own bookkeeping follows its database record, not `remote.local.url`.
+   Here `git for-each-ref refs/delta` in this clone lists nothing (pins are in the managed repo, as reported). The edtui
+   worktrees' `local` has NOT been repointed.
+6. Delta features seen only in app strings and its DB, none exercised: a "Work In" picker (Isolated Delta Worktree /
+   Existing Local Checkout / Existing Git Worktree), "Add Project to Thread", "Set as Primary Project", and the text "The
+   workspace cannot be changed after the agent has used this project". We do not know whether a shared thread can be
+   rebound to a local checkout on the receiving machine; we expect not once the agent has run.
+7. Older threads on that machine DID get a linked checkout (`~/src/yaks/.delta/worktrees/bearqc...`, `local` =
+   `~/src/yaks/.git`), because the project was added from the folder there. So whether a thread gets a user checkout depends
+   on how its project was added on that machine.
+Joel's goal: work in Zed and CLI tools (including `yaks`) without chasing where Delta put the worktrees; he is open to
+this not being the intended workflow (then he would only open these repos from Delta).
+What it means for yaks: worktree visibility gets more urgent (yaks-38dc lanes view, yaks-70e5 `yaks diff`), across git
+worktrees AND Delta clones, and across machines; every such facility must exist as a CLI command.
+Open questions (tracked on yaks-99ec): how yaks finds sibling worktrees when `local` is bare, absent, or at a different path
+per machine; what `preflight`/`path`/`discover` say there; what `yaks-coordinating-delta` and `land.sh` assume about
+`local`; and what carries farm state and archive branches across machines (only `origin`, which we never push without Joel).
+
+## O51 [ok][skill] What a worker sees on a shared-thread (managed-layout) machine  (delta-lead, probe-1 / yaks-f49c, landed f3a95d2)
+Evidence: `.yaks/artifacts/yaks-f49c/probe-1.md` (probe-1's commands and real output; I re-ran the pin and layout checks).
+- Layout: checkout `<root>/<dir>/yaks`, its git dir the SIBLING `<root>/<dir>/yaks.git` (`.git` is a `gitdir:` file,
+  `core.worktree` set); no `.delta/` anywhere. `git worktree list` prints the git dir itself, so it cannot enumerate
+  Delta checkouts. `yaks path/preflight/doctor` work unchanged (discovery stops at the `.git` FILE).
+- The worker's `local` is the managed BARE repo (not repointed: the coordinator's `set-url` is per clone and is not
+  inherited). It has no `refs/heads`, so `git fetch local` prints nothing, `local/main` does not exist, and
+  `git push --dry-run local HEAD:refs/heads/x` is ACCEPTED. Inferred, not run: a real `git push local <branch>:main` from
+  a managed-layout clone would succeed into the managed repo, where the human never looks. The skills' "push local" step
+  is unsafe there; it needs a check that `local` is a checkout.
+- `objects/info/alternates` names the managed repo, which holds the pins for every thread dir on the machine
+  (`refs/delta/<dir>/yaks/<sha>`; the worker's final commit was pinned under its own dir 3d4gr26p09ng, 3 pins in all).
+  Pins give dir -> commits but not owner, and the dir list does not mean the checkout still exists.
+- Workers are not isolated from siblings: the worker could `ls` the coordinator's checkout and read its
+  `target/release/yaks` (a worker may use the coordinator's built binary; it could also modify it, so the brief forbids it).
+- `DELTA_THREAD_TITLE` in a worker is the spawn title, not the worker's name (as O15); `git status` there said
+  `ahead 2` = the coordinator's two unpushed commits at spawn time.
+
+## O52 [ok][skill] First real landing with land.sh, and a conflict I caused  (delta-lead)
+Landed yaks-f49c (6345ab0) with `land.sh --dry-run` then `land.sh`. The pending merge left the worker's files untracked
+beside a half-finished merge ("All conflicts fixed but you are still merging"); the script reported the base as an
+ancestor, found that `git merge-tree` conflicted, fell back to cherry-pick, stopped with exit 5 and told me what to do.
+I resolved by hand and `git cherry-pick --continue`; `yaks doctor` clear. The conflict was my doing: after spawning I
+committed a note to the worker's yak (the model, which the skill tells the coordinator to record, but which is only known
+from the spawn confirmation, AFTER the claim is committed). The worker then moved that file shaving -> shorn with its own
+note, so both sides changed it. Skill fix to make: do not edit a worker's yak after spawn; record model and base on the
+parent/umbrella yak or in the landing note instead. Also: the script's "merge by SHA" line followed by "falling back to
+cherry-pick" reads as a contradiction; say "merge conflicts, so cherry-picking" once.
+No landing problem otherwise: no stale shaving copy, no reverted files.
+
+## O53 [ok][cli] Handles for finding sibling checkouts without Delta's database  (delta-lead)
+Both layouts expose the same three things, so a git-only discovery is possible:
+(1) the clone's `objects/info/alternates` -> the repo that hosts the pins (the human's checkout on the laptop, the managed
+bare repo here); (2) `refs/delta/<dir>/<repo>/<sha>` in that repo = which dirs exist or existed and their commits; (3) a
+checkout is `<root>/<dir>/<repo>` in both layouts (`<root>` = `<repo>/.delta/worktrees` on the laptop,
+`~/.local/share/delta/worktrees` here), i.e. `$(dirname $toplevel)/../<dir>/<repo>` for a sibling. What is missing: owner
+(which thread), and liveness beyond "the directory exists". Plain git worktrees need only `git worktree list`.

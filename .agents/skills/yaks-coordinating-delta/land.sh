@@ -41,7 +41,7 @@ land() {
   [ -n "$parent" ] || die "the worker commit has no parent"
   if git merge-base --is-ancestor "$parent" HEAD; then
     mode=merge
-    say "worker base $(git rev-parse --short "$parent") is an ancestor of HEAD: merge by SHA"
+    say "worker base $(git rev-parse --short "$parent") is an ancestor of HEAD: trying a merge by SHA"
   else
     mode=cherry-pick
     say "worker base $(git rev-parse --short "$parent") is NOT an ancestor of HEAD (history was rewritten): cherry-pick"
@@ -51,7 +51,7 @@ land() {
   if [ $mode = merge ]; then
     out=$(git merge-tree --write-tree --name-only HEAD "$full" 2>&1)
     if printf '%s\n' "$out" | grep -q '^CONFLICT'; then
-      say "merge-tree reports conflicts; falling back to cherry-pick:"
+      say "the merge would conflict, so landing by cherry-pick instead (you resolve the files named here, then 'git cherry-pick --continue'):"
       printf '%s\n' "$out" | grep '^CONFLICT' | sed 's/^/  /'
       mode=cherry-pick
     else
