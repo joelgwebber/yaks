@@ -4,7 +4,7 @@ title: 'Parallel development: finish and harden coordinator/worker skills + tool
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-04T21:01:08Z'
+updated: '2026-10-04T21:06:09Z'
 labels:
 - agent
 - skills
@@ -31,3 +31,7 @@ Spawned (base ca6d595, model anthropic/claude-sonnet-5-5 for both, read from the
 ---
 ▸ 2026-10-04T21:01:08Z [delta-lead]
 Landed: yaks-7149 part 2 (2c28d23, plus follow-up 649b48a: strict doctor must not count moved: entries as evidence) and yaks-e545 'yaks lanes' (ddb5a83); yaks-8265 shorn as covered. Spawned lanes-2 (agent 7d0c5122bd6940af, anthropic/claude-sonnet-5-5, base 04d7114) on yaks-d738 (lanes: a lane's own changes vs merge-base, behind count). Nothing pushed to local/origin yet; the bundle goes to local main after lanes-2 and a decision on the preflight 'local is a checkout' check.
+
+---
+▸ 2026-10-04T21:06:09Z [delta-lead]
+Pushed to local main (dab94a1; archive local delta/trial7): yaks-7149 part 2, yaks lanes (e545, d738), cross-machine probe and Delta skill fixes. Not on origin. Next candidates: preflight check that local is a checkout (new child of yaks-99ec), yaks init --mode (yaks-814a) with project-local skill install (yaks-3859), the TUI lanes view (yaks-38dc remainder), yaks brief (yaks-2c22).

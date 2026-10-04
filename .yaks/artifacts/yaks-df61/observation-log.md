@@ -906,3 +906,24 @@ checked: `last_verify_passed` matches `verify: ` and is unaffected.
 Also fixed: a `\u{25b8}` escape in a doc comment, and the stale coordination-skill lines (moves are attributed; do not
 edit a worker's yak while it runs). `yaks-8265` shorn as covered. Cost to watch (the worker recorded it too): a move edits
 the yak body, so two lanes moving or noting the same yak now conflict more often (O52).
+
+## O55 [ok][skill][cli] Lanes landed, reviewed on the real thread, and the first push using the "is local a checkout" check  (delta-lead)
+lanes-1 (yaks-e545, 3e4659b) landed by cherry-pick: land.sh stopped on three doc-table conflicts (its `lanes` row beside
+7149's reworded `log` row, same three files in every case), I kept both rows, cherry-pick --continue, gate 378 + 8 + 28.
+Review by running it where siblings are known to me: it listed every sibling Delta checkout with the right HEAD and mtime,
+and it was read-only (index, HEAD, ref and yak-file mtimes identical after two runs). It had one design gap the worker
+named: the farm delta was against THIS checkout, so every stale lane showed phantom moves reading backwards
+(`yaks-7149 shorn -> hairy` for lanes that never touched 7149). lanes-2 (yaks-d738, f5561ed) fixed it by diffing against
+the merge-base (read with ls-tree + cat-file into a temp dir) and adding BEHIND; landed with land.sh in one pass (base an
+ancestor, computed tree equal). On the thread: stale lanes say "no changes of its own"; a worker's real changes still show.
+Known limit: a lane whose work was landed by merge or cherry-pick still shows "+1 ahead" and its changes (the commit is not
+an ancestor); `git cherry` could mark such lanes "landed". Not built.
+Push: before pushing main I ran the new check from the Delta skill on my own clone (`git ls-remote --heads local main`
+prints main; `rev-parse --is-bare-repository` at local's URL says false), built three per-lane squash commits cut at the
+tested tips (final tree identical to the tested tip, d8034b7), pushed the branch, an archive `delta/trial7` (unsquashed
+history) and `local main`; Joel's checkout (clean, on main) advanced 4fc959e -> dab94a1 and stayed clean; origin untouched.
+Deleted my merged pr/ branch on local; re-synced my clone with `reset --hard local/main` after checking that no worker was
+running or parked and the trees were equal.
+Trial 7 scorecard: probe (f49c) 1 conflict I caused; 7149: clean landing + 1 regression found in review (strict doctor);
+e545: 3 doc-row conflicts + 1 design gap found in review; d738: clean. Four landings, three coordinator-side defects, all
+found by running the thing, none by the worker's own tests.
