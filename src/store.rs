@@ -1023,7 +1023,13 @@ pub fn find_task_file(root: &Path, id: &str) -> Option<(Status, PathBuf)> {
 /// Move a task into `dest`: rename its file into the destination dir, then
 /// rewrite it with a bumped `updated` (mirrors Python `move_task`). A no-op
 /// when the task is already at `dest`.
-pub fn move_task(root: &Path, id: &str, dest: Status) -> Result<MoveOutcome> {
+///
+/// Every real move also appends a transition entry to the body, in the note
+/// shape `▸ <ts> [<actor>]` + `moved: <from> -> <to>` (see
+/// [`transition_text`]), so the file alone says who moved the yak and when;
+/// `actor` is resolved by the caller (see `actor::resolve`). The caller holds
+/// the farm lock.
+pub fn move_task(root: &Path, id: &str, dest: Status, actor: Option<&str>) -> Result<MoveOutcome> {
     let Some((status, path)) = find_task_file(root, id) else {
         return Ok(MoveOutcome::NotFound);
     };
@@ -1038,10 +1044,32 @@ pub fn move_task(root: &Path, id: &str, dest: Status) -> Result<MoveOutcome> {
     let dest_path = dest_dir.join(format!("{id}.md"));
     fs::rename(&path, &dest_path)
         .with_context(|| format!("moving {} -> {}", path.display(), dest_path.display()))?;
+    let now = now_iso();
+    task.body = append_note(&task.body, &now, actor, &transition_text(status, dest));
     task.status = dest;
-    task.updated = Some(now_iso());
+    task.updated = Some(now);
     write::save(root, &task)?;
     Ok(MoveOutcome::Moved)
+}
+
+/// The text of a transition entry: `moved: <from> -> <to>`, one line that
+/// tells a status move from a free-form note in `yaks log` and the detail view.
+pub fn transition_text(from: Status, to: Status) -> String {
+    format!("moved: {} -> {}", from.dir(), to.dir())
+}
+
+/// True iff `text` is exactly a transition entry (`moved: <status> -> <status>`),
+/// as written by [`transition_text`]. Strict doctor uses it so that the move
+/// into `shorn` does not count as the evidence note that shearing requires.
+pub fn is_transition_text(text: &str) -> bool {
+    let Some((from, to)) = text
+        .strip_prefix("moved: ")
+        .and_then(|r| r.split_once(" -> "))
+    else {
+        return false;
+    };
+    let status = |s: &str| matches!(s, "hairy" | "shaving" | "shorn" | "dead");
+    status(from) && status(to)
 }
 
 /// Load a single task by id (whatever status dir it is in).
@@ -1733,7 +1761,7 @@ mod move_tests {
         assert!(root.join("hairy/yaksrs-mv01.md").is_file());
 
         assert_eq!(
-            move_task(&root, "yaksrs-mv01", Status::Shaving).unwrap(),
+            move_task(&root, "yaksrs-mv01", Status::Shaving, None).unwrap(),
             MoveOutcome::Moved
         );
         assert!(!root.join("hairy/yaksrs-mv01.md").exists());
@@ -1751,11 +1779,11 @@ mod move_tests {
         let root = temp_root();
         write::save(&root, &task("yaksrs-mv02", Status::Shorn)).unwrap();
         assert_eq!(
-            move_task(&root, "yaksrs-mv02", Status::Shorn).unwrap(),
+            move_task(&root, "yaksrs-mv02", Status::Shorn, None).unwrap(),
             MoveOutcome::AlreadyThere
         );
         assert_eq!(
-            move_task(&root, "does-not-exist", Status::Hairy).unwrap(),
+            move_task(&root, "does-not-exist", Status::Hairy, None).unwrap(),
             MoveOutcome::NotFound
         );
         let _ = fs::remove_dir_all(&root);

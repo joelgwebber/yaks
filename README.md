@@ -106,7 +106,7 @@ when all of them are shorn (or dead), and *tangled* otherwise.
 | `yaks next` / `tangled` | ready tasks / dependency-blocked tasks |
 | `yaks path <id>…` / `path <filters>` | each yak's current absolute file path (for a precise `git add`) |
 | `yaks search <q>` | substring search over id/title/description |
-| `yaks log` | timestamped notes across a filtered set, oldest first (an activity log); `--since`/`--by` narrow it |
+| `yaks log` | timestamped notes and status moves across a filtered set, oldest first (an activity log); `--since`/`--by` narrow it |
 | `yaks dep` / `reparent` | edit dependencies / move under a new parent |
 | `yaks bulk` | Apply one field edit (and/or reparent) to every yak matching a filter. **Dry-run by default** — pass `--commit` to apply. Requires a filter *and* a mutation flag |
 | `yaks rollup` | group yaks by the external issue they roll up to (`--keys` for a PR body) |
@@ -121,8 +121,10 @@ when all of them are shorn (or dead), and *tangled* otherwise.
 Add `--json` to any query command for machine-readable output. The
 state-transition verbs (`shave`, `shorn`, `regrow`, `slaughter`, `revive`) plus
 `update` and `reparent` accept **multiple ids** and apply the same change to
-each. Note-writing commands (`update`, `ask`, `answer`) take `--as <actor>` to
-attribute the note (falling back to `$YAKS_ACTOR`, then the git user).
+each. Note-writing commands (`update`, `ask`, `answer`) and the state-transition
+verbs take `--as <actor>` to attribute the note or move (falling back to
+`$YAKS_ACTOR`, then the harness identity, then the git user). Every move appends
+a `moved: <from> -> <to>` entry to the yak, stamped like a note.
 
 `yaks bulk` is a filter-driven mass edit: the standard query filters
 (`--status`, `--type`, `--priority`, `--label`, `--search`, `--ready`,

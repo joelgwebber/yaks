@@ -1,7 +1,7 @@
 # CLI reference
 
 Run `yaks <command> --help` for full flags. Most read commands accept the shared
-**filter flags** and `--json`; most note-writing commands accept `--as <actor>`.
+**filter flags** and `--json`; most note-writing and state-transition commands accept `--as <actor>`.
 
 ## Which farm a command uses
 
@@ -39,7 +39,7 @@ Every command except `init` operates on one farm, found in this order:
 | `tangled` (alias `blocked`) | Hairy yaks with at least one unresolved dependency. |
 | `search <text>` | Substring search over id / title / description. |
 | `stats` | Counts by status, type, priority. |
-| `log` | Timestamped notes across a filtered set, oldest first (`--since <2h\|3d\|date>`, `--by <actor>`). |
+| `log` | Timestamped notes and status moves (`moved: <from> -> <to>` entries) across a filtered set, oldest first (`--since <2h\|3d\|date>`, `--by <actor>`). |
 | `refs <id>` | The yaks a task points at (parent, deps, id mentions), flagging danglers. |
 | `commits <id>` | Git commits linked to a yak — those naming its id, and those that touched its file across status moves. |
 | `rollup` | Group yaks by the external issue they roll up to (`--keys` lists the external keys). |
@@ -106,6 +106,13 @@ would orphan them (it names them and exits non-zero). `slaughter <id> --family`
 takes the whole family instead: every live descendant, deepest first, then the
 yak itself.
 
+Every move appends an entry to the yak's body in the note shape,
+`▸ <ts> [<actor>]` then `moved: <from> -> <to>` (one per yak moved, so
+`slaughter --family` writes one on each), and each verb takes `--as <actor>`
+like the note commands. The file alone says who moved the yak and when, and
+`yaks log` lists moves with the notes. A yak moved by an older binary simply has
+no entry.
+
 ## Human-in-the-loop
 
 | Command | What it does |
@@ -128,13 +135,15 @@ yak itself.
 
 ## Attribution
 
-`--as <actor>` on note-writing commands stamps the note `▸ <ts> [actor]`. The
+`--as <actor>` on note-writing commands stamps the note `▸ <ts> [actor]`, and on
+the state-transition verbs stamps the `moved: <from> -> <to>` entry the same
+way. The
 actor resolves `--as` → `$YAKS_ACTOR` → the harness identity → git `user.name`.
 Under Delta the harness identity is derived from its terminal environment:
 `delta:<thread title>` (`$DELTA_THREAD_TITLE`, whitespace collapsed, cut to 40
 characters), else `delta:<thread id>` (`$DELTA_CURRENT_THREAD_ID`); the `delta:`
 prefix marks a derived, non-human actor. An explicit name (`--as` or
 `$YAKS_ACTOR`) is still preferred: it is stable and chosen, where a thread title
-can be renamed. Committed status
-transitions are already attributed by the git author. Attribution, never
+can be renamed. (The git author, the human under Delta, is not what attributes
+a move: the entry in the yak file is.) Attribution, never
 ownership — a yak belongs to no one.

@@ -164,7 +164,7 @@ Run these directly from the shell (see **Running yaks** above for the exact invo
 | `yaks next` | Hairy tasks whose deps are all resolved [alias: `ready`] |
 | `yaks tangled` | Hairy tasks with at least one unresolved dep [alias: `blocked`] |
 | `yaks search` | Substring search over id/title/description |
-| `yaks log` | Timestamped notes across a filtered set, oldest first (an activity log); `--since` and `--by` narrow it |
+| `yaks log` | Timestamped notes and status moves across a filtered set, oldest first (an activity log); `--since` and `--by` narrow it |
 | `yaks dep` | Add/remove a dependency between tasks |
 | `yaks reparent` | Move a task under a new `--parent` (or `--unparent` to top-level) |
 | `yaks bulk` | Apply one field edit (and/or reparent) to every yak matching a filter. **Dry-run by default**; pass `--commit` to apply. Refuses to run without at least one filter flag *and* at least one mutation flag |
@@ -181,7 +181,9 @@ Run these directly from the shell (see **Running yaks** above for the exact invo
 | `yaks scan-ids` | Scan a file and/or stdin for tokens that are real yak-ids in this farm — a private-mode leak check; exits non-zero if any are found |
 | `yaks tui` | Open the interactive terminal UI |
 
-The state-transition verbs (`shave`, `shorn`, `regrow`, `slaughter`, `revive`) and `reparent` accept **multiple ids** in one call, applying the same move to each. Attribute any note with `--as <actor>` (else `$YAKS_ACTOR`, else `delta:<thread title>`/`delta:<thread id>` derived from Delta's environment, else the git user; an explicit name is still preferred); attribution never implies ownership.
+The state-transition verbs (`shave`, `shorn`, `regrow`, `slaughter`, `revive`) and `reparent` accept **multiple ids** in one call, applying the same move to each. Every move appends a `▸ <ts> [<actor>]` entry reading `moved: <from> -> <to>` to the
+yak, so the file says who moved it and when (`yaks log` lists these). Attribute any note
+or move with `--as <actor>` (else `$YAKS_ACTOR`, else `delta:<thread title>`/`delta:<thread id>` derived from Delta's environment, else the git user; an explicit name is still preferred); attribution never implies ownership.
 
 ## Task format
 

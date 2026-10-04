@@ -204,15 +204,16 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Timestamped notes across a filtered set, oldest first (an activity log).
+    /// Timestamped notes and status moves across a filtered set, oldest first (an
+    /// activity log).
     Log {
         #[command(flatten)]
         filter: FilterFlags,
-        /// Only notes at or after this point: a duration (2h, 3d, 1w), a date
+        /// Only entries at or after this point: a duration (2h, 3d, 1w), a date
         /// (YYYY-MM-DD), or an RFC3339 timestamp. Omit for the full log.
         #[arg(long)]
         since: Option<String>,
-        /// Only notes attributed to this actor (matches the `[actor]` stamp).
+        /// Only entries attributed to this actor (matches the `[actor]` stamp).
         #[arg(long)]
         by: Option<String>,
         #[arg(long)]
@@ -338,18 +339,33 @@ enum Command {
     Shave {
         #[arg(required = true, num_args = 1..)]
         ids: Vec<String>,
+        /// Attribute the move to this actor (stamped as `[actor]` on its
+        /// `moved: <from> -> <to>` log entry). Resolved like `update --as`:
+        /// $YAKS_ACTOR, then the harness identity, then the git user.
+        #[arg(long = "as")]
+        as_actor: Option<String>,
     },
     /// Mark one or more yaks shorn (move to shorn).
     #[command(visible_alias = "close")]
     Shorn {
         #[arg(required = true, num_args = 1..)]
         ids: Vec<String>,
+        /// Attribute the move to this actor (stamped as `[actor]` on its
+        /// `moved: <from> -> <to>` log entry). Resolved like `update --as`:
+        /// $YAKS_ACTOR, then the harness identity, then the git user.
+        #[arg(long = "as")]
+        as_actor: Option<String>,
     },
     /// Regrow one or more shorn yaks (move back to hairy).
     #[command(visible_alias = "reopen")]
     Regrow {
         #[arg(required = true, num_args = 1..)]
         ids: Vec<String>,
+        /// Attribute the move to this actor (stamped as `[actor]` on its
+        /// `moved: <from> -> <to>` log entry). Resolved like `update --as`:
+        /// $YAKS_ACTOR, then the harness identity, then the git user.
+        #[arg(long = "as")]
+        as_actor: Option<String>,
     },
     /// Slaughter one or more yaks (move to dead).
     ///
@@ -362,11 +378,21 @@ enum Command {
         /// of each id, instead of refusing.
         #[arg(long)]
         family: bool,
+        /// Attribute the move to this actor (stamped as `[actor]` on its
+        /// `moved: <from> -> <to>` log entry). Resolved like `update --as`:
+        /// $YAKS_ACTOR, then the harness identity, then the git user.
+        #[arg(long = "as")]
+        as_actor: Option<String>,
     },
     /// Revive one or more dead yaks (move back to hairy).
     Revive {
         #[arg(required = true, num_args = 1..)]
         ids: Vec<String>,
+        /// Attribute the move to this actor (stamped as `[actor]` on its
+        /// `moved: <from> -> <to>` log entry). Resolved like `update --as`:
+        /// $YAKS_ACTOR, then the harness identity, then the git user.
+        #[arg(long = "as")]
+        as_actor: Option<String>,
     },
     /// Add or remove a dependency.
     Dep {
@@ -1021,22 +1047,57 @@ fn main() -> Result<()> {
             let rows = farm.inbox(build_spec(filter))?;
             render_rows(&rows, json, "Inbox empty: nothing awaiting a human.")?;
         }
-        Command::Shave { ids } => transition_many(
-            &farm,
-            &ids,
-            Status::Shaving,
-            "already being shaved",
-            "Shaving",
-        )?,
-        Command::Shorn { ids } => {
-            transition_many(&farm, &ids, Status::Shorn, "already shorn", "Shorn!")?
+        Command::Shave { ids, as_actor } => {
+            let actor = actor::resolve(as_actor.as_deref());
+            transition_many(
+                &farm,
+                &ids,
+                Status::Shaving,
+                "already being shaved",
+                "Shaving",
+                actor.as_deref(),
+            )?
         }
-        Command::Regrow { ids } => {
-            transition_many(&farm, &ids, Status::Hairy, "already hairy", "Regrown:")?
+        Command::Shorn { ids, as_actor } => {
+            let actor = actor::resolve(as_actor.as_deref());
+            transition_many(
+                &farm,
+                &ids,
+                Status::Shorn,
+                "already shorn",
+                "Shorn!",
+                actor.as_deref(),
+            )?
         }
-        Command::Slaughter { ids, family } => slaughter_many(&farm, &ids, family)?,
-        Command::Revive { ids } => {
-            transition_many(&farm, &ids, Status::Hairy, "already hairy", "Revived:")?
+        Command::Regrow { ids, as_actor } => {
+            let actor = actor::resolve(as_actor.as_deref());
+            transition_many(
+                &farm,
+                &ids,
+                Status::Hairy,
+                "already hairy",
+                "Regrown:",
+                actor.as_deref(),
+            )?
+        }
+        Command::Slaughter {
+            ids,
+            family,
+            as_actor,
+        } => {
+            let actor = actor::resolve(as_actor.as_deref());
+            slaughter_many(&farm, &ids, family, actor.as_deref())?
+        }
+        Command::Revive { ids, as_actor } => {
+            let actor = actor::resolve(as_actor.as_deref());
+            transition_many(
+                &farm,
+                &ids,
+                Status::Hairy,
+                "already hairy",
+                "Revived:",
+                actor.as_deref(),
+            )?
         }
         Command::Dep { action } => match action {
             DepAction::Add { id, dep_id } => match farm.dep_add(&id, &dep_id)? {
@@ -1370,8 +1431,15 @@ fn parse_status(s: &str) -> Option<Status> {
 /// Transition a single yak, printing a per-id result line. Returns `true` on
 /// success (moved or already there) and `false` on failure (not found), so a
 /// batch caller can process every id and set the exit code once at the end.
-fn transition(farm: &Farm, id: &str, dest: Status, already: &str, done: &str) -> Result<bool> {
-    match farm.transition(id, dest)? {
+fn transition(
+    farm: &Farm,
+    id: &str,
+    dest: Status,
+    already: &str,
+    done: &str,
+    actor: Option<&str>,
+) -> Result<bool> {
+    match farm.transition(id, dest, actor)? {
         MoveOutcome::NotFound => {
             eprintln!("error: task {id} not found");
             Ok(false)
@@ -1396,10 +1464,11 @@ fn transition_many(
     dest: Status,
     already: &str,
     done: &str,
+    actor: Option<&str>,
 ) -> Result<()> {
     let mut any_failed = false;
     for id in ids {
-        if !transition(farm, id, dest, already, done)? {
+        if !transition(farm, id, dest, already, done, actor)? {
             any_failed = true;
         }
     }
@@ -1412,10 +1481,10 @@ fn transition_many(
 /// Slaughter every id in `ids` (see [`Farm::slaughter`]). Like
 /// [`transition_many`], the whole batch is processed; a missing id or a yak
 /// refused for having live descendants exits non-zero afterwards (yaks-05da).
-fn slaughter_many(farm: &Farm, ids: &[String], family: bool) -> Result<()> {
+fn slaughter_many(farm: &Farm, ids: &[String], family: bool, actor: Option<&str>) -> Result<()> {
     let mut any_failed = false;
     for id in ids {
-        match farm.slaughter(id, family)? {
+        match farm.slaughter(id, family, actor)? {
             SlaughterOutcome::NotFound => {
                 eprintln!("error: task {id} not found");
                 any_failed = true;

@@ -1368,9 +1368,10 @@ impl App {
                     ids.iter().collect()
                 };
                 let Some(h) = &self.farm else { return };
+                let actor = crate::actor::resolve(None);
                 let (mut moved, mut failed) = (0usize, 0usize);
                 for id in &targets {
-                    match h.transition(id, dest) {
+                    match h.transition(id, dest, actor.as_deref()) {
                         Ok(MoveOutcome::Moved) => moved += 1,
                         Ok(_) => {}
                         Err(_) => failed += 1,
@@ -1402,7 +1403,8 @@ impl App {
                     return;
                 }
                 let Some(h) = &self.farm else { return };
-                match h.transition(&id, dest) {
+                let actor = crate::actor::resolve(None);
+                match h.transition(&id, dest, actor.as_deref()) {
                     Ok(MoveOutcome::Moved) => {
                         self.reload();
                         self.notification = Some(format!("{id} → {}", status_word(dest)));
@@ -1528,7 +1530,8 @@ impl App {
             }
             ConfirmAction::Slaughter(id) => {
                 let Some(h) = &self.farm else { return };
-                match h.transition(&id, Status::Dead) {
+                let actor = crate::actor::resolve(None);
+                match h.transition(&id, Status::Dead, actor.as_deref()) {
                     Ok(MoveOutcome::Moved) => {
                         self.reload();
                         self.notification = Some(format!("slaughtered {id}"));
@@ -1539,7 +1542,8 @@ impl App {
             }
             ConfirmAction::SlaughterFamily(id) => {
                 let Some(h) = &self.farm else { return };
-                match h.slaughter(&id, true) {
+                let actor = crate::actor::resolve(None);
+                match h.slaughter(&id, true, actor.as_deref()) {
                     Ok(crate::farm::SlaughterOutcome::Slaughtered(moved)) => {
                         self.reload();
                         let n = moved.len();

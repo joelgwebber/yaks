@@ -124,6 +124,6 @@ only net. The human may also push `origin`; Delta refreshes your `origin/main` f
   (`<repo>/.delta/worktrees/<id>/<repo>`), so discovery does not walk out to the user's farm: put
   `YAKS_DIR=<abs path to the farm>` in the worker brief and on every command (mode skill). Without
   it the worker gets an error naming the git top-level, not the live farm. Same-yak writes lose notes.
-- Attribution: notes carry the inline `YAKS_ACTOR`; commits are authored by the human; status moves have no
-  actor. Delta terminals expose `DELTA_THREAD_TITLE` and `DELTA_CURRENT_THREAD_ID`.
+- Attribution: notes carry the inline `YAKS_ACTOR`; commits are authored by the human; status moves carry
+  the actor too (a `moved: <from> -> <to>` entry, same `--as`/`YAKS_ACTOR`). Delta terminals expose `DELTA_THREAD_TITLE` and `DELTA_CURRENT_THREAD_ID`.
 - Each clone has its own `target/` (0.3-1.3 GB).

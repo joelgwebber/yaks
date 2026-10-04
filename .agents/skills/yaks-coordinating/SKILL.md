@@ -105,8 +105,11 @@ Notes carry the actor: `--as <name>` or an inline `YAKS_ACTOR=<name>` on each co
 neither, a note written under Delta is stamped `delta:<thread title>` (else
 `delta:<thread id>`) from Delta's environment, and elsewhere with the git user, which is the
 human; an explicit name is still preferred (stable, where a thread title can be renamed). Status moves (`shave`,
-`shorn`) record no actor at all; git authorship is the human in most setups. Attribution is
-never ownership.
+`shorn`, `regrow`, ...) take the same `--as`/`YAKS_ACTOR` and append a `moved: <from> -> <to>` entry to the
+yak, so the file says who moved it and when; `yaks log` lists them. They are not evidence: a shorn yak still
+needs a real note (`yaks doctor --strict`). Git authorship is the human in most setups. Because a move now
+edits the yak file, never edit a yak a worker owns while it runs: its landing would conflict with you.
+Attribution is never ownership.
 
 ## 10. Drift is signal
 The human edits yaks while you work: a touched `updated:`, a yak that moved, a new file.

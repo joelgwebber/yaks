@@ -886,3 +886,23 @@ bare repo here); (2) `refs/delta/<dir>/<repo>/<sha>` in that repo = which dirs e
 checkout is `<root>/<dir>/<repo>` in both layouts (`<root>` = `<repo>/.delta/worktrees` on the laptop,
 `~/.local/share/delta/worktrees` here), i.e. `$(dirname $toplevel)/../<dir>/<repo>` for a sibling. What is missing: owner
 (which thread), and liveness beyond "the directory exists". Plain git worktrees need only `git worktree list`.
+
+# Trial 7: lanes CLI (yaks-e545) and transition records (yaks-7149), two workers in parallel on the Linux machine  (delta-lead)
+
+## O54 [ok][cli] attr-1 (yaks-7149 part 2, 46f1abc): landed clean, and my review found a regression the tests could not  (delta-lead)
+Landing: Delta left a PENDING MERGE with the worker's files untracked/modified, plus the human's own new yak untracked in
+my tree. `land.sh --dry-run` computed a clean merge and refused, correctly, because Joel's `yaks-699b` was an unexplained
+file. `git merge --abort` left the applied files in place (it does not discard them; `land.sh` does), I committed
+Joel's yak by itself, then `land.sh` landed by merge, "result identical to the computed merge", doctor clear. First
+land.sh landing with no conflict: base ancestor, computed tree equal. Worker: 8 end-to-end tests that fail without the
+change, a two-actor run that is attributable from the file alone, docs parity done, 3 rustfmt leaks reverted.
+My review defect: with option A a move is a NOTE, so every shorn yak now has one, and `doctor --strict`'s "shorn yak with
+no recorded note" check (the evidence-before-shear rule in yaks-working) could never fire again. Reproduced on a scratch
+farm (shave + shorn, no note: strict "All clear"). Fix `649b48a`: `store::is_transition_text` (exactly `moved: <status> ->
+<status>`) and strict ignores those; the test fails with the old logic and passes with the fix (I swapped the condition
+back and watched it fail). Same pattern as O25/O48: a feature that reuses an existing record shape changes what every
+consumer of that shape means; grep the consumers (here `parse_notes` callers) and ask what each assumed. Other callers
+checked: `last_verify_passed` matches `verify: ` and is unaffected.
+Also fixed: a `\u{25b8}` escape in a doc comment, and the stale coordination-skill lines (moves are attributed; do not
+edit a worker's yak while it runs). `yaks-8265` shorn as covered. Cost to watch (the worker recorded it too): a move edits
+the yak body, so two lanes moving or noting the same yak now conflict more often (O52).

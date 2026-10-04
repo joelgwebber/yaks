@@ -592,8 +592,10 @@ impl Farm {
 
     /// Timestamped notes across the filtered set, oldest first. `since`, when
     /// set, keeps only notes at or after that instant (see `store::parse_since`).
-    /// Notes live in each task body; state transitions are not timestamped, so
-    /// this is a note log, not a full audit trail.
+    /// Notes live in each task body, and so do state transitions (a note whose
+    /// text is `moved: <from> -> <to>`, written by `store::move_task`), so this
+    /// is the activity log. Yaks moved by a binary that predates transition
+    /// entries have no such entry.
     pub fn log(
         &self,
         spec: FilterSpec,
@@ -785,7 +787,13 @@ impl Farm {
         // (abandoned) yaks are exempt — abandonment needs no completion note.
         if strict {
             for t in &tasks {
-                if t.status == Status::Shorn && store::parse_notes(&t.body).is_empty() {
+                // A `moved:` transition entry is not evidence: it is written by the
+                // move itself, so only a real note counts.
+                if t.status == Status::Shorn
+                    && store::parse_notes(&t.body)
+                        .iter()
+                        .all(|n| store::is_transition_text(&n.text))
+                {
                     issues.push(Issue {
                         kind: IssueKind::MissingEvidence,
                         message: format!(
@@ -1207,16 +1215,24 @@ impl Farm {
         Ok(R::Renamed { name, rewritten })
     }
 
-    pub fn transition(&self, id: &str, dest: Status) -> Result<MoveOutcome> {
+    /// Move `id` to `dest`, recording a `moved: <from> -> <to>` entry attributed
+    /// to `actor` (see [`store::move_task`]).
+    pub fn transition(&self, id: &str, dest: Status, actor: Option<&str>) -> Result<MoveOutcome> {
         let _lock = store::lock(&self.root)?;
-        store::move_task(&self.root, id, dest)
+        store::move_task(&self.root, id, dest, actor)
     }
 
     /// Slaughter `id` (move to dead). Refuses with
     /// [`SlaughterOutcome::HasLiveDescendants`] when that would orphan live
     /// descendants, unless `family` is set, in which case the whole family
-    /// (every live descendant, deepest first, then `id`) goes (yaks-05da).
-    pub fn slaughter(&self, id: &str, family: bool) -> Result<SlaughterOutcome> {
+    /// (every live descendant, deepest first, then `id`) goes (yaks-05da). Each
+    /// yak moved gets a transition entry attributed to `actor`.
+    pub fn slaughter(
+        &self,
+        id: &str,
+        family: bool,
+        actor: Option<&str>,
+    ) -> Result<SlaughterOutcome> {
         let _lock = store::lock(&self.root)?;
         let all = store::load(&self.root, &EVERY)?;
         let Some(me) = all.iter().find(|t| t.id == id) else {
@@ -1231,7 +1247,7 @@ impl Farm {
         }
         let mut moved = Vec::new();
         for d in doomed.iter().map(String::as_str).chain(std::iter::once(id)) {
-            if store::move_task(&self.root, d, Status::Dead)? == MoveOutcome::Moved {
+            if store::move_task(&self.root, d, Status::Dead, actor)? == MoveOutcome::Moved {
                 moved.push(d.to_string());
             }
         }
@@ -1652,7 +1668,7 @@ mod tests {
         // Source yaks live in a different herd (prefix) so ids can't collide.
         let a = created_id(src.create(new_task("source hairy", Some("proj"))).unwrap());
         let b = created_id(src.create(new_task("source done", Some("proj"))).unwrap());
-        src.transition(&b, Status::Shorn).unwrap();
+        src.transition(&b, Status::Shorn, None).unwrap();
 
         let plan = match dest.merge(&src_root, false).unwrap() {
             MergeOutcome::Done(p) => p,
@@ -1941,7 +1957,7 @@ mod tests {
         store::write::save(&root, &task("yak-0005", Status::Hairy)).unwrap();
 
         assert_eq!(
-            farm.slaughter("yak-0001", false).unwrap(),
+            farm.slaughter("yak-0001", false, None).unwrap(),
             SlaughterOutcome::HasLiveDescendants(vec!["yak-0003".into(), "yak-0002".into()])
         );
         assert!(
@@ -1950,7 +1966,7 @@ mod tests {
         );
 
         assert_eq!(
-            farm.slaughter("yak-0001", true).unwrap(),
+            farm.slaughter("yak-0001", true, None).unwrap(),
             SlaughterOutcome::Slaughtered(vec![
                 "yak-0003".into(),
                 "yak-0002".into(),
@@ -1966,15 +1982,15 @@ mod tests {
         );
 
         assert_eq!(
-            farm.slaughter("yak-0001", true).unwrap(),
+            farm.slaughter("yak-0001", true, None).unwrap(),
             SlaughterOutcome::AlreadyDead
         );
         assert_eq!(
-            farm.slaughter("yak-0005", false).unwrap(),
+            farm.slaughter("yak-0005", false, None).unwrap(),
             SlaughterOutcome::Slaughtered(vec!["yak-0005".into()])
         );
         assert_eq!(
-            farm.slaughter("yak-nope", true).unwrap(),
+            farm.slaughter("yak-nope", true, None).unwrap(),
             SlaughterOutcome::NotFound
         );
     }
@@ -1992,7 +2008,7 @@ mod tests {
         // All-good batch: both ids move to shorn, nothing flagged.
         let mut any_failed = false;
         for id in ["yak-0001", "yak-0002"] {
-            if farm.transition(id, Status::Shorn).unwrap() != MoveOutcome::Moved {
+            if farm.transition(id, Status::Shorn, None).unwrap() != MoveOutcome::Moved {
                 any_failed = true;
             }
         }
@@ -2006,7 +2022,7 @@ mod tests {
         let mut outcomes = Vec::new();
         let mut any_failed = false;
         for id in ["yak-0003", "yak-nope"] {
-            let outcome = farm.transition(id, Status::Shorn).unwrap();
+            let outcome = farm.transition(id, Status::Shorn, None).unwrap();
             if outcome != MoveOutcome::Moved {
                 any_failed = true;
             }
@@ -2112,6 +2128,38 @@ mod tests {
         );
         assert_eq!(issues[0].kind, IssueKind::MissingEvidence);
         assert_eq!(issues[0].ids, vec!["yak-0002"]);
+    }
+
+    /// A shorn yak whose only notes are the `moved:` entries written by the moves
+    /// themselves has no evidence: strict doctor flags it; a real note clears it.
+    #[test]
+    fn doctor_strict_does_not_count_transition_entries_as_evidence() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+        store::write::save(&root, &task("yak-0002", Status::Hairy)).unwrap();
+        for id in ["yak-0001", "yak-0002"] {
+            farm.transition(id, Status::Shaving, Some("tester"))
+                .unwrap();
+        }
+        let mut t = store::load_task_by_id(&root, "yak-0002").unwrap().unwrap();
+        t.body = store::append_note(
+            &t.body,
+            "2026-01-02T00:00:00Z",
+            Some("tester"),
+            "did the work",
+        );
+        store::write::save(&root, &t).unwrap();
+        for id in ["yak-0001", "yak-0002"] {
+            farm.transition(id, Status::Shorn, Some("tester")).unwrap();
+        }
+        let issues = farm.doctor(true).unwrap();
+        assert_eq!(
+            issues.len(),
+            1,
+            "only the yak with no real note: {issues:?}"
+        );
+        assert_eq!(issues[0].kind, IssueKind::MissingEvidence);
+        assert_eq!(issues[0].ids, vec!["yak-0001"]);
     }
 
     /// Strict mode: a shorn yak that carries a `verify:` command must show a

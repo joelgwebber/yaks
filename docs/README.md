@@ -25,8 +25,9 @@ describe.
   dependencies, a `needs` block, notes — is metadata that pushes nuance out of
   the state machine and into fields you can filter on.
 - **Notes are the work-trail.** Each yak accumulates timestamped, optionally
-  attributed notes (`▸ <ts> [actor]`). The notes are the durable record of what
-  happened and why; git history is the record of what *changed*.
+  attributed notes (`▸ <ts> [actor]`); every status move adds a
+  `moved: <from> -> <to>` entry in the same shape. The notes are the durable
+  record of what happened and why; git history is the record of what *changed*.
 
 ## Quick start
 
