@@ -12,6 +12,10 @@ task's status is implicit in which subdirectory it lives in.
   field is the only source of hierarchy).
 - **Any index is derived.** If a lookup index is added, it must be a per-user,
   rebuildable cache — never committed, never a second source of truth.
+- **Mutations hold the farm lock.** Any new `Farm` method that reads then
+  writes must take `store::lock` first (`.yaks/.lock`, advisory, not
+  re-entrant: lock once, at the outermost method). It keeps `.lock` in
+  `.yaks/.gitignore`.
 - **Don't change the on-disk format lightly.** The `.yaks/` layout is the
   contract; task files are meant to be readable, greppable, and diffable.
 

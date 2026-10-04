@@ -488,6 +488,7 @@ impl Farm {
         actor: Option<&str>,
         note: Option<&str>,
     ) -> Result<Option<Status>> {
+        let _lock = store::lock(&self.root)?;
         let Some(mut task) = store::load_task_by_id(&self.root, id)? else {
             return Ok(None);
         };
@@ -857,6 +858,7 @@ impl Farm {
     /// The `{old}-` boundary means `rename_prefix("yaks", ..)` never touches a
     /// `yaksrs-` id.
     pub fn rename_prefix(&self, old: &str, new: &str, dry_run: bool) -> Result<RenameOutcome> {
+        let _lock = (!dry_run).then(|| store::lock(&self.root)).transpose()?;
         let all = store::load(&self.root, &EVERY)?;
         let marker = format!("{old}-");
         let mut pairs = Vec::new();
@@ -865,7 +867,7 @@ impl Farm {
                 pairs.push((t.id.clone(), format!("{new}-{tail}")));
             }
         }
-        let outcome = self.rename_many(&pairs, dry_run)?;
+        let outcome = self.rename_many_locked(&pairs, dry_run)?;
         if !dry_run {
             if let RenameOutcome::Done(_) = &outcome {
                 store::set_config_prefix(&self.root, new)?;
@@ -883,6 +885,17 @@ impl Farm {
     /// change. This is the shared engine behind `yaks rename` (one pair) and the
     /// bulk prefix migration (many pairs).
     pub fn rename_many(&self, pairs: &[(String, String)], dry_run: bool) -> Result<RenameOutcome> {
+        let _lock = (!dry_run).then(|| store::lock(&self.root)).transpose()?;
+        self.rename_many_locked(pairs, dry_run)
+    }
+
+    /// [`Farm::rename_many`] for a caller that already holds the farm lock
+    /// (the lock is not re-entrant) or is only planning (`dry_run`).
+    fn rename_many_locked(
+        &self,
+        pairs: &[(String, String)],
+        dry_run: bool,
+    ) -> Result<RenameOutcome> {
         let all = store::load(&self.root, &EVERY)?;
         let existing: std::collections::HashSet<&str> = all.iter().map(|t| t.id.as_str()).collect();
 
@@ -992,6 +1005,7 @@ impl Farm {
     // -- mutations (each a whole operation) -------------------------------
 
     pub fn create(&self, new: NewTask) -> Result<CreateOutcome> {
+        let _lock = store::lock(&self.root)?;
         let cfg = store::read_config(&self.root);
         if let Some(p) = &new.parent {
             if !store::all_ids(&self.root).contains(p) {
@@ -1046,6 +1060,7 @@ impl Farm {
     }
 
     pub fn update(&self, id: &str, edit: TaskEdit) -> Result<UpdateOutcome> {
+        let _lock = store::lock(&self.root)?;
         let Some(mut task) = store::load_task_by_id(&self.root, id)? else {
             return Ok(UpdateOutcome::NotFound);
         };
@@ -1107,6 +1122,7 @@ impl Farm {
     /// (the root `.gitignore` explicitly un-ignores `.yaks/artifacts/`, yaks-52eb)
     /// so an attachment is shareable evidence, not just local scratch.
     pub fn attach(&self, id: &str, name: &str, data: &[u8]) -> Result<AttachOutcome> {
+        let _lock = store::lock(&self.root)?;
         let Some(mut task) = store::load_task_by_id(&self.root, id)? else {
             return Ok(AttachOutcome::NotFound);
         };
@@ -1142,6 +1158,7 @@ impl Farm {
         new: &str,
     ) -> Result<RenameAttachmentOutcome> {
         use RenameAttachmentOutcome as R;
+        let _lock = store::lock(&self.root)?;
         if store::load_task_by_id(&self.root, id)?.is_none() {
             return Ok(R::TaskNotFound);
         }
@@ -1191,6 +1208,7 @@ impl Farm {
     }
 
     pub fn transition(&self, id: &str, dest: Status) -> Result<MoveOutcome> {
+        let _lock = store::lock(&self.root)?;
         store::move_task(&self.root, id, dest)
     }
 
@@ -1199,6 +1217,7 @@ impl Farm {
     /// descendants, unless `family` is set, in which case the whole family
     /// (every live descendant, deepest first, then `id`) goes (yaks-05da).
     pub fn slaughter(&self, id: &str, family: bool) -> Result<SlaughterOutcome> {
+        let _lock = store::lock(&self.root)?;
         let all = store::load(&self.root, &EVERY)?;
         let Some(me) = all.iter().find(|t| t.id == id) else {
             return Ok(SlaughterOutcome::NotFound);
@@ -1220,14 +1239,17 @@ impl Farm {
     }
 
     pub fn dep_add(&self, id: &str, dep: &str) -> Result<DepOutcome> {
+        let _lock = store::lock(&self.root)?;
         store::add_dep(&self.root, id, dep)
     }
 
     pub fn dep_remove(&self, id: &str, dep: &str) -> Result<DepOutcome> {
+        let _lock = store::lock(&self.root)?;
         store::remove_dep(&self.root, id, dep)
     }
 
     pub fn reparent(&self, id: &str, new_parent: Option<String>) -> Result<Reparent> {
+        let _lock = store::lock(&self.root)?;
         store::reparent(&self.root, id, new_parent)
     }
 
@@ -1250,6 +1272,8 @@ impl Farm {
                 return Ok(MergeOutcome::NoSource(source.display().to_string()));
             }
         }
+        // A dry run only reads; a real merge writes into this farm.
+        let _lock = (!dry_run).then(|| store::lock(&self.root)).transpose()?;
         // Every source yak, by walking each status dir (file stem = id), kept as
         // raw bytes so frontmatter/body round-trip exactly.
         let mut found: Vec<(String, Status, PathBuf)> = Vec::new();
@@ -1362,7 +1386,7 @@ fn rank(s: Status) -> u8 {
 /// True iff the most recent `yaks verify` run recorded in `body` was a PASS.
 /// Verify-run notes are the ones `yaks verify` writes: `verify: <cmd> -> PASS…`
 /// / `-> FAIL…`. A yak with no such note (verify: set but never run) is false.
-fn last_verify_passed(body: &str) -> bool {
+pub(crate) fn last_verify_passed(body: &str) -> bool {
     store::parse_notes(body)
         .iter()
         .rev()
@@ -2244,5 +2268,66 @@ mod tests {
             farm.rename_attachment("yak-0009", "a.png", "c").unwrap(),
             R::TaskNotFound
         );
+    }
+
+    #[test]
+    fn concurrent_updates_to_one_yak_keep_every_note() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+        // Each thread opens its own lock file, so this contends exactly as
+        // separate processes do (flock conflicts across open file descriptions).
+        std::thread::scope(|s| {
+            for w in 0..8 {
+                let farm = &farm;
+                s.spawn(move || {
+                    for n in 0..25 {
+                        let edit = TaskEdit {
+                            note: Some(format!("w{w}-n{n}")),
+                            ..Default::default()
+                        };
+                        assert!(matches!(
+                            farm.update("yak-0001", edit).unwrap(),
+                            UpdateOutcome::Updated
+                        ));
+                    }
+                });
+            }
+        });
+        let body = store::load_task_by_id(&root, "yak-0001")
+            .unwrap()
+            .unwrap()
+            .body;
+        for w in 0..8 {
+            for n in 0..25 {
+                let want = format!("w{w}-n{n}");
+                assert_eq!(body.lines().filter(|l| *l == want).count(), 1, "{want}");
+            }
+        }
+        assert_eq!(body.matches("\u{25b8} ").count(), 200);
+        assert!(farm.doctor(false).unwrap().is_empty());
+    }
+
+    #[test]
+    fn lock_ignores_itself_without_clobbering_an_existing_gitignore() {
+        let (root, _farm) = temp_farm();
+        std::fs::write(root.join(".gitignore"), "scratch/").unwrap();
+        drop(store::lock(&root).unwrap());
+        drop(store::lock(&root).unwrap());
+        assert_eq!(
+            std::fs::read_to_string(root.join(".gitignore")).unwrap(),
+            "scratch/\n.lock\n"
+        );
+        assert!(root.join(".lock").is_file());
+    }
+
+    #[test]
+    fn rename_prefix_does_not_deadlock_on_the_farm_lock() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("old-0001", Status::Hairy)).unwrap();
+        assert!(matches!(
+            farm.rename_prefix("old", "new", false).unwrap(),
+            RenameOutcome::Done(_)
+        ));
+        assert!(root.join("hairy/new-0001.md").is_file());
     }
 }

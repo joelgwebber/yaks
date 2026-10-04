@@ -104,11 +104,18 @@ yak itself.
 | `skills install` | Install the bundled agent skills (`yaks`, `yaks-tracker`) into a skills dir (default `~/.agents/skills`). Upgrades a cleanly-outdated copy; leaves a locally-edited one alone unless `--force`. Refuses to write onto yaks' own `skills/` source (even via a symlink, even with `--force`). |
 | `skills status` | Per-skill verdict — `current` / `stale` / `adoptable` / `held` / `modified` / `unmanaged` / `source` — from the provenance stamp. `--dir` to inspect another skills dir. See [skills.md](skills.md). |
 | `doctor` | Read-only integrity check: duplicate-status ids, dangling parent/deps, malformed labels (a legacy label containing a comma or space, e.g. `ui,docs` — any label edit on that yak re-splits it). Exits non-zero on any issue (CI-usable). `--strict` also flags shorn yaks with no recorded note, and shorn yaks whose `verify:` command did not last PASS (evidence-before-shear). |
+| `preflight [<id>...]` | Read-only landing-readiness check; run it before committing a shorn yak or merging a lane in a team farm. Checks: (1) nothing under `.yaks/` is untracked or has unstaged changes in git (staged is fine: it is the step before the commit) — a new `artifacts/<id>/` never `git add`ed fails and is named; (2) every shorn yak in scope whose `verify:` command (own, else the config default for its labels) last PASSed, same rule as `doctor --strict`; scope is the ids given, else the shorn yaks that are part of the change in git (staged, modified or new under `.yaks/`, including a new `artifacts/<id>/`), and `--all` checks every shorn yak (old ones that never ran `verify` will fail); (3) no yak in two status dirs. `ids` scopes check 2 only; 1 and 3 are farm-wide. Prints one `preflight: FAIL <check>: …` line per failure and exits non-zero, else `preflight: ok`. In a private farm (nothing under `.yaks/` tracked by git) check 1 is skipped with a printed line and check 2 covers every shorn yak; 3 still runs. `--json` emits `{ok, failures[{check, message, subjects}], skipped}`. |
 | `tui` | Open the interactive terminal UI (see [tui.md](tui.md)). |
 
 ## Attribution
 
 `--as <actor>` on note-writing commands stamps the note `▸ <ts> [actor]`. The
-actor resolves `--as` → `$YAKS_ACTOR` → git `user.name`. Committed status
+actor resolves `--as` → `$YAKS_ACTOR` → the harness identity → git `user.name`.
+Under Delta the harness identity is derived from its terminal environment:
+`delta:<thread title>` (`$DELTA_THREAD_TITLE`, whitespace collapsed, cut to 40
+characters), else `delta:<thread id>` (`$DELTA_CURRENT_THREAD_ID`); the `delta:`
+prefix marks a derived, non-human actor. An explicit name (`--as` or
+`$YAKS_ACTOR`) is still preferred: it is stable and chosen, where a thread title
+can be renamed. Committed status
 transitions are already attributed by the git author. Attribution, never
 ownership — a yak belongs to no one.

@@ -98,7 +98,7 @@ The farm is shared. A human may be editing yaks in the `yaks tui` (or by hand) *
 
 ## Asking a human (ask / answer / inbox)
 
-When you hit a decision only a human should make — an ambiguous requirement, a risky tradeoff, a missing credential — **don't guess**. `yaks ask <id> --note "the question"` blocks the yak on a human: it sets the `needs` field, records your question as an attributed note, and drops the yak out of `yaks next` so you (or another agent) won't pick it back up while it waits. The human replies with `yaks answer <id> --note "the decision"`, which clears the block and returns the yak to `next`. `yaks inbox` lists everything currently awaiting a human. Attribute the note with `--as <actor>` (or set `$YAKS_ACTOR`) so the log shows who asked.
+When you hit a decision only a human should make — an ambiguous requirement, a risky tradeoff, a missing credential — **don't guess**. `yaks ask <id> --note "the question"` blocks the yak on a human: it sets the `needs` field, records your question as an attributed note, and drops the yak out of `yaks next` so you (or another agent) won't pick it back up while it waits. The human replies with `yaks answer <id> --note "the decision"`, which clears the block and returns the yak to `next`. `yaks inbox` lists everything currently awaiting a human. Attribute the note with `--as <actor>` (or set `$YAKS_ACTOR`) so the log shows who asked; under Delta an unnamed note is stamped `delta:<thread title>`, but an explicit name is still preferred.
 
 In `yaks tui` the same flow is one key: `a` asks or answers the selected yak in place, an **Inbox** view lists the awaiting-a-human queue, blocked yaks carry a ⏳ badge with a warning accent, and `m` marks rows for a bulk state change over the selection.
 
@@ -174,11 +174,12 @@ Run these directly from the shell (see **Running yaks** above for the exact invo
 | `yaks rollup` | Group yaks by the external issue they roll up to (`--keys` for just the keys) |
 | `yaks doctor` | Read-only farm-integrity check (duplicate-status ids, dangling parent/dep refs, malformed labels containing a comma or space); exits non-zero on issues, so it's CI-usable. `--json` emits issues as JSON |
 | `yaks doctor --strict` | Also flags shorn yaks with no recorded note, and shorn yaks whose `verify:` command did not last PASS — a shear without evidence (the evidence-before-shear rule) |
+| `yaks preflight [<id>...]` | Read-only check to run before landing (committing a shorn yak / merging a lane) in a team farm: nothing under `.yaks/` untracked or with unstaged changes (a new `artifacts/<id>/` you never `git add`ed fails, naming it), each shorn yak in scope (the ids; else those in the change in git; `--all` for every one) whose `verify:` (own or config default) last PASSed, no yak in two status dirs. One line per failure, non-zero exit; else `preflight: ok`. A private farm skips the git check and says so. `--json`. |
 | `yaks skills status` | Report whether the installed copies of these skills are current, stale, or locally edited (from a provenance stamp in their frontmatter). Ordinary `yaks` commands already upgrade a cleanly-stale skill, so this is for when one is flagged as edited |
 | `yaks scan-ids` | Scan a file and/or stdin for tokens that are real yak-ids in this farm — a private-mode leak check; exits non-zero if any are found |
 | `yaks tui` | Open the interactive terminal UI |
 
-The state-transition verbs (`shave`, `shorn`, `regrow`, `slaughter`, `revive`) and `reparent` accept **multiple ids** in one call, applying the same move to each. Attribute any note with `--as <actor>` (else `$YAKS_ACTOR`, else the git user); attribution never implies ownership.
+The state-transition verbs (`shave`, `shorn`, `regrow`, `slaughter`, `revive`) and `reparent` accept **multiple ids** in one call, applying the same move to each. Attribute any note with `--as <actor>` (else `$YAKS_ACTOR`, else `delta:<thread title>`/`delta:<thread id>` derived from Delta's environment, else the git user; an explicit name is still preferred); attribution never implies ownership.
 
 ## Task format
 

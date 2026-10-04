@@ -1,0 +1,38 @@
+$ DELTA_THREAD_TITLE="  Trial 5A:   derive the actor from Delta's env, a very long title" yaks update $ID --note from-title
+Updated yak-5ee8
+$ DELTA_CURRENT_THREAD_ID=abc123 (no title) yaks update --note from-id
+Updated yak-5ee8
+$ YAKS_ACTOR=t5-actor + both Delta vars
+Updated yak-5ee8
+$ --as flag + YAKS_ACTOR
+Updated yak-5ee8
+$ no Delta vars -> git user
+Updated yak-5ee8
+
+id:       yak-5ee8
+title:    demo
+status:   Hairy
+type:     task
+priority: 3
+created:  2026-10-04T04:50:59Z
+updated:  2026-10-04T04:50:59Z
+
+---
+▸ 2026-10-04T04:50:59Z [delta:Trial 5A: derive the actor from Delta's]
+from-title
+
+---
+▸ 2026-10-04T04:50:59Z [delta:abc123]
+from-id
+
+---
+▸ 2026-10-04T04:50:59Z [t5-actor]
+explicit-env
+
+---
+▸ 2026-10-04T04:50:59Z [flagname]
+explicit-flag
+
+---
+▸ 2026-10-04T04:50:59Z [Git Human]
+git-fallback

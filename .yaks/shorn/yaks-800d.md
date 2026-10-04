@@ -4,7 +4,7 @@ title: Concurrent updates to one yak can silently drop a note (no locking on rea
 type: bug
 priority: 3
 created: '2026-10-03T22:24:19Z'
-updated: '2026-10-04T04:40:17Z'
+updated: '2026-10-04T04:54:13Z'
 parent: yaks-b5a0
 labels:
 - cli
@@ -36,3 +36,17 @@ I have made no code changes yet; the tree is clean. Answer with a/b/c/d (and whe
 ---
 ▸ 2026-10-04T04:40:17Z [Joel Webber]
 Agreed, .yaks/.lock sgtm. I wouldn't want to do anything more fine-grained unless it proved necessary for some reason.
+
+---
+▸ 2026-10-04T04:48:59Z [t4-lock]
+Joel Webber (human) answered in his checkout: (a) farm-wide .yaks/.lock, nothing finer-grained unless needed; relayed by delta-lead, who also specified the self-ignoring .yaks/.gitignore.
+
+![stress-before-after](artifacts/yaks-800d/stress-before-after.txt)
+
+---
+▸ 2026-10-04T04:53:40Z [t4-lock]
+Evidence: 32x800 stress before 25046/25600 (554 lost) vs after 25600/25600; single-writer timing unchanged; cargo test -p yaks green; doctor clean. Lock = farm-wide .yaks/.lock via store::lock, held across load->edit->save in every mutating Farm method; .yaks/.gitignore gets '.lock' (created/appended, never clobbered; also at init). Out-of-scope edits made for docs parity: docs/README.md, AGENTS.md, yaks-coordinating-private skill paragraph (it said no lock exists).
+
+---
+▸ 2026-10-04T04:54:13Z [t4-lock]
+Shorn. Farm-wide .yaks/.lock (store::lock, std File::lock) held across load->edit->save in every mutating Farm method; .yaks/.gitignore gets '.lock' (also at init); doctor unaffected. Evidence: artifacts/yaks-800d/stress-before-after.txt (32x800: 25046/25600 before, 25600/25600 after; single-writer unchanged); cargo test -p yaks green; unit test fails with the lock removed from update.

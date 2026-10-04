@@ -10,6 +10,7 @@ mod farm;
 mod filter;
 mod json;
 mod model;
+mod preflight;
 mod refs;
 mod rollup;
 mod skills;
@@ -294,7 +295,9 @@ enum Command {
         #[arg(long)]
         note: Option<String>,
         /// Attribute the note to this actor (stamped as `[actor]`). Defaults to
-        /// $YAKS_ACTOR, then the git user; never implies ownership.
+        /// $YAKS_ACTOR, then the harness identity (`delta:<thread title>`, else
+        /// `delta:<thread id>`, from Delta's environment), then the git user;
+        /// never implies ownership.
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
@@ -476,6 +479,24 @@ enum Command {
         /// (abandoned) yaks are exempt.
         #[arg(long)]
         strict: bool,
+    },
+    /// Read-only landing-readiness check for a team farm: nothing under
+    /// `.yaks/` untracked or with unstaged changes in git, the verify command of
+    /// each shorn yak in the change last PASSed, no yak in two status dirs. Prints
+    /// one line per failure and exits non-zero, else `preflight: ok`. A private
+    /// farm skips the git check (said so) and checks every shorn yak.
+    Preflight {
+        /// Shorn yaks to check (default: the shorn yaks in the change in git,
+        /// i.e. staged, modified or new under `.yaks/`). Scopes the verify check
+        /// only; the git and duplicate-status checks are farm-wide.
+        ids: Vec<String>,
+        /// Check the verify command of EVERY shorn yak, not only those in the
+        /// change (old shorn yaks that never ran `verify` will fail).
+        #[arg(long)]
+        all: bool,
+        /// Emit the result as JSON.
+        #[arg(long)]
+        json: bool,
     },
     /// Open the interactive terminal UI.
     Tui {
@@ -1174,6 +1195,33 @@ fn main() -> Result<()> {
                 render_doctor(&issues);
             }
             if !issues.is_empty() {
+                std::process::exit(1);
+            }
+        }
+        Command::Preflight { ids, all, json } => {
+            let report = preflight::run(&farm, &ids, all)?;
+            if json {
+                json::print(&serde_json::json!({
+                    "ok": report.ok(),
+                    "failures": report.failures.iter().map(|f| serde_json::json!({
+                        "check": f.check.code(),
+                        "message": f.message,
+                        "subjects": f.subjects,
+                    })).collect::<Vec<_>>(),
+                    "skipped": report.skipped,
+                }))?;
+            } else {
+                for line in &report.skipped {
+                    println!("preflight: {line}");
+                }
+                for f in &report.failures {
+                    println!("preflight: FAIL {}: {}", f.check.code(), f.message);
+                }
+                if report.ok() {
+                    println!("preflight: ok");
+                }
+            }
+            if !report.ok() {
                 std::process::exit(1);
             }
         }

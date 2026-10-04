@@ -61,6 +61,13 @@ yaks tui                       # or drive it all interactively
   outer repo via `.git/info/exclude`. See the **yaks** skill for the full
   breakdown and footguns.
 
+**Concurrent writers.** Every command that changes the farm holds an exclusive
+advisory lock on `.yaks/.lock` for its whole read-modify-write, so parallel
+processes (several agents, a TUI and a CLI) never drop each other's edits, even
+on one yak. Readers don't take it. The first write (and `yaks init`) adds a
+`.lock` line to `.yaks/.gitignore`, creating that file if needed and keeping any
+other lines, so the lock is never shown or committed.
+
 ## Farms, herds, and families
 
 A **farm** is one `.yaks/` directory; a **herd** is a group of yaks sharing an id

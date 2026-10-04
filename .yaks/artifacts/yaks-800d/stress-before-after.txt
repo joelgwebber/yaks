@@ -1,0 +1,8 @@
+stress: /tmp/t4lock/stress.sh <binary> 32 800  (32 parallel `yaks update <same id> --note`, 800 each)
+BEFORE (unmodified binary): kept 25046 of 25600 (554 notes silently lost), 63s, exit codes 0, doctor clean
+AFTER  (farm lock):         kept 25600 of 25600, 58s, doctor "All clear"
+single-writer, 500 sequential updates: before 11.51s / 10.32s, after 9.92s / 12.02s (noise)
+.yaks/.gitignore contains ".lock"; `git add -A -n` in the stress farm lists no lock file.
+cargo test -p yaks: 331 unit (3 ignored) + 28 cli pass; new tests in src/farm.rs:
+ concurrent_updates_to_one_yak_keep_every_note, lock_ignores_itself_without_clobbering_an_existing_gitignore,
+ rename_prefix_does_not_deadlock_on_the_farm_lock

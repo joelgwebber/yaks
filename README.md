@@ -113,6 +113,7 @@ when all of them are shorn (or dead), and *tangled* otherwise.
 | `yaks stats` | task statistics |
 | `yaks doctor` | read-only farm-integrity check (duplicate-status ids, dangling parent/dep refs); exits non-zero on problems, so it's CI-usable. `--json` for machine output |
 | `yaks doctor --strict` | also flags shorn yaks with no recorded note — a shear without evidence (the evidence-before-shear rule) |
+| `yaks preflight [<id>...]` | read-only landing-readiness check for a team farm: nothing under `.yaks/` untracked or unstaged in git, the `verify:` of each shorn yak in the change last PASSed (`--all`: every shorn yak), no yak in two status dirs; exits non-zero with one line per failure, else `preflight: ok` |
 | `yaks scan-ids [file]` | flag real yak-ids in text (file and/or stdin) — a leak check for a pre-commit / PR gate; exits non-zero if any are found |
 | `yaks tui` | open the interactive terminal UI |
 

@@ -835,6 +835,7 @@ pub fn init(root: &Path, cfg: &InitConfig) -> Result<InitOutcome> {
     let schema_path = root.join("schema");
     fs::write(&schema_path, format!("{SCHEMA}\n"))
         .with_context(|| format!("writing {}", schema_path.display()))?;
+    ensure_lock_ignored(root)?;
     Ok(InitOutcome::Created)
 }
 
@@ -893,6 +894,61 @@ fn xorshift(s: &mut u64) -> u64 {
 /// Current UTC time as `YYYY-MM-DDTHH:MM:SSZ` (matches Python `now_iso`).
 pub fn now_iso() -> String {
     Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()
+}
+
+/// Name of the farm-wide lock file inside `.yaks/` (see [`lock`]).
+const LOCK_FILE: &str = ".lock";
+
+/// Held while a read-modify-write runs; releases the farm lock on drop.
+#[must_use = "the lock is released as soon as the guard is dropped"]
+pub struct FarmLock {
+    _file: fs::File,
+}
+
+/// Take the farm-wide exclusive lock, blocking until it is free. Every
+/// mutation (load -> edit -> save) holds it for its whole duration, so two
+/// processes can no longer read the same version of a yak and have one's edit
+/// silently overwrite the other's. Writes stay atomic (temp + rename) either
+/// way; the lock only orders whole operations. Readers never take it.
+///
+/// The lock is an OS advisory lock (`flock` / `LockFileEx`) on `.yaks/.lock`,
+/// released by the OS if the process dies. It is not re-entrant: a process
+/// that locks twice deadlocks itself, so take it once per outermost operation.
+pub fn lock(root: &Path) -> Result<FarmLock> {
+    let path = root.join(LOCK_FILE);
+    let file = fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(false)
+        .open(&path)
+        .with_context(|| format!("opening {}", path.display()))?;
+    file.lock()
+        .with_context(|| format!("locking {}", path.display()))?;
+    // Under the lock, so concurrent first writers can't interleave the append.
+    ensure_lock_ignored(root)?;
+    Ok(FarmLock { _file: file })
+}
+
+/// Make sure `.yaks/.gitignore` ignores the lock file, so a committed farm
+/// never shows or commits it. Creates the file if missing, appends the line if
+/// the file exists without it, and never rewrites anything else in it.
+fn ensure_lock_ignored(root: &Path) -> Result<()> {
+    let path = root.join(".gitignore");
+    let existing = match fs::read_to_string(&path) {
+        Ok(s) => s,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => String::new(),
+        Err(e) => return Err(e).with_context(|| format!("reading {}", path.display())),
+    };
+    if existing.lines().any(|l| l.trim() == LOCK_FILE) {
+        return Ok(());
+    }
+    let mut text = existing;
+    if !text.is_empty() && !text.ends_with('\n') {
+        text.push('\n');
+    }
+    text.push_str(LOCK_FILE);
+    text.push('\n');
+    fs::write(&path, text).with_context(|| format!("writing {}", path.display()))
 }
 
 /// Result of a status move.
