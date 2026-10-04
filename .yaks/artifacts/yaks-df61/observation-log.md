@@ -754,3 +754,42 @@ explanation of when it writes into a thread's working tree.
 | Landing shape | pending merge, tree clean, by SHA | pending merge, stale shaving file + fmt leak, by SHA | pending merge on a pinned history: add/add conflicts + mass revert, cherry-pick |
 | Defect found by me | bracket in actor broke the stamp round-trip | default scope was noise | none (reviewed; risks logged) |
 | Skill gap the worker reported | how to record a shorn summary | whether to self-shear when the coordinator judges | where in-farm files belong |
+
+# Trial 6: two more workers (yaks-b4dc discovery bound, yaks-2cd4 `yaks commit`)  (delta-lead)
+
+## O47 [ok][cli] The walk-up hazard is closed, verified on the real Delta layout  (delta-lead)
+6A (yaks-b4dc, e5136f4) bounded discovery as the human decided: `$YAKS_DIR` first (the `.yaks` dir, a dir containing
+one, or a pointer file; a bad value is an error, not a fall-through), then the walk, which now stops at the first
+directory holding a `.git` and no `.yaks`, naming that git top-level and the three fixes (`yaks init`, a pointer file,
+`YAKS_DIR`); outside git the walk to the filesystem root is unchanged. Landing was the cleanest yet: base an ancestor
+(step 7 passed), merge-tree conflict-free, applied tree equal to the computed merge, by-SHA merge byte-identical.
+My own check used the toy private repo from trial 3, whose real Delta checkout still sits at
+`/tmp/yaks-private-trial/.delta/worktrees/<id>/yaks-private-trial`: before, `yaks list` there silently read the live
+farm (O11); now it exits 1 with the error, `YAKS_DIR=<farm> yaks list` works, and the outer repo and its subdirectories
+still resolve normally. Consequence to expect: Delta x private and in-tree git worktrees of a private farm need
+`YAKS_DIR` (or a pointer) in the brief and on every command; the private/worktrees/delta skills now say so. The
+worker noted one gap: no way to ask which farm a command resolved without a yak id (yaks path <id> is indirect).
+
+## O48 [ok][cli] `yaks commit`: landed, and the one edge that mattered for Delta  (delta-lead)
+6B (yaks-2cd4, 552ac2b) built `yaks commit [-m] [--dry-run]`: stages the farm and runs `git commit --only -- .yaks`, so
+code and other staged files stay out; generated message per yak (`yaks: created A; shorn B; ...`); hooks run; never
+pushes; private farm fails clearly; no-op when clean. It chose the leans for all three forks and recorded them rather
+than asking, reasonably (none was a user-visible risk). Landing: base an ancestor, merge-tree conflict-free, but a stale
+`shaving/yaks-2cd4.md` sat in my applied tree beside the new `shorn/` file (third time this pattern: 5B, 6B, and the
+O22 resumed worker), so the by-SHA merge was again the right move. The deliberate overlap with 6A on docs/cli.md, the
+README and the skill table merged automatically, three files, no conflict (adjacent added rows).
+My own testing found the edge the worker's did not: during a PENDING MERGE (what a Delta landing leaves) git refuses a
+partial commit and the command reported a bare "git commit failed ... staged, not committed". Fixed with a
+MERGE_HEAD/CHERRY_PICK_HEAD guard that stages nothing, exits 1 and says what to do (test fails without the guard).
+Pattern worth keeping: a coordinator's review of a command that wraps git should exercise it in the states the
+workflow actually produces (pending merge, failing hook, other staged files), not only the clean one.
+
+## Trial 6 scorecard
+| | 6A bound discovery (b4dc) | 6B yaks commit (2cd4) |
+|---|---|---|
+| Result | rules + 8 tests, Delta-layout transcript | command + 6 tests, transcript |
+| Gate in my checkout | 359 + 28 | 366 + 28, then 367 + 28 with my guard |
+| Landing | clean: ancestor, merge-tree equal, by-SHA identical | ancestor, merge-tree clean, stale shaving copy removed by by-SHA |
+| Defect found by me | none; verified on the real Delta checkout | pending-merge edge (fixed + test) |
+| Forks | decided in the claim; one call recorded (bad YAKS_DIR is an error) | three leans taken and recorded, no ask |
+| Skill gap reported | no way to ask which farm resolved without a yak id | none |

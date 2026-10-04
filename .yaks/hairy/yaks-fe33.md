@@ -4,7 +4,7 @@ title: Repeatable parallel-run trials, one per environment
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-04T05:01:18Z'
+updated: '2026-10-04T05:19:23Z'
 parent: yaks-b5a0
 labels:
 - agent
@@ -39,3 +39,7 @@ Trials 2 and 3 done (log O27-O34): skills move via brief v2 verified, no block; 
 ---
 ▸ 2026-10-04T05:01:18Z [delta-lead]
 Trial 5 done (log O42-O46, scorecard at the end): three parallel workers, three landing shapes; a squash plus reset pinned a parked worker's history (rule added to the Delta skill, step 7); merge-tree check caught a stale shaving file and an fmt leak; two coordinator follow-ups found real defects (actor bracket round-trip, preflight default scope). Open: the unexplained reversion of an edited file (O46); same-file conflict between workers (docs rows merged cleanly this time); repeat run for noise; weaker-model cells (parked).
+
+---
+▸ 2026-10-04T05:19:23Z [delta-lead]
+Trial 6 done (log O47-O48): discovery bounded at the git top-level with YAKS_DIR (verified on the real Delta layout) and yaks commit landed; both landings used the by-SHA checklist; the stale-shaving-copy pattern recurred a third time, a candidate for yaks preflight or a Delta landing helper. Parked workers no longer pin history (no rewrite while they ran).
