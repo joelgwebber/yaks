@@ -938,7 +938,11 @@ mod symlink_guard_tests {
             let (front, _body) = rest
                 .split_once("\n---\n")
                 .unwrap_or_else(|| panic!("{n}: frontmatter is not closed"));
-            assert_eq!(field(front, "name").as_deref(), Some(n.as_str()), "{n}: name must equal its directory");
+            assert_eq!(
+                field(front, "name").as_deref(),
+                Some(n.as_str()),
+                "{n}: name must equal its directory"
+            );
             let desc = field(front, "description").unwrap_or_default();
             assert!(
                 desc.to_lowercase().contains("when"),
@@ -971,7 +975,10 @@ mod symlink_guard_tests {
                 let tok = text[start..end].trim_end_matches('-');
                 if tok.len() >= 5 {
                     let full = format!("yaks-{tok}");
-                    assert!(names.contains(&full), "{n}: refers to unknown skill `{full}`");
+                    assert!(
+                        names.contains(&full),
+                        "{n}: refers to unknown skill `{full}`"
+                    );
                 }
                 i = end.max(start);
             }
@@ -979,7 +986,47 @@ mod symlink_guard_tests {
         // The core's router must name every companion it routes to.
         let core = std::fs::read_to_string(dir.join("yaks-coordinating").join("SKILL.md")).unwrap();
         for n in names.iter().filter(|n| n.starts_with("yaks-coordinating-")) {
-            assert!(core.contains(n.as_str()), "yaks-coordinating does not route to {n}");
+            assert!(
+                core.contains(n.as_str()),
+                "yaks-coordinating does not route to {n}"
+            );
         }
+    }
+
+    /// The Delta landing helper is only trustworthy if its own scenarios keep passing
+    /// (clean merge by SHA, refusing unexplained edits, dry run, cherry-pick fallback).
+    /// It needs `git merge-tree --write-tree` (git 2.38+); skip on an older git.
+    #[test]
+    fn delta_land_script_selftest_passes() {
+        let ver = std::process::Command::new("git")
+            .arg("--version")
+            .output()
+            .unwrap();
+        let ver = String::from_utf8_lossy(&ver.stdout).to_string();
+        let nums: Vec<u32> = ver
+            .split_whitespace()
+            .nth(2)
+            .unwrap_or("0")
+            .split('.')
+            .filter_map(|p| p.parse().ok())
+            .collect();
+        if (
+            nums.first().copied().unwrap_or(0),
+            nums.get(1).copied().unwrap_or(0),
+        ) < (2, 38)
+        {
+            eprintln!("skipping: git {ver:?} lacks merge-tree --write-tree");
+            return;
+        }
+        let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join(".agents/skills/yaks-coordinating-delta/land.sh");
+        let out = std::process::Command::new("sh")
+            .arg(&script)
+            .arg("--selftest")
+            .output()
+            .unwrap();
+        let text = String::from_utf8_lossy(&out.stdout);
+        assert!(out.status.success(), "land.sh --selftest failed:\n{text}");
+        assert!(text.contains("selftest: all passed"), "{text}");
     }
 }

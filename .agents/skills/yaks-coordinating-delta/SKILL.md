@@ -58,7 +58,10 @@ After every worker returns, in this order:
 3. `git merge-tree --write-tree HEAD <sha>` (git 2.38 or newer; check `git --version`) prints the correct
    merged tree; `git diff <tree>` shows how your working tree differs from it. On an older git, make a
    scratch worktree and run `git merge --no-commit --no-ff <sha>` there, then compare. Differences in files the worker never touched are Delta's mistake.
-4. Land by SHA, one worker at a time: `git merge --abort`, `git checkout -- <that worker's files>`,
+4. `sh .agents/skills/yaks-coordinating-delta/land.sh <sha> --dry-run` reports steps 1-3 (and what in your tree the
+   commit does not explain); without `--dry-run` it does step 4 and checks the result equals the computed tree.
+   It refuses while your tree holds changes the commit does not explain (`--force-discard` overrides) and never
+   pushes. By hand, land by SHA, one worker at a time: `git merge --abort`, `git checkout -- <that worker's files>`,
    then `git merge --no-ff <sha>`. A merge refuses to overwrite untracked files, so for each untracked
    leftover first check it equals the worker's version, `git show <sha>:<path> | cmp - <path>`, and
    remove it only if it does. Conflict markers in a file mean the same thing: do not hand-edit them;

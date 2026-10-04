@@ -793,3 +793,16 @@ workflow actually produces (pending merge, failing hook, other staged files), no
 | Defect found by me | none; verified on the real Delta checkout | pending-merge edge (fixed + test) |
 | Forks | decided in the claim; one call recorded (bad YAKS_DIR is an error) | three leans taken and recorded, no ask |
 | Skill gap reported | no way to ask which farm resolved without a yak id | none |
+
+## O49 [skill] The landing procedure is now a tested script  (delta-lead)
+By-SHA landing was done by hand eight times across trials 1-6; its failure shapes are known and mechanical (stale
+`shaving/` copy, unexplained reverted files, history-pinned base, untracked leftovers that must match the commit).
+`.agents/skills/yaks-coordinating-delta/land.sh <sha> [--dry-run] [--force-discard]` encodes it: reports the pending
+state, chooses merge or cherry-pick from whether the worker's base is still an ancestor, computes the correct tree with
+`git merge-tree --write-tree`, REFUSES (exit 3, files named) if the working tree holds changes the worker's commit does
+not explain, clears the applied state, lands, and checks the result equals the computed tree; it never pushes. A
+`--selftest` builds temp repos for five scenarios (12 checks: merge with a Delta-like applied state, refusal that keeps
+the edit, --force-discard, dry run, rewritten-history cherry-pick); `cargo test` runs it
+(`delta_land_script_selftest_passes`, skipped on git older than 2.38). The first selftest run caught two bugs in the
+test itself (macOS `wc` padding; a setup that did not really rewrite history) and one in the script (running doctor with
+no farm). Not yet exercised on a real landing; use it on the next one and compare with the manual checklist.
