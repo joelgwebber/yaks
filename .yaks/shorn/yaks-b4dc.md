@@ -4,7 +4,7 @@ title: 'discover: walk-up crosses the git top-level and finds another checkout''
 type: bug
 priority: 2
 created: '2026-10-03T20:39:31Z'
-updated: '2026-10-03T22:48:20Z'
+updated: '2026-10-04T05:14:50Z'
 parent: yaks-b5a0
 labels:
 - cli
@@ -24,3 +24,13 @@ Joel (comment, 2026-10-03): agreed on option (b), the explicit pointer, made Del
 ---
 ▸ 2026-10-03T22:48:20Z [delta-lead]
 Process miss (delta-lead): yaks-working says to raise a genuine design fork through ask/answer even with a clear lean, so the decision is an attributed thread on the yak. This was such a fork (where the discovery boundary sits, a semantics change). I wrote the options in a note and asked in chat instead, so the decision lived only in chat and the yak never showed in the human's inbox. Same for yaks-7149 and yaks-2c22, which I have now ask-ed with a stated lean.
+
+---
+▸ 2026-10-04T05:11:28Z [delta-lead]
+TRIAL 6 (yaks-fe33): worker 't6-bound', SHORT brief, loads yaks-working itself. Claim committed. DECIDED (Joel, see his note above): discovery stops at the git top-level unless a .yaks pointer file or $YAKS_DIR names the farm. Spec: store::discover walks up as today and a .yaks dir, pointer file or symlink at any level still wins; NEW: (1) if $YAKS_DIR is set it is used first (the .yaks dir itself, a dir containing one, or a pointer file; relative paths from the cwd); (2) when the walk reaches a directory that contains .git (dir or file) and no .yaks, STOP with an error naming that git top-level and the three fixes (yaks init, a .yaks pointer file, YAKS_DIR); (3) outside any git repository the old walk to the filesystem root is unchanged. Consequence to document: an in-tree git worktree or a Delta checkout of a PRIVATE farm no longer finds the live farm by accident; it needs a pointer or YAKS_DIR (yaks init --mode private writing the pointer is the separate yak yaks-814a). Scope: src/store.rs (discover and its tests), docs that describe discovery, AGENTS.md, README, and the discovery/walk-up wording in the yaks, yaks-coordinating-private, -worktrees and -delta skills. Evidence: gate cargo test -p yaks; a test per rule; a transcript on a scratch layout that mimics Delta (outer repo with a private .yaks, a nested checkout with its own .git and no .yaks): error without YAKS_DIR, works with it. Ask about anything that is a real fork (for example whether a pointer file may be given to YAKS_DIR). Judge: coordinator re-runs gate and transcript.
+
+![discover-bound-transcript](artifacts/yaks-b4dc/discover-bound-transcript.txt)
+
+---
+▸ 2026-10-04T05:14:50Z [t6-bound]
+Implemented Joel's design in store::discover (+ discover_with taking YAKS_DIR as a param): YAKS_DIR first (the .yaks dir, a dir containing one, or a pointer file; relative from cwd; empty=unset; bad value=error, no fall-through); walk stops at the first dir with .git (dir or file) and no .yaks, with an error naming that top-level + yaks init / pointer file / YAKS_DIR; outside git the walk is unchanged. A pointer file is accepted by YAKS_DIR (spec said so; herd: honoured). Tests: 8 in store::discover_tests, one per rule. Gate: cargo test -p yaks = 359+28 passed incl. skills guard. Transcript on a Delta-like scratch layout attached (error without YAKS_DIR, success with it, relative, pointer, bad value). Docs/skills updated: README, docs/cli.md (new 'Which farm a command uses'), docs/README.md, AGENTS.md, skills yaks, -coordinating-private/-worktrees/-delta. Note: in-tree git worktrees of a PRIVATE farm now need YAKS_DIR/pointer too.

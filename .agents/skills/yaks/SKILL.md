@@ -67,12 +67,13 @@ Pick the hiding method that fits — they differ in blast radius:
 **Local-only across machines.** To sync a private farm between machines without committing it to the code repo, give `.yaks/` its **own** git repo on a private remote, nested inside the project:
 - `cd .yaks && git init`, add a private remote, and commit the farm there. Run all farm git ops from inside `.yaks/`.
 - Hide the nested repo from the **outer** repo with `.git/info/exclude` — never the `*` trick, which would also blind the farm's own repo. The outer repo then ignores `.yaks/` cleanly instead of flagging it as an embedded repo.
-- Habit: **pull before, push after** a work session so machines stay in sync. yaks needs no configuration for this — discovery finds `.yaks/` exactly as always.
+- Habit: **pull before, push after** a work session so machines stay in sync. yaks needs no configuration for this — discovery finds `.yaks/` exactly as always (from the repo root or any directory below it).
 
 **Several repos, one farm (out-of-tree).** To track several projects in one private farm that lives *outside* their repos, point each repo at it rather than giving each its own `.yaks/`:
 - **Pointer file (recommended):** put a `.yaks` *file* (not a directory) at the repo root with `path: <path to the shared .yaks>` and, optionally, `herd: <this repo's herd>`. `path` may be absolute, `~/`-relative, or relative to the repo. Discovery follows it, so every `yaks` command in that repo operates on the shared farm — and `yaks create` (with no `--herd`) routes new yaks into that repo's herd automatically.
 - **Symlink (zero-config):** alternatively symlink `.yaks` → the shared farm. Discovery follows it too, but every repo then shares one config herd, so pass `yaks create --herd <herd>` per repo.
 - Keep the pointer/symlink out of the shared repo (`.git/info/exclude`), exactly like a private farm. Consolidate existing separate farms into the shared one with `yaks merge`.
+- **Discovery stops at the git top-level.** `yaks` walks up from the cwd but not past the first directory with a `.git` unless that directory has a `.yaks` entry, so a nested checkout (a Delta checkout, an in-tree `git worktree`) does not reach another checkout's farm by accident; it errors, naming the fixes: `yaks init`, a `.yaks` pointer file, or `YAKS_DIR=<farm>` (the `.yaks/` dir, a directory containing it, or a pointer file; wins over the walk).
 
 **Team.** The yak files are part of the repo — treat them like code.
 - Commit the shorn yak move together with the code that completed it (hard rule 2).
@@ -175,6 +176,7 @@ Run these directly from the shell (see **Running yaks** above for the exact invo
 | `yaks doctor` | Read-only farm-integrity check (duplicate-status ids, dangling parent/dep refs, malformed labels containing a comma or space); exits non-zero on issues, so it's CI-usable. `--json` emits issues as JSON |
 | `yaks doctor --strict` | Also flags shorn yaks with no recorded note, and shorn yaks whose `verify:` command did not last PASS — a shear without evidence (the evidence-before-shear rule) |
 | `yaks preflight [<id>...]` | Read-only check to run before landing (committing a shorn yak / merging a lane) in a team farm: nothing under `.yaks/` untracked or with unstaged changes (a new `artifacts/<id>/` you never `git add`ed fails, naming it), each shorn yak in scope (the ids; else those in the change in git; `--all` for every one) whose `verify:` (own or config default) last PASSed, no yak in two status dirs. One line per failure, non-zero exit; else `preflight: ok`. A private farm skips the git check and says so. `--json`. |
+| `yaks commit` | Commit the farm's own changes (all of `.yaks/`, never code) in one command, with a generated `yaks: shorn …; updated …` message (`-m` overrides, `--dry-run` previews). Other staged files stay staged and out of it; hooks run; never pushes; fails in a private farm. |
 | `yaks skills status` | Report whether the installed copies of these skills are current, stale, or locally edited (from a provenance stamp in their frontmatter). Ordinary `yaks` commands already upgrade a cleanly-stale skill, so this is for when one is flagged as edited |
 | `yaks scan-ids` | Scan a file and/or stdin for tokens that are real yak-ids in this farm — a private-mode leak check; exits non-zero if any are found |
 | `yaks tui` | Open the interactive terminal UI |

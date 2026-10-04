@@ -80,3 +80,9 @@ To run several projects from one out-of-tree farm, point each repo at it: put a
 operates on the shared farm, and `yaks create` routes new yaks into that repo's
 herd with no flag. A `.yaks` symlink to the farm works too. Fold existing farms
 together with `yaks merge`.
+
+Discovery walks up from the cwd but **stops at the git top-level**, so a
+checkout nested inside another repo (a Delta checkout, an in-tree `git
+worktree`) never reaches that repo's farm by accident: give it a pointer file,
+or set `YAKS_DIR` (the farm, a directory containing it, or a pointer file). See
+[cli.md](cli.md#which-farm-a-command-uses).

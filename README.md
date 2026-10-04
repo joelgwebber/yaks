@@ -114,6 +114,7 @@ when all of them are shorn (or dead), and *tangled* otherwise.
 | `yaks doctor` | read-only farm-integrity check (duplicate-status ids, dangling parent/dep refs); exits non-zero on problems, so it's CI-usable. `--json` for machine output |
 | `yaks doctor --strict` | also flags shorn yaks with no recorded note — a shear without evidence (the evidence-before-shear rule) |
 | `yaks preflight [<id>...]` | read-only landing-readiness check for a team farm: nothing under `.yaks/` untracked or unstaged in git, the `verify:` of each shorn yak in the change last PASSed (`--all`: every shorn yak), no yak in two status dirs; exits non-zero with one line per failure, else `preflight: ok` |
+| `yaks commit [-m <msg>] [--dry-run]` | commit the farm's own changes (everything under `.yaks/`) and nothing else, with a generated message like `yaks: shorn yaks-abc1; updated yaks-def2`; code staged elsewhere stays staged and out of the commit; runs your git hooks, never pushes; errors in a private farm, no-op when clean |
 | `yaks scan-ids [file]` | flag real yak-ids in text (file and/or stdin) — a leak check for a pre-commit / PR gate; exits non-zero if any are found |
 | `yaks tui` | open the interactive terminal UI |
 
@@ -222,7 +223,7 @@ git init && git remote add origin <your-private-remote>
 
 Hide the nested repo from the outer repo with `.git/info/exclude` (not the `*`
 trick, which would also blind the farm's own repo). yaks needs no configuration —
-it discovers `.yaks/` exactly as before.
+it discovers `.yaks/` exactly as before (from the repo, or any directory below it).
 
 **Several repos, one farm.** To track several projects in a single out-of-tree
 farm, put a `.yaks` *file* (not a directory) at each repo root pointing at the
@@ -239,6 +240,15 @@ with no flag. A `.yaks` symlink to the farm works too (but every repo then
 shares one herd). Keep the pointer/symlink out of the shared repo with
 `.git/info/exclude`, and use `yaks merge` to fold existing farms into the shared
 one.
+
+**Where discovery stops.** `yaks` walks up from the current directory but stops
+at the git top-level (the first directory with a `.git`) unless that directory
+has a `.yaks` entry. A checkout nested inside another repo's tree, such as a
+Delta checkout or an in-tree `git worktree` of a private farm, therefore does
+not find the outer repo's farm by accident; it fails with an error naming the
+fixes: `yaks init`, a `.yaks` pointer file, or `YAKS_DIR=<farm>` (the `.yaks/`
+dir, a directory containing it, or a pointer file). Outside a git repo the walk
+runs to the filesystem root.
 
 > **Heads up:** `git clean -fdx` in the outer repo will delete an ignored or
 > excluded `.yaks/`, including a nested farm's history. Push a private farm

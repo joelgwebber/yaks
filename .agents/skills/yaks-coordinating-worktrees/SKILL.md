@@ -15,8 +15,10 @@ lane is a `git worktree` of one repository.
   `.git/info/exclude` fixes that. The cost is `?? wt/` in `git status`; always stage explicit
   paths and never `git add .`. `git worktree remove` it after the run.
 - Team farm: the lane has its own committed copy of `.yaks/`, so cut it AFTER the claim commit
-  and after committing any human answers. Private farm: an in-tree `wt/<name>` finds the one live
-  farm by walk-up with no setup; an out-of-tree worktree needs the pointer or a symlink.
+  and after committing any human answers. Private farm: discovery stops at the git top-level, and a
+  worktree is its own top-level (`.git` file), so even an in-tree `wt/<name>` does NOT find the
+  one live farm by walk-up: give each lane `YAKS_DIR=<abs path to the farm>` in its commands, or a
+  `.yaks` pointer file / symlink in the worktree.
 - Each lane builds and tests its OWN binary (`./target/release/yaks` in the lane), never the main
   checkout's.
 

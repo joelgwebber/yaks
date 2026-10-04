@@ -1,0 +1,52 @@
+# team farm, clean: nothing to commit
+$ /Users/joel/src/yaks/.delta/worktrees/e9p3dswra3s5/yaks/target/release/yaks commit
+commit: nothing to commit under the farm
+[exit 0]
+# farm drift + modified code + an unrelated staged file
+$ git status --short
+ D .yaks/hairy/yak-9217.md
+ M src/code.rs
+A  src/staged.rs
+?? .yaks/hairy/yak-aa5a.md
+?? .yaks/shaving/
+[exit 0]
+$ /Users/joel/src/yaks/.delta/worktrees/e9p3dswra3s5/yaks/target/release/yaks commit --dry-run
+  D .yaks/hairy/yak-9217.md
+  A .yaks/hairy/yak-aa5a.md
+  A .yaks/shaving/yak-9217.md
+commit: left 1 other staged file(s) out of the commit: src/staged.rs
+commit: would commit: yaks: created yak-aa5a; shaving yak-9217
+[exit 0]
+$ git status --short
+ D .yaks/hairy/yak-9217.md
+ M src/code.rs
+A  src/staged.rs
+?? .yaks/hairy/yak-aa5a.md
+?? .yaks/shaving/
+[exit 0]
+$ /Users/joel/src/yaks/.delta/worktrees/e9p3dswra3s5/yaks/target/release/yaks commit
+[main a220c73] yaks: created yak-aa5a; shaving yak-9217
+ 2 files changed, 8 insertions(+)
+ create mode 100644 .yaks/hairy/yak-aa5a.md
+ rename .yaks/{hairy => shaving}/yak-9217.md (100%)
+  D .yaks/hairy/yak-9217.md
+  A .yaks/hairy/yak-aa5a.md
+  A .yaks/shaving/yak-9217.md
+commit: left 1 other staged file(s) out of the commit: src/staged.rs
+commit: committed a220c73 yaks: created yak-aa5a; shaving yak-9217
+[exit 0]
+$ git status --short
+ M src/code.rs
+A  src/staged.rs
+[exit 0]
+$ git show --stat --format=%s HEAD
+yaks: created yak-aa5a; shaving yak-9217
+
+ .yaks/hairy/yak-aa5a.md              | 8 ++++++++
+ .yaks/{hairy => shaving}/yak-9217.md | 0
+ 2 files changed, 8 insertions(+)
+[exit 0]
+# private farm
+$ /Users/joel/src/yaks/.delta/worktrees/e9p3dswra3s5/yaks/target/release/yaks commit
+Error: this is a private farm (nothing under /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/tmp.O5w9lxKd38/.yaks is tracked by git); there is nothing for `yaks commit` to commit
+[exit 1]

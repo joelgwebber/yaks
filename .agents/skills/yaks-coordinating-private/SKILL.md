@@ -8,19 +8,21 @@ description: "Farm-mode companion to yaks-coordinating for a PRIVATE or OUT-OF-T
 Read `yaks-coordinating` first. This file is only what changes when the farm is not in git.
 
 ## What the farm is
-There is **one live farm** for every lane. A gitignored `.yaks/` is never copied into another
-checkout; `yaks` finds it by walking UP the filesystem, so any checkout inside the repo's
-directory tree reaches the same farm with no setup, and yak surgery is live and shared. There
-is no yak state to merge. An out-of-tree farm is reached by a `.yaks` pointer file (`path:` and optional `herd:`, resolved
+There is **one live farm** for every lane, and yak surgery is live and shared. There is no yak
+state to merge. A gitignored `.yaks/` is never copied into another checkout, and `yaks` walks UP
+from the cwd only as far as the git top-level (the first directory with a `.git`). So a lane
+that is its own git checkout (an in-tree `git worktree`, a Delta checkout under
+`<repo>/.delta/worktrees/`) does NOT find the farm by accident: it must be told, with a `.yaks`
+pointer file in the checkout or `YAKS_DIR=<farm>` (the `.yaks/` dir, its parent, or a pointer
+file) in every command's environment. Without either, `yaks` errors naming the git top-level and
+the fixes. An out-of-tree farm is reached by a `.yaks` pointer file (`path:` and optional `herd:`, resolved
 relative to the pointer's own directory) or a symlink; `ls -ld .yaks` tells them apart (`d` is the
 farm itself, `l` a symlink, `-` a pointer file). It is
 kept out of git with `.git/info/exclude`; a worktree OUTSIDE the repo tree needs the pointer or
 `ln -s <repo>/.yaks <worktree>/.yaks`. `yaks merge` consolidates separate farms.
-**Hazard:** the walk-up has no stop at the git top-level, so a checkout that lacks the farm
-for any reason reads and WRITES whatever farm sits above it. This is being changed (yaks-b4dc):
-discovery will stop at the git top-level unless a `.yaks` pointer file or `YAKS_DIR` names the
-farm, and `yaks init --mode private` will write that pointer. Until then the walk-up applies, so
-check which farm you are in before the first write.
+Put the farm's path in each worker's brief (`YAKS_DIR=<abs path> yaks ...`); `yaks path <id>`
+shows which farm a command resolved. A pointer file is only needed when you cannot set the
+environment (`yaks init --mode private` writing it is a separate, unshipped change).
 
 ## Claim
 `shave` the yaks and add the assignment notes. They are visible to everyone instantly and there

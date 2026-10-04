@@ -6,6 +6,7 @@
 
 mod actor;
 mod clipboard;
+mod commit;
 mod farm;
 mod filter;
 mod json;
@@ -497,6 +498,22 @@ enum Command {
         /// Emit the result as JSON.
         #[arg(long)]
         json: bool,
+    },
+    /// Commit the farm's own changes (everything under `.yaks/`: yak files,
+    /// artifacts, config) and nothing else, with a generated message such as
+    /// `yaks: shorn yaks-abc1; updated yaks-def2`. Code staged or modified
+    /// elsewhere is left alone (staged files stay staged). Runs a normal
+    /// `git commit`, so the repo's hooks apply; never pushes. Fails in a private
+    /// farm (nothing under `.yaks/` tracked by git) and while a merge or
+    /// cherry-pick is in progress (git forbids a partial commit then; finish it
+    /// with a plain `git commit`); a farm with no changes is a no-op that exits 0.
+    Commit {
+        /// Commit message (default: generated from the changed files).
+        #[arg(short, long)]
+        message: Option<String>,
+        /// Print the files and message without staging or committing.
+        #[arg(long)]
+        dry_run: bool,
     },
     /// Open the interactive terminal UI.
     Tui {
@@ -1223,6 +1240,28 @@ fn main() -> Result<()> {
             }
             if !report.ok() {
                 std::process::exit(1);
+            }
+        }
+        Command::Commit { message, dry_run } => {
+            match commit::run(farm.root(), message.as_deref(), dry_run)? {
+                commit::Outcome::Nothing => println!("commit: nothing to commit under the farm"),
+                commit::Outcome::Done(plan) => {
+                    let verb = if dry_run { "would commit" } else { "committed" };
+                    for (state, path) in &plan.files {
+                        println!("  {state} {path}");
+                    }
+                    if !plan.left_staged.is_empty() {
+                        println!(
+                            "commit: left {} other staged file(s) out of the commit: {}",
+                            plan.left_staged.len(),
+                            plan.left_staged.join(", ")
+                        );
+                    }
+                    match &plan.commit {
+                        Some(sha) => println!("commit: {verb} {sha} {}", plan.message),
+                        None => println!("commit: {verb}: {}", plan.message),
+                    }
+                }
             }
         }
         Command::Tui {

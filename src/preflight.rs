@@ -145,7 +145,7 @@ fn git_state(root: &Path, report: &mut Report) -> Result<Option<BTreeSet<String>
 
 /// The yak a farm path belongs to: `.yaks/<status>/<id>.md` or
 /// `.yaks/artifacts/<id>/...` (the farm may sit below the repo root).
-fn yak_id_of(path: &str) -> Option<String> {
+pub(crate) fn yak_id_of(path: &str) -> Option<String> {
     let parts: Vec<&str> = path.split('/').collect();
     if let Some(i) = parts.iter().position(|p| *p == "artifacts") {
         return parts

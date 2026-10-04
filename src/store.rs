@@ -25,14 +25,36 @@ pub struct Discovered {
     pub prefix: Option<String>,
 }
 
-/// Walk up from `start` to the farm the CLI/TUI should operate on. At each
-/// level the `.yaks` entry is resolved as:
-/// - a **directory** (or a symlink to one) — the farm root itself;
-/// - a **pointer file** — a regular file whose `path:` names a farm elsewhere
-///   (absolute, `~/`-relative, or relative to the pointer's own directory) and
-///   whose optional `prefix:` becomes this repo's default herd. This lets
-///   several repos share one out-of-tree farm with no environment variable.
+/// Find the farm the CLI/TUI should operate on, from `start` (the cwd).
+///
+/// 1. `$YAKS_DIR`, when set and non-empty, wins outright (see
+///    [`discover_with`]).
+/// 2. Otherwise walk up from `start`. At each level the `.yaks` entry is:
+///    - a **directory** (or a symlink to one) — the farm root itself;
+///    - a **pointer file** — a regular file whose `path:` names a farm elsewhere
+///      (absolute, `~/`-relative, or relative to the pointer's own directory)
+///      and whose optional `herd:` becomes this repo's default herd.
+/// 3. The walk **stops at the git top-level** (the first directory holding a
+///    `.git`, dir or file) unless that directory has a `.yaks` entry too. So a
+///    checkout nested inside another repo's tree (a Delta checkout under
+///    `<repo>/.delta/worktrees/…`, an in-tree `git worktree`) never reads the
+///    outer repo's farm by accident: it needs its own `.yaks` pointer or
+///    `YAKS_DIR`. Outside any git repository the walk runs to the filesystem
+///    root.
 pub fn discover(start: &Path) -> Result<Discovered> {
+    let env = std::env::var("YAKS_DIR").ok();
+    discover_with(start, env.as_deref())
+}
+
+/// [`discover`] with `$YAKS_DIR` passed in, so tests need not touch the process
+/// environment. `yaks_dir` may name the `.yaks/` dir itself, a directory
+/// containing one, or a pointer file (`~/`-relative, or relative to `start`);
+/// an empty value counts as unset, and a value that names no farm is an error
+/// rather than a fall-through to the walk.
+pub fn discover_with(start: &Path, yaks_dir: Option<&str>) -> Result<Discovered> {
+    if let Some(v) = yaks_dir.filter(|v| !v.is_empty()) {
+        return from_yaks_dir(start, v);
+    }
     let mut dir = start;
     loop {
         let candidate = dir.join(".yaks");
@@ -43,15 +65,42 @@ pub fn discover(start: &Path) -> Result<Discovered> {
             });
         }
         if candidate.is_file() {
-            let (path, prefix) = parse_pointer(&candidate)?;
-            let root = resolve_pointer_root(dir, &path)?;
-            return Ok(Discovered { root, prefix });
+            return follow_pointer(&candidate);
+        }
+        if dir.join(".git").exists() {
+            anyhow::bail!(
+                "no .yaks farm in the git repository at {top}; discovery stops there \
+                 so it cannot reach another checkout's farm. Fix it with one of: \
+                 `yaks init` in {top}; a `.yaks` pointer file there (`path: <farm>`); \
+                 or set YAKS_DIR to the farm",
+                top = dir.display()
+            );
         }
         match dir.parent() {
             Some(p) => dir = p,
             None => anyhow::bail!("no .yaks/ directory found at or above {}", start.display()),
         }
     }
+}
+
+/// Resolve `$YAKS_DIR`: a pointer file, or a farm dir / dir containing `.yaks`.
+fn from_yaks_dir(start: &Path, value: &str) -> Result<Discovered> {
+    let target = expand_path(start, value);
+    if target.is_file() {
+        return follow_pointer(&target);
+    }
+    let root = resolve_farm_root(&target)
+        .with_context(|| format!("YAKS_DIR={value} is not a .yaks/ farm or pointer file"))?;
+    Ok(Discovered { root, prefix: None })
+}
+
+/// Follow a `.yaks` pointer file to its farm (and optional herd prefix).
+fn follow_pointer(file: &Path) -> Result<Discovered> {
+    let (path, prefix) = parse_pointer(file)?;
+    let base = file.parent().unwrap_or_else(|| Path::new("."));
+    let root = resolve_farm_root(&expand_path(base, &path))
+        .with_context(|| format!("farm pointer {} (path: {path})", file.display()))?;
+    Ok(Discovered { root, prefix })
 }
 
 /// Parse a `.yaks` pointer file: `key: value` lines recognizing `path`
@@ -81,9 +130,8 @@ fn parse_pointer(file: &Path) -> Result<(String, Option<String>)> {
     }
 }
 
-/// Resolve a pointer's `path` (absolute, `~/…`, or relative to `base`) to a
-/// farm root: accept the `.yaks/` dir itself or a directory containing one.
-fn resolve_pointer_root(base: &Path, path: &str) -> Result<PathBuf> {
+/// Expand `~/…` and anchor a relative `path` at `base`.
+fn expand_path(base: &Path, path: &str) -> PathBuf {
     let expanded = match path.strip_prefix("~/") {
         Some(rest) => match std::env::var("HOME") {
             Ok(home) if !home.is_empty() => PathBuf::from(home).join(rest),
@@ -91,27 +139,28 @@ fn resolve_pointer_root(base: &Path, path: &str) -> Result<PathBuf> {
         },
         None => PathBuf::from(path),
     };
-    let joined = if expanded.is_absolute() {
+    if expanded.is_absolute() {
         expanded
     } else {
         base.join(expanded)
-    };
+    }
+}
+
+/// Accept the `.yaks/` dir itself or a directory containing one.
+fn resolve_farm_root(dir: &Path) -> Result<PathBuf> {
     let is_farm = |d: &Path| {
         ["hairy", "shaving", "shorn", "dead"]
             .iter()
             .any(|sub| d.join(sub).is_dir())
     };
-    if is_farm(&joined) {
-        return Ok(joined);
+    if is_farm(dir) {
+        return Ok(dir.to_path_buf());
     }
-    let nested = joined.join(".yaks");
+    let nested = dir.join(".yaks");
     if is_farm(&nested) {
         return Ok(nested);
     }
-    anyhow::bail!(
-        "farm pointer path {} is not a .yaks/ farm",
-        joined.display()
-    )
+    anyhow::bail!("{} is not a .yaks/ farm", dir.display())
 }
 
 /// Load every task file in the given statuses, sorted by id.
@@ -1974,6 +2023,158 @@ mod init_tests {
         ));
         assert_eq!(fs::read_to_string(root.join("hairy/keep.md")).unwrap(), "x");
 
+        let _ = fs::remove_dir_all(&base);
+    }
+}
+
+#[cfg(test)]
+mod discover_tests {
+    use super::*;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    static SEQ: AtomicU64 = AtomicU64::new(0);
+
+    /// A fresh scratch dir. Under the system temp dir, outside any git repo.
+    fn scratch() -> PathBuf {
+        let p = std::env::temp_dir().join(format!(
+            "yaksrs-discover-{}-{}",
+            std::process::id(),
+            SEQ.fetch_add(1, Ordering::Relaxed)
+        ));
+        fs::create_dir_all(&p).unwrap();
+        p
+    }
+
+    fn farm_at(dir: &Path) -> PathBuf {
+        let root = dir.join(".yaks");
+        fs::create_dir_all(root.join("hairy")).unwrap();
+        root
+    }
+
+    /// The Delta layout: an outer repo with a private `.yaks`, and a nested
+    /// checkout with its own `.git` and no `.yaks`.
+    fn delta_layout() -> (PathBuf, PathBuf, PathBuf) {
+        let base = scratch();
+        let outer = base.join("repo");
+        let farm = farm_at(&outer);
+        fs::create_dir_all(outer.join(".git")).unwrap();
+        let checkout = outer.join(".delta/worktrees/abc/repo");
+        fs::create_dir_all(&checkout).unwrap();
+        fs::write(checkout.join(".git"), "gitdir: elsewhere\n").unwrap();
+        (base, farm, checkout)
+    }
+
+    #[test]
+    fn walk_stops_at_the_git_top_level_with_a_helpful_error() {
+        let (base, farm, checkout) = delta_layout();
+        let deep = checkout.join("src/sub");
+        fs::create_dir_all(&deep).unwrap();
+        let err = discover_with(&deep, None)
+            .err()
+            .expect("must not find outer farm");
+        let msg = err.to_string();
+        assert!(msg.contains(&checkout.display().to_string()), "{msg}");
+        assert!(msg.contains("yaks init"), "{msg}");
+        assert!(msg.contains("pointer"), "{msg}");
+        assert!(msg.contains("YAKS_DIR"), "{msg}");
+        assert!(farm.is_dir());
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn a_farm_at_the_git_top_level_is_found_from_below() {
+        let base = scratch();
+        let root = farm_at(&base);
+        fs::create_dir_all(base.join(".git")).unwrap();
+        let deep = base.join("a/b");
+        fs::create_dir_all(&deep).unwrap();
+        assert_eq!(discover_with(&deep, None).unwrap().root, root);
+        // `.git` as a file (a linked worktree) bounds the walk the same way.
+        let _ = fs::remove_dir_all(base.join(".git"));
+        fs::write(base.join(".git"), "gitdir: x\n").unwrap();
+        assert_eq!(discover_with(&deep, None).unwrap().root, root);
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn a_pointer_file_at_the_nested_top_level_names_the_farm() {
+        let (base, farm, checkout) = delta_layout();
+        fs::write(
+            checkout.join(".yaks"),
+            format!("path: {}\nherd: web\n", farm.display()),
+        )
+        .unwrap();
+        let d = discover_with(&checkout.join("src"), None).unwrap_or_else(|_| {
+            fs::create_dir_all(checkout.join("src")).unwrap();
+            discover_with(&checkout.join("src"), None).unwrap()
+        });
+        assert_eq!(d.root, farm);
+        assert_eq!(d.prefix.as_deref(), Some("web"));
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn outside_any_git_repo_the_walk_reaches_the_filesystem_root() {
+        let base = scratch();
+        let root = farm_at(&base);
+        let deep = base.join("x/y/z");
+        fs::create_dir_all(&deep).unwrap();
+        assert_eq!(discover_with(&deep, None).unwrap().root, root);
+        // No farm and no git repo anywhere above: the old error.
+        let empty = scratch().join("q");
+        fs::create_dir_all(&empty).unwrap();
+        let msg = discover_with(&empty, None).err().unwrap().to_string();
+        assert!(msg.contains("no .yaks/ directory found"), "{msg}");
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn yaks_dir_wins_over_the_walk_and_the_git_stop() {
+        let (base, farm, checkout) = delta_layout();
+        let abs = farm.display().to_string();
+        // The `.yaks` dir itself, and the directory containing it.
+        assert_eq!(discover_with(&checkout, Some(&abs)).unwrap().root, farm);
+        let parent = farm.parent().unwrap().display().to_string();
+        assert_eq!(discover_with(&checkout, Some(&parent)).unwrap().root, farm);
+        // It also beats a nearer farm on the walk.
+        let near = farm_at(&checkout);
+        assert_eq!(discover_with(&checkout, Some(&abs)).unwrap().root, farm);
+        assert_eq!(discover_with(&checkout, None).unwrap().root, near);
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn yaks_dir_relative_resolves_from_the_cwd() {
+        let (base, farm, checkout) = delta_layout();
+        let rel = "../../../../.yaks"; // checkout -> repo/.yaks
+        assert_eq!(
+            discover_with(&checkout, Some(rel)).unwrap().root,
+            checkout.join(rel)
+        );
+        assert!(checkout.join(rel).join("hairy").is_dir());
+        let _ = farm;
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn yaks_dir_may_be_a_pointer_file_and_keeps_its_herd() {
+        let (base, farm, checkout) = delta_layout();
+        let ptr = base.join("ptr");
+        fs::write(&ptr, format!("path: {}\nherd: ops\n", farm.display())).unwrap();
+        let d = discover_with(&checkout, Some(&ptr.display().to_string())).unwrap();
+        assert_eq!(d.root, farm);
+        assert_eq!(d.prefix.as_deref(), Some("ops"));
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn yaks_dir_empty_is_unset_and_a_bad_value_is_an_error() {
+        let (base, _farm, checkout) = delta_layout();
+        // Empty falls through to the walk (which stops at the git top-level).
+        assert!(discover_with(&checkout, Some("")).is_err());
+        let bad = base.join("nope").display().to_string();
+        let msg = format!("{:#}", discover_with(&checkout, Some(&bad)).err().unwrap());
+        assert!(msg.contains("YAKS_DIR"), "{msg}");
         let _ = fs::remove_dir_all(&base);
     }
 }

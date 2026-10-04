@@ -3,6 +3,24 @@
 Run `yaks <command> --help` for full flags. Most read commands accept the shared
 **filter flags** and `--json`; most note-writing commands accept `--as <actor>`.
 
+## Which farm a command uses
+
+Every command except `init` operates on one farm, found in this order:
+
+1. **`$YAKS_DIR`**, if set: the `.yaks/` directory itself, a directory
+   containing one, or a pointer file (relative paths are from the cwd). A value
+   that names no farm is an error, not a fall-through.
+2. Otherwise **walk up** from the cwd; a `.yaks/` directory, pointer file, or
+   symlink at any level wins.
+3. The walk **stops at the git top-level** (the first directory holding a
+   `.git`, dir or file) unless that directory has a `.yaks` entry too. A
+   checkout with no farm of its own (a Delta checkout under
+   `<repo>/.delta/worktrees/`, an in-tree `git worktree` of a private farm)
+   therefore fails with an error naming the git top-level rather than silently
+   reading, and writing, another checkout's farm. Fix it with `yaks init`, a
+   `.yaks` pointer file (`path:` + optional `herd:`), or `YAKS_DIR`. Outside any
+   git repository the walk runs to the filesystem root.
+
 ## Filter flags (shared)
 
 `--status <s>` · `--type <t>` · `--priority <n>` · `--label <l>` · `--herd <h>`
@@ -105,6 +123,7 @@ yak itself.
 | `skills status` | Per-skill verdict — `current` / `stale` / `adoptable` / `held` / `modified` / `unmanaged` / `source` — from the provenance stamp. `--dir` to inspect another skills dir. See [skills.md](skills.md). |
 | `doctor` | Read-only integrity check: duplicate-status ids, dangling parent/deps, malformed labels (a legacy label containing a comma or space, e.g. `ui,docs` — any label edit on that yak re-splits it). Exits non-zero on any issue (CI-usable). `--strict` also flags shorn yaks with no recorded note, and shorn yaks whose `verify:` command did not last PASS (evidence-before-shear). |
 | `preflight [<id>...]` | Read-only landing-readiness check; run it before committing a shorn yak or merging a lane in a team farm. Checks: (1) nothing under `.yaks/` is untracked or has unstaged changes in git (staged is fine: it is the step before the commit) — a new `artifacts/<id>/` never `git add`ed fails and is named; (2) every shorn yak in scope whose `verify:` command (own, else the config default for its labels) last PASSed, same rule as `doctor --strict`; scope is the ids given, else the shorn yaks that are part of the change in git (staged, modified or new under `.yaks/`, including a new `artifacts/<id>/`), and `--all` checks every shorn yak (old ones that never ran `verify` will fail); (3) no yak in two status dirs. `ids` scopes check 2 only; 1 and 3 are farm-wide. Prints one `preflight: FAIL <check>: …` line per failure and exits non-zero, else `preflight: ok`. In a private farm (nothing under `.yaks/` tracked by git) check 1 is skipped with a printed line and check 2 covers every shorn yak; 3 still runs. `--json` emits `{ok, failures[{check, message, subjects}], skipped}`. |
+| `commit [-m <msg>] [--dry-run]` | Commit the farm's own changes — every change under `.yaks/` (yak files, moves, `artifacts/`, config) — and nothing else, so a human's drifted edits land in one command and stop blocking a landing. Stages the farm and runs `git commit --only -- .yaks`: files you staged elsewhere stay staged and out of the commit (named in the output), and modified code is never touched. The message is generated from the changed files, one verb per yak (`created`, `shaving`/`shorn`/`dead`/`regrown` for a move, `updated`, `removed`, `artifacts for`, `farm config`), e.g. `yaks: created yaks-8c08; shaving yaks-c968`; `-m` overrides it. `--dry-run` lists the files and message without staging or committing. A normal `git commit`, so the repo's hooks run (and may fail it: the farm changes are then left staged); it never pushes. A clean farm prints `nothing to commit` and exits 0. While a merge or cherry-pick is in progress (a Delta landing leaves one pending) it refuses, stages nothing and says why: git forbids the partial commit it relies on, so finish the merge with a plain `git commit` (the farm changes are part of it) or abort it. In a private farm (nothing under `.yaks/` tracked by git) it fails with a clear error. |
 | `tui` | Open the interactive terminal UI (see [tui.md](tui.md)). |
 
 ## Attribution

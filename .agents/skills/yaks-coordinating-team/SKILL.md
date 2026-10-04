@@ -36,7 +36,8 @@ match (a transient `shaving/` path after the move is the usual culprit). Use
   across branches. To bring main-side updates into a live branch, `git merge main`,
   all-or-nothing.
 - **Commit human drift first.** Before ANY squash checkpoint, commit or stash the human's
-  uncommitted `.yaks/` edits on your branch, especially answers to files the branch moves: a
+  uncommitted `.yaks/` edits on your branch (`yaks commit` does it in one command, never touching
+  code), especially answers to files the branch moves: a
   conflicted `merge --squash` leaves a half-staged index, and the following `&& git commit`
   silently does nothing.
 - **Gate re-syncs on success.** Run `reset --hard` or a branch re-sync only after you have

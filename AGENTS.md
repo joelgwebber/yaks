@@ -32,8 +32,16 @@ task's status is implicit in which subdirectory it lives in.
   settings through that same cascade.
 - **A repo can point at an out-of-tree farm** via a `.yaks` pointer file
   (`path:` + optional `herd:`) or a symlink, resolved in `store::discover`, so
-  several repos share one farm with no env var. `create` routes a new yak's
+  several repos share one farm. `create` routes a new yak's
   herd as: explicit `--herd` > pointer `herd:` > config default.
+- **Discovery is bounded by the git top-level.** `store::discover` uses
+  `$YAKS_DIR` first (the `.yaks/` dir, a dir containing one, or a pointer file),
+  else walks up from the cwd and stops at the first directory with a `.git`
+  unless it also has a `.yaks` entry; outside a git repo it walks to the
+  filesystem root. So a nested checkout (Delta's `<repo>/.delta/worktrees/…`, an
+  in-tree `git worktree`) never reads another checkout's farm by accident; it
+  needs its own pointer or `YAKS_DIR`. Tests use `discover_with` (the env var
+  passed in), never `set_var`.
 - **Consolidate** separate farms with `Farm::merge` (`yaks merge`), which is
   collision-checked and non-destructive.
 

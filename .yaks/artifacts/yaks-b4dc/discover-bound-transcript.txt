@@ -1,0 +1,40 @@
+# scratch layout (mimics Delta): outer git repo with private .yaks, nested checkout with own .git and no .yaks
+$ find /tmp/yaks-scratch-ZOfj -maxdepth 6 -name .git -o -maxdepth 6 -name .yaks | sort
+./repo/.delta/worktrees/abc/repo/.git
+./repo/.git
+./repo/.yaks
+
+$ (outer) yaks list
+  [H] demo-86d8  p3 task     outer yak
+exit=0
+
+$ (nested checkout, src/) yaks list     # no YAKS_DIR
+error: no .yaks farm in the git repository at /private/tmp/yaks-scratch-ZOfj/repo/.delta/worktrees/abc/repo; discovery stops there so it cannot reach another checkout's farm. Fix it with one of: `yaks init` in /private/tmp/yaks-scratch-ZOfj/repo/.delta/worktrees/abc/repo; a `.yaks` pointer file there (`path: <farm>`); or set YAKS_DIR to the farm
+exit=1
+
+$ (nested) yaks create 'x'              # no YAKS_DIR: must not write the outer farm
+error: no .yaks farm in the git repository at /private/tmp/yaks-scratch-ZOfj/repo/.delta/worktrees/abc/repo; discovery stops there so it cannot reach another checkout's farm. Fix it with one of: `yaks init` in /private/tmp/yaks-scratch-ZOfj/repo/.delta/worktrees/abc/repo; a `.yaks` pointer file there (`path: <farm>`); or set YAKS_DIR to the farm
+exit=1
+
+$ (nested) YAKS_DIR=/tmp/yaks-scratch-ZOfj/repo/.yaks yaks list
+  [H] demo-86d8  p3 task     outer yak
+exit=0
+
+$ (nested) YAKS_DIR=../../../../../.yaks yaks list   # relative to cwd
+  [H] demo-86d8  p3 task     outer yak
+exit=0
+
+$ (nested) YAKS_DIR=/nonexistent yaks list
+error: YAKS_DIR=/nonexistent is not a .yaks/ farm or pointer file
+exit=1
+
+$ (nested) pointer file instead
+  [H] demo-86d8  p3 task     outer yak
+exit=0
+
+$ (outer) yaks list shows the outer farm is untouched
+  [H] demo-86d8  p3 task     outer yak
+
+# outside any git repo: walk to the filesystem root, unchanged
+No tasks found.
+exit=0
