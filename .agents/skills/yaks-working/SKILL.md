@@ -46,8 +46,10 @@ semantics, scope), not trivia.
 ## While you work
 
 - **Name yourself on every command.** `YAKS_ACTOR=<name> yaks ...` or `--as <name>`; an
-  `export` does not survive between terminal calls in some harnesses. Without it your notes
-  are stamped with the git user, which is the human.
+  `export` does not survive between terminal calls in some harnesses. Without it, under Delta
+  your notes are stamped `delta:<thread title>` (or `delta:<thread id>`), derived from its
+  environment; elsewhere they are stamped with the git user, which is the human. An explicit
+  name is still preferred: it is stable, where a thread title can be renamed.
 - **Changes you did not make are signal, not an error.** A touched `updated:`, a yak that
   moved, a new file, a dirty working tree: a person or another agent is working in the same
   farm. Do not investigate, revert or announce it unless it changes your task.
@@ -105,7 +107,7 @@ semantics, scope), not trivia.
   hand to the coordinator. Only self-shear when the judge is a passing script or the call
   is genuinely yours.
 - Write a short shorn summary (what was done, what was learned, any yaks spawned,
-  the evidence), then `yaks shorn <id>`.
+  the evidence) with `yaks update <id> --note` (`shorn` takes no note), then `yaks shorn <id>`.
 - **Team mode:** stage the shorn yak move together with the code that completed
   it and commit them in one commit. `yaks attach` creates a NEW directory under
   `.yaks/artifacts/<id>/` that must be added too. Stage only paths that exist: `git add`

@@ -4,7 +4,7 @@ title: Repeatable parallel-run trials, one per environment
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-03T22:28:05Z'
+updated: '2026-10-04T05:01:18Z'
 parent: yaks-b5a0
 labels:
 - agent
@@ -35,3 +35,7 @@ Joel (2026-10-03): skip the weaker-model cells for now; focus on the overall pro
 ---
 ▸ 2026-10-03T22:28:05Z [delta-lead]
 Trials 2 and 3 done (log O27-O34): skills move via brief v2 verified, no block; Delta x private with 4 parallel workers + one ask/answer/resume; all five landing shapes observed and resolved by SHA. Scorecards in yaks-df61. Remaining: same-file conflict between two workers, a repeat run to separate noise, weaker-model cells (parked per Joel), a Delta x out-of-tree-pointer cell.
+
+---
+▸ 2026-10-04T05:01:18Z [delta-lead]
+Trial 5 done (log O42-O46, scorecard at the end): three parallel workers, three landing shapes; a squash plus reset pinned a parked worker's history (rule added to the Delta skill, step 7); merge-tree check caught a stale shaving file and an fmt leak; two coordinator follow-ups found real defects (actor bracket round-trip, preflight default scope). Open: the unexplained reversion of an edited file (O46); same-file conflict between workers (docs rows merged cleanly this time); repeat run for noise; weaker-model cells (parked).

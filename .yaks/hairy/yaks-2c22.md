@@ -4,7 +4,7 @@ title: 'Process rails: yaks brief (worker brief from a yak) and yaks preflight (
 type: feature
 priority: 2
 created: '2026-10-03T21:13:29Z'
-updated: '2026-10-03T23:19:12Z'
+updated: '2026-10-04T04:58:40Z'
 parent: yaks-b5a0
 labels:
 - cli

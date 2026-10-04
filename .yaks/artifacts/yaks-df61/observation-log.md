@@ -694,3 +694,63 @@ I could only read them from his working tree, read-only. Habit to adopt in publi
 commit yak edits promptly (his "Yak herding." commits). Agent side: when his tree is dirty,
 keep working on a branch and do not touch the yaks he has edited (a second writer produces a
 merge conflict later; I touched one anyway and resolved the trivial append). Tool idea filed.
+
+# Trial 5: three workers in parallel, landed with the new Delta skill  (delta-lead)
+Workers (all `claude-sonnet-5-5`, short briefs): 5A yaks-12a0 (actor from Delta env), 5B yaks-06be (`yaks preflight`),
+and the resumed 4B yaks-800d (farm lock). Each landed by SHA; three different failure shapes appeared.
+
+## O42 [skill] A parked worker pins your history; a squash plus reset breaks its landing  (delta-lead)
+4B was parked on a design ask, then resumed hours later. Meanwhile I had landed trial 4 as squashed commits and run
+`git reset --hard local/main`, so 4B's base (`44a93ea`) was no longer an ancestor of my branch. When it returned: (a)
+`MERGE_HEAD` pending, but `git merge-tree --write-tree HEAD <sha>` reported add/add CONFLICTS (merge-base was the old
+`8433de1`); (b) Delta's applied working tree was the worker's old snapshot and had reverted 16 files I had since
+changed (skills text, yaks-5c9f's notes and the human's note in it) and resurrected deleted yak files. Only the commit
+itself was trustworthy. What worked: `git merge --abort`, restore the tree, `git cherry-pick <sha>` (applies only the
+worker's own change; one modify/delete conflict on its yak file, resolved by taking the deletion after checking the
+shorn copy held every note). Rule added to yaks-coordinating-delta (step 7): check
+`git merge-base --is-ancestor <worker's parent> HEAD`; if not an ancestor, cherry-pick; and do not rewrite your branch
+while a worker is running or parked.
+
+## O43 [ok][skill] The merge-tree check earns its keep  (delta-lead)
+5B: the applied tree differed from the correct merge in two ways the worker's commit did not contain: a stale
+`shaving/yaks-06be.md` beside the new `shorn/` file (a duplicate status dir) and 16 lines of `cargo fmt` reformatting in
+`src/skills.rs` that the worker had reverted before committing (intermediate state leaked into the landing). A blanket
+`git add` would have committed both. Landing by SHA (abort, restore, remove verified-identical untracked leftovers,
+`git merge --no-ff`) gave a tree identical to the computed one. 5A, by contrast, applied cleanly: the check passed and
+the by-SHA merge was byte-identical. So the working tree after a landing is sometimes right and sometimes badly
+wrong, and only the comparison tells you which.
+
+## O44 [ok][cli] The farm lock, reviewed and measured  (delta-lead)
+Head-to-head with the worker's before binary, same script (32 parallel updates, 800 notes, one yak): old kept 798 of
+800, new 800 of 800, both 4 s, `doctor` clean. `store::lock` is std-only (`File::lock`), RAII, released by the OS on
+crash; mutating `Farm` methods take it once at the outermost level (not re-entrant, documented in AGENTS.md; the worker
+split `rename_many` to avoid self-deadlock). Residual risks, not acted on: a filesystem where locking fails makes every
+write fail loudly (no unlocked fallback); Windows is untested; the first write in an existing committed farm creates an
+untracked `.yaks/.gitignore` that `yaks preflight` will flag once until it is added.
+
+## O45 [cli] Preflight's default scope was noise; fixed  (delta-lead)
+As specified ("else all shorn yaks") it failed on dozens of old shorn yaks that never ran verify, on a clean tree:
+useless as a gate. Now the verify scope is the ids given, else (with `--all`) every shorn yak, else the shorn yaks that
+are part of the change in git (staged, modified or new, including a new `artifacts/<id>/`); a private farm, which git
+cannot describe, still checks all. Three tests pin it (the scope test fails when the scope is removed). My own clone
+now reports `preflight: ok`. Lesson: dogfood a gate on a real tree before accepting its default.
+
+## O46 [open] A file I had just edited was overwritten with the human's version  (delta-lead)
+Twice in this trial a file I had just edited changed under me. First, landing 4B (O42). Second, with no worker running:
+within about 40 seconds of an edit, `yaks-coordinating-delta/SKILL.md` in my working tree became byte-identical to the
+version on the human's `main`/`origin/main` (older than my commits), discarding one section that was already
+COMMITTED and one I had just added, while every other modified file was untouched. `git status` and `git checkout --
+<file>` recovered the committed text; the uncommitted step was lost and redone. Cause unknown (timing coincided with the
+human's new commit appearing on `local/main`, and with a `sed -i` on the file). Mitigation until understood: commit
+right after every edit batch, compare `git diff HEAD --stat` with what you meant to change before moving on, and treat
+an unexpected diff against HEAD as a Delta sync event, not as your own edit. Candidate follow-up: a Delta-side
+explanation of when it writes into a thread's working tree.
+
+## Trial 5 scorecard
+| | 5A actor (12a0) | 5B preflight (06be) | 4B lock (800d), resumed |
+|---|---|---|---|
+| Result | done, 5 tests, transcript | done, 9 tests, transcript | done, 3 tests, stress 25046 -> 25600 of 25600 |
+| Gate in my checkout | 336 + 28 | 340 + 28 | 348 + 28 |
+| Landing shape | pending merge, tree clean, by SHA | pending merge, stale shaving file + fmt leak, by SHA | pending merge on a pinned history: add/add conflicts + mass revert, cherry-pick |
+| Defect found by me | bracket in actor broke the stamp round-trip | default scope was noise | none (reviewed; risks logged) |
+| Skill gap the worker reported | how to record a shorn summary | whether to self-shear when the coordinator judges | where in-farm files belong |

@@ -33,12 +33,15 @@ worker is idle, then wake the worker with a one-line message: the note is the re
 only the nudge. Do not chase the worker with edits to its yak while it is running.
 
 ## One writer per yak
-Writes to DIFFERENT yaks are safe at any concurrency. Concurrent updates to the SAME yak can
-silently drop a note, because the update is a read-modify-write with no lock (32 parallel
-writers lost 4 of 800 notes; yaks-800d). **An append is a write**: `yaks update --note`
-rewrites the whole file: two writers read the same version, the second rename replaces the first
-writer's note, nothing reports an error and the file stays valid. "It only appends" does not make
-two writers safe. So no yak has two writers, and the coordinator does not write a yak a worker is actively using.
+Writes to DIFFERENT yaks are safe at any concurrency. A yaks binary with the farm lock (every
+mutation holds an exclusive lock on `.yaks/.lock`, self-ignored via `.yaks/.gitignore`) also keeps
+every note when several writers hit the SAME yak (32 parallel writers x 800 notes: 25600 of 25600
+kept; yaks-800d). Before that lock an update was a read-modify-write with no lock and silently
+dropped notes (554 of 25600 lost): **an append is a write**, `yaks update --note` rewrites the
+whole file, two writers read the same version, the second rename replaces the first writer's note,
+nothing reports an error and the file stays valid. The lock fixes the lost write, not the shared
+ownership, and an older binary still has the bug. So keep one writer per yak: no yak has two
+writers, and the coordinator does not write a yak a worker is actively using.
 The trap is a shared parent yak that several workers report to: give each worker its own yak,
 and summarise onto the parent yourself after they finish.
 

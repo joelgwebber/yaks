@@ -4,7 +4,7 @@ title: 'Delta skill: layers on top of the farm-mode coordination skills'
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-03T22:28:05Z'
+updated: '2026-10-04T04:50:02Z'
 parent: yaks-b5a0
 depends_on:
 - yaks-5c9f
@@ -36,3 +36,7 @@ Brief template revised after trial 1 (v2): glob pathspec for git add, blocked-wo
 ---
 ▸ 2026-10-03T22:28:05Z [delta-lead]
 Template v2 extended after trials 2/3: coordinator checklist items 7-8 (merge-tree check, land by SHA one at a time, do not hand-revert an applied landing) and a private-farm variant (section 9). Evidence in log O30-O34.
+
+---
+▸ 2026-10-04T04:50:02Z [delta-lead]
+SHORN SUMMARY. The Delta skill now exists as .agents/skills/yaks-coordinating-delta (with yaks-coordinating core, -team, -private, -worktrees, and yaks-working), real files discovered by the harness. Coverage of this yak's list: coordinator claims before spawn_subagent (Before you spawn); worker task names the yak and evidence contract (The brief); no path dependencies or machine-local config (brief, Forbidden); coordinator re-runs verification and rejects what it cannot reproduce (landing checks in core section 7 and the delta landing steps); one landing point and resync of a stale parent (added now: 'One landing point, and when your clone goes stale'); extra repos attached as Delta worktrees (The model). Evidence: the skill file loads through the real skill tool; repo_skills_are_well_formed passes and fails on each broken form; two cold-reads (8 and 12 scenarios) answered correctly after fixes; trials 4 (and 5, running) used it with short briefs. The worker-brief template artifact on this yak is superseded by the brief block in the skill.

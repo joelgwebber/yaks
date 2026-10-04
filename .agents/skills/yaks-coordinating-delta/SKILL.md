@@ -68,6 +68,14 @@ After every worker returns, in this order:
    A resumed worker's second landing can leave a yak in two status dirs.
 6. Do not hand-revert Delta's applied state and expect that worker's NEXT landing to merge cleanly; it
    will come back as a conflict. Use steps 1-4 again.
+7. **A parked or long-running worker pins your history.** Its commit is based on some commit of yours. If that
+   base is no longer an ancestor of your branch (you squashed, then `git reset --hard local/main`, or rebased),
+   `git merge <sha>` finds a very old merge-base and reports add/add conflicts, and Delta's applied tree is the
+   worker's old snapshot: it reverted every newer file in your working tree and resurrected deleted yaks. Test it
+   with `git merge-base --is-ancestor $(git log --format=%p -1 <sha>) HEAD`. If it fails, land with
+   `git cherry-pick <sha>` (only the worker's own change) and resolve its conflicts by hand. Better: while any
+   worker is running or parked do not rewrite your branch; after a squash landing use `git merge local/main`,
+   not `git reset --hard`.
 
 ## Asking and resuming
 A blocked worker has run `yaks ask` and returned. Answer in the yak (core section 8): in a team farm have
@@ -82,9 +90,17 @@ branch, so their `main` does not move by itself and there is no agent-side accep
 explicit `git push local <branch>:main`: refused if the human's checkout is on that branch and dirty (their
 yak drift counts), always possible to a branch that is not checked out. Team-mode asks and notes reach their
 `yaks inbox` only once `main` moves. Default flow: form logical per-lane commits on a PR-style branch, push the
-branch, then fast-forward `main`; put the yak id and the checks run in each message. Never push `origin` or open
+branch, then fast-forward `main` (and do not reset your own branch to it while workers are parked: step 7); put the yak id and the checks run in each message. Never push `origin` or open
 a PR without the human's say-so; GitHub needs `origin`, not `local`. You may delete your own merged `pr/*`
 branches on `local`.
+
+## One landing point, and when your clone goes stale
+Land from ONE place: the coordinator's thread. If another thread (a human-created subthread, a second
+coordinator) or the human pushed to `main` while you worked, your clone is behind and `git push` is
+rejected or would drop their work. `git fetch local`, then `git merge local/main` (or rebase your
+unpushed branch), re-run the gate, and only then push. Do not `git reset --hard local/main` unless
+`git status` is clean and `git log local/main..main` shows nothing you still need: the reflog is the
+only net. The human may also push `origin`; Delta refreshes your `origin/main` for you.
 
 ## Hazards
 - Private farm: every thread shares ONE live farm by walk-up (mode skill); same-yak writes lose notes.
