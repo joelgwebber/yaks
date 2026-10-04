@@ -19,7 +19,7 @@ The npm package is `@j15r/yaks` (the unscoped `yaks` was taken, so it's publishe
 
 **Starting a fresh farm.** If there's no `.yaks/` directory yet, create one with `yaks init` (run in the repo root). It scaffolds `.yaks/{hairy,shaving,shorn,dead}/` plus a `config.yaml`; tune the defaults with `--herd`, `--type`, and `--priority`. It refuses to clobber an existing farm, so it's safe to run.
 
-Add `--json` to any query command (`list`, `show`, `next`, `tangled`, `search`, `stats`, `rollup`, `inbox`, `log`, `doctor`) for machine-readable output. `yaks create --json` also prints the new yak's id and file path, which is handy when you create a yak and immediately act on it.
+Add `--json` to any query command (`list`, `show`, `next`, `tangled`, `search`, `stats`, `rollup`, `inbox`, `log`, `lanes`, `doctor`) for machine-readable output. `yaks create --json` also prints the new yak's id and file path, which is handy when you create a yak and immediately act on it.
 
 ## Terminology (say it right)
 
@@ -164,6 +164,7 @@ Run these directly from the shell (see **Running yaks** above for the exact invo
 | `yaks next` | Hairy tasks whose deps are all resolved [alias: `ready`] |
 | `yaks tangled` | Hairy tasks with at least one unresolved dep [alias: `blocked`] |
 | `yaks search` | Substring search over id/title/description |
+| `yaks lanes` | List the other checkouts of this repo (git worktrees and Delta clones) and what each one's farm changed since it forked from this one (vs the merge-base; a lane that is only behind shows no changes): yaks only there, yaks in a different status, new notes, `needs:` newly set; plus commits ahead/behind. Read-only everywhere; `--json`. A lane with no farm of its own reads `no farm here (private? set YAKS_DIR)` |
 | `yaks log` | Timestamped notes and status moves across a filtered set, oldest first (an activity log); `--since` and `--by` narrow it |
 | `yaks dep` | Add/remove a dependency between tasks |
 | `yaks reparent` | Move a task under a new `--parent` (or `--unparent` to top-level) |

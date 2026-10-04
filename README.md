@@ -106,6 +106,7 @@ when all of them are shorn (or dead), and *tangled* otherwise.
 | `yaks next` / `tangled` | ready tasks / dependency-blocked tasks |
 | `yaks path <id>…` / `path <filters>` | each yak's current absolute file path (for a precise `git add`) |
 | `yaks search <q>` | substring search over id/title/description |
+| `yaks lanes` | the other checkouts of this repo (git worktrees, Delta clones) and what each one's farm changed since it forked from yours (vs the merge-base, not a diff against your checkout): new/moved yaks, new notes, `needs:`, plus commits ahead/behind; read-only. `--json` |
 | `yaks log` | timestamped notes and status moves across a filtered set, oldest first (an activity log); `--since`/`--by` narrow it |
 | `yaks dep` / `reparent` | edit dependencies / move under a new parent |
 | `yaks bulk` | Apply one field edit (and/or reparent) to every yak matching a filter. **Dry-run by default** — pass `--commit` to apply. Requires a filter *and* a mutation flag |

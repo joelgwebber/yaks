@@ -10,6 +10,7 @@ mod commit;
 mod farm;
 mod filter;
 mod json;
+mod lanes;
 mod model;
 mod preflight;
 mod refs;
@@ -224,6 +225,16 @@ enum Command {
         query: String,
         #[command(flatten)]
         filter: FilterFlags,
+        #[arg(long)]
+        json: bool,
+    },
+    /// List the other checkouts of this repo (git worktrees and Delta clones)
+    /// and what each one's farm CHANGED since it forked from this checkout
+    /// (merge-base): yaks only there, yaks in another status, new notes,
+    /// `needs:` set; plus how far ahead/behind its HEAD is. A lane that is
+    /// merely behind shows no changes. Read-only everywhere.
+    Lanes {
+        /// Emit the lanes as JSON.
         #[arg(long)]
         json: bool,
     },
@@ -915,6 +926,14 @@ fn main() -> Result<()> {
                         waiting.join(", ")
                     );
                 }
+            }
+        }
+        Command::Lanes { json } => {
+            let lanes = farm.lanes(&env::current_dir()?)?;
+            if json {
+                json::print(&lanes::to_json(&lanes))?;
+            } else {
+                print!("{}", lanes::render(&lanes));
             }
         }
         Command::Stats { json } => {

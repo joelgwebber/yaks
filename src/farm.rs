@@ -448,6 +448,13 @@ impl Farm {
 
     // -- queries ----------------------------------------------------------
 
+    /// The other checkouts of the repository containing `cwd` (git worktrees
+    /// and Delta clones) and how each one's farm differs from this one. Read-only
+    /// everywhere; see [`crate::lanes`].
+    pub fn lanes(&self, cwd: &Path) -> Result<Vec<crate::lanes::Lane>> {
+        crate::lanes::discover(cwd, &self.root)
+    }
+
     /// Tasks matching `spec`, grouped by status then id (the `list`/`search` view).
     pub fn list(&self, spec: FilterSpec, include_dead: bool) -> Result<Vec<Task>> {
         let tasks = store::load(&self.root, &EVERY)?;

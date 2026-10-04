@@ -4,7 +4,7 @@ title: 'Parallel development: finish and harden coordinator/worker skills + tool
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-04T20:53:04Z'
+updated: '2026-10-04T21:01:08Z'
 labels:
 - agent
 - skills
@@ -27,3 +27,7 @@ Progress (delta-lead): resynced from local/main (61ec995); yaks-80d5 shorn with 
 ---
 ▸ 2026-10-04T20:53:04Z [delta-lead]
 Spawned (base ca6d595, model anthropic/claude-sonnet-5-5 for both, read from the spawn confirmations): lanes-1 (agent cf3d8487f2a446d5) on yaks-e545; attr-1 (agent d5432b27565a40aa) on yaks-7149. Decisions behind them: yaks-99ec (git worktrees plus a sibling-directory scan, no Delta database; skills stop assuming 'local' is a checkout) and yaks-7149 (option A). Per yaks-df61 O52 the coordinator does not edit a worker's yak after spawn.
+
+---
+▸ 2026-10-04T21:01:08Z [delta-lead]
+Landed: yaks-7149 part 2 (2c28d23, plus follow-up 649b48a: strict doctor must not count moved: entries as evidence) and yaks-e545 'yaks lanes' (ddb5a83); yaks-8265 shorn as covered. Spawned lanes-2 (agent 7d0c5122bd6940af, anthropic/claude-sonnet-5-5, base 04d7114) on yaks-d738 (lanes: a lane's own changes vs merge-base, behind count). Nothing pushed to local/origin yet; the bundle goes to local main after lanes-2 and a decision on the preflight 'local is a checkout' check.
