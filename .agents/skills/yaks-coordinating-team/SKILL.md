@@ -55,7 +55,7 @@ land the lane first, then route the human's answer to the ask that is now visibl
 After a PR squash with an id-free message the message half breaks and the file-follow
 survives: anchor on the file move.
 
-## PR-driven landing (coordinator owns `gh`, workers never touch it)
+## PR-driven landing (yakherd owns `gh`, workers never touch it)
 Yak moves ride inside the PR diff, so reviewers see `.yaks/` churn; that is the tradeoff.
 Yak ids may appear in commit messages but NEVER in a PR title or body or an external tracker:
 put the external key in with `yaks rollup --keys`, and preflight the text with

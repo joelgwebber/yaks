@@ -127,7 +127,7 @@ The per-yak discipline the other skills lean on:
 Conventions for running a small number (2–4) of agents over one farm reliably.
 The load-bearing ideas, all validated by dogfooding:
 
-- **Run shape: claim → fan out → merge → reconcile.** The coordinator makes one
+- **Run shape: claim → fan out → merge → reconcile.** The yakherd makes one
   commit that moves the batch's yaks to `shaving` with per-yak assignment notes
   ("licks the cookie", so `main`'s `shaving` set reflects what's in flight),
   cuts a git worktree per lane, spawns one worker each (workers skip the shave —
@@ -135,13 +135,13 @@ The load-bearing ideas, all validated by dogfooding:
   message), and regrows any yak left stranded in `shaving`.
 - **Disjoint scope is about *types*, not just files.** A change to a shared type
   breaks the other lane at merge even across disjoint files; put it in a
-  coordinator prep-commit first, or keep it in one lane.
-- **Human-in-the-loop routes through the coordinator.** Workers `ask` and hand
+  yakherd prep-commit first, or keep it in one lane.
+- **Human-in-the-loop routes through the yakherd.** Workers `ask` and hand
   back; the human answers on `main` (`yaks inbox`); the next spawn starts fresh
   from `main`. No live cross-worktree feedback.
 - **Human-driven interactive lane.** A thorny, iterative design problem can run
   as its own worktree lane *in parallel* without a fan-out: a peer lane the human
-  drives, landed through the coordinator (or the human is the coordinator). It
+  drives, landed through the yakherd (or the human is the yakherd). It
   starts yak-less, emits code or a fresh farm, and — because the human opens the
   worktree as the harness root — dodges the spawned-worker file-tool pitfall by
   construction.
@@ -159,10 +159,10 @@ The load-bearing ideas, all validated by dogfooding:
   it describes; `yaks commits <id>` recovers provenance from git; ids may appear
   in commit messages but never in PR titles or external trackers (`scan-ids`
   guards that).
-- **Parallel agents:** the coordinator drives the claim → fan-out → squash →
+- **Parallel agents:** the yakherd drives the claim → fan-out → squash →
   reconcile shape above, with `ask`/`answer`/`inbox` for human decisions and
   `doctor` for integrity.
 - **Interactive lane alongside parallel work:** a human-driven worktree lane for
   design problems that aren't fire-and-forget — same worktree mechanics, landed
-  through the coordinator; in private mode its emitted yaks are shared live, so
+  through the yakherd; in private mode its emitted yaks are shared live, so
   only the code has to land.

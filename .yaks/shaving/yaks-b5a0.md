@@ -4,7 +4,7 @@ title: 'Parallel development: finish and harden coordinator/worker skills + tool
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-05T21:08:55Z'
+updated: '2026-10-05T22:40:25Z'
 labels:
 - agent
 - skills
@@ -51,3 +51,15 @@ Spawned ins-1 (agent 48d1966b1f5e4947, anthropic/claude-sonnet-5-5, base ea99697
 ---
 ▸ 2026-10-05T21:08:55Z [delta-lead]
 Landed yaks-3859 (c568e09; reviewed: gate 414 + 8 + 28 + 3, install scenario reproduced in a temp repo with a temp HOME, six coordination skill descriptions load through the real skill tool). Spawned ini-1 (agent f3fb705cf6254a56, anthropic/claude-sonnet-5-5, base 629cc70) on yaks-814a. Asked Joel the auto-update fork on yaks-36b6. Not pushed to local main since 5a07d6a (Joel's checkout is at f441b3b; my clone merged it).
+
+---
+▸ 2026-10-05T22:40:25Z [delta-lead]
+Joel's batch (2026-10-05): decision C on yaks-36b6, plus yaks-382b, 7acf, 75cc, 0a87, c061, f313 to look at while the coordination mechanics are finished before the lanes UI design (7204).
+
+Spawned (base ca50b88, anthropic/claude-sonnet-5-5 both):
+- ntf-1 (agent 483e2795e9184806) on yaks-5c83: notify once per release when project-local skills are stale (child of 36b6).
+- inp-1 (agent b2485e98bc95473b) on yaks-c53a: stdin and file input for notes/descriptions (the CLI half of 382b).
+
+Coordinator, in this clone: the skills pass (a398, Decision: notes, lanes/init pointers, 7acf yakherd, the 382b markdown guidance once inp-1 lands, cold-read) under yaks-5c9f.
+
+Joel's checkout holds many uncommitted yak edits (36b6, 7204, c061, 382b...): I do not write into those files until he commits; new work on them goes into child yaks. Pushing to his main is blocked until then (preflight --push-main reports it).

@@ -1,6 +1,6 @@
 ---
 name: yaks-working
-description: "Use when you are taking one yak from hairy to shorn, as a worker handed one by a coordinator or on your own: re-read it, claim it, keep notes, gather evidence, shear, commit. Minimal and harness-agnostic. Opt-in skill, installed by `yaks skills install --with coordination`."
+description: "Use when you are taking one yak from hairy to shorn, as a worker handed one by a yakherd or on your own: re-read it, claim it, keep notes, gather evidence, shear, commit. Minimal and harness-agnostic. Opt-in skill, installed by `yaks skills install --with coordination`."
 ---
 
 # Working a yak (experimental)
@@ -31,7 +31,7 @@ block, and drops it from `yaks next` until it is resolved; then return control
 rather than spinning. Pending questions surface in the human's `yaks inbox`. Leave your
 edits in the working tree when you return: do not revert them and do not park them in
 `$TMPDIR` (deleted when your session ends), and say which you did in your final message.
-Never answer your own ask. A coordinator may answer scope or mechanics and have you run
+Never answer your own ask. A yakherd may answer scope or mechanics and have you run
 `yaks answer` on its stated authority, then wake you; you keep your context. A design fork
 waits for the human.
 
@@ -56,13 +56,17 @@ semantics, scope), not trivia.
 - **Append progress as you go.** `yaks update <id> --note "what you found /
   decided / changed"`. Short, factual, one event per note. This running log is
   what future sessions and agents rely on.
+- **Log your decisions.** A choice a reviewer could argue about (a rule you picked, a default,
+  scope you cut, a shape you rejected) goes in its own note starting `Decision:`: what you chose,
+  the alternatives you rejected and why. A human audits you from these; a decision that is only
+  in the code is invisible. A real fork still goes through `ask` (above), not a `Decision:` note.
 - **One writer per yak.** If two actors need to touch the same work at once,
   split it into child yaks first so each has a single owner.
 
 ## Before you shear
 
 - **Evidence contract first.** The definition-of-done — what will count as proof —
-  is authored *before* the work: by the coordinator at claim time, or by the
+  is authored *before* the work: by the yakherd at claim time, or by the
   working agent itself in solo mode. You shear against it, not against vibes.
 - **Evidence over assertion.** Do not shear on "it compiles", a self-report, or a
   green proxy. Verify against the *real artifact* via the project's verification
@@ -88,7 +92,7 @@ semantics, scope), not trivia.
 - **Scriptable evidence is a `verify:` command.** When the check is a command (a
   test, a build, an artifact producer), store it on the yak (`--verify`) and run
   `yaks verify <id>`: it records the PASS/FAIL as a note and, because it's stored,
-  anyone (coordinator, CI, a later agent) can re-run it. `doctor --strict` then
+  anyone (yakherd, CI, a later agent) can re-run it. `doctor --strict` then
   enforces that a shorn yak's `verify:` last passed.
 - **Authoring a *new* snapshot/golden needs your tool's accept step.** A fresh
   snapshot fails its first run by design (the tool writes a `.new` and errors),
@@ -104,7 +108,7 @@ semantics, scope), not trivia.
   A script judges when your `verify:` passes — self-shear. A subjective call (look
   & feel) is the human's: `yaks attach` the artifact and `yaks ask`. Something an
   agent can eyeball but you shouldn't grade your own homework on: attach it and
-  hand to the coordinator. Only self-shear when the judge is a passing script or the call
+  hand to the yakherd. Only self-shear when the judge is a passing script or the call
   is genuinely yours.
 - Write a short shorn summary (what was done, what was learned, any yaks spawned,
   the evidence) with `yaks update <id> --note` (`shorn` takes no note), then `yaks shorn <id>`.
@@ -126,6 +130,6 @@ semantics, scope), not trivia.
 
 ## Many workers
 
-When a coordinator hands yaks to several workers, `yaks-coordinating` (the core, which routes to
+When a yakherd hands yaks to several workers, `yaks-coordinating` (the core, which routes to
 the farm-mode and environment skills) is the multi-worker picture. As a worker you need only this file
 and your brief.

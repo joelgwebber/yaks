@@ -5,7 +5,8 @@ description: Coordinate several agents and a human over one yaks farm (claim, fa
 
 # Coordinating yaks (core)
 
-You are the **coordinator**: the one agent that claims yaks, briefs workers, lands
+You are the **yakherd** (the coordinator; the skills in this family keep the name
+`yaks-coordinating`): the one agent that claims yaks, briefs workers, lands
 their work, and talks to the human. A **worker** owns exactly one yak and follows
 `yaks-working`. This skill holds what is true in every setup; two short companions
 hold the rest.
@@ -32,7 +33,7 @@ shared blackboard. The many-agent case adds writers, nothing else.
 ## 3. The shape: claim, fan out, land, reconcile
 1. **Claim.** Before any worker starts, create or pick the leaf yaks, `yaks shave` each,
    and add a note: owner name, file scope, evidence contract and who judges (section 5).
-   Claiming is the coordinator's job; the mode skill says how a claim becomes visible.
+   Claiming is the yakherd's job; the mode skill says how a claim becomes visible.
 2. **Fan out.** One worker per yak, from the freshest state. Every brief meets the
    brief contract (section 6).
 3. **Land.** Only you land work, one worker at a time, from the SHA in the worker's
@@ -40,11 +41,17 @@ shared blackboard. The many-agent case adds writers, nothing else.
 4. **Reconcile.** A yak still `shaving` after the batch is stalled: `yaks regrow` it or
    re-run it. Run `yaks doctor`.
 
+While workers run, `yaks lanes` lists every other checkout of the repo (git worktrees and Delta
+clones): its HEAD, how far ahead and behind it is, who is working in it and on which yaks, and
+what its farm changed since it forked from yours (new yaks, moves, notes, open asks). It only
+reads. In a team farm each lane has its own farm to compare; in a private farm every lane shares
+one live farm, and `lanes` says `shares this farm` or `no farm here` instead of a delta.
+
 ## 4. Scope work so it cannot collide
 One writer per yak; if work is shared, split it into child yaks first. Separate before
 you serialise.
 - **Types, not only files.** A change to a shared type (a struct with exhaustive
-  constructions) breaks the other lane's files at merge. Put it in a coordinator prep
+  constructions) breaks the other lane's files at merge. Put it in a yakherd prep
   commit first, or keep it in one lane. Scan before fanning out: `grep 'TypeName {'`.
 - **One big file is unavoidable?** Scope each lane to a disjoint function or region, prefer
   yaks that add no field to a shared struct, anchor briefs by symbol (`fn name`), never by
@@ -89,7 +96,7 @@ The environment skill carries a fill-in template.
 - A worker that needs a human decision runs `yaks ask <id> --note "..."`, leaves its edits
   in place, and returns. It does not block.
 - You answer **scope and mechanics** yourself (`yaks answer`), and say in the note that you
-  are the coordinator. For a **real design fork** you do NOT run `yaks answer`: leave the ask
+  are the yakherd. For a **real design fork** you do NOT run `yaks answer`: leave the ask
   open (it sits in the human's `yaks inbox`), add your lean as a note, and tell the human. The
   answer is the record; a message to the worker is only the wake-up.
 - **Where the line is.** *Scope and mechanics* are reversible, local to the yak's stated goal,
@@ -120,4 +127,4 @@ report it unless it changes your task. Stage only the yak files you touched.
 - Scanned shared types; one writer per yak; briefs anchored by symbol.
 - Workers start from the freshest committed state (mode skill: what "freshest" means).
 - Evidence contract and judge written in each claim note.
-- Coordinator's own tree clean enough that a landing cannot be mistaken for your edits.
+- Yakherd's own tree clean enough that a landing cannot be mistaken for your edits.

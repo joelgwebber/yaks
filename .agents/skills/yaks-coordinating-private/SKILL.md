@@ -45,7 +45,7 @@ dropped notes (554 of 25600 lost): **an append is a write**, `yaks update --note
 whole file, two writers read the same version, the second rename replaces the first writer's note,
 nothing reports an error and the file stays valid. The lock fixes the lost write, not the shared
 ownership, and an older binary still has the bug. So keep one writer per yak: no yak has two
-writers, and the coordinator does not write a yak a worker is actively using.
+writers, and the yakherd does not write a yak a worker is actively using.
 The trap is a shared parent yak that several workers report to: give each worker its own yak,
 and summarise onto the parent yourself after they finish.
 

@@ -4,7 +4,7 @@ title: 'Checkpoint footgun: commit human drift before squash-merge; never reset 
 type: task
 priority: 2
 created: '2026-09-11T03:50:27Z'
-updated: '2026-09-13T21:18:58Z'
+updated: '2026-10-05T22:43:55Z'
 labels:
 - meta
 - skills
@@ -15,3 +15,21 @@ Live incident during b1cc/5: the serial-arc checkpoint (git merge --squash <bran
 ---
 ▸ 2026-09-13T21:18:58Z [coordinator]
 RECURRED at b1cc/8 (worse): the 'git add <list>' where one pathspec did NOT exist (.yaks/shaving/yaks-20f9.md, a transient state) made git add ABORT and stage NOTHING (same root cause as the 6c93 slip) -- so the branch commit captured only the PREVIOUSLY-staged snapshot renames, silently dropping the code edits (tui.rs slim, runtime.rs, tests.rs, AGENTS.md). The reset --hard then reverted tui.rs and left main BROKEN (snaps moved, tests still inline). Recovered because untracked files (runtime.rs/tests.rs/shorn/*) survive reset --hard. SHARPER LESSONS: (1) never 'git add' a list that may contain a non-existent path -- it aborts the whole add; add only paths you've confirmed exist, or add per-file. (2) GATE on COMMIT CONTENTS, not just 'HEAD moved' -- verify 'git show --stat' includes every expected file before reset --hard. (3) prefer 'yaks shorn' then stage via 'git add -A -- .yaks/<id>*' patterns that match the actual move, not hardcoded shaving/ paths.
+
+---
+▸ 2026-10-05T22:43:55Z [delta-lead]
+The asks of this yak are covered by shipped rules and tools; shearing it (coordinator delta-lead, 2026-10-05). The broader thinking you asked for is recorded on yaks-5f12.
+
+Rules, in `.agents/skills/yaks-coordinating-team/SKILL.md`:
+- "Commit human drift first": before ANY squash checkpoint, commit or stash the human's uncommitted `.yaks/` edits.
+- "Gate re-syncs on success": `reset --hard` or a branch re-sync only after the commit landed and `git show --stat` lists every expected file; never unconditionally.
+- "Stage with paths that exist": one missing pathspec makes `git add` abort and stage nothing.
+
+Tools:
+- `yaks commit` commits the farm only (`git commit --only -- .yaks`), refuses during a pending merge, never touches code.
+- `land.sh` lands by SHA, refuses while the tree holds changes the worker's commit does not explain, never resets blindly, and checks the result equals the computed merge.
+- `yaks preflight` checks what is about to be committed.
+
+---
+▸ 2026-10-05T22:43:55Z [delta-lead]
+moved: hairy -> shorn

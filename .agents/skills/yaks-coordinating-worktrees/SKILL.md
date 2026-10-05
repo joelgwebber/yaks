@@ -22,6 +22,9 @@ lane is a `git worktree` of one repository.
 - Each lane builds and tests its OWN binary (`./target/release/yaks` in the lane), never the main
   checkout's.
 
+To see all lanes at once (branch, ahead/behind, dirty files, who is working there, what each lane's farm
+changed) run `yaks lanes` from any checkout; it is read-only.
+
 ## File-tool rules (harnesses whose file tools root at the main checkout)
 1. Edit through the EXPLICIT worktree path (`wt/<name>/src/foo.rs`), never a bare `src/foo.rs`:
    a bare path silently edits the main tree.
@@ -51,7 +54,7 @@ A design problem the human and one agent iterate on is a peer lane the human dri
 opens `wt/<name>` as the harness root (an agent cannot re-root itself), and the yak is deferred
 until there is an artifact to make. Team farm: land the farm-only commit early so you can fan the
 emitted yaks out while the code work continues. Private farm: the yaks are visible at once; only
-claim what you hold. When the human says "merge up": if no coordinator is running they land it;
+claim what you hold. When the human says "merge up": if no yakherd is running they land it;
 otherwise you do, from a committed branch.
 
 ## Recovery

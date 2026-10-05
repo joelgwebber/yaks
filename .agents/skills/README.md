@@ -16,7 +16,7 @@ shipped ones from here.
   `yaks-coordinating-delta/land.sh`) must be listed in `BUNDLED` too; a test fails
   if one is missing.
   - `yaks-working` is for a worker taking ONE yak from hairy to shorn.
-  - `yaks-coordinating` is the core for a coordinator handing yaks to other agents;
+  - `yaks-coordinating` is the core for a yakherd handing yaks to other agents;
     it routes to one farm-mode skill and one environment skill:
     - farm mode: `yaks-coordinating-team` (`.yaks/` committed) or
       `yaks-coordinating-private` (gitignored or out-of-tree);

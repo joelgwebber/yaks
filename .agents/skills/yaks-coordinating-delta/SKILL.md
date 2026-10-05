@@ -1,6 +1,6 @@
 ---
 name: yaks-coordinating-delta
-description: "Environment companion to yaks-coordinating for coordinating in Delta (parent thread as coordinator, workers via spawn_subagent): the worker brief template, what a worker sees, how its work lands and how to check it, asking and resuming a worker, landing in the human's checkout. Load after yaks-coordinating and its farm-mode skill when you can call spawn_subagent. Opt-in skill, installed by `yaks skills install --with coordination`."
+description: "Environment companion to yaks-coordinating for coordinating in Delta (parent thread as yakherd, workers via spawn_subagent): the worker brief template, what a worker sees, how its work lands and how to check it, asking and resuming a worker, landing in the human's checkout. Load after yaks-coordinating and its farm-mode skill when you can call spawn_subagent. Opt-in skill, installed by `yaks skills install --with coordination`."
 ---
 
 # Coordinating in Delta
@@ -8,13 +8,17 @@ description: "Environment companion to yaks-coordinating for coordinating in Del
 Read `yaks-coordinating` and your farm-mode skill first. This file is how work MOVES in Delta.
 
 ## The model
-Your thread is the coordinator. Each worker (`spawn_subagent`) is its own thread with a thin git
+Your thread is the yakherd. Each worker (`spawn_subagent`) is its own thread with a thin git
 clone plus a checkout; those finished clones stay on disk. Where they live depends on the machine:
 on the human's own machine `<repo>/.delta/clones/<id>/<repo>.git` and `<repo>/.delta/worktrees/<id>/<repo>`;
 on a machine that only has the thread shared to it, `~/.local/share/delta/worktrees/<id>/<repo>` with the
 git dir as its sibling `<repo>.git` and NO `.delta/`. Either way a checkout is `<root>/<id>/<repo>`, and
-`git worktree list` inside it shows only that clone: do not use it to find siblings. Your clone's
-`objects/info/alternates` names the repo that holds Delta's `refs/delta/<id>/<repo>/<sha>` pins. A worker can
+`git worktree list` inside it shows only that clone; `yaks lanes` lists every sibling checkout (git worktrees
+and Delta clones) with its HEAD, ahead/behind, dirty count, who is working in it and what its farm changed,
+read-only. Your clone's `objects/info/alternates` names the repo that holds Delta's `refs/delta/<id>/<repo>/<sha>`
+pins. Delta marks the commits it imports from another machine as shallow boundaries, so a clone (yours or the
+human's) can be shallow (`git rev-parse --is-shallow-repository`): ancestry questions then have unreliable
+answers, `yaks lanes` shows `?` and `land.sh` prints a note; `git fetch --unshallow origin` (or `local`) fixes it. A worker can
 read your checkout and your `target/` (it is not isolated), so the brief forbids touching them. A fresh checkout has no `target/`: building takes 15-25 s.
 Extra repos are attached to the thread by the human as more Delta worktrees; with several attached,
 file tools and `skill` need the worktree argument. Never clone a repo or add a path dependency.
@@ -30,9 +34,9 @@ and `skill` needs the `worktree` argument; still put the critical rules in the b
   runs; pass `model` only when the human asked for one.
 - Start every spawn `title` with the worker's name (`lanes-1: build yaks lanes CLI`). Delta shows the title in
   its thread list and exports it as `DELTA_THREAD_TITLE`, which yaks stamps as `delta:<title>` when no actor is
-  set; with the name first the thread and the yak's notes and moves line up by eye (`yaks lanes` will label lanes
-  the same way, yaks-c29a).
-  Keep `YAKS_ACTOR=<name>` in the brief too: it is stable when a thread is renamed.
+  set; with the name first the thread, the yak's notes and moves, and the label `yaks lanes` shows for the lane
+  (its actors and in-progress yaks) line up by eye. Keep `YAKS_ACTOR=<name>` in the brief too: it is stable
+  when a thread is renamed.
 - Scope disjointly and give each worker its own yak (core sections 3-4). Parallel workers on one
   repo are fine: four landed within 10 seconds of each other.
 
@@ -51,11 +55,13 @@ before and passes after>; <attachment>. Paste real output in notes, claim nothin
 Forbidden: edits to Cargo.toml/Cargo.lock/.gitignore/config, path dependencies, `git push`,
 installs, history rewrites. <mode rule: team: stage `':(glob).yaks/*/<id>.md'` and
 `.yaks/artifacts/<id>` too; private: no yak ids or the word yaks in commits, stage only your files>
-Finish: shear after the gate passes; ONE commit, explicit paths, message `<id>: ...` (team) or
+Finish: `yaks shorn <id>` (there is no `shear` subcommand) after the gate passes; ONE commit, explicit paths, message `<id>: ...` (team) or
 plain English (private). Blocked or a decision needed: `yaks ask <id>`, leave your edits in the
 working tree (never revert, never park in $TMPDIR), say which in your final message, return.
+Decisions: record every choice a reviewer could argue about as a note starting `Decision:` that names
+the alternatives you rejected. Write multi-line notes as markdown with real line breaks, not one long line.
 Final message: commit SHA and `git show --stat`; gate command + last 15 lines; start/finish
-`date -u`; docs-parity grep you ran; anything surprising.
+`date -u`; the `Decision:` notes in one line each; docs-parity grep you ran; anything surprising.
 ```
 
 ## What lands, and how (never trust the working tree after a landing)
@@ -120,8 +126,8 @@ push `pr/<name>` to `local`, and give the human the command `git fetch <managed 
 repoint `local`).
 
 ## One landing point, and when your clone goes stale
-Land from ONE place: the coordinator's thread. If another thread (a human-created subthread, a second
-coordinator) or the human pushed to `main` while you worked, your clone is behind and `git push` is
+Land from ONE place: the yakherd's thread. If another thread (a human-created subthread, a second
+yakherd) or the human pushed to `main` while you worked, your clone is behind and `git push` is
 rejected or would drop their work. `git fetch local`, then `git merge local/main` (or rebase your
 unpushed branch), re-run the gate, and only then push. Do not `git reset --hard local/main` unless
 `git status` is clean and `git log local/main..main` shows nothing you still need: the reflog is the

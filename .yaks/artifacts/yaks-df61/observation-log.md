@@ -984,3 +984,23 @@ Consequences for yaks: (1) `yaks lanes` showing `?` and one hint is right. (2) l
 `git merge-base --is-ancestor` and computes the merge with `git merge-tree`; in a shallow repo both can be wrong in either
 direction (a missing parent looks like "not an ancestor"). It worked every time here because the base was always a recent commit
 of ours, but the script should say when the repo is shallow (filed as yaks-a398).
+
+# Trial 9: project-local skills install (yaks-3859) and `yaks init --mode` (yaks-814a)  (delta-lead)
+
+## O59 [ok][cli][skill] Two sequential workers, both landed clean; what each review added  (delta-lead)
+ins-1 (3859, 4671760) and ini-1 (814a, 1a1e10d) were sequential on purpose (init reuses the install function), each landed by
+`land.sh` in one pass (base an ancestor, computed tree equal), gates 414 + 8 + 28 + 3, then + 19 for init's new tests (which
+the worker ran against a pre-change checkout: all 19 fail there). My own checks: install into a temp git repo from a
+SUBDIRECTORY with a temp HOME (9 files at the git top-level, land.sh byte-identical and 0755, differences only the stamps and
+the source README, the user dir untouched); the six coordination skill descriptions changed text and still load through the real
+`skill` tool; each init mode driven in temp repos (plain init + hint; private: `git status` empty, exclude lines, second run
+"Nothing to change", a different mode errors naming what would have to change; pointer from a subdirectory with the right
+YAKS_DIR line). No defect found in either; I did not run `skills install` in the source tree (a failing guard would overwrite the
+source), I relied on the worker's transcript and the test for the refusal.
+Choice logging (Joel's question): ins-1 recorded its autosync decision and the consequence on the yak (a note at 21:05:21Z)
+because the brief asked for it by name; the same held for lbl-1's in-progress rule and pre-1's scope decision. Unprompted choices
+are the risk. Plan: the brief template and yaks-working get a line to write a `Decision:` note (the choice, the alternatives
+rejected) for anything a reviewer could argue about, with the next skills pass and its cold-read.
+Coordinator-side: the ini-1 report named stale prose in yaks-coordinating-private (fixed, 3715922). Pushed as two squash commits
+on Joel's f441b3b (`local main` 4bdf6db, archive `delta/trial9`), preflight --push-main ok first. Open: yaks-36b6 (auto-update of
+project-local skills; lean: notify) is Joel's call.

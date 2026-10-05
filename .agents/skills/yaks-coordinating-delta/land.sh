@@ -36,9 +36,17 @@ land() {
   git rev-parse -q --verify CHERRY_PICK_HEAD >/dev/null && pending="${pending:+$pending+}cherry-pick"
   say "worker commit: $short $subject"
   say "pending state: ${pending:-none}"
+  if [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" = true ]; then
+    say "note: this repository is shallow (Delta marks the commits it imports from another machine so); the ancestry and merge answers below are lower bounds: a missing parent can make a real ancestor look like 'not an ancestor'. 'git fetch --unshallow origin' (or local) fixes it; Delta may mark more later."
+  fi
 
   parent=$(git log --format=%p -1 "$full" | cut -d' ' -f1)
-  [ -n "$parent" ] || die "the worker commit has no parent"
+  if [ -z "$parent" ]; then
+    if [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" = true ]; then
+      die "the worker commit has no parent here because this repository is shallow; git fetch --unshallow origin (or local), then retry"
+    fi
+    die "the worker commit has no parent"
+  fi
   if git merge-base --is-ancestor "$parent" HEAD; then
     mode=merge
     say "worker base $(git rev-parse --short "$parent") is an ancestor of HEAD: trying a merge by SHA"
@@ -147,6 +155,7 @@ selftest() {
   setup; printf 'mine\n' > "$d/c.txt"; before=$(g rev-parse HEAD)
   out=$(run "$w" --dry-run 2>&1); rc=$?
   [ $rc = 0 ] && [ "$(g rev-parse HEAD)" = "$before" ] && [ "$(cat "$d/c.txt")" = mine ] && ok "no changes" || bad "rc=$rc"
+  printf '%s' "$out" | grep -q "repository is shallow" && bad "shallow note in a full repository" || ok "no shallow note in a full repository"
 
   say "5. worker base no longer an ancestor: cherry-pick"
   setup; g reset -q --hard "$root"
@@ -154,6 +163,14 @@ selftest() {
   g merge-base --is-ancestor "$base" HEAD && bad "setup: base still an ancestor" || ok "setup: base is not an ancestor"
   out=$(run "$w" 2>&1); rc=$?
   [ $rc = 0 ] && printf '%s' "$out" | grep -q "cherry-pick" && [ "$(cat "$d/a.txt")" = a2 ] && ok "cherry-picked" || bad "rc=$rc: $out"
+
+  say "6. a shallow repository gets the note (yaks-a398)"
+  setup; d2=$(mktemp -d)
+  git clone -q --depth 1 "file://$d" "$d2/c" >/dev/null 2>&1 && git -C "$d2/c" fetch -q --depth 2 origin worker >/dev/null 2>&1
+  [ "$(git -C "$d2/c" rev-parse --is-shallow-repository 2>/dev/null)" = true ] && ok "setup: the clone is shallow" || bad "setup: the clone is not shallow"
+  out=$( cd "$d2/c" && land "$w" --dry-run 2>&1 ); rc=$?
+  [ $rc = 0 ] && printf '%s' "$out" | grep -q "repository is shallow" && ok "note printed, dry run still works" || bad "rc=$rc: $out"
+  rm -rf "$d2"
 
   rm -rf "$d"
   if [ $fails = 0 ]; then say "selftest: all passed"; return 0; fi
