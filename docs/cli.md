@@ -50,8 +50,8 @@ Every command except `init` operates on one farm, found in this order:
 
 | Command | What it does |
 |---|---|
-| `create '<title>'` | New hairy yak. Title is positional or `--title`; `--type`/`--priority`/`--parent`/`--herd`/`--labels`/`--depends-on`/`--source`/`--description`/`--verify`; `--json` prints id + file path. `--labels` (like `--add-label`/`--remove-label`/`--label` everywhere) splits on commas and whitespace — a label may contain neither, so `--labels ui,docs`, `--labels 'ui, docs'`, and `--labels ui docs` all give `[ui, docs]` (duplicates dropped). `--herd` sets the new yak's herd (id prefix; default: the `.yaks` pointer file's `herd:`, else the config `herd:`), so one `.yaks/` can hold several herds. With neither `--herd` nor a default herd, `create` fails (non-zero) rather than silently minting a `yak-` herd. |
-| `update <ids…>` | Update fields/labels or append a `--note`; the same edit applies to every id. `--as <actor>` attributes the note. `--verify '<cmd>'` sets (or, empty, clears) the yak's verification command; `--source <url>` likewise sets (or, empty, clears) its external `source:`. |
+| `create '<title>'` | New hairy yak. Title is positional or `--title`; `--type`/`--priority`/`--parent`/`--herd`/`--labels`/`--depends-on`/`--source`/`--description`/`--description-file`/`--verify`; `--json` prints id + file path. `--description -` reads the body from stdin (see [Multi-line text](#multi-line-text)). `--labels` (like `--add-label`/`--remove-label`/`--label` everywhere) splits on commas and whitespace — a label may contain neither, so `--labels ui,docs`, `--labels 'ui, docs'`, and `--labels ui docs` all give `[ui, docs]` (duplicates dropped). `--herd` sets the new yak's herd (id prefix; default: the `.yaks` pointer file's `herd:`, else the config `herd:`), so one `.yaks/` can hold several herds. With neither `--herd` nor a default herd, `create` fails (non-zero) rather than silently minting a `yak-` herd. |
+| `update <ids…>` | Update fields/labels, replace the body (`--description`/`--description-file`) or append a `--note`/`--note-file`; the same edit (and the same text) applies to every id. `--note -` / `--description -` read stdin (see [Multi-line text](#multi-line-text)). `--as <actor>` attributes the note. `--verify '<cmd>'` sets (or, empty, clears) the yak's verification command; `--source <url>` likewise sets (or, empty, clears) its external `source:`. |
 | `dep add\|remove <id> <dep>` | Add / remove a dependency. |
 | `reparent <ids…> --parent <id>` | Move yaks under a new parent (or `--unparent` to top-level). |
 | `rename <old> <new>` | Rename a yak's id, updating every reference across the farm. |
@@ -118,9 +118,51 @@ no entry.
 
 | Command | What it does |
 |---|---|
-| `ask <id> --note '<question>'` | Block a yak on a human: sets the `needs` field, dropping it out of `next`. |
-| `answer <id> --note '<reply>'` | Clear the `needs` block (human-reserved). |
+| `ask <id> --note '<question>'` | Block a yak on a human: sets the `needs` field, dropping it out of `next`. Also `--note -` (stdin) / `--note-file PATH`. |
+| `answer <id> --note '<reply>'` | Clear the `needs` block (human-reserved). Also `--note -` / `--note-file PATH`. |
 | `inbox` | Yaks awaiting a human — equivalent to `list --needs` across all statuses. |
+
+## Multi-line text
+
+Shell quoting makes multi-line markdown awkward as an inline `--note "..."` /
+`--description "..."` argument (and the TUI renders a one-line blob as a single
+wrapped paragraph). `create`, `update`, `ask` and `answer` therefore take the
+text from stdin or a file instead:
+
+````sh
+yaks update <id> --note - <<'EOF'
+## Findings
+- `foo` is called from "bar" and costs $5
+
+```sh
+cargo test
+```
+EOF
+yaks create "Title" --description-file body.md
+yaks ask <id> --note-file question.md
+````
+
+| Flag | Source |
+|---|---|
+| `--note -`, `--description -` | stdin (`--note-file -` / `--description-file -` mean the same) |
+| `--note-file PATH`, `--description-file PATH` | the file at `PATH` |
+
+Rules, the same for all four commands:
+
+- The text is stored exactly as given — backticks, quotes, `$`, blank lines and
+  interior newlines survive — except that trailing newlines are trimmed (a
+  heredoc always adds one).
+- Empty (or whitespace-only) stdin or file is an error, never an empty note.
+  Inline `--description ""` still clears a body.
+- Stdin can be read once: `--note -` together with `--description -` is an error.
+  A `-` note with a `--description-file` is fine.
+- A flag given both inline and as a file (`--note x --note-file f`) is an error.
+- A missing, unreadable or non-UTF-8 file is an error naming the flag and path.
+- `-` with stdin attached to a terminal is refused with a message rather than
+  waiting silently; pipe or redirect the text in.
+- `update` with several ids applies the same text to each.
+- Inline values are unchanged: the only inline value with a new meaning is the
+  literal `-`.
 
 ## Farm admin & integrity
 

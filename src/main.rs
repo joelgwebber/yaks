@@ -277,8 +277,13 @@ enum Command {
         depends_on: Vec<String>,
         #[arg(long)]
         source: Option<String>,
-        #[arg(long)]
+        /// The yak's body (markdown). `-` reads it from stdin, so a multi-line
+        /// heredoc or pipe arrives intact: `yaks create "T" --description - <<'EOF'`.
+        #[arg(long, conflicts_with = "description_file")]
         description: Option<String>,
+        /// Read the body from this file (see `--description`; `-` is stdin).
+        #[arg(long = "description-file", value_name = "PATH")]
+        description_file: Option<String>,
         /// A rerunnable verification command for this yak (see `yaks verify`).
         #[arg(long)]
         verify: Option<String>,
@@ -297,8 +302,12 @@ enum Command {
         kind: Option<String>,
         #[arg(long)]
         priority: Option<u8>,
-        #[arg(long)]
+        /// Replace the body (markdown). `-` reads it from stdin.
+        #[arg(long, conflicts_with = "description_file")]
         description: Option<String>,
+        /// Replace the body with this file's text (`-` is stdin).
+        #[arg(long = "description-file", value_name = "PATH")]
+        description_file: Option<String>,
         /// Labels to add. Commas and spaces separate labels (`ui,docs`).
         #[arg(long = "add-label", num_args = 1..)]
         add_label: Vec<String>,
@@ -311,8 +320,13 @@ enum Command {
         /// Set (or clear, with an empty string) this yak's `verify:` command.
         #[arg(long)]
         verify: Option<String>,
-        #[arg(long)]
+        /// Append a timestamped note (markdown). `-` reads it from stdin, so a
+        /// multi-line heredoc or pipe arrives intact.
+        #[arg(long, conflicts_with = "note_file")]
         note: Option<String>,
+        /// Read the note from this file (`-` is stdin).
+        #[arg(long = "note-file", value_name = "PATH")]
+        note_file: Option<String>,
         /// Attribute the note to this actor (stamped as `[actor]`). Defaults to
         /// $YAKS_ACTOR, then the harness identity (`delta:<thread title>`, else
         /// `delta:<thread id>`, from Delta's environment), then the git user;
@@ -324,9 +338,13 @@ enum Command {
     /// field so the yak drops out of `next`; clear it with `answer`.
     Ask {
         id: String,
-        /// The question for the human (recorded as an attributed note).
-        #[arg(long)]
+        /// The question for the human (recorded as an attributed note). `-`
+        /// reads it from stdin.
+        #[arg(long, conflicts_with = "note_file")]
         note: Option<String>,
+        /// Read the question from this file (`-` is stdin).
+        #[arg(long = "note-file", value_name = "PATH")]
+        note_file: Option<String>,
         /// What the yak is waiting on. Defaults to `human`.
         #[arg(long, default_value = "human")]
         needs: String,
@@ -337,9 +355,13 @@ enum Command {
     /// human-reserved counterpart to `ask`; returns the yak to `next`.
     Answer {
         id: String,
-        /// The reply/decision (recorded as an attributed note).
-        #[arg(long)]
+        /// The reply/decision (recorded as an attributed note). `-` reads it
+        /// from stdin.
+        #[arg(long, conflicts_with = "note_file")]
         note: Option<String>,
+        /// Read the reply from this file (`-` is stdin).
+        #[arg(long = "note-file", value_name = "PATH")]
+        note_file: Option<String>,
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
@@ -1032,9 +1054,16 @@ fn main() -> Result<()> {
             depends_on,
             source,
             description,
+            description_file,
             verify,
             json,
         } => {
+            let description = resolve_text(
+                "--description",
+                description,
+                description_file,
+                &mut StdinText::real(),
+            )?;
             let title = match title.or(title_flag) {
                 Some(t) => t,
                 None => {
@@ -1082,13 +1111,19 @@ fn main() -> Result<()> {
             kind,
             priority,
             description,
+            description_file,
             add_label,
             remove_label,
             source,
             verify,
             note,
+            note_file,
             as_actor,
         } => {
+            let mut stdin = StdinText::real();
+            let description =
+                resolve_text("--description", description, description_file, &mut stdin)?;
+            let note = resolve_text("--note", note, note_file, &mut stdin)?;
             let actor = note
                 .as_ref()
                 .and_then(|_| actor::resolve(as_actor.as_deref()));
@@ -1109,9 +1144,11 @@ fn main() -> Result<()> {
         Command::Ask {
             id,
             note,
+            note_file,
             needs,
             as_actor,
         } => {
+            let note = resolve_text("--note", note, note_file, &mut StdinText::real())?;
             let actor = actor::resolve(as_actor.as_deref());
             match farm.set_needs(&id, Some(needs.clone()), actor.as_deref(), note.as_deref())? {
                 None => {
@@ -1129,7 +1166,13 @@ fn main() -> Result<()> {
                 }
             }
         }
-        Command::Answer { id, note, as_actor } => {
+        Command::Answer {
+            id,
+            note,
+            note_file,
+            as_actor,
+        } => {
+            let note = resolve_text("--note", note, note_file, &mut StdinText::real())?;
             let actor = actor::resolve(as_actor.as_deref());
             match farm.set_needs(&id, None, actor.as_deref(), note.as_deref())? {
                 None => {
@@ -1999,6 +2042,74 @@ fn render_commits(c: &Commits) {
     }
 }
 
+/// The process's stdin as a one-shot text source for `--note -` and
+/// `--description -`. There is only one stdin, so the second `-` in a call is
+/// an error. The reader and tty flag are fields so the rules are unit-testable.
+struct StdinText {
+    reader: Box<dyn std::io::Read>,
+    is_tty: bool,
+    used: bool,
+}
+
+impl StdinText {
+    fn real() -> Self {
+        use std::io::IsTerminal;
+        StdinText {
+            reader: Box::new(std::io::stdin()),
+            is_tty: std::io::stdin().is_terminal(),
+            used: false,
+        }
+    }
+
+    fn take(&mut self, flag: &str) -> Result<String> {
+        if self.used {
+            anyhow::bail!(
+                "stdin can be read only once per command; `-` was given for more than one of --note/--description"
+            );
+        }
+        self.used = true;
+        if self.is_tty {
+            anyhow::bail!(
+                "{flag} - reads stdin, but stdin is a terminal; pipe or redirect the text in (a heredoc works: `{flag} - <<'EOF'`)"
+            );
+        }
+        let mut text = String::new();
+        self.reader
+            .read_to_string(&mut text)
+            .map_err(|e| anyhow::anyhow!("cannot read {flag} text from stdin: {e}"))?;
+        Ok(text)
+    }
+}
+
+/// Resolve a text flag that accepts inline text, `-` (stdin), or a `-file`
+/// path (`-` there is stdin too). Text is stored as given except trailing line
+/// terminators are trimmed (a heredoc/`echo` always adds one); interior and
+/// leading whitespace survive. Text from stdin or a file that is empty (or only
+/// whitespace) is an error rather than an empty note. Inline text is returned
+/// untouched, so `--description ""` still clears a body. Inline-plus-file is
+/// rejected by clap (`conflicts_with`).
+fn resolve_text(
+    flag: &str,
+    inline: Option<String>,
+    file: Option<String>,
+    stdin: &mut StdinText,
+) -> Result<Option<String>> {
+    let (text, origin) = match (inline, file) {
+        (Some(t), _) if t != "-" => return Ok(Some(t)),
+        (None, None) => return Ok(None),
+        (_, Some(path)) if path != "-" => (
+            std::fs::read_to_string(&path)
+                .map_err(|e| anyhow::anyhow!("cannot read {flag}-file {path}: {e}"))?,
+            format!("{flag}-file {path}"),
+        ),
+        _ => (stdin.take(flag)?, format!("{flag} - (stdin)")),
+    };
+    if text.trim().is_empty() {
+        anyhow::bail!("{origin} is empty; refusing to store an empty text");
+    }
+    Ok(Some(text.trim_end_matches(['\n', '\r']).to_string()))
+}
+
 /// Gather the text `scan-ids` should scan: the contents of `file` (when given)
 /// and piped stdin (when stdin is not a terminal), so a file arg, a `... |`
 /// pipe, or both together all work. Joined with a newline so line numbers stay
@@ -2127,6 +2238,39 @@ fn fmt_plain_row(t: &Task) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn stdin(text: &'static str, is_tty: bool) -> StdinText {
+        StdinText {
+            reader: Box::new(text.as_bytes()),
+            is_tty,
+            used: false,
+        }
+    }
+
+    #[test]
+    fn resolve_text_refuses_a_terminal_stdin_instead_of_hanging() {
+        let mut s = stdin("never read", true);
+        let e = resolve_text("--note", Some("-".into()), None, &mut s).unwrap_err();
+        assert!(e.to_string().contains("stdin is a terminal"), "{e}");
+    }
+
+    #[test]
+    fn resolve_text_reads_stdin_once() {
+        let mut s = stdin("a\n\nb\n", false);
+        let got = resolve_text("--note", Some("-".into()), None, &mut s).unwrap();
+        assert_eq!(got.as_deref(), Some("a\n\nb"));
+        let e = resolve_text("--description", Some("-".into()), None, &mut s).unwrap_err();
+        assert!(e.to_string().contains("only once"), "{e}");
+    }
+
+    #[test]
+    fn resolve_text_passes_inline_and_absent_through() {
+        let mut s = stdin("unused", true);
+        assert_eq!(resolve_text("--note", None, None, &mut s).unwrap(), None);
+        let got = resolve_text("--note", Some("x\n".into()), None, &mut s).unwrap();
+        assert_eq!(got.as_deref(), Some("x\n"), "inline text is not trimmed");
+        assert!(!s.used);
+    }
 
     #[test]
     fn run_verify_command_reports_pass_and_fail() {
