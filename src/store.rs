@@ -105,7 +105,7 @@ fn follow_pointer(file: &Path) -> Result<Discovered> {
 
 /// Parse a `.yaks` pointer file: `key: value` lines recognizing `path`
 /// (required) and `prefix` (optional). Blank lines and `#` comments are ignored.
-fn parse_pointer(file: &Path) -> Result<(String, Option<String>)> {
+pub(crate) fn parse_pointer(file: &Path) -> Result<(String, Option<String>)> {
     let text = fs::read_to_string(file)
         .with_context(|| format!("reading farm pointer {}", file.display()))?;
     let mut path: Option<String> = None;
@@ -131,7 +131,7 @@ fn parse_pointer(file: &Path) -> Result<(String, Option<String>)> {
 }
 
 /// Expand `~/…` and anchor a relative `path` at `base`.
-fn expand_path(base: &Path, path: &str) -> PathBuf {
+pub(crate) fn expand_path(base: &Path, path: &str) -> PathBuf {
     let expanded = match path.strip_prefix("~/") {
         Some(rest) => match std::env::var("HOME") {
             Ok(home) if !home.is_empty() => PathBuf::from(home).join(rest),
@@ -147,7 +147,7 @@ fn expand_path(base: &Path, path: &str) -> PathBuf {
 }
 
 /// Accept the `.yaks/` dir itself or a directory containing one.
-fn resolve_farm_root(dir: &Path) -> Result<PathBuf> {
+pub(crate) fn resolve_farm_root(dir: &Path) -> Result<PathBuf> {
     let is_farm = |d: &Path| {
         ["hairy", "shaving", "shorn", "dead"]
             .iter()

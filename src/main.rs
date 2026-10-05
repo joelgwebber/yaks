@@ -9,6 +9,7 @@ mod clipboard;
 mod commit;
 mod farm;
 mod filter;
+mod init;
 mod json;
 mod lanes;
 mod model;
@@ -487,10 +488,19 @@ enum Command {
         #[arg(long)]
         dry_run: bool,
     },
-    /// Create a new .yaks/ farm in the current directory (hairy/ shaving/
-    /// shorn/ dead/ + config.yaml + schema). Works without an existing farm.
+    /// Create a .yaks/ farm in the current directory (hairy/ shaving/ shorn/
+    /// dead/ + config.yaml + schema). Works without an existing farm.
+    ///
+    /// With no --mode/--skills/--path this only creates a committed (team) farm
+    /// and tells you how to install skills. Give --mode and/or --skills for the
+    /// full setup: the farm per mode, the git excludes it implies, and the
+    /// project-local skills (default set unless --skills none). Every step is
+    /// idempotent, so the same command can be re-run, and a re-run with more
+    /// flags adds only what is missing. A different --mode on an existing farm
+    /// is an error, never a silent conversion.
     Init {
-        /// Default herd (id prefix) for new yaks (default: yak).
+        /// Default herd (id prefix) for new yaks (default: yak). With
+        /// --mode pointer it is also this repo's `herd:` in the pointer file.
         #[arg(long = "herd")]
         prefix: Option<String>,
         /// Default task type for new yaks (default: task).
@@ -502,6 +512,23 @@ enum Command {
         /// Use emacs keybindings in embedded editors instead of vim.
         #[arg(long)]
         emacs: bool,
+        /// Farm mode (a new farm is team when only --skills is given). team: the
+        /// farm in .yaks/, committed with the code. private: the farm in
+        /// .yaks/, listed in .git/info/exclude. pointer: a `.yaks` pointer file
+        /// to a farm at --path (created if absent), listed in
+        /// .git/info/exclude. private and pointer need a git repo.
+        #[arg(long, value_enum)]
+        mode: Option<init::Mode>,
+        /// For --mode pointer: the directory holding the farm (its `.yaks/`,
+        /// or the farm itself). Written to the pointer file as given.
+        #[arg(long, value_name = "DIR")]
+        path: Option<String>,
+        /// Skills to install project-local in the git top-level, through the
+        /// same install as `yaks skills install` (never overwrites an edited
+        /// skill). In private/pointer modes their directories go in
+        /// .git/info/exclude too. With --mode alone the default is `default`.
+        #[arg(long, value_enum)]
+        skills: Option<init::SkillSet>,
     },
     /// Install the bundled agent skills (yaks, yaks-tracker) into a skills
     /// directory. Works anywhere — no farm required.
@@ -647,9 +674,20 @@ fn main() -> Result<()> {
         kind,
         priority,
         emacs,
+        mode,
+        path,
+        skills,
     } = &cli.command
     {
-        return run_init(prefix.clone(), kind.clone(), *priority, *emacs);
+        return init::run(init::Args {
+            herd: prefix.clone(),
+            kind: kind.clone(),
+            priority: *priority,
+            emacs: *emacs,
+            mode: *mode,
+            path: path.clone(),
+            skills: *skills,
+        });
     }
     if let Command::Skills { action } = &cli.command {
         return run_skills(action);
@@ -1812,47 +1850,6 @@ fn report_rename(out: RenameOutcome) {
     }
 }
 
-fn run_init(
-    prefix: Option<String>,
-    kind: Option<String>,
-    priority: Option<u8>,
-    emacs: bool,
-) -> Result<()> {
-    let mut cfg = store::InitConfig::default();
-    if let Some(p) = prefix {
-        cfg.prefix = p;
-    }
-    if let Some(k) = kind {
-        cfg.default_type = k;
-    }
-    if let Some(p) = priority {
-        cfg.default_priority = p;
-    }
-    if emacs {
-        cfg.vim_mode = false;
-    }
-
-    let root = env::current_dir()?.join(".yaks");
-    match store::init(&root, &cfg)? {
-        store::InitOutcome::AlreadyExists => {
-            eprintln!(
-                "error: {} already exists — leaving it untouched.",
-                root.display()
-            );
-            std::process::exit(1);
-        }
-        store::InitOutcome::Created => {
-            println!("Initialized empty yaks farm in {}", root.display());
-            println!(
-                "  herd {}  ·  default type {}  ·  default priority {}",
-                cfg.prefix, cfg.default_type, cfg.default_priority
-            );
-            println!("Create your first yak with: yaks create --title \"…\"");
-            Ok(())
-        }
-    }
-}
-
 fn run_skills(action: &SkillsAction) -> Result<()> {
     match action {
         SkillsAction::Install {
@@ -1866,46 +1863,10 @@ fn run_skills(action: &SkillsAction) -> Result<()> {
             println!("Installing skills into {}", target.describe());
             let installed = skills::install(&base, *force, &skills::select(with))?;
             for i in &installed {
-                if i.wrote {
-                    let verb = match &i.before {
-                        skills::SkillState::Upgradable { from } => {
-                            format!("upgraded (from {from})")
-                        }
-                        skills::SkillState::Absent => "installed".to_string(),
-                        _ => "rewrote".to_string(),
-                    };
-                    println!("{verb} {} -> {}", i.name, i.path.display());
-                } else if i.blocked() {
-                    let why = match &i.before {
-                        skills::SkillState::SourceLinked => "it resolves into yaks' own \
-                             .agents/skills/ source \u{2014} the installed skill IS the \
-                             source, so there is nothing to install"
-                            .to_string(),
-                        skills::SkillState::Held { installed } => format!(
-                            "it was installed by yaks {installed}, which is not older \
-                             than this one \u{2014} refusing to downgrade"
-                        ),
-                        skills::SkillState::Unmanaged => {
-                            "it has no yaks stamp (hand-written, or another tool's)".to_string()
-                        }
-                        _ => "it was edited since it was installed".to_string(),
-                    };
-                    // Only offer --force where it would actually help; it can
-                    // never override a source-linked target.
-                    let hint = if matches!(i.before, skills::SkillState::SourceLinked) {
-                        ""
-                    } else {
-                        " (use --force to overwrite)"
-                    };
-                    println!(
-                        "skip {} [{}]: {}\n       {why}{hint}",
-                        i.name,
-                        i.before.word(),
-                        i.path.display(),
-                    );
-                } else {
-                    println!("ok {} is already current", i.name);
-                }
+                println!(
+                    "{}",
+                    skills::render_installed(i, " (use --force to overwrite)")
+                );
             }
             println!(
                 "\nThe skill activates when a .yaks/ directory is present. For another agent, re-run with --dir pointing at its skills directory (e.g. --dir ~/.claude/skills)."

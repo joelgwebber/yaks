@@ -17,7 +17,7 @@ Yaks is a single self-contained binary — a plain command-line tool. Run it dir
 
 The npm package is `@j15r/yaks` (the unscoped `yaks` was taken, so it's published under the `j15r` scope); the command it installs is `yaks`. Every example below is written as `yaks <cmd>` — substitute whichever invocation works for you. The CLI is stateless: each call is independent, there's nothing to keep running.
 
-**Starting a fresh farm.** If there's no `.yaks/` directory yet, create one with `yaks init` (run in the repo root). It scaffolds `.yaks/{hairy,shaving,shorn,dead}/` plus a `config.yaml`; tune the defaults with `--herd`, `--type`, and `--priority`. It refuses to clobber an existing farm, so it's safe to run.
+**Starting a fresh farm.** If there's no `.yaks/` directory yet, create one with `yaks init` (run in the repo root). It scaffolds `.yaks/{hairy,shaving,shorn,dead}/` plus a `config.yaml`; tune the defaults with `--herd`, `--type`, and `--priority`. Plain `yaks init` only creates a committed (team) farm, refuses to clobber an existing one, and prints how to install the skills. **Choose the mode and install the skills in the same step:** `yaks init --mode team|private|pointer [--path <dir> --herd <prefix>] [--skills default|coordination]` creates the farm, edits `.git/info/exclude` for `private`/`pointer` (never `.gitignore`), installs the skills project-local (their directories excluded too in `private`/`pointer`), and prints one line per step. It is idempotent: re-run it with more flags and it adds only what is missing, never overwrites an edited skill, and errors (naming what would change) if `--mode` differs from the existing farm's. For `private`/`pointer` it prints the `YAKS_DIR=<farm>` a Delta or worktree worker needs in its brief.
 
 Add `--json` to any query command (`list`, `show`, `next`, `tangled`, `search`, `stats`, `rollup`, `inbox`, `log`, `lanes`, `doctor`) for machine-readable output. `yaks create --json` also prints the new yak's id and file path, which is handy when you create a yak and immediately act on it.
 
@@ -45,7 +45,7 @@ Three **containers** name where yaks live and how they group:
 
 ## Two workflows: local or team
 
-Yaks runs in one of two modes, with different habits. **Figure out which mode you're in before you commit anything** — the signal is whether `.yaks/` is tracked by git:
+Yaks runs in one of two modes, with different habits. A farm set up with `yaks init --mode …` already has its mode (and its git excludes) chosen. For any other farm, **figure out which mode you're in before you commit anything** — the signal is whether `.yaks/` is tracked by git:
 
 - `.yaks/` is gitignored or otherwise untracked → **local-only** (a private scratchpad).
 - `.yaks/` is committed alongside the code → **team** (a shared tracker).
@@ -56,7 +56,7 @@ To check, **use `git ls-files .yaks`** — it lists files in **team** mode and p
 - Never `git add` yak files or include them in commits.
 - Keep yaks invisible to everyone else: don't mention them — or their IDs — in commit messages, PR titles/descriptions, code comments, or external trackers. Describe the change in plain terms ("add retry logic"), not "shorn yak-1234".
 
-Pick the hiding method that fits — they differ in blast radius:
+The quickest route is `yaks init --mode private` (the farm plus a `.git/info/exclude` line, and the skills). Otherwise pick the hiding method that fits — they differ in blast radius:
 - **Root `.gitignore`** (add a `.yaks/` line): simplest, but the ignore rule is itself committed, so the team sees that a farm exists.
 - **`.yaks/.gitignore` containing `*`**: self-contained — the farm hides itself with no edit to the repo root. Use this **only** for a plain, non-nested local-only farm; the `*` also blinds any git repo *inside* `.yaks/`, so it's the wrong tool for the multi-machine pattern below.
 - **`.git/info/exclude`**: per-repo and untracked, so nothing about the farm touches the committed tree. This is the right choice when `.yaks/` is itself a nested repo.
@@ -70,7 +70,7 @@ Pick the hiding method that fits — they differ in blast radius:
 - Habit: **pull before, push after** a work session so machines stay in sync. yaks needs no configuration for this — discovery finds `.yaks/` exactly as always (from the repo root or any directory below it).
 
 **Several repos, one farm (out-of-tree).** To track several projects in one private farm that lives *outside* their repos, point each repo at it rather than giving each its own `.yaks/`:
-- **Pointer file (recommended):** put a `.yaks` *file* (not a directory) at the repo root with `path: <path to the shared .yaks>` and, optionally, `herd: <this repo's herd>`. `path` may be absolute, `~/`-relative, or relative to the repo. Discovery follows it, so every `yaks` command in that repo operates on the shared farm — and `yaks create` (with no `--herd`) routes new yaks into that repo's herd automatically.
+- **Pointer file (recommended):** `yaks init --mode pointer --path <dir> [--herd <herd>]` creates the farm there if absent, writes the pointer and excludes it. By hand: put a `.yaks` *file* (not a directory) at the repo root with `path: <path to the shared .yaks>` and, optionally, `herd: <this repo's herd>`. `path` may be absolute, `~/`-relative, or relative to the repo. Discovery follows it, so every `yaks` command in that repo operates on the shared farm — and `yaks create` (with no `--herd`) routes new yaks into that repo's herd automatically.
 - **Symlink (zero-config):** alternatively symlink `.yaks` → the shared farm. Discovery follows it too, but every repo then shares one config herd, so pass `yaks create --herd <herd>` per repo.
 - Keep the pointer/symlink out of the shared repo (`.git/info/exclude`), exactly like a private farm. Consolidate existing separate farms into the shared one with `yaks merge`.
 - **Discovery stops at the git top-level.** `yaks` walks up from the cwd but not past the first directory with a `.git` unless that directory has a `.yaks` entry, so a nested checkout (a Delta checkout, an in-tree `git worktree`) does not reach another checkout's farm by accident; it errors, naming the fixes: `yaks init`, a `.yaks` pointer file, or `YAKS_DIR=<farm>` (the `.yaks/` dir, a directory containing it, or a pointer file; wins over the walk).
@@ -143,7 +143,7 @@ Run these directly from the shell (see **Running yaks** above for the exact invo
 
 | Command | What it does |
 |---------|-------------|
-| `yaks init` | Scaffold a new `.yaks/` farm in the current directory. `--herd`, `--type`, `--priority`, `--emacs`. Works without an existing farm |
+| `yaks init` | Scaffold a new `.yaks/` farm in the current directory. `--herd`, `--type`, `--priority`, `--emacs`; `--mode team\|private\|pointer` (+ `--path`) and `--skills none\|default\|coordination` for the full, idempotent setup. Works without an existing farm |
 | `yaks create` | Create a new task (in hairy). Title is positional (`yaks create "Fix the login crash"`; `--title` still works for back-compat); `--type`, `--priority`, `--parent`, `--herd` (herd / id prefix for this yak; defaults to the config herd — lets one `.yaks/` hold several herds), `--labels`, `--depends-on`, `--source`, `--description`, `--verify`, `--json` (print the new id + path) |
 | `yaks list` | List tasks with optional filters (`--all` also includes dead) |
 | `yaks show` | Show full details of a task |

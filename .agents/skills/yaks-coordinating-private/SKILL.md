@@ -22,7 +22,9 @@ kept out of git with `.git/info/exclude`; a worktree OUTSIDE the repo tree needs
 `ln -s <repo>/.yaks <worktree>/.yaks`. `yaks merge` consolidates separate farms.
 Put the farm's path in each worker's brief (`YAKS_DIR=<abs path> yaks ...`); `yaks path <id>`
 shows which farm a command resolved. A pointer file is only needed when you cannot set the
-environment (`yaks init --mode private` writing it is a separate, unshipped change).
+environment. To set a farm up in the first place: `yaks init --mode private` (the farm plus the
+`.git/info/exclude` line) or `yaks init --mode pointer --path <dir> [--herd <h>]` (the pointer file
+and the farm it points at); it is idempotent and prints the `YAKS_DIR=<farm>` line for a worker brief.
 
 ## Claim
 `shave` the yaks and add the assignment notes. They are visible to everyone instantly and there

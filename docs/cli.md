@@ -126,13 +126,47 @@ no entry.
 
 | Command | What it does |
 |---|---|
-| `init` | Create a `.yaks/` farm in the current directory. |
+| `init` | Create a `.yaks/` farm in the current directory. With no `--mode`/`--skills`/`--path` it only creates a committed (team) farm, then prints that skills are not installed and the exact command to add them. With `--mode` and/or `--skills` it does the full setup, one printed line per step (see below). Flags: `--herd`, `--type`, `--priority`, `--emacs`, `--mode team\|private\|pointer`, `--path <dir>`, `--skills none\|default\|coordination`. |
 | `skills install` | Install the bundled agent skills (`yaks`, `yaks-tracker`). Target: `--dir <path>` if given; else `--user` → `~/.agents/skills`; else `./.agents/skills` in the git top-level of the cwd when inside a git repo, and `~/.agents/skills` outside one. Prints the destination it chose. `--with coordination` adds `yaks-coordinating` (+ `-team`, `-private`, `-worktrees`, `-delta`, with its `land.sh`) and `yaks-working`. A skill is installed as a unit; an outdated untouched copy is upgraded, an edited one (including an edited script) is left alone unless `--force`. Refuses to write onto yaks' own `.agents/skills/` source (even via a symlink, even with `--force`), naming `--user`/`--dir` as the way out. |
 | `skills status` | Per-skill verdict — `current` / `stale` / `adoptable` / `held` / `modified` / `unmanaged` / `source` — from the provenance stamp (other files of a skill are compared by content). Same default directory as `install`; `--user` / `--dir` to inspect another; installed opt-in skills are always listed, `--with coordination` also lists absent ones. See [skills.md](skills.md). |
 | `doctor` | Read-only integrity check: duplicate-status ids, dangling parent/deps, malformed labels (a legacy label containing a comma or space, e.g. `ui,docs` — any label edit on that yak re-splits it). Exits non-zero on any issue (CI-usable). `--strict` also flags shorn yaks with no recorded note, and shorn yaks whose `verify:` command did not last PASS (evidence-before-shear). |
 | `preflight [<id>...] [--all] [--push-main]` | Read-only landing-readiness check; run it before committing a shorn yak or merging a lane in a team farm. Checks: (1) nothing under `.yaks/` is untracked or has unstaged changes in git (staged is fine: it is the step before the commit) — a new `artifacts/<id>/` never `git add`ed fails and is named; (2) every shorn yak in scope whose `verify:` command (own, else the config default for its labels) last PASSed, same rule as `doctor --strict`; scope is the ids given, else the shorn yaks that are part of the change in git (staged, modified or new under `.yaks/`, including a new `artifacts/<id>/`), and `--all` checks every shorn yak (old ones that never ran `verify` will fail); (3) no yak in two status dirs. `ids` scopes check 2 only; 1 and 3 are farm-wide. Prints one `preflight: FAIL <check>: …` line per failure and exits non-zero, else `preflight: ok`. In a private farm (nothing under `.yaks/` tracked by git) check 1 is skipped with a printed line and check 2 covers every shorn yak; 3 still runs. `--push-main` adds (4), for the coordinator about to `git push local <branch>:main` (off by default: it depends on another checkout's state, not on the change, and a repo with no `local` remote is not a failure without it): `local` must be a path on this machine (an https/ssh URL is reported as not the human's checkout, never resolved), a non-bare git repository with `refs/heads/main`, and not checked out on `main` with uncommitted changes to tracked files (git refuses the push then). Otherwise it fails with `preflight: FAIL local-checkout: …`, naming the fallback: push `pr/<name>` to `local` and give the human `git fetch <path> pr/<name>`, or repoint `local`. Read-only (`remote get-url`, `ls-remote`, `rev-parse`, `status`); never pushes. `--json` emits `{ok, failures[{check, message, subjects}], skipped}`. |
 | `commit [-m <msg>] [--dry-run]` | Commit the farm's own changes — every change under `.yaks/` (yak files, moves, `artifacts/`, config) — and nothing else, so a human's drifted edits land in one command and stop blocking a landing. Stages the farm and runs `git commit --only -- .yaks`: files you staged elsewhere stay staged and out of the commit (named in the output), and modified code is never touched. The message is generated from the changed files, one verb per yak (`created`, `shaving`/`shorn`/`dead`/`regrown` for a move, `updated`, `removed`, `artifacts for`, `farm config`), e.g. `yaks: created yaks-8c08; shaving yaks-c968`; `-m` overrides it. `--dry-run` lists the files and message without staging or committing. A normal `git commit`, so the repo's hooks run (and may fail it: the farm changes are then left staged); it never pushes. A clean farm prints `nothing to commit` and exits 0. While a merge or cherry-pick is in progress (a Delta landing leaves one pending) it refuses, stages nothing and says why: git forbids the partial commit it relies on, so finish the merge with a plain `git commit` (the farm changes are part of it) or abort it. In a private farm (nothing under `.yaks/` tracked by git) it fails with a clear error. |
 | `tui` | Open the interactive terminal UI (see [tui.md](tui.md)). |
+
+### `init`: modes and skills in one idempotent step
+
+```sh
+yaks init                                   # farm only (team); prints how to add skills
+yaks init --skills default                  # team farm + project-local skills
+yaks init --mode private                    # farm in .yaks/, kept out of git; default skills
+yaks init --mode pointer --path ~/farms/work --herd web   # .yaks pointer file -> a farm elsewhere
+```
+
+- **Modes.** `team`: the farm in `.yaks/`, committed with the code. `private`:
+  the same, plus `/.yaks` in `.git/info/exclude`. `pointer`: `--path <dir>` is the
+  directory holding the farm (its `.yaks/`, or the farm itself when `<dir>` is a
+  farm or named `.yaks`); it is created if absent, and `./.yaks` becomes a pointer
+  file (`path:` as given, plus `herd:` from `--herd`) that discovery follows,
+  also listed in `.git/info/exclude`. Excludes go to `.git/info/exclude`, never
+  `.gitignore` (committed: it would leak the farm's existence). `private` and
+  `pointer` need a git repo; in a linked worktree the shared exclude is edited.
+- **Skills.** `--skills default|coordination` (`none` skips) installs through the
+  same code as `skills install` — project-local in the git top-level, never
+  overwriting an edited skill. `--mode` alone installs the default set;
+  `--skills` alone means `team` for a new farm and leaves an existing farm's mode
+  as it is. In `private`/`pointer` modes each installed skill directory is
+  excluded too; in `team` mode they are ordinary files you may commit. Outside a
+  git repo `--skills` is an error (use `yaks skills install` for `~/.agents/skills`).
+- **Idempotent.** Every step prints one line, done or already-done. The same
+  command again changes nothing and ends `Nothing to change`; more flags add only
+  what is missing (an exclude line, a skill, the pointer). A **different** `--mode`
+  on an existing farm is an error that names what would have to change; init never
+  converts a farm. Settings flags (`--type`, `--priority`, `--herd`, `--emacs`) that
+  contradict an existing farm's `config.yaml` are also an error; init does not rewrite it.
+- **Workers.** `private`/`pointer` farms are invisible to a Delta or worktree
+  checkout (discovery stops at that checkout's git top-level), so init prints the
+  `YAKS_DIR=<farm>` to put in such a worker's brief.
 
 ## Attribution
 

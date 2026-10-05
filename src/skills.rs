@@ -745,6 +745,51 @@ impl Installed {
     }
 }
 
+/// One result of [`install`] as the line(s) the CLI prints, shared by
+/// `skills install` and `init --skills` so both say the same thing.
+/// `force_hint` is appended to a skip that `--force` would override (and
+/// omitted where nothing could, i.e. a source-linked target).
+pub fn render_installed(i: &Installed, force_hint: &str) -> String {
+    if i.wrote {
+        let verb = match &i.before {
+            SkillState::Upgradable { from } => format!("upgraded (from {from})"),
+            SkillState::Absent => "installed".to_string(),
+            _ => "rewrote".to_string(),
+        };
+        format!("{verb} {} -> {}", i.name, i.path.display())
+    } else if i.blocked() {
+        let why = match &i.before {
+            SkillState::SourceLinked => "it resolves into yaks' own \
+                 .agents/skills/ source \u{2014} the installed skill IS the \
+                 source, so there is nothing to install"
+                .to_string(),
+            SkillState::Held { installed } => format!(
+                "it was installed by yaks {installed}, which is not older \
+                 than this one \u{2014} refusing to downgrade"
+            ),
+            SkillState::Unmanaged => {
+                "it has no yaks stamp (hand-written, or another tool's)".to_string()
+            }
+            _ => "it was edited since it was installed".to_string(),
+        };
+        // Only offer --force where it would actually help; it can never
+        // override a source-linked target.
+        let hint = if matches!(i.before, SkillState::SourceLinked) {
+            ""
+        } else {
+            force_hint
+        };
+        format!(
+            "skip {} [{}]: {}\n       {why}{hint}",
+            i.name,
+            i.before.word(),
+            i.path.display(),
+        )
+    } else {
+        format!("ok {} is already current", i.name)
+    }
+}
+
 /// Write `content` to `path` atomically, so parallel `yaks` invocations (the
 /// coordinator spawns many) can never observe or leave a half-written file.
 fn write_atomic(path: &Path, content: &str, executable: bool) -> Result<()> {

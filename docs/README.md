@@ -32,7 +32,7 @@ describe.
 ## Quick start
 
 ```sh
-yaks init                      # scaffold a .yaks/ farm here
+yaks init                      # scaffold a .yaks/ farm here (--mode private|pointer, --skills default: full setup)
 yaks create 'Wire up auth'     # new hairy yak (prints its id)
 yaks next                      # what's ready to work (deps met)
 yaks shave [id]                # start it (→ shaving)

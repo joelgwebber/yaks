@@ -38,8 +38,10 @@ cargo build --release
 
 ## Quick start
 
-A farm is just a `.yaks/` directory. Create one at your project root and start
-tracking:
+A farm is just a `.yaks/` directory. `yaks init` creates one at your project
+root (plain `yaks init` makes a committed farm and tells you how to add the agent
+skills; `--mode private|pointer` and `--skills default` do the whole setup in one
+idempotent step, see [docs/cli.md](docs/cli.md)). Then start tracking:
 
 Within a farm, yaks group into **herds** by id prefix — a farm can hold several
 (`yaks create --herd <herd>`), so one (typically private) farm can track
@@ -47,7 +49,7 @@ several projects at once — and a parent yak with its descendants forms a
 **family**.
 
 ```sh
-mkdir .yaks
+yaks init --skills default   # the farm + the agent skills (add --mode private to keep both out of git)
 yaks create --title "Wire up the login form" --type feature --priority 2
 yaks list
 yaks shave <id>     # start work  (hairy -> shaving)
@@ -213,7 +215,10 @@ completed them. This project works this way — it tracks its own work in a
 committed farm.
 
 **Private (local-only).** Keep `.yaks/` out of the code repo and it becomes a
-personal scratchpad no one else sees. Hide it whichever way fits:
+personal scratchpad no one else sees. `yaks init --mode private` does it for you
+(the farm, a `/.yaks` line in `.git/info/exclude`, and the skills);
+`yaks init --mode pointer --path <dir>` points the repo at a farm kept elsewhere.
+By hand, hide it whichever way fits:
 
 - a `.yaks/` line in the root `.gitignore` — simplest, but the rule is committed;
 - a `.yaks/.gitignore` containing `*`, so the farm hides itself with no change to
