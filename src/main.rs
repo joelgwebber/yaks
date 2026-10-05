@@ -727,6 +727,14 @@ fn main() -> Result<()> {
             skills::version()
         );
     }
+    // Project-local skills are never written behind your back, so say so once
+    // per yaks version per checkout when they are stale. Not for `--json`
+    // (machine consumers); `skills` and `init` returned above.
+    if !env::args_os().any(|a| a == "--json") {
+        if let Some(msg) = skills::project_stale_notice(&env::current_dir()?) {
+            eprintln!("note: {msg}");
+        }
+    }
 
     let farm = match Farm::open(&env::current_dir()?) {
         Ok(h) => h,
@@ -1834,25 +1842,36 @@ fn render_doctor(issues: &[Issue]) {
 ///
 /// This is an *environment* advisory, not farm integrity, so it sits outside
 /// `Farm::doctor` and never affects its exit code. Auto-sync silently handles
-/// absent and cleanly-stale skills; what it can't resolve is a skill someone
-/// edited by hand — which would otherwise sit stale forever with no signal.
+/// absent and cleanly-stale user-level skills; what it can't resolve is a skill
+/// someone edited by hand — which would otherwise sit stale forever with no
+/// signal — and a stale project-local install, which is never written behind
+/// your back (the ordinary-command notice says it once; this says it whenever
+/// asked, in the same words).
 fn render_skill_advisory() {
     let base = skills::default_dir();
     let stuck: Vec<_> = skills::status(&base, &skills::select_for_status(&base, &[]))
         .into_iter()
         .filter(|s| s.state.has_local_edits())
         .collect();
-    if stuck.is_empty() {
+    let stale = env::current_dir()
+        .ok()
+        .and_then(|cwd| skills::project_stale(&cwd));
+    if stuck.is_empty() && stale.is_none() {
         return;
     }
     println!("\nSkills needing attention (not farm integrity):");
     for s in &stuck {
         println!("  {} [{}] {}", s.name, s.state.word(), s.path.display());
     }
-    println!(
-        "  These were edited after install, so yaks leaves them alone. \
-         Run `yaks skills status` to compare, or `yaks skills install --user --force` to replace."
-    );
+    if !stuck.is_empty() {
+        println!(
+            "  These were edited after install, so yaks leaves them alone. \
+             Run `yaks skills status` to compare, or `yaks skills install --user --force` to replace."
+        );
+    }
+    if let Some(stale) = stale {
+        println!("  {}", stale.message());
+    }
 }
 
 fn render_stats(s: &Stats) {
@@ -1916,7 +1935,7 @@ fn run_skills(action: &SkillsAction) -> Result<()> {
             );
             if matches!(target.kind, skills::TargetKind::Project { .. }) {
                 println!(
-                    "These are files in your working tree: commit them to share them, and re-run `yaks skills install` after upgrading yaks (only ~/.agents/skills is refreshed automatically)."
+                    "These are files in your working tree: commit them to share them, and re-run `yaks skills install` after upgrading yaks (only ~/.agents/skills is refreshed automatically; yaks tells you once per release when these fall behind)."
                 );
             }
             Ok(())
@@ -1925,12 +1944,11 @@ fn run_skills(action: &SkillsAction) -> Result<()> {
             let target = skills::resolve_target(dir.as_deref(), *user, &env::current_dir()?);
             let base = target.dir.clone();
             println!("{}", target.describe());
-            let mut stale = 0;
             let mut blocked = 0;
-            for s in skills::status(&base, &skills::select_for_status(&base, with)) {
+            let statuses = skills::status(&base, &skills::select_for_status(&base, with));
+            for s in &statuses {
                 let detail = match &s.state {
                     skills::SkillState::Upgradable { from } => {
-                        stale += 1;
                         format!("  (installed {from}, this yaks is {})", skills::version())
                     }
                     skills::SkillState::Held { installed } => {
@@ -1957,13 +1975,17 @@ fn run_skills(action: &SkillsAction) -> Result<()> {
                 };
                 println!("  {:<9} {}{}{}", s.state.word(), s.name, file, detail);
             }
-            if stale > 0 {
+            if let Some(stale) = skills::Stale::of(&statuses) {
                 let flag = match &target.kind {
                     skills::TargetKind::User => " --user".to_string(),
                     skills::TargetKind::Dir => format!(" --dir {}", base.display()),
                     _ => String::new(),
                 };
-                println!("\n{stale} stale; run `yaks skills install{flag}` to upgrade.");
+                println!(
+                    "\n{} stale; run `{}` to update them.",
+                    stale.count,
+                    stale.command(&flag)
+                );
             }
             if blocked > 0 {
                 println!(

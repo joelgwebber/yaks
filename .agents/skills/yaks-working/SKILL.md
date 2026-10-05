@@ -55,11 +55,18 @@ semantics, scope), not trivia.
   farm. Do not investigate, revert or announce it unless it changes your task.
 - **Append progress as you go.** `yaks update <id> --note "what you found /
   decided / changed"`. Short, factual, one event per note. This running log is
-  what future sessions and agents rely on.
+  what future sessions and agents rely on. Anything longer than a line goes in on
+  stdin as real markdown (`--note - <<'EOF' ... EOF`, quoted `'EOF'` so backticks and `$`
+  stay literal; see the `yaks` skill, "Writing notes and descriptions"), never as one
+  long argument. The TUI styles, one line at a time: `#` headings, `-`/`*`/`1.` list items,
+  `>` quotes, fenced code, inline `code`, `**bold**`, `*italic*`; it does not style tables.
 - **Log your decisions.** A choice a reviewer could argue about (a rule you picked, a default,
   scope you cut, a shape you rejected) goes in its own note starting `Decision:`: what you chose,
   the alternatives you rejected and why. A human audits you from these; a decision that is only
-  in the code is invisible. A real fork still goes through `ask` (above), not a `Decision:` note.
+  in the code is invisible. The line between the two: a `Decision:` note is for a choice that is
+  reversible and local to your yak's goal (a limit, a default, a name, which of two equivalent
+  designs); `ask` is for anything that changes behaviour a user sees, a data format, a dependency
+  or a shipped surface, or that you would want the human's say on (above), and it waits for them.
 - **One writer per yak.** If two actors need to touch the same work at once,
   split it into child yaks first so each has a single owner.
 

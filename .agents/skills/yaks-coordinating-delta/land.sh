@@ -18,6 +18,20 @@ die() { printf 'land: %s\n' "$*" >&2; exit "${2:-1}"; }
 
 if [ "${1:-}" = "--selftest" ]; then SELFTEST=1; else SELFTEST=0; fi
 
+# Shallow boundaries only change an answer about a history that reaches one: true when some commit
+# listed in the shallow file is an ancestor of HEAD or of the worker commit ($full). A boundary
+# elsewhere (a pinned commit Delta imported) cannot, so it must not trigger the note.
+shallow_matters() {
+  f=$(git rev-parse --git-path shallow 2>/dev/null) || return 1
+  [ -s "$f" ] || return 1
+  while read -r c; do
+    [ -n "$c" ] || continue
+    git merge-base --is-ancestor "$c" HEAD 2>/dev/null && return 0
+    git merge-base --is-ancestor "$c" "$full" 2>/dev/null && return 0
+  done < "$f"
+  return 1
+}
+
 land() {
   sha=${1:-}; [ $# -gt 0 ] && shift
   dry=0; force=0
@@ -36,7 +50,7 @@ land() {
   git rev-parse -q --verify CHERRY_PICK_HEAD >/dev/null && pending="${pending:+$pending+}cherry-pick"
   say "worker commit: $short $subject"
   say "pending state: ${pending:-none}"
-  if [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" = true ]; then
+  if shallow_matters; then
     say "note: this repository is shallow (Delta marks the commits it imports from another machine so); the ancestry and merge answers below are lower bounds: a missing parent can make a real ancestor look like 'not an ancestor'. 'git fetch --unshallow origin' (or local) fixes it; Delta may mark more later."
   fi
 
@@ -170,6 +184,15 @@ selftest() {
   [ "$(git -C "$d2/c" rev-parse --is-shallow-repository 2>/dev/null)" = true ] && ok "setup: the clone is shallow" || bad "setup: the clone is not shallow"
   out=$( cd "$d2/c" && land "$w" --dry-run 2>&1 ); rc=$?
   [ $rc = 0 ] && printf '%s' "$out" | grep -q "repository is shallow" && ok "note printed, dry run still works" || bad "rc=$rc: $out"
+  rm -rf "$d2"
+
+  say "7. a shallow boundary that no history reaches does not trigger the note"
+  setup; g branch other "$root"; g checkout -q other; printf 'o\n' > "$d/o.txt"; g add -A; g commit -q -m "other tip"; g checkout -q main
+  d2=$(mktemp -d)
+  git clone -q "file://$d" "$d2/c" >/dev/null 2>&1 && git -C "$d2/c" fetch -q --depth 1 origin other >/dev/null 2>&1
+  [ "$(git -C "$d2/c" rev-parse --is-shallow-repository 2>/dev/null)" = true ] && ok "setup: shallow only at an unrelated commit" || bad "setup: the clone is not shallow"
+  out=$( cd "$d2/c" && land "$w" --dry-run 2>&1 ); rc=$?
+  [ $rc = 0 ] && ! printf '%s' "$out" | grep -q "repository is shallow" && ok "no note, dry run works" || bad "rc=$rc: $out"
   rm -rf "$d2"
 
   rm -rf "$d"

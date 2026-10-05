@@ -61,7 +61,7 @@ this" instead of just clobbering. `yaks skills status` reports the verdict:
 | State | Meaning | What yaks does |
 |---|---|---|
 | `current` | Identical to this binary's copy | nothing |
-| `stale` | Untouched since install, and this yaks is newer | upgrades it |
+| `stale` | Untouched since install, and this yaks is newer | upgrades it (user-level automatically; a project-local one is announced, and `yaks skills install` upgrades it) |
 | `adoptable` | Unstamped but identical to ours (a pre-stamp install) | adopts it (stamps it) |
 | `held` | Untouched, but installed by a yaks **not older** than this one | nothing — refuses to downgrade |
 | `modified` | Edited after install | nothing without `--force` |
@@ -73,11 +73,32 @@ agent running against a stale skill and nobody remembering to re-run the
 installer, so a normal invocation installs what's absent and upgrades what's
 cleanly `stale`. It deliberately never touches `modified`, `unmanaged`, `held`,
 or `source`, only ever writes `~/.agents/skills` (never a project-local
-`.agents/skills`: those are files in your working tree, so `yaks skills status`
-shows them `stale` and you re-run `yaks skills install`), only the default set
-(never the `coordination` group), and writes atomically so parallel agents can't
-tear a file. Set `YAKS_SKILLS_AUTOSYNC=0` to disable it for CI or sandboxes.
-`yaks doctor` reports anything left needing a decision.
+`.agents/skills`: those are files in your working tree, so they get a notice
+instead, below), only the default set (never the `coordination` group), and
+writes atomically so parallel agents can't tear a file. Set
+`YAKS_SKILLS_AUTOSYNC=0` to disable it, and the notice below, for CI or
+sandboxes. `yaks doctor` reports anything left needing a decision.
+
+**A stale project-local install is announced, never rewritten.** When an
+ordinary command runs inside a git repo whose `./.agents/skills` holds a
+`stale` skill, it prints one line to stderr:
+
+```
+note: the skills in .agents/skills are from yaks 0.0.12, this is 0.0.13: run `yaks skills install` to update them
+```
+
+(`--with coordination` is added to the advice when an opt-in skill is among the
+stale ones; with several stale skills the version is the oldest.) `yaks skills
+install` upgrades a cleanly stale skill with no `--force`, so that is the whole
+fix. It is said **once per yaks version per checkout**: the version announced is
+remembered in `<git-dir>/yaks-skills-notified`, in the checkout's git dir, so
+nothing in the working tree changes and every clone or linked worktree is told
+once. It is not printed with `--json`, for `skills` and `init` (they print their
+own status), when `YAKS_SKILLS_AUTOSYNC=0`, or when the marker can't be written
+(a read-only `.git`: a notice that can't be remembered would repeat). It never
+fires for `modified`, `unmanaged`, `held` or `source` skills (your call), or for
+an absent skill. `yaks skills status` and `yaks doctor` give the same advice in
+the same words whenever you ask.
 
 Because auto-upgrade keys on the **version**, a skills-only edit doesn't reach
 users until the next release — two binaries at the same version never fight over

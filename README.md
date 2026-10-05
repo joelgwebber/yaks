@@ -182,7 +182,10 @@ yaks skills status                           # current / stale / edited, same di
 Inside a git repo the default is project-local (`.agents/skills` in the repo's
 top-level), so agents working in the project find the skills and you can commit
 them; it prints where it wrote. Project-local installs are never updated behind
-your back — `yaks skills status` shows them `stale`, and you re-run the install.
+your back, but an ordinary `yaks` command tells you (one stderr line, once per
+yaks release per checkout) when they are `stale`; `yaks skills status` and
+`yaks doctor` say it any time, and you re-run `yaks skills install`.
+`YAKS_SKILLS_AUTOSYNC=0` silences the notice.
 `--user` / outside a repo, `~/.agents/skills` is the **cross-client convention**:
 the [Agent Skills](https://agentskills.io) client-implementation guide tells
 agents to scan it in addition to their own native directory, so one install

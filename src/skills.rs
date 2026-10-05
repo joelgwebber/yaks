@@ -176,7 +176,9 @@ pub const SPEC_FRONTMATTER_KEYS: &[&str] = &[
     "allowed-tools",
 ];
 
-/// Environment variable that disables the startup auto-sync (see [`auto_sync`]).
+/// Environment variable that disables everything yaks does about skills on an
+/// ordinary command: the user-level auto-sync (see [`auto_sync`]) and the
+/// stale project-local notice (see [`project_stale_notice`]).
 pub const AUTOSYNC_ENV: &str = "YAKS_SKILLS_AUTOSYNC";
 
 /// Default install target: `~/.agents/skills`. Overridable so other agents'
@@ -871,8 +873,8 @@ pub fn install(base: &Path, force: bool, skills: &[&Skill]) -> Result<Vec<Instal
 ///   `Unmanaged`, or `Held`, so it can neither clobber your edits nor
 ///   downgrade a newer install;
 /// - only the user-level [`default_dir`], never a project-local
-///   `.agents/skills` (those are files in someone's working tree; `skills
-///   status` reports them stale instead) and never a `--dir` target;
+///   `.agents/skills` (those are files in someone's working tree; they get
+///   [`project_stale_notice`] instead) and never a `--dir` target;
 /// - only the default skill set, never the opt-in groups;
 /// - skipped entirely when [`AUTOSYNC_ENV`] is `0`/`false`/`never`, for CI and
 ///   sandboxes.
@@ -880,11 +882,21 @@ pub fn install(base: &Path, force: bool, skills: &[&Skill]) -> Result<Vec<Instal
 /// Returns the names it wrote, for a one-line notice; empty means it did
 /// nothing, which is the normal case.
 pub fn auto_sync() -> Vec<String> {
-    match std::env::var(AUTOSYNC_ENV) {
-        Ok(v) if matches!(v.trim(), "0" | "false" | "never") => return Vec::new(),
-        _ => {}
+    if !skills_notices_enabled() {
+        return Vec::new();
     }
     auto_sync_in(&default_dir())
+}
+
+/// False when [`AUTOSYNC_ENV`] is `0`/`false`/`never`: the one switch for
+/// everything yaks does about skills on an ordinary command, both the
+/// user-level sync ([`auto_sync`]) and the project-local notice
+/// ([`project_stale_notice`]).
+fn skills_notices_enabled() -> bool {
+    match std::env::var(AUTOSYNC_ENV) {
+        Ok(v) => !matches!(v.trim(), "0" | "false" | "never"),
+        Err(_) => true,
+    }
 }
 
 /// [`auto_sync`] against an explicit user-level directory (the seam its tests use).
@@ -909,6 +921,138 @@ fn auto_sync_in(base: &Path) -> Vec<String> {
         }
     }
     done
+}
+
+// -- the stale project-local notice ---------------------------------------
+
+/// A project-local install that has fallen behind this yaks: one or more of
+/// its skills is `stale` ([`SkillState::Upgradable`]). Built from the same
+/// states `yaks skills status` prints, so the notice, `status` and `yaks
+/// doctor` cannot disagree about what is stale or what to run.
+pub struct Stale {
+    /// How many skills are stale.
+    pub count: usize,
+    /// The oldest yaks version that wrote a stale skill.
+    pub from: String,
+    /// Opt-in groups with a stale skill, so the advice repeats `--with <group>`
+    /// (a bare `install` would skip them).
+    pub with: Vec<&'static str>,
+}
+
+impl Stale {
+    /// The stale skills among `statuses`, or `None` when nothing is stale.
+    /// A skill whose most demanding file is `modified`, `unmanaged`, `held` or
+    /// `source` is not stale: it is the user's call and says so elsewhere.
+    pub fn of(statuses: &[Status]) -> Option<Stale> {
+        let mut from: Option<String> = None;
+        let mut with: Vec<&'static str> = Vec::new();
+        let mut count = 0;
+        for s in statuses {
+            let SkillState::Upgradable { from: f } = &s.state else {
+                continue;
+            };
+            count += 1;
+            if from.as_deref().is_none_or(|cur| version_gt(cur, f)) {
+                from = Some(f.clone());
+            }
+            let group = BUNDLED
+                .iter()
+                .find(|b| b.name == s.name)
+                .and_then(|b| b.group);
+            if let Some(g) = group {
+                if !with.contains(&g) {
+                    with.push(g);
+                }
+            }
+        }
+        from.map(|from| Stale { count, from, with })
+    }
+
+    /// The command that brings these up to date, with `target_flag` (`" --user"`,
+    /// `" --dir <path>"`, or empty for the project-local default) after `install`.
+    pub fn command(&self, target_flag: &str) -> String {
+        let mut c = format!("yaks skills install{target_flag}");
+        for g in &self.with {
+            c.push_str(&format!(" --with {g}"));
+        }
+        c
+    }
+
+    /// The one-sentence advice for a project-local install, shared by the
+    /// startup notice (`note: ` in front) and the `yaks doctor` advisory.
+    pub fn message(&self) -> String {
+        format!(
+            "the skills in {PROJECT_SKILLS_DIR} are from yaks {}, this is {}: \
+             run `{}` to update them",
+            self.from,
+            version(),
+            self.command("")
+        )
+    }
+}
+
+/// Where a project-local install lives, relative to the git top-level.
+const PROJECT_SKILLS_DIR: &str = ".agents/skills";
+
+/// File in the checkout's git dir recording the newest yaks version that
+/// already told the user about a stale project-local install.
+const NOTIFIED_FILE: &str = "yaks-skills-notified";
+
+/// The stale skills of the project-local install in `cwd`'s git repo, if any.
+/// Only skills of [`BUNDLED`] that are actually installed there count (see
+/// [`select_for_status`]); an absent skill is not stale.
+pub fn project_stale(cwd: &Path) -> Option<Stale> {
+    let root = git_toplevel(cwd)?;
+    let base = root.join(PROJECT_SKILLS_DIR);
+    Stale::of(&status(&base, &select_for_status(&base, &[])))
+}
+
+/// The checkout's git dir: `<root>/.git` itself, or, for a linked worktree or
+/// submodule where `.git` is a file, the directory its `gitdir:` line names.
+/// Per checkout, so each Delta clone or worktree has its own.
+fn git_dir(root: &Path) -> Option<PathBuf> {
+    let dot_git = root.join(".git");
+    if dot_git.is_dir() {
+        return Some(dot_git);
+    }
+    let text = std::fs::read_to_string(&dot_git).ok()?;
+    let target = text.lines().find_map(|l| l.strip_prefix("gitdir:"))?.trim();
+    Some(root.join(target)) // an absolute `target` replaces `root`
+}
+
+/// The notice an ordinary command should print to stderr, or `None`.
+///
+/// Project-local skills are files in someone's working tree, so yaks never
+/// rewrites them on its own (yaks-3859); instead it says so, **once per yaks
+/// version per checkout**. "Told" is remembered in a marker file in the
+/// checkout's git dir (see [`NOTIFIED_FILE`]): untracked, outside the working
+/// tree, and per clone/worktree. Silent when [`AUTOSYNC_ENV`] is off, when
+/// nothing is stale (see [`Stale::of`]), when the marker already holds this
+/// version or a newer one (so two co-installed yaks don't take turns nagging),
+/// and when the marker cannot be written (a read-only `.git`, as in some
+/// sandboxes: a notice we cannot remember would repeat on every command;
+/// `status` and `doctor` still report it). The marker write is best-effort and
+/// never fails the command.
+pub fn project_stale_notice(cwd: &Path) -> Option<String> {
+    if !skills_notices_enabled() {
+        return None;
+    }
+    notice_in(cwd)
+}
+
+/// [`project_stale_notice`] without the environment switch (the seam its unit
+/// tests use; the switch itself is covered end to end).
+fn notice_in(cwd: &Path) -> Option<String> {
+    let root = git_toplevel(cwd)?;
+    let marker = git_dir(&root)?.join(NOTIFIED_FILE);
+    if let Ok(told) = std::fs::read_to_string(&marker) {
+        if !version_gt(version(), told.trim()) {
+            return None;
+        }
+    }
+    let stale = project_stale(cwd)?;
+    std::fs::write(&marker, format!("{}\n", version())).ok()?;
+    Some(stale.message())
 }
 
 #[cfg(test)]
@@ -1510,6 +1654,233 @@ mod tests {
         );
         let _ = std::fs::remove_dir_all(&project);
         let _ = std::fs::remove_dir_all(&user);
+    }
+
+    // -- the stale project-local notice ------------------------------------
+
+    /// Overwrite `name`'s SKILL.md in `base` with an older yaks' untouched copy
+    /// of older content: the `stale` state.
+    fn make_stale(base: &Path, name: &str) {
+        let skill = BUNDLED.iter().find(|s| s.name == name).unwrap();
+        let dir = base.join(name);
+        std::fs::create_dir_all(&dir).unwrap();
+        let old = format!("{}\n<!-- old -->\n", skill.skill_md());
+        std::fs::write(dir.join("SKILL.md"), stamp(&old, "0.0.0")).unwrap();
+    }
+
+    /// Every file under `dir` with its mtime and content, to prove a notice
+    /// wrote nothing into the working tree.
+    fn snapshot(dir: &Path) -> Vec<(PathBuf, std::time::SystemTime, Vec<u8>)> {
+        fn walk(d: &Path, out: &mut Vec<(PathBuf, std::time::SystemTime, Vec<u8>)>) {
+            let Ok(rd) = std::fs::read_dir(d) else { return };
+            for e in rd.flatten() {
+                let p = e.path();
+                if p.is_dir() {
+                    walk(&p, out);
+                } else {
+                    let m = std::fs::metadata(&p).unwrap().modified().unwrap();
+                    out.push((p.clone(), m, std::fs::read(&p).unwrap()));
+                }
+            }
+        }
+        let mut out = Vec::new();
+        walk(dir, &mut out);
+        out.sort_by(|a, b| a.0.cmp(&b.0));
+        out
+    }
+
+    fn marker(root: &Path) -> PathBuf {
+        root.join(".git").join(NOTIFIED_FILE)
+    }
+
+    #[test]
+    fn a_stale_project_install_is_announced_once_per_version() {
+        let root = fake_repo("ntf-once");
+        let base = root.join(".agents/skills");
+        install(&base, false, &select(&[])).unwrap();
+        make_stale(&base, "yaks");
+        let tree_before = snapshot(&root.join(".agents"));
+        let sub = root.join("sub/deeper");
+
+        let first = notice_in(&sub).expect("stale install is announced");
+        assert_eq!(
+            first,
+            format!(
+                "the skills in .agents/skills are from yaks 0.0.0, this is {}: \
+                 run `yaks skills install` to update them",
+                version()
+            )
+        );
+        assert_eq!(
+            std::fs::read_to_string(marker(&root)).unwrap().trim(),
+            version()
+        );
+        assert_eq!(notice_in(&sub), None, "the second command is silent");
+        assert_eq!(notice_in(&root), None);
+
+        // A newer yaks (a marker from an older one) announces again...
+        std::fs::write(marker(&root), "0.0.0\n").unwrap();
+        assert!(
+            notice_in(&sub).is_some(),
+            "announced again after a version change"
+        );
+        // ...but an older yaks does not re-announce over a newer yaks' marker.
+        std::fs::write(marker(&root), "99.0.0\n").unwrap();
+        assert_eq!(notice_in(&sub), None);
+
+        assert_eq!(
+            snapshot(&root.join(".agents")),
+            tree_before,
+            "the notice writes nothing into the working tree"
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn the_notice_is_silent_unless_a_skill_is_cleanly_stale() {
+        // current
+        let root = fake_repo("ntf-quiet");
+        let base = root.join(".agents/skills");
+        install(&base, false, &select(&[])).unwrap();
+        assert_eq!(notice_in(&root), None, "current");
+
+        // modified: edited after install
+        let md = base.join("yaks/SKILL.md");
+        let mut t = std::fs::read_to_string(&md).unwrap();
+        t.push_str("\nmy own line\n");
+        std::fs::write(&md, t).unwrap();
+        assert_eq!(notice_in(&root), None, "modified");
+
+        // held: installed by a yaks that is not older than this one
+        let future = format!("{}\n<!-- from the future -->\n", BUNDLED[0].skill_md());
+        std::fs::write(&md, stamp(&future, "99.0.0")).unwrap();
+        assert_eq!(notice_in(&root), None, "held");
+
+        // unmanaged: hand-written, no stamp
+        std::fs::write(&md, "---\nname: yaks\ndescription: mine\n---\n").unwrap();
+        assert_eq!(notice_in(&root), None, "unmanaged");
+
+        // absent: nothing installed at all
+        let bare = fake_repo("ntf-absent");
+        assert_eq!(notice_in(&bare), None, "absent");
+
+        // a stale skill beside a modified one is the user's call, not stale
+        make_stale(&base, "yaks-tracker");
+        make_stale(&base, "yaks");
+        std::fs::write(
+            base.join("yaks/SKILL.md"),
+            format!(
+                "{}\nedited\n",
+                std::fs::read_to_string(base.join("yaks/SKILL.md")).unwrap()
+            ),
+        )
+        .unwrap();
+        assert!(
+            notice_in(&root).is_some(),
+            "the clean stale one still counts"
+        );
+
+        // not in a git repo at all
+        let nogit = temp_base("ntf-nogit");
+        std::fs::create_dir_all(&nogit).unwrap();
+        assert_eq!(notice_in(&nogit), None, "no repo");
+
+        for d in [&root, &bare, &nogit] {
+            let _ = std::fs::remove_dir_all(d);
+        }
+    }
+
+    #[test]
+    fn the_notice_is_silent_in_a_yaks_source_checkout() {
+        let root = fake_repo("ntf-source");
+        std::fs::write(
+            root.join("Cargo.toml"),
+            "[package]\nname = \"yaks\"\nversion = \"0.0.1\"\n",
+        )
+        .unwrap();
+        // Even content that would be stale anywhere else.
+        make_stale(&root.join(".agents/skills"), "yaks");
+        assert!(project_stale(&root).is_none());
+        assert_eq!(notice_in(&root), None);
+        assert!(!marker(&root).exists());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn an_opt_in_stale_skill_adds_with_coordination_to_the_advice() {
+        let root = fake_repo("ntf-optin");
+        let base = root.join(".agents/skills");
+        install(&base, false, &select(&coordination())).unwrap();
+        make_stale(&base, "yaks-working");
+        let msg = notice_in(&root).expect("stale");
+        assert!(
+            msg.ends_with("run `yaks skills install --with coordination` to update them"),
+            "{msg}"
+        );
+        // The default-set-only case keeps the short form (asserted above), and
+        // `status` words the same advice from the same value.
+        let st = status(&base, &select_for_status(&base, &[]));
+        let stale = Stale::of(&st).unwrap();
+        assert_eq!(stale.count, 1);
+        assert_eq!(
+            stale.command(" --user"),
+            "yaks skills install --user --with coordination"
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn rerunning_install_after_the_notice_makes_it_current_and_quiet() {
+        let root = fake_repo("ntf-fix");
+        let base = root.join(".agents/skills");
+        install(&base, false, &select(&[])).unwrap();
+        make_stale(&base, "yaks");
+        assert!(notice_in(&root).is_some());
+
+        // `yaks skills install` (no flags, default set) is exactly what the
+        // notice names, and it upgrades a cleanly stale skill with no --force.
+        let res = install(&base, false, &select(&[])).unwrap();
+        assert!(res.iter().find(|i| i.name == "yaks").unwrap().wrote);
+        assert!(project_stale(&root).is_none());
+        // Quiet even if the marker is forgotten.
+        std::fs::remove_file(marker(&root)).unwrap();
+        assert_eq!(notice_in(&root), None);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn the_marker_lives_in_a_linked_worktrees_own_git_dir() {
+        let root = temp_base("ntf-wt");
+        let gitdir = temp_base("ntf-wt-gitdir");
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::create_dir_all(&gitdir).unwrap();
+        // `.git` is a file in a linked worktree; an absolute gitdir...
+        std::fs::write(root.join(".git"), format!("gitdir: {}\n", gitdir.display())).unwrap();
+        let base = root.join(".agents/skills");
+        install(&base, false, &select(&[])).unwrap();
+        make_stale(&base, "yaks");
+        assert!(notice_in(&root).is_some());
+        assert!(gitdir.join(NOTIFIED_FILE).is_file());
+        assert_eq!(notice_in(&root), None);
+        // ...and a relative one resolves against the worktree root.
+        std::fs::create_dir_all(root.join("meta")).unwrap();
+        std::fs::write(root.join(".git"), "gitdir: meta\n").unwrap();
+        assert!(notice_in(&root).is_some());
+        assert!(root.join("meta").join(NOTIFIED_FILE).is_file());
+        let _ = std::fs::remove_dir_all(&root);
+        let _ = std::fs::remove_dir_all(&gitdir);
+    }
+
+    #[test]
+    fn an_unrecordable_notice_is_not_printed() {
+        // A notice that cannot be remembered would repeat on every command.
+        let root = fake_repo("ntf-unwritable");
+        let base = root.join(".agents/skills");
+        install(&base, false, &select(&[])).unwrap();
+        make_stale(&base, "yaks");
+        std::fs::create_dir_all(marker(&root)).unwrap(); // a directory: the write fails
+        assert_eq!(notice_in(&root), None);
+        let _ = std::fs::remove_dir_all(&root);
     }
 }
 

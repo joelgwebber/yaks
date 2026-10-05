@@ -8,8 +8,8 @@ description: "Environment companion to yaks-coordinating for coordinating in Del
 Read `yaks-coordinating` and your farm-mode skill first. This file is how work MOVES in Delta.
 
 ## The model
-Your thread is the yakherd. Each worker (`spawn_subagent`) is its own thread with a thin git
-clone plus a checkout; those finished clones stay on disk. Where they live depends on the machine:
+Your thread is the yakherd. In Delta (the agent environment where every thread owns an isolated git
+checkout) each worker (`spawn_subagent`) is its own thread with a thin git clone plus a checkout; those finished clones stay on disk. Where they live depends on the machine:
 on the human's own machine `<repo>/.delta/clones/<id>/<repo>.git` and `<repo>/.delta/worktrees/<id>/<repo>`;
 on a machine that only has the thread shared to it, `~/.local/share/delta/worktrees/<id>/<repo>` with the
 git dir as its sibling `<repo>.git` and NO `.delta/`. Either way a checkout is `<root>/<id>/<repo>`, and
@@ -28,7 +28,8 @@ and `skill` needs the `worktree` argument; still put the critical rules in the b
 ## Before you spawn
 - Claim in the farm (mode skill). A worker's checkout is a snapshot of your WORKING TREE,
   uncommitted changes included, so it sees an uncommitted claim; in a team farm commit it anyway.
-- Read the model from the spawn confirmation and record it AFTER spawning, on the umbrella yak or in the
+- Read the model id from the spawn confirmation (for example `anthropic/claude-sonnet-5-5`) and record it AFTER
+  spawning, one line (worker name, agent id, model id, the base commit) on the umbrella yak or in the
   landing note, never on the worker's own yak: the worker moves that file, and your edit then conflicts with
   its landing. Once spawned, do not edit a worker's yak at all. The profile default has changed between
   runs; pass `model` only when the human asked for one.
@@ -59,7 +60,7 @@ Finish: `yaks shorn <id>` (there is no `shear` subcommand) after the gate passes
 plain English (private). Blocked or a decision needed: `yaks ask <id>`, leave your edits in the
 working tree (never revert, never park in $TMPDIR), say which in your final message, return.
 Decisions: record every choice a reviewer could argue about as a note starting `Decision:` that names
-the alternatives you rejected. Write multi-line notes as markdown with real line breaks, not one long line.
+the alternatives you rejected. Write multi-line notes as markdown with real line breaks: pipe them in with `--note - <<'EOF'`, not one long argument.
 Final message: commit SHA and `git show --stat`; gate command + last 15 lines; start/finish
 `date -u`; the `Decision:` notes in one line each; docs-parity grep you ran; anything surprising.
 ```

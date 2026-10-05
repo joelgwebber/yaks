@@ -107,8 +107,17 @@ In `yaks tui` the same flow is one key: `a` asks or answers the selected yak in 
 
 1. **Session start** — run `yaks list` and `yaks next` to see current state.
 2. **Before writing code** — `yaks shave <id>` (create the yak first if needed).
-3. **While working** — append progress notes with `yaks update <id> --note "what you found / decided / changed"`. This builds a running log in the markdown body so future sessions have context.
+3. **While working** — append progress notes with `yaks update <id> --note "what you found / decided / changed"` (one short line), or pipe a multi-line note in on stdin (see **Writing notes and descriptions**). This builds a running log in the markdown body so future sessions have context.
 4. **When the work is done** — gather evidence (see **Evidence before you shear**), append a brief shorn summary (what was done, what was learned, the evidence, any yaks spawned), then `yaks shorn <id>`. In team mode, stage the shorn yak move together with the code and commit them in one commit whenever practical.
+
+## Writing notes and descriptions (markdown)
+
+Yak bodies are markdown, and the TUI (detail pane and editor) styles them **one line at a time**, so structure has to be on its own lines. A heading, list items and a code fence crammed into one long line render as a single wrapped paragraph, which is nearly unreadable.
+
+- **Pass multi-line text on stdin or from a file, not as one inline argument.** `yaks update <id> --note - <<'EOF'` followed by the text and a closing `EOF` (a quoted `'EOF'` keeps backticks and `$` literal). The same works for `yaks create --description -`, `yaks ask --note -` and `yaks answer --note -`; `--note-file PATH` and `--description-file PATH` read a file. Inline `--note "..."` is for one short line.
+- **What the TUI styles:** headings (`#` to `######` plus a space, alone on a line), list items (`-`, `*`, `+` or `1.` / `1)`, one per line), `>` quotes, fenced code blocks (``` or `~~~`, each fence alone on its line), inline `code`, `**bold**` and `*italic*`. A blank line separates paragraphs. Yak ids and URLs in the body become followable links.
+- **What it does not style:** tables (they show as plain text), HTML, nested constructs beyond list indentation. Prefer a list to a table, and `yaks attach` for images and long output.
+- **One event per note, the fact first.** Quote a command and its real output in a fenced block, and keep a `Decision:` note (the choice and the alternatives rejected) separate from progress notes.
 
 ## Evidence before you shear
 
@@ -178,7 +187,7 @@ Run these directly from the shell (see **Running yaks** above for the exact invo
 | `yaks doctor --strict` | Also flags shorn yaks with no recorded note, and shorn yaks whose `verify:` command did not last PASS — a shear without evidence (the evidence-before-shear rule) |
 | `yaks preflight [<id>...]` | Read-only check to run before landing (committing a shorn yak / merging a lane) in a team farm: nothing under `.yaks/` untracked or with unstaged changes (a new `artifacts/<id>/` you never `git add`ed fails, naming it), each shorn yak in scope (the ids; else those in the change in git; `--all` for every one) whose `verify:` (own or config default) last PASSed, no yak in two status dirs. One line per failure, non-zero exit; else `preflight: ok`. A private farm skips the git check and says so. `--push-main` adds a check that the `local` remote is the human's checkout (non-bare, has `main`, not dirty on `main`), for the one about to push `main`. `--json`. |
 | `yaks commit` | Commit the farm's own changes (all of `.yaks/`, never code) in one command, with a generated `yaks: shorn …; updated …` message (`-m` overrides, `--dry-run` previews). Other staged files stay staged and out of it; hooks run; never pushes; fails in a private farm. |
-| `yaks skills status` | Report whether the installed copies of these skills are current, stale, or locally edited (from a provenance stamp in their frontmatter). Ordinary `yaks` commands already upgrade a cleanly-stale *user-level* (`~/.agents/skills`) skill; a project-local install (`yaks skills install` writes `./.agents/skills` in a git repo) is never touched behind your back, so `status` shows it `stale` and you re-run `yaks skills install` |
+| `yaks skills status` | Report whether the installed copies of these skills are current, stale, or locally edited (from a provenance stamp in their frontmatter). Ordinary `yaks` commands already upgrade a cleanly-stale *user-level* (`~/.agents/skills`) skill; a project-local install (`yaks skills install` writes `./.agents/skills` in a git repo) is never touched behind your back: an ordinary `yaks` command prints one `note:` line on stderr, once per yaks release per checkout, when it is `stale` (`status` and `doctor` say it any time) and you re-run `yaks skills install` |
 | `yaks scan-ids` | Scan a file and/or stdin for tokens that are real yak-ids in this farm — a private-mode leak check; exits non-zero if any are found |
 | `yaks tui` | Open the interactive terminal UI |
 
