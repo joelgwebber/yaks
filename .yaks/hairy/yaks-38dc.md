@@ -4,7 +4,7 @@ title: 'Lanes view: show in-flight yak state from sibling checkouts'
 type: feature
 priority: 3
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-03T22:17:47Z'
+updated: '2026-10-05T19:48:55Z'
 parent: yaks-b5a0
 labels:
 - ui
@@ -20,3 +20,7 @@ Feasibility (Delta, 2026-10-03): from one thread, <repo>/.delta/worktrees/*/<rep
 ---
 ▸ 2026-10-03T22:17:47Z [delta-lead]
 Joel (2026-10-03): good with lanes/diff/TUI-lanes; principle to hold: every core facility that drives a TUI view must also exist in a natural CLI form (e.g. yaks lanes, yaks diff <refA> <refB> alongside the lanes view and its diff pane). Design the data layer once, behind the CLI, and have the TUI call it (same as farm.rs serving both today).
+
+---
+▸ 2026-10-05T19:48:55Z [delta-lead]
+Joel's lanes review (2026-10-04) filed as yaks-c29a (label lanes by actor and in-progress yaks), yaks-1b39 (? when no merge-base; his primary was a shallow repo, fixed with git fetch --unshallow, one pinned commit still a shallow boundary) and yaks-7204 (idea: lane deltas as an overlay across the TUI/CLI). Coordinator delta-lead.

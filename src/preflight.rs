@@ -3,15 +3,17 @@
 //! Run before landing (committing a shorn yak, merging a lane). It reports the
 //! slips that earlier landings hit: a new artifacts directory that was never
 //! `git add`ed, yak edits left unstaged, a shorn yak whose `verify:` command did
-//! not last PASS, and a yak sitting in two status dirs. One line per failure;
-//! it never mutates the farm or the repo.
+//! not last PASS, and a yak sitting in two status dirs. With `--push-main` it
+//! also checks that the `local` remote is the human's checkout, before a
+//! `git push local <branch>:main`. One line per failure; it never mutates the
+//! farm or the repo (every git call here only reads: no push, fetch or write).
 
 use crate::farm::{Farm, IssueKind};
 use crate::model::Status;
 use crate::store;
 use anyhow::{Context, Result};
 use std::collections::BTreeSet;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// The checks preflight runs; `code()` is the stable name used in `--json`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -23,6 +25,9 @@ pub enum Check {
     Verify,
     /// One id lives in two status dirs.
     DuplicateStatus,
+    /// `--push-main`: the `local` remote is not a checkout that a push to
+    /// `main` would reach and update.
+    LocalCheckout,
 }
 
 impl Check {
@@ -31,6 +36,7 @@ impl Check {
             Check::GitState => "git-state",
             Check::Verify => "verify",
             Check::DuplicateStatus => "duplicate-status",
+            Check::LocalCheckout => "local-checkout",
         }
     }
 }
@@ -67,26 +73,39 @@ impl Report {
 /// under the farm, including a new `artifacts/<id>/`), so an old shorn yak that
 /// never ran `verify` is not blamed for a landing it is not in. A farm git
 /// cannot describe (private, or outside a repository) checks every shorn yak.
-pub fn run(farm: &Farm, ids: &[String], all: bool) -> Result<Report> {
+///
+/// `push_main` adds the `local`-remote check. It is opt-in: it depends on the
+/// state of another checkout (the human's), which a worker committing its yak
+/// can neither fix nor should be failed by; only the one landing on `main` asks.
+pub fn run(farm: &Farm, ids: &[String], all: bool, push_main: bool) -> Result<Report> {
     let mut report = Report::default();
     let changed = git_state(farm.root(), &mut report)?;
     let scope = Scope { ids, all, changed };
     verify(farm, &scope, &mut report)?;
     duplicate_status(farm, &mut report)?;
+    if push_main {
+        local_checkout(farm.root(), &mut report)?;
+    }
     Ok(report)
+}
+
+fn git_out(dir: &Path, args: &[&str]) -> Result<std::process::Output> {
+    std::process::Command::new("git")
+        .arg("-C")
+        .arg(dir)
+        .args(args)
+        .output()
+        .context("running git")
+}
+
+fn stdout_of(out: &std::process::Output) -> String {
+    String::from_utf8_lossy(&out.stdout).trim().to_string()
 }
 
 /// Check 1: nothing under the farm is untracked or has unstaged changes.
 /// Staged changes pass: staging is the step right before the landing commit.
 fn git_state(root: &Path, report: &mut Report) -> Result<Option<BTreeSet<String>>> {
-    let git = |args: &[&str]| {
-        std::process::Command::new("git")
-            .arg("-C")
-            .arg(root)
-            .args(args)
-            .output()
-            .context("running git")
-    };
+    let git = |args: &[&str]| git_out(root, args);
     let tracked = git(&["ls-files", "--", "."])?;
     if !tracked.status.success() {
         report
@@ -230,6 +249,154 @@ fn duplicate_status(farm: &Farm, report: &mut Report) -> Result<()> {
     Ok(())
 }
 
+/// Check 4 (`--push-main`): a `git push local <branch>:main` reaches the
+/// human's checkout. On a thread shared to another machine `local` is a
+/// Delta-managed bare repo with no branches: the push is accepted and lands
+/// where the human never looks. Reads only: `remote get-url`, `ls-remote`,
+/// `rev-parse`, `status`.
+///
+/// Fails when `local` is missing, is not a path on this machine (https, ssh),
+/// does not exist, is not a git repository, is bare, has no `refs/heads/main`,
+/// or is a checkout on `main` with uncommitted changes to tracked files (git
+/// refuses the push then). Untracked files do not block an update.
+fn local_checkout(root: &Path, report: &mut Report) -> Result<()> {
+    let Some(top) = git_out(root, &["rev-parse", "--show-toplevel"])
+        .ok()
+        .filter(|o| o.status.success())
+        .map(|o| PathBuf::from(stdout_of(&o)))
+    else {
+        report
+            .skipped
+            .push("local checkout: skipped (the farm is not inside a git repository)".into());
+        return Ok(());
+    };
+    let mut fail = |message: String, subject: &str| {
+        report.failures.push(Failure {
+            check: Check::LocalCheckout,
+            message,
+            subjects: vec![subject.to_string()],
+        });
+    };
+    let url = git_out(&top, &["remote", "get-url", "local"])?;
+    if !url.status.success() {
+        fail(
+            "there is no `local` remote, so there is no checkout of the human's to push `main` \
+             to (add one with `git remote add local <path>`, or hand the work over another way)"
+                .into(),
+            "local",
+        );
+        return Ok(());
+    }
+    let url = stdout_of(&url);
+    if is_remote_url(&url) {
+        fail(
+            format!(
+                "`local` is {url}, not a path on this machine, so it is not the human's \
+                 checkout: a push to its `main` lands on that server, not in their working tree. \
+                 Push `pr/<name>` there and tell the human to fetch it, or repoint `local` at \
+                 the checkout (`git remote set-url local <path>`)"
+            ),
+            &url,
+        );
+        return Ok(());
+    }
+    let path = {
+        let raw = url.strip_prefix("file://").unwrap_or(&url);
+        top.join(raw) // absolute `raw` replaces `top`
+    };
+    let shown = path.display().to_string();
+    let fallback = format!(
+        "never push `main` there: push `pr/<name>` to `local` and give the human `git fetch \
+         {shown} pr/<name>`, or repoint `local` at their checkout (`git remote set-url local \
+         <path>`)"
+    );
+    if !path.is_dir() {
+        fail(
+            format!(
+                "`local` points at {shown}, which does not exist or is not a directory: {fallback}"
+            ),
+            &shown,
+        );
+        return Ok(());
+    }
+    let bare = git_out(&path, &["rev-parse", "--is-bare-repository"])?;
+    if !bare.status.success() {
+        fail(
+            format!(
+                "`local` points at {shown}, which is not a readable git repository: {fallback}"
+            ),
+            &shown,
+        );
+        return Ok(());
+    }
+    if stdout_of(&bare) == "true" {
+        fail(
+            format!(
+                "`local` ({shown}) is a bare repository, not the human's checkout (a push to \
+                 `main` is accepted but lands where they never look): {fallback}"
+            ),
+            &shown,
+        );
+        return Ok(());
+    }
+    let heads = git_out(&top, &["ls-remote", "--heads", "local", "main"])?;
+    if !heads.status.success() || heads.stdout.is_empty() {
+        fail(
+            format!(
+                "`local` ({shown}) has no `refs/heads/main`, so it is not the human's checkout: {fallback}"
+            ),
+            &shown,
+        );
+        return Ok(());
+    }
+    // A `.git` directory is the repository of the checkout beside it.
+    let work = if path.file_name().is_some_and(|n| n == ".git") {
+        path.parent().unwrap_or(&path)
+    } else {
+        &path
+    };
+    let on_main = git_out(work, &["symbolic-ref", "--short", "-q", "HEAD"])
+        .is_ok_and(|o| stdout_of(&o) == "main");
+    if on_main {
+        let status = git_out(
+            work,
+            &[
+                "--no-optional-locks",
+                "status",
+                "--porcelain",
+                "--untracked-files=no",
+            ],
+        )?;
+        let dirty = stdout_of(&status).lines().count();
+        if dirty > 0 {
+            fail(
+                format!(
+                    "`local` ({shown}) is a checkout on `main` with {dirty} uncommitted \
+                     change(s) to tracked files, so a push to `main` would be refused. Ask the \
+                     human to commit or stash them (yak edits count), or push `pr/<name>` to \
+                     `local` and give them `git fetch {shown} pr/<name>`"
+                ),
+                &shown,
+            );
+        }
+    }
+    Ok(())
+}
+
+/// A remote URL that is not a path on this machine: `scheme://host/...`
+/// (except `file://`) or scp-style `host:path`.
+fn is_remote_url(url: &str) -> bool {
+    if url.starts_with("file://") {
+        return false;
+    }
+    if url.contains("://") {
+        return true;
+    }
+    // scp-style: a colon before any slash (and not a one-letter Windows drive).
+    url.split_once(':')
+        .is_some_and(|(host, _)| host.len() > 1 && !host.contains('/'))
+}
+
 const ALL: [Status; 4] = [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
 
 #[cfg(test)]
@@ -303,7 +470,7 @@ mod tests {
 
     fn failures(farm: &Farm, ids: &[&str], check: Check) -> Vec<Failure> {
         let ids: Vec<String> = ids.iter().map(|s| s.to_string()).collect();
-        run(farm, &ids, false)
+        run(farm, &ids, false, false)
             .unwrap()
             .failures
             .into_iter()
@@ -314,7 +481,7 @@ mod tests {
     #[test]
     fn clean_team_repo_is_ok() {
         let (_repo, farm) = team_repo();
-        let report = run(&farm, &[], false).unwrap();
+        let report = run(&farm, &[], false, false).unwrap();
         assert!(report.ok(), "{:?}", report.failures);
         assert!(report.skipped.is_empty());
     }
@@ -334,7 +501,7 @@ mod tests {
         );
         assert!(f[0].message.contains("untracked"));
         git(&repo, &["add", ".yaks"]);
-        assert!(run(&farm, &[], false).unwrap().ok(), "staged passes");
+        assert!(run(&farm, &[], false, false).unwrap().ok(), "staged passes");
     }
 
     #[test]
@@ -343,7 +510,7 @@ mod tests {
         store::write::save(&repo.join(".yaks"), &task("yak-0001", Status::Hairy)).unwrap();
         git(&repo, &["add", "."]);
         git(&repo, &["commit", "-q", "-m", "add yak"]);
-        assert!(run(&farm, &[], false).unwrap().ok());
+        assert!(run(&farm, &[], false, false).unwrap().ok());
         let file = repo.join(".yaks/hairy/yak-0001.md");
         let text = std::fs::read_to_string(&file).unwrap();
         std::fs::write(&file, format!("{text}\nedited\n")).unwrap();
@@ -351,14 +518,14 @@ mod tests {
         assert_eq!(f.len(), 1, "{f:?}");
         assert!(f[0].message.contains("yak-0001.md") && f[0].message.contains("unstaged"));
         git(&repo, &["add", ".yaks"]);
-        assert!(run(&farm, &[], false).unwrap().ok());
+        assert!(run(&farm, &[], false, false).unwrap().ok());
     }
 
     #[test]
     fn changes_outside_the_farm_are_not_flagged() {
         let (repo, farm) = team_repo();
         std::fs::write(repo.join("code.rs"), "fn main() {}").unwrap();
-        assert!(run(&farm, &[], false).unwrap().ok());
+        assert!(run(&farm, &[], false, false).unwrap().ok());
     }
 
     #[test]
@@ -371,7 +538,7 @@ mod tests {
         bad.verify = Some("false".into());
         bad.body = note("verify: `false` -> FAIL (exit 1)");
         store::write::save(&repo.join(".yaks"), &bad).unwrap();
-        let report = run(&farm, &[], false).unwrap();
+        let report = run(&farm, &[], false, false).unwrap();
         assert_eq!(report.skipped.len(), 1);
         assert!(report.skipped[0].contains("private farm"));
         assert!(report.failures.iter().all(|f| f.check != Check::GitState));
@@ -478,10 +645,10 @@ mod tests {
         store::write::save(&root, &fresh).unwrap();
         git(&repo, &["add", "."]);
         assert!(
-            run(&farm, &[], false).unwrap().ok(),
+            run(&farm, &[], false, false).unwrap().ok(),
             "old yak is out of scope"
         );
-        let all = run(&farm, &[], true).unwrap();
+        let all = run(&farm, &[], true, false).unwrap();
         assert_eq!(all.failures.len(), 1, "{:?}", all.failures);
         assert_eq!(all.failures[0].subjects, ["yak-0001"]);
         // Naming it puts it in scope too.
@@ -499,7 +666,7 @@ mod tests {
         store::write::save(&root, &old).unwrap();
         git(&repo, &["add", "."]);
         git(&repo, &["commit", "-q", "-m", "old shorn yak"]);
-        assert!(run(&farm, &[], false).unwrap().ok());
+        assert!(run(&farm, &[], false, false).unwrap().ok());
         // New evidence for that yak arrives: it is now part of the change.
         let dir = root.join("artifacts/yak-0001");
         std::fs::create_dir_all(&dir).unwrap();
@@ -525,5 +692,185 @@ mod tests {
         assert_eq!(yak_id_of(".yaks/.gitignore"), None);
         assert_eq!(yak_id_of("src/main.rs"), None);
         assert_eq!(yak_id_of("README.md"), None);
+    }
+
+    /// A fresh non-bare repo on `main` with one commit: the human's checkout.
+    fn human_checkout() -> PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "yaks-human-{}-{}",
+            std::process::id(),
+            SEQ.fetch_add(1, Ordering::Relaxed)
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        git(&dir, &["init", "-q", "-b", "main"]);
+        std::fs::write(dir.join("a.txt"), "a").unwrap();
+        git(&dir, &["add", "."]);
+        git(&dir, &["commit", "-q", "-m", "init"]);
+        dir
+    }
+
+    /// Point `repo`'s `local` remote at `url`, then run `--push-main` and return
+    /// the local-checkout failures.
+    fn local_failures(repo: &Path, farm: &Farm, url: &str) -> Vec<Failure> {
+        git(repo, &["remote", "add", "local", url]);
+        run(farm, &[], false, true)
+            .unwrap()
+            .failures
+            .into_iter()
+            .filter(|f| f.check == Check::LocalCheckout)
+            .collect()
+    }
+
+    fn only_message(f: Vec<Failure>) -> String {
+        assert_eq!(f.len(), 1, "{f:?}");
+        f[0].message.clone()
+    }
+
+    #[test]
+    fn local_that_is_a_real_checkout_with_main_passes() {
+        let (repo, farm) = team_repo();
+        let human = human_checkout();
+        let f = local_failures(&repo, &farm, human.to_str().unwrap());
+        assert!(f.is_empty(), "{f:?}");
+    }
+
+    #[test]
+    fn local_pointing_at_the_git_dir_of_a_checkout_passes_and_is_checked_for_dirt() {
+        let (repo, farm) = team_repo();
+        let human = human_checkout();
+        git(
+            &repo,
+            &[
+                "remote",
+                "add",
+                "local",
+                human.join(".git").to_str().unwrap(),
+            ],
+        );
+        let check = || {
+            run(&farm, &[], false, true)
+                .unwrap()
+                .failures
+                .into_iter()
+                .filter(|f| f.check == Check::LocalCheckout)
+                .count()
+        };
+        assert_eq!(check(), 0);
+        std::fs::write(human.join("a.txt"), "changed").unwrap();
+        assert_eq!(check(), 1, "the checkout beside the .git dir is dirty");
+    }
+
+    #[test]
+    fn bare_local_fails_and_names_the_pr_branch_fallback() {
+        let (repo, farm) = team_repo();
+        let human = human_checkout();
+        let bare = std::env::temp_dir().join(format!("yaks-bare-{}.git", std::process::id()));
+        let _ = std::fs::remove_dir_all(&bare);
+        git(
+            &human,
+            &["clone", "-q", "--bare", ".", bare.to_str().unwrap()],
+        );
+        let msg = only_message(local_failures(&repo, &farm, bare.to_str().unwrap()));
+        assert!(msg.contains("bare repository"), "{msg}");
+        assert!(msg.contains("push `pr/<name>` to `local`"), "{msg}");
+        assert!(
+            msg.contains(&format!("git fetch {} pr/<name>", bare.display())),
+            "{msg}"
+        );
+    }
+
+    #[test]
+    fn empty_managed_style_bare_local_fails() {
+        let (repo, farm) = team_repo();
+        let bare = std::env::temp_dir().join(format!("yaks-managed-{}.git", std::process::id()));
+        let _ = std::fs::remove_dir_all(&bare);
+        std::fs::create_dir_all(&bare).unwrap();
+        git(&bare, &["init", "-q", "--bare"]);
+        let msg = only_message(local_failures(&repo, &farm, bare.to_str().unwrap()));
+        assert!(msg.contains("bare repository"), "{msg}");
+    }
+
+    #[test]
+    fn non_bare_local_without_main_fails() {
+        let (repo, farm) = team_repo();
+        let human = human_checkout();
+        git(&human, &["checkout", "-q", "-b", "work"]);
+        git(&human, &["branch", "-q", "-D", "main"]);
+        let msg = only_message(local_failures(&repo, &farm, human.to_str().unwrap()));
+        assert!(msg.contains("no `refs/heads/main`"), "{msg}");
+        assert!(msg.contains("pr/<name>"), "{msg}");
+    }
+
+    #[test]
+    fn missing_local_remote_fails_only_when_asked() {
+        let (_repo, farm) = team_repo();
+        assert!(
+            run(&farm, &[], false, false).unwrap().ok(),
+            "off by default"
+        );
+        let report = run(&farm, &[], false, true).unwrap();
+        assert_eq!(report.failures.len(), 1, "{:?}", report.failures);
+        assert_eq!(report.failures[0].check, Check::LocalCheckout);
+        assert!(report.failures[0].message.contains("no `local` remote"));
+    }
+
+    #[test]
+    fn missing_local_path_fails() {
+        let (repo, farm) = team_repo();
+        let gone = std::env::temp_dir().join(format!("yaks-gone-{}", std::process::id()));
+        let msg = only_message(local_failures(&repo, &farm, gone.to_str().unwrap()));
+        assert!(msg.contains("does not exist"), "{msg}");
+        // A directory that is not a repository is reported too.
+        let (repo, farm) = team_repo();
+        let plain = std::env::temp_dir().join(format!("yaks-plain-{}", std::process::id()));
+        std::fs::create_dir_all(&plain).unwrap();
+        let msg = only_message(local_failures(&repo, &farm, plain.to_str().unwrap()));
+        assert!(msg.contains("not a readable git repository"), "{msg}");
+    }
+
+    #[test]
+    fn dirty_checkout_on_main_fails_but_untracked_files_and_other_branches_do_not() {
+        let (repo, farm) = team_repo();
+        let human = human_checkout();
+        let url = human.to_str().unwrap();
+        git(&repo, &["remote", "add", "local", url]);
+        let n = || {
+            run(&farm, &[], false, true)
+                .unwrap()
+                .failures
+                .into_iter()
+                .filter(|f| f.check == Check::LocalCheckout)
+                .collect::<Vec<_>>()
+        };
+        std::fs::write(human.join("new.txt"), "x").unwrap();
+        assert!(n().is_empty(), "untracked files do not block an update");
+        std::fs::write(human.join("a.txt"), "changed").unwrap();
+        let msg = only_message(n());
+        assert!(msg.contains("on `main` with 1 uncommitted"), "{msg}");
+        assert!(msg.contains("would be refused"), "{msg}");
+        git(&human, &["checkout", "-q", "-b", "work"]);
+        assert!(
+            n().is_empty(),
+            "dirty on another branch: main can be pushed"
+        );
+    }
+
+    #[test]
+    fn non_path_local_urls_are_reported_not_resolved() {
+        for url in [
+            "https://example.com/me/repo.git",
+            "ssh://git@example.com/me/repo.git",
+            "git@example.com:me/repo.git",
+        ] {
+            let (repo, farm) = team_repo();
+            let msg = only_message(local_failures(&repo, &farm, url));
+            assert!(
+                msg.contains(url) && msg.contains("not a path on this machine"),
+                "{msg}"
+            );
+        }
+        assert!(!is_remote_url("/tmp/x/.git"));
+        assert!(!is_remote_url("../sibling"));
+        assert!(!is_remote_url("file:///tmp/x"));
     }
 }

@@ -130,6 +130,13 @@ pub struct Lane {
     /// Short sha of the merge-base the farm delta is relative to; `None` means
     /// it is relative to this checkout's farm instead (no merge-base farm).
     pub farm_base: Option<String>,
+    /// Who is working in the lane: the distinct actors on its OWN new note
+    /// entries, first seen first (see [`label`]). Empty when the lane has no
+    /// own entries or no merge-base to tell which entries are its own.
+    pub who: Vec<String>,
+    /// Yaks the lane is working on: shaving in the lane, with own entries
+    /// there (see [`label`]). Empty whenever `who` cannot be told.
+    pub in_progress: Vec<String>,
     /// Set when the lane's git state could not be read; the lane is still
     /// listed.
     pub error: Option<String>,
@@ -187,6 +194,8 @@ fn inspect(
         farm_activity: None,
         farm: LaneFarm::None,
         farm_base: None,
+        who: Vec::new(),
+        in_progress: Vec::new(),
         error: None,
     };
     let mut full_head = None;
@@ -221,6 +230,7 @@ fn inspect(
                         match base {
                             Some((sha, base_tasks)) => {
                                 lane.farm_base = Some(sha);
+                                (lane.who, lane.in_progress) = label(&base_tasks, &theirs);
                                 LaneFarm::Own(compare_farms(&base_tasks, &theirs))
                             }
                             None => LaneFarm::Own(compare_farms(ours, &theirs)),
@@ -414,6 +424,49 @@ pub fn compare_farms(ours: &[crate::model::Task], theirs: &[crate::model::Task])
         }
     }
     d
+}
+
+/// Label a lane from its OWN new note entries: `(who, in_progress)`. Pure.
+///
+/// A lane's own entries are the notes its yaks have beyond the merge-base's
+/// (notes are append-only, so that is the tail past the base's count; every
+/// note of a yak the base lacks), committed or not. A `moved:` transition is
+/// one of those notes, so a claim or shear made in the lane counts like any
+/// other entry.
+///
+/// - `who`: the distinct actors on those entries, in first-seen order by
+///   timestamp. An entry with no actor names no one.
+/// - `in_progress`: the yaks that are in `shaving` in the lane and have own
+///   entries there, sorted by id. One rule, deliberately not "the lane moved
+///   it to shaving": a worker's checkout usually forks AFTER the coordinator's
+///   claim, so the claim is in the base and the worker's own entries are
+///   plain notes. A yak the lane has shorn, or never touched, is not in
+///   progress.
+fn label(base: &[crate::model::Task], theirs: &[crate::model::Task]) -> (Vec<String>, Vec<String>) {
+    let known: BTreeMap<&str, usize> = base
+        .iter()
+        .map(|t| (t.id.as_str(), store::parse_notes(&t.body).len()))
+        .collect();
+    let mut theirs: Vec<&crate::model::Task> = theirs.iter().collect();
+    theirs.sort_by(|a, b| a.id.cmp(&b.id));
+    let mut entries: Vec<store::NoteEntry> = Vec::new();
+    let mut in_progress = Vec::new();
+    for t in theirs {
+        let skip = known.get(t.id.as_str()).copied().unwrap_or(0);
+        let before = entries.len();
+        entries.extend(store::parse_notes(&t.body).into_iter().skip(skip));
+        if entries.len() > before && t.status == Status::Shaving {
+            in_progress.push(t.id.clone());
+        }
+    }
+    entries.sort_by(|a, b| a.ts.cmp(&b.ts));
+    let mut who: Vec<String> = Vec::new();
+    for actor in entries.into_iter().filter_map(|e| e.actor) {
+        if !who.contains(&actor) {
+            who.push(actor);
+        }
+    }
+    (who, in_progress)
 }
 
 // -- git / filesystem plumbing ---------------------------------------------
@@ -640,6 +693,8 @@ pub fn to_json(lanes: &[Lane]) -> Value {
                     "dirty": l.dirty,
                     "farm_activity": l.farm_activity,
                     "farm": farm,
+                    "who": l.who,
+                    "in_progress": l.in_progress,
                     "error": l.error,
                 })
             })
@@ -647,7 +702,20 @@ pub fn to_json(lanes: &[Lane]) -> Value {
     )
 }
 
-/// The compact human table: one row per lane, then indented farm detail.
+/// The one-line lane label: `who: a, b · shaving: id, id`, each half only
+/// when it has something; `None` for an unlabeled lane.
+fn label_line(l: &Lane) -> Option<String> {
+    let mut parts = Vec::new();
+    if !l.who.is_empty() {
+        parts.push(format!("who: {}", l.who.join(", ")));
+    }
+    if !l.in_progress.is_empty() {
+        parts.push(format!("shaving: {}", l.in_progress.join(", ")));
+    }
+    (!parts.is_empty()).then(|| parts.join(" \u{b7} "))
+}
+
+/// The compact human table: one row per lane, then its label and farm detail.
 pub fn render(lanes: &[Lane]) -> String {
     if lanes.is_empty() {
         return "No other checkouts found.\n".into();
@@ -707,6 +775,9 @@ pub fn render(lanes: &[Lane]) -> String {
         ));
         if let Some(e) = &l.error {
             out.push_str(&format!("  error: {e}\n"));
+        }
+        if let Some(label) = label_line(l) {
+            out.push_str(&format!("  {label}\n"));
         }
         match &l.farm {
             LaneFarm::Own(d) if d.is_empty() && l.farm_base.is_some() => {
@@ -1313,5 +1384,261 @@ mod tests {
             sh(&wt, &["--no-optional-locks", "status", "--porcelain"]),
         );
         assert_eq!(before, after);
+    }
+
+    // -- lane labels (who is working in a lane, and on which yaks) ------------
+
+    /// `body` with timestamped note entries appended: `(ts, actor, text)`.
+    fn notes(body: &str, entries: &[(&str, Option<&str>, &str)]) -> String {
+        entries
+            .iter()
+            .fold(body.to_string(), |b, (ts, actor, text)| {
+                store::append_note(&b, ts, *actor, text)
+            })
+    }
+
+    /// A repo whose committed farm has `yaks-aaaa` already claimed (shaving,
+    /// with the coordinator's claim note) and `yaks-bbbb` still hairy, plus a
+    /// linked worktree `wt` forked from it.
+    fn claimed_repo_with_lane(tag: &str) -> (PathBuf, PathBuf) {
+        let b = base(tag);
+        let t = b.join("repo");
+        fs::create_dir_all(&t).unwrap();
+        sh(&t, &["init", "-q"]);
+        let claim = notes(
+            "first",
+            &[(
+                "2026-03-01T00:00:00Z",
+                Some("coord"),
+                "moved: hairy -> shaving",
+            )],
+        );
+        task_file(&t, "shaving", "yaks-aaaa", "", &claim);
+        task_file(&t, "hairy", "yaks-bbbb", "", "second");
+        sh(&t, &["add", "-A"]);
+        sh(&t, &["commit", "-q", "-m", "init"]);
+        let wt = b.join("wt");
+        sh(
+            &t,
+            &["worktree", "add", "-q", "-b", "lane", wt.to_str().unwrap()],
+        );
+        (t, wt)
+    }
+
+    /// Rewrite `yaks-aaaa` (shaving) in the lane with extra note entries; the
+    /// claim from the base stays first.
+    fn lane_notes_on_aaaa(wt: &Path, entries: &[(&str, Option<&str>, &str)]) {
+        let claim = notes(
+            "first",
+            &[(
+                "2026-03-01T00:00:00Z",
+                Some("coord"),
+                "moved: hairy -> shaving",
+            )],
+        );
+        task_file(wt, "shaving", "yaks-aaaa", "", &notes(&claim, entries));
+    }
+
+    fn label_of(t: &Path) -> (Vec<String>, Vec<String>, String, Value) {
+        let lanes = lanes_of(t);
+        assert_eq!(lanes.len(), 1);
+        let l = &lanes[0];
+        (
+            l.who.clone(),
+            l.in_progress.clone(),
+            render(&lanes),
+            to_json(&lanes),
+        )
+    }
+
+    fn strs(v: &[&str]) -> Vec<String> {
+        v.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn a_worker_named_lane_is_labeled_with_the_worker_and_its_yak() {
+        let (t, wt) = claimed_repo_with_lane("label-worker");
+        // The claim is in the base; the worker's own entry is a plain note.
+        lane_notes_on_aaaa(&wt, &[("2026-03-02T00:00:00Z", Some("lbl-1"), "started")]);
+
+        let (who, in_progress, text, json) = label_of(&t);
+        assert_eq!(who, strs(&["lbl-1"]), "the base's claim actor is not ours");
+        assert_eq!(in_progress, strs(&["yaks-aaaa"]));
+        assert!(
+            text.contains("  who: lbl-1 \u{b7} shaving: yaks-aaaa\n"),
+            "{text}"
+        );
+        assert_eq!(json[0]["who"], json!(["lbl-1"]));
+        assert_eq!(json[0]["in_progress"], json!(["yaks-aaaa"]));
+        // The existing fields are untouched.
+        assert_eq!(json[0]["farm"]["notes"][0]["new"], 1);
+    }
+
+    #[test]
+    fn a_delta_thread_lane_is_labeled_with_its_delta_title() {
+        let (t, wt) = claimed_repo_with_lane("label-delta");
+        lane_notes_on_aaaa(
+            &wt,
+            &[(
+                "2026-03-02T00:00:00Z",
+                Some("delta:Fix attribution"),
+                "on it",
+            )],
+        );
+        let (who, _, text, json) = label_of(&t);
+        assert_eq!(who, strs(&["delta:Fix attribution"]));
+        assert!(
+            text.contains("  who: delta:Fix attribution \u{b7} shaving: yaks-aaaa\n"),
+            "{text}"
+        );
+        assert_eq!(json[0]["who"], json!(["delta:Fix attribution"]));
+    }
+
+    #[test]
+    fn a_git_user_fallback_actor_labels_the_lane_like_any_other() {
+        let (t, wt) = claimed_repo_with_lane("label-git-user");
+        lane_notes_on_aaaa(&wt, &[("2026-03-02T00:00:00Z", Some("Jane Doe"), "note")]);
+        let (who, in_progress, ..) = label_of(&t);
+        assert_eq!(who, strs(&["Jane Doe"]));
+        assert_eq!(in_progress, strs(&["yaks-aaaa"]));
+    }
+
+    #[test]
+    fn an_idle_lane_is_unlabeled() {
+        let (t, _wt) = claimed_repo_with_lane("label-idle");
+        // Behind with no entries of its own: the base's claim names no one here.
+        commit_move(&t, "yaks-bbbb", "hairy", "shorn");
+        let (who, in_progress, text, json) = label_of(&t);
+        assert!(who.is_empty() && in_progress.is_empty());
+        assert!(
+            !text.contains("who:") && !text.contains("shaving:"),
+            "{text}"
+        );
+        assert_eq!(json[0]["who"], json!([]));
+        assert_eq!(json[0]["in_progress"], json!([]));
+    }
+
+    #[test]
+    fn entries_without_an_actor_are_not_a_who() {
+        let (t, wt) = claimed_repo_with_lane("label-bare");
+        lane_notes_on_aaaa(&wt, &[("2026-03-02T00:00:00Z", None, "bare note")]);
+        let (who, in_progress, text, _) = label_of(&t);
+        assert!(who.is_empty());
+        // Still in progress, so the label says what, not who.
+        assert_eq!(in_progress, strs(&["yaks-aaaa"]));
+        assert!(text.contains("  shaving: yaks-aaaa\n"), "{text}");
+        assert!(!text.contains("who:"), "{text}");
+    }
+
+    #[test]
+    fn two_actors_in_one_lane_are_listed_once_each_in_first_seen_order() {
+        let (t, wt) = claimed_repo_with_lane("label-two");
+        // `yaks-bbbb` sorts after `yaks-aaaa`, but its note is the earliest.
+        task_file(
+            &wt,
+            "hairy",
+            "yaks-bbbb",
+            "",
+            &notes(
+                "second",
+                &[
+                    ("2026-03-02T00:00:00Z", Some("lanes-2"), "look"),
+                    ("2026-03-04T00:00:00Z", Some("lanes-2"), "again"),
+                ],
+            ),
+        );
+        lane_notes_on_aaaa(
+            &wt,
+            &[
+                ("2026-03-03T00:00:00Z", Some("delta:Fix attribution"), "hi"),
+                ("2026-03-05T00:00:00Z", Some("lanes-2"), "bye"),
+            ],
+        );
+        let (who, in_progress, text, json) = label_of(&t);
+        assert_eq!(who, strs(&["lanes-2", "delta:Fix attribution"]));
+        // `yaks-bbbb` is hairy in the lane: noted, not in progress.
+        assert_eq!(in_progress, strs(&["yaks-aaaa"]));
+        assert!(
+            text.contains("  who: lanes-2, delta:Fix attribution \u{b7} shaving: yaks-aaaa\n"),
+            "{text}"
+        );
+        assert_eq!(json[0]["who"], json!(["lanes-2", "delta:Fix attribution"]));
+    }
+
+    #[test]
+    fn a_yak_shorn_within_the_lane_is_not_in_progress() {
+        let (t, wt) = claimed_repo_with_lane("label-shorn");
+        lane_notes_on_aaaa(&wt, &[("2026-03-02T00:00:00Z", Some("w1"), "working")]);
+        // `yaks-bbbb`: claimed, worked and shorn inside the lane.
+        fs::remove_file(wt.join(".yaks/hairy/yaks-bbbb.md")).unwrap();
+        task_file(
+            &wt,
+            "shorn",
+            "yaks-bbbb",
+            "",
+            &notes(
+                "second",
+                &[
+                    (
+                        "2026-03-02T00:10:00Z",
+                        Some("w2"),
+                        "moved: hairy -> shaving",
+                    ),
+                    (
+                        "2026-03-02T00:20:00Z",
+                        Some("w2"),
+                        "moved: shaving -> shorn",
+                    ),
+                ],
+            ),
+        );
+        // A brand-new yak the lane created and left hairy.
+        task_file(
+            &wt,
+            "hairy",
+            "yaks-cccc",
+            "",
+            &notes("new", &[("2026-03-02T00:30:00Z", Some("w1"), "filed")]),
+        );
+        let (who, in_progress, text, json) = label_of(&t);
+        assert_eq!(who, strs(&["w1", "w2"]));
+        assert_eq!(in_progress, strs(&["yaks-aaaa"]));
+        assert_eq!(json[0]["in_progress"], json!(["yaks-aaaa"]));
+        assert!(
+            text.contains("  who: w1, w2 \u{b7} shaving: yaks-aaaa\n"),
+            "{text}"
+        );
+    }
+
+    #[test]
+    fn a_lane_compared_vs_checkout_is_unlabeled() {
+        let b = base("label-nobase");
+        let t = b.join("repo");
+        repo_with_farm(&t);
+        let wt = b.join("wt");
+        sh(
+            &t,
+            &["worktree", "add", "-q", "-b", "lane", wt.to_str().unwrap()],
+        );
+        // Unrelated history: no merge-base, so no telling which entries are its own.
+        sh(&wt, &["checkout", "-q", "--orphan", "orphan"]);
+        task_file(
+            &wt,
+            "shaving",
+            "yaks-aaaa",
+            "",
+            &notes("first", &[("2026-03-02T00:00:00Z", Some("lbl-1"), "hi")]),
+        );
+        sh(&wt, &["add", "-A"]);
+        sh(&wt, &["commit", "-q", "-m", "orphan"]);
+
+        let (who, in_progress, text, json) = label_of(&t);
+        assert_eq!(json[0]["farm"]["vs"], "checkout");
+        assert!(who.is_empty() && in_progress.is_empty());
+        assert!(
+            !text.contains("who:") && !text.contains("shaving:"),
+            "{text}"
+        );
+        assert_eq!(json[0]["who"], json!([]));
     }
 }

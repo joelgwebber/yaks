@@ -106,7 +106,7 @@ when all of them are shorn (or dead), and *tangled* otherwise.
 | `yaks next` / `tangled` | ready tasks / dependency-blocked tasks |
 | `yaks path <id>…` / `path <filters>` | each yak's current absolute file path (for a precise `git add`) |
 | `yaks search <q>` | substring search over id/title/description |
-| `yaks lanes` | the other checkouts of this repo (git worktrees, Delta clones) and what each one's farm changed since it forked from yours (vs the merge-base, not a diff against your checkout): new/moved yaks, new notes, `needs:`, plus commits ahead/behind; read-only. `--json` |
+| `yaks lanes` | the other checkouts of this repo (git worktrees, Delta clones) and what each one's farm changed since it forked from yours (vs the merge-base, not a diff against your checkout): new/moved yaks, new notes, `needs:`, plus commits ahead/behind, and a label per lane: who is working there (actors on its own new notes) and which yaks it has in `shaving`; read-only. `--json` |
 | `yaks log` | timestamped notes and status moves across a filtered set, oldest first (an activity log); `--since`/`--by` narrow it |
 | `yaks dep` / `reparent` | edit dependencies / move under a new parent |
 | `yaks bulk` | Apply one field edit (and/or reparent) to every yak matching a filter. **Dry-run by default** — pass `--commit` to apply. Requires a filter *and* a mutation flag |
@@ -114,7 +114,7 @@ when all of them are shorn (or dead), and *tangled* otherwise.
 | `yaks stats` | task statistics |
 | `yaks doctor` | read-only farm-integrity check (duplicate-status ids, dangling parent/dep refs); exits non-zero on problems, so it's CI-usable. `--json` for machine output |
 | `yaks doctor --strict` | also flags shorn yaks with no recorded note — a shear without evidence (the evidence-before-shear rule) |
-| `yaks preflight [<id>...]` | read-only landing-readiness check for a team farm: nothing under `.yaks/` untracked or unstaged in git, the `verify:` of each shorn yak in the change last PASSed (`--all`: every shorn yak), no yak in two status dirs; exits non-zero with one line per failure, else `preflight: ok` |
+| `yaks preflight [<id>...]` | read-only landing-readiness check for a team farm: nothing under `.yaks/` untracked or unstaged in git, the `verify:` of each shorn yak in the change last PASSed (`--all`: every shorn yak), no yak in two status dirs; `--push-main` also checks that `local` is the human's checkout (not bare, has `main`, not dirty on `main`) before `git push local <branch>:main`; exits non-zero with one line per failure, else `preflight: ok` |
 | `yaks commit [-m <msg>] [--dry-run]` | commit the farm's own changes (everything under `.yaks/`) and nothing else, with a generated message like `yaks: shorn yaks-abc1; updated yaks-def2`; code staged elsewhere stays staged and out of the commit; runs your git hooks, never pushes; errors in a private farm, no-op when clean |
 | `yaks scan-ids [file]` | flag real yak-ids in text (file and/or stdin) — a leak check for a pre-commit / PR gate; exits non-zero if any are found |
 | `yaks tui` | open the interactive terminal UI |

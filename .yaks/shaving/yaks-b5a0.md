@@ -4,7 +4,7 @@ title: 'Parallel development: finish and harden coordinator/worker skills + tool
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-04T21:06:09Z'
+updated: '2026-10-05T19:49:38Z'
 labels:
 - agent
 - skills
@@ -35,3 +35,7 @@ Landed: yaks-7149 part 2 (2c28d23, plus follow-up 649b48a: strict doctor must no
 ---
 ▸ 2026-10-04T21:06:09Z [delta-lead]
 Pushed to local main (dab94a1; archive local delta/trial7): yaks-7149 part 2, yaks lanes (e545, d738), cross-machine probe and Delta skill fixes. Not on origin. Next candidates: preflight check that local is a checkout (new child of yaks-99ec), yaks init --mode (yaks-814a) with project-local skill install (yaks-3859), the TUI lanes view (yaks-38dc remainder), yaks brief (yaks-2c22).
+
+---
+▸ 2026-10-05T19:49:38Z [delta-lead]
+Spawned (base 5dd2f4d, anthropic/claude-sonnet-5-5 both): pre-1 (agent 9b42bab0108849da) on yaks-d1bd, lbl-1 (agent e8c8fba428b440c4) on yaks-c29a. Spawn titles now start with the worker name (Delta skill). Joel's primary checkout (laptop) was a shallow repo; fixed with git fetch --unshallow at his request; one pinned commit (2c28d23) is still a shallow boundary, harmless.

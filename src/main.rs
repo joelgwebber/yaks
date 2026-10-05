@@ -232,7 +232,10 @@ enum Command {
     /// and what each one's farm CHANGED since it forked from this checkout
     /// (merge-base): yaks only there, yaks in another status, new notes,
     /// `needs:` set; plus how far ahead/behind its HEAD is. A lane that is
-    /// merely behind shows no changes. Read-only everywhere.
+    /// merely behind shows no changes. Each lane with entries of its own is
+    /// labeled under its row: `who:` (the distinct actors on those new notes)
+    /// and `shaving:` (yaks in shaving there that it wrote to); JSON `who`
+    /// and `in_progress`. Read-only everywhere.
     Lanes {
         /// Emit the lanes as JSON.
         #[arg(long)]
@@ -522,7 +525,10 @@ enum Command {
     /// `.yaks/` untracked or with unstaged changes in git, the verify command of
     /// each shorn yak in the change last PASSed, no yak in two status dirs. Prints
     /// one line per failure and exits non-zero, else `preflight: ok`. A private
-    /// farm skips the git check (said so) and checks every shorn yak.
+    /// farm skips the git check (said so) and checks every shorn yak. With
+    /// `--push-main` also checks that the `local` remote is the human's checkout
+    /// (not bare, has `main`, not dirty on `main`) before `git push local
+    /// <branch>:main`; read-only, never pushes.
     Preflight {
         /// Shorn yaks to check (default: the shorn yaks in the change in git,
         /// i.e. staged, modified or new under `.yaks/`). Scopes the verify check
@@ -532,6 +538,14 @@ enum Command {
         /// change (old shorn yaks that never ran `verify` will fail).
         #[arg(long)]
         all: bool,
+        /// Also check that the `local` remote is the human's checkout, for the
+        /// coordinator about to `git push local <branch>:main`: a path on this
+        /// machine, a non-bare repo with `refs/heads/main`, and not checked out
+        /// on `main` with uncommitted changes (git would refuse the push). Fails
+        /// with the `pr/<name>` fallback to use instead. Off by default: it
+        /// depends on another checkout's state, not on the change being landed.
+        #[arg(long)]
+        push_main: bool,
         /// Emit the result as JSON.
         #[arg(long)]
         json: bool,
@@ -1295,8 +1309,13 @@ fn main() -> Result<()> {
                 std::process::exit(1);
             }
         }
-        Command::Preflight { ids, all, json } => {
-            let report = preflight::run(&farm, &ids, all)?;
+        Command::Preflight {
+            ids,
+            all,
+            push_main,
+            json,
+        } => {
+            let report = preflight::run(&farm, &ids, all, push_main)?;
             if json {
                 json::print(&serde_json::json!({
                     "ok": report.ok(),

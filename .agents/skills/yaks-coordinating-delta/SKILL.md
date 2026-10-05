@@ -28,6 +28,11 @@ and `skill` needs the `worktree` argument; still put the critical rules in the b
   landing note, never on the worker's own yak: the worker moves that file, and your edit then conflicts with
   its landing. Once spawned, do not edit a worker's yak at all. The profile default has changed between
   runs; pass `model` only when the human asked for one.
+- Start every spawn `title` with the worker's name (`lanes-1: build yaks lanes CLI`). Delta shows the title in
+  its thread list and exports it as `DELTA_THREAD_TITLE`, which yaks stamps as `delta:<title>` when no actor is
+  set; with the name first the thread and the yak's notes and moves line up by eye (`yaks lanes` will label lanes
+  the same way, yaks-c29a).
+  Keep `YAKS_ACTOR=<name>` in the brief too: it is stable when a thread is renamed.
 - Scope disjointly and give each worker its own yak (core sections 3-4). Parallel workers on one
   repo are fine: four landed within 10 seconds of each other.
 
@@ -107,9 +112,12 @@ branches on `local`.
 
 **Before any push to `main`, check that `local` is the human's checkout.** On a thread shared to another machine `local` is a
 Delta-managed BARE repo with no branches (workers' clones always are); a push there is accepted and lands where
-the human never looks. Check: `git ls-remote --heads local main` prints a line, and `git -C "$(git remote get-url
-local)" rev-parse --is-bare-repository` says `false`. If not, never push `main`: push `pr/<name>` to `local`, and
-give the human the command `git fetch <managed repo path> pr/<name>` (or ask them to repoint `local`).
+the human never looks. Run `yaks preflight --push-main`: it exits non-zero, and prints what to do instead, when `local`
+is missing, bare, has no `main`, is not a path on this machine, or is a checkout on `main` with uncommitted changes
+(yak edits count; the push would be refused). By hand that is `git ls-remote --heads local main` printing a line and
+`git -C "$(git remote get-url local)" rev-parse --is-bare-repository` saying `false`. If it fails, never push `main`:
+push `pr/<name>` to `local`, and give the human the command `git fetch <managed repo path> pr/<name>` (or ask them to
+repoint `local`).
 
 ## One landing point, and when your clone goes stale
 Land from ONE place: the coordinator's thread. If another thread (a human-created subthread, a second
