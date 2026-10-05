@@ -14,22 +14,142 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 
-/// `(name, SKILL.md content)` for each bundled skill. Paths are relative to this
-/// source file (`src/skills.rs`), i.e. the repo's own `.agents/skills/`
-/// directory — the single, real source of this repo's skills (yaks-0576).
+/// One file of a bundled skill, relative to the skill's directory.
+pub struct SkillFile {
+    pub path: &'static str,
+    pub content: &'static str,
+    /// Installed with mode 0755 (a script the skill tells the agent to run).
+    pub executable: bool,
+}
+
+/// One bundled skill: a name, the opt-in group it belongs to, and its
+/// **explicit file list**.
+pub struct Skill {
+    pub name: &'static str,
+    /// `None` = part of the default install; `Some(g)` = installed only by
+    /// `--with g` (see [`GROUPS`]).
+    pub group: Option<&'static str>,
+    /// Every file the skill ships. `SKILL.md` must be listed first; it carries
+    /// the provenance stamp (see [`stamp`]). Other files are compared by content
+    /// against the digests recorded in that stamp.
+    pub files: &'static [SkillFile],
+}
+
+impl Skill {
+    /// The pristine `SKILL.md` content.
+    pub fn skill_md(&self) -> &'static str {
+        self.files[0].content
+    }
+
+    /// Every file but `SKILL.md`.
+    fn extras(&self) -> &'static [SkillFile] {
+        &self.files[1..]
+    }
+}
+
+const fn md(content: &'static str) -> SkillFile {
+    SkillFile {
+        path: "SKILL.md",
+        content,
+        executable: false,
+    }
+}
+
+/// The opt-in skill groups `yaks skills install --with <group>` accepts.
+pub const GROUPS: &[&str] = &["coordination"];
+
+/// Every bundled skill. Paths are relative to this source file
+/// (`src/skills.rs`), i.e. the repo's own `.agents/skills/` directory — the
+/// single, real source of this repo's skills (yaks-0576).
 ///
-/// **This explicit list, not the contents of `.agents/skills/`, decides what is
-/// embedded and installed.** The directory also holds repo-internal skills
-/// (`yaks-coordinating`, `yaks-working`) and may hold any other project-local
-/// skill; none of them is ever embedded or installed by `yaks skills install`
-/// unless it is added here on purpose.
-const BUNDLED: &[(&str, &str)] = &[
-    ("yaks", include_str!("../.agents/skills/yaks/SKILL.md")),
-    (
-        "yaks-tracker",
-        include_str!("../.agents/skills/yaks-tracker/SKILL.md"),
-    ),
+/// **This explicit list — skills and, per skill, files — not the contents of
+/// `.agents/skills/`, decides what is embedded and installed.** The directory
+/// may hold any other project-local skill, and none is embedded or installed
+/// unless it is added here on purpose. A test fails if a bundled skill's
+/// directory holds a file this list leaves out.
+///
+/// The default set is `yaks` + `yaks-tracker`; the `coordination` group (the
+/// multi-agent skills plus `yaks-working`) is opt-in.
+pub const BUNDLED: &[Skill] = &[
+    Skill {
+        name: "yaks",
+        group: None,
+        files: &[md(include_str!("../.agents/skills/yaks/SKILL.md"))],
+    },
+    Skill {
+        name: "yaks-tracker",
+        group: None,
+        files: &[md(include_str!("../.agents/skills/yaks-tracker/SKILL.md"))],
+    },
+    Skill {
+        name: "yaks-coordinating",
+        group: Some("coordination"),
+        files: &[md(include_str!(
+            "../.agents/skills/yaks-coordinating/SKILL.md"
+        ))],
+    },
+    Skill {
+        name: "yaks-coordinating-team",
+        group: Some("coordination"),
+        files: &[md(include_str!(
+            "../.agents/skills/yaks-coordinating-team/SKILL.md"
+        ))],
+    },
+    Skill {
+        name: "yaks-coordinating-private",
+        group: Some("coordination"),
+        files: &[md(include_str!(
+            "../.agents/skills/yaks-coordinating-private/SKILL.md"
+        ))],
+    },
+    Skill {
+        name: "yaks-coordinating-worktrees",
+        group: Some("coordination"),
+        files: &[md(include_str!(
+            "../.agents/skills/yaks-coordinating-worktrees/SKILL.md"
+        ))],
+    },
+    Skill {
+        name: "yaks-coordinating-delta",
+        group: Some("coordination"),
+        files: &[
+            md(include_str!(
+                "../.agents/skills/yaks-coordinating-delta/SKILL.md"
+            )),
+            SkillFile {
+                path: "land.sh",
+                content: include_str!("../.agents/skills/yaks-coordinating-delta/land.sh"),
+                executable: true,
+            },
+        ],
+    },
+    Skill {
+        name: "yaks-working",
+        group: Some("coordination"),
+        files: &[md(include_str!("../.agents/skills/yaks-working/SKILL.md"))],
+    },
 ];
+
+/// The skills an install selects: the default set plus every skill of each
+/// group in `with` (names from [`GROUPS`]).
+pub fn select(with: &[String]) -> Vec<&'static Skill> {
+    BUNDLED
+        .iter()
+        .filter(|s| s.group.is_none_or(|g| with.iter().any(|w| w == g)))
+        .collect()
+}
+
+/// What `status` reports: the default set, the requested groups, and any other
+/// bundled skill that is actually present in `base` (so an opt-in install is
+/// tracked without having to repeat `--with`).
+pub fn select_for_status(base: &Path, with: &[String]) -> Vec<&'static Skill> {
+    BUNDLED
+        .iter()
+        .filter(|s| {
+            s.group.is_none_or(|g| with.iter().any(|w| w == g)) || base.join(s.name).exists()
+        })
+        .collect()
+}
 
 /// This binary's version, stamped into skills it installs.
 pub fn version() -> &'static str {
@@ -90,6 +210,84 @@ pub fn expand_tilde(p: &str) -> PathBuf {
     PathBuf::from(p)
 }
 
+// -- where to install -----------------------------------------------------
+
+/// How an install/status target directory was chosen (printed so the user
+/// always sees where files go).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TargetKind {
+    /// `--dir <path>`.
+    Dir,
+    /// `--user`: [`default_dir`].
+    User,
+    /// No flag, inside a git repo: `<git top-level>/.agents/skills`.
+    Project { root: PathBuf },
+    /// No flag, not inside a git repo: [`default_dir`], as before.
+    UserFallback,
+}
+
+/// The chosen skills directory and why.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Target {
+    pub dir: PathBuf,
+    pub kind: TargetKind,
+}
+
+impl Target {
+    /// One line saying where, and why, for CLI output.
+    pub fn describe(&self) -> String {
+        let why = match &self.kind {
+            TargetKind::Dir => "--dir".to_string(),
+            TargetKind::User => "--user".to_string(),
+            TargetKind::Project { .. } => format!(
+                "project-local, in the git top-level; --user for {}",
+                default_dir().display()
+            ),
+            TargetKind::UserFallback => {
+                "not inside a git repo, so the user directory; --dir for another".to_string()
+            }
+        };
+        format!("{} ({why})", self.dir.display())
+    }
+}
+
+/// The nearest ancestor of `cwd` (itself included) holding a `.git` entry (a
+/// directory, or the file a linked worktree has) — the git top-level, found the
+/// same way `store::discover` bounds a farm search, without shelling out.
+pub fn git_toplevel(cwd: &Path) -> Option<PathBuf> {
+    cwd.ancestors()
+        .find(|d| d.join(".git").exists())
+        .map(Path::to_path_buf)
+}
+
+/// Choose the skills directory: `--dir` wins; else `--user` means
+/// [`default_dir`]; else `<git top-level>/.agents/skills` when `cwd` is inside a
+/// git repo, falling back to [`default_dir`] outside one.
+pub fn resolve_target(dir: Option<&str>, user: bool, cwd: &Path) -> Target {
+    if let Some(d) = dir {
+        return Target {
+            dir: expand_tilde(d),
+            kind: TargetKind::Dir,
+        };
+    }
+    if user {
+        return Target {
+            dir: default_dir(),
+            kind: TargetKind::User,
+        };
+    }
+    match git_toplevel(cwd) {
+        Some(root) => Target {
+            dir: root.join(".agents").join("skills"),
+            kind: TargetKind::Project { root },
+        },
+        None => Target {
+            dir: default_dir(),
+            kind: TargetKind::UserFallback,
+        },
+    }
+}
+
 // -- provenance -----------------------------------------------------------
 
 /// A 64-bit FNV-1a digest, rendered as 16 lowercase hex chars.
@@ -98,9 +296,9 @@ pub fn expand_tilde(p: &str) -> PathBuf {
 /// since we wrote them", which needs no cryptographic strength, and it keeps
 /// yaks a self-contained binary with no hashing dependency (the same reason
 /// the frontmatter parser is hand-rolled).
-fn digest(s: &str) -> String {
+fn digest(s: impl AsRef<[u8]>) -> String {
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
-    for b in s.as_bytes() {
+    for b in s.as_ref() {
         h ^= *b as u64;
         h = h.wrapping_mul(0x1000_0000_01b3);
     }
@@ -110,6 +308,10 @@ fn digest(s: &str) -> String {
 /// Key names inside the stamped `metadata:` map.
 const K_VERSION: &str = "yaks-version";
 const K_DIGEST: &str = "yaks-digest";
+/// Digests of the skill's other files as written (`path=digest,path=digest`),
+/// present only for a skill that ships more than `SKILL.md`. It is what lets a
+/// script edited since install be told apart from one an older yaks wrote.
+const K_FILES: &str = "yaks-files";
 
 /// Render the provenance block: a `metadata:` map holding the writing yaks'
 /// version and a digest of the content as written.
@@ -119,7 +321,7 @@ const K_DIGEST: &str = "yaks-digest";
 /// quoted strings because the spec defines metadata as a map of string keys to
 /// *string* values. It is emitted last in the frontmatter so it can be removed
 /// again deterministically by [`read_stamp`].
-fn stamp_block(version: &str, source_digest: &str) -> String {
+fn stamp_block(version: &str, source_digest: &str, files: &[(String, String)]) -> String {
     let mut s = String::from("metadata:\n");
     s.push_str("  ");
     s.push_str(K_VERSION);
@@ -130,6 +332,10 @@ fn stamp_block(version: &str, source_digest: &str) -> String {
     s.push_str(": \"");
     s.push_str(source_digest);
     s.push('"');
+    if !files.is_empty() {
+        let list: Vec<String> = files.iter().map(|(p, d)| format!("{p}={d}")).collect();
+        s.push_str(&format!("\n  {K_FILES}: \"{}\"", list.join(",")));
+    }
     s
 }
 
@@ -138,8 +344,14 @@ fn stamp_block(version: &str, source_digest: &str) -> String {
 /// The recorded digest is of `content` itself — the text *before* stamping —
 /// so verification is a clean round trip: strip the stamp back off an
 /// installed file and re-digest what remains.
-pub fn stamp(content: &str, version: &str) -> String {
-    let block = stamp_block(version, &digest(content));
+#[cfg(test)]
+fn stamp(content: &str, version: &str) -> String {
+    stamp_with_files(content, version, &[])
+}
+
+/// [`stamp`], also recording the digests of the skill's other files.
+fn stamp_with_files(content: &str, version: &str, files: &[(String, String)]) -> String {
+    let block = stamp_block(version, &digest(content), files);
     let Some(rest) = content.strip_prefix("---\n") else {
         // No frontmatter to extend; never corrupt the file.
         return content.to_string();
@@ -157,6 +369,8 @@ pub fn stamp(content: &str, version: &str) -> String {
 pub struct Stamp {
     pub version: String,
     pub digest: String,
+    /// `(path, digest)` of each non-`SKILL.md` file as written.
+    pub files: Vec<(String, String)>,
 }
 
 /// Split an installed skill into its stamp and the content as originally
@@ -167,6 +381,7 @@ pub struct Stamp {
 fn read_stamp(installed: &str) -> Option<(Stamp, String)> {
     let mut version: Option<String> = None;
     let mut dig: Option<String> = None;
+    let mut files: Vec<(String, String)> = Vec::new();
     let mut kept: Vec<&str> = Vec::new();
     let mut fence = 0usize; // how many `---` delimiters seen
     let mut in_block = false; // inside our metadata: block
@@ -196,6 +411,14 @@ fn read_stamp(installed: &str) -> Option<(Stamp, String)> {
                     dig = Some(unquote(v));
                     continue;
                 }
+                if let Some(v) = t.strip_prefix(K_FILES).and_then(|r| r.strip_prefix(':')) {
+                    files = unquote(v)
+                        .split(',')
+                        .filter_map(|e| e.split_once('='))
+                        .map(|(p, d)| (p.to_string(), d.to_string()))
+                        .collect();
+                    continue;
+                }
                 in_block = false;
             }
         }
@@ -208,7 +431,14 @@ fn read_stamp(installed: &str) -> Option<(Stamp, String)> {
     if installed.ends_with('\n') {
         body.push('\n');
     }
-    Some((Stamp { version, digest }, body))
+    Some((
+        Stamp {
+            version,
+            digest,
+            files,
+        },
+        body,
+    ))
 }
 
 fn unquote(s: &str) -> String {
@@ -345,22 +575,92 @@ pub fn inspect(path: &Path, content: &str) -> SkillState {
     }
 }
 
+/// Classify a skill's non-`SKILL.md` file `rel`, installed at `path`.
+///
+/// Such a file carries no stamp of its own; it is compared by content, and the
+/// digest the skill's `SKILL.md` stamp recorded for it (`recorded`) tells a
+/// copy an older yaks wrote (untouched → upgradable) from one edited since
+/// (`Modified`). With no record it is nobody's we know of (`Unmanaged`).
+fn inspect_extra(path: &Path, rel: &str, content: &str, recorded: Option<&Stamp>) -> SkillState {
+    let bytes = match std::fs::read(path) {
+        Ok(b) => b,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return SkillState::Absent,
+        Err(_) => return SkillState::Unmanaged,
+    };
+    if bytes == content.as_bytes() {
+        return SkillState::Current;
+    }
+    let Some(stamp) = recorded else {
+        return SkillState::Unmanaged;
+    };
+    match stamp.files.iter().find(|(p, _)| p == rel) {
+        None => SkillState::Unmanaged,
+        Some((_, d)) if *d != digest(&bytes) => SkillState::Modified {
+            installed: stamp.version.clone(),
+        },
+        Some(_) if version_gt(version(), &stamp.version) => SkillState::Upgradable {
+            from: stamp.version.clone(),
+        },
+        Some(_) => SkillState::Held {
+            installed: stamp.version.clone(),
+        },
+    }
+}
+
+/// How much attention a state wants; a skill reports its most demanding file.
+fn severity(s: &SkillState) -> u8 {
+    match s {
+        SkillState::Current => 0,
+        SkillState::Absent => 1,
+        SkillState::Adoptable => 2,
+        SkillState::Upgradable { .. } => 3,
+        SkillState::Held { .. } => 4,
+        SkillState::Unmanaged => 5,
+        SkillState::Modified { .. } => 6,
+        SkillState::SourceLinked => 7,
+    }
+}
+
+/// Classify an installed skill: the most demanding state among its files, and
+/// the path of the file that state is about. (Skills are installed, upgraded
+/// and protected as a unit.)
+pub fn inspect_skill(base: &Path, skill: &Skill) -> (PathBuf, SkillState) {
+    let dir = base.join(skill.name);
+    let md_path = dir.join("SKILL.md");
+    let mut worst = (md_path.clone(), inspect(&md_path, skill.skill_md()));
+    if worst.1 == SkillState::SourceLinked {
+        return worst;
+    }
+    let recorded = std::fs::read_to_string(&md_path)
+        .ok()
+        .and_then(|t| read_stamp(&t))
+        .map(|(s, _)| s);
+    for f in skill.extras() {
+        let path = dir.join(f.path);
+        let state = inspect_extra(&path, f.path, f.content, recorded.as_ref());
+        if severity(&state) > severity(&worst.1) {
+            worst = (path, state);
+        }
+    }
+    worst
+}
+
 /// One skill's situation in a skills directory.
 pub struct Status {
     pub name: String,
+    /// The file `state` is about (`SKILL.md` unless another file is the issue).
     pub path: PathBuf,
     pub state: SkillState,
 }
 
-/// Classify every bundled skill in `base`.
-pub fn status(base: &Path) -> Vec<Status> {
-    BUNDLED
+/// Classify each of `skills` in `base`.
+pub fn status(base: &Path, skills: &[&Skill]) -> Vec<Status> {
+    skills
         .iter()
-        .map(|(name, content)| {
-            let path = base.join(name).join("SKILL.md");
-            let state = inspect(&path, content);
+        .map(|skill| {
+            let (path, state) = inspect_skill(base, skill);
             Status {
-                name: (*name).to_string(),
+                name: skill.name.to_string(),
                 path,
                 state,
             }
@@ -429,10 +729,12 @@ pub fn is_source_tree(path: &Path) -> bool {
 /// Result of considering one bundled skill for installation.
 pub struct Installed {
     pub name: String,
+    /// The file `before` is about (`SKILL.md` unless another file is the issue).
     pub path: PathBuf,
-    /// What the target looked like before we acted.
+    /// What the target looked like before we acted (the most demanding state
+    /// among the skill's files).
     pub before: SkillState,
-    /// Whether the file was (re)written.
+    /// Whether the skill was (re)written.
     pub wrote: bool,
 }
 
@@ -445,47 +747,68 @@ impl Installed {
 
 /// Write `content` to `path` atomically, so parallel `yaks` invocations (the
 /// coordinator spawns many) can never observe or leave a half-written file.
-fn write_atomic(path: &Path, content: &str) -> Result<()> {
+fn write_atomic(path: &Path, content: &str, executable: bool) -> Result<()> {
     let tmp = path.with_extension(format!("tmp{}", std::process::id()));
     std::fs::write(&tmp, content).with_context(|| format!("writing {}", tmp.display()))?;
+    #[cfg(unix)]
+    if executable {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&tmp, std::fs::Permissions::from_mode(0o755))
+            .with_context(|| format!("making {} executable", tmp.display()))?;
+    }
+    #[cfg(not(unix))]
+    let _ = executable;
     std::fs::rename(&tmp, path).with_context(|| format!("installing {}", path.display()))?;
     Ok(())
 }
 
-/// Install the bundled skills into `base`.
+/// Write every file of `skill` under `base`, `SKILL.md` last: it carries the
+/// stamp (version, its own digest, and the digest of each other file), so a
+/// half-finished write leaves no stamp claiming the skill is current.
+fn write_skill(base: &Path, skill: &Skill) -> Result<()> {
+    let dir = base.join(skill.name);
+    std::fs::create_dir_all(&dir).with_context(|| format!("creating {}", dir.display()))?;
+    let mut digests = Vec::new();
+    for f in skill.extras() {
+        write_atomic(&dir.join(f.path), f.content, f.executable)?;
+        digests.push((f.path.to_string(), digest(f.content)));
+    }
+    let stamped = stamp_with_files(skill.skill_md(), version(), &digests);
+    write_atomic(&dir.join("SKILL.md"), &stamped, false)
+}
+
+/// Install `skills` (see [`select`]) into `base`.
 ///
-/// Files we wrote and that are still untouched are upgraded freely. A
-/// `Modified` or `Unmanaged` file is left alone unless `force` is set. Writing
-/// into this repo's own `.agents/skills/` is refused outright (see [`is_source_tree`]).
-pub fn install(base: &Path, force: bool) -> Result<Vec<Installed>> {
+/// A skill is installed, upgraded and protected as a unit: files we wrote and
+/// that are still untouched are upgraded freely, but if any file of it is
+/// `Modified`, `Unmanaged` or `Held`, none is written unless `force` is set.
+/// Writing into this repo's own `.agents/skills/` is refused outright (see
+/// [`is_source_tree`]).
+pub fn install(base: &Path, force: bool, skills: &[&Skill]) -> Result<Vec<Installed>> {
     if is_source_tree(base) {
         anyhow::bail!(
-            "refusing to install into {} — that is yaks' own .agents/skills/ source, \
+            "refusing to install into {} \u{2014} that is yaks' own .agents/skills/ source, \
              and overwriting it would revert the real files to this binary's \
-             baked-in copy (yaks-d8e9). Pick a skills directory instead, e.g. \
-             `yaks skills install` or `--dir ~/.claude/skills`.",
+             baked-in copy (yaks-d8e9). Install somewhere else: `--user` \
+             (~/.agents/skills) or `--dir <path>` (e.g. `--dir ~/.claude/skills`).",
             base.display()
         );
     }
     let mut out = Vec::new();
-    for (name, content) in BUNDLED {
-        let dir = base.join(name);
-        let path = dir.join("SKILL.md");
-        let before = inspect(&path, content);
+    for skill in skills {
+        let (path, before) = inspect_skill(base, skill);
         let wrote = match &before {
             SkillState::Current => false,
             // Never written, force or not: it resolves onto the source.
             SkillState::SourceLinked => false,
             s if s.needs_force() && !force => false,
             _ => {
-                std::fs::create_dir_all(&dir)
-                    .with_context(|| format!("creating {}", dir.display()))?;
-                write_atomic(&path, &stamp(content, version()))?;
+                write_skill(base, skill)?;
                 true
             }
         };
         out.push(Installed {
-            name: (*name).to_string(),
+            name: skill.name.to_string(),
             path,
             before,
             wrote,
@@ -503,8 +826,9 @@ pub fn install(base: &Path, force: bool) -> Result<Vec<Installed>> {
 ///   `Unmanaged`, or `Held`, so it can neither clobber your edits nor
 ///   downgrade a newer install;
 /// - only the user-level [`default_dir`], never a project-local
-///   `.agents/skills` (that would be writing into someone's repo) and never a
-///   `--dir` target;
+///   `.agents/skills` (those are files in someone's working tree; `skills
+///   status` reports them stale instead) and never a `--dir` target;
+/// - only the default skill set, never the opt-in groups;
 /// - skipped entirely when [`AUTOSYNC_ENV`] is `0`/`false`/`never`, for CI and
 ///   sandboxes.
 ///
@@ -515,24 +839,24 @@ pub fn auto_sync() -> Vec<String> {
         Ok(v) if matches!(v.trim(), "0" | "false" | "never") => return Vec::new(),
         _ => {}
     }
-    let base = default_dir();
-    if is_source_tree(&base) {
+    auto_sync_in(&default_dir())
+}
+
+/// [`auto_sync`] against an explicit user-level directory (the seam its tests use).
+fn auto_sync_in(base: &Path) -> Vec<String> {
+    if is_source_tree(base) {
         return Vec::new();
     }
     let mut done = Vec::new();
-    for (name, content) in BUNDLED {
-        let dir = base.join(name);
-        let path = dir.join("SKILL.md");
+    for skill in select(&[]) {
         // Never write through a symlink into a yaks checkout (see install).
-        if is_source_tree(&dir) {
+        if is_source_tree(&base.join(skill.name)) {
             continue;
         }
-        match inspect(&path, content) {
+        match inspect_skill(base, skill).1 {
             SkillState::Absent | SkillState::Upgradable { .. } | SkillState::Adoptable => {
-                if std::fs::create_dir_all(&dir).is_ok()
-                    && write_atomic(&path, &stamp(content, version())).is_ok()
-                {
-                    done.push((*name).to_string());
+                if write_skill(base, skill).is_ok() {
+                    done.push(skill.name.to_string());
                 }
             }
             // Current / Held / Modified / Unmanaged: leave it alone.
@@ -578,7 +902,8 @@ mod tests {
         // silently ignored by Claude Code but HARD-ERRORS on claude.ai upload /
         // the Skills API / package_skill.py, so it can't be caught by using the
         // skill locally. Put custom data under `metadata:` instead.
-        for (name, content) in BUNDLED {
+        for skill in BUNDLED {
+            let (name, content) = (skill.name, skill.skill_md());
             let keys = frontmatter_keys(content);
             for k in &keys {
                 assert!(
@@ -599,7 +924,7 @@ mod tests {
                 .map(str::trim)
                 .unwrap_or_default();
             assert_eq!(
-                declared, *name,
+                declared, name,
                 "skill {name:?} declares a `name` that doesn't match its directory"
             );
         }
@@ -613,14 +938,17 @@ mod tests {
         // starts comparing stamped content against stamped content. It has
         // happened (a stray install pointed at the repo), so assert it loudly
         // rather than trusting the write-path guard alone.
-        for (name, content) in BUNDLED {
+        for skill in BUNDLED {
+            let (name, content) = (skill.name, skill.skill_md());
             assert!(
                 read_stamp(content).is_none(),
                 ".agents/skills/{name}/SKILL.md carries a provenance stamp; the source \
                  must stay unstamped \u{2014} run `git checkout -- .agents/skills/`"
             );
             assert!(
-                !content.contains(K_VERSION) && !content.contains(K_DIGEST),
+                !content.contains(K_VERSION)
+                    && !content.contains(K_DIGEST)
+                    && !content.contains(K_FILES),
                 ".agents/skills/{name}/SKILL.md mentions a stamp key; the source must stay pristine"
             );
         }
@@ -628,7 +956,7 @@ mod tests {
 
     #[test]
     fn stamp_round_trips_and_stays_spec_legal() {
-        let src = BUNDLED[0].1;
+        let src = BUNDLED[0].skill_md();
         let out = stamp(src, "1.2.3");
         // The stamp lands in the frontmatter, under the spec's metadata: field.
         assert!(out.contains("metadata:\n  yaks-version: \"1.2.3\""));
@@ -668,12 +996,12 @@ mod tests {
     #[test]
     fn states_absent_current_modified_and_unmanaged() {
         let base = temp_base("states");
-        let (name, content) = BUNDLED[0];
+        let (name, content) = (BUNDLED[0].name, BUNDLED[0].skill_md());
         let path = base.join(name).join("SKILL.md");
 
         assert_eq!(inspect(&path, content), SkillState::Absent);
 
-        install(&base, false).unwrap();
+        install(&base, false, &select(&[])).unwrap();
         assert_eq!(inspect(&path, content), SkillState::Current);
 
         // A hand edit is detected and protected.
@@ -683,19 +1011,19 @@ mod tests {
             inspect(&path, content),
             SkillState::Modified { .. }
         ));
-        let res = install(&base, false).unwrap();
+        let res = install(&base, false, &select(&[])).unwrap();
         let me = res.iter().find(|i| i.name == name).unwrap();
         assert!(!me.wrote && me.blocked(), "modified file is protected");
         assert_eq!(std::fs::read_to_string(&path).unwrap(), edited);
         // ...until forced.
-        let res = install(&base, true).unwrap();
+        let res = install(&base, true, &select(&[])).unwrap();
         assert!(res.iter().find(|i| i.name == name).unwrap().wrote);
         assert_eq!(inspect(&path, content), SkillState::Current);
 
         // An unstamped file is someone else's; also protected.
         std::fs::write(&path, "---\nname: yaks\ndescription: hand rolled\n---\n").unwrap();
         assert_eq!(inspect(&path, content), SkillState::Unmanaged);
-        let res = install(&base, false).unwrap();
+        let res = install(&base, false, &select(&[])).unwrap();
         assert!(res.iter().find(|i| i.name == name).unwrap().blocked());
 
         let _ = std::fs::remove_dir_all(&base);
@@ -708,7 +1036,7 @@ mod tests {
         // lossless, so it must not demand --force -- otherwise the whole
         // installed base stays unmanaged and auto-sync never helps it.
         let base = temp_base("adopt");
-        let (name, content) = BUNDLED[0];
+        let (name, content) = (BUNDLED[0].name, BUNDLED[0].skill_md());
         let dir = base.join(name);
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("SKILL.md");
@@ -717,7 +1045,7 @@ mod tests {
         assert_eq!(inspect(&path, content), SkillState::Adoptable);
         assert!(!inspect(&path, content).needs_force());
 
-        let res = install(&base, false).unwrap();
+        let res = install(&base, false, &select(&[])).unwrap();
         assert!(
             res.iter().find(|i| i.name == name).unwrap().wrote,
             "an untouched pre-stamp install adopts with no --force"
@@ -737,7 +1065,7 @@ mod tests {
         // The ping-pong guard (yaks-1d51): a file stamped by a NEWER yaks must
         // not be rewritten by this one, or two co-installed binaries flip-flop.
         let base = temp_base("hold");
-        let (name, content) = BUNDLED[0];
+        let (name, content) = (BUNDLED[0].name, BUNDLED[0].skill_md());
         let dir = base.join(name);
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("SKILL.md");
@@ -748,7 +1076,7 @@ mod tests {
         assert!(matches!(inspect(&path, content), SkillState::Held { .. }));
         let before = std::fs::read_to_string(&path).unwrap();
         // Neither auto-sync nor a plain install may touch it.
-        let res = install(&base, false).unwrap();
+        let res = install(&base, false, &select(&[])).unwrap();
         assert!(!res.iter().find(|i| i.name == name).unwrap().wrote);
         assert_eq!(std::fs::read_to_string(&path).unwrap(), before);
 
@@ -758,7 +1086,7 @@ mod tests {
     #[test]
     fn stale_install_is_upgraded_without_force() {
         let base = temp_base("stale");
-        let (name, content) = BUNDLED[0];
+        let (name, content) = (BUNDLED[0].name, BUNDLED[0].skill_md());
         let dir = base.join(name);
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("SKILL.md");
@@ -770,7 +1098,7 @@ mod tests {
             inspect(&path, content),
             SkillState::Upgradable { .. }
         ));
-        let res = install(&base, false).unwrap();
+        let res = install(&base, false, &select(&[])).unwrap();
         assert!(
             res.iter().find(|i| i.name == name).unwrap().wrote,
             "a clean stale copy upgrades with no --force"
@@ -795,9 +1123,9 @@ mod tests {
             )
             .unwrap();
             assert!(is_source_tree(&base), "{layout} is a yaks source tree");
-            assert!(install(&base, false).is_err(), "{layout}");
+            assert!(install(&base, false, &select(&[])).is_err(), "{layout}");
             assert!(
-                install(&base, true).is_err(),
+                install(&base, true, &select(&[])).is_err(),
                 "--force must NOT be the escape hatch here ({layout})"
             );
             let _ = std::fs::remove_dir_all(&root);
@@ -822,7 +1150,7 @@ mod tests {
     fn install_writes_both_then_is_idempotent_then_forces() {
         let base = temp_base("install");
 
-        let first = install(&base, false).unwrap();
+        let first = install(&base, false, &select(&[])).unwrap();
         assert_eq!(first.len(), 2);
         assert!(first.iter().all(|i| i.wrote));
         assert!(base.join("yaks/SKILL.md").is_file());
@@ -831,7 +1159,7 @@ mod tests {
         assert!(yak.contains("name: yaks"));
 
         // Second run is a no-op: identical content needs no rewrite.
-        let again = install(&base, false).unwrap();
+        let again = install(&base, false, &select(&[])).unwrap();
         assert!(
             again
                 .iter()
@@ -840,13 +1168,303 @@ mod tests {
 
         // Force on an identical file stays a no-op: there is nothing to
         // refresh, and rewriting would only churn mtimes.
-        let forced = install(&base, true).unwrap();
+        let forced = install(&base, true, &select(&[])).unwrap();
         assert!(forced.iter().all(|i| !i.wrote));
 
         // And status agrees.
-        assert!(status(&base).iter().all(|s| s.state == SkillState::Current));
+        assert!(
+            status(&base, &select(&[]))
+                .iter()
+                .all(|s| s.state == SkillState::Current)
+        );
 
         let _ = std::fs::remove_dir_all(&base);
+    }
+
+    fn coordination() -> Vec<String> {
+        vec!["coordination".to_string()]
+    }
+
+    const SIX: [&str; 6] = [
+        "yaks-coordinating",
+        "yaks-coordinating-team",
+        "yaks-coordinating-private",
+        "yaks-coordinating-worktrees",
+        "yaks-coordinating-delta",
+        "yaks-working",
+    ];
+
+    #[test]
+    fn default_set_is_exactly_yaks_and_yaks_tracker() {
+        let names: Vec<_> = select(&[]).iter().map(|s| s.name).collect();
+        assert_eq!(names, ["yaks", "yaks-tracker"]);
+        let base = temp_base("default-set");
+        install(&base, false, &select(&[])).unwrap();
+        let mut dirs: Vec<_> = std::fs::read_dir(&base)
+            .unwrap()
+            .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        dirs.sort();
+        assert_eq!(dirs, ["yaks", "yaks-tracker"]);
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn with_coordination_adds_the_six_skills_and_the_land_script() {
+        let names: Vec<_> = select(&coordination()).iter().map(|s| s.name).collect();
+        assert_eq!(names.len(), 8);
+        for n in ["yaks", "yaks-tracker"].into_iter().chain(SIX) {
+            assert!(names.contains(&n), "{n}");
+        }
+        let base = temp_base("with-coord");
+        let res = install(&base, false, &select(&coordination())).unwrap();
+        assert!(res.iter().all(|i| i.wrote));
+        for n in SIX {
+            assert!(base.join(n).join("SKILL.md").is_file(), "{n}");
+        }
+        let land = base.join("yaks-coordinating-delta/land.sh");
+        assert_eq!(
+            std::fs::read_to_string(&land).unwrap(),
+            include_str!("../.agents/skills/yaks-coordinating-delta/land.sh")
+        );
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = std::fs::metadata(&land).unwrap().permissions().mode();
+            assert_eq!(mode & 0o777, 0o755, "land.sh must stay executable");
+        }
+        // Idempotent, and status sees all eight as current.
+        let again = install(&base, false, &select(&coordination())).unwrap();
+        assert!(again.iter().all(|i| !i.wrote));
+        let st = status(&base, &select_for_status(&base, &[]));
+        assert_eq!(
+            st.len(),
+            8,
+            "installed opt-in skills are tracked without --with"
+        );
+        assert!(st.iter().all(|s| s.state == SkillState::Current));
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn an_edited_script_is_reported_and_kept_unless_forced() {
+        let base = temp_base("script-edit");
+        let skills = select(&coordination());
+        install(&base, false, &skills).unwrap();
+        let land = base.join("yaks-coordinating-delta/land.sh");
+        let edited = std::fs::read_to_string(&land).unwrap() + "\n# local tweak\n";
+        std::fs::write(&land, &edited).unwrap();
+
+        let delta = BUNDLED
+            .iter()
+            .find(|s| s.name == "yaks-coordinating-delta")
+            .unwrap();
+        let (path, state) = inspect_skill(&base, delta);
+        assert!(matches!(state, SkillState::Modified { .. }), "{state:?}");
+        assert_eq!(path, land, "the report names the edited file");
+
+        let res = install(&base, false, &skills).unwrap();
+        let r = res
+            .iter()
+            .find(|i| i.name == "yaks-coordinating-delta")
+            .unwrap();
+        assert!(!r.wrote && r.blocked());
+        assert_eq!(std::fs::read_to_string(&land).unwrap(), edited);
+
+        let res = install(&base, true, &skills).unwrap();
+        assert!(
+            res.iter()
+                .find(|i| i.name == "yaks-coordinating-delta")
+                .unwrap()
+                .wrote
+        );
+        assert_ne!(std::fs::read_to_string(&land).unwrap(), edited);
+        assert_eq!(inspect_skill(&base, delta).1, SkillState::Current);
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn an_untouched_script_from_an_older_yaks_is_upgraded_without_force() {
+        let base = temp_base("script-stale");
+        let delta = BUNDLED
+            .iter()
+            .find(|s| s.name == "yaks-coordinating-delta")
+            .unwrap();
+        let dir = base.join(delta.name);
+        std::fs::create_dir_all(&dir).unwrap();
+        // What yaks 0.0.0 would have written: an older script, stamped with its digest.
+        let old_script = "#!/bin/sh\necho old\n";
+        std::fs::write(dir.join("land.sh"), old_script).unwrap();
+        std::fs::write(
+            dir.join("SKILL.md"),
+            stamp_with_files(
+                delta.skill_md(),
+                "0.0.0",
+                &[("land.sh".to_string(), digest(old_script))],
+            ),
+        )
+        .unwrap();
+        assert!(matches!(
+            inspect_skill(&base, delta).1,
+            SkillState::Upgradable { .. }
+        ));
+        let res = install(&base, false, &[delta]).unwrap();
+        assert!(res[0].wrote);
+        assert_eq!(inspect_skill(&base, delta).1, SkillState::Current);
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn stamp_records_extra_file_digests_and_round_trips() {
+        let src = BUNDLED[0].skill_md();
+        let files = vec![("a.sh".to_string(), "00ff".to_string())];
+        let out = stamp_with_files(src, "1.2.3", &files);
+        let (s, written) = read_stamp(&out).unwrap();
+        assert_eq!(s.files, files);
+        assert_eq!(written, src);
+        assert_eq!(frontmatter_keys(&out).last().unwrap(), "metadata");
+    }
+
+    #[test]
+    fn the_file_list_matches_the_source_directories() {
+        // BUNDLED is explicit, never directory contents — but a file added to a
+        // bundled skill's directory and forgotten here would silently not ship.
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join(".agents/skills");
+        for skill in BUNDLED {
+            assert_eq!(skill.files[0].path, "SKILL.md", "{}", skill.name);
+            let mut on_disk: Vec<String> = std::fs::read_dir(root.join(skill.name))
+                .unwrap()
+                .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+                .collect();
+            on_disk.sort();
+            let mut listed: Vec<String> = skill.files.iter().map(|f| f.path.to_string()).collect();
+            listed.sort();
+            assert_eq!(on_disk, listed, "{}: BUNDLED file list drifted", skill.name);
+            #[cfg(unix)]
+            for f in skill.files {
+                use std::os::unix::fs::PermissionsExt;
+                let mode = std::fs::metadata(root.join(skill.name).join(f.path))
+                    .unwrap()
+                    .permissions()
+                    .mode();
+                assert_eq!(
+                    mode & 0o100 != 0,
+                    f.executable,
+                    "{}/{}: executable flag disagrees with the source file mode",
+                    skill.name,
+                    f.path
+                );
+            }
+        }
+        for g in BUNDLED.iter().filter_map(|s| s.group) {
+            assert!(GROUPS.contains(&g), "group {g:?} missing from GROUPS");
+        }
+    }
+
+    fn fake_repo(tag: &str) -> PathBuf {
+        let root = temp_base(tag);
+        std::fs::create_dir_all(root.join(".git")).unwrap();
+        std::fs::create_dir_all(root.join("sub/deeper")).unwrap();
+        root
+    }
+
+    #[test]
+    fn default_target_is_project_local_at_the_git_top_level() {
+        let root = fake_repo("tgt-project");
+        let t = resolve_target(None, false, &root.join("sub/deeper"));
+        assert_eq!(t.dir, root.join(".agents/skills"));
+        assert_eq!(t.kind, TargetKind::Project { root: root.clone() });
+        assert!(t.describe().contains("project-local"));
+        // A linked worktree has a `.git` *file*, which counts too.
+        let wt = temp_base("tgt-wt");
+        std::fs::create_dir_all(&wt).unwrap();
+        std::fs::write(wt.join(".git"), "gitdir: /elsewhere\n").unwrap();
+        assert_eq!(
+            resolve_target(None, false, &wt).dir,
+            wt.join(".agents/skills")
+        );
+        let _ = std::fs::remove_dir_all(&root);
+        let _ = std::fs::remove_dir_all(&wt);
+    }
+
+    #[test]
+    fn user_flag_targets_the_user_dir_even_inside_a_repo() {
+        let root = fake_repo("tgt-user");
+        let t = resolve_target(None, true, &root);
+        assert_eq!(t.dir, default_dir());
+        assert_eq!(t.kind, TargetKind::User);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn dir_flag_wins_over_everything() {
+        let root = fake_repo("tgt-dir");
+        for user in [false, true] {
+            let t = resolve_target(Some("/some/where"), user, &root);
+            assert_eq!(t.dir, PathBuf::from("/some/where"));
+            assert_eq!(t.kind, TargetKind::Dir);
+        }
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn outside_a_git_repo_the_default_falls_back_to_the_user_dir() {
+        let cwd = temp_base("tgt-nogit");
+        std::fs::create_dir_all(&cwd).unwrap();
+        assert!(
+            git_toplevel(&cwd).is_none(),
+            "temp dir must not be in a repo"
+        );
+        let t = resolve_target(None, false, &cwd);
+        assert_eq!(t.dir, default_dir());
+        assert_eq!(t.kind, TargetKind::UserFallback);
+        assert!(t.describe().contains("not inside a git repo"));
+        let _ = std::fs::remove_dir_all(&cwd);
+    }
+
+    #[test]
+    fn in_a_yaks_checkout_the_default_target_is_refused_and_names_the_way_out() {
+        let root = fake_repo("tgt-yaks");
+        std::fs::write(root.join("Cargo.toml"), "[package]\nname = \"yaks\"\n").unwrap();
+        let t = resolve_target(None, false, &root.join("sub"));
+        let err = install(&t.dir, false, &select(&coordination()))
+            .err()
+            .expect("must refuse")
+            .to_string();
+        assert!(err.contains("--user") && err.contains("--dir"), "{err}");
+        // ...and --force is still not the way out.
+        assert!(install(&t.dir, true, &select(&[])).is_err());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn autosync_never_touches_a_project_local_install_or_the_opt_in_group() {
+        // Auto-sync works on the one user-level directory it is handed; a stale
+        // project-local install elsewhere is left exactly as it was.
+        let project = temp_base("as-project");
+        let user = temp_base("as-user");
+        let skills = select(&coordination());
+        install(&project, false, &skills).unwrap();
+        // Make the project copy stale: an older yaks' stamp over older content.
+        let md = project.join("yaks/SKILL.md");
+        let old = format!("{}\n<!-- old -->\n", BUNDLED[0].skill_md());
+        std::fs::write(&md, stamp(&old, "0.0.0")).unwrap();
+        let before = std::fs::read_to_string(&md).unwrap();
+
+        let wrote = auto_sync_in(&user);
+        assert_eq!(wrote, ["yaks", "yaks-tracker"], "default set only");
+        assert!(
+            !user.join("yaks-working").exists(),
+            "opt-in group not synced"
+        );
+        assert_eq!(std::fs::read_to_string(&md).unwrap(), before);
+        let st = status(&project, &select(&[]));
+        assert!(
+            matches!(st[0].state, SkillState::Upgradable { .. }),
+            "status reports the project install stale instead"
+        );
+        let _ = std::fs::remove_dir_all(&project);
+        let _ = std::fs::remove_dir_all(&user);
     }
 }
 
@@ -886,13 +1504,13 @@ mod symlink_guard_tests {
         // The base itself is NOT a source tree; only the resolved entry is.
         assert!(!is_source_tree(&base), "base looks innocent");
         assert_eq!(
-            inspect(&base.join("yaks").join("SKILL.md"), BUNDLED[0].1),
+            inspect(&base.join("yaks").join("SKILL.md"), BUNDLED[0].skill_md()),
             SkillState::SourceLinked,
         );
 
         // Neither a plain install nor a forced one may write through the link.
         for force in [false, true] {
-            install(&base, force).unwrap();
+            install(&base, force, &select(&[])).unwrap();
             assert_eq!(
                 std::fs::read_to_string(&precious).unwrap(),
                 "PRECIOUS SOURCE",
@@ -902,7 +1520,7 @@ mod symlink_guard_tests {
         // Auto-sync must not either (it targets the user dir, so prove the
         // state it keys off is the protective one).
         assert!(
-            inspect(&base.join("yaks").join("SKILL.md"), BUNDLED[0].1).needs_force(),
+            inspect(&base.join("yaks").join("SKILL.md"), BUNDLED[0].skill_md()).needs_force(),
             "source-linked must never be auto-written"
         );
 

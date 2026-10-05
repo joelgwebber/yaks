@@ -1,6 +1,6 @@
 ---
 name: yaks-coordinating
-description: Coordinate several agents and a human over one yaks farm (claim, fan out, land, reconcile). Start here when you will hand yaks to other agents or land their work; it tells you which farm-mode and environment skills to load next. Repo-internal (yaks dogfooding); not shipped.
+description: Coordinate several agents and a human over one yaks farm (claim, fan out, land, reconcile). Start here when you will hand yaks to other agents or land their work; it tells you which farm-mode and environment skills to load next. Opt-in skill, installed by `yaks skills install --with coordination`.
 ---
 
 # Coordinating yaks (core)

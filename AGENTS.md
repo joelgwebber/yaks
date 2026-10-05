@@ -110,8 +110,8 @@ a follow-up:
 
 - `docs/` (`docs/cli.md`, `docs/tui.md`, `docs/README.md`) and `README.md`.
 - the bundled skills (`.agents/skills/yaks`, `.agents/skills/yaks-tracker`) and
-  the repo-internal ones beside them (`.agents/skills/yaks-working`,
-  `.agents/skills/yaks-coordinating`).
+  the opt-in `coordination` group beside them (`.agents/skills/yaks-working`,
+  `.agents/skills/yaks-coordinating*`).
 - for a CLI change: the clap `--help` text — the `///` doc comments and
   `#[arg(...)]`/`#[command(...)]` help on the command/flag in `src/main.rs`.
 - for a TUI key/behavior: the `?` help overlay (`help_content` in
@@ -123,10 +123,17 @@ a follow-up:
 **Careful with the skills source.** This repo's skills live in `.agents/skills/`
 — real files, the only copy (no `skills/` dir, no symlinks: Delta discovers
 project skills there but skips symlinked skill dirs; yaks-0576).
-`.agents/skills/{yaks,yaks-tracker}/SKILL.md` are embedded via `include_str!`,
-and the explicit `BUNDLED` list in `src/skills.rs` — not the directory contents
-— decides what is embedded and installed, so `yaks-working`, `yaks-coordinating`
-and any other project-local skill are never shipped. `~/.agents/skills/<name>`
+The skills in `BUNDLED` are embedded via `include_str!`. `BUNDLED` in
+`src/skills.rs` is the explicit list — skills **and, per skill, files** (a skill
+like `yaks-coordinating-delta` carries `land.sh`) — and not the directory
+contents; it alone decides what is embedded and installed. The default set is
+`yaks` + `yaks-tracker`; `yaks-working` and `yaks-coordinating*` ship only as
+the opt-in `coordination` group (`yaks skills install --with coordination`), and
+any other project-local skill is never shipped. A test fails if a bundled
+skill's directory holds a file the list omits. `yaks skills install` writes
+project-local (`./.agents/skills` in the git top-level) by default — in this
+checkout that *is* the source, so it refuses; use `--user` or `--dir`.
+`~/.agents/skills/<name>`
 is sometimes a symlink back at the source — so a `yaks skills install` (even
 with no `--dir`) used to write *through the link* and revert your edits to the
 binary's baked-in copy, looking exactly like an authored change in `git status`.

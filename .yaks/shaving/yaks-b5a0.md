@@ -4,7 +4,7 @@ title: 'Parallel development: finish and harden coordinator/worker skills + tool
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-05T19:57:29Z'
+updated: '2026-10-05T20:57:26Z'
 labels:
 - agent
 - skills
@@ -43,3 +43,7 @@ Spawned (base 5dd2f4d, anthropic/claude-sonnet-5-5 both): pre-1 (agent 9b42bab01
 ---
 ▸ 2026-10-05T19:57:29Z [delta-lead]
 Landed: yaks-c29a lane labels (88b1ab1), yaks-d1bd 'yaks preflight --push-main' (15c5cbc; Delta skill now points at it, 5f42ee2). Spawned unk-1 (agent 0a69b695de03476d, anthropic/claude-sonnet-5-5, base 83abad0) on yaks-1b39. Asked Joel the init/skills-install forks on yaks-814a. Not yet pushed to local main (after unk-1).
+
+---
+▸ 2026-10-05T20:57:26Z [delta-lead]
+Spawned ins-1 (agent 48d1966b1f5e4947, anthropic/claude-sonnet-5-5, base ea99697) on yaks-3859 (project-local skills install, opt-in coordination group). Joel's answers on yaks-814a (1 yes, 2 yes optional, 3 'should init/skills roll together?') are uncommitted in his checkout; reply to him in chat first. O58 records the Delta shallow-file investigation.

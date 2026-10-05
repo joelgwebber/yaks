@@ -593,23 +593,46 @@ enum DepAction {
 
 #[derive(Subcommand)]
 enum SkillsAction {
-    /// Write the bundled SKILL.md files into a skills directory
-    /// (default: ~/.agents/skills). Works without a farm.
+    /// Write the bundled agent skills (yaks, yaks-tracker; --with adds more)
+    /// into a skills directory. By default that is ./.agents/skills in the git
+    /// top-level of the current directory, so the skills travel with the
+    /// project; outside a git repo it is ~/.agents/skills. Prints the
+    /// destination it chose. Works without a farm.
     Install {
-        /// Target skills directory (e.g. ~/.claude/skills). Defaults to ~/.agents/skills.
-        #[arg(long)]
+        /// Target skills directory (e.g. ~/.claude/skills). Wins over --user
+        /// and the git-repo default.
+        #[arg(long, conflicts_with = "user")]
         dir: Option<String>,
+        /// Install into the user directory, ~/.agents/skills, even inside a git repo.
+        #[arg(long)]
+        user: bool,
+        /// Also install an opt-in skill group. `coordination` adds
+        /// yaks-coordinating (+ -team, -private, -worktrees, -delta) and
+        /// yaks-working, for running several agents over one farm.
+        #[arg(long, value_name = "GROUP", value_delimiter = ',',
+              value_parser = clap::builder::PossibleValuesParser::new(skills::GROUPS))]
+        with: Vec<String>,
         /// Overwrite skills that were edited after they were installed. (Never
         /// permits writing into yaks' own .agents/skills/ source.)
         #[arg(long)]
         force: bool,
     },
     /// Report whether each installed skill is current, stale, or locally
-    /// edited, by comparing its provenance stamp against this binary.
+    /// edited, by comparing its provenance stamp against this binary. Looks in
+    /// the same default directory as `install`.
     Status {
-        /// Skills directory to inspect. Defaults to ~/.agents/skills.
-        #[arg(long)]
+        /// Skills directory to inspect. Defaults like `install`: the git
+        /// top-level's .agents/skills, else ~/.agents/skills.
+        #[arg(long, conflicts_with = "user")]
         dir: Option<String>,
+        /// Inspect the user directory, ~/.agents/skills.
+        #[arg(long)]
+        user: bool,
+        /// Also report on an opt-in skill group even if not installed yet
+        /// (installed ones are always reported).
+        #[arg(long, value_name = "GROUP", value_delimiter = ',',
+              value_parser = clap::builder::PossibleValuesParser::new(skills::GROUPS))]
+        with: Vec<String>,
     },
 }
 
@@ -1734,7 +1757,7 @@ fn render_doctor(issues: &[Issue]) {
 /// edited by hand — which would otherwise sit stale forever with no signal.
 fn render_skill_advisory() {
     let base = skills::default_dir();
-    let stuck: Vec<_> = skills::status(&base)
+    let stuck: Vec<_> = skills::status(&base, &skills::select_for_status(&base, &[]))
         .into_iter()
         .filter(|s| s.state.has_local_edits())
         .collect();
@@ -1747,7 +1770,7 @@ fn render_skill_advisory() {
     }
     println!(
         "  These were edited after install, so yaks leaves them alone. \
-         Run `yaks skills status` to compare, or `yaks skills install --force` to replace."
+         Run `yaks skills status` to compare, or `yaks skills install --user --force` to replace."
     );
 }
 
@@ -1832,12 +1855,16 @@ fn run_init(
 
 fn run_skills(action: &SkillsAction) -> Result<()> {
     match action {
-        SkillsAction::Install { dir, force } => {
-            let base = match dir {
-                Some(d) => skills::expand_tilde(d),
-                None => skills::default_dir(),
-            };
-            let installed = skills::install(&base, *force)?;
+        SkillsAction::Install {
+            dir,
+            user,
+            with,
+            force,
+        } => {
+            let target = skills::resolve_target(dir.as_deref(), *user, &env::current_dir()?);
+            let base = target.dir.clone();
+            println!("Installing skills into {}", target.describe());
+            let installed = skills::install(&base, *force, &skills::select(with))?;
             for i in &installed {
                 if i.wrote {
                     let verb = match &i.before {
@@ -1883,17 +1910,20 @@ fn run_skills(action: &SkillsAction) -> Result<()> {
             println!(
                 "\nThe skill activates when a .yaks/ directory is present. For another agent, re-run with --dir pointing at its skills directory (e.g. --dir ~/.claude/skills)."
             );
+            if matches!(target.kind, skills::TargetKind::Project { .. }) {
+                println!(
+                    "These are files in your working tree: commit them to share them, and re-run `yaks skills install` after upgrading yaks (only ~/.agents/skills is refreshed automatically)."
+                );
+            }
             Ok(())
         }
-        SkillsAction::Status { dir } => {
-            let base = match dir {
-                Some(d) => skills::expand_tilde(d),
-                None => skills::default_dir(),
-            };
-            println!("{}", base.display());
+        SkillsAction::Status { dir, user, with } => {
+            let target = skills::resolve_target(dir.as_deref(), *user, &env::current_dir()?);
+            let base = target.dir.clone();
+            println!("{}", target.describe());
             let mut stale = 0;
             let mut blocked = 0;
-            for s in skills::status(&base) {
+            for s in skills::status(&base, &skills::select_for_status(&base, with)) {
                 let detail = match &s.state {
                     skills::SkillState::Upgradable { from } => {
                         stale += 1;
@@ -1916,10 +1946,20 @@ fn run_skills(action: &SkillsAction) -> Result<()> {
                     }
                     _ => String::new(),
                 };
-                println!("  {:<9} {}{}", s.state.word(), s.name, detail);
+                // A file other than SKILL.md being the issue: say which.
+                let file = match s.path.file_name().and_then(|f| f.to_str()) {
+                    Some(f) if f != "SKILL.md" => format!(" [{f}]"),
+                    _ => String::new(),
+                };
+                println!("  {:<9} {}{}{}", s.state.word(), s.name, file, detail);
             }
             if stale > 0 {
-                println!("\n{stale} stale; run `yaks skills install` to upgrade.");
+                let flag = match &target.kind {
+                    skills::TargetKind::User => " --user".to_string(),
+                    skills::TargetKind::Dir => format!(" --dir {}", base.display()),
+                    _ => String::new(),
+                };
+                println!("\n{stale} stale; run `yaks skills install{flag}` to upgrade.");
             }
             if blocked > 0 {
                 println!(

@@ -1,6 +1,6 @@
 ---
 name: yaks-coordinating-worktrees
-description: "Environment companion to yaks-coordinating for coordinating with plain `git worktree` checkouts (one worktree per lane): creating and removing worktrees, the file-tool pitfalls of some agent harnesses, serial arcs, a human-driven lane, crash recovery. Load after yaks-coordinating and its farm-mode skill when your workers run in `git worktree` checkouts. Repo-internal; not shipped."
+description: "Environment companion to yaks-coordinating for coordinating with plain `git worktree` checkouts (one worktree per lane): creating and removing worktrees, the file-tool pitfalls of some agent harnesses, serial arcs, a human-driven lane, crash recovery. Load after yaks-coordinating and its farm-mode skill when your workers run in `git worktree` checkouts. Opt-in skill, installed by `yaks skills install --with coordination`."
 ---
 
 # Coordinating with git worktrees

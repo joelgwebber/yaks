@@ -1,6 +1,6 @@
 ---
 name: yaks-coordinating-team
-description: "Farm-mode companion to yaks-coordinating for a TEAM farm (`.yaks/` committed to git): per-branch farms, claim commits, shorn moves riding with the code, squash landing, provenance, PR-driven integration. Load after yaks-coordinating when `git ls-files .yaks` lists files. Repo-internal; not shipped."
+description: "Farm-mode companion to yaks-coordinating for a TEAM farm (`.yaks/` committed to git): per-branch farms, claim commits, shorn moves riding with the code, squash landing, provenance, PR-driven integration. Load after yaks-coordinating when `git ls-files .yaks` lists files. Opt-in skill, installed by `yaks skills install --with coordination`."
 ---
 
 # Coordinating a team farm (`.yaks/` is committed)

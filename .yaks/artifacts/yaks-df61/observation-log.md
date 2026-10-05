@@ -927,3 +927,60 @@ running or parked and the trees were equal.
 Trial 7 scorecard: probe (f49c) 1 conflict I caused; 7149: clean landing + 1 regression found in review (strict doctor);
 e545: 3 doc-row conflicts + 1 design gap found in review; d738: clean. Four landings, three coordinator-side defects, all
 found by running the thing, none by the worker's own tests.
+
+# Trial 8: lane labels (yaks-c29a), `preflight --push-main` (yaks-d1bd), unknown ahead/behind (yaks-1b39)  (delta-lead)
+
+## O56 [ok][cli] Delta's thread sync leaves clones SHALLOW; "no merge-base" is the normal case on Delta machines  (delta-lead)
+Joel pasted `yaks lanes` from his laptop: `+374 -3` and `(vs this checkout)` on three lanes. I reproduced it exactly by
+running my build from his primary checkout: `git rev-parse --is-shallow-repository` was true, `.git/shallow` listed the
+thread's own pinned commits (dab94a1, 2c28d23), `HEAD` saw 3 commits, so git had no merge-base with a lane at 4fc959e.
+My own thread clone on the laptop was shallow the same way (12 commits visible). The timestamp of `.git/shallow`
+matched the arrival of the thread's commits, so the mirror/sync is the likely cause (not verified in Delta). Fixes by hand
+(Joel authorized touching his checkout): `git fetch --unshallow origin` in the primary, `git fetch --unshallow local` in the
+clone; both histories connect again, one boundary stays (2c28d23, a pinned unreferenced commit whose parents live only on
+the other machine). `lanes` was correct to fall back; only the counts misled, and the lane directories Delta had removed in
+the meantime correctly vanished. yaks-1b39 turns the counts into `?` and prints one `git fetch --unshallow` hint when the
+repo is shallow.
+
+## O57 [ok][skill][cli] Trial 8: three small workers, clean landings, one check that is deliberately not default  (delta-lead)
+lbl-1 (c29a, 5d69ae0): landed clean (computed tree equal, gate 390 + 8 + 28). The worker rejected both in-progress rules I
+proposed and chose a third, with the reason on the yak: a worker forks AFTER the coordinator's claim, so "the lane moved it
+to shaving" would leave every real worker lane unlabeled. A brief that offers two rules and lets the worker test them
+against the real layout is worth keeping. pre-1 (d1bd, 6703870): landed clean (399 + 8 + 28). It put the check behind
+`--push-main` rather than the default scope (a worker cannot fix the human's checkout, and O45 showed what noisy defaults
+cost); I agree and ran it against the real local (ok), a managed-style bare repo and a dirty checkout on main (both fail
+with the fallback command). Gap it reported: a clean checkout on main without `receive.denyCurrentBranch=updateInstead`
+would also refuse the push; not checked. unk-1 (1b39, e63806a): landed clean (402 + 8 + 28); tests use a real depth-1 clone.
+First push that used the new check (`preflight --push-main` ok), two squash commits at tested tips, final tree equal to the
+tested tip, `local main` 5a07d6a, archive `delta/trial8`, clone re-synced after verifying equal trees. Titles of the spawns
+began with the worker names (Delta skill rule from Joel's question about delta:<title>).
+Process notes: terminal output was silently dropped three times when a command chained several outputs (one landing looked
+done and was not: HEAD unchanged, MERGE_HEAD still set); re-running the step alone and checking `git log`/`MERGE_HEAD`
+caught it. Keep verifying state instead of trusting a missing line.
+
+## O58 [open][skill] How Delta uses shallow files: evidence from its log and binary (Joel asked to understand it)  (delta-lead, 2026-10-05)
+Sources (read-only; no Delta source code): `~/Library/Application Support/delta/delta.log`, `strings` on `Delta.app/Contents/MacOS/delta-app`,
+the git dirs of the thread clones and the primary checkout. Facts, then inference.
+Facts. (a) The app binary contains code to copy, write and replace a git shallow file ("failed to copy shallow file from",
+"failed to write git shallow file", "failed to replace git shallow file", "shallow-file:base-backed"), uses `GIT_SHALLOW_FILE`,
+`--update-shallow`, `git rev-parse --is-shallow-repository`, and `objects/info/alternates`. (b) Every Delta clone's git dir holds
+`delta/copy-baseline`. (c) The log, on this thread's mount: `worktree_mount: ... steady-state error: Repository(git merge-base
+without shallow boundaries failed: error: Could not read 46f1abc...)` at 20:57Z and again for d51a3cb at 21:05Z on Oct 4, i.e. the
+moments commits from the other machine / worker arrived; Delta runs its own merge-base IGNORING shallow boundaries and logs when an
+object is missing. (d) `thread::worktrees` logs "failed to resolve worktree <uuid>: resolution did not finish within 15s; its history
+may be unreachable while offline" and "worktree preparation started ... repository=local:<uuid>"; `deltadb::worktree` logs "mount
+remote refresh ... remote=origin tracking_refs=N". A thread's worktree has an id and a HISTORY held in Delta's own store (deltadb,
+`[share-sync] full-sync HistoryId(...)` over a websocket) and is resolved per machine; a "mount" is its checkout. (e) After my
+`git fetch --unshallow` of the primary (15:47 local) and the clone (15:55), `.git/shallow` in each still lists exactly one commit
+(2c28d23, my pre-squash merge commit, whose parents exist only on the Linux machine) and the commits made on the laptop since
+then (a1ee94f, 5a07d6a...) added no boundary.
+Inference (not verified). Shallow boundaries are DELIBERATE: Delta imports thread commits into a mount/primary without their
+ancestors and writes them as boundaries so git never needs the missing parents; cross-machine arrival (history from the share-sync)
+is what produced ours (dab94a1, 2c28d23 are exactly the commits that came from the Linux machine); locally created commits did not.
+So `git fetch --unshallow` is a harmless workaround as far as we saw but Delta may re-add boundaries the next time a thread comes
+in from another machine. Untested: whether Delta rewrites the file on the next cross-machine import; the next machine switch will
+show it. Questions only Delta's authors can answer: which operation writes a boundary, and whether unshallow is supported.
+Consequences for yaks: (1) `yaks lanes` showing `?` and one hint is right. (2) land.sh decides "base is an ancestor of HEAD" with
+`git merge-base --is-ancestor` and computes the merge with `git merge-tree`; in a shallow repo both can be wrong in either
+direction (a missing parent looks like "not an ancestor"). It worked every time here because the base was always a recent commit
+of ours, but the script should say when the repo is shallow (filed as yaks-a398).

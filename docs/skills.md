@@ -4,18 +4,36 @@ Skills are prose guidance that rides *on top of* the tools — the least directi
 that measurably changes an agent's behavior. yaks keeps the tools unopinionated
 and puts methodology in skills, so different working styles fit the same core.
 
-Two skills ship in the binary and install via `yaks skills install` (into
-`~/.agents/skills` by default); two more are experimental and repo-internal
-(not shipped).
+Two skills ship by default and install via `yaks skills install`; the workflow
+skills for running several agents over one farm ship as the opt-in
+`coordination` group (`yaks skills install --with coordination`).
 
-This repo's own skills live in `.agents/skills/<name>/SKILL.md` — real files,
+## Where skills install
+
+| Flags | Destination |
+|---|---|
+| `--dir <path>` | exactly that directory (wins over everything) |
+| `--user` | `~/.agents/skills` |
+| *(none)*, inside a git repo | `./.agents/skills` in the **git top-level** of the cwd — project-local, so agents working in the project find the skills and you can commit them |
+| *(none)*, outside a git repo | `~/.agents/skills` (and it says so) |
+
+`install` prints the destination it chose. In a yaks checkout the project-local
+default *is* the skills source, so the source guard (below) refuses and names
+`--user` / `--dir` as the way out. `yaks skills status` uses the same default
+directory and flags.
+
+This repo's own skills live in `.agents/skills/<name>/` — real files,
 the single source of truth (no `skills/` directory, no symlinks; agent harnesses
 such as Delta discover project skills there but skip symlinked skill dirs). What
 ships is decided by the **explicit `BUNDLED` list** in `src/skills.rs`, *not* by
-what sits in that directory: only `yaks` and `yaks-tracker` are embedded in the
-binary and installed. `yaks-coordinating`, `yaks-working`, and any other
-project-local skill placed in `.agents/skills/` are never embedded or installed
-unless someone adds them to that list on purpose.
+what sits in that directory. The list names each skill **and its files** (a skill
+is no longer just a `SKILL.md`: `yaks-coordinating-delta` carries the executable
+`land.sh`, installed with mode 0755), and a test fails if a bundled skill's
+directory holds a file the list omits. The default set is `yaks` and
+`yaks-tracker`; the `coordination` group adds `yaks-coordinating`,
+`yaks-coordinating-team`, `-private`, `-worktrees`, `-delta` and `yaks-working`.
+Any other project-local skill placed in `.agents/skills/` is never embedded or
+installed unless someone adds it to that list on purpose.
 
 ## Installing, updating, and staying honest
 
@@ -27,7 +45,14 @@ always carries the skill matching its version. Installed copies get a
 metadata:
   yaks-version: "0.0.9"
   yaks-digest: "a64a55994a8ee572"
+  yaks-files: "land.sh=0f3c…"   # only for a skill that ships other files
 ```
+
+The stamp lives in `SKILL.md`. A skill's other files (a script) carry no stamp
+of their own; the stamp records their digests as written, so an untouched script
+from an older yaks upgrades while one you edited is `modified` and kept. A skill
+is installed, upgraded and protected as a unit, and its verdict is its most
+demanding file's (`status` names the file when it isn't `SKILL.md`).
 
 That stamp is what makes an installed skill *identifiable* rather than an
 anonymous copy, so yaks can tell "the tool moved on" from "a human edited
@@ -48,14 +73,17 @@ agent running against a stale skill and nobody remembering to re-run the
 installer, so a normal invocation installs what's absent and upgrades what's
 cleanly `stale`. It deliberately never touches `modified`, `unmanaged`, `held`,
 or `source`, only ever writes `~/.agents/skills` (never a project-local
-`.agents/skills`, which would be writing into your repo), and writes atomically
-so parallel agents can't tear a file. Set `YAKS_SKILLS_AUTOSYNC=0` to disable it
-for CI or sandboxes. `yaks doctor` reports anything left needing a decision.
+`.agents/skills`: those are files in your working tree, so `yaks skills status`
+shows them `stale` and you re-run `yaks skills install`), only the default set
+(never the `coordination` group), and writes atomically so parallel agents can't
+tear a file. Set `YAKS_SKILLS_AUTOSYNC=0` to disable it for CI or sandboxes.
+`yaks doctor` reports anything left needing a decision.
 
 Because auto-upgrade keys on the **version**, a skills-only edit doesn't reach
 users until the next release — two binaries at the same version never fight over
 an install (that's the `held` rule). When iterating locally, use
-`yaks skills install --force`.
+`yaks skills install --force` (in a git repo add `--user` to target
+`~/.agents/skills`).
 
 > **If you develop yaks:** this repo's `.agents/skills/` *is* the source of the
 > skills (and what agents working in the repo load). Symlinking
@@ -66,12 +94,12 @@ an install (that's the `held` rule). When iterating locally, use
 > older `yaks` on your `PATH` would silently revert your edits to its baked-in
 > copy, which looks exactly like an authored change in `git status`.
 
-| Skill | Ships? | Use it when… |
+| Skill | Installed by | Use it when… |
 |---|---|---|
-| **`yaks`** | ✓ | Managing tasks in a `.yaks/` farm — the commands, the workflow, solo vs team/private modes. |
-| **`yaks-tracker`** | ✓ | Relating yaks to external issue trackers (Jira/Linear/GitHub) as a one-way roll-up projection. |
-| **`yaks-working`** | dev | Taking one yak from hairy to shorn with a legible trail. |
-| **`yaks-coordinating`** | dev | Coordinating a shared farm across parallel agents and humans. |
+| **`yaks`** | default | Managing tasks in a `.yaks/` farm — the commands, the workflow, solo vs team/private modes. |
+| **`yaks-tracker`** | default | Relating yaks to external issue trackers (Jira/Linear/GitHub) as a one-way roll-up projection. |
+| **`yaks-working`** | `--with coordination` | Taking one yak from hairy to shorn with a legible trail. |
+| **`yaks-coordinating`** (+ `-team`, `-private`, `-worktrees`, `-delta`) | `--with coordination` | Coordinating a shared farm across parallel agents and humans. |
 
 ## The design test (what is a tool vs a skill)
 

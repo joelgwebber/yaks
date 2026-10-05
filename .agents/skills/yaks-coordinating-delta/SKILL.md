@@ -1,6 +1,6 @@
 ---
 name: yaks-coordinating-delta
-description: "Environment companion to yaks-coordinating for coordinating in Delta (parent thread as coordinator, workers via spawn_subagent): the worker brief template, what a worker sees, how its work lands and how to check it, asking and resuming a worker, landing in the human's checkout. Load after yaks-coordinating and its farm-mode skill when you can call spawn_subagent. Repo-internal; not shipped."
+description: "Environment companion to yaks-coordinating for coordinating in Delta (parent thread as coordinator, workers via spawn_subagent): the worker brief template, what a worker sees, how its work lands and how to check it, asking and resuming a worker, landing in the human's checkout. Load after yaks-coordinating and its farm-mode skill when you can call spawn_subagent. Opt-in skill, installed by `yaks skills install --with coordination`."
 ---
 
 # Coordinating in Delta

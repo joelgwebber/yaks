@@ -170,11 +170,18 @@ shells out to the `yaks` CLI (or `npx`), so there's nothing to run as a plugin.
 Install the skill straight from the binary — no clone required:
 
 ```sh
-yaks skills install                          # -> ~/.agents/skills  (yaks + yaks-tracker)
+yaks skills install                          # -> ./.agents/skills in the git repo you're in (yaks + yaks-tracker)
+yaks skills install --with coordination      # + the multi-agent skills (yaks-coordinating*, yaks-working)
+yaks skills install --user                   # -> ~/.agents/skills (also the default outside a git repo)
 yaks skills install --dir ~/.claude/skills   # any agent's skills dir; --force to overwrite
+yaks skills status                           # current / stale / edited, same directory rules
 ```
 
-`~/.agents/skills` is the default because it's the **cross-client convention**:
+Inside a git repo the default is project-local (`.agents/skills` in the repo's
+top-level), so agents working in the project find the skills and you can commit
+them; it prints where it wrote. Project-local installs are never updated behind
+your back — `yaks skills status` shows them `stale`, and you re-run the install.
+`--user` / outside a repo, `~/.agents/skills` is the **cross-client convention**:
 the [Agent Skills](https://agentskills.io) client-implementation guide tells
 agents to scan it in addition to their own native directory, so one install
 reaches every compliant client. (The spec defines the `SKILL.md` format, not
