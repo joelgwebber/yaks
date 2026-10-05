@@ -115,12 +115,16 @@ pub struct Lane {
     pub branch: Option<String>,
     /// Abbreviated HEAD sha; `None` when the lane's git state cannot be read.
     pub head: Option<String>,
-    /// Commits the lane's HEAD has that this checkout's HEAD lacks (0 when the
-    /// object is unknown here).
-    pub ahead: usize,
-    /// Commits this checkout's HEAD has that the lane's HEAD lacks (0 when the
-    /// object is unknown here).
-    pub behind: usize,
+    /// Commits the lane's HEAD has that this checkout's HEAD lacks. `None`
+    /// (unknown) when there is no merge-base between the two HEADs here:
+    /// shallow history, unrelated histories, or a lane commit we do not have.
+    pub ahead: Option<usize>,
+    /// Commits this checkout's HEAD has that the lane's HEAD lacks; `None`
+    /// exactly when `ahead` is.
+    pub behind: Option<usize>,
+    /// This checkout's repository is shallow (the same for every lane); only
+    /// used by [`render`] to explain unknown `ahead`/`behind`.
+    pub shallow_here: bool,
     /// Changed + untracked file count (`git status --porcelain`).
     pub dirty: Option<usize>,
     /// Newest mtime anywhere under the lane's farm: a liveness hint (finished
@@ -169,9 +173,14 @@ pub fn discover(cwd: &Path, farm_root: &Path) -> Result<Vec<Lane>> {
 
     let ours = store::load(farm_root, &EVERY).unwrap_or_default();
     let our_farm = canonical(farm_root);
+    let shallow = git(&top, &["rev-parse", "--is-shallow-repository"]).is_ok_and(|s| s == "true");
     Ok(found
         .into_iter()
-        .map(|(path, kind)| inspect(&top, &path, kind, &our_farm, &ours))
+        .map(|(path, kind)| {
+            let mut lane = inspect(&top, &path, kind, &our_farm, &ours);
+            lane.shallow_here = shallow;
+            lane
+        })
         .collect())
 }
 
@@ -188,8 +197,9 @@ fn inspect(
         kind,
         branch: None,
         head: None,
-        ahead: 0,
-        behind: 0,
+        ahead: None,
+        behind: None,
+        shallow_here: false,
         dirty: None,
         farm_activity: None,
         farm: LaneFarm::None,
@@ -198,7 +208,7 @@ fn inspect(
         in_progress: Vec::new(),
         error: None,
     };
-    let mut full_head = None;
+    let mut merge_base = None;
     match git_state(top, path) {
         Ok(g) => {
             lane.branch = g.branch;
@@ -206,7 +216,7 @@ fn inspect(
             lane.ahead = g.ahead;
             lane.behind = g.behind;
             lane.dirty = Some(g.dirty);
-            full_head = Some(g.full);
+            merge_base = g.merge_base;
         }
         Err(e) => lane.error = Some(format!("{e:#}")),
     }
@@ -224,9 +234,9 @@ fn inspect(
                     Ok(theirs) => {
                         // What the lane changed is relative to the merge-base,
                         // not to our (possibly newer) checkout.
-                        let base = full_head
+                        let base = merge_base
                             .as_deref()
-                            .and_then(|h| base_farm(top, h, path, &root));
+                            .and_then(|b| base_farm(top, b, path, &root));
                         match base {
                             Some((sha, base_tasks)) => {
                                 lane.farm_base = Some(sha);
@@ -247,9 +257,11 @@ fn inspect(
 struct GitState {
     branch: Option<String>,
     head: String,
-    full: String,
-    ahead: usize,
-    behind: usize,
+    /// `git merge-base HEAD <lane HEAD>` in OUR repo; `None` when there is
+    /// none (then `ahead`/`behind` are unknown too).
+    merge_base: Option<String>,
+    ahead: Option<usize>,
+    behind: Option<usize>,
     dirty: usize,
 }
 
@@ -260,12 +272,18 @@ fn git_state(top: &Path, lane: &Path) -> Result<GitState> {
     let branch = git(lane, &["symbolic-ref", "--short", "-q", "HEAD"])
         .ok()
         .filter(|b| !b.is_empty());
-    // Counted in OUR repo: a lane commit we do not have is unknown here => 0.
-    let count = |range: String| {
+    // Counted in OUR repo, and only when the two HEADs have a merge-base here.
+    // Without one (shallow history, unrelated histories, a lane commit we do
+    // not have) rev-list would count a whole history, which says nothing.
+    let merge_base = git(top, &["merge-base", "HEAD", &full])
+        .ok()
+        .filter(|b| !b.is_empty());
+    let count = |range: String| -> Option<usize> {
+        merge_base.as_ref()?;
         git(top, &["rev-list", "--count", &range])
+            .ok()?
+            .parse()
             .ok()
-            .and_then(|n| n.parse().ok())
-            .unwrap_or(0)
     };
     let ahead = count(format!("HEAD..{full}"));
     let behind = count(format!("{full}..HEAD"));
@@ -275,7 +293,7 @@ fn git_state(top: &Path, lane: &Path) -> Result<GitState> {
     Ok(GitState {
         branch,
         head,
-        full,
+        merge_base,
         ahead,
         behind,
         dirty,
@@ -304,10 +322,11 @@ impl Drop for TempDir {
     }
 }
 
-/// The lane's farm as of its merge-base with this checkout: `(short sha,
-/// tasks)`. `None` when there is nothing trustworthy to compare against (no
-/// common history, the lane's commit unknown here, a farm outside the lane's
-/// checkout, or no farm committed at the base); the caller then falls back to
+/// The lane's farm as of `base`, its merge-base with this checkout (see
+/// [`GitState`]): `(short sha, tasks)`. `None` when there is nothing
+/// trustworthy to compare against (a farm outside the lane's checkout, or no
+/// farm committed at the base); the caller, which has no `base` at all when
+/// there is no common history or the lane's commit is unknown here, then falls back to
 /// comparing with this checkout's working tree.
 ///
 /// Only our own repo is read (the base is an ancestor of our HEAD, and Delta
@@ -315,13 +334,12 @@ impl Drop for TempDir {
 /// files are materialized into a temp dir of ours and loaded like any farm.
 fn base_farm(
     top: &Path,
-    lane_head: &str,
+    base: &str,
     lane: &Path,
     lane_farm: &Path,
 ) -> Option<(String, Vec<crate::model::Task>)> {
     let rel = lane_farm.strip_prefix(lane).ok()?;
     let rel = rel.to_str()?.replace('\\', "/");
-    let base = git(top, &["merge-base", "HEAD", lane_head]).ok()?;
     let short = git(top, &["rev-parse", "--short", &base]).ok()?;
 
     // Status-dir task files only: `<rel>/<status>/<id>.md`.
@@ -688,6 +706,7 @@ pub fn to_json(lanes: &[Lane]) -> Value {
                     "kind": l.kind.as_str(),
                     "branch": l.branch,
                     "head": l.head,
+                    // `null` = unknown (no merge-base here).
                     "ahead": l.ahead,
                     "behind": l.behind,
                     "dirty": l.dirty,
@@ -732,7 +751,8 @@ pub fn render(lanes: &[Lane]) -> String {
                 },
                 l.head.clone().unwrap_or_else(|| "-".into()),
                 if l.head.is_some() {
-                    format!("+{} -{}", l.ahead, l.behind)
+                    let n = |c: Option<usize>| c.map_or_else(|| "?".into(), |c| c.to_string());
+                    format!("+{} -{}", n(l.ahead), n(l.behind))
                 } else {
                     "-".into()
                 },
@@ -826,6 +846,16 @@ pub fn render(lanes: &[Lane]) -> String {
                 }
             }
         }
+    }
+    // One line for the whole table, and only when it explains a `?`.
+    if lanes
+        .iter()
+        .any(|l| l.shallow_here && l.head.is_some() && l.ahead.is_none())
+    {
+        out.push_str(
+            "note: history is shallow here, so some lanes cannot be compared exactly; \
+             git fetch --unshallow fixes it\n",
+        );
     }
     out
 }
@@ -967,7 +997,7 @@ mod tests {
             l.head.as_deref(),
             Some(&*sh(&wt, &["rev-parse", "--short", "HEAD"]))
         );
-        assert_eq!((l.ahead, l.behind), (1, 0));
+        assert_eq!((l.ahead, l.behind), (Some(1), Some(0)));
         assert!(l.farm_base.is_some());
         // untracked.txt plus the yak edits (new files, a rename, a modified file).
         assert!(l.dirty.unwrap() >= 5, "dirty = {:?}", l.dirty);
@@ -1064,7 +1094,7 @@ mod tests {
 
         let lanes = lanes_of(&t);
         let l = &lanes[0];
-        assert_eq!((l.ahead, l.behind), (0, 2));
+        assert_eq!((l.ahead, l.behind), (Some(0), Some(2)));
         assert!(l.farm_base.is_some());
         assert_eq!(l.farm, LaneFarm::Own(FarmDelta::default()));
         let text = render(&lanes);
@@ -1105,7 +1135,7 @@ mod tests {
 
         let lanes = lanes_of(&t);
         let l = &lanes[0];
-        assert_eq!((l.ahead, l.behind), (1, 2));
+        assert_eq!((l.ahead, l.behind), (Some(1), Some(2)));
         let LaneFarm::Own(d) = &l.farm else {
             panic!("expected own farm, got {:?}", l.farm)
         };
@@ -1160,6 +1190,92 @@ mod tests {
         assert!(text.contains("(vs this checkout)"), "{text}");
         assert_eq!(to_json(&lanes)[0]["farm"]["vs"], "checkout");
         assert_eq!(to_json(&lanes)[0]["farm"]["base"], Value::Null);
+        // No merge-base: the counts are unknown, not the size of a history.
+        assert_eq!((l.ahead, l.behind), (None, None));
+        assert!(text.contains("+? -?"), "{text}");
+        assert_eq!(to_json(&lanes)[0]["ahead"], Value::Null);
+        assert_eq!(to_json(&lanes)[0]["behind"], Value::Null);
+        // Not a shallow repository, so there is nothing to unshallow.
+        assert!(!text.contains("history is shallow"), "{text}");
+    }
+
+    const SHALLOW_NOTE: &str = "note: history is shallow here, so some lanes cannot be compared exactly; git fetch --unshallow fixes it\n";
+
+    /// A depth-1 clone of a three-commit repo as the primary, plus a Delta lane
+    /// (a full clone of the same origin) checked out at `lane_at`. Returns
+    /// `(primary, lane)`.
+    fn shallow_primary_with_lane(tag: &str, lane_at: &str) -> (PathBuf, PathBuf) {
+        let b = base(tag);
+        let origin = b.join("origin");
+        repo_with_farm(&origin);
+        commit_move(&origin, "yaks-cccc", "shorn", "hairy");
+        commit_move(&origin, "yaks-aaaa", "hairy", "shorn");
+        let origin_url = format!("file://{}", origin.display());
+        let t = b.join("repo");
+        sh(
+            &b,
+            &[
+                "clone",
+                "-q",
+                "--depth",
+                "1",
+                &origin_url,
+                t.to_str().unwrap(),
+            ],
+        );
+        assert_eq!(sh(&t, &["rev-parse", "--is-shallow-repository"]), "true");
+        let lane = t.join(".delta/worktrees/xyz/repo");
+        fs::create_dir_all(lane.parent().unwrap()).unwrap();
+        sh(&b, &["clone", "-q", &origin_url, lane.to_str().unwrap()]);
+        sh(&lane, &["checkout", "-q", lane_at]);
+        (t, lane)
+    }
+
+    #[test]
+    fn a_shallow_primary_cannot_place_a_lane_older_than_its_boundary() {
+        let (t, lane) = shallow_primary_with_lane("shallow", "HEAD~2");
+        let lanes = lanes_of(&t);
+        assert_eq!(paths(&lanes), vec![lane]);
+        let l = &lanes[0];
+        assert_eq!((l.ahead, l.behind), (None, None));
+        let text = render(&lanes);
+        assert!(text.contains("+? -?"), "{text}");
+        // Said once, at the end, and the farm still falls back.
+        assert!(text.ends_with(SHALLOW_NOTE), "{text}");
+        assert_eq!(text.matches("history is shallow").count(), 1, "{text}");
+        assert!(text.contains("(vs this checkout)"), "{text}");
+        // JSON keeps its shape (a top-level array of lanes) and says null.
+        let j = to_json(&lanes);
+        assert_eq!(j.as_array().unwrap().len(), 1);
+        assert_eq!(j[0]["ahead"], Value::Null);
+        assert_eq!(j[0]["behind"], Value::Null);
+    }
+
+    #[test]
+    fn the_same_repo_unshallowed_shows_numbers_and_no_note() {
+        let (t, _lane) = shallow_primary_with_lane("unshallowed", "HEAD~2");
+        // Our own temp clone, so fetching is fine here.
+        sh(&t, &["fetch", "-q", "--unshallow"]);
+        let lanes = lanes_of(&t);
+        assert_eq!((lanes[0].ahead, lanes[0].behind), (Some(0), Some(2)));
+        let text = render(&lanes);
+        assert!(text.contains("+0 -2"), "{text}");
+        assert!(
+            !text.contains("history is shallow") && !text.contains('?'),
+            "{text}"
+        );
+        assert!(lanes[0].farm_base.is_some());
+    }
+
+    #[test]
+    fn a_shallow_primary_is_silent_when_every_lane_is_comparable() {
+        // The lane sits on the boundary commit itself: merge-base exists.
+        let (t, _lane) = shallow_primary_with_lane("shallow-ok", "HEAD");
+        let lanes = lanes_of(&t);
+        assert_eq!((lanes[0].ahead, lanes[0].behind), (Some(0), Some(0)));
+        let text = render(&lanes);
+        assert!(text.contains("+0 -0"), "{text}");
+        assert!(!text.contains("history is shallow"), "{text}");
     }
 
     /// Give `repo` (a checkout dir) an `objects/info/alternates` naming `store`.

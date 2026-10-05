@@ -231,7 +231,9 @@ enum Command {
     /// List the other checkouts of this repo (git worktrees and Delta clones)
     /// and what each one's farm CHANGED since it forked from this checkout
     /// (merge-base): yaks only there, yaks in another status, new notes,
-    /// `needs:` set; plus how far ahead/behind its HEAD is. A lane that is
+    /// `needs:` set; plus how far ahead/behind its HEAD is (`+? -?`, JSON
+    /// null, when there is no merge-base here, e.g. shallow history; the
+    /// table then says once to `git fetch --unshallow`). A lane that is
     /// merely behind shows no changes. Each lane with entries of its own is
     /// labeled under its row: `who:` (the distinct actors on those new notes)
     /// and `shaving:` (yaks in shaving there that it wrote to); JSON `who`
