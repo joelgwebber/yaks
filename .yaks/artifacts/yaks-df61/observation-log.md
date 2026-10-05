@@ -1004,3 +1004,31 @@ rejected) for anything a reviewer could argue about, with the next skills pass a
 Coordinator-side: the ini-1 report named stale prose in yaks-coordinating-private (fixed, 3715922). Pushed as two squash commits
 on Joel's f441b3b (`local main` 4bdf6db, archive `delta/trial9`), preflight --push-main ok first. Open: yaks-36b6 (auto-update of
 project-local skills; lean: notify) is Joel's call.
+
+# Trial 10: stdin/file input (yaks-c53a), the stale-skills notice (yaks-5c83), a skills pass with a cold-read gate  (delta-lead)
+
+## O60 [ok][skill][cli] Two workers landed clean; the cold-read gate found three real gaps and one wrong suggestion  (delta-lead)
+inp-1 (c53a, 5e5a1e9) and ntf-1 (5c83, b750092) landed by `land.sh` (base an ancestor, computed tree equal), gates 417 + 8 + 11
++ 28 + 19 + 3 and 424 + ... + 3 + 3. Both worker briefs required `Decision:` notes with the rejected alternatives; both
+delivered (seven and eight), and each named its consequence (ntf-1: notice only for strictly newer, an unwritable marker means no
+notice, `--json` detected anywhere in argv; inp-1: stdin on a TTY is refused). My own checks: a markdown heredoc with backticks,
+quotes, `$` and a fence through create, update, ask and answer came back byte-for-byte; a current install is silent, writes no
+marker and leaves the tree clean (the false-positive check). Notes the workers made BEFORE the new flag worked were one-liners
+(inp-1 said so itself): the guidance only helps once the tool does.
+Delta's applied state again reverted a section I had COMMITTED in the working tree while ntf-1 was in flight (my markdown
+guidance vanished from `.agents/skills/yaks/SKILL.md` on disk); a by-SHA landing restored it. Same family as O31/O46: never
+trust the tree during a landing, and commit before spawning so the by-SHA merge has something to keep.
+Cold-read gate (first real use of the rule): cold-read-1, a Haiku scout reading only the skill files, loaded all skills and
+answered lanes, private farm, landing, the push check, the spawn title and the yakherd correctly. It missed the styled-markdown
+constructs (deep in the long `yaks` skill, which workers do not read; the facts now also sit in the short `yaks-working`), the
+`Decision:`-vs-`ask` line (core §8 has it, `yaks-working` did not), and what "the model" to record means. cold-read-2 re-ran
+exactly those and got all three right. One of its suggested fixes was wrong (escaping backticks inside a quoted heredoc would put
+backslashes in the note): a weak reader is good at finding gaps and not to be trusted on the cure. The reusable brief is attached
+to yaks-5c9f and the rule is in `.agents/skills/README.md`.
+My own defect: the land.sh shallow note (yaks-a398) fired on any shallow repo; in this clone one leftover boundary (a pinned
+commit) made it fire on every landing. Fixed to fire only when a boundary commit is reachable from HEAD or the worker commit
+(selftest scenario 7). Pattern, again: a warning that is true but irrelevant trains people to ignore it; test it on the real
+machine before shipping.
+Also this round: yaks-75cc and yaks-0a87 shorn (already covered by shipped skill text and tools), thoughts on the farm vs git commits
+on yaks-5f12, analysis of c061 vs f313 on f313 (background jobs do not survive a Delta terminal call, tested), yaks-7acf (the yakherd)
+shorn, yaks-2c22 asked (where the brief template lives).
