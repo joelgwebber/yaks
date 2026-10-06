@@ -1,0 +1,244 @@
+KIND   BRANCH  HEAD     +AHEAD -BEHIND  DIRTY  FARM ACTIVE           PATH
+delta  main    db7cc43  +27 -8          3      2026-10-06T19:52:06Z  /Users/joel/src/yaks/.delta/worktrees/3kkcfcww892t/yaks
+  who: delta-lead, inp-1, ntf-1, Joel Webber, agt-1, brf-2 · shaving: yaks-2c22, yaks-b5a0
+  farm: 1 new, 8 moved, 52 new notes
+    + yaks-5c83
+    yaks-0a87 hairy -> shorn
+    yaks-2c22 hairy -> shaving
+    yaks-5c9f shaving -> shorn
+    yaks-75cc hairy -> shorn
+    yaks-7acf hairy -> shorn
+    yaks-a398 hairy -> shorn
+    yaks-c061 hairy -> shorn
+    yaks-c53a hairy -> shorn
+    yaks-0a87 +2 notes
+    yaks-2c22 +6 notes
+    yaks-5c9f +2 notes
+    yaks-5f12 +2 notes
+    yaks-75cc +2 notes
+    yaks-7acf +4 notes
+    yaks-a398 +4 notes
+    yaks-b5a0 +3 notes
+    yaks-c061 +14 notes
+    yaks-c53a +12 notes
+    yaks-f313 +1 notes
+delta  main    bf0a090  +23 -8          0      2026-10-06T04:08:28Z  /Users/joel/src/yaks/.delta/worktrees/486hnt20begb/yaks
+  who: delta-lead, inp-1, ntf-1, Joel Webber, agt-1 · shaving: yaks-2c22, yaks-b5a0
+  farm: 1 new, 8 moved, 48 new notes
+    + yaks-5c83
+    yaks-0a87 hairy -> shorn
+    yaks-2c22 hairy -> shaving
+    yaks-5c9f shaving -> shorn
+    yaks-75cc hairy -> shorn
+    yaks-7acf hairy -> shorn
+    yaks-a398 hairy -> shorn
+    yaks-c061 hairy -> shorn
+    yaks-c53a hairy -> shorn
+    yaks-0a87 +2 notes
+    yaks-2c22 +5 notes
+    yaks-5c9f +2 notes
+    yaks-5f12 +1 notes
+    yaks-75cc +2 notes
+    yaks-7acf +4 notes
+    yaks-a398 +4 notes
+    yaks-b5a0 +1 notes
+    yaks-c061 +14 notes
+    yaks-c53a +12 notes
+    yaks-f313 +1 notes
+delta  main    6703870  +4 -14          0      2026-10-05T19:54:10Z  /Users/joel/src/yaks/.delta/worktrees/8ek2jykcm7ke/yaks
+  who: delta-lead, pre-1 · shaving: yaks-c29a
+  farm: 3 new, 1 moved, 7 new notes
+    + yaks-1b39
+    + yaks-7204
+    + yaks-c29a
+    yaks-d1bd hairy -> shorn
+    yaks-38dc +1 notes
+    yaks-d1bd +6 notes
+delta  main    5e5a1e9  +3 -9           0      2026-10-05T22:44:20Z  /Users/joel/src/yaks/.delta/worktrees/8jspjv836gbr/yaks
+  who: delta-lead, inp-1 · shaving: yaks-5c83
+  farm: 1 new, 1 moved, 12 new notes
+    + yaks-5c83
+    yaks-c53a hairy -> shorn
+    yaks-c53a +12 notes
+delta  main    0a5e6a4  +18 -9          0      2026-10-06T03:33:56Z  /Users/joel/src/yaks/.delta/worktrees/b9cr48skdbst/yaks
+  who: delta-lead, inp-1, ntf-1 · shaving: yaks-b5a0
+  farm: 1 new, 6 moved, 30 new notes, 1 needs
+    + yaks-5c83
+    yaks-0a87 hairy -> shorn
+    yaks-5c9f shaving -> shorn
+    yaks-75cc hairy -> shorn
+    yaks-7acf hairy -> shorn
+    yaks-a398 hairy -> shorn
+    yaks-c53a hairy -> shorn
+    yaks-0a87 +2 notes
+    yaks-2c22 +1 notes
+    yaks-5c9f +2 notes
+    yaks-5f12 +1 notes
+    yaks-75cc +2 notes
+    yaks-7acf +4 notes
+    yaks-a398 +4 notes
+    yaks-b5a0 +1 notes
+    yaks-c53a +12 notes
+    yaks-f313 +1 notes
+    yaks-2c22 needs: human
+delta  main    b750092  +3 -9           0      2026-10-05T22:49:12Z  /Users/joel/src/yaks/.delta/worktrees/ccae3bj40fr0/yaks
+  who: delta-lead, ntf-1 · shaving: yaks-c53a
+  farm: 1 new, 1 moved, 2 new notes
+    + yaks-5c83
+    yaks-c53a hairy -> shaving
+    yaks-c53a +2 notes
+delta  main    b9e7b37  +44 -8          1      2026-10-06T21:37:02Z  /Users/joel/src/yaks/.delta/worktrees/f2hdbpew7kgx/yaks
+  who: delta-lead, inp-1, ntf-1, Joel Webber, agt-1, brf-2, shd-1, bas-1 · shaving: yaks-37fa, yaks-b5a0
+  farm: 5 new, 8 moved, 61 new notes
+    + yaks-37fa
+    + yaks-5c83
+    + yaks-79a5
+    + yaks-dfca
+    + yaks-ee0a
+    yaks-0a87 hairy -> shorn
+    yaks-2c22 hairy -> shorn
+    yaks-5c9f shaving -> shorn
+    yaks-75cc hairy -> shorn
+    yaks-7acf hairy -> shorn
+    yaks-a398 hairy -> shorn
+    yaks-c061 hairy -> shorn
+    yaks-c53a hairy -> shorn
+    yaks-0a87 +2 notes
+    yaks-2c22 +9 notes
+    yaks-38dc +1 notes
+    yaks-5c9f +2 notes
+    yaks-5f12 +2 notes
+    yaks-7204 +1 notes
+    yaks-75cc +2 notes
+    yaks-7acf +4 notes
+    yaks-a398 +4 notes
+    yaks-b5a0 +7 notes
+    yaks-c061 +14 notes
+    yaks-c53a +12 notes
+    yaks-f313 +1 notes
+delta  main    710b980  +39 -8          0      2026-10-06T21:15:33Z  /Users/joel/src/yaks/.delta/worktrees/n6zrds7fcrgj/yaks
+  who: delta-lead, inp-1, ntf-1, Joel Webber, agt-1, brf-2 · shaving: yaks-b5a0
+  farm: 3 new, 8 moved, 58 new notes
+    + yaks-37fa
+    + yaks-5c83
+    + yaks-ee0a
+    yaks-0a87 hairy -> shorn
+    yaks-2c22 hairy -> shorn
+    yaks-5c9f shaving -> shorn
+    yaks-75cc hairy -> shorn
+    yaks-7acf hairy -> shorn
+    yaks-a398 hairy -> shorn
+    yaks-c061 hairy -> shorn
+    yaks-c53a hairy -> shorn
+    yaks-0a87 +2 notes
+    yaks-2c22 +9 notes
+    yaks-5c9f +2 notes
+    yaks-5f12 +2 notes
+    yaks-75cc +2 notes
+    yaks-7acf +4 notes
+    yaks-a398 +4 notes
+    yaks-b5a0 +6 notes
+    yaks-c061 +14 notes
+    yaks-c53a +12 notes
+    yaks-f313 +1 notes
+delta  main    e63806a  +11 -14         0      2026-10-05T20:01:39Z  /Users/joel/src/yaks/.delta/worktrees/tp2zd0r5z185/yaks
+  who: delta-lead, pre-1, lbl-1, unk-1 · shaving: yaks-b5a0
+  farm: 3 new, 1 moved, 8 new notes
+    + yaks-1b39
+    + yaks-7204
+    + yaks-c29a
+    yaks-d1bd hairy -> shorn
+    yaks-38dc +1 notes
+    yaks-b5a0 +1 notes
+    yaks-d1bd +6 notes
+delta  main    4fc959e  +0 -19          0      2026-10-04T16:52:49Z  /Users/joel/src/yaks/.delta/worktrees/trw8aymc9w6v/yaks
+  farm: no changes of its own
+delta  main    d90e8a1  +41 -8          0      2026-10-06T21:34:35Z  /Users/joel/src/yaks/.delta/worktrees/vk8z2vjzgdqh/yaks
+  who: delta-lead, inp-1, ntf-1, Joel Webber, agt-1, brf-2, shd-1 · shaving: yaks-b5a0
+  farm: 4 new, 8 moved, 58 new notes
+    + yaks-37fa
+    + yaks-5c83
+    + yaks-dfca
+    + yaks-ee0a
+    yaks-0a87 hairy -> shorn
+    yaks-2c22 hairy -> shorn
+    yaks-5c9f shaving -> shorn
+    yaks-75cc hairy -> shorn
+    yaks-7acf hairy -> shorn
+    yaks-a398 hairy -> shorn
+    yaks-c061 hairy -> shorn
+    yaks-c53a hairy -> shorn
+    yaks-0a87 +2 notes
+    yaks-2c22 +9 notes
+    yaks-5c9f +2 notes
+    yaks-5f12 +2 notes
+    yaks-75cc +2 notes
+    yaks-7acf +4 notes
+    yaks-a398 +4 notes
+    yaks-b5a0 +6 notes
+    yaks-c061 +14 notes
+    yaks-c53a +12 notes
+    yaks-f313 +1 notes
+delta  main    9ac9673  +45 -8          0      2026-10-06T21:37:02Z  /Users/joel/src/yaks/.delta/worktrees/xp49gyb9fg59/yaks
+  who: delta-lead, inp-1, ntf-1, Joel Webber, agt-1, brf-2, shd-1 · shaving: yaks-37fa, yaks-b5a0
+  farm: 5 new, 8 moved, 62 new notes
+    + yaks-37fa
+    + yaks-5c83
+    + yaks-79a5
+    + yaks-dfca
+    + yaks-ee0a
+    yaks-0a87 hairy -> shorn
+    yaks-2c22 hairy -> shorn
+    yaks-5c9f shaving -> shorn
+    yaks-75cc hairy -> shorn
+    yaks-7acf hairy -> shorn
+    yaks-a398 hairy -> shorn
+    yaks-c061 hairy -> shorn
+    yaks-c53a hairy -> shorn
+    yaks-0a87 +2 notes
+    yaks-2c22 +9 notes
+    yaks-38dc +1 notes
+    yaks-5c9f +2 notes
+    yaks-5f12 +2 notes
+    yaks-7204 +1 notes
+    yaks-75cc +2 notes
+    yaks-7acf +4 notes
+    yaks-a398 +4 notes
+    yaks-b5a0 +8 notes
+    yaks-c061 +14 notes
+    yaks-c53a +12 notes
+    yaks-f313 +1 notes
+delta  main    0725169  +22 -8          3      2026-10-06T03:59:15Z  /Users/joel/src/yaks/.delta/worktrees/xw51kfjdpqy5/yaks
+  who: delta-lead, inp-1, ntf-1, Joel Webber, brf-1 · shaving: yaks-2c22, yaks-b5a0, yaks-c061
+  farm: 1 new, 8 moved, 38 new notes
+    + yaks-5c83
+    yaks-0a87 hairy -> shorn
+    yaks-2c22 hairy -> shaving
+    yaks-5c9f shaving -> shorn
+    yaks-75cc hairy -> shorn
+    yaks-7acf hairy -> shorn
+    yaks-a398 hairy -> shorn
+    yaks-c061 hairy -> shaving
+    yaks-c53a hairy -> shorn
+    yaks-0a87 +2 notes
+    yaks-2c22 +6 notes
+    yaks-5c9f +2 notes
+    yaks-5f12 +1 notes
+    yaks-75cc +2 notes
+    yaks-7acf +4 notes
+    yaks-a398 +4 notes
+    yaks-b5a0 +1 notes
+    yaks-c061 +3 notes
+    yaks-c53a +12 notes
+    yaks-f313 +1 notes
+delta  main    1a1e10d  +10 -11         0      2026-10-05T21:16:42Z  /Users/joel/src/yaks/.delta/worktrees/ynqz2tjwkyjx/yaks
+  who: delta-lead, ins-1, ini-1 · shaving: yaks-b5a0
+  farm: 2 new, 2 moved, 11 new notes, 1 needs
+    + yaks-36b6
+    + yaks-a398
+    yaks-3859 hairy -> shorn
+    yaks-814a hairy -> shorn
+    yaks-3859 +5 notes
+    yaks-814a +5 notes
+    yaks-b5a0 +1 notes
+    yaks-36b6 needs: human

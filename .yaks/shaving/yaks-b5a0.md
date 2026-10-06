@@ -4,7 +4,7 @@ title: 'Parallel development: finish and harden coordinator/worker skills + tool
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-06T21:32:29Z'
+updated: '2026-10-06T21:37:02Z'
 labels:
 - agent
 - skills
@@ -113,3 +113,11 @@ Filed from Joel's yaks lanes review: yaks-37fa (lane baseline defect) and the CL
 Spawned shd-1 (agent 85ba98dba47846fc, anthropic/claude-sonnet-5-5, base f0eef06) on yaks-dfca (the lane to shed rename); the first spawn whose brief was produced by `yaks brief` (plus the wrapper lines the Delta skill prescribes). Joel stays on one machine for the run.
 
 Order: yaks-dfca (rename) then yaks-37fa (lane baseline), since both edit src/lanes.rs. Then yaks status (yaks-ee0a step 2).
+
+---
+▸ 2026-10-06T21:37:02Z [delta-lead]
+Landed yaks-dfca (the shed rename, 7f49fe2): gate 452 + 8 + 11 + 28 + 19 + 5 + 3 + 3, `yaks lanes` is an unknown subcommand, `yaks sheds` prints what `lanes` printed (shd-1 compared old and new binaries on the same checkout, outputs identical), the only remaining hits for the old word outside history are the two glossary lines. Cold-read gate (cold-read-4, four skills): all loaded, every answer right, no place where "shed" reads oddly.
+
+Spawned bas-1 (agent 637d6f1015f64d9f, anthropic/claude-sonnet-5-5, base b9e7b37) on yaks-37fa (shed baseline from the fork point). Joel stays on one machine. Brief by `yaks brief` plus the wrapper lines, second use.
+
+Not yet published: 7f49fe2 and later are local to the thread; GitHub and the laptop checkout are at deea536. Hold the push until the baseline fix lands (one publish for the rename and the fix), unless Joel asks sooner.
