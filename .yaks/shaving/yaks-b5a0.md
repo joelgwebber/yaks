@@ -4,7 +4,7 @@ title: 'Parallel development: finish and harden coordinator/worker skills + tool
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-06T21:37:02Z'
+updated: '2026-10-06T21:48:46Z'
 labels:
 - agent
 - skills
@@ -121,3 +121,17 @@ Landed yaks-dfca (the shed rename, 7f49fe2): gate 452 + 8 + 11 + 28 + 19 + 5 + 3
 Spawned bas-1 (agent 637d6f1015f64d9f, anthropic/claude-sonnet-5-5, base b9e7b37) on yaks-37fa (shed baseline from the fork point). Joel stays on one machine. Brief by `yaks brief` plus the wrapper lines, second use.
 
 Not yet published: 7f49fe2 and later are local to the thread; GitHub and the laptop checkout are at deea536. Hold the push until the baseline fix lands (one publish for the rename and the fix), unless Joel asks sooner.
+
+---
+▸ 2026-10-06T21:44:37Z [delta-lead]
+Landed yaks-37fa (3d8c8d9): `yaks sheds` measures a shed from its fork point (oldest entry of its HEAD reflog). Checked by eye from ~/src/yaks: each worker shed shows only its own actor (brf-2, agt-1, pre-1, inp-1, ntf-1, bas-1, unk-1, shd-1, brf-1, ini-1); the main shed of the yakherd still lists about sixteen, correctly, since every landed worker's entries are in it. Gate 459 + 8 + 11 + 28 + 19 + 5 + 3 + 3.
+
+Published to the LAPTOP checkout only: ~/src/yaks main is 09b2130 (two squash commits on deea536: the rename, then the baseline fix), archive delta/trial13. GitHub is still deea536 and waits for Joel's go. The Linux machine's ~/src/yaks is at 991c0d2 (my earlier equivalent commit), behind both: `git fetch origin && git reset --hard origin/main` there once GitHub has the new commits.
+
+Next, in order: yaks status (yaks-ee0a step 2), then the read-only shed commands (changes, inbox --sheds, show --sheds), then the cross-shed answer; then the practical discussion across threads, worktrees and machines.
+
+---
+▸ 2026-10-06T21:48:46Z [delta-lead]
+Spawned sta-1 (agent c4904bc2d67f413c, anthropic/claude-sonnet-5-5, base 566d93e) on yaks-b6a9 (`yaks status`, step 2 of yaks-ee0a). Third spawn briefed by `yaks brief`. Joel stays on one machine.
+
+Still waiting for Joel's go to push GitHub: the rename and baseline fix are 09b2130 on the laptop checkout; GitHub is deea536. His "Groovy, go for it" answered the question about starting yaks status, not the push, so I did not push.

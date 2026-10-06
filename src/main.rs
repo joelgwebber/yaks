@@ -6,6 +6,7 @@
 
 mod actor;
 mod brief;
+mod changes;
 mod clipboard;
 mod commit;
 mod farm;
@@ -18,6 +19,7 @@ mod refs;
 mod rollup;
 mod sheds;
 mod skills;
+mod status;
 mod store;
 mod tui;
 
@@ -652,6 +654,26 @@ enum Command {
         /// Print the files and message without staging or committing.
         #[arg(long)]
         dry_run: bool,
+    },
+    /// Show what the farm has changed that git does not have yet, one line per
+    /// yak in yak terms (`created`, `moved hairy -> shaving`, `notes +2`,
+    /// `edited`, `removed`, `artifacts`; `config` for config.yaml), `*` marking
+    /// what is staged, ordered by id, then what `yaks commit` would do (and its
+    /// message). Uses the same classification as `yaks commit`. Read-only. Code
+    /// changed elsewhere in the repo is only counted, never listed. A clean farm
+    /// prints `farm clean: nothing to commit`; a private farm (nothing under
+    /// `.yaks/` tracked by git) says so; both exit 0. While a merge or
+    /// cherry-pick is in progress it says `yaks commit` will refuse.
+    Status {
+        /// Exit 1 when the farm has uncommitted changes (for scripts and
+        /// hooks); the output is the same. Without it the exit code is 0.
+        #[arg(long)]
+        check: bool,
+        /// Emit JSON: `clean`, `private`, `merge_in_progress`, `yaks` (array of
+        /// `{id, changes, staged}`), `other` (farm files that are not yaks, as
+        /// `{path, staged}`), `outside_farm` (count) and `message`.
+        #[arg(long)]
+        json: bool,
     },
     /// Print the worker brief for one yak: what a cold worker needs to start,
     /// derived from the yak, the config and the farm mode. Names the yak and
@@ -1569,6 +1591,17 @@ fn main() -> Result<()> {
                         None => println!("commit: {verb}: {}", plan.message),
                     }
                 }
+            }
+        }
+        Command::Status { check, json } => {
+            let report = status::collect(farm.root())?;
+            if json {
+                json::print(&status::to_json(&report))?;
+            } else {
+                print!("{}", status::render(&report));
+            }
+            if check && !report.clean() {
+                std::process::exit(1);
             }
         }
         Command::Brief {

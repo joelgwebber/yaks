@@ -1,0 +1,4 @@
+farm changes git does not have yet (* = staged):
+  yaks-b6a9  moved shaving -> shorn, notes +8
+8 other changed files outside the farm (`yaks commit` leaves them alone)
+run `yaks commit` to commit these as: yaks: shorn yaks-b6a9

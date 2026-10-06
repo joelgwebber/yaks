@@ -8,7 +8,7 @@
 //! never swept in: files staged elsewhere stay staged, exactly as they were.
 //! It runs a normal `git commit` (the repo's hooks apply) and never pushes.
 
-use crate::preflight::yak_id_of;
+use crate::changes::{self, Change, Kind, check, classify, git as run_git, pending_operation};
 use anyhow::{Context, Result, bail};
 use std::collections::BTreeSet;
 use std::path::Path;
@@ -34,51 +34,15 @@ pub struct Plan {
 
 /// Commit the farm at `root`. `message` overrides the generated one.
 pub fn run(root: &Path, message: Option<&str>, dry_run: bool) -> Result<Outcome> {
-    let git = |args: &[&str]| -> Result<Output> {
-        Command::new("git")
-            .arg("-C")
-            .arg(root)
-            .args(args)
-            .output()
-            .context("running git")
-    };
-    let check = |out: Output, what: &str| -> Result<Vec<u8>> {
-        if !out.status.success() {
-            bail!(
-                "{what} failed: {}",
-                String::from_utf8_lossy(&out.stderr).trim()
-            );
-        }
-        Ok(out.stdout)
-    };
+    let git = |args: &[&str]| -> Result<Output> { run_git(root, args) };
 
-    let tracked = git(&["ls-files", "--", "."])?;
-    if !tracked.status.success() {
-        bail!(
-            "the farm at {} is not inside a git repository",
-            root.display()
-        );
-    }
-    if tracked.stdout.is_empty() {
+    let Some(changes) = changes::read(root)? else {
         bail!(
             "this is a private farm (nothing under {} is tracked by git); there is nothing \
              for `yaks commit` to commit",
             root.display()
         );
-    }
-
-    let status = check(
-        git(&[
-            "status",
-            "--porcelain",
-            "-z",
-            "--untracked-files=all",
-            "--",
-            ".",
-        ])?,
-        "git status",
-    )?;
-    let changes = parse_status(&String::from_utf8_lossy(&status));
+    };
     if changes.is_empty() {
         return Ok(Outcome::Nothing);
     }
@@ -116,19 +80,14 @@ pub fn run(root: &Path, message: Option<&str>, dry_run: bool) -> Result<Outcome>
     // Git refuses a partial commit (`--only`) while a merge or cherry-pick is
     // in progress, and that is exactly the state a Delta landing leaves behind.
     // Say so before staging anything, instead of reporting a bare git failure.
-    for (head, what) in [("MERGE_HEAD", "merge"), ("CHERRY_PICK_HEAD", "cherry-pick")] {
-        if git(&["rev-parse", "-q", "--verify", head])?
-            .status
-            .success()
-        {
-            bail!(
-                "a {what} is in progress ({head} is set), and git refuses a partial commit \
-                 during one, which `yaks commit` relies on to leave other files out. Nothing \
-                 was staged or committed. Finish it with a plain `git commit` (your farm \
-                 changes are part of it) or abandon it (`git {what} --abort`), then run \
-                 `yaks commit` again if farm changes remain."
-            );
-        }
+    if let Some((head, what)) = pending_operation(root)? {
+        bail!(
+            "a {what} is in progress ({head} is set), and git refuses a partial commit \
+             during one, which `yaks commit` relies on to leave other files out. Nothing \
+             was staged or committed. Finish it with a plain `git commit` (your farm \
+             changes are part of it) or abandon it (`git {what} --abort`), then run \
+             `yaks commit` again if farm changes remain."
+        );
     }
 
     // Stage the farm (new files, deletions, moves), then commit exactly those
@@ -148,54 +107,15 @@ pub fn run(root: &Path, message: Option<&str>, dry_run: bool) -> Result<Outcome>
     Ok(Outcome::Done(plan))
 }
 
-/// One changed path under the farm, as `git status` reports it.
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct Change {
-    /// `A` (new or untracked), `M` or `D`.
-    state: char,
-    path: String,
-}
-
-/// Parse `git status --porcelain -z` output into one `Change` per path. A
-/// rename is a deletion of the old path plus an addition of the new one.
-fn parse_status(out: &str) -> Vec<Change> {
-    let mut changes = Vec::new();
-    let mut entries = out.split('\0').filter(|e| !e.is_empty());
-    while let Some(entry) = entries.next() {
-        let (xy, path) = entry.split_at(entry.len().min(2));
-        let path = path.trim_start().to_string();
-        let mut chars = xy.chars();
-        let (x, y) = (chars.next().unwrap_or(' '), chars.next().unwrap_or(' '));
-        if matches!(x, 'R' | 'C') {
-            if let Some(from) = entries.next().filter(|_| x == 'R') {
-                changes.push(Change {
-                    state: 'D',
-                    path: from.to_string(),
-                });
-            }
-            changes.push(Change { state: 'A', path });
-            continue;
-        }
-        let state = if xy == "??" || x == 'A' {
-            'A'
-        } else if x == 'D' || y == 'D' {
-            'D'
-        } else {
-            'M'
-        };
-        changes.push(Change { state, path });
-    }
-    changes
-}
-
 /// How many ids to name per phrase before saying "and N more".
 const MAX_IDS: usize = 5;
 
 /// A subject line built from the changed files, for example
 /// `yaks: created a; shorn b, c; updated d; artifacts for e`. Each yak gets one
-/// verb: a move reads as its destination status, a new file as `created`, an
-/// edit in place as `updated`, a deleted file as `removed`.
-fn generate_message(changes: &[Change]) -> String {
+/// verb (see [`classify`]): a move reads as its destination status, a new file
+/// as `created`, an edit in place as `updated`, a deleted file as `removed`.
+pub(crate) fn generate_message(changes: &[Change]) -> String {
+    let classified = classify(changes);
     let mut created = BTreeSet::new();
     let mut moved: [(&str, BTreeSet<String>); 4] = [
         ("shaving", BTreeSet::new()),
@@ -206,48 +126,25 @@ fn generate_message(changes: &[Change]) -> String {
     let mut updated = BTreeSet::new();
     let mut removed = BTreeSet::new();
     let mut artifacts = BTreeSet::new();
-    let mut other = false;
-
-    // A yak whose file vanished from one status dir and appeared in another
-    // moved; so look at both sides per id before choosing the verb.
-    let mut ids = BTreeSet::new();
-    for c in changes {
-        if let Some(id) = yak_id_of(&c.path) {
-            if is_artifact(&c.path) {
-                artifacts.insert(id);
-            } else {
-                ids.insert(id);
-            }
-        } else {
-            other = true;
+    for (id, change) in classified.yaks {
+        if change.artifacts {
+            artifacts.insert(id.clone());
         }
-    }
-    for id in ids {
-        let mine = |state: char| {
-            changes.iter().find(|c| {
-                !is_artifact(&c.path)
-                    && c.state == state
-                    && yak_id_of(&c.path).as_deref() == Some(id.as_str())
-            })
-        };
-        let gone = mine('D').is_some();
-        if let Some(now) = mine('A').or_else(|| mine('M')) {
-            if gone {
-                let slot = match status_dir(&now.path) {
+        match change.kind {
+            Some(Kind::Created) => created.insert(id),
+            Some(Kind::Moved { to, .. }) => {
+                let slot = match to.as_str() {
                     "shaving" => 0,
                     "shorn" => 1,
                     "dead" => 2,
                     _ => 3,
                 };
-                moved[slot].1.insert(id);
-            } else if now.state == 'A' {
-                created.insert(id);
-            } else {
-                updated.insert(id);
+                moved[slot].1.insert(id)
             }
-        } else {
-            removed.insert(id);
-        }
+            Some(Kind::Updated) => updated.insert(id),
+            Some(Kind::Removed) => removed.insert(id),
+            None => continue,
+        };
     }
 
     let mut parts = Vec::new();
@@ -263,7 +160,7 @@ fn generate_message(changes: &[Change]) -> String {
     phrase("updated", &updated);
     phrase("removed", &removed);
     phrase("artifacts for", &artifacts);
-    if other {
+    if !classified.other.is_empty() {
         parts.push("farm config".to_string());
     }
     format!("yaks: {}", parts.join("; "))
@@ -276,17 +173,6 @@ fn name_ids(ids: &BTreeSet<String>) -> String {
         s.push_str(&format!(" and {} more", ids.len() - MAX_IDS));
     }
     s
-}
-
-fn is_artifact(path: &str) -> bool {
-    path.split('/').any(|p| p == "artifacts")
-}
-
-/// The status directory a yak file path sits in (`shorn` for `.yaks/shorn/x.md`).
-fn status_dir(path: &str) -> &str {
-    let mut parts = path.rsplit('/');
-    parts.next();
-    parts.next().unwrap_or("")
 }
 
 #[cfg(test)]
@@ -464,6 +350,7 @@ mod tests {
             .map(|n| Change {
                 state: 'A',
                 path: format!(".yaks/hairy/yak-{n:04}.md"),
+                staged: false,
             })
             .collect();
         assert_eq!(
@@ -482,7 +369,7 @@ mod tests {
         );
         let status = git(&repo, &["status", "--porcelain", "-z", "-uall"]);
         assert_eq!(
-            generate_message(&parse_status(&status)),
+            generate_message(&changes::parse_status(&status)),
             "yaks: dead yak-0001"
         );
     }
