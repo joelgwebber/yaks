@@ -4,7 +4,7 @@ title: 'Parallel development: finish and harden coordinator/worker skills + tool
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-06T22:19:29Z'
+updated: '2026-10-06T22:24:59Z'
 labels:
 - agent
 - skills
@@ -141,3 +141,9 @@ Still waiting for Joel's go to push GitHub: the rename and baseline fix are 09b2
 Joel read `yaks sheds` from ~/src/yaks after the baseline fix and asked whether the main thread's own shed (eighteen actors, 21 new and 16 moved yaks) is a misfire. It is a real flaw in yaks-37fa: the fork point (23 commits back) was used although the shed had been synced with the viewer since (merge-base 1 commit back). Fix: yaks-22f1, use the nearer of the two. Spawned nbr-1 (agent cc5b017a736a4dfb, anthropic/claude-sonnet-5-5, base a9f6312).
 
 Everything else in his output read as intended: single-yak worker sheds with their own actors; idle sheds with no changes of their own (b9cr48skdbst, n6zrds7fcrgj, trw8aymc9w6v); and the two dead workers' sheds (brf-1 xw51kfjdpqy5, brf-2 3kkcfcww892t) each with 3 dirty files, their abandoned drafts.
+
+---
+▸ 2026-10-06T22:24:59Z [delta-lead]
+Landed yaks-22f1 (a1becd6): `yaks sheds` uses the nearer of the fork point and the merge-base with the viewer. Checked from ~/src/yaks: the yakherd's own shed shows `who: delta-lead, nbr-1 · shaving: yaks-b5a0` and `farm: 1 new, 1 new notes` (was eighteen actors); worker sheds unchanged. Gate 480 + 8 + 11 + 28 + 19 + 5 + 3 + 3 + 2.
+
+Published to the Mac's local only: ~/src/yaks main is b8f43e8 (one squash commit on 60a8bd9). GitHub is 60a8bd9 and waits for Joel's go; his earlier "push" for the sync did not cover this later commit.
