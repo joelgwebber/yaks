@@ -4,7 +4,7 @@ title: 'Parallel development: finish and harden coordinator/worker skills + tool
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-06T19:13:17Z'
+updated: '2026-10-06T20:01:59Z'
 labels:
 - agent
 - skills
@@ -81,3 +81,21 @@ brf-1 (agent c515ac6c7ea04cd2, yaks-2c22) went silent: its lane xw51kfjdpqy5 sho
 Action taken: sent brf-1 a status request through send_agent_message (finish if alive, else say what happened; do not start over). If it does not answer, spawn brf-2 seeded from brf-1's src/brief.rs (readable in its lane) rather than from scratch.
 
 Lesson for the Delta skill: a worker can die without a final message and the coordinator is never told. `yaks lanes` is what showed it (dirty files, an old FARM ACTIVE time, a `who` label); check lanes when a worker is overdue.
+
+---
+▸ 2026-10-06T19:51:48Z [delta-lead]
+Published: origin/main is now d42cf08 (a fast-forward from 2e0aae6, pushed on Joel's explicit "push origin!"); local main is still waiting for Joel's checkout to be clean (yaks-ea13 uncommitted); the same commits are on his repo as pr/yakherd-input-notice-2, archive delta/trial11.
+
+yaks brief is NOT in the thread worktree (no src/brief.rs); only yaks-c061 landed. brf-1's lane still holds the untracked draft and has not answered the status request (no change since 04:02Z).
+
+Spawned brf-2 (agent 0c8cefa7b32f4c7b, anthropic/claude-sonnet-5-5, base db7cc43) on yaks-2c22, seeded from brf-1's draft (copy and review, no writes in the other lane). Risk accepted: if brf-1 ever delivers, the coordinator lands only one of the two; the other is discarded.
+
+---
+▸ 2026-10-06T20:01:59Z [delta-lead]
+yaks brief is done and sheared (yaks-2c22; evidence and the clause comparison are on that yak). It was finished by the coordinator after brf-1 and brf-2 died when the thread changed machines (O61).
+
+Published state (2026-10-06, Linux machine): GitHub main is d42cf08 (pushed on Joel's go). This machine's local (the Linux ~/src/yaks) main is 991c0d2, one squash commit on top of d42cf08 (a fast-forward, preflight --push-main ok). The laptop's ~/src/yaks is a separate checkout, still on 2e0aae6 with Joel's yaks-ea13 edit uncommitted; the branch pr/yakherd-input-notice-2 is in its repo. 991c0d2 is NOT on GitHub: it waits for Joel's go.
+
+No delta/trial12 archive: pushing the unsquashed history from this shallow clone is refused ("shallow update not allowed"); the commits remain in the thread and in Delta's refs/delta pins.
+
+Coordination mechanics are finished (preflight --push-main, stdin/file input, the stale-skills notice, needs: agent with pickup, yaks brief, the cold-read gate). Next: the yaks-7204 lanes design discussion.

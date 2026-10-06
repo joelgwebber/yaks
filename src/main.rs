@@ -5,6 +5,7 @@
 //! --json). Tasks live as markdown files under `.yaks/`; status is the folder.
 
 mod actor;
+mod brief;
 mod clipboard;
 mod commit;
 mod farm;
@@ -647,6 +648,28 @@ enum Command {
         /// Print the files and message without staging or committing.
         #[arg(long)]
         dry_run: bool,
+    },
+    /// Print the worker brief for one yak: what a cold worker needs to start,
+    /// derived from the yak, the config and the farm mode. Names the yak and
+    /// that it is already `shaving`, the `YAKS_ACTOR=<name>` prefix for every
+    /// command (plus `YAKS_DIR` for a private or pointer farm, or with
+    /// `--yaks-dir`), this binary's path, the yak's `verify:` gate (else the
+    /// config default), the forbidden moves, how to finish (team: one commit
+    /// with the yak move; private: no yak ids in commits), how to ask, the
+    /// `Decision:` note rule and the final-message format. Read-only. Claim the
+    /// yak first (`yaks shave`): an unclaimed yak still prints, with a warning
+    /// on stderr. An unknown id fails with nothing on stdout. The coordinator
+    /// adds what a yak cannot know (spawn title, landing, model).
+    Brief {
+        id: String,
+        /// The worker's name, used as `YAKS_ACTOR` (e.g. `lanes-1`).
+        #[arg(long = "as", value_name = "NAME")]
+        as_actor: String,
+        /// Print `YAKS_DIR=<PATH>` on every command, for a worker whose checkout
+        /// does not hold the farm. Default: the farm in use for a private or
+        /// pointer farm, nothing for a team farm.
+        #[arg(long, value_name = "PATH")]
+        yaks_dir: Option<String>,
     },
     /// Open the interactive terminal UI.
     Tui {
@@ -1542,6 +1565,27 @@ fn main() -> Result<()> {
                         None => println!("commit: {verb}: {}", plan.message),
                     }
                 }
+            }
+        }
+        Command::Brief {
+            id,
+            as_actor,
+            yaks_dir,
+        } => {
+            let code = brief::run(
+                &farm,
+                &brief::Request {
+                    id: &id,
+                    actor: &as_actor,
+                    explicit_dir: yaks_dir.as_deref(),
+                    cwd: &env::current_dir()?,
+                    binary: &env::current_exe()?,
+                },
+                &mut std::io::stdout().lock(),
+                &mut std::io::stderr().lock(),
+            )?;
+            if code != 0 {
+                std::process::exit(code);
             }
         }
         Command::Tui {

@@ -4,7 +4,7 @@ title: 'Process rails: yaks brief (worker brief from a yak) and yaks preflight (
 type: feature
 priority: 2
 created: '2026-10-03T21:13:29Z'
-updated: '2026-10-06T03:58:20Z'
+updated: '2026-10-06T20:00:42Z'
 parent: yaks-b5a0
 labels:
 - cli
@@ -84,3 +84,37 @@ It must NOT contain orchestration the yak cannot know (spawn titles, Delta landi
 - Docs parity: docs/cli.md, README.md, `.agents/skills/yaks/SKILL.md` command table, `--help`. Leave `.agents/skills/yaks-coordinating*` and `yaks-working` to the coordinator, but report which sentences of the brief template in the Delta skill the command now replaces.
 - Evidence: gate green; a real run of `yaks brief` for a shaving yak in a team farm and in a private farm (paste both); then check the output against the Delta skill's current template and list any clause present in one and missing in the other.
 Judge: coordinator re-runs the gate and gives the output to a fresh scout as a worker brief.
+
+---
+▸ 2026-10-06T19:52:06Z [brf-2]
+Claim: worker brf-2 takes over from brf-1 (stalled after a draft). Start `date -u`: Tue Oct 6 19:51:44 UTC 2026. `ls .yaks/*/yaks-2c22.md`: `.yaks/shaving/yaks-2c22.md`. Seeding from brf-1's untracked src/brief.rs draft (reviewing every function against the settled design).
+
+---
+▸ 2026-10-06T20:00:42Z [delta-lead]
+Decision: what I kept from brf-1's draft and what I changed (coordinator delta-lead, 2026-10-06).
+
+The two workers on this yak died when the thread changed machines (yaks-df61 O61), so I finished it from brf-1's untracked draft, committed first as a baseline (ff3d3d2) so my changes are a reviewable diff.
+
+Kept: the structure (one small function per section, `Mode` picks the finish steps, `yaks_dir` decides the `YAKS_DIR` prefix, `gate` mirrors `yaks verify`), mode detection by `git ls-files` in the cwd's repo, shell quoting of the binary path, the actor-name check, the claim warning on stderr.
+
+Changed: the blocked section now says what to do once an ask is answered (`inbox --for agent`, then `pickup`) and never to answer your own ask (both landed in yaks-c061 after brf-1 started); the finish section says `yaks verify` must have recorded a PASS when there is a gate (a cold reader could not tell whether to run it before `shorn`); tests (16) and docs added; rustfmt.
+
+Alternatives rejected: a `--json` form (nobody consumes it; the text is the product; add it when a caller exists); embedding the template from the skill at build time (option B in the ask: ties the binary to the optional skills); printing scope by symbol (the yak cannot know it, the coordinator adds it).
+
+---
+▸ 2026-10-06T20:00:42Z [delta-lead]
+Done (coordinator delta-lead, 2026-10-06). `yaks brief <id> --as <name> [--yaks-dir <path>]` (src/brief.rs, the `Brief` subcommand) is in; commits ff3d3d2 (baseline draft), db14e9d, 504ad44 (16 tests), 4b4cd80 (docs), 433d192 (skills), 0cf54a0.
+
+Evidence:
+- `cargo test -p yaks`: 452 + 8 + 11 + 28 + 19 + 5 + 3 + 3 passed, 0 failed.
+- Real runs: a team brief for this very yak (gate = the config default `cargo test -p yaks`, finish stages `yaks path <id>`, `.yaks/shaving/<id>.md` and `.yaks/artifacts/<id>`) and a private brief in a `init --mode private` temp repo (gate = the yak's own `verify:`, `YAKS_DIR=<farm>` on every command, no yak id in commits).
+- Cold-read of a real brief (cold-read-3, a Haiku scout given ONLY the private brief text): all six answers right (first command with `YAKS_ACTOR`/`YAKS_DIR`; scope is in the claim note; the heredoc note; the finish steps and a commit message with no yak id; ask, then `pickup`). It flagged one ambiguity (whether `yaks verify` runs before `shorn`), fixed in 0cf54a0.
+
+Clause comparison with the Delta skill's old fill-in template:
+- In both: the yak id and "already shaving", do not touch other yaks, the `YAKS_ACTOR` prefix, `yaks show` and read every note, evidence and paste real output, forbidden moves, finish by `yaks shorn` with ONE commit and explicit paths, blocked means ask and leave edits, `Decision:` notes, multi-line notes, the final-message format.
+- Only in the command (derived, so it cannot be forgotten): the gate from `verify:`/config, the binary's absolute path, `YAKS_DIR`, the team-vs-private finish rule, `yaks path`, `yaks verify`, `yaks attach`, `yaks pickup`, "never answer your own ask".
+- Only in the skill wrapper now (a yak cannot know): task and scope by symbol, out of scope, evidence beyond the gate, do not touch other checkouts, build your own binary when the task changes yaks itself. The old template's `ls .yaks/*/<id>.md` check is replaced by recording `yaks path <id>`.
+
+---
+▸ 2026-10-06T20:00:42Z [delta-lead]
+moved: shaving -> shorn

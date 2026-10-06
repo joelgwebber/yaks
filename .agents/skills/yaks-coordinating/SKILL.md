@@ -77,7 +77,7 @@ the evidence contract and judge; forbidden moves (no dependency, config or `.git
 edits; no path dependencies; no push); how to finish (one commit, which paths to stage);
 what to do when blocked (`yaks ask`, leave edits in the working tree, never revert and never
 park work in `$TMPDIR`); and the final-message format (SHA, gate output, timings, surprises).
-The environment skill carries a fill-in template.
+`yaks brief <id> --as <name>` prints every clause above that the yak, the config and the farm mode determine; you add the task, the scope and any evidence beyond the gate. The environment skill says how to wrap it.
 
 ## 7. Landing checks (every mode, every environment)
 - Re-run the worker's gate yourself, in your checkout. If you cannot reproduce a claim, the

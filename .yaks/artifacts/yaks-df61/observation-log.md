@@ -1032,3 +1032,22 @@ machine before shipping.
 Also this round: yaks-75cc and yaks-0a87 shorn (already covered by shipped skill text and tools), thoughts on the farm vs git commits
 on yaks-5f12, analysis of c061 vs f313 on f313 (background jobs do not survive a Delta terminal call, tested), yaks-7acf (the yakherd)
 shorn, yaks-2c22 asked (where the brief template lives).
+
+## O61 [open][skill] Workers died silently when the thread changed machines  (delta-lead, 2026-10-06)
+Two workers on the same yak (yaks-2c22, `yaks brief`) ended without a final message and without a commit: brf-1 (last file write 04:02Z,
+silent for about 15 hours; its lane showed an untracked `src/brief.rs`, an edit to `src/main.rs` and one note) and brf-2 (spawned 19:51:44Z,
+copied brf-1's draft, claim note at 19:52:06Z, completion event "finished without a final assistant message" about a minute later). I could
+not read either from the threads tool ("history ... was reset while its state was awaited"), and a status request to brf-1 got no answer.
+Evidence for the cause (inferred, not confirmed in Delta): the thread moved from the laptop to the Linux machine at about 19:53Z. My last
+laptop shell read 19:52:57Z and my first Linux shell read 15:53:57 EDT, the same minute, and brf-2's death falls inside it. brf-1's silence is
+consistent with the laptop sleeping or the app closing. Joel's own guess was a Delta sync issue making the thread look stuck; this fits.
+Practical rules: (1) do not leave workers running across a machine switch; ask the human to say before switching, or wait for the completions;
+(2) when a worker is overdue, `yaks lanes` is how to see it (a `who: <worker>` label, dirty files, an old FARM ACTIVE time) and the lane's files
+are readable; (3) a dead worker's lane can be seeded into a replacement, which copies and reviews, never edits in place; (4) after two
+consecutive deaths on the same task the coordinator finishes it (here: from brf-1's draft, with tests and docs added by me) instead of a third
+try of the same shape.
+Side effects seen on the Linux clone after the switch: Delta kept re-reporting the dead worker's applied state (`src/brief.rs` "created", the
+brf-2 claim note, the `Brief` variant in `src/main.rs`) as external edits several times. `git status` stayed empty and my committed edits were
+never touched, so it was noise; the check is `git status --short` plus a line count of the file after each replay. The thread clone on each
+machine is a separate git repo; my commits had synced to this one (HEAD was my latest), and `git fetch origin` showed GitHub's `main` at the
+commit I had pushed from the laptop.

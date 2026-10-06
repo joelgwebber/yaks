@@ -41,29 +41,25 @@ and `skill` needs the `worktree` argument; still put the critical rules in the b
 - Scope disjointly and give each worker its own yak (core sections 3-4). Parallel workers on one
   repo are fine: four landed within 10 seconds of each other.
 
-## The brief (fill in every blank)
+## The brief
+Run `yaks brief <id> --as <name>` and paste its output at the start of the task. Add `--yaks-dir <abs path to the farm>` when
+the worker's checkout does not hold the farm (a private or pointer farm). It prints everything the yak, the config and the farm
+mode determine: the yak id and that it is already `shaving`, the `YAKS_ACTOR=<name>` prefix (and `YAKS_DIR`), the binary, the
+gate (`verify:`), the forbidden moves, how to finish in a team or a private farm, how to ask and pick up an answer, the
+`Decision:` note rule, multi-line notes on stdin, and the final-message format. A yak that is not yet `shaving` prints a
+warning on stderr: claim it first.
+
+Then add only what a yak cannot know:
 ```
-You are worker `<name>`. You own exactly ONE yak: `<id>` - "<title>". It is already `shaving`.
-Do not shave, shear, regrow or edit any other yak.
-Prefix EVERY yaks command with `YAKS_ACTOR=<name>` (each terminal call is a fresh shell).
-First: `ls .yaks/*/<id>.md` and `date -u` (team) or `ls -d .yaks` (private); record them in your
-first note. Build your own binary (`cargo build --release`, then ./target/release/yaks) or use
-<absolute path>; never npx or an installer. `yaks show <id>` and read every note.
+<the output of `yaks brief <id> --as <name>`>
 Task: <what and what not>. Scope by symbol: <files, functions>. Out of scope: everything else;
 if you must touch another file, `yaks ask` instead.
-Evidence (I re-run it and reject what I cannot reproduce): gate `<verify cmd>`; <test that fails
-before and passes after>; <attachment>. Paste real output in notes, claim nothing unobserved.
-Forbidden: edits to Cargo.toml/Cargo.lock/.gitignore/config, path dependencies, `git push`,
-installs, history rewrites. <mode rule: team: stage `':(glob).yaks/*/<id>.md'` and
-`.yaks/artifacts/<id>` too; private: no yak ids or the word yaks in commits, stage only your files>
-Finish: `yaks shorn <id>` (there is no `shear` subcommand) after the gate passes; ONE commit, explicit paths, message `<id>: ...` (team) or
-plain English (private). Blocked or a decision needed: `yaks ask <id>`, leave your edits in the
-working tree (never revert, never park in $TMPDIR), say which in your final message, return.
-Decisions: record every choice a reviewer could argue about as a note starting `Decision:` that names
-the alternatives you rejected. Write multi-line notes as markdown with real line breaks: pipe them in with `--note - <<'EOF'`, not one long argument.
-Final message: commit SHA and `git show --stat`; gate command + last 15 lines; start/finish
-`date -u`; the `Decision:` notes in one line each; docs-parity grep you ran; anything surprising.
+Evidence beyond the gate: <the test that fails before and passes after>; <attachment>.
+Do not read, write or build in any other checkout: your clone is yours; the coordinator's and the other workers' are not.
+If the task changes yaks itself, build and use your own binary (`cargo build --release`, then ./target/release/yaks), not the printed path.
 ```
+The scope, the judge and the evidence contract belong in the yak's claim note (the brief tells the worker to read it), so the
+brief stays short.
 
 ## What lands, and how (never trust the working tree after a landing)
 Delta merges a worker's result against what IT last applied to your tree, not against your HEAD.
@@ -141,4 +137,11 @@ only net. The human may also push `origin`; Delta refreshes your `origin/main` f
   it the worker gets an error naming the git top-level, not the live farm. Same-yak writes lose notes.
 - Attribution: notes carry the inline `YAKS_ACTOR`; commits are authored by the human; status moves carry
   the actor too (a `moved: <from> -> <to>` entry, same `--as`/`YAKS_ACTOR`). Delta terminals expose `DELTA_THREAD_TITLE` and `DELTA_CURRENT_THREAD_ID`.
+- A worker can die without a final message, and nobody tells you. Seen twice when the human moved the thread to another
+  machine while workers ran (yaks-df61 O61): ask the human to wait for the completions before switching. When a worker is
+  overdue, run `yaks lanes`: its lane shows a `who:` label, dirty files and an old FARM ACTIVE time, and its files are readable.
+  Do not wait indefinitely: a replacement copies and reviews the dead worker's draft (never edits it in place), and after two
+  deaths on one task you finish it yourself, committing in small steps.
+- Delta may keep re-reporting a dead worker's applied state as external edits. Check `git status --short` and the line count of
+  the file; if your commits are intact it is noise.
 - Each clone has its own `target/` (0.3-1.3 GB).
