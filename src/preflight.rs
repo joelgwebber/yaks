@@ -1,6 +1,6 @@
 //! `yaks preflight`: a read-only landing-readiness check for a team farm.
 //!
-//! Run before landing (committing a shorn yak, merging a lane). It reports the
+//! Run before landing (committing a shorn yak, merging a shed). It reports the
 //! slips that earlier landings hit: a new artifacts directory that was never
 //! `git add`ed, yak edits left unstaged, a shorn yak whose `verify:` command did
 //! not last PASS, and a yak sitting in two status dirs. With `--push-main` it

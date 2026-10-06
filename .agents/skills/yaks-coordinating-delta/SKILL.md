@@ -13,12 +13,12 @@ checkout) each worker (`spawn_subagent`) is its own thread with a thin git clone
 on the human's own machine `<repo>/.delta/clones/<id>/<repo>.git` and `<repo>/.delta/worktrees/<id>/<repo>`;
 on a machine that only has the thread shared to it, `~/.local/share/delta/worktrees/<id>/<repo>` with the
 git dir as its sibling `<repo>.git` and NO `.delta/`. Either way a checkout is `<root>/<id>/<repo>`, and
-`git worktree list` inside it shows only that clone; `yaks lanes` lists every sibling checkout (git worktrees
+`git worktree list` inside it shows only that clone; `yaks sheds` lists every sibling checkout (git worktrees
 and Delta clones) with its HEAD, ahead/behind, dirty count, who is working in it and what its farm changed,
 read-only. Your clone's `objects/info/alternates` names the repo that holds Delta's `refs/delta/<id>/<repo>/<sha>`
 pins. Delta marks the commits it imports from another machine as shallow boundaries, so a clone (yours or the
 human's) can be shallow (`git rev-parse --is-shallow-repository`): ancestry questions then have unreliable
-answers, `yaks lanes` shows `?` and `land.sh` prints a note; `git fetch --unshallow origin` (or `local`) fixes it. A worker can
+answers, `yaks sheds` shows `?` and `land.sh` prints a note; `git fetch --unshallow origin` (or `local`) fixes it. A worker can
 read your checkout and your `target/` (it is not isolated), so the brief forbids touching them. A fresh checkout has no `target/`: building takes 15-25 s.
 Extra repos are attached to the thread by the human as more Delta worktrees; with several attached,
 file tools and `skill` need the worktree argument. Never clone a repo or add a path dependency.
@@ -33,9 +33,9 @@ and `skill` needs the `worktree` argument; still put the critical rules in the b
   landing note, never on the worker's own yak: the worker moves that file, and your edit then conflicts with
   its landing. Once spawned, do not edit a worker's yak at all. The profile default has changed between
   runs; pass `model` only when the human asked for one.
-- Start every spawn `title` with the worker's name (`lanes-1: build yaks lanes CLI`). Delta shows the title in
+- Start every spawn `title` with the worker's name (`sheds-1: build yaks sheds CLI`). Delta shows the title in
   its thread list and exports it as `DELTA_THREAD_TITLE`, which yaks stamps as `delta:<title>` when no actor is
-  set; with the name first the thread, the yak's notes and moves, and the label `yaks lanes` shows for the lane
+  set; with the name first the thread, the yak's notes and moves, and the label `yaks sheds` shows for the shed
   (its actors and in-progress yaks) line up by eye. Keep `YAKS_ACTOR=<name>` in the brief too: it is stable
   when a thread is renamed.
 - Scope disjointly and give each worker its own yak (core sections 3-4). Parallel workers on one
@@ -108,7 +108,7 @@ branch, so their `main` does not move by itself and there is no agent-side accep
 explicit `git push local <branch>:main`: refused if the human's checkout is on that branch and dirty (their
 yak drift counts), always possible to a branch that is not checked out.
 Team-mode asks and notes reach their
-`yaks inbox` only once `main` moves. Default flow: form logical per-lane commits on a PR-style branch, push the
+`yaks inbox` only once `main` moves. Default flow: form logical per-shed commits on a PR-style branch, push the
 branch, then fast-forward `main` (and do not reset your own branch to it while workers are parked: step 7); put the yak id and the checks run in each message. Never push `origin` or open
 a PR without the human's say-so; GitHub needs `origin`, not `local`. You may delete your own merged `pr/*`
 branches on `local`.
@@ -139,7 +139,7 @@ only net. The human may also push `origin`; Delta refreshes your `origin/main` f
   the actor too (a `moved: <from> -> <to>` entry, same `--as`/`YAKS_ACTOR`). Delta terminals expose `DELTA_THREAD_TITLE` and `DELTA_CURRENT_THREAD_ID`.
 - A worker can die without a final message, and nobody tells you. Seen twice when the human moved the thread to another
   machine while workers ran (yaks-df61 O61): ask the human to wait for the completions before switching. When a worker is
-  overdue, run `yaks lanes`: its lane shows a `who:` label, dirty files and an old FARM ACTIVE time, and its files are readable.
+  overdue, run `yaks sheds`: its shed shows a `who:` label, dirty files and an old FARM ACTIVE time, and its files are readable.
   Do not wait indefinitely: a replacement copies and reviews the dead worker's draft (never edits it in place), and after two
   deaths on one task you finish it yourself, committing in small steps.
 - Delta may keep re-reporting a dead worker's applied state as external edits. Check `git status --short` and the line count of

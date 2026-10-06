@@ -1,6 +1,6 @@
 ---
 name: yaks-coordinating-private
-description: "Farm-mode companion to yaks-coordinating for a PRIVATE or OUT-OF-TREE farm (`.yaks/` gitignored, a `.yaks` pointer file, or a symlink): one live farm shared by every lane, live claims, no yak ids in anything shared, PR-driven landing. Load after yaks-coordinating when `git ls-files .yaks` prints nothing. Opt-in skill, installed by `yaks skills install --with coordination`."
+description: "Farm-mode companion to yaks-coordinating for a PRIVATE or OUT-OF-TREE farm (`.yaks/` gitignored, a `.yaks` pointer file, or a symlink): one live farm shared by every shed, live claims, no yak ids in anything shared, PR-driven landing. Load after yaks-coordinating when `git ls-files .yaks` prints nothing. Opt-in skill, installed by `yaks skills install --with coordination`."
 ---
 
 # Coordinating a private or out-of-tree farm
@@ -8,9 +8,9 @@ description: "Farm-mode companion to yaks-coordinating for a PRIVATE or OUT-OF-T
 Read `yaks-coordinating` first. This file is only what changes when the farm is not in git.
 
 ## What the farm is
-There is **one live farm** for every lane, and yak surgery is live and shared. There is no yak
+There is **one live farm** for every shed, and yak surgery is live and shared. There is no yak
 state to merge. A gitignored `.yaks/` is never copied into another checkout, and `yaks` walks UP
-from the cwd only as far as the git top-level (the first directory with a `.git`). So a lane
+from the cwd only as far as the git top-level (the first directory with a `.git`). So a shed
 that is its own git checkout (an in-tree `git worktree`, a Delta checkout under
 `<repo>/.delta/worktrees/`) does NOT find the farm by accident: it must be told, with a `.yaks`
 pointer file in the checkout or `YAKS_DIR=<farm>` (the `.yaks/` dir, its parent, or a pointer

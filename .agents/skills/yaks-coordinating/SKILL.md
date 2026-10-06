@@ -41,21 +41,21 @@ shared blackboard. The many-agent case adds writers, nothing else.
 4. **Reconcile.** A yak still `shaving` after the batch is stalled: `yaks regrow` it or
    re-run it. Run `yaks doctor`.
 
-While workers run, `yaks lanes` lists every other checkout of the repo (git worktrees and Delta
+While workers run, `yaks sheds` lists every other checkout of the repo (git worktrees and Delta
 clones): its HEAD, how far ahead and behind it is, who is working in it and on which yaks, and
 what its farm changed since it forked from yours (new yaks, moves, notes, open asks). It only
-reads. In a team farm each lane has its own farm to compare; in a private farm every lane shares
-one live farm, and `lanes` says `shares this farm` or `no farm here` instead of a delta.
+reads. In a team farm each shed has its own farm to compare; in a private farm every shed shares
+one live farm, and `sheds` says `shares this farm` or `no farm here` instead of a delta.
 
 ## 4. Scope work so it cannot collide
 One writer per yak; if work is shared, split it into child yaks first. Separate before
 you serialise.
 - **Types, not only files.** A change to a shared type (a struct with exhaustive
-  constructions) breaks the other lane's files at merge. Put it in a yakherd prep
-  commit first, or keep it in one lane. Scan before fanning out: `grep 'TypeName {'`.
-- **One big file is unavoidable?** Scope each lane to a disjoint function or region, prefer
+  constructions) breaks the other shed's files at merge. Put it in a yakherd prep
+  commit first, or keep it in one shed. Scan before fanning out: `grep 'TypeName {'`.
+- **One big file is unavoidable?** Scope each shed to a disjoint function or region, prefer
   yaks that add no field to a shared struct, anchor briefs by symbol (`fn name`), never by
-  line number, and warn lanes that a shared render path can ripple into snapshots they must
+  line number, and warn sheds that a shared render path can ripple into snapshots they must
   re-accept and eyeball.
 - This is technique, not architecture advice; whether the file should be split is its own yak.
 

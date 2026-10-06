@@ -4,7 +4,7 @@ title: 'Lanes view: show in-flight yak state from sibling checkouts'
 type: feature
 priority: 3
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-05T19:48:55Z'
+updated: '2026-10-06T21:32:29Z'
 parent: yaks-b5a0
 labels:
 - ui
@@ -24,3 +24,7 @@ Joel (2026-10-03): good with lanes/diff/TUI-lanes; principle to hold: every core
 ---
 ▸ 2026-10-05T19:48:55Z [delta-lead]
 Joel's lanes review (2026-10-04) filed as yaks-c29a (label lanes by actor and in-progress yaks), yaks-1b39 (? when no merge-base; his primary was a shallow repo, fixed with git fetch --unshallow, one pinned commit still a shallow boundary) and yaks-7204 (idea: lane deltas as an overlay across the TUI/CLI). Coordinator delta-lead.
+
+---
+▸ 2026-10-06T21:32:29Z [delta-lead]
+Terminology decision (Joel, 2026-10-06, via the naming subthread): a "lane" is now a SHED, everywhere, no aliases; `yaks lanes` becomes `yaks sheds`. Text above this note, and all history, keeps the word "lane": read it as "shed". Not decided: "clip" (what a shed has produced) and "barn" (the primary checkout). The rename itself is yaks-dfca; it lands before the baseline fix (yaks-37fa) because both edit the same file.

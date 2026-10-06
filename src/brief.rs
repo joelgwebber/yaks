@@ -316,7 +316,7 @@ fn check_actor(actor: &str) -> Result<()> {
             .chars()
             .any(|c| c.is_whitespace() || "'\"[]\\$`;&|<>()".contains(c))
     {
-        bail!("invalid worker name {actor:?}: use a short name such as `lanes-1`");
+        bail!("invalid worker name {actor:?}: use a short name such as `sheds-1`");
     }
     Ok(())
 }
@@ -566,7 +566,7 @@ mod tests {
 
     #[test]
     fn a_worker_name_that_is_not_shell_safe_is_refused() {
-        assert!(check_actor("lanes-1").is_ok());
+        assert!(check_actor("sheds-1").is_ok());
         for bad in ["", "two words", "a;b", "$x", "a'b", "[x]"] {
             assert!(check_actor(bad).is_err(), "{bad:?} should be refused");
         }

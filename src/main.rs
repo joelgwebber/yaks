@@ -12,11 +12,11 @@ mod farm;
 mod filter;
 mod init;
 mod json;
-mod lanes;
 mod model;
 mod preflight;
 mod refs;
 mod rollup;
+mod sheds;
 mod skills;
 mod store;
 mod tui;
@@ -237,13 +237,13 @@ enum Command {
     /// (merge-base): yaks only there, yaks in another status, new notes,
     /// `needs:` set; plus how far ahead/behind its HEAD is (`+? -?`, JSON
     /// null, when there is no merge-base here, e.g. shallow history; the
-    /// table then says once to `git fetch --unshallow`). A lane that is
-    /// merely behind shows no changes. Each lane with entries of its own is
+    /// table then says once to `git fetch --unshallow`). A shed that is
+    /// merely behind shows no changes. Each shed with entries of its own is
     /// labeled under its row: `who:` (the distinct actors on those new notes)
     /// and `shaving:` (yaks in shaving there that it wrote to); JSON `who`
     /// and `in_progress`. Read-only everywhere.
-    Lanes {
-        /// Emit the lanes as JSON.
+    Sheds {
+        /// Emit the sheds as JSON.
         #[arg(long)]
         json: bool,
     },
@@ -662,7 +662,7 @@ enum Command {
     /// adds what a yak cannot know (spawn title, landing, model).
     Brief {
         id: String,
-        /// The worker's name, used as `YAKS_ACTOR` (e.g. `lanes-1`).
+        /// The worker's name, used as `YAKS_ACTOR` (e.g. `sheds-1`).
         #[arg(long = "as", value_name = "NAME")]
         as_actor: String,
         /// Print `YAKS_DIR=<PATH>` on every command, for a worker whose checkout
@@ -1089,12 +1089,12 @@ fn main() -> Result<()> {
                 }
             }
         }
-        Command::Lanes { json } => {
-            let lanes = farm.lanes(&env::current_dir()?)?;
+        Command::Sheds { json } => {
+            let sheds = farm.sheds(&env::current_dir()?)?;
             if json {
-                json::print(&lanes::to_json(&lanes))?;
+                json::print(&sheds::to_json(&sheds))?;
             } else {
-                print!("{}", lanes::render(&lanes));
+                print!("{}", sheds::render(&sheds));
             }
         }
         Command::Stats { json } => {

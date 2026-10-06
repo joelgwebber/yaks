@@ -151,17 +151,17 @@ The load-bearing ideas, all validated by dogfooding:
 - **Run shape: claim → fan out → merge → reconcile.** The yakherd makes one
   commit that moves the batch's yaks to `shaving` with per-yak assignment notes
   ("licks the cookie", so `main`'s `shaving` set reflects what's in flight),
-  cuts a git worktree per lane, spawns one worker each (workers skip the shave —
-  their yak is already shaving), squash-merges each lane back (the yak id in the
+  cuts a git worktree per shed, spawns one worker each (workers skip the shave —
+  their yak is already shaving), squash-merges each shed back (the yak id in the
   message), and regrows any yak left stranded in `shaving`.
 - **Disjoint scope is about *types*, not just files.** A change to a shared type
-  breaks the other lane at merge even across disjoint files; put it in a
-  yakherd prep-commit first, or keep it in one lane.
+  breaks the other shed at merge even across disjoint files; put it in a
+  yakherd prep-commit first, or keep it in one shed.
 - **Human-in-the-loop routes through the yakherd.** Workers `ask` and hand
   back; the human answers on `main` (`yaks inbox`); the next spawn starts fresh
   from `main`. No live cross-worktree feedback.
-- **Human-driven interactive lane.** A thorny, iterative design problem can run
-  as its own worktree lane *in parallel* without a fan-out: a peer lane the human
+- **Human-driven interactive shed.** A thorny, iterative design problem can run
+  as its own worktree shed *in parallel* without a fan-out: a peer shed the human
   drives, landed through the yakherd (or the human is the yakherd). It
   starts yak-less, emits code or a fresh farm, and — because the human opens the
   worktree as the harness root — dodges the spawned-worker file-tool pitfall by
@@ -183,7 +183,7 @@ The load-bearing ideas, all validated by dogfooding:
 - **Parallel agents:** the yakherd drives the claim → fan-out → squash →
   reconcile shape above, with `ask`/`answer`/`inbox` for human decisions and
   `doctor` for integrity.
-- **Interactive lane alongside parallel work:** a human-driven worktree lane for
+- **Interactive shed alongside parallel work:** a human-driven worktree shed for
   design problems that aren't fire-and-forget — same worktree mechanics, landed
   through the yakherd; in private mode its emitted yaks are shared live, so
   only the code has to land.

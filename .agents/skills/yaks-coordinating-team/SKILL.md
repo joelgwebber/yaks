@@ -20,7 +20,7 @@ before fanning out. That makes your branch's `shaving` set honest and each yak s
 Some environments let a worker see an uncommitted claim; commit anyway, so the claim is
 durable and your branch tells the truth.
 A human's `yaks answer` on your branch is an uncommitted edit until you commit it. Commit
-answers before you cut a lane or spawn a worker, or the worker will not see them.
+answers before you cut a shed or spawn a worker, or the worker will not see them.
 
 ## A worker's finish
 One commit contains the code, the yak move `shaving > shorn` and any evidence. `yaks attach`
@@ -31,8 +31,8 @@ match (a transient `shaving/` path after the move is the usual culprit). Use
 `git show --stat` lists every file you expect before you rely on the commit.
 
 ## Landing
-- **Squash-merge** each lane; the yak id appears in the message, so `yaks commits <id>` can
-  join on it. Use a merge commit only for a lane that needs several commits. No cherry-picking
+- **Squash-merge** each shed; the yak id appears in the message, so `yaks commits <id>` can
+  join on it. Use a merge commit only for a shed that needs several commits. No cherry-picking
   across branches. To bring main-side updates into a live branch, `git merge main`,
   all-or-nothing.
 - **Commit human drift first.** Before ANY squash checkpoint, commit or stash the human's
@@ -43,12 +43,12 @@ match (a transient `shaving/` path after the move is the usual culprit). Use
 - **Gate re-syncs on success.** Run `reset --hard` or a branch re-sync only after you have
   checked that the commit landed and `git show --stat` contains every expected file. Never
   unconditionally.
-- Run `yaks doctor`. A stalled lane left `shaving` on your branch is `regrow`n or re-run.
+- Run `yaks doctor`. A stalled shed left `shaving` on your branch is `regrow`n or re-run.
 
 ## Asks
-A worker's `yaks ask` lives on its lane until it lands, so it does not appear in your
+A worker's `yaks ask` lives on its shed until it lands, so it does not appear in your
 `yaks inbox` before then. When the code is gated green and only a subjective sign-off remains,
-land the lane first, then route the human's answer to the ask that is now visible.
+land the shed first, then route the human's answer to the ask that is now visible.
 
 ## Provenance
 `yaks commits <id>` joins on the yak file followed across the squash plus the id in messages.
@@ -61,5 +61,5 @@ Yak ids may appear in commit messages but NEVER in a PR title or body or an exte
 put the external key in with `yaks rollup --keys`, and preflight the text with
 `printf '%s' "$body" | yaks scan-ids` (non-zero on any leaked id). Prefer a private farm when
 the repo also has an external tracker (two competing shared layers otherwise).
-If you land through a PR-style branch and a squash, keep the original per-lane history on a
+If you land through a PR-style branch and a squash, keep the original per-shed history on a
 named archive branch so worker SHAs cited in messages stay reachable.

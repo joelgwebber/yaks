@@ -4,7 +4,7 @@ title: 'Parallel development: finish and harden coordinator/worker skills + tool
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-06T20:01:59Z'
+updated: '2026-10-06T21:32:29Z'
 labels:
 - agent
 - skills
@@ -99,3 +99,17 @@ Published state (2026-10-06, Linux machine): GitHub main is d42cf08 (pushed on J
 No delta/trial12 archive: pushing the unsquashed history from this shallow clone is refused ("shallow update not allowed"); the commits remain in the thread and in Delta's refs/delta pins.
 
 Coordination mechanics are finished (preflight --push-main, stdin/file input, the stale-skills notice, needs: agent with pickup, yaks brief, the cold-read gate). Next: the yaks-7204 lanes design discussion.
+
+---
+▸ 2026-10-06T21:05:37Z [delta-lead]
+Published (2026-10-06, laptop): GitHub main and the laptop's ~/src/yaks main are deea536 (a squash commit on d42cf08: yaks brief, O61, the Delta skill pointer), both fast-forwards, gate green on this machine. The Linux machine's ~/src/yaks holds my earlier equivalent commit 991c0d2, which is not an ancestor of deea536 and has no unique work: on that machine `git fetch origin && git reset --hard origin/main` brings it level.
+
+Why yaks-2c22 was shorn in the thread worktree but not in ~/src/yaks: the thread had moved to the Linux machine, where `local` is the Linux checkout, so the squash was pushed there; the laptop checkout is a separate repo and was not updated until now.
+
+Filed from Joel's yaks lanes review: yaks-37fa (lane baseline defect) and the CLI-affordances design task under yaks-7204.
+
+---
+▸ 2026-10-06T21:32:29Z [delta-lead]
+Spawned shd-1 (agent 85ba98dba47846fc, anthropic/claude-sonnet-5-5, base f0eef06) on yaks-dfca (the lane to shed rename); the first spawn whose brief was produced by `yaks brief` (plus the wrapper lines the Delta skill prescribes). Joel stays on one machine for the run.
+
+Order: yaks-dfca (rename) then yaks-37fa (lane baseline), since both edit src/lanes.rs. Then yaks status (yaks-ee0a step 2).
