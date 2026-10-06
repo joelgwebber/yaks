@@ -2,9 +2,9 @@
 id: yaks-699b
 title: Inline viewing and editing of md attachments
 type: feature
-priority: 1
+priority: 3
 created: '2026-10-04T20:53:40Z'
-updated: '2026-10-04T20:53:40Z'
+updated: '2026-10-05T22:18:54Z'
 labels:
 - tui
 - markdown

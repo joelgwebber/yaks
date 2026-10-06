@@ -4,7 +4,7 @@ title: 'Differential-testing tool: capture Python curses TUI via PTY+pyte'
 type: task
 priority: 3
 created: '2026-08-22T03:33:06Z'
-updated: '2026-08-22T03:33:17Z'
+updated: '2026-10-05T22:35:06Z'
 parent: yaks-2892
 labels:
 - rust
@@ -16,3 +16,7 @@ tools/py_tui_capture.py drives the Python (curses) yaks TUI under a real pseudo-
 ---
 ▸ 2026-08-22T03:33:17Z
 Done. tools/py_tui_capture.py working end-to-end against tests/fixtures/herd: PTY + pyte, readiness wait for first curses paint, key translation (names + C- ctrl + arrows/page/etc), child stderr captured separately. Same frame markers as the Rust harness (minus the state header, which is internal to Rust). Verified keys drive it (l -> Python detail pane). Immediately surfaces differences: emoji tab bar with (N) counts + wrapping, id-first list rows with emoji glyphs + labels shown, detail header "Task: id" + "Blocks:" + humanized dates + Title:/Status:/... field labels, different help lines. Known pyte artifact: the detail vertical divider renders as x (DEC line-drawing charset not mapped) — cosmetic.
+
+---
+▸ 2026-10-05T22:35:06Z [Joel Webber]
+moved: shorn -> dead

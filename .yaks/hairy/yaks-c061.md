@@ -4,7 +4,7 @@ title: 'Answered questions are hard to find: no ''answered, pending agent pickup
 type: feature
 priority: 3
 created: '2026-09-24T12:39:58Z'
-updated: '2026-09-24T12:39:58Z'
+updated: '2026-10-05T22:36:13Z'
 labels:
 - cli
 - ui
@@ -34,3 +34,7 @@ Checked in code: the TUI `a` on a blocked yak opens the Answer prompt and submit
 - **Skill habit (no tool change):** the yaks skill's session-start step could include `yaks log --since <last session>` filtered to notes from non-agent actors on yaks the agent asked about. That's how this was actually found.
 
 The `needs: agent` flip is attractive: it keeps one field, gives `inbox` a symmetric counterpart ("awaiting an agent"), and survives any context loss because it's in the file. A human answering (`a` or `yaks answer`) would set it on yaks an agent asked about; an agent clears it when it picks the work up.
+
+---
+▸ 2026-10-05T22:36:13Z [Joel Webber]
+Possibly the same as yaks-f313?
