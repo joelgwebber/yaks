@@ -239,8 +239,11 @@ pub fn build(task: &Task, all: &[Task]) -> Vec<DLine> {
         field("Status:", status_word(task.status)),
     ];
     // A `needs` block is state worth seeing next to Status (mirrors CLI `show`).
-    // Carries a warning accent (Kind::Warn) so it reads as a blocker.
-    if let Some(n) = &task.needs {
+    // An open question carries a warning accent (Kind::Warn) so it reads as a
+    // blocker; an answered one (`needs: agent`) is plain: it blocks nothing.
+    if task.awaiting_agent() {
+        out.push(field("Needs:", "agent (answered, awaiting pickup)"));
+    } else if let Some(n) = &task.needs {
         out.push(warn_field("Needs:", n));
     }
     out.push(field("Type:", &task.kind));
@@ -582,6 +585,19 @@ mod detail_tests {
         // The Needs line carries the warning accent, not a plain field.
         let dlines = build(&task, &[task.clone()]);
         assert_eq!(dlines[needs_i].kind, Kind::Warn);
+    }
+
+    #[test]
+    fn answered_needs_is_a_plain_field_not_a_warning() {
+        let mut task = t("yak-0001", None, &[]);
+        task.needs = Some("agent".into());
+        let dlines = build(&task, &[task.clone()]);
+        let needs = dlines
+            .iter()
+            .find(|l| l.text.starts_with("Needs:"))
+            .unwrap();
+        assert!(needs.text.contains("answered"), "{}", needs.text);
+        assert_eq!(needs.kind, Kind::Field);
     }
 
     #[test]

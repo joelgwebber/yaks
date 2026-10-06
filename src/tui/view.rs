@@ -166,8 +166,8 @@ pub fn recent_view() -> View {
     }
 }
 
-/// The inbox: a flat list of every yak carrying a `needs` block (awaiting a
-/// human), across all statuses. Driven purely by the shared `needs_only`
+/// The inbox: a flat list of every yak carrying a `needs` value (awaiting a
+/// human, or answered and awaiting an agent), across all statuses. Driven purely by the shared `needs_only`
 /// predicate, so it composes with — rather than overrides — the filter. Not
 /// pinned by default (reach it from the view picker, or toggle the `inbox`
 /// chip in the filter drawer); replaces the old modal `i` toggle.

@@ -1072,6 +1072,63 @@ pub fn is_transition_text(text: &str) -> bool {
     status(from) && status(to)
 }
 
+/// Prefix of the first line of an `ask` note: `asked: needs <who>`. It marks
+/// which note raised the question, so the reply detection can tell the asker's
+/// own note from a later one by someone else. The question (if any) follows
+/// after a blank line.
+const ASK_PREFIX: &str = "asked: needs ";
+
+/// The text `ask` records: the marker line, then the question if there is one.
+pub fn ask_text(needs: &str, question: Option<&str>) -> String {
+    match question {
+        Some(q) => format!("{ASK_PREFIX}{needs}\n\n{q}"),
+        None => format!("{ASK_PREFIX}{needs}"),
+    }
+}
+
+/// True iff `text` is an `ask` note written by [`ask_text`].
+pub fn is_ask_text(text: &str) -> bool {
+    text.lines()
+        .next()
+        .is_some_and(|l| l.starts_with(ASK_PREFIX))
+}
+
+/// The first line of a `pickup` note.
+const PICKUP_LINE: &str = "picked up";
+
+/// The text `pickup` records: `picked up`, then the note if there is one.
+pub fn pickup_text(note: Option<&str>) -> String {
+    match note {
+        Some(n) => format!("{PICKUP_LINE}\n\n{n}"),
+        None => PICKUP_LINE.to_string(),
+    }
+}
+
+fn is_pickup_text(text: &str) -> bool {
+    text.lines().next() == Some(PICKUP_LINE)
+}
+
+/// Derived, never stored: has someone other than the asker written a plain
+/// note since the question was raised? True for a yak that is awaiting a human
+/// whose latest note after its latest `ask` note is by a different actor than
+/// the asker (a reply that did not use `answer`). Transition (`moved:`) and
+/// `pickup` entries are not replies. A yak with no `ask` note (a hand-set or
+/// pre-marker `needs:`) has no known asker and is never `replied`.
+pub fn is_replied(task: &Task) -> bool {
+    if !task.awaiting_human() {
+        return false;
+    }
+    let notes = parse_notes(&task.body);
+    let Some(ask_at) = notes.iter().rposition(|n| is_ask_text(&n.text)) else {
+        return false;
+    };
+    let asker = &notes[ask_at].actor;
+    notes[ask_at + 1..]
+        .iter()
+        .rfind(|n| !is_transition_text(&n.text) && !is_pickup_text(&n.text))
+        .is_some_and(|n| &n.actor != asker)
+}
+
 /// Load a single task by id (whatever status dir it is in).
 pub fn load_task_by_id(root: &Path, id: &str) -> Result<Option<Task>> {
     let Some((status, path)) = find_task_file(root, id) else {
@@ -2204,5 +2261,133 @@ mod discover_tests {
         let msg = format!("{:#}", discover_with(&checkout, Some(&bad)).err().unwrap());
         assert!(msg.contains("YAKS_DIR"), "{msg}");
         let _ = fs::remove_dir_all(&base);
+    }
+}
+
+#[cfg(test)]
+mod replied_tests {
+    use super::*;
+
+    fn task_with(needs: Option<&str>, notes: &[(&str, Option<&str>, &str)]) -> Task {
+        let mut body = String::new();
+        for (ts, actor, text) in notes {
+            body = append_note(&body, ts, *actor, text);
+        }
+        Task {
+            id: "t-1".into(),
+            title: "t".into(),
+            kind: "task".into(),
+            priority: 3,
+            status: Status::Hairy,
+            created: None,
+            updated: None,
+            parent: None,
+            labels: vec![],
+            depends_on: vec![],
+            source: None,
+            needs: needs.map(String::from),
+            verify: None,
+            extra: Vec::new(),
+            body,
+        }
+    }
+
+    fn ask(who: &str) -> String {
+        ask_text("human", Some(who))
+    }
+
+    #[test]
+    fn a_plain_note_by_someone_else_after_the_ask_is_a_reply() {
+        let t = task_with(
+            Some("human"),
+            &[
+                ("2026-01-01T00:00:00Z", Some("coord"), &ask("which?")),
+                ("2026-01-01T00:01:00Z", Some("joel"), "B"),
+            ],
+        );
+        assert!(is_replied(&t));
+    }
+
+    #[test]
+    fn the_askers_own_latest_note_is_not_a_reply() {
+        // The asker adding to its own question, or a human ask the asker
+        // follows with a note, is not a reply.
+        let own = task_with(
+            Some("human"),
+            &[
+                ("2026-01-01T00:00:00Z", Some("coord"), &ask("which?")),
+                ("2026-01-01T00:01:00Z", Some("coord"), "more context"),
+            ],
+        );
+        assert!(!is_replied(&own));
+        let just_asked = task_with(
+            Some("human"),
+            &[("2026-01-01T00:00:00Z", Some("coord"), &ask("which?"))],
+        );
+        assert!(!is_replied(&just_asked));
+        // Spec: the LATEST note decides, so a reply the asker then talks over
+        // is no longer flagged.
+        let talked_over = task_with(
+            Some("human"),
+            &[
+                ("2026-01-01T00:00:00Z", Some("coord"), &ask("which?")),
+                ("2026-01-01T00:01:00Z", Some("joel"), "B"),
+                ("2026-01-01T00:02:00Z", Some("coord"), "thanks"),
+            ],
+        );
+        assert!(!is_replied(&talked_over));
+    }
+
+    #[test]
+    fn moved_and_pickup_entries_are_not_replies() {
+        let t = task_with(
+            Some("human"),
+            &[
+                ("2026-01-01T00:00:00Z", Some("coord"), &ask("which?")),
+                (
+                    "2026-01-01T00:01:00Z",
+                    Some("joel"),
+                    &transition_text(Status::Shorn, Status::Hairy),
+                ),
+                ("2026-01-01T00:02:00Z", Some("joel"), &pickup_text(None)),
+            ],
+        );
+        assert!(!is_replied(&t));
+    }
+
+    #[test]
+    fn an_earlier_ask_is_superseded_by_the_latest_one() {
+        // Reply to the first ask, then a second ask by someone else: the
+        // reference point is the latest ask, so nothing has replied to it yet.
+        let t = task_with(
+            Some("human"),
+            &[
+                ("2026-01-01T00:00:00Z", Some("coord"), &ask("one?")),
+                ("2026-01-01T00:01:00Z", Some("joel"), "A"),
+                ("2026-01-01T00:02:00Z", Some("agt"), &ask("two?")),
+            ],
+        );
+        assert!(!is_replied(&t));
+    }
+
+    #[test]
+    fn only_a_yak_awaiting_a_human_with_a_known_asker_can_be_replied() {
+        let notes = [
+            ("2026-01-01T00:00:00Z", Some("coord"), ask("which?")),
+            ("2026-01-01T00:01:00Z", Some("joel"), "B".to_string()),
+        ];
+        let notes: Vec<_> = notes.iter().map(|(a, b, c)| (*a, *b, c.as_str())).collect();
+        assert!(!is_replied(&task_with(Some("agent"), &notes)));
+        assert!(!is_replied(&task_with(None, &notes)));
+        // A `needs:` with no `asked:` note (hand-set, or pre-marker) has no
+        // known asker: never flagged.
+        let legacy = task_with(
+            Some("human"),
+            &[
+                ("2026-01-01T00:00:00Z", Some("coord"), "which?"),
+                ("2026-01-01T00:01:00Z", Some("joel"), "B"),
+            ],
+        );
+        assert!(!is_replied(&legacy));
     }
 }

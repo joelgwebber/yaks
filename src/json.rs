@@ -61,6 +61,22 @@ pub fn task_value(t: &Task) -> Value {
     Value::Object(m)
 }
 
+/// `inbox --json`: the canonical task objects plus the derived `replied` flag.
+pub fn inbox_array(tasks: &[&Task]) -> Value {
+    Value::Array(
+        tasks
+            .iter()
+            .map(|t| {
+                let mut v = task_value(t);
+                if let Value::Object(m) = &mut v {
+                    m.insert("replied".into(), json!(crate::store::is_replied(t)));
+                }
+                v
+            })
+            .collect(),
+    )
+}
+
 pub fn tasks_array(tasks: &[Task]) -> Value {
     Value::Array(tasks.iter().map(task_value).collect())
 }

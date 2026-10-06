@@ -99,8 +99,9 @@ when all of them are shorn (or dead), and *tangled* otherwise.
 | `yaks refs <id>` | List what a task points at (parent, deps, id mentions in its text), flagging any that dangle |
 | `yaks commits <id>` | Show the git commits linked to a yak — those naming its id and those that touched its file across status moves |
 | `yaks update <id>` | Change fields/labels, set `--description`, or append a `--note` (`-` reads stdin; `--note-file PATH`: multi-line markdown without shell quoting) |
-| `yaks ask <id>` / `answer <id>` | Block a yak on a human (sets `needs`, drops it from `next`) / clear that block, each recording a `--note` |
-| `yaks inbox` | List yaks awaiting a human (the `needs` queue) |
+| `yaks ask <id>` / `answer <id>` | Block a yak on a human (sets `needs: human`, drops it from `next`) / answer it (sets `needs: agent`, so the answer cannot get lost; `--done` clears instead), each recording a `--note` |
+| `yaks pickup <id>` | An agent takes on an answered yak: clears `needs: agent` with an attributed note. The only thing that clears it |
+| `yaks inbox` | The `needs` queue, two sections: awaiting a human (`replied` marks a plain-note reply that skipped `answer`) and answered, awaiting an agent; `--for human\|agent`, `--json` |
 | `yaks shave <id>` | hairy → shaving (alias: `work`) |
 | `yaks shorn <id>` | shaving → shorn (alias: `close`) |
 | `yaks regrow <id>` | shorn → hairy (alias: `reopen`) |
@@ -148,9 +149,10 @@ embedded modal editor (vim or emacs keybindings, per `.yaks/config.yaml`). It
 auto-refreshes when the files change underneath it, so it stays in sync if you
 (or an agent) edit yaks from elsewhere. It takes the mouse too (wheel scroll,
 click to select / open / switch view). Mark rows with `m` for a bulk state
-change over the selection; `a` raises or clears a `needs` block (ask / answer);
-and an **Inbox** view lists every yak awaiting a human, each flagged inline with
-a ⏳ badge and a warning accent.
+change over the selection; `a` asks or answers (answer hands the yak to an agent: `needs: agent`);
+and an **Inbox** view lists every yak with a `needs` value, each flagged inline
+with a ⏳ badge and a warning accent (awaiting a human) or a ✅ badge (answered,
+awaiting an agent).
 
 ![The yaks TUI list view: a parent yak with children across statuses, labels, a dependency, and a ⏳ needs badge](docs/assets/tui-list.svg)
 

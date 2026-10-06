@@ -1509,6 +1509,24 @@ fn needs_badge_renders_on_a_blocked_row() {
     assert!(out.contains('\u{23f3}'), "hourglass badge present:\n{out}");
 }
 
+/// `needs: agent` (answered) is not awaiting a human: no hourglass, no
+/// warning accent in the detail pane, and `a` asks (follow-up) instead of
+/// answering; the row carries the answered badge instead.
+#[test]
+fn answered_yak_is_not_rendered_as_awaiting_a_human() {
+    let mut answered = task("t0", "answered already", Status::Hairy, 3, None);
+    answered.needs = Some("agent".into());
+    let mut app = App::new(vec![answered]);
+    let out = draw(&app, 80, 8);
+    assert!(!out.contains('\u{23f3}'), "no hourglass:\n{out}");
+    assert!(out.contains('\u{2705}'), "answered badge:\n{out}");
+    app.open_ask_or_answer();
+    match &app.overlay {
+        Overlay::Edit(ed) => assert!(matches!(ed.action, EditAction::Ask(_))),
+        _ => panic!("expected the ask prompt"),
+    }
+}
+
 #[test]
 fn inbox_view_lists_needs_blocked_across_statuses() {
     // The Inbox built-in view is a flat list of every yak awaiting a human,
@@ -2252,7 +2270,7 @@ mod live {
     }
 
     #[test]
-    fn answer_clears_needs_and_records_the_reply() {
+    fn answer_hands_the_yak_to_an_agent_and_records_the_reply() {
         let mut seed = task("t0", "solo", Status::Hairy, 3, None);
         seed.needs = Some("human".into());
         let (_dir, farm) = temp_farm(&[seed]);
@@ -2261,7 +2279,7 @@ mod live {
         press(&mut app, "resolved offline");
         enter(&mut app);
         let t = app.task("t0").unwrap();
-        assert!(t.needs.is_none(), "block cleared");
+        assert_eq!(t.needs.as_deref(), Some("agent"), "handed to an agent");
         assert!(
             t.body.contains("resolved offline"),
             "reply recorded as a note: {}",
@@ -2930,7 +2948,7 @@ fn ask_and_answer_prompts_separate_label_from_typed_text() {
     press(&mut app, "hello");
     let out = draw(&app, 120, 14);
     assert!(
-        out.contains("Answer a0 — clears the block (Enter save · Ctrl-C cancel): hello"),
+        out.contains("Answer a0 — hands it to an agent (Enter save · Ctrl-C cancel): hello"),
         "answer prompt should separate label from text\n{out}"
     );
 }

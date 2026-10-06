@@ -1,0 +1,18 @@
+=== frame 6 · 96x16 · focus=list · view=📥 Inbox · cursor=0 · rows=3 · sel=yak-77d4 · blocked=- · collapsed=0 · filter=inbox · overlay=none ===
+ 🦬 Hairy (2)   🪒 Shaving (0)   🐑 Shorn (1)   🕒 Recent (3)   ⭐ Starred (0)
+
+ yak-77d4 p3 task     🐑 Answered shorn yak                                                   ✅
+ yak-8e8f p3 task     🦬 Needs a human call                                                   ⏳
+ yak-205d p3 task     🦬 Answered, awaiting agent                                             ✅
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filte
+=== end ===

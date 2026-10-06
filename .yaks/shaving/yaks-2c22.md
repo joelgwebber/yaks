@@ -4,7 +4,7 @@ title: 'Process rails: yaks brief (worker brief from a yak) and yaks preflight (
 type: feature
 priority: 2
 created: '2026-10-03T21:13:29Z'
-updated: '2026-10-06T03:57:00Z'
+updated: '2026-10-06T03:58:20Z'
 parent: yaks-b5a0
 labels:
 - cli
@@ -55,3 +55,32 @@ Recording the answer (coordinator delta-lead, on Joel's note above, 2026-10-06T0
 I read that as option A: the binary owns the yak-derived core of the worker brief (`yaks brief <id> --as <name>`), the Delta skill keeps orchestration and shrinks to a pointer. The reason he gives is that a prose template filled in by hand gets clauses dropped. If that is not what you meant, say so and I will redo the brief before landing.
 
 Clearing `needs` because the reply was a plain note, which leaves the block set (this is exactly the gap in yaks-c061).
+
+---
+▸ 2026-10-06T03:58:20Z [delta-lead]
+moved: hairy -> shaving
+
+---
+▸ 2026-10-06T03:58:20Z [delta-lead]
+Claim and settled design (coordinator delta-lead). Owner: worker brf-1. Joel: "I'm good with putting these into the tools now" (read as option A, recorded above): the binary owns the yak-derived core of the worker brief; the Delta skill keeps orchestration and its template shrinks to a pointer (the coordinator edits the skill after landing).
+
+## `yaks brief <id> --as <name> [--yaks-dir <path>]`
+Prints the worker brief to stdout (plain text, deterministic). It errors (non-zero, nothing on stdout) if the yak does not exist, and if it is not `shaving` it prints the brief but warns on stderr that the coordinator must claim it first. Contents, each derivable from the yak, the config or the farm:
+1. The yak id and title, and that it is already `shaving`; do not shave, shear, regrow or edit any other yak.
+2. Every yaks command prefixed `YAKS_ACTOR=<name>` (a fresh shell per terminal call). With `--yaks-dir <path>` (or when the farm is out-of-tree/pointer or private) also the `YAKS_DIR=<path>` line for every command.
+3. How to get a binary: say to use the binary the coordinator names; default to the absolute path of the running executable (`current_exe`) and add "never npx or an installer".
+4. Read the yak first: `yaks show <id>` and every note; the scope, the judge and the evidence contract live in the claim note.
+5. Evidence: the yak's own `verify:` command (resolved with the config default by label, as `yaks verify` does) and any attachment the yak requires; "paste real output; claim nothing unobserved".
+6. Forbidden moves: edits to Cargo.toml/Cargo.lock/.gitignore/config, path dependencies, `git push`, installs, history rewrites.
+7. How to finish, chosen by farm mode (detect as the skills do: tracked `.yaks` = team): TEAM: `yaks shorn <id>` (there is no `shear` subcommand) after the evidence exists, ONE commit with explicit paths including `yaks path <id>` output, the removed old status path and `.yaks/artifacts/<id>` if anything was attached (a missing pathspec aborts `git add`), message `<id>: ...`. PRIVATE (untracked or out-of-tree farm): no yak ids or the word yaks in commits, stage only your own files, plain-English message.
+8. Blocked or a decision needed: `yaks ask <id>`, leave edits in the working tree, never revert, never park in $TMPDIR, say which in the final message.
+9. Notes: record every choice a reviewer could argue about as a note starting `Decision:` naming the rejected alternatives; multi-line notes as markdown piped on stdin (`--note - <<'EOF'`), not one long argument (the same text as the yaks skill).
+10. The final-message format: commit SHA and `git show --stat`; gate command and last lines; start/finish `date -u`; the Decision notes in one line each; docs-parity grep; anything surprising.
+It must NOT contain orchestration the yak cannot know (spawn titles, Delta landing, which model); the coordinator adds those around it.
+
+## Constraints
+- The text lives in one place in the binary (src/brief.rs is fine), is built from small pieces so mode/yak differences are explicit, and is covered by tests (team, private, pointer/--yaks-dir, non-shaving warning, unknown id, `verify:` present/absent).
+- `--json` is optional; if you add it, same sections as keys.
+- Docs parity: docs/cli.md, README.md, `.agents/skills/yaks/SKILL.md` command table, `--help`. Leave `.agents/skills/yaks-coordinating*` and `yaks-working` to the coordinator, but report which sentences of the brief template in the Delta skill the command now replaces.
+- Evidence: gate green; a real run of `yaks brief` for a shaving yak in a team farm and in a private farm (paste both); then check the output against the Delta skill's current template and list any clause present in one and missing in the other.
+Judge: coordinator re-runs the gate and gives the output to a fresh scout as a worker brief.

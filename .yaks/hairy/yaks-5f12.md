@@ -4,7 +4,7 @@ title: 'Decision: git-store vs Model 3 (coordinator-sole-writer on FS)'
 type: task
 priority: 1
 created: '2026-08-31T20:47:23Z'
-updated: '2026-10-05T22:43:55Z'
+updated: '2026-10-06T03:58:55Z'
 parent: yaks-4fe6
 labels:
 - git
@@ -41,3 +41,7 @@ Residual risk: two lanes (or a lane and the human) both append to the SAME yak; 
 
 ## Recommendation
 Do not build 2 or 3 now. The incidents above all have shipped mitigations, and the last six landings produced no hand-resolved yak-file conflict. Revisit when ANY of these happens: a landing needs a hand-resolved conflict inside `.yaks/`, a yak edit is lost, or two lanes need to write the same yak routinely. Count them in the observation log (yaks-df61) so the trigger is evidence, not a feeling.
+
+---
+▸ 2026-10-06T03:58:55Z [delta-lead]
+Trigger check (coordinator delta-lead, 2026-10-06): one hand-resolved conflict inside .yaks/ has now happened, an append/append on yaks-2c22 (the coordinator's ask and the human's answer appended to the same file) when merging the human's commit. It resolved by keeping both. One incident is not the pattern; the count stays in yaks-df61.

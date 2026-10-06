@@ -68,8 +68,11 @@ pub struct Task {
     pub labels: Vec<String>,
     pub depends_on: Vec<String>,
     pub source: Option<String>,
-    /// A soft, external block: while set (e.g. `human`), the yak is not ready in
-    /// `next`. Raised by `ask`, cleared by `answer`. Not ownership, not a status.
+    /// A soft, external hand-off, not ownership and not a status. `human` (or
+    /// any value but `agent`) is a block: the yak is not ready in `next`;
+    /// raised by `ask`. `agent` is the answered counterpart: `answer` sets it,
+    /// the yak is not blocked, and only `pickup` clears it. See
+    /// [`Task::awaiting_human`] / [`Task::awaiting_agent`].
     pub needs: Option<String>,
     /// An optional rerunnable verification command (the scriptable form of a
     /// yak's evidence contract). `yaks verify <id>` runs it and records the
@@ -80,6 +83,23 @@ pub struct Task {
     /// Keeps `.yaks/` authoritative across versions. Not rendered.
     pub extra: Vec<String>,
     pub body: String,
+}
+
+/// The `needs` value meaning "answered, awaiting an agent to pick the work up".
+/// Every other value is an open question (awaiting a human).
+pub const NEEDS_AGENT: &str = "agent";
+
+impl Task {
+    /// An open question: `needs` is set to anything but `agent`. Blocks `next`.
+    pub fn awaiting_human(&self) -> bool {
+        self.needs.as_deref().is_some_and(|n| n != NEEDS_AGENT)
+    }
+
+    /// An answered question nobody has picked up yet (`needs: agent`). Does not
+    /// block `next`.
+    pub fn awaiting_agent(&self) -> bool {
+        self.needs.as_deref() == Some(NEEDS_AGENT)
+    }
 }
 
 /// Split raw label input into canonical labels — the one parser every entry

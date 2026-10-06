@@ -4,7 +4,7 @@ title: 'Parallel development: finish and harden coordinator/worker skills + tool
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-05T22:40:25Z'
+updated: '2026-10-06T19:13:17Z'
 labels:
 - agent
 - skills
@@ -63,3 +63,21 @@ Spawned (base ca50b88, anthropic/claude-sonnet-5-5 both):
 Coordinator, in this clone: the skills pass (a398, Decision: notes, lanes/init pointers, 7acf yakherd, the 382b markdown guidance once inp-1 lands, cold-read) under yaks-5c9f.
 
 Joel's checkout holds many uncommitted yak edits (36b6, 7204, c061, 382b...): I do not write into those files until he commits; new work on them goes into child yaks. Pushing to his main is blocked until then (preflight --push-main reports it).
+
+---
+▸ 2026-10-06T03:58:55Z [delta-lead]
+Spawned (base 0725169, anthropic/claude-sonnet-5-5 both):
+- agt-1 (agent 017210ed9be846ae) on yaks-c061: `needs: agent` pickup state, `yaks pickup`, inbox sections, `replied` flag (Joel's decision recorded on c061).
+- brf-1 (agent c515ac6c7ea04cd2) on yaks-2c22: `yaks brief` (the binary owns the yak-derived core; Joel: "putting these into the tools now").
+
+Pushed to Joel's repo as pr/yakherd-input-notice-2 (6 commits: four squashes, a merge of his 2e0aae6, the 2c22 answer); main waits for his checkout to be clean (yaks-ea13 uncommitted). Archive: delta/trial10.
+
+Incident for the yaks-5f12 trigger: merging Joel's 'Yak herding.' conflicted in yaks-2c22 (my ask and his answer both appended at the end of the file). Resolved by keeping both. Count: 1 hand-resolved conflict inside .yaks/ so far.
+
+---
+▸ 2026-10-06T19:13:17Z [delta-lead]
+brf-1 (agent c515ac6c7ea04cd2, yaks-2c22) went silent: its lane xw51kfjdpqy5 shows src/brief.rs (354 lines, untracked), an edit to src/main.rs and one note on yaks-2c22, last file write 04:02Z on 2026-10-06; no final message by 19:15Z (about 15 hours). The threads tool cannot read it ("history ... was reset while its state was awaited", the same offline/unreachable-history condition Delta logs). Nothing was committed.
+
+Action taken: sent brf-1 a status request through send_agent_message (finish if alive, else say what happened; do not start over). If it does not answer, spawn brf-2 seeded from brf-1's src/brief.rs (readable in its lane) rather than from scratch.
+
+Lesson for the Delta skill: a worker can die without a final message and the coordinator is never told. `yaks lanes` is what showed it (dirty files, an old FARM ACTIVE time, a `who` label); check lanes when a worker is overdue.

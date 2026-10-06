@@ -26,11 +26,12 @@ use std::env;
 
 use farm::{
     AttachOutcome, Commits, CreateOutcome, DepOutcome, Farm, Issue, IssueKind, LogEntry,
-    MergeOutcome, MoveOutcome, NewTask, OpenError, RefKind, RenameAttachmentOutcome, RenameOutcome,
-    RenamePlan, Reparent, Show, SlaughterOutcome, Stats, TaskEdit, TaskRefs, UpdateOutcome,
+    MergeOutcome, MoveOutcome, NewTask, OpenError, Pickup, RefKind, RenameAttachmentOutcome,
+    RenameOutcome, RenamePlan, Reparent, Show, SlaughterOutcome, Stats, TaskEdit, TaskRefs,
+    UpdateOutcome,
 };
 use filter::FilterSpec;
-use model::{Status, Task, normalize_labels};
+use model::{NEEDS_AGENT, Status, Task, normalize_labels};
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -66,7 +67,8 @@ struct FilterFlags {
     ready: bool,
     #[arg(long)]
     tangled: bool,
-    /// Keep only yaks blocked on a human (a `needs` field is set).
+    /// Keep only yaks with a `needs` field set: awaiting a human (`needs:
+    /// human`) or answered and awaiting an agent (`needs: agent`).
     #[arg(long)]
     needs: bool,
     #[arg(long = "parent-of")]
@@ -335,7 +337,9 @@ enum Command {
         as_actor: Option<String>,
     },
     /// Block a yak on a human decision and record the question. Sets the `needs`
-    /// field so the yak drops out of `next`; clear it with `answer`.
+    /// field so the yak drops out of `next`; `answer` hands it to an agent
+    /// (`needs: agent`) and `pickup` clears that. Asking a yak that is already
+    /// answered (`needs: agent`) flips it back to `human`.
     Ask {
         id: String,
         /// The question for the human (recorded as an attributed note). `-`
@@ -351,8 +355,12 @@ enum Command {
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
-    /// Clear a yak's `needs` block (answer it) and record the reply. The
-    /// human-reserved counterpart to `ask`; returns the yak to `next`.
+    /// Answer a question: record the reply and set `needs: agent`, so the yak
+    /// shows in `inbox` (and, if hairy, `next`) as answered and awaiting an
+    /// agent. The human-reserved counterpart to `ask`. `--done` clears `needs`
+    /// instead, for an answer that needs no follow-up. A second answer keeps
+    /// `needs: agent` and appends the note; on a yak with no `needs` it only
+    /// records the note.
     Answer {
         id: String,
         /// The reply/decision (recorded as an attributed note). `-` reads it
@@ -362,14 +370,37 @@ enum Command {
         /// Read the reply from this file (`-` is stdin).
         #[arg(long = "note-file", value_name = "PATH")]
         note_file: Option<String>,
+        /// Clear `needs` entirely instead of handing the yak to an agent.
+        #[arg(long)]
+        done: bool,
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
-    /// List yaks awaiting a human (the `needs` inbox). Equivalent to
-    /// `list --needs` run across all statuses.
+    /// Pick up an answered yak: clear `needs: agent` and record who took the
+    /// work on (a `picked up` note). The only command that clears it; errors
+    /// on a yak that is not `needs: agent`.
+    Pickup {
+        id: String,
+        /// Optional note (what you will do with the answer). `-` reads stdin.
+        #[arg(long, conflicts_with = "note_file")]
+        note: Option<String>,
+        /// Read the note from this file (`-` is stdin).
+        #[arg(long = "note-file", value_name = "PATH")]
+        note_file: Option<String>,
+        #[arg(long = "as")]
+        as_actor: Option<String>,
+    },
+    /// List yaks with a `needs` value, across all statuses, in two sections:
+    /// awaiting a human (`needs: human`; `replied` marks one whose latest note
+    /// after the ask is by someone other than the asker) and answered, awaiting
+    /// an agent (`needs: agent`). `--for human|agent` shows one section.
     Inbox {
         #[command(flatten)]
         filter: FilterFlags,
+        /// Show only one section.
+        #[arg(long = "for", value_enum)]
+        audience: Option<Audience>,
+        /// JSON array of yaks, each with `needs` and `replied`.
         #[arg(long)]
         json: bool,
     },
@@ -1158,23 +1189,47 @@ fn main() -> Result<()> {
         } => {
             let note = resolve_text("--note", note, note_file, &mut StdinText::real())?;
             let actor = actor::resolve(as_actor.as_deref());
-            match farm.set_needs(&id, Some(needs.clone()), actor.as_deref(), note.as_deref())? {
-                None => {
-                    eprintln!("error: task {id} not found");
-                    std::process::exit(1);
-                }
-                Some(st) if matches!(st, Status::Shorn | Status::Dead) => {
-                    eprintln!(
-                        "warning: {id} is {st:?} — blocking finished work; did you mean a hairy yak? (it will still show in `inbox`)"
-                    );
-                    println!("Asked {id}: needs {needs}");
-                }
-                Some(_) => {
-                    println!("Asked {id}: needs {needs} (dropped from next until answered)")
-                }
+            let Some(c) = farm.ask(&id, &needs, actor.as_deref(), note.as_deref())? else {
+                eprintln!("error: task {id} not found");
+                std::process::exit(1);
+            };
+            if matches!(c.status, Status::Shorn | Status::Dead) {
+                eprintln!(
+                    "warning: {id} is {:?} \u{2014} blocking finished work; did you mean a hairy yak? (it will still show in `inbox`)",
+                    c.status
+                );
             }
+            let mut msg = format!("Asked {id}: needs {needs}");
+            if c.before.as_deref() == Some(NEEDS_AGENT) {
+                msg.push_str(" (was answered, awaiting an agent; now awaiting a human again)");
+            } else if !matches!(c.status, Status::Shorn | Status::Dead) {
+                msg.push_str(" (dropped from next until answered)");
+            }
+            println!("{msg}");
         }
         Command::Answer {
+            id,
+            note,
+            note_file,
+            done,
+            as_actor,
+        } => {
+            let note = resolve_text("--note", note, note_file, &mut StdinText::real())?;
+            let actor = actor::resolve(as_actor.as_deref());
+            let Some(c) = farm.answer(&id, actor.as_deref(), note.as_deref(), done)? else {
+                eprintln!("error: task {id} not found");
+                std::process::exit(1);
+            };
+            match (&c.before, &c.after) {
+                (None, _) => println!("Answered {id}: no needs block was set (note recorded)"),
+                (_, None) => println!("Answered {id}: needs cleared (done, no follow-up)"),
+                (Some(b), Some(_)) if b == NEEDS_AGENT => {
+                    println!("Answered {id}: still needs agent (note appended)")
+                }
+                _ => println!("Answered {id}: needs agent (awaiting pickup; see `yaks inbox`)"),
+            }
+        }
+        Command::Pickup {
             id,
             note,
             note_file,
@@ -1182,17 +1237,29 @@ fn main() -> Result<()> {
         } => {
             let note = resolve_text("--note", note, note_file, &mut StdinText::real())?;
             let actor = actor::resolve(as_actor.as_deref());
-            match farm.set_needs(&id, None, actor.as_deref(), note.as_deref())? {
-                None => {
+            match farm.pickup(&id, actor.as_deref(), note.as_deref())? {
+                Pickup::NotFound => {
                     eprintln!("error: task {id} not found");
                     std::process::exit(1);
                 }
-                Some(_) => println!("Answered {id}: needs cleared (back in next)"),
+                Pickup::NotAwaitingAgent(state) => {
+                    let state = match state {
+                        Some(n) => format!("needs: {n}"),
+                        None => "no needs block set".to_string(),
+                    };
+                    eprintln!("error: {id} is not awaiting an agent ({state}); nothing to pick up");
+                    std::process::exit(1);
+                }
+                Pickup::Picked => println!("Picked up {id}: needs cleared"),
             }
         }
-        Command::Inbox { filter, json } => {
+        Command::Inbox {
+            filter,
+            audience,
+            json,
+        } => {
             let rows = farm.inbox(build_spec(filter))?;
-            render_rows(&rows, json, "Inbox empty: nothing awaiting a human.")?;
+            render_inbox(&rows, audience, json)?;
         }
         Command::Shave { ids, as_actor } => {
             let actor = actor::resolve(as_actor.as_deref());
@@ -1786,6 +1853,62 @@ fn describe_bulk_mutation(
     parts.join("; ")
 }
 
+/// Which side of the `needs` hand-off `inbox --for` keeps.
+#[derive(Clone, Copy, clap::ValueEnum)]
+enum Audience {
+    /// Open questions (`needs: human`).
+    Human,
+    /// Answered, awaiting pickup (`needs: agent`).
+    Agent,
+}
+
+/// `inbox` output: a flat JSON array (each yak with `needs` and `replied`), or
+/// two text sections, "awaiting a human" and "answered, awaiting an agent".
+fn render_inbox(rows: &[Task], audience: Option<Audience>, json: bool) -> Result<()> {
+    let human: Vec<&Task> = rows
+        .iter()
+        .filter(|t| t.awaiting_human() && !matches!(audience, Some(Audience::Agent)))
+        .collect();
+    let agent: Vec<&Task> = rows
+        .iter()
+        .filter(|t| t.awaiting_agent() && !matches!(audience, Some(Audience::Human)))
+        .collect();
+    if json {
+        let kept: Vec<&Task> = human.iter().chain(agent.iter()).copied().collect();
+        json::print(&json::inbox_array(&kept))?;
+        return Ok(());
+    }
+    if human.is_empty() && agent.is_empty() {
+        println!(
+            "{}",
+            match audience {
+                Some(Audience::Human) => "Inbox empty: nothing awaiting a human.",
+                Some(Audience::Agent) => "Inbox empty: nothing answered and awaiting an agent.",
+                None => "Inbox empty: nothing awaiting a human or an agent.",
+            }
+        );
+        return Ok(());
+    }
+    for (title, section) in [
+        ("Awaiting a human:", &human),
+        ("Answered, awaiting an agent (`yaks pickup <id>`):", &agent),
+    ] {
+        if section.is_empty() {
+            continue;
+        }
+        println!("{title}");
+        for t in section {
+            let replied = if store::is_replied(t) {
+                " \u{21a9} replied"
+            } else {
+                ""
+            };
+            println!("{}{replied}", fmt_row(t));
+        }
+    }
+    Ok(())
+}
+
 fn render_rows(rows: &[Task], json: bool, empty_msg: &str) -> Result<()> {
     if json {
         json::print(&json::tasks_array(rows))?;
@@ -2234,8 +2357,10 @@ fn fmt_row(t: &Task) -> String {
     } else {
         format!(" (deps: {})", t.depends_on.join(","))
     };
-    // Make a needs-blocked yak visually distinct from a ready one in list/next.
+    // Make a needs-blocked yak visually distinct from a ready one in list/next;
+    // an answered one (`needs: agent`) is not a warning, it is waiting on us.
     let needs = match &t.needs {
+        Some(_) if t.awaiting_agent() => " \u{2713} answered (needs:agent)".to_string(),
         Some(who) => format!(" \u{26a0} needs:{who}"),
         None => String::new(),
     };
@@ -2252,9 +2377,18 @@ fn fmt_row(t: &Task) -> String {
     )
 }
 
-/// `  id  pN type     title` (no status glyph) — matches Python cmd_next.
+/// `  id  pN type     title` (no status glyph) — matches Python cmd_next;
+/// marks an answered yak (`needs: agent`) that is ready but awaits pickup.
 fn fmt_plain_row(t: &Task) -> String {
-    format!("  {}  p{} {:8} {}", t.id, t.priority, t.kind, t.title)
+    let answered = if t.awaiting_agent() {
+        " \u{2713} answered, awaiting pickup"
+    } else {
+        ""
+    };
+    format!(
+        "  {}  p{} {:8} {}{answered}",
+        t.id, t.priority, t.kind, t.title
+    )
 }
 
 #[cfg(test)]

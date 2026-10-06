@@ -160,11 +160,13 @@ fn ask_and_answer_take_stdin_and_file() {
     f.ok(&["answer", &id, "--note-file", &path], None);
     let file = f.file(&id);
     assert!(ends_with_text(&file));
-    assert!(!file.contains("needs:"), "{file}");
+    assert!(file.contains("needs: agent"), "{file}");
 
     f.ok(&["ask", &id, "--note-file", &path], None);
-    f.ok(&["answer", &id, "--note", "-"], Some(TEXT));
-    assert!(ends_with_text(&f.file(&id)));
+    f.ok(&["answer", &id, "--done", "--note", "-"], Some(TEXT));
+    let file = f.file(&id);
+    assert!(ends_with_text(&file));
+    assert!(!file.contains("needs:"), "{file}");
 }
 
 #[test]

@@ -103,7 +103,7 @@ After every worker returns, in this order:
 A blocked worker has run `yaks ask` and returned. Answer in the yak (core section 8): in a team farm have
 the worker run `yaks answer` on your stated authority, so the yak keeps one writer; in a private farm
 answer directly while the worker is idle. Then wake the SAME worker with `send_agent_message` to its
-agent id (it is in the spawn confirmation, and is the `sender_id` of its completion message): it resumes with its notes, findings and worktree (and may need to redo edits that were lost). The
+agent id (it is in the spawn confirmation, and is the `sender_id` of its completion message): it resumes with its notes, findings and worktree (and may need to redo edits that were lost). The answered yak is `needs: agent`: tell the worker to run `yaks pickup <id>` when it resumes. The
 message is the nudge; the note is the record. Ask the worker whether it saw the answer without a sync step.
 
 ## Landing in the human's checkout

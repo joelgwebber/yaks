@@ -55,8 +55,8 @@ pub(crate) enum EditAction {
     /// Raise a `needs` block on this id (default `human`) and record the typed
     /// question as an attributed note. TUI counterpart of CLI `ask`.
     Ask(String),
-    /// Clear the `needs` block on this id and record the typed reply. TUI
-    /// counterpart of CLI `answer`.
+    /// Answer this id (hands it to an agent: `needs: agent`) and record the
+    /// typed reply. TUI counterpart of CLI `answer`.
     Answer(String),
 }
 

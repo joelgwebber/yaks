@@ -240,7 +240,10 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
         entry("D / R", "Add dependency / reparent"),
         entry("H", "Move to another herd (multi-herd farm)"),
         entry("M", "Add a comment (note)"),
-        entry("a", "Ask / answer (raise / clear needs block)"),
+        entry(
+            "a",
+            "Ask / answer (answer hands the yak to an agent: needs agent)",
+        ),
         entry(
             ":w / :q / :wq",
             "Save / cancel / save+close (editor Normal)",
@@ -421,7 +424,7 @@ pub(crate) fn disp_width(s: &str) -> usize {
     s.chars()
         .map(|c| {
             let cp = c as u32;
-            if cp >= 0x1_F000 || cp == 0x2b50 || cp == 0x2764 || cp == 0x23f3 {
+            if cp >= 0x1_F000 || cp == 0x2b50 || cp == 0x2764 || cp == 0x23f3 || cp == 0x2705 {
                 2
             } else {
                 1
@@ -588,7 +591,8 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
                 id_field_w,
                 blocked.contains(&r.task.id),
                 app.selected.contains(&r.task.id),
-                r.task.needs.is_some(),
+                r.task.awaiting_human(),
+                r.task.awaiting_agent(),
                 app.is_starred(&r.task.id),
                 area.width,
                 app.is_multi_herd(),
@@ -666,6 +670,7 @@ pub(crate) fn list_item<'a>(
     blocked: bool,
     selected: bool,
     needs_blocked: bool,
+    answered: bool,
     starred: bool,
     width: u16,
     multi_herd: bool,
@@ -718,7 +723,7 @@ pub(crate) fn list_item<'a>(
             dim(Style::new().fg(Color::Magenta).add_modifier(Modifier::DIM)),
         ));
     }
-    // Needs badge (⏳): this yak is awaiting a human (a `needs` block). A
+    // Needs badge (⏳): this yak is awaiting a human (an open `needs` question). A
     // distinct axis from the dependency-blocked `*` lead, so it can co-occur.
     if needs_blocked {
         if !right_plain.is_empty() {
@@ -730,6 +735,16 @@ pub(crate) fn list_item<'a>(
             "\u{23f3}",
             dim(Style::new().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
         ));
+    }
+    // Answered badge (✅): `needs: agent`, answered and waiting for an agent to
+    // pick it up. Not a blocker, so no warning accent, and never ⏳.
+    if answered {
+        if !right_plain.is_empty() {
+            right_plain.push(' ');
+            right_spans.push(Span::raw(" "));
+        }
+        right_plain.push('\u{2705}');
+        right_spans.push(Span::raw("\u{2705}"));
     }
     if starred {
         if !right_plain.is_empty() {

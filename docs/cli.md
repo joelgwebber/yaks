@@ -25,7 +25,7 @@ Every command except `init` operates on one farm, found in this order:
 
 `--status <s>` · `--type <t>` · `--priority <n>` · `--label <l>` · `--herd <h>`
 (id prefix) · `--search <text>` · `--parent-of <id>` (descendants at any depth) · `--ready` ·
-`--tangled` · `--needs`. They compose, and back `list`, `search`, `log`, and the
+`--tangled` · `--needs` (any `needs` value, `human` or `agent`). They compose, and back `list`, `search`, `log`, and the
 `bulk` selector.
 
 ## Read / query
@@ -35,7 +35,7 @@ Every command except `init` operates on one farm, found in this order:
 | `list` | List tasks (non-dead by default; `--all` includes dead). Status renders as `[H]`/`[S]`/`[N]`/`[X]` — hairy / shaving / shor**n** / dead. |
 | `show <id>` | Show one yak: fields, references, children, body + notes. |
 | `path <id>...` / `path <filters>` | Print each yak's current file path (absolute, one per line), by id or by the shared filter flags (`--all` adds dead yaks). A transition moves a yak's file between status directories, so `git add $(yaks path <id>)` replaces hand-built `.yaks/<status>/<id>.md` paths. An unknown id goes to stderr with a non-zero exit (known ids still print). Ids or filters, not both. |
-| `next` (alias `ready`) | Hairy yaks whose dependencies are all resolved — the work queue. |
+| `next` (alias `ready`) | Hairy yaks whose dependencies are all resolved — the work queue. A yak awaiting a human (`needs: human`) is left out; one that has been answered (`needs: agent`) is included, marked `✓ answered, awaiting pickup` (`yaks pickup <id>` when you take it on). |
 | `tangled` (alias `blocked`) | Hairy yaks with at least one unresolved dependency. |
 | `search <text>` | Substring search over id / title / description. |
 | `stats` | Counts by status, type, priority. |
@@ -118,9 +118,10 @@ no entry.
 
 | Command | What it does |
 |---|---|
-| `ask <id> --note '<question>'` | Block a yak on a human: sets the `needs` field, dropping it out of `next`. Also `--note -` (stdin) / `--note-file PATH`. |
-| `answer <id> --note '<reply>'` | Clear the `needs` block (human-reserved). Also `--note -` / `--note-file PATH`. |
-| `inbox` | Yaks awaiting a human — equivalent to `list --needs` across all statuses. |
+| `ask <id> --note '<question>'` | Block a yak on a human: sets the `needs` field, dropping it out of `next`. On a yak that is already `needs: agent` it flips back to `human` and says so. Also `--note -` (stdin) / `--note-file PATH`. |
+| `answer <id> --note '<reply>'` | Answer a question (human-reserved): records the reply and sets `needs: agent`, so the answer stays findable (in `inbox`, and in `next` when the yak is hairy) until an agent picks it up. `--done` clears `needs` instead, for an answer that needs no follow-up. A second answer on a `needs: agent` yak keeps the state and appends the note; on a yak with no `needs` it only records the note. Also `--note -` / `--note-file PATH`. |
+| `pickup <id> [--note '<text>']` | An agent takes on an answered yak: clears `needs: agent` and records a `picked up` note attributed to the actor (`--as`). The only command that clears `needs: agent`; on a yak that is not `needs: agent` it fails, naming the state. A `needs` change is not a status move (no `moved:` entry). |
+| `inbox [--for human\|agent] [--json]` | Every yak with a `needs` value, across all statuses, in two sections: **Awaiting a human** (`needs: human`; marked `↩ replied` when its latest note after the ask is from someone other than the asker, i.e. a plain-note reply that did not use `answer`) and **Answered, awaiting an agent** (`needs: agent`). `--for` shows one section. `--json` is one array of yaks, each with `needs` and a derived `replied` boolean. `ask` records an `asked: needs <who>` first line in its note: that is what `replied` is measured from, so a yak whose `needs:` was set by hand has no known asker and is never `replied`. |
 
 ## Multi-line text
 

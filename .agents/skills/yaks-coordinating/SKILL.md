@@ -99,6 +99,13 @@ The environment skill carries a fill-in template.
   are the yakherd. For a **real design fork** you do NOT run `yaks answer`: leave the ask
   open (it sits in the human's `yaks inbox`), add your lean as a note, and tell the human. The
   answer is the record; a message to the worker is only the wake-up.
+- **An answer stays findable.** `yaks answer` leaves the yak `needs: agent` until an agent runs
+  `yaks pickup <id>`. After each batch and at the start of a session run `yaks inbox`: the
+  "answered, awaiting an agent" section is answers nobody has acted on, and a yak marked `replied`
+  under "awaiting a human" is a plain-note reply that skipped `answer` (the human wrote a note
+  instead). Record such a reply with `yaks answer` quoting the human's words and saying that you
+  read it from their note, so the state and the record agree; if you are unsure what they meant,
+  say how you read it in that note and let them correct it.
 - **Where the line is.** *Scope and mechanics* are reversible, local to the yak's stated goal,
   and nothing a reviewer would argue about later: may a worker touch one more file, which
   command stages a path, which of two equivalent test shapes to use. A *design fork* changes

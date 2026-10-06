@@ -8,7 +8,8 @@ interchangeable.
 
 - **List pane** — the yaks in the active *view*, as a tree or flat list.
   Views are tabs across the top (`Tab`/`[`/`]` to switch). Built-in views
-  include the default tree, **Recent**, **Inbox** (yaks awaiting a human), and
+  include the default tree, **Recent**, **Inbox** (yaks with a `needs` value: awaiting a human, or answered and
+  awaiting an agent), and
   **Starred**; you can save the current filter as a named view.
 - **Detail pane** — the selected yak: fields, parent/deps/children, source, a
   `Needs:` line when blocked, and the body + timestamped notes. Task-id
@@ -26,8 +27,10 @@ interchangeable.
 
 ## Signals
 
-- A **`⏳` badge** on a row marks a yak with a `needs` block (awaiting a human);
-  the detail `Needs:` line renders in a warning accent.
+- A **`⏳` badge** on a row marks a yak awaiting a human (`needs: human`); the
+  detail `Needs:` line renders in a warning accent. A **`✅` badge** marks an
+  answered yak awaiting an agent (`needs: agent`): it blocks nothing, so the
+  detail `Needs:` line is plain and the row is never shown as awaiting a human.
 - The dependency-blocked marker (`*`) and the multi-select marker (`●`) are
   distinct axes and can co-occur.
 - The tab row's right edge shows the active **family scope** for tree views
@@ -74,7 +77,7 @@ the pre-find scroll and cursor).
 | `D` / `R` | Add dependency / reparent |
 | `H` | Move to another herd (multi-herd farms) |
 | `M` | Add a comment (note) |
-| `a` | Ask / answer (raise or clear a `needs` block) |
+| `a` | Ask / answer (on a yak awaiting a human: answer, which sets `needs: agent`; otherwise ask, which sets `needs: human`) |
 | `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`) |
 | `r` | (detail) Rename the attachment whose image link the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
 | `X` | Slaughter (delete, with confirm); on a yak with live descendants the confirm offers the whole family, naming how many go |
@@ -123,7 +126,8 @@ pane, so a long body never leaves you wondering which yak you're reading.
 
 ![yaks TUI detail pane with a pinned header](assets/tui-detail-pinned.svg)
 
-**Inbox** — the flat, cross-status list of every yak carrying a `needs` block.
+**Inbox** — the flat, cross-status list of every yak carrying a `needs` value
+(`⏳` awaiting a human, `✅` answered and awaiting an agent).
 It is unpinned (no tab); reach it from the view picker (`v`) or the drawer
 `inbox` chip.
 

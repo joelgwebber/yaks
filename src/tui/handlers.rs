@@ -551,11 +551,12 @@ impl App {
         }
     }
 
-    /// Context-sensitive needs affordance: answer the selected yak if it already
-    /// carries a `needs` block, otherwise ask (raise one). One key, two verbs —
-    /// the prompt label states which.
+    /// Context-sensitive needs affordance: answer the selected yak if it is
+    /// awaiting a human, otherwise ask (raise a question; on an already
+    /// answered `needs: agent` yak that flips it back to a human). One key, two
+    /// verbs — the prompt label states which.
     pub(crate) fn open_ask_or_answer(&mut self) {
-        let blocked = self.selected().is_some_and(|t| t.needs.is_some());
+        let blocked = self.selected().is_some_and(|t| t.awaiting_human());
         if blocked {
             self.open_answer();
         } else {
@@ -580,28 +581,31 @@ impl App {
             self.overlay = Overlay::Edit(Editor::new(
                 self.editor_vim,
                 true,
-                format!("Answer {id} — clears the block (Enter save · Ctrl-C cancel): "),
+                format!("Answer {id} — hands it to an agent (Enter save · Ctrl-C cancel): "),
                 "",
                 EditAction::Answer(id),
             ));
         }
     }
 
-    /// Set or clear a `needs` block via the farm, appending the typed text as an
-    /// attributed note when non-empty. Backs the `Ask`/`Answer` edit actions.
-    pub(crate) fn set_needs_edit(
-        &mut self,
-        id: &str,
-        needs: Option<String>,
-        note: Option<&str>,
-        ok: String,
-    ) {
+    /// Ask or answer via the farm, appending the typed text as an attributed
+    /// note when non-empty. Backs the `Ask`/`Answer` edit actions.
+    pub(crate) fn needs_edit(&mut self, id: &str, answer: bool, note: Option<&str>) {
         let actor = crate::actor::resolve(None);
         let Some(h) = &self.farm else { return };
-        match h.set_needs(id, needs, actor.as_deref(), note) {
+        let res = if answer {
+            h.answer(id, actor.as_deref(), note, false)
+        } else {
+            h.ask(id, "human", actor.as_deref(), note)
+        };
+        match res {
             Ok(Some(_)) => {
                 self.reload();
-                self.notification = Some(ok);
+                self.notification = Some(if answer {
+                    format!("answered {id}: needs agent (awaiting pickup)")
+                } else {
+                    format!("asked {id}: needs human (out of next until answered)")
+                });
             }
             Ok(None) => self.notification = Some(format!("{id} not found")),
             Err(e) => self.notification = Some(format!("error: {e}")),
@@ -1230,18 +1234,11 @@ impl App {
             }
             EditAction::Ask(id) => {
                 let note = text.trim();
-                let note = (!note.is_empty()).then_some(note);
-                self.set_needs_edit(
-                    &id,
-                    Some("human".into()),
-                    note,
-                    format!("asked {id}: needs human (out of next until answered)"),
-                );
+                self.needs_edit(&id, false, (!note.is_empty()).then_some(note));
             }
             EditAction::Answer(id) => {
                 let note = text.trim();
-                let note = (!note.is_empty()).then_some(note);
-                self.set_needs_edit(&id, None, note, format!("answered {id}: block cleared"));
+                self.needs_edit(&id, true, (!note.is_empty()).then_some(note));
             }
             EditAction::SaveView => self.save_current_view(text),
             EditAction::RenameView { index } => {

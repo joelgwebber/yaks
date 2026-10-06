@@ -72,9 +72,10 @@ impl FilterSpec {
             }
         }
         let has_unresolved = t.depends_on.iter().any(|d| !resolved.contains(d.as_str()));
-        // A `needs` block (e.g. awaiting a human) is a soft, external dependency:
-        // it keeps a hairy yak out of `next` without being a status of its own.
-        if self.ready_only && (has_unresolved || t.needs.is_some()) {
+        // An open question (`needs` other than `agent`) is a soft, external
+        // dependency: it keeps a hairy yak out of `next` without being a status
+        // of its own. `needs: agent` (answered) does not block.
+        if self.ready_only && (has_unresolved || t.awaiting_human()) {
             return false;
         }
         if self.needs_only && t.needs.is_none() {
@@ -309,7 +310,17 @@ mod tests {
         // (as `ask` does) drops it out of `next` without changing its status.
         h.iter_mut().find(|t| t.id == "d").unwrap().needs = Some("human".into());
         assert_eq!(ids(apply(&h, &spec, false)), vec!["b", "k"]);
-        // Answering (clearing the block) returns it to ready.
+        // Answering hands it to an agent (`needs: agent`): not a block, so it
+        // is ready again (the CLI marks it answered).
+        h.iter_mut().find(|t| t.id == "d").unwrap().needs = Some("agent".into());
+        assert_eq!(ids(apply(&h, &spec, false)), vec!["b", "d", "k"]);
+        // ...and `needs_only` (the inbox predicate) still keeps it.
+        let inbox = FilterSpec {
+            needs_only: true,
+            ..Default::default()
+        };
+        assert_eq!(ids(apply(&h, &inbox, false)), vec!["d"]);
+        // A pickup clears it entirely.
         h.iter_mut().find(|t| t.id == "d").unwrap().needs = None;
         assert_eq!(ids(apply(&h, &spec, false)), vec!["b", "d", "k"]);
     }

@@ -13,7 +13,7 @@ use anyhow::{Context, Result, bail};
 use chrono::Utc;
 
 use crate::filter::{self, FilterSpec};
-use crate::model::{Status, Task, is_canonical_label, normalize_labels};
+use crate::model::{NEEDS_AGENT, Status, Task, is_canonical_label, normalize_labels};
 use crate::refs;
 use crate::rollup;
 use crate::store::{self, SchemaStatus};
@@ -22,6 +22,22 @@ pub use crate::store::{DepOutcome, MoveOutcome, Reparent};
 
 const NON_DEAD: [Status; 3] = [Status::Hairy, Status::Shaving, Status::Shorn];
 const EVERY: [Status; 4] = [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
+
+/// What `ask` / `answer` did to a yak's `needs`: its status (so callers can
+/// warn about asking on finished work) and the value before and after.
+pub struct NeedsChange {
+    pub status: Status,
+    pub before: Option<String>,
+    pub after: Option<String>,
+}
+
+/// Result of `pickup`.
+pub enum Pickup {
+    NotFound,
+    /// The yak was not `needs: agent`; carries what it was (`None` = no block).
+    NotAwaitingAgent(Option<String>),
+    Picked,
+}
 
 /// Why opening a farm failed.
 pub enum OpenError {
@@ -481,39 +497,91 @@ impl Farm {
             .collect())
     }
 
-    /// Set (or clear) a yak's `needs` block, optionally appending an attributed
-    /// note in the same write. Backs `ask` (set `needs=human` + question) and
-    /// `answer` (clear `needs` + reply). Clearing an already-clear block, or
-    /// setting an already-identical one, still records the note if given.
-    /// Set (or clear) a yak's `needs` block, optionally appending an attributed
-    /// note. Returns the yak's status (so callers can warn about blocking
-    /// finished work), or `None` if the id is unknown.
-    pub fn set_needs(
+    /// Raise a question: set `needs` (default `human`) and record the question
+    /// as an `asked: needs <who>` note in the same write. Allowed on a yak that
+    /// is already `needs: agent` (a follow-up question flips it back; `before`
+    /// tells the caller). `None` if the id is unknown.
+    pub fn ask(
         &self,
         id: &str,
-        needs: Option<String>,
+        needs: &str,
         actor: Option<&str>,
-        note: Option<&str>,
-    ) -> Result<Option<Status>> {
+        question: Option<&str>,
+    ) -> Result<Option<NeedsChange>> {
         let _lock = store::lock(&self.root)?;
         let Some(mut task) = store::load_task_by_id(&self.root, id)? else {
             return Ok(None);
         };
-        let status = task.status;
-        task.needs = needs;
-        if let Some(n) = note {
-            let ts = store::now_iso();
-            task.body = store::append_note(&task.body, &ts, actor, n);
-        }
-        task.updated = Some(store::now_iso());
+        let before = task.needs.replace(needs.to_string());
+        let ts = store::now_iso();
+        task.body = store::append_note(&task.body, &ts, actor, &store::ask_text(needs, question));
+        task.updated = Some(ts);
         store::write::save(&self.root, &task)?;
-        Ok(Some(status))
+        Ok(Some(NeedsChange {
+            status: task.status,
+            before,
+            after: task.needs,
+        }))
     }
 
-    /// Every yak carrying a `needs` block, regardless of status. The invariant is
-    /// that a set block is never invisible: an `ask` on a shorn/dead yak must
-    /// still surface here (that silent-block gap is exactly why this ignores
-    /// status). Other filter flags (priority/label/search) still apply.
+    /// Answer a question: record the reply, then hand the yak to an agent
+    /// (`needs: agent`) so the answer cannot vanish; `done` clears `needs`
+    /// instead (an answer that needs no follow-up). On a yak already `agent` the
+    /// state is kept and the note appended (a second answer); on one with no
+    /// `needs` the note is recorded and nothing else changes. `None` if the id
+    /// is unknown.
+    pub fn answer(
+        &self,
+        id: &str,
+        actor: Option<&str>,
+        note: Option<&str>,
+        done: bool,
+    ) -> Result<Option<NeedsChange>> {
+        let _lock = store::lock(&self.root)?;
+        let Some(mut task) = store::load_task_by_id(&self.root, id)? else {
+            return Ok(None);
+        };
+        let before = task.needs.clone();
+        if before.is_some() {
+            task.needs = (!done).then(|| NEEDS_AGENT.to_string());
+        }
+        let ts = store::now_iso();
+        if let Some(n) = note {
+            task.body = store::append_note(&task.body, &ts, actor, n);
+        }
+        task.updated = Some(ts);
+        store::write::save(&self.root, &task)?;
+        Ok(Some(NeedsChange {
+            status: task.status,
+            before,
+            after: task.needs,
+        }))
+    }
+
+    /// Clear `needs: agent` with an attributed `picked up` note. The only thing
+    /// that clears it. Refuses any other state, naming it.
+    pub fn pickup(&self, id: &str, actor: Option<&str>, note: Option<&str>) -> Result<Pickup> {
+        let _lock = store::lock(&self.root)?;
+        let Some(mut task) = store::load_task_by_id(&self.root, id)? else {
+            return Ok(Pickup::NotFound);
+        };
+        if !task.awaiting_agent() {
+            return Ok(Pickup::NotAwaitingAgent(task.needs));
+        }
+        task.needs = None;
+        let ts = store::now_iso();
+        task.body = store::append_note(&task.body, &ts, actor, &store::pickup_text(note));
+        task.updated = Some(ts);
+        store::write::save(&self.root, &task)?;
+        Ok(Pickup::Picked)
+    }
+
+    /// Every yak carrying a `needs` value, regardless of status: open
+    /// questions (awaiting a human) and answered ones (awaiting an agent;
+    /// see [`Task::awaiting_agent`]). The invariant is that a set value is
+    /// never invisible: an `ask` on a shorn/dead yak, or an answer to one, must
+    /// still surface here (that silent gap is exactly why this ignores status).
+    /// Other filter flags (priority/label/search) still apply.
     pub fn inbox(&self, mut spec: FilterSpec) -> Result<Vec<Task>> {
         spec.statuses = vec![Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
         let tasks = store::load(&self.root, &EVERY)?;
@@ -1534,6 +1602,165 @@ mod tests {
             .collect();
         got.sort();
         assert_eq!(got, vec!["yak-0001", "yak-0002"]); // shorn block included, unblocked excluded
+    }
+
+    fn needs_of(farm: &Farm, id: &str) -> Option<String> {
+        store::load_task_by_id(&farm.root, id)
+            .unwrap()
+            .unwrap()
+            .needs
+    }
+
+    fn note_texts(farm: &Farm, id: &str) -> Vec<String> {
+        let t = store::load_task_by_id(&farm.root, id).unwrap().unwrap();
+        store::parse_notes(&t.body)
+            .into_iter()
+            .map(|n| n.text)
+            .collect()
+    }
+
+    /// `answer` on an open question records the note and hands the yak to an
+    /// agent; the answer stays findable in `inbox` whatever the status (a shorn
+    /// yak is not in `next`), and `pickup` is the only thing that clears it.
+    #[test]
+    fn answer_hands_to_agent_and_only_pickup_clears_it() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Shorn)).unwrap();
+        farm.ask("yak-0001", "human", Some("coord"), Some("which?"))
+            .unwrap();
+        assert_eq!(needs_of(&farm, "yak-0001").as_deref(), Some("human"));
+
+        let c = farm
+            .answer("yak-0001", Some("joel"), Some("B"), false)
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            (c.before.as_deref(), c.after.as_deref()),
+            (Some("human"), Some("agent"))
+        );
+        assert_eq!(needs_of(&farm, "yak-0001").as_deref(), Some("agent"));
+        let inbox: Vec<String> = farm
+            .inbox(FilterSpec::default())
+            .unwrap()
+            .into_iter()
+            .map(|t| t.id)
+            .collect();
+        assert_eq!(
+            inbox,
+            vec!["yak-0001"],
+            "answered shorn yak stays in the inbox"
+        );
+
+        // No other command clears it: a plain note and a status move leave it.
+        let _ = farm
+            .answer("yak-0001", Some("joel"), Some("more"), false)
+            .unwrap();
+        assert_eq!(needs_of(&farm, "yak-0001").as_deref(), Some("agent"));
+
+        assert!(matches!(
+            farm.pickup("yak-0001", Some("agt"), Some("on it")).unwrap(),
+            Pickup::Picked
+        ));
+        assert_eq!(needs_of(&farm, "yak-0001"), None);
+        assert!(farm.inbox(FilterSpec::default()).unwrap().is_empty());
+        let notes = note_texts(&farm, "yak-0001");
+        assert_eq!(notes.last().unwrap(), "picked up\n\non it");
+    }
+
+    #[test]
+    fn answer_done_clears_needs_without_handing_off() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+        farm.ask("yak-0001", "human", Some("coord"), Some("which?"))
+            .unwrap();
+        let c = farm
+            .answer("yak-0001", Some("joel"), Some("ok"), true)
+            .unwrap()
+            .unwrap();
+        assert_eq!(c.after, None);
+        assert_eq!(needs_of(&farm, "yak-0001"), None);
+        assert_eq!(note_texts(&farm, "yak-0001").last().unwrap(), "ok");
+    }
+
+    /// Edge cases: an answer on a yak with no `needs` keeps today's behaviour
+    /// (note recorded, nothing else changes); a second answer on
+    /// `needs: agent` keeps the state and appends the note.
+    #[test]
+    fn answer_edge_cases_no_needs_and_second_answer() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+        let c = farm
+            .answer("yak-0001", Some("joel"), Some("fyi"), false)
+            .unwrap()
+            .unwrap();
+        assert_eq!((c.before, c.after), (None, None));
+        assert_eq!(needs_of(&farm, "yak-0001"), None);
+        assert_eq!(note_texts(&farm, "yak-0001"), vec!["fyi"]);
+
+        let mut t = task("yak-0002", Status::Hairy);
+        t.needs = Some("agent".into());
+        store::write::save(&root, &t).unwrap();
+        let c = farm
+            .answer("yak-0002", Some("joel"), Some("also"), false)
+            .unwrap()
+            .unwrap();
+        assert_eq!(c.after.as_deref(), Some("agent"));
+        assert_eq!(note_texts(&farm, "yak-0002"), vec!["also"]);
+        assert!(farm.answer("nope", None, None, false).unwrap().is_none());
+    }
+
+    /// `pickup` refuses anything that is not `needs: agent`, naming the state;
+    /// `ask` on `needs: agent` is allowed and flips it back to human.
+    #[test]
+    fn pickup_refuses_other_states_and_ask_flips_agent_back() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+        assert!(matches!(
+            farm.pickup("yak-0001", None, None).unwrap(),
+            Pickup::NotAwaitingAgent(None)
+        ));
+        farm.ask("yak-0001", "human", Some("coord"), None).unwrap();
+        assert!(matches!(
+            farm.pickup("yak-0001", None, None).unwrap(),
+            Pickup::NotAwaitingAgent(Some(n)) if n == "human"
+        ));
+        assert_eq!(
+            needs_of(&farm, "yak-0001").as_deref(),
+            Some("human"),
+            "refusal changed nothing"
+        );
+        assert!(matches!(
+            farm.pickup("nope", None, None).unwrap(),
+            Pickup::NotFound
+        ));
+
+        farm.answer("yak-0001", Some("joel"), None, false).unwrap();
+        let c = farm
+            .ask("yak-0001", "human", Some("agt"), Some("one more thing"))
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            (c.before.as_deref(), c.after.as_deref()),
+            (Some("agent"), Some("human"))
+        );
+    }
+
+    /// A `needs` change is not a status move: no `moved:` entry, status kept.
+    #[test]
+    fn needs_changes_write_no_transition_entry() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Shaving)).unwrap();
+        farm.ask("yak-0001", "human", Some("a"), Some("q")).unwrap();
+        farm.answer("yak-0001", Some("b"), Some("r"), false)
+            .unwrap();
+        farm.pickup("yak-0001", Some("a"), None).unwrap();
+        let t = store::load_task_by_id(&root, "yak-0001").unwrap().unwrap();
+        assert_eq!(t.status, Status::Shaving);
+        assert!(
+            note_texts(&farm, "yak-0001")
+                .iter()
+                .all(|n| !store::is_transition_text(n))
+        );
     }
 
     /// `refs` reports formal parent/deps (flagging danglers) and validated body
