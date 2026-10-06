@@ -4,7 +4,7 @@ title: CLI/MCP affordance to attach to a running yaks tui
 type: idea
 priority: 3
 created: '2026-08-23T02:49:59Z'
-updated: '2026-08-26T13:17:10Z'
+updated: '2026-10-05T22:29:29Z'
 labels:
 - cli
 ---
@@ -20,3 +20,7 @@ As we work through the mechanics and use-cases, let's make a point to identify U
 - Some affordance for saved searches, allowing the agent to show you a search without interrupting whatever you were working on.
 - Ephemeral agent-specific UI state -- relating to saved searches, a way for an agent to push a new UI state on the stack, so the user can just ESC out of it, back to where they were.
 - A way to "indicate" to the agent that you want it to look at a particular yak/herd/search/comment/... (we handle this for individual yaks with the ability to copy an id).
+
+---
+▸ 2026-10-05T22:28:42Z [Joel Webber]
+This could also be an interesting path for Delta integration. Bonus points if we can get Delta to emit some kind of in-thread UI affordance pointing to a particular place in the UI.

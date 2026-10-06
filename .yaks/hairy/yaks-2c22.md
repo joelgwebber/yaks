@@ -4,7 +4,7 @@ title: 'Process rails: yaks brief (worker brief from a yak) and yaks preflight (
 type: feature
 priority: 2
 created: '2026-10-03T21:13:29Z'
-updated: '2026-10-05T22:44:37Z'
+updated: '2026-10-06T03:40:48Z'
 parent: yaks-b5a0
 labels:
 - cli
@@ -44,3 +44,7 @@ Today the fill-in worker brief is prose in `.agents/skills/yaks-coordinating-del
 A. It follows the design test in `yaks-coordinating` section 2: what is true of working a given yak is a query over the farm and belongs in the tool; spawning, titles and landing are orchestration and stay in the skill. It also fixes the failure the observation log keeps showing (O5, O6, O9): a coordinator forgets a clause when it fills a template by hand.
 
 Cost: a user-visible command and a stable-ish output format, and the Delta skill must be edited to point at it. Say A, B, C or your own variant.
+
+---
+▸ 2026-10-06T03:40:48Z [Joel Webber]
+I'm good with putting these into the tools now. Can't always trust those sub-agents.

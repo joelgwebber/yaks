@@ -4,7 +4,9 @@ title: Add pull-request(s) field to frontmatter
 type: feature
 priority: 3
 created: '2026-08-26T12:58:19Z'
-updated: '2026-08-26T12:58:19Z'
+updated: '2026-10-05T22:31:55Z'
+labels:
+- schema
 ---
 
 Alongside 'source' for upstream issues, we need a place to track active PR(s) as well.

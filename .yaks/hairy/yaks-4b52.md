@@ -4,7 +4,9 @@ title: Branch/PR affordances in frontmatter
 type: feature
 priority: 3
 created: '2026-08-23T02:49:59Z'
-updated: '2026-08-23T02:49:59Z'
+updated: '2026-10-05T22:29:48Z'
+labels:
+- schema
 ---
 
 Not much to it -- just formalize and document a `change:` or similar sibling to `source:`, that captures a link to an upstream branch or PR.
