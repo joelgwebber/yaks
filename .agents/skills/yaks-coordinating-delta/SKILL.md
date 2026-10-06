@@ -122,6 +122,14 @@ is missing, bare, has no `main`, is not a path on this machine, or is a checkout
 push `pr/<name>` to `local`, and give the human the command `git fetch <managed repo path> pr/<name>` (or ask them to
 repoint `local`).
 
+## After the thread moves to another machine
+`local` is per machine: there it is that machine's own checkout, or a Delta-managed bare repo if the repository was never added there
+as a folder (then it has no branches and the check in `yaks preflight --push-main` fails). Delta never moves a branch in the human's
+checkout, and the two machines' checkouts share nothing, so they drift apart. The only carrier both can reach is GitHub. On arrival:
+`git fetch origin`, check `yaks preflight --push-main`, and if that machine's checkout is behind, bring it level with
+`git push local origin/main:main` (a fast-forward). Say so to the human; do not assume the other machine's checkout changed because
+this one did (yaks-df61 O62). Workers die with a machine switch, see Hazards.
+
 ## One landing point, and when your clone goes stale
 Land from ONE place: the yakherd's thread. If another thread (a human-created subthread, a second
 yakherd) or the human pushed to `main` while you worked, your clone is behind and `git push` is

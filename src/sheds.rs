@@ -14,8 +14,10 @@
 //! the oldest entry of the shed's HEAD reflog ([`fork_point`]); a worker forks
 //! from its coordinator's thread, not from the checkout that runs `yaks sheds`,
 //! so measuring from the merge-base with THIS checkout would credit the shed
-//! with everything its coordinator did before spawning it. When the reflog
-//! cannot give a usable fork point, the merge-base with this checkout is the
+//! with everything its coordinator did before spawning it. A shed synced with
+//! this checkout after it forked is measured from that merge-base instead
+//! when it is nearer ([`nearer_baseline`], `sync`): what it merged in is not
+//! its own. When the reflog cannot give a usable fork point, the merge-base with this checkout is the
 //! baseline instead and the output says so (`vs merge-base`); when there is no
 //! base farm to read at all, the shed is compared with this checkout's working
 //! tree and says so (`vs this checkout`).
@@ -105,6 +107,11 @@ pub enum BaseKind {
     /// Where the shed itself forked (oldest entry of its HEAD reflog): exactly
     /// the shed's own work.
     Fork,
+    /// The merge-base with this checkout, chosen because it is NEARER than the
+    /// fork point (the shed was synced with this checkout after it forked):
+    /// everything before it is already in our history. As exact as `Fork`, so
+    /// unmarked.
+    Sync,
     /// The merge-base with this checkout: the fallback when the fork point is
     /// unknown. It also counts whatever the shed inherited from the thread that
     /// spawned it, so the output marks it.
@@ -116,6 +123,7 @@ impl BaseKind {
     pub fn as_str(self) -> &'static str {
         match self {
             BaseKind::Fork => "fork",
+            BaseKind::Sync => "sync",
             BaseKind::MergeBase => "merge-base",
         }
     }
@@ -252,7 +260,7 @@ fn inspect(
             shed.ahead = g.ahead;
             shed.behind = g.behind;
             shed.dirty = Some(g.dirty);
-            bases.extend(g.fork.map(|f| (BaseKind::Fork, f)));
+            bases.extend(g.fork);
             bases.extend(g.merge_base.map(|b| (BaseKind::MergeBase, b)));
         }
         Err(e) => shed.error = Some(format!("{e:#}")),
@@ -296,9 +304,10 @@ fn inspect(
 struct GitState {
     branch: Option<String>,
     head: String,
-    /// The commit the shed forked from, when its reflog gives a usable one
-    /// (see [`fork_point`]).
-    fork: Option<String>,
+    /// The exact baseline, when the shed's reflog gives a usable fork point
+    /// (see [`fork_point`]): the fork point itself (`Fork`), or the merge-base
+    /// when that is nearer (`Sync`, see [`nearer_baseline`]).
+    fork: Option<(BaseKind, String)>,
     /// `git merge-base HEAD <shed HEAD>` in OUR repo; `None` when there is
     /// none (then `ahead`/`behind` are unknown too).
     merge_base: Option<String>,
@@ -335,7 +344,7 @@ fn git_state(top: &Path, shed: &Path) -> Result<GitState> {
     Ok(GitState {
         branch,
         head,
-        fork: fork_point(top, shed, &full),
+        fork: fork_point(top, shed, &full).map(|f| nearer_baseline(top, f, merge_base.as_deref())),
         merge_base,
         ahead,
         behind,
@@ -368,6 +377,23 @@ fn fork_point(top: &Path, shed: &Path, full: &str) -> Option<String> {
     }
     git(top, &["merge-base", "--is-ancestor", sha, full]).ok()?;
     Some(sha.to_string())
+}
+
+/// The nearer of the validated fork point `fork` and the merge-base `mb` with
+/// this checkout. When the merge-base descends from the fork point (the shed
+/// was synced with this checkout after it forked) everything between the two
+/// is already in our history, so it is not what the shed has that we lack: the
+/// merge-base wins (`Sync`). Otherwise (the merge-base is the fork point, an
+/// ancestor of it, or unrelated: a worker forked from a coordinator whose
+/// commits are not in our history, e.g. after a squash landing) the fork point
+/// wins.
+fn nearer_baseline(top: &Path, fork: String, mb: Option<&str>) -> (BaseKind, String) {
+    match mb {
+        Some(mb) if mb != fork && git(top, &["merge-base", "--is-ancestor", &fork, mb]).is_ok() => {
+            (BaseKind::Sync, mb.to_string())
+        }
+        _ => (BaseKind::Fork, fork),
+    }
 }
 
 /// A temp directory of ours, removed on drop.
@@ -747,8 +773,10 @@ pub fn to_json(sheds: &[Shed]) -> Value {
                     ShedFarm::Own(d) => json!({
                         "state": "own",
                         // What the delta is relative to (`base` = its short
-                        // sha): where the shed forked (`fork`), else its
-                        // merge-base with this checkout (`merge-base`), else,
+                        // sha): where the shed forked (`fork`), or this
+                        // checkout's merge-base with it when it was synced
+                        // since (`sync`), else that merge-base as a fallback
+                        // (`merge-base`), else,
                         // when neither can be read, this checkout's farm.
                         "vs": match &l.farm_base {
                             Some(b) => b.kind.as_str(),
@@ -800,7 +828,7 @@ pub fn to_json(sheds: &[Shed]) -> Value {
 /// merge-base)` or ` (vs this checkout)`. Empty for the fork point.
 fn vs_marker(l: &Shed) -> &'static str {
     match l.farm_base.as_ref().map(|b| b.kind) {
-        Some(BaseKind::Fork) => "",
+        Some(BaseKind::Fork | BaseKind::Sync) => "",
         Some(BaseKind::MergeBase) => " (vs merge-base)",
         None => " (vs this checkout)",
     }
@@ -1981,11 +2009,134 @@ mod tests {
         let sheds = sheds_of(&t);
         let l = shed_at(&sheds, &w);
         assert_eq!(l.who, strs(&["w-1"]));
-        assert_eq!(l.farm_base.as_ref().unwrap().kind, BaseKind::Fork);
+        // The viewer's merge-base with the worker is OLDER than the fork point
+        // (the squash left the coordinator's commits out of the viewer's
+        // history), so the fork point still wins: no `sync`.
+        let fork = sh(&coord, &["rev-parse", "--short", "HEAD"]);
+        assert_eq!(
+            l.farm_base,
+            Some(FarmBase {
+                kind: BaseKind::Fork,
+                sha: fork
+            })
+        );
         let ShedFarm::Own(d) = &l.farm else {
             panic!("expected own farm, got {:?}", l.farm)
         };
         assert_eq!(d.notes, vec![("yaks-aaaa".to_string(), 1)]);
+    }
+
+    /// The shed `l`'s JSON object from `to_json`.
+    fn json_of(sheds: &[Shed], l: &Path) -> Value {
+        to_json(sheds)
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|x| x["path"] == l.display().to_string().as_str())
+            .unwrap()
+            .clone()
+    }
+
+    /// What a shed that has been synced with the viewer must show: only what
+    /// came after the sync, exact (no `vs` marker), `farm.vs` = `sync`.
+    fn assert_only_post_sync(t: &Path, w: &Path, base_sha: &str) {
+        let sheds = sheds_of(t);
+        let l = shed_at(&sheds, w);
+        assert_eq!(
+            l.farm_base,
+            Some(FarmBase {
+                kind: BaseKind::Sync,
+                sha: base_sha.to_string()
+            })
+        );
+        assert_eq!(l.who, strs(&["new-1"]), "oldx and viewx predate the sync");
+        assert_eq!(l.in_progress, strs(&["yaks-aaaa"]));
+        let ShedFarm::Own(d) = &l.farm else {
+            panic!("expected own farm, got {:?}", l.farm)
+        };
+        assert_eq!(d.notes, vec![("yaks-aaaa".to_string(), 1)]);
+        assert!(d.added.is_empty() && d.moved.is_empty(), "{d:?}");
+        let text = render(&sheds);
+        assert!(
+            text.contains("  who: new-1 \u{b7} shaving: yaks-aaaa\n"),
+            "{text}"
+        );
+        assert!(
+            !text.contains("(vs "),
+            "sync is exact, not a fallback: {text}"
+        );
+        let jw = json_of(&sheds, w);
+        assert_eq!(jw["farm"]["vs"], "sync");
+        assert_eq!(jw["farm"]["base"], base_sha);
+        assert_eq!(jw["who"], json!(["new-1"]));
+    }
+
+    #[test]
+    fn a_shed_the_viewer_merged_shows_only_what_came_after_that() {
+        let (t, w) = claimed_repo_with_shed("sync-viewer-merged");
+        let old = ("2026-03-02T00:00:00Z", Some("oldx"), "old note");
+        commit_notes_on_aaaa(&w, &[old]);
+        // The viewer merges the shed (a real merge commit), then the shed
+        // carries on.
+        sh(&t, &["merge", "--no-ff", "-q", "-m", "land", "shed"]);
+        let synced = sh(&w, &["rev-parse", "--short", "HEAD"]);
+        commit_notes_on_aaaa(
+            &w,
+            &[old, ("2026-03-03T00:00:00Z", Some("new-1"), "new note")],
+        );
+        assert_only_post_sync(&t, &w, &synced);
+        // ahead/behind are untouched: still relative to the viewer's HEAD.
+        let sheds = sheds_of(&t);
+        assert_eq!(
+            (shed_at(&sheds, &w).ahead, shed_at(&sheds, &w).behind),
+            (Some(1), Some(1))
+        );
+    }
+
+    #[test]
+    fn a_shed_that_merged_the_viewer_shows_only_what_came_after_that() {
+        let (t, w) = claimed_repo_with_shed("sync-shed-merged");
+        // The viewer moves on (a note by `viewx`) and the shed pulls it in.
+        let old = ("2026-03-02T12:00:00Z", Some("viewx"), "viewer note");
+        commit_notes_on_aaaa(&t, &[old]);
+        let branch = sh(&t, &["symbolic-ref", "--short", "HEAD"]);
+        sh(&w, &["merge", "--no-ff", "-q", "-m", "sync", &branch]);
+        let synced = sh(&t, &["rev-parse", "--short", "HEAD"]);
+        commit_notes_on_aaaa(
+            &w,
+            &[old, ("2026-03-03T00:00:00Z", Some("new-1"), "new note")],
+        );
+        assert_only_post_sync(&t, &w, &synced);
+    }
+
+    #[test]
+    fn a_shed_that_never_synced_keeps_its_fork_point_even_when_the_viewer_moved_on() {
+        let (t, w) = claimed_repo_with_shed("sync-none");
+        let fork = sh(&w, &["rev-parse", "--short", "HEAD"]);
+        commit_notes_on_aaaa(&w, &[("2026-03-03T00:00:00Z", Some("new-1"), "new note")]);
+        task_file(
+            &t,
+            "hairy",
+            "yaks-bbbb",
+            "",
+            &notes(
+                "second",
+                &[("2026-03-02T12:00:00Z", Some("viewx"), "viewer note")],
+            ),
+        );
+        sh(&t, &["add", "-A"]);
+        sh(&t, &["commit", "-q", "-m", "viewer note"]);
+        let sheds = sheds_of(&t);
+        let l = shed_at(&sheds, &w);
+        assert_eq!(
+            l.farm_base,
+            Some(FarmBase {
+                kind: BaseKind::Fork,
+                sha: fork.clone()
+            })
+        );
+        assert_eq!(l.who, strs(&["new-1"]));
+        assert_eq!(json_of(&sheds, &w)["farm"]["vs"], "fork");
     }
 
     /// `<git-dir>/logs/HEAD` of the worktree `name` of `t`.

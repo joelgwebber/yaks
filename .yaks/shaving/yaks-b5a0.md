@@ -4,7 +4,7 @@ title: 'Parallel development: finish and harden coordinator/worker skills + tool
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-06T21:48:46Z'
+updated: '2026-10-06T22:19:29Z'
 labels:
 - agent
 - skills
@@ -135,3 +135,9 @@ Next, in order: yaks status (yaks-ee0a step 2), then the read-only shed commands
 Spawned sta-1 (agent c4904bc2d67f413c, anthropic/claude-sonnet-5-5, base 566d93e) on yaks-b6a9 (`yaks status`, step 2 of yaks-ee0a). Third spawn briefed by `yaks brief`. Joel stays on one machine.
 
 Still waiting for Joel's go to push GitHub: the rename and baseline fix are 09b2130 on the laptop checkout; GitHub is deea536. His "Groovy, go for it" answered the question about starting yaks status, not the push, so I did not push.
+
+---
+▸ 2026-10-06T22:19:29Z [delta-lead]
+Joel read `yaks sheds` from ~/src/yaks after the baseline fix and asked whether the main thread's own shed (eighteen actors, 21 new and 16 moved yaks) is a misfire. It is a real flaw in yaks-37fa: the fork point (23 commits back) was used although the shed had been synced with the viewer since (merge-base 1 commit back). Fix: yaks-22f1, use the nearer of the two. Spawned nbr-1 (agent cc5b017a736a4dfb, anthropic/claude-sonnet-5-5, base a9f6312).
+
+Everything else in his output read as intended: single-yak worker sheds with their own actors; idle sheds with no changes of their own (b9cr48skdbst, n6zrds7fcrgj, trw8aymc9w6v); and the two dead workers' sheds (brf-1 xw51kfjdpqy5, brf-2 3kkcfcww892t) each with 3 dirty files, their abandoned drafts.

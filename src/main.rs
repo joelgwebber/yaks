@@ -237,10 +237,12 @@ enum Command {
     /// List the other checkouts of this repo (git worktrees and Delta clones)
     /// and what each one's farm CHANGED since the shed forked (the oldest
     /// entry of its HEAD reflog, so a worker is not credited with what its
-    /// coordinator did first): yaks only there, yaks in another status, new
-    /// notes, `needs:` set. With no usable reflog the baseline is the
-    /// merge-base with this checkout and the output says `(vs merge-base)`
-    /// (JSON `farm.vs`: `fork`, `merge-base` or `checkout`). Also how far
+    /// coordinator did first; or, for a shed synced with this checkout since
+    /// it forked, the merge-base with this checkout when that is nearer, so
+    /// what it merged in is not counted): yaks only there, yaks in another
+    /// status, new notes, `needs:` set. With no usable reflog the baseline is
+    /// the merge-base with this checkout and the output says `(vs merge-base)`
+    /// (JSON `farm.vs`: `fork`, `sync`, `merge-base` or `checkout`). Also how far
     /// ahead/behind its HEAD is of this checkout's (`+? -?`, JSON null, when
     /// there is no merge-base here, e.g. shallow history; the table then says
     /// once to `git fetch --unshallow`). A shed that is merely behind shows

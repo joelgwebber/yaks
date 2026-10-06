@@ -1051,3 +1051,25 @@ brf-2 claim note, the `Brief` variant in `src/main.rs`) as external edits severa
 never touched, so it was noise; the check is `git status --short` plus a line count of the file after each replay. The thread clone on each
 machine is a separate git repo; my commits had synced to this one (HEAD was my latest), and `git fetch origin` showed GitHub's `main` at the
 commit I had pushed from the laptop.
+
+## O62 [skill] What `local` is, per machine, and what it means for keeping two machines in sync  (delta-lead, 2026-10-06)
+Joel asked, after a week of the thread moving between his Mac and a Linux box: what is `local` now, and can a thread shared to another
+machine update THAT machine's checkout? Everything below was observed in this thread.
+- `local` is per machine and per thread clone. On the Mac it is `/Users/joel/src/yaks/.git`, his real checkout (the project was added
+  there as a folder). A thread shared to the Linux box first got a Delta-managed BARE repo as `local` (O50, O51), because that machine had
+  no linked checkout for the repository record; Joel then repointed `local` by hand to `/home/joel/src/yaks/.git` in the clone, which made
+  pushes to `main` land in his Linux checkout (updateInstead). While the thread ran on Linux I pushed there; when it moved back to the Mac,
+  `local` pointed at the Mac checkout again (each machine's clone keeps its own config). That is why `~/src/yaks` on the Mac did not have
+  yaks-2c22 for a while: the push had gone to the Linux checkout.
+- Delta never moves a branch in the human's checkout. It pins every thread commit as `refs/delta/<dir>/<repo>/<sha>` in whatever repo
+  `local` stands for (O36); `main` moves only when a coordinator pushes it.
+- The two checkouts are separate repos with no shared state: after my pushes the Mac checkout, the Linux checkout and GitHub held
+  three different `main` commits (09b2130, 991c0d2, deea536) until I made them equal.
+- So the answer to "can Delta update the other machine's checkout?" is: not by itself. The one carrier that both machines can reach is
+  GitHub (`origin`). A coordinator on machine B can bring B's checkout level: `git fetch origin`, `yaks preflight --push-main`, then
+  `git push local origin/main:main` (a fast-forward; updateInstead updates the working tree). Nothing can push to the OTHER machine's
+  checkout from here (a different filesystem), unless the human gives each machine an ssh remote to the other, which we have not tried.
+- Today's sync, in order: squash commits built on the checkout's own `main`, pushed to the Mac `local`, then to GitHub (a fast-forward on
+  the human's say-so), then this thread's clone reset to GitHub's `main` after checking the trees were equal and archiving the unsquashed
+  history as `delta/trial14`. The Linux checkout still needs `git fetch origin && git reset --hard origin/main` (it holds only my earlier
+  equivalent commit).

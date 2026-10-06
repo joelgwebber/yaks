@@ -1,0 +1,69 @@
+KIND   BRANCH  HEAD     +AHEAD -BEHIND  DIRTY  FARM ACTIVE           PATH
+delta  main    db7cc43  +27 -11         3      2026-10-06T19:52:06Z  /Users/joel/src/yaks/.delta/worktrees/3kkcfcww892t/yaks
+  who: brf-2 · shaving: yaks-2c22
+  farm: 1 new notes
+    yaks-2c22 +1 notes
+delta  main    bf0a090  +23 -11         0      2026-10-06T04:08:28Z  /Users/joel/src/yaks/.delta/worktrees/486hnt20begb/yaks
+  who: agt-1
+  farm: 1 moved, 11 new notes
+    yaks-c061 shaving -> shorn
+    yaks-c061 +11 notes
+delta  main    6703870  +4 -17          0      2026-10-05T19:54:10Z  /Users/joel/src/yaks/.delta/worktrees/8ek2jykcm7ke/yaks
+  who: pre-1
+  farm: 1 moved, 4 new notes
+    yaks-d1bd shaving -> shorn
+    yaks-d1bd +4 notes
+delta  main    5e5a1e9  +3 -12          0      2026-10-05T22:44:20Z  /Users/joel/src/yaks/.delta/worktrees/8jspjv836gbr/yaks
+  who: inp-1
+  farm: 1 moved, 10 new notes
+    yaks-c53a shaving -> shorn
+    yaks-c53a +10 notes
+delta  main    0a5e6a4  +18 -12         0      2026-10-06T03:33:56Z  /Users/joel/src/yaks/.delta/worktrees/b9cr48skdbst/yaks
+  farm: no changes of its own
+delta  main    b750092  +3 -12          0      2026-10-05T22:49:12Z  /Users/joel/src/yaks/.delta/worktrees/ccae3bj40fr0/yaks
+  who: ntf-1
+  farm: 1 moved, 4 new notes
+    yaks-5c83 shaving -> shorn
+    yaks-5c83 +4 notes
+delta  main    0dc2144  +45 -11         0      2026-10-06T21:41:51Z  /Users/joel/src/yaks/.delta/worktrees/f2hdbpew7kgx/yaks
+  who: bas-1
+  farm: 1 moved, 10 new notes
+    yaks-37fa shaving -> shorn
+    yaks-37fa +10 notes
+delta  main    710b980  +39 -11         0      2026-10-06T21:15:33Z  /Users/joel/src/yaks/.delta/worktrees/n6zrds7fcrgj/yaks
+  farm: no changes of its own
+delta  main    a9f6312  +2 -0           6      2026-10-06T22:19:29Z  /Users/joel/src/yaks/.delta/worktrees/qw0xx3s64g6e/yaks
+  who: nbr-1 · shaving: yaks-22f1
+  farm: 1 new notes
+    yaks-22f1 +1 notes
+delta  main    e63806a  +11 -17         0      2026-10-05T20:01:39Z  /Users/joel/src/yaks/.delta/worktrees/tp2zd0r5z185/yaks
+  who: unk-1
+  farm: 1 moved, 3 new notes
+    yaks-1b39 shaving -> shorn
+    yaks-1b39 +3 notes
+delta  main    4fc959e  +0 -22          0      2026-10-04T16:52:49Z  /Users/joel/src/yaks/.delta/worktrees/trw8aymc9w6v/yaks
+  farm: no changes of its own
+delta  main    d90e8a1  +41 -11         0      2026-10-06T21:34:35Z  /Users/joel/src/yaks/.delta/worktrees/vk8z2vjzgdqh/yaks
+  who: shd-1
+  farm: 1 moved, 4 new notes
+    yaks-dfca shaving -> shorn
+    yaks-dfca +4 notes
+delta  main    93b3fb9  +3 -0           0      2026-10-06T22:19:29Z  /Users/joel/src/yaks/.delta/worktrees/xp49gyb9fg59/yaks
+  who: delta-lead · shaving: yaks-22f1, yaks-b5a0
+  farm: 1 new, 1 new notes
+    + yaks-22f1
+    yaks-b5a0 +1 notes
+delta  main    0725169  +22 -11         3      2026-10-06T03:59:15Z  /Users/joel/src/yaks/.delta/worktrees/xw51kfjdpqy5/yaks
+  who: brf-1 · shaving: yaks-2c22
+  farm: 1 new notes
+    yaks-2c22 +1 notes
+delta  main    fea181c  +51 -11         0      2026-10-06T21:54:59Z  /Users/joel/src/yaks/.delta/worktrees/yar6r29tjc78/yaks
+  who: sta-1
+  farm: 1 moved, 9 new notes
+    yaks-b6a9 shaving -> shorn
+    yaks-b6a9 +9 notes
+delta  main    1a1e10d  +10 -14         0      2026-10-05T21:16:42Z  /Users/joel/src/yaks/.delta/worktrees/ynqz2tjwkyjx/yaks
+  who: ini-1
+  farm: 1 moved, 3 new notes
+    yaks-814a shaving -> shorn
+    yaks-814a +3 notes
