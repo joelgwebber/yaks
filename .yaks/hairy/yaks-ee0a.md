@@ -4,7 +4,7 @@ title: 'CLI affordances for lanes and threads: what a human and an agent need to
 type: task
 priority: 2
 created: '2026-10-06T21:05:37Z'
-updated: '2026-10-06T21:41:31Z'
+updated: '2026-10-07T01:00:44Z'
 parent: yaks-7204
 labels:
 - cli
@@ -52,3 +52,11 @@ Terminology decision (Joel, 2026-10-06, via the naming subthread): a "lane" is n
 Decision (Joel, 2026-10-06): the vocabulary stops at "shed". "Clip" and "barn" are NOT adopted. Where a distinction is needed, add a qualifier instead of a new noun: the main shed (the primary checkout), the yakherd's shed, a worker's shed. Commands and docs use "shed" plus a qualifier; no new word for what a shed has produced either (`yaks changes <shed>` in the proposal above stands).
 
 Also decided in the same discussion: (1) a shed's copy of a yak is simply that shed's version, "not yet in the primary" (no special rules for how a thread works); (2) an answer written across sheds stays UNCOMMITTED in the asking shed's tree and the worker commits it with its own yak file; `--commit` is dropped; (3) only `answer` (and maybe `ask`) may write into another checkout, enforced in the shared library so the CLI and the TUI both get it, while a worker keeps full write access to its own yaks. Build order unchanged: baseline fix (yaks-37fa), then `yaks status`, then the read-only shed commands, then the cross-shed `answer`.
+
+---
+▸ 2026-10-07T01:00:44Z [delta-lead]
+Decisions (Joel, 2026-10-06, from the abandoned-shed discussion):
+1. A shed's state is a small vocabulary (active, idle, landed, stale, orphan); "its claim disagrees with the primary" (its own copy of a yak is `shaving` while the viewer's is `shorn`) is a SIDE NOTE on the row, not a state of its own.
+2. The yaks tools never remove or clean up a shed: "there is enough complexity and inference that this could be unpredictable and dangerous". They name what is safe and may print the command; Delta owns its clones, and `git worktree remove` stays the user's call.
+3. Liveness starts as the simplest signal: no farm activity for N hours while its own yak is still `shaving`. Revisit only if it misleads.
+Context: the two dead workers' sheds (brf-1, brf-2) hold uncommitted drafts and 0 commits of their own while their yak (yaks-2c22) is shorn in the main checkout; a finished worker's shed (sta-1) is clean with its one commit landed.
