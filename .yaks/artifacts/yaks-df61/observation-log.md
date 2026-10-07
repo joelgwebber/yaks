@@ -1073,3 +1073,26 @@ machine update THAT machine's checkout? Everything below was observed in this th
   the human's say-so), then this thread's clone reset to GitHub's `main` after checking the trees were equal and archiving the unsquashed
   history as `delta/trial14`. The Linux checkout still needs `git fetch origin && git reset --hard origin/main` (it holds only my earlier
   equivalent commit).
+
+## O63 [open][cli][skill] How a shed's location can be found, and whether a shared thread can be attached to a local checkout  (delta-lead, 2026-10-06)
+Joel asked for all the avenues before we commit to a design for opening `yaks tui` on the right shed. Read-only checks on the Mac; the
+database was read from a COPY of its files.
+- The `delta` CLI (`auth`, `db`, `thread`, `open`) has no path lookup. `delta thread list --json` gives ids, titles, archived flags (the human's
+  threads, not this thread's subagents). `delta thread status` is sync state only. `delta thread data` is a 19 MB replicated tree that
+  contains NO absolute worktree paths (searched for whole-string paths): mounts are machine-local, not stored in the thread. `delta open
+  [PATH_OR_URL]` opens or activates the app; there is no terminal command.
+- Machine-local state is SQLite in `<data dir>/user_*/data.sqlite`: `app_repositories(id, repository_index, state BLOB)` (8 rows here),
+  `app_worktree_mounts(namespace, worktree_id, repository_id, state BLOB)` (79 rows), `app_repository_checkout_preferences(repository_id,
+  use_existing_checkout)` (0 rows). The states are encoded blobs, so the "recorded user checkout" the app talks about ("No user checkout is
+  known for ...", "Failed to open the recorded user checkout for ...") is not plain columns: not safely hand-editable, and the app holds it
+  open. The app strings name three thread modes ("existing local checkout", "isolated Delta clone", "existing Git worktree"), a per-repository
+  use-existing-checkout flag, and the rule "the workspace cannot be changed after the agent has used this project". That explains why
+  repointing `remote.local` alone did not work (Delta's pins and mounts follow its repository record, O50) and suggests the real switch is
+  a UI choice made before an agent has used the thread. Untested.
+- Where Delta puts checkouts (both seen): linked `<repo>/.delta/worktrees/<dir>/<repo>`; managed `<platform data dir>/delta/worktrees/<dir>/...`:
+  Linux `${XDG_DATA_HOME:-~/.local/share}/delta/worktrees/<dir>/<repo>` (O51), macOS `~/Library/Application Support/delta/worktrees/<dir>/
+  local_<repo-record-uuid>` (four dirs here, other projects). So a scan of the known roots, matched on `remote.origin.url`, finds managed
+  checkouts without any registry; on macOS the folder is not named after the repo.
+- Mistake worth recording: my first probe of `delta thread data` ran a loose regex over a JSON that contains the transcript and printed raw
+  thread text including model reasoning, which a filter rejected. Probes of thread data must walk the JSON and print only short path-shaped
+  strings or key names, never a regex match over the whole document.

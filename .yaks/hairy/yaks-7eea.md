@@ -4,7 +4,7 @@ title: 'Open the TUI on a shed from anywhere: discovery, names and a --shed sele
 type: idea
 priority: 2
 created: '2026-10-07T01:00:44Z'
-updated: '2026-10-07T01:00:44Z'
+updated: '2026-10-07T03:47:37Z'
 parent: yaks-ee0a
 labels:
 - cli
@@ -34,3 +34,18 @@ Opening the TUI on another shed's farm gives full write access there (create, mo
 
 ## Lean
 Build A and B together (small, read-mostly, and B fixes both discovery and the names), plus C for free; make `--shed` a visit; D comes with the unified view later.
+
+---
+▸ 2026-10-07T03:47:37Z [delta-lead]
+Refinement (coordinator delta-lead, 2026-10-06, after Joel's two questions and the investigation in yaks-df61 O63).
+
+Anchors that do not depend on the current directory, and what each can find:
+1. The current repo (today): its `git worktree`s and the sibling / `.delta/worktrees` clones.
+2. Known Delta roots, scanned and matched on `remote.origin.url`: Linux `${XDG_DATA_HOME:-~/.local/share}/delta/worktrees/*/*`, macOS `~/Library/Application Support/delta/worktrees/*/*`. A convention baked into yaks, so it is isolated, documented as a convention, and overridable by a config list of extra roots. Finds managed checkouts from anywhere.
+3. A per-user registry written as a side effect of any yaks command run inside a Delta thread (DELTA_THREAD_TITLE and DELTA_CURRENT_THREAD_ID are in its environment): the title as the shed's name, and the path. Finds a shed wherever yaks has run in it.
+
+Realize the registry as a SYMLINK DIRECTORY, not (only) a file: for example `~/.yaks/sheds/<sanitized-title>` pointing at the shed's checkout (a short id appended on a clash; refreshed on each run, keyed by thread id, so a renamed thread keeps one link). Then `cd ~/.yaks/sheds/<tab>` works from any terminal with tab completion, Zed and other tools can open the folder, and nothing needs a yaks invocation to find a thread. This also answers Joel's original goal in yaks-df61 O50: work locally in Zed and the CLI without chasing where Delta put the worktrees.
+
+Delta CLI: no thread-to-path lookup exists (`thread status` and `thread data` carry no paths); "open a terminal at the worktree" is a Delta feature request, not something we can build.
+
+Still open: `--shed` as a visit (read plus answer/ask) or full access; and whether to try, on a fresh unused thread, Delta's "existing local checkout" / "existing Git worktree" modes through the UI (untested, and per the app the choice cannot change once an agent has used the thread).
