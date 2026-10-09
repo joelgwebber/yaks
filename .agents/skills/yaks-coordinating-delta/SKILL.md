@@ -40,8 +40,9 @@ and `skill` needs the `worktree` argument; still put the critical rules in the b
   is idle after an ask (core section 8). The profile default has changed between
   runs; pass `model` only when the human asked for one.
 - Right after spawning, run `yaks sheds`: the new worker's clone appears at once (Delta pins it on creation), named by
-  its Delta dir id (the `<id>` in `.delta/worktrees/<id>/`) until its first note. Record that dir id with the worker's
-  name and agent id (the spawn line above), so `yaks changes <dir id>` works even for a worker that never writes a note.
+  its Delta dir id (the `<id>` in `.delta/worktrees/<id>/`) until its first yaks command, then by the slug of its spawn title
+  (that command records `DELTA_THREAD_TITLE` in the clone's git config; `sheds-1: build the sheds CLI` is `sheds-1-build-the-sheds-cli`).
+  Record the dir id with the worker's name and agent id (the spawn line above), so `yaks changes <dir id>` works even for a worker that never runs yaks.
 - Start every spawn `title` with the worker's name (`sheds-1: build yaks sheds CLI`). Delta shows the title in
   its thread list and exports it as `DELTA_THREAD_TITLE`, which yaks stamps as `delta:<title>` when no actor is
   set; with the name first the thread, the yak's notes and moves, and the label `yaks sheds` shows for the shed

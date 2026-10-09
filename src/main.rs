@@ -266,7 +266,13 @@ enum Command {
     /// no changes. Each shed with entries of its own is
     /// labeled under its row: `who:` (the distinct actors on those new notes)
     /// and `shaving:` (yaks in shaving there that it wrote to); JSON `who`
-    /// and `in_progress`. Read-only everywhere.
+    /// and `in_progress`. A shed's name (the `name:` line, JSON `name`) is
+    /// `main` for the primary checkout, else the slug of its Delta thread title
+    /// (lowercase, other runs become `-`, at most 24 chars; the title is
+    /// recorded in the clone's own git config by any yaks command run there
+    /// with `DELTA_THREAD_TITLE` set, shown as `title:`, JSON `title`), else
+    /// its first actor, Delta dir id or branch. Read-only everywhere (apart
+    /// from that one-time recording in the clone you run yaks in).
     Sheds {
         /// Emit the sheds as JSON.
         #[arg(long)]
@@ -279,14 +285,14 @@ enum Command {
     /// set. The per-yak expansion of the `farm:` line of `yaks sheds`, with the
     /// same baseline (the shed's fork point, or the merge-base / this checkout,
     /// and the output says `(vs merge-base)` / `(vs this checkout)`). SHED is
-    /// its path, Delta dir id, branch or an actor on its notes, or a unique
-    /// substring of those; `main` names the primary checkout. No or an
+    /// its path, Delta dir id, thread-title slug, branch or an actor on its
+    /// notes, or a unique substring of those (or of its full title); `main` names the primary checkout. No or an
     /// ambiguous match lists the sheds and exits 1. A shed sharing this farm,
     /// or with none or an unreadable one, says why there is nothing to show.
     /// Read-only everywhere.
     Changes {
-        /// The shed: path, Delta dir id, branch, actor, `main`, or a unique
-        /// substring.
+        /// The shed: path, Delta dir id, thread-title slug, branch, actor,
+        /// `main`, or a unique substring.
         shed: String,
         /// Emit one JSON object per changed yak (`id`, `title`, `status`,
         /// `added`, `moved`, `notes` with `ts`/`actor`/`text`, `needs`, `vs`,
@@ -848,6 +854,9 @@ fn main() -> Result<()> {
     for dir in &cli.chdir {
         env::set_current_dir(dir)
             .with_context(|| format!("cannot change to directory '{}'", dir.display()))?;
+    }
+    if cli.chdir.is_empty() {
+        sheds::record_thread(); // a Delta clone remembers its thread title
     }
 
     // `init` creates a farm where none exists, and `skills` installs the skill

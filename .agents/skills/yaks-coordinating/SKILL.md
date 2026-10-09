@@ -43,17 +43,18 @@ shared blackboard. The many-agent case adds writers, nothing else.
 
 While workers run, watch them from your own checkout; these only read the other checkouts:
 - `yaks sheds`: every other checkout of the repo (git worktrees and Delta clones, including a worker
-  that has not committed yet): its name (`main` for the human's checkout, else the worker's actor
-  name, else an id), HEAD, ahead/behind, who is working in it and on which yaks, and a summary of
+  that has not committed yet): its name (`main` for the human's checkout, else the slug of the worker's
+  Delta thread title, else its actor name, else an id), HEAD, ahead/behind, who is working in it and on which yaks, and a summary of
   what its farm changed since it forked (new yaks, moves, notes, open asks).
 - `yaks changes <shed>`: that summary per yak, with each new note's actor and first line.
 - `yaks inbox --sheds`: every shed's open asks, with the question text. Run it after each spawn
   batch and whenever a worker returns blocked.
 - `yaks show <id> --sheds`: how each shed's copy of one yak differs from yours.
 `<shed>` is any of: the name `sheds` prints, `main`, the Delta dir id (Delta only: the `<id>` in
-`.delta/worktrees/<id>/`), a branch, an actor, a path, or a unique substring of a path, dir id or actor; an unknown or ambiguous one lists the sheds. A worker that has written no
-note yet has no actor name: `sheds` names it by its Delta dir id or branch, so use that (or its
-path) until its first note. `yaks -C <path> <cmd>` runs ANY command as if started in another
+`.delta/worktrees/<id>/`), a branch, an actor, a path, or a unique substring of a path, dir id, actor, slug or full thread title; an unknown or ambiguous one lists the sheds. A Delta worker is named by the slug of its
+spawn title (`cflag-1: add the -C flag` is `cflag-1-add-the-c-flag`) from its first yaks command, which records the
+title in the clone's own git config; before that (or in a clone that never ran yaks) it is named by its actor, Delta dir id or
+branch, so use that (or its path). Two workers with one slug get their dir id's first 4 characters appended. `yaks -C <path> <cmd>` runs ANY command as if started in another
 checkout, writes included: it is the same as `cd` there, so use it only on a checkout you own.
 In a team farm each shed has its own farm to compare; in a private farm every shed shares one live
 farm, so these say `shares this farm` and the plain commands already show everything.

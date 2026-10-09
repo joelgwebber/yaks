@@ -167,6 +167,13 @@ pub struct Shed {
     pub kind: ShedKind,
     /// The Delta directory id, for a pinned clone (see [`Found`]).
     pub dir: Option<String>,
+    /// The Delta thread title the clone recorded in its own git config
+    /// (`yaks.shed.title`, see [`record_thread`]); `None` for the primary and
+    /// for any clone that never ran yaks in a thread.
+    pub title: Option<String>,
+    /// The name [`Shed::name`] and `resolve` use for this shed: the [`slug`]
+    /// of `title`, made unique among the listed sheds by [`disambiguate`].
+    pub slug: Option<String>,
     /// The repository's main checkout.
     pub primary: bool,
     /// `None` when HEAD is detached (or unreadable).
@@ -206,15 +213,15 @@ pub struct Shed {
 
 impl Shed {
     /// A short name for messages and selectors: `main` for the primary
-    /// checkout, else the first actor in `who`, else the Delta dir id, else
-    /// the branch, else the directory name.
+    /// checkout, else the slug of its thread title, else the first actor in
+    /// `who`, else the Delta dir id, else the branch, else the directory name.
     pub fn name(&self) -> String {
         if self.primary {
             return "main".into();
         }
-        self.who
-            .first()
-            .cloned()
+        self.slug
+            .clone()
+            .or_else(|| self.who.first().cloned())
             .or_else(|| self.dir.clone())
             .or_else(|| self.branch.clone())
             .unwrap_or_else(|| {
@@ -238,14 +245,67 @@ pub fn discover(cwd: &Path, farm_root: &Path) -> Result<Vec<Shed>> {
     let ours = store::load(farm_root, &EVERY).unwrap_or_default();
     let our_farm = canonical(farm_root);
     let shallow = git(&top, &["rev-parse", "--is-shallow-repository"]).is_ok_and(|s| s == "true");
-    Ok(found
+    let mut sheds: Vec<Shed> = found
         .into_iter()
         .map(|(path, found)| {
             let mut shed = inspect(&top, &path, &found, &our_farm, &ours);
             shed.shallow_here = shallow;
             shed
         })
-        .collect())
+        .collect();
+    disambiguate(&mut sheds);
+    Ok(sheds)
+}
+
+/// Longest slug [`slug`] returns.
+const MAX_SLUG: usize = 24;
+
+/// A git-worktree-like name for a thread title: lowercase, every run of
+/// characters outside `[a-z0-9]` one `-`, no leading or trailing `-`, cut to
+/// at most [`MAX_SLUG`] characters at a `-` boundary when there is one.
+/// `None` when nothing is left (a title of only punctuation or emoji).
+pub fn slug(title: &str) -> Option<String> {
+    let mut s = String::new();
+    for c in title.to_lowercase().chars() {
+        if c.is_ascii_lowercase() || c.is_ascii_digit() {
+            s.push(c);
+        } else if !s.ends_with('-') {
+            s.push('-');
+        }
+    }
+    // Pure ASCII from here, so byte offsets are character offsets.
+    let s = s.trim_matches('-');
+    let cut = if s.len() <= MAX_SLUG {
+        s
+    } else if s.as_bytes()[MAX_SLUG] == b'-' {
+        &s[..MAX_SLUG]
+    } else {
+        let head = &s[..MAX_SLUG];
+        head.rfind('-').map_or(head, |i| &head[..i])
+    };
+    let cut = cut.trim_matches('-');
+    (!cut.is_empty()).then(|| cut.to_string())
+}
+
+/// Sheds whose title slugs are equal all get the first 4 characters of their
+/// Delta dir id appended (`<slug>-q7zz`), so a name picks out one shed. The
+/// primary is `main` whatever its title, so it takes no part.
+fn disambiguate(sheds: &mut [Shed]) {
+    let mut count: BTreeMap<String, usize> = BTreeMap::new();
+    for s in sheds.iter().filter(|s| !s.primary) {
+        if let Some(slug) = &s.slug {
+            *count.entry(slug.clone()).or_default() += 1;
+        }
+    }
+    for s in sheds.iter_mut().filter(|s| !s.primary) {
+        let (Some(slug), Some(dir)) = (&mut s.slug, &s.dir) else {
+            continue;
+        };
+        if count[slug.as_str()] > 1 {
+            slug.push('-');
+            slug.extend(dir.chars().take(4));
+        }
+    }
 }
 
 /// How one shed was found, and the identifiers discovery knows for it.
@@ -299,20 +359,23 @@ pub(crate) fn shed_paths(top: &Path) -> BTreeMap<PathBuf, Found> {
 }
 
 /// Pick one shed by `query`, in this order: its path (as given or
-/// canonical), its Delta dir id, `main` for the primary checkout, its
+/// canonical), its Delta dir id, its slug (the name `yaks sheds` shows for a
+/// clone with a thread title), `main` for the primary checkout, its
 /// branch, an actor in its `who`, then a unique case-insensitive substring of
-/// any of those. `main` names the primary before any branch called `main`
-/// (every Delta clone usually is on one). Ambiguity and no match are errors
-/// that list the candidates, so a caller can print them as is.
+/// any of those, its slug, or its full title. `main` names the primary before
+/// any branch called `main` (every Delta clone usually is on one). Ambiguity
+/// and no match are errors that list the candidates, so a caller can print
+/// them as is.
 pub fn resolve<'a>(sheds: &'a [Shed], query: &str) -> Result<&'a Shed, String> {
     let q = query.trim();
     if q.is_empty() {
         return Err("empty shed name".into());
     }
     let qpath = canonical(Path::new(q));
-    let rules: [&dyn Fn(&Shed) -> bool; 6] = [
+    let rules: [&dyn Fn(&Shed) -> bool; 7] = [
         &|s| s.path == qpath || s.path == Path::new(q),
         &|s| s.dir.as_deref() == Some(q),
+        &|s| s.slug.as_deref() == Some(q),
         &|s| q == "main" && s.primary,
         &|s| s.branch.as_deref() == Some(q),
         &|s| s.who.iter().any(|w| w == q),
@@ -321,6 +384,8 @@ pub fn resolve<'a>(sheds: &'a [Shed], query: &str) -> Result<&'a Shed, String> {
             let hit = |t: &str| t.to_lowercase().contains(&ql);
             hit(&s.path.display().to_string())
                 || s.dir.as_deref().is_some_and(hit)
+                || s.slug.as_deref().is_some_and(hit)
+                || s.title.as_deref().is_some_and(hit)
                 || s.who.iter().any(|w| hit(w))
         },
     ];
@@ -369,6 +434,8 @@ fn inspect(
         path: path.to_path_buf(),
         kind: found.kind,
         dir: found.dir.clone(),
+        title: None,
+        slug: None,
         primary: found.primary,
         branch: None,
         head: None,
@@ -383,6 +450,10 @@ fn inspect(
         in_progress: Vec::new(),
         error: None,
     };
+    if !found.primary {
+        shed.title = shed_git_dir(path).and_then(|gd| config_get(&gd, TITLE_KEY));
+        shed.slug = shed.title.as_deref().and_then(slug);
+    }
     let mut bases: Vec<(BaseKind, String)> = Vec::new();
     match git_state(top, path) {
         Ok(g) => {
@@ -1063,6 +1134,77 @@ pub(crate) fn alternates(common: &Path) -> Option<PathBuf> {
     })
 }
 
+/// The git config keys a Delta clone records its thread under, in its OWN git
+/// dir's config: per clone, never committed, rebuildable (so not a second
+/// source of truth for anything in `.yaks/`).
+const TITLE_KEY: &str = "yaks.shed.title";
+const THREAD_KEY: &str = "yaks.shed.thread";
+
+/// The absolute git dir of the checkout at `checkout`.
+fn shed_git_dir(checkout: &Path) -> Option<PathBuf> {
+    git(checkout, &["rev-parse", "--absolute-git-dir"])
+        .ok()
+        .map(|d| canonical(Path::new(&d)))
+}
+
+/// `key` from `<git_dir>/config` alone (never the user's or system config).
+fn config_get(git_dir: &Path, key: &str) -> Option<String> {
+    let cfg = git_dir.join("config");
+    let v = git(
+        git_dir,
+        &["config", "--file", &cfg.display().to_string(), "--get", key],
+    )
+    .ok()?;
+    (!v.is_empty()).then_some(v)
+}
+
+/// Record this checkout's Delta thread (`$DELTA_THREAD_TITLE`, and
+/// `$DELTA_CURRENT_THREAD_ID` when set) in its own git config, so
+/// `yaks sheds` can name the clone by its thread. Called once per command
+/// (see `main`); best effort and silent: any failure just leaves the name as
+/// it was. See [`record_thread_in`] for when it writes.
+pub fn record_thread() {
+    let var = |k: &str| std::env::var(k).ok();
+    if let Ok(cwd) = std::env::current_dir() {
+        record_thread_in(
+            &cwd,
+            var("DELTA_THREAD_TITLE").as_deref(),
+            var("DELTA_CURRENT_THREAD_ID").as_deref(),
+        );
+    }
+}
+
+/// The testable core of [`record_thread`]. Writes only in a Delta clone (its
+/// objects come through `objects/info/alternates`, and `cwd`'s git dir is the
+/// clone's own: a plain git worktree shares its config with the primary, and
+/// a worktree of a clone has no config of its own), only a non-empty title,
+/// and only a value that differs from what is stored, so most commands write
+/// nothing. The title has its whitespace collapsed.
+pub fn record_thread_in(cwd: &Path, title: Option<&str>, thread: Option<&str>) {
+    let tidy = |s: Option<&str>| {
+        let s = s?.split_whitespace().collect::<Vec<_>>().join(" ");
+        (!s.is_empty()).then_some(s)
+    };
+    let Some(title) = tidy(title) else { return };
+    let Some(h) = host(cwd) else { return };
+    if !h.via_alternates || common_dir(cwd).is_none_or(|c| c != h.own_git_dir) {
+        return;
+    }
+    let cfg = h.own_git_dir.join("config");
+    let set = |key: &str, value: &str| {
+        if config_get(&h.own_git_dir, key).as_deref() != Some(value) {
+            let _ = git(
+                &h.own_git_dir,
+                &["config", "--file", &cfg.display().to_string(), key, value],
+            );
+        }
+    };
+    set(TITLE_KEY, &title);
+    if let Some(thread) = tidy(thread) {
+        set(THREAD_KEY, &thread);
+    }
+}
+
 /// `remote.origin.url` from the repository whose git dir is `git_dir`.
 pub(crate) fn origin_url(git_dir: &Path) -> Option<String> {
     let cfg = git_dir.join("config");
@@ -1168,6 +1310,8 @@ pub fn to_json(sheds: &[Shed]) -> Value {
                     // checkout.
                     "name": l.name(),
                     "dir": l.dir,
+                    // The thread title the clone recorded (`null` if none).
+                    "title": l.title,
                     "primary": l.primary,
                     "branch": l.branch,
                     "head": l.head,
@@ -1353,7 +1497,10 @@ pub fn render(sheds: &[Shed]) -> String {
             r.iter().map(String::as_str).collect(),
             &l.path.display().to_string(),
         ));
-        out.push_str(&format!("  name: {}\n", l.name()));
+        match &l.title {
+            Some(t) => out.push_str(&format!("  name: {} \u{b7} title: {t}\n", l.name())),
+            None => out.push_str(&format!("  name: {}\n", l.name())),
+        }
         if let Some(e) = &l.error {
             out.push_str(&format!("  error: {e}\n"));
         }
@@ -2867,6 +3014,182 @@ mod tests {
         );
         let e = resolve(&from_t, "/").unwrap_err();
         assert!(e.contains("names 2 sheds"), "{e}");
+    }
+
+    // -- thread titles as shed names ----------------------------------------------
+
+    #[test]
+    fn slug_is_a_git_worktree_like_name() {
+        let slug = |t: &str| super::slug(t);
+        assert_eq!(
+            slug("cflag-1: yaks -C global flag").as_deref(),
+            Some("cflag-1-yaks-c-global")
+        );
+        assert_eq!(
+            slug("Delta :Yaks (cont'd)").as_deref(),
+            Some("delta-yaks-cont-d")
+        );
+        assert_eq!(
+            slug("  --Hello,   World!--  ").as_deref(),
+            Some("hello-world")
+        );
+        // At most 24 chars, cut at a `-` boundary when there is one.
+        assert_eq!(
+            slug("alpha beta gamma delta epsilon").as_deref(),
+            Some("alpha-beta-gamma-delta")
+        );
+        // A `-` right after the 24th character: kept whole.
+        assert_eq!(
+            slug("abcdefghijklmnopqrstuvwx yz").as_deref(),
+            Some("abcdefghijklmnopqrstuvwx")
+        );
+        // A cut that lands inside a word drops that word.
+        assert_eq!(
+            slug("alpha beta gamma delta eps").as_deref(),
+            Some("alpha-beta-gamma-delta")
+        );
+        assert_eq!(
+            slug("abcdefghij klmnopqrst uvwxyz").as_deref(),
+            Some("abcdefghij-klmnopqrst")
+        );
+        // No boundary to cut at: a hard cut.
+        assert_eq!(
+            slug(&"x".repeat(40)).as_deref(),
+            Some("xxxxxxxxxxxxxxxxxxxxxxxx")
+        );
+        // Nothing left: no slug, so the name falls through.
+        assert_eq!(slug("!!! \u{1f980}"), None);
+        assert_eq!(slug(""), None);
+    }
+
+    /// Give the clone `c` a recorded thread title the way `record_thread_in`
+    /// does, without needing the environment.
+    fn titled(c: &Path, title: &str) {
+        record_thread_in(c, Some(title), None);
+    }
+
+    #[test]
+    fn a_titled_clone_is_named_by_its_slug_and_resolves_by_it() {
+        let b = base("titled");
+        let t = b.join("repo");
+        repo_with_farm(&t);
+        let host = t.join(".git");
+        let (store, co) = (t.join(".delta/clones"), t.join(".delta/worktrees"));
+        let c1 = delta_clone(&host, &store, &co, "abc123", "repo");
+        let c2 = delta_clone(&host, &store, &co, "q7zz00", "repo");
+        titled(&c1, "cflag-1: yaks -C global flag");
+
+        let from_t = sheds_of(&t);
+        let s1 = shed_at(&from_t, &c1);
+        assert_eq!(s1.title.as_deref(), Some("cflag-1: yaks -C global flag"));
+        assert_eq!(s1.name(), "cflag-1-yaks-c-global");
+        // An untitled clone keeps its dir id.
+        assert_eq!(shed_at(&from_t, &c2).name(), "q7zz00");
+        let p = |q: &str| resolve(&from_t, q).unwrap().path.clone();
+        assert_eq!(p("cflag-1-yaks-c-global"), c1);
+        assert_eq!(p("abc123"), c1, "the dir id still resolves");
+        assert_eq!(p("global flag"), c1, "substring of the full title");
+        assert_eq!(p("YAKS -C GLOBAL"), c1, "case-insensitive");
+        let j = to_json(&from_t);
+        assert_eq!(j[0]["title"], "cflag-1: yaks -C global flag");
+        assert_eq!(j[0]["name"], "cflag-1-yaks-c-global");
+        assert_eq!(j[1]["title"], Value::Null);
+        assert!(render(&from_t).contains(
+            "  name: cflag-1-yaks-c-global \u{b7} title: cflag-1: yaks -C global flag\n"
+        ));
+    }
+
+    #[test]
+    fn the_slug_beats_the_actor_and_the_dir_id_in_a_name() {
+        let (t, wt) = claimed_repo_with_shed("slugfirst");
+        shed_notes_on_aaaa(&wt, &[("2026-03-03T00:00:00Z", Some("sheds-2"), "hi")]);
+        let c = delta_clone(
+            &t.join(".git"),
+            &t.join(".delta/clones"),
+            &t.join(".delta/worktrees"),
+            "q7zz",
+            "repo",
+        );
+        titled(&c, "Some Title");
+        let from_t = sheds_of(&t);
+        assert_eq!(shed_at(&from_t, &wt).name(), "sheds-2");
+        assert_eq!(shed_at(&from_t, &c).name(), "some-title");
+    }
+
+    #[test]
+    fn sheds_with_the_same_slug_get_their_dir_id_prefix() {
+        let b = base("collide");
+        let t = b.join("repo");
+        repo_with_farm(&t);
+        let host = t.join(".git");
+        let (store, co) = (t.join(".delta/clones"), t.join(".delta/worktrees"));
+        let c1 = delta_clone(&host, &store, &co, "q7zzaa", "repo");
+        let c2 = delta_clone(&host, &store, &co, "k3mmbb", "repo");
+        let c3 = delta_clone(&host, &store, &co, "xxxxcc", "repo");
+        titled(&c1, "Fix the thing");
+        titled(&c2, "fix the thing!");
+        titled(&c3, "Fix another thing");
+        let from_t = sheds_of(&t);
+        assert_eq!(shed_at(&from_t, &c1).name(), "fix-the-thing-q7zz");
+        assert_eq!(shed_at(&from_t, &c2).name(), "fix-the-thing-k3mm");
+        assert_eq!(shed_at(&from_t, &c3).name(), "fix-another-thing");
+        let p = |q: &str| resolve(&from_t, q).unwrap().path.clone();
+        assert_eq!(p("fix-the-thing-q7zz"), c1);
+        assert_eq!(p("fix-the-thing-k3mm"), c2);
+        assert!(resolve(&from_t, "fix-the-thing").is_err(), "ambiguous");
+    }
+
+    #[test]
+    fn record_thread_writes_only_in_a_delta_clone_and_only_a_changed_value() {
+        let b = base("record");
+        let t = b.join("repo");
+        repo_with_farm(&t);
+        let c = delta_clone(
+            &t.join(".git"),
+            &t.join(".delta/clones"),
+            &t.join(".delta/worktrees"),
+            "abc123",
+            "repo",
+        );
+        let get = |dir: &Path, key: &str| {
+            Command::new("git")
+                .arg("-C")
+                .arg(dir)
+                .args(["config", "--local", "--get", key])
+                .output()
+                .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+                .unwrap()
+        };
+        record_thread_in(&c, Some("  A  title \n"), Some("thr-1"));
+        assert_eq!(get(&c, "yaks.shed.title"), "A title");
+        assert_eq!(get(&c, "yaks.shed.thread"), "thr-1");
+        // Nothing leaked to the host.
+        assert_eq!(get(&t, "yaks.shed.title"), "");
+        // Same value: no write (the config file is untouched).
+        let gd = shed_git_dir(&c).unwrap();
+        let before = fs::metadata(gd.join("config")).unwrap().modified().unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(30));
+        record_thread_in(&c, Some("A title"), Some("thr-1"));
+        let after = fs::metadata(gd.join("config")).unwrap().modified().unwrap();
+        assert_eq!(before, after);
+        // A new title replaces the old one; no title leaves it alone.
+        record_thread_in(&c, Some("Next"), None);
+        assert_eq!(get(&c, "yaks.shed.title"), "Next");
+        record_thread_in(&c, None, Some("thr-2"));
+        record_thread_in(&c, Some("  "), Some("thr-2"));
+        assert_eq!(get(&c, "yaks.shed.title"), "Next");
+        assert_eq!(get(&c, "yaks.shed.thread"), "thr-1");
+
+        // The primary checkout and a plain git worktree record nothing.
+        let wt = b.join("wt");
+        sh(
+            &t,
+            &["worktree", "add", "-q", "-b", "w", wt.to_str().unwrap()],
+        );
+        record_thread_in(&t, Some("Primary"), None);
+        record_thread_in(&wt, Some("Worktree"), None);
+        assert_eq!(get(&t, "yaks.shed.title"), "");
+        assert_eq!(get(&wt, "yaks.shed.title"), "");
     }
 
     // -- yaks changes: the per-yak expansion of the `farm:` line ---------------
