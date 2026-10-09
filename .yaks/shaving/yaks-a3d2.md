@@ -4,7 +4,7 @@ title: 'Design pass: CLI affordances and skill/workflow changes for agents using
 type: task
 priority: 3
 created: '2026-10-09T20:12:45Z'
-updated: '2026-10-09T20:23:49Z'
+updated: '2026-10-09T20:26:07Z'
 parent: yaks-ee0a
 labels:
 - cli
@@ -41,3 +41,7 @@ Questions for Joel are two asks on this yak (names; what --shed may do).
 asked: needs human
 
 Q1 NAMES. A thread's title exists only inside that thread (DELTA_THREAD_TITLE). To show it from other sheds, yaks has to record it. My lean: any yaks command run inside a Delta clone writes `yaks.shed.title` (and the thread id) into that clone's OWN git config (never committed, rebuildable), and `yaks sheds` reads it through the pin chain; the name falls back to who:/dir/branch as now. The cost: an ordinary command then writes to that clone's git config. Alternative: no recording; names stay who:/dir. Q2 WHAT --shed MAY DO. My lean: `--shed <name>` is a VISIT: read commands, plus answer/ask, with a one-line banner naming the shed; `-C <path>` stays the deliberate full-access route. Alternative: --shed is just -C by name (full access). Please answer each Q (yes, no, or another option).
+
+---
+▸ 2026-10-09T20:26:07Z [delta:Delta :Yaks (cont'd)]
+Spawned (base 192af4b, all claude-sonnet-5-5): cflag-1 83ecd85713f64fc7 -> yaks-4e39; inbox-1 69ae675719914f1d -> yaks-2917; chg-1 92c1a81063e44ac0 -> yaks-e39c.
