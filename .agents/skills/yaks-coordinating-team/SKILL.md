@@ -9,9 +9,11 @@ Read `yaks-coordinating` first. This file is only what changes when the farm liv
 
 ## What the farm is
 Every checkout carries its own committed copy of `.yaks/`, so farms are **per-branch** and
-reconcile when work **lands**, not live. A worker's shave, note or ask is invisible to you
-until its commit reaches your branch. Coordinate with disjoint scopes plus landing, not by
-watching each other. Yak ids are fine in commit messages and in-repo references.
+reconcile when work **lands**, not live. A worker's shave, note or ask is invisible to your
+plain `list`/`show`/`inbox` until its commit reaches your branch; the cross-shed commands
+(core section 3: `sheds`, `changes`, `inbox --sheds`, `show --sheds`) read it in its checkout
+before then. Coordinate with disjoint scopes plus landing; watch with those to notice asks and
+stalls, never to merge state by hand. Yak ids are fine in commit messages and in-repo references.
 
 ## Claim
 Create or select the leaf yaks, `shave` each, add the assignment note (owner, scope, evidence

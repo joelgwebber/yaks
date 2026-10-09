@@ -51,8 +51,10 @@ While workers run, watch them from your own checkout; these only read the other 
   batch and whenever a worker returns blocked.
 - `yaks show <id> --sheds`: how each shed's copy of one yak differs from yours.
 `<shed>` is any of: the name `sheds` prints, `main`, the Delta dir id, a branch, an actor, a path,
-or a unique substring; an unknown or ambiguous one lists the sheds. `yaks -C <path> <cmd>` runs
-any command as if started in another checkout (full access there: use it deliberately).
+or a unique substring; an unknown or ambiguous one lists the sheds. A worker that has written no
+note yet has no actor name: `sheds` names it by its Delta dir id or branch, so use that (or its
+path) until its first note. `yaks -C <path> <cmd>` runs ANY command as if started in another
+checkout, writes included: it is the same as `cd` there, so use it only on a checkout you own.
 In a team farm each shed has its own farm to compare; in a private farm every shed shares one live
 farm, so these say `shares this farm` and the plain commands already show everything.
 
@@ -107,10 +109,13 @@ park work in `$TMPDIR`); and the final-message format (SHA, gate output, timings
 - You answer **scope and mechanics** yourself, and say in the note that you are the yakherd.
   When the ask is in a worker's shed (team farm), answer it THERE: `yaks answer <id>@<shed> --note
   "..."` writes the reply into that shed's copy and leaves it uncommitted for the worker to commit
-  with its yak file. It is the only command that writes outside your checkout.
-  For a **real design fork** you do NOT run `yaks answer`: leave the ask open, add your lean as a
-  note, and tell the human the yak id and, when the ask is in a shed, its name (they see it with
-  `yaks inbox --sheds` and answer with `yaks answer <id>@<shed>`). The
+  with its yak file. Of the cross-shed commands it is the only one that writes (`-C` is a `cd`,
+  not a cross-shed command; pushes are git, covered by the environment skill).
+  For a **real design fork** you do NOT run `yaks answer`: leave the ask open and tell the human,
+  in your reply to them, the yak id, the shed's name when the ask is in a shed (they see it with
+  `yaks inbox --sheds` and answer with `yaks answer <id>@<shed>`), and your lean. Record the
+  lean as a note on the UMBRELLA or parent yak, never on the worker's yak (section 9: you must not
+  edit a yak a worker owns while it runs). The
   answer is the record; a message to the worker is only the wake-up.
 - **An answer stays findable.** `yaks answer` leaves the yak `needs: agent` until an agent runs
   `yaks pickup <id>`. After each batch and at the start of a session run `yaks inbox`: the

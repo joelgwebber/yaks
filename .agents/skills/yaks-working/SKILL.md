@@ -34,7 +34,9 @@ edits in the working tree when you return: do not revert them and do not park th
 Never answer your own ask. A yakherd may answer scope or mechanics, then wake you; you keep
 your context. The answer may already be in your copy of the yak, written there from another
 checkout (`yaks answer <id>@<your shed>`) and left uncommitted: that is expected; commit it with
-your yak file. Or the yakherd may tell you to run `yaks answer` on its stated authority. A design fork
+your yak file. (Older briefs may instead tell you to record the yakherd's answer yourself with
+`yaks answer`, quoting it; that is the yakherd answering through you, not you answering your own
+ask.) A design fork
 waits for the human. An answered ask is left as `needs: agent` ("answered, awaiting an agent"):
 when you resume, or at the start of any session, run `yaks inbox --for agent`, read the answer,
 and take it on with `yaks pickup <id> --note "what you will do"`, which clears it.

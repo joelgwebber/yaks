@@ -101,7 +101,10 @@ After every worker returns, in this order:
    not `git reset --hard`.
 
 ## Asking and resuming
-A blocked worker has run `yaks ask` and returned. `yaks inbox --sheds` shows the question. Answer in the yak
+A blocked worker has run `yaks ask` and returned. Delta may apply its unfinished edits to your tree as it does
+on a finish: run `git status` and do not commit or `git add -A` them (they are the worker's, and come back with its real
+landing; restore them with `git checkout -- <files>` once you have checked they are only its edits). `yaks inbox --sheds`
+shows the question. Answer in the yak
 (core section 8): in a team farm `yaks answer <id>@<worker name> --note "..."` from your checkout writes the reply
 into the worker's copy, uncommitted, while it is idle (it commits it with its yak file); in a private farm
 answer directly while the worker is idle. Then wake the SAME worker with `send_agent_message` to its
@@ -153,8 +156,10 @@ only net. The human may also push `origin`; Delta refreshes your `origin/main` f
   the actor too (a `moved: <from> -> <to>` entry, same `--as`/`YAKS_ACTOR`). Delta terminals expose `DELTA_THREAD_TITLE` and `DELTA_CURRENT_THREAD_ID`.
 - A worker can die without a final message, and nobody tells you. Seen twice when the human moved the thread to another
   machine while workers ran (yaks-df61 O61): ask the human to wait for the completions before switching. When a worker is
-  overdue, run `yaks sheds`: its shed shows a `who:` label, dirty files and an old FARM ACTIVE time; `yaks changes <name>`
-  shows its notes so far, and its files are readable.
+  overdue (no completion and no new note for well past your estimate; 30 minutes is a sane default), run `yaks sheds`:
+  its row shows a `who:` label, dirty files and FARM ACTIVE, the newest file time in its farm (old means its yak files have
+  not changed since). `yaks changes <name>` shows its notes so far (a worker with no notes yet is named by its Delta dir id
+  in `sheds`), and its files are readable.
   Do not wait indefinitely: a replacement copies and reviews the dead worker's draft (never edits it in place), and after two
   deaths on one task you finish it yourself, committing in small steps.
 - Delta may keep re-reporting a dead worker's applied state as external edits. Check `git status --short` and the line count of
