@@ -416,8 +416,13 @@ enum Command {
     /// agent. The human-reserved counterpart to `ask`. `--done` clears `needs`
     /// instead, for an answer that needs no follow-up. A second answer keeps
     /// `needs: agent` and appends the note; on a yak with no `needs` it only
-    /// records the note.
+    /// records the note. `<id>@<shed>` answers in ANOTHER checkout's copy of
+    /// the yak (a shed from `yaks sheds`; see `yaks changes`): the reply is
+    /// written into that working tree and left uncommitted there, for its
+    /// worker to commit with its own yak file. The only command that writes
+    /// outside this checkout.
     Answer {
+        /// The yak id, or `<id>@<shed>` to answer in a shed's copy.
         id: String,
         /// The reply/decision (recorded as an attributed note). `-` reads it
         /// from stdin.
@@ -1374,9 +1379,36 @@ fn main() -> Result<()> {
         } => {
             let note = resolve_text("--note", note, note_file, &mut StdinText::real())?;
             let actor = actor::resolve(as_actor.as_deref());
-            let Some(c) = farm.answer(&id, actor.as_deref(), note.as_deref(), done)? else {
-                eprintln!("error: task {id} not found");
-                std::process::exit(1);
+            let (id, c) = if let Some((id, shed_q)) = id.split_once('@') {
+                let cwd = env::current_dir()?;
+                let sheds = farm.sheds(&cwd)?;
+                let shed = match sheds::resolve(&sheds, shed_q) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        eprintln!("error: {e}");
+                        std::process::exit(1);
+                    }
+                };
+                let w = match farm.answer_in_shed(shed, id, actor.as_deref(), note.as_deref(), done)
+                {
+                    Ok(w) => w,
+                    Err(e) => {
+                        eprintln!("error: {e:#}");
+                        std::process::exit(1);
+                    }
+                };
+                println!(
+                    "Wrote the answer into shed {} at {} (left uncommitted there; the shed's worker commits it)",
+                    shed.name(),
+                    w.path.display()
+                );
+                (id.to_string(), w.change)
+            } else {
+                let Some(c) = farm.answer(&id, actor.as_deref(), note.as_deref(), done)? else {
+                    eprintln!("error: task {id} not found");
+                    std::process::exit(1);
+                };
+                (id, c)
             };
             match (&c.before, &c.after) {
                 (None, _) => println!("Answered {id}: no needs block was set (note recorded)"),

@@ -72,6 +72,13 @@ pub struct NeedsChange {
     pub after: Option<String>,
 }
 
+/// What a cross-shed [`Farm::answer_in_shed`] wrote and where.
+pub struct ShedAnswered {
+    pub change: NeedsChange,
+    /// The yak's file in the shed's working tree (left uncommitted).
+    pub path: PathBuf,
+}
+
 /// Result of `pickup`.
 pub enum Pickup {
     NotFound,
@@ -606,6 +613,66 @@ impl Farm {
             before,
             after: task.needs,
         }))
+    }
+
+    /// [`Farm::answer`] applied to another checkout's farm: the one write this
+    /// library performs outside its own farm (decided in yaks-ee0a). The answer
+    /// lands in `shed`'s working tree and is left uncommitted there for its
+    /// worker to commit with its own yak file; nothing is staged or committed.
+    ///
+    /// This is a method, not a way to get a `Farm` on the shed: the temporary
+    /// `Farm` below never leaves it, so no other mutation can reach a shed.
+    /// The shed's farm is found with discovery that ignores `$YAKS_DIR` (that
+    /// names OUR farm), and is refused when it is not the shed's own: shared
+    /// with this checkout (plain `answer` is the tool), absent, unreadable, or
+    /// of a newer schema. `answer` takes the SHED farm's lock, once. Errors
+    /// name the cause; an unknown id is an error here too.
+    pub fn answer_in_shed(
+        &self,
+        shed: &crate::sheds::Shed,
+        id: &str,
+        actor: Option<&str>,
+        note: Option<&str>,
+        done: bool,
+    ) -> Result<ShedAnswered> {
+        let name = shed.name();
+        match &shed.farm {
+            crate::sheds::ShedFarm::Own(_) => {}
+            crate::sheds::ShedFarm::Shared => {
+                bail!("shed {name} shares this checkout's farm; use plain `yaks answer {id}`")
+            }
+            crate::sheds::ShedFarm::None => bail!("shed {name} has no farm of its own"),
+            crate::sheds::ShedFarm::Unreadable(why) => {
+                bail!("shed {name}'s farm is unreadable: {why}")
+            }
+        }
+        let found = store::discover_with(&shed.path, None)
+            .map_err(|e| anyhow::anyhow!("shed {name} has no readable farm: {e}"))?;
+        let same = |a: &Path, b: &Path| match (a.canonicalize(), b.canonicalize()) {
+            (Ok(a), Ok(b)) => a == b,
+            _ => a == b,
+        };
+        if same(&found.root, &self.root) {
+            bail!("shed {name} shares this checkout's farm; use plain `yaks answer {id}`");
+        }
+        if let SchemaStatus::Newer(v) = store::schema_status(&found.root) {
+            bail!(
+                "shed {name}'s farm is schema v{v}, newer than this yaks (v{})",
+                store::SCHEMA
+            );
+        }
+        let theirs = Farm {
+            root: found.root,
+            schema_warning: None,
+            pointer_prefix: None,
+        };
+        let Some(change) = theirs.answer(id, actor, note, done)? else {
+            bail!("task {id} not found in shed {name}");
+        };
+        let path = theirs
+            .path_of(id)
+            .ok_or_else(|| anyhow::anyhow!("task {id} vanished from shed {name}"))?;
+        Ok(ShedAnswered { change, path })
     }
 
     /// Clear `needs: agent` with an attributed `picked up` note. The only thing
