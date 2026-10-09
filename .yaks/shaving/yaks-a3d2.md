@@ -4,7 +4,7 @@ title: 'Design pass: CLI affordances and skill/workflow changes for agents using
 type: task
 priority: 3
 created: '2026-10-09T20:12:45Z'
-updated: '2026-10-09T20:26:07Z'
+updated: '2026-10-09T20:44:15Z'
 parent: yaks-ee0a
 labels:
 - cli
@@ -45,3 +45,7 @@ Q1 NAMES. A thread's title exists only inside that thread (DELTA_THREAD_TITLE). 
 ---
 ▸ 2026-10-09T20:26:07Z [delta:Delta :Yaks (cont'd)]
 Spawned (base 192af4b, all claude-sonnet-5-5): cflag-1 83ecd85713f64fc7 -> yaks-4e39; inbox-1 69ae675719914f1d -> yaks-2917; chg-1 92c1a81063e44ac0 -> yaks-e39c.
+
+---
+▸ 2026-10-09T20:44:15Z [delta:Delta :Yaks (cont'd)]
+Landed wave 1: yaks-4e39 (-C, d763638), yaks-2917 (inbox --sheds, 6fb56a2), yaks-e39c (changes, f0e6f0b). Review fixes in the next commit: inbox --sheds repeated every ask whose shed forked before our later note (seen live: 3 copies), and 'main' was ambiguous because Delta clones are on branch main. Gate after all three plus fixes: 12 suites ok, 493 unit tests.
