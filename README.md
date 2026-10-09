@@ -102,7 +102,7 @@ in `<path>`.
 | `yaks refs <id>` | List what a task points at (parent, deps, id mentions in its text), flagging any that dangle |
 | `yaks commits <id>` | Show the git commits linked to a yak — those naming its id and those that touched its file across status moves |
 | `yaks update <id>` | Change fields/labels, set `--description`, or append a `--note` (`-` reads stdin; `--note-file PATH`: multi-line markdown without shell quoting) |
-| `yaks ask <id>` / `answer <id>` | Block a yak on a human (sets `needs: human`, drops it from `next`) / answer it (sets `needs: agent`, so the answer cannot get lost; `--done` clears instead), each recording a `--note` |
+| `yaks ask <id>` / `answer <id>` | Block a yak on a human (sets `needs: human`, drops it from `next`) / answer it (sets `needs: agent`, so the answer cannot get lost; `--done` clears instead), each recording a `--note`. `answer <id>@<shed>` answers in another shed's copy of the yak, left uncommitted there |
 | `yaks pickup <id>` | An agent takes on an answered yak: clears `needs: agent` with an attributed note. The only thing that clears it |
 | `yaks inbox` | The `needs` queue, two sections: awaiting a human (`replied` marks a plain-note reply that skipped `answer`) and answered, awaiting an agent; `--for human\|agent`, `--sheds` (also the open asks in other sheds, with their question text), `--json` |
 | `yaks shave <id>` | hairy → shaving (alias: `work`) |
