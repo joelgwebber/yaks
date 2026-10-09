@@ -4,7 +4,7 @@ title: 'Design pass: CLI affordances and skill/workflow changes for agents using
 type: task
 priority: 3
 created: '2026-10-09T20:12:45Z'
-updated: '2026-10-09T22:51:35Z'
+updated: '2026-10-09T23:01:30Z'
 parent: yaks-ee0a
 labels:
 - cli
@@ -76,3 +76,19 @@ Joel's answers (2026-10-09): Q1 yes, record thread titles, slugged close to norm
 ---
 ▸ 2026-10-09T22:51:35Z [delta:Delta :Yaks (cont'd)]
 Wave 3: notes-1 4096595049444717 -> yaks-85d9 (landed 8ee705f, fast-forward); title-1 f7dcad579ea84c7b -> yaks-886a (landed 49c2d5d by cherry-pick, docs/cli.md row conflict resolved by hand keeping both). Next: shed-1 -> yaks-440d.
+
+![walkthrough-wave3](artifacts/yaks-a3d2/walkthrough-wave3.md)
+
+---
+▸ 2026-10-09T23:01:29Z [delta:Delta :Yaks (cont'd)]
+Done. The design pass produced and landed, every child shorn:
+- wave 1: yaks-4e39 `-C`, yaks-2917 `inbox --sheds`, yaks-e39c `changes <shed>` (plus coordinator review fixes c24609c);
+- wave 2: yaks-e7ed `show --sheds`, yaks-f347 `answer <id>@<shed>`, yaks-5138 one rule for compare_farms/yak_changes;
+- skills: yaks-f6ff (two Sonnet cold reads, all gaps fixed);
+- wave 3 (Joel's answers): yaks-886a thread-title shed names, yaks-85d9 created-yak notes counted, yaks-440d `--shed` (full access).
+Nine Sonnet workers in all, every landing clean or a one-row docs conflict; two real-machine bugs found in review. AGENTS.md now has "Delegating to cheaper models". The wave-3 walkthrough (25 real steps) is attached above.
+Open for later (not this yak): the TUI view of sheds (yaks-38dc / yaks-7204), and whether `--shed` should be tightened (Joel: only if it proves problematic).
+
+---
+▸ 2026-10-09T23:01:30Z [delta:Delta :Yaks (cont'd)]
+moved: shaving -> shorn
