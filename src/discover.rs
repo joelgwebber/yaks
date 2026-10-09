@@ -10,7 +10,7 @@
 //! Read-only, and it needs no farm.
 
 use crate::sheds::{
-    Host, Pinned, ShedKind, canonical, host, host_checkout, origin_url, pinned, shed_paths,
+    Found, Host, Pinned, canonical, host, host_checkout, origin_url, pinned, shed_paths,
     worktree_entries,
 };
 use crate::store;
@@ -41,7 +41,7 @@ pub struct Report {
     pub worktrees_host: Vec<(PathBuf, Result<(), String>)>,
     pub pinned: Vec<Pinned>,
     /// The resulting sheds, exactly as `yaks sheds` finds them.
-    pub sheds: BTreeMap<PathBuf, ShedKind>,
+    pub sheds: BTreeMap<PathBuf, Found>,
 }
 
 /// Run the chain from `anchor` (any directory inside a checkout).
@@ -227,7 +227,8 @@ pub fn render(r: &Report) -> String {
 
     let _ = writeln!(s, "\nSHEDS  ({}, this checkout excluded)", r.sheds.len());
     for (p, k) in &r.sheds {
-        let _ = writeln!(s, "  {}  [{}]", p.display(), k.as_str());
+        let main = if k.primary { ", main" } else { "" };
+        let _ = writeln!(s, "  {}  [{}{main}]", p.display(), k.kind.as_str());
     }
     s
 }
@@ -271,7 +272,9 @@ pub fn to_json(r: &Report) -> Value {
         })).collect::<Vec<_>>(),
         "sheds": r.sheds.iter().map(|(p, k)| json!({
             "path": p.display().to_string(),
-            "kind": k.as_str(),
+            "kind": k.kind.as_str(),
+            "dir": k.dir,
+            "primary": k.primary,
         })).collect::<Vec<_>>(),
     })
 }

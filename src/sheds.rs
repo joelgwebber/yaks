@@ -165,6 +165,10 @@ pub enum ShedFarm {
 pub struct Shed {
     pub path: PathBuf,
     pub kind: ShedKind,
+    /// The Delta directory id, for a pinned clone (see [`Found`]).
+    pub dir: Option<String>,
+    /// The repository's main checkout.
+    pub primary: bool,
     /// `None` when HEAD is detached (or unreadable).
     pub branch: Option<String>,
     /// Abbreviated HEAD sha; `None` when the shed's git state cannot be read.
@@ -200,6 +204,28 @@ pub struct Shed {
     pub error: Option<String>,
 }
 
+impl Shed {
+    /// A short name for messages and selectors: `main` for the primary
+    /// checkout, else the first actor in `who`, else the Delta dir id, else
+    /// the branch, else the directory name.
+    pub fn name(&self) -> String {
+        if self.primary {
+            return "main".into();
+        }
+        self.who
+            .first()
+            .cloned()
+            .or_else(|| self.dir.clone())
+            .or_else(|| self.branch.clone())
+            .unwrap_or_else(|| {
+                self.path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().into_owned())
+                    .unwrap_or_else(|| self.path.display().to_string())
+            })
+    }
+}
+
 /// List the other checkouts of the repository containing `cwd`, relative to
 /// the farm at `farm_root` (this checkout's farm). Sorted by path.
 pub fn discover(cwd: &Path, farm_root: &Path) -> Result<Vec<Shed>> {
@@ -214,31 +240,57 @@ pub fn discover(cwd: &Path, farm_root: &Path) -> Result<Vec<Shed>> {
     let shallow = git(&top, &["rev-parse", "--is-shallow-repository"]).is_ok_and(|s| s == "true");
     Ok(found
         .into_iter()
-        .map(|(path, kind)| {
-            let mut shed = inspect(&top, &path, kind, &our_farm, &ours);
+        .map(|(path, found)| {
+            let mut shed = inspect(&top, &path, &found, &our_farm, &ours);
             shed.shallow_here = shallow;
             shed
         })
         .collect())
 }
 
+/// How one shed was found, and the identifiers discovery knows for it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Found {
+    pub kind: ShedKind,
+    /// The Delta directory id (`refs/delta/<dir>/...`), for a pinned clone.
+    pub dir: Option<String>,
+    /// The repository's main checkout (the host checkout, or the main
+    /// working tree `git worktree list` names first).
+    pub primary: bool,
+}
+
 /// Every other checkout of the repository at `top`, by canonical path, with
 /// how it was found (see the module docs). A checkout found both ways is a
-/// `Worktree`. Excludes `top`.
-pub(crate) fn shed_paths(top: &Path) -> BTreeMap<PathBuf, ShedKind> {
-    let mut found: BTreeMap<PathBuf, ShedKind> = BTreeMap::new();
-    for p in worktree_paths(top) {
-        found.insert(canonical(&p), ShedKind::Worktree);
-    }
+/// `Worktree` and keeps its Delta dir id. Excludes `top`.
+pub(crate) fn shed_paths(top: &Path) -> BTreeMap<PathBuf, Found> {
+    let mut found: BTreeMap<PathBuf, Found> = BTreeMap::new();
+    let add_worktrees = |from: &Path, found: &mut BTreeMap<PathBuf, Found>| {
+        for (i, p) in worktree_paths(from).into_iter().enumerate() {
+            let e = found.entry(canonical(&p)).or_insert(Found {
+                kind: ShedKind::Worktree,
+                dir: None,
+                primary: false,
+            });
+            e.kind = ShedKind::Worktree;
+            // git lists the main working tree first.
+            e.primary |= i == 0;
+        }
+    };
+    add_worktrees(top, &mut found);
     if let Some(h) = host(top) {
         if let Some(primary) = host_checkout(&h) {
-            for p in worktree_paths(&primary) {
-                found.insert(canonical(&p), ShedKind::Worktree);
-            }
+            add_worktrees(&primary, &mut found);
         }
         for p in pinned(&h) {
             if let Ok(path) = p.checkout {
-                found.entry(path).or_insert(ShedKind::Delta);
+                found
+                    .entry(path)
+                    .or_insert(Found {
+                        kind: ShedKind::Delta,
+                        dir: None,
+                        primary: false,
+                    })
+                    .dir = Some(p.dir);
             }
         }
     }
@@ -246,17 +298,78 @@ pub(crate) fn shed_paths(top: &Path) -> BTreeMap<PathBuf, ShedKind> {
     found
 }
 
+/// Pick one shed by `query`, in this order: its path (as given or
+/// canonical), its Delta dir id, its branch, an actor in its `who`, then a
+/// unique case-insensitive substring of any of those. `main` also names the
+/// primary checkout. Ambiguity and no match are errors that list the
+/// candidates, so a caller can print them as is.
+#[allow(dead_code)] // used by the per-shed commands (yaks-a3d2)
+pub fn resolve<'a>(sheds: &'a [Shed], query: &str) -> Result<&'a Shed, String> {
+    let q = query.trim();
+    if q.is_empty() {
+        return Err("empty shed name".into());
+    }
+    let qpath = canonical(Path::new(q));
+    let rules: [&dyn Fn(&Shed) -> bool; 5] = [
+        &|s| s.path == qpath || s.path == Path::new(q),
+        &|s| s.dir.as_deref() == Some(q),
+        &|s| (q == "main" && s.primary) || s.branch.as_deref() == Some(q),
+        &|s| s.who.iter().any(|w| w == q),
+        &|s| {
+            let ql = q.to_lowercase();
+            let hit = |t: &str| t.to_lowercase().contains(&ql);
+            hit(&s.path.display().to_string())
+                || s.dir.as_deref().is_some_and(hit)
+                || s.who.iter().any(|w| hit(w))
+        },
+    ];
+    for rule in rules {
+        let hits: Vec<&Shed> = sheds.iter().filter(|s| rule(s)).collect();
+        match hits.len() {
+            0 => continue,
+            1 => return Ok(hits[0]),
+            _ => {
+                return Err(format!(
+                    "`{q}` names {} sheds; be more specific:\n{}",
+                    hits.len(),
+                    candidates(&hits)
+                ));
+            }
+        }
+    }
+    let all: Vec<&Shed> = sheds.iter().collect();
+    Err(if all.is_empty() {
+        format!("no shed matches `{q}`: no other checkouts found")
+    } else {
+        format!(
+            "no shed matches `{q}`; the sheds are:\n{}",
+            candidates(&all)
+        )
+    })
+}
+
+/// One line per shed: its short name, then its path.
+#[allow(dead_code)]
+fn candidates(sheds: &[&Shed]) -> String {
+    sheds
+        .iter()
+        .map(|s| format!("  {}  {}\n", s.name(), s.path.display()))
+        .collect()
+}
+
 /// Gather one shed's report. Never fails: unreadable parts become `error`.
 fn inspect(
     top: &Path,
     path: &Path,
-    kind: ShedKind,
+    found: &Found,
     our_farm: &Path,
     ours: &[crate::model::Task],
 ) -> Shed {
     let mut shed = Shed {
         path: path.to_path_buf(),
-        kind,
+        kind: found.kind,
+        dir: found.dir.clone(),
+        primary: found.primary,
         branch: None,
         head: None,
         ahead: None,
@@ -946,6 +1059,12 @@ pub fn to_json(sheds: &[Shed]) -> Value {
                 json!({
                     "path": l.path.display().to_string(),
                     "kind": l.kind.as_str(),
+                    // The short name `resolve` and messages use, the Delta
+                    // dir id of a pinned clone, and whether it is the main
+                    // checkout.
+                    "name": l.name(),
+                    "dir": l.dir,
+                    "primary": l.primary,
                     "branch": l.branch,
                     "head": l.head,
                     // `null` = unknown (no merge-base here).
@@ -1047,6 +1166,7 @@ pub fn render(sheds: &[Shed]) -> String {
             r.iter().map(String::as_str).collect(),
             &l.path.display().to_string(),
         ));
+        out.push_str(&format!("  name: {}\n", l.name()));
         if let Some(e) = &l.error {
             out.push_str(&format!("  error: {e}\n"));
         }
@@ -2496,5 +2616,64 @@ mod tests {
             Some(BaseKind::Fork),
             "{l:?}"
         );
+    }
+
+    // -- naming and resolving a shed -------------------------------------------
+
+    #[test]
+    fn sheds_carry_their_dir_id_and_the_primary_is_main() {
+        let b = base("names");
+        let t = b.join("repo");
+        repo_with_farm(&t);
+        let c = delta_clone(
+            &t.join(".git"),
+            &t.join(".delta/clones"),
+            &t.join(".delta/worktrees"),
+            "abc123",
+            "repo",
+        );
+        let from_c = sheds_of(&c);
+        let main = shed_at(&from_c, &t);
+        assert!(main.primary && main.name() == "main");
+        let from_t = sheds_of(&t);
+        let clone = shed_at(&from_t, &c);
+        assert_eq!(clone.dir.as_deref(), Some("abc123"));
+        assert!(!clone.primary);
+        assert_eq!(clone.name(), "abc123");
+        let j = to_json(&from_t);
+        assert_eq!(j[0]["dir"], "abc123");
+        assert_eq!(j[0]["name"], "abc123");
+        assert!(render(&from_t).contains("  name: abc123\n"));
+    }
+
+    #[test]
+    fn resolve_by_path_dir_branch_actor_main_and_substring() {
+        let (t, wt) = claimed_repo_with_shed("resolve");
+        shed_notes_on_aaaa(&wt, &[("2026-03-03T00:00:00Z", Some("sheds-2"), "hi")]);
+        let c = delta_clone(
+            &t.join(".git"),
+            &t.join(".delta/clones"),
+            &t.join(".delta/worktrees"),
+            "q7zz",
+            "repo",
+        );
+        let from_c = sheds_of(&c);
+        let p = |s: &Shed| s.path.clone();
+        assert_eq!(p(resolve(&from_c, "main").unwrap()), t);
+        assert_eq!(p(resolve(&from_c, wt.to_str().unwrap()).unwrap()), wt);
+        assert_eq!(p(resolve(&from_c, "sheds-2").unwrap()), wt);
+        let from_t = sheds_of(&t);
+        assert_eq!(p(resolve(&from_t, "q7zz").unwrap()), c);
+        assert_eq!(p(resolve(&from_t, "q7").unwrap()), c, "unique substring");
+        let branch = shed_at(&from_t, &wt).branch.clone().unwrap();
+        assert_eq!(p(resolve(&from_t, &branch).unwrap()), wt);
+        // No match lists every shed; ambiguity lists the candidates.
+        let e = resolve(&from_t, "nope").unwrap_err();
+        assert!(
+            e.contains("no shed matches `nope`") && e.contains("q7zz"),
+            "{e}"
+        );
+        let e = resolve(&from_t, "/").unwrap_err();
+        assert!(e.contains("names 2 sheds"), "{e}");
     }
 }
