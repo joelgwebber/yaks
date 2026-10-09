@@ -4,7 +4,7 @@ title: 'Design pass: CLI affordances and skill/workflow changes for agents using
 type: task
 priority: 3
 created: '2026-10-09T20:12:45Z'
-updated: '2026-10-09T20:45:52Z'
+updated: '2026-10-09T20:57:21Z'
 parent: yaks-ee0a
 labels:
 - cli
@@ -53,3 +53,7 @@ Landed wave 1: yaks-4e39 (-C, d763638), yaks-2917 (inbox --sheds, 6fb56a2), yaks
 ---
 ▸ 2026-10-09T20:45:52Z [delta:Delta :Yaks (cont'd)]
 Spawned wave 2 (base 1081d2f, all claude-sonnet-5-5): show-1 54c574c39d07404d -> yaks-e7ed; ans-1 d3af06f49c29425b -> yaks-f347; dedupe-1 b5ec518ad52349f7 -> yaks-5138.
+
+---
+▸ 2026-10-09T20:57:21Z [delta:Delta :Yaks (cont'd)]
+Landed wave 2: yaks-5138 (93e1a7e; sheds JSON byte-identical before/after on the real Mac), yaks-f347 (903bab1), yaks-e7ed (110c413). Delta applied both workers' results at once; landed each by SHA after setting the untracked leftovers aside (all four byte-identical to the landed files). Real-machine check: an ask made in the finished probe clone (dv4fmmmdm74z) showed in show --sheds and inbox --sheds from ~/src/yaks with its text; answer yaks-a398@probe wrote only into the probe clone, left it uncommitted (git status ' M'), our copy untouched; probe restored with git checkout afterwards. Gate: 14 suites ok, 494 unit. dedupe-1 recommends YES on counting a created yak's notes in sheds: left for Joel/next pass.
