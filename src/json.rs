@@ -77,6 +77,26 @@ pub fn inbox_array(tasks: &[&Task]) -> Value {
     )
 }
 
+/// `inbox --sheds --json`: the plain inbox array under `inbox`, and the open
+/// asks of the other sheds under `sheds` (one object per ask: the shed's
+/// `name` and `path`, then the yak's `id`, `title`, `status`, `needs`,
+/// `replied`, and the `question` text, `null` when there is none).
+pub fn inbox_sheds_value(own: &[&Task], sheds: &[&crate::farm::ShedAsk]) -> Value {
+    json!({
+        "inbox": inbox_array(own),
+        "sheds": sheds.iter().map(|a| json!({
+            "shed": a.shed,
+            "path": a.path.display().to_string(),
+            "id": a.task.id,
+            "title": a.task.title,
+            "status": status_str(a.task.status),
+            "needs": a.task.needs,
+            "replied": crate::store::is_replied(&a.task),
+            "question": a.question,
+        })).collect::<Vec<_>>(),
+    })
+}
+
 pub fn tasks_array(tasks: &[Task]) -> Value {
     Value::Array(tasks.iter().map(task_value).collect())
 }
