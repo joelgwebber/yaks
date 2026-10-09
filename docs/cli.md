@@ -3,6 +3,14 @@
 Run `yaks <command> --help` for full flags. Most read commands accept the shared
 **filter flags** and `--json`; most note-writing and state-transition commands accept `--as <actor>`.
 
+**Global flag: `-C <path>`** (like `git -C`; accepted before or after the
+subcommand). Every command runs as if started in `<path>`: farm discovery,
+`sheds`, `discover`, `status`, `commit`, `init`, `skills`, `tui`. A relative
+`<path>` is resolved against the real cwd; repeated `-C` compose, each relative
+to the previous (`yaks -C a -C b list` runs in `a/b`). A missing path is an
+error naming it. `$YAKS_DIR` still wins over discovery (a relative one is read
+from `<path>`).
+
 ## Which farm a command uses
 
 Every command except `init` operates on one farm, found in this order:

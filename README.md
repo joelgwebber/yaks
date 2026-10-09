@@ -91,6 +91,9 @@ when all of them are shorn (or dead), and *tangled* otherwise.
 
 ## Commands
 
+`yaks -C <path> <command>` (global, like `git -C`) runs any command as if started
+in `<path>`.
+
 | Command | What it does |
 |---------|--------------|
 | `yaks create` | Create a task; the title is positional (`yaks create "Fix login"`). Flags: `--type`, `--priority`, `--parent`, `--labels` (comma- or space-separated), `--depends-on`, `--source`, `--description` (`-` reads stdin; `--description-file PATH`), `--json` (emit the new id + file path) |

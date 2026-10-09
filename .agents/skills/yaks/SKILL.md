@@ -149,7 +149,7 @@ Labels are for slicing the farm later (`yaks list --label ui`), not for elaborat
 
 ## Commands
 
-Run these directly from the shell (see **Running yaks** above for the exact invocation).
+Run these directly from the shell (see **Running yaks** above for the exact invocation). `yaks -C <path> <cmd>` (global, like `git -C`) runs any command as if started in `<path>`.
 
 | Command | What it does |
 |---------|-------------|

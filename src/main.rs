@@ -24,7 +24,7 @@ mod status;
 mod store;
 mod tui;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
 use std::env;
 
@@ -45,6 +45,13 @@ use std::path::PathBuf;
     about = "Filesystem-native task tracker (Rust)"
 )]
 struct Cli {
+    /// Run as if started in <PATH> (like `git -C`): farm discovery, `sheds`,
+    /// `discover`, `commit`, `init`, `skills` and every other command see
+    /// <PATH> as the current directory. A relative <PATH> is resolved against
+    /// the real cwd; repeated `-C` compose, each relative to the previous.
+    /// `$YAKS_DIR` still wins over discovery (a relative one is read from <PATH>).
+    #[arg(short = 'C', value_name = "PATH", global = true)]
+    chdir: Vec<PathBuf>,
     #[command(subcommand)]
     command: Command,
 }
@@ -787,6 +794,14 @@ enum SkillsAction {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+
+    // `-C`: change directory once, before anything reads the cwd, so every
+    // `env::current_dir()` below (discovery, init, skills, sheds) agrees.
+    // Each step is relative to the previous one, as in git.
+    for dir in &cli.chdir {
+        env::set_current_dir(dir)
+            .with_context(|| format!("cannot change to directory '{}'", dir.display()))?;
+    }
 
     // `init` creates a farm where none exists, and `skills` installs the skill
     // that teaches an agent how to use yaks (likely before any farm exists) —
