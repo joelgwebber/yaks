@@ -4,7 +4,7 @@ title: 'Open the TUI on a shed from anywhere: discovery, names and a --shed sele
 type: idea
 priority: 2
 created: '2026-10-07T01:00:44Z'
-updated: '2026-10-07T03:47:37Z'
+updated: '2026-10-09T03:14:28Z'
 parent: yaks-ee0a
 labels:
 - cli
@@ -49,3 +49,13 @@ Realize the registry as a SYMLINK DIRECTORY, not (only) a file: for example `~/.
 Delta CLI: no thread-to-path lookup exists (`thread status` and `thread data` carry no paths); "open a terminal at the worktree" is a Delta feature request, not something we can build.
 
 Still open: `--shed` as a visit (read plus answer/ask) or full access; and whether to try, on a fresh unused thread, Delta's "existing local checkout" / "existing Git worktree" modes through the UI (untested, and per the app the choice cannot change once an agent has used the thread).
+
+---
+▸ 2026-10-09T03:14:28Z [delta-lead]
+Joel's model of discovery (2026-10-06), checked by the coordinator; adopted as the starting point for the core.
+
+1. git worktrees: point yaks at any one checkout (main or a worktree, any subdirectory); `git worktree list` from there sees every worktree of that repo. Correct. Team farm: each worktree has its own `.yaks/` copy, so the view is relative to the one you are in. Private farm: worktrees do not hold the farm (YAKS_DIR or a pointer).
+2. Delta (a), inside a Delta worktree: the sibling scan (same root, matching alternates or origin URL) finds the other Delta clones of that repo, and on the linked layout the primary checkout too. Gap: a primary checkout's plain git worktrees are not seen from inside a Delta clone.
+3. Delta (b), anywhere: needs a starting point: the platform Delta root (Linux XDG_DATA_HOME or ~/.local/share, macOS ~/Library/Application Support) gives every Delta checkout of every repo; group them by origin URL and pick one repo.
+Refinements: (i) the root scan belongs in discovery ALWAYS, not only in case (b): from the primary checkout on a machine where a thread is managed (not linked), the managed clone is only found by the root scan; (ii) a coherent view needs a reference shed, because "own changes" are relative to the viewer: in (b) that means choosing the repo AND which shed is "here" (default: the primary checkout when one is found).
+Brief: discovery = git worktree list + sibling scan + Delta root scan, filtered to one repo (origin URL); a selector (`-C <path>` / `--shed <name>`) sets the viewer. brf-1 (the first, stalled brief worker) reported stopped; nothing of it to land (its draft was finished as yaks-2c22).
