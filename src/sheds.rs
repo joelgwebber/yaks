@@ -636,14 +636,16 @@ fn base_farm(
 }
 
 /// Compare a shed's tasks to ours (see [`FarmDelta`]): the counts of
-/// [`yak_changes`], which owns the rules. Pure; ids sorted.
+/// [`yak_changes`], which owns the rules. A created yak's notes count as new
+/// notes too, so `farm:` agrees with `yaks changes`, which lists them. Pure;
+/// ids sorted.
 pub fn compare_farms(ours: &[crate::model::Task], theirs: &[crate::model::Task]) -> FarmDelta {
     let mut d = FarmDelta::default();
     for c in yak_changes(ours, theirs) {
         if c.added {
             d.added.push(c.id.clone());
-        } else if !c.notes.is_empty() {
-            // A created yak's notes are not counted (`yaks changes` lists them).
+        }
+        if !c.notes.is_empty() {
             d.notes.push((c.id.clone(), c.notes.len()));
         }
         if let Some((from, to)) = c.moved {
@@ -2968,12 +2970,11 @@ mod tests {
         assert_eq!(j[2]["added"], true);
         assert_eq!(j[0]["notes"][1]["actor"], "w-2");
         assert_eq!(j[0]["vs"], "fork");
-        // It expands what `sheds` counts: 1 new, 1 moved, and the notes on
-        // yaks that existed at the base (2 on aaaa + 1 on bbbb). `sheds` does
-        // not count the notes of a created yak; `changes` lists them.
+        // It expands what `sheds` counts: 1 new, 1 moved, and every new note
+        // (2 on aaaa + 1 on bbbb + the 1 on the created cccc).
         let sheds = sheds_of(&t);
         assert!(
-            render(&sheds).contains("farm: 1 new, 1 moved, 3 new notes"),
+            render(&sheds).contains("farm: 1 new, 1 moved, 4 new notes"),
             "{}",
             render(&sheds)
         );
@@ -2988,6 +2989,24 @@ mod tests {
         assert_eq!(ys.len(), 1);
         assert_eq!(ys[0].needs.as_deref(), Some("agent"));
         assert!(render_changes(&c).contains("    needs: agent\n"));
+    }
+
+    /// A created yak's notes count as new notes (`yaks changes` lists them,
+    /// so `farm:` must agree).
+    #[test]
+    fn compare_farms_counts_a_created_yaks_notes() {
+        let b = base("compare-created-notes");
+        let (ours, theirs) = (b.join("ours"), b.join("theirs"));
+        let note = "\n\n---\n\u{25b8} 2026-02-02T00:00:00Z [w]\nn";
+        task_file(&ours, "hairy", "yaks-aaaa", "", "a");
+        task_file(&theirs, "hairy", "yaks-aaaa", "", "a");
+        task_file(&theirs, "hairy", "yaks-bbbb", "", &format!("b{note}{note}"));
+        let load = |root: &Path| store::load(&root.join(".yaks"), &EVERY).unwrap();
+
+        let d = compare_farms(&load(&ours), &load(&theirs));
+
+        assert_eq!(d.added, ["yaks-bbbb"]);
+        assert_eq!(d.notes, [("yaks-bbbb".to_string(), 2)]);
     }
 
     /// `compare_farms` is `yak_changes` counted: both give the same answer on
@@ -3027,7 +3046,8 @@ mod tests {
         for c in yak_changes(&ours, &theirs) {
             if c.added {
                 counted.added.push(c.id.clone());
-            } else if !c.notes.is_empty() {
+            }
+            if !c.notes.is_empty() {
                 counted.notes.push((c.id.clone(), c.notes.len()));
             }
             if let Some((from, to)) = c.moved {
@@ -3053,7 +3073,11 @@ mod tests {
                 to: "shaving"
             }]
         );
-        assert_eq!(d.notes, [("yaks-bbbb".to_string(), 2)]);
+        // The created yak's own note counts, like the extra notes on bbbb.
+        assert_eq!(
+            d.notes,
+            [("yaks-bbbb".to_string(), 2), ("yaks-ffff".to_string(), 1)]
+        );
         assert_eq!(
             d.needs,
             [
