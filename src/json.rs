@@ -8,7 +8,7 @@ use std::path::Path;
 
 use serde_json::{Map, Value, json};
 
-use crate::farm::Stats;
+use crate::farm::{ShedCopies, Stats};
 use crate::model::{Status, Task};
 use crate::rollup::Group;
 
@@ -149,6 +149,33 @@ pub fn show_value(t: &Task, children: &[Task]) -> Value {
         }
     }
     v
+}
+
+/// `show --sheds --json`: one object per shed with a farm of its own. `status`
+/// and `needs` are the shed's copy's (null when absent / unset); `new_notes`
+/// are the entries it has that this checkout's copy lacks.
+pub fn shed_copies_value(c: &ShedCopies) -> Value {
+    Value::Array(
+        c.copies
+            .iter()
+            .map(|s| {
+                let notes: Vec<Value> = s
+                    .new_notes
+                    .iter()
+                    .map(|n| json!({"ts": n.ts, "actor": n.actor, "text": n.text}))
+                    .collect();
+                json!({
+                    "shed": s.shed,
+                    "path": s.path.display().to_string(),
+                    "status": s.task.as_ref().map(|t| status_str(t.status)),
+                    "needs": s.task.as_ref().and_then(|t| t.needs.clone()),
+                    "new_notes": notes,
+                    "same": s.same(),
+                    "absent": s.absent(),
+                })
+            })
+            .collect(),
+    )
 }
 
 pub fn stats_value(s: &Stats) -> Value {
