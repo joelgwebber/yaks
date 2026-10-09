@@ -635,37 +635,26 @@ fn base_farm(
     Some((short, tasks))
 }
 
-/// Compare a shed's tasks to ours (see [`FarmDelta`]). Pure; ids sorted.
+/// Compare a shed's tasks to ours (see [`FarmDelta`]): the counts of
+/// [`yak_changes`], which owns the rules. Pure; ids sorted.
 pub fn compare_farms(ours: &[crate::model::Task], theirs: &[crate::model::Task]) -> FarmDelta {
-    let mine: BTreeMap<&str, &crate::model::Task> =
-        ours.iter().map(|t| (t.id.as_str(), t)).collect();
     let mut d = FarmDelta::default();
-    let mut theirs: Vec<&crate::model::Task> = theirs.iter().collect();
-    theirs.sort_by(|a, b| a.id.cmp(&b.id));
-    for t in theirs {
-        match mine.get(t.id.as_str()) {
-            None => d.added.push(t.id.clone()),
-            Some(m) => {
-                if m.status != t.status {
-                    d.moved.push(Moved {
-                        id: t.id.clone(),
-                        from: m.status.dir(),
-                        to: t.status.dir(),
-                    });
-                }
-                let new = store::parse_notes(&t.body)
-                    .len()
-                    .saturating_sub(store::parse_notes(&m.body).len());
-                if new > 0 {
-                    d.notes.push((t.id.clone(), new));
-                }
-            }
+    for c in yak_changes(ours, theirs) {
+        if c.added {
+            d.added.push(c.id.clone());
+        } else if !c.notes.is_empty() {
+            // A created yak's notes are not counted (`yaks changes` lists them).
+            d.notes.push((c.id.clone(), c.notes.len()));
         }
-        // Only a `needs:` that is new or changed relative to ours: one both
-        // farms already carry is not news from this shed.
-        let ours_needs = mine.get(t.id.as_str()).and_then(|m| m.needs.as_ref());
-        if let Some(n) = t.needs.as_ref().filter(|n| Some(*n) != ours_needs) {
-            d.needs.push((t.id.clone(), n.clone()));
+        if let Some((from, to)) = c.moved {
+            d.moved.push(Moved {
+                id: c.id.clone(),
+                from,
+                to,
+            });
+        }
+        if let Some(n) = c.needs {
+            d.needs.push((c.id, n));
         }
     }
     d
@@ -690,10 +679,11 @@ pub struct YakChange {
     pub needs: Option<String>,
 }
 
-/// Per-yak expansion of [`compare_farms`] over the same rules (a yak that is
-/// new, in another status, has more notes, or a new `needs:`), but carrying
-/// the note entries themselves rather than a count. Pure; ids sorted; yaks the
-/// shed did not touch are left out.
+/// What the shed did to each yak it touched, per yak: one that is new, in
+/// another status, has more notes, or has a new `needs:` (one both farms
+/// already carry is not news). The one place these rules live;
+/// [`compare_farms`] counts them. Pure; ids sorted; yaks the shed did not
+/// touch are left out.
 pub fn yak_changes(base: &[crate::model::Task], theirs: &[crate::model::Task]) -> Vec<YakChange> {
     let mine: BTreeMap<&str, &crate::model::Task> =
         base.iter().map(|t| (t.id.as_str(), t)).collect();
@@ -2998,6 +2988,79 @@ mod tests {
         assert_eq!(ys.len(), 1);
         assert_eq!(ys[0].needs.as_deref(), Some("agent"));
         assert!(render_changes(&c).contains("    needs: agent\n"));
+    }
+
+    /// `compare_farms` is `yak_changes` counted: both give the same answer on
+    /// a fixture with a created yak, a moved one, extra notes, and `needs:`
+    /// new, changed and unchanged.
+    #[test]
+    fn compare_farms_is_yak_changes_counted() {
+        let b = base("compare-vs-changes");
+        let (ours, theirs) = (b.join("ours"), b.join("theirs"));
+        let note = "\n\n---\n\u{25b8} 2026-02-02T00:00:00Z [w]\nn";
+        // ours: aaaa moves, bbbb gains a note, cccc's needs changes, dddd's
+        // needs is already carried, eeee is untouched.
+        task_file(&ours, "hairy", "yaks-aaaa", "", "a");
+        task_file(&ours, "hairy", "yaks-bbbb", "", "b");
+        task_file(&ours, "hairy", "yaks-cccc", "needs: agent\n", "c");
+        task_file(&ours, "hairy", "yaks-dddd", "needs: human\n", "d");
+        task_file(&ours, "hairy", "yaks-eeee", "", "e");
+        task_file(&theirs, "shaving", "yaks-aaaa", "", "a");
+        task_file(&theirs, "hairy", "yaks-bbbb", "", &format!("b{note}{note}"));
+        task_file(&theirs, "hairy", "yaks-cccc", "needs: human\n", "c");
+        task_file(&theirs, "hairy", "yaks-dddd", "needs: human\n", "d");
+        task_file(&theirs, "hairy", "yaks-eeee", "", "e");
+        // A created yak, with a note and a `needs:`.
+        task_file(
+            &theirs,
+            "hairy",
+            "yaks-ffff",
+            "needs: agent\n",
+            &format!("f{note}"),
+        );
+        let load = |root: &Path| store::load(&root.join(".yaks"), &EVERY).unwrap();
+        let (ours, theirs) = (load(&ours), load(&theirs));
+
+        let d = compare_farms(&ours, &theirs);
+
+        let mut counted = FarmDelta::default();
+        for c in yak_changes(&ours, &theirs) {
+            if c.added {
+                counted.added.push(c.id.clone());
+            } else if !c.notes.is_empty() {
+                counted.notes.push((c.id.clone(), c.notes.len()));
+            }
+            if let Some((from, to)) = c.moved {
+                counted.moved.push(Moved {
+                    id: c.id.clone(),
+                    from,
+                    to,
+                });
+            }
+            if let Some(n) = c.needs {
+                counted.needs.push((c.id, n));
+            }
+        }
+        assert_eq!(d, counted);
+
+        // And the facts themselves, so the rules can't drift together.
+        assert_eq!(d.added, ["yaks-ffff"]);
+        assert_eq!(
+            d.moved,
+            [Moved {
+                id: "yaks-aaaa".into(),
+                from: "hairy",
+                to: "shaving"
+            }]
+        );
+        assert_eq!(d.notes, [("yaks-bbbb".to_string(), 2)]);
+        assert_eq!(
+            d.needs,
+            [
+                ("yaks-cccc".to_string(), "human".to_string()),
+                ("yaks-ffff".to_string(), "agent".to_string())
+            ]
+        );
     }
 
     #[test]
