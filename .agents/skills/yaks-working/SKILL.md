@@ -31,8 +31,10 @@ block, and drops it from `yaks next` until it is resolved; then return control
 rather than spinning. Pending questions surface in the human's `yaks inbox`. Leave your
 edits in the working tree when you return: do not revert them and do not park them in
 `$TMPDIR` (deleted when your session ends), and say which you did in your final message.
-Never answer your own ask. A yakherd may answer scope or mechanics and have you run
-`yaks answer` on its stated authority, then wake you; you keep your context. A design fork
+Never answer your own ask. A yakherd may answer scope or mechanics, then wake you; you keep
+your context. The answer may already be in your copy of the yak, written there from another
+checkout (`yaks answer <id>@<your shed>`) and left uncommitted: that is expected; commit it with
+your yak file. Or the yakherd may tell you to run `yaks answer` on its stated authority. A design fork
 waits for the human. An answered ask is left as `needs: agent` ("answered, awaiting an agent"):
 when you resume, or at the start of any session, run `yaks inbox --for agent`, read the answer,
 and take it on with `yaks pickup <id> --note "what you will do"`, which clears it.

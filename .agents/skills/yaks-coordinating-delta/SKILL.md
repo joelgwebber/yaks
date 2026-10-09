@@ -101,8 +101,9 @@ After every worker returns, in this order:
    not `git reset --hard`.
 
 ## Asking and resuming
-A blocked worker has run `yaks ask` and returned. Answer in the yak (core section 8): in a team farm have
-the worker run `yaks answer` on your stated authority, so the yak keeps one writer; in a private farm
+A blocked worker has run `yaks ask` and returned. `yaks inbox --sheds` shows the question. Answer in the yak
+(core section 8): in a team farm `yaks answer <id>@<worker name> --note "..."` from your checkout writes the reply
+into the worker's copy, uncommitted, while it is idle (it commits it with its yak file); in a private farm
 answer directly while the worker is idle. Then wake the SAME worker with `send_agent_message` to its
 agent id (it is in the spawn confirmation, and is the `sender_id` of its completion message): it resumes with its notes, findings and worktree (and may need to redo edits that were lost). The answered yak is `needs: agent`: tell the worker to run `yaks pickup <id>` when it resumes. The
 message is the nudge; the note is the record. Ask the worker whether it saw the answer without a sync step.
@@ -152,7 +153,8 @@ only net. The human may also push `origin`; Delta refreshes your `origin/main` f
   the actor too (a `moved: <from> -> <to>` entry, same `--as`/`YAKS_ACTOR`). Delta terminals expose `DELTA_THREAD_TITLE` and `DELTA_CURRENT_THREAD_ID`.
 - A worker can die without a final message, and nobody tells you. Seen twice when the human moved the thread to another
   machine while workers ran (yaks-df61 O61): ask the human to wait for the completions before switching. When a worker is
-  overdue, run `yaks sheds`: its shed shows a `who:` label, dirty files and an old FARM ACTIVE time, and its files are readable.
+  overdue, run `yaks sheds`: its shed shows a `who:` label, dirty files and an old FARM ACTIVE time; `yaks changes <name>`
+  shows its notes so far, and its files are readable.
   Do not wait indefinitely: a replacement copies and reviews the dead worker's draft (never edits it in place), and after two
   deaths on one task you finish it yourself, committing in small steps.
 - Delta may keep re-reporting a dead worker's applied state as external edits. Check `git status --short` and the line count of

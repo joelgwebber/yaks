@@ -46,9 +46,13 @@ match (a transient `shaving/` path after the move is the usual culprit). Use
 - Run `yaks doctor`. A stalled shed left `shaving` on your branch is `regrow`n or re-run.
 
 ## Asks
-A worker's `yaks ask` lives on its shed until it lands, so it does not appear in your
-`yaks inbox` before then. When the code is gated green and only a subjective sign-off remains,
-land the shed first, then route the human's answer to the ask that is now visible.
+A worker's `yaks ask` lives in its shed's copy until it lands, so plain `yaks inbox` does not show
+it; `yaks inbox --sheds` does (the shed's name and the question). Answer scope and mechanics in the
+shed with `yaks answer <id>@<shed>` (core section 8): the reply stays uncommitted there and the
+worker commits it with its yak file, so the yak keeps one committed history. For a design fork,
+tell the human the shed name and id; they can answer the same way from their checkout. When the
+code is gated green and only a subjective sign-off remains, you may instead land the shed first
+and route the human's answer to the ask that is now visible.
 
 ## Provenance
 `yaks commits <id>` joins on the yak file followed across the squash plus the id in messages.

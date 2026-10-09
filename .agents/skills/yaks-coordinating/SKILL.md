@@ -41,11 +41,20 @@ shared blackboard. The many-agent case adds writers, nothing else.
 4. **Reconcile.** A yak still `shaving` after the batch is stalled: `yaks regrow` it or
    re-run it. Run `yaks doctor`.
 
-While workers run, `yaks sheds` lists every other checkout of the repo (git worktrees and Delta
-clones): its HEAD, how far ahead and behind it is, who is working in it and on which yaks, and
-what its farm changed since it forked from yours (new yaks, moves, notes, open asks). It only
-reads. In a team farm each shed has its own farm to compare; in a private farm every shed shares
-one live farm, and `sheds` says `shares this farm` or `no farm here` instead of a delta.
+While workers run, watch them from your own checkout; these only read the other checkouts:
+- `yaks sheds`: every other checkout of the repo (git worktrees and Delta clones, including a worker
+  that has not committed yet): its name (`main` for the human's checkout, else the worker's actor
+  name, else an id), HEAD, ahead/behind, who is working in it and on which yaks, and a summary of
+  what its farm changed since it forked (new yaks, moves, notes, open asks).
+- `yaks changes <shed>`: that summary per yak, with each new note's actor and first line.
+- `yaks inbox --sheds`: every shed's open asks, with the question text. Run it after each spawn
+  batch and whenever a worker returns blocked.
+- `yaks show <id> --sheds`: how each shed's copy of one yak differs from yours.
+`<shed>` is any of: the name `sheds` prints, `main`, the Delta dir id, a branch, an actor, a path,
+or a unique substring; an unknown or ambiguous one lists the sheds. `yaks -C <path> <cmd>` runs
+any command as if started in another checkout (full access there: use it deliberately).
+In a team farm each shed has its own farm to compare; in a private farm every shed shares one live
+farm, so these say `shares this farm` and the plain commands already show everything.
 
 ## 4. Scope work so it cannot collide
 One writer per yak; if work is shared, split it into child yaks first. Separate before
@@ -95,9 +104,13 @@ park work in `$TMPDIR`); and the final-message format (SHA, gate output, timings
 ## 8. Ask and answer
 - A worker that needs a human decision runs `yaks ask <id> --note "..."`, leaves its edits
   in place, and returns. It does not block.
-- You answer **scope and mechanics** yourself (`yaks answer`), and say in the note that you
-  are the yakherd. For a **real design fork** you do NOT run `yaks answer`: leave the ask
-  open (it sits in the human's `yaks inbox`), add your lean as a note, and tell the human. The
+- You answer **scope and mechanics** yourself, and say in the note that you are the yakherd.
+  When the ask is in a worker's shed (team farm), answer it THERE: `yaks answer <id>@<shed> --note
+  "..."` writes the reply into that shed's copy and leaves it uncommitted for the worker to commit
+  with its yak file. It is the only command that writes outside your checkout.
+  For a **real design fork** you do NOT run `yaks answer`: leave the ask open, add your lean as a
+  note, and tell the human the yak id and, when the ask is in a shed, its name (they see it with
+  `yaks inbox --sheds` and answer with `yaks answer <id>@<shed>`). The
   answer is the record; a message to the worker is only the wake-up.
 - **An answer stays findable.** `yaks answer` leaves the yak `needs: agent` until an agent runs
   `yaks pickup <id>`. After each batch and at the start of a session run `yaks inbox`: the
