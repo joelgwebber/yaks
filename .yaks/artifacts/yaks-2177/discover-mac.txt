@@ -1,0 +1,164 @@
+# yaks discover on Joel's Mac, 2026-10-09T03:48:29Z
+
+################ anchor: /Users/joel/src/yaks/.delta/worktrees/jnc4mb98btw6/yaks
+ANCHOR  /Users/joel/src/yaks/.delta/worktrees/jnc4mb98btw6/yaks
+  top-level   /Users/joel/src/yaks/.delta/worktrees/jnc4mb98btw6/yaks
+  layout      Delta clone, linked layout (under /Users/joel/src/yaks)
+  git dir     /Users/joel/src/yaks/.delta/clones/jnc4mb98btw6/yaks.git
+  origin      https://github.com/joelgwebber/yaks.git
+  alternates  /Users/joel/src/yaks/.git/objects
+  local       /Users/joel/src/yaks/.git  (a checkout)
+  farm        /Users/joel/src/yaks/.delta/worktrees/jnc4mb98btw6/yaks/.yaks
+
+GIT WORKTREE LIST  (0 found, 1 rejected)
+  looked in  git -C /Users/joel/src/yaks/.delta/worktrees/jnc4mb98btw6/yaks worktree list
+  - /Users/joel/src/yaks/.delta/clones/jnc4mb98btw6/yaks.git
+      no .git (a separate git dir, e.g. a Delta clone's)
+
+DELTA SIBLING SCAN  (13 found, 0 rejected)
+  looked in  /Users/joel/src/yaks/.delta/worktrees/*/yaks
+  looked in  /Users/joel/src/yaks  (the checkout holding this clone)
+  looked in  /Users/joel/src/yaks/.delta/worktrees/jnc4mb98btw6/yaks/.delta/worktrees/*/yaks
+  + /Users/joel/src/yaks
+      same repo (origin)
+  + /Users/joel/src/yaks/.delta/worktrees/3kkcfcww892t/yaks
+      same repo (alternates)
+  + /Users/joel/src/yaks/.delta/worktrees/486hnt20begb/yaks
+      same repo (alternates)
+  + /Users/joel/src/yaks/.delta/worktrees/8ek2jykcm7ke/yaks
+      same repo (alternates)
+  + /Users/joel/src/yaks/.delta/worktrees/ccae3bj40fr0/yaks
+      same repo (alternates)
+  + /Users/joel/src/yaks/.delta/worktrees/f2hdbpew7kgx/yaks
+      same repo (alternates)
+  + /Users/joel/src/yaks/.delta/worktrees/n6zrds7fcrgj/yaks
+      same repo (alternates)
+  + /Users/joel/src/yaks/.delta/worktrees/tp2zd0r5z185/yaks
+      same repo (alternates)
+  + /Users/joel/src/yaks/.delta/worktrees/trw8aymc9w6v/yaks
+      same repo (alternates)
+  + /Users/joel/src/yaks/.delta/worktrees/vk8z2vjzgdqh/yaks
+      same repo (alternates)
+  + /Users/joel/src/yaks/.delta/worktrees/xp49gyb9fg59/yaks
+      same repo (alternates)
+  + /Users/joel/src/yaks/.delta/worktrees/xw51kfjdpqy5/yaks
+      same repo (alternates)
+  + /Users/joel/src/yaks/.delta/worktrees/ynqz2tjwkyjx/yaks
+      same repo (alternates)
+
+DELTA ROOTS  (0 found, 4 rejected)
+  looked in  /Users/joel/Library/Application Support/delta/worktrees
+  - /Users/joel/Library/Application Support/delta/worktrees/k0zrr649bh4g/local_8a543800-e331-44f4-b7db-6f623724c785
+      no .git
+  - /Users/joel/Library/Application Support/delta/worktrees/rwks7r9y0tcj/local_e7d77f9b-f98c-4407-8f29-e832d9ea58d2
+      different repository (origin https://github.com/rocketsurgery-games/schism)
+  - /Users/joel/Library/Application Support/delta/worktrees/sw5b04mv35vx/local_a4bed28b-3001-4a3a-9cbc-a93370741251
+      no .git
+  - /Users/joel/Library/Application Support/delta/worktrees/t7zzc48jkkfh/local_3c6c5490-70c5-4f19-b3f8-d2e770905104
+      different repository (origin https://github.com/joelgwebber/canon)
+
+SHEDS  (13 distinct, anchor excluded)
+  /Users/joel/src/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/3kkcfcww892t/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/486hnt20begb/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/8ek2jykcm7ke/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/ccae3bj40fr0/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/f2hdbpew7kgx/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/n6zrds7fcrgj/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/tp2zd0r5z185/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/trw8aymc9w6v/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/vk8z2vjzgdqh/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/xp49gyb9fg59/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/xw51kfjdpqy5/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/ynqz2tjwkyjx/yaks  [Delta sibling scan]
+
+################ anchor: /Users/joel/src/yaks
+ANCHOR  /Users/joel/src/yaks
+  top-level   /Users/joel/src/yaks
+  layout      primary checkout (.git is a directory)
+  git dir     /Users/joel/src/yaks/.git
+  origin      https://github.com/joelgwebber/yaks.git
+  farm        /Users/joel/src/yaks/.yaks
+
+GIT WORKTREE LIST  (0 found, 1 rejected)
+  looked in  git -C /Users/joel/src/yaks worktree list
+  - /Users/joel/src/yaks
+      the anchor itself
+
+DELTA SIBLING SCAN  (13 found, 0 rejected)
+  looked in  /Users/joel/*/yaks
+  looked in  /Users/joel/src/yaks/.delta/worktrees/*/yaks
+  + /Users/joel/src/yaks/.delta/worktrees/3kkcfcww892t/yaks
+      same repo (origin)
+  + /Users/joel/src/yaks/.delta/worktrees/486hnt20begb/yaks
+      same repo (origin)
+  + /Users/joel/src/yaks/.delta/worktrees/8ek2jykcm7ke/yaks
+      same repo (origin)
+  + /Users/joel/src/yaks/.delta/worktrees/ccae3bj40fr0/yaks
+      same repo (origin)
+  + /Users/joel/src/yaks/.delta/worktrees/f2hdbpew7kgx/yaks
+      same repo (origin)
+  + /Users/joel/src/yaks/.delta/worktrees/jnc4mb98btw6/yaks
+      same repo (origin)
+  + /Users/joel/src/yaks/.delta/worktrees/n6zrds7fcrgj/yaks
+      same repo (origin)
+  + /Users/joel/src/yaks/.delta/worktrees/tp2zd0r5z185/yaks
+      same repo (origin)
+  + /Users/joel/src/yaks/.delta/worktrees/trw8aymc9w6v/yaks
+      same repo (origin)
+  + /Users/joel/src/yaks/.delta/worktrees/vk8z2vjzgdqh/yaks
+      same repo (origin)
+  + /Users/joel/src/yaks/.delta/worktrees/xp49gyb9fg59/yaks
+      same repo (origin)
+  + /Users/joel/src/yaks/.delta/worktrees/xw51kfjdpqy5/yaks
+      same repo (origin)
+  + /Users/joel/src/yaks/.delta/worktrees/ynqz2tjwkyjx/yaks
+      same repo (origin)
+
+DELTA ROOTS  (0 found, 4 rejected)
+  looked in  /Users/joel/Library/Application Support/delta/worktrees
+  - /Users/joel/Library/Application Support/delta/worktrees/k0zrr649bh4g/local_8a543800-e331-44f4-b7db-6f623724c785
+      no .git
+  - /Users/joel/Library/Application Support/delta/worktrees/rwks7r9y0tcj/local_e7d77f9b-f98c-4407-8f29-e832d9ea58d2
+      different repository (origin https://github.com/rocketsurgery-games/schism)
+  - /Users/joel/Library/Application Support/delta/worktrees/sw5b04mv35vx/local_a4bed28b-3001-4a3a-9cbc-a93370741251
+      no .git
+  - /Users/joel/Library/Application Support/delta/worktrees/t7zzc48jkkfh/local_3c6c5490-70c5-4f19-b3f8-d2e770905104
+      different repository (origin https://github.com/joelgwebber/canon)
+
+SHEDS  (13 distinct, anchor excluded)
+  /Users/joel/src/yaks/.delta/worktrees/3kkcfcww892t/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/486hnt20begb/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/8ek2jykcm7ke/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/ccae3bj40fr0/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/f2hdbpew7kgx/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/jnc4mb98btw6/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/n6zrds7fcrgj/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/tp2zd0r5z185/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/trw8aymc9w6v/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/vk8z2vjzgdqh/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/xp49gyb9fg59/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/xw51kfjdpqy5/yaks  [Delta sibling scan]
+  /Users/joel/src/yaks/.delta/worktrees/ynqz2tjwkyjx/yaks  [Delta sibling scan]
+
+################ anchor: /tmp
+ANCHOR  /private/tmp
+  not in a git repository: only the Delta roots apply
+  farm        (none: no .yaks/ directory found at or above /private/tmp)
+
+DELTA ROOTS  (2 found, 2 rejected)
+  looked in  /Users/joel/Library/Application Support/delta/worktrees
+  - /Users/joel/Library/Application Support/delta/worktrees/k0zrr649bh4g/local_8a543800-e331-44f4-b7db-6f623724c785
+      no .git
+  + /Users/joel/Library/Application Support/delta/worktrees/rwks7r9y0tcj/local_e7d77f9b-f98c-4407-8f29-e832d9ea58d2
+      a checkout (no anchor repo to match)  origin https://github.com/rocketsurgery-games/schism
+  - /Users/joel/Library/Application Support/delta/worktrees/sw5b04mv35vx/local_a4bed28b-3001-4a3a-9cbc-a93370741251
+      no .git
+  + /Users/joel/Library/Application Support/delta/worktrees/t7zzc48jkkfh/local_3c6c5490-70c5-4f19-b3f8-d2e770905104
+      a checkout (no anchor repo to match)  origin https://github.com/joelgwebber/canon
+
+REPOS  (2 by origin)
+  https://github.com/joelgwebber/canon
+    /Users/joel/Library/Application Support/delta/worktrees/t7zzc48jkkfh/local_3c6c5490-70c5-4f19-b3f8-d2e770905104
+  https://github.com/rocketsurgery-games/schism
+    /Users/joel/Library/Application Support/delta/worktrees/rwks7r9y0tcj/local_e7d77f9b-f98c-4407-8f29-e832d9ea58d2

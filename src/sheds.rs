@@ -608,7 +608,7 @@ fn git_raw(dir: &Path, args: &[&str]) -> Result<String> {
     Ok(String::from_utf8_lossy(&out.stdout).into_owned())
 }
 
-fn canonical(p: &Path) -> PathBuf {
+pub(crate) fn canonical(p: &Path) -> PathBuf {
     fs::canonicalize(p).unwrap_or_else(|_| p.to_path_buf())
 }
 
@@ -616,33 +616,48 @@ fn canonical(p: &Path) -> PathBuf {
 /// missing and `.git`-less entries. (Inside Delta the entry is the clone's
 /// separate git dir, which holds no `.git`, so it drops out here.)
 fn worktree_paths(top: &Path) -> Vec<PathBuf> {
+    worktree_entries(top)
+        .into_iter()
+        .filter_map(|(p, verdict)| verdict.ok().map(|()| p))
+        .collect()
+}
+
+/// Every entry of `git worktree list --porcelain` in `top`, each with why it
+/// is not a checkout (`Err`) or `Ok` when it is one.
+pub(crate) fn worktree_entries(top: &Path) -> Vec<(PathBuf, Result<(), String>)> {
     let Ok(text) = git_raw(top, &["worktree", "list", "--porcelain"]) else {
         return Vec::new();
     };
     let mut out = Vec::new();
     for block in text.split("\n\n") {
         let mut path: Option<&str> = None;
-        let mut skip = false;
+        let mut skip: Option<String> = None;
         for line in block.lines() {
             if let Some(p) = line.strip_prefix("worktree ") {
                 path = Some(p);
-            } else if line == "bare" || line.starts_with("prunable") {
-                skip = true;
+            } else if line == "bare" {
+                skip = Some("bare".into());
+            } else if line.starts_with("prunable") {
+                skip = Some("prunable (directory gone)".into());
             }
         }
-        if let (Some(p), false) = (path, skip) {
-            let p = PathBuf::from(p);
-            if p.join(".git").exists() {
-                out.push(p);
+        let Some(p) = path else { continue };
+        let p = PathBuf::from(p);
+        let verdict = match skip {
+            Some(why) => Err(why),
+            None if !p.join(".git").exists() => {
+                Err("no .git (a separate git dir, e.g. a Delta clone's)".into())
             }
-        }
+            None => Ok(()),
+        };
+        out.push((p, verdict));
     }
     out
 }
 
 /// Delta-layout sibling candidates for the checkout at `top` (see the module
 /// docs). Not yet checked for being the same repository.
-fn delta_candidates(top: &Path) -> Vec<PathBuf> {
+pub(crate) fn delta_candidates(top: &Path) -> Vec<PathBuf> {
     let Some(name) = top.file_name() else {
         return Vec::new();
     };
@@ -676,7 +691,7 @@ fn scan_siblings(base: &Path, name: &std::ffi::OsStr) -> Vec<PathBuf> {
 }
 
 /// The shared (common) git dir of the checkout at `checkout`.
-fn common_dir(checkout: &Path) -> Option<PathBuf> {
+pub(crate) fn common_dir(checkout: &Path) -> Option<PathBuf> {
     let d = git(checkout, &["rev-parse", "--git-common-dir"]).ok()?;
     let d = PathBuf::from(d);
     Some(canonical(&if d.is_absolute() {
@@ -688,39 +703,111 @@ fn common_dir(checkout: &Path) -> Option<PathBuf> {
 
 /// Is the checkout at `cand` the same repository as the one whose common git
 /// dir is `own`? Same `objects/info/alternates`, else the same
-/// `remote.origin.url`. A same-named but different repository is rejected.
+/// `remote.origin.url` (alternates that DIFFER are not a rejection: a linked
+/// and a managed Delta clone of one repo borrow different stores). A
+/// same-named but different repository is rejected.
 fn same_repo(own: &Path, cand: &Path) -> bool {
+    repo_match(own, cand).is_ok()
+}
+
+/// [`same_repo`] with its reason: `Ok(how)` names the evidence that `cand` is
+/// the repository whose common git dir is `own` (`same git dir`,
+/// `alternates`, `origin`); `Err(why)` says why it is not. The one rule every
+/// discovery source uses.
+pub(crate) fn repo_match(own: &Path, cand: &Path) -> Result<&'static str, String> {
     let Some(theirs) = common_dir(cand) else {
-        return false;
+        return Err("not a git checkout".into());
     };
     if theirs == own {
-        return true;
+        return Ok("same git dir");
     }
-    let alternates = |c: &Path| {
-        fs::read_to_string(c.join("objects/info/alternates"))
-            .ok()
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-    };
     if let (Some(a), Some(b)) = (alternates(own), alternates(&theirs)) {
-        return a == b;
+        if a == b {
+            return Ok("alternates");
+        }
     }
-    let origin = |c: &Path| {
-        let cfg = c.join("config");
-        git(
-            c,
-            &[
-                "config",
-                "--file",
-                &cfg.display().to_string(),
-                "--get",
-                "remote.origin.url",
-            ],
-        )
-        .ok()
-        .filter(|s| !s.is_empty())
+    match (origin_url(own), origin_url(&theirs)) {
+        (Some(a), Some(b)) if normalize_url(&a) == normalize_url(&b) => Ok("origin"),
+        (Some(_), Some(b)) => Err(format!("different repository (origin {b})")),
+        (None, _) => Err("no origin here to compare with".into()),
+        (_, None) => Err("no origin to compare with".into()),
+    }
+}
+
+/// The first line of `<common>/objects/info/alternates`: the object store a
+/// Delta clone borrows (the human's checkout, or a managed bare repo).
+pub(crate) fn alternates(common: &Path) -> Option<PathBuf> {
+    fs::read_to_string(common.join("objects/info/alternates"))
+        .ok()?
+        .lines()
+        .map(str::trim)
+        .find(|l| !l.is_empty() && !l.starts_with('#'))
+        .map(PathBuf::from)
+}
+
+/// `remote.origin.url` from the repository whose common git dir is `common`.
+pub(crate) fn origin_url(common: &Path) -> Option<String> {
+    let cfg = common.join("config");
+    git(
+        common,
+        &[
+            "config",
+            "--file",
+            &cfg.display().to_string(),
+            "--get",
+            "remote.origin.url",
+        ],
+    )
+    .ok()
+    .filter(|s| !s.is_empty())
+}
+
+/// An origin URL with the spelling differences that do not change the repo
+/// removed: a trailing `/` and `.git`. Delta's managed clones record the URL
+/// as given (`https://github.com/o/r`), a `git clone` usually has `r.git`.
+pub(crate) fn normalize_url(url: &str) -> String {
+    let u = url.trim().trim_end_matches('/');
+    u.strip_suffix(".git").unwrap_or(u).to_string()
+}
+
+/// Where Delta keeps managed (not linked) checkouts on this platform:
+/// `~/Library/Application Support/delta/worktrees` on macOS, else
+/// `${XDG_DATA_HOME:-~/.local/share}/delta/worktrees`. A convention observed
+/// in Delta, not an API (yaks-df61 O63).
+pub(crate) fn default_delta_roots() -> Vec<PathBuf> {
+    let home = std::env::var_os("HOME").map(PathBuf::from);
+    let data = if cfg!(target_os = "macos") {
+        home.map(|h| h.join("Library/Application Support"))
+    } else {
+        std::env::var_os("XDG_DATA_HOME")
+            .filter(|v| !v.is_empty())
+            .map(PathBuf::from)
+            .or_else(|| home.map(|h| h.join(".local/share")))
     };
-    matches!((origin(own), origin(&theirs)), (Some(a), Some(b)) if a == b)
+    data.map(|d| vec![d.join("delta/worktrees")])
+        .unwrap_or_default()
+}
+
+/// Every `<root>/<dir>/<entry>` under a Delta root, skipping the `*.git`
+/// separate git dirs that sit beside managed checkouts. Sorted.
+pub(crate) fn delta_root_entries(root: &Path) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    let Ok(dirs) = fs::read_dir(root) else {
+        return out;
+    };
+    for d in dirs.flatten() {
+        let Ok(entries) = fs::read_dir(d.path()) else {
+            continue;
+        };
+        for e in entries.flatten() {
+            let is_git_dir = e.file_name().to_string_lossy().ends_with(".git");
+            if !is_git_dir && e.path().is_dir() {
+                out.push(e.path());
+            }
+        }
+    }
+    out.sort();
+    out
 }
 
 /// Newest mtime of anything under `root` (symlinks not followed).

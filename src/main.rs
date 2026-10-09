@@ -9,6 +9,7 @@ mod brief;
 mod changes;
 mod clipboard;
 mod commit;
+mod discover;
 mod farm;
 mod filter;
 mod init;
@@ -252,6 +253,27 @@ enum Command {
     /// and `in_progress`. Read-only everywhere.
     Sheds {
         /// Emit the sheds as JSON.
+        #[arg(long)]
+        json: bool,
+    },
+    /// Diagnostic: show what each shed-discovery source finds from a
+    /// directory, and why each candidate was accepted or rejected. Sources:
+    /// `git worktree list`, the Delta sibling scan (what `yaks sheds` uses),
+    /// and the Delta roots, where Delta keeps managed checkouts
+    /// (`~/Library/Application Support/delta/worktrees` on macOS, else
+    /// `${XDG_DATA_HOME:-~/.local/share}/delta/worktrees`; add more with
+    /// `--root`). Inside a checkout, candidates are matched to its repository
+    /// (same git dir, same alternates, or same origin URL); outside one, every
+    /// checkout under the roots is listed, grouped by origin. Read-only; works
+    /// without a farm.
+    Discover {
+        /// Where to look from (default: the current directory). Any directory:
+        /// a primary checkout, a git worktree, a Delta clone, or anywhere else.
+        path: Option<PathBuf>,
+        /// An extra Delta root to scan (`<root>/<dir>/<checkout>`); repeatable.
+        #[arg(long = "root", value_name = "DIR")]
+        roots: Vec<PathBuf>,
+        /// Emit the report as JSON.
         #[arg(long)]
         json: bool,
     },
@@ -796,6 +818,20 @@ fn main() -> Result<()> {
     if let Command::Skills { action } = &cli.command {
         return run_skills(action);
     }
+    if let Command::Discover { path, roots, json } = &cli.command {
+        let anchor = match path {
+            Some(p) => p.clone(),
+            None => env::current_dir()?,
+        };
+        let yaks_dir = env::var("YAKS_DIR").ok();
+        let report = discover::run(&anchor, roots, yaks_dir.as_deref());
+        if *json {
+            json::print(&discover::to_json(&report))?;
+        } else {
+            print!("{}", discover::render(&report));
+        }
+        return Ok(());
+    }
 
     // Keep the user-level skills current. The overwhelmingly common failure is
     // an agent running against a stale skill, and nobody remembers to re-run
@@ -941,6 +977,7 @@ fn main() -> Result<()> {
         }
         Command::Init { .. } => unreachable!("init is handled before opening a farm"),
         Command::Skills { .. } => unreachable!("skills is handled before opening a farm"),
+        Command::Discover { .. } => unreachable!("discover is handled before opening a farm"),
         Command::Refs { id } => match farm.refs(&id)? {
             None => {
                 eprintln!("no such task: {id}");

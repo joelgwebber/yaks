@@ -1,0 +1,251 @@
+
+################ primary checkout
+ANCHOR  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo
+  top-level   /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo
+  layout      primary checkout (.git is a directory)
+  git dir     /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.git
+  origin      https://example.com/synth/repo.git
+  farm        /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.yaks
+
+GIT WORKTREE LIST  (2 found, 1 rejected)
+  looked in  git -C /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo worktree list
+  - /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo
+      the anchor itself
+  + /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.wt/b
+      listed by git
+  + /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/wt-a
+      listed by git
+
+DELTA SIBLING SCAN  (1 found, 0 rejected)
+  looked in  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/*/repo
+  looked in  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.delta/worktrees/*/repo
+  + /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.delta/worktrees/d1/repo
+      same repo (origin)
+
+DELTA ROOTS  (1 found, 6 rejected)
+  looked in  /Users/joel/Library/Application Support/delta/worktrees
+  looked in  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees
+  - /Users/joel/Library/Application Support/delta/worktrees/k0zrr649bh4g/local_8a543800-e331-44f4-b7db-6f623724c785
+      no .git
+  - /Users/joel/Library/Application Support/delta/worktrees/rwks7r9y0tcj/local_e7d77f9b-f98c-4407-8f29-e832d9ea58d2
+      different repository (origin https://github.com/rocketsurgery-games/schism)
+  - /Users/joel/Library/Application Support/delta/worktrees/sw5b04mv35vx/local_a4bed28b-3001-4a3a-9cbc-a93370741251
+      no .git
+  - /Users/joel/Library/Application Support/delta/worktrees/t7zzc48jkkfh/local_3c6c5490-70c5-4f19-b3f8-d2e770905104
+      different repository (origin https://github.com/joelgwebber/canon)
+  + /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1
+      same repo (origin)
+  - /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m2/local_u2
+      different repository (origin https://example.com/synth/other)
+  - /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m3/local_u3
+      no .git
+
+SHEDS  (4 distinct, anchor excluded)
+  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1  [Delta roots]
+  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.delta/worktrees/d1/repo  [Delta sibling scan]
+  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.wt/b  [git worktree list]
+  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/wt-a  [git worktree list]
+
+################ git worktree (outside)
+ANCHOR  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/wt-a
+  top-level   /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/wt-a
+  layout      git worktree of /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo
+  git dir     /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.git
+  origin      https://example.com/synth/repo.git
+  farm        /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/wt-a/.yaks
+
+GIT WORKTREE LIST  (2 found, 1 rejected)
+  looked in  git -C /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/wt-a worktree list
+  + /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo
+      listed by git
+  + /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.wt/b
+      listed by git
+  - /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/wt-a
+      the anchor itself
+
+DELTA SIBLING SCAN  (0 found, 0 rejected)
+  looked in  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/*/wt-a
+  looked in  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/wt-a/.delta/worktrees/*/wt-a
+
+DELTA ROOTS  (1 found, 6 rejected)
+  looked in  /Users/joel/Library/Application Support/delta/worktrees
+  looked in  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees
+  - /Users/joel/Library/Application Support/delta/worktrees/k0zrr649bh4g/local_8a543800-e331-44f4-b7db-6f623724c785
+      no .git
+  - /Users/joel/Library/Application Support/delta/worktrees/rwks7r9y0tcj/local_e7d77f9b-f98c-4407-8f29-e832d9ea58d2
+      different repository (origin https://github.com/rocketsurgery-games/schism)
+  - /Users/joel/Library/Application Support/delta/worktrees/sw5b04mv35vx/local_a4bed28b-3001-4a3a-9cbc-a93370741251
+      no .git
+  - /Users/joel/Library/Application Support/delta/worktrees/t7zzc48jkkfh/local_3c6c5490-70c5-4f19-b3f8-d2e770905104
+      different repository (origin https://github.com/joelgwebber/canon)
+  + /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1
+      same repo (origin)
+  - /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m2/local_u2
+      different repository (origin https://example.com/synth/other)
+  - /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m3/local_u3
+      no .git
+
+SHEDS  (3 distinct, anchor excluded)
+  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1  [Delta roots]
+  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo  [git worktree list]
+  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.wt/b  [git worktree list]
+
+################ git worktree (inside), from a subdirectory
+ANCHOR  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.wt/b/.yaks
+  top-level   /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.wt/b
+  layout      git worktree of /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo
+  git dir     /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.git
+  origin      https://example.com/synth/repo.git
+  farm        /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.wt/b/.yaks
+
+GIT WORKTREE LIST  (2 found, 1 rejected)
+  looked in  git -C /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.wt/b worktree list
+  + /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo
+      listed by git
+  - /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.wt/b
+      the anchor itself
+  + /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/wt-a
+      listed by git
+
+DELTA SIBLING SCAN  (0 found, 0 rejected)
+  looked in  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/*/b
+  looked in  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.wt/b/.delta/worktrees/*/b
+
+DELTA ROOTS  (1 found, 6 rejected)
+  looked in  /Users/joel/Library/Application Support/delta/worktrees
+  looked in  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees
+  - /Users/joel/Library/Application Support/delta/worktrees/k0zrr649bh4g/local_8a543800-e331-44f4-b7db-6f623724c785
+      no .git
+  - /Users/joel/Library/Application Support/delta/worktrees/rwks7r9y0tcj/local_e7d77f9b-f98c-4407-8f29-e832d9ea58d2
+      different repository (origin https://github.com/rocketsurgery-games/schism)
+  - /Users/joel/Library/Application Support/delta/worktrees/sw5b04mv35vx/local_a4bed28b-3001-4a3a-9cbc-a93370741251
+      no .git
+  - /Users/joel/Library/Application Support/delta/worktrees/t7zzc48jkkfh/local_3c6c5490-70c5-4f19-b3f8-d2e770905104
+      different repository (origin https://github.com/joelgwebber/canon)
+  + /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1
+      same repo (origin)
+  - /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m2/local_u2
+      different repository (origin https://example.com/synth/other)
+  - /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m3/local_u3
+      no .git
+
+SHEDS  (3 distinct, anchor excluded)
+  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1  [Delta roots]
+  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo  [git worktree list]
+  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/wt-a  [git worktree list]
+
+################ Delta clone, linked layout
+ANCHOR  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.delta/worktrees/d1/repo
+  top-level   /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.delta/worktrees/d1/repo
+  layout      Delta clone, linked layout (under /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo)
+  git dir     /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.delta/clones/d1/repo.git
+  origin      https://example.com/synth/repo.git
+  alternates  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.git/objects
+  local       /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo  (a checkout)
+  farm        /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.delta/worktrees/d1/repo/.yaks
+
+GIT WORKTREE LIST  (0 found, 1 rejected)
+  looked in  git -C /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.delta/worktrees/d1/repo worktree list
+  - /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.delta/clones/d1/repo.git
+      no .git (a separate git dir, e.g. a Delta clone's)
+
+DELTA SIBLING SCAN  (1 found, 0 rejected)
+  looked in  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.delta/worktrees/*/repo
+  looked in  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo  (the checkout holding this clone)
+  looked in  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo/.delta/worktrees/d1/repo/.delta/worktrees/*/repo
+  + /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo
+      same repo (origin)
+
+DELTA ROOTS  (1 found, 6 rejected)
+  looked in  /Users/joel/Library/Application Support/delta/worktrees
+  looked in  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees
+  - /Users/joel/Library/Application Support/delta/worktrees/k0zrr649bh4g/local_8a543800-e331-44f4-b7db-6f623724c785
+      no .git
+  - /Users/joel/Library/Application Support/delta/worktrees/rwks7r9y0tcj/local_e7d77f9b-f98c-4407-8f29-e832d9ea58d2
+      different repository (origin https://github.com/rocketsurgery-games/schism)
+  - /Users/joel/Library/Application Support/delta/worktrees/sw5b04mv35vx/local_a4bed28b-3001-4a3a-9cbc-a93370741251
+      no .git
+  - /Users/joel/Library/Application Support/delta/worktrees/t7zzc48jkkfh/local_3c6c5490-70c5-4f19-b3f8-d2e770905104
+      different repository (origin https://github.com/joelgwebber/canon)
+  + /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1
+      same repo (origin)
+  - /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m2/local_u2
+      different repository (origin https://example.com/synth/other)
+  - /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m3/local_u3
+      no .git
+
+SHEDS  (2 distinct, anchor excluded)
+  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1  [Delta roots]
+  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/repo  [Delta sibling scan]
+
+################ Delta clone, managed layout
+ANCHOR  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1
+  top-level   /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1
+  layout      Delta clone, managed layout
+  git dir     /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1.git
+  origin      https://example.com/synth/repo
+  alternates  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/repository.git/objects
+  local       /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/repository.git  (BARE)
+  farm        /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1/.yaks
+
+GIT WORKTREE LIST  (0 found, 1 rejected)
+  looked in  git -C /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1 worktree list
+  - /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1.git
+      no .git (a separate git dir, e.g. a Delta clone's)
+
+DELTA SIBLING SCAN  (0 found, 0 rejected)
+  looked in  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/*/local_u1
+  looked in  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1/.delta/worktrees/*/local_u1
+
+DELTA ROOTS  (0 found, 7 rejected)
+  looked in  /Users/joel/Library/Application Support/delta/worktrees
+  looked in  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees
+  - /Users/joel/Library/Application Support/delta/worktrees/k0zrr649bh4g/local_8a543800-e331-44f4-b7db-6f623724c785
+      no .git
+  - /Users/joel/Library/Application Support/delta/worktrees/rwks7r9y0tcj/local_e7d77f9b-f98c-4407-8f29-e832d9ea58d2
+      different repository (origin https://github.com/rocketsurgery-games/schism)
+  - /Users/joel/Library/Application Support/delta/worktrees/sw5b04mv35vx/local_a4bed28b-3001-4a3a-9cbc-a93370741251
+      no .git
+  - /Users/joel/Library/Application Support/delta/worktrees/t7zzc48jkkfh/local_3c6c5490-70c5-4f19-b3f8-d2e770905104
+      different repository (origin https://github.com/joelgwebber/canon)
+  - /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1
+      the anchor itself
+  - /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m2/local_u2
+      different repository (origin https://example.com/synth/other)
+  - /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m3/local_u3
+      no .git
+
+SHEDS  (0 distinct, anchor excluded)
+
+################ anywhere (not a repo)
+ANCHOR  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture
+  not in a git repository: only the Delta roots apply
+  farm        (none: no .yaks/ directory found at or above /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture)
+
+DELTA ROOTS  (4 found, 3 rejected)
+  looked in  /Users/joel/Library/Application Support/delta/worktrees
+  looked in  /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees
+  - /Users/joel/Library/Application Support/delta/worktrees/k0zrr649bh4g/local_8a543800-e331-44f4-b7db-6f623724c785
+      no .git
+  + /Users/joel/Library/Application Support/delta/worktrees/rwks7r9y0tcj/local_e7d77f9b-f98c-4407-8f29-e832d9ea58d2
+      a checkout (no anchor repo to match)  origin https://github.com/rocketsurgery-games/schism
+  - /Users/joel/Library/Application Support/delta/worktrees/sw5b04mv35vx/local_a4bed28b-3001-4a3a-9cbc-a93370741251
+      no .git
+  + /Users/joel/Library/Application Support/delta/worktrees/t7zzc48jkkfh/local_3c6c5490-70c5-4f19-b3f8-d2e770905104
+      a checkout (no anchor repo to match)  origin https://github.com/joelgwebber/canon
+  + /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1
+      a checkout (no anchor repo to match)  origin https://example.com/synth/repo
+  + /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m2/local_u2
+      a checkout (no anchor repo to match)  origin https://example.com/synth/other
+  - /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m3/local_u3
+      no .git
+
+REPOS  (4 by origin)
+  https://example.com/synth/other
+    /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m2/local_u2
+  https://example.com/synth/repo
+    /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-terminal-.delta-fs-OiechE/yaks-discover-fixture/managed/worktrees/m1/local_u1
+  https://github.com/joelgwebber/canon
+    /Users/joel/Library/Application Support/delta/worktrees/t7zzc48jkkfh/local_3c6c5490-70c5-4f19-b3f8-d2e770905104
+  https://github.com/rocketsurgery-games/schism
+    /Users/joel/Library/Application Support/delta/worktrees/rwks7r9y0tcj/local_e7d77f9b-f98c-4407-8f29-e832d9ea58d2
