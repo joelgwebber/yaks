@@ -1129,6 +1129,33 @@ pub fn is_replied(task: &Task) -> bool {
         .is_some_and(|n| &n.actor != asker)
 }
 
+/// The note an open `needs` is waiting on: the newest note at or after the
+/// latest `ask` note, skipping transition and `pickup` entries exactly as
+/// [`is_replied`] does. `None` when the yak has no `ask` note (a hand-set
+/// `needs:`).
+pub fn ask_note(task: &Task) -> Option<NoteEntry> {
+    let notes = parse_notes(&task.body);
+    let ask_at = notes.iter().rposition(|n| is_ask_text(&n.text))?;
+    notes
+        .into_iter()
+        .skip(ask_at)
+        .rfind(|n| !is_transition_text(&n.text) && !is_pickup_text(&n.text))
+}
+
+/// The question text of an [`ask_note`]: for the ask itself, everything after
+/// its `asked: needs <who>` marker line; for a later reply, the whole note.
+/// `None` when there is no such note or no text (an ask with no question).
+pub fn ask_question(task: &Task) -> Option<String> {
+    let n = ask_note(task)?;
+    let text = if is_ask_text(&n.text) {
+        n.text.split_once('\n').map_or("", |(_, rest)| rest)
+    } else {
+        &n.text
+    };
+    let text = text.trim();
+    (!text.is_empty()).then(|| text.to_string())
+}
+
 /// Load a single task by id (whatever status dir it is in).
 pub fn load_task_by_id(root: &Path, id: &str) -> Result<Option<Task>> {
     let Some((status, path)) = find_task_file(root, id) else {
@@ -2294,6 +2321,54 @@ mod replied_tests {
 
     fn ask(who: &str) -> String {
         ask_text("human", Some(who))
+    }
+
+    #[test]
+    fn ask_question_is_the_ask_text_or_the_newest_reply_after_it() {
+        let asked = task_with(
+            Some("human"),
+            &[("2026-01-01T00:00:00Z", Some("coord"), &ask("which?"))],
+        );
+        assert_eq!(ask_question(&asked).as_deref(), Some("which?"));
+        let replied = task_with(
+            Some("human"),
+            &[
+                ("2026-01-01T00:00:00Z", Some("coord"), &ask("which?")),
+                ("2026-01-01T00:01:00Z", Some("joel"), "B"),
+                (
+                    "2026-01-01T00:02:00Z",
+                    Some("joel"),
+                    "moved: hairy -> shaving",
+                ),
+            ],
+        );
+        assert_eq!(ask_question(&replied).as_deref(), Some("B"));
+        // Only the latest ask counts; an earlier one is history.
+        let reasked = task_with(
+            Some("human"),
+            &[
+                ("2026-01-01T00:00:00Z", Some("coord"), &ask("old?")),
+                ("2026-01-01T00:01:00Z", Some("joel"), "B"),
+                ("2026-01-01T00:02:00Z", Some("coord"), &ask("new?")),
+            ],
+        );
+        assert_eq!(ask_question(&reasked).as_deref(), Some("new?"));
+    }
+
+    #[test]
+    fn ask_question_is_none_without_an_ask_or_a_question() {
+        // A hand-set `needs:` has no ask note.
+        assert_eq!(ask_question(&task_with(Some("human"), &[])), None);
+        let bare = task_with(
+            Some("human"),
+            &[(
+                "2026-01-01T00:00:00Z",
+                Some("coord"),
+                &ask_text("human", None),
+            )],
+        );
+        assert!(ask_note(&bare).is_some());
+        assert_eq!(ask_question(&bare), None);
     }
 
     #[test]

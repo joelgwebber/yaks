@@ -23,6 +23,31 @@ pub use crate::store::{DepOutcome, MoveOutcome, Reparent};
 const NON_DEAD: [Status; 3] = [Status::Hairy, Status::Shaving, Status::Shorn];
 const EVERY: [Status; 4] = [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
 
+/// One open ask found in another shed: see [`Farm::inbox_sheds`].
+#[derive(Debug, Clone)]
+pub struct ShedAsk {
+    /// The shed's short name ([`crate::sheds::Shed::name`]).
+    pub shed: String,
+    pub path: PathBuf,
+    /// The yak as that shed's farm has it.
+    pub task: Task,
+    /// The newest note at or after the ask ([`store::ask_question`]); `None`
+    /// for a hand-set `needs:` or an ask with no question.
+    pub question: Option<String>,
+}
+
+/// The yaks in `tasks` carrying a `needs` value, whatever their status (a set
+/// value is never invisible), narrowed by `spec`'s other filters. Shared by
+/// [`Farm::inbox`] and [`Farm::inbox_sheds`] so both mean the same thing.
+fn needs_rows<'a>(tasks: &'a [Task], spec: &FilterSpec) -> Vec<&'a Task> {
+    let mut spec = spec.clone();
+    spec.statuses = EVERY.to_vec();
+    filter::apply(tasks, &spec, true)
+        .into_iter()
+        .filter(|t| t.needs.is_some())
+        .collect()
+}
+
 /// What `ask` / `answer` did to a yak's `needs`: its status (so callers can
 /// warn about asking on finished work) and the value before and after.
 pub struct NeedsChange {
@@ -582,14 +607,46 @@ impl Farm {
     /// never invisible: an `ask` on a shorn/dead yak, or an answer to one, must
     /// still surface here (that silent gap is exactly why this ignores status).
     /// Other filter flags (priority/label/search) still apply.
-    pub fn inbox(&self, mut spec: FilterSpec) -> Result<Vec<Task>> {
-        spec.statuses = vec![Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
+    pub fn inbox(&self, spec: FilterSpec) -> Result<Vec<Task>> {
         let tasks = store::load(&self.root, &EVERY)?;
-        Ok(filter::apply(&tasks, &spec, true)
-            .into_iter()
-            .filter(|t| t.needs.is_some())
-            .cloned()
-            .collect())
+        Ok(needs_rows(&tasks, &spec).into_iter().cloned().collect())
+    }
+
+    /// Open asks in the OTHER sheds (see [`crate::sheds`]): every yak whose
+    /// `needs` is set in a shed's own farm, tagged with the shed it came from.
+    /// `spec` filters them as it does [`Farm::inbox`]. An ask that is identical
+    /// here (same id, same `needs`, same [`store::ask_note`]) is left out: the
+    /// plain inbox already shows it. A shed with no farm of its own (shared
+    /// with this checkout, private, unreadable) contributes nothing. Strictly
+    /// read-only in the other checkouts.
+    pub fn inbox_sheds(&self, cwd: &Path, spec: FilterSpec) -> Result<Vec<ShedAsk>> {
+        let ours = store::load(&self.root, &EVERY)?;
+        let mut out = Vec::new();
+        for shed in self.sheds(cwd)? {
+            if !matches!(shed.farm, crate::sheds::ShedFarm::Own(_)) {
+                continue;
+            }
+            let Ok(d) = store::discover_with(&shed.path, None) else {
+                continue;
+            };
+            let Ok(theirs) = store::load(&d.root, &EVERY) else {
+                continue;
+            };
+            for t in needs_rows(&theirs, &spec) {
+                let same_here = ours.iter().any(|o| {
+                    o.id == t.id && o.needs == t.needs && store::ask_note(o) == store::ask_note(t)
+                });
+                if !same_here {
+                    out.push(ShedAsk {
+                        shed: shed.name(),
+                        path: shed.path.clone(),
+                        question: store::ask_question(t),
+                        task: t.clone(),
+                    });
+                }
+            }
+        }
+        Ok(out)
     }
 
     /// Hairy tasks with at least one unresolved dependency, each paired with

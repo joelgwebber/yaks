@@ -427,7 +427,18 @@ enum Command {
         /// Show only one section.
         #[arg(long = "for", value_enum)]
         audience: Option<Audience>,
-        /// JSON array of yaks, each with `needs` and `replied`.
+        /// After the inbox, list the open asks in the OTHER sheds (git
+        /// worktrees and Delta clones of this repository; see `sheds`): per
+        /// shed, its name and path, then each yak with `needs` set in that
+        /// shed's own farm and the question text. Asks identical in this
+        /// checkout's farm are not repeated; sheds with no farm of their own
+        /// show nothing. `--for` and the filter flags apply. Read-only.
+        #[arg(long)]
+        sheds: bool,
+        /// JSON array of yaks, each with `needs` and `replied`. With
+        /// `--sheds`, an object instead: `inbox` (that array) and `sheds`
+        /// (one object per ask in another shed, with `shed`, `path`, `id`,
+        /// `title`, `status`, `needs`, `replied` and `question`).
         #[arg(long)]
         json: bool,
     },
@@ -1346,10 +1357,22 @@ fn main() -> Result<()> {
         Command::Inbox {
             filter,
             audience,
+            sheds,
             json,
         } => {
-            let rows = farm.inbox(build_spec(filter))?;
-            render_inbox(&rows, audience, json)?;
+            let spec = build_spec(filter);
+            let rows = farm.inbox(spec.clone())?;
+            let other: Option<Vec<farm::ShedAsk>> = if sheds {
+                let all = farm.inbox_sheds(&env::current_dir()?, spec)?;
+                Some(
+                    all.into_iter()
+                        .filter(|a| Audience::keeps(audience, &a.task))
+                        .collect(),
+                )
+            } else {
+                None
+            };
+            render_inbox(&rows, other.as_deref(), audience, json)?;
         }
         Command::Shave { ids, as_actor } => {
             let actor = actor::resolve(as_actor.as_deref());
@@ -1984,9 +2007,27 @@ enum Audience {
     Agent,
 }
 
+impl Audience {
+    /// Whether `audience` (`None` = both) keeps a yak with this `needs`.
+    fn keeps(audience: Option<Audience>, t: &Task) -> bool {
+        match audience {
+            None => true,
+            Some(Audience::Human) => t.awaiting_human(),
+            Some(Audience::Agent) => t.awaiting_agent(),
+        }
+    }
+}
+
 /// `inbox` output: a flat JSON array (each yak with `needs` and `replied`), or
 /// two text sections, "awaiting a human" and "answered, awaiting an agent".
-fn render_inbox(rows: &[Task], audience: Option<Audience>, json: bool) -> Result<()> {
+/// With `sheds` (`inbox --sheds`, already narrowed by `audience`), the JSON is
+/// `{inbox, sheds}` instead and the text gains a section per shed.
+fn render_inbox(
+    rows: &[Task],
+    sheds: Option<&[farm::ShedAsk]>,
+    audience: Option<Audience>,
+    json: bool,
+) -> Result<()> {
     let human: Vec<&Task> = rows
         .iter()
         .filter(|t| t.awaiting_human() && !matches!(audience, Some(Audience::Agent)))
@@ -1997,7 +2038,13 @@ fn render_inbox(rows: &[Task], audience: Option<Audience>, json: bool) -> Result
         .collect();
     if json {
         let kept: Vec<&Task> = human.iter().chain(agent.iter()).copied().collect();
-        json::print(&json::inbox_array(&kept))?;
+        match sheds {
+            None => json::print(&json::inbox_array(&kept))?,
+            Some(s) => json::print(&json::inbox_sheds_value(
+                &kept,
+                &s.iter().collect::<Vec<_>>(),
+            ))?,
+        }
         return Ok(());
     }
     if human.is_empty() && agent.is_empty() {
@@ -2009,7 +2056,6 @@ fn render_inbox(rows: &[Task], audience: Option<Audience>, json: bool) -> Result
                 None => "Inbox empty: nothing awaiting a human or an agent.",
             }
         );
-        return Ok(());
     }
     for (title, section) in [
         ("Awaiting a human:", &human),
@@ -2028,7 +2074,40 @@ fn render_inbox(rows: &[Task], audience: Option<Audience>, json: bool) -> Result
             println!("{}{replied}", fmt_row(t));
         }
     }
+    if let Some(sheds) = sheds {
+        render_shed_asks(sheds);
+    }
     Ok(())
+}
+
+/// The `inbox --sheds` text: one block per shed (`asks` arrive grouped by
+/// shed), each ask a normal inbox row followed by its question text indented.
+fn render_shed_asks(asks: &[farm::ShedAsk]) {
+    if asks.is_empty() {
+        println!("No open asks in other sheds.");
+        return;
+    }
+    let mut last: Option<(&str, &std::path::Path)> = None;
+    for a in asks {
+        if last != Some((a.shed.as_str(), a.path.as_path())) {
+            println!("Shed {} ({}):", a.shed, a.path.display());
+            last = Some((a.shed.as_str(), a.path.as_path()));
+        }
+        let replied = if store::is_replied(&a.task) {
+            " \u{21a9} replied"
+        } else {
+            ""
+        };
+        println!("{}{replied}", fmt_row(&a.task));
+        match &a.question {
+            Some(q) => {
+                for line in q.lines() {
+                    println!("      {line}");
+                }
+            }
+            None => println!("      (no question text)"),
+        }
+    }
 }
 
 fn render_rows(rows: &[Task], json: bool, empty_msg: &str) -> Result<()> {
