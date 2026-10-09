@@ -126,9 +126,18 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Show one task by id.
+    /// Show one task by id. With `--sheds`, also show how the OTHER checkouts
+    /// of this repository (git worktrees, Delta clones) have that yak: this
+    /// checkout's copy first, then one block per shed whose copy differs (its
+    /// status, `needs:`, and the note entries it has that this copy lacks) and
+    /// one line counting the sheds that are the same, lack the yak, or have no
+    /// farm of their own. Works for a yak that exists only in a shed (plain
+    /// `show` still exits 1). Read-only in the other checkouts.
     Show {
         id: String,
+        /// Also show each other shed's copy where it differs from this one's.
+        #[arg(long)]
+        sheds: bool,
         #[arg(long)]
         json: bool,
     },
@@ -950,19 +959,40 @@ fn main() -> Result<()> {
             let entries = farm.log(build_spec(filter), since.as_deref(), by.as_deref())?;
             render_log(&entries, json)?;
         }
-        Command::Show { id, json } => match farm.show(&id)? {
-            None => {
+        Command::Show { id, sheds, json } => {
+            let shown = farm.show(&id)?;
+            let copies = if sheds {
+                Some(farm.show_sheds(&env::current_dir()?, &id)?)
+            } else {
+                None
+            };
+            // A yak only a shed has is still worth showing with `--sheds`.
+            let in_sheds = copies
+                .as_ref()
+                .is_some_and(|c| c.copies.iter().any(|s| !s.absent()));
+            if shown.is_none() && !in_sheds {
                 eprintln!("no such task: {id}");
                 std::process::exit(1);
             }
-            Some(s) => {
-                if json {
-                    json::print(&json::show_value(&s.task, &s.children))?;
-                } else {
-                    render_show(&s);
+            if json {
+                let mut v = match &shown {
+                    Some(s) => json::show_value(&s.task, &s.children),
+                    None => serde_json::json!({ "id": id }),
+                };
+                if let (Some(c), serde_json::Value::Object(m)) = (&copies, &mut v) {
+                    m.insert("sheds".into(), json::shed_copies_value(c));
+                }
+                json::print(&v)?;
+            } else {
+                match &shown {
+                    Some(s) => render_show(s),
+                    None => println!("{id} is not in this checkout."),
+                }
+                if let Some(c) = &copies {
+                    render_show_sheds(c, shown.is_none());
                 }
             }
-        },
+        }
         Command::Path { ids, filter, all } => {
             let code = run_path(
                 &farm,
@@ -2633,6 +2663,49 @@ fn render_show(s: &Show) {
             println!("  [{}] {}  {}", c.status.glyph(), c.id, c.title);
         }
     }
+}
+
+/// The `Sheds:` section of `show --sheds`: one block per shed whose copy
+/// differs from this checkout's (name and path, status, `needs:`, and the note
+/// entries it has that ours lacks), then ONE line counting the rest. With
+/// `missing_here` (the yak is only in sheds) the blocks also carry the title.
+fn render_show_sheds(c: &farm::ShedCopies, missing_here: bool) {
+    let differing: Vec<&farm::ShedCopy> = c
+        .copies
+        .iter()
+        .filter(|s| !s.same() && !s.absent())
+        .collect();
+    println!("\nSheds:");
+    for s in &differing {
+        let Some(t) = &s.task else { continue };
+        println!("  {}  {}", s.shed, s.path.display());
+        if missing_here {
+            println!("    title:  {}", t.title);
+        }
+        println!("    status: {}", t.status.dir());
+        if let Some(n) = &t.needs {
+            println!("    needs:  {n}");
+        }
+        for n in &s.new_notes {
+            let line = n.text.lines().map(str::trim).find(|l| !l.is_empty());
+            println!(
+                "    {}  {}  {}",
+                n.ts,
+                n.actor.as_deref().unwrap_or("-"),
+                line.unwrap_or("")
+            );
+        }
+    }
+    let same = c.copies.iter().filter(|s| s.same()).count();
+    let absent = c.copies.iter().filter(|s| s.absent()).count();
+    let plural = |n: usize| if n == 1 { "shed" } else { "sheds" };
+    println!(
+        "{}same in {same} {}; absent in {absent}; no farm of its own in {} {}",
+        if differing.is_empty() { "" } else { "\n" },
+        plural(same),
+        c.no_farm,
+        plural(c.no_farm),
+    );
 }
 
 /// `  [X] id  pN type     title [labels] (deps: ...) ⚠ needs:<who>`

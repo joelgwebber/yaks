@@ -23,6 +23,50 @@ pub use crate::store::{DepOutcome, MoveOutcome, Reparent};
 const NON_DEAD: [Status; 3] = [Status::Hairy, Status::Shaving, Status::Shorn];
 const EVERY: [Status; 4] = [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
 
+/// One other shed's copy of a yak, as [`Farm::show_sheds`] found it.
+#[derive(Debug, Clone)]
+pub struct ShedCopy {
+    /// The shed's short name ([`crate::sheds::Shed::name`]).
+    pub shed: String,
+    pub path: PathBuf,
+    /// The shed's copy of the yak; `None` when its farm has no such yak.
+    pub task: Option<Task>,
+    /// Note entries the shed's copy has that this checkout's copy lacks (all
+    /// of its entries when the yak is not here). Empty when `task` is `None`.
+    pub new_notes: Vec<store::NoteEntry>,
+    /// This checkout's copy of the yak, for comparing status and `needs`.
+    pub ours: Option<Task>,
+}
+
+impl ShedCopy {
+    pub fn absent(&self) -> bool {
+        self.task.is_none()
+    }
+
+    /// The shed's copy says nothing this checkout's lacks: same status, same
+    /// `needs`, no note entry beyond ours. A shed that is merely behind (ours
+    /// has later notes) is the same by this measure. False when the yak is
+    /// only in the shed; meaningless (false) when absent from it.
+    pub fn same(&self) -> bool {
+        match (&self.task, &self.ours) {
+            (Some(t), Some(o)) => {
+                t.status == o.status && t.needs == o.needs && self.new_notes.is_empty()
+            }
+            _ => false,
+        }
+    }
+}
+
+/// Every other shed's copy of one yak (`yaks show <id> --sheds`).
+#[derive(Debug, Clone, Default)]
+pub struct ShedCopies {
+    /// One per shed with a farm of its own, sorted as `yaks sheds` lists them.
+    pub copies: Vec<ShedCopy>,
+    /// Sheds with no separate readable farm (shared with this checkout, none,
+    /// or unreadable): nothing to compare.
+    pub no_farm: usize,
+}
+
 /// One open ask found in another shed: see [`Farm::inbox_sheds`].
 #[derive(Debug, Clone)]
 pub struct ShedAsk {
@@ -790,6 +834,49 @@ impl Farm {
             .collect();
         children.sort_by(|a, b| a.id.cmp(&b.id));
         Ok(Some(Show { task, children }))
+    }
+
+    /// The yak `id` as every OTHER shed's farm has it (`show --sheds`): per
+    /// shed, its copy (or its absence) and the note entries it has that this
+    /// checkout's copy lacks. Strictly read-only in the other checkouts; a
+    /// shed whose farm is shared with this one, missing or unreadable is only
+    /// counted in [`ShedCopies::no_farm`].
+    pub fn show_sheds(&self, cwd: &Path, id: &str) -> Result<ShedCopies> {
+        let ours = store::load_task_by_id(&self.root, id)?;
+        let our_notes = ours
+            .as_ref()
+            .map(|o| store::parse_notes(&o.body))
+            .unwrap_or_default();
+        let mut out = ShedCopies::default();
+        for shed in self.sheds(cwd)? {
+            let theirs = match shed.farm {
+                crate::sheds::ShedFarm::Own(_) => store::discover_with(&shed.path, None)
+                    .and_then(|d| store::load_task_by_id(&d.root, id))
+                    .ok(),
+                _ => None,
+            };
+            let Some(task) = theirs else {
+                out.no_farm += 1;
+                continue;
+            };
+            let new_notes = task
+                .as_ref()
+                .map(|t| {
+                    store::parse_notes(&t.body)
+                        .into_iter()
+                        .filter(|n| !our_notes.contains(n))
+                        .collect()
+                })
+                .unwrap_or_default();
+            out.copies.push(ShedCopy {
+                shed: shed.name(),
+                path: shed.path.clone(),
+                task,
+                new_notes,
+                ours: ours.clone(),
+            });
+        }
+        Ok(out)
     }
 
     /// The current on-disk file of the yak `id`, wherever its status put it, or
