@@ -4,7 +4,7 @@ title: 'Design pass: CLI affordances and skill/workflow changes for agents using
 type: task
 priority: 3
 created: '2026-10-09T20:12:45Z'
-updated: '2026-10-09T22:29:19Z'
+updated: '2026-10-09T22:51:35Z'
 parent: yaks-ee0a
 labels:
 - cli
@@ -72,3 +72,7 @@ On --shed, just make it full access; we can tighten it later if it proves proble
 picked up
 
 Joel's answers (2026-10-09): Q1 yes, record thread titles, slugged close to normal git worktree names; Q2 --shed is full access (tighten later if needed); counting a created yak's notes in sheds: yes. Filed as three yaks below, run as wave 3 with a narrated CLI walkthrough.
+
+---
+▸ 2026-10-09T22:51:35Z [delta:Delta :Yaks (cont'd)]
+Wave 3: notes-1 4096595049444717 -> yaks-85d9 (landed 8ee705f, fast-forward); title-1 f7dcad579ea84c7b -> yaks-886a (landed 49c2d5d by cherry-pick, docs/cli.md row conflict resolved by hand keeping both). Next: shed-1 -> yaks-440d.
