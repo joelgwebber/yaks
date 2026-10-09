@@ -4,14 +4,13 @@ title: 'Design pass: CLI affordances and skill/workflow changes for agents using
 type: task
 priority: 3
 created: '2026-10-09T20:12:45Z'
-updated: '2026-10-09T20:57:21Z'
+updated: '2026-10-09T22:29:19Z'
 parent: yaks-ee0a
 labels:
 - cli
 - skills
 - delta
 - design
-needs: human
 ---
 
 Joel (2026-10-09): before the UI, pause to work through the CLI and skill/workflow changes agents need to use shed discovery well. Inputs: yaks-ee0a (proposed per-shed commands: `yaks changes <shed>`, `yaks inbox --sheds`, `yaks show <id> --sheds`, `yaks answer <id>@<shed>`), yaks-7eea (names and the -C/--shed selector; visit vs full access), and the facts from yaks-c635 (from inside any checkout an agent sees every shed, including a worker that has not committed yet; a clone on a shared machine cannot see the human's checkout).
@@ -57,3 +56,19 @@ Spawned wave 2 (base 1081d2f, all claude-sonnet-5-5): show-1 54c574c39d07404d ->
 ---
 ▸ 2026-10-09T20:57:21Z [delta:Delta :Yaks (cont'd)]
 Landed wave 2: yaks-5138 (93e1a7e; sheds JSON byte-identical before/after on the real Mac), yaks-f347 (903bab1), yaks-e7ed (110c413). Delta applied both workers' results at once; landed each by SHA after setting the untracked leftovers aside (all four byte-identical to the landed files). Real-machine check: an ask made in the finished probe clone (dv4fmmmdm74z) showed in show --sheds and inbox --sheds from ~/src/yaks with its text; answer yaks-a398@probe wrote only into the probe clone, left it uncommitted (git status ' M'), our copy untouched; probe restored with git checkout afterwards. Gate: 14 suites ok, 494 unit. dedupe-1 recommends YES on counting a created yak's notes in sheds: left for Joel/next pass.
+
+---
+▸ 2026-10-09T22:11:30Z [Joel Webber]
+Yes to thread titles -- could use a good way to shorten/slug them closer to normal git worktree names.
+
+---
+▸ 2026-10-09T22:13:17Z [Joel Webber]
+asked: needs human
+
+On --shed, just make it full access; we can tighten it later if it proves problematic.
+
+---
+▸ 2026-10-09T22:29:19Z [delta-lead]
+picked up
+
+Joel's answers (2026-10-09): Q1 yes, record thread titles, slugged close to normal git worktree names; Q2 --shed is full access (tighten later if needed); counting a created yak's notes in sheds: yes. Filed as three yaks below, run as wave 3 with a narrated CLI walkthrough.

@@ -168,3 +168,35 @@ workflow.
 3. Check existing yaks before creating new ones.
 4. Append progress notes to yak descriptions as you work.
 5. When unsure what's next, run `yaks next` — don't freelance.
+
+## Delegating to cheaper models
+
+Fan well-scoped yaks out to subagents on a cheaper model (e.g.
+`claude-sonnet-5-5`) and keep the coordination, design and review in the
+coordinating thread. It worked across six Sonnet workers in yaks-a3d2: every
+landing was clean and the workers' `Decision:` notes were sound. What they did
+NOT catch was behaviour on the real machine (the coordinator's run of each
+command found two bugs their tests missed), so the coordinator's review is part
+of the job, not a formality. The workflow is in the `yaks-coordinating` skills;
+what made it work here:
+
+- **Delegate** a yak with one clear outcome, a file/function scope, and a test
+  that can fail first: a new command, a flag, a refactor with a byte-identical
+  check. **Keep** design passes, skill/prose rewrites (they need the thread's
+  context), the shared helpers several workers build on (land those first as a
+  prep commit), and every landing and review.
+- **The claim note is the spec**: goal, scope by file and symbol, out of scope,
+  evidence (tests that fail before), judge. Brief with `yaks brief <id> --as
+  <name>` plus: build and use your own binary; full `cargo test --release`; the
+  docs-and-help rule above; which `src/main.rs` regions the parallel workers
+  each own (one `Command` variant each merges cleanly).
+- **Review by running it** where it will be used (this machine, the real
+  sheds), re-run the gate yourself, read the diff, then push.
+- **Cold-read prose with a cheap model.** After a skills change, a Sonnet scout
+  that reads only the skill files and answers scenario questions finds the
+  contradictions and undefined terms; re-ask only the failed questions after
+  fixing. Trust it to find gaps, not to pick the fix.
+- **`cargo fmt` reformats files nobody touched** (`src/actor.rs`,
+  `src/tui/docshots.rs`, `src/tui/tests.rs`, which follow `mod` declarations):
+  run `cargo fmt -- <your files>` and `git checkout` those three before
+  committing. Say so in every brief.
