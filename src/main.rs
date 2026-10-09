@@ -256,6 +256,28 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
+    /// What ONE shed (another checkout of this repo, picked like the rows of
+    /// `yaks sheds`) created, moved and noted since it forked, per yak, with
+    /// actors: new yaks (title, status), yaks in another status (from -> to),
+    /// each new note entry (timestamp, actor, first line) and `needs:` newly
+    /// set. The per-yak expansion of the `farm:` line of `yaks sheds`, with the
+    /// same baseline (the shed's fork point, or the merge-base / this checkout,
+    /// and the output says `(vs merge-base)` / `(vs this checkout)`). SHED is
+    /// its path, Delta dir id, branch or an actor on its notes, or a unique
+    /// substring of those; `main` names the primary checkout. No or an
+    /// ambiguous match lists the sheds and exits 1. A shed sharing this farm,
+    /// or with none or an unreadable one, says why there is nothing to show.
+    /// Read-only everywhere.
+    Changes {
+        /// The shed: path, Delta dir id, branch, actor, `main`, or a unique
+        /// substring.
+        shed: String,
+        /// Emit one JSON object per changed yak (`id`, `title`, `status`,
+        /// `added`, `moved`, `notes` with `ts`/`actor`/`text`, `needs`, `vs`,
+        /// `base`); `[]` when there is nothing to list.
+        #[arg(long)]
+        json: bool,
+    },
     /// Diagnostic: show the chain `yaks sheds` uses to find the other
     /// checkouts of this repo, step by step, from inside any checkout of it:
     /// `git worktree list` here; the HOST repo this checkout's
@@ -1162,6 +1184,26 @@ fn main() -> Result<()> {
                 json::print(&sheds::to_json(&sheds))?;
             } else {
                 print!("{}", sheds::render(&sheds));
+            }
+        }
+        Command::Changes { shed, json } => {
+            let cwd = env::current_dir()?;
+            let sheds = farm.sheds(&cwd)?;
+            let found = match sheds::resolve(&sheds, &shed) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("error: {e}");
+                    std::process::exit(1);
+                }
+            };
+            let changes = farm.shed_changes(found, &cwd)?;
+            if json {
+                if let Err(why) = &changes.yaks {
+                    eprintln!("note: nothing to show: {why}");
+                }
+                json::print(&sheds::changes_json(&changes))?;
+            } else {
+                print!("{}", sheds::render_changes(&changes));
             }
         }
         Command::Stats { json } => {

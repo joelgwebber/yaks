@@ -671,6 +671,118 @@ pub fn compare_farms(ours: &[crate::model::Task], theirs: &[crate::model::Task])
     d
 }
 
+/// What one shed did to one yak since the baseline (see [`yak_changes`]).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct YakChange {
+    pub id: String,
+    pub title: String,
+    /// The yak's status directory in the shed.
+    pub status: &'static str,
+    /// The yak exists only in the shed.
+    pub added: bool,
+    /// `(from, to)` status directories, when the yak is in another status than
+    /// at the baseline.
+    pub moved: Option<(&'static str, &'static str)>,
+    /// The note entries the shed appended (all of them for a created yak). A
+    /// `moved:` transition is one of these, with its actor.
+    pub notes: Vec<store::NoteEntry>,
+    /// The shed's `needs:`, when it is new or differs from the baseline's.
+    pub needs: Option<String>,
+}
+
+/// Per-yak expansion of [`compare_farms`] over the same rules (a yak that is
+/// new, in another status, has more notes, or a new `needs:`), but carrying
+/// the note entries themselves rather than a count. Pure; ids sorted; yaks the
+/// shed did not touch are left out.
+pub fn yak_changes(base: &[crate::model::Task], theirs: &[crate::model::Task]) -> Vec<YakChange> {
+    let mine: BTreeMap<&str, &crate::model::Task> =
+        base.iter().map(|t| (t.id.as_str(), t)).collect();
+    let mut theirs: Vec<&crate::model::Task> = theirs.iter().collect();
+    theirs.sort_by(|a, b| a.id.cmp(&b.id));
+    let mut out = Vec::new();
+    for t in theirs {
+        let m = mine.get(t.id.as_str());
+        let known = m.map_or(0, |m| store::parse_notes(&m.body).len());
+        let change = YakChange {
+            id: t.id.clone(),
+            title: t.title.clone(),
+            status: t.status.dir(),
+            added: m.is_none(),
+            moved: m
+                .filter(|m| m.status != t.status)
+                .map(|m| (m.status.dir(), t.status.dir())),
+            notes: store::parse_notes(&t.body)
+                .into_iter()
+                .skip(known)
+                .collect(),
+            needs: t
+                .needs
+                .clone()
+                .filter(|n| Some(n) != m.and_then(|m| m.needs.as_ref())),
+        };
+        if change.added
+            || change.moved.is_some()
+            || !change.notes.is_empty()
+            || change.needs.is_some()
+        {
+            out.push(change);
+        }
+    }
+    out
+}
+
+/// One shed's own changes, per yak (`yaks changes`).
+#[derive(Debug, Clone)]
+pub struct Changes {
+    pub name: String,
+    pub path: PathBuf,
+    /// What the changes are relative to, as in [`Shed::farm_base`]; `None`
+    /// means this checkout's farm.
+    pub base: Option<FarmBase>,
+    /// The changed yaks, or why there is nothing to list (a shared, absent or
+    /// unreadable farm).
+    pub yaks: Result<Vec<YakChange>, String>,
+}
+
+/// The per-yak changes of `shed` (one of [`discover`]'s), measured from the
+/// same baseline `discover` chose for it. `cwd` and `farm_root` are what
+/// `discover` was given. Read-only, like the rest of this module.
+pub fn changes(shed: &Shed, cwd: &Path, farm_root: &Path) -> Result<Changes> {
+    let yaks = match &shed.farm {
+        ShedFarm::Own(_) => {
+            let top = canonical(&PathBuf::from(
+                git(cwd, &["rev-parse", "--show-toplevel"])
+                    .context("yaks changes needs a git repository")?,
+            ));
+            shed_yak_changes(shed, &top, farm_root)
+        }
+        other => Err(farm_message(other).unwrap_or_default()),
+    };
+    Ok(Changes {
+        name: shed.name(),
+        path: shed.path.clone(),
+        base: shed.farm_base.clone(),
+        yaks,
+    })
+}
+
+fn shed_yak_changes(shed: &Shed, top: &Path, farm_root: &Path) -> Result<Vec<YakChange>, String> {
+    let root = store::discover_with(&shed.path, None)
+        .map_err(|e| format!("{e:#}"))?
+        .root;
+    let root = canonical(&root);
+    let theirs = store::load(&root, &EVERY).map_err(|e| format!("{e:#}"))?;
+    // The shed's own baseline when it has one (as `inspect` found it), else
+    // this checkout's farm, exactly as `compare_farms` was fed.
+    let base = shed
+        .farm_base
+        .as_ref()
+        .and_then(|b| base_farm(top, &b.sha, &shed.path, &root))
+        .map(|(_, tasks)| tasks)
+        .unwrap_or_else(|| store::load(farm_root, &EVERY).unwrap_or_default());
+    Ok(yak_changes(&base, &theirs))
+}
+
 /// Label a shed from its OWN new note entries: `(who, in_progress)`. Pure.
 ///
 /// A shed's own entries are the notes its yaks have beyond the base's
@@ -1086,11 +1198,94 @@ pub fn to_json(sheds: &[Shed]) -> Value {
 /// so a number that may include inherited work is never silent: ` (vs
 /// merge-base)` or ` (vs this checkout)`. Empty for the fork point.
 fn vs_marker(l: &Shed) -> &'static str {
-    match l.farm_base.as_ref().map(|b| b.kind) {
+    base_marker(l.farm_base.as_ref())
+}
+
+fn base_marker(base: Option<&FarmBase>) -> &'static str {
+    match base.map(|b| b.kind) {
         Some(BaseKind::Fork | BaseKind::Sync) => "",
         Some(BaseKind::MergeBase) => " (vs merge-base)",
         None => " (vs this checkout)",
     }
+}
+
+/// The first non-empty line of a note's text: what the per-yak view shows.
+fn first_line(text: &str) -> &str {
+    text.lines()
+        .map(str::trim)
+        .find(|l| !l.is_empty())
+        .unwrap_or("")
+}
+
+/// The human per-yak view of `yaks changes`: one block per changed yak, then
+/// its new note entries (timestamp, actor, first line) and `needs:`.
+pub fn render_changes(c: &Changes) -> String {
+    let mut out = format!("{}  {}\n", c.name, c.path.display());
+    let marker = base_marker(c.base.as_ref());
+    let yaks = match &c.yaks {
+        Err(why) => {
+            out.push_str(&format!("  nothing to show: {why}\n"));
+            return out;
+        }
+        Ok(y) => y,
+    };
+    if yaks.is_empty() {
+        out.push_str(&if c.base.is_some() {
+            format!("  no changes of its own{marker}\n")
+        } else {
+            "  no differences (vs this checkout)\n".to_string()
+        });
+        return out;
+    }
+    out.push_str(&format!("  changes{marker}:\n"));
+    for y in yaks {
+        let what = match (y.added, y.moved) {
+            (true, _) => format!("new, {}", y.status),
+            (false, Some((from, to))) => format!("{from} -> {to}"),
+            (false, None) => y.status.to_string(),
+        };
+        out.push_str(&format!("  {}  {}  [{what}]\n", y.id, y.title));
+        for n in &y.notes {
+            out.push_str(&format!(
+                "    {}  {}  {}\n",
+                n.ts,
+                n.actor.as_deref().unwrap_or("-"),
+                first_line(&n.text)
+            ));
+        }
+        if let Some(v) = &y.needs {
+            out.push_str(&format!("    needs: {v}\n"));
+        }
+    }
+    out
+}
+
+/// JSON for `yaks changes --json`: one object per changed yak. `vs`/`base`
+/// are as in `yaks sheds --json` `farm`. Empty when there is nothing to list.
+pub fn changes_json(c: &Changes) -> Value {
+    let vs = c.base.as_ref().map_or("checkout", |b| b.kind.as_str());
+    let base = c.base.as_ref().map(|b| &b.sha);
+    Value::Array(
+        c.yaks
+            .iter()
+            .flatten()
+            .map(|y| {
+                json!({
+                    "id": y.id,
+                    "title": y.title,
+                    "status": y.status,
+                    "added": y.added,
+                    "moved": y.moved.map(|(from, to)| json!({"from": from, "to": to})),
+                    "notes": y.notes.iter()
+                        .map(|n| json!({"ts": n.ts, "actor": n.actor, "text": n.text}))
+                        .collect::<Vec<_>>(),
+                    "needs": y.needs,
+                    "vs": vs,
+                    "base": base,
+                })
+            })
+            .collect(),
+    )
 }
 
 /// The one-line shed label: `who: a, b · shaving: id, id`, each half only
@@ -2675,5 +2870,186 @@ mod tests {
         );
         let e = resolve(&from_t, "/").unwrap_err();
         assert!(e.contains("names 2 sheds"), "{e}");
+    }
+
+    // -- yaks changes: the per-yak expansion of the `farm:` line ---------------
+
+    /// The worker shed `wt` of `claimed_repo_with_shed`: it creates `yaks-cccc`
+    /// (a note by w-1), moves `yaks-bbbb` hairy -> shaving (the `moved:` note by
+    /// w-2), and appends two notes by two actors to the claimed `yaks-aaaa`.
+    fn shed_with_one_of_each(wt: &Path) {
+        shed_notes_on_aaaa(
+            wt,
+            &[
+                (
+                    "2026-03-03T00:00:00Z",
+                    Some("w-1"),
+                    "first line\nsecond line stays out",
+                ),
+                ("2026-03-04T00:00:00Z", Some("w-2"), "other actor"),
+            ],
+        );
+        task_file(
+            wt,
+            "hairy",
+            "yaks-cccc",
+            "",
+            &notes("new", &[("2026-03-03T01:00:00Z", Some("w-1"), "made it")]),
+        );
+        fs::remove_file(wt.join(".yaks/hairy/yaks-bbbb.md")).unwrap();
+        task_file(
+            wt,
+            "shaving",
+            "yaks-bbbb",
+            "",
+            &notes(
+                "second",
+                &[(
+                    "2026-03-05T00:00:00Z",
+                    Some("w-2"),
+                    "moved: hairy -> shaving",
+                )],
+            ),
+        );
+    }
+
+    fn changes_of(viewer: &Path, query: &str) -> Changes {
+        let sheds = sheds_of(viewer);
+        let shed = resolve(&sheds, query).unwrap();
+        changes(shed, viewer, &viewer.join(".yaks")).unwrap()
+    }
+
+    #[test]
+    fn changes_lists_one_shed_per_yak_with_actors() {
+        let (t, wt) = claimed_repo_with_shed("changes-per-yak");
+        shed_with_one_of_each(&wt);
+        let c = changes_of(&t, "shed");
+        let ys = c.yaks.as_ref().unwrap();
+        let ids: Vec<&str> = ys.iter().map(|y| y.id.as_str()).collect();
+        assert_eq!(ids, ["yaks-aaaa", "yaks-bbbb", "yaks-cccc"]);
+        let actors = |y: &YakChange| -> Vec<Option<String>> {
+            y.notes.iter().map(|n| n.actor.clone()).collect()
+        };
+        // Notes: only the shed's two, not the coordinator's claim.
+        assert_eq!(ys[0].notes.len(), 2);
+        assert_eq!(
+            actors(&ys[0]),
+            [Some("w-1".to_string()), Some("w-2".to_string())]
+        );
+        assert!(!ys[0].added && ys[0].moved.is_none());
+        // Moved.
+        assert_eq!(ys[1].moved, Some(("hairy", "shaving")));
+        assert_eq!(ys[1].notes[0].text, "moved: hairy -> shaving");
+        assert_eq!(actors(&ys[1]), [Some("w-2".to_string())]);
+        // Created.
+        assert!(ys[2].added && ys[2].moved.is_none());
+        assert_eq!(
+            (ys[2].title.as_str(), ys[2].status),
+            ("yaks-cccc title", "hairy")
+        );
+        assert_eq!(actors(&ys[2]), [Some("w-1".to_string())]);
+
+        let out = render_changes(&c);
+        let lines: Vec<&str> = out.lines().collect();
+        assert_eq!(lines[0], format!("{}  {}", c.name, wt.display()));
+        assert_eq!(lines[1], "  changes:");
+        assert_eq!(lines[2], "  yaks-aaaa  yaks-aaaa title  [shaving]");
+        assert_eq!(lines[3], "    2026-03-03T00:00:00Z  w-1  first line");
+        assert_eq!(lines[4], "    2026-03-04T00:00:00Z  w-2  other actor");
+        assert_eq!(lines[5], "  yaks-bbbb  yaks-bbbb title  [hairy -> shaving]");
+        assert_eq!(
+            lines[6],
+            "    2026-03-05T00:00:00Z  w-2  moved: hairy -> shaving"
+        );
+        assert_eq!(lines[7], "  yaks-cccc  yaks-cccc title  [new, hairy]");
+        assert_eq!(lines[8], "    2026-03-03T01:00:00Z  w-1  made it");
+        assert_eq!(lines.len(), 9, "{out}");
+        assert!(!out.contains("second line stays out"));
+
+        let j = changes_json(&c);
+        let j = j.as_array().unwrap();
+        assert_eq!(j.len(), 3);
+        assert_eq!(j[1]["moved"], json!({"from": "hairy", "to": "shaving"}));
+        assert_eq!(j[2]["added"], true);
+        assert_eq!(j[0]["notes"][1]["actor"], "w-2");
+        assert_eq!(j[0]["vs"], "fork");
+        // It expands what `sheds` counts: 1 new, 1 moved, and the notes on
+        // yaks that existed at the base (2 on aaaa + 1 on bbbb). `sheds` does
+        // not count the notes of a created yak; `changes` lists them.
+        let sheds = sheds_of(&t);
+        assert!(
+            render(&sheds).contains("farm: 1 new, 1 moved, 3 new notes"),
+            "{}",
+            render(&sheds)
+        );
+    }
+
+    #[test]
+    fn changes_reports_needs_newly_set() {
+        let (t, wt) = claimed_repo_with_shed("changes-needs");
+        task_file(&wt, "hairy", "yaks-bbbb", "needs: agent\n", "second");
+        let c = changes_of(&t, "shed");
+        let ys = c.yaks.as_ref().unwrap();
+        assert_eq!(ys.len(), 1);
+        assert_eq!(ys[0].needs.as_deref(), Some("agent"));
+        assert!(render_changes(&c).contains("    needs: agent\n"));
+    }
+
+    #[test]
+    fn changes_main_from_a_shed_shows_the_main_checkouts_own_changes() {
+        let (t, wt) = claimed_repo_with_shed("changes-main");
+        shed_notes_on_aaaa(&wt, &[("2026-03-03T00:00:00Z", Some("w-1"), "shed note")]);
+        // Nothing of main's own since the fork yet.
+        let none = changes_of(&wt, "main");
+        assert_eq!(none.name, "main");
+        assert_eq!(none.yaks.as_ref().unwrap(), &vec![]);
+        assert_eq!(
+            render_changes(&none),
+            format!("main  {}\n  no changes of its own\n", t.display())
+        );
+        // Main then lands its own yak and a note after the shed forked.
+        task_file(
+            &t,
+            "hairy",
+            "yaks-dddd",
+            "",
+            &notes(
+                "main's",
+                &[("2026-03-06T00:00:00Z", Some("human"), "from main")],
+            ),
+        );
+        sh(&t, &["add", "-A"]);
+        sh(&t, &["commit", "-q", "-m", "main moves on"]);
+        let c = changes_of(&wt, "main");
+        let ys = c.yaks.as_ref().unwrap();
+        assert_eq!(ys.len(), 1, "{ys:?}");
+        assert!(ys[0].added && ys[0].id == "yaks-dddd");
+        assert_eq!(ys[0].notes[0].actor.as_deref(), Some("human"));
+        assert!(
+            !render_changes(&c).contains("shed note"),
+            "the shed's own notes are not main's"
+        );
+    }
+
+    #[test]
+    fn changes_says_why_a_shared_farm_has_nothing_to_show() {
+        let b = base("changes-shared");
+        let t = b.join("repo");
+        repo_with_farm(&t);
+        let wt = b.join("wt");
+        sh(
+            &t,
+            &["worktree", "add", "-q", "-b", "s", wt.to_str().unwrap()],
+        );
+        let sheds = sheds_of(&t);
+        let shed = shed_at(&sheds, &wt);
+        // A farm outside the checkout, both resolve to it.
+        let shared = ShedFarm::Shared;
+        let mut s = shed.clone();
+        s.farm = shared;
+        let c = changes(&s, &t, &t.join(".yaks")).unwrap();
+        assert_eq!(c.yaks, Err("shares this farm".to_string()));
+        assert!(render_changes(&c).contains("nothing to show: shares this farm"));
+        assert_eq!(changes_json(&c), json!([]));
     }
 }

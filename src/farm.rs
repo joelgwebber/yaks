@@ -471,6 +471,15 @@ impl Farm {
         crate::sheds::discover(cwd, &self.root)
     }
 
+    /// One shed's changes, per yak (`yaks changes`); see [`crate::sheds::changes`].
+    pub fn shed_changes(
+        &self,
+        shed: &crate::sheds::Shed,
+        cwd: &Path,
+    ) -> Result<crate::sheds::Changes> {
+        crate::sheds::changes(shed, cwd, &self.root)
+    }
+
     /// Tasks matching `spec`, grouped by status then id (the `list`/`search` view).
     pub fn list(&self, spec: FilterSpec, include_dead: bool) -> Result<Vec<Task>> {
         let tasks = store::load(&self.root, &EVERY)?;
