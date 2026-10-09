@@ -50,8 +50,8 @@ While workers run, watch them from your own checkout; these only read the other 
 - `yaks inbox --sheds`: every shed's open asks, with the question text. Run it after each spawn
   batch and whenever a worker returns blocked.
 - `yaks show <id> --sheds`: how each shed's copy of one yak differs from yours.
-`<shed>` is any of: the name `sheds` prints, `main`, the Delta dir id, a branch, an actor, a path,
-or a unique substring; an unknown or ambiguous one lists the sheds. A worker that has written no
+`<shed>` is any of: the name `sheds` prints, `main`, the Delta dir id (Delta only: the `<id>` in
+`.delta/worktrees/<id>/`), a branch, an actor, a path, or a unique substring of a path, dir id or actor; an unknown or ambiguous one lists the sheds. A worker that has written no
 note yet has no actor name: `sheds` names it by its Delta dir id or branch, so use that (or its
 path) until its first note. `yaks -C <path> <cmd>` runs ANY command as if started in another
 checkout, writes included: it is the same as `cd` there, so use it only on a checkout you own.
@@ -114,8 +114,10 @@ park work in `$TMPDIR`); and the final-message format (SHA, gate output, timings
   For a **real design fork** you do NOT run `yaks answer`: leave the ask open and tell the human,
   in your reply to them, the yak id, the shed's name when the ask is in a shed (they see it with
   `yaks inbox --sheds` and answer with `yaks answer <id>@<shed>`), and your lean. Record the
-  lean as a note on the UMBRELLA or parent yak, never on the worker's yak (section 9: you must not
-  edit a yak a worker owns while it runs). The
+  lean as a note on the yak's parent (the umbrella yak you grouped the batch under), or, when it
+  has none, only in your message: never on the worker's yak (section 9: you must not edit a yak a
+  worker owns while it runs). Leave the worker idle until the human answers; `yaks inbox --sheds`
+  then shows that yak as answered (`needs: agent`) in the shed, and you wake the worker. The
   answer is the record; a message to the worker is only the wake-up.
 - **An answer stays findable.** `yaks answer` leaves the yak `needs: agent` until an agent runs
   `yaks pickup <id>`. After each batch and at the start of a session run `yaks inbox`: the

@@ -22,7 +22,9 @@ before fanning out. That makes your branch's `shaving` set honest and each yak s
 Some environments let a worker see an uncommitted claim; commit anyway, so the claim is
 durable and your branch tells the truth.
 A human's `yaks answer` on your branch is an uncommitted edit until you commit it. Commit
-answers before you cut a shed or spawn a worker, or the worker will not see them.
+answers before you cut a shed or spawn a worker: a `git worktree` shed starts from a commit and
+would not see them, and even where a worker's checkout copies your working tree (Delta) the
+commit is what keeps your branch's history honest.
 
 ## A worker's finish
 One commit contains the code, the yak move `shaving > shorn` and any evidence. `yaks attach`
@@ -52,7 +54,8 @@ A worker's `yaks ask` lives in its shed's copy until it lands, so plain `yaks in
 it; `yaks inbox --sheds` does (the shed's name and the question). Answer scope and mechanics in the
 shed with `yaks answer <id>@<shed>` (core section 8): the reply stays uncommitted there and the
 worker commits it with its yak file, so the yak keeps one committed history. For a design fork,
-tell the human the shed name and id; they can answer the same way from their checkout. When the
+tell the human the shed name and id; they can answer the same way from their checkout (not from
+a machine the thread was only shared to: there their checkout cannot see the clones). When the
 code is gated green and only a subjective sign-off remains, you may instead land the shed first
 and route the human's answer to the ask that is now visible.
 

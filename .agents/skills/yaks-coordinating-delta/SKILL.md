@@ -36,8 +36,12 @@ and `skill` needs the `worktree` argument; still put the critical rules in the b
 - Read the model id from the spawn confirmation (for example `anthropic/claude-sonnet-5-5`) and record it AFTER
   spawning, one line (worker name, agent id, model id, the base commit) on the umbrella yak or in the
   landing note, never on the worker's own yak: the worker moves that file, and your edit then conflicts with
-  its landing. Once spawned, do not edit a worker's yak at all. The profile default has changed between
+  its landing. Once spawned, do not edit a worker's yak, with one exception: `yaks answer <id>@<shed>` while the worker
+  is idle after an ask (core section 8). The profile default has changed between
   runs; pass `model` only when the human asked for one.
+- Right after spawning, run `yaks sheds`: the new worker's clone appears at once (Delta pins it on creation), named by
+  its Delta dir id (the `<id>` in `.delta/worktrees/<id>/`) until its first note. Record that dir id with the worker's
+  name and agent id (the spawn line above), so `yaks changes <dir id>` works even for a worker that never writes a note.
 - Start every spawn `title` with the worker's name (`sheds-1: build yaks sheds CLI`). Delta shows the title in
   its thread list and exports it as `DELTA_THREAD_TITLE`, which yaks stamps as `delta:<title>` when no actor is
   set; with the name first the thread, the yak's notes and moves, and the label `yaks sheds` shows for the shed
@@ -102,9 +106,9 @@ After every worker returns, in this order:
 
 ## Asking and resuming
 A blocked worker has run `yaks ask` and returned. Delta may apply its unfinished edits to your tree as it does
-on a finish: run `git status` and do not commit or `git add -A` them (they are the worker's, and come back with its real
-landing; restore them with `git checkout -- <files>` once you have checked they are only its edits). `yaks inbox --sheds`
-shows the question. Answer in the yak
+on a finish: run `git status`, and leave them alone. Do not commit them, `git add -A` them, or revert them (a hand-revert
+comes back as a conflict at its real landing: step 6 above); land it by SHA when it finishes (steps 1-4), which sorts them
+out. `yaks inbox --sheds` shows the question. Answer in the yak
 (core section 8): in a team farm `yaks answer <id>@<worker name> --note "..."` from your checkout writes the reply
 into the worker's copy, uncommitted, while it is idle (it commits it with its yak file); in a private farm
 answer directly while the worker is idle. Then wake the SAME worker with `send_agent_message` to its
@@ -157,9 +161,10 @@ only net. The human may also push `origin`; Delta refreshes your `origin/main` f
 - A worker can die without a final message, and nobody tells you. Seen twice when the human moved the thread to another
   machine while workers ran (yaks-df61 O61): ask the human to wait for the completions before switching. When a worker is
   overdue (no completion and no new note for well past your estimate; 30 minutes is a sane default), run `yaks sheds`:
-  its row shows a `who:` label, dirty files and FARM ACTIVE, the newest file time in its farm (old means its yak files have
-  not changed since). `yaks changes <name>` shows its notes so far (a worker with no notes yet is named by its Delta dir id
-  in `sheds`), and its files are readable.
+  its row shows a `who:` label, the DIRTY count (changed files: code work in progress) and FARM ACTIVE, the newest file
+  time in its `.yaks/` (yak notes and moves). A recent time or a growing dirty count means slow, not dead; neither
+  moving for the overdue window means presume dead. `yaks changes <dir id or name>` shows its notes so far (use the dir id
+  you recorded at spawn when it has none), and its files are readable.
   Do not wait indefinitely: a replacement copies and reviews the dead worker's draft (never edits it in place), and after two
   deaths on one task you finish it yourself, committing in small steps.
 - Delta may keep re-reporting a dead worker's applied state as external edits. Check `git status --short` and the line count of
