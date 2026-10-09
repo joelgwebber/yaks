@@ -36,6 +36,22 @@ pub struct ShedAsk {
     pub question: Option<String>,
 }
 
+/// Does `ours` (this farm's copy of a yak) already hold everything `theirs`
+/// (a shed's copy) says about its latest ask: the `asked:` note itself and
+/// every entry after it? Then the shed's ask is not news here, even when this
+/// copy has moved on (a later note, an answer). A shed whose copy forked
+/// before our latest note is the common case; a re-ask or a reply in the shed
+/// is news. A `needs:` set by hand, with no ask note, is news only when our
+/// `needs` differs.
+fn ask_already_seen(ours: &Task, theirs: &Task) -> bool {
+    let tn = store::parse_notes(&theirs.body);
+    let Some(at) = tn.iter().rposition(|n| store::is_ask_text(&n.text)) else {
+        return ours.needs == theirs.needs;
+    };
+    let on = store::parse_notes(&ours.body);
+    tn[at..].iter().all(|n| on.contains(n))
+}
+
 /// The yaks in `tasks` carrying a `needs` value, whatever their status (a set
 /// value is never invisible), narrowed by `spec`'s other filters. Shared by
 /// [`Farm::inbox`] and [`Farm::inbox_sheds`] so both mean the same thing.
@@ -642,10 +658,11 @@ impl Farm {
                 continue;
             };
             for t in needs_rows(&theirs, &spec) {
-                let same_here = ours.iter().any(|o| {
-                    o.id == t.id && o.needs == t.needs && store::ask_note(o) == store::ask_note(t)
-                });
-                if !same_here {
+                let seen_here = ours
+                    .iter()
+                    .find(|o| o.id == t.id)
+                    .is_some_and(|o| ask_already_seen(o, t));
+                if !seen_here {
                     out.push(ShedAsk {
                         shed: shed.name(),
                         path: shed.path.clone(),

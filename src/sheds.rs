@@ -299,21 +299,22 @@ pub(crate) fn shed_paths(top: &Path) -> BTreeMap<PathBuf, Found> {
 }
 
 /// Pick one shed by `query`, in this order: its path (as given or
-/// canonical), its Delta dir id, its branch, an actor in its `who`, then a
-/// unique case-insensitive substring of any of those. `main` also names the
-/// primary checkout. Ambiguity and no match are errors that list the
-/// candidates, so a caller can print them as is.
-#[allow(dead_code)] // used by the per-shed commands (yaks-a3d2)
+/// canonical), its Delta dir id, `main` for the primary checkout, its
+/// branch, an actor in its `who`, then a unique case-insensitive substring of
+/// any of those. `main` names the primary before any branch called `main`
+/// (every Delta clone usually is on one). Ambiguity and no match are errors
+/// that list the candidates, so a caller can print them as is.
 pub fn resolve<'a>(sheds: &'a [Shed], query: &str) -> Result<&'a Shed, String> {
     let q = query.trim();
     if q.is_empty() {
         return Err("empty shed name".into());
     }
     let qpath = canonical(Path::new(q));
-    let rules: [&dyn Fn(&Shed) -> bool; 5] = [
+    let rules: [&dyn Fn(&Shed) -> bool; 6] = [
         &|s| s.path == qpath || s.path == Path::new(q),
         &|s| s.dir.as_deref() == Some(q),
-        &|s| (q == "main" && s.primary) || s.branch.as_deref() == Some(q),
+        &|s| q == "main" && s.primary,
+        &|s| s.branch.as_deref() == Some(q),
         &|s| s.who.iter().any(|w| w == q),
         &|s| {
             let ql = q.to_lowercase();
@@ -349,7 +350,6 @@ pub fn resolve<'a>(sheds: &'a [Shed], query: &str) -> Result<&'a Shed, String> {
 }
 
 /// One line per shed: its short name, then its path.
-#[allow(dead_code)]
 fn candidates(sheds: &[&Shed]) -> String {
     sheds
         .iter()
@@ -2857,6 +2857,11 @@ mod tests {
         assert_eq!(p(resolve(&from_c, "main").unwrap()), t);
         assert_eq!(p(resolve(&from_c, wt.to_str().unwrap()).unwrap()), wt);
         assert_eq!(p(resolve(&from_c, "sheds-2").unwrap()), wt);
+        // `main` is the primary even though the clone is on a branch `main`.
+        assert_eq!(shed_at(&from_c, &t).branch.as_deref(), Some("main"));
+        let from_wt = sheds_of(&wt);
+        assert_eq!(shed_at(&from_wt, &c).branch.as_deref(), Some("main"));
+        assert_eq!(p(resolve(&from_wt, "main").unwrap()), t);
         let from_t = sheds_of(&t);
         assert_eq!(p(resolve(&from_t, "q7zz").unwrap()), c);
         assert_eq!(p(resolve(&from_t, "q7").unwrap()), c, "unique substring");

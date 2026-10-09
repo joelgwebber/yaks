@@ -184,6 +184,39 @@ fn an_ask_identical_in_both_farms_is_listed_once_and_a_changed_one_is_not_hidden
 }
 
 #[test]
+fn a_shed_that_forked_before_our_later_note_does_not_repeat_the_ask() {
+    // The common case behind a stale-looking shed: the ask was committed, the
+    // shed forked, then THIS farm moved on (a note; a coordinator's update).
+    // The shed's copy says nothing we do not already have.
+    let r = Repo::new("moved-on", |dir, a, _| {
+        yaks(
+            dir,
+            "asker",
+            &["ask", a, "--note", "forked-before question"],
+        );
+    });
+    let a = {
+        let v: Value = serde_json::from_str(&yaks(&r.dir, "x", &["inbox", "--json"])).unwrap();
+        v[0]["id"].as_str().unwrap().to_string()
+    };
+    yaks(
+        &r.dir,
+        "main-actor",
+        &["update", &a, "--note", "a later note here"],
+    );
+    let out = r.inbox(&["--sheds"]);
+    assert!(out.contains("No open asks in other sheds"), "{out}");
+    // A reply in the shed after the same ask IS news.
+    yaks(
+        &r.shed,
+        "shed-worker",
+        &["update", &a, "--note", "reply from the shed"],
+    );
+    let out = r.inbox(&["--sheds"]);
+    assert!(out.contains("reply from the shed"), "{out}");
+}
+
+#[test]
 fn for_filter_and_json_shape() {
     let r = Repo::new("for", |_, _, _| {});
     let v: Value = serde_json::from_str(&yaks(&r.shed, "x", &["list", "--json"])).unwrap();
