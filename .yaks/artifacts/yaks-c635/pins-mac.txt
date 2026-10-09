@@ -1,0 +1,252 @@
+# yaks discover / yaks sheds on Joel's Mac after yaks-c635, 2026-10-09T20:12:42Z
+
+################ yaks discover /Users/joel/src/yaks/.delta/worktrees/jnc4mb98btw6/yaks
+CHECKOUT  /Users/joel/src/yaks/.delta/worktrees/jnc4mb98btw6/yaks
+  layout      Delta clone; host is a checkout (the project was added from a folder)
+  origin      https://github.com/joelgwebber/yaks.git
+  local       /Users/joel/src/yaks/.git  (a checkout)
+  farm        /Users/joel/src/yaks/.delta/worktrees/jnc4mb98btw6/yaks/.yaks
+
+1. GIT WORKTREE LIST (here)
+  - /Users/joel/src/yaks/.delta/clones/jnc4mb98btw6/yaks.git
+      no .git (a separate git dir, e.g. a Delta clone's)
+
+2. HOST
+  own git dir /Users/joel/src/yaks/.delta/clones/jnc4mb98btw6/yaks.git
+  host        /Users/joel/src/yaks/.git  (named by objects/info/alternates; a checkout)
+  clone store /Users/joel/src/yaks/.delta/clones
+
+3. DELTA PINS in the host  (38 pinned dirs: 2 live, 36 not)
+  - 0jwkm0npnqve/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - 3kkcfcww892t/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - 3s8a5yqk1p7s/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - 486hnt20begb/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - 5vakvqqg7ykn/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - 6dnmg0rxa8z2/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - 6sqm70h9vbdn/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - 72k1vk6apwt4/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - 7cs0tc5es24v/yaks  (6 pins)
+      gone (its git dir no longer exists)
+  - 85f5h6np93r5/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - 8ek2jykcm7ke/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - 8jspjv836gbr/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - 9jb19pjrykkq/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - 9xp675zkxkjp/yaks  (5 pins)
+      gone (its git dir no longer exists)
+  - af5ejzkbfeg3/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - axm8s5gngw48/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - b9cr48skdbst/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - ccae3bj40fr0/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - cmbtna3cvx51/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  + dv4fmmmdm74z/yaks  (2 pins)
+      /Users/joel/src/yaks/.delta/worktrees/dv4fmmmdm74z/yaks
+  - e9p3dswra3s5/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - f2hdbpew7kgx/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - jnc4mb98btw6/yaks  (2 pins)
+      this checkout
+  - mkn5b8hny6zf/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - n6zrds7fcrgj/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - qw0xx3s64g6e/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - r9tf7q74jvzy/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - r9z0ffzrv4se/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - tp2zd0r5z185/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - tpx7ckv1th2n/yaks  (53 pins)
+      gone (its git dir no longer exists)
+  - trw8aymc9w6v/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - vdjrx47b15hj/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - vk8z2vjzgdqh/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - xp49gyb9fg59/yaks  (72 pins)
+      gone (its git dir no longer exists)
+  - xw51kfjdpqy5/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - y2pm7fbez96t/yaks  (4 pins)
+      gone (its git dir no longer exists)
+  - yar6r29tjc78/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - ynqz2tjwkyjx/yaks  (3 pins)
+      gone (its git dir no longer exists)
+
+4. GIT WORKTREE LIST (host checkout /Users/joel/src/yaks)
+  + /Users/joel/src/yaks
+      a checkout
+
+SHEDS  (2, this checkout excluded)
+  /Users/joel/src/yaks  [worktree]
+  /Users/joel/src/yaks/.delta/worktrees/dv4fmmmdm74z/yaks  [delta]
+
+################ yaks discover /Users/joel/src/yaks
+CHECKOUT  /Users/joel/src/yaks
+  layout      primary checkout (.git is a directory)
+  origin      https://github.com/joelgwebber/yaks.git
+  farm        /Users/joel/src/yaks/.yaks
+
+1. GIT WORKTREE LIST (here)
+  - /Users/joel/src/yaks
+      this checkout
+
+2. HOST
+  own git dir /Users/joel/src/yaks/.git
+  host        /Users/joel/src/yaks/.git  (this repository: no alternates; a checkout)
+  clone store /Users/joel/src/yaks/.delta/clones
+
+3. DELTA PINS in the host  (38 pinned dirs: 2 live, 36 not)
+  - 0jwkm0npnqve/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - 3kkcfcww892t/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - 3s8a5yqk1p7s/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - 486hnt20begb/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - 5vakvqqg7ykn/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - 6dnmg0rxa8z2/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - 6sqm70h9vbdn/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - 72k1vk6apwt4/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - 7cs0tc5es24v/yaks  (6 pins)
+      gone (its git dir no longer exists)
+  - 85f5h6np93r5/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - 8ek2jykcm7ke/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - 8jspjv836gbr/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - 9jb19pjrykkq/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - 9xp675zkxkjp/yaks  (5 pins)
+      gone (its git dir no longer exists)
+  - af5ejzkbfeg3/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - axm8s5gngw48/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - b9cr48skdbst/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - ccae3bj40fr0/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - cmbtna3cvx51/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  + dv4fmmmdm74z/yaks  (2 pins)
+      /Users/joel/src/yaks/.delta/worktrees/dv4fmmmdm74z/yaks
+  - e9p3dswra3s5/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - f2hdbpew7kgx/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  + jnc4mb98btw6/yaks  (2 pins)
+      /Users/joel/src/yaks/.delta/worktrees/jnc4mb98btw6/yaks
+  - mkn5b8hny6zf/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - n6zrds7fcrgj/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - qw0xx3s64g6e/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - r9tf7q74jvzy/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - r9z0ffzrv4se/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - tp2zd0r5z185/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - tpx7ckv1th2n/yaks  (53 pins)
+      gone (its git dir no longer exists)
+  - trw8aymc9w6v/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - vdjrx47b15hj/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - vk8z2vjzgdqh/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - xp49gyb9fg59/yaks  (72 pins)
+      gone (its git dir no longer exists)
+  - xw51kfjdpqy5/yaks  (2 pins)
+      gone (its git dir no longer exists)
+  - y2pm7fbez96t/yaks  (4 pins)
+      gone (its git dir no longer exists)
+  - yar6r29tjc78/yaks  (3 pins)
+      gone (its git dir no longer exists)
+  - ynqz2tjwkyjx/yaks  (3 pins)
+      gone (its git dir no longer exists)
+
+SHEDS  (2, this checkout excluded)
+  /Users/joel/src/yaks/.delta/worktrees/dv4fmmmdm74z/yaks  [delta]
+  /Users/joel/src/yaks/.delta/worktrees/jnc4mb98btw6/yaks  [delta]
+
+################ yaks discover /Users/joel/Library/Application Support/delta/worktrees/sw5b04mv35vx/local_a4bed28b-3001-4a3a-9cbc-a93370741251
+CHECKOUT  /Users/joel/Library/Application Support/delta/worktrees/sw5b04mv35vx/local_a4bed28b-3001-4a3a-9cbc-a93370741251
+  layout      Delta clone; host is a bare repo (Delta-managed: a shared-thread machine)
+  origin      https://github.com/joelgwebber/j15r
+  local       /Users/joel/Library/Application Support/delta/user_01jrxs42eest3dk5825m868ym9/managed-repositories/a4bed28b-3001-4a3a-9cbc-a93370741251/repository.git  (BARE)
+  farm        (none: no .yaks farm in the git repository at /Users/joel/Library/Application Support/delta/worktrees/sw5b04mv35vx/local_a4bed28b-3001-4a3a-9cbc-a93370741251; discovery stops there so it cannot reach another checkout's farm. Fix it with one of: `yaks init` in /Users/joel/Library/Application Support/delta/worktrees/sw5b04mv35vx/local_a4bed28b-3001-4a3a-9cbc-a93370741251; a `.yaks` pointer file there (`path: <farm>`); or set YAKS_DIR to the farm)
+
+1. GIT WORKTREE LIST (here)
+  - /Users/joel/Library/Application Support/delta/worktrees/sw5b04mv35vx/local_a4bed28b-3001-4a3a-9cbc-a93370741251.git
+      no .git (a separate git dir, e.g. a Delta clone's)
+
+2. HOST
+  own git dir /Users/joel/Library/Application Support/delta/worktrees/sw5b04mv35vx/local_a4bed28b-3001-4a3a-9cbc-a93370741251.git
+  host        /Users/joel/Library/Application Support/delta/user_01jrxs42eest3dk5825m868ym9/managed-repositories/a4bed28b-3001-4a3a-9cbc-a93370741251/repository.git  (named by objects/info/alternates; bare)
+  clone store /Users/joel/Library/Application Support/delta/worktrees
+
+3. DELTA PINS in the host  (2 pinned dirs: 2 live, 0 not)
+  + bcasg4bjrcxp/j15r  (2 pins)
+      /Users/joel/Library/Application Support/delta/worktrees/bcasg4bjrcxp/j15r
+  - sw5b04mv35vx/local_a4bed28b-3001-4a3a-9cbc-a93370741251  (2 pins)
+      this checkout
+
+SHEDS  (1, this checkout excluded)
+  /Users/joel/Library/Application Support/delta/worktrees/bcasg4bjrcxp/j15r  [delta]
+
+################ yaks discover /Users/joel
+error: /Users/joel is not inside a git checkout. yaks discovers sheds from inside one (a primary checkout, a git worktree, or a Delta clone); cd into one or pass its path
+
+################ yaks sheds (from this clone)
+KIND      BRANCH  HEAD     +AHEAD -BEHIND  DIRTY  FARM ACTIVE           PATH
+worktree  main    b8f43e8  +0 -7           0      2026-10-06T22:24:54Z  /Users/joel/src/yaks
+  farm: no changes of its own
+delta     main    2594cd6  +0 -0           0      2026-10-09T19:50:47Z  /Users/joel/src/yaks/.delta/worktrees/dv4fmmmdm74z/yaks
+  farm: no changes of its own
+
+################ yaks sheds (from ~/src/yaks)
+KIND   BRANCH  HEAD     +AHEAD -BEHIND  DIRTY  FARM ACTIVE           PATH
+delta  main    2594cd6  +7 -0           0      2026-10-09T19:50:47Z  /Users/joel/src/yaks/.delta/worktrees/dv4fmmmdm74z/yaks
+  farm: no changes of its own
+delta  main    2594cd6  +7 -0           18     2026-10-09T20:12:18Z  /Users/joel/src/yaks/.delta/worktrees/jnc4mb98btw6/yaks
+  who: delta:ksQQI7UGw66zRMm9tnfRIaYEapLOAAa8q5IBxBCA, delta:Delta :Yaks (cont'd) · shaving: yaks-c635
+  farm: 2 new, 2 moved, 7 new notes
+    + yaks-2177
+    + yaks-c635
+    yaks-36b6 hairy -> shorn
+    yaks-99ec hairy -> shorn
+    yaks-36b6 +2 notes
+    yaks-38dc +1 notes
+    yaks-7eea +1 notes
+    yaks-99ec +2 notes
+    yaks-ee0a +1 notes

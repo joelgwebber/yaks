@@ -1,0 +1,122 @@
+
+################ linked: primary checkout
+CHECKOUT  $BASE/repo
+  layout      primary checkout (.git is a directory)
+  origin      https://example.com/synth/repo.git
+  farm        $BASE/repo/.yaks
+
+1. GIT WORKTREE LIST (here)
+  - $BASE/repo
+      this checkout
+  + $BASE/wt-a
+      a checkout
+
+2. HOST
+  own git dir $BASE/repo/.git
+  host        $BASE/repo/.git  (this repository: no alternates; a checkout)
+  clone store $BASE/repo/.delta/clones
+
+3. DELTA PINS in the host  (3 pinned dirs: 2 live, 1 not)
+  + d1/repo  (1 pins)
+      $BASE/repo/.delta/worktrees/d1/repo
+  + d2/repo  (1 pins)
+      $BASE/repo/.delta/worktrees/d2/repo
+  - gone1/repo  (1 pins)
+      gone (its git dir no longer exists)
+
+SHEDS  (3, this checkout excluded)
+  $BASE/repo/.delta/worktrees/d1/repo  [delta]
+  $BASE/repo/.delta/worktrees/d2/repo  [delta]
+  $BASE/wt-a  [worktree]
+
+################ linked: plain git worktree
+CHECKOUT  $BASE/wt-a
+  layout      git worktree of $BASE/repo
+  origin      (none)
+  farm        $BASE/wt-a/.yaks
+
+1. GIT WORKTREE LIST (here)
+  + $BASE/repo
+      a checkout
+  - $BASE/wt-a
+      this checkout
+
+2. HOST
+  own git dir $BASE/repo/.git/worktrees/wt-a
+  host        $BASE/repo/.git  (this repository: no alternates; a checkout)
+  clone store $BASE/repo/.delta/clones
+
+3. DELTA PINS in the host  (3 pinned dirs: 2 live, 1 not)
+  + d1/repo  (1 pins)
+      $BASE/repo/.delta/worktrees/d1/repo
+  + d2/repo  (1 pins)
+      $BASE/repo/.delta/worktrees/d2/repo
+  - gone1/repo  (1 pins)
+      gone (its git dir no longer exists)
+
+SHEDS  (3, this checkout excluded)
+  $BASE/repo  [worktree]
+  $BASE/repo/.delta/worktrees/d1/repo  [delta]
+  $BASE/repo/.delta/worktrees/d2/repo  [delta]
+
+################ linked: Delta clone, from a subdirectory
+CHECKOUT  $BASE/repo/.delta/worktrees/d1/repo
+  from        $BASE/repo/.delta/worktrees/d1/repo/.yaks
+  layout      Delta clone; host is a checkout (the project was added from a folder)
+  origin      $BASE/repo/.git
+  farm        $BASE/repo/.delta/worktrees/d1/repo/.yaks
+
+1. GIT WORKTREE LIST (here)
+  - $BASE/repo/.delta/clones/d1/repo.git
+      no .git (a separate git dir, e.g. a Delta clone's)
+
+2. HOST
+  own git dir $BASE/repo/.delta/clones/d1/repo.git
+  host        $BASE/repo/.git  (named by objects/info/alternates; a checkout)
+  clone store $BASE/repo/.delta/clones
+
+3. DELTA PINS in the host  (3 pinned dirs: 2 live, 1 not)
+  - d1/repo  (1 pins)
+      this checkout
+  + d2/repo  (1 pins)
+      $BASE/repo/.delta/worktrees/d2/repo
+  - gone1/repo  (1 pins)
+      gone (its git dir no longer exists)
+
+4. GIT WORKTREE LIST (host checkout $BASE/repo)
+  + $BASE/repo
+      a checkout
+  + $BASE/wt-a
+      a checkout
+
+SHEDS  (3, this checkout excluded)
+  $BASE/repo  [worktree]
+  $BASE/repo/.delta/worktrees/d2/repo  [delta]
+  $BASE/wt-a  [worktree]
+
+################ shared: Delta clone
+CHECKOUT  $BASE/managed/worktrees/m1/local_u1
+  layout      Delta clone; host is a bare repo (Delta-managed: a shared-thread machine)
+  origin      $BASE/managed/repository.git
+  farm        $BASE/managed/worktrees/m1/local_u1/.yaks
+
+1. GIT WORKTREE LIST (here)
+  - $BASE/managed/worktrees/m1/local_u1.git
+      no .git (a separate git dir, e.g. a Delta clone's)
+
+2. HOST
+  own git dir $BASE/managed/worktrees/m1/local_u1.git
+  host        $BASE/managed/repository.git  (named by objects/info/alternates; bare)
+  clone store $BASE/managed/worktrees
+
+3. DELTA PINS in the host  (2 pinned dirs: 2 live, 0 not)
+  - m1/local_u1  (1 pins)
+      this checkout
+  + m2/proj  (1 pins)
+      $BASE/managed/worktrees/m2/proj
+
+SHEDS  (1, this checkout excluded)
+  $BASE/managed/worktrees/m2/proj  [delta]
+
+################ outside any checkout
+error: $BASE is not inside a git checkout. yaks discovers sheds from inside one (a primary checkout, a git worktree, or a Delta clone); cd into one or pass its path

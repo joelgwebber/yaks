@@ -4,7 +4,7 @@ title: Auto-update installed project-local skills when yaks is upgraded?
 type: feature
 priority: 3
 created: '2026-10-05T21:08:13Z'
-updated: '2026-10-05T22:08:36Z'
+updated: '2026-10-09T20:12:18Z'
 parent: yaks-b5a0
 labels:
 - skills
@@ -26,3 +26,11 @@ My lean: (C), because an automatic write into a committed tree breaks the proper
 ---
 ▸ 2026-10-05T22:08:36Z [Joel Webber]
 I'm good with (C) as long as notification is automatic, and a `yaks skills` re-run fixes it easily.
+
+---
+▸ 2026-10-09T20:12:18Z [delta:Delta :Yaks (cont'd)]
+Closing: decided (C), notify rather than write (Joel, 2026-10-05). Shipped as yaks-5c83.
+
+---
+▸ 2026-10-09T20:12:18Z [delta:Delta :Yaks (cont'd)]
+moved: hairy -> shorn

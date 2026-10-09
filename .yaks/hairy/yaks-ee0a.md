@@ -4,7 +4,7 @@ title: 'CLI affordances for lanes and threads: what a human and an agent need to
 type: task
 priority: 2
 created: '2026-10-06T21:05:37Z'
-updated: '2026-10-07T01:00:44Z'
+updated: '2026-10-09T20:12:18Z'
 parent: yaks-7204
 labels:
 - cli
@@ -60,3 +60,7 @@ Decisions (Joel, 2026-10-06, from the abandoned-shed discussion):
 2. The yaks tools never remove or clean up a shed: "there is enough complexity and inference that this could be unpredictable and dangerous". They name what is safe and may print the command; Delta owns its clones, and `git worktree remove` stays the user's call.
 3. Liveness starts as the simplest signal: no farm activity for N hours while its own yak is still `shaving`. Revisit only if it misleads.
 Context: the two dead workers' sheds (brf-1, brf-2) hold uncommitted drafts and 0 commits of their own while their yak (yaks-2c22) is shorn in the main checkout; a finished worker's shed (sta-1) is clean with its one commit landed.
+
+---
+▸ 2026-10-09T20:12:18Z [delta:Delta :Yaks (cont'd)]
+Discovery is settled (yaks-c635): from inside any checkout, `yaks sheds` sees every git worktree and every pinned Delta clone, including workers that have not committed yet. The per-shed commands proposed above (changes, inbox --sheds, show --sheds, answer <id>@<shed>) can rely on it. Next is the CLI and skill design pass, then the UI.

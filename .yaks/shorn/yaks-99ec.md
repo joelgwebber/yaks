@@ -4,7 +4,7 @@ title: 'Cross-machine Delta threads: worktree discovery when ''local'' is a mana
 type: task
 priority: 2
 created: '2026-10-04T16:47:57Z'
-updated: '2026-10-04T20:44:44Z'
+updated: '2026-10-09T20:12:18Z'
 parent: yaks-b5a0
 labels:
 - cli
@@ -29,3 +29,14 @@ Design fork (coordinator delta-lead). Evidence: yaks-df61 O50-O53, probe yaks-f4
 ---
 ▸ 2026-10-04T20:44:44Z [Joel Webber]
 3. Yeah, it would be nice to get better connections throughout delta, but I think that's a ways off.
+
+---
+▸ 2026-10-09T20:12:18Z [delta:Delta :Yaks (cont'd)]
+Closing: every question is answered.
+(1) How to find sibling checkouts when `local` is bare, absent, or at a different path per machine: from inside any clone, follow `objects/info/alternates` to the host (the managed bare repo on a shared machine), read its refs/delta pins, and resolve each through the clone's git dir core.worktree. `local` is never consulted. Built as yaks-c635 and verified on a shared-layout machine's j15r clones and in synthetic layouts.
+(2) and (3) What preflight and land.sh assume about `local`: `yaks preflight --push-main` checks that `local` is a non-bare checkout before a push to main (yaks-d1bd), and the Delta skill uses it.
+(4) What carries state between machines: only origin (yaks-df61 O62). Not something yaks can change.
+
+---
+▸ 2026-10-09T20:12:18Z [delta:Delta :Yaks (cont'd)]
+moved: hairy -> shorn

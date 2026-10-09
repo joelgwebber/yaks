@@ -4,7 +4,7 @@ title: 'Lanes view: show in-flight yak state from sibling checkouts'
 type: feature
 priority: 3
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-06T21:32:29Z'
+updated: '2026-10-09T20:12:18Z'
 parent: yaks-b5a0
 labels:
 - ui
@@ -28,3 +28,7 @@ Joel's lanes review (2026-10-04) filed as yaks-c29a (label lanes by actor and in
 ---
 ▸ 2026-10-06T21:32:29Z [delta-lead]
 Terminology decision (Joel, 2026-10-06, via the naming subthread): a "lane" is now a SHED, everywhere, no aliases; `yaks lanes` becomes `yaks sheds`. Text above this note, and all history, keeps the word "lane": read it as "shed". Not decided: "clip" (what a shed has produced) and "barn" (the primary checkout). The rename itself is yaks-dfca; it lands before the baseline fix (yaks-37fa) because both edit the same file.
+
+---
+▸ 2026-10-09T20:12:18Z [delta:Delta :Yaks (cont'd)]
+Superseded premise (2026-10-09): the "Delta lanes via a directory scan as a stopgap, make discovery pluggable so a Delta CLI can replace it" part of the description no longer applies. Discovery is git-only and needs no Delta CLI (yaks-c635), and the CLI half is `yaks sheds`. What remains of this yak is the TUI view of sheds, designed under yaks-7204 / yaks-ee0a.

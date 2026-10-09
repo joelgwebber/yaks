@@ -22,19 +22,29 @@
 //! base farm to read at all, the shed is compared with this checkout's working
 //! tree and says so (`vs this checkout`).
 //!
-//! Discovery has two sources, merged by canonical path into one shed each:
+//! Discovery reads only what git records, from inside any checkout of the
+//! repository; it never searches the filesystem (yaks-c635):
 //!
-//! 1. `git worktree list --porcelain` (plain `git worktree add` checkouts).
-//! 2. Delta clones. Inside Delta `git worktree list` shows only the current
-//!    clone, so sibling directories are scanned too. A Delta checkout is
-//!    `<root>/<dir>/<name>` in both layouts (laptop
-//!    `<repo>/.delta/worktrees/<dir>/<name>`, managed machine
-//!    `~/.local/share/delta/worktrees/<dir>/<name>`). With `T` this checkout's
-//!    git top-level and `name` its basename the candidates are
-//!    `dirname(dirname(T))/*/<name>`, `T/.delta/worktrees/*/<name>`, and, when
-//!    `T` is itself a laptop-layout clone, the repository checkout that holds
-//!    it. A candidate is accepted only if it has its own `.git` and is the same
-//!    repository ([`same_repo`]).
+//! 1. `git worktree list --porcelain` here (plain `git worktree add`
+//!    checkouts; inside a Delta clone it shows only that clone).
+//! 2. The HOST ([`host`]): the repository named by this checkout's
+//!    `objects/info/alternates` (the human's `.git` on a machine where the
+//!    project was added from a folder; Delta's managed BARE repo on a machine
+//!    that only had the thread shared to it), else this repository itself.
+//! 3. Delta clones ([`pinned`]): Delta pins every clone's commits in the host
+//!    as `refs/delta/<dir>/<name>/<sha>`, from the moment the clone exists.
+//!    Each pin group resolves to a checkout through the clone's git dir
+//!    `<store>/<dir>/<name>.git` (`store` is the parent of our own git dir's
+//!    parent when we are a clone, else `<host checkout>/.delta/clones`) and its
+//!    `core.worktree`. A pin whose git dir is gone is a finished thread.
+//! 4. When the host is a checkout (not bare), that checkout and its own
+//!    `git worktree list`, so a Delta clone sees the primary's git worktrees.
+//!
+//! Everything found this way is the same repository by construction (one
+//! object store, one pin namespace), so no URL or name matching is needed.
+//! Limits: a clone on a shared-thread machine cannot see the human's checkout
+//! (its host is the managed repo), and pins say nothing about which thread
+//! owns a clone (the `who:` label does that).
 
 use crate::model::Status;
 use crate::store;
@@ -53,9 +63,9 @@ const EVERY: [Status; 4] = [Status::Hairy, Status::Shaving, Status::Shorn, Statu
 /// How a shed was found.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ShedKind {
-    /// Listed by `git worktree list`.
+    /// Listed by `git worktree list` (here, or in the host checkout).
     Worktree,
-    /// Found only by scanning Delta's sibling-clone layout.
+    /// A Delta clone, found through its `refs/delta` pins in the host.
     Delta,
 }
 
@@ -197,23 +207,7 @@ pub fn discover(cwd: &Path, farm_root: &Path) -> Result<Vec<Shed>> {
         git(cwd, &["rev-parse", "--show-toplevel"]).context("yaks sheds needs a git repository")?,
     );
     let top = canonical(&top);
-    let own_common = common_dir(&top);
-
-    // canonical path -> kind. Worktrees win over a Delta-only find.
-    let mut found: BTreeMap<PathBuf, ShedKind> = BTreeMap::new();
-    for p in worktree_paths(&top) {
-        found.insert(canonical(&p), ShedKind::Worktree);
-    }
-    for p in delta_candidates(&top) {
-        let p = canonical(&p);
-        if found.contains_key(&p) {
-            continue;
-        }
-        if own_common.as_deref().is_some_and(|c| same_repo(c, &p)) {
-            found.insert(p, ShedKind::Delta);
-        }
-    }
-    found.remove(&top);
+    let found = shed_paths(&top);
 
     let ours = store::load(farm_root, &EVERY).unwrap_or_default();
     let our_farm = canonical(farm_root);
@@ -226,6 +220,30 @@ pub fn discover(cwd: &Path, farm_root: &Path) -> Result<Vec<Shed>> {
             shed
         })
         .collect())
+}
+
+/// Every other checkout of the repository at `top`, by canonical path, with
+/// how it was found (see the module docs). A checkout found both ways is a
+/// `Worktree`. Excludes `top`.
+pub(crate) fn shed_paths(top: &Path) -> BTreeMap<PathBuf, ShedKind> {
+    let mut found: BTreeMap<PathBuf, ShedKind> = BTreeMap::new();
+    for p in worktree_paths(top) {
+        found.insert(canonical(&p), ShedKind::Worktree);
+    }
+    if let Some(h) = host(top) {
+        if let Some(primary) = host_checkout(&h) {
+            for p in worktree_paths(&primary) {
+                found.insert(canonical(&p), ShedKind::Worktree);
+            }
+        }
+        for p in pinned(&h) {
+            if let Ok(path) = p.checkout {
+                found.entry(path).or_insert(ShedKind::Delta);
+            }
+        }
+    }
+    found.remove(top);
+    found
 }
 
 /// Gather one shed's report. Never fails: unreadable parts become `error`.
@@ -655,39 +673,150 @@ pub(crate) fn worktree_entries(top: &Path) -> Vec<(PathBuf, Result<(), String>)>
     out
 }
 
-/// Delta-layout sibling candidates for the checkout at `top` (see the module
-/// docs). Not yet checked for being the same repository.
-pub(crate) fn delta_candidates(top: &Path) -> Vec<PathBuf> {
-    let Some(name) = top.file_name() else {
-        return Vec::new();
-    };
-    let mut out = Vec::new();
-    let root = top.parent().and_then(Path::parent);
-    if let Some(root) = root {
-        out.extend(scan_siblings(root, name));
-        // Laptop layout: `<repo>/.delta/worktrees/<dir>/<name>`; the repository
-        // checkout itself is a shed too.
-        if root.ends_with(".delta/worktrees") {
-            if let Some(repo) = root.parent().and_then(Path::parent) {
-                if repo.join(".git").exists() {
-                    out.push(repo.to_path_buf());
-                }
-            }
-        }
-    }
-    out.extend(scan_siblings(&top.join(".delta/worktrees"), name));
-    out
+/// The repository whose object store the checkout at `top` borrows, and
+/// everything this machine's Delta records there (see the module docs).
+#[derive(Debug, Clone)]
+pub struct Host {
+    /// This checkout's own git dir (`--absolute-git-dir`).
+    pub own_git_dir: PathBuf,
+    /// The host's git dir: the parent of the first `objects/info/alternates`
+    /// line, else this checkout's own common git dir (a primary checkout, a
+    /// plain git worktree, a non-Delta clone).
+    pub git_dir: PathBuf,
+    /// `true` when found through `alternates`.
+    pub via_alternates: bool,
+    /// The host is a bare repository (Delta's managed repo on a machine with
+    /// no linked checkout); `false` means a real checkout.
+    pub bare: bool,
+    /// Where Delta keeps clone git dirs (`<store>/<dir>/<name>.git`), when
+    /// known: beside our own git dir when we are a clone, else the host
+    /// checkout's `.delta/clones`.
+    pub store: Option<PathBuf>,
 }
 
-/// `<base>/*/<name>` entries that have their own `.git`.
-fn scan_siblings(base: &Path, name: &std::ffi::OsStr) -> Vec<PathBuf> {
-    let Ok(rd) = fs::read_dir(base) else {
+/// One `refs/delta/<dir>/<name>/*` pin group in the host, resolved.
+#[derive(Debug, Clone)]
+pub struct Pinned {
+    pub dir: String,
+    pub name: String,
+    /// Pinned commits.
+    pub pins: usize,
+    /// The clone's checkout (its git dir's `core.worktree`), or why the pin
+    /// does not resolve to a live checkout.
+    pub checkout: Result<PathBuf, String>,
+}
+
+/// Find the host of the checkout at `top`.
+pub fn host(top: &Path) -> Option<Host> {
+    let own_git_dir = canonical(Path::new(
+        &git(top, &["rev-parse", "--absolute-git-dir"]).ok()?,
+    ));
+    let common = common_dir(top)?;
+    let (git_dir, via_alternates) = match alternates(&common) {
+        // `<host>/objects`; a host with no `objects` dir is not one we read.
+        Some(objects) if objects.ends_with("objects") && objects.is_dir() => {
+            (canonical(objects.parent()?), true)
+        }
+        _ => (common.clone(), false),
+    };
+    let bare = git(&git_dir, &["rev-parse", "--is-bare-repository"]).is_ok_and(|b| b == "true");
+    let mut h = Host {
+        own_git_dir,
+        git_dir,
+        via_alternates,
+        bare,
+        store: None,
+    };
+    h.store = if via_alternates {
+        h.own_git_dir
+            .parent()
+            .and_then(Path::parent)
+            .map(Path::to_path_buf)
+    } else {
+        host_checkout(&h).map(|checkout| checkout.join(".delta/clones"))
+    };
+    Some(h)
+}
+
+/// Every pin group in the host, resolved to its checkout through the sibling
+/// git dir's `core.worktree`. Sorted by `<dir>/<name>`.
+pub fn pinned(host: &Host) -> Vec<Pinned> {
+    let Ok(refs) = git_raw(
+        &host.git_dir,
+        &["for-each-ref", "--format=%(refname)", "refs/delta/"],
+    ) else {
         return Vec::new();
     };
-    rd.flatten()
-        .map(|e| e.path().join(name))
-        .filter(|c| c.join(".git").exists())
+    let mut groups: BTreeMap<(String, String), usize> = BTreeMap::new();
+    for r in refs.lines() {
+        let mut parts = r.trim().splitn(5, '/');
+        // refs / delta / <dir> / <name> / <sha>
+        if let (Some("refs"), Some("delta"), Some(dir), Some(name), Some(_)) = (
+            parts.next(),
+            parts.next(),
+            parts.next(),
+            parts.next(),
+            parts.next(),
+        ) {
+            *groups
+                .entry((dir.to_string(), name.to_string()))
+                .or_default() += 1;
+        }
+    }
+    groups
+        .into_iter()
+        .map(|((dir, name), pins)| {
+            let checkout = resolve_pin(host, &dir, &name);
+            Pinned {
+                dir,
+                name,
+                pins,
+                checkout,
+            }
+        })
         .collect()
+}
+
+fn resolve_pin(host: &Host, dir: &str, name: &str) -> Result<PathBuf, String> {
+    let store = host
+        .store
+        .as_ref()
+        .ok_or("no clone store known here (run from inside a Delta clone)")?;
+    let gd = store.join(dir).join(format!("{name}.git"));
+    if !gd.is_dir() {
+        return Err("gone (its git dir no longer exists)".into());
+    }
+    let cfg = gd.join("config");
+    let wt = git(
+        &gd,
+        &[
+            "config",
+            "--file",
+            &cfg.display().to_string(),
+            "--get",
+            "core.worktree",
+        ],
+    )
+    .map_err(|_| "its git dir has no core.worktree".to_string())?;
+    let wt = PathBuf::from(wt);
+    let wt = if wt.is_absolute() { wt } else { gd.join(wt) };
+    if !wt.join(".git").exists() {
+        return Err(format!("checkout missing ({})", wt.display()));
+    }
+    Ok(canonical(&wt))
+}
+
+/// The host's main checkout, when the host is not bare (the human's checkout
+/// on a machine where the project was added from a folder): the first entry
+/// of `git worktree list` run in the host's git dir, which git always lists
+/// as the main working tree.
+pub(crate) fn host_checkout(host: &Host) -> Option<PathBuf> {
+    if host.bare {
+        return None;
+    }
+    let (main, verdict) = worktree_entries(&host.git_dir).into_iter().next()?;
+    verdict.ok()?;
+    Some(canonical(&main))
 }
 
 /// The shared (common) git dir of the checkout at `checkout`.
@@ -701,55 +830,27 @@ pub(crate) fn common_dir(checkout: &Path) -> Option<PathBuf> {
     }))
 }
 
-/// Is the checkout at `cand` the same repository as the one whose common git
-/// dir is `own`? Same `objects/info/alternates`, else the same
-/// `remote.origin.url` (alternates that DIFFER are not a rejection: a linked
-/// and a managed Delta clone of one repo borrow different stores). A
-/// same-named but different repository is rejected.
-fn same_repo(own: &Path, cand: &Path) -> bool {
-    repo_match(own, cand).is_ok()
-}
-
-/// [`same_repo`] with its reason: `Ok(how)` names the evidence that `cand` is
-/// the repository whose common git dir is `own` (`same git dir`,
-/// `alternates`, `origin`); `Err(why)` says why it is not. The one rule every
-/// discovery source uses.
-pub(crate) fn repo_match(own: &Path, cand: &Path) -> Result<&'static str, String> {
-    let Some(theirs) = common_dir(cand) else {
-        return Err("not a git checkout".into());
-    };
-    if theirs == own {
-        return Ok("same git dir");
-    }
-    if let (Some(a), Some(b)) = (alternates(own), alternates(&theirs)) {
-        if a == b {
-            return Ok("alternates");
-        }
-    }
-    match (origin_url(own), origin_url(&theirs)) {
-        (Some(a), Some(b)) if normalize_url(&a) == normalize_url(&b) => Ok("origin"),
-        (Some(_), Some(b)) => Err(format!("different repository (origin {b})")),
-        (None, _) => Err("no origin here to compare with".into()),
-        (_, None) => Err("no origin to compare with".into()),
-    }
-}
-
 /// The first line of `<common>/objects/info/alternates`: the object store a
 /// Delta clone borrows (the human's checkout, or a managed bare repo).
 pub(crate) fn alternates(common: &Path) -> Option<PathBuf> {
-    fs::read_to_string(common.join("objects/info/alternates"))
-        .ok()?
+    let text = fs::read_to_string(common.join("objects/info/alternates")).ok()?;
+    let line = text
         .lines()
         .map(str::trim)
-        .find(|l| !l.is_empty() && !l.starts_with('#'))
-        .map(PathBuf::from)
+        .find(|l| !l.is_empty() && !l.starts_with('#'))?;
+    let p = PathBuf::from(line);
+    Some(if p.is_absolute() {
+        p
+    } else {
+        common.join("objects").join(p)
+    })
 }
 
-/// `remote.origin.url` from the repository whose common git dir is `common`.
-pub(crate) fn origin_url(common: &Path) -> Option<String> {
-    let cfg = common.join("config");
+/// `remote.origin.url` from the repository whose git dir is `git_dir`.
+pub(crate) fn origin_url(git_dir: &Path) -> Option<String> {
+    let cfg = git_dir.join("config");
     git(
-        common,
+        git_dir,
         &[
             "config",
             "--file",
@@ -760,54 +861,6 @@ pub(crate) fn origin_url(common: &Path) -> Option<String> {
     )
     .ok()
     .filter(|s| !s.is_empty())
-}
-
-/// An origin URL with the spelling differences that do not change the repo
-/// removed: a trailing `/` and `.git`. Delta's managed clones record the URL
-/// as given (`https://github.com/o/r`), a `git clone` usually has `r.git`.
-pub(crate) fn normalize_url(url: &str) -> String {
-    let u = url.trim().trim_end_matches('/');
-    u.strip_suffix(".git").unwrap_or(u).to_string()
-}
-
-/// Where Delta keeps managed (not linked) checkouts on this platform:
-/// `~/Library/Application Support/delta/worktrees` on macOS, else
-/// `${XDG_DATA_HOME:-~/.local/share}/delta/worktrees`. A convention observed
-/// in Delta, not an API (yaks-df61 O63).
-pub(crate) fn default_delta_roots() -> Vec<PathBuf> {
-    let home = std::env::var_os("HOME").map(PathBuf::from);
-    let data = if cfg!(target_os = "macos") {
-        home.map(|h| h.join("Library/Application Support"))
-    } else {
-        std::env::var_os("XDG_DATA_HOME")
-            .filter(|v| !v.is_empty())
-            .map(PathBuf::from)
-            .or_else(|| home.map(|h| h.join(".local/share")))
-    };
-    data.map(|d| vec![d.join("delta/worktrees")])
-        .unwrap_or_default()
-}
-
-/// Every `<root>/<dir>/<entry>` under a Delta root, skipping the `*.git`
-/// separate git dirs that sit beside managed checkouts. Sorted.
-pub(crate) fn delta_root_entries(root: &Path) -> Vec<PathBuf> {
-    let mut out = Vec::new();
-    let Ok(dirs) = fs::read_dir(root) else {
-        return out;
-    };
-    for d in dirs.flatten() {
-        let Ok(entries) = fs::read_dir(d.path()) else {
-            continue;
-        };
-        for e in entries.flatten() {
-            let is_git_dir = e.file_name().to_string_lossy().ends_with(".git");
-            if !is_git_dir && e.path().is_dir() {
-                out.push(e.path());
-            }
-        }
-    }
-    out.sort();
-    out
 }
 
 /// Newest mtime of anything under `root` (symlinks not followed).
@@ -1424,10 +1477,28 @@ mod tests {
             ],
         );
         assert_eq!(sh(&t, &["rev-parse", "--is-shallow-repository"]), "true");
+        // The shed's git dir sits in the primary's clone store and is pinned
+        // there, like a Delta clone; it is a full clone, so it knows commits
+        // the shallow primary does not.
         let shed = t.join(".delta/worktrees/xyz/repo");
+        let gd = t.join(".delta/clones/xyz/repo.git");
         fs::create_dir_all(shed.parent().unwrap()).unwrap();
-        sh(&b, &["clone", "-q", &origin_url, shed.to_str().unwrap()]);
+        fs::create_dir_all(gd.parent().unwrap()).unwrap();
+        sh(
+            &b,
+            &[
+                "clone",
+                "-q",
+                "--separate-git-dir",
+                gd.to_str().unwrap(),
+                &origin_url,
+                shed.to_str().unwrap(),
+            ],
+        );
+        sh(&shed, &["config", "core.worktree", shed.to_str().unwrap()]);
         sh(&shed, &["checkout", "-q", shed_at]);
+        let head = sh(&t, &["rev-parse", "HEAD"]);
+        pin(&t.join(".git"), "xyz", "repo", &head);
         (t, shed)
     }
 
@@ -1478,17 +1549,6 @@ mod tests {
         assert!(!text.contains("history is shallow"), "{text}");
     }
 
-    /// Give `repo` (a checkout dir) an `objects/info/alternates` naming `store`.
-    fn set_alternates(repo: &Path, store: &Path) {
-        let info = repo.join(".git/objects/info");
-        fs::create_dir_all(&info).unwrap();
-        fs::write(
-            info.join("alternates"),
-            format!("{}\n", store.join("objects").display()),
-        )
-        .unwrap();
-    }
-
     fn init_commit(dir: &Path, origin: Option<&str>) {
         fs::create_dir_all(dir).unwrap();
         sh(dir, &["init", "-q"]);
@@ -1500,59 +1560,160 @@ mod tests {
         sh(dir, &["commit", "-q", "-m", "init"]);
     }
 
-    #[test]
-    fn managed_layout_sibling_is_a_delta_shed_and_look_alikes_are_rejected() {
-        let b = base("managed");
-        let store = b.join("store.git");
-        fs::create_dir_all(&store).unwrap();
-        sh(&store, &["init", "-q", "--bare"]);
-        let root = b.join("worktrees");
+    /// Make a Delta-shaped clone of `host` (a git dir: the human's `.git` or
+    /// a managed bare repo) the way Delta does: the checkout at
+    /// `<checkouts>/<dir>/<name>`, its git dir at `<store>/<dir>/<name>.git`
+    /// with `core.worktree` set and `objects/info/alternates` naming the
+    /// host's objects, and the starting commit pinned in the host as
+    /// `refs/delta/<dir>/<name>/<sha>`. Returns the checkout.
+    fn delta_clone(host: &Path, store: &Path, checkouts: &Path, dir: &str, name: &str) -> PathBuf {
+        let co = checkouts.join(dir).join(name);
+        let gd = store.join(dir).join(format!("{name}.git"));
+        fs::create_dir_all(co.parent().unwrap()).unwrap();
+        fs::create_dir_all(gd.parent().unwrap()).unwrap();
+        sh(
+            checkouts,
+            &[
+                "clone",
+                "-q",
+                "--shared",
+                "--separate-git-dir",
+                gd.to_str().unwrap(),
+                host.to_str().unwrap(),
+                co.to_str().unwrap(),
+            ],
+        );
+        sh(&co, &["config", "core.worktree", co.to_str().unwrap()]);
+        pin(host, dir, name, &sh(&co, &["rev-parse", "HEAD"]));
+        co
+    }
 
-        // Us, and a sibling clone sharing our object store (alternates).
-        let me = root.join("aaa/name");
-        let sib = root.join("bbb/name");
-        init_commit(&me, Some(&url(&b, "r")));
-        init_commit(&sib, Some(&url(&b, "r")));
-        set_alternates(&me, &store);
-        set_alternates(&sib, &store);
-        // Same repo by origin url only (no alternates): accepted.
-        let by_url = root.join("ccc/name");
-        init_commit(&by_url, Some(&url(&b, "r")));
-        // Same basename, different repository: rejected.
-        let other = root.join("ddd/name");
-        init_commit(&other, Some(&url(&b, "other")));
-        // A same-named directory with no `.git` of its own: rejected.
-        let bare_dir = root.join("eee/name");
-        fs::create_dir_all(&bare_dir).unwrap();
-        // A differently named sibling is never a candidate.
-        let renamed = root.join("fff/other-name");
-        init_commit(&renamed, Some(&url(&b, "r")));
-
-        let sheds = sheds_of(&me);
-        assert_eq!(paths(&sheds), vec![sib, by_url]);
-        assert!(sheds.iter().all(|l| l.kind == ShedKind::Delta));
-        assert!(!paths(&sheds).contains(&me), "never lists self");
+    /// Pin `sha` in `host` as Delta does.
+    fn pin(host: &Path, dir: &str, name: &str, sha: &str) {
+        sh(
+            host,
+            &["update-ref", &format!("refs/delta/{dir}/{name}/{sha}"), sha],
+        );
     }
 
     #[test]
-    fn laptop_layout_clones_under_the_checkout_are_delta_sheds() {
-        let b = base("laptop");
+    fn linked_layout_clones_find_each_other_the_primary_and_its_worktrees() {
+        // The human's machine: the project was added from a folder, so the
+        // host is the human's checkout and clones live under `.delta/`.
+        let b = base("linked");
         let t = b.join("repo");
-        init_commit(&t, Some(&url(&b, "r")));
-        let shed = t.join(".delta/worktrees/xyz/repo");
-        fs::create_dir_all(shed.parent().unwrap()).unwrap();
+        repo_with_farm(&t);
+        let host = t.join(".git");
+        let store = t.join(".delta/clones");
+        let co = t.join(".delta/worktrees");
+        let c1 = delta_clone(&host, &store, &co, "d1", "repo");
+        let c2 = delta_clone(&host, &store, &co, "d2", "repo");
+        // A plain git worktree of the primary, outside the repo.
+        let wt = b.join("wt");
+        sh(
+            &t,
+            &["worktree", "add", "-q", "-b", "w", wt.to_str().unwrap()],
+        );
+        // A finished thread: pinned, its clone removed by Delta.
+        pin(&host, "gone1", "repo", &sh(&t, &["rev-parse", "HEAD"]));
+
+        // From a clone: the other clone, the primary, and the primary's
+        // worktree (which `git worktree list` in a clone cannot show).
+        let from_c1 = sheds_of(&c1);
+        assert_eq!(paths(&from_c1), vec![t.clone(), c2.clone(), wt.clone()]);
+        assert_eq!(shed_at(&from_c1, &c2).kind, ShedKind::Delta);
+        assert_eq!(shed_at(&from_c1, &t).kind, ShedKind::Worktree);
+        // From the primary: both clones and the worktree.
+        let from_t = sheds_of(&t);
+        assert_eq!(paths(&from_t), vec![c1.clone(), c2.clone(), wt.clone()]);
+        // From the plain worktree: the same set, seen from there.
+        assert_eq!(paths(&sheds_of(&wt)), vec![t.clone(), c1, c2]);
+
+        // The gone pin is reported, never listed as a shed.
+        let h = host_of(&t);
+        let gone = pinned(&h).into_iter().find(|p| p.dir == "gone1").unwrap();
+        assert!(gone.checkout.unwrap_err().starts_with("gone"));
+    }
+
+    fn host_of(t: &Path) -> Host {
+        host(t).unwrap()
+    }
+
+    #[test]
+    fn managed_layout_clones_find_each_other_whatever_their_names() {
+        // A machine that only had the thread shared to it: the host is
+        // Delta's managed BARE repo and clone names need not match (seen:
+        // `j15r` beside `local_<uuid>`).
+        let b = base("managed");
+        let src = b.join("src");
+        repo_with_farm(&src);
+        let host = b.join("managed/repository.git");
         sh(
             &b,
-            &["clone", "-q", t.to_str().unwrap(), shed.to_str().unwrap()],
+            &[
+                "clone",
+                "-q",
+                "--bare",
+                src.to_str().unwrap(),
+                host.to_str().unwrap(),
+            ],
         );
-        sh(&shed, &["remote", "set-url", "origin", &url(&b, "r")]);
-        let sheds = sheds_of(&t);
-        assert_eq!(paths(&sheds), vec![shed.clone()]);
-        assert_eq!(sheds[0].kind, ShedKind::Delta);
+        let root = b.join("worktrees");
+        let c1 = delta_clone(&host, &root, &root, "m1", "local_u1");
+        let c2 = delta_clone(&host, &root, &root, "m2", "proj");
 
-        // And from the clone, the repository checkout that holds it is a shed.
-        let back = sheds_of(&shed);
-        assert_eq!(paths(&back), vec![t]);
+        let from_c1 = sheds_of(&c1);
+        assert_eq!(paths(&from_c1), vec![c2.clone()]);
+        assert_eq!(from_c1[0].kind, ShedKind::Delta);
+        assert_eq!(paths(&sheds_of(&c2)), vec![c1]);
+        let h = host_of(&c2);
+        assert!(h.bare && h.via_alternates);
+        // The unrelated `src` repo is never seen: no pins point at it.
+        assert!(!paths(&from_c1).contains(&src));
+    }
+
+    #[test]
+    fn a_new_clone_is_a_shed_before_its_first_commit() {
+        // Delta pins a clone's starting commit when it creates the clone
+        // (observed: a probe worker that never committed had pins).
+        let b = base("fresh");
+        let t = b.join("repo");
+        repo_with_farm(&t);
+        let c = delta_clone(
+            &t.join(".git"),
+            &t.join(".delta/clones"),
+            &t.join(".delta/worktrees"),
+            "new",
+            "repo",
+        );
+        assert_eq!(
+            sh(&c, &["rev-parse", "HEAD"]),
+            sh(&t, &["rev-parse", "HEAD"])
+        );
+        assert_eq!(paths(&sheds_of(&t)), vec![c]);
+    }
+
+    #[test]
+    fn look_alikes_without_pins_are_never_sheds() {
+        // Directory shapes alone prove nothing: an unpinned same-named clone
+        // and a same-named clone of another repo are both ignored.
+        let b = base("lookalike");
+        let t = b.join("repo");
+        repo_with_farm(&t);
+        let unpinned = t.join(".delta/worktrees/zzz/repo");
+        fs::create_dir_all(unpinned.parent().unwrap()).unwrap();
+        sh(
+            &b,
+            &[
+                "clone",
+                "-q",
+                t.to_str().unwrap(),
+                unpinned.to_str().unwrap(),
+            ],
+        );
+        let sib = b.join("other/x/repo");
+        init_commit(&sib, Some(&url(&b, "r")));
+        assert!(sheds_of(&t).is_empty());
     }
 
     #[test]
@@ -1560,13 +1721,24 @@ mod tests {
         let b = base("both");
         let t = b.join("repo");
         repo_with_farm(&t);
-        sh(&t, &["remote", "add", "origin", &url(&b, "r")]);
-        // A linked worktree that also matches the Delta scan (T/.delta/worktrees/*/repo).
-        let wt = t.join(".delta/worktrees/xyz/repo");
-        fs::create_dir_all(wt.parent().unwrap()).unwrap();
+        let wt = b.join("wt");
         sh(
             &t,
             &["worktree", "add", "-q", "-b", "shed", wt.to_str().unwrap()],
+        );
+        // A pin group whose clone store entry points at the same checkout.
+        let gd = t.join(".delta/clones/xyz/repo.git");
+        fs::create_dir_all(&gd).unwrap();
+        fs::write(
+            gd.join("config"),
+            format!("[core]\n\tworktree = {}\n", wt.display()),
+        )
+        .unwrap();
+        pin(
+            &t.join(".git"),
+            "xyz",
+            "repo",
+            &sh(&t, &["rev-parse", "HEAD"]),
         );
         let sheds = sheds_of(&t);
         assert_eq!(paths(&sheds), vec![wt]);

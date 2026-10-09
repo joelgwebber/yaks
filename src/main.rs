@@ -256,23 +256,19 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Diagnostic: show what each shed-discovery source finds from a
-    /// directory, and why each candidate was accepted or rejected. Sources:
-    /// `git worktree list`, the Delta sibling scan (what `yaks sheds` uses),
-    /// and the Delta roots, where Delta keeps managed checkouts
-    /// (`~/Library/Application Support/delta/worktrees` on macOS, else
-    /// `${XDG_DATA_HOME:-~/.local/share}/delta/worktrees`; add more with
-    /// `--root`). Inside a checkout, candidates are matched to its repository
-    /// (same git dir, same alternates, or same origin URL); outside one, every
-    /// checkout under the roots is listed, grouped by origin. Read-only; works
-    /// without a farm.
+    /// Diagnostic: show the chain `yaks sheds` uses to find the other
+    /// checkouts of this repo, step by step, from inside any checkout of it:
+    /// `git worktree list` here; the HOST repo this checkout's
+    /// `objects/info/alternates` names (the human's checkout, or Delta's
+    /// managed bare repo on a machine the thread was shared to); every
+    /// `refs/delta/<dir>/<name>/*` pin group there, resolved to a live
+    /// checkout through the clone's git dir `core.worktree` (or reported
+    /// gone); and, when the host is a checkout, its own `git worktree list`.
+    /// Git data only: nothing is searched for. Read-only; needs no farm.
     Discover {
-        /// Where to look from (default: the current directory). Any directory:
-        /// a primary checkout, a git worktree, a Delta clone, or anywhere else.
+        /// Where to look from (default: the current directory): any directory
+        /// inside a primary checkout, a git worktree, or a Delta clone.
         path: Option<PathBuf>,
-        /// An extra Delta root to scan (`<root>/<dir>/<checkout>`); repeatable.
-        #[arg(long = "root", value_name = "DIR")]
-        roots: Vec<PathBuf>,
         /// Emit the report as JSON.
         #[arg(long)]
         json: bool,
@@ -818,13 +814,19 @@ fn main() -> Result<()> {
     if let Command::Skills { action } = &cli.command {
         return run_skills(action);
     }
-    if let Command::Discover { path, roots, json } = &cli.command {
+    if let Command::Discover { path, json } = &cli.command {
         let anchor = match path {
             Some(p) => p.clone(),
             None => env::current_dir()?,
         };
         let yaks_dir = env::var("YAKS_DIR").ok();
-        let report = discover::run(&anchor, roots, yaks_dir.as_deref());
+        let report = match discover::run(&anchor, yaks_dir.as_deref()) {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("error: {e:#}");
+                std::process::exit(1);
+            }
+        };
         if *json {
             json::print(&discover::to_json(&report))?;
         } else {

@@ -1,77 +1,70 @@
 #!/bin/sh
-# Build a synthetic layout that exercises every `yaks discover` case, then run
-# `yaks discover` from each kind of anchor. Read-only outside $BASE.
+# Build synthetic Delta layouts the way Delta does (clone git dirs with
+# core.worktree, alternates into a host repo, refs/delta pins in the host),
+# then run `yaks discover` from every kind of checkout. Writes only under BASE.
 #
 #   scripts/discover-fixture.sh [YAKS_BIN] [BASE]
 #
-# Layout (one repo, origin https://example.com/synth/repo.git):
-#   $BASE/repo                               primary checkout, with a farm
-#   $BASE/wt-a                               git worktree (outside the repo)
-#   $BASE/repo/.wt/b                         git worktree (inside the repo)
-#   $BASE/repo/.delta/worktrees/d1/repo      Delta clone, linked layout
-#                                            (git dir .delta/clones/d1/repo.git,
-#                                            alternates -> repo/.git/objects)
-#   $BASE/managed/worktrees/m1/local_u1      Delta clone, managed layout
-#                                            (git dir local_u1.git beside it,
-#                                            alternates -> managed bare repo,
-#                                            origin spelled without .git)
-#   $BASE/managed/worktrees/m2/local_u2      managed clone of ANOTHER repo
-#   $BASE/managed/worktrees/m3/local_u3      orphaned mount: files, no git
+# LINKED machine (the project added from a folder; host = the human's checkout):
+#   $BASE/repo                              primary checkout, with a farm
+#   $BASE/wt-a                              plain git worktree of the primary
+#   $BASE/repo/.delta/worktrees/d1/repo     Delta clone (git dir in .delta/clones/d1)
+#   $BASE/repo/.delta/worktrees/d2/repo     Delta clone
+#   refs/delta/gone1/repo/*                 a finished thread: pinned, clone removed
+#   $BASE/repo/.delta/worktrees/zz/repo     look-alike: same shape, NOT pinned
+# SHARED machine (thread shared here; host = Delta's managed bare repo):
+#   $BASE/managed/repository.git            the managed bare repo
+#   $BASE/managed/worktrees/m1/local_u1     Delta clone
+#   $BASE/managed/worktrees/m2/proj         Delta clone with a different name
 set -eu
 Y=${1:-$(cd "$(dirname "$0")/.." && pwd)/target/release/yaks}
 BASE=${2:-${TMPDIR:-/tmp}/yaks-discover-fixture}
-URL=https://example.com/synth/repo.git
 g() { git -c user.name=t -c user.email=t@t -c commit.gpgsign=false -c init.defaultBranch=main "$@"; }
+
+# delta_clone HOST_GIT_DIR STORE CHECKOUTS DIR NAME
+delta_clone() {
+  co="$3/$4/$5"; gd="$2/$4/$5.git"
+  mkdir -p "$3/$4" "$2/$4"
+  g clone -q --shared --separate-git-dir "$gd" "$1" "$co"
+  g -C "$co" config core.worktree "$co"
+  sha=$(g -C "$co" rev-parse HEAD)
+  g --git-dir="$1" update-ref "refs/delta/$4/$5/$sha" "$sha"
+}
 
 rm -rf "$BASE"
 mkdir -p "$BASE"
 BASE=$(cd "$BASE" && pwd -P)
 
-# Primary checkout with a committed farm.
 g init -q "$BASE/repo"
-g -C "$BASE/repo" remote add origin "$URL"
+g -C "$BASE/repo" remote add origin https://example.com/synth/repo.git
 mkdir -p "$BASE/repo/.yaks/hairy"
 printf -- '---\nid: s-0001\ntitle: t\n---\n' >"$BASE/repo/.yaks/hairy/s-0001.md"
-printf '.wt/\n.delta/\n' >"$BASE/repo/.gitignore"
+printf '.delta/\n' >"$BASE/repo/.gitignore"
 g -C "$BASE/repo" add -A
 g -C "$BASE/repo" commit -qm init
-
-# Plain git worktrees: one beside the repo, one inside it.
 g -C "$BASE/repo" worktree add -q -b wt-a "$BASE/wt-a"
-g -C "$BASE/repo" worktree add -q -b wt-b "$BASE/repo/.wt/b"
 
-# Linked-layout Delta clone (how Delta lays out a project added from a folder).
-mkdir -p "$BASE/repo/.delta/worktrees/d1" "$BASE/repo/.delta/clones/d1"
-g clone -q --shared --separate-git-dir "$BASE/repo/.delta/clones/d1/repo.git" \
-  "$BASE/repo" "$BASE/repo/.delta/worktrees/d1/repo"
-g -C "$BASE/repo/.delta/worktrees/d1/repo" remote rename origin local
-g -C "$BASE/repo/.delta/worktrees/d1/repo" remote add origin "$URL"
+H="$BASE/repo/.git"
+delta_clone "$H" "$BASE/repo/.delta/clones" "$BASE/repo/.delta/worktrees" d1 repo
+delta_clone "$H" "$BASE/repo/.delta/clones" "$BASE/repo/.delta/worktrees" d2 repo
+sha=$(g -C "$BASE/repo" rev-parse HEAD)
+g -C "$BASE/repo" update-ref "refs/delta/gone1/repo/$sha" "$sha"
+mkdir -p "$BASE/repo/.delta/worktrees/zz"
+g clone -q "$BASE/repo" "$BASE/repo/.delta/worktrees/zz/repo"
 
-# Managed-layout Delta clone: a managed bare repo, a checkout named
-# local_<uuid> with its git dir beside it, origin as Delta records it.
 g clone -q --bare "$BASE/repo" "$BASE/managed/repository.git"
-mkdir -p "$BASE/managed/worktrees/m1"
-g clone -q --shared --separate-git-dir "$BASE/managed/worktrees/m1/local_u1.git" \
-  "$BASE/managed/repository.git" "$BASE/managed/worktrees/m1/local_u1"
-g -C "$BASE/managed/worktrees/m1/local_u1" remote rename origin local
-g -C "$BASE/managed/worktrees/m1/local_u1" remote add origin "${URL%.git}"
-
-# A managed clone of another repository, and an orphaned mount.
-mkdir -p "$BASE/managed/worktrees/m2"
-g init -q --separate-git-dir "$BASE/managed/worktrees/m2/local_u2.git" "$BASE/managed/worktrees/m2/local_u2"
-g -C "$BASE/managed/worktrees/m2/local_u2" remote add origin https://example.com/synth/other
-mkdir -p "$BASE/managed/worktrees/m3/local_u3"
-echo x >"$BASE/managed/worktrees/m3/local_u3/README"
+M="$BASE/managed/repository.git"
+delta_clone "$M" "$BASE/managed/worktrees" "$BASE/managed/worktrees" m1 local_u1
+delta_clone "$M" "$BASE/managed/worktrees" "$BASE/managed/worktrees" m2 proj
 
 run() {
   echo
   echo "################ $1"
   shift
-  "$Y" discover --root "$BASE/managed/worktrees" "$@"
+  "$Y" discover "$@" || true
 }
-run "primary checkout" "$BASE/repo"
-run "git worktree (outside)" "$BASE/wt-a"
-run "git worktree (inside), from a subdirectory" "$BASE/repo/.wt/b/.yaks"
-run "Delta clone, linked layout" "$BASE/repo/.delta/worktrees/d1/repo"
-run "Delta clone, managed layout" "$BASE/managed/worktrees/m1/local_u1"
-run "anywhere (not a repo)" "$BASE"
+run "linked: primary checkout" "$BASE/repo"
+run "linked: plain git worktree" "$BASE/wt-a"
+run "linked: Delta clone, from a subdirectory" "$BASE/repo/.delta/worktrees/d1/repo/.yaks"
+run "shared: Delta clone" "$BASE/managed/worktrees/m1/local_u1"
+run "outside any checkout" "$BASE"

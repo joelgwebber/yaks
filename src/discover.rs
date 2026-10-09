@@ -1,199 +1,87 @@
-//! `yaks discover`: a diagnostic that shows what every shed-discovery source
-//! finds from one anchor, and why each candidate was accepted or rejected.
+//! `yaks discover`: the shed-discovery chain `yaks sheds` uses, shown step by
+//! step from one checkout, so you can see what is found and why (yaks-c635).
 //!
-//! It exists to check the discovery model against real machines before the
-//! sources are wired into `yaks sheds` / a `--shed` selector (yaks-7eea,
-//! yaks-2177). Read-only, and it needs no farm: point it at any directory.
-//!
-//! Sources, each reported separately:
-//! 1. `git worktree list` from the anchor's checkout.
-//! 2. The Delta sibling scan `yaks sheds` uses today
-//!    ([`crate::sheds::delta_candidates`]).
-//! 3. The Delta roots: the platform's managed-checkout root
-//!    ([`crate::sheds::default_delta_roots`]) plus any `--root`. Every entry
-//!    is listed; when the anchor is in a repo, each is matched against it.
-//!
-//! Every candidate goes through the one rule `yaks sheds` uses
-//! ([`crate::sheds::repo_match`]), so the verdicts here are the verdicts there.
+//! The chain (see the `sheds` module docs): this checkout's own git dir; the
+//! host repository its `objects/info/alternates` names; every
+//! `refs/delta/<dir>/<name>/*` pin group there, resolved to a checkout through
+//! the clone's git dir `core.worktree` (or reported gone); and, when the host
+//! is a checkout, that checkout's `git worktree list`. Git data only: nothing
+//! is searched for, so it must be run from inside a checkout of the repo.
+//! Read-only, and it needs no farm.
 
 use crate::sheds::{
-    alternates, canonical, common_dir, default_delta_roots, delta_candidates, delta_root_entries,
-    normalize_url, origin_url, repo_match, worktree_entries,
+    Host, Pinned, ShedKind, canonical, host, host_checkout, origin_url, pinned, shed_paths,
+    worktree_entries,
 };
 use crate::store;
-use anyhow::Result;
+use anyhow::{Result, bail};
 use serde_json::{Value, json};
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-/// What the anchor directory is.
+/// What `yaks discover` saw from one checkout.
 #[derive(Debug)]
-pub struct Anchor {
-    pub path: PathBuf,
-    /// The git top-level, when the anchor is inside a checkout.
-    pub top: Option<PathBuf>,
-    pub common: Option<PathBuf>,
-    pub layout: Option<String>,
+pub struct Report {
+    pub anchor: PathBuf,
+    pub top: PathBuf,
+    pub layout: String,
     pub origin: Option<String>,
-    pub alternates: Option<PathBuf>,
     /// `local` remote URL, and whether it is a non-bare checkout.
     pub local: Option<(String, Option<bool>)>,
     /// The farm discovery resolves from the anchor, or why none.
     pub farm: Result<PathBuf, String>,
+    pub host: Option<Host>,
+    /// The host's checkout, when the host is not bare.
+    pub host_checkout: Option<PathBuf>,
+    /// `git worktree list` here: each entry and why it is not a checkout.
+    pub worktrees_here: Vec<(PathBuf, Result<(), String>)>,
+    /// `git worktree list` in the host checkout (empty when it is this repo).
+    pub worktrees_host: Vec<(PathBuf, Result<(), String>)>,
+    pub pinned: Vec<Pinned>,
+    /// The resulting sheds, exactly as `yaks sheds` finds them.
+    pub sheds: BTreeMap<PathBuf, ShedKind>,
 }
 
-/// One candidate a source produced, with its verdict.
-#[derive(Debug)]
-pub struct Candidate {
-    pub path: PathBuf,
-    /// `Ok(how)` = a shed of the anchor's repo; `Err(why)` = rejected.
-    pub verdict: Result<String, String>,
-    pub origin: Option<String>,
-}
-
-#[derive(Debug)]
-pub struct Source {
-    pub name: &'static str,
-    /// Where the source looked (roots, the command).
-    pub looked: Vec<String>,
-    pub candidates: Vec<Candidate>,
-}
-
-#[derive(Debug)]
-pub struct Report {
-    pub anchor: Anchor,
-    pub sources: Vec<Source>,
-}
-
-/// Run every source from `anchor`, adding `extra_roots` to the Delta roots.
-pub fn run(anchor: &Path, extra_roots: &[PathBuf], yaks_dir: Option<&str>) -> Report {
-    let mut roots = default_delta_roots();
-    roots.extend(extra_roots.iter().cloned());
-    let anchor = inspect_anchor(anchor, yaks_dir, &roots);
-    let mut sources = Vec::new();
-
-    if let (Some(top), Some(common)) = (&anchor.top, &anchor.common) {
-        let wt = worktree_entries(top)
-            .into_iter()
-            .map(|(p, v)| {
-                let p = canonical(&p);
-                let verdict = if &p == top {
-                    Err("the anchor itself".into())
-                } else {
-                    v.map(|()| "listed by git".to_string())
-                };
-                Candidate {
-                    origin: None,
-                    path: p,
-                    verdict,
-                }
-            })
-            .collect();
-        sources.push(Source {
-            name: "git worktree list",
-            looked: vec![format!("git -C {} worktree list", top.display())],
-            candidates: wt,
-        });
-
-        let mut sib: Vec<Candidate> = delta_candidates(top)
-            .into_iter()
-            .map(|p| canonical(&p))
-            .filter(|p| p != top)
-            .map(|p| judge(common, p))
-            .collect();
-        sib.sort_by(|a, b| a.path.cmp(&b.path));
-        sib.dedup_by(|a, b| a.path == b.path);
-        sources.push(Source {
-            name: "Delta sibling scan",
-            looked: sibling_globs(top),
-            candidates: sib,
-        });
-    }
-
-    let mut looked = Vec::new();
-    let mut cands = Vec::new();
-    for r in &roots {
-        let exists = r.is_dir();
-        looked.push(format!(
-            "{}{}",
-            r.display(),
-            if exists { "" } else { "  (does not exist)" }
-        ));
-        for e in delta_root_entries(r) {
-            let e = canonical(&e);
-            let c = match (&anchor.top, &anchor.common) {
-                (Some(top), _) if &e == top => Candidate {
-                    origin: None,
-                    path: e,
-                    verdict: Err("the anchor itself".into()),
-                },
-                (_, Some(common)) => judge(common, e),
-                _ => unanchored(e),
-            };
-            cands.push(c);
-        }
-    }
-    sources.push(Source {
-        name: "Delta roots",
-        looked,
-        candidates: cands,
-    });
-
-    Report { anchor, sources }
-}
-
-fn judge(common: &Path, path: PathBuf) -> Candidate {
-    let origin = common_dir(&path).and_then(|c| origin_url(&c));
-    let verdict = if !path.join(".git").exists() {
-        Err("no .git".into())
-    } else {
-        repo_match(common, &path).map(|how| format!("same repo ({how})"))
+/// Run the chain from `anchor` (any directory inside a checkout).
+pub fn run(anchor: &Path, yaks_dir: Option<&str>) -> Result<Report> {
+    let anchor = canonical(anchor);
+    let Some(top) = git(&anchor, &["rev-parse", "--show-toplevel"]) else {
+        bail!(
+            "{} is not inside a git checkout. yaks discovers sheds from inside one \
+             (a primary checkout, a git worktree, or a Delta clone); cd into one or pass its path",
+            anchor.display()
+        );
     };
-    Candidate {
-        path,
-        verdict,
-        origin,
-    }
-}
-
-/// With no anchor repo there is nothing to match: report each entry's repo.
-fn unanchored(path: PathBuf) -> Candidate {
-    if !path.join(".git").exists() {
-        return Candidate {
-            path,
-            verdict: Err("no .git".into()),
-            origin: None,
-        };
-    }
-    let origin = common_dir(&path).and_then(|c| origin_url(&c));
-    Candidate {
-        verdict: Ok("a checkout (no anchor repo to match)".into()),
-        path,
-        origin,
-    }
-}
-
-fn sibling_globs(top: &Path) -> Vec<String> {
-    let name = top
-        .file_name()
-        .map(|n| n.to_string_lossy().into_owned())
-        .unwrap_or_default();
-    let mut v = Vec::new();
-    if let Some(root) = top.parent().and_then(Path::parent) {
-        v.push(format!("{}/*/{name}", root.display()));
-        if root.ends_with(".delta/worktrees") {
-            if let Some(repo) = root.parent().and_then(Path::parent) {
-                v.push(format!(
-                    "{}  (the checkout holding this clone)",
-                    repo.display()
-                ));
-            }
-        }
-    }
-    v.push(format!("{}/.delta/worktrees/*/{name}", top.display()));
-    v
+    let top = canonical(Path::new(&top));
+    let farm = store::discover_with(&anchor, yaks_dir)
+        .map(|d| d.root)
+        .map_err(|e| format!("{e:#}"));
+    let local = git(&top, &["config", "--get", "remote.local.url"]).map(|u| {
+        let bare = git(Path::new(&u), &["rev-parse", "--is-bare-repository"]);
+        (u.clone(), bare.map(|b| b == "false"))
+    });
+    let host = host(&top);
+    let host_checkout = host.as_ref().and_then(host_checkout);
+    let worktrees_host = match &host_checkout {
+        Some(h) if host.as_ref().is_some_and(|h| h.via_alternates) => worktree_entries(h),
+        _ => Vec::new(),
+    };
+    Ok(Report {
+        layout: layout(&top, host.as_ref()),
+        origin: host.as_ref().and_then(|h| origin_url(&h.own_git_dir)),
+        pinned: host.as_ref().map(pinned).unwrap_or_default(),
+        worktrees_here: worktree_entries(&top),
+        sheds: shed_paths(&top),
+        anchor,
+        top,
+        local,
+        farm,
+        host,
+        host_checkout,
+        worktrees_host,
+    })
 }
 
 fn git(dir: &Path, args: &[&str]) -> Option<String> {
@@ -212,102 +100,62 @@ fn git(dir: &Path, args: &[&str]) -> Option<String> {
         .filter(|s| !s.is_empty())
 }
 
-fn inspect_anchor(path: &Path, yaks_dir: Option<&str>, roots: &[PathBuf]) -> Anchor {
-    let path = canonical(path);
-    let farm = store::discover_with(&path, yaks_dir)
-        .map(|d| d.root)
-        .map_err(|e| format!("{e:#}"));
-    let top = git(&path, &["rev-parse", "--show-toplevel"]).map(|t| canonical(Path::new(&t)));
-    let Some(top) = top else {
-        return Anchor {
-            path,
-            top: None,
-            common: None,
-            layout: None,
-            origin: None,
-            alternates: None,
-            local: None,
-            farm,
-        };
-    };
-    let common = common_dir(&top);
-    let local = git(&top, &["config", "--get", "remote.local.url"]).map(|u| {
-        let checkout = Path::new(&u);
-        let bare = git(checkout, &["rev-parse", "--is-bare-repository"]);
-        (u.clone(), bare.map(|b| b == "false"))
-    });
-    Anchor {
-        layout: Some(layout(&top, common.as_deref(), roots)),
-        origin: common.as_deref().and_then(origin_url),
-        alternates: common.as_deref().and_then(alternates),
-        path,
-        top: Some(top),
-        common,
-        local,
-        farm,
-    }
-}
-
 /// A one-line description of what kind of checkout `top` is.
-fn layout(top: &Path, common: Option<&Path>, roots: &[PathBuf]) -> String {
-    let dot = top.join(".git");
-    if dot.is_dir() {
+fn layout(top: &Path, host: Option<&Host>) -> String {
+    let Some(h) = host else {
+        return "unreadable git state".into();
+    };
+    if top.join(".git").is_dir() {
         return "primary checkout (.git is a directory)".into();
     }
-    let git_dir = git(top, &["rev-parse", "--absolute-git-dir"]).map(|d| canonical(Path::new(&d)));
-    if let (Some(g), Some(c)) = (&git_dir, common) {
-        if g != c {
-            let main = c.parent().unwrap_or(c);
-            return format!("git worktree of {}", main.display());
+    if h.via_alternates {
+        return if h.bare {
+            "Delta clone; host is a bare repo (Delta-managed: a shared-thread machine)".into()
+        } else {
+            "Delta clone; host is a checkout (the project was added from a folder)".into()
+        };
+    }
+    match crate::sheds::common_dir(top) {
+        Some(c) if c != h.own_git_dir => {
+            format!("git worktree of {}", c.parent().unwrap_or(&c).display())
         }
+        _ => "checkout with a separate git dir".into(),
     }
-    let s = top.display().to_string();
-    if let Some(i) = s.find("/.delta/worktrees/") {
-        return format!("Delta clone, linked layout (under {})", &s[..i]);
-    }
-    if roots.iter().any(|r| top.starts_with(canonical(r))) {
-        return "Delta clone, managed layout".into();
-    }
-    "checkout with a separate git dir".into()
 }
 
 // -- rendering ----------------------------------------------------------------
 
+fn entry_line(s: &mut String, top: &Path, p: &Path, v: &Result<(), String>) {
+    let p = canonical(p);
+    let (mark, why) = match v {
+        _ if p == top => ("-", "this checkout".to_string()),
+        Ok(()) => ("+", "a checkout".to_string()),
+        Err(e) => ("-", e.clone()),
+    };
+    let _ = writeln!(s, "  {mark} {}\n      {why}", p.display());
+}
+
 pub fn render(r: &Report) -> String {
     let mut s = String::new();
-    let a = &r.anchor;
-    let _ = writeln!(s, "ANCHOR  {}", a.path.display());
-    match &a.top {
-        None => {
-            let _ = writeln!(s, "  not in a git repository: only the Delta roots apply");
-        }
-        Some(top) => {
-            let _ = writeln!(s, "  top-level   {}", top.display());
-            if let Some(l) = &a.layout {
-                let _ = writeln!(s, "  layout      {l}");
-            }
-            if let Some(c) = &a.common {
-                let _ = writeln!(s, "  git dir     {}", c.display());
-            }
-            let _ = writeln!(
-                s,
-                "  origin      {}",
-                a.origin.as_deref().unwrap_or("(none)")
-            );
-            if let Some(alt) = &a.alternates {
-                let _ = writeln!(s, "  alternates  {}", alt.display());
-            }
-            if let Some((u, checkout)) = &a.local {
-                let what = match checkout {
-                    Some(true) => "a checkout",
-                    Some(false) => "BARE",
-                    None => "unreachable",
-                };
-                let _ = writeln!(s, "  local       {u}  ({what})");
-            }
-        }
+    let _ = writeln!(s, "CHECKOUT  {}", r.top.display());
+    if r.anchor != r.top {
+        let _ = writeln!(s, "  from        {}", r.anchor.display());
     }
-    match &a.farm {
+    let _ = writeln!(s, "  layout      {}", r.layout);
+    let _ = writeln!(
+        s,
+        "  origin      {}",
+        r.origin.as_deref().unwrap_or("(none)")
+    );
+    if let Some((u, checkout)) = &r.local {
+        let what = match checkout {
+            Some(true) => "a checkout",
+            Some(false) => "BARE",
+            None => "unreachable",
+        };
+        let _ = writeln!(s, "  local       {u}  ({what})");
+    }
+    match &r.farm {
         Ok(f) => {
             let _ = writeln!(s, "  farm        {}", f.display());
         }
@@ -316,76 +164,116 @@ pub fn render(r: &Report) -> String {
         }
     }
 
-    let anchored = a.top.is_some();
-    for src in &r.sources {
-        let found = src.candidates.iter().filter(|c| c.verdict.is_ok()).count();
-        let _ = writeln!(
-            s,
-            "\n{}  ({found} found, {} rejected)",
-            src.name.to_uppercase(),
-            src.candidates.len() - found
-        );
-        for l in &src.looked {
-            let _ = writeln!(s, "  looked in  {l}");
+    let _ = writeln!(s, "\n1. GIT WORKTREE LIST (here)");
+    for (p, v) in &r.worktrees_here {
+        entry_line(&mut s, &r.top, p, v);
+    }
+
+    let _ = writeln!(s, "\n2. HOST");
+    match &r.host {
+        None => {
+            let _ = writeln!(s, "  (could not read this checkout's git dir)");
         }
-        for c in &src.candidates {
-            let (mark, why) = match &c.verdict {
-                Ok(how) => ("+", how.as_str()),
-                Err(why) => ("-", why.as_str()),
+        Some(h) => {
+            let _ = writeln!(s, "  own git dir {}", h.own_git_dir.display());
+            let how = if h.via_alternates {
+                "named by objects/info/alternates"
+            } else {
+                "this repository: no alternates"
             };
-            let _ = writeln!(s, "  {mark} {}", c.path.display());
-            let origin = match (&c.origin, anchored) {
-                (Some(o), false) => format!("  origin {o}"),
-                _ => String::new(),
-            };
-            let _ = writeln!(s, "      {why}{origin}");
+            let kind = if h.bare { "bare" } else { "a checkout" };
+            let _ = writeln!(s, "  host        {}  ({how}; {kind})", h.git_dir.display());
+            match &h.store {
+                Some(st) => {
+                    let _ = writeln!(s, "  clone store {}", st.display());
+                }
+                None => {
+                    let _ = writeln!(s, "  clone store (unknown: run from inside a Delta clone)");
+                }
+            }
         }
     }
 
-    let union = union(r);
-    if anchored {
-        let _ = writeln!(s, "\nSHEDS  ({} distinct, anchor excluded)", union.len());
-        for (p, by) in &union {
-            let _ = writeln!(s, "  {}  [{}]", p.display(), by.join(", "));
-        }
-    } else {
-        let groups = by_origin(r);
-        let _ = writeln!(s, "\nREPOS  ({} by origin)", groups.len());
-        for (o, ps) in &groups {
-            let _ = writeln!(s, "  {o}");
-            for p in ps {
-                let _ = writeln!(s, "    {}", p.display());
+    let live = r.pinned.iter().filter(|p| p.checkout.is_ok()).count();
+    let _ = writeln!(
+        s,
+        "\n3. DELTA PINS in the host  ({} pinned dirs: {live} live, {} not)",
+        r.pinned.len(),
+        r.pinned.len() - live
+    );
+    for p in &r.pinned {
+        let label = format!("{}/{}  ({} pins)", p.dir, p.name, p.pins);
+        match &p.checkout {
+            Ok(c) if c == &r.top => {
+                let _ = writeln!(s, "  - {label}\n      this checkout");
+            }
+            Ok(c) => {
+                let _ = writeln!(s, "  + {label}\n      {}", c.display());
+            }
+            Err(e) => {
+                let _ = writeln!(s, "  - {label}\n      {e}");
             }
         }
+    }
+
+    if let Some(hc) = &r.host_checkout {
+        if r.host.as_ref().is_some_and(|h| h.via_alternates) {
+            let _ = writeln!(s, "\n4. GIT WORKTREE LIST (host checkout {})", hc.display());
+            for (p, v) in &r.worktrees_host {
+                entry_line(&mut s, &r.top, p, v);
+            }
+        }
+    }
+
+    let _ = writeln!(s, "\nSHEDS  ({}, this checkout excluded)", r.sheds.len());
+    for (p, k) in &r.sheds {
+        let _ = writeln!(s, "  {}  [{}]", p.display(), k.as_str());
     }
     s
 }
 
-/// Accepted candidates, one per path, with the sources that found each.
-fn union(r: &Report) -> BTreeMap<PathBuf, Vec<&'static str>> {
-    let mut m: BTreeMap<PathBuf, Vec<&'static str>> = BTreeMap::new();
-    for src in &r.sources {
-        for c in src.candidates.iter().filter(|c| c.verdict.is_ok()) {
-            m.entry(c.path.clone()).or_default().push(src.name);
-        }
-    }
-    m
-}
-
-/// Unanchored: accepted checkouts grouped by normalized origin URL.
-fn by_origin(r: &Report) -> BTreeMap<String, Vec<PathBuf>> {
-    let mut m: BTreeMap<String, Vec<PathBuf>> = BTreeMap::new();
-    for c in r.sources.iter().flat_map(|s| &s.candidates) {
-        if c.verdict.is_ok() {
-            let key = c
-                .origin
-                .as_deref()
-                .map(normalize_url)
-                .unwrap_or_else(|| "(no origin)".into());
-            m.entry(key).or_default().push(c.path.clone());
-        }
-    }
-    m
+pub fn to_json(r: &Report) -> Value {
+    let entries = |v: &[(PathBuf, Result<(), String>)]| {
+        v.iter()
+            .map(|(p, e)| {
+                json!({
+                    "path": p.display().to_string(),
+                    "checkout": e.is_ok(),
+                    "reason": e.as_ref().err(),
+                })
+            })
+            .collect::<Vec<_>>()
+    };
+    json!({
+        "checkout": r.top.display().to_string(),
+        "anchor": r.anchor.display().to_string(),
+        "layout": r.layout,
+        "origin": r.origin,
+        "local": r.local.as_ref().map(|(u, c)| json!({"url": u, "checkout": c})),
+        "farm": r.farm.as_ref().ok().map(|f| f.display().to_string()),
+        "farm_error": r.farm.as_ref().err(),
+        "host": r.host.as_ref().map(|h| json!({
+            "own_git_dir": h.own_git_dir.display().to_string(),
+            "git_dir": h.git_dir.display().to_string(),
+            "via_alternates": h.via_alternates,
+            "bare": h.bare,
+            "store": h.store.as_ref().map(|s| s.display().to_string()),
+            "checkout": r.host_checkout.as_ref().map(|c| c.display().to_string()),
+        })),
+        "worktrees_here": entries(&r.worktrees_here),
+        "worktrees_host": entries(&r.worktrees_host),
+        "pins": r.pinned.iter().map(|p| json!({
+            "dir": p.dir,
+            "name": p.name,
+            "pins": p.pins,
+            "checkout": p.checkout.as_ref().ok().map(|c| c.display().to_string()),
+            "reason": p.checkout.as_ref().err(),
+        })).collect::<Vec<_>>(),
+        "sheds": r.sheds.iter().map(|(p, k)| json!({
+            "path": p.display().to_string(),
+            "kind": k.as_str(),
+        })).collect::<Vec<_>>(),
+    })
 }
 
 #[cfg(test)]
@@ -406,7 +294,7 @@ mod tests {
         canonical(&p)
     }
 
-    fn sh(dir: &Path, args: &[&str]) {
+    fn sh(dir: &Path, args: &[&str]) -> String {
         let out = Command::new("git")
             .args(["-c", "user.name=t", "-c", "user.email=t@t"])
             .args([
@@ -425,34 +313,23 @@ mod tests {
             "git {args:?}: {}",
             String::from_utf8_lossy(&out.stderr)
         );
+        String::from_utf8_lossy(&out.stdout).trim().to_string()
     }
 
-    /// A primary checkout at `b/repo` (origin `url`), a managed bare repo, and
-    /// a managed-layout clone `b/root/m1/local_u1` whose git dir sits beside
-    /// it and whose origin is spelled `managed_url`.
-    fn layout(b: &Path, url: &str, managed_url: &str) -> (PathBuf, PathBuf, PathBuf) {
-        let repo = b.join("repo");
-        fs::create_dir_all(&repo).unwrap();
-        sh(&repo, &["init", "-q"]);
-        sh(&repo, &["remote", "add", "origin", url]);
-        fs::write(repo.join("f"), "x").unwrap();
-        sh(&repo, &["add", "-A"]);
-        sh(&repo, &["commit", "-qm", "init"]);
-        let bare = b.join("managed.git");
-        sh(
-            b,
-            &[
-                "clone",
-                "-q",
-                "--bare",
-                repo.to_str().unwrap(),
-                bare.to_str().unwrap(),
-            ],
-        );
-        let root = b.join("root");
-        let clone = root.join("m1/local_u1");
-        fs::create_dir_all(clone.parent().unwrap()).unwrap();
-        let gd = root.join("m1/local_u1.git");
+    /// A primary `b/repo` with one Delta clone `d1` (pinned, live) and one
+    /// pin group `gone1` whose clone no longer exists.
+    fn linked(b: &Path) -> (PathBuf, PathBuf) {
+        let t = b.join("repo");
+        fs::create_dir_all(&t).unwrap();
+        sh(&t, &["init", "-q"]);
+        fs::write(t.join("f"), "x").unwrap();
+        sh(&t, &["add", "-A"]);
+        sh(&t, &["commit", "-qm", "init"]);
+        let head = sh(&t, &["rev-parse", "HEAD"]);
+        let co = t.join(".delta/worktrees/d1/repo");
+        let gd = t.join(".delta/clones/d1/repo.git");
+        fs::create_dir_all(co.parent().unwrap()).unwrap();
+        fs::create_dir_all(gd.parent().unwrap()).unwrap();
         sh(
             b,
             &[
@@ -461,143 +338,70 @@ mod tests {
                 "--shared",
                 "--separate-git-dir",
                 gd.to_str().unwrap(),
-                bare.to_str().unwrap(),
-                clone.to_str().unwrap(),
+                t.to_str().unwrap(),
+                co.to_str().unwrap(),
             ],
         );
-        sh(&clone, &["remote", "set-url", "origin", managed_url]);
-        (repo, root, clone)
+        sh(&co, &["config", "core.worktree", co.to_str().unwrap()]);
+        for d in ["d1", "gone1"] {
+            sh(
+                &t,
+                &["update-ref", &format!("refs/delta/{d}/repo/{head}"), &head],
+            );
+        }
+        (t, co)
     }
 
-    /// Accepted paths from `source`, limited to the test's own `b` (the real
-    /// platform Delta root is always scanned too).
-    fn accepted(r: &Report, source: &str, b: &Path) -> Vec<PathBuf> {
-        r.sources
+    #[test]
+    fn from_a_clone_the_chain_names_host_pins_and_the_primary() {
+        let b = base("chain");
+        let (t, co) = linked(&b);
+        // From a subdirectory of the clone.
+        fs::create_dir_all(co.join("sub")).unwrap();
+        let r = run(&co.join("sub"), Some("")).unwrap();
+        assert_eq!(r.top, co);
+        let h = r.host.as_ref().unwrap();
+        assert!(h.via_alternates && !h.bare);
+        assert_eq!(h.git_dir, canonical(&t.join(".git")));
+        assert_eq!(r.host_checkout.as_deref(), Some(t.as_path()));
+        assert!(r.layout.starts_with("Delta clone; host is a checkout"));
+        let pins: Vec<_> = r
+            .pinned
             .iter()
-            .filter(|s| s.name == source)
-            .flat_map(|s| &s.candidates)
-            .filter(|c| c.verdict.is_ok() && c.path.starts_with(b))
-            .map(|c| c.path.clone())
-            .collect()
-    }
-
-    #[test]
-    fn the_root_scan_finds_a_managed_clone_from_the_primary_checkout() {
-        let b = base("primary");
-        let url = format!(
-            "https://example.com/{}/r.git",
-            b.file_name().unwrap().to_string_lossy()
-        );
-        // Delta records the URL without `.git`; still the same repository.
-        let (repo, root, clone) = layout(&b, &url, url.strip_suffix(".git").unwrap());
-        let r = run(&repo, &[root.clone()], Some(""));
-        assert_eq!(accepted(&r, "Delta roots", &b), vec![clone.clone()]);
-        // The sibling scan alone (what `yaks sheds` uses today) misses it.
-        assert!(!accepted(&r, "Delta sibling scan", &b).contains(&clone));
-        // The `.git` dir beside the checkout is never a candidate.
-        let all: Vec<_> = r.sources.iter().flat_map(|s| &s.candidates).collect();
-        assert!(
-            all.iter()
-                .all(|c| !c.path.to_string_lossy().ends_with(".git"))
-        );
-    }
-
-    #[test]
-    fn differing_alternates_fall_through_to_origin() {
-        let b = base("alt");
-        let url = format!(
-            "https://example.com/{}/r.git",
-            b.file_name().unwrap().to_string_lossy()
-        );
-        let (repo, _root, clone) = layout(&b, &url, &url);
-        // A linked-layout clone borrows the primary's objects, the managed
-        // clone the managed bare repo's: different alternates, one repo.
-        let linked = b.join("linked");
-        sh(
-            &b,
-            &[
-                "clone",
-                "-q",
-                "--shared",
-                repo.to_str().unwrap(),
-                linked.to_str().unwrap(),
-            ],
-        );
-        sh(&linked, &["remote", "set-url", "origin", &url]);
-        let own = common_dir(&linked).unwrap();
-        assert_eq!(repo_match(&own, &clone), Ok("origin"));
-    }
-
-    #[test]
-    fn a_different_repository_is_rejected_with_its_origin() {
-        let b = base("other");
-        let url = format!(
-            "https://example.com/{}/r.git",
-            b.file_name().unwrap().to_string_lossy()
-        );
-        let (repo, root, _clone) = layout(&b, &url, "https://example.com/elsewhere/other");
-        let r = run(&repo, &[root], Some(""));
-        assert!(accepted(&r, "Delta roots", &b).is_empty());
-        let src = r.sources.iter().find(|s| s.name == "Delta roots").unwrap();
-        let c = src
-            .candidates
-            .iter()
-            .find(|c| c.path.starts_with(&b))
-            .unwrap();
-        assert!(c.verdict.as_ref().unwrap_err().contains("elsewhere/other"));
-    }
-
-    #[test]
-    fn outside_a_repository_every_checkout_is_listed_by_origin() {
-        let b = base("anywhere");
-        let url = format!(
-            "https://example.com/{}/r.git",
-            b.file_name().unwrap().to_string_lossy()
-        );
-        let (_repo, root, clone) = layout(&b, &url, &url);
-        let orphan = root.join("m2/local_u2");
-        fs::create_dir_all(&orphan).unwrap();
-        let nowhere = b.join("nowhere");
-        fs::create_dir_all(&nowhere).unwrap();
-        let r = run(&nowhere, &[root], Some(""));
-        assert!(r.anchor.top.is_none());
-        assert_eq!(accepted(&r, "Delta roots", &b), vec![clone.clone()]);
-        let groups = by_origin(&r);
-        // Keyed by normalized origin; real checkouts may add other groups.
-        assert_eq!(groups.get(&normalize_url(&url)), Some(&vec![clone]));
+            .map(|p| (p.dir.as_str(), p.checkout.is_ok()))
+            .collect();
+        assert_eq!(pins, vec![("d1", true), ("gone1", false)]);
+        // The sheds are exactly what `yaks sheds` would list.
+        assert_eq!(r.sheds.keys().cloned().collect::<Vec<_>>(), vec![t.clone()]);
         let text = render(&r);
-        assert!(text.contains("REPOS") && !text.contains("SHEDS"));
+        assert!(
+            text.contains("4. GIT WORKTREE LIST (host checkout"),
+            "{text}"
+        );
+        assert!(
+            text.contains("gone (its git dir no longer exists)"),
+            "{text}"
+        );
+        let j = to_json(&r);
+        assert_eq!(j["pins"][1]["checkout"], Value::Null);
+        assert_eq!(j["sheds"][0]["kind"], "worktree");
     }
-}
 
-pub fn to_json(r: &Report) -> Value {
-    let a = &r.anchor;
-    let p = |p: &Option<PathBuf>| p.as_ref().map(|p| p.display().to_string());
-    json!({
-        "anchor": {
-            "path": a.path.display().to_string(),
-            "top": p(&a.top),
-            "layout": a.layout,
-            "git_dir": p(&a.common),
-            "origin": a.origin,
-            "alternates": p(&a.alternates),
-            "local": a.local.as_ref().map(|(u, c)| json!({"url": u, "checkout": c})),
-            "farm": a.farm.as_ref().ok().map(|f| f.display().to_string()),
-            "farm_error": a.farm.as_ref().err(),
-        },
-        "sources": r.sources.iter().map(|s| json!({
-            "name": s.name,
-            "looked": s.looked,
-            "candidates": s.candidates.iter().map(|c| json!({
-                "path": c.path.display().to_string(),
-                "accepted": c.verdict.is_ok(),
-                "reason": match &c.verdict { Ok(x) | Err(x) => x },
-                "origin": c.origin,
-            })).collect::<Vec<_>>(),
-        })).collect::<Vec<_>>(),
-        "sheds": union(r).into_iter().map(|(p, by)| json!({
-            "path": p.display().to_string(),
-            "sources": by,
-        })).collect::<Vec<_>>(),
-    })
+    #[test]
+    fn from_the_primary_there_is_no_host_step_and_the_clone_is_found() {
+        let b = base("primary");
+        let (t, co) = linked(&b);
+        let r = run(&t, Some("")).unwrap();
+        assert!(!r.host.as_ref().unwrap().via_alternates);
+        assert!(r.worktrees_host.is_empty());
+        assert_eq!(r.sheds.keys().cloned().collect::<Vec<_>>(), vec![co]);
+        assert!(!render(&r).contains("4. GIT WORKTREE LIST"));
+    }
+
+    #[test]
+    fn outside_a_checkout_it_refuses_and_says_where_to_run_it() {
+        let b = base("outside");
+        let e = run(&b, Some("")).unwrap_err().to_string();
+        assert!(e.contains("not inside a git checkout"), "{e}");
+    }
 }

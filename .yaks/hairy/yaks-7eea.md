@@ -1,10 +1,10 @@
 ---
 id: yaks-7eea
-title: 'Open the TUI on a shed from anywhere: discovery, names and a --shed selector'
+title: 'Act on another shed from where you are: shed names and a -C/--shed selector (discovery from inside a sibling: yaks-c635)'
 type: idea
 priority: 2
 created: '2026-10-07T01:00:44Z'
-updated: '2026-10-09T03:14:28Z'
+updated: '2026-10-09T20:12:18Z'
 parent: yaks-ee0a
 labels:
 - cli
@@ -59,3 +59,9 @@ Joel's model of discovery (2026-10-06), checked by the coordinator; adopted as t
 3. Delta (b), anywhere: needs a starting point: the platform Delta root (Linux XDG_DATA_HOME or ~/.local/share, macOS ~/Library/Application Support) gives every Delta checkout of every repo; group them by origin URL and pick one repo.
 Refinements: (i) the root scan belongs in discovery ALWAYS, not only in case (b): from the primary checkout on a machine where a thread is managed (not linked), the managed clone is only found by the root scan; (ii) a coherent view needs a reference shed, because "own changes" are relative to the viewer: in (b) that means choosing the repo AND which shed is "here" (default: the primary checkout when one is found).
 Brief: discovery = git worktree list + sibling scan + Delta root scan, filtered to one repo (origin URL); a selector (`-C <path>` / `--shed <name>`) sets the viewer. brf-1 (the first, stalled brief worker) reported stopped; nothing of it to land (its draft was finished as yaks-2c22).
+
+---
+▸ 2026-10-09T20:12:18Z [delta:Delta :Yaks (cont'd)]
+Decision (Joel, 2026-10-09): no "magical" discovery from outside a checkout. Sheds are found from inside any sibling using git data only (host via alternates, refs/delta pins, each pin's git dir core.worktree, and the host checkout's git worktrees). Built and wired into `yaks sheds` as yaks-c635; `yaks discover` shows the chain.
+Dropped from this design, and not to be revived without new evidence: (a) scanning Delta's platform roots (~/Library/Application Support, XDG_DATA_HOME); it found only managed checkouts, never the linked ones under each project folder, and nothing on disk links the two (Delta's sqlite blobs carry no paths); (b) the per-user registry and the ~/.yaks/sheds symlink directory (option B), whose only purpose was discovery from anywhere; (c) `yaks discover --root` and its outside-a-repo mode (removed).
+Still open here: NAMES (the thread title rather than the opaque dir id; `who:` labels are the current proxy) and the `-C <path>` / `--shed <name>` selector over the sheds a checkout can see, plus whether `--shed` is a visit (read plus answer/ask) or full access. These are the CLI and UI affordances that come next.

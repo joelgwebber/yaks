@@ -11,12 +11,17 @@ Read `yaks-coordinating` and your farm-mode skill first. This file is how work M
 Your thread is the yakherd. In Delta (the agent environment where every thread owns an isolated git
 checkout) each worker (`spawn_subagent`) is its own thread with a thin git clone plus a checkout; those finished clones stay on disk. Where they live depends on the machine:
 on the human's own machine `<repo>/.delta/clones/<id>/<repo>.git` and `<repo>/.delta/worktrees/<id>/<repo>`;
-on a machine that only has the thread shared to it, `~/.local/share/delta/worktrees/<id>/<repo>` with the
-git dir as its sibling `<repo>.git` and NO `.delta/`. Either way a checkout is `<root>/<id>/<repo>`, and
-`git worktree list` inside it shows only that clone; `yaks sheds` lists every sibling checkout (git worktrees
-and Delta clones) with its HEAD, ahead/behind, dirty count, who is working in it and what its farm changed,
-read-only. Your clone's `objects/info/alternates` names the repo that holds Delta's `refs/delta/<id>/<repo>/<sha>`
-pins. Delta marks the commits it imports from another machine as shallow boundaries, so a clone (yours or the
+on a machine that only has the thread shared to it, under Delta's data dir (`~/.local/share/delta/worktrees/<id>/...`
+on Linux, `~/Library/Application Support/delta/worktrees/<id>/...` on macOS; the checkout may be named `local_<uuid>`)
+with the git dir as its sibling `<name>.git` and NO `.delta/`. `git worktree list` inside a clone shows only that
+clone. Your clone's `objects/info/alternates` names the HOST repo: the human's checkout on their own machine,
+Delta's managed bare repo on a shared one. Delta pins every clone's commits there as `refs/delta/<id>/<name>/<sha>`,
+from the moment it creates the clone. `yaks sheds` follows exactly that (host, pins, each pinned clone's git dir and
+its `core.worktree`, plus the host checkout's own git worktrees), so from inside ANY checkout it lists every other one,
+including a worker that has not committed yet, with its HEAD, ahead/behind, dirty count, who is working in it and what
+its farm changed, read-only. `yaks discover` shows that chain step by step when a shed is missing. Two limits: from a
+clone on a shared machine the human's checkout is not visible (its host is the managed repo), and nothing finds sheds
+from outside every checkout. Delta marks the commits it imports from another machine as shallow boundaries, so a clone (yours or the
 human's) can be shallow (`git rev-parse --is-shallow-repository`): ancestry questions then have unreliable
 answers, `yaks sheds` shows `?` and `land.sh` prints a note; `git fetch --unshallow origin` (or `local`) fixes it. A worker can
 read your checkout and your `target/` (it is not isolated), so the brief forbids touching them. A fresh checkout has no `target/`: building takes 15-25 s.
