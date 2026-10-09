@@ -4,7 +4,7 @@ title: 'Design pass: CLI affordances and skill/workflow changes for agents using
 type: task
 priority: 3
 created: '2026-10-09T20:12:45Z'
-updated: '2026-10-09T20:44:15Z'
+updated: '2026-10-09T20:45:52Z'
 parent: yaks-ee0a
 labels:
 - cli
@@ -49,3 +49,7 @@ Spawned (base 192af4b, all claude-sonnet-5-5): cflag-1 83ecd85713f64fc7 -> yaks-
 ---
 ▸ 2026-10-09T20:44:15Z [delta:Delta :Yaks (cont'd)]
 Landed wave 1: yaks-4e39 (-C, d763638), yaks-2917 (inbox --sheds, 6fb56a2), yaks-e39c (changes, f0e6f0b). Review fixes in the next commit: inbox --sheds repeated every ask whose shed forked before our later note (seen live: 3 copies), and 'main' was ambiguous because Delta clones are on branch main. Gate after all three plus fixes: 12 suites ok, 493 unit tests.
+
+---
+▸ 2026-10-09T20:45:52Z [delta:Delta :Yaks (cont'd)]
+Spawned wave 2 (base 1081d2f, all claude-sonnet-5-5): show-1 54c574c39d07404d -> yaks-e7ed; ans-1 d3af06f49c29425b -> yaks-f347; dedupe-1 b5ec518ad52349f7 -> yaks-5138.
