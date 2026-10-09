@@ -56,6 +56,7 @@ spawn title (`cflag-1: add the -C flag` is `cflag-1-add-the-c-flag`) from its fi
 title in the clone's own git config; before that (or in a clone that never ran yaks) it is named by its actor, Delta dir id or
 branch, so use that (or its path). Two workers with one slug get their dir id's first 4 characters appended. `yaks -C <path> <cmd>` runs ANY command as if started in another
 checkout, writes included: it is the same as `cd` there, so use it only on a checkout you own.
+`yaks --shed <name> <cmd>` is the same by name (resolved like `<shed>` above; full access, same caution).
 In a team farm each shed has its own farm to compare; in a private farm every shed shares one live
 farm, so these say `shares this farm` and the plain commands already show everything.
 

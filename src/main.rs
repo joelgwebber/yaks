@@ -52,6 +52,16 @@ struct Cli {
     /// `$YAKS_DIR` still wins over discovery (a relative one is read from <PATH>).
     #[arg(short = 'C', value_name = "PATH", global = true)]
     chdir: Vec<PathBuf>,
+    /// Run as if started in another checkout of this repository (a shed from
+    /// `yaks sheds`), picked by name like `yaks changes <SHED>`: its path,
+    /// Delta dir id, thread-title slug, branch, actor, or a unique substring
+    /// (`main` is the primary checkout). The same as `-C <that shed's path>`:
+    /// FULL access, so a write command writes in that shed's farm. Applied
+    /// after any `-C`, relative to that checkout; at most once. No or an
+    /// ambiguous match lists the sheds and exits 1. Never records the Delta
+    /// thread title (that belongs to the checkout you are in).
+    #[arg(long = "shed", id = "into_shed", value_name = "SHED", global = true)]
+    into_shed: Option<String>,
     #[command(subcommand)]
     command: Command,
 }
@@ -845,6 +855,36 @@ enum SkillsAction {
     },
 }
 
+/// `--shed <query>`: change into the shed `query` names (see
+/// [`sheds::resolve`]), as `-C <its path>` would. Like the other cross-shed
+/// commands, a bad name prints resolve's candidate list and exits 1.
+fn enter_shed(query: &str) -> Result<()> {
+    let cwd = env::current_dir()?;
+    let farm = match Farm::open(&cwd) {
+        Ok(f) => f,
+        Err(OpenError::SchemaTooNew { found, supported }) => {
+            eprintln!(
+                "error: this farm uses schema v{found}, newer than this yaks supports (v{supported}). Upgrade yaks."
+            );
+            std::process::exit(1);
+        }
+        Err(OpenError::NoFarm(m)) => {
+            eprintln!("error: --shed needs a farm here to find the sheds: {m}");
+            std::process::exit(1);
+        }
+    };
+    let sheds = farm.sheds(&cwd)?;
+    let path = match sheds::resolve(&sheds, query) {
+        Ok(s) => s.path.clone(),
+        Err(e) => {
+            eprintln!("error: {e}");
+            std::process::exit(1);
+        }
+    };
+    env::set_current_dir(&path)
+        .with_context(|| format!("cannot change to directory '{}'", path.display()))
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
@@ -855,7 +895,14 @@ fn main() -> Result<()> {
         env::set_current_dir(dir)
             .with_context(|| format!("cannot change to directory '{}'", dir.display()))?;
     }
-    if cli.chdir.is_empty() {
+    // `--shed <name>`: `-C` by name, resolved over the sheds visible from the
+    // checkout the `-C` chain ended in.
+    if let Some(query) = &cli.into_shed {
+        enter_shed(query)?;
+    }
+    // The title in the environment is the CALLER's thread, so a hop into
+    // another checkout (`-C` or `--shed`) must not stamp it there.
+    if cli.chdir.is_empty() && cli.into_shed.is_none() {
         sheds::record_thread(); // a Delta clone remembers its thread title
     }
 
