@@ -4,7 +4,7 @@ title: 'CLI affordances for sheds and threads: what a human and an agent need to
 type: task
 priority: 2
 created: '2026-10-06T21:05:37Z'
-updated: '2026-10-10T19:09:48Z'
+updated: '2026-10-10T20:05:22Z'
 parent: yaks-7204
 labels:
 - cli
@@ -83,3 +83,7 @@ Landed yaks-e9bb (base-1 bed0da16b2714c3b; f03a81c by land.sh, merge of 82dfdab)
 ---
 ▸ 2026-10-10T19:09:48Z [delta-lead]
 Landed yaks-047a (edit-2 7341c64aec304ab0, a2c0ed8 by cherry-pick: docs/main.rs conflicts with yaks-e9bb resolved by hand keeping both the fork-point wording and the edited rule). Gate on this machine: 16 suites, 623 passed, 0 failed. Real machine: from the primary, `changes` on this thread lists the rewritten yaks as edited. Waiting on here-1 (yaks-ad6d).
+
+---
+▸ 2026-10-10T20:05:22Z [delta-lead]
+Landed yaks-ad6d (here-1 556e48480bff4e61, 5c7c95a by cherry-pick; docs/main.rs conflicts with yaks-047a resolved by hand keeping both). The claim commit had staged only the deletion of hairy/yaks-ad6d.md, so the worker's commit left shaving/yaks-ad6d.md behind (doctor: two status dirs); removed it, its two entries are in the shorn file. Gate on this machine: 16 suites, 630 passed, 0 failed. here-1's hung note (a $(cat <<EOF) with backticks ran top and yaks discover) was freed by killing top; the corrupt entry is not in the landed file.
