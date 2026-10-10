@@ -4,7 +4,7 @@ title: 'Act on another shed from where you are: shed names and a -C/--shed selec
 type: idea
 priority: 2
 created: '2026-10-07T01:00:44Z'
-updated: '2026-10-09T20:12:18Z'
+updated: '2026-10-10T13:40:07Z'
 parent: yaks-ee0a
 labels:
 - cli
@@ -65,3 +65,7 @@ Brief: discovery = git worktree list + sibling scan + Delta root scan, filtered 
 Decision (Joel, 2026-10-09): no "magical" discovery from outside a checkout. Sheds are found from inside any sibling using git data only (host via alternates, refs/delta pins, each pin's git dir core.worktree, and the host checkout's git worktrees). Built and wired into `yaks sheds` as yaks-c635; `yaks discover` shows the chain.
 Dropped from this design, and not to be revived without new evidence: (a) scanning Delta's platform roots (~/Library/Application Support, XDG_DATA_HOME); it found only managed checkouts, never the linked ones under each project folder, and nothing on disk links the two (Delta's sqlite blobs carry no paths); (b) the per-user registry and the ~/.yaks/sheds symlink directory (option B), whose only purpose was discovery from anywhere; (c) `yaks discover --root` and its outside-a-repo mode (removed).
 Still open here: NAMES (the thread title rather than the opaque dir id; `who:` labels are the current proxy) and the `-C <path>` / `--shed <name>` selector over the sheds a checkout can see, plus whether `--shed` is a visit (read plus answer/ask) or full access. These are the CLI and UI affordances that come next.
+
+---
+▸ 2026-10-10T13:40:07Z [delta:Delta :Yaks (cont'd)]
+Parked (Joel, 2026-10-10): showing which thread spawned which in sheds (the shared prefix of yaks.shed.thread ids, e.g. ksQQI7UGw66zRMm9tnfRIaYEapLOAA... across a yakherd and its workers, and 'delta thread list --subagents --json' lists exactly that thread's subagents) is deferred until Delta adds CLI affordances for thread hierarchy. Not built; the undocumented id format is the reason.
