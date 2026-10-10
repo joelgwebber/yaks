@@ -140,3 +140,85 @@ fn an_unknown_shed_lists_the_candidates_and_exits_1() {
     assert!(err.contains("/wt"), "{err}");
     assert!(out.stdout.is_empty());
 }
+
+#[test]
+fn no_argument_means_the_current_shed_and_every_selector_accepts_it() {
+    let (t, wt, first, _second) = repo("current");
+    ok(&wt, "w-1", &["update", &first, "--note", "worker one"]);
+
+    // From the worker's shed: no argument == its own name == `--shed` it.
+    let name = {
+        let j: serde_json::Value =
+            serde_json::from_str(&ok(&wt, "me", &["sheds", "--json"])).unwrap();
+        let here: Vec<_> = j
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|s| s["current"] == true)
+            .collect();
+        assert_eq!(here.len(), 1, "{j}");
+        assert_eq!(here[0]["path"], wt.display().to_string().as_str());
+        here[0]["name"].as_str().unwrap().to_string()
+    };
+    let bare = ok(&wt, "me", &["changes"]);
+    assert!(bare.contains("  w-1  worker one\n"), "{bare}");
+    assert_eq!(bare, ok(&wt, "me", &["changes", &name]));
+    assert_eq!(bare, ok(&wt, "me", &["--shed", &name, "changes"]));
+    // ...and the same changes as seen from the primary.
+    assert_eq!(bare, ok(&t, "me", &["changes", &name]));
+
+    // `main` from the primary is the primary (it used to be an error), and
+    // it is the same as no argument there; `--shed main` is a no-op.
+    let main = ok(&t, "me", &["changes", "main"]);
+    assert!(main.starts_with("main  "), "{main}");
+    assert_eq!(main, ok(&t, "me", &["changes"]));
+    assert_eq!(main, ok(&t, "me", &["--shed", "main", "changes"]));
+}
+
+#[test]
+fn answering_names_a_shed_and_the_current_one_is_a_plain_answer() {
+    let (_t, wt, first, _second) = repo("answer-current");
+    ok(&wt, "w-1", &["ask", &first, "--note", "which way?"]);
+    let out = ok(
+        &wt,
+        "me",
+        &["answer", &format!("{first}@main"), "--note", "x"],
+    );
+    // `main` is another shed from here: written there, not here.
+    assert!(out.contains("Wrote the answer into shed main"), "{out}");
+    let j: serde_json::Value = serde_json::from_str(&ok(&wt, "me", &["sheds", "--json"])).unwrap();
+    let own = j
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|s| s["current"] == true)
+        .unwrap()["name"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let out = ok(
+        &wt,
+        "me",
+        &["answer", &format!("{first}@{own}"), "--note", "go left"],
+    );
+    assert!(!out.contains("Wrote the answer into shed"), "{out}");
+    assert!(out.starts_with(&format!("Answered {first}")), "{out}");
+}
+
+#[test]
+fn inbox_and_show_sheds_still_mean_the_other_sheds() {
+    let (t, wt, first, _second) = repo("elsewhere");
+    ok(&wt, "w-1", &["update", &first, "--note", "worker one"]);
+    // From the worker: its own copy is the primary text, never a "Sheds:" block.
+    let out = ok(&wt, "me", &["show", &first, "--sheds"]);
+    assert!(
+        !out.contains("wt"),
+        "the viewer is not listed as a shed: {out}"
+    );
+    // From the primary the worker is listed.
+    let out = ok(&t, "me", &["show", &first, "--sheds"]);
+    assert!(
+        out.contains("Sheds:") && out.contains("worker one"),
+        "{out}"
+    );
+}

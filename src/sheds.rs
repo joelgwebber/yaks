@@ -1,5 +1,7 @@
-//! `yaks sheds`: the OTHER checkouts of this repository (git worktrees and
-//! Delta clones) and what each one's farm says relative to this checkout's.
+//! `yaks sheds`: every checkout of this repository (git worktrees and Delta
+//! clones), this one included and marked, and what each one's farm changed.
+//! Every row is measured the same way from every viewer; the viewer only
+//! decides which row is `current` (yaks-ad6d).
 //!
 //! Plain git plus the filesystem; no Delta database, no Delta CLI. Everything
 //! here is strictly read-only in the other checkouts: git is invoked as
@@ -12,7 +14,10 @@
 //! our own), so a shed that is merely behind shows nothing of its own and what
 //! it does show is exactly what it changed, committed or not. The fork point is
 //! the oldest entry of the shed's HEAD reflog ([`fork_point`]) and it is the
-//! baseline from EVERY viewer (yaks-e9bb): the answer about a shed never
+//! baseline from EVERY viewer (yaks-e9bb), except that the PRIMARY has no fork
+//! point worth the name and is measured from its `origin/main` instead (what
+//! it has not published; [`origin_base`]; its fork point only when there is no
+//! usable origin ref). Either way the answer about a shed never
 //! depends on which checkout runs `yaks sheds`. A worker forks from its
 //! coordinator's thread, not from the checkout that runs `yaks sheds`, so
 //! measuring from the merge-base with THIS checkout would credit the shed with
@@ -121,6 +126,11 @@ impl FarmDelta {
 /// Which commit a shed's own changes are measured from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BaseKind {
+    /// The primary checkout's `origin/main` (its remote-tracking ref, else
+    /// `origin/HEAD`'s target): what the primary has not published. Only the
+    /// primary is measured this way, from every viewer; it has no fork point
+    /// worth the name (its reflog starts when the repository did).
+    Origin,
     /// Where the shed itself forked (oldest entry of its HEAD reflog): exactly
     /// the shed's own work.
     Fork,
@@ -135,6 +145,7 @@ impl BaseKind {
     /// The JSON `farm.vs` value.
     pub fn as_str(self) -> &'static str {
         match self {
+            BaseKind::Origin => "origin",
             BaseKind::Fork => "fork",
             BaseKind::MergeBase => "merge-base",
         }
@@ -162,7 +173,7 @@ pub enum ShedFarm {
     Unreadable(String),
 }
 
-/// One other checkout of this repository.
+/// One checkout of this repository.
 #[derive(Debug, Clone)]
 pub struct Shed {
     pub path: PathBuf,
@@ -178,6 +189,9 @@ pub struct Shed {
     pub slug: Option<String>,
     /// The repository's main checkout.
     pub primary: bool,
+    /// The checkout `yaks sheds` was run in (the default shed when none is
+    /// named). Exactly one listed shed is current.
+    pub current: bool,
     /// `None` when HEAD is detached (or unreadable).
     pub branch: Option<String>,
     /// Abbreviated HEAD sha; `None` when the shed's git state cannot be read.
@@ -235,14 +249,19 @@ impl Shed {
     }
 }
 
-/// List the other checkouts of the repository containing `cwd`, relative to
-/// the farm at `farm_root` (this checkout's farm). Sorted by path.
+/// List every checkout of the repository containing `cwd`, this one included
+/// (`current`), each measured the same way. `farm_root` is this checkout's
+/// farm: where a shed is compared with "this checkout" and what makes another
+/// shed `Shared`. Sorted by path.
 pub fn discover(cwd: &Path, farm_root: &Path) -> Result<Vec<Shed>> {
     let top = PathBuf::from(
         git(cwd, &["rev-parse", "--show-toplevel"]).context("yaks sheds needs a git repository")?,
     );
     let top = canonical(&top);
-    let found = shed_paths(&top);
+    // Every checkout including this one (yaks-ad6d): the answer about a
+    // shed never depends on where you run `yaks sheds`, only which row is
+    // marked `current`.
+    let found = checkout_paths(&top);
 
     let ours = store::load(farm_root, &EVERY).unwrap_or_default();
     let our_farm = canonical(farm_root);
@@ -250,7 +269,8 @@ pub fn discover(cwd: &Path, farm_root: &Path) -> Result<Vec<Shed>> {
     let mut sheds: Vec<Shed> = found
         .into_iter()
         .map(|(path, found)| {
-            let mut shed = inspect(&top, &path, &found, &our_farm, &ours);
+            let current = path == top;
+            let mut shed = inspect(&top, &path, &found, current, &our_farm, &ours);
             shed.shallow_here = shallow;
             shed
         })
@@ -321,10 +341,18 @@ pub struct Found {
     pub primary: bool,
 }
 
-/// Every other checkout of the repository at `top`, by canonical path, with
-/// how it was found (see the module docs). A checkout found both ways is a
-/// `Worktree` and keeps its Delta dir id. Excludes `top`.
+/// Every OTHER checkout of the repository at `top` (see [`checkout_paths`]).
 pub(crate) fn shed_paths(top: &Path) -> BTreeMap<PathBuf, Found> {
+    let mut found = checkout_paths(top);
+    found.remove(top);
+    found
+}
+
+/// Every checkout of the repository at `top`, `top` itself included, by
+/// canonical path, with how it was found (see the module docs). A checkout
+/// found both ways is a `Worktree` and keeps its Delta dir id. `top` is listed
+/// even when nothing records it (the answer never depends on where you are).
+pub(crate) fn checkout_paths(top: &Path) -> BTreeMap<PathBuf, Found> {
     let mut found: BTreeMap<PathBuf, Found> = BTreeMap::new();
     let add_worktrees = |from: &Path, found: &mut BTreeMap<PathBuf, Found>| {
         for (i, p) in worktree_paths(from).into_iter().enumerate() {
@@ -356,7 +384,11 @@ pub(crate) fn shed_paths(top: &Path) -> BTreeMap<PathBuf, Found> {
             }
         }
     }
-    found.remove(top);
+    found.entry(top.to_path_buf()).or_insert(Found {
+        kind: ShedKind::Worktree,
+        dir: None,
+        primary: false,
+    });
     found
 }
 
@@ -374,13 +406,11 @@ pub fn resolve<'a>(sheds: &'a [Shed], query: &str) -> Result<&'a Shed, String> {
         return Err("empty shed name".into());
     }
     // `main` names the primary checkout and nothing else: when it is not in
-    // the list (we are in it), falling through to "a branch called `main`"
-    // would silently pick a Delta clone.
+    // the list (a clone on a machine where the primary is not visible),
+    // falling through to "a branch called `main`" would silently pick a Delta
+    // clone.
     if q == "main" && !sheds.iter().any(|s| s.primary) {
-        return Err(
-            "`main` is the primary checkout, and that is this one (or not visible from here)"
-                .into(),
-        );
+        return Err("`main` is the primary checkout, and it is not visible from here".into());
     }
     let qpath = canonical(Path::new(q));
     let rules: [&dyn Fn(&Shed) -> bool; 7] = [
@@ -416,7 +446,7 @@ pub fn resolve<'a>(sheds: &'a [Shed], query: &str) -> Result<&'a Shed, String> {
     }
     let all: Vec<&Shed> = sheds.iter().collect();
     Err(if all.is_empty() {
-        format!("no shed matches `{q}`: no other checkouts found")
+        format!("no shed matches `{q}`: no checkouts found")
     } else {
         format!(
             "no shed matches `{q}`; the sheds are:\n{}",
@@ -438,6 +468,7 @@ fn inspect(
     top: &Path,
     path: &Path,
     found: &Found,
+    current: bool,
     our_farm: &Path,
     ours: &[crate::model::Task],
 ) -> Shed {
@@ -448,6 +479,7 @@ fn inspect(
         title: None,
         slug: None,
         primary: found.primary,
+        current,
         branch: None,
         head: None,
         ahead: None,
@@ -466,6 +498,10 @@ fn inspect(
         shed.slug = shed.title.as_deref().and_then(slug);
     }
     let mut bases: Vec<(BaseKind, String)> = Vec::new();
+    // The primary is measured from what it has not published, whoever looks.
+    if found.primary {
+        bases.extend(origin_base(path).map(|o| (BaseKind::Origin, o)));
+    }
     match git_state(top, path) {
         Ok(g) => {
             shed.branch = g.branch;
@@ -484,7 +520,9 @@ fn inspect(
         Err(_) => shed.farm = ShedFarm::None,
         Ok(d) => {
             let root = canonical(&d.root);
-            if root == our_farm {
+            // "Shares this farm" says ANOTHER shed uses the viewer's farm; the
+            // viewer's own checkout is measured like any other shed.
+            if root == our_farm && !current {
                 shed.farm = ShedFarm::Shared;
             } else {
                 shed.farm_activity = newest_mtime(&root).map(format_time);
@@ -512,6 +550,25 @@ fn inspect(
         }
     }
     shed
+}
+
+/// The primary's `origin/main`: the remote-tracking ref `refs/remotes/origin/
+/// main`, else the target of `refs/remotes/origin/HEAD`. `None` with no
+/// `origin`, or when it was never fetched; the caller then falls back to the
+/// fork point.
+fn origin_base(primary: &Path) -> Option<String> {
+    let commit = |r: &str| {
+        git(
+            primary,
+            &["rev-parse", "--verify", "-q", &format!("{r}^{{commit}}")],
+        )
+        .ok()
+        .filter(|s| !s.is_empty())
+    };
+    commit("refs/remotes/origin/main").or_else(|| {
+        let target = git(primary, &["symbolic-ref", "-q", "refs/remotes/origin/HEAD"]).ok()?;
+        commit(&target)
+    })
 }
 
 struct GitState {
@@ -802,6 +859,8 @@ pub fn yak_changes(base: &[crate::model::Task], theirs: &[crate::model::Task]) -
 pub struct Changes {
     pub name: String,
     pub path: PathBuf,
+    /// The shed is the primary checkout (see [`Shed::primary`]).
+    pub primary: bool,
     /// What the changes are relative to, as in [`Shed::farm_base`]; `None`
     /// means this checkout's farm.
     pub base: Option<FarmBase>,
@@ -827,6 +886,7 @@ pub fn changes(shed: &Shed, cwd: &Path, farm_root: &Path) -> Result<Changes> {
     Ok(Changes {
         name: shed.name(),
         path: shed.path.clone(),
+        primary: shed.primary,
         base: shed.farm_base.clone(),
         yaks,
     })
@@ -1275,7 +1335,8 @@ pub fn to_json(sheds: &[Shed]) -> Value {
                     ShedFarm::Own(d) => json!({
                         "state": "own",
                         // What the delta is relative to (`base` = its short
-                        // sha): where the shed forked (`fork`), else this
+                        // sha): the primary's `origin/main` (`origin`),
+                        // where the shed forked (`fork`), else this
                         // checkout's merge-base with it as a fallback
                         // (`merge-base`), else, when neither can be read,
                         // this checkout's farm.
@@ -1316,6 +1377,8 @@ pub fn to_json(sheds: &[Shed]) -> Value {
                     // The thread title the clone recorded (`null` if none).
                     "title": l.title,
                     "primary": l.primary,
+                    // The checkout this was run in: exactly one row.
+                    "current": l.current,
                     "branch": l.branch,
                     "head": l.head,
                     // `null` = unknown (no merge-base here).
@@ -1335,13 +1398,19 @@ pub fn to_json(sheds: &[Shed]) -> Value {
 
 /// What the table says about a baseline other than the shed's own fork point,
 /// so a number that may include inherited work is never silent: ` (vs
-/// merge-base)` or ` (vs this checkout)`. Empty for the fork point.
+/// origin/main)` (the primary), ` (vs fork)` (the primary without one), ` (vs
+/// merge-base)` or ` (vs this checkout)`. Empty for a shed's fork point.
 fn vs_marker(l: &Shed) -> &'static str {
-    base_marker(l.farm_base.as_ref())
+    base_marker(l.farm_base.as_ref(), l.primary)
 }
 
-fn base_marker(base: Option<&FarmBase>) -> &'static str {
+/// The primary is expected to be measured from `origin/main`, so when it is
+/// measured from its fork point instead (no usable `origin` ref) that is said
+/// too; for any other shed the fork point is the plain, unmarked case.
+fn base_marker(base: Option<&FarmBase>, primary: bool) -> &'static str {
     match base.map(|b| b.kind) {
+        Some(BaseKind::Origin) => " (vs origin/main)",
+        Some(BaseKind::Fork) if primary => " (vs fork)",
         Some(BaseKind::Fork) => "",
         Some(BaseKind::MergeBase) => " (vs merge-base)",
         None => " (vs this checkout)",
@@ -1360,7 +1429,7 @@ fn first_line(text: &str) -> &str {
 /// its new note entries (timestamp, actor, first line) and `needs:`.
 pub fn render_changes(c: &Changes) -> String {
     let mut out = format!("{}  {}\n", c.name, c.path.display());
-    let marker = base_marker(c.base.as_ref());
+    let marker = base_marker(c.base.as_ref(), c.primary);
     let yaks = match &c.yaks {
         Err(why) => {
             out.push_str(&format!("  nothing to show: {why}\n"));
@@ -1448,7 +1517,7 @@ fn label_line(l: &Shed) -> Option<String> {
 /// The compact human table: one row per shed, then its label and farm detail.
 pub fn render(sheds: &[Shed]) -> String {
     if sheds.is_empty() {
-        return "No other checkouts found.\n".into();
+        return "No checkouts found.\n".into();
     }
     let rows: Vec<[String; 6]> = sheds
         .iter()
@@ -1489,8 +1558,9 @@ pub fn render(sheds: &[Shed]) -> String {
                 .unwrap_or(0)
         })
         .collect();
-    let line = |cells: Vec<&str>, path: &str| {
-        let mut s = String::new();
+    // `*` marks the checkout you are in.
+    let line = |mark: &str, cells: Vec<&str>, path: &str| {
+        let mut s = format!("{mark} ");
         for (c, w) in cells.iter().zip(&widths) {
             s.push_str(&format!("{c:<w$}  "));
         }
@@ -1498,15 +1568,17 @@ pub fn render(sheds: &[Shed]) -> String {
         s.push('\n');
         s
     };
-    let mut out = line(heads.to_vec(), "PATH");
+    let mut out = line(" ", heads.to_vec(), "PATH");
     for (l, r) in sheds.iter().zip(&rows) {
         out.push_str(&line(
+            if l.current { "*" } else { " " },
             r.iter().map(String::as_str).collect(),
             &l.path.display().to_string(),
         ));
+        let here = if l.current { " (here)" } else { "" };
         match &l.title {
-            Some(t) => out.push_str(&format!("  name: {} \u{b7} title: {t}\n", l.name())),
-            None => out.push_str(&format!("  name: {}\n", l.name())),
+            Some(t) => out.push_str(&format!("  name: {}{here} \u{b7} title: {t}\n", l.name())),
+            None => out.push_str(&format!("  name: {}{here}\n", l.name())),
         }
         if let Some(e) = &l.error {
             out.push_str(&format!("  error: {e}\n"));
@@ -1566,7 +1638,7 @@ pub fn render(sheds: &[Shed]) -> String {
     // One line for the whole table, and only when it explains a `?`.
     if sheds
         .iter()
-        .any(|l| l.shallow_here && l.head.is_some() && l.ahead.is_none())
+        .any(|l| !l.current && l.shallow_here && l.head.is_some() && l.ahead.is_none())
     {
         out.push_str(
             "note: history is shallow here, so some sheds cannot be compared exactly; \
@@ -1651,8 +1723,17 @@ mod tests {
         sh(dir, &["commit", "-q", "-m", "init"]);
     }
 
-    fn sheds_of(top: &Path) -> Vec<Shed> {
+    /// Every checkout as `top` sees them, `top` itself included (`current`).
+    fn all_sheds_of(top: &Path) -> Vec<Shed> {
         discover(top, &top.join(".yaks")).unwrap()
+    }
+
+    /// The OTHER checkouts as `top` sees them: most tests are about a row
+    /// seen from somewhere else; the current row has its own tests.
+    fn sheds_of(top: &Path) -> Vec<Shed> {
+        let mut sheds = all_sheds_of(top);
+        sheds.retain(|s| !s.current);
+        sheds
     }
 
     fn paths(sheds: &[Shed]) -> Vec<PathBuf> {
@@ -1665,7 +1746,7 @@ mod tests {
         let t = b.join("repo");
         repo_with_farm(&t);
         assert!(sheds_of(&t).is_empty());
-        assert_eq!(render(&[]), "No other checkouts found.\n");
+        assert_eq!(render(&[]), "No checkouts found.\n");
     }
 
     #[test]
@@ -2793,7 +2874,11 @@ mod tests {
             text.contains("  who: oldx, new-1 \u{b7} shaving: yaks-aaaa\n"),
             "{text}"
         );
-        assert!(!text.contains("(vs "), "the fork point is exact: {text}");
+        // (A primary without an `origin` ref says `(vs fork)`, see below.)
+        assert!(
+            !text.contains("(vs merge-base)") && !text.contains("(vs this checkout)"),
+            "the fork point is exact: {text}"
+        );
         let jw = json_of(&sheds, w);
         assert_eq!(jw["farm"]["vs"], "fork");
         assert_eq!(jw["farm"]["base"], fork_sha);
@@ -3142,11 +3227,10 @@ mod tests {
         assert_eq!(shed_at(&from_wt, &c).branch.as_deref(), Some("main"));
         assert_eq!(p(resolve(&from_wt, "main").unwrap()), t);
         let from_t = sheds_of(&t);
-        // From the primary itself it is not among the sheds, and `main` must
-        // not fall through to the clone that is on a branch called `main`.
+        // From the primary itself `main` is still the primary (not the clone
+        // that is on a branch called `main`), see the selectors test below.
         assert_eq!(shed_at(&from_t, &c).branch.as_deref(), Some("main"));
-        let e = resolve(&from_t, "main").unwrap_err();
-        assert!(e.contains("`main` is the primary checkout"), "{e}");
+        assert_eq!(p(resolve(&all_sheds_of(&t), "main").unwrap()), t);
         assert_eq!(p(resolve(&from_t, "q7zz").unwrap()), c);
         assert_eq!(p(resolve(&from_t, "q7").unwrap()), c, "unique substring");
         let branch = shed_at(&from_t, &wt).branch.clone().unwrap();
@@ -3159,6 +3243,196 @@ mod tests {
         );
         let e = resolve(&from_t, "/").unwrap_err();
         assert!(e.contains("names 2 sheds"), "{e}");
+    }
+
+    // -- the current shed, and the primary's origin/main (yaks-ad6d) ----------
+
+    /// A linked-layout fixture: the primary `t`, a plain git worktree `wt`
+    /// and a Delta clone `c`, each with a farm change of its own.
+    fn three_checkouts(tag: &str) -> (PathBuf, PathBuf, PathBuf) {
+        let (t, wt) = claimed_repo_with_shed(tag);
+        shed_notes_on_aaaa(&wt, &[("2026-03-03T00:00:00Z", Some("w-1"), "wt note")]);
+        let c = delta_clone(
+            &t.join(".git"),
+            &t.join(".delta/clones"),
+            &t.join(".delta/worktrees"),
+            "q7zz",
+            "repo",
+        );
+        task_file(&c, "hairy", "yaks-cccc", "", "clone yak");
+        (t, wt, c)
+    }
+
+    #[test]
+    fn every_viewer_lists_every_checkout_and_marks_only_itself() {
+        let (t, wt, c) = three_checkouts("three-viewers");
+        let every = [&t, &wt, &c].map(|v| all_sheds_of(v));
+        for (viewer, sheds) in [&t, &wt, &c].into_iter().zip(&every) {
+            assert_eq!(sheds.len(), 3, "{}", render(sheds));
+            let here: Vec<&Path> = sheds
+                .iter()
+                .filter(|s| s.current)
+                .map(|s| s.path.as_path())
+                .collect();
+            assert_eq!(here, [viewer.as_path()], "exactly the viewer is current");
+            let j = to_json(sheds);
+            let flags: Vec<bool> = j
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|x| x["current"].as_bool().unwrap())
+                .collect();
+            assert_eq!(flags.iter().filter(|f| **f).count(), 1);
+        }
+        // The same checkouts, and the same answer about each, from anywhere:
+        // `cwd` only picks which row is current.
+        for other in &every[1..] {
+            assert_eq!(paths(&every[0]), paths(other));
+            for (a, b) in every[0].iter().zip(other) {
+                assert_eq!(a.farm, b.farm, "{}", a.path.display());
+                assert_eq!(a.farm_base, b.farm_base, "{}", a.path.display());
+                assert_eq!((&a.who, &a.in_progress), (&b.who, &b.in_progress));
+                assert_eq!(a.name(), b.name());
+            }
+        }
+        // The viewer's row is measured like any other: the clone's own yak.
+        let from_c = &every[2];
+        let ShedFarm::Own(d) = &shed_at(from_c, &c).farm else {
+            panic!("the current shed has an own farm")
+        };
+        assert_eq!(d.added, ["yaks-cccc"]);
+        // And the text says where you are.
+        let text = render(from_c);
+        assert!(text.contains("  name: q7zz (here)\n"), "{text}");
+        assert!(text.contains("  name: main\n"), "{text}");
+        assert_eq!(
+            text.lines().filter(|l| l.starts_with("* ")).count(),
+            1,
+            "{text}"
+        );
+    }
+
+    #[test]
+    fn every_selector_accepts_the_current_shed_and_main_is_the_primary_from_the_primary() {
+        let (t, wt, c) = three_checkouts("selectors");
+        let from_t = all_sheds_of(&t);
+        let p = |s: &Shed| s.path.clone();
+        // From the primary, `main` is the primary itself, current or not.
+        assert_eq!(p(resolve(&from_t, "main").unwrap()), t);
+        assert!(resolve(&from_t, "main").unwrap().current);
+        assert_eq!(p(resolve(&from_t, "q7zz").unwrap()), c);
+        // From a clone, its own name, dir id, path and branch all work.
+        let from_c = all_sheds_of(&c);
+        assert_eq!(p(resolve(&from_c, "q7zz").unwrap()), c);
+        assert!(resolve(&from_c, "q7zz").unwrap().current);
+        assert_eq!(p(resolve(&from_c, c.to_str().unwrap()).unwrap()), c);
+        assert_eq!(p(resolve(&from_c, "main").unwrap()), t);
+        assert_eq!(p(resolve(&all_sheds_of(&wt), "shed").unwrap()), wt);
+        // `main` still errors, rather than picking a clone that is on a
+        // branch called `main`, when no primary is visible at all.
+        let no_primary: Vec<Shed> = from_c.iter().filter(|s| !s.primary).cloned().collect();
+        let e = resolve(&no_primary, "main").unwrap_err();
+        assert!(e.contains("not visible from here"), "{e}");
+    }
+
+    /// `repo_with_farm`, then a second commit adding `yaks-dddd` and a pointer
+    /// at it as `origin/main`, then a third adding `yaks-eeee` and an
+    /// uncommitted `yaks-ffff`: only eeee and ffff are unpublished.
+    fn primary_ahead_of_origin(tag: &str, origin_ref: &str) -> (PathBuf, String) {
+        let b = base(tag);
+        let t = b.join("repo");
+        repo_with_farm(&t);
+        task_file(&t, "hairy", "yaks-dddd", "", "published");
+        sh(&t, &["add", "-A"]);
+        sh(&t, &["commit", "-q", "-m", "published"]);
+        let published = sh(&t, &["rev-parse", "--short", "HEAD"]);
+        sh(&t, &["update-ref", origin_ref, "HEAD"]);
+        task_file(&t, "hairy", "yaks-eeee", "", "committed, not pushed");
+        sh(&t, &["add", "-A"]);
+        sh(&t, &["commit", "-q", "-m", "unpublished"]);
+        task_file(&t, "hairy", "yaks-ffff", "", "not even committed");
+        (t, published)
+    }
+
+    #[test]
+    fn the_primary_is_measured_from_origin_main_whoever_looks() {
+        let (t, published) = primary_ahead_of_origin("origin-main", "refs/remotes/origin/main");
+        let sibling = t.parent().unwrap().join("sibling");
+        sh(
+            &t,
+            &[
+                "worktree",
+                "add",
+                "-q",
+                "-b",
+                "sib",
+                sibling.to_str().unwrap(),
+            ],
+        );
+        let c = delta_clone(
+            &t.join(".git"),
+            &t.join(".delta/clones"),
+            &t.join(".delta/worktrees"),
+            "d1",
+            "repo",
+        );
+        for viewer in [&t, &sibling, &c] {
+            let sheds = all_sheds_of(viewer);
+            let main = sheds.iter().find(|s| s.primary).unwrap();
+            assert_eq!(
+                main.farm_base,
+                Some(FarmBase {
+                    kind: BaseKind::Origin,
+                    sha: published.clone()
+                }),
+                "{}",
+                viewer.display()
+            );
+            let ShedFarm::Own(d) = &main.farm else {
+                panic!("the primary has its own farm")
+            };
+            assert_eq!(d.added, ["yaks-eeee", "yaks-ffff"], "no flood: {d:?}");
+            let text = render(&sheds);
+            assert!(text.contains("farm: 2 new (vs origin/main)\n"), "{text}");
+            let j = json_of(&sheds, &t);
+            assert_eq!(
+                (&j["farm"]["vs"], &j["farm"]["base"]),
+                (&json!("origin"), &json!(published))
+            );
+        }
+    }
+
+    #[test]
+    fn the_primary_falls_back_to_origin_heads_target_then_to_its_fork_point() {
+        // No `origin/main`, but `origin/HEAD` points at another branch.
+        let (t, published) = primary_ahead_of_origin("origin-head", "refs/remotes/origin/trunk");
+        sh(
+            &t,
+            &[
+                "symbolic-ref",
+                "refs/remotes/origin/HEAD",
+                "refs/remotes/origin/trunk",
+            ],
+        );
+        let sheds = all_sheds_of(&t);
+        let main = shed_at(&sheds, &t);
+        assert_eq!(
+            main.farm_base,
+            Some(FarmBase {
+                kind: BaseKind::Origin,
+                sha: published
+            })
+        );
+        // No usable origin ref at all (no remote, never fetched): the fork
+        // point, and the text says `(vs fork)` rather than passing for
+        // "unpublished".
+        let (t, _) = primary_ahead_of_origin("no-origin", "refs/heads/elsewhere");
+        let sheds = all_sheds_of(&t);
+        let main = shed_at(&sheds, &t);
+        assert_eq!(main.farm_base.as_ref().unwrap().kind, BaseKind::Fork);
+        let text = render(&sheds);
+        assert!(text.contains("(vs fork)"), "{text}");
+        assert_eq!(json_of(&sheds, &t)["farm"]["vs"], "fork");
     }
 
     // -- thread titles as shed names ----------------------------------------------
@@ -3750,7 +4024,8 @@ mod tests {
         assert_eq!(none.yaks.as_ref().unwrap(), &vec![]);
         assert_eq!(
             render_changes(&none),
-            format!("main  {}\n  no changes of its own\n", t.display())
+            // A fixture primary has no `origin`: measured from its fork, said so.
+            format!("main  {}\n  no changes of its own (vs fork)\n", t.display())
         );
         // Main then lands its own yak and a note after the shed forked.
         task_file(

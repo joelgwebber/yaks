@@ -556,11 +556,20 @@ impl Farm {
 
     // -- queries ----------------------------------------------------------
 
-    /// The other checkouts of the repository containing `cwd` (git worktrees
-    /// and Delta clones) and how each one's farm differs from this one. Read-only
-    /// everywhere; see [`crate::sheds`].
+    /// Every checkout of the repository containing `cwd` (git worktrees and
+    /// Delta clones), the one in `cwd` included and marked
+    /// [`Shed::current`](crate::sheds::Shed::current), each measured like any
+    /// other. Read-only everywhere; see [`crate::sheds`].
     pub fn sheds(&self, cwd: &Path) -> Result<Vec<crate::sheds::Shed>> {
         crate::sheds::discover(cwd, &self.root)
+    }
+
+    /// [`Farm::sheds`] without the current one: what "elsewhere" means to
+    /// `inbox --sheds` and `show --sheds`, which already show this checkout.
+    fn other_sheds(&self, cwd: &Path) -> Result<Vec<crate::sheds::Shed>> {
+        let mut sheds = self.sheds(cwd)?;
+        sheds.retain(|s| !s.current);
+        Ok(sheds)
     }
 
     /// One shed's changes, per yak (`yaks changes`); see [`crate::sheds::changes`].
@@ -758,7 +767,7 @@ impl Farm {
     pub fn inbox_sheds(&self, cwd: &Path, spec: FilterSpec) -> Result<Vec<ShedAsk>> {
         let ours = store::load(&self.root, &EVERY)?;
         let mut out = Vec::new();
-        for shed in self.sheds(cwd)? {
+        for shed in self.other_sheds(cwd)? {
             if !matches!(shed.farm, crate::sheds::ShedFarm::Own(_)) {
                 continue;
             }
@@ -848,7 +857,7 @@ impl Farm {
             .map(|o| store::parse_notes(&o.body))
             .unwrap_or_default();
         let mut out = ShedCopies::default();
-        for shed in self.sheds(cwd)? {
+        for shed in self.other_sheds(cwd)? {
             let theirs = match shed.farm {
                 crate::sheds::ShedFarm::Own(_) => store::discover_with(&shed.path, None)
                     .and_then(|d| store::load_task_by_id(&d.root, id))

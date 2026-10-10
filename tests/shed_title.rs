@@ -101,6 +101,9 @@ fn names(primary: &Path) -> Vec<String> {
     j.as_array()
         .unwrap()
         .iter()
+        // The primary lists itself too (marked `current`); these tests are
+        // about how it names the clone.
+        .filter(|s| s["current"] == false)
         .map(|s| s["name"].as_str().unwrap().to_string())
         .collect()
 }
