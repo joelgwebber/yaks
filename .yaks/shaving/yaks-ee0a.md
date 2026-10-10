@@ -4,7 +4,7 @@ title: 'CLI affordances for sheds and threads: what a human and an agent need to
 type: task
 priority: 2
 created: '2026-10-06T21:05:37Z'
-updated: '2026-10-10T18:57:42Z'
+updated: '2026-10-10T19:05:33Z'
 parent: yaks-7204
 labels:
 - cli
@@ -75,3 +75,7 @@ Spawned (base ece5bf8, claude-sonnet-5-5 both, from the spawn confirmations): ed
 ---
 ▸ 2026-10-10T18:57:42Z [delta-lead]
 edit-1 (f73004df4f204368) ended with no final message and no work (clean clone e4gr4rszmhgz, no commits, no notes, no target/). First death on yaks-047a; respawned as edit-2 on the same brief and claim note (its notes will carry actor edit-2; the claim names edit-1).
+
+---
+▸ 2026-10-10T19:05:33Z [delta-lead]
+Landed yaks-e9bb (base-1 bed0da16b2714c3b; f03a81c by land.sh, merge of 82dfdab). Review on this machine: full gate 16 suites, 618 passed, 0 failed; the same shed seen from two viewers now gives the same answer (the old binary gave different baselines for my clone from the primary vs from a sibling: [hairy -> shaving] vs [shaving]). Known regression until yaks-ad6d: the primary's row seen from a clone is measured from its own first reflog entry (154 new, 23 moved, 172 notes), as base-1 reported. Spawned here-1 556e48480bff4e61 (claude-sonnet-5-5, base c212def) -> yaks-ad6d. edit-1 died (no work); edit-2 7341c64aec304ab0 is on yaks-047a.
