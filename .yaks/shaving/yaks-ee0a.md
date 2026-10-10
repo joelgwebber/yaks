@@ -4,7 +4,7 @@ title: 'CLI affordances for sheds and threads: what a human and an agent need to
 type: task
 priority: 2
 created: '2026-10-06T21:05:37Z'
-updated: '2026-10-10T17:18:02Z'
+updated: '2026-10-10T18:43:27Z'
 parent: yaks-7204
 labels:
 - cli
@@ -56,3 +56,14 @@ Discovery is settled (yaks-c635): from inside any checkout, `yaks sheds` sees ev
 ---
 ▸ 2026-10-10T17:18:02Z [delta-lead]
 moved: hairy -> shaving
+
+---
+▸ 2026-10-10T18:43:27Z [delta-lead]
+Decisions (Joel, 2026-10-10, shed semantics discussion; recorded by the coordinator). They bind yaks-ad6d, yaks-047a, yaks-ed5e, yaks-9277 and the baseline yak below.
+1. `cwd` does not matter. Every shed operation gives the same answer from any checkout; the only thing that depends on where you are is the DEFAULT shed when none is named. "Principle of least surprise: no behavior that changes with seemingly irrelevant environmental parameters."
+2. A shed's changes are measured from its FORK POINT, always (the oldest entry of its own HEAD reflog), against its working tree. This is "what it thinks it is doing". The viewer-dependent sync rule (`nearer_baseline`, yaks-22f1) goes. Stable baselines are preferred even when that repeats some yak changes across sheds (for example what a worker merged in from its coordinator).
+3. A shed's own side is its WORKING TREE (committed, staged and unstaged together): ONE diff, never three. A yak with uncommitted changes may carry a mark ("more active"); nothing more.
+4. The primary's baseline is `origin/main`; a clone's view of "the primary's committed state" is `local/main`, then `origin/main` (local only exists in clones, and points at the primary).
+5. `landed` and `stale` mean "already in the REFERENCE farm", not in the viewer's: the primary's working tree when the primary is visible, else `origin/main`. Delta-managed repos have no visible primary at all (`local` is a bare repo with no branches), so there the reference is `origin/main`. Detect both reliably or say nothing.
+6. No parent detection and no wait for Delta's thread hierarchy: showing the same yak in two sheds is fine, since the workflow norm is that sheds are yak-disjoint. The TUI shows each yak's state per shed that changed it.
+7. The current shed is listed as a marked row (yaks-ad6d), with the same fork-point baseline as any other.
