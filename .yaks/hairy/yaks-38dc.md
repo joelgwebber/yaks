@@ -1,17 +1,23 @@
 ---
 id: yaks-38dc
-title: 'Lanes view: show in-flight yak state from sibling checkouts'
+title: 'Sheds view: show in-flight yak state from other checkouts in the TUI'
 type: feature
 priority: 3
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-09T20:12:18Z'
+updated: '2026-10-10T15:43:55Z'
 parent: yaks-b5a0
 labels:
 - ui
 - cli
 ---
 
-Let yaks tui (and list/show) overlay yak state from other checkouts of the same repo: git lanes via git worktree list; Delta lanes via <repo>/.delta/worktrees/<id>/<repo>/.yaks as a stopgap (opaque ids, internal layout, local runs only). Read-only; the main checkout stays authoritative. Make discovery pluggable so the planned Delta CLI ('connect any agent to Delta threads and worktrees from the command line') can replace the directory scan. Relates to yaks-5f12 (live cross-worktree sharing).
+Let `yaks tui` show yak state from the other checkouts of this repo (sheds), read-only; the main checkout stays authoritative.
+
+The data layer and the CLI half are built and released (v0.0.14): `yaks sheds`, `yaks changes <shed>`, `yaks inbox --sheds`, `yaks show --sheds`, `yaks answer <id>@<shed>`, `yaks status`, and the global `-C` / `--shed <name>` selector. Discovery is git-only (yaks-c635). What remains of this yak is the TUI over them: the overlay is designed under yaks-7204, opening or re-rooting the TUI on a shed under yaks-7eea, and the landed state under yaks-ed5e.
+
+Principle (Joel, 2026-10-03): every facility that drives a TUI view also exists as a CLI command, and the TUI calls the same library (`src/sheds.rs`), as `farm.rs` serves both today.
+
+Updated 2026-10-10: the original text named "lanes" and a Delta directory scan as a stopgap with pluggable discovery; both are superseded (lane is now shed, discovery is git-only). The notes below are history and keep the word "lane": read it as "shed".
 
 ---
 ▸ 2026-10-03T21:13:29Z [delta-lead]
