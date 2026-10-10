@@ -4,7 +4,7 @@ title: 'CLI affordances for sheds and threads: what a human and an agent need to
 type: task
 priority: 2
 created: '2026-10-06T21:05:37Z'
-updated: '2026-10-10T15:43:56Z'
+updated: '2026-10-10T17:18:02Z'
 parent: yaks-7204
 labels:
 - cli
@@ -52,3 +52,7 @@ Context: the two dead workers' sheds (brf-1, brf-2) hold uncommitted drafts and 
 ---
 ▸ 2026-10-09T20:12:18Z [delta:Delta :Yaks (cont'd)]
 Discovery is settled (yaks-c635): from inside any checkout, `yaks sheds` sees every git worktree and every pinned Delta clone, including workers that have not committed yet. The per-shed commands proposed above (changes, inbox --sheds, show --sheds, answer <id>@<shed>) can rely on it. Next is the CLI and skill design pass, then the UI.
+
+---
+▸ 2026-10-10T17:18:02Z [delta-lead]
+moved: hairy -> shaving
