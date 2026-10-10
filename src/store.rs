@@ -188,7 +188,7 @@ pub fn load(root: &Path, statuses: &[Status]) -> Result<Vec<Task>> {
 }
 
 /// Parse one task file. Returns `None` if it has no usable frontmatter/id.
-fn parse_task(text: &str, status: Status) -> Option<Task> {
+pub fn parse_task(text: &str, status: Status) -> Option<Task> {
     let (front, body) = split_frontmatter(text)?;
 
     let mut id = String::new();
@@ -1216,18 +1216,14 @@ pub fn split_note_head(head: &str) -> (String, Option<String>) {
 /// note marker, and its text runs to the next such delimiter or the end. Plain
 /// description prose is skipped, so this is safe to run over a whole body.
 pub fn parse_notes(body: &str) -> Vec<NoteEntry> {
-    const MARK: &str = "\u{25b8} ";
     let lines: Vec<&str> = body.lines().collect();
-    let is_delim = |i: usize| {
-        lines[i].trim_end() == "---" && lines.get(i + 1).is_some_and(|l| l.starts_with(MARK))
-    };
     let mut out = Vec::new();
     let mut i = 0;
     while i < lines.len() {
-        if is_delim(i) {
-            let (ts, actor) = split_note_head(lines[i + 1][MARK.len()..].trim());
+        if is_note_delim(&lines, i) {
+            let (ts, actor) = split_note_head(lines[i + 1][NOTE_MARK.len()..].trim());
             let mut j = i + 2;
-            while j < lines.len() && !is_delim(j) {
+            while j < lines.len() && !is_note_delim(&lines, j) {
                 j += 1;
             }
             let text = lines[i + 2..j].join("\n").trim().to_string();
@@ -1238,6 +1234,44 @@ pub fn parse_notes(body: &str) -> Vec<NoteEntry> {
         }
     }
     out
+}
+
+const NOTE_MARK: &str = "\u{25b8} ";
+
+/// Line `i` opens a note block: a `---` line followed by a marker line.
+fn is_note_delim(lines: &[&str], i: usize) -> bool {
+    lines[i].trim_end() == "---" && lines.get(i + 1).is_some_and(|l| l.starts_with(NOTE_MARK))
+}
+
+/// A body's description: the text before its first note block, trimmed (all of
+/// it for a body with no notes). What [`parse_notes`] skips.
+pub fn description(body: &str) -> String {
+    let lines: Vec<&str> = body.lines().collect();
+    let end = (0..lines.len())
+        .find(|&i| is_note_delim(&lines, i))
+        .unwrap_or(lines.len());
+    lines[..end].join("\n").trim().to_string()
+}
+
+/// Whether `new` is an edited version of `old`, the same yak: any frontmatter
+/// field changed, or its description. The one definition of "edited", shared by
+/// `yaks status` (a file against its version at HEAD) and `yaks sheds` /
+/// `yaks changes` (a shed's yak against its baseline). Deliberately NOT edits:
+/// `updated:` (every mutation re-stamps it), the status (a directory move is its
+/// own change), `needs:` (reported as such) and the note entries (appended
+/// notes are their own change).
+pub fn edited(old: &Task, new: &Task) -> bool {
+    old.title != new.title
+        || old.kind != new.kind
+        || old.priority != new.priority
+        || old.created != new.created
+        || old.parent != new.parent
+        || old.labels != new.labels
+        || old.depends_on != new.depends_on
+        || old.source != new.source
+        || old.verify != new.verify
+        || old.extra != new.extra
+        || description(&old.body) != description(&new.body)
 }
 
 /// Parse a canonical timestamp (as written by `now_iso`) to a UTC instant.
