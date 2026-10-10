@@ -4,7 +4,7 @@ title: 'yaks sheds and changes: count an edited yak (title, description, fields)
 type: feature
 priority: 2
 created: '2026-10-10T17:17:57Z'
-updated: '2026-10-10T18:56:19Z'
+updated: '2026-10-10T18:57:42Z'
 parent: yaks-ee0a
 labels:
 - cli
@@ -27,3 +27,7 @@ Rule: a yak present in both the baseline and the shed, with nothing else to repo
 Share the classification with `yaks status` (`describe` in src/status.rs works on text, `yak_changes` on `Task`s): prefer ONE predicate both call; if that is not clean, keep two but add a test that feeds both the same pair and requires the same verdict. Record a `Decision:` note either way.
 Out of scope: src/sheds.rs baseline code (`fork_point`, `nearer_baseline`, `BaseKind`, `GitState`, the module docs on baselines: another worker owns them), `landed`/`stale`, the current-shed row. Put your new tests in their own `mod`-level block or beside the existing `yak_changes` tests, NOT at the end of the file's test module (the other worker appends there).
 Evidence (tests FAIL first): a shed that only rewrote a yak's description shows it `edited` in `changes` and counts it in `farm:`; a title-only edit; an `updated:`-only change is NOT shown; notes-only/move-only changes are not also `edited`; text and JSON. Real machine: from a clone with a rewritten yak, `yaks changes <shed>` lists it. Judge: coordinator.
+
+---
+▸ 2026-10-10T18:57:42Z [delta-lead]
+Coordinator: owner is now edit-2 (edit-1 died before doing anything; nothing to review or copy).
