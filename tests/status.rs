@@ -10,6 +10,10 @@ fn repo(tag: &str) -> (PathBuf, String) {
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     git(&dir, &["init", "-q"]);
+    // `yaks commit` runs a plain `git commit`, which needs an identity; a CI
+    // runner has no global one, so the repo carries its own.
+    git(&dir, &["config", "user.name", "t"]);
+    git(&dir, &["config", "user.email", "t@t"]);
     yaks(&dir, &["init"]);
     let created = yaks(&dir, &["create", "first"]);
     let id = created.split([' ', ':']).nth(1).unwrap().to_string();

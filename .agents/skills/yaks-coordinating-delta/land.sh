@@ -130,6 +130,9 @@ land() {
 
 selftest() {
   d=$(mktemp -d) || die "mktemp failed"; fails=0
+  # The script's own merge and cherry-pick commit too, and a CI runner has no
+  # global git identity: give them one for the selftest only.
+  export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
   ok() { say "  ok   $1"; }
   bad() { say "  FAIL $1"; fails=$((fails + 1)); }
   g() { git -C "$d" -c user.name=t -c user.email=t@t "$@"; }

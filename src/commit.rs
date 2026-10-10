@@ -219,6 +219,10 @@ mod tests {
         put(&repo, ".yaks/artifacts/yak-0002/a.txt", "a\n");
         put(&repo, "src/code.rs", "fn main() {}\n");
         git(&repo, &["init", "-q"]);
+        // `yaks commit` runs a plain `git commit`, which needs an identity; a CI
+        // runner has no global one, so the repo carries its own.
+        git(&repo, &["config", "user.name", "t"]);
+        git(&repo, &["config", "user.email", "t@t"]);
         git(&repo, &["add", "."]);
         git(&repo, &["commit", "-q", "-m", "init"]);
         repo
