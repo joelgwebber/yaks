@@ -4,7 +4,7 @@ title: 'CLI affordances for sheds and threads: what a human and an agent need to
 type: task
 priority: 2
 created: '2026-10-06T21:05:37Z'
-updated: '2026-10-10T18:56:54Z'
+updated: '2026-10-10T18:57:42Z'
 parent: yaks-7204
 labels:
 - cli
@@ -71,3 +71,7 @@ Decisions (Joel, 2026-10-10, shed semantics discussion; recorded by the coordina
 ---
 ▸ 2026-10-10T18:56:54Z [delta-lead]
 Spawned (base ece5bf8, claude-sonnet-5-5 both, from the spawn confirmations): edit-1 f73004df4f204368 -> yaks-047a; base-1 bed0da16b2714c3b -> yaks-e9bb. Both edit src/sheds.rs in disjoint regions (yak_changes and counts vs baseline code); expect one merge conflict at most in the test module or docs rows.
+
+---
+▸ 2026-10-10T18:57:42Z [delta-lead]
+edit-1 (f73004df4f204368) ended with no final message and no work (clean clone e4gr4rszmhgz, no commits, no notes, no target/). First death on yaks-047a; respawned as edit-2 on the same brief and claim note (its notes will carry actor edit-2; the claim names edit-1).
