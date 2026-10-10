@@ -103,6 +103,9 @@ pub struct FarmDelta {
     pub notes: Vec<(String, usize)>,
     /// `(id, value)` of shed yaks whose `needs:` is set and differs from ours.
     pub needs: Vec<(String, String)>,
+    /// Yaks in both whose title, fields or description the shed rewrote (see
+    /// [`store::edited`]).
+    pub edited: Vec<String>,
 }
 
 impl FarmDelta {
@@ -111,6 +114,7 @@ impl FarmDelta {
             && self.moved.is_empty()
             && self.notes.is_empty()
             && self.needs.is_empty()
+            && self.edited.is_empty()
     }
 }
 
@@ -715,6 +719,9 @@ pub fn compare_farms(ours: &[crate::model::Task], theirs: &[crate::model::Task])
                 to,
             });
         }
+        if c.edited {
+            d.edited.push(c.id.clone());
+        }
         if let Some(n) = c.needs {
             d.needs.push((c.id, n));
         }
@@ -739,11 +746,16 @@ pub struct YakChange {
     pub notes: Vec<store::NoteEntry>,
     /// The shed's `needs:`, when it is new or differs from the baseline's.
     pub needs: Option<String>,
+    /// The yak is in both and the shed rewrote its title, a field or its
+    /// description ([`store::edited`]). Never set with `added`.
+    pub edited: bool,
 }
 
 /// What the shed did to each yak it touched, per yak: one that is new, in
-/// another status, has more notes, or has a new `needs:` (one both farms
-/// already carry is not news). The one place these rules live;
+/// another status, has more notes, has a new `needs:` (one both farms already
+/// carry is not news), or was edited (title, fields or description, as
+/// `yaks status` reads it: [`store::edited`]; `updated:` alone is not an
+/// edit). The one place these rules live;
 /// [`compare_farms`] counts them. Pure; ids sorted; yaks the shed did not
 /// touch are left out.
 pub fn yak_changes(base: &[crate::model::Task], theirs: &[crate::model::Task]) -> Vec<YakChange> {
@@ -771,11 +783,13 @@ pub fn yak_changes(base: &[crate::model::Task], theirs: &[crate::model::Task]) -
                 .needs
                 .clone()
                 .filter(|n| Some(n) != m.and_then(|m| m.needs.as_ref())),
+            edited: m.is_some_and(|m| store::edited(m, t)),
         };
         if change.added
             || change.moved.is_some()
             || !change.notes.is_empty()
             || change.needs.is_some()
+            || change.edited
         {
             out.push(change);
         }
@@ -1280,6 +1294,7 @@ pub fn to_json(sheds: &[Shed]) -> Value {
                         "needs": d.needs.iter()
                             .map(|(id, v)| json!({"id": id, "needs": v}))
                             .collect::<Vec<_>>(),
+                        "edited": d.edited,
                     }),
                     other => json!({
                         "state": match other {
@@ -1363,11 +1378,14 @@ pub fn render_changes(c: &Changes) -> String {
     }
     out.push_str(&format!("  changes{marker}:\n"));
     for y in yaks {
-        let what = match (y.added, y.moved) {
+        let mut what = match (y.added, y.moved) {
             (true, _) => format!("new, {}", y.status),
             (false, Some((from, to))) => format!("{from} -> {to}"),
             (false, None) => y.status.to_string(),
         };
+        if y.edited {
+            what.push_str(", edited");
+        }
         out.push_str(&format!("  {}  {}  [{what}]\n", y.id, y.title));
         for n in &y.notes {
             out.push_str(&format!(
@@ -1404,6 +1422,7 @@ pub fn changes_json(c: &Changes) -> Value {
                         .map(|n| json!({"ts": n.ts, "actor": n.actor, "text": n.text}))
                         .collect::<Vec<_>>(),
                     "needs": y.needs,
+                    "edited": y.edited,
                     "vs": vs,
                     "base": base,
                 })
@@ -1517,6 +1536,9 @@ pub fn render(sheds: &[Shed]) -> String {
                 if !d.needs.is_empty() {
                     parts.push(format!("{} needs", d.needs.len()));
                 }
+                if !d.edited.is_empty() {
+                    parts.push(format!("{} edited", d.edited.len()));
+                }
                 out.push_str(&format!("  farm: {}{}\n", parts.join(", "), vs_marker(l)));
                 for id in &d.added {
                     out.push_str(&format!("    + {id}\n"));
@@ -1529,6 +1551,9 @@ pub fn render(sheds: &[Shed]) -> String {
                 }
                 for (id, v) in &d.needs {
                     out.push_str(&format!("    {id} needs: {v}\n"));
+                }
+                for id in &d.edited {
+                    out.push_str(&format!("    {id} edited\n"));
                 }
             }
             other => {
@@ -3434,6 +3459,188 @@ mod tests {
         assert!(render_changes(&c).contains("    needs: agent\n"));
     }
 
+    /// Rewrite a yak file of the shed in place with `from` replaced by `to`.
+    fn rewrite(root: &Path, status: &str, id: &str, from: &str, to: &str) {
+        let f = root.join(".yaks").join(status).join(format!("{id}.md"));
+        let text = fs::read_to_string(&f).unwrap();
+        assert!(text.contains(from), "{from} not in {text}");
+        fs::write(&f, text.replacen(from, to, 1)).unwrap();
+    }
+
+    /// A shed that only rewrote a yak's description, or only its title, has
+    /// an `edited` yak: `changes` lists it (text and JSON) and `farm:` counts
+    /// it.
+    #[test]
+    fn changes_reports_an_edited_yak() {
+        let (t, wt) = claimed_repo_with_shed("changes-edited");
+        rewrite(&wt, "hairy", "yaks-bbbb", "second", "second, rewritten");
+        rewrite(
+            &wt,
+            "shaving",
+            "yaks-aaaa",
+            "title: yaks-aaaa title",
+            "title: new title",
+        );
+        let c = changes_of(&t, "shed");
+        let ys = c.yaks.as_ref().unwrap();
+        let ids: Vec<(&str, bool)> = ys.iter().map(|y| (y.id.as_str(), y.edited)).collect();
+        assert_eq!(ids, [("yaks-aaaa", true), ("yaks-bbbb", true)]);
+        assert!(
+            ys.iter()
+                .all(|y| !y.added && y.moved.is_none() && y.notes.is_empty())
+        );
+
+        let out = render_changes(&c);
+        assert!(
+            out.contains("  yaks-aaaa  new title  [shaving, edited]\n"),
+            "{out}"
+        );
+        assert!(
+            out.contains("  yaks-bbbb  yaks-bbbb title  [hairy, edited]\n"),
+            "{out}"
+        );
+        let j = changes_json(&c);
+        assert_eq!(j[0]["edited"], true);
+        assert_eq!(j[1]["edited"], true);
+        let sheds = render(&sheds_of(&t));
+        assert!(sheds.contains("farm: 2 edited"), "{sheds}");
+        assert!(sheds.contains("    yaks-bbbb edited\n"), "{sheds}");
+        let j = &to_json(&sheds_of(&t))[0]["farm"]["edited"];
+        assert_eq!(j, &json!(["yaks-aaaa", "yaks-bbbb"]));
+    }
+
+    /// `updated:` alone is not an edit, and a yak that only gained notes,
+    /// moved or set `needs:` is not also `edited`; a created yak is `new`.
+    #[test]
+    fn changes_edited_ignores_stamps_notes_moves_and_needs() {
+        let (t, wt) = claimed_repo_with_shed("changes-plain");
+        // aaaa: only the updated stamp. bbbb: moves, gains a note, sets needs.
+        rewrite(
+            &wt,
+            "shaving",
+            "yaks-aaaa",
+            "updated: '2026-01-01",
+            "updated: '2026-09-09",
+        );
+        shed_with_one_of_each(&wt);
+        task_file(
+            &wt,
+            "shaving",
+            "yaks-bbbb",
+            "needs: agent\n",
+            &notes(
+                "second",
+                &[
+                    (
+                        "2026-03-05T00:00:00Z",
+                        Some("w-2"),
+                        "moved: hairy -> shaving",
+                    ),
+                    ("2026-03-06T00:00:00Z", Some("w-2"), "more"),
+                ],
+            ),
+        );
+        shed_notes_on_aaaa(&wt, &[("2026-03-03T00:00:00Z", Some("w-1"), "a note")]);
+        rewrite(
+            &wt,
+            "shaving",
+            "yaks-aaaa",
+            "updated: '2026-01-01",
+            "updated: '2026-09-09",
+        );
+        let c = changes_of(&t, "shed");
+        let ys = c.yaks.as_ref().unwrap();
+        assert_eq!(ys.len(), 3);
+        assert!(ys.iter().all(|y| !y.edited), "{ys:?}");
+        assert!(
+            !render_changes(&c).contains("edited"),
+            "{}",
+            render_changes(&c)
+        );
+        assert!(
+            !render(&sheds_of(&t)).contains("edited"),
+            "{}",
+            render(&sheds_of(&t))
+        );
+    }
+
+    /// An `updated:`-only change lists nothing at all.
+    #[test]
+    fn changes_ignores_an_updated_only_change() {
+        let (t, wt) = claimed_repo_with_shed("changes-updated-only");
+        rewrite(
+            &wt,
+            "hairy",
+            "yaks-bbbb",
+            "updated: '2026-01-01",
+            "updated: '2026-09-09",
+        );
+        let c = changes_of(&t, "shed");
+        assert!(c.yaks.as_ref().unwrap().is_empty());
+    }
+
+    /// An edit alongside a move or notes reads `edited` as well.
+    #[test]
+    fn changes_edited_is_reported_with_a_move_and_notes() {
+        let (t, wt) = claimed_repo_with_shed("changes-edited-and");
+        shed_with_one_of_each(&wt);
+        rewrite(&wt, "shaving", "yaks-bbbb", "priority: 3", "priority: 1");
+        rewrite(&wt, "shaving", "yaks-aaaa", "first", "first, reworded");
+        let c = changes_of(&t, "shed");
+        let out = render_changes(&c);
+        assert!(out.contains("[shaving, edited]"), "{out}");
+        assert!(out.contains("[hairy -> shaving, edited]"), "{out}");
+        assert!(out.contains("[new, hairy]"), "{out}");
+        assert!(!out.contains("[new, hairy, edited]"));
+    }
+
+    /// `yaks status` and `yaks sheds`/`changes` read an edit the same way: the
+    /// same pair of files gets the same verdict from both.
+    #[test]
+    fn status_and_changes_agree_on_edited() {
+        let base = "---\nid: yak-1\ntitle: t\ntype: task\npriority: 3\n\
+                    created: '2026-01-01T00:00:00Z'\nupdated: '2026-01-01T00:00:00Z'\n---\nbody";
+        let n = "\n\n---\n\u{25b8} 2026-02-02T00:00:00Z [w]\nnote";
+        let cases = [
+            (base.to_string(), false),
+            (
+                base.replace("2026-01-01T00:00:00Z'\n---", "2026-05-05T00:00:00Z'\n---"),
+                false,
+            ),
+            (format!("{base}{n}"), false),
+            (base.replace("title: t", "title: u"), true),
+            (base.replace("priority: 3", "priority: 1"), true),
+            (base.replace("type: task", "type: bug"), true),
+            (
+                base.replace("priority: 3", "priority: 3\nlabels: [x]"),
+                true,
+            ),
+            (
+                base.replace("priority: 3", "priority: 3\nparent: yak-0"),
+                true,
+            ),
+            (
+                base.replace("priority: 3", "priority: 3\nverify: true"),
+                true,
+            ),
+            (base.replace("priority: 3", "priority: 3\nsource: s"), true),
+            (base.replace("priority: 3", "priority: 3\nmystery: 1"), true),
+            (base.replace("\nbody", "\nbody changed"), true),
+            (
+                format!("{}{n}", base.replace("\nbody", "\nbody changed")),
+                true,
+            ),
+        ];
+        let parse = |t: &str| store::parse_task(t, crate::model::Status::Hairy).unwrap();
+        for (new, want) in cases {
+            let (_, status_says) = crate::status::describe(base, &new);
+            let changes_says = yak_changes(&[parse(base)], &[parse(&new)])
+                .iter()
+                .any(|y| y.edited);
+            assert_eq!((status_says, changes_says), (want, want), "{new}");
+        }
+    }
+
     /// A created yak's notes count as new notes (`yaks changes` lists them,
     /// so `farm:` must agree).
     #[test]
@@ -3499,6 +3706,9 @@ mod tests {
                     from,
                     to,
                 });
+            }
+            if c.edited {
+                counted.edited.push(c.id.clone());
             }
             if let Some(n) = c.needs {
                 counted.needs.push((c.id, n));

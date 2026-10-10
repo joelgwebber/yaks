@@ -266,7 +266,8 @@ enum Command {
     /// entry of its HEAD reflog, so a worker is not credited with what its
     /// coordinator did first; the same from every checkout, so what the shed
     /// merged in since counts as its own): yaks only there, yaks in another
-    /// status, new notes, `needs:` set. With no usable reflog the baseline is
+    /// status, new notes, `needs:` set, yaks edited (title, fields or
+    /// description, as `yaks status` reads them). With no usable reflog the baseline is
     /// the merge-base with this checkout (the one case that depends on where
     /// you run it) and the output says `(vs merge-base)`
     /// (JSON `farm.vs`: `fork`, `merge-base` or `checkout`). Also how far
@@ -291,8 +292,9 @@ enum Command {
     /// What ONE shed (another checkout of this repo, picked like the rows of
     /// `yaks sheds`) created, moved and noted since it forked, per yak, with
     /// actors: new yaks (title, status), yaks in another status (from -> to),
-    /// each new note entry (timestamp, actor, first line) and `needs:` newly
-    /// set. The per-yak expansion of the `farm:` line of `yaks sheds`, with the
+    /// each new note entry (timestamp, actor, first line), `needs:` newly
+    /// set, and an `edited` yak (title, fields or description rewritten, as
+    /// `yaks status` reads it; `updated:` alone is not an edit). The per-yak expansion of the `farm:` line of `yaks sheds`, with the
     /// same baseline (the shed's fork point, else the merge-base / this checkout,
     /// and the output says `(vs merge-base)` / `(vs this checkout)`). SHED is
     /// its path, Delta dir id, thread-title slug, branch or an actor on its

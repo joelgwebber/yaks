@@ -8,6 +8,7 @@
 
 use crate::changes::{self, Kind, YakChange, classify};
 use crate::commit::generate_message;
+use crate::model::{Status, Task};
 use crate::store;
 use anyhow::Result;
 use serde_json::{Value, json};
@@ -147,41 +148,22 @@ fn head_text(root: &Path, path: &str) -> Option<String> {
 }
 
 /// Compare a yak file's text at HEAD with now: how many notes were added
-/// (`moved: a -> b` transition entries do not count), and whether anything
-/// besides appended notes and the `updated:` stamp changed.
-fn describe(old: &str, new: &str) -> (usize, bool) {
-    let (old, new) = (without_updated(old), without_updated(new));
-    let notes = |text: &str| {
-        store::parse_notes(text)
+/// (`moved: a -> b` transition entries do not count), and whether the yak was
+/// edited ([`store::edited`], the definition `yaks sheds` shares). A file that
+/// does not parse counts as edited.
+pub(crate) fn describe(old: &str, new: &str) -> (usize, bool) {
+    let parse = |text: &str| store::parse_task(text, Status::Hairy);
+    let (Some(old), Some(new)) = (parse(old), parse(new)) else {
+        return (0, true);
+    };
+    let notes = |t: &Task| {
+        store::parse_notes(&t.body)
             .iter()
             .filter(|n| !store::is_transition_text(&n.text))
             .count()
     };
     let added = notes(&new).saturating_sub(notes(&old));
-    let edited = match new.strip_prefix(old.trim_end()) {
-        // Only appended notes: whatever precedes the first note block is blank.
-        Some(rest) => {
-            let rest = format!("\n{rest}");
-            let head = rest
-                .find("\n---\n\u{25b8} ")
-                .map_or(&rest[..], |i| &rest[..i]);
-            !head.trim().is_empty()
-        }
-        None => true,
-    };
-    (added, edited)
-}
-
-/// `text` without its `updated:` line, which every mutation re-stamps.
-fn without_updated(text: &str) -> String {
-    let mut dropped = false;
-    text.split_inclusive('\n')
-        .filter(|l| {
-            let hit = !dropped && l.starts_with("updated:");
-            dropped |= hit;
-            !hit
-        })
-        .collect()
+    (added, store::edited(&old, &new))
 }
 
 /// The text output.
