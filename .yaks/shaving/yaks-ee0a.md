@@ -4,7 +4,7 @@ title: 'CLI affordances for sheds and threads: what a human and an agent need to
 type: task
 priority: 2
 created: '2026-10-06T21:05:37Z'
-updated: '2026-10-10T18:43:27Z'
+updated: '2026-10-10T18:56:54Z'
 parent: yaks-7204
 labels:
 - cli
@@ -67,3 +67,7 @@ Decisions (Joel, 2026-10-10, shed semantics discussion; recorded by the coordina
 5. `landed` and `stale` mean "already in the REFERENCE farm", not in the viewer's: the primary's working tree when the primary is visible, else `origin/main`. Delta-managed repos have no visible primary at all (`local` is a bare repo with no branches), so there the reference is `origin/main`. Detect both reliably or say nothing.
 6. No parent detection and no wait for Delta's thread hierarchy: showing the same yak in two sheds is fine, since the workflow norm is that sheds are yak-disjoint. The TUI shows each yak's state per shed that changed it.
 7. The current shed is listed as a marked row (yaks-ad6d), with the same fork-point baseline as any other.
+
+---
+▸ 2026-10-10T18:56:54Z [delta-lead]
+Spawned (base ece5bf8, claude-sonnet-5-5 both, from the spawn confirmations): edit-1 f73004df4f204368 -> yaks-047a; base-1 bed0da16b2714c3b -> yaks-e9bb. Both edit src/sheds.rs in disjoint regions (yak_changes and counts vs baseline code); expect one merge conflict at most in the test module or docs rows.
