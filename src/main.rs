@@ -264,12 +264,12 @@ enum Command {
     /// List the other checkouts of this repo (git worktrees and Delta clones)
     /// and what each one's farm CHANGED since the shed forked (the oldest
     /// entry of its HEAD reflog, so a worker is not credited with what its
-    /// coordinator did first; or, for a shed synced with this checkout since
-    /// it forked, the merge-base with this checkout when that is nearer, so
-    /// what it merged in is not counted): yaks only there, yaks in another
+    /// coordinator did first; the same from every checkout, so what the shed
+    /// merged in since counts as its own): yaks only there, yaks in another
     /// status, new notes, `needs:` set. With no usable reflog the baseline is
-    /// the merge-base with this checkout and the output says `(vs merge-base)`
-    /// (JSON `farm.vs`: `fork`, `sync`, `merge-base` or `checkout`). Also how far
+    /// the merge-base with this checkout (the one case that depends on where
+    /// you run it) and the output says `(vs merge-base)`
+    /// (JSON `farm.vs`: `fork`, `merge-base` or `checkout`). Also how far
     /// ahead/behind its HEAD is of this checkout's (`+? -?`, JSON null, when
     /// there is no merge-base here, e.g. shallow history; the table then says
     /// once to `git fetch --unshallow`). A shed that is merely behind shows
@@ -293,7 +293,7 @@ enum Command {
     /// actors: new yaks (title, status), yaks in another status (from -> to),
     /// each new note entry (timestamp, actor, first line) and `needs:` newly
     /// set. The per-yak expansion of the `farm:` line of `yaks sheds`, with the
-    /// same baseline (the shed's fork point, or the merge-base / this checkout,
+    /// same baseline (the shed's fork point, else the merge-base / this checkout,
     /// and the output says `(vs merge-base)` / `(vs this checkout)`). SHED is
     /// its path, Delta dir id, thread-title slug, branch or an actor on its
     /// notes, or a unique substring of those (or of its full title); `main` names the primary checkout. No or an
