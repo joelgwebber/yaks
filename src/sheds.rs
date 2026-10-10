@@ -371,6 +371,15 @@ pub fn resolve<'a>(sheds: &'a [Shed], query: &str) -> Result<&'a Shed, String> {
     if q.is_empty() {
         return Err("empty shed name".into());
     }
+    // `main` names the primary checkout and nothing else: when it is not in
+    // the list (we are in it), falling through to "a branch called `main`"
+    // would silently pick a Delta clone.
+    if q == "main" && !sheds.iter().any(|s| s.primary) {
+        return Err(
+            "`main` is the primary checkout, and that is this one (or not visible from here)"
+                .into(),
+        );
+    }
     let qpath = canonical(Path::new(q));
     let rules: [&dyn Fn(&Shed) -> bool; 7] = [
         &|s| s.path == qpath || s.path == Path::new(q),
@@ -3002,6 +3011,11 @@ mod tests {
         assert_eq!(shed_at(&from_wt, &c).branch.as_deref(), Some("main"));
         assert_eq!(p(resolve(&from_wt, "main").unwrap()), t);
         let from_t = sheds_of(&t);
+        // From the primary itself it is not among the sheds, and `main` must
+        // not fall through to the clone that is on a branch called `main`.
+        assert_eq!(shed_at(&from_t, &c).branch.as_deref(), Some("main"));
+        let e = resolve(&from_t, "main").unwrap_err();
+        assert!(e.contains("`main` is the primary checkout"), "{e}");
         assert_eq!(p(resolve(&from_t, "q7zz").unwrap()), c);
         assert_eq!(p(resolve(&from_t, "q7").unwrap()), c, "unique substring");
         let branch = shed_at(&from_t, &wt).branch.clone().unwrap();
