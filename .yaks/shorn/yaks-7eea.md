@@ -4,7 +4,7 @@ title: 'Open the TUI on another shed: a shed picker (the CLI selector, -C and --
 type: idea
 priority: 2
 created: '2026-10-07T01:00:44Z'
-updated: '2026-10-10T15:43:56Z'
+updated: '2026-10-10T18:55:34Z'
 parent: yaks-ee0a
 labels:
 - cli
@@ -61,3 +61,14 @@ Still open here: NAMES (the thread title rather than the opaque dir id; `who:` l
 ---
 ▸ 2026-10-10T13:40:07Z [delta:Delta :Yaks (cont'd)]
 Parked (Joel, 2026-10-10): showing which thread spawned which in sheds (the shared prefix of yaks.shed.thread ids, e.g. ksQQI7UGw66zRMm9tnfRIaYEapLOAA... across a yakherd and its workers, and 'delta thread list --subagents --json' lists exactly that thread's subagents) is deferred until Delta adds CLI affordances for thread hierarchy. Not built; the undocumented id format is the reason.
+
+---
+▸ 2026-10-10T18:55:34Z [delta-lead]
+Two items of the original brainstorm were still open here; both belong to the TUI design, so they move to yaks-7204 (copied there as a note, not lost):
+- a shed picker inside the TUI that re-roots it, with a banner naming the shed;
+- a ready-to-paste `open:` line / `--paths` in `yaks sheds` (option C), only if the picker leaves a need.
+Everything else is built: discovery (yaks-c635), names (yaks-886a), `-C` (yaks-4e39) and `--shed` (yaks-440d, full access). The managed-repo discovery gap moved out as yaks-6beb. Shorn as done-and-subsumed (Joel, 2026-10-10).
+
+---
+▸ 2026-10-10T18:55:34Z [delta-lead]
+moved: hairy -> shorn
