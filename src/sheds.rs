@@ -11,16 +11,19 @@
 //! (committed history, read with `git ls-tree`/`cat-file` into a temp dir of
 //! our own), so a shed that is merely behind shows nothing of its own and what
 //! it does show is exactly what it changed, committed or not. The fork point is
-//! the oldest entry of the shed's HEAD reflog ([`fork_point`]); a worker forks
-//! from its coordinator's thread, not from the checkout that runs `yaks sheds`,
-//! so measuring from the merge-base with THIS checkout would credit the shed
-//! with everything its coordinator did before spawning it. A shed synced with
-//! this checkout after it forked is measured from that merge-base instead
-//! when it is nearer ([`nearer_baseline`], `sync`): what it merged in is not
-//! its own. When the reflog cannot give a usable fork point, the merge-base with this checkout is the
-//! baseline instead and the output says so (`vs merge-base`); when there is no
-//! base farm to read at all, the shed is compared with this checkout's working
-//! tree and says so (`vs this checkout`).
+//! the oldest entry of the shed's HEAD reflog ([`fork_point`]) and it is the
+//! baseline from EVERY viewer (yaks-e9bb): the answer about a shed never
+//! depends on which checkout runs `yaks sheds`. A worker forks from its
+//! coordinator's thread, not from the checkout that runs `yaks sheds`, so
+//! measuring from the merge-base with THIS checkout would credit the shed with
+//! everything its coordinator did before spawning it. What a shed merged in
+//! after forking (say its coordinator's `main`) is credited to it like anything
+//! else it holds: a stable baseline is preferred to a viewer-dependent one.
+//! Only when the reflog cannot give a usable fork point is the merge-base with
+//! this checkout the baseline instead; that fallback IS viewer-relative, so the
+//! output says so (`vs merge-base`). When there is no base farm to read at all,
+//! the shed is compared with this checkout's working tree and says so (`vs this
+//! checkout`).
 //!
 //! Discovery reads only what git records, from inside any checkout of the
 //! repository; it never searches the filesystem (yaks-c635):
@@ -117,14 +120,10 @@ pub enum BaseKind {
     /// Where the shed itself forked (oldest entry of its HEAD reflog): exactly
     /// the shed's own work.
     Fork,
-    /// The merge-base with this checkout, chosen because it is NEARER than the
-    /// fork point (the shed was synced with this checkout after it forked):
-    /// everything before it is already in our history. As exact as `Fork`, so
-    /// unmarked.
-    Sync,
     /// The merge-base with this checkout: the fallback when the fork point is
-    /// unknown. It also counts whatever the shed inherited from the thread that
-    /// spawned it, so the output marks it.
+    /// unknown. Unlike `Fork` it depends on which checkout is looking, and it
+    /// also counts whatever the shed inherited from the thread that spawned
+    /// it, so the output marks it.
     MergeBase,
 }
 
@@ -133,7 +132,6 @@ impl BaseKind {
     pub fn as_str(self) -> &'static str {
         match self {
             BaseKind::Fork => "fork",
-            BaseKind::Sync => "sync",
             BaseKind::MergeBase => "merge-base",
         }
     }
@@ -471,7 +469,7 @@ fn inspect(
             shed.ahead = g.ahead;
             shed.behind = g.behind;
             shed.dirty = Some(g.dirty);
-            bases.extend(g.fork);
+            bases.extend(g.fork.map(|f| (BaseKind::Fork, f)));
             bases.extend(g.merge_base.map(|b| (BaseKind::MergeBase, b)));
         }
         Err(e) => shed.error = Some(format!("{e:#}")),
@@ -489,8 +487,8 @@ fn inspect(
                 shed.farm = match store::load(&root, &EVERY) {
                     Ok(theirs) => {
                         // What the shed changed is relative to where it forked
-                        // (else the merge-base), not to our (possibly newer)
-                        // checkout.
+                        // (else the merge-base), never to our (possibly newer)
+                        // checkout, so every viewer gets the same answer.
                         let base = bases.iter().find_map(|(kind, b)| {
                             base_farm(top, b, path, &root)
                                 .map(|(sha, tasks)| (FarmBase { kind: *kind, sha }, tasks))
@@ -515,10 +513,9 @@ fn inspect(
 struct GitState {
     branch: Option<String>,
     head: String,
-    /// The exact baseline, when the shed's reflog gives a usable fork point
-    /// (see [`fork_point`]): the fork point itself (`Fork`), or the merge-base
-    /// when that is nearer (`Sync`, see [`nearer_baseline`]).
-    fork: Option<(BaseKind, String)>,
+    /// The shed's fork point, when its reflog gives a usable one (see
+    /// [`fork_point`]): the same commit from every viewer.
+    fork: Option<String>,
     /// `git merge-base HEAD <shed HEAD>` in OUR repo; `None` when there is
     /// none (then `ahead`/`behind` are unknown too).
     merge_base: Option<String>,
@@ -555,7 +552,7 @@ fn git_state(top: &Path, shed: &Path) -> Result<GitState> {
     Ok(GitState {
         branch,
         head,
-        fork: fork_point(top, shed, &full).map(|f| nearer_baseline(top, f, merge_base.as_deref())),
+        fork: fork_point(top, shed, &full),
         merge_base,
         ahead,
         behind,
@@ -588,23 +585,6 @@ fn fork_point(top: &Path, shed: &Path, full: &str) -> Option<String> {
     }
     git(top, &["merge-base", "--is-ancestor", sha, full]).ok()?;
     Some(sha.to_string())
-}
-
-/// The nearer of the validated fork point `fork` and the merge-base `mb` with
-/// this checkout. When the merge-base descends from the fork point (the shed
-/// was synced with this checkout after it forked) everything between the two
-/// is already in our history, so it is not what the shed has that we lack: the
-/// merge-base wins (`Sync`). Otherwise (the merge-base is the fork point, an
-/// ancestor of it, or unrelated: a worker forked from a coordinator whose
-/// commits are not in our history, e.g. after a squash landing) the fork point
-/// wins.
-fn nearer_baseline(top: &Path, fork: String, mb: Option<&str>) -> (BaseKind, String) {
-    match mb {
-        Some(mb) if mb != fork && git(top, &["merge-base", "--is-ancestor", &fork, mb]).is_ok() => {
-            (BaseKind::Sync, mb.to_string())
-        }
-        _ => (BaseKind::Fork, fork),
-    }
 }
 
 /// A temp directory of ours, removed on drop.
@@ -1281,11 +1261,10 @@ pub fn to_json(sheds: &[Shed]) -> Value {
                     ShedFarm::Own(d) => json!({
                         "state": "own",
                         // What the delta is relative to (`base` = its short
-                        // sha): where the shed forked (`fork`), or this
-                        // checkout's merge-base with it when it was synced
-                        // since (`sync`), else that merge-base as a fallback
-                        // (`merge-base`), else,
-                        // when neither can be read, this checkout's farm.
+                        // sha): where the shed forked (`fork`), else this
+                        // checkout's merge-base with it as a fallback
+                        // (`merge-base`), else, when neither can be read,
+                        // this checkout's farm.
                         "vs": match &l.farm_base {
                             Some(b) => b.kind.as_str(),
                             None => "checkout",
@@ -1348,7 +1327,7 @@ fn vs_marker(l: &Shed) -> &'static str {
 
 fn base_marker(base: Option<&FarmBase>) -> &'static str {
     match base.map(|b| b.kind) {
-        Some(BaseKind::Fork | BaseKind::Sync) => "",
+        Some(BaseKind::Fork) => "",
         Some(BaseKind::MergeBase) => " (vs merge-base)",
         None => " (vs this checkout)",
     }
@@ -2733,7 +2712,7 @@ mod tests {
         assert_eq!(l.who, strs(&["w-1"]));
         // The viewer's merge-base with the worker is OLDER than the fork point
         // (the squash left the coordinator's commits out of the viewer's
-        // history), so the fork point still wins: no `sync`.
+        // history); the fork point is the baseline from any viewer.
         let fork = sh(&coord, &["rev-parse", "--short", "HEAD"]);
         assert_eq!(
             l.farm_base,
@@ -2759,54 +2738,57 @@ mod tests {
             .clone()
     }
 
-    /// What a shed that has been synced with the viewer must show: only what
-    /// came after the sync, exact (no `vs` marker), `farm.vs` = `sync`.
-    fn assert_only_post_sync(t: &Path, w: &Path, base_sha: &str) {
+    /// What a shed that merged the viewer's work after forking must show from
+    /// EVERY viewer (yaks-e9bb): measured from its fork point, so what it
+    /// merged in is credited to it like anything else it holds, exact (no `vs`
+    /// marker), `farm.vs` = `fork`.
+    fn assert_since_the_fork(t: &Path, w: &Path, fork_sha: &str) {
         let sheds = sheds_of(t);
         let l = shed_at(&sheds, w);
         assert_eq!(
             l.farm_base,
             Some(FarmBase {
-                kind: BaseKind::Sync,
-                sha: base_sha.to_string()
+                kind: BaseKind::Fork,
+                sha: fork_sha.to_string()
             })
         );
-        assert_eq!(l.who, strs(&["new-1"]), "oldx and viewx predate the sync");
+        assert_eq!(
+            l.who,
+            strs(&["oldx", "new-1"]),
+            "the merged note is its own"
+        );
         assert_eq!(l.in_progress, strs(&["yaks-aaaa"]));
         let ShedFarm::Own(d) = &l.farm else {
             panic!("expected own farm, got {:?}", l.farm)
         };
-        assert_eq!(d.notes, vec![("yaks-aaaa".to_string(), 1)]);
+        assert_eq!(d.notes, vec![("yaks-aaaa".to_string(), 2)]);
         assert!(d.added.is_empty() && d.moved.is_empty(), "{d:?}");
         let text = render(&sheds);
         assert!(
-            text.contains("  who: new-1 \u{b7} shaving: yaks-aaaa\n"),
+            text.contains("  who: oldx, new-1 \u{b7} shaving: yaks-aaaa\n"),
             "{text}"
         );
-        assert!(
-            !text.contains("(vs "),
-            "sync is exact, not a fallback: {text}"
-        );
+        assert!(!text.contains("(vs "), "the fork point is exact: {text}");
         let jw = json_of(&sheds, w);
-        assert_eq!(jw["farm"]["vs"], "sync");
-        assert_eq!(jw["farm"]["base"], base_sha);
-        assert_eq!(jw["who"], json!(["new-1"]));
+        assert_eq!(jw["farm"]["vs"], "fork");
+        assert_eq!(jw["farm"]["base"], fork_sha);
+        assert_eq!(jw["who"], json!(["oldx", "new-1"]));
     }
 
     #[test]
-    fn a_shed_the_viewer_merged_shows_only_what_came_after_that() {
-        let (t, w) = claimed_repo_with_shed("sync-viewer-merged");
+    fn a_shed_the_viewer_merged_still_shows_everything_since_its_fork() {
+        let (t, w) = claimed_repo_with_shed("fork-viewer-merged");
+        let fork = sh(&w, &["rev-parse", "--short", "HEAD"]);
         let old = ("2026-03-02T00:00:00Z", Some("oldx"), "old note");
         commit_notes_on_aaaa(&w, &[old]);
         // The viewer merges the shed (a real merge commit), then the shed
         // carries on.
         sh(&t, &["merge", "--no-ff", "-q", "-m", "land", "shed"]);
-        let synced = sh(&w, &["rev-parse", "--short", "HEAD"]);
         commit_notes_on_aaaa(
             &w,
             &[old, ("2026-03-03T00:00:00Z", Some("new-1"), "new note")],
         );
-        assert_only_post_sync(&t, &w, &synced);
+        assert_since_the_fork(&t, &w, &fork);
         // ahead/behind are untouched: still relative to the viewer's HEAD.
         let sheds = sheds_of(&t);
         assert_eq!(
@@ -2816,24 +2798,148 @@ mod tests {
     }
 
     #[test]
-    fn a_shed_that_merged_the_viewer_shows_only_what_came_after_that() {
-        let (t, w) = claimed_repo_with_shed("sync-shed-merged");
-        // The viewer moves on (a note by `viewx`) and the shed pulls it in.
-        let old = ("2026-03-02T12:00:00Z", Some("viewx"), "viewer note");
+    fn a_shed_that_merged_the_viewer_still_shows_everything_since_its_fork() {
+        let (t, w) = claimed_repo_with_shed("fork-shed-merged");
+        let fork = sh(&w, &["rev-parse", "--short", "HEAD"]);
+        // The viewer moves on (a note by `oldx`) and the shed pulls it in.
+        let old = ("2026-03-02T00:00:00Z", Some("oldx"), "viewer note");
         commit_notes_on_aaaa(&t, &[old]);
         let branch = sh(&t, &["symbolic-ref", "--short", "HEAD"]);
         sh(&w, &["merge", "--no-ff", "-q", "-m", "sync", &branch]);
-        let synced = sh(&t, &["rev-parse", "--short", "HEAD"]);
         commit_notes_on_aaaa(
             &w,
             &[old, ("2026-03-03T00:00:00Z", Some("new-1"), "new note")],
         );
-        assert_only_post_sync(&t, &w, &synced);
+        assert_since_the_fork(&t, &w, &fork);
     }
 
     #[test]
-    fn a_shed_that_never_synced_keeps_its_fork_point_even_when_the_viewer_moved_on() {
-        let (t, w) = claimed_repo_with_shed("sync-none");
+    fn a_shed_that_merged_the_viewers_main_reads_the_same_from_every_viewer() {
+        // `w` forks from F, then merges the PRIMARY's main (a note by
+        // `oldx`), then adds its own. Seen from the primary the merge-base is
+        // main's tip, seen from a sibling shed it is F: the baseline, the
+        // changes and the label must not depend on which.
+        let (t, w) = claimed_repo_with_shed("fork-two-viewers");
+        let fork = sh(&w, &["rev-parse", "--short", "HEAD"]);
+        let sibling = t.parent().unwrap().join("sibling");
+        sh(
+            &t,
+            &[
+                "worktree",
+                "add",
+                "-q",
+                "-b",
+                "sibling",
+                sibling.to_str().unwrap(),
+                &fork,
+            ],
+        );
+        let old = ("2026-03-02T00:00:00Z", Some("oldx"), "viewer note");
+        commit_notes_on_aaaa(&t, &[old]);
+        let branch = sh(&t, &["symbolic-ref", "--short", "HEAD"]);
+        sh(&w, &["merge", "--no-ff", "-q", "-m", "sync", &branch]);
+        commit_notes_on_aaaa(
+            &w,
+            &[old, ("2026-03-03T00:00:00Z", Some("new-1"), "new note")],
+        );
+        // From the primary, and from the sibling (whose merge-base with the
+        // shed is the fork point itself).
+        assert_since_the_fork(&t, &w, &fork);
+        assert_since_the_fork(&sibling, &w, &fork);
+        let (from_t, from_sibling) = (sheds_of(&t), sheds_of(&sibling));
+        assert_eq!(shed_at(&from_t, &w).farm, shed_at(&from_sibling, &w).farm);
+        assert_eq!(
+            json_of(&from_t, &w)["farm"],
+            json_of(&from_sibling, &w)["farm"]
+        );
+    }
+
+    #[test]
+    fn a_delta_clone_is_measured_from_its_first_reflog_entry_from_every_viewer() {
+        // The clone's first reflog entry is the HEAD it was cloned at (F);
+        // it then merges the primary's moved-on main. A worktree sibling and
+        // the primary itself must agree on F.
+        let b = base("fork-clone");
+        let t = b.join("repo");
+        repo_with_farm(&t);
+        let fork = sh(&t, &["rev-parse", "--short", "HEAD"]);
+        let c = delta_clone(
+            &t.join(".git"),
+            &t.join(".delta/clones"),
+            &t.join(".delta/worktrees"),
+            "d1",
+            "repo",
+        );
+        let sibling = b.join("sibling");
+        sh(
+            &t,
+            &[
+                "worktree",
+                "add",
+                "-q",
+                "-b",
+                "sib",
+                sibling.to_str().unwrap(),
+            ],
+        );
+        task_file(
+            &t,
+            "hairy",
+            "yaks-dddd",
+            "",
+            &notes(
+                "main's own",
+                &[("2026-03-02T00:00:00Z", Some("viewx"), "n")],
+            ),
+        );
+        sh(&t, &["add", "-A"]);
+        sh(&t, &["commit", "-q", "-m", "main moves on"]);
+        let branch = sh(&t, &["symbolic-ref", "--short", "HEAD"]);
+        // The clone merges the primary's main (the clone's `origin`).
+        sh(&c, &["fetch", "-q", "origin", &branch]);
+        sh(&c, &["merge", "--no-ff", "-q", "-m", "sync", "FETCH_HEAD"]);
+        task_file(&c, "hairy", "yaks-eeee", "", "own");
+        sh(&c, &["add", "-A"]);
+        sh(&c, &["commit", "-q", "-m", "own"]);
+        // Delta pins the clone's commits in the host as it goes, which is what
+        // lets every viewer read the clone's history.
+        let head = sh(&c, &["rev-parse", "HEAD"]);
+        sh(
+            &t,
+            &[
+                "fetch",
+                "-q",
+                c.to_str().unwrap(),
+                &format!("{head}:refs/delta/d1/repo/{head}"),
+            ],
+        );
+        for viewer in [&t, &sibling] {
+            let sheds = sheds_of(viewer);
+            let l = shed_at(&sheds, &c);
+            assert_eq!(
+                l.farm_base,
+                Some(FarmBase {
+                    kind: BaseKind::Fork,
+                    sha: fork.clone()
+                }),
+                "viewer {}",
+                viewer.display()
+            );
+            let ShedFarm::Own(d) = &l.farm else {
+                panic!("expected own farm, got {:?}", l.farm)
+            };
+            assert_eq!(
+                d.added,
+                vec!["yaks-dddd".to_string(), "yaks-eeee".to_string()],
+                "viewer {}",
+                viewer.display()
+            );
+        }
+    }
+
+    #[test]
+    fn a_shed_keeps_its_fork_point_even_when_the_viewer_moved_on() {
+        let (t, w) = claimed_repo_with_shed("fork-viewer-moved");
         let fork = sh(&w, &["rev-parse", "--short", "HEAD"]);
         commit_notes_on_aaaa(&w, &[("2026-03-03T00:00:00Z", Some("new-1"), "new note")]);
         task_file(
