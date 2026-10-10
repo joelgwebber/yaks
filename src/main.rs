@@ -55,7 +55,8 @@ struct Cli {
     /// Run as if started in another checkout of this repository (a shed from
     /// `yaks sheds`), picked by name like `yaks changes <SHED>`: its path,
     /// Delta dir id, thread-title slug, branch, actor, or a unique substring
-    /// (`main` is the primary checkout). The same as `-C <that shed's path>`:
+    /// (`main` is the primary checkout; naming the checkout you are in is a
+    /// no-op). The same as `-C <that shed's path>`:
     /// FULL access, so a write command writes in that shed's farm. Applied
     /// after any `-C`, relative to that checkout; at most once. No or an
     /// ambiguous match lists the sheds and exits 1. Never records the Delta
@@ -137,7 +138,8 @@ enum Command {
         json: bool,
     },
     /// Show one task by id. With `--sheds`, also show how the OTHER checkouts
-    /// of this repository (git worktrees, Delta clones) have that yak: this
+    /// of this repository (git worktrees, Delta clones; not the one you are in)
+    /// have that yak: this
     /// checkout's copy first, then one block per shed whose copy differs (its
     /// status, `needs:`, and the note entries it has that this copy lacks) and
     /// one line counting the sheds that are the same, lack the yak, or have no
@@ -261,16 +263,24 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// List the other checkouts of this repo (git worktrees and Delta clones)
-    /// and what each one's farm CHANGED since the shed forked (the oldest
+    /// List EVERY checkout of this repo (git worktrees and Delta clones),
+    /// the one you are in included: it is marked (a `*` in the first column
+    /// and `(here)` on its `name:` line, JSON `current: true`, `false` on every
+    /// other row) and measured like any other, so where you run this only
+    /// picks which row is marked, never an answer. Each row says what that
+    /// checkout's farm CHANGED since the shed forked (the oldest
     /// entry of its HEAD reflog, so a worker is not credited with what its
     /// coordinator did first; the same from every checkout, so what the shed
     /// merged in since counts as its own): yaks only there, yaks in another
     /// status, new notes, `needs:` set, yaks edited (title, fields or
-    /// description, as `yaks status` reads them). With no usable reflog the baseline is
-    /// the merge-base with this checkout (the one case that depends on where
-    /// you run it) and the output says `(vs merge-base)`
-    /// (JSON `farm.vs`: `fork`, `merge-base` or `checkout`). Also how far
+    /// description, as `yaks status` reads them). The PRIMARY checkout is measured from
+    /// `origin/main` instead (the remote-tracking ref, else `origin/HEAD`'s
+    /// target) against its working tree, i.e. what it has not published, and
+    /// says `(vs origin/main)`; with no usable origin ref it falls back to its
+    /// fork point and says `(vs fork)`. With no usable reflog the baseline of
+    /// any other shed is the merge-base with this checkout (the one case that
+    /// depends on where you run it) and the output says `(vs merge-base)`
+    /// (JSON `farm.vs`: `origin`, `fork`, `merge-base` or `checkout`). Also how far
     /// ahead/behind its HEAD is of this checkout's (`+? -?`, JSON null, when
     /// there is no merge-base here, e.g. shallow history; the table then says
     /// once to `git fetch --unshallow`). A shed that is merely behind shows
@@ -289,23 +299,25 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// What ONE shed (another checkout of this repo, picked like the rows of
-    /// `yaks sheds`) created, moved and noted since it forked, per yak, with
-    /// actors: new yaks (title, status), yaks in another status (from -> to),
+    /// What ONE shed (a checkout of this repo, picked like the rows of
+    /// `yaks sheds`; with no SHED, the one you are in) created, moved and noted
+    /// since it forked, per yak, with actors: new yaks (title, status), yaks in another status (from -> to),
     /// each new note entry (timestamp, actor, first line), `needs:` newly
     /// set, and an `edited` yak (title, fields or description rewritten, as
     /// `yaks status` reads it; `updated:` alone is not an edit). The per-yak expansion of the `farm:` line of `yaks sheds`, with the
-    /// same baseline (the shed's fork point, else the merge-base / this checkout,
-    /// and the output says `(vs merge-base)` / `(vs this checkout)`). SHED is
+    /// same baseline (the shed's fork point; the primary's `origin/main`, else
+    /// its fork point, `(vs origin/main)` / `(vs fork)`; else the merge-base /
+    /// this checkout, `(vs merge-base)` / `(vs this checkout)`). SHED is
     /// its path, Delta dir id, thread-title slug, branch or an actor on its
-    /// notes, or a unique substring of those (or of its full title); `main` names the primary checkout. No or an
+    /// notes, or a unique substring of those (or of its full title); `main` names the primary checkout whether or not you are in it, and your own shed
+    /// works. No or an
     /// ambiguous match lists the sheds and exits 1. A shed sharing this farm,
     /// or with none or an unreadable one, says why there is nothing to show.
     /// Read-only everywhere.
     Changes {
         /// The shed: path, Delta dir id, thread-title slug, branch, actor,
-        /// `main`, or a unique substring.
-        shed: String,
+        /// `main`, or a unique substring. Default: the shed you are in.
+        shed: Option<String>,
         /// Emit one JSON object per changed yak (`id`, `title`, `status`,
         /// `added`, `moved`, `notes` with `ts`/`actor`/`text`, `needs`, `vs`,
         /// `base`); `[]` when there is nothing to list.
@@ -444,7 +456,8 @@ enum Command {
     /// instead, for an answer that needs no follow-up. A second answer keeps
     /// `needs: agent` and appends the note; on a yak with no `needs` it only
     /// records the note. `<id>@<shed>` answers in ANOTHER checkout's copy of
-    /// the yak (a shed from `yaks sheds`; see `yaks changes`): the reply is
+    /// the yak (a shed from `yaks sheds`; see `yaks changes`; your own shed is a
+    /// plain `answer`): the reply is
     /// written into that working tree and left uncommitted there, for its
     /// worker to commit with its own yak file. The only command that writes
     /// outside this checkout.
@@ -877,6 +890,8 @@ fn enter_shed(query: &str) -> Result<()> {
     };
     let sheds = farm.sheds(&cwd)?;
     let path = match sheds::resolve(&sheds, query) {
+        // Naming the shed you are in changes nothing (not even a subdirectory).
+        Ok(s) if s.current => return Ok(()),
         Ok(s) => s.path.clone(),
         Err(e) => {
             eprintln!("error: {e}");
@@ -1308,12 +1323,18 @@ fn main() -> Result<()> {
         Command::Changes { shed, json } => {
             let cwd = env::current_dir()?;
             let sheds = farm.sheds(&cwd)?;
-            let found = match sheds::resolve(&sheds, &shed) {
-                Ok(s) => s,
-                Err(e) => {
-                    eprintln!("error: {e}");
-                    std::process::exit(1);
-                }
+            // No name means the shed you are in.
+            let found = match shed {
+                None => sheds.iter().find(|s| s.current).ok_or_else(|| {
+                    anyhow::anyhow!("this checkout is not among the sheds of its repository")
+                })?,
+                Some(q) => match sheds::resolve(&sheds, &q) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        eprintln!("error: {e}");
+                        std::process::exit(1);
+                    }
+                },
             };
             let changes = farm.shed_changes(found, &cwd)?;
             if json {
@@ -1467,30 +1488,36 @@ fn main() -> Result<()> {
         } => {
             let note = resolve_text("--note", note, note_file, &mut StdinText::real())?;
             let actor = actor::resolve(as_actor.as_deref());
-            let (id, c) = if let Some((id, shed_q)) = id.split_once('@') {
-                let cwd = env::current_dir()?;
-                let sheds = farm.sheds(&cwd)?;
-                let shed = match sheds::resolve(&sheds, shed_q) {
-                    Ok(s) => s,
-                    Err(e) => {
-                        eprintln!("error: {e}");
-                        std::process::exit(1);
+            // `<id>@<shed>` names a shed; the current one is just plain `answer`.
+            let (id, shed) = match id.split_once('@') {
+                Some((id, shed_q)) => {
+                    let cwd = env::current_dir()?;
+                    let sheds = farm.sheds(&cwd)?;
+                    match sheds::resolve(&sheds, shed_q) {
+                        Ok(s) => (id.to_string(), Some(s.clone()).filter(|s| !s.current)),
+                        Err(e) => {
+                            eprintln!("error: {e}");
+                            std::process::exit(1);
+                        }
                     }
-                };
-                let w = match farm.answer_in_shed(shed, id, actor.as_deref(), note.as_deref(), done)
-                {
-                    Ok(w) => w,
-                    Err(e) => {
-                        eprintln!("error: {e:#}");
-                        std::process::exit(1);
-                    }
-                };
+                }
+                None => (id, None),
+            };
+            let (id, c) = if let Some(shed) = &shed {
+                let w =
+                    match farm.answer_in_shed(shed, &id, actor.as_deref(), note.as_deref(), done) {
+                        Ok(w) => w,
+                        Err(e) => {
+                            eprintln!("error: {e:#}");
+                            std::process::exit(1);
+                        }
+                    };
                 println!(
                     "Wrote the answer into shed {} at {} (left uncommitted there; the shed's worker commits it)",
                     shed.name(),
                     w.path.display()
                 );
-                (id.to_string(), w.change)
+                (id, w.change)
             } else {
                 let Some(c) = farm.answer(&id, actor.as_deref(), note.as_deref(), done)? else {
                     eprintln!("error: task {id} not found");

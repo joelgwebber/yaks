@@ -1,0 +1,338 @@
+[
+  {
+    "path": "/Users/joel/src/yaks",
+    "kind": "worktree",
+    "name": "main",
+    "dir": null,
+    "title": null,
+    "primary": true,
+    "current": false,
+    "branch": "main",
+    "head": "a2022f1",
+    "ahead": 4,
+    "behind": 0,
+    "dirty": 0,
+    "farm_activity": "2026-10-10T19:09:48Z",
+    "farm": {
+      "state": "own",
+      "vs": "origin",
+      "base": "dc9da87",
+      "added": [
+        "yaks-047a",
+        "yaks-3344",
+        "yaks-6beb",
+        "yaks-9277",
+        "yaks-ad6d",
+        "yaks-e9bb"
+      ],
+      "moved": [
+        {
+          "id": "yaks-7eea",
+          "from": "hairy",
+          "to": "shorn"
+        },
+        {
+          "id": "yaks-ee0a",
+          "from": "hairy",
+          "to": "shaving"
+        }
+      ],
+      "notes": [
+        {
+          "id": "yaks-047a",
+          "new": 9
+        },
+        {
+          "id": "yaks-3344",
+          "new": 4
+        },
+        {
+          "id": "yaks-6beb",
+          "new": 1
+        },
+        {
+          "id": "yaks-7204",
+          "new": 1
+        },
+        {
+          "id": "yaks-7eea",
+          "new": 2
+        },
+        {
+          "id": "yaks-ad6d",
+          "new": 2
+        },
+        {
+          "id": "yaks-e9bb",
+          "new": 9
+        },
+        {
+          "id": "yaks-ed5e",
+          "new": 1
+        },
+        {
+          "id": "yaks-ee0a",
+          "new": 6
+        }
+      ],
+      "needs": []
+    },
+    "who": [
+      "delta-lead",
+      "base-1",
+      "edit-2"
+    ],
+    "in_progress": [
+      "yaks-ad6d",
+      "yaks-ee0a"
+    ],
+    "error": null
+  },
+  {
+    "path": "/Users/joel/src/yaks/.delta/worktrees/e4gr4rszmhgz/yaks",
+    "kind": "delta",
+    "name": "edit-1-count-edited-yaks",
+    "dir": "e4gr4rszmhgz",
+    "title": "edit-1: count edited yaks in sheds and changes",
+    "primary": false,
+    "current": false,
+    "branch": "main",
+    "head": "ece5bf8",
+    "ahead": 0,
+    "behind": 5,
+    "dirty": 0,
+    "farm_activity": "2026-10-10T18:56:48Z",
+    "farm": {
+      "state": "own",
+      "vs": "fork",
+      "base": "ece5bf8",
+      "added": [],
+      "moved": [],
+      "notes": [],
+      "needs": []
+    },
+    "who": [],
+    "in_progress": [],
+    "error": null
+  },
+  {
+    "path": "/Users/joel/src/yaks/.delta/worktrees/mjgxvtvdt1a0/yaks",
+    "kind": "delta",
+    "name": "yak-shedding-mjgx",
+    "dir": "mjgxvtvdt1a0",
+    "title": "Yak Shedding",
+    "primary": false,
+    "current": false,
+    "branch": "main",
+    "head": "a2022f1",
+    "ahead": 4,
+    "behind": 0,
+    "dirty": 0,
+    "farm_activity": "2026-10-10T19:09:48Z",
+    "farm": {
+      "state": "own",
+      "vs": "fork",
+      "base": "9e4ca2a",
+      "added": [
+        "yaks-047a",
+        "yaks-3344",
+        "yaks-6beb",
+        "yaks-9277",
+        "yaks-a4d8",
+        "yaks-ad6d",
+        "yaks-cf2e",
+        "yaks-e9bb"
+      ],
+      "moved": [
+        {
+          "id": "yaks-3479",
+          "from": "shaving",
+          "to": "shorn"
+        },
+        {
+          "id": "yaks-7eea",
+          "from": "hairy",
+          "to": "shorn"
+        },
+        {
+          "id": "yaks-ee0a",
+          "from": "hairy",
+          "to": "shaving"
+        }
+      ],
+      "notes": [
+        {
+          "id": "yaks-047a",
+          "new": 9
+        },
+        {
+          "id": "yaks-3344",
+          "new": 4
+        },
+        {
+          "id": "yaks-3479",
+          "new": 2
+        },
+        {
+          "id": "yaks-6beb",
+          "new": 1
+        },
+        {
+          "id": "yaks-7204",
+          "new": 1
+        },
+        {
+          "id": "yaks-7eea",
+          "new": 2
+        },
+        {
+          "id": "yaks-ad6d",
+          "new": 2
+        },
+        {
+          "id": "yaks-e9bb",
+          "new": 9
+        },
+        {
+          "id": "yaks-ed5e",
+          "new": 1
+        },
+        {
+          "id": "yaks-ee0a",
+          "new": 6
+        }
+      ],
+      "needs": []
+    },
+    "who": [
+      "Joel Webber",
+      "delta-lead",
+      "base-1",
+      "edit-2"
+    ],
+    "in_progress": [
+      "yaks-ad6d",
+      "yaks-ee0a"
+    ],
+    "error": null
+  },
+  {
+    "path": "/Users/joel/src/yaks/.delta/worktrees/q2anm14m6tny/yaks",
+    "kind": "delta",
+    "name": "edit-2-count-edited-yaks",
+    "dir": "q2anm14m6tny",
+    "title": "edit-2: count edited yaks in sheds and changes",
+    "primary": false,
+    "current": false,
+    "branch": "main",
+    "head": "d820a61",
+    "ahead": 1,
+    "behind": 3,
+    "dirty": 0,
+    "farm_activity": "2026-10-10T19:06:58Z",
+    "farm": {
+      "state": "own",
+      "vs": "fork",
+      "base": "e97de70",
+      "added": [],
+      "moved": [
+        {
+          "id": "yaks-047a",
+          "from": "shaving",
+          "to": "shorn"
+        }
+      ],
+      "notes": [
+        {
+          "id": "yaks-047a",
+          "new": 6
+        }
+      ],
+      "needs": []
+    },
+    "who": [
+      "edit-2"
+    ],
+    "in_progress": [],
+    "error": null
+  },
+  {
+    "path": "/Users/joel/src/yaks/.delta/worktrees/qkpp5wdvfm8p/yaks",
+    "kind": "delta",
+    "name": "yak-shedding-qkpp",
+    "dir": "qkpp5wdvfm8p",
+    "title": "Yak Shedding",
+    "primary": false,
+    "current": false,
+    "branch": "main",
+    "head": "82dfdab",
+    "ahead": 0,
+    "behind": 4,
+    "dirty": 0,
+    "farm_activity": "2026-10-10T19:02:23Z",
+    "farm": {
+      "state": "own",
+      "vs": "fork",
+      "base": "ece5bf8",
+      "added": [],
+      "moved": [
+        {
+          "id": "yaks-e9bb",
+          "from": "shaving",
+          "to": "shorn"
+        }
+      ],
+      "notes": [
+        {
+          "id": "yaks-e9bb",
+          "new": 7
+        }
+      ],
+      "needs": []
+    },
+    "who": [
+      "base-1"
+    ],
+    "in_progress": [],
+    "error": null
+  },
+  {
+    "path": "/Users/joel/src/yaks/.delta/worktrees/qt7v225tzxq0/yaks",
+    "kind": "delta",
+    "name": "here-1-list-the-current",
+    "dir": "qt7v225tzxq0",
+    "title": "here-1: list the current shed, primary from origin/main",
+    "primary": false,
+    "current": true,
+    "branch": "main",
+    "head": "c212def",
+    "ahead": 0,
+    "behind": 0,
+    "dirty": 6,
+    "farm_activity": "2026-10-10T19:23:01Z",
+    "farm": {
+      "state": "own",
+      "vs": "fork",
+      "base": "c212def",
+      "added": [
+        "yaks-ad6d"
+      ],
+      "moved": [],
+      "notes": [
+        {
+          "id": "yaks-ad6d",
+          "new": 5
+        }
+      ],
+      "needs": []
+    },
+    "who": [
+      "delta-lead",
+      "here-1"
+    ],
+    "in_progress": [
+      "yaks-ad6d"
+    ],
+    "error": null
+  }
+]
