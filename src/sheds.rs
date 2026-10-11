@@ -64,7 +64,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 const EVERY: [Status; 4] = [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
 
@@ -184,6 +184,47 @@ pub struct FarmBase {
     pub sha: String,
 }
 
+/// Whether anyone appears to be actively working in a shed right now:
+/// orthogonal to `farm`'s `landed` (yaks-ed5e) rather than a third value of
+/// it, since the two questions ("is anything outstanding" and "is anyone
+/// still touching it") have independent answers — a shed can be
+/// landed-and-idle (the common case), landed-and-stale (nothing outstanding,
+/// but its own idea of `shaving` disagrees with the reference and nobody has
+/// touched it in a while), outstanding-and-active, or outstanding-and-stale
+/// (abandoned mid-work). Computed the same way for every shed, the primary
+/// included: unlike `landed` this is never a comparison to anything else
+/// (yaks-9277).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Liveness {
+    /// `in_progress` (see [`Shed::in_progress`]) is non-empty and the shed's
+    /// farm activity is within [`STALE_AFTER`].
+    Active,
+    /// No claim at all, or a claim whose farm activity cannot be told
+    /// (`farm_activity` unknown): no signal is not evidence of abandonment,
+    /// so this is the default, not `Stale`.
+    Idle,
+    /// `in_progress` is non-empty but the shed's farm activity is older than
+    /// [`STALE_AFTER`]: a claim nobody has touched in a while.
+    Stale,
+}
+
+impl Liveness {
+    /// The JSON `liveness` value.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Liveness::Active => "active",
+            Liveness::Idle => "idle",
+            Liveness::Stale => "stale",
+        }
+    }
+}
+
+/// How long a shed with a claimed yak (`in_progress` non-empty) can go with
+/// no farm activity before it reads `stale` instead of `active`. Hardcoded,
+/// not configurable yet (yaks-9277: "revisit only if it misleads"); a config
+/// override is a natural follow-up if 2h turns out to be wrong in practice.
+const STALE_AFTER: Duration = Duration::from_secs(2 * 60 * 60);
+
 /// The shed's farm relative to ours.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ShedFarm {
@@ -246,6 +287,9 @@ pub struct Shed {
     /// Yaks the shed is working on: shaving in the shed, with own entries
     /// there (see [`label`]). Empty whenever `who` cannot be told.
     pub in_progress: Vec<String>,
+    /// Whether anyone appears to be actively working here right now; see
+    /// [`Liveness`]. Every shed gets one, including the primary.
+    pub liveness: Liveness,
     /// Set when the shed's git state could not be read; the shed is still
     /// listed.
     pub error: Option<String>,
@@ -532,6 +576,7 @@ fn inspect(
         farm_base: None,
         who: Vec::new(),
         in_progress: Vec::new(),
+        liveness: Liveness::Idle,
         error: None,
     };
     if !found.primary {
@@ -557,6 +602,7 @@ fn inspect(
     }
     // The farm side is plain filesystem reads, so it is reported even when git
     // could not be read.
+    let mut activity: Option<SystemTime> = None;
     match store::discover_with(path, None) {
         Err(_) => shed.farm = ShedFarm::None,
         Ok(d) => {
@@ -566,7 +612,8 @@ fn inspect(
             if root == our_farm && !current {
                 shed.farm = ShedFarm::Shared;
             } else {
-                shed.farm_activity = newest_mtime(&root).map(format_time);
+                activity = newest_mtime(&root);
+                shed.farm_activity = activity.map(format_time);
                 shed.farm = match store::load(&root, &EVERY) {
                     Ok(theirs) => {
                         // What the shed changed is relative to where it forked
@@ -600,7 +647,32 @@ fn inspect(
             }
         }
     }
+    shed.liveness = liveness(&shed.in_progress, activity);
     shed
+}
+
+/// [`Liveness`] from the two raw signals: whether the shed has claimed a yak
+/// with own entries there (`in_progress`, see [`label`]) and when its farm
+/// was last touched (`None` when unknown). Pure, so it is easy to hit all
+/// three cases in a unit test without a real filesystem/git fixture.
+fn liveness(in_progress: &[String], activity: Option<SystemTime>) -> Liveness {
+    if in_progress.is_empty() {
+        return Liveness::Idle;
+    }
+    match activity {
+        // No signal is not evidence of abandonment.
+        None => Liveness::Idle,
+        Some(t) => {
+            let elapsed = SystemTime::now()
+                .duration_since(t)
+                .unwrap_or(Duration::ZERO);
+            if elapsed > STALE_AFTER {
+                Liveness::Stale
+            } else {
+                Liveness::Active
+            }
+        }
+    }
 }
 
 /// The REFERENCE farm's tasks (see the module docs): what every shed's
@@ -1558,6 +1630,10 @@ pub fn to_json(sheds: &[Shed]) -> Value {
                     "farm": farm,
                     "who": l.who,
                     "in_progress": l.in_progress,
+                    // Always present, including on the primary's own row
+                    // (unlike `farm.landed`, this is never a comparison to
+                    // anything, so there is nothing vacuous about it here).
+                    "liveness": l.liveness.as_str(),
                     "error": l.error,
                 })
             })
@@ -1673,9 +1749,12 @@ pub fn changes_json(c: &Changes) -> Value {
     )
 }
 
-/// The one-line shed label: `who: a, b · shaving: id, id`, each half only
-/// when it has something; `None` for an unlabeled shed. Measured from a
-/// merge-base it carries the `vs merge-base` marker.
+/// The one-line shed label: `who: a, b · shaving: id, id · active`, each
+/// part only when it has something; `None` for an unlabeled, idle shed.
+/// `idle` ([`Liveness`]) is silent — it is the common case, so it is never
+/// noise on the line; `active`/`stale` show (and only ever appear alongside
+/// `shaving:`, since both require a non-empty `in_progress`). Measured from
+/// a merge-base it carries the `vs merge-base` marker.
 fn label_line(l: &Shed) -> Option<String> {
     let mut parts = Vec::new();
     if !l.who.is_empty() {
@@ -1684,11 +1763,16 @@ fn label_line(l: &Shed) -> Option<String> {
     if !l.in_progress.is_empty() {
         parts.push(format!("shaving: {}", l.in_progress.join(", ")));
     }
+    match l.liveness {
+        Liveness::Active => parts.push("active".into()),
+        Liveness::Stale => parts.push("stale".into()),
+        Liveness::Idle => {}
+    }
     (!parts.is_empty()).then(|| format!("{}{}", parts.join(" \u{b7} "), vs_marker(l)))
 }
 
 /// The compact human table: one row per shed, then its label and farm detail.
-pub fn render(sheds: &[Shed]) -> String {
+pub fn render(sheds: &[Shed], orphaned: &[Pinned]) -> String {
     if sheds.is_empty() {
         return "No checkouts found.\n".into();
     }
@@ -1839,7 +1923,41 @@ pub fn render(sheds: &[Shed]) -> String {
              git fetch --unshallow fixes it\n",
         );
     }
+    // Orphaned pins are not a `Shed` row (no checkout to measure: see
+    // `orphaned_pins`), so they get one informational, text-only footer
+    // instead, reusing exactly the `Err(...)` entries `yaks discover`'s PINS
+    // section already shows — not a second "which pins are gone" check.
+    if !orphaned.is_empty() {
+        out.push_str(&format!(
+            "\norphaned ({}): a pinned clone whose checkout could not be resolved \
+             (most often a gone git dir — a finished thread)\n",
+            orphaned.len()
+        ));
+        for p in orphaned {
+            out.push_str(&format!(
+                "  {}/{}: {}\n",
+                p.dir,
+                p.name,
+                p.checkout.as_ref().unwrap_err()
+            ));
+        }
+    }
     out
+}
+
+/// Pinned clones in `cwd`'s host whose checkout could not be resolved (a gone
+/// git dir, a missing worktree, or similar — see [`pinned`]): what `render`'s
+/// `orphaned` footer lists. Not a [`Shed`]: there is no checkout to measure
+/// (no git state, no farm), so these are never in `discover`'s sheds array or
+/// `sheds --json`, only in the text table's footer (yaks-9277).
+pub fn orphaned_pins(cwd: &Path) -> Vec<Pinned> {
+    let Some(h) = host(cwd) else {
+        return Vec::new();
+    };
+    pinned(&h)
+        .into_iter()
+        .filter(|p| p.checkout.is_err())
+        .collect()
 }
 
 #[cfg(test)]
@@ -1940,7 +2058,7 @@ mod tests {
         let t = b.join("repo");
         repo_with_farm(&t);
         assert!(sheds_of(&t).is_empty());
-        assert_eq!(render(&[]), "No checkouts found.\n");
+        assert_eq!(render(&[], &[]), "No checkouts found.\n");
     }
 
     #[test]
@@ -2016,7 +2134,7 @@ mod tests {
         );
 
         // Both renderings carry the same facts.
-        let text = render(&sheds);
+        let text = render(&sheds, &[]);
         assert!(text.contains("worktree"), "{text}");
         assert!(text.contains("yaks-aaaa hairy -> shaving"), "{text}");
         assert!(text.contains("yaks-cccc needs: human"), "{text}");
@@ -2044,7 +2162,7 @@ mod tests {
         let sheds = sheds_of(&t);
         assert_eq!(sheds[0].branch, None, "detached HEAD has no branch");
         assert_eq!(sheds[0].farm, ShedFarm::Own(FarmDelta::default()));
-        assert!(render(&sheds).contains("(detached)"));
+        assert!(render(&sheds, &[]).contains("(detached)"));
     }
 
     /// Move a yak between status dirs in `repo` and commit it.
@@ -2088,7 +2206,7 @@ mod tests {
         assert_eq!((l.ahead, l.behind), (Some(0), Some(2)));
         assert!(l.farm_base.is_some());
         assert_eq!(l.farm, ShedFarm::Own(FarmDelta::default()));
-        let text = render(&sheds);
+        let text = render(&sheds, &[]);
         assert!(text.contains("+0 -2"), "{text}");
         assert!(text.contains("farm: no changes of its own"), "{text}");
         assert!(!text.contains("->"), "no phantom moves: {text}");
@@ -2148,7 +2266,7 @@ mod tests {
             d.needs,
             vec![("yaks-aaaa".to_string(), "human".to_string())]
         );
-        let text = render(&sheds);
+        let text = render(&sheds, &[]);
         assert!(text.contains("+1 -2"), "{text}");
         assert!(
             !text.contains("yaks-cccc") && !text.contains("yaks-ffff"),
@@ -2181,7 +2299,7 @@ mod tests {
         };
         // Compared with this checkout, as before.
         assert_eq!(d.moved.len(), 1);
-        let text = render(&sheds);
+        let text = render(&sheds, &[]);
         assert!(text.contains("(vs this checkout)"), "{text}");
         assert_eq!(to_json(&sheds)[0]["farm"]["vs"], "checkout");
         assert_eq!(to_json(&sheds)[0]["farm"]["base"], Value::Null);
@@ -2251,7 +2369,7 @@ mod tests {
         assert_eq!(paths(&sheds), vec![shed]);
         let l = &sheds[0];
         assert_eq!((l.ahead, l.behind), (None, None));
-        let text = render(&sheds);
+        let text = render(&sheds, &[]);
         assert!(text.contains("+? -?"), "{text}");
         // Said once, at the end, and the farm still falls back.
         assert!(text.ends_with(SHALLOW_NOTE), "{text}");
@@ -2271,7 +2389,7 @@ mod tests {
         sh(&t, &["fetch", "-q", "--unshallow"]);
         let sheds = sheds_of(&t);
         assert_eq!((sheds[0].ahead, sheds[0].behind), (Some(0), Some(2)));
-        let text = render(&sheds);
+        let text = render(&sheds, &[]);
         assert!(text.contains("+0 -2"), "{text}");
         assert!(
             !text.contains("history is shallow") && !text.contains('?'),
@@ -2286,7 +2404,7 @@ mod tests {
         let (t, _shed) = shallow_primary_with_shed("shallow-ok", "HEAD");
         let sheds = sheds_of(&t);
         assert_eq!((sheds[0].ahead, sheds[0].behind), (Some(0), Some(0)));
-        let text = render(&sheds);
+        let text = render(&sheds, &[]);
         assert!(text.contains("+0 -0"), "{text}");
         assert!(!text.contains("history is shallow"), "{text}");
     }
@@ -2521,7 +2639,7 @@ mod tests {
         let by = |p: &Path| sheds.iter().find(|l| l.path == p).unwrap();
         assert_eq!(by(&private).farm, ShedFarm::None);
         assert_eq!(by(&shared).farm, ShedFarm::Shared);
-        let text = render(&sheds);
+        let text = render(&sheds, &[]);
         assert!(
             text.contains("no farm here (private? set YAKS_DIR)"),
             "{text}"
@@ -2560,7 +2678,7 @@ mod tests {
         let bad = &sheds[1];
         assert!(bad.error.is_some());
         assert!(bad.head.is_none() && bad.dirty.is_none());
-        assert!(render(&sheds).contains("  error: "));
+        assert!(render(&sheds, &[]).contains("  error: "));
         assert!(to_json(&sheds)[1]["error"].is_string());
     }
 
@@ -2607,7 +2725,7 @@ mod tests {
         );
         let sheds = sheds_of(&t);
         assert_eq!(sheds.len(), 1);
-        let _ = (render(&sheds), to_json(&sheds));
+        let _ = (render(&sheds, &[]), to_json(&sheds));
         let after = (
             snapshot(&wt),
             snapshot(&admin),
@@ -2676,7 +2794,7 @@ mod tests {
         (
             l.who.clone(),
             l.in_progress.clone(),
-            render(&sheds),
+            render(&sheds, &[]),
             to_json(&sheds),
         )
     }
@@ -2695,7 +2813,7 @@ mod tests {
         assert_eq!(who, strs(&["lbl-1"]), "the base's claim actor is not ours");
         assert_eq!(in_progress, strs(&["yaks-aaaa"]));
         assert!(
-            text.contains("  who: lbl-1 \u{b7} shaving: yaks-aaaa\n"),
+            text.contains("  who: lbl-1 \u{b7} shaving: yaks-aaaa \u{b7} active\n"),
             "{text}"
         );
         assert_eq!(json[0]["who"], json!(["lbl-1"]));
@@ -2718,7 +2836,7 @@ mod tests {
         let (who, _, text, json) = label_of(&t);
         assert_eq!(who, strs(&["delta:Fix attribution"]));
         assert!(
-            text.contains("  who: delta:Fix attribution \u{b7} shaving: yaks-aaaa\n"),
+            text.contains("  who: delta:Fix attribution \u{b7} shaving: yaks-aaaa \u{b7} active\n"),
             "{text}"
         );
         assert_eq!(json[0]["who"], json!(["delta:Fix attribution"]));
@@ -2756,7 +2874,10 @@ mod tests {
         assert!(who.is_empty());
         // Still in progress, so the label says what, not who.
         assert_eq!(in_progress, strs(&["yaks-aaaa"]));
-        assert!(text.contains("  shaving: yaks-aaaa\n"), "{text}");
+        assert!(
+            text.contains("  shaving: yaks-aaaa \u{b7} active\n"),
+            "{text}"
+        );
         assert!(!text.contains("who:"), "{text}");
     }
 
@@ -2789,7 +2910,9 @@ mod tests {
         // `yaks-bbbb` is hairy in the shed: noted, not in progress.
         assert_eq!(in_progress, strs(&["yaks-aaaa"]));
         assert!(
-            text.contains("  who: sheds-2, delta:Fix attribution \u{b7} shaving: yaks-aaaa\n"),
+            text.contains(
+                "  who: sheds-2, delta:Fix attribution \u{b7} shaving: yaks-aaaa \u{b7} active\n"
+            ),
             "{text}"
         );
         assert_eq!(json[0]["who"], json!(["sheds-2", "delta:Fix attribution"]));
@@ -2835,7 +2958,7 @@ mod tests {
         assert_eq!(in_progress, strs(&["yaks-aaaa"]));
         assert_eq!(json[0]["in_progress"], json!(["yaks-aaaa"]));
         assert!(
-            text.contains("  who: w1, w2 \u{b7} shaving: yaks-aaaa\n"),
+            text.contains("  who: w1, w2 \u{b7} shaving: yaks-aaaa \u{b7} active\n"),
             "{text}"
         );
     }
@@ -2953,9 +3076,9 @@ mod tests {
         assert_eq!(jw["farm"]["vs"], "fork");
         assert_eq!(jw["farm"]["base"], fork.as_str());
         assert!(
-            render(&sheds).contains("  who: w-1 \u{b7} shaving: yaks-aaaa\n"),
+            render(&sheds, &[]).contains("  who: w-1 \u{b7} shaving: yaks-aaaa \u{b7} active\n"),
             "{}",
-            render(&sheds)
+            render(&sheds, &[])
         );
     }
 
@@ -2968,9 +3091,9 @@ mod tests {
         assert!(l.who.is_empty() && l.in_progress.is_empty());
         assert_eq!(l.farm, ShedFarm::Own(FarmDelta::default()));
         assert!(
-            render(&sheds).contains("farm: no changes of its own\n"),
+            render(&sheds, &[]).contains("farm: no changes of its own\n"),
             "{}",
-            render(&sheds)
+            render(&sheds, &[])
         );
     }
 
@@ -3052,7 +3175,7 @@ mod tests {
             panic!("expected own farm, got {:?}", l.farm)
         };
         assert_eq!(d.landed, ["yaks-aaaa"]);
-        let text = render(&sheds);
+        let text = render(&sheds, &[]);
         assert!(text.contains("farm: landed (1 yak)"), "{text}");
         assert!(!text.contains("+1 notes"), "no itemized line: {text}");
         let j = json_of(&sheds, &w);
@@ -3074,7 +3197,7 @@ mod tests {
             panic!("expected own farm, got {:?}", l.farm)
         };
         assert!(d.landed.is_empty(), "{d:?}");
-        let text = render(&sheds);
+        let text = render(&sheds, &[]);
         // Exact line: no `(N landed)` suffix (checking the literal "landed"
         // substring would also match this test's own temp-dir path).
         assert!(text.contains("  farm: 1 new notes\n"), "{text}");
@@ -3142,7 +3265,7 @@ mod tests {
             "new relative to the shed's own fork"
         );
         assert_eq!(d.landed, ["yaks-dddd"]);
-        let text = render(&sheds);
+        let text = render(&sheds, &[]);
         assert!(text.contains("farm: landed (1 yak)"), "{text}");
     }
 
@@ -3201,7 +3324,7 @@ mod tests {
         };
         assert_eq!(d.landed, ["yaks-bbbb"]);
         assert_eq!(d.touched().len(), 2, "{d:?}");
-        let text = render(&sheds);
+        let text = render(&sheds, &[]);
         assert!(
             text.contains("farm: 1 moved, 2 new notes (1 landed)"),
             "{text}"
@@ -3214,6 +3337,201 @@ mod tests {
             !text.contains("    yaks-bbbb"),
             "no itemized line for the landed yak: {text}"
         );
+    }
+
+    // -- liveness (yaks-9277): active/idle/stale, orthogonal to `landed` -----
+
+    /// Sets every entry under `dir` (files and directories, recursively, to
+    /// match what [`newest_mtime`] reads) to `age` ago, so a test can make a
+    /// shed's farm activity read as old without waiting for real time to
+    /// pass.
+    fn backdate(dir: &Path, age: Duration) {
+        let when = SystemTime::now() - age;
+        let mut stack = vec![dir.to_path_buf()];
+        while let Some(d) = stack.pop() {
+            for entry in fs::read_dir(&d).unwrap() {
+                let entry = entry.unwrap();
+                let p = entry.path();
+                let _ = fs::File::open(&p).and_then(|f| f.set_modified(when));
+                if entry.file_type().unwrap().is_dir() {
+                    stack.push(p);
+                }
+            }
+            let _ = fs::File::open(&d).and_then(|f| f.set_modified(when));
+        }
+    }
+
+    #[test]
+    fn liveness_is_active_with_a_claim_and_recent_activity() {
+        assert_eq!(
+            liveness(&["yaks-aaaa".to_string()], Some(SystemTime::now())),
+            Liveness::Active
+        );
+    }
+
+    #[test]
+    fn liveness_is_stale_with_a_claim_and_old_activity() {
+        let old = SystemTime::now() - STALE_AFTER - Duration::from_secs(1);
+        assert_eq!(
+            liveness(&["yaks-aaaa".to_string()], Some(old)),
+            Liveness::Stale
+        );
+    }
+
+    #[test]
+    fn liveness_is_idle_with_no_claim_or_with_unknown_activity() {
+        // No claim at all, even with fresh activity.
+        assert_eq!(liveness(&[], Some(SystemTime::now())), Liveness::Idle);
+        // A claim, but activity that cannot be told: no signal is not
+        // evidence of abandonment, so this is `idle`, never `stale`.
+        assert_eq!(liveness(&["yaks-aaaa".to_string()], None), Liveness::Idle);
+    }
+
+    #[test]
+    fn the_primary_gets_a_liveness_value_unlike_landed() {
+        // Unlike `farm.landed` (yaks-ed5e, never set for the primary's own
+        // row since comparing it with itself is vacuous), liveness is not a
+        // comparison to anything, so the primary gets one too.
+        let b = base("primary-liveness");
+        let t = b.join("repo");
+        repo_with_farm(&t);
+        // The primary claims a yak itself, uncommitted, with its own note.
+        fs::remove_file(t.join(".yaks/hairy/yaks-aaaa.md")).unwrap();
+        task_file(
+            &t,
+            "shaving",
+            "yaks-aaaa",
+            "",
+            &notes(
+                "first",
+                &[(
+                    "2026-03-01T00:00:00Z",
+                    Some("coord"),
+                    "moved: hairy -> shaving",
+                )],
+            ),
+        );
+        let sheds = all_sheds_of(&t);
+        let primary = sheds.iter().find(|s| s.primary).unwrap();
+        assert!(primary.current);
+        assert_eq!(primary.in_progress, strs(&["yaks-aaaa"]));
+        assert_eq!(primary.liveness, Liveness::Active);
+        let ShedFarm::Own(d) = &primary.farm else {
+            panic!("expected own farm, got {:?}", primary.farm)
+        };
+        assert!(d.landed.is_empty(), "never set for the primary's own row");
+        let j = to_json(&sheds);
+        let jp = j
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|x| x["primary"] == true)
+            .unwrap();
+        assert_eq!(jp["liveness"], "active");
+    }
+
+    /// The real j15r case from this yak's own notes: two clones agree on HEAD
+    /// and on their uncommitted farm files, and the primary already made the
+    /// same move independently (so the shed reads `landed`, yaks-ed5e) --
+    /// `landed` and liveness are orthogonal (decision A), so a shed can show
+    /// BOTH at once: nothing outstanding to act on, but nobody has touched
+    /// the shed itself in a while.
+    #[test]
+    fn a_shed_that_is_landed_and_stale_shows_both_independently() {
+        let (t, wt) = claimed_repo_with_shed("landed-stale");
+        // The shed claims yaks-bbbb, with its own note, uncommitted.
+        fs::remove_file(wt.join(".yaks/hairy/yaks-bbbb.md")).unwrap();
+        task_file(
+            &wt,
+            "shaving",
+            "yaks-bbbb",
+            "",
+            &notes(
+                "second",
+                &[(
+                    "2026-03-03T00:00:00Z",
+                    Some("w-1"),
+                    "moved: hairy -> shaving",
+                )],
+            ),
+        );
+        // The primary makes the identical move independently, after the fork.
+        fs::remove_file(t.join(".yaks/hairy/yaks-bbbb.md")).unwrap();
+        task_file(
+            &t,
+            "shaving",
+            "yaks-bbbb",
+            "",
+            &notes(
+                "second",
+                &[(
+                    "2026-03-04T00:00:00Z",
+                    Some("coord"),
+                    "moved: hairy -> shaving",
+                )],
+            ),
+        );
+        sh(&t, &["add", "-A"]);
+        sh(&t, &["commit", "-q", "-m", "primary also moves bbbb"]);
+        // Nobody has touched the shed's farm files in a long time.
+        backdate(&wt.join(".yaks"), STALE_AFTER + Duration::from_secs(60));
+
+        let sheds = sheds_of(&t);
+        let l = shed_at(&sheds, &wt);
+        assert_eq!(l.in_progress, strs(&["yaks-bbbb"]));
+        assert_eq!(
+            l.liveness,
+            Liveness::Stale,
+            "activity: {:?}",
+            l.farm_activity
+        );
+        let ShedFarm::Own(d) = &l.farm else {
+            panic!("expected own farm, got {:?}", l.farm)
+        };
+        assert_eq!(d.landed, ["yaks-bbbb"]);
+        let text = render(&sheds, &[]);
+        assert!(text.contains("farm: landed (1 yak)"), "{text}");
+        assert!(text.contains("shaving: yaks-bbbb \u{b7} stale"), "{text}");
+        let j = json_of(&sheds, &wt);
+        assert_eq!(j["liveness"], "stale");
+        assert_eq!(j["farm"]["landed"], json!(["yaks-bbbb"]));
+    }
+
+    // -- orphaned pins (yaks-9277): a gone Delta clone, listed but never a
+    // `Shed` row ---------------------------------------------------------
+
+    #[test]
+    fn render_lists_a_gone_pin_in_a_text_only_orphaned_footer() {
+        let b = base("orphan");
+        let t = b.join("repo");
+        repo_with_farm(&t);
+        let host = t.join(".git");
+        let store = t.join(".delta/clones");
+        let co = t.join(".delta/worktrees");
+        // A live clone (so the host's clone store exists and is known).
+        let _c1 = delta_clone(&host, &store, &co, "d1", "repo");
+        // A finished thread: pinned, its clone directory removed by Delta.
+        pin(&host, "gone1", "repo", &sh(&t, &["rev-parse", "HEAD"]));
+
+        let sheds = sheds_of(&t);
+        assert!(
+            sheds.iter().all(|s| s.dir.as_deref() != Some("gone1")),
+            "a gone pin is never a Shed row"
+        );
+        let orphaned = orphaned_pins(&t);
+        assert_eq!(orphaned.len(), 1);
+        assert_eq!(
+            (orphaned[0].dir.as_str(), orphaned[0].name.as_str()),
+            ("gone1", "repo")
+        );
+        assert!(orphaned[0].checkout.is_err());
+
+        let text = render(&sheds, &orphaned);
+        assert!(text.contains("orphaned (1):"), "{text}");
+        assert!(text.contains("gone1/repo"), "{text}");
+
+        // The normal table is unaffected when there is nothing orphaned.
+        assert!(!render(&sheds, &[]).contains("orphaned"));
     }
 
     /// No visible primary and no usable `origin` ref: `reference_tasks`
@@ -3445,9 +3763,9 @@ mod tests {
         };
         assert_eq!(d.notes, vec![("yaks-aaaa".to_string(), 2)]);
         assert!(d.added.is_empty() && d.moved.is_empty(), "{d:?}");
-        let text = render(&sheds);
+        let text = render(&sheds, &[]);
         assert!(
-            text.contains("  who: oldx, new-1 \u{b7} shaving: yaks-aaaa\n"),
+            text.contains("  who: oldx, new-1 \u{b7} shaving: yaks-aaaa \u{b7} active\n"),
             "{text}"
         );
         // (A primary without an `origin` ref says `(vs fork)`, see below.)
@@ -3679,9 +3997,11 @@ mod tests {
         assert_eq!(l.farm_base.as_ref().unwrap().kind, BaseKind::MergeBase);
         // Today's behaviour, now marked: the coordinator's entry is inherited.
         assert_eq!(l.who, strs(&["coordx", "w-1"]));
-        let text = render(&sheds);
+        let text = render(&sheds, &[]);
         assert!(
-            text.contains("  who: coordx, w-1 \u{b7} shaving: yaks-aaaa (vs merge-base)\n"),
+            text.contains(
+                "  who: coordx, w-1 \u{b7} shaving: yaks-aaaa \u{b7} active (vs merge-base)\n"
+            ),
             "{text}"
         );
         assert!(text.contains("new notes (vs merge-base)"), "{text}");
@@ -3778,7 +4098,7 @@ mod tests {
         let j = to_json(&from_t);
         assert_eq!(j[0]["dir"], "abc123");
         assert_eq!(j[0]["name"], "abc123");
-        assert!(render(&from_t).contains("  name: abc123\n"));
+        assert!(render(&from_t, &[]).contains("  name: abc123\n"));
     }
 
     #[test]
@@ -3844,7 +4164,7 @@ mod tests {
         let (t, wt, c) = three_checkouts("three-viewers");
         let every = [&t, &wt, &c].map(|v| all_sheds_of(v));
         for (viewer, sheds) in [&t, &wt, &c].into_iter().zip(&every) {
-            assert_eq!(sheds.len(), 3, "{}", render(sheds));
+            assert_eq!(sheds.len(), 3, "{}", render(sheds, &[]));
             let here: Vec<&Path> = sheds
                 .iter()
                 .filter(|s| s.current)
@@ -3878,7 +4198,7 @@ mod tests {
         };
         assert_eq!(d.added, ["yaks-cccc"]);
         // And the text says where you are.
-        let text = render(from_c);
+        let text = render(from_c, &[]);
         assert!(text.contains("  name: q7zz (here)\n"), "{text}");
         assert!(text.contains("  name: main\n"), "{text}");
         assert_eq!(
@@ -3968,7 +4288,7 @@ mod tests {
                 panic!("the primary has its own farm")
             };
             assert_eq!(d.added, ["yaks-eeee", "yaks-ffff"], "no flood: {d:?}");
-            let text = render(&sheds);
+            let text = render(&sheds, &[]);
             assert!(text.contains("farm: 2 new (vs origin/main)\n"), "{text}");
             let j = json_of(&sheds, &t);
             assert_eq!(
@@ -4006,7 +4326,7 @@ mod tests {
         let sheds = all_sheds_of(&t);
         let main = shed_at(&sheds, &t);
         assert_eq!(main.farm_base.as_ref().unwrap().kind, BaseKind::Fork);
-        let text = render(&sheds);
+        let text = render(&sheds, &[]);
         assert!(text.contains("(vs fork)"), "{text}");
         assert_eq!(json_of(&sheds, &t)["farm"]["vs"], "fork");
     }
@@ -4089,7 +4409,7 @@ mod tests {
         assert_eq!(j[0]["title"], "cflag-1: yaks -C global flag");
         assert_eq!(j[0]["name"], "cflag-1-yaks-c-global");
         assert_eq!(j[1]["title"], Value::Null);
-        assert!(render(&from_t).contains(
+        assert!(render(&from_t, &[]).contains(
             "  name: cflag-1-yaks-c-global \u{b7} title: cflag-1: yaks -C global flag\n"
         ));
     }
@@ -4294,9 +4614,9 @@ mod tests {
         // (2 on aaaa + 1 on bbbb + the 1 on the created cccc).
         let sheds = sheds_of(&t);
         assert!(
-            render(&sheds).contains("farm: 1 new, 1 moved, 4 new notes"),
+            render(&sheds, &[]).contains("farm: 1 new, 1 moved, 4 new notes"),
             "{}",
-            render(&sheds)
+            render(&sheds, &[])
         );
     }
 
@@ -4354,7 +4674,7 @@ mod tests {
         let j = changes_json(&c);
         assert_eq!(j[0]["edited"], true);
         assert_eq!(j[1]["edited"], true);
-        let sheds = render(&sheds_of(&t));
+        let sheds = render(&sheds_of(&t), &[]);
         assert!(sheds.contains("farm: 2 edited"), "{sheds}");
         assert!(sheds.contains("    yaks-bbbb edited\n"), "{sheds}");
         let j = &to_json(&sheds_of(&t))[0]["farm"]["edited"];
@@ -4410,9 +4730,9 @@ mod tests {
             render_changes(&c)
         );
         assert!(
-            !render(&sheds_of(&t)).contains("edited"),
+            !render(&sheds_of(&t), &[]).contains("edited"),
             "{}",
-            render(&sheds_of(&t))
+            render(&sheds_of(&t), &[])
         );
     }
 

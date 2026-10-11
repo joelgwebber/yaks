@@ -292,7 +292,18 @@ enum Command {
     /// no changes. Each shed with entries of its own is
     /// labeled under its row: `who:` (the distinct actors on those new notes)
     /// and `shaving:` (yaks in shaving there that it wrote to); JSON `who`
-    /// and `in_progress`. A shed's name (the `name:` line, JSON `name`) is
+    /// and `in_progress`. The same row also gets a liveness tag, computed
+    /// the same way for every shed including the primary (not a comparison,
+    /// unlike `landed`): `active` when it has a claim (`in_progress`
+    /// non-empty) and farm activity within the last 2 hours, `stale` when
+    /// that claim has had no farm activity for longer (unknown activity
+    /// counts as `idle`, never `stale`), else `idle`; `idle` is silent (the
+    /// common case), `active`/`stale` show on the label line, e.g.
+    /// `shaving: yaks-d738 · stale`; JSON `liveness`, always present. A
+    /// pinned Delta clone whose checkout could not be resolved (most often a
+    /// gone git dir: a finished thread) is not a row here — there is no
+    /// checkout to measure — but is listed in one extra text-only `orphaned`
+    /// footer (no JSON array for this yet). A shed's name (the `name:` line, JSON `name`) is
     /// `main` for the primary checkout, else the slug of its Delta thread title
     /// (lowercase, other runs become `-`, at most 24 chars; the title is
     /// recorded in the clone's own git config by any yaks command run there
@@ -1321,11 +1332,13 @@ fn main() -> Result<()> {
             }
         }
         Command::Sheds { json } => {
-            let sheds = farm.sheds(&env::current_dir()?)?;
+            let cwd = env::current_dir()?;
+            let sheds = farm.sheds(&cwd)?;
             if json {
                 json::print(&sheds::to_json(&sheds))?;
             } else {
-                print!("{}", sheds::render(&sheds));
+                let orphaned = sheds::orphaned_pins(&cwd);
+                print!("{}", sheds::render(&sheds, &orphaned));
             }
         }
         Command::Changes { shed, json } => {
