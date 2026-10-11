@@ -4,7 +4,7 @@ title: 'CLI affordances for sheds and threads: what a human and an agent need to
 type: task
 priority: 2
 created: '2026-10-06T21:05:37Z'
-updated: '2026-10-11T20:54:29Z'
+updated: '2026-10-11T21:58:30Z'
 parent: yaks-7204
 labels:
 - cli
@@ -105,3 +105,7 @@ Going forward: always `cd` into THIS thread's own clone for coordinator work, ne
 ---
 ▸ 2026-10-11T20:54:29Z [delta-lead]
 Landed yaks-ed5e (land-1 8d9d2f1e0c7e4407; fe70e16 by merge after the ed5e-content recovery above). Real-machine: the fixture evidence attached to the yak reproduces the exact 2026-10-10 superseded case (shed: hairy->shaving no notes; primary: hairy->shorn +3 notes) and now reads 'farm: landed (1 yak)'. Worth flagging: the worker found a real bug in my own claim-note spec mid-implementation -- a naive id-membership check on yak_changes(reference, theirs) would ALSO flag a backward-only move (reference behind the shed) as outstanding, since yak_changes's moved field is direction-blind. Fixed with a status_rank comparison (only a FORWARD move counts as outstanding). Gate: 16 suites, 638 passed, 0 failed, rebuilt and re-run on this machine.
+
+---
+▸ 2026-10-11T21:58:30Z [delta-lead]
+Spawned (base 5557c9e, claude-sonnet-5): live-1 1c43a07092dc4ff4 -> yaks-9277, per Joel's decision A (landed and liveness orthogonal). This time the claim commit and push happened entirely in my own clone (mjgxvtvdt1a0), not the primary -- confirmed reachable via local/main before spawning.
