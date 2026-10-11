@@ -4,7 +4,7 @@ title: 'CLI affordances for sheds and threads: what a human and an agent need to
 type: task
 priority: 2
 created: '2026-10-06T21:05:37Z'
-updated: '2026-10-11T20:15:15Z'
+updated: '2026-10-11T20:24:01Z'
 parent: yaks-7204
 labels:
 - cli
@@ -91,3 +91,13 @@ Landed yaks-ad6d (here-1 556e48480bff4e61, 5c7c95a by cherry-pick; docs/main.rs 
 ---
 ▸ 2026-10-11T20:15:15Z [delta-lead]
 Spawned (base b721f72, claude-sonnet-5): land-1 8d9d2f1e0c7e4407 -> yaks-ed5e. Resolved its open question first (landed generalizes to cover 'superseded by the reference' via yak_changes(reference, theirs) instead of a second word), and updated it for decision 5 (reference farm = primary's live farm when visible+readable, else origin/main, viewer-independent). yaks-9277 (the state vocabulary) is NOT spawned yet: it has a real design tension (stale vs landed) that needs Joel's call first, per its own 'design first with Joel' instruction.
+
+---
+▸ 2026-10-11T20:24:01Z [delta-lead]
+Process failure and recovery (2026-10-11, yaks-ed5e): I did all of this turn's early work (resolve note, shave, claim note, spawn-record, yaks-9277 design note) with `cd ~/src/yaks` — the human's PRIMARY checkout — instead of my own clone (mjgxvtvdt1a0). Compounding that, my claim commit (b721f72) repeated the exact bug documented for yaks-ad6d's 5070350: `git add -u` only staged the hairy-dir deletion, never the new shaving file, so the real spec was unreachable by anyone who fetched `local`/`origin` from that commit on.
+
+Consequence: land-1, spawned from MY clone (not the primary, since Delta clones a worker from the spawning thread's own checkout), started from a stale base that had neither the content fix nor the Decision/Claim notes. It correctly stopped and asked (`yaks ask`) instead of guessing.
+
+Fix: rebuilt the full yaks-ed5e.md by hand (local/main's complete Decision+Claim content, with land-1's own shave/ask notes and `needs: human` appended, verified byte-for-byte before committing), merged my clone with local/main (one add/add conflict per touched file, resolved by taking local/main's side plus the hand-merged ed5e file), pushed to local, answered land-1's ask there, and woke it.
+
+Going forward: always `cd` into THIS thread's own clone for coordinator work, never into the primary directly — a coordinator editing the primary bypasses the single-landing-point discipline and is invisible to future spawns until manually resynced, exactly what happened here.
