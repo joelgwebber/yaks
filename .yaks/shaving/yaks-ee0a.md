@@ -4,7 +4,7 @@ title: 'CLI affordances for sheds and threads: what a human and an agent need to
 type: task
 priority: 2
 created: '2026-10-06T21:05:37Z'
-updated: '2026-10-11T21:58:30Z'
+updated: '2026-10-11T22:20:18Z'
 parent: yaks-7204
 labels:
 - cli
@@ -109,3 +109,7 @@ Landed yaks-ed5e (land-1 8d9d2f1e0c7e4407; fe70e16 by merge after the ed5e-conte
 ---
 ▸ 2026-10-11T21:58:30Z [delta-lead]
 Spawned (base 5557c9e, claude-sonnet-5): live-1 1c43a07092dc4ff4 -> yaks-9277, per Joel's decision A (landed and liveness orthogonal). This time the claim commit and push happened entirely in my own clone (mjgxvtvdt1a0), not the primary -- confirmed reachable via local/main before spawning.
+
+---
+▸ 2026-10-11T22:20:18Z [delta-lead]
+Landed yaks-9277 (live-1 1c43a07092dc4ff4; a835067 by merge, clean, no unexplained working-tree changes this time). Gate: 16 suites, 644 passed, 0 failed, rebuilt and re-run on this machine. Real-machine: the attached before/after diff surfaced 51 genuinely orphaned Delta pins on this machine (every worker from this whole thread's history that finished or died), none of which showed up anywhere before; active tags on every currently-claimed shed including the primary and my own clone. Checked the liveness fn directly: idle is the default (empty claim or unknown activity), stale only with BOTH a claim and activity older than the 2h STALE_AFTER -- matches the spec exactly. The yaks-38dc family's CLI half (sheds/changes/inbox --sheds/show --sheds/answer @shed, edited, landed, liveness, the current-shed row, origin baseline) is now fully shipped; what remains is the TUI view (yaks-7204/yaks-38dc) and the two smaller loose ends (yaks-6beb: Delta managed-repo discovery, yaks-5138-adjacent follow-ups if any).
