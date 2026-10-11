@@ -1,0 +1,86 @@
+--- /tmp/sheds-before.txt	2026-10-11 18:16:57
++++ /tmp/sheds-after.txt	2026-10-11 18:17:17
+@@ -1,7 +1,7 @@
+   KIND      BRANCH  HEAD     +AHEAD -BEHIND  DIRTY  FARM ACTIVE           PATH
+   worktree  main    0a930fa  +1 -0           0      2026-10-11T21:58:36Z  /Users/joel/src/yaks
+   name: main
+-  who: delta-lead, base-1, edit-2, here-1, land-1, Joel Webber · shaving: yaks-9277, yaks-ee0a (vs origin/main)
++  who: delta-lead, base-1, edit-2, here-1, land-1, Joel Webber · shaving: yaks-9277, yaks-ee0a · active (vs origin/main)
+   farm: 6 new, 3 moved, 72 new notes, 1 needs, 5 edited (vs origin/main)
+     + yaks-047a
+     + yaks-3344
+@@ -30,14 +30,70 @@
+     yaks-7eea edited
+     yaks-ed5e edited
+     yaks-ee0a edited
+-* delta     main    5557c9e  +0 -0           0      2026-10-11T22:16:48Z  /Users/joel/src/yaks/.delta/worktrees/jzzz1njbms6m/yaks
++* delta     main    5557c9e  +0 -0           6      2026-10-11T22:17:04Z  /Users/joel/src/yaks/.delta/worktrees/jzzz1njbms6m/yaks
+   name: live-1-shed-liveness (here) · title: live-1: shed liveness (active, idle, stale) plus orphaned pins
+-  farm: no changes of its own
++  who: live-1 · shaving: yaks-9277 · active
++  farm: 4 new notes, 1 edited
++    yaks-9277 +4 notes
++    yaks-9277 edited
+   delta     main    0a930fa  +1 -0           0      2026-10-11T21:58:30Z  /Users/joel/src/yaks/.delta/worktrees/mjgxvtvdt1a0/yaks
+   name: yak-shedding · title: Yak Shedding
+-  who: Joel Webber, delta-lead, base-1, edit-2, here-1, land-1 · shaving: yaks-9277, yaks-ee0a
++  who: Joel Webber, delta-lead, base-1, edit-2, here-1, land-1 · shaving: yaks-9277, yaks-ee0a · active
+   farm: landed (16 yaks)
+   delta     main    2b92139  +0 -4           0      2026-10-11T20:51:45Z  /Users/joel/src/yaks/.delta/worktrees/y73w02wz9exc/yaks
+   name: land-1-mark-a-shed · title: land-1: mark a shed landed when its changes are upstream
+-  who: delta-lead, land-1 · shaving: yaks-ee0a
++  who: delta-lead, land-1 · shaving: yaks-ee0a · active
+   farm: landed (3 yaks)
++
++orphaned (51): a pinned clone whose checkout could not be resolved (most often a gone git dir — a finished thread)
++  0jwkm0npnqve/yaks: gone (its git dir no longer exists)
++  2wqa4188f15r/yaks: gone (its git dir no longer exists)
++  3kkcfcww892t/yaks: gone (its git dir no longer exists)
++  3s8a5yqk1p7s/yaks: gone (its git dir no longer exists)
++  486hnt20begb/yaks: gone (its git dir no longer exists)
++  5a644x273r07/yaks: gone (its git dir no longer exists)
++  5vakvqqg7ykn/yaks: gone (its git dir no longer exists)
++  606y05kk15w7/yaks: gone (its git dir no longer exists)
++  6dnmg0rxa8z2/yaks: gone (its git dir no longer exists)
++  6sqm70h9vbdn/yaks: gone (its git dir no longer exists)
++  72k1vk6apwt4/yaks: gone (its git dir no longer exists)
++  73gvtasv9rjr/yaks: gone (its git dir no longer exists)
++  7cs0tc5es24v/yaks: gone (its git dir no longer exists)
++  85f5h6np93r5/yaks: gone (its git dir no longer exists)
++  8ek2jykcm7ke/yaks: gone (its git dir no longer exists)
++  8jspjv836gbr/yaks: gone (its git dir no longer exists)
++  99yx2fj5eh45/yaks: gone (its git dir no longer exists)
++  9jb19pjrykkq/yaks: gone (its git dir no longer exists)
++  9xp675zkxkjp/yaks: gone (its git dir no longer exists)
++  af5ejzkbfeg3/yaks: gone (its git dir no longer exists)
++  axm8s5gngw48/yaks: gone (its git dir no longer exists)
++  b9cr48skdbst/yaks: gone (its git dir no longer exists)
++  ccae3bj40fr0/yaks: gone (its git dir no longer exists)
++  cmbtna3cvx51/yaks: gone (its git dir no longer exists)
++  dv4fmmmdm74z/yaks: gone (its git dir no longer exists)
++  e4gr4rszmhgz/yaks: gone (its git dir no longer exists)
++  e9p3dswra3s5/yaks: gone (its git dir no longer exists)
++  f2hdbpew7kgx/yaks: gone (its git dir no longer exists)
++  h4skc0fpebk8/yaks: gone (its git dir no longer exists)
++  jnc4mb98btw6/yaks: gone (its git dir no longer exists)
++  mkn5b8hny6zf/yaks: gone (its git dir no longer exists)
++  n6zrds7fcrgj/yaks: gone (its git dir no longer exists)
++  nw0v12c3ymte/yaks: gone (its git dir no longer exists)
++  q2anm14m6tny/yaks: gone (its git dir no longer exists)
++  qkpp5wdvfm8p/yaks: gone (its git dir no longer exists)
++  qt7v225tzxq0/yaks: gone (its git dir no longer exists)
++  qw0xx3s64g6e/yaks: gone (its git dir no longer exists)
++  r9tf7q74jvzy/yaks: gone (its git dir no longer exists)
++  r9z0ffzrv4se/yaks: gone (its git dir no longer exists)
++  tp2zd0r5z185/yaks: gone (its git dir no longer exists)
++  tpx7ckv1th2n/yaks: gone (its git dir no longer exists)
++  trw8aymc9w6v/yaks: gone (its git dir no longer exists)
++  tv2dwd6ghd1a/yaks: gone (its git dir no longer exists)
++  vdjrx47b15hj/yaks: gone (its git dir no longer exists)
++  vk8z2vjzgdqh/yaks: gone (its git dir no longer exists)
++  vks97kdt9jpt/yaks: gone (its git dir no longer exists)
++  xp49gyb9fg59/yaks: gone (its git dir no longer exists)
++  xw51kfjdpqy5/yaks: gone (its git dir no longer exists)
++  y2pm7fbez96t/yaks: gone (its git dir no longer exists)
++  yar6r29tjc78/yaks: gone (its git dir no longer exists)
++  ynqz2tjwkyjx/yaks: gone (its git dir no longer exists)
