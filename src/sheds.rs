@@ -59,7 +59,7 @@ use crate::store;
 use anyhow::{Context, Result, bail};
 use chrono::{DateTime, Utc};
 use serde_json::{Value, json};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -111,6 +111,15 @@ pub struct FarmDelta {
     /// Yaks in both whose title, fields or description the shed rewrote (see
     /// [`store::edited`]).
     pub edited: Vec<String>,
+    /// Touched ids that the REFERENCE farm (see the module docs and
+    /// [`reference_tasks`]) already has in full: nothing outstanding for the
+    /// shed to do about that yak, whether because the shed's state there
+    /// exactly matches the reference or because the reference is further
+    /// along (the shed's work was squashed/cherry-picked in under a
+    /// different commit, or the shed is simply behind the reference on that
+    /// one yak). Empty whenever there is no usable reference, and always for
+    /// the primary's own row (see [`Shed::primary`]).
+    pub landed: Vec<String>,
 }
 
 impl FarmDelta {
@@ -120,6 +129,21 @@ impl FarmDelta {
             && self.notes.is_empty()
             && self.needs.is_empty()
             && self.edited.is_empty()
+    }
+
+    /// Every distinct id this delta touches (new, moved, noted, `needs:`
+    /// newly set, or edited), deduped: a yak can land in more than one of
+    /// `added`/`moved`/`notes`/`needs`/`edited` at once. Compared with
+    /// `landed` by the render layer to tell "all of it landed" from "none of
+    /// it" from "some of it".
+    pub fn touched(&self) -> Vec<String> {
+        let mut ids: BTreeSet<String> = BTreeSet::new();
+        ids.extend(self.added.iter().cloned());
+        ids.extend(self.moved.iter().map(|m| m.id.clone()));
+        ids.extend(self.notes.iter().map(|(id, _)| id.clone()));
+        ids.extend(self.needs.iter().map(|(id, _)| id.clone()));
+        ids.extend(self.edited.iter().cloned());
+        ids.into_iter().collect()
     }
 }
 
@@ -266,11 +290,27 @@ pub fn discover(cwd: &Path, farm_root: &Path) -> Result<Vec<Shed>> {
     let ours = store::load(farm_root, &EVERY).unwrap_or_default();
     let our_farm = canonical(farm_root);
     let shallow = git(&top, &["rev-parse", "--is-shallow-repository"]).is_ok_and(|s| s == "true");
+    // The REFERENCE every shed's `landed` is measured against (same from
+    // every viewer): the primary's path, found the cheap way (it is already
+    // in `found`, no second discovery walk).
+    let primary_path = found
+        .iter()
+        .find(|(_, f)| f.primary)
+        .map(|(p, _)| p.clone());
+    let reference = reference_tasks(primary_path.as_deref(), &top, &our_farm);
     let mut sheds: Vec<Shed> = found
         .into_iter()
         .map(|(path, found)| {
             let current = path == top;
-            let mut shed = inspect(&top, &path, &found, current, &our_farm, &ours);
+            let mut shed = inspect(
+                &top,
+                &path,
+                &found,
+                current,
+                &our_farm,
+                &ours,
+                reference.as_deref(),
+            );
             shed.shallow_here = shallow;
             shed
         })
@@ -471,6 +511,7 @@ fn inspect(
     current: bool,
     our_farm: &Path,
     ours: &[crate::model::Task],
+    reference: Option<&[crate::model::Task]>,
 ) -> Shed {
     let mut shed = Shed {
         path: path.to_path_buf(),
@@ -539,9 +580,19 @@ fn inspect(
                             Some((base, base_tasks)) => {
                                 shed.farm_base = Some(base);
                                 (shed.who, shed.in_progress) = label(&base_tasks, &theirs);
-                                ShedFarm::Own(compare_farms(&base_tasks, &theirs))
+                                let mut d = compare_farms(&base_tasks, &theirs);
+                                if !found.primary {
+                                    d.landed = landed_ids(&base_tasks, &theirs, reference);
+                                }
+                                ShedFarm::Own(d)
                             }
-                            None => ShedFarm::Own(compare_farms(ours, &theirs)),
+                            None => {
+                                let mut d = compare_farms(ours, &theirs);
+                                if !found.primary {
+                                    d.landed = landed_ids(ours, &theirs, reference);
+                                }
+                                ShedFarm::Own(d)
+                            }
                         }
                     }
                     Err(e) => ShedFarm::Unreadable(format!("{e:#}")),
@@ -550,6 +601,100 @@ fn inspect(
         }
     }
     shed
+}
+
+/// The REFERENCE farm's tasks (see the module docs): what every shed's
+/// `landed` is measured against, the same from every viewer. The PRIMARY
+/// checkout's live working tree when it is visible here and its farm can be
+/// read (a plain, fresh read: `Own`, `Shared` and even a farm that happens to
+/// equal ours all count, since they are all readable), else the primary's
+/// `origin/main` (read via `top`, since every checkout of one repository
+/// shares the same remote-tracking refs), so a Delta-managed repo with no
+/// visible primary (`local` is a bare repo with no branches) still has a
+/// reference. `None` when neither works: callers then skip `landed` for
+/// every shed, never guessing. `farm_root` is `top`'s own farm (used only for
+/// the `origin/main` fallback, to read `top`'s `.yaks` as it existed there).
+fn reference_tasks(
+    primary_path: Option<&Path>,
+    top: &Path,
+    farm_root: &Path,
+) -> Option<Vec<crate::model::Task>> {
+    primary_path
+        .and_then(|p| {
+            let d = store::discover_with(p, None).ok()?;
+            store::load(&canonical(&d.root), &EVERY).ok()
+        })
+        .or_else(|| {
+            let commit = origin_base(top)?;
+            base_farm(top, &commit, top, farm_root).map(|(_, tasks)| tasks)
+        })
+}
+
+/// Where a status directory sits in the `hairy -> shaving -> shorn` (then
+/// `dead`) progression, for telling a FORWARD move (a yak further along)
+/// from a backward one (a yak not yet caught up): `EVERY`'s order.
+fn status_rank(dir: &str) -> usize {
+    EVERY
+        .iter()
+        .position(|s| s.dir() == dir)
+        .unwrap_or_default()
+}
+
+/// The ids of `yak_changes(reference, theirs)` that are genuinely
+/// OUTSTANDING: the shed has something beyond the reference, not merely
+/// behind it. A plain membership test would also flag the SUPERSEDED
+/// direction (the shed's copy is an earlier state of the reference's: fewer
+/// notes, or a status earlier in the hairy->shaving->shorn progression),
+/// because [`yak_changes`]'s `moved` is a plain inequality with no direction
+/// of its own (its `notes` already resolves this correctly by construction:
+/// `.skip(known)` past a shorter list of theirs' notes is simply empty).
+/// So a backward-only move (the reference's status ranks at or beyond
+/// theirs') is not outstanding by itself; any other signal (new to the
+/// reference, extra notes, a new `needs:`, a forward move, or edited) is.
+/// Pure.
+fn outstanding_ids(
+    reference: &[crate::model::Task],
+    theirs: &[crate::model::Task],
+) -> BTreeSet<String> {
+    yak_changes(reference, theirs)
+        .into_iter()
+        .filter(|c| {
+            c.added
+                || !c.notes.is_empty()
+                || c.needs.is_some()
+                || c.edited
+                || c.moved
+                    .is_some_and(|(from, to)| status_rank(to) > status_rank(from))
+        })
+        .map(|c| c.id)
+        .collect()
+}
+
+/// Which ids `yak_changes(base, theirs)` touches that the `reference` farm
+/// already has in full too (see [`FarmDelta::landed`]): nothing outstanding
+/// for the shed to do about them, whether because its state there matches
+/// the reference exactly or the reference is further along (see
+/// [`outstanding_ids`]). Empty with no `reference` or nothing touched. Pure.
+fn landed_ids(
+    base: &[crate::model::Task],
+    theirs: &[crate::model::Task],
+    reference: Option<&[crate::model::Task]>,
+) -> Vec<String> {
+    let Some(reference) = reference else {
+        return Vec::new();
+    };
+    let touched: Vec<String> = yak_changes(base, theirs)
+        .into_iter()
+        .map(|c| c.id)
+        .collect();
+    if touched.is_empty() {
+        return Vec::new();
+    }
+    let outstanding = outstanding_ids(reference, theirs);
+    touched
+        .into_iter()
+        .filter(|id| !outstanding.contains(id))
+        .collect()
 }
 
 /// The primary's `origin/main`: the remote-tracking ref `refs/remotes/origin/
@@ -806,6 +951,11 @@ pub struct YakChange {
     /// The yak is in both and the shed rewrote its title, a field or its
     /// description ([`store::edited`]). Never set with `added`.
     pub edited: bool,
+    /// The REFERENCE farm already has this yak's change in full (see
+    /// [`FarmDelta::landed`]); always `false` from [`yak_changes`] itself
+    /// (it has no reference to compare with) and only ever set by
+    /// [`shed_yak_changes`], never for the primary's own row.
+    pub landed: bool,
 }
 
 /// What the shed did to each yak it touched, per yak: one that is new, in
@@ -841,6 +991,7 @@ pub fn yak_changes(base: &[crate::model::Task], theirs: &[crate::model::Task]) -
                 .clone()
                 .filter(|n| Some(n) != m.and_then(|m| m.needs.as_ref())),
             edited: m.is_some_and(|m| store::edited(m, t)),
+            landed: false,
         };
         if change.added
             || change.moved.is_some()
@@ -871,15 +1022,17 @@ pub struct Changes {
 
 /// The per-yak changes of `shed` (one of [`discover`]'s), measured from the
 /// same baseline `discover` chose for it. `cwd` and `farm_root` are what
-/// `discover` was given. Read-only, like the rest of this module.
-pub fn changes(shed: &Shed, cwd: &Path, farm_root: &Path) -> Result<Changes> {
+/// `discover` was given; `sheds` is `discover`'s full result (used only to
+/// find the primary's path for [`reference_tasks`], without a second
+/// discovery walk). Read-only, like the rest of this module.
+pub fn changes(shed: &Shed, cwd: &Path, farm_root: &Path, sheds: &[Shed]) -> Result<Changes> {
     let yaks = match &shed.farm {
         ShedFarm::Own(_) => {
             let top = canonical(&PathBuf::from(
                 git(cwd, &["rev-parse", "--show-toplevel"])
                     .context("yaks changes needs a git repository")?,
             ));
-            shed_yak_changes(shed, &top, farm_root)
+            shed_yak_changes(shed, &top, farm_root, sheds)
         }
         other => Err(farm_message(other).unwrap_or_default()),
     };
@@ -892,7 +1045,12 @@ pub fn changes(shed: &Shed, cwd: &Path, farm_root: &Path) -> Result<Changes> {
     })
 }
 
-fn shed_yak_changes(shed: &Shed, top: &Path, farm_root: &Path) -> Result<Vec<YakChange>, String> {
+fn shed_yak_changes(
+    shed: &Shed,
+    top: &Path,
+    farm_root: &Path,
+    sheds: &[Shed],
+) -> Result<Vec<YakChange>, String> {
     let root = store::discover_with(&shed.path, None)
         .map_err(|e| format!("{e:#}"))?
         .root;
@@ -906,7 +1064,17 @@ fn shed_yak_changes(shed: &Shed, top: &Path, farm_root: &Path) -> Result<Vec<Yak
         .and_then(|b| base_farm(top, &b.sha, &shed.path, &root))
         .map(|(_, tasks)| tasks)
         .unwrap_or_else(|| store::load(farm_root, &EVERY).unwrap_or_default());
-    Ok(yak_changes(&base, &theirs))
+    let mut changes = yak_changes(&base, &theirs);
+    if !shed.primary {
+        let primary_path = sheds.iter().find(|s| s.primary).map(|s| s.path.as_path());
+        if let Some(reference) = reference_tasks(primary_path, top, farm_root) {
+            let outstanding = outstanding_ids(&reference, &theirs);
+            for c in &mut changes {
+                c.landed = !outstanding.contains(&c.id);
+            }
+        }
+    }
+    Ok(changes)
 }
 
 /// Label a shed from its OWN new note entries: `(who, in_progress)`. Pure.
@@ -1356,6 +1524,7 @@ pub fn to_json(sheds: &[Shed]) -> Value {
                             .map(|(id, v)| json!({"id": id, "needs": v}))
                             .collect::<Vec<_>>(),
                         "edited": d.edited,
+                        "landed": d.landed,
                     }),
                     other => json!({
                         "state": match other {
@@ -1455,6 +1624,9 @@ pub fn render_changes(c: &Changes) -> String {
         if y.edited {
             what.push_str(", edited");
         }
+        if y.landed {
+            what.push_str(", landed");
+        }
         out.push_str(&format!("  {}  {}  [{what}]\n", y.id, y.title));
         for n in &y.notes {
             out.push_str(&format!(
@@ -1492,6 +1664,7 @@ pub fn changes_json(c: &Changes) -> Value {
                         .collect::<Vec<_>>(),
                     "needs": y.needs,
                     "edited": y.edited,
+                    "landed": y.landed,
                     "vs": vs,
                     "base": base,
                 })
@@ -1593,6 +1766,12 @@ pub fn render(sheds: &[Shed]) -> String {
             ShedFarm::Own(d) if d.is_empty() => {
                 out.push_str("  farm: no differences (vs this checkout)\n")
             }
+            // Every touched yak is landed: nothing outstanding to list.
+            ShedFarm::Own(d) if !d.landed.is_empty() && d.landed.len() == d.touched().len() => {
+                let n = d.landed.len();
+                let yak = if n == 1 { "yak" } else { "yaks" };
+                out.push_str(&format!("  farm: landed ({n} {yak}){}\n", vs_marker(l)));
+            }
             ShedFarm::Own(d) => {
                 let n: usize = d.notes.iter().map(|(_, n)| n).sum();
                 let mut parts = Vec::new();
@@ -1611,20 +1790,35 @@ pub fn render(sheds: &[Shed]) -> String {
                 if !d.edited.is_empty() {
                     parts.push(format!("{} edited", d.edited.len()));
                 }
-                out.push_str(&format!("  farm: {}{}\n", parts.join(", "), vs_marker(l)));
-                for id in &d.added {
+                // A shed with some yaks landed and some still outstanding:
+                // the summary keeps every yak's full counts (the totals
+                // since the fork), but the itemized lines below list only
+                // what is still outstanding (per the spec: "lists the
+                // outstanding ones and says how many are landed").
+                let landed_note = if d.landed.is_empty() {
+                    String::new()
+                } else {
+                    format!(" ({} landed)", d.landed.len())
+                };
+                out.push_str(&format!(
+                    "  farm: {}{landed_note}{}\n",
+                    parts.join(", "),
+                    vs_marker(l)
+                ));
+                let outstanding = |id: &str| !d.landed.iter().any(|l| l == id);
+                for id in d.added.iter().filter(|id| outstanding(id)) {
                     out.push_str(&format!("    + {id}\n"));
                 }
-                for m in &d.moved {
+                for m in d.moved.iter().filter(|m| outstanding(&m.id)) {
                     out.push_str(&format!("    {} {} -> {}\n", m.id, m.from, m.to));
                 }
-                for (id, n) in &d.notes {
+                for (id, n) in d.notes.iter().filter(|(id, _)| outstanding(id)) {
                     out.push_str(&format!("    {id} +{n} notes\n"));
                 }
-                for (id, v) in &d.needs {
+                for (id, v) in d.needs.iter().filter(|(id, _)| outstanding(id)) {
                     out.push_str(&format!("    {id} needs: {v}\n"));
                 }
-                for id in &d.edited {
+                for id in d.edited.iter().filter(|id| outstanding(id)) {
                     out.push_str(&format!("    {id} edited\n"));
                 }
             }
@@ -2833,6 +3027,388 @@ mod tests {
         assert_eq!(d.notes, vec![("yaks-aaaa".to_string(), 1)]);
     }
 
+    // -- landed (yaks-ed5e): a shed whose changes are all already in the
+    // reference farm reads `landed`, not as outstanding work -----------------
+
+    /// The exact motivating case: a shed's commit was squashed into the
+    /// reference under a different sha, so `ahead`/`behind` (by commit) does
+    /// not catch it, but its farm content is now identical.
+    #[test]
+    fn a_squashed_shed_reads_landed_once_the_reference_has_everything_it_has() {
+        let (t, coord) = coordinator_with_own_notes("landed-squash");
+        let w = worker_of(&t, &coord, "w1");
+        commit_notes_on_aaaa(
+            &w,
+            &[
+                ("2026-03-02T00:00:00Z", Some("coordx"), "coordinator note"),
+                ("2026-03-03T00:00:00Z", Some("w-1"), "worker note"),
+            ],
+        );
+        sh(&t, &["merge", "--squash", "-q", "w1"]);
+        sh(&t, &["commit", "-q", "-m", "squash"]);
+        let sheds = sheds_of(&t);
+        let l = shed_at(&sheds, &w);
+        let ShedFarm::Own(d) = &l.farm else {
+            panic!("expected own farm, got {:?}", l.farm)
+        };
+        assert_eq!(d.landed, ["yaks-aaaa"]);
+        let text = render(&sheds);
+        assert!(text.contains("farm: landed (1 yak)"), "{text}");
+        assert!(!text.contains("+1 notes"), "no itemized line: {text}");
+        let j = json_of(&sheds, &w);
+        assert_eq!(j["farm"]["landed"], json!(["yaks-aaaa"]));
+    }
+
+    /// A shed with one note the reference lacks is NOT landed, even though
+    /// the reference has moved on in other ways.
+    #[test]
+    fn a_shed_with_an_extra_note_the_reference_lacks_is_not_landed() {
+        let (t, wt) = claimed_repo_with_shed("landed-extra-note");
+        shed_notes_on_aaaa(
+            &wt,
+            &[("2026-03-02T00:00:00Z", Some("w-1"), "still working")],
+        );
+        let sheds = sheds_of(&t);
+        let l = shed_at(&sheds, &wt);
+        let ShedFarm::Own(d) = &l.farm else {
+            panic!("expected own farm, got {:?}", l.farm)
+        };
+        assert!(d.landed.is_empty(), "{d:?}");
+        let text = render(&sheds);
+        // Exact line: no `(N landed)` suffix (checking the literal "landed"
+        // substring would also match this test's own temp-dir path).
+        assert!(text.contains("  farm: 1 new notes\n"), "{text}");
+        assert!(text.contains("    yaks-aaaa +1 notes\n"), "{text}");
+    }
+
+    /// The SECOND real-machine case (the 2026-10-10 note): a shed's copy of a
+    /// yak is an EARLIER state of the reference's (here: `shaving` with no
+    /// notes, while the reference already sheared it with notes). The shed
+    /// did touch the yak relative to its OWN fork (it is new there), but the
+    /// reference already has everything it has and more: landed.
+    #[test]
+    fn a_shed_whose_copy_is_superseded_by_the_reference_reads_landed() {
+        let b = base("landed-superseded");
+        let t = b.join("repo");
+        // A real initial commit (so the shed's fork point has a readable
+        // farm WITHOUT `yaks-dddd`): otherwise there is no base to read and
+        // `inspect` falls back to comparing against this checkout's CURRENT
+        // farm, which would already include the finished `yaks-dddd` below
+        // and make it look like a plain backward `moved`, not `added`.
+        repo_with_farm(&t);
+        let wt = b.join("wt");
+        sh(
+            &t,
+            &["worktree", "add", "-q", "-b", "shed", wt.to_str().unwrap()],
+        );
+        // The shed creates the yak itself, uncommitted, still `shaving` with
+        // no notes (a Delta-applied copy of work the primary has since
+        // finished, per the real case).
+        task_file(&wt, "shaving", "yaks-dddd", "", "new");
+        // The primary finishes and shears it, with notes, in its own commit.
+        task_file(
+            &t,
+            "shorn",
+            "yaks-dddd",
+            "",
+            &notes(
+                "new",
+                &[
+                    (
+                        "2026-03-01T00:00:00Z",
+                        Some("coord"),
+                        "moved: hairy -> shaving",
+                    ),
+                    ("2026-03-02T00:00:00Z", Some("coord"), "done"),
+                    (
+                        "2026-03-03T00:00:00Z",
+                        Some("coord"),
+                        "moved: shaving -> shorn",
+                    ),
+                ],
+            ),
+        );
+        sh(&t, &["add", "-A"]);
+        sh(&t, &["commit", "-q", "-m", "finish dddd"]);
+
+        let sheds = sheds_of(&t);
+        let l = shed_at(&sheds, &wt);
+        let ShedFarm::Own(d) = &l.farm else {
+            panic!("expected own farm, got {:?}", l.farm)
+        };
+        assert_eq!(
+            d.added,
+            ["yaks-dddd"],
+            "new relative to the shed's own fork"
+        );
+        assert_eq!(d.landed, ["yaks-dddd"]);
+        let text = render(&sheds);
+        assert!(text.contains("farm: landed (1 yak)"), "{text}");
+    }
+
+    /// A shed with some yaks landed and some still outstanding: the summary
+    /// keeps the full counts, adds `(K landed)`, and the itemized lines list
+    /// only what is still outstanding.
+    #[test]
+    fn a_shed_with_some_yaks_landed_and_some_outstanding_lists_only_the_outstanding() {
+        let (t, wt) = claimed_repo_with_shed("landed-mixed");
+        // The shed: an extra note on the already-claimed yaks-aaaa (stays
+        // outstanding, the reference never sees it), and yaks-bbbb moved to
+        // shaving with a note (will land: the primary makes the same move,
+        // with its own actor/text — note COUNT is the rule, see `yak_changes`).
+        shed_notes_on_aaaa(
+            &wt,
+            &[("2026-03-02T00:00:00Z", Some("w-1"), "still working")],
+        );
+        fs::remove_file(wt.join(".yaks/hairy/yaks-bbbb.md")).unwrap();
+        task_file(
+            &wt,
+            "shaving",
+            "yaks-bbbb",
+            "",
+            &notes(
+                "second",
+                &[(
+                    "2026-03-03T00:00:00Z",
+                    Some("w-1"),
+                    "moved: hairy -> shaving",
+                )],
+            ),
+        );
+        // The primary moves bbbb the same way, independently, after the shed forked.
+        fs::remove_file(t.join(".yaks/hairy/yaks-bbbb.md")).unwrap();
+        task_file(
+            &t,
+            "shaving",
+            "yaks-bbbb",
+            "",
+            &notes(
+                "second",
+                &[(
+                    "2026-03-04T00:00:00Z",
+                    Some("coord"),
+                    "moved: hairy -> shaving",
+                )],
+            ),
+        );
+        sh(&t, &["add", "-A"]);
+        sh(&t, &["commit", "-q", "-m", "primary also moves bbbb"]);
+
+        let sheds = sheds_of(&t);
+        let l = shed_at(&sheds, &wt);
+        let ShedFarm::Own(d) = &l.farm else {
+            panic!("expected own farm, got {:?}", l.farm)
+        };
+        assert_eq!(d.landed, ["yaks-bbbb"]);
+        assert_eq!(d.touched().len(), 2, "{d:?}");
+        let text = render(&sheds);
+        assert!(
+            text.contains("farm: 1 moved, 2 new notes (1 landed)"),
+            "{text}"
+        );
+        assert!(text.contains("    yaks-aaaa +1 notes\n"), "{text}");
+        // `yaks-bbbb` still appears on the `shaving:` label line (it IS
+        // being worked on there); only the itemized farm-detail lines
+        // (4-space indent, `moved`/`notes`) must drop it.
+        assert!(
+            !text.contains("    yaks-bbbb"),
+            "no itemized line for the landed yak: {text}"
+        );
+    }
+
+    /// No visible primary and no usable `origin` ref: `reference_tasks`
+    /// (and so `landed`) is `None`/empty, never a guess. Exercised directly
+    /// against the function `discover` relies on: a Delta-managed repo with
+    /// no visible primary (a bare `local`, see the module docs) falls
+    /// through exactly this path.
+    #[test]
+    fn landed_is_empty_with_no_visible_primary_and_no_usable_origin_ref() {
+        let b = base("landed-no-reference");
+        let t = b.join("repo");
+        repo_with_farm(&t); // no `origin` remote configured at all
+        assert_eq!(reference_tasks(None, &t, &t.join(".yaks")), None);
+
+        // And a shed with a real change still reports no `landed` for it.
+        let wt = b.join("wt");
+        sh(
+            &t,
+            &["worktree", "add", "-q", "-b", "shed", wt.to_str().unwrap()],
+        );
+        task_file(&wt, "hairy", "yaks-dddd", "", "new");
+        let base_tasks = store::load(&t.join(".yaks"), &EVERY).unwrap();
+        let theirs = store::load(&wt.join(".yaks"), &EVERY).unwrap();
+        assert_eq!(landed_ids(&base_tasks, &theirs, None), Vec::<String>::new());
+    }
+
+    /// Two non-primary viewers (siblings, neither the primary) agree on
+    /// whether a THIRD shed is landed: the reference is read the same way
+    /// regardless of who asks.
+    #[test]
+    fn two_non_primary_viewers_agree_on_whether_a_third_shed_is_landed() {
+        let (t, w) = claimed_repo_with_shed("landed-viewers");
+        // `w`'s change lands: the primary makes the identical move after.
+        fs::remove_file(w.join(".yaks/hairy/yaks-bbbb.md")).unwrap();
+        task_file(
+            &w,
+            "shaving",
+            "yaks-bbbb",
+            "",
+            &notes(
+                "second",
+                &[(
+                    "2026-03-02T00:00:00Z",
+                    Some("w-1"),
+                    "moved: hairy -> shaving",
+                )],
+            ),
+        );
+        fs::remove_file(t.join(".yaks/hairy/yaks-bbbb.md")).unwrap();
+        task_file(
+            &t,
+            "shaving",
+            "yaks-bbbb",
+            "",
+            &notes(
+                "second",
+                &[(
+                    "2026-03-03T00:00:00Z",
+                    Some("coord"),
+                    "moved: hairy -> shaving",
+                )],
+            ),
+        );
+        sh(&t, &["add", "-A"]);
+        sh(&t, &["commit", "-q", "-m", "primary also moves bbbb"]);
+        // Two sibling worktrees, neither the primary, forked after that commit.
+        let sib1 = t.parent().unwrap().join("sib1");
+        let sib2 = t.parent().unwrap().join("sib2");
+        sh(
+            &t,
+            &[
+                "worktree",
+                "add",
+                "-q",
+                "-b",
+                "sib1",
+                sib1.to_str().unwrap(),
+            ],
+        );
+        sh(
+            &t,
+            &[
+                "worktree",
+                "add",
+                "-q",
+                "-b",
+                "sib2",
+                sib2.to_str().unwrap(),
+            ],
+        );
+        for viewer in [&sib1, &sib2] {
+            let sheds = all_sheds_of(viewer);
+            let l = shed_at(&sheds, &w);
+            let ShedFarm::Own(d) = &l.farm else {
+                panic!("expected own farm, got {:?}", l.farm)
+            };
+            assert_eq!(d.landed, ["yaks-bbbb"], "from {}", viewer.display());
+        }
+    }
+
+    /// `yaks changes <shed>` marks each yak `landed` when it is: text (the
+    /// bracket list, like `edited`) and JSON.
+    #[test]
+    fn changes_marks_a_landed_yak_text_and_json() {
+        let (t, wt) = claimed_repo_with_shed("landed-changes");
+        fs::remove_file(wt.join(".yaks/hairy/yaks-bbbb.md")).unwrap();
+        task_file(
+            &wt,
+            "shaving",
+            "yaks-bbbb",
+            "",
+            &notes(
+                "second",
+                &[(
+                    "2026-03-02T00:00:00Z",
+                    Some("w-1"),
+                    "moved: hairy -> shaving",
+                )],
+            ),
+        );
+        shed_notes_on_aaaa(
+            &wt,
+            &[("2026-03-02T00:00:00Z", Some("w-1"), "still working")],
+        );
+        // The primary makes bbbb's move too, independently; aaaa's extra note
+        // stays outstanding.
+        fs::remove_file(t.join(".yaks/hairy/yaks-bbbb.md")).unwrap();
+        task_file(
+            &t,
+            "shaving",
+            "yaks-bbbb",
+            "",
+            &notes(
+                "second",
+                &[(
+                    "2026-03-03T00:00:00Z",
+                    Some("coord"),
+                    "moved: hairy -> shaving",
+                )],
+            ),
+        );
+        sh(&t, &["add", "-A"]);
+        sh(&t, &["commit", "-q", "-m", "primary also moves bbbb"]);
+
+        let c = changes_of(&t, "shed");
+        let ys = c.yaks.as_ref().unwrap();
+        let landed: Vec<(&str, bool)> = ys.iter().map(|y| (y.id.as_str(), y.landed)).collect();
+        assert_eq!(
+            landed,
+            [("yaks-aaaa", false), ("yaks-bbbb", true)],
+            "{ys:?}"
+        );
+        let out = render_changes(&c);
+        assert!(out.contains("[hairy -> shaving, landed]"), "{out}");
+        assert!(!out.contains("[shaving, landed]"), "{out}");
+        let j = changes_json(&c);
+        assert_eq!(j[0]["landed"], false);
+        assert_eq!(j[1]["landed"], true);
+    }
+
+    /// The pure building blocks, directly: `outstanding_ids` excludes a
+    /// backward move (superseded) but includes a forward one, extra notes, a
+    /// new `needs:`, an edit, or a brand-new yak; `landed_ids` is then
+    /// `touched - outstanding`.
+    #[test]
+    fn outstanding_ids_is_direction_aware() {
+        let b = base("outstanding-ids");
+        let (reference, theirs) = (b.join("reference"), b.join("theirs"));
+        task_file(&reference, "shorn", "yaks-back", "", "x");
+        task_file(&theirs, "shaving", "yaks-back", "", "x"); // superseded: behind
+        task_file(&reference, "hairy", "yaks-fwd", "", "x");
+        task_file(&theirs, "shaving", "yaks-fwd", "", "x"); // genuinely ahead
+        task_file(&reference, "hairy", "yaks-note", "", "x");
+        task_file(
+            &theirs,
+            "hairy",
+            "yaks-note",
+            "",
+            &notes("x", &[("2026-02-02T00:00:00Z", Some("w"), "extra")]),
+        );
+        let load = |root: &Path| store::load(&root.join(".yaks"), &EVERY).unwrap();
+        let (reference, theirs) = (load(&reference), load(&theirs));
+
+        let outstanding = outstanding_ids(&reference, &theirs);
+        assert_eq!(
+            outstanding,
+            BTreeSet::from(["yaks-fwd".to_string(), "yaks-note".to_string()])
+        );
+        // `landed_ids` relative to an empty base: every id is "touched" (all
+        // new), so landed is exactly what's left once outstanding is removed.
+        let empty: Vec<crate::model::Task> = Vec::new();
+        let landed = landed_ids(&empty, &theirs, Some(&reference));
+        assert_eq!(landed, ["yaks-back".to_string()]);
+    }
+
     /// The shed `l`'s JSON object from `to_json`.
     fn json_of(sheds: &[Shed], l: &Path) -> Value {
         to_json(sheds)
@@ -3653,9 +4229,11 @@ mod tests {
     }
 
     fn changes_of(viewer: &Path, query: &str) -> Changes {
-        let sheds = sheds_of(viewer);
+        // The full list (current included): `changes` needs the primary's
+        // path to find the reference, even when the viewer IS the primary.
+        let sheds = all_sheds_of(viewer);
         let shed = resolve(&sheds, query).unwrap();
-        changes(shed, viewer, &viewer.join(".yaks")).unwrap()
+        changes(shed, viewer, &viewer.join(".yaks"), &sheds).unwrap()
     }
 
     #[test]
@@ -4067,7 +4645,7 @@ mod tests {
         let shared = ShedFarm::Shared;
         let mut s = shed.clone();
         s.farm = shared;
-        let c = changes(&s, &t, &t.join(".yaks")).unwrap();
+        let c = changes(&s, &t, &t.join(".yaks"), &sheds).unwrap();
         assert_eq!(c.yaks, Err("shares this farm".to_string()));
         assert!(render_changes(&c).contains("nothing to show: shares this farm"));
         assert_eq!(changes_json(&c), json!([]));

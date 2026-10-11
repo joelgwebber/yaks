@@ -573,12 +573,15 @@ impl Farm {
     }
 
     /// One shed's changes, per yak (`yaks changes`); see [`crate::sheds::changes`].
+    /// `sheds` is the full list `Farm::sheds` returned (used only to find the
+    /// primary's path for `landed`, without a second discovery walk).
     pub fn shed_changes(
         &self,
         shed: &crate::sheds::Shed,
         cwd: &Path,
+        sheds: &[crate::sheds::Shed],
     ) -> Result<crate::sheds::Changes> {
-        crate::sheds::changes(shed, cwd, &self.root)
+        crate::sheds::changes(shed, cwd, &self.root, sheds)
     }
 
     /// Tasks matching `spec`, grouped by status then id (the `list`/`search` view).
