@@ -4,7 +4,7 @@ title: 'CLI affordances for sheds and threads: what a human and an agent need to
 type: task
 priority: 2
 created: '2026-10-06T21:05:37Z'
-updated: '2026-10-11T20:24:01Z'
+updated: '2026-10-11T20:54:29Z'
 parent: yaks-7204
 labels:
 - cli
@@ -101,3 +101,7 @@ Consequence: land-1, spawned from MY clone (not the primary, since Delta clones 
 Fix: rebuilt the full yaks-ed5e.md by hand (local/main's complete Decision+Claim content, with land-1's own shave/ask notes and `needs: human` appended, verified byte-for-byte before committing), merged my clone with local/main (one add/add conflict per touched file, resolved by taking local/main's side plus the hand-merged ed5e file), pushed to local, answered land-1's ask there, and woke it.
 
 Going forward: always `cd` into THIS thread's own clone for coordinator work, never into the primary directly — a coordinator editing the primary bypasses the single-landing-point discipline and is invisible to future spawns until manually resynced, exactly what happened here.
+
+---
+▸ 2026-10-11T20:54:29Z [delta-lead]
+Landed yaks-ed5e (land-1 8d9d2f1e0c7e4407; fe70e16 by merge after the ed5e-content recovery above). Real-machine: the fixture evidence attached to the yak reproduces the exact 2026-10-10 superseded case (shed: hairy->shaving no notes; primary: hairy->shorn +3 notes) and now reads 'farm: landed (1 yak)'. Worth flagging: the worker found a real bug in my own claim-note spec mid-implementation -- a naive id-membership check on yak_changes(reference, theirs) would ALSO flag a backward-only move (reference behind the shed) as outstanding, since yak_changes's moved field is direction-blind. Fixed with a status_rank comparison (only a FORWARD move counts as outstanding). Gate: 16 suites, 638 passed, 0 failed, rebuilt and re-run on this machine.
