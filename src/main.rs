@@ -273,7 +273,12 @@ enum Command {
     /// coordinator did first; the same from every checkout, so what the shed
     /// merged in since counts as its own): yaks only there, yaks in another
     /// status, new notes, `needs:` set, yaks edited (title, fields or
-    /// description, as `yaks status` reads them). The PRIMARY checkout is measured from
+    /// description, as `yaks status` reads them), and yaks `landed` (already
+    /// in the REFERENCE farm — the primary's own live farm when visible and
+    /// readable, else its `origin/main`: all touched landed replaces the
+    /// summary with `landed (N yak)`; some landed adds `(K landed)` and
+    /// prunes the itemized lines to what's still outstanding; never set for
+    /// the primary's own row; JSON `farm.landed`, an array of ids). The PRIMARY checkout is measured from
     /// `origin/main` instead (the remote-tracking ref, else `origin/HEAD`'s
     /// target) against its working tree, i.e. what it has not published, and
     /// says `(vs origin/main)`; with no usable origin ref it falls back to its
@@ -303,8 +308,10 @@ enum Command {
     /// `yaks sheds`; with no SHED, the one you are in) created, moved and noted
     /// since it forked, per yak, with actors: new yaks (title, status), yaks in another status (from -> to),
     /// each new note entry (timestamp, actor, first line), `needs:` newly
-    /// set, and an `edited` yak (title, fields or description rewritten, as
-    /// `yaks status` reads it; `updated:` alone is not an edit). The per-yak expansion of the `farm:` line of `yaks sheds`, with the
+    /// set, an `edited` yak (title, fields or description rewritten, as
+    /// `yaks status` reads it; `updated:` alone is not an edit), and a
+    /// `landed` yak (already in the reference farm, see `yaks sheds`;
+    /// `, landed` in the bracket list). The per-yak expansion of the `farm:` line of `yaks sheds`, with the
     /// same baseline (the shed's fork point; the primary's `origin/main`, else
     /// its fork point, `(vs origin/main)` / `(vs fork)`; else the merge-base /
     /// this checkout, `(vs merge-base)` / `(vs this checkout)`). SHED is
@@ -319,8 +326,9 @@ enum Command {
         /// `main`, or a unique substring. Default: the shed you are in.
         shed: Option<String>,
         /// Emit one JSON object per changed yak (`id`, `title`, `status`,
-        /// `added`, `moved`, `notes` with `ts`/`actor`/`text`, `needs`, `vs`,
-        /// `base`); `[]` when there is nothing to list.
+        /// `added`, `moved`, `notes` with `ts`/`actor`/`text`, `needs`,
+        /// `edited`, `landed`, `vs`, `base`); `[]` when there is nothing to
+        /// list.
         #[arg(long)]
         json: bool,
     },
@@ -1336,7 +1344,7 @@ fn main() -> Result<()> {
                     }
                 },
             };
-            let changes = farm.shed_changes(found, &cwd)?;
+            let changes = farm.shed_changes(found, &cwd, &sheds)?;
             if json {
                 if let Err(why) = &changes.yaks {
                     eprintln!("note: nothing to show: {why}");

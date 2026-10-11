@@ -1,0 +1,113 @@
+yaks-ed5e real-machine evidence (fixture reproducing the 2026-10-10 second real-machine case)
+Fixture: a primary + a linked-worktree shed, both starting with one hairy yak demo-aaaa.
+The shed claims it (shaving, no notes, uncommitted) while the primary independently finishes
+and shears it (shorn, 3 notes, committed) -- 'a Delta-applied copy of work the primary has
+since committed', the exact wording of the superseded-direction note.
+
+=== yaks sheds, run from the shed, BEFORE this change (binary built from aeef450) ===
+  KIND      BRANCH  HEAD     +AHEAD -BEHIND  DIRTY  FARM ACTIVE           PATH
+  worktree  main    9a7a2d8  +1 -0           1      2026-10-11T20:47:16Z  /private/tmp/yaks-ed5e-evidence/primary
+  name: main
+  who: coord (vs fork)
+  farm: 1 moved, 3 new notes (vs fork)
+    demo-aaaa hairy -> shorn
+    demo-aaaa +3 notes
+* worktree  shed    3db3b20  +0 -0           2      2026-10-11T20:47:16Z  /private/tmp/yaks-ed5e-evidence/primary/wt
+  name: shed (here)
+  farm: 1 moved
+    demo-aaaa hairy -> shaving
+
+=== yaks sheds, run from the shed, AFTER this change ===
+  KIND      BRANCH  HEAD     +AHEAD -BEHIND  DIRTY  FARM ACTIVE           PATH
+  worktree  main    9a7a2d8  +1 -0           1      2026-10-11T20:47:16Z  /private/tmp/yaks-ed5e-evidence/primary
+  name: main
+  who: coord (vs fork)
+  farm: 1 moved, 3 new notes (vs fork)
+    demo-aaaa hairy -> shorn
+    demo-aaaa +3 notes
+* worktree  shed    3db3b20  +0 -0           2      2026-10-11T20:47:16Z  /private/tmp/yaks-ed5e-evidence/primary/wt
+  name: shed (here)
+  farm: landed (1 yak)
+
+=== yaks sheds --json, run from the shed, AFTER this change (farm.landed) ===
+[
+  {
+    "path": "/private/tmp/yaks-ed5e-evidence/primary",
+    "kind": "worktree",
+    "name": "main",
+    "dir": null,
+    "title": null,
+    "primary": true,
+    "current": false,
+    "branch": "main",
+    "head": "9a7a2d8",
+    "ahead": 1,
+    "behind": 0,
+    "dirty": 1,
+    "farm_activity": "2026-10-11T20:47:16Z",
+    "farm": {
+      "state": "own",
+      "vs": "fork",
+      "base": "3db3b20",
+      "added": [],
+      "moved": [
+        {
+          "id": "demo-aaaa",
+          "from": "hairy",
+          "to": "shorn"
+        }
+      ],
+      "notes": [
+        {
+          "id": "demo-aaaa",
+          "new": 3
+        }
+      ],
+      "needs": [],
+      "edited": [],
+      "landed": []
+    },
+    "who": [
+      "coord"
+    ],
+    "in_progress": [],
+    "error": null
+  },
+  {
+    "path": "/private/tmp/yaks-ed5e-evidence/primary/wt",
+    "kind": "worktree",
+    "name": "shed",
+    "dir": null,
+    "title": null,
+    "primary": false,
+    "current": true,
+    "branch": "shed",
+    "head": "3db3b20",
+    "ahead": 0,
+    "behind": 0,
+    "dirty": 2,
+    "farm_activity": "2026-10-11T20:47:16Z",
+    "farm": {
+      "state": "own",
+      "vs": "fork",
+      "base": "3db3b20",
+      "added": [],
+      "moved": [
+        {
+          "id": "demo-aaaa",
+          "from": "hairy",
+          "to": "shaving"
+        }
+      ],
+      "notes": [],
+      "needs": [],
+      "edited": [],
+      "landed": [
+        "demo-aaaa"
+      ]
+    },
+    "who": [],
+    "in_progress": [],
+    "error": null
+  }
+]
