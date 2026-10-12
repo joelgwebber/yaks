@@ -186,7 +186,8 @@ enum Command {
         as_actor: Option<String>,
     },
     /// Attach a local file to a yak as evidence: copy it under
-    /// `.yaks/artifacts/<id>/` and link it in the body. Use for artifact
+    /// `.yaks/<id>/` (beside the yak's file) and link it in the body as
+    /// `![name](<id>/<file>)`. Use for artifact
     /// evidence a human or coordinator can look at (screenshots, TUI frames).
     Attach {
         id: String,
@@ -202,12 +203,12 @@ enum Command {
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
-    /// Rename a yak's attachment in `.yaks/artifacts/<id>/` and rewrite every
+    /// Rename a yak's attachment in `.yaks/<id>/` and rewrite every
     /// link to it across the farm. NEW is sanitized and keeps OLD's extension
     /// if it omits one; refuses to overwrite an existing attachment.
     RenameAttachment {
         id: String,
-        /// Current filename under `.yaks/artifacts/<id>/`.
+        /// Current filename under `.yaks/<id>/`.
         old: String,
         /// New filename (e.g. `login-page`, becomes `login-page.png`).
         new: String,
@@ -661,6 +662,19 @@ enum Command {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Convert an old-layout farm (schema 3: `hairy/ shaving/ shorn/ dead/`
+    /// directories, `artifacts/<id>/`) to the flat layout (schema 4): each yak
+    /// becomes `.yaks/<id>.md` with a `status:` field, `artifacts/<id>/`
+    /// becomes `<id>/` with every `](artifacts/<id>/` link rewritten, emptied
+    /// old directories are removed, `schema` becomes 4. Refuses, naming the
+    /// ids, when an id is in both layouts. Idempotent ("already flat"). Never
+    /// commits: it prints the commit to make. Quit every running `yaks tui`
+    /// first. Transitional: removed once every farm is migrated.
+    Migrate {
+        /// Print what would move; write nothing.
+        #[arg(long)]
+        dry_run: bool,
+    },
     /// Merge another farm's yaks into this one (consolidation). Copies every yak
     /// (all statuses) and its artifacts, preserving ids and status, and declares
     /// any incoming herd in this farm's config; refuses on id collisions.
@@ -672,8 +686,9 @@ enum Command {
         #[arg(long)]
         dry_run: bool,
     },
-    /// Create a .yaks/ farm in the current directory (hairy/ shaving/ shorn/
-    /// dead/ + config.yaml + schema). Works without an existing farm.
+    /// Create a .yaks/ farm in the current directory (config.yaml + schema;
+    /// yaks are flat files, `.yaks/<id>.md`, with a `status:` field). Works
+    /// without an existing farm.
     ///
     /// With no --mode/--skills/--path this only creates a committed (team) farm
     /// and tells you how to install skills. Give --mode and/or --skills for the
@@ -722,8 +737,10 @@ enum Command {
     },
     /// Group yaks by the external issue they roll up to.
     Rollup(RollupArgs),
-    /// Read-only farm-integrity check: report duplicate-status ids and dangling
-    /// parent/depends_on references. Exits non-zero when any issue is found.
+    /// Read-only farm-integrity check: report ids in both layouts (a flat file
+    /// plus an old status-dir copy) or in two status dirs, an invalid `status:`
+    /// value, and dangling parent/depends_on references. Exits non-zero when
+    /// any issue is found.
     Doctor {
         /// Emit the issues as JSON.
         #[arg(long)]
@@ -736,7 +753,8 @@ enum Command {
     },
     /// Read-only landing-readiness check for a team farm: nothing under
     /// `.yaks/` untracked or with unstaged changes in git, the verify command of
-    /// each shorn yak in the change last PASSed, no yak in two status dirs. Prints
+    /// each shorn yak in the change last PASSed, no yak in both layouts or two
+    /// status dirs, no invalid `status:` value. Prints
     /// one line per failure and exits non-zero, else `preflight: ok`. A private
     /// farm skips the git check (said so) and checks every shorn yak. With
     /// `--push-main` also checks that the `local` remote is the human's checkout
@@ -745,7 +763,7 @@ enum Command {
     Preflight {
         /// Shorn yaks to check (default: the shorn yaks in the change in git,
         /// i.e. staged, modified or new under `.yaks/`). Scopes the verify check
-        /// only; the git and duplicate-status checks are farm-wide.
+        /// only; the git and layout checks are farm-wide.
         ids: Vec<String>,
         /// Check the verify command of EVERY shorn yak, not only those in the
         /// change (old shorn yaks that never ran `verify` will fail).
@@ -1023,7 +1041,12 @@ fn main() -> Result<()> {
             std::process::exit(1);
         }
     };
-    if let Some(w) = &farm.schema_warning {
+    // `migrate` is the cure for that warning: don't print it there.
+    if let Some(w) = farm
+        .schema_warning
+        .as_ref()
+        .filter(|_| !matches!(cli.command, Command::Migrate { .. }))
+    {
         eprintln!("warning: {w}");
     }
 
@@ -1152,6 +1175,7 @@ fn main() -> Result<()> {
                 }
             }
         }
+        Command::Migrate { dry_run } => report_migrate(farm.migrate(dry_run)?),
         Command::Init { .. } => unreachable!("init is handled before opening a farm"),
         Command::Skills { .. } => unreachable!("skills is handled before opening a farm"),
         Command::Discover { .. } => unreachable!("discover is handled before opening a farm"),
@@ -1247,7 +1271,7 @@ fn main() -> Result<()> {
                     std::process::exit(1);
                 }
                 AttachOutcome::Attached(n) => {
-                    println!("attached {n} to {id} (.yaks/artifacts/{id}/{n})");
+                    println!("attached {n} to {id} (.yaks/{id}/{n})");
                     if let Some(text) = note {
                         let actor = actor::resolve(as_actor.as_deref());
                         farm.update(
@@ -1265,7 +1289,7 @@ fn main() -> Result<()> {
         Command::RenameAttachment { id, old, new } => {
             match farm.rename_attachment(&id, &old, &new)? {
                 RenameAttachmentOutcome::Renamed { name, rewritten } => println!(
-                    "renamed {old} -> {name} on {id} (.yaks/artifacts/{id}/{name}); \
+                    "renamed {old} -> {name} on {id} (.yaks/{id}/{name}); \
                      links rewritten in {rewritten} yak(s)"
                 ),
                 RenameAttachmentOutcome::Unchanged => println!("{old}: name unchanged"),
@@ -1273,7 +1297,7 @@ fn main() -> Result<()> {
                     let why = match refused {
                         RenameAttachmentOutcome::TaskNotFound => format!("no such task: {id}"),
                         RenameAttachmentOutcome::NoSuchAttachment(n) => {
-                            format!("no attachment {n} on {id} (.yaks/artifacts/{id}/)")
+                            format!("no attachment {n} on {id} (.yaks/{id}/)")
                         }
                         RenameAttachmentOutcome::Invalid(n) => {
                             format!("invalid attachment name: {n:?}")
@@ -2364,6 +2388,61 @@ fn render_log(entries: &[LogEntry], json: bool) -> Result<()> {
         }
     }
     Ok(())
+}
+
+/// Print a `yaks migrate` outcome; a refusal exits 1.
+fn report_migrate(outcome: farm::MigrateOutcome) {
+    match outcome {
+        farm::MigrateOutcome::AlreadyFlat => println!("already flat: nothing to migrate"),
+        farm::MigrateOutcome::Refused(problems) => {
+            eprintln!(
+                "error: cannot migrate, {} problem(s); nothing was changed:",
+                problems.len()
+            );
+            for p in problems {
+                eprintln!("  {p}");
+            }
+            std::process::exit(1);
+        }
+        farm::MigrateOutcome::Done(plan) => {
+            if !plan.applied {
+                for (id, st) in &plan.yaks {
+                    println!("  {}/{id}.md -> {id}.md [status: {}]", st.dir(), st.dir());
+                }
+                for id in &plan.attachments {
+                    println!("  artifacts/{id}/ -> {id}/");
+                }
+                if !plan.links_rewritten.is_empty() {
+                    println!(
+                        "  attachment links rewritten in {} yak(s): {}",
+                        plan.links_rewritten.len(),
+                        plan.links_rewritten.join(", ")
+                    );
+                }
+            }
+            let verb = if plan.applied {
+                "migrated"
+            } else {
+                "would migrate"
+            };
+            let mut line = format!(
+                "{verb} {} yaks ({} attachment dirs) to the flat layout",
+                plan.yaks.len(),
+                plan.attachments.len()
+            );
+            if plan.applied && plan.git_tracked {
+                line.push_str(
+                    "; commit with: git add -A .yaks && git commit -m \"yaks: migrate the farm to the flat layout\"",
+                );
+            } else if !plan.applied {
+                line.push_str(" (dry run: nothing written; re-run without --dry-run)");
+            }
+            println!("{line}");
+            for d in &plan.left {
+                eprintln!("note: left {d} in place: it is not empty");
+            }
+        }
+    }
 }
 
 fn render_doctor(issues: &[Issue]) {

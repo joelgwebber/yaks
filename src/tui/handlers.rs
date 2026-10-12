@@ -463,10 +463,8 @@ impl App {
                 _ => None,
             });
         let parsed = target.as_deref().and_then(|p| {
-            let rest = p
-                .strip_prefix(".yaks/")
-                .unwrap_or(p)
-                .strip_prefix("artifacts/")?;
+            // `<id>/<file>`, relative to the farm root (the yak's own directory).
+            let rest = p.strip_prefix(".yaks/").unwrap_or(p);
             let (id, name) = rest.split_once('/')?;
             (!name.contains('/')).then(|| (id.to_string(), name.to_string()))
         });
@@ -504,7 +502,8 @@ impl App {
         });
     }
 
-    /// Open a URL or artifact path in the OS default application (best-effort).
+    /// Open a URL or attachment (`<id>/<file>`, resolved from the farm root) in
+    /// the OS default application (best-effort).
     pub(crate) fn open_external(&mut self, target: &str) {
         let arg = if target.starts_with("http") {
             target.to_string()
@@ -1219,7 +1218,7 @@ impl App {
                 let taken = |n: &str| {
                     self.farm
                         .as_ref()
-                        .is_some_and(|h| h.root().join("artifacts").join(&id).join(n).exists())
+                        .is_some_and(|h| crate::store::artifact_dir(h.root(), &id).join(n).exists())
                 };
                 match name {
                     Some(n) if taken(&n) => {

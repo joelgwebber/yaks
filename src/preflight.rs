@@ -1,9 +1,10 @@
 //! `yaks preflight`: a read-only landing-readiness check for a team farm.
 //!
 //! Run before landing (committing a shorn yak, merging a shed). It reports the
-//! slips that earlier landings hit: a new artifacts directory that was never
+//! slips that earlier landings hit: a new attachment directory that was never
 //! `git add`ed, yak edits left unstaged, a shorn yak whose `verify:` command did
-//! not last PASS, and a yak sitting in two status dirs. With `--push-main` it
+//! not last PASS, and a yak in both layouts (or two old status dirs) or with an
+//! invalid `status:`. With `--push-main` it
 //! also checks that the `local` remote is the human's checkout, before a
 //! `git push local <branch>:main`. One line per failure; it never mutates the
 //! farm or the repo (every git call here only reads: no push, fetch or write).
@@ -23,8 +24,12 @@ pub enum Check {
     /// A shorn yak's verify command (own, else the config default for its
     /// labels) did not last PASS.
     Verify,
-    /// One id lives in two status dirs.
+    /// One id lives in two status dirs (old layout).
     DuplicateStatus,
+    /// One id is a flat `<id>.md` and also a file in an old status dir.
+    BothLayouts,
+    /// A yak file's `status:` value is not hairy, shaving, shorn or dead.
+    InvalidStatus,
     /// `--push-main`: the `local` remote is not a checkout that a push to
     /// `main` would reach and update.
     LocalCheckout,
@@ -36,6 +41,8 @@ impl Check {
             Check::GitState => "git-state",
             Check::Verify => "verify",
             Check::DuplicateStatus => "duplicate-status",
+            Check::BothLayouts => "both-layouts",
+            Check::InvalidStatus => "invalid-status",
             Check::LocalCheckout => "local-checkout",
         }
     }
@@ -70,7 +77,7 @@ impl Report {
 ///
 /// The verify scope is: the `ids` given; else, with `all`, every shorn yak; else
 /// the shorn yaks that are part of the change in git (staged, modified or new
-/// under the farm, including a new `artifacts/<id>/`), so an old shorn yak that
+/// under the farm, including a new `<id>/` attachment dir), so an old shorn yak that
 /// never ran `verify` is not blamed for a landing it is not in. A farm git
 /// cannot describe (private, or outside a repository) checks every shorn yak.
 ///
@@ -82,7 +89,7 @@ pub fn run(farm: &Farm, ids: &[String], all: bool, push_main: bool) -> Result<Re
     let changed = git_state(farm.root(), &mut report)?;
     let scope = Scope { ids, all, changed };
     verify(farm, &scope, &mut report)?;
-    duplicate_status(farm, &mut report)?;
+    layout(farm, &mut report)?;
     if push_main {
         local_checkout(farm.root(), &mut report)?;
     }
@@ -241,16 +248,21 @@ fn verify(farm: &Farm, scope: &Scope, report: &mut Report) -> Result<()> {
     Ok(())
 }
 
-/// Check 3: no yak sits in two status dirs (doctor's duplicate-status finding).
-fn duplicate_status(farm: &Farm, report: &mut Report) -> Result<()> {
+/// Check 3: farm layout integrity, doctor's findings of the same names: no
+/// id in both layouts, none in two old status dirs, no invalid `status:`.
+fn layout(farm: &Farm, report: &mut Report) -> Result<()> {
     for issue in farm.doctor(false)? {
-        if issue.kind == IssueKind::DuplicateStatus {
-            report.failures.push(Failure {
-                check: Check::DuplicateStatus,
-                message: issue.message,
-                subjects: issue.ids,
-            });
-        }
+        let check = match issue.kind {
+            IssueKind::DuplicateStatus => Check::DuplicateStatus,
+            IssueKind::BothLayouts => Check::BothLayouts,
+            IssueKind::InvalidStatus => Check::InvalidStatus,
+            _ => continue,
+        };
+        report.failures.push(Failure {
+            check,
+            message: issue.message,
+            subjects: issue.ids,
+        });
     }
     Ok(())
 }
@@ -439,8 +451,8 @@ mod tests {
         std::fs::write(root.join("config.yaml"), "herd: yak\n").unwrap();
         // An already-committed artifact dir, as in a real farm (git collapses an
         // untracked dir to its topmost new directory).
-        std::fs::create_dir_all(root.join("artifacts/yak-0000")).unwrap();
-        std::fs::write(root.join("artifacts/yak-0000/old.txt"), "x").unwrap();
+        std::fs::create_dir_all(root.join("yak-0000")).unwrap();
+        std::fs::write(root.join("yak-0000/old.txt"), "x").unwrap();
         git(&repo, &["init", "-q"]);
         git(&repo, &["add", "."]);
         git(&repo, &["commit", "-q", "-m", "init"]);
@@ -493,16 +505,12 @@ mod tests {
     #[test]
     fn untracked_artifacts_dir_fails_naming_it_and_passes_once_added() {
         let (repo, farm) = team_repo();
-        let dir = repo.join(".yaks/artifacts/yak-0001");
+        let dir = repo.join(".yaks/yak-0001");
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("frame.txt"), "x").unwrap();
         let f = failures(&farm, &[], Check::GitState);
         assert_eq!(f.len(), 1, "{f:?}");
-        assert!(
-            f[0].message.contains(".yaks/artifacts/yak-0001/"),
-            "{}",
-            f[0].message
-        );
+        assert!(f[0].message.contains(".yaks/yak-0001/"), "{}", f[0].message);
         assert!(f[0].message.contains("untracked"));
         git(&repo, &["add", ".yaks"]);
         assert!(run(&farm, &[], false, false).unwrap().ok(), "staged passes");
@@ -637,6 +645,38 @@ mod tests {
         assert!(f[0].message.contains("yak-0001"));
     }
 
+    #[test]
+    fn yak_in_both_layouts_fails() {
+        let (repo, farm) = team_repo();
+        let root = repo.join(".yaks");
+        store::write::save(&root, &task("yak-0001", Status::Shorn)).unwrap();
+        std::fs::create_dir_all(root.join("hairy")).unwrap();
+        std::fs::write(
+            root.join("hairy/yak-0001.md"),
+            store::write::render(&task("yak-0001", Status::Hairy)),
+        )
+        .unwrap();
+        git(&repo, &["add", "."]);
+        let f = failures(&farm, &[], Check::BothLayouts);
+        assert_eq!(f.len(), 1, "{f:?}");
+        assert_eq!(f[0].subjects, ["yak-0001"]);
+        assert!(f[0].message.contains("yak-0001"), "{}", f[0].message);
+    }
+
+    #[test]
+    fn invalid_status_value_fails() {
+        let (repo, farm) = team_repo();
+        let root = repo.join(".yaks");
+        let text = store::write::render(&task("yak-0001", Status::Hairy))
+            .replace("status: hairy", "status: finished");
+        std::fs::write(root.join("yak-0001.md"), text).unwrap();
+        git(&repo, &["add", "."]);
+        let f = failures(&farm, &[], Check::InvalidStatus);
+        assert_eq!(f.len(), 1, "{f:?}");
+        assert_eq!(f[0].subjects, ["yak-0001"]);
+        assert!(f[0].message.contains("finished"), "{}", f[0].message);
+    }
+
     /// An old shorn yak that never ran `verify` must not be blamed for a landing
     /// it is not part of; `--all` is the farm-wide check.
     #[test]
@@ -679,7 +719,7 @@ mod tests {
         git(&repo, &["commit", "-q", "-m", "old shorn yak"]);
         assert!(run(&farm, &[], false, false).unwrap().ok());
         // New evidence for that yak arrives: it is now part of the change.
-        let dir = root.join("artifacts/yak-0001");
+        let dir = root.join("yak-0001");
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("frame.txt"), "x").unwrap();
         git(&repo, &["add", ".yaks"]);
@@ -697,6 +737,14 @@ mod tests {
         assert_eq!(yak_id_of("sub/.yaks/hairy/x-1.md").as_deref(), Some("x-1"));
         assert_eq!(
             yak_id_of(".yaks/artifacts/yaks-aa49/frame.txt").as_deref(),
+            Some("yaks-aa49")
+        );
+        assert_eq!(
+            yak_id_of(".yaks/yaks-aa49/frame.txt").as_deref(),
+            Some("yaks-aa49")
+        );
+        assert_eq!(
+            yak_id_of(".yaks/yaks-aa49.md").as_deref(),
             Some("yaks-aa49")
         );
         assert_eq!(yak_id_of(".yaks/config.yaml"), None);
