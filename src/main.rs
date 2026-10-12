@@ -155,9 +155,9 @@ enum Command {
     },
     /// Print the current on-disk file path of yaks, one per line: by id
     /// (`yaks path yaks-1a2b ...`) or by the shared filter flags
-    /// (`yaks path --status shorn --label cli`). A transition moves a yak's file
-    /// between status directories, so use this instead of hand-building
-    /// `.yaks/<status>/<id>.md` for `git add`. Paths are absolute. An unknown
+    /// (`yaks path --status shorn --label cli`). Each yak's file is
+    /// `.yaks/<id>.md`, the same path for its whole life (a status move edits
+    /// it in place), handy for `git add`. Paths are absolute. An unknown
     /// id is reported on stderr and the exit status is non-zero (known ids are
     /// still printed). Give ids or filter flags, not both.
     Path {

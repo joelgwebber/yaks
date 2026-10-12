@@ -87,7 +87,7 @@ semantics, scope), not trivia.
   record it in a note: a command and its output, a test name, a file path, a
   commit SHA — or `yaks attach` the artifact itself (a screenshot, a TUI frame)
   when the evidence is something to look at. Attach keeps it an **external file**
-  under `.yaks/artifacts/` (committed in team mode), so it reaches the reviewer;
+  in `.yaks/<id>/`, beside the yak's file (committed in team mode), so it reaches the reviewer;
   never paste a large or binary artifact (SVG included) inline into a note or
   description. Note that `yaks attach` also **modifies the tracked yak file** (it
   links the artifact in the body), so expect the yak `.md` to show as changed and
@@ -125,11 +125,12 @@ semantics, scope), not trivia.
   is genuinely yours.
 - Write a short shorn summary (what was done, what was learned, any yaks spawned,
   the evidence) with `yaks update <id> --note` (`shorn` takes no note), then `yaks shorn <id>`.
-- **Team mode:** stage the shorn yak move together with the code that completed
-  it and commit them in one commit. `yaks attach` creates a NEW directory under
-  `.yaks/artifacts/<id>/` that must be added too. Stage only paths that exist: `git add`
-  aborts and stages nothing if one pathspec does not match (a transient `shaving/` path after
-  the move is the usual culprit), so use `git add $(yaks path <id>)` or `':(glob).yaks/*/<id>.md'` and check `git show --stat`
+- **Team mode:** stage the shorn yak together with the code that completed
+  it and commit them in one commit. The yak is one file at a fixed path,
+  `.yaks/<id>.md` (a status move edits it in place), and `yaks attach` creates a NEW
+  directory `.yaks/<id>/` that must be added too: `git add -A -- <code paths>
+  .yaks/<id>.md .yaks/<id>/` (only name paths that exist: `git add` stages nothing if one
+  pathspec does not match). Check `git show --stat`
   lists every file you expect before you rely on the commit. That commit is also what later
   lets you trace
   the change back to this yak (provenance, `yaks-2610`).

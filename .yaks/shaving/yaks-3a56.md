@@ -4,7 +4,7 @@ title: 'Flat farm, phase 3: brief + skills/docs sweep, migrate this farm, real-m
 type: task
 priority: 1
 created: '2026-10-12T19:54:05Z'
-updated: '2026-10-12T21:02:26Z'
+updated: '2026-10-12T21:06:37Z'
 parent: yaks-8b7a
 depends_on:
 - yaks-86f4
@@ -25,3 +25,12 @@ Amended (see yaks-8b7a): brief.rs's finish step stages `.yaks/<id>.md` and `.yak
 ---
 ▸ 2026-10-12T21:02:26Z [delta-lead]
 moved: hairy -> shaving
+
+---
+▸ 2026-10-12T21:06:37Z [delta-lead]
+Phase 3, part 1 (sweep) done:
+- src/brief.rs: the team finish step stages `<farm>/<id>.md` plus `<farm>/<id>/` if attached (no status path, no artifacts/). Flat-only on purpose: the new binary refuses writes on an unmigrated farm, so a brief it prints only runs on a flat one. Test updated.
+- Skills: yaks (init, attach, path, commits, slaughter, doctor, preflight rows; Task format now `.yaks/<id>.md` + `status:` with one transitional note on pre-0.0.16 farms and `yaks migrate`; a `migrate` row), yaks-working and yaks-coordinating-team (staging: `.yaks/<id>.md` and `.yaks/<id>/`, no glob, no shaving/ path), yaks-coordinating (doctor example), yaks-coordinating-delta (no "two status dirs").
+- README (layout block, task file example with `status:`, slaughter row, concepts), docs/README (layout block, the model), docs/cli (path, brief rows), `path`'s --help.
+- Gate: 17 suites, 678 passed, 0 failed, 3 ignored.
+- Docshots: re-rendered; only tui-detail-pinned.svg differs, and it differs identically when rendered from b25a5b9 (before the flat work), so it was already stale; not touched here (reverted), a separate refresh.

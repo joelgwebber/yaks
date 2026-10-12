@@ -100,8 +100,8 @@ park work in `$TMPDIR`); and the final-message format (SHA, gate output, timings
   intact.
 - Update-every-surface check: grep for the old behaviour across docs, skills, README and
   `--help` text before accepting.
-- `yaks doctor` after every landing. It checks farm integrity (for example a yak present in two
-  status directories, or a broken reference). "All clear" is a pass; any issue it lists is yours
+- `yaks doctor` after every landing. It checks farm integrity (for example an invalid `status:`
+  value, or a broken reference). "All clear" is a pass; any issue it lists is yours
   to fix before you move on.
 - Never write a claim into a yak that you did not observe.
 

@@ -256,12 +256,11 @@ fn finish(b: &Brief) -> String {
     );
     match b.mode {
         Mode::Team { farm_rel } => {
-            let old = format!("{farm_rel}/{}/{id}.md", Status::Shaving.dir());
             format!(
                 "Finish (team farm: `{farm_rel}/` is committed)\n\
                  {shear}\n\
-                 3. ONE commit, explicit paths: `git add -A -- <your code and docs> $(yaks path {id}) {old}`, plus `{farm_rel}/artifacts/{id}` only if you attached something (git aborts and stages nothing on a path that does not exist). Message `{id}: <what changed>`.\n\
-                 4. `git show --stat` must list the yak move and every file you expect."
+                 3. ONE commit, explicit paths: `git add -A -- <your code and docs> {farm_rel}/{id}.md`, plus `{farm_rel}/{id}/` only if you attached something (git aborts and stages nothing on a path that does not exist). Message `{id}: <what changed>`.\n\
+                 4. `git show --stat` must list your yak file and every file you expect."
             )
         }
         Mode::Private => format!(
@@ -412,8 +411,8 @@ mod tests {
     /// A farm directory with every status dir, a config and one saved yak.
     fn make_farm(root: &Path, config: &str, t: &Task) {
         std::fs::create_dir_all(&root).unwrap();
-        std::fs::create_dir_all(root.join("artifacts/yak-0000")).unwrap();
-        std::fs::write(root.join("artifacts/yak-0000/old.txt"), "x").unwrap();
+        std::fs::create_dir_all(root.join("yak-0000")).unwrap();
+        std::fs::write(root.join("yak-0000/old.txt"), "x").unwrap();
         std::fs::write(root.join("config.yaml"), config).unwrap();
         store::write::save(root, t).unwrap();
     }
@@ -497,8 +496,9 @@ mod tests {
         };
         let text = render(&facts(&t, &mode, None, None));
         assert!(text.contains("Finish (team farm: `.yaks/` is committed)"));
-        assert!(text.contains("$(yaks path yak-0001) .yaks/shaving/yak-0001.md"));
-        assert!(text.contains("`.yaks/artifacts/yak-0001`"));
+        assert!(text.contains("git add -A -- <your code and docs> .yaks/yak-0001.md`"));
+        assert!(text.contains("plus `.yaks/yak-0001/` only if you attached something"));
+        assert!(!text.contains("shaving/") && !text.contains("artifacts/"));
         assert!(text.contains("Message `yak-0001: <what changed>`"));
         assert!(text.contains("`yaks shorn yak-0001` (there is no `shear` subcommand)"));
         assert!(

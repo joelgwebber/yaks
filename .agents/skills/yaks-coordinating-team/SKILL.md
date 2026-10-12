@@ -27,12 +27,12 @@ would not see them, and even where a worker's checkout copies your working tree 
 commit is what keeps your branch's history honest.
 
 ## A worker's finish
-One commit contains the code, the yak move `shaving > shorn` and any evidence. `yaks attach`
-creates a NEW directory under `.yaks/artifacts/<id>/`; it must be `git add`ed or it is lost.
-Stage with paths that exist: `git add` aborts and stages NOTHING if one pathspec does not
-match (a transient `shaving/` path after the move is the usual culprit). Use
-`git add -A -- <code paths> $(yaks path <id>) .yaks/artifacts/<id>` (or the glob `':(glob).yaks/*/<id>.md'`) and then check
-`git show --stat` lists every file you expect before you rely on the commit.
+One commit contains the code, the yak (shorn: its `status:` line changed in place in
+`.yaks/<id>.md`) and any evidence. `yaks attach` creates a NEW directory `.yaks/<id>/`; it
+must be `git add`ed or it is lost. Stage with paths that exist (`git add` aborts and stages
+NOTHING if one pathspec does not match): `git add -A -- <code paths> .yaks/<id>.md`, plus
+`.yaks/<id>/` if you attached something, then check `git show --stat` lists every file you
+expect before you rely on the commit.
 
 ## Landing
 - **Squash-merge** each shed; the yak id appears in the message, so `yaks commits <id>` can

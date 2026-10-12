@@ -2,24 +2,23 @@
 
 **yaks** is a filesystem-native task tracker: a single self-contained Rust binary.
 Tasks ("yaks") are markdown files with YAML frontmatter under a `.yaks/`
-directory. A yak's **status is implicit in which subdirectory it lives in** —
-there is no database and no separate state file. The files are the whole truth:
+directory, one file per yak (`.yaks/<id>.md`) with its **status a frontmatter
+field** — there is no database and no separate state file. The files are the whole truth:
 readable, greppable, diffable, and versioned in git alongside the code they
 describe.
 
 ```sh
 .yaks/
-  hairy/       # not started
-  shaving/     # in progress
-  shorn/       # done
-  dead/        # abandoned (slaughtered)
-  config.yaml  # schema
+  config.yaml     # farm settings
+  schema          # the layout version (4)
+  yaks-1a2b.md    # one file per yak; frontmatter status: hairy | shaving | shorn | dead
+  yaks-1a2b/      # its attachments, beside it
 ```
 
 ## The model
 
-- **Files are authoritative; any index is derived.** Status is the directory.
-  Hierarchy is a frontmatter `parent:` field. Ids are flat and stable.
+- **Files are authoritative; any index is derived.** Status is a frontmatter
+  `status:` field, and a yak's file never moves. Hierarchy is a frontmatter `parent:` field. Ids are flat and stable.
 - **Tiny state machine.** Four statuses, five transitions (`shave`, `shorn`,
   `regrow`, `slaughter`, `revive`). Everything else — priority, type, labels,
   dependencies, a `needs` block, notes — is metadata that pushes nuance out of

@@ -17,7 +17,7 @@ Yaks is a single self-contained binary — a plain command-line tool. Run it dir
 
 The npm package is `@j15r/yaks` (the unscoped `yaks` was taken, so it's published under the `j15r` scope); the command it installs is `yaks`. Every example below is written as `yaks <cmd>` — substitute whichever invocation works for you. The CLI is stateless: each call is independent, there's nothing to keep running.
 
-**Starting a fresh farm.** If there's no `.yaks/` directory yet, create one with `yaks init` (run in the repo root). It scaffolds `.yaks/{hairy,shaving,shorn,dead}/` plus a `config.yaml`; tune the defaults with `--herd`, `--type`, and `--priority`. Plain `yaks init` only creates a committed (team) farm, refuses to clobber an existing one, and prints how to install the skills. **Choose the mode and install the skills in the same step:** `yaks init --mode team|private|pointer [--path <dir> --herd <prefix>] [--skills default|coordination]` creates the farm, edits `.git/info/exclude` for `private`/`pointer` (never `.gitignore`), installs the skills project-local (their directories excluded too in `private`/`pointer`), and prints one line per step. It is idempotent: re-run it with more flags and it adds only what is missing, never overwrites an edited skill, and errors (naming what would change) if `--mode` differs from the existing farm's. For `private`/`pointer` it prints the `YAKS_DIR=<farm>` a Delta or worktree worker needs in its brief.
+**Starting a fresh farm.** If there's no `.yaks/` directory yet, create one with `yaks init` (run in the repo root). It scaffolds `.yaks/` with a `config.yaml` (each yak becomes one file, `.yaks/<id>.md`); tune the defaults with `--herd`, `--type`, and `--priority`. Plain `yaks init` only creates a committed (team) farm, refuses to clobber an existing one, and prints how to install the skills. **Choose the mode and install the skills in the same step:** `yaks init --mode team|private|pointer [--path <dir> --herd <prefix>] [--skills default|coordination]` creates the farm, edits `.git/info/exclude` for `private`/`pointer` (never `.gitignore`), installs the skills project-local (their directories excluded too in `private`/`pointer`), and prints one line per step. It is idempotent: re-run it with more flags and it adds only what is missing, never overwrites an edited skill, and errors (naming what would change) if `--mode` differs from the existing farm's. For `private`/`pointer` it prints the `YAKS_DIR=<farm>` a Delta or worktree worker needs in its brief.
 
 Add `--json` to any query command (`list`, `show`, `next`, `tangled`, `search`, `stats`, `rollup`, `inbox`, `log`, `sheds`, `changes`, `doctor`) for machine-readable output. `yaks create --json` also prints the new yak's id and file path, which is handy when you create a yak and immediately act on it.
 
@@ -128,7 +128,7 @@ A yak is shorn against **evidence, not vibes**. "It compiles", a green proxy, or
 - **User-facing / UI change → attach what it looks like.** Drive the real UI (don't infer it from the diff) and `yaks attach` the evidence: a **screenshot** of the rendered state, or a **text serialization** of it (a headless frame, the rendered HTML/DOM, a snapshot dump). "The tests pass" does not prove a UI actually renders or behaves. And update **every surface the change is exposed through** — in-app help, `--help`, and docs — in the *same* change: a key or flag that works but is undocumented or invisible in help shipped half-done.
 - **No lever to verify this kind of change?** `yaks ask <id>` the human whether to build one, rather than shearing on faith.
 
-`yaks attach` keeps evidence as an external file under `.yaks/artifacts/<id>/` (committed in team mode) and links it in the body — so never paste a large or binary artifact (an SVG included) inline into a note. (It also edits the tracked yak `.md`, so stage that alongside the artifact.)
+`yaks attach` keeps evidence as an external file in `.yaks/<id>/`, beside the yak's file (committed in team mode) and links it in the body — so never paste a large or binary artifact (an SVG included) inline into a note. (It also edits the tracked yak `.md`, so stage that alongside the artifact: `git add .yaks/<id>.md .yaks/<id>/`.)
 
 ## Parent/child state rules
 
@@ -157,12 +157,12 @@ Run these directly from the shell (see **Running yaks** above for the exact invo
 | `yaks create` | Create a new task (in hairy). Title is positional (`yaks create "Fix the login crash"`; `--title` still works for back-compat); `--type`, `--priority`, `--parent`, `--herd` (herd / id prefix for this yak; defaults to the config herd — lets one `.yaks/` hold several herds), `--labels`, `--depends-on`, `--source`, `--description` (`-` reads stdin; `--description-file PATH`), `--verify`, `--json` (print the new id + path) |
 | `yaks list` | List tasks with optional filters (`--all` also includes dead) |
 | `yaks show` | Show full details of a task; `--sheds` also shows other checkouts' copies (not the one you are in) where they differ (status, `needs:`, new notes) and counts the rest |
-| `yaks path` | Print the current absolute file path of yaks, by id or by the filter flags. A state move relocates the file, so stage a yak precisely with `git add $(yaks path <id>)` instead of hand-building `.yaks/<status>/<id>.md` |
+| `yaks path` | Print the absolute file path of yaks (`.yaks/<id>.md`, stable for the yak's life: a status move edits the file in place), by id or by the filter flags; handy for `git add $(yaks path <id>)` |
 | `yaks refs` | List what a task points at (parent, deps, id mentions), flagging danglers |
-| `yaks commits` | Show the git commits linked to a yak — those naming its id and those that touched its file across status moves |
+| `yaks commits` | Show the git commits linked to a yak — those naming its id and those that touched its file |
 | `yaks update` | Update fields, labels (`--add-label`/`--remove-label`), or append a `--note` (`--note -` reads stdin, `--note-file PATH` a file: use these for multi-line markdown; same on `ask`/`answer`). Accepts multiple ids (same edit to each); `--as <actor>` attributes a note; `--verify '<cmd>'` sets/clears the yak's verification command; `--source <url>` sets/clears the external source |
 | `yaks verify` | Run a yak's verification command (its own `verify:` field, else the config `verify:` default resolved by label) and record the PASS/FAIL as an attributed note (exits non-zero on failure). Explicit — never auto-run. Gives a yak a rerunnable proof-of-correctness |
-| `yaks attach` | Attach a local file (screenshot, TUI frame) as evidence: stores it under `.yaks/artifacts/<id>/` and links it in the body. `--name` sets the stored filename; `--note`/`--as` record an attributed note. `yaks rename-attachment <id> <old> <new>` renames one later (links rewritten). The look-at-it form of evidence, for a human or yakherd to validate |
+| `yaks attach` | Attach a local file (screenshot, TUI frame) as evidence: stores it in `.yaks/<id>/` (beside the yak's file) and links it in the body as `![name](<id>/<file>)`. `--name` sets the stored filename; `--note`/`--as` record an attributed note. `yaks rename-attachment <id> <old> <new>` renames one later (links rewritten). The look-at-it form of evidence, for a human or yakherd to validate |
 | `yaks ask` | Block a yak on a human decision (sets `needs`, drops it from `next`); records the question as an attributed `--note` |
 | `yaks answer` | Answer a question: record the reply and set `needs: agent` (answered, awaiting pickup); `--done` clears `needs` instead; `<id>@<shed>` answers in another shed's copy, left uncommitted there |
 | `yaks pickup` | Take on an answered yak: clear `needs: agent` with a `picked up` note (only that clears it; errors on any other state) |
@@ -170,7 +170,7 @@ Run these directly from the shell (see **Running yaks** above for the exact invo
 | `yaks shave` | Start shaving a yak (hairy → shaving) [alias: `work`] |
 | `yaks shorn` | Mark a yak shorn (shaving → shorn) [alias: `close`] |
 | `yaks regrow` | Regrow a shorn yak (shorn → hairy) [alias: `reopen`] |
-| `yaks slaughter` | Slaughter a yak (move to hidden `dead/`) — for ideas you won't pursue or tasks that got obviated. Refuses a yak with live descendants; `--family` slaughters the whole family |
+| `yaks slaughter` | Slaughter a yak (status `dead`, hidden from every default query) — for ideas you won't pursue or tasks that got obviated. Refuses a yak with live descendants; `--family` slaughters the whole family |
 | `yaks revive` | Revive a dead yak back to hairy |
 | `yaks next` | Hairy tasks whose deps are all resolved [alias: `ready`] |
 | `yaks tangled` | Hairy tasks with at least one unresolved dep [alias: `blocked`] |
@@ -185,11 +185,12 @@ Run these directly from the shell (see **Running yaks** above for the exact invo
 | `yaks rename` | Rename a yak + rewrite every reference to it across the farm |
 | `yaks rename-herd` | Rename a whole herd: migrate all yaks from one id prefix to another; `--dry-run` to preview (`rename-prefix` still works as an alias) |
 | `yaks merge` | Merge another farm into this one — copies every yak (all statuses) + artifacts, preserving ids and status, and declares any incoming herd in this farm's `herds:` config (so it appears in the pickers); **refuses on id collisions** (reconcile the source's herd with `rename-herd` first). Non-destructive: the source is left intact. `--dry-run` previews |
+| `yaks migrate` | Convert a farm made before 0.0.16 (status directories, `artifacts/<id>/`) to the flat layout: each yak to `.yaks/<id>.md` with a `status:` field, attachments to `.yaks/<id>/`, links rewritten. `--dry-run` writes nothing; never commits (it prints the commit to make). Run it once per farm, with every `yaks tui` closed. Transitional |
 | `yaks stats` | Show task statistics |
 | `yaks rollup` | Group yaks by the external issue they roll up to (`--keys` for just the keys) |
-| `yaks doctor` | Read-only farm-integrity check (duplicate-status ids, dangling parent/dep refs, malformed labels containing a comma or space); exits non-zero on issues, so it's CI-usable. `--json` emits issues as JSON |
+| `yaks doctor` | Read-only farm-integrity check (an invalid `status:` value, dangling parent/dep refs, malformed labels containing a comma or space); exits non-zero on issues, so it's CI-usable. `--json` emits issues as JSON |
 | `yaks doctor --strict` | Also flags shorn yaks with no recorded note, and shorn yaks whose `verify:` command did not last PASS — a shear without evidence (the evidence-before-shear rule) |
-| `yaks preflight [<id>...]` | Read-only check to run before landing (committing a shorn yak / merging a shed) in a team farm: nothing under `.yaks/` untracked or with unstaged changes (a new `artifacts/<id>/` you never `git add`ed fails, naming it), each shorn yak in scope (the ids; else those in the change in git; `--all` for every one) whose `verify:` (own or config default) last PASSed, no yak in two status dirs. One line per failure, non-zero exit; else `preflight: ok`. A private farm skips the git check and says so. `--push-main` adds a check that the `local` remote is the human's checkout (non-bare, has `main`, not dirty on `main`), for the one about to push `main`. `--json`. |
+| `yaks preflight [<id>...]` | Read-only check to run before landing (committing a shorn yak / merging a shed) in a team farm: nothing under `.yaks/` untracked or with unstaged changes (a new `.yaks/<id>/` attachment dir you never `git add`ed fails, naming it), each shorn yak in scope (the ids; else those in the change in git; `--all` for every one) whose `verify:` (own or config default) last PASSed, no invalid `status:` value. One line per failure, non-zero exit; else `preflight: ok`. A private farm skips the git check and says so. `--push-main` adds a check that the `local` remote is the human's checkout (non-bare, has `main`, not dirty on `main`), for the one about to push `main`. `--json`. |
 | `yaks brief` | Print the worker brief for a yak (`yaks brief <id> --as <name> [--yaks-dir <path>]`), read-only: the actor prefix and `YAKS_DIR`, the gate, how to finish in a team or private farm, how to ask and pick up an answer, the `Decision:` rule. Warns on stderr if the yak is not yet `shaving` |
 | `yaks status` | What the farm has changed that git does not have yet, one line per yak (`created`, `moved hairy -> shaving`, `notes +2`, `edited`, `removed`, `artifacts`; `*` = staged), then the message `yaks commit` would use. Read-only; run it before a landing or a handoff. `--check` exits 1 when dirty, `--json` for scripts. Clean: `farm clean: nothing to commit`. |
 | `yaks commit` | Commit the farm's own changes (all of `.yaks/`, never code) in one command, with a generated `yaks: shorn …; updated …` message (`-m` overrides, `--dry-run` previews). Other staged files stay staged and out of it; hooks run; never pushes; fails in a private farm. |
@@ -203,12 +204,15 @@ or move with `--as <actor>` (else `$YAKS_ACTOR`, else `delta:<thread title>`/`de
 
 ## Task format
 
-Tasks live in `.yaks/hairy/`, `.yaks/shaving/`, or `.yaks/shorn/` as `.md` files. Slaughtered tasks live in `.yaks/dead/` and are excluded from every default query — pass `--all` (or `--status dead`) to `list` to find them. Status is implicit from the directory. Metadata is YAML frontmatter; the markdown body is the description.
+Each task is one file, `.yaks/<id>.md`, at the same path for its whole life; its attachments sit beside it in `.yaks/<id>/`. Its status is the frontmatter `status:` field (`hairy`, `shaving`, `shorn` or `dead`; a status move edits that line in place). Slaughtered (`dead`) tasks are excluded from every default query — pass `--all` (or `--status dead`) to `list` to find them. Metadata is YAML frontmatter; the markdown body is the description.
+
+> A farm made before yaks 0.0.16 keeps tasks in `hairy/ shaving/ shorn/ dead/` subdirectories and attachments in `artifacts/<id>/`. Every command still reads it, but writes refuse until you run `yaks migrate` once and commit the result.
 
 ```markdown
 ---
 id: yak-a1b2              # flat, opaque, and stable — never encodes hierarchy
 title: Fix the login crash
+status: shaving           # hairy | shaving | shorn | dead
 type: bug
 priority: 2
 created: "2026-02-16T10:00:00Z"

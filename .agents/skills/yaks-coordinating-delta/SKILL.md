@@ -93,7 +93,7 @@ After every worker returns, in this order:
    restore the file and merge by SHA. Never `git add -A` after a landing: Delta's applied state can mix
    files from several workers and unfinished edits, and `-A` would commit all of it as one change.
 5. Re-run the gate yourself, reproduce the key scenario, review the diff, `yaks doctor` (core section 7).
-   A resumed worker's second landing can leave a yak in two status dirs.
+   A resumed worker's second landing can leave a stale copy of its yak in your tree: check `git status`.
 6. Do not hand-revert Delta's applied state and expect that worker's NEXT landing to merge cleanly; it
    will come back as a conflict. Use steps 1-4 again.
 7. **A parked or long-running worker pins your history.** Its commit is based on some commit of yours. If that

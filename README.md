@@ -11,10 +11,10 @@ which matters because the workflow is lots of small command invocations.
 
 ```text
 .yaks/
-  hairy/     todo          (a hairy yak, not yet shaved)
-  shaving/   in progress   (you're shaving it)
-  shorn/     done          (shorn)
-  dead/      abandoned     (slaughtered; hidden from normal queries)
+  config.yaml
+  yaks-1a2b.md     one file per yak; `status: hairy|shaving|shorn|dead` in its frontmatter
+  yaks-1a2b/       that yak's attachments (screenshots, frames), beside it
+  yaks-3c4d.md
 ```
 
 ## Install
@@ -62,8 +62,8 @@ That's the whole loop: **shave** a yak before you work on it, **shear** it
 ## Concepts
 
 **States are adjectives, verbs are transitions.** A yak is *hairy* (todo),
-*shaving* (in progress), or *shorn* (done); *slaughtered* yaks go to a hidden
-`dead/`. You **shave** (hairy→shaving), **shear** / mark **shorn**
+*shaving* (in progress), or *shorn* (done); *slaughtered* yaks are `dead`,
+hidden from normal queries. You **shave** (hairy→shaving), **shear** / mark **shorn**
 (shaving→shorn), **regrow** (shorn→hairy), **slaughter**, and **revive**.
 
 **Task file.** Frontmatter for metadata, the markdown body for the description:
@@ -72,6 +72,7 @@ That's the whole loop: **shave** a yak before you work on it, **shear** it
 ---
 id: yak-a1b2
 title: Wire up the login form
+status: shaving        # hairy | shaving | shorn | dead
 type: feature          # bug | feature | task | idea
 priority: 2            # 1 urgent … 5 lowest (default 3)
 created: "2026-02-16T10:00:00Z"
@@ -110,7 +111,7 @@ in another checkout of this repo (a shed from `yaks sheds`, picked like
 | `yaks shave <id>` | hairy → shaving (alias: `work`) |
 | `yaks shorn <id>` | shaving → shorn (alias: `close`) |
 | `yaks regrow <id>` | shorn → hairy (alias: `reopen`) |
-| `yaks slaughter <id>` / `revive <id>` | move to / from the hidden `dead/` (`slaughter --family` also takes live descendants) |
+| `yaks slaughter <id>` / `revive <id>` | set the status to / from the hidden `dead` (`slaughter --family` also takes live descendants) |
 | `yaks next` / `tangled` | ready tasks / dependency-blocked tasks |
 | `yaks path <id>…` / `path <filters>` | each yak's current absolute file path (for a precise `git add`) |
 | `yaks search <q>` | substring search over id/title/description |
