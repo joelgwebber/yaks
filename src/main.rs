@@ -764,9 +764,10 @@ enum Command {
         json: bool,
     },
     /// Commit the farm's own changes (everything under `.yaks/`: yak files,
-    /// artifacts, config) and nothing else, with a generated message such as
-    /// `yaks: shorn yaks-abc1; updated yaks-def2`. Code staged or modified
-    /// elsewhere is left alone (staged files stay staged). Runs a normal
+    /// attachments, config) and nothing else, with a generated message such
+    /// as `yaks: shorn yaks-abc1; updated yaks-def2` (a layout migration is
+    /// one phrase: `migrate the farm to the flat layout (N yaks)`). Code
+    /// staged or modified elsewhere is left alone (staged files stay staged). Runs a normal
     /// `git commit`, so the repo's hooks apply; never pushes. Fails in a private
     /// farm (nothing under `.yaks/` tracked by git) and while a merge or
     /// cherry-pick is in progress (git forbids a partial commit then; finish it
@@ -781,7 +782,8 @@ enum Command {
     },
     /// Show what the farm has changed that git does not have yet, one line per
     /// yak in yak terms (`created`, `moved hairy -> shaving`, `notes +2`,
-    /// `edited`, `removed`, `artifacts`; `config` for config.yaml), `*` marking
+    /// `edited`, `removed`, `artifacts`; `config` for config.yaml; a layout
+    /// migration is one line, `farm layout migrated: N yaks`), `*` marking
     /// what is staged, ordered by id, then what `yaks commit` would do (and its
     /// message). Uses the same classification as `yaks commit`. Read-only. Code
     /// changed elsewhere in the repo is only counted, never listed. A clean farm

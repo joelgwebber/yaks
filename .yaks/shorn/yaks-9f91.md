@@ -4,7 +4,7 @@ title: 'Flat farm, phase 2: git reporting (yaks status, yaks commit, changes.rs)
 type: task
 priority: 1
 created: '2026-10-12T19:53:57Z'
-updated: '2026-10-12T20:20:38Z'
+updated: '2026-10-12T20:34:16Z'
 parent: yaks-8b7a
 depends_on:
 - yaks-95be
@@ -38,3 +38,29 @@ Evidence (fail first): the un-ignored test passes; a status change plus a note r
 - THIS REPO'S OWN FARM STAYS ON THE OLD LAYOUT until phase 3. Your built binary therefore refuses to write here, by design. Use the `yaks` on PATH (0.0.15) for every command on your yak; use your own `./target/release/yaks` only on temp fixtures. Never run `migrate`, or any write of the new binary, against this repo's `.yaks`.
 - Finish staging is the old layout's: `git add -A -- .yaks/shaving/<id>.md .yaks/shorn/<id>.md` plus `.yaks/artifacts/<id>` if you attached something, and NEVER name a path that does not exist (git then stages nothing at all). Check `git status --short` is empty after your commit.
 - File ownership is strict (three workers run at once): touch only the files your claim names. If you must touch another, `yaks ask` instead.
+
+---
+▸ 2026-10-12T20:23:54Z [git-2]
+git-2 started: Mon Oct 12 20:23:49 UTC 2026
+yaks path yaks-9f91: /Users/joel/src/yaks/.delta/worktrees/qzztv7bg68rg/yaks/.yaks/shaving/yaks-9f91.md
+
+---
+▸ 2026-10-12T20:33:09Z [git-2]
+Decision: the status transition is read in `changes::read` (HEAD's and the working tree's `status:` stored on each `Change` as `status_before`/`status_after`), so `classify` and `generate_message` stay pure functions of `&[Change]` and `yaks status` and `yaks commit` cannot disagree. Rejected: having `classify` shell out to git (breaks the pure unit tests, runs git per call) and doing it only in `status.rs` (commit would say `updated` where status says `moved`).
+Decision: the old deleted-plus-added pairing is ONE function, `changes::legacy_pair` (with its helpers `status_at`, `is_legacy_path`), marked transitional for yaks-bbda. It also decides `Migrated`: an old-layout path deleted and a flat `<id>.md` ADDED with the same status. Rejected: a separate pass over all changes for the migration (two places for yaks-bbda to find).
+Decision: the migration is `Kind::Migrated` per yak, folded by `classify` into `Classified::migrated` (count + staged); the `schema` file change is folded in too, so the migration is exactly one line and nothing else. A yak whose old file was deleted and flat file added with a DIFFERENT status stays a `moved`, even in the same commit as a migration. Rejected: counting by directory (would also swallow unrelated moves) and leaving `schema` as an `other` line (a second line for one event).
+Decision: commit message is `yaks: migrate the farm to the flat layout (N yaks)` (the claim note's text; the yak description's looser wording was `farm layout migrated: N yaks` for status only), joined with other phrases by `; ` when the commit also has them. `--json` gains `migrated: null | {yaks, staged}`.
+Decision: `head_text` moved from status.rs to changes.rs (pub) so `read` can use it; one git-show helper.
+Note: `yaks attach` in the new binary still writes `.yaks/artifacts/<id>/` (another worker's scope); `attachment_owner` accepts both shapes, so status reports `artifacts` either way (tested flat `<id>/`; real-machine run saw the legacy shape).
+
+---
+▸ 2026-10-12T20:34:07Z [git-2]
+verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-10-12T20:34:16Z [git-2]
+Done. `yaks status`/`yaks commit` now report an in-place `status:` change in a flat farm as `moved <from> -> <to>` / `shaving <id>` etc.; a flat attachment reports `artifacts`; a staged migration is one line `farm layout migrated: N yaks` and commit message `yaks: migrate the farm to the flat layout (N yaks)`. Old deleted+added pairing kept in `changes::legacy_pair`. tests/status.rs `clean_then_dirty_with_check_exit_codes` un-ignored and passing. New tests in src/status.rs: flat move, move+note, edit-not-a-move, flat attachment, staged migration, old-layout move. Docs: docs/cli.md and README.md status/commit rows, `///` help of Status/Commit in main.rs. Gate: `cargo test --release` all suites green (537 unit, 3 pre-existing ignored).
+
+---
+▸ 2026-10-12T20:34:16Z [git-2]
+moved: shaving -> shorn

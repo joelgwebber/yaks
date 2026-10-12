@@ -112,8 +112,10 @@ const MAX_IDS: usize = 5;
 
 /// A subject line built from the changed files, for example
 /// `yaks: created a; shorn b, c; updated d; artifacts for e`. Each yak gets one
-/// verb (see [`classify`]): a move reads as its destination status, a new file
-/// as `created`, an edit in place as `updated`, a deleted file as `removed`.
+/// verb (see [`classify`]): a status change reads as its destination status, a
+/// new file as `created`, any other edit as `updated`, a deleted file as
+/// `removed`. The farm layout migration is one phrase, `migrate the farm to the
+/// flat layout (N yaks)`, not a verb per yak.
 pub(crate) fn generate_message(changes: &[Change]) -> String {
     let classified = classify(changes);
     let mut created = BTreeSet::new();
@@ -143,11 +145,15 @@ pub(crate) fn generate_message(changes: &[Change]) -> String {
             }
             Some(Kind::Updated) => updated.insert(id),
             Some(Kind::Removed) => removed.insert(id),
-            None => continue,
+            // `classify` counts migrated yaks in `classified.migrated`.
+            Some(Kind::Migrated) | None => continue,
         };
     }
 
     let mut parts = Vec::new();
+    if let Some(m) = &classified.migrated {
+        parts.push(m.message());
+    }
     let mut phrase = |verb: &str, ids: &BTreeSet<String>| {
         if !ids.is_empty() {
             parts.push(format!("{verb} {}", name_ids(ids)));
@@ -351,11 +357,7 @@ mod tests {
     #[test]
     fn long_id_lists_are_capped_in_the_message() {
         let changes: Vec<Change> = (1..=8)
-            .map(|n| Change {
-                state: 'A',
-                path: format!(".yaks/hairy/yak-{n:04}.md"),
-                staged: false,
-            })
+            .map(|n| Change::new('A', format!(".yaks/yak-{n:04}.md"), false))
             .collect();
         assert_eq!(
             generate_message(&changes),

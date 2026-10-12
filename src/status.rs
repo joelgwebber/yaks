@@ -6,7 +6,7 @@
 //! an in-place change was (notes appended, or a field or the description
 //! changed) by comparing the file with its version at HEAD.
 
-use crate::changes::{self, Kind, YakChange, classify};
+use crate::changes::{self, Kind, Migration, YakChange, classify};
 use crate::commit::generate_message;
 use crate::model::{Status, Task};
 use crate::store;
@@ -37,6 +37,9 @@ pub struct Report {
     pub pending: Option<(&'static str, &'static str)>,
     pub yaks: Vec<YakLine>,
     pub other: Vec<OtherLine>,
+    /// The farm layout migration, when this change is (part of) it: one line,
+    /// however many yaks moved.
+    pub migrated: Option<Migration>,
     /// Changed files in the repository outside the farm (never listed).
     pub outside: usize,
     /// The message `yaks commit` would use, when there is anything to commit.
@@ -45,7 +48,7 @@ pub struct Report {
 
 impl Report {
     pub fn clean(&self) -> bool {
-        self.yaks.is_empty() && self.other.is_empty()
+        self.yaks.is_empty() && self.other.is_empty() && self.migrated.is_none()
     }
 }
 
@@ -58,6 +61,7 @@ pub fn collect(root: &Path) -> Result<Report> {
             pending: None,
             yaks: Vec::new(),
             other: Vec::new(),
+            migrated: None,
             outside: 0,
             message: None,
         });
@@ -96,13 +100,15 @@ pub fn collect(root: &Path) -> Result<Report> {
         pending: changes::pending_operation(root)?,
         yaks,
         other,
+        migrated: classified.migrated,
         outside: changes::outside(root)?.len(),
         message: (!changes.is_empty()).then(|| generate_message(&changes)),
     })
 }
 
 /// The change tokens for one yak's line, in the order `created`, `moved`,
-/// `notes`, `edited`, `removed`, `artifacts`.
+/// `notes`, `edited`, `removed`, `artifacts`. `moved` is a changed `status:`
+/// (or, transitionally, a file moved between old-layout status directories).
 fn describe_yak(root: &Path, top: &Path, change: &YakChange) -> Vec<String> {
     let mut out = Vec::new();
     match &change.kind {
@@ -114,7 +120,10 @@ fn describe_yak(root: &Path, top: &Path, change: &YakChange) -> Vec<String> {
             }
             // Compare the file with HEAD's; if either side cannot be read the
             // change is reported as an edit rather than guessed at.
-            let old = change.old_path.as_deref().and_then(|p| head_text(root, p));
+            let old = change
+                .old_path
+                .as_deref()
+                .and_then(|p| changes::head_text(root, p));
             let new = change
                 .path
                 .as_deref()
@@ -132,19 +141,12 @@ fn describe_yak(root: &Path, top: &Path, change: &YakChange) -> Vec<String> {
                 out.push("edited".to_string());
             }
         }
-        None => {}
+        Some(Kind::Migrated) | None => {}
     }
     if change.artifacts {
         out.push("artifacts".to_string());
     }
     out
-}
-
-fn head_text(root: &Path, path: &str) -> Option<String> {
-    let out = changes::git(root, &["show", &format!("HEAD:{path}")]).ok()?;
-    out.status
-        .success()
-        .then(|| String::from_utf8_lossy(&out.stdout).into_owned())
 }
 
 /// Compare a yak file's text at HEAD with now: how many notes were added
@@ -192,6 +194,9 @@ pub fn render(r: &Report) -> String {
                 y.changes.join(", ")
             ));
         }
+        if let Some(m) = &r.migrated {
+            out.push_str(&format!("{} {}\n", mark(m.staged), m.summary()));
+        }
         for o in &r.other {
             out.push_str(&format!("{} {}\n", mark(o.staged), o.label));
         }
@@ -230,6 +235,10 @@ pub fn to_json(r: &Report) -> Value {
             "changes": y.changes,
             "staged": y.staged,
         })).collect::<Vec<_>>(),
+        "migrated": r.migrated.as_ref().map(|m| json!({
+            "yaks": m.yaks,
+            "staged": m.staged,
+        })),
         "other": r.other.iter().map(|o| json!({
             "path": o.label,
             "staged": o.staged,
@@ -455,6 +464,126 @@ mod tests {
                 "yak-0002".into(),
                 "moved shaving -> shorn, notes +1, artifacts".into()
             )]
+        );
+    }
+
+    /// A committed flat farm: `yak-0001` hairy, `yak-0002` shaving (with an
+    /// attachment), config and a source file.
+    fn flat_repo() -> PathBuf {
+        let repo = std::env::temp_dir().join(format!(
+            "yaks-status-flat-{}-{}",
+            std::process::id(),
+            SEQ.fetch_add(1, Ordering::Relaxed)
+        ));
+        put(&repo, ".yaks/config.yaml", "herd: yak\n");
+        put(&repo, ".yaks/yak-0001.md", &flat("yak-0001", "hairy"));
+        put(&repo, ".yaks/yak-0002.md", &flat("yak-0002", "shaving"));
+        put(&repo, ".yaks/yak-0002/a.txt", "a\n");
+        git(&repo, &["init", "-q"]);
+        git(&repo, &["add", "."]);
+        git(&repo, &["commit", "-q", "-m", "init"]);
+        repo
+    }
+
+    fn flat(id: &str, status: &str) -> String {
+        format!(
+            "---\nid: {id}\ntitle: t\nstatus: {status}\nupdated: '2026-01-01T00:00:00Z'\n---\n\nbody\n"
+        )
+    }
+
+    #[test]
+    fn flat_status_change_reads_as_a_move() {
+        let repo = flat_repo();
+        put(&repo, ".yaks/yak-0001.md", &flat("yak-0001", "shaving"));
+        let r = report(&repo);
+        assert_eq!(
+            lines(&r),
+            [("yak-0001".into(), "moved hairy -> shaving".into())]
+        );
+        assert_eq!(r.message.as_deref(), Some("yaks: shaving yak-0001"));
+    }
+
+    #[test]
+    fn flat_status_change_plus_note_reports_both() {
+        let repo = flat_repo();
+        put(&repo, ".yaks/yak-0002.md", &flat("yak-0002", "shorn"));
+        append(&repo, ".yaks/yak-0002.md", &note("moved: shaving -> shorn"));
+        append(&repo, ".yaks/yak-0002.md", &note("done, really"));
+        let r = report(&repo);
+        assert_eq!(
+            lines(&r),
+            [("yak-0002".into(), "moved shaving -> shorn, notes +1".into())]
+        );
+        assert_eq!(r.message.as_deref(), Some("yaks: shorn yak-0002"));
+    }
+
+    #[test]
+    fn flat_edit_without_a_status_change_is_not_a_move() {
+        let repo = flat_repo();
+        append(&repo, ".yaks/yak-0001.md", &note("just a note"));
+        let r = report(&repo);
+        assert_eq!(lines(&r), [("yak-0001".into(), "notes +1".into())]);
+        assert_eq!(r.message.as_deref(), Some("yaks: updated yak-0001"));
+    }
+
+    #[test]
+    fn flat_attachment_reports_artifacts() {
+        let repo = flat_repo();
+        put(&repo, ".yaks/yak-0001/frame.svg", "<svg/>\n");
+        let r = report(&repo);
+        assert_eq!(lines(&r), [("yak-0001".into(), "artifacts".into())]);
+        assert_eq!(r.message.as_deref(), Some("yaks: artifacts for yak-0001"));
+    }
+
+    #[test]
+    fn staged_migration_reports_one_line_and_one_commit_message() {
+        let repo = team_repo(); // old layout: yak-0001 hairy, yak-0002 shaving + artifacts
+        std::fs::write(farm(&repo).join("schema"), "3\n").unwrap();
+        git(&repo, &["add", "."]);
+        git(&repo, &["commit", "-q", "-m", "schema"]);
+        // The migration: every yak moves to the root with its status, the
+        // attachments to `<id>/`, and `schema` is rewritten.
+        mv(&repo, ".yaks/hairy/yak-0001.md", ".yaks/yak-0001.md");
+        mv(&repo, ".yaks/shaving/yak-0002.md", ".yaks/yak-0002.md");
+        put(&repo, ".yaks/yak-0001.md", &flat("yak-0001", "hairy"));
+        put(&repo, ".yaks/yak-0002.md", &flat("yak-0002", "shaving"));
+        mv(
+            &repo,
+            ".yaks/artifacts/yak-0002/a.txt",
+            ".yaks/yak-0002/a.txt",
+        );
+        std::fs::write(farm(&repo).join("schema"), "4\n").unwrap();
+        git(&repo, &["add", "-A", "."]);
+        let r = report(&repo);
+        assert!(r.yaks.is_empty(), "{:?}", r.yaks);
+        assert!(r.other.is_empty(), "{:?}", r.other);
+        let text = render(&r);
+        assert!(text.contains("* farm layout migrated: 2 yaks\n"), "{text}");
+        assert_eq!(text.matches("moved").count(), 0, "{text}");
+        assert_eq!(
+            r.message.as_deref(),
+            Some("yaks: migrate the farm to the flat layout (2 yaks)")
+        );
+        // `yaks commit` uses it too.
+        let plan = match commit::run(&farm(&repo), None, true).unwrap() {
+            commit::Outcome::Done(p) => p,
+            commit::Outcome::Nothing => panic!("expected a plan"),
+        };
+        assert_eq!(
+            plan.message,
+            "yaks: migrate the farm to the flat layout (2 yaks)"
+        );
+    }
+
+    #[test]
+    fn old_layout_moves_still_read_as_moves() {
+        // A deleted plus an added path for one id (history, or a v3 farm).
+        let repo = team_repo();
+        mv(&repo, ".yaks/hairy/yak-0001.md", ".yaks/dead/yak-0001.md");
+        let r = report(&repo);
+        assert_eq!(
+            lines(&r),
+            [("yak-0001".into(), "moved hairy -> dead".into())]
         );
     }
 

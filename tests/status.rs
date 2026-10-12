@@ -54,7 +54,6 @@ fn yaks(dir: &Path, args: &[&str]) -> String {
 }
 
 #[test]
-#[ignore = "yaks-9f91: in the flat layout a status change is an in-place edit of `status:`, which yaks status does not report as a move yet; that worker un-ignores this test as its fail-first evidence"]
 fn clean_then_dirty_with_check_exit_codes() {
     let (dir, id) = repo("check");
     assert_eq!(yaks(&dir, &["status"]), "farm clean: nothing to commit\n");
