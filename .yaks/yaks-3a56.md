@@ -1,11 +1,11 @@
 ---
 id: yaks-3a56
 title: 'Flat farm, phase 3: brief + skills/docs sweep, migrate this farm, real-machine checks, release 0.0.16'
-status: shaving
+status: shorn
 type: task
 priority: 1
 created: '2026-10-12T19:54:05Z'
-updated: '2026-10-12T21:15:52Z'
+updated: '2026-10-12T21:35:44Z'
 parent: yaks-8b7a
 depends_on:
 - yaks-86f4
@@ -45,3 +45,15 @@ Real-machine checks (the plan's list):
 - Docshots: unchanged by the flat work (the one differing frame was already stale before it; see part 1).
 Note: the 0.0.14 `yaks` on PATH now refuses this farm (SchemaTooNew), so until 0.0.16 is installed every yak command here needs the built binary.
 Left: release 0.0.16, then migrate ~/src/j15r (and any other farm), then phase 4 (yaks-bbda).
+
+---
+▸ 2026-10-12T21:35:07Z [delta-lead]
+Done: sweep (672868d), this farm migrated (Joel, 80c1923), real-machine checks recorded above, release 0.0.16 (yaks-8577). Migrating the remaining farms (~/src/j15r, any private/pointer farms) is Joel's, with the released binary; yaks-bbda (phase 4) waits on that.
+
+---
+▸ 2026-10-12T21:35:43Z [delta-lead]
+verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-10-12T21:35:44Z [delta-lead]
+moved: shaving -> shorn
