@@ -4,7 +4,7 @@ title: 'Flat farm, phase 2: yaks migrate + doctor/preflight checks'
 type: task
 priority: 1
 created: '2026-10-12T19:53:57Z'
-updated: '2026-10-12T19:53:57Z'
+updated: '2026-10-12T20:00:39Z'
 parent: yaks-8b7a
 depends_on:
 - yaks-95be
@@ -17,3 +17,7 @@ Scope: a `yaks migrate [--dry-run]` command (src/main.rs: one new `Command` vari
 Migrate: under the farm lock; refuse, listing the ids, when any id exists in both layouts; move each legacy `<status>/<id>.md` to `<id>.md` with `status:` set; remove the emptied status dirs (never a non-empty one); write `schema` 4; print one summary line and the suggested commit. `--dry-run` writes nothing and prints what would move. Idempotent on a v4 farm ("already flat"). Works on a private or pointer farm (no git involved).
 Out of scope: src/store.rs (phase 1, done), src/changes.rs/status.rs/commit.rs and src/sheds.rs (other workers), skills (coordinator).
 Evidence (fail first): a v3 fixture migrates to flat with every status preserved and notes byte-identical; a collision refuses and changes nothing; dry-run changes nothing; doctor flags a hand-made both-layouts farm.
+
+---
+▸ 2026-10-12T20:00:39Z [delta-lead]
+Amended by D10 (see yaks-8b7a): migrate also moves `.yaks/artifacts/<id>/` to `.yaks/<id>/` and rewrites every `](artifacts/<id>/` link in every body to `](<id>/`, then removes the emptied `artifacts/`. This worker also owns converting the artifact code paths to phase 1's helper: src/farm.rs (attach, rename_attachment, merge's artifact copy, rename/rename_many's artifact dir move), src/preflight.rs (untracked-attachment check), src/tui/handlers.rs and src/tui/editor.rs (link resolution, rename), and the `attach`/`rename-attachment` docs rows. The migrate command is transitional (phase 4 deletes it): keep it in one place.

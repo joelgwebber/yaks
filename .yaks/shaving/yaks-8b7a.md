@@ -4,7 +4,7 @@ title: 'Decision: status as a frontmatter field (one stable path per yak) vs sta
 type: task
 priority: 1
 created: '2026-10-12T16:05:28Z'
-updated: '2026-10-12T19:53:34Z'
+updated: '2026-10-12T20:00:38Z'
 labels:
 - design
 - cli
@@ -72,3 +72,11 @@ Decision (Joel, 2026-10-12): go FLAT, dead included, one rule; and do it now, be
    - git reporting: src/changes.rs, src/status.rs, src/commit.rs (D7), their docs rows.
    - sheds: src/sheds.rs base_farm reading both layouts from a git tree, cross-shed comparison between a migrated and an unmigrated checkout, scripts/discover-fixture.sh.
 3. Coordinator: brief.rs and the skills/docs sweep (they must agree), migrate this repo's own farm in one commit, real-machine checks (the TUI looks unchanged in docshots; `yaks sheds` against a clone forked before the migration; a `--dry-run` on ~/src/j15r), then release 0.0.16.
+
+---
+▸ 2026-10-12T20:00:38Z [delta-lead]
+Amendments (Joel, 2026-10-12, on the plan above). These supersede D1, D4, D5 where they differ.
+- D1 confirmed: `.yaks/<id>.md` in the farm root.
+- D10 (new, Joel's idea, checked): attachments move from `.yaks/artifacts/<id>/` to `.yaks/<id>/`, beside the yak, in the SAME migration. Checked on this farm: 50 artifact dirs, none orphaned; 81 links in bodies, all of the one form `](artifacts/<id>/<file>)`, so the rewrite to `](<id>/<file>)` is mechanical. Bonus: today those links are relative to the farm root, so an editor's markdown preview of `.yaks/shorn/x.md` resolves them to `.yaks/shorn/artifacts/...` and breaks; from `.yaks/<id>.md` the new form resolves in any viewer. Costs: about 90 `artifacts` references in src (attach, rename-attachment, merge, rename, preflight's untracked check, the git reporting's artifact classification, the TUI's link resolution, brief); the root scan skips directories; staging a yak is now `.yaks/<id>.md` plus `.yaks/<id>/` (`yaks path` should print both, or a pathspec `.yaks/<id>*`, safe here because no legacy dotted ids remain).
+- D4 changed: the dual-layout read is TRANSITIONAL, not permanent. It exists so `yaks migrate` can read the old layout and so an unmigrated farm stays readable meanwhile.
+- D5 confirmed, plus a cleanup: once Joel's farms are migrated, a phase 4 removes `yaks migrate`, the dual read, the legacy git classification and the both-layouts doctor check, and every transitional doc line. What stays for good: a schema-3 farm refuses to open with a message naming the last release that can migrate it, and `yaks sheds` reports a shed whose farm is schema 3 as an old-layout clone (not as one that deleted every yak).
