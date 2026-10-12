@@ -4,12 +4,11 @@ title: 'yaks sheds: show a shed as landed when its farm changes are all already 
 type: feature
 priority: 3
 created: '2026-10-10T13:40:07Z'
-updated: '2026-10-11T20:51:45Z'
+updated: '2026-10-12T16:04:57Z'
 parent: yaks-ee0a
 labels:
 - cli
 - delta
-needs: human
 verify: cargo test --release
 ---
 
@@ -132,3 +131,9 @@ Out of scope, not touched: show --sheds/inbox --sheds, the TUI, any write, paren
 ---
 ▸ 2026-10-11T20:51:45Z [land-1]
 moved: shaving -> shorn
+
+---
+▸ 2026-10-12T16:04:57Z [delta-lead]
+picked up
+
+Root cause of this yak showing in Joel's inbox after it was shorn: the landed file (2b92139) still carried land-1's `needs: human` from its blocked ask, with no answer or pickup entry. My `yaks answer yaks-ed5e@land-1` wrote the answer into land-1's working tree, uncommitted, as designed; land-1 then synced with `git fetch local && git merge local/main` to get the missing spec, and the uncommitted answer did not survive that (the landed file has neither the answer note nor a pickup). Joel cleared it by hand (needs: agent); this pickup closes it. The hazard itself is filed separately.
