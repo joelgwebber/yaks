@@ -4,7 +4,7 @@ title: 'Decision: status as a frontmatter field (one stable path per yak) vs sta
 type: task
 priority: 1
 created: '2026-10-12T16:05:28Z'
-updated: '2026-10-12T16:05:28Z'
+updated: '2026-10-12T16:06:25Z'
 labels:
 - design
 - cli
@@ -33,3 +33,7 @@ Joel (2026-10-12): revisit, hopefully for the last time, whether a yak's status 
 A. Keep the directories; keep paying with tooling (path, doctor, preflight, commit).
 B. Flat: one directory, `status:` in the frontmatter, dead included (one rule).
 C. Hybrid: flat for hairy/shaving/shorn, keep `dead/` as the one subdirectory (slaughter/revive stay moves; dead stays out of the browse view).
+
+---
+▸ 2026-10-12T16:06:25Z [delta-lead]
+More evidence, found while filing this: the third staging miss in two days, and the first to reach origin. yaks-7faf's shear commit b25a5b9 recorded only the deletion of shaving/yaks-7faf.md; the new shorn/ file stayed untracked, so origin/main had the release yak missing entirely until 5d2ba3f. yaks doctor did not catch it (a yak that is simply absent is not a two-dir duplicate) and preflight's git-state check only runs on demand.
