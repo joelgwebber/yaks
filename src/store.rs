@@ -1,8 +1,17 @@
 //! Filesystem discovery, frontmatter parsing, and task serialization.
 //!
-//! The on-disk layout: a `.yaks/` directory with `hairy/ shaving/ shorn/ dead/`
-//! subdirs of `<id>.md` files,
-//! each with `---`-delimited YAML frontmatter followed by a markdown body.
+//! The on-disk layout (schema 4): a `.yaks/` directory holding one file per
+//! yak at a stable path, `<id>.md` ([`task_path`]), with `---`-delimited YAML
+//! frontmatter (its `status:` field is the yak's status) followed by a
+//! markdown body, and the yak's attachments beside it in `<id>/`
+//! ([`artifact_dir`]).
+//!
+//! The old layout (schema 3) kept each file in a `hairy/ shaving/ shorn/
+//! dead/` subdirectory and implied the status from it. It is still READ, by
+//! the [`legacy`] module only, so `yaks migrate` can convert a farm and an
+//! unmigrated farm stays readable; nothing writes it, and every write
+//! refuses on a farm that still has it (see [`lock`]). Transitional:
+//! yaks-bbda removes `legacy` once every farm is migrated.
 //!
 //! The frontmatter parser is a deliberately small hand-rolled fast path
 //! (scalars + simple lists) — the approach yak-3fd4.3 validated in Python. The
@@ -149,9 +158,7 @@ pub(crate) fn expand_path(base: &Path, path: &str) -> PathBuf {
 /// Accept the `.yaks/` dir itself or a directory containing one.
 pub(crate) fn resolve_farm_root(dir: &Path) -> Result<PathBuf> {
     let is_farm = |d: &Path| {
-        ["hairy", "shaving", "shorn", "dead"]
-            .iter()
-            .any(|sub| d.join(sub).is_dir())
+        d.join("config.yaml").is_file() || d.join("schema").is_file() || legacy::is_farm(d)
     };
     if is_farm(dir) {
         return Ok(dir.to_path_buf());
@@ -163,32 +170,90 @@ pub(crate) fn resolve_farm_root(dir: &Path) -> Result<PathBuf> {
     anyhow::bail!("{} is not a .yaks/ farm", dir.display())
 }
 
-/// Load every task file in the given statuses, sorted by id.
+/// The one path of yak `id`'s file: `<root>/<id>.md`. It never changes, a
+/// status move included.
+pub fn task_path(root: &Path, id: &str) -> PathBuf {
+    root.join(format!("{id}.md"))
+}
+
+/// The directory holding yak `id`'s attachments: `<root>/<id>/`, beside its
+/// file. (The attachment code moves onto it in yaks-86f4.)
+#[allow(dead_code)]
+pub fn artifact_dir(root: &Path, id: &str) -> PathBuf {
+    root.join(id)
+}
+
+/// The id of the yak that owns `rel`, a path RELATIVE TO THE FARM ROOT, when
+/// it is one of that yak's attachments: `<id>/<file...>`, or (transitional,
+/// the old layout) `artifacts/<id>/<file...>`. `None` for a yak file, a farm
+/// file (`config.yaml`, `.gitignore`, `schema`) or a legacy status-dir file.
+/// Accepts `/` or `\\` separators.
+pub fn attachment_owner(rel: &str) -> Option<String> {
+    let rel = rel.replace('\\', "/");
+    let mut parts = rel.split('/').filter(|p| !p.is_empty());
+    let first = parts.next()?;
+    let second = parts.next()?;
+    if first == "artifacts" {
+        // `artifacts/<id>/<file>`: the id is the second part.
+        return parts.next().map(|_| second.to_string());
+    }
+    if legacy::is_status_dir(first) || first.starts_with('.') {
+        return None;
+    }
+    Some(first.to_string())
+}
+
+/// The id of the yak that `rel`, a path RELATIVE TO THE FARM ROOT, belongs
+/// to: its own file `<id>.md`, one of its attachments (see
+/// [`attachment_owner`]), or (transitional) an old-layout
+/// `<status>/<id>.md`. `None` for a farm file such as `config.yaml`.
+pub fn path_owner(rel: &str) -> Option<String> {
+    let rel = rel.replace('\\', "/");
+    let parts: Vec<&str> = rel.split('/').filter(|p| !p.is_empty()).collect();
+    match parts.as_slice() {
+        [file] => file.strip_suffix(".md").map(String::from),
+        [dir, file] if legacy::is_status_dir(dir) => file.strip_suffix(".md").map(String::from),
+        _ => attachment_owner(&rel),
+    }
+}
+
+/// Load every task in the given statuses, sorted by id: each `<root>/<id>.md`
+/// (status from its `status:` field), plus, transitionally, any file the old
+/// layout left in a status directory ([`legacy::load`]). When one id is in
+/// both, the flat file wins (doctor reports the pair).
 pub fn load(root: &Path, statuses: &[Status]) -> Result<Vec<Task>> {
     let mut tasks = Vec::new();
-    for &status in statuses {
-        let dir = root.join(status.dir());
-        if !dir.is_dir() {
-            continue;
-        }
-        for entry in fs::read_dir(&dir).with_context(|| format!("reading {}", dir.display()))? {
+    if root.is_dir() {
+        for entry in fs::read_dir(root).with_context(|| format!("reading {}", root.display()))? {
             let path = entry?.path();
-            if path.extension().and_then(|e| e.to_str()) != Some("md") {
+            if !path.is_file() || path.extension().and_then(|e| e.to_str()) != Some("md") {
                 continue;
             }
             let text =
                 fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
-            if let Some(task) = parse_task(&text, status) {
-                tasks.push(task);
+            if let Some(task) = parse_task(&text, Status::Hairy) {
+                if statuses.contains(&task.status) {
+                    tasks.push(task);
+                }
             }
         }
     }
+    let flat: std::collections::HashSet<String> = tasks.iter().map(|t| t.id.clone()).collect();
+    tasks.extend(
+        legacy::load(root, statuses)?
+            .into_iter()
+            .filter(|t| !flat.contains(&t.id)),
+    );
     tasks.sort_by(|a, b| a.id.cmp(&b.id));
     Ok(tasks)
 }
 
 /// Parse one task file. Returns `None` if it has no usable frontmatter/id.
+/// `status` is the status when the frontmatter has no valid `status:` field
+/// (a hand-written file with none reads as hairy, as a missing `type:` reads
+/// as task).
 pub fn parse_task(text: &str, status: Status) -> Option<Task> {
+    let mut status = status;
     let (front, body) = split_frontmatter(text)?;
 
     let mut id = String::new();
@@ -238,6 +303,13 @@ pub fn parse_task(text: &str, status: Status) -> Option<Task> {
         match key {
             "id" => id = unquote(value),
             "title" => title = unquote(value),
+            // An invalid value keeps the fallback; doctor reports it from the
+            // file's text.
+            "status" => {
+                if let Some(s) = Status::parse(&unquote(value)) {
+                    status = s;
+                }
+            }
             "type" => kind = unquote(value),
             "priority" => priority = value.parse().unwrap_or(3),
             "created" => created = non_empty(unquote(value)),
@@ -353,11 +425,11 @@ pub mod write {
         s
     }
 
-    /// Write a task to `root/<status>/<id>.md` atomically (temp + rename).
+    /// Write a task to its one path, `root/<id>.md` ([`task_path`]),
+    /// atomically (temp + rename).
     pub fn save(root: &Path, t: &Task) -> Result<PathBuf> {
-        let dir = root.join(t.status.dir());
-        fs::create_dir_all(&dir).with_context(|| format!("creating {}", dir.display()))?;
-        let path = dir.join(format!("{}.md", t.id));
+        fs::create_dir_all(root).with_context(|| format!("creating {}", root.display()))?;
+        let path = task_path(root, &t.id);
         atomic_write(&path, &render(t))?;
         Ok(path)
     }
@@ -366,6 +438,7 @@ pub mod write {
         let mut out = String::new();
         out.push_str(&format!("id: {}\n", scalar(&t.id)));
         out.push_str(&format!("title: {}\n", scalar(&t.title)));
+        out.push_str(&format!("status: {}\n", t.status.dir()));
         out.push_str(&format!("type: {}\n", scalar(&t.kind)));
         out.push_str(&format!("priority: {}\n", t.priority));
         if let Some(c) = &t.created {
@@ -862,18 +935,16 @@ pub enum InitOutcome {
     AlreadyExists,
 }
 
-/// Create a fresh farm at `root` (the `.yaks/` directory itself): the four
-/// status subdirectories, a `config.yaml` seeded from `cfg`, and the `schema`
-/// marker for this build. Refuses to touch an existing `.yaks/` — the caller
-/// gets [`InitOutcome::AlreadyExists`] and nothing is written.
+/// Create a fresh farm at `root` (the `.yaks/` directory itself): a
+/// `config.yaml` seeded from `cfg` and the `schema` marker for this build.
+/// Yak files go directly in `root` as they are created. Refuses to touch an
+/// existing `.yaks/` — the caller gets [`InitOutcome::AlreadyExists`] and
+/// nothing is written.
 pub fn init(root: &Path, cfg: &InitConfig) -> Result<InitOutcome> {
     if root.exists() {
         return Ok(InitOutcome::AlreadyExists);
     }
-    for status in [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead] {
-        let dir = root.join(status.dir());
-        fs::create_dir_all(&dir).with_context(|| format!("creating {}", dir.display()))?;
-    }
+    fs::create_dir_all(root).with_context(|| format!("creating {}", root.display()))?;
     let config = format!(
         "herd: {}\ndefault_type: {}\ndefault_priority: {}\nvim_mode: {}\n",
         cfg.prefix, cfg.default_type, cfg.default_priority, cfg.vim_mode,
@@ -888,17 +959,14 @@ pub fn init(root: &Path, cfg: &InitConfig) -> Result<InitOutcome> {
     Ok(InitOutcome::Created)
 }
 
-/// Load every task file
-/// Every task id present on disk (all statuses, including dead).
+/// Every task id present on disk (all statuses, including dead; both
+/// layouts, transitionally).
 pub fn all_ids(root: &Path) -> std::collections::HashSet<String> {
-    let mut ids = std::collections::HashSet::new();
-    for st in [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead] {
-        let Ok(rd) = fs::read_dir(root.join(st.dir())) else {
-            continue;
-        };
+    let mut ids = legacy::ids(root);
+    if let Ok(rd) = fs::read_dir(root) {
         for entry in rd.flatten() {
             let p = entry.path();
-            if p.extension().and_then(|e| e.to_str()) == Some("md") {
+            if p.is_file() && p.extension().and_then(|e| e.to_str()) == Some("md") {
                 if let Some(stem) = p.file_stem().and_then(|s| s.to_str()) {
                     ids.insert(stem.to_string());
                 }
@@ -963,7 +1031,23 @@ pub struct FarmLock {
 /// The lock is an OS advisory lock (`flock` / `LockFileEx`) on `.yaks/.lock`,
 /// released by the OS if the process dies. It is not re-entrant: a process
 /// that locks twice deadlocks itself, so take it once per outermost operation.
+///
+/// Every mutation takes this lock, so it is also where a write is refused on
+/// a farm that still uses the old layout (schema 3, or any yak file in a
+/// status directory): writing the flat layout beside it would split the farm
+/// in two. `yaks migrate` converts the farm first (it locks with
+/// [`lock_for_migration`]).
 pub fn lock(root: &Path) -> Result<FarmLock> {
+    let guard = lock_for_migration(root)?;
+    if let Some(why) = legacy::write_blocker(root) {
+        anyhow::bail!("{why}");
+    }
+    Ok(guard)
+}
+
+/// [`lock`] without the old-layout refusal: only for `yaks migrate`, which
+/// is what converts such a farm. Transitional (yaks-bbda).
+pub fn lock_for_migration(root: &Path) -> Result<FarmLock> {
     let path = root.join(LOCK_FILE);
     let file = fs::OpenOptions::new()
         .create(true)
@@ -1008,21 +1092,24 @@ pub enum MoveOutcome {
     NotFound,
 }
 
-/// Locate a task's current file by id via exact-path probes (O(1) per status
-/// dir).
+/// Locate a task's file by id, with its status: the flat `<root>/<id>.md`
+/// (status read from its frontmatter), else, transitionally, a file the old
+/// layout left in a status directory.
 pub fn find_task_file(root: &Path, id: &str) -> Option<(Status, PathBuf)> {
-    for st in [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead] {
-        let p = root.join(st.dir()).join(format!("{id}.md"));
-        if p.is_file() {
-            return Some((st, p));
-        }
+    let p = task_path(root, id);
+    if p.is_file() {
+        let status = fs::read_to_string(&p)
+            .ok()
+            .and_then(|text| parse_task(&text, Status::Hairy))
+            .map_or(Status::Hairy, |t| t.status);
+        return Some((status, p));
     }
-    None
+    legacy::find(root, id)
 }
 
-/// Move a task into `dest`: rename its file into the destination dir, then
-/// rewrite it with a bumped `updated` (mirrors Python `move_task`). A no-op
-/// when the task is already at `dest`.
+/// Move a task to `dest`: set its `status:` field and rewrite it in place
+/// with a bumped `updated`; the file does not move. A no-op when the task is
+/// already at `dest`.
 ///
 /// Every real move also appends a transition entry to the body, in the note
 /// shape `▸ <ts> [<actor>]` + `moved: <from> -> <to>` (see
@@ -1039,11 +1126,6 @@ pub fn move_task(root: &Path, id: &str, dest: Status, actor: Option<&str>) -> Re
     let text = fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
     let mut task = parse_task(&text, status)
         .with_context(|| format!("parsing {} before move", path.display()))?;
-    let dest_dir = root.join(dest.dir());
-    fs::create_dir_all(&dest_dir).with_context(|| format!("creating {}", dest_dir.display()))?;
-    let dest_path = dest_dir.join(format!("{id}.md"));
-    fs::rename(&path, &dest_path)
-        .with_context(|| format!("moving {} -> {}", path.display(), dest_path.display()))?;
     let now = now_iso();
     task.body = append_note(&task.body, &now, actor, &transition_text(status, dest));
     task.status = dest;
@@ -1156,7 +1238,7 @@ pub fn ask_question(task: &Task) -> Option<String> {
     (!text.is_empty()).then(|| text.to_string())
 }
 
-/// Load a single task by id (whatever status dir it is in).
+/// Load a single task by id (see [`find_task_file`]).
 pub fn load_task_by_id(root: &Path, id: &str) -> Result<Option<Task>> {
     let Some((status, path)) = find_task_file(root, id) else {
         return Ok(None);
@@ -1483,8 +1565,109 @@ pub fn reparent(root: &Path, id: &str, new_parent: Option<String>) -> Result<Rep
     Ok(Reparent::Done { new_parent })
 }
 
-/// On-disk schema version this build understands.
-pub const SCHEMA: u32 = 3;
+/// On-disk schema version this build understands. 4: one flat file per yak
+/// with a `status:` field, attachments in `<id>/`. 3: status directories,
+/// attachments in `artifacts/<id>/` (read only by [`legacy`]).
+pub const SCHEMA: u32 = 4;
+
+/// The old layout (schema 3): status directories, `artifacts/<id>/`. Read
+/// only, so `yaks migrate` can convert a farm and an unmigrated farm stays
+/// readable. TRANSITIONAL: yaks-bbda deletes this module once every farm is
+/// migrated; keep every old-layout read in here.
+pub mod legacy {
+    use super::*;
+
+    /// The old layout's status directories, in status order.
+    pub const STATUSES: [Status; 4] = [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
+
+    /// `name` is one of the old layout's status directory names.
+    pub fn is_status_dir(name: &str) -> bool {
+        STATUSES.iter().any(|s| s.dir() == name)
+    }
+
+    /// `dir` has at least one old-layout status directory.
+    pub fn is_farm(dir: &Path) -> bool {
+        STATUSES.iter().any(|s| dir.join(s.dir()).is_dir())
+    }
+
+    /// Every old-layout task file under `root`: `(status, path)`, in status
+    /// then name order.
+    pub fn files(root: &Path) -> Vec<(Status, PathBuf)> {
+        let mut out = Vec::new();
+        for st in STATUSES {
+            let Ok(rd) = fs::read_dir(root.join(st.dir())) else {
+                continue;
+            };
+            let mut paths: Vec<PathBuf> = rd
+                .flatten()
+                .map(|e| e.path())
+                .filter(|p| p.is_file() && p.extension().and_then(|e| e.to_str()) == Some("md"))
+                .collect();
+            paths.sort();
+            out.extend(paths.into_iter().map(|p| (st, p)));
+        }
+        out
+    }
+
+    /// Old-layout tasks in the given statuses. The directory is the status,
+    /// whatever the file says (the old writer never wrote `status:`).
+    pub fn load(root: &Path, statuses: &[Status]) -> Result<Vec<Task>> {
+        let mut tasks = Vec::new();
+        for (st, path) in files(root) {
+            if !statuses.contains(&st) {
+                continue;
+            }
+            let text =
+                fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
+            if let Some(mut task) = parse_task(&text, st) {
+                task.status = st;
+                tasks.push(task);
+            }
+        }
+        Ok(tasks)
+    }
+
+    /// Every old-layout id.
+    pub fn ids(root: &Path) -> std::collections::HashSet<String> {
+        files(root)
+            .into_iter()
+            .filter_map(|(_, p)| p.file_stem().and_then(|s| s.to_str()).map(String::from))
+            .collect()
+    }
+
+    /// Yak `id`'s old-layout file, with the status its directory implies.
+    pub fn find(root: &Path, id: &str) -> Option<(Status, PathBuf)> {
+        STATUSES.iter().find_map(|&st| {
+            let p = root.join(st.dir()).join(format!("{id}.md"));
+            p.is_file().then_some((st, p))
+        })
+    }
+
+    /// Why a write must not touch the farm at `root`, if it must not: it is
+    /// schema 3, or a yak file still sits in a status directory (an old
+    /// binary wrote one after a migration).
+    pub fn write_blocker(root: &Path) -> Option<String> {
+        let old_schema = matches!(schema_status(root), SchemaStatus::Older(_));
+        let stray = files(root).len();
+        if !old_schema && stray == 0 {
+            return None;
+        }
+        Some(if old_schema {
+            format!(
+                "{} is schema v3 (yak status directories), and this yaks writes only the flat \
+                 layout (schema v{SCHEMA}): run `yaks migrate` there and commit the result \
+                 (reads still work meanwhile)",
+                root.display()
+            )
+        } else {
+            format!(
+                "{} has {stray} yak file(s) in old status directories (written by an older \
+                 yaks?): run `yaks migrate` there to fold them in before writing",
+                root.display()
+            )
+        })
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SchemaStatus {
@@ -1639,9 +1822,7 @@ mod move_tests {
         let mut p = std::env::temp_dir();
         let n = SEQ.fetch_add(1, Ordering::Relaxed);
         p.push(format!("yaksrs-test-{}-{}", std::process::id(), n));
-        for st in [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead] {
-            fs::create_dir_all(p.join(st.dir())).unwrap();
-        }
+        std::fs::create_dir_all(&p).unwrap();
         p
     }
 
@@ -1873,20 +2054,25 @@ mod move_tests {
     }
 
     #[test]
-    fn move_relocates_file_and_bumps_updated() {
+    fn move_edits_status_in_place_and_bumps_updated() {
         let root = temp_root();
         write::save(&root, &task("yaksrs-mv01", Status::Hairy)).unwrap();
-        assert!(root.join("hairy/yaksrs-mv01.md").is_file());
+        let path = task_path(&root, "yaksrs-mv01");
+        assert!(path.is_file());
 
         assert_eq!(
             move_task(&root, "yaksrs-mv01", Status::Shaving, None).unwrap(),
             MoveOutcome::Moved
         );
-        assert!(!root.join("hairy/yaksrs-mv01.md").exists());
-        assert!(root.join("shaving/yaksrs-mv01.md").is_file());
+        // The file stays put; only its `status:` (and `updated:`) change.
+        assert!(path.is_file());
+        assert!(!root.join("shaving").exists() && !root.join("hairy").exists());
 
-        let text = fs::read_to_string(root.join("shaving/yaksrs-mv01.md")).unwrap();
-        let moved = parse_task(&text, Status::Shaving).unwrap();
+        let text = fs::read_to_string(&path).unwrap();
+        assert!(text.contains("\nstatus: shaving\n"), "{text}");
+        // The parser takes the status from the file, not the fallback.
+        let moved = parse_task(&text, Status::Hairy).unwrap();
+        assert_eq!(moved.status, Status::Shaving);
         assert_ne!(moved.updated.as_deref(), Some("2026-01-01T00:00:00Z"));
 
         let _ = fs::remove_dir_all(&root);
@@ -1945,9 +2131,7 @@ mod graph_tests {
             std::process::id(),
             SEQ.fetch_add(1, Ordering::Relaxed)
         ));
-        for st in [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead] {
-            fs::create_dir_all(p.join(st.dir())).unwrap();
-        }
+        std::fs::create_dir_all(&p).unwrap();
         p
     }
 
@@ -2089,14 +2273,14 @@ mod schema_tests {
     #[test]
     fn schema_gate() {
         assert_eq!(
-            schema_status(&temp_root(Some("3"))),
+            schema_status(&temp_root(Some("4"))),
             SchemaStatus::Compatible
         );
         assert_eq!(
-            schema_status(&temp_root(Some("4\n"))),
-            SchemaStatus::Newer(4)
+            schema_status(&temp_root(Some("5\n"))),
+            SchemaStatus::Newer(5)
         );
-        assert_eq!(schema_status(&temp_root(Some("2"))), SchemaStatus::Older(2));
+        assert_eq!(schema_status(&temp_root(Some("3"))), SchemaStatus::Older(3));
         assert_eq!(schema_status(&temp_root(None)), SchemaStatus::Compatible);
         assert_eq!(
             schema_status(&temp_root(Some("garbage"))),
@@ -2134,10 +2318,11 @@ mod init_tests {
         };
         assert!(matches!(init(&root, &cfg).unwrap(), InitOutcome::Created));
 
+        // Flat layout: no status directories; yak files go in the root.
         for sub in ["hairy", "shaving", "shorn", "dead"] {
-            assert!(root.join(sub).is_dir(), "missing {sub}/");
+            assert!(!root.join(sub).exists(), "unexpected {sub}/");
         }
-        assert_eq!(fs::read_to_string(root.join("schema")).unwrap(), "3\n");
+        assert_eq!(fs::read_to_string(root.join("schema")).unwrap(), "4\n");
 
         // The seeded config round-trips through the reader.
         let read = read_config(&root);
@@ -2162,12 +2347,12 @@ mod init_tests {
             InitOutcome::Created
         ));
         // Drop a marker file, then re-init: it must be left untouched.
-        fs::write(root.join("hairy/keep.md"), "x").unwrap();
+        fs::write(root.join("keep.md"), "x").unwrap();
         assert!(matches!(
             init(&root, &InitConfig::default()).unwrap(),
             InitOutcome::AlreadyExists
         ));
-        assert_eq!(fs::read_to_string(root.join("hairy/keep.md")).unwrap(), "x");
+        assert_eq!(fs::read_to_string(root.join("keep.md")).unwrap(), "x");
 
         let _ = fs::remove_dir_all(&base);
     }
@@ -2498,5 +2683,219 @@ mod replied_tests {
             ],
         );
         assert!(!is_replied(&legacy));
+    }
+}
+
+#[cfg(test)]
+mod layout_tests {
+    //! The flat layout (schema 4) and the transitional read of the old one.
+    use super::*;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    static SEQ: AtomicU64 = AtomicU64::new(0);
+
+    fn temp_root(schema: Option<&str>) -> PathBuf {
+        let p = std::env::temp_dir().join(format!(
+            "yaks-layout-{}-{}",
+            std::process::id(),
+            SEQ.fetch_add(1, Ordering::Relaxed)
+        ));
+        let _ = fs::remove_dir_all(&p);
+        fs::create_dir_all(&p).unwrap();
+        if let Some(v) = schema {
+            fs::write(p.join("schema"), v).unwrap();
+        }
+        p
+    }
+
+    fn task(id: &str, status: Status) -> Task {
+        Task {
+            id: id.into(),
+            title: format!("t {id}"),
+            kind: "task".into(),
+            priority: 3,
+            status,
+            created: Some("2026-01-01T00:00:00Z".into()),
+            updated: Some("2026-01-01T00:00:00Z".into()),
+            parent: None,
+            labels: vec![],
+            depends_on: vec![],
+            source: None,
+            needs: None,
+            verify: None,
+            extra: vec![],
+            body: "body\n\n---\n\u{25b8} 2026-01-01T00:00:00Z [a]\nnote".into(),
+        }
+    }
+
+    /// An old-layout file: `<root>/<status>/<id>.md`, written the way the old
+    /// writer did (no `status:` line).
+    fn legacy_put(root: &Path, t: &Task) {
+        let dir = root.join(t.status.dir());
+        fs::create_dir_all(&dir).unwrap();
+        let text = write::render(t).replace(&format!("status: {}\n", t.status.dir()), "");
+        fs::write(dir.join(format!("{}.md", t.id)), text).unwrap();
+    }
+
+    #[test]
+    fn a_yak_round_trips_at_one_flat_path_with_its_status_field() {
+        let root = temp_root(Some("4"));
+        for (id, st) in [
+            ("y-0001", Status::Hairy),
+            ("y-0002", Status::Shaving),
+            ("y-0003", Status::Shorn),
+            ("y-0004", Status::Dead),
+        ] {
+            let path = write::save(&root, &task(id, st)).unwrap();
+            assert_eq!(path, task_path(&root, id));
+            let text = fs::read_to_string(&path).unwrap();
+            // `status:` comes right after `title:`.
+            assert!(
+                text.starts_with(&format!(
+                    "---\nid: {id}\ntitle: t {id}\nstatus: {}\n",
+                    st.dir()
+                )),
+                "{text}"
+            );
+            assert_eq!(find_task_file(&root, id), Some((st, path)));
+        }
+        let all = load(&root, &legacy::STATUSES).unwrap();
+        let got: Vec<(&str, Status)> = all.iter().map(|t| (t.id.as_str(), t.status)).collect();
+        assert_eq!(
+            got,
+            [
+                ("y-0001", Status::Hairy),
+                ("y-0002", Status::Shaving),
+                ("y-0003", Status::Shorn),
+                ("y-0004", Status::Dead)
+            ]
+        );
+        // A status filter still filters, without status directories.
+        let live = load(&root, &[Status::Shaving]).unwrap();
+        assert_eq!(live.len(), 1);
+        assert_eq!(
+            all[0],
+            parse_task(&write::render(&all[0]), Status::Dead).unwrap()
+        );
+        assert!(
+            !legacy::is_farm(&root),
+            "no status directory is ever created"
+        );
+    }
+
+    #[test]
+    fn a_missing_status_reads_as_hairy_and_an_invalid_one_keeps_the_fallback() {
+        let none = "---\nid: y-0001\ntitle: hand-made\n---\n";
+        assert_eq!(
+            parse_task(none, Status::Hairy).unwrap().status,
+            Status::Hairy
+        );
+        let bad = "---\nid: y-0001\ntitle: x\nstatus: done\n---\n";
+        assert_eq!(
+            parse_task(bad, Status::Hairy).unwrap().status,
+            Status::Hairy
+        );
+        let quoted = "---\nid: y-0001\ntitle: x\nstatus: 'shorn'\n---\n";
+        assert_eq!(
+            parse_task(quoted, Status::Hairy).unwrap().status,
+            Status::Shorn
+        );
+        // The parsed status is written back once, not duplicated as an extra.
+        let t = parse_task(quoted, Status::Hairy).unwrap();
+        assert!(t.extra.is_empty());
+        assert_eq!(write::render(&t).matches("status:").count(), 1);
+    }
+
+    #[test]
+    fn an_old_layout_farm_still_reads_with_the_status_its_directory_implies() {
+        let root = temp_root(Some("3"));
+        legacy_put(&root, &task("y-0001", Status::Hairy));
+        legacy_put(&root, &task("y-0002", Status::Shorn));
+        let all = load(&root, &legacy::STATUSES).unwrap();
+        let got: Vec<(&str, Status)> = all.iter().map(|t| (t.id.as_str(), t.status)).collect();
+        assert_eq!(got, [("y-0001", Status::Hairy), ("y-0002", Status::Shorn)]);
+        assert_eq!(
+            find_task_file(&root, "y-0002"),
+            Some((Status::Shorn, root.join("shorn/y-0002.md")))
+        );
+        assert!(all_ids(&root).contains("y-0001"));
+        assert!(load_task_by_id(&root, "y-0002").unwrap().is_some());
+    }
+
+    #[test]
+    fn every_write_refuses_on_an_old_layout_farm_and_migration_can_still_lock() {
+        // A schema-3 farm: refused, naming the fix.
+        let old = temp_root(Some("3"));
+        legacy_put(&old, &task("y-0001", Status::Hairy));
+        let err = lock(&old).err().expect("refused").to_string();
+        assert!(
+            err.contains("schema v3") && err.contains("yaks migrate"),
+            "{err}"
+        );
+        // An empty schema-3 farm too: the marker alone says old layout.
+        let empty_old = temp_root(Some("3"));
+        assert!(lock(&empty_old).is_err());
+        // A flat farm with a stray old-layout file (an old binary wrote it).
+        let stray = temp_root(Some("4"));
+        write::save(&stray, &task("y-0001", Status::Hairy)).unwrap();
+        legacy_put(&stray, &task("y-0002", Status::Shaving));
+        let err = lock(&stray).err().expect("refused").to_string();
+        assert!(
+            err.contains("1 yak file") && err.contains("yaks migrate"),
+            "{err}"
+        );
+        // A clean flat farm (or one with no schema marker at all) locks.
+        assert!(lock(&temp_root(Some("4"))).is_ok());
+        assert!(lock(&temp_root(None)).is_ok());
+        // The migration's own lock skips the refusal.
+        assert!(lock_for_migration(&old).is_ok());
+    }
+
+    #[test]
+    fn a_status_move_edits_the_file_in_place() {
+        let root = temp_root(Some("4"));
+        write::save(&root, &task("y-0001", Status::Hairy)).unwrap();
+        assert_eq!(
+            move_task(&root, "y-0001", Status::Shorn, Some("me")).unwrap(),
+            MoveOutcome::Moved
+        );
+        let text = fs::read_to_string(task_path(&root, "y-0001")).unwrap();
+        assert!(text.contains("\nstatus: shorn\n"), "{text}");
+        assert!(text.trim_end().ends_with("moved: hairy -> shorn"), "{text}");
+        let entries: Vec<String> = fs::read_dir(&root)
+            .unwrap()
+            .flatten()
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .filter(|n| n != "schema")
+            .collect();
+        assert_eq!(entries, ["y-0001.md"], "still the one file, nothing else");
+    }
+
+    #[test]
+    fn paths_resolve_to_their_owning_yak_in_both_layouts() {
+        assert_eq!(path_owner("y-0001.md").as_deref(), Some("y-0001"));
+        assert_eq!(path_owner("y-0001/frame.svg").as_deref(), Some("y-0001"));
+        assert_eq!(path_owner("y-0001/sub/notes.md").as_deref(), Some("y-0001"));
+        assert_eq!(path_owner("shorn/y-0001.md").as_deref(), Some("y-0001"));
+        assert_eq!(
+            path_owner("artifacts/y-0001/a.png").as_deref(),
+            Some("y-0001")
+        );
+        for not_a_yak in [
+            "config.yaml",
+            "schema",
+            ".gitignore",
+            ".lock",
+            "artifacts/x",
+        ] {
+            assert_eq!(path_owner(not_a_yak), None, "{not_a_yak}");
+        }
+        assert_eq!(attachment_owner("y-0001.md"), None);
+        assert_eq!(attachment_owner("y-0001/a.png").as_deref(), Some("y-0001"));
+        assert_eq!(attachment_owner("hairy/y-0001.md"), None);
+        assert_eq!(
+            artifact_dir(Path::new("/f"), "y-0001"),
+            Path::new("/f/y-0001")
+        );
     }
 }

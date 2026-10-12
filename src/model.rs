@@ -1,10 +1,9 @@
 //! Core task model for yaks.
 //!
-//! Status is implicit from the
-//! directory the file lives in; parentage is a frontmatter field (flat,
-//! stable ids).
+//! Status and parentage are frontmatter fields (`status:`, `parent:`); every
+//! yak is one file at a stable path, `.yaks/<id>.md` (flat, stable ids).
 
-/// Lifecycle state, encoded by which directory a task file lives in.
+/// Lifecycle state, the frontmatter `status:` field.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Status {
     Hairy,
@@ -14,13 +13,28 @@ pub enum Status {
 }
 
 impl Status {
-    /// Directory name under `.yaks/` for this status.
+    /// The status's name (`hairy`, `shaving`, `shorn`, `dead`): what the
+    /// `status:` field holds. It is also the name of the status directory the
+    /// old (schema 3) layout kept the file in, read only by the transitional
+    /// legacy loader in `store`.
     pub fn dir(self) -> &'static str {
         match self {
             Status::Hairy => "hairy",
             Status::Shaving => "shaving",
             Status::Shorn => "shorn",
             Status::Dead => "dead",
+        }
+    }
+
+    /// Parse a `status:` value (exactly one of the names [`Status::dir`]
+    /// returns). `None` for anything else.
+    pub fn parse(s: &str) -> Option<Status> {
+        match s {
+            "hairy" => Some(Status::Hairy),
+            "shaving" => Some(Status::Shaving),
+            "shorn" => Some(Status::Shorn),
+            "dead" => Some(Status::Dead),
+            _ => None,
         }
     }
 

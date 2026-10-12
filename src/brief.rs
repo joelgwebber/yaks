@@ -411,9 +411,7 @@ mod tests {
 
     /// A farm directory with every status dir, a config and one saved yak.
     fn make_farm(root: &Path, config: &str, t: &Task) {
-        for st in [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead] {
-            std::fs::create_dir_all(root.join(st.dir())).unwrap();
-        }
+        std::fs::create_dir_all(&root).unwrap();
         std::fs::create_dir_all(root.join("artifacts/yak-0000")).unwrap();
         std::fs::write(root.join("artifacts/yak-0000/old.txt"), "x").unwrap();
         std::fs::write(root.join("config.yaml"), config).unwrap();

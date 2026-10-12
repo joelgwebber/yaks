@@ -1426,10 +1426,7 @@ fn main() -> Result<()> {
                 }
                 CreateOutcome::Created(t) => {
                     if json {
-                        let path = farm
-                            .root()
-                            .join(t.status.dir())
-                            .join(format!("{}.md", t.id));
+                        let path = store::task_path(farm.root(), &t.id);
                         json::print(&json::create_value(&t, &path))?;
                     } else {
                         println!("Created {}: {}", t.id, t.title);
@@ -2913,9 +2910,7 @@ mod tests {
         let parent = env::temp_dir().join(format!("yaks-path-{tag}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&parent);
         let root = parent.join(".yaks");
-        for st in [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead] {
-            std::fs::create_dir_all(root.join(st.dir())).unwrap();
-        }
+        std::fs::create_dir_all(&root).unwrap();
         for (n, st) in [
             (1, Status::Hairy),
             (2, Status::Shaving),
@@ -2958,14 +2953,10 @@ mod tests {
     #[test]
     fn path_resolves_a_yak_in_each_status_dir() {
         let (root, farm) = path_farm("each");
-        for (id, dir) in [
-            ("yak-0001", "hairy"),
-            ("yak-0002", "shaving"),
-            ("yak-0003", "shorn"),
-            ("yak-0004", "dead"),
-        ] {
+        // One flat path per yak, whatever its status.
+        for id in ["yak-0001", "yak-0002", "yak-0003", "yak-0004"] {
             let (code, out, _) = path_cmd(&farm, &[id], FilterFlags::default(), false);
-            let want = root.join(dir).join(format!("{id}.md"));
+            let want = root.join(format!("{id}.md"));
             assert_eq!(code, 0);
             assert_eq!(out, vec![want.display().to_string()]);
             assert!(want.is_file());
@@ -2973,14 +2964,12 @@ mod tests {
     }
 
     #[test]
-    fn path_follows_a_transition() {
+    fn path_is_stable_across_a_transition() {
         let (root, farm) = path_farm("move");
         let before = farm.path_of("yak-0001").unwrap();
-        std::fs::rename(&before, root.join("shorn/yak-0001.md")).unwrap();
-        assert_eq!(
-            farm.path_of("yak-0001").unwrap(),
-            root.join("shorn/yak-0001.md")
-        );
+        store::move_task(&root, "yak-0001", Status::Shorn, None).unwrap();
+        assert_eq!(farm.path_of("yak-0001").unwrap(), before);
+        assert_eq!(before, root.join("yak-0001.md"));
     }
 
     #[test]
@@ -2996,8 +2985,8 @@ mod tests {
         assert_eq!(
             out,
             vec![
-                root.join("shorn/yak-0003.md").display().to_string(),
-                root.join("hairy/yak-0001.md").display().to_string(),
+                root.join("yak-0003.md").display().to_string(),
+                root.join("yak-0001.md").display().to_string(),
             ]
         );
     }
@@ -3012,10 +3001,7 @@ mod tests {
             false,
         );
         assert_eq!(code, 1);
-        assert_eq!(
-            out,
-            vec![root.join("hairy/yak-0001.md").display().to_string()]
-        );
+        assert_eq!(out, vec![root.join("yak-0001.md").display().to_string()]);
         assert!(err.contains("no such task: yak-nope"), "{err}");
     }
 
@@ -3029,10 +3015,7 @@ mod tests {
         };
         let (code, out, _) = by(label, false);
         assert_eq!(code, 0);
-        assert_eq!(
-            out,
-            vec![root.join("shorn/yak-0003.md").display().to_string()]
-        );
+        assert_eq!(out, vec![root.join("yak-0003.md").display().to_string()]);
 
         // Dead yaks are excluded by default, included with --all, and always
         // reachable by an explicit --status dead.
@@ -3048,7 +3031,7 @@ mod tests {
         };
         assert_eq!(
             by(dead, false).1,
-            vec![root.join("dead/yak-0004.md").display().to_string()]
+            vec![root.join("yak-0004.md").display().to_string()]
         );
     }
 

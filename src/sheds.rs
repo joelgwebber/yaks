@@ -907,9 +907,10 @@ fn base_farm(
     let rel = rel.to_str()?.replace('\\', "/");
     let short = git(top, &["rev-parse", "--short", &base]).ok()?;
 
-    // Status-dir task files only: `<rel>/<status>/<id>.md`.
+    // Task files only: `<rel>/<id>.md` (the flat layout), or (transitional)
+    // the old layout's `<rel>/<status>/<id>.md`; attachments are skipped.
     let tree = git_raw(top, &["ls-tree", "-r", "-z", &base, "--", &rel]).ok()?;
-    let mut files: Vec<(&str, String)> = Vec::new(); // (blob sha, "<status>/<file>")
+    let mut files: Vec<(&str, String)> = Vec::new(); // (blob sha, path under the farm)
     for entry in tree.split('\0').filter(|e| !e.is_empty()) {
         let (meta, path) = entry.split_once('\t')?;
         let mut m = meta.split(' ');
@@ -920,12 +921,14 @@ fn base_farm(
         let Some(under) = path.strip_prefix(&rel).and_then(|p| p.strip_prefix('/')) else {
             continue;
         };
-        let mut parts = under.split('/');
-        let (Some(dir), Some(file), None) = (parts.next(), parts.next(), parts.next()) else {
-            continue;
+        let parts: Vec<&str> = under.split('/').collect();
+        let keep = match parts.as_slice() {
+            [file] => file.ends_with(".md"),
+            [dir, file] => file.ends_with(".md") && store::legacy::is_status_dir(dir),
+            _ => false,
         };
-        if file.ends_with(".md") && EVERY.iter().any(|s| s.dir() == dir) {
-            files.push((sha, format!("{dir}/{file}")));
+        if keep {
+            files.push((sha, under.to_string()));
         }
     }
     if files.is_empty() {

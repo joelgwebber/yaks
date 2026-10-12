@@ -86,7 +86,7 @@ fn plain_init_is_unchanged_and_hints_at_skills() {
     assert!(out.contains("Initialized empty yaks farm in"), "{out}");
     assert!(out.contains("yaks init --skills default"), "{out}");
     assert!(out.contains("yaks skills install"), "{out}");
-    assert!(r.join(".yaks/hairy").is_dir());
+    assert!(r.join(".yaks/schema").is_file());
     assert!(!r.join(".agents").exists(), "plain init installs no skills");
     assert_eq!(
         exclude(&r).lines().filter(|l| l.starts_with('/')).count(),
@@ -109,7 +109,7 @@ fn team_mode_creates_the_farm_and_skills_as_ordinary_project_files() {
     let r = repo("team");
     let out = ok(&r, &["init", "--mode", "team", "--skills", "default"]);
     assert!(out.contains("ordinary project files"), "{out}");
-    assert!(r.join(".yaks/hairy").is_dir());
+    assert!(r.join(".yaks/schema").is_file());
     assert!(r.join(".agents/skills/yaks/SKILL.md").is_file());
     assert!(r.join(".agents/skills/yaks-tracker/SKILL.md").is_file());
     let st = status(&r);
@@ -129,7 +129,7 @@ fn team_mode_creates_the_farm_and_skills_as_ordinary_project_files() {
 fn private_mode_keeps_farm_and_skills_out_of_git() {
     let r = repo("private");
     let out = ok(&r, &["init", "--mode", "private", "--skills", "default"]);
-    assert!(r.join(".yaks/hairy").is_dir());
+    assert!(r.join(".yaks/schema").is_file());
     assert!(r.join(".agents/skills/yaks/SKILL.md").is_file());
     assert_eq!(status(&r), "", "nothing of init may show in git status");
     let ex = exclude(&r);
@@ -183,7 +183,7 @@ fn pointer_mode_creates_the_farm_at_the_path_and_discovery_follows_it() {
         ],
     );
     assert!(
-        farm_dir.join(".yaks/hairy").is_dir(),
+        farm_dir.join(".yaks/schema").is_file(),
         "farm created at the path"
     );
     let pointer = std::fs::read_to_string(r.join(".yaks")).unwrap();
@@ -406,7 +406,7 @@ fn private_and_pointer_outside_git_are_clear_errors() {
     assert!(!d.join(".yaks").exists(), "a refused init writes nothing");
     // A team farm with no skills needs no git.
     ok(&d, &["init", "--mode", "team", "--skills", "none"]);
-    assert!(d.join(".yaks/hairy").is_dir());
+    assert!(d.join(".yaks/schema").is_file());
 }
 
 #[test]

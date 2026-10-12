@@ -262,8 +262,8 @@ fn create_positional_title_and_json() {
     assert_eq!(v["title"], "from json");
     let path = v["path"].as_str().expect("path string");
     assert!(
-        path.ends_with(&format!("hairy/{id}.md")),
-        "path {path} should end with hairy/{id}.md"
+        path.ends_with(&format!(".yaks/{id}.md")),
+        "path {path} should end with .yaks/{id}.md"
     );
     assert!(
         std::path::Path::new(path).is_file(),
@@ -745,7 +745,7 @@ fn labels_normalized_on_create_update_bulk_and_doctor() {
     assert!(dry.contains("add labels [p, q]"), "{dry}");
 
     // A legacy on-disk comma label: doctor flags it (non-zero exit)...
-    let path = dir.join(format!(".yaks/hairy/{a}.md"));
+    let path = dir.join(format!(".yaks/{a}.md"));
     let text = std::fs::read_to_string(&path).unwrap();
     std::fs::write(&path, text.replacen("- bar\n", "- ui,docs\n", 1)).unwrap();
     let (ok, out) = raw(&["doctor"]);

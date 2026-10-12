@@ -1,0 +1,49 @@
+== this repo's schema-3 farm, new binary: reads
+warning: farm schema v3 predates this yaks (v4): reading the old layout; writes refuse until you run `yaks migrate` and commit the result.
+  [S] yaks-64c4  p4 idea     Yak archaeology: fast retrieval of past reasoning & provenance stitching [cli,search]
+  [S] yaks-77a5  p3 task     Case study: reconstruct the 2026-09-23 UI lightning round (11 lanes + 3 scouts) [ui]
+  [S] yaks-8b7a  p1 task     Decision: status as a frontmatter field (one stable path per yak) vs status directories [design,cli]
+warning: farm schema v3 predates this yaks (v4): reading the old layout; writes refuse until you run `yaks migrate` and commit the result.
+id:       yaks-95be
+title:    Flat farm, phase 1: store seam (flat paths, dual-layout reads, status field, schema 4)
+status:   Shaving
+== a write refuses
+warning: farm schema v3 predates this yaks (v4): reading the old layout; writes refuse until you run `yaks migrate` and commit the result.
+Error: /Users/joel/src/yaks/.delta/worktrees/mjgxvtvdt1a0/yaks/.yaks is schema v3 (yak status directories), and this yaks writes only the flat layout (schema v4): run `yaks migrate` there and commit the result (reads still work meanwhile)
+exit=1
+ M src/brief.rs
+ M src/farm.rs
+ M src/main.rs
+(nothing written: git status above should be empty)
+== a fresh flat farm
+.yaks/.gitignore
+.yaks/.lock
+.yaks/config.yaml
+.yaks/schema
+.yaks/yak-35c0.md
+--- the file:
+---
+id: yak-35c0
+title: first flat yak
+status: shorn
+type: task
+priority: 3
+created: '2026-10-12T20:18:14Z'
+updated: '2026-10-12T20:18:15Z'
+---
+
+---
+▸ 2026-10-12T20:18:15Z [delta:Yak Shedding]
+moved: hairy -> shaving
+
+---
+▸ 2026-10-12T20:18:15Z [delta:Yak Shedding]
+a note
+
+---
+▸ 2026-10-12T20:18:15Z [delta:Yak Shedding]
+moved: shaving -> shorn
+--- path:
+/private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-scratch-.delta-fs-56rqMw/flat/.yaks/yak-35c0.md
+  [N] yak-35c0  p3 task     first flat yak
+All clear: no farm-integrity issues found.

@@ -162,10 +162,16 @@ fn git_state(root: &Path, report: &mut Report) -> Result<Option<BTreeSet<String>
     Ok(Some(changed))
 }
 
-/// The yak a farm path belongs to: `.yaks/<status>/<id>.md` or
-/// `.yaks/artifacts/<id>/...` (the farm may sit below the repo root).
+/// The yak a repository path belongs to: `.yaks/<id>.md`, an attachment
+/// `.yaks/<id>/...`, or (transitional) the old `.yaks/<status>/<id>.md` and
+/// `.yaks/artifacts/<id>/...` (the farm may sit below the repo root). A
+/// committed farm is always a `.yaks/` directory, so everything after the last
+/// `.yaks` component is relative to the farm root ([`store::path_owner`]).
 pub(crate) fn yak_id_of(path: &str) -> Option<String> {
     let parts: Vec<&str> = path.split('/').collect();
+    if let Some(i) = parts.iter().rposition(|p| *p == ".yaks") {
+        return crate::store::path_owner(&parts[i + 1..].join("/"));
+    }
     if let Some(i) = parts.iter().position(|p| *p == "artifacts") {
         return parts
             .get(i + 1)
@@ -429,9 +435,7 @@ mod tests {
             SEQ.fetch_add(1, Ordering::Relaxed)
         ));
         let root = repo.join(".yaks");
-        for st in ALL {
-            std::fs::create_dir_all(root.join(st.dir())).unwrap();
-        }
+        std::fs::create_dir_all(&root).unwrap();
         std::fs::write(root.join("config.yaml"), "herd: yak\n").unwrap();
         // An already-committed artifact dir, as in a real farm (git collapses an
         // untracked dir to its topmost new directory).
@@ -511,7 +515,7 @@ mod tests {
         git(&repo, &["add", "."]);
         git(&repo, &["commit", "-q", "-m", "add yak"]);
         assert!(run(&farm, &[], false, false).unwrap().ok());
-        let file = repo.join(".yaks/hairy/yak-0001.md");
+        let file = repo.join(".yaks/yak-0001.md");
         let text = std::fs::read_to_string(&file).unwrap();
         std::fs::write(&file, format!("{text}\nedited\n")).unwrap();
         let f = failures(&farm, &[], Check::GitState);
@@ -618,8 +622,15 @@ mod tests {
     fn yak_in_two_status_dirs_fails() {
         let (repo, farm) = team_repo();
         let root = repo.join(".yaks");
-        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
-        store::write::save(&root, &task("yak-0001", Status::Shorn)).unwrap();
+        // Two old-layout copies (the add/add merge hazard of the old layout).
+        for st in [Status::Hairy, Status::Shorn] {
+            std::fs::create_dir_all(root.join(st.dir())).unwrap();
+            std::fs::write(
+                root.join(st.dir()).join("yak-0001.md"),
+                store::write::render(&task("yak-0001", st)),
+            )
+            .unwrap();
+        }
         git(&repo, &["add", "."]);
         let f = failures(&farm, &[], Check::DuplicateStatus);
         assert_eq!(f.len(), 1, "{f:?}");

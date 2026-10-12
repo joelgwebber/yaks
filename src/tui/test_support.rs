@@ -118,9 +118,7 @@ pub(crate) fn temp_farm(tasks: &[Task]) -> (PathBuf, Farm) {
     let n = SEQ.fetch_add(1, Ordering::Relaxed);
     proj.push(format!("yaksrs-tui-{}-{}", std::process::id(), n));
     let root = proj.join(".yaks");
-    for st in [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead] {
-        fs::create_dir_all(root.join(st.dir())).unwrap();
-    }
+    std::fs::create_dir_all(&root).unwrap();
     fs::write(root.join("schema"), SCHEMA.to_string()).unwrap();
     // A default herd, so TUI creates have somewhere to go (`create` errors
     // rather than fall back to an implicit `yak-`; yaks-b47b).

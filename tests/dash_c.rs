@@ -136,7 +136,7 @@ fn init_and_discover_honor_c() {
     git(&dir, &["init", "-q"]);
     let elsewhere = tmp("init-elsewhere");
     yaks(&elsewhere, &["-C", dir.to_str().unwrap(), "init"]);
-    assert!(dir.join(".yaks/hairy").is_dir());
+    assert!(dir.join(".yaks/schema").is_file());
     assert!(!elsewhere.join(".yaks").exists());
     let out = yaks(
         &elsewhere,

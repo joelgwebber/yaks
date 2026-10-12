@@ -532,7 +532,8 @@ impl Farm {
                 });
             }
             SchemaStatus::Older(v) => Some(format!(
-                "farm schema v{v} predates this yaks (v{}); reading best-effort.",
+                "farm schema v{v} predates this yaks (v{}): reading the old layout; writes \
+                 refuse until you run `yaks migrate` and commit the result.",
                 store::SCHEMA
             )),
             SchemaStatus::Compatible => None,
@@ -905,7 +906,7 @@ impl Farm {
         Ok(self
             .list(spec, include_dead)?
             .iter()
-            .map(|t| self.root.join(t.status.dir()).join(format!("{}.md", t.id)))
+            .map(|t| store::task_path(&self.root, &t.id))
             .collect())
     }
 
@@ -1315,10 +1316,9 @@ impl Farm {
             }
             // Remove each vacated subject file, unless its id is reused as a
             // rename target (a swap/chain, which stays put under its new writer).
-            for (st, old, _next) in &writes {
+            for (_st, old, _next) in &writes {
                 if map.contains_key(old) && !targets.contains(old) {
-                    let p = self.root.join(st.dir()).join(format!("{old}.md"));
-                    let _ = std::fs::remove_file(p);
+                    let _ = std::fs::remove_file(store::task_path(&self.root, old));
                 }
             }
         }
@@ -1614,21 +1614,14 @@ impl Farm {
         }
         // A dry run only reads; a real merge writes into this farm.
         let _lock = (!dry_run).then(|| store::lock(&self.root)).transpose()?;
-        // Every source yak, by walking each status dir (file stem = id), kept as
-        // raw bytes so frontmatter/body round-trip exactly.
+        // Every source yak, in either layout (an old-layout source is read
+        // too): `(id, status, its file)`. A flat file is copied as raw bytes so
+        // frontmatter and body round-trip exactly; an old-layout one is
+        // rewritten flat, with its `status:`.
         let mut found: Vec<(String, Status, PathBuf)> = Vec::new();
-        for st in [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead] {
-            let Ok(rd) = std::fs::read_dir(src_root.join(st.dir())) else {
-                continue;
-            };
-            for entry in rd.flatten() {
-                let p = entry.path();
-                if p.extension().and_then(|e| e.to_str()) != Some("md") {
-                    continue;
-                }
-                if let Some(stem) = p.file_stem().and_then(|s| s.to_str()) {
-                    found.push((stem.to_string(), st, p));
-                }
+        for t in store::load(&src_root, &EVERY)? {
+            if let Some((st, p)) = store::find_task_file(&src_root, &t.id) {
+                found.push((t.id, st, p));
             }
         }
         // Refuse if any id already lives in the destination (would clobber).
@@ -1667,12 +1660,18 @@ impl Farm {
         incoming.sort();
         let mut herds = incoming;
         if !dry_run {
-            for (_id, st, path) in &found {
-                let dest_dir = self.root.join(st.dir());
-                std::fs::create_dir_all(&dest_dir)?;
-                let name = path.file_name().expect("md file has a name");
-                std::fs::copy(path, dest_dir.join(name))
-                    .with_context(|| format!("copying {}", path.display()))?;
+            for (id, st, path) in &found {
+                if *path == store::task_path(&src_root, id) {
+                    std::fs::copy(path, store::task_path(&self.root, id))
+                        .with_context(|| format!("copying {}", path.display()))?;
+                } else {
+                    let text = std::fs::read_to_string(path)
+                        .with_context(|| format!("reading {}", path.display()))?;
+                    let mut task = store::parse_task(&text, *st)
+                        .with_context(|| format!("parsing {}", path.display()))?;
+                    task.status = *st;
+                    store::write::save(&self.root, &task)?;
+                }
             }
             for id in &artifacts {
                 copy_dir_all(
@@ -1758,9 +1757,10 @@ fn fold_counts<K: std::hash::Hash + Eq, I: Iterator<Item = K>>(it: I) -> Vec<(K,
 /// directory itself or a directory that contains one.
 fn resolve_farm_root(p: &Path) -> Option<PathBuf> {
     let is_farm = |d: &Path| {
-        [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead]
-            .iter()
-            .any(|st| d.join(st.dir()).is_dir())
+        d.join("config.yaml").is_file()
+            || d.join("schema").is_file()
+            || store::legacy::is_farm(d)
+            || store::load(d, &EVERY).is_ok_and(|t| !t.is_empty())
     };
     if is_farm(p) {
         return Some(p.to_path_buf());
@@ -1793,15 +1793,22 @@ mod tests {
 
     static SEQ: AtomicU64 = AtomicU64::new(0);
 
+    /// Yak `id` exists in `root` with status `st` (the file's own `status:`).
+    fn at(root: &Path, id: &str, st: Status) -> bool {
+        store::load_task_by_id(root, id)
+            .ok()
+            .flatten()
+            .is_some_and(|t| t.status == st)
+    }
+
     /// A temp farm (a `.yaks/` under a fresh parent dir) plus an open handle.
     fn temp_farm() -> (PathBuf, Farm) {
         let mut parent = std::env::temp_dir();
         let n = SEQ.fetch_add(1, Ordering::Relaxed);
         parent.push(format!("yaksrs-farm-refs-{}-{}", std::process::id(), n));
         let root = parent.join(".yaks");
-        for st in [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead] {
-            std::fs::create_dir_all(root.join(st.dir())).unwrap();
-        }
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(root.join("schema"), format!("{}\n", store::SCHEMA)).unwrap();
         let farm = match Farm::open(&parent) {
             Ok(h) => h,
             Err(_) => panic!("failed to open temp farm at {parent:?}"),
@@ -2159,12 +2166,12 @@ mod tests {
         };
         assert!(plan.applied && plan.yaks.len() == 2);
         // Each landed under its original status dir, and both now resolve.
-        assert!(dest_root.join("hairy").join(format!("{a}.md")).is_file());
-        assert!(dest_root.join("shorn").join(format!("{b}.md")).is_file());
+        assert!(at(&dest_root, &a, Status::Hairy));
+        assert!(at(&dest_root, &b, Status::Shorn));
         let ids = store::all_ids(&dest_root);
         assert!(ids.contains(&a) && ids.contains(&b));
         // Non-destructive: the source keeps its files.
-        assert!(src_root.join("hairy").join(format!("{a}.md")).is_file());
+        assert!(at(&src_root, &a, Status::Hairy));
     }
 
     #[test]
@@ -2331,8 +2338,8 @@ mod tests {
         );
 
         // Subject file moved.
-        assert!(root.join("hairy/yaks-0001.md").is_file());
-        assert!(!root.join("hairy/yaksrs-0001.md").exists());
+        assert!(at(&root, "yaks-0001", Status::Hairy));
+        assert!(!store::task_path(&root, "yaksrs-0001").exists());
 
         // Every referring surface updated; the non-id lookalike is left alone.
         let c = store::load_task_by_id(&root, "yaksrs-0002")
@@ -2365,8 +2372,8 @@ mod tests {
         store::write::save(&root, &task("yaksrs-0001", Status::Hairy)).unwrap();
         let plan = done(farm.rename("yaksrs-0001", "yaks-0001", true).unwrap());
         assert!(!plan.applied);
-        assert!(root.join("hairy/yaksrs-0001.md").is_file());
-        assert!(!root.join("hairy/yaks-0001.md").exists());
+        assert!(at(&root, "yaksrs-0001", Status::Hairy));
+        assert!(!store::task_path(&root, "yaks-0001").exists());
     }
 
     #[test]
@@ -2383,10 +2390,10 @@ mod tests {
         ];
         let plan = done(farm.rename_many(&pairs, false).unwrap());
         assert_eq!(plan.renames.len(), 2);
-        assert!(root.join("hairy/yaks-0001.md").is_file());
-        assert!(root.join("shorn/yaks-0002.md").is_file());
-        assert!(!root.join("hairy/yaksrs-0001.md").exists());
-        assert!(!root.join("shorn/yaksrs-0002.md").exists());
+        assert!(at(&root, "yaks-0001", Status::Hairy));
+        assert!(at(&root, "yaks-0002", Status::Shorn));
+        assert!(!store::task_path(&root, "yaksrs-0001").exists());
+        assert!(!store::task_path(&root, "yaksrs-0002").exists());
         let b2 = store::load_task_by_id(&root, "yaks-0002").unwrap().unwrap();
         assert_eq!(b2.depends_on, vec!["yaks-0001".to_string()]);
     }
@@ -2404,9 +2411,9 @@ mod tests {
         let plan = done(farm.rename_prefix("yaksrs", "yaks", false).unwrap());
         let news: Vec<&str> = plan.renames.iter().map(|(_, n)| n.as_str()).collect();
         assert_eq!(news, vec!["yaks-0001", "yaks-0002"]);
-        assert!(root.join("hairy/yaks-0001.md").is_file());
-        assert!(root.join("hairy/yaks-abcd.md").is_file()); // untouched
-        assert!(!root.join("hairy/yaksrs-0001.md").exists());
+        assert!(at(&root, "yaks-0001", Status::Hairy));
+        assert!(at(&root, "yaks-abcd", Status::Hairy)); // untouched
+        assert!(!store::task_path(&root, "yaksrs-0001").exists());
         let b2 = store::load_task_by_id(&root, "yaks-0002").unwrap().unwrap();
         assert_eq!(b2.depends_on, vec!["yaks-0001".to_string()]);
         assert_eq!(store::read_config(&root).prefix, "yaks");
@@ -2419,7 +2426,7 @@ mod tests {
         let plan = done(farm.rename_prefix("yaksrs", "yaks", true).unwrap());
         assert!(!plan.applied);
         assert!(!root.join("config.yaml").exists());
-        assert!(root.join("hairy/yaksrs-0001.md").is_file());
+        assert!(at(&root, "yaksrs-0001", Status::Hairy));
     }
 
     /// Slaughtering a parent with live descendants is refused (listing them)
@@ -2443,10 +2450,7 @@ mod tests {
             farm.slaughter("yak-0001", false, None).unwrap(),
             SlaughterOutcome::HasLiveDescendants(vec!["yak-0003".into(), "yak-0002".into()])
         );
-        assert!(
-            root.join("hairy/yak-0001.md").is_file(),
-            "guard must not move"
-        );
+        assert!(at(&root, "yak-0001", Status::Hairy), "guard must not move");
 
         assert_eq!(
             farm.slaughter("yak-0001", true, None).unwrap(),
@@ -2457,12 +2461,9 @@ mod tests {
             ])
         );
         for id in ["yak-0001", "yak-0002", "yak-0003", "yak-0004"] {
-            assert!(root.join(format!("dead/{id}.md")).is_file(), "{id} dead");
+            assert!(at(&root, id, Status::Dead), "{id} dead");
         }
-        assert!(
-            root.join("hairy/yak-0005.md").is_file(),
-            "non-family untouched"
-        );
+        assert!(at(&root, "yak-0005", Status::Hairy), "non-family untouched");
 
         assert_eq!(
             farm.slaughter("yak-0001", true, None).unwrap(),
@@ -2496,8 +2497,8 @@ mod tests {
             }
         }
         assert!(!any_failed, "an all-valid batch must not flag failure");
-        assert!(root.join("shorn/yak-0001.md").is_file());
-        assert!(root.join("shorn/yak-0002.md").is_file());
+        assert!(at(&root, "yak-0001", Status::Shorn));
+        assert!(at(&root, "yak-0002", Status::Shorn));
 
         // Partial failure: good id moves, missing id reports NotFound. The batch
         // must not abort on the first error, so the good id still moves.
@@ -2517,7 +2518,7 @@ mod tests {
             "a missing id must flag the batch (non-zero exit)"
         );
         assert!(
-            root.join("shorn/yak-0003.md").is_file(),
+            at(&root, "yak-0003", Status::Shorn),
             "the valid id must move despite a sibling failure"
         );
     }
@@ -2553,8 +2554,15 @@ mod tests {
     #[test]
     fn doctor_flags_same_id_in_two_status_dirs() {
         let (root, farm) = temp_farm();
-        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
-        store::write::save(&root, &task("yak-0001", Status::Shorn)).unwrap();
+        // Two old-layout copies (the add/add merge hazard of the old layout).
+        for st in [Status::Hairy, Status::Shorn] {
+            std::fs::create_dir_all(root.join(st.dir())).unwrap();
+            std::fs::write(
+                root.join(st.dir()).join("yak-0001.md"),
+                store::write::render(&task("yak-0001", st)),
+            )
+            .unwrap();
+        }
 
         let issues = farm.doctor(false).unwrap();
         assert_eq!(issues.len(), 1, "one duplicated id -> one clash");
@@ -2859,6 +2867,6 @@ mod tests {
             farm.rename_prefix("old", "new", false).unwrap(),
             RenameOutcome::Done(_)
         ));
-        assert!(root.join("hairy/new-0001.md").is_file());
+        assert!(at(&root, "new-0001", Status::Hairy));
     }
 }
