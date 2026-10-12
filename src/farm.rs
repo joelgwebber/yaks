@@ -16,7 +16,7 @@ use crate::filter::{self, FilterSpec};
 use crate::model::{NEEDS_AGENT, Status, Task, is_canonical_label, normalize_labels};
 use crate::refs;
 use crate::rollup;
-use crate::store::{self, SchemaStatus};
+use crate::store;
 
 pub use crate::store::{DepOutcome, MoveOutcome, Reparent};
 
@@ -134,15 +134,19 @@ pub enum Pickup {
 /// Why opening a farm failed.
 pub enum OpenError {
     NoFarm(String),
-    SchemaTooNew { found: u32, supported: u32 },
+    SchemaTooNew {
+        found: u32,
+        supported: u32,
+    },
+    /// The farm is on the old layout (schema 3); the message says which farm
+    /// and the one remedy.
+    OldLayout(String),
 }
 
 /// A handle to one `.yaks/` farm. Cheap to construct; holds no cache yet
 /// (leaves room for a future stat-validated index without changing callers).
 pub struct Farm {
     root: PathBuf,
-    /// Set when the farm's schema predates this build (best-effort read).
-    pub schema_warning: Option<String>,
     /// This repo's default herd (id prefix), when discovery followed a `.yaks`
     /// pointer file carrying `prefix:`. Used by `create` below an explicit
     /// `--prefix` and above the farm's config default.
@@ -465,17 +469,11 @@ pub struct Issue {
 /// The classes of problem `doctor` looks for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IssueKind {
-    /// One id living in more than one status dir at once (the old layout) —
-    /// the add/add merge hazard where a yak was moved on two branches.
-    DuplicateStatus,
-    /// One id as a flat `<id>.md` AND as a file in an old status dir: a
-    /// half-migrated farm, or an old binary writing after `yaks migrate`.
-    /// Transitional (yaks-bbda removes it with the old layout).
-    BothLayouts,
     /// A yak file whose `status:` line is not one of the four statuses (read
     /// as hairy meanwhile).
     InvalidStatus,
-    /// The same id parsed from two files in a single status dir.
+    /// The same `id:` in the frontmatter of two yak files (say a hand copy, or
+    /// a merge that kept both).
     DuplicateId,
     /// A task whose `parent` names an id no task has.
     DanglingParent,
@@ -500,8 +498,6 @@ impl IssueKind {
     /// A short, stable machine label (used for `--json` and grouping).
     pub fn code(self) -> &'static str {
         match self {
-            IssueKind::DuplicateStatus => "duplicate-status",
-            IssueKind::BothLayouts => "both-layouts",
             IssueKind::InvalidStatus => "invalid-status",
             IssueKind::DuplicateId => "duplicate-id",
             IssueKind::DanglingParent => "dangling-parent",
@@ -515,16 +511,10 @@ impl IssueKind {
     /// A human heading for grouped CLI output.
     pub fn heading(self) -> &'static str {
         match self {
-            IssueKind::DuplicateStatus => {
-                "Duplicate status (same id in multiple old-layout status dirs)"
-            }
-            IssueKind::BothLayouts => {
-                "Both layouts (same id as .yaks/<id>.md and in an old status dir)"
-            }
             IssueKind::InvalidStatus => {
                 "Invalid status (status: is not hairy, shaving, shorn or dead)"
             }
-            IssueKind::DuplicateId => "Duplicate id (same id twice in one status dir)",
+            IssueKind::DuplicateId => "Duplicate id (same id: in two yak files)",
             IssueKind::DanglingParent => "Dangling parent",
             IssueKind::DanglingDependsOn => "Dangling depends_on",
             IssueKind::MissingEvidence => "Missing evidence (shorn yak with no recorded note)",
@@ -541,23 +531,17 @@ impl Farm {
     pub fn open(cwd: &Path) -> std::result::Result<Farm, OpenError> {
         let found = store::discover(cwd).map_err(|e| OpenError::NoFarm(e.to_string()))?;
         let root = found.root;
-        let schema_warning = match store::schema_status(&root) {
-            SchemaStatus::Newer(found) => {
-                return Err(OpenError::SchemaTooNew {
-                    found,
-                    supported: store::SCHEMA,
-                });
-            }
-            SchemaStatus::Older(v) => Some(format!(
-                "farm schema v{v} predates this yaks (v{}): reading the old layout; writes \
-                 refuse until you run `yaks migrate` and commit the result.",
-                store::SCHEMA
-            )),
-            SchemaStatus::Compatible => None,
-        };
+        if let store::SchemaStatus::Newer(found) = store::schema_status(&root) {
+            return Err(OpenError::SchemaTooNew {
+                found,
+                supported: store::SCHEMA,
+            });
+        }
+        if let Some(why) = store::old_layout_refusal(&root) {
+            return Err(OpenError::OldLayout(why));
+        }
         Ok(Farm {
             root,
-            schema_warning,
             pointer_prefix: found.prefix,
         })
     }
@@ -729,7 +713,7 @@ impl Farm {
         if same(&found.root, &self.root) {
             bail!("shed {name} shares this checkout's farm; use plain `yaks answer {id}`");
         }
-        if let SchemaStatus::Newer(v) = store::schema_status(&found.root) {
+        if let store::SchemaStatus::Newer(v) = store::schema_status(&found.root) {
             bail!(
                 "shed {name}'s farm is schema v{v}, newer than this yaks (v{})",
                 store::SCHEMA
@@ -737,7 +721,6 @@ impl Farm {
         }
         let theirs = Farm {
             root: found.root,
-            schema_warning: None,
             pointer_prefix: None,
         };
         let Some(change) = theirs.answer(id, actor, note, done)? else {
@@ -1037,9 +1020,7 @@ impl Farm {
     /// (by kind, then id) so text and `--json` output are stable and
     /// CI-diffable.
     ///
-    /// v1 checks: an id in both layouts (a flat file plus an old status-dir
-    /// copy), an id in two old status dirs at once (the add/add merge hazard),
-    /// an invalid `status:` value, the same id twice inside one status dir,
+    /// Checks: an invalid `status:` value, the same `id:` in two yak files,
     /// and `parent` / `depends_on` references that point at no known yak.
     ///
     /// `strict` adds a skill-adherence check: any shorn yak lacking a recorded
@@ -1049,76 +1030,25 @@ impl Farm {
         let known = store::all_ids(&self.root);
         let mut issues = Vec::new();
 
-        // id -> the statuses it was loaded under (one entry per file on disk).
-        // A well-formed farm has exactly one file, hence one status, per id.
-        let mut by_id: std::collections::BTreeMap<&str, Vec<Status>> =
+        // One pass over the yak files themselves (the loader falls back
+        // silently, so only each file's text can say): a `status:` line that is
+        // not one of the four values, and the same `id:` in two files.
+        let mut files_by_id: std::collections::BTreeMap<String, Vec<String>> =
             std::collections::BTreeMap::new();
-        for t in &tasks {
-            by_id.entry(t.id.as_str()).or_default().push(t.status);
-        }
-        for (id, statuses) in &by_id {
-            let mut distinct = statuses.clone();
-            distinct.sort_by_key(|s| rank(*s));
-            distinct.dedup();
-            if distinct.len() > 1 {
-                let dirs: Vec<&str> = distinct.iter().map(|s| s.dir()).collect();
-                issues.push(Issue {
-                    kind: IssueKind::DuplicateStatus,
-                    message: format!(
-                        "{id} is in {} status dirs at once: {}",
-                        dirs.len(),
-                        dirs.join(", ")
-                    ),
-                    ids: vec![(*id).to_string()],
-                });
-            } else if statuses.len() > 1 {
-                issues.push(Issue {
-                    kind: IssueKind::DuplicateId,
-                    message: format!(
-                        "{id} appears {} times in {}/",
-                        statuses.len(),
-                        distinct[0].dir()
-                    ),
-                    ids: vec![(*id).to_string()],
-                });
-            }
-        }
-
-        // Layout integrity (transitional, with the old layout: yaks-bbda). An id
-        // as a flat `<id>.md` AND in an old status dir is a half-migrated farm
-        // (or an old binary that wrote after `yaks migrate`); `load` shows only
-        // the flat copy, so this reads the files themselves.
-        let flat = flat_ids(&self.root);
-        let mut both: Vec<String> = store::legacy::ids(&self.root)
-            .into_iter()
-            .filter(|id| flat.contains(id))
-            .collect();
-        both.sort();
-        for id in both {
-            issues.push(Issue {
-                kind: IssueKind::BothLayouts,
-                message: format!(
-                    "{id} is both .yaks/{id}.md and a file in an old status dir \
-                     (run `yaks migrate`, or delete the stale copy)"
-                ),
-                ids: vec![id],
-            });
-        }
-
-        // A `status:` line that is not one of the four values (the loader
-        // falls back silently, so only the file's text can say).
-        let mut files = flat_files(&self.root);
-        files.extend(store::legacy::files(&self.root).into_iter().map(|(_, p)| p));
-        for path in files {
+        for path in flat_files(&self.root) {
             let Ok(text) = std::fs::read_to_string(&path) else {
                 continue;
             };
+            let name = path
+                .file_name()
+                .and_then(|s| s.to_str())
+                .unwrap_or_default()
+                .to_string();
+            if let Some(task) = store::parse_task(&text, Status::Hairy) {
+                files_by_id.entry(task.id).or_default().push(name.clone());
+            }
             if let Some(value) = invalid_status_value(&text) {
-                let id = path
-                    .file_stem()
-                    .and_then(|s| s.to_str())
-                    .unwrap_or_default()
-                    .to_string();
+                let id = name.trim_end_matches(".md").to_string();
                 issues.push(Issue {
                     kind: IssueKind::InvalidStatus,
                     message: format!(
@@ -1128,6 +1058,17 @@ impl Farm {
                     ids: vec![id],
                 });
             }
+        }
+        for (id, names) in files_by_id.into_iter().filter(|(_, n)| n.len() > 1) {
+            issues.push(Issue {
+                kind: IssueKind::DuplicateId,
+                message: format!(
+                    "{id} is the id: of {} files: {}",
+                    names.len(),
+                    names.join(", ")
+                ),
+                ids: vec![id],
+            });
         }
 
         // Dangling references: a `parent` or `depends_on` naming no known id.
@@ -1188,7 +1129,7 @@ impl Farm {
                         message: format!(
                             "{} is {} but has no recorded note (evidence before shear)",
                             t.id,
-                            t.status.dir()
+                            t.status.as_str()
                         ),
                         ids: vec![t.id.clone()],
                     });
@@ -1679,11 +1620,11 @@ impl Farm {
         store::reparent(&self.root, id, new_parent)
     }
 
-    /// Merge every yak from the farm at `source` (either layout) into this
-    /// one, preserving each yak's status and, for a flat source, its file
-    /// bytes verbatim, and copying its attachment dir (`<id>/`, or the old
-    /// layout's `artifacts/<id>/`) alongside. Non-destructive: the source is left intact
-    /// (remove or symlink it yourself once satisfied). Refuses on any id
+    /// Merge every yak from the farm at `source` into this one, preserving
+    /// each yak's status and file bytes verbatim, and copying its attachment
+    /// dir (`<id>/`) alongside. A source on the old layout is refused (see
+    /// [`store::old_layout_refusal`]). Non-destructive: the source is left
+    /// intact (remove or symlink it yourself once satisfied). Refuses on any id
     /// collision — unique prefixes per herd make these rare; reconcile a clash
     /// with `rename-prefix` in the source first. `dry_run` reports the plan
     /// without writing.
@@ -1691,6 +1632,9 @@ impl Farm {
         let Some(src_root) = resolve_farm_root(source) else {
             return Ok(MergeOutcome::NoSource(source.display().to_string()));
         };
+        if let Some(why) = store::old_layout_refusal(&src_root) {
+            bail!("{why}");
+        }
         if let (Ok(a), Ok(b)) = (
             std::fs::canonicalize(&src_root),
             std::fs::canonicalize(&self.root),
@@ -1701,10 +1645,8 @@ impl Farm {
         }
         // A dry run only reads; a real merge writes into this farm.
         let _lock = (!dry_run).then(|| store::lock(&self.root)).transpose()?;
-        // Every source yak, in either layout (an old-layout source is read
-        // too): `(id, status, its file)`. A flat file is copied as raw bytes so
-        // frontmatter and body round-trip exactly; an old-layout one is
-        // rewritten flat, with its `status:`.
+        // Every source yak: `(id, status, its file)`. The file is copied as
+        // raw bytes so frontmatter and body round-trip exactly.
         let mut found: Vec<(String, Status, PathBuf)> = Vec::new();
         for t in store::load(&src_root, &EVERY)? {
             if let Some((st, p)) = store::find_task_file(&src_root, &t.id) {
@@ -1728,7 +1670,7 @@ impl Farm {
             found.iter().map(|(id, st, _)| (id.clone(), *st)).collect();
         let mut artifacts: Vec<String> = found
             .iter()
-            .filter(|(id, _, _)| source_attachment_dir(&src_root, id).is_some())
+            .filter(|(id, _, _)| store::artifact_dir(&src_root, id).is_dir())
             .map(|(id, _, _)| id.clone())
             .collect();
         artifacts.sort();
@@ -1747,24 +1689,15 @@ impl Farm {
         incoming.sort();
         let mut herds = incoming;
         if !dry_run {
-            for (id, st, path) in &found {
-                if *path == store::task_path(&src_root, id) {
-                    std::fs::copy(path, store::task_path(&self.root, id))
-                        .with_context(|| format!("copying {}", path.display()))?;
-                } else {
-                    let text = std::fs::read_to_string(path)
-                        .with_context(|| format!("reading {}", path.display()))?;
-                    let mut task = store::parse_task(&text, *st)
-                        .with_context(|| format!("parsing {}", path.display()))?;
-                    task.status = *st;
-                    task.body = rewrite_artifact_links(&task.body);
-                    store::write::save(&self.root, &task)?;
-                }
+            for (id, _, path) in &found {
+                std::fs::copy(path, store::task_path(&self.root, id))
+                    .with_context(|| format!("copying {}", path.display()))?;
             }
             for id in &artifacts {
-                if let Some(from) = source_attachment_dir(&src_root, id) {
-                    copy_dir_all(&from, &store::artifact_dir(&self.root, id))?;
-                }
+                copy_dir_all(
+                    &store::artifact_dir(&src_root, id),
+                    &store::artifact_dir(&self.root, id),
+                )?;
             }
             // Declare the incoming herds, so the merged yaks' herds are
             // offered by the pickers. Report what was actually added.
@@ -1778,17 +1711,6 @@ impl Farm {
             herds,
         }))
     }
-}
-
-/// Yak `id`'s attachment dir in the farm at `root`, whichever layout it uses:
-/// `<root>/<id>/`, else (transitional) the old `<root>/artifacts/<id>/`.
-fn source_attachment_dir(root: &Path, id: &str) -> Option<PathBuf> {
-    let flat = store::artifact_dir(root, id);
-    if flat.is_dir() {
-        return Some(flat);
-    }
-    let old = root.join(OLD_ARTIFACTS).join(id);
-    old.is_dir().then_some(old)
 }
 
 // -- doctor helpers ------------------------------------------------------
@@ -1805,14 +1727,6 @@ fn flat_files(root: &Path) -> Vec<PathBuf> {
         .collect();
     out.sort();
     out
-}
-
-/// The ids of the flat yak files (their file stems).
-fn flat_ids(root: &Path) -> std::collections::HashSet<String> {
-    flat_files(root)
-        .iter()
-        .filter_map(|p| p.file_stem().and_then(|s| s.to_str()).map(String::from))
-        .collect()
 }
 
 /// The value of a `status:` frontmatter line that is not one of the four
@@ -1837,213 +1751,6 @@ fn invalid_status_value(text: &str) -> Option<String> {
         return Status::parse(bare).is_none().then(|| bare.to_string());
     }
     None
-}
-
-// -- yaks migrate (transitional: yaks-bbda deletes this section) ----------
-
-/// The old layout's attachment directory, `<root>/artifacts/`.
-const OLD_ARTIFACTS: &str = "artifacts";
-
-/// Rewrite every old attachment link `](artifacts/<id>/` in `body` to the new
-/// form `](<id>/`. Only a link whose path has an `<id>/` segment is touched.
-fn rewrite_artifact_links(body: &str) -> String {
-    const OLD: &str = "](artifacts/";
-    let mut out = String::with_capacity(body.len());
-    let mut rest = body;
-    while let Some(i) = rest.find(OLD) {
-        let after = &rest[i + OLD.len()..];
-        let seg = after
-            .find(|c: char| c == '/' || c == ')' || c.is_whitespace())
-            .filter(|&n| n > 0 && after[n..].starts_with('/'));
-        out.push_str(&rest[..i]);
-        if seg.is_some() {
-            out.push_str("](");
-        } else {
-            out.push_str(OLD);
-        }
-        rest = after;
-    }
-    out.push_str(rest);
-    out
-}
-
-/// What [`Farm::migrate`] did, or with `dry_run` would do.
-#[derive(Debug)]
-pub struct MigratePlan {
-    /// Whether the plan was applied (`false` for a dry run).
-    pub applied: bool,
-    /// Each old-layout yak moved to `<id>.md`, as `(id, status)`, by id.
-    pub yaks: Vec<(String, Status)>,
-    /// Ids whose `artifacts/<id>/` moved to `<id>/`, sorted.
-    pub attachments: Vec<String>,
-    /// Yaks whose body had old `](artifacts/<id>/` links rewritten.
-    pub links_rewritten: Vec<String>,
-    /// Old directories that stay because something is still in them.
-    pub left: Vec<String>,
-    /// Whether anything under the farm is tracked by git (so the result
-    /// should be committed); false for a private or pointer farm.
-    pub git_tracked: bool,
-}
-
-/// Outcome of [`Farm::migrate`].
-#[derive(Debug)]
-pub enum MigrateOutcome {
-    /// Nothing to do: no old-layout files, dirs or links, schema current.
-    AlreadyFlat,
-    /// Refused, nothing written: these ids exist more than once (in both
-    /// layouts, or in two status dirs), or their attachment dir would land on
-    /// an existing path. One entry per problem.
-    Refused(Vec<String>),
-    /// Migrated, or (dry run) would migrate.
-    Done(MigratePlan),
-}
-
-impl Farm {
-    /// Convert a schema-3 farm (status directories, `artifacts/<id>/`) to the
-    /// flat layout (schema 4): each `<status>/<id>.md` becomes `<id>.md` with
-    /// its `status:` set, `artifacts/<id>/` becomes `<id>/` with every
-    /// `](artifacts/<id>/` link in every body rewritten, the emptied old
-    /// directories go (never a non-empty one) and the `schema` marker is
-    /// written last. Under the farm lock; refuses, writing nothing, when an id
-    /// is in both layouts. Idempotent. Never touches git. `dry_run` writes
-    /// nothing and returns the plan.
-    pub fn migrate(&self, dry_run: bool) -> Result<MigrateOutcome> {
-        let _lock = (!dry_run)
-            .then(|| store::lock_for_migration(&self.root))
-            .transpose()?;
-        let root = &self.root;
-
-        // The old-layout yak files, parsed (status from the directory).
-        let mut old: Vec<(Task, PathBuf)> = Vec::new();
-        for (st, path) in store::legacy::files(root) {
-            let text = std::fs::read_to_string(&path)
-                .with_context(|| format!("reading {}", path.display()))?;
-            let mut task = store::parse_task(&text, st)
-                .with_context(|| format!("{} has no usable frontmatter/id", path.display()))?;
-            task.status = st;
-            old.push((task, path));
-        }
-        let flat = flat_ids(root);
-
-        // Refuse on any id that would land on an existing file.
-        let mut problems: Vec<String> = Vec::new();
-        let mut seen = std::collections::HashSet::new();
-        for (t, _) in &old {
-            if flat.contains(&t.id) {
-                problems.push(format!(
-                    "{}: in both layouts (.yaks/{}.md and an old status dir)",
-                    t.id, t.id
-                ));
-            } else if !seen.insert(t.id.clone()) {
-                problems.push(format!("{}: in more than one old status dir", t.id));
-            }
-        }
-        // Attachment dirs: `artifacts/<id>/` -> `<id>/`, which must be free.
-        let mut dirs: Vec<String> = Vec::new();
-        if let Ok(rd) = std::fs::read_dir(root.join(OLD_ARTIFACTS)) {
-            for e in rd.flatten() {
-                if e.path().is_dir() {
-                    dirs.push(e.file_name().to_string_lossy().into_owned());
-                }
-            }
-        }
-        dirs.sort();
-        for id in &dirs {
-            if store::artifact_dir(root, id).exists() {
-                problems.push(format!(
-                    "{id}: .yaks/{id}/ already exists, so artifacts/{id}/ cannot move there"
-                ));
-            }
-        }
-        if !problems.is_empty() {
-            problems.sort();
-            problems.dedup();
-            return Ok(MigrateOutcome::Refused(problems));
-        }
-
-        // Link rewrites: every yak's body, flat and old-layout alike.
-        let old_ids: std::collections::HashSet<&str> =
-            old.iter().map(|(t, _)| t.id.as_str()).collect();
-        let mut links_rewritten: Vec<String> = Vec::new();
-        let mut rewrites: Vec<Task> = Vec::new(); // flat yaks whose body changes
-        for t in store::load(root, &EVERY)? {
-            if rewrite_artifact_links(&t.body) != t.body {
-                links_rewritten.push(t.id.clone());
-                if !old_ids.contains(t.id.as_str()) {
-                    rewrites.push(t);
-                }
-            }
-        }
-        links_rewritten.sort();
-
-        let schema_old = matches!(store::schema_status(root), SchemaStatus::Older(_));
-        let old_dirs: Vec<&str> = store::legacy::STATUSES
-            .iter()
-            .map(|s| s.dir())
-            .chain([OLD_ARTIFACTS])
-            .filter(|d| root.join(d).is_dir())
-            .collect();
-        if old.is_empty()
-            && dirs.is_empty()
-            && rewrites.is_empty()
-            && old_dirs.is_empty()
-            && !schema_old
-        {
-            return Ok(MigrateOutcome::AlreadyFlat);
-        }
-
-        let mut yaks: Vec<(String, Status)> =
-            old.iter().map(|(t, _)| (t.id.clone(), t.status)).collect();
-        yaks.sort_by(|a, b| a.0.cmp(&b.0));
-        let mut plan = MigratePlan {
-            applied: !dry_run,
-            yaks,
-            attachments: dirs.clone(),
-            links_rewritten,
-            left: Vec::new(),
-            git_tracked: tracked_by_git(root),
-        };
-        if dry_run {
-            return Ok(MigrateOutcome::Done(plan));
-        }
-
-        // Write the flat file, then drop the old one, per yak.
-        for (mut task, path) in old {
-            task.body = rewrite_artifact_links(&task.body);
-            store::write::save(root, &task)?;
-            std::fs::remove_file(&path).with_context(|| format!("removing {}", path.display()))?;
-        }
-        for mut task in rewrites {
-            task.body = rewrite_artifact_links(&task.body);
-            store::write::save(root, &task)?;
-        }
-        for id in &dirs {
-            let from = root.join(OLD_ARTIFACTS).join(id);
-            let to = store::artifact_dir(root, id);
-            std::fs::rename(&from, &to).with_context(|| format!("moving {}", from.display()))?;
-        }
-        // Remove the emptied old directories; `remove_dir` refuses a non-empty one.
-        for d in old_dirs {
-            if std::fs::remove_dir(root.join(d)).is_err() && root.join(d).is_dir() {
-                plan.left.push(format!("{d}/"));
-            }
-        }
-        let schema = root.join("schema");
-        std::fs::write(&schema, format!("{}\n", store::SCHEMA))
-            .with_context(|| format!("writing {}", schema.display()))?;
-        Ok(MigrateOutcome::Done(plan))
-    }
-}
-
-/// Whether git tracks anything under the farm at `root` (a team farm). False
-/// for a private or pointer farm, or one outside a repository.
-fn tracked_by_git(root: &Path) -> bool {
-    std::process::Command::new("git")
-        .arg("-C")
-        .arg(root)
-        .args(["ls-files", "--", "."])
-        .output()
-        .is_ok_and(|o| o.status.success() && !o.stdout.is_empty())
 }
 
 fn git_log(root: &Path, args: &[&str]) -> Result<Vec<String>> {
@@ -2088,15 +1795,13 @@ pub(crate) fn last_verify_passed(body: &str) -> bool {
 
 fn issue_rank(k: IssueKind) -> u8 {
     match k {
-        IssueKind::DuplicateStatus => 0,
-        IssueKind::BothLayouts => 1,
-        IssueKind::InvalidStatus => 2,
-        IssueKind::DuplicateId => 3,
-        IssueKind::DanglingParent => 4,
-        IssueKind::DanglingDependsOn => 5,
-        IssueKind::MissingEvidence => 6,
-        IssueKind::UnverifiedShear => 7,
-        IssueKind::MalformedLabel => 8,
+        IssueKind::InvalidStatus => 0,
+        IssueKind::DuplicateId => 1,
+        IssueKind::DanglingParent => 2,
+        IssueKind::DanglingDependsOn => 3,
+        IssueKind::MissingEvidence => 4,
+        IssueKind::UnverifiedShear => 5,
+        IssueKind::MalformedLabel => 6,
     }
 }
 
@@ -2114,7 +1819,7 @@ fn resolve_farm_root(p: &Path) -> Option<PathBuf> {
     let is_farm = |d: &Path| {
         d.join("config.yaml").is_file()
             || d.join("schema").is_file()
-            || store::legacy::is_farm(d)
+            || store::old_layout(d)
             || store::load(d, &EVERY).is_ok_and(|t| !t.is_empty())
     };
     if is_farm(p) {
@@ -2156,230 +1861,12 @@ mod tests {
             .is_some_and(|t| t.status == st)
     }
 
-    /// Write `t` the way the old (schema 3) layout did: `<status>/<id>.md`,
-    /// no `status:` line (the directory was the status).
-    fn old_layout_yak(root: &Path, t: &Task) {
-        let dir = root.join(t.status.dir());
-        std::fs::create_dir_all(&dir).unwrap();
-        let text: String = store::write::render(t)
-            .lines()
-            .filter(|l| !l.starts_with("status: "))
-            .map(|l| format!("{l}\n"))
-            .collect();
-        std::fs::write(dir.join(format!("{}.md", t.id)), text).unwrap();
-    }
-
-    /// Every file under `root`, by relative path, with its bytes.
-    fn snapshot(root: &Path) -> std::collections::BTreeMap<String, Vec<u8>> {
-        fn walk(dir: &Path, base: &Path, out: &mut std::collections::BTreeMap<String, Vec<u8>>) {
-            for e in std::fs::read_dir(dir).unwrap().flatten() {
-                let p = e.path();
-                let rel = p.strip_prefix(base).unwrap().display().to_string();
-                if p.is_dir() {
-                    out.insert(format!("{rel}/"), Vec::new());
-                    walk(&p, base, out);
-                } else if rel != ".lock" && rel != ".gitignore" {
-                    out.insert(rel, std::fs::read(&p).unwrap());
-                }
-            }
-        }
-        let mut out = std::collections::BTreeMap::new();
-        walk(root, root, &mut out);
-        out
-    }
-
-    /// A schema-3 farm: yaks in status dirs (with notes), two attachments of
-    /// yak-0001, and bodies linking them (its own, and from another yak).
-    fn v3_farm() -> (PathBuf, Farm) {
-        let (root, farm) = temp_farm();
-        std::fs::write(root.join("schema"), "3\n").unwrap();
-        let mut a = task("yak-0001", Status::Shaving);
-        a.body = store::append_note(
-            "Work.\n\n![a](artifacts/yak-0001/a.png)\n![b](artifacts/yak-0001/b.png)",
-            "2026-01-02T00:00:00Z",
-            Some("w"),
-            "did: a thing, with 'quotes'",
-        );
-        let mut b = task("yak-0002", Status::Shorn);
-        b.body = "see ![a](artifacts/yak-0001/a.png) and prose about artifacts/ in general".into();
-        let mut c = task("yak-0003", Status::Dead);
-        c.body = store::append_note("", "2026-01-03T00:00:00Z", None, "moved: hairy -> dead");
-        for t in [&a, &b, &c, &task("yak-0004", Status::Hairy)] {
-            old_layout_yak(&root, t);
-        }
-        let arts = root.join("artifacts/yak-0001");
-        std::fs::create_dir_all(&arts).unwrap();
-        std::fs::write(arts.join("a.png"), b"AAA").unwrap();
-        std::fs::write(arts.join("b.png"), b"BBB").unwrap();
-        (root, farm)
-    }
-
-    /// Every `](path)` in `body` that names a file under `root`'s yak dirs.
+    /// Every `](path)` in `body`.
     fn link_paths(body: &str) -> Vec<String> {
         body.split("](")
             .skip(1)
             .filter_map(|r| r.split(')').next().map(String::from))
             .collect()
-    }
-
-    #[test]
-    fn migrate_converts_a_v3_farm_to_flat() {
-        let (root, farm) = v3_farm();
-        let before: Vec<Task> = store::load(&root, &EVERY).unwrap();
-        let note_before = store::parse_notes(&before[0].body);
-
-        let MigrateOutcome::Done(plan) = farm.migrate(false).unwrap() else {
-            panic!("expected a migration");
-        };
-        assert!(plan.applied);
-        assert_eq!(plan.yaks.len(), 4);
-        assert_eq!(plan.attachments, ["yak-0001"]);
-        assert_eq!(plan.links_rewritten, ["yak-0001", "yak-0002"]);
-
-        // Flat files with the right statuses; old dirs gone; schema 4.
-        for (id, st) in [
-            ("yak-0001", Status::Shaving),
-            ("yak-0002", Status::Shorn),
-            ("yak-0003", Status::Dead),
-            ("yak-0004", Status::Hairy),
-        ] {
-            assert!(root.join(format!("{id}.md")).is_file(), "{id}.md");
-            assert!(at(&root, id, st), "{id} keeps {st:?}");
-            assert!(
-                std::fs::read_to_string(root.join(format!("{id}.md")))
-                    .unwrap()
-                    .contains(&format!("status: {}", st.dir()))
-            );
-        }
-        for d in ["hairy", "shaving", "shorn", "dead", "artifacts"] {
-            assert!(!root.join(d).exists(), "{d}/ removed");
-        }
-        assert_eq!(
-            std::fs::read_to_string(root.join("schema")).unwrap().trim(),
-            "4"
-        );
-
-        // Notes survive byte for byte; the yak with no links is untouched.
-        let a = store::load_task_by_id(&root, "yak-0001").unwrap().unwrap();
-        assert_eq!(store::parse_notes(&a.body), note_before);
-        let c = store::load_task_by_id(&root, "yak-0003").unwrap().unwrap();
-        assert_eq!(c.body, before[2].body);
-
-        // Attachments moved, every link resolves (from the farm root), and the
-        // prose mention of `artifacts/` is not a link and is left alone.
-        assert_eq!(std::fs::read(root.join("yak-0001/a.png")).unwrap(), b"AAA");
-        assert_eq!(std::fs::read(root.join("yak-0001/b.png")).unwrap(), b"BBB");
-        let b = store::load_task_by_id(&root, "yak-0002").unwrap().unwrap();
-        assert!(b.body.contains("![a](yak-0001/a.png)"), "{}", b.body);
-        assert!(
-            b.body.contains("prose about artifacts/ in general"),
-            "{}",
-            b.body
-        );
-        for t in [&a, &b] {
-            for p in link_paths(&t.body) {
-                assert!(root.join(&p).is_file(), "{} links {p}", t.id);
-            }
-        }
-
-        // Doctor is clean, and a second run is "already flat".
-        assert!(farm.doctor(false).unwrap().is_empty());
-        assert!(matches!(
-            farm.migrate(false).unwrap(),
-            MigrateOutcome::AlreadyFlat
-        ));
-    }
-
-    #[test]
-    fn migrate_refuses_when_an_id_is_in_both_layouts_and_changes_nothing() {
-        let (root, farm) = v3_farm();
-        // yak-0004 is hairy in the old layout; give it a flat twin too.
-        store::write::save(&root, &task("yak-0004", Status::Shorn)).unwrap();
-        let before = snapshot(&root);
-        let MigrateOutcome::Refused(problems) = farm.migrate(false).unwrap() else {
-            panic!("expected a refusal");
-        };
-        assert_eq!(problems.len(), 1, "{problems:?}");
-        assert!(problems[0].contains("yak-0004"), "{problems:?}");
-        assert_eq!(snapshot(&root), before, "nothing changed");
-    }
-
-    #[test]
-    fn migrate_refuses_when_an_attachment_dir_would_collide() {
-        let (root, farm) = v3_farm();
-        std::fs::create_dir_all(root.join("yak-0001")).unwrap();
-        let before = snapshot(&root);
-        let MigrateOutcome::Refused(problems) = farm.migrate(false).unwrap() else {
-            panic!("expected a refusal");
-        };
-        assert!(problems[0].contains("yak-0001"), "{problems:?}");
-        assert_eq!(snapshot(&root), before);
-    }
-
-    #[test]
-    fn migrate_dry_run_writes_nothing() {
-        let (root, farm) = v3_farm();
-        let before = snapshot(&root);
-        let MigrateOutcome::Done(plan) = farm.migrate(true).unwrap() else {
-            panic!("expected a plan");
-        };
-        assert!(!plan.applied);
-        assert_eq!(plan.yaks.len(), 4);
-        assert_eq!(plan.attachments, ["yak-0001"]);
-        assert_eq!(snapshot(&root), before);
-        assert_eq!(
-            std::fs::read_to_string(root.join("schema")).unwrap().trim(),
-            "3"
-        );
-    }
-
-    #[test]
-    fn migrate_leaves_a_non_empty_old_dir_alone() {
-        let (root, farm) = v3_farm();
-        std::fs::write(root.join("hairy/NOTES.txt"), "keep me").unwrap();
-        let MigrateOutcome::Done(plan) = farm.migrate(false).unwrap() else {
-            panic!("expected a migration");
-        };
-        assert_eq!(plan.left, ["hairy/"]);
-        assert_eq!(
-            std::fs::read(root.join("hairy/NOTES.txt")).unwrap(),
-            b"keep me"
-        );
-        assert!(!root.join("shaving").exists());
-    }
-
-    #[test]
-    fn migrate_on_a_flat_farm_is_already_flat() {
-        let (root, farm) = temp_farm();
-        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
-        let before = snapshot(&root);
-        assert!(matches!(
-            farm.migrate(false).unwrap(),
-            MigrateOutcome::AlreadyFlat
-        ));
-        assert!(matches!(
-            farm.migrate(true).unwrap(),
-            MigrateOutcome::AlreadyFlat
-        ));
-        assert_eq!(snapshot(&root), before);
-    }
-
-    #[test]
-    fn artifact_links_are_rewritten_only_when_they_name_a_yak_dir() {
-        assert_eq!(
-            rewrite_artifact_links("![a](artifacts/yak-1/a.png) [x](artifacts/yak-2/b/c.txt)"),
-            "![a](yak-1/a.png) [x](yak-2/b/c.txt)"
-        );
-        // Not links into a yak's dir: left as written.
-        assert_eq!(rewrite_artifact_links("[x](artifacts/)"), "[x](artifacts/)");
-        assert_eq!(
-            rewrite_artifact_links("[x](artifacts/f.png)"),
-            "[x](artifacts/f.png)"
-        );
-        assert_eq!(
-            rewrite_artifact_links("see artifacts/yak-1/a.png"),
-            "see artifacts/yak-1/a.png"
-        );
     }
 
     /// `rename` moves the attachment dir with its yak, and the id rewrite
@@ -2414,28 +1901,63 @@ mod tests {
         }
     }
 
-    /// Merging a v3 source lands flat, with its attachments beside the yaks
-    /// and its links rewritten.
+    /// A source farm on the old layout is refused, naming the fix, and
+    /// nothing is copied; a flat source merges byte for byte with its
+    /// attachments.
     #[test]
-    fn merge_from_a_v3_source_lands_flat_with_attachments() {
-        let (src, _src_farm) = v3_farm();
+    fn merge_refuses_an_old_layout_source_and_copies_a_flat_one() {
+        let (src, src_farm) = temp_farm();
+        store::write::save(&src, &task("yak-0001", Status::Shaving)).unwrap();
+        src_farm.attach("yak-0001", "a.png", b"AAA").unwrap();
         let (root, farm) = temp_farm();
-        let out = farm.merge(&src, false).unwrap();
-        let MergeOutcome::Done(plan) = out else {
+
+        // The source's `schema` says 3: refused, whatever else it holds.
+        std::fs::write(src.join("schema"), "3\n").unwrap();
+        let Err(err) = farm.merge(&src, false) else {
+            panic!("an old-layout source must be refused");
+        };
+        let err = err.to_string();
+        assert!(
+            err.contains("old yak layout") && err.contains("0.0.16"),
+            "{err}"
+        );
+        assert!(!root.join("yak-0001.md").exists());
+
+        std::fs::write(src.join("schema"), "4\n").unwrap();
+        let MergeOutcome::Done(plan) = farm.merge(&src, false).unwrap() else {
             panic!("expected a merge");
         };
-        assert_eq!(plan.yaks.len(), 4);
         assert_eq!(plan.artifacts, ["yak-0001"]);
         assert!(at(&root, "yak-0001", Status::Shaving));
-        assert!(at(&root, "yak-0003", Status::Dead));
         assert_eq!(std::fs::read(root.join("yak-0001/a.png")).unwrap(), b"AAA");
-        assert!(!root.join("artifacts").exists());
-        assert!(!root.join("hairy").exists());
-        let b = store::load_task_by_id(&root, "yak-0002").unwrap().unwrap();
-        assert!(b.body.contains("![a](yak-0001/a.png)"), "{}", b.body);
-        // The source is left intact.
-        assert!(src.join("hairy/yak-0004.md").is_file());
-        assert!(src.join("artifacts/yak-0001/a.png").is_file());
+        assert_eq!(
+            std::fs::read(root.join("yak-0001.md")).unwrap(),
+            std::fs::read(src.join("yak-0001.md")).unwrap()
+        );
+    }
+
+    /// Opening a farm on the old layout refuses (schema marker, or a yak file
+    /// in a status directory), a flat one opens.
+    #[test]
+    fn open_refuses_an_old_layout_farm() {
+        let (root, _farm) = temp_farm();
+        let parent = root.parent().unwrap().to_path_buf();
+        assert!(Farm::open(&parent).is_ok());
+        std::fs::create_dir_all(root.join("hairy")).unwrap();
+        std::fs::write(
+            root.join("hairy/yak-0001.md"),
+            store::write::render(&task("yak-0001", Status::Hairy)),
+        )
+        .unwrap();
+        match Farm::open(&parent) {
+            Err(OpenError::OldLayout(why)) => {
+                assert!(why.contains("npx -y @j15r/yaks@0.0.16 migrate"), "{why}")
+            }
+            _ => panic!("expected an old-layout refusal"),
+        }
+        std::fs::remove_dir_all(root.join("hairy")).unwrap();
+        std::fs::write(root.join("schema"), "3\n").unwrap();
+        assert!(matches!(Farm::open(&parent), Err(OpenError::OldLayout(_))));
     }
 
     /// A well-formed farm (resolvable parent + dep, one status per id) is clean.
@@ -3186,40 +2708,35 @@ mod tests {
         );
     }
 
-    /// The headline check: the same id written into two status dirs (the add/add
-    /// merge hazard) is flagged once as a duplicate-status clash.
+    /// The same `id:` in the frontmatter of two yak files (say a hand copy)
+    /// is flagged once, naming both files.
     #[test]
-    fn doctor_flags_same_id_in_two_status_dirs() {
+    fn doctor_flags_one_id_in_two_files() {
         let (root, farm) = temp_farm();
-        // Two old-layout copies (the add/add merge hazard of the old layout).
-        for st in [Status::Hairy, Status::Shorn] {
-            std::fs::create_dir_all(root.join(st.dir())).unwrap();
-            std::fs::write(
-                root.join(st.dir()).join("yak-0001.md"),
-                store::write::render(&task("yak-0001", st)),
-            )
-            .unwrap();
-        }
+        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+        std::fs::copy(root.join("yak-0001.md"), root.join("copy-of-yak-0001.md")).unwrap();
 
         let issues = farm.doctor(false).unwrap();
-        assert_eq!(issues.len(), 1, "one duplicated id -> one clash");
-        assert_eq!(issues[0].kind, IssueKind::DuplicateStatus);
+        assert_eq!(
+            issues.len(),
+            1,
+            "one duplicated id -> one clash: {issues:?}"
+        );
+        assert_eq!(issues[0].kind, IssueKind::DuplicateId);
         assert_eq!(issues[0].ids, vec!["yak-0001"]);
         assert!(
-            issues[0].message.contains("hairy") && issues[0].message.contains("shorn"),
-            "message names both dirs: {}",
+            issues[0].message.contains("yak-0001.md")
+                && issues[0].message.contains("copy-of-yak-0001.md"),
+            "message names both files: {}",
             issues[0].message
         );
     }
 
-    /// The flat layout's integrity classes: an id as a flat file AND in an old
-    /// status dir, and a `status:` value that is not one of the four.
+    /// A `status:` value that is not one of the four.
     #[test]
-    fn doctor_flags_both_layouts_and_invalid_status() {
+    fn doctor_flags_an_invalid_status() {
         let (root, farm) = temp_farm();
         store::write::save(&root, &task("yak-0001", Status::Shorn)).unwrap();
-        old_layout_yak(&root, &task("yak-0001", Status::Hairy));
-        old_layout_yak(&root, &task("yak-0002", Status::Hairy)); // old layout only: fine
         let bad = store::write::render(&task("yak-0003", Status::Hairy))
             .replace("status: hairy", "status: \"finished\"");
         std::fs::write(root.join("yak-0003.md"), bad).unwrap();
@@ -3232,10 +2749,7 @@ mod tests {
             .collect();
         assert_eq!(
             got,
-            vec![
-                (IssueKind::BothLayouts, vec!["yak-0001".to_string()]),
-                (IssueKind::InvalidStatus, vec!["yak-0003".to_string()]),
-            ]
+            vec![(IssueKind::InvalidStatus, vec!["yak-0003".to_string()])]
         );
     }
 

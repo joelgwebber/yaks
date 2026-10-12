@@ -55,7 +55,7 @@
 //! owns a clone (the `who:` label does that).
 
 use crate::model::Status;
-use crate::store::{self, SchemaStatus};
+use crate::store;
 use anyhow::{Context, Result, bail};
 use chrono::{DateTime, Utc};
 use serde_json::{Value, json};
@@ -277,10 +277,6 @@ pub struct Shed {
     /// threads' checkouts persist).
     pub farm_activity: Option<String>,
     pub farm: ShedFarm,
-    /// The shed's farm is still on the old layout (schema 3: status
-    /// directories). It is read like any other (see [`load_farm`]); only the
-    /// output says so. Transitional (yaks-bbda).
-    pub old_layout: bool,
     /// The commit the farm delta is relative to; `None` means it is relative
     /// to this checkout's farm instead (no base farm could be read).
     pub farm_base: Option<FarmBase>,
@@ -577,7 +573,6 @@ fn inspect(
         dirty: None,
         farm_activity: None,
         farm: ShedFarm::None,
-        old_layout: false,
         farm_base: None,
         who: Vec::new(),
         in_progress: Vec::new(),
@@ -612,7 +607,6 @@ fn inspect(
         Err(_) => shed.farm = ShedFarm::None,
         Ok(d) => {
             let root = canonical(&d.root);
-            shed.old_layout = is_old_layout(&root);
             // "Shares this farm" says ANOTHER shed uses the viewer's farm; the
             // viewer's own checkout is measured like any other shed.
             if root == our_farm && !current {
@@ -708,13 +702,13 @@ fn reference_tasks(
         })
 }
 
-/// Where a status directory sits in the `hairy -> shaving -> shorn` (then
+/// Where a status sits in the `hairy -> shaving -> shorn` (then
 /// `dead`) progression, for telling a FORWARD move (a yak further along)
 /// from a backward one (a yak not yet caught up): `EVERY`'s order.
 fn status_rank(dir: &str) -> usize {
     EVERY
         .iter()
-        .position(|s| s.dir() == dir)
+        .position(|s| s.as_str() == dir)
         .unwrap_or_default()
 }
 
@@ -913,8 +907,9 @@ fn base_farm(
     let rel = rel.to_str()?.replace('\\', "/");
     let short = git(top, &["rev-parse", "--short", &base]).ok()?;
 
-    // Task files only: `<rel>/<id>.md` (the flat layout), or (transitional)
-    // an old-layout file ([`old_tree_task`]); attachments are skipped.
+    // Task files only: `<rel>/<id>.md`; attachments are skipped. A commit from
+    // before the farm migrated has none (its yaks sat in status directories),
+    // so there is nothing to read and the caller falls back to its next base.
     let tree = git_raw(top, &["ls-tree", "-r", "-z", &base, "--", &rel]).ok()?;
     let mut files: Vec<(&str, String)> = Vec::new(); // (blob sha, path under the farm)
     for entry in tree.split('\0').filter(|e| !e.is_empty()) {
@@ -927,12 +922,7 @@ fn base_farm(
         let Some(under) = path.strip_prefix(&rel).and_then(|p| p.strip_prefix('/')) else {
             continue;
         };
-        let parts: Vec<&str> = under.split('/').collect();
-        let keep = match parts.as_slice() {
-            [file] => file.ends_with(".md"),
-            other => old_tree_task(other),
-        };
-        if keep {
+        if !under.contains('/') && under.ends_with(".md") {
             files.push((sha, under.to_string()));
         }
     }
@@ -981,57 +971,18 @@ fn base_farm(
     Some((short, tasks))
 }
 
-// -- old layout (transitional: yaks-bbda deletes this section) ----------------
-//
-// A farm is read the same way whatever its layout (`store::load` reads both),
-// so a shed that migrated after it forked is compared flat against an
-// old-layout base commit, and an unmigrated shed against a flat viewer, with
-// no special case in the comparison itself. What a migration changes besides
-// the file's place is only the wording of attachment links, which
-// [`load_farm`] undoes so a migration alone is never an "edit".
-
-/// The shed's farm at `root` is on the old layout: schema 3, or a yak file
-/// still in a status directory. (Phase 4 turns this into "old-layout clone,
-/// not read".)
-fn is_old_layout(root: &Path) -> bool {
-    matches!(store::schema_status(root), SchemaStatus::Older(_))
-        || !store::legacy::files(root).is_empty()
-}
-
-/// `parts`, a path under the farm in a git tree, is an old-layout task file:
-/// `<status>/<id>.md`.
-fn old_tree_task(parts: &[&str]) -> bool {
-    matches!(parts, [dir, file] if file.ends_with(".md") && store::legacy::is_status_dir(dir))
-}
-
-/// The tasks of the farm at `root` in either layout, for comparing: the old
-/// layout's `](artifacts/<id>/<file>)` links read as the flat layout's
-/// `](<id>/<file>)` (what `yaks migrate` rewrites them to).
+/// The tasks of the farm at `root`, for comparing. A farm on the old layout
+/// (an old-layout clone, from before 0.0.16) is an error here, never an empty
+/// farm: reading it as one would look like it deleted every yak.
 fn load_farm(root: &Path) -> Result<Vec<crate::model::Task>> {
-    let mut tasks = store::load(root, &EVERY)?;
-    for t in &mut tasks {
-        t.body = flat_attachment_links(&t.body);
+    if store::old_layout(root) {
+        anyhow::bail!(
+            "old layout (pre-0.0.16 clone): its farm keeps yaks in status directories, which \
+             this yaks does not read, so it is not read; {}",
+            store::OLD_LAYOUT_FIX
+        );
     }
-    Ok(tasks)
-}
-
-/// `](artifacts/<id>/` becomes `](<id>/`; a link into `artifacts/` that is not
-/// inside an id's directory is left alone, as `yaks migrate` leaves it.
-fn flat_attachment_links(body: &str) -> String {
-    const OLD: &str = "](artifacts/";
-    let mut out = String::with_capacity(body.len());
-    let mut rest = body;
-    while let Some(i) = rest.find(OLD) {
-        out.push_str(&rest[..i]);
-        out.push_str("](");
-        rest = &rest[i + OLD.len()..];
-        let seg = rest.find(|c: char| c == '/' || c == ')' || c.is_whitespace());
-        if !seg.is_some_and(|e| e > 0 && rest.as_bytes()[e] == b'/') {
-            out.push_str("artifacts/");
-        }
-    }
-    out.push_str(rest);
-    out
+    store::load(root, &EVERY)
 }
 
 /// Compare a shed's tasks to ours (see [`FarmDelta`]): the counts of
@@ -1110,11 +1061,11 @@ pub fn yak_changes(base: &[crate::model::Task], theirs: &[crate::model::Task]) -
         let change = YakChange {
             id: t.id.clone(),
             title: t.title.clone(),
-            status: t.status.dir(),
+            status: t.status.as_str(),
             added: m.is_none(),
             moved: m
                 .filter(|m| m.status != t.status)
-                .map(|m| (m.status.dir(), t.status.dir())),
+                .map(|m| (m.status.as_str(), t.status.as_str())),
             notes: store::parse_notes(&t.body)
                 .into_iter()
                 .skip(known)
@@ -1145,8 +1096,6 @@ pub struct Changes {
     pub path: PathBuf,
     /// The shed is the primary checkout (see [`Shed::primary`]).
     pub primary: bool,
-    /// The shed's farm is on the old layout (see [`Shed::old_layout`]).
-    pub old_layout: bool,
     /// What the changes are relative to, as in [`Shed::farm_base`]; `None`
     /// means this checkout's farm.
     pub base: Option<FarmBase>,
@@ -1175,7 +1124,6 @@ pub fn changes(shed: &Shed, cwd: &Path, farm_root: &Path, sheds: &[Shed]) -> Res
         name: shed.name(),
         path: shed.path.clone(),
         primary: shed.primary,
-        old_layout: shed.old_layout,
         base: shed.farm_base.clone(),
         yaks,
     })
@@ -1644,9 +1592,6 @@ pub fn to_json(sheds: &[Shed]) -> Value {
                         // checkout's merge-base with it as a fallback
                         // (`merge-base`), else, when neither can be read,
                         // this checkout's farm.
-                        // "old" for a farm still on the old layout (schema
-                        // 3, status directories), else "flat".
-                        "layout": layout_str(l.old_layout),
                         "vs": match &l.farm_base {
                             Some(b) => b.kind.as_str(),
                             None => "checkout",
@@ -1708,16 +1653,6 @@ pub fn to_json(sheds: &[Shed]) -> Value {
     )
 }
 
-fn layout_str(old: bool) -> &'static str {
-    if old { "old" } else { "flat" }
-}
-
-/// ` (old layout)` on the farm line of a shed whose farm is not migrated yet
-/// (transitional: yaks-bbda turns it into "old-layout clone, not read").
-fn layout_marker(old: bool) -> &'static str {
-    if old { " (old layout)" } else { "" }
-}
-
 /// What the table says about a baseline other than the shed's own fork point,
 /// so a number that may include inherited work is never silent: ` (vs
 /// origin/main)` (the primary), ` (vs fork)` (the primary without one), ` (vs
@@ -1751,11 +1686,7 @@ fn first_line(text: &str) -> &str {
 /// its new note entries (timestamp, actor, first line) and `needs:`.
 pub fn render_changes(c: &Changes) -> String {
     let mut out = format!("{}  {}\n", c.name, c.path.display());
-    let marker = format!(
-        "{}{}",
-        base_marker(c.base.as_ref(), c.primary),
-        layout_marker(c.old_layout)
-    );
+    let marker = base_marker(c.base.as_ref(), c.primary);
     let yaks = match &c.yaks {
         Err(why) => {
             out.push_str(&format!("  nothing to show: {why}\n"));
@@ -1804,7 +1735,6 @@ pub fn render_changes(c: &Changes) -> String {
 /// are as in `yaks sheds --json` `farm`. Empty when there is nothing to list.
 pub fn changes_json(c: &Changes) -> Value {
     let vs = c.base.as_ref().map_or("checkout", |b| b.kind.as_str());
-    let layout = layout_str(c.old_layout);
     let base = c.base.as_ref().map(|b| &b.sha);
     Value::Array(
         c.yaks
@@ -1823,7 +1753,6 @@ pub fn changes_json(c: &Changes) -> Value {
                     "needs": y.needs,
                     "edited": y.edited,
                     "landed": y.landed,
-                    "layout": layout,
                     "vs": vs,
                     "base": base,
                 })
@@ -1927,24 +1856,17 @@ pub fn render(sheds: &[Shed], orphaned: &[Pinned]) -> String {
             out.push_str(&format!("  {label}\n"));
         }
         match &l.farm {
-            ShedFarm::Own(d) if d.is_empty() && l.farm_base.is_some() => out.push_str(&format!(
-                "  farm: no changes of its own{}{}\n",
-                vs_marker(l),
-                layout_marker(l.old_layout)
-            )),
-            ShedFarm::Own(d) if d.is_empty() => out.push_str(&format!(
-                "  farm: no differences (vs this checkout){}\n",
-                layout_marker(l.old_layout)
-            )),
+            ShedFarm::Own(d) if d.is_empty() && l.farm_base.is_some() => {
+                out.push_str(&format!("  farm: no changes of its own{}\n", vs_marker(l)))
+            }
+            ShedFarm::Own(d) if d.is_empty() => {
+                out.push_str("  farm: no differences (vs this checkout)\n")
+            }
             // Every touched yak is landed: nothing outstanding to list.
             ShedFarm::Own(d) if !d.landed.is_empty() && d.landed.len() == d.touched().len() => {
                 let n = d.landed.len();
                 let yak = if n == 1 { "yak" } else { "yaks" };
-                out.push_str(&format!(
-                    "  farm: landed ({n} {yak}){}{}\n",
-                    vs_marker(l),
-                    layout_marker(l.old_layout)
-                ));
+                out.push_str(&format!("  farm: landed ({n} {yak}){}\n", vs_marker(l)));
             }
             ShedFarm::Own(d) => {
                 let n: usize = d.notes.iter().map(|(_, n)| n).sum();
@@ -1975,10 +1897,9 @@ pub fn render(sheds: &[Shed], orphaned: &[Pinned]) -> String {
                     format!(" ({} landed)", d.landed.len())
                 };
                 out.push_str(&format!(
-                    "  farm: {}{landed_note}{}{}\n",
+                    "  farm: {}{landed_note}{}\n",
                     parts.join(", "),
-                    vs_marker(l),
-                    layout_marker(l.old_layout)
+                    vs_marker(l)
                 ));
                 let outstanding = |id: &str| !d.landed.iter().any(|l| l == id);
                 for id in d.added.iter().filter(|id| outstanding(id)) {
@@ -5080,11 +5001,11 @@ mod tests {
         assert_eq!(changes_json(&c), json!([]));
     }
 
-    // -- both layouts (yaks-ca28) -------------------------------------------
+    // -- the old layout -----------------------------------------
 
     #[test]
-    fn base_farm_reads_an_old_layout_commit_and_a_flat_one_alike() {
-        let b = base("base-layouts");
+    fn base_farm_of_a_commit_from_before_the_migration_finds_nothing() {
+        let b = base("base-old");
         let t = b.join("repo");
         fs::create_dir_all(&t).unwrap();
         sh(&t, &["init", "-q"]);
@@ -5093,7 +5014,6 @@ mod tests {
         sh(&t, &["add", "-A"]);
         sh(&t, &["commit", "-q", "-m", "old layout"]);
         let old_sha = sh(&t, &["rev-parse", "HEAD"]);
-        // The migration, by hand: flat files with `status:`, schema 4.
         fs::remove_dir_all(t.join(".yaks")).unwrap();
         task_file(&t, "hairy", "yaks-aaaa", "", "first");
         task_file(&t, "shorn", "yaks-cccc", "", "third");
@@ -5102,28 +5022,15 @@ mod tests {
         let flat_sha = sh(&t, &["rev-parse", "HEAD"]);
 
         let farm = t.join(".yaks");
-        let (_, old) = base_farm(&t, &old_sha, &t, &farm).unwrap();
+        // No flat file at the old commit: `None`, the caller's cue to try its
+        // next base (never an empty base, which would make every yak "new").
+        assert!(base_farm(&t, &old_sha, &t, &farm).is_none());
         let (_, flat) = base_farm(&t, &flat_sha, &t, &farm).unwrap();
-        let view = |ts: &[crate::model::Task]| {
-            ts.iter()
-                .map(|t| (t.id.clone(), t.status))
-                .collect::<Vec<_>>()
-        };
-        assert_eq!(
-            view(&old),
-            vec![
-                ("yaks-aaaa".to_string(), Status::Hairy),
-                ("yaks-cccc".to_string(), Status::Shorn)
-            ]
-        );
-        assert_eq!(view(&old), view(&flat));
-        // Same yaks in both layouts: the layout alone is no change.
-        assert!(yak_changes(&old, &flat).is_empty());
-        assert!(yak_changes(&flat, &old).is_empty());
+        assert_eq!(flat.len(), 2);
     }
 
     #[test]
-    fn an_old_layout_farm_is_marked_old_and_a_flat_one_is_not() {
+    fn an_old_layout_farm_is_an_error_not_an_empty_farm() {
         let b = base("is-old");
         let old = b.join("old");
         let flat = b.join("flat");
@@ -5134,24 +5041,11 @@ mod tests {
         // Schema 4 with a yak an older binary left in a status directory.
         task_file(&late, "hairy", "yaks-bbbb", "", "x");
         old_task_file(&late, "hairy", "yaks-aaaa", "", "x");
-        assert!(is_old_layout(&old.join(".yaks")));
-        assert!(!is_old_layout(&flat.join(".yaks")));
-        assert!(is_old_layout(&late.join(".yaks")));
-    }
-
-    #[test]
-    fn attachment_links_compare_as_the_flat_layout_writes_them() {
-        assert_eq!(
-            flat_attachment_links(
-                "a ![s](artifacts/yaks-aaaa/s.png) b ![t](artifacts/yaks-bbbb/t.png)"
-            ),
-            "a ![s](yaks-aaaa/s.png) b ![t](yaks-bbbb/t.png)"
-        );
-        // Not an id's directory: left alone, as `migrate` leaves it.
-        assert_eq!(
-            flat_attachment_links("[x](artifacts/readme.md) [y](artifacts/) [z](other/a.png)"),
-            "[x](artifacts/readme.md) [y](artifacts/) [z](other/a.png)"
-        );
-        assert_eq!(flat_attachment_links("no links"), "no links");
+        for old in [&old, &late] {
+            let err = load_farm(&old.join(".yaks")).unwrap_err().to_string();
+            assert!(err.contains("old layout (pre-0.0.16 clone)"), "{err}");
+            assert!(err.contains("not read"), "{err}");
+        }
+        assert_eq!(load_farm(&flat.join(".yaks")).unwrap().len(), 1);
     }
 }

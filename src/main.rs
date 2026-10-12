@@ -662,19 +662,6 @@ enum Command {
         #[arg(long)]
         dry_run: bool,
     },
-    /// Convert an old-layout farm (schema 3: `hairy/ shaving/ shorn/ dead/`
-    /// directories, `artifacts/<id>/`) to the flat layout (schema 4): each yak
-    /// becomes `.yaks/<id>.md` with a `status:` field, `artifacts/<id>/`
-    /// becomes `<id>/` with every `](artifacts/<id>/` link rewritten, emptied
-    /// old directories are removed, `schema` becomes 4. Refuses, naming the
-    /// ids, when an id is in both layouts. Idempotent ("already flat"). Never
-    /// commits: it prints the commit to make. Quit every running `yaks tui`
-    /// first. Transitional: removed once every farm is migrated.
-    Migrate {
-        /// Print what would move; write nothing.
-        #[arg(long)]
-        dry_run: bool,
-    },
     /// Merge another farm's yaks into this one (consolidation). Copies every yak
     /// (all statuses) and its artifacts, preserving ids and status, and declares
     /// any incoming herd in this farm's config; refuses on id collisions.
@@ -737,10 +724,9 @@ enum Command {
     },
     /// Group yaks by the external issue they roll up to.
     Rollup(RollupArgs),
-    /// Read-only farm-integrity check: report ids in both layouts (a flat file
-    /// plus an old status-dir copy) or in two status dirs, an invalid `status:`
-    /// value, and dangling parent/depends_on references. Exits non-zero when
-    /// any issue is found.
+    /// Read-only farm-integrity check: report an invalid `status:` value, one
+    /// id in two yak files, and dangling parent/depends_on references. Exits
+    /// non-zero when any issue is found.
     Doctor {
         /// Emit the issues as JSON.
         #[arg(long)]
@@ -753,8 +739,8 @@ enum Command {
     },
     /// Read-only landing-readiness check for a team farm: nothing under
     /// `.yaks/` untracked or with unstaged changes in git, the verify command of
-    /// each shorn yak in the change last PASSed, no yak in both layouts or two
-    /// status dirs, no invalid `status:` value. Prints
+    /// each shorn yak in the change last PASSed, no invalid `status:` value,
+    /// no id in two yak files. Prints
     /// one line per failure and exits non-zero, else `preflight: ok`. A private
     /// farm skips the git check (said so) and checks every shorn yak. With
     /// `--push-main` also checks that the `local` remote is the human's checkout
@@ -763,7 +749,7 @@ enum Command {
     Preflight {
         /// Shorn yaks to check (default: the shorn yaks in the change in git,
         /// i.e. staged, modified or new under `.yaks/`). Scopes the verify check
-        /// only; the git and layout checks are farm-wide.
+        /// only; the git and integrity checks are farm-wide.
         ids: Vec<String>,
         /// Check the verify command of EVERY shorn yak, not only those in the
         /// change (old shorn yaks that never ran `verify` will fail).
@@ -783,8 +769,7 @@ enum Command {
     },
     /// Commit the farm's own changes (everything under `.yaks/`: yak files,
     /// attachments, config) and nothing else, with a generated message such
-    /// as `yaks: shorn yaks-abc1; updated yaks-def2` (a layout migration is
-    /// one phrase: `migrate the farm to the flat layout (N yaks)`). Code
+    /// as `yaks: shorn yaks-abc1; updated yaks-def2`. Code
     /// staged or modified elsewhere is left alone (staged files stay staged). Runs a normal
     /// `git commit`, so the repo's hooks apply; never pushes. Fails in a private
     /// farm (nothing under `.yaks/` tracked by git) and while a merge or
@@ -800,8 +785,7 @@ enum Command {
     },
     /// Show what the farm has changed that git does not have yet, one line per
     /// yak in yak terms (`created`, `moved hairy -> shaving`, `notes +2`,
-    /// `edited`, `removed`, `artifacts`; `config` for config.yaml; a layout
-    /// migration is one line, `farm layout migrated: N yaks`), `*` marking
+    /// `edited`, `removed`, `artifacts`; `config` for config.yaml), `*` marking
     /// what is staged, ordered by id, then what `yaks commit` would do (and its
     /// message). Uses the same classification as `yaks commit`. Read-only. Code
     /// changed elsewhere in the repo is only counted, never listed. A clean farm
@@ -922,6 +906,10 @@ fn enter_shed(query: &str) -> Result<()> {
             );
             std::process::exit(1);
         }
+        Err(OpenError::OldLayout(m)) => {
+            eprintln!("error: {m}");
+            std::process::exit(1);
+        }
         Err(OpenError::NoFarm(m)) => {
             eprintln!("error: --shed needs a farm here to find the sheds: {m}");
             std::process::exit(1);
@@ -1038,19 +1026,15 @@ fn main() -> Result<()> {
             );
             std::process::exit(1);
         }
+        Err(OpenError::OldLayout(m)) => {
+            eprintln!("error: {m}");
+            std::process::exit(1);
+        }
         Err(OpenError::NoFarm(m)) => {
             eprintln!("error: {m}");
             std::process::exit(1);
         }
     };
-    // `migrate` is the cure for that warning: don't print it there.
-    if let Some(w) = farm
-        .schema_warning
-        .as_ref()
-        .filter(|_| !matches!(cli.command, Command::Migrate { .. }))
-    {
-        eprintln!("warning: {w}");
-    }
 
     match cli.command {
         Command::List { filter, all, json } => {
@@ -1155,7 +1139,7 @@ fn main() -> Result<()> {
                         plan.source.display()
                     );
                     for (id, st) in &plan.yaks {
-                        println!("  {id} [{}]", st.dir());
+                        println!("  {id} [{}]", st.as_str());
                     }
                     if !plan.artifacts.is_empty() {
                         let a = if plan.applied { "copied" } else { "to copy" };
@@ -1177,7 +1161,6 @@ fn main() -> Result<()> {
                 }
             }
         }
-        Command::Migrate { dry_run } => report_migrate(farm.migrate(dry_run)?),
         Command::Init { .. } => unreachable!("init is handled before opening a farm"),
         Command::Skills { .. } => unreachable!("skills is handled before opening a farm"),
         Command::Discover { .. } => unreachable!("discover is handled before opening a farm"),
@@ -2392,61 +2375,6 @@ fn render_log(entries: &[LogEntry], json: bool) -> Result<()> {
     Ok(())
 }
 
-/// Print a `yaks migrate` outcome; a refusal exits 1.
-fn report_migrate(outcome: farm::MigrateOutcome) {
-    match outcome {
-        farm::MigrateOutcome::AlreadyFlat => println!("already flat: nothing to migrate"),
-        farm::MigrateOutcome::Refused(problems) => {
-            eprintln!(
-                "error: cannot migrate, {} problem(s); nothing was changed:",
-                problems.len()
-            );
-            for p in problems {
-                eprintln!("  {p}");
-            }
-            std::process::exit(1);
-        }
-        farm::MigrateOutcome::Done(plan) => {
-            if !plan.applied {
-                for (id, st) in &plan.yaks {
-                    println!("  {}/{id}.md -> {id}.md [status: {}]", st.dir(), st.dir());
-                }
-                for id in &plan.attachments {
-                    println!("  artifacts/{id}/ -> {id}/");
-                }
-                if !plan.links_rewritten.is_empty() {
-                    println!(
-                        "  attachment links rewritten in {} yak(s): {}",
-                        plan.links_rewritten.len(),
-                        plan.links_rewritten.join(", ")
-                    );
-                }
-            }
-            let verb = if plan.applied {
-                "migrated"
-            } else {
-                "would migrate"
-            };
-            let mut line = format!(
-                "{verb} {} yaks ({} attachment dirs) to the flat layout",
-                plan.yaks.len(),
-                plan.attachments.len()
-            );
-            if plan.applied && plan.git_tracked {
-                line.push_str(
-                    "; commit with: git add -A .yaks && git commit -m \"yaks: migrate the farm to the flat layout\"",
-                );
-            } else if !plan.applied {
-                line.push_str(" (dry run: nothing written; re-run without --dry-run)");
-            }
-            println!("{line}");
-            for d in &plan.left {
-                eprintln!("note: left {d} in place: it is not empty");
-            }
-        }
-    }
-}
-
 fn render_doctor(issues: &[Issue]) {
     if issues.is_empty() {
         println!("All clear: no farm-integrity issues found.");
@@ -2866,7 +2794,7 @@ fn render_show_sheds(c: &farm::ShedCopies, missing_here: bool) {
         if missing_here {
             println!("    title:  {}", t.title);
         }
-        println!("    status: {}", t.status.dir());
+        println!("    status: {}", t.status.as_str());
         if let Some(n) = &t.needs {
             println!("    needs:  {n}");
         }

@@ -7,11 +7,9 @@
 //! ([`artifact_dir`]).
 //!
 //! The old layout (schema 3) kept each file in a `hairy/ shaving/ shorn/
-//! dead/` subdirectory and implied the status from it. It is still READ, by
-//! the [`legacy`] module only, so `yaks migrate` can convert a farm and an
-//! unmigrated farm stays readable; nothing writes it, and every write
-//! refuses on a farm that still has it (see [`lock`]). Transitional:
-//! yaks-bbda removes `legacy` once every farm is migrated.
+//! dead/` subdirectory and implied the status from it. This yaks does not read
+//! it: [`old_layout`] recognises such a farm so it can be refused (see
+//! [`OLD_LAYOUT_FIX`]); yaks 0.0.16 is the last release that migrates one.
 //!
 //! The frontmatter parser is a deliberately small hand-rolled fast path
 //! (scalars + simple lists) — the approach yak-3fd4.3 validated in Python. The
@@ -157,9 +155,8 @@ pub(crate) fn expand_path(base: &Path, path: &str) -> PathBuf {
 
 /// Accept the `.yaks/` dir itself or a directory containing one.
 pub(crate) fn resolve_farm_root(dir: &Path) -> Result<PathBuf> {
-    let is_farm = |d: &Path| {
-        d.join("config.yaml").is_file() || d.join("schema").is_file() || legacy::is_farm(d)
-    };
+    let is_farm =
+        |d: &Path| d.join("config.yaml").is_file() || d.join("schema").is_file() || old_layout(d);
     if is_farm(dir) {
         return Ok(dir.to_path_buf());
     }
@@ -177,50 +174,40 @@ pub fn task_path(root: &Path, id: &str) -> PathBuf {
 }
 
 /// The directory holding yak `id`'s attachments: `<root>/<id>/`, beside its
-/// file. (The attachment code moves onto it in yaks-86f4.)
-#[allow(dead_code)]
+/// file.
 pub fn artifact_dir(root: &Path, id: &str) -> PathBuf {
     root.join(id)
 }
 
 /// The id of the yak that owns `rel`, a path RELATIVE TO THE FARM ROOT, when
-/// it is one of that yak's attachments: `<id>/<file...>`, or (transitional,
-/// the old layout) `artifacts/<id>/<file...>`. `None` for a yak file, a farm
-/// file (`config.yaml`, `.gitignore`, `schema`) or a legacy status-dir file.
-/// Accepts `/` or `\\` separators.
+/// it is one of that yak's attachments: `<id>/<file...>`. `None` for a yak
+/// file or a farm file (`config.yaml`, `.gitignore`, `schema`). Accepts `/` or
+/// `\\` separators.
 pub fn attachment_owner(rel: &str) -> Option<String> {
     let rel = rel.replace('\\', "/");
     let mut parts = rel.split('/').filter(|p| !p.is_empty());
     let first = parts.next()?;
-    let second = parts.next()?;
-    if first == "artifacts" {
-        // `artifacts/<id>/<file>`: the id is the second part.
-        return parts.next().map(|_| second.to_string());
-    }
-    if legacy::is_status_dir(first) || first.starts_with('.') {
+    parts.next()?;
+    if first.starts_with('.') {
         return None;
     }
     Some(first.to_string())
 }
 
 /// The id of the yak that `rel`, a path RELATIVE TO THE FARM ROOT, belongs
-/// to: its own file `<id>.md`, one of its attachments (see
-/// [`attachment_owner`]), or (transitional) an old-layout
-/// `<status>/<id>.md`. `None` for a farm file such as `config.yaml`.
+/// to: its own file `<id>.md`, or one of its attachments (see
+/// [`attachment_owner`]). `None` for a farm file such as `config.yaml`.
 pub fn path_owner(rel: &str) -> Option<String> {
     let rel = rel.replace('\\', "/");
     let parts: Vec<&str> = rel.split('/').filter(|p| !p.is_empty()).collect();
     match parts.as_slice() {
         [file] => file.strip_suffix(".md").map(String::from),
-        [dir, file] if legacy::is_status_dir(dir) => file.strip_suffix(".md").map(String::from),
         _ => attachment_owner(&rel),
     }
 }
 
 /// Load every task in the given statuses, sorted by id: each `<root>/<id>.md`
-/// (status from its `status:` field), plus, transitionally, any file the old
-/// layout left in a status directory ([`legacy::load`]). When one id is in
-/// both, the flat file wins (doctor reports the pair).
+/// (status from its `status:` field).
 pub fn load(root: &Path, statuses: &[Status]) -> Result<Vec<Task>> {
     let mut tasks = Vec::new();
     if root.is_dir() {
@@ -238,12 +225,6 @@ pub fn load(root: &Path, statuses: &[Status]) -> Result<Vec<Task>> {
             }
         }
     }
-    let flat: std::collections::HashSet<String> = tasks.iter().map(|t| t.id.clone()).collect();
-    tasks.extend(
-        legacy::load(root, statuses)?
-            .into_iter()
-            .filter(|t| !flat.contains(&t.id)),
-    );
     tasks.sort_by(|a, b| a.id.cmp(&b.id));
     Ok(tasks)
 }
@@ -438,7 +419,7 @@ pub mod write {
         let mut out = String::new();
         out.push_str(&format!("id: {}\n", scalar(&t.id)));
         out.push_str(&format!("title: {}\n", scalar(&t.title)));
-        out.push_str(&format!("status: {}\n", t.status.dir()));
+        out.push_str(&format!("status: {}\n", t.status.as_str()));
         out.push_str(&format!("type: {}\n", scalar(&t.kind)));
         out.push_str(&format!("priority: {}\n", t.priority));
         if let Some(c) = &t.created {
@@ -959,10 +940,9 @@ pub fn init(root: &Path, cfg: &InitConfig) -> Result<InitOutcome> {
     Ok(InitOutcome::Created)
 }
 
-/// Every task id present on disk (all statuses, including dead; both
-/// layouts, transitionally).
+/// Every task id present on disk (all statuses, including dead).
 pub fn all_ids(root: &Path) -> std::collections::HashSet<String> {
-    let mut ids = legacy::ids(root);
+    let mut ids = std::collections::HashSet::new();
     if let Ok(rd) = fs::read_dir(root) {
         for entry in rd.flatten() {
             let p = entry.path();
@@ -1031,23 +1011,7 @@ pub struct FarmLock {
 /// The lock is an OS advisory lock (`flock` / `LockFileEx`) on `.yaks/.lock`,
 /// released by the OS if the process dies. It is not re-entrant: a process
 /// that locks twice deadlocks itself, so take it once per outermost operation.
-///
-/// Every mutation takes this lock, so it is also where a write is refused on
-/// a farm that still uses the old layout (schema 3, or any yak file in a
-/// status directory): writing the flat layout beside it would split the farm
-/// in two. `yaks migrate` converts the farm first (it locks with
-/// [`lock_for_migration`]).
 pub fn lock(root: &Path) -> Result<FarmLock> {
-    let guard = lock_for_migration(root)?;
-    if let Some(why) = legacy::write_blocker(root) {
-        anyhow::bail!("{why}");
-    }
-    Ok(guard)
-}
-
-/// [`lock`] without the old-layout refusal: only for `yaks migrate`, which
-/// is what converts such a farm. Transitional (yaks-bbda).
-pub fn lock_for_migration(root: &Path) -> Result<FarmLock> {
     let path = root.join(LOCK_FILE);
     let file = fs::OpenOptions::new()
         .create(true)
@@ -1093,18 +1057,17 @@ pub enum MoveOutcome {
 }
 
 /// Locate a task's file by id, with its status: the flat `<root>/<id>.md`
-/// (status read from its frontmatter), else, transitionally, a file the old
-/// layout left in a status directory.
+/// (status read from its frontmatter).
 pub fn find_task_file(root: &Path, id: &str) -> Option<(Status, PathBuf)> {
     let p = task_path(root, id);
-    if p.is_file() {
-        let status = fs::read_to_string(&p)
-            .ok()
-            .and_then(|text| parse_task(&text, Status::Hairy))
-            .map_or(Status::Hairy, |t| t.status);
-        return Some((status, p));
+    if !p.is_file() {
+        return None;
     }
-    legacy::find(root, id)
+    let status = fs::read_to_string(&p)
+        .ok()
+        .and_then(|text| parse_task(&text, Status::Hairy))
+        .map_or(Status::Hairy, |t| t.status);
+    Some((status, p))
 }
 
 /// Move a task to `dest`: set its `status:` field and rewrite it in place
@@ -1137,7 +1100,7 @@ pub fn move_task(root: &Path, id: &str, dest: Status, actor: Option<&str>) -> Re
 /// The text of a transition entry: `moved: <from> -> <to>`, one line that
 /// tells a status move from a free-form note in `yaks log` and the detail view.
 pub fn transition_text(from: Status, to: Status) -> String {
-    format!("moved: {} -> {}", from.dir(), to.dir())
+    format!("moved: {} -> {}", from.as_str(), to.as_str())
 }
 
 /// True iff `text` is exactly a transition entry (`moved: <status> -> <status>`),
@@ -1565,108 +1528,39 @@ pub fn reparent(root: &Path, id: &str, new_parent: Option<String>) -> Result<Rep
     Ok(Reparent::Done { new_parent })
 }
 
-/// On-disk schema version this build understands. 4: one flat file per yak
-/// with a `status:` field, attachments in `<id>/`. 3: status directories,
-/// attachments in `artifacts/<id>/` (read only by [`legacy`]).
+/// On-disk schema version this build understands: one flat file per yak with
+/// a `status:` field, attachments in `<id>/`. (3, the old layout, is refused:
+/// see [`old_layout`].)
 pub const SCHEMA: u32 = 4;
 
-/// The old layout (schema 3): status directories, `artifacts/<id>/`. Read
-/// only, so `yaks migrate` can convert a farm and an unmigrated farm stays
-/// readable. TRANSITIONAL: yaks-bbda deletes this module once every farm is
-/// migrated; keep every old-layout read in here.
-pub mod legacy {
-    use super::*;
+/// What to do about an old-layout farm: the one remedy, shared by every
+/// refusal that names it.
+pub const OLD_LAYOUT_FIX: &str = "migrate it once with yaks 0.0.16 \
+     (npx -y @j15r/yaks@0.0.16 migrate), commit, then use this yaks again";
 
-    /// The old layout's status directories, in status order.
-    pub const STATUSES: [Status; 4] = [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
-
-    /// `name` is one of the old layout's status directory names.
-    pub fn is_status_dir(name: &str) -> bool {
-        STATUSES.iter().any(|s| s.dir() == name)
-    }
-
-    /// `dir` has at least one old-layout status directory.
-    pub fn is_farm(dir: &Path) -> bool {
-        STATUSES.iter().any(|s| dir.join(s.dir()).is_dir())
-    }
-
-    /// Every old-layout task file under `root`: `(status, path)`, in status
-    /// then name order.
-    pub fn files(root: &Path) -> Vec<(Status, PathBuf)> {
-        let mut out = Vec::new();
-        for st in STATUSES {
-            let Ok(rd) = fs::read_dir(root.join(st.dir())) else {
-                continue;
-            };
-            let mut paths: Vec<PathBuf> = rd
-                .flatten()
-                .map(|e| e.path())
-                .filter(|p| p.is_file() && p.extension().and_then(|e| e.to_str()) == Some("md"))
-                .collect();
-            paths.sort();
-            out.extend(paths.into_iter().map(|p| (st, p)));
-        }
-        out
-    }
-
-    /// Old-layout tasks in the given statuses. The directory is the status,
-    /// whatever the file says (the old writer never wrote `status:`).
-    pub fn load(root: &Path, statuses: &[Status]) -> Result<Vec<Task>> {
-        let mut tasks = Vec::new();
-        for (st, path) in files(root) {
-            if !statuses.contains(&st) {
-                continue;
-            }
-            let text =
-                fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
-            if let Some(mut task) = parse_task(&text, st) {
-                task.status = st;
-                tasks.push(task);
-            }
-        }
-        Ok(tasks)
-    }
-
-    /// Every old-layout id.
-    pub fn ids(root: &Path) -> std::collections::HashSet<String> {
-        files(root)
-            .into_iter()
-            .filter_map(|(_, p)| p.file_stem().and_then(|s| s.to_str()).map(String::from))
-            .collect()
-    }
-
-    /// Yak `id`'s old-layout file, with the status its directory implies.
-    pub fn find(root: &Path, id: &str) -> Option<(Status, PathBuf)> {
-        STATUSES.iter().find_map(|&st| {
-            let p = root.join(st.dir()).join(format!("{id}.md"));
-            p.is_file().then_some((st, p))
+/// The farm at `root` is on the old layout (schema 3): its `schema` marker
+/// says so, or a yak file sits in a `hairy/ shaving/ shorn/ dead/` directory.
+/// This yaks reads only the flat layout, so such a farm must never be read as
+/// if it were an empty one.
+pub fn old_layout(root: &Path) -> bool {
+    matches!(schema_status(root), SchemaStatus::Older(_))
+        || ["hairy", "shaving", "shorn", "dead"].iter().any(|d| {
+            fs::read_dir(root.join(d)).is_ok_and(|rd| {
+                rd.flatten()
+                    .any(|e| e.path().extension().and_then(|x| x.to_str()) == Some("md"))
+            })
         })
-    }
+}
 
-    /// Why a write must not touch the farm at `root`, if it must not: it is
-    /// schema 3, or a yak file still sits in a status directory (an old
-    /// binary wrote one after a migration).
-    pub fn write_blocker(root: &Path) -> Option<String> {
-        let old_schema = matches!(schema_status(root), SchemaStatus::Older(_));
-        let stray = files(root).len();
-        if !old_schema && stray == 0 {
-            return None;
-        }
-        Some(if old_schema {
-            format!(
-                "{} is schema v3 (yak status directories), and this yaks writes only the flat \
-                 layout (schema v{SCHEMA}): run `yaks migrate` there and commit the result \
-                 (reads still work meanwhile)",
-                root.display()
-            )
-        } else {
-            format!(
-                "{} has {stray} yak file(s) in old status directories (written by an older \
-                 yaks?): run `yaks migrate` there to fold them in before writing",
-                root.display()
-            )
-        })
-    }
+/// The refusal for an old-layout farm at `root`, `None` for any other farm.
+pub fn old_layout_refusal(root: &Path) -> Option<String> {
+    old_layout(root).then(|| {
+        format!(
+            "{} uses the old yak layout (status directories, schema 3), which this yaks no \
+             longer reads: {OLD_LAYOUT_FIX}",
+            root.display()
+        )
+    })
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -2378,7 +2272,8 @@ mod discover_tests {
 
     fn farm_at(dir: &Path) -> PathBuf {
         let root = dir.join(".yaks");
-        fs::create_dir_all(root.join("hairy")).unwrap();
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("config.yaml"), "herd: yak\n").unwrap();
         root
     }
 
@@ -2482,7 +2377,7 @@ mod discover_tests {
             discover_with(&checkout, Some(rel)).unwrap().root,
             checkout.join(rel)
         );
-        assert!(checkout.join(rel).join("hairy").is_dir());
+        assert!(checkout.join(rel).join("config.yaml").is_file());
         let _ = farm;
         let _ = fs::remove_dir_all(&base);
     }
@@ -2688,11 +2583,13 @@ mod replied_tests {
 
 #[cfg(test)]
 mod layout_tests {
-    //! The flat layout (schema 4) and the transitional read of the old one.
+    //! The flat layout (schema 4), and the refusal of the old one.
     use super::*;
     use std::sync::atomic::{AtomicU64, Ordering};
 
     static SEQ: AtomicU64 = AtomicU64::new(0);
+
+    const ALL_STATUSES: [Status; 4] = [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
 
     fn temp_root(schema: Option<&str>) -> PathBuf {
         let p = std::env::temp_dir().join(format!(
@@ -2730,10 +2627,10 @@ mod layout_tests {
 
     /// An old-layout file: `<root>/<status>/<id>.md`, written the way the old
     /// writer did (no `status:` line).
-    fn legacy_put(root: &Path, t: &Task) {
-        let dir = root.join(t.status.dir());
+    fn old_layout_put(root: &Path, t: &Task) {
+        let dir = root.join(t.status.as_str());
         fs::create_dir_all(&dir).unwrap();
-        let text = write::render(t).replace(&format!("status: {}\n", t.status.dir()), "");
+        let text = write::render(t).replace(&format!("status: {}\n", t.status.as_str()), "");
         fs::write(dir.join(format!("{}.md", t.id)), text).unwrap();
     }
 
@@ -2753,13 +2650,13 @@ mod layout_tests {
             assert!(
                 text.starts_with(&format!(
                     "---\nid: {id}\ntitle: t {id}\nstatus: {}\n",
-                    st.dir()
+                    st.as_str()
                 )),
                 "{text}"
             );
             assert_eq!(find_task_file(&root, id), Some((st, path)));
         }
-        let all = load(&root, &legacy::STATUSES).unwrap();
+        let all = load(&root, &ALL_STATUSES).unwrap();
         let got: Vec<(&str, Status)> = all.iter().map(|t| (t.id.as_str(), t.status)).collect();
         assert_eq!(
             got,
@@ -2777,10 +2674,7 @@ mod layout_tests {
             all[0],
             parse_task(&write::render(&all[0]), Status::Dead).unwrap()
         );
-        assert!(
-            !legacy::is_farm(&root),
-            "no status directory is ever created"
-        );
+        assert!(!old_layout(&root), "no status directory is ever created");
     }
 
     #[test]
@@ -2807,48 +2701,48 @@ mod layout_tests {
     }
 
     #[test]
-    fn an_old_layout_farm_still_reads_with_the_status_its_directory_implies() {
-        let root = temp_root(Some("3"));
-        legacy_put(&root, &task("y-0001", Status::Hairy));
-        legacy_put(&root, &task("y-0002", Status::Shorn));
-        let all = load(&root, &legacy::STATUSES).unwrap();
-        let got: Vec<(&str, Status)> = all.iter().map(|t| (t.id.as_str(), t.status)).collect();
-        assert_eq!(got, [("y-0001", Status::Hairy), ("y-0002", Status::Shorn)]);
-        assert_eq!(
-            find_task_file(&root, "y-0002"),
-            Some((Status::Shorn, root.join("shorn/y-0002.md")))
+    fn an_old_layout_farm_is_recognised_by_its_marker_or_a_yak_file_in_a_status_dir() {
+        // The `schema` marker alone, even with no yak at all.
+        assert!(old_layout(&temp_root(Some("3"))));
+        // A yak file in a status directory, whatever the marker says.
+        let stray = temp_root(Some("4"));
+        write::save(&stray, &task("y-0001", Status::Hairy)).unwrap();
+        assert!(!old_layout(&stray));
+        old_layout_put(&stray, &task("y-0002", Status::Shaving));
+        assert!(old_layout(&stray));
+        let unmarked = temp_root(None);
+        old_layout_put(&unmarked, &task("y-0003", Status::Dead));
+        assert!(old_layout(&unmarked));
+        // An empty status directory is not a yak file; a flat farm is not old.
+        let empty_dir = temp_root(Some("4"));
+        fs::create_dir_all(empty_dir.join("hairy")).unwrap();
+        assert!(!old_layout(&empty_dir));
+        assert!(!old_layout(&temp_root(Some("4"))));
+        assert!(!old_layout(&temp_root(None)));
+        // The refusal names the farm, the old layout and the release to use.
+        let why = old_layout_refusal(&stray).unwrap();
+        assert!(
+            why.contains(&stray.display().to_string())
+                && why.contains("old yak layout (status directories, schema 3)")
+                && why.contains("npx -y @j15r/yaks@0.0.16 migrate"),
+            "{why}"
         );
-        assert!(all_ids(&root).contains("y-0001"));
-        assert!(load_task_by_id(&root, "y-0002").unwrap().is_some());
+        assert_eq!(old_layout_refusal(&temp_root(Some("4"))), None);
     }
 
     #[test]
-    fn every_write_refuses_on_an_old_layout_farm_and_migration_can_still_lock() {
-        // A schema-3 farm: refused, naming the fix.
-        let old = temp_root(Some("3"));
-        legacy_put(&old, &task("y-0001", Status::Hairy));
-        let err = lock(&old).err().expect("refused").to_string();
-        assert!(
-            err.contains("schema v3") && err.contains("yaks migrate"),
-            "{err}"
-        );
-        // An empty schema-3 farm too: the marker alone says old layout.
-        let empty_old = temp_root(Some("3"));
-        assert!(lock(&empty_old).is_err());
-        // A flat farm with a stray old-layout file (an old binary wrote it).
-        let stray = temp_root(Some("4"));
-        write::save(&stray, &task("y-0001", Status::Hairy)).unwrap();
-        legacy_put(&stray, &task("y-0002", Status::Shaving));
-        let err = lock(&stray).err().expect("refused").to_string();
-        assert!(
-            err.contains("1 yak file") && err.contains("yaks migrate"),
-            "{err}"
-        );
-        // A clean flat farm (or one with no schema marker at all) locks.
-        assert!(lock(&temp_root(Some("4"))).is_ok());
-        assert!(lock(&temp_root(None)).is_ok());
-        // The migration's own lock skips the refusal.
-        assert!(lock_for_migration(&old).is_ok());
+    fn the_flat_loader_ignores_status_directories() {
+        let root = temp_root(Some("4"));
+        write::save(&root, &task("y-0001", Status::Hairy)).unwrap();
+        old_layout_put(&root, &task("y-0002", Status::Shaving));
+        let ids: Vec<String> = load(&root, &ALL_STATUSES)
+            .unwrap()
+            .into_iter()
+            .map(|t| t.id)
+            .collect();
+        assert_eq!(ids, ["y-0001"]);
+        assert!(find_task_file(&root, "y-0002").is_none());
+        assert!(!all_ids(&root).contains("y-0002"));
     }
 
     #[test]
@@ -2872,27 +2766,15 @@ mod layout_tests {
     }
 
     #[test]
-    fn paths_resolve_to_their_owning_yak_in_both_layouts() {
+    fn paths_resolve_to_their_owning_yak() {
         assert_eq!(path_owner("y-0001.md").as_deref(), Some("y-0001"));
         assert_eq!(path_owner("y-0001/frame.svg").as_deref(), Some("y-0001"));
         assert_eq!(path_owner("y-0001/sub/notes.md").as_deref(), Some("y-0001"));
-        assert_eq!(path_owner("shorn/y-0001.md").as_deref(), Some("y-0001"));
-        assert_eq!(
-            path_owner("artifacts/y-0001/a.png").as_deref(),
-            Some("y-0001")
-        );
-        for not_a_yak in [
-            "config.yaml",
-            "schema",
-            ".gitignore",
-            ".lock",
-            "artifacts/x",
-        ] {
+        for not_a_yak in ["config.yaml", "schema", ".gitignore", ".lock"] {
             assert_eq!(path_owner(not_a_yak), None, "{not_a_yak}");
         }
         assert_eq!(attachment_owner("y-0001.md"), None);
         assert_eq!(attachment_owner("y-0001/a.png").as_deref(), Some("y-0001"));
-        assert_eq!(attachment_owner("hairy/y-0001.md"), None);
         assert_eq!(
             artifact_dir(Path::new("/f"), "y-0001"),
             Path::new("/f/y-0001")
