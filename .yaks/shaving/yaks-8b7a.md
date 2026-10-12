@@ -4,7 +4,7 @@ title: 'Decision: status as a frontmatter field (one stable path per yak) vs sta
 type: task
 priority: 1
 created: '2026-10-12T16:05:28Z'
-updated: '2026-10-12T20:22:37Z'
+updated: '2026-10-12T20:23:52Z'
 labels:
 - design
 - cli
@@ -84,3 +84,7 @@ Amendments (Joel, 2026-10-12, on the plan above). These supersede D1, D4, D5 whe
 ---
 ▸ 2026-10-12T20:22:37Z [delta-lead]
 Phase 2 respawn: mig-1/git-1/shed-1 were started on anthropic/claude-opus-5.5 (the worker profile's default changed; I did not pin a model though Joel asked for Sonnet) and were told to stop clean within a minute. Respawned as mig-2 (yaks-86f4), git-2 (yaks-9f91), shed-2 (yaks-ca28) on claude-sonnet-5-5. The claim notes name the -1 owners; the -2 workers replace them.
+
+---
+▸ 2026-10-12T20:23:52Z [delta-lead]
+Spawned phase 2 (base 41b0053, model custom:LiteLLM/claude-sonnet-5-5 per the spawn confirmations): mig-2 76b2756b137644f6 -> yaks-86f4; git-2 4ba8b1c72a394316 -> yaks-9f91; shed-2 62c228b3013a476b -> yaks-ca28. Phase 1 (yaks-95be) landed as 79f00e9: gate 649 passed, 0 failed.
