@@ -4,7 +4,7 @@ title: 'Decision: status as a frontmatter field (one stable path per yak) vs sta
 type: task
 priority: 1
 created: '2026-10-12T16:05:28Z'
-updated: '2026-10-12T20:23:52Z'
+updated: '2026-10-12T20:36:54Z'
 labels:
 - design
 - cli
@@ -88,3 +88,7 @@ Phase 2 respawn: mig-1/git-1/shed-1 were started on anthropic/claude-opus-5.5 (t
 ---
 ▸ 2026-10-12T20:23:52Z [delta-lead]
 Spawned phase 2 (base 41b0053, model custom:LiteLLM/claude-sonnet-5-5 per the spawn confirmations): mig-2 76b2756b137644f6 -> yaks-86f4; git-2 4ba8b1c72a394316 -> yaks-9f91; shed-2 62c228b3013a476b -> yaks-ca28. Phase 1 (yaks-95be) landed as 79f00e9: gate 649 passed, 0 failed.
+
+---
+▸ 2026-10-12T20:36:54Z [delta-lead]
+Landed yaks-9f91 (git-2 4ba8b1c72a394316): b9de271, merge by SHA, clean. Gate on this machine 16 suites, 656 passed, 0 failed, 3 ignored (the pre-existing three; phase 1's handed-off status test is un-ignored and passes). Real machine (temp flat farm): shave + note reads 'moved hairy -> shaving, notes +1' and yaks commit writes 'yaks: shaving <id>', status clean after. Waiting on mig-2 and shed-2.
