@@ -43,7 +43,7 @@ pub(crate) enum EditAction {
         default: String,
         data: Vec<u8>,
     },
-    /// Rename attachment `old` under `.yaks/artifacts/<id>/`.
+    /// Rename attachment `old` under `.yaks/<id>/`.
     RenameAttachment {
         id: String,
         old: String,

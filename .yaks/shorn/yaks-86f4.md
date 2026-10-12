@@ -4,7 +4,7 @@ title: 'Flat farm, phase 2: yaks migrate + doctor/preflight checks'
 type: task
 priority: 1
 created: '2026-10-12T19:53:57Z'
-updated: '2026-10-12T20:20:38Z'
+updated: '2026-10-12T20:52:47Z'
 parent: yaks-8b7a
 depends_on:
 - yaks-95be
@@ -39,3 +39,34 @@ Evidence (fail first): a v3 fixture (status dirs, two attachments, a body linkin
 - THIS REPO'S OWN FARM STAYS ON THE OLD LAYOUT until phase 3. Your built binary therefore refuses to write here, by design. Use the `yaks` on PATH (0.0.15) for every command on your yak; use your own `./target/release/yaks` only on temp fixtures. Never run `migrate`, or any write of the new binary, against this repo's `.yaks`.
 - Finish staging is the old layout's: `git add -A -- .yaks/shaving/<id>.md .yaks/shorn/<id>.md` plus `.yaks/artifacts/<id>` if you attached something, and NEVER name a path that does not exist (git then stages nothing at all). Check `git status --short` is empty after your commit.
 - File ownership is strict (three workers run at once): touch only the files your claim names. If you must touch another, `yaks ask` instead.
+
+---
+▸ 2026-10-12T20:23:54Z [mig-2]
+mig-2 started (replaces mig-1). date -u: Mon Oct 12 20:23:48 UTC 2026
+yaks path yaks-86f4: /Users/joel/src/yaks/.delta/worktrees/n5p2egqfm27v/yaks/.yaks/shaving/yaks-86f4.md
+
+---
+▸ 2026-10-12T20:51:40Z [mig-2]
+verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-10-12T20:52:47Z [mig-2]
+Decision: `Farm::migrate` and its helpers (`rewrite_artifact_links`, `MigratePlan`, `MigrateOutcome`, `tracked_by_git`) live in one marked section of src/farm.rs ("yaks migrate (transitional: yaks-bbda deletes this section)"). Rejected: a new src/migrate.rs (not in my file scope; the claim names farm.rs).
+Decision: link rewrite only touches `](artifacts/<seg>/` where `<seg>` is followed by `/` (a link into a yak dir). Prose such as "artifacts/ in general", `[x](artifacts/)` and bare `artifacts/yak-1/a.png` mentions outside a markdown link are left alone. Rejected: a blanket `artifacts/` replace (would corrupt prose); also rejected rewriting bare path mentions (not links, and the claim says `](artifacts/<id>/`).
+Decision: refusal covers three cases, all listing ids and writing nothing: id in both layouts, id in two old status dirs, and an existing `.yaks/<id>/` that `artifacts/<id>/` would land on. Rejected: merging into an existing dir (silent clobber risk).
+Decision: a non-empty old dir (status dir or `artifacts/`) stays, with a stderr `note:`; remove_dir (never remove_dir_all) is the only removal. Migration still succeeds and writes schema 4.
+Decision: the schema-3 warning on open is suppressed for `migrate` only (it is the cure for that warning). Rejected: leaving it printed (noisy, misleading on a successful run).
+Decision: the commit hint prints only when git tracks something under the farm (`git ls-files -- .`), so private/pointer farms get the plain summary line with no git step. Rejected: always printing it.
+Decision: doctor/preflight: new IssueKinds `BothLayouts` (`both-layouts`) and `InvalidStatus` (`invalid-status`) plus preflight Checks of the same names; `duplicate-status` (two old status dirs) is kept for unmigrated farms. Invalid status is read from file text (`invalid_status_value`) because the loader falls back to hairy silently. Rejected: changing the loader to report (store.rs is out of scope).
+Decision: `rename` moves `.yaks/<old>/` to `.yaks/<new>/` through a temp name (swap/chain-safe) and refuses when `.yaks/<new>/` already exists unclaimed. The id-token rewrite already covers `](<old>/file)` links; tested.
+Decision: `merge` from an old-layout source rewrites `](artifacts/<id>/` links in the incoming bodies (rewritten flat files only; a flat source is still copied byte-for-byte) and copies `<id>/` or, failing that, `artifacts/<id>/`.
+Decision: TUI link resolution needed only small changes: the rename-attachment parser reads `<id>/<file>` (no `artifacts/` prefix), the paste-name collision check uses `store::artifact_dir`; `open_external` already joins the farm root. src/tui/detail.rs untouched (image-link scanning is path-agnostic).
+
+Summary: `yaks migrate [--dry-run]` (Farm::migrate, one Command::Migrate variant + report_migrate). Attach, rename-attachment, merge, rename/rename_many, preflight's untracked check and the TUI now use `<id>/` via store::artifact_dir. Doctor/preflight gained both-layouts and invalid-status. Docs: docs/cli.md rows (migrate, doctor, preflight, init, attach, rename-attachment, rename, merge), README rows (doctor, preflight, migrate), AGENTS.md first invariant + intro line, clap --help for migrate/init/doctor/preflight/attach/rename-attachment.
+Evidence (new tests, all passing): farm::tests migrate_converts_a_v3_farm_to_flat (statuses, notes byte-identical, attachments, every link resolves, doctor clean, rerun = already flat), migrate_refuses_when_an_id_is_in_both_layouts_and_changes_nothing, migrate_refuses_when_an_attachment_dir_would_collide, migrate_dry_run_writes_nothing, migrate_leaves_a_non_empty_old_dir_alone, migrate_on_a_flat_farm_is_already_flat, artifact_links_are_rewritten_only_when_they_name_a_yak_dir, rename_moves_the_attachment_dir_and_fixes_links, merge_from_a_v3_source_lands_flat_with_attachments, doctor_flags_both_layouts_and_invalid_status; preflight yak_in_both_layouts_fails, invalid_status_value_fails; tests/cli.rs migrate_converts_a_v3_farm_via_the_cli (write refuses before, dry-run, collision refuses, migrate, already flat, writes work after).
+Real machine: ran ./target/release/yaks on a COPY of this repo's .yaks (in a scratch git repo, never on the real one): dry-run listed moves and wrote nothing; migrate printed `migrated 404 yaks (51 attachment dirs) to the flat layout; commit with: ...`; doctor "All clear"; second run "already flat"; git -M saw renames; no `](artifacts/` links left in any yak; yaks-95be/phase1-real-machine.txt present beside its yak.
+Gate: `cargo test --release`: 16 suites, 662 passed, 0 failed, 4 ignored (the same 4 as phase 1; the yaks-9f91 one is that worker's). Not touched/known: src/brief.rs, commit.rs, status.rs, changes.rs, sheds.rs still carry `artifacts/` strings (other owners / coordinator).
+
+---
+▸ 2026-10-12T20:52:47Z [mig-2]
+moved: shaving -> shorn

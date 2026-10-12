@@ -2298,11 +2298,11 @@ mod live {
         enter(&mut app); // single-line commit -> attach
         let body = &app.task("t0").unwrap().body;
         assert!(
-            body.contains("![shot](artifacts/t0/shot.png)"),
+            body.contains("![shot](t0/shot.png)"),
             "body links artifact: {body}"
         );
         assert!(
-            proj.join(".yaks/artifacts/t0/shot.png").is_file(),
+            proj.join(".yaks/t0/shot.png").is_file(),
             "artifact copied into the farm"
         );
     }
@@ -2329,10 +2329,10 @@ mod live {
         enter(&mut app);
         let body = &app.task("t0").unwrap().body;
         assert!(
-            body.contains("![login-page](artifacts/t0/login-page.png)"),
+            body.contains("![login-page](t0/login-page.png)"),
             "link rewritten: {body}"
         );
-        let dir = proj.join(".yaks/artifacts/t0");
+        let dir = proj.join(".yaks/t0");
         assert!(dir.join("login-page.png").is_file());
         assert!(!dir.join("paste-20260921-234927.png").exists());
         assert_eq!(
@@ -2351,11 +2351,8 @@ mod live {
         press(&mut app, "dashboard");
         enter(&mut app);
         let body = &app.task("t0").unwrap().body;
-        assert!(
-            body.contains("![dashboard](artifacts/t0/dashboard.png)"),
-            "{body}"
-        );
-        assert!(proj.join(".yaks/artifacts/t0/dashboard.png").is_file());
+        assert!(body.contains("![dashboard](t0/dashboard.png)"), "{body}");
+        assert!(proj.join(".yaks/t0/dashboard.png").is_file());
     }
 
     #[test]

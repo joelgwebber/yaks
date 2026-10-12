@@ -666,16 +666,16 @@ fn attach_name_and_rename_attachment() {
         "dashboard",
     ]);
     assert!(out.contains("-> dashboard.png"), "{out}");
-    let arts = dir.join(".yaks/artifacts").join(&id);
+    let arts = dir.join(".yaks").join(&id);
     assert!(arts.join("dashboard.png").is_file());
     assert!(!arts.join("paste-20260921-234927.png").exists());
     let show = ok(&["show", &id]);
     assert!(
-        show.contains(&format!("![dashboard](artifacts/{id}/dashboard.png)")),
+        show.contains(&format!("![dashboard]({id}/dashboard.png)")),
         "{show}"
     );
     assert!(
-        show.contains(&format!("![login-page](artifacts/{id}/login-page.png)")),
+        show.contains(&format!("![login-page]({id}/login-page.png)")),
         "{show}"
     );
 
@@ -755,5 +755,88 @@ fn labels_normalized_on_create_update_bulk_and_doctor() {
     cli(&["update", &a, "--add-label", "ui"]);
     assert_eq!(labels(&a), ["ui", "docs", "x", "y"]);
     assert!(raw(&["doctor"]).0, "doctor clean after re-edit");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// `yaks migrate` end to end on a hand-made schema-3 farm: a write refuses
+/// first, `--dry-run` changes nothing, the migration moves the yak and its
+/// attachment and rewrites the link, the next run says "already flat", and a
+/// collision refuses with the id named.
+#[test]
+fn migrate_converts_a_v3_farm_via_the_cli() {
+    let dir = std::env::temp_dir().join(format!("yaks-migrate-cli-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let farm = dir.join(".yaks");
+    std::fs::create_dir_all(farm.join("shaving")).unwrap();
+    std::fs::create_dir_all(farm.join("artifacts/yak-0001")).unwrap();
+    std::fs::write(farm.join("schema"), "3\n").unwrap();
+    std::fs::write(farm.join("config.yaml"), "herd: yak\n").unwrap();
+    std::fs::write(farm.join("artifacts/yak-0001/a.png"), b"png").unwrap();
+    std::fs::write(
+        farm.join("shaving/yak-0001.md"),
+        "---\nid: yak-0001\ntitle: old\ntype: task\npriority: 3\n---\n\n![a](artifacts/yak-0001/a.png)\n",
+    )
+    .unwrap();
+    let cli = |args: &[&str]| {
+        Command::cargo_bin("yaks")
+            .unwrap()
+            .current_dir(&dir)
+            .env("YAKS_SKILLS_AUTOSYNC", "0")
+            .env_remove("YAKS_DIR")
+            .args(args)
+            .output()
+            .unwrap()
+    };
+    let text = |o: &std::process::Output| String::from_utf8_lossy(&o.stdout).to_string();
+
+    assert!(
+        !cli(&["create", "x"]).status.success(),
+        "write refuses before migrating"
+    );
+
+    let out = cli(&["migrate", "--dry-run"]);
+    assert!(out.status.success());
+    assert!(
+        text(&out).contains("would migrate 1 yaks (1 attachment dirs)"),
+        "{}",
+        text(&out)
+    );
+    assert!(
+        farm.join("shaving/yak-0001.md").is_file(),
+        "dry run moved nothing"
+    );
+
+    // A flat twin blocks the migration and nothing changes.
+    std::fs::write(
+        farm.join("yak-0001.md"),
+        "---\nid: yak-0001\ntitle: twin\n---\n",
+    )
+    .unwrap();
+    let out = cli(&["migrate"]);
+    assert!(!out.status.success());
+    assert!(String::from_utf8_lossy(&out.stderr).contains("yak-0001"));
+    assert!(farm.join("shaving/yak-0001.md").is_file());
+    std::fs::remove_file(farm.join("yak-0001.md")).unwrap();
+
+    let out = cli(&["migrate"]);
+    assert!(out.status.success(), "{:?}", out);
+    assert!(
+        text(&out).starts_with("migrated 1 yaks (1 attachment dirs)"),
+        "{}",
+        text(&out)
+    );
+    assert!(!farm.join("shaving").exists() && !farm.join("artifacts").exists());
+    assert_eq!(std::fs::read(farm.join("yak-0001/a.png")).unwrap(), b"png");
+    let md = std::fs::read_to_string(farm.join("yak-0001.md")).unwrap();
+    assert!(
+        md.contains("status: shaving") && md.contains("![a](yak-0001/a.png)"),
+        "{md}"
+    );
+    assert!(text(&cli(&["migrate"])).contains("already flat"));
+    assert!(cli(&["doctor"]).status.success());
+    assert!(
+        cli(&["create", "x"]).status.success(),
+        "writes work after migrating"
+    );
     let _ = std::fs::remove_dir_all(&dir);
 }
