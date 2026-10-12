@@ -2,9 +2,9 @@
 id: yaks-fe33
 title: Repeatable parallel-run trials, one per environment
 type: task
-priority: 2
+priority: 4
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-04T05:19:23Z'
+updated: '2026-10-12T19:42:44Z'
 parent: yaks-b5a0
 labels:
 - agent

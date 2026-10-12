@@ -4,8 +4,8 @@ title: 'CLI affordances for sheds and threads: what a human and an agent need to
 type: task
 priority: 2
 created: '2026-10-06T21:05:37Z'
-updated: '2026-10-11T22:20:18Z'
-parent: yaks-7204
+updated: '2026-10-12T19:42:31Z'
+parent: yaks-b5a0
 labels:
 - cli
 - design
