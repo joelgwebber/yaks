@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 1
 created: '2026-10-12T16:05:28Z'
-updated: '2026-10-12T21:02:26Z'
+updated: '2026-10-12T22:32:05Z'
 labels:
 - design
 - cli
@@ -109,3 +109,13 @@ Found and fixed in review (preflight.rs, my commit): `preflight` on a STAGED mig
 ---
 ▸ 2026-10-12T21:02:26Z [delta-lead]
 Landed yaks-ca28 (shed-2 62c228b3013a476b): 3cc4712, merge by SHA, clean. Phase 2 complete. Gate on this machine with all three: 17 suites, 678 passed, 0 failed, 3 ignored (pre-existing). Real machine: the new binary's 'yaks sheds' on this machine tags the still-unmigrated farm '(old layout)' and compares the live sheds normally. Next: phase 3 (yaks-3a56).
+
+---
+▸ 2026-10-12T22:32:05Z [delta-lead]
+Phase 4 started (yaks-bbda). Spawned bye-1 8d2d630764264357 (custom:LiteLLM/claude-sonnet-5-5, base 5fbd1a5) for the code removal (src/, tests/, docs/cli.md, README.md). Coordinator's half, done in parallel on disjoint files (commit below):
+- yaks skill: `migrate` row removed; the pre-0.0.16 note now says such a farm refuses to open and names the fix (`npx -y @j15r/yaks@0.0.16 migrate`, commit).
+- AGENTS.md first invariant: the transitional sentence becomes the permanent refusal.
+- .agents/skills/README.md: the cold-read brief's path is `.yaks/yaks-5c9f/cold-read-brief.md` (it moved with the migration).
+- .gitignore: the `!.yaks/artifacts/` un-ignore lines are dead (attachments now live in `.yaks/<id>/`, which the broad `artifacts/` rule does not match); removed. Checked: `git check-ignore` does not ignore `.yaks/yaks-5c9f/cold-read-brief.md`.
+- docs/assets/tui-detail-pinned.svg refreshed (stale since before the flat work); rasterized with headless Chrome and looked at: the pinned header, then the scrolled body with the detail cursor on the last note, matching docs/tui.md's caption.
+- Re-check of .agents/skills, docs/README.md, docs/tui.md, AGENTS.md for status-dir / artifacts/ / relocation / glob wording: nothing else left.

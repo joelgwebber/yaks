@@ -9,9 +9,8 @@ task's status is a frontmatter field; each yak is one file, `.yaks/<id>.md`.
 - **Files are authoritative.** Status is a frontmatter field (`status: hairy|
   shaving|shorn|dead`) and each yak is one file at the stable path
   `.yaks/<id>.md` (attachments in `.yaks/<id>/`); a status change edits the
-  file in place. The old layout (status directories, `artifacts/<id>/`) is read
-  only, until `yaks migrate` converts a farm (transitional, yaks-bbda).
-  Parentage is a frontmatter `parent:`
+  file in place. (A farm from before 0.0.16, with status directories, refuses
+  to open; 0.0.16's `yaks migrate` converts it.) Parentage is a frontmatter `parent:`
   field; ids are flat and stable (any legacy dotted ids are inert — the `parent:`
   field is the only source of hierarchy).
 - **Any index is derived.** If a lookup index is added, it must be a per-user,

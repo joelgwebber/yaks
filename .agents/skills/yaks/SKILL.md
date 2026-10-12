@@ -185,7 +185,6 @@ Run these directly from the shell (see **Running yaks** above for the exact invo
 | `yaks rename` | Rename a yak + rewrite every reference to it across the farm |
 | `yaks rename-herd` | Rename a whole herd: migrate all yaks from one id prefix to another; `--dry-run` to preview (`rename-prefix` still works as an alias) |
 | `yaks merge` | Merge another farm into this one — copies every yak (all statuses) + artifacts, preserving ids and status, and declares any incoming herd in this farm's `herds:` config (so it appears in the pickers); **refuses on id collisions** (reconcile the source's herd with `rename-herd` first). Non-destructive: the source is left intact. `--dry-run` previews |
-| `yaks migrate` | Convert a farm made before 0.0.16 (status directories, `artifacts/<id>/`) to the flat layout: each yak to `.yaks/<id>.md` with a `status:` field, attachments to `.yaks/<id>/`, links rewritten. `--dry-run` writes nothing; never commits (it prints the commit to make). Run it once per farm, with every `yaks tui` closed. Transitional |
 | `yaks stats` | Show task statistics |
 | `yaks rollup` | Group yaks by the external issue they roll up to (`--keys` for just the keys) |
 | `yaks doctor` | Read-only farm-integrity check (an invalid `status:` value, dangling parent/dep refs, malformed labels containing a comma or space); exits non-zero on issues, so it's CI-usable. `--json` emits issues as JSON |
@@ -206,7 +205,7 @@ or move with `--as <actor>` (else `$YAKS_ACTOR`, else `delta:<thread title>`/`de
 
 Each task is one file, `.yaks/<id>.md`, at the same path for its whole life; its attachments sit beside it in `.yaks/<id>/`. Its status is the frontmatter `status:` field (`hairy`, `shaving`, `shorn` or `dead`; a status move edits that line in place). Slaughtered (`dead`) tasks are excluded from every default query — pass `--all` (or `--status dead`) to `list` to find them. Metadata is YAML frontmatter; the markdown body is the description.
 
-> A farm made before yaks 0.0.16 keeps tasks in `hairy/ shaving/ shorn/ dead/` subdirectories and attachments in `artifacts/<id>/`. Every command still reads it, but writes refuse until you run `yaks migrate` once and commit the result.
+> A farm made before yaks 0.0.16 (status subdirectories, `artifacts/<id>/`) no longer opens: every command says so and names the fix, migrating it once with `npx -y @j15r/yaks@0.0.16 migrate` and committing the result.
 
 ```markdown
 ---
