@@ -3,8 +3,8 @@
 //! Run before landing (committing a shorn yak, merging a shed). It reports the
 //! slips that earlier landings hit: a new attachment directory that was never
 //! `git add`ed, yak edits left unstaged, a shorn yak whose `verify:` command did
-//! not last PASS, and a yak in both layouts (or two old status dirs) or with an
-//! invalid `status:`. With `--push-main` it
+//! not last PASS, and a yak file with an invalid `status:` or an id that two
+//! files claim. With `--push-main` it
 //! also checks that the `local` remote is the human's checkout, before a
 //! `git push local <branch>:main`. One line per failure; it never mutates the
 //! farm or the repo (every git call here only reads: no push, fetch or write).
@@ -24,12 +24,10 @@ pub enum Check {
     /// A shorn yak's verify command (own, else the config default for its
     /// labels) did not last PASS.
     Verify,
-    /// One id lives in two status dirs (old layout).
-    DuplicateStatus,
-    /// One id is a flat `<id>.md` and also a file in an old status dir.
-    BothLayouts,
     /// A yak file's `status:` value is not hairy, shaving, shorn or dead.
     InvalidStatus,
+    /// Two yak files carry the same `id:`.
+    DuplicateId,
     /// `--push-main`: the `local` remote is not a checkout that a push to
     /// `main` would reach and update.
     LocalCheckout,
@@ -40,9 +38,8 @@ impl Check {
         match self {
             Check::GitState => "git-state",
             Check::Verify => "verify",
-            Check::DuplicateStatus => "duplicate-status",
-            Check::BothLayouts => "both-layouts",
             Check::InvalidStatus => "invalid-status",
+            Check::DuplicateId => "duplicate-id",
             Check::LocalCheckout => "local-checkout",
         }
     }
@@ -72,7 +69,7 @@ impl Report {
 }
 
 /// Run every check. Only the verify check is scoped (the shorn yaks being
-/// landed); git state and duplicate status are farm-wide, since a stray file
+/// landed); git state and the integrity checks are farm-wide, since a stray file
 /// or a clash anywhere would ride along into the landing commit or merge.
 ///
 /// The verify scope is: the `ids` given; else, with `all`, every shorn yak; else
@@ -89,7 +86,7 @@ pub fn run(farm: &Farm, ids: &[String], all: bool, push_main: bool) -> Result<Re
     let changed = git_state(farm.root(), &mut report)?;
     let scope = Scope { ids, all, changed };
     verify(farm, &scope, &mut report)?;
-    layout(farm, &mut report)?;
+    integrity(farm, &mut report)?;
     if push_main {
         local_checkout(farm.root(), &mut report)?;
     }
@@ -166,40 +163,17 @@ fn git_state(root: &Path, report: &mut Report) -> Result<Option<BTreeSet<String>
             subjects: vec![path.to_string()],
         });
     }
-    // A yak whose only change is the layout migration (moved out of its status
-    // directory, same status) is not part of the work being landed: verifying
-    // it would fail the migration commit on every old, never-verified shorn
-    // yak. Transitional, with the migration (yaks-bbda).
-    if let Ok(Some(all)) = crate::changes::read(root) {
-        let classified = crate::changes::classify(&all);
-        if classified.migrated.is_some() {
-            changed.retain(|id| classified.yaks.contains_key(id));
-        }
-    }
     Ok(Some(changed))
 }
 
-/// The yak a repository path belongs to: `.yaks/<id>.md`, an attachment
-/// `.yaks/<id>/...`, or (transitional) the old `.yaks/<status>/<id>.md` and
-/// `.yaks/artifacts/<id>/...` (the farm may sit below the repo root). A
-/// committed farm is always a `.yaks/` directory, so everything after the last
-/// `.yaks` component is relative to the farm root ([`store::path_owner`]).
+/// The yak a repository path belongs to: `.yaks/<id>.md` or an attachment
+/// `.yaks/<id>/...` (the farm may sit below the repo root). A committed farm
+/// is always a `.yaks/` directory, so everything after the last `.yaks`
+/// component is relative to the farm root ([`store::path_owner`]).
 pub(crate) fn yak_id_of(path: &str) -> Option<String> {
     let parts: Vec<&str> = path.split('/').collect();
-    if let Some(i) = parts.iter().rposition(|p| *p == ".yaks") {
-        return crate::store::path_owner(&parts[i + 1..].join("/"));
-    }
-    if let Some(i) = parts.iter().position(|p| *p == "artifacts") {
-        return parts
-            .get(i + 1)
-            .filter(|id| !id.is_empty())
-            .map(|id| id.to_string());
-    }
-    let (file, dir) = (parts.last()?, parts.get(parts.len().checked_sub(2)?)?);
-    let stem = file.strip_suffix(".md")?;
-    ["hairy", "shaving", "shorn", "dead"]
-        .contains(dir)
-        .then(|| stem.to_string())
+    let i = parts.iter().rposition(|p| *p == ".yaks")?;
+    crate::store::path_owner(&parts[i + 1..].join("/"))
 }
 
 /// Which shorn yaks the verify check looks at (see [`run`]).
@@ -258,14 +232,13 @@ fn verify(farm: &Farm, scope: &Scope, report: &mut Report) -> Result<()> {
     Ok(())
 }
 
-/// Check 3: farm layout integrity, doctor's findings of the same names: no
-/// id in both layouts, none in two old status dirs, no invalid `status:`.
-fn layout(farm: &Farm, report: &mut Report) -> Result<()> {
+/// Check 3: farm integrity, doctor's findings of the same names: no invalid
+/// `status:`, no id claimed by two files.
+fn integrity(farm: &Farm, report: &mut Report) -> Result<()> {
     for issue in farm.doctor(false)? {
         let check = match issue.kind {
-            IssueKind::DuplicateStatus => Check::DuplicateStatus,
-            IssueKind::BothLayouts => Check::BothLayouts,
             IssueKind::InvalidStatus => Check::InvalidStatus,
+            IssueKind::DuplicateId => Check::DuplicateId,
             _ => continue,
         };
         report.failures.push(Failure {
@@ -494,32 +467,6 @@ mod tests {
         store::append_note("", "2026-01-02T00:00:00Z", Some("t"), text)
     }
 
-    /// A staged layout migration touches every yak's path, but none of them
-    /// is work being landed: an old shorn yak that never ran `verify` must not
-    /// fail the migration commit.
-    #[test]
-    fn a_staged_migration_puts_no_yak_in_the_verify_scope() {
-        let (repo, farm) = team_repo();
-        let root = repo.join(".yaks");
-        let mut old = task("yak-0001", Status::Shorn);
-        old.verify = Some("false".into());
-        old.body = note("did the work, never ran verify");
-        std::fs::create_dir_all(root.join("shorn")).unwrap();
-        std::fs::write(
-            root.join("shorn/yak-0001.md"),
-            store::write::render(&old).replace("status: shorn\n", ""),
-        )
-        .unwrap();
-        git(&repo, &["add", "."]);
-        git(&repo, &["commit", "-q", "-m", "old layout"]);
-        farm.migrate(false).unwrap();
-        git(&repo, &["add", "-A", ".yaks"]);
-        assert!(failures(&farm, &[], Check::Verify).is_empty());
-        // An explicit id is still checked: the exclusion is only for the scope
-        // the change implies.
-        assert_eq!(failures(&farm, &["yak-0001"], Check::Verify).len(), 1);
-    }
-
     fn failures(farm: &Farm, ids: &[&str], check: Check) -> Vec<Failure> {
         let ids: Vec<String> = ids.iter().map(|s| s.to_string()).collect();
         run(farm, &ids, false, false)
@@ -663,40 +610,16 @@ mod tests {
     }
 
     #[test]
-    fn yak_in_two_status_dirs_fails() {
-        let (repo, farm) = team_repo();
-        let root = repo.join(".yaks");
-        // Two old-layout copies (the add/add merge hazard of the old layout).
-        for st in [Status::Hairy, Status::Shorn] {
-            std::fs::create_dir_all(root.join(st.dir())).unwrap();
-            std::fs::write(
-                root.join(st.dir()).join("yak-0001.md"),
-                store::write::render(&task("yak-0001", st)),
-            )
-            .unwrap();
-        }
-        git(&repo, &["add", "."]);
-        let f = failures(&farm, &[], Check::DuplicateStatus);
-        assert_eq!(f.len(), 1, "{f:?}");
-        assert!(f[0].message.contains("yak-0001"));
-    }
-
-    #[test]
-    fn yak_in_both_layouts_fails() {
+    fn one_id_in_two_files_fails() {
         let (repo, farm) = team_repo();
         let root = repo.join(".yaks");
         store::write::save(&root, &task("yak-0001", Status::Shorn)).unwrap();
-        std::fs::create_dir_all(root.join("hairy")).unwrap();
-        std::fs::write(
-            root.join("hairy/yak-0001.md"),
-            store::write::render(&task("yak-0001", Status::Hairy)),
-        )
-        .unwrap();
+        std::fs::copy(root.join("yak-0001.md"), root.join("copy.md")).unwrap();
         git(&repo, &["add", "."]);
-        let f = failures(&farm, &[], Check::BothLayouts);
+        let f = failures(&farm, &[], Check::DuplicateId);
         assert_eq!(f.len(), 1, "{f:?}");
         assert_eq!(f[0].subjects, ["yak-0001"]);
-        assert!(f[0].message.contains("yak-0001"), "{}", f[0].message);
+        assert!(f[0].message.contains("copy.md"), "{}", f[0].message);
     }
 
     #[test]
@@ -765,16 +688,8 @@ mod tests {
     }
 
     #[test]
-    fn yak_ids_come_from_status_files_and_artifact_dirs_only() {
-        assert_eq!(
-            yak_id_of(".yaks/shorn/yaks-aa49.md").as_deref(),
-            Some("yaks-aa49")
-        );
-        assert_eq!(yak_id_of("sub/.yaks/hairy/x-1.md").as_deref(), Some("x-1"));
-        assert_eq!(
-            yak_id_of(".yaks/artifacts/yaks-aa49/frame.txt").as_deref(),
-            Some("yaks-aa49")
-        );
+    fn yak_ids_come_from_yak_files_and_attachment_dirs_only() {
+        assert_eq!(yak_id_of("sub/.yaks/x-1.md").as_deref(), Some("x-1"));
         assert_eq!(
             yak_id_of(".yaks/yaks-aa49/frame.txt").as_deref(),
             Some("yaks-aa49")

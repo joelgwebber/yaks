@@ -14,10 +14,8 @@ pub enum Status {
 
 impl Status {
     /// The status's name (`hairy`, `shaving`, `shorn`, `dead`): what the
-    /// `status:` field holds. It is also the name of the status directory the
-    /// old (schema 3) layout kept the file in, read only by the transitional
-    /// legacy loader in `store`.
-    pub fn dir(self) -> &'static str {
+    /// `status:` field holds.
+    pub fn as_str(self) -> &'static str {
         match self {
             Status::Hairy => "hairy",
             Status::Shaving => "shaving",
@@ -26,7 +24,7 @@ impl Status {
         }
     }
 
-    /// Parse a `status:` value (exactly one of the names [`Status::dir`]
+    /// Parse a `status:` value (exactly one of the names [`Status::as_str`]
     /// returns). `None` for anything else.
     pub fn parse(s: &str) -> Option<Status> {
         match s {

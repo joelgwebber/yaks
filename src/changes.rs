@@ -109,7 +109,7 @@ pub fn read(root: &Path) -> Result<Option<Vec<Change>>> {
 /// flat yak file is the only place a status change is visible to git).
 fn read_statuses(root: &Path, top: &Path, c: &mut Change) {
     let status_of =
-        |text: &str| store::parse_task(text, Status::Hairy).map(|t| t.status.dir().to_string());
+        |text: &str| store::parse_task(text, Status::Hairy).map(|t| t.status.as_str().to_string());
     if matches!(c.state, 'M' | 'D') {
         c.status_before = head_text(root, &c.path).and_then(|t| status_of(&t));
     }
@@ -201,16 +201,11 @@ pub fn parse_status(out: &str) -> Vec<Change> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Kind {
     Created,
-    /// Its `status:` changed (in place), or (an old-layout farm in history)
-    /// the file vanished from one status directory and appeared in another.
+    /// Its `status:` changed, in place.
     Moved {
         from: String,
         to: String,
     },
-    /// The farm layout migration: the old-layout file was deleted and the flat
-    /// file added with the same status. Never listed per yak; see
-    /// [`Classified::migrated`].
-    Migrated,
     /// Edited in place (a field, the description or a note).
     Updated,
     Removed,
@@ -232,43 +227,18 @@ pub struct YakChange {
     pub staged: bool,
 }
 
-/// The farm layout migration in the changes: how many yaks it moved, and
-/// whether all of it (their files, attachments and `schema`) is staged.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Migration {
-    pub yaks: usize,
-    pub staged: bool,
-}
-
-impl Migration {
-    /// The one line `yaks status` shows for it.
-    pub fn summary(&self) -> String {
-        format!("farm layout migrated: {} yaks", self.yaks)
-    }
-
-    /// The part of `yaks commit`'s message that names it.
-    pub fn message(&self) -> String {
-        format!("migrate the farm to the flat layout ({} yaks)", self.yaks)
-    }
-}
-
 /// The changes sorted into per-yak facts, plus farm files that belong to no
 /// yak (`config.yaml`, ...).
 #[derive(Debug, Default)]
 pub struct Classified {
-    /// Per yak, except the ones the migration moved (see `migrated`).
     pub yaks: BTreeMap<String, YakChange>,
     pub other: Vec<Change>,
-    pub migrated: Option<Migration>,
 }
 
 /// Classify `changes` per yak. In the flat layout a status change is a
 /// modified `<id>.md` whose `status:` differs between HEAD and the working
 /// tree. Each yak gets one verb: a move, else a new file (`created`), an edit
-/// in place (`Updated`), or a deleted file (`Removed`). The old-layout pairing
-/// (a deleted and an added path for one id) is [`legacy_pair`]. A yak the
-/// layout migration moved is counted in `migrated` instead of listed, and the
-/// `schema` file change that comes with it is folded in.
+/// in place (`Updated`), or a deleted file (`Removed`).
 pub fn classify(changes: &[Change]) -> Classified {
     let mut out = Classified::default();
     for c in changes {
@@ -298,7 +268,13 @@ pub fn classify(changes: &[Change]) -> Classified {
         };
         let (gone, now) = (mine('D'), mine('A').or_else(|| mine('M')));
         match (gone, now) {
-            (Some(gone), Some(now)) => legacy_pair(entry, gone, now),
+            // One path per yak, so a deletion and an addition for the same id
+            // cannot both be its own file; read it as an edit if it ever is.
+            (Some(gone), Some(now)) => {
+                entry.old_path = Some(gone.path.clone());
+                entry.path = Some(now.path.clone());
+                entry.kind = Some(Kind::Updated);
+            }
             (None, Some(now)) if now.state == 'A' => {
                 entry.kind = Some(Kind::Created);
                 entry.path = Some(now.path.clone());
@@ -321,62 +297,7 @@ pub fn classify(changes: &[Change]) -> Classified {
             (None, None) => {} // attachments only
         }
     }
-    let migrated: Vec<String> = out
-        .yaks
-        .iter()
-        .filter(|(_, y)| y.kind == Some(Kind::Migrated))
-        .map(|(id, _)| id.clone())
-        .collect();
-    if !migrated.is_empty() {
-        let mut staged = true;
-        for id in &migrated {
-            staged &= out.yaks.remove(id).is_some_and(|y| y.staged);
-        }
-        out.other.retain(|c| {
-            let is_schema = farm_rel(&c.path) == "schema";
-            if is_schema {
-                staged &= c.staged;
-            }
-            !is_schema
-        });
-        out.migrated = Some(Migration {
-            yaks: migrated.len(),
-            staged,
-        });
-    }
     out
-}
-
-/// TRANSITIONAL (yaks-bbda deletes it with the old layout): a yak with both a
-/// deleted and an added/modified file moved between status directories (a
-/// commit from before the flat layout) or, when the added file is the flat
-/// `<id>.md` carrying the status the old directory named, was moved by the
-/// layout migration. A flat side's status comes from its `status:` field.
-fn legacy_pair(entry: &mut YakChange, gone: &Change, now: &Change) {
-    entry.old_path = Some(gone.path.clone());
-    entry.path = Some(now.path.clone());
-    let from = status_at(gone);
-    let to = status_at(now);
-    entry.kind = Some(match (from, to) {
-        (Some(from), Some(to)) if from == to && is_legacy_path(&gone.path) && now.state == 'A' => {
-            Kind::Migrated
-        }
-        (Some(from), Some(to)) => Kind::Moved { from, to },
-        _ => Kind::Updated,
-    });
-}
-
-/// The status a yak file's change puts it in: the directory an old-layout path
-/// sits in, or a flat file's `status:` (at HEAD for a deletion).
-fn status_at(c: &Change) -> Option<String> {
-    if is_legacy_path(&c.path) {
-        return farm_rel(&c.path).split('/').next().map(String::from);
-    }
-    if c.state == 'D' {
-        c.status_before.clone()
-    } else {
-        c.status_after.clone()
-    }
 }
 
 /// `path` made relative to the farm root: everything after the last `.yaks`
@@ -390,7 +311,7 @@ fn farm_rel(path: &str) -> String {
     }
 }
 
-/// A file under `.yaks/<id>/` (or, transitionally, `.yaks/artifacts/<id>/`).
+/// A file under `.yaks/<id>/`.
 fn is_attachment(path: &str) -> bool {
     store::attachment_owner(&farm_rel(path)).is_some()
 }
@@ -399,12 +320,4 @@ fn is_attachment(path: &str) -> bool {
 fn is_flat_yak_file(path: &str) -> bool {
     let rel = farm_rel(path);
     !rel.contains('/') && rel.ends_with(".md")
-}
-
-/// An old-layout yak file: `.yaks/<status>/<id>.md`.
-fn is_legacy_path(path: &str) -> bool {
-    let rel = farm_rel(path);
-    let mut parts = rel.split('/');
-    matches!((parts.next(), parts.next(), parts.next()),
-        (Some(dir), Some(file), None) if store::legacy::is_status_dir(dir) && file.ends_with(".md"))
 }

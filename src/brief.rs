@@ -303,7 +303,7 @@ pub fn claim_warning(task: &Task) -> Option<String> {
         format!(
             "warning: {id} is {status}, not shaving: the coordinator must claim it (`yaks shave {id}`) before the worker starts; the brief says it is already shaving",
             id = task.id,
-            status = task.status.dir()
+            status = task.status.as_str()
         )
     })
 }

@@ -758,25 +758,19 @@ fn labels_normalized_on_create_update_bulk_and_doctor() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-/// `yaks migrate` end to end on a hand-made schema-3 farm: a write refuses
-/// first, `--dry-run` changes nothing, the migration moves the yak and its
-/// attachment and rewrites the link, the next run says "already flat", and a
-/// collision refuses with the id named.
+/// A schema-3 farm (status directories, the old layout) refuses to OPEN, for
+/// reads too, naming the last release that can migrate it. Nothing
+/// is written, and `migrate` is no longer a command.
 #[test]
-fn migrate_converts_a_v3_farm_via_the_cli() {
-    let dir = std::env::temp_dir().join(format!("yaks-migrate-cli-{}", std::process::id()));
+fn a_schema_3_farm_refuses_to_open_and_names_the_release_that_migrates_it() {
+    let dir = std::env::temp_dir().join(format!("yaks-old-layout-cli-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     let farm = dir.join(".yaks");
     std::fs::create_dir_all(farm.join("shaving")).unwrap();
-    std::fs::create_dir_all(farm.join("artifacts/yak-0001")).unwrap();
     std::fs::write(farm.join("schema"), "3\n").unwrap();
     std::fs::write(farm.join("config.yaml"), "herd: yak\n").unwrap();
-    std::fs::write(farm.join("artifacts/yak-0001/a.png"), b"png").unwrap();
-    std::fs::write(
-        farm.join("shaving/yak-0001.md"),
-        "---\nid: yak-0001\ntitle: old\ntype: task\npriority: 3\n---\n\n![a](artifacts/yak-0001/a.png)\n",
-    )
-    .unwrap();
+    let old = "---\nid: yak-0001\ntitle: old\ntype: task\npriority: 3\n---\n";
+    std::fs::write(farm.join("shaving/yak-0001.md"), old).unwrap();
     let cli = |args: &[&str]| {
         Command::cargo_bin("yaks")
             .unwrap()
@@ -787,56 +781,37 @@ fn migrate_converts_a_v3_farm_via_the_cli() {
             .output()
             .unwrap()
     };
-    let text = |o: &std::process::Output| String::from_utf8_lossy(&o.stdout).to_string();
-
+    for args in [
+        &["list"][..],
+        &["doctor"],
+        &["create", "x"],
+        &["show", "yak-0001"],
+    ] {
+        let out = cli(args);
+        assert!(!out.status.success(), "{args:?} must refuse");
+        let err = String::from_utf8_lossy(&out.stderr);
+        assert!(
+            err.contains("old yak layout (status directories, schema 3)")
+                && err.contains("npx -y @j15r/yaks@0.0.16 migrate"),
+            "{args:?}: {err}"
+        );
+    }
+    // The `schema` marker alone says old layout; a status directory holding a
+    // yak file does too, whatever `schema` says.
+    std::fs::write(farm.join("schema"), "4\n").unwrap();
+    let out = cli(&["list"]);
+    assert!(!out.status.success(), "a yak file in a status dir refuses");
+    std::fs::remove_dir_all(farm.join("shaving")).unwrap();
+    std::fs::write(farm.join("schema"), "3\n").unwrap();
     assert!(
-        !cli(&["create", "x"]).status.success(),
-        "write refuses before migrating"
+        !cli(&["list"]).status.success(),
+        "schema 3 refuses even when empty"
     );
-
-    let out = cli(&["migrate", "--dry-run"]);
-    assert!(out.status.success());
-    assert!(
-        text(&out).contains("would migrate 1 yaks (1 attachment dirs)"),
-        "{}",
-        text(&out)
-    );
-    assert!(
-        farm.join("shaving/yak-0001.md").is_file(),
-        "dry run moved nothing"
-    );
-
-    // A flat twin blocks the migration and nothing changes.
-    std::fs::write(
-        farm.join("yak-0001.md"),
-        "---\nid: yak-0001\ntitle: twin\n---\n",
-    )
-    .unwrap();
-    let out = cli(&["migrate"]);
-    assert!(!out.status.success());
-    assert!(String::from_utf8_lossy(&out.stderr).contains("yak-0001"));
-    assert!(farm.join("shaving/yak-0001.md").is_file());
-    std::fs::remove_file(farm.join("yak-0001.md")).unwrap();
-
-    let out = cli(&["migrate"]);
-    assert!(out.status.success(), "{:?}", out);
-    assert!(
-        text(&out).starts_with("migrated 1 yaks (1 attachment dirs)"),
-        "{}",
-        text(&out)
-    );
-    assert!(!farm.join("shaving").exists() && !farm.join("artifacts").exists());
-    assert_eq!(std::fs::read(farm.join("yak-0001/a.png")).unwrap(), b"png");
-    let md = std::fs::read_to_string(farm.join("yak-0001.md")).unwrap();
-    assert!(
-        md.contains("status: shaving") && md.contains("![a](yak-0001/a.png)"),
-        "{md}"
-    );
-    assert!(text(&cli(&["migrate"])).contains("already flat"));
-    assert!(cli(&["doctor"]).status.success());
-    assert!(
-        cli(&["create", "x"]).status.success(),
-        "writes work after migrating"
-    );
+    // Nothing was written, and there is no migrate command any more.
+    assert!(!farm.join("yak-0001.md").exists());
+    assert!(!cli(&["migrate"]).status.success());
+    // A flat farm opens.
+    std::fs::write(farm.join("schema"), "4\n").unwrap();
+    assert!(cli(&["list"]).status.success());
     let _ = std::fs::remove_dir_all(&dir);
 }
