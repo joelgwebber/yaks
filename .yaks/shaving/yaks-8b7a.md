@@ -4,7 +4,7 @@ title: 'Decision: status as a frontmatter field (one stable path per yak) vs sta
 type: task
 priority: 1
 created: '2026-10-12T16:05:28Z'
-updated: '2026-10-12T20:00:38Z'
+updated: '2026-10-12T20:22:37Z'
 labels:
 - design
 - cli
@@ -80,3 +80,7 @@ Amendments (Joel, 2026-10-12, on the plan above). These supersede D1, D4, D5 whe
 - D10 (new, Joel's idea, checked): attachments move from `.yaks/artifacts/<id>/` to `.yaks/<id>/`, beside the yak, in the SAME migration. Checked on this farm: 50 artifact dirs, none orphaned; 81 links in bodies, all of the one form `](artifacts/<id>/<file>)`, so the rewrite to `](<id>/<file>)` is mechanical. Bonus: today those links are relative to the farm root, so an editor's markdown preview of `.yaks/shorn/x.md` resolves them to `.yaks/shorn/artifacts/...` and breaks; from `.yaks/<id>.md` the new form resolves in any viewer. Costs: about 90 `artifacts` references in src (attach, rename-attachment, merge, rename, preflight's untracked check, the git reporting's artifact classification, the TUI's link resolution, brief); the root scan skips directories; staging a yak is now `.yaks/<id>.md` plus `.yaks/<id>/` (`yaks path` should print both, or a pathspec `.yaks/<id>*`, safe here because no legacy dotted ids remain).
 - D4 changed: the dual-layout read is TRANSITIONAL, not permanent. It exists so `yaks migrate` can read the old layout and so an unmigrated farm stays readable meanwhile.
 - D5 confirmed, plus a cleanup: once Joel's farms are migrated, a phase 4 removes `yaks migrate`, the dual read, the legacy git classification and the both-layouts doctor check, and every transitional doc line. What stays for good: a schema-3 farm refuses to open with a message naming the last release that can migrate it, and `yaks sheds` reports a shed whose farm is schema 3 as an old-layout clone (not as one that deleted every yak).
+
+---
+▸ 2026-10-12T20:22:37Z [delta-lead]
+Phase 2 respawn: mig-1/git-1/shed-1 were started on anthropic/claude-opus-5.5 (the worker profile's default changed; I did not pin a model though Joel asked for Sonnet) and were told to stop clean within a minute. Respawned as mig-2 (yaks-86f4), git-2 (yaks-9f91), shed-2 (yaks-ca28) on claude-sonnet-5-5. The claim notes name the -1 owners; the -2 workers replace them.
