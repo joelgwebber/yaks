@@ -166,6 +166,16 @@ fn git_state(root: &Path, report: &mut Report) -> Result<Option<BTreeSet<String>
             subjects: vec![path.to_string()],
         });
     }
+    // A yak whose only change is the layout migration (moved out of its status
+    // directory, same status) is not part of the work being landed: verifying
+    // it would fail the migration commit on every old, never-verified shorn
+    // yak. Transitional, with the migration (yaks-bbda).
+    if let Ok(Some(all)) = crate::changes::read(root) {
+        let classified = crate::changes::classify(&all);
+        if classified.migrated.is_some() {
+            changed.retain(|id| classified.yaks.contains_key(id));
+        }
+    }
     Ok(Some(changed))
 }
 
@@ -482,6 +492,32 @@ mod tests {
 
     fn note(text: &str) -> String {
         store::append_note("", "2026-01-02T00:00:00Z", Some("t"), text)
+    }
+
+    /// A staged layout migration touches every yak's path, but none of them
+    /// is work being landed: an old shorn yak that never ran `verify` must not
+    /// fail the migration commit.
+    #[test]
+    fn a_staged_migration_puts_no_yak_in_the_verify_scope() {
+        let (repo, farm) = team_repo();
+        let root = repo.join(".yaks");
+        let mut old = task("yak-0001", Status::Shorn);
+        old.verify = Some("false".into());
+        old.body = note("did the work, never ran verify");
+        std::fs::create_dir_all(root.join("shorn")).unwrap();
+        std::fs::write(
+            root.join("shorn/yak-0001.md"),
+            store::write::render(&old).replace("status: shorn\n", ""),
+        )
+        .unwrap();
+        git(&repo, &["add", "."]);
+        git(&repo, &["commit", "-q", "-m", "old layout"]);
+        farm.migrate(false).unwrap();
+        git(&repo, &["add", "-A", ".yaks"]);
+        assert!(failures(&farm, &[], Check::Verify).is_empty());
+        // An explicit id is still checked: the exclusion is only for the scope
+        // the change implies.
+        assert_eq!(failures(&farm, &["yak-0001"], Check::Verify).len(), 1);
     }
 
     fn failures(farm: &Farm, ids: &[&str], check: Check) -> Vec<Failure> {
