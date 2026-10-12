@@ -1,11 +1,11 @@
 ---
 id: yaks-8b7a
 title: 'Decision: status as a frontmatter field (one stable path per yak) vs status directories'
-status: shaving
+status: shorn
 type: task
 priority: 1
 created: '2026-10-12T16:05:28Z'
-updated: '2026-10-12T22:32:05Z'
+updated: '2026-10-12T23:01:57Z'
 labels:
 - design
 - cli
@@ -119,3 +119,23 @@ Phase 4 started (yaks-bbda). Spawned bye-1 8d2d630764264357 (custom:LiteLLM/clau
 - .gitignore: the `!.yaks/artifacts/` un-ignore lines are dead (attachments now live in `.yaks/<id>/`, which the broad `artifacts/` rule does not match); removed. Checked: `git check-ignore` does not ignore `.yaks/yaks-5c9f/cold-read-brief.md`.
 - docs/assets/tui-detail-pinned.svg refreshed (stale since before the flat work); rasterized with headless Chrome and looked at: the pinned header, then the scrolled body with the detail cursor on the last note, matching docs/tui.md's caption.
 - Re-check of .agents/skills, docs/README.md, docs/tui.md, AGENTS.md for status-dir / artifacts/ / relocation / glob wording: nothing else left.
+
+![phase4-real-machine](yaks-8b7a/phase4-real-machine.txt)
+
+---
+▸ 2026-10-12T23:01:15Z [delta-lead]
+Phase 4 real-machine check (after landing yaks-bbda).
+
+---
+▸ 2026-10-12T23:01:15Z [delta-lead]
+Landed yaks-bbda (bye-1 8d2d630764264357): 42d209e, merge by SHA, clean; 22 files, +665 -1807. Gate on this machine: 17 suites, 667 passed, 0 failed, 3 ignored (fewer than before: the old-layout tests went with the code). Leftover grep (legacy::, lock_for_migration, Migrated, legacy_pair, yaks-bbda, is_old_layout, flat_attachment_links, Command::Migrate) over src/ and tests/: empty.
+Real machine (attached): this farm works and doctor is clean; a read-only `yaks list` in a pre-0.0.16 clone (git-2's) refuses with exit 1 and the message naming `npx -y @j15r/yaks@0.0.16 migrate`, writing nothing there; `yaks sheds` shows the six old-layout clones as `farm unreadable: old layout (pre-0.0.16 clone)`, never as empty farms.
+All phases done: 1 yaks-95be, 2 yaks-86f4/9f91/ca28, 3 yaks-3a56 (0.0.16 released), 4 yaks-bbda (ships as 0.0.17). Follow-ups filed along the way: yaks-8814 (landed vs a needs: the reference resolved), yaks-07fe (shed scan speed). Shearing the umbrella.
+
+---
+▸ 2026-10-12T23:01:57Z [delta-lead]
+verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-10-12T23:01:57Z [delta-lead]
+moved: shaving -> shorn
