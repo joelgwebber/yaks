@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 1
 created: '2026-10-12T19:54:05Z'
-updated: '2026-10-12T21:06:37Z'
+updated: '2026-10-12T21:15:52Z'
 parent: yaks-8b7a
 depends_on:
 - yaks-86f4
@@ -35,3 +35,13 @@ Phase 3, part 1 (sweep) done:
 - README (layout block, task file example with `status:`, slaughter row, concepts), docs/README (layout block, the model), docs/cli (path, brief rows), `path`'s --help.
 - Gate: 17 suites, 678 passed, 0 failed, 3 ignored.
 - Docshots: re-rendered; only tui-detail-pinned.svg differs, and it differs identically when rendered from b25a5b9 (before the flat work), so it was already stale; not touched here (reverted), a separate refresh.
+
+---
+▸ 2026-10-12T21:15:52Z [delta-lead]
+Phase 3, part 2: Joel ran the migration of this repo's farm himself (80c1923 "Flat-yaks migration.", after quitting the old TUI in this checkout) and pushed it to local and origin. Verified after: schema 4, 404 flat yak files + 52 attachment dirs, no status dirs or artifacts/, doctor clean, preflight ok, farm clean against git.
+Real-machine checks (the plan's list):
+- `yaks sheds` against clones forked BEFORE the migration: the phase-2 workers' clones read `landed (1 yak) (old layout)`, the stopped mig-1/git-1 clones `no changes of its own (old layout)`, main `no changes of its own (vs origin/main)`. Correct.
+- `yaks migrate --dry-run` on ~/src/j15r: would migrate 19 yaks (2 attachment dirs), wrote nothing (git status unchanged).
+- Docshots: unchanged by the flat work (the one differing frame was already stale before it; see part 1).
+Note: the 0.0.14 `yaks` on PATH now refuses this farm (SchemaTooNew), so until 0.0.16 is installed every yak command here needs the built binary.
+Left: release 0.0.16, then migrate ~/src/j15r (and any other farm), then phase 4 (yaks-bbda).
