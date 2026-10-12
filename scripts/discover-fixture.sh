@@ -37,8 +37,9 @@ BASE=$(cd "$BASE" && pwd -P)
 
 g init -q "$BASE/repo"
 g -C "$BASE/repo" remote add origin https://example.com/synth/repo.git
-mkdir -p "$BASE/repo/.yaks/hairy"
-printf -- '---\nid: s-0001\ntitle: t\n---\n' >"$BASE/repo/.yaks/hairy/s-0001.md"
+mkdir -p "$BASE/repo/.yaks"
+printf '4\n' >"$BASE/repo/.yaks/schema"
+printf -- '---\nid: s-0001\ntitle: t\nstatus: hairy\n---\n' >"$BASE/repo/.yaks/s-0001.md"
 printf '.delta/\n' >"$BASE/repo/.gitignore"
 g -C "$BASE/repo" add -A
 g -C "$BASE/repo" commit -qm init
