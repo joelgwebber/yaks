@@ -4,7 +4,7 @@ title: 'Decision: status as a frontmatter field (one stable path per yak) vs sta
 type: task
 priority: 1
 created: '2026-10-12T16:05:28Z'
-updated: '2026-10-12T20:58:49Z'
+updated: '2026-10-12T21:02:26Z'
 labels:
 - design
 - cli
@@ -104,3 +104,7 @@ Review of yaks-86f4 + yaks-9f91 together: yaks migrate on a COPY of this repo's 
 Landed yaks-86f4 (mig-2 76b2756b137644f6): e2edbd9, merge by SHA (main.rs auto-merged with git-2's change; one unexplained comment edit in src/tui/detail.rs from Delta's applied state discarded, it was not in the worker's commit). Gate on this machine after both landings: 16 suites, 670 passed, 0 failed, 3 ignored (pre-existing).
 Real-machine review (attached, migrate-real-farm-copy.txt): on a copy of this repo's farm, `migrate --dry-run` wrote nothing; `migrate` moved 404 yaks and 51 attachment dirs; `list --all` byte-identical before and after; `yaks status` one line `farm layout migrated: 404 yaks`; `doctor` clean; `yaks commit` made one commit of 485 renames (git detected them, `log --follow` crosses it); a write works afterwards. The one `](artifacts/` left is prose inside a note (backticked), correctly untouched.
 Found and fixed in review (preflight.rs, my commit): `preflight` on a STAGED migration put every yak in the verify scope, so all 263 never-verified shorn yaks failed and the migration commit could not pass preflight. Fix: a yak whose only change is the migration (changes::classify's `migrated`) is not in the change's scope; explicit ids are still checked. New test fails without the fix, passes with it; preflight on the staged real-farm copy now prints `preflight: ok`.
+
+---
+▸ 2026-10-12T21:02:26Z [delta-lead]
+Landed yaks-ca28 (shed-2 62c228b3013a476b): 3cc4712, merge by SHA, clean. Phase 2 complete. Gate on this machine with all three: 17 suites, 678 passed, 0 failed, 3 ignored (pre-existing). Real machine: the new binary's 'yaks sheds' on this machine tags the still-unmigrated farm '(old layout)' and compares the live sheds normally. Next: phase 3 (yaks-3a56).
