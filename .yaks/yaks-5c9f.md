@@ -1,0 +1,72 @@
+---
+id: yaks-5c9f
+title: Restructure coordinator/worker skills by farm mode (public / private / out-of-tree)
+status: shorn
+type: task
+priority: 2
+created: '2026-10-03T20:14:31Z'
+updated: '2026-10-05T22:51:20Z'
+parent: yaks-b5a0
+depends_on:
+- yaks-80d5
+labels:
+- skills
+---
+
+Replace today's mixed public/private, harness-agnostic prose with a small shared core (claim, lanes, evidence, ask/answer) plus one coordinator + worker pair per environment (git worktrees; Delta), each followable without reading the others. Fold in pending guidance from yaks-0a87 and yaks-75cc. Embed and test-guard them like the yaks skill.
+
+---
+▸ 2026-10-03T20:27:55Z [delta-agent]
+Retitled per b5a0 direction: split by farm mode, not environment; Delta is a separate layered skill (yaks-2f9b).
+
+![restructure-plan](yaks-5c9f/restructure-plan.md)
+
+---
+▸ 2026-10-03T23:02:44Z [delta-lead]
+Restructure plan: target skill set (core + team + private + worktrees + delta), section-by-section map of today's 386-line yaks-coordinating, contradictions it closes, guards, proof plan (trial 4), order of work, and two forks.
+
+---
+▸ 2026-10-03T23:02:44Z [delta-lead]
+Two forks, both with a lean (details in restructure-plan.md section 9). (1) Layering: A = core + two mode skills (team, private) + two environment skills (worktrees, delta), a reader loads core + one mode + one environment; B = two standalone mode skills with the git-worktree mechanics folded in, Delta layered on top (the original phrasing). Lean A: B makes every Delta reader load worktree material that does not apply and duplicates the shared core. (2) Shipping: embed any of these in the binary, or keep them repo-internal? Lean: internal until trial 4 shows they work for someone who is not us. I am drafting core + team + private now under the artifact dir (fork-independent), nothing into .agents/skills until you answer.
+
+![draft-yaks-coordinating-core](yaks-5c9f/draft-yaks-coordinating-core.md)
+
+![draft-yaks-coordinating-team](yaks-5c9f/draft-yaks-coordinating-team.md)
+
+![draft-yaks-coordinating-private](yaks-5c9f/draft-yaks-coordinating-private.md)
+
+---
+▸ 2026-10-03T23:04:20Z [delta-lead]
+Progress: plan attached; drafts of core (111 lines), team (64) and private (57) attached as artifacts, kept out of .agents/skills until the forks are answered. Cold-read check running (a fresh scout with only the three drafts answers 8 scenarios). Next: worktrees and delta environment skills, then yaks-working fold-in (0a87, 75cc), guards, trial 4.
+
+---
+▸ 2026-10-03T23:05:14Z [delta-lead]
+Cold-read of the three drafts (fresh Haiku scout, drafts only, 8 scenarios): 6 right, 1 partly, 1 NOT COVERED, 3 ambiguities. Fixed: an append is a write (shared parent yak trap), the boundary between scope/mechanics and design forks with examples, and the pointer wording with what is planned vs true today. Logged as yaks-df61 O37. Remaining: worktrees and delta environment skills, yaks-working fold-in, guards, second cold-read on the full set, trial 4.
+
+![draft-yaks-coordinating-worktrees](yaks-5c9f/draft-yaks-coordinating-worktrees.md)
+
+![draft-yaks-coordinating-delta](yaks-5c9f/draft-yaks-coordinating-delta.md)
+
+---
+▸ 2026-10-03T23:14:04Z [Joel Webber]
+Agreed on A for the skill layering. I'm fine waiting on pushing them into the binary; I believe we have another yak to revisit the init/skill installation structure.
+
+---
+▸ 2026-10-03T23:32:45Z [delta-lead]
+Trial 4 done (log O38-O41): two short-brief workers followed the new skills on every point the brief omitted; a YAML flaw in my descriptions kept five skills from loading through the skill tool, fixed and guarded (O39). Landed as three squash commits (yaks-aa49, yaks-5c9f, yaks-800d claim) on the human's main. Remaining: yaks-2f9b is now largely superseded by yaks-coordinating-delta (review and close or trim), the second guard idea (a cold-read gate per skill change), and the follow-ups in yaks-3859/814a for install/init. Not shipped in the binary, per Joel.
+
+![cold-read-brief](yaks-5c9f/cold-read-brief.md)
+
+---
+▸ 2026-10-05T22:51:20Z [delta-lead]
+Done (coordinator delta-lead, 2026-10-05). What was left on this yak is closed:
+
+- **yaks-2f9b** is shorn (the Delta skill is `yaks-coordinating-delta`).
+- **Install/init follow-ups** landed: yaks-3859 (project-local install, opt-in `--with coordination` group, per-skill file lists) and yaks-814a (`yaks init --mode`, skills rolled in, idempotent), plus yaks-5c83 (a stale project-local install is announced once per release, never rewritten).
+- **The cold-read gate per skill change** now has a form: the reusable scout brief is attached (`cold-read-brief.md`) and the rule is written in `.agents/skills/README.md` ("Changing these skills": guard tests, load through the real `skill` tool, cold-read, re-run only the missed questions).
+
+Evidence for this round's skills pass (log O60): cold-read-1 (a Haiku scout, only the skill files, 8 scenario questions) loaded all skills and answered lanes, private farm, landing, the push check, the spawn title and the yakherd correctly; it missed the styled-markdown constructs (they sat deep in the long `yaks` skill), the `Decision:`-versus-`ask` line, and what "the model" to record means. Those were fixed (the constructs and the rule now also in `yaks-working`, Delta and the model id defined in the Delta skill, commit 203cf35); cold-read-2 re-ran exactly those questions and answered all three correctly from the text alone. One suggestion I rejected: a here-doc example that escapes backticks inside a quoted `'EOF'`, which would put backslashes into the note.
+
+---
+▸ 2026-10-05T22:51:20Z [delta-lead]
+moved: shaving -> shorn
