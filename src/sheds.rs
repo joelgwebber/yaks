@@ -59,11 +59,12 @@ use crate::store;
 use anyhow::{Context, Result, bail};
 use chrono::{DateTime, Utc};
 use serde_json::{Value, json};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, SystemTime};
 
 const EVERY: [Status; 4] = [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
@@ -322,18 +323,37 @@ impl Shed {
 /// farm: where a shed is compared with "this checkout" and what makes another
 /// shed `Shared`. Sorted by path.
 pub fn discover(cwd: &Path, farm_root: &Path) -> Result<Vec<Shed>> {
+    Ok(discover_all(cwd, farm_root)?.0)
+}
+
+/// [`discover`] plus the orphaned pins ([`orphaned_pins`]) from the same pass:
+/// the host is read and the pin groups are resolved once, not twice.
+pub fn discover_all(cwd: &Path, farm_root: &Path) -> Result<(Vec<Shed>, Vec<Pinned>)> {
     let top = PathBuf::from(
         git(cwd, &["rev-parse", "--show-toplevel"]).context("yaks sheds needs a git repository")?,
     );
     let top = canonical(&top);
-    // Every checkout including this one (yaks-ad6d): the answer about a
+    // The four independent first questions, asked at once: the checkouts and
+    // pins (every checkout including this one, yaks-ad6d: the answer about a
     // shed never depends on where you run `yaks sheds`, only which row is
-    // marked `current`.
-    let found = checkout_paths(&top);
-
-    let ours = load_farm(farm_root).unwrap_or_default();
+    // marked `current`), whether the repository is shallow, our own farm, and
+    // our HEAD (so a shed at the same commit needs no merge-base).
+    let (gathered, shallow, ours, top_head) = std::thread::scope(|s| {
+        let found = s.spawn(|| gather(&top));
+        let shallow = s.spawn(|| {
+            git(&top, &["rev-parse", "--is-shallow-repository"]).is_ok_and(|s| s == "true")
+        });
+        let ours = s.spawn(|| load_farm(farm_root).unwrap_or_default());
+        let head = s.spawn(|| git(&top, &["rev-parse", "HEAD"]).ok());
+        (
+            found.join().unwrap(),
+            shallow.join().unwrap(),
+            ours.join().unwrap(),
+            head.join().unwrap(),
+        )
+    });
+    let (found, pins) = gathered;
     let our_farm = canonical(farm_root);
-    let shallow = git(&top, &["rev-parse", "--is-shallow-repository"]).is_ok_and(|s| s == "true");
     // The REFERENCE every shed's `landed` is measured against (same from
     // every viewer): the primary's path, found the cheap way (it is already
     // in `found`, no second discovery walk).
@@ -342,25 +362,97 @@ pub fn discover(cwd: &Path, farm_root: &Path) -> Result<Vec<Shed>> {
         .find(|(_, f)| f.primary)
         .map(|(p, _)| p.clone());
     let reference = reference_tasks(primary_path.as_deref(), &top, &our_farm);
-    let mut sheds: Vec<Shed> = found
-        .into_iter()
-        .map(|(path, found)| {
-            let current = path == top;
-            let mut shed = inspect(
-                &top,
-                &path,
-                &found,
-                current,
-                &our_farm,
-                &ours,
-                reference.as_deref(),
-            );
-            shed.shallow_here = shallow;
-            shed
-        })
-        .collect();
+    let found: Vec<(PathBuf, Found)> = found.into_iter().collect();
+    let cache = BaseCache::default();
+    let mut sheds: Vec<Shed> = par_map(&found, |(path, found)| {
+        let mut shed = inspect(
+            &Ctx {
+                top: &top,
+                our_farm: &our_farm,
+                ours: &ours,
+                reference: reference.as_deref(),
+                top_head: top_head.as_deref(),
+                cache: &cache,
+            },
+            path,
+            found,
+            *path == top,
+        );
+        shed.shallow_here = shallow;
+        shed
+    });
     disambiguate(&mut sheds);
-    Ok(sheds)
+    let orphaned = pins.into_iter().filter(|p| p.checkout.is_err()).collect();
+    Ok((sheds, orphaned))
+}
+
+/// Apply `f` to every item on a small pool of threads, results in item order.
+/// What dominates a shed's cost is waiting on `git` child processes, so the
+/// sheds (and the pin groups) are measured side by side.
+fn par_map<T: Sync, R: Send>(items: &[T], f: impl Fn(&T) -> R + Sync) -> Vec<R> {
+    const WORKERS: usize = 8;
+    let next = AtomicUsize::new(0);
+    let out: Mutex<Vec<Option<R>>> = Mutex::new(items.iter().map(|_| None).collect());
+    std::thread::scope(|s| {
+        for _ in 0..WORKERS.min(items.len()) {
+            s.spawn(|| {
+                loop {
+                    let i = next.fetch_add(1, Ordering::Relaxed);
+                    let Some(item) = items.get(i) else { break };
+                    let r = f(item);
+                    out.lock().unwrap()[i] = Some(r);
+                }
+            });
+        }
+    });
+    out.into_inner()
+        .unwrap()
+        .into_iter()
+        .map(|r| r.expect("every item was mapped"))
+        .collect()
+}
+
+/// What every shed of one `discover` shares: read once, shown to all.
+struct Ctx<'a> {
+    top: &'a Path,
+    our_farm: &'a Path,
+    ours: &'a [crate::model::Task],
+    reference: Option<&'a [crate::model::Task]>,
+    /// Our own HEAD (full sha), when it resolves.
+    top_head: Option<&'a str>,
+    cache: &'a BaseCache,
+}
+
+/// [`base_farm`] results for one `discover`, by (base commit, farm path in the
+/// checkout): sheds forked from one commit (every worker a coordinator spawned
+/// at once) read that commit's farm once.
+#[derive(Default)]
+struct BaseCache(Mutex<HashMap<(String, String), BaseCell>>);
+
+type BaseCell = Arc<OnceLock<Option<(String, Arc<Vec<crate::model::Task>>)>>>;
+
+impl BaseCache {
+    fn get(
+        &self,
+        top: &Path,
+        base: &str,
+        shed: &Path,
+        shed_farm: &Path,
+    ) -> Option<(String, Arc<Vec<crate::model::Task>>)> {
+        let rel = shed_farm
+            .strip_prefix(shed)
+            .ok()?
+            .to_str()?
+            .replace('\\', "/");
+        let cell = {
+            let mut m = self.0.lock().unwrap();
+            m.entry((base.to_string(), rel)).or_default().clone()
+        };
+        cell.get_or_init(|| {
+            base_farm(top, base, shed, shed_farm).map(|(sha, tasks)| (sha, Arc::new(tasks)))
+        })
+        .clone()
+    }
 }
 
 /// Longest slug [`slug`] returns.
@@ -437,9 +529,18 @@ pub(crate) fn shed_paths(top: &Path) -> BTreeMap<PathBuf, Found> {
 /// found both ways is a `Worktree` and keeps its Delta dir id. `top` is listed
 /// even when nothing records it (the answer never depends on where you are).
 pub(crate) fn checkout_paths(top: &Path) -> BTreeMap<PathBuf, Found> {
-    let mut found: BTreeMap<PathBuf, Found> = BTreeMap::new();
-    let add_worktrees = |from: &Path, found: &mut BTreeMap<PathBuf, Found>| {
-        for (i, p) in worktree_paths(from).into_iter().enumerate() {
+    gather(top).0
+}
+
+/// [`checkout_paths`] plus every resolved pin group of the host (live and
+/// orphaned): everything discovery reads from git about WHERE the checkouts
+/// are, in one pass. The independent questions (`git worktree list` here, the
+/// host and its pins, the host checkout's worktrees) are asked side by side,
+/// and the pin groups are resolved side by side; they are merged in the order
+/// they always were, so the result is the same.
+fn gather(top: &Path) -> (BTreeMap<PathBuf, Found>, Vec<Pinned>) {
+    let add_worktrees = |paths: Vec<PathBuf>, found: &mut BTreeMap<PathBuf, Found>| {
+        for (i, p) in paths.into_iter().enumerate() {
             let e = found.entry(canonical(&p)).or_insert(Found {
                 kind: ShedKind::Worktree,
                 dir: None,
@@ -450,30 +551,56 @@ pub(crate) fn checkout_paths(top: &Path) -> BTreeMap<PathBuf, Found> {
             e.primary |= i == 0;
         }
     };
-    add_worktrees(top, &mut found);
-    if let Some(h) = host(top) {
-        if let Some(primary) = host_checkout(&h) {
-            add_worktrees(&primary, &mut found);
-        }
-        for p in pinned(&h) {
-            if let Ok(path) = p.checkout {
+    let (here, hosted) = std::thread::scope(|s| {
+        let here = s.spawn(|| worktree_paths(top));
+        let hosted = s.spawn(|| {
+            let h = host(top)?;
+            // The host checkout's `git worktree list`, asked once: its first
+            // entry IS the host checkout, and the list is the same from there.
+            let (entries, pins) = std::thread::scope(|s| {
+                let pins = s.spawn(|| pinned(&h));
+                let entries = if h.bare {
+                    Vec::new()
+                } else {
+                    worktree_entries(&h.git_dir)
+                };
+                (entries, pins.join().unwrap())
+            });
+            let primary = host_checkout_of(&entries);
+            let paths = if primary.is_some() {
+                entries_paths(entries)
+            } else {
+                Vec::new()
+            };
+            Some((paths, pins))
+        });
+        (here.join().unwrap(), hosted.join().unwrap())
+    });
+    let mut found: BTreeMap<PathBuf, Found> = BTreeMap::new();
+    add_worktrees(here, &mut found);
+    let mut all_pins = Vec::new();
+    if let Some((paths, pins)) = hosted {
+        add_worktrees(paths, &mut found);
+        for p in &pins {
+            if let Ok(path) = &p.checkout {
                 found
-                    .entry(path)
+                    .entry(path.clone())
                     .or_insert(Found {
                         kind: ShedKind::Delta,
                         dir: None,
                         primary: false,
                     })
-                    .dir = Some(p.dir);
+                    .dir = Some(p.dir.clone());
             }
         }
+        all_pins = pins;
     }
     found.entry(top.to_path_buf()).or_insert(Found {
         kind: ShedKind::Worktree,
         dir: None,
         primary: false,
     });
-    found
+    (found, all_pins)
 }
 
 /// Pick one shed by `query`, in this order: its path (as given or
@@ -548,15 +675,8 @@ fn candidates(sheds: &[&Shed]) -> String {
 }
 
 /// Gather one shed's report. Never fails: unreadable parts become `error`.
-fn inspect(
-    top: &Path,
-    path: &Path,
-    found: &Found,
-    current: bool,
-    our_farm: &Path,
-    ours: &[crate::model::Task],
-    reference: Option<&[crate::model::Task]>,
-) -> Shed {
+fn inspect(ctx: &Ctx, path: &Path, found: &Found, current: bool) -> Shed {
+    let (top, our_farm, ours, reference) = (ctx.top, ctx.our_farm, ctx.ours, ctx.reference);
     let mut shed = Shed {
         path: path.to_path_buf(),
         kind: found.kind,
@@ -579,16 +699,17 @@ fn inspect(
         liveness: Liveness::Idle,
         error: None,
     };
-    if !found.primary {
-        shed.title = shed_git_dir(path).and_then(|gd| config_get(&gd, TITLE_KEY));
-        shed.slug = shed.title.as_deref().and_then(slug);
-    }
     let mut bases: Vec<(BaseKind, String)> = Vec::new();
     // The primary is measured from what it has not published, whoever looks.
-    if found.primary {
-        bases.extend(origin_base(path).map(|o| (BaseKind::Origin, o)));
-    }
-    match git_state(top, path) {
+    let (origin, probe) = std::thread::scope(|s| {
+        let origin = s.spawn(|| found.primary.then(|| origin_base(path)).flatten());
+        let probe = git_state(ctx, path, !found.primary);
+        (origin.join().unwrap(), probe)
+    });
+    bases.extend(origin.map(|o| (BaseKind::Origin, o)));
+    shed.title = probe.title;
+    shed.slug = shed.title.as_deref().and_then(slug);
+    match probe.state {
         Ok(g) => {
             shed.branch = g.branch;
             shed.head = Some(g.head);
@@ -620,7 +741,8 @@ fn inspect(
                         // (else the merge-base), never to our (possibly newer)
                         // checkout, so every viewer gets the same answer.
                         let base = bases.iter().find_map(|(kind, b)| {
-                            base_farm(top, b, path, &root)
+                            ctx.cache
+                                .get(top, b, path, &root)
                                 .map(|(sha, tasks)| (FarmBase { kind: *kind, sha }, tasks))
                         });
                         match base {
@@ -835,39 +957,114 @@ struct GitState {
     dirty: usize,
 }
 
-fn git_state(top: &Path, shed: &Path) -> Result<GitState> {
-    let full = git(shed, &["rev-parse", "HEAD"])?;
-    let head = git(shed, &["rev-parse", "--short", "HEAD"])?;
-    // Exit 1 from `symbolic-ref -q` means a detached HEAD.
-    let branch = git(shed, &["symbolic-ref", "--short", "-q", "HEAD"])
-        .ok()
-        .filter(|b| !b.is_empty());
-    // Counted in OUR repo, and only when the two HEADs have a merge-base here.
-    // Without one (shallow history, unrelated histories, a shed commit we do
-    // not have) rev-list would count a whole history, which says nothing.
-    let merge_base = git(top, &["merge-base", "HEAD", &full])
-        .ok()
-        .filter(|b| !b.is_empty());
-    let count = |range: String| -> Option<usize> {
-        merge_base.as_ref()?;
-        git(top, &["rev-list", "--count", &range])
-            .ok()?
-            .parse()
-            .ok()
+/// What one shed's git questions came to: its thread `title` (asked when
+/// `want_title`; independent of whether the rest could be read) and the git
+/// `state`.
+struct GitProbe {
+    title: Option<String>,
+    state: Result<GitState>,
+}
+
+/// One shed's git state. After the one probe that names its git dir, full and
+/// short HEAD, the independent questions (title, branch, `status`, and the
+/// merge-base/count/fork-point chain in OUR repo) are asked side by side.
+fn git_state(ctx: &Ctx, shed: &Path, want_title: bool) -> GitProbe {
+    let top = ctx.top;
+    // `rev-parse --absolute-git-dir HEAD --short HEAD`: git dir, full, short.
+    let probe = git(
+        shed,
+        &["rev-parse", "--absolute-git-dir", "HEAD", "--short", "HEAD"],
+    );
+    let (git_dir, full, head) = match &probe {
+        Ok(out) => {
+            let mut l = out.lines();
+            match (l.next(), l.next(), l.next()) {
+                (Some(d), Some(f), Some(h)) => (d.to_string(), f.to_string(), h.to_string()),
+                _ => (String::new(), String::new(), String::new()),
+            }
+        }
+        Err(_) => (String::new(), String::new(), String::new()),
     };
-    let ahead = count(format!("HEAD..{full}"));
-    let behind = count(format!("{full}..HEAD"));
-    // `--no-optional-locks` (see `git`) keeps status from refreshing the index.
-    let status = git_raw(shed, &["status", "--porcelain", "--untracked-files=all"])?;
-    let dirty = status.lines().filter(|l| !l.trim().is_empty()).count();
-    Ok(GitState {
-        branch,
-        head,
-        fork: fork_point(top, shed, &full),
-        merge_base,
-        ahead,
-        behind,
-        dirty,
+    if full.is_empty() {
+        // HEAD does not resolve: the error is the answer for the git state,
+        // the title (a config read) is independent of it.
+        let title = want_title
+            .then(|| shed_git_dir(shed).and_then(|gd| config_get(&gd, TITLE_KEY)))
+            .flatten();
+        // The message is the one a plain `git rev-parse HEAD` gives (what
+        // this has always reported), not the combined probe's.
+        let e = match git(shed, &["rev-parse", "HEAD"]) {
+            Err(e) => e,
+            Ok(_) => probe
+                .err()
+                .unwrap_or_else(|| anyhow::anyhow!("git rev-parse HEAD: no output")),
+        };
+        return GitProbe {
+            title,
+            state: Err(e),
+        };
+    }
+    std::thread::scope(|s| {
+        let title = s.spawn(|| {
+            want_title
+                .then(|| config_get(&canonical(Path::new(&git_dir)), TITLE_KEY))
+                .flatten()
+        });
+        // Exit 1 from `symbolic-ref -q` means a detached HEAD.
+        let branch = s.spawn(|| {
+            git(shed, &["symbolic-ref", "--short", "-q", "HEAD"])
+                .ok()
+                .filter(|b| !b.is_empty())
+        });
+        // `--no-optional-locks` (see `git`) keeps status from refreshing the index.
+        let status = s.spawn(|| git_raw(shed, &["status", "--porcelain", "--untracked-files=all"]));
+        // Counted in OUR repo, and only when the two HEADs have a merge-base
+        // here. Without one (shallow history, unrelated histories, a shed
+        // commit we do not have) rev-list would count a whole history, which
+        // says nothing. The same commit as ours is its own merge-base, 0 and 0.
+        let (merge_base, ahead, behind) = if ctx.top_head == Some(full.as_str()) {
+            (Some(full.clone()), Some(0), Some(0))
+        } else {
+            let merge_base = git(top, &["merge-base", "HEAD", &full])
+                .ok()
+                .filter(|b| !b.is_empty());
+            let (ahead, behind) = match &merge_base {
+                None => (None, None),
+                // `HEAD...full` counts `<left>\t<right>` = commits only we
+                // have (the shed is BEHIND by) and only the shed has (AHEAD).
+                Some(_) => git(
+                    top,
+                    &[
+                        "rev-list",
+                        "--left-right",
+                        "--count",
+                        &format!("HEAD...{full}"),
+                    ],
+                )
+                .ok()
+                .and_then(|c| {
+                    let (l, r) = c.split_once('\t')?;
+                    Some((r.trim().parse().ok()?, l.trim().parse().ok()?))
+                })
+                .unzip(),
+            };
+            (merge_base, ahead, behind)
+        };
+        let fork = fork_point(top, &git_dir, &full, merge_base.as_deref());
+        let status = status.join().unwrap();
+        let state = status.map(|status| GitState {
+            branch: branch.join().unwrap(),
+            head,
+            fork,
+            merge_base,
+            ahead,
+            behind,
+            dirty: status.lines().filter(|l| !l.trim().is_empty()).count(),
+        });
+        GitProbe {
+            title: title.join().unwrap(),
+            state,
+        }
     })
 }
 
@@ -878,11 +1075,12 @@ fn git_state(top: &Path, shed: &Path) -> Result<GitState> {
 /// is no reflog, it is expired or unparseable, or the commit is not usable as a
 /// baseline: unknown to our object store, or not an ancestor of the shed's HEAD
 /// `full` (e.g. the shed was rebased since), which would make "since the fork"
-/// meaningless.
-fn fork_point(top: &Path, shed: &Path, full: &str) -> Option<String> {
+/// meaningless. `git_dir` is the shed's absolute git dir; a fork point equal to
+/// `full` or to the shed's `merge_base` with us is an ancestor by definition,
+/// so it is not asked of git.
+fn fork_point(top: &Path, git_dir: &str, full: &str, merge_base: Option<&str>) -> Option<String> {
     use std::io::{BufRead, BufReader};
-    let dir = git(shed, &["rev-parse", "--absolute-git-dir"]).ok()?;
-    let file = fs::File::open(Path::new(&dir).join("logs").join("HEAD")).ok()?;
+    let file = fs::File::open(Path::new(git_dir).join("logs").join("HEAD")).ok()?;
     let mut first = String::new();
     BufReader::new(file).read_line(&mut first).ok()?;
     // `<old> <new> <identity> <time> <tz>\t<message>`: `new` is where HEAD
@@ -894,7 +1092,10 @@ fn fork_point(top: &Path, shed: &Path, full: &str) -> Option<String> {
     {
         return None;
     }
-    git(top, &["merge-base", "--is-ancestor", sha, full]).ok()?;
+    let known_ancestor = merge_base.is_some_and(|mb| sha == full || sha == mb);
+    if !known_ancestor {
+        git(top, &["merge-base", "--is-ancestor", sha, full]).ok()?;
+    }
     Some(sha.to_string())
 }
 
@@ -938,13 +1139,26 @@ fn base_farm(
 ) -> Option<(String, Vec<crate::model::Task>)> {
     let rel = shed_farm.strip_prefix(shed).ok()?;
     let rel = rel.to_str()?.replace('\\', "/");
-    let short = git(top, &["rev-parse", "--short", &base]).ok()?;
+    // The short sha is independent of the tree read: ask both at once.
+    let short = std::thread::scope(|s| {
+        let short = s.spawn(|| git(top, &["rev-parse", "--short", base]).ok());
+        let r = base_files(top, base, &rel);
+        (short.join().unwrap(), r)
+    });
+    let (short, files) = short;
+    let short = short?;
+    let files = files?;
+    base_farm_tasks(top, short, files)
+}
 
+/// The task files (`(blob sha, name under the farm)`) of the farm at `rel` in
+/// commit `base`; `None` when there are none.
+fn base_files(top: &Path, base: &str, rel: &str) -> Option<Vec<(String, String)>> {
     // Task files only: `<rel>/<id>.md`; attachments are skipped. A commit from
     // before the farm migrated has none (its yaks sat in status directories),
     // so there is nothing to read and the caller falls back to its next base.
-    let tree = git_raw(top, &["ls-tree", "-r", "-z", &base, "--", &rel]).ok()?;
-    let mut files: Vec<(&str, String)> = Vec::new(); // (blob sha, path under the farm)
+    let tree = git_raw(top, &["ls-tree", "-r", "-z", base, "--", rel]).ok()?;
+    let mut files: Vec<(String, String)> = Vec::new(); // (blob sha, path under the farm)
     for entry in tree.split('\0').filter(|e| !e.is_empty()) {
         let (meta, path) = entry.split_once('\t')?;
         let mut m = meta.split(' ');
@@ -952,17 +1166,23 @@ fn base_farm(
             continue;
         }
         let sha = m.next()?;
-        let Some(under) = path.strip_prefix(&rel).and_then(|p| p.strip_prefix('/')) else {
+        let Some(under) = path.strip_prefix(rel).and_then(|p| p.strip_prefix('/')) else {
             continue;
         };
         if !under.contains('/') && under.ends_with(".md") {
-            files.push((sha, under.to_string()));
+            files.push((sha.to_string(), under.to_string()));
         }
     }
-    if files.is_empty() {
-        return None;
-    }
+    (!files.is_empty()).then_some(files)
+}
 
+/// Materialize `files` (blobs of our repo) into a temp dir and load them as a
+/// farm: `(short sha, tasks)`.
+fn base_farm_tasks(
+    top: &Path,
+    short: String,
+    files: Vec<(String, String)>,
+) -> Option<(String, Vec<crate::model::Task>)> {
     let tmp = TempDir::new().ok()?;
     let farm = tmp.0.join("farm");
     // One `cat-file --batch` for all blobs; its stdin is a file so there is no
@@ -1270,7 +1490,11 @@ pub(crate) fn canonical(p: &Path) -> PathBuf {
 /// missing and `.git`-less entries. (Inside Delta the entry is the clone's
 /// separate git dir, which holds no `.git`, so it drops out here.)
 fn worktree_paths(top: &Path) -> Vec<PathBuf> {
-    worktree_entries(top)
+    entries_paths(worktree_entries(top))
+}
+
+fn entries_paths(entries: Vec<(PathBuf, Result<(), String>)>) -> Vec<PathBuf> {
+    entries
         .into_iter()
         .filter_map(|(p, verdict)| verdict.ok().map(|()| p))
         .collect()
@@ -1344,10 +1568,15 @@ pub struct Pinned {
 
 /// Find the host of the checkout at `top`.
 pub fn host(top: &Path) -> Option<Host> {
-    let own_git_dir = canonical(Path::new(
-        &git(top, &["rev-parse", "--absolute-git-dir"]).ok()?,
-    ));
-    let common = common_dir(top)?;
+    // One probe for both: this checkout's git dir and its common one.
+    let probe = git(
+        top,
+        &["rev-parse", "--absolute-git-dir", "--git-common-dir"],
+    )
+    .ok()?;
+    let mut lines = probe.lines();
+    let own_git_dir = canonical(Path::new(lines.next()?));
+    let common = resolve_common_dir(top, lines.next()?);
     let (git_dir, via_alternates) = match alternates(&common) {
         // `<host>/objects`; a host with no `objects` dir is not one we read.
         Some(objects) if objects.ends_with("objects") && objects.is_dir() => {
@@ -1399,18 +1628,15 @@ pub fn pinned(host: &Host) -> Vec<Pinned> {
                 .or_default() += 1;
         }
     }
-    groups
-        .into_iter()
-        .map(|((dir, name), pins)| {
-            let checkout = resolve_pin(host, &dir, &name);
-            Pinned {
-                dir,
-                name,
-                pins,
-                checkout,
-            }
-        })
-        .collect()
+    // Most groups are finished threads whose git dir is gone (a directory
+    // test); each live one costs a `git config`, so those run side by side.
+    let groups: Vec<_> = groups.into_iter().collect();
+    par_map(&groups, |((dir, name), pins)| Pinned {
+        dir: dir.clone(),
+        name: name.clone(),
+        pins: *pins,
+        checkout: resolve_pin(host, dir, name),
+    })
 }
 
 fn resolve_pin(host: &Host, dir: &str, name: &str) -> Result<PathBuf, String> {
@@ -1450,20 +1676,27 @@ pub(crate) fn host_checkout(host: &Host) -> Option<PathBuf> {
     if host.bare {
         return None;
     }
-    let (main, verdict) = worktree_entries(&host.git_dir).into_iter().next()?;
-    verdict.ok()?;
-    Some(canonical(&main))
+    host_checkout_of(&worktree_entries(&host.git_dir))
+}
+
+/// The main checkout among `git worktree list` entries: the first, when it is
+/// a real checkout.
+fn host_checkout_of(entries: &[(PathBuf, Result<(), String>)]) -> Option<PathBuf> {
+    let (main, verdict) = entries.first()?;
+    verdict.as_ref().ok()?;
+    Some(canonical(main))
 }
 
 /// The shared (common) git dir of the checkout at `checkout`.
 pub(crate) fn common_dir(checkout: &Path) -> Option<PathBuf> {
     let d = git(checkout, &["rev-parse", "--git-common-dir"]).ok()?;
+    Some(resolve_common_dir(checkout, &d))
+}
+
+/// `git rev-parse --git-common-dir` output, made absolute against `checkout`.
+fn resolve_common_dir(checkout: &Path, d: &str) -> PathBuf {
     let d = PathBuf::from(d);
-    Some(canonical(&if d.is_absolute() {
-        d
-    } else {
-        checkout.join(d)
-    }))
+    canonical(&if d.is_absolute() { d } else { checkout.join(d) })
 }
 
 /// The first line of `<common>/objects/info/alternates`: the object store a
@@ -2009,6 +2242,10 @@ pub fn render(sheds: &[Shed], orphaned: &[Pinned]) -> String {
 /// `orphaned` footer lists. Not a [`Shed`]: there is no checkout to measure
 /// (no git state, no farm), so these are never in `discover`'s sheds array or
 /// `sheds --json`, only in the text table's footer (yaks-9277).
+///
+/// `yaks sheds` itself uses [`discover_all`], which returns these from the same
+/// pass as the sheds; this standalone form is for a caller that wants only them.
+#[allow(dead_code)]
 pub fn orphaned_pins(cwd: &Path) -> Vec<Pinned> {
     let Some(h) = host(cwd) else {
         return Vec::new();
