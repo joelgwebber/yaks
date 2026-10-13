@@ -723,23 +723,56 @@ fn status_rank(dir: &str) -> usize {
 /// So a backward-only move (the reference's status ranks at or beyond
 /// theirs') is not outstanding by itself; any other signal (new to the
 /// reference, extra notes, a new `needs:`, a forward move, or edited) is.
-/// Pure.
+/// A new `needs:` is itself superseded when the reference already resolved
+/// it (see [`needs_superseded`]). Pure.
 fn outstanding_ids(
     reference: &[crate::model::Task],
     theirs: &[crate::model::Task],
 ) -> BTreeSet<String> {
+    let reference_by_id: BTreeMap<&str, &crate::model::Task> =
+        reference.iter().map(|t| (t.id.as_str(), t)).collect();
+    let theirs_by_id: BTreeMap<&str, &crate::model::Task> =
+        theirs.iter().map(|t| (t.id.as_str(), t)).collect();
     yak_changes(reference, theirs)
         .into_iter()
         .filter(|c| {
+            let id = c.id.as_str();
+            let needs_outstanding = c.needs.is_some()
+                && !reference_by_id
+                    .get(id)
+                    .zip(theirs_by_id.get(id))
+                    .is_some_and(|(r, t)| needs_superseded(r, t));
             c.added
                 || !c.notes.is_empty()
-                || c.needs.is_some()
+                || needs_outstanding
                 || c.edited
                 || c.moved
                     .is_some_and(|(from, to)| status_rank(to) > status_rank(from))
         })
         .map(|c| c.id)
         .collect()
+}
+
+/// The shed's `needs:` on `theirs` is SUPERSEDED by `reference` (its copy of
+/// the same yak): the reference carries no `needs:` itself, already holds the
+/// shed's latest ask note entry (same timestamp, actor and text), and has
+/// either shipped the yak (shorn) or a later note entry after that ask: the
+/// question was asked, then answered or picked up, and the `needs:` cleared.
+/// A reference that never saw the ask (including a hand-set `needs:` with no
+/// ask entry) or still carries a `needs:` does not supersede. Pure.
+fn needs_superseded(reference: &crate::model::Task, theirs: &crate::model::Task) -> bool {
+    if reference.needs.is_some() {
+        return false;
+    }
+    let theirs_notes = store::parse_notes(&theirs.body);
+    let Some(ask) = theirs_notes.iter().rfind(|n| store::is_ask_text(&n.text)) else {
+        return false;
+    };
+    let notes = store::parse_notes(&reference.body);
+    notes
+        .iter()
+        .position(|n| n == ask)
+        .is_some_and(|at| reference.status == Status::Shorn || at + 1 < notes.len())
 }
 
 /// Which ids `yak_changes(base, theirs)` touches that the `reference` farm
@@ -3768,6 +3801,67 @@ mod tests {
         let empty: Vec<crate::model::Task> = Vec::new();
         let landed = landed_ids(&empty, &theirs, Some(&reference));
         assert_eq!(landed, ["yaks-back".to_string()]);
+    }
+
+    /// `outstanding_ids` contains `yaks-ask` for a shed copy that asks
+    /// (`needs: human` plus the ask entry) against a reference copy built by
+    /// the caller: `(status, front matter, note texts after the ask)`, or
+    /// `None` for a reference that never saw the ask.
+    fn outstanding_after_ask(tag: &str, reference: Option<(&str, &str, &[&str])>) -> bool {
+        let ask = ("2026-02-01T00:00:00Z", Some("w"), "asked: needs human");
+        let b = base(tag);
+        let (r, t) = (b.join("reference"), b.join("theirs"));
+        task_file(
+            &t,
+            "shaving",
+            "yaks-ask",
+            "needs: human\n",
+            &notes("x", &[ask]),
+        );
+        match reference {
+            Some((status, fm, after)) => {
+                let mut entries = vec![ask];
+                entries.extend(
+                    after
+                        .iter()
+                        .map(|text| ("2026-02-02T00:00:00Z", Some("coord"), *text)),
+                );
+                task_file(&r, status, "yaks-ask", fm, &notes("x", &entries));
+            }
+            None => task_file(&r, "shaving", "yaks-ask", "", "x"),
+        }
+        let load = |root: &Path| store::load(&root.join(".yaks"), &EVERY).unwrap();
+        outstanding_ids(&load(&r), &load(&t)).contains("yaks-ask")
+    }
+
+    /// yaks-8814: a shed's `needs:` that the reference already resolved is
+    /// superseded, not outstanding.
+    #[test]
+    fn outstanding_ids_supersedes_a_needs_the_reference_resolved() {
+        // (a) the land-1 case: ask, answer, pickup, `needs:` cleared.
+        assert!(!outstanding_after_ask(
+            "needs-resolved",
+            Some(("shaving", "", &["answered: yes", "picked up"])),
+        ));
+        // (b) the reference shipped it (shorn, no `needs:`), ask present.
+        assert!(!outstanding_after_ask(
+            "needs-shorn",
+            Some(("shorn", "", &["moved: shaving -> shorn"])),
+        ));
+        // (c) the reference never saw the ask: still outstanding.
+        assert!(outstanding_after_ask("needs-unseen", None));
+        // (d) the reference has `needs: human` too: unchanged (not a new
+        // `needs:`, so nothing outstanding on that account).
+        assert!(!outstanding_after_ask(
+            "needs-same",
+            Some(("shaving", "needs: human\n", &[])),
+        ));
+        // The ask is present but nothing followed it and `needs:` is
+        // cleared: nothing resolved it, so still outstanding.
+        assert!(outstanding_after_ask(
+            "needs-no-follow-up",
+            Some(("shaving", "", &[])),
+        ));
     }
 
     /// The shed `l`'s JSON object from `to_json`.
