@@ -1,11 +1,11 @@
 ---
 id: yaks-38dc
 title: 'Sheds view: show in-flight yak state from other checkouts in the TUI'
-status: hairy
+status: shaving
 type: feature
 priority: 3
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-10T15:43:55Z'
+updated: '2026-10-13T00:11:39Z'
 parent: yaks-b5a0
 labels:
 - ui
@@ -39,3 +39,7 @@ Terminology decision (Joel, 2026-10-06, via the naming subthread): a "lane" is n
 ---
 ▸ 2026-10-09T20:12:18Z [delta:Delta :Yaks (cont'd)]
 Superseded premise (2026-10-09): the "Delta lanes via a directory scan as a stopgap, make discovery pluggable so a Delta CLI can replace it" part of the description no longer applies. Discovery is git-only and needs no Delta CLI (yaks-c635), and the CLI half is `yaks sheds`. What remains of this yak is the TUI view of sheds, designed under yaks-7204 / yaks-ee0a.
+
+---
+▸ 2026-10-13T00:11:39Z [delta-lead]
+moved: hairy -> shaving

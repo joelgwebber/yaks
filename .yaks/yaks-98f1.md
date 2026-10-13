@@ -1,16 +1,15 @@
 ---
 id: yaks-98f1
 title: 'TUI: a thin Sheds tab (shed list + a shed''s changes), refreshed in the background'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-10-12T23:58:55Z'
-updated: '2026-10-13T00:08:41Z'
+updated: '2026-10-13T00:11:39Z'
 parent: yaks-38dc
 labels:
 - ui
 - delta
-needs: agent
 ---
 
 Approach A of the 2026-10-12 brainstorm, agreed to come first (Joel, on yaks-8b7a: "then a thin Sheds tab first, then the overlay"). Joel's pain: he opens terminals in Delta worktrees by hand to check a thread's state. The tab puts `yaks sheds` and `yaks changes <shed>` on screen, live, from inside `yaks tui`; the yak tree stays home.
@@ -91,3 +90,13 @@ Answers:
 ---
 ▸ 2026-10-13T00:08:41Z [Joel Webber]
 Answered above.
+
+---
+▸ 2026-10-13T00:11:39Z [delta-lead]
+picked up
+
+Picked up by delta-lead (yakherd, this thread): building the tab here to the design note with Joel's six answers (all as recommended; garbage sheds dimmed, filtering/removal later).
+
+---
+▸ 2026-10-13T00:11:39Z [delta-lead]
+moved: hairy -> shaving
