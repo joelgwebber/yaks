@@ -279,7 +279,11 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
         section("Sheds tab (every checkout: yaks sheds)"),
         entry("j / k", "Move between sheds (attention first)"),
         entry("l / Enter", "Show the shed's changes (yaks changes)"),
-        entry("j / k (detail)", "Move between its changed yaks"),
+        entry(
+            "j / k (detail)",
+            "Move between its changed yaks (outstanding first, landed fold below)",
+        ),
+        entry("Enter (on ▸ N landed)", "Show / hide the landed yaks"),
         entry("J / K (detail)", "Next / previous shed"),
         entry(
             "Enter (detail)",

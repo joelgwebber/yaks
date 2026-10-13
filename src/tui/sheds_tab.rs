@@ -268,8 +268,14 @@ pub(crate) struct ShedsTab {
     pub snapshot: Option<Snapshot>,
     /// Index into `Snapshot::order()`.
     pub cursor: usize,
-    /// Detail pane: index into the selected shed's yaks.
+    /// Detail pane: index into the selected shed's stops (see
+    /// [`detail_stops`]): its outstanding yaks, the fold line, then (open)
+    /// the landed yaks.
     pub line: usize,
+    /// Whether the detail shows the landed yaks under the fold line (Enter on
+    /// it toggles). One flag for the App, not per shed, and not persisted
+    /// (yaks-c1f8).
+    pub landed_open: bool,
     /// List: first visible row, kept across frames (yaks-9009).
     pub list_offset: Cell<usize>,
     /// Detail pane: first visible line, kept across frames.
@@ -286,6 +292,22 @@ pub(crate) struct ShedsTab {
     scanned_at: Option<Instant>,
     in_flight: Option<Receiver<Snapshot>>,
     queued: bool,
+}
+
+/// The cursor stops of a shed's detail, in display order: outstanding yaks
+/// first (`Some`), then ONE fold line for the landed ones (`None`), then the
+/// landed yaks themselves when `open`. The order is `sheds::split_landed`'s,
+/// as in `yaks changes`.
+fn detail_stops(yaks: &[YakChange], open: bool) -> Vec<Option<&YakChange>> {
+    let (outstanding, landed) = sheds::split_landed(yaks);
+    let mut stops: Vec<Option<&YakChange>> = outstanding.into_iter().map(Some).collect();
+    if !landed.is_empty() {
+        stops.push(None);
+        if open {
+            stops.extend(landed.into_iter().map(Some));
+        }
+    }
+    stops
 }
 
 impl ShedsTab {
@@ -357,7 +379,9 @@ impl App {
     /// and the detail cursor on the same yak (by id).
     pub(crate) fn apply_sheds_snapshot(&mut self, snap: Snapshot) {
         let shed = self.selected_shed().map(|s| s.path.clone());
+        // The detail cursor: a yak by id, or the fold line.
         let yak = self.selected_shed_yak().map(|y| y.id.clone());
+        let on_fold = self.selected_shed().is_some() && yak.is_none();
         if snap.error.is_none() {
             let keys = snap.ask_keys();
             if let Some(seen) = &self.sheds.seen_asks {
@@ -389,10 +413,25 @@ impl App {
             .unwrap_or(0)
             .min(order.len().saturating_sub(1));
         let yaks = order.get(self.sheds.cursor).map_or(&[][..], |&i| s.yaks(i));
-        self.sheds.line = yak
-            .and_then(|id| yaks.iter().position(|y| y.id == id))
-            .unwrap_or(0)
-            .min(yaks.len().saturating_sub(1));
+        let stops = detail_stops(yaks, self.sheds.landed_open);
+        let fold = stops.iter().position(Option::is_none);
+        self.sheds.line = match &yak {
+            // Still a stop: keep it. Folded away (it landed since, and the
+            // landed yaks are collapsed): the fold line it went behind.
+            Some(id) => stops
+                .iter()
+                .position(|y| y.is_some_and(|y| y.id == *id))
+                .or_else(|| {
+                    yaks.iter()
+                        .any(|y| y.landed && y.id == *id)
+                        .then_some(fold)
+                        .flatten()
+                }),
+            None if on_fold => fold,
+            None => None,
+        }
+        .unwrap_or(0)
+        .min(stops.len().saturating_sub(1));
     }
 
     /// The shed under the cursor, with its index into `Snapshot::sheds`.
@@ -406,9 +445,22 @@ impl App {
         self.sheds.snapshot.as_ref()?.sheds.get(i)
     }
 
+    /// The stops of the selected shed's detail (see [`detail_stops`]).
+    fn shed_stops(&self) -> Vec<Option<&YakChange>> {
+        let (Some(i), Some(s)) = (self.selected_shed_index(), self.sheds.snapshot.as_ref()) else {
+            return Vec::new();
+        };
+        detail_stops(s.yaks(i), self.sheds.landed_open)
+    }
+
+    /// The yak under the detail cursor; `None` on the fold line too.
     pub(crate) fn selected_shed_yak(&self) -> Option<&YakChange> {
-        let i = self.selected_shed_index()?;
-        self.sheds.snapshot.as_ref()?.yaks(i).get(self.sheds.line)
+        self.shed_stops().get(self.sheds.line).copied().flatten()
+    }
+
+    /// Whether the detail cursor is on the landed fold line.
+    fn on_landed_fold(&self) -> bool {
+        matches!(self.shed_stops().get(self.sheds.line), Some(None))
     }
 
     fn move_shed(&mut self, delta: i32) {
@@ -425,10 +477,7 @@ impl App {
     }
 
     fn move_shed_yak(&mut self, delta: i32) {
-        let n = self
-            .selected_shed_index()
-            .zip(self.sheds.snapshot.as_ref())
-            .map_or(0, |(i, s)| s.yaks(i).len());
+        let n = self.shed_stops().len();
         if n == 0 {
             return;
         }
@@ -514,6 +563,11 @@ impl App {
             // for yaks).
             KeyCode::Char('J') => self.move_shed(1),
             KeyCode::Char('K') => self.move_shed(-1),
+            // Enter on the fold line shows / hides the landed yaks; on a yak
+            // it opens it. The cursor stays on the fold line either way.
+            KeyCode::Enter if self.on_landed_fold() => {
+                self.sheds.landed_open = !self.sheds.landed_open;
+            }
             KeyCode::Enter => self.open_shed_yak(),
             KeyCode::Char('a') => self.open_answer_in_shed(),
             _ => {}
@@ -782,8 +836,75 @@ fn wrap(text: &str, w: usize) -> Vec<String> {
 /// How many lines of an ask's question the detail shows under its note.
 const ASK_LINES: usize = 6;
 
-/// The detail pane's lines for shed `i`, and the line each yak starts on.
-fn detail_lines(snap: &Snapshot, i: usize, width: usize) -> (Vec<Line<'static>>, Vec<usize>) {
+/// One yak's block in a shed's detail: the id/brackets/title line, each new
+/// note's first line (an ask's question too) and its `needs:`. A landed yak's
+/// text is dim.
+fn push_yak_block(lines: &mut Vec<Line<'static>>, y: &YakChange, width: usize) {
+    // The same bracket words as `yaks changes`.
+    let mut what = match (y.added, y.moved) {
+        (true, _) => format!("new, {}", y.status),
+        (false, Some((from, to))) => format!("{from} -> {to}"),
+        (false, None) => y.status.to_string(),
+    };
+    if y.edited {
+        what.push_str(", edited");
+    }
+    if y.landed {
+        what.push_str(", landed");
+    }
+    let style = if y.landed { dim() } else { Style::new() };
+    let mut spans = vec![
+        Span::styled(format!("{}  ", y.id), Style::new().fg(Color::Blue)),
+        Span::styled(format!("[{what}]  "), Style::new().fg(Color::Yellow)),
+    ];
+    if y.needs.as_deref() == Some("human") && !y.landed {
+        spans.insert(0, Span::raw("\u{23f3}"));
+    }
+    spans.push(Span::styled(y.title.clone(), style));
+    lines.push(Line::from(spans));
+    for n in &y.notes {
+        let first = n
+            .text
+            .lines()
+            .map(str::trim)
+            .find(|l| !l.is_empty())
+            .unwrap_or("");
+        lines.push(Line::from(vec![
+            Span::styled(
+                format!("    {}  {}  ", n.ts, n.actor.as_deref().unwrap_or("-")),
+                dim(),
+            ),
+            Span::styled(first.to_string(), style),
+        ]));
+        // An ask shows its question too: it is what `a` answers.
+        if crate::store::is_ask_text(&n.text) {
+            let rest = n.text.lines().skip_while(|l| l.trim() != first).skip(1);
+            for l in rest.filter(|l| !l.trim().is_empty()).take(ASK_LINES) {
+                for part in wrap(l.trim(), width.saturating_sub(6).max(10)) {
+                    lines.push(Line::from(Span::styled(
+                        format!("      {part}"),
+                        Style::new().fg(Color::Yellow),
+                    )));
+                }
+            }
+        }
+    }
+    if let Some(v) = &y.needs {
+        lines.push(Line::from(Span::styled(
+            format!("    needs: {v}"),
+            Style::new().fg(Color::Yellow),
+        )));
+    }
+}
+
+/// The detail pane's lines for shed `i`, and the line each stop (a yak's
+/// block, or the fold line) starts on, indexed like `ShedsTab::line`.
+fn detail_lines(
+    snap: &Snapshot,
+    i: usize,
+    width: usize,
+    landed_open: bool,
+) -> (Vec<Line<'static>>, Vec<usize>) {
     let s = &snap.sheds[i];
     let label = |k: &str| Span::styled(format!("{k:<9}"), Style::new().fg(Color::Cyan));
     let mut lines: Vec<Line<'static>> = Vec::new();
@@ -848,62 +969,28 @@ fn detail_lines(snap: &Snapshot, i: usize, width: usize) -> (Vec<Line<'static>>,
         ),
         Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
     )));
-    for y in yaks {
+    let (outstanding, landed) = sheds::split_landed(yaks);
+    for y in outstanding {
         starts.push(lines.len());
-        // The same bracket words as `yaks changes`.
-        let mut what = match (y.added, y.moved) {
-            (true, _) => format!("new, {}", y.status),
-            (false, Some((from, to))) => format!("{from} -> {to}"),
-            (false, None) => y.status.to_string(),
-        };
-        if y.edited {
-            what.push_str(", edited");
-        }
-        if y.landed {
-            what.push_str(", landed");
-        }
-        let style = if y.landed { dim() } else { Style::new() };
-        let mut spans = vec![
-            Span::styled(format!("{}  ", y.id), Style::new().fg(Color::Blue)),
-            Span::styled(format!("[{what}]  "), Style::new().fg(Color::Yellow)),
-        ];
-        if y.needs.as_deref() == Some("human") && !y.landed {
-            spans.insert(0, Span::raw("\u{23f3}"));
-        }
-        spans.push(Span::styled(y.title.clone(), style));
-        lines.push(Line::from(spans));
-        for n in &y.notes {
-            let first = n
-                .text
-                .lines()
-                .map(str::trim)
-                .find(|l| !l.is_empty())
-                .unwrap_or("");
-            lines.push(Line::from(vec![
-                Span::styled(
-                    format!("    {}  {}  ", n.ts, n.actor.as_deref().unwrap_or("-")),
-                    dim(),
-                ),
-                Span::styled(first.to_string(), style),
-            ]));
-            // An ask shows its question too: it is what `a` answers.
-            if crate::store::is_ask_text(&n.text) {
-                let rest = n.text.lines().skip_while(|l| l.trim() != first).skip(1);
-                for l in rest.filter(|l| !l.trim().is_empty()).take(ASK_LINES) {
-                    for part in wrap(l.trim(), width.saturating_sub(6).max(10)) {
-                        lines.push(Line::from(Span::styled(
-                            format!("      {part}"),
-                            Style::new().fg(Color::Yellow),
-                        )));
-                    }
-                }
+        push_yak_block(&mut lines, y, width);
+    }
+    // The landed yaks fold behind one line (a cursor stop); Enter on it
+    // shows them under it.
+    if !landed.is_empty() {
+        starts.push(lines.len());
+        lines.push(Line::from(Span::styled(
+            format!(
+                "{} {} landed",
+                if landed_open { '\u{25be}' } else { '\u{25b8}' },
+                landed.len()
+            ),
+            dim(),
+        )));
+        if landed_open {
+            for y in landed {
+                starts.push(lines.len());
+                push_yak_block(&mut lines, y, width);
             }
-        }
-        if let Some(v) = &y.needs {
-            lines.push(Line::from(Span::styled(
-                format!("    needs: {v}"),
-                Style::new().fg(Color::Yellow),
-            )));
         }
     }
     (lines, starts)
@@ -913,7 +1000,7 @@ pub(crate) fn render_shed_detail(app: &App, frame: &mut Frame, area: Rect) {
     let (Some(snap), Some(i)) = (&app.sheds.snapshot, app.selected_shed_index()) else {
         return;
     };
-    let (mut lines, starts) = detail_lines(snap, i, area.width as usize);
+    let (mut lines, starts) = detail_lines(snap, i, area.width as usize, app.sheds.landed_open);
     let h = area.height as usize;
     // Keep the selected yak's block in view (its first line at least).
     let mut offset = app.sheds.offset.get();
@@ -1593,6 +1680,183 @@ mod tests {
         }
         app.apply_sheds_snapshot(snap);
         assert_eq!(app.notification, None);
+    }
+
+    // -- landed yaks fold behind one line (yaks-c1f8) --------------------------
+
+    /// The fixture with two landed yaks added to perf-1-profile, ids that sort
+    /// BEFORE its outstanding yaks-07fe (so the fold's order is visible).
+    fn with_landed(mut snap: Snapshot) -> Snapshot {
+        let i = snap
+            .sheds
+            .iter()
+            .position(|s| s.name() == "perf-1-profile")
+            .unwrap();
+        let base = snap.yaks(i)[0].clone();
+        let landed = |id: &str, title: &str| {
+            let mut y = base.clone();
+            y.id = id.into();
+            y.title = title.into();
+            y.notes = vec![];
+            y.status = "shorn";
+            y.moved = Some(("shaving", "shorn"));
+            y.landed = true;
+            y
+        };
+        if let Some(Some(Changes { yaks: Ok(y), .. })) = snap.changes.get_mut(i) {
+            y.push(landed("yaks-0001", "first landed"));
+            y.push(landed("yaks-0002", "second landed"));
+            y.sort_by(|a, b| a.id.cmp(&b.id));
+        }
+        snap
+    }
+
+    /// An app on perf-1's detail (cursor on its first outstanding yak).
+    fn on_perf_detail() -> App {
+        let mut app = on_sheds(sample());
+        app.apply_sheds_snapshot(with_landed(fixture::snapshot()));
+        press(&mut app, "jjl");
+        assert_eq!(app.selected_shed().unwrap().name(), "perf-1-profile");
+        app
+    }
+
+    fn shed_yak_id(app: &App) -> Option<String> {
+        app.selected_shed_yak().map(|y| y.id.clone())
+    }
+
+    #[test]
+    fn outstanding_yaks_lead_and_one_line_folds_the_landed_ones() {
+        let app = on_perf_detail();
+        let frame = draw(&app, 120, 20);
+        assert!(frame.contains("Changes (3 yaks)"), "{frame}");
+        assert!(frame.contains("\u{25b8} 2 landed"), "{frame}");
+        assert!(frame.contains("yaks-07fe"), "{frame}");
+        assert!(!frame.contains("yaks-0001"), "{frame}");
+        assert!(!frame.contains("yaks-0002"), "{frame}");
+        assert!(frame.find("yaks-07fe") < frame.find("\u{25b8} 2 landed"));
+    }
+
+    #[test]
+    fn enter_on_the_fold_line_expands_and_collapses() {
+        let mut app = on_perf_detail();
+        press(&mut app, "j"); // the fold line
+        assert_eq!(shed_yak_id(&app), None);
+        enter_key(&mut app);
+        assert_eq!(app.focus, Focus::Detail);
+        assert!(
+            app.on_sheds_tab(),
+            "Enter on the fold line must not open a yak"
+        );
+        let open = draw(&app, 120, 20);
+        assert!(open.contains("\u{25be} 2 landed"), "{open}");
+        // Landed yaks sit below the fold line, in id order.
+        let at = |s: &str| open.find(s).unwrap_or_else(|| panic!("{s} in {open}"));
+        assert!(at("yaks-07fe") < at("\u{25be} 2 landed"));
+        assert!(at("\u{25be} 2 landed") < at("yaks-0001"));
+        assert!(at("yaks-0001") < at("yaks-0002"));
+        enter_key(&mut app); // the cursor stayed on the fold line
+        let shut = draw(&app, 120, 20);
+        assert!(shut.contains("\u{25b8} 2 landed"), "{shut}");
+        assert!(!shut.contains("yaks-0001"), "{shut}");
+    }
+
+    #[test]
+    fn j_and_k_reach_the_fold_line_and_the_landed_yaks_when_expanded() {
+        let mut app = on_perf_detail();
+        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-07fe"));
+        press(&mut app, "j"); // the fold line
+        assert_eq!(shed_yak_id(&app), None);
+        press(&mut app, "j"); // folded: nothing below it
+        assert_eq!(shed_yak_id(&app), None);
+        press(&mut app, "k");
+        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-07fe"));
+        press(&mut app, "j");
+        enter_key(&mut app); // expand
+        press(&mut app, "j");
+        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-0001"));
+        press(&mut app, "j");
+        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-0002"));
+        press(&mut app, "j"); // clamps at the end
+        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-0002"));
+        // Enter on a landed yak opens it as on any yak (not a fold toggle).
+        press(&mut app, "G");
+        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-0002"));
+        press(&mut app, "g");
+        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-07fe"));
+    }
+
+    #[test]
+    fn a_shed_with_nothing_landed_has_no_fold_line() {
+        let mut app = on_sheds(sample());
+        press(&mut app, "jjl"); // perf-1, fixture: one outstanding yak
+        let frame = draw(&app, 120, 20);
+        assert!(!frame.contains("landed"), "{frame}");
+        press(&mut app, "j");
+        assert_eq!(
+            shed_yak_id(&app).as_deref(),
+            Some("yaks-07fe"),
+            "no second stop"
+        );
+        enter_key(&mut app); // acts on the yak, as before: not a fold toggle
+        assert_eq!(
+            app.notification.as_deref(),
+            Some("yaks-07fe exists only in shed perf-1-profile")
+        );
+    }
+
+    #[test]
+    fn selection_survives_a_rescan_across_the_fold() {
+        let mut app = on_perf_detail();
+        press(&mut app, "j");
+        enter_key(&mut app);
+        press(&mut app, "jj"); // yaks-0002, expanded
+        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-0002"));
+        app.apply_sheds_snapshot(with_landed(fixture::snapshot()));
+        assert_eq!(app.selected_shed().unwrap().name(), "perf-1-profile");
+        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-0002"));
+        // The fold line stays selected too.
+        press(&mut app, "kk");
+        assert_eq!(shed_yak_id(&app), None);
+        app.apply_sheds_snapshot(with_landed(fixture::snapshot()));
+        assert_eq!(shed_yak_id(&app), None);
+        press(&mut app, "k");
+        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-07fe"));
+        // The yak the cursor is on lands while folded away: the cursor falls
+        // to the fold line (it is behind it now), not to the first yak.
+        enter_key(&mut app); // opens yaks-07fe's page: back to the tab first
+        app.set_view(
+            app.views
+                .iter()
+                .position(|v| v.key == view::SHEDS_KEY)
+                .unwrap(),
+        );
+        let mut snap = with_landed(fixture::snapshot());
+        let i = snap
+            .sheds
+            .iter()
+            .position(|s| s.name() == "perf-1-profile")
+            .unwrap();
+        if let Some(Some(Changes { yaks: Ok(y), .. })) = snap.changes.get_mut(i) {
+            y.iter_mut().for_each(|y| y.landed = true);
+        }
+        app.sheds.landed_open = false;
+        app.apply_sheds_snapshot(snap);
+        assert_eq!(app.selected_shed().unwrap().name(), "perf-1-profile");
+        assert_eq!(shed_yak_id(&app), None, "on the fold line");
+    }
+
+    #[test]
+    fn landed_fold_frames() {
+        let mut app = on_perf_detail();
+        insta::assert_snapshot!("sheds_tab_landed_folded", draw(&app, 120, 20));
+        press(&mut app, "j");
+        enter_key(&mut app);
+        insta::assert_snapshot!("sheds_tab_landed_expanded", draw(&app, 120, 20));
+        // land-1: everything landed, so just the fold line under the count.
+        let mut app = on_sheds(sample());
+        press(&mut app, "jjjl");
+        assert_eq!(app.selected_shed().unwrap().name(), "land-1-landed");
+        insta::assert_snapshot!("sheds_tab_all_landed", draw(&app, 120, 18));
     }
 
     #[test]
