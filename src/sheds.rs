@@ -1948,6 +1948,15 @@ fn first_line(text: &str) -> &str {
 
 /// The human per-yak view of `yaks changes`: one block per changed yak, then
 /// its new note entries (timestamp, actor, first line) and `needs:`.
+/// A shed's per-yak changes split for display (yaks-38dc follow-up): the
+/// outstanding ones (not `landed`) first, then the landed ones, each part in
+/// the given (id) order. The one ordering rule `yaks changes` and the TUI's
+/// Sheds-tab detail share: what is still to do leads, what already reached
+/// the reference folds behind it. Pure.
+pub fn split_landed(yaks: &[YakChange]) -> (Vec<&YakChange>, Vec<&YakChange>) {
+    yaks.iter().partition(|y| !y.landed)
+}
+
 pub fn render_changes(c: &Changes) -> String {
     let mut out = format!("{}  {}\n", c.name, c.path.display());
     let marker = base_marker(c.base.as_ref(), c.primary);
@@ -4069,6 +4078,26 @@ mod tests {
     /// backward move (superseded) but includes a forward one, extra notes, a
     /// new `needs:`, an edit, or a brand-new yak; `landed_ids` is then
     /// `touched - outstanding`.
+    #[test]
+    fn split_landed_puts_outstanding_first_and_keeps_order() {
+        let y = |id: &str, landed: bool| YakChange {
+            id: id.into(),
+            title: String::new(),
+            status: "hairy",
+            added: false,
+            moved: None,
+            notes: vec![],
+            needs: None,
+            edited: true,
+            landed,
+        };
+        let all = [y("a", true), y("b", false), y("c", true), y("d", false)];
+        let (out, landed) = split_landed(&all);
+        let ids = |v: Vec<&YakChange>| v.iter().map(|y| y.id.clone()).collect::<Vec<_>>();
+        assert_eq!(ids(out), ["b", "d"]);
+        assert_eq!(ids(landed), ["a", "c"]);
+    }
+
     #[test]
     fn outstanding_ids_is_direction_aware() {
         let b = base("outstanding-ids");
