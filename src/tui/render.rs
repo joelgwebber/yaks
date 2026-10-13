@@ -641,6 +641,7 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
                 app.is_starred(&r.task.id),
                 area.width,
                 app.is_multi_herd(),
+                shed_badge(app, &r.task.id),
             )
         })
         .collect();
@@ -709,6 +710,27 @@ pub(crate) fn herd_color(prefix: &str) -> Color {
     PALETTE[(h as usize) % PALETTE.len()]
 }
 
+/// What a row's shed badge shows: how many other sheds carry an outstanding
+/// change to the yak, and whether any of those is an open ask (`needs: human`).
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub(crate) struct ShedBadge {
+    pub count: usize,
+    pub asks: bool,
+}
+
+/// The badge for yak `id` from the sheds snapshot (the same
+/// `Snapshot::copies` rule the detail's Sheds section uses), `None` when no
+/// other shed has an outstanding change to it or no scan has landed yet.
+pub(crate) fn shed_badge(app: &App, id: &str) -> Option<ShedBadge> {
+    let copies = app.sheds.snapshot.as_ref()?.copies(id);
+    (!copies.is_empty()).then(|| ShedBadge {
+        count: copies.len(),
+        asks: copies
+            .iter()
+            .any(|(_, y)| y.needs.as_deref() == Some("human")),
+    })
+}
+
 pub(crate) fn list_item<'a>(
     r: &tree::Row<'a>,
     id_field_w: usize,
@@ -719,6 +741,7 @@ pub(crate) fn list_item<'a>(
     starred: bool,
     width: u16,
     multi_herd: bool,
+    sheds: Option<ShedBadge>,
 ) -> ListItem<'a> {
     let dim = |st: Style| {
         if r.ghost {
@@ -790,6 +813,24 @@ pub(crate) fn list_item<'a>(
         }
         right_plain.push('\u{2705}');
         right_spans.push(Span::raw("\u{2705}"));
+    }
+    // Shed badge (🛖N): N other sheds have an outstanding change to this yak.
+    // Dim, but the warning accent when one of them is an open ask, so a question
+    // waiting elsewhere is visible from the tree. Annotation only: it never
+    // moves or hides the row.
+    if let Some(b) = sheds {
+        if !right_plain.is_empty() {
+            right_plain.push(' ');
+            right_spans.push(Span::raw(" "));
+        }
+        let text = format!("\u{1f6d6}{}", b.count);
+        let style = if b.asks {
+            Style::new().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+        } else {
+            Style::new().add_modifier(Modifier::DIM)
+        };
+        right_plain.push_str(&text);
+        right_spans.push(Span::styled(text, dim(style)));
     }
     if starred {
         if !right_plain.is_empty() {
