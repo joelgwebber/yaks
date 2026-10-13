@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-13T02:49:11Z'
+updated: '2026-10-13T19:47:26Z'
 parent: yaks-b5a0
 labels:
 - ui
@@ -79,3 +79,7 @@ Spawned 2026-10-13T02:05Z from base 6b7f5ef, model anthropic/claude-sonnet-5-5 (
 ---
 ▸ 2026-10-13T02:49:11Z [delta-lead]
 Landed yaks-29e9 (fix-1, 8797869) as df3944b and yaks-9631 (ghost-1, ef3233c) as 1bd1e17; each tree checked equal to git merge-tree, no pending merge. Gate after both: cargo test --release 17 suites green, 580 unit tests. Doc SVGs regenerated (tui-shed-only new, the drawer's copies row), rasterized and looked at. Real machine (delta-lead): a scratch git worktree shed named by its actor (ghostcheck: disco-1's fix), a yak created there as a child of yaks-7204 shows as a dim row with 🛖ghostcheck; S and E refuse with 'yaks-3633 is only in shed ghostcheck: read-only here' and write nothing; Enter shows the shed copy under 'only in shed ghostcheck'. Worktree removed. Note: ghost-1's tests were not written first; it showed them failing by disabling the feature (8 of 10 failed), recorded on yaks-9631.
+
+---
+▸ 2026-10-13T19:47:26Z [delta-lead]
+Spawned 2026-10-13 from base 2d7c59e, model anthropic/claude-sonnet-5-5 (pinned): changes-1 (agent d7a47dfbc9b54d2e) on yaks-7422, fold-1 (agent c3762fc790084136) on yaks-c1f8. Prep in 2d7c59e: sheds::split_landed.
