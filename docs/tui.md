@@ -25,7 +25,10 @@ interchangeable.
   pane covers the whole main area and its divider is tipped with `◂` — the
   list is behind it; `h`/`Esc` returns to it.
 - **Filter drawer** (`f`) — toggle status / type / priority chips, a label and
-  search box, a parent scope, and `ready` / `tangled` / `inbox` predicates. On a
+  search box, a parent scope, `ready` / `tangled` / `inbox` predicates, and a
+  `copies` chip, `any` (the default) or `home`: `home` hides the other sheds'
+  overlay (shed-only rows, the `🛖` badges, the detail's `Sheds:` section, the
+  Inbox's shed asks) for a plain view of this farm. Saved views keep it. On a
   multi-herd farm it also grows a `herd` chip row to scope the list to one or
   more herds. The drawer composes into any view.
 - **Status bar** — the active farm, view, and cursor context.
@@ -43,7 +46,21 @@ interchangeable.
   visible from the tree. It annotates only: the row sits where this checkout's
   farm puts it, and a change that has landed, or one made in the shed the TUI
   runs in, gets no badge. Needs one Sheds-tab scan (the first lands within a
-  moment of startup; refreshed every 10 s, on any view).
+  moment of startup; refreshed every 10 s, on any view). When two or more
+  sheds changed the same yak the badge reads `🛖2⚠` and the detail's `Sheds:`
+  section opens with `⚠ changed in 2 sheds`: settle it before they land.
+  `copies: home` in the drawer hides all of this.
+- A yak that exists **only in another shed** (a worker's new yak, not landed)
+  is a dim row with a `🛖<shed>` badge naming the shed, placed by the shed
+  copy's status and parent: under its parent when this farm has it, else at
+  the root of its status view. It is read-only here: its detail is the shed's
+  copy under an `only in shed <name>` banner, and every key that writes to a
+  yak (`S E P T L D R H M A X C m *`) answers `<id> is only in shed <name>:
+  read-only here` and changes nothing. `a` answers its ask in that shed when it
+  is awaiting a human; `y` copies the id. Added in two sheds, it is one row
+  (the first shed in attention order) with the `⚠`.
+
+  ![yaks TUI tree with a shed-only row and a two-shed conflict marker](assets/tui-shed-only.svg)
 
   ![yaks TUI tree with shed badges](assets/tui-shed-badges.svg)
 
@@ -161,8 +178,9 @@ pane, so a long body never leaves you wondering which yak you're reading.
 (`⏳` awaiting a human, `✅` answered and awaiting an agent), and also a yak
 of this farm whose copy in another shed is awaiting a human (the TUI form of
 `yaks inbox --sheds`; the tab count agrees). `a` on such a row answers it in
-that shed, as the Sheds tab's `a` does; a yak that exists only in a shed is
-not a row (the Sheds tab shows it). When a scan finds an ask that was not in
+that shed, as the Sheds tab's `a` does; so does a shed-only yak whose copy
+asks (it is a dim row, see Signals). `copies: home` leaves only this farm's own
+`needs`. When a scan finds an ask that was not in
 the last one, a `⏳ new ask in <shed>: <id> <title>` notice flashes. It is unpinned (no tab); reach it from the view picker (`v`) or the drawer
 `inbox` chip.
 

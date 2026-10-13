@@ -12,7 +12,7 @@ expression: "draw(&app, 72, 16)"
 │   search   (any)
 │   parent   (any)
 │   deps      ready tangled inbox
-│
+│   copies    any home
 │
 │
 │

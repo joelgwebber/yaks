@@ -35,12 +35,22 @@ macro_rules! snap {
 
 /// Drive the headless TUI over the fixture farm with isolated XDG dirs (so
 /// persisted views/cache can't make the output machine-dependent).
+///
+/// The farm is run from a COPY outside any git repository: the TUI scans the
+/// sheds of the checkout it runs in (yaks-9631 shows the yaks only another
+/// shed has), and a scan from inside this repo would put whatever sheds the
+/// machine has into the golden frames.
 fn run_headless(args: &[&str], stdin: &str) -> String {
-    let farm = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/farm");
-    let xdg = std::env::temp_dir().join(format!("yaksrs-headless-{}", std::process::id()));
+    let src = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/farm");
+    // One directory per call: the tests of this file run in parallel.
+    static SEQ: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let xdg = std::env::temp_dir().join(format!("yaksrs-headless-{}-{n}", std::process::id()));
+    let farm = xdg.join("farm");
+    copy_dir(&src, &farm);
     let out = Command::cargo_bin("yaks")
         .unwrap()
-        .current_dir(farm)
+        .current_dir(&farm)
         .env("XDG_CONFIG_HOME", &xdg)
         .env("XDG_CACHE_HOME", &xdg)
         .env("YAKS_SKILLS_AUTOSYNC", "0")
@@ -55,6 +65,19 @@ fn run_headless(args: &[&str], stdin: &str) -> String {
     );
     let _ = std::fs::remove_dir_all(&xdg);
     String::from_utf8(out.stdout).unwrap()
+}
+
+fn copy_dir(from: &std::path::Path, to: &std::path::Path) {
+    std::fs::create_dir_all(to).unwrap();
+    for e in std::fs::read_dir(from).unwrap() {
+        let e = e.unwrap();
+        let dest = to.join(e.file_name());
+        if e.file_type().unwrap().is_dir() {
+            copy_dir(&e.path(), &dest);
+        } else {
+            std::fs::copy(e.path(), dest).unwrap();
+        }
+    }
 }
 
 #[test]

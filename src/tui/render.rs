@@ -262,11 +262,18 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
         entry("A / O", "Attach artifact / open it"),
         entry("r", "Rename attachment at cursor (detail)"),
         entry("X", "Slaughter (confirm; offers whole family)"),
+        entry(
+            "🛖 row",
+            "A yak only in another shed is read-only here (a answers its ask)",
+        ),
         blank(),
         section("Search & filter"),
         entry("/", "Inline search"),
         entry("#", "Go to any yak by id / title"),
-        entry("f", "Filter drawer"),
+        entry(
+            "f",
+            "Filter drawer (copies: any | home hides the other sheds)",
+        ),
         entry("Esc", "Revert filter to the active view"),
         blank(),
         section("Sheds tab (every checkout: yaks sheds)"),
@@ -641,7 +648,7 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
                 app.is_starred(&r.task.id),
                 area.width,
                 app.is_multi_herd(),
-                shed_badge(app, &r.task.id),
+                shed_badge(app, r),
             )
         })
         .collect();
@@ -711,23 +718,53 @@ pub(crate) fn herd_color(prefix: &str) -> Color {
 }
 
 /// What a row's shed badge shows: how many other sheds carry an outstanding
-/// change to the yak, and whether any of those is an open ask (`needs: human`).
-#[derive(Clone, Copy, PartialEq, Debug)]
+/// change to the yak, whether any of those is an open ask (`needs: human`),
+/// and, for a yak only another shed has, that shed's name.
+#[derive(Clone, PartialEq, Debug)]
 pub(crate) struct ShedBadge {
     pub count: usize,
     pub asks: bool,
+    pub only_in: Option<String>,
 }
 
-/// The badge for yak `id` from the sheds snapshot (the same
+impl ShedBadge {
+    /// Two or more sheds changed the yak: the conflict marker.
+    pub(crate) fn conflict(&self) -> bool {
+        self.count >= 2
+    }
+
+    /// `🛖2` / `🛖2⚠` (a conflict) on a yak this farm has; `🛖<shed>` on a
+    /// shed-only row, `🛖2⚠` once two sheds added it.
+    pub(crate) fn text(&self) -> String {
+        match (&self.only_in, self.conflict()) {
+            (Some(name), false) => format!("\u{1f6d6}{}", truncate_disp(name, 18)),
+            (_, true) => format!("\u{1f6d6}{}\u{26a0}", self.count),
+            (None, false) => format!("\u{1f6d6}{}", self.count),
+        }
+    }
+}
+
+/// The badge for the row's yak from the sheds snapshot (the same
 /// `Snapshot::copies` rule the detail's Sheds section uses), `None` when no
-/// other shed has an outstanding change to it or no scan has landed yet.
-pub(crate) fn shed_badge(app: &App, id: &str) -> Option<ShedBadge> {
-    let copies = app.sheds.snapshot.as_ref()?.copies(id);
-    (!copies.is_empty()).then(|| ShedBadge {
-        count: copies.len(),
+/// other shed has an outstanding change to it, no scan has landed yet, or the
+/// filter says `copies: home`.
+pub(crate) fn shed_badge(app: &App, r: &tree::Row<'_>) -> Option<ShedBadge> {
+    let snap = app.overlay()?;
+    let copies = snap.copies(&r.task.id);
+    let only_in = if r.shed_only {
+        snap.shed_only()
+            .into_iter()
+            .find(|(_, t)| t.id == r.task.id)
+            .map(|(s, _)| s.name())
+    } else {
+        None
+    };
+    (!copies.is_empty() || only_in.is_some()).then(|| ShedBadge {
+        count: copies.len().max(1),
         asks: copies
             .iter()
             .any(|(_, y)| y.needs.as_deref() == Some("human")),
+        only_in,
     })
 }
 
@@ -744,7 +781,7 @@ pub(crate) fn list_item<'a>(
     sheds: Option<ShedBadge>,
 ) -> ListItem<'a> {
     let dim = |st: Style| {
-        if r.ghost {
+        if r.ghost || r.shed_only {
             st.add_modifier(Modifier::DIM)
         } else {
             st
@@ -814,17 +851,18 @@ pub(crate) fn list_item<'a>(
         right_plain.push('\u{2705}');
         right_spans.push(Span::raw("\u{2705}"));
     }
-    // Shed badge (🛖N): N other sheds have an outstanding change to this yak.
-    // Dim, but the warning accent when one of them is an open ask, so a question
-    // waiting elsewhere is visible from the tree. Annotation only: it never
-    // moves or hides the row.
+    // Shed badge (🛖N): N other sheds have an outstanding change to this yak;
+    // `🛖N⚠` when two or more do (a conflict to settle), `🛖<shed>` on a
+    // shed-only row (dim, with the rest of it). Dim, but the warning accent
+    // when one of them is an open ask or a conflict, so a question waiting
+    // elsewhere is visible from the tree.
     if let Some(b) = sheds {
         if !right_plain.is_empty() {
             right_plain.push(' ');
             right_spans.push(Span::raw(" "));
         }
-        let text = format!("\u{1f6d6}{}", b.count);
-        let style = if b.asks {
+        let text = b.text();
+        let style = if b.asks || b.conflict() {
             Style::new().fg(Color::Yellow).add_modifier(Modifier::BOLD)
         } else {
             Style::new().add_modifier(Modifier::DIM)

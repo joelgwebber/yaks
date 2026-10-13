@@ -565,12 +565,43 @@ impl App {
         }
     }
 
+    /// Keys that write to the selected yak (or make a child of it). On a
+    /// yak only another shed has (yaks-9631) none of them applies: it is not
+    /// in this farm, so they refuse, and `a` answers its ask in that shed
+    /// when it has one. Returns whether the key was consumed.
+    pub(crate) fn guard_shed_only(&mut self, k: KeyEvent) -> bool {
+        let KeyCode::Char(c) = k.code else {
+            return false;
+        };
+        let detail = self.focus == Focus::Detail;
+        let writes = matches!(
+            c,
+            'S' | 'E' | 'P' | 'T' | 'L' | 'D' | 'R' | 'H' | 'M' | 'A' | 'X' | 'C' | 'm' | '*' | 'a'
+        ) || (detail && c == 'r');
+        if !writes || k.modifiers.contains(KeyModifiers::CONTROL) {
+            return false;
+        }
+        let Some((task, shed)) = self.selected_shed_only() else {
+            return false;
+        };
+        let (id, shed) = (task.id.clone(), shed.clone());
+        if c == 'a' && task.needs.as_deref() == Some("human") {
+            self.open_answer_in_shed_prompt(id, &shed);
+        } else {
+            self.notification = Some(format!(
+                "{id} is only in shed {}: read-only here",
+                shed.name()
+            ));
+        }
+        true
+    }
+
     /// The selected yak, when its home copy is not awaiting a human but
     /// another shed's is (the Inbox's overlay rows): the yak id and the shed
     /// to answer in, the first in `open_asks()` order.
     fn selected_shed_ask(&self) -> Option<(String, crate::sheds::Shed)> {
         let id = self.selected_id()?;
-        let snap = self.sheds.snapshot.as_ref()?;
+        let snap = self.overlay()?;
         let (shed, _) = snap.open_asks().into_iter().find(|(_, y)| y.id == id)?;
         Some((id, shed.clone()))
     }
@@ -1664,6 +1695,9 @@ pub(crate) fn handle_key(app: &mut App, k: KeyEvent) {
     // The Sheds tab owns its keys; no yak key reaches a yak from there.
     if app.on_sheds_tab() {
         app.handle_sheds_key(k);
+        return;
+    }
+    if app.guard_shed_only(k) {
         return;
     }
     let half = (app.page / 2).max(1) as i32;

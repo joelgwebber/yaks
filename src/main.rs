@@ -2008,6 +2008,7 @@ fn build_spec(f: FilterFlags) -> FilterSpec {
         tangled_only: f.tangled,
         needs_only: f.needs,
         parent: f.parent_of,
+        home_only: false,
     }
 }
 

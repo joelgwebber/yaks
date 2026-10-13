@@ -15,9 +15,11 @@
 //! annotate rows from the same snapshot, yaks-7204), and on `r`; one at a
 //! time.
 //!
-//! The overlay on the yak views reads the snapshot through two queries only:
-//! [`Snapshot::copies`] (what other sheds did to one yak) and
-//! [`Snapshot::open_asks`] (every other shed's outstanding ask).
+//! The overlay on the yak views reads the snapshot through three queries only:
+//! [`Snapshot::copies`] (what other sheds did to one yak),
+//! [`Snapshot::open_asks`] (every other shed's outstanding ask) and
+//! [`Snapshot::shed_only`] (the yaks that exist only in another shed, whose
+//! full `Task` the scan read from that shed's farm; yaks-9631).
 //!
 //! The tab is a built-in view (`view::sheds_view`) whose yak rows are empty,
 //! so every yak key is inert there; [`App::handle_sheds_key`] owns its keys.
@@ -40,6 +42,11 @@ pub(crate) const RESCAN_EVERY: Duration = Duration::from_secs(10);
 pub(crate) struct Snapshot {
     pub sheds: Vec<Shed>,
     pub changes: Vec<Option<Changes>>,
+    /// Parallel to `sheds`: the full `Task` of each yak that exists only in
+    /// that shed (its `YakChange.added`, not landed), read once per scan from
+    /// the shed's farm. Empty for the shed this TUI runs in and for sheds
+    /// with nothing new.
+    pub only_tasks: Vec<Vec<Task>>,
     pub orphaned: usize,
     /// The scan itself failed (e.g. not a git repository).
     pub error: Option<String>,
@@ -54,6 +61,7 @@ impl Snapshot {
                 return Snapshot {
                     sheds: Vec::new(),
                     changes: Vec::new(),
+                    only_tasks: Vec::new(),
                     orphaned: 0,
                     error: Some(format!("{e:#}")),
                 };
@@ -65,11 +73,17 @@ impl Snapshot {
                 ShedFarm::Own(_) => sheds::changes(s, cwd, farm_root, &sheds).ok(),
                 _ => None,
             })
+            .collect::<Vec<_>>();
+        let only_tasks = sheds
+            .iter()
+            .zip(&changes)
+            .map(|(s, c)| read_only_tasks(s, c.as_ref()))
             .collect();
         Snapshot {
             orphaned: orphaned.len(),
             sheds,
             changes,
+            only_tasks,
             error: None,
         }
     }
@@ -105,6 +119,27 @@ impl Snapshot {
                 Some((&self.sheds[i], &yaks[at])).filter(|(_, y)| !y.landed)
             })
             .collect()
+    }
+
+    /// The yaks that exist only in another shed: `(shed, task)` with the
+    /// shed's own copy of the yak, the shed this TUI runs in left out, in
+    /// attention order. A yak added in several sheds is listed once, under the
+    /// first of them (`copies(id).len() >= 2` is then the conflict). The App
+    /// further drops any yak this farm also has.
+    pub(crate) fn shed_only(&self) -> Vec<(&Shed, &Task)> {
+        let mut seen = HashSet::new();
+        let mut out = Vec::new();
+        for i in self.order() {
+            if self.sheds[i].current {
+                continue;
+            }
+            for t in self.only_tasks.get(i).into_iter().flatten() {
+                if seen.insert(t.id.as_str()) {
+                    out.push((&self.sheds[i], t));
+                }
+            }
+        }
+        out
     }
 
     /// Every other shed's outstanding ask: `(shed, change)` for each yak
@@ -149,6 +184,35 @@ impl Snapshot {
             .filter(|s| sheds::is_outstanding(s))
             .count()
     }
+}
+
+/// The full tasks of the yaks only `shed` has (see [`Snapshot::only_tasks`]):
+/// one read of its farm, only when `changes` lists one that has not landed.
+/// An unreadable farm yields none (the badges and the Sheds tab still show
+/// the change).
+fn read_only_tasks(shed: &Shed, changes: Option<&Changes>) -> Vec<Task> {
+    let Some(Changes { yaks: Ok(yaks), .. }) = changes else {
+        return Vec::new();
+    };
+    let new: HashSet<&str> = yaks
+        .iter()
+        .filter(|y| y.added && !y.landed)
+        .map(|y| y.id.as_str())
+        .collect();
+    if shed.current || new.is_empty() {
+        return Vec::new();
+    }
+    let all = [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
+    let Ok(root) = crate::store::discover_with(&shed.path, None) else {
+        return Vec::new();
+    };
+    let mut tasks: Vec<Task> = crate::store::load(&root.root, &all)
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|t| new.contains(t.id.as_str()))
+        .collect();
+    tasks.sort_by(|a, b| a.id.cmp(&b.id));
+    tasks
 }
 
 /// When the shed asked: the timestamp of the newest ask note it appended
@@ -965,6 +1029,28 @@ pub(crate) mod fixture {
         })
     }
 
+    /// `snap` plus a yak that exists only in the shed named `shed`: a new
+    /// change (`added`, `status`) in its `changes` and the shed's full copy in
+    /// `only_tasks`, as the scan reads them.
+    pub(crate) fn with_shed_only(mut snap: Snapshot, shed: &str, task: Task) -> Snapshot {
+        let i = snap.sheds.iter().position(|s| s.name() == shed).unwrap();
+        let mut c = change(&task.id, &task.title);
+        c.added = true;
+        c.status = match task.status {
+            Status::Hairy => "hairy",
+            Status::Shaving => "shaving",
+            Status::Shorn => "shorn",
+            Status::Dead => "dead",
+        };
+        c.needs = task.needs.clone();
+        if let Some(Some(Changes { yaks: Ok(y), .. })) = snap.changes.get_mut(i) {
+            y.push(c);
+            y.sort_by(|a, b| a.id.cmp(&b.id));
+        }
+        snap.only_tasks[i].push(task);
+        snap
+    }
+
     pub(crate) fn snapshot() -> Snapshot {
         let mut main = shed("main", "-");
         main.path = PathBuf::from("/src/yaks");
@@ -1052,6 +1138,7 @@ pub(crate) mod fixture {
             // Path order, as `discover` returns them; the tab reorders.
             sheds: vec![main, old, land, asker, perf],
             changes: vec![c_main, None, c_land, c_asker, c_perf],
+            only_tasks: vec![Vec::new(); 5],
             orphaned: 53,
             error: None,
         }

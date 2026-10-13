@@ -9,7 +9,15 @@ impl App {
     /// Select an existing task wherever it lives: switch to its status view (if
     /// one is pinned) and place the cursor on it, then focus the list.
     pub(crate) fn select_task(&mut self, id: &str) {
-        if let Some(st) = self.task(id).map(|t| t.status) {
+        // A shed-only yak is placed by its shed copy's status too.
+        let status = self.task(id).map(|t| t.status).or_else(|| {
+            self.overlay_tasks(&self.filter)
+                .0
+                .iter()
+                .find(|t| t.id == id)
+                .map(|t| t.status)
+        });
+        if let Some(st) = status {
             if let Some(i) = self.views.iter().position(|v| v.status == Some(st)) {
                 self.set_view(i);
             }
@@ -43,22 +51,35 @@ impl App {
     /// captured at the last render. This is the single source of truth for the
     /// row-indexed detail model (cursor, jumplist, find, scroll, render).
     pub(crate) fn detail_dlines(&self) -> Vec<detail::DLine> {
-        match self.selected() {
-            Some(t) => detail::wrap(
-                detail::build(t, &self.all, &self.shed_copies(&t.id)),
-                self.detail_width.get() as usize,
-            ),
-            None => Vec::new(),
-        }
+        let Some(t) = self.selected() else {
+            return Vec::new();
+        };
+        let copies = self.shed_copies(&t.id);
+        let lines = match self.selected_shed_only() {
+            // A yak only another shed has: that shed's copy, read-only, under
+            // a banner. Links resolve over the home yaks and the shed-only
+            // ones, so a shed-only parent or child is not "(missing)".
+            Some((t, shed)) => {
+                let mut all = self.all.clone();
+                if let Some(snap) = self.overlay() {
+                    all.extend(snap.shed_only().into_iter().map(|(_, t)| t.clone()));
+                }
+                let mut lines = vec![
+                    detail::banner(&format!("only in shed {}", shed.name())),
+                    detail::blank(),
+                ];
+                lines.extend(detail::build(t, &all, &copies));
+                lines
+            }
+            None => detail::build(t, &self.all, &copies),
+        };
+        detail::wrap(lines, self.detail_width.get() as usize)
     }
 
     /// What the other sheds changed about yak `id` (the Sheds section's data;
     /// empty before the first scan lands).
     fn shed_copies(&self, id: &str) -> Vec<(&crate::sheds::Shed, &crate::sheds::YakChange)> {
-        self.sheds
-            .snapshot
-            .as_ref()
-            .map_or_else(Vec::new, |s| s.copies(id))
+        self.overlay().map_or_else(Vec::new, |s| s.copies(id))
     }
 
     /// Detail jumplist for the current selection (empty when nothing selected).

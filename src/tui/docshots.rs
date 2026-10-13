@@ -293,6 +293,47 @@ fn docshots() {
     }
     press_key(&mut app, KeyCode::Enter);
     write_svg("tui-shed-badges-detail", &app, sw, 24);
+
+    // 10. Shed-only rows and the conflict marker (yaks-9631): a worker's new
+    //     yak is a dim row under its parent with the shed's name, and a yak
+    //     two sheds changed reads `🛖2⚠`.
+    let mut tasks = farm();
+    tasks.push(t(
+        "yaks-07fe",
+        "yaks sheds is slow: profile it",
+        "task",
+        2,
+        Status::Shaving,
+        Some("yaks-3901"),
+    ));
+    let mut snap = crate::tui::sheds_tab::fixture::snapshot();
+    snap = crate::tui::sheds_tab::fixture::with_shed_only(
+        snap,
+        "perf-1-profile",
+        t(
+            "yaks-9a01",
+            "cache the git calls per scan",
+            "task",
+            2,
+            Status::Shaving,
+            Some("yaks-3901"),
+        ),
+    );
+    let shed_at = |snap: &crate::tui::sheds_tab::Snapshot, name: &str| {
+        snap.sheds.iter().position(|s| s.name() == name).unwrap()
+    };
+    let mut twin = snap.yaks(shed_at(&snap, "perf-1-profile"))[0].clone();
+    twin.id = "yaks-07fe".into();
+    let asker = shed_at(&snap, "needs-1-superseded");
+    if let Some(Some(crate::sheds::Changes { yaks: Ok(y), .. })) = snap.changes.get_mut(asker) {
+        y.push(twin);
+        y.sort_by(|a, b| a.id.cmp(&b.id));
+    }
+    let mut app = App::new(tasks);
+    app.apply_sheds_snapshot(snap);
+    HeadlessApp::on_resize(&mut app, sw, sh);
+    view_to(&mut app, "status:shaving");
+    write_svg("tui-shed-only", &app, sw, sh);
 }
 
 /// Regenerate the agent-session example used by toque's README: drive the real
