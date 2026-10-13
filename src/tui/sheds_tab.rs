@@ -2,9 +2,9 @@
 //! screen, live. One row per checkout of the repository (attention first),
 //! and a detail pane with the selected shed's state and its per-yak changes.
 //!
-//! The data is exactly the CLI's: a scan calls `sheds::discover`,
-//! `sheds::changes` (per shed with a farm of its own) and
-//! `sheds::orphaned_pins`, and every summary text the CLI also prints comes
+//! The data is exactly the CLI's: a scan calls `sheds::discover_all` (the
+//! sheds and the orphaned pins, as `yaks sheds` does) and `sheds::changes`
+//! (per shed with a farm of its own), and every summary text the CLI also prints comes
 //! from the same `sheds` function (`farm_line`, `label_line`).
 //!
 //! A scan takes seconds (git subprocesses, several farms read), so it runs on
@@ -43,8 +43,8 @@ pub(crate) struct Snapshot {
 impl Snapshot {
     /// Run one scan, as `yaks sheds` + `yaks changes <each>` would.
     pub(crate) fn scan(cwd: &Path, farm_root: &Path) -> Snapshot {
-        let sheds = match sheds::discover(cwd, farm_root) {
-            Ok(s) => s,
+        let (sheds, orphaned) = match sheds::discover_all(cwd, farm_root) {
+            Ok(found) => found,
             Err(e) => {
                 return Snapshot {
                     sheds: Vec::new(),
@@ -62,7 +62,7 @@ impl Snapshot {
             })
             .collect();
         Snapshot {
-            orphaned: sheds::orphaned_pins(cwd).len(),
+            orphaned: orphaned.len(),
             sheds,
             changes,
             error: None,

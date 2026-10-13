@@ -2243,9 +2243,10 @@ pub fn render(sheds: &[Shed], orphaned: &[Pinned]) -> String {
 /// (no git state, no farm), so these are never in `discover`'s sheds array or
 /// `sheds --json`, only in the text table's footer (yaks-9277).
 ///
-/// `yaks sheds` itself uses [`discover_all`], which returns these from the same
-/// pass as the sheds; this standalone form is for a caller that wants only them.
-#[allow(dead_code)]
+/// `yaks sheds` and the TUI's Sheds tab use [`discover_all`], which returns
+/// these from the same pass as the sheds; this standalone form is what the
+/// tests compare it with.
+#[cfg(test)]
 pub fn orphaned_pins(cwd: &Path) -> Vec<Pinned> {
     let Some(h) = host(cwd) else {
         return Vec::new();

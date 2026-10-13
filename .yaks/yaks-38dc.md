@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-13T00:28:42Z'
+updated: '2026-10-13T00:55:08Z'
 parent: yaks-b5a0
 labels:
 - ui
@@ -51,3 +51,13 @@ Spawned 2026-10-13T00:13Z from base 280767f, model anthropic/claude-sonnet-5-5 (
 ---
 ▸ 2026-10-13T00:28:42Z [delta-lead]
 Landed yaks-8814 (needs-1, 503fca3): Delta fast-forwarded this checkout to it; land checks: no MERGE_HEAD, src/sheds.rs and .yaks/yaks-8814.md equal the commit, the diff confined to outstanding_ids + needs_superseded + tests; full cargo test --release green here. land-1's clone is gone, so the original case is covered by its test only. yaks-98f1 (the Sheds tab) shorn by delta-lead; perf-1 (yaks-07fe) still running.
+
+---
+▸ 2026-10-13T00:55:08Z [delta-lead]
+Landed yaks-07fe (perf-1, aba6d65) as 1c5720c by land.sh (worker base 280767f an ancestor; Delta had left a pending merge; result identical to the computed merge; the merge touched only the worker's 3 files). Checked here:
+- `yaks sheds` wall, 5 runs: before (d279fc0) 1.68 1.26 1.31 1.28 1.27 s; after 0.74 0.33 0.31 0.49 0.33 s.
+- `sheds`, `sheds --json`, `changes main`, `inbox --sheds` byte-identical (cmp) between the two binaries.
+- `yaks tui --headless` first frame (startup scan included): 1.87 s -> 0.80 s.
+- Full cargo test --release: 17 suites green, 0 failed.
+Follow-up commit (delta-lead): the Sheds tab scans with `sheds::discover_all` (one host read, as `yaks sheds`), `orphaned_pins` becomes test-only (its only caller left), the docs/tui.md scan-time line updated.
+Remaining under yaks-38dc: yaks-93fe (worktree-of-a-clone taken for the primary; discovery, now unblocked), yaks-7204 (overlay, next per Joel's plan), yaks-19c3 (activity log).
