@@ -24,7 +24,7 @@ text{white-space:pre}
 <text y="149.5"><tspan x="10.0" class="s2">│</tspan><tspan x="43.6" class="s4">search</tspan><tspan x="119.2" class="s4">(any)</tspan></text>
 <text y="167.5"><tspan x="10.0" class="s2">│</tspan><tspan x="43.6" class="s4">parent</tspan><tspan x="119.2" class="s4">(any)</tspan></text>
 <text y="185.5"><tspan x="10.0" class="s2">│</tspan><tspan x="43.6" class="s4">deps</tspan><tspan x="127.6" class="s4">ready</tspan><tspan x="178.0" class="s4">tangled</tspan><tspan x="245.2" class="s4">inbox</tspan></text>
-<text y="203.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text y="203.5"><tspan x="10.0" class="s2">│</tspan><tspan x="43.6" class="s4">copies</tspan><tspan x="127.6" class="s5">any</tspan><tspan x="161.2" class="s4">home</tspan></text>
 <text y="221.5"><tspan x="10.0" class="s2">│</tspan></text>
 <text y="239.5"><tspan x="10.0" class="s2">│</tspan></text>
 <text y="257.5"><tspan x="10.0" class="s2">│</tspan></text>
