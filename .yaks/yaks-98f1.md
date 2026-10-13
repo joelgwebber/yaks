@@ -5,12 +5,12 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-10-12T23:58:55Z'
-updated: '2026-10-12T23:59:17Z'
+updated: '2026-10-13T00:08:41Z'
 parent: yaks-38dc
 labels:
 - ui
 - delta
-needs: human
+needs: agent
 ---
 
 Approach A of the 2026-10-12 brainstorm, agreed to come first (Joel, on yaks-8b7a: "then a thin Sheds tab first, then the overlay"). Joel's pain: he opens terminals in Delta worktrees by hand to check a thread's state. The tab puts `yaks sheds` and `yaks changes <shed>` on screen, live, from inside `yaks tui`; the yak tree stays home.
@@ -77,3 +77,17 @@ Measured today in this checkout (release build, 10 sheds, 53 orphaned pins): `ya
 asked: needs human
 
 Confirm the Sheds tab design in the note above, or adjust: the six numbered questions at its end (each has a recommended answer). Also: OK to run yaks-07fe (profile the scan) and yaks-8814 (superseded needs) as two Sonnet workers in parallel while I build the tab here?
+
+---
+▸ 2026-10-13T00:08:38Z [Joel Webber]
+Answers:
+1. Tab count - outstanding sheds
+2. Order - attention first
+3. Garbage sheds - dim them, but we may want to remove them later (or allow them to be filtered out).
+4. Answer in-shed - Yes, let's try to get that right. If we run into lost answers, we can try to fix that later.
+5. Refresh - yes, only when the tab's open. We may want to change that when we add more inline affordances.
+6. Pinned by default - yes
+
+---
+▸ 2026-10-13T00:08:41Z [Joel Webber]
+Answered above.

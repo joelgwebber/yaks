@@ -1767,7 +1767,7 @@ pub fn changes_json(c: &Changes) -> Value {
 /// noise on the line; `active`/`stale` show (and only ever appear alongside
 /// `shaving:`, since both require a non-empty `in_progress`). Measured from
 /// a merge-base it carries the `vs merge-base` marker.
-fn label_line(l: &Shed) -> Option<String> {
+pub fn label_line(l: &Shed) -> Option<String> {
     let mut parts = Vec::new();
     if !l.who.is_empty() {
         parts.push(format!("who: {}", l.who.join(", ")));
@@ -1781,6 +1781,67 @@ fn label_line(l: &Shed) -> Option<String> {
         Liveness::Idle => {}
     }
     (!parts.is_empty()).then(|| format!("{}{}", parts.join(" \u{b7} "), vs_marker(l)))
+}
+
+/// The shed's farm has something outstanding: a delta of its own that is not
+/// all `landed`. What the TUI's Sheds tab counts and sorts by, and when
+/// [`render`] itemizes the delta under the `farm:` line.
+pub fn is_outstanding(l: &Shed) -> bool {
+    match &l.farm {
+        // `landed` is a subset of `touched`, so equal lengths = all landed.
+        ShedFarm::Own(d) => !d.is_empty() && d.landed.len() != d.touched().len(),
+        _ => false,
+    }
+}
+
+/// The one-line summary of a shed's farm, the text after `farm: ` in
+/// [`render`] (`no changes of its own`, `landed (2 yaks)`, `1 moved, 3 new
+/// notes (1 landed)`, `farm unreadable: ...`), with its baseline marker.
+/// Shared with the TUI's Sheds tab so the two never word it differently.
+pub fn farm_line(l: &Shed) -> String {
+    match &l.farm {
+        ShedFarm::Own(d) if d.is_empty() && l.farm_base.is_some() => {
+            format!("no changes of its own{}", vs_marker(l))
+        }
+        ShedFarm::Own(d) if d.is_empty() => "no differences (vs this checkout)".into(),
+        // Every touched yak is landed: nothing outstanding to list.
+        ShedFarm::Own(d) if !is_outstanding(l) => {
+            let n = d.landed.len();
+            let yak = if n == 1 { "yak" } else { "yaks" };
+            format!("landed ({n} {yak}){}", vs_marker(l))
+        }
+        ShedFarm::Own(d) => {
+            let n: usize = d.notes.iter().map(|(_, n)| n).sum();
+            let mut parts = Vec::new();
+            if !d.added.is_empty() {
+                parts.push(format!("{} new", d.added.len()));
+            }
+            if !d.moved.is_empty() {
+                parts.push(format!("{} moved", d.moved.len()));
+            }
+            if n > 0 {
+                parts.push(format!("{n} new notes"));
+            }
+            if !d.needs.is_empty() {
+                parts.push(format!("{} needs", d.needs.len()));
+            }
+            if !d.edited.is_empty() {
+                parts.push(format!("{} edited", d.edited.len()));
+            }
+            // A shed with some yaks landed and some still outstanding: the
+            // summary keeps every yak's full counts (the totals since the
+            // fork), but `render`'s itemized lines list only what is still
+            // outstanding (per the spec: "lists the outstanding ones and
+            // says how many are landed").
+            let landed_note = if d.landed.is_empty() {
+                String::new()
+            } else {
+                format!(" ({} landed)", d.landed.len())
+            };
+            format!("{}{landed_note}{}", parts.join(", "), vs_marker(l))
+        }
+        other => farm_message(other).unwrap_or_default(),
+    }
 }
 
 /// The compact human table: one row per shed, then its label and farm detail.
@@ -1855,52 +1916,9 @@ pub fn render(sheds: &[Shed], orphaned: &[Pinned]) -> String {
         if let Some(label) = label_line(l) {
             out.push_str(&format!("  {label}\n"));
         }
+        out.push_str(&format!("  farm: {}\n", farm_line(l)));
         match &l.farm {
-            ShedFarm::Own(d) if d.is_empty() && l.farm_base.is_some() => {
-                out.push_str(&format!("  farm: no changes of its own{}\n", vs_marker(l)))
-            }
-            ShedFarm::Own(d) if d.is_empty() => {
-                out.push_str("  farm: no differences (vs this checkout)\n")
-            }
-            // Every touched yak is landed: nothing outstanding to list.
-            ShedFarm::Own(d) if !d.landed.is_empty() && d.landed.len() == d.touched().len() => {
-                let n = d.landed.len();
-                let yak = if n == 1 { "yak" } else { "yaks" };
-                out.push_str(&format!("  farm: landed ({n} {yak}){}\n", vs_marker(l)));
-            }
-            ShedFarm::Own(d) => {
-                let n: usize = d.notes.iter().map(|(_, n)| n).sum();
-                let mut parts = Vec::new();
-                if !d.added.is_empty() {
-                    parts.push(format!("{} new", d.added.len()));
-                }
-                if !d.moved.is_empty() {
-                    parts.push(format!("{} moved", d.moved.len()));
-                }
-                if n > 0 {
-                    parts.push(format!("{n} new notes"));
-                }
-                if !d.needs.is_empty() {
-                    parts.push(format!("{} needs", d.needs.len()));
-                }
-                if !d.edited.is_empty() {
-                    parts.push(format!("{} edited", d.edited.len()));
-                }
-                // A shed with some yaks landed and some still outstanding:
-                // the summary keeps every yak's full counts (the totals
-                // since the fork), but the itemized lines below list only
-                // what is still outstanding (per the spec: "lists the
-                // outstanding ones and says how many are landed").
-                let landed_note = if d.landed.is_empty() {
-                    String::new()
-                } else {
-                    format!(" ({} landed)", d.landed.len())
-                };
-                out.push_str(&format!(
-                    "  farm: {}{landed_note}{}\n",
-                    parts.join(", "),
-                    vs_marker(l)
-                ));
+            ShedFarm::Own(d) if is_outstanding(l) => {
                 let outstanding = |id: &str| !d.landed.iter().any(|l| l == id);
                 for id in d.added.iter().filter(|id| outstanding(id)) {
                     out.push_str(&format!("    + {id}\n"));
@@ -1918,11 +1936,7 @@ pub fn render(sheds: &[Shed], orphaned: &[Pinned]) -> String {
                     out.push_str(&format!("    {id} edited\n"));
                 }
             }
-            other => {
-                if let Some(m) = farm_message(other) {
-                    out.push_str(&format!("  farm: {m}\n"));
-                }
-            }
+            _ => {}
         }
     }
     // One line for the whole table, and only when it explains a `?`.
