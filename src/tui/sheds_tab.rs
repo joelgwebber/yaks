@@ -123,6 +123,25 @@ impl Snapshot {
             .collect()
     }
 
+    /// Ids of yaks some other shed is asking a human about (the ids of
+    /// [`Snapshot::open_asks`]): what the Inbox adds to the home `needs:` rows.
+    pub(crate) fn asked_ids(&self) -> HashSet<&str> {
+        self.open_asks()
+            .iter()
+            .map(|(_, y)| y.id.as_str())
+            .collect()
+    }
+
+    /// Identity of each open ask, for noticing a new one between scans:
+    /// shed path + yak id + the timestamp of the ask note (so asking again
+    /// is a new ask).
+    fn ask_keys(&self) -> HashSet<(PathBuf, String, String)> {
+        self.open_asks()
+            .into_iter()
+            .map(|(s, y)| (s.path.clone(), y.id.clone(), ask_ts(y)))
+            .collect()
+    }
+
     /// Sheds with something outstanding: the tab's count.
     pub(crate) fn outstanding(&self) -> usize {
         self.sheds
@@ -130,6 +149,17 @@ impl Snapshot {
             .filter(|s| sheds::is_outstanding(s))
             .count()
     }
+}
+
+/// When the shed asked: the timestamp of the newest ask note it appended
+/// (empty if it carries none, e.g. a hand-edited `needs:`).
+fn ask_ts(y: &YakChange) -> String {
+    y.notes
+        .iter()
+        .rev()
+        .find(|n| crate::store::is_ask_text(&n.text))
+        .map(|n| n.ts.clone())
+        .unwrap_or_default()
 }
 
 /// A shed with an open ask that is still outstanding (not landed).
@@ -186,6 +216,9 @@ pub(crate) struct ShedsTab {
     /// Where to scan from (the TUI's cwd); `None` = never scan (read-only
     /// and test constructors).
     pub cwd: Option<PathBuf>,
+    /// The open asks of the last good scan, to flash a new one; `None` until
+    /// the first, which sets the baseline without a flash.
+    seen_asks: Option<HashSet<(PathBuf, String, String)>>,
     scanned_at: Option<Instant>,
     in_flight: Option<Receiver<Snapshot>>,
     queued: bool,
@@ -261,6 +294,29 @@ impl App {
     pub(crate) fn apply_sheds_snapshot(&mut self, snap: Snapshot) {
         let shed = self.selected_shed().map(|s| s.path.clone());
         let yak = self.selected_shed_yak().map(|y| y.id.clone());
+        if snap.error.is_none() {
+            let keys = snap.ask_keys();
+            if let Some(seen) = &self.sheds.seen_asks {
+                let new: Vec<_> = snap
+                    .open_asks()
+                    .into_iter()
+                    .filter(|(s, y)| !seen.contains(&(s.path.clone(), y.id.clone(), ask_ts(y))))
+                    .collect();
+                if let Some((s, y)) = new.first() {
+                    let more = match new.len() - 1 {
+                        0 => String::new(),
+                        n => format!(" (+{n} more)"),
+                    };
+                    self.notification = Some(format!(
+                        "\u{23f3} new ask in {}: {} {}{more}",
+                        s.name(),
+                        y.id,
+                        y.title
+                    ));
+                }
+            }
+            self.sheds.seen_asks = Some(keys);
+        }
         self.sheds.snapshot = Some(snap);
         let s = self.sheds.snapshot.as_ref().unwrap();
         let order = s.order();
@@ -439,13 +495,24 @@ impl App {
             self.notification = Some(format!("{} is not awaiting a human", y.id));
             return;
         }
-        let (id, name, path) = (y.id.clone(), shed.name(), shed.path.clone());
+        let (id, shed) = (y.id.clone(), shed.clone());
+        self.open_answer_in_shed_prompt(id, &shed);
+    }
+
+    /// The prompt for answering `id` in `shed` (`yaks answer <id>@<shed>`).
+    pub(crate) fn open_answer_in_shed_prompt(&mut self, id: String, shed: &Shed) {
         self.overlay = Overlay::Edit(Editor::new(
             self.editor_vim,
             true,
-            format!("Answer {id} in shed {name} (Enter save · Ctrl-C cancel): "),
+            format!(
+                "Answer {id} in shed {} (Enter save · Ctrl-C cancel): ",
+                shed.name()
+            ),
             "",
-            EditAction::AnswerInShed { id, shed: path },
+            EditAction::AnswerInShed {
+                id,
+                shed: shed.path.clone(),
+            },
         ));
     }
 
@@ -1184,6 +1251,230 @@ mod tests {
             asks,
             [("needs-1-superseded".to_string(), "yaks-8814".to_string())]
         );
+    }
+
+    // -- the Inbox overlay (yaks-1ea3) ----------------------------------------
+
+    /// An app on the Inbox with the fixture snapshot: yaks-8814 is in this farm
+    /// (home copy not blocked) and asked about in needs-1-superseded;
+    /// yaks-07fe is home-blocked; yaks-0001 is plain.
+    fn on_inbox() -> App {
+        let mut blocked = task(
+            "yaks-07fe",
+            "home blocked",
+            crate::model::Status::Shaving,
+            2,
+            None,
+        );
+        blocked.needs = Some("human".into());
+        let mut app = App::new(vec![
+            task(
+                "yaks-8814",
+                "a superseded needs",
+                crate::model::Status::Shaving,
+                2,
+                None,
+            ),
+            blocked,
+            task("yaks-0001", "plain", crate::model::Status::Hairy, 2, None),
+        ]);
+        app.apply_sheds_snapshot(fixture::snapshot());
+        let i = app.views.iter().position(|v| v.key == "inbox").unwrap();
+        app.set_view(i);
+        app
+    }
+
+    fn inbox_ids(app: &App) -> Vec<String> {
+        app.rows().iter().map(|r| r.task.id.clone()).collect()
+    }
+
+    #[test]
+    fn inbox_includes_a_home_yak_whose_shed_copy_asks() {
+        let app = on_inbox();
+        let mut ids = inbox_ids(&app);
+        ids.sort();
+        // yaks-8814 (shed asks) and yaks-07fe (home asks); not yaks-0001, and
+        // the shed-only asks are no rows (yaks-8814 is in this farm, but a
+        // yak only in a shed would not be).
+        assert_eq!(ids, ["yaks-07fe", "yaks-8814"]);
+        let v = app.active_view().clone();
+        assert_eq!(app.view_count(&v), 2);
+    }
+
+    #[test]
+    fn inbox_leaves_out_a_shed_only_ask() {
+        let mut app = on_inbox();
+        // Nothing of the asker's yak is in this farm any more.
+        app.all.retain(|t| t.id != "yaks-8814");
+        assert_eq!(inbox_ids(&app), ["yaks-07fe"]);
+        let v = app.active_view().clone();
+        assert_eq!(app.view_count(&v), 1);
+    }
+
+    #[test]
+    fn inbox_without_a_snapshot_is_home_needs_only() {
+        let mut app = on_inbox();
+        app.sheds.snapshot = None;
+        assert_eq!(inbox_ids(&app), ["yaks-07fe"]);
+    }
+
+    #[test]
+    fn a_on_a_shed_ask_row_answers_it_in_that_shed() {
+        let mut app = on_inbox();
+        let pos = app
+            .rows()
+            .iter()
+            .position(|r| r.task.id == "yaks-8814")
+            .unwrap();
+        app.cursor = pos;
+        press(&mut app, "a");
+        match &app.overlay {
+            Overlay::Edit(ed) => {
+                assert!(
+                    ed.label
+                        .contains("Answer yaks-8814 in shed needs-1-superseded"),
+                    "{}",
+                    ed.label
+                );
+                assert!(matches!(
+                    &ed.action,
+                    EditAction::AnswerInShed { id, shed }
+                        if id == "yaks-8814" && shed.ends_with("epe9/yaks")
+                ));
+            }
+            _ => panic!("a did not open the answer-in-shed prompt"),
+        }
+    }
+
+    #[test]
+    fn a_on_a_home_blocked_row_is_the_plain_answer() {
+        let mut app = on_inbox();
+        let pos = app
+            .rows()
+            .iter()
+            .position(|r| r.task.id == "yaks-07fe")
+            .unwrap();
+        app.cursor = pos;
+        press(&mut app, "a");
+        match &app.overlay {
+            Overlay::Edit(ed) => {
+                assert!(matches!(&ed.action, EditAction::Answer(id) if id == "yaks-07fe"))
+            }
+            _ => panic!("a did not open the plain answer prompt"),
+        }
+    }
+
+    #[test]
+    fn a_outside_the_inbox_is_as_before() {
+        // The same yak in the Hairy-style tree view: `a` asks, as ever.
+        let mut app = on_inbox();
+        app.set_view(0);
+        app.cursor = app
+            .rows()
+            .iter()
+            .position(|r| r.task.id == "yaks-8814")
+            .unwrap_or(0);
+        let id = app.selected_id().unwrap();
+        press(&mut app, "a");
+        match &app.overlay {
+            Overlay::Edit(ed) => assert!(
+                !matches!(&ed.action, EditAction::AnswerInShed { .. }),
+                "{id}: a answered in a shed outside the Inbox"
+            ),
+            _ => panic!("a opened nothing"),
+        }
+    }
+
+    #[test]
+    fn inbox_frame_with_a_shed_ask_row() {
+        let app = on_inbox();
+        insta::assert_snapshot!("inbox_shed_ask_row", draw(&app, 100, 12));
+    }
+
+    // -- the arrival flash ------------------------------------------------------
+
+    /// The fixture with one more ask in perf-1-profile (yaks-07fe).
+    fn with_perf_ask(ts: &str) -> Snapshot {
+        let mut snap = fixture::snapshot();
+        let perf = snap
+            .sheds
+            .iter()
+            .position(|s| s.name() == "perf-1-profile")
+            .unwrap();
+        if let Some(Some(Changes { yaks: Ok(y), .. })) = snap.changes.get_mut(perf) {
+            y[0].needs = Some("human".into());
+            y[0].notes.push(crate::store::NoteEntry {
+                ts: ts.into(),
+                actor: Some("perf-1".into()),
+                text: "asked: needs human\nWhich?".into(),
+            });
+        }
+        snap
+    }
+
+    #[test]
+    fn the_first_snapshot_does_not_flash() {
+        let mut app = App::new(vec![]);
+        app.apply_sheds_snapshot(fixture::snapshot());
+        assert_eq!(app.notification, None);
+    }
+
+    #[test]
+    fn a_new_ask_flashes_once_and_a_re_ask_flashes_again() {
+        let mut app = App::new(vec![]);
+        app.apply_sheds_snapshot(fixture::snapshot());
+        app.apply_sheds_snapshot(with_perf_ask("2026-10-13T00:20:00Z"));
+        assert_eq!(
+            app.notification.as_deref(),
+            Some("\u{23f3} new ask in perf-1-profile: yaks-07fe yaks sheds is slow: profile it")
+        );
+        // The same ask again: nothing new.
+        app.notification = None;
+        app.apply_sheds_snapshot(with_perf_ask("2026-10-13T00:20:00Z"));
+        assert_eq!(app.notification, None);
+        // Asked again (a new timestamp): it counts again.
+        app.apply_sheds_snapshot(with_perf_ask("2026-10-13T00:30:00Z"));
+        assert!(
+            app.notification
+                .as_deref()
+                .unwrap()
+                .contains("new ask in perf-1-profile")
+        );
+    }
+
+    #[test]
+    fn several_new_asks_name_the_first_and_count_the_rest() {
+        let mut app = App::new(vec![]);
+        let mut first = fixture::snapshot();
+        // The asker has not asked yet in the first snapshot.
+        let asker = first
+            .sheds
+            .iter()
+            .position(|s| s.name() == "needs-1-superseded")
+            .unwrap();
+        if let Some(Some(Changes { yaks: Ok(y), .. })) = first.changes.get_mut(asker) {
+            y[0].needs = None;
+        }
+        app.apply_sheds_snapshot(first);
+        app.apply_sheds_snapshot(with_perf_ask("2026-10-13T00:20:00Z"));
+        let n = app.notification.clone().unwrap();
+        // Attention order: the asker's shed ranks above perf-1.
+        assert_eq!(
+            n,
+            "\u{23f3} new ask in needs-1-superseded: yaks-8814 landed: a superseded needs is not outstanding (+1 more)"
+        );
+    }
+
+    #[test]
+    fn this_sheds_own_asks_do_not_flash() {
+        let mut app = App::new(vec![]);
+        app.apply_sheds_snapshot(fixture::snapshot());
+        let mut snap = with_perf_ask("2026-10-13T00:20:00Z");
+        for s in &mut snap.sheds {
+            s.current = s.name() == "perf-1-profile";
+        }
+        app.apply_sheds_snapshot(snap);
+        assert_eq!(app.notification, None);
     }
 
     #[test]

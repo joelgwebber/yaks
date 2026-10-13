@@ -79,7 +79,7 @@ the pre-find scroll and cursor).
 | `D` / `R` | Add dependency / reparent |
 | `H` | Move to another herd (multi-herd farms) |
 | `M` | Add a comment (note) |
-| `a` | Ask / answer (on a yak awaiting a human: answer, which sets `needs: agent`; otherwise ask, which sets `needs: human`) |
+| `a` | Ask / answer (on a yak awaiting a human: answer, which sets `needs: agent`; otherwise ask, which sets `needs: human`; on an Inbox row whose copy in another shed is awaiting a human: answer it in that shed, uncommitted there) |
 | `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`) |
 | `r` | (detail) Rename the attachment whose image link the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
 | `X` | Slaughter (delete, with confirm); on a yak with live descendants the confirm offers the whole family, naming how many go |
@@ -143,8 +143,12 @@ pane, so a long body never leaves you wondering which yak you're reading.
 ![yaks TUI detail pane with a pinned header](assets/tui-detail-pinned.svg)
 
 **Inbox** — the flat, cross-status list of every yak carrying a `needs` value
-(`⏳` awaiting a human, `✅` answered and awaiting an agent).
-It is unpinned (no tab); reach it from the view picker (`v`) or the drawer
+(`⏳` awaiting a human, `✅` answered and awaiting an agent), and also a yak
+of this farm whose copy in another shed is awaiting a human (the TUI form of
+`yaks inbox --sheds`; the tab count agrees). `a` on such a row answers it in
+that shed, as the Sheds tab's `a` does; a yak that exists only in a shed is
+not a row (the Sheds tab shows it). When a scan finds an ask that was not in
+the last one, a `⏳ new ask in <shed>: <id> <title>` notice flashes. It is unpinned (no tab); reach it from the view picker (`v`) or the drawer
 `inbox` chip.
 
 ![yaks TUI inbox view](assets/tui-inbox.svg)

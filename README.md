@@ -162,7 +162,7 @@ click to select / open / switch view). Mark rows with `m` for a bulk state
 change over the selection; `a` asks or answers (answer hands the yak to an agent: `needs: agent`);
 and an **Inbox** view lists every yak with a `needs` value, each flagged inline
 with a ⏳ badge and a warning accent (awaiting a human) or a ✅ badge (answered,
-awaiting an agent). A **Sheds** tab shows every checkout of the repo and what
+awaiting an agent; also a yak another shed is asking about, answered in that shed with `a`, and a new ask flashes). A **Sheds** tab shows every checkout of the repo and what
 each one changed (`yaks sheds` / `yaks changes`, refreshed in the background),
 and answers a worker's ask in its own checkout with `a`.
 

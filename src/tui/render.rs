@@ -253,7 +253,7 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
         entry("M", "Add a comment (note)"),
         entry(
             "a",
-            "Ask / answer (answer hands the yak to an agent: needs agent)",
+            "Ask / answer (answer: needs agent; Inbox: or in the asking shed)",
         ),
         entry(
             ":w / :q / :wq",

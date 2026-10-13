@@ -558,9 +558,21 @@ impl App {
         let blocked = self.selected().is_some_and(|t| t.awaiting_human());
         if blocked {
             self.open_answer();
+        } else if let Some((id, shed)) = self.selected_shed_ask() {
+            self.open_answer_in_shed_prompt(id, &shed);
         } else {
             self.open_ask();
         }
+    }
+
+    /// The selected yak, when its home copy is not awaiting a human but
+    /// another shed's is (the Inbox's overlay rows): the yak id and the shed
+    /// to answer in, the first in `open_asks()` order.
+    fn selected_shed_ask(&self) -> Option<(String, crate::sheds::Shed)> {
+        let id = self.selected_id()?;
+        let snap = self.sheds.snapshot.as_ref()?;
+        let (shed, _) = snap.open_asks().into_iter().find(|(_, y)| y.id == id)?;
+        Some((id, shed.clone()))
     }
 
     pub(crate) fn open_ask(&mut self) {

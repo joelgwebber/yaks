@@ -137,7 +137,10 @@ impl App {
             let n = self
                 .all
                 .iter()
-                .filter(|t| (want_dead || t.status != Status::Dead) && v.spec.matches(t, &resolved))
+                .filter(|t| {
+                    (want_dead || t.status != Status::Dead)
+                        && self.flat_matches(&v.spec, t, &resolved)
+                })
                 .count();
             return v.limit.map_or(n, |l| n.min(l));
         }
@@ -177,6 +180,33 @@ impl App {
             .collect()
     }
 
+    /// The flat views' per-yak predicate: `spec.matches`, except that under
+    /// `needs_only` (the inbox) a yak also matches when another shed's copy of
+    /// it is awaiting a human (`Snapshot::asked_ids`, yaks-1ea3). One rule for
+    /// the rows and the tab count. A yak that exists only in a shed is not in
+    /// `self.all`, so it is never a row.
+    pub(crate) fn flat_matches(
+        &self,
+        spec: &FilterSpec,
+        t: &Task,
+        resolved: &HashSet<&str>,
+    ) -> bool {
+        if spec.matches(t, resolved) {
+            return true;
+        }
+        let asked = spec.needs_only
+            && self
+                .sheds
+                .snapshot
+                .as_ref()
+                .is_some_and(|s| s.asked_ids().contains(t.id.as_str()));
+        asked && {
+            let mut rest = spec.clone();
+            rest.needs_only = false;
+            rest.matches(t, resolved)
+        }
+    }
+
     /// Flat, sorted rows for a sorted view (Recent / custom sorted).
     pub(crate) fn flat_rows(&self) -> Vec<tree::Row<'_>> {
         let v = self.active_view();
@@ -189,7 +219,8 @@ impl App {
             .all
             .iter()
             .filter(|t| {
-                (want_dead || t.status != Status::Dead) && self.filter.matches(t, &resolved)
+                (want_dead || t.status != Status::Dead)
+                    && self.flat_matches(&self.filter, t, &resolved)
             })
             .collect();
         let sort_by = v.sort_by.unwrap_or(view::SortField::Updated);
