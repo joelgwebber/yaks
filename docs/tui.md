@@ -44,6 +44,10 @@ interchangeable.
   farm puts it, and a change that has landed, or one made in the shed the TUI
   runs in, gets no badge. Needs one Sheds-tab scan (the first lands within a
   moment of startup; refreshed every 10 s, on any view).
+
+  ![yaks TUI tree with shed badges](assets/tui-shed-badges.svg)
+
+  ![yaks TUI detail with its Sheds section](assets/tui-shed-badges-detail.svg)
 - The dependency-blocked marker (`*`) and the multi-select marker (`●`) are
   distinct axes and can co-occur.
 - The tab row's right edge shows the active **family scope** for tree views
@@ -90,7 +94,7 @@ the pre-find scroll and cursor).
 | `D` / `R` | Add dependency / reparent |
 | `H` | Move to another herd (multi-herd farms) |
 | `M` | Add a comment (note) |
-| `a` | Ask / answer (on a yak awaiting a human: answer, which sets `needs: agent`; otherwise ask, which sets `needs: human`; on an Inbox row whose copy in another shed is awaiting a human: answer it in that shed, uncommitted there) |
+| `a` | Ask / answer (on a yak awaiting a human: answer, which sets `needs: agent`; otherwise ask, which sets `needs: human`; on a yak whose copy in another shed is awaiting a human, in any view (the Inbox lists them): answer it in that shed, uncommitted there) |
 | `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`) |
 | `r` | (detail) Rename the attachment whose image link the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
 | `X` | Slaughter (delete, with confirm); on a yak with live descendants the confirm offers the whole family, naming how many go |

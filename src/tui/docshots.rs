@@ -259,6 +259,40 @@ fn docshots() {
     press(&mut app, 'j');
     press(&mut app, 'l');
     write_svg("tui-sheds-detail", &app, sw, sh);
+
+    // 9. The overlay on the yak tree (yaks-7204): two children of the
+    //    umbrella that the fixture's workers changed carry a `🛖1` badge (the
+    //    asked one in yellow), and the asked one's detail lists the shed in
+    //    its Sheds section.
+    let mut tasks = farm();
+    let mut asked = t(
+        "yaks-8814",
+        "landed: a superseded needs is not outstanding",
+        "bug",
+        3,
+        Status::Shaving,
+        Some("yaks-3901"),
+    );
+    asked.labels = vec!["cli".into()];
+    tasks.push(asked);
+    tasks.push(t(
+        "yaks-07fe",
+        "yaks sheds is slow: profile it",
+        "task",
+        2,
+        Status::Shaving,
+        Some("yaks-3901"),
+    ));
+    let mut app = App::new(tasks);
+    app.apply_sheds_snapshot(crate::tui::sheds_tab::fixture::snapshot());
+    HeadlessApp::on_resize(&mut app, sw, sh);
+    view_to(&mut app, "status:shaving");
+    write_svg("tui-shed-badges", &app, sw, sh);
+    for _ in 0..4 {
+        press(&mut app, 'j'); // down the Shaving tree to yaks-8814
+    }
+    press_key(&mut app, KeyCode::Enter);
+    write_svg("tui-shed-badges-detail", &app, sw, 24);
 }
 
 /// Regenerate the agent-session example used by toque's README: drive the real
