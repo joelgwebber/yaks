@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-13T00:55:08Z'
+updated: '2026-10-13T01:31:29Z'
 parent: yaks-b5a0
 labels:
 - ui
@@ -61,3 +61,7 @@ Landed yaks-07fe (perf-1, aba6d65) as 1c5720c by land.sh (worker base 280767f an
 - Full cargo test --release: 17 suites green, 0 failed.
 Follow-up commit (delta-lead): the Sheds tab scans with `sheds::discover_all` (one host read, as `yaks sheds`), `orphaned_pins` becomes test-only (its only caller left), the docs/tui.md scan-time line updated.
 Remaining under yaks-38dc: yaks-93fe (worktree-of-a-clone taken for the primary; discovery, now unblocked), yaks-7204 (overlay, next per Joel's plan), yaks-19c3 (activity log).
+
+---
+▸ 2026-10-13T01:31:29Z [delta-lead]
+Spawned 2026-10-13T01:30Z from base 5392019, model anthropic/claude-sonnet-5-5 (pinned): badge-1 (agent c3d7a3b7d8264841) on yaks-ed6d, inbox-1 (agent 0c5192acae734297) on yaks-1ea3, disco-1 (agent 0cbe15ec6ca34e1a) on yaks-93fe; clones 2fdsqr81jxvy, f34qg6ja8z10, hers5ay2699w (named on their first yaks command).
