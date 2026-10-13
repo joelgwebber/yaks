@@ -512,8 +512,10 @@ pub struct Found {
     pub kind: ShedKind,
     /// The Delta directory id (`refs/delta/<dir>/...`), for a pinned clone.
     pub dir: Option<String>,
-    /// The repository's main checkout (the host checkout, or the main
-    /// working tree `git worktree list` names first).
+    /// The repository's main checkout: the first entry of a `git worktree
+    /// list` when that entry is itself a checkout (the host checkout, or this
+    /// repository's main working tree). A worktree added inside a Delta clone
+    /// is never it: that list's first entry is the clone's git dir.
     pub primary: bool,
 }
 
@@ -539,20 +541,28 @@ pub(crate) fn checkout_paths(top: &Path) -> BTreeMap<PathBuf, Found> {
 /// and the pin groups are resolved side by side; they are merged in the order
 /// they always were, so the result is the same.
 fn gather(top: &Path) -> (BTreeMap<PathBuf, Found>, Vec<Pinned>) {
-    let add_worktrees = |paths: Vec<PathBuf>, found: &mut BTreeMap<PathBuf, Found>| {
-        for (i, p) in paths.into_iter().enumerate() {
+    // git lists the repository's main working tree first, so the primary is
+    // entry 0 of a `git worktree list` WHEN it is itself a checkout. Where
+    // entry 0 is not one (a Delta clone's separate git dir has no `.git`), the
+    // list has no primary to name: counting only the entries that survive the
+    // filter would crown the first plain worktree (yaks-93fe).
+    let add_worktrees = |entries: Vec<(PathBuf, Result<(), String>)>,
+                         found: &mut BTreeMap<PathBuf, Found>| {
+        for (i, (p, verdict)) in entries.into_iter().enumerate() {
+            if verdict.is_err() {
+                continue;
+            }
             let e = found.entry(canonical(&p)).or_insert(Found {
                 kind: ShedKind::Worktree,
                 dir: None,
                 primary: false,
             });
             e.kind = ShedKind::Worktree;
-            // git lists the main working tree first.
             e.primary |= i == 0;
         }
     };
     let (here, hosted) = std::thread::scope(|s| {
-        let here = s.spawn(|| worktree_paths(top));
+        let here = s.spawn(|| worktree_entries(top));
         let hosted = s.spawn(|| {
             let h = host(top)?;
             // The host checkout's `git worktree list`, asked once: its first
@@ -567,20 +577,20 @@ fn gather(top: &Path) -> (BTreeMap<PathBuf, Found>, Vec<Pinned>) {
                 (entries, pins.join().unwrap())
             });
             let primary = host_checkout_of(&entries);
-            let paths = if primary.is_some() {
-                entries_paths(entries)
+            let entries = if primary.is_some() {
+                entries
             } else {
                 Vec::new()
             };
-            Some((paths, pins))
+            Some((entries, pins))
         });
         (here.join().unwrap(), hosted.join().unwrap())
     });
     let mut found: BTreeMap<PathBuf, Found> = BTreeMap::new();
     add_worktrees(here, &mut found);
     let mut all_pins = Vec::new();
-    if let Some((paths, pins)) = hosted {
-        add_worktrees(paths, &mut found);
+    if let Some((entries, pins)) = hosted {
+        add_worktrees(entries, &mut found);
         for p in &pins {
             if let Ok(path) = &p.checkout {
                 found
@@ -1484,20 +1494,6 @@ fn git_raw(dir: &Path, args: &[&str]) -> Result<String> {
 
 pub(crate) fn canonical(p: &Path) -> PathBuf {
     fs::canonicalize(p).unwrap_or_else(|_| p.to_path_buf())
-}
-
-/// Real checkouts from `git worktree list --porcelain`: skips bare, prunable,
-/// missing and `.git`-less entries. (Inside Delta the entry is the clone's
-/// separate git dir, which holds no `.git`, so it drops out here.)
-fn worktree_paths(top: &Path) -> Vec<PathBuf> {
-    entries_paths(worktree_entries(top))
-}
-
-fn entries_paths(entries: Vec<(PathBuf, Result<(), String>)>) -> Vec<PathBuf> {
-    entries
-        .into_iter()
-        .filter_map(|(p, verdict)| verdict.ok().map(|()| p))
-        .collect()
 }
 
 /// Every entry of `git worktree list --porcelain` in `top`, each with why it
@@ -2811,6 +2807,67 @@ mod tests {
 
     fn host_of(t: &Path) -> Host {
         host(t).unwrap()
+    }
+
+    #[test]
+    fn a_git_worktree_of_a_delta_clone_is_a_plain_shed_not_the_primary() {
+        // yaks-93fe: `git worktree add` inside a Delta clone. In the clone's
+        // `git worktree list` the first entry is its separate git dir (no
+        // `.git`, dropped), so the worktree became the list's first CHECKOUT
+        // and was taken for the primary: named `main`, measured vs origin.
+        let b = base("clonewt");
+        let t = b.join("repo");
+        repo_with_farm(&t);
+        let host = t.join(".git");
+        let c1 = delta_clone(
+            &host,
+            &t.join(".delta/clones"),
+            &t.join(".delta/worktrees"),
+            "d1",
+            "repo",
+        );
+        // The clone moves on (a thread's own work), then makes a worktree.
+        task_file(&c1, "hairy", "yaks-dddd", "", "clone work");
+        sh(&c1, &["add", "-A"]);
+        sh(&c1, &["commit", "-q", "-m", "clone work"]);
+        let wt = b.join("wt");
+        sh(
+            &c1,
+            &["worktree", "add", "-q", "--detach", wt.to_str().unwrap()],
+        );
+        sh(&t, &["update-ref", "refs/remotes/origin/main", "HEAD"]);
+
+        // From inside the clone or its worktree: one primary (the host
+        // checkout), the worktree a plain shed. (The host's own list cannot
+        // see a worktree registered in a clone's git dir; not this yak.)
+        for from in [&c1] {
+            let sheds = all_sheds_of(from);
+            assert_eq!(paths(&sheds), vec![t.clone(), c1.clone(), wt.clone()]);
+            let primaries: Vec<_> = sheds.iter().filter(|s| s.primary).collect();
+            assert_eq!(primaries.len(), 1, "{:?}", paths(&sheds));
+            assert_eq!(primaries[0].path, t);
+            let w = shed_at(&sheds, &wt);
+            assert!(!w.primary);
+            assert_ne!(w.name(), "main");
+            assert_eq!(w.name(), "wt");
+            let kind = w.farm_base.as_ref().map(|f| f.kind);
+            assert!(
+                matches!(kind, Some(BaseKind::Fork | BaseKind::MergeBase)),
+                "{kind:?}"
+            );
+            // The clone's own new yak is not credited to the worktree.
+            let ShedFarm::Own(d) = &w.farm else {
+                panic!("{:?}", w.farm)
+            };
+            assert!(d.is_empty() || kind == Some(BaseKind::MergeBase), "{d:?}");
+        }
+        // From the worktree itself: still not the primary, and not named
+        // `main`. (Observed: it lists the host checkout and itself, not the
+        // clone; that is how discovery already behaved, not this yak.)
+        let from_wt = all_sheds_of(&wt);
+        assert_eq!(from_wt.iter().filter(|s| s.primary).count(), 1);
+        assert!(shed_at(&from_wt, &t).primary);
+        assert!(!shed_at(&from_wt, &wt).primary);
     }
 
     #[test]
