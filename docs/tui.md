@@ -246,6 +246,8 @@ its checkout. The text is the CLI's own (the same functions produce it).
 
 ![yaks TUI Sheds tab with a shed's changes](assets/tui-sheds-detail.svg)
 
+![yaks TUI Sheds tab: a landed shed folds its yaks behind one line](assets/tui-sheds-detail-landed.svg)
+
 # Screenshots
 
 These are generated headlessly: the [`toque`](https://github.com/joelgwebber/toque) crate

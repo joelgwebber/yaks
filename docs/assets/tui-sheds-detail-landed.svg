@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="344" viewBox="0 0 1280 344" font-family="ui-monospace,'SF Mono','DejaVu Sans Mono',Menlo,Consolas,monospace" font-size="14">
+<style>
+text{white-space:pre}
+.b0{fill:#eaeaea}
+.b1{fill:#303030}
+.b2{fill:#3a3a3a}
+.s0{opacity:.6}
+.s1{fill:#1d1f21;font-weight:bold}
+.s2{fill:#969896}
+.s3{fill:#f0c674}
+.s4{font-weight:bold}
+.s5{fill:#8abeb7}
+.s6{fill:#8abeb7;font-weight:bold}
+.s7{fill:#b5bd68}
+.s8{fill:#b294bb}
+</style>
+<rect x="0" y="0" width="1280" height="344" rx="8" fill="#1d1f21"/>
+<rect class="b0" x="682.0" y="10.0" width="17.3" height="18.0"/>
+<rect class="b0" x="707.2" y="10.0" width="92.9" height="18.0"/>
+<rect class="b1" x="10.0" y="100.0" width="428.9" height="18.0"/>
+<rect class="b2" x="455.2" y="190.0" width="806.9" height="18.0"/>
+<g fill="#c5c8c6">
+<text y="23.5"><tspan x="10.0" class="s0"> 🦬</tspan><tspan x="35.2" class="s0"> Hairy (2)</tspan><tspan x="136.0" class="s0"> 🪒</tspan><tspan x="161.2" class="s0"> Shaving (3)</tspan><tspan x="278.8" class="s0"> 🐑</tspan><tspan x="304.0" class="s0"> Shorn (1)</tspan><tspan x="404.8" class="s0"> 🕒</tspan><tspan x="430.0" class="s0"> Recent (6)</tspan><tspan x="539.2" class="s0"> ⭐</tspan><tspan x="564.4" class="s0"> Starred (0)</tspan><tspan x="682.0" class="s1"> 🛖</tspan><tspan x="707.2" class="s1"> Sheds (2)</tspan><tspan x="1152.4" class="s2">scanned 4s ago</tspan></text>
+<text y="59.5"><tspan x="10.0" class="s3">*</tspan><tspan x="35.2" class="s4">main</tspan><tspan x="203.2" class="s0">idle</tspan><tspan x="262.0">+0 -0</tspan><tspan x="379.6">no chan</tspan><tspan x="438.4" class="s5">│</tspan><tspan x="455.2" class="s6">land-1-landed</tspan><tspan x="581.2">land-1-landed: a worker</tspan></text>
+<text y="77.5"><tspan x="10.0" class="s3">⏳</tspan><tspan x="35.2" class="s4">needs-1-superseded</tspan><tspan x="203.2" class="s7">active</tspan><tspan x="262.0">+1 -0</tspan><tspan x="337.6" class="s8">✎2</tspan><tspan x="379.6">2 new n</tspan><tspan x="438.4" class="s5">│</tspan><tspan x="455.2" class="s5">path</tspan><tspan x="530.8">/src/yaks/.delta/worktrees/h4n2/yaks</tspan></text>
+<text y="95.5"><tspan x="35.2" class="s4">perf-1-profile</tspan><tspan x="203.2" class="s7">active</tspan><tspan x="262.0">+1 -0</tspan><tspan x="337.6" class="s8">✎1</tspan><tspan x="379.6">1 new n</tspan><tspan x="438.4" class="s5">│</tspan><tspan x="455.2" class="s5">git</tspan><tspan x="530.8">main@1a2b3c4 · +0 -5 vs here · 0 dirty</tspan></text>
+<text y="113.5"><tspan x="35.2" class="s0">land-1-landed</tspan><tspan x="203.2" class="s0">idle   +0 -5</tspan><tspan x="379.6" class="s0">landed</tspan><tspan x="438.4" class="s5">│</tspan><tspan x="455.2" class="s5">farm</tspan><tspan x="530.8">landed (1 yak)</tspan></text>
+<text y="131.5"><tspan x="35.2" class="s0">mig-2-yaks-migrate</tspan><tspan x="203.2" class="s0">·      +1 -23</tspan><tspan x="379.6" class="s0">farm un</tspan><tspan x="438.4" class="s5">│</tspan><tspan x="455.2" class="s5">label</tspan><tspan x="530.8">who: land-1</tspan></text>
+<text y="149.5"><tspan x="438.4" class="s5">│</tspan><tspan x="455.2" class="s5">active</tspan><tspan x="530.8" class="s0">2026-10-13T00:10:00Z</tspan></text>
+<text y="167.5"><tspan x="438.4" class="s5">│</tspan></text>
+<text y="185.5"><tspan x="438.4" class="s5">│</tspan><tspan x="455.2" class="s6">Changes (1 yak)</tspan></text>
+<text y="203.5"><tspan x="438.4" class="s5">│</tspan><tspan x="455.2" class="s0">▸ 1 landed</tspan></text>
+<text y="221.5"><tspan x="438.4" class="s5">│</tspan></text>
+<text y="239.5"><tspan x="438.4" class="s5">│</tspan></text>
+<text y="257.5"><tspan x="438.4" class="s5">│</tspan></text>
+<text y="275.5"><tspan x="438.4" class="s5">│</tspan></text>
+<text y="293.5"><tspan x="438.4" class="s5">│</tspan></text>
+<text y="311.5"><tspan x="10.0" class="s0">   53 orphaned pins (finished threads; `yaks sheds`</tspan><tspan x="438.4" class="s5">│</tspan></text>
+<text y="329.5"><tspan x="10.0" class="s2">h:list  j/k:yak  J/K:shed  Enter:open yak  a:answer  y:copy id  r:rescan  ?:help</tspan></text>
+</g>
+</svg>

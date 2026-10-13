@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-13T19:47:26Z'
+updated: '2026-10-13T20:10:28Z'
 parent: yaks-b5a0
 labels:
 - ui
@@ -83,3 +83,7 @@ Landed yaks-29e9 (fix-1, 8797869) as df3944b and yaks-9631 (ghost-1, ef3233c) as
 ---
 ▸ 2026-10-13T19:47:26Z [delta-lead]
 Spawned 2026-10-13 from base 2d7c59e, model anthropic/claude-sonnet-5-5 (pinned): changes-1 (agent d7a47dfbc9b54d2e) on yaks-7422, fold-1 (agent c3762fc790084136) on yaks-c1f8. Prep in 2d7c59e: sheds::split_landed.
+
+---
+▸ 2026-10-13T20:10:28Z [delta-lead]
+Landed yaks-7422 (changes-1, 46afdf8) as 445ac41 and yaks-c1f8 (fold-1, 3631523) as 7f0fb77; trees equal git merge-tree, no pending merge. Follow-up: render_changes/changes_json (no-focus wrappers) made test-only (release build back to 0 warnings). Gate: cargo test --release 17 suites green, 596 unit tests. Real machine from Joel's checkout: yaks changes sheds-tui-thin-sheds-tab lists the 2 not-yet-pushed yaks first then 'landed (12): ...'; --status shaving -> 'landed (1): yaks-38dc'; --outstanding drops the fold; --json --outstanding the same 2; --status shavng exits 1 with a message. Docshot tui-sheds-detail-landed added (land-1's detail, '▸ 1 landed'), rasterized and looked at, embedded in docs/tui.md. Both workers' tests were red by stubbing/half-implementing, not strictly written first; recorded on their yaks.

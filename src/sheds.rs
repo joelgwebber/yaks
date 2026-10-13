@@ -2034,6 +2034,8 @@ fn fold_landed(landed: &[&YakChange]) -> String {
 }
 
 /// [`render_changes_with`] with no focus: everything, landed yaks folded.
+/// (The CLI always passes a focus; the tests use this form.)
+#[cfg(test)]
 pub fn render_changes(c: &Changes) -> String {
     render_changes_with(c, &Focus::default())
 }
@@ -2103,6 +2105,8 @@ pub fn render_changes_with(c: &Changes, focus: &Focus) -> String {
 
 /// JSON for `yaks changes --json`: one object per changed yak. `vs`/`base`
 /// are as in `yaks sheds --json` `farm`. Empty when there is nothing to list.
+/// (No focus; the CLI calls [`changes_json_with`], the tests this form.)
+#[cfg(test)]
 pub fn changes_json(c: &Changes) -> Value {
     changes_json_with(c, &Focus::default())
 }

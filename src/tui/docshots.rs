@@ -259,6 +259,11 @@ fn docshots() {
     press(&mut app, 'j');
     press(&mut app, 'l');
     write_svg("tui-sheds-detail", &app, sw, sh);
+    // A shed whose change has landed (land-1, two sheds down): its detail
+    // folds the landed yak behind one `▸ 1 landed` line (yaks-c1f8).
+    press(&mut app, 'J');
+    press(&mut app, 'J');
+    write_svg("tui-sheds-detail-landed", &app, sw, sh);
 
     // 9. The overlay on the yak tree (yaks-7204): two children of the
     //    umbrella that the fixture's workers changed carry a `🛖1` badge (the
