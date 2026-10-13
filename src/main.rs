@@ -1342,11 +1342,11 @@ fn main() -> Result<()> {
         }
         Command::Sheds { json } => {
             let cwd = env::current_dir()?;
-            let sheds = farm.sheds(&cwd)?;
+            // One pass: the sheds and the orphaned pins share the host read.
+            let (sheds, orphaned) = sheds::discover_all(&cwd, farm.root())?;
             if json {
                 json::print(&sheds::to_json(&sheds))?;
             } else {
-                let orphaned = sheds::orphaned_pins(&cwd);
                 print!("{}", sheds::render(&sheds, &orphaned));
             }
         }
