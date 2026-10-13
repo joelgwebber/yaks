@@ -150,12 +150,15 @@ pub(crate) enum ConfirmAction {
     DiscardEdit,
 }
 
-// Filter-drawer layout: 7 rows, three of them free-text.
-const DRAWER_ROWS: usize = 7;
+// Filter-drawer layout: 8 rows, three of them free-text.
+const DRAWER_ROWS: usize = 8;
 const STATUS_CHOICES: [Status; 4] = [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
 const TYPE_CHOICES: [&str; 4] = ["task", "bug", "feature", "idea"];
 const PRI_CHOICES: [u8; 5] = [1, 2, 3, 4, 5];
 const DEPS_CHOICES: [&str; 3] = ["ready", "tangled", "inbox"];
+/// The `copies` chip (yaks-9631): `any` shows the other sheds' overlay,
+/// `home` this farm only. Index 1 is `home`.
+const COPIES_CHOICES: [&str; 2] = ["any", "home"];
 
 fn text_field(seed: &str, vim: bool) -> RefCell<EditorState> {
     let mut st = EditorState::new(Lines::from(seed));
@@ -230,6 +233,7 @@ fn spec_eq(a: &FilterSpec, b: &FilterSpec) -> bool {
         && a.ready_only == b.ready_only
         && a.tangled_only == b.tangled_only
         && a.parent == b.parent
+        && a.home_only == b.home_only
 }
 
 /// Snapshot a spec (thin alias for `.clone()`; kept for call-site clarity).

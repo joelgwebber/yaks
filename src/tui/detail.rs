@@ -150,6 +150,23 @@ fn warn_field(label: &str, value: &str) -> DLine {
     }
 }
 
+/// A blank line (for callers outside this module).
+pub fn blank() -> DLine {
+    empty()
+}
+
+/// The banner on top of a read-only detail (`only in shed <name>`, yaks-9631):
+/// a warning-accent line.
+pub fn banner(text: &str) -> DLine {
+    DLine {
+        text: text.into(),
+        kind: Kind::Warn,
+        links: vec![],
+        md: vec![],
+        cont: false,
+    }
+}
+
 fn section(text: &str) -> DLine {
     DLine {
         text: text.into(),
@@ -226,6 +243,17 @@ fn sheds_section(sheds: &[(&Shed, &YakChange)]) -> Vec<DLine> {
         return Vec::new();
     }
     let mut out = vec![empty(), section("Sheds:")];
+    // Two or more sheds changed the same yak: a conflict to settle before
+    // they land (yaks-9631).
+    if sheds.len() >= 2 {
+        out.push(DLine {
+            text: format!("  \u{26a0} changed in {} sheds", sheds.len()),
+            kind: Kind::Warn,
+            links: vec![],
+            md: vec![],
+            cont: false,
+        });
+    }
     for (shed, y) in sheds {
         let mut what = match (y.added, y.moved) {
             (true, _) => format!("new, {}", y.status),

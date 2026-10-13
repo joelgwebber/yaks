@@ -18,6 +18,9 @@ pub struct Row<'a> {
     pub task: &'a Task,
     pub depth: u16,
     pub ghost: bool,
+    /// The yak exists only in another shed (yaks-9631): `task` is that shed's
+    /// copy. Unrelated to `ghost` (dim context rows); both render dim.
+    pub shed_only: bool,
     pub has_children: bool,
     /// Set by `apply_collapse` when this row is a collapsed parent.
     pub collapsed: bool,
@@ -32,6 +35,7 @@ impl<'a> Row<'a> {
             task,
             depth: 0,
             ghost: false,
+            shed_only: false,
             has_children: false,
             collapsed: false,
             hidden: 0,
@@ -65,11 +69,26 @@ fn cmp_child(a: &Task, b: &Task) -> Ordering {
 /// their family is dimmed context. With a content filter, matches anywhere in
 /// that family become the focus and non-matching ancestors are dimmed to root
 /// them; everything else is pruned. Mirrors Python `tree.build_tree`.
+#[cfg(test)]
 pub fn build<'a>(all: &'a [Task], spec: &FilterSpec, farm: FamilyScope) -> Vec<Row<'a>> {
-    let by_id: HashMap<&str, &Task> = all.iter().map(|t| (t.id.as_str(), t)).collect();
+    let refs: Vec<&Task> = all.iter().collect();
+    build_over(&refs, &HashSet::new(), spec, farm)
+}
+
+/// [`build`] over a task set that may include yaks that exist only in another
+/// shed (`shed_only`, by id): they are placed by their own status and parent
+/// like any other, flagged on their rows, and never count as resolved
+/// dependencies.
+pub fn build_over<'a>(
+    all: &[&'a Task],
+    shed_only: &HashSet<&str>,
+    spec: &FilterSpec,
+    farm: FamilyScope,
+) -> Vec<Row<'a>> {
+    let by_id: HashMap<&str, &Task> = all.iter().map(|&t| (t.id.as_str(), t)).collect();
 
     let mut children_of: HashMap<&str, Vec<&str>> = HashMap::new();
-    for t in all {
+    for &t in all {
         if let Some(p) = &t.parent {
             if by_id.contains_key(p.as_str()) {
                 children_of
@@ -130,7 +149,11 @@ pub fn build<'a>(all: &'a [Task], spec: &FilterSpec, farm: FamilyScope) -> Vec<R
     // Seeds (the bright focus): content matches anywhere in the family when a
     // filter is active, else the anchors themselves.
     let focus: HashSet<&str> = if spec.content_active() {
-        let resolved = filter::resolved_ids(all);
+        let resolved = filter::resolved_ids_of(
+            all.iter()
+                .copied()
+                .filter(|t| !shed_only.contains(t.id.as_str())),
+        );
         universe
             .iter()
             .copied()
@@ -174,7 +197,16 @@ pub fn build<'a>(all: &'a [Task], spec: &FilterSpec, farm: FamilyScope) -> Vec<R
 
     let mut out = Vec::new();
     for r in roots {
-        flatten(r, 0, &by_id, &children_of, &members, &focus, &mut out);
+        flatten(
+            r,
+            0,
+            &by_id,
+            &children_of,
+            &members,
+            &focus,
+            shed_only,
+            &mut out,
+        );
     }
     out
 }
@@ -231,6 +263,7 @@ fn flatten<'a>(
     children_of: &HashMap<&'a str, Vec<&'a str>>,
     members: &HashSet<&'a str>,
     focus: &HashSet<&str>,
+    shed_only: &HashSet<&str>,
     out: &mut Vec<Row<'a>>,
 ) {
     let mut kids: Vec<&str> = children_of
@@ -242,12 +275,22 @@ fn flatten<'a>(
         task: by_id[id],
         depth,
         ghost: !focus.contains(id),
+        shed_only: shed_only.contains(id),
         has_children: !kids.is_empty(),
         collapsed: false,
         hidden: 0,
     });
     for c in kids {
-        flatten(c, depth + 1, by_id, children_of, members, focus, out);
+        flatten(
+            c,
+            depth + 1,
+            by_id,
+            children_of,
+            members,
+            focus,
+            shed_only,
+            out,
+        );
     }
 }
 

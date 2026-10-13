@@ -29,6 +29,11 @@ pub struct FilterSpec {
     /// Herd scope: keep only yaks whose id prefix is in this set. Empty =
     /// unconstrained; OR within, like the other multi-value fields.
     pub herds: Vec<String>,
+    /// The TUI drawer's `copies: home` chip (yaks-9631): show this farm only,
+    /// without the other sheds' overlay (shed-only rows, badges, the Sheds
+    /// section, the Inbox's shed asks). Not a task predicate: `matches` and
+    /// `apply` ignore it, the TUI reads it. Default `false` = `copies: any`.
+    pub home_only: bool,
 }
 
 impl FilterSpec {
@@ -90,8 +95,13 @@ impl FilterSpec {
 
 /// Ids that count as "dep satisfied" — shorn + dead.
 pub fn resolved_ids(tasks: &[Task]) -> HashSet<&str> {
+    resolved_ids_of(tasks)
+}
+
+/// [`resolved_ids`] over any iterator of tasks.
+pub fn resolved_ids_of<'a>(tasks: impl IntoIterator<Item = &'a Task>) -> HashSet<&'a str> {
     tasks
-        .iter()
+        .into_iter()
         .filter(|t| t.status.is_resolved())
         .map(|t| t.id.as_str())
         .collect()

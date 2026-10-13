@@ -63,14 +63,14 @@ fn status_from_key(k: &str) -> Option<Status> {
     })
 }
 
-fn spec_to_json(s: &FilterSpec) -> Value {
+pub(crate) fn spec_to_json(s: &FilterSpec) -> Value {
     let mut statuses: Vec<&str> = s.statuses.iter().map(|&st| view::status_key(st)).collect();
     statuses.sort_unstable();
     let mut types = s.types.clone();
     types.sort();
     let mut priorities = s.priorities.clone();
     priorities.sort_unstable();
-    json!({
+    let mut spec = json!({
         "statuses": statuses,
         "types": types,
         "priorities": priorities,
@@ -81,7 +81,13 @@ fn spec_to_json(s: &FilterSpec) -> Value {
         "tangled_only": s.tangled_only,
         "needs_only": s.needs_only,
         "parent": s.parent,
-    })
+    });
+    // `copies: home` is written only when set, so a saved view that never
+    // used it stays byte-identical to before (yaks-9631).
+    if s.home_only {
+        spec["home_only"] = json!(true);
+    }
+    spec
 }
 
 fn str_vec(v: Option<&Value>) -> Vec<String> {
@@ -94,7 +100,7 @@ fn str_vec(v: Option<&Value>) -> Vec<String> {
         .unwrap_or_default()
 }
 
-fn spec_from_json(d: Option<&Value>) -> FilterSpec {
+pub(crate) fn spec_from_json(d: Option<&Value>) -> FilterSpec {
     let Some(d) = d else {
         return FilterSpec::default();
     };
@@ -137,6 +143,10 @@ fn spec_from_json(d: Option<&Value>) -> FilterSpec {
             .and_then(|x| x.as_bool())
             .unwrap_or(false),
         parent: opt_str("parent"),
+        home_only: d
+            .get("home_only")
+            .and_then(|x| x.as_bool())
+            .unwrap_or(false),
     }
 }
 
