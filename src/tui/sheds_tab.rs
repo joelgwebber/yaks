@@ -536,12 +536,21 @@ impl App {
         });
     }
 
-    /// Enter on a yak in a shed's detail: open this checkout's copy.
+    /// Enter on a yak in a shed's detail: open this checkout's copy, or, for a
+    /// yak only a shed has, its read-only shed-only row (yaks-9631), the same
+    /// row the yak views show. Only a yak no row can show (e.g. the overlay
+    /// is off, or its shed copy could not be read) is a dead end.
     fn open_shed_yak(&mut self) {
         let Some(id) = self.selected_shed_yak().map(|y| y.id.clone()) else {
             return;
         };
-        if self.task(&id).is_some() {
+        let shed_only = || {
+            self.overlay_tasks(&self.filter)
+                .0
+                .iter()
+                .any(|t| t.id == id)
+        };
+        if self.task(&id).is_some() || shed_only() {
             self.goto_task(&id);
         } else {
             let name = self.selected_shed().map(Shed::name).unwrap_or_default();
@@ -1259,6 +1268,28 @@ mod tests {
         assert!(!app.on_sheds_tab());
         assert_eq!(app.focus, Focus::Detail);
         assert_eq!(app.selected_id().as_deref(), Some("yaks-07fe"));
+    }
+
+    #[test]
+    fn enter_on_a_yak_only_in_that_shed_opens_its_read_only_row() {
+        // perf-1 made yaks-new1, which this farm does not have: Enter opens
+        // its shed-only row (yaks-9631), not a dead end.
+        let mut app = on_sheds(App::new(vec![]));
+        app.apply_sheds_snapshot(fixture::with_shed_only(
+            fixture::snapshot(),
+            "perf-1-profile",
+            task("yaks-new1", "fresh", crate::model::Status::Hairy, 2, None),
+        ));
+        press(&mut app, "jjl"); // perf-1's detail
+        assert_eq!(app.selected_shed().unwrap().name(), "perf-1-profile");
+        press(&mut app, "j"); // its yaks: yaks-07fe, yaks-new1
+        assert_eq!(app.selected_shed_yak().unwrap().id, "yaks-new1");
+        enter_key(&mut app);
+        assert!(!app.on_sheds_tab(), "{:?}", app.notification);
+        assert_eq!(app.focus, Focus::Detail);
+        assert_eq!(app.selected_id().as_deref(), Some("yaks-new1"));
+        let frame = draw(&app, 150, 20);
+        assert!(frame.contains("only in shed perf-1-profile"), "{frame}");
     }
 
     #[test]

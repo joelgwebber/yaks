@@ -281,7 +281,10 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
         entry("l / Enter", "Show the shed's changes (yaks changes)"),
         entry("j / k (detail)", "Move between its changed yaks"),
         entry("J / K (detail)", "Next / previous shed"),
-        entry("Enter (detail)", "Open this checkout's copy of the yak"),
+        entry(
+            "Enter (detail)",
+            "Open the yak (its shed-only row if not here)",
+        ),
         entry(
             "a (detail)",
             "Answer its ask in that shed (uncommitted there)",

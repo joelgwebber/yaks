@@ -137,7 +137,7 @@ active view.
 | `h` / `←` / `Esc` | (detail) Back to the shed list |
 | `j` / `k` | (detail) Move between its changed yaks |
 | `J` / `K` | (detail) Next / previous shed |
-| `Enter` | (detail) Open this checkout's copy of the yak (a yak that exists only in the shed says so) |
+| `Enter` | (detail) Open the yak: this checkout's copy, or for a yak only that shed has, its read-only shed-only row (the shed's copy) |
 | `a` | (detail) Answer the yak's ask in that shed: the CLI's `yaks answer <id>@<shed>`, written into the shed's working tree and left uncommitted for its worker to commit |
 | `y` | Copy the shed's path (detail: the yak id) |
 | `r` | Rescan now |
