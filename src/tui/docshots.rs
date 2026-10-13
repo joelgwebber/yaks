@@ -122,6 +122,8 @@ fn farm() -> Vec<Task> {
 
 fn app_at(w: u16, h: u16) -> App {
     let mut app = App::new(farm());
+    // A settled Sheds tab, so the tab strip shows a real count, not `(…)`.
+    app.apply_sheds_snapshot(crate::tui::sheds_tab::fixture::snapshot());
     HeadlessApp::on_resize(&mut app, w, h);
     app
 }
@@ -152,6 +154,7 @@ fn multi_herd_farm() -> Vec<Task> {
 
 fn multi_herd_app_at(w: u16, h: u16) -> App {
     let mut app = App::new(multi_herd_farm());
+    app.apply_sheds_snapshot(crate::tui::sheds_tab::fixture::snapshot());
     HeadlessApp::on_resize(&mut app, w, h);
     app
 }
@@ -242,6 +245,20 @@ fn docshots() {
     app.select_id("web-0007");
     press(&mut app, 'E');
     write_svg("tui-edit-herd", &app, w, h);
+
+    // 8. Sheds tab (yaks-98f1): every checkout, attention first (an open ask,
+    //    active workers, then quiet and unreadable ones dimmed), from a fixed
+    //    snapshot so the shot is stable; then a shed's changes in the detail,
+    //    with the ask's question under its note. 150 wide so the detail sits
+    //    beside the list.
+    let (sw, sh) = (150u16, 18u16);
+    let mut app = app_at(sw, sh);
+    view_to(&mut app, crate::tui::view::SHEDS_KEY);
+    app.sheds.age = Some(4);
+    write_svg("tui-sheds", &app, sw, sh);
+    press(&mut app, 'j');
+    press(&mut app, 'l');
+    write_svg("tui-sheds-detail", &app, sw, sh);
 }
 
 /// Regenerate the agent-session example used by toque's README: drive the real
@@ -254,7 +271,16 @@ fn docshots_session() {
     use toque::{DriverOpts, Session};
 
     let (w, h) = (96u16, 32u16);
-    let mut s = Session::new(App::new(farm()), DriverOpts { width: w, height: h, diff: false });
+    let mut app = App::new(farm());
+    app.apply_sheds_snapshot(crate::tui::sheds_tab::fixture::snapshot());
+    let mut s = Session::new(
+        app,
+        DriverOpts {
+            width: w,
+            height: h,
+            diff: false,
+        },
+    );
     let mut transcript = Vec::new();
     let mut shot = |s: &Session<App>, n: usize| {
         let svg = toque::render_to_svg(s.app(), w, h);

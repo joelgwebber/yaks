@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-13T00:11:39Z'
+updated: '2026-10-13T00:28:42Z'
 parent: yaks-b5a0
 labels:
 - ui
@@ -43,3 +43,11 @@ Superseded premise (2026-10-09): the "Delta lanes via a directory scan as a stop
 ---
 ▸ 2026-10-13T00:11:39Z [delta-lead]
 moved: hairy -> shaving
+
+---
+▸ 2026-10-13T00:12:39Z [delta-lead]
+Spawned 2026-10-13T00:13Z from base 280767f, model anthropic/claude-sonnet-5-5 (pinned): perf-1 (agent c690566f836e424b) on yaks-07fe, needs-1 (agent 370c6f34957d4b31) on yaks-8814; their clones are Delta dirs 53smxwrxenfm and epe9k7eghxv1 (names appear on their first yaks command). delta-lead builds yaks-98f1 in this thread.
+
+---
+▸ 2026-10-13T00:28:42Z [delta-lead]
+Landed yaks-8814 (needs-1, 503fca3): Delta fast-forwarded this checkout to it; land checks: no MERGE_HEAD, src/sheds.rs and .yaks/yaks-8814.md equal the commit, the diff confined to outstanding_ids + needs_superseded + tests; full cargo test --release green here. land-1's clone is gone, so the original case is covered by its test only. yaks-98f1 (the Sheds tab) shorn by delta-lead; perf-1 (yaks-07fe) still running.

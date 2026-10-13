@@ -1,11 +1,11 @@
 ---
 id: yaks-98f1
 title: 'TUI: a thin Sheds tab (shed list + a shed''s changes), refreshed in the background'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-10-12T23:58:55Z'
-updated: '2026-10-13T00:11:39Z'
+updated: '2026-10-13T00:28:42Z'
 parent: yaks-38dc
 labels:
 - ui
@@ -100,3 +100,57 @@ Picked up by delta-lead (yakherd, this thread): building the tab here to the des
 ---
 ▸ 2026-10-13T00:11:39Z [delta-lead]
 moved: hairy -> shaving
+
+![tui-sheds](yaks-98f1/tui-sheds.png)
+
+---
+▸ 2026-10-13T00:28:18Z [delta-lead]
+Rendered frame (docshots fixture, rasterized with headless Chrome): the shed list.
+
+![tui-sheds-detail](yaks-98f1/tui-sheds-detail.png)
+
+---
+▸ 2026-10-13T00:28:18Z [delta-lead]
+Rendered frame: a shed's changes in the detail, with the ask's question under its note.
+
+![real-machine-headless](yaks-98f1/real-machine-headless.txt)
+
+---
+▸ 2026-10-13T00:28:19Z [delta-lead]
+Real machine: yaks tui --headless on this repo (Recent, the Sheds tab, the needs-1 shed's detail).
+
+---
+▸ 2026-10-13T00:28:42Z [delta-lead]
+Decision: the tab is a built-in VIEW (key `sheds`, pinned, last), not a new top-level mode. `rows()` is empty there, so every yak key finds no selection, and `handle_key` routes the tab's keys to `handle_sheds_key` before the yak match, so S/E/X/… cannot reach a yak from the tab (tested). Rejected: a separate `Focus::Sheds` mode (a third pane state every handler would have to know about) and branching each yak handler on the tab.
+
+---
+▸ 2026-10-13T00:28:42Z [delta-lead]
+Decision: one scan = `sheds::discover` + `sheds::changes` for every shed with its own farm + `orphaned_pins`, run on a short-lived thread per scan, delivered as one `Snapshot` over mpsc. The live loop calls `settle_sheds(false)` each tick (non-blocking); toque's `settle` calls `settle_sheds(true)` so a headless frame is the settled one. `changes` for every shed (not on demand for the selected one) so moving between sheds is instant; it costs a little more per scan, which yaks-07fe can trim. The scan age is a field refreshed by `settle`, so `render` stays pure and tests freeze it. Rejected: a long-lived worker thread (no state to keep), computing `changes` lazily per selection (staleness and a second request type).
+
+---
+▸ 2026-10-13T00:28:42Z [delta-lead]
+Decision: an ask's note shows its question (up to 6 lines) under the note's first line in the shed detail, because the `a` key answers it there; `yaks changes` shows only the first line (`asked: needs human`). Not changed in the CLI (out of scope; `inbox --sheds` already shows the question there).
+
+---
+▸ 2026-10-13T00:28:42Z [delta-lead]
+Done (delta-lead). The Sheds tab, to the design note with Joel's six answers.
+
+What shipped:
+- src/tui/sheds_tab.rs (new): `Snapshot` (scan, attention order, outstanding count), `ShedsTab` state, the scan plumbing (`request_sheds_scan`, `settle_sheds`, `apply_sheds_snapshot` keeping the shed by path and the yak by id), the keys, answer-in-shed via `Farm::answer_in_shed`, the list and detail renderers, a test fixture and 9 tests.
+- Wiring: `view::sheds_view` / `SHEDS_KEY`; `App.sheds`; rows/count branches in viewmodel; render dispatch, tab count and `scanned Ns ago` slot; `EditAction::AnswerInShed`; the event loop and toque `settle`; the state header.
+- Prep commit 1d8151a: `sheds::farm_line`, `sheds::is_outstanding`, pub `label_line`, so the tab and `yaks sheds` share their text (`yaks sheds` byte-identical before/after on this machine).
+- Docs: docs/tui.md (Layout, a Sheds-tab key table, a Sheds tab section with two shots), README, the yaks skill's TUI paragraph, yaks-coordinating's watch list, `help_content` (a Sheds section) and `help_hint` (per focus on the tab).
+
+Evidence:
+- `cargo test --release`: 550 passed in the bin crate plus every integration suite green (run before the last test was added; `sheds_tab` 9/9 after).
+- Real machine, `yaks tui --headless` on this repo: the tab lists the 4 live sheds with the same counts as `yaks sheds`; needs-1's detail showed its notes live while it worked (attached transcript).
+- Real machine, the one write: a throwaway `git worktree` shed with `yaks ask yaks-98f1`; from the tab, j l j j j a, typed an answer, Enter: the shed's yaks-98f1.md got `needs: agent` and the attributed note, uncommitted there (`git status`: ` M .yaks/yaks-98f1.md`); the notification dropped below the tabs (too long to sit beside them); the rescan kept the cursor on the yak. Worktree removed after.
+- Frames LOOKED at (rasterized with headless Chrome, attached): attention order, dimmed quiet/unreadable rows, the ask's question in yellow.
+- Snapshot churn: four existing insta snapshots and every docs/assets SVG now show the 🛖 Sheds tab; at 96 columns the `family:` indicator no longer fits beside the strip and yields, as designed.
+
+Found on the way: yaks-93fe (a plain git worktree of a Delta clone is taken for the primary by discovery; CLI and tab alike).
+Follow-ups not done: mouse on the tab (clicks and wheel do nothing there; tab clicks work); filtering out or hiding garbage sheds (Joel: maybe later).
+
+---
+▸ 2026-10-13T00:28:42Z [delta-lead]
+moved: shaving -> shorn

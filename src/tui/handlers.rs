@@ -1239,6 +1239,10 @@ impl App {
                 let note = text.trim();
                 self.needs_edit(&id, true, (!note.is_empty()).then_some(note));
             }
+            EditAction::AnswerInShed { id, shed } => {
+                let note = text.trim();
+                self.commit_answer_in_shed(&id, &shed, (!note.is_empty()).then_some(note));
+            }
             EditAction::SaveView => self.save_current_view(text),
             EditAction::RenameView { index } => {
                 let name = text.trim().to_string();
@@ -1643,6 +1647,11 @@ pub(crate) fn handle_key(app: &mut App, k: KeyEvent) {
     }
     if ctrl && k.code == KeyCode::Char('c') {
         app.quit = true;
+        return;
+    }
+    // The Sheds tab owns its keys; no yak key reaches a yak from there.
+    if app.on_sheds_tab() {
+        app.handle_sheds_key(k);
         return;
     }
     let half = (app.page / 2).max(1) as i32;

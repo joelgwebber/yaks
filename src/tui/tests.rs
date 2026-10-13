@@ -1179,7 +1179,7 @@ fn starred_marker_and_tab_bar() {
 #[test]
 fn default_views_and_tab_cycling() {
     let mut app = sample();
-    assert_eq!(app.views.len(), 6); // 3 status + Recent + Inbox + Starred
+    assert_eq!(app.views.len(), 7); // 3 status + Recent + Inbox + Starred + Sheds
     assert_eq!(app.view, 0);
     assert_eq!(app.filter.statuses, vec![Status::Hairy]);
     tab_key(&mut app); // -> Shaving
@@ -1224,8 +1224,8 @@ fn save_view_creates_and_activates_custom_view() {
     handle_key(&mut app, key('V')); // save view
     typ(&mut app, "kids");
     enter_key(&mut app); // commit name
-    assert_eq!(app.views.len(), 7);
-    assert_eq!(app.view, 6);
+    assert_eq!(app.views.len(), 8);
+    assert_eq!(app.view, 7);
     let v = app.active_view();
     assert_eq!(v.name, "kids");
     assert_eq!(v.spec.search.as_deref(), Some("child"));
@@ -1295,11 +1295,11 @@ fn picker_deletes_custom_but_not_builtin() {
     handle_key(&mut app, key('V'));
     typ(&mut app, "mine");
     enter_key(&mut app);
-    assert_eq!(app.views.len(), 7);
+    assert_eq!(app.views.len(), 8);
     // Delete it via the picker (active view is the custom one, last index).
     handle_key(&mut app, key('v'));
     handle_key(&mut app, key('d'));
-    assert_eq!(app.views.len(), 6);
+    assert_eq!(app.views.len(), 7);
     // Deleting a built-in is refused.
     handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
     handle_key(&mut app, key('v'));

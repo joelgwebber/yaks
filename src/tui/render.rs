@@ -18,7 +18,8 @@ use edtui::{EditorState, EditorView};
 
 use super::{
     App, Focus, Overlay, completion_context, detail, editor_theme, render_create, render_drawer,
-    render_editor_panel, render_fuzzy_results, render_line_editor, render_query_line, tree, view,
+    render_editor_panel, render_fuzzy_results, render_line_editor, render_query_line,
+    render_shed_detail, render_sheds_list, tree, view,
 };
 use crate::filter::FilterSpec;
 use crate::model::{Status, Task};
@@ -53,7 +54,7 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
         let (left, right) = main_split(mid);
         let modal = left.width == 0;
         if !modal {
-            render_list(app, frame, left);
+            render_left(app, frame, left);
         }
         let inner = right_divider(frame, right, true);
         if modal {
@@ -75,12 +76,22 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
             Overlay::Create(f) => render_create(f, frame, inner),
             Overlay::Help(scroll) => render_help(*scroll, frame, inner),
             Overlay::ViewPicker(sel) => render_view_picker(app, *sel, frame, inner),
+            _ if app.on_sheds_tab() => render_shed_detail(app, frame, inner),
             _ => render_detail(app, frame, inner),
         }
     } else {
-        render_list(app, frame, mid);
+        render_left(app, frame, mid);
     }
     render_status(app, frame, bot);
+}
+
+/// The list pane: yak rows, or the Sheds tab's shed rows.
+fn render_left(app: &App, frame: &mut Frame, area: Rect) {
+    if app.on_sheds_tab() {
+        render_sheds_list(app, frame, area);
+    } else {
+        render_list(app, frame, area);
+    }
 }
 
 /// Right-pane (detail / overlay) share of the main area before clamping —
@@ -257,6 +268,19 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
         entry("#", "Go to any yak by id / title"),
         entry("f", "Filter drawer"),
         entry("Esc", "Revert filter to the active view"),
+        blank(),
+        section("Sheds tab (every checkout: yaks sheds)"),
+        entry("j / k", "Move between sheds (attention first)"),
+        entry("l / Enter", "Show the shed's changes (yaks changes)"),
+        entry("j / k (detail)", "Move between its changed yaks"),
+        entry("J / K (detail)", "Next / previous shed"),
+        entry("Enter (detail)", "Open this checkout's copy of the yak"),
+        entry(
+            "a (detail)",
+            "Answer its ask in that shed (uncommitted there)",
+        ),
+        entry("y", "Copy the shed's path (detail: the yak id)"),
+        entry("r", "Rescan now (auto every 10 s while shown)"),
         blank(),
         section("General"),
         entry("y", "Copy yak id to clipboard"),
@@ -467,7 +491,12 @@ pub(crate) fn render_tabs(app: &App, frame: &mut Frame, area: Rect) {
         } else {
             ""
         };
-        let text = format!(" {}{} ({}) ", v.name, mark, format_count(app.view_count(v)));
+        let count = if v.key == view::SHEDS_KEY {
+            app.sheds_count_label()
+        } else {
+            format_count(app.view_count(v))
+        };
+        let text = format!(" {}{} ({count}) ", v.name, mark);
         let style = if i == app.view {
             Style::new()
                 .fg(Color::Black)
@@ -531,6 +560,22 @@ pub(crate) fn render_tabs(app: &App, frame: &mut Frame, area: Rect) {
                 }
             };
             frame.render_widget(Paragraph::new(Span::styled(n.clone(), style)), rect);
+        }
+    } else if app.on_sheds_tab() {
+        // The Sheds tab's scan state in the same slot (`scanned 4s ago`).
+        let label = app.sheds_status_label();
+        if !label.is_empty() && tabs_w + disp_width(&label) < area.width as usize {
+            let w = disp_width(&label) as u16;
+            let rect = Rect {
+                x: area.x + area.width - w,
+                y: area.y,
+                width: w,
+                height: 1,
+            };
+            frame.render_widget(
+                Paragraph::new(Span::styled(label, Style::new().fg(Color::DarkGray))),
+                rect,
+            );
         }
     } else {
         let av = app.active_view();
@@ -1248,6 +1293,17 @@ pub(crate) fn help_hint(app: &App) -> String {
     } else {
         "f:filter  /:search"
     };
+    if app.on_sheds_tab() {
+        return match app.focus {
+            Focus::List => {
+                "Tab:view  j/k:move  l:changes  y:copy path  r:rescan  v:views  ?:help  q:quit"
+            }
+            Focus::Detail => {
+                "h:list  j/k:yak  J/K:shed  Enter:open yak  a:answer  y:copy id  r:rescan  ?:help"
+            }
+        }
+        .into();
+    }
     match app.focus {
         Focus::List => format!(
             "Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  {filter_hint}  ?:help"

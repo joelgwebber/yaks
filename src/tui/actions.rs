@@ -183,6 +183,9 @@ impl App {
             self.collapsed.len(),
             overlay_name(&self.overlay),
         );
+        if self.on_sheds_tab() {
+            return format!("{base} · {}", self.sheds_state_header());
+        }
         // In the detail pane, expose the scroll offset and whether the sticky
         // header is showing (the frontmatter top has scrolled off).
         if self.focus == Focus::Detail {

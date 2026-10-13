@@ -10,7 +10,9 @@ interchangeable.
   Views are tabs across the top (`Tab`/`[`/`]` to switch). Built-in views
   include the default tree, **Recent**, **Inbox** (yaks with a `needs` value: awaiting a human, or answered and
   awaiting an agent), and
-  **Starred**; you can save the current filter as a named view.
+  **Starred**; you can save the current filter as a named view. The
+  **Sheds** tab lists the repository's checkouts instead of yaks (see
+  [Sheds tab](#sheds-tab)).
 - **Detail pane** — the selected yak: fields, parent/deps/children, source, a
   `Needs:` line when blocked, and the body + timestamped notes. Task-id
   references and URLs in the body are followable links. It (and every
@@ -94,6 +96,20 @@ title words, then `Enter` opens its detail, switching to its view and recording
 the jump so `o` comes back); `f` filter drawer; `Esc` revert filter to the
 active view.
 
+**Sheds tab** — its own keys (the yak keys do nothing there):
+
+| Key | Action |
+|---|---|
+| `j` / `k`, `g` / `G`, `d` / `u` | Move between sheds |
+| `l` / `→` / `Enter` | Show the shed's changes (`yaks changes <shed>`) |
+| `h` / `←` / `Esc` | (detail) Back to the shed list |
+| `j` / `k` | (detail) Move between its changed yaks |
+| `J` / `K` | (detail) Next / previous shed |
+| `Enter` | (detail) Open this checkout's copy of the yak (a yak that exists only in the shed says so) |
+| `a` | (detail) Answer the yak's ask in that shed: the CLI's `yaks answer <id>@<shed>`, written into the shed's working tree and left uncommitted for its worker to commit |
+| `y` | Copy the shed's path (detail: the yak id) |
+| `r` | Rescan now |
+
 **General** — `y` copy yak id; `?` toggle help; `q` / `Ctrl-C` quit.
 
 **Mouse** — the wheel scrolls the pane under the pointer (over the list it moves
@@ -154,6 +170,38 @@ saving moves the yak to that herd (an id-prefix rename). `H` does the same move
 as a one-key picker.
 
 ![yaks TUI edit form with the herd chip row](assets/tui-edit-herd.svg)
+
+## Sheds tab
+
+The **🛦 Sheds** tab is `yaks sheds` and `yaks changes` on screen: every checkout
+of the repository (the primary `main`, git worktrees, Delta clones), live, so
+you can see what each worker's thread is doing without opening a terminal in
+its checkout. The text is the CLI's own (the same functions produce it).
+
+- **One row per shed**, attention first: `main`, then sheds with an open ask
+  (`⏳`), active ones, ones with work outstanding, stale ones, then quiet ones
+  (nothing outstanding, or all of it landed) and unreadable ones (an old-layout
+  clone), dimmed. `*` marks the checkout the TUI runs in. Each row shows its
+  liveness (`active` / `stale` / `idle`), `+ahead -behind` against this
+  checkout, `✎` and its count of uncommitted files, the `farm:` summary, and
+  the yaks it is shaving. A footer counts orphaned Delta pins (finished
+  threads; `yaks sheds` lists them).
+- **The tab count** is the number of sheds with something outstanding.
+- **The detail pane** (`l`) shows the shed's path, git state, baseline, who is
+  working there and when its farm last changed, then its changes per yak: the
+  same bracket words as `yaks changes` (`hairy -> shaving`, `new, hairy`,
+  `edited`, `landed`), each new note's first line, and for an ask the
+  question itself, which `a` answers in place.
+- **Refresh**: the scan runs in the background (it takes a second or two:
+  git and several farms), once at startup for the count, when you open the
+  tab, every 10 seconds while the tab is shown, and on `r`. The tab row's
+  right edge says `scanning…` or `scanned 4s ago`. The UI never waits on it.
+- Nothing on the tab removes a shed; cleanup stays advisory (`y` copies the
+  path).
+
+![yaks TUI Sheds tab](assets/tui-sheds.svg)
+
+![yaks TUI Sheds tab with a shed's changes](assets/tui-sheds-detail.svg)
 
 # Screenshots
 

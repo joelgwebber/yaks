@@ -27,6 +27,9 @@ fn event_loop(term: &mut Terminal<CrosstermBackend<Stdout>>, app: &mut App) -> R
             app.reload_preserving_selection();
             dirty = false;
         }
+        // The Sheds tab's background scan: pick up a finished one, start a
+        // due one. Never blocks (yaks-98f1).
+        app.settle_sheds(false);
         term.draw(|f| render(app, f))?;
         // Record the main-area height (minus tab + help lines) for paging.
         let h = term.size()?.height;

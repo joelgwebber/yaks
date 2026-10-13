@@ -22,6 +22,7 @@ mod markdown;
 mod mouse;
 mod render;
 mod runtime;
+mod sheds_tab;
 #[cfg(test)]
 mod test_support;
 #[cfg(test)]
@@ -37,7 +38,7 @@ mod views_store;
 use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, HashSet};
 use std::io::{self, Stdout};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::{self, Receiver};
 use std::time::Duration;
 
@@ -75,6 +76,7 @@ use handlers::{handle_event, handle_paste};
 use handlers::{handle_key, pump_events};
 use render::*;
 pub use runtime::run;
+use sheds_tab::*;
 
 /// One o/i nav-history stop: a task plus the detail cursor/scroll it was left
 /// at, so back/forward return you to where you were (yaks-28b4). Deliberately
@@ -312,6 +314,8 @@ pub struct App {
     /// Pane/tab rects recorded by the last render, for mouse hit-testing
     /// (reset each frame). See [`mouse::HitMap`].
     hits: RefCell<mouse::HitMap>,
+    /// The Sheds tab's snapshot, cursors and background scan (yaks-98f1).
+    sheds: ShedsTab,
     quit: bool,
 }
 
@@ -353,6 +357,7 @@ impl App {
             cmdline: None,
             selected: HashSet::new(),
             hits: RefCell::default(),
+            sheds: ShedsTab::default(),
             quit: false,
         }
     }
@@ -381,6 +386,10 @@ impl App {
         app.working_set = working_set;
         app.farm = Some(farm);
         app.clamp_cursor();
+        // One scan at startup feeds the Sheds tab's count; after that it
+        // scans only while shown (yaks-98f1).
+        app.sheds.cwd = std::env::current_dir().ok();
+        app.request_sheds_scan();
         Ok(app)
     }
 }

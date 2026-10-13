@@ -122,6 +122,10 @@ impl App {
                 .filter(|id| self.task(id).is_some())
                 .count();
         }
+        // The Sheds tab counts outstanding sheds, not yaks.
+        if v.key == view::SHEDS_KEY {
+            return self.sheds.snapshot.as_ref().map_or(0, |s| s.outstanding());
+        }
         // Flat views (Recent/Inbox/custom sorted) count via the flat predicate
         // so facets the tree ignores for pruning — notably `needs_only` — are
         // honored (an Inbox tab shows the awaiting-a-human count, not the farm
@@ -204,6 +208,10 @@ impl App {
         let v = self.active_view();
         if v.key == "working-set" {
             return self.working_set_rows();
+        }
+        // The Sheds tab has no yak rows: every yak key finds no selection.
+        if v.key == view::SHEDS_KEY {
+            return Vec::new();
         }
         if v.is_flat() {
             return self.flat_rows();

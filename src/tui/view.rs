@@ -202,11 +202,33 @@ pub fn working_set_view() -> View {
     }
 }
 
+/// The key of the Sheds tab (yaks-98f1): rows are the repository's checkouts
+/// (`yaks sheds`), not yaks, so the yak row/count paths branch on it.
+pub const SHEDS_KEY: &str = "sheds";
+
+/// The Sheds tab: every checkout of the repository and what each changed
+/// (`yaks sheds` / `yaks changes`), refreshed in the background while shown.
+/// Pinned by default (Joel, yaks-98f1); its spec is unused.
+pub fn sheds_view() -> View {
+    View {
+        name: "\u{1f6d6} Sheds".into(),
+        key: SHEDS_KEY.into(),
+        status: None,
+        builtin: true,
+        pinned: true,
+        spec: FilterSpec::default(),
+        sort_by: None,
+        sort_dir: SortDir::Desc,
+        limit: None,
+    }
+}
+
 pub fn default_views() -> Vec<View> {
     let mut v = builtin_status_views();
     v.push(recent_view());
     v.push(inbox_view());
     v.push(working_set_view());
+    v.push(sheds_view());
     v
 }
 

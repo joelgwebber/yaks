@@ -162,7 +162,9 @@ click to select / open / switch view). Mark rows with `m` for a bulk state
 change over the selection; `a` asks or answers (answer hands the yak to an agent: `needs: agent`);
 and an **Inbox** view lists every yak with a `needs` value, each flagged inline
 with a ⏳ badge and a warning accent (awaiting a human) or a ✅ badge (answered,
-awaiting an agent).
+awaiting an agent). A **Sheds** tab shows every checkout of the repo and what
+each one changed (`yaks sheds` / `yaks changes`, refreshed in the background),
+and answers a worker's ask in its own checkout with `a`.
 
 ![The yaks TUI list view: a parent yak with children across statuses, labels, a dependency, and a ⏳ needs badge](docs/assets/tui-list.svg)
 

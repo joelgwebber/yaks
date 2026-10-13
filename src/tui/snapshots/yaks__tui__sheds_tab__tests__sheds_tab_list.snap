@@ -1,0 +1,18 @@
+---
+source: src/tui/sheds_tab.rs
+expression: "draw(&app, 120, 14)"
+---
+ 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   🛖  Sheds (2)             scanned 4s ago
+
+*  main                idle   +0 -0         no changes of its own (vs origin/main)
+⏳  needs-1-superseded  active +1 -0    ✎2   2 new notes, 1 needs  shaving: yaks-8814
+   perf-1-profile      active +1 -0    ✎1   1 new notes  shaving: yaks-07fe
+   land-1-landed       idle   +0 -5         landed (1 yak)
+   mig-2-yaks-migrate  ·      +1 -23        farm unreadable: old layout (pre-0.0.16 clone): not read
+
+
+
+
+
+   53 orphaned pins (finished threads; `yaks sheds` lists them)
+Tab:view  j/k:move  l:changes  y:copy path  r:rescan  v:views  ?:help  q:quit

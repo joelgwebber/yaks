@@ -39,6 +39,12 @@ impl HeadlessApp for App {
     fn should_quit(&self) -> bool {
         self.quit
     }
+
+    /// Wait for a running Sheds-tab scan, so a headless frame shows the
+    /// settled state rather than `scanning…` (yaks-98f1).
+    fn settle(&mut self) {
+        self.settle_sheds(true);
+    }
 }
 
 #[cfg(test)]

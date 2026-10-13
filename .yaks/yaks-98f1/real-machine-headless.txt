@@ -1,0 +1,104 @@
+=== frame 0 · 150x24 · focus=list · view=🕒 Recent · cursor=0 · rows=50 · sel=yaks-93fe · blocked=[yaks-8d6a] · collapsed=0 · filter=(all) · overlay=none ===
+ 🕒 Recent (50)   📥 Inbox (3)   🦬 Hairy (56)   🪒 Shaving (6)   🛖 Sheds (3)
+
+ yaks-93fe p3 bug      🦬 sheds: a plain git worktree of a Delta clone is taken for the primary (named main, measured vs origin/main)     [cli, delta]
+ yaks-8814 p3 bug      🐑 landed: a shed's needs: that the reference already resolved is not outstanding                                  [cli, delta]
+ yaks-38dc p3 feature  🪒 Sheds view: show in-flight yak state from other checkouts in the TUI                                               [ui, cli]
+ yaks-98f1 p2 feature  🪒 TUI: a thin Sheds tab (shed list + a shed's changes), refreshed in the background                                [ui, delta]
+ yaks-07fe p2 task     🪒 yaks sheds is slow (~1.2 s for 4 sheds): profile it and make the common path cheap                              [cli, delta]
+ yaks-4f6e p2 task     🐑 Release v0.0.17                                                                                                    [release]
+ yaks-8b7a p1 task     🐑 Decision: status as a frontmatter field (one stable path per yak) vs status directories                        [design, cli]
+ yaks-bbda p2 task     🐑 Flat farm, phase 4: remove the migration and the dual-layout read once every farm is migrated                          [cli]
+ yaks-77a5 p3 task     🦬 Case study: reconstruct the 2026-09-23 UI lightning round (11 lanes + 3 scouts)                                         [ui]
+ yaks-64c4 p4 idea     🦬 Yak archaeology: fast retrieval of past reasoning & provenance stitching                                       [cli, search]
+ yaks-f04d p3 feature  🦬 Known labels in configuration                                                                               [config, labels]
+ yaks-3a56 p1 task     🐑 Flat farm, phase 3: brief + skills/docs sweep, migrate this farm, real-machine checks, release 0.0.16 [cli, skills, release]
+ yaks-8577 p2 task     🐑 Release v0.0.16                                                                                                    [release]
+ yaks-ca28 p1 task     🐑 Flat farm, phase 2: sheds read both layouts (base_farm, mixed-layout comparisons)                               [cli, delta]
+ yaks-86f4 p1 task     🐑 Flat farm, phase 2: yaks migrate + doctor/preflight checks                                                             [cli]
+ yaks-9f91 p1 task     🐑 Flat farm, phase 2: git reporting (yaks status, yaks commit, changes.rs) for in-place status changes              [cli, git]
+ yaks-95be p1 task     🐑 Flat farm, phase 1: store seam (flat paths, dual-layout reads, status field, schema 4)                                 [cli]
+ yaks-fe33 p4 task     🦬 Repeatable parallel-run trials, one per environment                                                                  [agent]
+ yaks-ee0a p2 task     🪒 CLI affordances for sheds and threads: what a human and an agent need to ask and do across checkouts           [cli, design]
+ yaks-7204 p3 idea     🦬 Shed deltas as an overlay across the TUI and CLI, not just a shed picker                                    [ui, cli, delta]
+ yaks-e475 p2 bug      🦬 answer <id>@<shed> can be lost when the worker syncs with git before committing it                              [cli, delta]
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help
+=== end ===
+=== frame 1 · 150x24 · focus=list · view=🛖 Sheds · cursor=0 · rows=0 · sel=- · blocked=[yaks-8d6a] · collapsed=0 · filter=(all) · overlay=none · sheds=4 · shed=main · shed_yak=- ===
+ 🕒 Recent (50)   📥 Inbox (3)   🦬 Hairy (56)   🪒 Shaving (6)   🛖 Sheds (3)                                                          scanned 0s ago
+
+   main                      idle   +0 -4         no changes of its own (vs origin/main)
+   perf-1-profile-and-speed  active +0 -1    ✎1   2 new notes  shaving: yaks-07fe
+*  sheds-tui-thin-sheds-tab  active +0 -0    ✎38  2 new, 3 moved, 19 new notes  shaving: yaks-07fe, yaks-38dc, yaks-98f1
+   needs-1-superseded-needs  idle   +0 -0         1 moved, 7 new notes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   61 orphaned pins (finished threads; `yaks sheds` lists them)
+Tab:view  j/k:move  l:changes  y:copy path  r:rescan  v:views  ?:help  q:quit
+=== end ===
+=== frame 2 · 150x24 · focus=list · view=🛖 Sheds · cursor=0 · rows=0 · sel=- · blocked=[yaks-8d6a] · collapsed=0 · filter=(all) · overlay=none · sheds=4 · shed=perf-1-profile-and-speed · shed_yak=yaks-07fe ===
+ 🕒 Recent (50)   📥 Inbox (3)   🦬 Hairy (56)   🪒 Shaving (6)   🛖 Sheds (3)                                                          scanned 0s ago
+
+   main                      idle   +0 -4         no changes of its own (vs origin/main)
+   perf-1-profile-and-speed  active +0 -1    ✎1   2 new notes  shaving: yaks-07fe
+*  sheds-tui-thin-sheds-tab  active +0 -0    ✎38  2 new, 3 moved, 19 new notes  shaving: yaks-07fe, yaks-38dc, yaks-98f1
+   needs-1-superseded-needs  idle   +0 -0         1 moved, 7 new notes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   61 orphaned pins (finished threads; `yaks sheds` lists them)
+Tab:view  j/k:move  l:changes  y:copy path  r:rescan  v:views  ?:help  q:quit
+=== end ===
+=== frame 3 · 150x24 · focus=detail · view=🛖 Sheds · cursor=0 · rows=0 · sel=- · blocked=[yaks-8d6a] · collapsed=0 · filter=(all) · overlay=none · sheds=4 · shed=perf-1-profile-and-speed · shed_yak=yaks-07fe ===
+ 🕒 Recent (50)   📥 Inbox (3)   🦬 Hairy (56)   🪒 Shaving (6)   🛖 Sheds (3)                                                          scanned 0s ago
+
+   main                      idle   +0 -4         n│ perf-1-profile-and-speed  perf-1: profile and speed up yaks sheds
+   perf-1-profile-and-speed  active +0 -1    ✎1   2│ path     /Users/joel/src/yaks/.delta/worktrees/53smxwrxenfm/yaks
+*  sheds-tui-thin-sheds-tab  active +0 -0    ✎38  2│ git      main@280767f · +0 -1 vs here · 1 dirty
+   needs-1-superseded-needs  idle   +0 -0         1│ farm     2 new notes
+                                                   │ label    who: perf-1 · shaving: yaks-07fe · active
+                                                   │ active   2026-10-13T00:26:33Z
+                                                   │
+                                                   │ Changes (1 yak)
+                                                   │ yaks-07fe  [shaving]  yaks sheds is slow (~1.2 s for 4 sheds): profile it and make the common pa
+                                                   │     2026-10-13T00:12:57Z  perf-1  Start: Tue Oct 13 00:12:57 UTC 2026
+                                                   │     2026-10-13T00:26:33Z  perf-1  Profile (before binary, release, this machine: 4 live sheds in
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+   61 orphaned pins (finished threads; `yaks sheds`│
+h:list  j/k:yak  J/K:shed  Enter:open yak  a:answer  y:copy id  r:rescan  ?:help
+=== end ===

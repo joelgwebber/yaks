@@ -1,5 +1,5 @@
 === frame 0 · 96x32 · focus=list · view=🦬 Hairy · cursor=0 · rows=3 · sel=yaks-3901 · blocked=[yaks-70e5] · collapsed=0 · filter=(all) · overlay=none ===
- 🦬 Hairy (2)   🪒 Shaving (3)   🐑 Shorn (1)   🕒 Recent (6)   ⭐ Starred (0)
+ 🦬 Hairy (2)   🪒 Shaving (3)   🐑 Shorn (1)   🕒 Recent (6)   ⭐ Starred (0)   🛖 Sheds (2)
 
  yaks-3901   p1 task     🪒 Coordination substrate for parallel yak-shaving         [coord, git]
 *  yaks-70e5 p3 feature  🦬 yaks diff <refA> <refB>: ref-generic farm diff                 [cli]
@@ -34,7 +34,7 @@ Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state
 === end ===
 > key Tab
 === frame 1 · 96x32 · focus=list · view=🪒 Shaving · cursor=0 · rows=4 · sel=yaks-3901 · blocked=[yaks-70e5] · collapsed=0 · filter=(all) · overlay=none ===
- 🦬 Hairy (2)   🪒 Shaving (3)   🐑 Shorn (1)   🕒 Recent (6)   ⭐ Starred (0)
+ 🦬 Hairy (2)   🪒 Shaving (3)   🐑 Shorn (1)   🕒 Recent (6)   ⭐ Starred (0)   🛖 Sheds (2)
 
  yaks-3901   p1 task     🪒 Coordination substrate for parallel yak-shaving         [coord, git]
    yaks-b517 p2 feature  🪒 HITL: needs-human frontmatter + inbox surfacing         [cli, ui] ⏳
@@ -69,7 +69,7 @@ Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state
 === end ===
 > key j
 === frame 2 · 96x32 · focus=list · view=🪒 Shaving · cursor=1 · rows=4 · sel=yaks-b517 · blocked=[yaks-70e5] · collapsed=0 · filter=(all) · overlay=none ===
- 🦬 Hairy (2)   🪒 Shaving (3)   🐑 Shorn (1)   🕒 Recent (6)   ⭐ Starred (0)
+ 🦬 Hairy (2)   🪒 Shaving (3)   🐑 Shorn (1)   🕒 Recent (6)   ⭐ Starred (0)   🛖 Sheds (2)
 
  yaks-3901   p1 task     🪒 Coordination substrate for parallel yak-shaving         [coord, git]
    yaks-b517 p2 feature  🪒 HITL: needs-human frontmatter + inbox surfacing         [cli, ui] ⏳
@@ -104,7 +104,7 @@ Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state
 === end ===
 > key l
 === frame 3 · 96x32 · focus=detail · view=🪒 Shaving · cursor=1 · rows=4 · sel=yaks-b517 · blocked=[yaks-70e5] · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
- 🦬 Hairy (2)   🪒 Shaving (3)   🐑 Shorn (1)   🕒 Recent (6)   ⭐ Starred (0)
+ 🦬 Hairy (2)   🪒 Shaving (3)   🐑 Shorn (1)   🕒 Recent (6)   ⭐ Starred (0)   🛖 Sheds (2)
 
 ◂ Task: yaks-b517
 │

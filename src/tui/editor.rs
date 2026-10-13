@@ -58,6 +58,12 @@ pub(crate) enum EditAction {
     /// Answer this id (hands it to an agent: `needs: agent`) and record the
     /// typed reply. TUI counterpart of CLI `answer`.
     Answer(String),
+    /// Answer `id` in the shed checked out at `shed` (the Sheds tab): the
+    /// CLI's `answer <id>@<shed>`, left uncommitted there (yaks-98f1).
+    AnswerInShed {
+        id: String,
+        shed: std::path::PathBuf,
+    },
 }
 
 /// What a context-sensitive `E` in the detail pane should edit, derived from
