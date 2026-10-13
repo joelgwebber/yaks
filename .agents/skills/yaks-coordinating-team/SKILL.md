@@ -58,6 +58,12 @@ tell the human the shed name and id; they can answer the same way from their che
 a machine the thread was only shared to: there their checkout cannot see the clones). When the
 code is gated green and only a subjective sign-off remains, you may instead land the shed first
 and route the human's answer to the ask that is now visible.
+Your OWN ask (raised in your checkout) is answered the same way: tell the human
+`yaks answer <id>@<your shed>`, never plain `yaks answer <id>`, and do not push the commit holding
+the open ask to their checkout before it is answered. The push copies the ask into their farm, a
+plain answer lands in that copy, and yours stays `needs: human` (seen on yaks-7204; the fix then is
+to record their answer in your yak with `yaks answer`, quoting it, and have them discard their
+uncommitted copy before your next push).
 
 ## Provenance
 `yaks commits <id>` joins on the yak file followed across the squash plus the id in messages.
