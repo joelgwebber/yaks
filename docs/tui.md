@@ -14,7 +14,10 @@ interchangeable.
   **Sheds** tab lists the repository's checkouts instead of yaks (see
   [Sheds tab](#sheds-tab)).
 - **Detail pane** — the selected yak: fields, parent/deps/children, source, a
-  `Needs:` line when blocked, and the body + timestamped notes. Task-id
+  `Needs:` line when blocked, a `Sheds:` section when another checkout has
+  changed it (one line per shed: name, the `yaks changes` bracket words,
+  `needs: <v>`, `+N notes`, and the newest note), and the body + timestamped
+  notes. Task-id
   references and URLs in the body are followable links. It (and every
   right-side overlay) takes ~⅔ of the width, clamped to 48–120 columns; the
   list gets the rest. When that would leave the list under 48 columns (a
@@ -33,6 +36,14 @@ interchangeable.
   detail `Needs:` line renders in a warning accent. A **`✅` badge** marks an
   answered yak awaiting an agent (`needs: agent`): it blocks nothing, so the
   detail `Needs:` line is plain and the row is never shown as awaiting a human.
+- A dim **`🛖N` badge** on a row says N other sheds (checkouts) carry an
+  outstanding change to that yak (the detail's `Sheds:` section lists them; `yaks
+  show <id> --sheds` is the CLI form). It turns yellow when one of those changes
+  is an open ask (`needs: human`), so a question waiting in another checkout is
+  visible from the tree. It annotates only: the row sits where this checkout's
+  farm puts it, and a change that has landed, or one made in the shed the TUI
+  runs in, gets no badge. Needs one Sheds-tab scan (the first lands within a
+  moment of startup; refreshed every 10 s, on any view).
 - The dependency-blocked marker (`*`) and the multi-select marker (`●`) are
   distinct axes and can co-occur.
 - The tab row's right edge shows the active **family scope** for tree views

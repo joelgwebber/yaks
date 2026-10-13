@@ -3181,3 +3181,99 @@ fn paste_bench() {
     );
     eprintln!("PASTE_FRAME\n{}", draw(&app, 90, 18));
 }
+
+// -- shed overlay (yaks-ed6d): row badges and the detail's Sheds section ------
+
+/// Three yaks the sheds fixture knows: `yaks-8814` (another shed's open ask),
+/// `yaks-07fe` (another shed's plain note) and `yaks-ed5e` (a landed change:
+/// outstanding nowhere, so no badge), plus `yaks-0000`, which no shed touched.
+fn sheds_overlay_app() -> App {
+    let mut ask = task("yaks-8814", "a superseded needs", Status::Hairy, 2, None);
+    ask.body = "Body of the ask yak.".into();
+    let mut app = App::new(vec![
+        ask,
+        task("yaks-07fe", "yaks sheds is slow", Status::Hairy, 2, None),
+        task("yaks-ed5e", "show a shed as landed", Status::Hairy, 2, None),
+        task("yaks-0000", "no shed touched this", Status::Hairy, 2, None),
+    ]);
+    app.apply_sheds_snapshot(sheds_tab::fixture::snapshot());
+    app
+}
+
+/// The frame line holding `id`.
+fn line_of(frame: &str, id: &str) -> String {
+    frame
+        .lines()
+        .find(|l| l.contains(id))
+        .unwrap_or_else(|| panic!("no row for {id} in\n{frame}"))
+        .to_string()
+}
+
+#[test]
+fn shed_badges_on_tree_rows_96() {
+    let app = sheds_overlay_app();
+    let frame = draw(&app, 96, 12);
+    assert!(line_of(&frame, "yaks-8814").contains("\u{1f6d6} 1"));
+    assert!(line_of(&frame, "yaks-07fe").contains("\u{1f6d6} 1"));
+    insta::assert_snapshot!(frame);
+}
+
+#[test]
+fn shed_badges_on_tree_rows_150() {
+    let app = sheds_overlay_app();
+    insta::assert_snapshot!(draw(&app, 150, 12));
+}
+
+#[test]
+fn an_ask_elsewhere_makes_the_badge_yellow_and_a_note_does_not() {
+    let app = sheds_overlay_app();
+    let backend = ratatui::backend::TestBackend::new(96, 12);
+    let mut term = ratatui::Terminal::new(backend).unwrap();
+    term.draw(|f| render(&app, f)).unwrap();
+    let buf = term.backend().buffer();
+    let fg_of_badge = |id: &str| {
+        let y = (0..buf.area.height)
+            .find(|&y| {
+                (0..buf.area.width)
+                    .map(|x| buf[(x, y)].symbol())
+                    .collect::<String>()
+                    .contains(id)
+            })
+            .unwrap();
+        let x = (0..buf.area.width)
+            .find(|&x| buf[(x, y)].symbol() == "\u{1f6d6}")
+            .unwrap();
+        buf[(x, y)].fg
+    };
+    assert_eq!(fg_of_badge("yaks-8814"), Color::Yellow);
+    assert_ne!(fg_of_badge("yaks-07fe"), Color::Yellow);
+}
+
+#[test]
+fn a_row_with_no_copies_is_byte_identical_to_before() {
+    let with = sheds_overlay_app();
+    let mut without = sheds_overlay_app();
+    without.sheds.snapshot = None;
+    let (a, b) = (draw(&with, 96, 12), draw(&without, 96, 12));
+    // No copy, or only a landed one: no badge and no layout shift.
+    for id in ["yaks-0000", "yaks-ed5e"] {
+        assert_eq!(line_of(&a, id), line_of(&b, id), "{id}");
+        assert!(!line_of(&a, id).contains('\u{1f6d6}'), "{id}");
+    }
+}
+
+#[test]
+fn the_detail_pane_lists_the_sheds_that_changed_the_yak() {
+    let mut app = sheds_overlay_app();
+    app.select_task("yaks-8814");
+    enter_key(&mut app); // list Enter -> focus detail
+    let frame = draw(&app, 150, 30);
+    assert!(frame.contains("Sheds:"));
+    insta::assert_snapshot!(frame);
+    // A yak no shed touched, or only a landed one, has no section at all.
+    for id in ["yaks-0000", "yaks-ed5e"] {
+        app.select_task(id);
+        enter_key(&mut app);
+        assert!(!draw(&app, 150, 30).contains("Sheds:"), "{id}");
+    }
+}

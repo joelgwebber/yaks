@@ -1,0 +1,34 @@
+---
+source: src/tui/tests.rs
+expression: frame
+---
+ 🦬  Hairy (4)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (4)   ⭐  Starred (0)   🛖  Sheds (2)                                       family: ~remaining
+
+ yaks-0000 p2 task     🦬  no shed touched this     │ Task: yaks-8814
+ yaks-07fe p2 task     🦬  yaks sheds is slow    🛖 1│
+ yaks-8814 p2 task     🦬  a superseded needs    🛖 1│ Title:       a superseded needs
+ yaks-ed5e p2 task     🦬  show a shed as landed    │ Status:      hairy
+                                                   │ Type:        task
+                                                   │ Priority:    p2
+                                                   │ Created:     -
+                                                   │ Updated:     -
+                                                   │ Labels:      -
+                                                   │
+                                                   │ Sheds:
+                                                   │   needs-1-superseded  [shaving]  needs: human  +2 notes  needs-1: asked: needs human
+                                                   │
+                                                   │ Body of the ask yak.
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  D:dep  S:state  f:filter  /:search  q:quit

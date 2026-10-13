@@ -1,12 +1,12 @@
 ---
 source: src/tui/sheds_tab.rs
-assertion_line: 1375
+assertion_line: 1391
 expression: "draw(&app, 100, 12)"
 ---
  🦬  Hairy (1)   🪒  Shaving (2)   🐑  Shorn (0)   🕒  Recent (3)   ⭐  Starred (0)   🛖  Sheds (2)
 
- yaks-07fe p2 task     🪒  home blocked                                                            ⏳
- yaks-8814 p2 task     🪒  a superseded needs
+ yaks-07fe p2 task     🪒  home blocked                                                        ⏳  🛖 1
+ yaks-8814 p2 task     🪒  a superseded needs                                                     🛖 1
 
 
 

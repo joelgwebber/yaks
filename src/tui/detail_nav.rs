@@ -45,11 +45,20 @@ impl App {
     pub(crate) fn detail_dlines(&self) -> Vec<detail::DLine> {
         match self.selected() {
             Some(t) => detail::wrap(
-                detail::build(t, &self.all),
+                detail::build(t, &self.all, &self.shed_copies(&t.id)),
                 self.detail_width.get() as usize,
             ),
             None => Vec::new(),
         }
+    }
+
+    /// What the other sheds changed about yak `id` (the Sheds section's data;
+    /// empty before the first scan lands).
+    fn shed_copies(&self, id: &str) -> Vec<(&crate::sheds::Shed, &crate::sheds::YakChange)> {
+        self.sheds
+            .snapshot
+            .as_ref()
+            .map_or_else(Vec::new, |s| s.copies(id))
     }
 
     /// Detail jumplist for the current selection (empty when nothing selected).
