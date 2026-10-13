@@ -222,3 +222,63 @@ fn inbox_and_show_sheds_still_mean_the_other_sheds() {
         "{out}"
     );
 }
+
+/// `--outstanding` / `--status` through the real binary: the landed yak is
+/// folded by default, dropped by `--outstanding`; `--status` narrows text and
+/// JSON; an unknown status is an error, not "show everything".
+#[test]
+fn outstanding_and_status_focus_the_list_and_landed_folds() {
+    let (t, wt, first, second) = repo("focus");
+    ok(&wt, "w-1", &["update", &first, "--note", "still going"]);
+    ok(&wt, "w-2", &["shave", &second]);
+    // The primary makes the same move, so `second` is landed in the shed.
+    ok(&t, "coord", &["shave", &second]);
+    git(&t, &["add", "-A"]);
+    git(&t, &["commit", "-q", "-m", "primary shaves second"]);
+
+    let all = ok(&t, "me", &["changes", "work"]);
+    let i_first = all
+        .find(&format!("  {first}  first  [shaving]\n"))
+        .expect(&all);
+    let i_fold = all.find(&format!("  landed (1): {second}\n")).expect(&all);
+    assert!(i_first < i_fold, "outstanding first, landed folded: {all}");
+    assert!(
+        !all.contains("second  ["),
+        "landed yak is not itemized: {all}"
+    );
+
+    let out = ok(&t, "me", &["changes", "work", "--outstanding"]);
+    assert!(out.contains("  still going\n"), "{out}");
+    assert!(!out.contains("landed") && !out.contains(&second), "{out}");
+
+    let out = ok(&t, "me", &["changes", "work", "--status", "shaving"]);
+    assert!(
+        out.contains(&first) && out.contains(&format!("landed (1): {second}")),
+        "{out}"
+    );
+    let out = ok(&t, "me", &["changes", "work", "--status", "hairy"]);
+    assert!(out.ends_with("  nothing in hairy\n"), "{out}");
+    let out = ok(
+        &t,
+        "me",
+        &["changes", "work", "--outstanding", "--status", "hairy"],
+    );
+    assert!(out.ends_with("  nothing outstanding in hairy\n"), "{out}");
+
+    let ids = |args: &[&str]| -> Vec<String> {
+        let j: Vec<serde_json::Value> = serde_json::from_str(&ok(&t, "me", args)).unwrap();
+        j.iter()
+            .map(|y| y["id"].as_str().unwrap().to_string())
+            .collect()
+    };
+    assert_eq!(ids(&["changes", "work", "--json"]).len(), 2);
+    assert_eq!(
+        ids(&["changes", "work", "--json", "--outstanding"]),
+        [first.clone()]
+    );
+    assert!(ids(&["changes", "work", "--json", "--status", "hairy"]).is_empty());
+
+    let bad = yaks(&t, "me", &["changes", "work", "--status", "nope"]);
+    assert!(!bad.status.success());
+    assert!(String::from_utf8_lossy(&bad.stderr).contains("unknown status"));
+}

@@ -46,7 +46,7 @@ While workers run, watch them from your own checkout; these only read the other 
   that has not committed yet): its name (`main` for the human's checkout, else the slug of the worker's
   Delta thread title, else its actor name, else an id), HEAD, ahead/behind, who is working in it and on which yaks, and a summary of
   what its farm changed since it forked (new yaks, moves, notes, open asks).
-- `yaks changes <shed>`: that summary per yak, with each new note's actor and first line.
+- `yaks changes <shed>`: that summary per yak, with each new note's actor and first line. Landed yaks fold into one `landed (N)` line behind the outstanding ones; `--status shaving` is the work in progress there, `--outstanding` drops the landed ones.
 - `yaks inbox --sheds`: every shed's open asks, with the question text. Run it after each spawn
   batch and whenever a worker returns blocked.
 - `yaks show <id> --sheds`: how each shed's copy of one yak differs from yours.

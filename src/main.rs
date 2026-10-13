@@ -322,8 +322,8 @@ enum Command {
     /// each new note entry (timestamp, actor, first line), `needs:` newly
     /// set, an `edited` yak (title, fields or description rewritten, as
     /// `yaks status` reads it; `updated:` alone is not an edit), and a
-    /// `landed` yak (already in the reference farm, see `yaks sheds`;
-    /// `, landed` in the bracket list). The per-yak expansion of the `farm:` line of `yaks sheds`, with the
+    /// `landed` yak (already in the reference farm, see `yaks sheds`; folded
+    /// into one `landed (N)` line after the outstanding yaks). The per-yak expansion of the `farm:` line of `yaks sheds`, with the
     /// same baseline (the shed's fork point; the primary's `origin/main`, else
     /// its fork point, `(vs origin/main)` / `(vs fork)`; else the merge-base /
     /// this checkout, `(vs merge-base)` / `(vs this checkout)`). SHED is
@@ -333,10 +333,25 @@ enum Command {
     /// ambiguous match lists the sheds and exits 1. A shed sharing this farm,
     /// or with none or an unreadable one, says why there is nothing to show.
     /// Read-only everywhere.
+    ///
+    /// The text view lists the outstanding yaks first, in full, then folds
+    /// the `landed` ones into one `landed (N): ids` line (wrapped); a shed
+    /// with nothing landed reads as before. `--outstanding` drops the landed
+    /// ones, `--status` keeps the yaks in a status in the shed; both also
+    /// filter `--json`, which otherwise lists every yak, landed included.
     Changes {
         /// The shed: path, Delta dir id, thread-title slug, branch, actor,
         /// `main`, or a unique substring. Default: the shed you are in.
         shed: Option<String>,
+        /// Drop the `landed` yaks (no `landed (N)` line). Combines with
+        /// `--status` (AND).
+        #[arg(long)]
+        outstanding: bool,
+        /// Keep only yaks whose status in the shed is one of these
+        /// (`hairy`, `shaving`, `shorn`, `dead`; repeatable, ORs):
+        /// `--status shaving` is the work in progress there.
+        #[arg(long)]
+        status: Vec<String>,
         /// Emit one JSON object per changed yak (`id`, `title`, `status`,
         /// `added`, `moved`, `notes` with `ts`/`actor`/`text`, `needs`,
         /// `edited`, `landed`, `vs`, `base`); `[]` when there is nothing to
@@ -1350,7 +1365,16 @@ fn main() -> Result<()> {
                 print!("{}", sheds::render(&sheds, &orphaned));
             }
         }
-        Command::Changes { shed, json } => {
+        Command::Changes {
+            shed,
+            outstanding,
+            status,
+            json,
+        } => {
+            let focus = sheds::Focus {
+                outstanding,
+                statuses: parse_statuses(&status)?,
+            };
             let cwd = env::current_dir()?;
             let sheds = farm.sheds(&cwd)?;
             // No name means the shed you are in.
@@ -1371,9 +1395,9 @@ fn main() -> Result<()> {
                 if let Err(why) = &changes.yaks {
                     eprintln!("note: nothing to show: {why}");
                 }
-                json::print(&sheds::changes_json(&changes))?;
+                json::print(&sheds::changes_json_with(&changes, &focus))?;
             } else {
-                print!("{}", sheds::render_changes(&changes));
+                print!("{}", sheds::render_changes_with(&changes, &focus));
             }
         }
         Command::Stats { json } => {
@@ -2010,6 +2034,20 @@ fn build_spec(f: FilterFlags) -> FilterSpec {
         parent: f.parent_of,
         home_only: false,
     }
+}
+
+/// `--status` values for `yaks changes`: [`parse_status`]'s values, but an
+/// unknown one is an error (the query commands skip it, which for `changes`
+/// would silently show every yak).
+fn parse_statuses(values: &[String]) -> Result<Vec<Status>> {
+    values
+        .iter()
+        .map(|s| {
+            parse_status(s).ok_or_else(|| {
+                anyhow::anyhow!("unknown status {s:?} (use hairy, shaving, shorn or dead)")
+            })
+        })
+        .collect()
 }
 
 fn parse_status(s: &str) -> Option<Status> {
