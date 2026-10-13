@@ -280,7 +280,7 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
             "Answer its ask in that shed (uncommitted there)",
         ),
         entry("y", "Copy the shed's path (detail: the yak id)"),
-        entry("r", "Rescan now (auto every 10 s while shown)"),
+        entry("r", "Rescan now (auto every 10 s)"),
         blank(),
         section("General"),
         entry("y", "Copy yak id to clipboard"),

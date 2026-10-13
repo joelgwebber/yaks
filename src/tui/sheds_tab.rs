@@ -11,8 +11,13 @@
 //! a background thread and comes back as one [`Snapshot`] over a channel;
 //! [`App::settle_sheds`] picks it up from the event loop (and from toque's
 //! `settle`), so key handling and the farm reload never wait on it. Scans run
-//! once at startup (for the tab count), on opening the tab, every
-//! [`RESCAN_EVERY`] while the tab is shown, and on `r`; one at a time.
+//! at startup, every [`RESCAN_EVERY`] whatever view is shown (the yak views
+//! annotate rows from the same snapshot, yaks-7204), and on `r`; one at a
+//! time.
+//!
+//! The overlay on the yak views reads the snapshot through two queries only:
+//! [`Snapshot::copies`] (what other sheds did to one yak) and
+//! [`Snapshot::open_asks`] (every other shed's outstanding ask).
 //!
 //! The tab is a built-in view (`view::sheds_view`) whose yak rows are empty,
 //! so every yak key is inert there; [`App::handle_sheds_key`] owns its keys.
@@ -26,7 +31,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 use std::time::Instant;
 
-/// How often the tab rescans while it is the active view.
+/// How often the sheds are rescanned (a scan is ~0.3 s since yaks-07fe).
 pub(crate) const RESCAN_EVERY: Duration = Duration::from_secs(10);
 
 /// One finished scan: every shed, its per-yak changes (parallel to `sheds`;
@@ -83,6 +88,39 @@ impl Snapshot {
         let mut idx: Vec<usize> = (0..self.sheds.len()).collect();
         idx.sort_by_key(|&i| (rank(&self.sheds[i]), self.sheds[i].name()));
         idx
+    }
+
+    /// What the OTHER sheds did to yak `id`: one `(shed, change)` per shed
+    /// whose farm changed it and has not landed, in the tab's attention order.
+    /// The shed this TUI runs in is left out (its farm is the one on screen),
+    /// and so is a landed change (nothing outstanding about it). The one rule
+    /// the overlay's row badges and detail section share.
+    pub(crate) fn copies(&self, id: &str) -> Vec<(&Shed, &YakChange)> {
+        self.order()
+            .into_iter()
+            .filter(|&i| !self.sheds[i].current)
+            .filter_map(|i| {
+                let yaks = self.yaks(i);
+                let at = yaks.binary_search_by(|y| y.id.as_str().cmp(id)).ok()?;
+                Some((&self.sheds[i], &yaks[at])).filter(|(_, y)| !y.landed)
+            })
+            .collect()
+    }
+
+    /// Every other shed's outstanding ask: `(shed, change)` for each yak
+    /// whose shed copy is `needs: human` and not landed, the shed this TUI
+    /// runs in left out, in attention order then by id.
+    pub(crate) fn open_asks(&self) -> Vec<(&Shed, &YakChange)> {
+        self.order()
+            .into_iter()
+            .filter(|&i| !self.sheds[i].current)
+            .flat_map(|i| {
+                self.yaks(i)
+                    .iter()
+                    .filter(|y| y.needs.as_deref() == Some("human") && !y.landed)
+                    .map(move |y| (&self.sheds[i], y))
+            })
+            .collect()
     }
 
     /// Sheds with something outstanding: the tab's count.
@@ -212,7 +250,7 @@ impl App {
             .sheds
             .scanned_at
             .is_none_or(|t| t.elapsed() >= RESCAN_EVERY);
-        if self.on_sheds_tab() && due && !self.sheds.scanning() {
+        if due && !self.sheds.scanning() {
             self.request_sheds_scan();
         }
         self.sheds.age = self.sheds.scanned_at.map(|t| t.elapsed().as_secs());
@@ -1116,6 +1154,36 @@ mod tests {
         app.settle_sheds(false);
         assert!(!app.sheds.scanning());
         let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn copies_and_open_asks_leave_out_this_shed_and_landed_changes() {
+        let mut snap = fixture::snapshot();
+        // Make the shed this TUI runs in (main, current) change yaks-8814
+        // too: it is the farm on screen, so it is never a "copy".
+        let main = snap.sheds.iter().position(|s| s.current).unwrap();
+        let mut own = snap.yaks(3)[0].clone();
+        own.needs = Some("human".into());
+        if let Some(Some(Changes { yaks: Ok(y), .. })) = snap.changes.get_mut(main) {
+            y.push(own);
+        }
+        let copies: Vec<String> = snap
+            .copies("yaks-8814")
+            .iter()
+            .map(|(s, _)| s.name())
+            .collect();
+        assert_eq!(copies, ["needs-1-superseded"]);
+        // land-1's change to yaks-ed5e has landed: not a copy.
+        assert!(snap.copies("yaks-ed5e").is_empty());
+        let asks: Vec<(String, String)> = snap
+            .open_asks()
+            .iter()
+            .map(|(s, y)| (s.name(), y.id.clone()))
+            .collect();
+        assert_eq!(
+            asks,
+            [("needs-1-superseded".to_string(), "yaks-8814".to_string())]
+        );
     }
 
     #[test]

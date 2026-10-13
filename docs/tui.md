@@ -194,8 +194,8 @@ its checkout. The text is the CLI's own (the same functions produce it).
   question itself, which `a` answers in place.
 - **Refresh**: the scan runs in the background (it runs git in every
   checkout and reads several farms: well under a second for a handful of
-  sheds), once at startup for the count, when you open the tab, every 10
-  seconds while the tab is shown, and on `r`. The tab row's
+  sheds), at startup and every 10 seconds whichever view is shown (the yak
+  views will annotate rows from it), and on `r`. The tab row's
   right edge says `scanning…` or `scanned 4s ago`. The UI never waits on it.
 - Nothing on the tab removes a shed; cleanup stays advisory (`y` copies the
   path).
