@@ -1957,7 +1957,92 @@ pub fn split_landed(yaks: &[YakChange]) -> (Vec<&YakChange>, Vec<&YakChange>) {
     yaks.iter().partition(|y| !y.landed)
 }
 
+/// Which of a shed's changed yaks `yaks changes` shows (`--outstanding`,
+/// `--status`). The filters AND; the default shows everything. The one place
+/// the rule lives: the text view and the JSON both go through it.
+#[derive(Debug, Clone, Default)]
+pub struct Focus {
+    /// Drop the `landed` yaks (no fold line either).
+    pub outstanding: bool,
+    /// Keep only yaks whose status in the shed is one of these (any, when
+    /// empty).
+    pub statuses: Vec<Status>,
+}
+
+impl Focus {
+    /// The yaks whose status passes `statuses`, landed or not, in order.
+    fn by_status(&self, yaks: &[YakChange]) -> Vec<YakChange> {
+        yaks.iter()
+            .filter(|y| {
+                self.statuses.is_empty() || self.statuses.iter().any(|s| s.as_str() == y.status)
+            })
+            .cloned()
+            .collect()
+    }
+
+    /// The yaks that pass every filter, in the given order.
+    pub fn select(&self, yaks: &[YakChange]) -> Vec<YakChange> {
+        let mut v = self.by_status(yaks);
+        if self.outstanding {
+            v.retain(|y| !y.landed);
+        }
+        v
+    }
+
+    /// What the filters ask for, for the "nothing ..." line:
+    /// `outstanding`, `in shaving, hairy`, or `outstanding in shaving`.
+    fn describe(&self) -> String {
+        let mut parts = Vec::new();
+        if self.outstanding {
+            parts.push("outstanding".to_string());
+        }
+        if !self.statuses.is_empty() {
+            let names: Vec<&str> = self.statuses.iter().map(|s| s.as_str()).collect();
+            parts.push(format!("in {}", names.join(", ")));
+        }
+        parts.join(" ")
+    }
+}
+
+/// The width the folded `landed (N): ...` line of [`render_changes_with`]
+/// wraps at.
+const FOLD_WIDTH: usize = 100;
+
+/// `  landed (N): a, b, c`, wrapped at [`FOLD_WIDTH`] with a four-space
+/// continuation indent; ids only (the bracket detail of a landed yak is in
+/// `--json`).
+fn fold_landed(landed: &[&YakChange]) -> String {
+    let mut out = String::new();
+    let mut line = format!("  landed ({}):", landed.len());
+    for (i, y) in landed.iter().enumerate() {
+        let word = if i + 1 < landed.len() {
+            format!("{},", y.id)
+        } else {
+            y.id.clone()
+        };
+        if line.len() + 1 + word.len() > FOLD_WIDTH && !line.trim().ends_with(':') {
+            out.push_str(&line);
+            out.push('\n');
+            line = "   ".to_string();
+        }
+        line.push(' ');
+        line.push_str(&word);
+    }
+    out.push_str(&line);
+    out.push('\n');
+    out
+}
+
+/// [`render_changes_with`] with no focus: everything, landed yaks folded.
 pub fn render_changes(c: &Changes) -> String {
+    render_changes_with(c, &Focus::default())
+}
+
+/// The human per-yak view of `yaks changes`, narrowed by `focus`: the
+/// outstanding yaks first, in full, then ONE `landed (N): ids` line folding
+/// the landed ones (none with `--outstanding`). A shed with nothing landed
+/// reads as it always did.
+pub fn render_changes_with(c: &Changes, focus: &Focus) -> String {
     let mut out = format!("{}  {}\n", c.name, c.path.display());
     let marker = base_marker(c.base.as_ref(), c.primary);
     let yaks = match &c.yaks {
@@ -1975,8 +2060,20 @@ pub fn render_changes(c: &Changes) -> String {
         });
         return out;
     }
+    let pool = focus.by_status(yaks);
+    let (outstanding, landed) = split_landed(&pool);
+    let landed: &[&YakChange] = if focus.outstanding { &[] } else { &landed };
+    if outstanding.is_empty() && landed.is_empty() {
+        let dropped = if focus.outstanding && !pool.is_empty() {
+            format!(" ({} landed)", pool.len())
+        } else {
+            String::new()
+        };
+        out.push_str(&format!("  nothing {}{dropped}\n", focus.describe()));
+        return out;
+    }
     out.push_str(&format!("  changes{marker}:\n"));
-    for y in yaks {
+    for y in outstanding {
         let mut what = match (y.added, y.moved) {
             (true, _) => format!("new, {}", y.status),
             (false, Some((from, to))) => format!("{from} -> {to}"),
@@ -1984,9 +2081,6 @@ pub fn render_changes(c: &Changes) -> String {
         };
         if y.edited {
             what.push_str(", edited");
-        }
-        if y.landed {
-            what.push_str(", landed");
         }
         out.push_str(&format!("  {}  {}  [{what}]\n", y.id, y.title));
         for n in &y.notes {
@@ -2001,18 +2095,26 @@ pub fn render_changes(c: &Changes) -> String {
             out.push_str(&format!("    needs: {v}\n"));
         }
     }
+    if !landed.is_empty() {
+        out.push_str(&fold_landed(landed));
+    }
     out
 }
 
 /// JSON for `yaks changes --json`: one object per changed yak. `vs`/`base`
 /// are as in `yaks sheds --json` `farm`. Empty when there is nothing to list.
 pub fn changes_json(c: &Changes) -> Value {
+    changes_json_with(c, &Focus::default())
+}
+
+/// [`changes_json`] keeping only the yaks `focus` selects.
+pub fn changes_json_with(c: &Changes, focus: &Focus) -> Value {
     let vs = c.base.as_ref().map_or("checkout", |b| b.kind.as_str());
     let base = c.base.as_ref().map(|b| &b.sha);
     Value::Array(
-        c.yaks
+        focus
+            .select(c.yaks.as_deref().unwrap_or(&[]))
             .iter()
-            .flatten()
             .map(|y| {
                 json!({
                     "id": y.id,
@@ -4067,11 +4169,217 @@ mod tests {
             "{ys:?}"
         );
         let out = render_changes(&c);
-        assert!(out.contains("[hairy -> shaving, landed]"), "{out}");
-        assert!(!out.contains("[shaving, landed]"), "{out}");
+        // The landed yak is folded behind the outstanding one.
+        assert!(out.contains("  yaks-aaaa  "), "{out}");
+        assert!(out.contains("  landed (1): yaks-bbbb\n"), "{out}");
+        assert!(!out.contains("[hairy -> shaving"), "{out}");
         let j = changes_json(&c);
         assert_eq!(j[0]["landed"], false);
         assert_eq!(j[1]["landed"], true);
+    }
+
+    // -- `changes` focus: outstanding first, landed folded, filters (yaks-7422) --
+
+    /// A synthetic changed yak: `(id, status in the shed, landed)`.
+    fn chg(id: &str, status: &'static str, landed: bool) -> YakChange {
+        YakChange {
+            id: id.into(),
+            title: format!("{id} title"),
+            status,
+            added: false,
+            moved: None,
+            notes: vec![store::NoteEntry {
+                ts: "2026-03-03T00:00:00Z".into(),
+                actor: Some("w".into()),
+                text: format!("note on {id}\nmore"),
+            }],
+            needs: None,
+            edited: false,
+            landed,
+        }
+    }
+
+    fn changes_with(yaks: Vec<YakChange>) -> Changes {
+        Changes {
+            name: "shed".into(),
+            path: PathBuf::from("/x/shed"),
+            primary: false,
+            base: None,
+            yaks: Ok(yaks),
+        }
+    }
+
+    fn focus(outstanding: bool, statuses: &[Status]) -> Focus {
+        Focus {
+            outstanding,
+            statuses: statuses.to_vec(),
+        }
+    }
+
+    fn json_ids(j: &Value) -> Vec<&str> {
+        j.as_array()
+            .unwrap()
+            .iter()
+            .map(|y| y["id"].as_str().unwrap())
+            .collect()
+    }
+
+    /// A shed with both kinds: the outstanding yaks in full first, then ONE
+    /// folded `landed (N)` line of ids; a landed yak's own block is gone.
+    #[test]
+    fn changes_text_puts_outstanding_first_and_folds_landed() {
+        let c = changes_with(vec![
+            chg("yaks-a", "shorn", true),
+            chg("yaks-b", "shaving", false),
+            chg("yaks-c", "shorn", true),
+            chg("yaks-d", "hairy", false),
+        ]);
+        let out = render_changes(&c);
+        assert_eq!(
+            out,
+            "shed  /x/shed\n  changes (vs this checkout):\n\
+             \x20 yaks-b  yaks-b title  [shaving]\n\
+             \x20   2026-03-03T00:00:00Z  w  note on yaks-b\n\
+             \x20 yaks-d  yaks-d title  [hairy]\n\
+             \x20   2026-03-03T00:00:00Z  w  note on yaks-d\n\
+             \x20 landed (2): yaks-a, yaks-c\n"
+        );
+    }
+
+    /// Only landed yaks: the fold line stands where the list would be.
+    #[test]
+    fn changes_text_with_only_landed_prints_the_fold_line() {
+        let c = changes_with(vec![
+            chg("yaks-a", "shorn", true),
+            chg("yaks-b", "shorn", true),
+        ]);
+        assert_eq!(
+            render_changes(&c),
+            "shed  /x/shed\n  changes (vs this checkout):\n  landed (2): yaks-a, yaks-b\n"
+        );
+    }
+
+    /// Nothing landed: byte-identical to the pre-fold rendering.
+    #[test]
+    fn changes_text_with_nothing_landed_is_unchanged() {
+        let c = changes_with(vec![
+            chg("yaks-a", "shaving", false),
+            chg("yaks-b", "hairy", false),
+        ]);
+        assert_eq!(
+            render_changes(&c),
+            "shed  /x/shed\n  changes (vs this checkout):\n\
+             \x20 yaks-a  yaks-a title  [shaving]\n\
+             \x20   2026-03-03T00:00:00Z  w  note on yaks-a\n\
+             \x20 yaks-b  yaks-b title  [hairy]\n\
+             \x20   2026-03-03T00:00:00Z  w  note on yaks-b\n"
+        );
+    }
+
+    /// A long landed list wraps rather than running off the line; every id
+    /// survives.
+    #[test]
+    fn changes_text_wraps_a_long_fold_line() {
+        let yaks: Vec<YakChange> = (0..30)
+            .map(|i| chg(&format!("yaks-{i:04}"), "shorn", true))
+            .collect();
+        let out = render_changes(&changes_with(yaks));
+        let fold: Vec<&str> = out.lines().skip(2).collect();
+        assert!(fold.len() > 1, "{out}");
+        assert!(fold[0].starts_with("  landed (30): yaks-0000, "), "{out}");
+        assert!(fold.iter().all(|l| l.len() <= FOLD_WIDTH), "{out}");
+        assert!(
+            fold[1..].iter().all(|l| l.starts_with("    yaks-")),
+            "{out}"
+        );
+        assert!(out.contains("yaks-0029\n"), "{out}");
+        assert_eq!(out.matches("yaks-").count(), 30);
+    }
+
+    /// `--outstanding` drops the landed yaks entirely: no fold line.
+    #[test]
+    fn changes_outstanding_drops_the_landed_yaks() {
+        let c = changes_with(vec![
+            chg("yaks-a", "shorn", true),
+            chg("yaks-b", "shaving", false),
+        ]);
+        let out = render_changes_with(&c, &focus(true, &[]));
+        assert!(out.contains("yaks-b  yaks-b title  [shaving]"), "{out}");
+        assert!(!out.contains("yaks-a"), "{out}");
+        assert!(!out.contains("landed"), "{out}");
+    }
+
+    /// `--status` keeps yaks by their status in the shed, folding applies to
+    /// what is left, and it ANDs with `--outstanding`.
+    #[test]
+    fn changes_status_filters_and_combines_with_outstanding() {
+        let c = changes_with(vec![
+            chg("yaks-a", "shaving", true),
+            chg("yaks-b", "shaving", false),
+            chg("yaks-c", "hairy", false),
+            chg("yaks-d", "shorn", true),
+        ]);
+        let out = render_changes_with(&c, &focus(false, &[Status::Shaving]));
+        assert!(out.contains("yaks-b  yaks-b title  [shaving]"), "{out}");
+        assert!(out.contains("  landed (1): yaks-a\n"), "{out}");
+        assert!(!out.contains("yaks-c") && !out.contains("yaks-d"), "{out}");
+
+        let out = render_changes_with(&c, &focus(true, &[Status::Shaving]));
+        assert!(out.contains("yaks-b  yaks-b title  [shaving]"), "{out}");
+        assert!(!out.contains("yaks-a") && !out.contains("landed"), "{out}");
+
+        // Repeatable: any of the statuses.
+        let out = render_changes_with(&c, &focus(true, &[Status::Shaving, Status::Hairy]));
+        assert!(out.contains("yaks-b") && out.contains("yaks-c"), "{out}");
+    }
+
+    /// `--json` is filtered by the same focus; the default lists every yak,
+    /// landed included, with the `landed` field.
+    #[test]
+    fn changes_json_is_filtered_by_the_focus() {
+        let c = changes_with(vec![
+            chg("yaks-a", "shaving", true),
+            chg("yaks-b", "shaving", false),
+            chg("yaks-c", "hairy", false),
+        ]);
+        let all = changes_json(&c);
+        assert_eq!(json_ids(&all), ["yaks-a", "yaks-b", "yaks-c"]);
+        assert_eq!(all[0]["landed"], true);
+        let j = changes_json_with(&c, &focus(true, &[]));
+        assert_eq!(json_ids(&j), ["yaks-b", "yaks-c"]);
+        let j = changes_json_with(&c, &focus(false, &[Status::Shaving]));
+        assert_eq!(json_ids(&j), ["yaks-a", "yaks-b"]);
+        let j = changes_json_with(&c, &focus(true, &[Status::Shaving]));
+        assert_eq!(json_ids(&j), ["yaks-b"]);
+        let j = changes_json_with(&c, &focus(true, &[Status::Dead]));
+        assert_eq!(j, json!([]));
+    }
+
+    /// Nothing left after filtering: one line saying so, never an empty body.
+    #[test]
+    fn changes_empty_after_filtering_says_so() {
+        let c = changes_with(vec![
+            chg("yaks-a", "shorn", true),
+            chg("yaks-b", "shorn", true),
+        ]);
+        assert_eq!(
+            render_changes_with(&c, &focus(true, &[])),
+            "shed  /x/shed\n  nothing outstanding (2 landed)\n"
+        );
+        assert_eq!(
+            render_changes_with(&c, &focus(false, &[Status::Shaving])),
+            "shed  /x/shed\n  nothing in shaving\n"
+        );
+        assert_eq!(
+            render_changes_with(&c, &focus(true, &[Status::Shaving, Status::Hairy])),
+            "shed  /x/shed\n  nothing outstanding in shaving, hairy\n"
+        );
+        // A shed with no changes at all keeps its own wording.
+        let none = changes_with(vec![]);
+        assert_eq!(
+            render_changes_with(&none, &focus(true, &[])),
+            render_changes(&none)
+        );
     }
 
     /// The pure building blocks, directly: `outstanding_ids` excludes a
