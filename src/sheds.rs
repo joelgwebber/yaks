@@ -886,14 +886,16 @@ fn outstanding_ids(
 }
 
 /// The shed's `needs:` on `theirs` is SUPERSEDED by `reference` (its copy of
-/// the same yak): the reference carries no `needs:` itself, already holds the
-/// shed's latest ask note entry (same timestamp, actor and text), and has
-/// either shipped the yak (shorn) or a later note entry after that ask: the
-/// question was asked, then answered or picked up, and the `needs:` cleared.
-/// A reference that never saw the ask (including a hand-set `needs:` with no
-/// ask entry) or still carries a `needs:` does not supersede. Pure.
+/// the same yak): the reference's `needs:` is cleared (answered and picked
+/// up) or `agent` (answered, not yet picked up: yaks-29e9), it already holds
+/// the shed's latest ask note entry (same timestamp, actor and text), and it
+/// has either shipped the yak (shorn) or a later note entry after that ask:
+/// the question was asked, then answered. A reference that never saw the ask
+/// (including a hand-set `needs:` with no ask entry) or is itself still
+/// `needs: human` does not supersede. Pure. The `landed` flag and the TUI's
+/// `open_asks` (so its Inbox and `a`) read this through `outstanding_ids`.
 fn needs_superseded(reference: &crate::model::Task, theirs: &crate::model::Task) -> bool {
-    if reference.needs.is_some() {
+    if !matches!(reference.needs.as_deref(), None | Some("agent")) {
         return false;
     }
     let theirs_notes = store::parse_notes(&theirs.body);
@@ -4156,6 +4158,58 @@ mod tests {
         assert!(outstanding_after_ask(
             "needs-no-follow-up",
             Some(("shaving", "", &[])),
+        ));
+    }
+
+    /// yaks-29e9 (seen on yaks-7204): the reference answered the ask (`needs:
+    /// agent`, answered but not yet picked up), so the shed's `needs: human`
+    /// is superseded just like a cleared one.
+    #[test]
+    fn outstanding_ids_supersedes_a_needs_the_reference_answered() {
+        // The yaks-7204 case: ask entry, then the answer; `needs: agent`.
+        assert!(!outstanding_after_ask(
+            "needs-answered",
+            Some(("shaving", "needs: agent\n", &["answered: yes"])),
+        ));
+        // `needs: agent` but nothing after the shed's ask: not an answer.
+        assert!(outstanding_after_ask(
+            "needs-agent-no-follow-up",
+            Some(("shaving", "needs: agent\n", &[])),
+        ));
+        // `needs: agent` with a DIFFERENT, older ask only (the shed's ask is
+        // unknown to the reference): still outstanding.
+        let b = base("needs-agent-other-ask");
+        let (r, t) = (b.join("reference"), b.join("theirs"));
+        task_file(
+            &t,
+            "shaving",
+            "yaks-ask",
+            "needs: human\n",
+            &notes(
+                "x",
+                &[("2026-02-01T00:00:00Z", Some("w"), "asked: needs human")],
+            ),
+        );
+        task_file(
+            &r,
+            "shaving",
+            "yaks-ask",
+            "needs: agent\n",
+            &notes(
+                "x",
+                &[
+                    ("2026-01-01T00:00:00Z", Some("w"), "asked: needs human"),
+                    ("2026-01-02T00:00:00Z", Some("coord"), "answered: yes"),
+                ],
+            ),
+        );
+        let load = |root: &Path| store::load(&root.join(".yaks"), &EVERY).unwrap();
+        assert!(outstanding_ids(&load(&r), &load(&t)).contains("yaks-ask"));
+        // The reference is still at `needs: human` (nobody answered): the
+        // same ask on both sides is not a new `needs:`; unchanged.
+        assert!(!outstanding_after_ask(
+            "needs-human-same",
+            Some(("shaving", "needs: human\n", &["a comment"])),
         ));
     }
 
