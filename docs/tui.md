@@ -135,9 +135,9 @@ active view.
 | `j` / `k`, `g` / `G`, `d` / `u` | Move between sheds |
 | `l` / `→` / `Enter` | Show the shed's changes (`yaks changes <shed>`) |
 | `h` / `←` / `Esc` | (detail) Back to the shed list |
-| `j` / `k` | (detail) Move between its changed yaks |
+| `j` / `k` | (detail) Move between its changed yaks: the outstanding ones first, then the `▸ N landed` fold line, then (open) the landed ones |
 | `J` / `K` | (detail) Next / previous shed |
-| `Enter` | (detail) Open the yak: this checkout's copy, or for a yak only that shed has, its read-only shed-only row (the shed's copy) |
+| `Enter` | (detail) On the `▸ N landed` line: show / hide the landed yaks. On a yak: open it: this checkout's copy, or for a yak only that shed has, its read-only shed-only row (the shed's copy) |
 | `a` | (detail) Answer the yak's ask in that shed: the CLI's `yaks answer <id>@<shed>`, written into the shed's working tree and left uncommitted for its worker to commit |
 | `y` | Copy the shed's path (detail: the yak id) |
 | `r` | Rescan now |
@@ -228,7 +228,12 @@ its checkout. The text is the CLI's own (the same functions produce it).
   working there and when its farm last changed, then its changes per yak: the
   same bracket words as `yaks changes` (`hairy -> shaving`, `new, hairy`,
   `edited`, `landed`), each new note's first line, and for an ask the
-  question itself, which `a` answers in place.
+  question itself, which `a` answers in place. The outstanding yaks lead; the
+  landed ones (already in this checkout's farm) fold behind one dim `▸ N landed`
+  line, as `yaks sheds` does, which `j`/`k` reach and `Enter` expands to `▾ N
+  landed` with the landed yaks below it (`Enter` again folds them). Folded by
+  default; the open/closed state is one setting for the tab, not kept per shed
+  or across runs. A shed with nothing landed shows no fold line.
 - **Refresh**: the scan runs in the background (it runs git in every
   checkout and reads several farms: well under a second for a handful of
   sheds), at startup and every 10 seconds whichever view is shown (the yak
