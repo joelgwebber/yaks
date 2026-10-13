@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-13T01:31:29Z'
+updated: '2026-10-13T02:02:44Z'
 parent: yaks-b5a0
 labels:
 - ui
@@ -65,3 +65,9 @@ Remaining under yaks-38dc: yaks-93fe (worktree-of-a-clone taken for the primary;
 ---
 ▸ 2026-10-13T01:31:29Z [delta-lead]
 Spawned 2026-10-13T01:30Z from base 5392019, model anthropic/claude-sonnet-5-5 (pinned): badge-1 (agent c3d7a3b7d8264841) on yaks-ed6d, inbox-1 (agent 0c5192acae734297) on yaks-1ea3, disco-1 (agent 0cbe15ec6ca34e1a) on yaks-93fe; clones 2fdsqr81jxvy, f34qg6ja8z10, hers5ay2699w (named on their first yaks command).
+
+---
+▸ 2026-10-13T02:02:44Z [delta-lead]
+Landed (delta-lead, 2026-10-13): yaks-1ea3 (inbox-1, 10710c6) as 6e10823; yaks-ed6d (badge-1, 6257044) as 994d52a; yaks-93fe (disco-1, 09e07f2) as 0767ac2 by land.sh. Gate on the combined tree: cargo test --release, 17 suites green, 569 unit tests. Doc SVGs regenerated once at the end (docshots scene 9 added for the badges and the detail's Sheds section; frames rasterized and looked at).
+
+Incident, for the record: while Delta held a PENDING merge of badge-1's result in this tree (MERGE_HEAD set), I committed a docs follow-up; that commit became a merge with badge-1 as parent but WITHOUT its changes (327 lines dropped), and land.sh then said "landed" because the SHA was already an ancestor. Caught by the external-edits showing badge-1's files removed. Fixed before any push: reset my unpushed commit, merged 6257044 by hand (resolving the yaks skill's TUI sentence, which inbox-1 and badge-1 both rewrote), verified the tree equals `git merge-tree` apart from that resolution and the re-accepted Inbox snapshot, and rebuilt the commit once more with commit-tree when Delta added disco-1's SHA to MERGE_HEAD seconds before the commit (a 3-parent merge claiming disco-1 without its code). Lesson: check `git rev-parse -q --verify MERGE_HEAD` before EVERY commit while workers are finishing, not only at landing.
