@@ -854,10 +854,14 @@ fn status_rank(dir: &str) -> usize {
 /// `.skip(known)` past a shorter list of theirs' notes is simply empty).
 /// So a backward-only move (the reference's status ranks at or beyond
 /// theirs') is not outstanding by itself; any other signal (new to the
-/// reference, extra notes, a new `needs:`, a forward move, or edited) is.
+/// reference, extra notes, a new `needs:`, a forward move, or an edit) is.
 /// A new `needs:` is itself superseded when the reference already resolved
-/// it (see [`needs_superseded`]). Pure.
+/// it (see [`needs_superseded`]). An edit is the shed's only when it made it
+/// since its `base` (three-way, [`store::edits_landed`]): a field the
+/// reference changed after the shed forked is the reference's edit, not one
+/// the shed has outstanding (yaks-e92e). Pure.
 fn outstanding_ids(
+    base: &[crate::model::Task],
     reference: &[crate::model::Task],
     theirs: &[crate::model::Task],
 ) -> BTreeSet<String> {
@@ -865,6 +869,8 @@ fn outstanding_ids(
         reference.iter().map(|t| (t.id.as_str(), t)).collect();
     let theirs_by_id: BTreeMap<&str, &crate::model::Task> =
         theirs.iter().map(|t| (t.id.as_str(), t)).collect();
+    let base_by_id: BTreeMap<&str, &crate::model::Task> =
+        base.iter().map(|t| (t.id.as_str(), t)).collect();
     yak_changes(reference, theirs)
         .into_iter()
         .filter(|c| {
@@ -874,10 +880,15 @@ fn outstanding_ids(
                     .get(id)
                     .zip(theirs_by_id.get(id))
                     .is_some_and(|(r, t)| needs_superseded(r, t));
+            let edit_outstanding = c.edited
+                && !reference_by_id
+                    .get(id)
+                    .zip(theirs_by_id.get(id))
+                    .is_some_and(|(r, t)| store::edits_landed(base_by_id.get(id).copied(), t, r));
             c.added
                 || !c.notes.is_empty()
                 || needs_outstanding
-                || c.edited
+                || edit_outstanding
                 || c.moved
                     .is_some_and(|(from, to)| status_rank(to) > status_rank(from))
         })
@@ -929,7 +940,7 @@ fn landed_ids(
     if touched.is_empty() {
         return Vec::new();
     }
-    let outstanding = outstanding_ids(reference, theirs);
+    let outstanding = outstanding_ids(base, reference, theirs);
     touched
         .into_iter()
         .filter(|id| !outstanding.contains(id))
@@ -1417,7 +1428,7 @@ fn shed_yak_changes(
     if !shed.primary {
         let primary_path = sheds.iter().find(|s| s.primary).map(|s| s.path.as_path());
         if let Some(reference) = reference_tasks(primary_path, top, farm_root) {
-            let outstanding = outstanding_ids(&reference, &theirs);
+            let outstanding = outstanding_ids(&base, &reference, &theirs);
             for c in &mut changes {
                 c.landed = !outstanding.contains(&c.id);
             }
@@ -4429,7 +4440,7 @@ mod tests {
         let load = |root: &Path| store::load(&root.join(".yaks"), &EVERY).unwrap();
         let (reference, theirs) = (load(&reference), load(&theirs));
 
-        let outstanding = outstanding_ids(&reference, &theirs);
+        let outstanding = outstanding_ids(&[], &reference, &theirs);
         assert_eq!(
             outstanding,
             BTreeSet::from(["yaks-fwd".to_string(), "yaks-note".to_string()])
@@ -4439,6 +4450,87 @@ mod tests {
         let empty: Vec<crate::model::Task> = Vec::new();
         let landed = landed_ids(&empty, &theirs, Some(&reference));
         assert_eq!(landed, ["yaks-back".to_string()]);
+    }
+
+    /// yaks-e92e: an edit is outstanding only when the SHED made it and the
+    /// reference has not touched that field. The reference re-parenting a
+    /// yak after the shed forked (the surveyor case: main moved four yaks
+    /// under a new parent) is not the shed's unlanded edit, nor is a field
+    /// both changed (the shed's edit landed, then the reference moved on); a
+    /// field only the shed changed still is, even when the reference edited
+    /// some other field of that yak.
+    #[test]
+    fn landed_edits_are_three_way() {
+        let b = base("landed-three-way");
+        let (bs, r, t) = (b.join("base"), b.join("reference"), b.join("theirs"));
+        let note = [("2026-02-02T00:00:00Z", Some("w"), "shed note")];
+        // Behind only: the shed added a note (landed in the reference); the
+        // reference then re-parented the yak.
+        task_file(&bs, "hairy", "yaks-behind", "parent: yaks-old\n", "x");
+        task_file(
+            &t,
+            "hairy",
+            "yaks-behind",
+            "parent: yaks-old\n",
+            &notes("x", &note),
+        );
+        task_file(
+            &r,
+            "hairy",
+            "yaks-behind",
+            "parent: yaks-new\n",
+            &notes("x", &note),
+        );
+        // The shed's own edit, not in the reference: outstanding.
+        task_file(&bs, "hairy", "yaks-mine", "", "x");
+        task_file(&t, "hairy", "yaks-mine", "labels:\n- shed\n", "x");
+        task_file(&r, "hairy", "yaks-mine", "", "x");
+        // Both edited, different fields: the shed's label is still missing.
+        task_file(&bs, "hairy", "yaks-both", "parent: yaks-old\n", "x");
+        task_file(
+            &t,
+            "hairy",
+            "yaks-both",
+            "parent: yaks-old\nlabels:\n- shed\n",
+            "x",
+        );
+        task_file(&r, "hairy", "yaks-both", "parent: yaks-new\n", "x");
+        // Both edited, and the reference took the shed's edit: landed.
+        task_file(&bs, "hairy", "yaks-took", "parent: yaks-old\n", "x");
+        task_file(
+            &t,
+            "hairy",
+            "yaks-took",
+            "parent: yaks-old\nlabels:\n- shed\n",
+            "x",
+        );
+        task_file(
+            &r,
+            "hairy",
+            "yaks-took",
+            "parent: yaks-new\nlabels:\n- shed\n",
+            "x",
+        );
+        // The surveyor review shed: it dropped the parent, that landed, and
+        // the reference re-parented later. Same field, reference wins.
+        task_file(&bs, "hairy", "yaks-moved-on", "parent: yaks-old\n", "x");
+        task_file(&t, "hairy", "yaks-moved-on", "", "x");
+        task_file(&r, "hairy", "yaks-moved-on", "parent: yaks-new\n", "x");
+        let load = |root: &Path| store::load(&root.join(".yaks"), &EVERY).unwrap();
+        let (bs, r, t) = (load(&bs), load(&r), load(&t));
+
+        assert_eq!(
+            outstanding_ids(&bs, &r, &t),
+            BTreeSet::from(["yaks-both".to_string(), "yaks-mine".to_string()])
+        );
+        assert_eq!(
+            landed_ids(&bs, &t, Some(&r)),
+            [
+                "yaks-behind".to_string(),
+                "yaks-moved-on".to_string(),
+                "yaks-took".to_string()
+            ]
+        );
     }
 
     /// `outstanding_ids` contains `yaks-ask` for a shed copy that asks
@@ -4469,7 +4561,7 @@ mod tests {
             None => task_file(&r, "shaving", "yaks-ask", "", "x"),
         }
         let load = |root: &Path| store::load(&root.join(".yaks"), &EVERY).unwrap();
-        outstanding_ids(&load(&r), &load(&t)).contains("yaks-ask")
+        outstanding_ids(&[], &load(&r), &load(&t)).contains("yaks-ask")
     }
 
     /// yaks-8814: a shed's `needs:` that the reference already resolved is
@@ -4545,7 +4637,7 @@ mod tests {
             ),
         );
         let load = |root: &Path| store::load(&root.join(".yaks"), &EVERY).unwrap();
-        assert!(outstanding_ids(&load(&r), &load(&t)).contains("yaks-ask"));
+        assert!(outstanding_ids(&[], &load(&r), &load(&t)).contains("yaks-ask"));
         // The reference is still at `needs: human` (nobody answered): the
         // same ask on both sides is not a new `needs:`; unchanged.
         assert!(!outstanding_after_ask(

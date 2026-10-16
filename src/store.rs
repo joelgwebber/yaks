@@ -1319,6 +1319,53 @@ pub fn edited(old: &Task, new: &Task) -> bool {
         || description(&old.body) != description(&new.body)
 }
 
+/// Whether `reference` has no edit (in the sense of [`edited`]) of `theirs`
+/// still to take, field by field against their common `base`. A field is
+/// outstanding only when the shed changed it (`base` -> `theirs`) and the
+/// reference still holds the base's value. So:
+/// - a field the shed left alone is never the shed's edit, however the
+///   reference changed it since (a later re-parent is not the shed's);
+/// - a field both changed is settled by the reference, whatever its value:
+///   either the shed's edit landed and the reference moved on, or the two
+///   disagree and the reference is where that gets resolved. The same rule
+///   as a status the reference has moved further along.
+///
+/// With no `base` (the shed created the yak) any difference is outstanding.
+/// The three-way counterpart of [`edited`], read by `yaks sheds`' `landed`
+/// (yaks-e92e). Pure.
+pub fn edits_landed(base: Option<&Task>, theirs: &Task, reference: &Task) -> bool {
+    fn pending<T: PartialEq>(base: Option<T>, theirs: T, reference: T) -> bool {
+        match base {
+            Some(b) => b != theirs && reference == b,
+            None => reference != theirs,
+        }
+    }
+    let desc = |t: &Task| description(&t.body);
+    !(pending(base.map(|b| &b.title), &theirs.title, &reference.title)
+        || pending(base.map(|b| &b.kind), &theirs.kind, &reference.kind)
+        || pending(
+            base.map(|b| b.priority),
+            theirs.priority,
+            reference.priority,
+        )
+        || pending(
+            base.map(|b| &b.created),
+            &theirs.created,
+            &reference.created,
+        )
+        || pending(base.map(|b| &b.parent), &theirs.parent, &reference.parent)
+        || pending(base.map(|b| &b.labels), &theirs.labels, &reference.labels)
+        || pending(
+            base.map(|b| &b.depends_on),
+            &theirs.depends_on,
+            &reference.depends_on,
+        )
+        || pending(base.map(|b| &b.source), &theirs.source, &reference.source)
+        || pending(base.map(|b| &b.verify), &theirs.verify, &reference.verify)
+        || pending(base.map(|b| &b.extra), &theirs.extra, &reference.extra)
+        || pending(base.map(desc), desc(theirs), desc(reference)))
+}
+
 /// Parse a canonical timestamp (as written by `now_iso`) to a UTC instant.
 pub fn parse_ts(s: &str) -> Option<DateTime<Utc>> {
     DateTime::parse_from_rfc3339(s)
