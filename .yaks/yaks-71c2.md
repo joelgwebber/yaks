@@ -3,9 +3,9 @@ id: yaks-71c2
 title: Search tokenization improvements
 status: hairy
 type: feature
-priority: 2
+priority: 3
 created: '2026-08-23T02:49:59Z'
-updated: '2026-08-29T17:34:35Z'
+updated: '2026-10-16T20:08:45Z'
 labels:
 - search
 ---

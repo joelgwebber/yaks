@@ -3,9 +3,9 @@ id: yaks-7cd1
 title: Per-repo agent context for private herds (config + .yaks/ instructions file)
 status: hairy
 type: feature
-priority: 2
+priority: 3
 created: '2026-08-23T02:09:20Z'
-updated: '2026-10-05T22:25:25Z'
+updated: '2026-10-16T20:08:52Z'
 labels:
 - agent
 - config

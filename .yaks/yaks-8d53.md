@@ -3,9 +3,9 @@ id: yaks-8d53
 title: CLI ergonomics for agent-driven bulk & refactor operations
 status: hairy
 type: task
-priority: 2
+priority: 3
 created: '2026-08-23T03:43:20Z'
-updated: '2026-08-28T04:21:41Z'
+updated: '2026-10-16T20:09:00Z'
 labels:
 - cli
 - agent
