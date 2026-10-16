@@ -13,7 +13,8 @@
 //! (committed history, read with `git ls-tree`/`cat-file` into a temp dir of
 //! our own), so a shed that is merely behind shows nothing of its own and what
 //! it does show is exactly what it changed, committed or not. The fork point is
-//! the oldest entry of the shed's HEAD reflog ([`fork_point`]) and it is the
+//! the oldest entry of the shed's HEAD reflog, or a later switch onto the
+//! branch it is on now ([`fork_point`]), and it is the
 //! baseline from EVERY viewer (yaks-e9bb), except that the PRIMARY has no fork
 //! point worth the name and is measured from its branch's upstream instead
 //! (what it has not published; [`upstream_base`]; its fork point only when
@@ -1146,35 +1147,119 @@ fn git_state(ctx: &Ctx, shed: &Path, want_title: bool) -> GitProbe {
     })
 }
 
-/// The commit `shed` was forked from: the second field of the first (oldest)
-/// line of its HEAD reflog (`<git-dir>/logs/HEAD`). For a Delta clone that is
-/// the coordinator's HEAD at spawn time, for a `git worktree add -b` shed the
-/// branch creation. `None` (the caller falls back to the merge-base) when there
-/// is no reflog, it is expired or unparseable, or the commit is not usable as a
-/// baseline: unknown to our object store, or not an ancestor of the shed's HEAD
-/// `full` (e.g. the shed was rebased since), which would make "since the fork"
-/// meaningless. `git_dir` is the shed's absolute git dir; a fork point equal to
-/// `full` or to the shed's `merge_base` with us is an ancestor by definition,
-/// so it is not asked of git.
+/// The commit `shed` was forked from, read from its HEAD reflog
+/// (`<git-dir>/logs/HEAD`, see [`fork_candidates`]): the oldest entry (for a
+/// Delta clone the coordinator's HEAD at spawn time, for a `git worktree add
+/// -b` shed the branch creation), unless the shed later SWITCHED onto the
+/// branch it is on now (a Delta clone is created on the source's checked-out
+/// branch, often `main`, and the thread then checks out its working branch):
+/// then the target of the latest such switch, so the shed is not credited
+/// with the whole branch it switched to (yaks-6af1). The switch is skipped
+/// when its target already holds work the shed did before it (`checkout -b`
+/// off its own commits, or a round trip back to a branch it committed on), so
+/// branching off your own work never loses its credit.
+///
+/// `None` (the caller falls back to the merge-base) when there is no reflog,
+/// it is expired or unparseable, or the commit is not usable as a baseline:
+/// unknown to our object store, or not an ancestor of the shed's HEAD `full`
+/// (e.g. the shed was rebased since), which would make "since the fork"
+/// meaningless. `git_dir` is the shed's absolute git dir; a fork point equal
+/// to `full` or to the shed's `merge_base` with us is an ancestor by
+/// definition, so it is not asked of git.
 fn fork_point(top: &Path, git_dir: &str, full: &str, merge_base: Option<&str>) -> Option<String> {
-    use std::io::{BufRead, BufReader};
-    let file = fs::File::open(Path::new(git_dir).join("logs").join("HEAD")).ok()?;
-    let mut first = String::new();
-    BufReader::new(file).read_line(&mut first).ok()?;
-    // `<old> <new> <identity> <time> <tz>\t<message>`: `new` is where HEAD
-    // pointed after the entry.
-    let sha = first.split_whitespace().nth(1)?;
-    if sha.len() < 40
-        || !sha.bytes().all(|b| b.is_ascii_hexdigit())
-        || sha.bytes().all(|b| b == b'0')
-    {
-        return None;
+    let git_dir = Path::new(git_dir);
+    let log = fs::read_to_string(git_dir.join("logs").join("HEAD")).ok()?;
+    // The branch checked out now, from the shed's own HEAD file (no git call).
+    let branch = fs::read_to_string(git_dir.join("HEAD")).ok().and_then(|h| {
+        h.trim()
+            .strip_prefix("ref: refs/heads/")
+            .map(str::to_string)
+    });
+    let c = fork_candidates(&log, branch.as_deref())?;
+    let usable = |sha: &str| {
+        merge_base.is_some_and(|mb| sha == full || sha == mb)
+            || git(top, &["merge-base", "--is-ancestor", sha, full]).is_ok()
+    };
+    if let Some(switch) = &c.switch {
+        // Does the switch target already hold the shed's own earlier work?
+        // One rev-list over what the target has beyond the oldest entry.
+        let keeps_own = !c.own_before_switch.is_empty() && {
+            let range =
+                git(top, &["rev-list", switch, &format!("^{}", c.oldest)]).unwrap_or_default();
+            let reach: BTreeSet<&str> = range.lines().collect();
+            c.own_before_switch
+                .iter()
+                .any(|o| o == switch || reach.contains(o.as_str()))
+        };
+        if !keeps_own && usable(switch) {
+            return Some(switch.clone());
+        }
     }
-    let known_ancestor = merge_base.is_some_and(|mb| sha == full || sha == mb);
-    if !known_ancestor {
-        git(top, &["merge-base", "--is-ancestor", sha, full]).ok()?;
-    }
-    Some(sha.to_string())
+    usable(&c.oldest).then(|| c.oldest.clone())
+}
+
+/// What [`fork_point`] reads from a HEAD reflog. Pure.
+#[derive(Debug, PartialEq, Eq)]
+struct ForkCandidates {
+    /// The new side of the oldest entry: today's fork point.
+    oldest: String,
+    /// The new side of the latest `checkout: moving from X to <branch>`
+    /// entry, `<branch>` being the branch checked out now; `None` with no
+    /// such entry or a detached HEAD.
+    switch: Option<String>,
+    /// The commits the shed made before that switch: the new side of every
+    /// entry after the oldest that moved HEAD and is not itself a `checkout:`
+    /// or `reset:` (Delta writes its own commits with an EMPTY message, so a
+    /// `commit:` prefix cannot be relied on; a merge counts too, which errs
+    /// toward keeping the oldest entry). Empty with no switch.
+    own_before_switch: Vec<String>,
+}
+
+/// Parse a HEAD reflog (`<old> <new> <identity> <time> <tz>\t<message>` per
+/// line, oldest first) into [`ForkCandidates`]. `None` when the oldest entry
+/// is unparseable or the null sha.
+fn fork_candidates(log: &str, branch: Option<&str>) -> Option<ForkCandidates> {
+    let sha_ok = |s: &str| {
+        s.len() >= 40 && s.bytes().all(|b| b.is_ascii_hexdigit()) && !s.bytes().all(|b| b == b'0')
+    };
+    let entries: Vec<(&str, &str, &str)> = log
+        .lines()
+        .filter_map(|l| {
+            let (head, msg) = l.split_once('\t').unwrap_or((l, ""));
+            let mut f = head.split_whitespace();
+            Some((f.next()?, f.next()?, msg))
+        })
+        .collect();
+    let oldest = entries.first().map(|e| e.1).filter(|s| sha_ok(s))?;
+    let at = branch.and_then(|b| {
+        entries.iter().rposition(|(_, new, msg)| {
+            sha_ok(new)
+                && msg
+                    .strip_prefix("checkout: moving from ")
+                    .and_then(|m| m.rsplit_once(" to "))
+                    .is_some_and(|(_, to)| to == b)
+        })
+    });
+    let own_before_switch = at
+        .map(|at| {
+            // The oldest entry is the fork itself, not the shed's work.
+            entries[1..at]
+                .iter()
+                .filter(|(old, new, msg)| {
+                    old != new
+                        && sha_ok(new)
+                        && !msg.starts_with("checkout:")
+                        && !msg.starts_with("reset:")
+                })
+                .map(|e| e.1.to_string())
+                .collect()
+        })
+        .unwrap_or_default();
+    Some(ForkCandidates {
+        oldest: oldest.to_string(),
+        switch: at.map(|at| entries[at].1.to_string()),
+        own_before_switch,
+    })
 }
 
 /// A temp directory of ours, removed on drop.
@@ -4758,6 +4843,96 @@ mod tests {
         assert_eq!(jw["farm"]["vs"], "fork");
         assert_eq!(jw["farm"]["base"], fork_sha);
         assert_eq!(jw["who"], json!(["oldx", "new-1"]));
+    }
+
+    /// yaks-6af1, the pure part: which reflog entries `fork_point` weighs.
+    #[test]
+    fn fork_candidates_follow_a_switch_onto_the_current_branch() {
+        let s = |c: char| c.to_string().repeat(40);
+        let (a, b, c, d) = (s('a'), s('b'), s('c'), s('d'));
+        let z = "0".repeat(40);
+        let line = |old: &str, new: &str, msg: &str| format!("{old} {new} J <j> 1 +0000\t{msg}\n");
+
+        // The surveyor clone: created on main, then onto the branch.
+        let log = line(&z, &a, "")
+            + &line(&a, &a, "reset: moving to HEAD")
+            + &line(&a, &b, "checkout: moving from main to feat")
+            + &line(&b, &c, "");
+        let got = fork_candidates(&log, Some("feat")).unwrap();
+        assert_eq!(
+            got,
+            ForkCandidates {
+                oldest: a.clone(),
+                switch: Some(b.clone()),
+                own_before_switch: vec![],
+            }
+        );
+        // Another branch checked out now, or detached: no switch.
+        assert_eq!(fork_candidates(&log, Some("main")).unwrap().switch, None);
+        assert_eq!(fork_candidates(&log, None).unwrap().switch, None);
+
+        // Work before the switch is recorded (Delta's empty-message commits
+        // included, resets and checkouts not), and the LATEST switch wins.
+        let log = line(&z, &a, "")
+            + &line(&a, &b, "")
+            + &line(&b, &b, "checkout: moving from main to feat")
+            + &line(&b, &c, "commit: x")
+            + &line(&c, &a, "checkout: moving from feat to main")
+            + &line(&a, &c, "checkout: moving from main to feat")
+            + &line(&c, &d, "");
+        let got = fork_candidates(&log, Some("feat")).unwrap();
+        assert_eq!(got.switch, Some(c.clone()));
+        assert_eq!(got.own_before_switch, vec![b.clone(), c.clone()]);
+
+        // A null or junk oldest entry: nothing to go on.
+        assert_eq!(fork_candidates(&line(&z, &z, ""), Some("feat")), None);
+        assert_eq!(fork_candidates("", Some("feat")), None);
+    }
+
+    /// yaks-6af1 on real repos: a shed created on `main` that checks out the
+    /// working branch is measured from the switch, not from `main`, so it is
+    /// not credited with the branch's work (or its claims); a shed that
+    /// branches off its OWN work keeps its original fork point.
+    #[test]
+    fn a_shed_that_switched_branches_is_measured_from_the_switch() {
+        let (t, w) = claimed_repo_with_shed("fork-switch");
+        // The branch the work happens on, ahead of where the shed started.
+        sh(&t, &["checkout", "-q", "-b", "feat"]);
+        let arc = ("2026-03-02T00:00:00Z", Some("arc"), "the branch's work");
+        commit_notes_on_aaaa(&t, &[arc]);
+        let switched_to = sh(&t, &["rev-parse", "--short", "HEAD"]);
+        sh(&t, &["checkout", "-q", "-"]);
+        // The shed switches onto it (`t` went back to its own branch).
+        sh(&w, &["checkout", "-q", "feat"]);
+        commit_notes_on_aaaa(
+            &w,
+            &[
+                arc,
+                ("2026-03-03T00:00:00Z", Some("own"), "the shed's note"),
+            ],
+        );
+        let sheds = sheds_of(&t);
+        let l = shed_at(&sheds, &w);
+        assert_eq!(
+            l.farm_base.as_ref().map(|b| (b.kind, b.sha.as_str())),
+            Some((BaseKind::Fork, switched_to.as_str())),
+            "measured from the switch"
+        );
+        assert_eq!(l.who, strs(&["own"]), "not credited with the arc");
+
+        // `checkout -b` off its own work: the original fork point stays.
+        let (t, w) = claimed_repo_with_shed("fork-own-branch");
+        let fork = sh(&w, &["rev-parse", "--short", "HEAD"]);
+        commit_notes_on_aaaa(&w, &[("2026-03-02T00:00:00Z", Some("own"), "before")]);
+        sh(&w, &["checkout", "-q", "-b", "spin-off"]);
+        let sheds = sheds_of(&t);
+        let l = shed_at(&sheds, &w);
+        assert_eq!(
+            l.farm_base.as_ref().map(|b| b.sha.as_str()),
+            Some(fork.as_str()),
+            "its own commits stay credited"
+        );
+        assert_eq!(l.who, strs(&["own"]));
     }
 
     #[test]

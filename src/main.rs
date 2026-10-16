@@ -271,7 +271,8 @@ enum Command {
     /// picks which row is marked, never an answer. Each row says what that
     /// checkout's farm CHANGED since the shed forked (the oldest
     /// entry of its HEAD reflog, so a worker is not credited with what its
-    /// coordinator did first; the same from every checkout, so what the shed
+    /// coordinator did first, or the target of a later switch onto the branch
+    /// it is on now unless that switch branched off its own commits; the same from every checkout, so what the shed
     /// merged in since counts as its own): yaks only there, yaks in another
     /// status, new notes, `needs:` set, yaks edited (title, fields or
     /// description, as `yaks status` reads them), and yaks `landed` (already
