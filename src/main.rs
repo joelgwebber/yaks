@@ -303,6 +303,10 @@ enum Command {
     /// counts as `idle`, never `stale`), else `idle`; `idle` is silent (the
     /// common case), `active`/`stale` show on the label line, e.g.
     /// `shaving: yaks-d738 · stale`; JSON `liveness`, always present. A
+    /// `state:` line says what keeps a shed around: `merged, nothing
+    /// outstanding` (its HEAD is in the primary's history, nothing
+    /// outstanding, a clean tree) or `uncommitted: N modified, M untracked`
+    /// (JSON `merged`, `untracked`). A
     /// pinned Delta clone whose checkout could not be resolved (most often a
     /// gone git dir: a finished thread) is not a row here — there is no
     /// checkout to measure — but is listed in one extra text-only `orphaned`

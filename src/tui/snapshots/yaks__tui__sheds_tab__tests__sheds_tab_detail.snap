@@ -7,6 +7,7 @@ expression: "draw(&app, 120, 18)"
 ◂ needs-1-superseded  needs-1-superseded: a worker
 │ path     /src/yaks/.delta/worktrees/epe9/yaks
 │ git      main@1a2b3c4 · +1 -0 vs here · 2 dirty
+│ state    uncommitted: 2 modified
 │ farm     2 new notes, 1 needs
 │ label    who: needs-1 · shaving: yaks-8814 · active
 │ active   2026-10-13T00:10:00Z
@@ -17,6 +18,5 @@ expression: "draw(&app, 120, 18)"
 │     2026-10-13T00:15:37Z  needs-1  asked: needs human
 │       Match the ask by timestamp only, or the whole entry?
 │     needs: human
-│
 │
 h:list  j/k:yak  J/K:shed  Enter:open yak  a:answer  y:copy id  r:rescan  ?:help

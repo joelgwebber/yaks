@@ -220,12 +220,15 @@ its checkout. The text is the CLI's own (the same functions produce it).
   (nothing outstanding, or all of it landed) and unreadable ones (an old-layout
   clone), dimmed. `*` marks the checkout the TUI runs in. Each row shows its
   liveness (`active` / `stale` / `idle`), `+ahead -behind` against this
-  checkout, `✎` and its count of uncommitted files, the `farm:` summary, and
-  the yaks it is shaving. A footer counts orphaned Delta pins (finished
+  checkout, `✎` and its count of uncommitted files, the `farm:` summary,
+  the yaks it is shaving, and, for a shed whose commits are already in the
+  primary with nothing outstanding, `merged, nothing outstanding` (safe to
+  delete) or `merged · uncommitted files` (only those keep it). A footer counts orphaned Delta pins (finished
   threads; `yaks sheds` lists them).
 - **The tab count** is the number of sheds with something outstanding.
-- **The detail pane** (`l`) shows the shed's path, git state, baseline, who is
-  working there and when its farm last changed, then its changes per yak: the
+- **The detail pane** (`l`) shows the shed's path, git state, its `state` (the
+  `yaks sheds` line: `merged, nothing outstanding`, or `uncommitted: N
+  modified, M untracked`), baseline, who is working there and when its farm last changed, then its changes per yak: the
   same bracket words as `yaks changes` (`hairy -> shaving`, `new, hairy`,
   `edited`, `landed`), each new note's first line, and for an ask the
   question itself, which `a` answers in place. The outstanding yaks lead; the

@@ -735,6 +735,14 @@ fn shed_row(s: &Shed, name_w: usize, width: u16) -> Line<'static> {
     if !s.in_progress.is_empty() {
         tail.push_str(&format!("  shaving: {}", s.in_progress.join(", ")));
     }
+    // A merged shed with nothing outstanding says so (or that only
+    // uncommitted files keep it); the `✎N` column already counts them.
+    if s.merged == Some(true) && !sheds::is_outstanding(s) {
+        tail.push_str(match s.dirty {
+            Some(d) if d > 0 => "  merged · uncommitted files",
+            _ => "  merged, nothing outstanding",
+        });
+    }
     let used: usize = spans.iter().map(|sp| disp_width(&sp.content)).sum();
     let room = (width as usize).saturating_sub(used);
     // Padded to the full width so the cursor highlight spans the row.
@@ -944,6 +952,9 @@ fn detail_lines(
     if let Some(e) = &s.error {
         field("error", e.clone(), Style::new().fg(Color::Red));
     }
+    if let Some(st) = sheds::state_line(s) {
+        field("state", st, Style::new());
+    }
     field("farm", sheds::farm_line(s), Style::new());
     if let Some(l) = sheds::label_line(s) {
         field("label", l, Style::new());
@@ -1080,6 +1091,8 @@ pub(crate) mod fixture {
             behind: Some(0),
             shallow_here: false,
             dirty: Some(0),
+            untracked: Some(0),
+            merged: None,
             farm_activity: Some("2026-10-13T00:10:00Z".into()),
             farm: ShedFarm::Own(FarmDelta::default()),
             farm_base: Some(FarmBase {

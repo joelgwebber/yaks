@@ -280,6 +280,15 @@ pub struct Shed {
     pub shallow_here: bool,
     /// Changed + untracked file count (`git status --porcelain`).
     pub dirty: Option<usize>,
+    /// How many of `dirty` are untracked (`??`); the rest are modified,
+    /// staged, deleted or renamed tracked files. `None` exactly when `dirty`
+    /// is.
+    pub untracked: Option<usize>,
+    /// The shed's HEAD is in the primary checkout's history (an ancestor of,
+    /// or equal to, the primary's HEAD): its commits are all in (yaks-28dc).
+    /// `None` for the primary itself, when the primary is not visible here,
+    /// or when the shed's git state cannot be read. See [`state_line`].
+    pub merged: Option<bool>,
     /// Newest mtime anywhere under the shed's farm: a liveness hint (finished
     /// threads' checkouts persist).
     pub farm_activity: Option<String>,
@@ -367,7 +376,18 @@ pub fn discover_all(cwd: &Path, farm_root: &Path) -> Result<(Vec<Shed>, Vec<Pinn
         .iter()
         .find(|(_, f)| f.primary)
         .map(|(p, _)| p.clone());
-    let reference = reference_tasks(primary_path.as_deref(), &top, &our_farm);
+    // The primary's HEAD too, for each shed's `merged` (same from every
+    // viewer); asked beside the reference read.
+    let (reference, primary_head) = std::thread::scope(|s| {
+        let head = s.spawn(|| {
+            primary_path
+                .as_deref()
+                .and_then(|p| git(p, &["rev-parse", "HEAD"]).ok())
+                .filter(|h| !h.is_empty())
+        });
+        let reference = reference_tasks(primary_path.as_deref(), &top, &our_farm);
+        (reference, head.join().unwrap())
+    });
     let found: Vec<(PathBuf, Found)> = found.into_iter().collect();
     let cache = BaseCache::default();
     let mut sheds: Vec<Shed> = par_map(&found, |(path, found)| {
@@ -378,6 +398,7 @@ pub fn discover_all(cwd: &Path, farm_root: &Path) -> Result<(Vec<Shed>, Vec<Pinn
                 ours: &ours,
                 reference: reference.as_deref(),
                 top_head: top_head.as_deref(),
+                primary_head: primary_head.as_deref(),
                 cache: &cache,
             },
             path,
@@ -426,6 +447,9 @@ struct Ctx<'a> {
     reference: Option<&'a [crate::model::Task]>,
     /// Our own HEAD (full sha), when it resolves.
     top_head: Option<&'a str>,
+    /// The primary checkout's HEAD (full sha), when it is visible and
+    /// resolves: what [`Shed::merged`] is measured against.
+    primary_head: Option<&'a str>,
     cache: &'a BaseCache,
 }
 
@@ -707,6 +731,8 @@ fn inspect(ctx: &Ctx, path: &Path, found: &Found, current: bool) -> Shed {
         behind: None,
         shallow_here: false,
         dirty: None,
+        untracked: None,
+        merged: None,
         farm_activity: None,
         farm: ShedFarm::None,
         farm_base: None,
@@ -733,6 +759,8 @@ fn inspect(ctx: &Ctx, path: &Path, found: &Found, current: bool) -> Shed {
             shed.ahead = g.ahead;
             shed.behind = g.behind;
             shed.dirty = Some(g.dirty);
+            shed.untracked = Some(g.untracked);
+            shed.merged = g.merged.filter(|_| !found.primary);
             bases.extend(g.fork.map(|f| (BaseKind::Fork, f, None)));
             bases.extend(g.merge_base.map(|b| (BaseKind::MergeBase, b, None)));
         }
@@ -1034,6 +1062,8 @@ struct GitState {
     ahead: Option<usize>,
     behind: Option<usize>,
     dirty: usize,
+    untracked: usize,
+    merged: Option<bool>,
 }
 
 /// What one shed's git questions came to: its thread `title` (asked when
@@ -1130,15 +1160,31 @@ fn git_state(ctx: &Ctx, shed: &Path, want_title: bool) -> GitProbe {
             (merge_base, ahead, behind)
         };
         let fork = fork_point(top, &git_dir, &full, merge_base.as_deref());
+        // In the primary's history already? Cheap when the viewer is the
+        // primary (nothing ahead of it means merged); else one git call.
+        let merged = ctx.primary_head.map(|ph| {
+            if ph == full {
+                true
+            } else if ctx.top_head == Some(ph) && ahead.is_some() {
+                ahead == Some(0)
+            } else {
+                git(top, &["merge-base", "--is-ancestor", &full, ph]).is_ok()
+            }
+        });
         let status = status.join().unwrap();
-        let state = status.map(|status| GitState {
-            branch: branch.join().unwrap(),
-            head,
-            fork,
-            merge_base,
-            ahead,
-            behind,
-            dirty: status.lines().filter(|l| !l.trim().is_empty()).count(),
+        let state = status.map(|status| {
+            let lines: Vec<&str> = status.lines().filter(|l| !l.trim().is_empty()).collect();
+            GitState {
+                branch: branch.join().unwrap(),
+                head,
+                fork,
+                merge_base,
+                ahead,
+                behind,
+                dirty: lines.len(),
+                untracked: lines.iter().filter(|l| l.starts_with("??")).count(),
+                merged,
+            }
         });
         GitProbe {
             title: title.join().unwrap(),
@@ -2054,6 +2100,12 @@ pub fn to_json(sheds: &[Shed]) -> Value {
                     "ahead": l.ahead,
                     "behind": l.behind,
                     "dirty": l.dirty,
+                    // Of `dirty`, the untracked files (the rest are tracked
+                    // changes); `null` exactly when `dirty` is.
+                    "untracked": l.untracked,
+                    // HEAD already in the primary's history; `null` for the
+                    // primary itself or when it cannot be told.
+                    "merged": l.merged,
                     "farm_activity": l.farm_activity,
                     "farm": farm,
                     "who": l.who,
@@ -2328,6 +2380,42 @@ pub fn is_outstanding(l: &Shed) -> bool {
     }
 }
 
+/// Whether anything still keeps a shed around (yaks-28dc), the text after
+/// `state: ` in [`render`]: `merged, nothing outstanding` when its HEAD is in
+/// the primary's history, its farm has nothing outstanding and its working
+/// tree is clean (nothing of its own is left there); otherwise what remains:
+/// `merged` (or nothing, when not merged) plus `uncommitted: N modified, M
+/// untracked`. `None` when there is nothing to say: the primary, a shed that
+/// is not merged and is clean, or one whose git state cannot be read. Shared
+/// with the TUI's Sheds tab.
+pub fn state_line(l: &Shed) -> Option<String> {
+    if l.primary {
+        return None;
+    }
+    let merged = l.merged == Some(true);
+    let uncommitted = match (l.dirty, l.untracked) {
+        (Some(d), Some(u)) if d > 0 => {
+            let m = d - u;
+            let mut parts = Vec::new();
+            if m > 0 {
+                parts.push(format!("{m} modified"));
+            }
+            if u > 0 {
+                parts.push(format!("{u} untracked"));
+            }
+            Some(format!("uncommitted: {}", parts.join(", ")))
+        }
+        _ => None,
+    };
+    match (merged, uncommitted) {
+        (true, None) if !is_outstanding(l) => Some("merged, nothing outstanding".into()),
+        (true, None) => Some("merged".into()),
+        (true, Some(u)) => Some(format!("merged \u{b7} {u}")),
+        (false, Some(u)) => Some(u),
+        (false, None) => None,
+    }
+}
+
 /// The one-line summary of a shed's farm, the text after `farm: ` in
 /// [`render`] (`no changes of its own`, `landed (2 yaks)`, `1 moved, 3 new
 /// notes (1 landed)`, `farm unreadable: ...`), with its baseline marker.
@@ -2449,6 +2537,9 @@ pub fn render(sheds: &[Shed], orphaned: &[Pinned]) -> String {
         }
         if let Some(label) = label_line(l) {
             out.push_str(&format!("  {label}\n"));
+        }
+        if let Some(state) = state_line(l) {
+            out.push_str(&format!("  state: {state}\n"));
         }
         out.push_str(&format!("  farm: {}\n", farm_line(l)));
         match &l.farm {
@@ -4843,6 +4934,54 @@ mod tests {
         assert_eq!(jw["farm"]["vs"], "fork");
         assert_eq!(jw["farm"]["base"], fork_sha);
         assert_eq!(jw["who"], json!(["oldx", "new-1"]));
+    }
+
+    /// yaks-28dc: a shed whose commits are in the primary says so, and a
+    /// dirty one says what keeps it; `merged` is measured against the
+    /// primary's HEAD (here the viewer), never set on the primary's own row.
+    #[test]
+    fn merged_and_uncommitted_say_what_keeps_a_shed() {
+        let (t, w) = claimed_repo_with_shed("merged-state");
+        // Merged and clean: nothing keeps it.
+        let sheds = all_sheds_of(&t);
+        let l = shed_at(&sheds, &w);
+        assert_eq!(l.merged, Some(true));
+        assert_eq!(
+            state_line(l).as_deref(),
+            Some("merged, nothing outstanding")
+        );
+        assert_eq!(shed_at(&sheds, &t).merged, None, "never on the primary");
+        assert_eq!(state_line(shed_at(&sheds, &t)), None);
+        let text = render(&sheds, &[]);
+        assert!(
+            text.contains("  state: merged, nothing outstanding\n"),
+            "{text}"
+        );
+        let j = json_of(&sheds, &w);
+        assert_eq!((&j["merged"], &j["untracked"]), (&json!(true), &json!(0)));
+
+        // Merged, but uncommitted files keep it: one modified, one untracked.
+        fs::write(w.join("README"), "x").unwrap();
+        fs::write(w.join(".yaks/yaks-bbbb.md"), "changed").unwrap();
+        let sheds = sheds_of(&t);
+        let l = shed_at(&sheds, &w);
+        assert_eq!((l.dirty, l.untracked), (Some(2), Some(1)));
+        assert!(
+            state_line(l)
+                .unwrap()
+                .starts_with("merged \u{b7} uncommitted: 1 modified, 1 untracked"),
+            "{:?}",
+            state_line(l)
+        );
+        sh(&w, &["checkout", "-q", "--", ".yaks"]);
+        fs::remove_file(w.join("README")).unwrap();
+
+        // A commit of its own: not merged, and clean says nothing.
+        commit_notes_on_aaaa(&w, &[("2026-03-02T00:00:00Z", Some("w"), "mine")]);
+        let sheds = sheds_of(&t);
+        let l = shed_at(&sheds, &w);
+        assert_eq!(l.merged, Some(false));
+        assert_eq!(state_line(l), None);
     }
 
     /// yaks-6af1, the pure part: which reflog entries `fork_point` weighs.

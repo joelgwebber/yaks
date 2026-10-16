@@ -7,6 +7,7 @@ expression: "draw(&app, 120, 20)"
 ◂ perf-1-profile  perf-1-profile: a worker
 │ path     /src/yaks/.delta/worktrees/53sm/yaks
 │ git      main@1a2b3c4 · +1 -0 vs here · 1 dirty
+│ state    uncommitted: 1 modified
 │ farm     1 new notes
 │ label    who: perf-1 · shaving: yaks-07fe · active
 │ active   2026-10-13T00:10:00Z
@@ -17,7 +18,6 @@ expression: "draw(&app, 120, 20)"
 │ ▾ 2 landed
 │ yaks-0001  [shaving -> shorn, landed]  first landed
 │ yaks-0002  [shaving -> shorn, landed]  second landed
-│
 │
 │
 │

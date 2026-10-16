@@ -1,0 +1,16 @@
+=== frame 0 · 150x14 · focus=list · view=🛖 Sheds · cursor=0 · rows=0 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none · sheds=7 · shed=main · shed_yak=- ===
+ 🛖 Sheds (4)   🕒 Recent (50)   ⭐ Starred (0)   📥 Inbox (0)   🦬 Hairy (37)   🪒 Shaving (4)                                         scanned 0s ago
+
+*  main                    idle   +0 -0         no changes of its own (vs origin/kinds-discovery)
+   build-the-role-label    active +14 -0   ✎3   1 moved, 1 new notes  shaving: survey-89ae
+   heuristics-models       active +20 -0   ✎13  5 new, 4 moved, 36 new notes, 2 edited  shaving: survey-3237, survey-9b8a, survey-a0ce
+   decode-extra-capture    idle   +4 -0         1 moved, 2 new notes
+   measure-dossier-digest  idle   +8 -0         1 new notes
+   yaks-28dc-clean         idle   +0 -2         no changes of its own  merged, nothing outstanding
+   yaks-28dc-merged        idle   +0 -4    ✎1   no changes of its own  merged · uncommitted files
+
+
+
+   31 orphaned pins (finished threads; `yaks sheds` lists them)
+Tab:view  j/k:move  l:changes  y:copy path  r:rescan  v:views  ?:help  q:quit
+=== end ===

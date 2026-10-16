@@ -1,0 +1,18 @@
+=== frame 2 · 120x16 · focus=detail · view=🛖 Sheds · cursor=0 · rows=0 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none · sheds=7 · shed=yaks-28dc-merged · shed_yak=- ===
+ 🛖 Sheds (4)   🕒 Recent (50)   ⭐ Starred (0)   📥 Inbox (0)   🦬 Hairy (37)   🪒 Shaving (4)           scanned 0s ago
+
+◂ yaks-28dc-merged
+│ path     /private/tmp/yaks-28dc-merged
+│ git      (detached)@8810208 · +0 -4 vs here · 1 dirty
+│ state    merged · uncommitted: 1 untracked
+│ farm     no changes of its own
+│ active   2026-10-16T20:42:09Z
+│
+│ No yak changes of its own.
+│
+│
+│
+│
+│
+h:list  j/k:yak  J/K:shed  Enter:open yak  a:answer  y:copy id  r:rescan  ?:help
+=== end ===
