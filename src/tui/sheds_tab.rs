@@ -1085,6 +1085,7 @@ pub(crate) mod fixture {
             farm_base: Some(FarmBase {
                 kind: BaseKind::Fork,
                 sha: "0f0f0f0".into(),
+                upstream: None,
             }),
             who: vec![],
             in_progress: vec![],
@@ -1158,8 +1159,9 @@ pub(crate) mod fixture {
         main.current = true;
         main.ahead = Some(0);
         main.farm_base = Some(FarmBase {
-            kind: BaseKind::Origin,
+            kind: BaseKind::Upstream,
             sha: "9e9e9e9".into(),
+            upstream: Some("origin/main".into()),
         });
 
         let mut asker = shed("needs-1-superseded", "epe9");

@@ -276,17 +276,18 @@ enum Command {
     /// status, new notes, `needs:` set, yaks edited (title, fields or
     /// description, as `yaks status` reads them), and yaks `landed` (already
     /// in the REFERENCE farm — the primary's own live farm when visible and
-    /// readable, else its `origin/main`: all touched landed replaces the
+    /// readable, else this checkout's branch upstream: all touched landed replaces the
     /// summary with `landed (N yak)`; some landed adds `(K landed)` and
     /// prunes the itemized lines to what's still outstanding; never set for
     /// the primary's own row; JSON `farm.landed`, an array of ids). The PRIMARY checkout is measured from
-    /// `origin/main` instead (the remote-tracking ref, else `origin/HEAD`'s
-    /// target) against its working tree, i.e. what it has not published, and
-    /// says `(vs origin/main)`; with no usable origin ref it falls back to its
+    /// the UPSTREAM of its branch instead (`@{upstream}`, else `origin/<branch>`,
+    /// else `origin/main` / `origin/HEAD`'s target) against its working tree,
+    /// i.e. what it has not published, and names the ref, e.g. `(vs
+    /// origin/kinds-discovery)`, JSON `farm.upstream`; with no usable ref it falls back to its
     /// fork point and says `(vs fork)`. With no usable reflog the baseline of
     /// any other shed is the merge-base with this checkout (the one case that
     /// depends on where you run it) and the output says `(vs merge-base)`
-    /// (JSON `farm.vs`: `origin`, `fork`, `merge-base` or `checkout`). Also how far
+    /// (JSON `farm.vs`: `upstream`, `fork`, `merge-base` or `checkout`). Also how far
     /// ahead/behind its HEAD is of this checkout's (`+? -?`, JSON null, when
     /// there is no merge-base here, e.g. shallow history; the table then says
     /// once to `git fetch --unshallow`). A shed that is merely behind shows
@@ -324,8 +325,8 @@ enum Command {
     /// `yaks status` reads it; `updated:` alone is not an edit), and a
     /// `landed` yak (already in the reference farm, see `yaks sheds`; folded
     /// into one `landed (N)` line after the outstanding yaks). The per-yak expansion of the `farm:` line of `yaks sheds`, with the
-    /// same baseline (the shed's fork point; the primary's `origin/main`, else
-    /// its fork point, `(vs origin/main)` / `(vs fork)`; else the merge-base /
+    /// same baseline (the shed's fork point; the primary's branch upstream, else
+    /// its fork point, `(vs origin/<branch>)` / `(vs fork)`; else the merge-base /
     /// this checkout, `(vs merge-base)` / `(vs this checkout)`). SHED is
     /// its path, Delta dir id, thread-title slug, branch or an actor on its
     /// notes, or a unique substring of those (or of its full title); `main` names the primary checkout whether or not you are in it, and your own shed
@@ -354,7 +355,7 @@ enum Command {
         status: Vec<String>,
         /// Emit one JSON object per changed yak (`id`, `title`, `status`,
         /// `added`, `moved`, `notes` with `ts`/`actor`/`text`, `needs`,
-        /// `edited`, `landed`, `vs`, `base`); `[]` when there is nothing to
+        /// `edited`, `landed`, `vs`, `base`, `upstream`); `[]` when there is nothing to
         /// list.
         #[arg(long)]
         json: bool,

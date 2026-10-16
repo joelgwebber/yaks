@@ -15,9 +15,9 @@
 //! it does show is exactly what it changed, committed or not. The fork point is
 //! the oldest entry of the shed's HEAD reflog ([`fork_point`]) and it is the
 //! baseline from EVERY viewer (yaks-e9bb), except that the PRIMARY has no fork
-//! point worth the name and is measured from its `origin/main` instead (what
-//! it has not published; [`origin_base`]; its fork point only when there is no
-//! usable origin ref). Either way the answer about a shed never
+//! point worth the name and is measured from its branch's upstream instead
+//! (what it has not published; [`upstream_base`]; its fork point only when
+//! there is no usable upstream ref). Either way the answer about a shed never
 //! depends on which checkout runs `yaks sheds`. A worker forks from its
 //! coordinator's thread, not from the checkout that runs `yaks sheds`, so
 //! measuring from the merge-base with THIS checkout would credit the shed with
@@ -151,11 +151,13 @@ impl FarmDelta {
 /// Which commit a shed's own changes are measured from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BaseKind {
-    /// The primary checkout's `origin/main` (its remote-tracking ref, else
-    /// `origin/HEAD`'s target): what the primary has not published. Only the
+    /// The primary checkout's upstream (its branch's `@{upstream}`, else
+    /// `origin/<branch>`, else `origin/main` / `origin/HEAD`'s target; see
+    /// [`upstream_base`]): what the primary has not published. Only the
     /// primary is measured this way, from every viewer; it has no fork point
-    /// worth the name (its reflog starts when the repository did).
-    Origin,
+    /// worth the name (its reflog starts when the repository did). The ref
+    /// used is [`FarmBase::upstream`].
+    Upstream,
     /// Where the shed itself forked (oldest entry of its HEAD reflog): exactly
     /// the shed's own work.
     Fork,
@@ -170,7 +172,7 @@ impl BaseKind {
     /// The JSON `farm.vs` value.
     pub fn as_str(self) -> &'static str {
         match self {
-            BaseKind::Origin => "origin",
+            BaseKind::Upstream => "upstream",
             BaseKind::Fork => "fork",
             BaseKind::MergeBase => "merge-base",
         }
@@ -183,6 +185,9 @@ pub struct FarmBase {
     pub kind: BaseKind,
     /// Short sha.
     pub sha: String,
+    /// The ref an `Upstream` base was read from, as git shortens it
+    /// (`origin/kinds-discovery`); `None` for every other kind.
+    pub upstream: Option<String>,
 }
 
 /// Whether anyone appears to be actively working in a shed right now:
@@ -709,14 +714,15 @@ fn inspect(ctx: &Ctx, path: &Path, found: &Found, current: bool) -> Shed {
         liveness: Liveness::Idle,
         error: None,
     };
-    let mut bases: Vec<(BaseKind, String)> = Vec::new();
+    // `(kind, commit, upstream ref name)`, tried in order.
+    let mut bases: Vec<(BaseKind, String, Option<String>)> = Vec::new();
     // The primary is measured from what it has not published, whoever looks.
-    let (origin, probe) = std::thread::scope(|s| {
-        let origin = s.spawn(|| found.primary.then(|| origin_base(path)).flatten());
+    let (upstream, probe) = std::thread::scope(|s| {
+        let upstream = s.spawn(|| found.primary.then(|| upstream_base(path)).flatten());
         let probe = git_state(ctx, path, !found.primary);
-        (origin.join().unwrap(), probe)
+        (upstream.join().unwrap(), probe)
     });
-    bases.extend(origin.map(|o| (BaseKind::Origin, o)));
+    bases.extend(upstream.map(|(name, c)| (BaseKind::Upstream, c, Some(name))));
     shed.title = probe.title;
     shed.slug = shed.title.as_deref().and_then(slug);
     match probe.state {
@@ -726,8 +732,8 @@ fn inspect(ctx: &Ctx, path: &Path, found: &Found, current: bool) -> Shed {
             shed.ahead = g.ahead;
             shed.behind = g.behind;
             shed.dirty = Some(g.dirty);
-            bases.extend(g.fork.map(|f| (BaseKind::Fork, f)));
-            bases.extend(g.merge_base.map(|b| (BaseKind::MergeBase, b)));
+            bases.extend(g.fork.map(|f| (BaseKind::Fork, f, None)));
+            bases.extend(g.merge_base.map(|b| (BaseKind::MergeBase, b, None)));
         }
         Err(e) => shed.error = Some(format!("{e:#}")),
     }
@@ -750,10 +756,18 @@ fn inspect(ctx: &Ctx, path: &Path, found: &Found, current: bool) -> Shed {
                         // What the shed changed is relative to where it forked
                         // (else the merge-base), never to our (possibly newer)
                         // checkout, so every viewer gets the same answer.
-                        let base = bases.iter().find_map(|(kind, b)| {
-                            ctx.cache
-                                .get(top, b, path, &root)
-                                .map(|(sha, tasks)| (FarmBase { kind: *kind, sha }, tasks))
+                        let base = bases.iter().find_map(|(kind, b, upstream)| {
+                            ctx.cache.get(top, b, path, &root).map(|(sha, tasks)| {
+                                let upstream = upstream.clone();
+                                (
+                                    FarmBase {
+                                        kind: *kind,
+                                        sha,
+                                        upstream,
+                                    },
+                                    tasks,
+                                )
+                            })
                         });
                         match base {
                             Some((base, base_tasks)) => {
@@ -811,13 +825,14 @@ fn liveness(in_progress: &[String], activity: Option<SystemTime>) -> Liveness {
 /// `landed` is measured against, the same from every viewer. The PRIMARY
 /// checkout's live working tree when it is visible here and its farm can be
 /// read (a plain, fresh read: `Own`, `Shared` and even a farm that happens to
-/// equal ours all count, since they are all readable), else the primary's
-/// `origin/main` (read via `top`, since every checkout of one repository
-/// shares the same remote-tracking refs), so a Delta-managed repo with no
-/// visible primary (`local` is a bare repo with no branches) still has a
-/// reference. `None` when neither works: callers then skip `landed` for
-/// every shed, never guessing. `farm_root` is `top`'s own farm (used only for
-/// the `origin/main` fallback, to read `top`'s `.yaks` as it existed there).
+/// equal ours all count, since they are all readable), else the upstream of
+/// the branch `top` is on ([`upstream_base`], the rule that measures the
+/// primary; read via `top`, since every checkout of one repository shares
+/// the same remote-tracking refs), so a Delta-managed repo with no visible
+/// primary (`local` is a bare repo with no branches) still has a reference.
+/// `None` when neither works: callers then skip `landed` for every shed,
+/// never guessing. `farm_root` is `top`'s own farm (used only for the
+/// upstream fallback, to read `top`'s `.yaks` as it existed there).
 fn reference_tasks(
     primary_path: Option<&Path>,
     top: &Path,
@@ -829,7 +844,7 @@ fn reference_tasks(
             load_farm(&canonical(&d.root)).ok()
         })
         .or_else(|| {
-            let commit = origin_base(top)?;
+            let (_, commit) = upstream_base(top)?;
             base_farm(top, &commit, top, farm_root).map(|(_, tasks)| tasks)
         })
 }
@@ -947,23 +962,63 @@ fn landed_ids(
         .collect()
 }
 
-/// The primary's `origin/main`: the remote-tracking ref `refs/remotes/origin/
-/// main`, else the target of `refs/remotes/origin/HEAD`. `None` with no
-/// `origin`, or when it was never fetched; the caller then falls back to the
-/// fork point.
-fn origin_base(primary: &Path) -> Option<String> {
+/// The UPSTREAM of the branch checked out at `checkout` (yaks-8309): what
+/// it has not published, as `(ref name, commit)`, the name shortened the way
+/// git shows it (`origin/kinds-discovery`). The first that resolves to a
+/// commit:
+/// 1. the branch's configured upstream (`@{upstream}`);
+/// 2. `origin/<branch>` (a branch pushed without `-u`);
+/// 3. `origin/main`, else `origin/HEAD`'s target (the repository's trunk:
+///    a detached HEAD, or a branch never pushed).
+///
+/// `None` with none of these (no `origin`, never fetched); the caller then
+/// falls back to the fork point. Branches that do not line up across remotes
+/// are not designed for. One rule for the primary's baseline and for
+/// `landed`'s reference when the primary is not visible.
+fn upstream_base(checkout: &Path) -> Option<(String, String)> {
     let commit = |r: &str| {
         git(
-            primary,
+            checkout,
             &["rev-parse", "--verify", "-q", &format!("{r}^{{commit}}")],
         )
         .ok()
         .filter(|s| !s.is_empty())
     };
-    commit("refs/remotes/origin/main").or_else(|| {
-        let target = git(primary, &["symbolic-ref", "-q", "refs/remotes/origin/HEAD"]).ok()?;
-        commit(&target)
-    })
+    let short = |r: &str| {
+        git(checkout, &["rev-parse", "--abbrev-ref", r])
+            .ok()
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| r.trim_start_matches("refs/remotes/").to_string())
+    };
+    let found = |r: &str| commit(r).map(|c| (short(r), c));
+    let branch = git(checkout, &["symbolic-ref", "--short", "-q", "HEAD"])
+        .ok()
+        .filter(|b| !b.is_empty());
+    branch
+        .as_deref()
+        .and_then(|b| {
+            git(
+                checkout,
+                &[
+                    "rev-parse",
+                    "--symbolic-full-name",
+                    &format!("{b}@{{upstream}}"),
+                ],
+            )
+            .ok()
+            .filter(|r| !r.is_empty())
+            .and_then(|r| found(&r))
+            .or_else(|| found(&format!("refs/remotes/origin/{b}")))
+        })
+        .or_else(|| found("refs/remotes/origin/main"))
+        .or_else(|| {
+            let target = git(
+                checkout,
+                &["symbolic-ref", "-q", "refs/remotes/origin/HEAD"],
+            )
+            .ok()?;
+            found(&target)
+        })
 }
 
 struct GitState {
@@ -1862,16 +1917,17 @@ pub fn to_json(sheds: &[Shed]) -> Value {
                     ShedFarm::Own(d) => json!({
                         "state": "own",
                         // What the delta is relative to (`base` = its short
-                        // sha): the primary's `origin/main` (`origin`),
-                        // where the shed forked (`fork`), else this
-                        // checkout's merge-base with it as a fallback
-                        // (`merge-base`), else, when neither can be read,
-                        // this checkout's farm.
+                        // sha): the primary's upstream (`upstream`, the ref
+                        // in `upstream`), where the shed forked (`fork`),
+                        // else this checkout's merge-base with it as a
+                        // fallback (`merge-base`), else, when neither can be
+                        // read, this checkout's farm.
                         "vs": match &l.farm_base {
                             Some(b) => b.kind.as_str(),
                             None => "checkout",
                         },
                         "base": l.farm_base.as_ref().map(|b| &b.sha),
+                        "upstream": l.farm_base.as_ref().and_then(|b| b.upstream.as_ref()),
                         "added": d.added,
                         "moved": d.moved.iter()
                             .map(|m| json!({"id": m.id, "from": m.from, "to": m.to}))
@@ -1930,22 +1986,23 @@ pub fn to_json(sheds: &[Shed]) -> Value {
 
 /// What the table says about a baseline other than the shed's own fork point,
 /// so a number that may include inherited work is never silent: ` (vs
-/// origin/main)` (the primary), ` (vs fork)` (the primary without one), ` (vs
-/// merge-base)` or ` (vs this checkout)`. Empty for a shed's fork point.
-fn vs_marker(l: &Shed) -> &'static str {
+/// origin/kinds-discovery)` (the primary, naming its upstream ref), ` (vs
+/// fork)` (the primary without one), ` (vs merge-base)` or ` (vs this
+/// checkout)`. Empty for a shed's fork point.
+fn vs_marker(l: &Shed) -> String {
     base_marker(l.farm_base.as_ref(), l.primary)
 }
 
-/// The primary is expected to be measured from `origin/main`, so when it is
-/// measured from its fork point instead (no usable `origin` ref) that is said
+/// The primary is expected to be measured from its upstream, so when it is
+/// measured from its fork point instead (no usable upstream ref) that is said
 /// too; for any other shed the fork point is the plain, unmarked case.
-fn base_marker(base: Option<&FarmBase>, primary: bool) -> &'static str {
-    match base.map(|b| b.kind) {
-        Some(BaseKind::Origin) => " (vs origin/main)",
-        Some(BaseKind::Fork) if primary => " (vs fork)",
-        Some(BaseKind::Fork) => "",
-        Some(BaseKind::MergeBase) => " (vs merge-base)",
-        None => " (vs this checkout)",
+fn base_marker(base: Option<&FarmBase>, primary: bool) -> String {
+    match base.map(|b| (b.kind, b.upstream.as_deref())) {
+        Some((BaseKind::Upstream, name)) => format!(" (vs {})", name.unwrap_or("upstream")),
+        Some((BaseKind::Fork, _)) if primary => " (vs fork)".into(),
+        Some((BaseKind::Fork, _)) => String::new(),
+        Some((BaseKind::MergeBase, _)) => " (vs merge-base)".into(),
+        None => " (vs this checkout)".into(),
     }
 }
 
@@ -2114,8 +2171,8 @@ pub fn render_changes_with(c: &Changes, focus: &Focus) -> String {
     out
 }
 
-/// JSON for `yaks changes --json`: one object per changed yak. `vs`/`base`
-/// are as in `yaks sheds --json` `farm`. Empty when there is nothing to list.
+/// JSON for `yaks changes --json`: one object per changed yak. `vs`/`base`/
+/// `upstream` are as in `yaks sheds --json` `farm`. Empty when there is nothing to list.
 /// (No focus; the CLI calls [`changes_json_with`], the tests this form.)
 #[cfg(test)]
 pub fn changes_json(c: &Changes) -> Value {
@@ -2126,6 +2183,7 @@ pub fn changes_json(c: &Changes) -> Value {
 pub fn changes_json_with(c: &Changes, focus: &Focus) -> Value {
     let vs = c.base.as_ref().map_or("checkout", |b| b.kind.as_str());
     let base = c.base.as_ref().map(|b| &b.sha);
+    let upstream = c.base.as_ref().and_then(|b| b.upstream.as_ref());
     Value::Array(
         focus
             .select(c.yaks.as_deref().unwrap_or(&[]))
@@ -2145,6 +2203,7 @@ pub fn changes_json_with(c: &Changes, focus: &Focus) -> Value {
                     "landed": y.landed,
                     "vs": vs,
                     "base": base,
+                    "upstream": upstream,
                 })
             })
             .collect(),
@@ -3555,7 +3614,8 @@ mod tests {
             l.farm_base,
             Some(FarmBase {
                 kind: BaseKind::Fork,
-                sha: fork.clone()
+                sha: fork.clone(),
+                upstream: None,
             })
         );
         let ShedFarm::Own(d) = &l.farm else {
@@ -3640,7 +3700,8 @@ mod tests {
             l.farm_base,
             Some(FarmBase {
                 kind: BaseKind::Fork,
-                sha: fork
+                sha: fork,
+                upstream: None,
             })
         );
         let ShedFarm::Own(d) = &l.farm else {
@@ -4668,7 +4729,8 @@ mod tests {
             l.farm_base,
             Some(FarmBase {
                 kind: BaseKind::Fork,
-                sha: fork_sha.to_string()
+                sha: fork_sha.to_string(),
+                upstream: None,
             })
         );
         assert_eq!(
@@ -4843,7 +4905,8 @@ mod tests {
                 l.farm_base,
                 Some(FarmBase {
                     kind: BaseKind::Fork,
-                    sha: fork.clone()
+                    sha: fork.clone(),
+                    upstream: None,
                 }),
                 "viewer {}",
                 viewer.display()
@@ -4883,7 +4946,8 @@ mod tests {
             l.farm_base,
             Some(FarmBase {
                 kind: BaseKind::Fork,
-                sha: fork.clone()
+                sha: fork.clone(),
+                upstream: None,
             })
         );
         assert_eq!(l.who, strs(&["new-1"]));
@@ -5197,8 +5261,9 @@ mod tests {
             assert_eq!(
                 main.farm_base,
                 Some(FarmBase {
-                    kind: BaseKind::Origin,
-                    sha: published.clone()
+                    kind: BaseKind::Upstream,
+                    sha: published.clone(),
+                    upstream: Some("origin/main".into()),
                 }),
                 "{}",
                 viewer.display()
@@ -5211,10 +5276,68 @@ mod tests {
             assert!(text.contains("farm: 2 new (vs origin/main)\n"), "{text}");
             let j = json_of(&sheds, &t);
             assert_eq!(
-                (&j["farm"]["vs"], &j["farm"]["base"]),
-                (&json!("origin"), &json!(published))
+                (&j["farm"]["vs"], &j["farm"]["base"], &j["farm"]["upstream"]),
+                (&json!("upstream"), &json!(published), &json!("origin/main"))
             );
         }
+    }
+
+    /// yaks-8309: a primary on a feature branch is measured from that
+    /// branch's upstream, not from `origin/main` (the surveyor case: the
+    /// primary on `kinds-discovery` read the whole arc as unpublished). With
+    /// no configured upstream, `origin/<branch>` is next; a branch never
+    /// pushed falls back to `origin/main`.
+    #[test]
+    fn the_primary_is_measured_from_its_branch_upstream() {
+        // `origin/main` is behind at the first commit; the branch's upstream
+        // is at `published`, so only eeee and ffff are unpublished.
+        let (t, published) = primary_ahead_of_origin("upstream-branch", "refs/remotes/origin/feat");
+        sh(&t, &["update-ref", "refs/remotes/origin/main", "HEAD~2"]);
+        sh(&t, &["checkout", "-q", "-b", "feat"]);
+        let measured = |t: &Path| {
+            let sheds = all_sheds_of(t);
+            let main = shed_at(&sheds, t).clone();
+            (main, render(&sheds, &[]), json_of(&sheds, t))
+        };
+        // `origin/feat` exists but is not configured as the upstream.
+        let (main, text, j) = measured(&t);
+        assert_eq!(
+            main.farm_base,
+            Some(FarmBase {
+                kind: BaseKind::Upstream,
+                sha: published.clone(),
+                upstream: Some("origin/feat".into()),
+            })
+        );
+        assert!(text.contains("farm: 2 new (vs origin/feat)\n"), "{text}");
+        assert_eq!(j["farm"]["upstream"], "origin/feat");
+
+        // A configured upstream wins over the same-named branch.
+        sh(&t, &["update-ref", "refs/remotes/origin/other", "HEAD"]);
+        // `@{upstream}` maps through the remote's fetch refspec.
+        sh(
+            &t,
+            &["remote", "add", "origin", "https://example.invalid/r.git"],
+        );
+        sh(&t, &["config", "branch.feat.remote", "origin"]);
+        sh(&t, &["config", "branch.feat.merge", "refs/heads/other"]);
+        let (main, text, _) = measured(&t);
+        assert_eq!(
+            main.farm_base.as_ref().unwrap().upstream.as_deref(),
+            Some("origin/other")
+        );
+        assert!(text.contains("farm: 1 new (vs origin/other)\n"), "{text}");
+
+        // A branch never pushed: `origin/main`.
+        sh(&t, &["config", "--unset", "branch.feat.merge"]);
+        sh(&t, &["config", "--unset", "branch.feat.remote"]);
+        sh(&t, &["branch", "-q", "-m", "feat", "local-only"]);
+        let (main, text, _) = measured(&t);
+        assert_eq!(
+            main.farm_base.as_ref().unwrap().upstream.as_deref(),
+            Some("origin/main")
+        );
+        assert!(text.contains("(vs origin/main)"), "{text}");
     }
 
     #[test]
@@ -5234,8 +5357,9 @@ mod tests {
         assert_eq!(
             main.farm_base,
             Some(FarmBase {
-                kind: BaseKind::Origin,
-                sha: published
+                kind: BaseKind::Upstream,
+                sha: published,
+                upstream: Some("origin/trunk".into()),
             })
         );
         // No usable origin ref at all (no remote, never fetched): the fork
