@@ -182,8 +182,13 @@ yak you're reading. The unscrolled `Status:` field carries the same status icon.
 detail pane and the editor, using only the 16 ANSI colours so it follows your
 terminal theme on dark and light backgrounds. Body headings are magenta
 underlined (H1), blue bold (H2) and bold italic (H3), deliberately unlike the
-pane's own cyan-bold labels (`Children:`, `Depends on:`). In the editor the
-`#` / `>` markers are dimmed and the heading or quote text carries the style.
+pane's own cyan-bold labels (`Children:`, `Depends on:`). In the editor
+the markers (`#`, `>`, `**`, `*`, `~~`, backticks, link `[` `]` and the `(url)`)
+are dimmed on the cursor's line and hidden on every other line, so the rest of
+the text reads like the rendered pane; link text is blue underlined. Hidden
+markers still occupy their cells (the terminal's "conceal" attribute draws them
+blank), so nothing shifts when the cursor moves between lines. Fence lines stay
+dim rather than hidden.
 The swatch below shows every style on a dark and a light terminal.
 
 ![yaks markdown palette on a dark and a light terminal](assets/tui-md-palette.svg)
