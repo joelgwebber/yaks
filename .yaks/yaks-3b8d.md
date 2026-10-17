@@ -5,14 +5,14 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-10-17T04:25:16Z'
-updated: '2026-10-17T04:26:35Z'
+updated: '2026-10-17T04:36:55Z'
 parent: yaks-ea13
 depends_on:
 - yaks-649d
+- yaks-a870
 labels:
 - markdown
 - tui
-needs: human
 ---
 
 On the renderer core.
@@ -27,3 +27,13 @@ On the renderer core.
 asked: needs human
 
 Attachment links: OK to (a) keep `![stem](<id>/<file>)` for images only, (b) write non-images as plain links `[stem](<id>/<file>)`, (c) have `rename-attachment` handle both forms, and (d) run a one-time fixup that rewrites existing non-image `![]` links (about 80 in this farm, mostly `.txt`/`.md`/`.svg`)? SVG counts as an image here.
+
+---
+▸ 2026-10-17T04:35:54Z [Joel Webber]
+Yup, completely agreed. This won't be the only fixup we'll need for the next release, so let's leverage the schema migration infrastructure (or extend it as needed) to handle these updates cleanly.
+
+---
+▸ 2026-10-17T04:36:55Z [delta-lead]
+picked up
+
+Picked up by the yakherd: the attach/link format part moves to the schema-5 migration yaks-a870; this yak keeps the rendering part (collapsed links, 🖼/📎 attachments).

@@ -33,6 +33,7 @@ notify = "6"
 arboard = { version = "3", features = ["wayland-data-control"] }
 png = "0.17"
 unicode-width = "0.2"
+pulldown-cmark = { version = "0.13", default-features = false }
 
 [profile.release]
 opt-level = 3

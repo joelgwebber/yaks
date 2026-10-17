@@ -5,11 +5,12 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-10-17T04:25:39Z'
-updated: '2026-10-17T04:26:35Z'
+updated: '2026-10-17T04:36:55Z'
 parent: yaks-faf5
 depends_on:
 - yaks-ef82
 - yaks-2362
+- yaks-a870
 labels:
 - markdown
 - tui

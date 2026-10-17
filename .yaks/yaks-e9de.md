@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T04:31:30Z'
+updated: '2026-10-17T04:37:18Z'
 labels:
 - markdown
 - tui
@@ -42,3 +42,17 @@ Every UI child attaches before/after headless frames (`yaks tui --headless`, plu
 ---
 ▸ 2026-10-17T04:31:30Z [delta-lead]
 moved: hairy -> shaving
+
+---
+▸ 2026-10-17T04:33:16Z [delta-lead]
+Batch 1 spawned 2026-10-17 from base ce4aeba, all on claude-sonnet-5-5 (worker profile, isolated clones):
+- bg-1 → yaks-5408, thread ksQQqt3mx3gRRTWsmE1GMTX1T5LOABiKcJIBxBCg_8DSgeNASrgoPHtnOl5O
+- hdr-1 → yaks-66a3, thread ksQQqt3mx3gRRTWsmE1GMTX1T5LOABiLPZIBxBCg_8DSgeNASrgoPHtnOl5O
+- links-1 → yaks-f67e, thread ksQQqt3mx3gRRTWsmE1GMTX1T5LOABiMf5IBxBCg_8DSgeNASrgoPHtnOl5O
+- dates-1 → yaks-ef82, thread ksQQqt3mx3gRRTWsmE1GMTX1T5LOABiOt5IBxBCg_8DSgeNASrgoPHtnOl5O
+- palette-1 → yaks-bc53, thread ksQQqt3mx3gRRTWsmE1GMTX1T5LOABiTKpIBxBCg_8DSgeNASrgoPHtnOl5O
+The lead (delta-lead) builds yaks-649d (renderer core) in parallel, in a new module.
+
+---
+▸ 2026-10-17T04:37:18Z [delta-lead]
+Joel answered yaks-2362 and yaks-3b8d (both yes, both as a schema migration in the next release): new yak yaks-a870 (schema 5 migration) carries both fixups; migrate-1 spawned on it.
