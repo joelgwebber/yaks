@@ -32,6 +32,7 @@ mod tree;
 mod view;
 mod viewmodel;
 mod views_store;
+mod when;
 
 // `headless` holds the `toque::HeadlessApp` impl for `App`; nothing to re-export
 // (the headless driver lives in the `toque` crate, invoked from `main`).
@@ -287,6 +288,9 @@ pub struct App {
     /// Detail-pane content width captured at render, used to soft-wrap the
     /// detail lines so the row-indexed model matches what's on screen.
     detail_width: Cell<u16>,
+    /// "Now" and the display timezone for human-friendly timestamps (pinned
+    /// under `cargo test`; see [`when::Clock::app_default`]).
+    clock: when::Clock,
     /// The list/tree viewport's scroll offset (first visible row), carried
     /// across frames so moving the cursor scrolls only as far as needed to keep
     /// it visible, rather than re-deriving it from 0 each frame (which pinned
@@ -351,6 +355,7 @@ impl App {
             page: 10,
             detail_page: 10,
             detail_width: Cell::new(0),
+            clock: when::Clock::app_default(),
             list_offset: Cell::new(0),
             overlay: Overlay::None,
             notification: None,

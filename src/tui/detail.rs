@@ -7,6 +7,7 @@
 use std::collections::{HashMap, HashSet};
 
 use super::markdown::{self, MdSpan};
+use super::when::Clock;
 use crate::model::{Status, Task};
 use crate::refs;
 use crate::sheds::{Shed, YakChange};
@@ -221,18 +222,10 @@ fn status_word(s: Status) -> &'static str {
     }
 }
 
-fn opt_date(o: &Option<String>) -> String {
+fn opt_date(o: &Option<String>, clock: &Clock) -> String {
     match o {
-        Some(s) => humanize_date(s),
+        Some(s) => clock.format(s),
         None => "-".to_string(),
-    }
-}
-
-/// "2025-12-31T19:00:00Z" -> "Dec 31, 2025 19:00" (falls back to the raw string).
-fn humanize_date(iso: &str) -> String {
-    match chrono::DateTime::parse_from_rfc3339(iso) {
-        Ok(dt) => dt.format("%b %-d, %Y %H:%M").to_string(),
-        Err(_) => iso.to_string(),
     }
 }
 
@@ -336,9 +329,22 @@ fn sheds_section(sheds: &[(&Shed, &YakChange)]) -> Vec<DLine> {
     out
 }
 
+/// [`build_at`] against the pinned test clock (see [`Clock::app_default`]).
+#[cfg(test)]
+pub fn build(task: &Task, all: &[Task], sheds: &[(&Shed, &YakChange)]) -> Vec<DLine> {
+    build_at(task, all, sheds, &Clock::app_default())
+}
+
 /// `sheds` is what the other sheds changed about this yak (`Snapshot::copies`);
 /// when non-empty it adds a Sheds section between the fields and the body.
-pub fn build(task: &Task, all: &[Task], sheds: &[(&Shed, &YakChange)]) -> Vec<DLine> {
+/// `clock` renders the Created/Updated timestamps (relative to its "now", in
+/// its timezone).
+pub fn build_at(
+    task: &Task,
+    all: &[Task],
+    sheds: &[(&Shed, &YakChange)],
+    clock: &Clock,
+) -> Vec<DLine> {
     let by_id: HashMap<&str, &Task> = all.iter().map(|t| (t.id.as_str(), t)).collect();
     let known: HashSet<&str> = by_id.keys().copied().collect();
 
@@ -385,8 +391,8 @@ pub fn build(task: &Task, all: &[Task], sheds: &[(&Shed, &YakChange)]) -> Vec<DL
         }
     }
     out.push(field("Priority:", &format!("p{}", task.priority)));
-    out.push(field("Created:", &opt_date(&task.created)));
-    out.push(field("Updated:", &opt_date(&task.updated)));
+    out.push(field("Created:", &opt_date(&task.created, clock)));
+    out.push(field("Updated:", &opt_date(&task.updated, clock)));
     out.push(field("Labels:", &labels));
 
     if !task.depends_on.is_empty() {
@@ -787,9 +793,24 @@ mod detail_tests {
     }
 
     #[test]
-    fn humanize_date_formats_iso() {
-        assert_eq!(humanize_date("2025-12-31T19:00:00Z"), "Dec 31, 2025 19:00");
-        assert_eq!(humanize_date("not-a-date"), "not-a-date");
+    fn created_and_updated_use_the_clock() {
+        let mut task = t("a", None, &[]);
+        task.updated = Some("2026-09-10T11:00:00Z".into());
+        task.created = Some("bogus".into());
+        let lines: Vec<String> = build(&task, &[task.clone()], &[])
+            .iter()
+            .map(|l| l.text.clone())
+            .collect();
+        assert!(
+            lines
+                .iter()
+                .any(|l| l.ends_with("1h ago") && l.contains("Updated:"))
+        );
+        assert!(
+            lines
+                .iter()
+                .any(|l| l.contains("Created:") && l.ends_with("bogus"))
+        );
     }
 }
 
