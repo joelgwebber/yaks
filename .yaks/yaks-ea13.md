@@ -1,11 +1,11 @@
 ---
 id: yaks-ea13
 title: Markdown rendering improvements
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-10-05T22:15:30Z'
-updated: '2026-10-17T04:31:30Z'
+updated: '2026-10-17T19:55:57Z'
 parent: yaks-e9de
 labels:
 - markdown
@@ -106,3 +106,13 @@ Baseline: yaks-ea13 as the detail pane renders it today (pre-yaks-649d), headles
 ▸ 2026-10-17T04:31:30Z [delta-lead]
 
 moved: hairy -> shaving
+
+---
+▸ 2026-10-17T19:55:43Z [delta-lead]
+
+Arc complete: every child shorn (or moved out / slaughtered), released in 0.0.20 (yaks-ade2).
+
+---
+▸ 2026-10-17T19:55:57Z [delta-lead]
+
+moved: shaving -> shorn

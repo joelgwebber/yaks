@@ -1,11 +1,11 @@
 ---
 id: yaks-e9de
 title: Readable markdown + detail/edit QoL
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T19:43:26Z'
+updated: '2026-10-17T19:55:57Z'
 labels:
 - markdown
 - tui
@@ -181,3 +181,13 @@ Landed 2026-10-17:
 Both identical to the computed merge; gate 18/18 green; doctor clean; `~/go/bin/yaks` rebuilt. My own pty drive of the `$EDITOR` hand-off timed out in this sandbox (no keystrokes reached the TUI), so that path rests on srclinks-1's pty run plus its unit tests (`editor_arguments_by_editor`, `following_a_source_link_queues_the_editor_at_the_line`).
 
 The arc is complete apart from the release (0.0.20), which waits on Joel's go-ahead.
+
+---
+▸ 2026-10-17T19:55:43Z [delta-lead]
+
+Arc complete: every child shorn (or moved out / slaughtered), released in 0.0.20 (yaks-ade2).
+
+---
+▸ 2026-10-17T19:55:57Z [delta-lead]
+
+moved: shaving -> shorn

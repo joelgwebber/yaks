@@ -1,11 +1,11 @@
 ---
 id: yaks-d2bb
 title: Markdown editing improvements
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-10-17T02:41:42Z'
-updated: '2026-10-17T04:31:30Z'
+updated: '2026-10-17T19:55:57Z'
 parent: yaks-e9de
 labels:
 - markdown
@@ -33,3 +33,13 @@ Restructured 2026-10-17 under yaks-e9de. Children: yaks-5408 (black background),
 ▸ 2026-10-17T04:31:30Z [delta-lead]
 
 moved: hairy -> shaving
+
+---
+▸ 2026-10-17T19:55:43Z [delta-lead]
+
+Arc complete: every child shorn (or moved out / slaughtered), released in 0.0.20 (yaks-ade2).
+
+---
+▸ 2026-10-17T19:55:57Z [delta-lead]
+
+moved: shaving -> shorn

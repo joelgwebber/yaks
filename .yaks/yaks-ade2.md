@@ -1,11 +1,11 @@
 ---
 id: yaks-ade2
 title: Release 0.0.20
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-10-17T19:44:47Z'
-updated: '2026-10-17T19:45:47Z'
+updated: '2026-10-17T19:55:57Z'
 labels:
 - release
 ---
@@ -29,3 +29,18 @@ Version 0.0.20 (Cargo.toml, Cargo.lock, npm/yaks/package.json). The headline sin
 - **Perf**: no per-row view rebuild (yaks-48d6), memoized rows and detail lines (yaks-bc30).
 
 Gate: full `cargo test --release` (18 suites green), `node npm/yaks/test-mapping.mjs` ok, `yaks doctor` clean, `yaks migrate --dry-run` nothing to migrate.
+
+---
+▸ 2026-10-17T19:55:43Z [delta-lead]
+
+Released 0.0.20. Tag run 39063900243 green: tests, five target builds, publish of all six packages (CI log lists `+ @j15r/yaks*@0.0.20` for all six). All six on the registry by 19:55Z; with a clean npm cache `npx -y @j15r/yaks@0.0.20 --version` prints `yaks 0.0.20`.
+
+---
+▸ 2026-10-17T19:55:57Z [delta-lead]
+
+verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-10-17T19:55:57Z [delta-lead]
+
+moved: shaving -> shorn
