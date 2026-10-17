@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T05:34:27Z'
+updated: '2026-10-17T17:03:17Z'
 labels:
 - markdown
 - tui
@@ -127,3 +127,13 @@ syntax-1 landed: da680bb (yaks-3020) → beb8e45, identical to the computed merg
 links-2 landed: 6a74341 (yaks-1bbb + yaks-3b8d) → eb268a6, identical to the computed merge; gate re-run green (17 ok). Checked on the real build against a scratch farm with a real `yaks attach`: `[the docs](url)` shows as text with `→ https://example.com/docs` in the status bar on Tab, the attachment shows as `📎 build-log` with `→ yak-…/build-log.txt`, the footnote renders as `claim[1]` with `[1] Because.` collected at the end.
 
 Every yak in the family that can be done without a decision is done. Remaining: yaks-bc53 (palette sign-off), yaks-a893 (in-place edit design, blocks yaks-4fa6 and yaks-c6f4), yaks-1f84 (edtui fork push), yaks-33c8 (parked idea).
+
+---
+▸ 2026-10-17T17:03:17Z [delta-lead]
+
+2026-10-17 ~17:05 (delta-lead):
+
+- Merged the yaks-48d6 perf subthread (fae62f3; it also merged local/main and Joel's own farm migration); gate 18/18 green; `~/go/bin/yaks` rebuilt from 7f5cc98.
+- Joel signed off yaks-bc53 (shorn) and approved yaks-a893. That design is split into yaks-597d (in-place editing) and yaks-92e5 (trim the form). yaks-4fa6 now depends on 597d, yaks-c6f4 on 92e5.
+- Joel OK'd edtui fork commits (yaks-1f84).
+- Spawned from 2d25402 on claude-sonnet-5-5: inplace-1 → yaks-597d (thread …mRp5I…), autocont-1 → yaks-1f84 (thread …mUspI…).
