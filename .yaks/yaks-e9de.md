@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T05:04:18Z'
+updated: '2026-10-17T05:05:57Z'
 labels:
 - markdown
 - tui
@@ -93,3 +93,7 @@ migrate-1 landed 2026-10-17: 80659ed (yaks-a870, schema 5 + `yaks migrate`) → 
 Hold: `target/release/yaks` stays the schema-4 build, and this repo's `.yaks/` stays schema 4, until hscroll-1 (yaks-c733) and edmarks-1 (yaks-9425) land. They do their bookkeeping with that binary on schema-4 clones, and their yak edits would conflict with a migration commit. After they land: rebuild, `yaks migrate`, commit it alone, regenerate every docshot (the comment shape changed), then shear yaks-2362.
 
 Worker note: migrate-1 says its new tests were written after the code and never ran red; the review above is the independent check.
+
+---
+▸ 2026-10-17T05:05:57Z [delta-lead]
+edmarks-1 landed: 41e6e05 (yaks-9425) → 1b5e0b6, identical to the computed merge; gate re-run green (target/s5). Looked at the attached frame: markers are dim on the cursor line and blank elsewhere. A hidden `(url)` leaves a gap as wide as the URL (width-preserving by decision); flagged to Joel as a possible follow-up (e.g. dim instead of hide for link URLs).
