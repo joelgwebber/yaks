@@ -1,16 +1,15 @@
 ---
 id: yaks-bc53
 title: Shared markdown style palette for read pane + editor
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-10-17T04:24:29Z'
-updated: '2026-10-17T16:29:41Z'
+updated: '2026-10-17T17:01:43Z'
 parent: yaks-e9de
 labels:
 - markdown
 - tui
-needs: agent
 ---
 
 Design pass, then a small code change. One table of styles used by both the read pane and the editor (today `markdown.rs` has its own private styles and the read pane layers its own link/label colors on top).
@@ -82,3 +81,20 @@ Reply = approve, or tell me which styles to change.
 ▸ 2026-10-17T16:29:41Z [Joel Webber]
 
 I dig it!
+
+---
+▸ 2026-10-17T17:01:32Z [delta-lead]
+
+picked up
+
+Joel signed off ('I dig it!'). Shearing: palette.rs is the one style table, used by mdrender, the editor highlighter and syntax colours.
+
+---
+▸ 2026-10-17T17:01:43Z [delta-lead]
+
+verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-10-17T17:01:43Z [delta-lead]
+
+moved: shaving -> shorn

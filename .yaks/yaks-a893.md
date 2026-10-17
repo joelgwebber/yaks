@@ -5,11 +5,10 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:25:39Z'
-updated: '2026-10-17T16:53:38Z'
+updated: '2026-10-17T17:02:15Z'
 parent: yaks-faf5
 labels:
 - tui
-needs: agent
 ---
 
 Design pass first; implementation yaks follow from it.
@@ -92,3 +91,15 @@ View/edit design (note above, with a mock frame): OK to (1) edit the description
 ▸ 2026-10-17T16:53:38Z [Joel Webber]
 
 I dig it. That sounds like a plan to me.
+
+---
+▸ 2026-10-17T17:01:43Z [delta-lead]
+
+picked up
+
+Joel approved the in-place edit design ('I dig it. That sounds like a plan to me.'). Splitting into implementation yaks below.
+
+---
+▸ 2026-10-17T17:02:15Z [delta-lead]
+
+Design approved by Joel. Implementation: yaks-597d (in-place editing, one worker: render/handlers/actions are too coupled to split), then yaks-92e5 (form trims to header fields). This design yak shears when both land.

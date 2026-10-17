@@ -5,10 +5,10 @@ status: hairy
 type: task
 priority: 4
 created: '2026-08-26T12:53:40Z'
-updated: '2026-10-17T04:26:52Z'
+updated: '2026-10-17T17:02:15Z'
 parent: yaks-faf5
 depends_on:
-- yaks-a893
+- yaks-92e5
 labels:
 - ui
 - editing
@@ -22,3 +22,8 @@ Fix: window or scroll the content stack so the focused block stays fully visible
 ▸ 2026-10-17T04:26:52Z [delta-lead]
 
 May be obviated by the view/edit unification design (yaks-a893); revisit once that design is agreed.
+
+---
+▸ 2026-10-17T17:02:15Z [delta-lead]
+
+Obviated by yaks-92e5 (the accordion goes away). Slaughter when that lands.
