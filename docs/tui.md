@@ -195,6 +195,21 @@ The swatch below shows every style on a dark and a light terminal.
 
 ![yaks markdown palette on a dark and a light terminal](assets/tui-md-palette.svg)
 
+**Code syntax colours** — a fenced block whose info string names a known
+language (`rust`/`rs`, `sh`/`bash`/`shell`/`console`, `json`, `toml`,
+`yaml`/`yml`, `python`/`py`, `js`/`ts`/`jsx`/`tsx`, `java`) is coloured token by
+token, in the detail pane and in the editor alike: keywords magenta, strings
+yellow, numbers cyan, comments dark grey italic, types and the keys of
+json/toml/yaml blue, and anything else in the code block's green. Block comments
+and multi-line strings carry across lines. It is a small lexer, not a parser,
+so an odd construct costs a colour, never the layout. Any other language (or
+none) stays one flat green. Colours are the 16 ANSI ones (`syntax_*` in
+`src/tui/palette.rs`, lexers in `src/tui/syntax.rs`).
+
+![fenced rust, sh and json blocks coloured in the detail pane](assets/tui-md-syntax.svg)
+
+![the same blocks in the editor, cursor on the first line](assets/tui-md-syntax-edit.svg)
+
 **Rendered markdown** — the detail pane renders a body as CommonMark
 (GitHub-flavoured): markers are hidden, a single newline joins lines into one
 paragraph that re-wraps to the pane width (a blank line starts a new one),

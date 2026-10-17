@@ -2,7 +2,8 @@
 //! embedded editor. Given logical lines it emits styled char-spans; fenced code
 //! blocks are tracked across lines via [`Highlighter`]. Pure Rust — no syntect,
 //! no onig, so it stays inside the C-free release matrix and we keep full
-//! control over the palette (and, later, embedded code-block languages).
+//! control over the palette. A fenced block whose info string names a known
+//! language is coloured token by token by [`super::syntax`] (yaks-3020).
 //!
 //! Spans are in *char* coordinates within one logical line, so they compose
 //! cleanly with the detail pane's link/find layers (which are also char-based)
@@ -13,6 +14,7 @@
 use ratatui::style::{Modifier, Style};
 
 use super::palette;
+use super::syntax::{self, Lang};
 
 /// A styled run of characters within one logical line (`start` is a char index,
 /// `len` a char count). Runs never overlap and are emitted left-to-right; gaps
@@ -69,6 +71,9 @@ fn quote() -> Style {
 pub struct Highlighter {
     /// `Some((fence_char, run_len))` while inside a fenced code block.
     fence: Option<(char, usize)>,
+    /// The open fence's language and lexer state, when its info string names
+    /// one we can colour (yaks-3020).
+    code: Option<(Lang, syntax::State)>,
 }
 
 impl Highlighter {
@@ -98,7 +103,18 @@ impl Highlighter {
         if let Some((fc, flen)) = self.fence {
             if is_closing_fence(&chars, fc, flen) {
                 self.fence = None;
+                self.code = None;
                 return vec![whole(&chars, marker())];
+            }
+            if let Some((lang, state)) = &mut self.code {
+                return syntax::highlight(*lang, state, &chars, code())
+                    .into_iter()
+                    .map(|r| MdSpan {
+                        start: r.start,
+                        len: r.len,
+                        style: r.style,
+                    })
+                    .collect();
             }
             return vec![whole(&chars, code())];
         }
@@ -106,6 +122,8 @@ impl Highlighter {
         // Opening fence: mark the fence line and enter the block.
         if let Some((fc, flen)) = opening_fence(&chars) {
             self.fence = Some((fc, flen));
+            let info: String = chars[indent(&chars) + flen..].iter().collect();
+            self.code = Lang::from_info(&info).map(|l| (l, syntax::State::default()));
             return vec![whole(&chars, marker())];
         }
 
@@ -183,7 +201,8 @@ fn indent(chars: &[char]) -> usize {
 }
 
 /// A code-fence opener: 3+ backticks or tildes after optional indent. The rest
-/// of the line is an info string, which we don't parse here.
+/// of the line is the info string, whose language [`Highlighter::line_with`]
+/// reads.
 fn opening_fence(chars: &[char]) -> Option<(char, usize)> {
     let i = indent(chars);
     let fc = *chars.get(i)?;
@@ -584,11 +603,34 @@ mod tests {
 
     #[test]
     fn fenced_block_colors_until_close() {
-        let out = highlight("```rust\nlet x = 1;\n```\nafter");
+        // An unknown language: one flat colour (known ones: see below).
+        let out = highlight("```text\nlet x = 1;\n```\nafter");
         assert_eq!(tags(&out[0]), vec![(0, 7, 'm')]); // opening fence
         assert_eq!(tags(&out[1]), vec![(0, 10, 'c')]); // code content
         assert_eq!(tags(&out[2]), vec![(0, 3, 'm')]); // closing fence
         assert_eq!(tags(&out[3]), vec![]); // back to prose
+    }
+
+    #[test]
+    fn known_language_lines_are_syntax_coloured_fence_lines_stay_dim() {
+        let out = highlight("```rust\nlet x = 1;\n```\n```nope\nlet x = 1;\n```");
+        assert_eq!(
+            out[0],
+            vec![whole(&"```rust".chars().collect::<Vec<_>>(), marker())]
+        );
+        let at = |spans: &[MdSpan], col: usize| {
+            spans
+                .iter()
+                .find(|s| col >= s.start && col < s.start + s.len)
+                .map(|s| s.style)
+        };
+        assert_eq!(at(&out[1], 0), Some(palette::syntax_keyword()));
+        assert_eq!(at(&out[1], 8), Some(palette::syntax_number()));
+        // Spans tile the line in char coords.
+        assert_eq!(out[1].iter().map(|s| s.len).sum::<usize>(), 10);
+        // Closing fence is dim, and the next block (unknown language) is flat.
+        assert_eq!(tags(&out[2]), vec![(0, 3, 'm')]);
+        assert_eq!(tags(&out[4]), vec![(0, 10, 'c')]);
     }
 
     #[test]

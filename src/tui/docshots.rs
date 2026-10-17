@@ -713,3 +713,57 @@ fn docshots_md_render() {
     app.detail_scroll = row.saturating_sub(6) as u16;
     write_svg("tui-md-render-scrolled", &app, w, h);
 }
+
+/// Fenced-code syntax colouring (yaks-3020): the read pane and the editor on a
+/// yak with rust, sh and json blocks, into `docs/assets/tui-md-syntax*.svg`.
+#[test]
+#[ignore = "asset generator; run with --ignored to refresh docs/assets/tui-md-syntax*.svg"]
+fn docshots_md_syntax() {
+    let mut y = t(
+        "yaks-1234",
+        "Syntax colours in fenced code",
+        "task",
+        3,
+        Status::Hairy,
+        None,
+    );
+    y.body = r#"Fenced blocks are coloured by the language on the fence.
+
+```rust
+/// A lifetime, a string, a number and a block comment.
+fn first<'a>(items: &'a [String], n: usize) -> Option<&'a str> {
+    /* not yet:
+       cached */
+    let label = "first"; // trailing
+    items.get(n.min(42)).map(|s| s.as_str())
+}
+```
+
+```sh
+# build and test
+export TARGET="$HOME/target"
+if cargo test --release; then echo "ok ${TARGET}"; fi
+```
+
+```json
+{ "name": "yaks", "schema": 5, "ok": true, "deps": [null, -1.5e3] }
+```
+
+```brainfuck
++++[>++<-] unknown languages stay one flat colour
+```"#
+        .to_string();
+    let (w, h) = (96u16, 34u16);
+    let mut app = App::new(vec![y]);
+    HeadlessApp::on_resize(&mut app, w, h);
+    press_key(&mut app, KeyCode::Enter);
+    let _ = toque::render_to_svg(&app, w, h);
+    write_svg("tui-md-syntax", &app, w, h);
+    // The same source in the editor (`E`), cursor on the first line so every
+    // code line is coloured and the fences stay dim.
+    press(&mut app, 'E');
+    for _ in 0..5 {
+        press_key(&mut app, KeyCode::Down); // title .. labels, source, description
+    }
+    write_svg("tui-md-syntax-edit", &app, w, h);
+}

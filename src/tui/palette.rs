@@ -99,7 +99,7 @@ pub fn link_url() -> Style {
 // -- blocks ---------------------------------------------------------------
 
 /// Fenced / indented code. Foreground only (see the module docs on why no
-/// background); syntax colouring (yaks-3020) layers on top of this base.
+/// background); the `syntax_*` token styles (yaks-3020) layer on top of this base.
 pub fn code_block() -> Style {
     inline_code()
 }
@@ -146,6 +146,40 @@ pub fn task(checked: bool) -> Style {
 
 pub fn task_glyph(checked: bool) -> &'static str {
     if checked { "☑" } else { "☐" }
+}
+
+// -- code syntax (yaks-3020) ------------------------------------------------
+
+// Token colours for fenced code in a known language. Plain identifiers keep
+// [`code_block`]'s green, so the hues below stand out against it. 16 ANSI
+// colours only, like everything here.
+
+pub fn syntax_keyword() -> Style {
+    Style::new().fg(Color::Magenta)
+}
+
+pub fn syntax_string() -> Style {
+    Style::new().fg(Color::Yellow)
+}
+
+pub fn syntax_number() -> Style {
+    Style::new().fg(Color::Cyan)
+}
+
+pub fn syntax_comment() -> Style {
+    Style::new()
+        .fg(Color::DarkGray)
+        .add_modifier(Modifier::ITALIC)
+}
+
+/// Types, and the keys of json/toml/yaml.
+pub fn syntax_type() -> Style {
+    Style::new().fg(Color::Blue)
+}
+
+/// Brackets, operators, separators: the terminal's default colour.
+pub fn syntax_punct() -> Style {
+    Style::new()
 }
 
 // -- alerts ---------------------------------------------------------------
@@ -260,6 +294,12 @@ mod tests {
             heading(4),
             strikethrough(),
             inline_code(),
+            syntax_keyword(),
+            syntax_string(),
+            syntax_number(),
+            syntax_comment(),
+            syntax_type(),
+            syntax_punct(),
             link_text(),
             bullet(),
             task(true),
