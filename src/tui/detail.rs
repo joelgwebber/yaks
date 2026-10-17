@@ -53,6 +53,18 @@ pub struct DLine {
     /// For a body row: where it came from, so yank can copy source and `E`
     /// can open the right block at the right line.
     pub src: Option<Src>,
+    /// For a row of a no-wrap block (code, table): which block, and the gutter
+    /// that stays put when the block scrolls sideways (yaks-c733). Such a row
+    /// may be wider than the pane; `render_dline` clips it.
+    pub nowrap: Option<mdrender::NoWrap>,
+}
+
+impl DLine {
+    /// Identity of the no-wrap block this row belongs to: (content block,
+    /// block id within it). Rows sharing a key scroll together.
+    pub fn nowrap_key(&self) -> Option<(usize, usize)> {
+        Some((self.src?.block, self.nowrap?.id))
+    }
 }
 
 /// A body row's origin: content block (0 = description, 1.. = comments) and
@@ -62,6 +74,21 @@ pub struct DLine {
 pub struct Src {
     pub block: usize,
     pub lines: Option<(usize, usize)>,
+}
+
+/// The widest row (display columns, prefix included) of each no-wrap block,
+/// keyed by [`DLine::nowrap_key`]. A block scrolls sideways at most this much
+/// minus the pane width.
+pub fn nowrap_extents(lines: &[DLine]) -> std::collections::HashMap<(usize, usize), usize> {
+    let mut out = std::collections::HashMap::new();
+    for l in lines {
+        if let Some(key) = l.nowrap_key() {
+            let w = l.text.chars().map(char_disp).sum();
+            let e: &mut usize = out.entry(key).or_default();
+            *e = (*e).max(w);
+        }
+    }
+    out
 }
 
 /// A single navigable target, located at a line + starting column.
@@ -83,6 +110,7 @@ fn field(label: &str, value: &str) -> DLine {
         md: vec![],
         cont: false,
         src: None,
+        nowrap: None,
     }
 }
 
@@ -96,6 +124,7 @@ fn warn_field(label: &str, value: &str) -> DLine {
         md: vec![],
         cont: false,
         src: None,
+        nowrap: None,
     }
 }
 
@@ -114,6 +143,7 @@ pub fn banner(text: &str) -> DLine {
         md: vec![],
         cont: false,
         src: None,
+        nowrap: None,
     }
 }
 
@@ -125,6 +155,7 @@ fn section(text: &str) -> DLine {
         md: vec![],
         cont: false,
         src: None,
+        nowrap: None,
     }
 }
 
@@ -136,6 +167,7 @@ fn empty() -> DLine {
         md: vec![],
         cont: false,
         src: None,
+        nowrap: None,
     }
 }
 
@@ -175,6 +207,7 @@ fn ref_line(prefix: String, glyph: &str, id: &str, title: &str, exists: bool) ->
         md: vec![],
         cont: false,
         src: None,
+        nowrap: None,
     }
 }
 
@@ -198,6 +231,7 @@ fn sheds_section(sheds: &[(&Shed, &YakChange)]) -> Vec<DLine> {
             md: vec![],
             cont: false,
             src: None,
+            nowrap: None,
         });
     }
     for (shed, y) in sheds {
@@ -253,6 +287,7 @@ fn sheds_section(sheds: &[(&Shed, &YakChange)]) -> Vec<DLine> {
             md,
             cont: false,
             src: None,
+            nowrap: None,
         });
     }
     out
@@ -405,6 +440,7 @@ pub fn build_at(
             md: vec![],
             cont: false,
             src: None,
+            nowrap: None,
         });
     }
 
@@ -423,6 +459,7 @@ pub fn build_at(
                 md: vec![],
                 cont: false,
                 src: None,
+                nowrap: None,
             });
         }
     }
@@ -465,6 +502,7 @@ fn body_rows(task: &Task, known: &HashSet<&str>, clock: &Clock, width: usize) ->
                     block: bi,
                     lines: Some(row.lines),
                 }),
+                nowrap: row.nowrap,
             });
         }
     }
@@ -510,6 +548,7 @@ fn comment_header(kind: &content::BlockKind, clock: &Clock, width: usize, block:
         links: vec![],
         cont: false,
         src: Some(Src { block, lines: None }),
+        nowrap: None,
     }
 }
 
@@ -632,6 +671,7 @@ pub fn wrap(lines: Vec<DLine>, width: usize) -> Vec<DLine> {
                 md,
                 cont: ri > 0,
                 src: dl.src,
+                nowrap: dl.nowrap,
             });
         }
     }
@@ -923,6 +963,7 @@ mod tests {
             }],
             cont: false,
             src: None,
+            nowrap: None,
         };
         // Width 10 splits the line; the code span (cols 5..16) must be clipped to
         // whatever falls on each row and re-based to that row's columns.
@@ -958,6 +999,7 @@ mod tests {
             md: vec![],
             cont: false,
             src: None,
+            nowrap: None,
         };
         let rows = wrap(vec![dl], 10);
         let texts: Vec<&str> = rows.iter().map(|r| r.text.as_str()).collect();
@@ -975,6 +1017,7 @@ mod tests {
             md: vec![],
             cont: false,
             src: None,
+            nowrap: None,
         };
         let rows = wrap(vec![dl], 8);
         let link_row = rows.iter().find(|r| !r.links.is_empty()).unwrap();
@@ -992,6 +1035,7 @@ mod tests {
             md: vec![],
             cont: false,
             src: None,
+            nowrap: None,
         };
         assert_eq!(wrap(vec![dl], 10)[0].text, "  alpha");
 
@@ -1002,6 +1046,7 @@ mod tests {
             md: vec![],
             cont: false,
             src: None,
+            nowrap: None,
         };
         let texts: Vec<String> = wrap(vec![dl2], 4).iter().map(|r| r.text.clone()).collect();
         assert_eq!(texts, vec!["abcd", "efgh", "ij"]);
@@ -1016,6 +1061,7 @@ mod tests {
             md: vec![],
             cont: false,
             src: None,
+            nowrap: None,
         };
         assert_eq!(wrap(vec![dl], 0).len(), 1);
     }

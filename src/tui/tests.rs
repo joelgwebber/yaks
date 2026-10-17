@@ -3703,3 +3703,161 @@ fn rendered_body_reflows_and_yank_copies_the_source_markdown() {
         "Some **bold**\ntext here.\n\n- item one that is long enough to wrap around"
     );
 }
+
+// -- yaks-c733: no-wrap blocks scroll sideways, per block -------------------
+
+/// A yak whose body holds a long code block, a prose line and a wide table.
+fn hscroll_app() -> App {
+    let mut t = task("h0", "Scroll", Status::Hairy, 3, None);
+    t.body = "Intro.\n\n```java\nclass Long { void aVeryLongMethodNameThatOverflows() {} }\nshort\n```\n\nOutro.\n\n| a | b |\n|---|---|\n| first column text | second column text that is wide |\n"
+        .into();
+    let mut app = App::new(vec![t]);
+    enter_key(&mut app);
+    let _ = draw(&app, 30, 30); // measure the pane width
+    app
+}
+
+fn press_char(app: &mut App, c: char) {
+    handle_key(app, key(c));
+}
+
+/// The frame's detail-pane rows, without the pane's left divider.
+fn pane_rows(frame: &str) -> Vec<String> {
+    frame
+        .lines()
+        .map(|l| l.strip_prefix("│ ").unwrap_or(l).to_string())
+        .collect()
+}
+
+/// The detail line index of the first row whose text contains `needle`.
+fn dline_of(app: &App, needle: &str) -> usize {
+    app.detail_dlines()
+        .iter()
+        .position(|l| l.text.contains(needle))
+        .unwrap_or_else(|| panic!("no detail row contains {needle:?}"))
+}
+
+#[test]
+fn code_block_shows_language_label_and_clips_with_a_marker() {
+    let app = hscroll_app();
+    let frame = draw(&app, 30, 30);
+    assert!(!frame.contains("```"), "fences are hidden:\n{frame}");
+    assert!(
+        pane_rows(&frame).iter().any(|l| l.trim() == "java"),
+        "label row:\n{frame}"
+    );
+    let long = pane_rows(&frame)
+        .into_iter()
+        .find(|l| l.contains("class Long"))
+        .unwrap_or_else(|| panic!("no code row:\n{frame}"));
+    assert!(
+        long.trim_end().ends_with('›'),
+        "right edge marker: {long:?}"
+    );
+    assert!(
+        !long.contains('‹'),
+        "nothing hidden on the left yet: {long:?}"
+    );
+}
+
+#[test]
+fn l_scrolls_only_the_block_under_the_cursor_and_h_returns() {
+    let mut app = hscroll_app();
+    let code = dline_of(&app, "class Long");
+    let table = dline_of(&app, "first column");
+    app.detail_line = code;
+    let before = draw(&app, 30, 30);
+    press_char(&mut app, 'l');
+    let after = draw(&app, 30, 30);
+    let row = |f: &str, needle: &str| pane_rows(f).into_iter().find(|l| l.contains(needle));
+    assert_ne!(row(&before, "class Long"), row(&after, "class Long"));
+    assert!(
+        pane_rows(&after).iter().any(|l| l.starts_with('‹')),
+        "left marker once scrolled:\n{after}"
+    );
+    // The label, the prose and the table did not move.
+    assert_eq!(row(&before, "Intro."), row(&after, "Intro."));
+    assert_eq!(row(&before, "first column"), row(&after, "first column"));
+    assert_eq!(row(&before, "java"), row(&after, "java"));
+    // `l` on prose scrolls nothing (and does not leave the pane).
+    app.detail_line = dline_of(&app, "Intro.");
+    press_char(&mut app, 'l');
+    assert_eq!(app.focus, Focus::Detail);
+    // ...and scrolling is per block: the table starts at 0.
+    app.detail_line = table;
+    let t = draw(&app, 30, 30);
+    assert!(
+        !pane_rows(&t).iter().any(|l| l.starts_with('‹')),
+        "the table was not scrolled:\n{t}"
+    );
+}
+
+#[test]
+fn h_scrolls_back_then_at_zero_returns_to_the_list() {
+    let mut app = hscroll_app();
+    app.detail_line = dline_of(&app, "class Long");
+    press_char(&mut app, 'l');
+    press_char(&mut app, 'l');
+    press_char(&mut app, 'h');
+    assert_eq!(app.focus, Focus::Detail, "still scrolled: h scrolls back");
+    press_char(&mut app, 'h');
+    assert_eq!(app.focus, Focus::Detail, "now at 0, but that h scrolled");
+    press_char(&mut app, 'h');
+    assert_eq!(
+        app.focus,
+        Focus::List,
+        "at offset 0 h goes back to the list"
+    );
+}
+
+#[test]
+fn h_on_prose_returns_to_the_list_and_esc_always_does() {
+    let mut app = hscroll_app();
+    app.detail_line = dline_of(&app, "Intro.");
+    press_char(&mut app, 'h');
+    assert_eq!(app.focus, Focus::List);
+    let mut app = hscroll_app();
+    app.detail_line = dline_of(&app, "class Long");
+    press_char(&mut app, 'l');
+    esc_key(&mut app);
+    assert_eq!(app.focus, Focus::List, "Esc leaves even a scrolled block");
+}
+
+#[test]
+fn scroll_clamps_at_the_widest_row_and_resets_when_the_cursor_leaves() {
+    let mut app = hscroll_app();
+    app.detail_line = dline_of(&app, "class Long");
+    for _ in 0..40 {
+        press_char(&mut app, 'l');
+    }
+    let frame = draw(&app, 30, 30);
+    let row = pane_rows(&frame)
+        .into_iter()
+        .find(|l| l.contains("Overflows"))
+        .unwrap_or_else(|| panic!("end of the line is visible:\n{frame}"));
+    assert!(
+        !row.trim_end().ends_with('›'),
+        "no right marker at the end: {row:?}"
+    );
+    // Leaving the block (j onto the next row is still the block; go to prose).
+    app.detail_line = dline_of(&app, "Outro.");
+    press_char(&mut app, 'j');
+    app.detail_line = dline_of(&app, "class Long");
+    let back = draw(&app, 30, 30);
+    assert!(
+        back.lines().any(|l| l.contains("class Long")),
+        "the block starts at its left edge again:\n{back}"
+    );
+}
+
+#[test]
+fn yank_of_a_scrolled_code_row_copies_the_full_source_line() {
+    let mut app = hscroll_app();
+    let code = dline_of(&app, "class Long");
+    app.detail_line = code;
+    press_char(&mut app, 'l');
+    assert_eq!(
+        app.selection_text(code, code).unwrap(),
+        "class Long { void aVeryLongMethodNameThatOverflows() {} }"
+    );
+}

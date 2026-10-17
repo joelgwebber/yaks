@@ -16,6 +16,7 @@ use std::cell::RefCell;
 
 use edtui::{EditorState, EditorView};
 
+use super::palette;
 use super::{
     App, Focus, Overlay, completion_context, detail, editor_theme, render_create, render_drawer,
     render_editor_panel, render_fuzzy_results, render_line_editor, render_query_line,
@@ -233,7 +234,14 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
         entry("* ", "Star / unstar (Starred view)"),
         blank(),
         section("Detail pane"),
-        entry("h / ← / Esc", "Back to list"),
+        entry(
+            "h / ← / Esc",
+            "Back to list (h/← scroll a code block or table left first)",
+        ),
+        entry(
+            "l / →",
+            "Scroll the code block / table under the cursor right",
+        ),
         entry("j / k", "Scroll"),
         entry("Tab / [ / ]", "Cycle links"),
         entry("Enter", "Follow link"),
@@ -1025,6 +1033,8 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
     } else {
         vec![]
     };
+    // Widest row of each no-wrap block, to clamp its sideways scroll.
+    let extents = detail::nowrap_extents(&lines);
     let rendered: Vec<Line> = lines
         .iter()
         .enumerate()
@@ -1042,10 +1052,15 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
             } else {
                 None
             };
-            render_dline(dl, cur, i, &lm, line_bg)
+            let hscroll = dl
+                .nowrap_key()
+                .and_then(|k| extents.get(&k).map(|&e| app.block_hscroll(k, e)))
+                .unwrap_or(0);
+            render_dline(dl, cur, i, &lm, line_bg, hscroll, area.width as usize)
         })
         .collect();
-    // No wrap: link/match highlight columns must stay valid.
+    // No wrap: link/match highlight columns must stay valid. (Rows of a
+    // no-wrap block are clipped to the pane by `render_dline`.)
     let p = Paragraph::new(rendered).scroll((app.detail_scroll, 0));
     frame.render_widget(p, content_area);
     if pinned {
@@ -1066,14 +1081,90 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
     }
 }
 
+/// Shown at a clipped edge of a no-wrap row: more to the left / to the right.
+const CLIP_LEFT: char = '\u{2039}'; // ‹
+const CLIP_RIGHT: char = '\u{203a}'; // ›
+
+/// Clip one styled no-wrap row to a `width`-column pane scrolled `off` columns
+/// right. The first `gutter` display columns (a quote bar, a list marker) stay
+/// put; the rest scrolls. A dim [`CLIP_LEFT`] / [`CLIP_RIGHT`] replaces the
+/// edge cell where text is hidden. Returns the row unchanged when it fits.
+fn clip_nowrap(
+    cells: Vec<(char, Style)>,
+    gutter: usize,
+    off: usize,
+    width: usize,
+    marker: Style,
+) -> Vec<(char, Style)> {
+    use unicode_width::UnicodeWidthChar;
+    let w = |c: char| c.width().unwrap_or(0);
+    // Split the gutter (display columns) from the scrolling text.
+    let mut split = 0;
+    let mut gw = 0;
+    while split < cells.len() && gw < gutter {
+        gw += w(cells[split].0);
+        split += 1;
+    }
+    let (head, text) = cells.split_at(split);
+    let avail = width.saturating_sub(gw);
+    let total: usize = text.iter().map(|(c, _)| w(*c)).sum();
+    if off == 0 && total <= avail {
+        return cells;
+    }
+    // Keep the cells wholly inside the window [off, off + avail).
+    let mut out: Vec<(char, Style)> = head.to_vec();
+    let mut col = 0;
+    let mut kept: Vec<(char, Style)> = Vec::new();
+    for &(c, st) in text {
+        let cw = w(c);
+        if col >= off && col + cw <= off + avail {
+            kept.push((c, st));
+        }
+        col += cw;
+    }
+    let clipped_left = off > 0 && !text.is_empty();
+    let clipped_right = total > off + avail;
+    // A marker takes one column; a wide cell it replaces leaves a blank.
+    let mark = |kept: &mut Vec<(char, Style)>, at_start: bool, ch: char| {
+        if kept.is_empty() {
+            return;
+        }
+        let i = if at_start { 0 } else { kept.len() - 1 };
+        let pad = w(kept[i].0) > 1;
+        let bg = kept[i].1.bg;
+        let mut st = marker;
+        st.bg = bg;
+        kept[i] = (ch, st);
+        if pad {
+            kept.insert(i + 1, (' ', st));
+        }
+    };
+    if clipped_right {
+        mark(&mut kept, false, CLIP_RIGHT);
+    }
+    if clipped_left {
+        if kept.is_empty() {
+            kept.push((CLIP_LEFT, marker));
+        } else {
+            mark(&mut kept, true, CLIP_LEFT);
+        }
+    }
+    out.extend(kept);
+    out
+}
+
 /// Render one detail line by computing a per-char style (base -> link ->
 /// find-match, each overriding the last) and coalescing equal runs into spans.
+/// A no-wrap row (code, table) is clipped to the pane `width`, scrolled
+/// `hscroll` columns (yaks-c733).
 pub(crate) fn render_dline<'a>(
     dl: &'a detail::DLine,
     cur: Option<&detail::Jump>,
     line_idx: usize,
     matches: &[(usize, usize, bool)],
     line_bg: Option<Color>,
+    hscroll: usize,
+    width: usize,
 ) -> Line<'a> {
     let chars: Vec<char> = dl.text.chars().collect();
     let n = chars.len();
@@ -1160,15 +1251,20 @@ pub(crate) fn render_dline<'a>(
             *s = st;
         }
     }
+    let mut cells: Vec<(char, Style)> = chars.into_iter().zip(styles).collect();
+    if let Some(nw) = dl.nowrap {
+        cells = clip_nowrap(cells, nw.gutter, hscroll, width, palette::marker());
+    }
     let mut spans: Vec<Span> = Vec::new();
     let mut i = 0;
-    while i < n {
-        let st = styles[i];
-        let start = i;
-        while i < n && styles[i] == st {
+    while i < cells.len() {
+        let st = cells[i].1;
+        let mut run = String::new();
+        while i < cells.len() && cells[i].1 == st {
+            run.push(cells[i].0);
             i += 1;
         }
-        spans.push(Span::styled(chars[start..i].iter().collect::<String>(), st));
+        spans.push(Span::styled(run, st));
     }
     Line::from(spans)
 }

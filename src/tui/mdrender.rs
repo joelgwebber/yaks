@@ -46,9 +46,23 @@ pub struct MdRow {
     pub links: Vec<(usize, usize, Target)>,
     /// Inclusive 0-based source line range within the document.
     pub lines: (usize, usize),
-    /// A no-wrap row (code block, table): may be wider than the render width;
-    /// the pane clips it (horizontal scroll is yaks-c733).
-    pub nowrap: bool,
+    /// Set on a row of a no-wrap block (code, table, HTML): the row may be
+    /// wider than the render width, and the pane clips it and scrolls the
+    /// whole block sideways together (yaks-c733).
+    pub nowrap: Option<NoWrap>,
+}
+
+/// Which no-wrap block a row belongs to, and the part that stays put when the
+/// block scrolls sideways.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NoWrap {
+    /// Block id, unique within one rendered document: every row of one code
+    /// block or table shares it.
+    pub id: usize,
+    /// Display columns of the container prefix (quote bar, list marker) the
+    /// row starts with. It is not part of the block's own text, so it never
+    /// scrolls away.
+    pub gutter: usize,
 }
 
 // Styles all come from the shared palette (yaks-bc53).
@@ -118,6 +132,10 @@ struct Renderer<'k> {
     pending_blank: bool,
     /// Inside a code or HTML block: text is emitted line by line, unwrapped.
     verbatim: Option<Style>,
+    /// The no-wrap block id rows are tagged with while `verbatim` is set.
+    block: Option<usize>,
+    /// Next free no-wrap block id.
+    next_block: usize,
     /// Table under construction: rows of cells of chars, plus alignments.
     table: Option<(Vec<Alignment>, Vec<Vec<Vec<Cell>>>)>,
 }
@@ -148,6 +166,8 @@ pub fn render(text: &str, width: usize, known: &HashSet<&str>) -> Vec<MdRow> {
         buf: Vec::new(),
         pending_blank: false,
         verbatim: None,
+        block: None,
+        next_block: 0,
         table: None,
     };
     for (i, (ev, range)) in events.iter().enumerate() {
@@ -228,7 +248,7 @@ impl Renderer<'_> {
                     };
                     avail
                 ];
-                self.emit(&cells, line, false);
+                self.emit(&cells, line, None);
                 self.pending_blank = true;
             }
             Event::TaskListMarker(done) => {
@@ -276,20 +296,35 @@ impl Renderer<'_> {
                             line,
                         })
                         .collect();
-                    self.emit(&cells, line, false);
+                    self.emit(&cells, line, None);
                 }
             }
             Tag::CodeBlock(kind) => {
                 self.block_start();
-                let _lang = match kind {
-                    CodeBlockKind::Fenced(l) => l.to_string(),
-                    CodeBlockKind::Indented => String::new(),
-                };
-                self.verbatim = Some(palette::code_block());
+                // The fences are hidden; a fenced block's language (the info
+                // string) is kept as a dim label row above the code. It is
+                // not part of the no-wrap block, so it stays put when the code
+                // scrolls.
+                if let CodeBlockKind::Fenced(lang) = kind {
+                    let lang = lang.trim();
+                    if !lang.is_empty() {
+                        let cells: Vec<Cell> = lang
+                            .chars()
+                            .map(|ch| Cell {
+                                ch,
+                                style: palette::code_fence(),
+                                link: None,
+                                line,
+                            })
+                            .collect();
+                        self.emit(&cells, line, None);
+                    }
+                }
+                self.open_block(palette::code_block());
             }
             Tag::HtmlBlock => {
                 self.block_start();
-                self.verbatim = Some(Style::new());
+                self.open_block(Style::new());
             }
             Tag::List(start) => {
                 self.block_start();
@@ -391,6 +426,7 @@ impl Renderer<'_> {
             }
             TagEnd::CodeBlock | TagEnd::HtmlBlock => {
                 self.verbatim = None;
+                self.block = None;
                 self.pending_blank = true;
             }
             TagEnd::List(_) => {
@@ -479,6 +515,14 @@ impl Renderer<'_> {
         }
     }
 
+    /// Start a code/HTML block: its text is emitted verbatim, every row tagged
+    /// with one fresh no-wrap block id.
+    fn open_block(&mut self, style: Style) {
+        self.verbatim = Some(style);
+        self.block = Some(self.next_block);
+        self.next_block += 1;
+    }
+
     /// Emit code/HTML block text one source line per row, unwrapped.
     fn verbatim_text(&mut self, t: &str, line: usize, style: Style) {
         let t = t.strip_suffix('\n').unwrap_or(t);
@@ -492,7 +536,7 @@ impl Renderer<'_> {
                     line: line + k,
                 })
                 .collect();
-            self.emit(&cells, line + k, true);
+            self.emit(&cells, line + k, self.block);
         }
     }
 
@@ -515,7 +559,7 @@ impl Renderer<'_> {
         let line = buf[0].line;
         for seg in buf.split(|c| c.ch == HARD_BREAK) {
             if seg.is_empty() {
-                self.emit(&[], line, false);
+                self.emit(&[], line, None);
                 continue;
             }
             // The prefix width can shrink after the first row (an ordered
@@ -530,7 +574,7 @@ impl Renderer<'_> {
                 while row_end > start && seg[row_end - 1].ch == ' ' && end < seg.len() {
                     row_end -= 1;
                 }
-                self.emit(&seg[start..row_end], seg[start].line, false);
+                self.emit(&seg[start..row_end], seg[start].line, None);
                 start = end;
                 while start < seg.len() && seg[start].ch == ' ' {
                     start += 1;
@@ -560,12 +604,13 @@ impl Renderer<'_> {
             spans,
             links: Vec::new(),
             lines: (line, line),
-            nowrap: false,
+            nowrap: None,
         });
     }
 
-    /// Emit one row: the prefix stack, then `cells`.
-    fn emit(&mut self, cells: &[Cell], line: usize, nowrap: bool) {
+    /// Emit one row: the prefix stack, then `cells`. `nowrap` is the id of the
+    /// no-wrap block the row belongs to, if any.
+    fn emit(&mut self, cells: &[Cell], line: usize, nowrap: Option<usize>) {
         let mut text = String::new();
         let mut spans: Vec<MdSpan> = Vec::new();
         let mut col = 0;
@@ -583,6 +628,7 @@ impl Renderer<'_> {
             col += n;
             c.used = true;
         }
+        let gutter = disp(&text);
         let mut links: Vec<(usize, usize, Target)> = Vec::new();
         let (mut lo, mut hi) = (line, line);
         for (k, cell) in cells.iter().enumerate() {
@@ -614,7 +660,7 @@ impl Renderer<'_> {
             spans,
             links,
             lines: (lo, hi),
-            nowrap,
+            nowrap: nowrap.map(|id| NoWrap { id, gutter }),
         });
     }
 
@@ -635,6 +681,8 @@ impl Renderer<'_> {
             }
         }
         let sep = palette::rule();
+        let id = Some(self.next_block);
+        self.next_block += 1;
         for (ri, row) in rows.iter().enumerate() {
             let line = row
                 .iter()
@@ -674,7 +722,7 @@ impl Renderer<'_> {
                 }));
                 cells.extend((0..r).map(|_| mk(' ', Style::new())));
             }
-            self.emit(&cells, line, true);
+            self.emit(&cells, line, id);
             if ri == 0 {
                 let mut rule: Vec<Cell> = Vec::new();
                 for (c, w) in widths.iter().enumerate() {
@@ -683,7 +731,7 @@ impl Renderer<'_> {
                     }
                     rule.extend((0..*w).map(|_| mk('─', sep)));
                 }
-                self.emit(&rule, line, true);
+                self.emit(&rule, line, id);
             }
         }
     }
@@ -881,11 +929,41 @@ mod tests {
             10,
             &known,
         );
-        let code: Vec<&MdRow> = rows.iter().filter(|r| r.nowrap).collect();
+        let code: Vec<&MdRow> = rows.iter().filter(|r| r.nowrap.is_some()).collect();
         assert_eq!(code[0].text, "class VeryLongNameThatWillNotFit {}");
         assert_eq!(code[0].lines, (3, 3));
         assert_eq!(code[1].lines, (4, 4));
         assert_eq!(rows[0].lines, (0, 0));
+    }
+
+    #[test]
+    fn fenced_code_gets_a_label_row_and_a_block_id_per_block() {
+        let known = HashSet::new();
+        let rows = render(
+            "```java\nA\nB\n```\n\n    indented\n\n> ```\n> Q\n> ```\n\n| x |\n|---|\n| 1 |",
+            40,
+            &known,
+        );
+        let t: Vec<&str> = rows.iter().map(|r| r.text.as_str()).collect();
+        assert_eq!(t[0], "java", "label row, fences hidden");
+        assert!(rows[0].nowrap.is_none(), "the label stays put");
+        let id = |i: usize| rows[i].nowrap.map(|n| n.id);
+        assert_eq!(id(1), id(2), "one block, one id");
+        assert_ne!(id(1), id(4), "the indented block is another block");
+        assert_eq!(t[4], "indented", "indented code has no label");
+        // A quoted block keeps its quote bar as a gutter that never scrolls.
+        let q = rows.iter().find(|r| r.text == "▎ Q").unwrap();
+        assert_eq!(q.nowrap.unwrap().gutter, 2);
+        // A table's rows (header, rule, body) share one id.
+        let tab: Vec<_> = rows.iter().filter(|r| r.text.contains('─')).collect();
+        assert!(tab.iter().all(|r| r.nowrap.is_some()));
+        let ids: HashSet<_> = rows
+            .iter()
+            .rev()
+            .take(3)
+            .map(|r| r.nowrap.unwrap().id)
+            .collect();
+        assert_eq!(ids.len(), 1, "table rows share one id");
     }
 
     #[test]

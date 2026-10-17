@@ -94,7 +94,9 @@ full-page; `g`/`G` top/bottom.
 | `v` / `V` | View picker / save filter as a view |
 | `*` | Star / unstar (Starred view) |
 
-**Detail pane** — `h`/`←`/`Esc` back; `j`/`k` scroll; `Tab`/`[`/`]` cycle links,
+**Detail pane** — `h`/`←`/`Esc` back (on a code block or table row `h`/`←`
+scroll it left first, and go back only at offset 0); `l`/`→` scroll the code
+block or table under the cursor right (nowhere else); `j`/`k` scroll; `Tab`/`[`/`]` cycle links,
 `Enter` follow; `i`/`o` nav forward/back (each yak reopens at the cursor and
 scroll you left it at); `J`/`K` next/prev task; `Ctrl-N`/`Ctrl-P`
 next/prev content block; `v` + `Shift-↑↓` visual-select lines, `y` copy;
@@ -192,11 +194,25 @@ The swatch below shows every style on a dark and a light terminal.
 (GitHub-flavoured): markers are hidden, a single newline joins lines into one
 paragraph that re-wraps to the pane width (a blank line starts a new one),
 wrapped list items hang under their bullet, quotes keep their `▎` bar around
-nested headings, lists and code, code blocks and tables are never wrapped, and
+nested headings, lists and code, code blocks and tables are never wrapped (a fenced block's
+language shows as a dim label row above it; see below for scrolling), and
 `[text](url)` shows just its text (still followable with `Tab`/`Enter`). The
 description and each comment render separately, each comment under a
 `▸ author · when` header. Yanking rendered rows (`v` … `y`) copies their source
 markdown, not the displayed text. The editor still shows the raw source.
+
+**Wide code blocks and tables** scroll sideways, one block at a time. With the
+line cursor on a row of a code block or table, `l`/`→` scroll that block right
+and `h`/`←` scroll it back (8 columns a press), clamped so the widest row ends
+at the pane's right edge. The rest of the pane does not move: the language
+label, the quote bar or list marker around a nested block, and every other
+block stay put. A dim `‹` / `›` in a row's first / last column marks text
+hidden on that side. `h`/`←` at offset 0, on any other row, and `Esc` anywhere
+all keep their meaning, back to the list. The offset lasts only while the cursor
+is on the block: moving off it (or to another yak) drops it. Yank still copies
+the full source lines.
+
+![a code block scrolled sideways: ‹ marks the hidden left edge, the table below does not move](assets/tui-md-render-scrolled.svg)
 
 ![yaks rendering a markdown torture test](assets/tui-md-render.svg)
 

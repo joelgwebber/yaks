@@ -693,4 +693,23 @@ fn docshots_md_render() {
     write_svg("tui-md-render", &app, w, h);
     press(&mut app, 'G'); // the code, table and comment at the end
     write_svg("tui-md-render-2", &app, w, h);
+    // yaks-c733: a narrow pane, the line cursor on a long code row, scrolled
+    // sideways (the table below is a separate block and stays put).
+    let (w, h) = (72u16, 56u16);
+    let mut app = App::new(vec![app.all[0].clone()]);
+    HeadlessApp::on_resize(&mut app, w, h);
+    press_key(&mut app, KeyCode::Enter);
+    let _ = toque::render_to_svg(&app, w, h);
+    let row = app
+        .detail_dlines()
+        .iter()
+        .position(|l| l.text.contains("insanely verbose"))
+        .expect("the fixture's long code line");
+    app.detail_line = row;
+    app.scroll_line_into_view(row as u16);
+    for _ in 0..6 {
+        press(&mut app, 'l');
+    }
+    app.detail_scroll = row.saturating_sub(6) as u16;
+    write_svg("tui-md-render-scrolled", &app, w, h);
 }

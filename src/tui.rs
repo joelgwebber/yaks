@@ -262,6 +262,11 @@ pub struct App {
     /// The detail pane's per-line cursor (index into the built detail lines).
     /// j/k move it, Tab snaps it to link lines, Enter follows a link on it.
     detail_line: usize,
+    /// Sideways scroll of the no-wrap block (code, table) under the line
+    /// cursor: `(yak id, content block, block id, display columns)`. Only that
+    /// block is scrolled; it is dropped as soon as the cursor leaves the block
+    /// or the yak changes (`App::drop_stale_hscroll`, yaks-c733).
+    detail_hscroll: Option<(String, usize, usize, usize)>,
     /// Visual-selection anchor (Some when a v/Shift-arrow selection is active).
     detail_anchor: Option<usize>,
     /// Active detail-pane find query + which match is current (n/N cycle).
@@ -345,6 +350,7 @@ impl App {
             focus: Focus::List,
             detail_scroll: 0,
             detail_line: 0,
+            detail_hscroll: None,
             detail_anchor: None,
             detail_find: None,
             detail_match: 0,

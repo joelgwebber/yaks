@@ -5,6 +5,9 @@
 
 use super::*;
 
+/// Columns a no-wrap block scrolls per `h`/`l`.
+const HSCROLL_STEP: usize = 8;
+
 impl App {
     /// Select an existing task wherever it lives: switch to its status view (if
     /// one is pinned) and place the cursor on it, then focus the list.
@@ -75,6 +78,63 @@ impl App {
             None => detail::build_at(t, &self.all, &copies, &self.clock, width),
         };
         detail::wrap(lines, width)
+    }
+
+    /// The sideways scroll of no-wrap block `key` of the selected yak: the
+    /// scroll state if it is this block's, else 0; clamped so the block never
+    /// scrolls past its widest row (`extent`) at the current pane width.
+    pub(crate) fn block_hscroll(&self, key: (usize, usize), extent: usize) -> usize {
+        let Some(t) = self.selected() else { return 0 };
+        match &self.detail_hscroll {
+            Some((id, b, n, off)) if *id == t.id && (*b, *n) == key => {
+                (*off).min(extent.saturating_sub(self.detail_width.get() as usize))
+            }
+            _ => 0,
+        }
+    }
+
+    /// `h`/`l` on a no-wrap block under the line cursor: scroll that block
+    /// `dir` steps sideways (clamped). Returns whether the offset changed, so
+    /// `h` at offset 0 (or off a no-wrap row) can fall through to "back to
+    /// list" (yaks-c733).
+    pub(crate) fn scroll_block(&mut self, dir: i32) -> bool {
+        let lines = self.detail_dlines();
+        let Some(key) = lines.get(self.detail_line).and_then(|l| l.nowrap_key()) else {
+            return false;
+        };
+        let Some(&extent) = detail::nowrap_extents(&lines).get(&key) else {
+            return false;
+        };
+        let Some(id) = self.selected().map(|t| t.id.clone()) else {
+            return false;
+        };
+        let max = extent.saturating_sub(self.detail_width.get() as usize);
+        let cur = self.block_hscroll(key, extent);
+        let next = (cur as i32 + dir * HSCROLL_STEP as i32).clamp(0, max as i32) as usize;
+        self.detail_hscroll = Some((id, key.0, key.1, next));
+        next != cur
+    }
+
+    /// Forget the sideways scroll once the line cursor is no longer on the
+    /// scrolled block (or the yak changed): a block's offset lives only while
+    /// you are on it. Called after every key and click in the detail pane, so
+    /// the many ways the cursor can move need no bookkeeping of their own.
+    pub(crate) fn drop_stale_hscroll(&mut self) {
+        let Some((id, block, n, _)) = &self.detail_hscroll else {
+            return;
+        };
+        let same_yak = self.selected().is_some_and(|t| t.id == *id);
+        let key = (*block, *n);
+        let on_block = same_yak
+            && self.focus == Focus::Detail
+            && self
+                .detail_dlines()
+                .get(self.detail_line)
+                .and_then(|l| l.nowrap_key())
+                == Some(key);
+        if !on_block {
+            self.detail_hscroll = None;
+        }
     }
 
     /// What the other sheds changed about yak `id` (the Sheds section's data;
