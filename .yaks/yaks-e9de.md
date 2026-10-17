@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T04:59:10Z'
+updated: '2026-10-17T05:00:47Z'
 labels:
 - markdown
 - tui
@@ -70,3 +70,13 @@ Checked on the real build: headless detail shows `Status: 🪒 shaving`, `Create
 ---
 ▸ 2026-10-17T04:59:10Z [delta-lead]
 Batch 2 spawned from 3c47d0f on claude-sonnet-5-5: hscroll-1 → yaks-c733 (thread ...jrf5I...), edmarks-1 → yaks-9425 (thread ...jtwJI...). migrate-1 (yaks-a870) woken after an early silent exit.
+
+---
+▸ 2026-10-17T05:00:47Z [delta-lead]
+Status 2026-10-17 ~05:05 (delta-lead):
+
+- Shorn: yaks-f67e, yaks-ef82, yaks-66a3, yaks-5408, yaks-649d (core), yaks-e30d and yaks-93cd (delivered by the core).
+- Waiting on Joel: yaks-bc53 (palette sign-off), yaks-a893 (in-place view/edit design), yaks-1f84 (OK to push to the edtui fork).
+- Running: migrate-1 (yaks-a870), hscroll-1 (yaks-c733), edmarks-1 (yaks-9425).
+- Held until hscroll-1 lands (both touch mdrender.rs): yaks-1bbb (footnote jumps; task lists and alerts already render), yaks-3020 (code syntax colours), and yaks-3b8d's attachment glyphs (also waits on yaks-a870).
+- yaks-382b: the CommonMark rule is already in the yaks skill (47d5d5e); the `$( )` rule in brief.rs and the coordinating skill remain, after migrate-1 lands (it edits the skills too).
