@@ -5,12 +5,12 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-10-17T04:25:39Z'
-updated: '2026-10-17T05:00:46Z'
+updated: '2026-10-17T13:22:47Z'
 parent: yaks-d2bb
 labels:
 - markdown
 - tui
-needs: human
+needs: agent
 ---
 
 Enter at the end of a `> `, `- `, `* `, `1. ` (renumbered to `2. `) or `- [ ] ` line starts the next line with the same prefix and indent; Enter on an item with an empty body removes the prefix (ends the list/quote). Insert mode only.
@@ -23,3 +23,8 @@ Implement in the edtui fork (a line-break hook or a markdown-aware `LineBreak` o
 asked: needs human
 
 Auto-continue lives in the edtui fork (github.com/joelgwebber/edtui, `yaks-integration`), and Cargo pulls it from GitHub, so landing it means pushing a branch to that fork and then `cargo update -p edtui` here. OK for me (or a worker) to push a feature branch to the fork and merge it into `yaks-integration`? If you'd rather review fork changes yourself first, say so and I'll stop at a pushed feature branch.
+
+---
+▸ 2026-10-17T13:22:47Z [Joel Webber]
+
+Yup, works for me. Feel free to commit whatever changes you need to our edtui fork. We'll resolve them later.
