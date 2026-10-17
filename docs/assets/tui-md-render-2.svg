@@ -89,6 +89,6 @@ text{white-space:pre}
 <text y="1103.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s2">▸ joel · Sunday 11:00 UTC</tspan><tspan x="245.2" class="s6">─────────────────────────────────────────────────────────────────────────────────</tspan></text>
 <text y="1121.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">Any thing else you can think of in the markdown standard (such as it is) and common extensions?</tspan></text>
 <text y="1139.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text y="1157.5"><tspan x="10.0" class="s6">h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  D:dep  S:state  f:filter  /:search  q:quit</tspan></text>
+<text y="1157.5"><tspan x="10.0" class="s6">h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search</tspan></text>
 </g>
 </svg>

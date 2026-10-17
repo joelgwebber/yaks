@@ -52,6 +52,6 @@ text{white-space:pre}
 <text y="383.5"><tspan x="438.4" class="s5">│</tspan></text>
 <text y="401.5"><tspan x="438.4" class="s5">│</tspan></text>
 <text y="419.5"><tspan x="438.4" class="s5">│</tspan></text>
-<text y="437.5"><tspan x="10.0" class="s2">h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  D:dep  S:state  f:filter  /:search  q:quit</tspan></text>
+<text y="437.5"><tspan x="10.0" class="s2">h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search  q:quit</tspan></text>
 </g>
 </svg>

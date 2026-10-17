@@ -84,6 +84,6 @@ text{white-space:pre}
 <text y="1103.5"><tspan x="10.0" class="s2">│</tspan></text>
 <text y="1121.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">I believe it's the markdown norm to only consider paragraph breaks with a newline. But that's also worth</tspan></text>
 <text y="1139.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">double-checking.</tspan></text>
-<text y="1157.5"><tspan x="10.0" class="s4">h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  D:dep  S:state  f:filter  /:search  q:quit</tspan></text>
+<text y="1157.5"><tspan x="10.0" class="s4">h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search</tspan></text>
 </g>
 </svg>

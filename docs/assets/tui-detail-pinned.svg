@@ -32,6 +32,6 @@ text{white-space:pre}
 <text y="275.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8">Go with the hourglass; ship it.</tspan></text>
 <text y="293.5"><tspan x="10.0" class="s1">│</tspan></text>
 <text y="311.5"><tspan x="10.0" class="s1">│</tspan></text>
-<text y="329.5"><tspan x="10.0" class="s5">h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  D:dep  S:state  f:filter  /:sear</tspan></text>
+<text y="329.5"><tspan x="10.0" class="s5">h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:fil</tspan></text>
 </g>
 </svg>

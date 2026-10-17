@@ -135,5 +135,5 @@ Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state
 │
 │
 │
-h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  D:dep  S:state  f:filter  /:sear
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:fil
 === end ===
