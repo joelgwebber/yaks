@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T17:03:17Z'
+updated: '2026-10-17T17:12:04Z'
 labels:
 - markdown
 - tui
@@ -137,3 +137,14 @@ Every yak in the family that can be done without a decision is done. Remaining: 
 - Joel signed off yaks-bc53 (shorn) and approved yaks-a893. That design is split into yaks-597d (in-place editing) and yaks-92e5 (trim the form). yaks-4fa6 now depends on 597d, yaks-c6f4 on 92e5.
 - Joel OK'd edtui fork commits (yaks-1f84).
 - Spawned from 2d25402 on claude-sonnet-5-5: inplace-1 → yaks-597d (thread …mRp5I…), autocont-1 → yaks-1f84 (thread …mUspI…).
+
+---
+▸ 2026-10-17T17:12:04Z [delta-lead]
+
+autocont-1 landed: 67abbe5 (yaks-1f84) → 1145a08. Fork review by the yakherd:
+
+- the diff is one commit, `ff5c1a9`, behind an off-by-default `EditorState` option inside `LineBreak`;
+- the fork's tests pass (175), including the worker's key-handler test, which asserts that a whole insert session with continuations undoes in one step (my ad-hoc probe with a hand-built key sequence failed on the probe itself, not on the feature);
+- merged into fork `yaks-integration` as c49afd9 and pushed; yaks Cargo.toml back on `branch = "yaks-integration"`, Cargo.lock pinned to c49afd9;
+- gate 18/18 green;
+- headless comment editor on the real build: `- a⏎b⏎⏎> q⏎` gives `- a / - b / > q / > `.
