@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T05:05:57Z'
+updated: '2026-10-17T05:18:09Z'
 labels:
 - markdown
 - tui
@@ -105,3 +105,13 @@ Worker note: migrate-1 says its new tests were written after the code and never 
 ▸ 2026-10-17T05:05:57Z [delta-lead]
 
 edmarks-1 landed: 41e6e05 (yaks-9425) → 1b5e0b6, identical to the computed merge; gate re-run green (target/s5). Looked at the attached frame: markers are dim on the cursor line and blank elsewhere. A hidden `(url)` leaves a gap as wide as the URL (width-preserving by decision); flagged to Joel as a possible follow-up (e.g. dim instead of hide for link URLs).
+
+---
+▸ 2026-10-17T05:18:09Z [delta-lead]
+
+Progress 2026-10-17 ~05:20 (delta-lead):
+
+- Landed: hscroll-1 6a00b3b (yaks-c733) → 4b0a142; farm migrated to schema 5 (6dd38ad); every docshot regenerated (07df082); yaks-382b and yaks-2362 shorn (ea64a36).
+- Batch 3 spawned from 4c586e9 on claude-sonnet-5-5: syntax-1 → yaks-3020 (thread …kcz5I…), links-2 → yaks-1bbb + yaks-3b8d (thread …ke_5I…).
+- Incident: syntax-1's first note landed in the coordinator's checkout; reverted, worker told to stay in its own clone.
+- Still waiting on Joel: yaks-bc53 (palette sign-off), yaks-a893 (in-place edit design), yaks-1f84 (edtui fork push).
