@@ -118,6 +118,7 @@ the pre-find scroll and cursor).
 | `r` | (detail) Rename the attachment whose link (📎 or 🖼) the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
 | `X` | Slaughter (delete, with confirm); on a yak with live descendants the confirm offers the whole family, naming how many go |
 | `:w` / `:q` / `:wq` | Save / cancel / save+close (editor Normal mode) |
+| `Enter` | (editor Insert mode, multi-line editors) Continue a markdown list or quote: `- `, `* `, `+ `, `1. ` / `1) ` (renumbered), `- [ ] ` (a `- [x] ` item continues as `- [ ] `) and `> ` start the next line with the same indent and marker; in the middle of a line the second half gets the marker; on an item with an empty body it removes the marker instead, ending the list. It is edtui's line break, so undo is unchanged. Single-line fields are unaffected |
 
 **Pasting** — the TUI enables bracketed paste, so a terminal paste (`Cmd-V` /
 `Ctrl-Shift-V`) lands in the focused text field as one literal insert: fast,

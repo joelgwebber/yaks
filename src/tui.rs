@@ -179,6 +179,7 @@ fn text_field(seed: &str, vim: bool) -> RefCell<EditorState> {
 fn multiline_field(seed: &str, vim: bool) -> RefCell<EditorState> {
     let mut st = EditorState::new(Lines::from(seed));
     st.set_single_line(false);
+    st.set_markdown_continuation(true);
     st.mode = if vim && !seed.is_empty() {
         EditorMode::Normal
     } else {

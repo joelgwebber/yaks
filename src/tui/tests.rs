@@ -382,6 +382,37 @@ fn join_lines_vim_adds_space() {
 }
 
 #[test]
+fn enter_continues_lists_and_quotes_in_the_comment_editor() {
+    // Insert-mode Enter continues `- `/`> ` prefixes and a second Enter on an
+    // empty item drops the marker (edtui fork's markdown continuation,
+    // yaks-1f84).
+    let enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+    let mut app = editable();
+    app.open_comment();
+    typ(&mut app, "- a");
+    handle_key(&mut app, enter);
+    typ(&mut app, "b");
+    handle_key(&mut app, enter);
+    assert_eq!(editor_state(&app).1, "- a\n- b\n- ");
+    handle_key(&mut app, enter); // empty item: ends the list
+    assert_eq!(editor_state(&app).1, "- a\n- b\n");
+    typ(&mut app, "> q");
+    handle_key(&mut app, enter);
+    typ(&mut app, "r");
+    assert_eq!(editor_state(&app).1, "- a\n- b\n> q\n> r");
+}
+
+#[test]
+fn enter_does_not_continue_in_a_single_line_field() {
+    let enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+    let mut app = editable();
+    handle_key(&mut app, key('L')); // single-line labels editor
+    typ(&mut app, "- a");
+    handle_key(&mut app, enter); // saves and closes: no continuation
+    assert!(matches!(app.overlay, Overlay::None));
+}
+
+#[test]
 fn single_line_vim_reaches_normal_mode() {
     // In vim mode a single-line field is modal: Esc switches to Normal and
     // never cancels, so the normal-mode keymap is usable; cancel is Ctrl-C
