@@ -25,6 +25,7 @@ mod palette;
 mod render;
 mod runtime;
 mod sheds_tab;
+mod syntax;
 #[cfg(test)]
 mod test_support;
 #[cfg(test)]

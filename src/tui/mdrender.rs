@@ -33,6 +33,7 @@ use unicode_width::UnicodeWidthChar;
 use super::detail::Target;
 use super::markdown::MdSpan;
 use super::palette::{self, AlertKind};
+use super::syntax::{self, Lang};
 use crate::refs;
 
 /// One rendered screen row.
@@ -132,6 +133,9 @@ struct Renderer<'k> {
     pending_blank: bool,
     /// Inside a code or HTML block: text is emitted line by line, unwrapped.
     verbatim: Option<Style>,
+    /// The fenced block's language and lexer state, when it is one we can
+    /// colour (yaks-3020); `None` keeps the flat `verbatim` style.
+    code: Option<(Lang, syntax::State)>,
     /// The no-wrap block id rows are tagged with while `verbatim` is set.
     block: Option<usize>,
     /// Next free no-wrap block id.
@@ -166,6 +170,7 @@ pub fn render(text: &str, width: usize, known: &HashSet<&str>) -> Vec<MdRow> {
         buf: Vec::new(),
         pending_blank: false,
         verbatim: None,
+        code: None,
         block: None,
         next_block: 0,
         table: None,
@@ -305,6 +310,12 @@ impl Renderer<'_> {
                 // string) is kept as a dim label row above the code. It is
                 // not part of the no-wrap block, so it stays put when the code
                 // scrolls.
+                self.code = match kind {
+                    CodeBlockKind::Fenced(info) => {
+                        Lang::from_info(info).map(|l| (l, syntax::State::default()))
+                    }
+                    CodeBlockKind::Indented => None,
+                };
                 if let CodeBlockKind::Fenced(lang) = kind {
                     let lang = lang.trim();
                     if !lang.is_empty() {
@@ -425,6 +436,7 @@ impl Renderer<'_> {
                 self.containers.pop();
             }
             TagEnd::CodeBlock | TagEnd::HtmlBlock => {
+                self.code = None;
                 self.verbatim = None;
                 self.block = None;
                 self.pending_blank = true;
@@ -527,9 +539,17 @@ impl Renderer<'_> {
     fn verbatim_text(&mut self, t: &str, line: usize, style: Style) {
         let t = t.strip_suffix('\n').unwrap_or(t);
         for (k, l) in t.split('\n').enumerate() {
-            let cells: Vec<Cell> = l
-                .chars()
-                .map(|ch| Cell {
+            let chars: Vec<char> = l.chars().collect();
+            let mut styles = vec![style; chars.len()];
+            if let Some((lang, state)) = &mut self.code {
+                for run in syntax::highlight(*lang, state, &chars, style) {
+                    styles[run.start..run.start + run.len].fill(run.style);
+                }
+            }
+            let cells: Vec<Cell> = chars
+                .iter()
+                .zip(styles)
+                .map(|(&ch, style)| Cell {
                     ch,
                     style,
                     link: None,
@@ -934,6 +954,37 @@ mod tests {
         assert_eq!(code[0].lines, (3, 3));
         assert_eq!(code[1].lines, (4, 4));
         assert_eq!(rows[0].lines, (0, 0));
+    }
+
+    /// The style of each char of `row`, by its span (default where none).
+    fn style_at(row: &MdRow, col: usize) -> Style {
+        row.spans
+            .iter()
+            .find(|s| col >= s.start && col < s.start + s.len)
+            .map_or(Style::new(), |s| s.style)
+    }
+
+    #[test]
+    fn known_fence_languages_are_syntax_coloured_and_unknown_stay_flat() {
+        let known = HashSet::new();
+        let rows = render(
+            "```rust\nlet x = \"a\"; /* open\nstill */ y\n```\n\n```nope\nlet x = 1;\n```",
+            40,
+            &known,
+        );
+        let t: Vec<&str> = rows.iter().map(|r| r.text.as_str()).collect();
+        assert_eq!(t[..3], ["rust", "let x = \"a\"; /* open", "still */ y"]);
+        let r = &rows[1];
+        assert_eq!(style_at(r, 0), palette::syntax_keyword());
+        assert_eq!(style_at(r, 8), palette::syntax_string());
+        assert_eq!(style_at(r, 14), palette::syntax_comment());
+        // The comment carries to the next row, inside the same block.
+        assert_eq!(style_at(&rows[2], 0), palette::syntax_comment());
+        assert_eq!(style_at(&rows[2], 9), palette::code_block());
+        // An unknown language is one flat style, and the lexer state does
+        // not leak from the previous block.
+        let flat = rows.iter().find(|r| r.text == "let x = 1;").unwrap();
+        assert!(flat.spans.iter().all(|s| s.style == palette::inline_code()));
     }
 
     #[test]

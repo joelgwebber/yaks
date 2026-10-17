@@ -12,7 +12,7 @@ text{white-space:pre}
 .s6{font-style:italic}
 .s7{fill:#81a2be;text-decoration:underline}
 .s8{fill:#b294bb;font-weight:bold;font-style:italic;text-decoration:underline}
-.s9{fill:#b5bd68}
+.s9{fill:#969896;font-style:italic}
 .s10{fill:#b294bb;font-weight:bold;text-decoration:underline}
 .s11{fill:#81a2be;font-weight:bold}
 .s12{font-weight:bold;font-style:italic}

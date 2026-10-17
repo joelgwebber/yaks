@@ -13,10 +13,12 @@ text{white-space:pre}
 .s6{fill:#969896}
 .s7{font-style:italic}
 .s8{fill:#b294bb;font-weight:bold;font-style:italic;text-decoration:underline}
-.s9{fill:#b5bd68}
+.s9{fill:#969896;font-style:italic}
 .s10{fill:#b294bb;font-weight:bold;text-decoration:underline}
 .s11{fill:#81a2be;font-weight:bold}
 .s12{font-weight:bold;font-style:italic}
+.s13{fill:#b294bb}
+.s14{fill:#b5bd68}
 </style>
 <rect x="0" y="0" width="944" height="1172" rx="8" fill="#1d1f21"/>
 <rect class="b0" x="10.0" y="10.0" width="17.3" height="18.0"/>
@@ -69,12 +71,12 @@ text{white-space:pre}
 <text y="779.5"><tspan x="10.0" class="s2">│</tspan></text>
 <text y="797.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">java</tspan></text>
 <text y="815.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s9">// Some languages can be insanely verbose, so it would help if code didn't wrap within blocks.</tspan></text>
-<text y="833.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s9">public static final native verbose obscene repetitive sealed bespoke class WhyDoJavaAndCSharpProgrammersUs</tspan><tspan x="917.2" class="s6">›</tspan></text>
-<text y="851.5"><tspan x="10.0" class="s2">│</tspan><tspan x="60.4" class="s9">@dependencyInjectionInsanity(DoubleBuckyDjangoRheinhardtTool.class)</tspan></text>
-<text y="869.5"><tspan x="10.0" class="s2">│</tspan><tspan x="60.4" class="s9">public static final sealed void dynamic withEvenMoreWeirdlyNamedMethods() {</tspan></text>
+<text y="833.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s13">public</tspan><tspan x="85.6" class="s13">static</tspan><tspan x="144.4" class="s13">final</tspan><tspan x="194.8" class="s14">native verbose obscene repetitive sealed bespoke</tspan><tspan x="606.4" class="s13">class</tspan><tspan x="656.8" class="s3">WhyDoJavaAndCSharpProgrammersUs</tspan><tspan x="917.2" class="s6">›</tspan></text>
+<text y="851.5"><tspan x="10.0" class="s2">│</tspan><tspan x="60.4">@</tspan><tspan x="68.8" class="s14">dependencyInjectionInsanity</tspan><tspan x="295.6">(</tspan><tspan x="304.0" class="s3">DoubleBuckyDjangoRheinhardtTool</tspan><tspan x="564.4">.</tspan><tspan x="572.8" class="s13">class</tspan><tspan x="614.8">)</tspan></text>
+<text y="869.5"><tspan x="10.0" class="s2">│</tspan><tspan x="60.4" class="s13">public</tspan><tspan x="119.2" class="s13">static</tspan><tspan x="178.0" class="s13">final</tspan><tspan x="228.4" class="s14">sealed</tspan><tspan x="287.2" class="s13">void</tspan><tspan x="329.2" class="s14">dynamic withEvenMoreWeirdlyNamedMethods</tspan><tspan x="656.8">()</tspan><tspan x="682.0">{</tspan></text>
 <text y="887.5"><tspan x="10.0" class="s2">│</tspan><tspan x="94.0" class="s9">// ...</tspan></text>
-<text y="905.5"><tspan x="10.0" class="s2">│</tspan><tspan x="60.4" class="s9">}</tspan></text>
-<text y="923.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s9">}</tspan></text>
+<text y="905.5"><tspan x="10.0" class="s2">│</tspan><tspan x="60.4">}</tspan></text>
+<text y="923.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">}</tspan></text>
 <text y="941.5"><tspan x="10.0" class="s2">│</tspan></text>
 <text y="959.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s5">Markdown</tspan><tspan x="102.4" class="s6">│</tspan><tspan x="119.2" class="s5">Tables</tspan><tspan x="178.0" class="s6">│</tspan><tspan x="194.8" class="s5">Can</tspan><tspan x="270.4" class="s6">│</tspan><tspan x="287.2" class="s5">Be</tspan><tspan x="362.8" class="s6">│</tspan><tspan x="379.6" class="s5">Really</tspan><tspan x="438.4" class="s6">│</tspan><tspan x="455.2" class="s5">useful</tspan></text>
 <text y="977.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">─────────┼────────┼──────────┼──────────┼────────┼───────</tspan></text>

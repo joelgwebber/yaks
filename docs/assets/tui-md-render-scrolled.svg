@@ -11,8 +11,10 @@ text{white-space:pre}
 .s4{fill:#f0c674}
 .s5{font-weight:bold}
 .s6{fill:#969896}
-.s7{fill:#b5bd68}
-.s8{font-style:italic}
+.s7{fill:#969896;font-style:italic}
+.s8{fill:#b5bd68}
+.s9{fill:#b294bb}
+.s10{font-style:italic}
 </style>
 <rect x="0" y="0" width="625" height="1028" rx="8" fill="#1d1f21"/>
 <rect class="b0" x="10.0" y="10.0" width="17.3" height="18.0"/>
@@ -31,9 +33,9 @@ text{white-space:pre}
 <text y="167.5"><tspan x="10.0" class="s2">│</tspan></text>
 <text y="185.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">java</tspan></text>
 <text y="203.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">‹</tspan><tspan x="35.2" class="s7">would help if code didn't wrap within blocks.</tspan></text>
-<text y="221.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">‹</tspan><tspan x="35.2" class="s7">tive sealed bespoke class WhyDoJavaAndCSharpProgrammersUseClassName</tspan><tspan x="598.0" class="s6">›</tspan></text>
-<text y="239.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">‹</tspan><tspan x="35.2" class="s7">oRheinhardtTool.class)</tspan></text>
-<text y="257.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">‹</tspan><tspan x="35.2" class="s7">venMoreWeirdlyNamedMethods() {</tspan></text>
+<text y="221.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">‹</tspan><tspan x="35.2" class="s8">tive sealed bespoke</tspan><tspan x="203.2" class="s9">class</tspan><tspan x="253.6" class="s3">WhyDoJavaAndCSharpProgrammersUseClassName</tspan><tspan x="598.0" class="s6">›</tspan></text>
+<text y="239.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">‹</tspan><tspan x="35.2" class="s3">oRheinhardtTool</tspan><tspan x="161.2">.</tspan><tspan x="169.6" class="s9">class</tspan><tspan x="211.6">)</tspan></text>
+<text y="257.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">‹</tspan><tspan x="35.2" class="s8">venMoreWeirdlyNamedMethods</tspan><tspan x="253.6">()</tspan><tspan x="278.8">{</tspan></text>
 <text y="275.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">‹</tspan></text>
 <text y="293.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">‹</tspan></text>
 <text y="311.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">‹</tspan></text>
@@ -44,7 +46,7 @@ text{white-space:pre}
 <text y="401.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">Such</tspan><tspan x="102.4" class="s6">│</tspan><tspan x="119.2">An</tspan><tspan x="178.0" class="s6">│</tspan><tspan x="194.8">Absolute</tspan><tspan x="270.4" class="s6">│</tspan><tspan x="287.2">Bitch</tspan><tspan x="362.8" class="s6">│</tspan><tspan x="379.6">To</tspan><tspan x="438.4" class="s6">│</tspan></text>
 <text y="419.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">Read</tspan><tspan x="102.4" class="s6">│</tspan><tspan x="119.2">And</tspan><tspan x="178.0" class="s6">│</tspan><tspan x="194.8">Write</tspan><tspan x="270.4" class="s6">│</tspan><tspan x="287.2">Reliably</tspan><tspan x="362.8" class="s6">│</tspan><tspan x="379.6">Like</tspan><tspan x="438.4" class="s6">│</tspan><tspan x="455.2">This</tspan></text>
 <text y="437.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text y="455.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">We should at least</tspan><tspan x="186.4" class="s8">render</tspan><tspan x="245.2">tables cleanly, even if we don't have great</tspan></text>
+<text y="455.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">We should at least</tspan><tspan x="186.4" class="s10">render</tspan><tspan x="245.2">tables cleanly, even if we don't have great</tspan></text>
 <text y="473.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">editing tools yet.</tspan></text>
 <text y="491.5"><tspan x="10.0" class="s2">│</tspan></text>
 <text y="509.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s2">▸ joel · Sunday 11:00 UTC</tspan><tspan x="245.2" class="s6">───────────────────────────────────────────</tspan></text>
