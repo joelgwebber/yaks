@@ -21,6 +21,14 @@ pub enum Target {
     /// A markdown image link `![alt](path)` — an attached artifact, opened
     /// externally (path is relative to the farm's `.yaks/` root).
     Artifact(String),
+    /// A link to a repo source file (`../src/foo.rs#L12-L40`, optionally
+    /// pinned `../blob/<sha>/…`), see [`super::source`]. `path` is relative
+    /// to the repo root; `lines` is 1-based inclusive.
+    Source {
+        path: String,
+        lines: Option<(u32, u32)>,
+        rev: Option<String>,
+    },
     /// A footnote reference `[n]` (the number it renders as): following it
     /// moves the line cursor to the definition at the end of the same block.
     Footnote(String),

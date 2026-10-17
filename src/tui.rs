@@ -26,6 +26,7 @@ mod palette;
 mod render;
 mod runtime;
 mod sheds_tab;
+mod source;
 mod syntax;
 #[cfg(test)]
 mod test_support;
@@ -312,6 +313,9 @@ pub struct App {
     overlay: Overlay,
     /// Transient one-line status message shown until the next mutation.
     notification: Option<String>,
+    /// An editor the event loop should run with the terminal suspended (set
+    /// by following a source link; see [`source`]).
+    pending_editor: Option<source::ExternalCmd>,
     /// Editor keybinding profile (vim vs emacs), from farm config.
     editor_vim: bool,
     /// The farm's configured id prefix (e.g. `yaks`), for autocomplete: typing
@@ -373,6 +377,7 @@ impl App {
             list_offset: Cell::new(0),
             overlay: Overlay::None,
             notification: None,
+            pending_editor: None,
             editor_vim: true,
             ref_prefix: "yak".to_string(),
             config_herds: Vec::new(),

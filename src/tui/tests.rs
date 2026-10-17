@@ -3958,6 +3958,22 @@ fn status_bar_shows_the_destination_of_the_link_under_the_cursor() {
 }
 
 #[test]
+fn status_bar_shows_path_lines_and_pin_of_a_source_link() {
+    // yaks-da5e
+    let mut a0 = task("a0", "Root A", Status::Hairy, 2, None);
+    a0.body = "See [the code](../src/foo.rs#L2-L4) and [then](../blob/abc1234def/src/foo.rs#L9).\n"
+        .into();
+    let mut app = App::new(vec![a0]);
+    enter_key(&mut app);
+    draw(&app, 80, 20);
+    tab_key(&mut app);
+    let frame = draw(&app, 80, 20);
+    assert!(frame.contains("See the code and then."), "{frame}");
+    let status = frame.lines().last().unwrap();
+    assert_eq!(status, "→ src/foo.rs:L2-L4", "{frame}");
+}
+
+#[test]
 fn an_attachment_only_another_shed_has_resolves_to_that_shed() {
     // yaks-31e2: opening `<id>/<file>` must not assume this checkout's farm.
     let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);

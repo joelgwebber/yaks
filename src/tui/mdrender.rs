@@ -888,10 +888,13 @@ fn is_attachment(dest: &str, known: &HashSet<&str>) -> bool {
         .is_some_and(|(id, file)| !file.is_empty() && known.contains(id))
 }
 
-/// Where a markdown link points: a web URL, or a farm-relative attachment.
+/// Where a markdown link points: a web URL, a repo source file, or a
+/// farm-relative attachment.
 fn link_target(dest: &str) -> Target {
     if dest.contains("://") || dest.starts_with("mailto:") {
         Target::Url(dest.to_string())
+    } else if let Some(src) = super::source::parse_source(dest) {
+        src
     } else {
         Target::Artifact(dest.to_string())
     }
@@ -1246,6 +1249,36 @@ mod tests {
                 Target::Artifact("yaks-0001/shot.png".into()),
                 Target::Url("https://x.io/a".into()),
                 Target::Artifact("other-9/f.txt".into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn links_to_repo_files_are_source_targets() {
+        // yaks-da5e: `../` climbs out of `.yaks/` into the repo; an
+        // attachment of a known yak stays an attachment.
+        let mut known = HashSet::new();
+        known.insert("yaks-0001");
+        let rows = render(
+            "[a](../src/foo.rs) [b](../src/foo.rs#L2-L4) [c](../blob/abc1234/src/foo.rs#L7) [d](yaks-0001/log.txt)",
+            100,
+            &known,
+        );
+        // The text is the link text, with no marker.
+        assert_eq!(rows[0].text, "a b c \u{1F4CE} d");
+        let targets: Vec<_> = rows[0].links.iter().map(|l| l.2.clone()).collect();
+        let src = |lines, rev: Option<&str>| Target::Source {
+            path: "src/foo.rs".into(),
+            lines,
+            rev: rev.map(String::from),
+        };
+        assert_eq!(
+            targets,
+            vec![
+                src(None, None),
+                src(Some((2, 4)), None),
+                src(Some((7, 7)), Some("abc1234")),
+                Target::Artifact("yaks-0001/log.txt".into()),
             ]
         );
     }

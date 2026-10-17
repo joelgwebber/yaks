@@ -573,12 +573,7 @@ impl App {
                 }
             }
         };
-        let opener = if cfg!(target_os = "macos") {
-            "open"
-        } else {
-            "xdg-open"
-        };
-        match std::process::Command::new(opener).arg(&arg).spawn() {
+        match super::source::os_open(&arg) {
             Ok(_) => {
                 self.notification = Some(match from {
                     Some(shed) => format!("opened {target} (from shed {shed})"),
@@ -620,13 +615,16 @@ impl App {
         crate::farm::locate_attachment(&farms, id, name)
     }
 
-    /// O — open the artifact/URL link on the current detail line externally.
+    /// O — open the artifact/URL/source link on the current detail line externally.
     pub(crate) fn open_current_external(&mut self) {
         let jumps = self.detail_jumps();
         match jumps.into_iter().find(|j| j.line == self.detail_line) {
             Some(j) => match j.target {
                 detail::Target::Artifact(p) => self.open_external(&p),
                 detail::Target::Url(u) => self.open_external(&u),
+                detail::Target::Source { path, lines, rev } => {
+                    self.open_source(&path, lines, rev.as_deref())
+                }
                 detail::Target::Task(_) | detail::Target::Footnote(_) => {
                     self.notification = Some("not an artifact/link".into())
                 }
