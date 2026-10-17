@@ -63,27 +63,27 @@ text{white-space:pre}
 <text y="725.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎</tspan><tspan x="43.6" class="s6">It would also be nice if comment blocks rendered properly with nested markup, so blocks like this don't</tspan></text>
 <text y="743.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎</tspan><tspan x="43.6" class="s6">turn into an unending sea of gray.</tspan></text>
 <text y="761.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎</tspan></text>
-<text y="779.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎</tspan><tspan x="43.6" class="s9"># with unformatted code</tspan></text>
-<text y="797.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎</tspan></text>
-<text y="815.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎</tspan><tspan x="43.6" class="s6">And lists that look like</tspan></text>
-<text y="833.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎</tspan></text>
-<text y="851.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎</tspan><tspan x="43.6" class="s2">•</tspan><tspan x="60.4" class="s6">still</tspan></text>
-<text y="869.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎</tspan><tspan x="43.6" class="s2">•</tspan><tspan x="60.4" class="s6">more</tspan></text>
-<text y="887.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎</tspan><tspan x="43.6" class="s2">•</tspan><tspan x="60.4" class="s6">gray</tspan></text>
-<text y="905.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text y="923.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s10">We also need different</tspan></text>
-<text y="941.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text y="959.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s11">Treatment for each kind</tspan></text>
-<text y="977.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text y="995.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s12">of header</tspan></text>
-<text y="1013.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text y="1031.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">It would also be nice if long lines rendered naturally as a paragraph when they wrap past the last column</tspan></text>
-<text y="1049.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">in the viewport. But it would also be nice if paragraphs that had been auto-wrapped by an editor or an</tspan></text>
-<text y="1067.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">agent that got overzealous about formatting everything fastidiously.</tspan></text>
-<text y="1085.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text y="1103.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">I believe it's the markdown norm to only consider paragraph breaks with a newline. But that's also worth</tspan></text>
-<text y="1121.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">double-checking.</tspan></text>
-<text y="1139.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text y="779.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎ python</tspan></text>
+<text y="797.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎</tspan><tspan x="43.6" class="s9"># with unformatted code</tspan></text>
+<text y="815.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎</tspan></text>
+<text y="833.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎</tspan><tspan x="43.6" class="s6">And lists that look like</tspan></text>
+<text y="851.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎</tspan></text>
+<text y="869.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎</tspan><tspan x="43.6" class="s2">•</tspan><tspan x="60.4" class="s6">still</tspan></text>
+<text y="887.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎</tspan><tspan x="43.6" class="s2">•</tspan><tspan x="60.4" class="s6">more</tspan></text>
+<text y="905.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">▎</tspan><tspan x="43.6" class="s2">•</tspan><tspan x="60.4" class="s6">gray</tspan></text>
+<text y="923.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text y="941.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s10">We also need different</tspan></text>
+<text y="959.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text y="977.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s11">Treatment for each kind</tspan></text>
+<text y="995.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text y="1013.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s12">of header</tspan></text>
+<text y="1031.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text y="1049.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">It would also be nice if long lines rendered naturally as a paragraph when they wrap past the last column</tspan></text>
+<text y="1067.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">in the viewport. But it would also be nice if paragraphs that had been auto-wrapped by an editor or an</tspan></text>
+<text y="1085.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">agent that got overzealous about formatting everything fastidiously.</tspan></text>
+<text y="1103.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text y="1121.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">I believe it's the markdown norm to only consider paragraph breaks with a newline. But that's also worth</tspan></text>
+<text y="1139.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">double-checking.</tspan></text>
 <text y="1157.5"><tspan x="10.0" class="s4">h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  D:dep  S:state  f:filter  /:search  q:quit</tspan></text>
 </g>
 </svg>

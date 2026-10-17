@@ -17,12 +17,12 @@ text{white-space:pre}
 <text y="59.5"><tspan x="10.0" class="s1">◂</tspan><tspan x="26.8" class="s2">Task: yaks-b517</tspan></text>
 <text y="77.5"><tspan x="10.0" class="s1">│</tspan></text>
 <text y="95.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8" class="s3">Title:</tspan><tspan x="136.0">HITL: needs-human frontmatter + inbox surfacing</tspan></text>
-<text y="113.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8" class="s3">Status:</tspan><tspan x="136.0">shaving</tspan></text>
+<text y="113.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8" class="s3">Status:</tspan><tspan x="136.0">🪒</tspan><tspan x="161.2">shaving</tspan></text>
 <text y="131.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8" class="s4">Needs:       human</tspan></text>
 <text y="149.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8" class="s3">Type:</tspan><tspan x="136.0">feature</tspan></text>
 <text y="167.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8" class="s3">Priority:</tspan><tspan x="136.0">p2</tspan></text>
-<text y="185.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8" class="s3">Created:</tspan><tspan x="136.0">Sep 1, 2026 10:00</tspan></text>
-<text y="203.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8" class="s3">Updated:</tspan><tspan x="136.0">Sep 6, 2026 12:00</tspan></text>
+<text y="185.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8" class="s3">Created:</tspan><tspan x="136.0">Sep 1, 2026 10:00 UTC</tspan></text>
+<text y="203.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8" class="s3">Updated:</tspan><tspan x="136.0">Sunday 12:00 UTC</tspan></text>
 <text y="221.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8" class="s3">Labels:</tspan><tspan x="136.0">cli, ui</tspan></text>
 <text y="239.5"><tspan x="10.0" class="s1">│</tspan></text>
 <text y="257.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8" class="s2">Blocks:</tspan></text>
@@ -31,16 +31,16 @@ text{white-space:pre}
 <text y="311.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8" class="s2">Parent:</tspan></text>
 <text y="329.5"><tspan x="10.0" class="s1">│</tspan><tspan x="43.6">🪒</tspan><tspan x="68.8" class="s5">yaks-3901</tspan><tspan x="161.2">Coordination substrate for parallel yak-shaving</tspan></text>
 <text y="347.5"><tspan x="10.0" class="s1">│</tspan></text>
-<text y="365.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8">Add a</tspan><tspan x="77.2" class="s6">`needs:`</tspan><tspan x="152.8">block agents raise via</tspan><tspan x="346.0" class="s6">`ask`</tspan><tspan x="396.4">and a human clears via</tspan><tspan x="589.6" class="s6">`answer`</tspan><tspan x="656.8">; surface blocked</tspan></text>
-<text y="383.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8">yaks in an Inbox view.</tspan></text>
+<text y="365.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8">Add a</tspan><tspan x="77.2" class="s6">needs:</tspan><tspan x="136.0">block agents raise via</tspan><tspan x="329.2" class="s6">ask</tspan><tspan x="362.8">and a human clears via</tspan><tspan x="556.0" class="s6">answer</tspan><tspan x="606.4">; surface blocked yaks</tspan></text>
+<text y="383.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8">in an Inbox view.</tspan></text>
 <text y="401.5"><tspan x="10.0" class="s1">│</tspan></text>
-<text y="419.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8">---</tspan></text>
-<text y="437.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8">▸ 2026-09-06T11:40:00Z [wtA]</tspan></text>
-<text y="455.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8">Proposal drafted — see the drawer</tspan><tspan x="312.4" class="s6">`inbox`</tspan><tspan x="379.6">chip. Which glyph should mark a blocked row?</tspan></text>
-<text y="473.5"><tspan x="10.0" class="s1">│</tspan></text>
-<text y="491.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8">---</tspan></text>
-<text y="509.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8">▸ 2026-09-06T12:00:00Z [joel]</tspan></text>
-<text y="527.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8">Go with the hourglass; ship it.</tspan></text>
+<text y="419.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8" class="s1">▸ wtA · Sunday 11:40 UTC</tspan><tspan x="236.8" class="s3">────────────────────────────────────────────────────────────────────</tspan></text>
+<text y="437.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8">Proposal drafted — see the drawer</tspan><tspan x="312.4" class="s6">inbox</tspan><tspan x="362.8">chip. Which glyph should mark a blocked row?</tspan></text>
+<text y="455.5"><tspan x="10.0" class="s1">│</tspan></text>
+<text y="473.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8" class="s1">▸ joel · Sunday 12:00 UTC</tspan><tspan x="245.2" class="s3">───────────────────────────────────────────────────────────────────</tspan></text>
+<text y="491.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8">Go with the hourglass; ship it.</tspan></text>
+<text y="509.5"><tspan x="10.0" class="s1">│</tspan></text>
+<text y="527.5"><tspan x="10.0" class="s1">│</tspan></text>
 <text y="545.5"><tspan x="10.0" class="s1">│</tspan></text>
 <text y="563.5"><tspan x="10.0" class="s1">│</tspan></text>
 <text y="581.5"><tspan x="10.0" class="s1">│</tspan></text>

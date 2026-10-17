@@ -28,48 +28,48 @@ text{white-space:pre}
 <text y="23.5"><tspan x="10.0" class="s0"> 🦬</tspan><tspan x="35.2" class="s0"> Hairy (1)</tspan><tspan x="136.0" class="s1"> 🪒</tspan><tspan x="161.2" class="s1"> Shaving (0)</tspan><tspan x="278.8" class="s1"> 🐑</tspan><tspan x="304.0" class="s1"> Shorn (0)</tspan><tspan x="404.8" class="s1"> 🕒</tspan><tspan x="430.0" class="s1"> Recent (1)</tspan><tspan x="539.2" class="s1"> ⭐</tspan><tspan x="564.4" class="s1"> Starred (0)</tspan><tspan x="682.0" class="s1"> 🛖</tspan><tspan x="707.2" class="s1"> Sheds (…)</tspan></text>
 <text y="59.5"><tspan x="10.0" class="s2">◂</tspan><tspan x="35.2">🦬</tspan><tspan x="60.4" class="s3">yaks-ea13</tspan><tspan x="152.8" class="s2">task</tspan><tspan x="228.4" class="s4">p3</tspan><tspan x="262.0" class="s5">Markdown rendering improvements</tspan></text>
 <text y="77.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">───────────────────────────────────────────────────────────────────────────────────────────────────────────</tspan></text>
-<text y="95.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s2">•</tspan><tspan x="43.6">Rendered like this when their text wraps on long lines.</tspan></text>
-<text y="113.5"><tspan x="10.0" class="s2">│</tspan><tspan x="43.6" class="s2">◦</tspan><tspan x="60.4">As well as for nested bullets that also have long lines. Otherwise the text gets really hard to read.</tspan></text>
-<text y="131.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text y="149.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s2">1.</tspan><tspan x="52.0">And the same with bulleted lists that also have very long lines that would otherwise wrap to the first</tspan></text>
-<text y="167.5"><tspan x="10.0" class="s2">│</tspan><tspan x="52.0">column.</tspan></text>
-<text y="185.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s2">2.</tspan><tspan x="52.0">Like this, which is very ugly and difficult to read in large lists.</tspan></text>
+<text y="95.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text y="113.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s2">1.</tspan><tspan x="52.0">And the same with bulleted lists that also have very long lines that would otherwise wrap to the first</tspan></text>
+<text y="131.5"><tspan x="10.0" class="s2">│</tspan><tspan x="52.0">column.</tspan></text>
+<text y="149.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s2">2.</tspan><tspan x="52.0">Like this, which is very ugly and difficult to read in large lists.</tspan></text>
+<text y="167.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text y="185.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">───────────────────────────────────────────────────────────────────────────────────────────────────────────</tspan></text>
 <text y="203.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text y="221.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">───────────────────────────────────────────────────────────────────────────────────────────────────────────</tspan></text>
+<text y="221.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">HRs should really render as actual horizontal rules and not just three hyphens.</tspan></text>
 <text y="239.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text y="257.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">HRs should really render as actual horizontal rules and not just three hyphens.</tspan></text>
-<text y="275.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text y="293.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s7">Much liks lists, it would be great if comments also rendered and wrapped in such a way that the</tspan></text>
-<text y="311.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s7">indendentation was clear.</tspan></text>
-<text y="329.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text y="347.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s8">Another case:</tspan></text>
-<text y="365.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan></text>
-<text y="383.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s7">It would also be nice if comment blocks rendered properly with nested markup, so blocks like this don't</tspan></text>
-<text y="401.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s7">turn into an unending sea of gray.</tspan></text>
-<text y="419.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan></text>
-<text y="437.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s9"># with unformatted code</tspan></text>
-<text y="455.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan></text>
-<text y="473.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s7">And lists that look like</tspan></text>
-<text y="491.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan></text>
-<text y="509.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s2">•</tspan><tspan x="60.4" class="s7">still</tspan></text>
-<text y="527.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s2">•</tspan><tspan x="60.4" class="s7">more</tspan></text>
-<text y="545.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s2">•</tspan><tspan x="60.4" class="s7">gray</tspan></text>
-<text y="563.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text y="581.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s10">We also need different</tspan></text>
-<text y="599.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text y="617.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s11">Treatment for each kind</tspan></text>
-<text y="635.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text y="653.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s12">of header</tspan></text>
-<text y="671.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text y="689.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">It would also be nice if long lines rendered naturally as a paragraph when they wrap past the last column</tspan></text>
-<text y="707.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">in the viewport. But it would also be nice if paragraphs that had been auto-wrapped by an editor or an</tspan></text>
-<text y="725.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">agent that got overzealous about formatting everything fastidiously.</tspan></text>
-<text y="743.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text y="761.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">I believe it's the markdown norm to only consider paragraph breaks with a newline. But that's also worth</tspan></text>
-<text y="779.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">double-checking.</tspan></text>
-<text y="797.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text y="257.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s7">Much liks lists, it would be great if comments also rendered and wrapped in such a way that the</tspan></text>
+<text y="275.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s7">indendentation was clear.</tspan></text>
+<text y="293.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text y="311.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s8">Another case:</tspan></text>
+<text y="329.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan></text>
+<text y="347.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s7">It would also be nice if comment blocks rendered properly with nested markup, so blocks like this don't</tspan></text>
+<text y="365.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s7">turn into an unending sea of gray.</tspan></text>
+<text y="383.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan></text>
+<text y="401.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎ python</tspan></text>
+<text y="419.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s9"># with unformatted code</tspan></text>
+<text y="437.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan></text>
+<text y="455.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s7">And lists that look like</tspan></text>
+<text y="473.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan></text>
+<text y="491.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s2">•</tspan><tspan x="60.4" class="s7">still</tspan></text>
+<text y="509.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s2">•</tspan><tspan x="60.4" class="s7">more</tspan></text>
+<text y="527.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">▎</tspan><tspan x="43.6" class="s2">•</tspan><tspan x="60.4" class="s7">gray</tspan></text>
+<text y="545.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text y="563.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s10">We also need different</tspan></text>
+<text y="581.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text y="599.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s11">Treatment for each kind</tspan></text>
+<text y="617.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text y="635.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s12">of header</tspan></text>
+<text y="653.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text y="671.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">It would also be nice if long lines rendered naturally as a paragraph when they wrap past the last column</tspan></text>
+<text y="689.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">in the viewport. But it would also be nice if paragraphs that had been auto-wrapped by an editor or an</tspan></text>
+<text y="707.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">agent that got overzealous about formatting everything fastidiously.</tspan></text>
+<text y="725.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text y="743.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">I believe it's the markdown norm to only consider paragraph breaks with a newline. But that's also worth</tspan></text>
+<text y="761.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">double-checking.</tspan></text>
+<text y="779.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text y="797.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s6">java</tspan></text>
 <text y="815.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s9">// Some languages can be insanely verbose, so it would help if code didn't wrap within blocks.</tspan></text>
-<text y="833.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s9">public static final native verbose obscene repetitive sealed bespoke class WhyDoJavaAndCSharpProgrammersUse</tspan></text>
+<text y="833.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s9">public static final native verbose obscene repetitive sealed bespoke class WhyDoJavaAndCSharpProgrammersUs</tspan><tspan x="917.2" class="s6">›</tspan></text>
 <text y="851.5"><tspan x="10.0" class="s2">│</tspan><tspan x="60.4" class="s9">@dependencyInjectionInsanity(DoubleBuckyDjangoRheinhardtTool.class)</tspan></text>
 <text y="869.5"><tspan x="10.0" class="s2">│</tspan><tspan x="60.4" class="s9">public static final sealed void dynamic withEvenMoreWeirdlyNamedMethods() {</tspan></text>
 <text y="887.5"><tspan x="10.0" class="s2">│</tspan><tspan x="94.0" class="s9">// ...</tspan></text>
