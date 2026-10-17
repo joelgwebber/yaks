@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T05:18:09Z'
+updated: '2026-10-17T05:30:45Z'
 labels:
 - markdown
 - tui
@@ -115,3 +115,8 @@ Progress 2026-10-17 ~05:20 (delta-lead):
 - Batch 3 spawned from 4c586e9 on claude-sonnet-5-5: syntax-1 → yaks-3020 (thread …kcz5I…), links-2 → yaks-1bbb + yaks-3b8d (thread …ke_5I…).
 - Incident: syntax-1's first note landed in the coordinator's checkout; reverted, worker told to stay in its own clone.
 - Still waiting on Joel: yaks-bc53 (palette sign-off), yaks-a893 (in-place edit design), yaks-1f84 (edtui fork push).
+
+---
+▸ 2026-10-17T05:30:45Z [delta-lead]
+
+syntax-1 landed: da680bb (yaks-3020) → beb8e45, identical to the computed merge, 16 files; gate re-run green; looked at the attached frame (rust/sh/json coloured, unknown language flat). Its commit carries no trace of the stray note in the coordinator's checkout.
