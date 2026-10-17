@@ -247,12 +247,18 @@ pub(crate) fn mode_style(mode: EditorMode) -> Style {
 /// on the state so edtui paints them at render (Normal *and* Insert), in logical
 /// coords so they survive edtui's own wrapping. Our own hand-rolled highlighter
 /// — no syntect, no C deps. Cheap enough to redo every frame.
+///
+/// Syntax markers are dim on the cursor's line and `Modifier::HIDDEN` on every
+/// other (yaks-9425): the line you are editing shows its markdown, the rest
+/// reads like the rendered pane. Hidden cells keep their width, so the editor's
+/// display width still equals its text width (no cursor mapping needed).
 pub(crate) fn set_md_highlights(state: &mut EditorState) {
+    let cursor_row = state.cursor.row;
     let text = state.lines.to_string();
     let mut hl = markdown::Highlighter::new();
     let mut highlights = Vec::new();
     for (row, line) in text.split('\n').enumerate() {
-        for sp in hl.line(line) {
+        for sp in hl.line_with(line, row != cursor_row) {
             if sp.len == 0 {
                 continue;
             }
@@ -398,5 +404,85 @@ mod theme_tests {
         term.draw(|f| crate::tui::render(&app, f)).unwrap();
         let buf = term.backend().buffer();
         assert!(buf.content().iter().all(|c| c.bg != Color::Rgb(0, 0, 0)));
+    }
+
+    const MARKED_UP: [&str; 6] = [
+        "# A heading",
+        "Some **bold**, *italic* and `code` here",
+        "A [link](https://example.com/x) and ~~gone~~",
+        "> a quoted line",
+        "",
+        "plain closing line",
+    ];
+
+    /// Open the comment editor on `MARKED_UP` with the cursor on `row` and draw
+    /// it into a buffer.
+    fn comment_editor_buffer(row: usize, w: u16, h: u16) -> ratatui::buffer::Buffer {
+        let mut app = editable();
+        enter_key(&mut app);
+        handle_key(&mut app, key('M'));
+        match &app.overlay {
+            crate::tui::Overlay::Edit(ed) => {
+                let mut st = ed.state.borrow_mut();
+                st.lines = Lines::from(MARKED_UP.join("\n").as_str());
+                st.cursor = edtui::Index2::new(row, 0);
+            }
+            _ => panic!("expected the comment editor"),
+        }
+        let mut term = Terminal::new(TestBackend::new(w, h)).unwrap();
+        term.draw(|f| crate::tui::render(&app, f)).unwrap();
+        term.backend().buffer().clone()
+    }
+
+    /// Find the first cell of `needle` in the buffer and report its modifier.
+    fn modifier_at(buf: &ratatui::buffer::Buffer, needle: &str) -> Modifier {
+        let area = buf.area;
+        for y in 0..area.height {
+            let row: Vec<&str> = (0..area.width).map(|x| buf[(x, y)].symbol()).collect();
+            let line = row.concat();
+            if let Some(at) = line.find(needle) {
+                let x = row.concat()[..at].chars().count() as u16;
+                return buf[(x, y)].modifier;
+            }
+        }
+        panic!("{needle:?} not drawn");
+    }
+
+    #[test]
+    fn markers_are_dim_on_the_cursor_row_and_hidden_elsewhere() {
+        // Cursor on the inline-styles line: its `**` stays visible (dim), the
+        // heading's `#` and the link's `](` are hidden.
+        let buf = comment_editor_buffer(1, 72, 16);
+        let text = buffer_to_string(&buf);
+        assert!(text.contains("Some **bold**, *italic*"), "{text}");
+        assert_eq!(modifier_at(&buf, "**bold"), Modifier::empty());
+        assert!(modifier_at(&buf, "# A heading").contains(Modifier::HIDDEN));
+        assert!(modifier_at(&buf, "](https").contains(Modifier::HIDDEN));
+        assert!(modifier_at(&buf, "> a quoted").contains(Modifier::HIDDEN));
+        // Moving the cursor to the link line swaps which rows hide.
+        let buf = comment_editor_buffer(2, 72, 16);
+        assert!(!modifier_at(&buf, "](https").contains(Modifier::HIDDEN));
+        assert!(modifier_at(&buf, "**bold").contains(Modifier::HIDDEN));
+    }
+
+    /// Visual check, not a gate: writes the comment editor with the cursor on
+    /// row 1 to `target/editor-markers.svg`, and `editor-markers-raw.svg`.
+    /// toque's SVG ignores `Modifier::HIDDEN` (it paints the glyph, dim), so the
+    /// first file blanks HIDDEN cells the way a terminal honouring SGR 8 does;
+    /// the raw one shows what toque draws unmodified.
+    /// `cargo test -p yaks editor_markers_svg -- --ignored`
+    #[test]
+    #[ignore]
+    fn editor_markers_svg() {
+        let raw = comment_editor_buffer(1, 72, 16);
+        let mut shown = raw.clone();
+        for cell in shown.content.iter_mut() {
+            if cell.modifier.contains(Modifier::HIDDEN) {
+                cell.set_symbol(" ");
+            }
+        }
+        std::fs::create_dir_all("target").unwrap();
+        std::fs::write("target/editor-markers.svg", toque::buffer_to_svg(&shown)).unwrap();
+        std::fs::write("target/editor-markers-raw.svg", toque::buffer_to_svg(&raw)).unwrap();
     }
 }
