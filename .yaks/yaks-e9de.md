@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T04:43:37Z'
+updated: '2026-10-17T04:59:10Z'
 labels:
 - markdown
 - tui
@@ -66,3 +66,7 @@ Batch 1 landed 2026-10-17 by the yakherd (land.sh, merge by SHA, each identical 
 - bg-1 d9f3493 (yaks-5408) → bc1deaf
 - palette-1 2a6faf4 (yaks-bc53, sign-off ask open to Joel) → b7c9cea
 Checked on the real build: headless detail shows `Status: 🪒 shaving`, `Created: 19m ago`, the pinned header with its rule row. Lead's mdrender module (yaks-649d, not yet wired) committed 9e986e6.
+
+---
+▸ 2026-10-17T04:59:10Z [delta-lead]
+Batch 2 spawned from 3c47d0f on claude-sonnet-5-5: hscroll-1 → yaks-c733 (thread ...jrf5I...), edmarks-1 → yaks-9425 (thread ...jtwJI...). migrate-1 (yaks-a870) woken after an early silent exit.
