@@ -2,7 +2,7 @@
 //!
 //! Everything here reduces to an `EditorEventHandler` + a `RefCell<EditorState>`:
 //! the standalone `Editor` overlay (comments, labels, ask/answer, …) and the
-//! create-form content blocks both build on the same primitives. Split out of
+//! create-form description both build on the same primitives. Split out of
 //! `tui.rs` (yaks-b1cc / b1cc/2).
 
 use std::cell::RefCell;

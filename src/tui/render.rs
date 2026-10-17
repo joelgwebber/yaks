@@ -75,7 +75,7 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
             Overlay::Edit(ed) if !ed.single_line => render_editor_panel(ed, frame, inner),
             Overlay::Fuzzy(fp) => render_fuzzy_results(app, fp, frame, inner),
             Overlay::Drawer(d) => render_drawer(d, frame, inner),
-            Overlay::Create(f) => render_create(f, &app.clock, frame, inner),
+            Overlay::Create(f) => render_create(f, frame, inner),
             Overlay::Help(scroll) => render_help(*scroll, frame, inner),
             Overlay::ViewPicker(sel) => render_view_picker(app, *sel, frame, inner),
             _ if app.on_sheds_tab() => render_shed_detail(app, frame, inner),
@@ -257,7 +257,7 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
         entry("c / C", "New root / child yak"),
         entry(
             "E",
-            "Edit the body block under the cursor in place; header row: form",
+            "Edit under the cursor: body block in place; header row / list: form",
         ),
         entry("P / T / L / S", "Priority / type / labels / state"),
         entry("D / R", "Add dependency / reparent"),
@@ -1378,8 +1378,9 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
             completion_context(&ed.state, &app.ref_prefix).is_some()
         }
         Overlay::BlockEdit(be) => completion_context(&be.editor.state, &app.ref_prefix).is_some(),
-        Overlay::Create(f) => matches!(f.content_index(),
-            Some(i) if completion_context(&f.blocks[i].editor, &app.ref_prefix).is_some()),
+        Overlay::Create(f) => f
+            .description_editor()
+            .is_some_and(|e| completion_context(e, &app.ref_prefix).is_some()),
         _ => false,
     };
     if ref_context {

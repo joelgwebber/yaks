@@ -510,14 +510,11 @@ fn vim_seeded_content_opens_in_normal_mode() {
     // expectation when reviewing text).
     let mut app = App::new(vec![body_with_comments()]);
     assert!(app.editor_vim);
-    app.open_edit();
-    match &app.overlay {
-        Overlay::Create(f) => {
-            assert_eq!(f.blocks[0].editor.borrow().mode, EditorMode::Normal);
-            assert_eq!(f.blocks[1].editor.borrow().mode, EditorMode::Normal);
-        }
-        _ => panic!("expected edit form"),
-    }
+    app.open_block_edit(Some(0));
+    assert_eq!(editor_state(&app).0, EditorMode::Normal);
+    app.overlay = Overlay::None;
+    app.open_block_edit(Some(1));
+    assert_eq!(editor_state(&app).0, EditorMode::Normal);
 }
 
 #[test]
@@ -527,7 +524,10 @@ fn vim_new_content_opens_in_insert_mode() {
     let mut app = App::new(vec![task("t0", "t", Status::Hairy, 3, None)]);
     app.open_create(false);
     match &app.overlay {
-        Overlay::Create(f) => assert_eq!(f.blocks[0].editor.borrow().mode, EditorMode::Insert),
+        Overlay::Create(f) => assert_eq!(
+            f.description.as_ref().unwrap().borrow().mode,
+            EditorMode::Insert
+        ),
         _ => panic!("expected create form"),
     }
     app.open_comment();
@@ -598,18 +598,22 @@ fn ctrl_n_p_navigate_content_blocks_in_detail() {
 
 #[test]
 fn unfocused_description_preview_wraps() {
-    // The edit form opens on the title row, so the description shows as the
+    // The create form opens on the title row, so the description shows as the
     // dimmed preview. A long logical line must soft-wrap (like the focused
     // editor and the detail view) rather than truncate at the pane edge, so
     // its tail word stays visible.
-    let mut t = task("e0", "Editable", Status::Hairy, 3, None);
-    t.body = "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda".into();
-    let mut app = App::new(vec![t]);
-    app.open_edit();
-    assert!(
-        !matches!(app.overlay, Overlay::None),
-        "edit form should open"
-    );
+    let mut app = App::new(vec![task("e0", "Editable", Status::Hairy, 3, None)]);
+    app.open_create(false);
+    let vim = app.editor_vim;
+    match &mut app.overlay {
+        Overlay::Create(f) => {
+            f.description = Some(multiline_field(
+                "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda",
+                vim,
+            ))
+        }
+        _ => panic!("create form should open"),
+    }
     let out = draw(&app, 40, 20);
     assert!(
         out.contains("lambda"),
@@ -724,16 +728,13 @@ fn help_opens_and_closes() {
 
 #[test]
 fn edit_form_panel() {
-    // E opens the shared form seeded from the task, with the description
-    // content zone focused (Tab past the meta rows).
+    // E on the list opens the shared form seeded from the task: header fields
+    // only (the body is edited in place in the detail pane), focus on title.
     let mut app = editable();
     handle_key(&mut app, key('E'));
     match &app.overlay {
         Overlay::Create(f) => assert!(f.is_editing()),
         _ => panic!("expected edit form"),
-    }
-    for _ in 0..HEADER_ROWS {
-        handle_key(&mut app, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
     }
     insta::assert_snapshot!(draw(&app, 72, 14));
 }
@@ -1722,13 +1723,6 @@ mod live {
         );
     }
 
-    fn ctrl_n(app: &mut App) {
-        handle_key(
-            app,
-            KeyEvent::new(KeyCode::Char('n'), KeyModifiers::CONTROL),
-        );
-    }
-
     fn esc(app: &mut App) {
         handle_key(app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
     }
@@ -2285,20 +2279,20 @@ mod live {
     }
 
     #[test]
-    fn edit_form_updates_description() {
+    fn create_form_saves_its_description() {
         let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
         let mut app = App::with_farm(farm).unwrap();
-        press(&mut app, "E"); // open the edit form seeded from t0
-        tab(&mut app); // title -> type
-        tab(&mut app); // -> priority
-        tab(&mut app); // -> labels
-        tab(&mut app); // -> source
-        tab(&mut app); // -> description content zone
+        press(&mut app, "c"); // create form, focus on title
+        press(&mut app, "new yak");
+        for _ in 0..HEADER_ROWS {
+            tab(&mut app); // -> description block
+        }
         press(&mut app, "hello");
         ctrl_s(&mut app);
         assert!(matches!(app.overlay, Overlay::None));
-        assert_eq!(app.task("t0").unwrap().body, "hello");
-        assert_eq!(app.task("t0").unwrap().title, "solo"); // untouched
+        let id = app.selected_id().unwrap();
+        assert_eq!(app.task(&id).unwrap().title, "new yak");
+        assert_eq!(app.task(&id).unwrap().body, "hello");
     }
 
     #[test]
@@ -2494,62 +2488,87 @@ mod live {
         assert_eq!(app.notification.as_deref(), Some("changes discarded"));
     }
 
-    #[test]
-    fn edit_form_edits_a_comment_in_place() {
-        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
-        let mut app = App::with_farm(farm).unwrap();
-        press(&mut app, "M"); // add a comment
-        press(&mut app, "original note");
-        ctrl_s(&mut app);
+    /// A yak whose body `content::assemble` would normalize (stray blank
+    /// lines, trailing spaces): any rebuild of the body shows up as a diff.
+    fn untidy_body_app() -> (std::path::PathBuf, App, String) {
+        let mut t = task("t0", "solo", Status::Hairy, 3, None);
+        t.body = "Desc  \n\n\n---\n\u{25b8} 2026-01-01T00:00:00Z [joel]\n\nnote   \n\n\n".into();
+        let (dir, farm) = temp_farm(&[t]);
+        let app = App::with_farm(farm).unwrap();
         let before = app.task("t0").unwrap().body.clone();
-        assert!(before.contains('\u{25b8}'));
-        app.focus = Focus::List; // `E` from the list opens the form
-        // Edit: walk title→type→priority→labels→source→description→comment.
-        // Tab is now a normal key inside content blocks, so field-nav uses
-        // Ctrl-N. The seeded comment opens in Normal (921a), so `i` to insert.
-        press(&mut app, "E");
-        for _ in 0..HEADER_ROWS + 1 {
-            ctrl_n(&mut app);
-        }
-        press(&mut app, "iX");
-        ctrl_s(&mut app);
-        let body = &app.task("t0").unwrap().body;
-        assert!(
-            body.contains("Xoriginal note"),
-            "comment edited in place: {body:?}"
-        );
-        assert!(body.contains('\u{25b8}'), "timestamp preserved: {body:?}");
+        (dir, app, before)
     }
 
     #[test]
-    fn edit_form_noop_preserves_comment_body() {
-        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
-        let mut app = App::with_farm(farm).unwrap();
-        press(&mut app, "M");
-        press(&mut app, "keep me");
-        ctrl_s(&mut app);
-        let before = app.task("t0").unwrap().body.clone();
-        app.focus = Focus::List; // `E` from the list opens the form
+    fn edit_form_has_header_rows_only() {
+        let (_d, mut app, _) = untidy_body_app();
+        app.focus = Focus::List;
         press(&mut app, "E");
-        ctrl_s(&mut app); // no edits: parse→assemble must round-trip losslessly
+        let Overlay::Create(f) = &app.overlay else {
+            panic!("expected the edit form")
+        };
+        assert!(f.description.is_none());
+        assert_eq!(f.row_count(), f.header_rows());
+        assert_eq!(f.row, 0, "focus starts at the title");
+        let out = draw(&app, 90, 24);
+        assert!(out.contains("Edit t0") && out.contains("title"), "{out}");
+        assert!(!out.contains("description"), "no content rows: {out}");
+        assert!(!out.contains("───"), "no content separator: {out}");
+        // Ctrl-N walks only the header rows and wraps back to the title.
+        let n = f.row_count();
+        for _ in 0..n {
+            handle_key(
+                &mut app,
+                KeyEvent::new(KeyCode::Char('n'), KeyModifiers::CONTROL),
+            );
+        }
+        assert!(matches!(&app.overlay, Overlay::Create(f) if f.row == 0));
+    }
+
+    #[test]
+    fn edit_form_title_edit_leaves_the_body_byte_identical() {
+        let (_d, mut app, before) = untidy_body_app();
+        app.focus = Focus::List;
+        press(&mut app, "E");
+        press(&mut app, "Z"); // title field: insert at the cursor
+        ctrl_s(&mut app);
+        let t = app.task("t0").unwrap();
+        assert!(t.title.contains('Z'), "title edited: {:?}", t.title);
+        assert_eq!(t.body, before);
+    }
+
+    #[test]
+    fn edit_form_without_edits_is_not_dirty_and_keeps_the_body() {
+        let (_d, mut app, before) = untidy_body_app();
+        app.focus = Focus::List;
+        press(&mut app, "E");
+        ctrl_s(&mut app);
         assert_eq!(app.task("t0").unwrap().body, before);
     }
 
     #[test]
-    fn edit_form_deletes_an_emptied_comment() {
+    fn create_form_still_has_its_description_block() {
+        let mut app = App::new(vec![task("t0", "t", Status::Hairy, 3, None)]);
+        app.open_create(false);
+        let Overlay::Create(f) = &app.overlay else {
+            panic!("expected the create form")
+        };
+        assert!(f.description.is_some());
+        assert_eq!(f.row_count(), f.header_rows() + 1);
+        let out = draw(&app, 90, 24);
+        assert!(out.contains("description"), "{out}");
+    }
+
+    #[test]
+    fn block_edit_deletes_an_emptied_comment() {
         let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
         let mut app = App::with_farm(farm).unwrap();
         press(&mut app, "M");
         press(&mut app, "note to remove");
         ctrl_s(&mut app);
         assert!(app.task("t0").unwrap().body.contains('\u{25b8}'));
-        let vim = app.editor_vim;
-        app.focus = Focus::List; // `E` from the list opens the form
-        press(&mut app, "E");
-        match &mut app.overlay {
-            Overlay::Create(f) => f.blocks[1].editor = multiline_field("", vim),
-            _ => panic!("expected edit form"),
-        }
+        app.open_block_edit(Some(1)); // the comment, in place
+        press(&mut app, "dd"); // Normal mode: delete its only line
         ctrl_s(&mut app);
         let body = &app.task("t0").unwrap().body;
         assert!(!body.contains('\u{25b8}'), "comment deleted: {body:?}");
@@ -2662,19 +2681,21 @@ mod live {
     }
 
     #[test]
-    fn colon_w_saves_the_edit_form() {
+    fn colon_w_saves_the_create_form() {
         let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
         let mut app = App::with_farm(farm).unwrap();
-        press(&mut app, "E");
+        press(&mut app, "c");
+        press(&mut app, "new yak");
         for _ in 0..HEADER_ROWS {
-            tab(&mut app); // -> description content row (empty -> Insert)
+            tab(&mut app); // -> description block (empty -> Insert)
         }
         press(&mut app, "hello");
         esc(&mut app); // Normal
         press(&mut app, ":w");
         enter(&mut app);
         assert!(matches!(app.overlay, Overlay::None));
-        assert_eq!(app.task("t0").unwrap().body, "hello");
+        let id = app.selected_id().unwrap();
+        assert_eq!(app.task(&id).unwrap().body, "hello");
     }
 
     #[test]
@@ -3068,19 +3089,19 @@ fn wrapped_detail_field_continuation_is_not_label_coloured() {
 
 // -- paste (yaks-f2aa) ----------------------------------------------------
 
-/// Open the edit form on `app`'s cursor yak and focus its description block.
+/// Open the create form on `app` and focus its description block.
 fn focus_description(app: &mut App) {
-    app.open_edit();
+    app.open_create(false);
     for _ in 0..5 {
         tab(app); // title -> type -> priority -> labels -> source -> description
     }
-    assert!(matches!(&app.overlay, Overlay::Create(f) if f.content_index() == Some(0)));
+    assert!(matches!(&app.overlay, Overlay::Create(f) if f.description_editor().is_some()));
 }
 
 fn description_text(app: &App) -> String {
     match &app.overlay {
-        Overlay::Create(f) => f.blocks[0].editor.borrow().lines.to_string(),
-        _ => panic!("expected the edit form"),
+        Overlay::Create(f) => f.description_text(),
+        _ => panic!("expected the create form"),
     }
 }
 
@@ -3102,14 +3123,21 @@ fn bracketed_paste_bulk_inserts_into_the_description() {
 
 #[test]
 fn vim_normal_mode_paste_inserts_literally_not_as_commands() {
-    // Seeded content opens in Normal; pasting `dd` must insert text, not
-    // delete a line (it would, replayed as keys).
-    let mut app = editable();
+    // In Normal mode pasting `dd` must insert text, not delete a line (it
+    // would, replayed as keys).
+    let mut app = App::new(vec![task("t0", "t", Status::Hairy, 3, None)]);
     focus_description(&mut app);
+    handle_paste(&mut app, "First line.\nSecond line.");
+    match &app.overlay {
+        Overlay::Create(f) => {
+            f.description.as_ref().unwrap().borrow_mut().mode = EditorMode::Normal
+        }
+        _ => panic!("expected the create form"),
+    }
     handle_paste(&mut app, "dd");
     let text = description_text(&app);
     assert!(text.contains("dd"), "pasted literally: {text:?}");
-    assert!(text.contains("First line.") && text.contains("Second line."));
+    assert!(text.contains("First line.") && text.contains("Second line"));
 }
 
 #[test]
