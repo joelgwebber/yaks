@@ -53,7 +53,41 @@ impl App {
     /// The detail lines for the current selection, soft-wrapped to the width
     /// captured at the last render. This is the single source of truth for the
     /// row-indexed detail model (cursor, jumplist, find, scroll, render).
-    pub(crate) fn detail_dlines(&self) -> Vec<detail::DLine> {
+    ///
+    /// Memoized (`memo.rs`, yaks-bc30): built once per change of the selected
+    /// yak, farm data, width, in-place editor or clock minute, and shared by
+    /// every caller of a keypress or frame.
+    pub(crate) fn detail_dlines(&self) -> Rc<Vec<detail::DLine>> {
+        let Some(row) = self.cached_rows().get(self.cursor).copied() else {
+            return Rc::default();
+        };
+        let key = memo::DlinesKey {
+            data_gen: self.data_gen,
+            loc: row.loc,
+            home_only: self.filter.home_only,
+            width: self.detail_width.get() as usize,
+            slot: self.edit_slot(),
+            minute: self.clock.minute(),
+        };
+        if let Some(c) = &*self.dlines_cache.borrow() {
+            if c.key == key {
+                #[cfg(test)]
+                assert_eq!(*c.lines, self.build_dlines(), "stale detail-lines cache");
+                return c.lines.clone();
+            }
+        }
+        #[cfg(test)]
+        memo::DLINES_CALLS.with(|c| c.set(c.get() + 1));
+        let lines = Rc::new(self.build_dlines());
+        *self.dlines_cache.borrow_mut() = Some(memo::DlinesCache {
+            key,
+            lines: lines.clone(),
+        });
+        lines
+    }
+
+    /// The uncached [`App::detail_dlines`]: the memo's one source of truth.
+    pub(super) fn build_dlines(&self) -> Vec<detail::DLine> {
         let Some(t) = self.selected() else {
             return Vec::new();
         };
@@ -459,7 +493,7 @@ impl App {
     /// J/K — move to the next/prev task in the list while staying in the detail
     /// pane, resetting the per-task detail view state.
     pub(crate) fn detail_next_task(&mut self, delta: i32) {
-        let len = self.rows().len();
+        let len = self.row_count();
         if len == 0 {
             return;
         }

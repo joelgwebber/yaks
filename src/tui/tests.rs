@@ -3353,6 +3353,7 @@ fn a_row_with_no_copies_is_byte_identical_to_before() {
     let with = sheds_overlay_app();
     let mut without = sheds_overlay_app();
     without.sheds.snapshot = None;
+    without.touch();
     let (a, b) = (draw(&with, 96, 12), draw(&without, 96, 12));
     // No copy, or only a landed one: no badge and no layout shift.
     for id in ["yaks-0000", "yaks-ed5e"] {
@@ -4314,5 +4315,165 @@ mod block_edit {
         }
         assert!(rows(&app) > before);
         assert!(draw(&app, 90, 30).contains("now ─"));
+    }
+}
+
+/// Memoized rows and detail lines (yaks-bc30): `ROWS_CALLS` / `DLINES_CALLS`
+/// count the actual rebuilds, and every cache hit is checked against a fresh
+/// build under `cfg(test)`, so a stale cache cannot pass silently.
+mod memo {
+    use super::*;
+    use crate::tui::{memo::DLINES_CALLS, viewmodel::ROWS_CALLS};
+
+    fn counts() -> (usize, usize) {
+        (ROWS_CALLS.with(|c| c.get()), DLINES_CALLS.with(|c| c.get()))
+    }
+
+    /// Rebuilds `(rows, detail lines)` done while running `f`.
+    fn builds(f: impl FnOnce()) -> (usize, usize) {
+        let (r, d) = counts();
+        f();
+        let (r2, d2) = counts();
+        (r2 - r, d2 - d)
+    }
+
+    /// A farm-ish app: `n` hairy yaks, the first with a long code block, the
+    /// detail pane focused and measured.
+    fn app_in_detail() -> App {
+        let mut tasks: Vec<Task> = (0..30)
+            .map(|i| {
+                task(
+                    &format!("t{i:02}"),
+                    &format!("yak {i}"),
+                    Status::Hairy,
+                    3,
+                    None,
+                )
+            })
+            .collect();
+        let code: Vec<String> = (0..30).map(|i| format!("let x{i} = {i};")).collect();
+        tasks[0].body = format!("Intro.\n\n```rust\n{}\n```\n\nTail.", code.join("\n"));
+        let mut app = App::new(tasks);
+        let _ = draw(&app, 100, 40);
+        enter_key(&mut app);
+        let _ = draw(&app, 100, 40);
+        app
+    }
+
+    #[test]
+    fn a_detail_keypress_rebuilds_the_rows_and_lines_at_most_once() {
+        let mut app = app_in_detail();
+        for k in ['j', 'j', 'k', 'l', 'h', 'l'] {
+            let b = builds(|| {
+                handle_key(&mut app, key(k));
+                let _ = draw(&app, 100, 40);
+            });
+            assert!(b.0 <= 1 && b.1 <= 1, "{k:?} rebuilt rows/lines {b:?} times");
+        }
+    }
+
+    #[test]
+    fn a_plain_redraw_and_a_cursor_move_inside_the_pane_rebuild_nothing() {
+        let mut app = app_in_detail();
+        let _ = draw(&app, 100, 40); // warm
+        let b = builds(|| {
+            let _ = draw(&app, 100, 40);
+            let _ = draw(&app, 100, 40);
+            handle_key(&mut app, key('j')); // same selection: no change of input
+            let _ = draw(&app, 100, 40);
+        });
+        assert_eq!(b, (0, 0));
+    }
+
+    #[test]
+    fn changing_the_selection_rebuilds_the_lines_once_and_not_the_rows() {
+        let mut app = App::new(
+            (0..5)
+                .map(|i| task(&format!("t{i}"), "yak", Status::Hairy, 3, None))
+                .collect(),
+        );
+        let _ = app.detail_dlines();
+        let b = builds(|| {
+            handle_key(&mut app, key('j'));
+            let _ = draw(&app, 100, 20);
+            let _ = app.detail_dlines();
+            let _ = app.detail_dlines();
+        });
+        assert_eq!(b, (0, 1));
+    }
+
+    #[test]
+    fn every_input_change_shows_up_in_the_next_read() {
+        // Each step changes one input; the next reads must equal a fresh
+        // build (the hit path asserts that) and reflect the change.
+        let mut app = App::new(vec![
+            task("a0", "Root", Status::Hairy, 2, None),
+            task("a1", "Child", Status::Hairy, 2, Some("a0")),
+            task("b0", "Other", Status::Hairy, 1, None),
+        ]);
+        let _ = draw(&app, 80, 20);
+        assert_eq!(app.row_count(), 3);
+        app.collapsed.insert("a0".into());
+        assert_eq!(app.row_count(), 2);
+        app.collapsed.clear();
+        assert_eq!(app.row_count(), 3);
+        app.filter.search = Some("other".into());
+        assert_eq!(app.row_count(), 1, "only the match is left");
+        assert_eq!(app.selected_id().as_deref(), Some("b0"));
+        app.filter.types = vec!["nope".into()];
+        assert_eq!(app.row_count(), 0);
+        app.filter = FilterSpec::default();
+        app.family_scope
+            .insert("status:hairy".into(), view::FamilyScope::Lone);
+        let _ = app.rows();
+        app.family_scope.clear();
+        app.set_view(1); // Shaving
+        assert_eq!(app.row_count(), 0);
+        app.set_view(0);
+        // Farm data replaced (with `touch`): the new title is shown.
+        let sel = app.selected_id().unwrap();
+        let at = app.all.iter().position(|t| t.id == sel).unwrap();
+        app.all[at].title = "Renamed".into();
+        app.touch();
+        assert_eq!(app.selected().unwrap().title, "Renamed");
+        // Detail lines follow the width, the selection and the data.
+        let w0 = app.detail_dlines().len();
+        app.all[at].body = "one\n\ntwo\n\nthree".into();
+        app.touch();
+        assert!(app.detail_dlines().len() > w0);
+        app.detail_width.set(20);
+        let narrow = app.detail_dlines().len();
+        app.detail_width.set(120);
+        assert!(app.detail_dlines().len() <= narrow);
+    }
+
+    #[test]
+    fn the_clock_minute_invalidates_relative_dates() {
+        let mut t = task("a0", "Root", Status::Hairy, 2, None);
+        t.updated = Some("2026-09-10T11:55:00Z".into());
+        let mut app = App::new(vec![t]);
+        let _ = draw(&app, 80, 20);
+        let text = |app: &App| {
+            app.detail_dlines()
+                .iter()
+                .map(|l| l.text.clone())
+                .collect::<Vec<_>>()
+                .join("\n")
+        };
+        assert!(text(&app).contains("5m ago"));
+        let later = chrono::DateTime::parse_from_rfc3339("2026-09-10T12:10:00Z")
+            .unwrap()
+            .to_utc();
+        app.clock = when::Clock::Fixed(later, chrono::FixedOffset::east_opt(0).unwrap());
+        assert!(text(&app).contains("15m ago"));
+    }
+
+    #[test]
+    #[should_panic(expected = "stale rows cache")]
+    fn a_missed_touch_is_caught_by_the_test_assertion() {
+        let mut app = App::new(vec![task("a0", "Root", Status::Hairy, 2, None)]);
+        let _ = app.rows(); // fill the cache
+        app.all.push(task("a1", "New", Status::Hairy, 2, None)); // no touch()
+        let _ = app.rows();
     }
 }

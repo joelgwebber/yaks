@@ -54,6 +54,7 @@ pub enum Kind {
 }
 
 /// One display line plus any link spans it carries (col + len in chars).
+#[derive(PartialEq, Debug)]
 pub struct DLine {
     pub text: String,
     pub kind: Kind,
@@ -108,7 +109,7 @@ pub fn nowrap_extents(lines: &[DLine]) -> std::collections::HashMap<(usize, usiz
 /// A content block being edited in place: its rows in the detail model are
 /// replaced by a header and `rows` editor rows (`Kind::Editor`), so scroll,
 /// cursor and hit arithmetic see the editor as N ordinary rows.
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct EditSlot {
     /// The content block being edited; `None` = a new comment after the last.
     pub block: Option<usize>,

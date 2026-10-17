@@ -82,9 +82,10 @@ impl App {
         if let Some(h) = &self.farm {
             if let Ok(all) = h.list(FilterSpec::default(), true) {
                 self.all = all;
+                self.touch();
             }
         }
-        let len = self.rows().len();
+        let len = self.row_count();
         self.cursor = if len == 0 {
             0
         } else {
@@ -100,6 +101,7 @@ impl App {
         if let Some(h) = &self.farm {
             if let Ok(all) = h.list(FilterSpec::default(), true) {
                 self.all = all;
+                self.touch();
             }
         }
         match sel.and_then(|id| self.rows().iter().position(|r| r.task.id == id)) {
@@ -186,16 +188,14 @@ impl App {
     /// The selected row's yak when it exists only in another shed, with that
     /// shed (the first, in attention order, when several added it).
     pub(crate) fn selected_shed_only(&self) -> Option<(&Task, &crate::sheds::Shed)> {
-        let row = self.rows().into_iter().nth(self.cursor)?;
-        if !row.shed_only {
-            return None;
+        let row = *self.cached_rows().get(self.cursor)?;
+        match row.loc {
+            memo::Loc::Shed(i, j) if row.shed_only => {
+                let snap = self.sheds.snapshot.as_ref()?;
+                Some((snap.only_tasks.get(i)?.get(j)?, snap.sheds.get(i)?))
+            }
+            _ => None,
         }
-        let (shed, task) = self
-            .overlay()?
-            .shed_only()
-            .into_iter()
-            .find(|(_, t)| t.id == row.task.id)?;
-        Some((task, shed))
     }
 
     /// Hairy tasks with at least one unresolved dependency (the blocked set;
@@ -287,13 +287,34 @@ impl App {
             .collect()
     }
 
-    /// Visible rows for the active view (dispatch: working-set / flat / tree).
-    /// Rebuilt on every call (tree, filters, shed overlay): about 1.5 ms on a
-    /// 450-yak farm, so per-row or per-frame loops must not call it, nor
-    /// anything built on it (`selected`, `detail_dlines`); see yaks-48d6.
+    /// Visible rows for the active view (dispatch: working-set / flat / tree),
+    /// memoized (`memo.rs`, yaks-bc30): the tree, filters and shed overlay are
+    /// rebuilt (about 1.5 ms on a 450-yak farm) only when an input changed, so
+    /// this is cheap enough for a keypress's several asks. Per-row loops should
+    /// still hoist it, and ask [`App::row_count`] / [`App::selected`] when that
+    /// is all they need.
     pub(crate) fn rows(&self) -> Vec<tree::Row<'_>> {
-        #[cfg(test)]
-        ROWS_CALLS.with(|c| c.set(c.get() + 1));
+        self.cached_rows()
+            .iter()
+            .map(|c| tree::Row {
+                task: self.resolve(c.loc),
+                depth: c.depth,
+                ghost: c.ghost,
+                shed_only: c.shed_only,
+                has_children: c.has_children,
+                collapsed: c.collapsed,
+                hidden: c.hidden,
+            })
+            .collect()
+    }
+
+    /// How many rows [`App::rows`] has.
+    pub(crate) fn row_count(&self) -> usize {
+        self.cached_rows().len()
+    }
+
+    /// The uncached [`App::rows`]: the memo's one source of truth.
+    pub(super) fn build_rows(&self) -> Vec<tree::Row<'_>> {
         let v = self.active_view();
         if v.key == "working-set" {
             return self.working_set_rows();
@@ -313,7 +334,7 @@ impl App {
 
     /// Keep the cursor within the current row count (after a filter change).
     pub(crate) fn clamp_cursor(&mut self) {
-        let len = self.rows().len();
+        let len = self.row_count();
         self.cursor = if len == 0 {
             0
         } else {
@@ -322,7 +343,8 @@ impl App {
     }
 
     pub(crate) fn selected(&self) -> Option<&Task> {
-        self.rows().into_iter().nth(self.cursor).map(|r| r.task)
+        let row = *self.cached_rows().get(self.cursor)?;
+        Some(self.resolve(row.loc))
     }
 
     pub(crate) fn selected_id(&self) -> Option<String> {

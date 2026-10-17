@@ -40,6 +40,15 @@ impl Clock {
         )
     }
 
+    /// The current minute (Unix minutes): what a memoized rendering of
+    /// relative dates ("5m ago") is good for.
+    pub(crate) fn minute(&self) -> i64 {
+        match *self {
+            Clock::System => Utc::now().timestamp().div_euclid(60),
+            Clock::Fixed(now, _) => now.timestamp().div_euclid(60),
+        }
+    }
+
     /// Render the RFC 3339 timestamp `iso` relative to this clock; input that
     /// does not parse passes through unchanged.
     pub(crate) fn format(&self, iso: &str) -> String {
