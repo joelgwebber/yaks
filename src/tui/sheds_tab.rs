@@ -406,6 +406,7 @@ impl App {
             self.sheds.seen_asks = Some(keys);
         }
         self.sheds.snapshot = Some(snap);
+        self.touch();
         let s = self.sheds.snapshot.as_ref().unwrap();
         let order = s.order();
         self.sheds.cursor = shed
@@ -1424,6 +1425,7 @@ mod tests {
         let (proj, farm) = temp_farm(&[]);
         let mut app = on_sheds(App::new(vec![]));
         app.sheds.snapshot = None;
+        app.touch();
         app.farm = Some(farm);
         app.sheds.cwd = Some(proj.clone());
         app.settle_sheds(false); // on the tab, never scanned: starts one
@@ -1526,6 +1528,7 @@ mod tests {
         let mut app = on_inbox();
         // Nothing of the asker's yak is in this farm any more.
         app.all.retain(|t| t.id != "yaks-8814");
+        app.touch();
         assert_eq!(inbox_ids(&app), ["yaks-07fe"]);
         let v = app.active_view().clone();
         assert_eq!(app.view_count(&v), 1);
@@ -1535,6 +1538,7 @@ mod tests {
     fn inbox_without_a_snapshot_is_home_needs_only() {
         let mut app = on_inbox();
         app.sheds.snapshot = None;
+        app.touch();
         assert_eq!(inbox_ids(&app), ["yaks-07fe"]);
     }
 

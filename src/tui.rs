@@ -21,6 +21,7 @@ mod handlers;
 mod headless;
 mod markdown;
 mod mdrender;
+mod memo;
 mod mouse;
 mod palette;
 mod render;
@@ -44,6 +45,7 @@ use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, HashSet};
 use std::io::{self, Stdout};
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use std::sync::mpsc::{self, Receiver};
 use std::time::Duration;
 
@@ -339,6 +341,11 @@ pub struct App {
     /// The Sheds tab's snapshot, cursors and background scan (yaks-98f1).
     sheds: ShedsTab,
     quit: bool,
+    /// Bumped by [`App::touch`] whenever `all` or the sheds snapshot is
+    /// replaced; the memoized rows and detail lines are keyed on it.
+    data_gen: u64,
+    rows_cache: RefCell<Option<memo::RowsCache>>,
+    dlines_cache: RefCell<Option<memo::DlinesCache>>,
 }
 
 impl App {
@@ -383,6 +390,9 @@ impl App {
             hits: RefCell::default(),
             sheds: ShedsTab::default(),
             quit: false,
+            data_gen: 0,
+            rows_cache: RefCell::new(None),
+            dlines_cache: RefCell::new(None),
         }
     }
 
