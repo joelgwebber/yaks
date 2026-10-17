@@ -50,6 +50,8 @@ While workers run, watch them from your own checkout; these only read the other 
 - `yaks inbox --sheds`: every shed's open asks, with the question text. Run it after each spawn
   batch and whenever a worker returns blocked.
 - `yaks show <id> --sheds`: how each shed's copy of one yak differs from yours.
+- `yaks attachment <id> [<file>]`: a yak's attachments in any shed (a worker's evidence before it
+  lands), as absolute paths you can read; the TUI opens them from the right shed too.
 - For a human, `yaks tui`'s **Sheds** tab shows the first two live (refreshed in the background), and
   answers a shed's ask in place with `a`, the same write as `yaks answer <id>@<shed>`.
 `<shed>` is any of: the name `sheds` prints, `main`, the Delta dir id (Delta only: the `<id>` in

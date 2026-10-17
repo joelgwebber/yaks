@@ -217,6 +217,20 @@ enum Command {
         /// New filename (e.g. `login-page`, becomes `login-page.png`).
         new: String,
     },
+    /// Find a yak's attachments wherever they are: this checkout's farm first,
+    /// then every other shed's (git worktrees, Delta clones), so evidence a
+    /// worker attached in its shed is readable before it lands. With no FILE,
+    /// lists each attachment as `<shed>  <absolute path>` (`.` = this
+    /// checkout; a name this checkout has hides other sheds' copies). With
+    /// FILE, prints that one's absolute path, or exits 1 when no farm has it.
+    /// Read-only.
+    Attachment {
+        id: String,
+        /// An attachment filename under `.yaks/<id>/` (as in its link).
+        file: Option<String>,
+        #[arg(long)]
+        json: bool,
+    },
     /// Scan text for tokens that are real yak-ids in this farm — a leak check
     /// for private-mode farms (pre-commit / PR hook). Reads a FILE and/or
     /// stdin, prints each found id as `line:col  id`, and EXITS NON-ZERO if
@@ -1341,6 +1355,43 @@ fn main() -> Result<()> {
                     eprintln!("error: {why}");
                     std::process::exit(1);
                 }
+            }
+        }
+        Command::Attachment { id, file, json } => {
+            let farms = farm.attachment_farms(&env::current_dir()?);
+            let found = match &file {
+                Some(f) => farm::locate_attachment(&farms, &id, f)
+                    .into_iter()
+                    .collect(),
+                None => farm::list_attachments(&farms, &id),
+            };
+            if json {
+                let items: Vec<serde_json::Value> = found
+                    .iter()
+                    .map(|a| {
+                        serde_json::json!({
+                            "name": a.name,
+                            "path": a.path.display().to_string(),
+                            "shed": a.shed,
+                        })
+                    })
+                    .collect();
+                println!("{}", serde_json::to_string_pretty(&items)?);
+            } else if file.is_some() {
+                for a in &found {
+                    println!("{}", a.path.display());
+                }
+            } else {
+                for a in &found {
+                    println!("{}  {}", a.shed.as_deref().unwrap_or("."), a.path.display());
+                }
+            }
+            if found.is_empty() {
+                match &file {
+                    Some(f) => eprintln!("no attachment {f} on {id} in this checkout or any shed"),
+                    None => eprintln!("no attachments on {id} in this checkout or any shed"),
+                }
+                std::process::exit(1);
             }
         }
         Command::ScanIds { file, json } => {

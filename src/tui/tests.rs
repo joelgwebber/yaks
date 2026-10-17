@@ -3908,3 +3908,34 @@ fn status_bar_shows_the_destination_of_the_link_under_the_cursor() {
             .contains("Enter:follow")
     );
 }
+
+#[test]
+fn an_attachment_only_another_shed_has_resolves_to_that_shed() {
+    // yaks-31e2: opening `<id>/<file>` must not assume this checkout's farm.
+    let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+    let mut app = App::with_farm(farm).unwrap();
+    // A worker shed (a real directory with its own farm) holding the file.
+    let (shed_dir, _shed_farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+    std::fs::create_dir_all(shed_dir.join(".yaks/t0")).unwrap();
+    std::fs::write(shed_dir.join(".yaks/t0/log.txt"), "from the shed").unwrap();
+    let mut snap = crate::tui::sheds_tab::fixture::snapshot();
+    let i = snap
+        .sheds
+        .iter()
+        .position(|s| !s.current && matches!(s.farm, crate::sheds::ShedFarm::Own(_)))
+        .unwrap();
+    snap.sheds[i].path = shed_dir.clone();
+    let name = snap.sheds[i].name();
+    app.apply_sheds_snapshot(snap);
+
+    let found = app
+        .resolve_attachment("t0/log.txt")
+        .expect("found in the shed");
+    assert_eq!(found.shed.as_deref(), Some(name.as_str()));
+    assert_eq!(
+        std::fs::read_to_string(&found.path).unwrap(),
+        "from the shed"
+    );
+    // Unknown everywhere: no path is invented.
+    assert!(app.resolve_attachment("t0/nope.txt").is_none());
+}
