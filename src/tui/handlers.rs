@@ -1681,6 +1681,12 @@ pub(crate) fn handle_paste(app: &mut App, text: &str) {
 }
 
 pub(crate) fn handle_key(app: &mut App, k: KeyEvent) {
+    handle_key_inner(app, k);
+    // A no-wrap block's sideways scroll lives only while the cursor is on it.
+    app.drop_stale_hscroll();
+}
+
+fn handle_key_inner(app: &mut App, k: KeyEvent) {
     let ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
     // A modal prompt swallows all other input until resolved (including Ctrl-C,
     // which an editor treats as cancel rather than quitting the app).
@@ -1784,7 +1790,17 @@ pub(crate) fn handle_key(app: &mut App, k: KeyEvent) {
             }
             match k.code {
                 KeyCode::Char('q') => app.quit = true,
-                KeyCode::Char('h') | KeyCode::Left => app.focus = Focus::List,
+                // On a no-wrap row (code, table) h/l and ←/→ scroll that block
+                // sideways (yaks-c733); h/← at offset 0 (or anywhere else)
+                // is "back to list".
+                KeyCode::Char('l') | KeyCode::Right => {
+                    app.scroll_block(1);
+                }
+                KeyCode::Char('h') | KeyCode::Left => {
+                    if !app.scroll_block(-1) {
+                        app.focus = Focus::List;
+                    }
+                }
                 // Esc peels back: selection → find → back to list (Python layering).
                 KeyCode::Esc => {
                     if app.detail_anchor.is_some() {

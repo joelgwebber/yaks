@@ -40,6 +40,11 @@ impl App {
     /// Dispatch one mouse event. Overlays (editors, pickers, drawer, help) own
     /// their input, so the mouse is ignored while one is open.
     pub(crate) fn handle_mouse(&mut self, m: MouseEvent) {
+        self.handle_mouse_inner(m);
+        self.drop_stale_hscroll();
+    }
+
+    fn handle_mouse_inner(&mut self, m: MouseEvent) {
         if !matches!(self.overlay, Overlay::None) {
             return;
         }
