@@ -5,12 +5,12 @@ status: shaving
 type: task
 priority: 2
 created: '2026-10-17T04:24:29Z'
-updated: '2026-10-17T04:42:09Z'
+updated: '2026-10-17T16:29:41Z'
 parent: yaks-e9de
 labels:
 - markdown
 - tui
-needs: human
+needs: agent
 ---
 
 Design pass, then a small code change. One table of styles used by both the read pane and the editor (today `markdown.rs` has its own private styles and the read pane layers its own link/label colors on top).
@@ -77,3 +77,8 @@ What I'd like your eye on:
 4. Quote: bar dim, text italic only (not grey), so quoted lists/code keep colour.
 5. Editor: `# `/`>` markers now dim, heading text styled by level (was whole-line yellow bold); bullets cyan non-bold.
 Reply = approve, or tell me which styles to change.
+
+---
+▸ 2026-10-17T16:29:41Z [Joel Webber]
+
+I dig it!
