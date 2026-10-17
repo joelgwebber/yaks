@@ -19,6 +19,7 @@ mod fuzzy;
 mod handlers;
 mod headless;
 mod markdown;
+mod mdrender;
 mod mouse;
 mod render;
 mod runtime;
