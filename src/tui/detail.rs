@@ -88,6 +88,30 @@ fn parse_image_link(chars: &[char], start: usize) -> Option<(usize, String)> {
     Some((j + 1 - start, path))
 }
 
+/// Where a bare URL in `chars[start..end]` (a whitespace-delimited run) really
+/// ends: the GFM extended-autolink rule. Trailing `.,;:!?'"` punctuation and an
+/// unbalanced trailing `)` are not part of the URL, while balanced parens
+/// inside it (`.../Foo_(bar)`) stay.
+fn trim_url_end(chars: &[char], start: usize, mut end: usize) -> usize {
+    while end > start {
+        match chars[end - 1] {
+            '.' | ',' | ';' | ':' | '!' | '?' | '\'' | '"' => end -= 1,
+            ')' => {
+                let span = &chars[start..end];
+                let open = span.iter().filter(|&&c| c == '(').count();
+                let close = span.iter().filter(|&&c| c == ')').count();
+                if close > open {
+                    end -= 1;
+                } else {
+                    break;
+                }
+            }
+            _ => break,
+        }
+    }
+    end
+}
+
 fn scan_body_links(line: &str, known: &HashSet<&str>) -> Vec<(usize, usize, Target)> {
     let chars: Vec<char> = line.chars().collect();
     let mut out = Vec::new();
@@ -106,6 +130,7 @@ fn scan_body_links(line: &str, known: &HashSet<&str>) -> Vec<(usize, usize, Targ
             while i < chars.len() && !chars[i].is_whitespace() {
                 i += 1;
             }
+            i = trim_url_end(&chars, start, i);
             out.push((
                 start,
                 i - start,
@@ -968,5 +993,42 @@ mod tests {
             jumps.iter().map(|j| j.target.clone()).collect::<Vec<_>>(),
             vec![Target::Url("https://example.com/x".into())]
         );
+    }
+
+    /// The links `scan_body_links` finds in `line`, with their spans.
+    fn urls(line: &str) -> Vec<(usize, usize, Target)> {
+        scan_body_links(line, &HashSet::new())
+    }
+
+    #[test]
+    fn url_in_markdown_link_stops_before_the_closing_paren() {
+        assert_eq!(
+            urls("[x](https://e.com/)"),
+            vec![(4, 14, Target::Url("https://e.com/".into()))]
+        );
+    }
+
+    #[test]
+    fn url_drops_trailing_paren_and_punctuation() {
+        assert_eq!(
+            urls("see https://e.com/a)."),
+            vec![(4, 15, Target::Url("https://e.com/a".into()))]
+        );
+        assert_eq!(
+            urls("(https://e.com/a, ok)"),
+            vec![(1, 15, Target::Url("https://e.com/a".into()))]
+        );
+        assert_eq!(
+            urls("really https://e.com/a?!"),
+            vec![(7, 15, Target::Url("https://e.com/a".into()))]
+        );
+    }
+
+    #[test]
+    fn url_keeps_balanced_parens() {
+        let u = "https://en.wikipedia.org/wiki/Foo_(bar)";
+        assert_eq!(urls(u), vec![(0, u.len(), Target::Url(u.into()))]);
+        let line = format!("see ({u}).");
+        assert_eq!(urls(&line), vec![(5, u.len(), Target::Url(u.into()))]);
     }
 }
