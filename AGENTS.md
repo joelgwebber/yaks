@@ -105,16 +105,20 @@ To actually *look* at an SVG frame, rasterize it to PNG with headless Chrome
 rasterizer botches the color emoji, so a browser engine is the lever.
 
 **Hand the human a build to try.** After landing any significant change, the
-main (coordinating) thread installs a fresh release build over Joel's
-pre-release test binary, `~/go/bin/yaks` — a temporary override on his `PATH`
-for trying changes before a release. Overwrite it; no backup:
+main (coordinating) thread installs a fresh release build to `~/go/bin/yaks`:
+Joel's pre-release test binary, a temporary override on his `PATH` (where `go`
+puts binaries too) for trying changes before a release. That is the **only**
+place a test build goes: never `~/bin`, `~/.local/bin` or anywhere else, so
+there is exactly one override to keep current. Overwrite it; no backup:
 
 ```sh
 cargo build --release && mkdir -p ~/go/bin && install -m 755 target/release/yaks ~/go/bin/yaks
 ```
 
 Workers never do this (their clones are not what lands); the coordinator does it
-once their work is merged and the gate is green, and says so in its report.
+once their work is merged and the gate is green, and says so in its report. A
+running `yaks tui` keeps the old binary until it is restarted, so say that too
+when the change is in the TUI.
 
 ## Keeping docs current
 
