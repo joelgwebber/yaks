@@ -414,6 +414,8 @@ impl App {
     pub(crate) fn open_edit_at_cursor(&mut self) {
         match self.edit_target_at(self.detail_line) {
             Some(EditTarget::Status) => self.open_state_picker(),
+            // A body row edits that block in place; header rows use the form.
+            Some(EditTarget::Content(b)) => self.open_block_edit(Some(b)),
             other => self.open_edit_focus(other),
         }
     }

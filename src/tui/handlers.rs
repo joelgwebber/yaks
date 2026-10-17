@@ -7,6 +7,67 @@
 
 use super::*;
 
+/// What one key did to an embedded multi-line or single-line editor overlay
+/// (`Overlay::Edit`, `Overlay::BlockEdit`): the shared key routing, decided in
+/// one place so the two editors cannot drift.
+pub(crate) enum EditKey {
+    Commit,
+    Cancel,
+    /// Open the ref completer: `(chars to replace, seed)`.
+    Complete(usize, String),
+    /// Vim `:` in Normal mode.
+    Cmdline,
+    /// Handed to edtui (or nothing to do).
+    Handled,
+}
+
+/// Route key `k` for editor `ed`: Ctrl-S (or Enter in a single-line field)
+/// commits, Ctrl-C / a double-Esc (or Esc in a single-line emacs field)
+/// cancels, Tab in a `<prefix>-…` context completes, `:` in vim Normal opens
+/// the command line, and everything else flows to edtui.
+pub(crate) fn editor_key(
+    ed: &mut Editor,
+    k: KeyEvent,
+    double_esc: bool,
+    ref_prefix: &str,
+) -> EditKey {
+    let ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
+    let commit =
+        (ctrl && k.code == KeyCode::Char('s')) || (ed.single_line && k.code == KeyCode::Enter);
+    // `:` in a multiline editor's Normal mode opens the command line.
+    let open_cmd = !ed.single_line
+        && ed.vim
+        && k.code == KeyCode::Char(':')
+        && ed.state.borrow().mode == EditorMode::Normal;
+    // A single-line field is fully modal in vim: a lone Esc only drops to
+    // Normal (handed to edtui) and never cancels, so the whole normal-mode
+    // keymap (b/w/0/$/dd/x/yy/p/...) is reachable. Cancel is Ctrl-C or a rapid
+    // double-Esc; emacs keeps plain single-Esc-cancels. In a multiline editor
+    // a lone Esc always just drops to Normal, so double-Esc is the only Esc-way
+    // out.
+    let esc_cancels = ed.single_line && k.code == KeyCode::Esc && !ed.vim;
+    let cancel = (ctrl && k.code == KeyCode::Char('c')) || esc_cancels || double_esc;
+    // Tab opens the ref completer when the cursor is in a `<prefix>-…` context;
+    // otherwise it falls through as a normal editor key.
+    let complete = if k.code == KeyCode::Tab {
+        completion_context(&ed.state, ref_prefix)
+    } else {
+        None
+    };
+    if commit {
+        EditKey::Commit
+    } else if let Some((len, seed)) = complete {
+        EditKey::Complete(len, seed)
+    } else if open_cmd {
+        EditKey::Cmdline
+    } else if cancel {
+        EditKey::Cancel
+    } else {
+        ed.handler.on_key_event(k, &mut ed.state.borrow_mut());
+        EditKey::Handled
+    }
+}
+
 impl App {
     pub(crate) fn handle_create_key(&mut self, k: KeyEvent, double_esc: bool) {
         let ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
@@ -581,15 +642,7 @@ impl App {
 
     /// M — append a timestamped comment/note to the selected task (multi-line).
     pub(crate) fn open_comment(&mut self) {
-        if let Some(id) = self.selected_id() {
-            self.overlay = Overlay::Edit(Editor::new(
-                self.editor_vim,
-                false,
-                format!("Comment on {id} — Ctrl-S save · Ctrl-C cancel"),
-                "",
-                EditAction::Comment(id),
-            ));
-        }
+        self.open_block_edit(None);
     }
 
     /// Context-sensitive needs affordance: answer the selected yak if it is
@@ -955,6 +1008,12 @@ impl App {
                     self.commit_edit(ed);
                 }
             }
+            Overlay::BlockEdit(_) => {
+                if let Overlay::BlockEdit(be) = std::mem::replace(&mut self.overlay, Overlay::None)
+                {
+                    self.commit_edit(be.editor);
+                }
+            }
             _ => {}
         }
     }
@@ -977,6 +1036,7 @@ impl App {
                 },
             ),
             Overlay::Edit(ed) => (!ed.single_line && !ed.text().trim().is_empty(), "cancelled"),
+            Overlay::BlockEdit(be) => (be.is_dirty(), "cancelled"),
             _ => (false, "cancelled"),
         };
         self.request_cancel(dirty, msg);
@@ -1151,66 +1211,40 @@ impl App {
         }
         // Editors are handled in place (most keys flow to edtui); only the
         // Pick/Confirm variants move their action out on resolution.
-        if matches!(self.overlay, Overlay::Edit(_)) {
-            // Decide within a short borrow, then act once it's released.
+        if matches!(self.overlay, Overlay::Edit(_) | Overlay::BlockEdit(_)) {
             let ref_prefix = self.ref_prefix.clone();
-            let (do_commit, do_cancel, dirty, open_cmd, open_ref) = {
-                let Overlay::Edit(ed) = &mut self.overlay else {
-                    unreachable!()
-                };
-                let commit = (ctrl && k.code == KeyCode::Char('s'))
-                    || (ed.single_line && k.code == KeyCode::Enter);
-                // `:` in a multiline editor's Normal mode opens the command line.
-                let open_cmd = !ed.single_line
-                    && ed.vim
-                    && k.code == KeyCode::Char(':')
-                    && ed.state.borrow().mode == EditorMode::Normal;
-                // A single-line field is fully modal in vim: a lone Esc only
-                // drops to Normal (handed to edtui) and never cancels, so the
-                // whole normal-mode keymap (b/w/0/$/dd/x/yy/p/...) is reachable.
-                // Cancel is Ctrl-C or a rapid double-Esc; emacs keeps plain
-                // single-Esc-cancels. In a multiline editor a lone Esc always
-                // just drops to Normal, so double-Esc is the only Esc-way out.
-                let esc_cancels = ed.single_line && k.code == KeyCode::Esc && !ed.vim;
-                let cancel = (ctrl && k.code == KeyCode::Char('c')) || esc_cancels || double_esc;
-                // Tab opens the ref completer when the cursor is in a `<prefix>-…`
-                // context; otherwise it falls through as a normal editor key.
-                let complete = if k.code == KeyCode::Tab {
-                    completion_context(&ed.state, &ref_prefix)
-                } else {
-                    None
-                };
-                if commit {
-                    (true, false, false, false, None)
-                } else if complete.is_some() {
-                    (false, false, false, false, complete)
-                } else if open_cmd {
-                    (false, false, false, true, None)
-                } else if cancel {
+            let (key, dirty) = match &mut self.overlay {
+                Overlay::Edit(ed) => {
+                    let key = editor_key(ed, k, double_esc, &ref_prefix);
                     // Only the multiline comment editor guards unsaved work.
                     let dirty = !ed.single_line && !ed.text().trim().is_empty();
-                    (false, true, dirty, false, None)
-                } else {
-                    ed.handler.on_key_event(k, &mut ed.state.borrow_mut());
-                    (false, false, false, false, None)
+                    (key, dirty)
                 }
+                Overlay::BlockEdit(be) => {
+                    let key = editor_key(&mut be.editor, k, double_esc, &ref_prefix);
+                    (key, be.is_dirty())
+                }
+                _ => unreachable!(),
             };
-            if do_commit {
-                if let Overlay::Edit(ed) = std::mem::replace(&mut self.overlay, Overlay::None) {
-                    self.commit_edit(ed);
-                }
-            } else if let Some((replace_len, seed)) = open_ref {
-                self.open_ref_picker(replace_len, &seed);
-            } else if open_cmd {
-                self.cmdline = Some(String::new());
-            } else if do_cancel {
-                self.request_cancel(dirty, "cancelled");
+            match key {
+                EditKey::Commit => match std::mem::replace(&mut self.overlay, Overlay::None) {
+                    Overlay::Edit(ed) => self.commit_edit(ed),
+                    Overlay::BlockEdit(be) => self.commit_edit(be.editor),
+                    _ => {}
+                },
+                EditKey::Complete(replace_len, seed) => self.open_ref_picker(replace_len, &seed),
+                EditKey::Cmdline => self.cmdline = Some(String::new()),
+                EditKey::Cancel => self.request_cancel(dirty, "cancelled"),
+                EditKey::Handled => {}
             }
+            // The editor may have grown or shrunk: keep all of it on screen.
+            self.show_block_editor();
             return;
         }
         match std::mem::replace(&mut self.overlay, Overlay::None) {
             Overlay::None
             | Overlay::Edit(_)
+            | Overlay::BlockEdit(_)
             | Overlay::Fuzzy(_)
             | Overlay::Search(_)
             | Overlay::Drawer(_)
@@ -1252,6 +1286,7 @@ impl App {
 
     pub(crate) fn commit_edit(&mut self, ed: Editor) {
         let text = ed.text();
+        let cursor_row = ed.state.borrow().cursor.row;
         match ed.action {
             EditAction::Labels(id) => {
                 let new = crate::model::normalize_labels([&text]);
@@ -1275,24 +1310,8 @@ impl App {
                     format!("{id} labels: {shown}"),
                 );
             }
-            EditAction::Comment(id) => {
-                if text.trim().is_empty() {
-                    self.notification = Some("comment cancelled".into());
-                    return;
-                }
-                // Attribute TUI comments like CLI ones: $YAKS_ACTOR, else git
-                // user (no --as in the TUI). Resolved lazily here so the
-                // read-only/snapshot constructor stays pure (no git subprocess).
-                self.apply_edit(
-                    &id,
-                    TaskEdit {
-                        note: Some(text),
-                        actor: crate::actor::resolve(None),
-                        ..Default::default()
-                    },
-                    format!("comment added to {id}"),
-                );
-            }
+            EditAction::Comment(id) => self.commit_comment(&id, text),
+            EditAction::Block { id, block } => self.commit_block(&id, block, text, cursor_row),
             EditAction::Attach(id) => self.commit_attach(id, text),
             EditAction::AttachPaste { id, default, data } => {
                 let name = if text.trim().is_empty() {
@@ -1341,6 +1360,27 @@ impl App {
         }
     }
 
+    /// Append `text` to `id` as a new comment (an empty one is a no-op).
+    pub(crate) fn commit_comment(&mut self, id: &str, text: String) {
+        if text.trim().is_empty() {
+            self.notification = Some("comment cancelled".into());
+            return;
+        }
+        // Attribute TUI comments like CLI ones: $YAKS_ACTOR, else git
+        // user (no --as in the TUI). Resolved lazily here so the
+        // read-only/snapshot constructor stays pure (no git subprocess).
+        self.apply_edit(
+            id,
+            TaskEdit {
+                note: Some(text),
+                actor: crate::actor::resolve(None),
+                ..Default::default()
+            },
+            format!("comment added to {id}"),
+        );
+        self.focus_new_comment();
+    }
+
     pub(crate) fn commit_fuzzy(&mut self, mut fp: FuzzyPick) {
         let cands = fuzzy_candidates(&self.all, &fp);
         // Resolve the selection to a target: `None` = clear-parent row,
@@ -1365,6 +1405,11 @@ impl App {
                     // whichever editor the picker was opened over.
                     match &mut ov {
                         Overlay::Edit(ed) => {
+                            delete_into(&mut ed.handler, &ed.state, fp.replace_len);
+                            insert_into(&mut ed.handler, &ed.state, id);
+                        }
+                        Overlay::BlockEdit(be) => {
+                            let ed = &mut be.editor;
                             delete_into(&mut ed.handler, &ed.state, fp.replace_len);
                             insert_into(&mut ed.handler, &ed.state, id);
                         }
@@ -1693,6 +1738,11 @@ pub(crate) fn handle_paste(app: &mut App, text: &str) {
             paste_into(&ed.state, text);
             return;
         }
+        Overlay::BlockEdit(be) => {
+            paste_into(&be.editor.state, text);
+            app.show_block_editor();
+            return;
+        }
         Overlay::Create(f) => {
             if let Some(i) = f.content_index() {
                 paste_into(&f.blocks[i].editor, text);
@@ -1723,7 +1773,13 @@ pub(crate) fn handle_paste(app: &mut App, text: &str) {
 }
 
 pub(crate) fn handle_key(app: &mut App, k: KeyEvent) {
+    let was_editing = app.block_edit().is_some();
     handle_key_inner(app, k);
+    // The in-place editor closed (saved or cancelled): its rows give way to the
+    // block's again, so pull the scroll back into range.
+    if was_editing && app.block_edit().is_none() {
+        app.settle_detail_scroll();
+    }
     // A no-wrap block's sideways scroll lives only while the cursor is on it.
     app.drop_stale_hscroll();
 }

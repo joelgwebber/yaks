@@ -59,6 +59,7 @@ impl App {
         };
         let copies = self.shed_copies(&t.id);
         let width = self.detail_width.get() as usize;
+        let slot = self.edit_slot();
         let lines = match self.selected_shed_only() {
             // A yak only another shed has: that shed's copy, read-only, under
             // a banner. Links resolve over the home yaks and the shed-only
@@ -72,10 +73,17 @@ impl App {
                     detail::banner(&format!("only in shed {}", shed.name())),
                     detail::blank(),
                 ];
-                lines.extend(detail::build_at(t, &all, &copies, &self.clock, width));
+                lines.extend(detail::build_at(
+                    t,
+                    &all,
+                    &copies,
+                    &self.clock,
+                    width,
+                    slot.as_ref(),
+                ));
                 lines
             }
-            None => detail::build_at(t, &self.all, &copies, &self.clock, width),
+            None => detail::build_at(t, &self.all, &copies, &self.clock, width, slot.as_ref()),
         };
         detail::wrap(lines, width)
     }

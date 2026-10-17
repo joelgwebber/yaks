@@ -1,0 +1,64 @@
+=== frame 3 · 90x30 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-cf78 · blocked=- · collapsed=0 · filter=(all) · overlay=block-edit · detail_scroll=5 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   🛖 Sheds
+
+◂  🦬 yak-cf78  task     p3  Login crashes on expired token
+│ ───────────────────────────────────────────────────────────────────────────────────────
+│ Priority:    p3
+│ Created:     8m ago
+│ Updated:     7m ago
+│ Labels:      -
+│
+│ Logging in with an expired token crashes the app.
+│
+│ Repro
+│
+│ 1. Log in, wait an hour.
+│ 2. Click anything.
+│
+│ ▸ joel · 7m ago ───────────────────────────────────────────────────────────────────────
+│ Seen on staging too. The refresh path never runs when the token is already expired.
+│
+│ ▸ agent-1 · 7m ago ────────────────────────────────────────────────────────────────────
+│ Root cause: refresh() checks exp after the request, not before.
+│
+│ • fix: check before
+│ • add a test
+│
+│ ▸ delta:inplace-1: in-place block editing · now ─────────────── editing · Ctrl-S save ─
+│ ┃Thanks, fixed in the next release.
+│ ┃
+│
+INSERT  Ctrl-S save · Ctrl-C / Esc Esc cancel
+=== end ===
+=== frame 4 · 90x30 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-cf78 · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=4 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   🛖 Sheds
+comment added to yak-cf78
+◂  🦬 yak-cf78  task     p3  Login crashes on expired token
+│ ───────────────────────────────────────────────────────────────────────────────────────
+│ Type:        task
+│ Priority:    p3
+│ Created:     8m ago
+│ Updated:     just now
+│ Labels:      -
+│
+│ Logging in with an expired token crashes the app.
+│
+│ Repro
+│
+│ 1. Log in, wait an hour.
+│ 2. Click anything.
+│
+│ ▸ joel · 7m ago ───────────────────────────────────────────────────────────────────────
+│ Seen on staging too. The refresh path never runs when the token is already expired.
+│
+│ ▸ agent-1 · 7m ago ────────────────────────────────────────────────────────────────────
+│ Root cause: refresh() checks exp after the request, not before.
+│
+│ • fix: check before
+│ • add a test
+│
+│ ▸ delta:inplace-1: in-place block editing · just now ──────────────────────────────────
+│ Thanks, fixed in the next release.
+│
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit here  M:comment  D:dep  S:s
+=== end ===

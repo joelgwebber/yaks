@@ -108,16 +108,37 @@ the pre-find scroll and cursor).
 | Key | Action |
 |---|---|
 | `c` / `C` | New root / child yak |
-| `E` | Edit the field/description/comment at the cursor |
+| `E` | Edit what the cursor is on: a body row (the description or a comment) turns that block into an editor **in place**; a header row (`Title:`, `Type:`, `Priority:`, `Labels:`, `Source:`, `Herd:`) opens the form on that field (`Status:` opens the state picker) |
 | `P` / `T` / `L` / `S` | Priority / type / labels / state |
 | `D` / `R` | Add dependency / reparent |
 | `H` | Move to another herd (multi-herd farms) |
-| `M` | Add a comment (note) |
+| `M` | Add a comment (note): an empty editor under a `▸ you · now` header after the last comment, in place |
 | `a` | Ask / answer (on a yak awaiting a human: answer, which sets `needs: agent`; otherwise ask, which sets `needs: human`; on a yak whose copy in another shed is awaiting a human, in any view (the Inbox lists them): answer it in that shed, uncommitted there) |
 | `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm, else in the shed that has it (a shed-only yak's shed first), and says which shed it came from |
 | `r` | (detail) Rename the attachment whose link (📎 or 🖼) the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
 | `X` | Slaughter (delete, with confirm); on a yak with live descendants the confirm offers the whole family, naming how many go |
 | `:w` / `:q` / `:wq` | Save / cancel / save+close (editor Normal mode) |
+
+**Editing in place** — `E` on a body row, or `M`, edits one content block
+without leaving the detail pane. The block's rendered rows are replaced by an
+editor showing its raw markdown, under its own header (accented, with an
+`editing · Ctrl-S save · Ctrl-C cancel` hint) and beside a bar down the left;
+everything above and below stays rendered and scrolls as usual. The editor's
+cursor starts on the source line behind the row the line cursor was on. It is as
+tall as the block's source lines plus one spare row, grows as you type, and is
+capped so about four rows of context stay on screen (the editor scrolls inside
+beyond that); the pane scrolls only as far as needed to show all of it. Every
+key goes to the editor (vim or emacs, per `vim_mode`; `Tab` completes a yak
+reference, `:w` / `:q` work in vim Normal mode). `Ctrl-S` saves just that block
+(the other blocks are rewritten in their canonical form, so they keep their
+text), `Ctrl-C` or a rapid `Esc Esc` cancels (asking first when you changed
+something), and an empty new comment is not saved. After a save the block
+re-renders in place and the line cursor stays on the same source line (on the
+new comment's header after `M`).
+
+![E on a comment row: that comment becomes an editor in the detail pane](assets/tui-edit-inplace.svg)
+
+![M: an empty editor under a provisional header after the last comment](assets/tui-edit-inplace-new.svg)
 
 **Pasting** — the TUI enables bracketed paste, so a terminal paste (`Cmd-V` /
 `Ctrl-Shift-V`) lands in the focused text field as one literal insert: fast,
@@ -270,7 +291,8 @@ label filter) take labels separated by commas and/or spaces — `ui, docs`,
 
 **Edit form** (`E`) — the shared create/edit form: `title`, `type`, `priority`,
 `labels`, and `source` (the external-issue URL; empty = none, so clearing it
-removes `source:`) rows above the description and comments. `E` on the detail
+removes `source:`) rows above the description and comments (body rows of the
+detail pane edit in place instead, see above). `E` on the detail
 pane's `Source:` line jumps straight to that row. Single-line rows scroll
 horizontally to keep the cursor in view rather than wrapping — a nudge to keep
 titles terse. On a multi-herd farm it grows a `herd` chip row (seeded to the

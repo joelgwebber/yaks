@@ -767,3 +767,67 @@ if cargo test --release; then echo "ok ${TARGET}"; fi
     }
     write_svg("tui-md-syntax-edit", &app, w, h);
 }
+
+/// In-place block editing (yaks-597d): `E` on a comment row turns that comment
+/// into an editor inside the detail pane, and `M` opens an empty one after the
+/// last comment, into `docs/assets/tui-edit-inplace*.svg`. Ignored by default;
+/// run explicitly: `cargo test -p yaks docshots_edit_inplace -- --ignored`.
+#[test]
+#[ignore = "asset generator; run with --ignored to refresh docs/assets/tui-edit-inplace*.svg"]
+fn docshots_edit_inplace() {
+    let (w, h) = (96u16, 30u16);
+    let mut y = t(
+        "yaks-5e11",
+        "Login crashes on an expired token",
+        "bug",
+        2,
+        Status::Shaving,
+        None,
+    );
+    y.body = "Logging in with an expired token crashes the app.\n\n## Repro\n\n\
+              1. Log in, wait an hour.\n2. Click anything."
+        .into();
+    y.body = crate::store::append_note(
+        &y.body,
+        "2026-09-06T11:40:00Z",
+        Some("joel"),
+        "Seen on staging too. The refresh path never runs when the token is already expired.",
+    );
+    y.body = crate::store::append_note(
+        &y.body,
+        "2026-09-06T11:58:00Z",
+        Some("agent-1"),
+        "Root cause: `refresh()` checks `exp` after the request, not before.\n\n- fix: check before\n- add a test",
+    );
+    let open = |y: &Task| {
+        let mut app = App::new(vec![y.clone()]);
+        HeadlessApp::on_resize(&mut app, w, h);
+        view_to(&mut app, "status:shaving");
+        press_key(&mut app, KeyCode::Enter);
+        let _ = toque::render_to_svg(&app, w, h); // measure the pane width
+        app
+    };
+
+    // `E` with the line cursor on the second comment's `fix:` row: the editor
+    // opens on that source line, the rest of the pane stays rendered.
+    let mut app = open(&y);
+    let row = app
+        .detail_dlines()
+        .iter()
+        .position(|l| l.text.contains("add a test"))
+        .expect("the comment's list row");
+    app.detail_line = row;
+    press(&mut app, 'E');
+    write_svg("tui-edit-inplace", &app, w, h);
+
+    // `M`: an empty editor under a provisional `you · now` header.
+    let mut app = open(&y);
+    press(&mut app, 'M');
+    press(&mut app, 'T');
+    press(&mut app, 'h');
+    press(&mut app, 'a');
+    press(&mut app, 'n');
+    press(&mut app, 'k');
+    press(&mut app, 's');
+    write_svg("tui-edit-inplace-new", &app, w, h);
+}

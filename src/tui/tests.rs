@@ -333,13 +333,13 @@ fn label_editor_field() {
 }
 
 fn editor_state(app: &App) -> (EditorMode, String) {
-    match &app.overlay {
-        Overlay::Edit(ed) => {
-            let st = ed.state.borrow();
-            (st.mode, st.lines.to_string())
-        }
+    let ed = match &app.overlay {
+        Overlay::Edit(ed) => ed,
+        Overlay::BlockEdit(be) => &be.editor,
         _ => panic!("no editor overlay open"),
-    }
+    };
+    let st = ed.state.borrow();
+    (st.mode, st.lines.to_string())
 }
 
 #[test]
@@ -500,27 +500,7 @@ fn vim_new_content_opens_in_insert_mode() {
         _ => panic!("expected create form"),
     }
     app.open_comment();
-    match &app.overlay {
-        Overlay::Edit(ed) => assert_eq!(ed.state.borrow().mode, EditorMode::Insert),
-        _ => panic!("expected comment editor"),
-    }
-}
-
-#[test]
-fn e_on_comment_line_opens_form_focused_on_that_comment() {
-    let mut app = App::new(vec![body_with_comments()]);
-    handle_key(&mut app, key('l')); // enter the detail pane
-    let starts = app.block_starts();
-    assert_eq!(starts.len(), 3); // description + two comments
-    app.detail_line = starts[2]; // second comment
-    handle_key(
-        &mut app,
-        KeyEvent::new(KeyCode::Char('E'), KeyModifiers::NONE),
-    );
-    match &app.overlay {
-        Overlay::Create(f) => assert_eq!(f.content_index(), Some(2)),
-        _ => panic!("E should open the edit form"),
-    }
+    assert_eq!(editor_state(&app).0, EditorMode::Insert);
 }
 
 #[test]
@@ -2492,6 +2472,7 @@ mod live {
         ctrl_s(&mut app);
         let before = app.task("t0").unwrap().body.clone();
         assert!(before.contains('\u{25b8}'));
+        app.focus = Focus::List; // `E` from the list opens the form
         // Edit: walk title→type→priority→labels→source→description→comment.
         // Tab is now a normal key inside content blocks, so field-nav uses
         // Ctrl-N. The seeded comment opens in Normal (921a), so `i` to insert.
@@ -2517,6 +2498,7 @@ mod live {
         press(&mut app, "keep me");
         ctrl_s(&mut app);
         let before = app.task("t0").unwrap().body.clone();
+        app.focus = Focus::List; // `E` from the list opens the form
         press(&mut app, "E");
         ctrl_s(&mut app); // no edits: parse→assemble must round-trip losslessly
         assert_eq!(app.task("t0").unwrap().body, before);
@@ -2531,6 +2513,7 @@ mod live {
         ctrl_s(&mut app);
         assert!(app.task("t0").unwrap().body.contains('\u{25b8}'));
         let vim = app.editor_vim;
+        app.focus = Focus::List; // `E` from the list opens the form
         press(&mut app, "E");
         match &mut app.overlay {
             Overlay::Create(f) => f.blocks[1].editor = multiline_field("", vim),
@@ -2552,7 +2535,10 @@ mod live {
         press(&mut app, "M");
         press(&mut app, "draft");
         esc(&mut app); // multiline: Esc drops to Normal, does NOT cancel
-        assert!(matches!(app.overlay, Overlay::Edit(_)), "editor stays open");
+        assert!(
+            matches!(app.overlay, Overlay::BlockEdit(_)),
+            "editor stays open"
+        );
     }
 
     #[test]
@@ -2668,7 +2654,10 @@ mod live {
         esc(&mut app); // empty comment -> Normal
         press(&mut app, ":nope");
         enter(&mut app);
-        assert!(matches!(app.overlay, Overlay::Edit(_)), "editor stays open");
+        assert!(
+            matches!(app.overlay, Overlay::BlockEdit(_)),
+            "editor stays open"
+        );
         assert_eq!(app.notification.as_deref(), Some("unknown command: :nope"));
     }
 
@@ -3958,4 +3947,297 @@ fn rendering_a_code_block_does_not_rebuild_rows_per_row() {
         per_frame <= 10,
         "one frame rebuilt the rows {per_frame} times (40 code rows on screen)"
     );
+}
+
+/// In-place block editing (yaks-597d): `E` on a body row and `M` edit one
+/// content block inside the detail pane.
+mod block_edit {
+    use super::*;
+
+    const DESC: &str = "The description.\n\n## Plan\n\n- one\n- two";
+
+    /// A farm-backed yak: a description and two comments (the second a list,
+    /// one item per source line), with the detail pane open and measured.
+    fn app_with_comments() -> (std::path::PathBuf, App) {
+        let mut t = task("t0", "solo", Status::Hairy, 3, None);
+        let b = crate::store::append_note(DESC, "2026-01-01T00:00:00Z", Some("joel"), "first note");
+        t.body = crate::store::append_note(
+            &b,
+            "2026-01-02T00:00:00Z",
+            Some("agent-1"),
+            "- alpha\n- beta\n- gamma",
+        );
+        let (dir, farm) = temp_farm(&[t]);
+        let mut app = App::with_farm(farm).unwrap();
+        app.detail_page = 27;
+        handle_key(&mut app, key('l'));
+        let _ = draw(&app, 90, 30); // measure the pane width
+        (dir, app)
+    }
+
+    fn ctrl(app: &mut App, c: char) {
+        handle_key(app, KeyEvent::new(KeyCode::Char(c), KeyModifiers::CONTROL));
+    }
+
+    /// Append `text` to the cursor's line from Normal mode (`A`, which edtui
+    /// binds with SHIFT, then the text).
+    fn append(app: &mut App, text: &str) {
+        handle_key(app, KeyEvent::new(KeyCode::Char('A'), KeyModifiers::SHIFT));
+        typ(app, text);
+    }
+
+    fn body(app: &App) -> String {
+        app.task("t0").unwrap().body.clone()
+    }
+
+    fn block_edit(app: &App) -> &BlockEdit {
+        match &app.overlay {
+            Overlay::BlockEdit(be) => be,
+            _ => panic!("expected the in-place editor"),
+        }
+    }
+
+    #[test]
+    fn e_on_a_comment_row_opens_the_editor_on_the_source_line_under_the_cursor() {
+        let (_d, mut app) = app_with_comments();
+        app.detail_line = dline_of(&app, "beta");
+        handle_key(&mut app, key('E'));
+        let be = block_edit(&app);
+        assert!(matches!(
+            &be.editor.action,
+            EditAction::Block { block: 2, .. }
+        ));
+        assert_eq!(be.editor.text(), "- alpha\n- beta\n- gamma");
+        assert_eq!(
+            be.editor.state.borrow().cursor.row,
+            1,
+            "source line of `beta`"
+        );
+        // Shows raw source in place, under its own header, bar in the gutter.
+        let frame = draw(&app, 90, 30);
+        assert!(frame.contains("┃- beta"), "{frame}");
+        assert!(frame.contains("agent-1 · "), "{frame}");
+        assert!(
+            frame.contains("editing · Ctrl-S save · Ctrl-C cancel"),
+            "{frame}"
+        );
+        // ...and the other blocks stay rendered around it.
+        assert!(frame.contains("The description."), "{frame}");
+        assert!(frame.contains("first note"), "{frame}");
+    }
+
+    #[test]
+    fn e_on_the_description_edits_block_zero() {
+        let (_d, mut app) = app_with_comments();
+        app.detail_line = dline_of(&app, "The description.");
+        handle_key(&mut app, key('E'));
+        assert!(matches!(
+            &block_edit(&app).editor.action,
+            EditAction::Block { block: 0, .. }
+        ));
+        assert_eq!(block_edit(&app).editor.state.borrow().cursor.row, 0);
+    }
+
+    #[test]
+    fn e_on_a_header_row_still_opens_the_form() {
+        let (_d, mut app) = app_with_comments();
+        app.detail_line = dline_of(&app, "Title:");
+        handle_key(&mut app, key('E'));
+        assert!(matches!(app.overlay, Overlay::Create(_)));
+    }
+
+    #[test]
+    fn rows_above_the_editor_stay_put() {
+        let (_d, mut app) = app_with_comments();
+        let before = pane_rows(&draw(&app, 90, 30));
+        app.detail_line = dline_of(&app, "beta");
+        handle_key(&mut app, key('E'));
+        let after = pane_rows(&draw(&app, 90, 30));
+        let header = after
+            .iter()
+            .position(|l| l.contains("agent-1 · "))
+            .expect("the edited block's header");
+        assert_eq!(app.detail_scroll, 0, "no scroll needed: the editor fits");
+        assert_eq!(&before[..header - 1], &after[..header - 1]);
+    }
+
+    #[test]
+    fn ctrl_s_saves_only_that_block() {
+        let (_d, mut app) = app_with_comments();
+        let before = body(&app);
+        app.detail_line = dline_of(&app, "beta");
+        handle_key(&mut app, key('E'));
+        // Normal mode, cursor on `- beta`: append to the line.
+        append(&mut app, "!");
+        ctrl(&mut app, 's');
+        assert!(matches!(app.overlay, Overlay::None));
+        assert_eq!(body(&app), before.replace("- beta", "- beta!"));
+        // The description and the first comment are byte-identical.
+        let a = content::parse(&before);
+        let b = content::parse(&body(&app));
+        assert_eq!(a[0], b[0]);
+        assert_eq!(a[1], b[1]);
+        assert_ne!(a[2], b[2]);
+    }
+
+    #[test]
+    fn ctrl_s_without_edits_changes_nothing() {
+        let (_d, mut app) = app_with_comments();
+        let before = body(&app);
+        app.detail_line = dline_of(&app, "first note");
+        handle_key(&mut app, key('E'));
+        ctrl(&mut app, 's');
+        assert_eq!(body(&app), before);
+        assert_eq!(app.notification.as_deref(), Some("t0 unchanged"));
+    }
+
+    #[test]
+    fn saving_the_description_leaves_the_comments_alone() {
+        let (_d, mut app) = app_with_comments();
+        let before = body(&app);
+        app.detail_line = dline_of(&app, "The description.");
+        handle_key(&mut app, key('E'));
+        append(&mut app, " edited");
+        ctrl(&mut app, 's');
+        assert_eq!(
+            body(&app),
+            before.replacen("The description.", "The description. edited", 1)
+        );
+    }
+
+    #[test]
+    fn after_saving_the_line_cursor_stays_on_the_same_source_line() {
+        let (_d, mut app) = app_with_comments();
+        app.detail_line = dline_of(&app, "beta");
+        handle_key(&mut app, key('E'));
+        append(&mut app, "!");
+        ctrl(&mut app, 's');
+        assert_eq!(app.detail_line, dline_of(&app, "beta!"));
+    }
+
+    #[test]
+    fn m_adds_a_comment_at_the_end() {
+        let (_d, mut app) = app_with_comments();
+        let before = body(&app);
+        handle_key(&mut app, key('M'));
+        assert!(matches!(
+            &block_edit(&app).editor.action,
+            EditAction::Comment(_)
+        ));
+        let frame = draw(&app, 90, 30);
+        assert!(frame.contains("· now"), "provisional header:\n{frame}");
+        assert!(
+            frame.contains("• gamma"),
+            "the comments stay visible:\n{frame}"
+        );
+        typ(&mut app, "a fresh note");
+        ctrl(&mut app, 's');
+        assert!(matches!(app.overlay, Overlay::None));
+        let now = body(&app);
+        assert!(now.starts_with(&before), "existing blocks untouched");
+        assert!(now.ends_with("\n\na fresh note"), "{now:?}");
+        let blocks = content::parse(&now);
+        assert_eq!(blocks.len(), 4);
+        // The line cursor sits on the new comment's header.
+        assert_eq!(
+            app.detail_dlines()[app.detail_line].src.map(|s| s.block),
+            Some(3)
+        );
+    }
+
+    #[test]
+    fn an_empty_new_comment_is_not_saved() {
+        let (_d, mut app) = app_with_comments();
+        let before = body(&app);
+        handle_key(&mut app, key('M'));
+        ctrl(&mut app, 's');
+        assert_eq!(body(&app), before);
+        assert_eq!(app.notification.as_deref(), Some("comment cancelled"));
+    }
+
+    #[test]
+    fn esc_esc_with_edits_asks_to_confirm_and_n_returns_to_the_editor() {
+        let (_d, mut app) = app_with_comments();
+        let before = body(&app);
+        app.detail_line = dline_of(&app, "beta");
+        handle_key(&mut app, key('E'));
+        append(&mut app, "!");
+        esc_key(&mut app);
+        esc_key(&mut app); // rapid double-Esc = cancel
+        assert!(matches!(app.overlay, Overlay::Confirm { .. }));
+        // The editor region stays drawn behind the prompt.
+        assert!(draw(&app, 90, 30).contains("┃- beta!"));
+        press(&mut app, "n");
+        assert_eq!(block_edit(&app).editor.text(), "- alpha\n- beta!\n- gamma");
+        esc_key(&mut app);
+        esc_key(&mut app);
+        press(&mut app, "y");
+        assert!(matches!(app.overlay, Overlay::None));
+        assert_eq!(body(&app), before, "nothing saved");
+        assert_eq!(app.notification.as_deref(), Some("changes discarded"));
+    }
+
+    #[test]
+    fn ctrl_c_without_edits_cancels_at_once() {
+        let (_d, mut app) = app_with_comments();
+        app.detail_line = dline_of(&app, "beta");
+        handle_key(&mut app, key('E'));
+        ctrl(&mut app, 'c');
+        assert!(matches!(app.overlay, Overlay::None));
+        assert_eq!(app.notification.as_deref(), Some("cancelled"));
+    }
+
+    #[test]
+    fn a_tall_editor_is_capped_and_scrolls_inside() {
+        let mut t = task("t0", "solo", Status::Hairy, 3, None);
+        let long: Vec<String> = (0..60).map(|i| format!("- item {i}")).collect();
+        t.body = format!("Intro.\n\n{}", long.join("\n"));
+        let (_d, farm) = temp_farm(&[t]);
+        let mut app = App::with_farm(farm).unwrap();
+        app.detail_page = 27;
+        handle_key(&mut app, key('l'));
+        let _ = draw(&app, 90, 30);
+        app.detail_line = dline_of(&app, "item 40");
+        handle_key(&mut app, key('E'));
+        let lines = app.detail_dlines();
+        let rows = lines
+            .iter()
+            .filter(|l| l.kind == detail::Kind::Editor)
+            .count();
+        assert!(rows < 27, "{rows} editor rows must leave context");
+        assert_eq!(app.edit_slot().unwrap().rows, rows);
+        // The whole editor is on screen, and the cursor's item is in it.
+        let frame = draw(&app, 90, 30);
+        assert!(frame.contains("┃- item 40"), "{frame}");
+        let first = lines
+            .iter()
+            .position(|l| l.kind == detail::Kind::Editor)
+            .unwrap();
+        let (top, shown) = (
+            app.detail_scroll as usize,
+            app.detail_rows_shown(app.detail_scroll),
+        );
+        assert!(
+            first > top && first + rows <= top + shown,
+            "editor within the viewport"
+        );
+    }
+
+    #[test]
+    fn typing_grows_the_editor_and_keeps_it_on_screen() {
+        let (_d, mut app) = app_with_comments();
+        handle_key(&mut app, key('M'));
+        let rows = |app: &App| {
+            app.detail_dlines()
+                .iter()
+                .filter(|l| l.kind == detail::Kind::Editor)
+                .count()
+        };
+        let before = rows(&app);
+        for _ in 0..5 {
+            handle_key(&mut app, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+        }
+        assert!(rows(&app) > before);
+        assert!(draw(&app, 90, 30).contains("now ─"));
+    }
 }
