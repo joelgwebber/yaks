@@ -104,6 +104,18 @@ To actually *look* at an SVG frame, rasterize it to PNG with headless Chrome
 (recipe in `docs/tui.md`) — yaks stays out of rasterization, and a pure-Rust
 rasterizer botches the color emoji, so a browser engine is the lever.
 
+**Hand the human a build to try.** After landing any significant change, the
+main (coordinating) thread installs a fresh release build over Joel's
+pre-release test binary, `~/go/bin/yaks` — a temporary override on his `PATH`
+for trying changes before a release. Overwrite it; no backup:
+
+```sh
+cargo build --release && mkdir -p ~/go/bin && install -m 755 target/release/yaks ~/go/bin/yaks
+```
+
+Workers never do this (their clones are not what lands); the coordinator does it
+once their work is merged and the gate is green, and says so in its report.
+
 ## Keeping docs current
 
 A user-facing change is not done until its docs **and its own in-app help** are.
