@@ -164,7 +164,10 @@ dependency-blocked yak; the `⏳` marks one awaiting a human.
 **Detail pane** — the selected yak. `Needs:` renders in a warning accent above
 the fields; `Blocks:`/`Parent:` list linked yaks; the body carries the
 description and timestamped, attributed notes (here a `[wtA]` → `[joel]`
-human-in-the-loop exchange).
+human-in-the-loop exchange). `Created:`/`Updated:` read relative to now for
+recent times (`just now`, `5m ago`, `3h ago`, `yesterday 14:05 -04:00`,
+`Tuesday 09:30 -04:00`) and as an absolute date past a week
+(`Aug 27, 2026 12:15 -04:00`), in your local timezone, which is always labelled.
 
 ![yaks TUI detail pane](assets/tui-detail.svg)
 

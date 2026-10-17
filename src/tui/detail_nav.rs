@@ -68,10 +68,10 @@ impl App {
                     detail::banner(&format!("only in shed {}", shed.name())),
                     detail::blank(),
                 ];
-                lines.extend(detail::build(t, &all, &copies));
+                lines.extend(detail::build_at(t, &all, &copies, &self.clock));
                 lines
             }
-            None => detail::build(t, &self.all, &copies),
+            None => detail::build_at(t, &self.all, &copies, &self.clock),
         };
         detail::wrap(lines, self.detail_width.get() as usize)
     }
