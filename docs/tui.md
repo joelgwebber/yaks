@@ -242,7 +242,17 @@ language shows as a dim label row above it; see below for scrolling), and
 the line cursor is on such a link the status bar shows its destination, dim and
 truncated, in place of the key hints). A link to a yak attachment
 (`<id>/<file>`) is marked `📎` and an image `🖼`; `Enter` opens either
-externally. Task lists show `☐`/`☑` and GitHub alerts (`> [!NOTE]`, `TIP`,
+externally. A link to a **repo source file** is a plain relative link from the
+yak's own file (`.yaks/<id>.md`), so `[code](../src/foo.rs)` also works on
+GitHub; `#L12` or `#L12-L40` adds lines (GitHub's own fragment), and
+`[code](../blob/<sha>/src/foo.rs#L12)` pins it to a commit (`<sha>` is 7 to 40 hex
+digits). It shows as plain link text; the status bar shows `src/foo.rs:L12-L40`
+(`@<sha7>` when pinned). `Enter`/`O` opens it in `$VISUAL`/`$EDITOR` at the line
+(the TUI suspends while it runs, so a full-screen editor works),
+else the OS opener. A pinned link whose file has changed since that commit opens
+a read-only copy of `git show <sha>:<path>` under the temp directory
+(`yaks-src/<sha>/…`); if the file is unchanged it opens the working copy. A link
+that climbs out of the repo (`../../x`) is not a source link. Task lists show `☐`/`☑` and GitHub alerts (`> [!NOTE]`, `TIP`,
 `IMPORTANT`, `WARNING`, `CAUTION`) a coloured bar with a title row. A footnote
 reference shows as a dim `[n]` (numbered in order of first use) that `Enter`
 follows to its definition; definitions collect at the end of their block

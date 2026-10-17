@@ -422,6 +422,9 @@ impl App {
             detail::Target::Task(id) => self.goto_task(&id),
             detail::Target::Url(u) => self.open_external(&u),
             detail::Target::Artifact(p) => self.open_external(&p),
+            detail::Target::Source { path, lines, rev } => {
+                self.open_source(&path, lines, rev.as_deref())
+            }
             detail::Target::Footnote(n) => self.goto_footnote(&n),
         }
     }

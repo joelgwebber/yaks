@@ -1,0 +1,132 @@
+=== frame 0 · 100x20 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-238d · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (2)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (2)   ⭐ Starred (0)   🛖 Sheds (0)
+
+ yak-238d p3 task     🦬 Separate
+ yak-4da9 p3 task     🦬 Source links
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /
+=== end ===
+=== frame 1 · 100x20 · focus=detail · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-238d · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (2)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (2)   ⭐ Starred (0)   🛖 Sheds (0)
+
+◂ Task: yak-238d
+│
+│ Title:       Separate
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Labels:      -
+│
+│ plain
+│
+│ range
+│
+│ pinned
+│
+│ gone
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter
+=== end ===
+=== frame 2 · 100x20 · focus=detail · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-238d · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (2)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (2)   ⭐ Starred (0)   🛖 Sheds (0)
+
+◂ Task: yak-238d
+│
+│ Title:       Separate
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Labels:      -
+│
+│ plain
+│
+│ range
+│
+│ pinned
+│
+│ gone
+→ src/foo.rs
+=== end ===
+=== frame 3 · 100x20 · focus=detail · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-238d · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (2)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (2)   ⭐ Starred (0)   🛖 Sheds (0)
+
+◂ Task: yak-238d
+│
+│ Title:       Separate
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Labels:      -
+│
+│ plain
+│
+│ range
+│
+│ pinned
+│
+│ gone
+→ src/foo.rs:L2-L4
+=== end ===
+=== frame 4 · 100x20 · focus=detail · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-238d · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (2)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (2)   ⭐ Starred (0)   🛖 Sheds (0)
+
+◂ Task: yak-238d
+│
+│ Title:       Separate
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Labels:      -
+│
+│ plain
+│
+│ range
+│
+│ pinned
+│
+│ gone
+→ src/foo.rs:L2-L4@da07025
+=== end ===
+=== frame 5 · 100x20 · focus=detail · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-238d · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (2)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (2)   ⭐ Starred (0)   🛖 Sheds (0)
+
+◂ Task: yak-238d
+│
+│ Title:       Separate
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Labels:      -
+│
+│ plain
+│
+│ range
+│
+│ pinned
+│
+│ gone
+→ src/nope.rs:L1
+=== end ===

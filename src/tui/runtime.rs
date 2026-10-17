@@ -7,13 +7,17 @@ use super::*;
 use ratatui::crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 pub fn run(mut app: App) -> Result<()> {
     let (mut term, kitty) = setup()?;
-    let res = event_loop(&mut term, &mut app);
+    let res = event_loop(&mut term, &mut app, kitty);
     let _ = restore(kitty);
     crate::clipboard::release();
     res
 }
 
-fn event_loop(term: &mut Terminal<CrosstermBackend<Stdout>>, app: &mut App) -> Result<()> {
+fn event_loop(
+    term: &mut Terminal<CrosstermBackend<Stdout>>,
+    app: &mut App,
+    kitty: bool,
+) -> Result<()> {
     // Best-effort filesystem watch on the farm's `.yaks/` tree so external edits
     // (including the user's own, from another process) refresh the UI. Kept
     // alive for the loop's duration; `_watcher` must not be dropped early.
@@ -48,6 +52,11 @@ fn event_loop(term: &mut Terminal<CrosstermBackend<Stdout>>, app: &mut App) -> R
                     Ok(None)
                 }
             })?;
+        }
+        // An editor queued by following a source link (yaks-da5e): run it on
+        // the real terminal, then take the screen back.
+        if let Some(cmd) = app.pending_editor.take() {
+            run_suspended(term, kitty, &cmd)?;
         }
         // Coalesce any pending fs notifications into one deferred refresh.
         if let Some(rx) = &rx {
@@ -97,7 +106,37 @@ fn setup_watcher(path: Option<PathBuf>) -> (Option<RecommendedWatcher>, Option<R
 
 // -- terminal lifecycle ---------------------------------------------------
 
+/// Hand the terminal to `cmd` (an editor) and take it back when it exits:
+/// leave the alternate screen and raw mode, wait for it, re-enter, and force a
+/// full repaint. A failure to start it is not fatal; the TUI carries on.
+fn run_suspended(
+    term: &mut Terminal<CrosstermBackend<Stdout>>,
+    kitty: bool,
+    cmd: &source::ExternalCmd,
+) -> Result<()> {
+    restore(kitty)?;
+    let _ = std::process::Command::new(&cmd.program)
+        .args(&cmd.args)
+        .status();
+    enter_modes()?;
+    term.clear()?;
+    Ok(())
+}
+
 fn setup() -> Result<(Terminal<CrosstermBackend<Stdout>>, bool)> {
+    let kitty = enter_modes()?;
+    let term = Terminal::new(CrosstermBackend::new(io::stdout()))?;
+    let prev = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let _ = restore(kitty);
+        prev(info);
+    }));
+    Ok((term, kitty))
+}
+
+/// Raw mode, alternate screen, mouse, paste and keyboard-enhancement flags;
+/// returns whether the kitty keyboard protocol is on. [`restore`] undoes it.
+fn enter_modes() -> Result<bool> {
     enable_raw_mode()?;
     let mut out = io::stdout();
     execute!(out, EnterAlternateScreen)?;
@@ -114,13 +153,7 @@ fn setup() -> Result<(Terminal<CrosstermBackend<Stdout>>, bool)> {
             PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
         );
     }
-    let term = Terminal::new(CrosstermBackend::new(out))?;
-    let prev = std::panic::take_hook();
-    std::panic::set_hook(Box::new(move |info| {
-        let _ = restore(kitty);
-        prev(info);
-    }));
-    Ok((term, kitty))
+    Ok(kitty)
 }
 
 fn restore(kitty: bool) -> Result<()> {
