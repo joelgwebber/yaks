@@ -21,6 +21,7 @@ mod headless;
 mod markdown;
 mod mdrender;
 mod mouse;
+mod palette;
 mod render;
 mod runtime;
 mod sheds_tab;
