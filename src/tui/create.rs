@@ -14,34 +14,28 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Wrap};
 
 use super::palette;
-use super::when::Clock;
 use super::{
-    CREATE_LABEL_W, HEADER_ROWS, PRI_CHOICES, TYPE_CHOICES, content, disp_width, editor_theme,
-    kind_index, make_handler, multiline_field, pri_index, render_chip_row, render_text_row,
-    set_md_highlights, text_field,
+    CREATE_LABEL_W, HEADER_ROWS, PRI_CHOICES, TYPE_CHOICES, disp_width, editor_theme, kind_index,
+    make_handler, multiline_field, pri_index, render_chip_row, render_text_row, set_md_highlights,
+    text_field,
 };
 use crate::model::Task;
 
-/// One editable content block in the form: the task's description, or a single
-/// comment (carrying its original timestamp so it round-trips unchanged).
-pub(crate) struct ContentBlock {
-    pub(crate) kind: content::BlockKind,
-    pub(crate) editor: RefCell<EditorState>,
-}
-
 /// The create/edit task form: a right-pane form modeled on `Drawer`. Two chip
 /// rows (type/priority) are **single-select** — the cursor *is* the value —
-/// plus single-line title/labels/source rows and a stack of multi-line **content**
-/// blocks (description + comments). `Ctrl-N/P`/Tab walk every row; the focused
-/// block expands to a live editor (accordion). `Ctrl-S` commits (create or
-/// update), `Esc`/`Ctrl-C` cancels. Shared by `c`/`C` (create) and `E` (edit).
+/// plus single-line title/labels/source (and herd) rows. Create (`c`/`C`) adds
+/// one multi-line **description** editor below them; edit (`E`) is the header
+/// rows only — the description and comments are edited in place in the detail
+/// pane (`blockedit.rs`). `Ctrl-N/P`/Tab walk every row. `Ctrl-S` commits
+/// (create or update), `Esc`/`Ctrl-C` cancels.
 pub(crate) struct CreateForm {
     pub(crate) title: RefCell<EditorState>,
     pub(crate) labels: RefCell<EditorState>,
     /// The `source:` external-issue URL (yaks-b0b4); empty = no source.
     pub(crate) source: RefCell<EditorState>,
-    /// `blocks[0]` is always the description; `blocks[1..]` are comments.
-    pub(crate) blocks: Vec<ContentBlock>,
+    /// The description editor, the last row of a *create* form; `None` when
+    /// editing (the body is not part of the edit form).
+    pub(crate) description: Option<RefCell<EditorState>>,
     /// Index into `TYPE_CHOICES` (single-select cursor==value).
     pub(crate) kind_idx: usize,
     /// Index into `PRI_CHOICES` (single-select cursor==value; default → p3).
@@ -73,10 +67,7 @@ impl CreateForm {
             title: text_field("", vim),
             labels: text_field("", vim),
             source: text_field("", vim),
-            blocks: vec![ContentBlock {
-                kind: content::BlockKind::Description,
-                editor: multiline_field("", vim),
-            }],
+            description: Some(multiline_field("", vim)),
             kind_idx: 0,           // task
             pri_idx: pri_index(3), // p3
             row: 0,
@@ -88,21 +79,14 @@ impl CreateForm {
         }
     }
 
-    /// Seed the form from an existing task for editing: the body is split into a
-    /// description block plus one block per comment.
+    /// Seed the form from an existing task for editing: header fields only; the
+    /// body is left untouched by this form.
     pub(crate) fn for_edit(vim: bool, task: &Task) -> Self {
-        let blocks = content::parse(&task.body)
-            .into_iter()
-            .map(|b| ContentBlock {
-                kind: b.kind,
-                editor: multiline_field(&b.text, vim),
-            })
-            .collect();
         CreateForm {
             title: text_field(&task.title, vim),
             labels: text_field(&task.labels.join(", "), vim),
             source: text_field(task.source.as_deref().unwrap_or(""), vim),
-            blocks,
+            description: None,
             kind_idx: kind_index(&task.kind),
             pri_idx: pri_index(task.priority),
             row: 0,
@@ -125,7 +109,7 @@ impl CreateForm {
         self.herds.len() > 1
     }
 
-    /// Non-content header rows, including the optional herd row.
+    /// Header rows (everything but the description), including the optional herd row.
     pub(crate) fn header_rows(&self) -> usize {
         HEADER_ROWS + self.has_herd_row() as usize
     }
@@ -136,21 +120,21 @@ impl CreateForm {
     }
 
     pub(crate) fn row_count(&self) -> usize {
-        self.header_rows() + self.blocks.len()
-    }
-
-    /// The content-block index for the current row, when the cursor is on one.
-    pub(crate) fn content_index(&self) -> Option<usize> {
-        self.row
-            .checked_sub(self.header_rows())
-            .filter(|&i| i < self.blocks.len())
+        self.header_rows() + self.description.is_some() as usize
     }
 
     pub(crate) fn is_content_row(&self) -> bool {
-        self.content_index().is_some()
+        self.description_editor().is_some()
     }
 
-    /// Single-line text rows (title, labels, source); content blocks are
+    /// The description editor, when the cursor is on it (create only).
+    pub(crate) fn description_editor(&self) -> Option<&RefCell<EditorState>> {
+        self.description
+            .as_ref()
+            .filter(|_| self.row == self.header_rows())
+    }
+
+    /// Single-line text rows (title, labels, source); the description is
     /// multi-line and handled separately.
     pub(crate) fn is_line_text_row(&self) -> bool {
         matches!(self.row, 0 | 3 | 4)
@@ -199,29 +183,28 @@ impl CreateForm {
         crate::model::normalize_labels([self.labels.borrow().lines.to_string()])
     }
 
-    /// Reassemble the full body from the description + comment blocks (emptied
-    /// comments are dropped, so saving an emptied comment deletes it).
-    pub(crate) fn assembled_body(&self) -> String {
-        let blocks: Vec<content::Block> = self
-            .blocks
-            .iter()
-            .map(|b| content::Block {
-                kind: b.kind.clone(),
-                text: b.editor.borrow().lines.to_string(),
-            })
-            .collect();
-        content::assemble(&blocks)
+    /// The description of a *create* (empty → no body); trailing whitespace is
+    /// trimmed like `content::assemble` does.
+    pub(crate) fn body_opt(&self) -> Option<String> {
+        let text = self.description_text();
+        let text = text.trim_end();
+        if text.trim().is_empty() {
+            None
+        } else {
+            Some(text.to_string())
+        }
     }
 
-    /// Body for a *create* (empty → no body). A create form only has the one
-    /// description block.
-    pub(crate) fn body_opt(&self) -> Option<String> {
-        let b = self.assembled_body();
-        if b.trim().is_empty() { None } else { Some(b) }
+    /// The raw description text (empty when the form has none).
+    pub(crate) fn description_text(&self) -> String {
+        self.description
+            .as_ref()
+            .map(|d| d.borrow().lines.to_string())
+            .unwrap_or_default()
     }
 }
 
-pub(crate) fn render_create(f: &CreateForm, clock: &Clock, frame: &mut Frame, area: Rect) {
+pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
     let has_herd = f.has_herd_row();
     let mut constraints = vec![
         Constraint::Length(1), // header
@@ -234,7 +217,7 @@ pub(crate) fn render_create(f: &CreateForm, clock: &Clock, frame: &mut Frame, ar
     if has_herd {
         constraints.push(Constraint::Length(1)); // herd chips
     }
-    constraints.push(Constraint::Min(0)); // content-block stack
+    constraints.push(Constraint::Min(0)); // description (create) / spare space
     let rects = Layout::vertical(constraints).split(area);
     let header_r = rects[0];
     let title_r = rects[1];
@@ -242,7 +225,7 @@ pub(crate) fn render_create(f: &CreateForm, clock: &Clock, frame: &mut Frame, ar
     let pri_r = rects[3];
     let labels_r = rects[4];
     let source_r = rects[5];
-    let (herd_r, content_r) = if has_herd {
+    let (herd_r, body_r) = if has_herd {
         (Some(rects[6]), rects[7])
     } else {
         (None, rects[6])
@@ -331,75 +314,17 @@ pub(crate) fn render_create(f: &CreateForm, clock: &Clock, frame: &mut Frame, ar
             hr,
         );
     }
-    render_content_stack(f, clock, frame, content_r);
-}
-
-/// Render the description + comment blocks as an accordion: one labeled
-/// separator per block, with the "expanded" block's body beneath its separator.
-/// The focused block (cursor on a content row) shows a live editor; otherwise
-/// the description shows as a dimmed, wrapped preview so it's visible at a
-/// glance while the cursor sits on a header field.
-pub(crate) fn render_content_stack(f: &CreateForm, clock: &Clock, frame: &mut Frame, area: Rect) {
-    let focused = f.content_index();
-    let expand = focused.unwrap_or(0); // description is shown by default
-    let mut constraints = Vec::new();
-    for i in 0..f.blocks.len() {
-        constraints.push(Constraint::Length(1)); // separator
-        if i == expand {
-            constraints.push(Constraint::Min(0)); // block body
-        }
-    }
-    let rects = Layout::vertical(constraints).split(area);
-    let mut ri = 0;
-    for (i, block) in f.blocks.iter().enumerate() {
-        let is_focused = focused == Some(i);
-        render_block_separator(block, is_focused, clock, frame, rects[ri]);
-        ri += 1;
-        if i != expand {
-            continue;
-        }
-        let body = rects[ri];
-        ri += 1;
-        if is_focused {
-            let mut st = block.editor.borrow_mut();
-            let mode = st.mode;
-            set_md_highlights(&mut st);
-            frame.render_widget(EditorView::new(&mut st).theme(editor_theme(mode)), body);
-        } else {
-            let placeholder = match &block.kind {
-                content::BlockKind::Description => "(no description)",
-                content::BlockKind::Comment { .. } => "(empty)",
-            };
-            let text = block.editor.borrow().lines.to_string();
-            let shown = if text.trim().is_empty() {
-                placeholder.to_string()
-            } else {
-                text
-            };
-            frame.render_widget(
-                Paragraph::new(shown)
-                    .style(Style::new().fg(Color::DarkGray))
-                    .wrap(Wrap { trim: false }),
-                body,
-            );
-        }
+    if let Some(desc) = &f.description {
+        render_description(desc, f.is_content_row(), frame, body_r);
     }
 }
 
-/// One accordion separator: `▸ label ───`, the same design as the detail
-/// pane's comment headers (`detail::comment_label`, `palette::comment_header`):
-/// a comment reads `author · when`; the focused block's label is accented.
-pub(crate) fn render_block_separator(
-    block: &ContentBlock,
-    focused: bool,
-    clock: &Clock,
-    frame: &mut Frame,
-    area: Rect,
-) {
-    let label = super::detail::comment_label(&block.kind, clock);
-    let marker = if focused { "\u{25b8} " } else { "  " };
-    let head = format!("{marker}{label} ");
-    let dashes = (area.width as usize).saturating_sub(disp_width(&head));
+/// The create form's description: a `description` separator, then a live
+/// editor while focused, else a dimmed wrapped preview of what is typed so far.
+fn render_description(desc: &RefCell<EditorState>, focused: bool, frame: &mut Frame, area: Rect) {
+    let [sep, body] = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).areas(area);
+    let head = format!("{}description ", if focused { "\u{25b8} " } else { "  " });
+    let dashes = (sep.width as usize).saturating_sub(disp_width(&head));
     frame.render_widget(
         Paragraph::new(Line::from(vec![
             Span::styled(head, palette::comment_header(focused)),
@@ -408,6 +333,25 @@ pub(crate) fn render_block_separator(
                 palette::rule(),
             ),
         ])),
-        area,
+        sep,
     );
+    if focused {
+        let mut st = desc.borrow_mut();
+        let mode = st.mode;
+        set_md_highlights(&mut st);
+        frame.render_widget(EditorView::new(&mut st).theme(editor_theme(mode)), body);
+    } else {
+        let text = desc.borrow().lines.to_string();
+        let shown = if text.trim().is_empty() {
+            "(no description)".to_string()
+        } else {
+            text
+        };
+        frame.render_widget(
+            Paragraph::new(shown)
+                .style(Style::new().fg(Color::DarkGray))
+                .wrap(Wrap { trim: false }),
+            body,
+        );
+    }
 }

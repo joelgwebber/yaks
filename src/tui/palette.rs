@@ -247,8 +247,8 @@ pub fn alert_title(kind: AlertKind) -> Style {
 // -- comments -------------------------------------------------------------
 
 /// A comment header's label (`▸ comment · 2026-09-06 · joel`): cyan when it is
-/// the focused block (edit form), dark grey otherwise. The trailing `─` run is
-/// always [`rule`]. Same design as the edit form's `render_block_separator`.
+/// the focused block (the create form's description), dark grey otherwise. The trailing `─` run is
+/// always [`rule`]. Same design as the create form's description separator.
 pub fn comment_header(focused: bool) -> Style {
     Style::new().fg(if focused {
         Color::Cyan

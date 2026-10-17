@@ -408,8 +408,8 @@ impl App {
         self.open_edit_focus(None);
     }
 
-    /// `E` from the detail pane: open the edit form focused on whatever the line
-    /// cursor sits on — a header field, the description, or a specific comment.
+    /// `E` from the detail pane: on a header field open the edit form focused on
+    /// it; on a body row (description or a comment) edit that block in place;
     /// Status routes to its own picker (it isn't a form field).
     pub(crate) fn open_edit_at_cursor(&mut self) {
         match self.edit_target_at(self.detail_line) {
@@ -439,7 +439,6 @@ impl App {
             form.herds = choices;
         }
         if let Some(t) = target {
-            let last_block = form.blocks.len().saturating_sub(1);
             form.row = match t {
                 EditTarget::Title => 0,
                 EditTarget::Type => 1,
@@ -447,10 +446,9 @@ impl App {
                 EditTarget::Labels => 3,
                 EditTarget::Source => 4,
                 EditTarget::Herd => HEADER_ROWS,
-                EditTarget::Status => 0, // handled by open_edit_at_cursor
-                // Content rows sit below the header rows, which include the herd
-                // row when present — so key off the form's own header_rows().
-                EditTarget::Content(i) => form.header_rows() + i.min(last_block),
+                // Status and body rows never reach the form: `open_edit_at_cursor`
+                // routes them to the picker / the in-place block editor.
+                EditTarget::Status | EditTarget::Content(_) => 0,
             };
         }
         self.overlay = Overlay::Create(form);

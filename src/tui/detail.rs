@@ -573,7 +573,7 @@ fn editor_rows(n: usize) -> impl Iterator<Item = DLine> {
 }
 
 /// The label of a comment block: `actor · when` (or just `when`). One design
-/// for the detail pane's comment headers and the edit form's separators.
+/// for the detail pane's comment headers.
 pub fn comment_label(kind: &content::BlockKind, clock: &Clock) -> String {
     match kind {
         content::BlockKind::Description => "description".into(),

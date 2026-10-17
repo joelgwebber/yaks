@@ -290,16 +290,18 @@ Label fields (the `L` editor, the create/edit form's `labels`, the drawer's
 label filter) take labels separated by commas and/or spaces — `ui, docs`,
 `ui docs`, and `ui,docs` all mean `[ui, docs]`; a label can contain neither.
 
-**Edit form** (`E`) — the shared create/edit form: `title`, `type`, `priority`,
-`labels`, and `source` (the external-issue URL; empty = none, so clearing it
-removes `source:`) rows above the description and comments (body rows of the
-detail pane edit in place instead, see above). `E` on the detail
-pane's `Source:` line jumps straight to that row. Single-line rows scroll
+**Edit form** (`E`) — the shared create/edit form. Editing it is header fields
+only: `title`, `type`, `priority`, `labels`, and `source` (the external-issue
+URL; empty = none, so clearing it removes `source:`). The body is never part of
+it: the description and comments are edited in place in the detail pane (see
+above), so saving the form leaves the body byte-identical. `E` from the list
+opens it with focus on `title`; `E` on a header line of the detail pane jumps to
+that row (`Source:` to `source`, and so on). Creating (`c`/`C`) uses the same
+form plus a `description` editor below the header rows. Single-line rows scroll
 horizontally to keep the cursor in view rather than wrapping — a nudge to keep
 titles terse. On a multi-herd farm it grows a `herd` chip row (seeded to the
-yak's current herd) between `source` and `description`, so changing it and
-saving moves the yak to that herd (an id-prefix rename). `H` does the same move
-as a one-key picker.
+yak's current herd) after `source`, so changing it and saving moves the yak to
+that herd (an id-prefix rename). `H` does the same move as a one-key picker.
 
 ![yaks TUI edit form with the herd chip row](assets/tui-edit-herd.svg)
 

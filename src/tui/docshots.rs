@@ -239,7 +239,8 @@ fn docshots() {
 
     // 7. Multi-herd edit form: on a two-herd farm (`web`/`api`), `E` opens the
     //    shared edit form, which grows a `herd` chip row (seeded to the yak's
-    //    current herd) between `labels` and `description` — the editable herd
+    //    current herd) after `source` (the form is header fields only; body
+    //    rows edit in place) — the editable herd
     //    affordance (yaks-71d1).
     let mut app = multi_herd_app_at(w, h);
     app.select_id("web-0007");
@@ -759,12 +760,15 @@ if cargo test --release; then echo "ok ${TARGET}"; fi
     press_key(&mut app, KeyCode::Enter);
     let _ = toque::render_to_svg(&app, w, h);
     write_svg("tui-md-syntax", &app, w, h);
-    // The same source in the editor (`E`), cursor on the first line so every
-    // code line is coloured and the fences stay dim.
+    // The same source in the in-place editor (`E` on a body row), cursor on
+    // the first line so every code line is coloured and the fences stay dim.
+    let row = app
+        .detail_dlines()
+        .iter()
+        .position(|l| l.text.contains("Fenced blocks"))
+        .expect("description row");
+    app.detail_line = row;
     press(&mut app, 'E');
-    for _ in 0..5 {
-        press_key(&mut app, KeyCode::Down); // title .. labels, source, description
-    }
     write_svg("tui-md-syntax-edit", &app, w, h);
 }
 

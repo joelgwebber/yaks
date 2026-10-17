@@ -162,8 +162,8 @@ impl App {
             let open_cmd = vim
                 && k.code == KeyCode::Char(':')
                 && matches!(&self.overlay, Overlay::Create(f)
-                    if f.content_index().is_some_and(|i|
-                        f.blocks[i].editor.borrow().mode == EditorMode::Normal));
+                    if f.description_editor()
+                        .is_some_and(|e| e.borrow().mode == EditorMode::Normal));
             if open_cmd {
                 self.cmdline = Some(String::new());
                 return;
@@ -173,8 +173,8 @@ impl App {
             let complete = if k.code == KeyCode::Tab {
                 match &self.overlay {
                     Overlay::Create(f) => f
-                        .content_index()
-                        .and_then(|i| completion_context(&f.blocks[i].editor, &self.ref_prefix)),
+                        .description_editor()
+                        .and_then(|e| completion_context(e, &self.ref_prefix)),
                     _ => None,
                 }
             } else {
@@ -187,9 +187,8 @@ impl App {
             // Never hand edtui a key it can't convert (it would panic).
             if edtui_can_handle(k.code) {
                 if let Overlay::Create(f) = &mut self.overlay {
-                    if let Some(i) = f.content_index() {
-                        f.handler
-                            .on_key_event(k, &mut f.blocks[i].editor.borrow_mut());
+                    if let Some(e) = &f.description {
+                        f.handler.on_key_event(k, &mut e.borrow_mut());
                     }
                 }
             }
@@ -281,7 +280,6 @@ impl App {
         let title = f.title_text();
         let kind = TYPE_CHOICES[f.kind_idx].to_string();
         let priority = PRI_CHOICES[f.pri_idx];
-        let body = f.assembled_body();
         let new_labels = f.labels_vec();
         let mut edit = TaskEdit::default();
         if title != cur.title {
@@ -292,9 +290,6 @@ impl App {
         }
         if priority != cur.priority {
             edit.priority = Some(priority);
-        }
-        if body != cur.body {
-            edit.description = Some(body);
         }
         // Source: empty clears it (farm `update` treats "" as clear).
         let source = f.source_text();
@@ -942,13 +937,12 @@ impl App {
                         || TYPE_CHOICES[f.kind_idx] != cur.kind
                         || PRI_CHOICES[f.pri_idx] != cur.priority
                         || a != b
-                        || f.assembled_body() != cur.body
                 }
                 None => true,
             },
             None => {
                 !f.title_text().is_empty()
-                    || !f.assembled_body().is_empty()
+                    || !f.description_text().trim().is_empty()
                     || !f.labels_vec().is_empty()
                     || f.kind_idx != 0
                     || f.pri_idx != pri_index(3)
@@ -1414,9 +1408,9 @@ impl App {
                             insert_into(&mut ed.handler, &ed.state, id);
                         }
                         Overlay::Create(f) => {
-                            if let Some(i) = f.content_index() {
-                                delete_into(&mut f.handler, &f.blocks[i].editor, fp.replace_len);
-                                insert_into(&mut f.handler, &f.blocks[i].editor, id);
+                            if let Some(e) = &f.description {
+                                delete_into(&mut f.handler, e, fp.replace_len);
+                                insert_into(&mut f.handler, e, id);
                             }
                         }
                         _ => {}
@@ -1744,8 +1738,8 @@ pub(crate) fn handle_paste(app: &mut App, text: &str) {
             return;
         }
         Overlay::Create(f) => {
-            if let Some(i) = f.content_index() {
-                paste_into(&f.blocks[i].editor, text);
+            if let Some(e) = f.description_editor() {
+                paste_into(e, text);
             } else if let Some(e) = f.line_editor() {
                 paste_into(e, text);
             }
