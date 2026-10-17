@@ -1,0 +1,42 @@
+=== frame 1 · 80x40 · focus=detail · view=🦬 Hairy · cursor=0 · rows=3 · sel=yaks-7e82 · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)
+
+◂ Task: yaks-7e82
+│
+│ Title:       Fixture
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Labels:      -
+│
+│ H1 heading
+│
+│ H2 heading
+│
+│ H3 heading
+│
+│ H4 heading
+│
+│ Some struck text, a link and code.
+│
+│ • ☐ open task
+│ • ☑ done task
+│
+│ ▎ ▲ WARNING
+│ ▎ Careful here.
+│
+│ Footnote ref[1].
+│
+│ [1] The footnote body.
+│
+│ ─────────────────────────────────────────────────────────────────────────────
+│
+│
+│
+│
+│
+│
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  D:dep  S:state
+=== end ===
