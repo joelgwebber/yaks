@@ -174,6 +174,16 @@ pane, so a long body never leaves you wondering which yak you're reading.
 
 ![yaks TUI detail pane with a pinned header](assets/tui-detail-pinned.svg)
 
+**Markdown styles** — one palette (`src/tui/palette.rs`) styles markdown in the
+detail pane and the editor, using only the 16 ANSI colours so it follows your
+terminal theme on dark and light backgrounds. Body headings are magenta
+underlined (H1), blue bold (H2) and bold italic (H3), deliberately unlike the
+pane's own cyan-bold labels (`Children:`, `Depends on:`). In the editor the
+`#` / `>` markers are dimmed and the heading or quote text carries the style.
+The swatch below shows every style on a dark and a light terminal.
+
+![yaks markdown palette on a dark and a light terminal](assets/tui-md-palette.svg)
+
 **Inbox** — the flat, cross-status list of every yak carrying a `needs` value
 (`⏳` awaiting a human, `✅` answered and awaiting an agent), and also a yak
 of this farm whose copy in another shed is awaiting a human (the TUI form of

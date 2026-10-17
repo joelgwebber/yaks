@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="961" height="1064" viewBox="0 0 961 1064" font-family="ui-monospace,'SF Mono','DejaVu Sans Mono',Menlo,Consolas,monospace" font-size="14">
+<style>
+text{white-space:pre}
+.b0{fill:#ffffff}
+.s0{fill:#333333}
+.s1{fill:#969896}
+.s2{fill:#666666}
+.s3{fill:#8abeb7;font-weight:bold}
+.s4{fill:#0598bc;font-weight:bold}
+.s5{fill:#b294bb;font-weight:bold;text-decoration:underline}
+.s6{fill:#bc05bc;font-weight:bold;text-decoration:underline}
+.s7{fill:#81a2be;font-weight:bold}
+.s8{fill:#0451a5;font-weight:bold}
+.s9{font-weight:bold;font-style:italic}
+.s10{fill:#333333;font-weight:bold;font-style:italic}
+.s11{fill:#969896;font-weight:bold}
+.s12{fill:#666666;font-weight:bold}
+.s13{font-style:italic}
+.s14{font-weight:bold}
+.s15{fill:#333333;font-style:italic}
+.s16{fill:#333333;font-weight:bold}
+.s17{fill:#b5bd68}
+.s18{fill:#81a2be;text-decoration:underline}
+.s19{fill:#00bc00}
+.s20{fill:#0451a5;text-decoration:underline}
+.s21{fill:#8abeb7}
+.s22{fill:#0598bc}
+.s23{fill:#f0c674}
+.s24{fill:#949800}
+.s25{fill:#81a2be}
+.s26{fill:#0451a5}
+.s27{fill:#b5bd68;font-weight:bold}
+.s28{fill:#00bc00;font-weight:bold}
+.s29{fill:#b294bb}
+.s30{fill:#b294bb;font-weight:bold}
+.s31{fill:#bc05bc}
+.s32{fill:#bc05bc;font-weight:bold}
+.s33{fill:#f0c674;font-weight:bold}
+.s34{fill:#949800;font-weight:bold}
+.s35{fill:#cc6666}
+.s36{fill:#cc6666;font-weight:bold}
+.s37{fill:#cd3131}
+.s38{fill:#cd3131;font-weight:bold}
+</style>
+<rect x="0" y="0" width="961" height="1064" rx="8" fill="#1d1f21"/>
+<rect class="b0" x="480.4" y="10.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="28.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="46.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="64.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="82.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="100.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="118.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="136.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="154.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="172.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="190.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="208.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="226.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="244.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="262.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="280.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="298.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="316.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="334.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="352.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="370.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="388.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="406.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="424.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="442.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="460.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="478.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="496.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="514.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="532.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="550.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="568.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="586.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="604.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="622.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="640.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="658.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="676.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="694.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="712.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="730.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="748.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="766.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="784.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="802.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="820.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="838.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="856.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="874.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="892.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="910.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="928.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="946.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="964.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="982.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="1000.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="1018.0" width="470.9" height="18.0"/>
+<rect class="b0" x="480.4" y="1036.0" width="470.9" height="18.0"/>
+<g fill="#c5c8c6">
+<text y="23.5"><tspan x="18.4">dark terminal (default)</tspan><tspan x="488.8" class="s0">light terminal (VS Code Light+ ANSI)</tspan></text>
+<text y="41.5"><tspan x="18.4" class="s1">── pane labels, for comparison</tspan><tspan x="488.8" class="s2">── pane labels, for comparison</tspan></text>
+<text y="59.5"><tspan x="18.4" class="s3">Children:</tspan><tspan x="119.2" class="s3">Depends on:</tspan><tspan x="236.8" class="s3">Needs:</tspan><tspan x="488.8" class="s4">Children:</tspan><tspan x="589.6" class="s4">Depends on:</tspan><tspan x="707.2" class="s4">Needs:</tspan></text>
+<text y="95.5"><tspan x="18.4" class="s1">── headings (read pane)</tspan><tspan x="488.8" class="s2">── headings (read pane)</tspan></text>
+<text y="113.5"><tspan x="18.4" class="s5">Heading 1</tspan><tspan x="488.8" class="s6">Heading 1</tspan></text>
+<text y="131.5"><tspan x="18.4" class="s7">Heading 2</tspan><tspan x="488.8" class="s8">Heading 2</tspan></text>
+<text y="149.5"><tspan x="18.4" class="s9">Heading 3</tspan><tspan x="488.8" class="s10">Heading 3</tspan></text>
+<text y="167.5"><tspan x="18.4" class="s11">Heading 4</tspan><tspan x="488.8" class="s12">Heading 4</tspan></text>
+<text y="203.5"><tspan x="18.4" class="s1">── inline</tspan><tspan x="488.8" class="s2">── inline</tspan></text>
+<text y="221.5"><tspan x="18.4">Plain,</tspan><tspan x="77.2" class="s13">emphasis</tspan><tspan x="144.4">,</tspan><tspan x="161.2" class="s14">strong</tspan><tspan x="211.6">,</tspan><tspan x="228.4" class="s9">strong+em</tspan><tspan x="304.0">,</tspan><tspan x="320.8" class="s1">struck</tspan><tspan x="371.2">,</tspan><tspan x="488.8" class="s0">Plain,</tspan><tspan x="547.6" class="s15">emphasis</tspan><tspan x="614.8" class="s0">,</tspan><tspan x="631.6" class="s16">strong</tspan><tspan x="682.0" class="s0">,</tspan><tspan x="698.8" class="s10">strong+em</tspan><tspan x="774.4" class="s0">,</tspan><tspan x="791.2" class="s2">struck</tspan><tspan x="841.6" class="s0">,</tspan></text>
+<text y="239.5"><tspan x="18.4">and</tspan><tspan x="52.0" class="s17">inline_code()</tspan><tspan x="161.2">, a</tspan><tspan x="194.8" class="s18">link text</tspan><tspan x="278.8" class="s1">(https://example.com/x)</tspan><tspan x="488.8" class="s0">and</tspan><tspan x="522.4" class="s19">inline_code()</tspan><tspan x="631.6" class="s0">, a</tspan><tspan x="665.2" class="s20">link text</tspan><tspan x="749.2" class="s2">(https://example.com/x)</tspan></text>
+<text y="275.5"><tspan x="18.4" class="s1">── code block</tspan><tspan x="488.8" class="s2">── code block</tspan></text>
+<text y="293.5"><tspan x="18.4" class="s1">```rust</tspan><tspan x="488.8" class="s2">```rust</tspan></text>
+<text y="311.5"><tspan x="18.4" class="s17">fn main() { println!(&quot;hi&quot;); }</tspan><tspan x="488.8" class="s19">fn main() { println!(&quot;hi&quot;); }</tspan></text>
+<text y="329.5"><tspan x="18.4" class="s1">```</tspan><tspan x="488.8" class="s2">```</tspan></text>
+<text y="365.5"><tspan x="18.4" class="s1">── lists, tasks, quote, rule</tspan><tspan x="488.8" class="s2">── lists, tasks, quote, rule</tspan></text>
+<text y="383.5"><tspan x="18.4" class="s21">•</tspan><tspan x="35.2">top level</tspan><tspan x="488.8" class="s22">•</tspan><tspan x="505.6" class="s0">top level</tspan></text>
+<text y="401.5"><tspan x="35.2" class="s21">◦</tspan><tspan x="52.0">nested</tspan><tspan x="505.6" class="s22">◦</tspan><tspan x="522.4" class="s0">nested</tspan></text>
+<text y="419.5"><tspan x="52.0" class="s21">▪</tspan><tspan x="68.8">nested deeper</tspan><tspan x="522.4" class="s22">▪</tspan><tspan x="539.2" class="s0">nested deeper</tspan></text>
+<text y="437.5"><tspan x="68.8" class="s21">•</tspan><tspan x="85.6">cycles back</tspan><tspan x="539.2" class="s22">•</tspan><tspan x="556.0" class="s0">cycles back</tspan></text>
+<text y="455.5"><tspan x="18.4" class="s21">1.</tspan><tspan x="43.6">ordered item</tspan><tspan x="488.8" class="s22">1.</tspan><tspan x="514.0" class="s0">ordered item</tspan></text>
+<text y="473.5"><tspan x="18.4" class="s17">☑</tspan><tspan x="35.2">a finished task</tspan><tspan x="488.8" class="s19">☑</tspan><tspan x="505.6" class="s0">a finished task</tspan></text>
+<text y="491.5"><tspan x="18.4" class="s23">☐</tspan><tspan x="35.2">an open task</tspan><tspan x="488.8" class="s24">☐</tspan><tspan x="505.6" class="s0">an open task</tspan></text>
+<text y="509.5"><tspan x="18.4" class="s1">▎</tspan><tspan x="35.2" class="s13">A quote reads in italic; the bar is quiet.</tspan><tspan x="488.8" class="s2">▎</tspan><tspan x="505.6" class="s15">A quote reads in italic; the bar is quiet.</tspan></text>
+<text y="527.5"><tspan x="18.4" class="s1">▎</tspan><tspan x="35.2" class="s21">•</tspan><tspan x="52.0">a list inside a quote keeps its</tspan><tspan x="320.8" class="s17">colours</tspan><tspan x="488.8" class="s2">▎</tspan><tspan x="505.6" class="s22">•</tspan><tspan x="522.4" class="s0">a list inside a quote keeps its</tspan><tspan x="791.2" class="s19">colours</tspan></text>
+<text y="545.5"><tspan x="18.4" class="s1">──────────────────────────────────────────────────────</tspan><tspan x="488.8" class="s2">──────────────────────────────────────────────────────</tspan></text>
+<text y="581.5"><tspan x="18.4" class="s1">── alerts</tspan><tspan x="488.8" class="s2">── alerts</tspan></text>
+<text y="599.5"><tspan x="18.4" class="s25">▎</tspan><tspan x="35.2" class="s7">● NOTE</tspan><tspan x="488.8" class="s26">▎</tspan><tspan x="505.6" class="s8">● NOTE</tspan></text>
+<text y="617.5"><tspan x="18.4" class="s25">▎</tspan><tspan x="35.2">body text stays the default colour</tspan><tspan x="488.8" class="s26">▎</tspan><tspan x="505.6" class="s0">body text stays the default colour</tspan></text>
+<text y="635.5"><tspan x="18.4" class="s17">▎</tspan><tspan x="35.2" class="s27">✦ TIP</tspan><tspan x="488.8" class="s19">▎</tspan><tspan x="505.6" class="s28">✦ TIP</tspan></text>
+<text y="653.5"><tspan x="18.4" class="s17">▎</tspan><tspan x="35.2">body text stays the default colour</tspan><tspan x="488.8" class="s19">▎</tspan><tspan x="505.6" class="s0">body text stays the default colour</tspan></text>
+<text y="671.5"><tspan x="18.4" class="s29">▎</tspan><tspan x="35.2" class="s30">◆ IMPORTANT</tspan><tspan x="488.8" class="s31">▎</tspan><tspan x="505.6" class="s32">◆ IMPORTANT</tspan></text>
+<text y="689.5"><tspan x="18.4" class="s29">▎</tspan><tspan x="35.2">body text stays the default colour</tspan><tspan x="488.8" class="s31">▎</tspan><tspan x="505.6" class="s0">body text stays the default colour</tspan></text>
+<text y="707.5"><tspan x="18.4" class="s23">▎</tspan><tspan x="35.2" class="s33">▲ WARNING</tspan><tspan x="488.8" class="s24">▎</tspan><tspan x="505.6" class="s34">▲ WARNING</tspan></text>
+<text y="725.5"><tspan x="18.4" class="s23">▎</tspan><tspan x="35.2">body text stays the default colour</tspan><tspan x="488.8" class="s24">▎</tspan><tspan x="505.6" class="s0">body text stays the default colour</tspan></text>
+<text y="743.5"><tspan x="18.4" class="s35">▎</tspan><tspan x="35.2" class="s36">✗ CAUTION</tspan><tspan x="488.8" class="s37">▎</tspan><tspan x="505.6" class="s38">✗ CAUTION</tspan></text>
+<text y="761.5"><tspan x="18.4" class="s35">▎</tspan><tspan x="35.2">body text stays the default colour</tspan><tspan x="488.8" class="s37">▎</tspan><tspan x="505.6" class="s0">body text stays the default colour</tspan></text>
+<text y="797.5"><tspan x="18.4" class="s1">── comment headers</tspan><tspan x="488.8" class="s2">── comment headers</tspan></text>
+<text y="815.5"><tspan x="35.2" class="s1">comment · 2026-09-06 · wtA ─────────────────────────</tspan><tspan x="505.6" class="s2">comment · 2026-09-06 · wtA ─────────────────────────</tspan></text>
+<text y="833.5"><tspan x="18.4" class="s21">▸ comment · 2026-09-06 · joel</tspan><tspan x="270.4" class="s1">────────────────────────</tspan><tspan x="488.8" class="s22">▸ comment · 2026-09-06 · joel</tspan><tspan x="740.8" class="s2">────────────────────────</tspan></text>
+<text y="869.5"><tspan x="18.4" class="s1">── editor (markers dimmed, text unchanged)</tspan><tspan x="488.8" class="s2">── editor (markers dimmed, text unchanged)</tspan></text>
+<text y="887.5"><tspan x="18.4" class="s1">#</tspan><tspan x="35.2" class="s5">Heading 1</tspan><tspan x="488.8" class="s2">#</tspan><tspan x="505.6" class="s6">Heading 1</tspan></text>
+<text y="905.5"><tspan x="18.4" class="s1">##</tspan><tspan x="43.6" class="s7">Heading 2</tspan><tspan x="488.8" class="s2">##</tspan><tspan x="514.0" class="s8">Heading 2</tspan></text>
+<text y="923.5"><tspan x="18.4" class="s1">###</tspan><tspan x="52.0" class="s9">Heading 3</tspan><tspan x="488.8" class="s2">###</tspan><tspan x="522.4" class="s10">Heading 3</tspan></text>
+<text y="941.5"><tspan x="18.4">Some</tspan><tspan x="60.4" class="s1">**</tspan><tspan x="77.2" class="s14">strong</tspan><tspan x="127.6" class="s1">**</tspan><tspan x="144.4">,</tspan><tspan x="161.2" class="s1">*</tspan><tspan x="169.6" class="s13">em</tspan><tspan x="186.4" class="s1">*</tspan><tspan x="203.2">and</tspan><tspan x="236.8" class="s17">`code`</tspan><tspan x="295.6">text</tspan><tspan x="488.8" class="s0">Some</tspan><tspan x="530.8" class="s2">**</tspan><tspan x="547.6" class="s16">strong</tspan><tspan x="598.0" class="s2">**</tspan><tspan x="614.8" class="s0">,</tspan><tspan x="631.6" class="s2">*</tspan><tspan x="640.0" class="s15">em</tspan><tspan x="656.8" class="s2">*</tspan><tspan x="673.6" class="s0">and</tspan><tspan x="707.2" class="s19">`code`</tspan><tspan x="766.0" class="s0">text</tspan></text>
+<text y="959.5"><tspan x="18.4" class="s21">-</tspan><tspan x="35.2">a bullet with</tspan><tspan x="152.8" class="s1">**</tspan><tspan x="169.6" class="s14">bold</tspan><tspan x="203.2" class="s1">**</tspan><tspan x="488.8" class="s22">-</tspan><tspan x="505.6" class="s0">a bullet with</tspan><tspan x="623.2" class="s2">**</tspan><tspan x="640.0" class="s16">bold</tspan><tspan x="673.6" class="s2">**</tspan></text>
+<text y="977.5"><tspan x="18.4" class="s1">&gt;</tspan><tspan x="26.8" class="s13"> a quoted line</tspan><tspan x="488.8" class="s2">&gt;</tspan><tspan x="497.2" class="s15"> a quoted line</tspan></text>
+<text y="995.5"><tspan x="18.4" class="s1">```rust</tspan><tspan x="488.8" class="s2">```rust</tspan></text>
+<text y="1013.5"><tspan x="18.4" class="s17">let x = 1;</tspan><tspan x="488.8" class="s19">let x = 1;</tspan></text>
+<text y="1031.5"><tspan x="18.4" class="s1">```</tspan><tspan x="488.8" class="s2">```</tspan></text>
+</g>
+</svg>

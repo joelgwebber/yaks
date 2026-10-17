@@ -10,7 +10,9 @@
 //! them to edtui `Highlight`s (logical row/col) which edtui applies at render,
 //! so they survive edtui's own wrapping too.
 
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::Style;
+
+use super::palette;
 
 /// A styled run of characters within one logical line (`start` is a char index,
 /// `len` a char count). Runs never overlap and are emitted left-to-right; gaps
@@ -22,28 +24,29 @@ pub struct MdSpan {
     pub style: Style,
 }
 
-fn heading() -> Style {
-    Style::new().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+// Every style below comes from the shared palette (`tui::palette`, yaks-bc53),
+// which the read pane's renderer reads too; this file only decides *where* they
+// apply on a line.
+fn heading(level: u8) -> Style {
+    palette::heading(level)
 }
 fn code() -> Style {
-    Style::new().fg(Color::Green)
+    palette::code_block()
 }
 fn marker() -> Style {
-    Style::new().fg(Color::DarkGray)
+    palette::marker()
 }
 fn bold() -> Style {
-    Style::new().add_modifier(Modifier::BOLD)
+    palette::strong()
 }
 fn italic() -> Style {
-    Style::new().add_modifier(Modifier::ITALIC)
+    palette::emphasis()
 }
 fn bullet() -> Style {
-    Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD)
+    palette::bullet()
 }
 fn quote() -> Style {
-    Style::new()
-        .fg(Color::DarkGray)
-        .add_modifier(Modifier::ITALIC)
+    palette::quote_text()
 }
 
 /// Stateful, line-at-a-time markdown highlighter. Feed it logical lines in
@@ -83,14 +86,41 @@ impl Highlighter {
             return vec![whole(&chars, marker())];
         }
 
-        // ATX heading: whole line in the heading style.
-        if is_heading(&chars) {
-            return vec![whole(&chars, heading())];
+        // ATX heading: the `#` run and its space are a dimmed marker, the rest
+        // takes the level's heading style. (Display width is unchanged: the editor never
+        // collapses markers.)
+        if let Some((level, hashes_end)) = atx_heading(&chars) {
+            let text_start = (hashes_end + 1).min(chars.len());
+            let mut spans = vec![MdSpan {
+                start: indent(&chars),
+                len: text_start - indent(&chars),
+                style: marker(),
+            }];
+            if text_start < chars.len() {
+                spans.push(MdSpan {
+                    start: text_start,
+                    len: chars.len() - text_start,
+                    style: heading(level),
+                });
+            }
+            return spans;
         }
 
-        // Blockquote: whole line dimmed + italic.
-        if is_blockquote(&chars) {
-            return vec![whole(&chars, quote())];
+        // Blockquote: dimmed `>` marker, italic text.
+        if let Some(gt) = blockquote_marker(&chars) {
+            let mut spans = vec![MdSpan {
+                start: gt,
+                len: 1,
+                style: palette::quote_bar(),
+            }];
+            if gt + 1 < chars.len() {
+                spans.push(MdSpan {
+                    start: gt + 1,
+                    len: chars.len() - gt - 1,
+                    style: quote(),
+                });
+            }
+            return spans;
         }
 
         // List item: color the bullet marker, inline-scan the rest.
@@ -150,14 +180,18 @@ fn is_closing_fence(chars: &[char], fc: char, flen: usize) -> bool {
 }
 
 /// An ATX heading: 1–6 `#` after optional indent, then a space or end of line.
-fn is_heading(chars: &[char]) -> bool {
+/// Returns `(level, hashes_end)` where `hashes_end` is one past the `#` run.
+fn atx_heading(chars: &[char]) -> Option<(u8, usize)> {
     let i = indent(chars);
     let hashes = chars[i..].iter().take_while(|c| **c == '#').count();
-    (1..=6).contains(&hashes) && matches!(chars.get(i + hashes), None | Some(&' '))
+    ((1..=6).contains(&hashes) && matches!(chars.get(i + hashes), None | Some(&' ')))
+        .then_some((hashes as u8, i + hashes))
 }
 
-fn is_blockquote(chars: &[char]) -> bool {
-    chars.get(indent(chars)) == Some(&'>')
+/// The column of a blockquote's `>` marker, if the line is one.
+fn blockquote_marker(chars: &[char]) -> Option<usize> {
+    let i = indent(chars);
+    (chars.get(i) == Some(&'>')).then_some(i)
 }
 
 /// A list item marker. Returns `(marker_end, content_start)` where `marker_end`
@@ -286,8 +320,12 @@ mod tests {
         spans
             .iter()
             .map(|s| {
-                let t = if s.style == heading() {
+                let t = if s.style == heading(1) {
                     'h'
+                } else if s.style == heading(2) {
+                    '2'
+                } else if s.style == heading(3) {
+                    '3'
                 } else if s.style == code() {
                     'c'
                 } else if s.style == marker() {
@@ -313,9 +351,12 @@ mod tests {
     }
 
     #[test]
-    fn heading_colors_whole_line() {
-        assert_eq!(line("# Title"), vec![(0, 7, 'h')]);
-        assert_eq!(line("### Deep"), vec![(0, 8, 'h')]);
+    fn heading_dims_hashes_and_styles_text_by_level() {
+        assert_eq!(line("# Title"), vec![(0, 2, 'm'), (2, 5, 'h')]);
+        assert_eq!(line("## Sub"), vec![(0, 3, 'm'), (3, 3, '2')]);
+        assert_eq!(line("### Deep"), vec![(0, 4, 'm'), (4, 4, '3')]);
+        // A bare `#` is a heading with no text.
+        assert_eq!(line("##"), vec![(0, 2, 'm')]);
         // Seven hashes is not a heading.
         assert_eq!(line("####### nope"), vec![]);
     }
@@ -355,8 +396,9 @@ mod tests {
     }
 
     #[test]
-    fn blockquote_whole_line() {
-        assert_eq!(line("> quoted"), vec![(0, 8, 'q')]);
+    fn blockquote_dims_marker_and_italicises_text() {
+        // Quote text is italic (same style as emphasis, so it tags as `i`).
+        assert_eq!(line("> quoted"), vec![(0, 1, 'm'), (1, 7, 'i')]);
     }
 
     #[test]

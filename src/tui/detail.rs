@@ -842,10 +842,12 @@ mod tests {
         let all = vec![task("yak-0001", None, &[], "# Heading\nplain line")];
         let lines = build(&all[0], &all, &[]);
         let body: Vec<&DLine> = lines.iter().filter(|l| l.kind == Kind::Body).collect();
-        // The heading line carries a whole-line span; the plain line carries none.
+        // The heading line carries a dimmed `# ` marker span and a heading-text
+        // span; the plain line carries none.
         let heading = body.iter().find(|l| l.text == "# Heading").unwrap();
-        assert_eq!(heading.md.len(), 1);
-        assert_eq!((heading.md[0].start, heading.md[0].len), (0, 9));
+        assert_eq!(heading.md.len(), 2);
+        assert_eq!((heading.md[0].start, heading.md[0].len), (0, 2));
+        assert_eq!((heading.md[1].start, heading.md[1].len), (2, 7));
         let plain = body.iter().find(|l| l.text == "plain line").unwrap();
         assert!(plain.md.is_empty());
     }

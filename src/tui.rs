@@ -20,6 +20,7 @@ mod handlers;
 mod headless;
 mod markdown;
 mod mouse;
+mod palette;
 mod render;
 mod runtime;
 mod sheds_tab;

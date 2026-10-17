@@ -377,3 +377,289 @@ fn docshots_session() {
     std::fs::write("docs/assets/session.txt", transcript).unwrap();
     eprintln!("wrote docs/assets/session-{{0..3}}.svg + session.txt");
 }
+
+// -- markdown palette swatch (yaks-bc53) ----------------------------------
+
+/// A "terminal theme" for the swatch: what the 16 ANSI colours and the default
+/// fg/bg resolve to. The SVG renderer hard-codes a dark theme; a light terminal
+/// is simulated by re-colouring the buffer's cells (so both panels live in one
+/// SVG and show the *same* palette calls).
+struct Theme {
+    bg: ratatui::style::Color,
+    fg: ratatui::style::Color,
+    ansi: fn(ratatui::style::Color) -> Option<(u8, u8, u8)>,
+}
+
+/// VS Code "Light+" terminal ANSI colours: a real, widely-used light theme (its
+/// green and yellow are the weak spots, which is the point of looking).
+fn light_ansi(c: ratatui::style::Color) -> Option<(u8, u8, u8)> {
+    use ratatui::style::Color::*;
+    Some(match c {
+        Black => (0x00, 0x00, 0x00),
+        Red => (0xcd, 0x31, 0x31),
+        Green => (0x00, 0xbc, 0x00),
+        Yellow => (0x94, 0x98, 0x00),
+        Blue => (0x04, 0x51, 0xa5),
+        Magenta => (0xbc, 0x05, 0xbc),
+        Cyan => (0x05, 0x98, 0xbc),
+        Gray => (0x55, 0x55, 0x55),
+        DarkGray => (0x66, 0x66, 0x66),
+        LightRed => (0xcd, 0x31, 0x31),
+        LightGreen => (0x14, 0xce, 0x14),
+        LightYellow => (0xb5, 0xba, 0x00),
+        LightBlue => (0x04, 0x51, 0xa5),
+        LightMagenta => (0xbc, 0x05, 0xbc),
+        LightCyan => (0x05, 0x98, 0xbc),
+        White => (0xa5, 0xa5, 0xa5),
+        _ => return None,
+    })
+}
+
+fn paint_theme(buf: &mut ratatui::buffer::Buffer, area: ratatui::layout::Rect, theme: &Theme) {
+    use ratatui::style::Color;
+    let map = |c: Color, default: Color| match c {
+        Color::Reset => default,
+        c => (theme.ansi)(c).map_or(c, |(r, g, b)| Color::Rgb(r, g, b)),
+    };
+    for y in area.top()..area.bottom() {
+        for x in area.left()..area.right() {
+            let cell = &mut buf[(x, y)];
+            cell.fg = map(cell.fg, theme.fg);
+            cell.bg = map(cell.bg, theme.bg);
+        }
+    }
+}
+
+/// The editor path: run a source line through the real [`markdown::Highlighter`]
+/// and turn its char spans into a styled `Line`.
+fn editor_line(
+    hl: &mut crate::tui::markdown::Highlighter,
+    text: &str,
+) -> ratatui::text::Line<'static> {
+    use ratatui::style::Style;
+    use ratatui::text::{Line, Span};
+    let chars: Vec<char> = text.chars().collect();
+    let mut out = Vec::new();
+    let mut at = 0;
+    for sp in hl.line(text) {
+        if sp.start > at {
+            out.push(Span::raw(chars[at..sp.start].iter().collect::<String>()));
+        }
+        out.push(Span::styled(
+            chars[sp.start..sp.start + sp.len]
+                .iter()
+                .collect::<String>(),
+            sp.style,
+        ));
+        at = sp.start + sp.len;
+    }
+    if at < chars.len() {
+        out.push(Span::styled(
+            chars[at..].iter().collect::<String>(),
+            Style::new(),
+        ));
+    }
+    Line::from(out)
+}
+
+/// One panel's worth of sample document: every style in the palette, hand-built
+/// from palette calls (this is a swatch, not the renderer).
+fn palette_swatch(width: usize) -> Vec<ratatui::text::Line<'static>> {
+    use crate::tui::palette::{self as p, AlertKind};
+    use ratatui::style::Style;
+    use ratatui::text::{Line, Span};
+
+    let s = |t: &str, st: Style| Span::styled(t.to_string(), st);
+    let r = |t: &str| Span::raw(t.to_string());
+    let section = |t: &str| Line::from(s(&format!("── {t} "), p::marker()));
+    let mut out: Vec<Line<'static>> = Vec::new();
+
+    out.push(section("pane labels, for comparison"));
+    out.push(Line::from(vec![
+        s("Children:", p::pane_label()),
+        r("   "),
+        s("Depends on:", p::pane_label()),
+        r("   "),
+        s("Needs:", p::pane_label()),
+    ]));
+    out.push(Line::raw(""));
+
+    out.push(section("headings (read pane)"));
+    for (lvl, t) in [
+        (1, "Heading 1"),
+        (2, "Heading 2"),
+        (3, "Heading 3"),
+        (4, "Heading 4"),
+    ] {
+        out.push(Line::from(s(t, p::heading(lvl))));
+    }
+    out.push(Line::raw(""));
+
+    out.push(section("inline"));
+    out.push(Line::from(vec![
+        r("Plain, "),
+        s("emphasis", p::emphasis()),
+        r(", "),
+        s("strong", p::strong()),
+        r(", "),
+        s("strong+em", p::strong().patch(p::emphasis())),
+        r(", "),
+        s("struck", p::strikethrough()),
+        r(","),
+    ]));
+    out.push(Line::from(vec![
+        r("and "),
+        s("inline_code()", p::inline_code()),
+        r(", a "),
+        s("link text", p::link_text()),
+        r(" "),
+        s("(https://example.com/x)", p::link_url()),
+        r("."),
+    ]));
+    out.push(Line::raw(""));
+
+    out.push(section("code block"));
+    out.push(Line::from(s("```rust", p::code_fence())));
+    out.push(Line::from(s(
+        "fn main() { println!(\"hi\"); }",
+        p::code_block(),
+    )));
+    out.push(Line::from(s("```", p::code_fence())));
+    out.push(Line::raw(""));
+
+    out.push(section("lists, tasks, quote, rule"));
+    for (depth, t) in [
+        (0usize, "top level"),
+        (1, "nested"),
+        (2, "nested deeper"),
+        (3, "cycles back"),
+    ] {
+        out.push(Line::from(vec![
+            r(&"  ".repeat(depth)),
+            s(p::bullet_glyph(depth), p::bullet()),
+            r(&format!(" {t}")),
+        ]));
+    }
+    out.push(Line::from(vec![s("1.", p::bullet()), r(" ordered item")]));
+    for (done, t) in [(true, "a finished task"), (false, "an open task")] {
+        out.push(Line::from(vec![
+            s(p::task_glyph(done), p::task(done)),
+            r(&format!(" {t}")),
+        ]));
+    }
+    out.push(Line::from(vec![
+        s(p::QUOTE_BAR, p::quote_bar()),
+        r(" "),
+        s(
+            "A quote reads in italic; the bar is quiet.",
+            p::quote_text(),
+        ),
+    ]));
+    out.push(Line::from(vec![
+        s(p::QUOTE_BAR, p::quote_bar()),
+        r(" "),
+        s(p::bullet_glyph(0), p::bullet()),
+        r(" a list inside a quote keeps its "),
+        s("colours", p::inline_code()),
+    ]));
+    out.push(Line::from(s(
+        &p::RULE_CHAR.to_string().repeat(width),
+        p::rule(),
+    )));
+    out.push(Line::raw(""));
+
+    out.push(section("alerts"));
+    for kind in AlertKind::ALL {
+        out.push(Line::from(vec![
+            s(p::QUOTE_BAR, p::alert(kind)),
+            r(" "),
+            s(
+                &format!("{} {}", kind.glyph(), kind.label()),
+                p::alert_title(kind),
+            ),
+        ]));
+        out.push(Line::from(vec![
+            s(p::QUOTE_BAR, p::alert(kind)),
+            r(" body text stays the default colour"),
+        ]));
+    }
+    out.push(Line::raw(""));
+
+    out.push(section("comment headers"));
+    for (focused, t) in [
+        (false, "  comment · 2026-09-06 · wtA "),
+        (true, "▸ comment · 2026-09-06 · joel "),
+    ] {
+        let dashes = width.saturating_sub(t.chars().count());
+        out.push(Line::from(vec![
+            s(t, p::comment_header(focused)),
+            s(&"─".repeat(dashes), p::rule()),
+        ]));
+    }
+    out.push(Line::raw(""));
+
+    out.push(section("editor (markers dimmed, text unchanged)"));
+    let mut hl = crate::tui::markdown::Highlighter::new();
+    for src in [
+        "# Heading 1",
+        "## Heading 2",
+        "### Heading 3",
+        "Some **strong**, *em* and `code` text",
+        "- a bullet with **bold**",
+        "> a quoted line",
+        "```rust",
+        "let x = 1;",
+        "```",
+    ] {
+        out.push(editor_line(&mut hl, src));
+    }
+    out
+}
+
+/// Render every markdown style against the default (dark) and a light terminal
+/// palette into `docs/assets/tui-md-palette.svg` (yaks-bc53). Ignored by
+/// default; run explicitly: `cargo test -p yaks docshots_md_palette -- --ignored`.
+#[test]
+#[ignore = "asset generator; run with --ignored to refresh docs/assets/tui-md-palette.svg"]
+fn docshots_md_palette() {
+    use ratatui::buffer::Buffer;
+    use ratatui::layout::Rect;
+    use ratatui::style::Color;
+    use ratatui::text::Line;
+    use ratatui::widgets::{Paragraph, Widget};
+
+    let panel = 56u16;
+    let lines = palette_swatch(panel as usize - 2);
+    let h = lines.len() as u16 + 2;
+    let area = Rect::new(0, 0, panel * 2, h);
+    let mut buf = Buffer::empty(area);
+    let themes = [
+        (
+            "dark terminal (default)",
+            Rect::new(0, 0, panel, h),
+            None::<Theme>,
+        ),
+        (
+            "light terminal (VS Code Light+ ANSI)",
+            Rect::new(panel, 0, panel, h),
+            Some(Theme {
+                bg: Color::Rgb(0xff, 0xff, 0xff),
+                fg: Color::Rgb(0x33, 0x33, 0x33),
+                ansi: light_ansi,
+            }),
+        ),
+    ];
+    for (title, rect, theme) in themes {
+        let inner = Rect::new(rect.x + 1, rect.y + 1, rect.width - 2, rect.height - 1);
+        Paragraph::new(Line::from(title))
+            .render(Rect::new(inner.x, rect.y, inner.width, 1), &mut buf);
+        Paragraph::new(lines.clone()).render(inner, &mut buf);
+        if let Some(theme) = theme {
+            paint_theme(&mut buf, rect, &theme);
+        }
+    }
+    let svg = toque::buffer_to_svg(&buf);
+    std::fs::create_dir_all("docs/assets").unwrap();
+    std::fs::write("docs/assets/tui-md-palette.svg", svg).unwrap();
+    eprintln!("wrote docs/assets/tui-md-palette.svg");
+}
