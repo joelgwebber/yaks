@@ -1,11 +1,11 @@
 ---
 id: yaks-e9de
 title: Readable markdown + detail/edit QoL
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T04:23:51Z'
+updated: '2026-10-17T04:31:30Z'
 labels:
 - markdown
 - tui
@@ -38,3 +38,7 @@ Every UI child attaches before/after headless frames (`yaks tui --headless`, plu
 5. Editor: hidden markers, quieter links, highlights from the shared parser, auto-continue (in the edtui fork).
 6. View/edit unification (design pass first).
 7. Skills guidance (yaks-382b) once the core lands; each feature updates skills/help/docs in its own change.
+
+---
+▸ 2026-10-17T04:31:30Z [delta-lead]
+moved: hairy -> shaving

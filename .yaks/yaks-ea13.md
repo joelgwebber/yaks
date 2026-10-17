@@ -1,11 +1,11 @@
 ---
 id: yaks-ea13
 title: Markdown rendering improvements
-status: hairy
+status: shaving
 type: task
 priority: 3
 created: '2026-10-05T22:15:30Z'
-updated: '2026-10-17T04:27:08Z'
+updated: '2026-10-17T04:31:30Z'
 parent: yaks-e9de
 labels:
 - markdown
@@ -98,3 +98,7 @@ Answer to the question above, for the record: beyond the examples here, the plan
 ---
 ▸ 2026-10-17T04:27:08Z [delta-lead]
 Baseline: yaks-ea13 as the detail pane renders it today (pre-yaks-649d), headless 100x110 frame.
+
+---
+▸ 2026-10-17T04:31:30Z [delta-lead]
+moved: hairy -> shaving

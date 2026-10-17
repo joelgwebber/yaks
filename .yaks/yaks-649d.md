@@ -1,11 +1,11 @@
 ---
 id: yaks-649d
 title: 'Renderer core: pulldown-cmark to a source-mapped row model'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:25:16Z'
-updated: '2026-10-17T04:25:16Z'
+updated: '2026-10-17T04:31:30Z'
 parent: yaks-ea13
 labels:
 - markdown
@@ -28,3 +28,11 @@ Paragraphs (soft/hard breaks), ATX + setext headings, bullet/ordered lists (star
 ## Evidence
 
 yaks-ea13's own body is the fixture: before/after headless frames attached, an insta snapshot test of it, and a docshots scene. Tests that fail first for: hanging indent of a wrapped list item, a wrapped quote keeping its bar, emphasis across a soft break, a soft break joining lines, yank returning source.
+
+---
+▸ 2026-10-17T04:31:30Z [delta-lead]
+moved: hairy -> shaving
+
+---
+▸ 2026-10-17T04:31:30Z [delta-lead]
+Claim (yakherd delta-lead, 2026-10-17): the coordinator builds this one in the lead thread, in a new module (src/tui/mdrender.rs) first, wired into detail.rs after the quick-win workers land.
