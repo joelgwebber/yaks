@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T05:30:45Z'
+updated: '2026-10-17T05:34:27Z'
 labels:
 - markdown
 - tui
@@ -120,3 +120,10 @@ Progress 2026-10-17 ~05:20 (delta-lead):
 ▸ 2026-10-17T05:30:45Z [delta-lead]
 
 syntax-1 landed: da680bb (yaks-3020) → beb8e45, identical to the computed merge, 16 files; gate re-run green; looked at the attached frame (rust/sh/json coloured, unknown language flat). Its commit carries no trace of the stray note in the coordinator's checkout.
+
+---
+▸ 2026-10-17T05:34:27Z [delta-lead]
+
+links-2 landed: 6a74341 (yaks-1bbb + yaks-3b8d) → eb268a6, identical to the computed merge; gate re-run green (17 ok). Checked on the real build against a scratch farm with a real `yaks attach`: `[the docs](url)` shows as text with `→ https://example.com/docs` in the status bar on Tab, the attachment shows as `📎 build-log` with `→ yak-…/build-log.txt`, the footnote renders as `claim[1]` with `[1] Because.` collected at the end.
+
+Every yak in the family that can be done without a decision is done. Remaining: yaks-bc53 (palette sign-off), yaks-a893 (in-place edit design, blocks yaks-4fa6 and yaks-c6f4), yaks-1f84 (edtui fork push), yaks-33c8 (parked idea).
