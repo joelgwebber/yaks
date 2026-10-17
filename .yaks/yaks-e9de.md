@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T18:01:31Z'
+updated: '2026-10-17T18:14:58Z'
 labels:
 - markdown
 - tui
@@ -164,3 +164,8 @@ Next: yaks-92e5 (drop the form's content blocks), then shear yaks-4fa6 / slaught
 ▸ 2026-10-17T18:01:31Z [delta-lead]
 
 formtrim-1 landed: 9381adf (yaks-92e5) → c2b20a0; gate 18/18; real build: `E` on the list opens a header-only form. Closed: yaks-4fa6 shorn (delivered by 597d), yaks-a893 shorn, yaks-c6f4 slaughtered. Docshots refreshed for the `M:comment` help bar. Open in the family: yaks-bc30 (perf cache), yaks-da5e and yaks-62cf (Joel's new ideas), yaks-33c8 (parked).
+
+---
+▸ 2026-10-17T18:14:58Z [delta-lead]
+
+Joel: finish the rest, land the arc, cut a release; leave yaks-33c8 and yaks-62cf out. Spawning cache-1 (yaks-bc30) and srclinks-1 (yaks-da5e, format agreed).
