@@ -5,10 +5,11 @@ status: hairy
 type: task
 priority: 2
 created: '2026-10-16T20:08:27Z'
-updated: '2026-10-16T20:09:48Z'
+updated: '2026-10-17T13:28:27Z'
 labels:
 - cli
 - agent
+- sheds
 ---
 
 As I'm working with many concurrent sheds, and dropping answers and feedback into the main checkout's yaks, it's putting a lot of burden on the coordinator and workers to figure out where to find the most recent changes to any given yak. This is compounded when I (constantly) forget to commit them.
