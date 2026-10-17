@@ -21,7 +21,7 @@
 //! editor at the right line.
 //!
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::ops::Range;
 
 use pulldown_cmark::{
@@ -103,6 +103,9 @@ struct Cell {
     line: usize,
 }
 
+/// Width of the rule above the footnote definitions.
+const FOOTNOTE_RULE: usize = 12;
+
 /// A forced row break inside inline content (a CommonMark hard break).
 const HARD_BREAK: char = '\n';
 
@@ -142,6 +145,16 @@ struct Renderer<'k> {
     next_block: usize,
     /// Table under construction: rows of cells of chars, plus alignments.
     table: Option<(Vec<Alignment>, Vec<Vec<Vec<Cell>>>)>,
+    /// Footnote number of each label: references in order of first use, then
+    /// definitions nobody references, in source order.
+    footnote_nums: HashMap<String, usize>,
+    /// Rendered footnote definitions `(number, rows)`, collected as they are
+    /// met and appended after the document's last block (see `footer`).
+    footnotes: Vec<(usize, Vec<MdRow>)>,
+    /// While a footnote definition renders: the main rows, `pending_blank` and
+    /// the definition's number, parked until it ends, so its rows are built
+    /// on their own.
+    parked: Option<(Vec<MdRow>, bool, usize)>,
 }
 
 /// Render one markdown document to rows wrapped at `width` display columns.
@@ -174,13 +187,35 @@ pub fn render(text: &str, width: usize, known: &HashSet<&str>) -> Vec<MdRow> {
         block: None,
         next_block: 0,
         table: None,
+        footnote_nums: footnote_numbers(&events),
+        footnotes: Vec::new(),
+        parked: None,
     };
     for (i, (ev, range)) in events.iter().enumerate() {
         let next = events.get(i + 1).map(|(e, _)| e);
         r.event(ev, range.clone(), next);
     }
     r.flush();
+    r.footer();
     r.rows
+}
+
+/// Number the footnotes: references in order of first use, then any
+/// definition no reference points at, in source order.
+fn footnote_numbers(events: &[(Event, Range<usize>)]) -> HashMap<String, usize> {
+    let mut nums = HashMap::new();
+    for want_def in [false, true] {
+        for (ev, _) in events {
+            let label = match ev {
+                Event::FootnoteReference(l) if !want_def => l,
+                Event::Start(Tag::FootnoteDefinition(l)) if want_def => l,
+                _ => continue,
+            };
+            let next = nums.len() + 1;
+            nums.entry(label.to_string()).or_insert(next);
+        }
+    }
+    nums
 }
 
 impl Renderer<'_> {
@@ -233,8 +268,17 @@ impl Renderer<'_> {
                 self.push_linked(t, line, st, false);
             }
             Event::FootnoteReference(label) => {
-                let st = self.style().patch(dim());
-                self.push_plain(&format!("[{label}]"), line, st);
+                // A dim `[n]` that is a link to the definition (Enter jumps).
+                let n = self.footnote_nums.get(label.as_ref()).copied().unwrap_or(0);
+                self.targets.push(Target::Footnote(n.to_string()));
+                let link = Some(self.targets.len() - 1);
+                let style = self.style().patch(dim());
+                self.buf.extend(format!("[{n}]").chars().map(|ch| Cell {
+                    ch,
+                    style,
+                    link,
+                    line,
+                }));
             }
             Event::SoftBreak => {
                 let st = self.style();
@@ -376,8 +420,17 @@ impl Renderer<'_> {
                 });
             }
             Tag::FootnoteDefinition(label) => {
-                self.block_start();
-                let first = format!("[{label}] ");
+                // Built apart and moved to the end of the document by
+                // `footer`; its blank-row bookkeeping must not leak into the
+                // blocks around it.
+                self.flush();
+                let n = self.footnote_nums.get(label.as_ref()).copied().unwrap_or(0);
+                self.parked = Some((
+                    std::mem::take(&mut self.rows),
+                    std::mem::replace(&mut self.pending_blank, false),
+                    n,
+                ));
+                let first = format!("[{n}] ");
                 let w = disp(&first);
                 self.containers.push(Container {
                     first,
@@ -404,6 +457,11 @@ impl Renderer<'_> {
                 self.targets.push(link_target(dest_url));
                 self.link = Some(self.targets.len() - 1);
                 self.styles.push(link());
+                // An attachment (`<id>/<file>` of a known yak) is marked 📎.
+                if is_attachment(dest_url, self.known) {
+                    let st = self.style();
+                    self.push_plain("\u{1F4CE} ", line, st);
+                }
             }
             Tag::Image { dest_url, .. } => {
                 self.targets.push(Target::Artifact(dest_url.to_string()));
@@ -434,6 +492,11 @@ impl Renderer<'_> {
             TagEnd::FootnoteDefinition => {
                 self.block_end();
                 self.containers.pop();
+                if let Some((rows, pending, n)) = self.parked.take() {
+                    let def = std::mem::replace(&mut self.rows, rows);
+                    self.pending_blank = pending;
+                    self.footnotes.push((n, def));
+                }
             }
             TagEnd::CodeBlock | TagEnd::HtmlBlock => {
                 self.code = None;
@@ -557,6 +620,33 @@ impl Renderer<'_> {
                 })
                 .collect();
             self.emit(&cells, line + k, self.block);
+        }
+    }
+
+    /// Append the footnote definitions after the last block: a blank row, a
+    /// short dim rule, then each definition in number order.
+    fn footer(&mut self) {
+        if self.footnotes.is_empty() {
+            return;
+        }
+        let mut notes = std::mem::take(&mut self.footnotes);
+        notes.sort_by_key(|(n, _)| *n);
+        if !self.rows.is_empty() {
+            self.blank_row();
+        }
+        let line = notes[0].1.first().map_or(0, |r| r.lines.0);
+        let cells = vec![
+            Cell {
+                ch: palette::RULE_CHAR,
+                style: palette::rule(),
+                link: None,
+                line,
+            };
+            FOOTNOTE_RULE.min(self.width)
+        ];
+        self.emit(&cells, line, None);
+        for (_, rows) in notes {
+            self.rows.extend(rows);
         }
     }
 
@@ -789,6 +879,13 @@ fn wrap_end(cells: &[Cell], width: usize) -> usize {
         Some(k) if k > 0 => k,
         _ => end,
     }
+}
+
+/// Whether a link destination is a yak attachment: `<id>/<file>` with `<id>` a
+/// known yak id (what `yaks attach` writes).
+fn is_attachment(dest: &str, known: &HashSet<&str>) -> bool {
+    dest.split_once('/')
+        .is_some_and(|(id, file)| !file.is_empty() && known.contains(id))
 }
 
 /// Where a markdown link points: a web URL, or a farm-relative attachment.
@@ -1073,6 +1170,98 @@ mod tests {
     fn loose_list_items_get_blank_rows_between() {
         let out = texts("- a\n\n- b", 40);
         assert_eq!(out, vec!["• a", "", "• b"]);
+    }
+
+    // yaks-1bbb: footnotes.
+    const NOTES: &str = "First[^b] and second[^a], first again[^b].\n\n[^a]: Note A.\n[^b]: Note B,\n    wrapped.\n\nAfter.";
+
+    #[test]
+    fn footnote_references_number_in_order_of_first_use_and_link() {
+        let rows = render(NOTES, 60, &HashSet::new());
+        assert_eq!(rows[0].text, "First[1] and second[2], first again[1].");
+        let links: Vec<_> = rows[0]
+            .links
+            .iter()
+            .map(|l| (l.0, l.1, l.2.clone()))
+            .collect();
+        assert_eq!(
+            links,
+            vec![
+                (5, 3, Target::Footnote("1".into())),
+                (19, 3, Target::Footnote("2".into())),
+                (35, 3, Target::Footnote("1".into())),
+            ]
+        );
+    }
+
+    #[test]
+    fn footnote_definitions_move_to_the_end_under_a_rule() {
+        let out = texts(NOTES, 60);
+        assert_eq!(
+            out,
+            vec![
+                "First[1] and second[2], first again[1].",
+                "",
+                "After.",
+                "",
+                "────────────",
+                "[1] Note B, wrapped.",
+                "[2] Note A.",
+            ]
+        );
+    }
+
+    #[test]
+    fn footnote_definition_wraps_under_its_label_and_maps_to_source() {
+        let rows = render(NOTES, 12, &HashSet::new());
+        let texts: Vec<_> = rows.iter().map(|r| r.text.as_str()).collect();
+        let at = texts.iter().position(|t| *t == "[1] Note B,").unwrap();
+        assert_eq!(texts[at + 1], "    wrapped.");
+        assert_eq!(rows[at].lines.0, 3, "definition B is on source line 3");
+        assert_eq!(texts[at + 2], "[2] Note A.");
+    }
+
+    #[test]
+    fn unreferenced_footnote_definition_still_renders_numbered_after() {
+        let out = texts("Text[^x].\n\n[^y]: orphan\n[^x]: used", 40);
+        assert_eq!(out[out.len() - 2..], ["[1] used", "[2] orphan"]);
+    }
+
+    // yaks-3b8d: attachments.
+    #[test]
+    fn attachment_links_get_a_paperclip_and_images_keep_the_picture() {
+        let mut known = HashSet::new();
+        known.insert("yaks-0001");
+        let rows = render(
+            "[log](yaks-0001/log.txt) ![shot](yaks-0001/shot.png) [web](https://x.io/a) [nope](other-9/f.txt)",
+            80,
+            &known,
+        );
+        assert_eq!(rows[0].text, "\u{1F4CE} log \u{1F5BC} shot web nope");
+        let targets: Vec<_> = rows[0].links.iter().map(|l| l.2.clone()).collect();
+        assert_eq!(
+            targets,
+            vec![
+                Target::Artifact("yaks-0001/log.txt".into()),
+                Target::Artifact("yaks-0001/shot.png".into()),
+                Target::Url("https://x.io/a".into()),
+                Target::Artifact("other-9/f.txt".into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn wide_glyph_prefix_wraps_within_the_width() {
+        let mut known = HashSet::new();
+        known.insert("yaks-0001");
+        // `📎 ` is 3 columns: a paragraph starting with it wraps by display
+        // width, not char count.
+        let rows = render("[abcd efgh](yaks-0001/f.txt)", 8, &known);
+        for r in &rows {
+            assert!(disp(&r.text) <= 8, "{:?} too wide", r.text);
+        }
+        assert_eq!(rows[0].text, "\u{1F4CE} abcd");
+        assert_eq!(rows[1].text, "efgh");
     }
 
     /// The torture-test body of yaks-ea13, rendered at 60 columns.

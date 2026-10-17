@@ -115,7 +115,7 @@ the pre-find scroll and cursor).
 | `M` | Add a comment (note) |
 | `a` | Ask / answer (on a yak awaiting a human: answer, which sets `needs: agent`; otherwise ask, which sets `needs: human`; on a yak whose copy in another shed is awaiting a human, in any view (the Inbox lists them): answer it in that shed, uncommitted there) |
 | `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`) |
-| `r` | (detail) Rename the attachment whose image link the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
+| `r` | (detail) Rename the attachment whose link (📎 or 🖼) the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
 | `X` | Slaughter (delete, with confirm); on a yak with live descendants the confirm offers the whole family, naming how many go |
 | `:w` / `:q` / `:wq` | Save / cancel / save+close (editor Normal mode) |
 
@@ -216,8 +216,16 @@ paragraph that re-wraps to the pane width (a blank line starts a new one),
 wrapped list items hang under their bullet, quotes keep their `▎` bar around
 nested headings, lists and code, code blocks and tables are never wrapped (a fenced block's
 language shows as a dim label row above it; see below for scrolling), and
-`[text](url)` shows just its text (still followable with `Tab`/`Enter`). The
-description and each comment render separately, each comment under a
+`[text](url)` shows just its text (still followable with `Tab`/`Enter`; while
+the line cursor is on such a link the status bar shows its destination, dim and
+truncated, in place of the key hints). A link to a yak attachment
+(`<id>/<file>`) is marked `📎` and an image `🖼`; `Enter` opens either
+externally. Task lists show `☐`/`☑` and GitHub alerts (`> [!NOTE]`, `TIP`,
+`IMPORTANT`, `WARNING`, `CAUTION`) a coloured bar with a title row. A footnote
+reference shows as a dim `[n]` (numbered in order of first use) that `Enter`
+follows to its definition; definitions collect at the end of their block
+(description or comment) under a short dim rule, and `o` returns to the
+reference. The description and each comment render separately, each comment under a
 `▸ author · when` header. Yanking rendered rows (`v` … `y`) copies their source
 markdown, not the displayed text. The editor still shows the raw source.
 

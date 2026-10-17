@@ -244,7 +244,7 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
         ),
         entry("j / k", "Scroll"),
         entry("Tab / [ / ]", "Cycle links"),
-        entry("Enter", "Follow link"),
+        entry("Enter", "Follow link / footnote (status bar: URL)"),
         entry("i / o", "Nav forward / back (restores position)"),
         entry("J / K", "Next / prev task (stay in detail)"),
         entry("Ctrl-N / Ctrl-P", "Next / prev content block"),
@@ -1444,9 +1444,32 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
                 .bg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
         ),
-        _ => (help_hint(app), Style::new().fg(Color::DarkGray)),
+        _ => (
+            link_hint(app, area.width as usize).unwrap_or_else(|| help_hint(app)),
+            Style::new().fg(Color::DarkGray),
+        ),
     };
     frame.render_widget(Paragraph::new(Span::styled(text, style)), area);
+}
+
+/// Where the link Enter would follow on the detail cursor's row points, for
+/// the status bar: a collapsed `[text](url)` shows only its text in the pane,
+/// so its destination is shown here instead of the key hints. Only URLs and
+/// attachments (what opens externally); yak ids and footnotes speak for
+/// themselves.
+fn link_hint(app: &App, width: usize) -> Option<String> {
+    if app.focus != Focus::Detail || !matches!(app.overlay, Overlay::None) || app.on_sheds_tab() {
+        return None;
+    }
+    let jump = app
+        .detail_jumps()
+        .into_iter()
+        .find(|j| j.line == app.detail_line)?;
+    let dest = match jump.target {
+        detail::Target::Url(u) | detail::Target::Artifact(u) => u,
+        detail::Target::Task(_) | detail::Target::Footnote(_) => return None,
+    };
+    Some(truncate_disp(&format!("→ {dest}"), width))
 }
 
 /// One-line description of the active content facets (for the status line).

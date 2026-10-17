@@ -412,7 +412,25 @@ impl App {
             detail::Target::Task(id) => self.goto_task(&id),
             detail::Target::Url(u) => self.open_external(&u),
             detail::Target::Artifact(p) => self.open_external(&p),
+            detail::Target::Footnote(n) => self.goto_footnote(&n),
         }
+    }
+
+    /// Move the line cursor to footnote `n`'s definition in the block the
+    /// cursor is in, recording the spot so `o` returns to the reference.
+    fn goto_footnote(&mut self, n: &str) {
+        let lines = self.detail_dlines();
+        let Some(to) = detail::footnote_line(&lines, self.detail_line, n) else {
+            self.notification = Some(format!("no definition for [{n}]"));
+            return;
+        };
+        if let Some(cur) = self.current_nav_entry() {
+            self.nav_back.push(cur);
+            self.nav_fwd.clear();
+        }
+        self.detail_line = to;
+        self.scroll_line_into_view(to as u16);
+        self.notification = Some(format!("→ [{n}] (o to go back)"));
     }
 
     /// y — copy the selected task's id to the system clipboard (best-effort).
