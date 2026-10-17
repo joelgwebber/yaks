@@ -3939,3 +3939,23 @@ fn an_attachment_only_another_shed_has_resolves_to_that_shed() {
     // Unknown everywhere: no path is invented.
     assert!(app.resolve_attachment("t0/nope.txt").is_none());
 }
+
+#[test]
+fn rendering_a_code_block_does_not_rebuild_rows_per_row() {
+    // yaks-48d6: render_detail asked `block_hscroll` (and so `selected()`,
+    // and so a full `rows()` rebuild) once per row of every no-wrap block, so
+    // a long code block made each frame cost one view rebuild per code line.
+    let mut t = task("c0", "Code", Status::Hairy, 3, None);
+    let code: Vec<String> = (0..40).map(|i| format!("let x{i} = {i};")).collect();
+    t.body = format!("Intro.\n\n```rust\n{}\n```", code.join("\n"));
+    let mut app = App::new(vec![t]);
+    enter_key(&mut app);
+    draw(&app, 100, 60); // capture the pane width
+    let before = super::viewmodel::ROWS_CALLS.with(|c| c.get());
+    draw(&app, 100, 60);
+    let per_frame = super::viewmodel::ROWS_CALLS.with(|c| c.get()) - before;
+    assert!(
+        per_frame <= 10,
+        "one frame rebuilt the rows {per_frame} times (40 code rows on screen)"
+    );
+}

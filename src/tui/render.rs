@@ -1057,7 +1057,7 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
             };
             let hscroll = dl
                 .nowrap_key()
-                .and_then(|k| extents.get(&k).map(|&e| app.block_hscroll(k, e)))
+                .and_then(|k| extents.get(&k).map(|&e| app.block_hscroll(&task.id, k, e)))
                 .unwrap_or(0);
             render_dline(dl, cur, i, &lm, line_bg, hscroll, area.width as usize)
         })

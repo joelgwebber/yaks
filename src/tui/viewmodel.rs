@@ -288,7 +288,12 @@ impl App {
     }
 
     /// Visible rows for the active view (dispatch: working-set / flat / tree).
+    /// Rebuilt on every call (tree, filters, shed overlay): about 1.5 ms on a
+    /// 450-yak farm, so per-row or per-frame loops must not call it, nor
+    /// anything built on it (`selected`, `detail_dlines`); see yaks-48d6.
     pub(crate) fn rows(&self) -> Vec<tree::Row<'_>> {
+        #[cfg(test)]
+        ROWS_CALLS.with(|c| c.set(c.get() + 1));
         let v = self.active_view();
         if v.key == "working-set" {
             return self.working_set_rows();
@@ -362,4 +367,11 @@ impl App {
             self.set_view(i);
         }
     }
+}
+
+#[cfg(test)]
+thread_local! {
+    /// How many times [`App::rows`] ran on this thread, so tests can pin the
+    /// rebuild count of a keypress or a frame (yaks-48d6).
+    pub(crate) static ROWS_CALLS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }

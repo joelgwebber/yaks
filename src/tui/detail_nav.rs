@@ -80,13 +80,15 @@ impl App {
         detail::wrap(lines, width)
     }
 
-    /// The sideways scroll of no-wrap block `key` of the selected yak: the
-    /// scroll state if it is this block's, else 0; clamped so the block never
-    /// scrolls past its widest row (`extent`) at the current pane width.
-    pub(crate) fn block_hscroll(&self, key: (usize, usize), extent: usize) -> usize {
-        let Some(t) = self.selected() else { return 0 };
+    /// The sideways scroll of no-wrap block `key` of yak `yak` (the selected
+    /// one): the scroll state if it is this block's, else 0; clamped so the
+    /// block never scrolls past its widest row (`extent`) at the current pane
+    /// width. The caller passes the id rather than this calling `selected()`:
+    /// the renderer asks once per no-wrap row, and `selected()` rebuilds the
+    /// whole view (yaks-48d6).
+    pub(crate) fn block_hscroll(&self, yak: &str, key: (usize, usize), extent: usize) -> usize {
         match &self.detail_hscroll {
-            Some((id, b, n, off)) if *id == t.id && (*b, *n) == key => {
+            Some((id, b, n, off)) if id == yak && (*b, *n) == key => {
                 (*off).min(extent.saturating_sub(self.detail_width.get() as usize))
             }
             _ => 0,
@@ -109,7 +111,7 @@ impl App {
             return false;
         };
         let max = extent.saturating_sub(self.detail_width.get() as usize);
-        let cur = self.block_hscroll(key, extent);
+        let cur = self.block_hscroll(&id, key, extent);
         let next = (cur as i32 + dir * HSCROLL_STEP as i32).clamp(0, max as i32) as usize;
         self.detail_hscroll = Some((id, key.0, key.1, next));
         next != cur
