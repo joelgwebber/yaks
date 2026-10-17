@@ -162,7 +162,7 @@ Run these directly from the shell (see **Running yaks** above for the exact invo
 | `yaks commits` | Show the git commits linked to a yak — those naming its id and those that touched its file |
 | `yaks update` | Update fields, labels (`--add-label`/`--remove-label`), or append a `--note` (`--note -` reads stdin, `--note-file PATH` a file: use these for multi-line markdown; same on `ask`/`answer`). Accepts multiple ids (same edit to each); `--as <actor>` attributes a note; `--verify '<cmd>'` sets/clears the yak's verification command; `--source <url>` sets/clears the external source |
 | `yaks verify` | Run a yak's verification command (its own `verify:` field, else the config `verify:` default resolved by label) and record the PASS/FAIL as an attributed note (exits non-zero on failure). Explicit — never auto-run. Gives a yak a rerunnable proof-of-correctness |
-| `yaks attach` | Attach a local file (screenshot, TUI frame) as evidence: stores it in `.yaks/<id>/` (beside the yak's file) and links it in the body as `![name](<id>/<file>)`. `--name` sets the stored filename; `--note`/`--as` record an attributed note. `yaks rename-attachment <id> <old> <new>` renames one later (links rewritten). The look-at-it form of evidence, for a human or yakherd to validate |
+| `yaks attach` | Attach a local file (screenshot, TUI frame) as evidence: stores it in `.yaks/<id>/` (beside the yak's file) and links it in the body as `![name](<id>/<file>)` for an image (png, jpg, jpeg, gif, webp, svg) or `[name](<id>/<file>)` for any other file. `--name` sets the stored filename; `--note`/`--as` record an attributed note. `yaks rename-attachment <id> <old> <new>` renames one later (links rewritten). The look-at-it form of evidence, for a human or yakherd to validate |
 | `yaks ask` | Block a yak on a human decision (sets `needs`, drops it from `next`); records the question as an attributed `--note` |
 | `yaks answer` | Answer a question: record the reply and set `needs: agent` (answered, awaiting pickup); `--done` clears `needs` instead; `<id>@<shed>` answers in another shed's copy, left uncommitted there |
 | `yaks pickup` | Take on an answered yak: clear `needs: agent` with a `picked up` note (only that clears it; errors on any other state) |
@@ -197,13 +197,15 @@ Run these directly from the shell (see **Running yaks** above for the exact invo
 | `yaks scan-ids` | Scan a file and/or stdin for tokens that are real yak-ids in this farm — a private-mode leak check; exits non-zero if any are found |
 | `yaks tui` | Open the interactive terminal UI |
 
-The state-transition verbs (`shave`, `shorn`, `regrow`, `slaughter`, `revive`) and `reparent` accept **multiple ids** in one call, applying the same move to each. Every move appends a `▸ <ts> [<actor>]` entry reading `moved: <from> -> <to>` to the
+The state-transition verbs (`shave`, `shorn`, `regrow`, `slaughter`, `revive`) and `reparent` accept **multiple ids** in one call, applying the same move to each. Every move appends a `▸ <ts> [<actor>]` entry (header, blank line, then) reading `moved: <from> -> <to>` to the
 yak, so the file says who moved it and when (`yaks log` lists these). Attribute any note
 or move with `--as <actor>` (else `$YAKS_ACTOR`, else `delta:<thread title>`/`delta:<thread id>` derived from Delta's environment, else the git user; an explicit name is still preferred); attribution never implies ownership.
 
 ## Task format
 
 Each task is one file, `.yaks/<id>.md`, at the same path for its whole life; its attachments sit beside it in `.yaks/<id>/`. Its status is the frontmatter `status:` field (`hairy`, `shaving`, `shorn` or `dead`; a status move edits that line in place). Slaughtered (`dead`) tasks are excluded from every default query — pass `--all` (or `--status dead`) to `list` to find them. Metadata is YAML frontmatter; the markdown body is the description.
+
+> A farm on schema 4 (comments written with no blank line after the `▸ <ts> [actor]` header, non-image attachments linked as `![..]`) is refused by every command but `yaks migrate`, which rewrites it to schema 5 (`--dry-run` first; commit the result on its own). Readers accept both shapes.
 
 > A farm made before yaks 0.0.16 (status subdirectories, `artifacts/<id>/`) no longer opens: every command says so and names the fix, migrating it once with `npx -y @j15r/yaks@0.0.16 migrate` and committing the result.
 

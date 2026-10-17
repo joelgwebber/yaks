@@ -65,6 +65,6 @@ expression: "run(&[\"list\", \"--json\"])"
     "created": "2026-01-03T00:00:00Z",
     "updated": "2026-01-03T00:00:00Z",
     "source": "https://github.com/acme/widgets/issues/9",
-    "description": "Wrapped up the gamma work.\n\n---\n▸ 2026-01-03T12:00:00Z\nVerified in staging."
+    "description": "Wrapped up the gamma work.\n\n---\n▸ 2026-01-03T12:00:00Z\n\nVerified in staging."
   }
 ]

@@ -141,6 +141,9 @@ pub enum OpenError {
     /// The farm is on the old layout (schema 3); the message says which farm
     /// and the one remedy.
     OldLayout(String),
+    /// The farm is flat but on schema 4: `yaks migrate` first (message says
+    /// which farm and how). Only `yaks migrate` opens such a farm.
+    NeedsMigration(String),
 }
 
 /// A handle to one `.yaks/` farm. Cheap to construct; holds no cache yet
@@ -331,6 +334,21 @@ pub fn attachment_name(raw: &str, keep_ext_of: &str) -> Option<String> {
         }
     }
     Some(out)
+}
+
+/// Replace every `old` (`[stem](path)`), with or without a leading `!`, in
+/// `text` by `new` (a whole link, `!` included when it is an image).
+fn replace_link(text: &str, old: &str, new: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(i) = rest.find(old) {
+        let head = &rest[..i];
+        out.push_str(head.strip_suffix('!').unwrap_or(head));
+        out.push_str(new);
+        rest = &rest[i + old.len()..];
+    }
+    out.push_str(rest);
+    out
 }
 
 /// Replace every whole-path occurrence of `old` in `text` with `new`. A match
@@ -529,6 +547,17 @@ impl IssueKind {
 impl Farm {
     /// Discover the nearest `.yaks/` above `cwd` and apply the schema gate.
     pub fn open(cwd: &Path) -> std::result::Result<Farm, OpenError> {
+        Self::open_inner(cwd, false)
+    }
+
+    /// Like [`Farm::open`], but also opens a farm that is behind the current
+    /// schema (schema 4), which is what `yaks migrate` needs. Still refuses a
+    /// newer farm and the old layout.
+    pub fn open_for_migration(cwd: &Path) -> std::result::Result<Farm, OpenError> {
+        Self::open_inner(cwd, true)
+    }
+
+    fn open_inner(cwd: &Path, allow_unmigrated: bool) -> std::result::Result<Farm, OpenError> {
         let found = store::discover(cwd).map_err(|e| OpenError::NoFarm(e.to_string()))?;
         let root = found.root;
         if let store::SchemaStatus::Newer(found) = store::schema_status(&root) {
@@ -539,6 +568,11 @@ impl Farm {
         }
         if let Some(why) = store::old_layout_refusal(&root) {
             return Err(OpenError::OldLayout(why));
+        }
+        if !allow_unmigrated {
+            if let Some(why) = store::migration_refusal(&root) {
+                return Err(OpenError::NeedsMigration(why));
+            }
         }
         Ok(Farm {
             root,
@@ -718,6 +752,9 @@ impl Farm {
                 "shed {name}'s farm is schema v{v}, newer than this yaks (v{})",
                 store::SCHEMA
             );
+        }
+        if let Some(why) = store::migration_refusal(&found.root) {
+            bail!("shed {name}: {why}");
         }
         let theirs = Farm {
             root: found.root,
@@ -1474,9 +1511,19 @@ impl Farm {
         }
     }
 
+    /// Bring a schema-4 farm up to the current schema: every fixup in
+    /// [`crate::migrate::FIXUPS`] over every yak file, then the `schema`
+    /// marker. Under the farm lock (a dry run only reads). Idempotent: on a
+    /// current farm it changes nothing. Never touches git.
+    pub fn migrate(&self, dry_run: bool) -> Result<crate::migrate::Report> {
+        let _lock = (!dry_run).then(|| store::lock(&self.root)).transpose()?;
+        crate::migrate::run(&self.root, dry_run)
+    }
+
     /// Write `data` to `.yaks/{id}/{name}` ([`store::artifact_dir`], beside the
-    /// yak's file) and append a markdown image link `![stem]({id}/{name})` to
-    /// the task body (relative to the yak's own file, so it resolves in any
+    /// yak's file) and append its markdown link to the task body
+    /// ([`store::attachment_link`]: `![stem]({id}/{name})` for an image,
+    /// `[stem]({id}/{name})` for any other file) (relative to the yak's own file, so it resolves in any
     /// markdown viewer). `name` should be a bare filename. The directory lives
     /// inside the farm and, in team mode, commits alongside `.yaks/`, so an
     /// attachment is shareable evidence, not just local scratch.
@@ -1488,11 +1535,7 @@ impl Farm {
         let dir = store::artifact_dir(&self.root, id);
         std::fs::create_dir_all(&dir)?;
         std::fs::write(dir.join(name), data)?;
-        let stem = Path::new(name)
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or(name);
-        let link = format!("![{stem}]({id}/{name})");
+        let link = store::attachment_link(id, name);
         let mut body = task.body.trim_end().to_string();
         if !body.is_empty() {
             body.push_str("\n\n");
@@ -1507,8 +1550,8 @@ impl Farm {
     /// Rename `.yaks/{id}/{old}` to a sanitized `new` (see
     /// [`attachment_name`]; the old extension is kept when `new` omits one)
     /// and rewrite every link to it across the farm — `{id}/{old}`
-    /// path mentions in any yak's body, plus the `![alt]` text of a link whose
-    /// alt was the old file stem (what `attach` writes). Refuses to clobber an
+    /// path mentions in any yak's body, plus the `![alt]` / `[alt]` text of a
+    /// link whose alt was the old file stem (what `attach` writes). Refuses to clobber an
     /// existing attachment.
     pub fn rename_attachment(
         &self,
@@ -1540,6 +1583,8 @@ impl Farm {
 
         let old_path = format!("{id}/{old}");
         let new_path = format!("{id}/{name}");
+        // The link text follows the stem, in either form (a rename can also
+        // move the file across the image/non-image line, e.g. `.txt` -> `.png`).
         let stem = |n: &str| {
             Path::new(n)
                 .file_stem()
@@ -1547,15 +1592,15 @@ impl Farm {
                 .unwrap_or(n)
                 .to_string()
         };
-        let old_alt = format!("![{}]({new_path})", stem(old));
-        let new_alt = format!("![{}]({new_path})", stem(&name));
+        let old_text = format!("[{}]({new_path})", stem(old));
+        let new_link = store::attachment_link(id, &name);
         let mut rewritten = 0;
         for mut t in store::load(&self.root, &EVERY)? {
             if !t.body.contains(&old_path) {
                 continue;
             }
-            let body =
-                replace_path_token(&t.body, &old_path, &new_path).replace(&old_alt, &new_alt);
+            let body = replace_path_token(&t.body, &old_path, &new_path);
+            let body = replace_link(&body, &old_text, &new_link);
             if body != t.body {
                 t.body = body;
                 t.updated = Some(store::now_iso());
@@ -1633,6 +1678,9 @@ impl Farm {
             return Ok(MergeOutcome::NoSource(source.display().to_string()));
         };
         if let Some(why) = store::old_layout_refusal(&src_root) {
+            bail!("{why}");
+        }
+        if let Some(why) = store::migration_refusal(&src_root) {
             bail!("{why}");
         }
         if let (Ok(a), Ok(b)) = (
@@ -1923,7 +1971,15 @@ mod tests {
         );
         assert!(!root.join("yak-0001.md").exists());
 
+        // A schema-4 source is behind this farm's shapes: migrate it first.
         std::fs::write(src.join("schema"), "4\n").unwrap();
+        let Err(err) = farm.merge(&src, false) else {
+            panic!("a schema-4 source must be refused");
+        };
+        assert!(err.to_string().contains("yaks migrate"), "{err}");
+        assert!(!root.join("yak-0001.md").exists());
+
+        std::fs::write(src.join("schema"), "5\n").unwrap();
         let MergeOutcome::Done(plan) = farm.merge(&src, false).unwrap() else {
             panic!("expected a merge");
         };
@@ -2950,6 +3006,135 @@ mod tests {
             other.body,
             "see .yaks/yak-0001/login-screen.png and yak-0001/paste-1.png.bak"
         );
+    }
+
+    /// `attach` links an image as `![stem](..)` and any other file as
+    /// `[stem](..)`; `rename-attachment` rewrites either form, and follows a
+    /// rename across the image line (`.txt` -> `.png`) by gaining the `!`.
+    #[test]
+    fn attach_links_images_with_a_bang_and_other_files_without() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+        for name in ["shot.png", "a.JPG", "v.svg", "log.txt", "notes.md", "noext"] {
+            let _ = farm.attach("yak-0001", name, b"x").unwrap();
+        }
+        let body = store::load_task_by_id(&root, "yak-0001")
+            .unwrap()
+            .unwrap()
+            .body;
+        for want in [
+            "![shot](yak-0001/shot.png)",
+            "![a](yak-0001/a.JPG)",
+            "![v](yak-0001/v.svg)",
+            "[log](yak-0001/log.txt)",
+            "[notes](yak-0001/notes.md)",
+            "[noext](yak-0001/noext)",
+        ] {
+            assert!(body.contains(want), "{want} missing from:\n{body}");
+        }
+        assert!(
+            !body.contains("![log]") && !body.contains("![notes]"),
+            "{body}"
+        );
+
+        // A non-image keeps its plain link through a rename...
+        farm.rename_attachment("yak-0001", "log.txt", "build log")
+            .unwrap();
+        let body = store::load_task_by_id(&root, "yak-0001")
+            .unwrap()
+            .unwrap()
+            .body;
+        assert!(
+            body.contains("[build-log](yak-0001/build-log.txt)"),
+            "{body}"
+        );
+        assert!(!body.contains("![build-log]"), "{body}");
+        // ...an image keeps its `!`...
+        farm.rename_attachment("yak-0001", "shot.png", "login")
+            .unwrap();
+        let body = store::load_task_by_id(&root, "yak-0001")
+            .unwrap()
+            .unwrap()
+            .body;
+        assert!(body.contains("![login](yak-0001/login.png)"), "{body}");
+        // ...and the form follows the extension when a rename crosses the line.
+        farm.rename_attachment("yak-0001", "notes.md", "notes.png")
+            .unwrap();
+        let body = store::load_task_by_id(&root, "yak-0001")
+            .unwrap()
+            .unwrap()
+            .body;
+        assert!(body.contains("![notes](yak-0001/notes.png)"), "{body}");
+        // A schema-4 `![txt](..)` link (not yet migrated) is rewritten too.
+        let mut t = store::load_task_by_id(&root, "yak-0001").unwrap().unwrap();
+        t.body = "![build-log](yak-0001/build-log.txt)".into();
+        store::write::save(&root, &t).unwrap();
+        farm.rename_attachment("yak-0001", "build-log.txt", "ci")
+            .unwrap();
+        let body = store::load_task_by_id(&root, "yak-0001")
+            .unwrap()
+            .unwrap()
+            .body;
+        assert_eq!(body, "[ci](yak-0001/ci.txt)");
+    }
+
+    /// `yaks migrate`: a schema-4 farm is refused by `Farm::open` (naming
+    /// `yaks migrate`), migrated by `open_for_migration` + `migrate`, a dry run
+    /// writes nothing, and a second run changes nothing.
+    #[test]
+    fn migrate_upgrades_a_schema_4_farm_once() {
+        let (root, _farm) = temp_farm();
+        let parent = root.parent().unwrap().to_path_buf();
+        let mut t = task("yak-0001", Status::Shaving);
+        t.body = format!(
+            "see ![log](yak-0001/log.txt) and ![s](yak-0001/s.png){}",
+            "\n\n---\n\u{25b8} 2026-01-01T00:00:00Z [a]\nold shape\n\n---\n\u{25b8} 2026-01-02T00:00:00Z\n\nnew shape"
+        );
+        store::write::save(&root, &t).unwrap();
+        std::fs::write(root.join("schema"), "4\n").unwrap();
+        let before = std::fs::read(root.join("yak-0001.md")).unwrap();
+
+        match Farm::open(&parent) {
+            Err(OpenError::NeedsMigration(why)) => assert!(why.contains("yaks migrate"), "{why}"),
+            _ => panic!("a schema-4 farm must refuse every command but migrate"),
+        }
+        let Ok(farm) = Farm::open_for_migration(&parent) else {
+            panic!("migrate must open a schema-4 farm");
+        };
+
+        let dry = farm.migrate(true).unwrap();
+        assert!(!dry.applied && dry.files == 1);
+        assert_eq!(std::fs::read(root.join("yak-0001.md")).unwrap(), before);
+        assert_eq!(std::fs::read_to_string(root.join("schema")).unwrap(), "4\n");
+
+        let done = farm.migrate(false).unwrap();
+        assert!(done.applied && done.files == 1);
+        let counts: Vec<usize> = done
+            .fixups
+            .iter()
+            .map(|f| f.yaks.iter().map(|(_, n)| n).sum())
+            .collect();
+        assert_eq!(counts, [1, 1], "one old-shape comment, one non-image link");
+        assert_eq!(std::fs::read_to_string(root.join("schema")).unwrap(), "5\n");
+        let body = store::load_task_by_id(&root, "yak-0001")
+            .unwrap()
+            .unwrap()
+            .body;
+        assert_eq!(
+            body,
+            "see [log](yak-0001/log.txt) and ![s](yak-0001/s.png)\n\n---\n\u{25b8} 2026-01-01T00:00:00Z [a]\n\nold shape\n\n---\n\u{25b8} 2026-01-02T00:00:00Z\n\nnew shape"
+        );
+        // Frontmatter (incl. `updated:`) is untouched: only the shape moves.
+        let after = std::fs::read_to_string(root.join("yak-0001.md")).unwrap();
+        let front = |s: &str| s.split("\n---\n").next().unwrap().to_string();
+        assert_eq!(front(&after), front(&String::from_utf8(before).unwrap()));
+
+        // Now an ordinary farm, and a second run is a no-op.
+        assert!(Farm::open(&parent).is_ok());
+        let bytes = std::fs::read(root.join("yak-0001.md")).unwrap();
+        let again = farm.migrate(false).unwrap();
+        assert!(again.is_noop() && again.files == 0);
+        assert_eq!(std::fs::read(root.join("yak-0001.md")).unwrap(), bytes);
     }
 
     #[test]

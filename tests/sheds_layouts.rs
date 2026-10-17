@@ -108,7 +108,7 @@ fn old_note(root: &Path, id: &str, ts: &str, actor: &str, text: &str) {
 
 /// What `yaks migrate` (0.0.16) did, by hand (the layout change and nothing else):
 /// each `<status>/<id>.md` becomes `<id>.md` with `status:` after `title:`,
-/// `artifacts/<id>/` becomes `<id>/` and its links follow, schema 4.
+/// `artifacts/<id>/` becomes `<id>/` and its links follow, schema 5 (what the migration of the day writes).
 fn migrate_by_hand(root: &Path) {
     let farm = root.join(".yaks");
     for st in ["hairy", "shaving", "shorn", "dead"] {
@@ -131,7 +131,7 @@ fn migrate_by_hand(root: &Path) {
         }
         fs::remove_dir(farm.join("artifacts")).unwrap();
     }
-    fs::write(farm.join("schema"), "4\n").unwrap();
+    fs::write(farm.join("schema"), "5\n").unwrap();
 }
 
 struct Repo {

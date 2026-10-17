@@ -92,6 +92,29 @@ cargo-dist ("dist") as a separate, additive path:
 
 Not set up yet; run `dist init` if/when you want those installers.
 
+## A release that bumps the farm schema
+
+A schema bump (4 -> 5: comment header blank line, non-image attachment links)
+ships with a `yaks migrate` fixup list (`src/migrate.rs`), and every command
+but `migrate` refuses a farm on the old schema. A migration commit touches
+nearly every yak file, so land it on its own and in this order:
+
+1. Land the code (the new binary reads BOTH shapes, so nothing breaks yet for
+   a checkout still on the old schema; `yaks sheds` and `changes` read them).
+2. In the primary checkout, with the new binary: `yaks migrate --dry-run`
+   (per-fixup counts), `yaks migrate`, `yaks doctor`, a second `yaks migrate`
+   (it must say `nothing to migrate`), then ONE commit of just `.yaks/`
+   (`git add -A .yaks && git commit -m "yaks: migrate the farm to schema 5"`).
+   Quit every running `yaks tui` first.
+3. Every other checkout (sheds, Delta clones) rebases or merges that commit,
+   or runs `yaks migrate` itself (the fixups are deterministic and
+   idempotent, so both routes give the same bytes). Until then the new binary
+   refuses it, naming `yaks migrate`; an OLD binary reading a migrated farm
+   refuses it as too new (schema 5 > 4), never misreads it.
+4. Open sheds with in-flight work: migrate the shed BEFORE merging it back, or
+   the merge carries old-shape comments into a migrated farm (harmless to read,
+   fixed by the next `yaks migrate`).
+
 ## Version bump
 
 Keep `Cargo.toml`, `npm/yaks/package.json`, and the tag in lockstep.

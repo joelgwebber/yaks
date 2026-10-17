@@ -10,7 +10,7 @@ describe.
 ```sh
 .yaks/
   config.yaml     # farm settings
-  schema          # the layout version (4)
+  schema          # the layout version (5; `yaks migrate` upgrades a 4)
   yaks-1a2b.md    # one file per yak; frontmatter status: hairy | shaving | shorn | dead
   yaks-1a2b/      # its attachments, beside it
 ```
@@ -24,7 +24,7 @@ describe.
   dependencies, a `needs` block, notes — is metadata that pushes nuance out of
   the state machine and into fields you can filter on.
 - **Notes are the work-trail.** Each yak accumulates timestamped, optionally
-  attributed notes (`▸ <ts> [actor]`); every status move adds a
+  attributed notes (`▸ <ts> [actor]`, then a blank line, then the text); every status move adds a
   `moved: <from> -> <to>` entry in the same shape. The notes are the durable
   record of what happened and why; git history is the record of what *changed*.
 

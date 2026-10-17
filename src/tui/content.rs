@@ -7,8 +7,13 @@
 //!
 //! ---
 //! ▸ <timestamp>
+//!
 //! <comment text>
 //! ```
+//!
+//! (Schema 4 wrote the text right under the `▸` line, with no blank line;
+//! `parse` accepts both shapes and `assemble` writes the blank line, so a
+//! schema-4 body reads the same and is upgraded when a comment is saved.)
 //!
 //! A comment boundary is *only* a line that is exactly `---` immediately
 //! followed by a `▸ <timestamp>` line, so a bare `---` horizontal rule inside
@@ -60,7 +65,8 @@ pub fn parse(body: &str) -> Vec<Block> {
         text: lines[..j].join("\n").trim_end().to_string(),
     });
 
-    // Comments: each spans its `▸` line's content until the next marker.
+    // Comments: each spans its `▸` line's content until the next marker. The
+    // one blank line after the `▸` line (schema 5) is not part of the text.
     while j < lines.len() {
         let head = lines[j + 1].trim_start().trim_start_matches(MARK).trim();
         let (timestamp, actor) = crate::store::split_note_head(head);
@@ -68,9 +74,14 @@ pub fn parse(body: &str) -> Vec<Block> {
         while k < lines.len() && !is_marker(&lines, k) {
             k += 1;
         }
+        let start = if lines.get(j + 2).is_some_and(|l| l.trim().is_empty()) {
+            j + 3
+        } else {
+            j + 2
+        };
         blocks.push(Block {
             kind: BlockKind::Comment { timestamp, actor },
-            text: lines[j + 2..k].join("\n").trim_end().to_string(),
+            text: lines[start.min(k)..k].join("\n").trim_end().to_string(),
         });
         j = k;
     }
@@ -100,7 +111,7 @@ pub fn assemble(blocks: &[Block]) -> String {
                 out.push(MARK);
                 out.push(' ');
                 out.push_str(&crate::store::note_head(timestamp, actor.as_deref()));
-                out.push('\n');
+                out.push_str("\n\n");
                 out.push_str(text);
                 wrote = true;
             }
@@ -216,6 +227,18 @@ mod tests {
     }
 
     #[test]
+    fn parses_both_comment_shapes_to_the_same_blocks() {
+        // schema 4: text directly under the header; schema 5: a blank line.
+        let old = "d\n\n---\n\u{25b8} 2026-01-01T00:00:00Z [a]\nline1\nline2\n\n---\n\u{25b8} 2026-01-02T00:00:00Z\nx";
+        let new = "d\n\n---\n\u{25b8} 2026-01-01T00:00:00Z [a]\n\nline1\nline2\n\n---\n\u{25b8} 2026-01-02T00:00:00Z\n\nx";
+        assert_eq!(parse(old), parse(new));
+        assert_eq!(parse(new)[1].text, "line1\nline2");
+        // Assembling either gives the schema-5 shape.
+        assert_eq!(assemble(&parse(old)), new);
+        assert_eq!(assemble(&parse(new)), new);
+    }
+
+    #[test]
     fn assemble_drops_emptied_comment() {
         let blocks = vec![
             desc("keep"),
@@ -224,7 +247,7 @@ mod tests {
         ];
         assert_eq!(
             assemble(&blocks),
-            "keep\n\n---\n\u{25b8} 2026-01-02T00:00:00Z\nstays"
+            "keep\n\n---\n\u{25b8} 2026-01-02T00:00:00Z\n\nstays"
         );
     }
 }

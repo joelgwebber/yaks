@@ -1,0 +1,35 @@
+$ yaks list   # schema-4 farm refuses
+error: /home/joel/src/yaks/.delta/worktrees/d7cjxmrxs40k/yaks/target/farmcopy/.yaks is on schema 4, this yaks writes schema 5: run `yaks migrate` (`--dry-run` shows what changes), commit the result, then use this yaks again
+
+$ yaks migrate --dry-run
+would migrate (schema 4 -> schema 5):
+  comment-header-blank-line: 1283 comment(s) in 396 yak(s)
+  attachment-links: 77 link(s) in 51 yak(s)
+396 yak file(s) to rewrite (dry run: nothing written; re-run without --dry-run)
+
+(per-yak lines: 447)
+
+$ yaks migrate
+migrated (schema 4 -> schema 5):
+  comment-header-blank-line: 1283 comment(s) in 396 yak(s)
+  attachment-links: 77 link(s) in 51 yak(s)
+396 yak file(s) rewritten
+
+$ yaks doctor
+All clear: no farm-integrity issues found.
+exit 0
+
+$ yaks migrate   # second run
+nothing to migrate: the farm is on schema 5
+
+$ yaks migrate --dry-run   # third
+nothing to migrate: the farm is on schema 5
+
+schema: 5
+
+non-image ![ left (should be none):
+0
+image ![ kept:
+12
+plain [stem](id/file) links:
+77

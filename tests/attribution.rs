@@ -66,11 +66,13 @@ impl Drop for Farm {
 
 /// The marker line `▸ <ts> [<actor>]` followed by the transition text.
 fn has_move(file: &str, actor: &str, from: &str, to: &str) -> bool {
+    // Schema 5: the header, a blank line, then the text.
     let lines: Vec<&str> = file.lines().collect();
-    lines.windows(2).any(|w| {
+    lines.windows(3).any(|w| {
         w[0].starts_with("\u{25b8} ")
             && w[0].ends_with(&format!(" [{actor}]"))
-            && w[1] == format!("moved: {from} -> {to}")
+            && w[1].is_empty()
+            && w[2] == format!("moved: {from} -> {to}")
     })
 }
 
