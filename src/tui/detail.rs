@@ -339,7 +339,10 @@ pub fn build(task: &Task, all: &[Task], sheds: &[(&Shed, &YakChange)]) -> Vec<DL
         section(&format!("Task: {}", task.id)),
         empty(),
         field("Title:", &task.title),
-        field("Status:", status_word(task.status)),
+        field(
+            "Status:",
+            &format!("{} {}", task.status.emoji(), status_word(task.status)),
+        ),
     ];
     // A `needs` block is state worth seeing next to Status (mirrors CLI `show`).
     // An open question carries a warning accent (Kind::Warn) so it reads as a

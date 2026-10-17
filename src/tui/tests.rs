@@ -1107,7 +1107,7 @@ fn long_detail_app(body_lines: usize) -> App {
 fn scroll_into_view_is_stable_and_minimal() {
     let mut app = long_detail_app(60);
     draw(&app, 80, 13); // capture the detail width
-    app.detail_page = 10; // viewport shows 10 rows (9 once the header is pinned)
+    app.detail_page = 10; // viewport shows 10 rows (8 once the header + rule are pinned)
     app.detail_scroll = 5; // currently rows 5..14
     app.scroll_line_into_view(8); // already visible -> unchanged
     assert_eq!(app.detail_scroll, 5);
@@ -1115,9 +1115,10 @@ fn scroll_into_view_is_stable_and_minimal() {
     assert_eq!(app.detail_scroll, 2);
     app.detail_scroll = 5;
     // Below -> land it on the last row that is actually visible: the pinned
-    // header costs a row, so only 9 content rows show (yaks-15c7).
+    // header and its rule cost two rows, so only 8 content rows show
+    // (yaks-15c7, yaks-66a3).
     app.scroll_line_into_view(20);
-    assert_eq!(app.detail_scroll, 20 - (9 - 1));
+    assert_eq!(app.detail_scroll, 20 - (8 - 1));
 }
 
 #[test]
@@ -1165,6 +1166,54 @@ fn detail_last_line_is_visible_with_a_blank_row_below() {
         );
     }
     assert_eq!(app.detail_scroll, app.detail_max_scroll());
+}
+
+#[test]
+fn pinned_header_has_a_rule_under_it_and_pushes_content_down_two_rows() {
+    // yaks-66a3: once scrolled, the one-line header gets a dim `─` rule row.
+    let mut app = long_detail_app(40);
+    let (w, h) = (80, 16);
+    app.detail_page = h - 3;
+    draw(&app, w, h);
+    handle_key(&mut app, key('G'));
+    let frame = draw(&app, w, h);
+    let rows: Vec<&str> = frame.lines().collect();
+    let hdr = rows
+        .iter()
+        .position(|l| l.contains("d0") && l.contains("Long") && l.contains("p3"))
+        .unwrap_or_else(|| panic!("no pinned header:\n{frame}"));
+    assert!(
+        rows[hdr + 1].contains(&"\u{2500}".repeat(20)),
+        "no rule under the pinned header:\n{frame}"
+    );
+    assert!(
+        rows[hdr + 2].contains("line "),
+        "content should start right under the rule:\n{frame}"
+    );
+    assert_eq!(
+        app.detail_rows_shown(app.detail_scroll),
+        (h - 3 - 2) as usize
+    );
+    // The unpinned frame has no rule.
+    app.detail_scroll = 0;
+    let top = draw(&app, w, h);
+    assert!(!top.contains(&"\u{2500}".repeat(20)), "{top}");
+}
+
+#[test]
+fn full_detail_header_shows_the_status_emoji() {
+    // yaks-66a3: the Status field carries the same icon as the pinned header.
+    let app = long_detail_app(1);
+    let frame = draw(&app, 80, 16);
+    let row = frame
+        .lines()
+        .find(|l| l.contains("Status:"))
+        .unwrap_or_else(|| panic!("no Status row:\n{frame}"));
+    // (the text frame pads a wide glyph, so check the glyph and word apart)
+    assert!(
+        row.contains(Status::Hairy.emoji()) && row.contains("hairy"),
+        "{row}"
+    );
 }
 
 // -- view substrate (6b-i) --------------------------------------------

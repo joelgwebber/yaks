@@ -7,7 +7,7 @@ expression: frame
  yaks-0000 p2 task     🦬  no shed touched this     │ Task: yaks-8814
  yaks-07fe p2 task     🦬  yaks sheds is slow    🛖 1│
  yaks-8814 p2 task     🦬  a superseded needs    🛖 1│ Title:       a superseded needs
- yaks-ed5e p2 task     🦬  show a shed as landed    │ Status:      hairy
+ yaks-ed5e p2 task     🦬  show a shed as landed    │ Status:      🦬  hairy
                                                    │ Type:        task
                                                    │ Priority:    p2
                                                    │ Created:     -
