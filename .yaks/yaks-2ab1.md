@@ -15,4 +15,5 @@ New run shape (agreed with Joel): (1) ONE coordinator commit on main creates/sha
 
 ---
 ▸ 2026-09-06T01:54:49Z [coordinator]
+
 DONE. Added a 'Parallel run shape (claim -> fan out -> merge -> reconcile)' section to coordinating-yaks and updated Merge/integration: squash-merge is now the DEFAULT for single-commit lanes (the claim commit documents the batch, so topology needn't live in the graph; provenance survives via id-in-message + --follow). --no-ff reserved for multi-commit lanes. About to trial this shape on a live run.

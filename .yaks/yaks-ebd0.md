@@ -20,6 +20,7 @@ Consider keeping `Clipboard` in more persistent state somewhere or keeping the c
 
 ---
 ▸ 2026-10-02T05:09:00Z [Joel Webber]
+
 Root cause, two layers:
 1. src/clipboard.rs::copy_text created an arboard::Clipboard, set_text, and dropped it immediately. On Linux the owning process serves clipboard contents, so the copy died with the handle (set_text still returned Ok -> 'copied' notification; arboard's 'dropped very quickly' warning). Fix: one process-lifetime Clipboard in a static Mutex<Option<_>>, released explicitly at TUI teardown (runtime::run) so arboard can hand off to a clipboard manager.
 2. arboard was built without 'wayland-data-control', so it only used X11 (:0). On niri (xwayland-satellite) that never reached the Wayland clipboard: even with the persistent handle, wl-paste still returned the old contents. Enabled the feature in Cargo.toml; wl-clipboard-rs is target-gated to linux/bsd, so mac/windows release builds are unaffected.

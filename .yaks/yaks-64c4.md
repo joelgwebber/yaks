@@ -15,4 +15,5 @@ Umbrella/holding-pen (no concrete design yet) for making it fast for humans AND 
 
 ---
 ▸ 2026-10-12T21:49:52Z [Joel Webber]
+
 moved: shaving -> hairy

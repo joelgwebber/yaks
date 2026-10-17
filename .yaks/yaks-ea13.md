@@ -85,20 +85,24 @@ We should at least _render_ tables cleanly, even if we don't have great editing 
 
 ---
 ▸ 2026-10-17T03:05:33Z [Joel Webber]
+
 Any thing else you can think of in the markdown standard (such as it is) and common extensions?
 
 ---
 ▸ 2026-10-17T04:26:52Z [delta-lead]
+
 Restructured 2026-10-17 under the umbrella yaks-e9de (its description holds the decisions). This yak is now the rendering sub-parent; its body stays the torture-test fixture. Children: yaks-649d (renderer core, pulldown-cmark), yaks-e30d (headings/rules/emphasis), yaks-c733 (code + tables, h-scroll), yaks-3b8d (links + attachments), yaks-1bbb (task lists, alerts, footnotes), yaks-4fa6 (exact-line `E`), yaks-f67e (link `)` bug), yaks-3020 (code-block syntax colors).
 
 Answer to the question above, for the record: beyond the examples here, the plan covers setext headings, hard breaks, lazy continuation, tight/loose lists, ordered start numbers, nested quotes, indented code, escapes/entities, inline HTML (literal), autolinks, reference links, and GFM tables, task lists, strikethrough, alerts and footnotes. Math, emoji shortcodes and definition lists are out.
 
-![before-headless](yaks-ea13/before-headless.txt)
+[before-headless](yaks-ea13/before-headless.txt)
 
 ---
 ▸ 2026-10-17T04:27:08Z [delta-lead]
+
 Baseline: yaks-ea13 as the detail pane renders it today (pre-yaks-649d), headless 100x110 frame.
 
 ---
 ▸ 2026-10-17T04:31:30Z [delta-lead]
+
 moved: hairy -> shaving

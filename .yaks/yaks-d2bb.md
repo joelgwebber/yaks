@@ -26,8 +26,10 @@ A few basic QoL improvements for markdown editing:
 
 ---
 ▸ 2026-10-17T04:26:52Z [delta-lead]
+
 Restructured 2026-10-17 under yaks-e9de. Children: yaks-5408 (black background), yaks-9425 (dimmed/hidden markers, quieter links, shared highlights), yaks-1f84 (auto-continue lists/quotes in the edtui fork). "Bring the styling into line with rendering" is yaks-bc53 (shared palette) plus yaks-9425. Out of scope by decision: anything that changes display width in the editor (collapsed links, wrap hanging indents, rendered tables).
 
 ---
 ▸ 2026-10-17T04:31:30Z [delta-lead]
+
 moved: hairy -> shaving

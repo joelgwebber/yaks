@@ -24,10 +24,12 @@ Output: a short design note on this yak and one yak per agreed change.
 
 ---
 ▸ 2026-10-09T20:23:49Z [delta:Delta :Yaks (cont'd)]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-09T20:23:49Z [delta:Delta :Yaks (cont'd)]
+
 Design note (coordinator, 2026-10-09). Build order, each piece read-only unless marked:
 0. DONE in the prep commit: `sheds::resolve(sheds, query)` resolves a shed by exact path, Delta dir id, branch (`main` = the primary), an actor in `who`, then a unique case-insensitive substring; ambiguity and no-match errors list the candidates. `Shed` gains `dir` (Delta dir id), `primary`, and `name()` (main, else the first `who`, else dir, else branch, else the dir name); `yaks sheds` prints and emits `name`, `dir` and `primary`.
 1. Global `yaks -C <path>`: identical to cd-ing there first (full access, like `git -C`). Worker yak.
@@ -38,50 +40,60 @@ Questions for Joel are two asks on this yak (names; what --shed may do).
 
 ---
 ▸ 2026-10-09T20:23:49Z [delta:Delta :Yaks (cont'd)]
+
 asked: needs human
 
 Q1 NAMES. A thread's title exists only inside that thread (DELTA_THREAD_TITLE). To show it from other sheds, yaks has to record it. My lean: any yaks command run inside a Delta clone writes `yaks.shed.title` (and the thread id) into that clone's OWN git config (never committed, rebuildable), and `yaks sheds` reads it through the pin chain; the name falls back to who:/dir/branch as now. The cost: an ordinary command then writes to that clone's git config. Alternative: no recording; names stay who:/dir. Q2 WHAT --shed MAY DO. My lean: `--shed <name>` is a VISIT: read commands, plus answer/ask, with a one-line banner naming the shed; `-C <path>` stays the deliberate full-access route. Alternative: --shed is just -C by name (full access). Please answer each Q (yes, no, or another option).
 
 ---
 ▸ 2026-10-09T20:26:07Z [delta:Delta :Yaks (cont'd)]
+
 Spawned (base 192af4b, all claude-sonnet-5-5): cflag-1 83ecd85713f64fc7 -> yaks-4e39; inbox-1 69ae675719914f1d -> yaks-2917; chg-1 92c1a81063e44ac0 -> yaks-e39c.
 
 ---
 ▸ 2026-10-09T20:44:15Z [delta:Delta :Yaks (cont'd)]
+
 Landed wave 1: yaks-4e39 (-C, d763638), yaks-2917 (inbox --sheds, 6fb56a2), yaks-e39c (changes, f0e6f0b). Review fixes in the next commit: inbox --sheds repeated every ask whose shed forked before our later note (seen live: 3 copies), and 'main' was ambiguous because Delta clones are on branch main. Gate after all three plus fixes: 12 suites ok, 493 unit tests.
 
 ---
 ▸ 2026-10-09T20:45:52Z [delta:Delta :Yaks (cont'd)]
+
 Spawned wave 2 (base 1081d2f, all claude-sonnet-5-5): show-1 54c574c39d07404d -> yaks-e7ed; ans-1 d3af06f49c29425b -> yaks-f347; dedupe-1 b5ec518ad52349f7 -> yaks-5138.
 
 ---
 ▸ 2026-10-09T20:57:21Z [delta:Delta :Yaks (cont'd)]
+
 Landed wave 2: yaks-5138 (93e1a7e; sheds JSON byte-identical before/after on the real Mac), yaks-f347 (903bab1), yaks-e7ed (110c413). Delta applied both workers' results at once; landed each by SHA after setting the untracked leftovers aside (all four byte-identical to the landed files). Real-machine check: an ask made in the finished probe clone (dv4fmmmdm74z) showed in show --sheds and inbox --sheds from ~/src/yaks with its text; answer yaks-a398@probe wrote only into the probe clone, left it uncommitted (git status ' M'), our copy untouched; probe restored with git checkout afterwards. Gate: 14 suites ok, 494 unit. dedupe-1 recommends YES on counting a created yak's notes in sheds: left for Joel/next pass.
 
 ---
 ▸ 2026-10-09T22:11:30Z [Joel Webber]
+
 Yes to thread titles -- could use a good way to shorten/slug them closer to normal git worktree names.
 
 ---
 ▸ 2026-10-09T22:13:17Z [Joel Webber]
+
 asked: needs human
 
 On --shed, just make it full access; we can tighten it later if it proves problematic.
 
 ---
 ▸ 2026-10-09T22:29:19Z [delta-lead]
+
 picked up
 
 Joel's answers (2026-10-09): Q1 yes, record thread titles, slugged close to normal git worktree names; Q2 --shed is full access (tighten later if needed); counting a created yak's notes in sheds: yes. Filed as three yaks below, run as wave 3 with a narrated CLI walkthrough.
 
 ---
 ▸ 2026-10-09T22:51:35Z [delta:Delta :Yaks (cont'd)]
+
 Wave 3: notes-1 4096595049444717 -> yaks-85d9 (landed 8ee705f, fast-forward); title-1 f7dcad579ea84c7b -> yaks-886a (landed 49c2d5d by cherry-pick, docs/cli.md row conflict resolved by hand keeping both). Next: shed-1 -> yaks-440d.
 
-![walkthrough-wave3](yaks-a3d2/walkthrough-wave3.md)
+[walkthrough-wave3](yaks-a3d2/walkthrough-wave3.md)
 
 ---
 ▸ 2026-10-09T23:01:29Z [delta:Delta :Yaks (cont'd)]
+
 Done. The design pass produced and landed, every child shorn:
 - wave 1: yaks-4e39 `-C`, yaks-2917 `inbox --sheds`, yaks-e39c `changes <shed>` (plus coordinator review fixes c24609c);
 - wave 2: yaks-e7ed `show --sheds`, yaks-f347 `answer <id>@<shed>`, yaks-5138 one rule for compare_farms/yak_changes;
@@ -92,4 +104,5 @@ Open for later (not this yak): the TUI view of sheds (yaks-38dc / yaks-7204), an
 
 ---
 ▸ 2026-10-09T23:01:30Z [delta:Delta :Yaks (cont'd)]
+
 moved: shaving -> shorn

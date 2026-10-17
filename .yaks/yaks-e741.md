@@ -15,4 +15,5 @@ Refactor per yaks-9b82. Introduce a print-free core::Herd facade that owns every
 
 ---
 ▸ 2026-08-20T22:37:42Z
+
 Done. herd::Herd — print-free core ops facade with whole-operation typed methods (open/list/next/tangled/search/stats/show/rollup/create/update/transition/dep_add/dep_remove/reparent). main.rs is now parse -> Herd op -> render only; schema gate moved into Herd::open (typed OpenError + schema_warning). rollup::Group is owned so groups outlive the load; json renders from typed results. Behavior byte-identical: 35 tests pass (17 golden snapshots unchanged), warning-free. herd is clap/render-free, ready to extract to a yaks-core lib crate for a future LSP-like process.

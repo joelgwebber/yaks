@@ -18,4 +18,5 @@ Purge/repoint everything that still describes toque's text style-encodings. Know
 
 ---
 ▸ 2026-09-09T04:54:55Z [agent]
+
 Shorn. toque/README.md: 'Style encodings' section replaced with 'Visual output (SVG)' (render_to_svg/buffer_to_svg) + a History note; quick-start + frame example de-styled. AGENTS.md: toque one-liner de-styled + stale pointer fixed (docs/tui-style-eval.md -> docs/research/tui-style-eval.md). docs/research/tui-style-eval.md: added Archived(historical) header. docs/tui.md: renderer attribution updated (lives in toque now). Bundled skills confirmed clean (no style refs; skills guard passes). Final repo grep: only intentional historical refs remain.

@@ -15,10 +15,12 @@ Just a special-case of the "rename config prefix" tool; both require chasing and
 
 ---
 ▸ 2026-08-29T18:37:49Z
+
 This is the single-yak entry point to the same rewrite engine as 7a92 (its own desc already says so). Simplest case, so build it FIRST (dep: 0af1 -> 0187 core; 7a92 -> 0af1). Reuse the core validation gate to only rewrite CONFIRMED references, never lookalike prose. Surfaces to chase: file stem (rename the .md), frontmatter id/parent/depends_on, and body text (bare + [[wiki]]). Wants a --dry-run/preview since it edits across many files.
 
 ---
 ▸ 2026-08-29T19:08:56Z
+
 SHORN. Built the shared rename engine that both single + prefix rename ride on.
 
 refs::rewrite(text, replace) — whole-ref-token rewrite primitive (preserves [[ ]], punctuation, and longer lookalike tokens); reintroduced refs::has_ref_shape (now consumed by the rename target validator). herd::rename_many(pairs, dry_run) is the engine: validates targets (shape + collision + not-found), then in one pass rewrites every subject file+id and every referrer surface (parent, depends_on, title, body incl [[wiki]]), matched as validated whole tokens so lookalike prose is never touched. Two-phase apply (write all, then remove vacated files) is safe for disjoint-prefix batches. herd::rename() is the single-pair convenience.

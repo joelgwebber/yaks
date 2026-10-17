@@ -21,14 +21,17 @@ Evidence (fail first): a shed whose fork point is a v3 commit and whose working 
 
 ---
 ▸ 2026-10-12T20:00:39Z [delta-lead]
+
 Amended by the transitional D4 (see yaks-8b7a): reading the FLAT layout from a git tree is the required part (after this farm migrates, every fork point is flat). Reading the old layout from a tree is transitional (phase 4 deletes it): keep it in one function. Permanent: a shed whose own farm is schema 3 reads as an old-layout clone, never as having deleted every yak.
 
 ---
 ▸ 2026-10-12T20:20:37Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-12T20:20:38Z [delta-lead]
+
 Claim (coordinator). Owner: shed-1. Spec: the description, the amendment note on this yak, and yaks-8b7a's plan.
 You own: src/sheds.rs, scripts/discover-fixture.sh, and the sheds tests (in src/sheds.rs and tests/ files about sheds/changes/inbox --sheds/show --sheds/answer @shed). Docs only if a sheds row describes the layout.
 Phase 1 already taught `base_farm` to keep `<rel>/<id>.md` from a git tree (minimal). Your part: mixed-layout correctness and its tests: a shed whose fork point is an old-layout commit and whose working tree is flat (it migrated) shows only its real changes (a migration alone reads "no changes of its own"); a flat viewer and an unmigrated shed compare correctly both ways, through `sheds`, `changes`, `show --sheds`, `inbox --sheds` and `landed`; `answer <id>@<shed>` into an unmigrated shed refuses with phase 1's message (the shed's farm lock refuses), and says which shed. Also: mark an unmigrated shed on its farm line, e.g. `farm: … (old layout)` and JSON `farm.layout: "old"|"flat"`, so yaks-bbda only has to turn it into "old-layout clone, not read". Keep every old-layout read in `store::legacy` or one function in sheds.rs that yaks-bbda can delete.
@@ -41,11 +44,13 @@ Evidence (fail first): fixtures for each case above, built with the new binary's
 
 ---
 ▸ 2026-10-12T20:23:53Z [shed-2]
+
 shed-2 starting (replaces shed-1). date -u: Mon Oct 12 20:23:49 UTC 2026
 yaks path yaks-ca28: /Users/joel/src/yaks/.delta/worktrees/bm7tfggpbs0m/yaks/.yaks/shaving/yaks-ca28.md
 
 ---
 ▸ 2026-10-12T20:55:55Z [shed-2]
+
 Decision: no layout-specific comparison code. Every farm read in src/sheds.rs goes through one `load_farm` (store::load already reads both layouts; status comes from `status:` or the directory), so a base commit in either layout, a flat or old working tree, and either viewer compare through the same `yak_changes`. Rejected: normalising both sides to a canonical layout before comparing, or a layout-aware diff; neither is needed because `Task` has no layout.
 Decision: `load_farm` also rewrites `](<id>/` to `](<id>/` in the compared bodies (what `yaks migrate` does to bodies). Without it every migrated yak with an attachment reads as `edited` (the description differs), so a migration alone would not read "no changes of its own". Checked fail-first: with the line commented out, the three migration tests fail. A link into `artifacts/` that is not inside an id dir is left alone, as migrate leaves it.
 Decision: all old-layout knowledge stays in one section of src/sheds.rs headed "old layout (transitional: yaks-bbda deletes this section)": `is_old_layout`, `old_tree_task`, `load_farm`/`flat_attachment_links`, plus the `layout_marker`/`layout_str` renderers. Everything old reads through `store::legacy` (files, is_status_dir). Rejected: adding to store::legacy (store.rs is out of scope).
@@ -58,8 +63,10 @@ Also: scripts/discover-fixture.sh builds a flat farm (schema 4 + `.yaks/s-0001.m
 
 ---
 ▸ 2026-10-12T20:56:55Z [shed-2]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-12T20:58:10Z [shed-2]
+
 moved: shaving -> shorn

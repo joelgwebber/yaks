@@ -19,4 +19,5 @@ Done well, this should also make it much easier for agents to coordinate implici
 
 ---
 ▸ 2026-10-16T20:09:48Z [Joel Webber]
+
 This also relates to yaks-5cea. Hopefully we can unify the CLI/TUI/lib implementations in such a way that these things Just Work.

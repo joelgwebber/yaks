@@ -15,4 +15,5 @@ Coverage check found gaps: crash-recovery procedure (run 4) and human-drift/huma
 
 ---
 ▸ 2026-09-06T16:26:10Z [coordinator]
+
 DONE. coordinating-yaks: fixed the stale pre-flight '--no-ff' -> 'squash-merge'; added a Recovery section (lost/crashed worker -> recover from the worktree, don't restart) and a 'Human drift is the human's' paragraph (leave edits untouched; human-created untracked yaks are theirs to introduce). a412 reconciled via note. Skills are now current for the next runs.

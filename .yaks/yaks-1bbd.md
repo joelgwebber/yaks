@@ -15,4 +15,5 @@ Eg, so I can search for a keyword in the list view, and continue searching for i
 
 ---
 ▸ 2026-09-23T21:40:08Z [design-scout]
+
 Design folded into yaks-953f's proposal attachment

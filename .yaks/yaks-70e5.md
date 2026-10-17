@@ -17,4 +17,5 @@ Today 'git diff main -- .yaks/' already does ~80%. BUILD THIS ONLY IF that raw d
 
 ---
 ▸ 2026-09-08T23:12:05Z [coordinator]
+
 Assessment (pre-compact): still correctly GATED — 'git diff main -- .yaks/' covers ~80%; build ref-generic 'yaks diff' only when raw diff proves too coarse in practice. Reframed under fe5a as EVAL INSTRUMENTATION (herd-state delta between two runs/variants), not a worktree feature. But log --since/--by + commits already answer most 'what changed between runs' questions, so 70e5's marginal value has shrunk further. Hold until a real need surfaces.

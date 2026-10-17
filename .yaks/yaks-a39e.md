@@ -16,4 +16,5 @@ Pluggable trait so all encodings share the headless harness, fixtures, and Q&A. 
 
 ---
 ▸ 2026-08-22T14:38:10Z
+
 Done: StyleEncoding enum (parallel/interleaved/spans) + --style-encoding flag (implies --style; parallel default). Encoders in src/tui/headless.rs operate on the ratatui Buffer; spans preserves literal whitespace (load-bearing) and keys runs by visual StyleKey with a legend. 93 unit + 19 CLI tests green, warning-free; verified end-to-end on the real herd incl. bad-encoding error. frame-diff (9f43) + portable bundle (d487) remain separate.

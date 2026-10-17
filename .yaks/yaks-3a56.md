@@ -21,14 +21,17 @@ Phase 3 of yaks-8b7a (coordinator; after all three phase-2 workers land): src/br
 
 ---
 ▸ 2026-10-12T20:00:39Z [delta-lead]
+
 Amended (see yaks-8b7a): brief.rs's finish step stages `.yaks/<id>.md` and `.yaks/<id>/`; skills drop every `.yaks/artifacts/<id>` staging line. Also migrate ~/src/j15r (Joel: we are the only users, migrate our farms quickly, then phase 4 removes the migration).
 
 ---
 ▸ 2026-10-12T21:02:26Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-12T21:06:37Z [delta-lead]
+
 Phase 3, part 1 (sweep) done:
 - src/brief.rs: the team finish step stages `<farm>/<id>.md` plus `<farm>/<id>/` if attached (no status path, no artifacts/). Flat-only on purpose: the new binary refuses writes on an unmigrated farm, so a brief it prints only runs on a flat one. Test updated.
 - Skills: yaks (init, attach, path, commits, slaughter, doctor, preflight rows; Task format now `.yaks/<id>.md` + `status:` with one transitional note on pre-0.0.16 farms and `yaks migrate`; a `migrate` row), yaks-working and yaks-coordinating-team (staging: `.yaks/<id>.md` and `.yaks/<id>/`, no glob, no shaving/ path), yaks-coordinating (doctor example), yaks-coordinating-delta (no "two status dirs").
@@ -38,6 +41,7 @@ Phase 3, part 1 (sweep) done:
 
 ---
 ▸ 2026-10-12T21:15:52Z [delta-lead]
+
 Phase 3, part 2: Joel ran the migration of this repo's farm himself (80c1923 "Flat-yaks migration.", after quitting the old TUI in this checkout) and pushed it to local and origin. Verified after: schema 4, 404 flat yak files + 52 attachment dirs, no status dirs or artifacts/, doctor clean, preflight ok, farm clean against git.
 Real-machine checks (the plan's list):
 - `yaks sheds` against clones forked BEFORE the migration: the phase-2 workers' clones read `landed (1 yak) (old layout)`, the stopped mig-1/git-1 clones `no changes of its own (old layout)`, main `no changes of its own (vs origin/main)`. Correct.
@@ -48,12 +52,15 @@ Left: release 0.0.16, then migrate ~/src/j15r (and any other farm), then phase 4
 
 ---
 ▸ 2026-10-12T21:35:07Z [delta-lead]
+
 Done: sweep (672868d), this farm migrated (Joel, 80c1923), real-machine checks recorded above, release 0.0.16 (yaks-8577). Migrating the remaining farms (~/src/j15r, any private/pointer farms) is Joel's, with the released binary; yaks-bbda (phase 4) waits on that.
 
 ---
 ▸ 2026-10-12T21:35:43Z [delta-lead]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-12T21:35:44Z [delta-lead]
+
 moved: shaving -> shorn

@@ -16,4 +16,5 @@ Add a fuzzy task-picker overlay (floating results list above a filter line, upda
 
 ---
 ▸ 2026-08-21T00:57:55Z
+
 Done. Added Overlay::Fuzzy(FuzzyPick): a filter-as-you-type task picker reusing edtui (single-line query) with a ranked results list in the right pane and the query on the status line. Ranking mirrors Python fuzzy_pick_task (id-prefix < id-substr < title-substr, then priority, then id; empty query lists all, capped 20). Wired D add-dependency (excludes self, existing deps, and cycle-forming targets via new filter::depends_on_transitively) and R reparent (excludes self + descendants + current parent; offers a clear-parent row when the task has a parent, via allow_none). Nav: Up/Down/Tab/Ctrl-P/Ctrl-N; Enter commit; Esc cancel; other keys edit the query and reset selection. Cycle-prevention kept in the TUI layer (façade/CLI untouched). 66 tests (was 59): filter unit test + 2 fuzzy render snapshots + 4 live dep/reparent tests. Warning-free. Completes slice 3 (3a/3b/3d; 3c merged into 3b).

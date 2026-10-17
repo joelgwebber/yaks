@@ -19,6 +19,7 @@ Implement in the edtui fork (a line-break hook or a markdown-aware `LineBreak` o
 
 ---
 ▸ 2026-10-17T05:00:46Z [delta-lead]
+
 asked: needs human
 
 Auto-continue lives in the edtui fork (github.com/joelgwebber/edtui, `yaks-integration`), and Cargo pulls it from GitHub, so landing it means pushing a branch to that fork and then `cargo update -p edtui` here. OK for me (or a worker) to push a feature branch to the fork and merge it into `yaks-integration`? If you'd rather review fork changes yourself first, say so and I'll stop at a pushed feature branch.

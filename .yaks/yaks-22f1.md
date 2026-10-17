@@ -27,39 +27,47 @@ Tests with temp repos: a shed forked, then merged/synced with the viewer: it sho
 
 ---
 ▸ 2026-10-06T22:19:09Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-06T22:19:09Z [delta-lead]
+
 Claim (coordinator delta-lead). Owner: worker nbr-1. Scope: `src/sheds.rs` (the baseline choice and its tests), the `sheds` rows in docs/cli.md, README.md and `.agents/skills/yaks/SKILL.md`, the `Sheds` help in src/main.rs. Judge: the coordinator re-runs the gate and `yaks sheds` from ~/src/yaks. Forbidden: ahead/behind semantics, the TUI, other commands, the coordination skills' prose. Terminology: a former lane is a SHED everywhere.
 
 ---
 ▸ 2026-10-06T22:19:29Z [nbr-1]
+
 Start: Tue Oct  6 22:19:26 UTC 2026
 Path: /Users/joel/src/yaks/.delta/worktrees/qw0xx3s64g6e/yaks/.yaks/shaving/yaks-22f1.md
 
-![sheds-before](yaks-22f1/sheds-before.txt)
+[sheds-before](yaks-22f1/sheds-before.txt)
 
-![sheds-after](yaks-22f1/sheds-after.txt)
+[sheds-after](yaks-22f1/sheds-after.txt)
 
 ---
 ▸ 2026-10-06T22:22:56Z [nbr-1]
+
 Decision: a baseline chosen because it is nearer is its own kind, `BaseKind::Sync`: JSON `farm.vs: "sync"`, `farm.base` = the merge-base's short sha, NO `(vs ...)` marker on the farm or label line (it is exact, like the fork point). Rejected: keeping `merge-base` plus a `why` field (a consumer reading `vs` would still conflate it with the inherited-work fallback, which is the thing the marker warns about); marking it `(vs sync)` (nothing to warn about, and the table would grow noise).
 
 ---
 ▸ 2026-10-06T22:22:56Z [nbr-1]
+
 Decision: "nearer" is tested as `M != F` and `git merge-base --is-ancestor F M` (in the viewer's repo). When M == F, or M is older than / unrelated to F, the shed stays `Fork` (so unsynced sheds and workers forked from a coordinator whose commits the viewer lacks, e.g. after a squash landing, are unchanged). Rejected: picking by commit date or rev-list count (clock/graph-size heuristics; ancestry is the exact statement of "already in the viewer's history").
 
 ---
 ▸ 2026-10-06T22:22:56Z [nbr-1]
+
 Decision: the fallback chain is [chosen exact baseline (Fork or Sync), merge-base (marked)], with the existing "farm unreadable at this commit, try the next" behaviour. If M's farm cannot be read the chain tries M again as `merge-base`, which fails identically; it does not fall back to F. Rejected: adding F as a third candidate (a shed whose farm exists at F but not at its own later merge-base is not a real case worth extra states).
 
 ---
 ▸ 2026-10-06T22:22:56Z [nbr-1]
+
 Decision: a test-setup point worth recording: "sync" means only commits that are in the viewer's history are dropped. A shed's own pre-sync commits that the viewer does not have are still the shed's own work and still show (first draft of the shed-merged-viewer test wrongly expected otherwise). The tests: shed landed on the viewer by a merge commit; shed that merged the viewer; unsynced shed with a viewer that moved on (Fork); squash-landed worker (Fork, asserted sha); missing/unusable reflog (MergeBase) unchanged.
 
 ---
 ▸ 2026-10-06T22:23:03Z [nbr-1]
+
 Evidence: real `yaks sheds` from /Users/joel/src/yaks, before (copy of the coordinator's binary) and after (this change's release binary), attached in full as sheds-before.txt / sheds-after.txt. `diff before after` shows only two changes:
 - the yakherd's shed xp49gyb9fg59 (HEAD 93b3fb9, +3 -0): before `who:` 18 actors, `farm: 22 new, 16 moved, 94 new notes`; after `who: delta-lead · shaving: yaks-22f1, yaks-b5a0`, `farm: 1 new, 1 new notes` (yaks-b5a0 +1 notes). Baseline is the merge-base with the viewer.
 - my own shed's DIRTY count (1 -> 6, because I was editing).
@@ -69,8 +77,10 @@ Summary: `nearer_baseline` in src/sheds.rs picks M (new `BaseKind::Sync`) when M
 
 ---
 ▸ 2026-10-06T22:23:19Z [nbr-1]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-06T22:23:22Z [nbr-1]
+
 moved: shaving -> shorn

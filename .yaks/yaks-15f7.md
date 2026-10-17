@@ -16,10 +16,12 @@ Each .yaks would still get its own config and yak prefix. We could also allow cr
 
 ---
 ▸ 2026-08-29T18:37:56Z
+
 This is the federation layer, and it sets a hard requirement on the core (yaks-0187): the resolver must take the id set as a parameter so it can widen from one herd to a friend-set without changing callers. Cross-herd refs need a herd-qualified reference form (reserved in 0187 grammar). Consequence for rename (7a92): prefixes must be UNIQUE across the friend-set or a qualified ref is ambiguous — which loops straight back to reconciling the yaks/yaksrs split. "Friend" relationship modeled in each config so tools know where to find sibling yak files.
 
 ---
 ▸ 2026-08-30T00:57:06Z
+
 DESIGN RESTATEMENT (multi-herd / friends), carried forward for a fresh session.
 
 GOAL: let the TUI (and CLI) operate over several .yaks/ herds at once — working across multiple project repos — so cross-cutting work is visible/manageable in one place. Each herd keeps its own config + prefix. Support cross-herd references.
@@ -43,8 +45,10 @@ SUGGESTED SLICES: (a) read-only multi-herd VIEW (load union, herd badges, cross-
 
 ---
 ▸ 2026-09-21T17:32:21Z [agent]
+
 PLAN SET (session with Joel): pivot from federation (multiple .yaks roots / friends) to CONSOLIDATION: one farm (.yaks) holding several herds (prefixes). Rationale: dissolves the hard federation problems instead of solving them. No roots to pipe to CLI/TUI, so the env-var-in-embedded-agents worry goes away and ordinary discovery finds one farm. Cross-herd refs already resolve (validation-based, prefix-agnostic; proven on mixed data during the yaksrs to yaks migration). Rename integrity is free since all refs live in one root. One TUI, one private backup repo. Accepted caveats: a farm is one privacy unit (no per-project team/private mix), and a unified view of yaks committed in their own repos is NOT served (judged uncommon; federation stays the fallback for that case). Vocabulary proposed: farm=whole .yaks, herd=prefix-group, family=yak-tree (gated by the docs/naming child). Fleshed out the family below; starting the shears on create-routing.
 
 ---
 ▸ 2026-09-21T19:30:58Z [agent]
+
 SHORN (umbrella). Multi-herd farms shipped end to end: one .yaks farm holds several herds (id prefixes), each a project, in one TUI, backed up as one private repo. Children: create --prefix routing (4154), terminology farm/herd/family sweep (92bf), yaks merge (7371), out-of-tree pointer/symlink discovery (1d98), per-herd config with a global-to-herd cascade (98d5), --herd filter plus TUI create herd-routing plus per-herd id colour (3290, a7eb), and docs/skills (eee7). Verified on scratch multi-herd farms throughout. Deferred and tracked (non-blocking): federation across separately-committed farms stays the fallback for repo-committed yaks in a unified view; an explicit in-form herd picker is a standalone follow-up. Ready to test and cut a release.

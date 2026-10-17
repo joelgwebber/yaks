@@ -17,4 +17,5 @@ Python shows a full-width list in list mode and only splits into list+detail whe
 
 ---
 ▸ 2026-08-22T04:03:29Z
+
 Done. render() now: tabs row, blank gap row, main, help bar. List is full-width when focus=list; focus=detail splits list(34%)+detail(66%). Interim: right-pane overlays (multiline edit/fuzzy/drawer/view-picker) still borrow the split until relocated (top drawer / full-screen pickers) with their own yaks.

@@ -15,4 +15,5 @@ The skill already has 'Before you start' (re-read notes/feedback first) and 'fol
 
 ---
 ▸ 2026-09-04T04:25:19Z [wt-skill]
+
 Added a tight paragraph after the 'Before you start' list in skills/dev/working-a-yak/SKILL.md covering the needs/ask/answer mechanism: 'yaks ask <id> --note' sets the needs block + drops from next -> hand back (don't block-and-wait); pending questions surface in 'yaks inbox'; 'yaks answer' is human-reserved (never self-clear). Verified via git diff (6 added lines, no restructuring). Edit-tool accepted the worktree path; no terminal fallback needed.

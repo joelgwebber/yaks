@@ -20,4 +20,5 @@ Fix: window or scroll the content stack so the focused block stays fully visible
 
 ---
 ▸ 2026-10-17T04:26:52Z [delta-lead]
+
 May be obviated by the view/edit unification design (yaks-a893); revisit once that design is agreed.

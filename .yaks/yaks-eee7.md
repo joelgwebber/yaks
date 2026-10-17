@@ -15,4 +15,5 @@ Doc gaps surfaced while shaving the multi-herd family. (1) docs/tui.md does not 
 
 ---
 ▸ 2026-09-21T19:30:58Z [agent]
+
 SHORN. Doc follow-ups for the multi-herd family. docs/tui.md: documented the list-view family-scope h key (auto/lone/remaining/all) and the tab-row family-scope indicator, plus the multi-herd per-herd id colour and create-header herd. skills/yaks-tracker: a Consolidated farms note (herds commonly map to different upstream trackers; source and rollup stay per-yak; rollup --herd scopes to one). AGENTS.md: a Farms/herds/families contributor section (defs, the one-level per-herd config cascade, out-of-tree pointer discovery and create prefix precedence, Farm::merge). No changeset workflow in this repo (tag releases), so nothing owed.

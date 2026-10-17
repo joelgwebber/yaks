@@ -16,4 +16,5 @@ Pristine char grid + a list of styled runs as (row, col-span, style); unlisted =
 
 ---
 ▸ 2026-08-22T14:43:39Z
+
 Slaughter: evaluated, not worth building. runlist cost 3.42x plain with no accuracy edge on a frontier model.

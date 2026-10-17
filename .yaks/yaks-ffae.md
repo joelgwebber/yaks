@@ -17,4 +17,5 @@ Python list+detail M opens a multi-line editor and appends a '---/ ▸ {iso} / t
 
 ---
 ▸ 2026-08-22T20:30:51Z
+
 Added EditAction::Comment + open_comment: M opens a multi-line editor (reusing the Overlay::Edit infra kept from 3b22) and on Ctrl-S appends a timestamped note via TaskEdit.note (store::append_note). Bound in both panes; added to ? help. Test comment_appends_timestamped_note. 111 unit + 19 CLI green.

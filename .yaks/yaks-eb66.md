@@ -15,6 +15,7 @@ Attribution (who wrote a note / made a transition), NOT ownership. Committed tra
 
 ---
 ▸ 2026-09-03T16:22:56Z
+
 [coordinator] DECISION (design settled, ready to build):
 - Store STABLE ACTOR IDENTITY, not ephemeral lane role. [wtA]/[coordinator] conflated the two; formalize identity only, do NOT globally-uniquify lane tags (transient by nature). Yak says which-work, actor says who; lane is usually redundant.
 - Resolution order for the actor: --as <actor> flag  >  $YAKS_ACTOR env (harness/coordinator pins it once per worker)  >  default from git config user.name/email.
@@ -25,6 +26,7 @@ Attribution (who wrote a note / made a transition), NOT ownership. Committed tra
 
 ---
 ▸ 2026-09-03T16:28:52Z [coordinator]
+
 BUILT + verified. Actor attribution on notes.
 - store::append_note_as(body, ts, actor, note) stamps '▸ <ts> [actor]'; append_note is now a None wrapper (no churn at ~10 existing call sites). NoteEntry gains actor: Option<String>; parse_notes splits an optional trailing [actor] (bare notes -> None, byte-compatible, no migration).
 - TaskEdit.actor threads through herd.update. CLI: 'yaks update --as <actor>' + resolve_actor: --as > $YAKS_ACTOR > git user.name (best-effort, never fails). 'yaks log --by <actor>' filters; log + json show the actor.

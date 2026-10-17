@@ -16,8 +16,10 @@ Emit each text row immediately followed by its style-id row, so cross-reference 
 
 ---
 ▸ 2026-08-22T13:41:45Z
+
 Dominates the parallel baseline on both axes: cheaper (338 vs 364 tok) and easier cross-reference (style row adjacent to its text). Both 7/7 so far. Parallel (3b02) effectively obsoleted unless a case shows otherwise.
 
 ---
 ▸ 2026-08-22T14:43:38Z
+
 Implemented as the 'interleaved' encoding (a39e). Aligned-grid fallback; dominates parallel on tokens + cross-reference.

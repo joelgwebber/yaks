@@ -30,14 +30,17 @@ Out of scope: TUI, `yaks diff` (ref-generic, gated, yaks-70e5), pins/refs/delta,
 
 ---
 ▸ 2026-10-04T20:52:37Z [delta-lead]
+
 Claim (coordinator delta-lead). Owner: worker lanes-1. Scope: new src/lanes.rs, a thin Farm method, the 'lanes' subcommand in src/main.rs, docs/README/skill command list. Judge: coordinator re-runs 'cargo test -p yaks' and 'yaks lanes' in my checkout against the real Delta layout (this thread has sibling checkouts). Forbidden: other checkouts' files (read-only), TUI, Cargo/config, discovery rule changes, coordination skills.
 
 ---
 ▸ 2026-10-04T20:53:23Z [lanes-1]
+
 Start 2026-10-04T20:52:53Z (date -u). Yak file: .yaks/shaving/yaks-e545.md. Built own binary ./target/release/yaks.
 
 ---
 ▸ 2026-10-04T20:58:59Z [lanes-1]
+
 Done. Gate: cargo test -p yaks => 377 passed (9 new in lanes::tests) + 28 cli passed. New tests: plain git worktree lane (branch, ahead, dirty, added/moved/note/needs delta), detached + needs-already-ours not news, managed-layout alternates sibling + origin-url sibling accepted / same-name different repo, no-.git dir and differently named dir rejected, laptop-layout T/.delta/worktrees clone (+ repo checkout from the clone), found-by-both = one worktree lane, private farm (none) and shared farm (pointer), unreadable lane (corrupt .git) listed with error, and read-only (lane + its git admin dir mtimes/len + status identical before/after, index made stale first).
 Real run in own Delta checkout (./target/release/yaks lanes), 4 sibling lanes, kind delta, own checkout omitted:
  3d4gr26p09ng  main 6345ab0 +1 dirty 0  farm: 1 moved (yaks-7149 shaving -> hairy)

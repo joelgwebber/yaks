@@ -32,4 +32,5 @@ Check first: whether Delta can adopt ~/src/j15r as the project folder (then it b
 
 ---
 ▸ 2026-10-10T18:55:33Z [delta-lead]
+
 Decision (Joel, 2026-10-10): promote to a top-level, low-priority yak ("make this better in Delta"), out from under yaks-7eea. Today it may be unfixable from yaks alone: nothing in git links a plain primary checkout to Delta's managed bare host, and the Delta CLI has no thread-to-path map. What is workable now: `yaks -C <any clone> sheds` (option D), or naming the host once (option A, `yaks.host`), neither built. Joel is first finding out why ~/src/j15r came up managed at all (the thread was created on one machine, in the Delta UI, so a linked host was expected); if that is a Delta setup issue, this yak shrinks to documentation or disappears. Do not investigate further until he reports. A Delta-side request ("the folder is the host", or a way to ask Delta for a thread's checkout paths) belongs here.

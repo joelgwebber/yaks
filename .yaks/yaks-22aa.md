@@ -16,4 +16,5 @@ The full multi-row filter drawer reproducing Python _DrawerState: chip rows (sta
 
 ---
 ▸ 2026-08-21T01:48:23Z
+
 Done. Overlay::Drawer(Drawer) reproduces Python _DrawerState: 7 rows — status/type/priority chips, labels/search/parent text (edtui single-line, RefCell), deps ready/tangled chips. Nav: Up/Down/Tab/Ctrl-N/P (and j/k on chip rows) move rows; Left/Right/h/l move the chip cursor; Space toggles; C clears all; Enter applies; Esc reverts to the pre-open spec. Every edit rebuilds App.filter via build_spec() for live preview (tree re-colors as you go). Rendered in the right pane with a ▸ current-row marker and a help hint on the status line. Since FilterSpec is not Clone, added a local clone_spec() for the revert snapshot. 75 tests (was 70): drawer render snapshot + toggle/apply/cancel/clear/text-row behavior. Warning-free. Completes slice 4.

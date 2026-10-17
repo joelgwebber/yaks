@@ -26,10 +26,12 @@ Out of scope: auto-writing anything project-local (explicitly rejected), the use
 
 ---
 ▸ 2026-10-05T22:39:49Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-05T22:39:49Z [delta-lead]
+
 Claim (coordinator delta-lead). Owner: worker ntf-1.
 
 Scope: src/skills.rs (reuse the stale check, add the notice), the hook in src/main.rs where auto_sync runs on ordinary commands, docs/skills.md, docs/cli.md, README.md, the status row in .agents/skills/yaks/SKILL.md, the doctor advisory wording.
@@ -40,6 +42,7 @@ Forbidden: writing into any working tree, auto-updating project-local skills, co
 
 ---
 ▸ 2026-10-05T22:44:56Z [ntf-1]
+
 Worker ntf-1 started.
 
 - `ls .yaks/*/yaks-5c83.md`: `.yaks/shaving/yaks-5c83.md`
@@ -48,6 +51,7 @@ Worker ntf-1 started.
 
 ---
 ▸ 2026-10-05T22:48:46Z [ntf-1]
+
 Decision: where "announced" is remembered, and what the notice does.
 
 - **Marker**: `<git-dir>/yaks-skills-notified` holding the yaks version announced (git dir resolved without shelling out: `.git` itself, or the `gitdir:` line of a linked worktree/submodule `.git` file, relative paths against the top-level). Untracked, outside the working tree, per clone/worktree. Rejected: a per-user cache dir (`~/.cache/yaks`): one marker would silence every checkout/Delta lane after the first, but each lane has its own skills files and must be told; keyed-by-path caches add a second index to rebuild. Rejected: a marker under `.yaks/` or `.agents/` (working tree, would show in git status, forbidden).
@@ -62,6 +66,7 @@ Decision: where "announced" is remembered, and what the notice does.
 
 ---
 ▸ 2026-10-05T22:49:12Z [ntf-1]
+
 Shorn summary (ntf-1).
 
 - Added `Stale` / `project_stale` / `project_stale_notice` (src/skills.rs) and the hook after `auto_sync` in src/main.rs; `skills status` and the doctor advisory use the same `Stale` value/words. Docs updated: docs/skills.md, docs/cli.md, README.md, status row of .agents/skills/yaks/SKILL.md, the `skills install` tail line.
@@ -72,4 +77,5 @@ Shorn summary (ntf-1).
 
 ---
 ▸ 2026-10-05T22:49:12Z [ntf-1]
+
 moved: shaving -> shorn

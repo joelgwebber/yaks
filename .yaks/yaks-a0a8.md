@@ -15,8 +15,10 @@ Cut v0.0.8. Ships since v0.0.7: the yaks-b1cc tui.rs split (6.7k-line monolith -
 
 ---
 ▸ 2026-09-13T23:43:57Z [Joel Webber]
+
 verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-09-13T23:44:32Z [Joel Webber]
+
 Version lockstep set to 0.0.8: Cargo.toml + npm/yaks/package.json (the two files release.yml's lockstep check compares against the tag); Cargo.lock refreshed by 'cargo build --release', which now reports 'Compiling yaks v0.0.8' and './target/release/yaks --version' prints 'yaks 0.0.8'. Levers: 'yaks verify yaks-a0a8' (cargo test --workspace) PASS -- 242 unit + 25 cli + 7 toque + 1 doctest, 0 failed, 1 ignored (the on-demand docshots generator). 'node npm/yaks/test-mapping.mjs' ok (launcher host->package mapping + optionalDependencies consistent). 'yaks doctor' all clear. Note: toque stays at 0.1.0 -- release.yml publishes only the six npm packages, not the crate.

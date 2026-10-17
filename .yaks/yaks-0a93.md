@@ -16,4 +16,5 @@ Match the Rust TUI closely to the Python curses TUI before intentionally evolvin
 
 ---
 ▸ 2026-08-22T21:26:34Z
+
 All 22 parity children shorn; Rust TUI at genuine parity with the Python original. docs/tui-parity.md documents the method and per-area findings across §1-§15.

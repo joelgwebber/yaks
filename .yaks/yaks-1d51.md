@@ -12,6 +12,7 @@ Make skill installation braindead simple and hard to screw up.
 
 ---
 ▸ 2026-09-23T03:04:51Z [agent]
+
 DESIGN (research-backed; sources: Agent Skills spec via code.claude.com/docs/en/skills, openskills README).
 
 ROOT CAUSE, one sentence: an installed SKILL.md is a vendored copy with NO IDENTITY. Nothing records which producer/version wrote it, nor what was originally written -- so we cannot tell 'stale' (bd9a) from 'user edited' (d8e9). Both children are the same missing primitive: provenance.
@@ -41,6 +42,7 @@ OPEN FORKS for the human: (i) should upgrade be opt-in or should doctor auto-nag
 
 ---
 ▸ 2026-09-23T04:02:21Z [agent]
+
 CORRECTIONS + VERIFICATION after Joel pushed back on two claims. Both were worth checking; one of my framings was misleading.
 
 1. '.agents' (plural) -- JOEL WAS RIGHT, and yaks is correct as-is. Zed's docs (https://zed.dev/docs/ai/skills, 'Where Skills Live') specify exactly two locations: global ~/.agents/skills/ and project-local <worktree>/.agents/skills/ -- PLURAL. yaks' default_dir() matches Zed exactly. It was openskills that is the outlier: verified at source level (src/utils/dirs.ts, not just the README) it uses '.agent/skills' SINGULAR for its --universal mode, and getSearchDirs() searches only ./.agent, ~/.agent, ./.claude, ~/.claude -- it never looks at .agents at all. So a yaks-installed skill is invisible to openskills, and vice versa. My earlier note framed this as a yaks-vs-world mismatch; it is not. Revised recommendation for fork (iii): keep ~/.agents/skills as the default (it is right for the primary harness) and simply DOCUMENT the openskills path rather than installing to both -- installing to both would create two divergent copies with no shared provenance, which is the very problem this family exists to fix.
@@ -54,6 +56,7 @@ CORRECTIONS + VERIFICATION after Joel pushed back on two claims. Both were worth
 
 ---
 ▸ 2026-09-23T04:18:23Z [agent]
+
 ROUND 3 -- two premise corrections + a design problem with auto-install.
 
 A. '.agents' is not merely Zed's choice, it IS the cross-client convention. The spec site's client-implementation guide (https://agentskills.io/client-implementation/adding-skills-support.md, 'Where to scan') tells implementors to scan BOTH their native dir and the .agents/skills/ convention: project <proj>/.agents/skills/ and user ~/.agents/skills/, labelled 'Cross-client interoperability', with the text 'The .agents/skills/ paths have emerged as a widely-adopted convention for cross-client skill sharing.' The spec deliberately does NOT mandate an install location (it only defines what goes inside a skill dir), so there is no official installer -- .agents/skills/ is the emergent answer. yaks' default is therefore exactly right.
@@ -79,6 +82,7 @@ REFINED AUTO-INSTALL RULES (for implementation):
 
 ---
 ▸ 2026-09-23T04:19:39Z [agent]
+
 NOTE: the preceding note has three spans mangled by an authoring accident -- I used backticks inside a shell argument and they were command-substituted. One of them EXECUTED a skills install with the v0.0.9 binary on PATH and clobbered ~/.agents/skills/yaks/SKILL.md with the stale bundled copy, losing the Evidence section. Restored from the current build and verified identical to the repo source. Read those spans as: (1) a downgrade requires an explicit skills-install-with-force; (2) never a --dir target; (3) skip the skills subcommands themselves.
 
 The accident is a free live reproduction of d8e9, and it exposes a GAP in the monotonic-version fix I proposed: both binaries report 0.0.9. The homebrew release and this dev build share a version number, but their embedded content differs, because the skills change landed in commit 7a4f543 AFTER the v0.0.9 tag. So a strictly-greater-version rule would NOT have auto-healed this, and equally would not have caused it.
@@ -89,10 +93,12 @@ CONSEQUENCE worth accepting deliberately: a skills-only fix does not reach users
 
 ---
 ▸ 2026-09-23T04:41:58Z [agent]
+
 Family complete. All three children shorn: e233 (spec-compliant frontmatter + a test enforcing the six allowed keys), d8e9 (the symlink clobber -- see its notes; the root cause was a ~/.agents/skills symlink into the repo, not a stray --dir), and bd9a (provenance stamp, seven-state machine, skills status, doctor advisory, and startup auto-sync).
 
 Net effect against the original goal -- make skill installation braindead simple and hard to screw up: installation is now mostly invisible (ordinary commands top it up), and the failure modes that actually bit us are structurally prevented rather than documented away. The design held up under contact: every guardrail in this yak's notes earned its place, and the two that mattered most (monotonic versions, resolve-symlinks-before-guarding) were both discovered by breaking the thing for real rather than by reasoning.
 
 ---
 ▸ 2026-09-23T04:42:00Z [agent]
+
 verify: `cargo test --workspace` -> PASS (exit 0)

@@ -14,4 +14,5 @@ Could yaks move from file-authoritative storage to a git-bug-style operation-log
 
 ---
 ▸ 2026-08-31T20:48:17Z
+
 Storage spectrum (synthesis). There are not two options but a spectrum, trading legibility for mergelessness: (1) files on code branches (today): visible on the platform + in PRs, merges WITH code, PR-pollution. (2) files on a separate orphan ref (e.g. refs/yaks/herd), materialized into .yaks/ locally: off code branches, no PR-pollution, shared via .git, KEEPS files/grep, but still needs file-merge handling for concurrent same-yak edits (union driver + disjoint assignment) and a checkout/cache step. Cheap: no engine. (3) op-log in refs (git-bug): off-branch, mergeless (CRDT), shared, intrinsic attribution, but a real engine + platform-invisible + opacity-unless-cached. Key point: option 2 decouples 'herd off code branches' (cheap, keeps files) from 'mergeless op-log' (expensive). Model 3 (coordinator-sole-writer) is orthogonal: it removes concurrency by construction and works with ANY of the three loci.

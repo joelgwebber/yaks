@@ -15,4 +15,5 @@ Two per-yak working-trail frictions from the parallel UI dogfood run, for the ya
 
 ---
 ▸ 2026-09-11T01:01:55Z [coordinator]
+
 Shorn: added to yaks-working (1) a 'yaks attach also modifies the tracked yak file' side-effect note on the evidence bullet, and (2) a 'new snapshot/golden needs your tool's accept step' bullet (generic principle; insta accept / INSTA_UPDATE=always as the example). Evidence: edits in skills/dev/yaks-working/SKILL.md.

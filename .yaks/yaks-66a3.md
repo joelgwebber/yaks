@@ -18,10 +18,12 @@ Before/after frames (pinned and unpinned) attached; update the `tui-detail*.svg`
 
 ---
 ▸ 2026-10-17T04:31:30Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-17T04:31:30Z [delta-lead]
+
 Claim (yakherd delta-lead, 2026-10-17): owner **hdr-1**.
 Scope: `render_detail` and `pinned_header_line` in src/tui/render.rs (a dim `─` rule row under the pinned one-line header; content still pushed down, nothing hidden; mouse hit area `hits.detail` must stay aligned with content rows), and the `Status:` field in `detail::build` (src/tui/detail.rs) carrying the status emoji, e.g. `Status:      🦬 hairy`. Only those functions in detail.rs: other workers own `scan_body_links` and `humanize_date`/`opt_date` there. Also check `App::detail_page` / scroll-into-view arithmetic accounts for the extra pinned row (see headless.rs on_resize and the live loop).
 Evidence: tests that fail first (pinned header + rule occupy two rows; Status line contains the emoji); headless frames pinned and unpinned attached. Judge: coordinator at landing.
@@ -29,18 +31,21 @@ Do NOT regenerate docs/assets docshots (several workers would collide on the SVG
 
 ---
 ▸ 2026-10-17T04:32:28Z [hdr-1]
+
 Start: 2026-10-17T04:32:25Z; path: /home/joel/src/yaks/.delta/worktrees/vhcj0wne3pb5/yaks/.yaks/yaks-66a3.md
 
-![pinned](yaks-66a3/pinned.txt)
+[pinned](yaks-66a3/pinned.txt)
 
-![unpinned](yaks-66a3/unpinned.txt)
+[unpinned](yaks-66a3/unpinned.txt)
 
 ---
 ▸ 2026-10-17T04:39:12Z [hdr-1]
+
 verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-17T04:39:47Z [hdr-1]
+
 Decision: the rule is a second reserved row (`PINNED_ROWS = 2` in render.rs, shared with `App::detail_rows_shown`) drawn as a DarkGray `─` line; rejected a ratatui `Block` bottom border (would need a nested layout and would not share the row constant with the scroll arithmetic) and overlaying the first content row (hides content).
 Decision: Status field is `🦬 hairy` (emoji from `Status::emoji()` + word) in the existing `Status:` field; rejected adding the emoji to the `Task:` section line. `edit_target_at` matches on the `Status:` prefix, so `E` is unaffected.
 Decision: pin condition stays `detail_scroll > 0`; the viewport shrinks by 2 (`detail_rows_shown`), so `detail_max_scroll` / `scroll_line_into_view` / wheel clamp follow automatically. headless/runtime `detail_page` untouched.
@@ -49,4 +54,5 @@ Summary: pinned header gets a dim rule row (content pushed down 2 rows, hits.det
 
 ---
 ▸ 2026-10-17T04:39:47Z [hdr-1]
+
 moved: shaving -> shorn

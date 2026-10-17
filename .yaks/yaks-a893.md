@@ -25,12 +25,14 @@ Deliverable: a short design note on this yak with mock frames (headless renders 
 
 ---
 ▸ 2026-10-17T05:00:19Z [delta-lead]
+
 moved: hairy -> shaving
 
-![today-view-M-E](yaks-a893/today-view-M-E.txt)
+[today-view-M-E](yaks-a893/today-view-M-E.txt)
 
 ---
 ▸ 2026-10-17T05:00:19Z [delta-lead]
+
 Design note (delta-lead, 2026-10-17). Today's three surfaces are attached (`today-view-M-E.txt`: headless 90x34 frames of the detail pane, `M`, and `E` on a comment). Problems seen there:
 
 - `M` replaces the whole pane with an empty editor, so the thing you are replying to disappears.
@@ -81,6 +83,7 @@ Questions for Joel are asked on this yak.
 
 ---
 ▸ 2026-10-17T05:00:19Z [delta-lead]
+
 asked: needs human
 
 View/edit design (note above, with a mock frame): OK to (1) edit the description and comments *in place* in the detail pane (`E` on a body row, `M` for a new comment at the end, `Ctrl-S` saves just that block), and (2) drop the content blocks from the `E` edit form so it holds only header fields (create keeps its description)? That removes the accordion and yaks-c6f4. If yes I'll split it into implementation yaks and fan it out.

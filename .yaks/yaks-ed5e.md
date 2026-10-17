@@ -21,11 +21,13 @@ Evidence (tests FAIL first): a worktree shed whose yak change was cherry-picked/
 
 ---
 ▸ 2026-10-10T15:44:45Z [delta-lead]
+
 Second real-machine case (2026-10-10, ~/src/j15r clones 47g751xth9ea and nh3dwrb2as8f, viewed from clone bcasg4bjrcxp): both are at 07fa8a4, +0 -7, and each holds seven uncommitted yak files that are Delta-applied copies of work the primary has since committed. `yaks sheds` says `farm: 5 new, 2 moved` for each; but j15r-7384, 9e6d, 9ea3, a24d, ab39 are `shorn` here with notes (the shed's copies are `shaving`/`hairy` with none), and j15r-7de1, ad91 are identical here. Nothing in those sheds is outstanding.
 The `landed` rule above (same status, every note the shed has) does not catch it, because OUR copy is further along, not equal. Same family, other direction: a shed copy that is an earlier state of ours (same id, our status later in hairy -> shaving -> shorn, our notes a superset of its) should also read as already in this checkout. Decide whether `landed` covers "superseded by ours" or it is a separate word (see the shed state vocabulary yak: `stale`). Add this case to the tests: a shed whose yak is `shaving` with no notes while ours is `shorn` with notes.
 
 ---
 ▸ 2026-10-11T20:14:12Z [delta-lead]
+
 Resolving the open question left by the note above (2026-10-10 superseded case), and bringing this up to date with the viewer-independence decision made since (yaks-ee0a, decision 5, yaks-e9bb/yaks-ad6d landed after this was written).
 
 **Decision: `landed` covers "superseded by the reference" too, via one generalized check, not a second word.** A yak in a shed's delta is landed when `yak_changes(reference, shed_tasks)` does NOT include it — i.e. the shed has nothing for that yak beyond what the reference farm already has. Run the OTHER way (`yak_changes(reference, shed_tasks)` instead of the shed's own `yak_changes(shed_base, shed_tasks)`), this single rule covers both directions for free: the shed's state exactly matches the reference (the original spec), AND the shed's state is a strict prefix of the reference's (superseded: more notes, further along in hairy->shaving->shorn) — because in either case the reference has everything the shed has, so nothing is outstanding. Only when the shed has something the reference lacks (a real unlanded change, or a genuine disagreement the reference never saw) does the yak stay outstanding. `yaks-9277`'s `stale` is a different, liveness-based concept (no activity while still claimed) and does not need to overlap with this.
@@ -36,10 +38,12 @@ Resolving the open question left by the note above (2026-10-10 superseded case),
 
 ---
 ▸ 2026-10-11T20:14:12Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-11T20:14:46Z [delta-lead]
+
 Claim (coordinator). Owner: land-1. Spec = the full description and notes above (read them in order; the two 2026-10-11 Decisions bind the mechanism, below is how to wire them into the existing code).
 
 ## Mechanism
@@ -75,32 +79,39 @@ Judge: coordinator (re-runs the gate, reviews the diff, checks the real-machine 
 
 ---
 ▸ 2026-10-11T20:16:05Z [land-1]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-11T20:16:05Z [land-1]
+
 Brief said already shaving but farm had it in hairy/; shaving it now before starting work.
 
 ---
 ▸ 2026-10-11T20:19:07Z [land-1]
+
 asked: needs human
 
 Blocked: my shed's copy of yaks-ed5e lacks the two 2026-10-11 Decision notes and the final Claim (coordinator) note the brief says define `landed` precisely and supersede earlier wording. Checked local/main (fetched) and origin/main: neither has them either — the claim commit (b721f72, "yaks-ed5e: claim (land-1)") only staged the deletion of .yaks/hairy/yaks-ed5e.md, same bug as yaks-ad6d's claim commit 5070350, but no follow-up commit re-adding the shaving file with full note history exists yet for yaks-ed5e. I shaved it myself locally (it was hairy in my shed) and messaged the parent thread asking for either the literal note text or a pushed commit with .yaks/shaving/yaks-ed5e.md. Not starting the code/docs scope until I have the real spec.
 
 ---
 ▸ 2026-10-11T20:24:47Z [land-1]
+
 Blocker resolved: fetched+merged local/main (fast-forward 8f393ab -> aeef450), which carries the full note history (both 2026-10-11 Decision notes + Claim note) the coordinator had fixed upstream. Resuming work per the Claim note's Mechanism section. needs:human left as-is since this wasn't a formal yaks answer, just upstream sync; proceeding with the coordinator's direct go-ahead.
 
 ---
 ▸ 2026-10-11T20:34:16Z [land-1]
+
 Implemented the mechanism in src/sheds.rs: FarmDelta.landed + touched(), YakChange.landed, reference_tasks()/landed_ids() helpers, discover() computes the reference once (primary's live farm, else origin/main via origin_base+base_farm) and threads it through inspect(); changes()/shed_yak_changes() thread &[Shed] (farm.rs::shed_changes + main.rs call site updated) to find the primary without a second discovery walk. render() farm: line: 'landed (N yak)' when ALL touched are landed, '(K landed)' + pruned itemized lines when mixed, untouched when none. render_changes appends ', landed'. JSON: farm.landed (array), changes landed:bool. All 60 pre-existing sheds:: tests still pass unchanged (additive). Writing the new landed-specific tests next.
 
 ---
 ▸ 2026-10-11T20:44:07Z [land-1]
+
 Evidence (tests FAIL first): wrote 8 new tests + 1 pure unit test for outstanding_ids. Before implementing outstanding_ids' direction-aware refinement, 3 of the 8 tests failed on first run (a_shed_with_an_extra_note_..., a_shed_with_some_yaks_landed_and_some_outstanding_..., a_shed_whose_copy_is_superseded_...) - two were my own test-fixture bugs (temp-dir path accidentally containing the literal substring "landed"/"yaks-bbbb" that my own assertions matched against; fixed by tightening the assertions to exact indented lines), and the superseded test's real bug was in my FIRST implementation attempt: a naive "is this id in yak_changes(reference, theirs)'s output" check misfires on a BACKWARD status move (shed behind reference, e.g. shed=shaving no notes vs reference=shorn with notes) because yak_changes' `moved` field is a plain inequality with no direction, while `notes` already handles backward correctly via `.skip(known)` on a shorter list. Fixed by adding outstanding_ids() with a status_rank() direction check: only a FORWARD move (or added/notes/needs/edited) counts as genuinely outstanding; a backward-only move does not. All 8 tests + the pure outstanding_ids_is_direction_aware test now pass; full `cargo test --bin yaks sheds::` = 68 passed (60 pre-existing unchanged + 8 new), 0 failed.
 
 ---
 ▸ 2026-10-11T20:44:19Z [land-1]
+
 Decision: render/JSON shapes, finalizing the Claim note's open choices.
 - Text `farm:` line: unchanged when `landed` is empty. ALL touched landed: replace the whole summary with `farm: landed (N yak)` (singular "yak" for N=1, "yaks" otherwise) and print NO itemized lines (nothing is outstanding). MIXED: keep the existing summary counts (full totals since fork, unchanged), append ` (K landed)`, and prune every itemized line (`+ id`, `id from -> to`, `id +N notes`, `id needs: v`, `id edited`) down to ids NOT in `landed` - so the itemized block always shows exactly what's still actionable.
 - `render_changes`: append `, landed` to the bracket list, after `edited` (so `[hairy -> shaving, landed]`), the same pattern `edited` already uses - no new punctuation/shape.
@@ -109,32 +120,38 @@ Decision: render/JSON shapes, finalizing the Claim note's open choices.
 
 ---
 ▸ 2026-10-11T20:44:31Z [land-1]
+
 Decision: outstanding_ids() is direction-aware (not a plain yak_changes(reference, theirs) membership check), and reference_tasks() takes Option<&Path> instead of the Claim note's suggested Option<&Shed>.
 - Direction: a plain "is this id anywhere in yak_changes(reference, theirs)'s output" test (what the Claim note's "landed when yak_changes(reference, shed_tasks) does NOT include it" literally reads as) breaks the SECOND Decision's own superseded case: yak_changes' `moved` field is a direction-blind inequality (reference.status != theirs.status), so a shed that is BEHIND the reference (e.g. shed=shaving/no-notes, reference=shorn/with-notes) still produces a `moved` entry and would wrongly read as outstanding. `notes` already handles the backward direction for free (`.skip(known)` on a shorter list is empty, not an error); `moved` does not, because status is a simple ordered progression and skip-style truncation does not apply to a single scalar comparison. Fix: outstanding_ids() reuses yak_changes(reference, theirs) but only counts a `moved` entry as outstanding when theirs' status ranks AHEAD of reference's (hairy<shaving<shorn<dead, via EVERY's order) - added/notes/needs/edited are unchanged (already direction-correct or direction-irrelevant). Recorded in code as status_rank()/outstanding_ids() doc comments; the superseded test (a_shed_whose_copy_is_superseded_by_the_reference_reads_landed) is the regression guard.
 - Shed vs Path: the Claim note's reference_tasks(primary: Option<&Shed>, ...) can't be built at the point discover() needs it (the primary's own Shed doesn't exist yet - computing it first would require inspect()ing it before every other row, and Shed doesn't carry raw task lists anyway, only the already-grouped FarmDelta). Used Option<&Path> instead and do a direct store::discover_with+load read, gated only on success (matches the Decision's "primary visible + readable" criterion without needing a prebuilt Shed). changes()/shed_yak_changes() DO have the full already-inspected &[Shed] in hand (threaded through per Mechanism point 5) and use it only to find the primary's path, not its ShedFarm variant.
 
-![sheds-landed-before-after](yaks-ed5e/sheds-landed-before-after.txt)
+[sheds-landed-before-after](yaks-ed5e/sheds-landed-before-after.txt)
 
 ---
 ▸ 2026-10-11T20:47:53Z [land-1]
+
 Real-machine fixture reproducing the 2026-10-10 superseded-direction case: a shed claims a yak (shaving, no notes) while the primary independently finishes and shears it (shorn, 3 notes). Before: shed row showed 'farm: 1 moved' + itemized 'demo-aaaa hairy -> shaving' (outstanding). After: 'farm: landed (1 yak)', JSON farm.landed=["demo-aaaa"]. Binaries built from this checkout (before = git stash of src/sheds.rs+farm.rs+main.rs back to aeef450, after = current working tree).
 
 ---
 ▸ 2026-10-11T20:50:17Z [land-1]
+
 verify: `cargo test --release` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-11T20:51:44Z [land-1]
+
 Done. src/sheds.rs: FarmDelta.landed (+touched()), YakChange.landed, reference_tasks()/outstanding_ids()/status_rank()/landed_ids() helpers; discover() computes the reference once and threads it through inspect(); changes()/shed_yak_changes() thread &[Shed] (farm.rs::shed_changes + main.rs call site). render(): "farm: landed (N yak)" when ALL touched landed (no itemized lines), "(K landed)" + pruned itemized lines when mixed, unchanged when none. render_changes appends ", landed". JSON: sheds farm.landed (array of ids), changes landed:bool. Docs/help updated in the same change: docs/cli.md (sheds + changes rows), README.md, .agents/skills/yaks/SKILL.md (sheds + changes rows), src/main.rs clap /// help for Sheds/Changes + its --json doc comment.
 Evidence: 8 new sheds:: tests + 1 pure outstanding_ids test (squash/cherry-pick -> landed, extra note -> not landed, superseded direction -> landed, mixed summary+pruning, no-reference -> empty, two non-primary viewers agree, yaks changes landed text+JSON) - all failed-then-passed per the evidence contract (noted above). Full cargo test --release: all 16 suites green, 0 failed (ran before AND after the last code edit, including after cargo fmt). yaks verify yaks-ed5e: PASS. Real-machine evidence: attached before/after `yaks sheds` output from a from-scratch fixture reproducing the 2026-10-10 superseded-direction case (binaries built from this checkout, before = stashed back to aeef450) - attachments/yaks-ed5e/sheds-landed-before-after.txt.
 Out of scope, not touched: show --sheds/inbox --sheds, the TUI, any write, parent/child display, yaks-9277 (stale vocabulary).
 
 ---
 ▸ 2026-10-11T20:51:45Z [land-1]
+
 moved: shaving -> shorn
 
 ---
 ▸ 2026-10-12T16:04:57Z [delta-lead]
+
 picked up
 
 Root cause of this yak showing in Joel's inbox after it was shorn: the landed file (2b92139) still carried land-1's `needs: human` from its blocked ask, with no answer or pickup entry. My `yaks answer yaks-ed5e@land-1` wrote the answer into land-1's working tree, uncommitted, as designed; land-1 then synced with `git fetch local && git merge local/main` to get the missing spec, and the uncommitted answer did not survive that (the landed file has neither the answer note nor a pickup). Joel cleared it by hand (needs: agent); this pickup closes it. The hazard itself is filed separately.

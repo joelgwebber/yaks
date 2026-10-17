@@ -17,6 +17,7 @@ is limited.
 
 ---
 ▸ 2026-09-03T16:22:56Z
+
 [coordinator] DECISION (design settled, ready to build): model needs-human as a SOFT BLOCK on the existing readiness gate, via a fresh FRONTMATTER FIELD (not a label — a label is too freeform for something load-bearing).
 - Field: 'needs: human'. Makes 'yaks next' treat the yak as NOT ready, exactly like an unmet depends_on (needs-human == a dependency on an external human event). The guard falls out for free: agents that trust 'yaks next' never pick it up. No new status (keep the tiny state machine tiny).
 - Raise (attributed, uses eb66 actor): 'yaks ask <id> --note "which auth approach?"' sets the field + records the question in one step.
@@ -28,6 +29,7 @@ Depends on eb66 (the 'ask' note should be attributed). Build eb66 first.
 
 ---
 ▸ 2026-09-03T16:39:05Z [coordinator]
+
 BUILT + verified. needs-human as a soft block on the readiness gate.
 - New Task.needs: Option<String> (frontmatter 'needs: <who>'; parse + canonical write; back-compatible — absent field = unblocked, no migration). filter: ready_only now also excludes needs.is_some(), so a blocked yak drops out of 'next' exactly like an unmet dep. No new status.
 - Commands: 'yaks ask <id> --note ... [--needs human]' sets the block + records an attributed question (uses eb66 --as). 'yaks answer <id> --note ...' clears it + records the reply (human-reserved by convention). 'yaks inbox' lists needs-blocked yaks. needs shows in 'show' + json.
@@ -36,4 +38,5 @@ FOLLOW-UPS: (1) TUI inbox filter + badge (CLI is the durable part; done here). (
 
 ---
 ▸ 2026-09-03T17:59:54Z [coordinator]
+
 Clearing the needs block Joel set while dogfooding ('yaks ask yaks-b517' on an already-SHORN yak). That probe revealed the inbox-visibility gap: ask set needs=human but inbox (hairy+shaving only) never surfaced it — a silent block. Captured as yaks-bc68 (inbox must show every needs-blocked yak, status-independent). Restoring b517 to a clean shorn state.

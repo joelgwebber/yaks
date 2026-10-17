@@ -21,10 +21,12 @@ Evidence: a docshots scene rendering every style against the default and a light
 
 ---
 ▸ 2026-10-17T04:31:30Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-17T04:31:30Z [delta-lead]
+
 Claim (yakherd delta-lead, 2026-10-17): owner **palette-1**.
 Scope: a new module src/tui/palette.rs (named `Style` constructors or a struct of them) holding every markdown style listed in this yak's description; switch the private style fns in src/tui/markdown.rs to read from it (behaviour may change only where the new palette differs); a new docshots scene in src/tui/docshots.rs that renders a sample document covering every style (headings H1-H3 next to a pane label like `Children:`, emphasis, code, quote bar, bullets per depth, rule, link text + dim URL, task boxes, the five alert kinds, a comment header) to a NEW docs/assets/tui-md-palette.svg (generate only that one SVG). The renderer that will use most of these does not exist yet: render the sample by hand-building ratatui Lines from the palette, it is a swatch, not the renderer.
 Constraints: 16-colour/indexed colours that work on dark and light terminals; headings must not reuse the pane-label style (cyan bold) from `render_dline`.
@@ -33,6 +35,7 @@ Do NOT regenerate docs/assets docshots (several workers would collide on the SVG
 
 ---
 ▸ 2026-10-17T04:33:10Z [palette-1]
+
 Start Sat Oct 17 04:33:10 AM UTC 2026; path: /home/joel/src/yaks/.delta/worktrees/g01yg13e0zfq/yaks/.yaks/yaks-bc53.md
 
 ![tui-md-palette](yaks-bc53/tui-md-palette.svg)
@@ -41,6 +44,7 @@ Start Sat Oct 17 04:33:10 AM UTC 2026; path: /home/joel/src/yaks/.delta/worktree
 
 ---
 ▸ 2026-10-17T04:41:57Z [palette-1]
+
 Decision: no code-block background. Alternatives rejected: Indexed(236/237) grey (subtle on dark, a black slab on light terminals), Rgb tint (same, and pins a hue). Code is set apart by green fg + the dim fence line instead; the constraint (16-colour, dark+light safe) wins over the "optional subtle bg" in the description.
 Decision: headings = H1 magenta+bold+underline, H2 blue+bold, H3 default-fg bold+italic, H4-6 dark grey bold. Alternatives rejected: yellow (the old heading colour; clashes with the Warn/needs accent), cyan (is the pane-label colour). Levels differ by colour AND weight/underline/italic so they read on monochrome terminals. A unit test asserts no level equals `pane_label()`.
 Decision: API = plain `pub fn x() -> Style` in src/tui/palette.rs plus glyph fns/consts (`bullet_glyph(depth)`, `task_glyph`, `QUOTE_BAR`, `RULE_CHAR`) and an `AlertKind` enum with `label()`/`glyph()`. Alternative rejected: a `Palette` struct (nothing to configure yet; fns are simplest to call from mdrender). `#![allow(dead_code)]` on the module until yaks-649d consumes it.
@@ -51,15 +55,18 @@ Decision: light-terminal panel in the swatch is simulated by re-colouring buffer
 
 ---
 ▸ 2026-10-17T04:41:57Z [palette-1]
+
 Summary: new src/tui/palette.rs (single style table; unit tests: distinct heading levels != pane_label, distinct alert colours, only 16 ANSI colours + no bg, bullet cycle); src/tui/markdown.rs reads every style from it (heading levels, dim `#`/`>` markers); new docshots scene `docshots_md_palette` -> docs/assets/tui-md-palette.svg (only this SVG generated; the diff in docshots.rs is pure additions); docs/tui.md gains a "Markdown styles" paragraph + embed. No `?` help / CLI change (no key or flag changed). Attached: SVG + PNG (rasterized with `firefox --headless --screenshot`, since no Chrome on this box; emoji-free swatch so Firefox is fine).
 Gate: `cargo test --workspace` and `cargo test --release` both pass (605 unit + all integration tests).
 
 ---
 ▸ 2026-10-17T04:42:02Z [palette-1]
+
 verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-17T04:42:09Z [palette-1]
+
 asked: needs human
 
 Joel: please sign off on the palette frame before the renderer core (yaks-649d) consumes it. Attached: yaks-bc53/tui-md-palette.png (+ .svg); also docs/assets/tui-md-palette.svg in the commit. Left = default dark, right = VS Code Light+ ANSI.

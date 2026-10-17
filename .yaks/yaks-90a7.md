@@ -14,4 +14,5 @@ Cargo.toml and README declare Apache-2.0 but there is no LICENSE file at the rep
 
 ---
 ▸ 2026-08-23T14:59:59Z
+
 Added canonical Apache-2.0 LICENSE (fetched verbatim from apache.org) at repo root; appendix boilerplate left as-is.

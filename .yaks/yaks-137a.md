@@ -13,4 +13,5 @@ Cut v0.0.11 to ship the 2026-09-23 UI lightning round. Highlights since v0.0.10:
 
 ---
 ▸ 2026-09-24T02:30:35Z [Joel Webber]
+
 verify: `cargo test --workspace` -> PASS (exit 0)

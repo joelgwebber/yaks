@@ -17,4 +17,5 @@ Match Python row: ' {id}   p{pri} {type-word}   {glyph} {title}   {[labels]right
 
 ---
 ▸ 2026-08-22T04:03:29Z
+
 Done. Row = {lead}{indent}{id ljust} p{pri} {type:8} {emoji} {title} … right-aligned [labels] + star slot + collapse badge ▶N. Blocked (hairy w/ unresolved dep) gets a magenta * lead. No left chevron; tree = indentation. Near-identical to Python at 100 wide.

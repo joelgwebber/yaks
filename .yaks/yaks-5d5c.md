@@ -15,8 +15,10 @@ A human-driven interactive lane running in parallel with other work. FRAMING (ap
 
 ---
 ▸ 2026-09-09T00:12:36Z [coordinator]
+
 Drafted for review (judge = human read-over; no script lever). Added section 'Human-driven interactive lane (parallel, without a fan-out)' to skills/dev/yaks-coordinating/SKILL.md (between Merge/integration and PR-driven integration); touched docs/skills.md (coordinating bullet + workflows-at-a-glance line). Left shaving pending human judgment; uncommitted.
 
 ---
 ▸ 2026-09-09T00:24:40Z [coordinator]
+
 Shorn: added 'Human-driven interactive lane' section to yaks-coordinating + two docs/skills.md touches; Kickoff sharpened so re-rooting reads as the human's non-delegable step. Evidence: prose reviewed and approved by human (no script lever — skills/dev/ isn't embedded, so 'cargo test skills' doesn't guard it). Landing alongside this commit.

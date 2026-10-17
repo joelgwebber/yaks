@@ -19,6 +19,7 @@ Bonus points if we can find a way to get agents to reliably pass some kind of sk
 
 ---
 ▸ 2026-09-23T04:41:44Z [agent]
+
 Delivered. Installed skills now carry a provenance stamp in their frontmatter under the spec's metadata: field (yaks-version + yaks-digest, quoted strings per the spec's string-values rule), which is what makes staleness decidable at all. inspect() yields seven states: current / stale / adoptable / held / modified / unmanaged / source.
 
 Validation and upgrade: 'yaks skills status' reports the verdict per skill (with --dir for other skills dirs), and 'yaks skills install' upgrades a cleanly-stale copy with no flag while refusing to touch a locally-edited one without --force. yaks doctor adds an advisory listing only the ones a human must decide about (it sits outside Farm::doctor, since this is environment, not farm integrity, and must not affect its exit code).
@@ -29,4 +30,5 @@ Two deliberate consequences: (a) auto-upgrade keys on version, so a skills-only 
 
 ---
 ▸ 2026-09-23T04:41:44Z [agent]
+
 verify: `cargo test -p yaks skills` -> PASS (exit 0)

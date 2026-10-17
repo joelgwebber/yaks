@@ -15,4 +15,5 @@ Fold run-3 findings into skills/dev/coordinating-yaks/SKILL.md: (1) file-tool SO
 
 ---
 ▸ 2026-09-04T04:03:54Z [wt-skill]
+
 Added to coordinating-yaks: (1) file-tool SOP fallback rung — terminal-with-anchored-replacements when the edit tool refuses the gitignored .worktrees/ path; noted main stayed src-clean across three runs. (2) new 'Coordinator pre-flight (accreted from runs)' checklist cross-referencing existing sections. Evidence: edit tool ACCEPTED the full worktree path this run (fallback not needed); git -C main status showed only unrelated .yaks/ drift (yaks-012b, yaks-b517), zero skills/ or src/ edits in main.

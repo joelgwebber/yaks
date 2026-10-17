@@ -15,4 +15,5 @@ cargo-dist multi-platform builds + GitHub Releases; Biome-style npm installer (p
 
 ---
 ▸ 2026-10-05T22:35:07Z [Joel Webber]
+
 moved: hairy -> dead

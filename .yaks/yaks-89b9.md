@@ -14,4 +14,5 @@ Decision (origin: yaks-1a96; prototype: yaks-dce6). Keep DUAL TUI-evidence outpu
 
 ---
 ▸ 2026-09-09T04:55:01Z [agent]
+
 Shorn — all three children landed. Outcome: TUI evidence is now two clean channels (plain toque text snapshot + toque SVG->PNG); the dual-plane colored-text encodings are gone. svg_of promoted into toque (render_to_svg/buffer_to_svg); StyleEncoding machinery + --style flags removed; docs/skills swept. cargo test --workspace green; clippy clean.

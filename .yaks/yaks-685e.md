@@ -15,4 +15,5 @@ Follow-up deferred from yaks-4e8a/548b: give the needs block a warning accent so
 
 ---
 ▸ 2026-09-04T04:27:34Z [wt-tui]
+
 Implemented: added Kind::Warn to src/tui/detail.rs (Needs: field now built via warn_field), handled in render_dline's base-style match (yellow+bold, mirrors Kind::Section); tinted the ⏳ needs badge in tui.rs list_item to yellow+bold to match. Extended needs_block_renders_after_status_when_set to assert Kind::Warn. cargo build --release + cargo test --release green (224 + 21). No snapshots regenerated: insta snaps here capture only cell .symbol() (buffer_to_string), not color, so a pure style change produces zero .snap diff.

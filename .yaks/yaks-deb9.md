@@ -15,4 +15,5 @@ DONE in initial commit b39f2ed: fs discovery, hand-rolled frontmatter fast-path 
 
 ---
 ▸ 2026-08-20T03:26:32Z
+
 Completed in initial commit b39f2ed, before this herd existed. Recorded here for the yaks-rs history.

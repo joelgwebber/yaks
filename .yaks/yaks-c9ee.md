@@ -15,8 +15,10 @@ A yaks log --since <ts|duration> [filters] that returns timestamped notes and st
 
 ---
 ▸ 2026-08-30T20:08:52Z
+
 Implemented yaks log [--since <spec>] [filters] [--json]. Core is pure/testable in store.rs: parse_notes() splits the timestamped note blocks append_note() writes; parse_since() accepts 2h/3d/1w durations, YYYY-MM-DD, naive datetime, or RFC3339; parse_ts() for cutoff compares. herd::log() applies the shared FilterSpec, keeps notes at/after the cutoff, sorts oldest-first. Evidence: 3 new unit tests pass (parse_notes x2, parse_since); full suite green (cargo test --workspace); live run 'yaks log --since 2h --parent-of yaps-3901' returned the two seeded notes, --json shape verified, 'yaks log --since banana' exits 1 with a clear message. Not done: state-transition timestamps (transitions are not individually recorded) -> spun out as a follow-up.
 
 ---
 ▸ 2026-08-30T20:10:25Z
+
 Shorn. Landed in-tree; state-transition timestamps deferred to yaks-8265.

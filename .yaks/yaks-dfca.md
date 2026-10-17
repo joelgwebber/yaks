@@ -40,24 +40,29 @@ The observation log `.yaks/artifacts/yaks-df61/**`, every other yak file under `
 
 ---
 ▸ 2026-10-06T21:31:51Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-06T21:31:51Z [delta-lead]
+
 Claim (coordinator delta-lead). Owner: worker shd-1. Scope: the whole tree except the history listed in the description. Judge: the coordinator re-runs the gate, runs `yaks sheds` and `yaks lanes` against the real checkouts, and greps for stragglers. Forbidden: renaming anything in the allowed history, changing behaviour, any other yak, adopting "clip" or "barn".
 
 ---
 ▸ 2026-10-06T21:32:19Z [shd-1]
+
 Start: Tue Oct  6 21:32:15 UTC 2026
 Path: /Users/joel/src/yaks/.delta/worktrees/vk8z2vjzgdqh/yaks/.yaks/shaving/yaks-dfca.md
 Old binary copied to scratch (yaks-old) before any edit.
 
 ---
 ▸ 2026-10-06T21:34:21Z [shd-1]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-06T21:34:35Z [shd-1]
+
 Decision: mechanical `Lane`->`Shed`, `lane`->`shed` (perl, case-preserving) over every non-history text file, then read every hunk. A token census first showed no false positives (no plane/planet/Elane), so the identifier case needed no word-boundary guard. Rejected: per-file hand edits (error-prone for ~800 hits); a blind replace without the diff review.
 Decision: no generic-prose sentence was kept as "lane": every one (one lane per worker, per-lane commits, a human-driven lane, ...) reads fine as "shed", so the exception list is empty.
 Decision: `rustfmt --edition 2024` on the five changed src files reordered `mod sheds;` after `mod rollup;` (alphabetical, as rustfmt does); its unrelated hunks in actor.rs, tui/docshots.rs, tui/tests.rs were reverted.
@@ -73,4 +78,5 @@ Summary: src/lanes.rs -> src/sheds.rs (git mv), Command::Lanes -> Sheds, Farm::l
 
 ---
 ▸ 2026-10-06T21:34:35Z [shd-1]
+
 moved: shaving -> shorn

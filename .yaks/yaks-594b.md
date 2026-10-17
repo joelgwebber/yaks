@@ -16,6 +16,7 @@ eb66 (actor attribution) and b517 (needs-human block) landed at the FILE + CLI-c
 
 ---
 ▸ 2026-09-03T20:12:50Z [coordinator]
+
 SECOND PARALLEL RUN — done, clean. Two-lane disjoint run (the point: workers coordinating while USING the attribution/needs work we just landed). CLI lane (wt/cli-needs, main.rs+json.rs): yaks-45c7 (row marker) + yaks-29a3 (show renders extra). TUI lane (wt/tui-needs, tui.rs+tui/detail.rs): yaks-548b (badge + 'i' inbox toggle + 'a' ask/answer keys) + yaks-eeba (detail renders extra).
 
 RESULT: zero-conflict merge on BOTH lanes (2nd was a real 3-way). 219 tests green integrated (each worker added its own; +8 over baseline). Verified on merged binary: 'yaks show yaks-b517' now surfaces Joel's real 'wat: foo' under 'Other fields:'; a blocked yak shows '⚠ needs:human' in list. TUI parts covered by the worker's headless tests (badge/inbox/ask-answer/detail).
@@ -30,4 +31,5 @@ FRICTION (agent-reported, actionable): 'yaks shave'/'create' don't accept --as (
 
 ---
 ▸ 2026-09-04T17:07:48Z [coordinator]
+
 COMPLETE. needs + attribution are first-class across CLI+TUI now. Attribution: shared actor::resolve (1603), TUI comment [actor] parse+render (1edb), auto-attributed TUI comments (ffa5). needs visibility: detail field (4e8a), warning accent (685e), CLI row marker (45c7), inbox status-invariant (bc68). Preserved-unknown-frontmatter render: CLI show (29a3) + TUI detail (eeba). Inbox as filter/view (a3a6). All children shorn across runs 2-5; herd stayed integrity-clean throughout (yaks doctor).

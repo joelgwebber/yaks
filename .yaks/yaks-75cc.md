@@ -19,6 +19,7 @@ Instead, it should simply serve as signal that the user is also doing something 
 
 ---
 ▸ 2026-10-05T22:43:55Z [delta-lead]
+
 Already in the skills; shearing as done (coordinator delta-lead, 2026-10-05).
 
 Where the guidance lives today:
@@ -30,4 +31,5 @@ The mechanics that make the advice cheap to follow also exist now: `yaks commit`
 
 ---
 ▸ 2026-10-05T22:43:55Z [delta-lead]
+
 moved: hairy -> shorn

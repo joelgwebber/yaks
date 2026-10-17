@@ -16,4 +16,5 @@ Current approach: pristine char grid, then an aligned style-id grid + legend. Ad
 
 ---
 ▸ 2026-08-22T14:43:38Z
+
 Implemented in the headless harness as the 'parallel' encoding (a39e). Kept for back-compat/default; superseded by spans/interleaved per docs/tui-style-eval.md.

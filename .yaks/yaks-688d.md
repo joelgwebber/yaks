@@ -17,14 +17,17 @@ Then we can add the ability to follow them like any other link, and autocompleti
 
 ---
 ▸ 2026-08-29T17:51:24Z
+
 Remember to address these tools as a combination of CLI tools and TUI affordances layered atop them, when appropriate.
 
 ---
 ▸ 2026-08-29T17:51:57Z
+
 And required skill updates as well, so agents know how to use the tools.
 
 ---
 ▸ 2026-08-29T18:37:42Z
+
 Decomposition (planning; pre-review). Reframed the herd around a shared yak-REFERENCE model rather than just informal linking, after pulling in 15f7 (multi-herd). Added two children: yaks-0187 (reference resolution core — the shared resolver everything sits on) and yaks-3563 (agent skill updates). Build order via deps: 0187 -> {c2c5 render, 0af1 rename} ; 0af1 -> 7a92 (single-yak rename generalizes to bulk prefix rename) ; 0187 -> 15f7 ; {c2c5, 7a92} -> 3563 skills.
 
 Key finding: informal linking already half-exists (detail.rs::scan_body_links, wired across desc+comments) and already made the right call — validate candidates against the real id set, prefix-AGNOSTIC. So the "formal markup vs prefix-regex" question in this desc is effectively settled; codify the validation approach in 0187.
@@ -35,4 +38,5 @@ RESIDUAL not yet split out: the parent asks for follow + autocomplete (editing-t
 
 ---
 ▸ 2026-08-29T18:42:14Z
+
 DECISION (user): migrate yaksrs- -> yaks-. The yaksrs prefix was an accidental side-effect of the python->rust rewrite. We will DOGFOOD the rename tool (yaks-7a92) to perform the 160-file migration — that migration is its acceptance test. Autocomplete/follow stays folded into yaks-c2c5 for now (tracked in its scope note). Starting pen-to-paper on yaks-0187 (reference resolution core).

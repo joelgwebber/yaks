@@ -16,14 +16,17 @@ From yaks-df61 O58: Delta marks imported thread commits as shallow boundaries, s
 
 ---
 ▸ 2026-10-05T22:40:25Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-05T22:40:25Z [delta-lead]
+
 Claim (coordinator delta-lead): part of the skills pass under yaks-5c9f; I do it myself (land.sh plus its selftest).
 
 ---
 ▸ 2026-10-05T22:43:08Z [delta-lead]
+
 Done (96c7b6a, with the skill sentence in 71fb223).
 
 - `land.sh` prints one note when `git rev-parse --is-shallow-repository` is true: ancestry and merge answers are lower bounds, and `git fetch --unshallow origin` (or `local`) fixes it.
@@ -32,4 +35,5 @@ Done (96c7b6a, with the skill sentence in 71fb223).
 
 ---
 ▸ 2026-10-05T22:43:08Z [delta-lead]
+
 moved: shaving -> shorn

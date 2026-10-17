@@ -12,4 +12,5 @@ I think we're using edtui for both, but [esc] takes you straight out of the edit
 
 ---
 ▸ 2026-08-28T04:48:16Z
+
 Implemented. Single-line editors are now modal in vim across all overlays, matching the Edit-overlay pattern: a lone Esc drops the field to Normal (edtui) so motions (h/l/w/b/0/$/x/i/a...) are reachable, and Ctrl-C or a rapid double-Esc cancels. Covered: inline search (/), detail find, the fuzzy dep/reparent picker, and the filter drawer text rows (labels/search/parent); the create/edit form title/labels already worked. Emacs mode unchanged (lone Esc cancels). Added a shared App::field_cancel helper; the drawer still closes on a lone Esc on chip rows. Drawer footer hint is now vim-aware. Tests: search + detail-find cancel switched to Ctrl-C, plus new Esc-enters-Normal coverage for search, detail-find, fuzzy, and drawer.

@@ -37,14 +37,17 @@ C. Hybrid: flat for hairy/shaving/shorn, keep `dead/` as the one subdirectory (s
 
 ---
 ▸ 2026-10-12T16:06:25Z [delta-lead]
+
 More evidence, found while filing this: the third staging miss in two days, and the first to reach origin. yaks-7faf's shear commit b25a5b9 recorded only the deletion of shaving/yaks-7faf.md; the new shorn/ file stayed untracked, so origin/main had the release yak missing entirely until 5d2ba3f. yaks doctor did not catch it (a yak that is simply absent is not a two-dir duplicate) and preflight's git-state check only runs on demand.
 
 ---
 ▸ 2026-10-12T19:44:39Z [Joel Webber]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-12T19:53:34Z [delta-lead]
+
 Decision (Joel, 2026-10-12): go FLAT, dead included, one rule; and do it now, before any of the yaks-38dc TUI work (then a thin Sheds tab first, then the overlay). "I'd rather have to back out of that due to some serious unforeseen problem, than take on the pain of a hybrid approach."
 
 ## Transition plan (coordinator; D1, D4 and D5 marked [confirm] need Joel's OK before code)
@@ -76,6 +79,7 @@ Decision (Joel, 2026-10-12): go FLAT, dead included, one rule; and do it now, be
 
 ---
 ▸ 2026-10-12T20:00:38Z [delta-lead]
+
 Amendments (Joel, 2026-10-12, on the plan above). These supersede D1, D4, D5 where they differ.
 - D1 confirmed: `.yaks/<id>.md` in the farm root.
 - D10 (new, Joel's idea, checked): attachments move from `.yaks/artifacts/<id>/` to `.yaks/<id>/`, beside the yak, in the SAME migration. Checked on this farm: 50 artifact dirs, none orphaned; 81 links in bodies, all of the one form `](<id>/<file>)`, so the rewrite to `](<id>/<file>)` is mechanical. Bonus: today those links are relative to the farm root, so an editor's markdown preview of `.yaks/shorn/x.md` resolves them to `.yaks/shorn/artifacts/...` and breaks; from `.yaks/<id>.md` the new form resolves in any viewer. Costs: about 90 `artifacts` references in src (attach, rename-attachment, merge, rename, preflight's untracked check, the git reporting's artifact classification, the TUI's link resolution, brief); the root scan skips directories; staging a yak is now `.yaks/<id>.md` plus `.yaks/<id>/` (`yaks path` should print both, or a pathspec `.yaks/<id>*`, safe here because no legacy dotted ids remain).
@@ -84,34 +88,41 @@ Amendments (Joel, 2026-10-12, on the plan above). These supersede D1, D4, D5 whe
 
 ---
 ▸ 2026-10-12T20:22:37Z [delta-lead]
+
 Phase 2 respawn: mig-1/git-1/shed-1 were started on anthropic/claude-opus-5.5 (the worker profile's default changed; I did not pin a model though Joel asked for Sonnet) and were told to stop clean within a minute. Respawned as mig-2 (yaks-86f4), git-2 (yaks-9f91), shed-2 (yaks-ca28) on claude-sonnet-5-5. The claim notes name the -1 owners; the -2 workers replace them.
 
 ---
 ▸ 2026-10-12T20:23:52Z [delta-lead]
+
 Spawned phase 2 (base 41b0053, model custom:LiteLLM/claude-sonnet-5-5 per the spawn confirmations): mig-2 76b2756b137644f6 -> yaks-86f4; git-2 4ba8b1c72a394316 -> yaks-9f91; shed-2 62c228b3013a476b -> yaks-ca28. Phase 1 (yaks-95be) landed as 79f00e9: gate 649 passed, 0 failed.
 
 ---
 ▸ 2026-10-12T20:36:54Z [delta-lead]
+
 Landed yaks-9f91 (git-2 4ba8b1c72a394316): b9de271, merge by SHA, clean. Gate on this machine 16 suites, 656 passed, 0 failed, 3 ignored (the pre-existing three; phase 1's handed-off status test is un-ignored and passes). Real machine (temp flat farm): shave + note reads 'moved hairy -> shaving, notes +1' and yaks commit writes 'yaks: shaving <id>', status clean after. Waiting on mig-2 and shed-2.
 
-![migrate-real-farm-copy](yaks-8b7a/migrate-real-farm-copy.txt)
+[migrate-real-farm-copy](yaks-8b7a/migrate-real-farm-copy.txt)
 
 ---
 ▸ 2026-10-12T20:58:49Z [delta-lead]
+
 Review of yaks-86f4 + yaks-9f91 together: yaks migrate on a COPY of this repo's real farm in a scratch git repo (never the real one).
 
 ---
 ▸ 2026-10-12T20:58:49Z [delta-lead]
+
 Landed yaks-86f4 (mig-2 76b2756b137644f6): e2edbd9, merge by SHA (main.rs auto-merged with git-2's change; one unexplained comment edit in src/tui/detail.rs from Delta's applied state discarded, it was not in the worker's commit). Gate on this machine after both landings: 16 suites, 670 passed, 0 failed, 3 ignored (pre-existing).
 Real-machine review (attached, migrate-real-farm-copy.txt): on a copy of this repo's farm, `migrate --dry-run` wrote nothing; `migrate` moved 404 yaks and 51 attachment dirs; `list --all` byte-identical before and after; `yaks status` one line `farm layout migrated: 404 yaks`; `doctor` clean; `yaks commit` made one commit of 485 renames (git detected them, `log --follow` crosses it); a write works afterwards. The one `](artifacts/` left is prose inside a note (backticked), correctly untouched.
 Found and fixed in review (preflight.rs, my commit): `preflight` on a STAGED migration put every yak in the verify scope, so all 263 never-verified shorn yaks failed and the migration commit could not pass preflight. Fix: a yak whose only change is the migration (changes::classify's `migrated`) is not in the change's scope; explicit ids are still checked. New test fails without the fix, passes with it; preflight on the staged real-farm copy now prints `preflight: ok`.
 
 ---
 ▸ 2026-10-12T21:02:26Z [delta-lead]
+
 Landed yaks-ca28 (shed-2 62c228b3013a476b): 3cc4712, merge by SHA, clean. Phase 2 complete. Gate on this machine with all three: 17 suites, 678 passed, 0 failed, 3 ignored (pre-existing). Real machine: the new binary's 'yaks sheds' on this machine tags the still-unmigrated farm '(old layout)' and compares the live sheds normally. Next: phase 3 (yaks-3a56).
 
 ---
 ▸ 2026-10-12T22:32:05Z [delta-lead]
+
 Phase 4 started (yaks-bbda). Spawned bye-1 8d2d630764264357 (custom:LiteLLM/claude-sonnet-5-5, base 5fbd1a5) for the code removal (src/, tests/, docs/cli.md, README.md). Coordinator's half, done in parallel on disjoint files (commit below):
 - yaks skill: `migrate` row removed; the pre-0.0.16 note now says such a farm refuses to open and names the fix (`npx -y @j15r/yaks@0.0.16 migrate`, commit).
 - AGENTS.md first invariant: the transitional sentence becomes the permanent refusal.
@@ -120,22 +131,26 @@ Phase 4 started (yaks-bbda). Spawned bye-1 8d2d630764264357 (custom:LiteLLM/clau
 - docs/assets/tui-detail-pinned.svg refreshed (stale since before the flat work); rasterized with headless Chrome and looked at: the pinned header, then the scrolled body with the detail cursor on the last note, matching docs/tui.md's caption.
 - Re-check of .agents/skills, docs/README.md, docs/tui.md, AGENTS.md for status-dir / artifacts/ / relocation / glob wording: nothing else left.
 
-![phase4-real-machine](yaks-8b7a/phase4-real-machine.txt)
+[phase4-real-machine](yaks-8b7a/phase4-real-machine.txt)
 
 ---
 ▸ 2026-10-12T23:01:15Z [delta-lead]
+
 Phase 4 real-machine check (after landing yaks-bbda).
 
 ---
 ▸ 2026-10-12T23:01:15Z [delta-lead]
+
 Landed yaks-bbda (bye-1 8d2d630764264357): 42d209e, merge by SHA, clean; 22 files, +665 -1807. Gate on this machine: 17 suites, 667 passed, 0 failed, 3 ignored (fewer than before: the old-layout tests went with the code). Leftover grep (legacy::, lock_for_migration, Migrated, legacy_pair, yaks-bbda, is_old_layout, flat_attachment_links, Command::Migrate) over src/ and tests/: empty.
 Real machine (attached): this farm works and doctor is clean; a read-only `yaks list` in a pre-0.0.16 clone (git-2's) refuses with exit 1 and the message naming `npx -y @j15r/yaks@0.0.16 migrate`, writing nothing there; `yaks sheds` shows the six old-layout clones as `farm unreadable: old layout (pre-0.0.16 clone)`, never as empty farms.
 All phases done: 1 yaks-95be, 2 yaks-86f4/9f91/ca28, 3 yaks-3a56 (0.0.16 released), 4 yaks-bbda (ships as 0.0.17). Follow-ups filed along the way: yaks-8814 (landed vs a needs: the reference resolved), yaks-07fe (shed scan speed). Shearing the umbrella.
 
 ---
 ▸ 2026-10-12T23:01:57Z [delta-lead]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-12T23:01:57Z [delta-lead]
+
 moved: shaving -> shorn

@@ -16,6 +16,7 @@ Footgun that silently reverted skills/yaks/SKILL.md in this repo (lost the yaks-
 
 ---
 ▸ 2026-09-23T04:41:32Z [agent]
+
 Fixed, and the root cause was NOT what I first diagnosed. The real mechanism: ~/.agents/skills/yaks and ~/.agents/skills/yaks-tracker are SYMLINKS into this repo (-> ../../src/rs/yaks/skills/...), a handy dev setup for running the live skill. So a plain 'yaks skills install' with no --dir at all resolves through the link onto the repo source and rewrites it with the binary's baked-in copy. That is why the working tree showed an exact revert to the v0.0.9 bundled content and looked like an authored edit. My first guess (someone pointed --force at the repo skills dir) was wrong about the target; the symlink did it.
 
 Proof it was live: my own 'cargo test' runs re-stamped skills/*/SKILL.md repeatedly, because the integration tests spawn the binary for ordinary commands, startup auto-sync fired, and it wrote to the real ~/.agents/skills -> through the symlinks -> into the source.
@@ -24,4 +25,5 @@ Fixes: (1) is_source_tree now CANONICALIZES the target and checks every ancestor
 
 ---
 ▸ 2026-09-23T04:41:33Z [agent]
+
 verify: `cargo test -p yaks skills` -> PASS (exit 0)

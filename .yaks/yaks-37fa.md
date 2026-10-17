@@ -29,14 +29,17 @@ Tests with temp repos: a worker forked from a coordinator that already has its o
 
 ---
 ▸ 2026-10-06T21:32:29Z [delta-lead]
+
 Terminology decision (Joel, 2026-10-06, via the naming subthread): a "lane" is now a SHED, everywhere, no aliases; `yaks lanes` becomes `yaks sheds`. Text above this note, and all history, keeps the word "lane": read it as "shed". Not decided: "clip" (what a shed has produced) and "barn" (the primary checkout). The rename itself is yaks-dfca; it lands before the baseline fix (yaks-37fa) because both edit the same file.
 
 ---
 ▸ 2026-10-06T21:36:27Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-06T21:36:27Z [delta-lead]
+
 Claim (coordinator delta-lead), after the rename landed (yaks-dfca, 7f49fe2). Read "lane" in the description as "shed"; the file is now `src/sheds.rs`, the command `yaks sheds`, the types `Shed`, `ShedKind`, `ShedFarm`, the Farm method `Farm::sheds`. Owner: worker bas-1.
 
 ## Hints for the fix
@@ -51,34 +54,41 @@ The coordinator re-runs the gate and runs `yaks sheds` from ~/src/yaks, where ea
 
 ---
 ▸ 2026-10-06T21:37:02Z [bas-1]
+
 Start Tue Oct  6 21:37:02 UTC 2026; yaks path: /Users/joel/src/yaks/.delta/worktrees/f2hdbpew7kgx/yaks/.yaks/shaving/yaks-37fa.md; checkout /Users/joel/src/yaks/.delta/worktrees/f2hdbpew7kgx/yaks. Before-binary copied to /tmp/bas1/yaks-before (outside repo, scratch only).
 
 ---
 ▸ 2026-10-06T21:41:08Z [bas-1]
+
 Decision: the fork point is validated before use: the reflog's first commit must be an ancestor of the shed's HEAD (`git merge-base --is-ancestor <fork> <HEAD>` in the viewer's repo), else fall back to the merge-base. Rejected: trusting the first line blindly. A shed rebased onto another root (or whose first line names a commit this repo lacks) would otherwise be measured from a commit that is not in its history, and "since the fork" would be meaningless.
 
 ---
 ▸ 2026-10-06T21:41:08Z [bas-1]
+
 Decision: three baselines, one marker each. Fork point: no marker, JSON `farm.vs: "fork"`. Merge-base fallback: ` (vs merge-base)` on the farm line AND on the label line (the label is what showed the inherited actors), JSON `"merge-base"`. Neither readable: unchanged ` (vs this checkout)` / `"checkout"`. The brief says "`(vs viewer)`-style"; I wrote `vs merge-base` because "viewer" is not a term this CLI or its docs use ("this checkout" is). Rejected: one shared `(vs viewer)` for both fallbacks (hides which one was used); marker on the farm line only (the label line would look authoritative). JSON `farm.base` is still the short sha of whichever base was used.
 
 ---
 ▸ 2026-10-06T21:41:08Z [bas-1]
+
 Decision: if the fork commit is valid but its farm cannot be read (no `.yaks` committed there), try the merge-base next before falling back to the checkout working tree, instead of jumping straight to the checkout. Same chain as before for the merge-base; the marker tells which base was used. Rejected: fork-or-checkout only, which would turn a shed that created its farm itself into a noisy "vs this checkout" diff when a merge-base farm exists.
 
 ---
 ▸ 2026-10-06T21:41:08Z [bas-1]
+
 Decision: `Shed.farm_base` is now `Option<FarmBase { kind: BaseKind::{Fork, MergeBase}, sha }>` rather than a second field next to `Option<String>`: the kind and the sha cannot disagree, and `None` still means "compared with this checkout". Public struct only used inside src/sheds.rs (and its tests); no TUI/other consumer.
 
 ---
 ▸ 2026-10-06T21:41:08Z [bas-1]
+
 Decision: left alone, as scoped: `ahead`/`behind` (still vs the viewer), the coordination skills' prose (the coordinator updates it), TUI. The `(vs this checkout)` wording is unchanged. Observed, not changed: the coordinator's own shed (xp49...) still lists 16 actors in the real run, because its thread forked long ago and everything since really is in its own history; that is the correct reading of "since this shed forked".
 
-![before](yaks-37fa/before.txt)
+[before](yaks-37fa/before.txt)
 
-![sheds-after](yaks-37fa/sheds-after.txt)
+[sheds-after](yaks-37fa/sheds-after.txt)
 
 ---
 ▸ 2026-10-06T21:41:31Z [bas-1]
+
 Evidence: real `yaks sheds` from /Users/joel/src/yaks, before (/tmp/bas1/yaks-before = coordinator binary) and after (this change), attached in full as before.txt / sheds-after.txt. Worker sheds, who/farm lines (path dir, HEAD):
 
 | shed | before | after |
@@ -94,12 +104,15 @@ No `(vs ...)` marker appears: every real shed has a usable reflog. Tests added i
 
 ---
 ▸ 2026-10-06T21:41:46Z [bas-1]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-06T21:41:51Z [bas-1]
+
 Summary: `yaks sheds` now measures a shed from its own fork point (oldest HEAD reflog entry, validated as an ancestor of the shed's HEAD), falling back to the merge-base with this checkout and marking it `(vs merge-base)` on the farm and label lines (JSON `farm.vs`: fork | merge-base | checkout). Changed: src/sheds.rs (+7 tests), `Sheds` help in src/main.rs, the `sheds` rows in docs/cli.md, README.md, .agents/skills/yaks/SKILL.md. Gate `cargo test -p yaks`: PASS. Real run: each worker shed shows only its own actors (table above).
 
 ---
 ▸ 2026-10-06T21:41:51Z [bas-1]
+
 moved: shaving -> shorn

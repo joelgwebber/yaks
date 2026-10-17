@@ -14,4 +14,5 @@ config.yaml sets verify.ui = cargo test -p yaks docshots -- --ignored, but that 
 
 ---
 ▸ 2026-09-11T00:58:50Z [coordinator]
+
 Decision: verify.ui is the pass/fail GATE, not the asset generator. Per the settled two-channel model (text snapshot = gate, SVG = visual review), the ui lever now runs 'cargo test -p yaks' (the tui insta snapshot tests that doctor --strict enforces at shear). The docshot generator stays a separate on-demand visual channel, not a gate. Changed .yaks/config.yaml (+ clarifying comment), the docs/cli.md example (+ a gate-vs-visual sentence), and the skills/yaks SKILL.md example. Evidence: cargo test -p yaks green (242 unit incl. skills-embed test + 25 CLI, 0 failed).

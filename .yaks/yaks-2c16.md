@@ -24,4 +24,5 @@ As we work through the mechanics and use-cases, let's make a point to identify U
 
 ---
 ▸ 2026-10-05T22:28:42Z [Joel Webber]
+
 This could also be an interesting path for Delta integration. Bonus points if we can get Delta to emit some kind of in-thread UI affordance pointing to a particular place in the UI.

@@ -16,10 +16,12 @@ Measured 2026-10-03 (log yaks-df61 O26): N parallel 'yaks update <same id> --not
 
 ---
 ▸ 2026-10-03T23:24:17Z [delta-lead]
+
 TRIAL 4 (yaks-5c9f): worker 't4-lock', SHORT brief, must load yaks-working itself. Claim committed. Scope: the read-modify-write path for yak updates in src/store.rs (and the farm.rs callers if needed). Evidence: gate cargo test -p yaks; a multi-process stress that LOSES notes before the fix and keeps N/N after (the 32 parallel x 800 case is the benchmark), doctor clean, no meaningful slowdown. Std only: no new dependency. Expected design forks the worker should ask about: where a lock lives and whether it is gitignored in a committed farm. Judge: coordinator re-runs the gate and the stress.
 
 ---
 ▸ 2026-10-03T23:27:55Z [t4-lock]
+
 Design fork before I write code: WHERE does the lock live? Baseline reproduced: 32 writers x 800 notes on one yak lost 554 of 25600 (kept 25046; exit codes 0, doctor clean). Stress script: /tmp/t4lock/stress.sh.
 
 Constraint: save() is tmp+rename, so flock on the yak file itself is useless (the lock sticks to the replaced inode). The lock must be a separate stable path, held across load -> edit -> save (update/attach/other read-modify-write callers in farm.rs, via one helper in store.rs; std File::lock, rustc here is 1.99, so no dependency).
@@ -36,18 +38,22 @@ I have made no code changes yet; the tree is clean. Answer with a/b/c/d (and whe
 
 ---
 ▸ 2026-10-04T04:40:17Z [Joel Webber]
+
 Agreed, .yaks/.lock sgtm. I wouldn't want to do anything more fine-grained unless it proved necessary for some reason.
 
 ---
 ▸ 2026-10-04T04:48:59Z [t4-lock]
+
 Joel Webber (human) answered in his checkout: (a) farm-wide .yaks/.lock, nothing finer-grained unless needed; relayed by delta-lead, who also specified the self-ignoring .yaks/.gitignore.
 
-![stress-before-after](yaks-800d/stress-before-after.txt)
+[stress-before-after](yaks-800d/stress-before-after.txt)
 
 ---
 ▸ 2026-10-04T04:53:40Z [t4-lock]
+
 Evidence: 32x800 stress before 25046/25600 (554 lost) vs after 25600/25600; single-writer timing unchanged; cargo test -p yaks green; doctor clean. Lock = farm-wide .yaks/.lock via store::lock, held across load->edit->save in every mutating Farm method; .yaks/.gitignore gets '.lock' (created/appended, never clobbered; also at init). Out-of-scope edits made for docs parity: docs/README.md, AGENTS.md, yaks-coordinating-private skill paragraph (it said no lock exists).
 
 ---
 ▸ 2026-10-04T04:54:13Z [t4-lock]
+
 Shorn. Farm-wide .yaks/.lock (store::lock, std File::lock) held across load->edit->save in every mutating Farm method; .yaks/.gitignore gets '.lock' (also at init); doctor unaffected. Evidence: artifacts/yaks-800d/stress-before-after.txt (32x800: 25046/25600 before, 25600/25600 after; single-writer unchanged); cargo test -p yaks green; unit test fails with the lock removed from update.

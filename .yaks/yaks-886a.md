@@ -14,10 +14,12 @@ labels:
 
 ---
 ▸ 2026-10-09T22:35:48Z [delta:Delta :Yaks (cont'd)]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-09T22:35:48Z [delta:Delta :Yaks (cont'd)]
+
 Claim (coordinator). Owner: title-1. Decided by Joel on yaks-a3d2 (2026-10-09): yes to thread titles as shed names, "slugged closer to normal git worktree names".
 Goal:
 1. RECORD: any yaks command run inside a Delta clone, with `DELTA_THREAD_TITLE` set, records the title in that clone's OWN git config (`git config --file <absolute-git-dir>/config yaks.shed.title "<title>"`), plus `yaks.shed.thread` = `DELTA_CURRENT_THREAD_ID` when set. Best effort and silent on any failure; write only when the stored value differs (no write on every command). Never derived state that is committed (git config is per-clone, never committed: the AGENTS.md "derived, rebuildable" rule).
@@ -31,18 +33,22 @@ Evidence (tests that FAIL first): slug unit tests incl. the two examples and the
 
 ---
 ▸ 2026-10-09T22:38:36Z [title-1]
+
 Started: Fri Oct  9 22:38:33 UTC 2026. yaks path: /Users/joel/src/yaks/.delta/worktrees/606y05kk15w7/yaks/.yaks/shaving/yaks-886a.md
 
 ---
 ▸ 2026-10-09T22:46:00Z [title-1]
+
 verify: `cargo test -p yaks` -> FAIL (exit 101)
 
 ---
 ▸ 2026-10-09T22:47:15Z [title-1]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-09T22:48:34Z [title-1]
+
 Decision: guard "Delta clone" = `host(cwd).via_alternates` AND `git rev-parse --git-common-dir` == own git dir. Rejected: alternates alone (a git worktree *of* a clone would pass but shares the clone's config, so it would stamp the clone with a title that is not the clone's thread); rejected checking `core.worktree`.
 Decision: `-C` guard is `cli.chdir.is_empty()` at the one call line after the `-C` loop (as specified), not a check inside record_thread: the function stays a plain "record for the cwd" and the CLI says when it applies.
 Decision: record the title with whitespace collapsed (split_whitespace/join), nothing else. Rejected: reusing actor.rs's 40-char cut / bracket replacement (that exists for note stamps; the full title is wanted for `title:` display and the full-title substring match).
@@ -65,4 +71,5 @@ Surprise: in this clone `git config --get yaks.shed.title` = "title-1: shed name
 
 ---
 ▸ 2026-10-09T22:48:34Z [title-1]
+
 moved: shaving -> shorn

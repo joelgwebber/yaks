@@ -31,10 +31,12 @@ yaks-ea13's own body is the fixture: before/after headless frames attached, an i
 
 ---
 ▸ 2026-10-17T04:31:30Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-17T04:31:30Z [delta-lead]
+
 Claim (yakherd delta-lead, 2026-10-17): the coordinator builds this one in the lead thread, in a new module (src/tui/mdrender.rs) first, wired into detail.rs after the quick-win workers land.
 
 ![ea13-rendered-top](yaks-649d/ea13-rendered-top.png)
@@ -43,6 +45,7 @@ Claim (yakherd delta-lead, 2026-10-17): the coordinator builds this one in the l
 
 ---
 ▸ 2026-10-17T04:56:17Z [delta-lead]
+
 Core wired into the detail pane (delta-lead, 2026-10-17).
 
 - `src/tui/mdrender.rs`: pulldown-cmark 0.13 (no default features, GFM tables/tasks/strikethrough/footnotes/alerts), prefix-stack layout, per-row source-line map, palette styles. 23 unit tests + an insta snapshot of yaks-ea13's body at 60 columns.
@@ -59,8 +62,10 @@ Remaining for this yak: nothing structural. Code/table horizontal scroll is yaks
 
 ---
 ▸ 2026-10-17T04:56:58Z [delta-lead]
+
 verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-17T04:57:02Z [delta-lead]
+
 moved: shaving -> shorn

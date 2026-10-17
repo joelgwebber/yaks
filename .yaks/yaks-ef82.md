@@ -14,14 +14,17 @@ Bonus points for rendering in the local timezone.
 
 ---
 ▸ 2026-10-17T04:26:52Z [delta-lead]
+
 Scope agreed 2026-10-17 (yaks-e9de): relative shorthand for nearby times ("5m ago", "3h ago", "yesterday"), an absolute local-time date beyond about a week, with the timezone shown where absolute; used for comment headers (yaks-93cd) and the Created/Updated fields. "Now" must be injectable (an `App` clock, a fixed instant in tests) so insta snapshots and docshots stay deterministic. Today `humanize_date` (src/tui/detail.rs) formats UTC with no zone label.
 
 ---
 ▸ 2026-10-17T04:31:30Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-17T04:31:30Z [delta-lead]
+
 Claim (yakherd delta-lead, 2026-10-17): owner **dates-1**.
 Scope: a pure formatter (new small module, e.g. src/tui/when.rs, or beside `humanize_date` in src/tui/detail.rs) taking the timestamp, a "now" and a timezone offset, used for the Created/Updated fields. Rules: under 1 min "just now"; under 1 h "Nm ago"; under 24 h "Nh ago"; yesterday "yesterday HH:MM"; under 7 days "Weekday HH:MM"; else "Oct 5, 2026 22:15" in local time; absolute forms carry the zone abbreviation or offset. Unparseable input passes through unchanged. Inject "now" + offset through `detail::build` (or an App-level clock) so tests and the headless/docshot paths are deterministic: no `set_var`, no reading the real clock in tests. Only `humanize_date`/`opt_date` and the Created/Updated lines in detail.rs: other workers own `scan_body_links` and the `Status:` line. Expose the formatter for reuse by comment headers (yaks-93cd, not yours).
 Evidence: unit tests over the table of rules with a fixed now/offset; headless frame attached. Judge: coordinator at landing.
@@ -29,12 +32,14 @@ Do NOT regenerate docs/assets docshots (several workers would collide on the SVG
 
 ---
 ▸ 2026-10-17T04:32:53Z [dates-1]
+
 Start Sat Oct 17 04:32:53 AM UTC 2026; path: /home/joel/src/yaks/.delta/worktrees/9y0cpwz8ykh1/yaks/.yaks/yaks-ef82.md
 
-![frame](yaks-ef82/frame.txt)
+[frame](yaks-ef82/frame.txt)
 
 ---
 ▸ 2026-10-17T04:37:33Z [dates-1]
+
 Decision: formatter is `tui::when::{Clock, format_in}` (new src/tui/when.rs), not beside humanize_date, so comment headers (yaks-93cd) can reuse `app.clock.format(iso)`. `humanize_date` removed (its one caller moved).
 Decision: injection via an `App.clock: when::Clock` field (enum `System` | `Fixed(now, offset)`) and `detail::build_at(.., &Clock)`; rejected a new parameter on `detail::build` for every caller/test. `build` survives only under `#[cfg(test)]` as a wrapper on the pinned test clock (2026-09-10 12:00 UTC, shown in UTC), so snapshots are deterministic with no set_var; no insta snapshot moved (all snapshot Created/Updated are `-`). `App::new` picks `Clock::app_default()` = System in the binary, Fixed under cfg(test). The headless `--headless` binary path therefore shows real local time (nothing deterministic to pin there; docshots run under cfg(test) so use the Fixed clock).
 Decision: "under 24h" wins over "yesterday": 23h ago prints "23h ago", and "yesterday HH:MM" starts at exactly 24h (calendar day = yesterday in the display tz). 2..=6 calendar days back = weekday name; 7+ = absolute. Rejected strict calendar "yesterday" for 1h-old timestamps after midnight.
@@ -46,8 +51,10 @@ Summary: Created/Updated in the detail pane now render relative/local with label
 
 ---
 ▸ 2026-10-17T04:37:42Z [dates-1]
+
 verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-17T04:38:43Z [dates-1]
+
 moved: shaving -> shorn

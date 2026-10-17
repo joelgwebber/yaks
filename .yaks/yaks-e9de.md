@@ -41,10 +41,12 @@ Every UI child attaches before/after headless frames (`yaks tui --headless`, plu
 
 ---
 ▸ 2026-10-17T04:31:30Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-17T04:33:16Z [delta-lead]
+
 Batch 1 spawned 2026-10-17 from base ce4aeba, all on claude-sonnet-5-5 (worker profile, isolated clones):
 - bg-1 → yaks-5408, thread ksQQqt3mx3gRRTWsmE1GMTX1T5LOABiKcJIBxBCg_8DSgeNASrgoPHtnOl5O
 - hdr-1 → yaks-66a3, thread ksQQqt3mx3gRRTWsmE1GMTX1T5LOABiLPZIBxBCg_8DSgeNASrgoPHtnOl5O
@@ -55,10 +57,12 @@ The lead (delta-lead) builds yaks-649d (renderer core) in parallel, in a new mod
 
 ---
 ▸ 2026-10-17T04:37:18Z [delta-lead]
+
 Joel answered yaks-2362 and yaks-3b8d (both yes, both as a schema migration in the next release): new yak yaks-a870 (schema 5 migration) carries both fixups; migrate-1 spawned on it.
 
 ---
 ▸ 2026-10-17T04:43:37Z [delta-lead]
+
 Batch 1 landed 2026-10-17 by the yakherd (land.sh, merge by SHA, each identical to the computed merge; `cargo test --release` 623+ pass, doctor clean):
 - links-1 e7f2d34 (yaks-f67e) → d430c17
 - dates-1 7684791 (yaks-ef82) → cfa4bd1
@@ -69,10 +73,12 @@ Checked on the real build: headless detail shows `Status: 🪒 shaving`, `Create
 
 ---
 ▸ 2026-10-17T04:59:10Z [delta-lead]
+
 Batch 2 spawned from 3c47d0f on claude-sonnet-5-5: hscroll-1 → yaks-c733 (thread ...jrf5I...), edmarks-1 → yaks-9425 (thread ...jtwJI...). migrate-1 (yaks-a870) woken after an early silent exit.
 
 ---
 ▸ 2026-10-17T05:00:47Z [delta-lead]
+
 Status 2026-10-17 ~05:05 (delta-lead):
 
 - Shorn: yaks-f67e, yaks-ef82, yaks-66a3, yaks-5408, yaks-649d (core), yaks-e30d and yaks-93cd (delivered by the core).
@@ -83,6 +89,7 @@ Status 2026-10-17 ~05:05 (delta-lead):
 
 ---
 ▸ 2026-10-17T05:04:18Z [delta-lead]
+
 migrate-1 landed 2026-10-17: 80659ed (yaks-a870, schema 5 + `yaks migrate`) → 2d80a0f, identical to the computed merge. Gate re-run in a separate target dir (`CARGO_TARGET_DIR=target/s5 cargo test --release`: 17 result lines ok). Reviewed on a fresh copy of this farm with that build:
 
 - dry run: 1336 comment headers in 402 yaks, 84 non-image links in 57 yaks
@@ -96,4 +103,5 @@ Worker note: migrate-1 says its new tests were written after the code and never 
 
 ---
 ▸ 2026-10-17T05:05:57Z [delta-lead]
+
 edmarks-1 landed: 41e6e05 (yaks-9425) → 1b5e0b6, identical to the computed merge; gate re-run green (target/s5). Looked at the attached frame: markers are dim on the cursor line and blank elsewhere. A hidden `(url)` leaves a gap as wide as the URL (width-preserving by decision); flagged to Joel as a possible follow-up (e.g. dim instead of hide for link URLs).

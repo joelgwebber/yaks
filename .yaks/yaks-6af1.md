@@ -31,14 +31,17 @@ Evidence: tests for a clone that starts on main and checks out a branch, the rou
 
 ---
 ▸ 2026-10-16T20:31:43Z [delta]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-16T20:36:16Z [delta]
+
 Decision: the fork point is the target of the LATEST `checkout: moving from X to <current branch>` entry in the HEAD reflog. It is skipped when that target already holds commits the shed made earlier: any HEAD-moving entry after the oldest that isn't a `checkout:` or `reset:` (Delta writes its commits with an empty message, so a `commit:` prefix can't be relied on). That covers `checkout -b` off its own work and round trips back to a branch it committed on. Otherwise it falls back to the oldest entry, as before. Ancestor-of-HEAD validation is unchanged. Rejected: the branch reflog (`logs/refs/heads/<b>`). A Delta clone's branch reflog starts at its first commit, not at the switch (rzzejj28kv0t: first entry `8ef0612 -> e7f6045`), so it would need the same guard anyway and adds a second file format. Parsing is pure (`fork_candidates`) and unit-tested.
 
 ---
 ▸ 2026-10-16T20:36:16Z [delta]
+
 Evidence. New tests:
 - `fork_candidates_follow_a_switch_onto_the_current_branch` (pure): surveyor-shaped reflog, another branch or detached HEAD, a round trip, empty-message commits, a null oldest entry.
 - `a_shed_that_switched_branches_is_measured_from_the_switch` (real repos): switched onto `feat`, measured from the switch, `who` only the shed's own actor. Also `checkout -b` off its own commits keeps the original fork point. Disabling the switch made it FAIL (`left: 53c6627`, the oldest entry; `right: 490cceb`, the switch).
@@ -56,4 +59,5 @@ survey-209f (main's claim) is gone from its row. The remainder is its own 19 com
 
 ---
 ▸ 2026-10-16T20:36:16Z [delta]
+
 moved: shaving -> shorn
