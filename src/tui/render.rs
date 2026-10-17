@@ -267,7 +267,10 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
             ":w / :q / :wq",
             "Save / cancel / save+close (editor Normal)",
         ),
-        entry("A / O", "Attach artifact / open it"),
+        entry(
+            "A / O",
+            "Attach artifact / open it (from whichever shed has it)",
+        ),
         entry("r", "Rename attachment at cursor (detail)"),
         entry("X", "Slaughter (confirm; offers whole family)"),
         entry(

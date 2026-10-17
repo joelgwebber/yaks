@@ -67,6 +67,69 @@ pub struct ShedCopies {
     pub no_farm: usize,
 }
 
+/// One attachment file found in some farm: see [`list_attachments`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FoundAttachment {
+    /// The attachment's file name (`.yaks/<id>/<name>`).
+    pub name: String,
+    /// Absolute path of the file.
+    pub path: PathBuf,
+    /// The shed it was found in ([`crate::sheds::Shed::name`]); `None` for
+    /// this checkout's own farm.
+    pub shed: Option<String>,
+}
+
+/// Where yak `id`'s attachment `name` lives: the first of `farms` (a
+/// `(shed name, farm root)` list; `None` = this checkout) whose
+/// `<root>/<id>/<name>` is a file. The one resolution rule behind the TUI's
+/// open and `yaks attachment`: this checkout first, then the caller's order of
+/// other sheds (yaks-31e2).
+pub fn locate_attachment(
+    farms: &[(Option<String>, PathBuf)],
+    id: &str,
+    name: &str,
+) -> Option<FoundAttachment> {
+    if name.is_empty() || name.contains(['/', '\\']) || name.starts_with('.') {
+        return None;
+    }
+    farms.iter().find_map(|(shed, root)| {
+        let path = store::artifact_dir(root, id).join(name);
+        path.is_file().then(|| FoundAttachment {
+            name: name.to_string(),
+            path,
+            shed: shed.clone(),
+        })
+    })
+}
+
+/// Every attachment of yak `id` across `farms` (same list as
+/// [`locate_attachment`]), one entry per file name: the first farm that has
+/// it wins, so a file this checkout has hides other sheds' copies. Sorted by
+/// name.
+pub fn list_attachments(farms: &[(Option<String>, PathBuf)], id: &str) -> Vec<FoundAttachment> {
+    let mut out: Vec<FoundAttachment> = Vec::new();
+    for (shed, root) in farms {
+        let Ok(rd) = std::fs::read_dir(store::artifact_dir(root, id)) else {
+            continue;
+        };
+        for e in rd.flatten() {
+            let name = e.file_name().to_string_lossy().into_owned();
+            if name.starts_with('.') || !e.path().is_file() {
+                continue;
+            }
+            if !out.iter().any(|a| a.name == name) {
+                out.push(FoundAttachment {
+                    name,
+                    path: e.path(),
+                    shed: shed.clone(),
+                });
+            }
+        }
+    }
+    out.sort_by(|a, b| a.name.cmp(&b.name));
+    out
+}
+
 /// One open ask found in another shed: see [`Farm::inbox_sheds`].
 #[derive(Debug, Clone)]
 pub struct ShedAsk {
@@ -598,6 +661,22 @@ impl Farm {
     /// other. Read-only everywhere; see [`crate::sheds`].
     pub fn sheds(&self, cwd: &Path) -> Result<Vec<crate::sheds::Shed>> {
         crate::sheds::discover(cwd, &self.root)
+    }
+
+    /// The farms to look for yak attachments in, in resolution order: this
+    /// checkout's (`None`), then every other shed with a farm of its own, as
+    /// `yaks sheds` orders them. Without a git repository (no sheds), just
+    /// this farm.
+    pub fn attachment_farms(&self, cwd: &Path) -> Vec<(Option<String>, PathBuf)> {
+        let mut farms = vec![(None, self.root.clone())];
+        for shed in self.other_sheds(cwd).unwrap_or_default() {
+            if let crate::sheds::ShedFarm::Own(_) = shed.farm {
+                if let Ok(d) = store::discover_with(&shed.path, None) {
+                    farms.push((Some(shed.name()), d.root));
+                }
+            }
+        }
+        farms
     }
 
     /// [`Farm::sheds`] without the current one: what "elsewhere" means to
@@ -2466,6 +2545,55 @@ mod tests {
         p.push(format!("yaks-{tag}-{}-{}", std::process::id(), n));
         std::fs::create_dir_all(&p).unwrap();
         p
+    }
+
+    /// yaks-31e2: an attachment is found in this farm first, else in the first
+    /// shed farm that has it, with that shed named; listing merges by name.
+    #[test]
+    fn attachments_resolve_across_shed_farms_in_order() {
+        let here = temp_dir_named("att-here");
+        let w1 = temp_dir_named("att-w1");
+        let w2 = temp_dir_named("att-w2");
+        let put = |root: &Path, name: &str, body: &str| {
+            std::fs::create_dir_all(root.join("y-1")).unwrap();
+            std::fs::write(root.join("y-1").join(name), body).unwrap();
+        };
+        put(&here, "both.txt", "here");
+        put(&w1, "both.txt", "w1");
+        put(&w1, "only-w1.txt", "w1");
+        put(&w2, "only-w1.txt", "w2");
+        put(&w2, "only-w2.png", "w2");
+        let farms = vec![
+            (None, here.clone()),
+            (Some("w1".to_string()), w1.clone()),
+            (Some("w2".to_string()), w2.clone()),
+        ];
+        let found = |n| locate_attachment(&farms, "y-1", n).map(|a| (a.shed, a.path));
+        assert_eq!(found("both.txt"), Some((None, here.join("y-1/both.txt"))));
+        assert_eq!(
+            found("only-w1.txt"),
+            Some((Some("w1".into()), w1.join("y-1/only-w1.txt")))
+        );
+        assert_eq!(
+            found("only-w2.png"),
+            Some((Some("w2".into()), w2.join("y-1/only-w2.png")))
+        );
+        assert_eq!(found("missing.txt"), None);
+        // No escaping the yak's directory.
+        assert_eq!(found("../y-1/both.txt"), None);
+        let listed: Vec<(String, Option<String>)> = list_attachments(&farms, "y-1")
+            .into_iter()
+            .map(|a| (a.name, a.shed))
+            .collect();
+        assert_eq!(
+            listed,
+            vec![
+                ("both.txt".into(), None),
+                ("only-w1.txt".into(), Some("w1".into())),
+                ("only-w2.png".into(), Some("w2".into())),
+            ]
+        );
+        assert!(list_attachments(&farms, "y-404").is_empty());
     }
 
     #[test]

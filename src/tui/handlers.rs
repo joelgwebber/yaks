@@ -502,15 +502,19 @@ impl App {
         });
     }
 
-    /// Open a URL or attachment (`<id>/<file>`, resolved from the farm root) in
-    /// the OS default application (best-effort).
+    /// Open a URL or attachment in the OS default application (best-effort).
+    /// An attachment (`<id>/<file>`) is resolved by [`App::resolve_attachment`]:
+    /// this farm, else the shed it lives in (yaks-31e2).
     pub(crate) fn open_external(&mut self, target: &str) {
-        let arg = if target.starts_with("http") {
-            target.to_string()
+        let (arg, from) = if target.contains("://") || target.starts_with("mailto:") {
+            (target.to_string(), None)
         } else {
-            match &self.farm {
-                Some(h) => h.root().join(target).display().to_string(),
-                None => target.to_string(),
+            match self.resolve_attachment(target) {
+                Some(found) => (found.path.display().to_string(), found.shed),
+                None => {
+                    self.notification = Some(format!("{target}: not in this farm or any shed"));
+                    return;
+                }
             }
         };
         let opener = if cfg!(target_os = "macos") {
@@ -519,9 +523,45 @@ impl App {
             "xdg-open"
         };
         match std::process::Command::new(opener).arg(&arg).spawn() {
-            Ok(_) => self.notification = Some(format!("opened {target}")),
+            Ok(_) => {
+                self.notification = Some(match from {
+                    Some(shed) => format!("opened {target} (from shed {shed})"),
+                    None => format!("opened {target}"),
+                })
+            }
             Err(e) => self.notification = Some(format!("open failed: {e}")),
         }
+    }
+
+    /// Where attachment link `target` (`<id>/<file>`, farm-relative) is on
+    /// disk: this checkout's farm, else (from the last sheds scan) the shed
+    /// whose copy of the selected yak is on screen, else any other shed's
+    /// farm. The same rule as `yaks attachment`, over the snapshot's shed
+    /// list, so a keypress runs no git discovery.
+    pub(crate) fn resolve_attachment(&self, target: &str) -> Option<crate::farm::FoundAttachment> {
+        let rel = target.strip_prefix(".yaks/").unwrap_or(target);
+        let (id, name) = rel.split_once('/')?;
+        let root = self.farm.as_ref()?.root().to_path_buf();
+        let mut farms = vec![(None, root)];
+        if let Some(snap) = &self.sheds.snapshot {
+            let mut sheds: Vec<&crate::sheds::Shed> = Vec::new();
+            if let Some((_, shed)) = self.selected_shed_only() {
+                sheds.push(shed);
+            }
+            for s in &snap.sheds {
+                if !s.current && !sheds.iter().any(|x| x.path == s.path) {
+                    sheds.push(s);
+                }
+            }
+            for s in sheds {
+                if let crate::sheds::ShedFarm::Own(_) = s.farm {
+                    if let Ok(d) = crate::store::discover_with(&s.path, None) {
+                        farms.push((Some(s.name()), d.root));
+                    }
+                }
+            }
+        }
+        crate::farm::locate_attachment(&farms, id, name)
     }
 
     /// O — open the artifact/URL link on the current detail line externally.

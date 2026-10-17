@@ -1,0 +1,28 @@
+$ yaks attachment <id>   # from the primary; the file is only in shed "worker"
+worker  <tmp>/worker/.yaks/yak-dc57/run.log
+
+$ cat "$(yaks attachment <id> run.log)"
+PASS 42 tests
+
+$ yaks attachment <id> nope.txt
+no attachment nope.txt on yak-dc57 in this checkout or any shed
+(exit 1)
+
+--- TUI: Enter on the 📎 link of a yak that exists only in shed "worker" (headless; xdg-open stubbed to record its argument)
+=== frame 3 · 100x14 · focus=detail · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-ae02 · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=8 · pinned=yes ===
+ 🦬 Hairy (2)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (2)   ⭐ Starred (0)   🛖 Sheds (1)
+opened yak-ae02/note.txt (from shed worker)
+◂  🦬 yak-ae02  task     p3  Shed-only yak
+│ ─────────────────────────────────────────────────────────────────────────────────────────────────
+│ Created:     just now
+│ Updated:     just now
+│ Labels:      -
+│
+│ Sheds:
+│   worker  [new, hairy]
+│
+│ 📎 note
+│
+→ yak-ae02/note.txt
+=== end ===
+opener received: <tmp>/worker/.yaks/yak-ae02/note.txt
