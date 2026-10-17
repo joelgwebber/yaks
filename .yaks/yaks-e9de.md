@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T04:37:18Z'
+updated: '2026-10-17T04:43:37Z'
 labels:
 - markdown
 - tui
@@ -56,3 +56,13 @@ The lead (delta-lead) builds yaks-649d (renderer core) in parallel, in a new mod
 ---
 ▸ 2026-10-17T04:37:18Z [delta-lead]
 Joel answered yaks-2362 and yaks-3b8d (both yes, both as a schema migration in the next release): new yak yaks-a870 (schema 5 migration) carries both fixups; migrate-1 spawned on it.
+
+---
+▸ 2026-10-17T04:43:37Z [delta-lead]
+Batch 1 landed 2026-10-17 by the yakherd (land.sh, merge by SHA, each identical to the computed merge; `cargo test --release` 623+ pass, doctor clean):
+- links-1 e7f2d34 (yaks-f67e) → d430c17
+- dates-1 7684791 (yaks-ef82) → cfa4bd1
+- hdr-1 2e9ba38 (yaks-66a3) → da1a2d2
+- bg-1 d9f3493 (yaks-5408) → bc1deaf
+- palette-1 2a6faf4 (yaks-bc53, sign-off ask open to Joel) → b7c9cea
+Checked on the real build: headless detail shows `Status: 🪒 shaving`, `Created: 19m ago`, the pinned header with its rule row. Lead's mdrender module (yaks-649d, not yet wired) committed 9e986e6.

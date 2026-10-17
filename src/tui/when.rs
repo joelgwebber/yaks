@@ -13,6 +13,7 @@ pub(crate) enum Clock {
     /// "5m ago" stays current and DST is honoured per timestamp).
     System,
     /// A fixed instant and offset, for tests and docshots.
+    #[cfg_attr(not(test), allow(dead_code))]
     Fixed(DateTime<Utc>, FixedOffset),
 }
 
