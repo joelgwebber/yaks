@@ -1,11 +1,11 @@
 ---
 id: yaks-3b8d
 title: 'Links and attachments: collapse to text, markdown-friendly attachment links'
-status: hairy
+status: shaving
 type: feature
 priority: 3
 created: '2026-10-17T04:25:16Z'
-updated: '2026-10-17T04:36:55Z'
+updated: '2026-10-17T05:17:20Z'
 parent: yaks-ea13
 depends_on:
 - yaks-649d
@@ -40,3 +40,18 @@ Yup, completely agreed. This won't be the only fixup we'll need for the next rel
 picked up
 
 Picked up by the yakherd: the attach/link format part moves to the schema-5 migration yaks-a870; this yak keeps the rendering part (collapsed links, 🖼/📎 attachments).
+
+---
+▸ 2026-10-17T05:17:20Z [delta-lead]
+
+moved: hairy -> shaving
+
+---
+▸ 2026-10-17T05:17:20Z [delta-lead]
+
+Claim (yakherd delta-lead, 2026-10-17): owner **links-2**, together with yaks-1bbb (both are about link targets in the read pane). The renderer core already collapses `[text](url)` to its text (Tab/Enter follow it), and yaks-a870 rewrote attachment links (images `![]`, everything else `[]`). Remaining scope:
+
+- `src/tui/mdrender.rs` (`Tag::Link` / `Tag::Image` / `link_target` only): a link whose destination is an attachment (`<id>/<file>` relative path, where `<id>` is a known yak id) renders with a `📎 ` prefix (non-image) or keeps `🖼 ` (image); both are `Target::Artifact`, opened externally as today. Note the emoji are 2 cells wide: check alignment and wrapping.
+- Show the URL of the link under the line cursor in the status bar (src/tui/render.rs `render_status`, where the notification/hints go), dim, truncated, so a collapsed link's destination is visible without following it.
+
+Evidence: tests on the Target and prefix; headless frame with an attachment, an image and a URL link, plus the status bar line when the cursor is on the link. Judge: coordinator at landing.
