@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T17:12:04Z'
+updated: '2026-10-17T17:52:29Z'
 labels:
 - markdown
 - tui
@@ -148,3 +148,14 @@ autocont-1 landed: 67abbe5 (yaks-1f84) → 1145a08. Fork review by the yakherd:
 - merged into fork `yaks-integration` as c49afd9 and pushed; yaks Cargo.toml back on `branch = "yaks-integration"`, Cargo.lock pinned to c49afd9;
 - gate 18/18 green;
 - headless comment editor on the real build: `- a⏎b⏎⏎> q⏎` gives `- a / - b / > q / > `.
+
+---
+▸ 2026-10-17T17:52:29Z [delta-lead]
+
+inplace-1 landed: 4fbf85c (yaks-597d) → 41394a2, identical to the computed merge. The worker ran only the workspace gate; the yakherd re-ran `cargo test --release` (18/18 ok). Driven on the real build against a scratch farm:
+
+- `E` on a comment: the block becomes an editor in place (accented header with the save hint, `┃` gutter, raw source), everything above stays rendered.
+- An `o`-new-line edit + Ctrl-S: the file diff is exactly the added line + `updated:`; all other blocks byte-identical.
+- `M` + text + Ctrl-S: a new attributed comment appended, the editor closes.
+
+Next: yaks-92e5 (drop the form's content blocks), then shear yaks-4fa6 / slaughter yaks-c6f4 / shear yaks-a893.
