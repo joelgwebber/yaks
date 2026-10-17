@@ -362,7 +362,7 @@ fn docshots_session() {
         },
     );
     let mut transcript = Vec::new();
-    let mut shot = |s: &Session<App>, n: usize| {
+    let shot = |s: &Session<App>, n: usize| {
         let svg = toque::render_to_svg(s.app(), w, h);
         std::fs::write(format!("docs/assets/session-{n}.svg"), svg).unwrap();
     };

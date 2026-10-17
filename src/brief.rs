@@ -238,7 +238,8 @@ fn notes(b: &Brief) -> String {
         "Notes\n\
          - Append progress as you go: `yaks update {id} --note \"...\"`.\n\
          - Record every choice a reviewer could argue about as its own note starting `Decision:`, naming the alternatives you rejected.\n\
-         - Write a multi-line note as markdown with real line breaks, piped on stdin (`yaks update {id} --note - <<'EOF'` ... `EOF`), never as one long argument."
+         - Write a multi-line note as markdown with real line breaks, piped on stdin (`yaks update {id} --note - <<'EOF'` ... `EOF`, the quoted `'EOF'` keeps backticks and `$` literal), never as one long argument and never inside `$( )` or a double-quoted string, where backticks and `$` in the note run as commands.\n\
+         - Notes render as CommonMark: a single newline joins lines into one paragraph, so put separate points on list lines (`- `) or separate them with a blank line."
     )
 }
 

@@ -1,11 +1,11 @@
 ---
 id: yaks-382b
 title: Give explicit markdown formatting guidance in skills
-status: hairy
+status: shorn
 type: bug
 priority: 1
 created: '2026-10-05T22:10:36Z'
-updated: '2026-10-17T04:26:52Z'
+updated: '2026-10-17T05:16:47Z'
 parent: yaks-e9de
 depends_on:
 - yaks-649d
@@ -31,3 +31,29 @@ Where it must appear: the yaks skill (Writing notes and descriptions) already sa
 ▸ 2026-10-17T04:26:52Z [delta-lead]
 
 Folded into yaks-e9de (2026-10-17). The guidance must teach CommonMark semantics, now the decision: a single newline does not break a line, so put each item on a list line or separate paragraphs with a blank line, fence code and pasted output. Also replace the skill's "What the TUI styles / does not style" list (it describes the old per-line highlighter) once the renderer core yaks-649d lands, and keep the "never put a body in `$( )`" rule from the note above.
+
+---
+▸ 2026-10-17T05:16:12Z [delta-lead]
+
+moved: hairy -> shaving
+
+---
+▸ 2026-10-17T05:16:44Z [delta-lead]
+
+Done (delta-lead):
+
+- The yaks skill's "Writing notes and descriptions" teaches the CommonMark newline rule and lists what the TUI renders (47d5d5e).
+- It also says never to put a body inside `$( )` or a double-quoted argument.
+- `yaks brief` (src/brief.rs) carries both rules, so every worker brief the coordinating skills paste does too.
+
+Evidence: `cargo test --release` green, including the embedded-skills tests; `yaks brief` output checked.
+
+---
+▸ 2026-10-17T05:16:47Z [delta-lead]
+
+verify: `cargo test -p yaks skills` -> PASS (exit 0)
+
+---
+▸ 2026-10-17T05:16:47Z [delta-lead]
+
+moved: shaving -> shorn
