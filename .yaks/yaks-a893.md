@@ -5,11 +5,11 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:25:39Z'
-updated: '2026-10-17T05:00:19Z'
+updated: '2026-10-17T16:53:38Z'
 parent: yaks-faf5
 labels:
 - tui
-needs: human
+needs: agent
 ---
 
 Design pass first; implementation yaks follow from it.
@@ -87,3 +87,8 @@ Questions for Joel are asked on this yak.
 asked: needs human
 
 View/edit design (note above, with a mock frame): OK to (1) edit the description and comments *in place* in the detail pane (`E` on a body row, `M` for a new comment at the end, `Ctrl-S` saves just that block), and (2) drop the content blocks from the `E` edit form so it holds only header fields (create keeps its description)? That removes the accordion and yaks-c6f4. If yes I'll split it into implementation yaks and fan it out.
+
+---
+▸ 2026-10-17T16:53:38Z [Joel Webber]
+
+I dig it. That sounds like a plan to me.
