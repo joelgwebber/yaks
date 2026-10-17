@@ -21,6 +21,9 @@ pub enum Target {
     /// A markdown image link `![alt](path)` — an attached artifact, opened
     /// externally (path is relative to the farm's `.yaks/` root).
     Artifact(String),
+    /// A footnote reference `[n]` (the number it renders as): following it
+    /// moves the line cursor to the definition at the end of the same block.
+    Footnote(String),
 }
 
 /// Styling hint for a detail line.
@@ -838,6 +841,17 @@ mod detail_tests {
                 .any(|l| l.contains("Created:") && l.ends_with("bogus"))
         );
     }
+}
+
+/// The row of footnote `n`'s definition for a reference on row `from`: the
+/// last row of the same content block that starts `[n] ` (definitions sit at
+/// the end of their block, so this cannot be mistaken for body text).
+pub fn footnote_line(lines: &[DLine], from: usize, n: &str) -> Option<usize> {
+    let block = lines.get(from)?.src?.block;
+    let head = format!("[{n}] ");
+    lines
+        .iter()
+        .rposition(|l| l.src.is_some_and(|s| s.block == block) && l.text.starts_with(&head))
 }
 
 /// Flatten every link across the lines, in reading order.

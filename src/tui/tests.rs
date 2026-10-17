@@ -3861,3 +3861,50 @@ fn yank_of_a_scrolled_code_row_copies_the_full_source_line() {
         "class Long { void aVeryLongMethodNameThatOverflows() {} }"
     );
 }
+
+/// A yak whose body has a footnote, an attachment link and a URL link.
+fn linked_footnote() -> App {
+    let mut a0 = task("a0", "Root A", Status::Hairy, 2, None);
+    a0.body = "Claim[^1].\n\nSee [the docs](https://example.com/docs) and [log](a0/log.txt).\n\n[^1]: Because.\n"
+        .into();
+    App::new(vec![a0])
+}
+
+#[test]
+fn following_a_footnote_reference_jumps_to_its_definition_and_o_returns() {
+    // yaks-1bbb
+    let mut app = linked_footnote();
+    enter_key(&mut app);
+    draw(&app, 80, 20); // measure the pane
+    tab_key(&mut app);
+    let from = app.detail_line;
+    assert!(app.detail_dlines()[from].text.starts_with("Claim[1]"));
+    enter_key(&mut app);
+    let to = app.detail_line;
+    assert!(to > from);
+    assert_eq!(app.detail_dlines()[to].text, "[1] Because.");
+    press(&mut app, "o");
+    assert_eq!(app.detail_line, from);
+}
+
+#[test]
+fn status_bar_shows_the_destination_of_the_link_under_the_cursor() {
+    // yaks-3b8d
+    let mut app = linked_footnote();
+    enter_key(&mut app);
+    draw(&app, 80, 20);
+    tab_key(&mut app); // the footnote row: nothing to show
+    tab_key(&mut app); // the row holding the URL and the attachment
+    let frame = draw(&app, 80, 20);
+    let status = frame.lines().last().unwrap();
+    assert_eq!(status, "→ https://example.com/docs", "{frame}");
+    // A row with no external link goes back to the key hints.
+    press(&mut app, "g");
+    assert!(
+        draw(&app, 80, 20)
+            .lines()
+            .last()
+            .unwrap()
+            .contains("Enter:follow")
+    );
+}

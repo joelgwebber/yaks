@@ -1,11 +1,11 @@
 ---
 id: yaks-3b8d
 title: 'Links and attachments: collapse to text, markdown-friendly attachment links'
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-10-17T04:25:16Z'
-updated: '2026-10-17T05:17:20Z'
+updated: '2026-10-17T05:33:15Z'
 parent: yaks-ea13
 depends_on:
 - yaks-649d
@@ -55,3 +55,39 @@ Claim (yakherd delta-lead, 2026-10-17): owner **links-2**, together with yaks-1b
 - Show the URL of the link under the line cursor in the status bar (src/tui/render.rs `render_status`, where the notification/hints go), dim, truncated, so a collapsed link's destination is visible without following it.
 
 Evidence: tests on the Target and prefix; headless frame with an attachment, an image and a URL link, plus the status bar line when the cursor is on the link. Judge: coordinator at landing.
+
+---
+▸ 2026-10-17T05:21:50Z [links-2]
+
+Start (links-2): Sat Oct 17 05:21:50 AM UTC 2026
+
+- path: /home/joel/src/yaks/.delta/worktrees/dvtctdaewedz/yaks/.yaks/yaks-3b8d.md
+- own binary: ./target/release/yaks built in this checkout; base 4c586e9
+
+[frame-links](yaks-3b8d/frame-links.txt)
+
+---
+▸ 2026-10-17T05:33:01Z [links-2]
+
+Decision: an attachment link is recognised as `<id>/<file>` where `<id>` is a known yak id in the farm (`is_attachment` in mdrender.rs). A relative link to anything else (`other/f.txt`) stays a plain `Target::Artifact` with no 📎. Rejected: any relative path (would mark `docs/x.md`); checking the file exists (render must not touch disk).
+
+Decision: the status-bar destination is `→ <dest>` in the existing dim help-bar style, replacing the key hints (not a second row), only in the detail pane with no overlay, and only for URL and attachment targets. Yak-id links and footnotes show the normal hints (they are visible in the text). Rejected: also showing task ids; a dedicated status row. `link_hint` in render.rs, truncated with `truncate_disp`.
+
+Decision: when several links share a row the first (leftmost) one's destination is shown, matching what `follow_link`/`O` act on (`find` first jump of the line).
+
+Done:
+- mdrender.rs `Tag::Link`: pushes `📎 ` (inside the link, so it is part of the followable run and underlined) for attachments; images already had `🖼 `; both `Target::Artifact`, opened externally as before. `link_target` unchanged.
+- render.rs `render_status`/`link_hint`; docs/tui.md (rendered markdown paragraph, `r` rename row now says link 📎 or 🖼), skill line.
+- Emoji width: `📎`/`🖼` are 2 cells; the layout already measures with `unicode-width`. `wide_glyph_prefix_wraps_within_the_width` renders at width 8 and asserts every row fits and the wrap point is `📎 abcd` / `efgh`.
+- Tests: `attachment_links_get_a_paperclip_and_images_keep_the_picture` (text, targets for 📎 file, 🖼 image, URL, non-attachment relative path) and the wrap test both FAILED with the prefix disabled and pass with it; `status_bar_shows_the_destination_of_the_link_under_the_cursor` in tests.rs.
+- Frame attached: frame-links.txt (headless 90x34, scratch farm with a real `yaks attach` of a .txt and a .svg): status bar shows `→ https://example.com/some/long/path`, `→ yak-b573/build-log.txt`, `→ yak-b573/shot.svg`; rows render `📎 build-log` and `🖼 shot`.
+
+---
+▸ 2026-10-17T05:33:07Z [links-2]
+
+verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-10-17T05:33:15Z [links-2]
+
+moved: shaving -> shorn

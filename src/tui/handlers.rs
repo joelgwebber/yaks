@@ -531,7 +531,9 @@ impl App {
             Some(j) => match j.target {
                 detail::Target::Artifact(p) => self.open_external(&p),
                 detail::Target::Url(u) => self.open_external(&u),
-                detail::Target::Task(_) => self.notification = Some("not an artifact/link".into()),
+                detail::Target::Task(_) | detail::Target::Footnote(_) => {
+                    self.notification = Some("not an artifact/link".into())
+                }
             },
             None => self.notification = Some("no link on this line".into()),
         }
