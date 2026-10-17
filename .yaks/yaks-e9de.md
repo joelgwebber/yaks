@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T05:00:47Z'
+updated: '2026-10-17T05:04:18Z'
 labels:
 - markdown
 - tui
@@ -80,3 +80,16 @@ Status 2026-10-17 ~05:05 (delta-lead):
 - Running: migrate-1 (yaks-a870), hscroll-1 (yaks-c733), edmarks-1 (yaks-9425).
 - Held until hscroll-1 lands (both touch mdrender.rs): yaks-1bbb (footnote jumps; task lists and alerts already render), yaks-3020 (code syntax colours), and yaks-3b8d's attachment glyphs (also waits on yaks-a870).
 - yaks-382b: the CommonMark rule is already in the yaks skill (47d5d5e); the `$( )` rule in brief.rs and the coordinating skill remain, after migrate-1 lands (it edits the skills too).
+
+---
+▸ 2026-10-17T05:04:18Z [delta-lead]
+migrate-1 landed 2026-10-17: 80659ed (yaks-a870, schema 5 + `yaks migrate`) → 2d80a0f, identical to the computed merge. Gate re-run in a separate target dir (`CARGO_TARGET_DIR=target/s5 cargo test --release`: 17 result lines ok). Reviewed on a fresh copy of this farm with that build:
+
+- dry run: 1336 comment headers in 402 yaks, 84 non-image links in 57 yaks
+- after the real run: the diff is exactly 1336 added blank lines and 84 dropped `!`
+- `doctor` clean, and a second `migrate` reports nothing to do
+- a migrated yak renders its comments correctly in the TUI
+
+Hold: `target/release/yaks` stays the schema-4 build, and this repo's `.yaks/` stays schema 4, until hscroll-1 (yaks-c733) and edmarks-1 (yaks-9425) land. They do their bookkeeping with that binary on schema-4 clones, and their yak edits would conflict with a migration commit. After they land: rebuild, `yaks migrate`, commit it alone, regenerate every docshot (the comment shape changed), then shear yaks-2362.
+
+Worker note: migrate-1 says its new tests were written after the code and never ran red; the review above is the independent check.
