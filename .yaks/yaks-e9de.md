@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T18:14:58Z'
+updated: '2026-10-17T19:43:26Z'
 labels:
 - markdown
 - tui
@@ -169,3 +169,15 @@ formtrim-1 landed: 9381adf (yaks-92e5) → c2b20a0; gate 18/18; real build: `E` 
 ▸ 2026-10-17T18:14:58Z [delta-lead]
 
 Joel: finish the rest, land the arc, cut a release; leave yaks-33c8 and yaks-62cf out. Spawning cache-1 (yaks-bc30) and srclinks-1 (yaks-da5e, format agreed).
+
+---
+▸ 2026-10-17T19:43:26Z [delta-lead]
+
+Landed 2026-10-17:
+
+- srclinks-1 684800b (yaks-da5e, source links incl. pinned commits) → 5e3e5f1
+- cache-1 f8e5c10 (yaks-bc30, memoized rows()/detail lines; held `j` ~22 ms → ~0.7 ms per key on this farm) → 90d22ee
+
+Both identical to the computed merge; gate 18/18 green; doctor clean; `~/go/bin/yaks` rebuilt. My own pty drive of the `$EDITOR` hand-off timed out in this sandbox (no keystrokes reached the TUI), so that path rests on srclinks-1's pty run plus its unit tests (`editor_arguments_by_editor`, `following_a_source_link_queues_the_editor_at_the_line`).
+
+The arc is complete apart from the release (0.0.20), which waits on Joel's go-ahead.
