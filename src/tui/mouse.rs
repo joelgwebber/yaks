@@ -248,20 +248,20 @@ mod tests {
             .collect::<Vec<_>>()
             .join("\n");
         let mut app = App::new(vec![t]);
-        app.detail_page = 7;
+        app.detail_page = 9;
         enter_key(&mut app);
-        let before = draw(&app, 60, 10);
+        let before = draw(&app, 60, 12);
         // Wheel over the detail pane (right side) scrolls it.
         mouse(&mut app, MouseEventKind::ScrollDown, 40, 4);
         mouse(&mut app, MouseEventKind::ScrollDown, 40, 4);
         assert_eq!(app.detail_scroll, 6);
         assert!(app.detail_line >= 6, "cursor dragged into view");
-        let after = draw(&app, 60, 10);
+        let after = draw(&app, 60, 12);
         println!("--- detail before 2x wheel-down ---\n{before}--- after ---\n{after}");
         mouse(&mut app, MouseEventKind::ScrollUp, 40, 4);
         assert_eq!(app.detail_scroll, 3);
         // Click a detail line: the line cursor lands on the clicked line.
-        let frame = draw(&app, 60, 10);
+        let frame = draw(&app, 60, 12);
         let y = row_of(&frame, "Labels:");
         click(&mut app, 40, y);
         assert_eq!(app.focus, Focus::Detail);

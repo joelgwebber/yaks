@@ -979,6 +979,10 @@ pub(crate) fn pinned_header_line(task: &Task, starred: bool, width: u16) -> Line
     Line::from(spans)
 }
 
+/// Rows the pinned detail header occupies: the one-line summary plus the rule
+/// under it. `App::detail_rows_shown` subtracts this from the viewport.
+pub(crate) const PINNED_ROWS: u16 = 2;
+
 pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
     let focused = app.focus == Focus::Detail;
     // The left divider is drawn by render() via right_divider(); we render the
@@ -991,16 +995,17 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
     // Capture the content width so the row-indexed model (and event handlers)
     // wrap to exactly what's rendered here.
     app.detail_width.set(area.width);
-    // When scrolled past the frontmatter, reserve the top row for a sticky
-    // header and push the content down one row (nothing is hidden — the pin adds
-    // a row rather than overlaying one).
-    let pinned = app.detail_scroll > 0 && area.height > 1;
+    // When scrolled past the frontmatter, reserve the top two rows for a sticky
+    // header and a dim rule under it, and push the content down by both
+    // (nothing is hidden — the pin adds rows rather than overlaying them).
+    // `App::detail_rows_shown` mirrors this arithmetic (PINNED_ROWS).
+    let pinned = app.detail_scroll > 0 && area.height > PINNED_ROWS;
     let content_area = if pinned {
         Rect {
             x: area.x,
-            y: area.y + 1,
+            y: area.y + PINNED_ROWS,
             width: area.width,
-            height: area.height - 1,
+            height: area.height - PINNED_ROWS,
         }
     } else {
         area
@@ -1046,6 +1051,18 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
     if pinned {
         let header = pinned_header_line(task, app.is_starred(&task.id), area.width);
         frame.render_widget(Paragraph::new(header), Rect { height: 1, ..area });
+        let rule = Line::from(Span::styled(
+            "\u{2500}".repeat(area.width as usize),
+            Style::new().fg(Color::DarkGray),
+        ));
+        frame.render_widget(
+            Paragraph::new(rule),
+            Rect {
+                y: area.y + 1,
+                height: 1,
+                ..area
+            },
+        );
     }
 }
 

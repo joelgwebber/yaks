@@ -173,7 +173,8 @@ recent times (`just now`, `5m ago`, `3h ago`, `yesterday 14:05 -04:00`,
 
 Once you scroll past the frontmatter (`j`/`k`/`d`/`u`/`G`), a sticky one-line
 header pins the yak's status, id, type, priority, and title to the top of the
-pane, so a long body never leaves you wondering which yak you're reading.
+pane, with a dim rule under it, so a long body never leaves you wondering which
+yak you're reading. The unscrolled `Status:` field carries the same status icon.
 
 ![yaks TUI detail pane with a pinned header](assets/tui-detail-pinned.svg)
 

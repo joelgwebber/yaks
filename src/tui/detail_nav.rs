@@ -199,13 +199,13 @@ impl App {
     }
 
     /// Detail content rows visible at `scroll`: the whole pane at the top, one
-    /// fewer once scrolled (the sticky header takes the top row).
+    /// fewer once scrolled (the sticky header and its rule take the top rows).
     pub(crate) fn detail_rows_shown(&self, scroll: u16) -> usize {
         let page = self.detail_page.max(1) as usize;
         if scroll == 0 {
             page
         } else {
-            page.saturating_sub(1).max(1)
+            page.saturating_sub(PINNED_ROWS as usize).max(1)
         }
     }
 

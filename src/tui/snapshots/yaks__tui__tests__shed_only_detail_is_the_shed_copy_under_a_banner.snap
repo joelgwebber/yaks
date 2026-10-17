@@ -9,7 +9,7 @@ expression: frame
    yaks-5001 p3 task     🦬  a work 🛖 perf-1-profile│ Task: yaks-5001
  yaks-5003   p3 task     🦬  ⏳  🛖 needs-1-superseded│
                                                    │ Title:       a worker's new child
-                                                   │ Status:      hairy
+                                                   │ Status:      🦬  hairy
                                                    │ Type:        task
                                                    │ Priority:    p3
                                                    │ Created:     -
