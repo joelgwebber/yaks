@@ -16,6 +16,7 @@ use std::cell::RefCell;
 
 use edtui::{EditorState, EditorView};
 
+use super::blockedit;
 use super::palette;
 use super::{
     App, Focus, Overlay, completion_context, detail, editor_theme, render_create, render_drawer,
@@ -254,11 +255,18 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
         blank(),
         section("Edit"),
         entry("c / C", "New root / child yak"),
-        entry("E", "Edit field/desc/comment at cursor"),
+        entry(
+            "E",
+            "Edit the body block under the cursor in place; header row: form",
+        ),
         entry("P / T / L / S", "Priority / type / labels / state"),
         entry("D / R", "Add dependency / reparent"),
         entry("H", "Move to another herd (multi-herd farm)"),
-        entry("M", "Add a comment (note)"),
+        entry("M", "Add a comment (in place, after the last one)"),
+        entry(
+            "Ctrl-S / Ctrl-C",
+            "Save / cancel an in-place edit (Esc Esc cancels too)",
+        ),
         entry(
             "a",
             "Ask / answer (answer: needs agent; or in the shed that asks)",
@@ -453,6 +461,7 @@ pub(crate) fn overlay_name(o: &Overlay) -> &'static str {
         Overlay::Pick { .. } => "pick",
         Overlay::Confirm { .. } => "confirm",
         Overlay::Edit(_) => "edit",
+        Overlay::BlockEdit(_) => "block-edit",
         Overlay::Fuzzy(_) => "fuzzy",
         Overlay::Search(_) => "search",
         Overlay::Drawer(_) => "drawer",
@@ -1063,6 +1072,10 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
                 .nowrap_key()
                 .and_then(|k| extents.get(&k).map(|&e| app.block_hscroll(&task.id, k, e)))
                 .unwrap_or(0);
+            // The in-place editor draws over its rows below; they stay blank.
+            if dl.kind == detail::Kind::Editor {
+                return Line::default();
+            }
             render_dline(dl, cur, i, &lm, line_bg, hscroll, area.width as usize)
         })
         .collect();
@@ -1070,6 +1083,9 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
     // no-wrap block are clipped to the pane by `render_dline`.)
     let p = Paragraph::new(rendered).scroll((app.detail_scroll, 0));
     frame.render_widget(p, content_area);
+    if let Some(be) = app.block_edit() {
+        blockedit::render_block_editor(be, &lines, app.detail_scroll, frame, content_area);
+    }
     if pinned {
         let header = pinned_header_line(task, app.is_starred(&task.id), area.width);
         frame.render_widget(Paragraph::new(header), Rect { height: 1, ..area });
@@ -1361,6 +1377,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
         Overlay::Edit(ed) if !ed.single_line => {
             completion_context(&ed.state, &app.ref_prefix).is_some()
         }
+        Overlay::BlockEdit(be) => completion_context(&be.editor.state, &app.ref_prefix).is_some(),
         Overlay::Create(f) => matches!(f.content_index(),
             Some(i) if completion_context(&f.blocks[i].editor, &app.ref_prefix).is_some()),
         _ => false,
@@ -1412,6 +1429,11 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
             )),
             area,
         );
+        return;
+    }
+    // The in-place block editor: its mode (vim) and the save/cancel keys.
+    if let Overlay::BlockEdit(be) = &app.overlay {
+        frame.render_widget(Paragraph::new(be.status_line()), area);
         return;
     }
     // Create/edit-form help hint. The `(need title)` marker mirrors Python's guard.
@@ -1538,7 +1560,7 @@ pub(crate) fn help_hint(app: &App) -> String {
             "Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  {filter_hint}  ?:help"
         ),
         Focus::Detail => format!(
-            "h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  D:dep  S:state  {filter_hint}  q:quit"
+            "h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  {filter_hint}  q:quit"
         ),
     }
 }

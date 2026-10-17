@@ -1,0 +1,32 @@
+=== frame 5 · 90x30 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-cf78 · blocked=- · collapsed=0 · filter=(all) · overlay=block-edit · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   🛖 Sheds
+
+◂ Task: yak-cf78
+│
+│ Title:       Login crashes on expired token
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     8m ago
+│ Updated:     7m ago
+│ Labels:      -
+│
+│ Logging in with an expired token crashes the app.
+│
+│ Repro
+│
+│ 1. Log in, wait an hour.
+│ 2. Click anything.
+│
+│ ▸ joel · 7m ago ───────────────────────────────────────────────────────────────────────
+│ Seen on staging too. The refresh path never runs when the token is already expired.
+│
+│ ▸ agent-1 · 7m ago ──────────────────────────── editing · Ctrl-S save · Ctrl-C cancel ─
+│ ┃Root cause: `refresh()` checks `exp` after the request, not before.
+│ ┃
+│ ┃- fix: check before
+│ ┃- add a test
+│ ┃
+│
+NORMAL  Ctrl-S save · Ctrl-C / Esc Esc cancel
+=== end ===

@@ -40,6 +40,9 @@ pub enum Kind {
     Shed,
     Body,
     Empty,
+    /// One row of the in-place block editor's region (yaks-597d): the row
+    /// model reserves the rows, `render_detail` draws the editor over them.
+    Editor,
 }
 
 /// One display line plus any link spans it carries (col + len in chars).
@@ -92,6 +95,23 @@ pub fn nowrap_extents(lines: &[DLine]) -> std::collections::HashMap<(usize, usiz
         }
     }
     out
+}
+
+/// A content block being edited in place: its rows in the detail model are
+/// replaced by a header and `rows` editor rows (`Kind::Editor`), so scroll,
+/// cursor and hit arithmetic see the editor as N ordinary rows.
+#[derive(Clone, Debug)]
+pub struct EditSlot {
+    /// The content block being edited; `None` = a new comment after the last.
+    pub block: Option<usize>,
+    /// Rows the editor occupies (below the header).
+    pub rows: usize,
+    /// Header label of a new comment (`you · now`); an existing block keeps
+    /// its own.
+    pub label: String,
+    /// Candidate hints for the header, longest first; the first that fits the
+    /// pane is drawn.
+    pub hints: Vec<String>,
 }
 
 /// A single navigable target, located at a line + starting column.
@@ -299,7 +319,7 @@ fn sheds_section(sheds: &[(&Shed, &YakChange)]) -> Vec<DLine> {
 /// [`build_at`] against the pinned test clock (see [`Clock::app_default`]).
 #[cfg(test)]
 pub fn build(task: &Task, all: &[Task], sheds: &[(&Shed, &YakChange)]) -> Vec<DLine> {
-    build_at(task, all, sheds, &Clock::app_default(), 0)
+    build_at(task, all, sheds, &Clock::app_default(), 0, None)
 }
 
 /// `sheds` is what the other sheds changed about this yak (`Snapshot::copies`);
@@ -312,6 +332,7 @@ pub fn build_at(
     sheds: &[(&Shed, &YakChange)],
     clock: &Clock,
     width: usize,
+    edit: Option<&EditSlot>,
 ) -> Vec<DLine> {
     let by_id: HashMap<&str, &Task> = all.iter().map(|t| (t.id.as_str(), t)).collect();
     let known: HashSet<&str> = by_id.keys().copied().collect();
@@ -469,7 +490,7 @@ pub fn build_at(
 
     out.extend(sheds_section(sheds));
 
-    out.extend(body_rows(task, &known, clock, width));
+    out.extend(body_rows(task, &known, clock, width, edit));
     out
 }
 
@@ -481,16 +502,36 @@ const FALLBACK_WIDTH: usize = 80;
 /// markdown document (`content::parse` first, so nothing leaks between them),
 /// each comment under a header row. Rows are already wrapped to `width` and
 /// carry their [`Src`], so [`wrap`] leaves them alone.
-fn body_rows(task: &Task, known: &HashSet<&str>, clock: &Clock, width: usize) -> Vec<DLine> {
+fn body_rows(
+    task: &Task,
+    known: &HashSet<&str>,
+    clock: &Clock,
+    width: usize,
+    edit: Option<&EditSlot>,
+) -> Vec<DLine> {
     let width = if width == 0 { FALLBACK_WIDTH } else { width };
     let mut out = Vec::new();
     let blocks = content::parse(&task.body);
     for (bi, block) in blocks.iter().enumerate() {
         let is_comment = matches!(block.kind, content::BlockKind::Comment { .. });
-        if block.text.trim().is_empty() && !is_comment {
+        let slot = edit.filter(|e| e.block == Some(bi));
+        if block.text.trim().is_empty() && !is_comment && slot.is_none() {
             continue;
         }
         out.push(empty());
+        if let Some(slot) = slot {
+            // The block is being edited: its rendered rows give way to the
+            // editor's, under a header (the description gets one too, to
+            // carry the hint).
+            out.push(header_row(
+                &comment_label(&block.kind, clock),
+                width,
+                bi,
+                Some(slot),
+            ));
+            out.extend(editor_rows(slot.rows));
+            continue;
+        }
         if is_comment {
             out.push(comment_header(&block.kind, clock, width, bi));
         }
@@ -509,7 +550,26 @@ fn body_rows(task: &Task, known: &HashSet<&str>, clock: &Clock, width: usize) ->
             });
         }
     }
+    // A new comment: a provisional header and the editor after the last block.
+    if let Some(slot) = edit.filter(|e| e.block.is_none()) {
+        out.push(empty());
+        out.push(header_row(&slot.label, width, blocks.len(), Some(slot)));
+        out.extend(editor_rows(slot.rows));
+    }
     out
+}
+
+/// The rows an in-place editor reserves.
+fn editor_rows(n: usize) -> impl Iterator<Item = DLine> {
+    (0..n).map(|_| DLine {
+        text: String::new(),
+        kind: Kind::Editor,
+        links: vec![],
+        md: vec![],
+        cont: false,
+        src: None,
+        nowrap: None,
+    })
 }
 
 /// The label of a comment block: `actor · when` (or just `when`). One design
@@ -529,23 +589,63 @@ pub fn comment_label(kind: &content::BlockKind, clock: &Clock) -> String {
 
 /// A comment's header row in the detail pane: `▸ actor · when ────`.
 fn comment_header(kind: &content::BlockKind, clock: &Clock, width: usize, block: usize) -> DLine {
-    let head = format!("\u{25b8} {} ", comment_label(kind, clock));
+    header_row(&comment_label(kind, clock), width, block, None)
+}
+
+/// A block header row: `▸ label ────` to the pane width. For the block under
+/// the in-place editor (`editing`) the label is bold and the longest hint that
+/// fits sits at the right end of the rule: `── editing · Ctrl-S save ──`.
+fn header_row(label: &str, width: usize, block: usize, editing: Option<&EditSlot>) -> DLine {
+    let head = format!("\u{25b8} {label} ");
     let head_len = head.chars().count();
-    let dashes = width.saturating_sub(head.chars().map(char_disp).sum());
-    let text = format!("{head}{}", palette::RULE_CHAR.to_string().repeat(dashes));
-    DLine {
-        md: vec![
-            MdSpan {
-                start: 0,
-                len: head_len,
-                style: palette::comment_header(true),
-            },
-            MdSpan {
-                start: head_len,
-                len: dashes,
+    let head_w: usize = head.chars().map(char_disp).sum();
+    let rule = palette::RULE_CHAR.to_string();
+    // Room after the head for `── <hint> ─`: at least two dashes before the
+    // hint and one after.
+    let hint = editing.and_then(|e| {
+        e.hints
+            .iter()
+            .find(|h| head_w + 2 + 1 + h.chars().map(char_disp).sum::<usize>() + 1 + 1 <= width)
+    });
+    let mut label_style = palette::comment_header(true);
+    if editing.is_some() {
+        label_style = label_style.add_modifier(Modifier::BOLD);
+    }
+    let mut text = head;
+    let mut md = vec![MdSpan {
+        start: 0,
+        len: head_len,
+        style: label_style,
+    }];
+    let push_rule = |text: &mut String, md: &mut Vec<MdSpan>, n: usize| {
+        if n > 0 {
+            md.push(MdSpan {
+                start: text.chars().count(),
+                len: n,
                 style: palette::rule(),
-            },
-        ],
+            });
+            text.push_str(&rule.repeat(n));
+        }
+    };
+    match hint {
+        Some(h) => {
+            let hint_w: usize = h.chars().map(char_disp).sum();
+            let dashes = width - head_w - hint_w - 2 - 1;
+            push_rule(&mut text, &mut md, dashes);
+            text.push(' ');
+            md.push(MdSpan {
+                start: text.chars().count(),
+                len: h.chars().count(),
+                style: palette::comment_header(true),
+            });
+            text.push_str(h);
+            text.push(' ');
+            push_rule(&mut text, &mut md, 1);
+        }
+        None => push_rule(&mut text, &mut md, width.saturating_sub(head_w)),
+    }
+    DLine {
+        md,
         text,
         kind: Kind::Body,
         links: vec![],

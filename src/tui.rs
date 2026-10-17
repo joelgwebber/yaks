@@ -6,6 +6,7 @@
 //! mutates `App`; mutating keys route through the `Farm` facade and then reload.
 
 mod actions;
+mod blockedit;
 mod cache;
 mod content;
 mod create;
@@ -71,6 +72,7 @@ use crate::farm::{
 use crate::filter::{self, FilterSpec};
 use crate::model::{Status, Task};
 
+use blockedit::BlockEdit;
 use create::*;
 use drawer::*;
 use editor::*;
@@ -116,6 +118,9 @@ pub(crate) enum Overlay {
     },
     /// An in-frame edtui editor (single-line field or multi-line body).
     Edit(Editor),
+    /// One content block (the description, a comment, or a new comment)
+    /// edited in place in the detail pane (yaks-597d).
+    BlockEdit(BlockEdit),
     /// A filter-as-you-type task picker (dependencies, reparent).
     Fuzzy(FuzzyPick),
     /// Inline incremental search: edits `App.filter.search` live.

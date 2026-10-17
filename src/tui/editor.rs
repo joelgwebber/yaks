@@ -35,6 +35,13 @@ pub(crate) struct Editor {
 pub(crate) enum EditAction {
     Labels(String),
     Comment(String),
+    /// Replace content block `block` (0 = description, 1.. = comments) of `id`
+    /// with the typed text: the in-place editor's save (yaks-597d). A new
+    /// comment is `Comment` instead.
+    Block {
+        id: String,
+        block: usize,
+    },
     Attach(String),
     /// Name a clipboard PNG before attaching it to `id` (empty input keeps
     /// the `default` `paste-<ts>.png` name).
@@ -421,11 +428,12 @@ mod theme_tests {
     /// it into a buffer.
     fn comment_editor_buffer(row: usize, w: u16, h: u16) -> ratatui::buffer::Buffer {
         let mut app = editable();
+        app.detail_page = h.saturating_sub(3); // as the live loop sets it
         enter_key(&mut app);
         handle_key(&mut app, key('M'));
         match &app.overlay {
-            crate::tui::Overlay::Edit(ed) => {
-                let mut st = ed.state.borrow_mut();
+            crate::tui::Overlay::BlockEdit(be) => {
+                let mut st = be.editor.state.borrow_mut();
                 st.lines = Lines::from(MARKED_UP.join("\n").as_str());
                 st.cursor = edtui::Index2::new(row, 0);
             }
@@ -447,14 +455,14 @@ mod theme_tests {
                 return buf[(x, y)].modifier;
             }
         }
-        panic!("{needle:?} not drawn");
+        panic!("{needle:?} not drawn:\n{}", buffer_to_string(buf));
     }
 
     #[test]
     fn markers_are_dim_on_the_cursor_row_and_hidden_elsewhere() {
         // Cursor on the inline-styles line: its `**` stays visible (dim), the
         // heading's `#` and the link's `](` are hidden.
-        let buf = comment_editor_buffer(1, 72, 16);
+        let buf = comment_editor_buffer(1, 72, 24);
         let text = buffer_to_string(&buf);
         assert!(text.contains("Some **bold**, *italic*"), "{text}");
         assert_eq!(modifier_at(&buf, "**bold"), Modifier::empty());
@@ -462,7 +470,7 @@ mod theme_tests {
         assert!(modifier_at(&buf, "](https").contains(Modifier::HIDDEN));
         assert!(modifier_at(&buf, "> a quoted").contains(Modifier::HIDDEN));
         // Moving the cursor to the link line swaps which rows hide.
-        let buf = comment_editor_buffer(2, 72, 16);
+        let buf = comment_editor_buffer(2, 72, 24);
         assert!(!modifier_at(&buf, "](https").contains(Modifier::HIDDEN));
         assert!(modifier_at(&buf, "**bold").contains(Modifier::HIDDEN));
     }
@@ -476,7 +484,7 @@ mod theme_tests {
     #[test]
     #[ignore]
     fn editor_markers_svg() {
-        let raw = comment_editor_buffer(1, 72, 16);
+        let raw = comment_editor_buffer(1, 72, 24);
         let mut shown = raw.clone();
         for cell in shown.content.iter_mut() {
             if cell.modifier.contains(Modifier::HIDDEN) {

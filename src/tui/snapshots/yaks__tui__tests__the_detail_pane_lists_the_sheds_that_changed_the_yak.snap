@@ -31,4 +31,4 @@ expression: frame
                                                    │
                                                    │
                                                    │
-h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  D:dep  S:state  f:filter  /:search  q:quit
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search  q:quit
