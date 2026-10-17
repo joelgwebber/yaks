@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 3
 created: '2026-10-17T16:44:57Z'
-updated: '2026-10-17T16:48:59Z'
+updated: '2026-10-17T17:20:15Z'
 labels:
 - sheds
 - git
@@ -29,3 +29,12 @@ Relatedly:
 > This worktree shows `.yaks/yaks-bc53.md` as modified. I didn't touch it and left it alone.
 
 In both of these cases, the worker was either unable (in the first) or unwilling (the second) to make changes to a yak on its worktree.
+
+---
+▸ 2026-10-17T17:20:15Z [Joel Webber]
+
+One other avenue to consider -- to what extent should the yaks tools and TUI be committing yak changes directly?
+
+There are clearly cases where we don't want yaks to automatically commit -- eg on main. But when on a local branch or worktree it's probably net better to aggressively commit, for both history and visibility to other sheds.
+
+Similarly, we might consider doing something similar for merging (of the .yaks only) changes across worktrees. We'll want to think that all through carefully, though -- there could be a lot of weird edge cases to work through.
