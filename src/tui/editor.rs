@@ -269,6 +269,10 @@ pub(crate) fn set_md_highlights(state: &mut EditorState) {
 /// Theme for embedded editors. The cursor cell is styled per mode so Normal vs
 /// Insert is visible even without a real hardware cursor shape: a solid block
 /// in Normal/Visual, an underline (bar-like) in Insert.
+///
+/// `base` is set explicitly to the terminal default: edtui's own default is
+/// `bg(BLACK).fg(WHITE)`, which would paint every editor surface pitch black
+/// instead of matching the pane/overlay it sits on (yaks-5408).
 pub(crate) fn editor_theme(mode: EditorMode) -> EditorTheme<'static> {
     let cursor = match mode {
         EditorMode::Insert => Style::new().add_modifier(Modifier::UNDERLINED),
@@ -277,6 +281,7 @@ pub(crate) fn editor_theme(mode: EditorMode) -> EditorTheme<'static> {
     EditorTheme::default()
         .hide_status_line()
         .block(Block::default())
+        .base(Style::default())
         .cursor_style(cursor)
 }
 
@@ -365,4 +370,33 @@ pub(crate) fn render_line_editor(ed: &Editor, frame: &mut Frame, area: Rect) {
         }
     }
     render_query_line(&ed.label, &ed.state, frame, area);
+}
+
+#[cfg(test)]
+mod theme_tests {
+    use super::*;
+    use crate::tui::handle_key;
+    use crate::tui::test_support::*;
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+
+    /// edtui's default `base` is `bg(BLACK)`; editors must paint the pane's
+    /// own background instead (yaks-5408).
+    #[test]
+    fn editor_theme_does_not_paint_a_background() {
+        for mode in [EditorMode::Normal, EditorMode::Insert, EditorMode::Visual] {
+            assert_eq!(editor_theme(mode).base, Style::default());
+        }
+    }
+
+    #[test]
+    fn comment_overlay_paints_no_black_cells() {
+        let mut app = editable();
+        enter_key(&mut app);
+        handle_key(&mut app, key('M'));
+        let mut term = Terminal::new(TestBackend::new(72, 14)).unwrap();
+        term.draw(|f| crate::tui::render(&app, f)).unwrap();
+        let buf = term.backend().buffer();
+        assert!(buf.content().iter().all(|c| c.bg != Color::Rgb(0, 0, 0)));
+    }
 }
