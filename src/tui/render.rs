@@ -268,6 +268,10 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
             "Save / cancel / save+close (editor Normal)",
         ),
         entry(
+            "Enter",
+            "(editor Insert) Continue a list / quote; on an empty item, end it",
+        ),
+        entry(
             "A / O",
             "Attach artifact / open it (from whichever shed has it)",
         ),

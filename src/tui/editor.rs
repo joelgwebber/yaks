@@ -102,6 +102,8 @@ impl Editor {
     ) -> Self {
         let mut state = EditorState::new(Lines::from(initial));
         state.set_single_line(single_line);
+        // Enter continues markdown lists and quotes (edtui fork, yaks-1f84).
+        state.set_markdown_continuation(!single_line);
         // Vim users expect to land in Normal when reviewing existing multiline
         // content; an empty editor (and every single-line field) opens in Insert
         // so you can type immediately.

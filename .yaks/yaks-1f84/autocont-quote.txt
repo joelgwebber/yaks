@@ -1,0 +1,27 @@
+# keys: Enter M, type '> q', Enter, 'r', Enter, Enter, '1. x', Enter
+=== frame 9 · 90x24 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-bd88 · blocked=- · collapsed=0 · filter=(all) · overlay=edit · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   🛖 Sheds
+
+◂ Comment on yak-bd88 — Ctrl-S save · Ctrl-C cancel                                INSERT
+│ > q
+│ > r
+│ 1. x
+│ 2.
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  D:dep  S:state  f:filter
+=== end ===
