@@ -18,4 +18,5 @@ Once the fancy-regex edtui change lands (and yaks points at it), flip md-syntax 
 
 ---
 ▸ 2026-08-25T03:26:31Z
+
 Obviated by yaks-2956 (md-syntax feature is being removed, not enabled by default).

@@ -33,46 +33,57 @@ Tests with temp git repos: clean; one created yak; a moved yak (status dir chang
 
 ---
 ▸ 2026-10-06T21:48:23Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-06T21:48:23Z [delta-lead]
+
 Claim (coordinator delta-lead). Owner: worker sta-1. Scope: a new src/status.rs (or the smallest home that fits), a shared classification extracted from src/commit.rs so `yaks status` and `yaks commit` agree, the `Status` subcommand and dispatch in src/main.rs, docs/cli.md, README.md, the commands table in `.agents/skills/yaks/SKILL.md`, `--help`. Judge: the coordinator re-runs the gate and runs `yaks status` in this repo before and after a note and a move. Forbidden: any write to git or the farm from `status`, changing what `yaks commit` does (only share its classification), the TUI, `--sheds`, the coordination skills' prose.
 
 ---
 ▸ 2026-10-06T21:48:45Z [sta-1]
+
 Start: Tue Oct  6 21:48:42 UTC 2026. yaks path: /Users/joel/src/yaks/.delta/worktrees/yar6r29tjc78/yaks/.yaks/shaving/yaks-b6a9.md
 
 ---
 ▸ 2026-10-06T21:54:35Z [sta-1]
+
 Decision: classification lives in a new `src/changes.rs` (Change, parse_status, `classify` into per-yak Kind Created/Moved/Updated/Removed + artifacts flag, git helpers, pending merge check). `commit::generate_message` and `yaks status` both call `classify`. Rejected: making `status` import private helpers from commit.rs (wrong dependency direction) and duplicating the verbs.
 
 ---
 ▸ 2026-10-06T21:54:35Z [sta-1]
+
 Decision: `notes +N` / `edited` come from comparing the file with its HEAD version (`git show HEAD:<path>`), ignoring the re-stamped `updated:` line and the `moved: a -> b` transition entry a move writes. "Only appended note blocks" = notes; anything else (a field, the description, an edited existing note, or only the `updated:` stamp) = `edited`. Both read as `updated` in the commit message, so they agree. Rejected: counting the move's own note (every move would print `notes +1`), and parsing frontmatter field by field.
 
 ---
 ▸ 2026-10-06T21:54:35Z [sta-1]
+
 Decision: a yak's `staged` (`*`, JSON bool) is true only when every changed path of that yak is staged with nothing pending in the working tree (so a partly staged yak shows unstaged). Rejected: a third "partial" state; `yaks commit` stages everything anyway.
 
 ---
 ▸ 2026-10-06T21:54:35Z [sta-1]
+
 Decision: artifacts are one more token on the yak's own line (`artifacts`, no count), not a separate `artifacts <id>` line, since a yak with several kinds of change gets one line; an artifacts-only yak gets a line `<id>  artifacts`. `config` is config.yaml; any other non-yak farm file shows as its path. JSON adds `private`, `outside_farm` (count) and `message` to the requested keys; `other` is `[{path, staged}]`.
 
 ---
 ▸ 2026-10-06T21:54:35Z [sta-1]
+
 Decision: `--check` exit 1 only on uncommitted farm changes (code outside the farm and a pending merge with a clean farm are exit 0); private farm exits 0 with or without `--check`. In a merge the final line says `yaks commit` will refuse instead of offering the message; the farm lines are still listed.
 
 ---
 ▸ 2026-10-06T21:54:50Z [sta-1]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-06T21:54:59Z [sta-1]
+
 Shorn summary: added `yaks status [--check] [--json]` (src/status.rs) over a new shared `src/changes.rs` (classification extracted from src/commit.rs; `yaks commit` behaviour unchanged, its 8 tests pass untouched apart from the Change struct gaining `staged`). Tests: 21 unit tests in status.rs (clean, created, moved, notes, field edit, updated-stamp-only, removed, artifact, config, staged vs unstaged, several kinds on one line, staged rename, private, merge in progress, code counted not listed, json shape, writes nothing, agreement with the commit message incl. `commit --dry-run` message equality) and 2 binary tests in tests/status.rs (`--check` exit codes 0/1, clean -> dirty -> `yaks commit` -> clean, `--json`). Docs: docs/cli.md, README.md, SKILL.md command table, clap --help. Real run in this checkout: the state before the move is `yaks-b6a9  notes +1` (exit 0; `--check` exit 1); the moved state is attached as artifacts/status-after-move.txt.
 
 ---
 ▸ 2026-10-06T21:54:59Z [sta-1]
+
 moved: shaving -> shorn
 
-![status-after-move](yaks-b6a9/status-after-move.txt)
+[status-after-move](yaks-b6a9/status-after-move.txt)

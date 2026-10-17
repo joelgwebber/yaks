@@ -24,14 +24,16 @@ Evidence: tests for merged+clean, merged+dirty, not merged; a toque frame of the
 
 ---
 ▸ 2026-10-16T20:36:20Z [delta]
+
 moved: hairy -> shaving
 
-![sheds-tab-surveyor](yaks-28dc/sheds-tab-surveyor.txt)
+[sheds-tab-surveyor](yaks-28dc/sheds-tab-surveyor.txt)
 
-![sheds-detail-merged-dirty](yaks-28dc/sheds-detail-merged-dirty.txt)
+[sheds-detail-merged-dirty](yaks-28dc/sheds-detail-merged-dirty.txt)
 
 ---
 ▸ 2026-10-16T20:43:43Z [delta]
+
 Decision: "merged" means the shed's HEAD is an ancestor of the PRIMARY's HEAD (not the viewer's, not the reference ref), so every viewer gets the same answer, and it matches what Joel lands into. It's `null` for the primary or when the primary isn't visible. Text: a `state:` line just above `farm:`:
 - `merged, nothing outstanding` when merged, nothing outstanding in the farm, and a clean tree;
 - otherwise `merged` and/or `uncommitted: N modified, M untracked`;
@@ -41,6 +43,7 @@ JSON adds `merged` (bool|null) and `untracked` (the `??` part of `dirty`). TUI: 
 
 ---
 ▸ 2026-10-16T20:43:43Z [delta]
+
 Evidence. New test `merged_and_uncommitted_say_what_keeps_a_shed`: merged+clean, merged with 1 modified and 1 untracked, not merged+clean, and the primary never merged. Three Sheds-tab insta snapshots gained the `state  uncommitted: N modified` line on their dirty fixture shed (reviewed; that's the only change). Full `cargo test --release`: green.
 
 Real machine, from ~/src/fs/subtext/surveyor, with two scratch worktrees added then removed (HEAD~1 clean, HEAD~3 plus an untracked file):
@@ -53,4 +56,5 @@ Headless TUI frames are attached: the Sheds tab list and the detail pane of the 
 
 ---
 ▸ 2026-10-16T20:43:43Z [delta]
+
 moved: shaving -> shorn

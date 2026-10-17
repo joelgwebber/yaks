@@ -16,4 +16,5 @@ Foundational mutation slice. Give App a Herd handle and a reload() that re-queri
 
 ---
 ▸ 2026-08-21T00:14:33Z
+
 Done. App now holds Option<Herd>; App::with_herd loads the view + reload() re-queries after each mutation and clamps the cursor. Added a pure bottom-line Overlay system (Pick single-key + Confirm y/N) routed before normal keys, reproducing Python pick()/confirm(). Wired S(state h/s/n/x->transition), P(priority 1-5->update), T(type t/b/f/i->update), X(confirm->slaughter to Dead, refuses non-dead children). Each ends with reload + a notification line; same-value picks are no-ops with an "already" message. Design call: X slaughters to Dead (recoverable via revive) rather than Python-TUI hard unlink, matching our git-like recoverability. 51 tests (was 39): overlay-render snapshots + a temp-.yaks live mutation/reload harness. Warning-free.

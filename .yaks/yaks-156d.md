@@ -12,4 +12,5 @@ Cut v0.0.9: the multi-herd farm feature set (one .yaks/ holding several herds) p
 
 ---
 ▸ 2026-09-22T00:37:06Z [agent]
+
 verify: `cargo test --workspace` -> PASS (exit 0)

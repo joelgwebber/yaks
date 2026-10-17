@@ -17,4 +17,5 @@ In edit mode edtui's LineWrapper hard-wraps at character boundaries (splits word
 
 ---
 ▸ 2026-08-25T23:11:59Z
+
 Done: word-aware line wrapping in edtui (branch yaks/word-wrap). Rewrote LineWrapper around one shared wrap_ranges (break at last space that fits; hard-break long words), used by rendering, viewport row-count, mouse mapping, AND the gj/gk motions (unified at integration so cursor nav matches the render). Editor now wraps on word boundaries instead of mid-word. Verified in yaks.

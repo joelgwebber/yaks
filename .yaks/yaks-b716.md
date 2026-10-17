@@ -15,4 +15,5 @@ Follow-up polish to yaks-efa9. In a single-line field in vim Normal mode, j/k do
 
 ---
 ▸ 2026-08-28T04:58:16Z
+
 Implemented. In vim Normal mode, j/k now navigate between fields instead of being no-ops: create/edit form single-line rows (title/labels), filter drawer text rows (labels/search/parent), and the fuzzy picker (j/k move the result selection). A j/k field-nav carries Normal to the destination field so it keeps moving (esp. across the drawers adjacent text rows) rather than dropping back to Insert; Insert-mode j/k still type. Added CreateForm::line_editor and Drawer::text_editor helpers. Tests: drawer_normal_jk_navigates_and_carries_mode, create_form_normal_j_navigates_rows, fuzzy_normal_jk_moves_selection.

@@ -14,4 +14,5 @@ Coordinating the UI batch, the coordinator cannot cheaply eyeball an attached SV
 
 ---
 ▸ 2026-09-11T01:05:15Z [coordinator]
+
 Shorn: resolved as a documented RECIPE, not a 'yaks render' subcommand. Rationale: (1) yaks's hard invariant is a single self-contained binary -- shelling to Chrome breaks it; (2) the pure-Rust alternative (resvg) renders our color emoji as tofu, so a browser engine is needed for fidelity regardless -- rasterization isn't yaks's job. Added a 'Rasterizing an SVG to view it' recipe to docs/tui.md (headless Chrome -> PNG in a gitignored dir; window-size from the SVG header; magick compare for pixel-diffs) + a pointer from AGENTS.md 'Verifying changes'. Bonus: closed a docs->reality gap (AGENTS.md already pointed at a docs/tui.md recipe that did not exist). Deferred (not pursued): a pure-Rust 'yaks render' if emoji-capable rasterization ever lands.

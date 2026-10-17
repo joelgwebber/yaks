@@ -17,4 +17,5 @@ edtui depends on syntect with DEFAULT features, which enable default-onig -> oni
 
 ---
 ▸ 2026-08-25T03:26:31Z
+
 Obviated by yaks-2956: we're dropping edtui's syntect highlighting entirely (coloring both detail + editor with a hand-rolled highlighter via edtui's public state.highlights API), so yaks no longer needs a fancy-regex edtui. Slaughtering. Could still be offered upstream as a courtesy for other edtui users, but that's not yaks work.

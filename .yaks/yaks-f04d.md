@@ -16,12 +16,15 @@ That way we can give them descriptions, which can in turn provide useful context
 
 ---
 ▸ 2026-09-23T21:35:38Z [coordinator]
+
 Shaved as parent of yaks-7cb3 (lightning-round lane 'labels').
 
 ---
 ▸ 2026-09-23T21:45:01Z [lane-labels]
+
 yaks-7cb3 landed label normalization on lane-labels: model::normalize_labels is the shared parser (commas/whitespace split) and doctor's malformed-label check -- a known-labels config can build on is_canonical_label/normalize_labels.
 
 ---
 ▸ 2026-10-12T21:49:45Z [Joel Webber]
+
 moved: shaving -> hairy

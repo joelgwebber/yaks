@@ -16,4 +16,5 @@ Reframe: keep the App-state-derived header / classify as an optional, developer-
 
 ---
 ▸ 2026-08-22T14:58:44Z
+
 Done (simple/literal, no classify): enriched App::state_header into the developer debug facility - now also surfaces rows, blocked=[ids], collapsed count, and filter summary alongside focus/view/cursor/sel/overlay. Validated on the fixture herd (blocked=[fix-0004]). classify / per-cell semantics intentionally deferred; snapshot style output stays literal. Regenerated the headless_session golden snapshot.

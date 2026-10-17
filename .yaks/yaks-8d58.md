@@ -15,4 +15,5 @@ Delete the dual-plane colored-text machinery now that SVG is the visual channel.
 
 ---
 ▸ 2026-09-09T04:54:55Z [agent]
+
 Shorn. Removed toque's text style-encodings: enum StyleEncoding (+parse), DriverOpts.style, encode_body's style branches, spans_layer/style_layer, StyleRegistry/base36/legend/color_name/StyleKey. SnapshotEncoder is now plain-grid only (unit struct + Default). Dropped --style/--style-encoding from 'yaks tui' (src/main.rs). Removed 3 headless.rs style tests + 5 toque lib style tests. cargo test --workspace green (7+235+25+1); clippy clean; 'tui --help' no longer lists style flags.

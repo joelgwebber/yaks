@@ -21,14 +21,17 @@ Evidence (fail first): a v3 fixture migrates to flat with every status preserved
 
 ---
 ▸ 2026-10-12T20:00:39Z [delta-lead]
+
 Amended by D10 (see yaks-8b7a): migrate also moves `.yaks/artifacts/<id>/` to `.yaks/<id>/` and rewrites every `](<id>/` link in every body to `](<id>/`, then removes the emptied `artifacts/`. This worker also owns converting the artifact code paths to phase 1's helper: src/farm.rs (attach, rename_attachment, merge's artifact copy, rename/rename_many's artifact dir move), src/preflight.rs (untracked-attachment check), src/tui/handlers.rs and src/tui/editor.rs (link resolution, rename), and the `attach`/`rename-attachment` docs rows. The migrate command is transitional (phase 4 deletes it): keep it in one place.
 
 ---
 ▸ 2026-10-12T20:20:37Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-12T20:20:38Z [delta-lead]
+
 Claim (coordinator). Owner: mig-1. Spec: the description, the amendment note on this yak, and yaks-8b7a's plan (D5, D8, D10) and amendments.
 You own: src/farm.rs (`Farm::migrate`; doctor; attach, rename_attachment, merge's artifact copy, rename/rename_many moving `<old>/` to `<new>/`; the merge source may be either layout), src/preflight.rs (the both-layouts check replacing "two status dirs"; the untracked-attachment check for `.yaks/<id>/`), src/main.rs (ONE new `Command::Migrate` variant, its dispatch, and the `--help` text of `migrate`/`init`/`doctor`/`preflight`/`attach`/`rename-attachment`), src/tui/handlers.rs and src/tui/editor.rs (attachment links are now `<id>/<file>`, resolved from the farm root), and the docs rows for exactly those commands in docs/cli.md and README.md, plus AGENTS.md's first invariant.
 Migrate details: under `store::lock_for_migration`; refuse, listing ids, when any id is in both layouts; per old-layout file write `<id>.md` with `status:` (reuse `store::write::save` on the parsed task, status from its directory) then remove the old file; move `artifacts/<id>/` to `<id>/` and rewrite every `](<id>/` in EVERY yak's body to `](<id>/`; remove emptied status dirs and an emptied `artifacts/` (never a non-empty dir); write `schema` 4 last; print `migrated N yaks (M attachment dirs) to the flat layout; commit with: git add -A .yaks && git commit -m "yaks: migrate the farm to the flat layout"`. `--dry-run` prints the plan and writes nothing; on a flat farm, "already flat". A private/pointer farm works the same (no git involved).
@@ -43,15 +46,18 @@ Evidence (fail first): a v3 fixture (status dirs, two attachments, a body linkin
 
 ---
 ▸ 2026-10-12T20:23:54Z [mig-2]
+
 mig-2 started (replaces mig-1). date -u: Mon Oct 12 20:23:48 UTC 2026
 yaks path yaks-86f4: /Users/joel/src/yaks/.delta/worktrees/n5p2egqfm27v/yaks/.yaks/shaving/yaks-86f4.md
 
 ---
 ▸ 2026-10-12T20:51:40Z [mig-2]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-12T20:52:47Z [mig-2]
+
 Decision: `Farm::migrate` and its helpers (`rewrite_artifact_links`, `MigratePlan`, `MigrateOutcome`, `tracked_by_git`) live in one marked section of src/farm.rs ("yaks migrate (transitional: yaks-bbda deletes this section)"). Rejected: a new src/migrate.rs (not in my file scope; the claim names farm.rs).
 Decision: link rewrite only touches `](<seg>/` where `<seg>` is followed by `/` (a link into a yak dir). Prose such as "artifacts/ in general", `[x](artifacts/)` and bare `artifacts/yak-1/a.png` mentions outside a markdown link are left alone. Rejected: a blanket `artifacts/` replace (would corrupt prose); also rejected rewriting bare path mentions (not links, and the claim says `](<id>/`).
 Decision: refusal covers three cases, all listing ids and writing nothing: id in both layouts, id in two old status dirs, and an existing `.yaks/<id>/` that `artifacts/<id>/` would land on. Rejected: merging into an existing dir (silent clobber risk).
@@ -70,4 +76,5 @@ Gate: `cargo test --release`: 16 suites, 662 passed, 0 failed, 4 ignored (the sa
 
 ---
 ▸ 2026-10-12T20:52:47Z [mig-2]
+
 moved: shaving -> shorn

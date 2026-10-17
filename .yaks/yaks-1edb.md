@@ -15,4 +15,5 @@ eb66 changed the note marker line to '▸ <ts> [actor]', but the TUI has its OWN
 
 ---
 ▸ 2026-09-03T18:25:09Z [coordinator]
+
 BUILT. Shared the marker primitives from store (note_head(ts,actor) formats '<ts> [actor]'; split_note_head now pub) so the log writer and the TUI comment (re)assembly can't drift. content.rs BlockKind::Comment gains actor: Option<String>, parsed via store::split_note_head and re-emitted via store::note_head; render_block_separator shows 'comment · <date> · <actor>'. Fixes the latent bug where the actor was glued into the timestamp string (invisible + fragile on edit). Test parses_and_round_trips_the_actor_stamp (parse + byte-identical assemble). 209 tests green. Unblocks yaks-ffa5 (auto-attributed TUI comments) and yaks-548b.

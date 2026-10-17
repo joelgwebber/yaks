@@ -15,10 +15,12 @@ Live incident during b1cc/5: the serial-arc checkpoint (git merge --squash <bran
 
 ---
 ▸ 2026-09-13T21:18:58Z [coordinator]
+
 RECURRED at b1cc/8 (worse): the 'git add <list>' where one pathspec did NOT exist (.yaks/shaving/yaks-20f9.md, a transient state) made git add ABORT and stage NOTHING (same root cause as the 6c93 slip) -- so the branch commit captured only the PREVIOUSLY-staged snapshot renames, silently dropping the code edits (tui.rs slim, runtime.rs, tests.rs, AGENTS.md). The reset --hard then reverted tui.rs and left main BROKEN (snaps moved, tests still inline). Recovered because untracked files (runtime.rs/tests.rs/shorn/*) survive reset --hard. SHARPER LESSONS: (1) never 'git add' a list that may contain a non-existent path -- it aborts the whole add; add only paths you've confirmed exist, or add per-file. (2) GATE on COMMIT CONTENTS, not just 'HEAD moved' -- verify 'git show --stat' includes every expected file before reset --hard. (3) prefer 'yaks shorn' then stage via 'git add -A -- .yaks/<id>*' patterns that match the actual move, not hardcoded shaving/ paths.
 
 ---
 ▸ 2026-10-05T22:43:55Z [delta-lead]
+
 The asks of this yak are covered by shipped rules and tools; shearing it (coordinator delta-lead, 2026-10-05). The broader thinking you asked for is recorded on yaks-5f12.
 
 Rules, in `.agents/skills/yaks-coordinating-team/SKILL.md`:
@@ -33,4 +35,5 @@ Tools:
 
 ---
 ▸ 2026-10-05T22:43:55Z [delta-lead]
+
 moved: hairy -> shorn

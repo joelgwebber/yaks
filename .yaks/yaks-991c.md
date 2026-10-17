@@ -5,10 +5,11 @@ status: hairy
 type: task
 priority: 2
 created: '2026-10-16T20:08:27Z'
-updated: '2026-10-16T20:09:48Z'
+updated: '2026-10-17T13:28:27Z'
 labels:
 - cli
 - agent
+- sheds
 ---
 
 As I'm working with many concurrent sheds, and dropping answers and feedback into the main checkout's yaks, it's putting a lot of burden on the coordinator and workers to figure out where to find the most recent changes to any given yak. This is compounded when I (constantly) forget to commit them.
@@ -19,4 +20,5 @@ Done well, this should also make it much easier for agents to coordinate implici
 
 ---
 ▸ 2026-10-16T20:09:48Z [Joel Webber]
+
 This also relates to yaks-5cea. Hopefully we can unify the CLI/TUI/lib implementations in such a way that these things Just Work.

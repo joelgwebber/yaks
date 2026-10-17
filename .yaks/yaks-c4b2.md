@@ -33,12 +33,15 @@ Updates needed:
 
 ---
 ▸ 2026-09-02T23:28:43Z
+
 Docs: extended skills/yak/SKILL.md local-vs-team section to add the three private-hiding methods (root .gitignore; .yaks/.gitignore='*' non-nested only; .git/info/exclude; global core.excludesFile), the local-only-across-machines nested-repo pattern (own .git on a private remote, hidden via .git/info/exclude, pull-before/push-after), and the 'git clean -fdx' footgun. README.md: added a 'Public and private herds' section covering public/team, private/local-only, and multi-machine sync, plus the clean -x heads-up.
 
 ---
 ▸ 2026-09-02T23:28:43Z
+
 Follow-up (CLI, not done here — src/ owned by a parallel worker): add an optional 'yaks sync' wrapper (pull/commit/push the herd repo), tie into 'yaks init' (yaks-7511) to offer local/team/private setup, and 'yaks path' (yaks-aa49) to locate the herd. Herd-location override (YAKS_DIR/--herd, ex yaks-d4e7) stays deferred — not needed for private-multi-machine.
 
 ---
 ▸ 2026-09-02T23:28:50Z
+
 Shorn summary: docs portion of the consensus is rendered. Files changed: skills/yak/SKILL.md (modes/hiding/footgun) and README.md (new 'Public and private herds' section). All three modes and the per-case hiding method are documented; the clean -x footgun and the 'not shared across worktrees/clones' caveat are called out in both. No new design decisions — prose translation of the yak body only. CLI work left as the follow-up note above. src/ untouched (parallel worker owns it).

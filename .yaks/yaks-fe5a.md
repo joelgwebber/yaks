@@ -15,4 +15,5 @@ From pstack's 'eval' playbook: 'test how a skill or prompt change affects agent 
 
 ---
 ▸ 2026-09-08T23:12:05Z [coordinator]
+
 Assessment (pre-compact): fe5a is the meta-eval capstone — use yaks to measure whether a skill/prompt change actually improves agent behavior, blinded. Two shifts since it was filed: (1) we now have most of the MEASUREMENT substrate already — log --since/--by (per-actor activity trail), commits (what landed), verify (recorded PASS/FAIL), doctor --strict (mechanized gate), attribution — so a blinded A/B can be measured largely with existing tools, shrinking 70e5's necessity. (2) The hard part is NOT a tool: it's a curated TASK SET (a benchmark of representative yaks) to run variant-A vs variant-B against, plus real blinding (the agent under test mustn't know which variant). Recommendation: keep fe5a a methodology/skill, not a rush; pick it up when there's a concrete skill change worth A/B-ing rigorously. 70e5 is its instrumentation, still gated.

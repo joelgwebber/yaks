@@ -20,6 +20,7 @@ Out of scope: badges on yak rows, a Sheds section in the yak detail, the merged 
 
 ---
 ▸ 2026-10-12T23:59:17Z [delta-lead]
+
 Design proposal (delta-lead, 2026-10-12), grounded in the code; to confirm with Joel before any code.
 
 ## Where it lives
@@ -73,12 +74,14 @@ Measured today in this checkout (release build, 10 sheds, 53 orphaned pins): `ya
 
 ---
 ▸ 2026-10-12T23:59:17Z [delta-lead]
+
 asked: needs human
 
 Confirm the Sheds tab design in the note above, or adjust: the six numbered questions at its end (each has a recommended answer). Also: OK to run yaks-07fe (profile the scan) and yaks-8814 (superseded needs) as two Sonnet workers in parallel while I build the tab here?
 
 ---
 ▸ 2026-10-13T00:08:38Z [Joel Webber]
+
 Answers:
 1. Tab count - outstanding sheds
 2. Order - attention first
@@ -89,50 +92,60 @@ Answers:
 
 ---
 ▸ 2026-10-13T00:08:41Z [Joel Webber]
+
 Answered above.
 
 ---
 ▸ 2026-10-13T00:11:39Z [delta-lead]
+
 picked up
 
 Picked up by delta-lead (yakherd, this thread): building the tab here to the design note with Joel's six answers (all as recommended; garbage sheds dimmed, filtering/removal later).
 
 ---
 ▸ 2026-10-13T00:11:39Z [delta-lead]
+
 moved: hairy -> shaving
 
 ![tui-sheds](yaks-98f1/tui-sheds.png)
 
 ---
 ▸ 2026-10-13T00:28:18Z [delta-lead]
+
 Rendered frame (docshots fixture, rasterized with headless Chrome): the shed list.
 
 ![tui-sheds-detail](yaks-98f1/tui-sheds-detail.png)
 
 ---
 ▸ 2026-10-13T00:28:18Z [delta-lead]
+
 Rendered frame: a shed's changes in the detail, with the ask's question under its note.
 
-![real-machine-headless](yaks-98f1/real-machine-headless.txt)
+[real-machine-headless](yaks-98f1/real-machine-headless.txt)
 
 ---
 ▸ 2026-10-13T00:28:19Z [delta-lead]
+
 Real machine: yaks tui --headless on this repo (Recent, the Sheds tab, the needs-1 shed's detail).
 
 ---
 ▸ 2026-10-13T00:28:42Z [delta-lead]
+
 Decision: the tab is a built-in VIEW (key `sheds`, pinned, last), not a new top-level mode. `rows()` is empty there, so every yak key finds no selection, and `handle_key` routes the tab's keys to `handle_sheds_key` before the yak match, so S/E/X/… cannot reach a yak from the tab (tested). Rejected: a separate `Focus::Sheds` mode (a third pane state every handler would have to know about) and branching each yak handler on the tab.
 
 ---
 ▸ 2026-10-13T00:28:42Z [delta-lead]
+
 Decision: one scan = `sheds::discover` + `sheds::changes` for every shed with its own farm + `orphaned_pins`, run on a short-lived thread per scan, delivered as one `Snapshot` over mpsc. The live loop calls `settle_sheds(false)` each tick (non-blocking); toque's `settle` calls `settle_sheds(true)` so a headless frame is the settled one. `changes` for every shed (not on demand for the selected one) so moving between sheds is instant; it costs a little more per scan, which yaks-07fe can trim. The scan age is a field refreshed by `settle`, so `render` stays pure and tests freeze it. Rejected: a long-lived worker thread (no state to keep), computing `changes` lazily per selection (staleness and a second request type).
 
 ---
 ▸ 2026-10-13T00:28:42Z [delta-lead]
+
 Decision: an ask's note shows its question (up to 6 lines) under the note's first line in the shed detail, because the `a` key answers it there; `yaks changes` shows only the first line (`asked: needs human`). Not changed in the CLI (out of scope; `inbox --sheds` already shows the question there).
 
 ---
 ▸ 2026-10-13T00:28:42Z [delta-lead]
+
 Done (delta-lead). The Sheds tab, to the design note with Joel's six answers.
 
 What shipped:
@@ -153,4 +166,5 @@ Follow-ups not done: mouse on the tab (clicks and wheel do nothing there; tab cl
 
 ---
 ▸ 2026-10-13T00:28:42Z [delta-lead]
+
 moved: shaving -> shorn

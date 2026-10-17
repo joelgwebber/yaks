@@ -22,17 +22,20 @@ Adjacent: yak-6f33 (carry search context globally) and yak-2d13 (shorn predecess
 
 ---
 ▸ 2026-09-23T16:57:17Z [Joel Webber]
+
 Bonus points: I find it annoying when I i/o my way in and out of a stack, and lose my list context in the process.
 It's definitely helpful that moving up and down the stack makes a point to find the yak in *some* list, but it would be even better if that list context were part of the actual stack, so it brings me back reliably to where I was previously.
 
-![158d-design](yaks-158d/158d-design.md)
+[158d-design](yaks-158d/158d-design.md)
 
 ---
 ▸ 2026-09-23T21:39:42Z [design-scout]
+
 Design proposal attached
 
 ---
 ▸ 2026-09-23T21:39:42Z [design-scout]
+
 Design attached (158d-design.md). Root cause: every jump goes through select_task -> set_view(status view), which resets filter + cursor; entries only hold ids. Proposal: NavEntry = {view_key, live filter, cursor id/idx, list offset, focus, 28b4 detail pos}, snapshot on departure. Decisions:
 1) What pushes? Lean: jumps only (link follow, view switch, programmatic goto). Filter/search commits and entering/leaving detail update the current entry in place and don't push.
 2) Link follow to a yak outside the current list: lean: stay in the current list if the target is in it, else switch to its status view as today (now undoable with o). Also fixes a bug: following a link to a dead yak shows the previous yak.

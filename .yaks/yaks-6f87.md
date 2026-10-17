@@ -16,4 +16,5 @@ Frame-diff (9f43) re-emits many lines on navigation because spans/parallel style
 
 ---
 ▸ 2026-08-22T14:58:44Z
+
 Done: persistent StyleRegistry on the headless Driver assigns stable base36 ids across frames (append-only). Legend lists only ids used in the current frame. Navigation under a style encoding now diffs to just the affected rows (+ the legend only when the used-style set changes) instead of cascading the whole screen. Unit tests: id stability + compact spans diff.

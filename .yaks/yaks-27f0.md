@@ -15,4 +15,5 @@ Establish + document (in yaks-working AND yaks-coordinating) the practice of run
 
 ---
 ▸ 2026-09-11T01:51:09Z [coordinator]
+
 Shorn: documented the provenance-asking practice in yaks-working ('Ask to record a judgment call, not only when you're stuck') + a HITL cross-ref in yaks-coordinating. First enacted live on yaks-2301 (phase-5) and yaks-b1cc (cadence) -- those answer threads ARE the provenance.

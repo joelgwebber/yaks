@@ -16,4 +16,5 @@ Phase 2 slice 1. yaks tui subcommand; ratatui + crossterm; terminal init/restore
 
 ---
 ▸ 2026-08-20T23:00:46Z
+
 Done. yaks tui subcommand + tui module (ratatui 0.30 + crossterm). Terminal init/restore + panic hook + kitty DISAMBIGUATE flags when supported. Pure render(&App,&mut Frame): two-pane list+detail, status tabs (Hairy/Shaving/Shorn) with counts, focus-aware help; j/k/g/G nav, Tab/[ ] tab switch, l/Enter focus detail, h/Esc back, q/Ctrl-C quit. Read-only over herd.list. Backend-agnostic render -> 2 TestBackend+insta snapshot tests (37 total), warning-free. Live interactive run not automatable here (needs a real tty); snapshots cover render + focus. Next: tree+collapse, then mutations via Herd.

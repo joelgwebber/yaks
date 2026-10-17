@@ -23,20 +23,25 @@ Evidence: tests with temp repos: a lane that is only behind (no farm lines, `-N`
 
 ---
 ▸ 2026-10-04T21:00:51Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-04T21:00:51Z [delta-lead]
+
 Claim (coordinator delta-lead). Owner: worker lanes-2. Scope: src/lanes.rs, the lanes row in docs/cli.md, README.md, .agents/skills/yaks/SKILL.md, the Lanes help in src/main.rs; nothing else. Judge: coordinator re-runs 'cargo test -p yaks' and 'yaks lanes' in my checkout on this thread (stale lanes must show no phantom moves). Forbidden: writes in other checkouts, TUI, discovery rules, coordination skills.
 
 ---
 ▸ 2026-10-04T21:01:30Z [lanes-2]
+
 Start 2026-10-04T21:01:03Z (date -u: Sun Oct 4 09:01:03 PM UTC 2026). ls .yaks/*/yaks-d738.md -> .yaks/shaving/yaks-d738.md. Built release binary; HEAD 04d7114.
 
 ---
 ▸ 2026-10-04T21:04:11Z [lanes-2]
+
 Done. src/lanes.rs: base_farm() = merge-base (git merge-base HEAD <lane HEAD> in our repo) -> ls-tree -r -z + one cat-file --batch (stdin from a file) into a TempDir (removed on drop) -> store::load -> compare_farms(base, lane tree). Fallback (no merge-base / no committed farm at base / farm outside lane checkout) = old compare vs this checkout, labelled '(vs this checkout)'; JSON farm.vs + farm.base. Lane gets behind + farm_base; table column '+AHEAD -BEHIND' shows '+N -M'; empty delta reads 'no changes of its own'. New tests (fail with base_farm disabled): a_lane_that_is_only_behind_has_no_farm_changes_of_its_own, a_lane_behind_with_its_own_changes_shows_only_its_own (committed + uncommitted own changes, ours-only moves not shown), no_merge_base_falls_back_to_this_checkout_and_says_so, base_temp_dir_is_removed_when_dropped; read-only test still passes. cargo test -p yaks green (382+8+28). Real run in own checkout: stale lanes 3d4g/kb36 no phantom 7149/8265 moves (kb36 'no changes of its own'; 3d4g shows its real f49c move+note, confirmed by git show 6345ab0); t36m shows its real e545 move. Docs: cli.md, README, SKILL.md, --help updated. Finished 2026-10-04T21:04:11Z.
 
 ---
 ▸ 2026-10-04T21:04:11Z [lanes-2]
+
 moved: shaving -> shorn

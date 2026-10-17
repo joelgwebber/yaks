@@ -13,6 +13,7 @@ Maybe it's just a skill thing, but it would be nice if there were a way for an a
 
 ---
 ▸ 2026-10-05T22:44:10Z [delta-lead]
+
 Relationship to yaks-c061, and when to do it (coordinator delta-lead, 2026-10-05; Joel asked whether they are redundant and whether to do them sooner).
 
 ## Not redundant, but ordered: c061 first

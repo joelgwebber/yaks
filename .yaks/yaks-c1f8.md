@@ -16,10 +16,12 @@ Joel, 2026-10-13: the Sheds tab's detail mirrors `yaks changes` and lists every 
 
 ---
 ▸ 2026-10-13T19:46:42Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-13T19:46:42Z [delta-lead]
+
 Claim (delta-lead, yakherd): owner fold-1 (Sonnet worker). Parallel with changes-1 (the CLI half, src/sheds.rs render + src/main.rs).
 
 Design (delta-lead, within Joel's ask; say so in a Decision note if something does not hold up):
@@ -35,12 +37,14 @@ Evidence (fail first): tests that (i) outstanding blocks come first and one `▸
 
 ---
 ▸ 2026-10-13T19:48:26Z [fold-1]
+
 Start: Tue Oct 13 19:47:53 UTC 2026 (worker fold-1)
 yaks path yaks-c1f8: /Users/joel/src/yaks/.delta/worktrees/p76ng8mfcj6a/yaks/.yaks/yaks-c1f8.md
 Plan: `ShedsTab.line` becomes an index into the detail's *stops*: outstanding yaks, then one fold stop (if any landed), then the landed yaks when `landed_open`. Tests first (frames of a perf-1 variant with landed yaks), seen failing, then the implementation.
 
 ---
 ▸ 2026-10-13T19:50:40Z [fold-1]
+
 Failing first (the cursor model was in place, render still the old one): `cargo test --release sheds_tab` -> 24 passed, 4 failed: outstanding_yaks_lead_and_one_line_folds_the_landed_ones, enter_on_the_fold_line_expands_and_collapses, a_shed_with_nothing_landed_has_no_fold_line, landed_fold_frames (new snapshots). Old frame of perf-1 with two landed yaks:
 ```
 │ Changes (3 yaks)
@@ -52,6 +56,7 @@ Failing first (the cursor model was in place, render still the old one): `cargo 
 
 ---
 ▸ 2026-10-13T20:00:52Z [fold-1]
+
 Real machine (my own release binary, `yaks tui --headless --size 150x30` from my checkout; keys: `[` to the Sheds tab, `j j j` to sheds-tui-thin-sheds-tab (14 landed yaks), `l`, `j` to the fold line, then `Enter`). Detail pane only (left list trimmed); frame 1 collapsed (cursor on the fold line, `shed_yak=-`), frame 2 after Enter, expanded, first lines:
 
 ```
@@ -120,6 +125,7 @@ h:list  j/k:yak  J/K:shed  Enter:open yak  a:answer  y:copy id  r:rescan  ?:help
 
 ---
 ▸ 2026-10-13T20:01:09Z [fold-1]
+
 Decision: the fold line joins the cursor model as a *stop*, not a separate cursor. `ShedsTab.line` is now an index into `detail_stops` (`Vec<Option<&YakChange>>`: outstanding yaks, then one `None` = the fold line when any yak landed, then the landed yaks when open). `selected_shed_yak` returns `None` on the fold line, so `a`, `y` (falls back to the shed path, as outside the detail) and Enter-open need no special case, and `j/k/g/G/d/u` clamp over the stops unchanged. Rejected: a second `fold_selected: bool` beside `line` (two cursors, every move/clamp/render path has to reconcile them) and making the fold a synthetic `YakChange` (would leak a fake yak into `a`/`y`/Enter).
 Decision: `landed_open` is one bool on `ShedsTab` (per App, not per shed, not persisted, as the claim said). Rejected per-shed state (a map keyed by shed path that has to survive rescans and drop gone sheds, for a view toggle). J/K to another shed keeps the flag.
 Decision: Enter on the fold line toggles and leaves the cursor on the fold line (the landed yaks are below it); Enter on any yak, outstanding or landed, still opens it. A collapse while the cursor is on a landed yak cannot happen from the keyboard (Enter there opens the yak), but a rescan that lands the selected yak while folded drops the cursor onto the fold line (`apply_sheds_snapshot`: by id if still a stop, else the fold line when the id is a landed yak, else 0). `on_fold` is remembered across a rescan too.
@@ -131,8 +137,10 @@ Summary: Sheds tab detail leads with outstanding yaks, folds landed ones behind 
 
 ---
 ▸ 2026-10-13T20:04:57Z [fold-1]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-13T20:05:05Z [fold-1]
+
 moved: shaving -> shorn

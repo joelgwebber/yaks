@@ -16,4 +16,5 @@ Core tension: Esc currently cancels the whole edit, which defeats modal (Normal-
 
 ---
 ▸ 2026-08-27T16:46:25Z
+
 All children shorn: a031 (double-Esc==Ctrl-C), 2e80 (modal single-line fields), 921a (Normal-mode default for seeded content), 275f (confirm-before-discard), fe4f (:w/:q/:wq command line). Shipped in v0.0.3.

@@ -17,10 +17,12 @@ Joel (2026-10-10): `yaks sheds` omits the shed you are in, so you cannot see whe
 
 ---
 ▸ 2026-10-10T19:05:06Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-10T19:05:06Z [delta-lead]
+
 Claim (coordinator). Owner: here-1. Binding: the 2026-10-10 Decisions on yaks-ee0a (read them: 1, 2, 3, 4, 7), and yaks-e9bb (landed, f03a81c: one fork-point baseline per shed from every viewer).
 Why now: after yaks-e9bb the PRIMARY's row, seen from a clone, is measured from the first entry of the primary's own reflog and shows 154 new yaks, 23 moved, 172 notes (real machine, 2026-10-10). That is noise until the primary has its own baseline.
 
@@ -35,24 +37,28 @@ Evidence (tests FAIL first): from three viewers (primary, a sibling git worktree
 
 ---
 ▸ 2026-10-10T19:05:31Z [here-1]
+
 Start Sat Oct 10 19:05:30 UTC 2026. yaks path: /Users/joel/src/yaks/.delta/worktrees/qt7v225tzxq0/yaks/.yaks/shaving/yaks-ad6d.md
 
 ---
 ▸ 2026-10-10T19:18:57Z [here-1]
+
 Progress 1: read the code. Implemented (src/sheds.rs, farm.rs, main.rs): discover lists every checkout (checkout_paths; shed_paths still = others, used by discover.rs), Shed.current, BaseKind::Origin + origin_base for the primary, resolve main error, render '*'/(here), JSON current, changes [SHED] optional, answer <id>@<current> = plain answer, --shed <current> no-op, Farm::other_sheds for inbox/show --sheds. Next: fix old tests, add fail-first tests, docs.
 
 ---
 ▸ 2026-10-10T19:23:01Z [here-1]
+
 Fail-first evidence: with discover reverted to the old 'exclude the viewer' (shed_paths) and the primary origin base disabled, the 5 new/updated unit tests fail: every_viewer_lists_every_checkout_and_marks_only_itself (left != right: only 'delta' row listed from the clone, no current row), every_selector_accepts_the_current_shed_and_main_is_the_primary_from_the_primary (Err: `main` is the primary checkout, and it is not visible from here), the_primary_is_measured_from_origin_main_whoever_looks (primary row None / no base), the_primary_falls_back_to_origin_heads_target_then_to_its_fork_point, resolve_by_path_dir_branch_actor_main_and_substring. 50 passed; 5 failed. With the fix: sheds:: 55 passed.
 
-![yaks-ad6d-sheds-old](yaks-ad6d/yaks-ad6d-sheds-old.txt)
+[yaks-ad6d-sheds-old](yaks-ad6d/yaks-ad6d-sheds-old.txt)
 
-![yaks-ad6d-sheds-new](yaks-ad6d/yaks-ad6d-sheds-new.txt)
+[yaks-ad6d-sheds-new](yaks-ad6d/yaks-ad6d-sheds-new.txt)
 
-![yaks-ad6d-sheds-new](yaks-ad6d/yaks-ad6d-sheds-new.json)
+[yaks-ad6d-sheds-new](yaks-ad6d/yaks-ad6d-sheds-new.json)
 
 ---
 ▸ 2026-10-10T19:37:20Z [here-1]
+
 Real machine (old = PATH yaks 0.0.14, new = ./target/release/yaks; `sheds` run read-only in this clone; attached above as yaks-ad6d-sheds-old.txt / -new.txt / -new.json). Old: the primary row, seen from this clone after yaks-e9bb, was measured from its own first reflog entry (154 new / 23 moved / 172 notes). New: the primary row is `vs origin/main` (refs/remotes/origin/main = dc9da87): `6 new, 2 moved, 35 new notes`, i.e. what the primary has not pushed (its HEAD is 4+ commits ahead of the clone's fork, plus a working tree). This clone is now the `*` row with `(here)`, measured from its fork like any other; JSON has exactly one `current: true`. Its `+0 -0` is by construction (own HEAD against itself).
 
 Audit of every farm.sheds(...) caller (src/main.rs, src/farm.rs):
@@ -68,6 +74,7 @@ Audit of every farm.sheds(...) caller (src/main.rs, src/farm.rs):
 
 ---
 ▸ 2026-10-10T19:37:20Z [here-1]
+
 Decision: the primary's baseline is refs/remotes/origin/main, else the target of refs/remotes/origin/HEAD; with no usable ref it falls back to the fork point and says so: text ` (vs fork)` (only for the primary), JSON farm.vs "fork". New farm.vs value "origin", text ` (vs origin/main)`. Rejected: (a) a bare `origin/main` rev lookup (it also matches a LOCAL branch of that name; the full refs/remotes path cannot be fooled); (b) silently using the fork point for a primary with no origin ref (the number would pass for "unpublished"; it is the flood we are fixing); (c) merge-base / `this checkout` fallback (viewer-relative).
 Decision: the primary is measured from origin from EVERY viewer (found.primary), not only when the viewer is the primary. Rejected: viewer-only (that is the cwd-dependence Decision 1 forbids).
 Decision: `yaks changes` uses the same marker rule (Changes gets a `primary` field to say `(vs fork)` vs the plain unmarked fork case); changes --json vs/base follow farm.vs (so "origin").
@@ -80,17 +87,21 @@ Decision: in the unit tests `sheds_of` now means "the OTHER checkouts" (filters 
 
 ---
 ▸ 2026-10-10T19:40:38Z [here-1]
+
 Docs parity: grepped "OTHER checkouts|other checkouts|other sheds|No other checkouts|(or not visible" across docs/, README.md, .agents/skills/yaks, .agents/skills/yaks-tracker and src/. Every remaining hit is deliberately "elsewhere" (show/inbox --sheds, `yaks discover`, "read-only in the other checkouts", the "No open asks in other sheds." line); the sheds/changes/answer/--shed wording in docs/cli.md, README.md, .agents/skills/yaks/SKILL.md and the Sheds/Changes/Show/Answer/--shed clap help in src/main.rs now says: every checkout listed, current marked (* / (here) / JSON current), changes [SHED] defaults to the current shed, main = primary whether or not current, primary measured vs origin/main (else vs fork), no-op for naming your own shed. Real binary check (this clone): `changes` == `changes <own name>` == `--shed <own name> changes` (byte-identical); `changes main` = the primary (vs origin/main); `show --sheds`/`inbox --sheds` do not list this clone. Pre-existing unrelated warning: unused mut in src/tui/docshots.rs:259 (untouched).
 Summary: yaks sheds lists every checkout with the viewer marked; the primary is measured from origin/main from every viewer; every selector accepts the current shed (changes with no argument, --shed, answer <id>@<current>, main); show/inbox --sheds still exclude the viewer. Tests: 5 new/rewritten unit tests + 3 CLI tests fail-first then pass; full `cargo test --release` all suites ok after the last code edit.
 
 ---
 ▸ 2026-10-10T19:41:13Z [here-1]
+
 verify: `cargo test --release` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-10T19:41:37Z [here-1]
+
 Correction to the summary above: of the 3 new CLI tests in tests/changes.rs, 2 fail on the old src/ (no_argument_means_the_current_shed_and_every_selector_accepts_it: left 0 right 1 current row; answering_names_a_shed_and_the_current_one_is_a_plain_answer: no current row, Option::unwrap on None) and pass now; inbox_and_show_sheds_still_mean_the_other_sheds is a regression guard that passes before and after, by design (show/inbox --sheds must keep excluding the viewer). Checked by stashing src/ and running `cargo test --release --test changes`.
 
 ---
 ▸ 2026-10-10T19:43:03Z [here-1]
+
 moved: shaving -> shorn

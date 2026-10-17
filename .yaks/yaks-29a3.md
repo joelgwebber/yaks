@@ -15,4 +15,5 @@ yaks-031d preserves unmodeled frontmatter (Task.extra) on round-trip but nothing
 
 ---
 ▸ 2026-09-03T20:06:12Z [wt-cli]
+
 Done. render_show (src/main.rs) now prints an 'Other fields:' section listing task.extra verbatim after needs/source, before body; json::task_value (src/json.rs) emits an 'extra' array when non-empty (omitted when empty, so goldens unchanged). Read-only, not an editor. Verified on a throwaway with hand-added 'wat: foo': text show renders 'Other fields:\n  wat: foo'; show --json emits "extra": ["wat: foo"]. Unit tests task_value_surfaces_extra_when_present + task_value_omits_extra_when_empty pass; full suite 214 unit + 20 cli green.

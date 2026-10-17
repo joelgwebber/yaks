@@ -14,4 +14,5 @@ The filter drawer STATUS_CHOICES includes Dead, but App.all is always loaded via
 
 ---
 ▸ 2026-08-28T04:28:30Z
+
 Implemented (Option B: make Dead reachable). App.all now loads every status (herd.list include_dead=true) in with_herd + both reload paths, so dead lives in the model. Effects: a dep on a slaughtered yak now resolves (previously it falsely showed blocked); the ancestor walk can root a live yak beneath a dead parent; selecting Dead in the filter drawer surfaces slaughtered yaks. Flat views (Recent/custom) guard against leaking dead unless the live filter requests Dead; tree anchors already exclude Dead by default and remaining prunes dead-only subtrees. Tests: slaughter_confirm_moves_to_dead updated (dead persists in the model but is hidden), plus new dead_is_loaded_but_hidden_until_filtered.

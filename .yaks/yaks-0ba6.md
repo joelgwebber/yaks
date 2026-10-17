@@ -12,4 +12,5 @@ Cut v0.0.10 to deliver the yaks-1d51 skill-management family. The version bump i
 
 ---
 ▸ 2026-09-23T04:47:20Z [agent]
+
 verify: `cargo test --workspace` -> PASS (exit 0)

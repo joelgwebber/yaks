@@ -14,4 +14,5 @@ In the edit/create form, the description field wraps correctly when focused (edt
 
 ---
 ▸ 2026-08-26T02:42:25Z
+
 Fixed: the unfocused description preview in render_create used a plain Paragraph with no .wrap(), so long lines truncated at the pane edge. Added .wrap(Wrap { trim: false }) (trim:false preserves leading indentation) so the dimmed preview soft-wraps like the focused editor and detail view. Added regression test unfocused_description_preview_wraps.

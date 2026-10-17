@@ -14,4 +14,5 @@ Cut v0.0.7. Since v0.0.6 (which lacked them) this ships: yaks verify + Task.veri
 
 ---
 ▸ 2026-09-09T01:00:11Z [coordinator]
+
 Verified: 'cargo build --release' compiles as yaks v0.0.7; 'cargo test --workspace' ALL_GREEN (238 unit + 25 cli + 13 toque + 1 doctest, 0 failed). Version lockstep set — Cargo.toml + npm/yaks/package.json = 0.0.7, matching tag v0.0.7; Cargo.lock refreshed by the release build.

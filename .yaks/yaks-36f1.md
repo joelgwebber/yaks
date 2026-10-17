@@ -14,4 +14,5 @@ npm publish --dry-run warns it auto-corrects repository from a string to an obje
 
 ---
 ▸ 2026-08-23T05:00:29Z
+
 Done. npm/yaks/package.json + npm/platform-template/package.json now use the object repository form; re-ran build-npm + dry-run, warning gone, mapping test still passes. dist/ and artifacts/ are gitignored.

@@ -18,20 +18,24 @@ Evidence: round-trip tests for the flat layout; a v3 fixture still loads read-on
 
 ---
 ▸ 2026-10-12T20:00:38Z [delta-lead]
+
 Amended by D10 and the transitional D4 (see yaks-8b7a): also add the one artifact-path helper everyone calls (`store::artifact_dir(root, id)` = `<root>/<id>/`, plus a predicate for 'is this repo path an attachment') so phase-2 workers convert their call sites to it; the dual read is transitional and must stay isolated (one function) so phase 4 can delete it.
 
 ---
 ▸ 2026-10-12T20:00:47Z [delta-lead]
+
 moved: hairy -> shaving
 
-![phase1-real-machine](yaks-95be/phase1-real-machine.txt)
+[phase1-real-machine](yaks-95be/phase1-real-machine.txt)
 
 ---
 ▸ 2026-10-12T20:18:41Z [delta-lead]
+
 Real machine: the new binary on this repo's schema-3 farm (reads with a warning, a write refuses and writes nothing) and on a fresh flat farm (init, create, shave, note, shear: one file, status edited in place, moved: entries intact, doctor clean).
 
 ---
 ▸ 2026-10-12T20:18:42Z [delta-lead]
+
 Done (phase 1). What landed:
 - `src/store.rs`: `task_path`, `artifact_dir`, `attachment_owner`, `path_owner`; `load` reads `<root>/*.md` (status from `status:`, missing = hairy) plus, via `legacy::load`, the old status dirs (flat wins on a clash); `parse_task` reads `status:` (invalid keeps the fallback, never duplicated into `extra`); the writer puts `status:` after `title:`; `save` writes the one flat path; `move_task` edits in place and keeps the `moved:` entry; `find_task_file`/`load_task_by_id`/`all_ids` flat first, then legacy; `init` creates no status dirs; `SCHEMA` = 4.
 - The write refusal (D4) sits in `store::lock`, which every mutation already takes: refuses on schema 3 or on any yak file in a status dir (an old binary wrote it); `lock_for_migration` skips it, for yaks-86f4.
@@ -44,8 +48,10 @@ Decision: a committed farm is always a `.yaks/` directory, so repo paths are mad
 
 ---
 ▸ 2026-10-12T20:19:35Z [delta-lead]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-12T20:19:35Z [delta-lead]
+
 moved: shaving -> shorn

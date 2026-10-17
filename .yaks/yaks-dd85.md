@@ -15,8 +15,10 @@ Motivated by yaks-71d1 shipping half-done (H key: no help entry, wrong edit surf
 
 ---
 ▸ 2026-09-22T00:42:41Z [agent]
+
 Shipped skill (skills/yaks/SKILL.md): new 'Evidence before you shear' section — scriptable check → verify: command; user-facing/UI change → attach a screenshot OR text serialization and update every exposed surface (in-app help, --help, docs); no lever → ask. Workflow step 4 now points to it. yaks-working (repo-internal): added an explicit UI-evidence bullet citing the 71d1 H miss. AGENTS.md 'Verifying changes': added the attach-the-frame habit + prefer a docshots scene for durable states. Guarded by cargo test -p yaks skills (embedded==on-disk); full suite green.
 
 ---
 ▸ 2026-09-22T00:42:42Z [agent]
+
 verify: `cargo test -p yaks skills` -> PASS (exit 0)

@@ -16,10 +16,12 @@ Overlay part (a)+(b) of yaks-7204, after the Sheds tab (yaks-98f1): on the yak v
 
 ---
 ▸ 2026-10-13T01:29:43Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-13T01:29:44Z [delta-lead]
+
 Claim (delta-lead, yakherd): owner badge-1 (Sonnet worker). Parallel with inbox-1 (yaks-1ea3) and disco-1 (yaks-93fe).
 
 Goal: two annotations on the yak views from the Sheds-tab snapshot (`App.sheds.snapshot`, refreshed every 10 s whatever view is shown since the prep commit).
@@ -35,12 +37,14 @@ Evidence: insta snapshots (fail first) of (i) a tree view with a badged row, one
 
 ---
 ▸ 2026-10-13T01:33:35Z [badge-1]
+
 Start: Tue Oct 13 01:33:35 UTC 2026
 yaks path: /Users/joel/src/yaks/.delta/worktrees/f34qg6ja8z10/yaks/.yaks/yaks-ed6d.md
 Plan: tests first (tests.rs tail), then render.rs list_item badge, detail.rs sheds section, detail_nav.rs wiring, docs.
 
 ---
 ▸ 2026-10-13T01:35:30Z [badge-1]
+
 Failing first (tests appended at the end of src/tui/tests.rs, run before any implementation, `cargo test --release -- shed_badges an_ask_elsewhere a_row_with_no the_detail_pane`):
 
 ```
@@ -53,10 +57,12 @@ test tui::tests::a_row_with_no_copies_is_byte_identical_to_before ... ok   (guar
 
 ---
 ▸ 2026-10-13T01:48:47Z [badge-1]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-13T01:52:00Z [badge-1]
+
 Decision: badge glyph `🛖N` (the Sheds tab's own glyph, N = count, no space; the issue's form), dim, bold yellow when any copy is `needs: human`. Rejected: reusing ⏳ (means "this yak awaits a human" in THIS farm: a different axis); a bare dot (no count, no link to the Sheds tab); coloring the whole row (shifts attention off the title).
 Decision: placement = the right-hand badge cluster, between the ⏳/✅ badges and the star/collapse badge, in the same separator-by-one-space scheme. It sits after the labels, so titles keep the same width as before for a row without copies; for a row with copies the title loses 3 columns (space + 🛖 width 2 + digit => 4) which at 96 columns is still ~45 chars. Rejected: left of the title (shifts every row's id/priority/type columns, a layout change for rows without badges).
 Decision: the Sheds section sits after the Labels/Parent/Children/Source/Other-fields block and before the body (the notes live in the body, so the Sheds lines read as "what is elsewhere" above "what is here"), and its lines use a new `detail::Kind::Shed` styled through `md` spans (yellow bracket, bold yellow needs, dim newest note) rather than reusing `Field`/`Warn`: `Field` would grey the first 13 columns as a label (wrong for a shed name) and `Warn` would paint the whole line yellow. `edit_target_at`/`block_index_per_line` ignore it (they only look at Field/Body).
@@ -76,16 +82,20 @@ Real machine (`printf 'key Tab\nsnapshot\n' | yaks tui --headless --size 150x30`
 
 ---
 ▸ 2026-10-13T01:52:08Z [badge-1]
+
 Correction to the previous note: a row with a badge loses 4 title columns (separator space + 🛖 at width 2 + one digit), not 3. And on the real machine yaks-7204's badge IS the yellow one in principle (the sheds-tab clone holds `needs: human` on yaks-7204), but headless text frames carry no colour, so yellow is evidenced only by the buffer-fg unit test, not by the pasted frame.
 
 ---
 ▸ 2026-10-13T01:54:06Z [badge-1]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-13T01:54:13Z [badge-1]
+
 Summary: shed overlay on the yak views. Row badge `🛖N` (yellow when a copy is `needs: human`) in `render::list_item` via `shed_badge`; `Sheds:` section in the detail (`detail::sheds_section`, `Kind::Shed`, copies passed from `detail_nav::detail_dlines`); data only from `Snapshot::copies`. 4 new insta/unit tests + 3 snapshots at the end of tests.rs; docs/tui.md and the yaks skill updated. Not touched: sheds_tab.rs, viewmodel.rs, handlers.rs, docs/assets, ghost rows.
 
 ---
 ▸ 2026-10-13T01:54:13Z [badge-1]
+
 moved: shaving -> shorn

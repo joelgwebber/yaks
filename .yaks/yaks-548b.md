@@ -18,6 +18,7 @@ Make needs actionable in the TUI: (1) a list-row badge/indicator for needs-block
 
 ---
 ▸ 2026-09-03T20:10:42Z [wt-tui]
+
 Done — all three parts landed in src/tui.rs.
 (a) List badge: list_item() gains a needs_blocked param; a yellow hourglass badge renders on the right for any yak with needs set (disp_width teaches U+23F3 width 2). Distinct axis from the dep-blocked '*' lead, so they co-occur. Test: needs_badge_renders_on_a_blocked_row.
 (b) Inbox: new App.inbox_only flag toggled by 'i' (list pane); rows() returns a flat, id-sorted list of every yak with needs.is_some() across all statuses (mirrors herd.inbox), overriding the active view. No FilterSpec change. Test: inbox_toggle_shows_only_needs_blocked_across_statuses (incl. a shorn-but-blocked yak surfacing).

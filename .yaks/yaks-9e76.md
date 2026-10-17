@@ -16,4 +16,5 @@ Add the edtui dependency and an in-frame multi-line editor overlay for E (edit s
 
 ---
 ▸ 2026-08-21T00:41:17Z
+
 Merged into yaks-1699 (single shared edtui editor overlay). No separate hand-rolled line editor.

@@ -19,4 +19,5 @@ CANDIDATE FIX: put worktrees in a NON-gitignored in-project dir (e.g. wt/ instea
 
 ---
 ▸ 2026-09-05T03:08:42Z [coordinator]
+
 VALIDATED + ADOPTED. Ran the fix live: two sub-agents worked in NON-gitignored wt/ worktrees and BOTH used native edit_file successfully — zero terminal fallback (vs 3/3 needing the fallback the prior run). So the gitignore was the sole cause; wt/ (non-gitignored) is the fix. Updated the coordinating-yaks file-tool SOP to lead with 'put worktrees in wt/ (non-gitignored)' + the tradeoff (a cosmetic '?? wt/' in main status; never gitignore/exclude it or the refusal returns) and kept the terminal fallback as secondary. Corrected the earlier wrong claim that git skips nested worktrees in status — a non-gitignored worktree DOES show as '?? wt/'; gitignore is what hid the old .worktrees/. Net: the token-tax is eliminated going forward.

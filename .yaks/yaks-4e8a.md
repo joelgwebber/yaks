@@ -15,4 +15,5 @@ detail.rs build() renders Title/Status/Type/Priority/Created/Updated/Labels/Depe
 
 ---
 ▸ 2026-09-03T18:28:07Z [coordinator]
+
 BUILT. detail.rs build() now inserts a 'Needs:' field immediately after Status when task.needs is set (mirrors the CLI show line). Test needs_block_renders_after_status_when_set (present+positioned when set, absent when unset); 210 tests green. Accent/warning styling deferred to yaks-548b (needs a new DLine Kind).

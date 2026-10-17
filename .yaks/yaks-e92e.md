@@ -22,10 +22,12 @@ Evidence: a test that fails first: shed forks, the reference re-parents a yak th
 
 ---
 ▸ 2026-10-16T19:53:21Z [delta]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-16T20:00:10Z [delta]
+
 Decision: field-wise three-way, with the reference settling any field it also changed. A field counts as the shed's outstanding edit only when the shed changed it (base -> theirs) AND the reference still holds the base value (`store::edits_landed`). Rejected:
 - `edited(base, theirs) && edited(reference, theirs)` (yak-level): still flags a yak when the reference edited a different field after the shed's edit landed.
 - "reference holds the shed's value" per field (my first draft): the real review shed failed it. It had dropped survey-209f's `parent: survey-e0c0`; that landed, then main re-parented to survey-3237, so the reference has neither the base nor the shed's value. When both sides changed a field, the reference is where that gets settled, the same way a status the reference moved further along already reads landed.
@@ -33,6 +35,7 @@ A shed-created yak (no base) is unchanged: any difference is outstanding.
 
 ---
 ▸ 2026-10-16T20:00:10Z [delta]
+
 Evidence. The new test `sheds::tests::landed_edits_are_three_way` covers: behind only (re-parented in the reference), the shed's own label (outstanding), both edited different fields (outstanding), both edited the same field (landed), and the surveyor review case. Restoring the old `c.edited` condition made it FAIL (`left: {yaks-behind, yaks-both, yaks-mine, yaks-took}`). With the fix it passes. Full `cargo test --release`: 17 suites, 0 failures.
 
 Real data: a scratch `git clone --shared` of ~/src/fs/subtext/surveyor at 8ef0612, with worktrees replaying the two now-gone clones (review: e1f11f9 -> 973d4f6; fix-collapse: 493e7b4 -> a5956a7).
@@ -45,4 +48,5 @@ Scratch clone removed afterwards. Docs: the `landed` rule in docs/cli.md `sheds`
 
 ---
 ▸ 2026-10-16T20:00:10Z [delta]
+
 moved: shaving -> shorn

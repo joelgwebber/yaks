@@ -15,4 +15,5 @@ yaks-coordinating documents ephemeral per-lane worktrees for PARALLEL fan-out an
 
 ---
 ▸ 2026-09-11T01:51:09Z [coordinator]
+
 Shorn: added the 'Serial-arc run shape (persistent worktree, sequential phases)' section to yaks-coordinating -- cut once/keep/remove-at-end; HITL via coordinator-at-worktree; checkpoint aggressively (squash each phase to main, then merge main back) per Joel's cadence answer (A, esp. team mode); executor choice. b1cc is the first user.

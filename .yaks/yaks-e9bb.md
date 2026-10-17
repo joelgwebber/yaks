@@ -25,10 +25,12 @@ Evidence: tests for two viewers (primary and a sibling) giving the same answer f
 
 ---
 ▸ 2026-10-10T18:56:18Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-10T18:56:19Z [delta-lead]
+
 Claim (coordinator). Owner: base-1. Spec = the description above and the 2026-10-10 Decisions on yaks-ee0a (read them: decisions 1-3). Joel confirmed that dropping the `sync` value of `farm.vs` from the JSON is fine.
 Scope by symbol (src/sheds.rs): `nearer_baseline` (delete), `BaseKind::Sync` and its `as_str`, the `fork` candidate in `GitState` and where it is built (`fork_point(...).map(nearer_baseline ...)`), the baseline list in `inspect` (the `bases` vector), the `(vs merge-base)` text, the module docs on baselines (lines ~10-23), and every test that names `Sync`/`sync`. Docs: the `vs` / baseline wording in docs/cli.md, README.md, `.agents/skills/yaks/SKILL.md`, the `Sheds` help in src/main.rs.
 Keep: the fork point validation (ancestor of the shed's HEAD), the merge-base FALLBACK when there is no usable reflog (`vs merge-base`, still viewer-relative: say so in the doc), `vs this checkout` when no base farm can be read, ahead/behind exactly as they are (commits are a different question).
@@ -37,10 +39,12 @@ Evidence (tests FAIL first): one shed forked from commit F that later merged the
 
 ---
 ▸ 2026-10-10T18:57:48Z [base-1]
+
 Start 2026-10-10T18:57:48Z (base-1). yaks path: /Users/joel/src/yaks/.delta/worktrees/qkpp5wdvfm8p/yaks/.yaks/shaving/yaks-e9bb.md. Plan: tests first (fail against the nearer_baseline rule), then drop nearer_baseline/BaseKind::Sync/farm.vs sync, update docs+help.
 
 ---
 ▸ 2026-10-10T18:58:18Z [base-1]
+
 Failing-first output (before any code change), 'cargo test --release --bin yaks sheds::tests::a_': 4 failed, 17 passed.
 The three viewer tests fail with 'left: Some(FarmBase { kind: Sync, sha: ... }) right: Some(FarmBase { kind: Fork, sha: ... })' (the viewer-relative rule picks the viewer's merge-base); the clone test fails with 'left: None right: Some(FarmBase{kind: Fork..})' which I am investigating (likely fixture, not the rule).
 
@@ -75,12 +79,13 @@ assertion `left == right` failed
   left: Some(FarmBase { kind: Sync, sha: "08ef270" })
  right: Some(FarmBase { kind: Fork, sha: "d75e4f2" })
 
-![yaks-e9bb-sheds-old](yaks-e9bb/yaks-e9bb-sheds-old.json)
+[yaks-e9bb-sheds-old](yaks-e9bb/yaks-e9bb-sheds-old.json)
 
-![yaks-e9bb-sheds-new](yaks-e9bb/yaks-e9bb-sheds-new.json)
+[yaks-e9bb-sheds-new](yaks-e9bb/yaks-e9bb-sheds-new.json)
 
 ---
 ▸ 2026-10-10T19:01:19Z [base-1]
+
 Real-machine comparison (old = PATH yaks 0.0.14, new = ./target/release/yaks, both `sheds --json` run from this clone, read-only; attached as yaks-e9bb-sheds-old.json / -new.json). Same 4 rows; 2 identical, 2 differ, and both differences are exactly the old `sync` cases:
 - `main` (primary, ~/src/yaks, listed from this Delta clone): old `vs: sync, base 4d37dce`, 0 changes (the clone had merged the primary's main, so the nearer merge-base was the primary's tip). New `vs: fork, base f5dce34` = the primary's own first reflog entry (an old commit from Sep, its reflog is 187 lines long): 154 added, 23 moved, 172 notes, 3 needs, 61 actors. That is the accepted cost of "fork point always", and it is a nonsense number for the PRIMARY row: the primary has no fork point. The coordinator spec says the primary's baseline is origin/main and is yaks-ad6d's job (out of scope). See Decision below.
 - `yak-shedding` (a Delta clone, this thread's coordinator-ish shed): old `sync, base ece5bf8`, 2 notes; new `fork, base 9e4ca2a` (v0.0.14, where the clone was made): 8 added, 3 moved, 9 notes, who +1 (Joel Webber), in_progress gains yaks-e9bb: the yaks the shed merged in from main, shown with their actors (the accepted redundancy).
@@ -89,6 +94,7 @@ Nothing else differs (ahead/behind, dirty, activity unchanged). `farm.vs` is nev
 
 ---
 ▸ 2026-10-10T19:01:19Z [base-1]
+
 Decision: baseline is the shed's fork point from every viewer; `nearer_baseline` and `BaseKind::Sync` deleted. Rejected: (a) keep `nearer_baseline` but compute it against a fixed reference such as origin/main (would still make a shed's baseline move when main moves, and needs a reference every checkout may lack); (b) keep Sync only when the SHED merged the viewer (still viewer-dependent, as the two-viewers test shows); (c) skip merged-in commits by reading merge parents (heuristic, shallow-fragile, and decision 2 of yaks-ee0a explicitly accepts repeats).
 Decision: the JSON value `farm.vs == "sync"` is removed (Joel agreed). Values are now `fork`, `merge-base`, `checkout`. Rejected: keep `sync` in the enum for compatibility (nothing could ever produce it), or alias it to `fork`. Docs/help/README/skill say so.
 Decision: the merge-base FALLBACK (`vs merge-base`) stays viewer-relative, and the docs say so in those words, as the spec asks. Rejected: dropping the fallback (a shed with an expired reflog would then fall to `vs this checkout`, a weaker answer) or inventing a viewer-independent fallback (nothing in git gives one).
@@ -99,12 +105,15 @@ Tests (beside the baseline tests, src/sheds.rs): rewrote the old sync pair (`a_s
 
 ---
 ▸ 2026-10-10T19:02:17Z [base-1]
+
 verify: `cargo test --release` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-10T19:02:23Z [base-1]
+
 Summary: baseline is the fork point from every viewer (nearer_baseline, BaseKind::Sync, farm.vs 'sync' removed); merge-base fallback kept and documented as viewer-relative; docs/cli.md, README, yaks skill, Sheds/Changes help updated; 4 new/rewritten tests fail-first then pass; full cargo test --release PASS. Open for the coordinator: the primary row from a clone now reads from its own old reflog start until yaks-ad6d (origin/main baseline) lands.
 
 ---
 ▸ 2026-10-10T19:02:23Z [base-1]
+
 moved: shaving -> shorn

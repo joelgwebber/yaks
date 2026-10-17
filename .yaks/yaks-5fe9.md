@@ -15,6 +15,7 @@ What happened when we ran a yak through Delta for the first time, and what it ta
 
 ---
 ▸ 2026-10-03T20:14:43Z [delta-agent]
+
 FINDINGS (2026-10-02/03, landed as c56861a + edtui yaks-integration 6ba0dbf).
 1. Delta model: each thread is a separate thin git clone (.delta/clones/<id>/<repo>.git, objects shared with the main .git via alternates, ~100-300 KB of own objects) plus a checkout at .delta/worktrees/<id>/<repo>/; the id is per thread, shared across that thread's repos. Disk is dominated by each checkout's own cargo target/ (0.3-1.3 GB). Work moves between threads by Delta file merges (automatic when a worker finishes; merge_thread on request) and lands in git only by an explicit git push to local (the user's checkout) and/or origin. Nothing pushes automatically.
 2. Same per-branch-farm model as git worktrees in team mode (yaks-coordinating: claim on main first; farms reconcile at merge, not live). The coordinator shaved before spawning, which was right.

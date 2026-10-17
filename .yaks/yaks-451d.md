@@ -15,4 +15,5 @@ Surfaced while shearing the 15f7 herds family: running yaks verify on any yaks-h
 
 ---
 ▸ 2026-09-21T21:02:03Z [agent]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)

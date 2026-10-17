@@ -13,4 +13,5 @@ However the python code was working, the new implementation really needs to watc
 
 ---
 ▸ 2026-08-22T19:47:22Z
+
 Added a recursive notify (6.1.1) file-watcher on the herd .yaks/ tree, wired into the event loop. Loop now blocks on input via event::poll(250ms); content-changing fs events (create/remove/data-modify; access+metadata filtered to avoid a read->reload loop) set a pending-refresh flag applied by reload_preserving_selection ONLY while idle (overlay==None), so external edits never yank data from under an open editor/picker. Cursor kept on the same task by id; refresh is silent (doesn't clobber mutation notifications). Best-effort: watcher failure degrades gracefully (no auto-refresh). Unit test reload_preserving_selection_picks_up_external_add. 109 unit + 19 CLI green, no new clippy. docs/tui-parity.md #13.

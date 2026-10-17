@@ -14,10 +14,12 @@ labels:
 
 ---
 ▸ 2026-10-09T20:44:58Z [delta:Delta :Yaks (cont'd)]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-09T20:44:58Z [delta:Delta :Yaks (cont'd)]
+
 Claim (coordinator). Owner: ans-1.
 Goal: `yaks answer <id>@<shed> --note "<reply>"` (and `--done`, same as plain answer) records the answer in THAT shed's copy of the yak, not in this checkout's. Decided by Joel (yaks-ee0a, 2026-10-06): the answer is written into the asking shed's working tree and left UNCOMMITTED there (the worker commits it with its own yak file); only `answer` (and maybe later `ask`) may write into another checkout; enforce that in the shared library, not only the CLI.
 Rules:
@@ -32,14 +34,17 @@ Evidence: tests that FAIL before (tests/answer_shed.rs, real binary, git worktre
 
 ---
 ▸ 2026-10-09T20:46:29Z [ans-1]
+
 Start: Fri Oct  9 20:46:25 UTC 2026. path: /Users/joel/src/yaks/.delta/worktrees/h4skc0fpebk8/yaks/.yaks/shaving/yaks-f347.md
 
 ---
 ▸ 2026-10-09T20:52:07Z [ans-1]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-09T20:52:41Z [ans-1]
+
 Decision: the cross-shed write is one `Farm::answer_in_shed(&self, shed, id, ...)` method (src/farm.rs). The shed `Farm` is a temporary built inside it and never returned, so no other mutation can reach a shed. Rejected: a public `Farm::open_at(root)` or a separate `ShedFarm` type, since either hands callers a full-power handle or adds a second type for one method; the narrowness is enforced in the library as Joel decided.
 Decision: the shed's farm root comes from `store::discover_with(&shed.path, None)`, ignoring $YAKS_DIR (which names OUR farm). Then I refuse when `shed.farm` is Shared/None/Unreadable, when the found root canonicalises to our own root, or when its schema is newer. Rejected: trusting `ShedFarm::Own` alone (it can go stale between discovery and write).
 Decision: `answer_in_shed` calls the existing `Farm::answer` on the shed root, so the needs transition, attributed note and the shed farm's lock (once, outermost) are the one implementation. An id absent in the shed is an error ("task X not found in shed N"). Plain answer's rule is matched: on a yak with no `needs` it only records the note (not refused), and an already-`agent` yak keeps the state, because plain answer does that. I did not add a needs=human check, since plain answer has none.
@@ -49,4 +54,5 @@ Docs: docs/cli.md answer row, README.md ask/answer row, .agents/skills/yaks/SKIL
 
 ---
 ▸ 2026-10-09T20:52:42Z [ans-1]
+
 moved: shaving -> shorn

@@ -17,4 +17,5 @@ Python's E reopens the whole task form (title/type/priority/labels/description) 
 
 ---
 ▸ 2026-08-22T19:42:02Z
+
 Generalized CreateForm into a shared create/edit form. Added edit_id + CreateForm::for_edit (seeds title/type/priority/labels/description from a task); open_edit routes E (list + detail) to it. Description is now a multi-line edtui content zone (multiline_field) with a '─ description ─' separator, Enter=newline. Commit gesture switched to Ctrl-S (create -> Herd::create; edit -> Herd::update, field-diffed so unchanged fields don't rewrite/bump updated); Esc/Ctrl-C cancel (Esc yields to the editor inside the description zone). Removed the old body-only editor (open_body_edit + EditAction::Body). Reusable content zone for future comment editing. Tests updated to Ctrl-S; added edit_form_updates_description/changes_type_and_priority/cancel + edit_form_panel snapshot; create_form snapshot regenerated. 108 unit + 19 CLI green, warning-free, no new clippy. Verified multi-line body persists end-to-end.

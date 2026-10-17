@@ -38,10 +38,12 @@ The `needs: agent` flip is attractive: it keeps one field, gives `inbox` a symme
 
 ---
 ▸ 2026-10-05T22:36:13Z [Joel Webber]
+
 Possibly the same as yaks-f313?
 
 ---
 ▸ 2026-10-06T03:58:04Z [delta-lead]
+
 Decision (Joel, 2026-10-06, in chat on the coordinator's question "should I take the first slice; the `needs: agent` flip is a fork for you"): "I do like `needs: agent` as an approach." Recorded here by the coordinator (delta-lead) because the question was asked in chat, not as an ask on this yak (his uncommitted edits on this file blocked me from writing here at the time); his words are quoted exactly.
 
 Joel also noted it is interesting that this, of all cases, did not arrive as a question on the yak itself. It is the same gap this yak describes, one level up: a reply or a question that travels outside the yak leaves no durable trace and no pickup state.
@@ -58,52 +60,64 @@ Out of scope: cross-checkout visibility (yaks-7204), a waiting command (yaks-f31
 
 ---
 ▸ 2026-10-06T03:58:04Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-06T03:58:04Z [delta-lead]
+
 Claim (coordinator delta-lead). Owner: worker agt-1. Scope: src/main.rs (answer, inbox, the new pickup verb, next), src/farm.rs and store as needed for the needs transitions and the replied detection, the TUI only where `needs` is read, docs/cli.md, README.md, `.agents/skills/yaks/SKILL.md` (asking/answering sections and the command table), `--help`. Judge: coordinator re-runs the gate and drives the loop in a temp farm (ask, plain-note reply, answer, inbox both sections, pickup). Forbidden: changes to the on-disk format beyond the existing free-form `needs:` values, the farm lock rule, coordination skills prose.
 
 ---
 ▸ 2026-10-06T03:59:04Z [agt-1]
+
 agt-1 start. `ls .yaks/*/yaks-c061.md` -> `.yaks/shaving/yaks-c061.md`; `date -u` -> Tue Oct  6 03:58:40 UTC 2026. Own binary built: ./target/release/yaks.
 
-![inbox-answered-frame](yaks-c061/inbox-answered-frame.txt)
+[inbox-answered-frame](yaks-c061/inbox-answered-frame.txt)
 
 ---
 ▸ 2026-10-06T04:08:10Z [agt-1]
+
 Headless TUI frame (yaks tui --headless, Inbox view): yak-77d4 (shorn, answered) and yak-205d (answered) carry the answered badge, only yak-8e8f (needs: human) carries the hourglass.
 
 ---
 ▸ 2026-10-06T04:08:10Z [agt-1]
+
 Decision: how `replied` finds the asker. `ask` now always records a note whose first line is `asked: needs <who>` (then a blank line and the question, if any); `replied` = the latest `asked:` note's actor vs the latest later note that is not a `moved:`/`picked up` entry. Rejected: (a) no marker, guess the asker from note order (false positives: a human comment before the ask would flag it); (b) a new frontmatter field for the asker (on-disk format change, forbidden); (c) matching timestamps against `updated:` (fragile). Cost: `ask` with no `--note` now writes a one-line note too (it also names the asker). A `needs:` set by hand or before this change has no `asked:` note, so it is never flagged `replied`; nothing migrates.
 
 ---
 ▸ 2026-10-06T04:08:10Z [agt-1]
+
 Decision: `agent` is the only special `needs` value; every other value (`human`, or a free-form `--needs foo`) counts as an open question: it blocks `next`, lands in the "awaiting a human" section, and `answer` hands it to an agent. Rejected: restricting the hand-off to exactly `human` (an `ask --needs foo` yak would keep today's clear-on-answer, a second rule for the reader).
 
 ---
 ▸ 2026-10-06T04:08:10Z [agt-1]
+
 Decision: `answer` on a yak with no `needs` keeps what the code does today (the settled-design text says "an error", but today it records the note, prints "Answered" and changes nothing): it records the note, leaves `needs` unset, and the message now says "no needs block was set (note recorded)". Rejected: making it an error (a behaviour change nobody asked for; the TUI `a` key cannot reach it anyway). `answer` on `needs: agent`: state kept, note appended, message "still needs agent". `answer --done` on any `needs` clears it; `--done` on no needs just records the note.
 
 ---
 ▸ 2026-10-06T04:08:10Z [agt-1]
+
 Decision: `ask` always allowed on `needs: agent`; it sets `needs: human` and prints "(was answered, awaiting an agent; now awaiting a human again)". Rejected: refusing until pickup (a human follow-up question on an answered yak is natural, and the answer note stays in the history).
 
 ---
 ▸ 2026-10-06T04:08:10Z [agt-1]
+
 Decision: `pickup` writes the note `picked up` (then a blank line and `--note`, if given); on a yak that is not `needs: agent` it exits 1 with "not awaiting an agent (needs: human)" / "(no needs block set)" and changes nothing. Rejected: a no-op success on a clear yak (hides a mistaken id/state; an agent loop would think it took work it did not). No `moved:` entry: a `needs` change is not a status move.
 
 ---
 ▸ 2026-10-06T04:08:10Z [agt-1]
+
 Decision: `inbox` text output is two titled sections (a section is omitted when empty; `--for` shows one); `--json` stays ONE flat array (human rows first), each row the normal task object plus a `replied` boolean (always present on inbox rows, `false` for agent rows), so a script filters on `needs`. `list --needs`/`bulk --needs` keep selecting ANY `needs` value (inbox's predicate). Rejected: a JSON object `{human:[],agent:[]}` (breaks the existing array shape consumers rely on); `replied` only when true (optional keys are harder to script).
 
 ---
 ▸ 2026-10-06T04:08:10Z [agt-1]
+
 Decision: TUI. Rows/detail: `needs: agent` gets a `✅` badge (no hourglass, no warning accent; detail line `Needs: agent (answered, awaiting pickup)`), `⏳` is reserved for awaiting-a-human. `a` answers only a yak awaiting a human; on a `needs: agent` yak it opens ASK (a human follow-up that flips it back), since the TUI has no pickup (an agent verb). Answer in the TUI hands to an agent like the CLI (no `--done` key). The Inbox view is unchanged (`needs_only` = any `needs`). Also fixed `disp_width` to count U+2705 as width 2 (the badge was mis-measured and dropped from the row). Rejected: a `P` pickup key (humans do not pick up) and showing the replied flag in the TUI (not asked; CLI-only for slice 1).
 
 ---
 ▸ 2026-10-06T04:08:28Z [agt-1]
+
 Evidence. Gate: `cargo test -p yaks` green (436 unit + integration incl. new tests/needs_loop.rs; new tests reference the new `ask`/`answer`/`pickup` API and `needs: agent` rules, so they cannot pass on the old code).
 Real run in a temp farm (own binary, actors coord/joel/agt):
 ```
@@ -127,4 +141,5 @@ agt$   yaks inbox               -> Inbox empty: nothing awaiting a human or an a
 
 ---
 ▸ 2026-10-06T04:08:28Z [agt-1]
+
 moved: shaving -> shorn

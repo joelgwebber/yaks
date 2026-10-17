@@ -15,4 +15,5 @@ TUI counterpart to the CLI show render: surface Task.extra (unmodeled frontmatte
 
 ---
 ▸ 2026-09-03T20:02:36Z [wt-tui]
+
 Done. Added a read-only 'Other fields:' section to detail.rs build() after the Source block, echoing task.extra verbatim (2-space indent, no links/md). Test extra_renders_read_only_other_fields_section covers empty->absent and non-empty->verbatim lines under the header; asserts no link targets. cargo build --release clean; cargo test --release 211 passed + 20 integration passed.

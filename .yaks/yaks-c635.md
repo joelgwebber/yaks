@@ -16,10 +16,12 @@ Follows yaks-2177 (yaks discover). Its findings 2 and 3: from a linked Delta clo
 
 ---
 ▸ 2026-10-09T20:01:45Z [delta:Delta :Yaks (cont'd)]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-09T20:01:45Z [delta:Delta :Yaks (cont'd)]
+
 Replan (Joel, 2026-10-09): give up on "magical" Delta discovery from outside a checkout. Discover every shed from inside any sibling using git data only:
 1. Own git dir: `git rev-parse --absolute-git-dir`.
 2. Host repo: the first line of `objects/info/alternates`, whose parent is the host. That is the human's `.git` on a linked machine and Delta's managed bare repo on a shared one. A checkout without alternates is its own host.
@@ -29,12 +31,13 @@ Replan (Joel, 2026-10-09): give up on "magical" Delta discovery from outside a c
 Verified by hand on the Mac (this clone: 37 pinned dirs, 36 gone, 1 live; the j15r managed clones resolve each other despite different names). A probe worker showed that Delta pins a NEW clone's starting commits at creation, before it makes any commit (refs/delta/dv4fmmmdm74z/yaks/* existed for a worker that never committed), so a fresh worker is visible at once.
 Remove: the Delta root scan, `--root`, the name-based sibling scan, the alternates/origin matching for Delta candidates, and `yaks discover`'s outside-a-repo mode. `yaks discover` becomes a view of this chain.
 
-![pins-mac](yaks-c635/pins-mac.txt)
+[pins-mac](yaks-c635/pins-mac.txt)
 
-![pins-fixture](yaks-c635/pins-fixture.txt)
+[pins-fixture](yaks-c635/pins-fixture.txt)
 
 ---
 ▸ 2026-10-09T20:12:45Z [delta:Delta :Yaks (cont'd)]
+
 Done. `sheds::shed_paths` is now the only discovery path: git worktrees here; the host from alternates; refs/delta pins resolved through `<store>/<dir>/<name>.git` and core.worktree; and the host checkout's git worktrees when the host is not bare. Removed: the name-based sibling scan, the `.delta/worktrees` scan, the Delta root scan, `--root`, `repo_match`/`same_repo`/`normalize_url`, and `yaks discover`'s outside-a-repo mode (it now exits 1 with "run it from inside a checkout").
 Decision: the clone store is the parent of our own git dir's parent when we are a clone, else `<host checkout>/.delta/clones`. That is the one structural fact used, and it only resolves names the pins provide. Rejected alternative: keep a directory scan as a fallback; it would bring back look-alike matching and the "found by layout" ambiguity.
 Evidence (attached):
@@ -45,4 +48,5 @@ Docs: docs/cli.md (sheds discovery and the discover row), README.md, the yaks sk
 
 ---
 ▸ 2026-10-09T20:12:45Z [delta:Delta :Yaks (cont'd)]
+
 moved: shaving -> shorn

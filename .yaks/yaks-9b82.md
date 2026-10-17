@@ -20,4 +20,5 @@ Discuss scope/shape before starting Phase 2.
 
 ---
 ▸ 2026-08-20T22:31:13Z
+
 Discussion concluded. Decisions: (1) a print-free core ops facade (Herd) exposing each WHOLE operation as a typed method; CLI and TUI are thin layers over it. (2) Reuse target = editor/IDE plugins (nvim/VSCode/Cursor) that either shell out to yaks or talk to a long-lived LSP-like process over socket/pipe; expose via protocol/specialized CLI LATER — architecture must SUPPORT a persistent process, but defer that plumbing. (3) No composite/atomic ops beyond what the TUI needs; the facade exposes the whole operation for the atomic bits it does need. (4) TUI ships as a `yaks tui` subcommand. Keep core free of clap/rendering so it can later extract to a lib crate.

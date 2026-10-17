@@ -16,4 +16,5 @@ Many commands landed this herd; keep the shipped guidance current. Update skills
 
 ---
 ▸ 2026-09-05T03:22:41Z [wt-docs]
+
 Additively refreshed README.md + skills/yak/SKILL.md against the live CLI (verified via yaks --help and per-cmd --help, and tui.rs for TUI claims). README: positional-title create + --json; ask/answer/inbox rows; doctor + scan-ids rows; multi-id transition/update/reparent note; --as attribution; TUI m/a/Inbox/⏳ line. SKILL: create positional+--json, update multi-id+--as, ask/answer/inbox + doctor + scan-ids rows, multi-id note, new 'Asking a human' subsection, scan-ids leak-check in Keep-yaks-private, inbox in --json list. Did NOT document the parallel-lane 'bulk' command.

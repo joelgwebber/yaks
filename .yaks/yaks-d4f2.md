@@ -17,4 +17,5 @@ Python's detail pane mirrors nearly all list mutating ops; Rust's only has E. Ad
 
 ---
 ▸ 2026-08-22T20:26:33Z
+
 Detail pane now mirrors the list mutating ops: S/P/T/L/D/R/X/E, c/C, f, * — all act on selected(), which is focus-independent. Added J/K (next/prev task without leaving detail; resets per-task view state) and G (scroll last line to viewport bottom). Help Detail section gained J/K. Verified via headless (S opens picker in detail, J advances selection). 110 unit + 19 CLI green.

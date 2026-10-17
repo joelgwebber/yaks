@@ -15,8 +15,10 @@ The design test: CLI-expressible over files goes in yaks core; anything assuming
 
 ---
 ▸ 2026-08-30T20:50:55Z
+
 [wtB] claimed; drafting coordinating-yaks skill
 
 ---
 ▸ 2026-08-30T20:51:47Z
+
 [wtB] wrote skills/dev/coordinating-yaks/SKILL.md (59 lines): design test, harness degradation, per-branch herds, disjoint scoping, optional attribution, human-in-the-loop. Points at working-a-yak for the per-yak trail and check-before-start.

@@ -10,8 +10,10 @@ updated: '2026-10-05T22:27:13Z'
 
 ---
 ▸ 2026-09-21T19:41:06Z [Joel Webber]
+
 verify: `echo test-herd-lever` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-05T22:27:13Z [Joel Webber]
+
 moved: hairy -> dead

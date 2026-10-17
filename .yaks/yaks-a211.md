@@ -14,4 +14,5 @@ Found by the yaks-28b4 lane: detail_page = h-3 counts the pinned/sticky title ro
 
 ---
 ▸ 2026-10-02T14:19:11Z [claude]
+
 Fixed by yaks-15c7 (same off-by-one: pinned header row not subtracted from the viewport).

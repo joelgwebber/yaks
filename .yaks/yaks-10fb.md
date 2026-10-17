@@ -14,4 +14,5 @@ Fresh herd carrying forward the genuine future-work hoisted from the 3901 wrap-u
 
 ---
 ▸ 2026-09-09T00:39:20Z [coordinator]
+
 Shorn: post-3901 follow-up triage complete. Delivered 213b (PR-driven integration, both modes validated) + 5d5c (human-driven interactive lane guidance). Remaining children PARKED as standing hairy backlog with recorded triggers: 70e5 (build if 'git diff main -- .yaks/' proves too coarse), 8265 (when a solo-mode activity log is wanted), eb5f (when CI-grade enforcement is wanted). Container's job done; deferred children live on as backlog, not buried.

@@ -19,10 +19,12 @@ Evidence: before/after timings on this machine and on ~/src/j15r.
 
 ---
 ▸ 2026-10-13T00:11:39Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-13T00:11:39Z [delta-lead]
+
 Claim (delta-lead, yakherd): owner perf-1 (Sonnet worker, its own Delta thread). Runs in parallel with yaks-8814 (needs-1) and yaks-98f1 (the TUI Sheds tab, delta-lead).
 
 Goal: know where `yaks sheds` spends its time, then make the common path cheap without changing any output.
@@ -36,11 +38,13 @@ Evidence: per-step timings before/after (how you measured them, in a note); `yak
 
 ---
 ▸ 2026-10-13T00:12:57Z [perf-1]
+
 Start: Tue Oct 13 00:12:57 UTC 2026
 yaks path yaks-07fe: /Users/joel/src/yaks/.delta/worktrees/53smxwrxenfm/yaks/.yaks/yaks-07fe.md
 
 ---
 ▸ 2026-10-13T00:26:33Z [perf-1]
+
 Profile (before binary, release, this machine: 4 live sheds incl. current, 61 orphaned pins, 14 cores). Measured with a TEMPORARY Instant wrapper around `git_raw`, `newest_mtime`, `load_farm` and `discover` (removed before committing; a python git shim was rejected: it cost ~0.3 s per call and drowned the signal).
 - `yaks sheds` wall 1.2-1.5 s; user 0.28, sys 0.61.
 - `discover` after the toplevel probe: 1.10-1.24 s. checkout_paths 100-117 ms of that.
@@ -51,6 +55,7 @@ Plan: (1) run the per-shed inspection and the pin resolution on a bounded thread
 
 ---
 ▸ 2026-10-13T00:49:16Z [perf-1]
+
 Decision: no persistent cache. The wall time was 80 serial `git` spawns at ~10 ms each, not filesystem work, so reducing and overlapping the spawns got 4x without a derived-cache design (which is yours to approve). Rejected: a per-user cache keyed on (HEAD, farm mtime), a `libgit2`/`gix` dependency (forbidden), a persistent `git cat-file --batch-check` daemon.
 Decision: concurrency by `std::thread::scope` (no new dependency): `par_map` (8 workers, order-preserving) over the sheds and over the pin groups; scoped threads for the independent probes inside one shed and inside discovery. Rejected: rayon (new dep), tokio.
 Decision: fewer spawns, same answers. `rev-parse --absolute-git-dir HEAD --short HEAD` as one call; `--absolute-git-dir --git-common-dir` as one call in `host`; `rev-list --left-right --count HEAD...<shed>` replaces two `--count` calls; when the shed's HEAD equals ours, merge-base is HEAD and ahead/behind are 0/0 (no spawn); a fork point equal to the shed's HEAD or to its merge-base skips `merge-base --is-ancestor` (an ancestor by definition; the call still runs otherwise); `worktree list` in the host is run once (its first entry is the host checkout, the list is the same from there) instead of twice.
@@ -59,6 +64,7 @@ Decision: new `sheds::discover_all(cwd, farm_root) -> (sheds, orphaned pins)` fr
 
 ---
 ▸ 2026-10-13T00:49:16Z [perf-1]
+
 Timings, wall clock, 7 runs each (min / median / max, seconds), this machine (4 sheds incl. current, 61 orphaned pins), measured by a python subprocess loop with the before binary (target/yaks-before, built before any edit) and the after binary back to back:
 - `yaks sheds`: before 1.24 / 1.28 / 1.69, after 0.31 / 0.32 / 0.40
 - `yaks sheds --json`: before 1.14 / 1.16 / 1.21, after 0.31 / 0.31 / 0.34
@@ -71,8 +77,10 @@ Left on the table (not done): `changes main` is still ~0.1 s above `sheds` becau
 
 ---
 ▸ 2026-10-13T00:50:05Z [perf-1]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-13T00:50:12Z [perf-1]
+
 moved: shaving -> shorn

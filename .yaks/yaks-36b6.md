@@ -16,6 +16,7 @@ From Joel (2026-10-05): it would be nice if installed skills auto-updated when t
 
 ---
 ▸ 2026-10-05T21:08:13Z [delta-lead]
+
 Design fork (coordinator delta-lead). Options for project-local skills (./.agents/skills in a repo):
 
 A. status quo: never auto-written; 'yaks skills status' shows them stale and 'yaks doctor' prints the advisory; you re-run 'yaks skills install'.
@@ -26,12 +27,15 @@ My lean: (C), because an automatic write into a committed tree breaks the proper
 
 ---
 ▸ 2026-10-05T22:08:36Z [Joel Webber]
+
 I'm good with (C) as long as notification is automatic, and a `yaks skills` re-run fixes it easily.
 
 ---
 ▸ 2026-10-09T20:12:18Z [delta:Delta :Yaks (cont'd)]
+
 Closing: decided (C), notify rather than write (Joel, 2026-10-05). Shipped as yaks-5c83.
 
 ---
 ▸ 2026-10-09T20:12:18Z [delta:Delta :Yaks (cont'd)]
+
 moved: hairy -> shorn

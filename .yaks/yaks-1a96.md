@@ -15,4 +15,5 @@ Joel's Q (from yaks-52eb): for TUI evidence attached to yaks, should we emit toq
 
 ---
 ▸ 2026-09-09T04:12:43Z [agent]
+
 Resolved into a herd. Decision: keep DUAL output (plain toque text + SVG), and RETIRE toque's text style-encodings (semantic style already lives in the state header as facts; SVG is the visual channel; PNG on demand for resolution control). Spawned umbrella yaks-89b9 with children: renderer->toque (yaks-dce6), drop-encodings (yaks-8d58), docs sweep (yaks-2ed9). Shearing this idea as decided.

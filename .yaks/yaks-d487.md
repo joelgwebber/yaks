@@ -15,4 +15,5 @@ Eval runner + scoring + write-up. RESEARCH REPORT lives at docs/tui-style-eval.m
 
 ---
 ▸ 2026-08-22T21:59:01Z
+
 Eval runner + scoring + portable cross-model bundle DROPPED to documentation only (per user). Durable outputs complete: research in docs/tui-style-eval.md + validated encoders in-tree (moving to the toque crate under yaks-20b9). Approaches + rough results will also seed toque's README.

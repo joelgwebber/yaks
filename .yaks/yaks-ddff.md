@@ -16,4 +16,5 @@ Port build_tree (no-filter path: anchors=tab status; universe=anchors+ancestors+
 
 ---
 ▸ 2026-08-20T23:50:02Z
+
 Done. tui/tree.rs ports build_tree (anchors=tab status; universe=anchors+ancestors+descendants; non-anchor family rendered as dimmed ghosts) + apply_collapse (hidden counts + chevron). List renders indented rows with status glyph + ▾/▸ chevron; Space folds/unfolds; d/u half-page, PageUp/Down full; cursor over visible (post-collapse) rows. Sparse restyle: dropped the bordered boxes for a single left-divider on the detail pane, no pane titles. Content-filter re-coloring (bright matches vs dim context) still deferred to the filter slice. 2 TUI snapshots + tree unit tests; 39 tests, warning-free.

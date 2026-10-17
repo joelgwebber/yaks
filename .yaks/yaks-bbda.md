@@ -17,14 +17,17 @@ Phase 4 of yaks-8b7a (after phase 3's release and after Joel's farms are migrate
 
 ---
 ▸ 2026-10-12T21:22:59Z [delta-lead]
+
 Joel (2026-10-12): as part of phase 4, re-check every skill and doc for wording the flat layout made stale (status directories, artifacts/<id>/, moves relocating a file, staging globs), beyond the transitional lines this phase removes: grep .agents/skills, docs/, README.md, AGENTS.md and src/ --help text. Also refresh docs/assets/tui-detail-pinned.svg (stale since before the flat work: docshots re-render it differently from b25a5b9 too; one 'cargo test -p yaks docshots -- --ignored' and commit).
 
 ---
 ▸ 2026-10-12T22:29:49Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-12T22:29:49Z [delta-lead]
+
 Claim (coordinator). Owner: bye-1 (code); the coordinator does the prose sweep in parallel. Joel (2026-10-12): every farm is migrated, so proceed. Base: 0.0.16 (released). Spec = the description plus this note.
 
 ## Remove (all transitional, every place marked yaks-bbda / "transitional" / "old layout")
@@ -47,11 +50,13 @@ Evidence: the two permanent behaviors above fail first; `grep -rnE "legacy|migra
 
 ---
 ▸ 2026-10-12T22:30:25Z [bye-1]
+
 Start: Mon Oct 12 22:30:19 UTC 2026 (bye-1)
 yaks path: /Users/joel/src/yaks/.delta/worktrees/h4n200yc9791/yaks/.yaks/yaks-bbda.md
 
 ---
 ▸ 2026-10-12T22:45:51Z [bye-1]
+
 Failing first (before any removal), `cargo test --release --test cli --test sheds_layouts`:
 - tests/cli.rs `a_schema_3_farm_refuses_to_open_and_names_the_release_that_migrates_it` FAILED
 - tests/sheds_layouts.rs: all 5 FAILED: an_old_layout_shed_is_named_as_such_never_read_as_an_empty_farm, changes_show_and_inbox_name_an_old_layout_shed_and_skip_it, answering_into_an_old_layout_shed_refuses_and_writes_nothing, a_flat_shed_forked_before_the_migration_is_compared_to_the_checkout_not_to_nothing, an_old_layout_checkout_refuses_every_command_naming_the_release_that_migrates_it
@@ -59,6 +64,7 @@ Plan: one `store::old_layout(root)` predicate; `Farm::open` + merge source + ans
 
 ---
 ▸ 2026-10-12T22:57:10Z [bye-1]
+
 Decision: one predicate and one message. `store::old_layout(root)` (schema marker < 4, or any `hairy/ shaving/ shorn/ dead/` dir holding a `.md`; an empty status dir does not count) plus `store::old_layout_refusal` / `OLD_LAYOUT_FIX`. Every refusal (open, merge source, sheds) builds on them. Rejected: separate checks per call site; keeping `schema_warning` (removed with the field).
 Decision: `Farm::open` returns a new `OpenError::OldLayout(msg)`, printed as `error: <msg>`, exit 1, for reads and writes alike. Rejected: reusing `NoFarm` (loses the distinct cause) and a warning-only read.
 Decision: `store::resolve_farm_root` still recognises an old-layout farm as a farm (via `old_layout`), so discovery finds it and `open` refuses with the migrate message instead of "no .yaks farm". `yaks init` over one says "already exists, leaving it untouched" (unchanged, checked by hand).
@@ -73,10 +79,12 @@ Decision: tests/fixtures/farm (schema 3, status dirs) converted to the flat layo
 
 ---
 ▸ 2026-10-12T22:58:09Z [bye-1]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-12T22:58:28Z [bye-1]
+
 Summary (bye-1): removed the migration and the dual-layout read; added the permanent schema-3 refusal.
 - Removed: `yaks migrate` (+ `Farm::migrate`, plan/outcome, link rewrite, `tracked_by_git`), `store::legacy`, `lock_for_migration`, `Status::dir` (now `as_str`), `schema_warning`; changes: `legacy_pair`, `Kind::Migrated`, `Migration`; status/commit migration line, message and `migrated` JSON key; preflight migration scope + `duplicate-status`/`both-layouts`; doctor's `DuplicateStatus`/`BothLayouts`; sheds: `old_layout` field, `is_old_layout`, `old_tree_task`, `flat_attachment_links`, `farm.layout`/`layout` JSON keys, `(old layout)` markers; `artifacts/<id>` branches in attachment_owner/path_owner/yak_id_of/merge.
 - Kept/new: `store::old_layout` + refusal message (`<farm> uses the old yak layout (status directories, schema 3), which this yaks no longer reads: migrate it once with yaks 0.0.16 (npx -y @j15r/yaks@0.0.16 migrate), commit, then use this yaks again`) on `Farm::open` (all commands, reads too) and the merge source; an old-layout shed is `ShedFarm::Unreadable("old layout (pre-0.0.16 clone) ... not read ...")` in sheds/changes/show --sheds/inbox --sheds/answer@shed; a pre-migration base commit falls back to the next base. doctor/preflight keep `invalid-status` and a flat `duplicate-id`.
@@ -87,4 +95,5 @@ Summary (bye-1): removed the migration and the dual-layout read; added the perma
 
 ---
 ▸ 2026-10-12T22:58:28Z [bye-1]
+
 moved: shaving -> shorn

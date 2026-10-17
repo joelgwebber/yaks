@@ -15,4 +15,5 @@ Polish deferred from yaks-3290. (1) Per-row herd badge/column in the list, gated
 
 ---
 ▸ 2026-09-21T19:30:58Z [agent]
+
 SHORN (badge). Per-herd colour on each row's id prefix in the list, gated to multi-herd farms (App::is_multi_herd = more than one distinct id prefix), so single-herd farms and snapshots are unchanged. render::herd_color hashes the prefix (FNV-1a) into a 6-colour palette; the id tail stays blue. Colours do not appear in the plain-text snapshots (no churn); verified by unit tests (is_multi_herd plus a multi-herd draw). The explicit in-form herd PICKER (override the target herd inside the create form) is split into a standalone follow-up: it needs create-form row-index surgery, and the context-seeded current-herd plus CLI --prefix already cover routing, so it is kept out of the release. docs/tui.md notes the herd colour and create-header herd.

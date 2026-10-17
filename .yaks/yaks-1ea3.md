@@ -16,10 +16,12 @@ Overlay part (d) + the arrival flash of yaks-7204: the Inbox view (and its tab c
 
 ---
 ▸ 2026-10-13T01:29:43Z [delta-lead]
+
 moved: hairy -> shaving
 
 ---
 ▸ 2026-10-13T01:29:44Z [delta-lead]
+
 Claim (delta-lead, yakherd): owner inbox-1 (Sonnet worker). Parallel with badge-1 (yaks-ed6d) and disco-1 (yaks-93fe).
 
 Goal:
@@ -34,11 +36,13 @@ Evidence (fail first): unit tests that (i) the Inbox rows and count include a ho
 
 ---
 ▸ 2026-10-13T01:31:25Z [inbox-1]
+
 Start: Tue Oct 13 01:31:22 UTC 2026
 yaks path: /Users/joel/src/yaks/.delta/worktrees/hers5ay2699w/yaks/.yaks/yaks-1ea3.md
 
 ---
 ▸ 2026-10-13T01:34:51Z [inbox-1]
+
 Tests written first, seen failing before any implementation (cargo test --release sheds_tab):
 ```
 test tui::sheds_tab::tests::inbox_includes_a_home_yak_whose_shed_copy_asks ... FAILED   left: ["yaks-07fe"]  right: ["yaks-07fe", "yaks-8814"]
@@ -51,6 +55,7 @@ test result: FAILED. 16 passed; 5 failed
 
 ---
 ▸ 2026-10-13T01:40:03Z [inbox-1]
+
 Real machine (own binary, `yaks tui --headless --size 150x30`, scratch `git worktree add --detach $DELTA_SCRATCH_DIR/wt HEAD`; discovery names that shed `main` today, yaks-93fe):
 - `YAKS_ACTOR=inbox-scratch yaks ask yaks-0012 --note "which way, scratch?"` in the scratch shed.
 - Inbox (view picker, 5th row) showed 4 rows; the new last row `yaks-0012 p2 task 🦬 Op model + compile: yak operations, Lamport clocks, snapshot` was NOT awaiting a human at home (only the shed asks), the other three are home `needs:` rows. `G` then `a` opened the prompt `Answer yaks-0012 in shed main (Enter save · Ctrl-C cancel): `; typed text + Enter gave `answered yaks-0012 in main: uncommitted there, for its worker to commit`, and the row dropped (rows=3).
@@ -60,6 +65,7 @@ Real machine (own binary, `yaks tui --headless --size 150x30`, scratch `git work
 
 ---
 ▸ 2026-10-13T01:44:17Z [inbox-1]
+
 Decision: the Inbox rule lives in one new predicate `App::flat_matches` (viewmodel.rs) used by both `flat_rows` and `view_count`: `spec.matches`, or, when the spec is `needs_only`, a yak whose id is in `Snapshot::asked_ids()` (ids of `open_asks()`) and that matches the spec with `needs_only` off (so search/type/etc. still apply). Rejected: adding a field to `FilterSpec` (on-disk saved views, filter.rs is outside scope) and duplicating the check in rows and count.
 Decision: the drawer's `inbox` chip on other views is left as is (home `needs:` only). Sharing the rule would need the chip's FilterSpec to know about sheds; not trivial here, so not done. (Side effect: `needs_only` set live in any flat view, e.g. via the chip on Recent, also takes the shed asks, because `flat_matches` keys on the spec; tree views use `tree::build` and do not.)
 Decision: `a` gives the plain answer when the home copy is awaiting a human, else the shed answer if `open_asks()` has the yak (first in open_asks() order), else the plain ask. This applies in any view where the selected yak has a shed ask, not only the Inbox (a yak with an open shed ask on Hairy now answers in the shed on `a`, rather than raising a home ask). Rejected: gating on the active view being the Inbox: the badge overlay already shows the ask on every view, and `a` answering the visible ask is the same rule.
@@ -70,12 +76,15 @@ Decision: `fixture::snapshot` untouched; tests derive variants by mutating a cop
 
 ---
 ▸ 2026-10-13T01:47:55Z [inbox-1]
+
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 ---
 ▸ 2026-10-13T01:48:05Z [inbox-1]
+
 Summary: Inbox rows and tab count include a home yak whose shed copy asks (`App::flat_matches`); `a` answers it in the first asking shed via the shared `open_answer_in_shed_prompt`; `apply_sheds_snapshot` flashes `⏳ new ask in <shed>: <id> <title>` (+N more) for asks not in the previous good scan, keyed by shed path + id + ask-note ts. Docs: docs/tui.md (Inbox paragraph, `a` row), README TUI paragraph, yaks skill TUI line, `a` help_content line. Gate: full `cargo test --release` ok (563 passed + integration suites), `yaks verify` PASS. New insta snapshot inbox_shed_ask_row read by eye (row yaks-8814 listed under the home-blocked yaks-07fe). Not run: docshots generator (coordinator). Caveat: test `a_outside_the_inbox_is_as_before` is weak (Hairy's selection is whatever the tree holds); the unit tests (ii) are the two a_on_* tests.
 
 ---
 ▸ 2026-10-13T01:48:05Z [inbox-1]
+
 moved: shaving -> shorn

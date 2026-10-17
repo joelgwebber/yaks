@@ -15,4 +15,5 @@ Follow-up to bbfe. The dry-run showed checkout@v5 and setup-node@v5 run on Node 
 
 ---
 ▸ 2026-08-23T16:59:40Z
+
 Validated on CI (run 32653229296): all actions now on Node 24 (no deprecation annotations), download-artifact@v8 read all 5 upload-artifact@v7 binaries (interop confirmed), publish dry-ran all 6 packages. Node bump complete.

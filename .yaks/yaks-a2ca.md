@@ -14,4 +14,5 @@ Mining pstack (cursor/plugins) + Lauren Tan's 'Verification is all you need' pos
 
 ---
 ▸ 2026-09-09T00:39:20Z [coordinator]
+
 Shorn: pstack + 'Verification is all you need' mining complete; core finding is in the body. Delivered 79a9 (evidence-over-assertion -> rerunnable artifact, mechanized across verify/attach/doctor --strict). fe5a parked as hairy backlog (blinded skill-change eval is a methodology, not a build; pick up with a concrete skill change worth A/B-ing). Not adopting the router/swarm/styling skills, per stance.
