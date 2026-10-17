@@ -20,8 +20,6 @@
 //! the document) it came from, so yank can copy source and `E` can open the
 //! editor at the right line.
 //!
-//! Not yet wired into the detail pane (the next step of yaks-649d).
-#![allow(dead_code)]
 
 use std::collections::HashSet;
 use std::ops::Range;
@@ -29,11 +27,12 @@ use std::ops::Range;
 use pulldown_cmark::{
     Alignment, BlockQuoteKind, CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd,
 };
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Modifier, Style};
 use unicode_width::UnicodeWidthChar;
 
 use super::detail::Target;
 use super::markdown::MdSpan;
+use super::palette::{self, AlertKind};
 use crate::refs;
 
 /// One rendered screen row.
@@ -52,42 +51,30 @@ pub struct MdRow {
     pub nowrap: bool,
 }
 
-// Styles. Local until the shared palette (yaks-bc53) lands; then these read
-// from it.
+// Styles all come from the shared palette (yaks-bc53).
 fn heading(level: HeadingLevel) -> Style {
-    let s = Style::new().add_modifier(Modifier::BOLD);
-    match level {
-        HeadingLevel::H1 => s.fg(Color::Magenta).add_modifier(Modifier::UNDERLINED),
-        HeadingLevel::H2 => s.fg(Color::Magenta),
-        _ => s,
-    }
+    palette::heading(level as u8)
 }
 fn code() -> Style {
-    Style::new().fg(Color::Green)
+    palette::inline_code()
 }
 fn dim() -> Style {
-    Style::new().fg(Color::DarkGray)
+    palette::marker()
 }
 fn bullet() -> Style {
-    Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD)
-}
-fn quote_bar() -> Style {
-    Style::new().fg(Color::DarkGray)
+    palette::bullet()
 }
 fn link() -> Style {
-    Style::new()
-        .fg(Color::Blue)
-        .add_modifier(Modifier::UNDERLINED)
+    palette::link_text()
 }
-fn alert(kind: BlockQuoteKind) -> (Style, &'static str) {
-    let (c, t) = match kind {
-        BlockQuoteKind::Note => (Color::Blue, "Note"),
-        BlockQuoteKind::Tip => (Color::Green, "Tip"),
-        BlockQuoteKind::Important => (Color::Magenta, "Important"),
-        BlockQuoteKind::Warning => (Color::Yellow, "Warning"),
-        BlockQuoteKind::Caution => (Color::Red, "Caution"),
-    };
-    (Style::new().fg(c), t)
+fn alert_kind(kind: BlockQuoteKind) -> AlertKind {
+    match kind {
+        BlockQuoteKind::Note => AlertKind::Note,
+        BlockQuoteKind::Tip => AlertKind::Tip,
+        BlockQuoteKind::Important => AlertKind::Important,
+        BlockQuoteKind::Warning => AlertKind::Warning,
+        BlockQuoteKind::Caution => AlertKind::Caution,
+    }
 }
 
 /// One character of laid-out text with everything needed to emit it.
@@ -234,8 +221,8 @@ impl Renderer<'_> {
                 let avail = self.avail();
                 let cells = vec![
                     Cell {
-                        ch: '─',
-                        style: dim(),
+                        ch: palette::RULE_CHAR,
+                        style: palette::rule(),
                         link: None,
                         line,
                     };
@@ -245,8 +232,8 @@ impl Renderer<'_> {
                 self.pending_blank = true;
             }
             Event::TaskListMarker(done) => {
-                let st = if *done { dim() } else { bullet() };
-                self.push_plain(if *done { "☑ " } else { "☐ " }, line, st);
+                let glyph = format!("{} ", palette::task_glyph(*done));
+                self.push_plain(&glyph, line, palette::task(*done));
             }
         }
     }
@@ -262,23 +249,29 @@ impl Renderer<'_> {
                 self.block_start();
                 let (style, title) = match kind {
                     Some(k) => {
-                        let (s, t) = alert(*k);
-                        (s, Some(t))
+                        let k = alert_kind(*k);
+                        (palette::alert(k), Some((k, palette::alert_title(k))))
                     }
-                    None => (quote_bar(), None),
+                    None => (palette::quote_bar(), None),
                 };
+                if title.is_none() {
+                    self.styles.push(palette::quote_text());
+                } else {
+                    self.styles.push(Style::new());
+                }
                 self.containers.push(Container {
-                    first: "▎ ".into(),
-                    cont: "▎ ".into(),
+                    first: format!("{} ", palette::QUOTE_BAR),
+                    cont: format!("{} ", palette::QUOTE_BAR),
                     style,
                     used: false,
                 });
-                if let Some(t) = title {
+                if let Some((k, tstyle)) = title {
+                    let t = format!("{} {}", k.glyph(), k.label());
                     let cells: Vec<Cell> = t
                         .chars()
                         .map(|ch| Cell {
                             ch,
-                            style: style.add_modifier(Modifier::BOLD),
+                            style: tstyle,
                             link: None,
                             line,
                         })
@@ -292,7 +285,7 @@ impl Renderer<'_> {
                     CodeBlockKind::Fenced(l) => l.to_string(),
                     CodeBlockKind::Indented => String::new(),
                 };
-                self.verbatim = Some(code());
+                self.verbatim = Some(palette::code_block());
             }
             Tag::HtmlBlock => {
                 self.block_start();
@@ -326,7 +319,7 @@ impl Renderer<'_> {
                         *n += 1;
                         m
                     }
-                    None => format!("{} ", ["•", "◦", "▪"][depth % 3]),
+                    None => format!("{} ", palette::bullet_glyph(depth)),
                 };
                 let w = disp(&marker);
                 self.containers.push(Container {
@@ -357,13 +350,9 @@ impl Renderer<'_> {
                 }
             }
             Tag::TableCell => self.buf.clear(),
-            Tag::Emphasis => self
-                .styles
-                .push(Style::new().add_modifier(Modifier::ITALIC)),
-            Tag::Strong => self.styles.push(Style::new().add_modifier(Modifier::BOLD)),
-            Tag::Strikethrough => self
-                .styles
-                .push(Style::new().add_modifier(Modifier::CROSSED_OUT)),
+            Tag::Emphasis => self.styles.push(palette::emphasis()),
+            Tag::Strong => self.styles.push(palette::strong()),
+            Tag::Strikethrough => self.styles.push(palette::strikethrough()),
             Tag::Superscript | Tag::Subscript => self.styles.push(Style::new()),
             Tag::Link { dest_url, .. } => {
                 self.targets.push(link_target(dest_url));
@@ -391,7 +380,12 @@ impl Renderer<'_> {
                 self.block_end();
                 self.styles.pop();
             }
-            TagEnd::BlockQuote(_) | TagEnd::FootnoteDefinition => {
+            TagEnd::BlockQuote(_) => {
+                self.block_end();
+                self.containers.pop();
+                self.styles.pop();
+            }
+            TagEnd::FootnoteDefinition => {
                 self.block_end();
                 self.containers.pop();
             }
@@ -640,7 +634,7 @@ impl Renderer<'_> {
                 widths[c] = widths[c].max(cell.iter().map(|x| char_w(x.ch)).sum());
             }
         }
-        let sep = Style::new().fg(Color::DarkGray);
+        let sep = palette::rule();
         for (ri, row) in rows.iter().enumerate() {
             let line = row
                 .iter()
@@ -738,10 +732,33 @@ fn link_target(dest: &str) -> Target {
     }
 }
 
+/// Where a bare URL in `chars[start..end]` (a whitespace-delimited run) really
+/// ends: the GFM extended-autolink rule. Trailing `.,;:!?'"` punctuation and an
+/// unbalanced trailing `)` are not part of the URL, while balanced parens
+/// inside it (`.../Foo_(bar)`) stay.
+fn trim_url_end(chars: &[char], start: usize, mut end: usize) -> usize {
+    while end > start {
+        match chars[end - 1] {
+            '.' | ',' | ';' | ':' | '!' | '?' | '\'' | '"' => end -= 1,
+            ')' => {
+                let span = &chars[start..end];
+                let open = span.iter().filter(|&&c| c == '(').count();
+                let close = span.iter().filter(|&&c| c == ')').count();
+                if close > open {
+                    end -= 1;
+                } else {
+                    break;
+                }
+            }
+            _ => break,
+        }
+    }
+    end
+}
+
 /// Bare URLs and known yak ids in prose, as `(start, len, target)` char runs.
-/// A URL ends at whitespace, then loses trailing punctuation and an unbalanced
-/// closing paren (the GFM extended-autolink rule).
-fn autolinks(chars: &[char], known: &HashSet<&str>) -> Vec<(usize, usize, Target)> {
+/// A URL ends at whitespace, then [`trim_url_end`] applies (yaks-f67e).
+pub fn autolinks(chars: &[char], known: &HashSet<&str>) -> Vec<(usize, usize, Target)> {
     let mut out = Vec::new();
     let mut i = 0;
     while i < chars.len() {
@@ -754,19 +771,7 @@ fn autolinks(chars: &[char], known: &HashSet<&str>) -> Vec<(usize, usize, Target
             while i < chars.len() && !chars[i].is_whitespace() {
                 i += 1;
             }
-            let mut end = i;
-            loop {
-                let Some(&last) = end.checked_sub(1).map(|k| &chars[k]) else {
-                    break;
-                };
-                let opens = chars[start..end].iter().filter(|&&c| c == '(').count();
-                let closes = chars[start..end].iter().filter(|&&c| c == ')').count();
-                if ".,;:!?'\"*_~".contains(last) || (last == ')' && closes > opens) {
-                    end -= 1;
-                } else {
-                    break;
-                }
-            }
+            let end = trim_url_end(chars, start, i);
             out.push((
                 start,
                 end - start,
@@ -931,7 +936,7 @@ mod tests {
         let out = texts("- [ ] todo\n- [x] done\n\n> [!NOTE]\n> heads up", 40);
         assert_eq!(
             out,
-            vec!["• ☐ todo", "• ☑ done", "", "▎ Note", "▎ heads up"]
+            vec!["• ☐ todo", "• ☑ done", "", "▎ ● NOTE", "▎ heads up"]
         );
     }
 
@@ -953,5 +958,43 @@ mod tests {
             .collect::<Vec<_>>()
             .join("\n");
         insta::assert_snapshot!(out);
+    }
+
+    // yaks-f67e: where a bare URL ends.
+    fn urls(line: &str) -> Vec<(usize, usize, Target)> {
+        let chars: Vec<char> = line.chars().collect();
+        autolinks(&chars, &HashSet::new())
+    }
+
+    #[test]
+    fn url_in_markdown_link_stops_before_the_closing_paren() {
+        assert_eq!(
+            urls("[x](https://e.com/)"),
+            vec![(4, 14, Target::Url("https://e.com/".into()))]
+        );
+    }
+
+    #[test]
+    fn url_drops_trailing_paren_and_punctuation() {
+        assert_eq!(
+            urls("see https://e.com/a)."),
+            vec![(4, 15, Target::Url("https://e.com/a".into()))]
+        );
+        assert_eq!(
+            urls("(https://e.com/a, ok)"),
+            vec![(1, 15, Target::Url("https://e.com/a".into()))]
+        );
+        assert_eq!(
+            urls("really https://e.com/a?!"),
+            vec![(7, 15, Target::Url("https://e.com/a".into()))]
+        );
+    }
+
+    #[test]
+    fn url_keeps_balanced_parens() {
+        let u = "https://en.wikipedia.org/wiki/Foo_(bar)";
+        assert_eq!(urls(u), vec![(0, u.len(), Target::Url(u.into()))]);
+        let line = format!("see ({u}).");
+        assert_eq!(urls(&line), vec![(5, u.len(), Target::Url(u.into()))]);
     }
 }

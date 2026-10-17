@@ -6,10 +6,10 @@
 
 use std::collections::{HashMap, HashSet};
 
-use super::markdown::{self, MdSpan};
+use super::markdown::MdSpan;
 use super::when::Clock;
+use super::{content, mdrender, palette};
 use crate::model::{Status, Task};
-use crate::refs;
 use crate::sheds::{Shed, YakChange};
 use ratatui::style::{Color, Modifier, Style};
 
@@ -50,6 +50,18 @@ pub struct DLine {
     /// True when this line is a wrapped continuation of the previous one (set by
     /// [`wrap`]). Lets yank rejoin a soft-wrapped line back into one logical line.
     pub cont: bool,
+    /// For a body row: where it came from, so yank can copy source and `E`
+    /// can open the right block at the right line.
+    pub src: Option<Src>,
+}
+
+/// A body row's origin: content block (0 = description, 1.. = comments) and
+/// the inclusive 0-based line range within that block's text. A comment's
+/// header row has `lines: None`.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub struct Src {
+    pub block: usize,
+    pub lines: Option<(usize, usize)>,
 }
 
 /// A single navigable target, located at a line + starting column.
@@ -63,97 +75,6 @@ fn is_url(s: &str) -> bool {
     s.starts_with("http://") || s.starts_with("https://")
 }
 
-/// Scan a body line for known task ids and URLs, returning (col, len, target).
-/// Parse a markdown image link `![alt](path)` starting at `start` (`chars[start]`
-/// is `!`). Returns `(total_len_in_chars, path)` when well-formed.
-fn parse_image_link(chars: &[char], start: usize) -> Option<(usize, String)> {
-    if chars.get(start) != Some(&'!') || chars.get(start + 1) != Some(&'[') {
-        return None;
-    }
-    let mut i = start + 2;
-    while i < chars.len() && chars[i] != ']' {
-        i += 1;
-    }
-    if chars.get(i + 1) != Some(&'(') {
-        return None;
-    }
-    let path_start = i + 2;
-    let mut j = path_start;
-    while j < chars.len() && chars[j] != ')' {
-        j += 1;
-    }
-    if j >= chars.len() {
-        return None;
-    }
-    let path: String = chars[path_start..j].iter().collect();
-    Some((j + 1 - start, path))
-}
-
-/// Where a bare URL in `chars[start..end]` (a whitespace-delimited run) really
-/// ends: the GFM extended-autolink rule. Trailing `.,;:!?'"` punctuation and an
-/// unbalanced trailing `)` are not part of the URL, while balanced parens
-/// inside it (`.../Foo_(bar)`) stay.
-fn trim_url_end(chars: &[char], start: usize, mut end: usize) -> usize {
-    while end > start {
-        match chars[end - 1] {
-            '.' | ',' | ';' | ':' | '!' | '?' | '\'' | '"' => end -= 1,
-            ')' => {
-                let span = &chars[start..end];
-                let open = span.iter().filter(|&&c| c == '(').count();
-                let close = span.iter().filter(|&&c| c == ')').count();
-                if close > open {
-                    end -= 1;
-                } else {
-                    break;
-                }
-            }
-            _ => break,
-        }
-    }
-    end
-}
-
-fn scan_body_links(line: &str, known: &HashSet<&str>) -> Vec<(usize, usize, Target)> {
-    let chars: Vec<char> = line.chars().collect();
-    let mut out = Vec::new();
-    let mut i = 0;
-    while i < chars.len() {
-        if chars[i] == '!' {
-            if let Some((len, path)) = parse_image_link(&chars, i) {
-                out.push((i, len, Target::Artifact(path)));
-                i += len;
-                continue;
-            }
-        }
-        let rest: String = chars[i..].iter().collect();
-        if is_url(&rest) {
-            let start = i;
-            while i < chars.len() && !chars[i].is_whitespace() {
-                i += 1;
-            }
-            i = trim_url_end(&chars, start, i);
-            out.push((
-                start,
-                i - start,
-                Target::Url(chars[start..i].iter().collect()),
-            ));
-            continue;
-        }
-        if refs::is_ref_char(chars[i]) {
-            let (tok, end, run_end) = refs::token_at(&chars, i);
-            if !tok.is_empty() {
-                if let Some(id) = refs::resolve(&tok, |t| known.contains(t)) {
-                    out.push((i, end - i, Target::Task(id)));
-                }
-            }
-            i = run_end;
-            continue;
-        }
-        i += 1;
-    }
-    out
-}
-
 fn field(label: &str, value: &str) -> DLine {
     DLine {
         text: format!("{label:<13}{value}"),
@@ -161,6 +82,7 @@ fn field(label: &str, value: &str) -> DLine {
         links: vec![],
         md: vec![],
         cont: false,
+        src: None,
     }
 }
 
@@ -173,6 +95,7 @@ fn warn_field(label: &str, value: &str) -> DLine {
         links: vec![],
         md: vec![],
         cont: false,
+        src: None,
     }
 }
 
@@ -190,6 +113,7 @@ pub fn banner(text: &str) -> DLine {
         links: vec![],
         md: vec![],
         cont: false,
+        src: None,
     }
 }
 
@@ -200,6 +124,7 @@ fn section(text: &str) -> DLine {
         links: vec![],
         md: vec![],
         cont: false,
+        src: None,
     }
 }
 
@@ -210,6 +135,7 @@ fn empty() -> DLine {
         links: vec![],
         md: vec![],
         cont: false,
+        src: None,
     }
 }
 
@@ -248,6 +174,7 @@ fn ref_line(prefix: String, glyph: &str, id: &str, title: &str, exists: bool) ->
         links,
         md: vec![],
         cont: false,
+        src: None,
     }
 }
 
@@ -270,6 +197,7 @@ fn sheds_section(sheds: &[(&Shed, &YakChange)]) -> Vec<DLine> {
             links: vec![],
             md: vec![],
             cont: false,
+            src: None,
         });
     }
     for (shed, y) in sheds {
@@ -324,6 +252,7 @@ fn sheds_section(sheds: &[(&Shed, &YakChange)]) -> Vec<DLine> {
             links: vec![],
             md,
             cont: false,
+            src: None,
         });
     }
     out
@@ -332,7 +261,7 @@ fn sheds_section(sheds: &[(&Shed, &YakChange)]) -> Vec<DLine> {
 /// [`build_at`] against the pinned test clock (see [`Clock::app_default`]).
 #[cfg(test)]
 pub fn build(task: &Task, all: &[Task], sheds: &[(&Shed, &YakChange)]) -> Vec<DLine> {
-    build_at(task, all, sheds, &Clock::app_default())
+    build_at(task, all, sheds, &Clock::app_default(), 0)
 }
 
 /// `sheds` is what the other sheds changed about this yak (`Snapshot::copies`);
@@ -344,6 +273,7 @@ pub fn build_at(
     all: &[Task],
     sheds: &[(&Shed, &YakChange)],
     clock: &Clock,
+    width: usize,
 ) -> Vec<DLine> {
     let by_id: HashMap<&str, &Task> = all.iter().map(|t| (t.id.as_str(), t)).collect();
     let known: HashSet<&str> = by_id.keys().copied().collect();
@@ -474,6 +404,7 @@ pub fn build_at(
             links,
             md: vec![],
             cont: false,
+            src: None,
         });
     }
 
@@ -491,54 +422,103 @@ pub fn build_at(
                 links: vec![],
                 md: vec![],
                 cont: false,
+                src: None,
             });
         }
     }
 
     out.extend(sheds_section(sheds));
 
-    let body = task.body.trim();
-    if !body.is_empty() {
+    out.extend(body_rows(task, &known, clock, width));
+    out
+}
+
+/// Width the body is laid out at before the first render has measured the
+/// pane (`width == 0`).
+const FALLBACK_WIDTH: usize = 80;
+
+/// The body, rendered: the description and each comment parsed as its own
+/// markdown document (`content::parse` first, so nothing leaks between them),
+/// each comment under a header row. Rows are already wrapped to `width` and
+/// carry their [`Src`], so [`wrap`] leaves them alone.
+fn body_rows(task: &Task, known: &HashSet<&str>, clock: &Clock, width: usize) -> Vec<DLine> {
+    let width = if width == 0 { FALLBACK_WIDTH } else { width };
+    let mut out = Vec::new();
+    let blocks = content::parse(&task.body);
+    for (bi, block) in blocks.iter().enumerate() {
+        let is_comment = matches!(block.kind, content::BlockKind::Comment { .. });
+        if block.text.trim().is_empty() && !is_comment {
+            continue;
+        }
         out.push(empty());
-        let mut hl = markdown::Highlighter::new();
-        for raw in body.lines() {
-            let line = refs::strip_wikilinks(raw);
-            let links = scan_body_links(&line, &known);
-            let md = hl.line(&line);
+        if is_comment {
+            out.push(comment_header(&block.kind, clock, width, bi));
+        }
+        for row in mdrender::render(&block.text, width, known) {
             out.push(DLine {
-                text: line,
+                text: row.text,
                 kind: Kind::Body,
-                links,
-                md,
+                links: row.links,
+                md: row.spans,
                 cont: false,
+                src: Some(Src {
+                    block: bi,
+                    lines: Some(row.lines),
+                }),
             });
         }
     }
     out
 }
 
-/// For each display line, the content-block index it belongs to (0 =
-/// description, 1.. = comments), or `None` for non-body lines. A comment starts
-/// at a Body `---` line immediately followed by a `▸ …` line (the on-disk
-/// comment marker), letting the detail pane map its line cursor to a content
-/// block for block navigation and context-sensitive editing.
-pub fn block_index_per_line(lines: &[DLine]) -> Vec<Option<usize>> {
-    let mut out = vec![None; lines.len()];
-    let mut block = 0usize;
-    for i in 0..lines.len() {
-        if lines[i].kind != Kind::Body {
-            continue;
+/// The label of a comment block: `actor · when` (or just `when`). One design
+/// for the detail pane's comment headers and the edit form's separators.
+pub fn comment_label(kind: &content::BlockKind, clock: &Clock) -> String {
+    match kind {
+        content::BlockKind::Description => "description".into(),
+        content::BlockKind::Comment { timestamp, actor } => {
+            let when = clock.format(timestamp);
+            match actor {
+                Some(a) => format!("{a} · {when}"),
+                None => when,
+            }
         }
-        let is_sep = lines[i].text.trim() == "---"
-            && lines
-                .get(i + 1)
-                .is_some_and(|n| n.kind == Kind::Body && n.text.trim_start().starts_with('▸'));
-        if is_sep {
-            block += 1;
-        }
-        out[i] = Some(block);
     }
-    out
+}
+
+/// A comment's header row in the detail pane: `▸ actor · when ────`.
+fn comment_header(kind: &content::BlockKind, clock: &Clock, width: usize, block: usize) -> DLine {
+    let head = format!("\u{25b8} {} ", comment_label(kind, clock));
+    let head_len = head.chars().count();
+    let dashes = width.saturating_sub(head.chars().map(char_disp).sum());
+    let text = format!("{head}{}", palette::RULE_CHAR.to_string().repeat(dashes));
+    DLine {
+        md: vec![
+            MdSpan {
+                start: 0,
+                len: head_len,
+                style: palette::comment_header(true),
+            },
+            MdSpan {
+                start: head_len,
+                len: dashes,
+                style: palette::rule(),
+            },
+        ],
+        text,
+        kind: Kind::Body,
+        links: vec![],
+        cont: false,
+        src: Some(Src { block, lines: None }),
+    }
+}
+
+/// For each display line, the content-block index it belongs to (0 =
+/// description, 1.. = comments), or `None` for non-body lines, from the rows'
+/// [`Src`]. Lets the detail pane map its line cursor to a content block for
+/// block navigation and context-sensitive editing.
+pub fn block_index_per_line(lines: &[DLine]) -> Vec<Option<usize>> {
+    lines.iter().map(|l| l.src.map(|s| s.block)).collect()
 }
 
 /// Display width of a char (wide glyphs like status emoji count as 2).
@@ -611,7 +591,9 @@ pub fn wrap(lines: Vec<DLine>, width: usize) -> Vec<DLine> {
     for dl in lines {
         let chars: Vec<char> = dl.text.chars().collect();
         let total: usize = chars.iter().map(|&c| char_disp(c)).sum();
-        if total <= width {
+        // Rendered body rows are already laid out (or deliberately unwrapped:
+        // code, tables).
+        if total <= width || dl.src.is_some() {
             out.push(dl);
             continue;
         }
@@ -649,6 +631,7 @@ pub fn wrap(lines: Vec<DLine>, width: usize) -> Vec<DLine> {
                 links,
                 md,
                 cont: ri > 0,
+                src: dl.src,
             });
         }
     }
@@ -888,17 +871,43 @@ mod tests {
 
     #[test]
     fn build_attaches_markdown_spans_to_body_lines() {
-        let all = vec![task("yak-0001", None, &[], "# Heading\nplain line")];
+        let all = vec![task("yak-0001", None, &[], "# Heading\n\nplain line")];
         let lines = build(&all[0], &all, &[]);
         let body: Vec<&DLine> = lines.iter().filter(|l| l.kind == Kind::Body).collect();
-        // The heading line carries a dimmed `# ` marker span and a heading-text
-        // span; the plain line carries none.
-        let heading = body.iter().find(|l| l.text == "# Heading").unwrap();
-        assert_eq!(heading.md.len(), 2);
-        assert_eq!((heading.md[0].start, heading.md[0].len), (0, 2));
-        assert_eq!((heading.md[1].start, heading.md[1].len), (2, 7));
+        // The rendered heading hides its `# ` marker and carries one heading
+        // span; the plain line carries none. Each row knows its source line.
+        let heading = body.iter().find(|l| l.text == "Heading").unwrap();
+        assert_eq!(heading.md.len(), 1);
+        assert_eq!((heading.md[0].start, heading.md[0].len), (0, 7));
+        assert_eq!(heading.src.unwrap().lines, Some((0, 0)));
         let plain = body.iter().find(|l| l.text == "plain line").unwrap();
         assert!(plain.md.is_empty());
+        assert_eq!(plain.src.unwrap().lines, Some((2, 2)));
+    }
+
+    #[test]
+    fn comments_render_under_a_header_with_their_block_index() {
+        let body = crate::store::append_note("Desc.", "2026-09-10T11:00:00Z", Some("joel"), "a\nb");
+        let all = vec![task("yak-0001", None, &[], &body)];
+        let lines = build(&all[0], &all, &[]);
+        let body: Vec<&DLine> = lines.iter().filter(|l| l.kind == Kind::Body).collect();
+        let texts: Vec<&str> = body.iter().map(|l| l.text.as_str()).collect();
+        assert_eq!(texts[0], "Desc.");
+        assert!(texts[1].starts_with("\u{25b8} joel · 1h ago "), "{texts:?}");
+        // CommonMark: the comment's soft break joins its two lines.
+        assert_eq!(texts[2], "a b");
+        assert_eq!(
+            body.iter()
+                .map(|l| l.src.unwrap().block)
+                .collect::<Vec<_>>(),
+            vec![0, 1, 1]
+        );
+        // No raw `---` / `▸ <timestamp>` lines leak through.
+        assert!(
+            !texts
+                .iter()
+                .any(|t| *t == "---" || t.contains("2026-09-10T"))
+        );
     }
 
     #[test]
@@ -913,6 +922,7 @@ mod tests {
                 style: ratatui::style::Style::new(),
             }],
             cont: false,
+            src: None,
         };
         // Width 10 splits the line; the code span (cols 5..16) must be clipped to
         // whatever falls on each row and re-based to that row's columns.
@@ -947,6 +957,7 @@ mod tests {
             links: vec![],
             md: vec![],
             cont: false,
+            src: None,
         };
         let rows = wrap(vec![dl], 10);
         let texts: Vec<&str> = rows.iter().map(|r| r.text.as_str()).collect();
@@ -963,6 +974,7 @@ mod tests {
             links: vec![(4, 8, Target::Task("yak-0001".into()))],
             md: vec![],
             cont: false,
+            src: None,
         };
         let rows = wrap(vec![dl], 8);
         let link_row = rows.iter().find(|r| !r.links.is_empty()).unwrap();
@@ -979,6 +991,7 @@ mod tests {
             links: vec![],
             md: vec![],
             cont: false,
+            src: None,
         };
         assert_eq!(wrap(vec![dl], 10)[0].text, "  alpha");
 
@@ -988,6 +1001,7 @@ mod tests {
             links: vec![],
             md: vec![],
             cont: false,
+            src: None,
         };
         let texts: Vec<String> = wrap(vec![dl2], 4).iter().map(|r| r.text.clone()).collect();
         assert_eq!(texts, vec!["abcd", "efgh", "ij"]);
@@ -1001,6 +1015,7 @@ mod tests {
             links: vec![],
             md: vec![],
             cont: false,
+            src: None,
         };
         assert_eq!(wrap(vec![dl], 0).len(), 1);
     }
@@ -1019,42 +1034,5 @@ mod tests {
             jumps.iter().map(|j| j.target.clone()).collect::<Vec<_>>(),
             vec![Target::Url("https://example.com/x".into())]
         );
-    }
-
-    /// The links `scan_body_links` finds in `line`, with their spans.
-    fn urls(line: &str) -> Vec<(usize, usize, Target)> {
-        scan_body_links(line, &HashSet::new())
-    }
-
-    #[test]
-    fn url_in_markdown_link_stops_before_the_closing_paren() {
-        assert_eq!(
-            urls("[x](https://e.com/)"),
-            vec![(4, 14, Target::Url("https://e.com/".into()))]
-        );
-    }
-
-    #[test]
-    fn url_drops_trailing_paren_and_punctuation() {
-        assert_eq!(
-            urls("see https://e.com/a)."),
-            vec![(4, 15, Target::Url("https://e.com/a".into()))]
-        );
-        assert_eq!(
-            urls("(https://e.com/a, ok)"),
-            vec![(1, 15, Target::Url("https://e.com/a".into()))]
-        );
-        assert_eq!(
-            urls("really https://e.com/a?!"),
-            vec![(7, 15, Target::Url("https://e.com/a".into()))]
-        );
-    }
-
-    #[test]
-    fn url_keeps_balanced_parens() {
-        let u = "https://en.wikipedia.org/wiki/Foo_(bar)";
-        assert_eq!(urls(u), vec![(0, u.len(), Target::Url(u.into()))]);
-        let line = format!("see ({u}).");
-        assert_eq!(urls(&line), vec![(5, u.len(), Target::Url(u.into()))]);
     }
 }

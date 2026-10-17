@@ -188,6 +188,20 @@ The swatch below shows every style on a dark and a light terminal.
 
 ![yaks markdown palette on a dark and a light terminal](assets/tui-md-palette.svg)
 
+**Rendered markdown** — the detail pane renders a body as CommonMark
+(GitHub-flavoured): markers are hidden, a single newline joins lines into one
+paragraph that re-wraps to the pane width (a blank line starts a new one),
+wrapped list items hang under their bullet, quotes keep their `▎` bar around
+nested headings, lists and code, code blocks and tables are never wrapped, and
+`[text](url)` shows just its text (still followable with `Tab`/`Enter`). The
+description and each comment render separately, each comment under a
+`▸ author · when` header. Yanking rendered rows (`v` … `y`) copies their source
+markdown, not the displayed text. The editor still shows the raw source.
+
+![yaks rendering a markdown torture test](assets/tui-md-render.svg)
+
+![the same, scrolled to its code block, table and a comment](assets/tui-md-render-2.svg)
+
 **Inbox** — the flat, cross-status list of every yak carrying a `needs` value
 (`⏳` awaiting a human, `✅` answered and awaiting an agent), and also a yak
 of this farm whose copy in another shed is awaiting a human (the TUI form of

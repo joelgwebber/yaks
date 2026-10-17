@@ -73,7 +73,7 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
             Overlay::Edit(ed) if !ed.single_line => render_editor_panel(ed, frame, inner),
             Overlay::Fuzzy(fp) => render_fuzzy_results(app, fp, frame, inner),
             Overlay::Drawer(d) => render_drawer(d, frame, inner),
-            Overlay::Create(f) => render_create(f, frame, inner),
+            Overlay::Create(f) => render_create(f, &app.clock, frame, inner),
             Overlay::Help(scroll) => render_help(*scroll, frame, inner),
             Overlay::ViewPicker(sel) => render_view_picker(app, *sel, frame, inner),
             _ if app.on_sheds_tab() => render_shed_detail(app, frame, inner),

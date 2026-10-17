@@ -1097,7 +1097,9 @@ fn long_detail_app(body_lines: usize) -> App {
     t.body = (0..body_lines)
         .map(|i| format!("line {i}"))
         .collect::<Vec<_>>()
-        .join("\n");
+        // Hard breaks (trailing backslash), so each source line stays its own
+        // row under CommonMark soft-break rendering (yaks-649d).
+        .join("\\\n");
     let mut app = App::new(vec![t]);
     enter_key(&mut app);
     app
@@ -3671,5 +3673,33 @@ fn a_on_a_shed_only_ask_opens_the_in_shed_prompt() {
     assert_eq!(
         app.notification.as_deref(),
         Some("yaks-5001 is only in shed perf-1-profile: read-only here")
+    );
+}
+
+#[test]
+fn rendered_body_reflows_and_yank_copies_the_source_markdown() {
+    // yaks-649d: the body is rendered (markers hidden, soft breaks joined,
+    // list items hanging), and yanking rendered rows copies the source.
+    let mut t = task("m0", "Md", Status::Hairy, 3, None);
+    t.body = "Some **bold**\ntext here.\n\n- item one that is long enough to wrap around".into();
+    let mut app = App::new(vec![t]);
+    enter_key(&mut app);
+    let frame = draw(&app, 40, 20);
+    assert!(frame.contains("Some bold text here."), "{frame}");
+    assert!(!frame.contains("**"), "{frame}");
+    let lines = app.detail_dlines();
+    let first = lines
+        .iter()
+        .position(|l| l.text == "Some bold text here.")
+        .unwrap();
+    let last = lines.len() - 1;
+    assert!(
+        lines[last].text.starts_with("  "),
+        "hanging indent: {:?}",
+        lines[last].text
+    );
+    assert_eq!(
+        app.selection_text(first, last).unwrap(),
+        "Some **bold**\ntext here.\n\n- item one that is long enough to wrap around"
     );
 }

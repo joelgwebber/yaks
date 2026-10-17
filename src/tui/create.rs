@@ -13,6 +13,8 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Wrap};
 
+use super::palette;
+use super::when::Clock;
 use super::{
     CREATE_LABEL_W, HEADER_ROWS, PRI_CHOICES, TYPE_CHOICES, content, disp_width, editor_theme,
     kind_index, make_handler, multiline_field, pri_index, render_chip_row, render_text_row,
@@ -219,7 +221,7 @@ impl CreateForm {
     }
 }
 
-pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
+pub(crate) fn render_create(f: &CreateForm, clock: &Clock, frame: &mut Frame, area: Rect) {
     let has_herd = f.has_herd_row();
     let mut constraints = vec![
         Constraint::Length(1), // header
@@ -329,7 +331,7 @@ pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
             hr,
         );
     }
-    render_content_stack(f, frame, content_r);
+    render_content_stack(f, clock, frame, content_r);
 }
 
 /// Render the description + comment blocks as an accordion: one labeled
@@ -337,7 +339,7 @@ pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
 /// The focused block (cursor on a content row) shows a live editor; otherwise
 /// the description shows as a dimmed, wrapped preview so it's visible at a
 /// glance while the cursor sits on a header field.
-pub(crate) fn render_content_stack(f: &CreateForm, frame: &mut Frame, area: Rect) {
+pub(crate) fn render_content_stack(f: &CreateForm, clock: &Clock, frame: &mut Frame, area: Rect) {
     let focused = f.content_index();
     let expand = focused.unwrap_or(0); // description is shown by default
     let mut constraints = Vec::new();
@@ -351,7 +353,7 @@ pub(crate) fn render_content_stack(f: &CreateForm, frame: &mut Frame, area: Rect
     let mut ri = 0;
     for (i, block) in f.blocks.iter().enumerate() {
         let is_focused = focused == Some(i);
-        render_block_separator(block, is_focused, frame, rects[ri]);
+        render_block_separator(block, is_focused, clock, frame, rects[ri]);
         ri += 1;
         if i != expand {
             continue;
@@ -384,36 +386,27 @@ pub(crate) fn render_content_stack(f: &CreateForm, frame: &mut Frame, area: Rect
     }
 }
 
-/// One accordion separator: `▸ label ───` (cyan marker when focused, dim
-/// otherwise). Comment blocks label with their date.
+/// One accordion separator: `▸ label ───`, the same design as the detail
+/// pane's comment headers (`detail::comment_label`, `palette::comment_header`):
+/// a comment reads `author · when`; the focused block's label is accented.
 pub(crate) fn render_block_separator(
     block: &ContentBlock,
     focused: bool,
+    clock: &Clock,
     frame: &mut Frame,
     area: Rect,
 ) {
-    let label = match &block.kind {
-        content::BlockKind::Description => "description".to_string(),
-        content::BlockKind::Comment { timestamp, actor } => {
-            let date = timestamp.get(..10).unwrap_or(timestamp);
-            match actor {
-                Some(a) => format!("comment · {date} · {a}"),
-                None => format!("comment · {date}"),
-            }
-        }
-    };
-    let marker = if focused { "▸ " } else { "  " };
+    let label = super::detail::comment_label(&block.kind, clock);
+    let marker = if focused { "\u{25b8} " } else { "  " };
     let head = format!("{marker}{label} ");
     let dashes = (area.width as usize).saturating_sub(disp_width(&head));
-    let color = if focused {
-        Color::Cyan
-    } else {
-        Color::DarkGray
-    };
     frame.render_widget(
         Paragraph::new(Line::from(vec![
-            Span::styled(head, Style::new().fg(color)),
-            Span::styled("─".repeat(dashes), Style::new().fg(Color::DarkGray)),
+            Span::styled(head, palette::comment_header(focused)),
+            Span::styled(
+                palette::RULE_CHAR.to_string().repeat(dashes),
+                palette::rule(),
+            ),
         ])),
         area,
     );

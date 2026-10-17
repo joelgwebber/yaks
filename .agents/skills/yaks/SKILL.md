@@ -113,11 +113,15 @@ In `yaks tui` the same flow is one key: `a` asks or answers the selected yak in 
 
 ## Writing notes and descriptions (markdown)
 
-Yak bodies are markdown, and the TUI (detail pane and editor) styles them **one line at a time**, so structure has to be on its own lines. A heading, list items and a code fence crammed into one long line render as a single wrapped paragraph, which is nearly unreadable.
+Yak bodies are **CommonMark** (GitHub-flavoured), and the TUI's detail pane renders them that way. The rule that matters most: **a single newline does not break a line.** Consecutive lines join into one paragraph, re-wrapped to the pane width; only a blank line starts a new paragraph. So:
+
+- Put each item on its own **list line** (`- `, `1. `), or separate items with a **blank line**. `Decision: ...` and `Evidence: ...` written on consecutive plain lines run together into one paragraph.
+- Don't hard-wrap prose at a fixed width; it is reflowed anyway. To force a break inside a paragraph, end the line with `\`.
+- Fence code, commands and pasted output (```` ``` ````), which are shown verbatim and never wrapped.
 
 - **Pass multi-line text on stdin or from a file, not as one inline argument.** `yaks update <id> --note - <<'EOF'` followed by the text and a closing `EOF` (a quoted `'EOF'` keeps backticks and `$` literal). The same works for `yaks create --description -`, `yaks ask --note -` and `yaks answer --note -`; `--note-file PATH` and `--description-file PATH` read a file. Inline `--note "..."` is for one short line.
-- **What the TUI styles:** headings (`#` to `######` plus a space, alone on a line), list items (`-`, `*`, `+` or `1.` / `1)`, one per line), `>` quotes, fenced code blocks (``` or `~~~`, each fence alone on its line), inline `code`, `**bold**` and `*italic*`. A blank line separates paragraphs. Yak ids and URLs in the body become followable links.
-- **What it does not style:** tables (they show as plain text), HTML, nested constructs beyond list indentation. Prefer a list to a table, and `yaks attach` for images and long output.
+- **What the TUI renders:** headings, paragraphs, bullet and numbered lists (nested, wrapped lines hang under their marker), `>` quotes (which may hold lists, code and headings), fenced and indented code, tables, rules (`---` after a blank line), task lists (`- [ ]`), alerts (`> [!NOTE]`), `**bold**`, `*italic*`, `~~strike~~`, inline `code`, and links (`[text](url)` shows just the text). Yak ids and URLs become followable links. Markers are hidden; a comment shows under a header with its author and age.
+- **What it does not:** inline HTML (shown as text), math, footnote jumps. `yaks attach` images and long output rather than pasting them.
 - **One event per note, the fact first.** Quote a command and its real output in a fenced block, and keep a `Decision:` note (the choice and the alternatives rejected) separate from progress notes.
 
 ## Evidence before you shear

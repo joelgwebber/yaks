@@ -1,11 +1,11 @@
 ---
 id: yaks-649d
 title: 'Renderer core: pulldown-cmark to a source-mapped row model'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-10-17T04:25:16Z'
-updated: '2026-10-17T04:31:30Z'
+updated: '2026-10-17T04:57:02Z'
 parent: yaks-ea13
 labels:
 - markdown
@@ -36,3 +36,31 @@ moved: hairy -> shaving
 ---
 ▸ 2026-10-17T04:31:30Z [delta-lead]
 Claim (yakherd delta-lead, 2026-10-17): the coordinator builds this one in the lead thread, in a new module (src/tui/mdrender.rs) first, wired into detail.rs after the quick-win workers land.
+
+![ea13-rendered-top](yaks-649d/ea13-rendered-top.png)
+
+![ea13-rendered-end](yaks-649d/ea13-rendered-end.png)
+
+---
+▸ 2026-10-17T04:56:17Z [delta-lead]
+Core wired into the detail pane (delta-lead, 2026-10-17).
+
+- `src/tui/mdrender.rs`: pulldown-cmark 0.13 (no default features, GFM tables/tasks/strikethrough/footnotes/alerts), prefix-stack layout, per-row source-line map, palette styles. 23 unit tests + an insta snapshot of yaks-ea13's body at 60 columns.
+- `detail::build_at` takes the pane width; the body is split with `content::parse`, each block rendered on its own, each comment under a `▸ author · when` header row (`detail::comment_label`, also used by the edit form's `render_block_separator` now: one design). `DLine.src` (block + source lines) replaces `block_index_per_line`'s `---`/`▸` text match; `E` and Ctrl-N/P use it.
+- Yank (`selection_text`) copies the source lines of rendered rows, gaps included (test `rendered_body_reflows_and_yank_copies_the_source_markdown`).
+- The old `scan_body_links` is gone; bare-URL autolinking moved into mdrender with links-1's `trim_url_end` rule and tests (yaks-f67e).
+- Docs: docs/tui.md "Rendered markdown" + two docshots (`docshots_md_render` → `tui-md-render*.svg`); the yaks skill's "Writing notes and descriptions" now states the CommonMark newline rule and what renders (part of yaks-382b's ask; the rest of 382b stays open).
+
+Decision: tests that built long bodies from single-newline lines (`long_detail_app`) now join lines with hard breaks (`\` + newline): under CommonMark those were one paragraph, and the tests are about scrolling many rows, not about paragraphs. Alternative rejected: a special "preserve newlines" mode.
+
+Evidence: `cargo test --release` all green (17 result lines ok). Attached PNGs (headless SVG rasterized with Firefox) of the torture test top and end, comment header included.
+
+Remaining for this yak: nothing structural. Code/table horizontal scroll is yaks-c733, exact-line `E` is yaks-4fa6; inline-code-inside-a-link and footnote jumps are in their sibling yaks.
+
+---
+▸ 2026-10-17T04:56:58Z [delta-lead]
+verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-10-17T04:57:02Z [delta-lead]
+moved: shaving -> shorn

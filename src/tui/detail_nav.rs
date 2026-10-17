@@ -55,6 +55,7 @@ impl App {
             return Vec::new();
         };
         let copies = self.shed_copies(&t.id);
+        let width = self.detail_width.get() as usize;
         let lines = match self.selected_shed_only() {
             // A yak only another shed has: that shed's copy, read-only, under
             // a banner. Links resolve over the home yaks and the shed-only
@@ -68,12 +69,12 @@ impl App {
                     detail::banner(&format!("only in shed {}", shed.name())),
                     detail::blank(),
                 ];
-                lines.extend(detail::build_at(t, &all, &copies, &self.clock));
+                lines.extend(detail::build_at(t, &all, &copies, &self.clock, width));
                 lines
             }
-            None => detail::build_at(t, &self.all, &copies, &self.clock),
+            None => detail::build_at(t, &self.all, &copies, &self.clock, width),
         };
-        detail::wrap(lines, self.detail_width.get() as usize)
+        detail::wrap(lines, width)
     }
 
     /// What the other sheds changed about yak `id` (the Sheds section's data;
@@ -160,36 +161,72 @@ impl App {
 
     /// y / Enter (in visual mode) — copy the selected line block (dedented) to
     /// the clipboard and clear the selection.
+    /// The text a yank of detail rows `lo..=hi` copies: source markdown for
+    /// rendered body rows, the displayed text (soft wraps rejoined) for the
+    /// rest, dedented.
+    pub(crate) fn selection_text(&self, lo: usize, hi: usize) -> Option<String> {
+        let lines = self.detail_dlines();
+        if lines.is_empty() {
+            return None;
+        }
+        let hi = hi.min(lines.len() - 1);
+        let task = self.selected()?;
+        let blocks = super::content::parse(&task.body);
+        // Rejoin soft-wrapped continuations into their logical line so a
+        // yanked paragraph doesn't carry hard breaks at wrap points.
+        // A rendered body row yanks its *source* markdown instead
+        // (yaks-649d): each source line once, in order.
+        let mut rejoined: Vec<String> = Vec::new();
+        let mut last_src: Option<(usize, usize)> = None;
+        for line in &lines[lo..=hi] {
+            if let Some(src) = line.src {
+                let Some((a, b)) = src.lines else {
+                    continue; // a comment header row
+                };
+                let Some(block) = blocks.get(src.block) else {
+                    continue;
+                };
+                let text: Vec<&str> = block.text.split('\n').collect();
+                // Within one block, include source lines between the last
+                // copied one and this row (the blank lines a paragraph gap
+                // renders as one row, a fence line, ...).
+                let from = match last_src {
+                    Some((lb, ln)) if lb == src.block && ln < a => ln + 1,
+                    _ => a,
+                };
+                for n in from..=b {
+                    if last_src.is_some_and(|(lb, ln)| lb == src.block && ln >= n) {
+                        continue;
+                    }
+                    if let Some(t) = text.get(n) {
+                        rejoined.push((*t).to_string());
+                    }
+                    last_src = Some((src.block, n));
+                }
+                continue;
+            }
+            if line.cont {
+                if let Some(last) = rejoined.last_mut() {
+                    last.push(' ');
+                    last.push_str(&line.text);
+                    continue;
+                }
+            }
+            rejoined.push(line.text.clone());
+        }
+        Some(dedent(&rejoined).join("\n"))
+    }
+
     pub(crate) fn yank_selection(&mut self) {
         let Some((lo, hi)) = self.selection_range() else {
             return;
         };
-        let text = match self.selected() {
-            Some(_) => {
-                let lines = self.detail_dlines();
-                if lines.is_empty() {
-                    return;
-                }
-                let hi = hi.min(lines.len() - 1);
-                // Rejoin soft-wrapped continuations into their logical line so a
-                // yanked paragraph doesn't carry hard breaks at wrap points.
-                let mut rejoined: Vec<String> = Vec::new();
-                for line in &lines[lo..=hi] {
-                    if line.cont {
-                        if let Some(last) = rejoined.last_mut() {
-                            last.push(' ');
-                            last.push_str(&line.text);
-                            continue;
-                        }
-                    }
-                    rejoined.push(line.text.clone());
-                }
-                dedent(&rejoined).join("\n")
-            }
-            None => return,
+        let Some(text) = self.selection_text(lo, hi) else {
+            return;
         };
         let ok = crate::clipboard::copy_text(&text);
         self.detail_anchor = None;
+        let hi = hi.min(self.detail_line_count().saturating_sub(1));
         let n = hi - lo + 1;
         self.notification = Some(if ok {
             format!("copied {n} line(s)")

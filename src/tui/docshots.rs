@@ -663,3 +663,34 @@ fn docshots_md_palette() {
     std::fs::write("docs/assets/tui-md-palette.svg", svg).unwrap();
     eprintln!("wrote docs/assets/tui-md-palette.svg");
 }
+
+/// The markdown torture test (yaks-ea13's body plus a comment) in the detail
+/// pane, at the top and scrolled to its code/table/comment part, into
+/// `docs/assets/tui-md-render*.svg` (yaks-649d). Ignored by default; run
+/// explicitly: `cargo test -p yaks docshots_md_render -- --ignored`.
+#[test]
+#[ignore = "asset generator; run with --ignored to refresh docs/assets/tui-md-render*.svg"]
+fn docshots_md_render() {
+    let mut y = t(
+        "yaks-ea13",
+        "Markdown rendering improvements",
+        "task",
+        3,
+        Status::Hairy,
+        None,
+    );
+    y.body = crate::store::append_note(
+        include_str!("testdata/ea13.md").trim_end(),
+        "2026-09-06T11:00:00Z",
+        Some("joel"),
+        "Any thing else you can think of in the markdown\nstandard (such as it is) and common extensions?",
+    );
+    let (w, h) = (110u16, 64u16);
+    let mut app = App::new(vec![y]);
+    HeadlessApp::on_resize(&mut app, w, h);
+    press_key(&mut app, KeyCode::Enter);
+    let _ = toque::render_to_svg(&app, w, h); // measure the pane width
+    write_svg("tui-md-render", &app, w, h);
+    press(&mut app, 'G'); // the code, table and comment at the end
+    write_svg("tui-md-render-2", &app, w, h);
+}
