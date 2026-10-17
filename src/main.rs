@@ -14,6 +14,7 @@ mod farm;
 mod filter;
 mod init;
 mod json;
+mod migrate;
 mod model;
 mod preflight;
 mod refs;
@@ -187,7 +188,8 @@ enum Command {
     },
     /// Attach a local file to a yak as evidence: copy it under
     /// `.yaks/<id>/` (beside the yak's file) and link it in the body as
-    /// `![name](<id>/<file>)`. Use for artifact
+    /// `![name](<id>/<file>)` for an image (png, jpg, jpeg, gif, webp, svg)
+    /// or `[name](<id>/<file>)` for any other file. Use for artifact
     /// evidence a human or coordinator can look at (screenshots, TUI frames).
     Attach {
         id: String,
@@ -204,8 +206,10 @@ enum Command {
         as_actor: Option<String>,
     },
     /// Rename a yak's attachment in `.yaks/<id>/` and rewrite every
-    /// link to it across the farm. NEW is sanitized and keeps OLD's extension
-    /// if it omits one; refuses to overwrite an existing attachment.
+    /// link to it across the farm (the link text follows the new stem, and
+    /// the `!` of an image link follows the new extension). NEW is sanitized
+    /// and keeps OLD's extension if it omits one; refuses to overwrite an
+    /// existing attachment.
     RenameAttachment {
         id: String,
         /// Current filename under `.yaks/<id>/`.
@@ -683,6 +687,20 @@ enum Command {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Bring a farm on an older schema up to this yaks' (schema 4 -> 5): put
+    /// the blank line after every comment's `▸ <ts> [actor]` header, and link
+    /// non-image attachments as `[stem](<id>/<file>)` instead of
+    /// `![stem](<id>/<file>)`. Rewrites the yak files in place under the farm
+    /// lock, then sets `.yaks/schema` to 5. Idempotent: a current farm
+    /// reports "nothing to migrate". Every other command refuses a schema-4
+    /// farm and names this one. Never commits: it prints the commit to make
+    /// (a migration touches nearly every yak file, so land it on its own).
+    /// Quit every running `yaks tui` first.
+    Migrate {
+        /// Print what would change, per fixup; write nothing.
+        #[arg(long)]
+        dry_run: bool,
+    },
     /// Merge another farm's yaks into this one (consolidation). Copies every yak
     /// (all statuses) and its artifacts, preserving ids and status, and declares
     /// any incoming herd in this farm's config; refuses on id collisions.
@@ -927,7 +945,7 @@ fn enter_shed(query: &str) -> Result<()> {
             );
             std::process::exit(1);
         }
-        Err(OpenError::OldLayout(m)) => {
+        Err(OpenError::OldLayout(m) | OpenError::NeedsMigration(m)) => {
             eprintln!("error: {m}");
             std::process::exit(1);
         }
@@ -1039,7 +1057,13 @@ fn main() -> Result<()> {
         }
     }
 
-    let farm = match Farm::open(&env::current_dir()?) {
+    // `migrate` is the one command that opens a farm behind the current schema.
+    let open = if matches!(cli.command, Command::Migrate { .. }) {
+        Farm::open_for_migration
+    } else {
+        Farm::open
+    };
+    let farm = match open(&env::current_dir()?) {
         Ok(h) => h,
         Err(OpenError::SchemaTooNew { found, supported }) => {
             eprintln!(
@@ -1047,7 +1071,7 @@ fn main() -> Result<()> {
             );
             std::process::exit(1);
         }
-        Err(OpenError::OldLayout(m)) => {
+        Err(OpenError::OldLayout(m) | OpenError::NeedsMigration(m)) => {
             eprintln!("error: {m}");
             std::process::exit(1);
         }
@@ -1182,6 +1206,7 @@ fn main() -> Result<()> {
                 }
             }
         }
+        Command::Migrate { dry_run } => report_migrate(&farm.migrate(dry_run)?),
         Command::Init { .. } => unreachable!("init is handled before opening a farm"),
         Command::Skills { .. } => unreachable!("skills is handled before opening a farm"),
         Command::Discover { .. } => unreachable!("discover is handled before opening a farm"),
@@ -2418,6 +2443,58 @@ fn render_log(entries: &[LogEntry], json: bool) -> Result<()> {
         }
     }
     Ok(())
+}
+
+/// Print a `yaks migrate` report: one line per fixup (with the yaks it
+/// touches), then the total and, after a real run on a git-tracked farm, the
+/// commit to make.
+fn report_migrate(r: &migrate::Report) {
+    if r.is_noop() {
+        println!(
+            "nothing to migrate: the farm is on schema {}",
+            store::SCHEMA
+        );
+        return;
+    }
+    let from = r
+        .from
+        .map_or("unmarked".to_string(), |v| format!("schema {v}"));
+    println!(
+        "{} ({from} -> schema {}):",
+        if r.applied {
+            "migrated"
+        } else {
+            "would migrate"
+        },
+        store::SCHEMA
+    );
+    for f in &r.fixups {
+        let total: usize = f.yaks.iter().map(|(_, n)| n).sum();
+        println!(
+            "  {}: {total} {} in {} yak(s)",
+            f.name,
+            f.unit,
+            f.yaks.len()
+        );
+        if !r.applied {
+            for (id, n) in &f.yaks {
+                println!("    {id}: {n}");
+            }
+        }
+    }
+    let mut line = format!(
+        "{} yak file(s) {}",
+        r.files,
+        if r.applied { "rewritten" } else { "to rewrite" }
+    );
+    if r.applied && r.git_tracked {
+        line.push_str(
+            "; commit with: git add -A .yaks && git commit -m \"yaks: migrate the farm to schema 5\"",
+        );
+    } else if !r.applied {
+        line.push_str(" (dry run: nothing written; re-run without --dry-run)");
+    }
+    println!("{line}");
 }
 
 fn render_doctor(issues: &[Issue]) {

@@ -1,6 +1,6 @@
 //! Filesystem discovery, frontmatter parsing, and task serialization.
 //!
-//! The on-disk layout (schema 4): a `.yaks/` directory holding one file per
+//! The on-disk layout (schema 5): a `.yaks/` directory holding one file per
 //! yak at a stable path, `<id>.md` ([`task_path`]), with `---`-delimited YAML
 //! frontmatter (its `status:` field is the yak's status) followed by a
 //! markdown body, and the yak's attachments beside it in `<id>/`
@@ -10,6 +10,8 @@
 //! dead/` subdirectory and implied the status from it. This yaks does not read
 //! it: [`old_layout`] recognises such a farm so it can be refused (see
 //! [`OLD_LAYOUT_FIX`]); yaks 0.0.16 is the last release that migrates one.
+//! Schema 4 (flat, but the older comment-header and attachment-link shapes)
+//! is migrated by this yaks: `yaks migrate` (see `crate::migrate`).
 //!
 //! The frontmatter parser is a deliberately small hand-rolled fast path
 //! (scalars + simple lists) — the approach yak-3fd4.3 validated in Python. The
@@ -341,7 +343,7 @@ pub fn parse_task(text: &str, status: Status) -> Option<Task> {
 }
 
 /// Split `---\n<frontmatter>\n---\n<body>` into `(frontmatter, body)`.
-fn split_frontmatter(text: &str) -> Option<(&str, &str)> {
+pub(crate) fn split_frontmatter(text: &str) -> Option<(&str, &str)> {
     let rest = text
         .strip_prefix("---\n")
         .or_else(|| text.strip_prefix("---\r\n"))?;
@@ -546,7 +548,7 @@ pub mod write {
             && (b.len() == 10 || matches!(b[10], b'T' | b't' | b' '))
     }
 
-    fn atomic_write(path: &Path, text: &str) -> Result<()> {
+    pub fn atomic_write(path: &Path, text: &str) -> Result<()> {
         let dir = path.parent().context("path has no parent directory")?;
         let name = path
             .file_name()
@@ -1211,14 +1213,45 @@ pub fn load_task_by_id(root: &Path, id: &str) -> Result<Option<Task>> {
 }
 
 /// Append a timestamped note block to a body
-/// (`<body>\n\n---\n\u{25b8} <ts>\n<note>`; no leading blank line when empty).
+/// (`<body>\n\n---\n\u{25b8} <ts>\n\n<note>`; no leading blank line when empty).
+/// The blank line after the marker makes it a paragraph of its own in any
+/// CommonMark viewer (schema 5; schema 4 wrote the note right under it, and
+/// every reader still accepts that shape).
 /// An optional actor is stamped onto the marker line as `\u{25b8} <ts> [<actor>]`;
 /// an absent or empty actor writes the bare `\u{25b8} <ts>` form, so this is
 /// byte-for-byte compatible with pre-actor notes and needs no migration.
 pub fn append_note(body: &str, ts: &str, actor: Option<&str>, note: &str) -> String {
     let desc = body.trim_end();
     let sep = if desc.is_empty() { "" } else { "\n\n" };
-    format!("{desc}{sep}---\n\u{25b8} {}\n{note}", note_head(ts, actor))
+    format!(
+        "{desc}{sep}---\n\u{25b8} {}\n\n{note}",
+        note_head(ts, actor)
+    )
+}
+
+/// File extensions (lowercase) that count as images: an attachment of one is
+/// linked as `![stem](<id>/<file>)`, any other as `[stem](<id>/<file>)`.
+const IMAGE_EXTS: &[&str] = &["png", "jpg", "jpeg", "gif", "webp", "svg"];
+
+/// Whether attachment `name` is an image (by extension, case-insensitive).
+pub fn is_image_name(name: &str) -> bool {
+    Path::new(name)
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| IMAGE_EXTS.iter().any(|i| i.eq_ignore_ascii_case(e)))
+}
+
+/// The markdown link to yak `id`'s attachment `name`, relative to the yak's own
+/// file: `![stem](<id>/<name>)` for an image, `[stem](<id>/<name>)` otherwise
+/// (what GitHub and every CommonMark viewer expect). The single source of the
+/// shape, shared by `attach`, `rename-attachment` and the schema-5 migration.
+pub fn attachment_link(id: &str, name: &str) -> String {
+    let stem = Path::new(name)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or(name);
+    let bang = if is_image_name(name) { "!" } else { "" };
+    format!("{bang}[{stem}]({id}/{name})")
 }
 
 /// Format a note marker line's payload: `<ts>` or `<ts> [<actor>]`. The single
@@ -1284,7 +1317,7 @@ pub fn parse_notes(body: &str) -> Vec<NoteEntry> {
 const NOTE_MARK: &str = "\u{25b8} ";
 
 /// Line `i` opens a note block: a `---` line followed by a marker line.
-fn is_note_delim(lines: &[&str], i: usize) -> bool {
+pub(crate) fn is_note_delim(lines: &[&str], i: usize) -> bool {
     lines[i].trim_end() == "---" && lines.get(i + 1).is_some_and(|l| l.starts_with(NOTE_MARK))
 }
 
@@ -1575,10 +1608,16 @@ pub fn reparent(root: &Path, id: &str, new_parent: Option<String>) -> Result<Rep
     Ok(Reparent::Done { new_parent })
 }
 
-/// On-disk schema version this build understands: one flat file per yak with
-/// a `status:` field, attachments in `<id>/`. (3, the old layout, is refused:
-/// see [`old_layout`].)
-pub const SCHEMA: u32 = 4;
+/// On-disk schema version this build writes: one flat file per yak with a
+/// `status:` field, attachments in `<id>/`, a blank line after a comment's
+/// `\u{25b8}` header, and non-image attachments linked as `[stem](<id>/<file>)`.
+/// Schema 4 (the same, minus those last two) is read and migrated by
+/// `yaks migrate` (see [`migration_refusal`]); 3, the old layout, is refused
+/// outright (see [`old_layout`]).
+pub const SCHEMA: u32 = 5;
+
+/// The first schema with the flat layout. Older farms are the old layout.
+pub const FLAT_SCHEMA: u32 = 4;
 
 /// What to do about an old-layout farm: the one remedy, shared by every
 /// refusal that names it.
@@ -1590,7 +1629,7 @@ pub const OLD_LAYOUT_FIX: &str = "migrate it once with yaks 0.0.16 \
 /// This yaks reads only the flat layout, so such a farm must never be read as
 /// if it were an empty one.
 pub fn old_layout(root: &Path) -> bool {
-    matches!(schema_status(root), SchemaStatus::Older(_))
+    matches!(schema_status(root), SchemaStatus::Older(v) if v < FLAT_SCHEMA)
         || ["hairy", "shaving", "shorn", "dead"].iter().any(|d| {
             fs::read_dir(root.join(d)).is_ok_and(|rd| {
                 rd.flatten()
@@ -1605,6 +1644,22 @@ pub fn old_layout_refusal(root: &Path) -> Option<String> {
         format!(
             "{} uses the old yak layout (status directories, schema 3), which this yaks no \
              longer reads: {OLD_LAYOUT_FIX}",
+            root.display()
+        )
+    })
+}
+
+/// The refusal for a flat farm at `root` that is behind [`SCHEMA`] (schema 4),
+/// `None` for any other farm. Every command but `yaks migrate` stops here, so
+/// a farm never ends up half old shape, half new.
+pub fn migration_refusal(root: &Path) -> Option<String> {
+    let SchemaStatus::Older(v) = schema_status(root) else {
+        return None;
+    };
+    (v >= FLAT_SCHEMA && !old_layout(root)).then(|| {
+        format!(
+            "{} is on schema {v}, this yaks writes schema {SCHEMA}: run `yaks migrate` \
+             (`--dry-run` shows what changes), commit the result, then use this yaks again",
             root.display()
         )
     })
@@ -2043,7 +2098,7 @@ mod note_tests {
     fn append_note_on_empty_body_has_no_leading_blank() {
         assert_eq!(
             append_note("", "2026-01-01T00:00:00Z", None, "hi"),
-            "---\n\u{25b8} 2026-01-01T00:00:00Z\nhi"
+            "---\n\u{25b8} 2026-01-01T00:00:00Z\n\nhi"
         );
     }
 
@@ -2052,7 +2107,7 @@ mod note_tests {
         let out = append_note("Existing.\n", "2026-01-01T00:00:00Z", None, "second");
         assert_eq!(
             out,
-            "Existing.\n\n---\n\u{25b8} 2026-01-01T00:00:00Z\nsecond"
+            "Existing.\n\n---\n\u{25b8} 2026-01-01T00:00:00Z\n\nsecond"
         );
     }
 }
@@ -2214,14 +2269,27 @@ mod schema_tests {
     #[test]
     fn schema_gate() {
         assert_eq!(
-            schema_status(&temp_root(Some("4"))),
+            schema_status(&temp_root(Some("5"))),
             SchemaStatus::Compatible
         );
         assert_eq!(
-            schema_status(&temp_root(Some("5\n"))),
-            SchemaStatus::Newer(5)
+            schema_status(&temp_root(Some("6\n"))),
+            SchemaStatus::Newer(6)
         );
+        assert_eq!(schema_status(&temp_root(Some("4"))), SchemaStatus::Older(4));
         assert_eq!(schema_status(&temp_root(Some("3"))), SchemaStatus::Older(3));
+        // Schema 3 is the old layout (refused outright); schema 4 is the flat
+        // layout one `yaks migrate` behind (refused with that remedy).
+        assert!(old_layout(&temp_root(Some("3"))));
+        assert!(!old_layout(&temp_root(Some("4"))));
+        assert!(migration_refusal(&temp_root(Some("3"))).is_none());
+        assert!(
+            migration_refusal(&temp_root(Some("4")))
+                .unwrap()
+                .contains("yaks migrate")
+        );
+        assert!(migration_refusal(&temp_root(Some("5"))).is_none());
+        assert!(migration_refusal(&temp_root(None)).is_none());
         assert_eq!(schema_status(&temp_root(None)), SchemaStatus::Compatible);
         assert_eq!(
             schema_status(&temp_root(Some("garbage"))),
@@ -2263,7 +2331,7 @@ mod init_tests {
         for sub in ["hairy", "shaving", "shorn", "dead"] {
             assert!(!root.join(sub).exists(), "unexpected {sub}/");
         }
-        assert_eq!(fs::read_to_string(root.join("schema")).unwrap(), "4\n");
+        assert_eq!(fs::read_to_string(root.join("schema")).unwrap(), "5\n");
 
         // The seeded config round-trips through the reader.
         let read = read_config(&root);
