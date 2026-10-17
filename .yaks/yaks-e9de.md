@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T17:52:29Z'
+updated: '2026-10-17T18:01:31Z'
 labels:
 - markdown
 - tui
@@ -159,3 +159,8 @@ inplace-1 landed: 4fbf85c (yaks-597d) → 41394a2, identical to the computed mer
 - `M` + text + Ctrl-S: a new attributed comment appended, the editor closes.
 
 Next: yaks-92e5 (drop the form's content blocks), then shear yaks-4fa6 / slaughter yaks-c6f4 / shear yaks-a893.
+
+---
+▸ 2026-10-17T18:01:31Z [delta-lead]
+
+formtrim-1 landed: 9381adf (yaks-92e5) → c2b20a0; gate 18/18; real build: `E` on the list opens a header-only form. Closed: yaks-4fa6 shorn (delivered by 597d), yaks-a893 shorn, yaks-c6f4 slaughtered. Docshots refreshed for the `M:comment` help bar. Open in the family: yaks-bc30 (perf cache), yaks-da5e and yaks-62cf (Joel's new ideas), yaks-33c8 (parked).

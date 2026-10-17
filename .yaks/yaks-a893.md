@@ -1,11 +1,11 @@
 ---
 id: yaks-a893
 title: 'Design: unify view and edit for the description and comments'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-10-17T04:25:39Z'
-updated: '2026-10-17T17:02:15Z'
+updated: '2026-10-17T18:01:21Z'
 parent: yaks-faf5
 labels:
 - tui
@@ -103,3 +103,24 @@ Joel approved the in-place edit design ('I dig it. That sounds like a plan to me
 ▸ 2026-10-17T17:02:15Z [delta-lead]
 
 Design approved by Joel. Implementation: yaks-597d (in-place editing, one worker: render/handlers/actions are too coupled to split), then yaks-92e5 (form trims to header fields). This design yak shears when both land.
+
+---
+▸ 2026-10-17T18:01:17Z [delta-lead]
+
+Design delivered:
+
+- yaks-597d (in-place editing, 41394a2)
+- yaks-92e5 (form keeps header fields only, c2b20a0)
+- yaks-4fa6 shorn with 597d; yaks-c6f4 slaughtered (obviated)
+
+Checked on the real build: `E` on a comment edits it in place, a save changes only that block, `M` appends a comment, `E` on the list opens a header-only form.
+
+---
+▸ 2026-10-17T18:01:21Z [delta-lead]
+
+verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-10-17T18:01:21Z [delta-lead]
+
+moved: shaving -> shorn
