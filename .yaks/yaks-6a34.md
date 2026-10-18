@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 1
 created: '2026-10-18T05:15:02Z'
-updated: '2026-10-18T05:54:58Z'
+updated: '2026-10-18T06:07:45Z'
 labels:
 - sheds
 - git
@@ -62,3 +62,10 @@ Round 1 spawned (delta-farm, 2026-10-18 ~05:55Z), base 1ffd6d8, worker profile d
 Not spawned from Joel's starred set: yaks-1bbd (search context) is folded into yaks-953f, which has an open design ask (4 questions, needs: human) gating phases 2-3; yaks-8d6a (label completion) depends on yaks-b2ed and on predefined labels (yaks-f04d), neither built.
 
 First observation: 20 s after spawn `yaks sheds` lists all three clones by thread-title slug, each `shares this farm`; every brief printed the live-farm finish with no `YAKS_DIR`.
+
+---
+▸ 2026-10-18T06:07:45Z [delta-farm]
+
+Round 1, first landing (delta-farm): `shear-1` (yaks-27c6) landed by SHA with land.sh, clean (base an ancestor, computed tree equal); my review and real run on a scratch farm agreed with the worker's report. Farm commit + `merge local/farm` + push to main worked as designed: the farm commit swept up 15 of Joel's TUI edits from tonight and the worker's attachment with no extra step, main fast-forwarded, the primary stayed clean.
+
+Trial finding #1 (fixed, yaks-5924): `yaks preflight --push-main` asked the FARM's checkout for the `local` remote; under a live farm that is the farm worktree, which has none, so the landing check failed though the push was fine. Now asked of the invoking checkout. Exactly the kind of "the farm root is not the code checkout" assumption to look for elsewhere (status/commit/preflight's git-state are correct to use the farm root).
