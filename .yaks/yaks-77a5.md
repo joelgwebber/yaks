@@ -5,10 +5,10 @@ status: hairy
 type: task
 priority: 3
 created: '2026-09-24T01:30:48Z'
-updated: '2026-10-12T21:49:53Z'
+updated: '2026-10-18T05:46:33Z'
 parent: yaks-64c4
 labels:
-- ui
+- tui
 ---
 
 Post-facto archaeology of a large parallel run, to see what's recoverable and what's lost. Step 1: capture the coordinator's conversation-only context before it's lost (lane SHAs, agent durations, merge/conflict log). Step 2: document the gaps. Step 3: sketch a timeline. Then decide what tooling would help.

@@ -5,11 +5,11 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-08-26T13:23:02Z'
-updated: '2026-09-24T02:29:59Z'
+updated: '2026-10-18T05:47:05Z'
 parent: yaks-f04d
 labels:
-- ui
 - labels
+- tui
 ---
 
 At present, it's possible to create labels with spaces in them. We should disallow this.

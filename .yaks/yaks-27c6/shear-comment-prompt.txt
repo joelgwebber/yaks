@@ -1,0 +1,18 @@
+=== frame 3 · 100x16 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-2283 · blocked=- · collapsed=0 · filter=(all) · overlay=edit ===
+ 🦬 Hairy (2)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (2)   ⭐ Starred (0)   🛖 Sheds (0)
+
+ yak-2283 p3 task     🦬 Ship the release notes
+ yak-b318 p3 task     🦬 Fix flaky test
+
+
+
+
+
+
+
+
+
+
+
+Shear yak-2283 — optional comment (Enter shears · Ctrl-C cancel): release notes drafted       INSERT
+=== end ===
