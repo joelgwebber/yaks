@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 1
 created: '2026-10-18T05:15:02Z'
-updated: '2026-10-18T06:07:45Z'
+updated: '2026-10-18T06:15:40Z'
 labels:
 - sheds
 - git
@@ -69,3 +69,17 @@ First observation: 20 s after spawn `yaks sheds` lists all three clones by threa
 Round 1, first landing (delta-farm): `shear-1` (yaks-27c6) landed by SHA with land.sh, clean (base an ancestor, computed tree equal); my review and real run on a scratch farm agreed with the worker's report. Farm commit + `merge local/farm` + push to main worked as designed: the farm commit swept up 15 of Joel's TUI edits from tonight and the worker's attachment with no extra step, main fast-forwarded, the primary stayed clean.
 
 Trial finding #1 (fixed, yaks-5924): `yaks preflight --push-main` asked the FARM's checkout for the `local` remote; under a live farm that is the farm worktree, which has none, so the landing check failed though the push was fine. Now asked of the invoking checkout. Exactly the kind of "the farm root is not the code checkout" assumption to look for elsewhere (status/commit/preflight's git-state are correct to use the farm root).
+
+---
+▸ 2026-10-18T06:15:40Z [delta-farm]
+
+Round 1 result (delta-farm): 3 workers, 3 clean landings (all land.sh merges by SHA, base an ancestor, computed tree equal, no conflicts despite all three touching handlers.rs / help_content / tests.rs / docs/tui.md), 854 tests green on main, one trial bug found and fixed (yaks-5924).
+
+What the live farm changed, observed:
+- Zero `.yaks/` content in any worker commit (all three `git show --stat` clean); no stale-copy writes (`git status` of ~/src/yaks clean after every landing; every clone clean).
+- Claims, progress notes, Decision notes and attachments were visible in the live farm the moment they were written; the coordinator never had to read another checkout (`yaks changes`, `inbox --sheds`, `show --sheds`, `attachment` were not used once).
+- Landing the farm is one step per landing (`yaks commit`, merge `local/farm`) and absorbed Joel's 15 concurrent TUI edits with no coordination.
+- No stale shaving copy / reverted yak files in any landing (the O22/O43/O48 failure shape needs yak files in the worker's tree; there were none).
+- No asks this round, so the live ask/answer path is still untested under the live farm.
+
+Friction: `preflight --push-main` (fixed). Nothing else.
