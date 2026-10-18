@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 1
 created: '2026-10-18T05:15:02Z'
-updated: '2026-10-18T16:00:15Z'
+updated: '2026-10-18T20:13:09Z'
 labels:
 - sheds
 - git
@@ -88,3 +88,8 @@ Friction: `preflight --push-main` (fixed). Nothing else.
 ▸ 2026-10-18T16:00:15Z [delta-farm]
 
 Linear landing in place (yaks-2355): workers land as one squash commit, the farm by `yaks commit --land` (cherry-picks), and `farm` follows `main` by itself. The farm worktree is pattern-sparse (`--no-cone '/.yaks/'`): only `.yaks/` on disk. Round-1 spaghetti left in history as is (Joel).
+
+---
+▸ 2026-10-18T20:13:09Z [delta-farm]
+
+Round 2 result (delta-farm): 2 workers (clobber-1 yaks-9f5c, attach-edit-1 yaks-56c1) both landed by land.sh's new SQUASH path (first real use): one single-parent commit each on main, worker message + author + `Squashed-from:` trailer, tree identical to the computed merge, no conflicts though both touched src/tui/handlers.rs, src/tui/tests.rs and docs/tui.md. main stays linear through code AND farm landings (`yaks commit --land`). 869 tests green. No asks again (both designs were decided in the claims), so the live ask path is still untested. No stale-copy writes, no `.yaks/` in any worker commit. Also landed this round by the yakherd: yaks-6c4f (source links under the live farm), yaks-4809 (farm-branch discovery groundwork).
