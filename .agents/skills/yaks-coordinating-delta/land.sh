@@ -131,7 +131,8 @@ land() {
   say "landed: $(git log --oneline -1)"
   top=$(git rev-parse --show-toplevel)
   for y in yaks ./target/release/yaks; do
-    if [ -d "$top/.yaks" ] && command -v "$y" >/dev/null 2>&1; then say "doctor: $("$y" doctor 2>&1 | tail -1)"; break; fi
+    # The farm may live elsewhere (on its own branch, yaks-73f4): ask yaks, not the tree.
+    if command -v "$y" >/dev/null 2>&1 && ( cd "$top" && "$y" path >/dev/null 2>&1 ); then say "doctor: $( cd "$top" && "$y" doctor 2>&1 | tail -1)"; break; fi
   done
 }
 
