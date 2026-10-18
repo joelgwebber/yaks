@@ -5,8 +5,7 @@ status: hairy
 type: idea
 priority: 3
 created: '2026-09-08T00:50:52Z'
-updated: '2026-09-08T23:12:05Z'
-parent: yaks-a2ca
+updated: '2026-10-18T03:38:13Z'
 labels:
 - eval
 ---
