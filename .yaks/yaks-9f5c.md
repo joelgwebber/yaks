@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-10-18T05:15:36Z'
-updated: '2026-10-18T20:00:00Z'
+updated: '2026-10-18T20:00:47Z'
 parent: yaks-6a34
 labels:
 - tui
@@ -38,3 +38,8 @@ Design (decided, not yours to fork): optimistic concurrency in the library, one 
 Scope: src/farm.rs (`TaskEdit`, `Farm::update`, `UpdateOutcome`), src/tui/blockedit.rs (`commit_block`), the conflict handling at its call site. Do NOT touch src/tui/editor.rs's `EditAction` enum (attach-edit-1 adds a variant there) or the attachment viewer code.
 
 Evidence: tests that fail first: library (base read, concurrent `update --note`, save with base: both survive; a concurrent edit of the SAME text: Conflict, file unchanged); TUI (open block editor, another writer appends a note via `Farm::update`, save: the note survives). Gate `cargo test --workspace`. Judge: delta-farm.
+
+---
+▸ 2026-10-18T20:00:47Z [clobber-1]
+
+Started (clobber-1): Sun Oct 18 08:00:42 PM UTC 2026. yaks path yaks-9f5c: /home/joel/src/yaks-farm/.yaks/yaks-9f5c.md
