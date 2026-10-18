@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 1
 created: '2026-10-18T05:15:02Z'
-updated: '2026-10-18T05:15:36Z'
+updated: '2026-10-18T05:24:49Z'
 labels:
 - sheds
 - git
@@ -43,3 +43,10 @@ Undo: merge `farm` once more, `git worktree remove ~/src/yaks-farm`, `git branch
 ▸ 2026-10-18T05:15:36Z [delta-farm]
 
 moved: hairy -> shaving
+
+---
+▸ 2026-10-18T05:24:49Z [delta-farm]
+
+Setup done on this machine (delta-farm, 2026-10-18): `~/src/yaks-farm` = sparse worktree of branch `farm` (yaks-da69's `live_branch: farm` is committed on main, 92a4ac5). Verified with `~/go/bin/yaks`: `yaks path` resolves to `/home/joel/src/yaks-farm/.yaks` from the primary, from a subdirectory of it, from a Delta clone and from the farm worktree; a shear written from the Delta clone landed in the farm with both code checkouts clean; `yaks commit` committed on `farm`; the coordinator-side landing (`git fetch local farm && git merge local/farm`, push `main`) brought it to main as a fast-forward; `yaks sheds` from the primary lists the clone and the farm worktree as `shares this farm`; `preflight: ok` in the farm.
+
+Hazard found: the `yaks` on this machine's PATH is the pnpm 0.0.20 install, which ignores `live_branch:` and writes the checkout's stale `.yaks/` (`yaks path yaks-6a34` there printed `~/src/yaks/.yaks/...`), and `~/go/bin` is not ahead of it on PATH here. Until a release carries this, every human shell and every worker must use `~/go/bin/yaks` (the brief names the binary the coordinator ran). A write by an old binary shows up as a dirty `.yaks/` in a code checkout: `yaks status` there, then move the edit into the live farm by hand.
