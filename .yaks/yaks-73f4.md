@@ -1,11 +1,11 @@
 ---
 id: yaks-73f4
 title: 'The farm is a branch: an orphan yaks branch replaces committed .yaks/ on main (shared, personal or local)'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-10-18T15:54:02Z'
-updated: '2026-10-18T20:02:13Z'
+updated: '2026-10-18T21:15:00Z'
 parent: yaks-6a34
 labels:
 - git
@@ -54,3 +54,8 @@ Design for the build (delta-farm, before code):
 **This repo's migration** (after round 2 lands, no worker in flight): commit the farm; in `~/src/yaks-farm` create branch `yaks` from `farm` and commit `git rm -r --cached` of everything but `.yaks/` (so the branch's tree is only the farm, while its history still contains every past `.yaks/` commit: `git log --follow` and `yaks commits` keep working); drop `live_branch:` from its config; `sparse-checkout disable`; on main, one commit removing `.yaks/`. Fresh farms elsewhere use `git worktree add --orphan`. Pushing `yaks` to origin waits for Joel.
 
 **Deferred to children/siblings**: `yaks init --mode branch` + XDG default path (yaks-b1e9, yaks-0ef9), `yaks sync` + merge driver (yaks-4a53), the private pre-push hook, named farms per team via a pointer `branch:` key, and yaks-b32e's layout (decided before migrating if it changes paths).
+
+---
+▸ 2026-10-18T21:15:00Z [delta-farm]
+
+moved: hairy -> shaving
