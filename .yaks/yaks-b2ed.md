@@ -5,9 +5,9 @@ status: hairy
 type: task
 priority: 3
 created: '2026-08-26T13:27:01Z'
-updated: '2026-10-03T20:31:56Z'
+updated: '2026-10-18T05:46:07Z'
 labels:
-- ui
+- tui
 ---
 
 We could use this when typing in both single-line fields, and text blocks.

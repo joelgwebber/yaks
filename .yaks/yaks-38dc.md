@@ -5,11 +5,11 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-13T20:10:28Z'
+updated: '2026-10-18T05:46:47Z'
 parent: yaks-b5a0
 labels:
-- ui
 - cli
+- tui
 ---
 
 Let `yaks tui` show yak state from the other checkouts of this repo (sheds), read-only; the main checkout stays authoritative.

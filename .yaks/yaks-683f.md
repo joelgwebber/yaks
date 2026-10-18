@@ -5,9 +5,9 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
-updated: '2026-09-23T21:39:11Z'
+updated: '2026-10-18T05:45:58Z'
 labels:
-- ui
+- tui
 needs: human
 ---
 

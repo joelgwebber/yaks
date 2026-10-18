@@ -5,10 +5,10 @@ status: hairy
 type: bug
 priority: 3
 created: '2026-08-23T14:38:59Z'
-updated: '2026-09-23T21:40:08Z'
+updated: '2026-10-18T05:46:51Z'
 labels:
-- ui
 - search
+- tui
 needs: human
 ---
 
