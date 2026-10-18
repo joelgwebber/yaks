@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 1
 created: '2026-10-18T05:15:02Z'
-updated: '2026-10-18T06:15:40Z'
+updated: '2026-10-18T16:00:15Z'
 labels:
 - sheds
 - git
@@ -83,3 +83,8 @@ What the live farm changed, observed:
 - No asks this round, so the live ask/answer path is still untested under the live farm.
 
 Friction: `preflight --push-main` (fixed). Nothing else.
+
+---
+▸ 2026-10-18T16:00:15Z [delta-farm]
+
+Linear landing in place (yaks-2355): workers land as one squash commit, the farm by `yaks commit --land` (cherry-picks), and `farm` follows `main` by itself. The farm worktree is pattern-sparse (`--no-cone '/.yaks/'`): only `.yaks/` on disk. Round-1 spaghetti left in history as is (Joel).
