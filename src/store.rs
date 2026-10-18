@@ -104,7 +104,7 @@ pub fn discover_with(start: &Path, yaks_dir: Option<&str>) -> Result<Discovered>
 
 /// A directory whose only entries are `.lock` and `.gitignore` (empty
 /// included): the remains of a farm, not a farm.
-fn only_leftovers(dir: &Path) -> bool {
+pub(crate) fn only_leftovers(dir: &Path) -> bool {
     fs::read_dir(dir).is_ok_and(|entries| {
         entries
             .flatten()
@@ -115,6 +115,64 @@ fn only_leftovers(dir: &Path) -> bool {
 /// The default name of the farm branch (yaks-73f4); `git config yaks.branch`
 /// in the repository overrides it.
 pub const FARM_BRANCH: &str = "yaks";
+
+/// Where a farm branch's worktree lives by default, outside every checkout:
+/// `$XDG_DATA_HOME/yaks/farms/<repo>-<8 hex>`, else
+/// `$HOME/.local/share/yaks/farms/...` (on every platform, as the TUI's
+/// views pick `$XDG_CONFIG_HOME`/`~/.config`), else
+/// `%LOCALAPPDATA%\yaks\farms\...` when `HOME` is unset. `<repo>` is the
+/// directory name of the repository's main checkout (its host's, from a Delta
+/// clone) and the hex a stable hash of the host's canonical git dir
+/// ([`crate::sheds::host`]), so every checkout of one repository on a machine
+/// agrees and two repos with the same name do not collide. `yaks migrate
+/// --to-branch` puts the worktree here unless told otherwise.
+pub fn farm_home(repo: &Path) -> PathBuf {
+    farm_home_with(repo, |k| std::env::var(k).ok())
+}
+
+/// [`farm_home`] with the environment passed in, so tests need not touch the
+/// process environment or the real data dir.
+pub fn farm_home_with(repo: &Path, env: impl Fn(&str) -> Option<String>) -> PathBuf {
+    let set = |k: &str| env(k).filter(|v| !v.is_empty()).map(PathBuf::from);
+    let base = set("XDG_DATA_HOME")
+        .or_else(|| set("HOME").map(|h| h.join(".local").join("share")))
+        .or_else(|| set("LOCALAPPDATA"))
+        .unwrap_or_else(std::env::temp_dir);
+    let host = crate::sheds::host(repo);
+    let git_dir = host.as_ref().map_or_else(
+        || fs::canonicalize(repo).unwrap_or_else(|_| repo.to_path_buf()),
+        |h| h.git_dir.clone(),
+    );
+    let checkout = host.as_ref().and_then(crate::sheds::host_checkout);
+    let name = checkout
+        .as_deref()
+        .and_then(Path::file_name)
+        .map(|n| n.to_string_lossy().into_owned())
+        .or_else(|| {
+            // A bare host: `<name>.git`, or `<name>/.git`.
+            let n = git_dir.file_name()?.to_string_lossy().into_owned();
+            match n.strip_suffix(".git") {
+                Some("") => Some(
+                    git_dir
+                        .parent()?
+                        .file_name()?
+                        .to_string_lossy()
+                        .into_owned(),
+                ),
+                Some(s) => Some(s.to_string()),
+                None => Some(n),
+            }
+        })
+        .unwrap_or_else(|| "repo".to_string());
+    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+    for b in git_dir.to_string_lossy().bytes() {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    base.join("yaks")
+        .join("farms")
+        .join(format!("{name}-{}", &format!("{h:016x}")[..8]))
+}
 
 fn git_line(dir: &Path, args: &[&str]) -> Option<String> {
     std::process::Command::new("git")

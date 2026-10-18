@@ -5,6 +5,7 @@
 //! --json). Tasks live as markdown files under `.yaks/`; status is the folder.
 
 mod actor;
+mod branchfarm;
 mod brief;
 mod changes;
 mod clipboard;
@@ -724,10 +725,34 @@ enum Command {
     /// farm and names this one. Never commits: it prints the commit to make
     /// (a migration touches nearly every yak file, so land it on its own).
     /// Quit every running `yaks tui` first.
+    ///
+    /// With `--to-branch`, instead move a committed in-tree `.yaks/` farm onto
+    /// an orphan-tree farm branch in its own worktree: the branch starts at
+    /// HEAD (the farm's history stays reachable: `yaks commits`, `git log
+    /// --follow`) and its first commit keeps only `.yaks/`; the current branch
+    /// gets one commit removing `.yaks/`. Run it from the checkout whose farm
+    /// moves, with a clean tree. Refuses (changing nothing) on uncommitted
+    /// changes, a pending merge or cherry-pick, a private (untracked) farm, or
+    /// an existing branch or worktree path; a farm already on a branch says
+    /// so. Never pushes: it prints the pushes and the setup line for other
+    /// machines.
     Migrate {
-        /// Print what would change, per fixup; write nothing.
+        /// Print what would change; write nothing.
         #[arg(long)]
         dry_run: bool,
+        /// Move the committed in-tree farm onto a farm branch (see above).
+        #[arg(long)]
+        to_branch: bool,
+        /// With --to-branch: the branch name (default: `git config
+        /// yaks.branch`, else `yaks`). Any other name is recorded in `git
+        /// config yaks.branch` so discovery finds it.
+        #[arg(long, requires = "to_branch")]
+        branch: Option<String>,
+        /// With --to-branch: where the farm worktree goes (default
+        /// `$XDG_DATA_HOME/yaks/farms/<repo>-<hash>`, i.e.
+        /// `~/.local/share/yaks/farms/...`).
+        #[arg(long, requires = "to_branch")]
+        worktree: Option<PathBuf>,
     },
     /// Merge another farm's yaks into this one (consolidation). Copies every yak
     /// (all statuses) and its artifacts, preserving ids and status, and declares
@@ -1046,6 +1071,28 @@ fn main() -> Result<()> {
     if let Command::Skills { action } = &cli.command {
         return run_skills(action);
     }
+    // `migrate --to-branch` moves the farm rather than opening it.
+    if let Command::Migrate {
+        dry_run,
+        to_branch: true,
+        branch,
+        worktree,
+    } = &cli.command
+    {
+        let opts = branchfarm::Opts {
+            branch: branch.clone(),
+            worktree: worktree.clone(),
+            dry_run: *dry_run,
+        };
+        match branchfarm::run(&env::current_dir()?, &opts, store::farm_home) {
+            Ok(o) => print!("{}", branchfarm::render(&o)),
+            Err(e) => {
+                eprintln!("error: {e:#}");
+                std::process::exit(1);
+            }
+        }
+        return Ok(());
+    }
     if let Command::Discover { path, json } = &cli.command {
         let anchor = match path {
             Some(p) => p.clone(),
@@ -1237,7 +1284,7 @@ fn main() -> Result<()> {
                 }
             }
         }
-        Command::Migrate { dry_run } => report_migrate(&farm.migrate(dry_run)?),
+        Command::Migrate { dry_run, .. } => report_migrate(&farm.migrate(dry_run)?),
         Command::Init { .. } => unreachable!("init is handled before opening a farm"),
         Command::Skills { .. } => unreachable!("skills is handled before opening a farm"),
         Command::Discover { .. } => unreachable!("discover is handled before opening a farm"),

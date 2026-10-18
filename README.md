@@ -287,7 +287,10 @@ runs to the filesystem root.
 **The farm on its own branch.** A farm can live on an orphan branch (`yaks`,
 or the name in `git config yaks.branch`) whose tree is only `.yaks/`, checked
 out as its own `git worktree`: `git worktree add --orphan -b yaks ../<repo>-yaks`
-for a new farm, `git worktree add ../<repo>-yaks yaks` for an existing one. A
+for a new farm, `git worktree add ../<repo>-yaks yaks` for an existing one, and
+`yaks migrate --to-branch` to move a committed in-tree `.yaks/` there (history
+kept, `.yaks/` removed from the current branch in one commit, the worktree under
+`~/.local/share/yaks/farms/`, nothing pushed). A
 checkout with no `.yaks/` then finds it, so every shed on a machine (the primary,
 worktrees, Delta clones) reads and writes the same files with no merge step,
 `yaks commit` commits on that branch, and `main`, feature branches and PRs carry
