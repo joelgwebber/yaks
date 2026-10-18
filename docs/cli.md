@@ -39,41 +39,27 @@ Every command except `init` operates on one farm, found in this order:
    reading, and writing, another checkout's farm. Fix it with `yaks init`, a
    `.yaks` pointer file (`path:` + optional `herd:`), or `YAKS_DIR`. Outside any
    git repository the walk runs to the filesystem root.
-   Before that error, a top-level with no `.yaks` entry looks for the **farm
-   branch**: `git config yaks.branch` (default `yaks`), an orphan branch that
-   holds only `.yaks/`. If a worktree of the repository (its host, for a Delta
-   clone) has it checked out, that worktree's `.yaks/` is the farm; if the
-   branch exists (locally or as `origin/<branch>`) with no worktree, the error
-   names `git worktree add <path> <branch>`. So a repository whose farm lives
-   on a branch needs nothing on `main` (yaks-73f4).
-4. A **live farm**: when the `.yaks/` the walk found has `live_branch: <branch>`
-   in its `config.yaml` (committed, so every clone agrees), that directory is a
-   stale copy and the command is redirected to `<worktree>/.yaks` for the
-   worktree of this repository where `<branch>` is checked out, found with
-   `git worktree list` in the repository (its host, for a Delta clone: the
-   repository its object store borrows from). So every checkout on a machine
-   (the primary, git worktrees, Delta clones) reads and writes ONE farm, and a
-   checkout's own `.yaks/` is never written. The live worktree itself resolves
-   to itself. If no worktree has the branch checked out (or it has no
-   `.yaks/`), that is an error naming the fix, never a silent fall-through to
-   the stale copy; `YAKS_DIR` still overrides (for a clone whose host is a bare
-   managed repo and cannot see the worktree). Rule 1 and a pointer file are
-   not redirected. Set one up with:
+4. **The farm as a branch** (yaks-73f4). Before that error, a top-level with
+   no `.yaks` entry looks for the **farm branch**: `git config yaks.branch`
+   (default `yaks`), an orphan branch whose tree is only `.yaks/`. If a
+   worktree of the repository (its host, for a Delta clone: the repository its
+   object store borrows from) has it checked out, that worktree's `.yaks/` is
+   the farm, so every checkout on a machine (the primary, git worktrees, Delta
+   clones) reads and writes ONE farm and `main` carries no yak files at all.
+   If the branch exists (locally or as `origin/<branch>`) with no worktree,
+   the error names `git worktree add <path> <branch>`. A `.yaks/` whose config
+   has a `live_branch:` line is a stale copy from before a repository moved
+   its farm onto a branch: it is redirected the same way, never used. Set up:
 
    ```sh
-   git -C <repo> worktree add -b farm ../<repo>-farm main
-   git -C ../<repo>-farm sparse-checkout set --no-cone '/.yaks/'   # only .yaks/ on disk
-   # then `live_branch: farm` in .yaks/config.yaml, committed on main
+   git -C <repo> worktree add --orphan -b yaks ../<repo>-yaks   # a new farm
+   git -C <repo> worktree add ../<repo>-yaks yaks              # an existing one (e.g. origin/yaks)
    ```
 
-   `yaks commit` in any checkout then commits the farm on `farm` (its git
-   commands run in the farm's root); `yaks commit --land`, run in the checkout
-   about to push `main`, also cherry-picks the farm's new commits onto it, so
-   main stays a straight line (no merge commits), and the next `yaks commit`
-   moves `farm` back onto `main` (a mixed reset: uncommitted yak edits are
-   untouched). Feature branches and PRs carry no yak churn, and the farm
-   crosses machines as `origin/farm`. `yaks path` with no arguments prints the
-   farm a command resolved.
+   `yaks commit` (from any checkout) commits the farm on its branch, in the
+   farm worktree; no code checkout, branch or PR ever carries yak churn. Push
+   the branch to share or back up the farm (`git -C ../<repo>-yaks push`).
+   `yaks path` with no arguments prints the farm a command resolved.
 
 ## Filter flags (shared)
 
@@ -88,7 +74,7 @@ Every command except `init` operates on one farm, found in this order:
 |---|---|
 | `list` | List tasks (non-dead by default; `--all` includes dead). Status renders as `[H]`/`[S]`/`[N]`/`[X]` — hairy / shaving / shor**n** / dead. |
 | `show <id> [--sheds] [--json]` | Show one yak: fields, references, children, body + notes. `--sheds` then adds a `Sheds:` section for the OTHER checkouts of this repo (git worktrees and Delta clones, as `sheds` lists them, without the one you are in: its copy is the one printed first): this checkout's copy is printed first, then one block per shed whose copy differs — the shed's name and path, its status, its `needs:` when set, and the note entries it has that this copy lacks (timestamp, actor, first line) — and ONE trailing line counting the rest: `same in N sheds; absent in N; no farm of its own in N sheds` (a copy with the same status, the same `needs:` and no extra notes is "same", so a shed that is merely behind counts as same; "no farm" is a shed sharing this farm, with none, or with an unreadable one). A yak that exists only in sheds is still shown (`<id> is not in this checkout.`, then each shed's copy with its title) and exits 0; without `--sheds`, or when no shed has it either, an unknown id exits 1. `--json` adds a `sheds` array to the usual object (for an id only in sheds, the object is just `{id, sheds}`): one entry per shed with a farm of its own — `shed`, `path`, `status` and `needs` (null when the shed lacks the yak / has no `needs`), `new_notes` (`[{ts, actor, text}]`), `same`, `absent`. Read-only in the other checkouts. |
-| `path [<id>...]` / `path <filters>` | Print each yak's current file path (absolute, one per line), by id or by the shared filter flags (`--all` adds dead yaks). Each yak's file is `.yaks/<id>.md`, the same path for its whole life (a status move edits it in place); its attachments are in `.yaks/<id>/`. An unknown id goes to stderr with a non-zero exit (known ids still print). Ids or filters, not both; with neither, prints the farm root this command resolved (the live farm's, under `live_branch:`): which farm am I on? |
+| `path [<id>...]` / `path <filters>` | Print each yak's current file path (absolute, one per line), by id or by the shared filter flags (`--all` adds dead yaks). Each yak's file is `.yaks/<id>.md`, the same path for its whole life (a status move edits it in place); its attachments are in `.yaks/<id>/`. An unknown id goes to stderr with a non-zero exit (known ids still print). Ids or filters, not both; with neither, prints the farm root this command resolved (the farm branch's worktree, when the farm is a branch): which farm am I on? |
 | `next` (alias `ready`) | Hairy yaks whose dependencies are all resolved — the work queue. A yak awaiting a human (`needs: human`) is left out; one that has been answered (`needs: agent`) is included, marked `✓ answered, awaiting pickup` (`yaks pickup <id>` when you take it on). |
 | `tangled` (alias `blocked`) | Hairy yaks with at least one unresolved dependency. |
 | `search <text>` | Substring search over id / title / description. |
@@ -235,7 +221,7 @@ Rules, the same for all four commands:
 | `preflight [<id>...] [--all] [--push-main]` | Read-only landing-readiness check; run it before committing a shorn yak or merging a shed in a team farm. Checks: (1) nothing under `.yaks/` is untracked or has unstaged changes in git (staged is fine: it is the step before the commit) — a new `<id>/` attachment dir never `git add`ed fails and is named; (2) every shorn yak in scope whose `verify:` command (own, else the config default for its labels) last PASSed, same rule as `doctor --strict`; scope is the ids given, else the shorn yaks that are part of the change in git (staged, modified or new under `.yaks/`, including a new `<id>/` attachment dir), and `--all` checks every shorn yak (old ones that never ran `verify` will fail); (3) farm integrity: no invalid `status:` value (`invalid-status`) and no `id:` in two yak files (`duplicate-id`). `ids` scopes check 2 only; 1 and 3 are farm-wide. Prints one `preflight: FAIL <check>: …` line per failure and exits non-zero, else `preflight: ok`. In a private farm (nothing under `.yaks/` tracked by git) check 1 is skipped with a printed line and check 2 covers every shorn yak; 3 still runs. `--push-main` adds (4), for the yakherd about to `git push local <branch>:main` (off by default: it depends on another checkout's state, not on the change, and a repo with no `local` remote is not a failure without it): `local` must be a path on this machine (an https/ssh URL is reported as not the human's checkout, never resolved), a non-bare git repository with `refs/heads/main`, and not checked out on `main` with uncommitted changes to tracked files (git refuses the push then). Otherwise it fails with `preflight: FAIL local-checkout: …`, naming the fallback: push `pr/<name>` to `local` and give the human `git fetch <path> pr/<name>`, or repoint `local`. Read-only (`remote get-url`, `ls-remote`, `rev-parse`, `status`); never pushes. `--json` emits `{ok, failures[{check, message, subjects}], skipped}`. |
 | `brief <id> --as <name> [--yaks-dir <path>]` | Print the worker brief for one yak, read-only: the part a worker needs that the yak, the config and the farm determine. It names the yak and that it is already `shaving`; the `YAKS_ACTOR=<name>` prefix for every command (plus `YAKS_DIR=<farm>` for a private or pointer farm, or whatever `--yaks-dir` names); this binary's absolute path; the evidence (the yak's own `verify:`, else the config default for its labels and herd); the forbidden moves; how to finish, chosen by farm mode (team: `yaks shorn`, ONE commit staging `.yaks/<id>.md` and any `.yaks/<id>/`, message `<id>: ...`; private: no yak id or the word yaks in commits); how to ask and what to do once the ask is answered (`inbox --for agent`, then `pickup`); the `Decision:` note rule; multi-line notes on stdin; and the final-message format. Mode is detected as the skills do (tracked farm in the repo of the cwd = team). An unclaimed yak still prints, with a warning on stderr; an unknown id fails with nothing on stdout; `--as` must be a shell-safe name. What a yak cannot know (spawn title, how work lands, the model, scope by symbol) stays with the coordinator, who adds it around this text. |
 | `status [--check] [--json]` | What the farm has changed that git does not have yet, one line per yak, ordered by id, in yak terms: `created`, `moved hairy -> shaving` (the `status:` field of its `<id>.md` differs between HEAD and the working tree), `notes +2` (notes appended; the `moved:` entry a move writes is not counted), `edited` (a field, the description or an existing note changed), `removed`, `artifacts` (a new or changed file under `.yaks/<id>/`, the yak's attachments); a yak with several kinds of change gets one line with all of them, and `config` is `config.yaml`. A `*` in the first column marks a yak whose changes are all staged. It uses the same classification as `commit` (the verbs cannot drift: `created`/`removed`/a move read the same, `notes` and `edited` are both `updated`), and ends with the message `commit` would use. Code changed elsewhere in the repo is not listed, only counted in one line (`N other changed files outside the farm`), so you know `commit` leaves it alone. A clean farm prints `farm clean: nothing to commit`; a private farm (nothing under `.yaks/` tracked by git) prints `private farm: not tracked by git, nothing to commit`; both exit 0. While a merge or cherry-pick is in progress it says `yaks commit` will refuse (git forbids the partial commit) and why. Read-only: nothing is staged, committed or written. `--check` exits 1 when the farm is dirty (same output, for scripts and hooks; otherwise the exit code is 0). `--json`: `{clean, private, merge_in_progress, yaks: [{id, changes, staged}], other: [{path, staged}], outside_farm, message}`. |
-| `commit [-m <msg>] [--dry-run] [--land]` | Commit the farm's own changes — every change under `.yaks/` (yak files, attachments, config) — and nothing else, so a human's drifted edits land in one command and stop blocking a landing. Stages the farm and runs `git commit --only -- .yaks`: files you staged elsewhere stay staged and out of the commit (named in the output), and modified code is never touched. The message is generated from the changed files, one verb per yak (`created`, `shaving`/`shorn`/`dead`/`regrown` for a move, `updated`, `removed`, `artifacts for`, `farm config`), e.g. `yaks: created yaks-8c08; shaving yaks-c968`; `-m` overrides it. `--dry-run` lists the files and message without staging or committing. A normal `git commit`, so the repo's hooks run (and may fail it: the farm changes are then left staged); it never pushes. A clean farm prints `nothing to commit` and exits 0. While a merge or cherry-pick is in progress (a Delta landing leaves one pending) it refuses, stages nothing and says why: git forbids the partial commit it relies on, so finish the merge with a plain `git commit` (the farm changes are part of it) or abort it. In a private farm (nothing under `.yaks/` tracked by git) it fails with a clear error. A live farm (`live_branch:`) commits on its branch whatever the cwd, first moving that branch onto `main` (a mixed reset: uncommitted yak edits untouched) when main already holds the farm's exact `.yaks/` tree. `--land` (live farm only, run in the checkout about to push `main`, never the farm worktree): commit, then cherry-pick every farm commit this checkout lacks onto its HEAD, oldest first (no merge commits; a second run picks nothing); never pushes. |
+| `commit [-m <msg>] [--dry-run]` | Commit the farm's own changes — every change under `.yaks/` (yak files, attachments, config) — and nothing else, so a human's drifted edits land in one command and stop blocking a landing. Stages the farm and runs `git commit --only -- .yaks`: files you staged elsewhere stay staged and out of the commit (named in the output), and modified code is never touched. The message is generated from the changed files, one verb per yak (`created`, `shaving`/`shorn`/`dead`/`regrown` for a move, `updated`, `removed`, `artifacts for`, `farm config`), e.g. `yaks: created yaks-8c08; shaving yaks-c968`; `-m` overrides it. `--dry-run` lists the files and message without staging or committing. A normal `git commit`, so the repo's hooks run (and may fail it: the farm changes are then left staged); it never pushes. A clean farm prints `nothing to commit` and exits 0. While a merge or cherry-pick is in progress (a Delta landing leaves one pending) it refuses, stages nothing and says why: git forbids the partial commit it relies on, so finish the merge with a plain `git commit` (the farm changes are part of it) or abort it. In a private farm (nothing under `.yaks/` tracked by git) it fails with a clear error. When the farm is a branch (rule 4 above) this commits in the farm's own worktree, on that branch, whatever the cwd. |
 | `tui` | Open the interactive terminal UI (see [tui.md](tui.md)). |
 
 ### `init`: modes and skills in one idempotent step

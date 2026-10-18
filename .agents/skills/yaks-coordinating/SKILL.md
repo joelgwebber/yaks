@@ -12,12 +12,14 @@ their work, and talks to the human. A **worker** owns exactly one yak and follow
 hold the rest.
 
 ## 1. Pick your layers
-1. **Farm mode.** Run `git ls-files .yaks`.
-   - It lists files: the farm is committed (**team**). Load `yaks-coordinating-team`. If
-     `.yaks/config.yaml` has `live_branch:`, it is a **live** team farm (one farm per machine
-     in a worktree of that branch; `yaks path` with no arguments prints it): read that
-     skill's "Live farm" section, which replaces its per-branch rules.
-   - It prints nothing: the farm is **private** (gitignored or stealth) or
+1. **Farm mode.** Run `yaks path` (no arguments) and `git ls-files .yaks`.
+   - `yaks path` prints a farm OUTSIDE your checkout, in a worktree whose branch is the farm
+     branch (`git -C <that dir> branch --show-current`, normally `yaks`): the farm is **on its
+     own branch** (team). Load `yaks-coordinating-team` and read its first section, which
+     replaces its per-branch rules.
+   - `git ls-files .yaks` lists files: the farm is committed beside the code (**team**). Load
+     `yaks-coordinating-team`.
+   - Neither: the farm is **private** (gitignored or stealth) or
      **out-of-tree** (a `.yaks` pointer file or symlink). Load `yaks-coordinating-private`.
    - Unsure: treat it as private. Leaking an id is worse than not using one.
 2. **Environment.** Running in a Delta thread (`$DELTA_CURRENT_THREAD_ID` is set and

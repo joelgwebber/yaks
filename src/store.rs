@@ -50,12 +50,13 @@ pub struct Discovered {
 ///    outer repo's farm by accident: it needs its own `.yaks` pointer or
 ///    `YAKS_DIR`. Outside any git repository the walk runs to the filesystem
 ///    root.
-/// 4. A farm directory the walk found whose `config.yaml` names a
-///    `live_branch:` is a stale copy: the farm is **redirected** to the
-///    worktree of this repository where that branch is checked out (see
-///    [`redirect_live`]). Unlike rule 3 this is a lookup, not a walk, and it
-///    is opted into by a committed config key; a missing worktree is an
-///    error, never a silent fall-through to the stale copy.
+/// 4. At a git top-level with no `.yaks` entry, the farm is a **branch**: the
+///    worktree of the repository (its host, for a Delta clone) where the farm
+///    branch is checked out ([`farm_branch_worktree`], yaks-73f4).
+/// 5. A farm directory the walk found whose `config.yaml` names a
+///    `live_branch:` is a STALE copy (a checkout of a commit from before its
+///    repository moved the farm onto a branch): it is redirected to the farm
+///    branch's worktree the same way (see [`redirect_live`]), never used.
 pub fn discover(start: &Path) -> Result<Discovered> {
     let env = std::env::var("YAKS_DIR").ok();
     discover_with(start, env.as_deref())
@@ -176,15 +177,11 @@ fn farm_branch_worktree(dir: &Path) -> Result<Option<Discovered>> {
     )
 }
 
-/// The farm branch `root` is a dedicated worktree of, if any: the config's
-/// `live_branch:` (the live farm of yaks-6a34), else the configured farm
-/// branch when `root`'s checkout has it as HEAD (an orphan farm, yaks-73f4).
-/// A checkout whose farm is just its own `.yaks/` gives `None`. `brief` and
-/// source links use this to know the farm is not where the code is.
+/// The farm branch `root` is a dedicated worktree of, if any: the configured
+/// farm branch, when `root`'s checkout has it as HEAD (yaks-73f4). A checkout
+/// whose farm is just its own `.yaks/` gives `None`. `brief` and source links
+/// use this to know the farm is not where the code is.
 pub fn farm_branch(root: &Path) -> Option<String> {
-    if let Some(b) = read_config(root).live_branch {
-        return Some(b);
-    }
     let top = root.parent()?;
     let head = git_line(top, &["symbolic-ref", "--short", "-q", "HEAD"])?;
     let toplevel = git_line(top, &["rev-parse", "--show-toplevel"])?;
@@ -192,59 +189,35 @@ pub fn farm_branch(root: &Path) -> Option<String> {
     (same && head == configured_farm_branch(top)).then_some(head)
 }
 
-/// Apply the farm's `live_branch:` ([`Config::live_branch`]) to the `.yaks`
-/// directory `found` at `dir`. With none, `found` is the farm. With one, the
-/// farm is `<worktree>/.yaks` for the worktree of `dir`'s repository (its
-/// host, for a Delta clone: [`crate::sheds::worktree_of_branch`]) that has the
-/// branch checked out; `found` itself when it is that worktree's. One rule,
-/// no fallback: when no worktree has the branch, or that worktree holds no
-/// `.yaks/`, this is an error naming the fix (`$YAKS_DIR` still overrides,
-/// for a machine whose repository cannot see the live worktree, such as a
-/// Delta clone whose host is a bare managed repo).
+/// A `.yaks` directory `found` at `dir` is the farm, unless its config names
+/// a `live_branch:` ([`Config::live_branch`]): then it is a stale copy left
+/// in a checkout of a commit from before the repository moved its farm onto a
+/// branch, and the farm is the farm branch's worktree
+/// ([`farm_branch_worktree`]; the old value of the key is not used, so a copy
+/// from the live-farm trial, yaks-6a34, reaches today's farm). One rule, no
+/// fallback: with no such worktree this is an error naming the fix, never the
+/// stale copy (`$YAKS_DIR` still overrides).
 ///
 /// Only the walk's find is redirected. A pointer file already names one
 /// out-of-tree farm, and `$YAKS_DIR` is the explicit override.
 fn redirect_live(dir: &Path, found: PathBuf) -> Result<Discovered> {
-    let Some(branch) = read_config(&found).live_branch else {
-        return Ok(Discovered {
-            root: found,
-            prefix: None,
-        });
-    };
-    let Some(worktree) = crate::sheds::worktree_of_branch(dir, &branch) else {
-        anyhow::bail!(
-            "the farm at {found} names live branch `{branch}` (config `live_branch:`), but no \
-             worktree of this repository has it checked out, so there is no live farm to use. \
-             Create it: `git worktree add -b {branch} <path> main` (or `git worktree add <path> \
-             {branch}` if the branch exists), then `git -C <path> sparse-checkout set --no-cone '/.yaks/'`; \
-             or set YAKS_DIR to the live farm",
-            found = found.display()
-        );
-    };
-    let live = worktree.join(".yaks");
-    let same = |a: &Path, b: &Path| match (a.canonicalize(), b.canonicalize()) {
-        (Ok(a), Ok(b)) => a == b,
-        _ => a == b,
-    };
-    if same(&live, &found) {
+    if read_config(&found).live_branch.is_none() {
         return Ok(Discovered {
             root: found,
             prefix: None,
         });
     }
-    if !live.is_dir() {
-        anyhow::bail!(
-            "the farm at {found} names live branch `{branch}`, checked out at {wt}, but that \
-             worktree has no .yaks/ directory (`git -C {wt} sparse-checkout set --no-cone '/.yaks/'` restores it); \
-             or set YAKS_DIR to the live farm",
+    match farm_branch_worktree(dir)? {
+        Some(d) => Ok(d),
+        None => anyhow::bail!(
+            "{found} is a stale copy (its config names `live_branch:`): this repository's farm \
+             lives on the branch `{branch}`, which does not exist here. Fetch it (`git fetch origin \
+             {branch}`) and add its worktree (`git worktree add <path> {branch}`), or set YAKS_DIR \
+             to the farm",
             found = found.display(),
-            wt = worktree.display()
-        );
+            branch = configured_farm_branch(dir)
+        ),
     }
-    Ok(Discovered {
-        root: live,
-        prefix: None,
-    })
 }
 
 /// Resolve `$YAKS_DIR`: a pointer file, or a farm dir / dir containing `.yaks`.
@@ -749,14 +722,11 @@ pub struct Config {
     /// farm globals for yaks in that herd. Empty means a single implicit herd
     /// equal to `prefix` (back-compat).
     pub herds: std::collections::HashMap<String, HerdConfig>,
-    /// `live_branch:` — the farm's LIVE copy is the worktree of this
-    /// repository where that branch is checked out (normally a sparse
-    /// `git worktree` holding only `.yaks/`). Discovery from any other
-    /// checkout of the repository redirects there (see [`discover`]), so
-    /// every shed on a machine reads and writes one farm and a checkout's
-    /// own `.yaks/` is a stale, never-written mirror. Committed, so every
-    /// clone agrees. `None` (the default): each checkout's `.yaks/` is its
-    /// own farm.
+    /// `live_branch:` — marks a STALE copy: this `.yaks/` was committed while
+    /// the repository kept a live farm elsewhere (the yaks-6a34 trial), so
+    /// discovery redirects to the farm branch's worktree instead of using it
+    /// (see [`discover`]). Only presence matters; the value is not used.
+    /// `None` (the default): the directory is a farm.
     pub live_branch: Option<String>,
 }
 
@@ -2685,7 +2655,7 @@ mod discover_tests {
         let _ = fs::remove_dir_all(&base);
     }
 
-    // -- live_branch: one live farm per machine ----------------------------
+    // -- live_branch: a stale copy from the live-farm trial ----------------
 
     fn git(dir: &Path, args: &[&str]) {
         let out = std::process::Command::new("git")
@@ -2717,7 +2687,8 @@ mod discover_tests {
         (base, primary, stale)
     }
 
-    /// `git worktree add -b farm <base>/farm main`, sparse to `.yaks`.
+    /// The repository's farm on an orphan `yaks` branch, in a worktree at
+    /// `<base>/farm` (as after the migration away from `live_branch`).
     fn add_farm_worktree(base: &Path, primary: &Path) -> PathBuf {
         let wt = base.join("farm");
         git(
@@ -2726,19 +2697,20 @@ mod discover_tests {
                 "worktree",
                 "add",
                 "-q",
+                "--orphan",
                 "-b",
-                "farm",
+                "yaks",
                 &wt.display().to_string(),
-                "main",
             ],
         );
-        git(&wt, &["sparse-checkout", "set", ".yaks"]);
-        assert!(wt.join(".yaks/config.yaml").is_file());
+        farm_at(&wt);
+        git(&wt, &["add", ".yaks"]);
+        git(&wt, &["commit", "-q", "-m", "yaks: seed"]);
         wt
     }
 
     #[test]
-    fn live_branch_redirects_every_checkout_to_the_farm_worktree() {
+    fn a_stale_live_branch_copy_redirects_every_checkout_to_the_farm_branch() {
         let (base, primary, stale) = live_repo();
         let farm_wt = add_farm_worktree(&base, &primary);
         let live = canon(&farm_wt.join(".yaks"));
@@ -2780,7 +2752,7 @@ mod discover_tests {
             "the clone has a stale copy"
         );
         assert_eq!(canon(&discover_with(&clone, None).unwrap().root), live);
-        // The farm worktree resolves to itself (no redirect loop).
+        // The farm worktree resolves to itself.
         assert_eq!(canon(&discover_with(&farm_wt, None).unwrap().root), live);
         // The stale copy is never the answer.
         assert_ne!(
@@ -2791,24 +2763,16 @@ mod discover_tests {
     }
 
     #[test]
-    fn live_branch_without_its_worktree_is_an_error_naming_the_fix() {
+    fn a_stale_live_branch_copy_with_no_farm_branch_is_an_error_naming_the_fix() {
         let (base, primary, _stale) = live_repo();
         let msg = format!(
             "{:#}",
             discover_with(&primary, None).err().expect("no fallback")
         );
-        assert!(msg.contains("live branch `farm`"), "{msg}");
-        assert!(msg.contains("git worktree add -b farm"), "{msg}");
-        assert!(msg.contains("sparse-checkout set --no-cone"), "{msg}");
+        assert!(msg.contains("stale copy"), "{msg}");
+        assert!(msg.contains("the branch `yaks`"), "{msg}");
+        assert!(msg.contains("worktree add"), "{msg}");
         assert!(msg.contains("YAKS_DIR"), "{msg}");
-        // A worktree that has the branch but lost its .yaks/ is also an error.
-        let farm_wt = add_farm_worktree(&base, &primary);
-        fs::remove_dir_all(farm_wt.join(".yaks")).unwrap();
-        let msg = format!(
-            "{:#}",
-            discover_with(&primary, None).err().expect("no fallback")
-        );
-        assert!(msg.contains("no .yaks/ directory"), "{msg}");
         let _ = fs::remove_dir_all(&base);
     }
 

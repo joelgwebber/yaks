@@ -50,17 +50,11 @@ task's status is a frontmatter field; each yak is one file, `.yaks/<id>.md`.
   orphan branch holding only `.yaks/`) to its worktree via the host's `git
   worktree list` (`store::farm_branch_worktree`); `store::farm_branch(root)` says
   whether a root is such a dedicated farm worktree (`brief`, source links).
-- **A team farm can be live** (`live_branch: farm` in `config.yaml`, committed;
-  yaks-6a34): the `.yaks/` the walk finds is then a stale copy and discovery
-  redirects to the worktree where that branch is checked out
-  (`store::redirect_live` via `sheds::worktree_of_branch`, which asks the host
-  repository's `git worktree list`, so a Delta clone finds the human's
-  worktrees). One farm per machine, every shed writes it, nothing ever writes a
-  checkout's own copy; no such worktree is an error, never a fallback. **This
-  repo runs that way:** the live farm is `~/src/yaks-farm/.yaks` (a sparse
-  worktree of branch `farm`), `yaks commit` commits there, and `yaks commit --land`
-  from the coordinator's checkout cherry-picks the farm commits onto `main` (linear).
-  Never `git add` anything under `.yaks/` in a code checkout.
+- **This repo's farm is the branch `yaks`** (an orphan branch holding only
+  `.yaks/`), checked out at `~/src/yaks-farm` on Joel's machines; `main` has no
+  `.yaks/`. Every shed resolves to that one farm; `yaks commit` commits there.
+  A `.yaks/` with `live_branch:` in its config (a checkout of a commit from the
+  yaks-6a34 trial) is a stale copy that discovery redirects (`store::redirect_live`).
 - **Consolidate** separate farms with `Farm::merge` (`yaks merge`), which is
   collision-checked and non-destructive.
 
@@ -198,10 +192,10 @@ This project uses yaks to track its own work. The yaks skill has the full
 workflow.
 
 1. Never start coding without a shaving yak. No exceptions.
-2. Shear a yak as soon as its work is done. The farm is live (above): the
-   shear is already in `~/src/yaks-farm/.yaks`; the coordinator commits the farm
-   there and lands it on `main` with `yaks commit --land`. Never stage `.yaks/`
-   in a code checkout. Yak ids in commit messages are fine (team mode).
+2. Shear a yak as soon as its work is done. The farm is a branch (above): the
+   shear is already in `~/src/yaks-farm/.yaks`, and the coordinator commits it
+   there with `yaks commit`. No code commit ever contains `.yaks/`. Yak ids in
+   commit messages are fine (team mode). Pushing `yaks` to origin is Joel's call.
 3. Check existing yaks before creating new ones.
 4. Append progress notes to yak descriptions as you work.
 5. When unsure what's next, run `yaks next` — don't freelance.

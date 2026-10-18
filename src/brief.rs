@@ -28,10 +28,10 @@ pub enum Mode {
     /// with each checkout and the yak move rides in the worker's commit.
     /// `farm_rel` is the farm's path from the git top-level (normally `.yaks`).
     Team { farm_rel: String },
-    /// A committed farm whose config names a `live_branch:` (see
-    /// [`store::Config::live_branch`]): one live farm per machine, in the
+    /// The farm is a dedicated worktree of a farm branch ([`store::farm_branch`],
+    /// yaks-73f4): one live farm per machine, in the
     /// worktree of that branch, which every checkout's discovery redirects to.
-    /// The worker's checkout holds a stale copy it must never stage; the
+    /// The worker's checkout has no farm of its own and stages nothing of it; the
     /// yakherd commits the farm on the live branch. Yak ids are fine in
     /// commit messages (the farm is in git).
     Live { branch: String },
@@ -86,7 +86,7 @@ pub fn gate(task: &Task, cfg: &Config) -> Option<Gate> {
 }
 
 /// Detect the farm mode as the coordination skills do: a farm whose config
-/// names a `live_branch:` is live (wherever it resolved); else a farm with
+/// is a farm-branch worktree is live (wherever it resolved); else a farm with
 /// tracked files in the repository containing `cwd` is a team farm. A farm
 /// that is not inside that repository (a pointer file or symlink to another
 /// place) is private even if some other repository tracks it, because the
@@ -208,7 +208,7 @@ fn commands(b: &Brief) -> String {
     }
     if let Mode::Live { branch } = b.mode {
         s.push_str(&format!(
-            "\n- The farm is LIVE: one copy per machine, in the worktree of branch `{branch}`, shared by every checkout. `yaks path` (no arguments) prints it; the `.yaks/` in your checkout is a stale mirror that nothing writes."
+            "\n- The farm is LIVE: one copy per machine, in the worktree of branch `{branch}`, shared by every checkout. `yaks path` (no arguments) prints it; never create or stage a `.yaks/` in your own checkout."
         ));
     }
     s
@@ -285,7 +285,7 @@ fn finish(b: &Brief) -> String {
         Mode::Live { branch } => format!(
             "Finish (live farm: the farm is committed on branch `{branch}` by the yakherd, never by you)\n\
              {shear}\n\
-             3. ONE commit of your own source files only: `git add -A -- <your files>`. Never stage anything under `.yaks/` in your checkout (it is a stale copy; your yak edits are already in the live farm). Message `{id}: <what changed>`.\n\
+             3. ONE commit of your own source files only: `git add -A -- <your files>`. Never stage anything under `.yaks/` in your checkout (your yak edits are already in the farm). Message `{id}: <what changed>`.\n\
              4. `git show --stat` must list every file you expect and nothing under `.yaks/`."
         ),
         Mode::Private => format!(
@@ -543,16 +543,20 @@ mod tests {
         assert!(text.contains("`YAKS_DIR` names the farm"));
     }
 
+    fn mode_yaks() -> Mode {
+        Mode::Live {
+            branch: "yaks".into(),
+        }
+    }
+
     #[test]
     fn a_live_brief_never_stages_the_stale_copy_and_keeps_ids_in_messages() {
         let t = task("yak-0001", Status::Shaving);
-        let mode = Mode::Live {
-            branch: "farm".into(),
-        };
+        let mode = mode_yaks();
         let text = render(&facts(&t, &mode, None, None));
         assert!(
             text.contains(
-                "Finish (live farm: the farm is committed on branch `farm` by the yakherd"
+                "Finish (live farm: the farm is committed on branch `yaks` by the yakherd"
             )
         );
         assert!(text.contains("Never stage anything under `.yaks/`"));
@@ -565,23 +569,15 @@ mod tests {
             !text.contains("YAKS_DIR"),
             "discovery redirects from any checkout"
         );
-        // A live farm's detect_mode comes from the config, wherever the farm is.
-        let repo = tmp("live");
-        make_farm(&repo.join(".yaks"), "herd: yak\nlive_branch: farm\n", &t);
-        assert_eq!(detect_mode(&repo, &repo.join(".yaks")), mode);
+        // A farm-branch worktree (yaks-73f4) is live: its checkout's HEAD is
+        // the farm branch.
+        let repo = tmp("orphan");
+        make_farm(&repo.join(".yaks"), "herd: yak\n", &t);
+        git(&repo, &["init", "-q", "-b", "yaks"]);
+        git(&repo, &["add", "."]);
+        git(&repo, &["commit", "-q", "-m", "seed"]);
+        assert_eq!(detect_mode(&repo, &repo.join(".yaks")), mode_yaks());
         assert_eq!(yaks_dir(None, &repo, &mode, &repo.join(".yaks")), None);
-        // An orphan farm branch worktree (no live_branch:, yaks-73f4) is live too.
-        let orphan = tmp("orphan");
-        make_farm(&orphan.join(".yaks"), "herd: yak\n", &t);
-        git(&orphan, &["init", "-q", "-b", "yaks"]);
-        git(&orphan, &["add", "."]);
-        git(&orphan, &["commit", "-q", "-m", "seed"]);
-        assert_eq!(
-            detect_mode(&orphan, &orphan.join(".yaks")),
-            Mode::Live {
-                branch: "yaks".into()
-            }
-        );
         assert!(yaks_dir(Some("/f/.yaks"), &repo, &mode, &repo.join(".yaks")).is_some());
     }
 

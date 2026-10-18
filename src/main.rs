@@ -161,8 +161,8 @@ enum Command {
     /// it in place), handy for `git add`. Paths are absolute. An unknown
     /// id is reported on stderr and the exit status is non-zero (known ids are
     /// still printed). Give ids or filter flags, not both. With neither, print
-    /// the farm root this command resolved (the live farm when the config
-    /// names a `live_branch:`): which farm am I on?
+    /// the farm root this command resolved (the farm branch's worktree when
+    /// the farm is a branch): which farm am I on?
     Path {
         /// Yak ids to resolve.
         ids: Vec<String>,
@@ -843,11 +843,8 @@ enum Command {
     /// cherry-pick is in progress (git forbids a partial commit then; finish it
     /// with a plain `git commit`); a farm with no changes is a no-op that exits 0.
     ///
-    /// A LIVE farm (`live_branch:`) commits on its branch, in its worktree,
-    /// whatever the cwd; first it moves that branch onto `main` (a mixed reset:
-    /// ref and index only, uncommitted yak edits untouched) whenever main
-    /// already holds the farm's exact `.yaks/` tree, so the farm stays a short
-    /// line on top of main.
+    /// When the farm is a branch (yaks-73f4) this commits in the farm's own
+    /// worktree, on that branch, whatever the cwd: no code checkout is touched.
     Commit {
         /// Commit message (default: generated from the changed files).
         #[arg(short, long)]
@@ -855,12 +852,6 @@ enum Command {
         /// Print the files and message without staging or committing.
         #[arg(long)]
         dry_run: bool,
-        /// Live farm only, run from the code checkout you are about to push:
-        /// commit the farm, then cherry-pick every farm commit this checkout
-        /// lacks onto its HEAD (oldest first), so the farm lands as plain
-        /// commits, never a merge. Never pushes.
-        #[arg(long, conflicts_with = "dry_run")]
-        land: bool,
     },
     /// Show what the farm has changed that git does not have yet, one line per
     /// yak in yak terms (`created`, `moved hairy -> shaving`, `notes +2`,
@@ -2013,59 +2004,28 @@ fn main() -> Result<()> {
                 std::process::exit(1);
             }
         }
-        Command::Commit {
-            message,
-            dry_run: _,
-            land: true,
-        } => {
-            let l = commit::land(farm.root(), &env::current_dir()?, message.as_deref())?;
-            if let Some(base) = l.synced {
-                println!(
-                    "commit: moved the farm branch onto {base} (it already held every farm commit)"
-                );
-            }
-            match &l.committed {
-                Some(plan) => println!(
-                    "commit: committed {} {}",
-                    plan.commit.as_deref().unwrap_or("?"),
-                    plan.message
-                ),
-                None => println!("commit: nothing to commit under the farm"),
-            }
-            if l.picked.is_empty() {
-                println!("land: this checkout already has every farm commit");
-            } else {
-                println!(
-                    "land: cherry-picked {} farm commit(s) onto HEAD:",
-                    l.picked.len()
-                );
-                for (sha, subject) in &l.picked {
-                    println!("  {sha} {subject}");
+        Command::Commit { message, dry_run } => {
+            match commit::run(farm.root(), message.as_deref(), dry_run)? {
+                commit::Outcome::Nothing => println!("commit: nothing to commit under the farm"),
+                commit::Outcome::Done(plan) => {
+                    let verb = if dry_run { "would commit" } else { "committed" };
+                    for (state, path) in &plan.files {
+                        println!("  {state} {path}");
+                    }
+                    if !plan.left_staged.is_empty() {
+                        println!(
+                            "commit: left {} other staged file(s) out of the commit: {}",
+                            plan.left_staged.len(),
+                            plan.left_staged.join(", ")
+                        );
+                    }
+                    match &plan.commit {
+                        Some(sha) => println!("commit: {verb} {sha} {}", plan.message),
+                        None => println!("commit: {verb}: {}", plan.message),
+                    }
                 }
             }
         }
-        Command::Commit {
-            message, dry_run, ..
-        } => match commit::run(farm.root(), message.as_deref(), dry_run)? {
-            commit::Outcome::Nothing => println!("commit: nothing to commit under the farm"),
-            commit::Outcome::Done(plan) => {
-                let verb = if dry_run { "would commit" } else { "committed" };
-                for (state, path) in &plan.files {
-                    println!("  {state} {path}");
-                }
-                if !plan.left_staged.is_empty() {
-                    println!(
-                        "commit: left {} other staged file(s) out of the commit: {}",
-                        plan.left_staged.len(),
-                        plan.left_staged.join(", ")
-                    );
-                }
-                match &plan.commit {
-                    Some(sha) => println!("commit: {verb} {sha} {}", plan.message),
-                    None => println!("commit: {verb}: {}", plan.message),
-                }
-            }
-        },
         Command::Status { check, json } => {
             let report = status::collect(farm.root())?;
             if json {

@@ -41,7 +41,7 @@ Three **containers** name where yaks live and how they group:
 ## Hard rules
 
 1. **NEVER write code without an active shaving yak.** Before touching any code — even a one-line fix — you must have a yak in shaving state. If you don't, stop and `yaks shave <id>` one first (create it if needed). No exceptions.
-2. **ALWAYS shear when a yak's work is done.** Run `yaks shorn <id>` as soon as the task is complete. In **team mode** (below), stage the shorn yak file alongside the code that completed it and commit them together, unless the farm is **live** (`live_branch:` in its config): then your checkout's `.yaks/` is a stale copy you never stage, and the yakherd commits the farm. In **local-only mode**, never commit yak files at all.
+2. **ALWAYS shear when a yak's work is done.** Run `yaks shorn <id>` as soon as the task is complete. In **team mode** (below), stage the shorn yak file alongside the code that completed it and commit them together, unless the farm is **on its own branch** (below): then there is nothing to stage with your code, and the yakherd commits the farm. In **local-only mode**, never commit yak files at all.
 3. **NEVER leak yak IDs into external-facing surfaces** (PR titles/descriptions, external issue trackers, and — in local-only mode — commit messages). See "Keep yaks private," below.
 
 ## Two workflows: local or team
@@ -80,12 +80,13 @@ The quickest route is `yaks init --mode private` (the farm plus a `.git/info/exc
 - Commit the shorn yak move together with the code that completed it (hard rule 2).
 - Yak IDs are fine in commit messages and other in-repo references — collaborators can resolve them from the committed files.
 
-**Team, live (one farm per machine).** A team farm whose `.yaks/config.yaml` has `live_branch: <branch>` (committed, so every clone agrees) keeps ONE live copy per machine: the `git worktree` where that branch is checked out (normally sparse, holding only `.yaks/`). Discovery from any checkout of the repo (the primary, a git worktree, a Delta clone) redirects there, so every shed reads and writes the same files with no merge step, and a checkout's own `.yaks/` is a stale mirror nothing writes. `yaks path` with no arguments prints the farm in use; `git ls-files .yaks` still says team. Habits:
-- Never `git add` anything under `.yaks/` in a code checkout; your yak edits are already in the live farm. Yak ids in commit messages are fine.
-- The yakherd (or the human) commits the farm with `yaks commit` (it commits on `<branch>`, whatever the cwd) and lands it on `main` with `yaks commit --land`, run from the checkout about to be pushed: it cherry-picks the farm's new commits onto that checkout's HEAD, so `main` stays a straight line, and the next `yaks commit` moves the live branch back onto `main`. Feature branches and PRs carry no yak churn.
-- Across machines the farm travels as `origin/<branch>`: push it before switching, pull it after. Set up a machine with `git -C <repo> worktree add -b <branch> <path> main` and `git -C <path> sparse-checkout set --no-cone '/.yaks/'` (or `worktree add <path> <branch>` once the branch exists). A machine with no such worktree gets an error naming that fix; `YAKS_DIR=<live farm>` overrides for a checkout whose repository cannot see the worktree.
+**Team, farm on its own branch (one farm per machine).** The farm can live on an orphan branch (`yaks`, or the name in `git config yaks.branch`) whose tree is only `.yaks/`, checked out as its own `git worktree`. A checkout with no `.yaks/` finds that worktree (the primary, a git worktree, a Delta clone), so every shed reads and writes the same files with no merge step, and `main`, feature branches and PRs carry no yak files. `yaks path` with no arguments prints the farm in use (it is outside your checkout). Habits:
+- Your yak edits are already in the farm; there is nothing under `.yaks/` to stage with your code. Yak ids in commit messages are fine.
+- The yakherd (or the human) commits the farm with `yaks commit`, which commits on the farm branch in the farm worktree, whatever the cwd. Pushing that branch shares or backs up the farm.
+- Set up a machine with `git -C <repo> worktree add <path> yaks` (the branch from `origin`), or `git worktree add --orphan -b yaks <path>` for a new farm. A checkout whose repository has the branch but no worktree gets an error naming that fix; `YAKS_DIR=<farm>` overrides for a checkout whose repository cannot see the worktree.
+- A `.yaks/` with `live_branch:` in its config is a stale copy from before a repository moved its farm onto a branch; discovery skips it.
 
-> This repo is **team mode, live**: `.yaks/` is committed, yak IDs in commit messages are expected, and the live farm is the sparse worktree of branch `farm` (on Joel's machines `~/src/yaks-farm/.yaks`). Never stage `.yaks/` in a code checkout.
+> This repo's farm is **on its own branch**: the orphan branch `yaks` (on Joel's machines `~/src/yaks-farm/.yaks`); `main` has no `.yaks/`, and yak IDs in commit messages are expected.
 
 ## Keep yaks private (external surfaces)
 

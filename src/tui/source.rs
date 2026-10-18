@@ -474,21 +474,16 @@ mod tests {
     }
 
     #[test]
-    fn a_live_farm_resolves_source_links_in_the_code_checkout_not_the_farm_worktree() {
+    fn a_farm_branch_resolves_source_links_in_the_code_checkout_not_the_farm_worktree() {
         let base = std::env::temp_dir().join(format!("yaks-srclive-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&base);
         let code = base.join("code");
         std::fs::create_dir_all(code.join("src")).unwrap();
-        std::fs::create_dir_all(code.join(".yaks")).unwrap();
         std::fs::write(code.join("src/foo.rs"), "a\nb\n").unwrap();
-        std::fs::write(
-            code.join(".yaks/config.yaml"),
-            "herd: yak\nlive_branch: farm\n",
-        )
-        .unwrap();
         git_ok(&code, &["init", "-q", "-b", "main"]);
         git_ok(&code, &["add", "."]);
         git_ok(&code, &["commit", "-q", "-m", "init"]);
+        // The farm on an orphan branch, in its own worktree (yaks-73f4).
         let wt = base.join("farm");
         git_ok(
             &code,
@@ -496,13 +491,14 @@ mod tests {
                 "worktree",
                 "add",
                 "-q",
+                "--orphan",
                 "-b",
-                "farm",
+                "yaks",
                 wt.to_str().unwrap(),
-                "main",
             ],
         );
-        git_ok(&wt, &["sparse-checkout", "set", "--no-cone", "/.yaks/"]);
+        std::fs::create_dir_all(wt.join(".yaks")).unwrap();
+        std::fs::write(wt.join(".yaks/config.yaml"), "herd: yak\n").unwrap();
         let root = wt.join(".yaks");
         let code_c = crate::sheds::canonical(&code);
         // From the code checkout, and from the farm worktree (falls back to the
@@ -517,27 +513,6 @@ mod tests {
         assert!(!wt.join("src/foo.rs").exists());
         assert!(
             resolve_source_file(&source_base(&root, None).unwrap(), "src/foo.rs", None).is_ok()
-        );
-        // An ORPHAN farm branch (no live_branch: in its config, yaks-73f4):
-        // the same answer, keyed on the farm worktree's HEAD.
-        let orphan = base.join("orphan");
-        git_ok(
-            &code,
-            &[
-                "worktree",
-                "add",
-                "-q",
-                "--orphan",
-                "-b",
-                "yaks",
-                orphan.to_str().unwrap(),
-            ],
-        );
-        std::fs::create_dir_all(orphan.join(".yaks")).unwrap();
-        std::fs::write(orphan.join(".yaks/config.yaml"), "herd: yak\n").unwrap();
-        assert_eq!(
-            source_base(&orphan.join(".yaks"), Some(&orphan)),
-            Some(code_c.clone())
         );
         // A farm in its own checkout keeps resolving against its parent.
         let (proj, _farm) = crate::tui::test_support::temp_farm(&[]);

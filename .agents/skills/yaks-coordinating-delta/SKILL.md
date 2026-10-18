@@ -53,8 +53,8 @@ and `skill` needs the `worktree` argument; still put the critical rules in the b
 
 ## The brief
 Run `yaks brief <id> --as <name>` and paste its output at the start of the task. Add `--yaks-dir <abs path to the farm>` when
-the worker's checkout does not hold the farm (a private or pointer farm), or when the farm is live (`live_branch:`) and the
-worker's clone cannot see the live worktree (its host is Delta's bare managed repo: a shared-thread machine). It prints
+the worker's checkout does not hold the farm (a private or pointer farm), or when the farm is on its own branch and the
+worker's clone cannot see the farm worktree (its host is Delta's bare managed repo: a shared-thread machine). It prints
 everything the yak, the config and the farm
 mode determine: the yak id and that it is already `shaving`, the `YAKS_ACTOR=<name>` prefix (and `YAKS_DIR`), the binary, the
 gate (`verify:`), the forbidden moves, how to finish in a team, a live or a private farm, how to ask and pick up an answer, the

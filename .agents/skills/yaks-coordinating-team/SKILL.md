@@ -1,32 +1,29 @@
 ---
 name: yaks-coordinating-team
-description: "Farm-mode companion to yaks-coordinating for a TEAM farm (`.yaks/` committed to git): per-branch farms, claim commits, shorn moves riding with the code, squash landing, provenance, PR-driven integration. Load after yaks-coordinating when `git ls-files .yaks` lists files. Opt-in skill, installed by `yaks skills install --with coordination`."
+description: "Farm-mode companion to yaks-coordinating for a TEAM farm (the farm in git: on its own branch, or committed beside the code): one farm per machine on a farm branch; per-branch farms, claim commits, shorn moves riding with the code, squash landing, provenance, PR-driven integration. Load after yaks-coordinating when the farm is on a branch or `git ls-files .yaks` lists files. Opt-in skill, installed by `yaks skills install --with coordination`."
 ---
 
-# Coordinating a team farm (`.yaks/` is committed)
+# Coordinating a team farm (the farm is in git)
 
-Read `yaks-coordinating` first. This file is only what changes when the farm lives in git.
+Read `yaks-coordinating` first. This file is only what changes when the farm lives in git: on its
+own branch (first section, the default), or committed on the code branches (the rest).
 
-## Live farm (`live_branch:` in `.yaks/config.yaml`)
-When the farm's config names a live branch, there is **one farm per machine**: the `git
-worktree` where that branch is checked out (sparse, holding only `.yaks/`), which discovery
-reaches from every checkout of the repository (yours, the human's, every worker clone). Then
-the per-branch rules below (claim commits, shorn moves riding in the worker's commit,
-`answer <id>@<shed>`, `inbox --sheds`) do not apply; the private skill's live rules do (live
-claims and asks, one writer per yak, workers stage nothing under `.yaks/`), plus:
-- Yak ids are fine in commit messages (the farm is in git). Workers' briefs say
-  "Finish (live farm" and need no `YAKS_DIR` on this machine; `yaks path` (no arguments) must
-  print the live farm, make it the worker's first check.
-- **You land the farm:** after the code landings, run `yaks commit --land` in the checkout
-  you are about to push: it commits the farm (on the live branch) and cherry-picks every farm
-  commit your HEAD lacks onto it, oldest first, so `main` stays a straight line, then push
-  `main` as usual. The next `yaks commit` moves the live branch onto the new `main` by itself.
-  Never `git merge` the live branch. Never stage `.yaks/` in a code checkout; `land.sh` and
-  `preflight` then have no yak drift to explain.
-- **Machines:** the farm crosses as `origin/<branch>`. Before the human switches machines:
-  `yaks commit`, then `git -C <primary> push origin <branch>`; on arrival `git -C <farm
-  worktree> pull`. A clone whose host is Delta's bare managed repo cannot see the worktree:
-  give its brief `--yaks-dir <live farm>` (`~/`-relative works on every machine).
+## The farm on its own branch (the default here)
+When the farm lives on an orphan branch (`yaks`, or `git config yaks.branch`) in its own
+worktree, there is **one farm per machine**, reached by discovery from every checkout (yours,
+the human's, every worker clone), and `main` carries no yak files. Then the per-branch rules
+below (claim commits, shorn moves riding in the worker's commit, `answer <id>@<shed>`, `inbox
+--sheds`) do not apply; the private skill's live rules do (live claims and asks, one writer per
+yak, workers stage nothing under `.yaks/`), plus:
+- Yak ids are fine in commit messages (the farm is in git). Workers' briefs say "Finish (live
+  farm" and need no `YAKS_DIR` on this machine; `yaks path` (no arguments) must print the farm
+  worktree's `.yaks`: make it the worker's first check.
+- **You commit the farm** with `yaks commit` (on the farm branch, in its worktree, whatever your
+  cwd), at least at every landing. Code lands by `land.sh` (a squash); nothing else touches
+  `.yaks/`, so landings never conflict on yak files.
+- **Machines and teammates:** the farm crosses as `origin/<branch>`. Push it only on the
+  human's say-so; once pushed: push before a machine switch, pull after. A clone whose host is
+  Delta's bare managed repo cannot see the worktree: give its brief `--yaks-dir <farm>`.
 - `yaks sheds` still lists every checkout with its git facts (branch, ahead/behind, dirty,
   merged, liveness); its farm-diff columns read `shares this farm` for every shed, by design.
   "What is worker X doing" is `yaks log --by <actor>` and `yaks inbox`.
