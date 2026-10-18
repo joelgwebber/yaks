@@ -4382,6 +4382,60 @@ mod block_edit {
         );
     }
 
+    /// yaks-9f5c: a note another writer appends while the editor is open
+    /// survives the save.
+    #[test]
+    fn saving_keeps_a_note_appended_meanwhile() {
+        let (_d, mut app) = app_with_comments();
+        app.detail_line = dline_of(&app, "The description.");
+        handle_key(&mut app, key('E'));
+        let other = crate::farm::TaskEdit {
+            note: Some("written by another shed".into()),
+            ..Default::default()
+        };
+        app.farm.as_ref().unwrap().update("t0", other).unwrap();
+        append(&mut app, " edited");
+        ctrl(&mut app, 's');
+        assert!(matches!(app.overlay, Overlay::None));
+        let now = body(&app);
+        assert!(now.starts_with("The description. edited\n"), "{now}");
+        assert!(now.contains("- gamma"), "{now}");
+        assert!(now.ends_with("\n\nwritten by another shed"), "{now}");
+        assert_eq!(app.notification.as_deref(), Some("t0 updated"));
+    }
+
+    /// yaks-9f5c: a concurrent rewrite is a conflict: nothing is written and
+    /// the editor reopens on the fresh yak holding the user's text.
+    #[test]
+    fn a_conflicting_save_writes_nothing_and_keeps_the_text() {
+        let (_d, mut app) = app_with_comments();
+        app.detail_line = dline_of(&app, "beta");
+        handle_key(&mut app, key('E'));
+        let theirs = body(&app).replace("first note", "their rewrite");
+        let other = crate::farm::TaskEdit {
+            description: Some(theirs.clone()),
+            ..Default::default()
+        };
+        app.farm.as_ref().unwrap().update("t0", other).unwrap();
+        append(&mut app, "!");
+        ctrl(&mut app, 's');
+        assert_eq!(body(&app), theirs, "nothing written; the App reloaded");
+        let be = block_edit(&app);
+        assert_eq!(be.editor.text(), "- alpha\n- beta!\n- gamma");
+        assert!(be.is_dirty(), "a cancel still asks");
+        assert_eq!(
+            app.notification.as_deref(),
+            Some("t0 changed on disk; not saved: review and Ctrl-S again")
+        );
+        let frame = draw(&app, 90, 30);
+        assert!(frame.contains("their rewrite"), "{frame}");
+        assert!(frame.contains("┃- beta!"), "{frame}");
+        // Saving again goes against the fresh body and keeps their rewrite.
+        ctrl(&mut app, 's');
+        assert!(matches!(app.overlay, Overlay::None));
+        assert_eq!(body(&app), theirs.replace("- beta", "- beta!"));
+    }
+
     #[test]
     fn after_saving_the_line_cursor_stays_on_the_same_source_line() {
         let (_d, mut app) = app_with_comments();

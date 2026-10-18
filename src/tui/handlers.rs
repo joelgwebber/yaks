@@ -1878,9 +1878,18 @@ impl App {
         self.notification = Some(msg);
     }
 
-    pub(crate) fn apply_edit(&mut self, id: &str, edit: TaskEdit, ok_msg: String) {
-        let Some(h) = &self.farm else { return };
-        match h.update(id, edit) {
+    /// Apply `edit` to `id` and report the result as a notification; returns
+    /// the outcome (`None` without a farm or on an error) so a caller can act
+    /// on a [`UpdateOutcome::Conflict`].
+    pub(crate) fn apply_edit(
+        &mut self,
+        id: &str,
+        edit: TaskEdit,
+        ok_msg: String,
+    ) -> Option<UpdateOutcome> {
+        let h = self.farm.as_ref()?;
+        let outcome = h.update(id, edit);
+        match outcome {
             Ok(UpdateOutcome::Updated) => {
                 // Follow the edited yak to its new sorted slot. The cursor is
                 // index-based, so an edit that changes the sort key (e.g.
@@ -1901,8 +1910,15 @@ impl App {
             }
             Ok(UpdateOutcome::NoChanges) => self.notification = Some(format!("{id} unchanged")),
             Ok(UpdateOutcome::NotFound) => self.notification = Some(format!("{id} not found")),
-            Err(e) => self.notification = Some(format!("error: {e}")),
+            // Nothing was written; show what is on disk now (the caller keeps
+            // the user's text, yaks-9f5c).
+            Ok(UpdateOutcome::Conflict) => {
+                self.reload_preserving_selection();
+                self.notification = Some(format!("{id} changed on disk; not saved"));
+            }
+            Err(ref e) => self.notification = Some(format!("error: {e}")),
         }
+        outcome.ok()
     }
 
     pub(crate) fn resolve_confirm(&mut self, action: ConfirmAction) {

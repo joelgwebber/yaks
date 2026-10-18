@@ -243,6 +243,13 @@ pub struct TaskEdit {
     pub kind: Option<String>,
     pub priority: Option<u8>,
     pub description: Option<String>,
+    /// The body `description` was edited against (optimistic concurrency,
+    /// yaks-9f5c). `None` overwrites the body outright (the CLI's explicit
+    /// `--description`). `Some(base)`: if the file still holds `base` the
+    /// description is written; if it holds `base` plus entries appended since
+    /// (a note, a move) they are kept after the new description; anything else
+    /// writes nothing and returns [`UpdateOutcome::Conflict`].
+    pub base: Option<String>,
     pub add_labels: Vec<String>,
     pub remove_labels: Vec<String>,
     /// Set the external `source:` URL; an empty string clears it.
@@ -292,10 +299,41 @@ pub struct MergePlan {
     pub herds: Vec<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UpdateOutcome {
     Updated,
     NoChanges,
     NotFound,
+    /// A description edit with a `base` the file no longer matches, other than
+    /// by appended entries: nothing was written (see [`TaskEdit::base`]).
+    Conflict,
+}
+
+/// The body to write for a description `new` edited against `base`, given the
+/// file's `current` body: `new` when nothing moved, `new` plus the entries
+/// appended since `base` was read, or `None` when the body changed some other
+/// way (yaks-9f5c). An entry is what [`store::append_note`] adds: a
+/// `---` / `▸ ` header after the trimmed body.
+fn rebase_description(base: &str, current: &str, new: String) -> Option<String> {
+    let base = base.trim_end();
+    if current.trim_end() == base {
+        return Some(new);
+    }
+    let rest = current.strip_prefix(base)?;
+    let entry = if base.is_empty() {
+        rest.trim_start_matches('\n')
+    } else {
+        rest.strip_prefix("\n\n")?
+    };
+    if !entry.starts_with("---\n\u{25b8} ") {
+        return None;
+    }
+    let new = new.trim_end();
+    Some(if new.is_empty() {
+        entry.to_string()
+    } else {
+        format!("{new}\n\n{entry}")
+    })
 }
 
 /// Result of attaching an artifact to a task.
@@ -1685,7 +1723,13 @@ impl Farm {
             changed = true;
         }
         if let Some(d) = edit.description {
-            task.body = d;
+            task.body = match edit.base {
+                None => d,
+                Some(base) => match rebase_description(&base, &task.body, d) {
+                    Some(body) => body,
+                    None => return Ok(UpdateOutcome::Conflict),
+                },
+            };
             changed = true;
         }
         // Labels are normalized on the way in (split on commas/whitespace,
@@ -3488,6 +3532,120 @@ mod tests {
         assert_eq!(
             farm.rename_attachment("yak-0009", "a.png", "c").unwrap(),
             R::TaskNotFound
+        );
+    }
+
+    /// yaks-9f5c: a description saved against a stale base keeps a note
+    /// another writer appended meanwhile.
+    #[test]
+    fn description_with_base_keeps_a_concurrent_note() {
+        let (root, farm) = temp_farm();
+        let mut t = task("yak-0001", Status::Hairy);
+        t.body = "Old description.".into();
+        store::write::save(&root, &t).unwrap();
+        let base = store::load_task_by_id(&root, "yak-0001")
+            .unwrap()
+            .unwrap()
+            .body;
+        let note = TaskEdit {
+            note: Some("a concurrent note".into()),
+            ..Default::default()
+        };
+        assert_eq!(
+            farm.update("yak-0001", note).unwrap(),
+            UpdateOutcome::Updated
+        );
+        let edit = TaskEdit {
+            description: Some("New description.".into()),
+            base: Some(base),
+            ..Default::default()
+        };
+        assert_eq!(
+            farm.update("yak-0001", edit).unwrap(),
+            UpdateOutcome::Updated
+        );
+        let body = store::load_task_by_id(&root, "yak-0001")
+            .unwrap()
+            .unwrap()
+            .body;
+        assert!(
+            body.starts_with("New description.\n\n---\n\u{25b8} "),
+            "{body}"
+        );
+        assert!(body.ends_with("\n\na concurrent note"), "{body}");
+        assert!(!body.contains("Old description."), "{body}");
+    }
+
+    /// yaks-9f5c: a concurrent rewrite of the same text is a conflict, and the
+    /// file is left exactly as the other writer left it.
+    #[test]
+    fn description_with_base_conflicts_on_a_concurrent_rewrite() {
+        let (root, farm) = temp_farm();
+        let mut t = task("yak-0001", Status::Hairy);
+        t.body = "Old description.".into();
+        store::write::save(&root, &t).unwrap();
+        let base = store::load_task_by_id(&root, "yak-0001")
+            .unwrap()
+            .unwrap()
+            .body;
+        let other = TaskEdit {
+            description: Some("Their description.".into()),
+            ..Default::default()
+        };
+        assert_eq!(
+            farm.update("yak-0001", other).unwrap(),
+            UpdateOutcome::Updated
+        );
+        let path = store::task_path(&root, "yak-0001");
+        let on_disk = std::fs::read_to_string(&path).unwrap();
+        let edit = TaskEdit {
+            description: Some("My description.".into()),
+            base: Some(base),
+            title: Some("retitled".into()),
+            ..Default::default()
+        };
+        assert_eq!(
+            farm.update("yak-0001", edit).unwrap(),
+            UpdateOutcome::Conflict
+        );
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), on_disk);
+    }
+
+    #[test]
+    fn rebase_description_cases() {
+        let note = store::append_note("base", "T", Some("a"), "n");
+        // Unchanged (trailing whitespace aside): the new text as is.
+        assert_eq!(
+            rebase_description("base\n", "base", "new".into()).as_deref(),
+            Some("new")
+        );
+        // Appended entry kept.
+        assert_eq!(
+            rebase_description("base", &note, "new".into()).unwrap(),
+            note.replacen("base", "new", 1)
+        );
+        // From an empty base, and to an empty description.
+        let first = store::append_note("", "T", None, "n");
+        assert_eq!(
+            rebase_description("", &first, "new".into()).unwrap(),
+            format!("new\n\n{first}")
+        );
+        assert_eq!(
+            rebase_description("base", &note, String::new()).unwrap(),
+            &note[6..]
+        );
+        // Text appended that is not an entry, or an edited prefix: conflict.
+        assert_eq!(
+            rebase_description("base", "base and more", "new".into()),
+            None
+        );
+        assert_eq!(
+            rebase_description("base", "based\n\n---\n\u{25b8} x", "new".into()),
+            None
+        );
+        assert_eq!(
+            rebase_description("base", &note.replace("base", "BASE"), "new".into()),
+            None
         );
     }
 

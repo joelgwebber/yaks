@@ -141,7 +141,11 @@ reference, `:w` / `:q` work in vim Normal mode). `Ctrl-S` saves just that block
 text), `Ctrl-C` or a rapid `Esc Esc` cancels (asking first when you changed
 something), and an empty new comment is not saved. After a save the block
 re-renders in place and the line cursor stays on the same source line (on the
-new comment's header after `M`).
+new comment's header after `M`). A save never drops what another process wrote
+while the editor was open: notes or moves appended meanwhile are kept below
+your edit, and if the yak changed any other way nothing is saved, the pane
+reloads, and the editor reopens with your text (`changed on disk; not saved:
+review and Ctrl-S again`).
 
 ![E on a comment row: that comment becomes an editor in the detail pane](assets/tui-edit-inplace.svg)
 

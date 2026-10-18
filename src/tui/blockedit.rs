@@ -258,16 +258,71 @@ impl App {
         if body == task.body {
             self.notification = Some(format!("{id} unchanged"));
         } else {
-            self.apply_edit(
+            // `task.body` may be stale: the farm keeps entries appended since
+            // and refuses anything else (yaks-9f5c).
+            let base = task.body.clone();
+            let text = blocks.swap_remove(block).text;
+            let outcome = self.apply_edit(
                 id,
                 TaskEdit {
                     description: Some(body),
+                    base: Some(base),
                     ..Default::default()
                 },
                 format!("{id} updated"),
             );
+            if outcome == Some(UpdateOutcome::Conflict) {
+                self.reopen_after_conflict(id, block, text, row);
+                return;
+            }
         }
         self.focus_source_line(block, Some(row));
+    }
+
+    /// A save that conflicted wrote nothing and `apply_edit` reloaded the yak:
+    /// reopen the editor on the same block of the fresh body, holding the
+    /// user's `text` (dirty, so a cancel still asks), to review and save
+    /// again. A block that is gone leaves the text on the clipboard instead.
+    fn reopen_after_conflict(&mut self, id: &str, block: usize, text: String, row: usize) {
+        let fresh = (self.selected_id().as_deref() == Some(id))
+            .then(|| self.task(id))
+            .flatten()
+            .and_then(|t| content::parse(&t.body).get(block).map(|b| b.text.clone()));
+        let Some(original) = fresh else {
+            let copied = crate::clipboard::copy_text(&text);
+            self.notification = Some(format!(
+                "{id} changed on disk; not saved{}",
+                if copied {
+                    ", your text is on the clipboard"
+                } else {
+                    ", clipboard unavailable"
+                }
+            ));
+            return;
+        };
+        let editor = Editor::new(
+            self.editor_vim,
+            false,
+            String::new(),
+            &text,
+            EditAction::Block {
+                id: id.to_string(),
+                block,
+            },
+        );
+        let last = text.split('\n').count() - 1;
+        editor.state.borrow_mut().cursor = edtui::Index2::new(row.min(last), 0);
+        self.overlay = Overlay::BlockEdit(BlockEdit {
+            editor,
+            id: id.to_string(),
+            block: Some(block),
+            original,
+            label: String::new(),
+        });
+        self.show_block_editor();
+        self.notification = Some(format!(
+            "{id} changed on disk; not saved: review and Ctrl-S again"
+        ));
     }
 
     /// Put the line cursor on the row showing `line` (a 0-based source line) of

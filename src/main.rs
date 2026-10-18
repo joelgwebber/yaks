@@ -1614,6 +1614,8 @@ fn main() -> Result<()> {
                 kind,
                 priority,
                 description,
+                // An explicit overwrite (yaks-9f5c): the CLI never rebases.
+                base: None,
                 add_labels: add_label,
                 remove_labels: remove_label,
                 source,
@@ -1915,6 +1917,7 @@ fn main() -> Result<()> {
                     kind: set_type,
                     priority: set_priority,
                     description: None,
+                    base: None,
                     add_labels: add_label,
                     remove_labels: remove_label,
                     source: None,
@@ -2301,7 +2304,8 @@ fn slaughter_many(farm: &Farm, ids: &[String], family: bool, actor: Option<&str>
 }
 
 /// Apply `edit` to a single id, printing the per-id result. Returns false only
-/// when the id was not found (so the caller can exit non-zero).
+/// when the id was not found or (never, without a `base`) conflicted, so the
+/// caller can exit non-zero.
 fn update_one(farm: &Farm, id: &str, edit: TaskEdit) -> Result<bool> {
     match farm.update(id, edit)? {
         UpdateOutcome::NotFound => {
@@ -2315,6 +2319,11 @@ fn update_one(farm: &Farm, id: &str, edit: TaskEdit) -> Result<bool> {
         UpdateOutcome::NoChanges => {
             println!("No changes specified.");
             Ok(true)
+        }
+        // Only an edit with a `base` can conflict; the CLI sets none.
+        UpdateOutcome::Conflict => {
+            eprintln!("error: task {id} changed on disk; not updated");
+            Ok(false)
         }
     }
 }
