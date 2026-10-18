@@ -114,7 +114,7 @@ the pre-find scroll and cursor).
 | `H` | Move to another herd (multi-herd farms) |
 | `M` | Add a comment (note): an empty editor under a `▸ you · now` header after the last comment, in place |
 | `a` | Ask / answer (on a yak awaiting a human: answer, which sets `needs: agent`; otherwise ask, which sets `needs: human`; on a yak whose copy in another shed is awaiting a human, in any view (the Inbox lists them): answer it in that shed, uncommitted there) |
-| `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm, else in the shed that has it (a shed-only yak's shed first), and says which shed it came from |
+| `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm, else in the shed that has it (a shed-only yak's shed first), and says which shed it came from. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped; `j`/`k`, `d`/`u`, `g`/`G` scroll, `O` hands it to the OS opener (to edit it), `Esc`/`q`/`h` close. Images and binary files open with the OS opener |
 | `r` | (detail) Rename the attachment whose link (📎 or 🖼) the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
 | `X` | Slaughter (delete, with confirm); on a yak with live descendants the confirm offers the whole family, naming how many go |
 | `:w` / `:q` / `:wq` | Save / cancel / save+close (editor Normal mode) |
@@ -241,8 +241,8 @@ language shows as a dim label row above it; see below for scrolling), and
 `[text](url)` shows just its text (still followable with `Tab`/`Enter`; while
 the line cursor is on such a link the status bar shows its destination, dim and
 truncated, in place of the key hints). A link to a yak attachment
-(`<id>/<file>`) is marked `📎` and an image `🖼`; `Enter` opens either
-externally. A link to a **repo source file** is a plain relative link from the
+(`<id>/<file>`) is marked `📎` and an image `🖼`; `Enter` opens a text
+attachment in the pane's viewer (below) and an image externally. A link to a **repo source file** is a plain relative link from the
 yak's own file (`.yaks/<id>.md`), so `[code](../src/foo.rs)` also works on
 GitHub; `#L12` or `#L12-L40` adds lines (GitHub's own fragment), and
 `[code](../blob/<sha>/src/foo.rs#L12)` pins it to a commit (`<sha>` is 7 to 40 hex

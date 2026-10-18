@@ -138,6 +138,8 @@ pub(crate) enum Overlay {
     ViewPicker(usize),
     /// The keyboard-help reference (`?`): carries the scroll offset.
     Help(u16),
+    /// A text attachment open in the in-TUI viewer, or its editor (yaks-699b).
+    Attachment(handlers::AttachView),
 }
 
 /// What a resolved single-key pick should do (carries the target task id).

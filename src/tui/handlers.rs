@@ -7,6 +7,88 @@
 
 use super::*;
 
+/// Largest attachment the in-TUI viewer shows; a bigger file opens externally.
+const VIEW_MAX_BYTES: u64 = 1 << 20;
+
+/// A text attachment open in the viewer overlay (`Overlay::Attachment`,
+/// yaks-699b): read once on open, a `.md`/`.markdown` file rendered by the
+/// detail pane's markdown renderer and anything else shown verbatim, wrapped
+/// to the pane. Read-only: `O` hands it to the OS opener to edit.
+pub(crate) struct AttachView {
+    /// The link target as written (`<id>/<file>`), shown as the header.
+    pub(crate) target: String,
+    pub(crate) path: PathBuf,
+    /// The shed the file came from (`None`: this farm).
+    pub(crate) shed: Option<String>,
+    pub(crate) text: String,
+    pub(crate) markdown: bool,
+    /// First visible content row.
+    pub(crate) scroll: u16,
+    /// Content width at the last render, so key handling clamps the scroll
+    /// to the rows actually on screen.
+    pub(crate) width: Cell<u16>,
+}
+
+impl AttachView {
+    /// The viewer for `found`, or `None` when it should open externally: an
+    /// image, a file over [`VIEW_MAX_BYTES`], or one that is not UTF-8 text
+    /// (invalid UTF-8, or a NUL byte).
+    pub(crate) fn open(target: &str, found: &crate::farm::FoundAttachment) -> Option<Self> {
+        if crate::store::is_image_name(&found.name) {
+            return None;
+        }
+        if std::fs::metadata(&found.path).ok()?.len() > VIEW_MAX_BYTES {
+            return None;
+        }
+        let text = String::from_utf8(std::fs::read(&found.path).ok()?).ok()?;
+        if text.contains('\0') {
+            return None;
+        }
+        let markdown = Path::new(&found.name)
+            .extension()
+            .and_then(|e| e.to_str())
+            .is_some_and(|e| e.eq_ignore_ascii_case("md") || e.eq_ignore_ascii_case("markdown"));
+        Some(AttachView {
+            target: target.to_string(),
+            path: found.path.clone(),
+            shed: found.shed.clone(),
+            text,
+            markdown,
+            scroll: 0,
+            width: Cell::new(0),
+        })
+    }
+
+    /// The content laid out to `width` as detail rows: markdown through
+    /// [`mdrender::render`] (so it looks as it would in a yak's body), plain
+    /// text one row per line, soft-wrapped by [`detail::wrap`].
+    pub(crate) fn rows(&self, width: u16, known: &HashSet<&str>) -> Vec<detail::DLine> {
+        let width = width.max(1) as usize;
+        let row = |text: String, md, links, nowrap| detail::DLine {
+            text,
+            kind: detail::Kind::Body,
+            links,
+            md,
+            cont: false,
+            src: None,
+            nowrap,
+        };
+        if self.markdown {
+            mdrender::render(&self.text, width, known)
+                .into_iter()
+                .map(|r| row(r.text, r.spans, r.links, r.nowrap))
+                .collect()
+        } else {
+            let lines = self
+                .text
+                .lines()
+                .map(|l| row(l.replace('\t', "    "), vec![], vec![], None))
+                .collect();
+            detail::wrap(lines, width)
+        }
+    }
+}
+
 /// What one key did to an embedded multi-line or single-line editor overlay
 /// (`Overlay::Edit`, `Overlay::BlockEdit`): the shared key routing, decided in
 /// one place so the two editors cannot drift.
@@ -558,29 +640,94 @@ impl App {
         });
     }
 
-    /// Open a URL or attachment in the OS default application (best-effort).
-    /// An attachment (`<id>/<file>`) is resolved by [`App::resolve_attachment`]:
-    /// this farm, else the shed it lives in (yaks-31e2).
+    /// Open a URL or attachment (`Enter` on its link, or `O`). An attachment
+    /// (`<id>/<file>`) is resolved by [`App::resolve_attachment`]: this farm,
+    /// else the shed it lives in (yaks-31e2). A text attachment opens in the
+    /// in-TUI viewer ([`AttachView`], yaks-699b); a URL, an image or any other
+    /// file goes to the OS default application (best-effort).
     pub(crate) fn open_external(&mut self, target: &str) {
         let (arg, from) = if target.contains("://") || target.starts_with("mailto:") {
             (target.to_string(), None)
         } else {
             match self.resolve_attachment(target) {
-                Some(found) => (found.path.display().to_string(), found.shed),
+                Some(found) => match AttachView::open(target, &found) {
+                    Some(v) => {
+                        self.notification = Some(match &found.shed {
+                            Some(shed) => format!("viewing {target} (from shed {shed})"),
+                            None => format!("viewing {target}"),
+                        });
+                        self.overlay = Overlay::Attachment(v);
+                        return;
+                    }
+                    None => (found.path.display().to_string(), found.shed),
+                },
                 None => {
                     self.notification = Some(format!("{target}: not in this farm or any shed"));
                     return;
                 }
             }
         };
-        match super::source::os_open(&arg) {
-            Ok(_) => {
-                self.notification = Some(match from {
-                    Some(shed) => format!("opened {target} (from shed {shed})"),
-                    None => format!("opened {target}"),
-                })
+        self.os_open(target, &arg, from.as_deref());
+    }
+
+    /// Hand `arg` (a URL or file path) to the OS opener, reporting it as
+    /// `target`. Under `cargo test` nothing is launched (a test must never
+    /// pop up an image viewer); the notification is the same.
+    fn os_open(&mut self, target: &str, arg: &str, from: Option<&str>) {
+        #[cfg(not(test))]
+        let opened = super::source::os_open(arg).map(drop);
+        #[cfg(test)]
+        let opened: std::io::Result<()> = {
+            let _ = arg;
+            Ok(())
+        };
+        self.notification = Some(match (opened, from) {
+            (Ok(()), Some(shed)) => format!("opened {target} (from shed {shed})"),
+            (Ok(()), None) => format!("opened {target}"),
+            (Err(e), _) => format!("open failed: {e}"),
+        });
+    }
+
+    /// Keys in the attachment viewer: scroll like the help reference, `O`
+    /// hands the file to the OS opener, `Esc`/`q`/`h`/`←` close it.
+    pub(crate) fn handle_attachment_key(&mut self, k: KeyEvent) {
+        let Overlay::Attachment(v) = &self.overlay else {
+            return;
+        };
+        match k.code {
+            KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('h') | KeyCode::Left => {
+                self.overlay = Overlay::None;
+                return;
             }
-            Err(e) => self.notification = Some(format!("open failed: {e}")),
+            KeyCode::Char('O') => {
+                let (target, arg, from) = (
+                    v.target.clone(),
+                    v.path.display().to_string(),
+                    v.shed.clone(),
+                );
+                self.overlay = Overlay::None;
+                self.os_open(&target, &arg, from.as_deref());
+                return;
+            }
+            _ => {}
+        }
+        let vh = self.detail_page.saturating_sub(1).max(1);
+        let known: HashSet<&str> = self.all.iter().map(|t| t.id.as_str()).collect();
+        let total = v.rows(v.width.get(), &known).len() as u16;
+        let max_scroll = total.saturating_sub(vh);
+        let half = (vh / 2).max(1);
+        let Overlay::Attachment(v) = &mut self.overlay else {
+            return;
+        };
+        let s = &mut v.scroll;
+        match k.code {
+            KeyCode::Char('j') | KeyCode::Down => *s = (*s + 1).min(max_scroll),
+            KeyCode::Char('k') | KeyCode::Up => *s = s.saturating_sub(1),
+            KeyCode::Char('d') | KeyCode::PageDown => *s = (*s + half).min(max_scroll),
+            KeyCode::Char('u') | KeyCode::PageUp => *s = s.saturating_sub(half),
+            KeyCode::Char('g') | KeyCode::Home => *s = 0,
+            KeyCode::Char('G') | KeyCode::End => *s = max_scroll,
+            _ => {}
         }
     }
 
@@ -615,7 +762,8 @@ impl App {
         crate::farm::locate_attachment(&farms, id, name)
     }
 
-    /// O — open the artifact/URL/source link on the current detail line externally.
+    /// O — open the artifact/URL/source link on the current detail line (a
+    /// text attachment in the viewer, anything else externally).
     pub(crate) fn open_current_external(&mut self) {
         let jumps = self.detail_jumps();
         match jumps.into_iter().find(|j| j.line == self.detail_line) {
@@ -1066,6 +1214,10 @@ impl App {
             self.handle_help_key(k);
             return;
         }
+        if matches!(self.overlay, Overlay::Attachment(_)) {
+            self.handle_attachment_key(k);
+            return;
+        }
         if matches!(self.overlay, Overlay::ViewPicker(_)) {
             self.handle_view_picker_key(k);
             return;
@@ -1243,7 +1395,8 @@ impl App {
             | Overlay::Create(_)
             | Overlay::DetailFind(_)
             | Overlay::ViewPicker(_)
-            | Overlay::Help(_) => {}
+            | Overlay::Help(_)
+            | Overlay::Attachment(_) => {}
             Overlay::Pick {
                 prompt,
                 keys,
