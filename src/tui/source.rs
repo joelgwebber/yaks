@@ -219,6 +219,36 @@ fn editor_from_env() -> Option<String> {
         .find(|v| !v.trim().is_empty())
 }
 
+/// The checkout a source link (`../src/foo.rs`) is resolved in. For a farm in
+/// its own checkout that is the farm's parent, as the link's `../` says. A
+/// LIVE farm (`live_branch:`, yaks-6a34) lives in a worktree that holds only
+/// `.yaks/`, so there it is the code checkout instead: the git top-level of
+/// `cwd` (where the TUI was started) unless that is the farm worktree itself,
+/// else the repository's main checkout (yaks-6c4f). `None` when nothing fits.
+pub(crate) fn source_base(farm_root: &Path, cwd: Option<&Path>) -> Option<PathBuf> {
+    let own = farm_root.parent().map(Path::to_path_buf);
+    if crate::store::read_config(farm_root).live_branch.is_none() {
+        return own;
+    }
+    let farm_wt = own.as_deref().map(crate::sheds::canonical);
+    let top = |dir: &Path| {
+        Command::new("git")
+            .arg("-C")
+            .arg(dir)
+            .args(["rev-parse", "--show-toplevel"])
+            .output()
+            .ok()
+            .filter(|o| o.status.success())
+            .map(|o| crate::sheds::canonical(Path::new(String::from_utf8_lossy(&o.stdout).trim())))
+    };
+    if let Some(t) = cwd.and_then(top).filter(|t| Some(t) != farm_wt.as_ref()) {
+        return Some(t);
+    }
+    crate::sheds::host(farm_root)
+        .and_then(|h| crate::sheds::host_checkout(&h))
+        .filter(|t| Some(t) != farm_wt.as_ref())
+}
+
 impl App {
     /// Follow a source link: `$VISUAL`/`$EDITOR` at the line, else the OS
     /// opener. The editor is queued ([`App::pending_editor`]) for the event
@@ -238,10 +268,9 @@ impl App {
         let Some(base) = self
             .farm
             .as_ref()
-            .and_then(|f| f.root().parent())
-            .map(Path::to_path_buf)
+            .and_then(|f| source_base(f.root(), self.sheds.cwd.as_deref()))
         else {
-            self.notification = Some("no farm to resolve the link against".into());
+            self.notification = Some("no code checkout to resolve the link against".into());
             return;
         };
         let (file, snapshot) = match resolve_source_file(&base, path, rev) {
@@ -442,6 +471,60 @@ mod tests {
                 .unwrap()
                 .contains("src/foo.rs:L2-L3@")
         );
+    }
+
+    #[test]
+    fn a_live_farm_resolves_source_links_in_the_code_checkout_not_the_farm_worktree() {
+        let base = std::env::temp_dir().join(format!("yaks-srclive-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let code = base.join("code");
+        std::fs::create_dir_all(code.join("src")).unwrap();
+        std::fs::create_dir_all(code.join(".yaks")).unwrap();
+        std::fs::write(code.join("src/foo.rs"), "a\nb\n").unwrap();
+        std::fs::write(
+            code.join(".yaks/config.yaml"),
+            "herd: yak\nlive_branch: farm\n",
+        )
+        .unwrap();
+        git_ok(&code, &["init", "-q", "-b", "main"]);
+        git_ok(&code, &["add", "."]);
+        git_ok(&code, &["commit", "-q", "-m", "init"]);
+        let wt = base.join("farm");
+        git_ok(
+            &code,
+            &[
+                "worktree",
+                "add",
+                "-q",
+                "-b",
+                "farm",
+                wt.to_str().unwrap(),
+                "main",
+            ],
+        );
+        git_ok(&wt, &["sparse-checkout", "set", "--no-cone", "/.yaks/"]);
+        let root = wt.join(".yaks");
+        let code_c = crate::sheds::canonical(&code);
+        // From the code checkout, and from the farm worktree (falls back to the
+        // main checkout), the base is the code; never the sparse farm worktree.
+        assert_eq!(
+            source_base(&root, Some(&code.join("src"))),
+            Some(code_c.clone())
+        );
+        assert_eq!(source_base(&root, Some(&wt)), Some(code_c.clone()));
+        assert_eq!(source_base(&root, None), Some(code_c.clone()));
+        // The old rule (the farm's parent) is what broke: no src there.
+        assert!(!wt.join("src/foo.rs").exists());
+        assert!(
+            resolve_source_file(&source_base(&root, None).unwrap(), "src/foo.rs", None).is_ok()
+        );
+        // A farm in its own checkout keeps resolving against its parent.
+        let (proj, _farm) = crate::tui::test_support::temp_farm(&[]);
+        assert_eq!(
+            source_base(&proj.join(".yaks"), Some(&code)),
+            Some(proj.clone())
+        );
+        let _ = std::fs::remove_dir_all(&base);
     }
 
     #[test]
