@@ -4139,6 +4139,73 @@ fn an_attachment_only_another_shed_has_resolves_to_that_shed() {
     assert!(app.resolve_attachment("t0/nope.txt").is_none());
 }
 
+/// A farm whose only yak `t0` has attachment `name` holding `data`, opened
+/// with the detail cursor on its link.
+fn app_on_attachment(name: &str, data: &[u8]) -> (PathBuf, App) {
+    let (dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+    farm.attach("t0", name, data).unwrap();
+    let mut app = App::with_farm(farm).unwrap();
+    press(&mut app, "l");
+    draw(&app, 100, 24); // measure the pane
+    tab_key(&mut app);
+    (dir, app)
+}
+
+#[test]
+fn enter_on_a_markdown_attachment_opens_the_viewer_rendered() {
+    // yaks-699b: a text attachment opens in the TUI, markdown rendered.
+    let (_dir, mut app) = app_on_attachment(
+        "notes.md",
+        b"# Findings\n\nSome **bold** text\nthat reflows.\n\n- one\n- two\n",
+    );
+    enter_key(&mut app);
+    assert!(matches!(app.overlay, Overlay::Attachment(_)));
+    assert_eq!(app.notification.as_deref(), Some("viewing t0/notes.md"));
+    let frame = draw(&app, 100, 24);
+    assert!(frame.contains("t0/notes.md  markdown"), "{frame}");
+    // Markers hidden, soft break joined, bullets drawn.
+    assert!(
+        frame.contains("Findings") && !frame.contains("# Findings"),
+        "{frame}"
+    );
+    assert!(frame.contains("Some bold text that reflows."), "{frame}");
+    assert!(frame.contains("• one"), "{frame}");
+    assert!(frame.contains("O open externally"), "{frame}");
+    press(&mut app, "q");
+    assert!(matches!(app.overlay, Overlay::None));
+}
+
+#[test]
+fn a_plain_text_attachment_is_shown_verbatim_and_scrolls() {
+    let text: String = (1..=60)
+        .map(|i| format!("line {i} **not bold**\n"))
+        .collect();
+    let (_dir, mut app) = app_on_attachment("run.log", text.as_bytes());
+    press(&mut app, "O");
+    let frame = draw(&app, 100, 24);
+    assert!(frame.contains("t0/run.log  text"), "{frame}");
+    assert!(frame.contains("line 1 **not bold**"), "{frame}");
+    press(&mut app, "G");
+    let frame = draw(&app, 100, 24);
+    assert!(frame.contains("line 60 **not bold**"), "{frame}");
+    assert!(!frame.contains("line 1 **"), "{frame}");
+    press(&mut app, "g");
+    assert!(draw(&app, 100, 24).contains("line 1 **not bold**"));
+}
+
+#[test]
+fn an_image_or_binary_attachment_still_opens_externally() {
+    // The OS opener is stubbed under `cargo test`; the overlay must stay shut.
+    let (_dir, mut app) = app_on_attachment("shot.png", b"plain text but an image name");
+    enter_key(&mut app);
+    assert!(matches!(app.overlay, Overlay::None));
+    assert_eq!(app.notification.as_deref(), Some("opened t0/shot.png"));
+    let (_dir, mut app) = app_on_attachment("blob.bin", &[0xff, 0xfe, 0x00, 0x01]);
+    enter_key(&mut app);
+    assert!(matches!(app.overlay, Overlay::None));
+    assert_eq!(app.notification.as_deref(), Some("opened t0/blob.bin"));
+}
+
 #[test]
 fn rendering_a_code_block_does_not_rebuild_rows_per_row() {
     // yaks-48d6: render_detail asked `block_hscroll` (and so `selected()`,

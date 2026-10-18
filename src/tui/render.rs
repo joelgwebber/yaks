@@ -51,6 +51,7 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
                 | Overlay::Create(_)
                 | Overlay::ViewPicker(_)
                 | Overlay::Help(_)
+                | Overlay::Attachment(_)
         );
     if app.focus == Focus::Detail || right_overlay {
         let (left, right) = main_split(mid);
@@ -77,6 +78,7 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
             Overlay::Drawer(d) => render_drawer(d, frame, inner),
             Overlay::Create(f) => render_create(f, frame, inner),
             Overlay::Help(scroll) => render_help(*scroll, frame, inner),
+            Overlay::Attachment(v) => render_attachment(app, v, frame, inner),
             Overlay::ViewPicker(sel) => render_view_picker(app, *sel, frame, inner),
             _ if app.on_sheds_tab() => render_shed_detail(app, frame, inner),
             _ => render_detail(app, frame, inner),
@@ -288,6 +290,10 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
             "A / O",
             "Attach artifact / open it (from whichever shed has it)",
         ),
+        entry(
+            "  (text file)",
+            "Opens in a viewer (.md rendered); O there opens externally",
+        ),
         entry("r", "Rename attachment at cursor (detail)"),
         entry("X", "Slaughter (confirm; offers whole family)"),
         entry(
@@ -351,6 +357,46 @@ pub(crate) fn render_help(scroll: u16, frame: &mut Frame, area: Rect) {
         head,
     );
     frame.render_widget(Paragraph::new(help_content()).scroll((scroll, 0)), body);
+}
+
+/// The attachment viewer (yaks-699b): a cyan header naming the file (and the
+/// shed it came from), then its rows from `scroll` down, styled like the
+/// detail pane's body.
+pub(crate) fn render_attachment(
+    app: &App,
+    v: &super::handlers::AttachView,
+    frame: &mut Frame,
+    area: Rect,
+) {
+    let [head, body] = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).areas(area);
+    let kind = if v.markdown { "markdown" } else { "text" };
+    let from = v
+        .shed
+        .as_deref()
+        .map(|s| format!(" · shed {s}"))
+        .unwrap_or_default();
+    frame.render_widget(
+        Paragraph::new(Line::from(vec![
+            Span::styled(
+                format!("📎 {}", v.target),
+                Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(format!("  {kind}{from}"), Style::new().fg(Color::DarkGray)),
+        ])),
+        head,
+    );
+    v.width.set(body.width);
+    let known: std::collections::HashSet<&str> = app.all.iter().map(|t| t.id.as_str()).collect();
+    let rows = v.rows(body.width, &known);
+    let w = body.width as usize;
+    let lines: Vec<Line> = rows
+        .iter()
+        .enumerate()
+        .skip(v.scroll as usize)
+        .take(body.height as usize)
+        .map(|(i, dl)| render_dline(dl, None, i, &[], None, 0, w))
+        .collect();
+    frame.render_widget(Paragraph::new(lines), body);
 }
 
 /// The create/edit task form: header + title / type / priority / labels meta
@@ -474,6 +520,7 @@ pub(crate) fn overlay_name(o: &Overlay) -> &'static str {
         Overlay::Help(_) => "help",
         Overlay::DetailFind(_) => "detail-find",
         Overlay::ViewPicker(_) => "view-picker",
+        Overlay::Attachment(_) => "attachment",
     }
 }
 
@@ -1431,6 +1478,17 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
         frame.render_widget(
             Paragraph::new(Span::styled(
                 "j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close",
+                Style::new().fg(Color::DarkGray),
+            )),
+            area,
+        );
+        return;
+    }
+    // Attachment viewer hint.
+    if matches!(&app.overlay, Overlay::Attachment(_)) {
+        frame.render_widget(
+            Paragraph::new(Span::styled(
+                "j/k scroll · d/u page · g/G top/bottom · O open externally · Esc/q close",
                 Style::new().fg(Color::DarkGray),
             )),
             area,
