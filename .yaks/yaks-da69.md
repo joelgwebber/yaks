@@ -1,11 +1,11 @@
 ---
 id: yaks-da69
 title: 'live_branch config: discovery resolves the live farm worktree; bare yaks path prints the farm root; brief Live mode'
-status: shaving
+status: shorn
 type: feature
 priority: 1
 created: '2026-10-18T05:15:36Z'
-updated: '2026-10-18T05:23:39Z'
+updated: '2026-10-18T05:24:22Z'
 parent: yaks-6a34
 labels:
 - cli
@@ -36,3 +36,13 @@ Decision: only the walk's find is redirected. `$YAKS_DIR` stays the explicit ove
 Decision: the live-worktree lookup lives in `sheds.rs` beside `worktree_entries` (same porcelain, same host logic) and `store` calls it; store -> sheds is a reversed dependency, accepted over duplicating `host()`'s alternates handling.
 
 Evidence: `store::discover_tests::{live_branch_redirects_every_checkout_to_the_farm_worktree, live_branch_without_its_worktree_is_an_error_naming_the_fix, yaks_dir_overrides_a_live_branch_and_a_pointer_is_not_redirected, config_reads_live_branch}` (real git: primary, a plain worktree, a `--shared` clone standing in for a Delta clone, the farm worktree itself), `brief::tests::a_live_brief_never_stages_the_stale_copy_and_keeps_ids_in_messages`, `tests::path_with_nothing_prints_the_farm_root_and_refuses_ids_plus_filter`. Full `cargo test --release`: 712 + all integration suites green. Docs/help/skills: docs/cli.md (discovery rule 4, `path` row), README, AGENTS.md (discovery bullet, task-tracking rule 2), clap help for `path`, the yaks skill (hard rule 2, a "Team, live" section, `path` row), yaks-working (live finish), yaks-coordinating (mode routing), yaks-coordinating-team ("Live farm" section), yaks-coordinating-delta (brief `--yaks-dir`). Real-machine check follows once the farm worktree exists on this machine.
+
+---
+▸ 2026-10-18T05:24:22Z [delta-farm]
+
+Real machine (delta-farm): `~/go/bin/yaks path` prints `/home/joel/src/yaks-farm/.yaks` from ~/src/yaks, from ~/src/yaks/src/tui, from this Delta clone (host via alternates) and from the farm worktree itself; this note and the shear were written from the Delta clone into the live farm and are the first live writes of the trial.
+
+---
+▸ 2026-10-18T05:24:22Z [delta-farm]
+
+moved: shaving -> shorn
