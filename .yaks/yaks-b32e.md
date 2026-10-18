@@ -1,11 +1,12 @@
 ---
 id: yaks-b32e
 title: Consider optimizations of the merged yak directory structure
-status: hairy
+status: shaving
 type: task
 priority: 1
 created: '2026-10-18T19:31:08Z'
-updated: '2026-10-18T19:31:26Z'
+updated: '2026-10-18T20:00:00Z'
+parent: yaks-73f4
 ---
 
 Given that we've recently merged all yaks into a single directory, and that we're also in the process of reconsidering the way we handle branches and worktrees (ie, yaks-6a34), it seems like a good time to consider whether this is the right final directory structure state.
@@ -52,3 +53,15 @@ Let's research this carefully, and if it proves still worthwhile, make a concret
 That last point gets at a larger principle: We started this project with the idea that it would be _simple_ and _filesystem-native_. We've grown some modestly complex features, somewhat in tension with this. Which is fine, but we shouldn't do such things without a defensible purpose.
 
 The most obvious reason to do so would be performance at scale. But that's a question that can only be answered in light of an understanding of modern filesystem performance characteristics, and perhaps also those of modern editor/IDE indexing systems.
+
+---
+▸ 2026-10-18T20:00:00Z [delta-farm]
+
+moved: hairy -> shaving
+
+---
+▸ 2026-10-18T20:00:00Z [delta-farm]
+
+Claim (delta-farm, yakherd). Owner: `scale-1` (scout: measures, recommends, does not decide or shear). Decision belongs to Joel, before the orphan-farm migration (yaks-73f4).
+
+Question: does a flat `.yaks/` stay fine at O(1000s-10000s) yaks, or does a nested layout earn its keep? Measure on synthetic farms of 1k, 10k, 50k yaks (realistic files: copy the shape of real yak files, a few % with attachment dirs), in /tmp, with the real binary: yaks `list`, `show`, `next`, `search`, the TUI startup (headless, first frame), `yaks sheds`; plain `ls`, `ls -l`, `find`, `grep -r`, shell globbing (`ls .yaks/*.md` arg limits); git `status`, `add -A`, `commit`, `log -- .yaks`; and a web IDE file tree: if openvscode-server/code-server can run headless here (a release tarball unpacked in /tmp is fine; no system install, no sudo), open each farm and time the explorer listing `.yaks/` (headless Chrome is on this machine; see docs/tui.md for the recipe). Compare against a nested layout only if flat shows a real problem. Report numbers in a table, attach the scripts and raw output, and give a recommendation with the threshold where flat stops being fine, if any.
