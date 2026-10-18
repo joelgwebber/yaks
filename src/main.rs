@@ -32,8 +32,8 @@ use std::env;
 use farm::{
     AttachOutcome, Commits, CreateOutcome, DepOutcome, Farm, Issue, IssueKind, LogEntry,
     MergeOutcome, MoveOutcome, NewTask, OpenError, Pickup, RefKind, RenameAttachmentOutcome,
-    RenameOutcome, RenamePlan, Reparent, Show, SlaughterOutcome, Stats, TaskEdit, TaskRefs,
-    UpdateOutcome,
+    RenameOutcome, RenamePlan, Reparent, Show, SlaughterOutcome, Stats, TaskBackRefs, TaskEdit,
+    TaskRefs, UpdateOutcome,
 };
 use filter::FilterSpec;
 use model::{NEEDS_AGENT, Status, Task, normalize_labels};
@@ -173,8 +173,20 @@ enum Command {
         all: bool,
     },
     /// List the yaks a task points at (parent, deps, and id mentions in its
-    /// text), flagging any formal reference that dangles.
-    Refs { id: String },
+    /// text), flagging any formal reference that dangles. With --incoming,
+    /// list the yaks that point at it instead.
+    Refs {
+        id: String,
+        /// Incoming references: every yak whose `parent:` or `depends_on:` names
+        /// this one, or whose title, description or a note mentions its id (whole
+        /// real ids only), each labelled with how it refers. Computed by scanning
+        /// the farm; no index.
+        #[arg(long)]
+        incoming: bool,
+        /// Machine output (with --incoming).
+        #[arg(long, requires = "incoming")]
+        json: bool,
+    },
     /// Show the git commits linked to a yak: those naming its id and those that
     /// touched its file across status moves.
     Commits { id: String },
@@ -1226,7 +1238,19 @@ fn main() -> Result<()> {
         Command::Init { .. } => unreachable!("init is handled before opening a farm"),
         Command::Skills { .. } => unreachable!("skills is handled before opening a farm"),
         Command::Discover { .. } => unreachable!("discover is handled before opening a farm"),
-        Command::Refs { id } => match farm.refs(&id)? {
+        Command::Refs {
+            id,
+            incoming: true,
+            json,
+        } => match farm.backrefs(&id)? {
+            None => {
+                eprintln!("no such task: {id}");
+                std::process::exit(1);
+            }
+            Some(r) if json => json::print(&backrefs_json(&r))?,
+            Some(r) => render_backrefs(&r),
+        },
+        Command::Refs { id, .. } => match farm.refs(&id)? {
             None => {
                 eprintln!("no such task: {id}");
                 std::process::exit(1);
@@ -2775,6 +2799,67 @@ fn render_refs(r: &TaskRefs) {
         let loc = e.line.map(|n| format!("  body:L{n}")).unwrap_or_default();
         println!("  {kind:<8} {:<14} {status}{loc}", e.id);
     }
+}
+
+fn render_backrefs(r: &TaskBackRefs) {
+    println!("{}  {}", r.id, r.title);
+    if r.entries.is_empty() {
+        println!("  (no incoming references)");
+        return;
+    }
+    for e in &r.entries {
+        let loc = e.via.location();
+        let loc = if loc.is_empty() {
+            String::new()
+        } else {
+            format!("  {loc}")
+        };
+        println!(
+            "  {:<8} {:<14} {}  {}{loc}",
+            e.via.kind(),
+            e.id,
+            e.status.emoji(),
+            e.title
+        );
+    }
+}
+
+/// `refs --incoming --json`: `{id, title, incoming: [...]}`, one object per
+/// reference: the referring yak's `id`, `title`, `status`, `kind`
+/// (`child`/`depends`/`mention`), and for a mention `in` (`title`/`body`/
+/// `note`) plus `line` (body) or `ts` and `actor` (note, `actor` may be null).
+fn backrefs_json(r: &TaskBackRefs) -> serde_json::Value {
+    use farm::BackRefVia;
+    let incoming: Vec<serde_json::Value> = r
+        .entries
+        .iter()
+        .map(|e| {
+            let mut v = serde_json::json!({
+                "id": e.id,
+                "title": e.title,
+                "status": e.status.as_str(),
+                "kind": e.via.kind(),
+            });
+            let m = v.as_object_mut().expect("object");
+            match &e.via {
+                BackRefVia::Child | BackRefVia::Depends => {}
+                BackRefVia::Title => {
+                    m.insert("in".into(), "title".into());
+                }
+                BackRefVia::Body { line } => {
+                    m.insert("in".into(), "body".into());
+                    m.insert("line".into(), (*line).into());
+                }
+                BackRefVia::Note { ts, actor } => {
+                    m.insert("in".into(), "note".into());
+                    m.insert("ts".into(), ts.clone().into());
+                    m.insert("actor".into(), actor.clone().into());
+                }
+            }
+            v
+        })
+        .collect();
+    serde_json::json!({ "id": r.id, "title": r.title, "incoming": incoming })
 }
 
 fn render_commits(c: &Commits) {

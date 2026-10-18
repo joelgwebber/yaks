@@ -102,7 +102,7 @@ in another checkout of this repo (a shed from `yaks sheds`, picked like
 | `yaks create` | Create a task; the title is positional (`yaks create "Fix login"`). Flags: `--type`, `--priority`, `--parent`, `--labels` (comma- or space-separated), `--depends-on`, `--source`, `--description` (`-` reads stdin; `--description-file PATH`), `--json` (emit the new id + file path) |
 | `yaks list` | List tasks; filter by `--status/--type/--priority/--label/--search`, `--ready`, `--tangled`, `--parent-of`, `--all` |
 | `yaks show <id>` | Full detail for one task, with parent + children; `--sheds` adds how each other shed (git worktree / Delta clone) has it where that differs: status, `needs:`, new notes |
-| `yaks refs <id>` | List what a task points at (parent, deps, id mentions in its text), flagging any that dangle |
+| `yaks refs <id>` | List what a task points at (parent, deps, id mentions in its text), flagging any that dangle; `--incoming` lists what points AT it instead (children, dependents, mentions in titles/descriptions/notes, each saying how; `--json`) |
 | `yaks commits <id>` | Show the git commits linked to a yak — those naming its id and those that touched its file across status moves |
 | `yaks update <id>` | Change fields/labels, set `--description`, or append a `--note` (`-` reads stdin; `--note-file PATH`: multi-line markdown without shell quoting) |
 | `yaks ask <id>` / `answer <id>` | Block a yak on a human (sets `needs: human`, drops it from `next`) / answer it (sets `needs: agent`, so the answer cannot get lost; `--done` clears instead), each recording a `--note`. `answer <id>@<shed>` answers in another shed's copy of the yak, left uncommitted there |

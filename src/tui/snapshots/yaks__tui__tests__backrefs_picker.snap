@@ -1,0 +1,18 @@
+---
+source: src/tui/tests.rs
+expression: "draw(&app, 72, 14)"
+---
+ 🦬  Hairy (4)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (4)   ⭐  Starr
+→ a1
+◂ References to a1  (2 matches)
+│ 🦬   a0 [body:L1] Root A
+│ 🦬   b0 [note:2026-01-02T00:00:00Z [ann]] Unrelated B
+│
+│
+│
+│
+│
+│
+│
+│
+search:

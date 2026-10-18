@@ -389,6 +389,35 @@ impl App {
         ));
     }
 
+    /// `B` — find references: the fuzzy picker over the yaks that point AT the
+    /// selected one (children, dependents, id mentions in a title, description
+    /// or note; `farm::backrefs_in`), each row tagged with how it refers;
+    /// Enter goes to it like `#` does.
+    pub(crate) fn open_backrefs_picker(&mut self) {
+        let Some(id) = self.selected_id() else { return };
+        let mut only: std::collections::BTreeMap<String, String> = Default::default();
+        for r in crate::farm::backrefs_in(&self.all, &id) {
+            let tag = only.entry(r.id).or_default();
+            if !tag.is_empty() {
+                tag.push_str(", ");
+            }
+            tag.push_str(&r.via.label());
+        }
+        if only.is_empty() {
+            self.notification = Some(format!("no yak refers to {id}"));
+            return;
+        }
+        let mut fp = FuzzyPick::new(
+            self.editor_vim,
+            format!("References to {id}"),
+            HashSet::new(),
+            false,
+            FuzzyAction::Goto,
+        );
+        fp.only = Some(only);
+        self.overlay = Overlay::Fuzzy(fp);
+    }
+
     pub(crate) fn open_reparent_picker(&mut self) {
         let Some(id) = self.selected_id() else { return };
         let mut exclude = filter::descendant_ids(&self.all, &id, true);
@@ -1914,6 +1943,7 @@ fn handle_key_inner(app: &mut App, k: KeyEvent) {
             KeyCode::Char('H') => app.open_herd_picker(),
             KeyCode::Char('/') => app.open_search(),
             KeyCode::Char('#') => app.open_goto_picker(),
+            KeyCode::Char('B') => app.open_backrefs_picker(),
             KeyCode::Char('f') => app.open_drawer(),
             KeyCode::Char('*') => app.toggle_star(),
             KeyCode::Char('y') => app.copy_selected_id(),
@@ -1986,6 +2016,7 @@ fn handle_key_inner(app: &mut App, k: KeyEvent) {
                 KeyCode::Char('i') => app.nav_forward(),
                 KeyCode::Char('/') => app.open_detail_find(),
                 KeyCode::Char('#') => app.open_goto_picker(),
+                KeyCode::Char('B') => app.open_backrefs_picker(),
                 KeyCode::Char('n') => app.detail_find_jump(1),
                 KeyCode::Char('N') => app.detail_find_jump(-1),
                 KeyCode::Char('?') => app.open_help(),

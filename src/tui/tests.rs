@@ -3035,6 +3035,65 @@ fn hash_from_detail_pane_matches_title_too() {
 }
 
 #[test]
+fn b_opens_references_picker_over_incoming_yaks_and_enter_goes() {
+    // `B` lists only the yaks that point at the selected one, each tagged with
+    // how: a0's children a1 and a2 (a2 also depends on it); a1 is mentioned in
+    // a0's body and a note of b0's.
+    let mut a0 = task("a0", "Root A", Status::Hairy, 2, None);
+    a0.body = "follow a1 then a2".into();
+    let mut a2 = task("a2", "Child A2", Status::Hairy, 3, Some("a0"));
+    a2.depends_on = vec!["a0".into()];
+    let mut b0 = task("b0", "Unrelated B", Status::Hairy, 3, None);
+    b0.body = "desc\n\n---\n▸ 2026-01-02T00:00:00Z [ann]\n\nsee a1, not a10".into();
+    let mut app = App::new(vec![
+        a0,
+        task("a1", "Child A1", Status::Hairy, 3, Some("a0")),
+        a2,
+        b0,
+    ]);
+    handle_key(&mut app, key('B')); // cursor on a0
+    let Overlay::Fuzzy(fp) = &app.overlay else {
+        panic!("B must open the fuzzy picker")
+    };
+    assert_eq!(fp.label, "References to a0");
+    let rows: Vec<(String, String)> = fuzzy_candidates(&app.all, fp)
+        .iter()
+        .map(|t| (t.id.clone(), fp.only.as_ref().unwrap()[&t.id].clone()))
+        .collect();
+    let s = |a: &str, b: &str| (a.to_string(), b.to_string());
+    assert_eq!(rows, vec![s("a1", "child"), s("a2", "child, depends")]);
+    esc_key(&mut app); // query to Normal
+    esc_key(&mut app); // close
+    assert!(matches!(app.overlay, Overlay::None));
+
+    // From a1: mentioned by a0's description and by b0's note.
+    app.goto_task("a1");
+    handle_key(&mut app, key('B'));
+    insta::assert_snapshot!("backrefs_picker", draw(&app, 72, 14));
+    let Overlay::Fuzzy(fp) = &app.overlay else {
+        panic!("B must open the fuzzy picker from detail")
+    };
+    let ids: Vec<&str> = fuzzy_candidates(&app.all, fp)
+        .iter()
+        .map(|t| t.id.as_str())
+        .collect();
+    assert_eq!(ids, vec!["a0", "b0"]);
+    press(&mut app, "b0");
+    enter_key(&mut app);
+    assert_eq!(app.focus, Focus::Detail);
+    assert_eq!(app.selected_id().as_deref(), Some("b0"));
+}
+
+#[test]
+fn b_with_no_incoming_references_says_so() {
+    let mut app = sample();
+    handle_key(&mut app, key('j')); // a1: nothing points at it
+    handle_key(&mut app, key('B'));
+    assert!(matches!(app.overlay, Overlay::None));
+    assert_eq!(app.notification.as_deref(), Some("no yak refers to a1"));
+}
+
+#[test]
 fn goto_lands_even_when_an_ad_hoc_search_hides_the_target() {
     // The jump switches to the target's status view (resetting the live
     // filter to that view's spec), so a search that hid it doesn't block it.

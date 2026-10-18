@@ -109,6 +109,22 @@ fn refs() {
     snap!("refs", &["refs", "fix-0004"]);
 }
 #[test]
+fn refs_incoming() {
+    // fix-0003 is fix-0004's parent and fix-0005's dependency.
+    snap!("refs_incoming", &["refs", "fix-0003", "--incoming"]);
+}
+#[test]
+fn refs_incoming_json() {
+    snap!(
+        "refs_incoming_json",
+        &["refs", "fix-0003", "--incoming", "--json"]
+    );
+}
+#[test]
+fn refs_incoming_none() {
+    snap!("refs_incoming_none", &["refs", "fix-0006", "--incoming"]);
+}
+#[test]
 fn list_json() {
     snap!("list_json", &["list", "--json"]);
 }

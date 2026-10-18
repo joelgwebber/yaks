@@ -482,6 +482,123 @@ pub struct TaskRefs {
     pub entries: Vec<RefEntry>,
 }
 
+/// How another yak refers to the subject of [`Farm::backrefs`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BackRefVia {
+    /// Its `parent:` is the subject (it is a child).
+    Child,
+    /// Its `depends_on:` lists the subject (the subject blocks it).
+    Depends,
+    /// Its title mentions the subject's id.
+    Title,
+    /// Its description mentions the id on this 1-based body line.
+    Body { line: usize },
+    /// One of its notes mentions the id.
+    Note { ts: String, actor: Option<String> },
+}
+
+impl BackRefVia {
+    /// The formal/informal kind, the same words `yaks refs` uses outgoing:
+    /// `child`, `depends`, or `mention`.
+    pub fn kind(&self) -> &'static str {
+        match self {
+            BackRefVia::Child => "child",
+            BackRefVia::Depends => "depends",
+            _ => "mention",
+        }
+    }
+
+    /// Where a mention sits (`title`, `body:L3`, `note:<ts> [actor]`); empty
+    /// for the formal kinds.
+    pub fn location(&self) -> String {
+        match self {
+            BackRefVia::Child | BackRefVia::Depends => String::new(),
+            BackRefVia::Title => "title".into(),
+            BackRefVia::Body { line } => format!("body:L{line}"),
+            BackRefVia::Note { ts, actor } => match actor {
+                Some(a) => format!("note:{ts} [{a}]"),
+                None => format!("note:{ts}"),
+            },
+        }
+    }
+
+    /// One short human label: `child`, `depends`, `title`, `body:L3`,
+    /// `note:<ts> [actor]` (the TUI picker's row tag).
+    pub fn label(&self) -> String {
+        match self {
+            BackRefVia::Child | BackRefVia::Depends => self.kind().into(),
+            _ => self.location(),
+        }
+    }
+}
+
+/// One incoming reference: yak `id` refers to the subject `via` something.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BackRef {
+    pub id: String,
+    pub title: String,
+    pub status: Status,
+    pub via: BackRefVia,
+}
+
+/// Every yak that points at a task — the inverse of [`TaskRefs`], computed on
+/// demand by scanning the farm (there is no stored back-reference index).
+pub struct TaskBackRefs {
+    pub id: String,
+    pub title: String,
+    pub entries: Vec<BackRef>,
+}
+
+/// The incoming references to `id` among `all`: children, dependents, and id
+/// mentions in another yak's title, description (one entry per line) or notes
+/// (one entry per note), matched by the same whole-real-id resolver as
+/// [`Farm::refs`] (`refs::scan`). A yak mentioning itself is not a back-ref.
+/// Ordered by referring yak (in `all`'s order), then child, depends, title,
+/// body, notes. Pure over a task slice so the TUI can run it on what it
+/// already holds.
+pub fn backrefs_in(all: &[Task], id: &str) -> Vec<BackRef> {
+    let only = |t: &str| t == id;
+    let mentions = |text: &str| !refs::scan(&refs::strip_wikilinks(text), only).is_empty();
+    let mut out = Vec::new();
+    for t in all.iter().filter(|t| t.id != id) {
+        let mut push = |via| {
+            out.push(BackRef {
+                id: t.id.clone(),
+                title: t.title.clone(),
+                status: t.status,
+                via,
+            })
+        };
+        if t.parent.as_deref() == Some(id) {
+            push(BackRefVia::Child);
+        }
+        if t.depends_on.iter().any(|d| d == id) {
+            push(BackRefVia::Depends);
+        }
+        if mentions(&t.title) {
+            push(BackRefVia::Title);
+        }
+        let lines: Vec<&str> = t.body.lines().collect();
+        for (n, raw) in lines.iter().enumerate() {
+            if store::is_note_delim(&lines, n) {
+                break; // the description ends at the first note
+            }
+            if mentions(raw) {
+                push(BackRefVia::Body { line: n + 1 });
+            }
+        }
+        for note in store::parse_notes(&t.body) {
+            if mentions(&note.text) {
+                push(BackRefVia::Note {
+                    ts: note.ts,
+                    actor: note.actor,
+                });
+            }
+        }
+    }
+    out
+}
+
 /// The git commits linked to a yak, recovered from history rather than stored:
 /// those that name the id in a commit message, and those that touched the yak's
 /// own file as it moved across statuses.
@@ -1128,6 +1245,22 @@ impl Farm {
             id: task.id,
             title: task.title,
             entries,
+        }))
+    }
+
+    /// Every yak that points at this task (children, dependents, id mentions
+    /// in titles, descriptions and notes), each saying how — see
+    /// [`backrefs_in`]. Computed on demand by scanning the farm; `None` when
+    /// no such task exists.
+    pub fn backrefs(&self, id: &str) -> Result<Option<TaskBackRefs>> {
+        let all = self.list(FilterSpec::default(), true)?;
+        let Some(task) = all.iter().find(|t| t.id == id) else {
+            return Ok(None);
+        };
+        Ok(Some(TaskBackRefs {
+            id: task.id.clone(),
+            title: task.title.clone(),
+            entries: backrefs_in(&all, id),
         }))
     }
 
@@ -2351,6 +2484,69 @@ mod tests {
     fn refs_none_for_missing_task() {
         let (_root, farm) = temp_farm();
         assert!(farm.refs("yak-dead").unwrap().is_none());
+    }
+
+    /// `backrefs` finds every yak pointing at the subject — child, dependent,
+    /// and whole-id mentions in a title, a description line and a note —
+    /// labelled with how, and nothing for lookalike prose or the subject's own
+    /// self-mention.
+    #[test]
+    fn backrefs_find_children_deps_and_mentions_but_not_lookalikes() {
+        let (root, farm) = temp_farm();
+        let mut subject = task("yak-0001", Status::Hairy);
+        subject.body = "I am yak-0001 myself".into();
+        store::write::save(&root, &subject).unwrap();
+        let mut child = task("yak-0002", Status::Hairy);
+        child.parent = Some("yak-0001".into());
+        store::write::save(&root, &child).unwrap();
+        let mut blocked = task("yak-0003", Status::Shaving);
+        blocked.depends_on = vec!["yak-0001".into()];
+        store::write::save(&root, &blocked).unwrap();
+        let mut titled = task("yak-0004", Status::Shorn);
+        titled.title = "follow-up to yak-0001.".into();
+        store::write::save(&root, &titled).unwrap();
+        let mut prose = task("yak-0005", Status::Hairy);
+        // Lookalikes: a longer id, a suffix, bare hex. None is the whole id.
+        prose.body = "intro\nsee [[yak-0001]] here\nnot yak-00011, xyak-0001 or 0001".into();
+        store::write::save(&root, &prose).unwrap();
+        farm.update(
+            "yak-0005",
+            TaskEdit {
+                note: Some("blocked on yak-0001 still".into()),
+                actor: Some("alice".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let mut unrelated = task("yak-0006", Status::Hairy);
+        unrelated.body = "yak-0001x and yak-0001-2 are not it".into();
+        store::write::save(&root, &unrelated).unwrap();
+
+        let r = farm.backrefs("yak-0001").unwrap().expect("subject exists");
+        let got: Vec<(&str, String, String)> = r
+            .entries
+            .iter()
+            .map(|e| {
+                let via = match &e.via {
+                    BackRefVia::Note { actor, .. } => format!("note by {actor:?}"),
+                    v => v.label(),
+                };
+                (e.id.as_str(), e.via.kind().to_string(), via)
+            })
+            .collect();
+        let s = |a: &str| a.to_string();
+        assert_eq!(
+            got,
+            vec![
+                ("yak-0002", s("child"), s("child")),
+                ("yak-0005", s("mention"), s("body:L2")),
+                ("yak-0005", s("mention"), s("note by Some(\"alice\")")),
+                ("yak-0003", s("depends"), s("depends")),
+                ("yak-0004", s("mention"), s("title")),
+            ],
+            "lookalikes (yak-00011, xyak-0001, 0001, yak-0001x) and the self-mention must not count"
+        );
+        assert!(farm.backrefs("yak-dead").unwrap().is_none());
     }
 
     fn new_task(title: &str, prefix: Option<&str>) -> NewTask {

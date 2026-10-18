@@ -249,6 +249,7 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
             "Enter",
             "Follow link / footnote / source file (status bar: URL)",
         ),
+        entry("B", "Find references: yaks that point at this one"),
         entry("i / o", "Nav forward / back (restores position)"),
         entry("J / K", "Next / prev task (stay in detail)"),
         entry("Ctrl-N / Ctrl-P", "Next / prev content block"),
