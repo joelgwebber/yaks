@@ -11,3 +11,7 @@ verify:
   cli: cargo test -p yaks
   skills: cargo test -p yaks skills
   default: cargo test --workspace
+
+# One live farm per machine: the sparse worktree where branch `farm` is checked out
+# (yaks-6a34). Every checkout of this repo redirects there; this copy is a stale mirror.
+live_branch: farm
