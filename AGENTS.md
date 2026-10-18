@@ -53,7 +53,8 @@ task's status is a frontmatter field; each yak is one file, `.yaks/<id>.md`.
   worktrees). One farm per machine, every shed writes it, nothing ever writes a
   checkout's own copy; no such worktree is an error, never a fallback. **This
   repo runs that way:** the live farm is `~/src/yaks-farm/.yaks` (a sparse
-  worktree of branch `farm`), `yaks commit` commits there, `main` merges `farm`.
+  worktree of branch `farm`), `yaks commit` commits there, and `yaks commit --land`
+  from the coordinator's checkout cherry-picks the farm commits onto `main` (linear).
   Never `git add` anything under `.yaks/` in a code checkout.
 - **Consolidate** separate farms with `Farm::merge` (`yaks merge`), which is
   collision-checked and non-destructive.
@@ -194,7 +195,7 @@ workflow.
 1. Never start coding without a shaving yak. No exceptions.
 2. Shear a yak as soon as its work is done. The farm is live (above): the
    shear is already in `~/src/yaks-farm/.yaks`; the coordinator commits the farm
-   there with `yaks commit` and merges `farm` into `main`. Never stage `.yaks/`
+   there and lands it on `main` with `yaks commit --land`. Never stage `.yaks/`
    in a code checkout. Yak ids in commit messages are fine (team mode).
 3. Check existing yaks before creating new ones.
 4. Append progress notes to yak descriptions as you work.

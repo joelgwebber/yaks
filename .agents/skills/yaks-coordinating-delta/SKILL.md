@@ -88,11 +88,13 @@ After every worker returns, in this order:
 4. `sh .agents/skills/yaks-coordinating-delta/land.sh <sha> --dry-run` reports steps 1-3 (and what in your tree the
    commit does not explain); without `--dry-run` it does step 4 and checks the result equals the computed tree.
    It refuses while your tree holds changes the commit does not explain (`--force-discard` overrides) and never
-   pushes. By hand, land by SHA, one worker at a time: `git merge --abort`, `git checkout -- <that worker's files>`,
-   then `git merge --no-ff <sha>`. A merge refuses to overwrite untracked files, so for each untracked
+   pushes. It lands the worker as ONE squash commit on HEAD (the worker's message plus a `Squashed-from:` trailer),
+   or a cherry-pick when the base was rewritten or the merge would conflict: never a merge commit. By hand, land by
+   SHA, one worker at a time: `git merge --abort`, `git checkout -- <that worker's files>`, then
+   `git merge --squash <sha> && git commit -C <sha>`. A merge refuses to overwrite untracked files, so for each untracked
    leftover first check it equals the worker's version, `git show <sha>:<path> | cmp - <path>`, and
    remove it only if it does. Conflict markers in a file mean the same thing: do not hand-edit them;
-   restore the file and merge by SHA. Never `git add -A` after a landing: Delta's applied state can mix
+   restore the file and land by SHA. Never `git add -A` after a landing: Delta's applied state can mix
    files from several workers and unfinished edits, and `-A` would commit all of it as one change.
 5. Re-run the gate yourself, reproduce the key scenario, review the diff, `yaks doctor` (core section 7).
    A resumed worker's second landing can leave a stale copy of its yak in your tree: check `git status`.

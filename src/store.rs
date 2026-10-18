@@ -119,7 +119,7 @@ fn redirect_live(dir: &Path, found: PathBuf) -> Result<Discovered> {
             "the farm at {found} names live branch `{branch}` (config `live_branch:`), but no \
              worktree of this repository has it checked out, so there is no live farm to use. \
              Create it: `git worktree add -b {branch} <path> main` (or `git worktree add <path> \
-             {branch}` if the branch exists), then `git -C <path> sparse-checkout set .yaks`; \
+             {branch}` if the branch exists), then `git -C <path> sparse-checkout set --no-cone '/.yaks/'`; \
              or set YAKS_DIR to the live farm",
             found = found.display()
         );
@@ -138,7 +138,7 @@ fn redirect_live(dir: &Path, found: PathBuf) -> Result<Discovered> {
     if !live.is_dir() {
         anyhow::bail!(
             "the farm at {found} names live branch `{branch}`, checked out at {wt}, but that \
-             worktree has no .yaks/ directory (`git -C {wt} sparse-checkout set .yaks` restores it); \
+             worktree has no .yaks/ directory (`git -C {wt} sparse-checkout set --no-cone '/.yaks/'` restores it); \
              or set YAKS_DIR to the live farm",
             found = found.display(),
             wt = worktree.display()
@@ -2702,7 +2702,7 @@ mod discover_tests {
         );
         assert!(msg.contains("live branch `farm`"), "{msg}");
         assert!(msg.contains("git worktree add -b farm"), "{msg}");
-        assert!(msg.contains("sparse-checkout set .yaks"), "{msg}");
+        assert!(msg.contains("sparse-checkout set --no-cone"), "{msg}");
         assert!(msg.contains("YAKS_DIR"), "{msg}");
         // A worktree that has the branch but lost its .yaks/ is also an error.
         let farm_wt = add_farm_worktree(&base, &primary);

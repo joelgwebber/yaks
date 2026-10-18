@@ -17,11 +17,12 @@ claims and asks, one writer per yak, workers stage nothing under `.yaks/`), plus
 - Yak ids are fine in commit messages (the farm is in git). Workers' briefs say
   "Finish (live farm" and need no `YAKS_DIR` on this machine; `yaks path` (no arguments) must
   print the live farm, make it the worker's first check.
-- **You commit the farm:** `yaks commit` commits on the live branch whatever your cwd. Bring
-  it into `main` as part of landing: `git fetch local <branch> && git merge local/<branch>`
-  into the branch you are about to push (the live branch is the only one that changes
-  `.yaks/`, so this never conflicts), then push `main` as usual. Never stage `.yaks/` in a
-  code checkout; `land.sh` and `preflight` then have no yak drift to explain.
+- **You land the farm:** after the code landings, run `yaks commit --land` in the checkout
+  you are about to push: it commits the farm (on the live branch) and cherry-picks every farm
+  commit your HEAD lacks onto it, oldest first, so `main` stays a straight line, then push
+  `main` as usual. The next `yaks commit` moves the live branch onto the new `main` by itself.
+  Never `git merge` the live branch. Never stage `.yaks/` in a code checkout; `land.sh` and
+  `preflight` then have no yak drift to explain.
 - **Machines:** the farm crosses as `origin/<branch>`. Before the human switches machines:
   `yaks commit`, then `git -C <primary> push origin <branch>`; on arrival `git -C <farm
   worktree> pull`. A clone whose host is Delta's bare managed repo cannot see the worktree:

@@ -289,10 +289,10 @@ name a live branch in `.yaks/config.yaml` (`live_branch: farm`): the farm every
 checkout of the repo uses is then the one in the `git worktree` where that
 branch is checked out, and each checkout's own `.yaks/` is a stale copy nothing
 writes. Set it up once per machine with `git worktree add -b farm ../<repo>-farm
-main` and `git -C ../<repo>-farm sparse-checkout set .yaks`. Every shed (the
+main` and `git -C ../<repo>-farm sparse-checkout set --no-cone '/.yaks/'`. Every shed (the
 primary, worktrees, Delta clones) then reads and writes the same files with no
-merge step, `yaks commit` commits the farm on `farm`, `main` merges `farm` in,
-and feature branches and PRs carry no yak churn. No such worktree is an error
+merge step, `yaks commit` commits the farm on `farm`, `yaks commit --land` (from the
+checkout you push) cherry-picks those commits onto `main` as a straight line, and feature branches and PRs carry no yak churn. No such worktree is an error
 naming the fix (`YAKS_DIR` overrides). `yaks path` with no arguments prints the
 farm a command resolved.
 

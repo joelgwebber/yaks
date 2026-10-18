@@ -6,11 +6,13 @@
 #
 # Delta applies a returning worker's result to your working tree and may leave MERGE_HEAD set, but
 # that applied tree is not a trustworthy merge (stale files, reverted files, unfinished edits). The
-# commit is. This script: reports the pending state; picks `merge` when the worker's base is still an
-# ancestor of HEAD, else `cherry-pick` (history was rewritten); computes the correct merged tree;
-# refuses if the working tree has changes the worker's commit does not explain (your edits, or
-# Delta's mistakes) unless --force-discard; clears the applied state; lands the commit; and checks
-# the result equals the computed tree. It never pushes. Needs git 2.38+ (merge-tree --write-tree).
+# commit is. This script: reports the pending state; when the worker's base is still an ancestor of
+# HEAD, computes the correct merged tree and lands it as ONE squash commit on HEAD (the worker's
+# message and author, plus a `Squashed-from:` trailer naming the worker commit), else `cherry-pick`
+# (history was rewritten, or the merge would conflict); refuses if the working tree has changes the
+# worker's commit does not explain (your edits, or Delta's mistakes) unless --force-discard; clears
+# the applied state; lands; and checks the result equals the computed tree. Either way main stays a
+# straight line: no merge commits (yaks-2355). It never pushes. Needs git 2.38+ (merge-tree --write-tree).
 set -u
 
 say() { printf '%s\n' "$*"; }
@@ -62,15 +64,15 @@ land() {
     die "the worker commit has no parent"
   fi
   if git merge-base --is-ancestor "$parent" HEAD; then
-    mode=merge
-    say "worker base $(git rev-parse --short "$parent") is an ancestor of HEAD: trying a merge by SHA"
+    mode=squash
+    say "worker base $(git rev-parse --short "$parent") is an ancestor of HEAD: squashing onto HEAD"
   else
     mode=cherry-pick
     say "worker base $(git rev-parse --short "$parent") is NOT an ancestor of HEAD (history was rewritten): cherry-pick"
   fi
 
   tree=""
-  if [ $mode = merge ]; then
+  if [ $mode = squash ]; then
     out=$(git merge-tree --write-tree --name-only HEAD "$full" 2>&1)
     if printf '%s\n' "$out" | grep -q '^CONFLICT'; then
       say "the merge would conflict, so landing by cherry-pick instead (you resolve the files named here, then 'git cherry-pick --continue'):"
@@ -111,9 +113,14 @@ land() {
     fi
   done < "$tmp/dirty"
 
-  if [ $mode = merge ]; then
-    git merge --no-ff -q -m "Merge worker commit $short ($subject)" "$full" \
-      || die "merge stopped; resolve, commit, then run yaks doctor" 5
+  if [ $mode = squash ]; then
+    # The computed tree, committed once on top of HEAD as the worker (author and date kept).
+    { git log -1 --format=%B "$full"; printf '\nSquashed-from: %s\n' "$full"; } > "$tmp/msg"
+    new=$(GIT_AUTHOR_NAME=$(git log -1 --format=%an "$full") \
+          GIT_AUTHOR_EMAIL=$(git log -1 --format=%ae "$full") \
+          GIT_AUTHOR_DATE=$(git log -1 --format=%aI "$full") \
+          git commit-tree "$tree" -p HEAD -F "$tmp/msg") || die "commit-tree failed" 5
+    git merge --ff-only -q "$new" || die "could not fast-forward to the squash commit $new" 5
     if [ "$(git rev-parse 'HEAD^{tree}')" = "$tree" ]; then say "result is identical to the computed merge"
     else say "WARNING: result differs from the computed merge tree"; fi
   else
@@ -147,12 +154,15 @@ selftest() {
   }
   run() { ( cd "$d" && land "$@" ) ; }
 
-  say "1. applied state with a stale untracked leftover; merge by SHA"
-  setup; printf 'b\n' > "$d/b.txt"; g add -A; g commit -q -m "main moves"
+  say "1. applied state with a stale untracked leftover; squash onto HEAD"
+  setup; printf 'b\n' > "$d/b.txt"; g add -A; g commit -q -m "main moves"; mainmoved=$(g rev-parse HEAD)
   g merge -q --no-commit --no-ff "$w" >/dev/null 2>&1; g reset -q          # Delta-like: MERGE_HEAD, unstaged
   out=$(run "$w" 2>&1); rc=$?
   [ $rc = 0 ] && ok "exit 0" || { bad "exit $rc: $out"; }
-  [ "$(g rev-list --parents -1 HEAD | wc -w | tr -d ' ')" = 3 ] && ok "a merge commit" || bad "not a merge commit"
+  [ "$(g rev-list --parents -1 HEAD | wc -w | tr -d ' ')" = 2 ] && [ "$(g rev-parse HEAD^)" = "$mainmoved" ] \
+    && ok "one single-parent commit on HEAD (no merge commit)" || bad "not a single squash commit on HEAD"
+  g log -1 --format=%B | grep -q "^worker change" && g log -1 --format=%B | grep -q "^Squashed-from: $w" \
+    && ok "worker message + Squashed-from trailer" || bad "message: $(g log -1 --format=%B)"
   [ "$(cat "$d/a.txt")" = a2 ] && [ -f "$d/new/f.txt" ] && ok "worker change present" || bad "worker change missing"
   [ ! -e "$d/.git/MERGE_HEAD" ] && ok "no MERGE_HEAD" || bad "MERGE_HEAD left"
   printf '%s' "$out" | grep -q "identical to the computed merge" && ok "tree equals merge-tree" || bad "tree check"
