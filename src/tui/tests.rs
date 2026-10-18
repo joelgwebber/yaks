@@ -4206,6 +4206,121 @@ fn an_image_or_binary_attachment_still_opens_externally() {
     assert_eq!(app.notification.as_deref(), Some("opened t0/blob.bin"));
 }
 
+/// The attachment viewer's `E` (yaks-56c1): open the editor over the file.
+fn edit_attachment(app: &mut App) -> &Editor {
+    press(app, "E");
+    match &app.overlay {
+        Overlay::Edit(ed) => {
+            assert!(matches!(ed.action, EditAction::EditAttachment(_)));
+            ed
+        }
+        _ => panic!("E in the viewer should open the editor"),
+    }
+}
+
+fn ctrl_key(app: &mut App, c: char) {
+    handle_key(app, KeyEvent::new(KeyCode::Char(c), KeyModifiers::CONTROL));
+}
+
+#[test]
+fn e_in_the_viewer_edits_the_attachment_and_saves_it_back() {
+    let (dir, mut app) = app_on_attachment("notes.md", b"- one\n- two");
+    let path = dir.join(".yaks/t0/notes.md");
+    enter_key(&mut app);
+    assert_eq!(edit_attachment(&mut app).text(), "- one\n- two");
+    let frame = draw(&app, 100, 24);
+    assert!(frame.contains("Edit t0/notes.md"), "{frame}");
+    // Vim Normal on existing text: `i` inserts at the cursor (the start).
+    press(&mut app, "i# Findings");
+    enter_key(&mut app);
+    press(&mut app, "**new** ");
+    esc_key(&mut app);
+    ctrl_key(&mut app, 's');
+    assert_eq!(
+        std::fs::read_to_string(&path).unwrap(),
+        "# Findings\n**new** - one\n- two"
+    );
+    assert_eq!(app.notification.as_deref(), Some("saved t0/notes.md"));
+    // Back in the viewer, the new text rendered as markdown.
+    assert!(matches!(app.overlay, Overlay::Attachment(_)));
+    let frame = draw(&app, 100, 24);
+    assert!(
+        frame.contains("Findings") && !frame.contains("# Findings"),
+        "{frame}"
+    );
+    assert!(
+        frame.contains("new - one") && !frame.contains("**new**"),
+        "{frame}"
+    );
+    assert!(frame.contains("E edit"), "{frame}");
+}
+
+#[test]
+fn cancelling_an_attachment_edit_leaves_the_file_unchanged() {
+    let (dir, mut app) = app_on_attachment("run.log", b"line 1\n");
+    let path = dir.join(".yaks/t0/run.log");
+    enter_key(&mut app);
+    edit_attachment(&mut app);
+    press(&mut app, "iextra");
+    // Ctrl-C on typed text asks first; declining keeps the edit.
+    ctrl_key(&mut app, 'c');
+    assert!(matches!(app.overlay, Overlay::Confirm { .. }));
+    press(&mut app, "n");
+    assert!(matches!(app.overlay, Overlay::Edit(_)));
+    ctrl_key(&mut app, 'c');
+    press(&mut app, "y");
+    assert!(
+        matches!(app.overlay, Overlay::Attachment(_)),
+        "back to the viewer"
+    );
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "line 1\n");
+    // An untouched edit cancels straight back to the viewer.
+    edit_attachment(&mut app);
+    ctrl_key(&mut app, 'c');
+    assert!(matches!(app.overlay, Overlay::Attachment(_)));
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "line 1\n");
+}
+
+#[test]
+fn an_attachment_changed_on_disk_meanwhile_is_not_overwritten() {
+    let (dir, mut app) = app_on_attachment("run.log", b"line 1\n");
+    let path = dir.join(".yaks/t0/run.log");
+    enter_key(&mut app);
+    edit_attachment(&mut app);
+    press(&mut app, "imine");
+    std::fs::write(&path, "theirs\n").unwrap();
+    ctrl_key(&mut app, 's');
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "theirs\n");
+    match &app.overlay {
+        Overlay::Edit(ed) => assert_eq!(ed.text(), "mineline 1\n"),
+        _ => panic!("the editor stays open with the typed text"),
+    }
+    // A second save is a deliberate overwrite.
+    ctrl_key(&mut app, 's');
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "mineline 1\n");
+    assert!(matches!(app.overlay, Overlay::Attachment(_)));
+}
+
+#[test]
+fn an_image_attachment_offers_no_edit() {
+    // An image never reaches the viewer, so there is no `E` to press.
+    let (dir, mut app) = app_on_attachment("shot.png", b"plain text but an image name");
+    enter_key(&mut app);
+    assert!(matches!(app.overlay, Overlay::None));
+    press(&mut app, "E");
+    assert!(!matches!(
+        &app.overlay,
+        Overlay::Edit(Editor {
+            action: EditAction::EditAttachment(_),
+            ..
+        })
+    ));
+    assert_eq!(
+        std::fs::read(dir.join(".yaks/t0/shot.png")).unwrap(),
+        b"plain text but an image name"
+    );
+}
+
 #[test]
 fn rendering_a_code_block_does_not_rebuild_rows_per_row() {
     // yaks-48d6: render_detail asked `block_hscroll` (and so `selected()`,

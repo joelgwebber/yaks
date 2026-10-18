@@ -55,6 +55,11 @@ pub(crate) enum EditAction {
         id: String,
         old: String,
     },
+    /// Write the typed text back to the text attachment open in the viewer
+    /// (`E` there, yaks-56c1), then reopen the viewer on it. Carries the view
+    /// as opened: its path, and the text the edit started from (the dirty
+    /// check, and the guard against a file changed on disk meanwhile).
+    EditAttachment(super::handlers::AttachView),
     SaveView,
     RenameView {
         index: usize,

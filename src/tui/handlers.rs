@@ -13,7 +13,8 @@ const VIEW_MAX_BYTES: u64 = 1 << 20;
 /// A text attachment open in the viewer overlay (`Overlay::Attachment`,
 /// yaks-699b): read once on open, a `.md`/`.markdown` file rendered by the
 /// detail pane's markdown renderer and anything else shown verbatim, wrapped
-/// to the pane. Read-only: `O` hands it to the OS opener to edit.
+/// to the pane. `E` edits it in place (yaks-56c1: [`App::open_attachment_edit`],
+/// saved by [`App::commit_attachment_edit`]); `O` hands it to the OS opener.
 pub(crate) struct AttachView {
     /// The link target as written (`<id>/<file>`), shown as the header.
     pub(crate) target: String,
@@ -86,6 +87,28 @@ impl AttachView {
                 .collect();
             detail::wrap(lines, width)
         }
+    }
+}
+
+/// Whether cancelling editor `ed` would lose work: an attachment edit when its
+/// text differs from the file as opened; otherwise a non-empty multi-line
+/// editor (single-line fields never ask).
+fn edit_is_dirty(ed: &Editor) -> bool {
+    match &ed.action {
+        EditAction::EditAttachment(v) => ed.text() != v.text,
+        _ => !ed.single_line && !ed.text().trim().is_empty(),
+    }
+}
+
+/// The overlay left after cancelling `ov`: the viewer an attachment edit was
+/// opened from (the file unchanged), else nothing.
+fn viewer_behind(ov: Overlay) -> Overlay {
+    match ov {
+        Overlay::Edit(Editor {
+            action: EditAction::EditAttachment(v),
+            ..
+        }) => Overlay::Attachment(v),
+        _ => Overlay::None,
     }
 }
 
@@ -717,8 +740,9 @@ impl App {
         });
     }
 
-    /// Keys in the attachment viewer: scroll like the help reference, `O`
-    /// hands the file to the OS opener, `Esc`/`q`/`h`/`←` close it.
+    /// Keys in the attachment viewer: scroll like the help reference, `E`
+    /// edits the file in place, `O` hands it to the OS opener,
+    /// `Esc`/`q`/`h`/`←` close it.
     pub(crate) fn handle_attachment_key(&mut self, k: KeyEvent) {
         let Overlay::Attachment(v) = &self.overlay else {
             return;
@@ -726,6 +750,10 @@ impl App {
         match k.code {
             KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('h') | KeyCode::Left => {
                 self.overlay = Overlay::None;
+                return;
+            }
+            KeyCode::Char('E') => {
+                self.open_attachment_edit();
                 return;
             }
             KeyCode::Char('O') => {
@@ -758,6 +786,87 @@ impl App {
             KeyCode::Char('G') | KeyCode::End => *s = max_scroll,
             _ => {}
         }
+    }
+
+    /// E (attachment viewer) — edit the viewed text file in the multi-line
+    /// editor (yaks-56c1). Only this farm's own copy: a file the viewer found
+    /// in another shed is that checkout's, so it is left to `O` there.
+    pub(crate) fn open_attachment_edit(&mut self) {
+        let Overlay::Attachment(v) = &self.overlay else {
+            return;
+        };
+        if let Some(shed) = &v.shed {
+            self.notification = Some(format!("{} is shed {shed}'s copy: edit it there", v.target));
+            return;
+        }
+        let Overlay::Attachment(v) = std::mem::replace(&mut self.overlay, Overlay::None) else {
+            unreachable!()
+        };
+        let label = format!("Edit {} (Ctrl-S save · Ctrl-C cancel)", v.target);
+        let text = v.text.clone();
+        self.overlay = Overlay::Edit(Editor::new(
+            self.editor_vim,
+            false,
+            label,
+            &text,
+            EditAction::EditAttachment(v),
+        ));
+    }
+
+    /// Save an attachment edit: write `text` to the viewed file under the farm
+    /// lock, then reopen the viewer on it (markdown re-rendered). If the file
+    /// changed on disk since the edit began, nothing is written and the editor
+    /// stays open with the typed text; a second Ctrl-S overwrites.
+    pub(crate) fn commit_attachment_edit(&mut self, mut v: AttachView, text: String) {
+        if text == v.text {
+            self.notification = Some(format!("{}: unchanged", v.target));
+            self.overlay = Overlay::Attachment(v);
+            return;
+        }
+        let Some(root) = self.farm.as_ref().map(|h| h.root().to_path_buf()) else {
+            return;
+        };
+        let saved = (|| -> anyhow::Result<Option<String>> {
+            let _lock = crate::store::lock(&root)?;
+            let on_disk = std::fs::read_to_string(&v.path)?;
+            if on_disk != v.text {
+                return Ok(Some(on_disk));
+            }
+            crate::store::write::atomic_write(&v.path, &text)?;
+            Ok(None)
+        })();
+        match saved {
+            Ok(None) => {
+                self.notification = Some(format!("saved {}", v.target));
+                v.text = text;
+                self.overlay = Overlay::Attachment(v);
+            }
+            Ok(Some(on_disk)) => {
+                self.notification = Some(format!(
+                    "{} changed on disk: not saved (Ctrl-S again overwrites)",
+                    v.target
+                ));
+                v.text = on_disk;
+                self.reopen_attachment_edit(v, &text);
+            }
+            Err(e) => {
+                self.notification = Some(format!("save failed: {e}"));
+                self.reopen_attachment_edit(v, &text);
+            }
+        }
+    }
+
+    /// Put the attachment editor back with the typed `text` after a save that
+    /// did not write, so no edit is lost.
+    fn reopen_attachment_edit(&mut self, v: AttachView, text: &str) {
+        let label = format!("Edit {} (Ctrl-S save · Ctrl-C cancel)", v.target);
+        self.overlay = Overlay::Edit(Editor::new(
+            self.editor_vim,
+            false,
+            label,
+            text,
+            EditAction::EditAttachment(v),
+        ));
     }
 
     /// Where attachment link `target` (`<id>/<file>`, farm-relative) is on
@@ -1093,7 +1202,8 @@ impl App {
                 action: ConfirmAction::DiscardEdit,
             };
         } else {
-            self.overlay = Overlay::None;
+            let ov = std::mem::replace(&mut self.overlay, Overlay::None);
+            self.overlay = viewer_behind(ov);
             self.notification = Some(msg.to_string());
         }
     }
@@ -1191,7 +1301,8 @@ impl App {
     /// `:q!` force-cancels, discarding unsaved work outright.
     pub(crate) fn cmd_quit(&mut self, force: bool) {
         if force {
-            self.overlay = Overlay::None;
+            let ov = std::mem::replace(&mut self.overlay, Overlay::None);
+            self.overlay = viewer_behind(ov);
             self.notification = Some("cancelled".into());
             return;
         }
@@ -1204,7 +1315,7 @@ impl App {
                     "create cancelled"
                 },
             ),
-            Overlay::Edit(ed) => (!ed.single_line && !ed.text().trim().is_empty(), "cancelled"),
+            Overlay::Edit(ed) => (edit_is_dirty(ed), "cancelled"),
             Overlay::BlockEdit(be) => (be.is_dirty(), "cancelled"),
             _ => (false, "cancelled"),
         };
@@ -1389,9 +1500,7 @@ impl App {
             let (key, dirty) = match &mut self.overlay {
                 Overlay::Edit(ed) => {
                     let key = editor_key(ed, k, double_esc, &ref_prefix);
-                    // Only the multiline comment editor guards unsaved work.
-                    let dirty = !ed.single_line && !ed.text().trim().is_empty();
-                    (key, dirty)
+                    (key, edit_is_dirty(ed))
                 }
                 Overlay::BlockEdit(be) => {
                     let key = editor_key(&mut be.editor, k, double_esc, &ref_prefix);
@@ -1509,6 +1618,7 @@ impl App {
             EditAction::RenameAttachment { id, old } => {
                 self.commit_rename_attachment(id, old, text)
             }
+            EditAction::EditAttachment(v) => self.commit_attachment_edit(v, text),
             EditAction::Ask(id) => {
                 let note = text.trim();
                 self.needs_edit(&id, false, (!note.is_empty()).then_some(note));
@@ -1924,7 +2034,10 @@ impl App {
     pub(crate) fn resolve_confirm(&mut self, action: ConfirmAction) {
         match action {
             ConfirmAction::DiscardEdit => {
-                self.dirty_cancel = None; // drop the stashed editor
+                // Drop the stashed editor (an attachment edit returns to its viewer).
+                if let Some(ov) = self.dirty_cancel.take() {
+                    self.overlay = viewer_behind(ov);
+                }
                 self.notification = Some("changes discarded".into());
             }
             ConfirmAction::Slaughter(id) => {

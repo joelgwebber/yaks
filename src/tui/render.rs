@@ -292,7 +292,7 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
         ),
         entry(
             "  (text file)",
-            "Opens in a viewer (.md rendered); O there opens externally",
+            "Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally",
         ),
         entry("r", "Rename attachment at cursor (detail)"),
         entry("X", "Slaughter (confirm; offers whole family)"),
@@ -1488,7 +1488,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
     if matches!(&app.overlay, Overlay::Attachment(_)) {
         frame.render_widget(
             Paragraph::new(Span::styled(
-                "j/k scroll · d/u page · g/G top/bottom · O open externally · Esc/q close",
+                "j/k scroll · d/u page · g/G top/bottom · E edit · O open externally · Esc/q close",
                 Style::new().fg(Color::DarkGray),
             )),
             area,
