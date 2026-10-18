@@ -90,7 +90,7 @@ full-page; `g`/`G` top/bottom.
 | `h` | Cycle **family scope** — how much of each tree shows: auto → lone → remaining → all |
 | `Space` | Collapse / expand subtree |
 | `m` | Mark / unmark row (multi-select) |
-| `S` (with marks) | Bulk state transition over the marked set |
+| `S` (with marks) | Bulk state transition over the marked set (shearing asks for one optional comment for the set) |
 | `v` / `V` | View picker / save filter as a view |
 | `*` | Star / unstar (Starred view) |
 
@@ -110,6 +110,7 @@ the pre-find scroll and cursor).
 | `c` / `C` | New root / child yak |
 | `E` | Edit what the cursor is on: a body row (the description or a comment) turns that block into an editor **in place**; a header row (`Title:`, `Type:`, `Priority:`, `Labels:`, `Source:`, `Herd:`) opens the form on that field (`Status:` opens the state picker) |
 | `P` / `T` / `L` / `S` | Priority / type / labels / state |
+| `S` → `n` | Shear: a one-line prompt asks for an optional comment, recorded as a note on the yak before it moves to shorn (so `yaks doctor --strict` sees evidence). `Enter` on an empty line shears with no note; `Ctrl-C` (or `Esc` in emacs mode, a double-`Esc` in vim) cancels and leaves the yak as it was. With marks, the one comment goes on every yak that moves. |
 | `D` / `R` | Add dependency / reparent |
 | `H` | Move to another herd (multi-herd farms) |
 | `M` | Add a comment (note): an empty editor under a `▸ you · now` header after the last comment, in place |

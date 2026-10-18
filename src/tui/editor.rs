@@ -65,12 +65,22 @@ pub(crate) enum EditAction {
     /// Answer this id (hands it to an agent: `needs: agent`) and record the
     /// typed reply. TUI counterpart of CLI `answer`.
     Answer(String),
+    /// Shear the target, first recording the typed comment (if any) as an
+    /// attributed note on each yak (yaks-27c6).
+    Shear(ShearTarget),
     /// Answer `id` in the shed checked out at `shed` (the Sheds tab): the
     /// CLI's `answer <id>@<shed>`, left uncommitted there (yaks-98f1).
     AnswerInShed {
         id: String,
         shed: std::path::PathBuf,
     },
+}
+
+/// Which yak(s) a shear-comment prompt shears: the single-yak state picker,
+/// or the bulk picker over the marked set.
+pub(crate) enum ShearTarget {
+    One(String),
+    Bulk(Vec<String>),
 }
 
 /// What a context-sensitive `E` in the detail pane should edit, derived from

@@ -263,6 +263,7 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
             "Edit under the cursor: body block in place; header row / list: form",
         ),
         entry("P / T / L / S", "Priority / type / labels / state"),
+        entry("S → n", "Shear: prompts an optional comment (Enter shears)"),
         entry("D / R", "Add dependency / reparent"),
         entry("H", "Move to another herd (multi-herd farm)"),
         entry("M", "Add a comment (in place, after the last one)"),
