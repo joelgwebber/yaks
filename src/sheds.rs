@@ -1695,6 +1695,34 @@ pub(crate) fn canonical(p: &Path) -> PathBuf {
     fs::canonicalize(p).unwrap_or_else(|_| p.to_path_buf())
 }
 
+/// The worktree of the repository containing `from` where `branch` is checked
+/// out, if any: `git worktree list --porcelain` in the HOST ([`host`]: this
+/// checkout's own repository, or the one its `alternates` names, so a Delta
+/// clone finds the human's worktrees), matched on `branch refs/heads/<b>`.
+/// Backs `live_branch:` discovery (`store::discover`). `None` outside git, or
+/// when nothing has the branch checked out (a bare host lists only its own
+/// worktrees). Read-only.
+pub(crate) fn worktree_of_branch(from: &Path, branch: &str) -> Option<PathBuf> {
+    let h = host(from)?;
+    let text = git_raw(&h.git_dir, &["worktree", "list", "--porcelain"]).ok()?;
+    let want = format!("branch refs/heads/{branch}");
+    for block in text.split("\n\n") {
+        let mut path: Option<&str> = None;
+        let mut hit = false;
+        for line in block.lines() {
+            if let Some(p) = line.strip_prefix("worktree ") {
+                path = Some(p);
+            } else if line == want {
+                hit = true;
+            }
+        }
+        if hit {
+            return path.map(|p| canonical(Path::new(p)));
+        }
+    }
+    None
+}
+
 /// Every entry of `git worktree list --porcelain` in `top`, each with why it
 /// is not a checkout (`Err`) or `Ok` when it is one.
 pub(crate) fn worktree_entries(top: &Path) -> Vec<(PathBuf, Result<(), String>)> {

@@ -13,7 +13,10 @@ hold the rest.
 
 ## 1. Pick your layers
 1. **Farm mode.** Run `git ls-files .yaks`.
-   - It lists files: the farm is committed (**team**). Load `yaks-coordinating-team`.
+   - It lists files: the farm is committed (**team**). Load `yaks-coordinating-team`. If
+     `.yaks/config.yaml` has `live_branch:`, it is a **live** team farm (one farm per machine
+     in a worktree of that branch; `yaks path` with no arguments prints it): read that
+     skill's "Live farm" section, which replaces its per-branch rules.
    - It prints nothing: the farm is **private** (gitignored or stealth) or
      **out-of-tree** (a `.yaks` pointer file or symlink). Load `yaks-coordinating-private`.
    - Unsure: treat it as private. Leaking an id is worse than not using one.

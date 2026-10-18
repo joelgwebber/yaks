@@ -7,6 +7,29 @@ description: "Farm-mode companion to yaks-coordinating for a TEAM farm (`.yaks/`
 
 Read `yaks-coordinating` first. This file is only what changes when the farm lives in git.
 
+## Live farm (`live_branch:` in `.yaks/config.yaml`)
+When the farm's config names a live branch, there is **one farm per machine**: the `git
+worktree` where that branch is checked out (sparse, holding only `.yaks/`), which discovery
+reaches from every checkout of the repository (yours, the human's, every worker clone). Then
+the per-branch rules below (claim commits, shorn moves riding in the worker's commit,
+`answer <id>@<shed>`, `inbox --sheds`) do not apply; the private skill's live rules do (live
+claims and asks, one writer per yak, workers stage nothing under `.yaks/`), plus:
+- Yak ids are fine in commit messages (the farm is in git). Workers' briefs say
+  "Finish (live farm" and need no `YAKS_DIR` on this machine; `yaks path` (no arguments) must
+  print the live farm, make it the worker's first check.
+- **You commit the farm:** `yaks commit` commits on the live branch whatever your cwd. Bring
+  it into `main` as part of landing: `git fetch local <branch> && git merge local/<branch>`
+  into the branch you are about to push (the live branch is the only one that changes
+  `.yaks/`, so this never conflicts), then push `main` as usual. Never stage `.yaks/` in a
+  code checkout; `land.sh` and `preflight` then have no yak drift to explain.
+- **Machines:** the farm crosses as `origin/<branch>`. Before the human switches machines:
+  `yaks commit`, then `git -C <primary> push origin <branch>`; on arrival `git -C <farm
+  worktree> pull`. A clone whose host is Delta's bare managed repo cannot see the worktree:
+  give its brief `--yaks-dir <live farm>` (`~/`-relative works on every machine).
+- `yaks sheds` still lists every checkout with its git facts (branch, ahead/behind, dirty,
+  merged, liveness); its farm-diff columns read `shares this farm` for every shed, by design.
+  "What is worker X doing" is `yaks log --by <actor>` and `yaks inbox`.
+
 ## What the farm is
 Every checkout carries its own committed copy of `.yaks/`, so farms are **per-branch** and
 reconcile when work **lands**, not live. A worker's shave, note or ask is invisible to your

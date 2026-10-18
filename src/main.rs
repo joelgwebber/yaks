@@ -160,7 +160,9 @@ enum Command {
     /// `.yaks/<id>.md`, the same path for its whole life (a status move edits
     /// it in place), handy for `git add`. Paths are absolute. An unknown
     /// id is reported on stderr and the exit status is non-zero (known ids are
-    /// still printed). Give ids or filter flags, not both.
+    /// still printed). Give ids or filter flags, not both. With neither, print
+    /// the farm root this command resolved (the live farm when the config
+    /// names a `live_branch:`): which farm am I on?
     Path {
         /// Yak ids to resolve.
         ids: Vec<String>,
@@ -2076,11 +2078,13 @@ fn run_path(
     out: &mut impl std::io::Write,
     err: &mut impl std::io::Write,
 ) -> Result<i32> {
-    if ids.is_empty() == !filter.any_set() {
-        writeln!(
-            err,
-            "error: path takes yak ids or filter flags (not both, not neither)"
-        )?;
+    if ids.is_empty() && !filter.any_set() {
+        // Which farm am I on? The root discovery resolved, redirects included.
+        writeln!(out, "{}", farm.root().display())?;
+        return Ok(0);
+    }
+    if !ids.is_empty() && filter.any_set() {
+        writeln!(err, "error: path takes yak ids or filter flags, not both")?;
         return Ok(1);
     }
     if ids.is_empty() {
@@ -3218,11 +3222,12 @@ mod tests {
     }
 
     #[test]
-    fn path_needs_ids_xor_filter() {
-        let (_root, farm) = path_farm("xor");
+    fn path_with_nothing_prints_the_farm_root_and_refuses_ids_plus_filter() {
+        let (root, farm) = path_farm("xor");
+        // Which farm am I on?
         let (code, out, err) = path_cmd(&farm, &[], FilterFlags::default(), false);
-        assert_eq!((code, out.len()), (1, 0));
-        assert!(err.contains("ids or filter flags"), "{err}");
+        assert_eq!((code, out), (0, vec![root.display().to_string()]));
+        assert!(err.is_empty(), "{err}");
         let label = FilterFlags {
             label: vec!["cli".into()],
             ..Default::default()

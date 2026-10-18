@@ -39,6 +39,32 @@ Every command except `init` operates on one farm, found in this order:
    reading, and writing, another checkout's farm. Fix it with `yaks init`, a
    `.yaks` pointer file (`path:` + optional `herd:`), or `YAKS_DIR`. Outside any
    git repository the walk runs to the filesystem root.
+4. A **live farm**: when the `.yaks/` the walk found has `live_branch: <branch>`
+   in its `config.yaml` (committed, so every clone agrees), that directory is a
+   stale copy and the command is redirected to `<worktree>/.yaks` for the
+   worktree of this repository where `<branch>` is checked out, found with
+   `git worktree list` in the repository (its host, for a Delta clone: the
+   repository its object store borrows from). So every checkout on a machine
+   (the primary, git worktrees, Delta clones) reads and writes ONE farm, and a
+   checkout's own `.yaks/` is never written. The live worktree itself resolves
+   to itself. If no worktree has the branch checked out (or it has no
+   `.yaks/`), that is an error naming the fix, never a silent fall-through to
+   the stale copy; `YAKS_DIR` still overrides (for a clone whose host is a bare
+   managed repo and cannot see the worktree). Rule 1 and a pointer file are
+   not redirected. Set one up with:
+
+   ```sh
+   git -C <repo> worktree add -b farm ../<repo>-farm main
+   git -C ../<repo>-farm sparse-checkout set .yaks      # the worktree holds only .yaks/
+   # then `live_branch: farm` in .yaks/config.yaml, committed on main
+   ```
+
+   `yaks commit` in any checkout then commits the farm on `farm` (its git
+   commands run in the farm's root), `main` takes those commits by merging
+   `farm` (the only branch that changes `.yaks/`, so never a conflict), feature
+   branches and PRs carry no yak churn, and the farm crosses machines as
+   `origin/farm`. `yaks path` with no arguments prints the farm a command
+   resolved.
 
 ## Filter flags (shared)
 
@@ -53,7 +79,7 @@ Every command except `init` operates on one farm, found in this order:
 |---|---|
 | `list` | List tasks (non-dead by default; `--all` includes dead). Status renders as `[H]`/`[S]`/`[N]`/`[X]` — hairy / shaving / shor**n** / dead. |
 | `show <id> [--sheds] [--json]` | Show one yak: fields, references, children, body + notes. `--sheds` then adds a `Sheds:` section for the OTHER checkouts of this repo (git worktrees and Delta clones, as `sheds` lists them, without the one you are in: its copy is the one printed first): this checkout's copy is printed first, then one block per shed whose copy differs — the shed's name and path, its status, its `needs:` when set, and the note entries it has that this copy lacks (timestamp, actor, first line) — and ONE trailing line counting the rest: `same in N sheds; absent in N; no farm of its own in N sheds` (a copy with the same status, the same `needs:` and no extra notes is "same", so a shed that is merely behind counts as same; "no farm" is a shed sharing this farm, with none, or with an unreadable one). A yak that exists only in sheds is still shown (`<id> is not in this checkout.`, then each shed's copy with its title) and exits 0; without `--sheds`, or when no shed has it either, an unknown id exits 1. `--json` adds a `sheds` array to the usual object (for an id only in sheds, the object is just `{id, sheds}`): one entry per shed with a farm of its own — `shed`, `path`, `status` and `needs` (null when the shed lacks the yak / has no `needs`), `new_notes` (`[{ts, actor, text}]`), `same`, `absent`. Read-only in the other checkouts. |
-| `path <id>...` / `path <filters>` | Print each yak's current file path (absolute, one per line), by id or by the shared filter flags (`--all` adds dead yaks). Each yak's file is `.yaks/<id>.md`, the same path for its whole life (a status move edits it in place); its attachments are in `.yaks/<id>/`. An unknown id goes to stderr with a non-zero exit (known ids still print). Ids or filters, not both. |
+| `path [<id>...]` / `path <filters>` | Print each yak's current file path (absolute, one per line), by id or by the shared filter flags (`--all` adds dead yaks). Each yak's file is `.yaks/<id>.md`, the same path for its whole life (a status move edits it in place); its attachments are in `.yaks/<id>/`. An unknown id goes to stderr with a non-zero exit (known ids still print). Ids or filters, not both; with neither, prints the farm root this command resolved (the live farm's, under `live_branch:`): which farm am I on? |
 | `next` (alias `ready`) | Hairy yaks whose dependencies are all resolved — the work queue. A yak awaiting a human (`needs: human`) is left out; one that has been answered (`needs: agent`) is included, marked `✓ answered, awaiting pickup` (`yaks pickup <id>` when you take it on). |
 | `tangled` (alias `blocked`) | Hairy yaks with at least one unresolved dependency. |
 | `search <text>` | Substring search over id / title / description. |

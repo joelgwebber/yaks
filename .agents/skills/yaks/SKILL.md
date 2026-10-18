@@ -41,7 +41,7 @@ Three **containers** name where yaks live and how they group:
 ## Hard rules
 
 1. **NEVER write code without an active shaving yak.** Before touching any code — even a one-line fix — you must have a yak in shaving state. If you don't, stop and `yaks shave <id>` one first (create it if needed). No exceptions.
-2. **ALWAYS shear when a yak's work is done.** Run `yaks shorn <id>` as soon as the task is complete. In **team mode** (below), stage the shorn yak file alongside the code that completed it and commit them together. In **local-only mode**, never commit yak files at all.
+2. **ALWAYS shear when a yak's work is done.** Run `yaks shorn <id>` as soon as the task is complete. In **team mode** (below), stage the shorn yak file alongside the code that completed it and commit them together, unless the farm is **live** (`live_branch:` in its config): then your checkout's `.yaks/` is a stale copy you never stage, and the yakherd commits the farm. In **local-only mode**, never commit yak files at all.
 3. **NEVER leak yak IDs into external-facing surfaces** (PR titles/descriptions, external issue trackers, and — in local-only mode — commit messages). See "Keep yaks private," below.
 
 ## Two workflows: local or team
@@ -80,7 +80,12 @@ The quickest route is `yaks init --mode private` (the farm plus a `.git/info/exc
 - Commit the shorn yak move together with the code that completed it (hard rule 2).
 - Yak IDs are fine in commit messages and other in-repo references — collaborators can resolve them from the committed files.
 
-> This repo is **team mode**: `.yaks/` is committed, and yak IDs in commit messages are expected.
+**Team, live (one farm per machine).** A team farm whose `.yaks/config.yaml` has `live_branch: <branch>` (committed, so every clone agrees) keeps ONE live copy per machine: the `git worktree` where that branch is checked out (normally sparse, holding only `.yaks/`). Discovery from any checkout of the repo (the primary, a git worktree, a Delta clone) redirects there, so every shed reads and writes the same files with no merge step, and a checkout's own `.yaks/` is a stale mirror nothing writes. `yaks path` with no arguments prints the farm in use; `git ls-files .yaks` still says team. Habits:
+- Never `git add` anything under `.yaks/` in a code checkout; your yak edits are already in the live farm. Yak ids in commit messages are fine.
+- The yakherd (or the human) commits the farm with `yaks commit` (it commits on `<branch>`, whatever the cwd) and brings it into `main` with `git merge <branch>` — the only branch that changes `.yaks/`, so it never conflicts. Feature branches and PRs carry no yak churn.
+- Across machines the farm travels as `origin/<branch>`: push it before switching, pull it after. Set up a machine with `git -C <repo> worktree add -b <branch> <path> main` and `git -C <path> sparse-checkout set .yaks` (or `worktree add <path> <branch>` once the branch exists). A machine with no such worktree gets an error naming that fix; `YAKS_DIR=<live farm>` overrides for a checkout whose repository cannot see the worktree.
+
+> This repo is **team mode, live**: `.yaks/` is committed, yak IDs in commit messages are expected, and the live farm is the sparse worktree of branch `farm` (on Joel's machines `~/src/yaks-farm/.yaks`). Never stage `.yaks/` in a code checkout.
 
 ## Keep yaks private (external surfaces)
 
@@ -161,7 +166,7 @@ Run these directly from the shell (see **Running yaks** above for the exact invo
 | `yaks create` | Create a new task (in hairy). Title is positional (`yaks create "Fix the login crash"`; `--title` still works for back-compat); `--type`, `--priority`, `--parent`, `--herd` (herd / id prefix for this yak; defaults to the config herd — lets one `.yaks/` hold several herds), `--labels`, `--depends-on`, `--source`, `--description` (`-` reads stdin; `--description-file PATH`), `--verify`, `--json` (print the new id + path) |
 | `yaks list` | List tasks with optional filters (`--all` also includes dead) |
 | `yaks show` | Show full details of a task; `--sheds` also shows other checkouts' copies (not the one you are in) where they differ (status, `needs:`, new notes) and counts the rest |
-| `yaks path` | Print the absolute file path of yaks (`.yaks/<id>.md`, stable for the yak's life: a status move edits the file in place), by id or by the filter flags; handy for `git add $(yaks path <id>)` |
+| `yaks path` | Print the absolute file path of yaks (`.yaks/<id>.md`, stable for the yak's life: a status move edits the file in place), by id or by the filter flags; handy for `git add $(yaks path <id>)`. With no arguments, the farm root this command resolved (the live farm's under `live_branch:`): which farm am I on? |
 | `yaks refs` | List what a task points at (parent, deps, id mentions), flagging danglers |
 | `yaks commits` | Show the git commits linked to a yak — those naming its id and those that touched its file |
 | `yaks update` | Update fields, labels (`--add-label`/`--remove-label`), or append a `--note` (`--note -` reads stdin, `--note-file PATH` a file: use these for multi-line markdown; same on `ask`/`answer`). Accepts multiple ids (same edit to each); `--as <actor>` attributes a note; `--verify '<cmd>'` sets/clears the yak's verification command; `--source <url>` sets/clears the external source |

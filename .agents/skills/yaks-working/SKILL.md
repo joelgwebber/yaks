@@ -134,6 +134,11 @@ semantics, scope), not trivia.
   lists every file you expect before you rely on the commit. That commit is also what later
   lets you trace
   the change back to this yak (provenance, `yaks-2610`).
+- **Live team farm** (`yaks path` with no arguments prints a farm OUTSIDE your checkout, and
+  `.yaks/config.yaml` has `live_branch:`; your brief says "Finish (live farm"): every shed shares
+  that one farm, so your notes, shear and attachments are already there. Never stage anything
+  under `.yaks/` in your checkout (a stale copy); commit only your own source files, with the
+  yak id in the message. The yakherd commits the farm.
 - **Private farm** (`git ls-files .yaks` prints nothing): the yak files are not in git. Never
   put yak ids or the word yaks in a commit message, code or comments, and stage only your own
   source files.

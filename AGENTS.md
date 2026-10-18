@@ -45,6 +45,16 @@ task's status is a frontmatter field; each yak is one file, `.yaks/<id>.md`.
   in-tree `git worktree`) never reads another checkout's farm by accident; it
   needs its own pointer or `YAKS_DIR`. Tests use `discover_with` (the env var
   passed in), never `set_var`.
+- **A team farm can be live** (`live_branch: farm` in `config.yaml`, committed;
+  yaks-6a34): the `.yaks/` the walk finds is then a stale copy and discovery
+  redirects to the worktree where that branch is checked out
+  (`store::redirect_live` via `sheds::worktree_of_branch`, which asks the host
+  repository's `git worktree list`, so a Delta clone finds the human's
+  worktrees). One farm per machine, every shed writes it, nothing ever writes a
+  checkout's own copy; no such worktree is an error, never a fallback. **This
+  repo runs that way:** the live farm is `~/src/yaks-farm/.yaks` (a sparse
+  worktree of branch `farm`), `yaks commit` commits there, `main` merges `farm`.
+  Never `git add` anything under `.yaks/` in a code checkout.
 - **Consolidate** separate farms with `Farm::merge` (`yaks merge`), which is
   collision-checked and non-destructive.
 
@@ -182,8 +192,10 @@ This project uses yaks to track its own work. The yaks skill has the full
 workflow.
 
 1. Never start coding without a shaving yak. No exceptions.
-2. Shear a yak as soon as its work is done, and commit the shorn yak file
-   alongside the code that completed it (`.yaks/` is committed here — team mode).
+2. Shear a yak as soon as its work is done. The farm is live (above): the
+   shear is already in `~/src/yaks-farm/.yaks`; the coordinator commits the farm
+   there with `yaks commit` and merges `farm` into `main`. Never stage `.yaks/`
+   in a code checkout. Yak ids in commit messages are fine (team mode).
 3. Check existing yaks before creating new ones.
 4. Append progress notes to yak descriptions as you work.
 5. When unsure what's next, run `yaks next` — don't freelance.
