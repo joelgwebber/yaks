@@ -80,6 +80,9 @@ pub fn discover_with(start: &Path, yaks_dir: Option<&str>) -> Result<Discovered>
             return follow_pointer(&candidate);
         }
         if dir.join(".git").exists() {
+            if let Some(found) = farm_branch_worktree(dir)? {
+                return Ok(found);
+            }
             anyhow::bail!(
                 "no .yaks farm in the git repository at {top}; discovery stops there \
                  so it cannot reach another checkout's farm. Fix it with one of: \
@@ -93,6 +96,100 @@ pub fn discover_with(start: &Path, yaks_dir: Option<&str>) -> Result<Discovered>
             None => anyhow::bail!("no .yaks/ directory found at or above {}", start.display()),
         }
     }
+}
+
+/// The default name of the farm branch (yaks-73f4); `git config yaks.branch`
+/// in the repository overrides it.
+pub const FARM_BRANCH: &str = "yaks";
+
+fn git_line(dir: &Path, args: &[&str]) -> Option<String> {
+    std::process::Command::new("git")
+        .arg("-C")
+        .arg(dir)
+        .args(args)
+        .env_remove("GIT_DIR")
+        .env_remove("GIT_WORK_TREE")
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        .filter(|s| !s.is_empty())
+}
+
+/// The farm branch name configured for the repository containing `dir`
+/// (`git config yaks.branch`, read in the host repository so a Delta clone
+/// sees its human's setting), else [`FARM_BRANCH`].
+pub fn configured_farm_branch(dir: &Path) -> String {
+    let host = crate::sheds::host(dir).map(|h| h.git_dir);
+    host.as_deref()
+        .and_then(|g| git_line(g, &["config", "--get", "yaks.branch"]))
+        .or_else(|| git_line(dir, &["config", "--get", "yaks.branch"]))
+        .unwrap_or_else(|| FARM_BRANCH.to_string())
+}
+
+/// The farm as a BRANCH (yaks-73f4): for a git top-level `dir` with no `.yaks`
+/// entry, the `.yaks/` of the worktree of the repository (its host, for a
+/// Delta clone) where the farm branch ([`configured_farm_branch`]) is checked
+/// out. `Ok(None)` when the repository has no such branch at all (the
+/// caller's "no farm" error stands); an error naming the fix when the branch
+/// exists (locally or as `origin/<branch>`) but no worktree has it, or that
+/// worktree holds no `.yaks/`.
+fn farm_branch_worktree(dir: &Path) -> Result<Option<Discovered>> {
+    let branch = configured_farm_branch(dir);
+    if let Some(wt) = crate::sheds::worktree_of_branch(dir, &branch) {
+        let root = wt.join(".yaks");
+        if !root.is_dir() {
+            anyhow::bail!(
+                "the farm branch `{branch}` is checked out at {wt} but has no .yaks/ there; \
+                 restore it (`git -C {wt} checkout -- .yaks`) or set YAKS_DIR to the farm",
+                wt = wt.display()
+            );
+        }
+        return Ok(Some(Discovered { root, prefix: None }));
+    }
+    let local = git_line(
+        dir,
+        &[
+            "rev-parse",
+            "--verify",
+            "-q",
+            &format!("refs/heads/{branch}"),
+        ],
+    );
+    let remote = git_line(
+        dir,
+        &[
+            "rev-parse",
+            "--verify",
+            "-q",
+            &format!("refs/remotes/origin/{branch}"),
+        ],
+    );
+    if local.is_none() && remote.is_none() {
+        return Ok(None);
+    }
+    anyhow::bail!(
+        "this repository's farm is the branch `{branch}`, but no worktree has it checked out. \
+         Create one (it holds only .yaks/): `git -C {top} worktree add <path> {branch}`, e.g. \
+         `git -C {top} worktree add ../$(basename {top})-yaks {branch}`; or set YAKS_DIR to the farm",
+        top = dir.display()
+    )
+}
+
+/// The farm branch `root` is a dedicated worktree of, if any: the config's
+/// `live_branch:` (the live farm of yaks-6a34), else the configured farm
+/// branch when `root`'s checkout has it as HEAD (an orphan farm, yaks-73f4).
+/// A checkout whose farm is just its own `.yaks/` gives `None`. `brief` and
+/// source links use this to know the farm is not where the code is.
+pub fn farm_branch(root: &Path) -> Option<String> {
+    if let Some(b) = read_config(root).live_branch {
+        return Some(b);
+    }
+    let top = root.parent()?;
+    let head = git_line(top, &["symbolic-ref", "--short", "-q", "HEAD"])?;
+    let toplevel = git_line(top, &["rev-parse", "--show-toplevel"])?;
+    let same = Path::new(&toplevel).canonicalize().ok() == top.canonicalize().ok();
+    (same && head == configured_farm_branch(top)).then_some(head)
 }
 
 /// Apply the farm's `live_branch:` ([`Config::live_branch`]) to the `.yaks`
@@ -2730,6 +2827,125 @@ mod discover_tests {
             canon(&discover_with(&other, None).unwrap().root),
             canon(&stale)
         );
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    // -- the farm is a branch (yaks-73f4) ------------------------------------
+
+    /// A code repo on `main` with NO `.yaks/`, plus an orphan `yaks` branch
+    /// holding only a farm, checked out (when `worktree`) beside it:
+    /// `(base, code, Some(farm worktree))`.
+    fn branch_repo(worktree: bool) -> (PathBuf, PathBuf, Option<PathBuf>) {
+        let base = scratch();
+        let code = base.join("code");
+        fs::create_dir_all(code.join("src")).unwrap();
+        fs::write(code.join("src/m.rs"), "fn main() {}\n").unwrap();
+        git(&code, &["init", "-q", "-b", "main"]);
+        git(&code, &["add", "."]);
+        git(&code, &["commit", "-q", "-m", "code"]);
+        let wt = base.join("farm");
+        git(
+            &code,
+            &[
+                "worktree",
+                "add",
+                "-q",
+                "--orphan",
+                "-b",
+                "yaks",
+                &wt.display().to_string(),
+            ],
+        );
+        farm_at(&wt);
+        git(&wt, &["add", ".yaks"]);
+        git(&wt, &["commit", "-q", "-m", "yaks: seed"]);
+        if !worktree {
+            git(
+                &code,
+                &["worktree", "remove", "--force", &wt.display().to_string()],
+            );
+            return (base, code, None);
+        }
+        (base, code, Some(wt))
+    }
+
+    #[test]
+    fn a_checkout_with_no_farm_finds_the_farm_branch_worktree() {
+        let (base, code, wt) = branch_repo(true);
+        let farm = canon(&wt.unwrap().join(".yaks"));
+        assert!(!code.join(".yaks").exists(), "main carries no farm");
+        assert_eq!(canon(&discover_with(&code, None).unwrap().root), farm);
+        assert_eq!(
+            canon(&discover_with(&code.join("src"), None).unwrap().root),
+            farm
+        );
+        // A plain worktree of main, and a --shared clone (a Delta clone's shape).
+        let side = base.join("side");
+        git(
+            &code,
+            &[
+                "worktree",
+                "add",
+                "-q",
+                "-b",
+                "topic",
+                &side.display().to_string(),
+                "main",
+            ],
+        );
+        assert_eq!(canon(&discover_with(&side, None).unwrap().root), farm);
+        git(
+            &base,
+            &[
+                "clone",
+                "-q",
+                "--shared",
+                &code.display().to_string(),
+                "clone",
+            ],
+        );
+        assert_eq!(
+            canon(&discover_with(&base.join("clone"), None).unwrap().root),
+            farm
+        );
+        // The farm worktree itself finds its own .yaks/ by the plain walk, and
+        // knows it is a dedicated farm.
+        let farm_wt = farm.parent().unwrap().to_path_buf();
+        assert_eq!(canon(&discover_with(&farm_wt, None).unwrap().root), farm);
+        assert_eq!(farm_branch(&farm).as_deref(), Some("yaks"));
+        // A configured name wins over the default.
+        git(&code, &["branch", "-q", "-m", "yaks", "yaks/team-a"]);
+        git(&code, &["config", "yaks.branch", "yaks/team-a"]);
+        assert_eq!(canon(&discover_with(&code, None).unwrap().root), farm);
+        assert_eq!(farm_branch(&farm).as_deref(), Some("yaks/team-a"));
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn a_farm_branch_without_a_worktree_is_an_error_naming_the_fix() {
+        let (base, code, _) = branch_repo(false);
+        let msg = format!(
+            "{:#}",
+            discover_with(&code, None).err().expect("no worktree")
+        );
+        assert!(msg.contains("the branch `yaks`"), "{msg}");
+        assert!(msg.contains("worktree add"), "{msg}");
+        assert!(msg.contains("YAKS_DIR"), "{msg}");
+        // Only on origin (a fresh clone): same error.
+        git(
+            &base,
+            &["clone", "-q", &code.display().to_string(), "fresh"],
+        );
+        let fresh = base.join("fresh");
+        let msg = format!("{:#}", discover_with(&fresh, None).err().unwrap());
+        assert!(msg.contains("the branch `yaks`"), "{msg}");
+        // No farm branch at all: the old "no farm" error.
+        git(&code, &["branch", "-q", "-D", "yaks"]);
+        let msg = format!("{:#}", discover_with(&code, None).err().unwrap());
+        assert!(msg.contains("yaks init"), "{msg}");
+        // A checkout whose farm is its own .yaks/ is not a farm branch.
+        let own = farm_at(&code);
+        assert_eq!(farm_branch(&own), None);
         let _ = fs::remove_dir_all(&base);
     }
 

@@ -45,6 +45,11 @@ task's status is a frontmatter field; each yak is one file, `.yaks/<id>.md`.
   in-tree `git worktree`) never reads another checkout's farm by accident; it
   needs its own pointer or `YAKS_DIR`. Tests use `discover_with` (the env var
   passed in), never `set_var`.
+- **The farm can be a branch** (yaks-73f4): a git top-level with no `.yaks`
+  entry resolves the farm branch (`git config yaks.branch`, default `yaks`, an
+  orphan branch holding only `.yaks/`) to its worktree via the host's `git
+  worktree list` (`store::farm_branch_worktree`); `store::farm_branch(root)` says
+  whether a root is such a dedicated farm worktree (`brief`, source links).
 - **A team farm can be live** (`live_branch: farm` in `config.yaml`, committed;
   yaks-6a34): the `.yaks/` the walk finds is then a stale copy and discovery
   redirects to the worktree where that branch is checked out

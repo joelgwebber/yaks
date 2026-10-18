@@ -227,7 +227,7 @@ fn editor_from_env() -> Option<String> {
 /// else the repository's main checkout (yaks-6c4f). `None` when nothing fits.
 pub(crate) fn source_base(farm_root: &Path, cwd: Option<&Path>) -> Option<PathBuf> {
     let own = farm_root.parent().map(Path::to_path_buf);
-    if crate::store::read_config(farm_root).live_branch.is_none() {
+    if crate::store::farm_branch(farm_root).is_none() {
         return own;
     }
     let farm_wt = own.as_deref().map(crate::sheds::canonical);
@@ -517,6 +517,27 @@ mod tests {
         assert!(!wt.join("src/foo.rs").exists());
         assert!(
             resolve_source_file(&source_base(&root, None).unwrap(), "src/foo.rs", None).is_ok()
+        );
+        // An ORPHAN farm branch (no live_branch: in its config, yaks-73f4):
+        // the same answer, keyed on the farm worktree's HEAD.
+        let orphan = base.join("orphan");
+        git_ok(
+            &code,
+            &[
+                "worktree",
+                "add",
+                "-q",
+                "--orphan",
+                "-b",
+                "yaks",
+                orphan.to_str().unwrap(),
+            ],
+        );
+        std::fs::create_dir_all(orphan.join(".yaks")).unwrap();
+        std::fs::write(orphan.join(".yaks/config.yaml"), "herd: yak\n").unwrap();
+        assert_eq!(
+            source_base(&orphan.join(".yaks"), Some(&orphan)),
+            Some(code_c.clone())
         );
         // A farm in its own checkout keeps resolving against its parent.
         let (proj, _farm) = crate::tui::test_support::temp_farm(&[]);

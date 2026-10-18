@@ -92,7 +92,7 @@ pub fn gate(task: &Task, cfg: &Config) -> Option<Gate> {
 /// place) is private even if some other repository tracks it, because the
 /// worker's commits are made here.
 pub fn detect_mode(cwd: &Path, farm_root: &Path) -> Mode {
-    if let Some(branch) = store::read_config(farm_root).live_branch {
+    if let Some(branch) = store::farm_branch(farm_root) {
         return Mode::Live { branch };
     }
     let git = |dir: &Path, args: &[&str]| {
@@ -570,6 +570,18 @@ mod tests {
         make_farm(&repo.join(".yaks"), "herd: yak\nlive_branch: farm\n", &t);
         assert_eq!(detect_mode(&repo, &repo.join(".yaks")), mode);
         assert_eq!(yaks_dir(None, &repo, &mode, &repo.join(".yaks")), None);
+        // An orphan farm branch worktree (no live_branch:, yaks-73f4) is live too.
+        let orphan = tmp("orphan");
+        make_farm(&orphan.join(".yaks"), "herd: yak\n", &t);
+        git(&orphan, &["init", "-q", "-b", "yaks"]);
+        git(&orphan, &["add", "."]);
+        git(&orphan, &["commit", "-q", "-m", "seed"]);
+        assert_eq!(
+            detect_mode(&orphan, &orphan.join(".yaks")),
+            Mode::Live {
+                branch: "yaks".into()
+            }
+        );
         assert!(yaks_dir(Some("/f/.yaks"), &repo, &mode, &repo.join(".yaks")).is_some());
     }
 

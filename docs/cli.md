@@ -39,6 +39,13 @@ Every command except `init` operates on one farm, found in this order:
    reading, and writing, another checkout's farm. Fix it with `yaks init`, a
    `.yaks` pointer file (`path:` + optional `herd:`), or `YAKS_DIR`. Outside any
    git repository the walk runs to the filesystem root.
+   Before that error, a top-level with no `.yaks` entry looks for the **farm
+   branch**: `git config yaks.branch` (default `yaks`), an orphan branch that
+   holds only `.yaks/`. If a worktree of the repository (its host, for a Delta
+   clone) has it checked out, that worktree's `.yaks/` is the farm; if the
+   branch exists (locally or as `origin/<branch>`) with no worktree, the error
+   names `git worktree add <path> <branch>`. So a repository whose farm lives
+   on a branch needs nothing on `main` (yaks-73f4).
 4. A **live farm**: when the `.yaks/` the walk found has `live_branch: <branch>`
    in its `config.yaml` (committed, so every clone agrees), that directory is a
    stale copy and the command is redirected to `<worktree>/.yaks` for the
