@@ -1,0 +1,31 @@
+t0 changed on disk; not saved: review and Ctrl-S again
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   🛖  Sheds
+t0 changed on disk; not saved: review and Ctrl-S again
+◂ Task: t0
+│
+│ Title:       solo
+│ Status:      🦬  hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     -
+│ Updated:     Oct 18, 2026 20:07 UTC
+│ Labels:      -
+│
+│ The description.
+│
+│ Plan
+│
+│ • one
+│ • two
+│
+│ ▸ joel · Jan 1, 2026 00:00 UTC ────────────────────────────────────────────────────────
+│ their rewrite
+│
+│ ▸ agent-1 · Jan 2, 2026 00:00 UTC ───────────── editing · Ctrl-S save · Ctrl-C cancel ─
+│ ┃- alpha
+│ ┃- beta!
+│ ┃- gamma
+│ ┃
+│
+│
+NORMAL  Ctrl-S save · Ctrl-C / Esc Esc cancel
