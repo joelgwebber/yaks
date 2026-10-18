@@ -97,7 +97,12 @@ full-page; `g`/`G` top/bottom.
 **Detail pane** — `h`/`←`/`Esc` back (on a code block or table row `h`/`←`
 scroll it left first, and go back only at offset 0); `l`/`→` scroll the code
 block or table under the cursor right (nowhere else); `j`/`k` scroll; `Tab`/`[`/`]` cycle links,
-`Enter` follow; `i`/`o` nav forward/back (each yak reopens at the cursor and
+`Enter` follow; `B` find references (also in the list pane): a picker over
+the yaks that point *at* this one — its children, the yaks that depend on it, and
+those whose title, description or a note mentions its id — each row tagged with
+how (`[child]`, `[depends]`, `[title]`, `[body:L3]`, `[note:<ts> [actor]]`);
+type to filter, `Enter` goes to one like `#` (it is `yaks refs <id>
+--incoming`); `i`/`o` nav forward/back (each yak reopens at the cursor and
 scroll you left it at); `J`/`K` next/prev task; `Ctrl-N`/`Ctrl-P`
 next/prev content block; `v` + `Shift-↑↓` visual-select lines, `y` copy;
 `/`, `n`/`N` find (`Enter` keeps the cursor on the current match, `Esc` restores

@@ -6,7 +6,7 @@
 //! candidate ranking, and the results list live here.
 
 use std::cell::RefCell;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
 use edtui::{EditorEventHandler, EditorMode, EditorState, Lines};
 use ratatui::Frame;
@@ -27,6 +27,10 @@ pub(crate) struct FuzzyPick {
     pub(crate) handler: EditorEventHandler,
     /// Ids never offered (self, existing deps/parents, cycle- or loop-forming).
     pub(crate) exclude: HashSet<String>,
+    /// When set, the picker offers ONLY these ids (uncapped), each row tagged
+    /// with its value: the `B` find-references picker, where the tag says how
+    /// that yak refers to the subject (`child`, `depends`, `body:L3`, ...).
+    pub(crate) only: Option<BTreeMap<String, String>>,
     /// When true, a synthetic top row clears the parent (reparent to root).
     pub(crate) allow_none: bool,
     pub(crate) sel: usize,
@@ -100,6 +104,7 @@ impl FuzzyPick {
             query: RefCell::new(st),
             handler: make_handler(vim),
             exclude,
+            only: None,
             allow_none,
             sel: 0,
             action,
@@ -121,6 +126,9 @@ pub(crate) fn fuzzy_candidates<'a>(all: &'a [Task], fp: &FuzzyPick) -> Vec<&'a T
     let mut scored: Vec<(u8, u8, &Task)> = Vec::new();
     for t in all {
         if fp.exclude.contains(&t.id) {
+            continue;
+        }
+        if fp.only.as_ref().is_some_and(|o| !o.contains_key(&t.id)) {
             continue;
         }
         let score = if q.is_empty() {
@@ -145,7 +153,10 @@ pub(crate) fn fuzzy_candidates<'a>(all: &'a [Task], fp: &FuzzyPick) -> Vec<&'a T
             .then(a.1.cmp(&b.1))
             .then_with(|| a.2.id.cmp(&b.2.id))
     });
-    scored.into_iter().take(20).map(|(_, _, t)| t).collect()
+    // A restricted universe (find-references) is shown whole; the open
+    // task-set pickers stay capped.
+    let cap = if fp.only.is_some() { usize::MAX } else { 20 };
+    scored.into_iter().take(cap).map(|(_, _, t)| t).collect()
 }
 
 /// Number of selectable rows (candidates plus the optional clear-parent row).
@@ -173,11 +184,19 @@ pub(crate) fn render_fuzzy_results(app: &App, fp: &FuzzyPick, frame: &mut Frame,
     for t in &cands {
         // Status emoji (matching the list, tab bar and detail pane) rather than
         // a bracketed letter glyph.
-        items.push(ListItem::new(Line::from(vec![
+        let mut spans = vec![
             Span::raw(format!("{}  ", t.status.emoji())),
             Span::styled(format!("{} ", t.id), Style::new().fg(Color::DarkGray)),
-            Span::raw(t.title.clone()),
-        ])));
+        ];
+        // Find-references: how this yak refers to the subject.
+        if let Some(tag) = fp.only.as_ref().and_then(|o| o.get(&t.id)) {
+            spans.push(Span::styled(
+                format!("[{tag}] "),
+                Style::new().fg(Color::Yellow),
+            ));
+        }
+        spans.push(Span::raw(t.title.clone()));
+        items.push(ListItem::new(Line::from(spans)));
     }
     let total = cands.len() + fp.allow_none as usize;
     let mut state = ListState::default();

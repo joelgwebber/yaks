@@ -167,7 +167,7 @@ Run these directly from the shell (see **Running yaks** above for the exact invo
 | `yaks list` | List tasks with optional filters (`--all` also includes dead) |
 | `yaks show` | Show full details of a task; `--sheds` also shows other checkouts' copies (not the one you are in) where they differ (status, `needs:`, new notes) and counts the rest |
 | `yaks path` | Print the absolute file path of yaks (`.yaks/<id>.md`, stable for the yak's life: a status move edits the file in place), by id or by the filter flags; handy for `git add $(yaks path <id>)`. With no arguments, the farm root this command resolved (the live farm's under `live_branch:`): which farm am I on? |
-| `yaks refs` | List what a task points at (parent, deps, id mentions), flagging danglers |
+| `yaks refs` | List what a task points at (parent, deps, id mentions), flagging danglers; `--incoming` lists the yaks that point AT it (children, dependents, mentions in titles/descriptions/notes, each labelled how; `--json`) |
 | `yaks commits` | Show the git commits linked to a yak — those naming its id and those that touched its file |
 | `yaks update` | Update fields, labels (`--add-label`/`--remove-label`), or append a `--note` (`--note -` reads stdin, `--note-file PATH` a file: use these for multi-line markdown; same on `ask`/`answer`). Accepts multiple ids (same edit to each); `--as <actor>` attributes a note; `--verify '<cmd>'` sets/clears the yak's verification command; `--source <url>` sets/clears the external source |
 | `yaks verify` | Run a yak's verification command (its own `verify:` field, else the config `verify:` default resolved by label) and record the PASS/FAIL as an attributed note (exits non-zero on failure). Explicit — never auto-run. Gives a yak a rerunnable proof-of-correctness |
@@ -276,7 +276,7 @@ Beyond the structural links (`parent:`, `depends_on:`), you can mention one yak 
 
 In `yaks tui`, a mention is highlighted and followable (Tab / `[` / `]` to cycle, Enter to follow).
 
-Use **`yaks refs <id>`** to see everything a yak points at — parent, dependencies, and id mentions in its text — with any dangling formal reference flagged. It's a quick integrity check before or after edits.
+Use **`yaks refs <id>`** to see everything a yak points at — parent, dependencies, and id mentions in its text — with any dangling formal reference flagged. It's a quick integrity check before or after edits. **`yaks refs <id> --incoming`** is the reverse: every yak that points *at* it (children, dependents, and mentions in titles, descriptions and notes), each labelled with how; in the TUI, `B` opens the same list as a picker.
 
 ### Renaming safely
 
