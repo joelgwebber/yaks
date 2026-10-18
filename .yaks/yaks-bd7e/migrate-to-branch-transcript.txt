@@ -1,0 +1,157 @@
++ cd /tmp/mig-t/surveyor
++ export XDG_DATA_HOME=/tmp/mig-t/data
++ XDG_DATA_HOME=/tmp/mig-t/data
++ git log --oneline -3 main
+8d95c1b Yaks: file per-context corpus children (survey-378b) under survey-3237.
+859304c Yaks: fullstory round 2 on survey-3237 (8ab7 adopted, orphans retracted, remaining merge rows measured).
+a31eb44 fullstory: retract six rows orphaned by the value-row change.
++ git branch -a
+* main
+  remotes/origin/HEAD -> origin/main
+  remotes/origin/main
++ ls -A
+AGENTS.md
+docs
+.git
+.gitattributes
+.gitignore
+go
+README.md
+scripts
+sites
+.yaks
++ ls -A .yaks
++ wc -l
+190
++ /home/joel/src/yaks/.delta/worktrees/x4wwafff0hjq/yaks/target/release/yaks migrate --to-branch --dry-run
+would move the farm (190 tracked file(s) in /tmp/mig-t/surveyor/.yaks) to the branch `yaks`:
+- create `yaks` from HEAD in a new worktree at /tmp/mig-t/data/yaks/farms/surveyor-d707600d, its first commit keeping only .yaks/ (the farm's history stays reachable)
+- commit the removal of .yaks/ on `main` ("yaks: the farm moves to branch yaks"), then delete the leftover .yaks/ directory
+(dry run: nothing changed; re-run without --dry-run to move it)
++ git status --short
++ wc -l
+0
++ ls /tmp/mig-t/data
+ls: cannot access '/tmp/mig-t/data': No such file or directory
++ /home/joel/src/yaks/.delta/worktrees/x4wwafff0hjq/yaks/target/release/yaks migrate --to-branch
+moved the farm to the branch `yaks`: it is now /tmp/mig-t/data/yaks/farms/surveyor-d707600d/.yaks
+- `yaks` 5143f0d: keeps only .yaks/ (190 file(s)), with the farm's history
+- `main` 6be5f8d: removes .yaks/
+Nothing was pushed. To publish, push both:
+  git -C /tmp/mig-t/data/yaks/farms/surveyor-d707600d push -u origin yaks
+  git -C /tmp/mig-t/surveyor push origin main
+On another machine or for a teammate, after pulling `main`:
+  git fetch origin yaks && git worktree add <path> yaks
++ echo exit=0
+exit=0
+++ git worktree list --porcelain
+++ awk '/^worktree/{w=$2} /branch refs\/heads\/yaks/{print w}'
++ WT=/tmp/mig-t/data/yaks/farms/surveyor-d707600d
++ git log --oneline -3 main
+6be5f8d yaks: the farm moves to branch yaks
+8d95c1b Yaks: file per-context corpus children (survey-378b) under survey-3237.
+859304c Yaks: fullstory round 2 on survey-3237 (8ab7 adopted, orphans retracted, remaining merge rows measured).
++ git log --oneline -3 yaks
+5143f0d yaks: branch yaks keeps only the farm (.yaks/)
+8d95c1b Yaks: file per-context corpus children (survey-378b) under survey-3237.
+859304c Yaks: fullstory round 2 on survey-3237 (8ab7 adopted, orphans retracted, remaining merge rows measured).
++ ls -A /tmp/mig-t/data/yaks/farms/surveyor-d707600d
+.git
+.yaks
++ git -C /tmp/mig-t/data/yaks/farms/surveyor-d707600d ls-files
++ grep -v '^.yaks/'
++ wc -l
+0
++ git -C /tmp/mig-t/data/yaks/farms/surveyor-d707600d status --short --ignored
++ ls -A
+AGENTS.md
+docs
+.git
+.gitattributes
+.gitignore
+go
+README.md
+scripts
+sites
++ git status --short --ignored
++ /home/joel/src/yaks/.delta/worktrees/x4wwafff0hjq/yaks/target/release/yaks path
+/tmp/mig-t/data/yaks/farms/surveyor-d707600d/.yaks
++ mkdir -p /tmp/mig-t/surveyor-sub-check
++ cd src
+++ ls -d docs/ go/ scripts/ sites/
+++ head -1
++ cd docs/
++ pwd
+/tmp/mig-t/surveyor/docs
++ /home/joel/src/yaks/.delta/worktrees/x4wwafff0hjq/yaks/target/release/yaks path
+/tmp/mig-t/data/yaks/farms/surveyor-d707600d/.yaks
++ cd /tmp/mig-t/surveyor
++ /home/joel/src/yaks/.delta/worktrees/x4wwafff0hjq/yaks/target/release/yaks commits survey-e0c0
+Commits mentioning survey-e0c0:
+  e604cd4 Yaks: shear four finished children of survey-e0c0.
+  69e64c6 yaks: updated survey-7170, survey-e0c0
+
+Commits touching /tmp/mig-t/data/yaks/farms/surveyor-d707600d/.yaks/survey-e0c0.md:
+  d28caa5 Role and name as model judgment over code-assembled evidence (survey-9b8a).
+  21caf6e Yaks: record the doc rewrite, the table audit and the stale comments it found.
+  69e64c6 yaks: updated survey-7170, survey-e0c0
+  7c2bfdc Yaks: record the variant and baseline deletion.
+  5426b7b Yaks: record the refine-variant verdict and what it found.
+  bf4a9c0 Yaks: record why go/audit waits for go/tree.
+  49fb20d Drop the generated corpora, traces and ledger journals.
+  920e0f9 Yaks: pull the overlay yak into the kinds arc, retire the pool-model discovery yak.
+  f3dc84d Yaks: shear the decision-walk yak, and record why the other ex-6c3a children stay.
+  9564e36 Yaks and docs: one family for the kinds arc, and refine/merge instead of D/E.
+  f52abe6 Yaks: retire the obsoleted identity-arc work, and file addressability as merge evidence.
+  a7c5463 Yaks: close the identity arc, open the discovery-on-kinds arc with its plan.
++ /home/joel/src/yaks/.delta/worktrees/x4wwafff0hjq/yaks/target/release/yaks list
++ head -5
+  [H] survey-03b5  p3 idea     Overlay: let sightmap browser toggle and pin the overlay without a side panel [sightmap,demo]
+  [H] survey-0e3a  p2 bug      sightmap: extension not re-extracted when content changes without a manifest version bump [upstream,sightmap,hd]
+  [H] survey-2c5e  p3 task     sightmap: export snapshot tree types (ComponentNode/annotated) for consumers; surveyor capture uses them [upstream,spec]
+  [H] survey-378b  p1 task     Corpus children per context, not the union across every use (blocks merging generic primitives like Text) [emit,algorithm]
+  [H] survey-4ba2  p4 bug      sightmap: browser fill appends to a non-empty input instead of replacing it [upstream,sightmap,hd]
+
+thread 'main' (57222) panicked at library/std/src/io/stdio.rs:1166:9:
+failed printing to stdout: Broken pipe (os error 32)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
++ /home/joel/src/yaks/.delta/worktrees/x4wwafff0hjq/yaks/target/release/yaks migrate --to-branch
+the farm is already on the branch `yaks`, at /tmp/mig-t/data/yaks/farms/surveyor-d707600d/.yaks; nothing to do
++ echo exit=0
+exit=0
++ git clone -q --shared surveyor shared
++ /home/joel/src/yaks/.delta/worktrees/x4wwafff0hjq/yaks/target/release/yaks -C shared path
+/tmp/mig-t/data/yaks/farms/surveyor-d707600d/.yaks
++ cd surveyor
++ echo x
++ XDG_DATA_HOME=/tmp/mig-t/data2
++ /home/joel/src/yaks/.delta/worktrees/x4wwafff0hjq/yaks/target/release/yaks migrate --to-branch --branch other
+error: no committed .yaks/ farm in /tmp/mig-t/surveyor to move
++ echo exit=1
+exit=1
++ rm scratch.txt
++ git branch --list other
++ ls /tmp/mig-t/data2
+ls: cannot access '/tmp/mig-t/data2': No such file or directory
++ set +x
++ cd surveyor
++ /home/joel/src/yaks/.delta/worktrees/x4wwafff0hjq/yaks/target/release/yaks migrate --to-branch --branch other
+the farm is already on the branch `yaks`, at /tmp/mig-t/data/yaks/farms/surveyor-d707600d/.yaks; nothing to do
++ echo exit=0
+exit=0
++ cd ..
++ git clone -q /home/joel/src/fs/subtext/surveyor fresh
++ cd fresh
++ echo x
++ XDG_DATA_HOME=/tmp/mig-t/data2
++ /home/joel/src/yaks/.delta/worktrees/x4wwafff0hjq/yaks/target/release/yaks migrate --to-branch
+error: the checkout has 1 uncommitted change(s) (untracked files included); commit or stash them first:
+?? scratch.txt
++ echo exit=1
+exit=1
++ git branch --list yaks
++ ls /tmp/mig-t/data2
+ls: cannot access '/tmp/mig-t/data2': No such file or directory
++ git status --short
+?? scratch.txt
++ set +x
