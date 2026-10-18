@@ -74,7 +74,10 @@ pub fn discover_with(start: &Path, yaks_dir: Option<&str>) -> Result<Discovered>
     let mut dir = start;
     loop {
         let candidate = dir.join(".yaks");
-        if candidate.is_dir() {
+        // A `.yaks/` holding nothing but the farm's own ignored files (what a
+        // pull that stops tracking the farm leaves behind) does not stop the
+        // walk, or it would hide the farm branch (yaks-87a3).
+        if candidate.is_dir() && !only_leftovers(&candidate) {
             return redirect_live(dir, candidate);
         }
         if candidate.is_file() {
@@ -97,6 +100,16 @@ pub fn discover_with(start: &Path, yaks_dir: Option<&str>) -> Result<Discovered>
             None => anyhow::bail!("no .yaks/ directory found at or above {}", start.display()),
         }
     }
+}
+
+/// A directory whose only entries are `.lock` and `.gitignore` (empty
+/// included): the remains of a farm, not a farm.
+fn only_leftovers(dir: &Path) -> bool {
+    fs::read_dir(dir).is_ok_and(|entries| {
+        entries
+            .flatten()
+            .all(|e| matches!(e.file_name().to_str(), Some(".lock" | ".gitignore")))
+    })
 }
 
 /// The default name of the farm branch (yaks-73f4); `git config yaks.branch`
@@ -2882,6 +2895,22 @@ mod discover_tests {
         git(&code, &["config", "yaks.branch", "yaks/team-a"]);
         assert_eq!(canon(&discover_with(&code, None).unwrap().root), farm);
         assert_eq!(farm_branch(&farm).as_deref(), Some("yaks/team-a"));
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn a_leftover_non_farm_dot_yaks_does_not_hide_the_farm_branch() {
+        let (base, code, wt) = branch_repo(true);
+        let farm = canon(&wt.unwrap().join(".yaks"));
+        // What a pull that removes a tracked farm leaves: the ignored lock.
+        fs::create_dir_all(code.join(".yaks")).unwrap();
+        fs::write(code.join(".yaks/.lock"), "").unwrap();
+        fs::write(code.join(".yaks/.gitignore"), ".lock\n").unwrap();
+        assert_eq!(canon(&discover_with(&code, None).unwrap().root), farm);
+        assert_eq!(
+            canon(&discover_with(&code.join("src"), None).unwrap().root),
+            farm
+        );
         let _ = fs::remove_dir_all(&base);
     }
 
