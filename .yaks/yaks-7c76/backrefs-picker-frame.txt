@@ -1,0 +1,24 @@
+=== frame 4 · 110x22 · focus=detail · view=🪒 Shaving · cursor=0 · rows=17 · sel=yaks-6a34 · blocked=[yaks-8d6a] · collapsed=0 · filter=(all) · overlay=fuzzy · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (66)   🪒 Shaving (7)   🐑 Shorn (374)   🕒 Recent (50)   ⭐ Starred (0)   🛖 Sheds (0)  → yaks-6a34
+
+◂ References to yaks-6a34  (9 matches)
+│ 🐑  yaks-5924 [child, body:L1] preflight --push-main checks the farm's checkout, not the one pushing (break
+│ 🐑  yaks-da69 [child, body:L1] live_branch config: discovery resolves the live farm worktree; bare yaks pat
+│ 🦬  yaks-9eaa [child, body:L1] Stamp the shed on every write; build the sheds view from stamps (group-by),
+│ 🦬  yaks-9f5c [child, body:L1] Optimistic concurrency on whole-body edits: TUI description/block edit must
+│ 🐑  yaks-27c6 [note:2026-10-18T05:53:21Z [delta-farm]] Shear-with-comment in TUI
+│ 🪒  yaks-699b [note:2026-10-18T05:53:21Z [delta-farm]] Inline viewing and editing of txt/md attachments
+│ 🪒  yaks-7c76 [note:2026-10-18T05:53:21Z [delta-farm]] Find-references affordance in CLI/TUI
+│ 🦬  yaks-b048 [child, body:L1] Collapse the team/private coordination skills into one live-farm skill
+│ 🦬  yaks-b1e9 [child, body:L1] yaks init --mode live + yaks farm status: create/check the sparse farm workt
+│
+│
+│
+│
+│
+│
+│
+│
+│
+search:
+=== end ===
