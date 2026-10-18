@@ -81,14 +81,17 @@ impl Report {
 /// `push_main` adds the `local`-remote check. It is opt-in: it depends on the
 /// state of another checkout (the human's), which a worker committing its yak
 /// can neither fix nor should be failed by; only the one landing on `main` asks.
-pub fn run(farm: &Farm, ids: &[String], all: bool, push_main: bool) -> Result<Report> {
+/// It is asked of `cwd`, the checkout that will run `git push local`, which is
+/// not the farm's checkout when the farm is live (`live_branch:`, a separate
+/// worktree; yaks-5924).
+pub fn run(farm: &Farm, cwd: &Path, ids: &[String], all: bool, push_main: bool) -> Result<Report> {
     let mut report = Report::default();
     let changed = git_state(farm.root(), &mut report)?;
     let scope = Scope { ids, all, changed };
     verify(farm, &scope, &mut report)?;
     integrity(farm, &mut report)?;
     if push_main {
-        local_checkout(farm.root(), &mut report)?;
+        local_checkout(cwd, &mut report)?;
     }
     Ok(report)
 }
@@ -254,7 +257,7 @@ fn integrity(farm: &Farm, report: &mut Report) -> Result<()> {
 /// human's checkout. On a thread shared to another machine `local` is a
 /// Delta-managed bare repo with no branches: the push is accepted and lands
 /// where the human never looks. Reads only: `remote get-url`, `ls-remote`,
-/// `rev-parse`, `status`.
+/// `rev-parse`, `status`. `root` is any directory inside the pushing checkout.
 ///
 /// Fails when `local` is missing, is not a path on this machine (https, ssh),
 /// does not exist, is not a git repository, is bare, has no `refs/heads/main`,
@@ -268,7 +271,7 @@ fn local_checkout(root: &Path, report: &mut Report) -> Result<()> {
     else {
         report
             .skipped
-            .push("local checkout: skipped (the farm is not inside a git repository)".into());
+            .push("local checkout: skipped (not inside a git repository)".into());
         return Ok(());
     };
     let mut fail = |message: String, subject: &str| {
@@ -469,7 +472,7 @@ mod tests {
 
     fn failures(farm: &Farm, ids: &[&str], check: Check) -> Vec<Failure> {
         let ids: Vec<String> = ids.iter().map(|s| s.to_string()).collect();
-        run(farm, &ids, false, false)
+        run(farm, farm.root(), &ids, false, false)
             .unwrap()
             .failures
             .into_iter()
@@ -480,7 +483,7 @@ mod tests {
     #[test]
     fn clean_team_repo_is_ok() {
         let (_repo, farm) = team_repo();
-        let report = run(&farm, &[], false, false).unwrap();
+        let report = run(&farm, farm.root(), &[], false, false).unwrap();
         assert!(report.ok(), "{:?}", report.failures);
         assert!(report.skipped.is_empty());
     }
@@ -496,7 +499,10 @@ mod tests {
         assert!(f[0].message.contains(".yaks/yak-0001/"), "{}", f[0].message);
         assert!(f[0].message.contains("untracked"));
         git(&repo, &["add", ".yaks"]);
-        assert!(run(&farm, &[], false, false).unwrap().ok(), "staged passes");
+        assert!(
+            run(&farm, farm.root(), &[], false, false).unwrap().ok(),
+            "staged passes"
+        );
     }
 
     #[test]
@@ -505,7 +511,7 @@ mod tests {
         store::write::save(&repo.join(".yaks"), &task("yak-0001", Status::Hairy)).unwrap();
         git(&repo, &["add", "."]);
         git(&repo, &["commit", "-q", "-m", "add yak"]);
-        assert!(run(&farm, &[], false, false).unwrap().ok());
+        assert!(run(&farm, farm.root(), &[], false, false).unwrap().ok());
         let file = repo.join(".yaks/yak-0001.md");
         let text = std::fs::read_to_string(&file).unwrap();
         std::fs::write(&file, format!("{text}\nedited\n")).unwrap();
@@ -513,14 +519,14 @@ mod tests {
         assert_eq!(f.len(), 1, "{f:?}");
         assert!(f[0].message.contains("yak-0001.md") && f[0].message.contains("unstaged"));
         git(&repo, &["add", ".yaks"]);
-        assert!(run(&farm, &[], false, false).unwrap().ok());
+        assert!(run(&farm, farm.root(), &[], false, false).unwrap().ok());
     }
 
     #[test]
     fn changes_outside_the_farm_are_not_flagged() {
         let (repo, farm) = team_repo();
         std::fs::write(repo.join("code.rs"), "fn main() {}").unwrap();
-        assert!(run(&farm, &[], false, false).unwrap().ok());
+        assert!(run(&farm, farm.root(), &[], false, false).unwrap().ok());
     }
 
     #[test]
@@ -533,7 +539,7 @@ mod tests {
         bad.verify = Some("false".into());
         bad.body = note("verify: `false` -> FAIL (exit 1)");
         store::write::save(&repo.join(".yaks"), &bad).unwrap();
-        let report = run(&farm, &[], false, false).unwrap();
+        let report = run(&farm, farm.root(), &[], false, false).unwrap();
         assert_eq!(report.skipped.len(), 1);
         assert!(report.skipped[0].contains("private farm"));
         assert!(report.failures.iter().all(|f| f.check != Check::GitState));
@@ -655,10 +661,10 @@ mod tests {
         store::write::save(&root, &fresh).unwrap();
         git(&repo, &["add", "."]);
         assert!(
-            run(&farm, &[], false, false).unwrap().ok(),
+            run(&farm, farm.root(), &[], false, false).unwrap().ok(),
             "old yak is out of scope"
         );
-        let all = run(&farm, &[], true, false).unwrap();
+        let all = run(&farm, farm.root(), &[], true, false).unwrap();
         assert_eq!(all.failures.len(), 1, "{:?}", all.failures);
         assert_eq!(all.failures[0].subjects, ["yak-0001"]);
         // Naming it puts it in scope too.
@@ -676,7 +682,7 @@ mod tests {
         store::write::save(&root, &old).unwrap();
         git(&repo, &["add", "."]);
         git(&repo, &["commit", "-q", "-m", "old shorn yak"]);
-        assert!(run(&farm, &[], false, false).unwrap().ok());
+        assert!(run(&farm, farm.root(), &[], false, false).unwrap().ok());
         // New evidence for that yak arrives: it is now part of the change.
         let dir = root.join("yak-0001");
         std::fs::create_dir_all(&dir).unwrap();
@@ -723,7 +729,7 @@ mod tests {
     /// the local-checkout failures.
     fn local_failures(repo: &Path, farm: &Farm, url: &str) -> Vec<Failure> {
         git(repo, &["remote", "add", "local", url]);
-        run(farm, &[], false, true)
+        run(farm, farm.root(), &[], false, true)
             .unwrap()
             .failures
             .into_iter()
@@ -734,6 +740,26 @@ mod tests {
     fn only_message(f: Vec<Failure>) -> String {
         assert_eq!(f.len(), 1, "{f:?}");
         f[0].message.clone()
+    }
+
+    #[test]
+    fn push_main_checks_the_invoking_checkout_not_a_live_farms_worktree() {
+        // A live farm (yaks-5924): the farm lives in its own repo/worktree with no
+        // `local` remote; the checkout that pushes `main` has one.
+        let (_farm_repo, farm) = team_repo();
+        let (code, _code_farm) = team_repo();
+        let human = human_checkout();
+        git(&code, &["remote", "add", "local", human.to_str().unwrap()]);
+        let local = |cwd: &Path| {
+            run(&farm, cwd, &[], false, true)
+                .unwrap()
+                .failures
+                .into_iter()
+                .filter(|f| f.check == Check::LocalCheckout)
+                .count()
+        };
+        assert_eq!(local(&code), 0, "the pushing checkout has a good `local`");
+        assert_eq!(local(farm.root()), 1, "the farm's own checkout has none");
     }
 
     #[test]
@@ -758,7 +784,7 @@ mod tests {
             ],
         );
         let check = || {
-            run(&farm, &[], false, true)
+            run(&farm, farm.root(), &[], false, true)
                 .unwrap()
                 .failures
                 .into_iter()
@@ -815,10 +841,10 @@ mod tests {
     fn missing_local_remote_fails_only_when_asked() {
         let (_repo, farm) = team_repo();
         assert!(
-            run(&farm, &[], false, false).unwrap().ok(),
+            run(&farm, farm.root(), &[], false, false).unwrap().ok(),
             "off by default"
         );
-        let report = run(&farm, &[], false, true).unwrap();
+        let report = run(&farm, farm.root(), &[], false, true).unwrap();
         assert_eq!(report.failures.len(), 1, "{:?}", report.failures);
         assert_eq!(report.failures[0].check, Check::LocalCheckout);
         assert!(report.failures[0].message.contains("no `local` remote"));
@@ -845,7 +871,7 @@ mod tests {
         let url = human.to_str().unwrap();
         git(&repo, &["remote", "add", "local", url]);
         let n = || {
-            run(&farm, &[], false, true)
+            run(&farm, farm.root(), &[], false, true)
                 .unwrap()
                 .failures
                 .into_iter()

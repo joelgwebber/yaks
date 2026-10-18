@@ -1948,7 +1948,7 @@ fn main() -> Result<()> {
             push_main,
             json,
         } => {
-            let report = preflight::run(&farm, &ids, all, push_main)?;
+            let report = preflight::run(&farm, &env::current_dir()?, &ids, all, push_main)?;
             if json {
                 json::print(&serde_json::json!({
                     "ok": report.ok(),
