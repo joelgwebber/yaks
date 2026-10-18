@@ -86,7 +86,7 @@ The quickest route is `yaks init --mode private` (the farm plus a `.git/info/exc
 - Set up a machine with `git -C <repo> worktree add <path> yaks` (the branch from `origin`), or `git worktree add --orphan -b yaks <path>` for a new farm. To move a repo's committed in-tree `.yaks/` onto the branch, run `yaks migrate --to-branch` (`--dry-run` first) in its main checkout with a clean tree: it keeps the farm's history, removes `.yaks/` from the current branch in one commit, puts the worktree under `~/.local/share/yaks/farms/` (`--worktree` overrides) and prints the pushes to make; it never pushes. A checkout whose repository has the branch but no worktree gets an error naming that fix; `YAKS_DIR=<farm>` overrides for a checkout whose repository cannot see the worktree.
 - A `.yaks/` with `live_branch:` in its config is a stale copy from before a repository moved its farm onto a branch; discovery skips it.
 
-> This repo's farm is **on its own branch**: the orphan branch `yaks` (on Joel's machines `~/src/yaks-farm/.yaks`); `main` has no `.yaks/`, and yak IDs in commit messages are expected.
+> This repo's farm is **on its own branch**: the orphan branch `yaks` (`yaks path` prints its worktree, under `~/.local/share/yaks/farms/` on Joel's machines); `main` has no `.yaks/`, and yak IDs in commit messages are expected.
 
 ## Keep yaks private (external surfaces)
 

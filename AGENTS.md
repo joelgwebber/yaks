@@ -51,7 +51,7 @@ task's status is a frontmatter field; each yak is one file, `.yaks/<id>.md`.
   worktree list` (`store::farm_branch_worktree`); `store::farm_branch(root)` says
   whether a root is such a dedicated farm worktree (`brief`, source links).
 - **This repo's farm is the branch `yaks`** (an orphan branch holding only
-  `.yaks/`), checked out at `~/src/yaks-farm` on Joel's machines; `main` has no
+  `.yaks/`), checked out at `yaks path` (on Joel's Linux machine `~/.local/share/yaks/farms/yaks-539d3edb`, the `yaks migrate --to-branch` default); `main` has no
   `.yaks/`. Every shed resolves to that one farm; `yaks commit` commits there.
   A `.yaks/` with `live_branch:` in its config (a checkout of a commit from the
   yaks-6a34 trial) is a stale copy that discovery redirects (`store::redirect_live`).
@@ -193,7 +193,7 @@ workflow.
 
 1. Never start coding without a shaving yak. No exceptions.
 2. Shear a yak as soon as its work is done. The farm is a branch (above): the
-   shear is already in `~/src/yaks-farm/.yaks`, and the coordinator commits it
+   shear is already in the farm worktree (`yaks path`), and the coordinator commits it
    there with `yaks commit`. No code commit ever contains `.yaks/`. Yak ids in
    commit messages are fine (team mode). Pushing `yaks` to origin is Joel's call.
 3. Check existing yaks before creating new ones.
