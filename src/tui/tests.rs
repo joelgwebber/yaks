@@ -1731,12 +1731,85 @@ mod live {
     fn state_pick_transitions_and_reloads() {
         let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
         let mut app = App::with_farm(farm).unwrap();
-        // S then n → shorn. The task leaves the Hairy tab.
+        // S then n → the optional shear comment; Enter (empty) → shorn.
         press(&mut app, "Sn");
+        enter(&mut app);
         assert!(matches!(app.overlay, Overlay::None));
         let t = app.task("t0").unwrap();
         assert_eq!(t.status, Status::Shorn);
         assert_eq!(app.notification.as_deref(), Some("t0 → shorn"));
+    }
+
+    #[test]
+    fn state_pick_shear_records_the_optional_comment() {
+        // yaks-27c6: shearing via the picker prompts for a comment; a typed
+        // one lands as a note on the (now shorn) yak.
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "Sn");
+        match &app.overlay {
+            Overlay::Edit(ed) => assert!(matches!(ed.action, EditAction::Shear(_))),
+            _ => panic!("expected the shear-comment prompt"),
+        }
+        // The prompt alone shears nothing.
+        assert_eq!(app.task("t0").unwrap().status, Status::Hairy);
+        press(&mut app, "done via tui");
+        enter(&mut app);
+        assert!(matches!(app.overlay, Overlay::None));
+        let t = app.task("t0").unwrap();
+        assert_eq!(t.status, Status::Shorn);
+        assert!(t.body.contains("done via tui"), "{}", t.body);
+        assert_eq!(app.notification.as_deref(), Some("t0 → shorn"));
+    }
+
+    #[test]
+    fn state_pick_shear_with_empty_comment_adds_no_note() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "Sn");
+        press(&mut app, "   "); // whitespace only counts as empty
+        enter(&mut app);
+        let t = app.task("t0").unwrap();
+        assert_eq!(t.status, Status::Shorn);
+        // Only the transition's own `moved:` note, no comment.
+        assert_eq!(t.body.matches("▸ ").count(), 1, "{}", t.body);
+    }
+
+    #[test]
+    fn state_pick_shear_cancel_leaves_the_yak() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "Sn");
+        handle_key(
+            &mut app,
+            KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
+        );
+        assert!(matches!(app.overlay, Overlay::None));
+        assert_eq!(app.task("t0").unwrap().status, Status::Hairy);
+    }
+
+    #[test]
+    fn bulk_shear_comment_goes_on_every_moved_yak() {
+        let (_dir, farm) = temp_farm(&[
+            task("t0", "one", Status::Hairy, 3, None),
+            task("t1", "two", Status::Shorn, 3, None),
+            task("t2", "three", Status::Hairy, 3, None),
+        ]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "mjm"); // mark the two hairy rows (t1 is hidden)
+        app.selected.insert("t1".to_string()); // and the already-shorn one
+        assert_eq!(app.selected.len(), 3);
+        press(&mut app, "Sn");
+        press(&mut app, "batch done");
+        enter(&mut app);
+        for id in ["t0", "t2"] {
+            let t = app.task(id).unwrap();
+            assert_eq!(t.status, Status::Shorn);
+            assert!(t.body.contains("batch done"), "{id}: {}", t.body);
+        }
+        // t1 was already shorn: no move, so no note.
+        assert!(!app.task("t1").unwrap().body.contains("batch done"));
+        assert_eq!(app.notification.as_deref(), Some("2/3 → shorn"));
     }
 
     #[test]
@@ -1750,8 +1823,10 @@ mod live {
         // Mark all three rows (m, j, m, j, m) -- order-independent.
         press(&mut app, "mjmjm");
         assert_eq!(app.selected.len(), 3);
-        // `S` with marks opens the bulk picker; `n` shorns the whole set.
+        // `S` with marks opens the bulk picker; `n` + Enter (no comment)
+        // shorns the whole set.
         press(&mut app, "Sn");
+        enter(&mut app);
         assert!(matches!(app.overlay, Overlay::None));
         for id in ["t0", "t1", "t2"] {
             assert_eq!(app.task(id).unwrap().status, Status::Shorn);

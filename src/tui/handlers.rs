@@ -1335,6 +1335,7 @@ impl App {
                 let note = text.trim();
                 self.needs_edit(&id, true, (!note.is_empty()).then_some(note));
             }
+            EditAction::Shear(target) => self.commit_shear(target, &text),
             EditAction::AnswerInShed { id, shed } => {
                 let note = text.trim();
                 self.commit_answer_in_shed(&id, &shed, (!note.is_empty()).then_some(note));
@@ -1471,46 +1472,11 @@ impl App {
                     'x' => Status::Dead,
                     _ => return,
                 };
-                // Slaughter must not orphan children: skip any marked id with
-                // live children and report the count (the single path,
-                // open_slaughter_confirm, offers a family slaughter instead). Non-slaughter bulk
-                // transitions are unaffected (yaks-5c51).
-                let mut skipped = 0usize;
-                let targets: Vec<&String> = if dest == Status::Dead {
-                    ids.iter()
-                        .filter(|id| {
-                            let keep = self.live_child_count(id) == 0;
-                            if !keep {
-                                skipped += 1;
-                            }
-                            keep
-                        })
-                        .collect()
+                if dest == Status::Shorn {
+                    self.open_shear_comment(ShearTarget::Bulk(ids));
                 } else {
-                    ids.iter().collect()
-                };
-                let Some(h) = &self.farm else { return };
-                let actor = crate::actor::resolve(None);
-                let (mut moved, mut failed) = (0usize, 0usize);
-                for id in &targets {
-                    match h.transition(id, dest, actor.as_deref()) {
-                        Ok(MoveOutcome::Moved) => moved += 1,
-                        Ok(_) => {}
-                        Err(_) => failed += 1,
-                    }
+                    self.bulk_transition(&ids, dest, None);
                 }
-                let total = ids.len();
-                self.selected.clear();
-                self.reload();
-                let mut msg = if failed > 0 {
-                    format!("{moved}/{total} → {} ({failed} failed)", status_word(dest))
-                } else {
-                    format!("{moved}/{total} → {}", status_word(dest))
-                };
-                if skipped > 0 {
-                    msg.push_str(&format!(" · {skipped} skipped: have children"));
-                }
-                self.notification = Some(msg);
             }
             PickAction::State(id) => {
                 let dest = match c {
@@ -1524,20 +1490,10 @@ impl App {
                     self.notification = Some(format!("{id} already {}", status_word(dest)));
                     return;
                 }
-                let Some(h) = &self.farm else { return };
-                let actor = crate::actor::resolve(None);
-                match h.transition(&id, dest, actor.as_deref()) {
-                    Ok(MoveOutcome::Moved) => {
-                        self.reload();
-                        self.notification = Some(format!("{id} → {}", status_word(dest)));
-                    }
-                    Ok(MoveOutcome::AlreadyThere) => {
-                        self.notification = Some(format!("{id} already {}", status_word(dest)))
-                    }
-                    Ok(MoveOutcome::NotFound) => {
-                        self.notification = Some(format!("{id} not found"))
-                    }
-                    Err(e) => self.notification = Some(format!("error: {e}")),
+                if dest == Status::Shorn {
+                    self.open_shear_comment(ShearTarget::One(id));
+                } else {
+                    self.transition_one(&id, dest, None);
                 }
             }
             PickAction::Priority(id) => {
@@ -1615,6 +1571,129 @@ impl App {
                 }
             }
         }
+    }
+
+    /// Shearing from a state picker first asks for an optional comment, so a
+    /// TUI shear can carry the evidence note `doctor --strict` looks for
+    /// (yaks-27c6). Enter on an empty line shears with no note; cancel
+    /// (Ctrl-C, or Esc in emacs) leaves the yak(s) as they were.
+    pub(crate) fn open_shear_comment(&mut self, target: ShearTarget) {
+        let what = match &target {
+            ShearTarget::One(id) => id.clone(),
+            ShearTarget::Bulk(ids) => format!("{} marked", ids.len()),
+        };
+        self.overlay = Overlay::Edit(Editor::new(
+            self.editor_vim,
+            true,
+            format!("Shear {what} — optional comment (Enter shears · Ctrl-C cancel): "),
+            "",
+            EditAction::Shear(target),
+        ));
+    }
+
+    /// Commit a shear-comment prompt: the non-empty note goes on each yak
+    /// before its move, then the yak(s) move to shorn.
+    pub(crate) fn commit_shear(&mut self, target: ShearTarget, text: &str) {
+        let note = text.trim();
+        let note = (!note.is_empty()).then_some(note);
+        match target {
+            ShearTarget::One(id) => self.transition_one(&id, Status::Shorn, note),
+            ShearTarget::Bulk(ids) => self.bulk_transition(&ids, Status::Shorn, note),
+        }
+    }
+
+    /// Append `note` (attributed like other TUI notes) to `id` ahead of a
+    /// transition, so the note is in place when the yak lands in `dest`.
+    fn note_before_move(&self, id: &str, note: Option<&str>, actor: Option<&str>) -> Result<()> {
+        let (Some(h), Some(note)) = (&self.farm, note) else {
+            return Ok(());
+        };
+        h.update(
+            id,
+            TaskEdit {
+                note: Some(note.to_string()),
+                actor: actor.map(str::to_string),
+                ..Default::default()
+            },
+        )
+        .map(|_| ())
+    }
+
+    /// Move one yak to `dest`, first recording `note` on it when given.
+    pub(crate) fn transition_one(&mut self, id: &str, dest: Status, note: Option<&str>) {
+        let actor = crate::actor::resolve(None);
+        if let Err(e) = self.note_before_move(id, note, actor.as_deref()) {
+            self.notification = Some(format!("error: {e}"));
+            return;
+        }
+        let Some(h) = &self.farm else { return };
+        match h.transition(id, dest, actor.as_deref()) {
+            Ok(MoveOutcome::Moved) => {
+                self.reload();
+                self.notification = Some(format!("{id} → {}", status_word(dest)));
+            }
+            Ok(MoveOutcome::AlreadyThere) => {
+                self.notification = Some(format!("{id} already {}", status_word(dest)))
+            }
+            Ok(MoveOutcome::NotFound) => self.notification = Some(format!("{id} not found")),
+            Err(e) => self.notification = Some(format!("error: {e}")),
+        }
+    }
+
+    /// Move every marked id to `dest` (recording `note` on each first when
+    /// given), then clear the marks and report the count.
+    pub(crate) fn bulk_transition(&mut self, ids: &[String], dest: Status, note: Option<&str>) {
+        // Slaughter must not orphan children: skip any marked id with
+        // live children and report the count (the single path,
+        // open_slaughter_confirm, offers a family slaughter instead). Non-slaughter bulk
+        // transitions are unaffected (yaks-5c51).
+        let mut skipped = 0usize;
+        let targets: Vec<&String> = if dest == Status::Dead {
+            ids.iter()
+                .filter(|id| {
+                    let keep = self.live_child_count(id) == 0;
+                    if !keep {
+                        skipped += 1;
+                    }
+                    keep
+                })
+                .collect()
+        } else {
+            ids.iter().collect()
+        };
+        if self.farm.is_none() {
+            return;
+        }
+        let actor = crate::actor::resolve(None);
+        let (mut moved, mut failed) = (0usize, 0usize);
+        for id in &targets {
+            // Never note a yak that is already there: the move would be a no-op.
+            if self.task(id).map(|t| t.status) == Some(dest) {
+                continue;
+            }
+            if self.note_before_move(id, note, actor.as_deref()).is_err() {
+                failed += 1;
+                continue;
+            }
+            let Some(h) = &self.farm else { return };
+            match h.transition(id, dest, actor.as_deref()) {
+                Ok(MoveOutcome::Moved) => moved += 1,
+                Ok(_) => {}
+                Err(_) => failed += 1,
+            }
+        }
+        let total = ids.len();
+        self.selected.clear();
+        self.reload();
+        let mut msg = if failed > 0 {
+            format!("{moved}/{total} → {} ({failed} failed)", status_word(dest))
+        } else {
+            format!("{moved}/{total} → {}", status_word(dest))
+        };
+        if skipped > 0 {
+            msg.push_str(&format!(" · {skipped} skipped: have children"));
+        }
+        self.notification = Some(msg);
     }
 
     pub(crate) fn apply_edit(&mut self, id: &str, edit: TaskEdit, ok_msg: String) {
