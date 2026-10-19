@@ -1,11 +1,11 @@
 ---
 id: yaks-78ff
 title: Think through yak shed commit/worktree flows
-status: hairy
+status: dead
 type: task
 priority: 3
 created: '2026-10-17T16:44:57Z'
-updated: '2026-10-17T17:20:15Z'
+updated: '2026-10-19T04:26:23Z'
 labels:
 - sheds
 - git
@@ -38,3 +38,13 @@ One other avenue to consider -- to what extent should the yaks tools and TUI be 
 There are clearly cases where we don't want yaks to automatically commit -- eg on main. But when on a local branch or worktree it's probably net better to aggressively commit, for both history and visibility to other sheds.
 
 Similarly, we might consider doing something similar for merging (of the .yaks only) changes across worktrees. We'll want to think that all through carefully, though -- there could be a lot of weird edge cases to work through.
+
+---
+▸ 2026-10-19T04:26:21Z [delta:herd-pass]
+
+Obviated in its main question (the cross-shed state taxonomy) by one farm per machine (yaks-6a34, yaks-73f4). Joel's auto-commit question (2026-10-17 note) survives in a new form, auto-committing the farm branch, and is carried on yaks-4a53 (yaks sync). Slaughtered in the 2026-10-19 herd pass.
+
+---
+▸ 2026-10-19T04:26:23Z [delta:herd-pass]
+
+moved: hairy -> dead

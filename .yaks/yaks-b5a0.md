@@ -1,11 +1,11 @@
 ---
 id: yaks-b5a0
 title: 'Parallel development: finish and harden coordinator/worker skills + tooling (git worktrees, Delta)'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-06T22:24:59Z'
+updated: '2026-10-19T04:28:52Z'
 labels:
 - agent
 - skills
@@ -169,3 +169,13 @@ Everything else in his output read as intended: single-yak worker sheds with the
 Landed yaks-22f1 (a1becd6): `yaks sheds` uses the nearer of the fork point and the merge-base with the viewer. Checked from ~/src/yaks: the yakherd's own shed shows `who: delta-lead, nbr-1 · shaving: yaks-b5a0` and `farm: 1 new, 1 new notes` (was eighteen actors); worker sheds unchanged. Gate 480 + 8 + 11 + 28 + 19 + 5 + 3 + 3 + 2.
 
 Published to the Mac's local only: ~/src/yaks main is b8f43e8 (one squash commit on 60a8bd9). GitHub is 60a8bd9 and waits for Joel's go; his earlier "push" for the sync did not cover this later commit.
+
+---
+▸ 2026-10-19T04:28:51Z [delta:herd-pass]
+
+Shorn in the 2026-10-19 herd pass: its children are done or superseded, and its goal (reliable parallel work across worktrees and Delta) is now carried by the one-farm-per-machine model, yaks-6a34. The skills restructure it started continues as yaks-b048; yaks-fe33 is now top-level.
+
+---
+▸ 2026-10-19T04:28:52Z [delta:herd-pass]
+
+moved: shaving -> shorn

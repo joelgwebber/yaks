@@ -5,8 +5,7 @@ status: hairy
 type: task
 priority: 4
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-12T19:42:44Z'
-parent: yaks-b5a0
+updated: '2026-10-19T04:28:52Z'
 labels:
 - agent
 ---

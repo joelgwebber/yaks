@@ -5,8 +5,8 @@ status: hairy
 type: bug
 priority: 2
 created: '2026-10-13T02:02:44Z'
-updated: '2026-10-13T02:02:44Z'
-parent: yaks-38dc
+updated: '2026-10-19T04:27:07Z'
+parent: yaks-e5fb
 labels:
 - skills
 - delta

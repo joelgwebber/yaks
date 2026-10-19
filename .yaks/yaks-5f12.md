@@ -1,11 +1,11 @@
 ---
 id: yaks-5f12
 title: 'Decision: git-store vs Model 3 (coordinator-sole-writer on FS)'
-status: hairy
+status: dead
 type: task
 priority: 1
 created: '2026-08-31T20:47:23Z'
-updated: '2026-10-06T03:58:55Z'
+updated: '2026-10-19T04:26:23Z'
 parent: yaks-4fe6
 labels:
 - git
@@ -49,3 +49,8 @@ Do not build 2 or 3 now. The incidents above all have shipped mitigations, and t
 ▸ 2026-10-06T03:58:55Z [delta-lead]
 
 Trigger check (coordinator delta-lead, 2026-10-06): one hand-resolved conflict inside .yaks/ has now happened, an append/append on yaks-2c22 (the coordinator's ask and the human's answer appended to the same file) when merging the human's commit. It resolved by keeping both. One incident is not the pattern; the count stays in yaks-df61.
+
+---
+▸ 2026-10-19T04:26:23Z [delta:herd-pass]
+
+moved: hairy -> dead

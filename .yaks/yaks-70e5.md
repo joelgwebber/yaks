@@ -1,11 +1,11 @@
 ---
 id: yaks-70e5
 title: 'Candidate primitive: yaks diff <refA> <refB> (ref-generic herd diff)'
-status: hairy
+status: dead
 type: feature
 priority: 3
 created: '2026-09-03T22:25:35Z'
-updated: '2026-09-08T23:12:05Z'
+updated: '2026-10-19T04:26:23Z'
 parent: yaks-10fb
 labels:
 - cli
@@ -19,3 +19,13 @@ Today 'git diff main -- .yaks/' already does ~80%. BUILD THIS ONLY IF that raw d
 ▸ 2026-09-08T23:12:05Z [coordinator]
 
 Assessment (pre-compact): still correctly GATED — 'git diff main -- .yaks/' covers ~80%; build ref-generic 'yaks diff' only when raw diff proves too coarse in practice. Reframed under fe5a as EVAL INSTRUMENTATION (herd-state delta between two runs/variants), not a worktree feature. But log --since/--by + commits already answer most 'what changed between runs' questions, so 70e5's marginal value has shrunk further. Hold until a real need surfaces.
+
+---
+▸ 2026-10-19T04:26:22Z [delta:herd-pass]
+
+Obviated: yak state no longer lives on code refs; the farm branch has its own history (`git -C $(dirname $(yaks path)) log`). Slaughtered in the 2026-10-19 herd pass.
+
+---
+▸ 2026-10-19T04:26:23Z [delta:herd-pass]
+
+moved: hairy -> dead

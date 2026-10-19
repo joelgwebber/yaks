@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 1
 created: '2026-10-17T13:57:13Z'
-updated: '2026-10-17T14:24:08Z'
+updated: '2026-10-19T04:30:38Z'
 labels:
 - skills
 ---
@@ -22,3 +22,8 @@ Some general principles (leave a little wiggle room for the agent to ignore when
 - Keep completion/evidence comments reasonably terse. Design docs belong in attachments, not comments.
 
 Also relevant: yaks-699b
+
+---
+▸ 2026-10-19T04:30:38Z [delta:herd-pass]
+
+Herd pass 2026-10-19: still open and still p1; land it with the skills rewrite (yaks-b048) since the evidence guidance lives in yaks and yaks-working, or do it first as a small edit if that rewrite waits.

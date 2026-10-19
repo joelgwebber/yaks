@@ -1,11 +1,11 @@
 ---
 id: yaks-38dc
 title: 'Sheds view: show in-flight yak state from other checkouts in the TUI'
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-18T05:46:47Z'
+updated: '2026-10-19T04:27:08Z'
 parent: yaks-b5a0
 labels:
 - cli
@@ -102,3 +102,13 @@ Spawned 2026-10-13 from base 2d7c59e, model anthropic/claude-sonnet-5-5 (pinned)
 ▸ 2026-10-13T20:10:28Z [delta-lead]
 
 Landed yaks-7422 (changes-1, 46afdf8) as 445ac41 and yaks-c1f8 (fold-1, 3631523) as 7f0fb77; trees equal git merge-tree, no pending merge. Follow-up: render_changes/changes_json (no-focus wrappers) made test-only (release build back to 0 warnings). Gate: cargo test --release 17 suites green, 596 unit tests. Real machine from Joel's checkout: yaks changes sheds-tui-thin-sheds-tab lists the 2 not-yet-pushed yaks first then 'landed (12): ...'; --status shaving -> 'landed (1): yaks-38dc'; --outstanding drops the fold; --json --outstanding the same 2; --status shavng exits 1 with a message. Docshot tui-sheds-detail-landed added (land-1's detail, '▸ 1 landed'), rasterized and looked at, embedded in docs/tui.md. Both workers' tests were red by stubbing/half-implementing, not strictly written first; recorded on their yaks.
+
+---
+▸ 2026-10-19T04:27:06Z [delta:herd-pass]
+
+Shorn in the 2026-10-19 herd pass: the Sheds tab and the CLI it drives shipped (yaks-98f1, yaks-7422, yaks-c1f8, ...). Its farm-diff half is slated for deletion under yaks-9eaa. yaks-3bcd moved under yaks-e5fb (land.sh into the binary); yaks-19c3 is now top-level.
+
+---
+▸ 2026-10-19T04:27:08Z [delta:herd-pass]
+
+moved: shaving -> shorn

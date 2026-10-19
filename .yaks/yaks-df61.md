@@ -1,11 +1,11 @@
 ---
 id: yaks-df61
 title: 'Delta observation log: how threads, worktrees, clones and the farm interact'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-10-03T20:35:54Z'
-updated: '2026-10-03T23:04:20Z'
+updated: '2026-10-19T04:27:08Z'
 parent: yaks-b5a0
 labels:
 - delta
@@ -35,3 +35,13 @@ O12 resolved: push to local main is refused while the user's checkout has unstag
 ▸ 2026-10-03T23:04:20Z [delta-lead]
 
 O35 resolved and O36 added: Delta mirrors every thread commit as refs/delta/<thread>/<repo>/<sha> in the user's repo; nothing reaches the user's main without an explicit push; asks reach the human's inbox only when main moves.
+
+---
+▸ 2026-10-19T04:27:06Z [delta:herd-pass]
+
+Shorn in the 2026-10-19 herd pass: the log did its job through the per-shed-farm era (O1-O62+); the model it observed was replaced by one farm per machine. New observations go on yaks-6a34.
+
+---
+▸ 2026-10-19T04:27:08Z [delta:herd-pass]
+
+moved: shaving -> shorn

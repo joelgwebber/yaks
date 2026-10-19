@@ -1,11 +1,11 @@
 ---
 id: yaks-6a34
-title: 'Trial: one live farm per machine (sparse farm worktree); sheds become git facts'
+title: 'One farm per machine: the farm on its own branch, reached from every shed (umbrella)'
 status: shaving
 type: task
 priority: 1
 created: '2026-10-18T05:15:02Z'
-updated: '2026-10-18T20:13:09Z'
+updated: '2026-10-19T04:29:29Z'
 labels:
 - sheds
 - git
@@ -93,3 +93,15 @@ Linear landing in place (yaks-2355): workers land as one squash commit, the farm
 ▸ 2026-10-18T20:13:09Z [delta-farm]
 
 Round 2 result (delta-farm): 2 workers (clobber-1 yaks-9f5c, attach-edit-1 yaks-56c1) both landed by land.sh's new SQUASH path (first real use): one single-parent commit each on main, worker message + author + `Squashed-from:` trailer, tree identical to the computed merge, no conflicts though both touched src/tui/handlers.rs, src/tui/tests.rs and docs/tui.md. main stays linear through code AND farm landings (`yaks commit --land`). 869 tests green. No asks again (both designs were decided in the claims), so the live ask path is still untested. No stale-copy writes, no `.yaks/` in any worker commit. Also landed this round by the yakherd: yaks-6c4f (source links under the live farm), yaks-4809 (farm-branch discovery groundwork).
+
+---
+▸ 2026-10-19T04:29:29Z [delta:herd-pass]
+
+Verdict (herd pass, 2026-10-19): the trial held and became the model. It went further than planned: the farm is an orphan branch (yaks-73f4) rather than a sparse worktree of `farm`; this repo migrated (yaks-87a3), `yaks migrate --to-branch` does it for any repo (yaks-bd7e), and a fresh clone bootstraps its farm worktree on first use (yaks-a260, released in 0.0.21). This yak is now the umbrella for finishing the model; the open children, in rough order:
+
+1. yaks-7bfd (p1): old checkouts with a committed `.yaks/` silently write a dead copy.
+2. yaks-b048: the skills still describe per-shed farm copies (audit on that yak).
+3. yaks-4a53: `yaks sync` + merge driver, needed once two machines push the farm.
+4. yaks-9eaa: shed stamps, then delete the farm-diff half of sheds.rs (no longer blocked: the verdict is in).
+5. yaks-e5fb: `yaks land` replaces land.sh.
+6. yaks-b1e9, yaks-0ef9: `init --mode branch` / `farm status`; the per-user home for everything else.

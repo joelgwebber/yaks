@@ -5,8 +5,10 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-10-04T20:50:20Z'
-updated: '2026-10-05T22:44:10Z'
-source: cli, agent
+updated: '2026-10-19T04:28:52Z'
+labels:
+- cli
+- agent
 ---
 
 Maybe it's just a skill thing, but it would be nice if there were a way for an agent to run a CLI command in the background, and have it return when something's ready. They do this sort of thing a lot for other CLI tools.

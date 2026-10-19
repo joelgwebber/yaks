@@ -1,11 +1,11 @@
 ---
 id: yaks-ee0a
 title: 'CLI affordances for sheds and threads: what a human and an agent need to ask and do across checkouts'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-10-06T21:05:37Z'
-updated: '2026-10-12T19:42:31Z'
+updated: '2026-10-19T04:27:08Z'
 parent: yaks-b5a0
 labels:
 - cli
@@ -130,3 +130,13 @@ Spawned (base 5557c9e, claude-sonnet-5): live-1 1c43a07092dc4ff4 -> yaks-9277, p
 ▸ 2026-10-11T22:20:18Z [delta-lead]
 
 Landed yaks-9277 (live-1 1c43a07092dc4ff4; a835067 by merge, clean, no unexplained working-tree changes this time). Gate: 16 suites, 644 passed, 0 failed, rebuilt and re-run on this machine. Real-machine: the attached before/after diff surfaced 51 genuinely orphaned Delta pins on this machine (every worker from this whole thread's history that finished or died), none of which showed up anywhere before; active tags on every currently-claimed shed including the primary and my own clone. Checked the liveness fn directly: idle is the default (empty claim or unknown activity), stale only with BOTH a claim and activity older than the 2h STALE_AFTER -- matches the spec exactly. The yaks-38dc family's CLI half (sheds/changes/inbox --sheds/show --sheds/answer @shed, edited, landed, liveness, the current-shed row, origin baseline) is now fully shipped; what remains is the TUI view (yaks-7204/yaks-38dc) and the two smaller loose ends (yaks-6beb: Delta managed-repo discovery, yaks-5138-adjacent follow-ups if any).
+
+---
+▸ 2026-10-19T04:27:06Z [delta:herd-pass]
+
+Shorn in the 2026-10-19 herd pass: every question here shipped in v0.0.14 (sheds, changes, inbox --sheds, answer @shed, show --sheds, status). The 'still open' TUI items were built (Sheds tab, yaks-98f1) or are superseded by one farm per machine; what a shed view should show now is yaks-9eaa. Children yaks-8471 and yaks-e475 slaughtered as obviated.
+
+---
+▸ 2026-10-19T04:27:08Z [delta:herd-pass]
+
+moved: shaving -> shorn
