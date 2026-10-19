@@ -294,6 +294,73 @@ fn apply(plan: &mut Plan) -> Result<()> {
     Ok(())
 }
 
+/// Give a repository whose farm branch has no worktree one (yaks-a260):
+/// `git worktree add` of `branch` at `home(top)`, where `top` is the git
+/// top-level of the checkout discovery started in. A branch that exists only
+/// as `origin/<branch>` (a fresh clone) becomes a local branch tracking it,
+/// so `git pull`/`push` in the farm worktree work with no setup. Never
+/// fetches, and never touches the checkout's own branch or files. Returns the
+/// worktree.
+///
+/// Refuses a checkout that borrows another repository's objects (a Delta
+/// clone): a worktree made here would be invisible to that repository's other
+/// checkouts, the same refusal as `migrate --to-branch`.
+pub fn bootstrap(top: &Path, branch: &str, home: impl FnOnce(&Path) -> PathBuf) -> Result<PathBuf> {
+    let host = sheds::host(top).context("reading the repository")?;
+    if host.via_alternates {
+        let main = sheds::host_checkout(&host).map_or_else(
+            || {
+                format!(
+                    "{} (no checkout there: set YAKS_DIR to the farm)",
+                    host.git_dir.display()
+                )
+            },
+            |p| p.display().to_string(),
+        );
+        bail!(
+            "this repository's farm is the branch `{branch}`, but no worktree has it checked out, \
+             and this checkout borrows another repository's objects (a Delta clone), so it \
+             cannot create one for the others. Run any yaks command in its main checkout to \
+             create the worktree: {main}"
+        );
+    }
+    let wt = home(top);
+    if fs::symlink_metadata(&wt).is_ok() {
+        bail!(
+            "the farm branch `{branch}` has no worktree, and the place for one, {}, already \
+             exists. Remove it, or add the worktree elsewhere: `git -C {} worktree add <path> \
+             {branch}`",
+            wt.display(),
+            top.display()
+        );
+    }
+    if let Some(parent) = wt.parent() {
+        fs::create_dir_all(parent).with_context(|| format!("creating {}", parent.display()))?;
+    }
+    let wt_s = wt.to_string_lossy().into_owned();
+    // Forget a record of a worktree whose directory was deleted, or git
+    // refuses to check the branch out a second time.
+    git(top, &["worktree", "prune"])?;
+    if ref_exists(top, &format!("refs/heads/{branch}")) {
+        git(top, &["worktree", "add", "-q", &wt_s, branch])?;
+    } else {
+        git(
+            top,
+            &[
+                "worktree",
+                "add",
+                "-q",
+                "--track",
+                "-b",
+                branch,
+                &wt_s,
+                &format!("origin/{branch}"),
+            ],
+        )?;
+    }
+    Ok(sheds::canonical(&wt))
+}
+
 /// The report `yaks migrate --to-branch` prints.
 pub fn render(o: &Outcome) -> String {
     let p = match o {
@@ -347,9 +414,9 @@ pub fn render(o: &Outcome) -> String {
         "Nothing was pushed. To publish, push both:\n  \
          git -C {wt} push -u origin {b}\n  \
          git -C {repo} push origin {}\n\
-         On another machine or for a teammate, after pulling `{}`:\n  \
-         git fetch origin {b} && git worktree add <path> {b}\n",
-        p.code_branch, p.code_branch
+         On another machine or for a teammate, a clone needs no setup: the first yaks \
+         command in it creates the farm worktree from `origin/{b}`.\n",
+        p.code_branch
     ));
     if p.set_config {
         s.push_str(&format!("  git config yaks.branch {b}\n"));
@@ -491,7 +558,8 @@ mod tests {
             text.contains(&format!("git -C {} push -u origin yaks", wt.display())),
             "{text}"
         );
-        assert!(text.contains("git worktree add <path> yaks"), "{text}");
+        assert!(text.contains("a clone needs no setup"), "{text}");
+        assert!(!text.contains("git worktree add <path>"), "{text}");
 
         // main: no .yaks/ tracked, and none on disk (the .lock leftover too).
         assert_eq!(sh(&r, &["ls-files", ".yaks"]), "");

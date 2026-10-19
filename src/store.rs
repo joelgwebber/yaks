@@ -59,8 +59,69 @@ pub struct Discovered {
 ///    branch's worktree the same way (see [`redirect_live`]), never used.
 pub fn discover(start: &Path) -> Result<Discovered> {
     let env = std::env::var("YAKS_DIR").ok();
-    discover_with(start, env.as_deref())
+    if std::env::var_os(NO_BOOTSTRAP_ENV).is_some_and(|v| !v.is_empty()) {
+        return discover_with(start, env.as_deref());
+    }
+    discover_bootstrapping(start, env.as_deref(), farm_home, |line| eprintln!("{line}"))
 }
+
+/// Set (non-empty) to make [`discover`] fail with the "no worktree" error
+/// instead of creating the farm worktree (CI that should not touch the data
+/// dir).
+pub const NO_BOOTSTRAP_ENV: &str = "YAKS_NO_BOOTSTRAP";
+
+/// [`discover_with`], except that a repository whose farm branch exists
+/// (locally, or as `origin/<branch>` after a clone) but has no worktree gets
+/// one at `home(checkout)` ([`crate::branchfarm::bootstrap`], yaks-a260),
+/// reported through `say`, and discovery then runs again. Only the commands
+/// that open the farm for the checkout they run in come here: the read-only
+/// walks over OTHER checkouts ([`discover_with`], `yaks sheds`) never create
+/// anything.
+pub fn discover_bootstrapping(
+    start: &Path,
+    yaks_dir: Option<&str>,
+    home: impl FnOnce(&Path) -> PathBuf,
+    say: impl FnOnce(&str),
+) -> Result<Discovered> {
+    let err = match discover_with(start, yaks_dir) {
+        Err(e) => e,
+        ok => return ok,
+    };
+    let Some(missing) = err.downcast_ref::<MissingFarmWorktree>() else {
+        return Err(err);
+    };
+    let wt = crate::branchfarm::bootstrap(&missing.top, &missing.branch, home)?;
+    say(&format!(
+        "yaks: created the farm worktree for the branch `{}` at {}",
+        missing.branch,
+        wt.display()
+    ));
+    discover_with(start, yaks_dir)
+}
+
+/// A repository whose farm is the branch `branch` (it exists, locally or as
+/// `origin/<branch>`) but that no worktree has checked out. `top` is the git
+/// top-level where discovery stopped. [`discover_bootstrapping`] fixes it;
+/// otherwise this is the error.
+#[derive(Debug)]
+pub struct MissingFarmWorktree {
+    pub top: PathBuf,
+    pub branch: String,
+}
+
+impl std::fmt::Display for MissingFarmWorktree {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (top, branch) = (self.top.display(), &self.branch);
+        write!(
+            f,
+            "this repository's farm is the branch `{branch}`, but no worktree has it checked out. \
+             Create one (it holds only .yaks/): `git -C {top} worktree add <path> {branch}`, e.g. \
+             `git -C {top} worktree add ../$(basename {top})-yaks {branch}`; or set YAKS_DIR to the farm"
+        )
+    }
+}
+
+impl std::error::Error for MissingFarmWorktree {}
 
 /// [`discover`] with `$YAKS_DIR` passed in, so tests need not touch the process
 /// environment. `yaks_dir` may name the `.yaks/` dir itself, a directory
@@ -208,7 +269,9 @@ pub fn configured_farm_branch(dir: &Path) -> String {
 /// worktree holds no `.yaks/`.
 fn farm_branch_worktree(dir: &Path) -> Result<Option<Discovered>> {
     let branch = configured_farm_branch(dir);
-    if let Some(wt) = crate::sheds::worktree_of_branch(dir, &branch) {
+    // A registered worktree whose directory is gone (deleted by hand) is no
+    // worktree: bootstrap prunes the record and adds a fresh one.
+    if let Some(wt) = crate::sheds::worktree_of_branch(dir, &branch).filter(|w| w.is_dir()) {
         let root = wt.join(".yaks");
         if !root.is_dir() {
             anyhow::bail!(
@@ -240,12 +303,11 @@ fn farm_branch_worktree(dir: &Path) -> Result<Option<Discovered>> {
     if local.is_none() && remote.is_none() {
         return Ok(None);
     }
-    anyhow::bail!(
-        "this repository's farm is the branch `{branch}`, but no worktree has it checked out. \
-         Create one (it holds only .yaks/): `git -C {top} worktree add <path> {branch}`, e.g. \
-         `git -C {top} worktree add ../$(basename {top})-yaks {branch}`; or set YAKS_DIR to the farm",
-        top = dir.display()
-    )
+    Err(MissingFarmWorktree {
+        top: dir.to_path_buf(),
+        branch,
+    }
+    .into())
 }
 
 /// The farm branch `root` is a dedicated worktree of, if any: the configured
@@ -2997,6 +3059,109 @@ mod discover_tests {
         // A checkout whose farm is its own .yaks/ is not a farm branch.
         let own = farm_at(&code);
         assert_eq!(farm_branch(&own), None);
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    fn bootstrap_home(base: &Path) -> impl Fn(&Path) -> PathBuf + '_ {
+        move |_| base.join("data/farms/code-1234")
+    }
+
+    #[test]
+    fn a_fresh_clone_gets_the_farm_worktree_on_first_use() {
+        let (base, code, _) = branch_repo(false);
+        git(
+            &base,
+            &["clone", "-q", &code.display().to_string(), "fresh"],
+        );
+        let fresh = base.join("fresh");
+        // The read-only walk still only reports.
+        assert!(discover_with(&fresh, None).is_err());
+        assert!(!base.join("data").exists());
+        let mut said = Vec::new();
+        let d = discover_bootstrapping(&fresh.join("src"), None, bootstrap_home(&base), |l| {
+            said.push(l.to_string())
+        })
+        .unwrap();
+        let wt = canon(&base.join("data/farms/code-1234"));
+        assert_eq!(canon(&d.root), wt.join(".yaks"));
+        assert_eq!(said.len(), 1, "{said:?}");
+        assert!(
+            said[0].contains("`yaks`") && said[0].contains("code-1234"),
+            "{said:?}"
+        );
+        // The local branch tracks origin, so pull/push work with no setup.
+        let up = std::process::Command::new("git")
+            .arg("-C")
+            .arg(&wt)
+            .args(["rev-parse", "--abbrev-ref", "yaks@{upstream}"])
+            .output()
+            .unwrap();
+        assert_eq!(String::from_utf8_lossy(&up.stdout).trim(), "origin/yaks");
+        // The checkout itself is untouched, and a second run is silent.
+        assert!(!fresh.join(".yaks").exists());
+        let mut again = 0;
+        let d2 =
+            discover_bootstrapping(&fresh, None, bootstrap_home(&base), |_| again += 1).unwrap();
+        assert_eq!(again, 0);
+        assert_eq!(canon(&d2.root), wt.join(".yaks"));
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn a_local_branch_with_no_worktree_is_bootstrapped_and_a_deleted_one_is_recreated() {
+        let (base, code, wt) = branch_repo(true);
+        let wt = wt.unwrap();
+        fs::remove_dir_all(&wt).unwrap(); // deleted by hand; git still lists it
+        let d = discover_bootstrapping(&code, None, bootstrap_home(&base), |_| {}).unwrap();
+        assert_eq!(
+            canon(&d.root),
+            canon(&base.join("data/farms/code-1234/.yaks"))
+        );
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn bootstrap_refuses_a_shared_clone_and_an_occupied_home_and_no_branch_means_no_farm() {
+        let (base, code, _) = branch_repo(false);
+        git(
+            &base,
+            &[
+                "clone",
+                "-q",
+                "--shared",
+                &code.display().to_string(),
+                "clone",
+            ],
+        );
+        let clone = base.join("clone");
+        let msg = format!(
+            "{:#}",
+            discover_bootstrapping(&clone, None, bootstrap_home(&base), |_| {})
+                .err()
+                .unwrap()
+        );
+        assert!(msg.contains("Delta clone") && msg.contains("code"), "{msg}");
+        assert!(!base.join("data").exists(), "nothing created for a clone");
+        // The place is taken by something else.
+        fs::create_dir_all(base.join("data/farms/code-1234")).unwrap();
+        let msg = format!(
+            "{:#}",
+            discover_bootstrapping(&code, None, bootstrap_home(&base), |_| {})
+                .err()
+                .unwrap()
+        );
+        assert!(msg.contains("already exists"), "{msg}");
+        // No farm branch anywhere: the plain "no farm" error, nothing created.
+        git(&code, &["branch", "-q", "-D", "yaks"]);
+        fs::remove_dir_all(base.join("data")).unwrap();
+        let msg = format!(
+            "{:#}",
+            discover_bootstrapping(&code, None, bootstrap_home(&base), |_| {})
+                .err()
+                .unwrap()
+        );
+        assert!(msg.contains("yaks init"), "{msg}");
+        assert!(!base.join("data").exists());
         let _ = fs::remove_dir_all(&base);
     }
 
