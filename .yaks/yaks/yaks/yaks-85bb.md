@@ -1,11 +1,11 @@
 ---
 id: yaks-85bb
 title: 'Private farm guard: yaks.private refuses sync''s push and a pre-push hook blocks a manual push of the farm branch'
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-10-21T20:31:48Z'
-updated: '2026-10-21T20:41:45Z'
+updated: '2026-10-21T20:58:21Z'
 parent: yaks-472e
 labels:
 - git
@@ -59,3 +59,19 @@ Decision: `yaks private` is handled before a farm is opened (like `init`/`migrat
 ▸ 2026-10-21T20:41:45Z [private-1]
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-10-21T20:54:29Z [private-1]
+
+Summary: new src/privatefarm.rs (is_private, install_guard, remove_guard, run + 5 tests), Command::Private { off } + early dispatch + `mod privatefarm;` in src/main.rs, rows in docs/cli.md and the yaks skill (table + farm-on-a-branch bullet). `yaks verify` PASS recorded above; full `cargo test --release` green on rerun.
+- Observed flake, not mine: tests/sheds_layouts.rs `a_flat_shed_forked_before_the_migration_falls_back_to_the_next_base_not_to_nothing` failed twice in full-suite runs (left "checkout", right "merge-base"; reflog second-boundary/timing under load) and passed 6/6 alone both with and without my change (stash -u baseline).
+
+---
+▸ 2026-10-21T20:54:30Z [private-1]
+
+moved: shaving -> shorn
+
+---
+▸ 2026-10-21T20:58:21Z [delta:herd-dirs]
+
+Landed (delta:herd-dirs): 0e1775b (single-parent, Squashed-from 5a7c0ae). Review with my build on a scratch repo + bare origin: `yaks private` -> `git push origin yaks` and `git push --all` refused, remote empty; `--off` removes the hook and the push goes through. Full gate green (19 suites). Sync will reword the 'once it exists' lines.
