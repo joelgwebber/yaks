@@ -128,6 +128,8 @@ in another checkout of this repo (a shed from `yaks sheds`, picked like
 | `yaks preflight [<id>...]` | read-only landing-readiness check for a team farm: nothing under `.yaks/` untracked or unstaged in git, the `verify:` of each shorn yak in the change last PASSed (`--all`: every shorn yak), no invalid `status:`, no id in two yak files; `--push-main` also checks that `local` is the human's checkout (not bare, has `main`, not dirty on `main`) before `git push local <branch>:main`; exits non-zero with one line per failure, else `preflight: ok`; on a farm that is a branch, uncommitted yak files are one warning (`run yaks commit`), not a failure |
 | `yaks brief <id> --as <name>` | print the worker brief for a yak, read-only: the actor prefix, the gate (`verify:`), how to finish in a team or a private farm, how to ask and pick up an answer. The coordinator adds scope, the spawn title and landing |
 | `yaks status [--check] [--json]` | what the farm has changed that git does not have yet, one line per yak (`created`, `moved hairy -> shaving`, `notes +2`, `edited`, `removed`, `artifacts`; `*` marks staged), ending with the message `yaks commit` would use; read-only; code elsewhere is only counted; `--check` exits 1 when dirty, `--json` for scripts; on a farm branch a last line says whether it is published, ahead or behind its upstream (as of the last fetch, never fetches), JSON `sync` |
+| `yaks sync [--no-commit] [--no-pull] [--no-push]` | for a farm on its own branch: commit, pull (rebasing with yaks's merge driver, so two machines' edits to one yak merge into a valid yak) and push it, creating the remote branch on first publish; never pushes a private farm (`yaks private`) |
+| `yaks private [--off]` | mark the farm private: `yaks sync` never pushes it, and a `pre-push` hook refuses a manual push of the farm branch |
 | `yaks commit [-m <msg>] [--dry-run]` | commit the farm's own changes (everything under `.yaks/`) and nothing else, with a generated message like `yaks: shorn yaks-abc1; updated yaks-def2`; code staged elsewhere stays staged and out of the commit; runs your git hooks, never pushes; errors in a private farm, no-op when clean |
 | `yaks scan-ids [file]` | flag real yak-ids in text (file and/or stdin) — a leak check for a pre-commit / PR gate; exits non-zero if any are found |
 | `yaks tui` | open the interactive terminal UI |
@@ -296,7 +298,7 @@ kept, `.yaks/` removed from the current branch in one commit, the worktree under
 checkout with no `.yaks/` then finds it, so every shed on a machine (the primary,
 worktrees, Delta clones) reads and writes the same files with no merge step,
 `yaks commit` commits on that branch, and `main`, feature branches and PRs carry
-no yak churn. Push the branch to share or back up the farm. `yaks path` with no
+no yak churn. `yaks sync` commits, pulls and pushes the branch to share or back up the farm. `yaks path` with no
 arguments prints the farm a command resolved.
 
 > **Heads up:** `git clean -fdx` in the outer repo will delete an ignored or

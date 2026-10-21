@@ -74,7 +74,10 @@ pub fn read(root: &Path) -> Result<Option<Vec<Change>>> {
             root.display()
         );
     }
-    if tracked.stdout.is_empty() {
+    // Nothing tracked means a private (untracked) farm, unless the farm is a
+    // farm branch's worktree: that branch IS the farm, tracked or not yet
+    // (a fresh orphan branch has no commit before the first `yaks commit`).
+    if tracked.stdout.is_empty() && crate::store::farm_branch(root).is_none() {
         return Ok(None);
     }
     let status = check(

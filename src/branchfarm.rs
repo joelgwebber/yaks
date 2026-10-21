@@ -412,7 +412,7 @@ pub fn render(o: &Outcome) -> String {
     }
     s.push_str(&format!(
         "Nothing was pushed. To publish, push both:\n  \
-         git -C {wt} push -u origin {b}\n  \
+         yaks sync    (publishes the farm branch `{b}` to origin)\n  \
          git -C {repo} push origin {}\n\
          On another machine or for a teammate, a clone needs no setup: the first yaks \
          command in it creates the farm worktree from `origin/{b}`.\n",
@@ -555,7 +555,7 @@ mod tests {
         assert!(p.applied && !p.set_config, "{p:?}");
         let text = render(&out);
         assert!(
-            text.contains(&format!("git -C {} push -u origin yaks", wt.display())),
+            text.contains("yaks sync    (publishes the farm branch `yaks` to origin)"),
             "{text}"
         );
         assert!(text.contains("a clone needs no setup"), "{text}");

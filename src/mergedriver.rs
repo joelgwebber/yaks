@@ -354,7 +354,6 @@ fn driver_command() -> Result<String> {
 /// `.yaks/`) merges yak files with the yaks driver: the `.gitattributes` rule
 /// on the farm branch and the repository's `merge.yaks.driver` config.
 /// Idempotent; changes nothing that is already in place.
-#[allow(dead_code)] // used by `yaks sync` (yaks-472e)
 pub fn ensure_registered(worktree: &Path) -> Result<()> {
     let attrs = worktree.join(".gitattributes");
     let text = match std::fs::read_to_string(&attrs) {

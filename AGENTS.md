@@ -195,7 +195,8 @@ workflow.
 2. Shear a yak as soon as its work is done. The farm is a branch (above): the
    shear is already in the farm worktree (`yaks path`), and the coordinator commits it
    there with `yaks commit`. No code commit ever contains `.yaks/`. Yak ids in
-   commit messages are fine (team mode). Pushing `yaks` to origin is Joel's call.
+   commit messages are fine (team mode). Publishing the farm (`yaks sync`, which
+   pushes `yaks` to origin) is Joel's call.
 3. Check existing yaks before creating new ones.
 4. Append progress notes to yak descriptions as you work.
 5. When unsure what's next, run `yaks next` — don't freelance.

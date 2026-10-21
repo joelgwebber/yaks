@@ -26,6 +26,7 @@ mod sheds;
 mod skills;
 mod status;
 mod store;
+mod sync;
 mod tui;
 
 use anyhow::{Context, Result};
@@ -781,8 +782,8 @@ enum Command {
     /// installs a `pre-push` hook (in the hooks dir `git` uses, so
     /// `core.hooksPath` is honored and every worktree shares it) that refuses a
     /// push of the farm branch (`yaks`, or `git config yaks.branch`), including
-    /// `git push --all`; a yaks command that pushes (`yaks sync`, once it exists)
-    /// must refuse on `yaks.private` too. Pushing
+    /// `git push --all`; `yaks sync` commits and pulls but never
+    /// pushes it. Pushing
     /// any other branch is unaffected. An existing `pre-push` hook that is not
     /// yaks's is left untouched (the command says how to chain the check).
     ///
@@ -899,6 +900,30 @@ enum Command {
         /// Emit the result as JSON.
         #[arg(long)]
         json: bool,
+    },
+    /// Sync the farm branch with its remote: commit what is dirty (`yaks
+    /// commit`), fetch and rebase onto `<remote>/<branch>` (concurrent edits to
+    /// one yak merge into a valid yak through yaks's merge driver, which this
+    /// registers), then push, creating the remote branch with the same name on
+    /// the first publish. The remote is `branch.<branch>.remote`, else `origin`.
+    /// Only for a farm on its own branch; runs in the farm worktree whatever
+    /// the cwd. A private farm (`yaks private`) is never pushed. A rebase that
+    /// stops on a conflict the driver cannot settle (a non-yak file such as
+    /// `config.yaml`) is aborted, leaving the branch as it was, and names the
+    /// files. Nothing is ever synced automatically.
+    Sync {
+        /// Do not commit first (a dirty farm then skips the pull too).
+        #[arg(long)]
+        no_commit: bool,
+        /// Do not fetch or rebase (commit and push only).
+        #[arg(long)]
+        no_pull: bool,
+        /// Do not push (commit and pull only).
+        #[arg(long)]
+        no_push: bool,
+        /// Message for the commit (else generated, as `yaks commit`).
+        #[arg(short, long)]
+        message: Option<String>,
     },
     /// Commit the farm's own changes (everything under `.yaks/`: yak files,
     /// attachments, config) and nothing else, with a generated message such
@@ -2143,6 +2168,20 @@ fn main() -> Result<()> {
             if !report.ok() {
                 std::process::exit(1);
             }
+        }
+        Command::Sync {
+            no_commit,
+            no_pull,
+            no_push,
+            message,
+        } => {
+            let opts = sync::Opts {
+                no_commit,
+                no_pull,
+                no_push,
+                message,
+            };
+            print!("{}", sync::run(farm.root(), &opts)?.render());
         }
         Command::Commit { message, dry_run } => {
             match commit::run(farm.root(), message.as_deref(), dry_run)? {
