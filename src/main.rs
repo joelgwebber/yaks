@@ -839,7 +839,9 @@ enum Command {
     /// farm skips the git check (said so) and checks every shorn yak. With
     /// `--push-main` also checks that the `local` remote is the human's checkout
     /// (not bare, has `main`, not dirty on `main`) before `git push local
-    /// <branch>:main`; read-only, never pushes.
+    /// <branch>:main`; read-only, never pushes. On a farm that is a branch,
+    /// uncommitted yak files are one warning (`run yaks commit`), not a
+    /// failure.
     Preflight {
         /// Shorn yaks to check (default: the shorn yaks in the change in git,
         /// i.e. staged, modified or new under `.yaks/`). Scopes the verify check
@@ -888,7 +890,9 @@ enum Command {
     /// changed elsewhere in the repo is only counted, never listed. A clean farm
     /// prints `farm clean: nothing to commit`; a private farm (nothing under
     /// `.yaks/` tracked by git) says so; both exit 0. While a merge or
-    /// cherry-pick is in progress it says `yaks commit` will refuse.
+    /// cherry-pick is in progress it says `yaks commit` will refuse. When the
+    /// farm is a branch, a last line says whether that branch is published,
+    /// ahead or behind its upstream, as of the last fetch (never fetches).
     Status {
         /// Exit 1 when the farm has uncommitted changes (for scripts and
         /// hooks); the output is the same. Without it the exit code is 0.
@@ -896,7 +900,8 @@ enum Command {
         check: bool,
         /// Emit JSON: `clean`, `private`, `merge_in_progress`, `yaks` (array of
         /// `{id, changes, staged}`), `other` (farm files that are not yaks, as
-        /// `{path, staged}`), `outside_farm` (count) and `message`.
+        /// `{path, staged}`), `outside_farm` (count), `message` and `sync`
+        /// (`{branch, upstream, ahead, behind}` on a farm branch, else null).
         #[arg(long)]
         json: bool,
     },
@@ -2048,10 +2053,14 @@ fn main() -> Result<()> {
                         "subjects": f.subjects,
                     })).collect::<Vec<_>>(),
                     "skipped": report.skipped,
+                    "warnings": report.warnings,
                 }))?;
             } else {
                 for line in &report.skipped {
                     println!("preflight: {line}");
+                }
+                for line in &report.warnings {
+                    println!("preflight: warning: {line}");
                 }
                 for f in &report.failures {
                     println!("preflight: FAIL {}: {}", f.check.code(), f.message);

@@ -4,7 +4,9 @@
 //! Read-only. The classification is the one `yaks commit` builds its message
 //! from ([`crate::changes::classify`]); this adds, per yak, what kind of edit
 //! an in-place change was (notes appended, or a field or the description
-//! changed) by comparing the file with its version at HEAD.
+//! changed) by comparing the file with its version at HEAD. A farm that is a
+//! branch also says how that branch stands against its upstream
+//! ([`sync_state`]), from the last fetch: nothing here touches the network.
 
 use crate::changes::{self, Kind, YakChange, classify};
 use crate::commit::generate_message;
@@ -29,6 +31,21 @@ pub struct OtherLine {
     pub staged: bool,
 }
 
+/// Where a farm branch stands against its upstream, as of the last fetch.
+/// What the TUI's sync indicator reuses.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SyncState {
+    /// The farm branch (`yaks` by default).
+    pub branch: String,
+    /// Its upstream (`origin/yaks`), or `None` when the branch was never
+    /// published (no upstream configured, or the one configured is gone).
+    pub upstream: Option<String>,
+    /// Commits on the branch the upstream does not have.
+    pub ahead: usize,
+    /// Commits on the upstream the branch does not have.
+    pub behind: usize,
+}
+
 #[derive(Debug)]
 pub struct Report {
     /// Nothing under the farm is tracked by git.
@@ -41,6 +58,9 @@ pub struct Report {
     pub outside: usize,
     /// The message `yaks commit` would use, when there is anything to commit.
     pub message: Option<String>,
+    /// The farm branch against its upstream; `None` unless the farm is a
+    /// branch ([`sync_state`]).
+    pub sync: Option<SyncState>,
 }
 
 impl Report {
@@ -60,6 +80,7 @@ pub fn collect(root: &Path) -> Result<Report> {
             other: Vec::new(),
             outside: 0,
             message: None,
+            sync: sync_state(root),
         });
     };
     let top = PathBuf::from(
@@ -98,7 +119,76 @@ pub fn collect(root: &Path) -> Result<Report> {
         other,
         outside: changes::outside(root)?.len(),
         message: (!changes.is_empty()).then(|| generate_message(&changes)),
+        sync: sync_state(root),
     })
+}
+
+/// How the farm branch stands against its upstream, from the refs as of the
+/// last fetch: never fetches, never writes. `None` unless the farm at `root`
+/// is a dedicated farm-branch worktree ([`store::farm_branch`]; an in-tree
+/// farm has no branch of its own) or git cannot say.
+pub fn sync_state(root: &Path) -> Option<SyncState> {
+    let branch = store::farm_branch(root)?;
+    let top = root.parent()?;
+    let line = |args: &[&str]| -> Option<String> {
+        let out = changes::git(top, args).ok()?;
+        let text = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        (out.status.success() && !text.is_empty()).then_some(text)
+    };
+    let Some(upstream) = line(&[
+        "rev-parse",
+        "--abbrev-ref",
+        &format!("{branch}@{{upstream}}"),
+    ]) else {
+        return Some(SyncState {
+            branch,
+            upstream: None,
+            ahead: 0,
+            behind: 0,
+        });
+    };
+    let counts = line(&[
+        "rev-list",
+        "--left-right",
+        "--count",
+        &format!("{branch}...{upstream}"),
+    ])?;
+    let mut n = counts.split_whitespace().map(|w| w.parse::<usize>());
+    let (Some(Ok(ahead)), Some(Ok(behind))) = (n.next(), n.next()) else {
+        return None;
+    };
+    Some(SyncState {
+        branch,
+        upstream: Some(upstream),
+        ahead,
+        behind,
+    })
+}
+
+impl SyncState {
+    /// The one status line for this state.
+    pub fn line(&self) -> String {
+        let branch = &self.branch;
+        match &self.upstream {
+            None => format!(
+                "farm branch {branch}: not published (no upstream); `yaks sync` publishes it"
+            ),
+            Some(up) if self.ahead == 0 && self.behind == 0 => {
+                format!("farm branch {branch}: up to date with {up}")
+            }
+            Some(up) => format!(
+                "farm branch {branch}: {} ahead, {} behind {up} (as of the last fetch); \
+                 `yaks sync` {}",
+                self.ahead,
+                self.behind,
+                if self.behind == 0 {
+                    "publishes"
+                } else {
+                    "reconciles"
+                }
+            ),
+        }
+    }
 }
 
 /// The change tokens for one yak's line, in the order `created`, `moved`,
@@ -212,6 +302,10 @@ pub fn render(r: &Report) -> String {
             )),
         }
     }
+    if let Some(sync) = &r.sync {
+        out.push_str(&sync.line());
+        out.push('\n');
+    }
     out
 }
 
@@ -232,6 +326,12 @@ pub fn to_json(r: &Report) -> Value {
         })).collect::<Vec<_>>(),
         "outside_farm": r.outside,
         "message": r.message,
+        "sync": r.sync.as_ref().map(|s| json!({
+            "branch": s.branch,
+            "upstream": s.upstream,
+            "ahead": s.ahead,
+            "behind": s.behind,
+        })),
     })
 }
 
@@ -606,6 +706,168 @@ mod tests {
         let _ = report(&repo);
         assert_eq!(git(&repo, &["status", "--porcelain"]), before);
         assert_eq!(git(&repo, &["rev-parse", "HEAD"]), head);
+    }
+
+    /// A farm that is a branch: `(code repo, farm worktree, bare origin)`. The
+    /// farm branch `yaks` is an orphan branch holding only `.yaks/`, checked out
+    /// in its own worktree; `origin` exists but the branch is not pushed yet.
+    fn branch_farm() -> (PathBuf, PathBuf, PathBuf) {
+        let base = std::env::temp_dir().join(format!(
+            "yaks-status-branch-{}-{}",
+            std::process::id(),
+            SEQ.fetch_add(1, Ordering::Relaxed)
+        ));
+        let (code, wt, origin) = (
+            base.join("code"),
+            base.join("farm"),
+            base.join("origin.git"),
+        );
+        std::fs::create_dir_all(&code).unwrap();
+        git(&base, &["init", "-q", "--bare", origin.to_str().unwrap()]);
+        git(&code, &["init", "-q", "-b", "main"]);
+        put(&code, "src/code.rs", "fn main() {}\n");
+        git(&code, &["add", "."]);
+        git(&code, &["commit", "-q", "-m", "code"]);
+        git(
+            &code,
+            &["remote", "add", "origin", origin.to_str().unwrap()],
+        );
+        git(
+            &code,
+            &["worktree", "add", "-q", "--detach", wt.to_str().unwrap()],
+        );
+        git(&wt, &["checkout", "-q", "--orphan", "yaks"]);
+        git(&wt, &["rm", "-rfq", "."]);
+        put(&wt, ".yaks/config.yaml", "herd: yak\n");
+        put(
+            &wt,
+            ".yaks/yak/yaks/yak-0001.md",
+            &flat("yak-0001", "hairy"),
+        );
+        git(&wt, &["add", "."]);
+        git(&wt, &["commit", "-q", "-m", "farm"]);
+        (code, wt, origin)
+    }
+
+    fn sync(wt: &Path) -> SyncState {
+        sync_state(&wt.join(".yaks")).expect("a farm branch has a sync state")
+    }
+
+    fn state(upstream: Option<&str>, ahead: usize, behind: usize) -> SyncState {
+        SyncState {
+            branch: "yaks".into(),
+            upstream: upstream.map(String::from),
+            ahead,
+            behind,
+        }
+    }
+
+    /// A commit on the farm branch made from a second clone of `origin`, pushed.
+    fn push_from_a_second_clone(origin: &Path) {
+        let other = origin.parent().unwrap().join("clone2");
+        git(
+            origin.parent().unwrap(),
+            &[
+                "clone",
+                "-q",
+                origin.to_str().unwrap(),
+                other.to_str().unwrap(),
+            ],
+        );
+        git(&other, &["checkout", "-q", "yaks"]);
+        put(
+            &other,
+            ".yaks/yak/yaks/yak-0002.md",
+            &flat("yak-0002", "hairy"),
+        );
+        git(&other, &["add", "."]);
+        git(&other, &["commit", "-q", "-m", "from elsewhere"]);
+        git(&other, &["push", "-q", "origin", "yaks"]);
+    }
+
+    #[test]
+    fn a_farm_branch_with_no_upstream_is_not_published() {
+        let (_code, wt, _origin) = branch_farm();
+        let s = sync(&wt);
+        assert_eq!(s, state(None, 0, 0));
+        let r = report(&wt);
+        let text = render(&r);
+        assert!(
+            text.ends_with(
+                "farm branch yaks: not published (no upstream); `yaks sync` publishes it\n"
+            ),
+            "{text}"
+        );
+        assert_eq!(
+            to_json(&r)["sync"],
+            serde_json::json!({"branch": "yaks", "upstream": null, "ahead": 0, "behind": 0})
+        );
+    }
+
+    #[test]
+    fn a_published_farm_branch_is_up_to_date_then_ahead_then_behind_and_ahead() {
+        let (_code, wt, origin) = branch_farm();
+        git(&wt, &["push", "-q", "-u", "origin", "yaks"]);
+        assert_eq!(sync(&wt), state(Some("origin/yaks"), 0, 0));
+        assert_eq!(
+            render(&report(&wt)),
+            "farm clean: nothing to commit\nfarm branch yaks: up to date with origin/yaks\n"
+        );
+
+        put(
+            &wt,
+            ".yaks/yak/yaks/yak-0003.md",
+            &flat("yak-0003", "hairy"),
+        );
+        git(&wt, &["add", "."]);
+        git(&wt, &["commit", "-q", "-m", "local"]);
+        assert_eq!(sync(&wt), state(Some("origin/yaks"), 1, 0));
+        let text = render(&report(&wt));
+        assert!(
+            text.contains(
+                "farm branch yaks: 1 ahead, 0 behind origin/yaks (as of the last fetch); \
+                 `yaks sync` publishes"
+            ),
+            "{text}"
+        );
+
+        push_from_a_second_clone(&origin);
+        // Not fetched yet: status never fetches, so it still says 1 ahead.
+        assert_eq!(sync(&wt), state(Some("origin/yaks"), 1, 0));
+        git(&wt, &["fetch", "-q", "origin"]);
+        assert_eq!(sync(&wt), state(Some("origin/yaks"), 1, 1));
+        let v = to_json(&report(&wt));
+        assert_eq!(v["sync"]["ahead"], 1);
+        assert_eq!(v["sync"]["behind"], 1);
+        assert_eq!(v["sync"]["upstream"], "origin/yaks");
+        assert!(render(&report(&wt)).contains("1 ahead, 1 behind origin/yaks"));
+    }
+
+    #[test]
+    fn a_farm_branch_only_behind_says_so() {
+        let (_code, wt, origin) = branch_farm();
+        git(&wt, &["push", "-q", "-u", "origin", "yaks"]);
+        push_from_a_second_clone(&origin);
+        git(&wt, &["fetch", "-q", "origin"]);
+        assert_eq!(sync(&wt), state(Some("origin/yaks"), 0, 1));
+    }
+
+    #[test]
+    fn an_in_tree_farm_has_no_sync_state() {
+        let repo = team_repo();
+        assert_eq!(sync_state(&farm(&repo)), None);
+        let r = report(&repo);
+        assert!(r.sync.is_none() && !render(&r).contains("farm branch"));
+        assert!(to_json(&r)["sync"].is_null());
+    }
+
+    #[test]
+    fn sync_state_writes_nothing() {
+        let (_code, wt, _origin) = branch_farm();
+        git(&wt, &["push", "-q", "-u", "origin", "yaks"]);
+        let before = git(&wt, &["for-each-ref"]);
+        let _ = sync(&wt);
+        assert_eq!(git(&wt, &["for-each-ref"]), before);
     }
 
     /// The verb `yaks commit` puts a status change under.

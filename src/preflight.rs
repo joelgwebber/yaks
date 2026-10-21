@@ -8,6 +8,11 @@
 //! also checks that the `local` remote is the human's checkout, before a
 //! `git push local <branch>:main`. One line per failure; it never mutates the
 //! farm or the repo (every git call here only reads: no push, fetch or write).
+//!
+//! When the farm is a branch with its own worktree ([`store::farm_branch`]) the
+//! git-state check changes meaning: uncommitted yak files are that farm's normal
+//! state and the code push does not carry them, so they are one warning line
+//! (`yaks commit` is the fix), not a failure; unresolved conflicts still fail.
 
 use crate::farm::{Farm, IssueKind};
 use crate::model::Status;
@@ -60,6 +65,9 @@ pub struct Report {
     /// Checks that could not apply here (e.g. git state in a private farm),
     /// each a clear line saying why. Not failures.
     pub skipped: Vec<String>,
+    /// Notes that do not fail the check: a farm branch's uncommitted changes
+    /// (normal there; `yaks commit` is the next step, not `git add`).
+    pub warnings: Vec<String>,
 }
 
 impl Report {
@@ -111,6 +119,8 @@ fn stdout_of(out: &std::process::Output) -> String {
 
 /// Check 1: nothing under the farm is untracked or has unstaged changes.
 /// Staged changes pass: staging is the step right before the landing commit.
+/// A farm branch's worktree is committed with `yaks commit`, not `git add`, so
+/// its uncommitted changes (staged or not) are counted into one warning.
 fn git_state(root: &Path, report: &mut Report) -> Result<Option<BTreeSet<String>>> {
     let git = |args: &[&str]| git_out(root, args);
     let tracked = git(&["ls-files", "--", "."])?;
@@ -134,6 +144,8 @@ fn git_state(root: &Path, report: &mut Report) -> Result<Option<BTreeSet<String>
         );
     }
     let out = String::from_utf8_lossy(&status.stdout);
+    let branch_farm = store::farm_branch(root).is_some();
+    let mut uncommitted = 0usize;
     let mut changed = BTreeSet::new();
     let mut entries = out.split('\0').filter(|e| !e.is_empty());
     while let Some(entry) = entries.next() {
@@ -151,9 +163,14 @@ fn git_state(root: &Path, report: &mut Report) -> Result<Option<BTreeSet<String>
         if let Some(id) = yak_id_of(path) {
             changed.insert(id);
         }
+        let conflict = x == 'U' || y == 'U' || xy == "AA" || xy == "DD";
+        if branch_farm && !conflict {
+            uncommitted += 1;
+            continue;
+        }
         let message = if xy == "??" {
             format!("{path} is untracked (git add it)")
-        } else if x == 'U' || y == 'U' || xy == "AA" || xy == "DD" {
+        } else if conflict {
             format!("{path} has unresolved merge conflicts")
         } else if y != ' ' {
             format!("{path} has unstaged changes (git add it)")
@@ -165,6 +182,11 @@ fn git_state(root: &Path, report: &mut Report) -> Result<Option<BTreeSet<String>
             message,
             subjects: vec![path.to_string()],
         });
+    }
+    if uncommitted > 0 {
+        report.warnings.push(format!(
+            "farm has {uncommitted} uncommitted change(s): run `yaks commit`"
+        ));
     }
     Ok(Some(changed))
 }
@@ -554,6 +576,92 @@ mod tests {
             report.failures
         );
         assert_eq!(report.failures[0].check, Check::Verify);
+    }
+
+    /// A farm that is a branch (an orphan `yaks` branch in its own worktree),
+    /// with one committed yak; the code repo is the worktree's host.
+    fn branch_farm() -> (PathBuf, PathBuf) {
+        let base = std::env::temp_dir().join(format!(
+            "yaks-preflight-branch-{}-{}",
+            std::process::id(),
+            SEQ.fetch_add(1, Ordering::Relaxed)
+        ));
+        let (code, wt) = (base.join("code"), base.join("farm"));
+        std::fs::create_dir_all(&code).unwrap();
+        git(&code, &["init", "-q", "-b", "main"]);
+        std::fs::write(code.join("code.rs"), "fn main() {}").unwrap();
+        git(&code, &["add", "."]);
+        git(&code, &["commit", "-q", "-m", "code"]);
+        git(
+            &code,
+            &["worktree", "add", "-q", "--detach", wt.to_str().unwrap()],
+        );
+        git(&wt, &["checkout", "-q", "--orphan", "yaks"]);
+        git(&wt, &["rm", "-rfq", "."]);
+        let root = wt.join(".yaks");
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(root.join("config.yaml"), "herd: yak\n").unwrap();
+        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+        git(&wt, &["add", "."]);
+        git(&wt, &["commit", "-q", "-m", "farm"]);
+        (code, wt)
+    }
+
+    #[test]
+    fn a_branch_farm_with_uncommitted_yaks_warns_once_and_does_not_fail() {
+        let (_code, wt) = branch_farm();
+        let farm = Farm::open(&wt).unwrap_or_else(|_| panic!("open farm at {wt:?}"));
+        assert!(store::farm_branch(farm.root()).is_some());
+        let clean = run(&farm, farm.root(), &[], false, true).unwrap();
+        assert!(clean.warnings.is_empty(), "{:?}", clean.warnings);
+
+        // An edited yak, a new yak and a new attachment dir: three uncommitted
+        // changes, none of them a failure.
+        let file = wt.join(".yaks/yak/yaks/yak-0001.md");
+        let text = std::fs::read_to_string(&file).unwrap();
+        std::fs::write(&file, format!("{text}\nedited\n")).unwrap();
+        store::write::save(&wt.join(".yaks"), &task("yak-0002", Status::Hairy)).unwrap();
+        std::fs::create_dir_all(wt.join(".yaks/yak/yaks/yak-0003")).unwrap();
+        std::fs::write(wt.join(".yaks/yak/yaks/yak-0003/f.txt"), "x").unwrap();
+        // --push-main is about the code branch: its local-remote failure is
+        // there (no `local` remote here), the git state is not.
+        let report = run(&farm, farm.root(), &[], false, true).unwrap();
+        assert!(
+            report.failures.iter().all(|f| f.check != Check::GitState),
+            "{:?}",
+            report.failures
+        );
+        assert_eq!(
+            report.warnings,
+            ["farm has 3 uncommitted change(s): run `yaks commit`"]
+        );
+        let all = format!("{:?}{:?}", report.warnings, report.failures);
+        assert!(!all.contains("git add"), "{all}");
+        assert!(run(&farm, farm.root(), &[], false, false).unwrap().ok());
+    }
+
+    #[test]
+    fn a_branch_farm_with_a_merge_conflict_still_fails() {
+        let (_code, wt) = branch_farm();
+        let farm = Farm::open(&wt).unwrap_or_else(|_| panic!("open farm at {wt:?}"));
+        let file = wt.join(".yaks/yak/yaks/yak-0001.md");
+        let base = std::fs::read_to_string(&file).unwrap();
+        git(&wt, &["checkout", "-q", "-b", "side"]);
+        std::fs::write(&file, format!("{base}\nside\n")).unwrap();
+        git(&wt, &["commit", "-qam", "side"]);
+        git(&wt, &["checkout", "-q", "yaks"]);
+        std::fs::write(&file, format!("{base}\nmain\n")).unwrap();
+        git(&wt, &["commit", "-qam", "main"]);
+        let merge = Command::new("git")
+            .arg("-C")
+            .arg(&wt)
+            .args(["merge", "-q", "side"])
+            .output()
+            .unwrap();
+        assert!(!merge.status.success());
+        let f = failures(&farm, &[], Check::GitState);
+        assert_eq!(f.len(), 1, "{f:?}");
+        assert!(f[0].message.contains("unresolved merge conflicts"));
     }
 
     #[test]
