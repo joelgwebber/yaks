@@ -1,11 +1,11 @@
 ---
 id: yaks-b048
 title: 'Rewrite the skills for one farm per machine: collapse the farm-mode and environment layers'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-10-18T05:15:36Z'
-updated: '2026-10-21T03:30:36Z'
+updated: '2026-10-21T23:11:05Z'
 parent: yaks-6a34
 depends_on:
 - yaks-7bfd
@@ -46,3 +46,20 @@ Joel (2026-10-19), on the proposal above:
 - Go with one `yaks-coordinating` and simplify as much as possible ("Yes, please!").
 - The skills stop teaching `changes <shed>`, `inbox --sheds`, `show --sheds` and `answer <id>@<shed>` now ("That SGTM"); they are slated for deletion under yaks-9eaa.
 - The bundled `yaks` skill gets a brevity pass too: it has grown long-winded and should be slimmed for clarity, not just rewritten for the new model.
+
+---
+▸ 2026-10-21T22:54:55Z [delta:herd-dirs]
+
+moved: hairy -> shaving
+
+---
+▸ 2026-10-21T23:11:05Z [delta:herd-dirs]
+
+First pass written (uncommitted in the delta:herd-dirs checkout, pending Joel's review):
+
+- `yaks` 321 -> 156 lines: one "Where the farm lives" section (branch farm first; team/private/pointer as short bullets), when-to-sync rule, compact command map (sheds/changes/answer@shed/show --sheds/attachment no longer taught), the large-farm xargs trap (yaks-8f2e), task format trimmed.
+- `yaks-working` 153 -> 46: one Finish section with a three-way yak-files rule.
+- `yaks-coordinating` 168 -> 93, absorbing the four companions (Delta and worktrees are sections 9-10); companions deleted, retired by yaks-4c93.
+- `yaks-tracker`: private-farm paragraph updated. Docs: docs/skills.md, docs/README.md, docs/cli.md, README, AGENTS.md, .agents/skills/README.md.
+
+Gate green; skill loads through the real `skill` tool. No cold-read scout yet.
