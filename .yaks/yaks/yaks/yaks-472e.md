@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-21T19:54:29Z'
-updated: '2026-10-21T20:34:01Z'
+updated: '2026-10-21T21:11:47Z'
 parent: yaks-6a34
 labels:
 - git
@@ -85,3 +85,8 @@ Round 1 spawned (delta:herd-dirs, 2026-10-21), base 1e95cd3 (mergedriver stub pr
 - `private-1` -> yaks-85bb (private guard), thread ksQQfIIp_WA2ToGZ4UwiEcPWKpLOACZHFZIBxBCA0aLJyrhJPreUvVwLftHG
 
 Next, after landing: yaks-e3b2 (sync; needs 4a53 + 85bb's is_private), then yaks-ce5d (TUI; needs bd1d + e3b2).
+
+---
+▸ 2026-10-21T21:11:47Z [delta:herd-dirs]
+
+Round 2 (delta:herd-dirs): landed 0e1775b (private, 85bb), cabc284 + 3bc2282 (sync, e3b2, built by the yakherd). Spawned `tui-sync-1` -> yaks-ce5d, anthropic/claude-sonnet-5-5, base 3bc2282, thread ksQQfIIp_WA2ToGZ4UwiEcPWKpLOACad2ZIBxBCA0aLJyrhJPreUvVwLftHG.
