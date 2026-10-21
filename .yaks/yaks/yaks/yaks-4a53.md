@@ -1,11 +1,11 @@
 ---
 id: yaks-4a53
 title: 'Frontmatter-aware merge driver for farm files: concurrent edits always merge into a VALID yak'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-10-18T19:35:20Z'
-updated: '2026-10-21T20:33:51Z'
+updated: '2026-10-21T20:52:02Z'
 parent: yaks-472e
 labels:
 - git
@@ -67,3 +67,82 @@ Claim (delta:herd-dirs, yakherd). Owner: `driver-1`.
 ▸ 2026-10-21T20:33:51Z [driver-1]
 
 Start: Wed Oct 21 20:33:47 UTC 2026 (date -u). `yaks path yaks-4a53`: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-4a53.md
+
+---
+▸ 2026-10-21T20:42:48Z [driver-1]
+
+Decision: `yaks merge-driver` is handled at the very top of `main` (before `-C`, skill auto-sync and farm open) with an `unreachable!` arm in the dispatch match.
+- Rejected: a normal dispatch arm after `Farm::open`. Git runs the driver on temp files with the repo as cwd, and a farm open can fail or print notes (skill top-up) in the middle of a merge.
+
+---
+▸ 2026-10-21T20:42:48Z [driver-1]
+
+Decision: an EMPTY base (git's `%O` for an add/add of the same path) is merged as "the empty yak" instead of taking the non-yak fallback.
+- Both sides' notes and labels survive, scalars that differ become a conflict note.
+- Rejected: treating it as unparsable (exit 1), which would hand git a text conflict for a perfectly valid pair of yaks.
+- A non-empty base that is not a yak still falls back.
+
+---
+▸ 2026-10-21T20:42:48Z [driver-1]
+
+Decision: when both sides changed the description differently, ours is kept AND the other side's description is quoted (`> ` lines) inside the `merge-driver` note.
+- Rejected: only naming the field, which silently drops the other text from the working tree (only git history would hold it).
+
+---
+▸ 2026-10-21T20:42:49Z [driver-1]
+
+Decision: a conflict note also bumps `updated` to the note's timestamp (`max(updated, note ts)`); the clean path is exactly `max` of the two sides.
+- Rejected: leaving `updated` older than the note the driver just wrote.
+
+---
+▸ 2026-10-21T20:42:49Z [driver-1]
+
+Decision: `merge` stays the pure API the claim asked for (non-yak input returns `ours` unchanged); `run` calls a private `try_merge -> Option<Merged>` so it can tell "not a yak" (exit 1) apart.
+- `merge` carries `#[allow(dead_code)]` because only tests call it.
+- Rejected: adding a field to `Merged` to flag the fallback (changes the specified shape).
+
+---
+▸ 2026-10-21T20:42:49Z [driver-1]
+
+Decision: notes are unioned as `ours` entries then `theirs` entries not in ours, then an entry that is in base but missing from either side is dropped (a deliberate removal wins), then a stable sort by timestamp string.
+- Unknown frontmatter keys merge per key (a block list is one value); `id` and `created` use the scalar rule.
+- Rejected: dropping the base-removal rule (it would resurrect entries one side deleted).
+
+---
+▸ 2026-10-21T20:42:50Z [driver-1]
+
+Decision: the integration test (`tests/merge_driver.rs`) registers the driver by hand with the same attribute line and a driver command built from `cargo_bin("yaks")`, because the crate is a binary and `ensure_registered` cannot be called from `tests/`.
+- `ensure_registered` has its own unit test against a real `git init` (attribute line appended to a file with no trailing newline, config set once, idempotent).
+- A control test shows plain git conflicts on the same two clones without the driver, which is the "fails before" evidence.
+
+---
+▸ 2026-10-21T20:46:48Z [driver-1]
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-10-21T20:46:56Z [driver-1]
+
+Summary: `yaks merge-driver %O %A %B %P` (hidden) + `mergedriver::{merge, run, ensure_registered}`.
+- Notes unioned and time-ordered, `updated` max, labels/deps merged, other fields by the side that changed them; a both-changed field keeps ours and adds one `merge-driver` note.
+- Non-yak input: ours untouched, exit 1.
+- `ensure_registered` writes `.yaks/**/*.md merge=yaks` and `merge.yaks.{name,driver}` idempotently; not called from anywhere yet.
+- Evidence: 13 unit tests in `mergedriver.rs`, 4 in `tests/merge_driver.rs` (control conflict, real `git merge`, real `git rebase` across two clones with `yaks doctor --strict` clean, non-yak conflict).
+- Gate `cargo test --release`: all suites ok (760 unit passed); `yaks verify`: PASS.
+- Docs: one `docs/cli.md` row; clap help on the hidden variant.
+
+---
+▸ 2026-10-21T20:46:57Z [driver-1]
+
+moved: shaving -> shorn
+
+---
+▸ 2026-10-21T20:52:02Z [delta:herd-dirs]
+
+Landed (delta:herd-dirs): 0b114a4 (single-parent, tree equal to the merge; Squashed-from c9f516f). Review run by the yakherd with its own build, two real clones of a farm branch on a bare origin:
+
+- concurrent: A notes + shaves, B notes + slaughters the same yak
+- without the driver: `pull --rebase` conflicts ("Could not apply ... # B")
+- with the driver: rebase succeeds, stderr `both sides changed status; kept this side, the other recorded in a note`; both notes kept, ONE `updated:` line, `doctor` clean, a `[merge-driver]` note `merge conflict: status was shaving here, dead on the other side; kept shaving`.
+
+Follow-up for yaks-e3b2: `ensure_registered` writes `.gitattributes` uncommitted; sync must commit it on the farm branch (and the rule must be on the branch so every clone gets it).

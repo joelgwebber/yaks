@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-21T20:31:48Z'
-updated: '2026-10-21T20:33:02Z'
+updated: '2026-10-21T20:41:45Z'
 parent: yaks-472e
 labels:
 - git
@@ -35,3 +35,27 @@ Claim (delta:herd-dirs, yakherd). Owner: `private-1`.
 **Evidence:** test with a scratch repo + bare remote + farm branch: after `yaks private`, `git push origin yaks` from the farm worktree AND `git push --all` from the code checkout are both refused and the remote's branch is unchanged; pushing `main` alone still works; `yaks private --off` restores pushing; a foreign pre-push hook is left untouched and reported.
 
 **Judge:** the yakherd.
+
+---
+▸ 2026-10-21T20:34:02Z [private-1]
+
+Start: Wed Oct 21 20:33:58 UTC 2026 (date -u)
+yaks path yaks-85bb: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-85bb.md
+
+---
+▸ 2026-10-21T20:38:17Z [private-1]
+
+Decision: `yaks private` is handled before a farm is opened (like `init`/`migrate --to-branch`), so it works from the code checkout, the farm worktree or a repo with no `.yaks/`. Rejected: running it through `Farm::open` (would fail where no farm resolves, and it touches the repository, not a farm).
+- Decision: the hook re-reads `yaks.private` and `yaks.branch` at push time rather than baking the branch in. Rejected: a generated per-branch hook (stale after a `yaks.branch` change; `--off` would have to rewrite it). `--off` still removes our hook, but a leftover hook is inert once the flag is unset (tested).
+- Decision: a foreign `pre-push` hook gives exit 0, the flag IS set (sync is guarded), and a stdout warning says a manual push is NOT blocked, plus the hook body to fold in. Rejected: non-zero exit (the claim note says "left untouched and reported"); chaining by renaming their hook (rewrites user files).
+- Decision: ownership is the `# yaks-private-guard` marker line; `--off` and re-install only touch files carrying it.
+- Decision: `is_private` is true if the repo OR its Delta host has `yaks.private true` (mirrors `configured_farm_branch`); `yaks private` itself writes only the local repo's config (worktrees share it). `--off` warns if the flag is still true from another config.
+- Decision: hook path via `git rev-parse --git-path hooks` (honors `core.hooksPath`, shared by worktrees; tested).
+- Known gap: the hook matches the pushed LOCAL ref name `refs/heads/<farm branch>`, so `git push origin yaks~1:refs/heads/x` (a non-branch local ref spelling) is not blocked. A Delta clone has its own hooks dir; run `yaks private` inside the clone to guard it.
+- `yaks sync` does not exist in this tree yet: clap help, docs/cli.md and the skill say "`yaks sync`, once it exists" must refuse on `yaks.private` (`privatefarm::is_private`); the dead-code warning is avoided because `--off` uses it. Whoever lands sync should reword.
+- Evidence: 5 unit tests in src/privatefarm.rs (scratch repo + bare origin + orphan farm worktree): baseline farm push works before `yaks private`; after it `git push origin yaks` (from the farm worktree) and `git push origin --all` (code checkout) both exit non-zero with the message and the bare remote has no refs; `git push origin main` then works; idempotent re-run; `--off` restores pushing and removes the hook; foreign hook untouched/reported and not removed by `--off`; core.hooksPath; custom yaks.branch; non-repo errors. Manually with ./target/release/yaks on a throwaway repo: private -> push --all rc=1, farm push rc=1, main rc=0; --off -> farm push rc=0, remote has both refs.
+
+---
+▸ 2026-10-21T20:41:45Z [private-1]
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
