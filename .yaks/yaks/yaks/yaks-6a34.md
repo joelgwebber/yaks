@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 1
 created: '2026-10-18T05:15:02Z'
-updated: '2026-10-21T19:54:36Z'
+updated: '2026-10-21T22:10:48Z'
 labels:
 - sheds
 - git
@@ -110,3 +110,8 @@ Verdict (herd pass, 2026-10-19): the trial held and became the model. It went fu
 ▸ 2026-10-21T19:54:36Z [delta:herd-dirs]
 
 2026-10-21: added yaks-472e (farm branch sync lifecycle: commit, pull, push), design first; it takes over the `yaks sync` and auto-commit pieces that were notes on yaks-4a53.
+
+---
+▸ 2026-10-21T22:10:48Z [delta:herd-dirs]
+
+Round 3 (delta:herd-dirs), base 47120db, anthropic/claude-sonnet-5-5: `land-1` -> yaks-e5fb + yaks-3bcd (thread ksQQfIIp_WA2ToGZ4UwiEcPWKpLOACb3eJIBxBCA0aLJyrhJPreUvVwLftHG); `init-1` -> yaks-b1e9 (thread ksQQfIIp_WA2ToGZ4UwiEcPWKpLOACb4h5IBxBCA0aLJyrhJPreUvVwLftHG). The yakherd takes yaks-7bfd (discovery). Then yaks-b048 (skills rewrite, depends on 7bfd), yaks-8f2e folded into it; yaks-0ef9 last.

@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-18T15:54:02Z'
-updated: '2026-10-21T22:10:10Z'
+updated: '2026-10-21T22:10:38Z'
 parent: yaks-6a34
 labels:
 - cli
@@ -39,3 +39,9 @@ Claim (delta:herd-dirs, yakherd). Owner: `land-1`. Also covers yaks-3bcd (same c
 ▸ 2026-10-21T22:10:10Z [delta:herd-dirs]
 
 moved: hairy -> shaving
+
+---
+▸ 2026-10-21T22:10:38Z [land-1]
+
+Start (land-1): date -u = Wed Oct 21 22:10:34 UTC 2026
+- yaks path yaks-e5fb = /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-e5fb.md
