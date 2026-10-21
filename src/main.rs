@@ -158,7 +158,7 @@ enum Command {
     /// Print the current on-disk file path of yaks, one per line: by id
     /// (`yaks path yaks-1a2b ...`) or by the shared filter flags
     /// (`yaks path --status shorn --label cli`). Each yak's file is
-    /// `.yaks/<id>.md`, the same path for its whole life (a status move edits
+    /// `.yaks/<herd>/yaks/<id>.md`, the same path for its whole life (a status move edits
     /// it in place), handy for `git add`. Paths are absolute. An unknown
     /// id is reported on stderr and the exit status is non-zero (known ids are
     /// still printed). Give ids or filter flags, not both. With neither, print
@@ -202,7 +202,7 @@ enum Command {
         as_actor: Option<String>,
     },
     /// Attach a local file to a yak as evidence: copy it under
-    /// `.yaks/<id>/` (beside the yak's file) and link it in the body as
+    /// `.yaks/<herd>/yaks/<id>/` (beside the yak's file) and link it in the body as
     /// `![name](<id>/<file>)` for an image (png, jpg, jpeg, gif, webp, svg)
     /// or `[name](<id>/<file>)` for any other file. Use for artifact
     /// evidence a human or coordinator can look at (screenshots, TUI frames).
@@ -220,14 +220,14 @@ enum Command {
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
-    /// Rename a yak's attachment in `.yaks/<id>/` and rewrite every
+    /// Rename a yak's attachment in `.yaks/<herd>/yaks/<id>/` and rewrite every
     /// link to it across the farm (the link text follows the new stem, and
     /// the `!` of an image link follows the new extension). NEW is sanitized
     /// and keeps OLD's extension if it omits one; refuses to overwrite an
     /// existing attachment.
     RenameAttachment {
         id: String,
-        /// Current filename under `.yaks/<id>/`.
+        /// Current filename under `.yaks/<herd>/yaks/<id>/`.
         old: String,
         /// New filename (e.g. `login-page`, becomes `login-page.png`).
         new: String,
@@ -241,7 +241,7 @@ enum Command {
     /// Read-only.
     Attachment {
         id: String,
-        /// An attachment filename under `.yaks/<id>/` (as in its link).
+        /// An attachment filename under `.yaks/<herd>/yaks/<id>/` (as in its link).
         file: Option<String>,
         #[arg(long)]
         json: bool,
@@ -716,13 +716,14 @@ enum Command {
         #[arg(long)]
         dry_run: bool,
     },
-    /// Bring a farm on an older schema up to this yaks' (schema 4 -> 5): put
-    /// the blank line after every comment's `▸ <ts> [actor]` header, and link
+    /// Bring a farm on an older schema up to this yaks' (schema 4 or 5 -> 6):
+    /// move every yak file and attachment dir from the farm root into its
+    /// herd's directory (`<herd>/yaks/<id>.md`, `<herd>/yaks/<id>/`), put the
+    /// blank line after every comment's `▸ <ts> [actor]` header, and link
     /// non-image attachments as `[stem](<id>/<file>)` instead of
-    /// `![stem](<id>/<file>)`. Rewrites the yak files in place under the farm
-    /// lock, then sets `.yaks/schema` to 5. Idempotent: a current farm
-    /// reports "nothing to migrate". Every other command refuses a schema-4
-    /// farm and names this one. Never commits: it prints the commit to make
+    /// `![stem](<id>/<file>)`. Works under the farm lock, then sets
+    /// `.yaks/schema` to 6. Idempotent: a current farm reports "nothing to
+    /// migrate". Every other command refuses an older farm and names this one. Never commits: it prints the commit to make
     /// (a migration touches nearly every yak file, so land it on its own).
     /// Quit every running `yaks tui` first.
     ///
@@ -766,7 +767,7 @@ enum Command {
         dry_run: bool,
     },
     /// Create a .yaks/ farm in the current directory (config.yaml + schema;
-    /// yaks are flat files, `.yaks/<id>.md`, with a `status:` field). Works
+    /// each yak is one file, `.yaks/<herd>/yaks/<id>.md`, with a `status:` field). Works
     /// without an existing farm.
     ///
     /// With no --mode/--skills/--path this only creates a committed (team) farm
@@ -1392,7 +1393,12 @@ fn main() -> Result<()> {
                     std::process::exit(1);
                 }
                 AttachOutcome::Attached(n) => {
-                    println!("attached {n} to {id} (.yaks/{id}/{n})");
+                    println!(
+                        "attached {n} to {id} ({})",
+                        store::artifact_dir(std::path::Path::new(".yaks"), &id)
+                            .join(&n)
+                            .display()
+                    );
                     if let Some(text) = note {
                         let actor = actor::resolve(as_actor.as_deref());
                         farm.update(
@@ -1410,15 +1416,21 @@ fn main() -> Result<()> {
         Command::RenameAttachment { id, old, new } => {
             match farm.rename_attachment(&id, &old, &new)? {
                 RenameAttachmentOutcome::Renamed { name, rewritten } => println!(
-                    "renamed {old} -> {name} on {id} (.yaks/{id}/{name}); \
-                     links rewritten in {rewritten} yak(s)"
+                    "renamed {old} -> {name} on {id} ({}); \
+                     links rewritten in {rewritten} yak(s)",
+                    store::artifact_dir(std::path::Path::new(".yaks"), &id)
+                        .join(&name)
+                        .display()
                 ),
                 RenameAttachmentOutcome::Unchanged => println!("{old}: name unchanged"),
                 refused => {
                     let why = match refused {
                         RenameAttachmentOutcome::TaskNotFound => format!("no such task: {id}"),
                         RenameAttachmentOutcome::NoSuchAttachment(n) => {
-                            format!("no attachment {n} on {id} (.yaks/{id}/)")
+                            format!(
+                                "no attachment {n} on {id} ({}/)",
+                                store::artifact_dir(std::path::Path::new(".yaks"), &id).display()
+                            )
                         }
                         RenameAttachmentOutcome::Invalid(n) => {
                             format!("invalid attachment name: {n:?}")
@@ -2606,6 +2618,23 @@ fn report_migrate(r: &migrate::Report) {
         },
         store::SCHEMA
     );
+    if !r.layout.is_empty() {
+        let (files, dirs) = r
+            .layout
+            .iter()
+            .fold((0, 0), |(f, d), (_, hf, hd)| (f + hf, d + hd));
+        println!(
+            "  herd-directories: {files} yak file(s) and {dirs} attachment dir(s) {} <herd>/yaks/",
+            if r.applied {
+                "moved into"
+            } else {
+                "to move into"
+            }
+        );
+        for (herd, f, d) in &r.layout {
+            println!("    {herd}/yaks/: {f} yak(s), {d} attachment dir(s)");
+        }
+    }
     for f in &r.fixups {
         let total: usize = f.yaks.iter().map(|(_, n)| n).sum();
         println!(
@@ -2626,9 +2655,10 @@ fn report_migrate(r: &migrate::Report) {
         if r.applied { "rewritten" } else { "to rewrite" }
     );
     if r.applied && r.git_tracked {
-        line.push_str(
-            "; commit with: git add -A .yaks && git commit -m \"yaks: migrate the farm to schema 5\"",
-        );
+        line.push_str(&format!(
+            "; commit with: git add -A .yaks && git commit -m \"yaks: migrate the farm to schema {}\"",
+            store::SCHEMA
+        ));
     } else if !r.applied {
         line.push_str(" (dry run: nothing written; re-run without --dry-run)");
     }
@@ -3286,7 +3316,7 @@ mod tests {
         // One flat path per yak, whatever its status.
         for id in ["yak-0001", "yak-0002", "yak-0003", "yak-0004"] {
             let (code, out, _) = path_cmd(&farm, &[id], FilterFlags::default(), false);
-            let want = root.join(format!("{id}.md"));
+            let want = store::task_path(&root, id);
             assert_eq!(code, 0);
             assert_eq!(out, vec![want.display().to_string()]);
             assert!(want.is_file());
@@ -3299,7 +3329,7 @@ mod tests {
         let before = farm.path_of("yak-0001").unwrap();
         store::move_task(&root, "yak-0001", Status::Shorn, None).unwrap();
         assert_eq!(farm.path_of("yak-0001").unwrap(), before);
-        assert_eq!(before, root.join("yak-0001.md"));
+        assert_eq!(before, store::task_path(&root, "yak-0001"));
     }
 
     #[test]
@@ -3315,8 +3345,8 @@ mod tests {
         assert_eq!(
             out,
             vec![
-                root.join("yak-0003.md").display().to_string(),
-                root.join("yak-0001.md").display().to_string(),
+                store::task_path(&root, "yak-0003").display().to_string(),
+                store::task_path(&root, "yak-0001").display().to_string(),
             ]
         );
     }
@@ -3331,7 +3361,10 @@ mod tests {
             false,
         );
         assert_eq!(code, 1);
-        assert_eq!(out, vec![root.join("yak-0001.md").display().to_string()]);
+        assert_eq!(
+            out,
+            vec![store::task_path(&root, "yak-0001").display().to_string()]
+        );
         assert!(err.contains("no such task: yak-nope"), "{err}");
     }
 
@@ -3345,7 +3378,10 @@ mod tests {
         };
         let (code, out, _) = by(label, false);
         assert_eq!(code, 0);
-        assert_eq!(out, vec![root.join("yak-0003.md").display().to_string()]);
+        assert_eq!(
+            out,
+            vec![store::task_path(&root, "yak-0003").display().to_string()]
+        );
 
         // Dead yaks are excluded by default, included with --all, and always
         // reachable by an explicit --status dead.
@@ -3361,7 +3397,7 @@ mod tests {
         };
         assert_eq!(
             by(dead, false).1,
-            vec![root.join("yak-0004.md").display().to_string()]
+            vec![store::task_path(&root, "yak-0004").display().to_string()]
         );
     }
 

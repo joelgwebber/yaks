@@ -270,9 +270,17 @@ mod tests {
             SEQ.fetch_add(1, Ordering::Relaxed)
         ));
         put(&repo, ".yaks/config.yaml", "herd: yak\n");
-        put(&repo, ".yaks/yak-0001.md", &flat("yak-0001", "hairy"));
-        put(&repo, ".yaks/yak-0002.md", &flat("yak-0002", "shaving"));
-        put(&repo, ".yaks/yak-0002/a.txt", "a\n");
+        put(
+            &repo,
+            ".yaks/yak/yaks/yak-0001.md",
+            &flat("yak-0001", "hairy"),
+        );
+        put(
+            &repo,
+            ".yaks/yak/yaks/yak-0002.md",
+            &flat("yak-0002", "shaving"),
+        );
+        put(&repo, ".yaks/yak/yaks/yak-0002/a.txt", "a\n");
         put(&repo, "src/code.rs", "fn main() {}\n");
         git(&repo, &["init", "-q"]);
         git(&repo, &["add", "."]);
@@ -323,7 +331,7 @@ mod tests {
     #[test]
     fn created_yak() {
         let repo = team_repo();
-        put(&repo, ".yaks/yak-0003.md", "three\n");
+        put(&repo, ".yaks/yak/yaks/yak-0003.md", "three\n");
         let r = report(&repo);
         assert_eq!(lines(&r), [("yak-0003".into(), "created".into())]);
         assert!(!r.yaks[0].staged);
@@ -332,8 +340,16 @@ mod tests {
     #[test]
     fn moved_yak_with_its_transition_note_is_just_a_move() {
         let repo = team_repo();
-        put(&repo, ".yaks/yak-0002.md", &flat("yak-0002", "shorn"));
-        append(&repo, ".yaks/yak-0002.md", &note("moved: shaving -> shorn"));
+        put(
+            &repo,
+            ".yaks/yak/yaks/yak-0002.md",
+            &flat("yak-0002", "shorn"),
+        );
+        append(
+            &repo,
+            ".yaks/yak/yaks/yak-0002.md",
+            &note("moved: shaving -> shorn"),
+        );
         let r = report(&repo);
         assert_eq!(
             lines(&r),
@@ -344,8 +360,8 @@ mod tests {
     #[test]
     fn new_notes_are_counted() {
         let repo = team_repo();
-        append(&repo, ".yaks/yak-0001.md", &note("one"));
-        append(&repo, ".yaks/yak-0001.md", &note("two"));
+        append(&repo, ".yaks/yak/yaks/yak-0001.md", &note("one"));
+        append(&repo, ".yaks/yak/yaks/yak-0001.md", &note("two"));
         let r = report(&repo);
         assert_eq!(lines(&r), [("yak-0001".into(), "notes +2".into())]);
     }
@@ -355,14 +371,14 @@ mod tests {
         let repo = team_repo();
         put(
             &repo,
-            ".yaks/yak-0001.md",
+            ".yaks/yak/yaks/yak-0001.md",
             &flat("yak-0001", "hairy").replace("title: t", "title: new"),
         );
         assert_eq!(
             lines(&report(&repo)),
             [("yak-0001".into(), "edited".into())]
         );
-        append(&repo, ".yaks/yak-0001.md", &note("n"));
+        append(&repo, ".yaks/yak/yaks/yak-0001.md", &note("n"));
         assert_eq!(
             lines(&report(&repo)),
             [("yak-0001".into(), "notes +1, edited".into())]
@@ -374,7 +390,7 @@ mod tests {
         let repo = team_repo();
         put(
             &repo,
-            ".yaks/yak-0001.md",
+            ".yaks/yak/yaks/yak-0001.md",
             &flat("yak-0001", "hairy").replace("2026-01-01", "2026-03-03"),
         );
         assert_eq!(
@@ -386,7 +402,7 @@ mod tests {
     #[test]
     fn removed_yak() {
         let repo = team_repo();
-        std::fs::remove_file(repo.join(".yaks/yak-0001.md")).unwrap();
+        std::fs::remove_file(repo.join(".yaks/yak/yaks/yak-0001.md")).unwrap();
         assert_eq!(
             lines(&report(&repo)),
             [("yak-0001".into(), "removed".into())]
@@ -396,7 +412,7 @@ mod tests {
     #[test]
     fn new_artifact_and_config_change() {
         let repo = team_repo();
-        put(&repo, ".yaks/yak-0002/b.txt", "b\n");
+        put(&repo, ".yaks/yak/yaks/yak-0002/b.txt", "b\n");
         put(&repo, ".yaks/config.yaml", "herd: other\n");
         let r = report(&repo);
         assert_eq!(lines(&r), [("yak-0002".into(), "artifacts".into())]);
@@ -407,9 +423,9 @@ mod tests {
     #[test]
     fn staged_versus_unstaged() {
         let repo = team_repo();
-        append(&repo, ".yaks/yak-0001.md", &note("n"));
-        put(&repo, ".yaks/yak-0003.md", "three\n");
-        git(&repo, &["add", ".yaks/yak-0003.md"]);
+        append(&repo, ".yaks/yak/yaks/yak-0001.md", &note("n"));
+        put(&repo, ".yaks/yak/yaks/yak-0003.md", "three\n");
+        git(&repo, &["add", ".yaks/yak/yaks/yak-0003.md"]);
         let r = report(&repo);
         let staged: Vec<(&str, bool)> = r.yaks.iter().map(|y| (&*y.id, y.staged)).collect();
         assert_eq!(staged, [("yak-0001", false), ("yak-0003", true)]);
@@ -421,13 +437,17 @@ mod tests {
     #[test]
     fn several_kinds_of_change_share_one_line() {
         let repo = team_repo();
-        put(&repo, ".yaks/yak-0002.md", &flat("yak-0002", "shorn"));
+        put(
+            &repo,
+            ".yaks/yak/yaks/yak-0002.md",
+            &flat("yak-0002", "shorn"),
+        );
         append(
             &repo,
-            ".yaks/yak-0002.md",
+            ".yaks/yak/yaks/yak-0002.md",
             &(note("moved: shaving -> shorn") + &note("evidence")),
         );
-        put(&repo, ".yaks/yak-0002/b.txt", "b\n");
+        put(&repo, ".yaks/yak/yaks/yak-0002/b.txt", "b\n");
         let r = report(&repo);
         assert_eq!(
             lines(&r),
@@ -441,7 +461,11 @@ mod tests {
     #[test]
     fn flat_status_change_reads_as_a_move() {
         let repo = team_repo();
-        put(&repo, ".yaks/yak-0001.md", &flat("yak-0001", "shaving"));
+        put(
+            &repo,
+            ".yaks/yak/yaks/yak-0001.md",
+            &flat("yak-0001", "shaving"),
+        );
         let r = report(&repo);
         assert_eq!(
             lines(&r),
@@ -453,9 +477,17 @@ mod tests {
     #[test]
     fn flat_status_change_plus_note_reports_both() {
         let repo = team_repo();
-        put(&repo, ".yaks/yak-0002.md", &flat("yak-0002", "shorn"));
-        append(&repo, ".yaks/yak-0002.md", &note("moved: shaving -> shorn"));
-        append(&repo, ".yaks/yak-0002.md", &note("done, really"));
+        put(
+            &repo,
+            ".yaks/yak/yaks/yak-0002.md",
+            &flat("yak-0002", "shorn"),
+        );
+        append(
+            &repo,
+            ".yaks/yak/yaks/yak-0002.md",
+            &note("moved: shaving -> shorn"),
+        );
+        append(&repo, ".yaks/yak/yaks/yak-0002.md", &note("done, really"));
         let r = report(&repo);
         assert_eq!(
             lines(&r),
@@ -467,7 +499,7 @@ mod tests {
     #[test]
     fn flat_edit_without_a_status_change_is_not_a_move() {
         let repo = team_repo();
-        append(&repo, ".yaks/yak-0001.md", &note("just a note"));
+        append(&repo, ".yaks/yak/yaks/yak-0001.md", &note("just a note"));
         let r = report(&repo);
         assert_eq!(lines(&r), [("yak-0001".into(), "notes +1".into())]);
         assert_eq!(r.message.as_deref(), Some("yaks: updated yak-0001"));
@@ -476,7 +508,7 @@ mod tests {
     #[test]
     fn flat_attachment_reports_artifacts() {
         let repo = team_repo();
-        put(&repo, ".yaks/yak-0001/frame.svg", "<svg/>\n");
+        put(&repo, ".yaks/yak/yaks/yak-0001/frame.svg", "<svg/>\n");
         let r = report(&repo);
         assert_eq!(lines(&r), [("yak-0001".into(), "artifacts".into())]);
         assert_eq!(r.message.as_deref(), Some("yaks: artifacts for yak-0001"));
@@ -485,8 +517,12 @@ mod tests {
     #[test]
     fn a_staged_status_change_reads_as_a_staged_move() {
         let repo = team_repo();
-        put(&repo, ".yaks/yak-0001.md", &flat("yak-0001", "dead"));
-        git(&repo, &["add", ".yaks/yak-0001.md"]);
+        put(
+            &repo,
+            ".yaks/yak/yaks/yak-0001.md",
+            &flat("yak-0001", "dead"),
+        );
+        git(&repo, &["add", ".yaks/yak/yaks/yak-0001.md"]);
         let r = report(&repo);
         assert_eq!(
             lines(&r),
@@ -500,7 +536,7 @@ mod tests {
         let repo = team_repo();
         git(&repo, &["rm", "-rq", "--cached", ".yaks"]);
         put(&repo, ".gitignore", ".yaks/\n");
-        put(&repo, ".yaks/yak-0009.md", "nine\n");
+        put(&repo, ".yaks/yak/yaks/yak-0009.md", "nine\n");
         let r = report(&repo);
         assert!(r.private && r.clean());
         assert_eq!(
@@ -518,7 +554,7 @@ mod tests {
         git(&repo, &["commit", "-q", "-m", "side"]);
         git(&repo, &["checkout", "-q", "-"]);
         git(&repo, &["merge", "--no-commit", "--no-ff", "-q", "side"]);
-        put(&repo, ".yaks/yak-0003.md", "three\n");
+        put(&repo, ".yaks/yak/yaks/yak-0003.md", "three\n");
         let r = report(&repo);
         assert!(r.pending.is_some());
         let text = render(&r);
@@ -546,7 +582,7 @@ mod tests {
     #[test]
     fn json_shape() {
         let repo = team_repo();
-        append(&repo, ".yaks/yak-0001.md", &note("n"));
+        append(&repo, ".yaks/yak/yaks/yak-0001.md", &note("n"));
         put(&repo, ".yaks/config.yaml", "herd: other\n");
         let v = to_json(&report(&repo));
         assert_eq!(v["clean"], false);
@@ -563,8 +599,8 @@ mod tests {
     #[test]
     fn status_writes_nothing() {
         let repo = team_repo();
-        append(&repo, ".yaks/yak-0001.md", &note("n"));
-        put(&repo, ".yaks/yak-0003.md", "three\n");
+        append(&repo, ".yaks/yak/yaks/yak-0001.md", &note("n"));
+        put(&repo, ".yaks/yak/yaks/yak-0003.md", "three\n");
         let before = git(&repo, &["status", "--porcelain"]);
         let head = git(&repo, &["rev-parse", "HEAD"]);
         let _ = report(&repo);
@@ -592,14 +628,18 @@ mod tests {
     #[test]
     fn status_agrees_with_the_commit_message() {
         let repo = team_repo();
-        put(&repo, ".yaks/yak-0003.md", "three\n"); // created
-        put(&repo, ".yaks/yak-0004.md", "four\n");
-        append(&repo, ".yaks/yak-0001.md", &note("n")); // notes
-        put(&repo, ".yaks/yak-0002.md", &flat("yak-0002", "shorn")); // moved
-        put(&repo, ".yaks/yak-0002/b.txt", "b\n"); // artifacts
-        put(&repo, ".yaks/yak-0005/b.txt", "b\n"); // artifacts only
+        put(&repo, ".yaks/yak/yaks/yak-0003.md", "three\n"); // created
+        put(&repo, ".yaks/yak/yaks/yak-0004.md", "four\n");
+        append(&repo, ".yaks/yak/yaks/yak-0001.md", &note("n")); // notes
+        put(
+            &repo,
+            ".yaks/yak/yaks/yak-0002.md",
+            &flat("yak-0002", "shorn"),
+        ); // moved
+        put(&repo, ".yaks/yak/yaks/yak-0002/b.txt", "b\n"); // artifacts
+        put(&repo, ".yaks/yak/yaks/yak-0005/b.txt", "b\n"); // artifacts only
         put(&repo, ".yaks/config.yaml", "herd: other\n"); // config
-        git(&repo, &["add", ".yaks/yak-0004.md"]);
+        git(&repo, &["add", ".yaks/yak/yaks/yak-0004.md"]);
 
         let r = report(&repo);
         let plan = match commit::run(&farm(&repo), None, true).unwrap() {

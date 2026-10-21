@@ -1,8 +1,10 @@
 //! Links to repo source files (yaks-da5e): `[x](../src/foo.rs#L12-L40)`.
 //!
-//! A yak file lives at `.yaks/<id>.md`, so a plain relative link that climbs
-//! one level (`../src/foo.rs`) is a path from the repo root, and resolves the
-//! same way on GitHub and in any other markdown renderer. Two optional parts:
+//! `../src/foo.rs` is a path from the repo root: one `../` for the `.yaks/`
+//! the link conventionally climbs out of (it predates herd directories, when
+//! a yak file sat at `.yaks/<id>.md`, and is kept so existing links keep
+//! working). yaks resolves it against the code checkout; other renderers
+//! no longer resolve it by plain relative path. Two optional parts:
 //!
 //! - a GitHub-style line fragment, `#L12` or `#L12-L40`;
 //! - a pinned commit in the GitHub blob-URL shape, `../blob/<sha>/src/foo.rs`

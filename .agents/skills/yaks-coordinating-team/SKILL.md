@@ -49,10 +49,10 @@ commit is what keeps your branch's history honest.
 
 ## A worker's finish
 One commit contains the code, the yak (shorn: its `status:` line changed in place in
-`.yaks/<id>.md`) and any evidence. `yaks attach` creates a NEW directory `.yaks/<id>/`; it
+`.yaks/<herd>/yaks/<id>.md`) and any evidence. `yaks attach` creates a NEW directory `.yaks/<herd>/yaks/<id>/`; it
 must be `git add`ed or it is lost. Stage with paths that exist (`git add` aborts and stages
-NOTHING if one pathspec does not match): `git add -A -- <code paths> .yaks/<id>.md`, plus
-`.yaks/<id>/` if you attached something, then check `git show --stat` lists every file you
+NOTHING if one pathspec does not match): `git add -A -- <code paths> .yaks/<herd>/yaks/<id>.md`, plus
+`.yaks/<herd>/yaks/<id>/` if you attached something, then check `git show --stat` lists every file you
 expect before you rely on the commit.
 
 ## Landing

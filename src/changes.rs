@@ -311,13 +311,13 @@ fn farm_rel(path: &str) -> String {
     }
 }
 
-/// A file under `.yaks/<id>/`.
+/// A file under `.yaks/<herd>/yaks/<id>/`.
 fn is_attachment(path: &str) -> bool {
     store::attachment_owner(&farm_rel(path)).is_some()
 }
 
-/// A yak's own flat file: `.yaks/<id>.md`.
+/// A yak's own file: `.yaks/<herd>/yaks/<id>.md`.
 fn is_flat_yak_file(path: &str) -> bool {
     let rel = farm_rel(path);
-    !rel.contains('/') && rel.ends_with(".md")
+    store::path_owner(&rel).is_some() && store::attachment_owner(&rel).is_none()
 }

@@ -1378,7 +1378,16 @@ fn base_files(top: &Path, base: &str, rel: &str) -> Option<Vec<(String, String)>
         let Some(under) = path.strip_prefix(rel).and_then(|p| p.strip_prefix('/')) else {
             continue;
         };
-        if !under.contains('/') && under.ends_with(".md") {
+        // A yak file: `<herd>/yaks/<id>.md` (schema 6), or `<id>.md` at the
+        // farm root in a commit from before the herd-directory migration.
+        // Either is materialized at its schema-6 path below.
+        let is_yak = if under.contains('/') {
+            crate::store::path_owner(under).is_some()
+                && crate::store::attachment_owner(under).is_none()
+        } else {
+            under.ends_with(".md")
+        };
+        if is_yak {
             files.push((sha.to_string(), under.to_string()));
         }
     }
@@ -1425,7 +1434,11 @@ fn base_farm_tasks(
             .ok()?;
         let body = rest.get(nl + 1..nl + 1 + size)?;
         rest = rest.get(nl + 1 + size + 1..)?;
-        let dest = farm.join(name);
+        // Old flat names land at their schema-6 path, so the loader sees them.
+        let dest = match name.strip_suffix(".md").filter(|n| !n.contains('/')) {
+            Some(id) => store::task_path(&farm, id),
+            None => farm.join(name),
+        };
         fs::create_dir_all(dest.parent()?).ok()?;
         fs::write(dest, body).ok()?;
     }
@@ -1443,6 +1456,11 @@ fn load_farm(root: &Path) -> Result<Vec<crate::model::Task>> {
              this yaks does not read, so it is not read; {}",
             store::OLD_LAYOUT_FIX
         );
+    }
+    // A farm behind this schema (a clone from before the herd-directory
+    // migration keeps its yaks at the farm root) would read as empty.
+    if let Some(why) = store::migration_refusal(root) {
+        anyhow::bail!("not migrated: {why}");
     }
     store::load(root, &EVERY)
 }
@@ -2694,14 +2712,16 @@ mod tests {
         String::from_utf8_lossy(&out.stdout).trim().to_string()
     }
 
-    /// One yak in the FLAT layout: `.yaks/<id>.md` with a `status:` field.
+    /// One yak in the current layout: `.yaks/<herd>/yaks/<id>.md` with a `status:` field.
     fn task_file(root: &Path, status: &str, id: &str, extra_fm: &str, body: &str) {
         let dir = root.join(".yaks");
         fs::create_dir_all(&dir).unwrap();
         // What `yaks init` writes: a flat farm is recognised by its marker.
         fs::write(dir.join("schema"), format!("{}\n", store::SCHEMA)).unwrap();
+        let f = store::task_path(&dir, id);
+        fs::create_dir_all(f.parent().unwrap()).unwrap();
         fs::write(
-            dir.join(format!("{id}.md")),
+            f,
             format!(
                 "---\nid: {id}\ntitle: {id} title\nstatus: {status}\ntype: task\n\
                  priority: 3\ncreated: '2026-01-01T00:00:00Z'\n\
@@ -2728,7 +2748,7 @@ mod tests {
 
     /// Change a flat yak's `status:` in place (how a move is written now).
     fn set_status(root: &Path, id: &str, from: &str, to: &str) {
-        let f = root.join(format!(".yaks/{id}.md"));
+        let f = store::task_path(&root.join(".yaks"), id);
         let text = fs::read_to_string(&f).unwrap();
         let old = format!("status: {from}\n");
         assert!(text.contains(&old), "{old} not in {text}");
@@ -3474,7 +3494,7 @@ mod tests {
         // Make the shed's index stale (same bytes, newer mtime) so an ordinary
         // `git status` would want to refresh it.
         std::thread::sleep(std::time::Duration::from_millis(30));
-        let f = wt.join(".yaks/yaks-aaaa.md");
+        let f = wt.join(".yaks/yaks/yaks/yaks-aaaa.md");
         let text = fs::read_to_string(&f).unwrap();
         fs::write(&f, text).unwrap();
         task_file(&wt, "hairy", "yaks-zzzz", "", "new");
@@ -3685,7 +3705,7 @@ mod tests {
         let (t, wt) = claimed_repo_with_shed("label-shorn");
         shed_notes_on_aaaa(&wt, &[("2026-03-02T00:00:00Z", Some("w1"), "working")]);
         // `yaks-bbbb`: claimed, worked and shorn inside the shed.
-        fs::remove_file(wt.join(".yaks/yaks-bbbb.md")).unwrap();
+        fs::remove_file(wt.join(".yaks/yaks/yaks/yaks-bbbb.md")).unwrap();
         task_file(
             &wt,
             "shorn",
@@ -4047,7 +4067,7 @@ mod tests {
             &wt,
             &[("2026-03-02T00:00:00Z", Some("w-1"), "still working")],
         );
-        fs::remove_file(wt.join(".yaks/yaks-bbbb.md")).unwrap();
+        fs::remove_file(wt.join(".yaks/yaks/yaks/yaks-bbbb.md")).unwrap();
         task_file(
             &wt,
             "shaving",
@@ -4063,7 +4083,7 @@ mod tests {
             ),
         );
         // The primary moves bbbb the same way, independently, after the shed forked.
-        fs::remove_file(t.join(".yaks/yaks-bbbb.md")).unwrap();
+        fs::remove_file(t.join(".yaks/yaks/yaks/yaks-bbbb.md")).unwrap();
         task_file(
             &t,
             "shaving",
@@ -4160,7 +4180,7 @@ mod tests {
         let t = b.join("repo");
         repo_with_farm(&t);
         // The primary claims a yak itself, uncommitted, with its own note.
-        fs::remove_file(t.join(".yaks/yaks-aaaa.md")).unwrap();
+        fs::remove_file(t.join(".yaks/yaks/yaks/yaks-aaaa.md")).unwrap();
         task_file(
             &t,
             "shaving",
@@ -4204,7 +4224,7 @@ mod tests {
     fn a_shed_that_is_landed_and_stale_shows_both_independently() {
         let (t, wt) = claimed_repo_with_shed("landed-stale");
         // The shed claims yaks-bbbb, with its own note, uncommitted.
-        fs::remove_file(wt.join(".yaks/yaks-bbbb.md")).unwrap();
+        fs::remove_file(wt.join(".yaks/yaks/yaks/yaks-bbbb.md")).unwrap();
         task_file(
             &wt,
             "shaving",
@@ -4220,7 +4240,7 @@ mod tests {
             ),
         );
         // The primary makes the identical move independently, after the fork.
-        fs::remove_file(t.join(".yaks/yaks-bbbb.md")).unwrap();
+        fs::remove_file(t.join(".yaks/yaks/yaks/yaks-bbbb.md")).unwrap();
         task_file(
             &t,
             "shaving",
@@ -4329,7 +4349,7 @@ mod tests {
     fn two_non_primary_viewers_agree_on_whether_a_third_shed_is_landed() {
         let (t, w) = claimed_repo_with_shed("landed-viewers");
         // `w`'s change lands: the primary makes the identical move after.
-        fs::remove_file(w.join(".yaks/yaks-bbbb.md")).unwrap();
+        fs::remove_file(w.join(".yaks/yaks/yaks/yaks-bbbb.md")).unwrap();
         task_file(
             &w,
             "shaving",
@@ -4344,7 +4364,7 @@ mod tests {
                 )],
             ),
         );
-        fs::remove_file(t.join(".yaks/yaks-bbbb.md")).unwrap();
+        fs::remove_file(t.join(".yaks/yaks/yaks/yaks-bbbb.md")).unwrap();
         task_file(
             &t,
             "shaving",
@@ -4401,7 +4421,7 @@ mod tests {
     #[test]
     fn changes_marks_a_landed_yak_text_and_json() {
         let (t, wt) = claimed_repo_with_shed("landed-changes");
-        fs::remove_file(wt.join(".yaks/yaks-bbbb.md")).unwrap();
+        fs::remove_file(wt.join(".yaks/yaks/yaks/yaks-bbbb.md")).unwrap();
         task_file(
             &wt,
             "shaving",
@@ -4422,7 +4442,7 @@ mod tests {
         );
         // The primary makes bbbb's move too, independently; aaaa's extra note
         // stays outstanding.
-        fs::remove_file(t.join(".yaks/yaks-bbbb.md")).unwrap();
+        fs::remove_file(t.join(".yaks/yaks/yaks/yaks-bbbb.md")).unwrap();
         task_file(
             &t,
             "shaving",
@@ -4990,7 +5010,7 @@ mod tests {
 
         // Merged, but uncommitted files keep it: one modified, one untracked.
         fs::write(w.join("README"), "x").unwrap();
-        fs::write(w.join(".yaks/yaks-bbbb.md"), "changed").unwrap();
+        fs::write(w.join(".yaks/yaks/yaks/yaks-bbbb.md"), "changed").unwrap();
         let sheds = sheds_of(&t);
         let l = shed_at(&sheds, &w);
         assert_eq!((l.dirty, l.untracked), (Some(2), Some(1)));
@@ -5916,7 +5936,7 @@ mod tests {
             "",
             &notes("new", &[("2026-03-03T01:00:00Z", Some("w-1"), "made it")]),
         );
-        fs::remove_file(wt.join(".yaks/yaks-bbbb.md")).unwrap();
+        fs::remove_file(wt.join(".yaks/yaks/yaks/yaks-bbbb.md")).unwrap();
         task_file(
             wt,
             "shaving",
@@ -6019,7 +6039,7 @@ mod tests {
     /// Rewrite a yak file of the shed in place with `from` replaced by `to`.
     fn rewrite(root: &Path, status: &str, id: &str, from: &str, to: &str) {
         let _ = status; // the flat layout has one path per yak
-        let f = root.join(format!(".yaks/{id}.md"));
+        let f = store::task_path(&root.join(".yaks"), id);
         let text = fs::read_to_string(&f).unwrap();
         assert!(text.contains(from), "{from} not in {text}");
         fs::write(&f, text.replacen(from, to, 1)).unwrap();

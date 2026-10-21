@@ -104,13 +104,13 @@ nearly every yak file, so land it on its own and in this order:
 2. In the primary checkout, with the new binary: `yaks migrate --dry-run`
    (per-fixup counts), `yaks migrate`, `yaks doctor`, a second `yaks migrate`
    (it must say `nothing to migrate`), then ONE commit of just `.yaks/`
-   (`git add -A .yaks && git commit -m "yaks: migrate the farm to schema 5"`).
+   (`git add -A .yaks && git commit -m "yaks: migrate the farm to schema <N>"`).
    Quit every running `yaks tui` first.
 3. Every other checkout (sheds, Delta clones) rebases or merges that commit,
    or runs `yaks migrate` itself (the fixups are deterministic and
    idempotent, so both routes give the same bytes). Until then the new binary
    refuses it, naming `yaks migrate`; an OLD binary reading a migrated farm
-   refuses it as too new (schema 5 > 4), never misreads it.
+   refuses it as too new (e.g. schema 6 > 5), never misreads it.
 4. Open sheds with in-flight work: migrate the shed BEFORE merging it back, or
    the merge carries old-shape comments into a migrated farm (harmless to read,
    fixed by the next `yaks migrate`).

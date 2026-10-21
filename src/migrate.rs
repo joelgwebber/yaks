@@ -4,9 +4,14 @@
 //! Each [`Fixup`] is a pure function from one yak's body to its fixed body
 //! (plus how many edits it made). They are idempotent and independent, so a
 //! later schema's fixup is one more entry in [`FIXUPS`]; `yaks migrate` runs
-//! the whole list over every yak file (schema 4 -> 5 today, and a re-run on a
-//! current farm changes nothing). Readers accept the shapes every fixup
+//! the whole list over every yak file (schema 4 -> 5), and a re-run on a
+//! current farm changes nothing. Readers accept the shapes every fixup
 //! rewrites *from*, so an un-migrated checkout or an old commit still parses.
+//!
+//! Schema 6 adds one LAYOUT step that runs first ([`plan_layout`]): every yak
+//! file and attachment directory at the farm root moves into its herd's
+//! directory, `<herd>/yaks/` ([`store::task_path`]). Bodies are not touched by
+//! it (attachment links are relative to the yak file, which moves with them).
 
 use crate::store;
 use anyhow::{Context, Result};
@@ -128,6 +133,95 @@ pub struct FixupReport {
     pub yaks: Vec<(String, usize)>,
 }
 
+/// One file or directory the layout step moves, farm-relative.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Move {
+    pub from: std::path::PathBuf,
+    pub to: std::path::PathBuf,
+}
+
+/// The schema-6 layout step: every yak file at the farm root (`<id>.md` with
+/// frontmatter naming that `id`) and its attachment directory (`<id>/`) moves
+/// to `<herd>/yaks/` ([`store::task_path`], [`store::artifact_dir`]). A root
+/// `.md` with no frontmatter, or whose `id:` is not its file name, is not a
+/// yak file and stays. Refuses (before any move) when a destination already
+/// exists, or when a yak's herd is a reserved name (`docs`). Returns the moves
+/// in a stable order: yak files first, then attachment dirs.
+pub fn plan_layout(root: &Path) -> Result<Vec<Move>> {
+    let mut files = Vec::new();
+    let mut dirs = Vec::new();
+    let Ok(rd) = std::fs::read_dir(root) else {
+        return Ok(Vec::new());
+    };
+    let mut entries: Vec<_> = rd.flatten().map(|e| e.path()).collect();
+    entries.sort();
+    let mut ids = HashSet::new();
+    for p in &entries {
+        if !p.is_file() || p.extension().and_then(|e| e.to_str()) != Some("md") {
+            continue;
+        }
+        let Some(stem) = p.file_stem().and_then(|s| s.to_str()) else {
+            continue;
+        };
+        let text =
+            std::fs::read_to_string(p).with_context(|| format!("reading {}", p.display()))?;
+        let Some(task) = store::parse_task(&text, crate::model::Status::Hairy) else {
+            continue;
+        };
+        if task.id != stem {
+            continue;
+        }
+        ids.insert(stem.to_string());
+        files.push(Move {
+            from: p.clone(),
+            to: store::task_path(root, stem),
+        });
+    }
+    for p in &entries {
+        let Some(name) = p.file_name().and_then(|s| s.to_str()) else {
+            continue;
+        };
+        if p.is_dir() && ids.contains(name) {
+            dirs.push(Move {
+                from: p.clone(),
+                to: store::artifact_dir(root, name),
+            });
+        }
+    }
+    for id in &ids {
+        let herd = store::herd_of(id);
+        if store::RESERVED_HERD_NAMES.contains(&herd) {
+            anyhow::bail!(
+                "{id}'s herd `{herd}` is a reserved name (it would collide with the farm's docs \
+                 directory); rename the herd first (`yaks rename-herd {herd} <new>`) with yaks 0.0.21"
+            );
+        }
+    }
+    let moves: Vec<Move> = files.into_iter().chain(dirs).collect();
+    for m in &moves {
+        if std::fs::symlink_metadata(&m.to).is_ok() {
+            anyhow::bail!(
+                "cannot move {} into its herd directory: {} already exists",
+                m.from.display(),
+                m.to.display()
+            );
+        }
+    }
+    Ok(moves)
+}
+
+fn apply_layout(moves: &[Move]) -> Result<()> {
+    for m in moves {
+        if let Some(parent) = m.to.parent() {
+            std::fs::create_dir_all(parent)
+                .with_context(|| format!("creating {}", parent.display()))?;
+        }
+        std::fs::rename(&m.from, &m.to)
+            .with_context(|| format!("moving {} to {}", m.from.display(), m.to.display()))?;
+    }
+    Ok(())
+}
+
 /// Result of a [`run`].
 #[derive(Debug)]
 pub struct Report {
@@ -135,6 +229,9 @@ pub struct Report {
     pub applied: bool,
     /// The farm's schema marker before the run (`None`: no usable marker).
     pub from: Option<u32>,
+    /// The layout step's moves (schema 6): per herd, `(herd, yak files,
+    /// attachment dirs)`, sorted by herd.
+    pub layout: Vec<(String, usize, usize)>,
     pub fixups: Vec<FixupReport>,
     /// Yak files rewritten (or that would be): the union over the fixups.
     pub files: usize,
@@ -146,7 +243,7 @@ pub struct Report {
 impl Report {
     /// Nothing changed and nothing would: the farm is current.
     pub fn is_noop(&self) -> bool {
-        self.files == 0 && self.from.is_none_or(|v| v == store::SCHEMA)
+        self.files == 0 && self.layout.is_empty() && self.from.is_none_or(|v| v == store::SCHEMA)
     }
 }
 
@@ -159,7 +256,49 @@ pub fn run(root: &Path, dry_run: bool) -> Result<Report> {
     let from = std::fs::read_to_string(root.join("schema"))
         .ok()
         .and_then(|raw| raw.trim().parse::<u32>().ok());
-    let ids = store::all_ids(root);
+    // The layout step first, so the fixups below read every yak at its
+    // schema-6 path. A dry run plans it and reads the files where they are.
+    let moves = plan_layout(root)?;
+    let mut layout: std::collections::BTreeMap<String, (usize, usize)> = Default::default();
+    for m in &moves {
+        let name = m
+            .from
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or_default();
+        let id = name.strip_suffix(".md").unwrap_or(name);
+        let e = layout.entry(store::herd_of(id).to_string()).or_default();
+        if m.from.is_dir() {
+            e.1 += 1;
+        } else {
+            e.0 += 1;
+        }
+    }
+    let layout: Vec<(String, usize, usize)> =
+        layout.into_iter().map(|(h, (f, d))| (h, f, d)).collect();
+    if !dry_run {
+        apply_layout(&moves)?;
+    }
+    let mut paths: Vec<std::path::PathBuf> = if dry_run {
+        let moved: HashSet<_> = moves.iter().map(|m| m.to.clone()).collect();
+        store::yak_files(root)
+            .into_iter()
+            .filter(|p| !moved.contains(p))
+            .chain(
+                moves
+                    .iter()
+                    .filter(|m| m.from.is_file())
+                    .map(|m| m.from.clone()),
+            )
+            .collect()
+    } else {
+        store::yak_files(root)
+    };
+    paths.sort();
+    let ids: HashSet<String> = paths
+        .iter()
+        .filter_map(|p| p.file_stem().and_then(|s| s.to_str()).map(String::from))
+        .collect();
     let ctx = Ctx { ids: &ids };
     let mut fixups: Vec<FixupReport> = FIXUPS
         .iter()
@@ -170,8 +309,6 @@ pub fn run(root: &Path, dry_run: bool) -> Result<Report> {
         })
         .collect();
     let mut writes: Vec<(std::path::PathBuf, String)> = Vec::new();
-    let mut paths: Vec<_> = ids.iter().map(|id| store::task_path(root, id)).collect();
-    paths.sort();
     for path in paths {
         let text = std::fs::read_to_string(&path)
             .with_context(|| format!("reading {}", path.display()))?;
@@ -199,6 +336,7 @@ pub fn run(root: &Path, dry_run: bool) -> Result<Report> {
     let report = Report {
         applied: !dry_run,
         from,
+        layout,
         fixups,
         files: writes.len(),
         git_tracked: tracked_by_git(root),

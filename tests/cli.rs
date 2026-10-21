@@ -300,9 +300,11 @@ fn create_positional_title_and_json() {
     assert!(!id.is_empty(), "empty id in JSON: {json_out}");
     assert_eq!(v["title"], "from json");
     let path = v["path"].as_str().expect("path string");
+    // Schema 6: `<herd>/yaks/<id>.md` (the default herd here is `yak`).
+    let herd = id.split_once('-').unwrap().0;
     assert!(
-        path.ends_with(&format!(".yaks/{id}.md")),
-        "path {path} should end with .yaks/{id}.md"
+        path.ends_with(&format!(".yaks/{herd}/yaks/{id}.md")),
+        "path {path} should end with .yaks/{herd}/yaks/{id}.md"
     );
     assert!(
         std::path::Path::new(path).is_file(),
@@ -705,7 +707,11 @@ fn attach_name_and_rename_attachment() {
         "dashboard",
     ]);
     assert!(out.contains("-> dashboard.png"), "{out}");
-    let arts = dir.join(".yaks").join(&id);
+    let arts = dir
+        .join(".yaks")
+        .join(id.split_once('-').unwrap().0)
+        .join("yaks")
+        .join(&id);
     assert!(arts.join("dashboard.png").is_file());
     assert!(!arts.join("paste-20260921-234927.png").exists());
     let show = ok(&["show", &id]);
@@ -784,7 +790,10 @@ fn labels_normalized_on_create_update_bulk_and_doctor() {
     assert!(dry.contains("add labels [p, q]"), "{dry}");
 
     // A legacy on-disk comma label: doctor flags it (non-zero exit)...
-    let path = dir.join(format!(".yaks/{a}.md"));
+    let path = dir.join(format!(
+        ".yaks/{}/yaks/{a}.md",
+        a.split_once('-').unwrap().0
+    ));
     let text = std::fs::read_to_string(&path).unwrap();
     std::fs::write(&path, text.replacen("- bar\n", "- ui,docs\n", 1)).unwrap();
     let (ok, out) = raw(&["doctor"]);
@@ -849,8 +858,8 @@ fn a_schema_3_farm_refuses_to_open_and_names_the_release_that_migrates_it() {
     // Nothing was written, and there is no migrate command any more.
     assert!(!farm.join("yak-0001.md").exists());
     assert!(!cli(&["migrate"]).status.success());
-    // A flat farm opens.
-    std::fs::write(farm.join("schema"), "5\n").unwrap();
+    // A current farm opens.
+    std::fs::write(farm.join("schema"), "6\n").unwrap();
     assert!(cli(&["list"]).status.success());
     let _ = std::fs::remove_dir_all(&dir);
 }

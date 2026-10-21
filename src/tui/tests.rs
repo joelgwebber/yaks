@@ -2433,7 +2433,7 @@ mod live {
             "body links artifact: {body}"
         );
         assert!(
-            proj.join(".yaks/t0/shot.png").is_file(),
+            proj.join(".yaks/t0/yaks/t0/shot.png").is_file(),
             "artifact copied into the farm"
         );
     }
@@ -2463,7 +2463,7 @@ mod live {
             body.contains("![login-page](t0/login-page.png)"),
             "link rewritten: {body}"
         );
-        let dir = proj.join(".yaks/t0");
+        let dir = proj.join(".yaks/t0/yaks/t0");
         assert!(dir.join("login-page.png").is_file());
         assert!(!dir.join("paste-20260921-234927.png").exists());
         assert_eq!(
@@ -2483,7 +2483,7 @@ mod live {
         enter(&mut app);
         let body = &app.task("t0").unwrap().body;
         assert!(body.contains("![dashboard](t0/dashboard.png)"), "{body}");
-        assert!(proj.join(".yaks/t0/dashboard.png").is_file());
+        assert!(proj.join(".yaks/t0/yaks/t0/dashboard.png").is_file());
     }
 
     #[test]
@@ -4115,8 +4115,8 @@ fn an_attachment_only_another_shed_has_resolves_to_that_shed() {
     let mut app = App::with_farm(farm).unwrap();
     // A worker shed (a real directory with its own farm) holding the file.
     let (shed_dir, _shed_farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
-    std::fs::create_dir_all(shed_dir.join(".yaks/t0")).unwrap();
-    std::fs::write(shed_dir.join(".yaks/t0/log.txt"), "from the shed").unwrap();
+    std::fs::create_dir_all(shed_dir.join(".yaks/t0/yaks/t0")).unwrap();
+    std::fs::write(shed_dir.join(".yaks/t0/yaks/t0/log.txt"), "from the shed").unwrap();
     let mut snap = crate::tui::sheds_tab::fixture::snapshot();
     let i = snap
         .sheds
@@ -4225,7 +4225,7 @@ fn ctrl_key(app: &mut App, c: char) {
 #[test]
 fn e_in_the_viewer_edits_the_attachment_and_saves_it_back() {
     let (dir, mut app) = app_on_attachment("notes.md", b"- one\n- two");
-    let path = dir.join(".yaks/t0/notes.md");
+    let path = dir.join(".yaks/t0/yaks/t0/notes.md");
     enter_key(&mut app);
     assert_eq!(edit_attachment(&mut app).text(), "- one\n- two");
     let frame = draw(&app, 100, 24);
@@ -4258,7 +4258,7 @@ fn e_in_the_viewer_edits_the_attachment_and_saves_it_back() {
 #[test]
 fn cancelling_an_attachment_edit_leaves_the_file_unchanged() {
     let (dir, mut app) = app_on_attachment("run.log", b"line 1\n");
-    let path = dir.join(".yaks/t0/run.log");
+    let path = dir.join(".yaks/t0/yaks/t0/run.log");
     enter_key(&mut app);
     edit_attachment(&mut app);
     press(&mut app, "iextra");
@@ -4284,7 +4284,7 @@ fn cancelling_an_attachment_edit_leaves_the_file_unchanged() {
 #[test]
 fn an_attachment_changed_on_disk_meanwhile_is_not_overwritten() {
     let (dir, mut app) = app_on_attachment("run.log", b"line 1\n");
-    let path = dir.join(".yaks/t0/run.log");
+    let path = dir.join(".yaks/t0/yaks/t0/run.log");
     enter_key(&mut app);
     edit_attachment(&mut app);
     press(&mut app, "imine");
@@ -4316,7 +4316,7 @@ fn an_image_attachment_offers_no_edit() {
         })
     ));
     assert_eq!(
-        std::fs::read(dir.join(".yaks/t0/shot.png")).unwrap(),
+        std::fs::read(dir.join(".yaks/t0/yaks/t0/shot.png")).unwrap(),
         b"plain text but an image name"
     );
 }

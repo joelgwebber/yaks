@@ -215,9 +215,17 @@ mod tests {
             SEQ.fetch_add(1, Ordering::Relaxed)
         ));
         put(&repo, ".yaks/config.yaml", "herd: yak\n");
-        put(&repo, ".yaks/yak-0001.md", &flat("yak-0001", "hairy"));
-        put(&repo, ".yaks/yak-0002.md", &flat("yak-0002", "shaving"));
-        put(&repo, ".yaks/yak-0002/a.txt", "a\n");
+        put(
+            &repo,
+            ".yaks/yak/yaks/yak-0001.md",
+            &flat("yak-0001", "hairy"),
+        );
+        put(
+            &repo,
+            ".yaks/yak/yaks/yak-0002.md",
+            &flat("yak-0002", "shaving"),
+        );
+        put(&repo, ".yaks/yak/yaks/yak-0002/a.txt", "a\n");
         put(&repo, "src/code.rs", "fn main() {}\n");
         git(&repo, &["init", "-q"]);
         // `yaks commit` runs a plain `git commit`, which needs an identity; a CI
@@ -256,10 +264,14 @@ mod tests {
     fn commits_farm_changes_and_leaves_code_alone() {
         let repo = team_repo();
         // A move, an edit, a new yak, a new artifact, plus dirty code.
-        put(&repo, ".yaks/yak-0002.md", &flat("yak-0002", "shorn"));
-        put(&repo, ".yaks/yak-0001.md", "one, edited\n");
-        put(&repo, ".yaks/yak-0003.md", "three\n");
-        put(&repo, ".yaks/yak-0002/b.txt", "b\n");
+        put(
+            &repo,
+            ".yaks/yak/yaks/yak-0002.md",
+            &flat("yak-0002", "shorn"),
+        );
+        put(&repo, ".yaks/yak/yaks/yak-0001.md", "one, edited\n");
+        put(&repo, ".yaks/yak/yaks/yak-0003.md", "three\n");
+        put(&repo, ".yaks/yak/yaks/yak-0002/b.txt", "b\n");
         put(&repo, "src/code.rs", "fn main() { dirty() }\n");
 
         let plan = done(run(&farm(&repo), None, false).unwrap());
@@ -271,10 +283,10 @@ mod tests {
         assert_eq!(
             last_files(&repo),
             [
-                ".yaks/yak-0001.md",
-                ".yaks/yak-0002.md",
-                ".yaks/yak-0002/b.txt",
-                ".yaks/yak-0003.md",
+                ".yaks/yak/yaks/yak-0001.md",
+                ".yaks/yak/yaks/yak-0002.md",
+                ".yaks/yak/yaks/yak-0002/b.txt",
+                ".yaks/yak/yaks/yak-0003.md",
             ]
         );
         // Code is untouched: still modified, still unstaged.
@@ -291,14 +303,14 @@ mod tests {
         put(&repo, "src/code.rs", "fn main() { staged() }\n");
         put(&repo, "src/new.rs", "\n");
         git(&repo, &["add", "src"]);
-        put(&repo, ".yaks/yak-0001.md", "one, edited\n");
+        put(&repo, ".yaks/yak/yaks/yak-0001.md", "one, edited\n");
 
         let plan = done(run(&farm(&repo), Some("yaks: mine"), false).unwrap());
         assert_eq!(plan.message, "yaks: mine");
         let mut left = plan.left_staged.clone();
         left.sort();
         assert_eq!(left, ["src/code.rs", "src/new.rs"]);
-        assert_eq!(last_files(&repo), [".yaks/yak-0001.md"]);
+        assert_eq!(last_files(&repo), [".yaks/yak/yaks/yak-0001.md"]);
         assert_eq!(
             git(&repo, &["status", "--porcelain"]),
             "M  src/code.rs\nA  src/new.rs\n"
@@ -322,7 +334,7 @@ mod tests {
         let repo = team_repo();
         git(&repo, &["rm", "-rq", "--cached", ".yaks"]);
         put(&repo, ".gitignore", ".yaks/\n");
-        put(&repo, ".yaks/yak-0009.md", "nine\n");
+        put(&repo, ".yaks/yak/yaks/yak-0009.md", "nine\n");
         let err = run(&farm(&repo), None, false).err().unwrap().to_string();
         assert!(err.contains("private farm"), "{err}");
     }
@@ -330,8 +342,8 @@ mod tests {
     #[test]
     fn dry_run_reports_without_staging_or_committing() {
         let repo = team_repo();
-        put(&repo, ".yaks/yak-0001.md", "one, edited\n");
-        put(&repo, ".yaks/yak-0003.md", "three\n");
+        put(&repo, ".yaks/yak/yaks/yak-0001.md", "one, edited\n");
+        put(&repo, ".yaks/yak/yaks/yak-0003.md", "three\n");
         let before = git(&repo, &["rev-parse", "HEAD"]);
         let plan = done(run(&farm(&repo), None, true).unwrap());
         assert_eq!(plan.message, "yaks: created yak-0003; updated yak-0001");
@@ -340,14 +352,14 @@ mod tests {
         assert_eq!(git(&repo, &["rev-parse", "HEAD"]), before);
         assert_eq!(
             git(&repo, &["status", "--porcelain"]),
-            " M .yaks/yak-0001.md\n?? .yaks/yak-0003.md\n"
+            " M .yaks/yak/yaks/yak-0001.md\n?? .yaks/yak/yaks/yak-0003.md\n"
         );
     }
 
     #[test]
     fn long_id_lists_are_capped_in_the_message() {
         let changes: Vec<Change> = (1..=8)
-            .map(|n| Change::new('A', format!(".yaks/yak-{n:04}.md"), false))
+            .map(|n| Change::new('A', format!(".yaks/yak/yaks/yak-{n:04}.md"), false))
             .collect();
         assert_eq!(
             generate_message(&changes),
@@ -367,7 +379,7 @@ mod tests {
         git(&repo, &["checkout", "-q", "-"]);
         git(&repo, &["merge", "--no-commit", "--no-ff", "-q", "side"]);
         assert!(repo.join(".git/MERGE_HEAD").exists(), "merge is pending");
-        put(&repo, ".yaks/yak-0003.md", "three\n");
+        put(&repo, ".yaks/yak/yaks/yak-0003.md", "three\n");
 
         let err = match run(&farm(&repo), None, false) {
             Err(e) => e.to_string(),
@@ -380,7 +392,7 @@ mod tests {
         );
         // Nothing was staged: the new yak is still untracked.
         let status = git(&repo, &["status", "--porcelain", "--", ".yaks"]);
-        assert!(status.contains("?? .yaks/yak-0003.md"), "{status}");
+        assert!(status.contains("?? .yaks/yak/yaks/yak-0003.md"), "{status}");
         // A dry run still previews.
         assert!(matches!(
             run(&farm(&repo), None, true).unwrap(),

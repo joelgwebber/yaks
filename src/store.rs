@@ -430,61 +430,129 @@ pub(crate) fn resolve_farm_root(dir: &Path) -> Result<PathBuf> {
     anyhow::bail!("{} is not a .yaks/ farm", dir.display())
 }
 
-/// The one path of yak `id`'s file: `<root>/<id>.md`. It never changes, a
-/// status move included.
+/// The directory under a herd's directory that holds its yaks (schema 6):
+/// `<root>/<herd>/yaks/`. Its sibling `docs/` (and a farm-wide `<root>/docs/`)
+/// is reserved for documents that are not yaks.
+pub const YAKS_SUBDIR: &str = "yaks";
+
+/// Names that can never be a herd: a top-level directory with one of these
+/// names is not a herd directory, and `create`/`rename-herd` refuse them.
+pub const RESERVED_HERD_NAMES: &[&str] = &["docs"];
+
+/// The herd of yak `id`: the id up to its first `-` (the whole id if it has
+/// none). Ids are flat and stable; this is only where the file lives.
+pub fn herd_of(id: &str) -> &str {
+    id.split_once('-').map_or(id, |(h, _)| h)
+}
+
+/// The directory holding herd `herd`'s yak files: `<root>/<herd>/yaks/`.
+pub fn herd_dir(root: &Path, herd: &str) -> PathBuf {
+    root.join(herd).join(YAKS_SUBDIR)
+}
+
+/// The one path of yak `id`'s file: `<root>/<herd>/yaks/<id>.md` (schema 6).
+/// It never changes, a status move included.
 pub fn task_path(root: &Path, id: &str) -> PathBuf {
-    root.join(format!("{id}.md"))
+    herd_dir(root, herd_of(id)).join(format!("{id}.md"))
 }
 
-/// The directory holding yak `id`'s attachments: `<root>/<id>/`, beside its
-/// file.
+/// The directory holding yak `id`'s attachments: `<root>/<herd>/yaks/<id>/`,
+/// beside its file.
 pub fn artifact_dir(root: &Path, id: &str) -> PathBuf {
-    root.join(id)
+    herd_dir(root, herd_of(id)).join(id)
 }
 
-/// The id of the yak that owns `rel`, a path RELATIVE TO THE FARM ROOT, when
-/// it is one of that yak's attachments: `<id>/<file...>`. `None` for a yak
-/// file or a farm file (`config.yaml`, `.gitignore`, `schema`). Accepts `/` or
-/// `\\` separators.
-pub fn attachment_owner(rel: &str) -> Option<String> {
-    let rel = rel.replace('\\', "/");
-    let mut parts = rel.split('/').filter(|p| !p.is_empty());
-    let first = parts.next()?;
-    parts.next()?;
-    if first.starts_with('.') {
-        return None;
+/// Every herd directory of the farm at `root` that holds yaks: each top-level
+/// directory (not a dot-dir, not a reserved name) with a `yaks/` inside, as
+/// `(herd, <root>/<herd>/yaks)`, sorted.
+pub fn herd_dirs(root: &Path) -> Vec<(String, PathBuf)> {
+    let Ok(rd) = fs::read_dir(root) else {
+        return Vec::new();
+    };
+    let mut out: Vec<(String, PathBuf)> = rd
+        .flatten()
+        .filter_map(|e| {
+            let name = e.file_name().to_str()?.to_string();
+            if name.starts_with('.') || RESERVED_HERD_NAMES.contains(&name.as_str()) {
+                return None;
+            }
+            let dir = e.path().join(YAKS_SUBDIR);
+            dir.is_dir().then_some((name, dir))
+        })
+        .collect();
+    out.sort();
+    out
+}
+
+/// Every yak file of the farm at `root`: `<herd>/yaks/*.md` for each herd
+/// directory ([`herd_dirs`]), sorted by path. Fixed depth: one `read_dir` per
+/// herd, never a recursive walk (attachment dirs are not descended into).
+pub fn yak_files(root: &Path) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    for (_, dir) in herd_dirs(root) {
+        let Ok(rd) = fs::read_dir(&dir) else { continue };
+        out.extend(
+            rd.flatten()
+                .map(|e| e.path())
+                .filter(|p| p.is_file() && p.extension().and_then(|e| e.to_str()) == Some("md")),
+        );
     }
-    Some(first.to_string())
+    out.sort();
+    out
 }
 
-/// The id of the yak that `rel`, a path RELATIVE TO THE FARM ROOT, belongs
-/// to: its own file `<id>.md`, or one of its attachments (see
-/// [`attachment_owner`]). `None` for a farm file such as `config.yaml`.
-pub fn path_owner(rel: &str) -> Option<String> {
+/// Split `rel`, a path RELATIVE TO THE FARM ROOT, into its parts under a
+/// herd's `yaks/` directory: `<herd>/yaks/<rest...>` gives `rest`.
+fn under_herd_yaks(rel: &str) -> Option<Vec<String>> {
     let rel = rel.replace('\\', "/");
     let parts: Vec<&str> = rel.split('/').filter(|p| !p.is_empty()).collect();
     match parts.as_slice() {
-        [file] => file.strip_suffix(".md").map(String::from),
-        _ => attachment_owner(&rel),
+        [herd, sub, rest @ ..]
+            if *sub == YAKS_SUBDIR
+                && !herd.starts_with('.')
+                && !RESERVED_HERD_NAMES.contains(herd)
+                && !rest.is_empty() =>
+        {
+            Some(rest.iter().map(|s| s.to_string()).collect())
+        }
+        _ => None,
     }
 }
 
-/// Load every task in the given statuses, sorted by id: each `<root>/<id>.md`
-/// (status from its `status:` field).
+/// The id of the yak that owns `rel`, a path RELATIVE TO THE FARM ROOT, when
+/// it is one of that yak's attachments: `<herd>/yaks/<id>/<file...>`. `None`
+/// for a yak file or a farm file (`config.yaml`, `.gitignore`, `schema`).
+/// Accepts `/` or `\\` separators.
+pub fn attachment_owner(rel: &str) -> Option<String> {
+    let rest = under_herd_yaks(rel)?;
+    match rest.as_slice() {
+        [id, _, ..] if !id.starts_with('.') => Some(id.clone()),
+        _ => None,
+    }
+}
+
+/// The id of the yak that `rel`, a path RELATIVE TO THE FARM ROOT, belongs
+/// to: its own file `<herd>/yaks/<id>.md`, or one of its attachments (see
+/// [`attachment_owner`]). `None` for a farm file such as `config.yaml`.
+pub fn path_owner(rel: &str) -> Option<String> {
+    let rest = under_herd_yaks(rel)?;
+    match rest.as_slice() {
+        [file] if !file.starts_with('.') => file.strip_suffix(".md").map(String::from),
+        [_] => None,
+        _ => attachment_owner(rel),
+    }
+}
+
+/// Load every task in the given statuses, sorted by id: each
+/// `<root>/<herd>/yaks/<id>.md` ([`yak_files`]; status from its `status:` field).
 pub fn load(root: &Path, statuses: &[Status]) -> Result<Vec<Task>> {
     let mut tasks = Vec::new();
-    if root.is_dir() {
-        for entry in fs::read_dir(root).with_context(|| format!("reading {}", root.display()))? {
-            let path = entry?.path();
-            if !path.is_file() || path.extension().and_then(|e| e.to_str()) != Some("md") {
-                continue;
-            }
-            let text =
-                fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
-            if let Some(task) = parse_task(&text, Status::Hairy) {
-                if statuses.contains(&task.status) {
-                    tasks.push(task);
-                }
+    for path in yak_files(root) {
+        let text =
+            fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
+        if let Some(task) = parse_task(&text, Status::Hairy) {
+            if statuses.contains(&task.status) {
+                tasks.push(task);
             }
         }
     }
@@ -669,11 +737,12 @@ pub mod write {
         s
     }
 
-    /// Write a task to its one path, `root/<id>.md` ([`task_path`]),
+    /// Write a task to its one path, `root/<herd>/yaks/<id>.md` ([`task_path`]),
     /// atomically (temp + rename).
     pub fn save(root: &Path, t: &Task) -> Result<PathBuf> {
-        fs::create_dir_all(root).with_context(|| format!("creating {}", root.display()))?;
         let path = task_path(root, &t.id);
+        let dir = path.parent().unwrap_or(root);
+        fs::create_dir_all(dir).with_context(|| format!("creating {}", dir.display()))?;
         atomic_write(&path, &render(t))?;
         Ok(path)
     }
@@ -1213,18 +1282,10 @@ pub fn init(root: &Path, cfg: &InitConfig) -> Result<InitOutcome> {
 
 /// Every task id present on disk (all statuses, including dead).
 pub fn all_ids(root: &Path) -> std::collections::HashSet<String> {
-    let mut ids = std::collections::HashSet::new();
-    if let Ok(rd) = fs::read_dir(root) {
-        for entry in rd.flatten() {
-            let p = entry.path();
-            if p.is_file() && p.extension().and_then(|e| e.to_str()) == Some("md") {
-                if let Some(stem) = p.file_stem().and_then(|s| s.to_str()) {
-                    ids.insert(stem.to_string());
-                }
-            }
-        }
-    }
-    ids
+    yak_files(root)
+        .iter()
+        .filter_map(|p| p.file_stem().and_then(|s| s.to_str()).map(String::from))
+        .collect()
 }
 
 /// Generate a collision-free `{prefix}-{4 lowercase hex}` id (Python-compatible).
@@ -1877,13 +1938,14 @@ pub fn reparent(root: &Path, id: &str, new_parent: Option<String>) -> Result<Rep
     Ok(Reparent::Done { new_parent })
 }
 
-/// On-disk schema version this build writes: one flat file per yak with a
-/// `status:` field, attachments in `<id>/`, a blank line after a comment's
-/// `\u{25b8}` header, and non-image attachments linked as `[stem](<id>/<file>)`.
-/// Schema 4 (the same, minus those last two) is read and migrated by
-/// `yaks migrate` (see [`migration_refusal`]); 3, the old layout, is refused
-/// outright (see [`old_layout`]).
-pub const SCHEMA: u32 = 5;
+/// On-disk schema version this build writes: one file per yak with a
+/// `status:` field at `<herd>/yaks/<id>.md`, attachments beside it in
+/// `<herd>/yaks/<id>/`, a blank line after a comment's `\u{25b8}` header, and
+/// non-image attachments linked as `[stem](<id>/<file>)`. Schema 5 (the same,
+/// every yak at the farm root) and 4 (5 minus the last two) are read and
+/// migrated by `yaks migrate` (see [`migration_refusal`]); 3, the old layout,
+/// is refused outright (see [`old_layout`]).
+pub const SCHEMA: u32 = 6;
 
 /// The first schema with the flat layout. Older farms are the old layout.
 pub const FLAT_SCHEMA: u32 = 4;
@@ -2538,13 +2600,14 @@ mod schema_tests {
     #[test]
     fn schema_gate() {
         assert_eq!(
-            schema_status(&temp_root(Some("5"))),
+            schema_status(&temp_root(Some("6"))),
             SchemaStatus::Compatible
         );
         assert_eq!(
-            schema_status(&temp_root(Some("6\n"))),
-            SchemaStatus::Newer(6)
+            schema_status(&temp_root(Some("7\n"))),
+            SchemaStatus::Newer(7)
         );
+        assert_eq!(schema_status(&temp_root(Some("5"))), SchemaStatus::Older(5));
         assert_eq!(schema_status(&temp_root(Some("4"))), SchemaStatus::Older(4));
         assert_eq!(schema_status(&temp_root(Some("3"))), SchemaStatus::Older(3));
         // Schema 3 is the old layout (refused outright); schema 4 is the flat
@@ -2557,7 +2620,12 @@ mod schema_tests {
                 .unwrap()
                 .contains("yaks migrate")
         );
-        assert!(migration_refusal(&temp_root(Some("5"))).is_none());
+        assert!(
+            migration_refusal(&temp_root(Some("5")))
+                .unwrap()
+                .contains("yaks migrate")
+        );
+        assert!(migration_refusal(&temp_root(Some("6"))).is_none());
         assert!(migration_refusal(&temp_root(None)).is_none());
         assert_eq!(schema_status(&temp_root(None)), SchemaStatus::Compatible);
         assert_eq!(
@@ -2600,7 +2668,7 @@ mod init_tests {
         for sub in ["hairy", "shaving", "shorn", "dead"] {
             assert!(!root.join(sub).exists(), "unexpected {sub}/");
         }
-        assert_eq!(fs::read_to_string(root.join("schema")).unwrap(), "5\n");
+        assert_eq!(fs::read_to_string(root.join("schema")).unwrap(), "6\n");
 
         // The seeded config round-trips through the reader.
         let read = read_config(&root);
@@ -3527,28 +3595,53 @@ mod layout_tests {
         let text = fs::read_to_string(task_path(&root, "y-0001")).unwrap();
         assert!(text.contains("\nstatus: shorn\n"), "{text}");
         assert!(text.trim_end().ends_with("moved: hairy -> shorn"), "{text}");
-        let entries: Vec<String> = fs::read_dir(&root)
+        let entries: Vec<String> = fs::read_dir(herd_dir(&root, "y"))
             .unwrap()
             .flatten()
             .map(|e| e.file_name().to_string_lossy().into_owned())
-            .filter(|n| n != "schema")
             .collect();
         assert_eq!(entries, ["y-0001.md"], "still the one file, nothing else");
     }
 
     #[test]
     fn paths_resolve_to_their_owning_yak() {
-        assert_eq!(path_owner("y-0001.md").as_deref(), Some("y-0001"));
-        assert_eq!(path_owner("y-0001/frame.svg").as_deref(), Some("y-0001"));
-        assert_eq!(path_owner("y-0001/sub/notes.md").as_deref(), Some("y-0001"));
-        for not_a_yak in ["config.yaml", "schema", ".gitignore", ".lock"] {
+        assert_eq!(path_owner("y/yaks/y-0001.md").as_deref(), Some("y-0001"));
+        assert_eq!(
+            path_owner("y/yaks/y-0001/frame.svg").as_deref(),
+            Some("y-0001")
+        );
+        assert_eq!(
+            path_owner("y/yaks/y-0001/sub/notes.md").as_deref(),
+            Some("y-0001")
+        );
+        assert_eq!(path_owner("y\\yaks\\y-0001.md").as_deref(), Some("y-0001"));
+        for not_a_yak in [
+            "config.yaml",
+            "schema",
+            ".gitignore",
+            ".lock",
+            "y-0001.md",           // a loose schema-5 file is not loaded
+            "y/docs/page.md",      // a herd's docs are not yaks
+            "docs/yaks/y-0001.md", // `docs` is never a herd
+            ".git/yaks/y-0001.md",
+            "y/yaks/.hidden.md",
+        ] {
             assert_eq!(path_owner(not_a_yak), None, "{not_a_yak}");
         }
-        assert_eq!(attachment_owner("y-0001.md"), None);
-        assert_eq!(attachment_owner("y-0001/a.png").as_deref(), Some("y-0001"));
+        assert_eq!(attachment_owner("y/yaks/y-0001.md"), None);
+        assert_eq!(
+            attachment_owner("y/yaks/y-0001/a.png").as_deref(),
+            Some("y-0001")
+        );
+        assert_eq!(
+            task_path(Path::new("/f"), "y-0001"),
+            Path::new("/f/y/yaks/y-0001.md")
+        );
         assert_eq!(
             artifact_dir(Path::new("/f"), "y-0001"),
-            Path::new("/f/y-0001")
+            Path::new("/f/y/yaks/y-0001")
         );
+        assert_eq!(herd_of("web-1a2b"), "web");
+        assert_eq!(herd_of("odd"), "odd");
     }
 }

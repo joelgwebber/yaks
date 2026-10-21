@@ -169,8 +169,8 @@ fn git_state(root: &Path, report: &mut Report) -> Result<Option<BTreeSet<String>
     Ok(Some(changed))
 }
 
-/// The yak a repository path belongs to: `.yaks/<id>.md` or an attachment
-/// `.yaks/<id>/...` (the farm may sit below the repo root). A committed farm
+/// The yak a repository path belongs to: `.yaks/<herd>/yaks/<id>.md` or an
+/// attachment `.yaks/<herd>/yaks/<id>/...` (the farm may sit below the repo root). A committed farm
 /// is always a `.yaks/` directory, so everything after the last `.yaks`
 /// component is relative to the farm root ([`store::path_owner`]).
 pub(crate) fn yak_id_of(path: &str) -> Option<String> {
@@ -437,8 +437,8 @@ mod tests {
         std::fs::write(root.join("config.yaml"), "herd: yak\n").unwrap();
         // An already-committed artifact dir, as in a real farm (git collapses an
         // untracked dir to its topmost new directory).
-        std::fs::create_dir_all(root.join("yak-0000")).unwrap();
-        std::fs::write(root.join("yak-0000/old.txt"), "x").unwrap();
+        std::fs::create_dir_all(store::artifact_dir(&root, "yak-0000")).unwrap();
+        std::fs::write(store::artifact_dir(&root, "yak-0000").join("old.txt"), "x").unwrap();
         git(&repo, &["init", "-q"]);
         git(&repo, &["add", "."]);
         git(&repo, &["commit", "-q", "-m", "init"]);
@@ -491,12 +491,16 @@ mod tests {
     #[test]
     fn untracked_artifacts_dir_fails_naming_it_and_passes_once_added() {
         let (repo, farm) = team_repo();
-        let dir = repo.join(".yaks/yak-0001");
+        let dir = repo.join(".yaks/yak/yaks/yak-0001");
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("frame.txt"), "x").unwrap();
         let f = failures(&farm, &[], Check::GitState);
         assert_eq!(f.len(), 1, "{f:?}");
-        assert!(f[0].message.contains(".yaks/yak-0001/"), "{}", f[0].message);
+        assert!(
+            f[0].message.contains(".yaks/yak/yaks/yak-0001/"),
+            "{}",
+            f[0].message
+        );
         assert!(f[0].message.contains("untracked"));
         git(&repo, &["add", ".yaks"]);
         assert!(
@@ -512,7 +516,7 @@ mod tests {
         git(&repo, &["add", "."]);
         git(&repo, &["commit", "-q", "-m", "add yak"]);
         assert!(run(&farm, farm.root(), &[], false, false).unwrap().ok());
-        let file = repo.join(".yaks/yak-0001.md");
+        let file = repo.join(".yaks/yak/yaks/yak-0001.md");
         let text = std::fs::read_to_string(&file).unwrap();
         std::fs::write(&file, format!("{text}\nedited\n")).unwrap();
         let f = failures(&farm, &[], Check::GitState);
@@ -620,7 +624,7 @@ mod tests {
         let (repo, farm) = team_repo();
         let root = repo.join(".yaks");
         store::write::save(&root, &task("yak-0001", Status::Shorn)).unwrap();
-        std::fs::copy(root.join("yak-0001.md"), root.join("copy.md")).unwrap();
+        std::fs::copy(store::task_path(&root, "yak-0001"), root.join("copy.md")).unwrap();
         git(&repo, &["add", "."]);
         let f = failures(&farm, &[], Check::DuplicateId);
         assert_eq!(f.len(), 1, "{f:?}");
@@ -634,7 +638,7 @@ mod tests {
         let root = repo.join(".yaks");
         let text = store::write::render(&task("yak-0001", Status::Hairy))
             .replace("status: hairy", "status: finished");
-        std::fs::write(root.join("yak-0001.md"), text).unwrap();
+        std::fs::write(store::task_path(&root, "yak-0001"), text).unwrap();
         git(&repo, &["add", "."]);
         let f = failures(&farm, &[], Check::InvalidStatus);
         assert_eq!(f.len(), 1, "{f:?}");
@@ -684,7 +688,7 @@ mod tests {
         git(&repo, &["commit", "-q", "-m", "old shorn yak"]);
         assert!(run(&farm, farm.root(), &[], false, false).unwrap().ok());
         // New evidence for that yak arrives: it is now part of the change.
-        let dir = root.join("yak-0001");
+        let dir = store::artifact_dir(&root, "yak-0001");
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("frame.txt"), "x").unwrap();
         git(&repo, &["add", ".yaks"]);
@@ -695,13 +699,13 @@ mod tests {
 
     #[test]
     fn yak_ids_come_from_yak_files_and_attachment_dirs_only() {
-        assert_eq!(yak_id_of("sub/.yaks/x-1.md").as_deref(), Some("x-1"));
+        assert_eq!(yak_id_of("sub/.yaks/x/yaks/x-1.md").as_deref(), Some("x-1"));
         assert_eq!(
-            yak_id_of(".yaks/yaks-aa49/frame.txt").as_deref(),
+            yak_id_of(".yaks/yaks/yaks/yaks-aa49/frame.txt").as_deref(),
             Some("yaks-aa49")
         );
         assert_eq!(
-            yak_id_of(".yaks/yaks-aa49.md").as_deref(),
+            yak_id_of(".yaks/yaks/yaks/yaks-aa49.md").as_deref(),
             Some("yaks-aa49")
         );
         assert_eq!(yak_id_of(".yaks/config.yaml"), None);

@@ -104,11 +104,26 @@ fn an_attachment_added_in_a_shed_is_found_from_the_primary() {
     std::fs::write(&log, "ok\n").unwrap();
     yaks(worker, "worker", &["attach", &id, log.to_str().unwrap()]);
     // Not here: the primary's farm has no such file.
-    assert!(!r.dir.join(".yaks").join(&id).join("build-log.txt").exists());
+    let herd = id.split_once('-').unwrap().0;
+    assert!(
+        !r.dir
+            .join(".yaks")
+            .join(herd)
+            .join("yaks")
+            .join(&id)
+            .join("build-log.txt")
+            .exists()
+    );
 
     let path = yaks(&r.dir, "main-actor", &["attachment", &id, "build-log.txt"]);
     let path = PathBuf::from(path.trim());
-    assert!(path.starts_with(worker), "{}", path.display());
+    // Canonical on both sides: on macOS the temp dir is a /var -> /private/var link.
+    let canon = |p: &std::path::Path| p.canonicalize().unwrap();
+    assert!(
+        canon(&path).starts_with(canon(worker)),
+        "{}",
+        path.display()
+    );
     assert_eq!(std::fs::read_to_string(&path).unwrap(), "ok\n");
 
     let listed = yaks(&r.dir, "main-actor", &["attachment", &id]);

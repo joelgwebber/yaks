@@ -2,7 +2,7 @@
 
 **yaks** is a filesystem-native task tracker: a single self-contained Rust binary.
 Tasks ("yaks") are markdown files with YAML frontmatter under a `.yaks/`
-directory, one file per yak (`.yaks/<id>.md`) with its **status a frontmatter
+directory, one file per yak (`.yaks/<herd>/yaks/<id>.md`) with its **status a frontmatter
 field** — there is no database and no separate state file. The files are the whole truth:
 readable, greppable, diffable, and versioned in git alongside the code they
 describe.
@@ -10,9 +10,13 @@ describe.
 ```sh
 .yaks/
   config.yaml     # farm settings
-  schema          # the layout version (5; `yaks migrate` upgrades a 4)
-  yaks-1a2b.md    # one file per yak; frontmatter status: hairy | shaving | shorn | dead
-  yaks-1a2b/      # its attachments, beside it
+  schema          # the layout version (6; `yaks migrate` upgrades a 4 or 5)
+  yaks/           # one directory per herd (the id prefix)
+    yaks/
+      yaks-1a2b.md  # one file per yak; frontmatter status: hairy | shaving | shorn | dead
+      yaks-1a2b/    # its attachments, beside it
+    docs/         # reserved for the herd's non-yak documents (not built yet)
+  docs/           # reserved for farm-wide documents (not built yet)
 ```
 
 ## The model

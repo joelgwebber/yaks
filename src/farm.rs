@@ -220,6 +220,7 @@ pub struct Farm {
 }
 
 /// Fields for a new task (defaults resolved from config inside `create`).
+#[derive(Default)]
 pub struct NewTask {
     pub title: String,
     /// Which herd (id prefix) the new yak joins. `None` uses the repo's pointer
@@ -728,6 +729,10 @@ pub enum IssueKind {
     /// before labels were normalized; yaks-7cb3). Any label edit on the yak
     /// re-splits it.
     MalformedLabel,
+    /// A yak file that is not at its one path, `<herd>/yaks/<id>.md` (in
+    /// another herd's directory, under the wrong name, or loose at the farm
+    /// root). Not loaded from there; move it to where `yaks path <id>` says.
+    MisplacedFile,
 }
 
 impl IssueKind {
@@ -741,6 +746,7 @@ impl IssueKind {
             IssueKind::MissingEvidence => "missing-evidence",
             IssueKind::UnverifiedShear => "unverified-shear",
             IssueKind::MalformedLabel => "malformed-label",
+            IssueKind::MisplacedFile => "misplaced-file",
         }
     }
 
@@ -758,6 +764,7 @@ impl IssueKind {
                 "Unverified shear (shorn yak whose verify: command did not last PASS)"
             }
             IssueKind::MalformedLabel => "Malformed label (contains a comma or whitespace)",
+            IssueKind::MisplacedFile => "Misplaced yak file (not at <herd>/yaks/<id>.md)",
         }
     }
 }
@@ -1322,7 +1329,7 @@ impl Farm {
         // not one of the four values, and the same `id:` in two files.
         let mut files_by_id: std::collections::BTreeMap<String, Vec<String>> =
             std::collections::BTreeMap::new();
-        for path in flat_files(&self.root) {
+        for path in store::yak_files(&self.root) {
             let Ok(text) = std::fs::read_to_string(&path) else {
                 continue;
             };
@@ -1331,8 +1338,27 @@ impl Farm {
                 .and_then(|s| s.to_str())
                 .unwrap_or_default()
                 .to_string();
+            let rel = path
+                .strip_prefix(&self.root)
+                .unwrap_or(&path)
+                .display()
+                .to_string();
             if let Some(task) = store::parse_task(&text, Status::Hairy) {
-                files_by_id.entry(task.id).or_default().push(name.clone());
+                // Not at its path, and no file there: misplaced. With a file
+                // at its path it is a second copy, reported as a duplicate.
+                let want = store::task_path(&self.root, &task.id);
+                if want != path && !want.is_file() {
+                    issues.push(Issue {
+                        kind: IssueKind::MisplacedFile,
+                        message: format!(
+                            "{rel} holds {id}, whose file belongs at {want} (move it there)",
+                            id = task.id,
+                            want = store::task_path(Path::new(""), &task.id).display()
+                        ),
+                        ids: vec![task.id.clone()],
+                    });
+                }
+                files_by_id.entry(task.id).or_default().push(rel.clone());
             }
             if let Some(value) = invalid_status_value(&text) {
                 let id = name.trim_end_matches(".md").to_string();
@@ -1343,6 +1369,36 @@ impl Farm {
                          dead (fix the status: line)"
                     ),
                     ids: vec![id],
+                });
+            }
+        }
+        // A yak file left at the farm root (a hand copy, or a pre-schema-6
+        // leftover): not loaded from there.
+        for path in root_md_files(&self.root) {
+            let Ok(text) = std::fs::read_to_string(&path) else {
+                continue;
+            };
+            if let Some(task) = store::parse_task(&text, Status::Hairy) {
+                let name = path
+                    .file_name()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or_default();
+                if store::task_path(&self.root, &task.id).is_file() {
+                    files_by_id
+                        .entry(task.id)
+                        .or_default()
+                        .push(name.to_string());
+                    continue;
+                }
+                issues.push(Issue {
+                    kind: IssueKind::MisplacedFile,
+                    message: format!(
+                        "{name} at the farm root holds {id}, whose file belongs at {want} \
+                         (move it there; it is not loaded from the root)",
+                        id = task.id,
+                        want = store::task_path(Path::new(""), &task.id).display()
+                    ),
+                    ids: vec![task.id.clone()],
                 });
             }
         }
@@ -1531,7 +1587,10 @@ impl Farm {
             if !existing.contains(old.as_str()) {
                 return Ok(RenameOutcome::NotFound(old.clone()));
             }
-            if new == old || !refs::has_ref_shape(new) {
+            if new == old
+                || !refs::has_ref_shape(new)
+                || store::RESERVED_HERD_NAMES.contains(&store::herd_of(new))
+            {
                 return Ok(RenameOutcome::Invalid(new.clone()));
             }
             if !targets.insert(new.clone()) || map.insert(old.clone(), new.clone()).is_some() {
@@ -1667,7 +1726,12 @@ impl Farm {
             .or(self.pointer_prefix.as_deref())
             .filter(|p| !p.is_empty())
         {
-            Some(p) if refs::has_ref_shape(&format!("{p}-0000")) => p.to_string(),
+            Some(p)
+                if refs::has_ref_shape(&format!("{p}-0000"))
+                    && !store::RESERVED_HERD_NAMES.contains(&p) =>
+            {
+                p.to_string()
+            }
             Some(p) => return Ok(CreateOutcome::InvalidPrefix(p.to_string())),
             // No `--herd`, no pointer herd: only a herd the farm's config
             // actually declares is a default. `cfg.prefix` alone isn't enough:
@@ -1994,8 +2058,12 @@ impl Farm {
         let mut herds = incoming;
         if !dry_run {
             for (id, _, path) in &found {
-                std::fs::copy(path, store::task_path(&self.root, id))
-                    .with_context(|| format!("copying {}", path.display()))?;
+                let dest = store::task_path(&self.root, id);
+                if let Some(dir) = dest.parent() {
+                    std::fs::create_dir_all(dir)
+                        .with_context(|| format!("creating {}", dir.display()))?;
+                }
+                std::fs::copy(path, dest).with_context(|| format!("copying {}", path.display()))?;
             }
             for id in &artifacts {
                 copy_dir_all(
@@ -2019,8 +2087,9 @@ impl Farm {
 
 // -- doctor helpers ------------------------------------------------------
 
-/// Every flat yak file (`<root>/*.md`), by name.
-fn flat_files(root: &Path) -> Vec<PathBuf> {
+/// Every `.md` file loose at the farm root (no yak file belongs there since
+/// schema 6), by name.
+fn root_md_files(root: &Path) -> Vec<PathBuf> {
     let Ok(rd) = std::fs::read_dir(root) else {
         return Vec::new();
     };
@@ -2106,6 +2175,7 @@ fn issue_rank(k: IssueKind) -> u8 {
         IssueKind::MissingEvidence => 4,
         IssueKind::UnverifiedShear => 5,
         IssueKind::MalformedLabel => 6,
+        IssueKind::MisplacedFile => 7,
     }
 }
 
@@ -2188,8 +2258,11 @@ mod tests {
             farm.rename("yak-0001", "yaks-0001", false).unwrap(),
             RenameOutcome::Done(_)
         ));
-        assert!(!root.join("yak-0001").exists());
-        assert_eq!(std::fs::read(root.join("yaks-0001/a.png")).unwrap(), b"png");
+        assert!(!store::artifact_dir(&root, "yak-0001").exists());
+        assert_eq!(
+            std::fs::read(store::artifact_dir(&root, "yaks-0001").join("a.png")).unwrap(),
+            b"png"
+        );
         let renamed = store::load_task_by_id(&root, "yaks-0001").unwrap().unwrap();
         assert!(
             renamed.body.contains("![a](yaks-0001/a.png)"),
@@ -2199,8 +2272,15 @@ mod tests {
         let other = store::load_task_by_id(&root, "yak-0002").unwrap().unwrap();
         assert_eq!(other.body, "![a](yaks-0001/a.png)");
         for t in [&renamed, &other] {
+            // An attachment link `<id>/<file>` resolves by id (as the TUI
+            // and `yaks attachment` do), wherever the linking yak lives.
             for p in link_paths(&t.body) {
-                assert!(root.join(&p).is_file(), "{} links {p}", t.id);
+                let (id, name) = p.split_once('/').unwrap();
+                assert!(
+                    store::artifact_dir(&root, id).join(name).is_file(),
+                    "{} links {p}",
+                    t.id
+                );
             }
         }
     }
@@ -2225,7 +2305,7 @@ mod tests {
             err.contains("old yak layout") && err.contains("0.0.16"),
             "{err}"
         );
-        assert!(!root.join("yak-0001.md").exists());
+        assert!(!store::task_path(&root, "yak-0001").exists());
 
         // A schema-4 source is behind this farm's shapes: migrate it first.
         std::fs::write(src.join("schema"), "4\n").unwrap();
@@ -2233,18 +2313,28 @@ mod tests {
             panic!("a schema-4 source must be refused");
         };
         assert!(err.to_string().contains("yaks migrate"), "{err}");
-        assert!(!root.join("yak-0001.md").exists());
+        assert!(!store::task_path(&root, "yak-0001").exists());
 
+        // A schema-5 source (yaks at its root) must be migrated first too.
         std::fs::write(src.join("schema"), "5\n").unwrap();
+        let Err(err) = farm.merge(&src, false) else {
+            panic!("a schema-5 source must be refused");
+        };
+        assert!(err.to_string().contains("yaks migrate"), "{err}");
+
+        std::fs::write(src.join("schema"), format!("{}\n", store::SCHEMA)).unwrap();
         let MergeOutcome::Done(plan) = farm.merge(&src, false).unwrap() else {
             panic!("expected a merge");
         };
         assert_eq!(plan.artifacts, ["yak-0001"]);
         assert!(at(&root, "yak-0001", Status::Shaving));
-        assert_eq!(std::fs::read(root.join("yak-0001/a.png")).unwrap(), b"AAA");
         assert_eq!(
-            std::fs::read(root.join("yak-0001.md")).unwrap(),
-            std::fs::read(src.join("yak-0001.md")).unwrap()
+            std::fs::read(store::artifact_dir(&root, "yak-0001").join("a.png")).unwrap(),
+            b"AAA"
+        );
+        assert_eq!(
+            std::fs::read(store::task_path(&root, "yak-0001")).unwrap(),
+            std::fs::read(store::task_path(&src, "yak-0001")).unwrap()
         );
     }
 
@@ -2795,8 +2885,8 @@ mod tests {
         let w1 = temp_dir_named("att-w1");
         let w2 = temp_dir_named("att-w2");
         let put = |root: &Path, name: &str, body: &str| {
-            std::fs::create_dir_all(root.join("y-1")).unwrap();
-            std::fs::write(root.join("y-1").join(name), body).unwrap();
+            std::fs::create_dir_all(store::artifact_dir(&root, "y-1")).unwrap();
+            std::fs::write(store::artifact_dir(&root, "y-1").join(name), body).unwrap();
         };
         put(&here, "both.txt", "here");
         put(&w1, "both.txt", "w1");
@@ -2809,14 +2899,23 @@ mod tests {
             (Some("w2".to_string()), w2.clone()),
         ];
         let found = |n| locate_attachment(&farms, "y-1", n).map(|a| (a.shed, a.path));
-        assert_eq!(found("both.txt"), Some((None, here.join("y-1/both.txt"))));
+        assert_eq!(
+            found("both.txt"),
+            Some((None, store::artifact_dir(&here, "y-1").join("both.txt")))
+        );
         assert_eq!(
             found("only-w1.txt"),
-            Some((Some("w1".into()), w1.join("y-1/only-w1.txt")))
+            Some((
+                Some("w1".into()),
+                store::artifact_dir(&w1, "y-1").join("only-w1.txt")
+            ))
         );
         assert_eq!(
             found("only-w2.png"),
-            Some((Some("w2".into()), w2.join("y-1/only-w2.png")))
+            Some((
+                Some("w2".into()),
+                store::artifact_dir(&w2, "y-1").join("only-w2.png")
+            ))
         );
         assert_eq!(found("missing.txt"), None);
         // No escaping the yak's directory.
@@ -3138,7 +3237,11 @@ mod tests {
     fn doctor_flags_one_id_in_two_files() {
         let (root, farm) = temp_farm();
         store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
-        std::fs::copy(root.join("yak-0001.md"), root.join("copy-of-yak-0001.md")).unwrap();
+        std::fs::copy(
+            store::task_path(&root, "yak-0001"),
+            root.join("copy-of-yak-0001.md"),
+        )
+        .unwrap();
 
         let issues = farm.doctor(false).unwrap();
         assert_eq!(
@@ -3163,7 +3266,7 @@ mod tests {
         store::write::save(&root, &task("yak-0001", Status::Shorn)).unwrap();
         let bad = store::write::render(&task("yak-0003", Status::Hairy))
             .replace("status: hairy", "status: \"finished\"");
-        std::fs::write(root.join("yak-0003.md"), bad).unwrap();
+        std::fs::write(store::task_path(&root, "yak-0003"), bad).unwrap();
 
         let got: Vec<(IssueKind, Vec<String>)> = farm
             .doctor(false)
@@ -3358,7 +3461,7 @@ mod tests {
                 rewritten: 2
             }
         );
-        let dir = root.join("yak-0001");
+        let dir = store::artifact_dir(&root, "yak-0001");
         assert!(!dir.join("paste-1.png").exists());
         assert_eq!(std::fs::read(dir.join("login-screen.png")).unwrap(), b"png");
         let owner = store::load_task_by_id(&root, "yak-0001").unwrap().unwrap();
@@ -3450,7 +3553,7 @@ mod tests {
     /// `yaks migrate`), migrated by `open_for_migration` + `migrate`, a dry run
     /// writes nothing, and a second run changes nothing.
     #[test]
-    fn migrate_upgrades_a_schema_4_farm_once() {
+    fn migrate_upgrades_a_schema_4_farm_to_herd_dirs_once() {
         let (root, _farm) = temp_farm();
         let parent = root.parent().unwrap().to_path_buf();
         let mut t = task("yak-0001", Status::Shaving);
@@ -3458,7 +3561,20 @@ mod tests {
             "see ![log](yak-0001/log.txt) and ![s](yak-0001/s.png){}",
             "\n\n---\n\u{25b8} 2026-01-01T00:00:00Z [a]\nold shape\n\n---\n\u{25b8} 2026-01-02T00:00:00Z\n\nnew shape"
         );
+        // A schema-4 farm keeps its yaks at the root (`<id>.md`, `<id>/`);
+        // write it that way, with an attachment and a second herd.
         store::write::save(&root, &t).unwrap();
+        store::write::save(&root, &task("web-0002", Status::Hairy)).unwrap();
+        for id in ["yak-0001", "web-0002"] {
+            std::fs::rename(store::task_path(&root, id), root.join(format!("{id}.md"))).unwrap();
+        }
+        std::fs::create_dir_all(root.join("yak-0001")).unwrap();
+        std::fs::write(root.join("yak-0001/log.txt"), "log").unwrap();
+        // Not yaks: a loose note without frontmatter, and a stray dir.
+        std::fs::write(root.join("README.md"), "farm notes\n").unwrap();
+        std::fs::create_dir_all(root.join("misc")).unwrap();
+        std::fs::remove_dir_all(root.join("yak")).ok();
+        std::fs::remove_dir_all(root.join("web")).ok();
         std::fs::write(root.join("schema"), "4\n").unwrap();
         let before = std::fs::read(root.join("yak-0001.md")).unwrap();
 
@@ -3472,18 +3588,41 @@ mod tests {
 
         let dry = farm.migrate(true).unwrap();
         assert!(!dry.applied && dry.files == 1);
+        assert_eq!(
+            dry.layout,
+            [("web".to_string(), 1, 0), ("yak".to_string(), 1, 1)]
+        );
         assert_eq!(std::fs::read(root.join("yak-0001.md")).unwrap(), before);
+        assert!(
+            !store::task_path(&root, "yak-0001").exists(),
+            "dry run moves nothing"
+        );
         assert_eq!(std::fs::read_to_string(root.join("schema")).unwrap(), "4\n");
 
         let done = farm.migrate(false).unwrap();
         assert!(done.applied && done.files == 1);
+        assert_eq!(done.layout, dry.layout);
+        // Every yak and attachment dir is in its herd directory; nothing
+        // that is not a yak moved.
+        assert!(!root.join("yak-0001.md").exists() && !root.join("web-0002.md").exists());
+        assert!(store::task_path(&root, "web-0002").is_file());
+        assert_eq!(
+            std::fs::read_to_string(store::artifact_dir(&root, "yak-0001").join("log.txt"))
+                .unwrap(),
+            "log"
+        );
+        assert!(!root.join("yak-0001").exists());
+        assert!(root.join("README.md").is_file() && root.join("misc").is_dir());
         let counts: Vec<usize> = done
             .fixups
             .iter()
             .map(|f| f.yaks.iter().map(|(_, n)| n).sum())
             .collect();
         assert_eq!(counts, [1, 1], "one old-shape comment, one non-image link");
-        assert_eq!(std::fs::read_to_string(root.join("schema")).unwrap(), "5\n");
+        assert_eq!(
+            std::fs::read_to_string(root.join("schema")).unwrap(),
+            format!("{}\n", store::SCHEMA)
+        );
         let body = store::load_task_by_id(&root, "yak-0001")
             .unwrap()
             .unwrap()
@@ -3493,16 +3632,73 @@ mod tests {
             "see [log](yak-0001/log.txt) and ![s](yak-0001/s.png)\n\n---\n\u{25b8} 2026-01-01T00:00:00Z [a]\n\nold shape\n\n---\n\u{25b8} 2026-01-02T00:00:00Z\n\nnew shape"
         );
         // Frontmatter (incl. `updated:`) is untouched: only the shape moves.
-        let after = std::fs::read_to_string(root.join("yak-0001.md")).unwrap();
+        let after = std::fs::read_to_string(store::task_path(&root, "yak-0001")).unwrap();
         let front = |s: &str| s.split("\n---\n").next().unwrap().to_string();
         assert_eq!(front(&after), front(&String::from_utf8(before).unwrap()));
 
         // Now an ordinary farm, and a second run is a no-op.
         assert!(Farm::open(&parent).is_ok());
-        let bytes = std::fs::read(root.join("yak-0001.md")).unwrap();
+        let bytes = std::fs::read(store::task_path(&root, "yak-0001")).unwrap();
         let again = farm.migrate(false).unwrap();
-        assert!(again.is_noop() && again.files == 0);
-        assert_eq!(std::fs::read(root.join("yak-0001.md")).unwrap(), bytes);
+        assert!(again.is_noop() && again.files == 0 && again.layout.is_empty());
+        assert!(farm.doctor(false).unwrap().is_empty());
+        assert_eq!(
+            std::fs::read(store::task_path(&root, "yak-0001")).unwrap(),
+            bytes
+        );
+    }
+
+    /// Schema 6: a yak file away from `<herd>/yaks/<id>.md` is reported (and
+    /// not loaded); `docs` can never be a herd.
+    #[test]
+    fn doctor_flags_a_misplaced_yak_file_and_docs_is_not_a_herd() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+        store::write::save(&root, &task("web-0002", Status::Hairy)).unwrap();
+        // In the wrong herd's directory, and loose at the root.
+        std::fs::rename(
+            store::task_path(&root, "web-0002"),
+            store::herd_dir(&root, "yak").join("web-0002.md"),
+        )
+        .unwrap();
+        std::fs::rename(
+            store::task_path(&root, "yak-0001"),
+            root.join("yak-0001.md"),
+        )
+        .unwrap();
+        let issues = farm.doctor(false).unwrap();
+        let kinds: Vec<_> = issues.iter().map(|i| (i.kind, i.ids.clone())).collect();
+        assert!(
+            kinds.contains(&(IssueKind::MisplacedFile, vec!["web-0002".to_string()])),
+            "{issues:?}"
+        );
+        assert!(
+            kinds.contains(&(IssueKind::MisplacedFile, vec!["yak-0001".to_string()])),
+            "{issues:?}"
+        );
+        assert!(
+            issues
+                .iter()
+                .any(|i| i.message.contains("web/yaks/web-0002.md"))
+        );
+        // A reserved name is refused as a herd.
+        let out = farm
+            .create(NewTask {
+                title: "x".into(),
+                prefix: Some("docs".into()),
+                ..Default::default()
+            })
+            .unwrap();
+        assert!(matches!(out, CreateOutcome::InvalidPrefix(p) if p == "docs"));
+        // And a `docs/` dir with a `yaks/` inside is never read as a herd.
+        let fake = root.join("docs").join("yaks");
+        std::fs::create_dir_all(&fake).unwrap();
+        std::fs::write(
+            fake.join("docs-0001.md"),
+            "---\nid: docs-0001\ntitle: t\n---\n",
+        )
+        .unwrap();
+        assert!(!store::all_ids(&root).contains("docs-0001"));
     }
 
     #[test]
@@ -3516,7 +3712,10 @@ mod tests {
             farm.rename_attachment("yak-0001", "a.png", "b").unwrap(),
             R::Collision("b.png".into())
         );
-        assert_eq!(std::fs::read(root.join("yak-0001/b.png")).unwrap(), b"b");
+        assert_eq!(
+            std::fs::read(store::artifact_dir(&root, "yak-0001").join("b.png")).unwrap(),
+            b"b"
+        );
         assert_eq!(
             farm.rename_attachment("yak-0001", "a.png", "a").unwrap(),
             R::Unchanged

@@ -108,7 +108,8 @@ fn old_note(root: &Path, id: &str, ts: &str, actor: &str, text: &str) {
 
 /// What `yaks migrate` (0.0.16) did, by hand (the layout change and nothing else):
 /// each `<status>/<id>.md` becomes `<id>.md` with `status:` after `title:`,
-/// `artifacts/<id>/` becomes `<id>/` and its links follow, schema 5 (what the migration of the day writes).
+/// `artifacts/<id>/` becomes `<id>/` and its links follow; then straight to the
+/// schema-6 herd directories (`<herd>/yaks/`), as `yaks migrate` does today.
 fn migrate_by_hand(root: &Path) {
     let farm = root.join(".yaks");
     for st in ["hairy", "shaving", "shorn", "dead"] {
@@ -120,18 +121,28 @@ fn migrate_by_hand(root: &Path) {
             let text = text
                 .replacen(" title\n", &format!(" title\nstatus: {st}\n"), 1)
                 .replace("](artifacts/", "](");
-            fs::write(farm.join(p.file_name().unwrap()), text).unwrap();
+            // Straight to today's path, `<herd>/yaks/<id>.md` (schema 6).
+            let name = p.file_name().unwrap().to_str().unwrap().to_string();
+            let dest = herd_yaks(&farm, &name);
+            fs::create_dir_all(&dest).unwrap();
+            fs::write(dest.join(&name), text).unwrap();
             fs::remove_file(p).unwrap();
         }
         fs::remove_dir(&dir).unwrap();
     }
     if let Ok(rd) = fs::read_dir(farm.join("artifacts")) {
         for e in rd.flatten() {
-            fs::rename(e.path(), farm.join(e.file_name())).unwrap();
+            let name = e.file_name().to_str().unwrap().to_string();
+            fs::rename(e.path(), herd_yaks(&farm, &name).join(&name)).unwrap();
         }
         fs::remove_dir(farm.join("artifacts")).unwrap();
     }
-    fs::write(farm.join("schema"), "5\n").unwrap();
+    fs::write(farm.join("schema"), "6\n").unwrap();
+}
+
+/// `<farm>/<herd>/yaks/` for a yak file or attachment-dir name.
+fn herd_yaks(farm: &Path, name: &str) -> PathBuf {
+    farm.join(name.split_once('-').unwrap().0).join("yaks")
 }
 
 struct Repo {
