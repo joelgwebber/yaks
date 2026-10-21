@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-10-18T19:35:20Z'
-updated: '2026-10-19T04:26:21Z'
+updated: '2026-10-21T19:54:35Z'
 parent: yaks-73f4
 labels:
 - git
@@ -23,3 +23,8 @@ Scope note (Joel, 2026-10-18): `yaks sync` should also cover the FIRST publish o
 ▸ 2026-10-19T04:26:21Z [delta:herd-pass]
 
 Carried over from yaks-78ff (Joel, 2026-10-17): should yaks commit yak changes by itself? Under the farm branch the answer is cheap to give: the farm worktree is the only writer of .yaks, so an automatic `yaks commit` (on a timer, at TUI exit, or as part of `yaks sync`) cannot collide with code commits. Decide here with sync.
+
+---
+▸ 2026-10-21T19:54:35Z [delta:herd-dirs]
+
+Herd pass 2026-10-21: the sync lifecycle (`yaks sync`, first publish, auto-commit, pull timing) moved to its own yak, yaks-472e. This yak is now just the merge driver; yaks-472e decides whether sync ships before it.

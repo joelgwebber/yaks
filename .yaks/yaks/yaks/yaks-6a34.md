@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 1
 created: '2026-10-18T05:15:02Z'
-updated: '2026-10-19T04:29:29Z'
+updated: '2026-10-21T19:54:36Z'
 labels:
 - sheds
 - git
@@ -105,3 +105,8 @@ Verdict (herd pass, 2026-10-19): the trial held and became the model. It went fu
 4. yaks-9eaa: shed stamps, then delete the farm-diff half of sheds.rs (no longer blocked: the verdict is in).
 5. yaks-e5fb: `yaks land` replaces land.sh.
 6. yaks-b1e9, yaks-0ef9: `init --mode branch` / `farm status`; the per-user home for everything else.
+
+---
+▸ 2026-10-21T19:54:36Z [delta:herd-dirs]
+
+2026-10-21: added yaks-472e (farm branch sync lifecycle: commit, pull, push), design first; it takes over the `yaks sync` and auto-commit pieces that were notes on yaks-4a53.
