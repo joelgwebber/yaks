@@ -1,11 +1,11 @@
 ---
 id: yaks-b1e9
 title: 'yaks init --mode branch [--branch <name>]: start a new farm on an orphan branch at farm_home'
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-10-18T05:15:36Z'
-updated: '2026-10-21T22:10:10Z'
+updated: '2026-10-21T22:49:46Z'
 parent: yaks-6a34
 labels:
 - cli
@@ -51,3 +51,43 @@ Claim (delta:herd-dirs, yakherd). Owner: `init-1`. Rescoped: `yaks farm status` 
 ▸ 2026-10-21T22:10:10Z [delta:herd-dirs]
 
 moved: hairy -> shaving
+
+---
+▸ 2026-10-21T22:10:52Z [init-1]
+
+Start (init-1): 2026-10-21T22:10:49Z
+- `yaks path yaks-b1e9`: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-b1e9.md
+
+---
+▸ 2026-10-21T22:20:25Z [init-1]
+
+Implemented `yaks init --mode branch [--branch <name>]` (src/init.rs `ensure_branch_farm`, `Mode::Branch`; main.rs `Init` args + dispatch; branchfarm `git`/`ref_exists` made `pub(crate)`).
+- Tests (tests/init_modes.rs, 8 `branch_mode_*`): all failed before (`invalid value 'branch' for '--mode'`), pass now: fresh orphan worktree at farm_home + `yaks path` + `yaks create`; re-run no-op; `--branch personal-joel` records `yaks.branch`; existing `origin/yaks` only gets its worktree (history stays 1 commit); in-tree farm refused; `--shared` clone refused; flag misuse (`--path`, `--branch` without mode, bad name, code branch); skills land in the code checkout, not the farm.
+- Real run in scratch repo (temp XDG_DATA_HOME/HOME), saved verbatim at /tmp/init-1-real-run.txt. Key lines: `branch: created the orphan branch `yaks` at <tmp>/data/yaks/farms/code-de84654d`; second run ends `Nothing to change: already set up this way.`; `yaks path` from the code checkout -> `<tmp>/data/yaks/farms/code-de84654d/.yaks`; `yaks create --title hello` -> `Created yak-28b9: hello`; `git worktree list` shows the farm worktree on `[yaks]` (unborn, 0000000); code `git status --short` empty; second repo `--branch personal-joel` printed `config: set yaks.branch = personal-joel`.
+- Gate: `cargo test --release` all suites green (unit 785 passed/8 ignored, init_modes 27 passed).
+
+---
+▸ 2026-10-21T22:20:25Z [init-1]
+
+Decision: a Delta/`--shared` clone is refused only when init would have to CREATE a worktree (new branch, or existing branch with no worktree). An existing worktree is reported "unchanged" (re-run no-op works from a clone). Rejected: refusing every run from a clone (breaks idempotent re-runs, nothing is changed anyway).
+- Decision: new branch = `git worktree add -q --orphan -b <b> <farm_home>`, left UNBORN (no commit), as the claim says; idempotence checks `worktree_of_branch` (which lists unborn branches) before refs. Rejected: an initial empty commit (claim: do not commit).
+- Decision: an existing branch must hold `.yaks/` at its tip (`git cat-file -e <tip>:.yaks`) else refuse ("not a farm; pick another with --branch"); also refuse a name equal to the checked-out code branch, and run in a farm worktree itself. Rejected: reusing blindly (`--branch main` would make a worktree of code).
+- Decision: reuse `branchfarm::bootstrap` for an existing branch (passing the already computed farm_home), and `ensure_farm` for the config clash check (`--herd other` on an existing farm errors, like the other modes). Made `branchfarm::git`/`ref_exists` `pub(crate)` rather than duplicating them.
+- Decision: `--branch` without `--mode branch` is an error (not silently ignored), and `--branch` alone no longer counts as plain init. `--mode branch --path` errors naming farm_home.
+- Decision: `yaks.branch` is written only when it differs from `configured_farm_branch` (same rule as migrate), after the worktree exists. Skills in branch mode are ordinary project files in the code checkout (no exclude lines), like team mode. A `.yaks/` holding only leftovers (.lock/.gitignore) is not an in-tree farm.
+- Decision: docs: cli.md row + init section paragraph, README/docs/README mode lists, clap help, yaks skill init sentence + command-table row (kept to the init clause; yaks-b048 owns the rewrite).
+
+---
+▸ 2026-10-21T22:24:22Z [init-1]
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-10-21T22:24:29Z [init-1]
+
+moved: shaving -> shorn
+
+---
+▸ 2026-10-21T22:49:46Z [delta:herd-dirs]
+
+Landed (delta:herd-dirs): ad0165d (single-parent, Squashed-from 2a3af01). merge_worktrees' 3-way merge from the worker's older base rolled back d138472 in store.rs/AGENTS.md/docs/cli.md/SKILL.md; restored those from HEAD and applied only the worker's hunks, then re-ran the gate (20 suites).
