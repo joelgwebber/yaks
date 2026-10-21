@@ -1,0 +1,1792 @@
+=== frame 0 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+ yak-9a7f p3 task     🦬 third yak
+ yak-f9ae p3 task     🦬 first yak
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help
+=== end ===
+=== frame 1 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│ Movement
+│   j / k  ↓ / ↑  Move cursor
+│   d / u         Half-page down / up
+│   PgDn / PgUp   Full-page down / up
+│   g / G         Top / bottom
+│
+│ List pane
+│   Tab / S-Tab   Next / previous view
+│   [ / ]         Previous / next view
+│   l / → / Enter Show detail pane
+│   Space         Collapse / expand subtree
+│   m             Mark / unmark row (multi-select)
+│   S (marked)    Bulk state over the marked set
+│   v / V         View picker / save filter as view
+│   *             Star / unstar (Starred view)
+│
+│ Detail pane
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 2 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   j / k  ↓ / ↑  Move cursor
+│   d / u         Half-page down / up
+│   PgDn / PgUp   Full-page down / up
+│   g / G         Top / bottom
+│
+│ List pane
+│   Tab / S-Tab   Next / previous view
+│   [ / ]         Previous / next view
+│   l / → / Enter Show detail pane
+│   Space         Collapse / expand subtree
+│   m             Mark / unmark row (multi-select)
+│   S (marked)    Bulk state over the marked set
+│   v / V         View picker / save filter as view
+│   *             Star / unstar (Starred view)
+│
+│ Detail pane
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 3 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   d / u         Half-page down / up
+│   PgDn / PgUp   Full-page down / up
+│   g / G         Top / bottom
+│
+│ List pane
+│   Tab / S-Tab   Next / previous view
+│   [ / ]         Previous / next view
+│   l / → / Enter Show detail pane
+│   Space         Collapse / expand subtree
+│   m             Mark / unmark row (multi-select)
+│   S (marked)    Bulk state over the marked set
+│   v / V         View picker / save filter as view
+│   *             Star / unstar (Starred view)
+│
+│ Detail pane
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 4 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   PgDn / PgUp   Full-page down / up
+│   g / G         Top / bottom
+│
+│ List pane
+│   Tab / S-Tab   Next / previous view
+│   [ / ]         Previous / next view
+│   l / → / Enter Show detail pane
+│   Space         Collapse / expand subtree
+│   m             Mark / unmark row (multi-select)
+│   S (marked)    Bulk state over the marked set
+│   v / V         View picker / save filter as view
+│   *             Star / unstar (Starred view)
+│
+│ Detail pane
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 5 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   g / G         Top / bottom
+│
+│ List pane
+│   Tab / S-Tab   Next / previous view
+│   [ / ]         Previous / next view
+│   l / → / Enter Show detail pane
+│   Space         Collapse / expand subtree
+│   m             Mark / unmark row (multi-select)
+│   S (marked)    Bulk state over the marked set
+│   v / V         View picker / save filter as view
+│   *             Star / unstar (Starred view)
+│
+│ Detail pane
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 6 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│
+│ List pane
+│   Tab / S-Tab   Next / previous view
+│   [ / ]         Previous / next view
+│   l / → / Enter Show detail pane
+│   Space         Collapse / expand subtree
+│   m             Mark / unmark row (multi-select)
+│   S (marked)    Bulk state over the marked set
+│   v / V         View picker / save filter as view
+│   *             Star / unstar (Starred view)
+│
+│ Detail pane
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 7 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│ List pane
+│   Tab / S-Tab   Next / previous view
+│   [ / ]         Previous / next view
+│   l / → / Enter Show detail pane
+│   Space         Collapse / expand subtree
+│   m             Mark / unmark row (multi-select)
+│   S (marked)    Bulk state over the marked set
+│   v / V         View picker / save filter as view
+│   *             Star / unstar (Starred view)
+│
+│ Detail pane
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 8 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   Tab / S-Tab   Next / previous view
+│   [ / ]         Previous / next view
+│   l / → / Enter Show detail pane
+│   Space         Collapse / expand subtree
+│   m             Mark / unmark row (multi-select)
+│   S (marked)    Bulk state over the marked set
+│   v / V         View picker / save filter as view
+│   *             Star / unstar (Starred view)
+│
+│ Detail pane
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 9 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   [ / ]         Previous / next view
+│   l / → / Enter Show detail pane
+│   Space         Collapse / expand subtree
+│   m             Mark / unmark row (multi-select)
+│   S (marked)    Bulk state over the marked set
+│   v / V         View picker / save filter as view
+│   *             Star / unstar (Starred view)
+│
+│ Detail pane
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 10 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   l / → / Enter Show detail pane
+│   Space         Collapse / expand subtree
+│   m             Mark / unmark row (multi-select)
+│   S (marked)    Bulk state over the marked set
+│   v / V         View picker / save filter as view
+│   *             Star / unstar (Starred view)
+│
+│ Detail pane
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 11 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   Space         Collapse / expand subtree
+│   m             Mark / unmark row (multi-select)
+│   S (marked)    Bulk state over the marked set
+│   v / V         View picker / save filter as view
+│   *             Star / unstar (Starred view)
+│
+│ Detail pane
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 12 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   m             Mark / unmark row (multi-select)
+│   S (marked)    Bulk state over the marked set
+│   v / V         View picker / save filter as view
+│   *             Star / unstar (Starred view)
+│
+│ Detail pane
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 13 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   S (marked)    Bulk state over the marked set
+│   v / V         View picker / save filter as view
+│   *             Star / unstar (Starred view)
+│
+│ Detail pane
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 14 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   v / V         View picker / save filter as view
+│   *             Star / unstar (Starred view)
+│
+│ Detail pane
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 15 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   *             Star / unstar (Starred view)
+│
+│ Detail pane
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 16 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│
+│ Detail pane
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 17 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│ Detail pane
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 18 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   h / ← / Esc   Back to list (h/← scroll a code block or table left first)
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 19 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   l / →         Scroll the code block / table under the cursor right
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 20 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   j / k         Scroll
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 21 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   Tab / [ / ]   Cycle links
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 22 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   Enter         Follow link / footnote / source file (status bar: URL)
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 23 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   B             Find references: yaks that point at this one
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 24 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   i / o         Nav forward / back (restores position)
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 25 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   J / K         Next / prev task (stay in detail)
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 26 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   Ctrl-N / Ctrl-PNext / prev content block
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 27 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   v , Shift-↑↓  Visual select lines
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 28 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   y / Enter     Copy selection / follow link
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 29 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   / , n / N     Find, next / prev match
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 30 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 31 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│ Edit
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 32 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   c / C         New root / child yak
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 33 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   E             Edit under the cursor: body block in place; header row / list: form
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 34 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   P / T / L / S Priority / type / labels / state
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 35 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   S → n         Shear: prompts an optional comment (Enter shears)
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 36 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   D / R         Add dependency / reparent
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 37 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   H             Move to another herd (multi-herd farm)
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 38 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   M             Add a comment (in place, after the last one)
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 39 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   Ctrl-S / Ctrl-CSave / cancel an in-place edit (Esc Esc cancels too)
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 40 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   a             Ask / answer (answer: needs agent; or in the shed that asks)
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+│   J / K (detail)Next / previous shed
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 41 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   :w / :q / :wq Save / cancel / save+close (editor Normal)
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+│   J / K (detail)Next / previous shed
+│   Enter (detail)Open the yak (its shed-only row if not here)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 42 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   Enter         (editor Insert) Continue a list / quote; on an empty item, end it
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+│   J / K (detail)Next / previous shed
+│   Enter (detail)Open the yak (its shed-only row if not here)
+│   a (detail)    Answer its ask in that shed (uncommitted there)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 43 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   A / O         Attach artifact / open it (from whichever shed has it)
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+│   J / K (detail)Next / previous shed
+│   Enter (detail)Open the yak (its shed-only row if not here)
+│   a (detail)    Answer its ask in that shed (uncommitted there)
+│   y             Copy the shed's path (detail: the yak id)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 44 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│     (text file) Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+│   J / K (detail)Next / previous shed
+│   Enter (detail)Open the yak (its shed-only row if not here)
+│   a (detail)    Answer its ask in that shed (uncommitted there)
+│   y             Copy the shed's path (detail: the yak id)
+│   r             Rescan now (auto every 10 s)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 45 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   r             Rename attachment at cursor (detail)
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+│   J / K (detail)Next / previous shed
+│   Enter (detail)Open the yak (its shed-only row if not here)
+│   a (detail)    Answer its ask in that shed (uncommitted there)
+│   y             Copy the shed's path (detail: the yak id)
+│   r             Rescan now (auto every 10 s)
+│
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 46 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   X             Slaughter (confirm; offers whole family)
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+│   J / K (detail)Next / previous shed
+│   Enter (detail)Open the yak (its shed-only row if not here)
+│   a (detail)    Answer its ask in that shed (uncommitted there)
+│   y             Copy the shed's path (detail: the yak id)
+│   r             Rescan now (auto every 10 s)
+│
+│ General
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 47 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   🛖 row         A yak only in another shed is read-only here (a answers its ask)
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+│   J / K (detail)Next / previous shed
+│   Enter (detail)Open the yak (its shed-only row if not here)
+│   a (detail)    Answer its ask in that shed (uncommitted there)
+│   y             Copy the shed's path (detail: the yak id)
+│   r             Rescan now (auto every 10 s)
+│
+│ General
+│   y             Copy yak id to clipboard
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 48 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+│   J / K (detail)Next / previous shed
+│   Enter (detail)Open the yak (its shed-only row if not here)
+│   a (detail)    Answer its ask in that shed (uncommitted there)
+│   y             Copy the shed's path (detail: the yak id)
+│   r             Rescan now (auto every 10 s)
+│
+│ General
+│   y             Copy yak id to clipboard
+│   ?             Toggle this help
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 49 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│ Search & filter
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+│   J / K (detail)Next / previous shed
+│   Enter (detail)Open the yak (its shed-only row if not here)
+│   a (detail)    Answer its ask in that shed (uncommitted there)
+│   y             Copy the shed's path (detail: the yak id)
+│   r             Rescan now (auto every 10 s)
+│
+│ General
+│   y             Copy yak id to clipboard
+│   ?             Toggle this help
+│   q / Ctrl-C    Quit
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 50 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   /             Inline search
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+│   J / K (detail)Next / previous shed
+│   Enter (detail)Open the yak (its shed-only row if not here)
+│   a (detail)    Answer its ask in that shed (uncommitted there)
+│   y             Copy the shed's path (detail: the yak id)
+│   r             Rescan now (auto every 10 s)
+│
+│ General
+│   y             Copy yak id to clipboard
+│   ?             Toggle this help
+│   q / Ctrl-C    Quit
+│
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 51 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   #             Go to any yak by id / title
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+│   J / K (detail)Next / previous shed
+│   Enter (detail)Open the yak (its shed-only row if not here)
+│   a (detail)    Answer its ask in that shed (uncommitted there)
+│   y             Copy the shed's path (detail: the yak id)
+│   r             Rescan now (auto every 10 s)
+│
+│ General
+│   y             Copy yak id to clipboard
+│   ?             Toggle this help
+│   q / Ctrl-C    Quit
+│
+│ Mouse
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 52 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   f             Filter drawer (copies: any | home hides the other sheds)
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+│   J / K (detail)Next / previous shed
+│   Enter (detail)Open the yak (its shed-only row if not here)
+│   a (detail)    Answer its ask in that shed (uncommitted there)
+│   y             Copy the shed's path (detail: the yak id)
+│   r             Rescan now (auto every 10 s)
+│
+│ General
+│   y             Copy yak id to clipboard
+│   ?             Toggle this help
+│   q / Ctrl-C    Quit
+│
+│ Mouse
+│   Wheel         Scroll the pane under the pointer
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 53 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│   Esc           Revert filter to the active view
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+│   J / K (detail)Next / previous shed
+│   Enter (detail)Open the yak (its shed-only row if not here)
+│   a (detail)    Answer its ask in that shed (uncommitted there)
+│   y             Copy the shed's path (detail: the yak id)
+│   r             Rescan now (auto every 10 s)
+│
+│ General
+│   y             Copy yak id to clipboard
+│   ?             Toggle this help
+│   q / Ctrl-C    Quit
+│
+│ Mouse
+│   Wheel         Scroll the pane under the pointer
+│   Click row     Select (again: open detail; detail stays open)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 54 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+│   J / K (detail)Next / previous shed
+│   Enter (detail)Open the yak (its shed-only row if not here)
+│   a (detail)    Answer its ask in that shed (uncommitted there)
+│   y             Copy the shed's path (detail: the yak id)
+│   r             Rescan now (auto every 10 s)
+│
+│ General
+│   y             Copy yak id to clipboard
+│   ?             Toggle this help
+│   q / Ctrl-C    Quit
+│
+│ Mouse
+│   Wheel         Scroll the pane under the pointer
+│   Click row     Select (again: open detail; detail stays open)
+│   Click detail  Move line cursor (again: follow link)
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 55 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)         family: ~remaining
+
+◂ Help — keys
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+│   J / K (detail)Next / previous shed
+│   Enter (detail)Open the yak (its shed-only row if not here)
+│   a (detail)    Answer its ask in that shed (uncommitted there)
+│   y             Copy the shed's path (detail: the yak id)
+│   r             Rescan now (auto every 10 s)
+│
+│ General
+│   y             Copy yak id to clipboard
+│   ?             Toggle this help
+│   q / Ctrl-C    Quit
+│
+│ Mouse
+│   Wheel         Scroll the pane under the pointer
+│   Click row     Select (again: open detail; detail stays open)
+│   Click detail  Move line cursor (again: follow link)
+│   Click tab     Switch view
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===

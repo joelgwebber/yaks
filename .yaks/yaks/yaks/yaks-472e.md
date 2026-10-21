@@ -1,11 +1,11 @@
 ---
 id: yaks-472e
 title: 'Farm branch sync lifecycle: commit, pull and push the farm (yaks sync), design first'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-10-21T19:54:29Z'
-updated: '2026-10-21T21:11:47Z'
+updated: '2026-10-21T21:44:08Z'
 parent: yaks-6a34
 labels:
 - git
@@ -90,3 +90,13 @@ Next, after landing: yaks-e3b2 (sync; needs 4a53 + 85bb's is_private), then yaks
 ▸ 2026-10-21T21:11:47Z [delta:herd-dirs]
 
 Round 2 (delta:herd-dirs): landed 0e1775b (private, 85bb), cabc284 + 3bc2282 (sync, e3b2, built by the yakherd). Spawned `tui-sync-1` -> yaks-ce5d, anthropic/claude-sonnet-5-5, base 3bc2282, thread ksQQfIIp_WA2ToGZ4UwiEcPWKpLOACad2ZIBxBCA0aLJyrhJPreUvVwLftHG.
+
+---
+▸ 2026-10-21T21:44:08Z [delta:herd-dirs]
+
+All children landed (delta:herd-dirs): 8f77dde status, 0b114a4 driver, 0e1775b private, cabc284+3bc2282 sync, 47120db TUI chip + W/U. Skills guidance on when to sync stays with yaks-b048. Not pushed anywhere; publishing the farm (`yaks sync`) and pushing main are Joel's call.
+
+---
+▸ 2026-10-21T21:44:08Z [delta:herd-dirs]
+
+moved: shaving -> shorn

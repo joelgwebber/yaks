@@ -1,0 +1,6 @@
+=== frame 0 · 160x4 · focus=list · view=🦬 Hairy · cursor=0 · rows=52 · sel=yaks-6a34 · blocked=[yaks-19c3,yaks-248d,yaks-8d6a,yaks-8f2e,yaks-b048] · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (50)   🪒 Shaving (4)   🐑 Shorn (397)   🕒 Recent (50)   ⭐ Starred (0)   🛖 Sheds (0)                         family: ~remaining ● 2 uncommitted ↑13
+
+ yaks-6a34     p1 task     🪒 One farm per machine: the farm on its own branch, reached from every shed (umbrella)                          [sheds, git, design]
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help
+=== end ===

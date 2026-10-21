@@ -1,0 +1,67 @@
+=== frame 0 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)            ● 3 uncommitted
+
+ yak-9a7f p3 task     🦬 third yak
+ yak-f9ae p3 task     🦬 first yak
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help
+=== end ===
+[main d5530bb] yaks: created yak-9a7f; shaving yak-a292; updated yak-f9ae
+ 3 files changed, 22 insertions(+), 3 deletions(-)
+ create mode 100644 .yaks/yak/yaks/yak-9a7f.md
+=== frame 1 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-9a7f · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (2)   🪒 Shaving (1)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (1)
+committed d5530bb yaks: created yak-9a7f; shaving yak-a292; updated yak-f9ae
+ yak-9a7f p3 task     🦬 third yak
+ yak-f9ae p3 task     🦬 first yak
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help
+=== end ===
