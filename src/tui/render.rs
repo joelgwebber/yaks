@@ -310,6 +310,14 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
         ),
         entry("Esc", "Revert filter to the active view"),
         blank(),
+        section("Farm git state (the chip on the tab row)"),
+        entry("W", "Commit the farm (yaks commit)"),
+        entry("U", "Sync the farm: commit, pull, push (yaks sync)"),
+        entry(
+            "chip",
+            "● N uncommitted, ↑ahead, ↓behind, not published; none when clean",
+        ),
+        blank(),
         section("Sheds tab (every checkout: yaks sheds)"),
         entry("j / k", "Move between sheds (attention first)"),
         entry("l / Enter", "Show the shed's changes (yaks changes)"),
@@ -618,6 +626,22 @@ pub(crate) fn render_tabs(app: &App, frame: &mut Frame, area: Rect) {
     }
     let tabs_w = disp_width(&spans.iter().map(|s| s.content.as_ref()).collect::<String>());
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
+    // The farm's git state, pinned to the row's far right; it yields (is not
+    // drawn) when the tabs leave no room. Whatever else uses the right slot
+    // (notification, family, sheds label) ends just left of it.
+    let mut slot_w = area.width;
+    let room = (area.width as usize).saturating_sub(tabs_w + 1);
+    if let Some((line, w)) = farm_sync_chip(app, room) {
+        let w = w as u16;
+        let rect = Rect {
+            x: area.x + area.width - w,
+            y: area.y,
+            width: w,
+            height: 1,
+        };
+        frame.render_widget(Paragraph::new(line), rect);
+        slot_w = area.width - w - 1;
+    }
     // Right-aligned slot on the tab row: a transient notification takes it when
     // present (Python placement); otherwise the persistent family-scope indicator
     // for tree views. `~` marks a view inheriting the global default (auto) vs
@@ -634,9 +658,9 @@ pub(crate) fn render_tabs(app: &App, frame: &mut Frame, area: Rect) {
         let full = disp_width(n);
         let w = (full as u16).min(area.width);
         if w > 0 {
-            let rect = if tabs_w + full <= area.width as usize {
+            let rect = if tabs_w + full <= slot_w as usize {
                 Rect {
-                    x: area.x + area.width - w,
+                    x: area.x + slot_w - w,
                     y: area.y,
                     width: w,
                     height: 1,
@@ -654,10 +678,10 @@ pub(crate) fn render_tabs(app: &App, frame: &mut Frame, area: Rect) {
     } else if app.on_sheds_tab() {
         // The Sheds tab's scan state in the same slot (`scanned 4s ago`).
         let label = app.sheds_status_label();
-        if !label.is_empty() && tabs_w + disp_width(&label) < area.width as usize {
+        if !label.is_empty() && tabs_w + disp_width(&label) < slot_w as usize {
             let w = disp_width(&label) as u16;
             let rect = Rect {
-                x: area.x + area.width - w,
+                x: area.x + slot_w - w,
                 y: area.y,
                 width: w,
                 height: 1,
@@ -677,11 +701,11 @@ pub(crate) fn render_tabs(app: &App, frame: &mut Frame, area: Rect) {
             let label = format!("family: {marker}{val}");
             // The indicator yields rather than overwrite tabs when the strip is
             // too wide to fit it.
-            if tabs_w + disp_width(&label) < area.width as usize {
-                let w = (disp_width(&label) as u16).min(area.width);
+            if tabs_w + disp_width(&label) < slot_w as usize {
+                let w = (disp_width(&label) as u16).min(slot_w);
                 if w > 0 {
                     let rect = Rect {
-                        x: area.x + area.width - w,
+                        x: area.x + slot_w - w,
                         y: area.y,
                         width: w,
                         height: 1,
@@ -694,6 +718,34 @@ pub(crate) fn render_tabs(app: &App, frame: &mut Frame, area: Rect) {
             }
         }
     }
+}
+
+/// The tab-row chip for the farm's git state ([`FarmSync`]) and its display
+/// width, for `room` free columns after the tabs: the full text if it fits,
+/// else the compact one, else `None` (also when there is nothing to say). Dim,
+/// except `↓behind`, which is the one warning (a sync would bring changes in).
+fn farm_sync_chip(app: &App, room: usize) -> Option<(Line<'static>, usize)> {
+    let farm_sync = app.farm_sync.as_ref()?;
+    [false, true].into_iter().find_map(|compact| {
+        let segments = farm_sync.segments(compact);
+        if segments.is_empty() {
+            return None;
+        }
+        let mut spans = Vec::new();
+        for (i, (text, warn)) in segments.into_iter().enumerate() {
+            if i > 0 {
+                spans.push(Span::raw(" "));
+            }
+            let style = if warn {
+                Style::new().fg(Color::Yellow)
+            } else {
+                Style::new().fg(Color::DarkGray)
+            };
+            spans.push(Span::styled(text, style));
+        }
+        let w = disp_width(&spans.iter().map(|s| s.content.as_ref()).collect::<String>());
+        (w <= room).then(|| (Line::from(spans), w))
+    })
 }
 
 pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {

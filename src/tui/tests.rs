@@ -4846,4 +4846,194 @@ mod memo {
         app.all.push(task("a1", "New", Status::Hairy, 2, None)); // no touch()
         let _ = app.rows();
     }
+
+    // -- farm git-state chip + W/U keys (yaks-ce5d) --------------------------
+
+    fn with_chip(dirty: usize, sync: Option<(Option<&str>, usize, usize)>) -> App {
+        let mut app = sample();
+        app.farm_sync = Some(FarmSync {
+            dirty,
+            sync: sync.map(|(upstream, ahead, behind)| crate::status::SyncState {
+                branch: "yaks".into(),
+                upstream: upstream.map(String::from),
+                ahead,
+                behind,
+            }),
+        });
+        app
+    }
+
+    #[test]
+    fn chip_is_absent_when_the_farm_is_clean_and_up_to_date() {
+        let app = with_chip(0, Some((Some("origin/yaks"), 0, 0)));
+        insta::assert_snapshot!(draw(&app, 140, 8));
+    }
+
+    #[test]
+    fn chip_shows_the_uncommitted_count() {
+        insta::assert_snapshot!(draw(&with_chip(3, None), 140, 8));
+    }
+
+    #[test]
+    fn chip_shows_ahead_and_behind() {
+        let app = with_chip(2, Some((Some("origin/yaks"), 2, 1)));
+        insta::assert_snapshot!(draw(&app, 140, 8));
+    }
+
+    #[test]
+    fn chip_says_not_published_without_an_upstream() {
+        insta::assert_snapshot!(draw(&with_chip(0, Some((None, 0, 0))), 140, 8));
+    }
+
+    #[test]
+    fn chip_sits_right_of_a_notification() {
+        let mut app = with_chip(1, None);
+        app.notification = Some("syncing…".into());
+        insta::assert_snapshot!(draw(&app, 140, 8));
+    }
+
+    #[test]
+    fn chip_goes_compact_when_the_tabs_leave_little_room() {
+        // 120 columns: `● 1 uncommitted not published` does not fit, `●1 unpub` does.
+        insta::assert_snapshot!(draw(&with_chip(1, Some((None, 0, 0))), 120, 8));
+    }
+
+    #[test]
+    fn chip_yields_when_the_tabs_leave_no_room() {
+        insta::assert_snapshot!(draw(&with_chip(3, None), 30, 6));
+    }
+
+    #[test]
+    fn only_behind_is_a_warning() {
+        let segs = FarmSync {
+            dirty: 1,
+            sync: Some(crate::status::SyncState {
+                branch: "yaks".into(),
+                upstream: Some("origin/yaks".into()),
+                ahead: 2,
+                behind: 1,
+            }),
+        }
+        .segments(false);
+        assert_eq!(
+            segs,
+            vec![
+                ("● 1 uncommitted".to_string(), false),
+                ("↑2".to_string(), false),
+                ("↓1".to_string(), true),
+            ]
+        );
+    }
+
+    #[test]
+    fn help_lists_the_commit_and_sync_keys() {
+        let text: String = help_content()
+            .iter()
+            .map(|l| {
+                l.spans
+                    .iter()
+                    .map(|s| s.content.as_ref())
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(text.contains("Commit the farm"), "{text}");
+        assert!(text.contains("Sync the farm"), "{text}");
+    }
+
+    #[test]
+    fn help_overlay_shows_the_farm_keys() {
+        let mut app = sample();
+        app.overlay = Overlay::Help(54);
+        insta::assert_snapshot!(draw(&app, 100, 20));
+    }
+
+    fn git_in(dir: &std::path::Path, args: &[&str]) {
+        let out = std::process::Command::new("git")
+            .arg("-C")
+            .arg(dir)
+            .args(args)
+            .env_remove("GIT_DIR")
+            .env_remove("GIT_WORK_TREE")
+            .env_remove("GIT_INDEX_FILE")
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "git {args:?}: {out:?}");
+    }
+
+    #[test]
+    fn w_commits_a_dirty_team_farm_and_the_chip_goes() {
+        let (proj, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        git_in(&proj, &["init", "-q"]);
+        git_in(&proj, &["config", "user.name", "t"]);
+        git_in(&proj, &["config", "user.email", "t@t"]);
+        git_in(&proj, &["add", "."]);
+        git_in(&proj, &["commit", "-q", "-m", "init"]);
+        let mut app = App::with_farm(farm).unwrap();
+        assert_eq!(app.farm_sync.as_ref().map(|f| f.dirty), Some(0));
+        assert!(!draw(&app, 140, 8).contains("uncommitted"));
+
+        // A TUI mutation dirties the farm; the chip appears via the reload.
+        press(&mut app, "Sn");
+        enter_key(&mut app);
+        // The yak's file, plus `.yaks/.gitignore` that the first write creates.
+        assert_eq!(app.farm_sync.as_ref().map(|f| f.dirty), Some(2));
+        assert!(draw(&app, 140, 8).contains("● 2 uncommitted"));
+
+        // W queues the commit and says so; nothing is committed until it runs.
+        handle_key(&mut app, key('W'));
+        assert_eq!(app.notification.as_deref(), Some("committing…"));
+        assert_eq!(app.farm_sync.as_ref().map(|f| f.dirty), Some(2));
+        app.run_pending_farm_op();
+        let note = app.notification.clone().unwrap();
+        assert!(note.starts_with("committed "), "{note}");
+        assert!(!note.contains('\n'));
+        assert_eq!(app.farm_sync.as_ref().map(|f| f.dirty), Some(0));
+        assert!(!draw(&app, 140, 8).contains("uncommitted"));
+        let log = std::process::Command::new("git")
+            .arg("-C")
+            .arg(&proj)
+            .args(["log", "--oneline"])
+            .output()
+            .unwrap();
+        assert_eq!(String::from_utf8_lossy(&log.stdout).lines().count(), 2);
+    }
+
+    #[test]
+    fn w_on_a_clean_farm_says_so_and_u_on_a_non_branch_farm_errors_in_one_line() {
+        let (proj, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        git_in(&proj, &["init", "-q"]);
+        git_in(&proj, &["add", "."]);
+        git_in(
+            &proj,
+            &[
+                "-c",
+                "user.name=t",
+                "-c",
+                "user.email=t@t",
+                "commit",
+                "-q",
+                "-m",
+                "i",
+            ],
+        );
+        let mut app = App::with_farm(farm).unwrap();
+        handle_key(&mut app, key('W'));
+        app.run_pending_farm_op();
+        assert_eq!(app.notification.as_deref(), Some("nothing to commit"));
+        handle_key(&mut app, key('U'));
+        assert_eq!(app.notification.as_deref(), Some("syncing…"));
+        app.run_pending_farm_op();
+        let note = app.notification.clone().unwrap();
+        assert!(note.starts_with("error: "), "{note}");
+        assert!(!note.contains('\n'));
+    }
+
+    #[test]
+    fn w_and_u_do_nothing_without_a_farm() {
+        let mut app = sample();
+        handle_key(&mut app, key('W'));
+        handle_key(&mut app, key('U'));
+        assert!(app.notification.is_none() && app.pending_farm_op.is_none());
+    }
 }

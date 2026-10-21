@@ -41,8 +41,11 @@ impl HeadlessApp for App {
     }
 
     /// Wait for a running Sheds-tab scan, so a headless frame shows the
-    /// settled state rather than `scanning…` (yaks-98f1).
+    /// settled state rather than `scanning…` (yaks-98f1), and run a queued
+    /// `W`/`U` commit or sync (the live loop does so after drawing
+    /// `committing…`/`syncing…`).
     fn settle(&mut self) {
+        self.run_pending_farm_op();
         self.settle_sheds(true);
     }
 }

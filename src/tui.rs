@@ -16,6 +16,7 @@ mod detail_nav;
 mod docshots;
 mod drawer;
 mod editor;
+mod farmsync;
 mod fuzzy;
 mod handlers;
 mod headless;
@@ -79,6 +80,7 @@ use blockedit::BlockEdit;
 use create::*;
 use drawer::*;
 use editor::*;
+use farmsync::{FarmOp, FarmSync};
 use fuzzy::*;
 #[cfg(test)]
 use handlers::{handle_event, handle_paste};
@@ -346,6 +348,12 @@ pub struct App {
     hits: RefCell<mouse::HitMap>,
     /// The Sheds tab's snapshot, cursors and background scan (yaks-98f1).
     sheds: ShedsTab,
+    /// The farm's uncommitted count and sync standing, for the tab-row chip
+    /// (`None`: no farm, a private farm, or git could not say). Re-read on
+    /// every reload; see [`farmsync`].
+    farm_sync: Option<FarmSync>,
+    /// A `W`/`U` commit or sync waiting for the frame that announces it.
+    pending_farm_op: Option<FarmOp>,
     quit: bool,
     /// Bumped by [`App::touch`] whenever `all` or the sheds snapshot is
     /// replaced; the memoized rows and detail lines are keyed on it.
@@ -396,6 +404,8 @@ impl App {
             selected: HashSet::new(),
             hits: RefCell::default(),
             sheds: ShedsTab::default(),
+            farm_sync: None,
+            pending_farm_op: None,
             quit: false,
             data_gen: 0,
             rows_cache: RefCell::new(None),
@@ -426,6 +436,7 @@ impl App {
         app.views = views;
         app.working_set = working_set;
         app.farm = Some(farm);
+        app.refresh_farm_sync();
         app.clamp_cursor();
         // One scan at startup feeds the Sheds tab's count; after that it
         // scans only while shown (yaks-98f1).

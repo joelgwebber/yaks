@@ -2234,6 +2234,8 @@ fn handle_key_inner(app: &mut App, k: KeyEvent) {
             KeyCode::Char('a') => app.open_ask_or_answer(),
             KeyCode::Char('v') => app.open_view_picker(),
             KeyCode::Char('V') => app.open_save_view(),
+            KeyCode::Char('W') => app.request_farm_op(FarmOp::Commit),
+            KeyCode::Char('U') => app.request_farm_op(FarmOp::Sync),
             KeyCode::Char('?') => app.open_help(),
             KeyCode::Esc => {
                 if app.is_view_modified() {
@@ -2302,6 +2304,8 @@ fn handle_key_inner(app: &mut App, k: KeyEvent) {
                 KeyCode::Char('n') => app.detail_find_jump(1),
                 KeyCode::Char('N') => app.detail_find_jump(-1),
                 KeyCode::Char('?') => app.open_help(),
+                KeyCode::Char('W') => app.request_farm_op(FarmOp::Commit),
+                KeyCode::Char('U') => app.request_farm_op(FarmOp::Sync),
                 KeyCode::Char('v') => app.toggle_visual(),
                 // Enter yanks an active selection, else follows the link on the line.
                 KeyCode::Enter => {

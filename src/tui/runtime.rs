@@ -35,6 +35,12 @@ fn event_loop(
         // due one. Never blocks (yaks-98f1).
         app.settle_sheds(false);
         term.draw(|f| render(app, f))?;
+        // A `W`/`U` commit or sync queued by the last key: its `committing…` /
+        // `syncing…` frame is now on screen, so run it (blocking) and redraw.
+        if app.pending_farm_op.is_some() {
+            app.run_pending_farm_op();
+            continue;
+        }
         // Record the main-area height (minus tab + help lines) for paging.
         let h = term.size()?.height;
         app.page = h.saturating_sub(2).max(1);

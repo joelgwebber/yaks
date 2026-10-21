@@ -1,0 +1,24 @@
+---
+source: src/tui/tests.rs
+expression: "draw(&app, 100, 20)"
+---
+ 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   🛖  Sheds (…)
+
+◂ Help — keys
+│ Farm git state (the chip on the tab row)
+│   W             Commit the farm (yaks commit)
+│   U             Sync the farm: commit, pull, push (yaks sync)
+│   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
+│
+│ Sheds tab (every checkout: yaks sheds)
+│   j / k         Move between sheds (attention first)
+│   l / Enter     Show the shed's changes (yaks changes)
+│   j / k (detail)Move between its changed yaks (outstanding first, landed fold below)
+│   Enter (on ▸ N landed)Show / hide the landed yaks
+│   J / K (detail)Next / previous shed
+│   Enter (detail)Open the yak (its shed-only row if not here)
+│   a (detail)    Answer its ask in that shed (uncommitted there)
+│   y             Copy the shed's path (detail: the yak id)
+│   r             Rescan now (auto every 10 s)
+│
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close

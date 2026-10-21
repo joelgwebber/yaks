@@ -31,6 +31,21 @@ interchangeable.
   Inbox's shed asks) for a plain view of this farm. Saved views keep it. On a
   multi-herd farm it also grows a `herd` chip row to scope the list to one or
   more herds. The drawer composes into any view.
+- **Farm chip** — on the tab row's right edge, what the farm has that git does
+  not, and where the farm branch stands against its upstream (the one
+  `yaks status` prints, read from local git: it never fetches, and nothing is
+  ever committed or synced unless you press `W` / `U`). Dim text, in this order:
+  `● 3 uncommitted` (yaks and other farm files git lacks), `not published`
+  (the farm branch has no upstream), `↑2` (commits to push), and `↓1` (commits
+  to pull: the one warning colour). Nothing is shown when the farm is clean and
+  up to date or for a private farm. When the full text does not fit beside the
+  tabs it shortens to `●3` and `unpub`, and is hidden if even that does not
+  fit. An
+  in-tree farm (`.yaks/` committed beside the code) has no branch of its own, so
+  only the uncommitted count. It is re-read whenever the farm is (re)loaded: at
+  startup, after every TUI change, and when files under `.yaks/` change; it
+  does not notice a commit or push made elsewhere until then. The family label
+  and notifications sit just left of it.
 - **Status bar** — the active farm, view, and cursor context.
 
 ## Signals
@@ -93,6 +108,8 @@ full-page; `g`/`G` top/bottom.
 | `S` (with marks) | Bulk state transition over the marked set (shearing asks for one optional comment for the set) |
 | `v` / `V` | View picker / save filter as a view |
 | `*` | Star / unstar (Starred view) |
+| `W` | Commit the farm (`yaks commit`; also in the detail pane, not on the Sheds tab). The result is the notification: `committed <sha> <message>`, `nothing to commit`, or the error |
+| `U` | Sync the farm (`yaks sync`: commit, pull, push; also in the detail pane). Shows `syncing…` while it runs (it touches the network, so the TUI waits), then the sync report's last line, or the error |
 
 **Detail pane** — `h`/`←`/`Esc` back (on a code block or table row `h`/`←`
 scroll it left first, and go back only at offset 0); `l`/`→` scroll the code

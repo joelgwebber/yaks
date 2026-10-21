@@ -85,6 +85,7 @@ impl App {
                 self.touch();
             }
         }
+        self.refresh_farm_sync();
         let len = self.row_count();
         self.cursor = if len == 0 {
             0
@@ -104,6 +105,7 @@ impl App {
                 self.touch();
             }
         }
+        self.refresh_farm_sync();
         match sel.and_then(|id| self.rows().iter().position(|r| r.task.id == id)) {
             Some(pos) => self.cursor = pos,
             None => self.clamp_cursor(),
