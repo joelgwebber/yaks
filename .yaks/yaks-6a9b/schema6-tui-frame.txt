@@ -1,0 +1,33 @@
+
+=== frame 6 · 120x30 · focus=detail · view=🐑 Shorn · cursor=0 · rows=28 · sel=yaks-6a34 · blocked=[yaks-19c3,yaks-248d,yaks-8d6a,yaks-8f2e,yaks-b048] · collapsed=0 · filter=“df61” · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (52)   🪒 Shaving (3)   🐑 Shorn* (391)   🕒 Recent (50)   ⭐ Starred (0)   🛖 Sheds (0)   filter: “df61”
+filter: df61
+◂ Task: yaks-6a34
+│
+│ Title:       One farm per machine: the farm on its own branch, reached from every shed (umbrella)
+│ Status:      🪒 shaving
+│ Type:        task
+│ Herd:        yaks
+│ Priority:    p1
+│ Created:     Sunday 01:15 -04:00
+│ Updated:     Monday 00:29 -04:00
+│ Labels:      sheds, git, design
+│
+│ Children:
+│   🦬 yaks-0ef9  Client-side home for farm worktrees and per-user yaks metadata (XDG data dir)
+│   🐑 yaks-2355  Linear landing: squash worker commits onto HEAD; land the live farm by cherry-pick, then move farm
+│ onto main
+│   🐑 yaks-5924  preflight --push-main checks the farm's checkout, not the one pushing (breaks under a live farm)
+│   🐑 yaks-6c4f  Source links in yaks resolve against the farm's parent, which is the farm worktree under a
+│ live/branch farm
+│   🪒 yaks-73f4  The farm is a branch: an orphan yaks branch replaces committed .yaks/ on main (shared, personal or
+│ local)
+│   🦬 yaks-9eaa  Stamp the shed on every write; build the sheds view from stamps (group-by), delete the farm-diff half
+│ of sheds.rs
+│   🐑 yaks-9f5c  Optimistic concurrency on whole-body edits: TUI description/block edit must not clobber a concurrent
+│ note
+│   🦬 yaks-b048  Rewrite the skills for one farm per machine: collapse the farm-mode and environment layers
+│   🦬 yaks-b1e9  yaks init --mode branch + yaks farm status: start a new farm on an orphan branch at farm_home; report
+│ where it is and whether it is pushed
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  Esc:clear  q:quit
+=== end ===
