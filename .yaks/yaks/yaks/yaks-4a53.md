@@ -1,12 +1,12 @@
 ---
 id: yaks-4a53
 title: 'Frontmatter-aware merge driver for farm files: concurrent edits always merge into a VALID yak'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-10-18T19:35:20Z'
-updated: '2026-10-21T19:54:35Z'
-parent: yaks-73f4
+updated: '2026-10-21T20:33:01Z'
+parent: yaks-472e
 labels:
 - git
 - cli
@@ -28,3 +28,37 @@ Carried over from yaks-78ff (Joel, 2026-10-17): should yaks commit yak changes b
 ▸ 2026-10-21T19:54:35Z [delta:herd-dirs]
 
 Herd pass 2026-10-21: the sync lifecycle (`yaks sync`, first publish, auto-commit, pull timing) moved to its own yak, yaks-472e. This yak is now just the merge driver; yaks-472e decides whether sync ships before it.
+
+---
+▸ 2026-10-21T20:33:01Z [delta:herd-dirs]
+
+moved: hairy -> shaving
+
+---
+▸ 2026-10-21T20:33:01Z [delta:herd-dirs]
+
+Claim (delta:herd-dirs, yakherd). Owner: `driver-1`.
+
+**Goal:** `yaks merge-driver %O %A %B %P` merges three versions of one yak file into a VALID yak, never conflict markers; registered automatically for the farm worktree.
+
+**Scope (files/symbols):**
+- `src/mergedriver.rs` (exists as a stub with `ensure_registered`): add `pub fn merge(base: &str, ours: &str, theirs: &str) -> Merged` (pure, string in, string out; `Merged { text: String, conflicts: Vec<String> }`) and implement `ensure_registered(worktree)`.
+- `src/main.rs`: ONE new `Command::MergeDriver { base, ours, theirs, path }` variant (hidden from top-level help is fine: `#[command(hide = true)]`) + its dispatch arm: read the three files, write the result to `ours` (git's `%A`), exit 0 always (non-zero only on I/O error).
+- Reuse `store::parse_task`, `store::write::render`, `store::parse_notes`/`NoteEntry` for parsing and serialization; do not hand-roll YAML.
+
+**Merge rules:**
+- Notes (the `---`/`▸ <ts> [actor]` entries after the description): union of both sides' entries not in base, deduped by exact entry text, ordered by timestamp (stable for ties: ours first). Entries in base and kept by both stay.
+- Description (body before the first note): take the side that changed it vs base; if both changed it differently keep ours and record a conflict.
+- Frontmatter: `updated` = max of the two. `labels`, `depends_on`: base ∪ additions from each side minus removals from each side. Scalars (`status`, `title`, `priority`, `type`, `parent`, `source`, `verify`, `needs`, unknown `extra` keys): the side that changed vs base wins; both changed differently -> keep ours, record conflict.
+- A conflict never fails the merge: append one attributed note to the merged yak, actor `merge-driver`, text `merge conflict: <field> was <ours> here, <theirs> on the other side; kept <ours>` (one line per field), using the existing note writer shape (`store::append_note` or equivalent, current schema: blank line after header). `yaks doctor` needs nothing new; a human sees the note.
+- If ANY of the three does not parse as a yak (no frontmatter), fall back: write ours unchanged, print a one-line warning to stderr, exit 1 so git reports a conflict for that path (non-yak files under `.yaks/` like config.yaml get this).
+
+**Registration (`ensure_registered(worktree)`):** idempotent. (1) `<worktree>/.gitattributes` contains `.yaks/**/*.md merge=yaks` (create or append the one line; leave other lines). (2) `git -C <worktree> config merge.yaks.name "yaks yak-file merge"` and `merge.yaks.driver "<abs path of current exe> merge-driver %O %A %B %P"` (repo-level config; the farm worktree shares the repo config, which is fine). Do NOT call it from anywhere yet; `yaks sync` (yaks-e3b2) will.
+
+**Out of scope:** `yaks sync`, any push/pull, TUI, docs beyond `docs/cli.md` one row for `merge-driver` (mark it internal) and the clap help.
+
+**Evidence (tests that fail before):**
+- Unit tests in `mergedriver.rs`: two different notes on one yak -> both kept, one `updated:` line, parses; same scalar changed both ways -> ours kept + conflict note; label add on one side + remove on the other; description changed one side; a non-yak input -> fallback.
+- An integration test in a scratch repo: farm branch, two clones (or two branches), concurrent notes + one conflicting status change on the same yak, `ensure_registered`, `git merge` / `git rebase` succeeds with no markers and `yaks doctor` is clean.
+
+**Judge:** the yakherd, by re-running the tests and a real two-clone merge.
