@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-10-18T05:15:36Z'
-updated: '2026-10-19T04:30:38Z'
+updated: '2026-10-21T03:30:36Z'
 parent: yaks-6a34
 depends_on:
 - yaks-7bfd
@@ -38,3 +38,11 @@ Audit (herd pass, 2026-10-19), against the skills at v0.0.21. Nothing in `yaks i
 Also fold in: yaks-248d (linking yaks, now stable paths), yaks-8f2e (large-farm command-line traps), the "every surface" docs (README, docs/*, .agents/skills/README.md, BUNDLED in src/skills.rs + its guard test). Check with the README's cold-read procedure.
 
 Order: decide yaks-9eaa's fate for `changes`/`inbox --sheds`/`answer @shed` first (or write the skills as if they are gone), so the skills never teach a command we are about to delete.
+
+---
+▸ 2026-10-21T03:30:36Z [delta:herd-pass]
+
+Joel (2026-10-19), on the proposal above:
+- Go with one `yaks-coordinating` and simplify as much as possible ("Yes, please!").
+- The skills stop teaching `changes <shed>`, `inbox --sheds`, `show --sheds` and `answer <id>@<shed>` now ("That SGTM"); they are slated for deletion under yaks-9eaa.
+- The bundled `yaks` skill gets a brevity pass too: it has grown long-winded and should be slimmed for clarity, not just rewritten for the new model.

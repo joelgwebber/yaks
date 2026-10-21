@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-10-18T05:15:36Z'
-updated: '2026-10-19T04:29:29Z'
+updated: '2026-10-21T03:30:36Z'
 parent: yaks-6a34
 labels:
 - sheds
@@ -23,3 +23,8 @@ Delete once the trial holds: fork points / base farms / `compare_farms` / `yak_c
 ▸ 2026-10-19T04:29:29Z [delta:herd-pass]
 
 Herd pass 2026-10-19: unblocked, the trial's verdict is in (yaks-6a34). The per-shed farm-diff commands it deletes (`changes <shed>`, `inbox --sheds`, `show --sheds`, `answer <id>@<shed>`, ghost rows) are also what the skills rewrite (yaks-b048) stops teaching, so land the two together or skills first. yaks-0309 and yaks-9a06 (ordering) now sit under this yak.
+
+---
+▸ 2026-10-21T03:30:36Z [delta:herd-pass]
+
+Joel (2026-10-19): agreed that the skills stop teaching the per-shed farm-diff commands now (yaks-b048), ahead of their deletion here.
