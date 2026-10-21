@@ -1,12 +1,11 @@
 ---
 id: yaks-0ef9
-title: Client-side home for farm worktrees and per-user yaks metadata (XDG data dir)
+title: 'Per-user yaks state: one home for TUI views, the stale-skills marker and a repo-to-farm registry (config vs data vs state dirs)'
 status: hairy
 type: task
 priority: 3
 created: '2026-10-18T15:54:02Z'
-updated: '2026-10-18T22:32:58Z'
-parent: yaks-6a34
+updated: '2026-10-21T22:54:32Z'
 labels:
 - cli
 - design
@@ -18,3 +17,8 @@ Joel (2026-10-18): decide where live-farm worktrees live long-term. Candidate: a
 ▸ 2026-10-18T22:32:58Z [delta-farm]
 
 Scope note (delta-farm): the farm-worktree location (`store::farm_home`, `$XDG_DATA_HOME/yaks/farms/<repo>-<hash>`) is built under yaks-bd7e, since the migrate command needs its default now. What remains here: views/starred working set, the stale-skills marker, a repo->farm registry (for bare-host machines and quiet farms), config vs data vs state dirs.
+
+---
+▸ 2026-10-21T22:54:32Z [delta:herd-dirs]
+
+Joel (2026-10-21): clarified the title and hoisted out of yaks-6a34; hygiene work for later. The farm-worktree location part is done (store::farm_home, yaks-bd7e).
