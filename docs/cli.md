@@ -53,9 +53,12 @@ Every command except `init` operates on one farm, found in this order:
    prints one stderr line saying where; later runs are silent. It never
    fetches, and never creates one from a Delta clone (it names the main checkout
    instead). `YAKS_NO_BOOTSTRAP=1` turns it off: the command then fails with an
-   error naming `git worktree add <path> <branch>`. A `.yaks/` whose config
-   has a `live_branch:` line is a stale copy from before a repository moved
-   its farm onto a branch: it is redirected the same way, never used. Set up:
+   error naming `git worktree add <path> <branch>`. A committed
+   in-tree `.yaks/` in a repository whose farm branch has a worktree elsewhere
+   (an old checkout forked before `yaks migrate --to-branch`), or one whose
+   config has a `live_branch:` line, is a stale copy: discovery uses the farm
+   branch's worktree instead and warns once on stderr, naming the copy to
+   remove. `YAKS_DIR` naming the copy still wins. Set up:
 
    ```sh
    yaks migrate --to-branch                                     # move a committed in-tree farm (below)

@@ -335,10 +335,10 @@ pub fn farm_branch(root: &Path) -> Option<String> {
 /// out-of-tree farm, and `$YAKS_DIR` is the explicit override.
 fn redirect_live(dir: &Path, found: PathBuf) -> Result<Discovered> {
     if read_config(&found).live_branch.is_none() {
-        return Ok(Discovered {
+        return Ok(stale_in_tree(dir, &found)?.unwrap_or(Discovered {
             root: found,
             prefix: None,
-        });
+        }));
     }
     match farm_branch_worktree(dir)? {
         Some(d) => Ok(d),
@@ -351,6 +351,39 @@ fn redirect_live(dir: &Path, found: PathBuf) -> Result<Discovered> {
             branch = configured_farm_branch(dir)
         ),
     }
+}
+
+/// A committed in-tree `found` (`<dir>/.yaks`) in a repository whose farm
+/// is a branch with a worktree elsewhere is a STALE copy (yaks-7bfd): an old
+/// checkout (a Delta clone or git worktree forked before `yaks migrate
+/// --to-branch`) still carries the farm that has since moved, and writing it
+/// would land in a dead copy. Then the farm branch's worktree is the farm,
+/// with one stderr warning naming the stale copy. `None` (use `found`) when
+/// `found` IS the farm branch's worktree, or the repository has no farm
+/// branch with a worktree (an ordinary in-tree farm), or `found` is not at
+/// the checkout's top level (a nested farm such as a test fixture).
+fn stale_in_tree(dir: &Path, found: &Path) -> Result<Option<Discovered>> {
+    // Only the farm at a checkout's top level is the one that moved: a farm
+    // nested deeper (a test fixture, a sub-project's own farm) is its own.
+    if !dir.join(".git").exists() || farm_branch(found).is_some() {
+        return Ok(None);
+    }
+    let branch = configured_farm_branch(dir);
+    let Some(wt) = crate::sheds::worktree_of_branch(dir, &branch).filter(|w| w.is_dir()) else {
+        return Ok(None);
+    };
+    let root = wt.join(".yaks");
+    if !root.is_dir() || fs::canonicalize(&root).ok() == fs::canonicalize(found).ok() {
+        return Ok(None);
+    }
+    eprintln!(
+        "yaks: warning: {} is a stale copy of the farm (this repository's farm is the branch \
+         `{branch}`, at {}); using that. Remove the copy from this checkout (`git rm -r .yaks` \
+         once its branch has the commit that moved the farm, or merge that commit)",
+        found.display(),
+        root.display()
+    );
+    Ok(Some(Discovered { root, prefix: None }))
 }
 
 /// Resolve `$YAKS_DIR`: a pointer file, or a farm dir / dir containing `.yaks`.
@@ -3084,6 +3117,57 @@ mod discover_tests {
         assert_eq!(canon(&discover_with(&code, None).unwrap().root), farm);
         assert_eq!(farm_branch(&farm).as_deref(), Some("yaks/team-a"));
         let _ = fs::remove_dir_all(&base);
+    }
+
+    /// yaks-7bfd: a checkout forked before the farm moved to its branch still
+    /// has the committed `.yaks/`; it is a stale copy, never the farm.
+    #[test]
+    fn a_committed_in_tree_copy_beside_a_farm_branch_worktree_is_stale() {
+        let (base, code, wt) = branch_repo(true);
+        let farm = canon(&wt.unwrap().join(".yaks"));
+        // An old checkout: a worktree of a commit that still had `.yaks/`.
+        let old = base.join("old");
+        git(
+            &code,
+            &[
+                "worktree",
+                "add",
+                "-q",
+                "-b",
+                "old",
+                &old.display().to_string(),
+                "main",
+            ],
+        );
+        let stale = farm_at(&old);
+        fs::write(stale.join("y-0001.md"), "---\nid: y-0001\ntitle: t\n---\n").unwrap();
+        git(&old, &["add", ".yaks"]);
+        git(&old, &["commit", "-q", "-m", "pre-migration farm"]);
+        assert_eq!(canon(&discover_with(&old, None).unwrap().root), farm);
+        assert_eq!(
+            canon(&discover_with(&old.join(".yaks"), None).unwrap().root),
+            farm
+        );
+        // The farm worktree itself, and YAKS_DIR naming the stale copy, are not redirected.
+        let farm_wt = farm.parent().unwrap().to_path_buf();
+        assert_eq!(canon(&discover_with(&farm_wt, None).unwrap().root), farm);
+        assert_eq!(
+            canon(
+                &discover_with(&old, Some(&stale.display().to_string()))
+                    .unwrap()
+                    .root
+            ),
+            canon(&stale)
+        );
+        // No farm-branch worktree: an in-tree farm is just the farm.
+        let (base2, code2, _) = branch_repo(false);
+        let own = farm_at(&code2);
+        assert_eq!(
+            canon(&discover_with(&code2, None).unwrap().root),
+            canon(&own)
+        );
+        let _ = fs::remove_dir_all(&base);
+        let _ = fs::remove_dir_all(&base2);
     }
 
     #[test]

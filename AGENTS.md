@@ -53,8 +53,9 @@ task's status is a frontmatter field; each yak is one file, `.yaks/<herd>/yaks/<
 - **This repo's farm is the branch `yaks`** (an orphan branch holding only
   `.yaks/`), checked out at `yaks path` (on Joel's Linux machine `~/.local/share/yaks/farms/yaks-539d3edb`, the `yaks migrate --to-branch` default); `main` has no
   `.yaks/`. Every shed resolves to that one farm; `yaks commit` commits there.
-  A `.yaks/` with `live_branch:` in its config (a checkout of a commit from the
-  yaks-6a34 trial) is a stale copy that discovery redirects (`store::redirect_live`).
+  A committed in-tree `.yaks/` beside a farm-branch worktree (a checkout forked
+  before the migration), or one with `live_branch:` in its config, is a stale copy
+  that discovery redirects with a warning (`store::redirect_live`, yaks-7bfd).
 - **Consolidate** separate farms with `Farm::merge` (`yaks merge`), which is
   collision-checked and non-destructive.
 
