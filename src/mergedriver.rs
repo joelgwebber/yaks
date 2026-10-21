@@ -334,10 +334,18 @@ fn set_git_config(worktree: &Path, key: &str, value: &str) -> Result<()> {
     Ok(())
 }
 
-/// The driver command line for the current executable, shell-quoted when its
-/// path needs it.
+/// The driver command line: plain `yaks`, resolved on `PATH` when git runs
+/// it, when the `yaks` there is this very binary (the normal case: an
+/// installed yaks). Pinning an absolute path would break every later merge
+/// once that binary moves (a reinstall elsewhere, a deleted build tree), and
+/// git then reports each yak file as a conflict. Only a binary run from
+/// outside `PATH` (a dev build, a test) pins its own path, shell-quoted when
+/// needed.
 fn driver_command() -> Result<String> {
     let exe = std::env::current_exe().context("locating the yaks executable")?;
+    if on_path_as_yaks(&exe) {
+        return Ok("yaks merge-driver %O %A %B %P".to_string());
+    }
     let exe = exe.to_string_lossy();
     let plain = exe
         .chars()
@@ -372,6 +380,21 @@ pub fn ensure_registered(worktree: &Path) -> Result<()> {
     set_git_config(worktree, "merge.yaks.name", "yaks yak-file merge")?;
     set_git_config(worktree, "merge.yaks.driver", &driver_command()?)?;
     Ok(())
+}
+
+/// Whether `yaks` on `PATH` is `exe` (same file, after resolving links).
+fn on_path_as_yaks(exe: &Path) -> bool {
+    let Ok(me) = std::fs::canonicalize(exe) else {
+        return false;
+    };
+    let Some(path) = std::env::var_os("PATH") else {
+        return false;
+    };
+    std::env::split_paths(&path)
+        .map(|d| d.join(if cfg!(windows) { "yaks.exe" } else { "yaks" }))
+        .find(|p| p.is_file())
+        .and_then(|p| std::fs::canonicalize(p).ok())
+        .is_some_and(|p| p == me)
 }
 
 #[cfg(test)]
