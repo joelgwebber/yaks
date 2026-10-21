@@ -155,7 +155,7 @@ a follow-up:
 project skills there but skips symlinked skill dirs; yaks-0576).
 The skills in `BUNDLED` are embedded via `include_str!`. `BUNDLED` in
 `src/skills.rs` is the explicit list — skills **and, per skill, files** (a skill
-like `yaks-coordinating-delta` carries `land.sh`) — and not the directory
+may carry extra files; none does today since `land.sh` became `yaks land`) — and not the directory
 contents; it alone decides what is embedded and installed. The default set is
 `yaks` + `yaks-tracker`; `yaks-working` and `yaks-coordinating*` ship only as
 the opt-in `coordination` group (`yaks skills install --with coordination`), and

@@ -15,6 +15,7 @@ mod farm;
 mod filter;
 mod init;
 mod json;
+mod land;
 mod mergedriver;
 mod migrate;
 mod model;
@@ -954,6 +955,32 @@ enum Command {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Land a Delta worker's commit by SHA on the current branch of the code
+    /// checkout you are in: one single-parent squash commit with the worker's
+    /// message and author plus a `Squashed-from: <full sha>` trailer (never a
+    /// merge commit), or a `git cherry-pick` when the worker's base is no longer
+    /// an ancestor of HEAD or the merge would conflict. Delta's applied state
+    /// (a pending merge, the worker's files in the working tree) is not trusted:
+    /// it is reported, then cleared, and the result is checked against
+    /// `git merge-tree --write-tree`. Refuses (exit 3) when the working tree holds
+    /// changes the worker's commit does not explain, unless `--force-discard`;
+    /// refuses (exit 6) a SHA that is already an ancestor of HEAD but whose
+    /// change is missing from HEAD's tree (a merge that dropped it); refuses (exit
+    /// 7) a commit that touches `.yaks/` when HEAD tracks none (a branch farm).
+    /// Never pushes. Needs git 2.38+ (2.40+ to check an already-landed SHA) and
+    /// no farm.
+    Land {
+        /// The worker's commit (a SHA or any rev that names a commit).
+        sha: String,
+        /// Report the pending state, the merged tree, what the working tree holds
+        /// that the commit does not explain, and what would happen; change nothing.
+        #[arg(long)]
+        dry_run: bool,
+        /// Land even when the working tree holds changes the worker's commit does
+        /// not explain (they are discarded).
+        #[arg(long)]
+        force_discard: bool,
+    },
     /// Show what the farm has changed that git does not have yet, one line per
     /// yak in yak terms (`created`, `moved hairy -> shaving`, `notes +2`,
     /// `edited`, `removed`, `artifacts`; `config` for config.yaml), `*` marking
@@ -1204,6 +1231,19 @@ fn main() -> Result<()> {
         }
         return Ok(());
     }
+    // `land` runs in the code checkout and needs no farm.
+    if let Command::Land {
+        sha,
+        dry_run,
+        force_discard,
+    } = &cli.command
+    {
+        std::process::exit(land::cli(&land::Opts {
+            sha: sha.clone(),
+            dry_run: *dry_run,
+            force_discard: *force_discard,
+        }));
+    }
     if let Command::Discover { path, json } = &cli.command {
         let anchor = match path {
             Some(p) => p.clone(),
@@ -1400,6 +1440,7 @@ fn main() -> Result<()> {
         Command::Skills { .. } => unreachable!("skills is handled before opening a farm"),
         Command::Private { .. } => unreachable!("private is handled before opening a farm"),
         Command::Discover { .. } => unreachable!("discover is handled before opening a farm"),
+        Command::Land { .. } => unreachable!("land is handled before opening a farm"),
         Command::MergeDriver { .. } => {
             unreachable!("merge-driver is handled before opening a farm")
         }

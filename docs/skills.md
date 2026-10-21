@@ -27,8 +27,9 @@ the single source of truth (no `skills/` directory, no symlinks; agent harnesses
 such as Delta discover project skills there but skip symlinked skill dirs). What
 ships is decided by the **explicit `BUNDLED` list** in `src/skills.rs`, *not* by
 what sits in that directory. The list names each skill **and its files** (a skill
-is no longer just a `SKILL.md`: `yaks-coordinating-delta` carries the executable
-`land.sh`, installed with mode 0755), and a test fails if a bundled skill's
+may be more than a `SKILL.md`: an extra file is installed with mode 0755 when its
+entry says it is executable; none ships today, since the landing script became
+`yaks land`), and a test fails if a bundled skill's
 directory holds a file the list omits. The default set is `yaks` and
 `yaks-tracker`; the `coordination` group adds `yaks-coordinating`,
 `yaks-coordinating-team`, `-private`, `-worktrees`, `-delta` and `yaks-working`.
@@ -45,7 +46,7 @@ always carries the skill matching its version. Installed copies get a
 metadata:
   yaks-version: "0.0.9"
   yaks-digest: "a64a55994a8ee572"
-  yaks-files: "land.sh=0f3c…"   # only for a skill that ships other files
+  yaks-files: "run.sh=0f3c…"    # only for a skill that ships other files
 ```
 
 The stamp lives in `SKILL.md`. A skill's other files (a script) carry no stamp

@@ -23,7 +23,7 @@ its farm changed, read-only. `yaks discover` shows that chain step by step when 
 clone on a shared machine the human's checkout is not visible (its host is the managed repo), and nothing finds sheds
 from outside every checkout. Delta marks the commits it imports from another machine as shallow boundaries, so a clone (yours or the
 human's) can be shallow (`git rev-parse --is-shallow-repository`): ancestry questions then have unreliable
-answers, `yaks sheds` shows `?` and `land.sh` prints a note; `git fetch --unshallow origin` (or `local`) fixes it. A worker can
+answers, `yaks sheds` shows `?` and `yaks land` prints a note; `git fetch --unshallow origin` (or `local`) fixes it. A worker can
 read your checkout and your `target/` (it is not isolated), so the brief forbids touching them. A fresh checkout has no `target/`: building takes 15-25 s.
 Extra repos are attached to the thread by the human as more Delta worktrees; with several attached,
 file tools and `skill` need the worktree argument. Never clone a repo or add a path dependency.
@@ -85,11 +85,13 @@ After every worker returns, in this order:
 3. `git merge-tree --write-tree HEAD <sha>` (git 2.38 or newer; check `git --version`) prints the correct
    merged tree; `git diff <tree>` shows how your working tree differs from it. On an older git, make a
    scratch worktree and run `git merge --no-commit --no-ff <sha>` there, then compare. Differences in files the worker never touched are Delta's mistake.
-4. `sh .agents/skills/yaks-coordinating-delta/land.sh <sha> --dry-run` reports steps 1-3 (and what in your tree the
+4. `yaks land <sha> --dry-run` (runs in your code checkout, needs no farm) reports steps 1-3 (and what in your tree the
    commit does not explain); without `--dry-run` it does step 4 and checks the result equals the computed tree.
    It refuses while your tree holds changes the commit does not explain (`--force-discard` overrides) and never
    pushes. It lands the worker as ONE squash commit on HEAD (the worker's message plus a `Squashed-from:` trailer),
-   or a cherry-pick when the base was rewritten or the merge would conflict: never a merge commit. By hand, land by
+   or a cherry-pick when the base was rewritten or the merge would conflict: never a merge commit. It also
+   refuses a SHA that is already an ancestor of HEAD but whose change is missing from HEAD (a merge that dropped it: exit 6),
+   and a commit that stages `.yaks/` files when HEAD tracks none (a branch farm: exit 7). By hand, land by
    SHA, one worker at a time: `git merge --abort`, `git checkout -- <that worker's files>`, then
    `git merge --squash <sha> && git commit -C <sha>`. A merge refuses to overwrite untracked files, so for each untracked
    leftover first check it equals the worker's version, `git show <sha>:<path> | cmp - <path>`, and

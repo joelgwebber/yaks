@@ -112,16 +112,9 @@ pub const BUNDLED: &[Skill] = &[
     Skill {
         name: "yaks-coordinating-delta",
         group: Some("coordination"),
-        files: &[
-            md(include_str!(
-                "../.agents/skills/yaks-coordinating-delta/SKILL.md"
-            )),
-            SkillFile {
-                path: "land.sh",
-                content: include_str!("../.agents/skills/yaks-coordinating-delta/land.sh"),
-                executable: true,
-            },
-        ],
+        files: &[md(include_str!(
+            "../.agents/skills/yaks-coordinating-delta/SKILL.md"
+        ))],
     },
     Skill {
         name: "yaks-working",
@@ -1399,7 +1392,7 @@ mod tests {
     }
 
     #[test]
-    fn with_coordination_adds_the_six_skills_and_the_land_script() {
+    fn with_coordination_adds_the_six_skills() {
         let names: Vec<_> = select(&coordination()).iter().map(|s| s.name).collect();
         assert_eq!(names.len(), 8);
         for n in ["yaks", "yaks-tracker"].into_iter().chain(SIX) {
@@ -1410,17 +1403,6 @@ mod tests {
         assert!(res.iter().all(|i| i.wrote));
         for n in SIX {
             assert!(base.join(n).join("SKILL.md").is_file(), "{n}");
-        }
-        let land = base.join("yaks-coordinating-delta/land.sh");
-        assert_eq!(
-            std::fs::read_to_string(&land).unwrap(),
-            include_str!("../.agents/skills/yaks-coordinating-delta/land.sh")
-        );
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let mode = std::fs::metadata(&land).unwrap().permissions().mode();
-            assert_eq!(mode & 0o777, 0o755, "land.sh must stay executable");
         }
         // Idempotent, and status sees all eight as current.
         let again = install(&base, false, &select(&coordination())).unwrap();
@@ -1435,71 +1417,91 @@ mod tests {
         let _ = std::fs::remove_dir_all(&base);
     }
 
+    /// No bundled skill ships a file besides `SKILL.md` today (the landing
+    /// script became `yaks land`), but the machinery for one is still live: this
+    /// fixture exercises it. Two versions of one skill, the second with a changed
+    /// script, stand for "this yaks" and "an older yaks".
+    static FIXTURE_NEW: Skill = Skill {
+        name: "fixture",
+        group: None,
+        files: &[
+            md("---\nname: fixture\ndescription: a skill with a script\n---\nbody\n"),
+            SkillFile {
+                path: "run.sh",
+                content: "#!/bin/sh\necho new\n",
+                executable: true,
+            },
+        ],
+    };
+
+    #[test]
+    fn a_skills_extra_file_installs_executable_and_stays_current() {
+        let base = temp_base("extra-install");
+        let res = install(&base, false, &[&FIXTURE_NEW]).unwrap();
+        assert!(res[0].wrote);
+        let run = base.join("fixture/run.sh");
+        assert_eq!(
+            std::fs::read_to_string(&run).unwrap(),
+            "#!/bin/sh\necho new\n"
+        );
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = std::fs::metadata(&run).unwrap().permissions().mode();
+            assert_eq!(mode & 0o777, 0o755, "an executable file stays executable");
+        }
+        assert_eq!(inspect_skill(&base, &FIXTURE_NEW).1, SkillState::Current);
+        assert!(!install(&base, false, &[&FIXTURE_NEW]).unwrap()[0].wrote);
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
     #[test]
     fn an_edited_script_is_reported_and_kept_unless_forced() {
         let base = temp_base("script-edit");
-        let skills = select(&coordination());
-        install(&base, false, &skills).unwrap();
-        let land = base.join("yaks-coordinating-delta/land.sh");
-        let edited = std::fs::read_to_string(&land).unwrap() + "\n# local tweak\n";
-        std::fs::write(&land, &edited).unwrap();
+        install(&base, false, &[&FIXTURE_NEW]).unwrap();
+        let script = base.join("fixture/run.sh");
+        let edited = std::fs::read_to_string(&script).unwrap() + "\n# local tweak\n";
+        std::fs::write(&script, &edited).unwrap();
 
-        let delta = BUNDLED
-            .iter()
-            .find(|s| s.name == "yaks-coordinating-delta")
-            .unwrap();
-        let (path, state) = inspect_skill(&base, delta);
+        let (path, state) = inspect_skill(&base, &FIXTURE_NEW);
         assert!(matches!(state, SkillState::Modified { .. }), "{state:?}");
-        assert_eq!(path, land, "the report names the edited file");
+        assert_eq!(path, script, "the report names the edited file");
 
-        let res = install(&base, false, &skills).unwrap();
-        let r = res
-            .iter()
-            .find(|i| i.name == "yaks-coordinating-delta")
-            .unwrap();
-        assert!(!r.wrote && r.blocked());
-        assert_eq!(std::fs::read_to_string(&land).unwrap(), edited);
+        let res = install(&base, false, &[&FIXTURE_NEW]).unwrap();
+        assert!(!res[0].wrote && res[0].blocked());
+        assert_eq!(std::fs::read_to_string(&script).unwrap(), edited);
 
-        let res = install(&base, true, &skills).unwrap();
-        assert!(
-            res.iter()
-                .find(|i| i.name == "yaks-coordinating-delta")
-                .unwrap()
-                .wrote
-        );
-        assert_ne!(std::fs::read_to_string(&land).unwrap(), edited);
-        assert_eq!(inspect_skill(&base, delta).1, SkillState::Current);
+        let res = install(&base, true, &[&FIXTURE_NEW]).unwrap();
+        assert!(res[0].wrote);
+        assert_ne!(std::fs::read_to_string(&script).unwrap(), edited);
+        assert_eq!(inspect_skill(&base, &FIXTURE_NEW).1, SkillState::Current);
         let _ = std::fs::remove_dir_all(&base);
     }
 
     #[test]
     fn an_untouched_script_from_an_older_yaks_is_upgraded_without_force() {
         let base = temp_base("script-stale");
-        let delta = BUNDLED
-            .iter()
-            .find(|s| s.name == "yaks-coordinating-delta")
-            .unwrap();
-        let dir = base.join(delta.name);
+        let dir = base.join(FIXTURE_NEW.name);
         std::fs::create_dir_all(&dir).unwrap();
         // What yaks 0.0.0 would have written: an older script, stamped with its digest.
         let old_script = "#!/bin/sh\necho old\n";
-        std::fs::write(dir.join("land.sh"), old_script).unwrap();
+        std::fs::write(dir.join("run.sh"), old_script).unwrap();
         std::fs::write(
             dir.join("SKILL.md"),
             stamp_with_files(
-                delta.skill_md(),
+                FIXTURE_NEW.skill_md(),
                 "0.0.0",
-                &[("land.sh".to_string(), digest(old_script))],
+                &[("run.sh".to_string(), digest(old_script))],
             ),
         )
         .unwrap();
         assert!(matches!(
-            inspect_skill(&base, delta).1,
+            inspect_skill(&base, &FIXTURE_NEW).1,
             SkillState::Upgradable { .. }
         ));
-        let res = install(&base, false, &[delta]).unwrap();
+        let res = install(&base, false, &[&FIXTURE_NEW]).unwrap();
         assert!(res[0].wrote);
-        assert_eq!(inspect_skill(&base, delta).1, SkillState::Current);
+        assert_eq!(inspect_skill(&base, &FIXTURE_NEW).1, SkillState::Current);
         let _ = std::fs::remove_dir_all(&base);
     }
 
@@ -2025,42 +2027,5 @@ mod symlink_guard_tests {
                 "yaks-coordinating does not route to {n}"
             );
         }
-    }
-
-    /// The Delta landing helper is only trustworthy if its own scenarios keep passing
-    /// (clean merge by SHA, refusing unexplained edits, dry run, cherry-pick fallback).
-    /// It needs `git merge-tree --write-tree` (git 2.38+); skip on an older git.
-    #[test]
-    fn delta_land_script_selftest_passes() {
-        let ver = std::process::Command::new("git")
-            .arg("--version")
-            .output()
-            .unwrap();
-        let ver = String::from_utf8_lossy(&ver.stdout).to_string();
-        let nums: Vec<u32> = ver
-            .split_whitespace()
-            .nth(2)
-            .unwrap_or("0")
-            .split('.')
-            .filter_map(|p| p.parse().ok())
-            .collect();
-        if (
-            nums.first().copied().unwrap_or(0),
-            nums.get(1).copied().unwrap_or(0),
-        ) < (2, 38)
-        {
-            eprintln!("skipping: git {ver:?} lacks merge-tree --write-tree");
-            return;
-        }
-        let script = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join(".agents/skills/yaks-coordinating-delta/land.sh");
-        let out = std::process::Command::new("sh")
-            .arg(&script)
-            .arg("--selftest")
-            .output()
-            .unwrap();
-        let text = String::from_utf8_lossy(&out.stdout);
-        assert!(out.status.success(), "land.sh --selftest failed:\n{text}");
-        assert!(text.contains("selftest: all passed"), "{text}");
     }
 }

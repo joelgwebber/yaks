@@ -55,7 +55,7 @@ fn installs_project_local_by_default_and_opt_in_adds_the_coordination_group() {
     assert!(out.status.success(), "{}", text(&out));
     assert!(root.join(".agents/skills/yaks-working/SKILL.md").is_file());
     assert!(
-        root.join(".agents/skills/yaks-coordinating-delta/land.sh")
+        root.join(".agents/skills/yaks-coordinating-delta/SKILL.md")
             .is_file()
     );
 

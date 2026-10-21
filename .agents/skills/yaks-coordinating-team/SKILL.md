@@ -19,7 +19,7 @@ yak, workers stage nothing under `.yaks/`), plus:
   farm" and need no `YAKS_DIR` on this machine; `yaks path` (no arguments) must print the farm
   worktree's `.yaks`: make it the worker's first check.
 - **You commit the farm** with `yaks commit` (on the farm branch, in its worktree, whatever your
-  cwd), at least at every landing. Code lands by `land.sh` (a squash); nothing else touches
+  cwd), at least at every landing. Code lands by `yaks land <sha>` (a squash); nothing else touches
   `.yaks/`, so landings never conflict on yak files.
 - **Machines and teammates:** the farm crosses as `origin/<branch>`. Push it only on the
   human's say-so; once pushed: push before a machine switch, pull after. A clone whose host is
