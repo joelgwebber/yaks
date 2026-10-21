@@ -416,6 +416,25 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
+    /// Internal: git's merge driver for yak files (`git config merge.yaks.driver
+    /// "yaks merge-driver %O %A %B %P"`, registered for the farm branch with
+    /// `.yaks/**/*.md merge=yaks`). Merges the three versions of one yak into
+    /// `<ours>` as a valid yak, never conflict markers: notes unioned by
+    /// timestamp, labels/deps merged, the later `updated`, and a field both
+    /// sides changed differently keeps this side and records the other in a
+    /// `merge-driver` note. Exits 1, leaving `<ours>` alone, when an input is
+    /// not a yak file. Needs no farm.
+    #[command(hide = true)]
+    MergeDriver {
+        /// The common ancestor (`%O`).
+        base: PathBuf,
+        /// This side's version (`%A`); the merge result is written here.
+        ours: PathBuf,
+        /// The other side's version (`%B`).
+        theirs: PathBuf,
+        /// The path being merged in the repository (`%P`), for messages.
+        path: String,
+    },
     /// Show task statistics.
     Stats {
         #[arg(long)]
@@ -1034,6 +1053,25 @@ fn enter_shed(query: &str) -> Result<()> {
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
+    // Git's merge driver runs inside a merge, on temp files: no `-C`, no farm,
+    // no skill top-up. Handled before anything else touches the checkout.
+    if let Command::MergeDriver {
+        base,
+        ours,
+        theirs,
+        path,
+    } = &cli.command
+    {
+        match mergedriver::run(base, ours, theirs, path) {
+            Ok(0) => return Ok(()),
+            Ok(code) => std::process::exit(code),
+            Err(e) => {
+                eprintln!("error: {e:#}");
+                std::process::exit(2);
+            }
+        }
+    }
+
     // `-C`: change directory once, before anything reads the cwd, so every
     // `env::current_dir()` below (discovery, init, skills, sheds) agrees.
     // Each step is relative to the previous one, as in git.
@@ -1295,6 +1333,9 @@ fn main() -> Result<()> {
         Command::Init { .. } => unreachable!("init is handled before opening a farm"),
         Command::Skills { .. } => unreachable!("skills is handled before opening a farm"),
         Command::Discover { .. } => unreachable!("discover is handled before opening a farm"),
+        Command::MergeDriver { .. } => {
+            unreachable!("merge-driver is handled before opening a farm")
+        }
         Command::Refs {
             id,
             incoming: true,
