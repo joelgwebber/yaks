@@ -19,6 +19,7 @@ mod mergedriver;
 mod migrate;
 mod model;
 mod preflight;
+mod privatefarm;
 mod refs;
 mod rollup;
 mod sheds;
@@ -775,6 +776,23 @@ enum Command {
         #[arg(long, requires = "to_branch")]
         worktree: Option<PathBuf>,
     },
+    /// Mark this repository's farm private: it never leaves the machine through
+    /// yaks or a stray `git push`. Sets `git config yaks.private true` and
+    /// installs a `pre-push` hook (in the hooks dir `git` uses, so
+    /// `core.hooksPath` is honored and every worktree shares it) that refuses a
+    /// push of the farm branch (`yaks`, or `git config yaks.branch`), including
+    /// `git push --all`; a yaks command that pushes (`yaks sync`, once it exists)
+    /// must refuse on `yaks.private` too. Pushing
+    /// any other branch is unaffected. An existing `pre-push` hook that is not
+    /// yaks's is left untouched (the command says how to chain the check).
+    ///
+    /// `--off` unsets the flag and removes yaks's own hook only. Touches no farm
+    /// and no remote.
+    Private {
+        /// Undo: unset `yaks.private` and remove yaks's `pre-push` hook.
+        #[arg(long)]
+        off: bool,
+    },
     /// Merge another farm's yaks into this one (consolidation). Copies every yak
     /// (all statuses) and its artifacts, preserving ids and status, and declares
     /// any incoming herd in this farm's config; refuses on id collisions.
@@ -1138,6 +1156,17 @@ fn main() -> Result<()> {
         }
         return Ok(());
     }
+    // `private` marks the repository, not a farm: it needs none.
+    if let Command::Private { off } = &cli.command {
+        match privatefarm::run(&env::current_dir()?, *off) {
+            Ok(report) => print!("{report}"),
+            Err(e) => {
+                eprintln!("error: {e:#}");
+                std::process::exit(1);
+            }
+        }
+        return Ok(());
+    }
     if let Command::Discover { path, json } = &cli.command {
         let anchor = match path {
             Some(p) => p.clone(),
@@ -1332,6 +1361,7 @@ fn main() -> Result<()> {
         Command::Migrate { dry_run, .. } => report_migrate(&farm.migrate(dry_run)?),
         Command::Init { .. } => unreachable!("init is handled before opening a farm"),
         Command::Skills { .. } => unreachable!("skills is handled before opening a farm"),
+        Command::Private { .. } => unreachable!("private is handled before opening a farm"),
         Command::Discover { .. } => unreachable!("discover is handled before opening a farm"),
         Command::MergeDriver { .. } => {
             unreachable!("merge-driver is handled before opening a farm")
