@@ -5,8 +5,7 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-10-18T05:15:36Z'
-updated: '2026-10-21T21:30:17Z'
-parent: yaks-6a34
+updated: '2026-10-21T21:55:17Z'
 labels:
 - sheds
 - cli
