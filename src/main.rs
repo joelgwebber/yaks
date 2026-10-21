@@ -15,6 +15,7 @@ mod farm;
 mod filter;
 mod init;
 mod json;
+mod mergedriver;
 mod migrate;
 mod model;
 mod preflight;
