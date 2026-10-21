@@ -164,11 +164,11 @@ fn coordination_adds_the_group_and_excludes_each_directory_in_private_mode() {
         &["init", "--mode", "private", "--skills", "coordination"],
     );
     assert!(
-        r.join(".agents/skills/yaks-coordinating-delta/SKILL.md")
+        r.join(".agents/skills/yaks-coordinating/SKILL.md")
             .is_file()
     );
     assert_eq!(status(&r), "");
-    assert!(exclude(&r).contains("/.agents/skills/yaks-coordinating-delta"));
+    assert!(exclude(&r).contains("/.agents/skills/yaks-coordinating"));
 }
 
 #[test]

@@ -270,7 +270,7 @@ fn setup(args: &Args) -> Result<()> {
         let chosen = skills::select(&with);
         let installed = skills::install(&target.dir, false, &chosen)?;
         for i in &installed {
-            if i.wrote {
+            if i.changed() {
                 rep.changed = true;
             }
             println!(

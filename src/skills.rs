@@ -68,8 +68,8 @@ pub const GROUPS: &[&str] = &["coordination"];
 /// unless it is added here on purpose. A test fails if a bundled skill's
 /// directory holds a file this list leaves out.
 ///
-/// The default set is `yaks` + `yaks-tracker`; the `coordination` group (the
-/// multi-agent skills plus `yaks-working`) is opt-in.
+/// The default set is `yaks` + `yaks-tracker`; the `coordination` group
+/// (`yaks-coordinating` and `yaks-working`) is opt-in.
 pub const BUNDLED: &[Skill] = &[
     Skill {
         name: "yaks",
@@ -89,39 +89,29 @@ pub const BUNDLED: &[Skill] = &[
         ))],
     },
     Skill {
-        name: "yaks-coordinating-team",
-        group: Some("coordination"),
-        files: &[md(include_str!(
-            "../.agents/skills/yaks-coordinating-team/SKILL.md"
-        ))],
-    },
-    Skill {
-        name: "yaks-coordinating-private",
-        group: Some("coordination"),
-        files: &[md(include_str!(
-            "../.agents/skills/yaks-coordinating-private/SKILL.md"
-        ))],
-    },
-    Skill {
-        name: "yaks-coordinating-worktrees",
-        group: Some("coordination"),
-        files: &[md(include_str!(
-            "../.agents/skills/yaks-coordinating-worktrees/SKILL.md"
-        ))],
-    },
-    Skill {
-        name: "yaks-coordinating-delta",
-        group: Some("coordination"),
-        files: &[md(include_str!(
-            "../.agents/skills/yaks-coordinating-delta/SKILL.md"
-        ))],
-    },
-    Skill {
         name: "yaks-working",
         group: Some("coordination"),
         files: &[md(include_str!("../.agents/skills/yaks-working/SKILL.md"))],
     },
 ];
+
+/// Skills this yaks once bundled and no longer does. Nothing upgrades a skill
+/// the binary no longer knows, so an old copy would teach its retired advice
+/// forever: [`install`] removes an untouched stamped copy (and `status` and the
+/// stale notice flag it). All were in the `coordination` group.
+pub const RETIRED: &[&str] = &[
+    // Folded into `yaks-coordinating`.
+    "yaks-coordinating-team",
+    // Folded into `yaks-coordinating`.
+    "yaks-coordinating-private",
+    // Folded into `yaks-coordinating`.
+    "yaks-coordinating-worktrees",
+    // Folded into `yaks-coordinating`.
+    "yaks-coordinating-delta",
+];
+
+/// The skill the retired ones were folded into, named in what we print.
+const RETIRED_INTO: &str = "yaks-coordinating";
 
 /// The skills an install selects: the default set plus every skill of each
 /// group in `with` (names from [`GROUPS`]).
@@ -497,6 +487,12 @@ pub enum SkillState {
     /// common dev setup. There is nothing to install: the installed skill *is* the source.
     /// Never written, not even with `--force` (yaks-d8e9).
     SourceLinked,
+    /// A skill this yaks no longer bundles ([`RETIRED`]), stamped by yaks and
+    /// untouched since: `install` removes it.
+    Retired { from: String },
+    /// A retired skill that is edited or carries no yaks stamp. Never removed
+    /// by yaks, not even with `--force`: whoever owns it removes it by hand.
+    RetiredKept { stamped: bool },
 }
 
 impl SkillState {
@@ -530,6 +526,7 @@ impl SkillState {
             SkillState::Adoptable => "adoptable",
             SkillState::Unmanaged => "unmanaged",
             SkillState::SourceLinked => "source",
+            SkillState::Retired { .. } | SkillState::RetiredKept { .. } => "retired",
         }
     }
 }
@@ -613,6 +610,8 @@ fn severity(s: &SkillState) -> u8 {
         SkillState::Unmanaged => 5,
         SkillState::Modified { .. } => 6,
         SkillState::SourceLinked => 7,
+        // Never reached through `inspect_skill` (retired skills are not bundled).
+        SkillState::Retired { .. } | SkillState::RetiredKept { .. } => 8,
     }
 }
 
@@ -648,9 +647,10 @@ pub struct Status {
     pub state: SkillState,
 }
 
-/// Classify each of `skills` in `base`.
+/// Classify each of `skills` in `base`, then any [`RETIRED`] skill present
+/// there (always reported, so a leftover is visible without `--with`).
 pub fn status(base: &Path, skills: &[&Skill]) -> Vec<Status> {
-    skills
+    let mut out: Vec<Status> = skills
         .iter()
         .map(|skill| {
             let (path, state) = inspect_skill(base, skill);
@@ -660,7 +660,37 @@ pub fn status(base: &Path, skills: &[&Skill]) -> Vec<Status> {
                 state,
             }
         })
-        .collect()
+        .collect();
+    out.extend(RETIRED.iter().filter_map(|name| {
+        let (path, state) = inspect_retired(base, name)?;
+        Some(Status {
+            name: name.to_string(),
+            path,
+            state,
+        })
+    }));
+    out
+}
+
+/// A [`RETIRED`] skill's installed `SKILL.md` and its state, or `None` when it
+/// is not present in `base` (or resolves into a yaks source tree, which is
+/// never touched or reported). It is `Retired` only when its stamp is intact
+/// and its content still matches the stamp's digest, the check [`inspect`] makes.
+fn inspect_retired(base: &Path, name: &str) -> Option<(PathBuf, SkillState)> {
+    let dir = base.join(name);
+    if is_source_tree(&dir) {
+        return None;
+    }
+    let path = dir.join("SKILL.md");
+    let text = std::fs::read_to_string(&path).ok()?;
+    let state = match read_stamp(&text) {
+        Some((s, written)) if digest(&written) == s.digest => {
+            SkillState::Retired { from: s.version }
+        }
+        Some(_) => SkillState::RetiredKept { stamped: true },
+        None => SkillState::RetiredKept { stamped: false },
+    };
+    Some((path, state))
 }
 
 // -- the source-tree guard ------------------------------------------------
@@ -731,9 +761,16 @@ pub struct Installed {
     pub before: SkillState,
     /// Whether the skill was (re)written.
     pub wrote: bool,
+    /// Whether a retired skill was removed (`before` is then `Retired`).
+    pub removed: bool,
 }
 
 impl Installed {
+    /// True when `install` changed anything on disk for this skill.
+    pub fn changed(&self) -> bool {
+        self.wrote || self.removed
+    }
+
     /// True when the file was left alone because it would need `--force`.
     pub fn blocked(&self) -> bool {
         !self.wrote && self.before.needs_force()
@@ -745,7 +782,25 @@ impl Installed {
 /// `force_hint` is appended to a skip that `--force` would override (and
 /// omitted where nothing could, i.e. a source-linked target).
 pub fn render_installed(i: &Installed, force_hint: &str) -> String {
-    if i.wrote {
+    if i.removed {
+        format!(
+            "removed {} (retired, now part of {RETIRED_INTO}) -> {}",
+            i.name,
+            i.path.display()
+        )
+    } else if let SkillState::RetiredKept { stamped } = &i.before {
+        let why = if *stamped {
+            "it was edited since it was installed"
+        } else {
+            "it has no yaks stamp (hand-written, or another tool's)"
+        };
+        format!(
+            "kept {} [retired]: {}\n       {why}; yaks retired it (now part of \
+             {RETIRED_INTO}), remove it by hand",
+            i.name,
+            i.path.display(),
+        )
+    } else if i.wrote {
         let verb = match &i.before {
             SkillState::Upgradable { from } => format!("upgraded (from {from})"),
             SkillState::Absent => "installed".to_string(),
@@ -824,6 +879,9 @@ fn write_skill(base: &Path, skill: &Skill) -> Result<()> {
 /// `Modified`, `Unmanaged` or `Held`, none is written unless `force` is set.
 /// Writing into this repo's own `.agents/skills/` is refused outright (see
 /// [`is_source_tree`]).
+///
+/// Every [`RETIRED`] skill present in `base` is also dealt with, whatever
+/// `skills` holds: removed if untouched, reported and kept otherwise.
 pub fn install(base: &Path, force: bool, skills: &[&Skill]) -> Result<Vec<Installed>> {
     if is_source_tree(base) {
         anyhow::bail!(
@@ -852,6 +910,27 @@ pub fn install(base: &Path, force: bool, skills: &[&Skill]) -> Result<Vec<Instal
             path,
             before,
             wrote,
+            removed: false,
+        });
+    }
+    for name in RETIRED {
+        let Some((path, before)) = inspect_retired(base, name) else {
+            continue;
+        };
+        // Only an untouched, stamped copy is ours to delete; the skill's own
+        // directory goes with it.
+        let removed = matches!(before, SkillState::Retired { .. });
+        if removed {
+            let dir = base.join(name);
+            std::fs::remove_dir_all(&dir)
+                .with_context(|| format!("removing retired skill {}", dir.display()))?;
+        }
+        out.push(Installed {
+            name: name.to_string(),
+            path,
+            before,
+            wrote: false,
+            removed,
         });
     }
     Ok(out)
@@ -919,7 +998,8 @@ fn auto_sync_in(base: &Path) -> Vec<String> {
 // -- the stale project-local notice ---------------------------------------
 
 /// A project-local install that has fallen behind this yaks: one or more of
-/// its skills is `stale` ([`SkillState::Upgradable`]). Built from the same
+/// its skills is `stale` ([`SkillState::Upgradable`]) or an untouched retired
+/// copy ([`SkillState::Retired`], which `install` removes). Built from the same
 /// states `yaks skills status` prints, so the notice, `status` and `yaks
 /// doctor` cannot disagree about what is stale or what to run.
 pub struct Stale {
@@ -941,17 +1021,23 @@ impl Stale {
         let mut with: Vec<&'static str> = Vec::new();
         let mut count = 0;
         for s in statuses {
-            let SkillState::Upgradable { from: f } = &s.state else {
+            let (SkillState::Upgradable { from: f } | SkillState::Retired { from: f }) = &s.state
+            else {
                 continue;
             };
             count += 1;
             if from.as_deref().is_none_or(|cur| version_gt(cur, f)) {
                 from = Some(f.clone());
             }
-            let group = BUNDLED
-                .iter()
-                .find(|b| b.name == s.name)
-                .and_then(|b| b.group);
+            // Every retired skill was in the coordination group.
+            let group = if matches!(s.state, SkillState::Retired { .. }) {
+                Some("coordination")
+            } else {
+                BUNDLED
+                    .iter()
+                    .find(|b| b.name == s.name)
+                    .and_then(|b| b.group)
+            };
             if let Some(g) = group {
                 if !with.contains(&g) {
                     with.push(g);
@@ -1367,14 +1453,7 @@ mod tests {
         vec!["coordination".to_string()]
     }
 
-    const SIX: [&str; 6] = [
-        "yaks-coordinating",
-        "yaks-coordinating-team",
-        "yaks-coordinating-private",
-        "yaks-coordinating-worktrees",
-        "yaks-coordinating-delta",
-        "yaks-working",
-    ];
+    const COORDINATION: [&str; 2] = ["yaks-coordinating", "yaks-working"];
 
     #[test]
     fn default_set_is_exactly_yaks_and_yaks_tracker() {
@@ -1392,25 +1471,25 @@ mod tests {
     }
 
     #[test]
-    fn with_coordination_adds_the_six_skills() {
+    fn with_coordination_adds_the_two_skills() {
         let names: Vec<_> = select(&coordination()).iter().map(|s| s.name).collect();
-        assert_eq!(names.len(), 8);
-        for n in ["yaks", "yaks-tracker"].into_iter().chain(SIX) {
+        assert_eq!(names.len(), 4);
+        for n in ["yaks", "yaks-tracker"].into_iter().chain(COORDINATION) {
             assert!(names.contains(&n), "{n}");
         }
         let base = temp_base("with-coord");
         let res = install(&base, false, &select(&coordination())).unwrap();
         assert!(res.iter().all(|i| i.wrote));
-        for n in SIX {
+        for n in COORDINATION {
             assert!(base.join(n).join("SKILL.md").is_file(), "{n}");
         }
-        // Idempotent, and status sees all eight as current.
+        // Idempotent, and status sees all four as current.
         let again = install(&base, false, &select(&coordination())).unwrap();
         assert!(again.iter().all(|i| !i.wrote));
         let st = status(&base, &select_for_status(&base, &[]));
         assert_eq!(
             st.len(),
-            8,
+            4,
             "installed opt-in skills are tracked without --with"
         );
         assert!(st.iter().all(|s| s.state == SkillState::Current));
@@ -1829,6 +1908,131 @@ mod tests {
             "yaks skills install --user --with coordination"
         );
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    /// Plant a retired skill in `base` as an old yaks left it: stamped, and
+    /// untouched unless `edit` appends to the content afterwards.
+    fn plant_retired(base: &Path, name: &str, edit: bool) -> PathBuf {
+        let dir = base.join(name);
+        std::fs::create_dir_all(&dir).unwrap();
+        let md = dir.join("SKILL.md");
+        std::fs::write(
+            &md,
+            stamp(
+                "---\nname: retired\ndescription: old\n---\n# retired\nold advice\n",
+                "0.0.0",
+            ),
+        )
+        .unwrap();
+        if edit {
+            let t = std::fs::read_to_string(&md).unwrap();
+            std::fs::write(&md, format!("{t}my own note\n")).unwrap();
+        }
+        dir
+    }
+
+    #[test]
+    fn install_removes_an_untouched_retired_skill() {
+        let base = temp_base("retired-rm");
+        let dir = plant_retired(&base, "yaks-coordinating-delta", false);
+        std::fs::write(dir.join("extra.txt"), "x").unwrap();
+        let res = install(&base, false, &select(&[])).unwrap();
+        let r = res
+            .iter()
+            .find(|i| i.name == "yaks-coordinating-delta")
+            .expect("reported");
+        assert!(r.removed && r.changed() && !r.wrote);
+        assert!(!dir.exists(), "the whole skill directory goes");
+        let line = render_installed(r, " (hint)");
+        assert!(
+            line.starts_with("removed yaks-coordinating-delta (retired"),
+            "{line}"
+        );
+        assert!(line.contains("yaks-coordinating"), "{line}");
+        // Nothing left to report the second time.
+        let again = install(&base, false, &select(&[])).unwrap();
+        assert!(again.iter().all(|i| i.name != "yaks-coordinating-delta"));
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn install_keeps_and_reports_an_edited_or_unstamped_retired_skill() {
+        let base = temp_base("retired-keep");
+        let edited = plant_retired(&base, "yaks-coordinating-team", true);
+        let bare = base.join("yaks-coordinating-private");
+        std::fs::create_dir_all(&bare).unwrap();
+        std::fs::write(bare.join("SKILL.md"), "hand-written\n").unwrap();
+        // Even --force never deletes what someone else owns.
+        let res = install(&base, true, &select(&[])).unwrap();
+        for (name, why) in [
+            ("yaks-coordinating-team", "edited since it was installed"),
+            ("yaks-coordinating-private", "no yaks stamp"),
+        ] {
+            let r = res.iter().find(|i| i.name == name).expect("reported");
+            assert!(!r.removed && !r.wrote && !r.changed());
+            let line = render_installed(r, "");
+            assert!(
+                line.starts_with(&format!("kept {name} [retired]")),
+                "{line}"
+            );
+            assert!(
+                line.contains(why) && line.contains("remove it by hand"),
+                "{line}"
+            );
+        }
+        assert!(edited.join("SKILL.md").is_file());
+        assert!(bare.join("SKILL.md").is_file());
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn status_reports_a_present_retired_skill_as_retired() {
+        let base = temp_base("retired-status");
+        install(&base, false, &select(&[])).unwrap();
+        plant_retired(&base, "yaks-coordinating-worktrees", false);
+        plant_retired(&base, "yaks-coordinating-team", true);
+        let st = status(&base, &select_for_status(&base, &[]));
+        let word = |n: &str| st.iter().find(|s| s.name == n).map(|s| s.state.word());
+        assert_eq!(word("yaks-coordinating-worktrees"), Some("retired"));
+        assert_eq!(word("yaks-coordinating-team"), Some("retired"));
+        // Absent retired skills are not listed.
+        assert_eq!(word("yaks-coordinating-delta"), None);
+        assert_eq!(st.len(), 4);
+        assert!(matches!(
+            st.iter()
+                .find(|s| s.name == "yaks-coordinating-worktrees")
+                .unwrap()
+                .state,
+            SkillState::Retired { .. }
+        ));
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn an_untouched_retired_skill_is_stale_in_the_notice_and_stale_of() {
+        let root = fake_repo("ntf-retired");
+        let base = root.join(".agents/skills");
+        install(&base, false, &select(&[])).unwrap();
+        plant_retired(&base, "yaks-coordinating-delta", false);
+        let st = status(&base, &select_for_status(&base, &[]));
+        let stale = Stale::of(&st).expect("a retired copy counts");
+        assert_eq!(stale.count, 1);
+        assert_eq!(stale.from, "0.0.0");
+        assert_eq!(stale.command(""), "yaks skills install --with coordination");
+        let msg = notice_in(&root).expect("notice");
+        assert!(
+            msg.ends_with("run `yaks skills install --with coordination` to update them"),
+            "{msg}"
+        );
+        // An edited retired copy is the owner's call, not stale.
+        let root2 = fake_repo("ntf-retired-edited");
+        let base2 = root2.join(".agents/skills");
+        install(&base2, false, &select(&[])).unwrap();
+        plant_retired(&base2, "yaks-coordinating-delta", true);
+        assert!(Stale::of(&status(&base2, &select_for_status(&base2, &[]))).is_none());
+        assert_eq!(notice_in(&root2), None);
+        let _ = std::fs::remove_dir_all(&root);
+        let _ = std::fs::remove_dir_all(&root2);
     }
 
     #[test]

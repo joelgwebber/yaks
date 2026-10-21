@@ -1065,8 +1065,8 @@ enum SkillsAction {
         #[arg(long)]
         user: bool,
         /// Also install an opt-in skill group. `coordination` adds
-        /// yaks-coordinating (+ -team, -private, -worktrees, -delta) and
-        /// yaks-working, for running several agents over one farm.
+        /// yaks-coordinating and yaks-working, for running several agents
+        /// over one farm.
         #[arg(long, value_name = "GROUP", value_delimiter = ',',
               value_parser = clap::builder::PossibleValuesParser::new(skills::GROUPS))]
         with: Vec<String>,
@@ -2980,6 +2980,17 @@ fn run_skills(action: &SkillsAction) -> Result<()> {
                         blocked += 1;
                         "  (no yaks stamp \u{2014} hand-written or another tool's)".to_string()
                     }
+                    skills::SkillState::Retired { from } => {
+                        format!("  (retired; installed by {from}; `yaks skills install` removes it)")
+                    }
+                    skills::SkillState::RetiredKept { stamped } => {
+                        if *stamped {
+                            "  (retired, and edited since install \u{2014} remove it by hand)"
+                        } else {
+                            "  (retired, and no yaks stamp \u{2014} remove it by hand)"
+                        }
+                        .to_string()
+                    }
                     skills::SkillState::SourceLinked => {
                         "  (resolves onto yaks' own .agents/skills/ source \u{2014} nothing to install)"
                             .to_string()
@@ -3000,7 +3011,7 @@ fn run_skills(action: &SkillsAction) -> Result<()> {
                     _ => String::new(),
                 };
                 println!(
-                    "\n{} stale; run `{}` to update them.",
+                    "\n{} stale or retired; run `{}` to update them.",
                     stale.count,
                     stale.command(&flag)
                 );

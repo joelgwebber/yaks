@@ -55,7 +55,7 @@ fn installs_project_local_by_default_and_opt_in_adds_the_coordination_group() {
     assert!(out.status.success(), "{}", text(&out));
     assert!(root.join(".agents/skills/yaks-working/SKILL.md").is_file());
     assert!(
-        root.join(".agents/skills/yaks-coordinating-delta/SKILL.md")
+        root.join(".agents/skills/yaks-coordinating/SKILL.md")
             .is_file()
     );
 
@@ -63,7 +63,7 @@ fn installs_project_local_by_default_and_opt_in_adds_the_coordination_group() {
     let t = text(&out);
     assert!(out.status.success(), "{t}");
     assert!(
-        t.contains("yaks-coordinating-delta") && !t.contains("stale"),
+        t.contains("yaks-coordinating") && !t.contains("stale"),
         "{t}"
     );
 
