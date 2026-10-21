@@ -40,7 +40,7 @@ cargo build --release
 
 A farm is just a `.yaks/` directory. `yaks init` creates one at your project
 root (plain `yaks init` makes a committed farm and tells you how to add the agent
-skills; `--mode private|pointer` and `--skills default` do the whole setup in one
+skills; `--mode private|pointer|branch` and `--skills default` do the whole setup in one
 idempotent step, see [docs/cli.md](docs/cli.md)). Then start tracking:
 
 Within a farm, yaks group into **herds** by id prefix — a farm can hold several

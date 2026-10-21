@@ -467,3 +467,290 @@ fn a_linked_worktree_writes_the_shared_exclude() {
     assert_eq!(status(&wt), "");
     assert!(exclude(&r).lines().any(|l| l == "/.yaks"));
 }
+
+// -- --mode branch ------------------------------------------------------------
+
+/// The data dir a branch-mode test points `XDG_DATA_HOME` at: a sibling of the
+/// repo, so the farm worktree lands outside every checkout and the real data dir
+/// is never touched.
+fn data(r: &Path) -> PathBuf {
+    let name = r.file_name().unwrap().to_string_lossy().into_owned();
+    r.parent().unwrap().join(format!("{name}-xdg"))
+}
+
+fn yaks_x(cwd: &Path, args: &[&str]) -> Output {
+    Command::new(env!("CARGO_BIN_EXE_yaks"))
+        .args(args)
+        .current_dir(cwd)
+        .env("HOME", cwd.join("__home"))
+        .env("XDG_DATA_HOME", data(cwd))
+        .env("YAKS_SKILLS_AUTOSYNC", "0")
+        .env_remove("YAKS_DIR")
+        .env_remove("YAKS_NO_BOOTSTRAP")
+        .output()
+        .unwrap()
+}
+
+fn okx(cwd: &Path, args: &[&str]) -> String {
+    let o = yaks_x(cwd, args);
+    assert!(o.status.success(), "yaks {args:?} failed:\n{}", text(&o));
+    text(&o)
+}
+
+fn errx(cwd: &Path, args: &[&str]) -> String {
+    let o = yaks_x(cwd, args);
+    assert!(
+        !o.status.success(),
+        "yaks {args:?} should fail:\n{}",
+        text(&o)
+    );
+    text(&o)
+}
+
+/// The worktree that has `branch` checked out (unborn included), per git.
+fn worktree_of(r: &Path, branch: &str) -> Option<PathBuf> {
+    let list = git(r, &["worktree", "list", "--porcelain"]);
+    let want = format!("branch refs/heads/{branch}");
+    list.split("\n\n").find_map(|block| {
+        block.lines().any(|l| l == want).then(|| {
+            let p = block.lines().next()?.strip_prefix("worktree ")?;
+            Path::new(p).canonicalize().ok()
+        })?
+    })
+}
+
+fn entries(dir: &Path) -> Vec<String> {
+    let mut v: Vec<String> = std::fs::read_dir(dir)
+        .unwrap()
+        .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    v.sort();
+    v
+}
+
+#[test]
+fn branch_mode_creates_an_orphan_farm_worktree_at_farm_home() {
+    let r = repo("branch-fresh");
+    let out = okx(&r, &["init", "--mode", "branch", "--skills", "none"]);
+    let wt = worktree_of(&r, "yaks").expect("the farm branch has a worktree");
+    assert!(
+        wt.starts_with(data(&r).canonicalize().unwrap().join("yaks/farms")),
+        "worktree at farm_home, got {}\n{out}",
+        wt.display()
+    );
+    assert!(out.contains(&wt.display().to_string()), "{out}");
+    // Orphan: the worktree holds only the farm, and the branch has no commits,
+    // so it shares no history with the code branch. Nothing is committed.
+    assert_eq!(entries(&wt), vec![".git", ".yaks"]);
+    assert!(wt.join(".yaks/config.yaml").is_file());
+    let o = Command::new("git")
+        .args([
+            "-C",
+            wt.to_str().unwrap(),
+            "rev-parse",
+            "--verify",
+            "-q",
+            "HEAD",
+        ])
+        .output()
+        .unwrap();
+    assert!(!o.status.success(), "the new farm branch has no commit yet");
+    assert!(
+        out.contains("yaks sync") && out.contains("yaks private"),
+        "{out}"
+    );
+    // The code checkout is untouched, and discovery finds the farm from it.
+    assert_eq!(status(&r), "");
+    assert!(!r.join(".yaks").exists());
+    let path = okx(&r, &["path"]);
+    assert_eq!(path.trim(), wt.join(".yaks").display().to_string());
+    okx(&r, &["create", "--title", "first yak"]);
+    assert!(okx(&r, &["list"]).contains("first yak"));
+    assert_eq!(status(&r), "");
+}
+
+#[test]
+fn branch_mode_rerun_is_a_no_op() {
+    let r = repo("branch-rerun");
+    okx(&r, &["init", "--mode", "branch", "--skills", "none"]);
+    let wt = worktree_of(&r, "yaks").unwrap();
+    okx(&r, &["create", "--title", "keep me"]);
+    let before = git(&r, &["worktree", "list", "--porcelain"]);
+    let out = okx(&r, &["init", "--mode", "branch", "--skills", "none"]);
+    assert!(out.contains("Nothing to change"), "{out}");
+    assert!(out.contains("already"), "{out}");
+    assert_eq!(git(&r, &["worktree", "list", "--porcelain"]), before);
+    assert_eq!(worktree_of(&r, "yaks"), Some(wt));
+    assert!(okx(&r, &["list"]).contains("keep me"));
+    // A herd the farm does not have is a conflict, not a rewrite.
+    assert!(
+        errx(
+            &r,
+            &[
+                "init", "--mode", "branch", "--skills", "none", "--herd", "other"
+            ]
+        )
+        .contains("different settings")
+    );
+}
+
+#[test]
+fn branch_mode_records_a_chosen_branch_name() {
+    let r = repo("branch-named");
+    okx(
+        &r,
+        &[
+            "init",
+            "--mode",
+            "branch",
+            "--branch",
+            "personal-joel",
+            "--skills",
+            "none",
+        ],
+    );
+    assert_eq!(
+        git(&r, &["config", "--get", "yaks.branch"]).trim(),
+        "personal-joel"
+    );
+    let wt = worktree_of(&r, "personal-joel").expect("worktree on the chosen branch");
+    assert!(worktree_of(&r, "yaks").is_none());
+    assert_eq!(
+        okx(&r, &["path"]).trim(),
+        wt.join(".yaks").display().to_string()
+    );
+    // Re-running without --branch uses the recorded name: a no-op.
+    let out = okx(&r, &["init", "--mode", "branch", "--skills", "none"]);
+    assert!(out.contains("Nothing to change"), "{out}");
+    // The default name records nothing.
+    let d = repo("branch-default-name");
+    okx(&d, &["init", "--mode", "branch", "--skills", "none"]);
+    let o = Command::new("git")
+        .args(["config", "--get", "yaks.branch"])
+        .current_dir(&d)
+        .output()
+        .unwrap();
+    assert!(
+        !o.status.success(),
+        "the default name is not written to config"
+    );
+}
+
+#[test]
+fn branch_mode_with_an_existing_origin_farm_only_adds_its_worktree() {
+    let a = repo("branch-origin-a");
+    okx(&a, &["init", "--mode", "branch", "--skills", "none"]);
+    okx(&a, &["create", "--title", "from origin"]);
+    let wa = worktree_of(&a, "yaks").unwrap();
+    git(&wa, &["add", "-A"]);
+    git(&wa, &["commit", "-qm", "the farm"]);
+    let origin = temp("branch-origin-bare");
+    git(&origin, &["init", "-q", "--bare", "."]);
+    git(&a, &["remote", "add", "origin", origin.to_str().unwrap()]);
+    git(&a, &["push", "-q", "origin", "--all"]);
+    let host = temp("branch-origin-b");
+    let b = host.join("clone");
+    git(
+        &host,
+        &["clone", "-q", origin.to_str().unwrap(), b.to_str().unwrap()],
+    );
+    assert!(worktree_of(&b, "yaks").is_none());
+    let out = okx(&b, &["init", "--mode", "branch", "--skills", "none"]);
+    let wb = worktree_of(&b, "yaks").expect("worktree added for the existing branch");
+    assert!(wb.join(".yaks/config.yaml").is_file(), "{out}");
+    assert!(okx(&b, &["list"]).contains("from origin"));
+    // Only the worktree was added: the history is the pushed commit, no more.
+    assert_eq!(git(&wb, &["rev-list", "--count", "HEAD"]).trim(), "1");
+    assert_eq!(status(&b), "");
+    assert!(
+        okx(&b, &["init", "--mode", "branch", "--skills", "none"]).contains("Nothing to change")
+    );
+}
+
+#[test]
+fn branch_mode_refuses_an_in_tree_farm_and_changes_nothing() {
+    let r = repo("branch-intree");
+    ok(&r, &["init"]);
+    let e = errx(&r, &["init", "--mode", "branch", "--skills", "none"]);
+    assert!(e.contains("migrate --to-branch"), "{e}");
+    assert!(worktree_of(&r, "yaks").is_none());
+    assert!(!data(&r).exists(), "nothing created in the data dir");
+}
+
+#[test]
+fn branch_mode_refuses_a_shared_clone_and_changes_nothing() {
+    let r = repo("branch-shared");
+    let b = temp("branch-shared-clone");
+    let clone = b.join("clone");
+    git(
+        &b,
+        &[
+            "clone",
+            "-q",
+            "--shared",
+            r.to_str().unwrap(),
+            clone.to_str().unwrap(),
+        ],
+    );
+    let e = errx(&clone, &["init", "--mode", "branch", "--skills", "none"]);
+    assert!(e.contains("borrows another repository's objects"), "{e}");
+    assert!(!data(&clone).exists());
+    assert!(worktree_of(&r, "yaks").is_none());
+}
+
+#[test]
+fn branch_mode_flag_misuse_is_refused_before_any_change() {
+    let r = repo("branch-flags");
+    let e = errx(&r, &["init", "--mode", "branch", "--path", "x"]);
+    assert!(e.contains("farm home") || e.contains("farm_home"), "{e}");
+    let e = errx(&r, &["init", "--branch", "other", "--skills", "none"]);
+    assert!(
+        e.contains("--branch only applies to `--mode branch`"),
+        "{e}"
+    );
+    let e = errx(
+        &r,
+        &[
+            "init", "--mode", "branch", "--branch", "bad name", "--skills", "none",
+        ],
+    );
+    assert!(e.contains("not a valid branch name"), "{e}");
+    // The code branch is not a farm.
+    let code = git(&r, &["symbolic-ref", "--short", "HEAD"]);
+    let e = errx(
+        &r,
+        &[
+            "init",
+            "--mode",
+            "branch",
+            "--branch",
+            code.trim(),
+            "--skills",
+            "none",
+        ],
+    );
+    assert!(e.contains("the branch you are on"), "{e}");
+    assert!(!data(&r).exists());
+    let o = Command::new("git")
+        .args(["config", "--get", "yaks.branch"])
+        .current_dir(&r)
+        .output()
+        .unwrap();
+    assert!(!o.status.success(), "a refused run records no branch name");
+}
+
+#[test]
+fn branch_mode_skills_go_in_the_code_checkout_not_the_farm() {
+    let r = repo("branch-skills");
+    let out = okx(&r, &["init", "--mode", "branch", "--skills", "default"]);
+    assert!(r.join(".agents/skills/yaks/SKILL.md").is_file(), "{out}");
+    let wt = worktree_of(&r, "yaks").unwrap();
+    assert!(!wt.join(".agents").exists());
+    assert_eq!(
+        exclude(&r).lines().filter(|l| l.starts_with('/')).count(),
+        0
+    );
+    assert!(
+        okx(&r, &["init", "--mode", "branch", "--skills", "default"]).contains("Nothing to change")
+    );
+}

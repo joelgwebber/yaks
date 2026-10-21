@@ -17,7 +17,8 @@
 //! `.git/info/exclude` (never `.gitignore`, which is committed and would leak
 //! the farm's existence).
 
-use crate::{skills, store};
+use crate::branchfarm::{self, git, ref_exists};
+use crate::{sheds, skills, store};
 use anyhow::{Context, Result, bail};
 use clap::ValueEnum;
 use std::env;
@@ -33,6 +34,8 @@ pub enum Mode {
     Private,
     /// A `.yaks` pointer file to a farm elsewhere (`--path`), kept out of git.
     Pointer,
+    /// The farm on its own orphan branch, in a worktree at [`store::farm_home`].
+    Branch,
 }
 
 impl Mode {
@@ -41,6 +44,7 @@ impl Mode {
             Mode::Team => "team",
             Mode::Private => "private",
             Mode::Pointer => "pointer",
+            Mode::Branch => "branch",
         }
     }
 }
@@ -64,6 +68,7 @@ pub struct Args {
     pub emacs: bool,
     pub mode: Option<Mode>,
     pub path: Option<String>,
+    pub branch: Option<String>,
     pub skills: Option<SkillSet>,
 }
 
@@ -87,7 +92,8 @@ impl Args {
 }
 
 pub fn run(args: Args) -> Result<()> {
-    if args.mode.is_none() && args.skills.is_none() && args.path.is_none() {
+    if args.mode.is_none() && args.skills.is_none() && args.path.is_none() && args.branch.is_none()
+    {
         plain(&args)
     } else {
         setup(&args)
@@ -164,10 +170,28 @@ impl Report {
 fn setup(args: &Args) -> Result<()> {
     let cwd = env::current_dir()?;
     let top = skills::git_toplevel(&cwd);
-    let farm_here = cwd.join(".yaks");
+    // A branch farm belongs to the repository, so an in-tree farm is looked for
+    // at the git top-level; every other mode works in the cwd.
+    let farm_here = match (args.mode, &top) {
+        (Some(Mode::Branch), Some(top)) => top.join(".yaks"),
+        _ => cwd.join(".yaks"),
+    };
 
+    if args.path.is_some() && args.mode == Some(Mode::Branch) {
+        let home = top.as_deref().map_or_else(
+            || "its farm_home".to_string(),
+            |t| store::farm_home(t).display().to_string(),
+        );
+        bail!(
+            "--path only applies to `--mode pointer`; `--mode branch` puts the farm's worktree \
+             at its farm home ({home}), not at a path you choose"
+        );
+    }
     if args.path.is_some() && args.mode != Some(Mode::Pointer) {
         bail!("--path only applies to `--mode pointer`");
+    }
+    if args.branch.is_some() && args.mode != Some(Mode::Branch) {
+        bail!("--branch only applies to `--mode branch`");
     }
     if args.mode == Some(Mode::Pointer) && args.path.is_none() {
         bail!("`--mode pointer` needs `--path <dir>`: the directory that holds the farm");
@@ -194,6 +218,7 @@ fn setup(args: &Args) -> Result<()> {
     };
     let top_for_exclude = match mode {
         Mode::Team => None,
+        Mode::Branch => Some(needs_git("`--mode branch`")?),
         m => Some(needs_git(&format!("`--mode {}`", m.word()))?),
     };
     let top_for_skills = match skill_set {
@@ -213,6 +238,10 @@ fn setup(args: &Args) -> Result<()> {
     // The farm, and where discovery will find it.
     // The exclude line goes in first, so the farm never shows up in `git status`.
     let farm_root: PathBuf = match mode {
+        Mode::Branch => {
+            let top = top_for_exclude.as_ref().expect("branch requires git");
+            ensure_branch_farm(top, args, &mut rep)?
+        }
         Mode::Team => {
             let cfg = args.farm_config(args.herd.as_ref());
             ensure_farm(&farm_here, &cfg, args, true, &mut rep)?
@@ -249,7 +278,7 @@ fn setup(args: &Args) -> Result<()> {
                 skills::render_installed(i, " (`yaks skills install --force` overwrites)")
             );
         }
-        if mode != Mode::Team {
+        if matches!(mode, Mode::Private | Mode::Pointer) {
             for s in &chosen {
                 let line = format!("/.agents/skills/{}", s.name);
                 ensure_excluded(top, &line, "skill", &mut rep)?;
@@ -264,6 +293,11 @@ fn setup(args: &Args) -> Result<()> {
         Mode::Team => println!(
             "note: .yaks/ (and .agents/skills/, if installed) are ordinary project files \
              \u{2014} commit them to share them."
+        ),
+        Mode::Branch => println!(
+            "note: the farm is the git branch above, checked out outside every checkout; \
+             nothing is committed or pushed. `yaks sync` publishes it, `yaks private` \
+             keeps it local. .agents/skills/ (if installed) are ordinary project files."
         ),
         Mode::Private | Mode::Pointer => println!(
             "note: a Delta or other worktree worker runs in a different checkout, where \
@@ -307,6 +341,19 @@ fn refuse_conversion(mode: Mode, existing: &Existing, farm_here: &Path) -> Resul
         | (Existing::Farm { private: false }, Mode::Team)
         | (Existing::Farm { private: true }, Mode::Private)
         | (Existing::Pointer, Mode::Pointer) => return Ok(()),
+        // The remains of a farm (`.lock`, `.gitignore`) are not one.
+        (Existing::Farm { .. }, Mode::Branch) if store::only_leftovers(farm_here) => {
+            return Ok(());
+        }
+        (Existing::Farm { .. }, Mode::Branch) => format!(
+            "{here} is an in-tree farm; `--mode branch` starts a NEW farm on its own branch. \
+             To move this one onto a branch, keeping its history, run `yaks migrate --to-branch`"
+        ),
+        (Existing::Pointer, Mode::Branch) => format!(
+            "{here} is a pointer file to a farm elsewhere; `--mode branch` would have to \
+             replace it. Remove the pointer (and its line in .git/info/exclude) first if the \
+             farm should live on a branch instead"
+        ),
         (Existing::Farm { private: false }, Mode::Private) => format!(
             "{here} is a team farm (not listed in .git/info/exclude); `--mode private` \
              would have to add `.yaks` to .git/info/exclude and, if the farm is already \
@@ -386,6 +433,118 @@ fn ensure_farm(
         }
     }
     Ok(root.to_path_buf())
+}
+
+/// Branch mode: the farm on an orphan branch, in a worktree at
+/// [`store::farm_home`], found by discovery from every checkout of the
+/// repository. Reuses the branch when it exists (a worktree is added if none
+/// has it: [`branchfarm::bootstrap`]), else starts a new orphan branch holding
+/// only `.yaks/`. Nothing is committed or pushed. Returns the farm root.
+///
+/// Every refusal is checked before the first change.
+fn ensure_branch_farm(top: &Path, args: &Args, rep: &mut Report) -> Result<PathBuf> {
+    let configured = store::configured_farm_branch(top);
+    let branch = args.branch.clone().unwrap_or_else(|| configured.clone());
+    if git(top, &["check-ref-format", "--branch", &branch]).is_err() {
+        bail!("`{branch}` is not a valid branch name");
+    }
+    if store::farm_branch(&top.join(".yaks")).is_some() {
+        bail!(
+            "{} is itself the farm's worktree; run `yaks init --mode branch` in a code checkout",
+            top.display()
+        );
+    }
+    if git(top, &["symbolic-ref", "--short", "-q", "HEAD"]).is_ok_and(|b| b == branch) {
+        bail!("`{branch}` is the branch you are on, not a farm; pick another with --branch");
+    }
+    let cfg = args.farm_config(args.herd.as_ref());
+    let local = ref_exists(top, &format!("refs/heads/{branch}"));
+    let remote = ref_exists(top, &format!("refs/remotes/origin/{branch}"));
+    let existing_wt = sheds::worktree_of_branch(top, &branch).filter(|w| w.is_dir());
+
+    let worktree = if let Some(wt) = existing_wt {
+        rep.already(format!(
+            "branch: `{branch}` is checked out at {}, unchanged",
+            wt.display()
+        ));
+        wt
+    } else {
+        // Creating a worktree is refused where it would be invisible to the
+        // other checkouts of the repository (a Delta or --shared clone).
+        let host = sheds::host(top).context("reading the repository")?;
+        if host.via_alternates {
+            let main = sheds::host_checkout(&host).map_or_else(
+                || host.git_dir.display().to_string(),
+                |p| p.display().to_string(),
+            );
+            bail!(
+                "this checkout borrows another repository's objects (a Delta or --shared clone); a \
+                 farm worktree made here would be invisible to that repository's other checkouts. \
+                 Run `yaks init --mode branch` in its main checkout: {main}"
+            );
+        }
+        let wt = store::farm_home(top);
+        if fs::symlink_metadata(&wt).is_ok() {
+            bail!(
+                "{} (the farm home) already exists; remove it, or add the worktree elsewhere \
+                 yourself: `git -C {} worktree add <path> {branch}`",
+                wt.display(),
+                top.display()
+            );
+        }
+        if local || remote {
+            let tip = if local {
+                branch.clone()
+            } else {
+                format!("origin/{branch}")
+            };
+            if git(top, &["cat-file", "-e", &format!("{tip}:.yaks")]).is_err() {
+                bail!(
+                    "the branch `{branch}` exists but holds no .yaks/, so it is not a farm; pick \
+                     another name with --branch"
+                );
+            }
+            let made = branchfarm::bootstrap(top, &branch, |_| wt.clone())?;
+            rep.done(format!(
+                "branch: added the worktree for the existing branch `{branch}` at {}",
+                made.display()
+            ));
+            made
+        } else {
+            if let Some(parent) = wt.parent() {
+                fs::create_dir_all(parent)
+                    .with_context(|| format!("creating {}", parent.display()))?;
+            }
+            // Forget the record of a worktree whose directory was deleted, or
+            // git refuses to check the (unborn) branch out again.
+            git(top, &["worktree", "prune"])?;
+            let wt_s = wt.to_string_lossy().into_owned();
+            git(
+                top,
+                &["worktree", "add", "-q", "--orphan", "-b", &branch, &wt_s],
+            )
+            .context(
+                "creating the orphan farm worktree (`git worktree add --orphan` needs git 2.42+)",
+            )?;
+            let wt = sheds::canonical(&wt);
+            rep.done(format!(
+                "branch: created the orphan branch `{branch}` at {}",
+                wt.display()
+            ));
+            wt
+        }
+    };
+
+    // Discovery must find the branch: record it unless the repository already
+    // resolves to it (the default `yaks`, or an earlier setting).
+    if configured != branch {
+        git(top, &["config", "yaks.branch", &branch])?;
+        rep.done(format!("config: set yaks.branch = {branch}"));
+    }
+
+    let root = worktree.join(".yaks");
+    ensure_farm(&root, &cfg, args, true, rep)?;
+    Ok(root)
 }
 
 /// Pointer mode: the farm at `--path` (created if absent), then the pointer

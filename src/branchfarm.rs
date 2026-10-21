@@ -61,7 +61,7 @@ pub struct Plan {
 
 /// Run git in `dir` with a clean environment; trimmed stdout, or an error
 /// carrying git's stderr.
-fn git(dir: &Path, args: &[&str]) -> Result<String> {
+pub(crate) fn git(dir: &Path, args: &[&str]) -> Result<String> {
     let out = Command::new("git")
         .arg("-C")
         .arg(dir)
@@ -81,7 +81,7 @@ fn git(dir: &Path, args: &[&str]) -> Result<String> {
     Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
 }
 
-fn ref_exists(dir: &Path, name: &str) -> bool {
+pub(crate) fn ref_exists(dir: &Path, name: &str) -> bool {
     git(dir, &["rev-parse", "--verify", "-q", name]).is_ok()
 }
 

@@ -834,13 +834,23 @@ enum Command {
         /// farm in .yaks/, committed with the code. private: the farm in
         /// .yaks/, listed in .git/info/exclude. pointer: a `.yaks` pointer file
         /// to a farm at --path (created if absent), listed in
-        /// .git/info/exclude. private and pointer need a git repo.
+        /// .git/info/exclude. branch: the farm on its own orphan branch
+        /// (--branch, default `yaks`) in a worktree outside every checkout
+        /// (the default `yaks migrate --to-branch` location); an existing
+        /// branch only gets its worktree; nothing is committed or pushed.
+        /// private, pointer and branch need a git repo.
         #[arg(long, value_enum)]
         mode: Option<init::Mode>,
         /// For --mode pointer: the directory holding the farm (its `.yaks/`,
         /// or the farm itself). Written to the pointer file as given.
         #[arg(long, value_name = "DIR")]
         path: Option<String>,
+        /// For --mode branch: the farm branch's name (default: `git config
+        /// yaks.branch`, else `yaks`). A non-default name is recorded with
+        /// `git config yaks.branch` so discovery finds it. Chosen once, at
+        /// creation.
+        #[arg(long, value_name = "NAME")]
+        branch: Option<String>,
         /// Skills to install project-local in the git top-level, through the
         /// same install as `yaks skills install` (never overwrites an edited
         /// skill). In private/pointer modes their directories go in
@@ -1143,6 +1153,7 @@ fn main() -> Result<()> {
         emacs,
         mode,
         path,
+        branch,
         skills,
     } = &cli.command
     {
@@ -1153,6 +1164,7 @@ fn main() -> Result<()> {
             emacs: *emacs,
             mode: *mode,
             path: path.clone(),
+            branch: branch.clone(),
             skills: *skills,
         });
     }
