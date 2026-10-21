@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-18T19:35:20Z'
-updated: '2026-10-21T20:33:01Z'
+updated: '2026-10-21T20:33:51Z'
 parent: yaks-472e
 labels:
 - git
@@ -62,3 +62,8 @@ Claim (delta:herd-dirs, yakherd). Owner: `driver-1`.
 - An integration test in a scratch repo: farm branch, two clones (or two branches), concurrent notes + one conflicting status change on the same yak, `ensure_registered`, `git merge` / `git rebase` succeeds with no markers and `yaks doctor` is clean.
 
 **Judge:** the yakherd, by re-running the tests and a real two-clone merge.
+
+---
+▸ 2026-10-21T20:33:51Z [driver-1]
+
+Start: Wed Oct 21 20:33:47 UTC 2026 (date -u). `yaks path yaks-4a53`: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-4a53.md

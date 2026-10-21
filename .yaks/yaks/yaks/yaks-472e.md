@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-21T19:54:29Z'
-updated: '2026-10-21T20:33:01Z'
+updated: '2026-10-21T20:34:01Z'
 parent: yaks-6a34
 labels:
 - git
@@ -75,3 +75,13 @@ Skills guidance goes into yaks-b048.
 ▸ 2026-10-21T20:33:01Z [delta:herd-dirs]
 
 moved: hairy -> shaving
+
+---
+▸ 2026-10-21T20:34:01Z [delta:herd-dirs]
+
+Round 1 spawned (delta:herd-dirs, 2026-10-21), base 1e95cd3 (mergedriver stub prep commit), model anthropic/claude-sonnet-5-5 for all three:
+- `driver-1` -> yaks-4a53 (merge driver), thread ksQQfIIp_WA2ToGZ4UwiEcPWKpLOACZFrpIBxBCA0aLJyrhJPreUvVwLftHG
+- `status-1` -> yaks-bd1d + yaks-d4a7 (status sync state, preflight on a branch farm), thread ksQQfIIp_WA2ToGZ4UwiEcPWKpLOACZG4JIBxBCA0aLJyrhJPreUvVwLftHG
+- `private-1` -> yaks-85bb (private guard), thread ksQQfIIp_WA2ToGZ4UwiEcPWKpLOACZHFZIBxBCA0aLJyrhJPreUvVwLftHG
+
+Next, after landing: yaks-e3b2 (sync; needs 4a53 + 85bb's is_private), then yaks-ce5d (TUI; needs bd1d + e3b2).

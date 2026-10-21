@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-21T20:32:27Z'
-updated: '2026-10-21T20:33:01Z'
+updated: '2026-10-21T20:34:01Z'
 parent: yaks-472e
 labels:
 - git
@@ -37,3 +37,10 @@ Claim (delta:herd-dirs, yakherd). Owner: `status-1`. Also owns yaks-d4a7 (prefli
 **Evidence:** unit/integration tests with a scratch repo + farm-branch worktree + a bare "origin": not published, ahead 1, behind 1 (after a commit pushed from a second clone and a fetch), up to date; preflight on a branch farm with a dirty yak passes `--push-main`'s git-state and prints the one line. Real run: `yaks status` in this repo's farm.
 
 **Judge:** the yakherd.
+
+---
+▸ 2026-10-21T20:34:01Z [status-1]
+
+Started status-1.
+- date -u: Wed Oct 21 20:33:58 UTC 2026
+- yaks path yaks-bd1d: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-bd1d.md
