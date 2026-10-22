@@ -5,14 +5,13 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-22T20:35:28Z'
-updated: '2026-10-22T21:49:01Z'
+updated: '2026-10-22T22:12:53Z'
 depends_on:
 - yaks-89fc
 labels:
 - tui
 - images
 - markdown
-needs: human
 ---
 
 Follow-up to yaks-4305, which only shows an image in a pane of its own after Enter. An image link in a yak body (`![name](<id>/<file>)`) renders today as a `🖼 name` link row; it should draw the picture in place, in the detail pane, as GitHub does.
@@ -89,3 +88,15 @@ I mixed two cases in question 2; your "scale down" answers the first, and I need
    - (A) Clip it at the pane edge. I said earlier that kitty crops unreliably, and that was wrong: the `ratatui-image` docs say kitty and halfblocks clip properly (`Image::allow_clipping`), and sixel and iTerm2 do not. So Ghostty clips fine; a sixel or iTerm2 terminal shows the `🖼 alt` placeholder text until the image is fully in view. My lean.
    - (B) Re-scale the visible part to the visible rows, so the image shrinks and grows as you scroll. It costs a re-encode and, on kitty, a re-transmit at every scroll step, which will probably flicker, and the picture changes size under your eyes.
    - (C) Draw only fully visible images, placeholder otherwise (my first plan: no flicker, but it pops in and out).
+
+---
+▸ 2026-10-22T22:12:53Z [delta:Add basic image attachment rendering]
+
+Recorded by the yakherd from the human's comments in the Delta thread (not typed into this yak): on (A) clip a partly visible image at the pane edge: "That works. Let's try it and see how it goes."
+
+---
+▸ 2026-10-22T22:12:53Z [delta:Add basic image attachment rendering]
+
+picked up
+
+Building (A) clip-at-edge plus the inline_images switch.

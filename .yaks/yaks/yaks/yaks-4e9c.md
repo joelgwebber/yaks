@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-22T20:35:28Z'
-updated: '2026-10-22T21:57:46Z'
+updated: '2026-10-22T22:19:01Z'
 labels:
 - tui
 - images
@@ -179,3 +179,77 @@ This reverses round 1's verdict: the two "look" objections were fixable.
 - Still differs from Chrome: Noto emoji art instead of Apple's; DejaVu letterforms instead of Menlo/SF Mono (same cell grid).
 
 Open for the human (asked on this yak): the home (toque vs yaks), the cache, and what the font subset should cover. The spike also carried a stray `src/actor.rs` change (a `cargo fmt` reformat): not part of this work, never to be merged.
+
+---
+▸ 2026-10-22T22:12:53Z [delta:Add basic image attachment rendering]
+
+Recorded by the yakherd from the human's comments in the Delta thread (not typed into this yak). Direction: "Groovy!" (render to PNG, cache, embed a font). toque attached ("Got it, just mapped that in for you"). Binary cost: "Oh yeah, that's fine. Binaries are getting huge these days anyway." Cache in `$XDG_CACHE_HOME/yaks/` keyed by content hash and render size: "Yup, that sounds perfect." Wider font subset: "Maybe a follow-up yak for this?" (filed as yaks-4f4d).
+
+---
+▸ 2026-10-22T22:12:53Z [delta:Add basic image attachment rendering]
+
+picked up
+
+Home is toque behind a cargo feature; yaks consumes it. Briefing a worker for the toque side now.
+
+---
+▸ 2026-10-22T22:13:34Z [delta:Add basic image attachment rendering]
+
+Claim (yakherd, thread of yaks-4305), reshaped by the human's answers: Owner of the toque half: `toque-1`. The yak is two pieces in two repos; this claim is piece 1.
+
+**Piece 1 (toque, worktree `toque`, branch main):** a rasterizer with embedded fonts, behind a cargo feature `png` (default OFF so toque stays light for users who only want text and svg snapshots).
+- `toque::rasterize_svg(svg: &[u8]) -> Option<Raster>` with `Raster { width: u32, height: u32, rgba: Vec<u8> }` (straight RGBA8), and `toque::svg_to_png(svg: &[u8]) -> Option<Vec<u8>>`, and `toque::render_to_png(app, w, h) -> Option<Vec<u8>>` (render_to_svg then svg_to_png). No `image` crate dependency in toque: yaks wraps `Raster` itself.
+- Fonts are embedded (no system fonts at all, so a frame renders the same on every machine): the five files already committed under `assets/fonts/` (DejaVu Sans Mono regular + bold, Noto Color Emoji COLRv1, subset to today's glyphs; licenses beside them). The wider subset is a separate yak (yaks-4f4d); structure the code so swapping the font files needs no code change.
+- The two svg writer fixes svg-1 found, ALWAYS on (not feature-gated; they make Chrome and resvg agree): `xml:space="preserve"` on each `<text>` (resvg ignores `white-space:pre` from CSS; keep the CSS rule too, Chrome needs it), and `fill-opacity:.6` instead of `opacity:.6` for DIM (resvg ignores `opacity` on `<tspan>`; Chrome honours both).
+- Proof the writer fix does not regress Chrome: rasterize one frame with headless Chrome before and after (recipe in the yaks repo's docs/tui.md) and say that they match.
+- Source for the resvg usage and the font loading: the spike commit `22b384949066a86781841ed0d49780c080cc4b36` in the `yaks` worktree (`git -C <yaks worktree> show 22b3849:src/tui/imageview.rs`: `embedded_fonts`, `rasterize_svg`), resvg 0.48 with `text` only (the spike measured that COLRv1 emoji need no `raster-images`).
+- Gate: `cargo test` and `cargo test --features png` in toque. Tests: an svg with ASCII, a box-drawing char and a color emoji rasterizes to non-blank pixels, including a pixel that is not gray (proves color emoji), with no system fonts available (the test must not depend on the machine's fonts: build with the embedded db only); `render_to_png` output starts with the PNG magic; the DIM and spacing fixes appear in `render_to_svg` output.
+- README: a short section on the `png` feature.
+
+**Piece 2 (yaks, after piece 1 is published):** `ImageView` decodes svg through `toque::rasterize_svg`; a PNG cache under `$XDG_CACHE_HOME/yaks/` keyed by content hash and render size (human-approved); drop the spike's own resvg dependency (it was never merged). Needs toque pushed to origin (yaks pins it as a git dependency) and `cargo update -p toque`: the human's call to push. I do piece 2 myself.
+
+---
+▸ 2026-10-22T22:14:10Z [toque-1]
+
+Start (toque-1) 2026-10-22T22:14:10Z. Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-4e9c.md. Working in the toque worktree /Users/joel/src/toque/.delta/worktrees/xg3wm6rndqhj/toque.
+
+---
+▸ 2026-10-22T22:17:07Z [toque-1]
+
+Piece 1 (toque-1): toque commit 240eb5f on toque main (not pushed). `png` feature (default off): `rasterize_svg`, `svg_to_png`, `render_to_png`, `Raster`, in `src/raster.rs`; writer fixes always on in `src/svg.rs`.
+Chrome before/after of a throwaway toque frame (box drawing, `Needs:       human`, DIM row, bold, 🐑 on a blue bg): `magick compare -metric AE` = 383 px of 45,568; the diff box is 101x12 at the DIM row only, max per-channel difference 2/255 (`-fuzz 2%` gives 0). So Chrome renders the same, except `fill-opacity` blends the dim text a hair differently than `opacity`. Attached: chrome-before-writer-fix.png, chrome-after-writer-fix.png, resvg-after-writer-fix.png (the resvg render now keeps the `Needs:       human` column and the dim row; before the fix resvg collapsed the spaces and ignored dim).
+Updated tests: none existed that asserted the old strings (grep for `opacity`/`white-space` in src and README found only the new tests and doc comments), so only two tests were added: `text_rows_preserve_spaces_for_both_chrome_and_resvg`, `dim_uses_fill_opacity`. Both failed before the fix.
+Decision: PNG encoding via resvg's re-exported `tiny_skia::Pixmap::encode_png` (tiny-skia's `png-format` is a default feature and resvg keeps it on with default-features off; no extra feature needed, no `image` dep). Rejected: a hand-rolled encoder.
+Decision: the color-emoji test draws 🐑 and ⭐ and asserts a non-gray pixel. Noto's 🐑 is white/gray (max channel spread 4 over the glyph), so 🐑 alone cannot prove color; ⭐ (in the subset) does. The test also asserts the db holds exactly the 3 embedded faces.
+Decision: the test frame uses ─│─ not ┌┐: the subset has U+2500/2502/2503/253c only, no corners, so toque frames with box corners (┌ └ ┐ ┘, rounded) render those blank today (visible as missing corners in resvg-after-writer-fix.png). This is for yaks-4f4d (wider subset) and is the one surprising thing: the claim said the subset covers the docs' glyphs, but Chrome-vs-resvg of my frame shows missing corners; the docs/assets svgs use only lines. 
+Decision: `rasterize_svg` returns `Raster` with `take_demultiplied` straight RGBA; `render_pixmap` is shared by it and `svg_to_png`, fontdb built once in a `OnceLock`.
+
+![chrome-before-writer-fix](yaks-4e9c/chrome-before-writer-fix.png)
+
+![chrome-after-writer-fix](yaks-4e9c/chrome-after-writer-fix.png)
+
+![resvg-after-writer-fix](yaks-4e9c/resvg-after-writer-fix.png)
+
+---
+▸ 2026-10-22T22:17:17Z [toque-1]
+
+Correction (toque-1): my last note said the docs/assets svgs use only lines. Wrong for toque's own `docs/assets/yaks-session-{1,2,3}.svg`: they contain box corners/joins (┌ ┐ └ ┘ ├ ┤ etc.; grep counts 1-33 per glyph). The embedded subset (spiked against yaks's 22 docs/assets, not toque's 3) has no corners or joins, so `render_to_png` of those frames draws them blank. Attachments are not affected by this commit, but yaks-4f4d (wider subset) should be treated as needed, not optional, before the viewer shows toque frames: include all of Box Drawing U+2500-257F.
+
+---
+▸ 2026-10-22T22:19:01Z [delta:Add basic image attachment rendering]
+
+Piece 1 done (yakherd, verified): toque `main` in the thread's toque worktree is at 240eb5f (fonts 4108e52, then toque-1's rasterizer, a clean fast-forward). NOT pushed to origin. I re-ran both gates myself: `cargo test` 13 lib + 1 doc, and `cargo test --features png` 16 lib + 1 doc, all pass. Read src/raster.rs and the src/svg.rs diff: matches the claim (`xml:space="preserve"` on each `<text>`; `fill-opacity:.6` for DIM; CSS rule kept for Chrome). toque-1 compared Chrome before and after the writer change: 383 of 45,568 px differ, all in the DIM row, max 2/255 per channel, 0 with `-fuzz 2%`.
+
+Correction to a worker finding: toque-1 wrote that toque's own docs/assets use box corners. I counted U+2500-257F in toque's `docs/assets/*.svg` and found only U+2502; the yaks repo's docs use U+2500, 2502, 2503 and 253c. The gap is real regardless: the embedded subset has only those four box glyphs, so `┌ ┐ └ ┘ ├ ┤ ┬ ┴` and the rounded corners (every ratatui `Block` border) render blank in a toque PNG. yaks-4f4d (wider subset) must land before toque is published or yaks shows any app's frames.
+
+Piece 2 (yaks: `ImageView` through `toque::rasterize_svg`, the XDG PNG cache, drop the spike's resvg) cannot be committed until toque is on origin: yaks pins it as a git dependency and a path dependency must never be committed. That push is the human's call (asked).
+
+---
+▸ 2026-10-22T22:19:01Z [delta:Add basic image attachment rendering]
+
+asked: needs human
+
+Piece 1 (toque) is done and verified in the toque worktree (240eb5f, not pushed). Two things for you:
+
+1. Order. yaks consumes toque as a git dependency, so piece 2 (the svg viewer in yaks) is blocked until toque is pushed. Before that, the font subset needs widening (yaks-4f4d): right now every box-drawing corner and join renders blank, which any ratatui `Block` border uses. My lean: do yaks-4f4d first (it is mostly regenerating the font files plus a script, small), push toque once, then do piece 2. Alternative: push toque now and widen later, accepting blank corners in the viewer until then.
+2. Pushing toque to `origin/main` is yours: say "push toque" and I will (or push it yourself).
