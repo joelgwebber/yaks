@@ -6,7 +6,8 @@
 //! SVG snapshots like anything else.
 
 use std::cell::RefCell;
-use std::path::PathBuf;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 use ratatui::Frame;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
@@ -16,9 +17,10 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 use ratatui_image::picker::Picker;
 use ratatui_image::protocol::StatefulProtocol;
+use ratatui_image::sliced::{SignedPosition, SlicedImage, SlicedProtocol};
 use ratatui_image::{FilterType, Resize, StatefulImage};
 
-use super::{App, Overlay};
+use super::{App, Overlay, detail};
 
 /// Largest image file the viewer decodes; a bigger one opens externally.
 const IMAGE_MAX_BYTES: u64 = 32 << 20;
@@ -106,6 +108,110 @@ impl App {
                 self.os_open(&target, &arg);
             }
             _ => {}
+        }
+    }
+}
+
+// -- inline images in the detail pane (yaks-0bf0) ---------------------------
+
+/// Most decoded inline images kept at once; past it the cache is emptied and
+/// the visible ones are rebuilt (a handful covers any yak a person scrolls).
+const INLINE_CACHE_MAX: usize = 8;
+
+/// Inline images ready to draw, by (file, its mtime in ns, columns, rows). A
+/// file that failed to decode is remembered as `None` so a broken image is not
+/// retried every frame; a new mtime is a new key, so an edited file reloads.
+#[derive(Default)]
+pub(crate) struct InlineCache {
+    ready: HashMap<(PathBuf, u128, u16, u16), Option<SlicedProtocol>>,
+}
+
+#[cfg(test)]
+impl InlineCache {
+    pub(crate) fn len(&self) -> usize {
+        self.ready.len()
+    }
+}
+
+fn mtime_ns(path: &Path) -> u128 {
+    std::fs::metadata(path)
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map_or(0, |d| d.as_nanos())
+}
+
+/// Decode `path` and encode it for `cols`x`rows` cells. Done once per image
+/// and size, at first draw, and only for an image on screen.
+fn build_inline(app: &App, path: &Path, cols: u16, rows: u16) -> Option<SlicedProtocol> {
+    let img = image::ImageReader::open(path)
+        .ok()?
+        .with_guessed_format()
+        .ok()?
+        .decode()
+        .ok()?;
+    // Stretch to exactly the reserved cells (the layout already kept the aspect
+    // to within a cell), so no padding strip shows where rounding left a
+    // remainder, and an author's `=50%` of a small image is enlarged to fit.
+    let font = app.picker.font_size();
+    let img = img.resize_exact(
+        u32::from(cols) * u32::from(font.width),
+        u32::from(rows) * u32::from(font.height),
+        FilterType::Triangle,
+    );
+    SlicedProtocol::new_with_resize(
+        &app.picker,
+        img,
+        ratatui::layout::Size::new(cols, rows),
+        Resize::Fit(None),
+    )
+    .ok()
+}
+
+/// Paint the inline images that intersect the visible rows of the detail pane
+/// over the blank rows the layout reserved for them. `area` is the content
+/// area (below any pinned header); `lines` are the pane's rows. An image
+/// partly scrolled out of view is clipped at the pane edge by `SlicedImage`
+/// (kitty and half-blocks skip rows, sixel drops bands, iTerm2 draws row
+/// slices). An image wholly out of view is neither decoded nor drawn.
+pub(crate) fn render_inline_images(
+    app: &App,
+    lines: &[detail::DLine],
+    frame: &mut Frame,
+    area: Rect,
+) {
+    let scroll = app.detail_scroll as isize;
+    let mut i = 0;
+    while i < lines.len() {
+        let Some(slot) = lines[i].image.as_ref().filter(|s| s.row == 0) else {
+            i += 1;
+            continue;
+        };
+        let top = i as isize - scroll;
+        let n = slot.rows.max(1) as usize;
+        i += n;
+        if top + n as isize <= 0 || top >= area.height as isize {
+            continue;
+        }
+        let key = (
+            slot.path.clone(),
+            mtime_ns(&slot.path),
+            slot.cols,
+            slot.rows,
+        );
+        let mut cache = app.inline_cache.borrow_mut();
+        if cache.ready.len() >= INLINE_CACHE_MAX && !cache.ready.contains_key(&key) {
+            cache.ready.clear();
+        }
+        let proto = cache
+            .ready
+            .entry(key)
+            .or_insert_with(|| build_inline(app, &slot.path, slot.cols, slot.rows));
+        if let Some(proto) = proto {
+            frame.render_widget(
+                SlicedImage::new(proto, SignedPosition::from((0, top as i16))),
+                area,
+            );
         }
     }
 }

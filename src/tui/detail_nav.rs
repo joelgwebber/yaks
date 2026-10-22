@@ -58,6 +58,7 @@ impl App {
             loc: row.loc,
             width: self.detail_width.get() as usize,
             slot: self.edit_slot(),
+            images: self.image_env().map(|e| (e.cell_px, e.max_rows)),
             minute: self.clock.minute(),
         };
         if let Some(c) = &*self.dlines_cache.borrow() {
@@ -84,8 +85,32 @@ impl App {
         };
         let width = self.detail_width.get() as usize;
         let slot = self.edit_slot();
-        let lines = detail::build_at(t, &self.all, &self.clock, width, slot.as_ref());
+        let env = self.image_env();
+        let lines = detail::build_at(
+            t,
+            &self.all,
+            &self.clock,
+            width,
+            slot.as_ref(),
+            env.as_ref(),
+        );
         detail::wrap(lines, width)
+    }
+
+    /// Where and how big inline images are laid out, or `None` when they are
+    /// off (`inline_images: false`) or there is no farm to resolve attachments
+    /// in. No image is taller than two thirds of the detail pane unless the
+    /// author asked for a size.
+    pub(crate) fn image_env(&self) -> Option<detail::ImageEnv<'_>> {
+        if !self.inline_images {
+            return None;
+        }
+        let font = self.picker.font_size();
+        Some(detail::ImageEnv {
+            root: self.farm.as_ref()?.root(),
+            cell_px: (font.width, font.height),
+            max_rows: (self.detail_page * 2 / 3).max(4),
+        })
     }
 
     /// The sideways scroll of no-wrap block `key` of yak `yak` (the selected

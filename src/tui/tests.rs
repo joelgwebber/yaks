@@ -1,6 +1,7 @@
 use super::*;
 use crate::tui::test_support::*;
 use ratatui::style::{Color, Modifier};
+use toque::HeadlessApp;
 
 #[test]
 fn mark_toggles_selection_and_renders_gutter_dot() {
@@ -3787,6 +3788,161 @@ fn o_in_the_image_viewer_opens_externally_and_closes_it() {
     press(&mut app, "O");
     assert!(matches!(app.overlay, Overlay::None));
     assert_eq!(app.notification.as_deref(), Some("opened t0/shot.png"));
+}
+
+fn put_attachment(farm: &crate::farm::Farm, id: &str, name: &str, data: &[u8]) {
+    let dir = crate::store::artifact_dir(farm.root(), id);
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join(name), data).unwrap();
+}
+
+/// A farm whose yak `t0` has body `body` and a 120x120 two-tone PNG attachment
+/// `shot.png`, opened in the detail pane at 80 columns.
+fn app_with_inline_image(body: &str, inline: bool) -> (PathBuf, App) {
+    let mut t0 = task("t0", "solo", Status::Hairy, 3, None);
+    t0.body = body.to_string();
+    let (dir, farm) = temp_farm(&[t0]);
+    // Written straight into the attachment directory: `Farm::attach` would
+    // also append its own image link to the body, hiding what each test sets.
+    put_attachment(&farm, "t0", "shot.png", &two_tone_png(120, 120));
+    let mut app = App::with_farm(farm).unwrap();
+    app.inline_images = inline;
+    HeadlessApp::on_resize(&mut app, 100, 40);
+    press(&mut app, "l");
+    draw(&app, 100, 40); // measure the pane
+    (dir, app)
+}
+
+fn image_rows(app: &App) -> Vec<usize> {
+    app.detail_dlines()
+        .iter()
+        .enumerate()
+        .filter(|(_, l)| l.image.is_some())
+        .map(|(i, _)| i)
+        .collect()
+}
+
+#[test]
+fn an_image_alone_in_a_paragraph_reserves_rows_in_the_detail_pane() {
+    // yaks-0bf0: 120x120 px at the half-block picker's 10x20 px cells is 12x6
+    // cells, under the pane width and the row cap.
+    let (_dir, app) = app_with_inline_image("Before.\n\n![shot](t0/shot.png)\n\nAfter.", true);
+    let rows = image_rows(&app);
+    assert_eq!(rows.len(), 6, "{rows:?}");
+    assert!(rows.windows(2).all(|w| w[1] == w[0] + 1), "contiguous");
+    let lines = app.detail_dlines();
+    let slot = |i: usize| lines[i].image.as_ref().unwrap();
+    assert_eq!((slot(rows[0]).cols, slot(rows[0]).rows), (12, 6));
+    assert_eq!(
+        rows.iter().map(|&i| slot(i).row).collect::<Vec<_>>(),
+        vec![0, 1, 2, 3, 4, 5]
+    );
+    // The rows follow the `🖼 shot` link row, which stays followable.
+    let link = rows[0] - 1;
+    assert!(
+        lines[link].text.contains("🖼 shot"),
+        "{:?}",
+        lines[link].text
+    );
+    assert!(!lines[link].links.is_empty());
+    // And they belong to the paragraph: same source block as the link row.
+    assert_eq!(
+        lines[rows[0]].src.unwrap().block,
+        lines[link].src.unwrap().block
+    );
+}
+
+#[test]
+fn an_image_in_text_a_list_or_with_inline_images_off_stays_a_link_row() {
+    for body in [
+        "see ![shot](t0/shot.png) here",
+        "- ![shot](t0/shot.png)",
+        "> ![shot](t0/shot.png)",
+    ] {
+        let (_dir, app) = app_with_inline_image(body, true);
+        assert!(image_rows(&app).is_empty(), "{body:?}");
+    }
+    let (_dir, app) = app_with_inline_image("![shot](t0/shot.png)", false);
+    assert!(image_rows(&app).is_empty(), "inline_images off");
+    // A remote image or a missing file has no rows to reserve either.
+    for body in ["![x](https://example.com/a.png)", "![x](t0/missing.png)"] {
+        let (_dir, app) = app_with_inline_image(body, true);
+        assert!(image_rows(&app).is_empty(), "{body:?}");
+    }
+}
+
+#[test]
+fn an_explicit_size_sets_the_reserved_rows() {
+    // `=x60` is 60 px tall: 3 rows of 20 px, width from the aspect (6 cols).
+    let (_dir, app) = app_with_inline_image("![shot =x60](t0/shot.png)", true);
+    let lines = app.detail_dlines();
+    let rows = image_rows(&app);
+    assert_eq!(rows.len(), 3);
+    let s = lines[rows[0]].image.as_ref().unwrap();
+    assert_eq!((s.cols, s.rows), (6, 3));
+}
+
+/// Screen rows of a `w`x`h` frame that carry image pixels. The test image is
+/// pure red over pure blue; the half-block encoder paints a uniform cell as a
+/// background color on a space, so look at colors, not glyphs.
+fn image_pixel_rows(app: &App, w: u16, h: u16) -> usize {
+    let mut term = Terminal::new(ratatui::backend::TestBackend::new(w, h)).unwrap();
+    term.draw(|f| render(app, f)).unwrap();
+    let buf = term.backend().buffer();
+    let is_img = |c: Color| c == Color::Rgb(255, 0, 0) || c == Color::Rgb(0, 0, 255);
+    (0..h)
+        .filter(|&y| {
+            (0..w).any(|x| {
+                let c = &buf[(x, y)];
+                is_img(c.fg) || is_img(c.bg)
+            })
+        })
+        .count()
+}
+
+#[test]
+fn an_inline_image_is_drawn_clipped_at_the_pane_edge_and_scrolls() {
+    // A short pane so the image straddles the bottom edge, then the top.
+    let body = format!(
+        "{}\n\n![shot](t0/shot.png)\n\nEnd.",
+        "Line.\n\nMore.\n\n".repeat(3)
+    );
+    let (_dir, mut app) = app_with_inline_image(&body, true);
+    HeadlessApp::on_resize(&mut app, 100, 14);
+    draw(&app, 100, 14);
+    let first = image_rows(&app)[0];
+    // Scroll so the image starts two rows above the bottom edge of the content
+    // area (once scrolled, a pinned header takes two rows of the pane): two of
+    // its six rows are visible, clipped, not hidden.
+    let shown = app.detail_rows_shown(1);
+    app.detail_scroll = (first + 2 - shown) as u16;
+    let n = image_pixel_rows(&app, 100, 14);
+    assert_eq!(n, 2, "two rows visible, clipped at the pane edge");
+    // Scrolled so the whole image is in view: every row drawn.
+    app.detail_scroll = first as u16 - 1;
+    assert_eq!(image_pixel_rows(&app, 100, 14), 6, "whole image drawn");
+    // Scrolled until it is off the top: nothing drawn.
+    app.detail_scroll = (image_rows(&app)[5] + 1) as u16;
+    assert_eq!(image_pixel_rows(&app, 100, 14), 0, "off the top: not drawn");
+}
+
+#[test]
+fn a_broken_inline_image_is_not_retried_every_frame_and_draws_nothing() {
+    let mut t0 = task("t0", "solo", Status::Hairy, 3, None);
+    t0.body = "![shot](t0/shot.png)".into();
+    let (_dir, farm) = temp_farm(&[t0]);
+    // A PNG header that `into_dimensions` accepts, then garbage: layout
+    // reserves rows, decode fails at draw time.
+    let mut png = two_tone_png(40, 40);
+    png.truncate(png.len() / 2);
+    put_attachment(&farm, "t0", "shot.png", &png);
+    let mut app = App::with_farm(farm).unwrap();
+    HeadlessApp::on_resize(&mut app, 100, 30);
+    press(&mut app, "l");
+    for _ in 0..3 {
+        assert_eq!(image_pixel_rows(&app, 100, 30), 0);
+    }
+    assert_eq!(app.inline_cache.borrow().len(), 1, "one remembered failure");
 }
 
 /// The attachment viewer's `E` (yaks-56c1): open the editor over the file.

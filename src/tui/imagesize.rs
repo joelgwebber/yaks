@@ -88,8 +88,6 @@ fn digits(s: &str) -> Option<(u32, &str)> {
 ///   author's call.
 /// - Both: the largest size that fits inside the `W`x`H` box with the aspect
 ///   kept.
-// Only the unit tests call it until the inline-image layout (yaks-0bf0) does.
-#[allow(dead_code)]
 pub fn cells(
     size: Option<ImageSize>,
     natural_px: (u32, u32),

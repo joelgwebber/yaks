@@ -71,6 +71,7 @@ impl AttachView {
             cont: false,
             src: None,
             nowrap,
+            image: None,
         };
         if self.markdown {
             mdrender::render(&self.text, width, known)

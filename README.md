@@ -309,6 +309,7 @@ herd: yak              # default herd / id prefix (`yaks init` writes it; `creat
 default_type: task     # default --type
 default_priority: 3    # default --priority
 vim_mode: true         # TUI editor keybindings: vim (true) or emacs (false)
+inline_images: true    # TUI: draw an image alone in a body paragraph in place (false: a link row)
 ```
 
 A user-global `~/.config/yaks/config.yaml` is merged underneath per-project

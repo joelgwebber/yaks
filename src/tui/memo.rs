@@ -98,6 +98,9 @@ pub(super) struct DlinesKey {
     pub loc: Loc,
     pub width: usize,
     pub slot: Option<detail::EditSlot>,
+    /// Inline images: the cell size and tallest image that sized the layout
+    /// (`None` when off), so a resize or a new picker rebuilds it.
+    pub images: Option<((u16, u16), u16)>,
     /// Relative dates ("5m ago") are good to the minute.
     pub minute: i64,
 }

@@ -5,6 +5,7 @@
 //! Tab/Enter jump navigation. No regex (hand-rolled id/URL scan).
 
 use std::collections::{HashMap, HashSet};
+use std::path::{Path, PathBuf};
 
 use super::markdown::MdSpan;
 use super::when::Clock;
@@ -67,6 +68,33 @@ pub struct DLine {
     /// that stays put when the block scrolls sideways (yaks-c733). Such a row
     /// may be wider than the pane; `render_dline` clips it.
     pub nowrap: Option<mdrender::NoWrap>,
+    /// For one of the rows an inline image reserves (yaks-0bf0): which image
+    /// and which of its rows this is. The row's text is blank; `render_detail`
+    /// draws the image over the whole run of rows.
+    pub image: Option<ImageSlot>,
+}
+
+/// One row of the block an inline image reserves in the detail pane.
+#[derive(Clone, PartialEq, Debug)]
+pub struct ImageSlot {
+    /// The image file on disk.
+    pub path: PathBuf,
+    /// The image's size in cells.
+    pub cols: u16,
+    pub rows: u16,
+    /// This row's index within the image's `rows` (0 = its first row).
+    pub row: u16,
+}
+
+/// What the layout needs to reserve rows for inline images: where attachments
+/// live, the terminal's cell size in pixels, and the tallest an image without
+/// an explicit size may be. `None` (no farm, or `inline_images: false`) keeps
+/// every image a `🖼 alt` link row.
+#[derive(Clone, Copy)]
+pub struct ImageEnv<'a> {
+    pub root: &'a Path,
+    pub cell_px: (u16, u16),
+    pub max_rows: u16,
 }
 
 impl DLine {
@@ -138,6 +166,7 @@ fn field(label: &str, value: &str) -> DLine {
         cont: false,
         src: None,
         nowrap: None,
+        image: None,
     }
 }
 
@@ -152,6 +181,7 @@ fn warn_field(label: &str, value: &str) -> DLine {
         cont: false,
         src: None,
         nowrap: None,
+        image: None,
     }
 }
 
@@ -164,6 +194,7 @@ fn section(text: &str) -> DLine {
         cont: false,
         src: None,
         nowrap: None,
+        image: None,
     }
 }
 
@@ -176,6 +207,7 @@ fn empty() -> DLine {
         cont: false,
         src: None,
         nowrap: None,
+        image: None,
     }
 }
 
@@ -216,13 +248,14 @@ fn ref_line(prefix: String, glyph: &str, id: &str, title: &str, exists: bool) ->
         cont: false,
         src: None,
         nowrap: None,
+        image: None,
     }
 }
 
 /// [`build_at`] against the pinned test clock (see [`Clock::app_default`]).
 #[cfg(test)]
 pub fn build(task: &Task, all: &[Task]) -> Vec<DLine> {
-    build_at(task, all, &Clock::app_default(), 0, None)
+    build_at(task, all, &Clock::app_default(), 0, None, None)
 }
 
 /// `clock` renders the Created/Updated timestamps (relative to its "now", in
@@ -233,6 +266,7 @@ pub fn build_at(
     clock: &Clock,
     width: usize,
     edit: Option<&EditSlot>,
+    images: Option<&ImageEnv>,
 ) -> Vec<DLine> {
     let by_id: HashMap<&str, &Task> = all.iter().map(|t| (t.id.as_str(), t)).collect();
     let known: HashSet<&str> = by_id.keys().copied().collect();
@@ -365,6 +399,7 @@ pub fn build_at(
             cont: false,
             src: None,
             nowrap: None,
+            image: None,
         });
     }
 
@@ -384,11 +419,12 @@ pub fn build_at(
                 cont: false,
                 src: None,
                 nowrap: None,
+                image: None,
             });
         }
     }
 
-    out.extend(body_rows(task, &known, clock, width, edit));
+    out.extend(body_rows(task, &known, clock, width, edit, images));
     out
 }
 
@@ -406,6 +442,7 @@ fn body_rows(
     clock: &Clock,
     width: usize,
     edit: Option<&EditSlot>,
+    images: Option<&ImageEnv>,
 ) -> Vec<DLine> {
     let width = if width == 0 { FALLBACK_WIDTH } else { width };
     let mut out = Vec::new();
@@ -433,19 +470,43 @@ fn body_rows(
         if is_comment {
             out.push(comment_header(&block.kind, clock, width, bi));
         }
+        // An image that is a whole paragraph reserves rows after the
+        // paragraph's last row; `pending` holds it until that row has gone out.
+        let mut pending: Option<(Src, ImageSlot)> = None;
         for row in mdrender::render(&block.text, width, known) {
+            // The blank row after the paragraph (a lone image has no container,
+            // so its rows are never blank) ends it: the image goes here.
+            if row.text.trim().is_empty() {
+                if let Some(p) = pending.take() {
+                    out.extend(image_rows(p));
+                }
+            }
+            let src = Src {
+                block: bi,
+                lines: Some(row.lines),
+            };
+            if pending.is_none() {
+                pending = images
+                    .and_then(|env| {
+                        row.images
+                            .iter()
+                            .find_map(|img| image_slot(env, img, width))
+                    })
+                    .map(|slot| (src, slot));
+            }
             out.push(DLine {
                 text: row.text,
                 kind: Kind::Body,
                 links: row.links,
                 md: row.spans,
                 cont: false,
-                src: Some(Src {
-                    block: bi,
-                    lines: Some(row.lines),
-                }),
+                src: Some(src),
                 nowrap: row.nowrap,
+                image: None,
             });
+        }
+        if let Some(p) = pending.take() {
+            out.extend(image_rows(p));
         }
     }
     // A new comment: a provisional header and the editor after the last block.
@@ -455,6 +516,55 @@ fn body_rows(
         out.extend(editor_rows(slot.rows));
     }
     out
+}
+
+/// The image of `img` if it is drawn in place: it is a whole top-level
+/// paragraph, a local attachment (`<id>/<file>`) whose header an image decoder
+/// can read, sized by [`imagesize::cells`] from that header alone (no decode,
+/// so laying out a yak never waits on its pictures). The slot is for row 0.
+fn image_slot(env: &ImageEnv, img: &mdrender::MdImage, pane_cols: usize) -> Option<ImageSlot> {
+    if !img.alone || img.target.contains("://") {
+        return None;
+    }
+    let rel = img.target.strip_prefix(".yaks/").unwrap_or(&img.target);
+    let (id, name) = rel.split_once('/')?;
+    if !crate::store::is_image_name(name) {
+        return None;
+    }
+    let found = crate::farm::locate_attachment(env.root, id, name)?;
+    let (w, h) = image::ImageReader::open(&found.path)
+        .ok()?
+        .with_guessed_format()
+        .ok()?
+        .into_dimensions()
+        .ok()?;
+    let pane = pane_cols.min(u16::MAX as usize) as u16;
+    let (cols, rows) = super::imagesize::cells(img.size, (w, h), env.cell_px, pane, env.max_rows);
+    Some(ImageSlot {
+        path: found.path,
+        cols,
+        rows,
+        row: 0,
+    })
+}
+
+/// The blank rows an inline image reserves, each tagged with its slot. They
+/// are body rows of the image's paragraph (same [`Src`]), so `E`, yank and
+/// block navigation treat them as the paragraph they belong to.
+fn image_rows((src, slot): (Src, ImageSlot)) -> impl Iterator<Item = DLine> {
+    (0..slot.rows).map(move |row| DLine {
+        text: String::new(),
+        kind: Kind::Body,
+        links: vec![],
+        md: vec![],
+        cont: false,
+        src: Some(src),
+        nowrap: None,
+        image: Some(ImageSlot {
+            row,
+            ..slot.clone()
+        }),
+    })
 }
 
 /// The rows an in-place editor reserves.
@@ -467,6 +577,7 @@ fn editor_rows(n: usize) -> impl Iterator<Item = DLine> {
         cont: false,
         src: None,
         nowrap: None,
+        image: None,
     })
 }
 
@@ -550,6 +661,7 @@ fn header_row(label: &str, width: usize, block: usize, editing: Option<&EditSlot
         cont: false,
         src: Some(Src { block, lines: None }),
         nowrap: None,
+        image: None,
     }
 }
 
@@ -673,6 +785,7 @@ pub fn wrap(lines: Vec<DLine>, width: usize) -> Vec<DLine> {
                 cont: ri > 0,
                 src: dl.src,
                 nowrap: dl.nowrap,
+                image: None,
             });
         }
     }
@@ -976,6 +1089,7 @@ mod tests {
             cont: false,
             src: None,
             nowrap: None,
+            image: None,
         };
         // Width 10 splits the line; the code span (cols 5..16) must be clipped to
         // whatever falls on each row and re-based to that row's columns.
@@ -1012,6 +1126,7 @@ mod tests {
             cont: false,
             src: None,
             nowrap: None,
+            image: None,
         };
         let rows = wrap(vec![dl], 10);
         let texts: Vec<&str> = rows.iter().map(|r| r.text.as_str()).collect();
@@ -1030,6 +1145,7 @@ mod tests {
             cont: false,
             src: None,
             nowrap: None,
+            image: None,
         };
         let rows = wrap(vec![dl], 8);
         let link_row = rows.iter().find(|r| !r.links.is_empty()).unwrap();
@@ -1048,6 +1164,7 @@ mod tests {
             cont: false,
             src: None,
             nowrap: None,
+            image: None,
         };
         assert_eq!(wrap(vec![dl], 10)[0].text, "  alpha");
 
@@ -1059,6 +1176,7 @@ mod tests {
             cont: false,
             src: None,
             nowrap: None,
+            image: None,
         };
         let texts: Vec<String> = wrap(vec![dl2], 4).iter().map(|r| r.text.clone()).collect();
         assert_eq!(texts, vec!["abcd", "efgh", "ij"]);
@@ -1074,6 +1192,7 @@ mod tests {
             cont: false,
             src: None,
             nowrap: None,
+            image: None,
         };
         assert_eq!(wrap(vec![dl], 0).len(), 1);
     }

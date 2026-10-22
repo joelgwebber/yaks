@@ -157,10 +157,28 @@ terminal. Sizing rule (`imagesize::cells`): with **no size** an image is shown
 at its natural size, shrunk to the pane width and a row cap, never enlarged (as
 GitHub does); with a **width** (or a **height**) it takes that size, clamped to
 the pane width, the other side following the aspect ratio, and no row cap; with
-**both** it fits inside the `WxH` box, aspect kept. Today the size is parsed and
-carried on the rendered row (`MdRow.images`) but nothing draws an image inline
-yet, and the viewer above still fits the whole pane; the inline layout that uses
-it is yaks-0bf0.
+**both** it fits inside the `WxH` box, aspect kept. The viewer above still
+fits the whole pane; the size applies to the inline image below.
+
+**Inline images** — an image that is the whole of a top-level body paragraph
+(`![shot](<id>/shot.png)` on a line of its own, in a description or a comment) is
+drawn in the detail pane, under its `🖼 shot` link row, which stays followable
+(`Enter` opens the viewer). It is not drawn in place inside a sentence, a list, a
+quote or a table: those stay the link row. The layout reserves the image's rows
+from its file header alone, so a yak never waits on its pictures; the image is
+decoded when it first scrolls into view and kept (a handful at a time). With no
+size an image shows at its natural size, shrunk to the pane width and two thirds
+of the pane's height; an explicit size (see above) may be taller. An image
+partly scrolled out of view is **clipped** at the pane edge on every protocol
+(kitty and half-block skip rows, sixel drops bands, iTerm2 draws row slices); one
+fully out of view is not decoded. A remote (`http://`) image, an svg, a missing or
+undecodable file stays the link row. Set `inline_images: false` in
+`.yaks/config.yaml` to keep every image a link row (for a terminal whose image
+protocol misbehaves).
+
+![An image alone in a paragraph, drawn in the pane at 60% width](assets/tui-image-inline.svg)
+
+![The same image clipped at the bottom edge of the pane](assets/tui-image-inline-clipped.svg)
 
 **Pasting** — the TUI enables bracketed paste, so a terminal paste (`Cmd-V` /
 `Ctrl-Shift-V`) lands in the focused text field as one literal insert: fast,

@@ -808,3 +808,68 @@ fn docshots_image_viewer() {
     press_key(&mut app, KeyCode::Enter); // open it
     write_svg("tui-image-viewer", &app, w, h);
 }
+
+/// Inline images (yaks-0bf0): an image that is a whole paragraph of a yak body
+/// is drawn in the detail pane, in a second shot clipped at the pane's bottom
+/// edge, into `docs/assets/tui-image-inline*.svg`. Ignored by default; run
+/// explicitly: `cargo test -p yaks docshots_image_inline -- --ignored`.
+#[test]
+#[ignore = "asset generator; run with --ignored to refresh docs/assets/tui-image-inline*.svg"]
+fn docshots_image_inline() {
+    use crate::tui::test_support::temp_farm;
+
+    // A 240x140 test card: a diagonal gradient with a white-ringed disc.
+    let (iw, ih) = (240u32, 140u32);
+    let mut px = Vec::new();
+    for y in 0..ih {
+        for x in 0..iw {
+            let (dx, dy) = (x as f32 - 120.0, y as f32 - 70.0);
+            let d = (dx * dx + dy * dy).sqrt();
+            px.extend_from_slice(&if (44.0..50.0).contains(&d) {
+                [255, 255, 255]
+            } else if d < 44.0 {
+                [240, 180, 40]
+            } else {
+                [(60 + x / 3) as u8, (40 + y) as u8, (200 - x / 2) as u8]
+            });
+        }
+    }
+    let mut png_bytes = Vec::new();
+    let mut enc = png::Encoder::new(&mut png_bytes, iw, ih);
+    enc.set_color(png::ColorType::Rgb);
+    enc.set_depth(png::BitDepth::Eight);
+    enc.write_header().unwrap().write_image_data(&px).unwrap();
+
+    let mut y = t(
+        "yak-1a2b",
+        "Login page looks wrong on mobile",
+        "bug",
+        2,
+        Status::Shaving,
+        None,
+    );
+    y.body = "The header wraps at 360px, as in this capture:\n\n\
+              ![mobile login =60%](yak-1a2b/mobile-login.png)\n\n\
+              Everything below the fold is fine."
+        .into();
+    let (_dir, farm) = temp_farm(&[y]);
+    let dir = crate::store::artifact_dir(farm.root(), "yak-1a2b");
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("mobile-login.png"), &png_bytes).unwrap();
+
+    let (w, h) = (100u16, 34u16);
+    let mut app = App::with_farm(farm).unwrap();
+    HeadlessApp::on_resize(&mut app, w, h);
+    view_to(&mut app, "status:shaving");
+    press(&mut app, 'l'); // focus the detail pane
+    let _ = toque::render_to_svg(&app, w, h); // measure the pane width
+    write_svg("tui-image-inline", &app, w, h);
+
+    // A shorter pane, scrolled so the image straddles the bottom edge: the
+    // visible rows are drawn, clipped, not replaced by a placeholder.
+    let (w, h) = (100u16, 24u16);
+    HeadlessApp::on_resize(&mut app, w, h);
+    let _ = toque::render_to_svg(&app, w, h);
+    app.detail_scroll = 6;
+    write_svg("tui-image-inline-clipped", &app, w, h);
+}

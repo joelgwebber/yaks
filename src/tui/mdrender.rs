@@ -54,9 +54,6 @@ pub struct MdRow {
     pub nowrap: Option<NoWrap>,
     /// The images whose `🖼` marker sits on this row, in order (an image
     /// wrapped across rows belongs to its first row).
-    // Read only by the inline-image layout (yaks-0bf0); until it lands the
-    // compiler sees no reader.
-    #[allow(dead_code)]
     pub images: Vec<MdImage>,
 }
 
@@ -69,6 +66,9 @@ pub struct MdImage {
     pub alt: String,
     /// The size the author asked for (`![alt =50%](p)`), if any.
     pub size: Option<ImageSize>,
+    /// The image is the whole of a top-level paragraph (not in a list, quote
+    /// or footnote, no other text): the only case drawn in place (yaks-0bf0).
+    pub alone: bool,
 }
 
 /// Which no-wrap block a row belongs to, and the part that stays put when the
@@ -506,7 +506,10 @@ impl Renderer<'_> {
 
     fn end(&mut self, tag: &TagEnd) {
         match tag {
-            TagEnd::Paragraph => self.block_end(),
+            TagEnd::Paragraph => {
+                self.mark_lone_image();
+                self.block_end();
+            }
             TagEnd::Heading(_) => {
                 self.block_end();
                 self.styles.pop();
@@ -573,6 +576,22 @@ impl Renderer<'_> {
         }
     }
 
+    /// A top-level paragraph whose every cell belongs to one image is that
+    /// image's whole paragraph: flag it so the detail layout may draw it.
+    fn mark_lone_image(&mut self) {
+        if !self.containers.is_empty() || self.table.is_some() || self.parked.is_some() {
+            return;
+        }
+        let Some(li) = self.buf.first().and_then(|c| c.link) else {
+            return;
+        };
+        if self.buf.iter().all(|c| c.link == Some(li)) {
+            if let Some(img) = self.images.get_mut(&li) {
+                img.alone = true;
+            }
+        }
+    }
+
     /// The image's alt text is in `buf`: cut a trailing size token (`=50%`) out
     /// of what is shown and keep it, with the alt and target, for the row the
     /// marker lands on.
@@ -588,7 +607,15 @@ impl Renderer<'_> {
             return;
         };
         let target = target.clone();
-        self.images.insert(link, MdImage { target, alt, size });
+        self.images.insert(
+            link,
+            MdImage {
+                target,
+                alt,
+                size,
+                alone: false,
+            },
+        );
     }
 
     /// Push prose text, auto-linking bare URLs and yak ids (unless already
@@ -1330,11 +1357,13 @@ mod tests {
                     target: "a/shot.png".into(),
                     alt: "shot".into(),
                     size: Some(want_size),
+                    alone: false,
                 },
                 MdImage {
                     target: "b.png".into(),
                     alt: "plain".into(),
                     size: None,
+                    alone: false,
                 },
             ]
         );
@@ -1347,6 +1376,27 @@ mod tests {
         assert_eq!(rows[0].images[0].alt, "");
         assert!(rows[0].images[0].size.is_some());
         assert_eq!(rows[0].images[1].size, None);
+    }
+
+    // yaks-0bf0: only an image that is a whole top-level paragraph is `alone`.
+    #[test]
+    fn an_image_alone_in_a_top_level_paragraph_is_flagged() {
+        let alone = |md: &str| {
+            let rows = render(md, 80, &HashSet::new());
+            let flags: Vec<bool> = rows
+                .iter()
+                .flat_map(|r| r.images.iter().map(|i| i.alone))
+                .collect();
+            assert_eq!(flags.len(), 1, "{md:?}");
+            flags[0]
+        };
+        assert!(alone("![a](p.png)"));
+        assert!(alone("Intro.\n\n![a =50%](p.png)\n\nOutro."));
+        assert!(!alone("see ![a](p.png)"));
+        assert!(!alone("![a](p.png) text"));
+        assert!(!alone("- ![a](p.png)"));
+        assert!(!alone("> ![a](p.png)"));
+        assert!(!alone("| h |\n|---|\n| ![a](p.png) |"));
     }
 
     #[test]

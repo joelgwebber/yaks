@@ -321,6 +321,11 @@ pub struct App {
     /// cells). Halfblocks until [`runtime::run`] queries the real terminal, so
     /// headless frames and tests draw an image as colored cells.
     picker: ratatui_image::picker::Picker,
+    /// Draw an image that stands alone in a body paragraph in place
+    /// (`inline_images` in the farm config, default on; yaks-0bf0).
+    inline_images: bool,
+    /// Decoded inline images, filled while drawing (see [`imageview`]).
+    inline_cache: RefCell<imageview::InlineCache>,
     /// Transient one-line status message shown until the next mutation.
     notification: Option<String>,
     /// An editor the event loop should run with the terminal suspended (set
@@ -398,6 +403,8 @@ impl App {
             list_offset: Cell::new(0),
             overlay: Overlay::None,
             picker: ratatui_image::picker::Picker::halfblocks(),
+            inline_images: true,
+            inline_cache: RefCell::default(),
             notification: None,
             pending_editor: None,
             editor_vim: true,
@@ -433,6 +440,7 @@ impl App {
         let working_set = views_store::load_working_set(farm.root());
         let mut app = App::new(all);
         app.editor_vim = vim;
+        app.inline_images = cfg.inline_images;
         app.config_herds = cfg.known_herds();
         app.ref_prefix = cfg.prefix;
         app.collapsed = ui.collapsed;

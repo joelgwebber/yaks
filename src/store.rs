@@ -959,6 +959,10 @@ pub struct Config {
     pub default_priority: u8,
     /// When true, embedded editors use vim keybindings; otherwise emacs.
     pub vim_mode: bool,
+    /// When true (the default), the TUI draws an image that stands alone in a
+    /// body paragraph in place (yaks-0bf0); false keeps it a `🖼 alt` link row.
+    /// For a terminal whose image protocol misbehaves.
+    pub inline_images: bool,
     /// Optional default verification commands, keyed by label (plus a `default`
     /// key). A yak with no explicit `verify:` field resolves its command here by
     /// label. The project's levers, named once (see `resolve_verify`).
@@ -1034,6 +1038,7 @@ pub fn read_config(root: &Path) -> Config {
         default_type: "task".to_string(),
         default_priority: 3,
         vim_mode: true,
+        inline_images: true,
         verify: std::collections::HashMap::new(),
         herds: std::collections::HashMap::new(),
         live_branch: None,
@@ -1128,6 +1133,9 @@ pub fn read_config(root: &Path) -> Config {
                     }
                 }
                 "vim_mode" => c.vim_mode = matches!(val.as_str(), "true" | "True" | "yes" | "1"),
+                "inline_images" => {
+                    c.inline_images = matches!(val.as_str(), "true" | "True" | "yes" | "1")
+                }
                 "live_branch" if !val.is_empty() => c.live_branch = Some(val),
                 "verify" if val.is_empty() => sec = Sec::GlobalVerify,
                 "herds" if val.is_empty() => sec = Sec::Herds,
