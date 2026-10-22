@@ -1,11 +1,11 @@
 ---
 source: src/tui/tests.rs
-assertion_line: 4473
 expression: "draw(&app, 100, 20)"
 ---
  🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   🛖  Sheds (…)
 
 ◂ Help — keys
+│ Farm git state (the chip on the tab row)
 │   W             Commit the farm (yaks commit)
 │   U             Sync the farm: commit, pull, push (yaks sync)
 │   chip          ● N uncommitted, ↑ahead, ↓behind, not published; none when clean
@@ -21,5 +21,4 @@ expression: "draw(&app, 100, 20)"
 │
 │ General
 │   y             Copy yak id to clipboard
-│   ?             Toggle this help
 j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close

@@ -756,3 +756,55 @@ fn docshots_edit_inplace() {
     press(&mut app, 's');
     write_svg("tui-edit-inplace-new", &app, w, h);
 }
+
+/// The image viewer (yaks-4305): `Enter` on an image attachment draws it in the
+/// pane (as half-block cells here; a graphics-capable terminal gets the real
+/// pixels) into `docs/assets/tui-image-viewer.svg`. Ignored by default; run
+/// explicitly: `cargo test -p yaks docshots_image_viewer -- --ignored`.
+#[test]
+#[ignore = "asset generator; run with --ignored to refresh docs/assets/tui-image-viewer.svg"]
+fn docshots_image_viewer() {
+    use crate::tui::test_support::temp_farm;
+
+    // A 240×140 test card: a diagonal gradient with a white-ringed disc.
+    let (iw, ih) = (240u32, 140u32);
+    let mut px = Vec::new();
+    for y in 0..ih {
+        for x in 0..iw {
+            let (dx, dy) = (x as f32 - 120.0, y as f32 - 70.0);
+            let d = (dx * dx + dy * dy).sqrt();
+            px.extend_from_slice(&if (44.0..50.0).contains(&d) {
+                [255, 255, 255]
+            } else if d < 44.0 {
+                [240, 180, 40]
+            } else {
+                [(60 + x / 3) as u8, (40 + y) as u8, (200 - x / 2) as u8]
+            });
+        }
+    }
+    let mut png_bytes = Vec::new();
+    let mut enc = png::Encoder::new(&mut png_bytes, iw, ih);
+    enc.set_color(png::ColorType::Rgb);
+    enc.set_depth(png::BitDepth::Eight);
+    enc.write_header().unwrap().write_image_data(&px).unwrap();
+
+    let (_dir, farm) = temp_farm(&[t(
+        "yak-1a2b",
+        "Login page looks wrong on mobile",
+        "bug",
+        2,
+        Status::Shaving,
+        None,
+    )]);
+    farm.attach("yak-1a2b", "mobile-login.png", &png_bytes)
+        .unwrap();
+    let (w, h) = (110u16, 30u16);
+    let mut app = App::with_farm(farm).unwrap();
+    HeadlessApp::on_resize(&mut app, w, h);
+    view_to(&mut app, "status:shaving");
+    press(&mut app, 'l'); // focus the detail pane
+    let _ = toque::render_to_svg(&app, w, h); // measure the pane width
+    press_key(&mut app, KeyCode::Tab); // cursor onto the attachment link
+    press_key(&mut app, KeyCode::Enter); // open it
+    write_svg("tui-image-viewer", &app, w, h);
+}

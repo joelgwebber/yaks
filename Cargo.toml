@@ -34,6 +34,8 @@ arboard = { version = "3", features = ["wayland-data-control"] }
 png = "0.17"
 unicode-width = "0.2"
 pulldown-cmark = { version = "0.13", default-features = false }
+ratatui-image = { version = "11.1", default-features = false, features = ["crossterm"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp"] }
 
 [profile.release]
 opt-level = 3

@@ -7,6 +7,12 @@ use super::*;
 use ratatui::crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 pub fn run(mut app: App) -> Result<()> {
     let (mut term, kitty) = setup()?;
+    // Ask the terminal which image protocol it speaks and its cell size. Needs
+    // raw mode and must run before any event is read; a terminal that does not
+    // answer keeps the half-block fallback (yaks-4305).
+    if let Ok(picker) = ratatui_image::picker::Picker::from_query_stdio() {
+        app.picker = picker;
+    }
     let res = event_loop(&mut term, &mut app, kitty);
     let _ = restore(kitty);
     crate::clipboard::release();

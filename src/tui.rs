@@ -20,6 +20,7 @@ mod farmsync;
 mod fuzzy;
 mod handlers;
 mod headless;
+mod imageview;
 mod markdown;
 mod mdrender;
 mod memo;
@@ -142,6 +143,8 @@ pub(crate) enum Overlay {
     Help(u16),
     /// A text attachment open in the in-TUI viewer, or its editor (yaks-699b).
     Attachment(handlers::AttachView),
+    /// An image attachment open in the in-TUI image viewer (yaks-4305).
+    Image(imageview::ImageView),
 }
 
 /// What a resolved single-key pick should do (carries the target task id).
@@ -313,6 +316,10 @@ pub struct App {
     /// the selection to the bottom edge when scrolling up — yaks-9009).
     list_offset: Cell<usize>,
     overlay: Overlay,
+    /// How this terminal draws images (kitty/sixel/iTerm2, else half-block
+    /// cells). Halfblocks until [`runtime::run`] queries the real terminal, so
+    /// headless frames and tests draw an image as colored cells.
+    picker: ratatui_image::picker::Picker,
     /// Transient one-line status message shown until the next mutation.
     notification: Option<String>,
     /// An editor the event loop should run with the terminal suspended (set
@@ -389,6 +396,7 @@ impl App {
             clock: when::Clock::app_default(),
             list_offset: Cell::new(0),
             overlay: Overlay::None,
+            picker: ratatui_image::picker::Picker::halfblocks(),
             notification: None,
             pending_editor: None,
             editor_vim: true,

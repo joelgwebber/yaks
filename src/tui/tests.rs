@@ -978,7 +978,10 @@ fn follow_link_to_yak_outside_any_view_says_so() {
     tab_key(&mut app); // -> the d0 link line
     enter_key(&mut app); // follow it
     let frame = draw(&app, 72, 16);
-    assert_eq!(app.notification.as_deref(), Some("d0 isn't shown in any view"));
+    assert_eq!(
+        app.notification.as_deref(),
+        Some("d0 isn't shown in any view")
+    );
     assert!(frame.contains("d0 isn't shown in any view"), "{frame}");
     assert!(!frame.contains("→ d0"), "{frame}");
     assert!(app.nav_back.is_empty(), "failed jump records no history");
@@ -3729,6 +3732,61 @@ fn an_image_or_binary_attachment_still_opens_externally() {
     enter_key(&mut app);
     assert!(matches!(app.overlay, Overlay::None));
     assert_eq!(app.notification.as_deref(), Some("opened t0/blob.bin"));
+}
+
+/// A `w`×`h` RGB PNG, red on the top half and blue on the bottom.
+fn two_tone_png(w: u32, h: u32) -> Vec<u8> {
+    let mut out = Vec::new();
+    let mut enc = png::Encoder::new(&mut out, w, h);
+    enc.set_color(png::ColorType::Rgb);
+    enc.set_depth(png::BitDepth::Eight);
+    let data: Vec<u8> = (0..h)
+        .flat_map(|y| (0..w).flat_map(move |_| if y < h / 2 { [255, 0, 0] } else { [0, 0, 255] }))
+        .collect();
+    enc.write_header().unwrap().write_image_data(&data).unwrap();
+    out
+}
+
+#[test]
+fn enter_on_an_image_attachment_shows_it_in_the_pane() {
+    // yaks-4305: a decodable image opens in the TUI, drawn as half-block cells
+    // when the terminal speaks no graphics protocol (as under test).
+    let (_dir, mut app) = app_on_attachment("shot.png", &two_tone_png(64, 64));
+    enter_key(&mut app);
+    assert!(matches!(app.overlay, Overlay::Image(_)));
+    assert_eq!(app.notification.as_deref(), Some("viewing t0/shot.png"));
+    let mut term = Terminal::new(ratatui::backend::TestBackend::new(100, 24)).unwrap();
+    term.draw(|f| render(&app, f)).unwrap();
+    let buf = term.backend().buffer();
+    let text = buffer_to_string(buf);
+    assert!(text.contains("t0/shot.png  image 64×64"), "{text}");
+    assert!(text.contains("O open externally"), "{text}");
+    // Red over blue: pixels were drawn as colored cells, not a placeholder.
+    let has = |rgb: Color| buf.content.iter().any(|c| c.fg == rgb || c.bg == rgb);
+    assert!(has(Color::Rgb(255, 0, 0)), "no red cells:\n{text}");
+    assert!(has(Color::Rgb(0, 0, 255)), "no blue cells:\n{text}");
+    press(&mut app, "q");
+    assert!(matches!(app.overlay, Overlay::None));
+}
+
+#[test]
+fn an_undecodable_image_attachment_falls_back_to_the_os_opener() {
+    // svg is an image by name but not decodable by the `image` crate; so is a
+    // corrupt png. Neither opens the viewer.
+    let (_dir, mut app) =
+        app_on_attachment("logo.svg", b"<svg xmlns='http://www.w3.org/2000/svg'/>");
+    enter_key(&mut app);
+    assert!(matches!(app.overlay, Overlay::None));
+    assert_eq!(app.notification.as_deref(), Some("opened t0/logo.svg"));
+}
+
+#[test]
+fn o_in_the_image_viewer_opens_externally_and_closes_it() {
+    let (_dir, mut app) = app_on_attachment("shot.png", &two_tone_png(8, 8));
+    enter_key(&mut app);
+    press(&mut app, "O");
+    assert!(matches!(app.overlay, Overlay::None));
+    assert_eq!(app.notification.as_deref(), Some("opened t0/shot.png"));
 }
 
 /// The attachment viewer's `E` (yaks-56c1): open the editor over the file.

@@ -52,6 +52,7 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
                 | Overlay::ViewPicker(_)
                 | Overlay::Help(_)
                 | Overlay::Attachment(_)
+                | Overlay::Image(_)
         );
     if app.focus == Focus::Detail || right_overlay {
         let (left, right) = main_split(mid);
@@ -79,6 +80,7 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
             Overlay::Create(f) => render_create(f, frame, inner),
             Overlay::Help(scroll) => render_help(*scroll, frame, inner),
             Overlay::Attachment(v) => render_attachment(app, v, frame, inner),
+            Overlay::Image(v) => super::imageview::render_image(v, frame, inner),
             Overlay::ViewPicker(sel) => render_view_picker(app, *sel, frame, inner),
             _ if app.on_sheds_tab() => render_shed_detail(app, frame, inner),
             _ => render_detail(app, frame, inner),
@@ -287,6 +289,10 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
         entry(
             "  (text file)",
             "Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally",
+        ),
+        entry(
+            "  (image)",
+            "Shown in the pane (png/jpg/gif/webp); O opens externally, Esc/q closes",
         ),
         entry("r", "Rename attachment at cursor (detail)"),
         entry("X", "Slaughter (confirm; offers whole family)"),
@@ -506,6 +512,7 @@ pub(crate) fn overlay_name(o: &Overlay) -> &'static str {
         Overlay::DetailFind(_) => "detail-find",
         Overlay::ViewPicker(_) => "view-picker",
         Overlay::Attachment(_) => "attachment",
+        Overlay::Image(_) => "image",
     }
 }
 
@@ -1446,6 +1453,17 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
         frame.render_widget(
             Paragraph::new(Span::styled(
                 "j/k scroll · d/u page · g/G top/bottom · E edit · O open externally · Esc/q close",
+                Style::new().fg(Color::DarkGray),
+            )),
+            area,
+        );
+        return;
+    }
+    // Image viewer hint.
+    if matches!(&app.overlay, Overlay::Image(_)) {
+        frame.render_widget(
+            Paragraph::new(Span::styled(
+                "O open externally · Esc/q close",
                 Style::new().fg(Color::DarkGray),
             )),
             area,

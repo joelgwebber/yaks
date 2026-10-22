@@ -5,6 +5,7 @@
 //! `resolve_*`) — plus the top-level free `handle_key` dispatcher. Split out of
 //! `tui.rs` (yaks-b1cc / b1cc/7). `use super::*` inherits `tui.rs`'s scope.
 
+use super::imageview::ImageView;
 use super::*;
 
 /// Largest attachment the in-TUI viewer shows; a bigger file opens externally.
@@ -691,21 +692,27 @@ impl App {
 
     /// Open a URL or attachment (`Enter` on its link, or `O`). An attachment
     /// (`<id>/<file>`) is resolved by [`App::resolve_attachment`]. A text
-    /// attachment opens in the in-TUI viewer ([`AttachView`], yaks-699b); a URL, an image or any other
-    /// file goes to the OS default application (best-effort).
+    /// attachment opens in the in-TUI viewer ([`AttachView`], yaks-699b) and a
+    /// decodable image in the image viewer ([`ImageView`], yaks-4305); a URL or
+    /// any other file goes to the OS default application (best-effort).
     pub(crate) fn open_external(&mut self, target: &str) {
         let arg = if target.contains("://") || target.starts_with("mailto:") {
             target.to_string()
         } else {
             match self.resolve_attachment(target) {
-                Some(found) => match AttachView::open(target, &found) {
-                    Some(v) => {
+                Some(found) => {
+                    if let Some(v) = ImageView::open(target, &found, &self.picker) {
+                        self.notification = Some(format!("viewing {target}"));
+                        self.overlay = Overlay::Image(v);
+                        return;
+                    }
+                    if let Some(v) = AttachView::open(target, &found) {
                         self.notification = Some(format!("viewing {target}"));
                         self.overlay = Overlay::Attachment(v);
                         return;
                     }
-                    None => found.path.display().to_string(),
-                },
+                    found.path.display().to_string()
+                }
                 None => {
                     self.notification = Some(format!("{target}: not in this farm"));
                     return;
@@ -718,7 +725,7 @@ impl App {
     /// Hand `arg` (a URL or file path) to the OS opener, reporting it as
     /// `target`. Under `cargo test` nothing is launched (a test must never
     /// pop up an image viewer); the notification is the same.
-    fn os_open(&mut self, target: &str, arg: &str) {
+    pub(super) fn os_open(&mut self, target: &str, arg: &str) {
         #[cfg(not(test))]
         let opened = super::source::os_open(arg).map(drop);
         #[cfg(test)]
@@ -1275,6 +1282,10 @@ impl App {
             self.handle_attachment_key(k);
             return;
         }
+        if matches!(self.overlay, Overlay::Image(_)) {
+            self.handle_image_key(k);
+            return;
+        }
         if matches!(self.overlay, Overlay::ViewPicker(_)) {
             self.handle_view_picker_key(k);
             return;
@@ -1451,7 +1462,8 @@ impl App {
             | Overlay::DetailFind(_)
             | Overlay::ViewPicker(_)
             | Overlay::Help(_)
-            | Overlay::Attachment(_) => {}
+            | Overlay::Attachment(_)
+            | Overlay::Image(_) => {}
             Overlay::Pick {
                 prompt,
                 keys,
