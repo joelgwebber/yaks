@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-22T20:35:28Z'
-updated: '2026-10-22T21:49:02Z'
+updated: '2026-10-22T21:57:46Z'
 labels:
 - tui
 - images
@@ -136,3 +136,46 @@ Questions:
 1. Where does it live: toque (my lean) or yaks directly? toque is its own repo (github.com/joelgwebber/toque), so I would need it attached as a Delta worktree to edit it, and yaks would bump the pinned commit (`cargo update -p toque`).
 2. The binary-size cost is the same either way (the spike measured +2.8 MB and +38 crates for `resvg`, plus the font); you did not object to it, so I am taking that as accepted unless you say otherwise. The embedded fonts add on top: a monospace font is a few hundred KB, and color emoji needs a subset, because toque frames use only a dozen or so emoji. I have asked svg-1 to measure both.
 3. Where to cache the PNGs: under `$XDG_CACHE_HOME/yaks/` next to the existing per-farm UI cache (`src/tui/cache.rs`), keyed by a hash of the svg's content plus the render size. Never in the farm, never committed. OK? The first open of an svg would still take the 170 ms; I would not pre-render in the background in this pass.
+
+![tui-list-B-sys-appleemoji-first](yaks-4e9c/tui-list-B-sys-appleemoji-first.png)
+
+![tui-detail-B-sys-appleemoji-first](yaks-4e9c/tui-detail-B-sys-appleemoji-first.png)
+
+![tui-list-F-final](yaks-4e9c/tui-list-F-final.png)
+
+![tui-detail-F-final](yaks-4e9c/tui-detail-F-final.png)
+
+![tui-list-F-final-patched](yaks-4e9c/tui-list-F-final-patched.png)
+
+![tui-detail-F-final-patched](yaks-4e9c/tui-detail-F-final-patched.png)
+
+---
+▸ 2026-10-22T21:57:09Z [svg-1]
+
+Follow-up spike (svg-1), commit 22b3849 on svg-1-resvg-spike (on top of a703b64); not landed, not shorn. Measured on the final tree; `cargo test --workspace` green (711 lib tests).
+Finding 1 (color emoji with system fonts): with `raster-images` on and system fonts only (A), emoji are STILL monochrome outlines; the fix is real: load /System/Library/Fonts/Apple Color Emoji.ttc into fontdb BEFORE load_system_fonts (B): emoji then render in color (sbix) and the whole-node-tofu from .LastResort does not occur. Side effect: with Apple Color Emoji in the db the render time drops from 162 ms to 13 ms (fewer fallback scans). Rendering is still a different artwork from Chrome (Apple's glyphs but placed on the text baseline slightly differently, bison/sheep drawn ~2 px higher). Attached: tui-{list,detail}-B-sys-appleemoji-first.png.
+Finding 2 (oddities are in the toque SVG, not resvg bugs): (a) `opacity:.6` as a CSS class on <tspan>: resvg honours only presentation attributes it understands on text spans; `fill-opacity:.6` in the same class works. (b) `Needs: human` x-position: the SVG sets `white-space:pre` in a <style> rule; resvg ignores that CSS property and collapses the run of spaces in `Needs:       human`. Adding `xml:space="preserve"` on <text> restores the column. Both fixed by a 2-line change in toque's SVG writer (emit `xml:space="preserve"` on <text>, and `fill-opacity` instead of `opacity` for dim) which Chrome also accepts. With those patched in a copy, the resvg render differs from Chrome by 0.5% mean gray difference on tui-detail (antialiasing, emoji artwork). Attached: tui-{list,detail}-F-final-patched.png.
+Finding 3 (embedded fonts, system fonts OFF, fontdb holds only what we embed): text, bold, box drawing, arrows and bullets all render; layout matches Chrome. Chosen: DejaVu Sans Mono (Bitstream Vera license + public-domain changes; permissive, needs the license text shipped: assets/fonts/DejaVu-LICENSE.txt). Alternatives checked against the glyphs the 22 docs/assets SVGs use: JetBrainsMono (OFL) lacks U+2610 U+2611 U+270E U+2726; Anonymous Pro lacks arrows and 16 others; Menlo/SF Mono are not redistributable. Subset (pyftsubset from fontTools 4.61.1 under pyenv 3.11.13, already installed, nothing installed by me): regular 9,872 B, bold 9,944 B, from 335,068 / 318,392 B raw. Emoji: Noto Color Emoji (OFL; 10.6 MB CBDT raw, 4.8 MB COLRv1 raw) subset to the 8 emoji: 15,916 B (CBDT) and 14,468 B (COLRv1); both render in color and differ from each other by <0.4% of pixels. Chose COLRv1 (smaller, vector: needs no `raster-images`, so no extra crates); attached C/D frames in /tmp only, final frames attached: tui-{list,detail}-F-final.png.
+Coverage: docs/assets/*.svg use 38 distinct non-ASCII codepoints (7 box/block: ─ │ ┃ ┼ ▀ ▄ ▎; 8 emoji: ⏳ ⭐ 🐑 🕒 🖼 🛖 🦬 🪒; 23 others: arrows, bullets, ✎ ☐ ☑ ✗ ✦ etc.), 120 distinct codepoints including ASCII. A subset covering exactly those is feasible and done.
+Binary (separate full release build each, fresh target dirs): system-fonts build 9,060,352 B; mono-only embedded 9,060,096 B (so embedding replaces fontdb's system scan at ~0 net: +~20 KB of font data offset by dropping fs/fontconfig deps, 262 crates); + COLRv1 emoji 9,076,608 B (+16,512 B vs mono-only); + CBDT emoji with raster-images 9,342,112 B (+282 KB, 265 crates). Baseline without resvg: 6,238,736 B. Clean build 20.8-21.2 s wall for each.
+Render time (release, median of 7, embedded fonts, no system scan): tui-list 3.0 ms, tui-detail 4.6 ms (was 160/140 ms with system fonts); first call incl. font db setup ~8 ms. So Enter on an svg is effectively instant and no longer needs caching for latency, only to avoid re-decoding on every open.
+Decision: embed fonts rather than load system fonts (rejected: system fonts as primary, because it renders blank on a font-less host, takes 160 ms, and picks a different face per machine; a system-font fallback is not needed since the subset covers every toque glyph).
+Decision: COLRv1 over CBDT for the emoji (rejected: CBDT, +282 KB of raster decoding crates for the same look).
+Decision: ship DejaVu (Bitstream) and Noto Emoji (OFL) license texts beside the fonts.
+Remaining differences from Chrome: emoji artwork is Noto not Apple (Chrome on macOS uses Apple's); glyphs are DejaVu Sans Mono not SF Mono/Menlo, so letterforms differ but advance width is the same cell grid; the `opacity`/`white-space:pre` issues above until toque's SVG writer is changed; any non-covered codepoint (e.g. CJK, a different emoji) renders blank, since the subset is exactly the docs' set, so a real build should subset from a wider range (all of Box Drawing, Arrows, Geometric Shapes, and the emoji a yak may attach) at some KB cost.
+
+---
+▸ 2026-10-22T21:57:46Z [delta:Add basic image attachment rendering]
+
+Spike round 2 (yakherd, from svg-1's report; not landed). Commit 22b3849 on `svg-1-resvg-spike` (on top of a703b64), in svg-1's clone; `cargo test --workspace` passes there (711 lib tests incl. one rendering text and a color emoji from embedded fonts alone). I have not merged or re-run it on main.
+
+This reverses round 1's verdict: the two "look" objections were fixable.
+
+- Emoji: `raster-images` alone did not give color. Pre-loading the platform emoji font before `load_system_fonts()` did. With embedded fonts, color emoji work with no system fonts. Not seen: the `.LastResort` tofu a third party reported (svg-1 got outline glyphs on this Mac).
+- The two oddities are in toque's SVG, not resvg bugs: `white-space:pre` in a `<style>` rule is ignored by resvg (fix: `xml:space="preserve"` on `<text>`), and CSS `opacity` on `<tspan>` is ignored (fix: `fill-opacity`, which works in both). Both are two-line changes in toque's svg writer; patched in a copy, `tui-detail` differs from Chrome by 0.5% mean gray.
+- Embedded fonts, subset with `pyftsubset` (already installed; nothing installed): DejaVu Sans Mono regular+bold (9.9 KB each, Bitstream Vera license) and Noto Color Emoji COLRv1 (14.5 KB, OFL). The subset covers exactly the 38 non-ASCII codepoints in docs/assets/*.svg; anything else renders blank, so a real build needs a wider subset (all of Box Drawing, Arrows, Geometric Shapes, a broader emoji set). CBDT instead of COLRv1 costs +282 KB and 3 more crates for the same look.
+- Cost: binary 6,238,736 B without resvg; 9,076,608 B with resvg + embedded mono + COLRv1 emoji (+2.84 MB); 262 crates vs 225; clean build about 21 s vs 18.6 s. Embedding fonts is free versus the system-font build (dropping the font scan offsets it).
+- Speed: 3.0 ms (tui-list) and 4.6 ms (tui-detail) per render, versus 160 ms with system fonts, so the cache is no longer needed for latency (it would only skip re-decoding).
+- Still differs from Chrome: Noto emoji art instead of Apple's; DejaVu letterforms instead of Menlo/SF Mono (same cell grid).
+
+Open for the human (asked on this yak): the home (toque vs yaks), the cache, and what the font subset should cover. The spike also carried a stray `src/actor.rs` change (a `cargo fmt` reformat): not part of this work, never to be merged.
