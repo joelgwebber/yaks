@@ -1,11 +1,11 @@
 ---
 id: yaks-6a9b
 title: 'Per-herd directories: <herd>/yaks/<id>.md (schema 6), room for per-herd and global docs'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-10-21T03:30:37Z'
-updated: '2026-10-21T15:48:37Z'
+updated: '2026-10-22T19:40:12Z'
 labels:
 - design
 ---
@@ -75,3 +75,15 @@ Evidence:
 - `cargo test --release`: all 18 suites green (747 unit tests), including the previously failing tests/attachment_sheds.rs (fixed its macOS /var vs /private/var compare).
 - New tests: path helpers (incl. docs/, dot, loose files), migrate 4->6 with two herds + an attachment dir + non-yak root files (dry run moves nothing, real run, idempotent re-run, doctor clean), doctor misplaced-file + `docs` refused as a herd, merge refuses a schema-5 source.
 - Real farm: a copy of this repo's farm (491 yaks, 82 attachment dirs, herds `yaks` + `test`) migrated in 0.08 s; doctor clean; second run "nothing to migrate"; `list --all` 491 before and after; git sees 633 renames (100%) + the schema line; `yaks path`, `yaks attachment`, `show` work; headless TUI frame attached (detail pane resolves cross-herd children).
+
+---
+▸ 2026-10-22T19:40:12Z [delta:Fix TUI log spam during sync]
+
+Checked for closing out: the work is shipped. Commit 45601f5 is on main and in v0.0.22 and v0.0.23; `yaks --version` is 0.0.23 and this repo's farm is schema 6, `yaks doctor` clean. The other farms named in the plan (hearth, j15r, canon, joel, potemkin, schism, surveyor) are schema 6 too.
+
+Leftover, not part of this yak: the gnusto farm (~/.local/share/yaks/farms/gnusto-fa60ec71) is still schema 5, so every command but `yaks migrate` refuses it there. Run `yaks migrate` in that checkout when convenient.
+
+---
+▸ 2026-10-22T19:40:12Z [delta:Fix TUI log spam during sync]
+
+moved: shaving -> shorn
