@@ -1,11 +1,11 @@
 ---
 id: yaks-73f4
 title: 'The farm is a branch: an orphan yaks branch replaces committed .yaks/ on main (shared, personal or local)'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-10-18T15:54:02Z'
-updated: '2026-10-18T21:15:00Z'
+updated: '2026-10-22T00:59:55Z'
 parent: yaks-6a34
 labels:
 - git
@@ -59,3 +59,13 @@ Design for the build (delta-farm, before code):
 ▸ 2026-10-18T21:15:00Z [delta-farm]
 
 moved: hairy -> shaving
+
+---
+▸ 2026-10-22T00:59:55Z [delta:herd-dirs]
+
+All children shorn (discovery, bootstrap, migration, stale-copy redirect, large-farm docs). Shearing with the umbrella yaks-6a34.
+
+---
+▸ 2026-10-22T00:59:55Z [delta:herd-dirs]
+
+moved: shaving -> shorn

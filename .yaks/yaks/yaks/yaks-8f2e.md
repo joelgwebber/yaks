@@ -1,11 +1,11 @@
 ---
 id: yaks-8f2e
 title: 'Docs/skills: large-farm command-line traps (xargs silent chunking, E2BIG on absolute globs)'
-status: hairy
+status: shorn
 type: task
 priority: 2
 created: '2026-10-18T21:15:00Z'
-updated: '2026-10-19T04:30:38Z'
+updated: '2026-10-22T00:59:43Z'
 parent: yaks-73f4
 depends_on:
 - yaks-b048
@@ -20,3 +20,13 @@ From yaks-b32e (scale-1): `ls .yaks/*.md | xargs wc -l | tail -1` silently gives
 ▸ 2026-10-19T04:30:31Z [delta:herd-pass]
 
 Herd pass 2026-10-19: fold into the skills rewrite (yaks-b048) when it happens; it is one short section.
+
+---
+▸ 2026-10-22T00:59:43Z [delta:herd-dirs]
+
+Folded into the yaks skill's Filtering section by yaks-b048 (567c64c, refined in 51549a7): the xargs chunking and E2BIG traps, with a single-stream counting recipe. No `path --null`: not needed so far.
+
+---
+▸ 2026-10-22T00:59:43Z [delta:herd-dirs]
+
+moved: hairy -> shorn

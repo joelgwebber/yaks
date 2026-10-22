@@ -1,11 +1,11 @@
 ---
 id: yaks-b048
 title: 'Rewrite the skills for one farm per machine: collapse the farm-mode and environment layers'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-10-18T05:15:36Z'
-updated: '2026-10-21T23:11:05Z'
+updated: '2026-10-22T00:59:43Z'
 parent: yaks-6a34
 depends_on:
 - yaks-7bfd
@@ -63,3 +63,20 @@ First pass written (uncommitted in the delta:herd-dirs checkout, pending Joel's 
 - `yaks-tracker`: private-farm paragraph updated. Docs: docs/skills.md, docs/README.md, docs/cli.md, README, AGENTS.md, .agents/skills/README.md.
 
 Gate green; skill loads through the real `skill` tool. No cold-read scout yet.
+
+---
+▸ 2026-10-22T00:59:43Z [delta:herd-dirs]
+
+Done. Landed on main:
+- `00fbc8c` yaks-4c93: retire the four companion skills (RETIRED list, install removes untouched copies).
+- `567c64c` first pass: 8 skills to 4, `yaks` 321 -> 156 lines, when-to-sync, large-farm traps.
+- `f615cfb` second pass, per Joel: drop the in-tree farm from the skills, `yaks-working` defers to `yaks brief` (18 lines), AGENTS.md 235 -> 181.
+- `51549a7` cold-read fixes (cold-read-1, Sonnet scout; all four skills loaded): one commit-id rule by farm visibility, session-start order, `sync --no-push` before publishing, the judge shears, counting recipe. Spun off yaks-d794 (`path --all` bug).
+- `0739dcd` yaks-f800 (docs/cli.md rows) and `3b1e175` yaks-8c99 (one-line --help summaries).
+
+Evidence: full gate (`cargo build --release && cargo test --release --no-fail-fast`) 20 suites green on 3b1e175; `cargo test --bin yaks skills::` 37 passed; real-binary retirement run in a temp dir (3 removed, edited one kept).
+
+---
+▸ 2026-10-22T00:59:43Z [delta:herd-dirs]
+
+moved: shaving -> shorn

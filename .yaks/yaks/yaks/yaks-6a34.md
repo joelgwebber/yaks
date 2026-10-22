@@ -1,11 +1,11 @@
 ---
 id: yaks-6a34
 title: 'One farm per machine: the farm on its own branch, reached from every shed (umbrella)'
-status: shaving
+status: shorn
 type: task
 priority: 1
 created: '2026-10-18T05:15:02Z'
-updated: '2026-10-21T22:10:48Z'
+updated: '2026-10-22T00:59:55Z'
 labels:
 - sheds
 - git
@@ -115,3 +115,13 @@ Verdict (herd pass, 2026-10-19): the trial held and became the model. It went fu
 ▸ 2026-10-21T22:10:48Z [delta:herd-dirs]
 
 Round 3 (delta:herd-dirs), base 47120db, anthropic/claude-sonnet-5-5: `land-1` -> yaks-e5fb + yaks-3bcd (thread ksQQfIIp_WA2ToGZ4UwiEcPWKpLOACb3eJIBxBCA0aLJyrhJPreUvVwLftHG); `init-1` -> yaks-b1e9 (thread ksQQfIIp_WA2ToGZ4UwiEcPWKpLOACb4h5IBxBCA0aLJyrhJPreUvVwLftHG). The yakherd takes yaks-7bfd (discovery). Then yaks-b048 (skills rewrite, depends on 7bfd), yaks-8f2e folded into it; yaks-0ef9 last.
+
+---
+▸ 2026-10-22T00:59:55Z [delta:herd-dirs]
+
+Wrapped up: every child shorn. The farm is a branch (yaks-73f4), the sync lifecycle (yaks-472e), round 3 (yaks-7bfd, yaks-b1e9, yaks-e5fb/yaks-3bcd) and the skills rewrite (yaks-b048) are on main. Spun out to top level: yaks-9eaa (sheds from stamps), yaks-0ef9 (per-user state), yaks-c43b (TUI dirty marks), yaks-d794 (path --all). Release 0.0.22 (schema 6) awaits Joel's go-ahead.
+
+---
+▸ 2026-10-22T00:59:55Z [delta:herd-dirs]
+
+moved: shaving -> shorn

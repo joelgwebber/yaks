@@ -1,0 +1,71 @@
+Filesystem-native task tracker (Rust)
+
+Usage: yaks [OPTIONS] <COMMAND>
+
+Commands:
+  list               List tasks (non-dead by default; --all also includes dead)
+  show               Show one task by id (`--sheds`: also how other checkouts have it)
+  path               Print the on-disk file path of yaks, by id or by filter flags
+  refs               List the yaks a task points at, or (--incoming) the yaks pointing at it
+  commits            Show the git commits linked to a yak
+  verify             Run a yak's `verify:` command and record PASS/FAIL as a note
+  attach             Attach a local file to a yak as evidence
+  rename-attachment  Rename a yak's attachment and rewrite every link to it
+  attachment         Find a yak's attachments in this checkout or any other shed
+  scan-ids           Scan text for real yak ids (a leak check for private farms)
+  next               List hairy tasks whose dependencies are all resolved [alias: ready]
+  tangled            List hairy tasks with at least one unresolved dependency [alias: blocked]
+  log                Activity log: timestamped notes and status moves, oldest first
+  search             Substring search over id/title/description
+  sheds              List every checkout of this repo and what its farm changed
+  changes            Show what one shed created, moved and noted since it forked
+  discover           Diagnostic: show how `yaks sheds` finds the other checkouts
+  stats              Show task statistics
+  create             Create a new task (in hairy)
+  update             Update fields, labels, or append a timestamped note
+  ask                Block a yak on a human decision and record the question
+  answer             Answer a question: record the reply and hand the yak to an agent
+  pickup             Pick up an answered yak: clear `needs: agent` and note who took it
+  inbox              List yaks awaiting a human or answered and awaiting an agent
+  shave              Start shaving one or more yaks (move to shaving) [alias: work]
+  shorn              Mark one or more yaks shorn (move to shorn) [alias: close]
+  regrow             Regrow one or more shorn yaks (move back to hairy) [alias: reopen]
+  slaughter          Slaughter one or more yaks (move to dead)
+  revive             Revive one or more dead yaks (move back to hairy)
+  dep                Add or remove a dependency
+  reparent           Move tasks under a new parent (--parent) or to top-level (--unparent)
+  bulk               Apply one field edit (and/or reparent) to every yak matching a filter
+  rename             Rename a yak, updating its file, id and every reference to it
+  rename-herd        Rename a whole herd: move every yak to a new id prefix
+  migrate            Bring an older-schema farm up to this yaks' schema, or move it to a branch
+  private            Mark this repository's farm private: it never leaves the machine
+  merge              Merge another farm's yaks into this one (consolidation)
+  init               Create a .yaks/ farm in the current directory
+  skills             Install or check the bundled agent skills
+  rollup             Group yaks by the external issue they roll up to
+  doctor             Read-only farm-integrity check; exits non-zero on any issue
+  preflight          Read-only landing-readiness check for a team farm
+  sync               Sync the farm branch with its remote: commit, rebase, push
+  commit             Commit the farm's own changes (only `.yaks/`) with a generated message
+  land               Land a Delta worker's commit by SHA on the current branch
+  status             Show what the farm has changed that git does not have yet
+  brief              Print the worker brief for one yak: what a cold worker needs to start
+  tui                Open the interactive terminal UI
+  help               Print this message or the help of the given subcommand(s)
+
+Options:
+  -C <PATH>
+          Run as if started in <PATH> (like `git -C`).
+          
+          Farm discovery, `sheds`, `discover`, `commit`, `init`, `skills` and every other command see <PATH> as the current directory. A relative <PATH> is resolved against the real cwd; repeated `-C` compose, each relative to the previous. `$YAKS_DIR` still wins over discovery (a relative one is read from <PATH>).
+
+      --shed <SHED>
+          Run as if started in another checkout of this repo (a shed).
+          
+          The shed, from `yaks sheds`, is picked by name like `yaks changes <SHED>`: its path, Delta dir id, thread-title slug, branch, actor, or a unique substring (`main` is the primary checkout; naming the checkout you are in is a no-op). The same as `-C <that shed's path>`: FULL access, so a write command writes in that shed's farm. Applied after any `-C`, relative to that checkout; at most once. No or an ambiguous match lists the sheds and exits 1. Never records the Delta thread title (that belongs to the checkout you are in).
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+  -V, --version
+          Print version
