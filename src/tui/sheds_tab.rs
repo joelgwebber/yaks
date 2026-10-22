@@ -1,31 +1,25 @@
-//! The Sheds tab (yaks-98f1): `yaks sheds` and `yaks changes <shed>` on
-//! screen, live. One row per checkout of the repository (attention first),
-//! and a detail pane with the selected shed's state and its per-yak changes.
+//! The Sheds tab (yaks-98f1, yaks-9eaa): `yaks sheds` on screen, live. One
+//! row per checkout of the repository (attention first), and a detail pane
+//! with the selected shed's git state and the yaks it wrote, newest first.
 //!
 //! The data is exactly the CLI's: a scan calls `sheds::discover_all` (the
-//! sheds and the orphaned pins, as `yaks sheds` does) and `sheds::changes`
-//! (per shed with a farm of its own), and every summary text the CLI also prints comes
-//! from the same `sheds` function (`farm_line`, `label_line`).
+//! sheds, each joined to the farm's activity log, and the orphaned pins), and
+//! every summary text the CLI also prints comes from the same `sheds`
+//! function (`label_line`, `state_line`, `touched_line`).
 //!
-//! A scan takes seconds (git subprocesses, several farms read), so it runs on
-//! a background thread and comes back as one [`Snapshot`] over a channel;
-//! [`App::settle_sheds`] picks it up from the event loop (and from toque's
-//! `settle`), so key handling and the farm reload never wait on it. Scans run
-//! at startup, every [`RESCAN_EVERY`] whatever view is shown (the yak views
-//! annotate rows from the same snapshot, yaks-7204), and on `r`; one at a
-//! time.
-//!
-//! The overlay on the yak views reads the snapshot through three queries only:
-//! [`Snapshot::copies`] (what other sheds did to one yak),
-//! [`Snapshot::open_asks`] (every other shed's outstanding ask) and
-//! [`Snapshot::shed_only`] (the yaks that exist only in another shed, whose
-//! full `Task` the scan read from that shed's farm; yaks-9631).
+//! A scan runs git in every checkout, so it runs on a background thread and
+//! comes back as one [`Snapshot`] over a channel; [`App::settle_sheds`]
+//! picks it up from the event loop (and from toque's `settle`), so key
+//! handling and the farm reload never wait on it. Scans run at startup,
+//! every [`RESCAN_EVERY`] while the tab is shown, and on `r`; one at a time.
 //!
 //! The tab is a built-in view (`view::sheds_view`) whose yak rows are empty,
 //! so every yak key is inert there; [`App::handle_sheds_key`] owns its keys.
+//! Every shed shares the farm on screen, so a yak a shed wrote is a yak of
+//! this farm: Enter opens it, and `a` on the yak views answers it.
 
 use super::*;
-use crate::sheds::{self, Changes, Liveness, Shed, ShedFarm, YakChange};
+use crate::sheds::{self, Liveness, Shed, Touched};
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
@@ -33,232 +27,77 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 use std::time::Instant;
 
-/// How often the sheds are rescanned (a scan is ~0.3 s since yaks-07fe).
+/// How often the sheds are rescanned while the tab is shown.
 pub(crate) const RESCAN_EVERY: Duration = Duration::from_secs(10);
 
-/// One finished scan: every shed, its per-yak changes (parallel to `sheds`;
-/// `None` for a shed with no farm of its own or a failed `changes`), and how
-/// many pinned clones are orphaned (no checkout left).
+/// One finished scan: every shed (with its activity) and how many pinned
+/// clones are orphaned (no checkout left).
 pub(crate) struct Snapshot {
     pub sheds: Vec<Shed>,
-    pub changes: Vec<Option<Changes>>,
-    /// Parallel to `sheds`: the full `Task` of each yak that exists only in
-    /// that shed (its `YakChange.added`, not landed), read once per scan from
-    /// the shed's farm. Empty for the shed this TUI runs in and for sheds
-    /// with nothing new.
-    pub only_tasks: Vec<Vec<Task>>,
     pub orphaned: usize,
     /// The scan itself failed (e.g. not a git repository).
     pub error: Option<String>,
 }
 
 impl Snapshot {
-    /// Run one scan, as `yaks sheds` + `yaks changes <each>` would.
+    /// Run one scan, as `yaks sheds` would.
     pub(crate) fn scan(cwd: &Path, farm_root: &Path) -> Snapshot {
-        let (sheds, orphaned) = match sheds::discover_all(cwd, farm_root) {
-            Ok(found) => found,
-            Err(e) => {
-                return Snapshot {
-                    sheds: Vec::new(),
-                    changes: Vec::new(),
-                    only_tasks: Vec::new(),
-                    orphaned: 0,
-                    error: Some(format!("{e:#}")),
-                };
-            }
-        };
-        let changes = sheds
-            .iter()
-            .map(|s| match s.farm {
-                ShedFarm::Own(_) => sheds::changes(s, cwd, farm_root, &sheds).ok(),
-                _ => None,
-            })
-            .collect::<Vec<_>>();
-        let only_tasks = sheds
-            .iter()
-            .zip(&changes)
-            .map(|(s, c)| read_only_tasks(s, c.as_ref()))
-            .collect();
-        Snapshot {
-            orphaned: orphaned.len(),
-            sheds,
-            changes,
-            only_tasks,
-            error: None,
+        match sheds::discover_all(cwd, farm_root) {
+            Ok((sheds, orphaned)) => Snapshot {
+                sheds,
+                orphaned: orphaned.len(),
+                error: None,
+            },
+            Err(e) => Snapshot {
+                sheds: Vec::new(),
+                orphaned: 0,
+                error: Some(format!("{e:#}")),
+            },
         }
     }
 
-    /// The yaks a shed's detail lists (its `changes`), empty when none.
-    pub(crate) fn yaks(&self, i: usize) -> &[YakChange] {
-        match self.changes.get(i) {
-            Some(Some(Changes { yaks: Ok(y), .. })) => y,
-            _ => &[],
-        }
+    /// The yaks shed `i` wrote, newest first (empty when none).
+    pub(crate) fn yaks(&self, i: usize) -> &[Touched] {
+        self.sheds.get(i).map_or(&[][..], |s| &s.touched)
     }
 
     /// Indices into `sheds` in display order: attention first (see [`rank`]),
-    /// then by name.
+    /// then the most recent writer, then by name.
     pub(crate) fn order(&self) -> Vec<usize> {
         let mut idx: Vec<usize> = (0..self.sheds.len()).collect();
-        idx.sort_by_key(|&i| (rank(&self.sheds[i]), self.sheds[i].name()));
+        idx.sort_by(|&a, &b| {
+            let (sa, sb) = (&self.sheds[a], &self.sheds[b]);
+            rank(sa)
+                .cmp(&rank(sb))
+                .then_with(|| sb.last_write.cmp(&sa.last_write))
+                .then_with(|| sa.name().cmp(&sb.name()))
+        });
         idx
     }
 
-    /// What the OTHER sheds did to yak `id`: one `(shed, change)` per shed
-    /// whose farm changed it and has not landed, in the tab's attention order.
-    /// The shed this TUI runs in is left out (its farm is the one on screen),
-    /// and so is a landed change (nothing outstanding about it). The one rule
-    /// the overlay's row badges and detail section share.
-    pub(crate) fn copies(&self, id: &str) -> Vec<(&Shed, &YakChange)> {
-        self.order()
-            .into_iter()
-            .filter(|&i| !self.sheds[i].current)
-            .filter_map(|i| {
-                let yaks = self.yaks(i);
-                let at = yaks.binary_search_by(|y| y.id.as_str().cmp(id)).ok()?;
-                Some((&self.sheds[i], &yaks[at])).filter(|(_, y)| !y.landed)
-            })
-            .collect()
-    }
-
-    /// The yaks that exist only in another shed: `(shed, task)` with the
-    /// shed's own copy of the yak, the shed this TUI runs in left out, in
-    /// attention order. A yak added in several sheds is listed once, under the
-    /// first of them (`copies(id).len() >= 2` is then the conflict). The App
-    /// further drops any yak this farm also has.
-    pub(crate) fn shed_only(&self) -> Vec<(&Shed, &Task)> {
-        let mut seen = HashSet::new();
-        let mut out = Vec::new();
-        for i in self.order() {
-            if self.sheds[i].current {
-                continue;
-            }
-            for t in self.only_tasks.get(i).into_iter().flatten() {
-                if seen.insert(t.id.as_str()) {
-                    out.push((&self.sheds[i], t));
-                }
-            }
-        }
-        out
-    }
-
-    /// Every other shed's outstanding ask: `(shed, change)` for each yak
-    /// whose shed copy is `needs: human` and not landed, the shed this TUI
-    /// runs in left out, in attention order then by id.
-    pub(crate) fn open_asks(&self) -> Vec<(&Shed, &YakChange)> {
-        self.order()
-            .into_iter()
-            .filter(|&i| !self.sheds[i].current)
-            .flat_map(|i| {
-                self.yaks(i)
-                    .iter()
-                    .filter(|y| y.needs.as_deref() == Some("human") && !y.landed)
-                    .map(move |y| (&self.sheds[i], y))
-            })
-            .collect()
-    }
-
-    /// Ids of yaks some other shed is asking a human about (the ids of
-    /// [`Snapshot::open_asks`]): what the Inbox adds to the home `needs:` rows.
-    pub(crate) fn asked_ids(&self) -> HashSet<&str> {
-        self.open_asks()
-            .iter()
-            .map(|(_, y)| y.id.as_str())
-            .collect()
-    }
-
-    /// Identity of each open ask, for noticing a new one between scans:
-    /// shed path + yak id + the timestamp of the ask note (so asking again
-    /// is a new ask).
-    fn ask_keys(&self) -> HashSet<(PathBuf, String, String)> {
-        self.open_asks()
-            .into_iter()
-            .map(|(s, y)| (s.path.clone(), y.id.clone(), ask_ts(y)))
-            .collect()
-    }
-
-    /// Sheds with something outstanding: the tab's count.
-    pub(crate) fn outstanding(&self) -> usize {
+    /// Sheds working on something now (`active` or holding a claim): the
+    /// tab's count.
+    pub(crate) fn busy(&self) -> usize {
         self.sheds
             .iter()
-            .filter(|s| sheds::is_outstanding(s))
+            .filter(|s| rank(s) <= 3 && !s.primary)
             .count()
     }
 }
 
-/// The full tasks of the yaks only `shed` has (see [`Snapshot::only_tasks`]):
-/// one read of its farm, only when `changes` lists one that has not landed.
-/// An unreadable farm yields none (the badges and the Sheds tab still show
-/// the change).
-fn read_only_tasks(shed: &Shed, changes: Option<&Changes>) -> Vec<Task> {
-    let Some(Changes { yaks: Ok(yaks), .. }) = changes else {
-        return Vec::new();
-    };
-    let new: HashSet<&str> = yaks
-        .iter()
-        .filter(|y| y.added && !y.landed)
-        .map(|y| y.id.as_str())
-        .collect();
-    if shed.current || new.is_empty() {
-        return Vec::new();
-    }
-    let all = [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
-    let Ok(root) = crate::store::discover_with(&shed.path, None) else {
-        return Vec::new();
-    };
-    let mut tasks: Vec<Task> = crate::store::load(&root.root, &all)
-        .unwrap_or_default()
-        .into_iter()
-        .filter(|t| new.contains(t.id.as_str()))
-        .collect();
-    tasks.sort_by(|a, b| a.id.cmp(&b.id));
-    tasks
-}
-
-/// When the shed asked: the timestamp of the newest ask note it appended
-/// (empty if it carries none, e.g. a hand-edited `needs:`).
-fn ask_ts(y: &YakChange) -> String {
-    y.notes
-        .iter()
-        .rev()
-        .find(|n| crate::store::is_ask_text(&n.text))
-        .map(|n| n.ts.clone())
-        .unwrap_or_default()
-}
-
-/// A shed with an open ask that is still outstanding (not landed).
-fn open_ask(s: &Shed) -> bool {
-    match &s.farm {
-        ShedFarm::Own(d) => d
-            .needs
-            .iter()
-            .any(|(id, v)| v == "human" && !d.landed.contains(id)),
-        _ => false,
-    }
-}
-
-/// A shed whose farm cannot be compared (unreadable, absent, shared).
-fn unreadable(s: &Shed) -> bool {
-    !matches!(s.farm, ShedFarm::Own(_))
-}
-
-/// Attention order (Joel, yaks-98f1): the primary, then open asks, active,
-/// outstanding, stale, quiet (nothing outstanding), unreadable last.
+/// Attention order: the primary, then a shed with an open ask, active,
+/// stale (a claim gone quiet), then the rest.
 fn rank(s: &Shed) -> u8 {
     if s.primary {
         0
-    } else if open_ask(s) {
+    } else if s.open_asks().next().is_some() {
         1
     } else if s.liveness == Liveness::Active {
         2
-    } else if sheds::is_outstanding(s) {
-        3
     } else if s.liveness == Liveness::Stale {
-        4
-    } else if !unreadable(s) {
-        5
+        3
     } else {
-        6
+        4
     }
 }
 
@@ -268,14 +107,8 @@ pub(crate) struct ShedsTab {
     pub snapshot: Option<Snapshot>,
     /// Index into `Snapshot::order()`.
     pub cursor: usize,
-    /// Detail pane: index into the selected shed's stops (see
-    /// [`detail_stops`]): its outstanding yaks, the fold line, then (open)
-    /// the landed yaks.
+    /// Detail pane: index into the selected shed's touched yaks.
     pub line: usize,
-    /// Whether the detail shows the landed yaks under the fold line (Enter on
-    /// it toggles). One flag for the App, not per shed, and not persisted
-    /// (yaks-c1f8).
-    pub landed_open: bool,
     /// List: first visible row, kept across frames (yaks-9009).
     pub list_offset: Cell<usize>,
     /// Detail pane: first visible line, kept across frames.
@@ -286,28 +119,9 @@ pub(crate) struct ShedsTab {
     /// Where to scan from (the TUI's cwd); `None` = never scan (read-only
     /// and test constructors).
     pub cwd: Option<PathBuf>,
-    /// The open asks of the last good scan, to flash a new one; `None` until
-    /// the first, which sets the baseline without a flash.
-    seen_asks: Option<HashSet<(PathBuf, String, String)>>,
     scanned_at: Option<Instant>,
     in_flight: Option<Receiver<Snapshot>>,
     queued: bool,
-}
-
-/// The cursor stops of a shed's detail, in display order: outstanding yaks
-/// first (`Some`), then ONE fold line for the landed ones (`None`), then the
-/// landed yaks themselves when `open`. The order is `sheds::split_landed`'s,
-/// as in `yaks changes`.
-fn detail_stops(yaks: &[YakChange], open: bool) -> Vec<Option<&YakChange>> {
-    let (outstanding, landed) = sheds::split_landed(yaks);
-    let mut stops: Vec<Option<&YakChange>> = outstanding.into_iter().map(Some).collect();
-    if !landed.is_empty() {
-        stops.push(None);
-        if open {
-            stops.extend(landed.into_iter().map(Some));
-        }
-    }
-    stops
 }
 
 impl ShedsTab {
@@ -338,9 +152,10 @@ impl App {
         self.sheds.in_flight = Some(rx);
     }
 
-    /// Pick up a finished scan, start a due one, refresh the age. Cheap; the
-    /// event loop calls it every tick. `block` waits for a running scan
-    /// (toque's `settle`, so a headless frame shows the settled state).
+    /// Pick up a finished scan, start a due one (only while the tab is
+    /// shown), refresh the age. Cheap; the event loop calls it every tick.
+    /// `block` waits for a running scan (toque's `settle`, so a headless
+    /// frame shows the settled state).
     pub(crate) fn settle_sheds(&mut self, block: bool) {
         if let Some(rx) = &self.sheds.in_flight {
             let got = if block {
@@ -369,7 +184,7 @@ impl App {
             .sheds
             .scanned_at
             .is_none_or(|t| t.elapsed() >= RESCAN_EVERY);
-        if due && !self.sheds.scanning() {
+        if due && !self.sheds.scanning() && self.on_sheds_tab() {
             self.request_sheds_scan();
         }
         self.sheds.age = self.sheds.scanned_at.map(|t| t.elapsed().as_secs());
@@ -379,32 +194,7 @@ impl App {
     /// and the detail cursor on the same yak (by id).
     pub(crate) fn apply_sheds_snapshot(&mut self, snap: Snapshot) {
         let shed = self.selected_shed().map(|s| s.path.clone());
-        // The detail cursor: a yak by id, or the fold line.
         let yak = self.selected_shed_yak().map(|y| y.id.clone());
-        let on_fold = self.selected_shed().is_some() && yak.is_none();
-        if snap.error.is_none() {
-            let keys = snap.ask_keys();
-            if let Some(seen) = &self.sheds.seen_asks {
-                let new: Vec<_> = snap
-                    .open_asks()
-                    .into_iter()
-                    .filter(|(s, y)| !seen.contains(&(s.path.clone(), y.id.clone(), ask_ts(y))))
-                    .collect();
-                if let Some((s, y)) = new.first() {
-                    let more = match new.len() - 1 {
-                        0 => String::new(),
-                        n => format!(" (+{n} more)"),
-                    };
-                    self.notification = Some(format!(
-                        "\u{23f3} new ask in {}: {} {}{more}",
-                        s.name(),
-                        y.id,
-                        y.title
-                    ));
-                }
-            }
-            self.sheds.seen_asks = Some(keys);
-        }
         self.sheds.snapshot = Some(snap);
         self.touch();
         let s = self.sheds.snapshot.as_ref().unwrap();
@@ -414,25 +204,10 @@ impl App {
             .unwrap_or(0)
             .min(order.len().saturating_sub(1));
         let yaks = order.get(self.sheds.cursor).map_or(&[][..], |&i| s.yaks(i));
-        let stops = detail_stops(yaks, self.sheds.landed_open);
-        let fold = stops.iter().position(Option::is_none);
-        self.sheds.line = match &yak {
-            // Still a stop: keep it. Folded away (it landed since, and the
-            // landed yaks are collapsed): the fold line it went behind.
-            Some(id) => stops
-                .iter()
-                .position(|y| y.is_some_and(|y| y.id == *id))
-                .or_else(|| {
-                    yaks.iter()
-                        .any(|y| y.landed && y.id == *id)
-                        .then_some(fold)
-                        .flatten()
-                }),
-            None if on_fold => fold,
-            None => None,
-        }
-        .unwrap_or(0)
-        .min(stops.len().saturating_sub(1));
+        self.sheds.line = yak
+            .and_then(|id| yaks.iter().position(|y| y.id == id))
+            .unwrap_or(0)
+            .min(yaks.len().saturating_sub(1));
     }
 
     /// The shed under the cursor, with its index into `Snapshot::sheds`.
@@ -446,22 +221,9 @@ impl App {
         self.sheds.snapshot.as_ref()?.sheds.get(i)
     }
 
-    /// The stops of the selected shed's detail (see [`detail_stops`]).
-    fn shed_stops(&self) -> Vec<Option<&YakChange>> {
-        let (Some(i), Some(s)) = (self.selected_shed_index(), self.sheds.snapshot.as_ref()) else {
-            return Vec::new();
-        };
-        detail_stops(s.yaks(i), self.sheds.landed_open)
-    }
-
-    /// The yak under the detail cursor; `None` on the fold line too.
-    pub(crate) fn selected_shed_yak(&self) -> Option<&YakChange> {
-        self.shed_stops().get(self.sheds.line).copied().flatten()
-    }
-
-    /// Whether the detail cursor is on the landed fold line.
-    fn on_landed_fold(&self) -> bool {
-        matches!(self.shed_stops().get(self.sheds.line), Some(None))
+    /// The yak under the detail cursor.
+    pub(crate) fn selected_shed_yak(&self) -> Option<&Touched> {
+        self.selected_shed()?.touched.get(self.sheds.line)
     }
 
     fn move_shed(&mut self, delta: i32) {
@@ -478,7 +240,7 @@ impl App {
     }
 
     fn move_shed_yak(&mut self, delta: i32) {
-        let n = self.shed_stops().len();
+        let n = self.selected_shed().map_or(0, |s| s.touched.len());
         if n == 0 {
             return;
         }
@@ -496,10 +258,10 @@ impl App {
         format!("sheds={n} · shed={shed} · shed_yak={yak}")
     }
 
-    /// The tab's count: outstanding sheds, `…` before the first scan.
+    /// The tab's count: sheds busy right now, `…` before the first scan.
     pub(crate) fn sheds_count_label(&self) -> String {
         match &self.sheds.snapshot {
-            Some(s) => format_count(s.outstanding()),
+            Some(s) => format_count(s.busy()),
             None => "\u{2026}".into(),
         }
     }
@@ -564,13 +326,7 @@ impl App {
             // for yaks).
             KeyCode::Char('J') => self.move_shed(1),
             KeyCode::Char('K') => self.move_shed(-1),
-            // Enter on the fold line shows / hides the landed yaks; on a yak
-            // it opens it. The cursor stays on the fold line either way.
-            KeyCode::Enter if self.on_landed_fold() => {
-                self.sheds.landed_open = !self.sheds.landed_open;
-            }
             KeyCode::Enter => self.open_shed_yak(),
-            KeyCode::Char('a') => self.open_answer_in_shed(),
             _ => {}
         }
     }
@@ -591,83 +347,17 @@ impl App {
         });
     }
 
-    /// Enter on a yak in a shed's detail: open this checkout's copy, or, for a
-    /// yak only a shed has, its read-only shed-only row (yaks-9631), the same
-    /// row the yak views show. Only a yak no row can show (e.g. the overlay
-    /// is off, or its shed copy could not be read) is a dead end.
+    /// Enter on a yak in a shed's detail: open it (every shed shares this
+    /// farm). A yak since removed from the farm says so.
     fn open_shed_yak(&mut self) {
         let Some(id) = self.selected_shed_yak().map(|y| y.id.clone()) else {
             return;
         };
-        let shed_only = || {
-            self.overlay_tasks(&self.filter)
-                .0
-                .iter()
-                .any(|t| t.id == id)
-        };
-        if self.task(&id).is_some() || shed_only() {
+        if self.task(&id).is_some() {
             self.goto_task(&id);
         } else {
-            let name = self.selected_shed().map(Shed::name).unwrap_or_default();
-            self.notification = Some(format!("{id} exists only in shed {name}"));
+            self.notification = Some(format!("{id} is no longer in this farm"));
         }
-    }
-
-    /// `a` on a yak awaiting a human in a shed's detail: answer it there
-    /// (`yaks answer <id>@<shed>`).
-    fn open_answer_in_shed(&mut self) {
-        let (Some(shed), Some(y)) = (self.selected_shed(), self.selected_shed_yak()) else {
-            return;
-        };
-        if y.needs.as_deref() != Some("human") {
-            self.notification = Some(format!("{} is not awaiting a human", y.id));
-            return;
-        }
-        let (id, shed) = (y.id.clone(), shed.clone());
-        self.open_answer_in_shed_prompt(id, &shed);
-    }
-
-    /// The prompt for answering `id` in `shed` (`yaks answer <id>@<shed>`).
-    pub(crate) fn open_answer_in_shed_prompt(&mut self, id: String, shed: &Shed) {
-        self.overlay = Overlay::Edit(Editor::new(
-            self.editor_vim,
-            true,
-            format!(
-                "Answer {id} in shed {} (Enter save · Ctrl-C cancel): ",
-                shed.name()
-            ),
-            "",
-            EditAction::AnswerInShed {
-                id,
-                shed: shed.path.clone(),
-            },
-        ));
-    }
-
-    /// Commit an answer typed for a shed's ask: the same write as the CLI's
-    /// `answer <id>@<shed>`, left uncommitted in the shed's working tree.
-    pub(crate) fn commit_answer_in_shed(&mut self, id: &str, path: &Path, note: Option<&str>) {
-        let Some(farm) = &self.farm else { return };
-        let Some(shed) = self
-            .sheds
-            .snapshot
-            .as_ref()
-            .and_then(|s| s.sheds.iter().find(|s| s.path == path))
-        else {
-            self.notification = Some("that shed is gone; rescan with r".into());
-            return;
-        };
-        let actor = crate::actor::resolve(None);
-        self.notification = Some(
-            match farm.answer_in_shed(shed, id, actor.as_deref(), note, false) {
-                Ok(_) => format!(
-                    "answered {id} in {}: uncommitted there, for its worker to commit",
-                    shed.name()
-                ),
-                Err(e) => format!("answer failed: {e:#}"),
-            },
-        );
-        self.request_sheds_scan();
     }
 }
 
@@ -679,7 +369,6 @@ fn dim() -> Style {
 
 fn liveness_span(s: &Shed) -> Span<'static> {
     match s.liveness {
-        _ if unreadable(s) => Span::styled(format!("{:<7}", "\u{b7}"), dim()),
         Liveness::Active => Span::styled(format!("{:<7}", "active"), Style::new().fg(Color::Green)),
         Liveness::Stale => Span::styled(format!("{:<7}", "stale"), Style::new().fg(Color::Yellow)),
         Liveness::Idle => Span::styled(format!("{:<7}", "idle"), dim()),
@@ -700,16 +389,17 @@ fn pad(s: &str, w: usize) -> String {
     format!("{t}{}", " ".repeat(fill))
 }
 
-/// One list row for a shed.
+/// One list row for a shed: mark, name, liveness, ahead/behind, dirty, then
+/// what it is working on (else its newest yak) and its state.
 fn shed_row(s: &Shed, name_w: usize, width: u16) -> Line<'static> {
-    let mark = if open_ask(s) {
+    let mark = if s.open_asks().next().is_some() {
         "\u{23f3}"
     } else if s.current {
         "* "
     } else {
         "  "
     };
-    let quiet = rank(s) >= 5;
+    let quiet = rank(s) >= 4;
     let base = if quiet { dim() } else { Style::new() };
     let mut spans = vec![
         Span::styled(format!("{mark} "), Style::new().fg(Color::Yellow)),
@@ -732,17 +422,19 @@ fn shed_row(s: &Shed, name_w: usize, width: u16) -> Line<'static> {
             Style::new().fg(Color::Magenta),
         ),
     ];
-    let mut tail = sheds::farm_line(s);
-    if !s.in_progress.is_empty() {
-        tail.push_str(&format!("  shaving: {}", s.in_progress.join(", ")));
-    }
-    // A merged shed with nothing outstanding says so (or that only
-    // uncommitted files keep it); the `✎N` column already counts them.
-    if s.merged == Some(true) && !sheds::is_outstanding(s) {
-        tail.push_str(match s.dirty {
-            Some(d) if d > 0 => "  merged · uncommitted files",
-            _ => "  merged, nothing outstanding",
-        });
+    let mut tail = if !s.in_progress.is_empty() {
+        format!("shaving: {}", s.in_progress.join(", "))
+    } else {
+        s.touched
+            .first()
+            .map(|t| format!("last: {} {}", t.id, t.title))
+            .unwrap_or_default()
+    };
+    if let Some(st) = sheds::state_line(s) {
+        if !tail.is_empty() {
+            tail.push_str("  ");
+        }
+        tail.push_str(&st);
     }
     let used: usize = spans.iter().map(|sp| disp_width(&sp.content)).sum();
     let room = (width as usize).saturating_sub(used);
@@ -815,7 +507,7 @@ pub(crate) fn render_sheds_list(app: &App, frame: &mut Frame, area: Rect) {
         lines.push(Line::default());
         lines.push(Line::from(Span::styled(
             format!(
-                "   {} orphaned pins (finished threads; `yaks sheds` lists them)",
+                "   {} orphaned pins (finished threads; `yaks discover` lists them)",
                 snap.orphaned
             ),
             dim(),
@@ -842,78 +534,37 @@ fn wrap(text: &str, w: usize) -> Vec<String> {
     out
 }
 
-/// How many lines of an ask's question the detail shows under its note.
-const ASK_LINES: usize = 6;
-
-/// One yak's block in a shed's detail: the id/brackets/title line, each new
-/// note's first line (an ask's question too) and its `needs:`. A landed yak's
-/// text is dim.
-fn push_yak_block(lines: &mut Vec<Line<'static>>, y: &YakChange, width: usize) {
-    // The same bracket words as `yaks changes`.
-    let mut what = match (y.added, y.moved) {
-        (true, _) => format!("new, {}", y.status),
-        (false, Some((from, to))) => format!("{from} -> {to}"),
-        (false, None) => y.status.to_string(),
-    };
-    if y.edited {
-        what.push_str(", edited");
+/// One touched yak's line in a shed's detail: `⏳` when it awaits a human,
+/// id, status now, title, and when the shed last wrote it.
+fn yak_line(y: &Touched) -> Line<'static> {
+    let mut spans = Vec::new();
+    if y.needs.as_deref() == Some("human") {
+        spans.push(Span::raw("\u{23f3}"));
     }
-    if y.landed {
-        what.push_str(", landed");
-    }
-    let style = if y.landed { dim() } else { Style::new() };
-    let mut spans = vec![
-        Span::styled(format!("{}  ", y.id), Style::new().fg(Color::Blue)),
-        Span::styled(format!("[{what}]  "), Style::new().fg(Color::Yellow)),
-    ];
-    if y.needs.as_deref() == Some("human") && !y.landed {
-        spans.insert(0, Span::raw("\u{23f3}"));
-    }
-    spans.push(Span::styled(y.title.clone(), style));
-    lines.push(Line::from(spans));
-    for n in &y.notes {
-        let first = n
-            .text
-            .lines()
-            .map(str::trim)
-            .find(|l| !l.is_empty())
-            .unwrap_or("");
-        lines.push(Line::from(vec![
-            Span::styled(
-                format!("    {}  {}  ", n.ts, n.actor.as_deref().unwrap_or("-")),
-                dim(),
-            ),
-            Span::styled(first.to_string(), style),
-        ]));
-        // An ask shows its question too: it is what `a` answers.
-        if crate::store::is_ask_text(&n.text) {
-            let rest = n.text.lines().skip_while(|l| l.trim() != first).skip(1);
-            for l in rest.filter(|l| !l.trim().is_empty()).take(ASK_LINES) {
-                for part in wrap(l.trim(), width.saturating_sub(6).max(10)) {
-                    lines.push(Line::from(Span::styled(
-                        format!("      {part}"),
-                        Style::new().fg(Color::Yellow),
-                    )));
-                }
-            }
-        }
-    }
-    if let Some(v) = &y.needs {
-        lines.push(Line::from(Span::styled(
-            format!("    needs: {v}"),
-            Style::new().fg(Color::Yellow),
-        )));
-    }
+    let status = y.status.map_or("gone", crate::model::Status::as_str);
+    let done = matches!(
+        y.status,
+        None | Some(crate::model::Status::Shorn | crate::model::Status::Dead)
+    );
+    spans.push(Span::styled(
+        format!("{}  ", y.id),
+        Style::new().fg(Color::Blue),
+    ));
+    spans.push(Span::styled(
+        format!("{status:<8}"),
+        Style::new().fg(Color::Yellow),
+    ));
+    spans.push(Span::styled(
+        y.title.clone(),
+        if done { dim() } else { Style::new() },
+    ));
+    spans.push(Span::styled(format!("  {}", y.last), dim()));
+    Line::from(spans)
 }
 
-/// The detail pane's lines for shed `i`, and the line each stop (a yak's
-/// block, or the fold line) starts on, indexed like `ShedsTab::line`.
-fn detail_lines(
-    snap: &Snapshot,
-    i: usize,
-    width: usize,
-    landed_open: bool,
-) -> (Vec<Line<'static>>, Vec<usize>) {
+/// The detail pane's lines for shed `i`, and the line each touched yak sits
+/// on, indexed like `ShedsTab::line`.
+fn detail_lines(snap: &Snapshot, i: usize, width: usize) -> (Vec<Line<'static>>, Vec<usize>) {
     let s = &snap.sheds[i];
     let label = |k: &str| Span::styled(format!("{k:<9}"), Style::new().fg(Color::Cyan));
     let mut lines: Vec<Line<'static>> = Vec::new();
@@ -956,54 +607,25 @@ fn detail_lines(
     if let Some(st) = sheds::state_line(s) {
         field("state", st, Style::new());
     }
-    field("farm", sheds::farm_line(s), Style::new());
     if let Some(l) = sheds::label_line(s) {
-        field("label", l, Style::new());
-    }
-    if let Some(a) = &s.farm_activity {
-        field("active", a.clone(), dim());
+        field("activity", l, Style::new());
     }
     lines.push(Line::default());
-    let yaks = snap.yaks(i);
     let mut starts = Vec::new();
-    if yaks.is_empty() {
+    if s.touched.is_empty() {
         lines.push(Line::from(Span::styled(
-            "No yak changes of its own.",
+            "No yaks written from this checkout.",
             dim(),
         )));
         return (lines, starts);
     }
     lines.push(Line::from(Span::styled(
-        format!(
-            "Changes ({} {})",
-            yaks.len(),
-            if yaks.len() == 1 { "yak" } else { "yaks" }
-        ),
+        format!("Yaks written here ({}), newest first", s.touched.len()),
         Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
     )));
-    let (outstanding, landed) = sheds::split_landed(yaks);
-    for y in outstanding {
+    for y in &s.touched {
         starts.push(lines.len());
-        push_yak_block(&mut lines, y, width);
-    }
-    // The landed yaks fold behind one line (a cursor stop); Enter on it
-    // shows them under it.
-    if !landed.is_empty() {
-        starts.push(lines.len());
-        lines.push(Line::from(Span::styled(
-            format!(
-                "{} {} landed",
-                if landed_open { '\u{25be}' } else { '\u{25b8}' },
-                landed.len()
-            ),
-            dim(),
-        )));
-        if landed_open {
-            for y in landed {
-                starts.push(lines.len());
-                push_yak_block(&mut lines, y, width);
-            }
-        }
+        lines.push(yak_line(y));
     }
     (lines, starts)
 }
@@ -1012,19 +634,15 @@ pub(crate) fn render_shed_detail(app: &App, frame: &mut Frame, area: Rect) {
     let (Some(snap), Some(i)) = (&app.sheds.snapshot, app.selected_shed_index()) else {
         return;
     };
-    let (mut lines, starts) = detail_lines(snap, i, area.width as usize, app.sheds.landed_open);
+    let (mut lines, starts) = detail_lines(snap, i, area.width as usize);
     let h = area.height as usize;
-    // Keep the selected yak's block in view (its first line at least).
+    // Keep the selected yak's line in view.
     let mut offset = app.sheds.offset.get();
     if let Some(&start) = starts.get(app.sheds.line) {
-        let end = starts
-            .get(app.sheds.line + 1)
-            .copied()
-            .unwrap_or(lines.len());
         if start < offset {
             offset = start;
-        } else if end > offset + h {
-            offset = (end.saturating_sub(h)).min(start);
+        } else if start + 1 > offset + h {
+            offset = start + 1 - h;
         }
         if app.focus == Focus::Detail {
             let hl = Style::new().bg(Color::Indexed(237));
@@ -1070,12 +688,12 @@ fn truncate_line(l: Line<'static>, w: usize) -> Line<'static> {
 }
 
 /// A hand-built snapshot for tests and doc shots: the primary, a worker with
-/// an open ask, an active worker, a landed one and an old-layout clone.
+/// an open ask, an active worker, a finished (merged) one and an idle clone.
 #[cfg(test)]
 pub(crate) mod fixture {
     use super::*;
-    use crate::sheds::{BaseKind, FarmBase, FarmDelta, Moved, ShedKind};
-    use crate::store::NoteEntry;
+    use crate::model::Status;
+    use crate::sheds::ShedKind;
 
     fn shed(name: &str, dir: &str) -> Shed {
         Shed {
@@ -1094,72 +712,36 @@ pub(crate) mod fixture {
             dirty: Some(0),
             untracked: Some(0),
             merged: None,
-            farm_activity: Some("2026-10-13T00:10:00Z".into()),
-            farm: ShedFarm::Own(FarmDelta::default()),
-            farm_base: Some(FarmBase {
-                kind: BaseKind::Fork,
-                sha: "0f0f0f0".into(),
-                upstream: None,
-            }),
-            who: vec![],
+            touched: vec![],
             in_progress: vec![],
+            last_write: None,
             liveness: Liveness::Idle,
             error: None,
         }
     }
 
-    fn note(ts: &str, actor: &str, text: &str) -> NoteEntry {
-        NoteEntry {
-            ts: ts.into(),
-            actor: Some(actor.into()),
-            text: text.into(),
-        }
-    }
-
-    fn change(id: &str, title: &str) -> YakChange {
-        YakChange {
+    fn touched(id: &str, title: &str, status: Status, last: &str) -> Touched {
+        Touched {
             id: id.into(),
             title: title.into(),
-            status: "shaving",
-            added: false,
-            moved: None,
-            notes: vec![],
+            status: Some(status),
             needs: None,
-            edited: false,
-            landed: false,
+            last: last.into(),
         }
     }
 
-    fn changes_of(s: &Shed, yaks: Vec<YakChange>) -> Option<Changes> {
-        Some(Changes {
-            name: s.name(),
-            path: s.path.clone(),
-            primary: s.primary,
-            base: s.farm_base.clone(),
-            yaks: Ok(yaks),
-        })
-    }
-
-    /// `snap` plus a yak that exists only in the shed named `shed`: a new
-    /// change (`added`, `status`) in its `changes` and the shed's full copy in
-    /// `only_tasks`, as the scan reads them.
-    pub(crate) fn with_shed_only(mut snap: Snapshot, shed: &str, task: Task) -> Snapshot {
-        let i = snap.sheds.iter().position(|s| s.name() == shed).unwrap();
-        let mut c = change(&task.id, &task.title);
-        c.added = true;
-        c.status = match task.status {
-            Status::Hairy => "hairy",
-            Status::Shaving => "shaving",
-            Status::Shorn => "shorn",
-            Status::Dead => "dead",
-        };
-        c.needs = task.needs.clone();
-        if let Some(Some(Changes { yaks: Ok(y), .. })) = snap.changes.get_mut(i) {
-            y.push(c);
-            y.sort_by(|a, b| a.id.cmp(&b.id));
-        }
-        snap.only_tasks[i].push(task);
-        snap
+    /// Set a shed's activity from its touched list (newest first), as
+    /// `sheds::discover` derives it.
+    fn active(mut s: Shed, touched: Vec<Touched>, liveness: Liveness) -> Shed {
+        s.in_progress = touched
+            .iter()
+            .filter(|t| t.status == Some(Status::Shaving))
+            .map(|t| t.id.clone())
+            .collect();
+        s.last_write = touched.first().map(|t| t.last.clone());
+        s.touched = touched;
+        s.liveness = liveness;
+        s
     }
 
     pub(crate) fn snapshot() -> Snapshot {
@@ -1172,85 +754,72 @@ pub(crate) mod fixture {
         main.primary = true;
         main.current = true;
         main.ahead = Some(0);
-        main.farm_base = Some(FarmBase {
-            kind: BaseKind::Upstream,
-            sha: "9e9e9e9".into(),
-            upstream: Some("origin/main".into()),
-        });
+        let main = active(
+            main,
+            vec![touched(
+                "yaks-6a34",
+                "One farm per machine (umbrella)",
+                Status::Shaving,
+                "2026-10-13T00:05:00Z",
+            )],
+            Liveness::Active,
+        );
 
         let mut asker = shed("needs-1-superseded", "epe9");
         asker.dirty = Some(2);
-        asker.who = vec!["needs-1".into()];
-        asker.in_progress = vec!["yaks-8814".into()];
-        asker.liveness = Liveness::Active;
-        asker.farm = ShedFarm::Own(FarmDelta {
-            notes: vec![("yaks-8814".into(), 2)],
-            needs: vec![("yaks-8814".into(), "human".into())],
-            ..Default::default()
-        });
-        let mut ask = change("yaks-8814", "landed: a superseded needs is not outstanding");
-        ask.notes = vec![
-            note(
-                "2026-10-13T00:12:55Z",
-                "needs-1",
-                "Start: Tue Oct 13 00:12:52 UTC 2026",
-            ),
-            note(
-                "2026-10-13T00:15:37Z",
-                "needs-1",
-                "asked: needs human\nMatch the ask by timestamp only, or the whole entry?",
-            ),
-        ];
+        asker.untracked = Some(1);
+        let mut ask = touched(
+            "yaks-8814",
+            "landed: a superseded needs is not outstanding",
+            Status::Shaving,
+            "2026-10-13T00:15:37Z",
+        );
         ask.needs = Some("human".into());
+        let asker = active(asker, vec![ask], Liveness::Active);
 
         let mut perf = shed("perf-1-profile", "53sm");
         perf.dirty = Some(1);
-        perf.who = vec!["perf-1".into()];
-        perf.in_progress = vec!["yaks-07fe".into()];
-        perf.liveness = Liveness::Active;
-        perf.farm = ShedFarm::Own(FarmDelta {
-            notes: vec![("yaks-07fe".into(), 1)],
-            ..Default::default()
-        });
-        let mut slow = change("yaks-07fe", "yaks sheds is slow: profile it");
-        slow.notes = vec![note(
-            "2026-10-13T00:12:57Z",
-            "perf-1",
-            "43 git calls are 0.95 s of 2.4 s",
-        )];
+        perf.untracked = Some(0);
+        let perf = active(
+            perf,
+            vec![
+                touched(
+                    "yaks-07fe",
+                    "yaks sheds is slow: profile it",
+                    Status::Shaving,
+                    "2026-10-13T00:12:57Z",
+                ),
+                touched(
+                    "yaks-bc30",
+                    "Perf: cache rows()",
+                    Status::Shorn,
+                    "2026-10-12T22:00:00Z",
+                ),
+            ],
+            Liveness::Active,
+        );
 
         let mut land = shed("land-1-landed", "h4n2");
         land.ahead = Some(0);
         land.behind = Some(5);
-        land.who = vec!["land-1".into()];
-        land.farm = ShedFarm::Own(FarmDelta {
-            moved: vec![Moved {
-                id: "yaks-ed5e".into(),
-                from: "hairy",
-                to: "shorn",
-            }],
-            landed: vec!["yaks-ed5e".into()],
-            ..Default::default()
-        });
-        let mut shorn = change("yaks-ed5e", "yaks sheds: show a shed as landed");
-        shorn.moved = Some(("hairy", "shorn"));
-        shorn.status = "shorn";
-        shorn.landed = true;
+        land.merged = Some(true);
+        let land = active(
+            land,
+            vec![touched(
+                "yaks-ed5e",
+                "yaks sheds: show a shed as landed",
+                Status::Shorn,
+                "2026-10-12T20:00:00Z",
+            )],
+            Liveness::Idle,
+        );
 
-        let mut old = shed("mig-2-yaks-migrate", "n5p2");
-        old.behind = Some(23);
-        old.farm = ShedFarm::Unreadable("old layout (pre-0.0.16 clone): not read".into());
-        old.farm_base = None;
+        let mut quiet = shed("mig-2-yaks-migrate", "n5p2");
+        quiet.behind = Some(23);
 
-        let c_main = changes_of(&main, vec![]);
-        let c_asker = changes_of(&asker, vec![ask]);
-        let c_perf = changes_of(&perf, vec![slow]);
-        let c_land = changes_of(&land, vec![shorn]);
         Snapshot {
             // Path order, as `discover` returns them; the tab reorders.
-            sheds: vec![main, old, land, asker, perf],
-            changes: vec![c_main, None, c_land, c_asker, c_perf],
-            only_tasks: vec![Vec::new(); 5],
+            sheds: vec![main, quiet, land, asker, perf],
             orphaned: 53,
             error: None,
         }
@@ -1280,7 +849,7 @@ mod tests {
     }
 
     #[test]
-    fn order_is_attention_first() {
+    fn order_is_attention_first_then_most_recent_writer() {
         let app = on_sheds(sample());
         assert_eq!(
             names(&app),
@@ -1288,17 +857,16 @@ mod tests {
                 "main",
                 "needs-1-superseded", // open ask
                 "perf-1-profile",     // active
-                "land-1-landed",      // quiet: all landed
-                "mig-2-yaks-migrate", // unreadable
+                "land-1-landed",      // idle, wrote most recently of the rest
+                "mig-2-yaks-migrate", // idle, never wrote
             ]
         );
     }
 
     #[test]
-    fn tab_count_is_outstanding_sheds() {
+    fn tab_count_is_busy_sheds() {
         let app = on_sheds(sample());
-        // The asker and perf-1; main has nothing, land-1 is all landed and
-        // the old-layout clone is unreadable.
+        // The asker and perf-1; main is not counted, the rest are idle.
         assert_eq!(app.sheds_count_label(), "2");
         let v = app.active_view().clone();
         assert_eq!(app.view_count(&v), 2);
@@ -1307,7 +875,7 @@ mod tests {
     #[test]
     fn yak_keys_are_inert_on_the_sheds_tab() {
         let mut app = on_sheds(sample());
-        for c in ['S', 'E', 'X', 'c', 'D', 'M', '/', 'f', '*', 'm'] {
+        for c in ['S', 'E', 'X', 'c', 'D', 'M', '/', 'f', '*', 'm', 'a'] {
             press(&mut app, &c.to_string());
             assert!(
                 matches!(app.overlay, Overlay::None),
@@ -1320,14 +888,18 @@ mod tests {
     #[test]
     fn detail_moves_over_yaks_and_sheds() {
         let mut app = on_sheds(sample());
-        press(&mut app, "jl"); // the asker's detail
-        assert_eq!(app.focus, Focus::Detail);
-        assert_eq!(app.selected_shed().unwrap().name(), "needs-1-superseded");
-        assert_eq!(app.selected_shed_yak().unwrap().id, "yaks-8814");
-        press(&mut app, "J"); // next shed, still in the detail
+        press(&mut app, "jjl"); // perf-1's detail
         assert_eq!(app.focus, Focus::Detail);
         assert_eq!(app.selected_shed().unwrap().name(), "perf-1-profile");
         assert_eq!(app.selected_shed_yak().unwrap().id, "yaks-07fe");
+        press(&mut app, "j");
+        assert_eq!(app.selected_shed_yak().unwrap().id, "yaks-bc30");
+        press(&mut app, "j"); // clamps
+        assert_eq!(app.selected_shed_yak().unwrap().id, "yaks-bc30");
+        press(&mut app, "K"); // previous shed, still in the detail
+        assert_eq!(app.focus, Focus::Detail);
+        assert_eq!(app.selected_shed().unwrap().name(), "needs-1-superseded");
+        assert_eq!(app.selected_shed_yak().unwrap().id, "yaks-8814");
         press(&mut app, "h");
         assert_eq!(app.focus, Focus::List);
     }
@@ -1335,23 +907,20 @@ mod tests {
     #[test]
     fn a_new_snapshot_keeps_the_selected_shed_and_yak() {
         let mut app = on_sheds(sample());
-        press(&mut app, "jjl");
-        assert_eq!(app.selected_shed().unwrap().name(), "perf-1-profile");
+        press(&mut app, "jjlj");
+        assert_eq!(app.selected_shed_yak().unwrap().id, "yaks-bc30");
         // The next scan finds the asker's ask answered: it drops below perf-1
-        // in the order, but the cursor stays on perf-1.
+        // in the order, but the cursor stays on perf-1 and its yak.
         let mut snap = fixture::snapshot();
-        if let ShedFarm::Own(d) = &mut snap.sheds[3].farm {
-            d.needs.clear();
-        }
-        snap.sheds[3].liveness = Liveness::Idle;
+        snap.sheds[3].touched[0].needs = None;
         app.apply_sheds_snapshot(snap);
         assert_eq!(app.selected_shed().unwrap().name(), "perf-1-profile");
-        assert_eq!(app.selected_shed_yak().unwrap().id, "yaks-07fe");
+        assert_eq!(app.selected_shed_yak().unwrap().id, "yaks-bc30");
     }
 
     #[test]
-    fn enter_opens_this_checkouts_copy_or_says_it_is_shed_only() {
-        // Only yaks-07fe exists here.
+    fn enter_opens_the_yak_or_says_it_is_gone() {
+        // Only yaks-07fe is in this farm.
         let mut app = on_sheds(App::new(vec![task(
             "yaks-07fe",
             "slow",
@@ -1363,7 +932,7 @@ mod tests {
         enter_key(&mut app);
         assert_eq!(
             app.notification.as_deref(),
-            Some("yaks-8814 exists only in shed needs-1-superseded")
+            Some("yaks-8814 is no longer in this farm")
         );
         assert!(app.on_sheds_tab());
         press(&mut app, "J"); // perf-1: yaks-07fe
@@ -1371,51 +940,6 @@ mod tests {
         assert!(!app.on_sheds_tab());
         assert_eq!(app.focus, Focus::Detail);
         assert_eq!(app.selected_id().as_deref(), Some("yaks-07fe"));
-    }
-
-    #[test]
-    fn enter_on_a_yak_only_in_that_shed_opens_its_read_only_row() {
-        // perf-1 made yaks-new1, which this farm does not have: Enter opens
-        // its shed-only row (yaks-9631), not a dead end.
-        let mut app = on_sheds(App::new(vec![]));
-        app.apply_sheds_snapshot(fixture::with_shed_only(
-            fixture::snapshot(),
-            "perf-1-profile",
-            task("yaks-new1", "fresh", crate::model::Status::Hairy, 2, None),
-        ));
-        press(&mut app, "jjl"); // perf-1's detail
-        assert_eq!(app.selected_shed().unwrap().name(), "perf-1-profile");
-        press(&mut app, "j"); // its yaks: yaks-07fe, yaks-new1
-        assert_eq!(app.selected_shed_yak().unwrap().id, "yaks-new1");
-        enter_key(&mut app);
-        assert!(!app.on_sheds_tab(), "{:?}", app.notification);
-        assert_eq!(app.focus, Focus::Detail);
-        assert_eq!(app.selected_id().as_deref(), Some("yaks-new1"));
-        let frame = draw(&app, 150, 20);
-        assert!(frame.contains("only in shed perf-1-profile"), "{frame}");
-    }
-
-    #[test]
-    fn a_answers_only_an_ask() {
-        let mut app = on_sheds(sample());
-        press(&mut app, "jl"); // the asker's yaks-8814 is needs: human
-        press(&mut app, "a");
-        match &app.overlay {
-            Overlay::Edit(ed) => assert!(matches!(
-                &ed.action,
-                EditAction::AnswerInShed { id, shed }
-                    if id == "yaks-8814" && shed.ends_with("epe9/yaks")
-            )),
-            _ => panic!("a did not open the answer prompt"),
-        }
-        app.overlay = Overlay::None;
-        press(&mut app, "J"); // perf-1 has no ask
-        press(&mut app, "a");
-        assert!(matches!(app.overlay, Overlay::None));
-        assert_eq!(
-            app.notification.as_deref(),
-            Some("yaks-07fe is not awaiting a human")
-        );
     }
 
     #[test]
@@ -1446,443 +970,22 @@ mod tests {
     }
 
     #[test]
-    fn copies_and_open_asks_leave_out_this_shed_and_landed_changes() {
-        let mut snap = fixture::snapshot();
-        // Make the shed this TUI runs in (main, current) change yaks-8814
-        // too: it is the farm on screen, so it is never a "copy".
-        let main = snap.sheds.iter().position(|s| s.current).unwrap();
-        let mut own = snap.yaks(3)[0].clone();
-        own.needs = Some("human".into());
-        if let Some(Some(Changes { yaks: Ok(y), .. })) = snap.changes.get_mut(main) {
-            y.push(own);
-        }
-        let copies: Vec<String> = snap
-            .copies("yaks-8814")
-            .iter()
-            .map(|(s, _)| s.name())
-            .collect();
-        assert_eq!(copies, ["needs-1-superseded"]);
-        // land-1's change to yaks-ed5e has landed: not a copy.
-        assert!(snap.copies("yaks-ed5e").is_empty());
-        let asks: Vec<(String, String)> = snap
-            .open_asks()
-            .iter()
-            .map(|(s, y)| (s.name(), y.id.clone()))
-            .collect();
-        assert_eq!(
-            asks,
-            [("needs-1-superseded".to_string(), "yaks-8814".to_string())]
-        );
-    }
-
-    // -- the Inbox overlay (yaks-1ea3) ----------------------------------------
-
-    /// An app on the Inbox with the fixture snapshot: yaks-8814 is in this farm
-    /// (home copy not blocked) and asked about in needs-1-superseded;
-    /// yaks-07fe is home-blocked; yaks-0001 is plain.
-    fn on_inbox() -> App {
-        let mut blocked = task(
-            "yaks-07fe",
-            "home blocked",
-            crate::model::Status::Shaving,
-            2,
-            None,
-        );
-        blocked.needs = Some("human".into());
-        let mut app = App::new(vec![
-            task(
-                "yaks-8814",
-                "a superseded needs",
-                crate::model::Status::Shaving,
-                2,
-                None,
-            ),
-            blocked,
-            task("yaks-0001", "plain", crate::model::Status::Hairy, 2, None),
-        ]);
-        app.apply_sheds_snapshot(fixture::snapshot());
-        let i = app.views.iter().position(|v| v.key == "inbox").unwrap();
-        app.set_view(i);
-        app
-    }
-
-    fn inbox_ids(app: &App) -> Vec<String> {
-        app.rows().iter().map(|r| r.task.id.clone()).collect()
-    }
-
-    #[test]
-    fn inbox_includes_a_home_yak_whose_shed_copy_asks() {
-        let app = on_inbox();
-        let mut ids = inbox_ids(&app);
-        ids.sort();
-        // yaks-8814 (shed asks) and yaks-07fe (home asks); not yaks-0001, and
-        // the shed-only asks are no rows (yaks-8814 is in this farm, but a
-        // yak only in a shed would not be).
-        assert_eq!(ids, ["yaks-07fe", "yaks-8814"]);
-        let v = app.active_view().clone();
-        assert_eq!(app.view_count(&v), 2);
-    }
-
-    #[test]
-    fn inbox_leaves_out_a_shed_only_ask() {
-        let mut app = on_inbox();
-        // Nothing of the asker's yak is in this farm any more.
-        app.all.retain(|t| t.id != "yaks-8814");
-        app.touch();
-        assert_eq!(inbox_ids(&app), ["yaks-07fe"]);
-        let v = app.active_view().clone();
-        assert_eq!(app.view_count(&v), 1);
-    }
-
-    #[test]
-    fn inbox_without_a_snapshot_is_home_needs_only() {
-        let mut app = on_inbox();
-        app.sheds.snapshot = None;
-        app.touch();
-        assert_eq!(inbox_ids(&app), ["yaks-07fe"]);
-    }
-
-    #[test]
-    fn a_on_a_shed_ask_row_answers_it_in_that_shed() {
-        let mut app = on_inbox();
-        let pos = app
-            .rows()
-            .iter()
-            .position(|r| r.task.id == "yaks-8814")
-            .unwrap();
-        app.cursor = pos;
-        press(&mut app, "a");
-        match &app.overlay {
-            Overlay::Edit(ed) => {
-                assert!(
-                    ed.label
-                        .contains("Answer yaks-8814 in shed needs-1-superseded"),
-                    "{}",
-                    ed.label
-                );
-                assert!(matches!(
-                    &ed.action,
-                    EditAction::AnswerInShed { id, shed }
-                        if id == "yaks-8814" && shed.ends_with("epe9/yaks")
-                ));
-            }
-            _ => panic!("a did not open the answer-in-shed prompt"),
-        }
-    }
-
-    #[test]
-    fn a_on_a_home_blocked_row_is_the_plain_answer() {
-        let mut app = on_inbox();
-        let pos = app
-            .rows()
-            .iter()
-            .position(|r| r.task.id == "yaks-07fe")
-            .unwrap();
-        app.cursor = pos;
-        press(&mut app, "a");
-        match &app.overlay {
-            Overlay::Edit(ed) => {
-                assert!(matches!(&ed.action, EditAction::Answer(id) if id == "yaks-07fe"))
-            }
-            _ => panic!("a did not open the plain answer prompt"),
-        }
-    }
-
-    #[test]
-    fn a_outside_the_inbox_is_as_before() {
-        // The same yak in the Hairy-style tree view: `a` asks, as ever.
-        let mut app = on_inbox();
-        app.set_view(0);
-        app.cursor = app
-            .rows()
-            .iter()
-            .position(|r| r.task.id == "yaks-8814")
-            .unwrap_or(0);
-        let id = app.selected_id().unwrap();
-        press(&mut app, "a");
-        match &app.overlay {
-            Overlay::Edit(ed) => assert!(
-                !matches!(&ed.action, EditAction::AnswerInShed { .. }),
-                "{id}: a answered in a shed outside the Inbox"
-            ),
-            _ => panic!("a opened nothing"),
-        }
-    }
-
-    #[test]
-    fn inbox_frame_with_a_shed_ask_row() {
-        let app = on_inbox();
-        insta::assert_snapshot!("inbox_shed_ask_row", draw(&app, 100, 12));
-    }
-
-    // -- the arrival flash ------------------------------------------------------
-
-    /// The fixture with one more ask in perf-1-profile (yaks-07fe).
-    fn with_perf_ask(ts: &str) -> Snapshot {
-        let mut snap = fixture::snapshot();
-        let perf = snap
-            .sheds
-            .iter()
-            .position(|s| s.name() == "perf-1-profile")
-            .unwrap();
-        if let Some(Some(Changes { yaks: Ok(y), .. })) = snap.changes.get_mut(perf) {
-            y[0].needs = Some("human".into());
-            y[0].notes.push(crate::store::NoteEntry {
-                ts: ts.into(),
-                actor: Some("perf-1".into()),
-                text: "asked: needs human\nWhich?".into(),
-            });
-        }
-        snap
-    }
-
-    #[test]
-    fn the_first_snapshot_does_not_flash() {
+    fn no_scan_runs_off_the_tab() {
+        let (proj, farm) = temp_farm(&[]);
         let mut app = App::new(vec![]);
-        app.apply_sheds_snapshot(fixture::snapshot());
-        assert_eq!(app.notification, None);
-    }
-
-    #[test]
-    fn a_new_ask_flashes_once_and_a_re_ask_flashes_again() {
-        let mut app = App::new(vec![]);
-        app.apply_sheds_snapshot(fixture::snapshot());
-        app.apply_sheds_snapshot(with_perf_ask("2026-10-13T00:20:00Z"));
-        assert_eq!(
-            app.notification.as_deref(),
-            Some("\u{23f3} new ask in perf-1-profile: yaks-07fe yaks sheds is slow: profile it")
-        );
-        // The same ask again: nothing new.
-        app.notification = None;
-        app.apply_sheds_snapshot(with_perf_ask("2026-10-13T00:20:00Z"));
-        assert_eq!(app.notification, None);
-        // Asked again (a new timestamp): it counts again.
-        app.apply_sheds_snapshot(with_perf_ask("2026-10-13T00:30:00Z"));
-        assert!(
-            app.notification
-                .as_deref()
-                .unwrap()
-                .contains("new ask in perf-1-profile")
-        );
-    }
-
-    #[test]
-    fn several_new_asks_name_the_first_and_count_the_rest() {
-        let mut app = App::new(vec![]);
-        let mut first = fixture::snapshot();
-        // The asker has not asked yet in the first snapshot.
-        let asker = first
-            .sheds
-            .iter()
-            .position(|s| s.name() == "needs-1-superseded")
-            .unwrap();
-        if let Some(Some(Changes { yaks: Ok(y), .. })) = first.changes.get_mut(asker) {
-            y[0].needs = None;
-        }
-        app.apply_sheds_snapshot(first);
-        app.apply_sheds_snapshot(with_perf_ask("2026-10-13T00:20:00Z"));
-        let n = app.notification.clone().unwrap();
-        // Attention order: the asker's shed ranks above perf-1.
-        assert_eq!(
-            n,
-            "\u{23f3} new ask in needs-1-superseded: yaks-8814 landed: a superseded needs is not outstanding (+1 more)"
-        );
-    }
-
-    #[test]
-    fn this_sheds_own_asks_do_not_flash() {
-        let mut app = App::new(vec![]);
-        app.apply_sheds_snapshot(fixture::snapshot());
-        let mut snap = with_perf_ask("2026-10-13T00:20:00Z");
-        for s in &mut snap.sheds {
-            s.current = s.name() == "perf-1-profile";
-        }
-        app.apply_sheds_snapshot(snap);
-        assert_eq!(app.notification, None);
-    }
-
-    // -- landed yaks fold behind one line (yaks-c1f8) --------------------------
-
-    /// The fixture with two landed yaks added to perf-1-profile, ids that sort
-    /// BEFORE its outstanding yaks-07fe (so the fold's order is visible).
-    fn with_landed(mut snap: Snapshot) -> Snapshot {
-        let i = snap
-            .sheds
-            .iter()
-            .position(|s| s.name() == "perf-1-profile")
-            .unwrap();
-        let base = snap.yaks(i)[0].clone();
-        let landed = |id: &str, title: &str| {
-            let mut y = base.clone();
-            y.id = id.into();
-            y.title = title.into();
-            y.notes = vec![];
-            y.status = "shorn";
-            y.moved = Some(("shaving", "shorn"));
-            y.landed = true;
-            y
-        };
-        if let Some(Some(Changes { yaks: Ok(y), .. })) = snap.changes.get_mut(i) {
-            y.push(landed("yaks-0001", "first landed"));
-            y.push(landed("yaks-0002", "second landed"));
-            y.sort_by(|a, b| a.id.cmp(&b.id));
-        }
-        snap
-    }
-
-    /// An app on perf-1's detail (cursor on its first outstanding yak).
-    fn on_perf_detail() -> App {
-        let mut app = on_sheds(sample());
-        app.apply_sheds_snapshot(with_landed(fixture::snapshot()));
-        press(&mut app, "jjl");
-        assert_eq!(app.selected_shed().unwrap().name(), "perf-1-profile");
-        app
-    }
-
-    fn shed_yak_id(app: &App) -> Option<String> {
-        app.selected_shed_yak().map(|y| y.id.clone())
-    }
-
-    #[test]
-    fn outstanding_yaks_lead_and_one_line_folds_the_landed_ones() {
-        let app = on_perf_detail();
-        let frame = draw(&app, 120, 20);
-        assert!(frame.contains("Changes (3 yaks)"), "{frame}");
-        assert!(frame.contains("\u{25b8} 2 landed"), "{frame}");
-        assert!(frame.contains("yaks-07fe"), "{frame}");
-        assert!(!frame.contains("yaks-0001"), "{frame}");
-        assert!(!frame.contains("yaks-0002"), "{frame}");
-        assert!(frame.find("yaks-07fe") < frame.find("\u{25b8} 2 landed"));
-    }
-
-    #[test]
-    fn enter_on_the_fold_line_expands_and_collapses() {
-        let mut app = on_perf_detail();
-        press(&mut app, "j"); // the fold line
-        assert_eq!(shed_yak_id(&app), None);
-        enter_key(&mut app);
-        assert_eq!(app.focus, Focus::Detail);
-        assert!(
-            app.on_sheds_tab(),
-            "Enter on the fold line must not open a yak"
-        );
-        let open = draw(&app, 120, 20);
-        assert!(open.contains("\u{25be} 2 landed"), "{open}");
-        // Landed yaks sit below the fold line, in id order.
-        let at = |s: &str| open.find(s).unwrap_or_else(|| panic!("{s} in {open}"));
-        assert!(at("yaks-07fe") < at("\u{25be} 2 landed"));
-        assert!(at("\u{25be} 2 landed") < at("yaks-0001"));
-        assert!(at("yaks-0001") < at("yaks-0002"));
-        enter_key(&mut app); // the cursor stayed on the fold line
-        let shut = draw(&app, 120, 20);
-        assert!(shut.contains("\u{25b8} 2 landed"), "{shut}");
-        assert!(!shut.contains("yaks-0001"), "{shut}");
-    }
-
-    #[test]
-    fn j_and_k_reach_the_fold_line_and_the_landed_yaks_when_expanded() {
-        let mut app = on_perf_detail();
-        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-07fe"));
-        press(&mut app, "j"); // the fold line
-        assert_eq!(shed_yak_id(&app), None);
-        press(&mut app, "j"); // folded: nothing below it
-        assert_eq!(shed_yak_id(&app), None);
-        press(&mut app, "k");
-        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-07fe"));
-        press(&mut app, "j");
-        enter_key(&mut app); // expand
-        press(&mut app, "j");
-        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-0001"));
-        press(&mut app, "j");
-        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-0002"));
-        press(&mut app, "j"); // clamps at the end
-        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-0002"));
-        // Enter on a landed yak opens it as on any yak (not a fold toggle).
-        press(&mut app, "G");
-        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-0002"));
-        press(&mut app, "g");
-        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-07fe"));
-    }
-
-    #[test]
-    fn a_shed_with_nothing_landed_has_no_fold_line() {
-        let mut app = on_sheds(sample());
-        press(&mut app, "jjl"); // perf-1, fixture: one outstanding yak
-        let frame = draw(&app, 120, 20);
-        assert!(!frame.contains("landed"), "{frame}");
-        press(&mut app, "j");
-        assert_eq!(
-            shed_yak_id(&app).as_deref(),
-            Some("yaks-07fe"),
-            "no second stop"
-        );
-        enter_key(&mut app); // acts on the yak, as before: not a fold toggle
-        assert_eq!(
-            app.notification.as_deref(),
-            Some("yaks-07fe exists only in shed perf-1-profile")
-        );
-    }
-
-    #[test]
-    fn selection_survives_a_rescan_across_the_fold() {
-        let mut app = on_perf_detail();
-        press(&mut app, "j");
-        enter_key(&mut app);
-        press(&mut app, "jj"); // yaks-0002, expanded
-        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-0002"));
-        app.apply_sheds_snapshot(with_landed(fixture::snapshot()));
-        assert_eq!(app.selected_shed().unwrap().name(), "perf-1-profile");
-        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-0002"));
-        // The fold line stays selected too.
-        press(&mut app, "kk");
-        assert_eq!(shed_yak_id(&app), None);
-        app.apply_sheds_snapshot(with_landed(fixture::snapshot()));
-        assert_eq!(shed_yak_id(&app), None);
-        press(&mut app, "k");
-        assert_eq!(shed_yak_id(&app).as_deref(), Some("yaks-07fe"));
-        // The yak the cursor is on lands while folded away: the cursor falls
-        // to the fold line (it is behind it now), not to the first yak.
-        enter_key(&mut app); // opens yaks-07fe's page: back to the tab first
-        app.set_view(
-            app.views
-                .iter()
-                .position(|v| v.key == view::SHEDS_KEY)
-                .unwrap(),
-        );
-        let mut snap = with_landed(fixture::snapshot());
-        let i = snap
-            .sheds
-            .iter()
-            .position(|s| s.name() == "perf-1-profile")
-            .unwrap();
-        if let Some(Some(Changes { yaks: Ok(y), .. })) = snap.changes.get_mut(i) {
-            y.iter_mut().for_each(|y| y.landed = true);
-        }
-        app.sheds.landed_open = false;
-        app.apply_sheds_snapshot(snap);
-        assert_eq!(app.selected_shed().unwrap().name(), "perf-1-profile");
-        assert_eq!(shed_yak_id(&app), None, "on the fold line");
-    }
-
-    #[test]
-    fn landed_fold_frames() {
-        let mut app = on_perf_detail();
-        insta::assert_snapshot!("sheds_tab_landed_folded", draw(&app, 120, 20));
-        press(&mut app, "j");
-        enter_key(&mut app);
-        insta::assert_snapshot!("sheds_tab_landed_expanded", draw(&app, 120, 20));
-        // land-1: everything landed, so just the fold line under the count.
-        let mut app = on_sheds(sample());
-        press(&mut app, "jjjl");
-        assert_eq!(app.selected_shed().unwrap().name(), "land-1-landed");
-        insta::assert_snapshot!("sheds_tab_all_landed", draw(&app, 120, 18));
+        app.farm = Some(farm);
+        app.sheds.cwd = Some(proj.clone());
+        assert!(!app.on_sheds_tab());
+        app.settle_sheds(false);
+        assert!(!app.sheds.scanning());
+        let _ = std::fs::remove_dir_all(proj);
     }
 
     #[test]
     fn sheds_tab_frames() {
         let mut app = on_sheds(sample());
         insta::assert_snapshot!("sheds_tab_list", draw(&app, 120, 14));
-        press(&mut app, "jl");
+        press(&mut app, "jjl");
         insta::assert_snapshot!("sheds_tab_detail", draw(&app, 120, 18));
     }
 }

@@ -126,9 +126,9 @@ impl App {
                 .filter(|id| self.task(id).is_some())
                 .count();
         }
-        // The Sheds tab counts outstanding sheds, not yaks.
+        // The Sheds tab counts busy sheds, not yaks.
         if v.key == view::SHEDS_KEY {
-            return self.sheds.snapshot.as_ref().map_or(0, |s| s.outstanding());
+            return self.sheds.snapshot.as_ref().map_or(0, |s| s.busy());
         }
         // Flat views (Recent/Inbox/custom sorted) count via the flat predicate
         // so facets the tree ignores for pruning — notably `needs_only` — are
@@ -138,66 +138,17 @@ impl App {
         if v.is_flat() {
             let resolved = filter::resolved_ids(&self.all);
             let want_dead = v.spec.statuses.contains(&Status::Dead);
-            let (universe, _) = self.overlay_tasks(&v.spec);
-            let n = universe
+            let n = self
+                .all
                 .iter()
-                .filter(|t| {
-                    (want_dead || t.status != Status::Dead)
-                        && self.flat_matches(&v.spec, t, &resolved)
-                })
+                .filter(|t| (want_dead || t.status != Status::Dead) && v.spec.matches(t, &resolved))
                 .count();
             return v.limit.map_or(n, |l| n.min(l));
         }
-        let (universe, only) = self.overlay_tasks(&v.spec);
-        tree::build_over(&universe, &only, &v.spec, self.resolved_family_scope(v))
+        tree::build(&self.all, &v.spec, self.resolved_family_scope(v))
             .iter()
             .filter(|r| !r.ghost)
             .count()
-    }
-
-    /// The sheds snapshot the overlay reads for a view with filter `spec`:
-    /// `None` under `copies: home` (`FilterSpec::home_only`) or before the
-    /// first scan. The one gate for shed-only rows, badges, the Sheds
-    /// section, the Inbox's shed asks and answering in a shed from a row.
-    pub(crate) fn overlay_of(&self, spec: &FilterSpec) -> Option<&sheds_tab::Snapshot> {
-        self.sheds.snapshot.as_ref().filter(|_| !spec.home_only)
-    }
-
-    /// [`App::overlay_of`] for the live filter.
-    pub(crate) fn overlay(&self) -> Option<&sheds_tab::Snapshot> {
-        self.overlay_of(&self.filter)
-    }
-
-    /// The tasks a yak view builds its rows from: this farm's, plus (under
-    /// `copies: any`) the yaks that exist only in another shed, with the ids
-    /// of those. A yak this farm has too is never a shed-only row, whatever a
-    /// stale snapshot says.
-    pub(crate) fn overlay_tasks(&self, spec: &FilterSpec) -> (Vec<&Task>, HashSet<&str>) {
-        let mut all: Vec<&Task> = self.all.iter().collect();
-        let mut only = HashSet::new();
-        if let Some(snap) = self.overlay_of(spec) {
-            let home: HashSet<&str> = self.all.iter().map(|t| t.id.as_str()).collect();
-            for (_, t) in snap.shed_only() {
-                if !home.contains(t.id.as_str()) {
-                    only.insert(t.id.as_str());
-                    all.push(t);
-                }
-            }
-        }
-        (all, only)
-    }
-
-    /// The selected row's yak when it exists only in another shed, with that
-    /// shed (the first, in attention order, when several added it).
-    pub(crate) fn selected_shed_only(&self) -> Option<(&Task, &crate::sheds::Shed)> {
-        let row = *self.cached_rows().get(self.cursor)?;
-        match row.loc {
-            memo::Loc::Shed(i, j) if row.shed_only => {
-                let snap = self.sheds.snapshot.as_ref()?;
-                Some((snap.only_tasks.get(i)?.get(j)?, snap.sheds.get(i)?))
-            }
-            _ => None,
-        }
     }
 
     /// Hairy tasks with at least one unresolved dependency (the blocked set;
@@ -230,31 +181,6 @@ impl App {
             .collect()
     }
 
-    /// The flat views' per-yak predicate: `spec.matches`, except that under
-    /// `needs_only` (the inbox) a yak also matches when another shed's copy of
-    /// it is awaiting a human (`Snapshot::asked_ids`, yaks-1ea3). One rule for
-    /// the rows and the tab count. Under `copies: home` only this farm's own
-    /// `needs` counts.
-    pub(crate) fn flat_matches(
-        &self,
-        spec: &FilterSpec,
-        t: &Task,
-        resolved: &HashSet<&str>,
-    ) -> bool {
-        if spec.matches(t, resolved) {
-            return true;
-        }
-        let asked = spec.needs_only
-            && self
-                .overlay_of(spec)
-                .is_some_and(|s| s.asked_ids().contains(t.id.as_str()));
-        asked && {
-            let mut rest = spec.clone();
-            rest.needs_only = false;
-            rest.matches(t, resolved)
-        }
-    }
-
     /// Flat, sorted rows for a sorted view (Recent / custom sorted).
     pub(crate) fn flat_rows(&self) -> Vec<tree::Row<'_>> {
         let v = self.active_view();
@@ -263,12 +189,11 @@ impl App {
         // the live filter explicitly asks for it (fe00): the model now carries
         // dead, but a working list shouldn't surface slaughtered yaks by default.
         let want_dead = self.filter.statuses.contains(&Status::Dead);
-        let (universe, only) = self.overlay_tasks(&self.filter);
-        let mut matched: Vec<&Task> = universe
-            .into_iter()
+        let mut matched: Vec<&Task> = self
+            .all
+            .iter()
             .filter(|t| {
-                (want_dead || t.status != Status::Dead)
-                    && self.flat_matches(&self.filter, t, &resolved)
+                (want_dead || t.status != Status::Dead) && self.filter.matches(t, &resolved)
             })
             .collect();
         let sort_by = v.sort_by.unwrap_or(view::SortField::Updated);
@@ -279,14 +204,7 @@ impl App {
         if let Some(lim) = v.limit {
             matched.truncate(lim);
         }
-        matched
-            .into_iter()
-            .map(|t| {
-                let mut r = tree::Row::leaf(t);
-                r.shed_only = only.contains(t.id.as_str());
-                r
-            })
-            .collect()
+        matched.into_iter().map(tree::Row::leaf).collect()
     }
 
     /// Visible rows for the active view (dispatch: working-set / flat / tree),
@@ -302,7 +220,6 @@ impl App {
                 task: self.resolve(c.loc),
                 depth: c.depth,
                 ghost: c.ghost,
-                shed_only: c.shed_only,
                 has_children: c.has_children,
                 collapsed: c.collapsed,
                 hidden: c.hidden,
@@ -329,8 +246,7 @@ impl App {
             return self.flat_rows();
         }
         let scope = self.resolved_family_scope(v);
-        let (universe, only) = self.overlay_tasks(&self.filter);
-        let flat = tree::build_over(&universe, &only, &self.filter, scope);
+        let flat = tree::build(&self.all, &self.filter, scope);
         tree::apply_collapse(flat, &self.collapsed)
     }
 

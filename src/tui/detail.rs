@@ -10,8 +10,7 @@ use super::markdown::MdSpan;
 use super::when::Clock;
 use super::{content, mdrender, palette};
 use crate::model::{Status, Task};
-use crate::sheds::{Shed, YakChange};
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::Modifier;
 
 /// Where a link points.
 #[derive(Clone, PartialEq, Debug)]
@@ -42,10 +41,6 @@ pub enum Kind {
     /// A field carrying a warning accent (e.g. the `needs` blocker), styled
     /// distinctly from a plain `Field` in `render_dline`.
     Warn,
-    /// One line of the Sheds section (what another shed changed about the
-    /// yak); its colours ride in `md`, like a body line's, but it is not body
-    /// text (no content block, no link scan).
-    Shed,
     Body,
     Empty,
     /// One row of the in-place block editor's region (yaks-597d): the row
@@ -160,25 +155,6 @@ fn warn_field(label: &str, value: &str) -> DLine {
     }
 }
 
-/// A blank line (for callers outside this module).
-pub fn blank() -> DLine {
-    empty()
-}
-
-/// The banner on top of a read-only detail (`only in shed <name>`, yaks-9631):
-/// a warning-accent line.
-pub fn banner(text: &str) -> DLine {
-    DLine {
-        text: text.into(),
-        kind: Kind::Warn,
-        links: vec![],
-        md: vec![],
-        cont: false,
-        src: None,
-        nowrap: None,
-    }
-}
-
 fn section(text: &str) -> DLine {
     DLine {
         text: text.into(),
@@ -243,102 +219,17 @@ fn ref_line(prefix: String, glyph: &str, id: &str, title: &str, exists: bool) ->
     }
 }
 
-/// The Sheds section: one line per shed that changed the yak, the TUI form of
-/// `yaks show <id> --sheds`. The shed name, then the bracket words of `yaks
-/// changes` (`hairy -> shaving`, `new, hairy`, `edited`), `needs: <v>` and
-/// `+N notes`, then (dim) the newest note's actor and first line. Nothing at
-/// all (no header) when no shed changed the yak.
-fn sheds_section(sheds: &[(&Shed, &YakChange)]) -> Vec<DLine> {
-    if sheds.is_empty() {
-        return Vec::new();
-    }
-    let mut out = vec![empty(), section("Sheds:")];
-    // Two or more sheds changed the same yak: a conflict to settle before
-    // they land (yaks-9631).
-    if sheds.len() >= 2 {
-        out.push(DLine {
-            text: format!("  \u{26a0} changed in {} sheds", sheds.len()),
-            kind: Kind::Warn,
-            links: vec![],
-            md: vec![],
-            cont: false,
-            src: None,
-            nowrap: None,
-        });
-    }
-    for (shed, y) in sheds {
-        let mut what = match (y.added, y.moved) {
-            (true, _) => format!("new, {}", y.status),
-            (false, Some((from, to))) => format!("{from} -> {to}"),
-            (false, None) => y.status.to_string(),
-        };
-        if y.edited {
-            what.push_str(", edited");
-        }
-        let mut text = format!("  {}  ", shed.name());
-        let mut md = Vec::new();
-        // Append `piece` to the line, styled when `style` is given.
-        let mut push = |text: &mut String, piece: String, style: Option<Style>| {
-            if let Some(style) = style {
-                md.push(MdSpan {
-                    start: text.chars().count(),
-                    len: piece.chars().count(),
-                    style,
-                });
-            }
-            text.push_str(&piece);
-        };
-        push(
-            &mut text,
-            format!("[{what}]"),
-            Some(Style::new().fg(Color::Yellow)),
-        );
-        if let Some(v) = &y.needs {
-            let warn = Style::new().fg(Color::Yellow).add_modifier(Modifier::BOLD);
-            push(&mut text, "  ".into(), None);
-            push(&mut text, format!("needs: {v}"), Some(warn));
-        }
-        if !y.notes.is_empty() {
-            push(&mut text, format!("  +{} notes", y.notes.len()), None);
-        }
-        if let Some(n) = y.notes.last() {
-            let first = n
-                .text
-                .lines()
-                .map(str::trim)
-                .find(|l| !l.is_empty())
-                .unwrap_or("");
-            let dim = Style::new().add_modifier(Modifier::DIM);
-            let actor = n.actor.as_deref().unwrap_or("-");
-            push(&mut text, format!("  {actor}: {first}"), Some(dim));
-        }
-        out.push(DLine {
-            text,
-            kind: Kind::Shed,
-            links: vec![],
-            md,
-            cont: false,
-            src: None,
-            nowrap: None,
-        });
-    }
-    out
-}
-
 /// [`build_at`] against the pinned test clock (see [`Clock::app_default`]).
 #[cfg(test)]
-pub fn build(task: &Task, all: &[Task], sheds: &[(&Shed, &YakChange)]) -> Vec<DLine> {
-    build_at(task, all, sheds, &Clock::app_default(), 0, None)
+pub fn build(task: &Task, all: &[Task]) -> Vec<DLine> {
+    build_at(task, all, &Clock::app_default(), 0, None)
 }
 
-/// `sheds` is what the other sheds changed about this yak (`Snapshot::copies`);
-/// when non-empty it adds a Sheds section between the fields and the body.
 /// `clock` renders the Created/Updated timestamps (relative to its "now", in
 /// its timezone).
 pub fn build_at(
     task: &Task,
     all: &[Task],
-    sheds: &[(&Shed, &YakChange)],
     clock: &Clock,
     width: usize,
     edit: Option<&EditSlot>,
@@ -496,8 +387,6 @@ pub fn build_at(
             });
         }
     }
-
-    out.extend(sheds_section(sheds));
 
     out.extend(body_rows(task, &known, clock, width, edit));
     out
@@ -820,7 +709,7 @@ mod detail_tests {
             t("yak-0001", None, &[]),
             t("yak-0002", None, &["yak-0001"]), // 0002 depends on 0001
         ];
-        let lines = build(&all[0], &all, &[]);
+        let lines = build(&all[0], &all);
         let text: Vec<&str> = lines.iter().map(|l| l.text.as_str()).collect();
         assert_eq!(text[0], "Task: yak-0001");
         assert!(text.iter().any(|l| l.starts_with("Status:")));
@@ -841,14 +730,14 @@ mod detail_tests {
     fn needs_block_renders_after_status_when_set() {
         let mut task = t("yak-0001", None, &[]);
         // Unset: no Needs line.
-        let plain: Vec<String> = build(&task, &[task.clone()], &[])
+        let plain: Vec<String> = build(&task, &[task.clone()])
             .iter()
             .map(|l| l.text.clone())
             .collect();
         assert!(!plain.iter().any(|l| l.starts_with("Needs:")));
         // Set: a Needs line appears, immediately after Status.
         task.needs = Some("human".into());
-        let lines: Vec<String> = build(&task, &[task.clone()], &[])
+        let lines: Vec<String> = build(&task, &[task.clone()])
             .iter()
             .map(|l| l.text.clone())
             .collect();
@@ -857,7 +746,7 @@ mod detail_tests {
         assert_eq!(needs_i, status_i + 1);
         assert!(lines[needs_i].contains("human"));
         // The Needs line carries the warning accent, not a plain field.
-        let dlines = build(&task, &[task.clone()], &[]);
+        let dlines = build(&task, &[task.clone()]);
         assert_eq!(dlines[needs_i].kind, Kind::Warn);
     }
 
@@ -865,7 +754,7 @@ mod detail_tests {
     fn answered_needs_is_a_plain_field_not_a_warning() {
         let mut task = t("yak-0001", None, &[]);
         task.needs = Some("agent".into());
-        let dlines = build(&task, &[task.clone()], &[]);
+        let dlines = build(&task, &[task.clone()]);
         let needs = dlines
             .iter()
             .find(|l| l.text.starts_with("Needs:"))
@@ -879,7 +768,7 @@ mod detail_tests {
         // Single-herd farm (one dashed prefix): no Herd line — it would just
         // echo the id prefix and add noise (yaks-71d1).
         let solo = vec![t("web-0001", None, &[]), t("web-0002", None, &[])];
-        let single: Vec<String> = build(&solo[0], &solo, &[])
+        let single: Vec<String> = build(&solo[0], &solo)
             .iter()
             .map(|l| l.text.clone())
             .collect();
@@ -887,7 +776,7 @@ mod detail_tests {
         // Multi-herd farm (two prefixes): a Herd line appears, between Type and
         // Priority, naming this yak's prefix.
         let mixed = vec![t("web-0001", None, &[]), t("api-0001", None, &[])];
-        let lines: Vec<String> = build(&mixed[0], &mixed, &[])
+        let lines: Vec<String> = build(&mixed[0], &mixed)
             .iter()
             .map(|l| l.text.clone())
             .collect();
@@ -906,7 +795,7 @@ mod detail_tests {
     fn extra_renders_read_only_other_fields_section() {
         let mut task = t("yak-0001", None, &[]);
         // Empty: no section.
-        let plain: Vec<String> = build(&task, &[task.clone()], &[])
+        let plain: Vec<String> = build(&task, &[task.clone()])
             .iter()
             .map(|l| l.text.clone())
             .collect();
@@ -917,7 +806,7 @@ mod detail_tests {
             "reviewers:".into(),
             "- bob".into(),
         ];
-        let lines = build(&task, &[task.clone()], &[]);
+        let lines = build(&task, &[task.clone()]);
         let text: Vec<String> = lines.iter().map(|l| l.text.clone()).collect();
         let sec = text
             .iter()
@@ -935,7 +824,7 @@ mod detail_tests {
         let mut task = t("a", None, &[]);
         task.updated = Some("2026-09-10T11:00:00Z".into());
         task.created = Some("bogus".into());
-        let lines: Vec<String> = build(&task, &[task.clone()], &[])
+        let lines: Vec<String> = build(&task, &[task.clone()])
             .iter()
             .map(|l| l.text.clone())
             .collect();
@@ -1017,7 +906,7 @@ mod tests {
             task("yak-0002", None, &[], ""),
             task("yak-0003", Some("yak-0001"), &[], ""), // child of 0001
         ];
-        let lines = build(&all[0], &all, &[]);
+        let lines = build(&all[0], &all);
         let jumps = jumplist(&lines);
         let targets: Vec<Target> = jumps.iter().map(|j| j.target.clone()).collect();
         // parent: none; dep yak-0002; child yak-0003; body refs yak-0003, yak-0002.
@@ -1035,7 +924,7 @@ mod tests {
     #[test]
     fn build_attaches_markdown_spans_to_body_lines() {
         let all = vec![task("yak-0001", None, &[], "# Heading\n\nplain line")];
-        let lines = build(&all[0], &all, &[]);
+        let lines = build(&all[0], &all);
         let body: Vec<&DLine> = lines.iter().filter(|l| l.kind == Kind::Body).collect();
         // The rendered heading hides its `# ` marker and carries one heading
         // span; the plain line carries none. Each row knows its source line.
@@ -1052,7 +941,7 @@ mod tests {
     fn comments_render_under_a_header_with_their_block_index() {
         let body = crate::store::append_note("Desc.", "2026-09-10T11:00:00Z", Some("joel"), "a\nb");
         let all = vec![task("yak-0001", None, &[], &body)];
-        let lines = build(&all[0], &all, &[]);
+        let lines = build(&all[0], &all);
         let body: Vec<&DLine> = lines.iter().filter(|l| l.kind == Kind::Body).collect();
         let texts: Vec<&str> = body.iter().map(|l| l.text.as_str()).collect();
         assert_eq!(texts[0], "Desc.");
@@ -1104,7 +993,7 @@ mod tests {
     fn body_link_span_points_at_the_id() {
         let all = vec![task("yak-0001", None, &[], "x yak-0001 y")];
         // self-id still scans in body (resolution is the caller's concern here).
-        let lines = build(&all[0], &all, &[]);
+        let lines = build(&all[0], &all);
         let body = lines.last().unwrap();
         assert_eq!(body.text, "x yak-0001 y");
         assert_eq!(body.links.len(), 1);
@@ -1197,7 +1086,7 @@ mod tests {
             &[],
             "docs at https://example.com/x ok",
         )];
-        let lines = build(&all[0], &all, &[]);
+        let lines = build(&all[0], &all);
         let jumps = jumplist(&lines);
         assert_eq!(
             jumps.iter().map(|j| j.target.clone()).collect::<Vec<_>>(),

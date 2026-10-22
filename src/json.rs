@@ -8,7 +8,7 @@ use std::path::Path;
 
 use serde_json::{Map, Value, json};
 
-use crate::farm::{ShedCopies, Stats};
+use crate::farm::Stats;
 use crate::model::{Status, Task};
 use crate::rollup::Group;
 
@@ -77,26 +77,6 @@ pub fn inbox_array(tasks: &[&Task]) -> Value {
     )
 }
 
-/// `inbox --sheds --json`: the plain inbox array under `inbox`, and the open
-/// asks of the other sheds under `sheds` (one object per ask: the shed's
-/// `name` and `path`, then the yak's `id`, `title`, `status`, `needs`,
-/// `replied`, and the `question` text, `null` when there is none).
-pub fn inbox_sheds_value(own: &[&Task], sheds: &[&crate::farm::ShedAsk]) -> Value {
-    json!({
-        "inbox": inbox_array(own),
-        "sheds": sheds.iter().map(|a| json!({
-            "shed": a.shed,
-            "path": a.path.display().to_string(),
-            "id": a.task.id,
-            "title": a.task.title,
-            "status": status_str(a.task.status),
-            "needs": a.task.needs,
-            "replied": crate::store::is_replied(&a.task),
-            "question": a.question,
-        })).collect::<Vec<_>>(),
-    })
-}
-
 pub fn tasks_array(tasks: &[Task]) -> Value {
     Value::Array(tasks.iter().map(task_value).collect())
 }
@@ -149,33 +129,6 @@ pub fn show_value(t: &Task, children: &[Task]) -> Value {
         }
     }
     v
-}
-
-/// `show --sheds --json`: one object per shed with a farm of its own. `status`
-/// and `needs` are the shed's copy's (null when absent / unset); `new_notes`
-/// are the entries it has that this checkout's copy lacks.
-pub fn shed_copies_value(c: &ShedCopies) -> Value {
-    Value::Array(
-        c.copies
-            .iter()
-            .map(|s| {
-                let notes: Vec<Value> = s
-                    .new_notes
-                    .iter()
-                    .map(|n| json!({"ts": n.ts, "actor": n.actor, "text": n.text}))
-                    .collect();
-                json!({
-                    "shed": s.shed,
-                    "path": s.path.display().to_string(),
-                    "status": s.task.as_ref().map(|t| status_str(t.status)),
-                    "needs": s.task.as_ref().and_then(|t| t.needs.clone()),
-                    "new_notes": notes,
-                    "same": s.same(),
-                    "absent": s.absent(),
-                })
-            })
-            .collect(),
-    )
 }
 
 pub fn stats_value(s: &Stats) -> Value {

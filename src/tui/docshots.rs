@@ -247,10 +247,10 @@ fn docshots() {
     press(&mut app, 'E');
     write_svg("tui-edit-herd", &app, w, h);
 
-    // 8. Sheds tab (yaks-98f1): every checkout, attention first (an open ask,
-    //    active workers, then quiet and unreadable ones dimmed), from a fixed
-    //    snapshot so the shot is stable; then a shed's changes in the detail,
-    //    with the ask's question under its note. 150 wide so the detail sits
+    // 8. Sheds tab (yaks-98f1, yaks-9eaa): every checkout, attention first
+    //    (an open ask, active workers, then idle ones dimmed), from a fixed
+    //    snapshot so the shot is stable; then a shed's detail: its git state
+    //    and the yaks it wrote, newest first. 150 wide so the detail sits
     //    beside the list.
     let (sw, sh) = (150u16, 18u16);
     let mut app = app_at(sw, sh);
@@ -258,88 +258,9 @@ fn docshots() {
     app.sheds.age = Some(4);
     write_svg("tui-sheds", &app, sw, sh);
     press(&mut app, 'j');
+    press(&mut app, 'j');
     press(&mut app, 'l');
     write_svg("tui-sheds-detail", &app, sw, sh);
-    // A shed whose change has landed (land-1, two sheds down): its detail
-    // folds the landed yak behind one `▸ 1 landed` line (yaks-c1f8).
-    press(&mut app, 'J');
-    press(&mut app, 'J');
-    write_svg("tui-sheds-detail-landed", &app, sw, sh);
-
-    // 9. The overlay on the yak tree (yaks-7204): two children of the
-    //    umbrella that the fixture's workers changed carry a `🛖1` badge (the
-    //    asked one in yellow), and the asked one's detail lists the shed in
-    //    its Sheds section.
-    let mut tasks = farm();
-    let mut asked = t(
-        "yaks-8814",
-        "landed: a superseded needs is not outstanding",
-        "bug",
-        3,
-        Status::Shaving,
-        Some("yaks-3901"),
-    );
-    asked.labels = vec!["cli".into()];
-    tasks.push(asked);
-    tasks.push(t(
-        "yaks-07fe",
-        "yaks sheds is slow: profile it",
-        "task",
-        2,
-        Status::Shaving,
-        Some("yaks-3901"),
-    ));
-    let mut app = App::new(tasks);
-    app.apply_sheds_snapshot(crate::tui::sheds_tab::fixture::snapshot());
-    HeadlessApp::on_resize(&mut app, sw, sh);
-    view_to(&mut app, "status:shaving");
-    write_svg("tui-shed-badges", &app, sw, sh);
-    for _ in 0..4 {
-        press(&mut app, 'j'); // down the Shaving tree to yaks-8814
-    }
-    press_key(&mut app, KeyCode::Enter);
-    write_svg("tui-shed-badges-detail", &app, sw, 24);
-
-    // 10. Shed-only rows and the conflict marker (yaks-9631): a worker's new
-    //     yak is a dim row under its parent with the shed's name, and a yak
-    //     two sheds changed reads `🛖2⚠`.
-    let mut tasks = farm();
-    tasks.push(t(
-        "yaks-07fe",
-        "yaks sheds is slow: profile it",
-        "task",
-        2,
-        Status::Shaving,
-        Some("yaks-3901"),
-    ));
-    let mut snap = crate::tui::sheds_tab::fixture::snapshot();
-    snap = crate::tui::sheds_tab::fixture::with_shed_only(
-        snap,
-        "perf-1-profile",
-        t(
-            "yaks-9a01",
-            "cache the git calls per scan",
-            "task",
-            2,
-            Status::Shaving,
-            Some("yaks-3901"),
-        ),
-    );
-    let shed_at = |snap: &crate::tui::sheds_tab::Snapshot, name: &str| {
-        snap.sheds.iter().position(|s| s.name() == name).unwrap()
-    };
-    let mut twin = snap.yaks(shed_at(&snap, "perf-1-profile"))[0].clone();
-    twin.id = "yaks-07fe".into();
-    let asker = shed_at(&snap, "needs-1-superseded");
-    if let Some(Some(crate::sheds::Changes { yaks: Ok(y), .. })) = snap.changes.get_mut(asker) {
-        y.push(twin);
-        y.sort_by(|a, b| a.id.cmp(&b.id));
-    }
-    let mut app = App::new(tasks);
-    app.apply_sheds_snapshot(snap);
-    HeadlessApp::on_resize(&mut app, sw, sh);
-    view_to(&mut app, "status:shaving");
-    write_svg("tui-shed-only", &app, sw, sh);
 }
 
 /// Regenerate the agent-session example used by toque's README: drive the real

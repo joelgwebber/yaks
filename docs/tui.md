@@ -14,10 +14,7 @@ interchangeable.
   **Sheds** tab lists the repository's checkouts instead of yaks (see
   [Sheds tab](#sheds-tab)).
 - **Detail pane** — the selected yak: fields, parent/deps/children, source, a
-  `Needs:` line when blocked, a `Sheds:` section when another checkout has
-  changed it (one line per shed: name, the `yaks changes` bracket words,
-  `needs: <v>`, `+N notes`, and the newest note), and the body + timestamped
-  notes. Task-id
+  `Needs:` line when blocked, and the body + timestamped notes. Task-id
   references and URLs in the body are followable links. It (and every
   right-side overlay) takes ~⅔ of the width, clamped to 48–120 columns; the
   list gets the rest. When that would leave the list under 48 columns (a
@@ -25,10 +22,7 @@ interchangeable.
   pane covers the whole main area and its divider is tipped with `◂` — the
   list is behind it; `h`/`Esc` returns to it.
 - **Filter drawer** (`f`) — toggle status / type / priority chips, a label and
-  search box, a parent scope, `ready` / `tangled` / `inbox` predicates, and a
-  `copies` chip, `any` (the default) or `home`: `home` hides the other sheds'
-  overlay (shed-only rows, the `🛖` badges, the detail's `Sheds:` section, the
-  Inbox's shed asks) for a plain view of this farm. Saved views keep it. On a
+  search box, a parent scope, and `ready` / `tangled` / `inbox` predicates. On a
   multi-herd farm it also grows a `herd` chip row to scope the list to one or
   more herds. The drawer composes into any view.
 - **Farm chip** — on the tab row's right edge, what the farm has that git does
@@ -54,32 +48,6 @@ interchangeable.
   detail `Needs:` line renders in a warning accent. A **`✅` badge** marks an
   answered yak awaiting an agent (`needs: agent`): it blocks nothing, so the
   detail `Needs:` line is plain and the row is never shown as awaiting a human.
-- A dim **`🛖N` badge** on a row says N other sheds (checkouts) carry an
-  outstanding change to that yak (the detail's `Sheds:` section lists them; `yaks
-  show <id> --sheds` is the CLI form). It turns yellow when one of those changes
-  is an open ask (`needs: human`), so a question waiting in another checkout is
-  visible from the tree. It annotates only: the row sits where this checkout's
-  farm puts it, and a change that has landed, or one made in the shed the TUI
-  runs in, gets no badge. Needs one Sheds-tab scan (the first lands within a
-  moment of startup; refreshed every 10 s, on any view). When two or more
-  sheds changed the same yak the badge reads `🛖2⚠` and the detail's `Sheds:`
-  section opens with `⚠ changed in 2 sheds`: settle it before they land.
-  `copies: home` in the drawer hides all of this.
-- A yak that exists **only in another shed** (a worker's new yak, not landed)
-  is a dim row with a `🛖<shed>` badge naming the shed, placed by the shed
-  copy's status and parent: under its parent when this farm has it, else at
-  the root of its status view. It is read-only here: its detail is the shed's
-  copy under an `only in shed <name>` banner, and every key that writes to a
-  yak (`S E P T L D R H M A X C m *`) answers `<id> is only in shed <name>:
-  read-only here` and changes nothing. `a` answers its ask in that shed when it
-  is awaiting a human; `y` copies the id. Added in two sheds, it is one row
-  (the first shed in attention order) with the `⚠`.
-
-  ![yaks TUI tree with a shed-only row and a two-shed conflict marker](assets/tui-shed-only.svg)
-
-  ![yaks TUI tree with shed badges](assets/tui-shed-badges.svg)
-
-  ![yaks TUI detail with its Sheds section](assets/tui-shed-badges-detail.svg)
 - The dependency-blocked marker (`*`) and the multi-select marker (`●`) are
   distinct axes and can co-occur.
 - The tab row's right edge shows the active **family scope** for tree views
@@ -136,8 +104,8 @@ the pre-find scroll and cursor).
 | `D` / `R` | Add dependency / reparent |
 | `H` | Move to another herd (multi-herd farms) |
 | `M` | Add a comment (note): an empty editor under a `▸ you · now` header after the last comment, in place |
-| `a` | Ask / answer (on a yak awaiting a human: answer, which sets `needs: agent`; otherwise ask, which sets `needs: human`; on a yak whose copy in another shed is awaiting a human, in any view (the Inbox lists them): answer it in that shed, uncommitted there) |
-| `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm, else in the shed that has it (a shed-only yak's shed first), and says which shed it came from. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped; `j`/`k`, `d`/`u`, `g`/`G` scroll, `E` edits it in place (the multi-line editor: `Ctrl-S` writes the file back under the farm lock and returns to the viewer, re-rendered; cancel returns unchanged, asking first if you typed anything; a file changed on disk meanwhile is not overwritten until a second `Ctrl-S`; a copy found in another shed is not editable here), `O` hands it to the OS opener, `Esc`/`q`/`h` close. Images and binary files open with the OS opener |
+| `a` | Ask / answer (on a yak awaiting a human: answer, which sets `needs: agent`; otherwise ask, which sets `needs: human`) |
+| `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped; `j`/`k`, `d`/`u`, `g`/`G` scroll, `E` edits it in place (the multi-line editor: `Ctrl-S` writes the file back under the farm lock and returns to the viewer, re-rendered; cancel returns unchanged, asking first if you typed anything; a file changed on disk meanwhile is not overwritten until a second `Ctrl-S`), `O` hands it to the OS opener, `Esc`/`q`/`h` close. Images and binary files open with the OS opener |
 | `r` | (detail) Rename the attachment whose link (📎 or 🖼) the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
 | `X` | Slaughter (delete, with confirm); on a yak with live descendants the confirm offers the whole family, naming how many go |
 | `:w` / `:q` / `:wq` | Save / cancel / save+close (editor Normal mode) |
@@ -184,12 +152,11 @@ active view.
 | Key | Action |
 |---|---|
 | `j` / `k`, `g` / `G`, `d` / `u` | Move between sheds |
-| `l` / `→` / `Enter` | Show the shed's changes (`yaks changes <shed>`) |
+| `l` / `→` / `Enter` | Show the shed: its git state and the yaks it wrote |
 | `h` / `←` / `Esc` | (detail) Back to the shed list |
-| `j` / `k` | (detail) Move between its changed yaks: the outstanding ones first, then the `▸ N landed` fold line, then (open) the landed ones |
+| `j` / `k` | (detail) Move between its yaks (newest write first) |
 | `J` / `K` | (detail) Next / previous shed |
-| `Enter` | (detail) On the `▸ N landed` line: show / hide the landed yaks. On a yak: open it: this checkout's copy, or for a yak only that shed has, its read-only shed-only row (the shed's copy) |
-| `a` | (detail) Answer the yak's ask in that shed: the CLI's `yaks answer <id>@<shed>`, written into the shed's working tree and left uncommitted for its worker to commit |
+| `Enter` | (detail) Open the yak |
 | `y` | Copy the shed's path (detail: the yak id) |
 | `r` | Rescan now |
 
@@ -308,13 +275,7 @@ the full source lines.
 ![the same, scrolled to its code block, table and a comment](assets/tui-md-render-2.svg)
 
 **Inbox** — the flat, cross-status list of every yak carrying a `needs` value
-(`⏳` awaiting a human, `✅` answered and awaiting an agent), and also a yak
-of this farm whose copy in another shed is awaiting a human (the TUI form of
-`yaks inbox --sheds`; the tab count agrees). `a` on such a row answers it in
-that shed, as the Sheds tab's `a` does; so does a shed-only yak whose copy
-asks (it is a dim row, see Signals). `copies: home` leaves only this farm's own
-`needs`. When a scan finds an ask that was not in
-the last one, a `⏳ new ask in <shed>: <id> <title>` notice flashes. It is unpinned (no tab); reach it from the view picker (`v`) or the drawer
+(`⏳` awaiting a human, `✅` answered and awaiting an agent). It is unpinned (no tab); reach it from the view picker (`v`) or the drawer
 `inbox` chip.
 
 ![yaks TUI inbox view](assets/tui-inbox.svg)
@@ -346,46 +307,38 @@ that herd (an id-prefix rename). `H` does the same move as a one-key picker.
 
 ## Sheds tab
 
-The **🛦 Sheds** tab is `yaks sheds` and `yaks changes` on screen: every checkout
-of the repository (the primary `main`, git worktrees, Delta clones), live, so
-you can see what each worker's thread is doing without opening a terminal in
-its checkout. The text is the CLI's own (the same functions produce it).
+The **🛦 Sheds** tab is `yaks sheds` on screen: every checkout of the
+repository (the primary `main`, git worktrees, Delta clones), live, so you can
+see what each worker's thread is doing without opening a terminal in its
+checkout. Every checkout shares this one farm, and each write records the
+checkout it came from in the farm's local activity log, so a shed's activity is
+just the yaks it wrote. The text is the CLI's own (the same functions produce
+it).
 
 - **One row per shed**, attention first: `main`, then sheds with an open ask
-  (`⏳`), active ones, ones with work outstanding, stale ones, then quiet ones
-  (nothing outstanding, or all of it landed) and unreadable ones (an old-layout
-  clone), dimmed. `*` marks the checkout the TUI runs in. Each row shows its
-  liveness (`active` / `stale` / `idle`), `+ahead -behind` against this
-  checkout, `✎` and its count of uncommitted files, the `farm:` summary,
-  the yaks it is shaving, and, for a shed whose commits are already in the
-  primary with nothing outstanding, `merged, nothing outstanding` (safe to
-  delete) or `merged · uncommitted files` (only those keep it). A footer counts orphaned Delta pins (finished
-  threads; `yaks sheds` lists them).
-- **The tab count** is the number of sheds with something outstanding.
-- **The detail pane** (`l`) shows the shed's path, git state, its `state` (the
-  `yaks sheds` line: `merged, nothing outstanding`, or `uncommitted: N
-  modified, M untracked`), baseline, who is working there and when its farm last changed, then its changes per yak: the
-  same bracket words as `yaks changes` (`hairy -> shaving`, `new, hairy`,
-  `edited`, `landed`), each new note's first line, and for an ask the
-  question itself, which `a` answers in place. The outstanding yaks lead; the
-  landed ones (already in this checkout's farm) fold behind one dim `▸ N landed`
-  line, as `yaks sheds` does, which `j`/`k` reach and `Enter` expands to `▾ N
-  landed` with the landed yaks below it (`Enter` again folds them). Folded by
-  default; the open/closed state is one setting for the tab, not kept per shed
-  or across runs. A shed with nothing landed shows no fold line.
-- **Refresh**: the scan runs in the background (it runs git in every
-  checkout and reads several farms: well under a second for a handful of
-  sheds), at startup and every 10 seconds whichever view is shown (the yak
-  views will annotate rows from it), and on `r`. The tab row's
+  (`⏳`), active ones (wrote within 2 hours), stale ones (hold a shaving yak but
+  went quiet), then idle ones, dimmed; within each, the most recent writer
+  first. `*` marks the checkout the TUI runs in. Each row shows its liveness,
+  `+ahead -behind` against this checkout, `✎` and its count of uncommitted
+  files, the yaks it is shaving (else the last yak it wrote), and its `state`
+  (`merged, clean`: safe to delete; or what uncommitted files keep it). A
+  footer counts orphaned Delta pins (finished threads; `yaks discover` lists
+  them). The farm branch's own worktree is not a row.
+- **The tab count** is the number of sheds busy right now (active, stale, or
+  asking).
+- **The detail pane** (`l`) shows the shed's path, git state, `state`, its
+  activity label, then every yak it wrote, newest first, with its status now
+  (`⏳` on one awaiting a human). `Enter` opens the yak; answer an ask with `a`
+  from any yak view, as for any other yak.
+- **Refresh**: the scan runs in the background (git in every checkout), when
+  the tab opens, every 10 seconds while it is shown, and on `r`. The tab row's
   right edge says `scanning…` or `scanned 4s ago`. The UI never waits on it.
 - Nothing on the tab removes a shed; cleanup stays advisory (`y` copies the
   path).
 
 ![yaks TUI Sheds tab](assets/tui-sheds.svg)
 
-![yaks TUI Sheds tab with a shed's changes](assets/tui-sheds-detail.svg)
-
-![yaks TUI Sheds tab: a landed shed folds its yaks behind one line](assets/tui-sheds-detail-landed.svg)
+![yaks TUI Sheds tab with a shed's detail](assets/tui-sheds-detail.svg)
 
 # Screenshots
 

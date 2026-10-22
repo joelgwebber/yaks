@@ -206,8 +206,8 @@ pub fn working_set_view() -> View {
 /// (`yaks sheds`), not yaks, so the yak row/count paths branch on it.
 pub const SHEDS_KEY: &str = "sheds";
 
-/// The Sheds tab: every checkout of the repository and what each changed
-/// (`yaks sheds` / `yaks changes`), refreshed in the background while shown.
+/// The Sheds tab: every checkout of the repository and the yaks each wrote
+/// (`yaks sheds`), refreshed in the background while shown.
 /// Pinned by default (Joel, yaks-98f1); its spec is unused.
 pub fn sheds_view() -> View {
     View {

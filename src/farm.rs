@@ -23,145 +23,50 @@ pub use crate::store::{DepOutcome, MoveOutcome, Reparent};
 const NON_DEAD: [Status; 3] = [Status::Hairy, Status::Shaving, Status::Shorn];
 const EVERY: [Status; 4] = [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
 
-/// One other shed's copy of a yak, as [`Farm::show_sheds`] found it.
-#[derive(Debug, Clone)]
-pub struct ShedCopy {
-    /// The shed's short name ([`crate::sheds::Shed::name`]).
-    pub shed: String,
-    pub path: PathBuf,
-    /// The shed's copy of the yak; `None` when its farm has no such yak.
-    pub task: Option<Task>,
-    /// Note entries the shed's copy has that this checkout's copy lacks (all
-    /// of its entries when the yak is not here). Empty when `task` is `None`.
-    pub new_notes: Vec<store::NoteEntry>,
-    /// This checkout's copy of the yak, for comparing status and `needs`.
-    pub ours: Option<Task>,
-}
-
-impl ShedCopy {
-    pub fn absent(&self) -> bool {
-        self.task.is_none()
-    }
-
-    /// The shed's copy says nothing this checkout's lacks: same status, same
-    /// `needs`, no note entry beyond ours. A shed that is merely behind (ours
-    /// has later notes) is the same by this measure. False when the yak is
-    /// only in the shed; meaningless (false) when absent from it.
-    pub fn same(&self) -> bool {
-        match (&self.task, &self.ours) {
-            (Some(t), Some(o)) => {
-                t.status == o.status && t.needs == o.needs && self.new_notes.is_empty()
-            }
-            _ => false,
-        }
-    }
-}
-
-/// Every other shed's copy of one yak (`yaks show <id> --sheds`).
-#[derive(Debug, Clone, Default)]
-pub struct ShedCopies {
-    /// One per shed with a farm of its own, sorted as `yaks sheds` lists them.
-    pub copies: Vec<ShedCopy>,
-    /// Sheds with no separate readable farm (shared with this checkout, none,
-    /// or unreadable): nothing to compare.
-    pub no_farm: usize,
-}
-
-/// One attachment file found in some farm: see [`list_attachments`].
+/// One attachment file of a yak: see [`list_attachments`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FoundAttachment {
-    /// The attachment's file name (`.yaks/<id>/<name>`).
+    /// The attachment's file name (`<herd>/yaks/<id>/<name>`).
     pub name: String,
     /// Absolute path of the file.
     pub path: PathBuf,
-    /// The shed it was found in ([`crate::sheds::Shed::name`]); `None` for
-    /// this checkout's own farm.
-    pub shed: Option<String>,
 }
 
-/// Where yak `id`'s attachment `name` lives: the first of `farms` (a
-/// `(shed name, farm root)` list; `None` = this checkout) whose
-/// `<root>/<id>/<name>` is a file. The one resolution rule behind the TUI's
-/// open and `yaks attachment`: this checkout first, then the caller's order of
-/// other sheds (yaks-31e2).
-pub fn locate_attachment(
-    farms: &[(Option<String>, PathBuf)],
-    id: &str,
-    name: &str,
-) -> Option<FoundAttachment> {
+/// Where yak `id`'s attachment `name` lives in the farm at `root`, when it
+/// is a file there. The one resolution rule behind the TUI's open and `yaks
+/// attachment`. A name that could leave the yak's directory is refused.
+pub fn locate_attachment(root: &Path, id: &str, name: &str) -> Option<FoundAttachment> {
     if name.is_empty() || name.contains(['/', '\\']) || name.starts_with('.') {
         return None;
     }
-    farms.iter().find_map(|(shed, root)| {
-        let path = store::artifact_dir(root, id).join(name);
-        path.is_file().then(|| FoundAttachment {
-            name: name.to_string(),
-            path,
-            shed: shed.clone(),
-        })
+    let path = store::artifact_dir(root, id).join(name);
+    path.is_file().then(|| FoundAttachment {
+        name: name.to_string(),
+        path,
     })
 }
 
-/// Every attachment of yak `id` across `farms` (same list as
-/// [`locate_attachment`]), one entry per file name: the first farm that has
-/// it wins, so a file this checkout has hides other sheds' copies. Sorted by
-/// name.
-pub fn list_attachments(farms: &[(Option<String>, PathBuf)], id: &str) -> Vec<FoundAttachment> {
-    let mut out: Vec<FoundAttachment> = Vec::new();
-    for (shed, root) in farms {
-        let Ok(rd) = std::fs::read_dir(store::artifact_dir(root, id)) else {
-            continue;
-        };
-        for e in rd.flatten() {
+/// Every attachment of yak `id` in the farm at `root`, sorted by name.
+pub fn list_attachments(root: &Path, id: &str) -> Vec<FoundAttachment> {
+    let Ok(rd) = std::fs::read_dir(store::artifact_dir(root, id)) else {
+        return Vec::new();
+    };
+    let mut out: Vec<FoundAttachment> = rd
+        .flatten()
+        .filter_map(|e| {
             let name = e.file_name().to_string_lossy().into_owned();
-            if name.starts_with('.') || !e.path().is_file() {
-                continue;
-            }
-            if !out.iter().any(|a| a.name == name) {
-                out.push(FoundAttachment {
-                    name,
-                    path: e.path(),
-                    shed: shed.clone(),
-                });
-            }
-        }
-    }
+            (!name.starts_with('.') && e.path().is_file()).then(|| FoundAttachment {
+                name,
+                path: e.path(),
+            })
+        })
+        .collect();
     out.sort_by(|a, b| a.name.cmp(&b.name));
     out
 }
 
-/// One open ask found in another shed: see [`Farm::inbox_sheds`].
-#[derive(Debug, Clone)]
-pub struct ShedAsk {
-    /// The shed's short name ([`crate::sheds::Shed::name`]).
-    pub shed: String,
-    pub path: PathBuf,
-    /// The yak as that shed's farm has it.
-    pub task: Task,
-    /// The newest note at or after the ask ([`store::ask_question`]); `None`
-    /// for a hand-set `needs:` or an ask with no question.
-    pub question: Option<String>,
-}
-
-/// Does `ours` (this farm's copy of a yak) already hold everything `theirs`
-/// (a shed's copy) says about its latest ask: the `asked:` note itself and
-/// every entry after it? Then the shed's ask is not news here, even when this
-/// copy has moved on (a later note, an answer). A shed whose copy forked
-/// before our latest note is the common case; a re-ask or a reply in the shed
-/// is news. A `needs:` set by hand, with no ask note, is news only when our
-/// `needs` differs.
-fn ask_already_seen(ours: &Task, theirs: &Task) -> bool {
-    let tn = store::parse_notes(&theirs.body);
-    let Some(at) = tn.iter().rposition(|n| store::is_ask_text(&n.text)) else {
-        return ours.needs == theirs.needs;
-    };
-    let on = store::parse_notes(&ours.body);
-    tn[at..].iter().all(|n| on.contains(n))
-}
-
 /// The yaks in `tasks` carrying a `needs` value, whatever their status (a set
-/// value is never invisible), narrowed by `spec`'s other filters. Shared by
-/// [`Farm::inbox`] and [`Farm::inbox_sheds`] so both mean the same thing.
+/// value is never invisible), narrowed by `spec`'s other filters.
 fn needs_rows<'a>(tasks: &'a [Task], spec: &FilterSpec) -> Vec<&'a Task> {
     let mut spec = spec.clone();
     spec.statuses = EVERY.to_vec();
@@ -177,13 +82,6 @@ pub struct NeedsChange {
     pub status: Status,
     pub before: Option<String>,
     pub after: Option<String>,
-}
-
-/// What a cross-shed [`Farm::answer_in_shed`] wrote and where.
-pub struct ShedAnswered {
-    pub change: NeedsChange,
-    /// The yak's file in the shed's working tree (left uncommitted).
-    pub path: PathBuf,
 }
 
 /// Result of `pickup`.
@@ -817,50 +715,6 @@ impl Farm {
 
     // -- queries ----------------------------------------------------------
 
-    /// Every checkout of the repository containing `cwd` (git worktrees and
-    /// Delta clones), the one in `cwd` included and marked
-    /// [`Shed::current`](crate::sheds::Shed::current), each measured like any
-    /// other. Read-only everywhere; see [`crate::sheds`].
-    pub fn sheds(&self, cwd: &Path) -> Result<Vec<crate::sheds::Shed>> {
-        crate::sheds::discover(cwd, &self.root)
-    }
-
-    /// The farms to look for yak attachments in, in resolution order: this
-    /// checkout's (`None`), then every other shed with a farm of its own, as
-    /// `yaks sheds` orders them. Without a git repository (no sheds), just
-    /// this farm.
-    pub fn attachment_farms(&self, cwd: &Path) -> Vec<(Option<String>, PathBuf)> {
-        let mut farms = vec![(None, self.root.clone())];
-        for shed in self.other_sheds(cwd).unwrap_or_default() {
-            if let crate::sheds::ShedFarm::Own(_) = shed.farm {
-                if let Ok(d) = store::discover_with(&shed.path, None) {
-                    farms.push((Some(shed.name()), d.root));
-                }
-            }
-        }
-        farms
-    }
-
-    /// [`Farm::sheds`] without the current one: what "elsewhere" means to
-    /// `inbox --sheds` and `show --sheds`, which already show this checkout.
-    fn other_sheds(&self, cwd: &Path) -> Result<Vec<crate::sheds::Shed>> {
-        let mut sheds = self.sheds(cwd)?;
-        sheds.retain(|s| !s.current);
-        Ok(sheds)
-    }
-
-    /// One shed's changes, per yak (`yaks changes`); see [`crate::sheds::changes`].
-    /// `sheds` is the full list `Farm::sheds` returned (used only to find the
-    /// primary's path for `landed`, without a second discovery walk).
-    pub fn shed_changes(
-        &self,
-        shed: &crate::sheds::Shed,
-        cwd: &Path,
-        sheds: &[crate::sheds::Shed],
-    ) -> Result<crate::sheds::Changes> {
-        crate::sheds::changes(shed, cwd, &self.root, sheds)
-    }
-
     /// Tasks matching `spec`, grouped by status then id (the `list`/`search` view).
     pub fn list(&self, spec: FilterSpec, include_dead: bool) -> Result<Vec<Task>> {
         let tasks = store::load(&self.root, &EVERY)?;
@@ -948,68 +802,6 @@ impl Farm {
         }))
     }
 
-    /// [`Farm::answer`] applied to another checkout's farm: the one write this
-    /// library performs outside its own farm (decided in yaks-ee0a). The answer
-    /// lands in `shed`'s working tree and is left uncommitted there for its
-    /// worker to commit with its own yak file; nothing is staged or committed.
-    ///
-    /// This is a method, not a way to get a `Farm` on the shed: the temporary
-    /// `Farm` below never leaves it, so no other mutation can reach a shed.
-    /// The shed's farm is found with discovery that ignores `$YAKS_DIR` (that
-    /// names OUR farm), and is refused when it is not the shed's own: shared
-    /// with this checkout (plain `answer` is the tool), absent, unreadable, or
-    /// of a newer schema. `answer` takes the SHED farm's lock, once. Errors
-    /// name the cause; an unknown id is an error here too.
-    pub fn answer_in_shed(
-        &self,
-        shed: &crate::sheds::Shed,
-        id: &str,
-        actor: Option<&str>,
-        note: Option<&str>,
-        done: bool,
-    ) -> Result<ShedAnswered> {
-        let name = shed.name();
-        match &shed.farm {
-            crate::sheds::ShedFarm::Own(_) => {}
-            crate::sheds::ShedFarm::Shared => {
-                bail!("shed {name} shares this checkout's farm; use plain `yaks answer {id}`")
-            }
-            crate::sheds::ShedFarm::None => bail!("shed {name} has no farm of its own"),
-            crate::sheds::ShedFarm::Unreadable(why) => {
-                bail!("shed {name}'s farm is unreadable: {why}")
-            }
-        }
-        let found = store::discover_with(&shed.path, None)
-            .map_err(|e| anyhow::anyhow!("shed {name} has no readable farm: {e}"))?;
-        let same = |a: &Path, b: &Path| match (a.canonicalize(), b.canonicalize()) {
-            (Ok(a), Ok(b)) => a == b,
-            _ => a == b,
-        };
-        if same(&found.root, &self.root) {
-            bail!("shed {name} shares this checkout's farm; use plain `yaks answer {id}`");
-        }
-        if let store::SchemaStatus::Newer(v) = store::schema_status(&found.root) {
-            bail!(
-                "shed {name}'s farm is schema v{v}, newer than this yaks (v{})",
-                store::SCHEMA
-            );
-        }
-        if let Some(why) = store::migration_refusal(&found.root) {
-            bail!("shed {name}: {why}");
-        }
-        let theirs = Farm {
-            root: found.root,
-            pointer_prefix: None,
-        };
-        let Some(change) = theirs.answer(id, actor, note, done)? else {
-            bail!("task {id} not found in shed {name}");
-        };
-        let path = theirs
-            .path_of(id)
-            .ok_or_else(|| anyhow::anyhow!("task {id} vanished from shed {name}"))?;
-        Ok(ShedAnswered { change, path })
-    }
-
     /// Clear `needs: agent` with an attributed `picked up` note. The only thing
     /// that clears it. Refuses any other state, naming it.
     pub fn pickup(&self, id: &str, actor: Option<&str>, note: Option<&str>) -> Result<Pickup> {
@@ -1037,44 +829,6 @@ impl Farm {
     pub fn inbox(&self, spec: FilterSpec) -> Result<Vec<Task>> {
         let tasks = store::load(&self.root, &EVERY)?;
         Ok(needs_rows(&tasks, &spec).into_iter().cloned().collect())
-    }
-
-    /// Open asks in the OTHER sheds (see [`crate::sheds`]): every yak whose
-    /// `needs` is set in a shed's own farm, tagged with the shed it came from.
-    /// `spec` filters them as it does [`Farm::inbox`]. An ask that is identical
-    /// here (same id, same `needs`, same [`store::ask_note`]) is left out: the
-    /// plain inbox already shows it. A shed with no farm of its own (shared
-    /// with this checkout, private, unreadable) contributes nothing. Strictly
-    /// read-only in the other checkouts.
-    pub fn inbox_sheds(&self, cwd: &Path, spec: FilterSpec) -> Result<Vec<ShedAsk>> {
-        let ours = store::load(&self.root, &EVERY)?;
-        let mut out = Vec::new();
-        for shed in self.other_sheds(cwd)? {
-            if !matches!(shed.farm, crate::sheds::ShedFarm::Own(_)) {
-                continue;
-            }
-            let Ok(d) = store::discover_with(&shed.path, None) else {
-                continue;
-            };
-            let Ok(theirs) = store::load(&d.root, &EVERY) else {
-                continue;
-            };
-            for t in needs_rows(&theirs, &spec) {
-                let seen_here = ours
-                    .iter()
-                    .find(|o| o.id == t.id)
-                    .is_some_and(|o| ask_already_seen(o, t));
-                if !seen_here {
-                    out.push(ShedAsk {
-                        shed: shed.name(),
-                        path: shed.path.clone(),
-                        question: store::ask_question(t),
-                        task: t.clone(),
-                    });
-                }
-            }
-        }
-        Ok(out)
     }
 
     /// Hairy tasks with at least one unresolved dependency, each paired with
@@ -1125,49 +879,6 @@ impl Farm {
             .collect();
         children.sort_by(|a, b| a.id.cmp(&b.id));
         Ok(Some(Show { task, children }))
-    }
-
-    /// The yak `id` as every OTHER shed's farm has it (`show --sheds`): per
-    /// shed, its copy (or its absence) and the note entries it has that this
-    /// checkout's copy lacks. Strictly read-only in the other checkouts; a
-    /// shed whose farm is shared with this one, missing or unreadable is only
-    /// counted in [`ShedCopies::no_farm`].
-    pub fn show_sheds(&self, cwd: &Path, id: &str) -> Result<ShedCopies> {
-        let ours = store::load_task_by_id(&self.root, id)?;
-        let our_notes = ours
-            .as_ref()
-            .map(|o| store::parse_notes(&o.body))
-            .unwrap_or_default();
-        let mut out = ShedCopies::default();
-        for shed in self.other_sheds(cwd)? {
-            let theirs = match shed.farm {
-                crate::sheds::ShedFarm::Own(_) => store::discover_with(&shed.path, None)
-                    .and_then(|d| store::load_task_by_id(&d.root, id))
-                    .ok(),
-                _ => None,
-            };
-            let Some(task) = theirs else {
-                out.no_farm += 1;
-                continue;
-            };
-            let new_notes = task
-                .as_ref()
-                .map(|t| {
-                    store::parse_notes(&t.body)
-                        .into_iter()
-                        .filter(|n| !our_notes.contains(n))
-                        .collect()
-                })
-                .unwrap_or_default();
-            out.copies.push(ShedCopy {
-                shed: shed.name(),
-                path: shed.path.clone(),
-                task,
-                new_notes,
-                ours: ours.clone(),
-            });
-        }
-        Ok(out)
     }
 
     /// The current on-disk file of the yak `id`, wherever its status put it, or
@@ -2877,62 +2588,24 @@ mod tests {
         p
     }
 
-    /// yaks-31e2: an attachment is found in this farm first, else in the first
-    /// shed farm that has it, with that shed named; listing merges by name.
+    /// An attachment resolves by name in its yak's directory, never outside it.
     #[test]
-    fn attachments_resolve_across_shed_farms_in_order() {
-        let here = temp_dir_named("att-here");
-        let w1 = temp_dir_named("att-w1");
-        let w2 = temp_dir_named("att-w2");
-        let put = |root: &Path, name: &str, body: &str| {
-            std::fs::create_dir_all(store::artifact_dir(&root, "y-1")).unwrap();
-            std::fs::write(store::artifact_dir(&root, "y-1").join(name), body).unwrap();
-        };
-        put(&here, "both.txt", "here");
-        put(&w1, "both.txt", "w1");
-        put(&w1, "only-w1.txt", "w1");
-        put(&w2, "only-w1.txt", "w2");
-        put(&w2, "only-w2.png", "w2");
-        let farms = vec![
-            (None, here.clone()),
-            (Some("w1".to_string()), w1.clone()),
-            (Some("w2".to_string()), w2.clone()),
-        ];
-        let found = |n| locate_attachment(&farms, "y-1", n).map(|a| (a.shed, a.path));
-        assert_eq!(
-            found("both.txt"),
-            Some((None, store::artifact_dir(&here, "y-1").join("both.txt")))
-        );
-        assert_eq!(
-            found("only-w1.txt"),
-            Some((
-                Some("w1".into()),
-                store::artifact_dir(&w1, "y-1").join("only-w1.txt")
-            ))
-        );
-        assert_eq!(
-            found("only-w2.png"),
-            Some((
-                Some("w2".into()),
-                store::artifact_dir(&w2, "y-1").join("only-w2.png")
-            ))
-        );
+    fn attachments_resolve_in_the_yaks_directory() {
+        let root = temp_dir_named("att-here");
+        let dir = store::artifact_dir(&root, "y-1");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("b.txt"), "b").unwrap();
+        std::fs::write(dir.join("a.png"), "a").unwrap();
+        let found = |n| locate_attachment(&root, "y-1", n).map(|a| a.path);
+        assert_eq!(found("b.txt"), Some(dir.join("b.txt")));
         assert_eq!(found("missing.txt"), None);
-        // No escaping the yak's directory.
-        assert_eq!(found("../y-1/both.txt"), None);
-        let listed: Vec<(String, Option<String>)> = list_attachments(&farms, "y-1")
+        assert_eq!(found("../y-1/b.txt"), None);
+        let names: Vec<String> = list_attachments(&root, "y-1")
             .into_iter()
-            .map(|a| (a.name, a.shed))
+            .map(|a| a.name)
             .collect();
-        assert_eq!(
-            listed,
-            vec![
-                ("both.txt".into(), None),
-                ("only-w1.txt".into(), Some("w1".into())),
-                ("only-w2.png".into(), Some("w2".into())),
-            ]
-        );
-        assert!(list_attachments(&farms, "y-404").is_empty());
+        assert_eq!(names, ["a.png", "b.txt"]);
+        assert!(list_attachments(&root, "y-404").is_empty());
     }
 
     #[test]

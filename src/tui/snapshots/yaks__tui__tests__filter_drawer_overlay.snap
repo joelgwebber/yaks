@@ -1,5 +1,6 @@
 ---
 source: src/tui/tests.rs
+assertion_line: 876
 expression: "draw(&app, 72, 16)"
 ---
  🦬  Hairy* (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Star
@@ -12,7 +13,7 @@ expression: "draw(&app, 72, 16)"
 │   search   (any)
 │   parent   (any)
 │   deps      ready tangled inbox
-│   copies    any home
+│
 │
 │
 │

@@ -26,7 +26,7 @@ You are the **yakherd**: the one agent that claims yaks, briefs workers, lands t
 3. **Land.** Only you land, one worker at a time, by the SHA in its final message, then check it (section 6).
 4. **Reconcile.** A yak still `shaving` after the batch is stalled: `regrow` it or re-run it. `yaks doctor`, `yaks commit`.
 
-**Watching workers.** `yaks log --by <worker> --since 1h` and `yaks inbox` show their notes and asks live. `yaks sheds` lists every checkout with its git facts (branch, ahead/behind, dirty files, merged, liveness), which tells a slow worker from a dead one.
+**Watching workers.** `yaks log --by <worker> --since 1h` and `yaks inbox` show their notes and asks live. `yaks sheds` lists every checkout with its git facts (branch, ahead/behind, dirty files, merged) and the yaks it wrote, newest first, with when it last wrote: that tells a slow worker from a dead one.
 
 ## 3. Scope work so it cannot collide
 

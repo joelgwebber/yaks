@@ -15,18 +15,14 @@ use ratatui::text::Span;
 use ratatui::widgets::Paragraph;
 
 use super::{
-    COPIES_CHOICES, DEPS_CHOICES, DRAWER_LABEL_W, DRAWER_ROWS, PRI_CHOICES, STATUS_CHOICES,
-    TYPE_CHOICES, clone_spec, make_handler, render_chip_row, render_text_row, status_word,
-    text_field, toggle,
+    DEPS_CHOICES, DRAWER_LABEL_W, DRAWER_ROWS, PRI_CHOICES, STATUS_CHOICES, TYPE_CHOICES,
+    clone_spec, make_handler, render_chip_row, render_text_row, status_word, text_field, toggle,
 };
 use crate::filter::FilterSpec;
 use crate::model::Status;
 
-/// The `copies` chip row (yaks-9631): `any | home`, the last fixed row.
-const COPIES_ROW: usize = DRAWER_ROWS - 1;
-
 /// The optional herd chip row is appended after the fixed [`DRAWER_ROWS`] rows
-/// (0..=7), so its row index is `DRAWER_ROWS`. It only exists on multi-herd
+/// (0..=6), so its row index is `DRAWER_ROWS`. It only exists on multi-herd
 /// farms; single-herd farms keep the original fixed layout untouched.
 const HERD_ROW: usize = DRAWER_ROWS;
 
@@ -48,8 +44,6 @@ pub(crate) struct Drawer {
     /// The inbox facet: keep only yaks carrying a `needs` block. Composes with
     /// the rest of the filter (replaces the old modal `i` toggle).
     pub(crate) needs: bool,
-    /// `copies: home` (yaks-9631): this farm only, no other-shed overlay.
-    pub(crate) home: bool,
     pub(crate) labels: RefCell<EditorState>,
     pub(crate) search: RefCell<EditorState>,
     pub(crate) parent: RefCell<EditorState>,
@@ -70,7 +64,6 @@ impl Drawer {
             ready: f.ready_only,
             tangled: f.tangled_only,
             needs: f.needs_only,
-            home: f.home_only,
             labels: text_field(&f.labels.join(", "), vim),
             search: text_field(f.search.as_deref().unwrap_or(""), vim),
             parent: text_field(f.parent.as_deref().unwrap_or(""), vim),
@@ -112,7 +105,6 @@ impl Drawer {
             1 => TYPE_CHOICES.len(),
             2 => PRI_CHOICES.len(),
             6 => DEPS_CHOICES.len(),
-            COPIES_ROW => COPIES_CHOICES.len(),
             HERD_ROW => self.herd_choices.len(),
             _ => 0,
         }
@@ -128,8 +120,6 @@ impl Drawer {
                 1 => self.tangled = !self.tangled,
                 _ => self.needs = !self.needs,
             },
-            // A radio: the chip under the cursor is the value.
-            COPIES_ROW => self.home = self.chip_idx == 1,
             HERD_ROW => toggle(&mut self.herds, self.herd_choices[self.chip_idx].clone()),
             _ => {}
         }
@@ -143,7 +133,6 @@ impl Drawer {
         self.ready = false;
         self.tangled = false;
         self.needs = false;
-        self.home = false;
         *self.labels.borrow_mut() = {
             let mut s = EditorState::new(Lines::from(""));
             s.set_single_line(true);
@@ -183,7 +172,6 @@ impl Drawer {
             ready_only: self.ready,
             tangled_only: self.tangled,
             needs_only: self.needs,
-            home_only: self.home,
             parent: non_empty(&self.parent),
             // On multi-herd farms the herd chip row owns this scope; on
             // single-herd farms `herds` stays whatever the view carried in
@@ -194,7 +182,7 @@ impl Drawer {
 }
 
 pub(crate) fn render_drawer(d: &Drawer, frame: &mut Frame, area: Rect) {
-    // header + the 8 fixed rows, plus the herd row on multi-herd farms, then a
+    // header + the 7 fixed rows, plus the herd row on multi-herd farms, then a
     // flex filler. Row `n` renders into `rows[n + 1]`.
     let mut constraints = vec![
         Constraint::Length(1), // header
@@ -205,7 +193,6 @@ pub(crate) fn render_drawer(d: &Drawer, frame: &mut Frame, area: Rect) {
         Constraint::Length(1), // search
         Constraint::Length(1), // parent
         Constraint::Length(1), // deps chips
-        Constraint::Length(1), // copies chips
     ];
     if d.multi_herd() {
         constraints.push(Constraint::Length(1)); // herd chips
@@ -298,20 +285,6 @@ pub(crate) fn render_drawer(d: &Drawer, frame: &mut Frame, area: Rect) {
         &deps,
         frame,
         rows[7],
-    );
-    let copies: Vec<(String, bool)> = COPIES_CHOICES
-        .iter()
-        .enumerate()
-        .map(|(i, c)| (c.to_string(), d.home == (i == 1)))
-        .collect();
-    render_chip_row(
-        d.row == COPIES_ROW,
-        d.chip_idx,
-        DRAWER_LABEL_W,
-        "copies",
-        &copies,
-        frame,
-        rows[COPIES_ROW + 1],
     );
     if d.multi_herd() {
         let herds: Vec<(String, bool)> = d

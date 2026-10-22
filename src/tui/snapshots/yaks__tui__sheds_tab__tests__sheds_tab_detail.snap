@@ -4,19 +4,19 @@ expression: "draw(&app, 120, 18)"
 ---
  🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   🛖  Sheds (2)             scanned 4s ago
 
-◂ needs-1-superseded  needs-1-superseded: a worker
-│ path     /src/yaks/.delta/worktrees/epe9/yaks
-│ git      main@1a2b3c4 · +1 -0 vs here · 2 dirty
-│ state    uncommitted: 2 modified
-│ farm     2 new notes, 1 needs
-│ label    who: needs-1 · shaving: yaks-8814 · active
-│ active   2026-10-13T00:10:00Z
+◂ perf-1-profile  perf-1-profile: a worker
+│ path     /src/yaks/.delta/worktrees/53sm/yaks
+│ git      main@1a2b3c4 · +1 -0 vs here · 1 dirty
+│ state    uncommitted: 1 modified
+│ activity shaving: yaks-07fe · 2 yaks · active
 │
-│ Changes (1 yak)
-│ ⏳ yaks-8814  [shaving]  landed: a superseded needs is not outstanding
-│     2026-10-13T00:12:55Z  needs-1  Start: Tue Oct 13 00:12:52 UTC 2026
-│     2026-10-13T00:15:37Z  needs-1  asked: needs human
-│       Match the ask by timestamp only, or the whole entry?
-│     needs: human
+│ Yaks written here (2), newest first
+│ yaks-07fe  shaving yaks sheds is slow: profile it  2026-10-13T00:12:57Z
+│ yaks-bc30  shorn   Perf: cache rows()  2026-10-12T22:00:00Z
 │
-h:list  j/k:yak  J/K:shed  Enter:open yak  a:answer  y:copy id  r:rescan  ?:help
+│
+│
+│
+│
+│
+h:list  j/k:yak  J/K:shed  Enter:open yak  y:copy id  r:rescan  ?:help

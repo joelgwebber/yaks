@@ -73,12 +73,6 @@ pub(crate) enum EditAction {
     /// Shear the target, first recording the typed comment (if any) as an
     /// attributed note on each yak (yaks-27c6).
     Shear(ShearTarget),
-    /// Answer `id` in the shed checked out at `shed` (the Sheds tab): the
-    /// CLI's `answer <id>@<shed>`, left uncommitted there (yaks-98f1).
-    AnswerInShed {
-        id: String,
-        shed: std::path::PathBuf,
-    },
 }
 
 /// Which yak(s) a shear-comment prompt shears: the single-yak state picker,

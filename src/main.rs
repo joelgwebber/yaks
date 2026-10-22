@@ -4,6 +4,7 @@
 //! facade): every command is parse args -> call one Farm op -> render (text or
 //! --json). Tasks live as markdown files under `.yaks/`; status is the folder.
 
+mod activity;
 mod actor;
 mod branchfarm;
 mod brief;
@@ -60,18 +61,6 @@ struct Cli {
     /// `$YAKS_DIR` still wins over discovery (a relative one is read from <PATH>).
     #[arg(short = 'C', value_name = "PATH", global = true)]
     chdir: Vec<PathBuf>,
-    /// Run as if started in another checkout of this repo (a shed).
-    ///
-    /// The shed, from `yaks sheds`, is picked by name like `yaks changes <SHED>`: its path,
-    /// Delta dir id, thread-title slug, branch, actor, or a unique substring
-    /// (`main` is the primary checkout; naming the checkout you are in is a
-    /// no-op). The same as `-C <that shed's path>`:
-    /// FULL access, so a write command writes in that shed's farm. Applied
-    /// after any `-C`, relative to that checkout; at most once. No or an
-    /// ambiguous match lists the sheds and exits 1. Never records the Delta
-    /// thread title (that belongs to the checkout you are in).
-    #[arg(long = "shed", id = "into_shed", value_name = "SHED", global = true)]
-    into_shed: Option<String>,
     #[command(subcommand)]
     command: Command,
 }
@@ -146,20 +135,9 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Show one task by id (`--sheds`: also how other checkouts have it).
-    ///
-    /// With `--sheds`, also show how the OTHER checkouts of this repository
-    /// (git worktrees, Delta clones; not the one you are in) have that yak: this
-    /// checkout's copy first, then one block per shed whose copy differs (its
-    /// status, `needs:`, and the note entries it has that this copy lacks) and
-    /// one line counting the sheds that are the same, lack the yak, or have no
-    /// farm of their own. Works for a yak that exists only in a shed (plain
-    /// `show` still exits 1). Read-only in the other checkouts.
+    /// Show one task by id.
     Show {
         id: String,
-        /// Also show each other shed's copy where it differs from this one's.
-        #[arg(long)]
-        sheds: bool,
         #[arg(long)]
         json: bool,
     },
@@ -252,15 +230,11 @@ enum Command {
         /// New filename (e.g. `login-page`, becomes `login-page.png`).
         new: String,
     },
-    /// Find a yak's attachments in this checkout or any other shed.
+    /// Find a yak's attachments (their absolute paths).
     ///
-    /// Looks in this checkout's farm first,
-    /// then every other shed's (git worktrees, Delta clones), so evidence a
-    /// worker attached in its shed is readable before it lands. With no FILE,
-    /// lists each attachment as `<shed>  <absolute path>` (`.` = this
-    /// checkout; a name this checkout has hides other sheds' copies). With
-    /// FILE, prints that one's absolute path, or exits 1 when no farm has it.
-    /// Read-only.
+    /// With no FILE, lists the absolute path of each attachment of the yak.
+    /// With FILE, prints that one's absolute path, or exits 1 when the yak
+    /// has no such attachment. Read-only.
     Attachment {
         id: String,
         /// An attachment filename under `.yaks/<herd>/yaks/<id>/` (as in its link).
@@ -322,108 +296,34 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// List every checkout of this repo and what its farm changed.
+    /// List every checkout of this repo, its git state and the yaks it wrote.
     ///
     /// Covers EVERY checkout of this repo (git worktrees and Delta clones),
-    /// the one you are in included: it is marked (a `*` in the first column
-    /// and `(here)` on its `name:` line, JSON `current: true`, `false` on every
-    /// other row) and measured like any other, so where you run this only
-    /// picks which row is marked, never an answer. Each row says what that
-    /// checkout's farm CHANGED since the shed forked (the oldest
-    /// entry of its HEAD reflog, so a worker is not credited with what its
-    /// coordinator did first, or the target of a later switch onto the branch
-    /// it is on now unless that switch branched off its own commits; the same from every checkout, so what the shed
-    /// merged in since counts as its own): yaks only there, yaks in another
-    /// status, new notes, `needs:` set, yaks edited (title, fields or
-    /// description, as `yaks status` reads them), and yaks `landed` (already
-    /// in the REFERENCE farm — the primary's own live farm when visible and
-    /// readable, else this checkout's branch upstream: all touched landed replaces the
-    /// summary with `landed (N yak)`; some landed adds `(K landed)` and
-    /// prunes the itemized lines to what's still outstanding; never set for
-    /// the primary's own row; JSON `farm.landed`, an array of ids). The PRIMARY checkout is measured from
-    /// the UPSTREAM of its branch instead (`@{upstream}`, else `origin/<branch>`,
-    /// else `origin/main` / `origin/HEAD`'s target) against its working tree,
-    /// i.e. what it has not published, and names the ref, e.g. `(vs
-    /// origin/kinds-discovery)`, JSON `farm.upstream`; with no usable ref it falls back to its
-    /// fork point and says `(vs fork)`. With no usable reflog the baseline of
-    /// any other shed is the merge-base with this checkout (the one case that
-    /// depends on where you run it) and the output says `(vs merge-base)`
-    /// (JSON `farm.vs`: `upstream`, `fork`, `merge-base` or `checkout`). Also how far
-    /// ahead/behind its HEAD is of this checkout's (`+? -?`, JSON null, when
-    /// there is no merge-base here, e.g. shallow history; the table then says
-    /// once to `git fetch --unshallow`). A shed that is merely behind shows
-    /// no changes. Each shed with entries of its own is
-    /// labeled under its row: `who:` (the distinct actors on those new notes)
-    /// and `shaving:` (yaks in shaving there that it wrote to); JSON `who`
-    /// and `in_progress`. The same row also gets a liveness tag, computed
-    /// the same way for every shed including the primary (not a comparison,
-    /// unlike `landed`): `active` when it has a claim (`in_progress`
-    /// non-empty) and farm activity within the last 2 hours, `stale` when
-    /// that claim has had no farm activity for longer (unknown activity
-    /// counts as `idle`, never `stale`), else `idle`; `idle` is silent (the
-    /// common case), `active`/`stale` show on the label line, e.g.
-    /// `shaving: yaks-d738 · stale`; JSON `liveness`, always present. A
-    /// `state:` line says what keeps a shed around: `merged, nothing
-    /// outstanding` (its HEAD is in the primary's history, nothing
-    /// outstanding, a clean tree) or `uncommitted: N modified, M untracked`
-    /// (JSON `merged`, `untracked`). A
-    /// pinned Delta clone whose checkout could not be resolved (most often a
-    /// gone git dir: a finished thread) is not a row here — there is no
-    /// checkout to measure — but is listed in one extra text-only `orphaned`
-    /// footer (no JSON array for this yet). A shed's name (the `name:` line, JSON `name`) is
-    /// `main` for the primary checkout, else the slug of its Delta thread title
-    /// (lowercase, other runs become `-`, at most 24 chars; the title is
-    /// recorded in the clone's own git config by any yaks command run there
-    /// with `DELTA_THREAD_TITLE` set, shown as `title:`, JSON `title`), else
-    /// its first actor, Delta dir id or branch. Read-only everywhere (apart
-    /// from that one-time recording in the clone you run yaks in).
+    /// the one you are in included and marked (`*` in the first column,
+    /// `(here)` on its `name:` line, JSON `current`). Every checkout shares
+    /// one farm, so a row is that checkout's git state plus what the farm's
+    /// local activity log says it wrote: branch, HEAD, how far ahead/behind
+    /// this checkout's HEAD (`+? -?`, JSON null, with no merge-base here),
+    /// dirty files, and its LAST WRITE to the farm. Under each row: `name:`
+    /// (`main` for the primary checkout, else the slug of its Delta thread
+    /// title, at most 24 chars, recorded in the clone's own git config by any
+    /// yaks command run there with `DELTA_THREAD_TITLE` set; else its Delta
+    /// dir id or branch), a label (`shaving:` the yaks it wrote that are
+    /// shaving now; `N asking` for those awaiting a human; how many yaks it
+    /// wrote; `active` when it wrote within the last 2 hours, `stale` when it
+    /// holds a shaving yak but has not written for longer), a `state:` line
+    /// (`merged, clean`: its HEAD is in the primary's history and its tree is
+    /// clean, safe to clean up; else `uncommitted: N modified, M untracked`),
+    /// and its five most recently written yaks with their status now. The
+    /// farm branch's own worktree is not a shed (see `yaks status`). Pinned
+    /// Delta clones with no checkout left are counted in one `orphaned` line.
+    /// JSON: `touched` (every yak it wrote, newest first), `in_progress`,
+    /// `last_write`, `liveness`, `merged`, `untracked`. The activity log is
+    /// per-machine and never committed: a write from a checkout records it in
+    /// `<farm>/.activity/`. Read-only everywhere (apart from recording the
+    /// thread title in the clone you run yaks in).
     Sheds {
         /// Emit the sheds as JSON.
-        #[arg(long)]
-        json: bool,
-    },
-    /// Show what one shed created, moved and noted since it forked.
-    ///
-    /// For ONE shed (a checkout of this repo, picked like the rows of
-    /// `yaks sheds`; with no SHED, the one you are in) created, moved and noted
-    /// since it forked, per yak, with actors: new yaks (title, status), yaks in another status (from -> to),
-    /// each new note entry (timestamp, actor, first line), `needs:` newly
-    /// set, an `edited` yak (title, fields or description rewritten, as
-    /// `yaks status` reads it; `updated:` alone is not an edit), and a
-    /// `landed` yak (already in the reference farm, see `yaks sheds`; folded
-    /// into one `landed (N)` line after the outstanding yaks). The per-yak expansion of the `farm:` line of `yaks sheds`, with the
-    /// same baseline (the shed's fork point; the primary's branch upstream, else
-    /// its fork point, `(vs origin/<branch>)` / `(vs fork)`; else the merge-base /
-    /// this checkout, `(vs merge-base)` / `(vs this checkout)`). SHED is
-    /// its path, Delta dir id, thread-title slug, branch or an actor on its
-    /// notes, or a unique substring of those (or of its full title); `main` names the primary checkout whether or not you are in it, and your own shed
-    /// works. No or an
-    /// ambiguous match lists the sheds and exits 1. A shed sharing this farm,
-    /// or with none or an unreadable one, says why there is nothing to show.
-    /// Read-only everywhere.
-    ///
-    /// The text view lists the outstanding yaks first, in full, then folds
-    /// the `landed` ones into one `landed (N): ids` line (wrapped); a shed
-    /// with nothing landed reads as before. `--outstanding` drops the landed
-    /// ones, `--status` keeps the yaks in a status in the shed; both also
-    /// filter `--json`, which otherwise lists every yak, landed included.
-    Changes {
-        /// The shed: path, Delta dir id, thread-title slug, branch, actor,
-        /// `main`, or a unique substring. Default: the shed you are in.
-        shed: Option<String>,
-        /// Drop the `landed` yaks (no `landed (N)` line). Combines with
-        /// `--status` (AND).
-        #[arg(long)]
-        outstanding: bool,
-        /// Keep only yaks whose status in the shed is one of these
-        /// (`hairy`, `shaving`, `shorn`, `dead`; repeatable, ORs):
-        /// `--status shaving` is the work in progress there.
-        #[arg(long)]
-        status: Vec<String>,
-        /// Emit one JSON object per changed yak (`id`, `title`, `status`,
-        /// `added`, `moved`, `notes` with `ts`/`actor`/`text`, `needs`,
-        /// `edited`, `landed`, `vs`, `base`, `upstream`); `[]` when there is nothing to
-        /// list.
         #[arg(long)]
         json: bool,
     },
@@ -586,14 +486,8 @@ enum Command {
     /// agent. The human-reserved counterpart to `ask`. `--done` clears `needs`
     /// instead, for an answer that needs no follow-up. A second answer keeps
     /// `needs: agent` and appends the note; on a yak with no `needs` it only
-    /// records the note. `<id>@<shed>` answers in ANOTHER checkout's copy of
-    /// the yak (a shed from `yaks sheds`; see `yaks changes`; your own shed is a
-    /// plain `answer`): the reply is
-    /// written into that working tree and left uncommitted there, for its
-    /// worker to commit with its own yak file. The only command that writes
-    /// outside this checkout.
+    /// records the note.
     Answer {
-        /// The yak id, or `<id>@<shed>` to answer in a shed's copy.
         id: String,
         /// The reply/decision (recorded as an attributed note). `-` reads it
         /// from stdin.
@@ -636,18 +530,7 @@ enum Command {
         /// Show only one section.
         #[arg(long = "for", value_enum)]
         audience: Option<Audience>,
-        /// After the inbox, list the open asks in the OTHER sheds (git
-        /// worktrees and Delta clones of this repository; see `sheds`): per
-        /// shed, its name and path, then each yak with `needs` set in that
-        /// shed's own farm and the question text. Asks identical in this
-        /// checkout's farm are not repeated; sheds with no farm of their own
-        /// show nothing. `--for` and the filter flags apply. Read-only.
-        #[arg(long)]
-        sheds: bool,
-        /// JSON array of yaks, each with `needs` and `replied`. With
-        /// `--sheds`, an object instead: `inbox` (that array) and `sheds`
-        /// (one object per ask in another shed, with `shed`, `path`, `id`,
-        /// `title`, `status`, `needs`, `replied` and `question`).
+        /// JSON array of yaks, each with `needs` and `replied`.
         #[arg(long)]
         json: bool,
     },
@@ -1163,42 +1046,6 @@ enum SkillsAction {
     },
 }
 
-/// `--shed <query>`: change into the shed `query` names (see
-/// [`sheds::resolve`]), as `-C <its path>` would. Like the other cross-shed
-/// commands, a bad name prints resolve's candidate list and exits 1.
-fn enter_shed(query: &str) -> Result<()> {
-    let cwd = env::current_dir()?;
-    let farm = match Farm::open(&cwd) {
-        Ok(f) => f,
-        Err(OpenError::SchemaTooNew { found, supported }) => {
-            eprintln!(
-                "error: this farm uses schema v{found}, newer than this yaks supports (v{supported}). Upgrade yaks."
-            );
-            std::process::exit(1);
-        }
-        Err(OpenError::OldLayout(m) | OpenError::NeedsMigration(m)) => {
-            eprintln!("error: {m}");
-            std::process::exit(1);
-        }
-        Err(OpenError::NoFarm(m)) => {
-            eprintln!("error: --shed needs a farm here to find the sheds: {m}");
-            std::process::exit(1);
-        }
-    };
-    let sheds = farm.sheds(&cwd)?;
-    let path = match sheds::resolve(&sheds, query) {
-        // Naming the shed you are in changes nothing (not even a subdirectory).
-        Ok(s) if s.current => return Ok(()),
-        Ok(s) => s.path.clone(),
-        Err(e) => {
-            eprintln!("error: {e}");
-            std::process::exit(1);
-        }
-    };
-    env::set_current_dir(&path)
-        .with_context(|| format!("cannot change to directory '{}'", path.display()))
-}
-
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
@@ -1228,14 +1075,9 @@ fn main() -> Result<()> {
         env::set_current_dir(dir)
             .with_context(|| format!("cannot change to directory '{}'", dir.display()))?;
     }
-    // `--shed <name>`: `-C` by name, resolved over the sheds visible from the
-    // checkout the `-C` chain ended in.
-    if let Some(query) = &cli.into_shed {
-        enter_shed(query)?;
-    }
     // The title in the environment is the CALLER's thread, so a hop into
-    // another checkout (`-C` or `--shed`) must not stamp it there.
-    if cli.chdir.is_empty() && cli.into_shed.is_none() {
+    // another checkout (`-C`) must not stamp it there.
+    if cli.chdir.is_empty() {
         sheds::record_thread(); // a Delta clone remembers its thread title
     }
 
@@ -1403,38 +1245,15 @@ fn main() -> Result<()> {
             let entries = farm.log(build_spec(filter), since.as_deref(), by.as_deref())?;
             render_log(&entries, json)?;
         }
-        Command::Show { id, sheds, json } => {
-            let shown = farm.show(&id)?;
-            let copies = if sheds {
-                Some(farm.show_sheds(&env::current_dir()?, &id)?)
-            } else {
-                None
-            };
-            // A yak only a shed has is still worth showing with `--sheds`.
-            let in_sheds = copies
-                .as_ref()
-                .is_some_and(|c| c.copies.iter().any(|s| !s.absent()));
-            if shown.is_none() && !in_sheds {
+        Command::Show { id, json } => {
+            let Some(shown) = farm.show(&id)? else {
                 eprintln!("no such task: {id}");
                 std::process::exit(1);
-            }
+            };
             if json {
-                let mut v = match &shown {
-                    Some(s) => json::show_value(&s.task, &s.children),
-                    None => serde_json::json!({ "id": id }),
-                };
-                if let (Some(c), serde_json::Value::Object(m)) = (&copies, &mut v) {
-                    m.insert("sheds".into(), json::shed_copies_value(c));
-                }
-                json::print(&v)?;
+                json::print(&json::show_value(&shown.task, &shown.children))?;
             } else {
-                match &shown {
-                    Some(s) => render_show(s),
-                    None => println!("{id} is not in this checkout."),
-                }
-                if let Some(c) = &copies {
-                    render_show_sheds(c, shown.is_none());
-                }
+                render_show(&shown);
             }
         }
         Command::Path { ids, filter, all } => {
@@ -1670,12 +1489,11 @@ fn main() -> Result<()> {
             }
         }
         Command::Attachment { id, file, json } => {
-            let farms = farm.attachment_farms(&env::current_dir()?);
             let found = match &file {
-                Some(f) => farm::locate_attachment(&farms, &id, f)
+                Some(f) => farm::locate_attachment(farm.root(), &id, f)
                     .into_iter()
                     .collect(),
-                None => farm::list_attachments(&farms, &id),
+                None => farm::list_attachments(farm.root(), &id),
             };
             if json {
                 let items: Vec<serde_json::Value> = found
@@ -1684,24 +1502,19 @@ fn main() -> Result<()> {
                         serde_json::json!({
                             "name": a.name,
                             "path": a.path.display().to_string(),
-                            "shed": a.shed,
                         })
                     })
                     .collect();
                 println!("{}", serde_json::to_string_pretty(&items)?);
-            } else if file.is_some() {
-                for a in &found {
-                    println!("{}", a.path.display());
-                }
             } else {
                 for a in &found {
-                    println!("{}  {}", a.shed.as_deref().unwrap_or("."), a.path.display());
+                    println!("{}", a.path.display());
                 }
             }
             if found.is_empty() {
                 match &file {
-                    Some(f) => eprintln!("no attachment {f} on {id} in this checkout or any shed"),
-                    None => eprintln!("no attachments on {id} in this checkout or any shed"),
+                    Some(f) => eprintln!("no attachment {f} on {id}"),
+                    None => eprintln!("no attachments on {id}"),
                 }
                 std::process::exit(1);
             }
@@ -1757,41 +1570,6 @@ fn main() -> Result<()> {
                 json::print(&sheds::to_json(&sheds))?;
             } else {
                 print!("{}", sheds::render(&sheds, &orphaned));
-            }
-        }
-        Command::Changes {
-            shed,
-            outstanding,
-            status,
-            json,
-        } => {
-            let focus = sheds::Focus {
-                outstanding,
-                statuses: parse_statuses(&status)?,
-            };
-            let cwd = env::current_dir()?;
-            let sheds = farm.sheds(&cwd)?;
-            // No name means the shed you are in.
-            let found = match shed {
-                None => sheds.iter().find(|s| s.current).ok_or_else(|| {
-                    anyhow::anyhow!("this checkout is not among the sheds of its repository")
-                })?,
-                Some(q) => match sheds::resolve(&sheds, &q) {
-                    Ok(s) => s,
-                    Err(e) => {
-                        eprintln!("error: {e}");
-                        std::process::exit(1);
-                    }
-                },
-            };
-            let changes = farm.shed_changes(found, &cwd, &sheds)?;
-            if json {
-                if let Err(why) = &changes.yaks {
-                    eprintln!("note: nothing to show: {why}");
-                }
-                json::print(&sheds::changes_json_with(&changes, &focus))?;
-            } else {
-                print!("{}", sheds::render_changes_with(&changes, &focus));
             }
         }
         Command::Stats { json } => {
@@ -1935,42 +1713,9 @@ fn main() -> Result<()> {
         } => {
             let note = resolve_text("--note", note, note_file, &mut StdinText::real())?;
             let actor = actor::resolve(as_actor.as_deref());
-            // `<id>@<shed>` names a shed; the current one is just plain `answer`.
-            let (id, shed) = match id.split_once('@') {
-                Some((id, shed_q)) => {
-                    let cwd = env::current_dir()?;
-                    let sheds = farm.sheds(&cwd)?;
-                    match sheds::resolve(&sheds, shed_q) {
-                        Ok(s) => (id.to_string(), Some(s.clone()).filter(|s| !s.current)),
-                        Err(e) => {
-                            eprintln!("error: {e}");
-                            std::process::exit(1);
-                        }
-                    }
-                }
-                None => (id, None),
-            };
-            let (id, c) = if let Some(shed) = &shed {
-                let w =
-                    match farm.answer_in_shed(shed, &id, actor.as_deref(), note.as_deref(), done) {
-                        Ok(w) => w,
-                        Err(e) => {
-                            eprintln!("error: {e:#}");
-                            std::process::exit(1);
-                        }
-                    };
-                println!(
-                    "Wrote the answer into shed {} at {} (left uncommitted there; the shed's worker commits it)",
-                    shed.name(),
-                    w.path.display()
-                );
-                (id, w.change)
-            } else {
-                let Some(c) = farm.answer(&id, actor.as_deref(), note.as_deref(), done)? else {
-                    eprintln!("error: task {id} not found");
-                    std::process::exit(1);
-                };
-                (id, c)
+            let Some(c) = farm.answer(&id, actor.as_deref(), note.as_deref(), done)? else {
+                eprintln!("error: task {id} not found");
+                std::process::exit(1);
             };
             match (&c.before, &c.after) {
                 (None, _) => println!("Answered {id}: no needs block was set (note recorded)"),
@@ -2008,22 +1753,10 @@ fn main() -> Result<()> {
         Command::Inbox {
             filter,
             audience,
-            sheds,
             json,
         } => {
-            let spec = build_spec(filter);
-            let rows = farm.inbox(spec.clone())?;
-            let other: Option<Vec<farm::ShedAsk>> = if sheds {
-                let all = farm.inbox_sheds(&env::current_dir()?, spec)?;
-                Some(
-                    all.into_iter()
-                        .filter(|a| Audience::keeps(audience, &a.task))
-                        .collect(),
-                )
-            } else {
-                None
-            };
-            render_inbox(&rows, other.as_deref(), audience, json)?;
+            let rows = farm.inbox(build_spec(filter))?;
+            render_inbox(&rows, audience, json)?;
         }
         Command::Shave { ids, as_actor } => {
             let actor = actor::resolve(as_actor.as_deref());
@@ -2449,22 +2182,7 @@ fn build_spec(f: FilterFlags) -> FilterSpec {
         tangled_only: f.tangled,
         needs_only: f.needs,
         parent: f.parent_of,
-        home_only: false,
     }
-}
-
-/// `--status` values for `yaks changes`: [`parse_status`]'s values, but an
-/// unknown one is an error (the query commands skip it, which for `changes`
-/// would silently show every yak).
-fn parse_statuses(values: &[String]) -> Result<Vec<Status>> {
-    values
-        .iter()
-        .map(|s| {
-            parse_status(s).ok_or_else(|| {
-                anyhow::anyhow!("unknown status {s:?} (use hairy, shaving, shorn or dead)")
-            })
-        })
-        .collect()
 }
 
 fn parse_status(s: &str) -> Option<Status> {
@@ -2700,27 +2418,9 @@ enum Audience {
     Agent,
 }
 
-impl Audience {
-    /// Whether `audience` (`None` = both) keeps a yak with this `needs`.
-    fn keeps(audience: Option<Audience>, t: &Task) -> bool {
-        match audience {
-            None => true,
-            Some(Audience::Human) => t.awaiting_human(),
-            Some(Audience::Agent) => t.awaiting_agent(),
-        }
-    }
-}
-
 /// `inbox` output: a flat JSON array (each yak with `needs` and `replied`), or
 /// two text sections, "awaiting a human" and "answered, awaiting an agent".
-/// With `sheds` (`inbox --sheds`, already narrowed by `audience`), the JSON is
-/// `{inbox, sheds}` instead and the text gains a section per shed.
-fn render_inbox(
-    rows: &[Task],
-    sheds: Option<&[farm::ShedAsk]>,
-    audience: Option<Audience>,
-    json: bool,
-) -> Result<()> {
+fn render_inbox(rows: &[Task], audience: Option<Audience>, json: bool) -> Result<()> {
     let human: Vec<&Task> = rows
         .iter()
         .filter(|t| t.awaiting_human() && !matches!(audience, Some(Audience::Agent)))
@@ -2731,13 +2431,7 @@ fn render_inbox(
         .collect();
     if json {
         let kept: Vec<&Task> = human.iter().chain(agent.iter()).copied().collect();
-        match sheds {
-            None => json::print(&json::inbox_array(&kept))?,
-            Some(s) => json::print(&json::inbox_sheds_value(
-                &kept,
-                &s.iter().collect::<Vec<_>>(),
-            ))?,
-        }
+        json::print(&json::inbox_array(&kept))?;
         return Ok(());
     }
     if human.is_empty() && agent.is_empty() {
@@ -2767,40 +2461,7 @@ fn render_inbox(
             println!("{}{replied}", fmt_row(t));
         }
     }
-    if let Some(sheds) = sheds {
-        render_shed_asks(sheds);
-    }
     Ok(())
-}
-
-/// The `inbox --sheds` text: one block per shed (`asks` arrive grouped by
-/// shed), each ask a normal inbox row followed by its question text indented.
-fn render_shed_asks(asks: &[farm::ShedAsk]) {
-    if asks.is_empty() {
-        println!("No open asks in other sheds.");
-        return;
-    }
-    let mut last: Option<(&str, &std::path::Path)> = None;
-    for a in asks {
-        if last != Some((a.shed.as_str(), a.path.as_path())) {
-            println!("Shed {} ({}):", a.shed, a.path.display());
-            last = Some((a.shed.as_str(), a.path.as_path()));
-        }
-        let replied = if store::is_replied(&a.task) {
-            " \u{21a9} replied"
-        } else {
-            ""
-        };
-        println!("{}{replied}", fmt_row(&a.task));
-        match &a.question {
-            Some(q) => {
-                for line in q.lines() {
-                    println!("      {line}");
-                }
-            }
-            None => println!("      (no question text)"),
-        }
-    }
 }
 
 fn render_rows(rows: &[Task], json: bool, empty_msg: &str) -> Result<()> {
@@ -3379,49 +3040,6 @@ fn render_show(s: &Show) {
             println!("  [{}] {}  {}", c.status.glyph(), c.id, c.title);
         }
     }
-}
-
-/// The `Sheds:` section of `show --sheds`: one block per shed whose copy
-/// differs from this checkout's (name and path, status, `needs:`, and the note
-/// entries it has that ours lacks), then ONE line counting the rest. With
-/// `missing_here` (the yak is only in sheds) the blocks also carry the title.
-fn render_show_sheds(c: &farm::ShedCopies, missing_here: bool) {
-    let differing: Vec<&farm::ShedCopy> = c
-        .copies
-        .iter()
-        .filter(|s| !s.same() && !s.absent())
-        .collect();
-    println!("\nSheds:");
-    for s in &differing {
-        let Some(t) = &s.task else { continue };
-        println!("  {}  {}", s.shed, s.path.display());
-        if missing_here {
-            println!("    title:  {}", t.title);
-        }
-        println!("    status: {}", t.status.as_str());
-        if let Some(n) = &t.needs {
-            println!("    needs:  {n}");
-        }
-        for n in &s.new_notes {
-            let line = n.text.lines().map(str::trim).find(|l| !l.is_empty());
-            println!(
-                "    {}  {}  {}",
-                n.ts,
-                n.actor.as_deref().unwrap_or("-"),
-                line.unwrap_or("")
-            );
-        }
-    }
-    let same = c.copies.iter().filter(|s| s.same()).count();
-    let absent = c.copies.iter().filter(|s| s.absent()).count();
-    let plural = |n: usize| if n == 1 { "shed" } else { "sheds" };
-    println!(
-        "{}same in {same} {}; absent in {absent}; no farm of its own in {} {}",
-        if differing.is_empty() { "" } else { "\n" },
-        plural(same),
-        c.no_farm,
-        plural(c.no_farm),
-    );
 }
 
 /// `  [X] id  pN type     title [labels] (deps: ...) ⚠ needs:<who>`

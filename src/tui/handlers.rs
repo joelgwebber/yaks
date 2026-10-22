@@ -19,8 +19,6 @@ pub(crate) struct AttachView {
     /// The link target as written (`<id>/<file>`), shown as the header.
     pub(crate) target: String,
     pub(crate) path: PathBuf,
-    /// The shed the file came from (`None`: this farm).
-    pub(crate) shed: Option<String>,
     pub(crate) text: String,
     pub(crate) markdown: bool,
     /// First visible content row.
@@ -52,7 +50,6 @@ impl AttachView {
         Some(AttachView {
             target: target.to_string(),
             path: found.path.clone(),
-            shed: found.shed.clone(),
             text,
             markdown,
             scroll: 0,
@@ -693,39 +690,35 @@ impl App {
     }
 
     /// Open a URL or attachment (`Enter` on its link, or `O`). An attachment
-    /// (`<id>/<file>`) is resolved by [`App::resolve_attachment`]: this farm,
-    /// else the shed it lives in (yaks-31e2). A text attachment opens in the
-    /// in-TUI viewer ([`AttachView`], yaks-699b); a URL, an image or any other
+    /// (`<id>/<file>`) is resolved by [`App::resolve_attachment`]. A text
+    /// attachment opens in the in-TUI viewer ([`AttachView`], yaks-699b); a URL, an image or any other
     /// file goes to the OS default application (best-effort).
     pub(crate) fn open_external(&mut self, target: &str) {
-        let (arg, from) = if target.contains("://") || target.starts_with("mailto:") {
-            (target.to_string(), None)
+        let arg = if target.contains("://") || target.starts_with("mailto:") {
+            target.to_string()
         } else {
             match self.resolve_attachment(target) {
                 Some(found) => match AttachView::open(target, &found) {
                     Some(v) => {
-                        self.notification = Some(match &found.shed {
-                            Some(shed) => format!("viewing {target} (from shed {shed})"),
-                            None => format!("viewing {target}"),
-                        });
+                        self.notification = Some(format!("viewing {target}"));
                         self.overlay = Overlay::Attachment(v);
                         return;
                     }
-                    None => (found.path.display().to_string(), found.shed),
+                    None => found.path.display().to_string(),
                 },
                 None => {
-                    self.notification = Some(format!("{target}: not in this farm or any shed"));
+                    self.notification = Some(format!("{target}: not in this farm"));
                     return;
                 }
             }
         };
-        self.os_open(target, &arg, from.as_deref());
+        self.os_open(target, &arg);
     }
 
     /// Hand `arg` (a URL or file path) to the OS opener, reporting it as
     /// `target`. Under `cargo test` nothing is launched (a test must never
     /// pop up an image viewer); the notification is the same.
-    fn os_open(&mut self, target: &str, arg: &str, from: Option<&str>) {
+    fn os_open(&mut self, target: &str, arg: &str) {
         #[cfg(not(test))]
         let opened = super::source::os_open(arg).map(drop);
         #[cfg(test)]
@@ -733,10 +726,9 @@ impl App {
             let _ = arg;
             Ok(())
         };
-        self.notification = Some(match (opened, from) {
-            (Ok(()), Some(shed)) => format!("opened {target} (from shed {shed})"),
-            (Ok(()), None) => format!("opened {target}"),
-            (Err(e), _) => format!("open failed: {e}"),
+        self.notification = Some(match opened {
+            Ok(()) => format!("opened {target}"),
+            Err(e) => format!("open failed: {e}"),
         });
     }
 
@@ -757,13 +749,9 @@ impl App {
                 return;
             }
             KeyCode::Char('O') => {
-                let (target, arg, from) = (
-                    v.target.clone(),
-                    v.path.display().to_string(),
-                    v.shed.clone(),
-                );
+                let (target, arg) = (v.target.clone(), v.path.display().to_string());
                 self.overlay = Overlay::None;
-                self.os_open(&target, &arg, from.as_deref());
+                self.os_open(&target, &arg);
                 return;
             }
             _ => {}
@@ -789,14 +777,9 @@ impl App {
     }
 
     /// E (attachment viewer) — edit the viewed text file in the multi-line
-    /// editor (yaks-56c1). Only this farm's own copy: a file the viewer found
-    /// in another shed is that checkout's, so it is left to `O` there.
+    /// editor (yaks-56c1).
     pub(crate) fn open_attachment_edit(&mut self) {
-        let Overlay::Attachment(v) = &self.overlay else {
-            return;
-        };
-        if let Some(shed) = &v.shed {
-            self.notification = Some(format!("{} is shed {shed}'s copy: edit it there", v.target));
+        if !matches!(self.overlay, Overlay::Attachment(_)) {
             return;
         }
         let Overlay::Attachment(v) = std::mem::replace(&mut self.overlay, Overlay::None) else {
@@ -870,34 +853,11 @@ impl App {
     }
 
     /// Where attachment link `target` (`<id>/<file>`, farm-relative) is on
-    /// disk: this checkout's farm, else (from the last sheds scan) the shed
-    /// whose copy of the selected yak is on screen, else any other shed's
-    /// farm. The same rule as `yaks attachment`, over the snapshot's shed
-    /// list, so a keypress runs no git discovery.
+    /// disk in this farm: the same rule as `yaks attachment`.
     pub(crate) fn resolve_attachment(&self, target: &str) -> Option<crate::farm::FoundAttachment> {
         let rel = target.strip_prefix(".yaks/").unwrap_or(target);
         let (id, name) = rel.split_once('/')?;
-        let root = self.farm.as_ref()?.root().to_path_buf();
-        let mut farms = vec![(None, root)];
-        if let Some(snap) = &self.sheds.snapshot {
-            let mut sheds: Vec<&crate::sheds::Shed> = Vec::new();
-            if let Some((_, shed)) = self.selected_shed_only() {
-                sheds.push(shed);
-            }
-            for s in &snap.sheds {
-                if !s.current && !sheds.iter().any(|x| x.path == s.path) {
-                    sheds.push(s);
-                }
-            }
-            for s in sheds {
-                if let crate::sheds::ShedFarm::Own(_) = s.farm {
-                    if let Ok(d) = crate::store::discover_with(&s.path, None) {
-                        farms.push((Some(s.name()), d.root));
-                    }
-                }
-            }
-        }
-        crate::farm::locate_attachment(&farms, id, name)
+        crate::farm::locate_attachment(self.farm.as_ref()?.root(), id, name)
     }
 
     /// O — open the artifact/URL/source link on the current detail line (a
@@ -932,52 +892,9 @@ impl App {
         let blocked = self.selected().is_some_and(|t| t.awaiting_human());
         if blocked {
             self.open_answer();
-        } else if let Some((id, shed)) = self.selected_shed_ask() {
-            self.open_answer_in_shed_prompt(id, &shed);
         } else {
             self.open_ask();
         }
-    }
-
-    /// Keys that write to the selected yak (or make a child of it). On a
-    /// yak only another shed has (yaks-9631) none of them applies: it is not
-    /// in this farm, so they refuse, and `a` answers its ask in that shed
-    /// when it has one. Returns whether the key was consumed.
-    pub(crate) fn guard_shed_only(&mut self, k: KeyEvent) -> bool {
-        let KeyCode::Char(c) = k.code else {
-            return false;
-        };
-        let detail = self.focus == Focus::Detail;
-        let writes = matches!(
-            c,
-            'S' | 'E' | 'P' | 'T' | 'L' | 'D' | 'R' | 'H' | 'M' | 'A' | 'X' | 'C' | 'm' | '*' | 'a'
-        ) || (detail && c == 'r');
-        if !writes || k.modifiers.contains(KeyModifiers::CONTROL) {
-            return false;
-        }
-        let Some((task, shed)) = self.selected_shed_only() else {
-            return false;
-        };
-        let (id, shed) = (task.id.clone(), shed.clone());
-        if c == 'a' && task.needs.as_deref() == Some("human") {
-            self.open_answer_in_shed_prompt(id, &shed);
-        } else {
-            self.notification = Some(format!(
-                "{id} is only in shed {}: read-only here",
-                shed.name()
-            ));
-        }
-        true
-    }
-
-    /// The selected yak, when its home copy is not awaiting a human but
-    /// another shed's is (the Inbox's overlay rows): the yak id and the shed
-    /// to answer in, the first in `open_asks()` order.
-    fn selected_shed_ask(&self) -> Option<(String, crate::sheds::Shed)> {
-        let id = self.selected_id()?;
-        let snap = self.overlay()?;
-        let (shed, _) = snap.open_asks().into_iter().find(|(_, y)| y.id == id)?;
-        Some((id, shed.clone()))
     }
 
     pub(crate) fn open_ask(&mut self) {
@@ -1628,10 +1545,6 @@ impl App {
                 self.needs_edit(&id, true, (!note.is_empty()).then_some(note));
             }
             EditAction::Shear(target) => self.commit_shear(target, &text),
-            EditAction::AnswerInShed { id, shed } => {
-                let note = text.trim();
-                self.commit_answer_in_shed(&id, &shed, (!note.is_empty()).then_some(note));
-            }
             EditAction::SaveView => self.save_current_view(text),
             EditAction::RenameView { index } => {
                 let name = text.trim().to_string();
@@ -2181,9 +2094,6 @@ fn handle_key_inner(app: &mut App, k: KeyEvent) {
     // The Sheds tab owns its keys; no yak key reaches a yak from there.
     if app.on_sheds_tab() {
         app.handle_sheds_key(k);
-        return;
-    }
-    if app.guard_shed_only(k) {
         return;
     }
     let half = (app.page / 2).max(1) as i32;

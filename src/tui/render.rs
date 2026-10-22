@@ -274,10 +274,7 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
             "Ctrl-S / Ctrl-C",
             "Save / cancel an in-place edit (Esc Esc cancels too)",
         ),
-        entry(
-            "a",
-            "Ask / answer (answer: needs agent; or in the shed that asks)",
-        ),
+        entry("a", "Ask / answer (answer: needs agent)"),
         entry(
             ":w / :q / :wq",
             "Save / cancel / save+close (editor Normal)",
@@ -286,28 +283,18 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
             "Enter",
             "(editor Insert) Continue a list / quote; on an empty item, end it",
         ),
-        entry(
-            "A / O",
-            "Attach artifact / open it (from whichever shed has it)",
-        ),
+        entry("A / O", "Attach artifact / open it"),
         entry(
             "  (text file)",
             "Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally",
         ),
         entry("r", "Rename attachment at cursor (detail)"),
         entry("X", "Slaughter (confirm; offers whole family)"),
-        entry(
-            "🛖 row",
-            "A yak only in another shed is read-only here (a answers its ask)",
-        ),
         blank(),
         section("Search & filter"),
         entry("/", "Inline search"),
         entry("#", "Go to any yak by id / title"),
-        entry(
-            "f",
-            "Filter drawer (copies: any | home hides the other sheds)",
-        ),
+        entry("f", "Filter drawer"),
         entry("Esc", "Revert filter to the active view"),
         blank(),
         section("Farm git state (the chip on the tab row)"),
@@ -320,21 +307,16 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
         blank(),
         section("Sheds tab (every checkout: yaks sheds)"),
         entry("j / k", "Move between sheds (attention first)"),
-        entry("l / Enter", "Show the shed's changes (yaks changes)"),
+        entry(
+            "l / Enter",
+            "Show the shed: git state and the yaks it wrote",
+        ),
         entry(
             "j / k (detail)",
-            "Move between its changed yaks (outstanding first, landed fold below)",
+            "Move between its yaks (newest write first)",
         ),
-        entry("Enter (on ▸ N landed)", "Show / hide the landed yaks"),
         entry("J / K (detail)", "Next / previous shed"),
-        entry(
-            "Enter (detail)",
-            "Open the yak (its shed-only row if not here)",
-        ),
-        entry(
-            "a (detail)",
-            "Answer its ask in that shed (uncommitted there)",
-        ),
+        entry("Enter (detail)", "Open the yak"),
         entry("y", "Copy the shed's path (detail: the yak id)"),
         entry("r", "Rescan now (auto every 10 s)"),
         blank(),
@@ -367,8 +349,8 @@ pub(crate) fn render_help(scroll: u16, frame: &mut Frame, area: Rect) {
     frame.render_widget(Paragraph::new(help_content()).scroll((scroll, 0)), body);
 }
 
-/// The attachment viewer (yaks-699b): a cyan header naming the file (and the
-/// shed it came from), then its rows from `scroll` down, styled like the
+/// The attachment viewer (yaks-699b): a cyan header naming the file, then its
+/// rows from `scroll` down, styled like the
 /// detail pane's body.
 pub(crate) fn render_attachment(
     app: &App,
@@ -378,18 +360,13 @@ pub(crate) fn render_attachment(
 ) {
     let [head, body] = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).areas(area);
     let kind = if v.markdown { "markdown" } else { "text" };
-    let from = v
-        .shed
-        .as_deref()
-        .map(|s| format!(" · shed {s}"))
-        .unwrap_or_default();
     frame.render_widget(
         Paragraph::new(Line::from(vec![
             Span::styled(
                 format!("📎 {}", v.target),
                 Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
             ),
-            Span::styled(format!("  {kind}{from}"), Style::new().fg(Color::DarkGray)),
+            Span::styled(format!("  {kind}"), Style::new().fg(Color::DarkGray)),
         ])),
         head,
     );
@@ -783,7 +760,6 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
                 app.is_starred(&r.task.id),
                 area.width,
                 app.is_multi_herd(),
-                shed_badge(app, r),
             )
         })
         .collect();
@@ -852,57 +828,6 @@ pub(crate) fn herd_color(prefix: &str) -> Color {
     PALETTE[(h as usize) % PALETTE.len()]
 }
 
-/// What a row's shed badge shows: how many other sheds carry an outstanding
-/// change to the yak, whether any of those is an open ask (`needs: human`),
-/// and, for a yak only another shed has, that shed's name.
-#[derive(Clone, PartialEq, Debug)]
-pub(crate) struct ShedBadge {
-    pub count: usize,
-    pub asks: bool,
-    pub only_in: Option<String>,
-}
-
-impl ShedBadge {
-    /// Two or more sheds changed the yak: the conflict marker.
-    pub(crate) fn conflict(&self) -> bool {
-        self.count >= 2
-    }
-
-    /// `🛖2` / `🛖2⚠` (a conflict) on a yak this farm has; `🛖<shed>` on a
-    /// shed-only row, `🛖2⚠` once two sheds added it.
-    pub(crate) fn text(&self) -> String {
-        match (&self.only_in, self.conflict()) {
-            (Some(name), false) => format!("\u{1f6d6}{}", truncate_disp(name, 18)),
-            (_, true) => format!("\u{1f6d6}{}\u{26a0}", self.count),
-            (None, false) => format!("\u{1f6d6}{}", self.count),
-        }
-    }
-}
-
-/// The badge for the row's yak from the sheds snapshot (the same
-/// `Snapshot::copies` rule the detail's Sheds section uses), `None` when no
-/// other shed has an outstanding change to it, no scan has landed yet, or the
-/// filter says `copies: home`.
-pub(crate) fn shed_badge(app: &App, r: &tree::Row<'_>) -> Option<ShedBadge> {
-    let snap = app.overlay()?;
-    let copies = snap.copies(&r.task.id);
-    let only_in = if r.shed_only {
-        snap.shed_only()
-            .into_iter()
-            .find(|(_, t)| t.id == r.task.id)
-            .map(|(s, _)| s.name())
-    } else {
-        None
-    };
-    (!copies.is_empty() || only_in.is_some()).then(|| ShedBadge {
-        count: copies.len().max(1),
-        asks: copies
-            .iter()
-            .any(|(_, y)| y.needs.as_deref() == Some("human")),
-        only_in,
-    })
-}
-
 pub(crate) fn list_item<'a>(
     r: &tree::Row<'a>,
     id_field_w: usize,
@@ -913,10 +838,9 @@ pub(crate) fn list_item<'a>(
     starred: bool,
     width: u16,
     multi_herd: bool,
-    sheds: Option<ShedBadge>,
 ) -> ListItem<'a> {
     let dim = |st: Style| {
-        if r.ghost || r.shed_only {
+        if r.ghost {
             st.add_modifier(Modifier::DIM)
         } else {
             st
@@ -985,25 +909,6 @@ pub(crate) fn list_item<'a>(
         }
         right_plain.push('\u{2705}');
         right_spans.push(Span::raw("\u{2705}"));
-    }
-    // Shed badge (🛖N): N other sheds have an outstanding change to this yak;
-    // `🛖N⚠` when two or more do (a conflict to settle), `🛖<shed>` on a
-    // shed-only row (dim, with the rest of it). Dim, but the warning accent
-    // when one of them is an open ask or a conflict, so a question waiting
-    // elsewhere is visible from the tree.
-    if let Some(b) = sheds {
-        if !right_plain.is_empty() {
-            right_plain.push(' ');
-            right_spans.push(Span::raw(" "));
-        }
-        let text = b.text();
-        let style = if b.asks || b.conflict() {
-            Style::new().fg(Color::Yellow).add_modifier(Modifier::BOLD)
-        } else {
-            Style::new().add_modifier(Modifier::DIM)
-        };
-        right_plain.push_str(&text);
-        right_spans.push(Span::styled(text, dim(style)));
     }
     if starred {
         if !right_plain.is_empty() {
@@ -1666,10 +1571,10 @@ pub(crate) fn help_hint(app: &App) -> String {
     if app.on_sheds_tab() {
         return match app.focus {
             Focus::List => {
-                "Tab:view  j/k:move  l:changes  y:copy path  r:rescan  v:views  ?:help  q:quit"
+                "Tab:view  j/k:move  l:detail  y:copy path  r:rescan  v:views  ?:help  q:quit"
             }
             Focus::Detail => {
-                "h:list  j/k:yak  J/K:shed  Enter:open yak  a:answer  y:copy id  r:rescan  ?:help"
+                "h:list  j/k:yak  J/K:shed  Enter:open yak  y:copy id  r:rescan  ?:help"
             }
         }
         .into();

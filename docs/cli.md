@@ -11,17 +11,6 @@ to the previous (`yaks -C a -C b list` runs in `a/b`). A missing path is an
 error naming it. `$YAKS_DIR` still wins over discovery (a relative one is read
 from `<path>`).
 
-**Global flag: `--shed <name>`** is `-C` by name: it runs the command in another
-checkout of this repo (a shed from `yaks sheds`), picked like `yaks changes
-<shed>` (path, Delta dir id, thread-title slug, branch, actor, `main`, or a
-unique substring; naming the checkout you are already in is a no-op). Accepted before or after the subcommand, at most once, and
-applied after any `-C` (the name is resolved over the sheds visible from that
-checkout). It is FULL access, exactly `-C <that shed's path>`: a write command
-writes in that shed's farm, and nothing extra is printed. No or an ambiguous
-match prints `error: ...` with the list of sheds and exits 1. It never records
-the Delta thread title (as with `-C`, the title in the environment is the
-caller's thread). Use it only on a checkout you own.
-
 ## Which farm a command uses
 
 Every command except `init` operates on one farm, found in this order:
@@ -85,14 +74,13 @@ Every command except `init` operates on one farm, found in this order:
 | Command | What it does |
 |---|---|
 | `list` | List tasks (non-dead by default; `--all` includes dead). Status renders as `[H]`/`[S]`/`[N]`/`[X]` — hairy / shaving / shor**n** / dead. |
-| `show <id> [--sheds] [--json]` | Show one yak: fields, references, children, body + notes. `--sheds` adds its copies in the OTHER checkouts of this repo; `--json` adds a `sheds` array. Read-only in the other checkouts. [Details](#show) |
+| `show <id> [--json]` | Show one yak: fields, references, children, body + notes. [Details](#show) |
 | `path [<id>...]` / `path <filters>` | Print each yak's current file path (absolute, one per line), by id or by the shared filter flags (`--all` adds dead yaks). With neither, prints the farm root this command resolved. [Details](#path) |
 | `next` (alias `ready`) | Hairy yaks whose dependencies are all resolved — the work queue. Leaves out `needs: human`; includes answered yaks (`needs: agent`), marked `✓ answered, awaiting pickup`. [Details](#next) |
 | `tangled` (alias `blocked`) | Hairy yaks with at least one unresolved dependency. |
 | `search <text>` | Substring search over id / title / description. |
 | `stats` | Counts by status, type, priority. |
-| `sheds` | EVERY checkout of this repo — plain `git worktree`s and Delta clones — and what each one's farm changed (`--json` for scripts). Strictly read-only in the other checkouts. [Details](#sheds) |
-| `changes [SHED]` | What ONE shed (default: the one you are in) created, moved and noted since it forked, per yak, with actors. `--outstanding`, `--status S`, `--json`. Read-only. [Details](#changes) |
+| `sheds` | EVERY checkout of this repo — plain `git worktree`s and Delta clones — with its git state and the yaks it has been writing to the shared farm (`--json` for scripts). Read-only. [Details](#sheds) |
 | `discover [PATH]` | Diagnostic: the chain `sheds` uses to find the other checkouts, step by step, from `PATH` (default the cwd). `--json`. Read-only; needs no farm. [Details](#discover) |
 | `log` | Timestamped notes and status moves (`moved: <from> -> <to>` entries) across a filtered set, oldest first (`--since <2h\|3d\|date>`, `--by <actor>`). |
 | `refs <id>` | The yaks a task points at (parent, deps, id mentions), flagging danglers. |
@@ -103,13 +91,9 @@ Every command except `init` operates on one farm, found in this order:
 
 ### `show`
 
-`show <id> [--sheds] [--json]`
+`show <id> [--json]`
 
-Show one yak: fields, references, children, body + notes. `--sheds` then adds a `Sheds:` section for the OTHER checkouts of this repo (git worktrees and Delta clones, as `sheds` lists them, without the one you are in: its copy is the one printed first): this checkout's copy is printed first, then one block per shed whose copy differs — the shed's name and path, its status, its `needs:` when set, and the note entries it has that this copy lacks (timestamp, actor, first line) — and ONE trailing line counting the rest: `same in N sheds; absent in N; no farm of its own in N sheds` (a copy with the same status, the same `needs:` and no extra notes is "same", so a shed that is merely behind counts as same; "no farm" is a shed sharing this farm, with none, or with an unreadable one).
-
-A yak that exists only in sheds is still shown (`<id> is not in this checkout.`, then each shed's copy with its title) and exits 0; without `--sheds`, or when no shed has it either, an unknown id exits 1.
-
-`--json` adds a `sheds` array to the usual object (for an id only in sheds, the object is just `{id, sheds}`): one entry per shed with a farm of its own — `shed`, `path`, `status` and `needs` (null when the shed lacks the yak / has no `needs`), `new_notes` (`[{ts, actor, text}]`), `same`, `absent`. Read-only in the other checkouts.
+Show one yak: fields, references, children, body + notes. An unknown id exits 1.
 
 ### `path`
 
@@ -127,57 +111,24 @@ Hairy yaks whose dependencies are all resolved — the work queue. A yak awaitin
 
 ### `sheds`
 
-`sheds`
+`sheds [--json]`
 
-EVERY checkout of this repo — plain `git worktree`s and Delta clones — and what each one's farm changed (`--json` for scripts); a shed (formerly lane) is one such checkout.
+EVERY checkout of this repo — plain `git worktree`s and Delta clones — with its git state and the yaks it has been writing; a shed is one such checkout.
 
-The checkout you are in is listed too, like any other row and measured the same way: a `*` in the first column and `(here)` on its `name:` line (JSON `current: true`, `false` on every other row, so exactly one is current). `cwd` never changes an answer, only which row is current and which shed a command defaults to.
+Every checkout on a machine shares ONE farm (the farm branch's worktree), so there is no per-shed copy of the farm to compare. What a shed has been doing comes from the farm's **activity log**: every write of a yak file (a note, a move, an ask, an answer, an attachment, an edit) records the checkout it ran in, one line per write, in `<farm>/.activity/<hash>.log` (the hash is of the checkout's path; the file's first line names it). The log is per-machine metadata: its directory ignores itself, so it is never committed, never merged, and invisible to `yaks status` and `yaks commit`. Who wrote a note stays the note's actor, in the yak file. `YAKS_NO_ACTIVITY=1` turns the logging off.
 
-Each shed's `name:` line (JSON `name`) is `main` for the primary checkout, else the slug of the Delta thread title (lowercase, runs of other characters one `-`, at most 24 characters, cut at a `-`; two clones with one slug get their dir id's first 4 characters appended, e.g. `fix-it-q7zz`), else its first `who` actor, else its Delta dir id, else its branch.
+The checkout you are in is listed too: a `*` in the first column and `(here)` on its `name:` line (JSON `current: true`, exactly one row). The farm branch's own worktree is not a shed (`yaks status` reports its state).
 
-The title is read from the clone's own git config `yaks.shed.title` (JSON `title`, also shown on the `name:` line), which ANY yaks command run inside a Delta clone with `DELTA_THREAD_TITLE` set records (with `yaks.shed.thread` from `DELTA_CURRENT_THREAD_ID`), only when the value changed, silently, never for `-C` or `--shed`, never in a plain git worktree; it is per-clone and never committed.
+Per shed: kind (`worktree`/`delta`), branch (or detached), short HEAD, `+N -M` (commits it has that this checkout's HEAD lacks / commits this HEAD has that it lacks; JSON `ahead`/`behind`), or `+? -?` (JSON `null`) when there is no merge-base here (shallow history, a commit unknown here; when this repo is shallow one line at the end says `git fetch --unshallow` fixes it), the dirty-file count, its LAST WRITE to the farm, and its path. Under the row:
 
-Per shed: path, kind (`worktree`/`delta`), branch (or detached), short HEAD, `+N -M` (commits it has that this HEAD lacks / commits this HEAD has that it lacks; `ahead`/`behind` in JSON), or `+? -?` (JSON `null`) when this repo has no merge-base with the shed's HEAD (shallow history, unrelated histories, a shed commit unknown here) so the counts cannot be told; when this repo is shallow (`git rev-parse --is-shallow-repository`) and a shed lost its merge-base that way, ONE line at the end of the table says `note: history is shallow here, so some sheds cannot be compared exactly; git fetch --unshallow fixes it` (JSON is unchanged: still an array of sheds), dirty-file count, newest mtime under its `.yaks` (a liveness hint: finished threads' checkouts persist), and the farm delta, relative to where the SHED FORKED: the oldest entry of its HEAD reflog (`<git-dir>/logs/HEAD`, first line; for a Delta clone the coordinator's HEAD at spawn time, for a `git worktree add -b` shed the branch creation), so a worker is not credited with what its coordinator committed before spawning it. A shed that later SWITCHED onto the branch it is on now (a Delta clone is created on the source's checked-out branch, often `main`, and the thread then checks out its working branch) is measured from the target of its latest `checkout: moving from X to <its branch>` reflog entry instead, so it is not credited with the whole branch it switched to; that switch is ignored when its target already holds commits the shed made before it (`checkout -b` off its own work, a round trip back to a branch it committed on).
+- `name:` (JSON `name`): `main` for the primary checkout, else the slug of the Delta thread title (lowercase, runs of other characters one `-`, at most 24 characters, cut at a `-`; two clones with one slug get their dir id's first 4 characters appended, e.g. `fix-it-q7zz`), else its Delta dir id, else its branch. The title is read from the clone's own git config `yaks.shed.title` (JSON `title`, also shown on the `name:` line), which ANY yaks command run inside a Delta clone with `DELTA_THREAD_TITLE` set records (with `yaks.shed.thread` from `DELTA_CURRENT_THREAD_ID`), only when the value changed, silently, never for `-C`, never in a plain git worktree; it is per-clone and never committed.
+- the activity label, each part only when it has something: `shaving: <ids>` (the yaks it wrote that are `shaving` now; JSON `in_progress`), `N asking` (those awaiting a human), how many yaks it wrote, and `active` (it wrote within the last 2 hours) or `stale` (it holds a shaving yak but has not written for longer); `idle` is silent. JSON `liveness`, always present.
+- `state:` (JSON `merged`, `untracked`): `merged, clean` when its HEAD is in the primary checkout's history and its tree is clean (safe to clean up); otherwise `merged` (when it is) and `uncommitted: N modified, M untracked`. Not shown for the primary, or for a shed that is not merged and clean.
+- its five most recently written yaks, newest first: `id  status  title  (last write)`, `⏳` first on one awaiting a human, `gone` for a yak no longer in the farm. JSON `touched` lists them all (`id`, `title`, `status`, `needs`, `last`), with `last_write`.
 
-The PRIMARY checkout has no fork point worth the name, so it is measured from the UPSTREAM of the branch it is on: the branch's configured `@{upstream}`, else `origin/<branch>` (pushed without `-u`), else `origin/main` (else `origin/HEAD`'s target; a detached HEAD or a branch never pushed) against its working tree, i.e. what it has not published: its farm line names the ref, e.g. `(vs origin/kinds-discovery)`, and JSON has `farm.vs: "upstream"` with the ref in `farm.upstream`; with no usable ref (no remote, never fetched) it falls back to its fork point and says `(vs fork)`. Branches that do not line up across remotes are not designed for.
+A pinned Delta clone whose checkout cannot be resolved (most often a gone git dir: a finished thread) is not a row; the text table counts them in one `orphaned: N` line (`yaks discover` lists each).
 
-The baseline is the same from EVERY viewer: the answer about a shed never depends on which checkout runs `sheds`, so what a shed merged in after forking (say its coordinator's `main`) is credited to it like anything else it holds, and the same yak may show in two sheds (there is no `sync` value any more); a shed whose commits were squash-landed still shows only its own work (the base's committed `.yaks` is read from our own repo into a temp dir that is removed; a shed that is merely behind shows `no changes of its own`, never phantom moves).
-
-A shed whose own farm is on the old layout (schema 3, or a yak file in a status directory: a clone from before 0.0.16) is never read as an empty farm, which would look like it deleted every yak: its `farm:` line says `old layout (pre-0.0.16 clone): ... not read` (JSON `farm.state: "unreadable"` with that `message`), `changes` says `nothing to show` with the same reason, `show --sheds` counts it under `no farm of its own`, `inbox --sheds` skips it, and `answer <id>@<shed>` into it refuses, naming the shed. A base commit from before the farm migrated has no yak files to read, so the baseline falls through to the next one below (the merge-base, then this checkout), never to an empty farm. When the reflog is missing, expired or unusable (its first commit unknown here, or not an ancestor of the shed's HEAD) the baseline is the shed's MERGE-BASE with this checkout instead (the one case that depends on which checkout is looking), and the farm line and label line say `(vs merge-base)`, because that baseline also counts whatever the shed inherited from the thread that spawned it. `ahead`/`behind` describe the shed relative to this checkout (`+0 -0` for the row that is this checkout) — yaks only in the shed, yaks in a different status directory (`hairy -> shaving`), yaks with new notes (count; a created yak's notes count too, so the `farm:` line agrees with `yaks changes`), and yaks whose `needs:` is set in the shed and differs from the base, and yaks it `edited` (in both, with a different title, parent, labels, deps, priority, type, source, verify, other frontmatter field or description; the one rule `yaks status` also uses, so `updated:` alone, a status move, new notes and `needs:` are not edits; JSON `farm.edited`, an array of ids).
-
-A touched yak whose change is already in the REFERENCE farm (the primary checkout's own live working tree when it is visible here and readable, else the upstream of the branch this checkout is on, by the same rule as the primary's baseline, read the same way from every viewer; absent when neither is usable) reads `landed`, not outstanding work: its state there matches the reference exactly, or the reference is further along (a commit cherry-picked or squashed under a different sha, or a shed that simply has not caught up on that one yak; an edit to the yak's title, fields or description counts as the shed's only when the shed made it and the reference has not changed that field since, so the reference re-parenting a yak after the shed forked is not outstanding there) — either way the reference already has everything the shed has for it, so there is nothing to act on. A shed with EVERY touched yak landed replaces the whole summary with `farm: landed (N yak)` and lists no itemized lines; a shed with SOME landed keeps the usual summary counts, adds `(K landed)`, and prunes the itemized lines down to the yaks that are still outstanding. The primary's own row never reports `landed` (comparing it with itself is vacuous). JSON `farm.landed`, an array of ids.
-
-Under each shed's row a label line names who is working there and on what: `who: sheds-2, delta:Fix attribution · shaving: yaks-d738`. It is read only from the shed's OWN new note entries (those beyond the base's, i.e. since the shed forked, committed or not; a `moved:` transition is one): `who` is the distinct actors on them in first-seen order (entries with no actor name no one), and the yaks are those that are in `shaving` in the shed and have own entries there (a claim already in the base counts when the shed has added notes to it; a yak the shed has shorn, or never touched, does not). JSON: `who` (array) and `in_progress` (array of ids).
-
-A liveness tag says whether anyone appears to be actively working here right now, computed the same way for every shed INCLUDING THE PRIMARY (not a comparison to anything, unlike `landed`): `active` when it has a claim (`in_progress` non-empty) and farm activity within the last 2 hours (`STALE_AFTER`, hardcoded, not configurable yet — a config override is a natural follow-up if that misleads in practice), `stale` when that claim has had no farm activity for longer (unknown activity counts as `idle`, never `stale`: no signal is not evidence of abandonment), else `idle`. `idle` is silent (the common case, never shown on the label line); `active`/`stale` appear there instead, e.g. `shaving: yaks-d738 · stale`. JSON `liveness`, a string, always present on every row including the primary's.
-
-A `state:` line (JSON `merged` and `untracked`) says whether anything still keeps a shed around: `merged, nothing outstanding` when its HEAD is already in the primary checkout's history (an ancestor of the primary's HEAD, the same from every viewer), its farm has nothing outstanding and its working tree is clean; otherwise `merged` (when it is) and `uncommitted: N modified, M untracked`, e.g. `merged · uncommitted: 1 untracked`. Not shown for the primary, or for a shed that is not merged and clean. JSON `merged` is `null` for the primary or when the primary is not visible; `untracked` counts the `??` part of `dirty`.
-
-A shed with no own entries, or one compared `vs this checkout` (no base to tell its entries from ours), has no label line and empty arrays. If neither base can be read (no usable fork point and no common history, the shed's commit unknown here, no `.yaks` committed at the base, a farm outside the shed's checkout) the shed is compared with this checkout's working tree instead and the output says `(vs this checkout)`; JSON `farm.vs` is `upstream` (with `farm.upstream`, the ref), `fork`, `merge-base` (all with `farm.base`, the short sha) or `checkout`.
-
-A shed with no farm of its own says `no farm here (private? set YAKS_DIR)`; another shed that resolves to this very farm says `shares this farm`; one whose git state cannot be read is listed with its `error`.
-
-A pinned Delta clone whose checkout cannot be resolved at all (most often a gone git dir: a finished thread) is not a row here — there is no checkout to measure, no git state, no farm — but the text table lists it in one extra footer instead, `orphaned (N): ...`, one line per pin (`<dir>/<name>: <why>`); no JSON array for this yet (`sheds --json` stays exactly the checkouts you could act on).
-
-Discovery reads git data only, from inside any checkout of the repo (it never searches the filesystem): `git worktree list --porcelain` here; the HOST repo this checkout's `objects/info/alternates` names (the human's `.git` where the project was added from a folder, Delta's managed bare repo on a machine the thread was shared to; else this repo); every Delta clone pinned there as `refs/delta/<dir>/<name>/<sha>` (Delta pins a clone's starting commits when it creates it), resolved to its checkout through the clone's git dir `<store>/<dir>/<name>.git` and its `core.worktree` (a pin whose git dir is gone is a finished thread; it shows in the `orphaned` footer above, not as a shed row); and, when the host is a checkout, that checkout and its own `git worktree list` (so a Delta clone sees the primary's git worktrees). A clone on a shared-thread machine cannot see the human's checkout. `yaks discover` shows each step. Strictly read-only in the other checkouts (`git --no-optional-locks`; no fetch, checkout or writes). Needs a git repo and a farm; a repo with no other checkout lists just this one.
-
-### `changes`
-
-`changes [SHED]`
-
-What ONE shed (default: the one you are in; otherwise named by: the name `sheds` prints (the thread-title slug of a Delta clone), `main` for the primary checkout, a Delta dir id, a branch, an actor on its notes, a path, or a unique substring; the same rule as `answer <id>@<shed>`; naming your own shed works, and `main` is the primary checkout whether or not you are in it) created, moved and noted since it forked, per yak, with actors: new yaks (title, status), `from -> to` moves, each new note entry (timestamp, actor, first line), `needs:` newly set, and an `edited` yak (title, fields or description rewritten, the rule `yaks status` uses; `, edited` in the bracket list, so `[hairy -> shaving, edited]`; `updated:` alone is not an edit, and a new yak is `new`, not `edited`), and a `landed` yak (its change is already in the REFERENCE farm, see `sheds`'s `farm.landed`; never set for the primary's own row; JSON `landed`).
-
-The text view lists the OUTSTANDING yaks first, in full, then folds the landed ones into one `landed (N): id, id, ...` line (ids only, wrapped at 100 columns, continuation lines indented); a shed with nothing landed reads as before, and one with only landed yaks prints just that line.
-
-`--outstanding` drops the landed yaks (no fold line); `--status S` (repeatable, ORs; `hairy`, `shaving`, `shorn`, `dead`, an unknown one is an error) keeps only yaks whose status in the shed is S, so `--status shaving` is the work in progress there; the two AND, and both filter `--json` too (which otherwise lists every yak, landed included).
-
-When nothing is left one line says so (`nothing outstanding (12 landed)`, `nothing in shaving`).
-
-The per-yak expansion of the `farm:` line of `sheds`, with the same baseline (a shed's fork point; the primary's upstream, `(vs origin/<branch>)`, else `(vs fork)`; else `(vs merge-base)` / `(vs this checkout)`).
-
-`--json`: one object per changed yak (`id`, `title`, `status`, `added`, `moved`, `notes` with `ts`/`actor`/`text`, `needs`, `edited`, `landed`, `vs`, `base`, `upstream`).
-
-An unknown or ambiguous name lists the sheds and exits 1; a shed sharing this farm (or with none) says why there is nothing to show. Read-only
+Discovery reads git data only, from inside any checkout of the repo (it never searches the filesystem): `git worktree list --porcelain` here; the HOST repo this checkout's `objects/info/alternates` names (the human's `.git` where the project was added from a folder, Delta's managed bare repo on a machine the thread was shared to; else this repo); every Delta clone pinned there as `refs/delta/<dir>/<name>/<sha>`, resolved to its checkout through the clone's git dir `<store>/<dir>/<name>.git` and its `core.worktree`; and, when the host is a checkout, that checkout and its own `git worktree list` (so a Delta clone sees the primary's git worktrees). A clone on a shared-thread machine cannot see the human's checkout. `yaks discover` shows each step. Strictly read-only in the other checkouts (`git --no-optional-locks`; no fetch, checkout or writes).
 
 ### `discover`
 
@@ -268,7 +219,7 @@ Requires ≥1 filter flag (never the whole farm) and ≥1 mutation flag (`--add-
 | `verify <ids…>` | Run each yak's verification command with live output, and record `verify: <cmd> -> PASS/FAIL (exit N)` as an attributed note. Exits non-zero if any fails. Explicit only. [Details](#verify) |
 | `attach <id> <path>` | Copy a local file under `.yaks/<herd>/yaks/<id>/` and link it in the yak's body — artifact evidence a human can view. `--name` renames it; `--note`/`--as` record an attributed note. [Details](#attach) |
 | `rename-attachment <id> <old> <new>` | Rename `.yaks/<herd>/yaks/<id>/<old>` and rewrite every link to it across the farm. Refuses to overwrite an existing attachment. [Details](#rename-attachment) |
-| `attachment <id> [<file>]` | Find a yak's attachments wherever they are: this checkout's farm first, then every other shed's. With `<file>`, prints its absolute path. `--json`. Read-only. [Details](#attachment) |
+| `attachment <id> [<file>]` | Print the absolute path of a yak's attachments (all, or the one named). `--json`. Read-only. [Details](#attachment) |
 
 ### `verify`
 
@@ -325,9 +276,7 @@ Rename `.yaks/<herd>/yaks/<id>/<old>` (e.g. an ugly `paste-….png`) and rewrite
 
 `attachment <id> [<file>]`
 
-Find a yak's attachments wherever they are: this checkout's farm first, then every other shed's (git worktrees, Delta clones), so evidence a worker attached in its shed can be read before it lands.
-
-With no `<file>`, lists `<shed>  <absolute path>` per attachment (`.` = this checkout; a name this checkout has hides other sheds' copies); with `<file>`, prints that one's absolute path (exit 1 if no farm has it). `--json`. Read-only.
+With no `<file>`, lists the absolute path of each of the yak's attachments (in `<herd>/yaks/<id>/`); with `<file>`, prints that one's path (exit 1 when the yak has no such attachment). `--json`. Read-only.
 
 ## State transitions (all accept multiple ids)
 
@@ -356,9 +305,9 @@ no entry.
 | Command | What it does |
 |---|---|
 | `ask <id> --note '<question>'` | Block a yak on a human: sets the `needs` field, dropping it out of `next`. Also `--note -` (stdin) / `--note-file PATH`. [Details](#ask) |
-| `answer <id> --note '<reply>'` | Answer a question (human-reserved): records the reply and sets `needs: agent`; `--done` clears `needs` instead. `answer <id>@<shed>` answers in ANOTHER checkout's copy. [Details](#answer) |
+| `answer <id> --note '<reply>'` | Answer a question (human-reserved): records the reply and sets `needs: agent`; `--done` clears `needs` instead. [Details](#answer) |
 | `pickup <id> [--note '<text>']` | An agent takes on an answered yak: clears `needs: agent` and records a `picked up` note (`--as`). Fails on a yak that is not `needs: agent`. [Details](#pickup) |
-| `inbox [--for human\|agent] [--sheds] [--json]` | Every yak with a `needs` value, across all statuses: **Awaiting a human** and **Answered, awaiting an agent**. `--for` shows one section; `--sheds` adds other checkouts' asks; `--json`. [Details](#inbox) |
+| `inbox [--for human\|agent] [--json]` | Every yak with a `needs` value, across all statuses: **Awaiting a human** and **Answered, awaiting an agent**. `--for` shows one section; `--json`. [Details](#inbox) |
 
 ### `ask`
 
@@ -374,8 +323,6 @@ Answer a question (human-reserved): records the reply and sets `needs: agent`, s
 
 A second answer on a `needs: agent` yak keeps the state and appends the note; on a yak with no `needs` it only records the note. Also `--note -` / `--note-file PATH`.
 
-`answer <id>@<shed>` answers in ANOTHER checkout's copy of the yak (`<shed>` as in `yaks changes`; the id and shed name from `inbox --sheds`): same transition and attributed note, written into that checkout's working tree under its own farm lock and left **uncommitted** there (its worker commits it with its own yak file); one line says which shed and file. `<shed>` may also be the checkout you are in, which is just a plain `answer`. Refused when the shed shares this farm (use plain `answer`), has none or an unreadable one, or lacks the yak. The only command that writes outside this checkout; nothing is staged or committed.
-
 ### `pickup`
 
 `pickup <id> [--note '<text>']`
@@ -386,17 +333,13 @@ The only command that clears `needs: agent`; on a yak that is not `needs: agent`
 
 ### `inbox`
 
-`inbox [--for human|agent] [--sheds] [--json]`
+`inbox [--for human|agent] [--json]`
 
 Every yak with a `needs` value, across all statuses, in two sections: **Awaiting a human** (`needs: human`; marked `↩ replied` when its latest note after the ask is from someone other than the asker, i.e. a plain-note reply that did not use `answer`) and **Answered, awaiting an agent** (`needs: agent`).
 
 `--for` shows one section.
 
-`--sheds` then adds, per OTHER shed (a git worktree or Delta clone of this repository, as `sheds` lists them, without the one you are in), every yak with `needs` set in that shed's own farm: the shed's name and path, the usual row, and the question text (the newest note at or after the ask, so a reply shows instead when there is one).
-
-An ask identical in this checkout's farm (same id, same `needs`, same latest note) is not repeated; a shed whose farm is shared with this checkout or that has none shows nothing. `--for` and the filter flags apply to the shed rows; the shed farms are only read, never written.
-
-`--json` is one array of yaks, each with `needs` and a derived `replied` boolean; with `--sheds` it is instead an object `{inbox: [...that array...], sheds: [{shed, path, id, title, status, needs, replied, question}]}` (`question` is `null` for a hand-set `needs:` or an ask with no text).
+`--json` is one array of yaks, each with `needs` and a derived `replied` boolean.
 
 `ask` records an `asked: needs <who>` first line in its note: that is what `replied` is measured from, so a yak whose `needs:` was set by hand has no known asker and is never `replied`.
 

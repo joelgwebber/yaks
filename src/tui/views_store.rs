@@ -70,7 +70,7 @@ pub(crate) fn spec_to_json(s: &FilterSpec) -> Value {
     types.sort();
     let mut priorities = s.priorities.clone();
     priorities.sort_unstable();
-    let mut spec = json!({
+    let spec = json!({
         "statuses": statuses,
         "types": types,
         "priorities": priorities,
@@ -82,11 +82,6 @@ pub(crate) fn spec_to_json(s: &FilterSpec) -> Value {
         "needs_only": s.needs_only,
         "parent": s.parent,
     });
-    // `copies: home` is written only when set, so a saved view that never
-    // used it stays byte-identical to before (yaks-9631).
-    if s.home_only {
-        spec["home_only"] = json!(true);
-    }
     spec
 }
 
@@ -143,10 +138,6 @@ pub(crate) fn spec_from_json(d: Option<&Value>) -> FilterSpec {
             .and_then(|x| x.as_bool())
             .unwrap_or(false),
         parent: opt_str("parent"),
-        home_only: d
-            .get("home_only")
-            .and_then(|x| x.as_bool())
-            .unwrap_or(false),
     }
 }
 

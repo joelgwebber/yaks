@@ -24,12 +24,10 @@ use std::rc::Rc;
 
 use super::*;
 
-/// Where a cached row's yak lives: this farm's tasks, or the `j`th task that
-/// exists only in shed `i` (`Snapshot::only_tasks`).
+/// Where a cached row's yak lives: its index in this farm's tasks.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(super) enum Loc {
     Home(usize),
-    Shed(usize, usize),
 }
 
 /// A `tree::Row` with its `&Task` replaced by a [`Loc`].
@@ -38,7 +36,6 @@ pub(super) struct CachedRow {
     pub loc: Loc,
     pub depth: u16,
     pub ghost: bool,
-    pub shed_only: bool,
     pub has_children: bool,
     pub collapsed: bool,
     pub hidden: usize,
@@ -99,8 +96,6 @@ pub(super) struct RowsCache {
 pub(super) struct DlinesKey {
     pub data_gen: u64,
     pub loc: Loc,
-    /// `copies: home` hides the sheds overlay (`App::overlay`).
-    pub home_only: bool,
     pub width: usize,
     pub slot: Option<detail::EditSlot>,
     /// Relative dates ("5m ago") are good to the minute.
@@ -113,14 +108,14 @@ pub(super) struct DlinesCache {
 }
 
 impl App {
-    /// Record that `all` or the sheds snapshot was replaced, so the memoized
+    /// Record that `all` (or the sheds snapshot) was replaced, so the memoized
     /// rows and detail lines are rebuilt. See the module docs.
     pub(crate) fn touch(&mut self) {
         self.data_gen += 1;
     }
 
-    /// Index of `t` in `all`, or in a shed's only-tasks: the inverse of
-    /// [`App::resolve`]. `t` must be borrowed from one of them.
+    /// Index of `t` in `all`: the inverse of [`App::resolve`]. `t` must be
+    /// borrowed from `all`.
     pub(super) fn locate(&self, t: &Task) -> Loc {
         let size = std::mem::size_of::<Task>();
         let addr = t as *const Task as usize;
@@ -128,33 +123,15 @@ impl App {
             let start = base.as_ptr() as usize;
             (addr >= start && addr < start + base.len() * size).then(|| (addr - start) / size)
         };
-        if let Some(i) = within(&self.all) {
-            return Loc::Home(i);
+        match within(&self.all) {
+            Some(i) => Loc::Home(i),
+            None => unreachable!("row task {} is not a task of this farm", t.id),
         }
-        for (i, only) in self
-            .sheds
-            .snapshot
-            .iter()
-            .flat_map(|s| s.only_tasks.iter().enumerate())
-        {
-            if let Some(j) = within(only) {
-                return Loc::Shed(i, j);
-            }
-        }
-        unreachable!("row task {} is neither a home nor a shed-only task", t.id)
     }
 
     pub(super) fn resolve(&self, loc: Loc) -> &Task {
         match loc {
             Loc::Home(i) => &self.all[i],
-            Loc::Shed(i, j) => {
-                let snap = self
-                    .sheds
-                    .snapshot
-                    .as_ref()
-                    .expect("snapshot behind a shed-only row");
-                &snap.only_tasks[i][j]
-            }
         }
     }
 
@@ -184,7 +161,6 @@ impl App {
                 loc: self.locate(r.task),
                 depth: r.depth,
                 ghost: r.ghost,
-                shed_only: r.shed_only,
                 has_children: r.has_children,
                 collapsed: r.collapsed,
                 hidden: r.hidden,

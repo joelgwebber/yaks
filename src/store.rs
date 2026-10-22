@@ -167,10 +167,24 @@ pub fn discover_with(start: &Path, yaks_dir: Option<&str>) -> Result<Discovered>
 /// included): the remains of a farm, not a farm.
 pub(crate) fn only_leftovers(dir: &Path) -> bool {
     fs::read_dir(dir).is_ok_and(|entries| {
-        entries
-            .flatten()
-            .all(|e| matches!(e.file_name().to_str(), Some(".lock" | ".gitignore")))
+        entries.flatten().all(|e| {
+            matches!(
+                e.file_name().to_str(),
+                Some(".lock" | ".gitignore" | crate::activity::DIR)
+            )
+        })
     })
+}
+
+/// A stable 64-bit FNV-1a hash of `s`: the same on every run and platform
+/// (what names a farm home and a checkout's activity log).
+pub fn stable_hash(s: &str) -> u64 {
+    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+    for b in s.bytes() {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    h
 }
 
 /// The default name of the farm branch (yaks-73f4); `git config yaks.branch`
@@ -225,11 +239,7 @@ pub fn farm_home_with(repo: &Path, env: impl Fn(&str) -> Option<String>) -> Path
             }
         })
         .unwrap_or_else(|| "repo".to_string());
-    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
-    for b in git_dir.to_string_lossy().bytes() {
-        h ^= b as u64;
-        h = h.wrapping_mul(0x0000_0100_0000_01b3);
-    }
+    let h = stable_hash(&git_dir.to_string_lossy());
     base.join("yaks")
         .join("farms")
         .join(format!("{name}-{}", &format!("{h:016x}")[..8]))
@@ -777,6 +787,7 @@ pub mod write {
         let dir = path.parent().unwrap_or(root);
         fs::create_dir_all(dir).with_context(|| format!("creating {}", dir.display()))?;
         atomic_write(&path, &render(t))?;
+        crate::activity::record(root, &t.id);
         Ok(path)
     }
 
@@ -1539,33 +1550,6 @@ pub fn is_replied(task: &Task) -> bool {
         .is_some_and(|n| &n.actor != asker)
 }
 
-/// The note an open `needs` is waiting on: the newest note at or after the
-/// latest `ask` note, skipping transition and `pickup` entries exactly as
-/// [`is_replied`] does. `None` when the yak has no `ask` note (a hand-set
-/// `needs:`).
-pub fn ask_note(task: &Task) -> Option<NoteEntry> {
-    let notes = parse_notes(&task.body);
-    let ask_at = notes.iter().rposition(|n| is_ask_text(&n.text))?;
-    notes
-        .into_iter()
-        .skip(ask_at)
-        .rfind(|n| !is_transition_text(&n.text) && !is_pickup_text(&n.text))
-}
-
-/// The question text of an [`ask_note`]: for the ask itself, everything after
-/// its `asked: needs <who>` marker line; for a later reply, the whole note.
-/// `None` when there is no such note or no text (an ask with no question).
-pub fn ask_question(task: &Task) -> Option<String> {
-    let n = ask_note(task)?;
-    let text = if is_ask_text(&n.text) {
-        n.text.split_once('\n').map_or("", |(_, rest)| rest)
-    } else {
-        &n.text
-    };
-    let text = text.trim();
-    (!text.is_empty()).then(|| text.to_string())
-}
-
 /// Load a single task by id (see [`find_task_file`]).
 pub fn load_task_by_id(root: &Path, id: &str) -> Result<Option<Task>> {
     let Some((status, path)) = find_task_file(root, id) else {
@@ -1695,9 +1679,8 @@ pub fn description(body: &str) -> String {
 }
 
 /// Whether `new` is an edited version of `old`, the same yak: any frontmatter
-/// field changed, or its description. The one definition of "edited", shared by
-/// `yaks status` (a file against its version at HEAD) and `yaks sheds` /
-/// `yaks changes` (a shed's yak against its baseline). Deliberately NOT edits:
+/// field changed, or its description. The one definition of "edited", used by
+/// `yaks status` (a file against its version at HEAD). Deliberately NOT edits:
 /// `updated:` (every mutation re-stamps it), the status (a directory move is its
 /// own change), `needs:` (reported as such) and the note entries (appended
 /// notes are their own change).
@@ -1713,53 +1696,6 @@ pub fn edited(old: &Task, new: &Task) -> bool {
         || old.verify != new.verify
         || old.extra != new.extra
         || description(&old.body) != description(&new.body)
-}
-
-/// Whether `reference` has no edit (in the sense of [`edited`]) of `theirs`
-/// still to take, field by field against their common `base`. A field is
-/// outstanding only when the shed changed it (`base` -> `theirs`) and the
-/// reference still holds the base's value. So:
-/// - a field the shed left alone is never the shed's edit, however the
-///   reference changed it since (a later re-parent is not the shed's);
-/// - a field both changed is settled by the reference, whatever its value:
-///   either the shed's edit landed and the reference moved on, or the two
-///   disagree and the reference is where that gets resolved. The same rule
-///   as a status the reference has moved further along.
-///
-/// With no `base` (the shed created the yak) any difference is outstanding.
-/// The three-way counterpart of [`edited`], read by `yaks sheds`' `landed`
-/// (yaks-e92e). Pure.
-pub fn edits_landed(base: Option<&Task>, theirs: &Task, reference: &Task) -> bool {
-    fn pending<T: PartialEq>(base: Option<T>, theirs: T, reference: T) -> bool {
-        match base {
-            Some(b) => b != theirs && reference == b,
-            None => reference != theirs,
-        }
-    }
-    let desc = |t: &Task| description(&t.body);
-    !(pending(base.map(|b| &b.title), &theirs.title, &reference.title)
-        || pending(base.map(|b| &b.kind), &theirs.kind, &reference.kind)
-        || pending(
-            base.map(|b| b.priority),
-            theirs.priority,
-            reference.priority,
-        )
-        || pending(
-            base.map(|b| &b.created),
-            &theirs.created,
-            &reference.created,
-        )
-        || pending(base.map(|b| &b.parent), &theirs.parent, &reference.parent)
-        || pending(base.map(|b| &b.labels), &theirs.labels, &reference.labels)
-        || pending(
-            base.map(|b| &b.depends_on),
-            &theirs.depends_on,
-            &reference.depends_on,
-        )
-        || pending(base.map(|b| &b.source), &theirs.source, &reference.source)
-        || pending(base.map(|b| &b.verify), &theirs.verify, &reference.verify)
-        || pending(base.map(|b| &b.extra), &theirs.extra, &reference.extra)
-        || pending(base.map(desc), desc(theirs), desc(reference)))
 }
 
 /// Parse a canonical timestamp (as written by `now_iso`) to a UTC instant.
@@ -3358,54 +3294,6 @@ mod replied_tests {
 
     fn ask(who: &str) -> String {
         ask_text("human", Some(who))
-    }
-
-    #[test]
-    fn ask_question_is_the_ask_text_or_the_newest_reply_after_it() {
-        let asked = task_with(
-            Some("human"),
-            &[("2026-01-01T00:00:00Z", Some("coord"), &ask("which?"))],
-        );
-        assert_eq!(ask_question(&asked).as_deref(), Some("which?"));
-        let replied = task_with(
-            Some("human"),
-            &[
-                ("2026-01-01T00:00:00Z", Some("coord"), &ask("which?")),
-                ("2026-01-01T00:01:00Z", Some("joel"), "B"),
-                (
-                    "2026-01-01T00:02:00Z",
-                    Some("joel"),
-                    "moved: hairy -> shaving",
-                ),
-            ],
-        );
-        assert_eq!(ask_question(&replied).as_deref(), Some("B"));
-        // Only the latest ask counts; an earlier one is history.
-        let reasked = task_with(
-            Some("human"),
-            &[
-                ("2026-01-01T00:00:00Z", Some("coord"), &ask("old?")),
-                ("2026-01-01T00:01:00Z", Some("joel"), "B"),
-                ("2026-01-01T00:02:00Z", Some("coord"), &ask("new?")),
-            ],
-        );
-        assert_eq!(ask_question(&reasked).as_deref(), Some("new?"));
-    }
-
-    #[test]
-    fn ask_question_is_none_without_an_ask_or_a_question() {
-        // A hand-set `needs:` has no ask note.
-        assert_eq!(ask_question(&task_with(Some("human"), &[])), None);
-        let bare = task_with(
-            Some("human"),
-            &[(
-                "2026-01-01T00:00:00Z",
-                Some("coord"),
-                &ask_text("human", None),
-            )],
-        );
-        assert!(ask_note(&bare).is_some());
-        assert_eq!(ask_question(&bare), None);
     }
 
     #[test]
