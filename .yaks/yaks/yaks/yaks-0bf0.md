@@ -5,13 +5,14 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-22T20:35:28Z'
-updated: '2026-10-22T22:12:53Z'
+updated: '2026-10-22T22:44:38Z'
 depends_on:
 - yaks-89fc
 labels:
 - tui
 - images
 - markdown
+verify: cargo test --workspace
 ---
 
 Follow-up to yaks-4305, which only shows an image in a pane of its own after Enter. An image link in a yak body (`![name](<id>/<file>)`) renders today as a `🖼 name` link row; it should draw the picture in place, in the detail pane, as GitHub does.
@@ -100,3 +101,38 @@ Recorded by the yakherd from the human's comments in the Delta thread (not typed
 picked up
 
 Building (A) clip-at-edge plus the inline_images switch.
+
+---
+▸ 2026-10-22T22:24:50Z [delta:Add basic image attachment rendering]
+
+Decision (yakherd): partial visibility uses ratatui-image's `SlicedImage`/`SlicedProtocol`, not a placeholder. It clips at the pane edge on every protocol (kitty via unicode-placeholder row skip, half-blocks, sixel by dropping bands, iTerm2 by per-row slices), so the human's choice (A) works everywhere and the "placeholder on sixel/iTerm2" fallback in my earlier lean is not needed. Rejected: `StatefulImage` (re-encodes on every size change and blocks the frame), re-scaling the visible part (flicker).
+
+Decision: an image expands only when it is alone in a TOP-LEVEL paragraph (no list, quote, table or footnote around it): `MdImage.alone`, computed in mdrender. Rejected: inline-in-a-sentence (no sensible layout) and indented images in lists/quotes for now (the draw offset needs the container gutter; a follow-up if wanted).
+
+Decision: layout reads only the image HEADER (`ImageReader::into_dimensions`), at build time; decode and encode happen at first DRAW and only for images intersecting the visible rows, cached by (path, mtime, cols, rows) with a small cap. So opening a yak with twenty screenshots decodes the one or two on screen.
+
+---
+▸ 2026-10-22T22:44:09Z [delta:Add basic image attachment rendering]
+
+verify: `cargo test --workspace` -> PASS (exit 0)
+
+![tui-image-inline](yaks-0bf0/tui-image-inline.png)
+
+![tui-image-inline-clipped](yaks-0bf0/tui-image-inline-clipped.png)
+
+---
+▸ 2026-10-22T22:44:38Z [delta:Add basic image attachment rendering]
+
+Built (yakherd), committed in the thread clone as ea538c8 (on top of 7462a6f); not pushed to the user's `main`. `yaks verify yaks-0bf0`: PASS (`cargo test --workspace`, 730 in the bin).
+
+What it does: an image that is the whole of a top-level body paragraph reserves rows in the detail row model (`DLine.image`, `ImageSlot`), sized from its file header alone (`imagesize::cells`, no decode), and `render_detail` draws it over those rows with `SlicedImage`, clipped at the pane edge. Decode and encode run at first draw for images on screen only, cached by (path, mtime, cols, rows) up to 8, a failed decode remembered. Everything else (in text, a list, quote or table; remote; svg; missing or undecodable; `inline_images: false`) stays the `🖼 alt` link row. The link row stays above the image, so Enter still opens the viewer. New config key `inline_images` (default true).
+
+Tests that failed first: image-alone reserves rows (12x6 cells for a 120 px image at the half-block 10x20 px cell), mixed/list/quote/off/remote/missing do not, `=x60` sets 3 rows, clipping (2 rows visible at the bottom edge, all 6 when scrolled in, 0 when scrolled off), a broken file draws nothing and is not retried. mdrender: `MdImage.alone`.
+
+Evidence attached: two color frames (full and clipped), rasterized from the docshots SVGs with headless Chrome. They show the half-block fallback only.
+
+NOT verified, and the reason this is still open: any real graphics protocol. Kitty (Ghostty) scroll and redraw behavior is exactly what I cannot see: stale images when the pane scrolls, an overlay (`?`, a picker) opened over an image, a resize, and kitty re-transmitting on every frame. Also untested here: an image inside a comment (same `body_rows` path as the description, not separately tested) and several images in one yak.
+
+Decision (yakherd): the draw cell size comes from `Picker::font_size()`; the half-block picker's default 10x20 px is what tests and headless frames use, so row counts there differ from a real terminal's.
+Decision: `build_inline` stretches the decoded image to exactly cols x rows cells (`resize_exact`) before encoding. Rejected `Resize::Scale`: it left a padding strip where cell rounding did not divide evenly (seen in the first frame).
+Follow-up if wanted: images inside list items and quotes (need the container gutter as a draw offset).
