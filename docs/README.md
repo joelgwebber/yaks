@@ -52,18 +52,20 @@ yaks tui                       # or drive it all interactively
   tools, and the workflows they encode (solo, team, and careful multi-agent
   parallelism).
 
-## Solo vs team mode
+## Where the farm lives
 
-- **Team mode:** `.yaks/` is committed with the code. The farm is shared, visible
-  in git/PRs, and yak surgery merges alongside the changes it describes.
-  Provenance is recoverable from git (`yaks commits <id>`).
-- **Solo / private mode:** `.yaks/` is not committed to the code repo. Hide it
-  via the root `.gitignore`, a self-contained `.yaks/.gitignore` of `*` (only
-  when the farm is *not* its own git repo), `.git/info/exclude` (per-repo,
-  untracked), or a global `core.excludesFile`. For a private farm synced across
-  machines, give `.yaks/` its own `.git` on a private remote and hide it from the
-  outer repo via `.git/info/exclude`. See the **yaks** skill for the full
-  breakdown and footguns.
+- **On its own branch (recommended):** an orphan branch (`yaks`) holding only
+  `.yaks/`, checked out once per machine outside every checkout. Every checkout
+  of the repo shares that one farm live; code branches and PRs carry no yak
+  files. `yaks commit` commits it, `yaks sync` commits, pulls and pushes it, and
+  `yaks private` keeps it on this machine. Set up with `yaks init --mode branch`
+  or move an existing farm with `yaks migrate --to-branch`.
+- **Committed with the code (team):** `.yaks/` is tracked on the code branches,
+  and yak changes ride in the commits that make them.
+- **Private:** `.yaks/` is excluded from git (`yaks init --mode private` writes
+  `.git/info/exclude`). Keep yak ids out of commits and PRs (`yaks scan-ids`).
+
+See the **yaks** skill for the habits that go with each.
 
 **Concurrent writers.** Every command that changes the farm holds an exclusive
 advisory lock on `.yaks/.lock` for its whole read-modify-write, so parallel

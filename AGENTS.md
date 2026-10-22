@@ -141,7 +141,7 @@ a follow-up:
 - `docs/` (`docs/cli.md`, `docs/tui.md`, `docs/README.md`) and `README.md`.
 - the bundled skills (`.agents/skills/yaks`, `.agents/skills/yaks-tracker`) and
   the opt-in `coordination` group beside them (`.agents/skills/yaks-working`,
-  `.agents/skills/yaks-coordinating*`).
+  `.agents/skills/yaks-coordinating`).
 - for a CLI change: the clap `--help` text — the `///` doc comments and
   `#[arg(...)]`/`#[command(...)]` help on the command/flag in `src/main.rs`.
 - for a TUI key/behavior: the `?` help overlay (`help_content` in
@@ -157,7 +157,7 @@ The skills in `BUNDLED` are embedded via `include_str!`. `BUNDLED` in
 `src/skills.rs` is the explicit list — skills **and, per skill, files** (a skill
 may carry extra files; none does today since `land.sh` became `yaks land`) — and not the directory
 contents; it alone decides what is embedded and installed. The default set is
-`yaks` + `yaks-tracker`; `yaks-working` and `yaks-coordinating*` ship only as
+`yaks` + `yaks-tracker`; `yaks-working` and `yaks-coordinating` ship only as
 the opt-in `coordination` group (`yaks skills install --with coordination`), and
 any other project-local skill is never shipped. A test fails if a bundled
 skill's directory holds a file the list omits. `yaks skills install` writes
@@ -210,7 +210,7 @@ coordinating thread. It worked across six Sonnet workers in yaks-a3d2: every
 landing was clean and the workers' `Decision:` notes were sound. What they did
 NOT catch was behaviour on the real machine (the coordinator's run of each
 command found two bugs their tests missed), so the coordinator's review is part
-of the job, not a formality. The workflow is in the `yaks-coordinating` skills;
+of the job, not a formality. The workflow is in the `yaks-coordinating` skill;
 what made it work here:
 
 - **Delegate** a yak with one clear outcome, a file/function scope, and a test

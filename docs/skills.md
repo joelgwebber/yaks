@@ -31,8 +31,11 @@ may be more than a `SKILL.md`: an extra file is installed with mode 0755 when it
 entry says it is executable; none ships today, since the landing script became
 `yaks land`), and a test fails if a bundled skill's
 directory holds a file the list omits. The default set is `yaks` and
-`yaks-tracker`; the `coordination` group adds `yaks-coordinating`,
-`yaks-coordinating-team`, `-private`, `-worktrees`, `-delta` and `yaks-working`.
+`yaks-tracker`; the `coordination` group adds `yaks-coordinating` and
+`yaks-working`. (Four companion skills, `yaks-coordinating-team`, `-private`,
+`-worktrees` and `-delta`, were folded into `yaks-coordinating`; `yaks skills
+install` removes an untouched installed copy of them and `skills status` reports
+any left as `retired`.)
 Any other project-local skill placed in `.agents/skills/` is never embedded or
 installed unless someone adds it to that list on purpose.
 
@@ -118,10 +121,10 @@ an install (that's the `held` rule). When iterating locally, use
 
 | Skill | Installed by | Use it when… |
 |---|---|---|
-| **`yaks`** | default | Managing tasks in a `.yaks/` farm — the commands, the workflow, solo vs team/private modes. |
+| **`yaks`** | default | Managing tasks in a `.yaks/` farm — the commands, the workflow, where the farm lives and when to sync. |
 | **`yaks-tracker`** | default | Relating yaks to external issue trackers (Jira/Linear/GitHub) as a one-way roll-up projection. |
 | **`yaks-working`** | `--with coordination` | Taking one yak from hairy to shorn with a legible trail. |
-| **`yaks-coordinating`** (+ `-team`, `-private`, `-worktrees`, `-delta`) | `--with coordination` | Coordinating a shared farm across parallel agents and humans. |
+| **`yaks-coordinating`** | `--with coordination` | Coordinating a shared farm across parallel agents and humans, in Delta threads or git worktrees. |
 
 ## The design test (what is a tool vs a skill)
 
@@ -149,42 +152,34 @@ The per-yak discipline the other skills lean on:
 Conventions for running a small number (2–4) of agents over one farm reliably.
 The load-bearing ideas, all validated by dogfooding:
 
-- **Run shape: claim → fan out → merge → reconcile.** The yakherd makes one
-  commit that moves the batch's yaks to `shaving` with per-yak assignment notes
-  ("licks the cookie", so `main`'s `shaving` set reflects what's in flight),
-  cuts a git worktree per shed, spawns one worker each (workers skip the shave —
-  their yak is already shaving), squash-merges each shed back (the yak id in the
-  message), and regrows any yak left stranded in `shaving`.
+- **One live farm.** With the farm on its own branch, every checkout (the
+  human's, the yakherd's, each worker's) reads and writes the same farm, so
+  claims, notes and asks are visible at once and no code commit carries yak
+  files. The yakherd commits the farm (`yaks commit`) and syncs it (`yaks sync`).
+- **Run shape: claim → fan out → land → reconcile.** The yakherd moves the
+  batch's yaks to `shaving` with per-yak claim notes (owner, scope, evidence
+  contract, judge), briefs one worker per yak (`yaks brief`), lands each by SHA
+  (`yaks land`, one squash commit, never a merge), and regrows any yak left
+  stranded in `shaving`.
 - **Disjoint scope is about *types*, not just files.** A change to a shared type
-  breaks the other shed at merge even across disjoint files; put it in a
-  yakherd prep-commit first, or keep it in one shed.
-- **Human-in-the-loop routes through the yakherd.** Workers `ask` and hand
-  back; the human answers on `main` (`yaks inbox`); the next spawn starts fresh
-  from `main`. No live cross-worktree feedback.
-- **Human-driven interactive shed.** A thorny, iterative design problem can run
-  as its own worktree shed *in parallel* without a fan-out: a peer shed the human
-  drives, landed through the yakherd (or the human is the yakherd). It
-  starts yak-less, emits code or a fresh farm, and — because the human opens the
-  worktree as the harness root — dodges the spawned-worker file-tool pitfall by
-  construction.
-- **Recovery.** A worker's work lives in its worktree, so a lost session isn't
-  lost work — recover from the worktree rather than restarting.
-- **Integrity.** `yaks doctor` after a batch catches merge damage; across many
-  runs the disjoint-leaf model has kept farms corruption-free.
+  breaks the other worker at merge even across disjoint files; put it in a
+  yakherd prep commit first, or keep it in one worker.
+- **Human-in-the-loop through the farm.** Workers `ask` and hand back; the
+  yakherd answers scope and mechanics, the human answers design forks
+  (`yaks inbox`), and the worker resumes with `yaks pickup`.
+- **Recovery.** A worker's work lives in its checkout, so a lost session isn't
+  lost work — recover from the checkout rather than restarting.
+- **Integrity.** `yaks doctor` after every landing.
 
 ## Workflows at a glance
 
 - **Solo:** `create` → `next` → `shave` → `update --note` → `shorn`. The farm is
-  durable memory; notes are how you (or an agent) remember across sessions. Keep
-  it private with one of the hiding options in [README](README.md#solo-vs-team-mode).
-- **Team:** commit `.yaks/` with the code. Yak surgery lands alongside the change
-  it describes; `yaks commits <id>` recovers provenance from git; ids may appear
-  in commit messages but never in PR titles or external trackers (`scan-ids`
-  guards that).
-- **Parallel agents:** the yakherd drives the claim → fan-out → squash →
-  reconcile shape above, with `ask`/`answer`/`inbox` for human decisions and
-  `doctor` for integrity.
-- **Interactive shed alongside parallel work:** a human-driven worktree shed for
-  design problems that aren't fire-and-forget — same worktree mechanics, landed
-  through the yakherd; in private mode its emitted yaks are shared live, so
-  only the code has to land.
+  durable memory; notes are how you (or an agent) remember across sessions.
+- **Across machines or a team:** keep the farm on its own branch (`yaks init
+  --mode branch`, or `yaks migrate --to-branch`) and `yaks sync` at session
+  start, after landings and before switching machines. `yaks private` keeps it on
+  one machine. Ids may appear in commit messages but never in PR titles or
+  external trackers (`scan-ids` guards that).
+- **Parallel agents:** the yakherd drives the claim → fan-out → land →
+  reconcile shape above, with `ask`/`answer`/`pickup` for decisions and `doctor`
+  for integrity.

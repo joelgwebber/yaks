@@ -16,14 +16,12 @@ shipped ones from here.
   today; the landing script became `yaks land`) must be listed in `BUNDLED` too;
   a test fails if one is missing.
   - `yaks-working` is for a worker taking ONE yak from hairy to shorn.
-  - `yaks-coordinating` is the core for a yakherd handing yaks to other agents;
-    it routes to one farm-mode skill and one environment skill:
-    - farm mode: `yaks-coordinating-team` (`.yaks/` committed) or
-      `yaks-coordinating-private` (gitignored or out-of-tree);
-    - environment: `yaks-coordinating-worktrees` (plain `git worktree`) or
-      `yaks-coordinating-delta` (Delta threads and `spawn_subagent`).
+  - `yaks-coordinating` is for a yakherd handing yaks to other agents, with a
+    section each for Delta threads and plain git worktrees. (It replaced four
+    companion skills, `-team`, `-private`, `-worktrees` and `-delta`; `yaks skills
+    install` removes untouched installed copies of those.)
   A guard test (`repo_skills_are_well_formed` in `src/skills.rs`) keeps the names,
-  descriptions, cross-references and the core's router consistent.
+  descriptions and cross-references consistent.
 
 `yaks skills install` refuses to write into this directory (the source-tree
 guard, yaks-d8e9), with or without `--force`.
@@ -39,4 +37,4 @@ A skill is only as good as a cold reader's reading of it, and a flaw can keep a 
 
 1. `cargo test -p yaks skills` (the guards: frontmatter quoting, the explicit `BUNDLED` file lists, source protection; the landing scenarios are `yaks land`'s own tests, `cargo test -p yaks land::`).
 2. Load each changed skill through the real `skill` tool, with the worktree argument. A description containing `: ` must be quoted, or the skill will not load.
-3. Cold-read it: a fresh scout that sees only the skill files answers scenario questions that probe what you changed. The reusable brief is `.yaks/yaks-5c9f/cold-read-brief.md`. Fix the real gaps, then re-run only the questions it missed with a second scout.
+3. Cold-read it: a fresh scout that sees only the skill files answers scenario questions that probe what you changed. The reusable brief is attached to yaks-5c9f (`yaks attachment yaks-5c9f cold-read-brief.md`). Fix the real gaps, then re-run only the questions it missed with a second scout.

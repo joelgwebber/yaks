@@ -191,7 +191,7 @@ Install the skill straight from the binary — no clone required:
 
 ```sh
 yaks skills install                          # -> ./.agents/skills in the git repo you're in (yaks + yaks-tracker)
-yaks skills install --with coordination      # + the multi-agent skills (yaks-coordinating*, yaks-working)
+yaks skills install --with coordination      # + the multi-agent skills (yaks-coordinating, yaks-working)
 yaks skills install --user                   # -> ~/.agents/skills (also the default outside a git repo)
 yaks skills install --dir ~/.claude/skills   # any agent's skills dir; --force to overwrite
 yaks skills status                           # current / stale / edited, same directory rules
