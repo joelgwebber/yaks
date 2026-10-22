@@ -51,15 +51,18 @@ use std::path::PathBuf;
     about = "Filesystem-native task tracker (Rust)"
 )]
 struct Cli {
-    /// Run as if started in <PATH> (like `git -C`): farm discovery, `sheds`,
+    /// Run as if started in <PATH> (like `git -C`).
+    ///
+    /// Farm discovery, `sheds`,
     /// `discover`, `commit`, `init`, `skills` and every other command see
     /// <PATH> as the current directory. A relative <PATH> is resolved against
     /// the real cwd; repeated `-C` compose, each relative to the previous.
     /// `$YAKS_DIR` still wins over discovery (a relative one is read from <PATH>).
     #[arg(short = 'C', value_name = "PATH", global = true)]
     chdir: Vec<PathBuf>,
-    /// Run as if started in another checkout of this repository (a shed from
-    /// `yaks sheds`), picked by name like `yaks changes <SHED>`: its path,
+    /// Run as if started in another checkout of this repo (a shed).
+    ///
+    /// The shed, from `yaks sheds`, is picked by name like `yaks changes <SHED>`: its path,
     /// Delta dir id, thread-title slug, branch, actor, or a unique substring
     /// (`main` is the primary checkout; naming the checkout you are in is a
     /// no-op). The same as `-C <that shed's path>`:
@@ -143,9 +146,10 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Show one task by id. With `--sheds`, also show how the OTHER checkouts
-    /// of this repository (git worktrees, Delta clones; not the one you are in)
-    /// have that yak: this
+    /// Show one task by id (`--sheds`: also how other checkouts have it).
+    ///
+    /// With `--sheds`, also show how the OTHER checkouts of this repository
+    /// (git worktrees, Delta clones; not the one you are in) have that yak: this
     /// checkout's copy first, then one block per shed whose copy differs (its
     /// status, `needs:`, and the note entries it has that this copy lacks) and
     /// one line counting the sheds that are the same, lack the yak, or have no
@@ -159,7 +163,9 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Print the current on-disk file path of yaks, one per line: by id
+    /// Print the on-disk file path of yaks, by id or by filter flags.
+    ///
+    /// One path per line: by id
     /// (`yaks path yaks-1a2b ...`) or by the shared filter flags
     /// (`yaks path --status shorn --label cli`). Each yak's file is
     /// `.yaks/<herd>/yaks/<id>.md`, the same path for its whole life (a status move edits
@@ -177,9 +183,11 @@ enum Command {
         #[arg(long)]
         all: bool,
     },
-    /// List the yaks a task points at (parent, deps, and id mentions in its
-    /// text), flagging any formal reference that dangles. With --incoming,
-    /// list the yaks that point at it instead.
+    /// List the yaks a task points at, or (--incoming) the yaks pointing at it.
+    ///
+    /// Outgoing references are the parent, deps, and id mentions in its text;
+    /// any formal reference that dangles is flagged. With --incoming, list the
+    /// yaks that point at it instead.
     Refs {
         id: String,
         /// Incoming references: every yak whose `parent:` or `depends_on:` names
@@ -192,10 +200,14 @@ enum Command {
         #[arg(long, requires = "incoming")]
         json: bool,
     },
-    /// Show the git commits linked to a yak: those naming its id and those that
-    /// touched its file across status moves.
+    /// Show the git commits linked to a yak.
+    ///
+    /// Lists the commits naming its id and those that touched its file across
+    /// status moves.
     Commits { id: String },
-    /// Run a yak's recorded `verify:` command and record the PASS/FAIL as an
+    /// Run a yak's `verify:` command and record PASS/FAIL as a note.
+    ///
+    /// Runs the yak's recorded `verify:` command and records the PASS/FAIL as an
     /// attributed evidence note. Explicit — yaks never auto-runs it. Exits
     /// non-zero if any verify fails (or a yak has no `verify:` command).
     Verify {
@@ -205,7 +217,9 @@ enum Command {
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
-    /// Attach a local file to a yak as evidence: copy it under
+    /// Attach a local file to a yak as evidence.
+    ///
+    /// Copies the file under
     /// `.yaks/<herd>/yaks/<id>/` (beside the yak's file) and link it in the body as
     /// `![name](<id>/<file>)` for an image (png, jpg, jpeg, gif, webp, svg)
     /// or `[name](<id>/<file>)` for any other file. Use for artifact
@@ -224,7 +238,9 @@ enum Command {
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
-    /// Rename a yak's attachment in `.yaks/<herd>/yaks/<id>/` and rewrite every
+    /// Rename a yak's attachment and rewrite every link to it.
+    ///
+    /// Renames the attachment in `.yaks/<herd>/yaks/<id>/` and rewrites every
     /// link to it across the farm (the link text follows the new stem, and
     /// the `!` of an image link follows the new extension). NEW is sanitized
     /// and keeps OLD's extension if it omits one; refuses to overwrite an
@@ -236,7 +252,9 @@ enum Command {
         /// New filename (e.g. `login-page`, becomes `login-page.png`).
         new: String,
     },
-    /// Find a yak's attachments wherever they are: this checkout's farm first,
+    /// Find a yak's attachments in this checkout or any other shed.
+    ///
+    /// Looks in this checkout's farm first,
     /// then every other shed's (git worktrees, Delta clones), so evidence a
     /// worker attached in its shed is readable before it lands. With no FILE,
     /// lists each attachment as `<shed>  <absolute path>` (`.` = this
@@ -250,7 +268,9 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Scan text for tokens that are real yak-ids in this farm — a leak check
+    /// Scan text for real yak ids (a leak check for private farms).
+    ///
+    /// Finds tokens that are real yak-ids in this farm — a leak check
     /// for private-mode farms (pre-commit / PR hook). Reads a FILE and/or
     /// stdin, prints each found id as `line:col  id`, and EXITS NON-ZERO if
     /// any are found (clean text exits zero).
@@ -278,8 +298,9 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Timestamped notes and status moves across a filtered set, oldest first (an
-    /// activity log).
+    /// Activity log: timestamped notes and status moves, oldest first.
+    ///
+    /// Covers a filtered set of yaks.
     Log {
         #[command(flatten)]
         filter: FilterFlags,
@@ -301,7 +322,9 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// List EVERY checkout of this repo (git worktrees and Delta clones),
+    /// List every checkout of this repo and what its farm changed.
+    ///
+    /// Covers EVERY checkout of this repo (git worktrees and Delta clones),
     /// the one you are in included: it is marked (a `*` in the first column
     /// and `(here)` on its `name:` line, JSON `current: true`, `false` on every
     /// other row) and measured like any other, so where you run this only
@@ -359,7 +382,9 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// What ONE shed (a checkout of this repo, picked like the rows of
+    /// Show what one shed created, moved and noted since it forked.
+    ///
+    /// For ONE shed (a checkout of this repo, picked like the rows of
     /// `yaks sheds`; with no SHED, the one you are in) created, moved and noted
     /// since it forked, per yak, with actors: new yaks (title, status), yaks in another status (from -> to),
     /// each new note entry (timestamp, actor, first line), `needs:` newly
@@ -402,7 +427,9 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Diagnostic: show the chain `yaks sheds` uses to find the other
+    /// Diagnostic: show how `yaks sheds` finds the other checkouts.
+    ///
+    /// Shows the chain `yaks sheds` uses to find the other
     /// checkouts of this repo, step by step, from inside any checkout of it:
     /// `git worktree list` here; the HOST repo this checkout's
     /// `objects/info/alternates` names (the human's checkout, or Delta's
@@ -419,7 +446,9 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Internal: git's merge driver for yak files (`git config merge.yaks.driver
+    /// Internal: git's merge driver for yak files.
+    ///
+    /// Git's merge driver for yak files (`git config merge.yaks.driver
     /// "yaks merge-driver %O %A %B %P"`, registered for the farm branch with
     /// `.yaks/**/*.md merge=yaks`). Merges the three versions of one yak into
     /// `<ours>` as a valid yak, never conflict markers: notes unioned by
@@ -485,8 +514,9 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Update fields, labels, or append a timestamped note. Accepts multiple
-    /// ids; the same edit is applied to each.
+    /// Update fields, labels, or append a timestamped note.
+    ///
+    /// Accepts multiple ids; the same edit is applied to each.
     Update {
         #[arg(required = true, num_args = 1..)]
         ids: Vec<String>,
@@ -528,7 +558,9 @@ enum Command {
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
-    /// Block a yak on a human decision and record the question. Sets the `needs`
+    /// Block a yak on a human decision and record the question.
+    ///
+    /// Sets the `needs`
     /// field so the yak drops out of `next`; `answer` hands it to an agent
     /// (`needs: agent`) and `pickup` clears that. Asking a yak that is already
     /// answered (`needs: agent`) flips it back to `human`.
@@ -547,7 +579,9 @@ enum Command {
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
-    /// Answer a question: record the reply and set `needs: agent`, so the yak
+    /// Answer a question: record the reply and hand the yak to an agent.
+    ///
+    /// Records the reply and sets `needs: agent`, so the yak
     /// shows in `inbox` (and, if hairy, `next`) as answered and awaiting an
     /// agent. The human-reserved counterpart to `ask`. `--done` clears `needs`
     /// instead, for an answer that needs no follow-up. A second answer keeps
@@ -574,7 +608,9 @@ enum Command {
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
-    /// Pick up an answered yak: clear `needs: agent` and record who took the
+    /// Pick up an answered yak: clear `needs: agent` and note who took it.
+    ///
+    /// Clears `needs: agent` and records who took the
     /// work on (a `picked up` note). The only command that clears it; errors
     /// on a yak that is not `needs: agent`.
     Pickup {
@@ -588,7 +624,9 @@ enum Command {
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
-    /// List yaks with a `needs` value, across all statuses, in two sections:
+    /// List yaks awaiting a human or answered and awaiting an agent.
+    ///
+    /// Lists yaks with a `needs` value, across all statuses, in two sections:
     /// awaiting a human (`needs: human`; `replied` marks one whose latest note
     /// after the ask is by someone other than the asker) and answered, awaiting
     /// an agent (`needs: agent`). `--for human|agent` shows one section.
@@ -678,8 +716,9 @@ enum Command {
         #[command(subcommand)]
         action: DepAction,
     },
-    /// Move one or more tasks under a new parent (--parent) or to top-level
-    /// (--unparent). Every id is reparented to the same destination.
+    /// Move tasks under a new parent (--parent) or to top-level (--unparent).
+    ///
+    /// Every id is reparented to the same destination.
     Reparent {
         #[arg(required = true, num_args = 1..)]
         ids: Vec<String>,
@@ -688,8 +727,9 @@ enum Command {
         #[arg(long)]
         unparent: bool,
     },
-    /// Apply the same field edit (and/or reparent) to every yak matching a
-    /// filter. DRY-RUN BY DEFAULT: without --commit it only prints the matched
+    /// Apply one field edit (and/or reparent) to every yak matching a filter.
+    ///
+    /// DRY-RUN BY DEFAULT: without --commit it only prints the matched
     /// set and the mutation, changing nothing. Requires at least one filter flag
     /// (never operates on the whole farm) and at least one mutation flag. Field
     /// edits + reparent only — no state transitions (see yaks-7cc8).
@@ -719,8 +759,10 @@ enum Command {
         #[arg(long)]
         commit: bool,
     },
-    /// Rename a yak, updating its file + id and every reference to it
-    /// (parent, depends_on, and body/title mentions) across the farm.
+    /// Rename a yak, updating its file, id and every reference to it.
+    ///
+    /// References (parent, depends_on, and body/title mentions) are rewritten
+    /// across the farm.
     Rename {
         old: String,
         new: String,
@@ -728,7 +770,9 @@ enum Command {
         #[arg(long)]
         dry_run: bool,
     },
-    /// Rename a whole herd: migrate every yak from one id prefix to another
+    /// Rename a whole herd: move every yak to a new id prefix.
+    ///
+    /// Migrates every yak from one id prefix to another
     /// (e.g. yaksrs -> yaks), rewriting all references and updating the farm's
     /// configured herd. (`rename-prefix` still works as an alias.)
     #[command(name = "rename-herd", alias = "rename-prefix")]
@@ -739,8 +783,10 @@ enum Command {
         #[arg(long)]
         dry_run: bool,
     },
-    /// Bring a farm on an older schema up to this yaks' (schema 4 or 5 -> 6):
-    /// move every yak file and attachment dir from the farm root into its
+    /// Bring an older-schema farm up to this yaks' schema, or move it to a branch.
+    ///
+    /// Brings a farm on an older schema up to this yaks' (schema 4 or 5 -> 6):
+    /// moves every yak file and attachment dir from the farm root into its
     /// herd's directory (`<herd>/yaks/<id>.md`, `<herd>/yaks/<id>/`), put the
     /// blank line after every comment's `▸ <ts> [actor]` header, and link
     /// non-image attachments as `[stem](<id>/<file>)` instead of
@@ -778,7 +824,9 @@ enum Command {
         #[arg(long, requires = "to_branch")]
         worktree: Option<PathBuf>,
     },
-    /// Mark this repository's farm private: it never leaves the machine through
+    /// Mark this repository's farm private: it never leaves the machine.
+    ///
+    /// It never leaves the machine through
     /// yaks or a stray `git push`. Sets `git config yaks.private true` and
     /// installs a `pre-push` hook (in the hooks dir `git` uses, so
     /// `core.hooksPath` is honored and every worktree shares it) that refuses a
@@ -795,7 +843,9 @@ enum Command {
         #[arg(long)]
         off: bool,
     },
-    /// Merge another farm's yaks into this one (consolidation). Copies every yak
+    /// Merge another farm's yaks into this one (consolidation).
+    ///
+    /// Copies every yak
     /// (all statuses) and its artifacts, preserving ids and status, and declares
     /// any incoming herd in this farm's config; refuses on id collisions.
     /// Non-destructive — the source is left intact.
@@ -806,9 +856,11 @@ enum Command {
         #[arg(long)]
         dry_run: bool,
     },
-    /// Create a .yaks/ farm in the current directory (config.yaml + schema;
-    /// each yak is one file, `.yaks/<herd>/yaks/<id>.md`, with a `status:` field). Works
-    /// without an existing farm.
+    /// Create a .yaks/ farm in the current directory.
+    ///
+    /// Writes config.yaml + schema (each yak is one file,
+    /// `.yaks/<herd>/yaks/<id>.md`, with a `status:` field). Works without an
+    /// existing farm.
     ///
     /// With no --mode/--skills/--path this only creates a committed (team) farm
     /// and tells you how to install skills. Give --mode and/or --skills for the
@@ -859,7 +911,9 @@ enum Command {
         #[arg(long, value_enum)]
         skills: Option<init::SkillSet>,
     },
-    /// Install the bundled agent skills (yaks, yaks-tracker) into a skills
+    /// Install or check the bundled agent skills.
+    ///
+    /// Installs the bundled agent skills (yaks, yaks-tracker) into a skills
     /// directory. Works anywhere — no farm required.
     Skills {
         #[command(subcommand)]
@@ -867,7 +921,9 @@ enum Command {
     },
     /// Group yaks by the external issue they roll up to.
     Rollup(RollupArgs),
-    /// Read-only farm-integrity check: report an invalid `status:` value, one
+    /// Read-only farm-integrity check; exits non-zero on any issue.
+    ///
+    /// Reports an invalid `status:` value, one
     /// id in two yak files, and dangling parent/depends_on references. Exits
     /// non-zero when any issue is found.
     Doctor {
@@ -880,8 +936,10 @@ enum Command {
         #[arg(long)]
         strict: bool,
     },
-    /// Read-only landing-readiness check for a team farm: nothing under
-    /// `.yaks/` untracked or with unstaged changes in git, the verify command of
+    /// Read-only landing-readiness check for a team farm.
+    ///
+    /// Read-only. Checks that nothing under
+    /// `.yaks/` is untracked or with unstaged changes in git, the verify command of
     /// each shorn yak in the change last PASSed, no invalid `status:` value,
     /// no id in two yak files. Prints
     /// one line per failure and exits non-zero, else `preflight: ok`. A private
@@ -912,7 +970,9 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Sync the farm branch with its remote: commit what is dirty (`yaks
+    /// Sync the farm branch with its remote: commit, rebase, push.
+    ///
+    /// Commits what is dirty (`yaks
     /// commit`), fetch and rebase onto `<remote>/<branch>` (concurrent edits to
     /// one yak merge into a valid yak through yaks's merge driver, which this
     /// registers), then push, creating the remote branch with the same name on
@@ -936,8 +996,10 @@ enum Command {
         #[arg(short, long)]
         message: Option<String>,
     },
-    /// Commit the farm's own changes (everything under `.yaks/`: yak files,
-    /// attachments, config) and nothing else, with a generated message such
+    /// Commit the farm's own changes (only `.yaks/`) with a generated message.
+    ///
+    /// Commits everything under `.yaks/` (yak files, attachments, config) and
+    /// nothing else, with a generated message such
     /// as `yaks: shorn yaks-abc1; updated yaks-def2`. Code
     /// staged or modified elsewhere is left alone (staged files stay staged). Runs a normal
     /// `git commit`, so the repo's hooks apply; never pushes. Fails in a private
@@ -955,7 +1017,9 @@ enum Command {
         #[arg(long)]
         dry_run: bool,
     },
-    /// Land a Delta worker's commit by SHA on the current branch of the code
+    /// Land a Delta worker's commit by SHA on the current branch.
+    ///
+    /// Lands it on the current branch of the code
     /// checkout you are in: one single-parent squash commit with the worker's
     /// message and author plus a `Squashed-from: <full sha>` trailer (never a
     /// merge commit), or a `git cherry-pick` when the worker's base is no longer
@@ -981,7 +1045,9 @@ enum Command {
         #[arg(long)]
         force_discard: bool,
     },
-    /// Show what the farm has changed that git does not have yet, one line per
+    /// Show what the farm has changed that git does not have yet.
+    ///
+    /// One line per
     /// yak in yak terms (`created`, `moved hairy -> shaving`, `notes +2`,
     /// `edited`, `removed`, `artifacts`; `config` for config.yaml), `*` marking
     /// what is staged, ordered by id, then what `yaks commit` would do (and its
@@ -1004,8 +1070,9 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Print the worker brief for one yak: what a cold worker needs to start,
-    /// derived from the yak, the config and the farm mode. Names the yak and
+    /// Print the worker brief for one yak: what a cold worker needs to start.
+    ///
+    /// Derived from the yak, the config and the farm mode. Names the yak and
     /// that it is already `shaving`, the `YAKS_ACTOR=<name>` prefix for every
     /// command (plus `YAKS_DIR` for a private or pointer farm, or with
     /// `--yaks-dir`), this binary's path, the yak's `verify:` gate (else the
@@ -1051,10 +1118,11 @@ enum DepAction {
 
 #[derive(Subcommand)]
 enum SkillsAction {
-    /// Write the bundled agent skills (yaks, yaks-tracker; --with adds more)
-    /// into a skills directory. By default that is ./.agents/skills in the git
-    /// top-level of the current directory, so the skills travel with the
-    /// project; outside a git repo it is ~/.agents/skills. Prints the
+    /// Write the bundled agent skills into a skills directory.
+    ///
+    /// The skills are yaks and yaks-tracker; --with adds more. By default that
+    /// is ./.agents/skills in the git top-level of the current directory, so
+    /// the skills travel with the project; outside a git repo it is ~/.agents/skills. Prints the
     /// destination it chose. Works without a farm.
     Install {
         /// Target skills directory (e.g. ~/.claude/skills). Wins over --user
@@ -1075,9 +1143,10 @@ enum SkillsAction {
         #[arg(long)]
         force: bool,
     },
-    /// Report whether each installed skill is current, stale, or locally
-    /// edited, by comparing its provenance stamp against this binary. Looks in
-    /// the same default directory as `install`.
+    /// Report whether each installed skill is current, stale, or edited.
+    ///
+    /// Compares each skill's provenance stamp against this binary. Looks in the
+    /// same default directory as `install`.
     Status {
         /// Skills directory to inspect. Defaults like `install`: the git
         /// top-level's .agents/skills, else ~/.agents/skills.
