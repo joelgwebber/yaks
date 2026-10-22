@@ -44,17 +44,22 @@ Delegating), `.yaks/config.yaml` on the farm branch (`yaks path`) for `verify:`,
 
 ## 3. Land on main
 
-- **From a Delta worker subthread** (the commit is on no branch in the user's
-  checkout): in the main checkout, `yaks land <sha> --dry-run`, then
-  `yaks land <sha>`. It never pushes.
+Work out where you are first: `git remote -v`. A `local` remote pointing at
+the user's checkout means this is a Delta clone, and **a commit here is not
+landed**: `main` here is the clone's own `main`. Landing means moving the user's
+checkout's `main`.
+
+- **In a Delta clone** (a `local` remote exists): `yaks preflight --push-main`,
+  then `git push local <branch>:main` (follow its `pr/<name>` fallback if it
+  says so). Do not report landed until the verify step below passes.
+- **Landing a worker's commit into a checkout** (you are the coordinator in that
+  checkout): `yaks land <sha> --dry-run`, then `yaks land <sha>`. It never pushes.
 - **Already in the user's checkout on `main`:** the commit from step 2 is the landing.
-- **From a Delta thread whose clone is not the user's checkout:** `yaks preflight
-  --push-main`, then `git push local <branch>:main` (follow its `pr/<name>`
-  fallback if it says so).
 - Never push `origin` or open a PR without the user's say-so.
-- Verify: `main` contains the change (`git log main -1`, `git merge-base
-  --is-ancestor <sha-or-landed> main`), and `git status --short` shows no stray
-  changes. A pending `MERGE_HEAD` that `yaks land` cannot explain is a blocker.
+- Verify in the **user's checkout**, not the clone: `git -C <path of local>
+  log --oneline -1 main` shows the change and `git -C <path of local> status
+  --short` shows no stray changes. A pending `MERGE_HEAD` that `yaks land`
+  cannot explain is a blocker. Anything weaker is not landed.
 
 ## 4. Close out the yak
 
