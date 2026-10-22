@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-10-22T12:29:53Z'
-updated: '2026-10-22T19:18:15Z'
+updated: '2026-10-22T19:18:30Z'
 labels:
 - tui
 ---
@@ -44,3 +44,8 @@ moved: shaving -> shorn
 ▸ 2026-10-22T19:18:15Z [delta:Land commit output capture fix]
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-10-22T19:18:30Z [delta:Land commit output capture fix]
+
+Landed on main as aec9c81 (local, not pushed). Gate: yaks verify yaks-5d5a PASS. Also added .agents/skills/land (Land Changes skill).
