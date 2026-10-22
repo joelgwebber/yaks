@@ -6,13 +6,14 @@
 //! landing. This stages everything under the farm root and commits just those
 //! paths (`git commit --only`), so code the repo has staged or modified is
 //! never swept in: files staged elsewhere stay staged, exactly as they were.
-//! It runs a normal `git commit` (the repo's hooks apply) and never pushes.
+//! It runs a normal `git commit` (the repo's hooks apply, their output shown
+//! only if the commit fails) and never pushes.
 
 use crate::changes::{self, Change, Kind, check, classify, git as run_git, pending_operation};
-use anyhow::{Context, Result, bail};
+use anyhow::{Result, bail};
 use std::collections::BTreeSet;
 use std::path::Path;
-use std::process::{Command, Output};
+use std::process::Output;
 
 /// What `run` did (or, with `dry_run`, would do).
 pub enum Outcome {
@@ -91,16 +92,20 @@ pub fn run(root: &Path, message: Option<&str>, dry_run: bool) -> Result<Outcome>
     }
 
     // Stage the farm (new files, deletions, moves), then commit exactly those
-    // paths. Hooks run and print through our stdio, as for any `git commit`.
+    // paths. Hooks run, but their output and git's summary (a `rename ... (100%)`
+    // line per file after a migration) are captured, never inherited: this runs
+    // under the TUI too, where stray output corrupts the screen. A failure
+    // carries it in the error.
     check(git(&["add", "-A", "--", "."])?, "git add")?;
-    let committed = Command::new("git")
-        .arg("-C")
-        .arg(root)
-        .args(["commit", "--only", "-m", &plan.message, "--", "."])
-        .status()
-        .context("running git commit")?;
-    if !committed.success() {
-        bail!("git commit failed ({committed}); the farm changes are staged, not committed");
+    let committed = git(&["commit", "--only", "-m", &plan.message, "--", "."])?;
+    if !committed.status.success() {
+        let mut said = String::from_utf8_lossy(&committed.stdout).into_owned();
+        said.push_str(&String::from_utf8_lossy(&committed.stderr));
+        bail!(
+            "git commit failed ({}); the farm changes are staged, not committed: {}",
+            committed.status,
+            said.trim()
+        );
     }
     let head = check(git(&["rev-parse", "--short", "HEAD"])?, "git rev-parse")?;
     plan.commit = Some(String::from_utf8_lossy(&head).trim().to_string());
@@ -180,6 +185,7 @@ fn name_ids(ids: &BTreeSet<String>) -> String {
 mod tests {
     use super::*;
     use std::path::PathBuf;
+    use std::process::Command;
     use std::sync::atomic::{AtomicU64, Ordering};
 
     static SEQ: AtomicU64 = AtomicU64::new(0);
@@ -369,6 +375,30 @@ mod tests {
 
     /// A Delta landing leaves a merge pending; `git commit --only` would fail there
     /// with a bare error, so the command must explain and stage nothing.
+    /// git's and a hook's output must be captured, not inherited (it would
+    /// corrupt the TUI), and a failing hook's output must reach the error.
+    #[test]
+    fn hook_output_is_captured_and_reported_on_failure() {
+        let repo = team_repo();
+        let hook = repo.join(".git/hooks/pre-commit");
+        std::fs::write(&hook, "#!/bin/sh\necho spewed-by-hook\nexit 1\n").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&hook, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        put(
+            &repo,
+            ".yaks/yak/yaks/yak-0003.md",
+            &flat("yak-0003", "hairy"),
+        );
+        let err = match run(&farm(&repo), None, false) {
+            Err(e) => e.to_string(),
+            Ok(_) => panic!("expected the hook to fail the commit"),
+        };
+        assert!(err.contains("spewed-by-hook"), "{err}");
+    }
+
     #[test]
     fn refuses_during_a_merge_and_stages_nothing() {
         let repo = team_repo();

@@ -622,7 +622,7 @@ Stages the farm and runs `git commit --only -- .yaks`: files you staged elsewher
 
 The message is generated from the changed files, one verb per yak (`created`, `shaving`/`shorn`/`dead`/`regrown` for a move, `updated`, `removed`, `artifacts for`, `farm config`), e.g. `yaks: created yaks-8c08; shaving yaks-c968`; `-m` overrides it. `--dry-run` lists the files and message without staging or committing.
 
-A normal `git commit`, so the repo's hooks run (and may fail it: the farm changes are then left staged); it never pushes. A clean farm prints `nothing to commit` and exits 0.
+A normal `git commit`, so the repo's hooks run (and may fail it: the farm changes are then left staged and the hook's output is in the error); git's and the hooks' output is captured, so a successful commit prints only yaks' own summary (and never garbles the TUI); it never pushes. A clean farm prints `nothing to commit` and exits 0.
 
 While a merge or cherry-pick is in progress (a Delta landing leaves one pending) it refuses, stages nothing and says why: git forbids the partial commit it relies on, so finish the merge with a plain `git commit` (the farm changes are part of it) or abort it.
 
