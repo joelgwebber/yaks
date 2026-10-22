@@ -5,11 +5,11 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-22T20:35:28Z'
-updated: '2026-10-22T21:01:44Z'
+updated: '2026-10-22T21:49:02Z'
 labels:
 - tui
 - images
-needs: agent
+needs: human
 ---
 
 Follow-up to yaks-4305. The image viewer decodes with the `image` crate (png, jpeg, gif, webp), which cannot read svg, so an `.svg` attachment still goes to the OS opener. That is the format most yak evidence uses: toque frames and `docshots` write SVG.
@@ -117,3 +117,22 @@ If (a): I will close this yak with a note and file the toque/attach PNG yak (toq
 ▸ 2026-10-22T21:01:42Z [Joel Webber]
 
 On `resvg`, can we not just render them to PNGs and cache the results? I'm not sure I've ever seen a system without a monospaced font, but if we absolutely must, can't we just embed a standard one? That would actually be really helpful for `toque`, where we always know we need it.
+
+---
+▸ 2026-10-22T21:49:02Z [delta:Add basic image attachment rendering]
+
+picked up
+
+Read your answer: render svg to PNG once, cache the result, and embed a standard monospace font if a system one cannot be assumed (which would also help toque, where it is always needed). I like it; it removes both svg-1's objections that were fixable (silent text loss without a font; a 170 ms stall on every open). I am sending svg-1 a measurement-only follow-up on the two things the spike did not settle (color emoji; the embedded font). One more question follows on where it should live.
+
+---
+▸ 2026-10-22T21:49:02Z [delta:Add basic image attachment rendering]
+
+asked: needs human
+
+Your render-to-PNG, cache and embedded-font direction works, and one observation turns a choice into a simple one: yaks already depends on toque (a normal dependency in Cargo.toml, not a dev one). So the rasterizer plus the embedded font can live in toque once, as `toque::svg_to_png` behind a cargo feature, and yaks calls it. That gives toque a deterministic `render_to_png` for evidence (no system fonts at all), and the viewer a way to show any svg.
+
+Questions:
+1. Where does it live: toque (my lean) or yaks directly? toque is its own repo (github.com/joelgwebber/toque), so I would need it attached as a Delta worktree to edit it, and yaks would bump the pinned commit (`cargo update -p toque`).
+2. The binary-size cost is the same either way (the spike measured +2.8 MB and +38 crates for `resvg`, plus the font); you did not object to it, so I am taking that as accepted unless you say otherwise. The embedded fonts add on top: a monospace font is a few hundred KB, and color emoji needs a subset, because toque frames use only a dozen or so emoji. I have asked svg-1 to measure both.
+3. Where to cache the PNGs: under `$XDG_CACHE_HOME/yaks/` next to the existing per-farm UI cache (`src/tui/cache.rs`), keyed by a hash of the svg's content plus the render size. Never in the farm, never committed. OK? The first open of an svg would still take the 170 ms; I would not pre-render in the background in this pass.

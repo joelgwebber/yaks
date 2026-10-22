@@ -5,14 +5,14 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-22T20:35:28Z'
-updated: '2026-10-22T20:58:49Z'
+updated: '2026-10-22T21:49:01Z'
 depends_on:
 - yaks-89fc
 labels:
 - tui
 - images
 - markdown
-needs: agent
+needs: human
 ---
 
 Follow-up to yaks-4305, which only shows an image in a pane of its own after Enter. An image link in a yak body (`![name](<id>/<file>)`) renders today as a `🖼 name` link row; it should draw the picture in place, in the detail pane, as GitHub does.
@@ -69,3 +69,23 @@ Two forks before I build this, with my leans (I will start on the parts that do 
 ▸ 2026-10-22T20:58:49Z [Joel Webber]
 
 Response in comment above.
+
+---
+▸ 2026-10-22T21:49:01Z [delta:Add basic image attachment rendering]
+
+picked up
+
+Read your answers. (1) `inline_images` config switch: yes, I will add it (default on). (2) "Scale down instead": I read my question 2 too loosely, so one narrower question follows; the rest of the layout code waits on it.
+
+---
+▸ 2026-10-22T21:49:01Z [delta:Add basic image attachment rendering]
+
+asked: needs human
+
+I mixed two cases in question 2; your "scale down" answers the first, and I need you on the second.
+
+1. An image bigger than the pane. Scale it down to fit, as you said. Already the plan: never wider than the pane, never taller than about two thirds of its height, no size given. An explicit size (`=50%`) is the author's call and may be taller.
+2. An image only PARTLY scrolled into view (its top or bottom edge is off the pane). Options:
+   - (A) Clip it at the pane edge. I said earlier that kitty crops unreliably, and that was wrong: the `ratatui-image` docs say kitty and halfblocks clip properly (`Image::allow_clipping`), and sixel and iTerm2 do not. So Ghostty clips fine; a sixel or iTerm2 terminal shows the `🖼 alt` placeholder text until the image is fully in view. My lean.
+   - (B) Re-scale the visible part to the visible rows, so the image shrinks and grows as you scroll. It costs a re-encode and, on kitty, a re-transmit at every scroll step, which will probably flicker, and the picture changes size under your eyes.
+   - (C) Draw only fully visible images, placeholder otherwise (my first plan: no flicker, but it pops in and out).
