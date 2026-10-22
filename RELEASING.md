@@ -100,7 +100,7 @@ but `migrate` refuses a farm on the old schema. A migration commit touches
 nearly every yak file, so land it on its own and in this order:
 
 1. Land the code (the new binary reads BOTH shapes, so nothing breaks yet for
-   a checkout still on the old schema; `yaks sheds` and `changes` read them).
+   a checkout still on the old schema).
 2. In the primary checkout, with the new binary: `yaks migrate --dry-run`
    (per-fixup counts), `yaks migrate`, `yaks doctor`, a second `yaks migrate`
    (it must say `nothing to migrate`), then ONE commit of just `.yaks/`
