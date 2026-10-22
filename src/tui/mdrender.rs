@@ -31,6 +31,7 @@ use ratatui::style::{Modifier, Style};
 use unicode_width::UnicodeWidthChar;
 
 use super::detail::Target;
+use super::imagesize::{self, ImageSize};
 use super::markdown::MdSpan;
 use super::palette::{self, AlertKind};
 use super::syntax::{self, Lang};
@@ -51,6 +52,23 @@ pub struct MdRow {
     /// wider than the render width, and the pane clips it and scrolls the
     /// whole block sideways together (yaks-c733).
     pub nowrap: Option<NoWrap>,
+    /// The images whose `🖼` marker sits on this row, in order (an image
+    /// wrapped across rows belongs to its first row).
+    // Read only by the inline-image layout (yaks-0bf0); until it lands the
+    // compiler sees no reader.
+    #[allow(dead_code)]
+    pub images: Vec<MdImage>,
+}
+
+/// One markdown image: what the inline-image layout needs to draw it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MdImage {
+    /// The image destination, as written (the same as its link target).
+    pub target: String,
+    /// The alt text as shown, without the size token.
+    pub alt: String,
+    /// The size the author asked for (`![alt =50%](p)`), if any.
+    pub size: Option<ImageSize>,
 }
 
 /// Which no-wrap block a row belongs to, and the part that stays put when the
@@ -155,6 +173,12 @@ struct Renderer<'k> {
     /// the definition's number, parked until it ends, so its rows are built
     /// on their own.
     parked: Option<(Vec<MdRow>, bool, usize)>,
+    /// The image being read: its link index and where its alt text starts in
+    /// `buf`.
+    open_image: Option<(usize, usize)>,
+    /// Finished images by link index, waiting for the row their marker lands
+    /// on (see `emit`).
+    images: HashMap<usize, MdImage>,
 }
 
 /// Render one markdown document to rows wrapped at `width` display columns.
@@ -190,6 +214,8 @@ pub fn render(text: &str, width: usize, known: &HashSet<&str>) -> Vec<MdRow> {
         footnote_nums: footnote_numbers(&events),
         footnotes: Vec::new(),
         parked: None,
+        open_image: None,
+        images: HashMap::new(),
     };
     for (i, (ev, range)) in events.iter().enumerate() {
         let next = events.get(i + 1).map(|(e, _)| e);
@@ -469,6 +495,7 @@ impl Renderer<'_> {
                 self.styles.push(link());
                 let st = self.style();
                 self.push_plain("🖼 ", line, st);
+                self.open_image = Some((self.targets.len() - 1, self.buf.len()));
             }
             Tag::DefinitionList
             | Tag::DefinitionListTitle
@@ -530,15 +557,38 @@ impl Renderer<'_> {
             | TagEnd::Subscript => {
                 self.styles.pop();
             }
-            TagEnd::Link | TagEnd::Image => {
+            TagEnd::Link => {
                 self.styles.pop();
                 self.link = None;
+            }
+            TagEnd::Image => {
+                self.styles.pop();
+                self.link = None;
+                self.end_image();
             }
             TagEnd::DefinitionList
             | TagEnd::DefinitionListTitle
             | TagEnd::DefinitionListDefinition
             | TagEnd::MetadataBlock(_) => {}
         }
+    }
+
+    /// The image's alt text is in `buf`: cut a trailing size token (`=50%`) out
+    /// of what is shown and keep it, with the alt and target, for the row the
+    /// marker lands on.
+    fn end_image(&mut self) {
+        let Some((link, start)) = self.open_image.take() else {
+            return;
+        };
+        let alt: String = self.buf[start..].iter().map(|c| c.ch).collect();
+        let (shown, size) = imagesize::split_alt(&alt);
+        let alt = shown.to_string();
+        self.buf.truncate(start + alt.chars().count());
+        let Target::Artifact(target) = &self.targets[link] else {
+            return;
+        };
+        let target = target.clone();
+        self.images.insert(link, MdImage { target, alt, size });
     }
 
     /// Push prose text, auto-linking bare URLs and yak ids (unless already
@@ -715,6 +765,7 @@ impl Renderer<'_> {
             links: Vec::new(),
             lines: (line, line),
             nowrap: None,
+            images: Vec::new(),
         });
     }
 
@@ -740,6 +791,7 @@ impl Renderer<'_> {
         }
         let gutter = disp(&text);
         let mut links: Vec<(usize, usize, Target)> = Vec::new();
+        let mut images: Vec<MdImage> = Vec::new();
         let (mut lo, mut hi) = (line, line);
         for (k, cell) in cells.iter().enumerate() {
             text.push(cell.ch);
@@ -757,6 +809,8 @@ impl Renderer<'_> {
                 }
             }
             if let Some(li) = cell.link {
+                // The first row to show an image's link carries its marker.
+                images.extend(self.images.remove(&li));
                 let target = &self.targets[li];
                 let prev_same = k > 0 && cells[k - 1].link == Some(li);
                 match links.last_mut() {
@@ -771,6 +825,7 @@ impl Renderer<'_> {
             links,
             lines: (lo, hi),
             nowrap: nowrap.map(|id| NoWrap { id, gutter }),
+            images,
         });
     }
 
@@ -1251,6 +1306,56 @@ mod tests {
                 Target::Artifact("other-9/f.txt".into()),
             ]
         );
+    }
+
+    // yaks-89fc: image size token.
+    #[test]
+    fn image_size_token_is_hidden_and_carried_on_the_row() {
+        let known = HashSet::new();
+        let rows = render(
+            "see ![shot =50%](a/shot.png) and ![plain](b.png)",
+            80,
+            &known,
+        );
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].text, "see \u{1F5BC} shot and \u{1F5BC} plain");
+        let want_size = ImageSize {
+            width: Some(imagesize::Dim::Percent(50)),
+            height: None,
+        };
+        assert_eq!(
+            rows[0].images,
+            vec![
+                MdImage {
+                    target: "a/shot.png".into(),
+                    alt: "shot".into(),
+                    size: Some(want_size),
+                },
+                MdImage {
+                    target: "b.png".into(),
+                    alt: "plain".into(),
+                    size: None,
+                },
+            ]
+        );
+        // The link still covers the whole `🖼 shot`, token gone.
+        assert_eq!(rows[0].links[0].0, 4);
+        assert_eq!(rows[0].links[0].1, "\u{1F5BC} shot".chars().count());
+        // Size-only alt, and an `=` that is not a size, stay as written.
+        let rows = render("![=300x200](p.png) ![a = b](q.png)", 80, &known);
+        assert_eq!(rows[0].text, "\u{1F5BC}  \u{1F5BC} a = b");
+        assert_eq!(rows[0].images[0].alt, "");
+        assert!(rows[0].images[0].size.is_some());
+        assert_eq!(rows[0].images[1].size, None);
+    }
+
+    #[test]
+    fn a_wrapped_image_belongs_to_its_first_row() {
+        let rows = render("![one two three four =x120](p.png)", 10, &HashSet::new());
+        assert!(rows.len() > 1);
+        assert_eq!(rows[0].images.len(), 1);
+        assert!(rows[1..].iter().all(|r| r.images.is_empty()));
+        assert!(rows.iter().all(|r| !r.text.contains('=')));
     }
 
     #[test]

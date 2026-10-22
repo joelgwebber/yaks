@@ -20,6 +20,7 @@ mod farmsync;
 mod fuzzy;
 mod handlers;
 mod headless;
+mod imagesize;
 mod imageview;
 mod markdown;
 mod mdrender;

@@ -72,6 +72,7 @@ Bodies are CommonMark, rendered by the TUI:
 - Fence commands and pasted output. Keep a `Decision:` note (the choice and the alternatives rejected) separate from progress notes.
 - Mention another yak by its **full id** (`yak-0af1`, never the bare `0af1`); the TUI makes it a link and `yaks refs <id> [--incoming]` lists the references. Link repo code with a relative link, `[code](../src/foo.rs#L12-L40)`.
 - No inline HTML or math. Attach images and long output (`yaks attach`) rather than pasting them.
+- Size an image with a trailing alt-text token: `![shot =50%](<id>/shot.png)`, `=300x200` or `=x120` (px, or `%` of width).
 
 ## Evidence before you shear
 

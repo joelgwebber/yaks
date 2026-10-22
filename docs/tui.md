@@ -144,6 +144,24 @@ headless frames and the SVG docshots show.
 
 ![Enter on an image attachment: shown in the pane](assets/tui-image-viewer.svg)
 
+**Image size** — an author sizes a markdown image with a trailing token in its
+alt text: `![shot =50%](p.png)`, `![shot =300x200](p.png)`, `![shot =x120](p.png)`
+(`![=50%](p.png)` for no alt). It is the one form that stays valid CommonMark
+and reads as plain alt text on GitHub. The token is the alt's *last* word: `=`
+then `W`, `xH` or `WxH`; `W` is digits with an optional `%` (of the pane's
+content width) or `px`, `H` is digits with an optional `px` (no `%`); bare
+digits are pixels; zero or anything else is not a size and stays in the alt.
+The token never displays: `🖼 shot` shows without it. Pixels become cells with
+the terminal's cell size, so the same image can take different cell counts per
+terminal. Sizing rule (`imagesize::cells`): with **no size** an image is shown
+at its natural size, shrunk to the pane width and a row cap, never enlarged (as
+GitHub does); with a **width** (or a **height**) it takes that size, clamped to
+the pane width, the other side following the aspect ratio, and no row cap; with
+**both** it fits inside the `WxH` box, aspect kept. Today the size is parsed and
+carried on the rendered row (`MdRow.images`) but nothing draws an image inline
+yet, and the viewer above still fits the whole pane; the inline layout that uses
+it is yaks-0bf0.
+
 **Pasting** — the TUI enables bracketed paste, so a terminal paste (`Cmd-V` /
 `Ctrl-Shift-V`) lands in the focused text field as one literal insert: fast,
 never interpreted as vim Normal-mode commands, newlines flattened to spaces in
