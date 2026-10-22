@@ -14,16 +14,16 @@ You are the **yakherd**: the one agent that claims yaks, briefs workers, lands t
 `yaks path` (no arguments) prints the farm. In the recommended setup it is a **branch farm**: one worktree per machine that every checkout (yours, the human's, each worker's) reads and writes live. So:
 
 - Claims, notes, shears and asks are visible to everyone the moment they are written. There is no yak state to merge and nothing under `.yaks/` in any code commit.
-- **You commit the farm** (`yaks commit`), at least at every landing. **You sync it** (`yaks sync`) at session start, after landings and before a machine switch, and only push when the human has published the farm (`yaks status` shows its upstream; `yaks private` farms never push).
-- Yak ids are fine in commit messages.
+- **You commit the farm** (`yaks commit`), at least at every landing. **You sync it** (`yaks sync`) at session start, after landings and before a machine switch. Until the human has published the farm (`yaks status` shows no upstream), use `yaks sync --no-push`: the first push creates the remote branch.
+- Yak ids are fine in commit messages once the farm is published; on a `yaks private` farm treat it as private (below).
 
-**A private or pointer farm** (`.yaks/` excluded, or a `.yaks` pointer file) is also live and shared, but a worker's checkout is its own git top-level and does not find it: every worker command needs `YAKS_DIR=<abs farm path>` (`yaks brief` adds it). Keep yak ids out of commits, code, comments and PRs (`yaks scan-ids` checks text), and after landing note the landed SHA on the yak, since git cannot link it.
+**A private farm** (`yaks private`, `.yaks/` excluded, or a `.yaks` pointer file) is also live and shared. An excluded or pointer farm is not found from a worker's checkout (its own git top-level): every worker command needs `YAKS_DIR=<abs farm path>` (`yaks brief` adds it). Keep yak ids out of commits, code, comments and PRs (`yaks scan-ids` checks text), and after landing note the landed SHA on the yak, since git cannot link it.
 
 ## 2. The shape: claim, fan out, land, reconcile
 
 1. **Claim.** Create or pick the leaf yaks, `yaks shave` each, and write a claim note: owner name, scope by file and symbol, out of scope, evidence contract, judge (section 4).
 2. **Fan out.** One worker per yak, each from your freshest state, each with a brief (section 5).
-3. **Land.** Only you land, one worker at a time, by the SHA in its final message, after the checks in section 6.
+3. **Land.** Only you land, one worker at a time, by the SHA in its final message, then check it (section 6).
 4. **Reconcile.** A yak still `shaving` after the batch is stalled: `regrow` it or re-run it. `yaks doctor`, `yaks commit`.
 
 **Watching workers.** `yaks log --by <worker> --since 1h` and `yaks inbox` show their notes and asks live. `yaks sheds` lists every checkout with its git facts (branch, ahead/behind, dirty files, merged, liveness), which tells a slow worker from a dead one.
@@ -36,7 +36,7 @@ You are the **yakherd**: the one agent that claims yaks, briefs workers, lands t
 
 ## 4. Evidence contract and judge
 
-The claim note says what counts as done and who decides: a script (the yak's `verify:` or the config default; the worker self-shears on PASS and you re-run it), the human for a subjective call (`yaks ask`), or you at landing. If you cannot say what the evidence is, the lever is missing: ask the human about building one before you fan out.
+The claim note says what counts as done and who decides, and the judge shears: a script (the yak's `verify:` or the config default; the worker shears on PASS and you re-run it), the human for a subjective call (`yaks ask`), or you at landing. If you cannot say what the evidence is, the lever is missing: ask the human about building one before you fan out.
 
 ## 5. The brief
 
@@ -55,7 +55,7 @@ Pass `--yaks-dir <farm>` when the worker's checkout cannot find the farm. If the
 ## 6. Landing
 
 1. **Land by SHA:** `yaks land <sha> --dry-run`, then `yaks land <sha>`. It lands one single-parent squash commit (or a cherry-pick when the base moved), checks the result against `git merge-tree`, and never pushes. It refuses while your tree has changes the commit does not explain, a SHA whose change a merge dropped, and a commit that stages `.yaks/` beside a branch farm.
-2. **Re-run the gate yourself** and reproduce the key scenario with your own build. A claim you cannot reproduce is rejected, not annotated.
+2. **Re-run the gate yourself** and reproduce the key scenario with your own build. A claim you cannot reproduce is rejected, not annotated: `git revert` the landing and regrow the yak.
 3. **Read the diff** for quality and for every surface the change touches (docs, skills, README, `--help`, in-app help); make fixes as your own follow-up commits.
 4. `yaks doctor`, then `yaks commit`. Never write a claim into a yak that you did not observe.
 

@@ -19,7 +19,7 @@ A plain CLI, run from the shell (no slash commands, nothing to keep running): `y
 
 **On its own branch (recommended; this repo).** The farm is an orphan branch (`yaks`, or `git config yaks.branch`) holding only `.yaks/`, checked out once per machine in a worktree outside every checkout (under `~/.local/share/yaks/farms/`). Every checkout of the repo (the main one, git worktrees, agent clones) reads and writes that same farm, so yak edits are live everywhere and code branches carry no yak files.
 
-- **Never stage `.yaks/` with your code.** Yak ids in commit messages are fine.
+- **Never stage `.yaks/` with your code.**
 - **`yaks commit`** commits the farm on its branch, from any cwd. **`yaks status`** shows what is uncommitted, and whether the branch is ahead or behind its remote.
 - **`yaks sync`** commits, pulls (a rebase whose merge driver turns two machines' edits to one yak into a valid yak) and pushes. Nothing syncs on its own: **sync at session start, after landing work, and before switching machines.** If someone else coordinates, leave the sync to them unless asked. In `yaks tui`, `W` commits and `U` syncs.
 - **`yaks private`** keeps the farm on this machine: a `pre-push` hook refuses any push of the farm branch, and `yaks sync` commits and pulls but never pushes. `--off` undoes it.
@@ -42,11 +42,11 @@ A plain CLI, run from the shell (no slash commands, nothing to keep running): `y
 
 1. **Never write code without a shaving yak.** Even a one-line fix: `yaks shave <id>` first (create the yak if needed).
 2. **Shear as soon as the work is done:** evidence and a summary note, then `yaks shorn <id>`.
-3. **Keep yak ids out of external surfaces:** PR titles and bodies, external trackers, and (in a private farm) commit messages, code and comments. Use the external key instead (`yaks rollup --keys`; the **yaks-tracker** skill). `yaks scan-ids [FILE]` exits non-zero if text holds a real yak id; wire it into a hook.
+3. **Keep yak ids out of external surfaces:** PR titles and bodies and external trackers. Ids go in commit messages only when the farm is published (a shared branch farm); with a private farm (`yaks private`, excluded or pointer) keep them out of commits, code and comments too. Use the external key instead (`yaks rollup --keys`; the **yaks-tracker** skill). `yaks scan-ids [FILE]` exits non-zero if text holds a real yak id; wire it into a hook.
 
 ## Workflow
 
-1. **Session start:** `yaks inbox --for agent` (answers nobody has acted on), then `yaks next` (ready work) or `yaks list`. On a branch farm, `yaks sync` first.
+1. **Session start:** on a branch farm, `yaks sync` (unless a yakherd coordinates); then `yaks inbox --for agent` (answers nobody has acted on); then `yaks next`.
 2. **Before code:** `yaks shave <id>`, and its parent if still hairy. Re-read it with `yaks show <id>`; the latest note is the freshest signal.
 3. **While working:** `yaks update <id> --note "..."`, one event per note.
 4. **Done:** gather evidence, add a short summary note (what changed, what you learned, the evidence, any yaks spawned), `yaks shorn <id>`. Shear the parent when its last child is shorn; never leave a hairy parent over shorn children.
@@ -120,7 +120,7 @@ Coordinating several agents (`brief`, `land`, `sheds`) is the opt-in **yaks-coor
 
 ## Filtering
 
-`list`, `next`, `tangled`, `search`, `path`, `log` and `bulk` share filters: `--status`, `--type`, `--priority`, `--label`, `--herd` (each repeatable, OR within a flag), `--search Q`, `--ready`, `--tangled`, `--needs`, `--parent-of <id>`; AND across flags. `--all` includes dead yaks.
+`list`, `next`, `tangled`, `search`, `path`, `log` and `bulk` share filters: `--status`, `--type`, `--priority`, `--label`, `--herd` (each repeatable, OR within a flag), `--search Q`, `--ready`, `--tangled`, `--needs`, `--parent-of <id>` (its descendants); AND across flags. `--all` includes dead yaks.
 
 ```sh
 yaks list --type bug --priority 1
@@ -128,7 +128,7 @@ yaks next --label auth
 yaks bulk --parent-of yak-c3d4 --add-label spike --commit
 ```
 
-**Large farms.** Don't summarize yak files through `ls .yaks/... | xargs`: past a few thousand paths `xargs` splits the list and a total like `xargs wc -l | tail -1` is silently wrong, and an absolute glob fails with "argument list too long". Use `yaks list --json` / `yaks path <filters>` (one path per line), `rg -l`, or `find ... -exec cmd {} +`.
+**Large farms.** Don't summarize yak files through `ls .yaks/... | xargs`: past a few thousand paths `xargs` splits the list and a total like `xargs wc -l | tail -1` is silently wrong, and an absolute glob fails with "argument list too long". List with `yaks list --json` or `yaks path <filters>` (one path per line); to total, feed one stream to one counter (`yaks path --status shorn | xargs cat | wc -l`, never `xargs wc` or `find -exec wc {} +`, which print a total per batch).
 
 ## Task format
 
