@@ -24,40 +24,23 @@ task's status is a frontmatter field; each yak is one file, `.yaks/<herd>/yaks/<
 
 ## Farms, herds, families
 
-- A **farm** is one `.yaks/` directory (what `Farm` opens). A **herd** is a group
-  of yaks sharing an id prefix within a farm; a farm may hold several (config
-  `herds:` map; `create --herd`), so one private farm can track several
-  projects. A **family** is a parent yak + its descendants (the TUI tree /
-  `view::FamilyScope`).
-- **Per-herd config cascades one level:** `default_type` / `default_priority` /
-  `verify` resolve herd-value-else-global (`store::Config::{default_type_for,
-  default_priority_for, resolve_verify}`, `known_herds`). Add new per-herd
-  settings through that same cascade.
-- **A repo can point at an out-of-tree farm** via a `.yaks` pointer file
-  (`path:` + optional `herd:`) or a symlink, resolved in `store::discover`, so
-  several repos share one farm. `create` routes a new yak's
-  herd as: explicit `--herd` > pointer `herd:` > config default.
-- **Discovery is bounded by the git top-level.** `store::discover` uses
-  `$YAKS_DIR` first (the `.yaks/` dir, a dir containing one, or a pointer file),
-  else walks up from the cwd and stops at the first directory with a `.git`
-  unless it also has a `.yaks` entry; outside a git repo it walks to the
-  filesystem root. So a nested checkout (Delta's `<repo>/.delta/worktrees/…`, an
-  in-tree `git worktree`) never reads another checkout's farm by accident; it
-  needs its own pointer or `YAKS_DIR`. Tests use `discover_with` (the env var
-  passed in), never `set_var`.
-- **The farm can be a branch** (yaks-73f4): a git top-level with no `.yaks`
-  entry resolves the farm branch (`git config yaks.branch`, default `yaks`, an
-  orphan branch holding only `.yaks/`) to its worktree via the host's `git
-  worktree list` (`store::farm_branch_worktree`); `store::farm_branch(root)` says
-  whether a root is such a dedicated farm worktree (`brief`, source links).
-- **This repo's farm is the branch `yaks`** (an orphan branch holding only
-  `.yaks/`), checked out at `yaks path` (on Joel's Linux machine `~/.local/share/yaks/farms/yaks-539d3edb`, the `yaks migrate --to-branch` default); `main` has no
-  `.yaks/`. Every shed resolves to that one farm; `yaks commit` commits there.
-  A committed in-tree `.yaks/` beside a farm-branch worktree (a checkout forked
-  before the migration), or one with `live_branch:` in its config, is a stale copy
-  that discovery redirects with a warning (`store::redirect_live`, yaks-7bfd).
-- **Consolidate** separate farms with `Farm::merge` (`yaks merge`), which is
-  collision-checked and non-destructive.
+The vocabulary and the user-facing rules are in the `yaks` skill; this is where
+they live in the code.
+
+- **Herds:** per-herd config cascades one level, herd value else global
+  (`store::Config::{default_type_for, default_priority_for, resolve_verify}`,
+  `known_herds`). Add new per-herd settings through that cascade. A **family**
+  is `view::FamilyScope`.
+- **Discovery** (`store::discover`): `$YAKS_DIR`, else walk up to the git
+  top-level for a `.yaks` entry (directory, symlink, or pointer file with `path:`
+  and optional `herd:`), else the farm branch's worktree
+  (`store::farm_branch_worktree`; `store::farm_branch(root)` says whether a root
+  is one). `create` routes a herd as `--herd` > pointer `herd:` > config. A
+  committed `.yaks/` beside a farm-branch worktree is a stale copy that
+  `store::redirect_live` redirects with a warning. Tests use `discover_with`,
+  never `set_var`.
+- **This repo's farm is the branch `yaks`**, checked out at `yaks path`; `main`
+  has no `.yaks/`, and no code commit ever contains it.
 
 ## Layout
 
@@ -150,36 +133,18 @@ a follow-up:
   not in `help_content` is invisible to users (this is how yaks-71d1's `H`
   shipped half-done).
 
-**Careful with the skills source.** This repo's skills live in `.agents/skills/`
-— real files, the only copy (no `skills/` dir, no symlinks: Delta discovers
-project skills there but skips symlinked skill dirs; yaks-0576).
-The skills in `BUNDLED` are embedded via `include_str!`. `BUNDLED` in
-`src/skills.rs` is the explicit list — skills **and, per skill, files** (a skill
-may carry extra files; none does today since `land.sh` became `yaks land`) — and not the directory
-contents; it alone decides what is embedded and installed. The default set is
-`yaks` + `yaks-tracker`; `yaks-working` and `yaks-coordinating` ship only as
-the opt-in `coordination` group (`yaks skills install --with coordination`), and
-any other project-local skill is never shipped. A test fails if a bundled
-skill's directory holds a file the list omits. `yaks skills install` writes
-project-local (`./.agents/skills` in the git top-level) by default — in this
-checkout that *is* the source, so it refuses; use `--user` or `--dir`.
-`~/.agents/skills/<name>`
-is sometimes a symlink back at the source — so a `yaks skills install` (even
-with no `--dir`) used to write *through the link* and revert your edits to the
-binary's baked-in copy, looking exactly like an authored change in `git status`.
-That's yaks-d8e9; it bit twice. The installer now refuses any target that
-resolves into a yaks checkout's `.agents/skills/` (or the pre-0576 `skills/`;
-`source` state, not overridable by `--force`), the test suite sets
-`YAKS_SKILLS_AUTOSYNC=0` so `cargo test` can't touch your real skills, and a test
-asserts the embedded source is never itself stamped. If `git status` ever shows
-an unexplained `metadata:` stamp in `.agents/skills/`, that's the symptom —
-`git checkout -- .agents/skills/`.
+**Careful with the skills source.** `.agents/skills/` holds this repo's skills
+as real files, the only copy (no symlinks: Delta skips symlinked skill dirs).
+The explicit `BUNDLED` list in `src/skills.rs`, not the directory, decides what
+is embedded and installed (`RETIRED` lists skills it removes); `cargo test -p
+yaks skills` guards it. `yaks skills install` refuses to write into a yaks
+checkout's `.agents/skills/`, even through a `~/.agents/skills` symlink
+(yaks-d8e9). If `git status` ever shows an unexplained `metadata:` stamp in
+`.agents/skills/`, `git checkout -- .agents/skills/`.
 
-The bundled skills are embedded in the binary (`src/skills.rs`), so
-`cargo test -p yaks skills` guards them; the other surfaces have no gate, so
-treat docs/help↔reality parity as part of the change's evidence — grep for the
-old name/key across `docs/`, `.agents/skills/`, `README.md`, and `src/` and confirm every
-description matches the shipped behavior.
+The other surfaces have no gate, so docs/help parity is part of the change's
+evidence: grep for the old name or key across `docs/`, `.agents/skills/`,
+`README.md` and `src/`.
 
 ## Releasing
 
@@ -189,47 +154,28 @@ dispatch). See `RELEASING.md`.
 
 ## Task tracking
 
-This project uses yaks to track its own work. The yaks skill has the full
-workflow.
-
-1. Never start coding without a shaving yak. No exceptions.
-2. Shear a yak as soon as its work is done. The farm is a branch (above): the
-   shear is already in the farm worktree (`yaks path`), and the coordinator commits it
-   there with `yaks commit`. No code commit ever contains `.yaks/`. Yak ids in
-   commit messages are fine (team mode). Publishing the farm (`yaks sync`, which
-   pushes `yaks` to origin) is Joel's call.
-3. Check existing yaks before creating new ones.
-4. Append progress notes to yak descriptions as you work.
-5. When unsure what's next, run `yaks next` — don't freelance.
+This project tracks its own work with yaks; the `yaks` skill is the workflow.
+Repo specifics: never code without a shaving yak; check existing yaks before
+creating one; run `yaks next` when unsure what's next. The coordinator commits
+the farm (`yaks commit`); publishing it (`yaks sync`) is Joel's call.
 
 ## Delegating to cheaper models
 
 Fan well-scoped yaks out to subagents on a cheaper model (e.g.
-`claude-sonnet-5-5`) and keep the coordination, design and review in the
-coordinating thread. It worked across six Sonnet workers in yaks-a3d2: every
-landing was clean and the workers' `Decision:` notes were sound. What they did
-NOT catch was behaviour on the real machine (the coordinator's run of each
-command found two bugs their tests missed), so the coordinator's review is part
-of the job, not a formality. The workflow is in the `yaks-coordinating` skill;
-what made it work here:
+`claude-sonnet-5-5`) and keep design, prose, review and every landing in the
+coordinating thread; the `yaks-coordinating` skill is the workflow. In yaks-a3d2
+six Sonnet workers landed cleanly, but the coordinator's own run of each command
+found two bugs their tests missed: the review is part of the job.
 
-- **Delegate** a yak with one clear outcome, a file/function scope, and a test
-  that can fail first: a new command, a flag, a refactor with a byte-identical
-  check. **Keep** design passes, skill/prose rewrites (they need the thread's
-  context), the shared helpers several workers build on (land those first as a
-  prep commit), and every landing and review.
-- **The claim note is the spec**: goal, scope by file and symbol, out of scope,
-  evidence (tests that fail before), judge. Brief with `yaks brief <id> --as
-  <name>` plus: build and use your own binary; full `cargo test --release`; the
-  docs-and-help rule above; which `src/main.rs` regions the parallel workers
-  each own (one `Command` variant each merges cleanly).
-- **Review by running it** where it will be used (this machine, the real
-  sheds), re-run the gate yourself, read the diff, then push.
-- **Cold-read prose with a cheap model.** After a skills change, a Sonnet scout
-  that reads only the skill files and answers scenario questions finds the
-  contradictions and undefined terms; re-ask only the failed questions after
-  fixing. Trust it to find gaps, not to pick the fix.
+- **Delegate** a yak with one outcome, a file/function scope and a test that can
+  fail first. **Keep** design passes, skill and prose rewrites, and shared
+  helpers several workers build on (land those first as a prep commit).
+- **Brief extras** beyond `yaks brief`: build and use your own binary; the full
+  gate; the docs-and-help rule; which `src/main.rs` regions each parallel worker
+  owns; the `cargo fmt` caveat below.
+- **Cold-read prose with a cheap model** after a skills change: a scout that
+  reads only the skill files and answers scenario questions finds the gaps.
+  Trust it to find them, not to pick the fix.
 - **`cargo fmt` reformats files nobody touched** (`src/actor.rs`,
-  `src/tui/docshots.rs`, `src/tui/tests.rs`, which follow `mod` declarations):
-  run `cargo fmt -- <your files>` and `git checkout` those three before
-  committing. Say so in every brief.
+  `src/tui/docshots.rs`, `src/tui/tests.rs`): run `cargo fmt -- <your files>`
+  and `git checkout` those three before committing.

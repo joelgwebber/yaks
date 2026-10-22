@@ -17,9 +17,7 @@ You are the **yakherd**: the one agent that claims yaks, briefs workers, lands t
 - **You commit the farm** (`yaks commit`), at least at every landing. **You sync it** (`yaks sync`) at session start, after landings and before a machine switch, and only push when the human has published the farm (`yaks status` shows its upstream; `yaks private` farms never push).
 - Yak ids are fine in commit messages.
 
-Other layouts change only a few things:
-- **Private or pointer farm** (`.yaks/` excluded, or a `.yaks` pointer file): also live and shared, but a worker's checkout is its own git top-level and does not find it. Every worker command needs `YAKS_DIR=<abs farm path>` (`yaks brief` adds it). Keep yak ids out of commits, code, comments and PRs; check text with `yaks scan-ids`; after landing, note the landed SHA on the yak (git cannot link it).
-- **Committed in-tree farm** (`git ls-files .yaks` lists files): each checkout has its own copy, so claims must be committed before workers fork, and each worker commits its yak file with its code. It works, but every coordination step gets harder; propose `yaks migrate --to-branch`.
+**A private or pointer farm** (`.yaks/` excluded, or a `.yaks` pointer file) is also live and shared, but a worker's checkout is its own git top-level and does not find it: every worker command needs `YAKS_DIR=<abs farm path>` (`yaks brief` adds it). Keep yak ids out of commits, code, comments and PRs (`yaks scan-ids` checks text), and after landing note the landed SHA on the yak, since git cannot link it.
 
 ## 2. The shape: claim, fan out, land, reconcile
 

@@ -13,7 +13,7 @@ A plain CLI, run from the shell (no slash commands, nothing to keep running): `y
 
 **Which farm am I on?** `yaks path` (no arguments) prints it. Discovery uses `$YAKS_DIR` if set, else walks up from the cwd to the git top-level looking for `.yaks` (a directory, a symlink, or a pointer file), else uses the repo's **farm branch** worktree (below). It never walks past a git top-level, so a nested checkout does not read another checkout's farm by accident; the error names the fixes.
 
-**Starting a farm.** `yaks init --mode branch|team|private|pointer [--skills default|coordination]` creates the farm, its git excludes and the project-local skills in one idempotent step (re-run it to add what is missing; it never overwrites an edited skill). `branch` is the recommended mode; `--path <dir> --herd <prefix>` goes with `pointer`.
+**Starting a farm.** `yaks init --mode branch|private|pointer [--skills default|coordination]` creates the farm, its git excludes and the project-local skills in one idempotent step (re-run it to add what is missing; it never overwrites an edited skill). `branch` is the recommended mode; `--path <dir> --herd <prefix>` goes with `pointer`.
 
 ## Where the farm lives
 
@@ -26,10 +26,9 @@ A plain CLI, run from the shell (no slash commands, nothing to keep running): `y
 - A fresh clone needs no setup: the first command creates the farm worktree from `origin/yaks`. `yaks migrate --to-branch` moves a committed in-tree `.yaks/` onto a branch. A checkout that still holds an old committed `.yaks/` gets a warning and is redirected to the branch farm.
 
 **Other layouts.**
-- **Committed beside the code (team):** `.yaks/` is tracked on the code branches. Commit a yak's file with the code that changed it; stage only the yak files you touched.
 - **Private (local-only):** `.yaks/` is excluded from git (`.git/info/exclude`). Never commit yak files, and never put yak ids in commit messages, code or comments.
 - **Pointer:** a `.yaks` *file* with `path: <farm>` and optional `herd: <prefix>` points one or more repos at a shared out-of-tree farm (`yaks init --mode pointer`). `yaks merge` consolidates separate farms.
-- Not sure which applies? `git ls-files .yaks` lists files only for a committed farm. If in doubt, act as private: a leaked id is worse than a missing one.
+- If in doubt, act as private: a leaked id is worse than a missing one.
 
 > **Footgun:** `git clean -fdx` deletes an excluded `.yaks/`. Back up a private in-tree farm, or use a private branch farm instead.
 

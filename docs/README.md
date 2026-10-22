@@ -60,8 +60,6 @@ yaks tui                       # or drive it all interactively
   files. `yaks commit` commits it, `yaks sync` commits, pulls and pushes it, and
   `yaks private` keeps it on this machine. Set up with `yaks init --mode branch`
   or move an existing farm with `yaks migrate --to-branch`.
-- **Committed with the code (team):** `.yaks/` is tracked on the code branches,
-  and yak changes ride in the commits that make them.
 - **Private:** `.yaks/` is excluded from git (`yaks init --mode private` writes
   `.git/info/exclude`). Keep yak ids out of commits and PRs (`yaks scan-ids`).
 
