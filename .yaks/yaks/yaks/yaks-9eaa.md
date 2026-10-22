@@ -1,15 +1,16 @@
 ---
 id: yaks-9eaa
-title: Stamp the shed on every write; build the sheds view from stamps (group-by), delete the farm-diff half of sheds.rs
-status: hairy
+title: Sheds from a local per-shed activity log + git facts; delete the farm-diff half of sheds.rs
+status: shorn
 type: feature
 priority: 2
 created: '2026-10-18T05:15:36Z'
-updated: '2026-10-21T21:55:17Z'
+updated: '2026-10-22T03:26:28Z'
 labels:
 - sheds
 - cli
 - tui
+verify: cargo test --release
 ---
 
 With one live farm (yaks-6a34) "what is shed X doing" cannot come from diffing farm copies. Every write (note, move, ask, answer, attach) records the shed it ran in beside the actor, named by the rule `yaks sheds` already uses (`main`, the Delta thread-title slug, ...), e.g. a `shed:` on the entry header or an `actor@shed` form; decide the on-disk shape carefully (schema bump) and keep it readable.
@@ -46,3 +47,50 @@ Review 2026-10-21 (delta:sheds-review), on main @ 3bc2282 (sync/private/merge-dr
 **One more row to drop:** a `git worktree` whose branch is the farm branch (`store::farm_branch`) is the farm, not a shed; its state belongs to `yaks status` / the TUI sync chip.
 
 Design question for the replacement (the per-write stamp): the shed is per-MACHINE metadata (a Delta dir id or worktree path means nothing on another machine once the farm is pushed), while the actor is already the durable, committed 'who' (`delta:<thread title>` when unnamed). So consider recording the shed OUTSIDE the yak files: an uncommitted per-shed activity log under the farm (e.g. `.yaks/.activity/<shed-id>`, gitignored like `.lock`; one `ts  id  op` line per write), joined to discovery by shed id (`main`, the Delta dir id, else the worktree dir). No schema bump, nothing to merge, the sheds view = git facts + that log (claims, touched yaks newest first, liveness from the newest line). Alternative: a stamp in the note header (schema 7, committed, meaningless off-machine). Joel to pick.
+
+---
+▸ 2026-10-22T02:45:25Z [delta:sheds-review]
+
+moved: hairy -> shaving
+
+---
+▸ 2026-10-22T02:45:25Z [delta:sheds-review]
+
+Decision (Joel 2026-10-21): record the shed OUTSIDE the yak files, in an uncommitted per-machine activity log under the farm (gitignored like `.lock`), joined to discovery by checkout. No schema bump. Rejected: a shed stamp in the note header (schema 7, committed, meaningless on another machine). The actor stays the durable 'who'.
+
+---
+▸ 2026-10-22T03:24:41Z [delta:sheds-review]
+
+Implementation in progress (delta:sheds-review): activity log + slim sheds view built; gate green; docs updated. Evidence next.
+
+![sheds-detail](yaks-9eaa/sheds-detail.png)
+
+[surveyor-sheds](yaks-9eaa/surveyor-sheds.txt)
+
+---
+▸ 2026-10-22T03:25:39Z [delta:sheds-review]
+
+Done (delta:sheds-review). Summary:
+
+- **New: the activity log** (`src/activity.rs`). `store::write::save` appends `<ts>\t<id>` to `<farm>/.activity/<hash of checkout path>.log` for the checkout the process runs in (git top-level of the cwd). The dir holds a `.gitignore` of `*`, so git, `yaks status` and `yaks commit` never see it; discovery's `only_leftovers` tolerates it. `YAKS_NO_ACTIVITY=1` turns it off.
+- **`sheds.rs` rewritten** (6.4k -> 2.4k lines): kept discovery, names, git state; deleted fork points, base farms, `compare_farms`/`yak_changes`/`landed`/`label`/`resolve`. A row = git facts + `touched` (yaks it wrote, newest first, status now), `in_progress`, `last_write`, `liveness` (active = wrote within 2h; stale = holds a shaving yak, quiet longer). The farm branch's own worktree is no longer listed. Orphaned pins are one count line.
+- **Deleted commands/flags:** `yaks changes`, `--shed`, `show --sheds`, `inbox --sheds`, `answer <id>@<shed>`; `yaks attachment` reads this farm only.
+- **TUI:** Sheds tab rebuilt on the new data (detail = yaks written, Enter opens); scans only while the tab is shown. Removed the overlay: `🛖` badges, shed-only rows, the detail `Sheds:` section, the `copies` drawer chip (`FilterSpec::home_only`), Inbox shed asks, answer-in-shed, `Loc::Shed`.
+- **Docs/help:** README, docs/cli.md, docs/tui.md, clap help, `?` overlay, help bar, coordinating skill line; 4 obsolete docshot SVGs removed, tui-sheds/tui-sheds-detail/tui-drawer regenerated.
+
+Evidence:
+- `cargo test --release`: all suites green (703 unit + every integration suite), incl. new `tests/shed_activity.rs` (end-to-end through the binary on a farm-branch repo) and unit tests for the join, liveness and farm-worktree exclusion.
+- Real farm: `yaks sheds` in this repo shows this thread's row `shaving: yaks-9eaa · 1 yak · active` with the yak listed; `git status` in the farm worktree shows nothing under `.activity`.
+- Surveyor output attached (no activity yet there: the log starts with this build). Frame of the new Sheds detail attached.
+
+Children: yaks-0309 (ordering: attention, then most recent writer) and yaks-9a06 (detail newest first) are delivered here.
+
+---
+▸ 2026-10-22T03:26:19Z [delta:sheds-review]
+
+verify: `cargo test --release` -> PASS (exit 0)
+
+---
+▸ 2026-10-22T03:26:28Z [delta:sheds-review]
+
+moved: shaving -> shorn

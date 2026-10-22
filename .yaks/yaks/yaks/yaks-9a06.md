@@ -1,11 +1,11 @@
 ---
 id: yaks-9a06
 title: 'Shed detail: yak changes seem to be arbitrarily ordered'
-status: hairy
+status: shorn
 type: bug
 priority: 2
 created: '2026-10-16T20:44:03Z'
-updated: '2026-10-19T04:28:52Z'
+updated: '2026-10-22T03:49:43Z'
 parent: yaks-9eaa
 labels:
 - sheds
@@ -25,3 +25,23 @@ It just struck me that we could also do with some grouping on these. A few obser
 ▸ 2026-10-19T04:28:52Z [delta:herd-pass]
 
 Herd pass 2026-10-19: moved under yaks-9eaa; with the sheds view built from per-write shed stamps, this ordering is a plain sort there.
+
+---
+▸ 2026-10-22T03:26:27Z [delta:sheds-review]
+
+moved: hairy -> shaving
+
+---
+▸ 2026-10-22T03:26:28Z [delta:sheds-review]
+
+Delivered by yaks-9eaa: the Sheds list sorts attention first (main, open ask, active, stale, idle), then the most recent writer; a shed's detail lists the yaks it wrote newest first. Evidence on yaks-9eaa.
+
+---
+▸ 2026-10-22T03:26:28Z [delta:sheds-review]
+
+moved: shaving -> shorn
+
+---
+▸ 2026-10-22T03:49:43Z [delta:sheds-review]
+
+verify: `cargo test --workspace` -> PASS (exit 0)

@@ -1,0 +1,20 @@
+  KIND      BRANCH  HEAD     +AHEAD -BEHIND  DIRTY  LAST WRITE  PATH
+* worktree  main    967850d  +0 -0           0      -           /Users/joel/src/fs/subtext/surveyor
+  name: main (here)
+  delta     main    9f6d7fd  +0 -8           15     -           /Users/joel/src/fs/subtext/surveyor/.delta/worktrees/9kf39g7cyp2a/surveyor
+  name: 9kf39g7cyp2a
+  state: merged · uncommitted: 14 modified, 1 untracked
+  delta     main    289c67e  +0 -2           1      -           /Users/joel/src/fs/subtext/surveyor/.delta/worktrees/bps5vp6pgmc2/surveyor
+  name: bps5vp6pgmc2
+  state: merged · uncommitted: 1 untracked
+  delta     main    967850d  +0 -0           0      -           /Users/joel/src/fs/subtext/surveyor/.delta/worktrees/j1wxewehwhgh/surveyor
+  name: resume-output-quality · title: Resume output quality work on survey-3237
+  state: merged, clean
+  delta     main    cf4ca60  +5 -0           1      -           /Users/joel/src/fs/subtext/surveyor/.delta/worktrees/q2fq2kn3e2mv/surveyor
+  name: build-the-fixture · title: Build the fixture compiler and want.yaml diff
+  state: uncommitted: 1 untracked
+  delta     main    8ad119f  +12 -0          46     -           /Users/joel/src/fs/subtext/surveyor/.delta/worktrees/snbz7js86a4f/surveyor
+  name: document-pipeline · title: Document pipeline algorithm with concrete examples
+  state: uncommitted: 46 modified
+
+orphaned: 39 pinned clone(s) with no checkout left (finished threads; `yaks discover` lists them)
