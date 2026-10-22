@@ -652,13 +652,27 @@ mod tests {
         git(&wt, &["checkout", "-q", "yaks"]);
         std::fs::write(&file, format!("{base}\nmain\n")).unwrap();
         git(&wt, &["commit", "-qam", "main"]);
+        // The identity matters: without one, git on a host with no derivable
+        // email (CI) refuses before merging, leaving no conflict to detect.
         let merge = Command::new("git")
             .arg("-C")
             .arg(&wt)
+            .args(["-c", "user.name=t", "-c", "user.email=t@t"])
             .args(["merge", "-q", "side"])
             .output()
             .unwrap();
         assert!(!merge.status.success());
+        assert!(
+            Command::new("git")
+                .arg("-C")
+                .arg(&wt)
+                .args(["rev-parse", "-q", "--verify", "MERGE_HEAD"])
+                .output()
+                .unwrap()
+                .status
+                .success(),
+            "the merge stopped before conflicting: {merge:?}"
+        );
         let f = failures(&farm, &[], Check::GitState);
         assert_eq!(f.len(), 1, "{f:?}");
         assert!(f[0].message.contains("unresolved merge conflicts"));
