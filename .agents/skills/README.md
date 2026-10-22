@@ -5,6 +5,7 @@ symlinks. Agent harnesses (Delta, and anything else that scans
 `.agents/skills/<name>/SKILL.md`) load them from here, and the binary embeds the
 shipped ones from here.
 
+- **Repo-local, never shipped:** `land` (see the warning below).
 - **Shipped by default:** `yaks` and `yaks-tracker`. The explicit `BUNDLED` list in
   `src/skills.rs` — skills and, per skill, files; not the contents of this
   directory — decides what is embedded in the binary and installed by
@@ -22,6 +23,14 @@ shipped ones from here.
     install` removes untouched installed copies of those.)
   A guard test (`repo_skills_are_well_formed` in `src/skills.rs`) keeps the names,
   descriptions and cross-references consistent.
+
+> [!WARNING]
+> **`land` is NOT a yaks skill and must NEVER be bundled.** `land/` is this
+> repo's own Delta "Land Changes" action (Delta insists on a skill named `land`):
+> it hard-codes this repo's gate, `main` and farm branch, and means nothing in
+> anyone else's project. It stays out of `BUNDLED` in `src/skills.rs` (so it is
+> never embedded or installed by `yaks skills install`), and the test
+> `land_is_repo_local_and_never_bundled` fails if that changes.
 
 `yaks skills install` refuses to write into this directory (the source-tree
 guard, yaks-d8e9), with or without `--force`.

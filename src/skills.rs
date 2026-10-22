@@ -70,6 +70,10 @@ pub const GROUPS: &[&str] = &["coordination"];
 ///
 /// The default set is `yaks` + `yaks-tracker`; the `coordination` group
 /// (`yaks-coordinating` and `yaks-working`) is opt-in.
+///
+/// **Never add `land` here.** `.agents/skills/land/` is this repo's own Delta
+/// "Land Changes" action (it hard-codes this repo's gate, `main` and farm), not
+/// a yaks feature. `land_is_repo_local_and_never_bundled` fails if it is added.
 pub const BUNDLED: &[Skill] = &[
     Skill {
         name: "yaks",
@@ -1593,6 +1597,21 @@ mod tests {
         assert_eq!(s.files, files);
         assert_eq!(written, src);
         assert_eq!(frontmatter_keys(&out).last().unwrap(), "metadata");
+    }
+
+    /// `land` is this repo's own Delta landing action, specific to developing
+    /// yaks. It lives in `.agents/skills/` so Delta finds it, and must never be
+    /// embedded in the binary or installed into users' projects.
+    #[test]
+    fn land_is_repo_local_and_never_bundled() {
+        assert!(
+            BUNDLED.iter().all(|s| s.name != "land"),
+            "`land` is repo-local (Delta's Land Changes action); do not bundle it"
+        );
+        assert!(
+            !RETIRED.contains(&"land"),
+            "`land` was never bundled, so it cannot be retired"
+        );
     }
 
     #[test]

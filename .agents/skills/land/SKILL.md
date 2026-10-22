@@ -8,6 +8,10 @@ metadata:
 
 # Land (yaks repo)
 
+> **Repo-local; never bundle this skill.** It is this repo's Delta "Land Changes"
+> action, not part of yaks: do not add it to `BUNDLED` in `src/skills.rs`, and
+> never install it into other projects.
+
 Personal project: no PRs, no code CI, `main` is the destination. The yak workflow
 is the point, so work is tracked before it lands and closed out after. Being
 invoked is the request to land: proceed; stop only for a real blocker, and then
