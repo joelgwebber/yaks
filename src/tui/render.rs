@@ -292,7 +292,7 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
         ),
         entry(
             "  (image)",
-            "Shown in the pane (png/jpg/gif/webp); O opens externally, Esc/q closes",
+            "Shown in the pane (png/jpg/gif/webp/svg); O opens externally, Esc/q closes",
         ),
         entry(
             "  (image alone)",

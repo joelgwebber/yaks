@@ -95,8 +95,10 @@ For a durable UI state, prefer a `docshots` scene + a `docs/` embed over a
 one-off frame.
 
 To actually *look* at an SVG frame, rasterize it to PNG with headless Chrome
-(recipe in `docs/tui.md`) — yaks stays out of rasterization, and a pure-Rust
-rasterizer botches the color emoji, so a browser engine is the lever.
+(recipe in `docs/tui.md`): that is the faithful lever. The TUI's image viewer
+also rasterizes an attached SVG itself (toque's `png` feature, embedded fonts,
+so no system fonts; box-drawing corners are blank until the font subset is
+widened), which is enough to check an attachment shows up.
 
 **Hand the human a build to try.** After landing any significant change, the
 main (coordinating) thread installs a fresh release build to `~/go/bin/yaks`:

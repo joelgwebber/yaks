@@ -25,6 +25,54 @@ use super::{App, Overlay, detail};
 /// Largest image file the viewer decodes; a bigger one opens externally.
 const IMAGE_MAX_BYTES: u64 = 32 << 20;
 
+/// Largest svg the viewer rasterizes. Far below [`IMAGE_MAX_BYTES`]: an svg is
+/// text that expands to pixels, and rasterizing blocks the UI.
+const SVG_MAX_BYTES: u64 = 4 << 20;
+
+/// The PNG of svg `svg`, rasterized by toque with its embedded fonts (so the
+/// same on every machine), cached by content under `cache_base`. A miss
+/// rasterizes and writes the cache best-effort: a read-only or missing cache
+/// directory only costs the next open a re-render (a few ms).
+pub(super) fn svg_png(svg: &[u8], cache_base: Option<&Path>) -> Option<Vec<u8>> {
+    let cached = cache_base.map(|b| super::cache::svg_png_path_in(b, svg));
+    if let Some(png) = cached.as_ref().and_then(|p| std::fs::read(p).ok()) {
+        return Some(png);
+    }
+    let png = toque::svg_to_png(svg)?;
+    if let Some(p) = &cached {
+        if let Some(dir) = p.parent() {
+            let _ = std::fs::create_dir_all(dir);
+        }
+        let _ = std::fs::write(p, &png);
+    }
+    Some(png)
+}
+
+/// Decode an image attachment to pixels: an svg through toque's rasterizer (and
+/// the PNG cache), anything else through the `image` crate with the format
+/// guessed from the content.
+fn decode_attachment(path: &Path, name: &str) -> Option<image::DynamicImage> {
+    let is_svg = Path::new(name)
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("svg"));
+    if is_svg {
+        if std::fs::metadata(path).ok()?.len() > SVG_MAX_BYTES {
+            return None;
+        }
+        let png = svg_png(
+            &std::fs::read(path).ok()?,
+            super::cache::svg_cache_base().as_deref(),
+        )?;
+        return image::load_from_memory(&png).ok();
+    }
+    image::ImageReader::open(path)
+        .ok()?
+        .with_guessed_format()
+        .ok()?
+        .decode()
+        .ok()
+}
+
 /// An image attachment open in the viewer.
 pub(crate) struct ImageView {
     /// The link target as written (`<id>/<file>`), shown as the header.
@@ -39,8 +87,8 @@ pub(crate) struct ImageView {
 
 impl ImageView {
     /// The viewer for `found`, or `None` when it should open externally: not
-    /// an image by name, over [`IMAGE_MAX_BYTES`], or one the `image` crate
-    /// cannot decode (an svg, a corrupt file, a format it was built without).
+    /// an image by name, over [`IMAGE_MAX_BYTES`], or one that cannot be
+    /// decoded (a corrupt file, a malformed svg, a format built without).
     pub(crate) fn open(
         target: &str,
         found: &crate::farm::FoundAttachment,
@@ -52,12 +100,7 @@ impl ImageView {
         if std::fs::metadata(&found.path).ok()?.len() > IMAGE_MAX_BYTES {
             return None;
         }
-        let img = image::ImageReader::open(&found.path)
-            .ok()?
-            .with_guessed_format()
-            .ok()?
-            .decode()
-            .ok()?;
+        let img = decode_attachment(&found.path, &found.name)?;
         Some(ImageView {
             target: target.to_string(),
             path: found.path.clone(),
@@ -144,12 +187,8 @@ fn mtime_ns(path: &Path) -> u128 {
 /// Decode `path` and encode it for `cols`x`rows` cells. Done once per image
 /// and size, at first draw, and only for an image on screen.
 fn build_inline(app: &App, path: &Path, cols: u16, rows: u16) -> Option<SlicedProtocol> {
-    let img = image::ImageReader::open(path)
-        .ok()?
-        .with_guessed_format()
-        .ok()?
-        .decode()
-        .ok()?;
+    let name = path.file_name()?.to_str()?;
+    let img = decode_attachment(path, name)?;
     // Stretch to exactly the reserved cells (the layout already kept the aspect
     // to within a cell), so no padding strip shows where rounding left a
     // remainder, and an author's `=50%` of a small image is enlarged to fit.

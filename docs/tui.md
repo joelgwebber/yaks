@@ -105,7 +105,7 @@ the pre-find scroll and cursor).
 | `H` | Move to another herd (multi-herd farms) |
 | `M` | Add a comment (note): an empty editor under a `▸ you · now` header after the last comment, in place |
 | `a` | Ask / answer (on a yak awaiting a human: answer, which sets `needs: agent`; otherwise ask, which sets `needs: human`) |
-| `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped; `j`/`k`, `d`/`u`, `g`/`G` scroll, `E` edits it in place (the multi-line editor: `Ctrl-S` writes the file back under the farm lock and returns to the viewer, re-rendered; cancel returns unchanged, asking first if you typed anything; a file changed on disk meanwhile is not overwritten until a second `Ctrl-S`), `O` hands it to the OS opener, `Esc`/`q`/`h` close. An image (png, jpg, gif, webp; up to 32 MiB) opens **in the pane** too: drawn with the terminal's own graphics protocol (kitty, sixel, iTerm2) when it speaks one, else as half-block cells; shrunk to fit, never enlarged; `O` opens it externally, `Esc`/`q`/`h` close. An svg, an undecodable image and binary files open with the OS opener |
+| `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped; `j`/`k`, `d`/`u`, `g`/`G` scroll, `E` edits it in place (the multi-line editor: `Ctrl-S` writes the file back under the farm lock and returns to the viewer, re-rendered; cancel returns unchanged, asking first if you typed anything; a file changed on disk meanwhile is not overwritten until a second `Ctrl-S`), `O` hands it to the OS opener, `Esc`/`q`/`h` close. An image (png, jpg, gif, webp up to 32 MiB; svg up to 4 MiB) opens **in the pane** too: drawn with the terminal's own graphics protocol (kitty, sixel, iTerm2) when it speaks one, else as half-block cells; shrunk to fit, never enlarged; `O` opens it externally, `Esc`/`q`/`h` close. An svg is rasterized first (see *Svg attachments* below); a corrupt or undecodable image and binary files open with the OS opener |
 | `r` | (detail) Rename the attachment whose link (📎 or 🖼) the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
 | `X` | Slaughter (delete, with confirm); on a yak with live descendants the confirm offers the whole family, naming how many go |
 | `:w` / `:q` / `:wq` | Save / cancel / save+close (editor Normal mode) |
@@ -171,14 +171,26 @@ size an image shows at its natural size, shrunk to the pane width and two thirds
 of the pane's height; an explicit size (see above) may be taller. An image
 partly scrolled out of view is **clipped** at the pane edge on every protocol
 (kitty and half-block skip rows, sixel drops bands, iTerm2 draws row slices); one
-fully out of view is not decoded. A remote (`http://`) image, an svg, a missing or
-undecodable file stays the link row. Set `inline_images: false` in
+fully out of view is not decoded. A remote (`http://`) image, a missing or
+undecodable file stays the link row; an svg is drawn like any other image. Set `inline_images: false` in
 `.yaks/config.yaml` to keep every image a link row (for a terminal whose image
 protocol misbehaves).
 
 ![An image alone in a paragraph, drawn in the pane at 60% width](assets/tui-image-inline.svg)
 
 ![The same image clipped at the bottom edge of the pane](assets/tui-image-inline-clipped.svg)
+
+**Svg attachments** — an `.svg` attachment (up to 4 MiB) is rasterized by
+[toque](https://github.com/joelgwebber/toque)'s `png` feature (`resvg`) with
+fonts embedded in the binary, never the system's, so a toque frame looks the
+same on every machine and shows its text and color emoji even where no
+monospace font is installed. The PNG is cached by the svg's content under
+`$XDG_CACHE_HOME/yaks/svg/` (default `~/.cache/yaks/svg/`); it is rebuildable, a
+read-only cache only costs a re-render (a few ms), and it is never in the farm.
+The embedded fonts are DejaVu Sans Mono and a color emoji subset covering the
+glyphs in our own frames: a character outside that subset renders blank, most
+visibly the box-drawing corners of a bordered widget (the wider subset is a
+known follow-up). A malformed svg opens with the OS opener.
 
 **Pasting** — the TUI enables bracketed paste, so a terminal paste (`Cmd-V` /
 `Ctrl-Shift-V`) lands in the focused text field as one literal insert: fast,
@@ -403,10 +415,10 @@ there when the TUI's look changes.
 
 ## Rasterizing an SVG to view it
 
-The frames render **color emoji**, so view them with a real **browser engine** — a
-pure-Rust rasterizer (`resvg`) renders our emoji glyphs as tofu. `yaks` stays out
-of rasterization on purpose (it's a self-contained task-tracker binary, not an
-image tool), so this is a recipe, not a subcommand. Headless Chrome writes a PNG
+The TUI's image viewer rasterizes an svg attachment itself (see *Svg
+attachments* above), so a frame attached with `yaks attach` can be looked at in
+`yaks tui`. For a file on disk, or a pixel-faithful look at the color emoji and
+the system's fonts, use a real **browser engine**: headless Chrome writes a PNG
 you — or an agent whose file tools only read in-project paths — can then open;
 keep it in a gitignored dir such as `target/`:
 

@@ -47,6 +47,34 @@ fn cache_home() -> PathBuf {
     std::env::temp_dir()
 }
 
+/// Bumped whenever the svg rasterizer's output changes for the same input (a
+/// toque bump that widens the embedded font subset, say), so a cached PNG from
+/// the old renderer is not served.
+const SVG_RENDER_GEN: u32 = 1;
+
+/// Where the PNG of svg `bytes`, rasterized at its own size, is cached under
+/// `base`: `<base>/yaks/svg/<gen>-<hash of content>.png`. Content-addressed, so
+/// an edited svg is a new file and the old one is simply never read again.
+pub fn svg_png_path_in(base: &Path, bytes: &[u8]) -> PathBuf {
+    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+    for b in bytes {
+        h ^= u64::from(*b);
+        h = h.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    base.join("yaks")
+        .join("svg")
+        .join(format!("{SVG_RENDER_GEN}-{h:016x}.png"))
+}
+
+/// The user's cache directory for rebuildable files, or `None` under test, so
+/// a test never reads or writes the real cache.
+pub fn svg_cache_base() -> Option<PathBuf> {
+    if cfg!(test) {
+        return None;
+    }
+    Some(cache_home())
+}
+
 /// Absolute path to this farm's UI-state cache file.
 pub fn ui_state_path(root: &Path) -> PathBuf {
     cache_home()

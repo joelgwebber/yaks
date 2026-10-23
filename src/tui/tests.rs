@@ -3772,13 +3772,61 @@ fn enter_on_an_image_attachment_shows_it_in_the_pane() {
 
 #[test]
 fn an_undecodable_image_attachment_falls_back_to_the_os_opener() {
-    // svg is an image by name but not decodable by the `image` crate; so is a
-    // corrupt png. Neither opens the viewer.
-    let (_dir, mut app) =
-        app_on_attachment("logo.svg", b"<svg xmlns='http://www.w3.org/2000/svg'/>");
+    // A corrupt png and a malformed svg are images by name but cannot be
+    // decoded: neither opens the viewer.
+    for (name, data) in [
+        ("broken.png", &b"\x89PNG\r\n\x1a\nnot really"[..]),
+        ("broken.svg", &b"<svg"[..]),
+    ] {
+        let (_dir, mut app) = app_on_attachment(name, data);
+        enter_key(&mut app);
+        assert!(matches!(app.overlay, Overlay::None), "{name}");
+        assert_eq!(
+            app.notification.as_deref(),
+            Some(format!("opened t0/{name}").as_str())
+        );
+    }
+}
+
+#[test]
+fn enter_on_an_svg_attachment_rasterizes_it_into_the_pane() {
+    // yaks-4e9c: toque rasterizes svg with its embedded fonts, so the viewer
+    // shows it with no system font and no cache (the cache is off under test).
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120">
+        <rect width="120" height="60" fill="#ff0000"/>
+        <rect y="60" width="120" height="60" fill="#0000ff"/></svg>"##;
+    let (_dir, mut app) = app_on_attachment("diagram.svg", svg);
     enter_key(&mut app);
-    assert!(matches!(app.overlay, Overlay::None));
-    assert_eq!(app.notification.as_deref(), Some("opened t0/logo.svg"));
+    assert!(matches!(app.overlay, Overlay::Image(_)));
+    let mut term = Terminal::new(ratatui::backend::TestBackend::new(100, 24)).unwrap();
+    term.draw(|f| render(&app, f)).unwrap();
+    let buf = term.backend().buffer();
+    let text = buffer_to_string(buf);
+    assert!(text.contains("t0/diagram.svg  image 120×120"), "{text}");
+    let has = |rgb: Color| buf.content.iter().any(|c| c.fg == rgb || c.bg == rgb);
+    assert!(
+        has(Color::Rgb(255, 0, 0)) && has(Color::Rgb(0, 0, 255)),
+        "{text}"
+    );
+}
+
+#[test]
+fn an_svg_png_is_cached_by_content_and_reused() {
+    let dir = std::env::temp_dir().join(format!("yaks-svgcache-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="#00ff00"/></svg>"##;
+    let path = crate::tui::cache::svg_png_path_in(&dir, svg);
+    assert!(!path.exists());
+    let first = imageview::svg_png(svg, Some(&dir)).unwrap();
+    assert!(path.exists(), "written on a miss");
+    assert_eq!(std::fs::read(&path).unwrap(), first);
+    // A hit is served from the file: change it and the new bytes come back.
+    std::fs::write(&path, b"cached").unwrap();
+    assert_eq!(imageview::svg_png(svg, Some(&dir)).unwrap(), b"cached");
+    // Different content is a different cache file.
+    let other = br#"<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"/>"#;
+    assert_ne!(path, crate::tui::cache::svg_png_path_in(&dir, other));
+    let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]

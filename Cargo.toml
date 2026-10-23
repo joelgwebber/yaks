@@ -28,7 +28,9 @@ ratatui = "0.30"
 edtui = { git = "https://github.com/joelgwebber/edtui", branch = "yaks-integration", default-features = false, features = ["arboard"] }
 # Headless ratatui driver, extracted from yaks into its own repo. Not on
 # crates.io yet; Cargo.lock pins the exact commit.
-toque = { git = "https://github.com/joelgwebber/toque", branch = "main" }
+# `png`: rasterize svg attachments (embedded fonts, no system fonts) for the
+# image viewer, yaks-4e9c.
+toque = { git = "https://github.com/joelgwebber/toque", branch = "main", features = ["png"] }
 notify = "6"
 arboard = { version = "3", features = ["wayland-data-control"] }
 png = "0.17"
