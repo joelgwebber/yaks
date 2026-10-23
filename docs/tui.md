@@ -171,8 +171,9 @@ size an image shows at its natural size, shrunk to the pane width and two thirds
 of the pane's height; an explicit size (see above) may be taller. An image
 partly scrolled out of view is **clipped** at the pane edge on every protocol
 (kitty and half-block skip rows, sixel drops bands, iTerm2 draws row slices); one
-fully out of view is not decoded. A remote (`http://`) image, a missing or
-undecodable file stays the link row; an svg is drawn like any other image. Set `inline_images: false` in
+fully out of view is not decoded. A remote (`http://`) image, an svg (its size
+is not in a file header; `Enter` still opens it in the viewer), a missing or
+undecodable file stays the link row. Set `inline_images: false` in
 `.yaks/config.yaml` to keep every image a link row (for a terminal whose image
 protocol misbehaves).
 
