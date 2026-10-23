@@ -1,15 +1,16 @@
 ---
 id: yaks-4e9c
 title: Display svg attachments in the image viewer
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-10-22T20:35:28Z'
-updated: '2026-10-22T22:19:01Z'
+updated: '2026-10-23T01:46:28Z'
 labels:
 - tui
 - images
 needs: human
+verify: cargo test --workspace
 ---
 
 Follow-up to yaks-4305. The image viewer decodes with the `image` crate (png, jpeg, gif, webp), which cannot read svg, so an `.svg` attachment still goes to the OS opener. That is the format most yak evidence uses: toque frames and `docshots` write SVG.
@@ -253,3 +254,28 @@ Piece 1 (toque) is done and verified in the toque worktree (240eb5f, not pushed)
 
 1. Order. yaks consumes toque as a git dependency, so piece 2 (the svg viewer in yaks) is blocked until toque is pushed. Before that, the font subset needs widening (yaks-4f4d): right now every box-drawing corner and join renders blank, which any ratatui `Block` border uses. My lean: do yaks-4f4d first (it is mostly regenerating the font files plus a script, small), push toque once, then do piece 2. Alternative: push toque now and widen later, accepting blank corners in the viewer until then.
 2. Pushing toque to `origin/main` is yours: say "push toque" and I will (or push it yourself).
+
+---
+▸ 2026-10-23T01:45:26Z [delta:Add basic image attachment rendering]
+
+verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-10-23T01:46:27Z [delta:Add basic image attachment rendering]
+
+Piece 2 done (yakherd): committed in the thread clone as 67122a0 (on ea538c8); not pushed to the user's `main`. toque was pushed to origin by the human's go-ahead ("push the toque changes, main is fine"): origin/main is 240eb5f; yaks pins it (Cargo.lock) with `features = ["png"]`.
+
+`yaks verify yaks-4e9c`: PASS (`cargo test --workspace`, 732 in the bin). With my own release build: an attached `tui-detail.svg` opens in the viewer as `image 826x632`, written to `$XDG_CACHE_HOME/yaks/svg/1-<hash>.png`, and the second open reads the cache. Viewed the cached PNG next to Chrome's render of the same svg: text, color emoji, dimming and the `Needs:` column all match; differences are only the font (DejaVu vs Menlo) and Noto vs Apple emoji art. The box-drawing rule under the title is missing in the resvg render and the separators in the comment headers are short: the embedded subset has no U+2500-ish coverage beyond four glyphs (yaks-4f4d).
+
+What changed: `ImageView` and `build_inline` decode through `decode_attachment`, which sends `.svg` (up to 4 MiB) through `toque::svg_to_png` and a content-addressed PNG cache (`cache::svg_png_path_in`, `SVG_RENDER_GEN` bumped when toque's output changes); a malformed svg falls back to the OS opener. The cache is off under `cargo test`. Docs: `docs/tui.md` (a new "Svg attachments" paragraph; the Chrome recipe is now "the faithful lever, not the only one"), `AGENTS.md`, the `?` help line (snapshot unchanged).
+
+Decision (yakherd): the cache key is a hash of the svg's CONTENT only, plus a render generation constant, not the file path or mtime, so an edited svg is a new file and the same frame attached to two yaks shares one PNG. Rejected: keying on path+mtime (duplicates, and an in-place edit within one mtime tick is stale).
+Decision: no size limit on the cache directory (a PNG per distinct svg ever opened; a frame is ~70 KB). If it grows noticeably, prune by age: a follow-up, not now.
+Decision: svg inside an inline-image paragraph also works (same decoder), since `image_slot` reads dimensions with `image::ImageReader`, which cannot read an svg: so an svg stays a link row inline even though the viewer opens it. Not fixed here; noted for yaks-0bf0 follow-up.
+
+Not verified: that the shared cache behaves with two yaks processes writing the same file at once (a plain write: a torn file would fail decode and re-render next time; not exercised).
+
+---
+▸ 2026-10-23T01:46:28Z [delta:Add basic image attachment rendering]
+
+moved: shaving -> shorn
