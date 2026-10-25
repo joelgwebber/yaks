@@ -3,9 +3,9 @@ id: yaks-84e0
 title: Use the same internal navigation affordances in text/md viewing as in yak details
 status: hairy
 type: task
-priority: 2
+priority: 3
 created: '2026-10-22T19:53:58Z'
-updated: '2026-10-22T19:53:58Z'
+updated: '2026-10-25T21:27:33Z'
 labels:
 - tui
 ---
