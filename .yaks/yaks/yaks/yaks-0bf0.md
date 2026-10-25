@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-22T20:35:28Z'
-updated: '2026-10-25T21:21:22Z'
+updated: '2026-10-25T21:26:26Z'
 depends_on:
 - yaks-89fc
 labels:
@@ -166,3 +166,8 @@ Closing the yak. Follow-ups not filed: images inside list items and quotes; an s
 ▸ 2026-10-25T21:21:22Z [delta:Add basic image attachment rendering]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-25T21:26:26Z [delta:Add basic image attachment rendering]
+
+Landed (yakherd): the thread's five commits fast-forwarded onto the user's checkout main (2b1f3ba..c4b0b9f: yaks-89fc 7462a6f, yaks-0bf0 ea538c8 and c4b0b9f, yaks-4e9c 67122a0 and e4e378d). Verified there: git log shows c4b0b9f, status clean, no MERGE_HEAD. The first push attempt printed nothing and did not land; the second did. origin not pushed. toque origin/main 240eb5f. Release build installed to ~/.cargo/bin/yaks and ~/go/bin/yaks from c4b0b9f.
