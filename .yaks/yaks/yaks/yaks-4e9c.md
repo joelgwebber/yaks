@@ -5,11 +5,10 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-22T20:35:28Z'
-updated: '2026-10-23T01:46:28Z'
+updated: '2026-10-25T21:20:22Z'
 labels:
 - tui
 - images
-needs: human
 verify: cargo test --workspace
 ---
 
@@ -279,3 +278,10 @@ Not verified: that the shared cache behaves with two yaks processes writing the 
 ▸ 2026-10-23T01:46:28Z [delta:Add basic image attachment rendering]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-25T21:20:22Z [delta:Add basic image attachment rendering]
+
+picked up
+
+Already done: toque pushed (240eb5f), svg viewer committed in the thread clone. Clearing the stale flag.

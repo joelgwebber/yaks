@@ -1,11 +1,11 @@
 ---
 id: yaks-0bf0
 title: Show images inline in yak bodies and comments
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-10-22T20:35:28Z'
-updated: '2026-10-22T22:44:38Z'
+updated: '2026-10-25T21:21:22Z'
 depends_on:
 - yaks-89fc
 labels:
@@ -136,3 +136,33 @@ NOT verified, and the reason this is still open: any real graphics protocol. Kit
 Decision (yakherd): the draw cell size comes from `Picker::font_size()`; the half-block picker's default 10x20 px is what tests and headless frames use, so row counts there differ from a real terminal's.
 Decision: `build_inline` stretches the decoded image to exactly cols x rows cells (`resize_exact`) before encoding. Rejected `Resize::Scale`: it left a padding strip where cell rounding did not divide evenly (seen in the first frame).
 Follow-up if wanted: images inside list items and quotes (need the container gutter as a draw offset).
+
+---
+▸ 2026-10-25T21:07:19Z [Joel Webber]
+
+Looking really good! One small nit -- the cursor movement in view-mode goes "underneath" an inline image based on its height in cells, forcing you to move down across many cells to move past a large image. I believe this should be more like edit mode, where you only have to move a single cell to get past the image.
+
+---
+▸ 2026-10-25T21:18:04Z [delta:Add basic image attachment rendering]
+
+verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-10-25T21:21:22Z [delta:Add basic image attachment rendering]
+
+Cursor fix (yakherd), committed in the thread clone as c4b0b9f, after the human's nit: moving the line cursor through a body went "underneath" an inline image one reserved row at a time.
+
+Fix: the rows an image reserves are no longer cursor stops. `detail::cursor_stops` lists every row but those; `move_detail_line` (j/k/d/u) and `detail_line_to` (g/G) step along the stops, so one `j` from the `🖼 alt` link row lands on the row after the picture and one `k` comes back, as in edit mode. A click on the picture lands on its link row (a second click there opens the viewer). A cursor already inside the block (only possible after a reflow) leaves it in the direction of travel, and a step up from inside arrives on the link row instead of overshooting it.
+
+Tests that failed first: `the_line_cursor_steps_over_an_inline_image_in_one_move`, `paging_and_g_never_land_inside_an_inline_image`, `clicking_an_inline_image_selects_its_link_row_and_a_second_click_opens_it`. `cargo test --workspace` PASS (735 in the bin); `yaks verify yaks-0bf0` PASS. `docs/tui.md` says so.
+
+Decision (yakherd): `d`/`u` count stops, not rows, so a half-page move over an image moves a little further on screen than half a pane. Rejected: counting rows (it would land inside the block or need a snap-back).
+
+Installed the build to ~/.cargo/bin/yaks and ~/go/bin/yaks (identical). The human reported the inline images "work beautifully" in Ghostty, so the real-protocol check I flagged is done by them, apart from the cases they did not mention (several images in one yak, an image in a comment): treated as fine, not verified by me.
+
+Closing the yak. Follow-ups not filed: images inside list items and quotes; an svg inline (it has no header size).
+
+---
+▸ 2026-10-25T21:21:22Z [delta:Add basic image attachment rendering]
+
+moved: shaving -> shorn
