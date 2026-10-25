@@ -3930,6 +3930,85 @@ fn an_explicit_size_sets_the_reserved_rows() {
     assert_eq!((s.cols, s.rows), (6, 3));
 }
 
+#[test]
+fn the_line_cursor_steps_over_an_inline_image_in_one_move() {
+    // yaks-0bf0: the image's reserved rows are not cursor stops, so one `j`
+    // from its link row lands on the row after the image and one `k` comes back.
+    let (_dir, mut app) = app_with_inline_image("Before.\n\n![shot](t0/shot.png)\n\nAfter.", true);
+    let rows = image_rows(&app);
+    assert_eq!(rows.len(), 6);
+    let (link, after) = (rows[0] - 1, rows[5] + 1);
+    app.detail_line = link;
+    press(&mut app, "j");
+    assert_eq!(app.detail_line, after, "one j crosses the whole image");
+    press(&mut app, "k");
+    assert_eq!(app.detail_line, link, "one k comes back to its link row");
+    // From above: the row before the link row steps onto it, then over.
+    app.detail_line = link - 1;
+    press(&mut app, "j");
+    assert_eq!(app.detail_line, link);
+    // A count of steps counts the image as one: three `j` from the row above
+    // the link reach link, after, and the row after that.
+    app.detail_line = link - 1;
+    for _ in 0..3 {
+        press(&mut app, "j");
+    }
+    assert_eq!(app.detail_line, after + 1);
+}
+
+#[test]
+fn paging_and_g_never_land_inside_an_inline_image() {
+    // The image is the last thing in the body, so `G` and a big `d` would end
+    // in its reserved rows; they stop on its link row instead.
+    let (_dir, mut app) = app_with_inline_image("Intro.\n\n![shot](t0/shot.png)", true);
+    let rows = image_rows(&app);
+    let link = rows[0] - 1;
+    press(&mut app, "G");
+    assert_eq!(app.detail_line, link, "G stops on the last non-image row");
+    app.detail_line = 0;
+    app.move_detail_line(1000);
+    assert_eq!(app.detail_line, link, "a long move down too");
+    // Moving up from the end of the image block skips to its link row.
+    app.detail_line = rows[5];
+    press(&mut app, "k");
+    assert_eq!(app.detail_line, link);
+    // And a cursor already inside the block (a click, a reflow) leaves it in
+    // the direction of travel without stopping on a reserved row.
+    app.detail_line = rows[2];
+    press(&mut app, "k");
+    assert_eq!(app.detail_line, link);
+}
+
+#[test]
+fn clicking_an_inline_image_selects_its_link_row_and_a_second_click_opens_it() {
+    let (_dir, mut app) = app_with_inline_image("![shot](t0/shot.png)", true);
+    draw(&app, 100, 40);
+    let rows = image_rows(&app);
+    let link = rows[0] - 1;
+    let top = app.hits.borrow().detail.expect("detail rect").y;
+    let click_row = |app: &mut App, line: usize| {
+        let y = top + (line as u16 - app.detail_scroll);
+        app.handle_mouse(ratatui::crossterm::event::MouseEvent {
+            kind: ratatui::crossterm::event::MouseEventKind::Down(
+                ratatui::crossterm::event::MouseButton::Left,
+            ),
+            column: 12,
+            row: y,
+            modifiers: KeyModifiers::NONE,
+        });
+    };
+    click_row(&mut app, rows[3]);
+    assert_eq!(
+        app.detail_line, link,
+        "a click on the picture lands on its link row"
+    );
+    click_row(&mut app, rows[1]);
+    assert!(
+        matches!(app.overlay, Overlay::Image(_)),
+        "the second click opens the viewer"
+    );
+}
+
 /// Screen rows of a `w`x`h` frame that carry image pixels. The test image is
 /// pure red over pure blue; the half-block encoder paints a uniform cell as a
 /// background color on a space, so look at colors, not glyphs.

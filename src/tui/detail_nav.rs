@@ -181,20 +181,43 @@ impl App {
         self.detail_dlines().len()
     }
 
-    /// Move the detail line cursor by `delta`, clamped, keeping it in view.
+    /// Move the detail line cursor by `delta` stops, clamped, keeping it in
+    /// view. The rows an inline image reserves are not stops (see
+    /// [`detail::cursor_stops`]): one step crosses a whole image, as in edit
+    /// mode.
     pub(crate) fn move_detail_line(&mut self, delta: i32) {
-        let n = self.detail_line_count();
-        if n == 0 {
+        let lines = self.detail_dlines();
+        let stops = detail::cursor_stops(&lines);
+        if stops.is_empty() {
             return;
         }
-        self.detail_line = (self.detail_line as i32 + delta).clamp(0, n as i32 - 1) as usize;
+        // The current stop: the last one at or before the cursor. A cursor
+        // inside an image block (only a click or a reflow puts it there) is on
+        // that image's stop, its link row; a step up from inside it arrives
+        // there, so it costs one step less.
+        let at = stops
+            .partition_point(|&r| r <= self.detail_line)
+            .saturating_sub(1);
+        let inside = stops[at] != self.detail_line;
+        let delta = if inside && delta < 0 {
+            delta + 1
+        } else {
+            delta
+        };
+        let to = (at as i32 + delta).clamp(0, stops.len() as i32 - 1) as usize;
+        self.detail_line = stops[to];
         self.scroll_line_into_view(self.detail_line as u16);
     }
 
-    /// g / G — jump the line cursor to the top / bottom.
+    /// g / G — jump the line cursor to the top / bottom stop.
     pub(crate) fn detail_line_to(&mut self, end: bool) {
-        let n = self.detail_line_count();
-        self.detail_line = if end { n.saturating_sub(1) } else { 0 };
+        let lines = self.detail_dlines();
+        let stops = detail::cursor_stops(&lines);
+        self.detail_line = if end {
+            stops.last().copied().unwrap_or(0)
+        } else {
+            0
+        };
         self.scroll_line_into_view(self.detail_line as u16);
     }
 

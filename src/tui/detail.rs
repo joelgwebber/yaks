@@ -548,6 +548,16 @@ fn image_slot(env: &ImageEnv, img: &mdrender::MdImage, pane_cols: usize) -> Opti
     })
 }
 
+/// The rows the line cursor can rest on: every row except the blank rows an
+/// inline image reserves after its first one. The image is one stop, on the
+/// row above its picture (its `🖼 alt` link row), so crossing it takes one
+/// step, however tall it is.
+pub fn cursor_stops(lines: &[DLine]) -> Vec<usize> {
+    (0..lines.len())
+        .filter(|&i| lines[i].image.is_none())
+        .collect()
+}
+
 /// The blank rows an inline image reserves, each tagged with its slot. They
 /// are body rows of the image's paragraph (same [`Src`]), so `E`, yank and
 /// block navigation treat them as the paragraph they belong to.

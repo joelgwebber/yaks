@@ -117,6 +117,11 @@ impl App {
         }
         self.focus = Focus::Detail;
         self.detail_anchor = None;
+        // A click on an inline image's picture lands on its link row, the
+        // image's one cursor stop; a second click there follows the link.
+        let lines = self.detail_dlines();
+        let stops = detail::cursor_stops(&lines);
+        let i = stops[stops.partition_point(|&r| r <= i).saturating_sub(1)];
         if i == self.detail_line {
             self.follow_link();
         } else {
