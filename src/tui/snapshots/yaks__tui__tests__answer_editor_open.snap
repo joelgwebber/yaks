@@ -1,0 +1,24 @@
+---
+source: src/tui/tests.rs
+expression: "draw(&app, 100, 20)"
+---
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   🛖  Sheds (…)
+
+◂ Task: t0
+│
+│ Title:       Pick a cache
+│ Status:      🦬  hairy
+│ Needs:       human
+│ Type:        task
+│ Priority:    p3
+│ Created:     -
+│ Updated:     -
+│ Labels:      -
+│
+│ Which cache should the index use?
+│
+│ ▸ Answer t0 · you · now ────────────────────────── Ctrl-S answer (needs: agent) · Ctrl-C cancel ─
+│ ┃The disk one.
+│ ┃It survives restarts.
+│ ┃
+INSERT  Ctrl-S answer: needs agent · Ctrl-C / Esc Esc cancel

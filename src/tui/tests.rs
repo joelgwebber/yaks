@@ -1589,8 +1589,8 @@ fn answered_yak_is_not_rendered_as_awaiting_a_human() {
     assert!(out.contains('\u{2705}'), "answered badge:\n{out}");
     app.open_ask_or_answer();
     match &app.overlay {
-        Overlay::Edit(ed) => assert!(matches!(ed.action, EditAction::Ask(_))),
-        _ => panic!("expected the ask prompt"),
+        Overlay::BlockEdit(be) => assert!(matches!(be.editor.action, EditAction::Ask(_))),
+        _ => panic!("expected the ask editor"),
     }
 }
 
@@ -2388,41 +2388,6 @@ mod live {
     }
 
     #[test]
-    fn ask_raises_needs_and_records_the_question() {
-        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
-        let mut app = App::with_farm(farm).unwrap();
-        press(&mut app, "a"); // no needs yet -> ask prompt
-        press(&mut app, "why is this blocked");
-        enter(&mut app); // single-line commit
-        assert!(matches!(app.overlay, Overlay::None));
-        let t = app.task("t0").unwrap();
-        assert_eq!(t.needs.as_deref(), Some("human"));
-        assert!(
-            t.body.contains("why is this blocked"),
-            "question recorded as a note: {}",
-            t.body
-        );
-    }
-
-    #[test]
-    fn answer_hands_the_yak_to_an_agent_and_records_the_reply() {
-        let mut seed = task("t0", "solo", Status::Hairy, 3, None);
-        seed.needs = Some("human".into());
-        let (_dir, farm) = temp_farm(&[seed]);
-        let mut app = App::with_farm(farm).unwrap();
-        press(&mut app, "a"); // needs is set -> answer prompt
-        press(&mut app, "resolved offline");
-        enter(&mut app);
-        let t = app.task("t0").unwrap();
-        assert_eq!(t.needs.as_deref(), Some("agent"), "handed to an agent");
-        assert!(
-            t.body.contains("resolved offline"),
-            "reply recorded as a note: {}",
-            t.body
-        );
-    }
-
-    #[test]
     fn attach_file_writes_artifact_and_links_body() {
         let (proj, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
         let src = proj.join("shot.png");
@@ -2920,6 +2885,95 @@ mod live {
         ctrl_s(&mut app);
         assert!(app.task("t0").unwrap().source.is_none());
     }
+
+    /// yaks-ce5e: `a` on a yak awaiting a human opens the multi-line comment
+    /// editor; a multi-line answer saved with Ctrl-S hands the yak to an agent
+    /// and lands whole as the note (not as a plain comment).
+    #[test]
+    fn answer_editor_saves_a_multi_line_answer() {
+        let mut t = task("t0", "solo", Status::Hairy, 3, None);
+        t.needs = Some("human".into());
+        let (_dir, farm) = temp_farm(&[t]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "a");
+        match &app.overlay {
+            Overlay::BlockEdit(be) => {
+                assert!(matches!(be.editor.action, EditAction::Answer(_)))
+            }
+            _ => panic!("expected the answer editor"),
+        }
+        press(&mut app, "Use the cache.");
+        enter(&mut app);
+        press(&mut app, "Second line.");
+        assert!(
+            matches!(app.overlay, Overlay::BlockEdit(_)),
+            "Enter is a newline"
+        );
+        ctrl_s(&mut app);
+        assert!(matches!(app.overlay, Overlay::None));
+        let t = app.task("t0").unwrap();
+        assert_eq!(t.needs.as_deref(), Some("agent"));
+        assert!(
+            t.body.contains("Use the cache.\nSecond line."),
+            "{}",
+            t.body
+        );
+        assert_eq!(
+            app.notification.as_deref(),
+            Some("answered t0: needs agent (awaiting pickup)")
+        );
+    }
+
+    /// yaks-ce5e: the ask editor is multi-line too; Ctrl-S sets `needs:
+    /// human` and records the whole question in the ask note.
+    #[test]
+    fn ask_editor_saves_a_multi_line_question() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "a");
+        match &app.overlay {
+            Overlay::BlockEdit(be) => assert!(matches!(be.editor.action, EditAction::Ask(_))),
+            _ => panic!("expected the ask editor"),
+        }
+        press(&mut app, "Which cache?");
+        enter(&mut app);
+        press(&mut app, "- the disk one");
+        ctrl_s(&mut app);
+        assert!(matches!(app.overlay, Overlay::None));
+        let t = app.task("t0").unwrap();
+        assert_eq!(t.needs.as_deref(), Some("human"));
+        assert!(
+            t.body.contains("Which cache?\n- the disk one"),
+            "{}",
+            t.body
+        );
+    }
+
+    /// An empty answer still answers (no note), as the one-line prompt did;
+    /// cancelling an empty editor changes nothing.
+    #[test]
+    fn answer_editor_empty_save_and_cancel() {
+        let mut t = task("t0", "solo", Status::Hairy, 3, None);
+        t.needs = Some("human".into());
+        let (_dir, farm) = temp_farm(&[t]);
+        let mut app = App::with_farm(farm).unwrap();
+        let before = app.task("t0").unwrap().body.clone();
+        press(&mut app, "a");
+        handle_key(
+            &mut app,
+            KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
+        );
+        assert!(
+            matches!(app.overlay, Overlay::None),
+            "empty cancel: no confirm"
+        );
+        assert_eq!(app.task("t0").unwrap().needs.as_deref(), Some("human"));
+        press(&mut app, "a");
+        ctrl_s(&mut app);
+        let t = app.task("t0").unwrap();
+        assert_eq!(t.needs.as_deref(), Some("agent"));
+        assert_eq!(t.body, before, "no note for an empty answer");
+    }
 }
 
 // -- ephemeral status line placement ----------------------------------
@@ -3157,27 +3211,45 @@ fn modal_detail_shows_back_affordance_only_when_covering_the_list() {
     );
 }
 
-/// yaks-027a: the single-line ask/answer prompts end in a `: ` separator, so
-/// the typed text doesn't butt straight up against the key hints
-/// (`…Ctrl-C cancelStrong agreement…`).
+/// yaks-ce5e: the ask/answer editors (the multi-line comment editor) name
+/// their verb in the header and say what Ctrl-S does, so the two stay
+/// distinguishable now that they share `M`'s affordance.
 #[test]
-fn ask_and_answer_prompts_separate_label_from_typed_text() {
+fn ask_and_answer_editors_name_the_verb_and_the_save() {
     let mut app = sample();
     app.open_ask();
     press(&mut app, "hello");
     let out = draw(&app, 120, 14);
-    assert!(
-        out.contains("Ask a0 — blocks on a human (Enter save · Ctrl-C cancel): hello"),
-        "ask prompt should separate label from text\n{out}"
-    );
+    assert!(out.contains("▸ Ask a0 · you · now"), "ask header\n{out}");
+    assert!(out.contains("Ctrl-S ask (needs: human)"), "ask hint\n{out}");
+    assert!(out.contains("hello"), "typed text\n{out}");
     let mut app = sample();
     app.open_answer();
     press(&mut app, "hello");
     let out = draw(&app, 120, 14);
     assert!(
-        out.contains("Answer a0 — hands it to an agent (Enter save · Ctrl-C cancel): hello"),
-        "answer prompt should separate label from text\n{out}"
+        out.contains("▸ Answer a0 · you · now"),
+        "answer header\n{out}"
     );
+    assert!(
+        out.contains("Ctrl-S answer (needs: agent)"),
+        "answer hint\n{out}"
+    );
+}
+
+/// yaks-ce5e: the open answer editor, with a multi-line answer typed.
+#[test]
+fn answer_editor_open() {
+    let mut t = task("t0", "Pick a cache", Status::Hairy, 3, None);
+    t.needs = Some("human".into());
+    t.body = "Which cache should the index use?".into();
+    let mut app = App::new(vec![t]);
+    app.detail_page = 17;
+    app.open_ask_or_answer();
+    press(&mut app, "The disk one.");
+    handle_key(&mut app, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+    press(&mut app, "It survives restarts.");
+    insta::assert_snapshot!(draw(&app, 100, 20));
 }
 
 /// yaks-2d17: a header field that soft-wraps in the detail pane must style its

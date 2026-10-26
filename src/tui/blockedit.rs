@@ -8,6 +8,10 @@
 //! hit arithmetic need no special case, and `render_detail` draws the edtui view
 //! over those rows. Save writes only that block (`content::assemble`, so the
 //! others round-trip), cancel goes through the usual dirty-confirm.
+//!
+//! `a` (ask / answer) opens the same new-comment editor with an `Ask`/`Answer`
+//! action (yaks-ce5e): its header names the verb and its hints say what saving
+//! does; the save raises or answers the `needs` block with the text as the note.
 
 use super::*;
 use edtui::EditorView;
@@ -31,6 +35,27 @@ const HINTS: [&str; 3] = [
     "editing · Ctrl-S save",
     "Ctrl-S save",
 ];
+/// Header hints of the ask editor: what Ctrl-S does to the yak.
+const ASK_HINTS: [&str; 3] = [
+    "Ctrl-S ask (needs: human) · Ctrl-C cancel",
+    "Ctrl-S ask (needs: human)",
+    "Ctrl-S ask",
+];
+/// Header hints of the answer editor.
+const ANSWER_HINTS: [&str; 3] = [
+    "Ctrl-S answer (needs: agent) · Ctrl-C cancel",
+    "Ctrl-S answer (needs: agent)",
+    "Ctrl-S answer",
+];
+
+/// The header hints for an editor whose save is `action`.
+fn hints_for(action: &EditAction) -> &'static [&'static str; 3] {
+    match action {
+        EditAction::Ask(_) => &ASK_HINTS,
+        EditAction::Answer(_) => &ANSWER_HINTS,
+        _ => &HINTS,
+    }
+}
 
 /// The open in-place editor: the `Editor` (whose `EditAction` says where the
 /// save goes) plus what the row model needs to place and compare it.
@@ -63,8 +88,13 @@ impl BlockEdit {
             spans.push(Span::styled(mode_tag(mode), mode_style(mode)));
             spans.push(Span::raw("  "));
         }
+        let save = match self.editor.action {
+            EditAction::Ask(_) => "Ctrl-S ask: needs human",
+            EditAction::Answer(_) => "Ctrl-S answer: needs agent",
+            _ => "Ctrl-S save",
+        };
         spans.push(Span::styled(
-            "Ctrl-S save · Ctrl-C / Esc Esc cancel",
+            format!("{save} · Ctrl-C / Esc Esc cancel"),
             Style::new().fg(Color::DarkGray),
         ));
         Line::from(spans)
@@ -141,7 +171,10 @@ impl App {
             block: be.block,
             rows: (wrapped_rows(&text, width.saturating_sub(GUTTER)) + 1).min(cap),
             label: be.label.clone(),
-            hints: HINTS.iter().map(|h| h.to_string()).collect(),
+            hints: hints_for(&be.editor.action)
+                .iter()
+                .map(|h| h.to_string())
+                .collect(),
         })
     }
 
@@ -172,22 +205,53 @@ impl App {
                     },
                 )
             }
-            None => {
-                // Resolved here (not in the read-only constructor's path) so a
-                // farm-less App shows `you` and runs no git subprocess.
-                let who = if self.farm.is_some() {
-                    crate::actor::resolve(None)
-                } else {
-                    None
-                };
-                (
-                    String::new(),
-                    format!("{} · now", who.as_deref().unwrap_or("you")),
-                    0,
-                    EditAction::Comment(id.clone()),
-                )
-            }
+            None => (
+                String::new(),
+                format!("{} · now", self.note_author()),
+                0,
+                EditAction::Comment(id.clone()),
+            ),
         };
+        self.open_slot_editor(id, block, text, label, row, action);
+    }
+
+    /// `a`: open the new-comment editor whose save asks (`answer` false:
+    /// `needs: human`) or answers (`needs: agent`) the selected yak, the typed
+    /// text becoming the note. The header names the verb.
+    pub(crate) fn open_needs_edit(&mut self, answer: bool) {
+        let Some(id) = self.selected_id() else { return };
+        let (verb, action) = if answer {
+            ("Answer", EditAction::Answer(id.clone()))
+        } else {
+            ("Ask", EditAction::Ask(id.clone()))
+        };
+        let label = format!("{verb} {id} · {} · now", self.note_author());
+        self.open_slot_editor(id, None, String::new(), label, 0, action);
+    }
+
+    /// Who a new note will be attributed to, for its provisional header.
+    /// Resolved here (not in the read-only constructor's path) so a farm-less
+    /// App shows `you` and runs no git subprocess.
+    fn note_author(&self) -> String {
+        let who = if self.farm.is_some() {
+            crate::actor::resolve(None)
+        } else {
+            None
+        };
+        who.unwrap_or_else(|| "you".into())
+    }
+
+    /// Open the in-place editor on `block` of `id` (`None`: a new note after
+    /// the last block) holding `text`, its cursor on source line `row`.
+    fn open_slot_editor(
+        &mut self,
+        id: String,
+        block: Option<usize>,
+        text: String,
+        label: String,
+        row: usize,
+        action: EditAction,
+    ) {
         let editor = Editor::new(self.editor_vim, false, String::new(), &text, action);
         let last = text.split('\n').count() - 1;
         editor.state.borrow_mut().cursor = edtui::Index2::new(row.min(last), 0);

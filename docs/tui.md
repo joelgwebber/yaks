@@ -104,7 +104,7 @@ the pre-find scroll and cursor).
 | `D` / `R` | Add dependency / reparent |
 | `H` | Move to another herd (multi-herd farms) |
 | `M` | Add a comment (note): an empty editor under a `▸ you · now` header after the last comment, in place |
-| `a` | Ask / answer (on a yak awaiting a human: answer, which sets `needs: agent`; otherwise ask, which sets `needs: human`) |
+| `a` | Ask / answer (on a yak awaiting a human: answer, which sets `needs: agent`; otherwise ask, which sets `needs: human`). Opens the same multi-line editor as `M`, headed `Ask <id>` / `Answer <id>`; `Ctrl-S` asks or answers with the text as the note (an empty one asks or answers with no note), cancel changes nothing |
 | `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped; `j`/`k`, `d`/`u`, `g`/`G` scroll, `E` edits it in place (the multi-line editor: `Ctrl-S` writes the file back under the farm lock and returns to the viewer, re-rendered; cancel returns unchanged, asking first if you typed anything; a file changed on disk meanwhile is not overwritten until a second `Ctrl-S`), `O` hands it to the OS opener, `Esc`/`q`/`h` close. An image (png, jpg, gif, webp up to 32 MiB; svg up to 4 MiB) opens **in the pane** too: drawn with the terminal's own graphics protocol (kitty, sixel, iTerm2) when it speaks one, else as half-block cells; shrunk to fit, never enlarged; `O` opens it externally, `Esc`/`q`/`h` close. An svg is rasterized first (see *Svg attachments* below); a corrupt or undecodable image and binary files open with the OS opener |
 | `r` | (detail) Rename the attachment whose link (📎 or 🖼) the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
 | `X` | Slaughter (delete, with confirm); on a yak with live descendants the confirm offers the whole family, naming how many go |
@@ -131,6 +131,12 @@ while the editor was open: notes or moves appended meanwhile are kept below
 your edit, and if the yak changed any other way nothing is saved, the pane
 reloads, and the editor reopens with your text (`changed on disk; not saved:
 review and Ctrl-S again`).
+
+`a` opens this editor too, as a new note headed `Ask <id> · you · now` or
+`Answer <id> · you · now`, with a `Ctrl-S ask (needs: human)` or `Ctrl-S answer
+(needs: agent)` hint: saving sets `needs` (via the same path as `yaks ask` /
+`yaks answer`) and records the text as the note, rather than appending a plain
+comment.
 
 ![E on a comment row: that comment becomes an editor in the detail pane](assets/tui-edit-inplace.svg)
 

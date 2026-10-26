@@ -895,7 +895,8 @@ impl App {
     /// Context-sensitive needs affordance: answer the selected yak if it is
     /// awaiting a human, otherwise ask (raise a question; on an already
     /// answered `needs: agent` yak that flips it back to a human). One key, two
-    /// verbs — the prompt label states which.
+    /// verbs — the editor's header states which. Both open the multi-line
+    /// comment editor (`M`'s), whose save goes through `needs_edit`.
     pub(crate) fn open_ask_or_answer(&mut self) {
         let blocked = self.selected().is_some_and(|t| t.awaiting_human());
         if blocked {
@@ -905,28 +906,14 @@ impl App {
         }
     }
 
+    /// Ask: Ctrl-S sets `needs: human`, recording the typed question.
     pub(crate) fn open_ask(&mut self) {
-        if let Some(id) = self.selected_id() {
-            self.overlay = Overlay::Edit(Editor::new(
-                self.editor_vim,
-                true,
-                format!("Ask {id} — blocks on a human (Enter save · Ctrl-C cancel): "),
-                "",
-                EditAction::Ask(id),
-            ));
-        }
+        self.open_needs_edit(false);
     }
 
+    /// Answer: Ctrl-S sets `needs: agent`, recording the typed reply.
     pub(crate) fn open_answer(&mut self) {
-        if let Some(id) = self.selected_id() {
-            self.overlay = Overlay::Edit(Editor::new(
-                self.editor_vim,
-                true,
-                format!("Answer {id} — hands it to an agent (Enter save · Ctrl-C cancel): "),
-                "",
-                EditAction::Answer(id),
-            ));
-        }
+        self.open_needs_edit(true);
     }
 
     /// Ask or answer via the farm, appending the typed text as an attributed
@@ -1549,14 +1536,8 @@ impl App {
                 self.commit_rename_attachment(id, old, text)
             }
             EditAction::EditAttachment(v) => self.commit_attachment_edit(v, text),
-            EditAction::Ask(id) => {
-                let note = text.trim();
-                self.needs_edit(&id, false, (!note.is_empty()).then_some(note));
-            }
-            EditAction::Answer(id) => {
-                let note = text.trim();
-                self.needs_edit(&id, true, (!note.is_empty()).then_some(note));
-            }
+            EditAction::Ask(id) => self.commit_needs(&id, false, &text),
+            EditAction::Answer(id) => self.commit_needs(&id, true, &text),
             EditAction::Shear(target) => self.commit_shear(target, &text),
             EditAction::SaveView => self.save_current_view(text),
             EditAction::RenameView { index } => {
@@ -1569,6 +1550,15 @@ impl App {
                 self.overlay = Overlay::ViewPicker(index.min(self.views.len().saturating_sub(1)));
             }
         }
+    }
+
+    /// Save the ask (`answer` false) or answer editor: `needs_edit` with the
+    /// trimmed text as the note (none when empty), then, as after `M`, the
+    /// line cursor goes to the new note.
+    fn commit_needs(&mut self, id: &str, answer: bool, text: &str) {
+        let note = text.trim();
+        self.needs_edit(id, answer, (!note.is_empty()).then_some(note));
+        self.focus_new_comment();
     }
 
     /// Append `text` to `id` as a new comment (an empty one is a no-op).
