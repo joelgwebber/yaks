@@ -1,11 +1,11 @@
 ---
 id: yaks-db07
 title: Canned requests (tidy/summarize), markdown lint for run-on bodies, bulk --request
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-10-26T21:51:28Z'
-updated: '2026-10-26T23:07:58Z'
+updated: '2026-10-26T23:19:10Z'
 parent: yaks-33c8
 labels:
 - cli
@@ -49,3 +49,20 @@ Workers:
 ▸ 2026-10-26T23:07:58Z [delta-lead]
 
 Fan-out (delta-lead): runon-1 on yaks-ef3b (thread …AC17XpIB…), kinds-1 on yaks-f853 (thread …AC17k5IB…), both on the profile default model, base 696348e.
+
+---
+▸ 2026-10-26T23:19:10Z [delta-lead]
+
+Done (delta-lead). Pushed to the human's checkout as `ab5e667`; installed with `cargo install --path .`.
+
+- yaks-ef3b: the `--run-on` filter (`537960e`). 124 live yaks match.
+- yaks-f853: `request --kind tidy|summarize` and `bulk --request` (landed as `58c6b3d`).
+- Skills (`ab5e667`): canned requests are followed literally, `--run-on` is in the filter list, and the coordinating skill shows the bulk recipe.
+- Gate: 873 passed, 0 failed.
+
+Auto-tidy on import stays with yaks-00c4 (noted there).
+
+---
+▸ 2026-10-26T23:19:10Z [delta-lead]
+
+moved: shaving -> shorn
