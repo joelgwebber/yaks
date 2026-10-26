@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 3
 created: '2026-10-19T04:27:59Z'
-updated: '2026-10-26T21:06:03Z'
+updated: '2026-10-26T21:08:02Z'
 labels:
 - tui
 ---
@@ -86,3 +86,8 @@ moved: shaving -> shorn
 ▸ 2026-10-26T21:06:03Z [delta-lead]
 
 Landed as 595697b (delta-lead, yakherd), via yaks land of worker commit 5d6a85e. Full gate re-run: 822 passed, 0 failed. Reproduced with my own debug build on a throwaway farm: a then two typed lines then Ctrl-S sets needs: agent, and the note holds both lines.
+
+---
+▸ 2026-10-26T21:08:02Z [delta-lead]
+
+Rebased onto your main (c4b0b9f, 5 new commits) and pushed to your checkout as 4f94dad. In docs/tui.md I kept the new a row and took upstream's svg A/O row. Gate after the rebase: 849 passed, 0 failed.
