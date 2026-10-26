@@ -5,6 +5,7 @@ expression: "draw(&app, 100, 20)"
  🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   🛖  Sheds (…)
 
 ◂ Help — keys
+│   Esc           Revert filter to the active view
 │
 │ Farm git state (the chip on the tab row)
 │   W             Commit the farm (yaks commit)
@@ -20,5 +21,4 @@ expression: "draw(&app, 100, 20)"
 │   y             Copy the shed's path (detail: the yak id)
 │   r             Rescan now (auto every 10 s)
 │
-│ General
 j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close

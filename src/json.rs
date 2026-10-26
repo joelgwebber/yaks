@@ -70,6 +70,9 @@ pub fn inbox_array(tasks: &[&Task]) -> Value {
                 let mut v = task_value(t);
                 if let Value::Object(m) = &mut v {
                     m.insert("replied".into(), json!(crate::store::is_replied(t)));
+                    // Why it awaits an agent (`answered`|`requested`), else null.
+                    let why = crate::store::agent_why(t).map(|w| w.as_str());
+                    m.insert("why".into(), json!(why));
                 }
                 v
             })

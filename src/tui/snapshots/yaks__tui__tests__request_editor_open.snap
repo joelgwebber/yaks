@@ -1,0 +1,24 @@
+---
+source: src/tui/tests.rs
+expression: "draw(&app, 100, 20)"
+---
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   🛖  Sheds (…)
+
+◂ Task: t0
+│
+│ Title:       Messy notes
+│ Status:      🦬  hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     -
+│ Updated:     -
+│ Labels:      -
+│
+│ Decision: one Evidence: two
+│
+│ ▸ Request t0 · you · now ──────────────────────── Ctrl-S request (needs: agent) · Ctrl-C cancel ─
+│ ┃Tidy the body for CommonMark.
+│ ┃Keep the decisions as a list.
+│ ┃
+│
+INSERT  Ctrl-S request: needs agent · Ctrl-C / Esc Esc cancel

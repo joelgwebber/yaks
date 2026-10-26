@@ -892,50 +892,62 @@ impl App {
         self.open_block_edit(None);
     }
 
-    /// Context-sensitive needs affordance: answer the selected yak if it is
-    /// awaiting a human, otherwise ask (raise a question; on an already
-    /// answered `needs: agent` yak that flips it back to a human). One key, two
-    /// verbs — the editor's header states which. Both open the multi-line
-    /// comment editor (`M`'s), whose save goes through `needs_edit`.
-    pub(crate) fn open_ask_or_answer(&mut self) {
+    /// `a`, the human's hand-off key: answer the selected yak if it is awaiting
+    /// a human, otherwise request work on it from an agent. Either way it ends
+    /// `needs: agent`. One key, two verbs — the editor's header states which.
+    /// Both open the multi-line comment editor (`M`'s), whose save goes
+    /// through `needs_edit`. Asking is `Q` ([`Self::open_ask`]).
+    pub(crate) fn open_answer_or_request(&mut self) {
         let blocked = self.selected().is_some_and(|t| t.awaiting_human());
-        if blocked {
-            self.open_answer();
+        self.open_needs_edit(if blocked {
+            NeedsVerb::Answer
         } else {
-            self.open_ask();
-        }
+            NeedsVerb::Request
+        });
     }
 
-    /// Ask: Ctrl-S sets `needs: human`, recording the typed question.
+    /// `Q` — ask: Ctrl-S sets `needs: human`, recording the typed question (on
+    /// a `needs: agent` yak that flips it back to a human).
     pub(crate) fn open_ask(&mut self) {
-        self.open_needs_edit(false);
+        self.open_needs_edit(NeedsVerb::Ask);
     }
 
-    /// Answer: Ctrl-S sets `needs: agent`, recording the typed reply.
-    pub(crate) fn open_answer(&mut self) {
-        self.open_needs_edit(true);
-    }
-
-    /// Ask or answer via the farm, appending the typed text as an attributed
-    /// note when non-empty. Backs the `Ask`/`Answer` edit actions.
-    pub(crate) fn needs_edit(&mut self, id: &str, answer: bool, note: Option<&str>) {
+    /// Ask, answer or request via the farm, appending the typed text as an
+    /// attributed note when non-empty. Backs the `Ask`/`Answer`/`Request` edit
+    /// actions.
+    pub(crate) fn needs_edit(&mut self, id: &str, verb: NeedsVerb, note: Option<&str>) {
         let actor = crate::actor::resolve(None);
         let Some(h) = &self.farm else { return };
-        let res = if answer {
-            h.answer(id, actor.as_deref(), note, false)
-        } else {
-            h.ask(id, "human", actor.as_deref(), note)
+        let res = match verb {
+            NeedsVerb::Answer => h
+                .answer(id, actor.as_deref(), note, false)
+                .map(|c| c.is_some()),
+            NeedsVerb::Ask => h
+                .ask(id, "human", actor.as_deref(), note)
+                .map(|c| c.is_some()),
+            NeedsVerb::Request => match h.request(id, actor.as_deref(), note) {
+                Ok(crate::farm::Request::NotFound) => Ok(false),
+                Ok(crate::farm::Request::AwaitingHuman(_)) => {
+                    self.notification =
+                        Some(format!("{id} is awaiting a human: answer it instead (a)"));
+                    return;
+                }
+                Ok(crate::farm::Request::Requested(_)) => Ok(true),
+                Err(e) => Err(e),
+            },
         };
         match res {
-            Ok(Some(_)) => {
+            Ok(true) => {
                 self.reload();
-                self.notification = Some(if answer {
-                    format!("answered {id}: needs agent (awaiting pickup)")
-                } else {
-                    format!("asked {id}: needs human (out of next until answered)")
+                self.notification = Some(match verb {
+                    NeedsVerb::Answer => format!("answered {id}: needs agent (awaiting pickup)"),
+                    NeedsVerb::Request => format!("requested {id}: needs agent (awaiting pickup)"),
+                    NeedsVerb::Ask => {
+                        format!("asked {id}: needs human (out of next until answered)")
+                    }
                 });
             }
-            Ok(None) => self.notification = Some(format!("{id} not found")),
+            Ok(false) => self.notification = Some(format!("{id} not found")),
             Err(e) => self.notification = Some(format!("error: {e}")),
         }
     }
@@ -1536,8 +1548,9 @@ impl App {
                 self.commit_rename_attachment(id, old, text)
             }
             EditAction::EditAttachment(v) => self.commit_attachment_edit(v, text),
-            EditAction::Ask(id) => self.commit_needs(&id, false, &text),
-            EditAction::Answer(id) => self.commit_needs(&id, true, &text),
+            EditAction::Ask(id) => self.commit_needs(&id, NeedsVerb::Ask, &text),
+            EditAction::Answer(id) => self.commit_needs(&id, NeedsVerb::Answer, &text),
+            EditAction::Request(id) => self.commit_needs(&id, NeedsVerb::Request, &text),
             EditAction::Shear(target) => self.commit_shear(target, &text),
             EditAction::SaveView => self.save_current_view(text),
             EditAction::RenameView { index } => {
@@ -1552,12 +1565,12 @@ impl App {
         }
     }
 
-    /// Save the ask (`answer` false) or answer editor: `needs_edit` with the
-    /// trimmed text as the note (none when empty), then, as after `M`, the
-    /// line cursor goes to the new note.
-    fn commit_needs(&mut self, id: &str, answer: bool, text: &str) {
+    /// Save the ask, answer or request editor: `needs_edit` with the trimmed
+    /// text as the note (none when empty), then, as after `M`, the line cursor
+    /// goes to the new note.
+    fn commit_needs(&mut self, id: &str, verb: NeedsVerb, text: &str) {
         let note = text.trim();
-        self.needs_edit(id, answer, (!note.is_empty()).then_some(note));
+        self.needs_edit(id, verb, (!note.is_empty()).then_some(note));
         self.focus_new_comment();
     }
 
@@ -2144,7 +2157,8 @@ fn handle_key_inner(app: &mut App, k: KeyEvent) {
             KeyCode::Char('y') => app.copy_selected_id(),
             KeyCode::Char('M') => app.open_comment(),
             KeyCode::Char('A') => app.open_attach(),
-            KeyCode::Char('a') => app.open_ask_or_answer(),
+            KeyCode::Char('a') => app.open_answer_or_request(),
+            KeyCode::Char('Q') => app.open_ask(),
             KeyCode::Char('v') => app.open_view_picker(),
             KeyCode::Char('V') => app.open_save_view(),
             KeyCode::Char('W') => app.request_farm_op(FarmOp::Commit),
@@ -2257,7 +2271,8 @@ fn handle_key_inner(app: &mut App, k: KeyEvent) {
                 KeyCode::Char('M') => app.open_comment(),
                 KeyCode::Char('A') => app.open_attach(),
                 KeyCode::Char('r') => app.open_rename_attachment(),
-                KeyCode::Char('a') => app.open_ask_or_answer(),
+                KeyCode::Char('a') => app.open_answer_or_request(),
+                KeyCode::Char('Q') => app.open_ask(),
                 KeyCode::Char('O') => app.open_current_external(),
                 // Move between tasks without leaving the detail pane.
                 KeyCode::Char('J') => app.detail_next_task(1),

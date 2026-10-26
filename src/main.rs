@@ -89,7 +89,7 @@ struct FilterFlags {
     #[arg(long)]
     tangled: bool,
     /// Keep only yaks with a `needs` field set: awaiting a human (`needs:
-    /// human`) or answered and awaiting an agent (`needs: agent`).
+    /// human`) or awaiting an agent (`needs: agent`: answered or requested).
     #[arg(long)]
     needs: bool,
     #[arg(long = "parent-of")]
@@ -503,14 +503,15 @@ enum Command {
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
-    /// Pick up an answered yak: clear `needs: agent` and note who took it.
+    /// Pick up a yak awaiting an agent: clear `needs: agent` and note who took it.
     ///
-    /// Clears `needs: agent` and records who took the
+    /// Clears `needs: agent` (answered or requested) and records who took the
     /// work on (a `picked up` note). The only command that clears it; errors
     /// on a yak that is not `needs: agent`.
     Pickup {
         id: String,
-        /// Optional note (what you will do with the answer). `-` reads stdin.
+        /// Optional note (what you will do with the answer or request). `-`
+        /// reads stdin.
         #[arg(long, conflicts_with = "note_file")]
         note: Option<String>,
         /// Read the note from this file (`-` is stdin).
@@ -519,19 +520,41 @@ enum Command {
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
-    /// List yaks awaiting a human or answered and awaiting an agent.
+    /// Hand a yak to an agent: set `needs: agent` and record the request.
+    ///
+    /// For work a human wants done with no question before it (tidy this,
+    /// summarize that). Records a `requested: needs agent` note with the
+    /// request, so the yak shows in `inbox --for agent` marked `requested`
+    /// until an agent runs `pickup`. On a yak already `needs: agent` it keeps
+    /// the state and appends the request. Refuses a yak awaiting a human:
+    /// `answer` that instead.
+    Request {
+        id: String,
+        /// What the agent should do (recorded as an attributed note). `-`
+        /// reads it from stdin.
+        #[arg(long, conflicts_with = "note_file")]
+        note: Option<String>,
+        /// Read the request from this file (`-` is stdin).
+        #[arg(long = "note-file", value_name = "PATH")]
+        note_file: Option<String>,
+        #[arg(long = "as")]
+        as_actor: Option<String>,
+    },
+    /// List yaks awaiting a human or awaiting an agent.
     ///
     /// Lists yaks with a `needs` value, across all statuses, in two sections:
     /// awaiting a human (`needs: human`; `replied` marks one whose latest note
-    /// after the ask is by someone other than the asker) and answered, awaiting
-    /// an agent (`needs: agent`). `--for human|agent` shows one section.
+    /// after the ask is by someone other than the asker) and awaiting an agent
+    /// (`needs: agent`; each marked `answered` or `requested`, from the latest
+    /// ask/request note). `--for human|agent` shows one section.
     Inbox {
         #[command(flatten)]
         filter: FilterFlags,
         /// Show only one section.
         #[arg(long = "for", value_enum)]
         audience: Option<Audience>,
-        /// JSON array of yaks, each with `needs` and `replied`.
+        /// JSON array of yaks, each with `needs`, `replied` and `why`
+        /// (`answered`|`requested` when awaiting an agent, else null).
         #[arg(long)]
         json: bool,
     },
@@ -1781,6 +1804,34 @@ fn main() -> Result<()> {
                 Pickup::Picked => println!("Picked up {id}: needs cleared"),
             }
         }
+        Command::Request {
+            id,
+            note,
+            note_file,
+            as_actor,
+        } => {
+            let note = resolve_text("--note", note, note_file, &mut StdinText::real())?;
+            let actor = actor::resolve(as_actor.as_deref());
+            match farm.request(&id, actor.as_deref(), note.as_deref())? {
+                farm::Request::NotFound => {
+                    eprintln!("error: task {id} not found");
+                    std::process::exit(1);
+                }
+                farm::Request::AwaitingHuman(n) => {
+                    eprintln!(
+                        "error: {id} is awaiting a human (needs: {n}); answer it instead (`yaks answer {id}`)"
+                    );
+                    std::process::exit(1);
+                }
+                farm::Request::Requested(c) => {
+                    if c.before.as_deref() == Some(NEEDS_AGENT) {
+                        println!("Requested {id}: still needs agent (request appended)");
+                    } else {
+                        println!("Requested {id}: needs agent (awaiting pickup; see `yaks inbox`)");
+                    }
+                }
+            }
+        }
         Command::Inbox {
             filter,
             audience,
@@ -2497,12 +2548,13 @@ fn describe_bulk_mutation(
 enum Audience {
     /// Open questions (`needs: human`).
     Human,
-    /// Answered, awaiting pickup (`needs: agent`).
+    /// Awaiting pickup (`needs: agent`): answered or requested.
     Agent,
 }
 
-/// `inbox` output: a flat JSON array (each yak with `needs` and `replied`), or
-/// two text sections, "awaiting a human" and "answered, awaiting an agent".
+/// `inbox` output: a flat JSON array (each yak with `needs`, `replied` and
+/// `why`), or two text sections, "awaiting a human" and "awaiting an agent"
+/// (each agent row marked `answered` or `requested`).
 fn render_inbox(rows: &[Task], audience: Option<Audience>, json: bool) -> Result<()> {
     let human: Vec<&Task> = rows
         .iter()
@@ -2522,20 +2574,21 @@ fn render_inbox(rows: &[Task], audience: Option<Audience>, json: bool) -> Result
             "{}",
             match audience {
                 Some(Audience::Human) => "Inbox empty: nothing awaiting a human.",
-                Some(Audience::Agent) => "Inbox empty: nothing answered and awaiting an agent.",
+                Some(Audience::Agent) => "Inbox empty: nothing awaiting an agent.",
                 None => "Inbox empty: nothing awaiting a human or an agent.",
             }
         );
     }
     for (title, section) in [
         ("Awaiting a human:", &human),
-        ("Answered, awaiting an agent (`yaks pickup <id>`):", &agent),
+        ("Awaiting an agent (`yaks pickup <id>`):", &agent),
     ] {
         if section.is_empty() {
             continue;
         }
         println!("{title}");
         for t in section {
+            // An agent row's `answered`/`requested` mark comes from `fmt_row`.
             let replied = if store::is_replied(t) {
                 " \u{21a9} replied"
             } else {
@@ -3138,11 +3191,12 @@ fn fmt_row(t: &Task) -> String {
         format!(" (deps: {})", t.depends_on.join(","))
     };
     // Make a needs-blocked yak visually distinct from a ready one in list/next;
-    // an answered one (`needs: agent`) is not a warning, it is waiting on us.
-    let needs = match &t.needs {
-        Some(_) if t.awaiting_agent() => " \u{2713} answered (needs:agent)".to_string(),
-        Some(who) => format!(" \u{26a0} needs:{who}"),
-        None => String::new(),
+    // one awaiting an agent (`needs: agent`) is not a warning, it is waiting on
+    // us, and says why (answered or requested).
+    let needs = match (&t.needs, store::agent_why(t)) {
+        (Some(_), Some(why)) => format!(" \u{2713} {} (needs:agent)", why.as_str()),
+        (Some(who), None) => format!(" \u{26a0} needs:{who}"),
+        (None, _) => String::new(),
     };
     format!(
         "  [{}] {}  p{} {:8} {}{}{}{}",
@@ -3158,17 +3212,14 @@ fn fmt_row(t: &Task) -> String {
 }
 
 /// `  id  pN type     title` (no status glyph) — matches Python cmd_next;
-/// marks an answered yak (`needs: agent`) that is ready but awaits pickup.
+/// marks a yak awaiting an agent (`needs: agent`, answered or requested) that
+/// is ready but awaits pickup.
 fn fmt_plain_row(t: &Task) -> String {
-    let answered = if t.awaiting_agent() {
-        " \u{2713} answered, awaiting pickup"
-    } else {
-        ""
+    let why = match store::agent_why(t) {
+        Some(why) => format!(" \u{2713} {}, awaiting pickup", why.as_str()),
+        None => String::new(),
     };
-    format!(
-        "  {}  p{} {:8} {}{answered}",
-        t.id, t.priority, t.kind, t.title
-    )
+    format!("  {}  p{} {:8} {}{why}", t.id, t.priority, t.kind, t.title)
 }
 
 #[cfg(test)]

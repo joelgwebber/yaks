@@ -70,9 +70,22 @@ pub(crate) enum EditAction {
     /// Answer this id (hands it to an agent: `needs: agent`) and record the
     /// typed reply. TUI counterpart of CLI `answer`.
     Answer(String),
+    /// Request work on this id from an agent (`needs: agent`, no prior
+    /// question) and record the typed request. TUI counterpart of CLI
+    /// `request`.
+    Request(String),
     /// Shear the target, first recording the typed comment (if any) as an
     /// attributed note on each yak (yaks-27c6).
     Shear(ShearTarget),
+}
+
+/// Which `needs` verb a new-note editor performs on save: `Q` asks, `a`
+/// answers (on a yak awaiting a human) or requests (otherwise).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum NeedsVerb {
+    Ask,
+    Answer,
+    Request,
 }
 
 /// Which yak(s) a shear-comment prompt shears: the single-yak state picker,

@@ -306,8 +306,9 @@ no entry.
 |---|---|
 | `ask <id> --note '<question>'` | Block a yak on a human: sets the `needs` field, dropping it out of `next`. Also `--note -` (stdin) / `--note-file PATH`. [Details](#ask) |
 | `answer <id> --note '<reply>'` | Answer a question (human-reserved): records the reply and sets `needs: agent`; `--done` clears `needs` instead. [Details](#answer) |
-| `pickup <id> [--note '<text>']` | An agent takes on an answered yak: clears `needs: agent` and records a `picked up` note (`--as`). Fails on a yak that is not `needs: agent`. [Details](#pickup) |
-| `inbox [--for human\|agent] [--json]` | Every yak with a `needs` value, across all statuses: **Awaiting a human** and **Answered, awaiting an agent**. `--for` shows one section; `--json`. [Details](#inbox) |
+| `request <id> --note '<what to do>'` | Hand a yak to an agent with no prior question: sets `needs: agent` and records a `requested: needs agent` note. Refuses a yak awaiting a human (answer it instead). [Details](#request) |
+| `pickup <id> [--note '<text>']` | An agent takes on a yak awaiting it (answered or requested): clears `needs: agent` and records a `picked up` note (`--as`). Fails on a yak that is not `needs: agent`. [Details](#pickup) |
+| `inbox [--for human\|agent] [--json]` | Every yak with a `needs` value, across all statuses: **Awaiting a human** and **Awaiting an agent** (each marked `answered` or `requested`). `--for` shows one section; `--json`. [Details](#inbox) |
 | `wait [--for human\|agent] [--timeout DUR] [--new] [--json]` | Block until the inbox has something for that audience, then print it as `inbox` does (exit 0); a timeout exits 2 with nothing on stdout. [Details](#wait) |
 
 ### `ask`
@@ -324,11 +325,19 @@ Answer a question (human-reserved): records the reply and sets `needs: agent`, s
 
 A second answer on a `needs: agent` yak keeps the state and appends the note; on a yak with no `needs` it only records the note. Also `--note -` / `--note-file PATH`.
 
+### `request`
+
+`request <id> --note '<what to do>'`
+
+Hand a yak to an agent when no question came first: a human (or a yakherd) asks for work on it, such as tidying the body or summarizing the notes. Sets `needs: agent` and records the request under a `requested: needs agent` first line, so the yak shows in `inbox --for agent` marked `requested` (and in `next`, when hairy, as `requested, awaiting pickup`) until an agent runs `pickup`.
+
+A second request on a `needs: agent` yak keeps the state and appends the note. On a yak awaiting a human it fails and writes nothing: that yak needs an `answer`. Also `--note -` / `--note-file PATH`, and `--as`.
+
 ### `pickup`
 
 `pickup <id> [--note '<text>']`
 
-An agent takes on an answered yak: clears `needs: agent` and records a `picked up` note attributed to the actor (`--as`).
+An agent takes on a yak awaiting it, answered or requested: clears `needs: agent` and records a `picked up` note attributed to the actor (`--as`).
 
 The only command that clears `needs: agent`; on a yak that is not `needs: agent` it fails, naming the state. A `needs` change is not a status move (no `moved:` entry).
 
@@ -336,11 +345,11 @@ The only command that clears `needs: agent`; on a yak that is not `needs: agent`
 
 `inbox [--for human|agent] [--json]`
 
-Every yak with a `needs` value, across all statuses, in two sections: **Awaiting a human** (`needs: human`; marked `↩ replied` when its latest note after the ask is from someone other than the asker, i.e. a plain-note reply that did not use `answer`) and **Answered, awaiting an agent** (`needs: agent`).
+Every yak with a `needs` value, across all statuses, in two sections: **Awaiting a human** (`needs: human`; marked `↩ replied` when its latest note after the ask is from someone other than the asker, i.e. a plain-note reply that did not use `answer`) and **Awaiting an agent** (`needs: agent`), each row marked `answered` or `requested`: whichever of an `ask` or a `request` note came last (a hand-set `needs: agent` with neither counts as `answered`).
 
 `--for` shows one section.
 
-`--json` is one array of yaks, each with `needs` and a derived `replied` boolean.
+`--json` is one array of yaks, each with `needs`, a derived `replied` boolean, and a derived `why`: `"answered"` or `"requested"` for a yak awaiting an agent, else `null`.
 
 `ask` records an `asked: needs <who>` first line in its note: that is what `replied` is measured from, so a yak whose `needs:` was set by hand has no known asker and is never `replied`.
 
@@ -359,7 +368,7 @@ Block until the inbox for that audience (both sections when `--for` is omitted),
 
 Shell quoting makes multi-line markdown awkward as an inline `--note "..."` /
 `--description "..."` argument (and the TUI renders a one-line blob as a single
-wrapped paragraph). `create`, `update`, `ask` and `answer` therefore take the
+wrapped paragraph). `create`, `update`, `ask`, `answer` and `request` therefore take the
 text from stdin or a file instead:
 
 ````sh

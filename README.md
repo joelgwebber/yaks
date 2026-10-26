@@ -109,8 +109,9 @@ in `<path>`.
 | `yaks commits <id>` | Show the git commits linked to a yak — those naming its id and those that touched its file across status moves |
 | `yaks update <id>` | Change fields/labels, set `--description`, or append a `--note` (`-` reads stdin; `--note-file PATH`: multi-line markdown without shell quoting) |
 | `yaks ask <id>` / `answer <id>` | Block a yak on a human (sets `needs: human`, drops it from `next`) / answer it (sets `needs: agent`, so the answer cannot get lost; `--done` clears instead), each recording a `--note` |
-| `yaks pickup <id>` | An agent takes on an answered yak: clears `needs: agent` with an attributed note. The only thing that clears it |
-| `yaks inbox` | The `needs` queue, two sections: awaiting a human (`replied` marks a plain-note reply that skipped `answer`) and answered, awaiting an agent; `--for human\|agent`, `--json` |
+| `yaks request <id>` | Hand a yak to an agent with no prior question (sets `needs: agent`, recording the `--note`); refuses a yak awaiting a human |
+| `yaks pickup <id>` | An agent takes on a yak awaiting it (answered or requested): clears `needs: agent` with an attributed note. The only thing that clears it |
+| `yaks inbox` | The `needs` queue, two sections: awaiting a human (`replied` marks a plain-note reply that skipped `answer`) and awaiting an agent (marked `answered` or `requested`); `--for human\|agent`, `--json` |
 | `yaks wait` | Block until the inbox has something (`--for human\|agent`, filters), then print it like `inbox`; `--timeout 10m` exits 2 when nothing came, `--new` ignores what was already there |
 | `yaks shave <id>` | hairy → shaving (alias: `work`) |
 | `yaks shorn <id>` | shaving → shorn (alias: `close`) |
@@ -164,10 +165,10 @@ embedded modal editor (vim or emacs keybindings, per `.yaks/config.yaml`). It
 auto-refreshes when the files change underneath it, so it stays in sync if you
 (or an agent) edit yaks from elsewhere. It takes the mouse too (wheel scroll,
 click to select / open / switch view). Mark rows with `m` for a bulk state
-change over the selection; `a` asks or answers (answer hands the yak to an agent: `needs: agent`);
+change over the selection; `a` answers a yak awaiting a human, or else requests agent work on it (both hand it to an agent: `needs: agent`), and `Q` asks a question;
 and an **Inbox** view lists every yak with a `needs` value, each flagged inline
-with a ⏳ badge and a warning accent (awaiting a human) or a ✅ badge (answered,
-awaiting an agent). A **Sheds** tab shows every checkout of the repo and the
+with a ⏳ badge and a warning accent (awaiting a human) or a ✅ badge (answered or
+requested, awaiting an agent). A **Sheds** tab shows every checkout of the repo and the
 yaks each one has been writing (`yaks sheds`, refreshed in the background).
 
 ![The yaks TUI list view: a parent yak with children across statuses, labels, a dependency, and a ⏳ needs badge](docs/assets/tui-list.svg)

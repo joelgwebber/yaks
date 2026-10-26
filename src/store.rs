@@ -1522,6 +1522,61 @@ pub fn is_ask_text(text: &str) -> bool {
         .is_some_and(|l| l.starts_with(ASK_PREFIX))
 }
 
+/// Prefix of the first line of a `request` note: `requested: needs agent`. It
+/// marks a hand-off to an agent that no question preceded, so the inbox can
+/// tell a request from an answer. The request text (if any) follows after a
+/// blank line.
+const REQUEST_LINE: &str = "requested: needs agent";
+
+/// The text `request` records: the marker line, then the request if there is one.
+pub fn request_text(request: Option<&str>) -> String {
+    match request {
+        Some(r) => format!("{REQUEST_LINE}\n\n{r}"),
+        None => REQUEST_LINE.to_string(),
+    }
+}
+
+/// True iff `text` is a `request` note written by [`request_text`].
+pub fn is_request_text(text: &str) -> bool {
+    text.lines().next() == Some(REQUEST_LINE)
+}
+
+/// Why a yak is awaiting an agent (`needs: agent`). Derived, never stored.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AgentWhy {
+    /// A human answered a question (`answer`).
+    Answered,
+    /// A human handed the yak over with no prior question (`request`).
+    Requested,
+}
+
+impl AgentWhy {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            AgentWhy::Answered => "answered",
+            AgentWhy::Requested => "requested",
+        }
+    }
+}
+
+/// Derived, never stored: why a `needs: agent` yak awaits an agent. The
+/// latest `ask`/`request` marker note decides: a `request` marker means
+/// `Requested`; anything else (an ask then an answer, or a hand-set value with
+/// no marker) is `Answered`. `None` for a yak not awaiting an agent.
+pub fn agent_why(task: &Task) -> Option<AgentWhy> {
+    if !task.awaiting_agent() {
+        return None;
+    }
+    let notes = parse_notes(&task.body);
+    let latest = notes
+        .iter()
+        .rfind(|n| is_ask_text(&n.text) || is_request_text(&n.text));
+    Some(match latest {
+        Some(n) if is_request_text(&n.text) => AgentWhy::Requested,
+        _ => AgentWhy::Answered,
+    })
+}
+
 /// The first line of a `pickup` note.
 const PICKUP_LINE: &str = "picked up";
 
@@ -3368,6 +3423,45 @@ mod replied_tests {
             ],
         );
         assert!(!is_replied(&t));
+    }
+
+    /// `agent_why` reads the latest ask/request marker: a request (alone or
+    /// after an answered ask) is `Requested`; an answered ask or a hand-set
+    /// `needs: agent` is `Answered`; a yak not awaiting an agent has none.
+    #[test]
+    fn agent_why_follows_the_latest_ask_or_request_marker() {
+        let requested = task_with(
+            Some("agent"),
+            &[(
+                "2026-01-01T00:00:00Z",
+                Some("joel"),
+                &request_text(Some("tidy")),
+            )],
+        );
+        assert_eq!(agent_why(&requested), Some(AgentWhy::Requested));
+        let answered = task_with(
+            Some("agent"),
+            &[
+                ("2026-01-01T00:00:00Z", Some("coord"), &ask("which?")),
+                ("2026-01-01T00:01:00Z", Some("joel"), "B"),
+            ],
+        );
+        assert_eq!(agent_why(&answered), Some(AgentWhy::Answered));
+        let request_after_answer = task_with(
+            Some("agent"),
+            &[
+                ("2026-01-01T00:00:00Z", Some("coord"), &ask("which?")),
+                ("2026-01-01T00:01:00Z", Some("joel"), "B"),
+                ("2026-01-01T00:02:00Z", Some("joel"), &request_text(None)),
+            ],
+        );
+        assert_eq!(agent_why(&request_after_answer), Some(AgentWhy::Requested));
+        assert_eq!(
+            agent_why(&task_with(Some("agent"), &[])),
+            Some(AgentWhy::Answered)
+        );
+        assert_eq!(agent_why(&task_with(Some("human"), &[])), None);
+        assert_eq!(agent_why(&task_with(None, &[])), None);
     }
 
     #[test]

@@ -276,7 +276,11 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
             "Ctrl-S / Ctrl-C",
             "Save / cancel an in-place edit (Esc Esc cancels too)",
         ),
-        entry("a", "Ask / answer (answer: needs agent)"),
+        entry(
+            "a",
+            "Answer (awaiting a human) / request agent work (else): needs agent",
+        ),
+        entry("Q", "Ask a question: needs human"),
         entry(
             ":w / :q / :wq",
             "Save / cancel / save+close (editor Normal)",

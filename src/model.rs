@@ -97,7 +97,8 @@ pub struct Task {
     pub body: String,
 }
 
-/// The `needs` value meaning "answered, awaiting an agent to pick the work up".
+/// The `needs` value meaning "awaiting an agent to pick the work up" (a human
+/// answered a question, or requested work with `request`).
 /// Every other value is an open question (awaiting a human).
 pub const NEEDS_AGENT: &str = "agent";
 

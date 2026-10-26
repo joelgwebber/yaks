@@ -8,7 +8,7 @@ interchangeable.
 
 - **List pane** — the yaks in the active *view*, as a tree or flat list.
   Views are tabs across the top (`Tab`/`[`/`]` to switch). Built-in views
-  include the default tree, **Recent**, **Inbox** (yaks with a `needs` value: awaiting a human, or answered and
+  include the default tree, **Recent**, **Inbox** (yaks with a `needs` value: awaiting a human, or answered or requested and
   awaiting an agent), and
   **Starred**; you can save the current filter as a named view. The
   **Sheds** tab lists the repository's checkouts instead of yaks (see
@@ -45,9 +45,10 @@ interchangeable.
 ## Signals
 
 - A **`⏳` badge** on a row marks a yak awaiting a human (`needs: human`); the
-  detail `Needs:` line renders in a warning accent. A **`✅` badge** marks an
-  answered yak awaiting an agent (`needs: agent`): it blocks nothing, so the
-  detail `Needs:` line is plain and the row is never shown as awaiting a human.
+  detail `Needs:` line renders in a warning accent. A **`✅` badge** marks a
+  yak awaiting an agent (`needs: agent`), answered or requested: it blocks
+  nothing, so the detail `Needs:` line is plain (`agent (answered, awaiting
+  pickup)` or `agent (requested, …)`) and the row is never shown as awaiting a human.
 - The dependency-blocked marker (`*`) and the multi-select marker (`●`) are
   distinct axes and can co-occur.
 - The tab row's right edge shows the active **family scope** for tree views
@@ -104,7 +105,8 @@ the pre-find scroll and cursor).
 | `D` / `R` | Add dependency / reparent |
 | `H` | Move to another herd (multi-herd farms) |
 | `M` | Add a comment (note): an empty editor under a `▸ you · now` header after the last comment, in place |
-| `a` | Ask / answer (on a yak awaiting a human: answer, which sets `needs: agent`; otherwise ask, which sets `needs: human`). Opens the same multi-line editor as `M`, headed `Ask <id>` / `Answer <id>`; `Ctrl-S` asks or answers with the text as the note (an empty one asks or answers with no note), cancel changes nothing |
+| `a` | Hand the yak to an agent (`needs: agent`): on a yak awaiting a human, answer; otherwise request agent work (like `yaks request`; on a yak already awaiting an agent the request is appended). Opens the same multi-line editor as `M`, headed `Answer <id>` / `Request <id>`; `Ctrl-S` answers or requests with the text as the note (an empty one does so with no note), cancel changes nothing |
+| `Q` | Ask a question (`needs: human`, out of `next` until answered; on a yak awaiting an agent it flips back to a human). The same editor, headed `Ask <id>` |
 | `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped; `j`/`k`, `d`/`u`, `g`/`G` scroll, `E` edits it in place (the multi-line editor: `Ctrl-S` writes the file back under the farm lock and returns to the viewer, re-rendered; cancel returns unchanged, asking first if you typed anything; a file changed on disk meanwhile is not overwritten until a second `Ctrl-S`), `O` hands it to the OS opener, `Esc`/`q`/`h` close. An image (png, jpg, gif, webp up to 32 MiB; svg up to 4 MiB) opens **in the pane** too: drawn with the terminal's own graphics protocol (kitty, sixel, iTerm2) when it speaks one, else as half-block cells; shrunk to fit, never enlarged; `O` opens it externally, `Esc`/`q`/`h` close. An svg is rasterized first (see *Svg attachments* below); a corrupt or undecodable image and binary files open with the OS opener |
 | `r` | (detail) Rename the attachment whose link (📎 or 🖼) the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
 | `X` | Slaughter (delete, with confirm); on a yak with live descendants the confirm offers the whole family, naming how many go |
@@ -340,7 +342,7 @@ the full source lines.
 ![the same, scrolled to its code block, table and a comment](assets/tui-md-render-2.svg)
 
 **Inbox** — the flat, cross-status list of every yak carrying a `needs` value
-(`⏳` awaiting a human, `✅` answered and awaiting an agent). It is unpinned (no tab); reach it from the view picker (`v`) or the drawer
+(`⏳` awaiting a human, `✅` answered or requested, awaiting an agent). It is unpinned (no tab); reach it from the view picker (`v`) or the drawer
 `inbox` chip.
 
 ![yaks TUI inbox view](assets/tui-inbox.svg)

@@ -93,7 +93,8 @@ fn whole_loop_ask_reply_answer_next_pickup() {
     // Answer: awaiting an agent; both sections are right, `--for` narrows.
     f.run("joel", &["answer", &id, "--note", "Confirmed: B"]);
     let inbox = f.run("tester", &["inbox"]);
-    assert!(inbox.contains("Answered, awaiting an agent"), "{inbox}");
+    assert!(inbox.contains("Awaiting an agent"), "{inbox}");
+    assert!(inbox.contains("answered (needs:agent)"), "{inbox}");
     assert!(!inbox.contains("Awaiting a human"), "{inbox}");
     assert!(
         f.run("tester", &["inbox", "--for", "human"])
@@ -103,8 +104,12 @@ fn whole_loop_ask_reply_answer_next_pickup() {
     assert!(f.json(&["inbox", "--for", "human", "--json"]).is_empty());
     let j = f.json(&["inbox", "--for", "agent", "--json"]);
     assert_eq!(
-        (j[0]["needs"].as_str(), j[0]["replied"].as_bool()),
-        (Some("agent"), Some(false))
+        (
+            j[0]["needs"].as_str(),
+            j[0]["replied"].as_bool(),
+            j[0]["why"].as_str()
+        ),
+        (Some("agent"), Some(false), Some("answered"))
     );
 
     // `next` lists it, marked answered.
@@ -121,6 +126,44 @@ fn whole_loop_ask_reply_answer_next_pickup() {
     );
     let next = f.run("tester", &["next"]);
     assert!(next.contains(&id) && !next.contains("answered"), "{next}");
+}
+
+/// `request` hands a yak with no question to an agent: the inbox marks it
+/// `requested` (text and JSON `why`), `next` too, and `pickup` clears it. On a
+/// yak awaiting a human it refuses, pointing at `answer`.
+#[test]
+fn request_hands_to_agent_through_the_inbox() {
+    let f = Farm::new("request");
+    let id = f.create("R");
+    let out = f.run("joel", &["request", &id, "--note", "tidy the body"]);
+    assert!(out.contains("needs agent (awaiting pickup"), "{out}");
+    let inbox = f.run("tester", &["inbox", "--for", "agent"]);
+    assert!(
+        inbox.contains("Awaiting an agent") && inbox.contains("requested (needs:agent)"),
+        "{inbox}"
+    );
+    let j = f.json(&["inbox", "--json"]);
+    assert_eq!(
+        (j[0]["needs"].as_str(), j[0]["why"].as_str()),
+        (Some("agent"), Some("requested"))
+    );
+    let next = f.run("tester", &["next"]);
+    assert!(next.contains("requested, awaiting pickup"), "{next}");
+    let out = f.run("joel", &["request", &id, "--note", "and summarize"]);
+    assert!(out.contains("still needs agent"), "{out}");
+    f.run("agt", &["pickup", &id, "--note", "on it"]);
+    assert!(f.run("tester", &["inbox"]).contains("Inbox empty"));
+
+    f.run("coord", &["ask", &id, "--note", "q"]);
+    let e = f.fail("joel", &["request", &id, "--note", "x"]);
+    assert!(
+        e.contains("awaiting a human") && e.contains("answer"),
+        "{e}"
+    );
+    assert_eq!(
+        f.json(&["inbox", "--json"])[0]["why"],
+        serde_json::Value::Null
+    );
 }
 
 #[test]

@@ -9,9 +9,10 @@
 //! over those rows. Save writes only that block (`content::assemble`, so the
 //! others round-trip), cancel goes through the usual dirty-confirm.
 //!
-//! `a` (ask / answer) opens the same new-comment editor with an `Ask`/`Answer`
-//! action (yaks-ce5e): its header names the verb and its hints say what saving
-//! does; the save raises or answers the `needs` block with the text as the note.
+//! `a` (answer / request) and `Q` (ask) open the same new-comment editor with
+//! an `Answer`/`Request`/`Ask` action (yaks-ce5e, yaks-b75b): its header names
+//! the verb and its hints say what saving does; the save sets the `needs`
+//! block with the text as the note.
 
 use super::*;
 use edtui::EditorView;
@@ -47,12 +48,19 @@ const ANSWER_HINTS: [&str; 3] = [
     "Ctrl-S answer (needs: agent)",
     "Ctrl-S answer",
 ];
+/// Header hints of the request editor.
+const REQUEST_HINTS: [&str; 3] = [
+    "Ctrl-S request (needs: agent) · Ctrl-C cancel",
+    "Ctrl-S request (needs: agent)",
+    "Ctrl-S request",
+];
 
 /// The header hints for an editor whose save is `action`.
 fn hints_for(action: &EditAction) -> &'static [&'static str; 3] {
     match action {
         EditAction::Ask(_) => &ASK_HINTS,
         EditAction::Answer(_) => &ANSWER_HINTS,
+        EditAction::Request(_) => &REQUEST_HINTS,
         _ => &HINTS,
     }
 }
@@ -91,6 +99,7 @@ impl BlockEdit {
         let save = match self.editor.action {
             EditAction::Ask(_) => "Ctrl-S ask: needs human",
             EditAction::Answer(_) => "Ctrl-S answer: needs agent",
+            EditAction::Request(_) => "Ctrl-S request: needs agent",
             _ => "Ctrl-S save",
         };
         spans.push(Span::styled(
@@ -215,15 +224,15 @@ impl App {
         self.open_slot_editor(id, block, text, label, row, action);
     }
 
-    /// `a`: open the new-comment editor whose save asks (`answer` false:
-    /// `needs: human`) or answers (`needs: agent`) the selected yak, the typed
-    /// text becoming the note. The header names the verb.
-    pub(crate) fn open_needs_edit(&mut self, answer: bool) {
+    /// `a` / `Q`: open the new-comment editor whose save asks (`needs:
+    /// human`), answers or requests (`needs: agent`) on the selected yak, the
+    /// typed text becoming the note. The header names the verb.
+    pub(crate) fn open_needs_edit(&mut self, verb: NeedsVerb) {
         let Some(id) = self.selected_id() else { return };
-        let (verb, action) = if answer {
-            ("Answer", EditAction::Answer(id.clone()))
-        } else {
-            ("Ask", EditAction::Ask(id.clone()))
+        let (verb, action) = match verb {
+            NeedsVerb::Ask => ("Ask", EditAction::Ask(id.clone())),
+            NeedsVerb::Answer => ("Answer", EditAction::Answer(id.clone())),
+            NeedsVerb::Request => ("Request", EditAction::Request(id.clone())),
         };
         let label = format!("{verb} {id} · {} · now", self.note_author());
         self.open_slot_editor(id, None, String::new(), label, 0, action);

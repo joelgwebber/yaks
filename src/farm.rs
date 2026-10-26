@@ -92,6 +92,17 @@ pub enum Pickup {
     Picked,
 }
 
+/// Result of `request`.
+pub enum Request {
+    NotFound,
+    /// The yak is awaiting a human (carries its `needs` value): answer it
+    /// instead; nothing was written.
+    AwaitingHuman(String),
+    /// Recorded: the yak's status and its `needs` before (`None`, or `agent`
+    /// for a second request) and after (always `agent`).
+    Requested(NeedsChange),
+}
+
 /// Why opening a farm failed.
 pub enum OpenError {
     NoFarm(String),
@@ -802,6 +813,31 @@ impl Farm {
         }))
     }
 
+    /// Hand a yak to an agent with no prior question: set `needs: agent` and
+    /// record the request as a `requested: needs agent` note in the same write.
+    /// On a yak already `needs: agent` the state is kept and the request
+    /// appended. Refuses a yak awaiting a human (that needs an `answer`), and
+    /// writes nothing then.
+    pub fn request(&self, id: &str, actor: Option<&str>, note: Option<&str>) -> Result<Request> {
+        let _lock = store::lock(&self.root)?;
+        let Some(mut task) = store::load_task_by_id(&self.root, id)? else {
+            return Ok(Request::NotFound);
+        };
+        if task.awaiting_human() {
+            return Ok(Request::AwaitingHuman(task.needs.unwrap_or_default()));
+        }
+        let before = task.needs.replace(NEEDS_AGENT.to_string());
+        let ts = store::now_iso();
+        task.body = store::append_note(&task.body, &ts, actor, &store::request_text(note));
+        task.updated = Some(ts);
+        store::write::save(&self.root, &task)?;
+        Ok(Request::Requested(NeedsChange {
+            status: task.status,
+            before,
+            after: task.needs,
+        }))
+    }
+
     /// Clear `needs: agent` with an attributed `picked up` note. The only thing
     /// that clears it. Refuses any other state, naming it.
     pub fn pickup(&self, id: &str, actor: Option<&str>, note: Option<&str>) -> Result<Pickup> {
@@ -821,7 +857,7 @@ impl Farm {
     }
 
     /// Every yak carrying a `needs` value, regardless of status: open
-    /// questions (awaiting a human) and answered ones (awaiting an agent;
+    /// questions (awaiting a human) and answered or requested ones (awaiting an agent;
     /// see [`Task::awaiting_agent`]). The invariant is that a set value is
     /// never invisible: an `ask` on a shorn/dead yak, or an answer to one, must
     /// still surface here (that silent gap is exactly why this ignores status).
@@ -2271,6 +2307,62 @@ mod tests {
             (c.before.as_deref(), c.after.as_deref()),
             (Some("agent"), Some("human"))
         );
+    }
+
+    /// `request` on a yak with no `needs` hands it to an agent with a marker
+    /// note (inbox shows it, `pickup` clears it); on `needs: human` it refuses
+    /// and writes nothing; on `needs: agent` it keeps the state and appends.
+    #[test]
+    fn request_hands_to_agent_refuses_human_and_appends_on_agent() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+        let Request::Requested(c) = farm
+            .request("yak-0001", Some("joel"), Some("tidy the body"))
+            .unwrap()
+        else {
+            panic!("expected Requested");
+        };
+        assert_eq!(
+            (c.before.as_deref(), c.after.as_deref()),
+            (None, Some("agent"))
+        );
+        assert_eq!(needs_of(&farm, "yak-0001").as_deref(), Some("agent"));
+        assert_eq!(
+            note_texts(&farm, "yak-0001"),
+            vec!["requested: needs agent\n\ntidy the body"]
+        );
+        let rows = farm.inbox(FilterSpec::default()).unwrap();
+        assert_eq!(store::agent_why(&rows[0]), Some(store::AgentWhy::Requested));
+
+        // A second request keeps `needs: agent` and appends.
+        let Request::Requested(c) = farm.request("yak-0001", Some("joel"), None).unwrap() else {
+            panic!("expected Requested");
+        };
+        assert_eq!(
+            (c.before.as_deref(), c.after.as_deref()),
+            (Some("agent"), Some("agent"))
+        );
+        assert_eq!(note_texts(&farm, "yak-0001").len(), 2);
+        assert!(matches!(
+            farm.pickup("yak-0001", Some("agt"), None).unwrap(),
+            Pickup::Picked
+        ));
+        assert_eq!(needs_of(&farm, "yak-0001"), None);
+
+        // Awaiting a human: refused, nothing written.
+        farm.ask("yak-0001", "human", Some("agt"), Some("q"))
+            .unwrap();
+        let before = note_texts(&farm, "yak-0001");
+        assert!(matches!(
+            farm.request("yak-0001", Some("joel"), Some("x")).unwrap(),
+            Request::AwaitingHuman(n) if n == "human"
+        ));
+        assert_eq!(needs_of(&farm, "yak-0001").as_deref(), Some("human"));
+        assert_eq!(note_texts(&farm, "yak-0001"), before);
+        assert!(matches!(
+            farm.request("nope", None, None).unwrap(),
+            Request::NotFound
+        ));
     }
 
     /// A `needs` change is not a status move: no `moved:` entry, status kept.

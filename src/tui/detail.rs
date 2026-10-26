@@ -300,9 +300,13 @@ pub fn build_at(
     ];
     // A `needs` block is state worth seeing next to Status (mirrors CLI `show`).
     // An open question carries a warning accent (Kind::Warn) so it reads as a
-    // blocker; an answered one (`needs: agent`) is plain: it blocks nothing.
-    if task.awaiting_agent() {
-        out.push(field("Needs:", "agent (answered, awaiting pickup)"));
+    // blocker; one awaiting an agent (`needs: agent`) is plain: it blocks
+    // nothing, and says why (answered or requested).
+    if let Some(why) = crate::store::agent_why(task) {
+        out.push(field(
+            "Needs:",
+            &format!("agent ({}, awaiting pickup)", why.as_str()),
+        ));
     } else if let Some(n) = &task.needs {
         out.push(warn_field("Needs:", n));
     }
@@ -883,6 +887,29 @@ mod detail_tests {
             .find(|l| l.text.starts_with("Needs:"))
             .unwrap();
         assert!(needs.text.contains("answered"), "{}", needs.text);
+        assert_eq!(needs.kind, Kind::Field);
+    }
+
+    #[test]
+    fn requested_needs_says_requested() {
+        let mut task = t("yak-0001", None, &[]);
+        task.needs = Some("agent".into());
+        task.body = crate::store::append_note(
+            "",
+            "2026-01-01T00:00:00Z",
+            Some("joel"),
+            &crate::store::request_text(Some("tidy")),
+        );
+        let dlines = build(&task, &[task.clone()]);
+        let needs = dlines
+            .iter()
+            .find(|l| l.text.starts_with("Needs:"))
+            .unwrap();
+        assert!(
+            needs.text.contains("agent (requested, awaiting pickup)"),
+            "{}",
+            needs.text
+        );
         assert_eq!(needs.kind, Kind::Field);
     }
 

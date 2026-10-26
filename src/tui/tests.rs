@@ -1577,8 +1577,8 @@ fn needs_badge_renders_on_a_blocked_row() {
 }
 
 /// `needs: agent` (answered) is not awaiting a human: no hourglass, no
-/// warning accent in the detail pane, and `a` asks (follow-up) instead of
-/// answering; the row carries the answered badge instead.
+/// warning accent in the detail pane, and `a` requests (more agent work)
+/// instead of answering; the row carries the answered badge instead.
 #[test]
 fn answered_yak_is_not_rendered_as_awaiting_a_human() {
     let mut answered = task("t0", "answered already", Status::Hairy, 3, None);
@@ -1587,10 +1587,10 @@ fn answered_yak_is_not_rendered_as_awaiting_a_human() {
     let out = draw(&app, 80, 8);
     assert!(!out.contains('\u{23f3}'), "no hourglass:\n{out}");
     assert!(out.contains('\u{2705}'), "answered badge:\n{out}");
-    app.open_ask_or_answer();
+    app.open_answer_or_request();
     match &app.overlay {
-        Overlay::BlockEdit(be) => assert!(matches!(be.editor.action, EditAction::Ask(_))),
-        _ => panic!("expected the ask editor"),
+        Overlay::BlockEdit(be) => assert!(matches!(be.editor.action, EditAction::Request(_))),
+        _ => panic!("expected the request editor"),
     }
 }
 
@@ -2924,13 +2924,47 @@ mod live {
         );
     }
 
-    /// yaks-ce5e: the ask editor is multi-line too; Ctrl-S sets `needs:
-    /// human` and records the whole question in the ask note.
+    /// yaks-b75b: `a` on a yak not awaiting a human opens the request editor;
+    /// a multi-line request saved with Ctrl-S sets `needs: agent` and lands
+    /// whole in a `requested: needs agent` note.
+    #[test]
+    fn request_editor_saves_a_multi_line_request() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "a");
+        match &app.overlay {
+            Overlay::BlockEdit(be) => {
+                assert!(matches!(be.editor.action, EditAction::Request(_)))
+            }
+            _ => panic!("expected the request editor"),
+        }
+        press(&mut app, "Tidy the body.");
+        enter(&mut app);
+        press(&mut app, "Then summarize.");
+        ctrl_s(&mut app);
+        assert!(matches!(app.overlay, Overlay::None));
+        let t = app.task("t0").unwrap();
+        assert_eq!(t.needs.as_deref(), Some("agent"));
+        assert!(
+            t.body
+                .contains("requested: needs agent\n\nTidy the body.\nThen summarize."),
+            "{}",
+            t.body
+        );
+        assert_eq!(
+            app.notification.as_deref(),
+            Some("requested t0: needs agent (awaiting pickup)")
+        );
+    }
+
+    /// yaks-ce5e / yaks-b75b: the ask editor (now `Q`) is multi-line too;
+    /// Ctrl-S sets `needs: human` and records the whole question in the ask
+    /// note.
     #[test]
     fn ask_editor_saves_a_multi_line_question() {
         let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
         let mut app = App::with_farm(farm).unwrap();
-        press(&mut app, "a");
+        press(&mut app, "Q");
         match &app.overlay {
             Overlay::BlockEdit(be) => assert!(matches!(be.editor.action, EditAction::Ask(_))),
             _ => panic!("expected the ask editor"),
@@ -3224,7 +3258,7 @@ fn ask_and_answer_editors_name_the_verb_and_the_save() {
     assert!(out.contains("Ctrl-S ask (needs: human)"), "ask hint\n{out}");
     assert!(out.contains("hello"), "typed text\n{out}");
     let mut app = sample();
-    app.open_answer();
+    app.open_needs_edit(NeedsVerb::Answer);
     press(&mut app, "hello");
     let out = draw(&app, 120, 14);
     assert!(
@@ -3235,6 +3269,33 @@ fn ask_and_answer_editors_name_the_verb_and_the_save() {
         out.contains("Ctrl-S answer (needs: agent)"),
         "answer hint\n{out}"
     );
+    let mut app = sample();
+    app.open_answer_or_request();
+    press(&mut app, "hello");
+    let out = draw(&app, 120, 14);
+    assert!(
+        out.contains("▸ Request a0 · you · now"),
+        "request header\n{out}"
+    );
+    assert!(
+        out.contains("Ctrl-S request (needs: agent)"),
+        "request hint\n{out}"
+    );
+}
+
+/// yaks-b75b: the open request editor (`a` on a plain yak), with a multi-line
+/// request typed.
+#[test]
+fn request_editor_open() {
+    let mut t = task("t0", "Messy notes", Status::Hairy, 3, None);
+    t.body = "Decision: one\nEvidence: two".into();
+    let mut app = App::new(vec![t]);
+    app.detail_page = 17;
+    handle_key(&mut app, key('a'));
+    press(&mut app, "Tidy the body for CommonMark.");
+    handle_key(&mut app, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+    press(&mut app, "Keep the decisions as a list.");
+    insta::assert_snapshot!(draw(&app, 100, 20));
 }
 
 /// yaks-ce5e: the open answer editor, with a multi-line answer typed.
@@ -3245,7 +3306,7 @@ fn answer_editor_open() {
     t.body = "Which cache should the index use?".into();
     let mut app = App::new(vec![t]);
     app.detail_page = 17;
-    app.open_ask_or_answer();
+    app.open_answer_or_request();
     press(&mut app, "The disk one.");
     handle_key(&mut app, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
     press(&mut app, "It survives restarts.");
