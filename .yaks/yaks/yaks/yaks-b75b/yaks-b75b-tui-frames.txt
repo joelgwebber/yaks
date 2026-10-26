@@ -1,0 +1,87 @@
+# yaks-b75b headless TUI frames (target/debug/yaks tui --headless, throwaway farm)
+
+## a on a plain yak: the Request editor, multi-line text typed
+=== frame 6 · 100x22 · focus=detail · view=🦬 Hairy · cursor=2 · rows=3 · sel=yak-73e0 · blocked=- · collapsed=0 · filter=(all) · overlay=block-edit · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (0)
+
+◂ Task: yak-73e0
+│
+│ Title:       Fresh yak
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Labels:      -
+│
+│ ▸ Request yak-73e0 · joel · now ───────────────── Ctrl-S request (needs: agent) · Ctrl-C cancel ─
+│ ┃Tidy the body for CommonMark.
+│ ┃Keep the decisions as a list.
+│ ┃
+│
+│
+│
+│
+│
+INSERT  Ctrl-S request: needs agent · Ctrl-C / Esc Esc cancel
+=== end ===
+
+## after Ctrl-S: needs: agent (requested), marker note recorded
+=== frame 7 · 100x26 · focus=detail · view=🦬 Hairy · cursor=2 · rows=3 · sel=yak-73e0 · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (0)
+requested yak-73e0: needs agent (awaiting pickup)
+◂ Task: yak-73e0
+│
+│ Title:       Fresh yak
+│ Status:      🦬 hairy
+│ Needs:       agent (requested, awaiting pickup)
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Labels:      -
+│
+│ ▸ joel · just now ───────────────────────────────────────────────────────────────────────────────
+│ requested: needs agent
+│
+│ Tidy the body for CommonMark. Keep the decisions as a list.
+│
+│
+│
+│
+│
+│
+│
+│
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter
+=== end ===
+
+## a on an answered (needs: agent) yak also opens Request
+=== frame 4 · 100x26 · focus=detail · view=🦬 Hairy · cursor=0 · rows=3 · sel=yak-39e6 · blocked=- · collapsed=0 · filter=(all) · overlay=block-edit · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   🛖 Sheds (0)
+
+◂ Task: yak-39e6
+│
+│ Title:       Pick a cache
+│ Status:      🦬 hairy
+│ Needs:       agent (answered, awaiting pickup)
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Labels:      -
+│
+│ ▸ coord · just now ──────────────────────────────────────────────────────────────────────────────
+│ asked: needs human
+│
+│ Disk or memory?
+│
+│ ▸ coord · just now ──────────────────────────────────────────────────────────────────────────────
+│ Disk.
+│
+│ ▸ Request yak-39e6 · joel · now ───────────────── Ctrl-S request (needs: agent) · Ctrl-C cancel ─
+│ ┃Tidy the body for CommonMark.
+│ ┃Keep the decisions as a list.
+│ ┃
+INSERT  Ctrl-S request: needs agent · Ctrl-C / Esc Esc cancel
+=== end ===

@@ -1,0 +1,27 @@
+$ yaks init --mode private
+(ok)
+$ yaks ask yak-3d1b --note 'red or blue?'
+Asked yak-3d1b: needs human (dropped from next until answered)
+$ date -u +%T; yaks wait --for agent --timeout 30s &   # shell A
+21:57:46
+# shell B, 4s later:
+21:57:50
+$ yaks answer yak-3d1b --note blue
+Answered yak-3d1b: needs agent (awaiting pickup; see `yaks inbox`)
+# shell A output:
+Answered, awaiting an agent (`yaks pickup <id>`):
+  [H] yak-3d1b  p3 task     Pick a color ✓ answered (needs:agent)
+exit=0
+21:57:52
+$ yaks inbox --for agent   # for comparison
+Answered, awaiting an agent (`yaks pickup <id>`):
+  [H] yak-3d1b  p3 task     Pick a color ✓ answered (needs:agent)
+$ yaks wait --for agent --new --timeout 3s
+yaks wait: timed out after 3s: nothing new awaiting an agent
+exit=2
+$ yaks wait --for human --timeout 0s
+yaks wait: timed out after 0s: nothing awaiting a human
+exit=2
+$ yaks wait --timeout banana
+Error: could not parse --timeout 'banana'; use a duration like 30s, 10m or 2h
+exit=1
