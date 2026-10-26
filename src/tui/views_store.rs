@@ -137,6 +137,8 @@ pub(crate) fn spec_from_json(d: Option<&Value>) -> FilterSpec {
             .get("needs_only")
             .and_then(|x| x.as_bool())
             .unwrap_or(false),
+        // CLI-only (yaks-ef3b): saved views never carry it.
+        run_on: false,
         parent: opt_str("parent"),
     }
 }

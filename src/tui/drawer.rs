@@ -172,6 +172,8 @@ impl Drawer {
             ready_only: self.ready,
             tangled_only: self.tangled,
             needs_only: self.needs,
+            // CLI-only (yaks-ef3b): the drawer has no run-on chip.
+            run_on: false,
             parent: non_empty(&self.parent),
             // On multi-herd farms the herd chip row owns this scope; on
             // single-herd farms `herds` stays whatever the view carried in

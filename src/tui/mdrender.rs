@@ -25,7 +25,7 @@ use std::collections::{HashMap, HashSet};
 use std::ops::Range;
 
 use pulldown_cmark::{
-    Alignment, BlockQuoteKind, CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd,
+    Alignment, BlockQuoteKind, CodeBlockKind, Event, HeadingLevel, Parser, Tag, TagEnd,
 };
 use ratatui::style::{Modifier, Style};
 use unicode_width::UnicodeWidthChar;
@@ -184,14 +184,9 @@ struct Renderer<'k> {
 /// Render one markdown document to rows wrapped at `width` display columns.
 /// `known` is the farm's yak ids, so mentions become [`Target::Task`] links.
 pub fn render(text: &str, width: usize, known: &HashSet<&str>) -> Vec<MdRow> {
-    let mut opts = Options::empty();
-    opts.insert(Options::ENABLE_TABLES);
-    opts.insert(Options::ENABLE_FOOTNOTES);
-    opts.insert(Options::ENABLE_STRIKETHROUGH);
-    opts.insert(Options::ENABLE_TASKLISTS);
-    opts.insert(Options::ENABLE_GFM);
-    let events: Vec<(Event, Range<usize>)> =
-        Parser::new_ext(text, opts).into_offset_iter().collect();
+    let events: Vec<(Event, Range<usize>)> = Parser::new_ext(text, crate::markdown_lint::options())
+        .into_offset_iter()
+        .collect();
     let mut line_starts = vec![0];
     line_starts.extend(text.match_indices('\n').map(|(i, _)| i + 1));
     let mut r = Renderer {

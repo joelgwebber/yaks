@@ -17,6 +17,7 @@ mod filter;
 mod init;
 mod json;
 mod land;
+mod markdown_lint;
 mod mergedriver;
 mod migrate;
 mod model;
@@ -92,6 +93,11 @@ struct FilterFlags {
     /// human`) or awaiting an agent (`needs: agent`: answered or requested).
     #[arg(long)]
     needs: bool,
+    /// Keep only yaks whose description or any note has run-on lines:
+    /// adjacent lines that markdown joins into one paragraph (a soft line
+    /// break). Candidates for a tidy.
+    #[arg(long = "run-on")]
+    run_on: bool,
     #[arg(long = "parent-of")]
     parent_of: Option<String>,
 }
@@ -110,6 +116,7 @@ impl FilterFlags {
             || self.ready
             || self.tangled
             || self.needs
+            || self.run_on
             || self.parent_of.is_some()
     }
 }
@@ -2315,6 +2322,7 @@ fn build_spec(f: FilterFlags) -> FilterSpec {
         ready_only: f.ready,
         tangled_only: f.tangled,
         needs_only: f.needs,
+        run_on: f.run_on,
         parent: f.parent_of,
     }
 }

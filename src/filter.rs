@@ -24,6 +24,9 @@ pub struct FilterSpec {
     /// Keep only yaks carrying a `needs` block (the inbox predicate). Composes
     /// with any view; the status-independent inbox is this plus no status scope.
     pub needs_only: bool,
+    /// Keep only yaks whose description or any note has run-on lines (lines
+    /// markdown joins into one paragraph; see [`crate::markdown_lint`]).
+    pub run_on: bool,
     /// Descendant-of scope (a task id); matches its descendants at any depth.
     pub parent: Option<String>,
     /// Herd scope: keep only yaks whose id prefix is in this set. Empty =
@@ -42,6 +45,7 @@ impl FilterSpec {
             || self.search.as_deref().is_some_and(|s| !s.is_empty())
             || self.ready_only
             || self.tangled_only
+            || self.run_on
             || !self.herds.is_empty()
     }
 
@@ -82,6 +86,10 @@ impl FilterSpec {
             return false;
         }
         if self.tangled_only && !has_unresolved {
+            return false;
+        }
+        // Last: it parses markdown, the most expensive predicate.
+        if self.run_on && !crate::markdown_lint::has_run_on(&t.body) {
             return false;
         }
         true
@@ -323,6 +331,19 @@ mod tests {
         // A pickup clears it entirely.
         h.iter_mut().find(|t| t.id == "d").unwrap().needs = None;
         assert_eq!(ids(apply(&h, &spec, false)), vec!["b", "d", "k"]);
+    }
+
+    #[test]
+    fn run_on_keeps_bodies_with_joined_lines() {
+        let mut h = farm();
+        h.iter_mut().find(|t| t.id == "b").unwrap().body = "one\ntwo".into();
+        h.iter_mut().find(|t| t.id == "d").unwrap().body = "one\n\ntwo".into();
+        let spec = FilterSpec {
+            run_on: true,
+            ..Default::default()
+        };
+        assert!(spec.content_active());
+        assert_eq!(ids(apply(&h, &spec, false)), vec!["b"]);
     }
 
     #[test]

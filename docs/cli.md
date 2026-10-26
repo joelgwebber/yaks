@@ -66,7 +66,9 @@ Every command except `init` operates on one farm, found in this order:
 
 `--status <s>` · `--type <t>` · `--priority <n>` · `--label <l>` · `--herd <h>`
 (id prefix) · `--search <text>` · `--parent-of <id>` (descendants at any depth) · `--ready` ·
-`--tangled` · `--needs` (any `needs` value, `human` or `agent`). They compose, and back `list`, `search`, `log`, and the
+`--tangled` · `--needs` (any `needs` value, `human` or `agent`) · `--run-on` (the description or a note has
+run-on lines: adjacent lines that markdown joins into one paragraph, which a tidy splits into blocks; a hard
+break, a list or a code fence is not run-on). They compose, and back `list`, `search`, `log`, and the
 `bulk` selector.
 
 ## Read / query

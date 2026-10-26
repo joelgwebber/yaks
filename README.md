@@ -148,7 +148,7 @@ a `moved: <from> -> <to>` entry to the yak, stamped like a note.
 
 `yaks bulk` is a filter-driven mass edit: the standard query filters
 (`--status`, `--type`, `--priority`, `--label`, `--search`, `--ready`,
-`--tangled`, `--needs`, `--parent-of`) *select* the set, and a mutation flag
+`--tangled`, `--needs`, `--run-on`, `--parent-of`) *select* the set, and a mutation flag
 (`--add-label`, `--remove-label`, `--set-priority`, `--set-type`, `--reparent`,
 `--unparent`) *applies* the change to each. It is **dry-run by default**:
 without `--commit` it just prints the matched set and the intended mutation,
