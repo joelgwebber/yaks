@@ -46,22 +46,29 @@ A plain CLI, run from the shell (no slash commands, nothing to keep running): `y
 
 ## Workflow
 
-1. **Session start:** on a branch farm, `yaks sync` (unless a yakherd coordinates); then `yaks inbox --for agent` (answers nobody has acted on); then `yaks next`.
+1. **Session start:** on a branch farm, `yaks sync` (unless a yakherd coordinates); then `yaks inbox --for agent` (answers and requests nobody has acted on: handle these first); then `yaks next`.
 2. **Before code:** `yaks shave <id>`, and its parent if still hairy. Re-read it with `yaks show <id>`; the latest note is the freshest signal.
 3. **While working:** `yaks update <id> --note "..."`, one event per note.
 4. **Done:** gather evidence, add a short summary note (see "Evidence before you shear"), `yaks shorn <id>`. Shear the parent when its last child is shorn; never leave a hairy parent over shorn children.
 
 **You share the farm with a human.** They edit yaks in `yaks tui` while you work, so a yak may move, gain a note or appear without you. That is signal, not an error: don't revert, restage or report it; follow it if it redirects your work.
 
-## Asking a human
+## The inbox: work waiting on someone
 
-For a decision only a human should make (an ambiguous requirement, a risky tradeoff, a missing credential), don't guess:
+A yak's `needs` field says who acts next, and `yaks inbox` lists every yak that has one: **awaiting a human** (`needs: human`) or **awaiting an agent** (`needs: agent`, marked `answered` or `requested`).
 
-- `yaks ask <id> --note "the question"` sets `needs: human` and drops the yak out of `yaks next`. Return control; don't wait.
-- The human runs `yaks answer <id> --note "..."` (or `a` in the TUI), which sets `needs: agent`.
-- The yak stays in `yaks inbox` until an agent runs `yaks pickup <id> --note "what I'll do"`, the only command that clears `needs: agent`. Never answer your own ask.
+**Asking a human.** For a decision only a human should make (an ambiguous requirement, a risky tradeoff, a missing credential), don't guess:
+
+- `yaks ask <id> --note "the question"` sets `needs: human` and drops the yak out of `yaks next`. Then return control.
+- The human runs `yaks answer <id> --note "..."` (or `a` in the TUI), which sets `needs: agent`. Never answer your own ask.
 - `yaks inbox` marks a yak `replied` when the human answered with a plain note instead of `answer`.
 - Also ask to *record* a real design fork (behavior a user sees, a data format, a dependency) even when you have a lean: state the lean in the question.
+
+**Requests.** A human (or a yakherd) hands you work with `yaks request <id> --note "..."` (`a` in the TUI on a yak that isn't awaiting them): a chore on that yak, such as tidying its markdown, summarizing its notes or checking something. Treat it as an instruction from the human, scoped to that yak, and do it now unless it needs a decision (then `ask`).
+
+**Taking it on.** For either kind, `yaks pickup <id> --note "what I'll do"` is the only thing that clears `needs: agent`; then do the work and note the result. An inbox row you leave stays there for the next agent.
+
+**Waiting.** `yaks wait --for agent --timeout 10m` blocks until something is awaiting an agent, then prints it like `inbox` (exit 0; exit 2 on timeout). If your harness can run a command in the background, run it there after an `ask` to be woken by the answer; otherwise return and check `yaks inbox` next session. `--new` ignores rows already there when it started.
 
 ## Notes and descriptions
 
@@ -138,7 +145,7 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 | `path [<id>...]` | Absolute file path of yaks (by id or filters); no arguments: the farm in use |
 | `update <id>...` | Fields, `--add-label`/`--remove-label`, `--note`, `--verify`, `--source` |
 | `shave` / `shorn` / `regrow` / `slaughter` / `revive` | State moves; several ids at once; each appends an attributed `moved:` entry. `slaughter --family` takes descendants too |
-| `ask` / `answer` / `pickup` / `inbox` | The human-decision loop (above); `inbox --for human\|agent` |
+| `ask` / `answer` / `request` / `pickup` / `inbox` / `wait` | The inbox (above); `inbox --for human\|agent`, `wait --timeout 10m` |
 | `verify <id>` | Run the yak's `verify:` (else the config default) and record PASS/FAIL |
 | `attach <id> <file>` | Store and link evidence; `rename-attachment` renames one |
 | `log` | Notes and moves over a filtered set, oldest first; `--since 2h`, `--by <actor>` |

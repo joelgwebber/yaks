@@ -63,7 +63,9 @@ Pass `--yaks-dir <farm>` when the worker's checkout cannot find the farm. If the
 
 - A worker that needs a decision runs `yaks ask`, leaves its edits and returns.
 - **Scope and mechanics** (reversible, local to the yak's goal: one more file, which test shape): answer it yourself with `yaks answer <id> --note "..."`, saying you are the yakherd, then wake the worker. The answer is the record; the message is only the wake-up.
-- **A design fork** (behavior a user sees, a data format, a dependency, a shipped surface, anything a reviewer would want a say in; if unsure, it is a fork): leave the ask open, and tell the human the yak id and your lean (record the lean on the parent yak, never the worker's). Wake the worker once `yaks inbox` shows it answered.
+- **A design fork** (behavior a user sees, a data format, a dependency, a shipped surface, anything a reviewer would want a say in; if unsure, it is a fork): leave the ask open, and tell the human the yak id and your lean (record the lean on the parent yak, never the worker's). Wake the worker once `yaks inbox` shows it answered (`yaks wait --for agent --new --timeout <dur>` blocks until it is, if your harness can run it in the background).
+- **Waiting on workers' asks:** `yaks wait --for human --new --timeout <dur>` returns when a worker raises a new ask.
+- **Handing a chore to an agent** with no worker running (tidy a body, summarize a yak): `yaks request <id> --note "..."` queues it in the agent inbox for whichever agent runs next.
 - At session start and after each batch, run `yaks inbox`. A yak marked `replied` got a plain-note answer: record it with `yaks answer`, quoting the human and saying you read it from their note.
 
 ## 8. Attribution and drift
