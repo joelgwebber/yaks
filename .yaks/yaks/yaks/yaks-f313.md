@@ -1,11 +1,11 @@
 ---
 id: yaks-f313
 title: Some way for agents to get notified of available answers
-status: hairy
+status: shaving
 type: feature
 priority: 3
 created: '2026-10-04T20:50:20Z'
-updated: '2026-10-19T04:28:52Z'
+updated: '2026-10-26T21:51:51Z'
 labels:
 - cli
 - agent
@@ -31,3 +31,31 @@ Relationship to yaks-c061, and when to do it (coordinator delta-lead, 2026-10-05
 - Do c061 soon, in two slices. (1) No format change: `yaks inbox` marks a blocked yak whose latest note after the ask is from a different actor ("replied") and lists answered-but-untouched yaks since a time (`--answered --since`). Derived from notes, cheap. (2) The `needs: agent` flip is a design fork for Joel.
 - It pairs with the lanes work (yaks-7204): asks and answers that sit in another checkout need the same cross-checkout visibility.
 - Leave f313 open and lower priority until c061 exists; when it does, `yaks wait [--for answers]` is a small command for harnesses that can run background tasks. In Delta the coordinator loop (check lanes and inbox, wake the worker) is the supported path.
+
+---
+▸ 2026-10-26T21:51:27Z [delta-lead]
+
+moved: hairy -> shaving
+
+---
+▸ 2026-10-26T21:51:51Z [delta-lead]
+
+Claim (delta-lead, yakherd). Owner: `wait-1`. Design: the latest design note on yaks-33c8.
+
+**Goal:** `yaks wait` blocks until the inbox has something for the given audience, then prints it and exits 0.
+
+- Flags: `--for human|agent` (reuse `Audience`), the shared `FilterFlags`, `--timeout <dur>` (reuse the duration parsing `log --since` uses; no timeout means wait forever), `--new`, `--json`, and `--interval <dur>` (default 2s; hidden, or documented as a tuning knob).
+- On a hit it prints exactly what `yaks inbox` prints for the same audience and filters, by calling `render_inbox(rows, audience, json)` (do not change its signature or body; another worker, `request-1`, owns its body and is changing the agent section title/markers).
+- A timeout exits 2 with a one-line stderr message and nothing on stdout.
+- `--new` ignores rows (by id and `needs` value) already present at start, so a yak that flips from human to agent counts as new.
+- Implementation: poll `Farm::inbox` each interval, reading files and taking no lock. Put the logic in `src/farm.rs` (or a small `src/wait.rs`) so it can be tested without sleeping for real: inject the clock or the interval.
+
+**Scope:** a `Wait` variant right after `Inbox` in `src/main.rs`, its dispatch arm right after `Command::Inbox`, the new logic module. `docs/cli.md` gets a `### wait` after `### inbox` in "Human-in-the-loop". The README command table gets a row if inbox has one. `--help` doc comments.
+
+**Out of scope:** the `request` verb and inbox rendering (`request-1`), the skills (delta-lead), any daemon or file watcher.
+
+**Evidence:**
+- Tests that fail first: returns immediately when the inbox is non-empty, times out (exit 2) when it is empty, wakes when another writer answers mid-wait (a thread that writes after a short delay), and `--new` ignores pre-existing rows.
+- A real-binary transcript: `yaks wait --for agent --timeout 30s` in one shell while another runs `yaks answer`, pasted in a note.
+
+**Gate:** `cargo test`. **Judge:** delta-lead at landing.
