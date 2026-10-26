@@ -30,6 +30,7 @@ mod status;
 mod store;
 mod sync;
 mod tui;
+mod wait;
 
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
@@ -531,6 +532,36 @@ enum Command {
         #[arg(long = "for", value_enum)]
         audience: Option<Audience>,
         /// JSON array of yaks, each with `needs` and `replied`.
+        #[arg(long)]
+        json: bool,
+    },
+    /// Block until the inbox has something, then print it like `inbox`.
+    ///
+    /// Polls the farm files (no lock, no daemon) every `--interval` until the
+    /// inbox for `--for human|agent` (both sections when omitted), narrowed by
+    /// the filter flags, is non-empty; then prints exactly what `yaks inbox`
+    /// prints for the same flags and exits 0. On `--timeout` it prints nothing
+    /// on stdout, a one-line message on stderr, and exits 2. Run it as a
+    /// background task to be woken when a question is answered or a request
+    /// arrives (`yaks wait --for agent --timeout 10m`).
+    Wait {
+        #[command(flatten)]
+        filter: FilterFlags,
+        /// Wait on one section only.
+        #[arg(long = "for", value_enum)]
+        audience: Option<Audience>,
+        /// Give up after this long (`30s`, `10m`, `2h`; `0s` checks once).
+        /// Omitted: wait forever.
+        #[arg(long, value_name = "DUR")]
+        timeout: Option<String>,
+        /// Ignore yaks already in the inbox when the wait starts; a yak whose
+        /// `needs` value changes (human to agent) counts as new.
+        #[arg(long)]
+        new: bool,
+        /// How often to re-read the farm (a tuning knob; whole units, `1s` up).
+        #[arg(long, value_name = "DUR", default_value = "2s")]
+        interval: String,
+        /// Print the hit as `inbox --json` does.
         #[arg(long)]
         json: bool,
     },
@@ -1758,6 +1789,48 @@ fn main() -> Result<()> {
             let rows = farm.inbox(build_spec(filter))?;
             render_inbox(&rows, audience, json)?;
         }
+        Command::Wait {
+            filter,
+            audience,
+            timeout,
+            new,
+            interval,
+            json,
+        } => {
+            let opts = wait::WaitOpts {
+                timeout: timeout
+                    .as_deref()
+                    .map(|s| parse_wait_duration("--timeout", s))
+                    .transpose()?,
+                interval: parse_wait_duration("--interval", &interval)?,
+                new_only: new,
+            };
+            if opts.interval.is_zero() {
+                anyhow::bail!("--interval must be at least 1s");
+            }
+            let spec = build_spec(filter);
+            let keep = |t: &Task| match audience {
+                Some(Audience::Human) => t.awaiting_human(),
+                Some(Audience::Agent) => t.awaiting_agent(),
+                None => t.needs.is_some(),
+            };
+            match wait::wait_for(|| farm.inbox(spec.clone()), keep, &opts, &wait::RealClock)? {
+                Some(rows) => render_inbox(&rows, audience, json)?,
+                None => {
+                    let who = match audience {
+                        Some(Audience::Human) => "awaiting a human",
+                        Some(Audience::Agent) => "awaiting an agent",
+                        None => "awaiting a human or an agent",
+                    };
+                    let new = if new { "new " } else { "" };
+                    eprintln!(
+                        "yaks wait: timed out after {}: nothing {new}{who}",
+                        timeout.as_deref().unwrap_or_default()
+                    );
+                    std::process::exit(2);
+                }
+            }
+        }
         Command::Shave { ids, as_actor } => {
             let actor = actor::resolve(as_actor.as_deref());
             transition_many(
@@ -2168,6 +2241,16 @@ fn run_path(
         }
     }
     Ok(code)
+}
+
+/// A `wait` duration flag (`30s`, `10m`, `2h`), in the grammar `log --since`
+/// uses for its relative form.
+fn parse_wait_duration(flag: &str, s: &str) -> Result<std::time::Duration> {
+    store::parse_duration(s)
+        .and_then(|d| d.to_std().ok())
+        .with_context(|| {
+            format!("could not parse {flag} '{s}'; use a duration like 30s, 10m or 2h")
+        })
 }
 
 fn build_spec(f: FilterFlags) -> FilterSpec {

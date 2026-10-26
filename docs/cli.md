@@ -308,6 +308,7 @@ no entry.
 | `answer <id> --note '<reply>'` | Answer a question (human-reserved): records the reply and sets `needs: agent`; `--done` clears `needs` instead. [Details](#answer) |
 | `pickup <id> [--note '<text>']` | An agent takes on an answered yak: clears `needs: agent` and records a `picked up` note (`--as`). Fails on a yak that is not `needs: agent`. [Details](#pickup) |
 | `inbox [--for human\|agent] [--json]` | Every yak with a `needs` value, across all statuses: **Awaiting a human** and **Answered, awaiting an agent**. `--for` shows one section; `--json`. [Details](#inbox) |
+| `wait [--for human\|agent] [--timeout DUR] [--new] [--json]` | Block until the inbox has something for that audience, then print it as `inbox` does (exit 0); a timeout exits 2 with nothing on stdout. [Details](#wait) |
 
 ### `ask`
 
@@ -342,6 +343,17 @@ Every yak with a `needs` value, across all statuses, in two sections: **Awaiting
 `--json` is one array of yaks, each with `needs` and a derived `replied` boolean.
 
 `ask` records an `asked: needs <who>` first line in its note: that is what `replied` is measured from, so a yak whose `needs:` was set by hand has no known asker and is never `replied`.
+
+### `wait`
+
+`wait [--for human|agent] [filters] [--timeout DUR] [--new] [--json] [--interval DUR]`
+
+Block until the inbox for that audience (both sections when `--for` is omitted), narrowed by the usual filter flags, is non-empty; then print exactly what `inbox` prints for the same flags and exit 0. An agent runs `yaks wait --for agent --timeout 10m` as a background task to be woken when a question is answered; a human-side tool can `wait --for human` the same way.
+
+- `--timeout DUR` gives up after `30s`, `10m`, `2h` (the duration form `log --since` takes; `0s` checks once). On timeout nothing goes to stdout, one line goes to stderr, and the exit code is 2. Without it, `wait` waits forever.
+- `--new` ignores yaks already in the inbox when the wait starts. A row is a yak plus its `needs` value, so a yak answered during the wait (human to agent) counts as new, and so does one that is picked up and later comes back.
+- `--json` prints the hit as `inbox --json` does.
+- `--interval DUR` (default `2s`) is how often it re-reads the farm. It polls the files and takes no lock; there is no daemon or watcher.
 
 ## Multi-line text
 

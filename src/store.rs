@@ -1740,21 +1740,28 @@ pub fn parse_since(spec: &str, now: DateTime<Utc>) -> Result<DateTime<Utc>> {
 /// `None` when `spec` is not a number-then-unit token so callers fall back to
 /// absolute parsing.
 fn parse_relative(spec: &str, now: DateTime<Utc>) -> Option<DateTime<Utc>> {
+    Some(now - parse_duration(spec)?)
+}
+
+/// A duration spec: an integer then `s`/`m`/`h`/`d`/`w` (`30s`, `2h`, `1w`).
+/// The one grammar `log --since` (relative form) and `wait --timeout` share.
+/// `None` when `spec` is not a number-then-unit token.
+pub fn parse_duration(spec: &str) -> Option<Duration> {
+    let spec = spec.trim();
     let idx = spec.find(|c: char| c.is_ascii_alphabetic())?;
     if idx == 0 {
         return None;
     }
     let (num, unit) = spec.split_at(idx);
     let n: i64 = num.trim().parse().ok()?;
-    let dur = match unit {
+    Some(match unit {
         "s" => Duration::seconds(n),
         "m" => Duration::minutes(n),
         "h" => Duration::hours(n),
         "d" => Duration::days(n),
         "w" => Duration::weeks(n),
         _ => return None,
-    };
-    Some(now - dur)
+    })
 }
 
 #[cfg(test)]

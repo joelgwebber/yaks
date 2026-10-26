@@ -111,6 +111,7 @@ in `<path>`.
 | `yaks ask <id>` / `answer <id>` | Block a yak on a human (sets `needs: human`, drops it from `next`) / answer it (sets `needs: agent`, so the answer cannot get lost; `--done` clears instead), each recording a `--note` |
 | `yaks pickup <id>` | An agent takes on an answered yak: clears `needs: agent` with an attributed note. The only thing that clears it |
 | `yaks inbox` | The `needs` queue, two sections: awaiting a human (`replied` marks a plain-note reply that skipped `answer`) and answered, awaiting an agent; `--for human\|agent`, `--json` |
+| `yaks wait` | Block until the inbox has something (`--for human\|agent`, filters), then print it like `inbox`; `--timeout 10m` exits 2 when nothing came, `--new` ignores what was already there |
 | `yaks shave <id>` | hairy → shaving (alias: `work`) |
 | `yaks shorn <id>` | shaving → shorn (alias: `close`) |
 | `yaks regrow <id>` | shorn → hairy (alias: `reopen`) |
