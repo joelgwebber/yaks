@@ -10,6 +10,13 @@ installs only the one matching the host's os/cpu, and `bin/yaks.js` execs it.
 Users get it via `npm i -g @j15r/yaks` (command stays `yaks`) or
 `npx @j15r/yaks`.
 
+### Before tagging: try the build locally
+
+`cargo install --path .` installs the tree you are about to tag into
+`~/.cargo/bin` (put it ahead of npm's bin directory on your `PATH` if you also
+have the npm package). Run it against a real farm before you push the tag; the
+manual workflow run below covers the other platforms.
+
 ### Automated (primary): the `release` workflow
 
 `.github/workflows/release.yml` does the whole thing:

@@ -101,17 +101,15 @@ so no system fonts; box-drawing corners are blank until the font subset is
 widened), which is enough to check an attachment shows up.
 
 **Hand the human a build to try.** After landing any significant change, the
-main (coordinating) thread installs a fresh release build to `~/go/bin/yaks`:
-Joel's pre-release test binary, a temporary override on his `PATH` (where `go`
-puts binaries too) for trying changes before a release. That is the **only**
-place a test build goes: never `~/bin`, `~/.local/bin` or anywhere else, so
-there is exactly one override to keep current. Overwrite it; no backup:
+main (coordinating) thread installs the landed tree with Cargo, which puts the
+binary in `~/.cargo/bin` (a developer who wants a local build to win over an
+npm-installed `yaks` puts that directory first on their `PATH`):
 
 ```sh
-cargo build --release && mkdir -p ~/go/bin && install -m 755 target/release/yaks ~/go/bin/yaks
+cargo install --path .
 ```
 
-Workers never do this (their clones are not what lands); the coordinator does it
+Never copy a binary anywhere else by hand. Workers never do this (their clones are not what lands); the coordinator does it
 once their work is merged and the gate is green, and says so in its report. A
 running `yaks tui` keeps the old binary until it is restarted, so say that too
 when the change is in the TUI.
@@ -163,7 +161,7 @@ dispatch). See `RELEASING.md`.
 This project tracks its own work with yaks; the `yaks` skill is the workflow.
 Repo specifics: never code without a shaving yak; check existing yaks before
 creating one; run `yaks next` when unsure what's next. The coordinator commits
-the farm (`yaks commit`); publishing it (`yaks sync`) is Joel's call.
+the farm (`yaks commit`); publishing it (`yaks sync`) is the human's call.
 
 ## Delegating to cheaper models
 

@@ -79,8 +79,8 @@ checkout's `main`.
 After a significant landing, from the main checkout:
 
 ```sh
-cargo build --release && mkdir -p ~/go/bin && install -m 755 target/release/yaks ~/go/bin/yaks
+cargo install --path .
 ```
 
-This is the only place a test build goes. Say you did it; for a TUI change add
+This installs to `~/.cargo/bin`; never copy a binary anywhere else by hand. Say you did it; for a TUI change add
 that a running `yaks tui` needs a restart.

@@ -32,9 +32,14 @@ npx @j15r/yaks list
 ```sh
 git clone https://github.com/joelgwebber/yaks
 cd yaks
-cargo build --release
-./target/release/yaks --help
+cargo install --path .   # installs to ~/.cargo/bin
+yaks --help
 ```
+
+Re-run `cargo install --path .` to pick up local changes. If you also have the
+npm package installed, put `~/.cargo/bin` ahead of npm's bin directory on your
+`PATH` so your local build wins. `cargo build` / `cargo test` are the usual
+inner loop (`./target/debug/yaks`).
 
 ## Quick start
 
