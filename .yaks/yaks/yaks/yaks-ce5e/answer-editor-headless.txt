@@ -1,0 +1,131 @@
+=== frame 0 · 100x24 · focus=list · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-20eb · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   🛖 Sheds (0)
+
+ yak-20eb p3 task     🦬 Pick a cache                                                             ⏳
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /
+=== end ===
+=== frame 1 · 100x24 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-20eb · blocked=- · collapsed=0 · filter=(all) · overlay=block-edit · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   🛖 Sheds (0)
+
+◂ Task: yak-20eb
+│
+│ Title:       Pick a cache
+│ Status:      🦬 hairy
+│ Needs:       human
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Labels:      -
+│
+│ Which cache should the index use?
+│
+│ ▸ joel · just now ───────────────────────────────────────────────────────────────────────────────
+│ asked: needs human
+│
+│ Which cache: memory or disk?
+│
+│ ▸ Answer yak-20eb · joel · now ─────────────────── Ctrl-S answer (needs: agent) · Ctrl-C cancel ─
+│ ┃
+│ ┃
+INSERT  Ctrl-S answer: needs agent · Ctrl-C / Esc Esc cancel
+=== end ===
+=== frame 2 · 100x24 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-20eb · blocked=- · collapsed=0 · filter=(all) · overlay=block-edit · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   🛖 Sheds (0)
+
+◂ Task: yak-20eb
+│
+│ Title:       Pick a cache
+│ Status:      🦬 hairy
+│ Needs:       human
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Labels:      -
+│
+│ Which cache should the index use?
+│
+│ ▸ joel · just now ───────────────────────────────────────────────────────────────────────────────
+│ asked: needs human
+│
+│ Which cache: memory or disk?
+│
+│ ▸ Answer yak-20eb · joel · now ─────────────────── Ctrl-S answer (needs: agent) · Ctrl-C cancel ─
+│ ┃The disk one.
+│ ┃
+INSERT  Ctrl-S answer: needs agent · Ctrl-C / Esc Esc cancel
+=== end ===
+=== frame 3 · 100x24 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-20eb · blocked=- · collapsed=0 · filter=(all) · overlay=block-edit · detail_scroll=4 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   🛖 Sheds (0)
+
+◂  🦬 yak-20eb  task     p3  Pick a cache
+│ ─────────────────────────────────────────────────────────────────────────────────────────────────
+│ Needs:       human
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Labels:      -
+│
+│ Which cache should the index use?
+│
+│ ▸ joel · just now ───────────────────────────────────────────────────────────────────────────────
+│ asked: needs human
+│
+│ Which cache: memory or disk?
+│
+│ ▸ Answer yak-20eb · joel · now ─────────────────── Ctrl-S answer (needs: agent) · Ctrl-C cancel ─
+│ ┃The disk one.
+│ ┃
+│ ┃
+│
+INSERT  Ctrl-S answer: needs agent · Ctrl-C / Esc Esc cancel
+=== end ===
+=== frame 4 · 100x24 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-20eb · blocked=- · collapsed=0 · filter=(all) · overlay=block-edit · detail_scroll=4 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   🛖 Sheds (0)
+
+◂  🦬 yak-20eb  task     p3  Pick a cache
+│ ─────────────────────────────────────────────────────────────────────────────────────────────────
+│ Needs:       human
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Labels:      -
+│
+│ Which cache should the index use?
+│
+│ ▸ joel · just now ───────────────────────────────────────────────────────────────────────────────
+│ asked: needs human
+│
+│ Which cache: memory or disk?
+│
+│ ▸ Answer yak-20eb · joel · now ─────────────────── Ctrl-S answer (needs: agent) · Ctrl-C cancel ─
+│ ┃The disk one.
+│ ┃It survives restarts.
+│ ┃
+│
+INSERT  Ctrl-S answer: needs agent · Ctrl-C / Esc Esc cancel
+=== end ===
+! unknown action: snap

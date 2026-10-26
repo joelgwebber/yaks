@@ -1,0 +1,23 @@
+id:       yak-20eb
+title:    Pick a cache
+status:   Hairy
+type:     task
+priority: 3
+created:  2026-10-26T21:02:14Z
+updated:  2026-10-26T21:02:34Z
+needs:    agent
+
+Which cache should the index use?
+
+---
+▸ 2026-10-26T21:02:18Z [joel]
+
+asked: needs human
+
+Which cache: memory or disk?
+
+---
+▸ 2026-10-26T21:02:34Z [joel]
+
+The disk one.
+It survives restarts.
