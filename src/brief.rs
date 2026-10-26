@@ -257,7 +257,7 @@ fn notes(b: &Brief) -> String {
          - Append progress as you go: `yaks update {id} --note \"...\"`.\n\
          - Record every choice a reviewer could argue about as its own note starting `Decision:`, naming the alternatives you rejected.\n\
          - Write a multi-line note as markdown with real line breaks, piped on stdin (`yaks update {id} --note - <<'EOF'` ... `EOF`, the quoted `'EOF'` keeps backticks and `$` literal), never as one long argument and never inside `$( )` or a double-quoted string, where backticks and `$` in the note run as commands.\n\
-         - Notes render as CommonMark: a single newline joins lines into one paragraph, so put separate points on list lines (`- `) or separate them with a blank line."
+         - Notes render as CommonMark: a single newline joins lines into one paragraph. Put a blank line between every block (paragraph, list, fence), and parallel facts on list lines (`- `)."
     )
 }
 
@@ -270,7 +270,7 @@ fn finish(b: &Brief) -> String {
         "the evidence the claim note names is in a note".to_string()
     };
     let shear = format!(
-        "1. Finish only after the evidence exists: {proof}, and your summary is in a note (`yaks shorn` takes no note).\n\
+        "1. Finish only after the evidence exists: {proof}, and your summary is in a note (`yaks shorn` takes no note): short, the shape of the fix and the evidence (linked or attached), not a bare \"done\" and not a design doc.\n\
          2. `yaks shorn {id}` (there is no `shear` subcommand)."
     );
     match b.mode {

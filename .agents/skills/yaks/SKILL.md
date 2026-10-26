@@ -49,7 +49,7 @@ A plain CLI, run from the shell (no slash commands, nothing to keep running): `y
 1. **Session start:** on a branch farm, `yaks sync` (unless a yakherd coordinates); then `yaks inbox --for agent` (answers nobody has acted on); then `yaks next`.
 2. **Before code:** `yaks shave <id>`, and its parent if still hairy. Re-read it with `yaks show <id>`; the latest note is the freshest signal.
 3. **While working:** `yaks update <id> --note "..."`, one event per note.
-4. **Done:** gather evidence, add a short summary note (what changed, what you learned, the evidence, any yaks spawned), `yaks shorn <id>`. Shear the parent when its last child is shorn; never leave a hairy parent over shorn children.
+4. **Done:** gather evidence, add a short summary note (see "Evidence before you shear"), `yaks shorn <id>`. Shear the parent when its last child is shorn; never leave a hairy parent over shorn children.
 
 **You share the farm with a human.** They edit yaks in `yaks tui` while you work, so a yak may move, gain a note or appear without you. That is signal, not an error: don't revert, restage or report it; follow it if it redirects your work.
 
@@ -65,22 +65,60 @@ For a decision only a human should make (an ambiguous requirement, a risky trade
 
 ## Notes and descriptions
 
-Bodies are CommonMark, rendered by the TUI:
+Bodies are GitHub-flavoured CommonMark. The TUI renders each note as its own document, and a human reads it there, so write for a reader scanning a pane, not a log file.
 
-- **A single newline does not break a line.** Put separate points on list lines or separate them with a blank line; don't hard-wrap prose.
-- **Multi-line text goes on stdin:** `yaks update <id> --note - <<'EOF'` … `EOF` (quoted `'EOF'` keeps backticks and `$` literal). Never inside `$( )` or a double-quoted argument, where backticks run as commands. `--note-file` / `--description-file` read a file; the same `-` works for `create --description`, `ask --note` and `answer --note`.
-- Fence commands and pasted output. Keep a `Decision:` note (the choice and the alternatives rejected) separate from progress notes.
-- Mention another yak by its **full id** (`yak-0af1`, never the bare `0af1`); the TUI makes it a link and `yaks refs <id> [--incoming]` lists the references. Link repo code with a relative link, `[code](../src/foo.rs#L12-L40)`.
-- No inline HTML or math. Attach images and long output (`yaks attach`) rather than pasting them.
+**Shape.**
+
+- **A blank line between every block.** A single newline is only a space: lines with no blank line between them join into one paragraph. Separate each paragraph, list, heading, code fence and table from its neighbours by a blank line. Don't hard-wrap prose.
+- **Short blocks.** A paragraph makes one point in a few sentences. Parallel facts (results, files, per-case numbers, next steps) are a list, one item each. A long body with distinct parts gets `##` headings.
+- Fence commands, code and pasted output, with a language (```` ```sh ````). Put ids, paths, flags and symbols in backticks.
+- Also rendered: tables, task lists (`- [ ]`), footnotes, strikethrough and alerts (`> [!NOTE]`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`). Not rendered: inline HTML (shows as literal text), math, emoji shortcodes; mermaid shows as a code block.
+- Keep a `Decision:` note (the choice and the alternatives rejected) separate from progress notes.
+
+Not this (one run-on paragraph, because single newlines join):
+
+```text
+G1 landed (d84aa65). Splits families into tokens; fullstory joins 161.
+NO FIXTURE yet: the hand-built one didn't reproduce the chain.
+Next: G3's question, so it belongs with yak-7af5.
+```
+
+This:
+
+```markdown
+G1 landed (d84aa65): families are now split into their tokens.
+
+- fullstory: 161 joins
+- no fixture yet: the hand-built one didn't reproduce the chain
+
+Next: G3's question, which belongs with yak-7af5.
+```
+
+**Links.**
+
+- Another yak: its **full id** (`yak-0af1`, never the bare `0af1`); the TUI makes it a link and `yaks refs <id> [--incoming]` lists the references.
+- Repo code, in a yak: a path from the repo root behind one `../`, with GitHub's line fragment: `[fn parse](../src/foo.rs#L12-L40)`; `../blob/<sha>/src/foo.rs#L12` pins it to a commit.
+- Attachments: `yaks attach` writes the link (`[name](<id>/<file>)`, `![name](...)` for an image). Attach images and long output rather than pasting them.
 - Size an image with a trailing alt-text token: `![shot =50%](<id>/shot.png)`, `=300x200` or `=x120` (px, or `%` of width).
+- **A yak from your conversation with the human:** when your harness renders links to local files (Zed, Delta, most IDE chats), link the yak's file by its absolute path, as printed by `yaks path yak-0af1` (`[yak-0af1](/home/me/.local/share/yaks/farms/.../yak-0af1.md)`), so they can open it in one click. A yak's file never moves, so the link stays good. (Hard rule 3 still keeps ids out of PRs and trackers.)
+
+**Writing it.** Any note with a newline, a backtick or a `$` goes on stdin: `yaks update <id> --note - <<'EOF'` … `EOF` (quoted `'EOF'` keeps backticks and `$` literal). Never inside `$( )` or a double-quoted argument, where backticks run as commands. `--note-file` / `--description-file` read a file; the same `-` works for `create --description`, `ask --note` and `answer --note`.
 
 ## Evidence before you shear
 
 Shear against evidence, not vibes: "it compiles" or a self-report is not enough.
 
 - **A command proves it:** store it with `yaks update <id> --verify '<cmd>'` and run `yaks verify <id>`, which records PASS/FAIL as a note anyone can re-run. `yaks doctor --strict` flags a shorn yak whose `verify:` did not last pass.
-- **A UI change:** drive the real UI and `yaks attach <id> <file>` a screenshot or text frame. Update every surface that describes the change (in-app help, `--help`, docs) in the same change.
+- **A web UI change:** a screenshot of the changed state, attached. `sightmap browser`, when available, can find the component and capture just it.
+- **A TUI change:** a text frame of the changed state at least; a rendered screenshot if the TUI library can produce one.
+- **Code:** link the code that matters (`[fn parse](../src/foo.rs#L12-L40)`); a short snippet only when it is the point.
+- **Logs and long output:** the few lines that show the result, fenced; attach the rest.
+- Update every surface that describes a user-facing change (in-app help, `--help`, docs) in the same change.
 - **No way to verify it?** `yaks ask` whether to build one rather than shearing on faith.
+
+Skip what makes no sense for the change; never skip it because it is effort.
+
+**The summary note** is short: what changed and, unless that already says it all (a typo fix), the shape of the fix in a sentence or two; the evidence (linked or attached, per the list above), and any yaks spawned. Not a bare "done", and not a design doc: a long write-up goes in an attachment the note links to.
 
 `yaks attach` stores the file beside the yak in `.yaks/<herd>/yaks/<id>/` and links it in the body.
 

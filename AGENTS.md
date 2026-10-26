@@ -129,6 +129,10 @@ a follow-up:
   `.agents/skills/yaks-coordinating`).
 - for a CLI change: the clap `--help` text — the `///` doc comments and
   `#[arg(...)]`/`#[command(...)]` help on the command/flag in `src/main.rs`.
+- for a markdown rendering change (what the TUI renders, a dialect choice, a
+  link form): the `yaks` skill's "Notes and descriptions" section, which is
+  how agents learn what to write, plus the notes line in `src/brief.rs`.
+  Keep it to the rule an agent needs; the full behaviour lives in `docs/tui.md`.
 - for a TUI key/behavior: the `?` help overlay (`help_content` in
   `src/tui/render.rs`) **and**, if the key is common enough to belong there, the
   compact bottom help bar (`help_hint`). A new key that lands in the handler but
