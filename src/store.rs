@@ -1536,6 +1536,56 @@ pub fn request_text(request: Option<&str>) -> String {
     }
 }
 
+/// A canned request (`request --kind`, `bulk --request`): a chore whose whole
+/// instruction is written into the request note, so the agent reading the
+/// inbox needs no skill to know what to do. The texts live only here.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
+pub enum RequestKind {
+    /// Fix the line structure of the body so it renders as CommonMark.
+    Tidy,
+    /// Append one summary note.
+    Summarize,
+}
+
+impl RequestKind {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            RequestKind::Tidy => "tidy",
+            RequestKind::Summarize => "summarize",
+        }
+    }
+
+    /// The instruction recorded for yak `id`. Its first line names the kind,
+    /// so a human scanning the yak or the inbox sees which chore it is.
+    pub fn instruction(self, id: &str) -> String {
+        match self {
+            RequestKind::Tidy => format!(
+                "Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.\n\n\
+                 Put a blank line between blocks, make run-on facts a list, and fence pasted output. \
+                 Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. \
+                 Edit the file at `yaks path {id}` directly: `update --description` replaces the whole body, notes included. \
+                 Then `yaks pickup {id} --note \"<one line>\"`."
+            ),
+            RequestKind::Summarize => format!(
+                "Summarize request: append one note summarizing this yak: its current state, the decisions made, and what is left.\n\n\
+                 Change nothing else. \
+                 Add it with `yaks update {id} --note -`, then `yaks pickup {id}`."
+            ),
+        }
+    }
+}
+
+/// The request a `request` records under its marker line: the kind's
+/// instruction (if any), then the extra note (if any) after a blank line.
+/// `None` when both are absent.
+pub fn compose_request(id: &str, kind: Option<RequestKind>, extra: Option<&str>) -> Option<String> {
+    match (kind.map(|k| k.instruction(id)), extra) {
+        (Some(k), Some(e)) => Some(format!("{k}\n\n{e}")),
+        (Some(k), None) => Some(k),
+        (None, e) => e.map(str::to_string),
+    }
+}
+
 /// True iff `text` is a `request` note written by [`request_text`].
 pub fn is_request_text(text: &str) -> bool {
     text.lines().next() == Some(REQUEST_LINE)

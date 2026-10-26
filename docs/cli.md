@@ -164,7 +164,7 @@ Mentions are whole real ids, matched exactly as `refs` and the TUI links do. Com
 | `rename-herd <old> <new>` | Rename a whole herd: migrate every id from one prefix to another (e.g. `yaksrs` → `yaks`). (`rename-prefix` still works as an alias.) |
 | `merge <path> [--dry-run]` | Merge another farm's yaks (all statuses + attachments, byte for byte) into this one, preserving ids and status. Non-destructive; refuses on id collisions. [Details](#merge) |
 | `merge-driver <base> <ours> <theirs> <path>` | **Internal** (hidden from `--help`): git's merge driver for yak files. Merges the three versions of one yak into `<ours>` as a valid yak, never conflict markers. Needs no farm. [Details](#merge-driver) |
-| `bulk <filter> <mutation>` | Filter-driven field edit. **Dry-run by default**: changes nothing without `--commit`. Requires ≥1 filter flag and ≥1 mutation flag. Field edits + reparent only. [Details](#bulk) |
+| `bulk <filter> <mutation>` | Filter-driven field edit. **Dry-run by default**: changes nothing without `--commit`. Requires ≥1 filter flag and ≥1 mutation flag. Field edits, reparent, and `--request <kind>` only. [Details](#bulk) |
 
 ### `create`
 
@@ -212,7 +212,9 @@ Exits 0 on a merge (conflicts included), 1 and leaves `<ours>` untouched when an
 
 Filter-driven field edit. **Dry-run by default** — prints the matched set + the mutation and changes nothing without `--commit`.
 
-Requires ≥1 filter flag (never the whole farm) and ≥1 mutation flag (`--add-label`/`--remove-label`/`--set-priority`/`--set-type`/`--reparent`/`--unparent`). Field edits + reparent only — no state transitions.
+Requires ≥1 filter flag (never the whole farm) and ≥1 mutation flag (`--add-label`/`--remove-label`/`--set-priority`/`--set-type`/`--reparent`/`--unparent`/`--request`). Field edits, reparent, and requests only — no state transitions.
+
+`--request tidy|summarize [--note '<extra>']` queues that canned request on every matched yak, exactly as [`request --kind`](#request) does (one `request` per yak). It combines with the field edits or stands alone. A yak awaiting a human is skipped and listed as skipped (answer it instead); the dry run marks it `(awaiting a human: request skipped)`. Example: `yaks bulk --label docs --request tidy --commit`.
 
 ## Verification
 
@@ -308,7 +310,7 @@ no entry.
 |---|---|
 | `ask <id> --note '<question>'` | Block a yak on a human: sets the `needs` field, dropping it out of `next`. Also `--note -` (stdin) / `--note-file PATH`. [Details](#ask) |
 | `answer <id> --note '<reply>'` | Answer a question (human-reserved): records the reply and sets `needs: agent`; `--done` clears `needs` instead. [Details](#answer) |
-| `request <id> --note '<what to do>'` | Hand a yak to an agent with no prior question: sets `needs: agent` and records a `requested: needs agent` note. Refuses a yak awaiting a human (answer it instead). [Details](#request) |
+| `request <id> [--kind tidy\|summarize] [--note '<what to do>']` | Hand a yak to an agent with no prior question: sets `needs: agent` and records a `requested: needs agent` note (a `--kind` writes its canned instruction). Refuses a yak awaiting a human (answer it instead). [Details](#request) |
 | `pickup <id> [--note '<text>']` | An agent takes on a yak awaiting it (answered or requested): clears `needs: agent` and records a `picked up` note (`--as`). Fails on a yak that is not `needs: agent`. [Details](#pickup) |
 | `inbox [--for human\|agent] [--json]` | Every yak with a `needs` value, across all statuses: **Awaiting a human** and **Awaiting an agent** (each marked `answered` or `requested`). `--for` shows one section; `--json`. [Details](#inbox) |
 | `wait [--for human\|agent] [--timeout DUR] [--new] [--json]` | Block until the inbox has something for that audience, then print it as `inbox` does (exit 0); a timeout exits 2 with nothing on stdout. [Details](#wait) |
@@ -329,11 +331,18 @@ A second answer on a `needs: agent` yak keeps the state and appends the note; on
 
 ### `request`
 
-`request <id> --note '<what to do>'`
+`request <id> [--kind tidy|summarize] [--note '<what to do>']`
 
 Hand a yak to an agent when no question came first: a human (or a yakherd) asks for work on it, such as tidying the body or summarizing the notes. Sets `needs: agent` and records the request under a `requested: needs agent` first line, so the yak shows in `inbox --for agent` marked `requested` (and in `next`, when hairy, as `requested, awaiting pickup`) until an agent runs `pickup`.
 
 A second request on a `needs: agent` yak keeps the state and appends the note. On a yak awaiting a human it fails and writes nothing: that yak needs an `answer`. Also `--note -` / `--note-file PATH`, and `--as`.
+
+`--kind` records a canned chore whose whole instruction is written into the note, so the agent needs no skill to know what to do. The note is the kind's instruction (its first line names the kind), then `--note` (if any) after a blank line. Give `--kind`, `--note`, or both.
+
+- `tidy` (`Tidy request: ...`): change only the line structure of the description and every note so they render as CommonMark (blank lines between blocks, lists for run-on facts, fences for pasted output); never words, note headers or frontmatter; edit the file at `yaks path <id>` directly; then `pickup` with a one-line note.
+- `summarize` (`Summarize request: ...`): append one summary note (current state, decisions made, what is left), change nothing else, then `pickup`.
+
+To queue a kind on many yaks at once, use [`bulk --request`](#bulk).
 
 ### `pickup`
 

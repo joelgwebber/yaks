@@ -109,7 +109,7 @@ in `<path>`.
 | `yaks commits <id>` | Show the git commits linked to a yak — those naming its id and those that touched its file across status moves |
 | `yaks update <id>` | Change fields/labels, set `--description`, or append a `--note` (`-` reads stdin; `--note-file PATH`: multi-line markdown without shell quoting) |
 | `yaks ask <id>` / `answer <id>` | Block a yak on a human (sets `needs: human`, drops it from `next`) / answer it (sets `needs: agent`, so the answer cannot get lost; `--done` clears instead), each recording a `--note` |
-| `yaks request <id>` | Hand a yak to an agent with no prior question (sets `needs: agent`, recording the `--note`); refuses a yak awaiting a human |
+| `yaks request <id>` | Hand a yak to an agent with no prior question (sets `needs: agent`, recording the `--note`, or a canned `--kind tidy\|summarize` instruction); refuses a yak awaiting a human |
 | `yaks pickup <id>` | An agent takes on a yak awaiting it (answered or requested): clears `needs: agent` with an attributed note. The only thing that clears it |
 | `yaks inbox` | The `needs` queue, two sections: awaiting a human (`replied` marks a plain-note reply that skipped `answer`) and awaiting an agent (marked `answered` or `requested`); `--for human\|agent`, `--json` |
 | `yaks wait` | Block until the inbox has something (`--for human\|agent`, filters), then print it like `inbox`; `--timeout 10m` exits 2 when nothing came, `--new` ignores what was already there |
@@ -124,7 +124,7 @@ in `<path>`.
 | `yaks discover [PATH]` | diagnostic: how `yaks sheds` finds the other checkouts, step by step, from inside any checkout: `git worktree list`, the host repo this checkout's alternates name, every Delta clone pinned there (`refs/delta/<dir>/<name>/*`, live or gone), and the host checkout's git worktrees. Git data only; read-only, no farm needed. `--json` |
 | `yaks log` | timestamped notes and status moves across a filtered set, oldest first (an activity log); `--since`/`--by` narrow it |
 | `yaks dep` / `reparent` | edit dependencies / move under a new parent |
-| `yaks bulk` | Apply one field edit (and/or reparent) to every yak matching a filter. **Dry-run by default** — pass `--commit` to apply. Requires a filter *and* a mutation flag |
+| `yaks bulk` | Apply one field edit (and/or reparent, and/or `--request <kind>`) to every yak matching a filter. **Dry-run by default** — pass `--commit` to apply. Requires a filter *and* a mutation flag |
 | `yaks rollup` | group yaks by the external issue they roll up to (`--keys` for a PR body) |
 | `yaks stats` | task statistics |
 | `yaks doctor` | read-only farm-integrity check (an invalid `status:` value, one id in two yak files, dangling parent/dep refs); exits non-zero on problems, so it's CI-usable. `--json` for machine output |
@@ -150,11 +150,12 @@ a `moved: <from> -> <to>` entry to the yak, stamped like a note.
 (`--status`, `--type`, `--priority`, `--label`, `--search`, `--ready`,
 `--tangled`, `--needs`, `--run-on`, `--parent-of`) *select* the set, and a mutation flag
 (`--add-label`, `--remove-label`, `--set-priority`, `--set-type`, `--reparent`,
-`--unparent`) *applies* the change to each. It is **dry-run by default**:
-without `--commit` it just prints the matched set and the intended mutation,
-changing nothing. It refuses to run without at least one filter flag (so it
-never touches the whole farm) and without at least one mutation flag. It only
-edits fields and reparents — no state transitions (use `shave`/`shorn`/etc. for
+`--unparent`, `--request tidy|summarize`) *applies* the change to each. It is
+**dry-run by default**: without `--commit` it just prints the matched set and
+the intended mutation, changing nothing. It refuses to run without at least one
+filter flag (so it never touches the whole farm) and without at least one
+mutation flag. It only edits fields, reparents and queues requests (skipping a
+yak awaiting a human) — no state transitions (use `shave`/`shorn`/etc. for
 those). Example: `yaks bulk --label auth --set-priority 1 --commit`.
 
 ## Interactive TUI

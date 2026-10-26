@@ -535,10 +535,21 @@ enum Command {
     /// until an agent runs `pickup`. On a yak already `needs: agent` it keeps
     /// the state and appends the request. Refuses a yak awaiting a human:
     /// `answer` that instead.
+    ///
+    /// `--kind tidy|summarize` records a canned chore: the note is the kind's
+    /// full instruction (first line `Tidy request: ...` or `Summarize request:
+    /// ...`), then `--note` (if any) after a blank line. Give `--kind`,
+    /// `--note`, or both.
+    #[command(group(clap::ArgGroup::new("what").required(true).multiple(true).args(["kind", "note", "note_file"])))]
     Request {
         id: String,
-        /// What the agent should do (recorded as an attributed note). `-`
-        /// reads it from stdin.
+        /// A canned request whose instruction text is written into the note:
+        /// `tidy` (fix only the body's line structure so it renders as
+        /// CommonMark) or `summarize` (append one summary note).
+        #[arg(long, value_enum)]
+        kind: Option<store::RequestKind>,
+        /// What the agent should do (recorded as an attributed note; after
+        /// the kind's instruction with `--kind`). `-` reads it from stdin.
         #[arg(long, conflicts_with = "note_file")]
         note: Option<String>,
         /// Read the request from this file (`-` is stdin).
@@ -676,7 +687,13 @@ enum Command {
     /// DRY-RUN BY DEFAULT: without --commit it only prints the matched
     /// set and the mutation, changing nothing. Requires at least one filter flag
     /// (never operates on the whole farm) and at least one mutation flag. Field
-    /// edits + reparent only — no state transitions (see yaks-7cc8).
+    /// edits, reparent, and `--request` only — no state transitions (see
+    /// yaks-7cc8).
+    ///
+    /// `--request tidy|summarize` queues that canned request on every matched
+    /// yak, exactly as `yaks request <id> --kind <kind>` would; it combines
+    /// with the field edits or stands alone. A yak awaiting a human is skipped
+    /// and reported (answer it instead); a skip is not a failure.
     Bulk {
         #[command(flatten)]
         filter: FilterFlags,
@@ -699,6 +716,14 @@ enum Command {
         /// Reparent every matched yak to top-level.
         #[arg(long)]
         unparent: bool,
+        /// Queue this canned request on every matched yak (as `request
+        /// --kind`): `tidy` or `summarize`.
+        #[arg(long, value_enum, value_name = "KIND")]
+        request: Option<store::RequestKind>,
+        /// Extra text recorded after the request's instruction (needs
+        /// `--request`). `-` reads it from stdin.
+        #[arg(long, requires = "request")]
+        note: Option<String>,
         /// Actually apply the mutation. Without it, this is a dry run.
         #[arg(long)]
         commit: bool,
@@ -1813,11 +1838,13 @@ fn main() -> Result<()> {
         }
         Command::Request {
             id,
+            kind,
             note,
             note_file,
             as_actor,
         } => {
             let note = resolve_text("--note", note, note_file, &mut StdinText::real())?;
+            let note = store::compose_request(&id, kind, note.as_deref());
             let actor = actor::resolve(as_actor.as_deref());
             match farm.request(&id, actor.as_deref(), note.as_deref())? {
                 farm::Request::NotFound => {
@@ -1988,6 +2015,8 @@ fn main() -> Result<()> {
             set_type,
             reparent,
             unparent,
+            request,
+            note,
             commit,
         } => {
             // Safety rule 1: never operate on the whole farm implicitly.
@@ -2012,12 +2041,13 @@ fn main() -> Result<()> {
                 || set_type.is_some();
             let does_reparent = unparent || reparent.is_some();
             // Safety rule 2: require at least one mutation flag.
-            if !does_field_edit && !does_reparent {
+            if !does_field_edit && !does_reparent && request.is_none() {
                 eprintln!(
-                    "error: bulk requires at least one mutation flag (--add-label/--remove-label/--set-priority/--set-type/--reparent/--unparent)"
+                    "error: bulk requires at least one mutation flag (--add-label/--remove-label/--set-priority/--set-type/--reparent/--unparent/--request)"
                 );
                 std::process::exit(1);
             }
+            let note = resolve_text("--note", note, None, &mut StdinText::real())?;
 
             let rows = farm.list(build_spec(filter), false)?;
             if rows.is_empty() {
@@ -2032,13 +2062,20 @@ fn main() -> Result<()> {
                 set_type.as_deref(),
                 reparent.as_deref(),
                 unparent,
+                request,
+                note.as_deref(),
             );
 
             // Safety rule 3: dry-run is the default — print and change nothing.
             if !commit {
                 println!("would update {} yaks:", rows.len());
                 for t in &rows {
-                    println!("  {}  {}", t.id, t.title);
+                    let skip = if request.is_some() && t.awaiting_human() {
+                        "  (awaiting a human: request skipped)"
+                    } else {
+                        ""
+                    };
+                    println!("  {}  {}{skip}", t.id, t.title);
                 }
                 println!("mutation: {mutation}");
                 println!("(dry run — pass --commit to apply)");
@@ -2068,6 +2105,9 @@ fn main() -> Result<()> {
             if does_reparent {
                 let new_parent = if unparent { None } else { reparent };
                 reparent_many(&farm, &ids, new_parent)?;
+            }
+            if let Some(kind) = request {
+                request_many(&farm, &ids, kind, note.as_deref())?;
             }
         }
         Command::Rollup(args) => {
@@ -2520,8 +2560,49 @@ fn reparent_many(farm: &Farm, ids: &[String], new_parent: Option<String>) -> Res
     Ok(())
 }
 
-/// Human-readable one-line summary of the field edit and/or reparent a bulk run
-/// would apply. Used in both the dry-run preview and the commit log line.
+/// Queue the canned request `kind` (plus `note`) on each id, as `request
+/// --kind` does, printing one line per id. A yak awaiting a human is skipped
+/// and reported, not failed; an unknown id fails the run (exit 1) after the
+/// rest are done, like `update_many`.
+fn request_many(
+    farm: &Farm,
+    ids: &[String],
+    kind: store::RequestKind,
+    note: Option<&str>,
+) -> Result<()> {
+    let actor = actor::resolve(None);
+    let mut skipped = Vec::new();
+    let mut any_failed = false;
+    for id in ids {
+        let text = store::compose_request(id, Some(kind), note);
+        match farm.request(id, actor.as_deref(), text.as_deref())? {
+            farm::Request::NotFound => {
+                eprintln!("error: task {id} not found");
+                any_failed = true;
+            }
+            farm::Request::AwaitingHuman(_) => skipped.push(id.as_str()),
+            farm::Request::Requested(_) => {
+                println!("Requested {id}: {} (needs agent)", kind.as_str())
+            }
+        }
+    }
+    if !skipped.is_empty() {
+        println!(
+            "skipped {} awaiting a human (answer instead): {}",
+            skipped.len(),
+            skipped.join(", ")
+        );
+    }
+    if any_failed {
+        std::process::exit(1);
+    }
+    Ok(())
+}
+
+/// Human-readable one-line summary of the field edit, reparent and/or request
+/// a bulk run would apply. Used in both the dry-run preview and the commit log
+/// line.
+#[allow(clippy::too_many_arguments)]
 fn describe_bulk_mutation(
     add_label: &[String],
     remove_label: &[String],
@@ -2529,6 +2610,8 @@ fn describe_bulk_mutation(
     set_type: Option<&str>,
     reparent: Option<&str>,
     unparent: bool,
+    request: Option<store::RequestKind>,
+    note: Option<&str>,
 ) -> String {
     let mut parts: Vec<String> = Vec::new();
     if !add_label.is_empty() {
@@ -2547,6 +2630,12 @@ fn describe_bulk_mutation(
         parts.push("reparent to top-level".to_string());
     } else if let Some(id) = reparent {
         parts.push(format!("reparent under {id}"));
+    }
+    if let Some(k) = request {
+        match note {
+            Some(n) => parts.push(format!("request {} (note: {n:?})", k.as_str())),
+            None => parts.push(format!("request {}", k.as_str())),
+        }
     }
     parts.join("; ")
 }

@@ -54,6 +54,12 @@ impl Farm {
         v["id"].as_str().unwrap().to_string()
     }
 
+    /// The yak's file, read through `yaks path <id>`.
+    fn body(&self, id: &str) -> String {
+        let path = self.run("tester", &["path", id]);
+        std::fs::read_to_string(path.trim()).unwrap()
+    }
+
     fn json(&self, args: &[&str]) -> Vec<serde_json::Value> {
         serde_json::from_str::<Vec<serde_json::Value>>(&self.run("tester", args)).unwrap()
     }
@@ -163,6 +169,96 @@ fn request_hands_to_agent_through_the_inbox() {
     assert_eq!(
         f.json(&["inbox", "--json"])[0]["why"],
         serde_json::Value::Null
+    );
+}
+
+/// `request --kind tidy` writes the kind's instruction (first line names it)
+/// under the marker, then the extra note after a blank line; neither `--kind`
+/// nor `--note` is an error.
+#[test]
+fn request_kind_writes_the_instruction_then_the_note() {
+    let f = Farm::new("kind");
+    let id = f.create("K");
+    let e = f.fail("joel", &["request", &id]);
+    assert!(e.contains("--kind") && e.contains("--note"), "{e}");
+
+    f.run(
+        "joel",
+        &["request", &id, "--kind", "tidy", "--note", "esp. the plan"],
+    );
+    let body = f.body(&id);
+    let want = "requested: needs agent\n\nTidy request: change only the line structure";
+    assert!(body.contains(want), "{body}");
+    assert!(body.contains(&format!("`yaks path {id}`")), "{body}");
+    assert!(body.contains("pickup"), "{body}");
+    assert!(body.trim_end().ends_with("\n\nesp. the plan"), "{body}");
+    assert!(
+        f.run("tester", &["inbox", "--for", "agent"])
+            .contains("requested"),
+    );
+
+    f.run("joel", &["request", &id, "--kind", "summarize"]);
+    let body = f.body(&id);
+    assert!(
+        body.contains("requested: needs agent\n\nSummarize request: append one note"),
+        "{body}"
+    );
+}
+
+/// `bulk --request tidy` is a dry run without `--commit` (nothing queued),
+/// queues on every match with it, and skips (and reports) a yak awaiting a
+/// human without failing.
+#[test]
+fn bulk_request_dry_runs_then_queues_and_skips_awaiting_human() {
+    let f = Farm::new("bulkreq");
+    let a = f.create("A");
+    let b = f.create("B");
+    let h = f.create("H");
+    f.run("tester", &["update", &a, &b, &h, "--add-label", "chore"]);
+    f.run("coord", &["ask", &h, "--note", "q?"]);
+
+    let out = f.run("joel", &["bulk", "--label", "chore", "--request", "tidy"]);
+    assert!(out.contains("would update 3 yaks"), "{out}");
+    assert!(out.contains("mutation: request tidy"), "{out}");
+    assert!(out.contains("awaiting a human: request skipped"), "{out}");
+    assert!(out.contains("dry run"), "{out}");
+    assert!(f.json(&["inbox", "--for", "agent", "--json"]).is_empty());
+
+    let out = f.run(
+        "joel",
+        &[
+            "bulk",
+            "--label",
+            "chore",
+            "--request",
+            "tidy",
+            "--note",
+            "x",
+            "--commit",
+        ],
+    );
+    assert!(out.contains(&format!("Requested {a}: tidy")), "{out}");
+    assert!(out.contains(&format!("Requested {b}: tidy")), "{out}");
+    assert!(
+        out.contains(&format!("skipped 1 awaiting a human (answer instead): {h}")),
+        "{out}"
+    );
+    let agent = f.json(&["inbox", "--for", "agent", "--json"]);
+    let mut ids: Vec<&str> = agent.iter().map(|j| j["id"].as_str().unwrap()).collect();
+    ids.sort();
+    let mut want = vec![a.as_str(), b.as_str()];
+    want.sort();
+    assert_eq!(ids, want);
+    assert_eq!(agent[0]["why"].as_str(), Some("requested"));
+    let body = f.body(&a);
+    assert!(
+        body.contains("requested: needs agent\n\nTidy request:") && body.contains("\n\nx"),
+        "{body}"
+    );
+    // Still awaiting the human, untouched.
+    assert_eq!(
+        f.json(&["inbox", "--for", "human", "--json"])[0]["id"].as_str(),
+        Some(h.as_str())
     );
 }
 
