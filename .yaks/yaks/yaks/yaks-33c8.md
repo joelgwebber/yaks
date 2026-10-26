@@ -1,11 +1,11 @@
 ---
 id: yaks-33c8
 title: 'Idea: model-driven reformat of legacy yak bodies for CommonMark'
-status: shaving
+status: shorn
 type: idea
 priority: 4
 created: '2026-10-17T04:25:58Z'
-updated: '2026-10-26T21:52:24Z'
+updated: '2026-10-26T22:06:22Z'
 labels:
 - markdown
 ---
@@ -118,3 +118,22 @@ Canned requests (`--tidy`, `--summarize`), a `doctor` lint for run-on bodies, `b
 ▸ 2026-10-26T21:52:24Z [delta-lead]
 
 Fan-out (delta-lead): request-1 on yaks-b75b (thread ksQQXwyj…y-WpIB…), wait-1 on yaks-f313 (thread ksQQXwyj…y-g5IB…), both on the profile default model, base 4069286. Skills prose stays with delta-lead, after both land. Follow-ups in yaks-db07.
+
+---
+▸ 2026-10-26T22:06:21Z [delta-lead]
+
+Done (delta-lead): the inbox is now the queue of work waiting on someone. Pushed to the human's checkout as `696348e`.
+
+- yaks-b75b (`request`, inbox `why`, TUI `a`/`Q`) landed as `25b9cb1`.
+- yaks-f313 (`yaks wait`) landed as `655dacf`.
+- Skills, `696348e`:
+  - the `yaks` skill's "Asking a human" section is now "The inbox: work waiting on someone": ask, request, pickup and wait, plus how an agent treats a request;
+  - `yaks-working` covers wait after an ask and requested rows;
+  - `yaks-coordinating` covers `wait --for human --new` for workers' asks and `request` for chores.
+- Gate: 866 passed, 0 failed. Installed with `cargo install --path .`.
+- Follow-ups: yaks-db07 (canned tidy/summarize, a run-on lint, `bulk --request`, auto-tidy on import with yaks-00c4).
+
+---
+▸ 2026-10-26T22:06:22Z [delta-lead]
+
+moved: shaving -> shorn

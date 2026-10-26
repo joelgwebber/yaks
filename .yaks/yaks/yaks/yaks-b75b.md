@@ -1,11 +1,11 @@
 ---
 id: yaks-b75b
 title: 'request: hand a yak to an agent through the inbox (needs: agent without a prior ask)'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-10-26T21:51:27Z'
-updated: '2026-10-26T22:01:00Z'
+updated: '2026-10-26T22:06:21Z'
 parent: yaks-33c8
 labels:
 - cli
@@ -123,3 +123,38 @@ Awaiting an agent (`yaks pickup <id>`):
 ```
 
 Headless TUI frames (a → Request editor, Ctrl-S → `Needs: agent (requested, awaiting pickup)`, and `a` on an answered yak) are attached as `yaks-b75b-tui-frames.txt`.
+
+---
+▸ 2026-10-26T22:02:06Z [request-1]
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-10-26T22:02:16Z [request-1]
+
+Summary (request-1): `yaks request` hands a yak to an agent with no prior ask.
+
+- `Farm::request` (under `store::lock`) sets `needs: agent` and writes a `requested: needs agent` marker note (`store::request_text`); it refuses `needs: human` (`farm::Request::AwaitingHuman`, nothing written) and appends on `needs: agent`.
+- Derived `store::agent_why` (latest ask/request marker) drives the inbox's "Awaiting an agent" rows (`✓ answered|requested (needs:agent)`), `next`, JSON `why`, and the TUI `Needs:` line.
+- TUI: `a` answers a yak awaiting a human, else opens the multi-line **Request** editor; `Q` asks. `help_content` updated (`help_hint` has no `a`).
+- Docs: `docs/cli.md` (new `### request`, inbox), `docs/tui.md` (`a`, `Q`, inbox, signals), `README.md`, clap help.
+
+Evidence: tests that fail without the change (`farm::request_hands_to_agent_refuses_human_and_appends_on_agent`, `store::agent_why_follows_the_latest_ask_or_request_marker`, `needs_loop::request_hands_to_agent_through_the_inbox`, `tui::request_editor_saves_a_multi_line_request`, `ask_editor_saves_a_multi_line_question` via `Q`, `detail::requested_needs_says_requested`, insta `request_editor_open`); the transcript note above; attached `yaks-b75b-tui-frames.txt`; `yaks verify yaks-b75b` PASS.
+
+---
+▸ 2026-10-26T22:02:16Z [request-1]
+
+moved: shaving -> shorn
+
+---
+▸ 2026-10-26T22:06:21Z [delta-lead]
+
+Landed (delta-lead, yakherd): worker commit `53afb7e` cherry-picked as `25b9cb1`. The README and `docs/cli.md` command tables conflicted with wait-1's row; I kept request-1's rows plus the `wait` row.
+
+- Gate on the combined tree: 866 passed, 0 failed.
+- Reproduced with my own build on a throwaway farm:
+  - a request on a yak awaiting a human is refused (exit 1);
+  - a background `request` woke `yaks wait --for agent` (exit 0), with the row marked `requested`;
+  - `inbox --json` gives `why` `answered` and `requested`;
+  - `pickup` clears the request.
+- TUI, headless: `a` on a plain yak opens the Request editor; Ctrl-S gives `Needs: agent (requested, awaiting pickup)` and the ✅ badge; `Q` opens the Ask editor.
