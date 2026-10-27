@@ -285,22 +285,20 @@ fn a_conflict_the_driver_cannot_settle_aborts_and_changes_nothing() {
     let _ = std::fs::remove_dir_all(&base);
 }
 
+/// `sync` refuses a farm that is not a farm branch (one reached through
+/// YAKS_DIR): it has no branch to pull or push.
 #[test]
-fn an_in_tree_farm_is_refused() {
-    let base = tmp("intree");
+fn a_yaks_dir_farm_is_refused() {
+    let base = tmp("yaksdir");
+    let farm = base.join(".yaks");
+    std::fs::create_dir_all(&farm).unwrap();
+    std::fs::write(farm.join("config.yaml"), "herd: t\n").unwrap();
+    std::fs::write(farm.join("schema"), "6\n").unwrap();
     git(&base, &["init", "-q", "-b", "main"]);
-    let init = Command::cargo_bin("yaks")
-        .unwrap()
-        .current_dir(&base)
-        .env("YAKS_SKILLS_AUTOSYNC", "0")
-        .args(["init"])
-        .output()
-        .unwrap();
-    assert!(init.status.success());
     let out = Command::cargo_bin("yaks")
         .unwrap()
         .current_dir(&base)
-        .env_remove("YAKS_DIR")
+        .env("YAKS_DIR", &farm)
         .env("YAKS_SKILLS_AUTOSYNC", "0")
         .args(["sync"])
         .output()

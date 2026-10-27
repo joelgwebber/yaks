@@ -1,52 +1,50 @@
 ---
 name: yaks
-description: Yaks task tracking workflow. Use when a .yaks/ directory exists in the project. Provides commands and guidance for managing filesystem-native tasks stored as markdown files with YAML frontmatter.
+description: Yaks task tracking workflow. Use when the project tracks work with yaks (`yaks path` prints a farm, or a `yaks` git branch exists). Provides commands and guidance for managing tasks stored as markdown files with YAML frontmatter on their own git branch.
 ---
 
 # Yaks — Task tracking workflow
 
-This project tracks work with yaks: each task (a **yak**) is a markdown file with YAML frontmatter in a `.yaks/` farm. Follow this workflow so task state stays accurate.
+This project tracks work with yaks: each task (a **yak**) is a markdown file with YAML frontmatter in a `.yaks/` **farm** that lives on its own git branch. Follow this workflow so task state stays accurate.
 
 ## Running yaks
 
 A plain CLI, run from the shell (no slash commands, nothing to keep running): `yaks <cmd>` if it is on `PATH`, else `npx @j15r/yaks <cmd>`, else `./target/release/yaks <cmd>` in a checkout you built. Add `--json` to any query command for machine-readable output; `yaks create --json` also prints the new id and path.
 
-**Which farm am I on?** `yaks path` (no arguments) prints it. Discovery uses `$YAKS_DIR` if set, else walks up from the cwd to the git top-level looking for `.yaks` (a directory, a symlink, or a pointer file), else uses the repo's **farm branch** worktree (below). It never walks past a git top-level, so a nested checkout does not read another checkout's farm by accident; the error names the fixes.
-
-**Starting a farm.** `yaks init --mode branch|private|pointer [--skills default|coordination]` creates the farm, its git excludes and the project-local skills in one idempotent step (re-run it to add what is missing; it never overwrites an edited skill). `branch` is the recommended mode; `--path <dir> --herd <prefix>` goes with `pointer`.
-
 ## Where the farm lives
 
-**On its own branch (recommended; this repo).** The farm is an orphan branch (`yaks`, or `git config yaks.branch`) holding only `.yaks/`, checked out once per machine in a worktree outside every checkout (under `~/.local/share/yaks/farms/`). Every checkout of the repo (the main one, git worktrees, agent clones) reads and writes that same farm, so yak edits are live everywhere and code branches carry no yak files.
+The farm is an orphan branch (`yaks`) holding only `.yaks/`, checked out once per machine under `~/.local/share/yaks/farms/`. Every checkout of the repo (yours, the human's, each agent clone) reads and writes that one farm, so yak edits are live everywhere.
 
-- **Never stage `.yaks/` with your code.**
-- **`yaks commit`** commits the farm on its branch, from any cwd. **`yaks status`** shows what is uncommitted, and whether the branch is ahead or behind its remote.
-- **`yaks sync`** commits, pulls (a rebase whose merge driver turns two machines' edits to one yak into a valid yak) and pushes. Nothing syncs on its own: **sync at session start, after landing work, and before switching machines.** If someone else coordinates, leave the sync to them unless asked. In `yaks tui`, `W` commits and `U` syncs.
-- **`yaks private`** keeps the farm on this machine: a `pre-push` hook refuses any push of the farm branch, and `yaks sync` commits and pulls but never pushes. `--off` undoes it.
-- A fresh clone needs no setup: the first command creates the farm worktree from `origin/yaks`. `yaks migrate --to-branch` moves a committed in-tree `.yaks/` onto a branch. A checkout that still holds an old committed `.yaks/` gets a warning and is redirected to the branch farm.
+```sh
+yaks path                  # which farm am I on?
+yaks status                # what is uncommitted; is the branch ahead/behind?
+yaks commit                # commit the farm on its branch (from any cwd)
+yaks sync                  # commit, pull (yak-aware merge), push
+```
 
-**Other layouts.**
-- **Private (local-only):** `.yaks/` is excluded from git (`.git/info/exclude`). Never commit yak files, and never put yak ids in commit messages, code or comments.
-- **Pointer:** a `.yaks` *file* with `path: <farm>` and optional `herd: <prefix>` points one or more repos at a shared out-of-tree farm (`yaks init --mode pointer`). `yaks merge` consolidates separate farms.
-- If in doubt, act as private: a leaked id is worse than a missing one.
+- **Never stage `.yaks/` with your code.** Code commits never contain yaks.
+- **Sync at session start, after landing work, and before switching machines.** Nothing syncs on its own. If someone else coordinates, leave the sync to them unless asked. In `yaks tui`, `W` commits and `U` syncs.
+- **Starting one:** `yaks init` (the branch, its worktree and these skills; idempotent). A clone of a repo with `origin/yaks` needs no setup.
+- **Sharing another repo's farm:** `yaks init --farm <checkout> --herd <h>` sets `git config yaks.farm`/`yaks.herd`; this repo then uses that farm, and `yaks create` puts new yaks in herd `<h>`.
+- **`YAKS_DIR=<dir>`** overrides discovery for one command.
 
-> **Footgun:** `git clean -fdx` deletes an excluded `.yaks/`. Back up a private in-tree farm, or use a private branch farm instead.
+**Private farms.** `yaks private` keeps the farm on this machine: a `pre-push` hook refuses any push of the farm branch, and `yaks sync` never pushes. `git config yaks.private` says whether it is set.
 
 ## Vocabulary
 
 - **States** (adjectives): **hairy** (not started), **shaving** (in progress), **shorn** (done), and the hidden **dead**.
 - **Verbs** (the commands): **shave** (hairy → shaving), **shear** / `yaks shorn` (shaving → shorn), **regrow** (shorn → hairy), **slaughter** (→ dead), **revive** (dead → hairy).
-- **Farm**: one `.yaks/` store. **Herd**: the yaks sharing one id prefix (a farm can hold several; `yaks create --herd <h>`). **Family**: a parent yak and its descendants. **Shed**: one checkout of the repo that someone works in.
+- **Farm**: one `.yaks/` store, on its own branch. **Herd**: the yaks sharing one id prefix (a farm can hold several; `yaks create --herd <h>`). **Family**: a parent yak and its descendants. **Shed**: one checkout of the repo that someone works in.
 
 ## Hard rules
 
 1. **Never write code without a shaving yak.** Even a one-line fix: `yaks shave <id>` first (create the yak if needed).
 2. **Shear as soon as the work is done:** evidence and a summary note, then `yaks shorn <id>`.
-3. **Keep yak ids out of external surfaces:** PR titles and bodies and external trackers. Ids go in commit messages only when the farm is published (a shared branch farm); with a private farm (`yaks private`, excluded or pointer) keep them out of commits, code and comments too. Use the external key instead (`yaks rollup --keys`; the **yaks-tracker** skill). `yaks scan-ids [FILE]` exits non-zero if text holds a real yak id; wire it into a hook.
+3. **Keep yak ids out of external surfaces:** PR titles and bodies and external trackers. Ids are fine in commit messages, unless the farm is private (`yaks private`): then keep ids, and the word "yaks", out of commits, code and comments, since their readers cannot see the farm. Use the external key instead (`yaks rollup --keys`; the **yaks-tracker** skill). `yaks scan-ids [FILE]` exits non-zero if text holds a real yak id; wire it into a hook.
 
 ## Workflow
 
-1. **Session start:** on a branch farm, `yaks sync` (unless a yakherd coordinates); then `yaks inbox --for agent` (answers and requests nobody has acted on: handle these first); then `yaks next`.
+1. **Session start:** `yaks sync` (unless a yakherd coordinates); then `yaks inbox --for agent` (answers and requests nobody has acted on: handle these first); then `yaks next`.
 2. **Before code:** `yaks shave <id>`, and its parent if still hairy. Re-read it with `yaks show <id>`; the latest note is the freshest signal.
 3. **While working:** `yaks update <id> --note "..."`, one event per note.
 4. **Done:** gather evidence, add a short summary note (see "Evidence before you shear"), `yaks shorn <id>`. Shear the parent when its last child is shorn; never leave a hairy parent over shorn children.
@@ -154,9 +152,9 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 | `dep` / `reparent` | Add/remove a dependency; move under `--parent <id>` or `--unparent` |
 | `bulk` | One field edit or reparent over a filtered set; dry-run unless `--commit`; refuses without a filter |
 | `rename` / `rename-herd` | Rename a yak or a whole herd, rewriting every reference; `--dry-run` first |
-| `status` / `commit` / `sync` | The farm's uncommitted changes; commit them; commit, pull and push a branch farm |
-| `private [--off]` | Keep a branch farm on this machine |
-| `init` / `migrate` / `merge` | Create a farm; upgrade an old schema or `--to-branch`; consolidate another farm |
+| `status` / `commit` / `sync` | The farm's uncommitted changes; commit them; commit, pull and push it |
+| `private [--off]` | Keep the farm on this machine |
+| `init` / `migrate` / `merge` | Start a farm (or `--farm` to share one); upgrade an old schema; consolidate another farm |
 | `doctor [--strict]` / `preflight` | Farm integrity; pre-landing check |
 | `stats` / `rollup [--keys]` | Counts; yaks grouped by external issue |
 | `skills install` / `skills status` | Install or check these skills |

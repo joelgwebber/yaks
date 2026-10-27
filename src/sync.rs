@@ -87,8 +87,7 @@ fn farm_worktree(root: &Path) -> Result<(PathBuf, String)> {
     let Some(branch) = store::farm_branch(root) else {
         bail!(
             "{} is not on its own farm branch, so there is nothing for `yaks sync` to do: \
-             commit it with `yaks commit` and push it with the code (or move it onto a branch \
-             with `yaks migrate --to-branch`)",
+             start a farm branch with `yaks init`",
             root.display()
         );
     };

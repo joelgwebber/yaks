@@ -1,24 +1,25 @@
-//! `yaks status` through the real binary, in a temp git repo with a committed
-//! (team) farm: the text, `--check` exit codes and `--json`.
+//! `yaks status` through the real binary, in a temp git repo whose farm is
+//! its farm branch: the text, `--check` exit codes and `--json`.
 
+mod common;
 use assert_cmd::Command;
 use std::path::{Path, PathBuf};
 
-/// A repo with a committed farm holding one yak; returns it and the yak's id.
+/// A repo whose farm (committed on its branch) holds one yak; returns it and
+/// the yak's id.
 fn repo(tag: &str) -> (PathBuf, String) {
     let dir = std::env::temp_dir().join(format!("yaks-status-{tag}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    git(&dir, &["init", "-q"]);
+    common::cleanup(&dir);
+    common::git_init(&dir);
     // `yaks commit` runs a plain `git commit`, which needs an identity; a CI
-    // runner has no global one, so the repo carries its own.
+    // runner has no global one, so the repo carries its own (shared by the
+    // farm worktree).
     git(&dir, &["config", "user.name", "t"]);
     git(&dir, &["config", "user.email", "t@t"]);
-    yaks(&dir, &["init"]);
+    yaks(&dir, &["init", "--skills", "none"]);
     let created = yaks(&dir, &["create", "first"]);
     let id = created.split([' ', ':']).nth(1).unwrap().to_string();
-    git(&dir, &["add", "."]);
-    git(&dir, &["commit", "-q", "-m", "init"]);
+    yaks(&dir, &["commit"]);
     (dir, id)
 }
 
@@ -36,6 +37,8 @@ fn run(dir: &Path, args: &[&str]) -> std::process::Output {
     Command::cargo_bin("yaks")
         .unwrap()
         .current_dir(dir)
+        .env("XDG_DATA_HOME", common::data_home(dir))
+        .env_remove("YAKS_DIR")
         .env("YAKS_SKILLS_AUTOSYNC", "0")
         .env("YAKS_ACTOR", "tester")
         .args(args)
@@ -56,7 +59,11 @@ fn yaks(dir: &Path, args: &[&str]) -> String {
 #[test]
 fn clean_then_dirty_with_check_exit_codes() {
     let (dir, id) = repo("check");
-    assert_eq!(yaks(&dir, &["status"]), "farm clean: nothing to commit\n");
+    assert_eq!(
+        yaks(&dir, &["status"]),
+        "farm clean: nothing to commit\n\
+         farm branch yaks: not published (no upstream); `yaks sync` publishes it\n"
+    );
     assert_eq!(run(&dir, &["status", "--check"]).status.code(), Some(0));
 
     yaks(&dir, &["update", &id, "--note", "hello"]);

@@ -270,7 +270,7 @@ mod tests {
         let root = parent.join(".yaks");
         std::fs::create_dir_all(&root).unwrap();
         std::fs::write(root.join("schema"), format!("{}\n", store::SCHEMA)).unwrap();
-        let farm = Farm::open(&parent).unwrap_or_else(|_| panic!("open {parent:?}"));
+        let farm = Farm::at(&root).unwrap_or_else(|_| panic!("open {parent:?}"));
         (root, farm)
     }
 
@@ -286,7 +286,7 @@ mod tests {
         let writer_root = root.parent().unwrap().to_path_buf();
         let writer = std::thread::spawn(move || {
             std::thread::sleep(Duration::from_millis(150));
-            let farm = Farm::open(&writer_root).unwrap_or_else(|_| panic!("open"));
+            let farm = Farm::at(&writer_root.join(".yaks")).unwrap_or_else(|_| panic!("open"));
             farm.answer("yak-0001", Some("joel"), Some("this one"), false)
                 .unwrap();
         });

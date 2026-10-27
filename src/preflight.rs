@@ -1,18 +1,14 @@
-//! `yaks preflight`: a read-only landing-readiness check for a team farm.
+//! `yaks preflight`: a read-only landing-readiness check.
 //!
-//! Run before landing (committing a shorn yak, merging a shed). It reports the
-//! slips that earlier landings hit: a new attachment directory that was never
-//! `git add`ed, yak edits left unstaged, a shorn yak whose `verify:` command did
-//! not last PASS, and a yak file with an invalid `status:` or an id that two
-//! files claim. With `--push-main` it
-//! also checks that the `local` remote is the human's checkout, before a
-//! `git push local <branch>:main`. One line per failure; it never mutates the
-//! farm or the repo (every git call here only reads: no push, fetch or write).
-//!
-//! When the farm is a branch with its own worktree ([`store::farm_branch`]) the
-//! git-state check changes meaning: uncommitted yak files are that farm's normal
-//! state and the code push does not carry them, so they are one warning line
-//! (`yaks commit` is the fix), not a failure; unresolved conflicts still fail.
+//! Run before landing work. It reports the slips that earlier landings hit: a
+//! shorn yak whose `verify:` command did not last PASS, a yak file with an
+//! invalid `status:` or an id that two files claim, and an unresolved merge
+//! conflict in the farm. Uncommitted farm changes are normal (the farm branch
+//! is committed with `yaks commit`, not with the code), so they are one warning
+//! line. With `--push-main` it also checks that the `local` remote is the
+//! human's checkout, before a `git push local <branch>:main`. One line per
+//! failure; it never mutates the farm or the repo (every git call here only
+//! reads: no push, fetch or write).
 
 use crate::farm::{Farm, IssueKind};
 use crate::model::Status;
@@ -24,7 +20,7 @@ use std::path::{Path, PathBuf};
 /// The checks preflight runs; `code()` is the stable name used in `--json`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Check {
-    /// Something under the farm is untracked or has unstaged changes in git.
+    /// A farm file has unresolved merge conflicts.
     GitState,
     /// A shorn yak's verify command (own, else the config default for its
     /// labels) did not last PASS.
@@ -62,8 +58,8 @@ pub struct Failure {
 #[derive(Debug, Default)]
 pub struct Report {
     pub failures: Vec<Failure>,
-    /// Checks that could not apply here (e.g. git state in a private farm),
-    /// each a clear line saying why. Not failures.
+    /// Checks that could not apply here (e.g. git state for a farm that is not
+    /// a farm branch), each a clear line saying why. Not failures.
     pub skipped: Vec<String>,
     /// Notes that do not fail the check: a farm branch's uncommitted changes
     /// (normal there; `yaks commit` is the next step, not `git add`).
@@ -81,17 +77,16 @@ impl Report {
 /// or a clash anywhere would ride along into the landing commit or merge.
 ///
 /// The verify scope is: the `ids` given; else, with `all`, every shorn yak; else
-/// the shorn yaks that are part of the change in git (staged, modified or new
-/// under the farm, including a new `<id>/` attachment dir), so an old shorn yak that
-/// never ran `verify` is not blamed for a landing it is not in. A farm git
-/// cannot describe (private, or outside a repository) checks every shorn yak.
+/// the shorn yaks the farm has uncommitted changes to (modified or new,
+/// including a new `<id>/` attachment dir), so an old shorn yak that never ran
+/// `verify` is not blamed for a landing it is not in. A farm that is not a farm
+/// branch (reached through `YAKS_DIR`) checks every shorn yak.
 ///
 /// `push_main` adds the `local`-remote check. It is opt-in: it depends on the
 /// state of another checkout (the human's), which a worker committing its yak
 /// can neither fix nor should be failed by; only the one landing on `main` asks.
 /// It is asked of `cwd`, the checkout that will run `git push local`, which is
-/// not the farm's checkout when the farm is live (`live_branch:`, a separate
-/// worktree; yaks-5924).
+/// not the farm's checkout (the farm branch's own worktree; yaks-5924).
 pub fn run(farm: &Farm, cwd: &Path, ids: &[String], all: bool, push_main: bool) -> Result<Report> {
     let mut report = Report::default();
     let changed = git_state(farm.root(), &mut report)?;
@@ -117,26 +112,19 @@ fn stdout_of(out: &std::process::Output) -> String {
     String::from_utf8_lossy(&out.stdout).trim().to_string()
 }
 
-/// Check 1: nothing under the farm is untracked or has unstaged changes.
-/// Staged changes pass: staging is the step right before the landing commit.
-/// A farm branch's worktree is committed with `yaks commit`, not `git add`, so
-/// its uncommitted changes (staged or not) are counted into one warning.
+/// Check 1: the farm branch's worktree has no unresolved merge conflict. Its
+/// other uncommitted changes are its normal state (`yaks commit` commits them),
+/// so they are counted into one warning. Returns the yaks those changes touch
+/// (the default verify scope), or `None` for a farm that is not a farm branch,
+/// where the check is skipped.
 fn git_state(root: &Path, report: &mut Report) -> Result<Option<BTreeSet<String>>> {
-    let git = |args: &[&str]| git_out(root, args);
-    let tracked = git(&["ls-files", "--", "."])?;
-    if !tracked.status.success() {
-        report
-            .skipped
-            .push("git state: skipped (the farm is not inside a git repository)".into());
-        return Ok(None);
-    }
-    if tracked.stdout.is_empty() {
+    if store::farm_branch(root).is_none() {
         report.skipped.push(
-            "git state: skipped (private farm: nothing under the farm is tracked by git)".into(),
+            "git state: skipped (the farm is not a farm branch, e.g. one named by YAKS_DIR)".into(),
         );
         return Ok(None);
     }
-    let status = git(&["status", "--porcelain", "-z", "--", "."])?;
+    let status = git_out(root, &["status", "--porcelain", "-z", "--", "."])?;
     if !status.status.success() {
         anyhow::bail!(
             "git status failed: {}",
@@ -144,7 +132,6 @@ fn git_state(root: &Path, report: &mut Report) -> Result<Option<BTreeSet<String>
         );
     }
     let out = String::from_utf8_lossy(&status.stdout);
-    let branch_farm = store::farm_branch(root).is_some();
     let mut uncommitted = 0usize;
     let mut changed = BTreeSet::new();
     let mut entries = out.split('\0').filter(|e| !e.is_empty());
@@ -159,29 +146,18 @@ fn git_state(root: &Path, report: &mut Report) -> Result<Option<BTreeSet<String>
         if matches!(x, 'R' | 'C') {
             entries.next();
         }
-        // Every entry, staged or not, puts its yak in the change being landed.
         if let Some(id) = yak_id_of(path) {
             changed.insert(id);
         }
-        let conflict = x == 'U' || y == 'U' || xy == "AA" || xy == "DD";
-        if branch_farm && !conflict {
-            uncommitted += 1;
-            continue;
-        }
-        let message = if xy == "??" {
-            format!("{path} is untracked (git add it)")
-        } else if conflict {
-            format!("{path} has unresolved merge conflicts")
-        } else if y != ' ' {
-            format!("{path} has unstaged changes (git add it)")
+        if x == 'U' || y == 'U' || xy == "AA" || xy == "DD" {
+            report.failures.push(Failure {
+                check: Check::GitState,
+                message: format!("{path} has unresolved merge conflicts"),
+                subjects: vec![path.to_string()],
+            });
         } else {
-            continue; // staged only: ready to commit
-        };
-        report.failures.push(Failure {
-            check: Check::GitState,
-            message,
-            subjects: vec![path.to_string()],
-        });
+            uncommitted += 1;
+        }
     }
     if uncommitted > 0 {
         report.warnings.push(format!(
@@ -192,8 +168,7 @@ fn git_state(root: &Path, report: &mut Report) -> Result<Option<BTreeSet<String>
 }
 
 /// The yak a repository path belongs to: `.yaks/<herd>/yaks/<id>.md` or an
-/// attachment `.yaks/<herd>/yaks/<id>/...` (the farm may sit below the repo root). A committed farm
-/// is always a `.yaks/` directory, so everything after the last `.yaks`
+/// attachment `.yaks/<herd>/yaks/<id>/...`. Everything after the last `.yaks`
 /// component is relative to the farm root ([`store::path_owner`]).
 pub(crate) fn yak_id_of(path: &str) -> Option<String> {
     let parts: Vec<&str> = path.split('/').collect();
@@ -446,26 +421,20 @@ mod tests {
         assert!(out.status.success(), "git {args:?}: {out:?}");
     }
 
-    /// A temp git repo with a near-empty farm committed in it, so the farm counts
-    /// as team-mode (something under `.yaks/` is tracked).
-    fn team_repo() -> (PathBuf, Farm) {
-        let repo = std::env::temp_dir().join(format!(
-            "yaks-preflight-{}-{}",
-            std::process::id(),
-            SEQ.fetch_add(1, Ordering::Relaxed)
-        ));
-        let root = repo.join(".yaks");
-        std::fs::create_dir_all(&root).unwrap();
-        std::fs::write(root.join("config.yaml"), "herd: yak\n").unwrap();
+    /// A farm branch's worktree (`repo`, holding `.yaks/`) with a near-empty
+    /// farm committed on it, beside its code repo; `repo` is also a checkout
+    /// whose `local` remote the push-main tests set.
+    fn farm_repo() -> (PathBuf, Farm) {
+        let (_code, wt) = branch_farm();
+        let root = wt.join(".yaks");
         // An already-committed artifact dir, as in a real farm (git collapses an
         // untracked dir to its topmost new directory).
         std::fs::create_dir_all(store::artifact_dir(&root, "yak-0000")).unwrap();
         std::fs::write(store::artifact_dir(&root, "yak-0000").join("old.txt"), "x").unwrap();
-        git(&repo, &["init", "-q"]);
-        git(&repo, &["add", "."]);
-        git(&repo, &["commit", "-q", "-m", "init"]);
-        let farm = Farm::open(&repo).unwrap_or_else(|_| panic!("open farm at {repo:?}"));
-        (repo, farm)
+        git(&wt, &["add", "."]);
+        git(&wt, &["commit", "-q", "-m", "attachment"]);
+        let farm = Farm::open(&wt).unwrap_or_else(|_| panic!("open farm at {wt:?}"));
+        (wt, farm)
     }
 
     fn task(id: &str, status: Status) -> Task {
@@ -503,71 +472,38 @@ mod tests {
     }
 
     #[test]
-    fn clean_team_repo_is_ok() {
-        let (_repo, farm) = team_repo();
+    fn a_clean_farm_is_ok() {
+        let (_repo, farm) = farm_repo();
         let report = run(&farm, farm.root(), &[], false, false).unwrap();
         assert!(report.ok(), "{:?}", report.failures);
         assert!(report.skipped.is_empty());
     }
 
     #[test]
-    fn untracked_artifacts_dir_fails_naming_it_and_passes_once_added() {
-        let (repo, farm) = team_repo();
-        let dir = repo.join(".yaks/yak/yaks/yak-0001");
-        std::fs::create_dir_all(&dir).unwrap();
-        std::fs::write(dir.join("frame.txt"), "x").unwrap();
-        let f = failures(&farm, &[], Check::GitState);
-        assert_eq!(f.len(), 1, "{f:?}");
-        assert!(
-            f[0].message.contains(".yaks/yak/yaks/yak-0001/"),
-            "{}",
-            f[0].message
-        );
-        assert!(f[0].message.contains("untracked"));
-        git(&repo, &["add", ".yaks"]);
-        assert!(
-            run(&farm, farm.root(), &[], false, false).unwrap().ok(),
-            "staged passes"
-        );
-    }
-
-    #[test]
-    fn unstaged_yak_edit_fails_and_passes_once_staged() {
-        let (repo, farm) = team_repo();
-        store::write::save(&repo.join(".yaks"), &task("yak-0001", Status::Hairy)).unwrap();
-        git(&repo, &["add", "."]);
-        git(&repo, &["commit", "-q", "-m", "add yak"]);
-        assert!(run(&farm, farm.root(), &[], false, false).unwrap().ok());
-        let file = repo.join(".yaks/yak/yaks/yak-0001.md");
-        let text = std::fs::read_to_string(&file).unwrap();
-        std::fs::write(&file, format!("{text}\nedited\n")).unwrap();
-        let f = failures(&farm, &[], Check::GitState);
-        assert_eq!(f.len(), 1, "{f:?}");
-        assert!(f[0].message.contains("yak-0001.md") && f[0].message.contains("unstaged"));
-        git(&repo, &["add", ".yaks"]);
-        assert!(run(&farm, farm.root(), &[], false, false).unwrap().ok());
-    }
-
-    #[test]
     fn changes_outside_the_farm_are_not_flagged() {
-        let (repo, farm) = team_repo();
+        let (repo, farm) = farm_repo();
         std::fs::write(repo.join("code.rs"), "fn main() {}").unwrap();
         assert!(run(&farm, farm.root(), &[], false, false).unwrap().ok());
     }
 
     #[test]
-    fn private_farm_skips_git_state_but_still_runs_other_checks() {
-        let (repo, farm) = team_repo();
-        // Untrack the farm and ignore it: now `git ls-files .yaks` is empty.
-        git(&repo, &["rm", "-rq", "--cached", ".yaks"]);
-        std::fs::write(repo.join(".gitignore"), ".yaks/\n").unwrap();
+    fn a_yaks_dir_farm_skips_git_state_but_still_runs_other_checks() {
+        let dir = std::env::temp_dir().join(format!(
+            "yaks-preflight-plain-{}-{}",
+            std::process::id(),
+            SEQ.fetch_add(1, Ordering::Relaxed)
+        ));
+        let root = dir.join(".yaks");
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(root.join("config.yaml"), "herd: yak\n").unwrap();
         let mut bad = task("yak-0001", Status::Shorn);
         bad.verify = Some("false".into());
         bad.body = note("verify: `false` -> FAIL (exit 1)");
-        store::write::save(&repo.join(".yaks"), &bad).unwrap();
+        store::write::save(&root, &bad).unwrap();
+        let farm = Farm::at(&root).unwrap_or_else(|_| panic!("open"));
         let report = run(&farm, farm.root(), &[], false, false).unwrap();
         assert_eq!(report.skipped.len(), 1);
-        assert!(report.skipped[0].contains("private farm"));
+        assert!(report.skipped[0].contains("not a farm branch"));
         assert!(report.failures.iter().all(|f| f.check != Check::GitState));
         assert_eq!(
             report.failures.len(),
@@ -680,7 +616,7 @@ mod tests {
 
     #[test]
     fn verify_check_passes_and_fails_on_the_last_verify_note() {
-        let (repo, farm) = team_repo();
+        let (repo, farm) = farm_repo();
         let root = repo.join(".yaks");
         let mut ok = task("yak-0001", Status::Shorn);
         ok.verify = Some("true".into());
@@ -708,7 +644,7 @@ mod tests {
 
     #[test]
     fn verify_check_uses_the_config_default_for_the_yaks_labels() {
-        let (repo, farm) = team_repo();
+        let (repo, farm) = farm_repo();
         let root = repo.join(".yaks");
         std::fs::write(
             root.join("config.yaml"),
@@ -730,7 +666,7 @@ mod tests {
 
     #[test]
     fn unknown_id_fails_and_unshorn_ids_are_ignored() {
-        let (repo, farm) = team_repo();
+        let (repo, farm) = farm_repo();
         let mut t = task("yak-0001", Status::Shaving);
         t.verify = Some("false".into());
         store::write::save(&repo.join(".yaks"), &t).unwrap();
@@ -743,7 +679,7 @@ mod tests {
 
     #[test]
     fn one_id_in_two_files_fails() {
-        let (repo, farm) = team_repo();
+        let (repo, farm) = farm_repo();
         let root = repo.join(".yaks");
         store::write::save(&root, &task("yak-0001", Status::Shorn)).unwrap();
         std::fs::copy(store::task_path(&root, "yak-0001"), root.join("copy.md")).unwrap();
@@ -756,7 +692,7 @@ mod tests {
 
     #[test]
     fn invalid_status_value_fails() {
-        let (repo, farm) = team_repo();
+        let (repo, farm) = farm_repo();
         let root = repo.join(".yaks");
         let text = store::write::render(&task("yak-0001", Status::Hairy))
             .replace("status: hairy", "status: finished");
@@ -772,7 +708,7 @@ mod tests {
     /// it is not part of; `--all` is the farm-wide check.
     #[test]
     fn default_scope_is_the_yaks_in_the_change_and_all_is_farm_wide() {
-        let (repo, farm) = team_repo();
+        let (repo, farm) = farm_repo();
         let root = repo.join(".yaks");
         let mut old = task("yak-0001", Status::Shorn);
         old.verify = Some("true".into());
@@ -800,7 +736,7 @@ mod tests {
 
     #[test]
     fn a_new_artifacts_dir_puts_its_yak_in_scope() {
-        let (repo, farm) = team_repo();
+        let (repo, farm) = farm_repo();
         let root = repo.join(".yaks");
         let mut old = task("yak-0001", Status::Shorn);
         old.verify = Some("true".into());
@@ -872,8 +808,8 @@ mod tests {
     fn push_main_checks_the_invoking_checkout_not_a_live_farms_worktree() {
         // A live farm (yaks-5924): the farm lives in its own repo/worktree with no
         // `local` remote; the checkout that pushes `main` has one.
-        let (_farm_repo, farm) = team_repo();
-        let (code, _code_farm) = team_repo();
+        let (_farm_repo, farm) = farm_repo();
+        let (code, _code_farm) = farm_repo();
         let human = human_checkout();
         git(&code, &["remote", "add", "local", human.to_str().unwrap()]);
         let local = |cwd: &Path| {
@@ -890,7 +826,7 @@ mod tests {
 
     #[test]
     fn local_that_is_a_real_checkout_with_main_passes() {
-        let (repo, farm) = team_repo();
+        let (repo, farm) = farm_repo();
         let human = human_checkout();
         let f = local_failures(&repo, &farm, human.to_str().unwrap());
         assert!(f.is_empty(), "{f:?}");
@@ -898,7 +834,7 @@ mod tests {
 
     #[test]
     fn local_pointing_at_the_git_dir_of_a_checkout_passes_and_is_checked_for_dirt() {
-        let (repo, farm) = team_repo();
+        let (repo, farm) = farm_repo();
         let human = human_checkout();
         git(
             &repo,
@@ -924,7 +860,7 @@ mod tests {
 
     #[test]
     fn bare_local_fails_and_names_the_pr_branch_fallback() {
-        let (repo, farm) = team_repo();
+        let (repo, farm) = farm_repo();
         let human = human_checkout();
         let bare = std::env::temp_dir().join(format!("yaks-bare-{}.git", std::process::id()));
         let _ = std::fs::remove_dir_all(&bare);
@@ -943,7 +879,7 @@ mod tests {
 
     #[test]
     fn empty_managed_style_bare_local_fails() {
-        let (repo, farm) = team_repo();
+        let (repo, farm) = farm_repo();
         let bare = std::env::temp_dir().join(format!("yaks-managed-{}.git", std::process::id()));
         let _ = std::fs::remove_dir_all(&bare);
         std::fs::create_dir_all(&bare).unwrap();
@@ -954,7 +890,7 @@ mod tests {
 
     #[test]
     fn non_bare_local_without_main_fails() {
-        let (repo, farm) = team_repo();
+        let (repo, farm) = farm_repo();
         let human = human_checkout();
         git(&human, &["checkout", "-q", "-b", "work"]);
         git(&human, &["branch", "-q", "-D", "main"]);
@@ -965,7 +901,7 @@ mod tests {
 
     #[test]
     fn missing_local_remote_fails_only_when_asked() {
-        let (_repo, farm) = team_repo();
+        let (_repo, farm) = farm_repo();
         assert!(
             run(&farm, farm.root(), &[], false, false).unwrap().ok(),
             "off by default"
@@ -978,12 +914,12 @@ mod tests {
 
     #[test]
     fn missing_local_path_fails() {
-        let (repo, farm) = team_repo();
+        let (repo, farm) = farm_repo();
         let gone = std::env::temp_dir().join(format!("yaks-gone-{}", std::process::id()));
         let msg = only_message(local_failures(&repo, &farm, gone.to_str().unwrap()));
         assert!(msg.contains("does not exist"), "{msg}");
         // A directory that is not a repository is reported too.
-        let (repo, farm) = team_repo();
+        let (repo, farm) = farm_repo();
         let plain = std::env::temp_dir().join(format!("yaks-plain-{}", std::process::id()));
         std::fs::create_dir_all(&plain).unwrap();
         let msg = only_message(local_failures(&repo, &farm, plain.to_str().unwrap()));
@@ -992,7 +928,7 @@ mod tests {
 
     #[test]
     fn dirty_checkout_on_main_fails_but_untracked_files_and_other_branches_do_not() {
-        let (repo, farm) = team_repo();
+        let (repo, farm) = farm_repo();
         let human = human_checkout();
         let url = human.to_str().unwrap();
         git(&repo, &["remote", "add", "local", url]);
@@ -1024,7 +960,7 @@ mod tests {
             "ssh://git@example.com/me/repo.git",
             "git@example.com:me/repo.git",
         ] {
-            let (repo, farm) = team_repo();
+            let (repo, farm) = farm_repo();
             let msg = only_message(local_failures(&repo, &farm, url));
             assert!(
                 msg.contains(url) && msg.contains("not a path on this machine"),

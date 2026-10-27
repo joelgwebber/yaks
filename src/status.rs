@@ -48,8 +48,9 @@ pub struct SyncState {
 
 #[derive(Debug)]
 pub struct Report {
-    /// Nothing under the farm is tracked by git.
-    pub private: bool,
+    /// Nothing under the farm is tracked by git (a `YAKS_DIR` farm that is
+    /// not a farm branch).
+    pub untracked: bool,
     /// A merge or cherry-pick is in progress: `(the ref git sets, what it is)`.
     pub pending: Option<(&'static str, &'static str)>,
     pub yaks: Vec<YakLine>,
@@ -74,7 +75,7 @@ impl Report {
 pub fn collect(root: &Path) -> Result<Report> {
     let Some(changes) = changes::read(root)? else {
         return Ok(Report {
-            private: true,
+            untracked: true,
             pending: None,
             yaks: Vec::new(),
             other: Vec::new(),
@@ -113,7 +114,7 @@ pub fn collect(root: &Path) -> Result<Report> {
         })
         .collect();
     Ok(Report {
-        private: false,
+        untracked: false,
         pending: changes::pending_operation(root)?,
         yaks,
         other,
@@ -125,8 +126,8 @@ pub fn collect(root: &Path) -> Result<Report> {
 
 /// How the farm branch stands against its upstream, from the refs as of the
 /// last fetch: never fetches, never writes. `None` unless the farm at `root`
-/// is a dedicated farm-branch worktree ([`store::farm_branch`]; an in-tree
-/// farm has no branch of its own) or git cannot say.
+/// is a dedicated farm-branch worktree ([`store::farm_branch`]) or git cannot
+/// say.
 pub fn sync_state(root: &Path) -> Option<SyncState> {
     let branch = store::farm_branch(root)?;
     let top = root.parent()?;
@@ -254,8 +255,8 @@ pub(crate) fn describe(old: &str, new: &str) -> (usize, bool) {
 
 /// The text output.
 pub fn render(r: &Report) -> String {
-    if r.private {
-        return "private farm: not tracked by git, nothing to commit\n".to_string();
+    if r.untracked {
+        return "farm not in git (not a farm branch): nothing to commit\n".to_string();
     }
     let mut out = String::new();
     if r.clean() {
@@ -312,7 +313,7 @@ pub fn render(r: &Report) -> String {
 /// The `--json` output.
 pub fn to_json(r: &Report) -> Value {
     json!({
-        "private": r.private,
+        "untracked": r.untracked,
         "clean": r.clean(),
         "merge_in_progress": r.pending.is_some(),
         "yaks": r.yaks.iter().map(|y| json!({
@@ -361,9 +362,10 @@ mod tests {
         std::fs::write(p, text).unwrap();
     }
 
-    /// A committed team farm: `yak-0001` hairy, `yak-0002` shaving (with an
+    /// A committed farm (the shape of a farm branch's worktree, as far as git
+    /// is concerned): `yak-0001` hairy, `yak-0002` shaving (with an
     /// attachment), config and a source file.
-    fn team_repo() -> PathBuf {
+    fn farm_repo() -> PathBuf {
         let repo = std::env::temp_dir().join(format!(
             "yaks-status-{}-{}",
             std::process::id(),
@@ -422,15 +424,15 @@ mod tests {
 
     #[test]
     fn clean_farm() {
-        let repo = team_repo();
+        let repo = farm_repo();
         let r = report(&repo);
-        assert!(r.clean() && !r.private && r.message.is_none());
+        assert!(r.clean() && !r.untracked && r.message.is_none());
         assert_eq!(render(&r), "farm clean: nothing to commit\n");
     }
 
     #[test]
     fn created_yak() {
-        let repo = team_repo();
+        let repo = farm_repo();
         put(&repo, ".yaks/yak/yaks/yak-0003.md", "three\n");
         let r = report(&repo);
         assert_eq!(lines(&r), [("yak-0003".into(), "created".into())]);
@@ -439,7 +441,7 @@ mod tests {
 
     #[test]
     fn moved_yak_with_its_transition_note_is_just_a_move() {
-        let repo = team_repo();
+        let repo = farm_repo();
         put(
             &repo,
             ".yaks/yak/yaks/yak-0002.md",
@@ -459,7 +461,7 @@ mod tests {
 
     #[test]
     fn new_notes_are_counted() {
-        let repo = team_repo();
+        let repo = farm_repo();
         append(&repo, ".yaks/yak/yaks/yak-0001.md", &note("one"));
         append(&repo, ".yaks/yak/yaks/yak-0001.md", &note("two"));
         let r = report(&repo);
@@ -468,7 +470,7 @@ mod tests {
 
     #[test]
     fn a_field_edit_is_an_edit_even_with_a_note() {
-        let repo = team_repo();
+        let repo = farm_repo();
         put(
             &repo,
             ".yaks/yak/yaks/yak-0001.md",
@@ -487,7 +489,7 @@ mod tests {
 
     #[test]
     fn only_the_updated_stamp_changing_still_reads_as_edited() {
-        let repo = team_repo();
+        let repo = farm_repo();
         put(
             &repo,
             ".yaks/yak/yaks/yak-0001.md",
@@ -501,7 +503,7 @@ mod tests {
 
     #[test]
     fn removed_yak() {
-        let repo = team_repo();
+        let repo = farm_repo();
         std::fs::remove_file(repo.join(".yaks/yak/yaks/yak-0001.md")).unwrap();
         assert_eq!(
             lines(&report(&repo)),
@@ -511,7 +513,7 @@ mod tests {
 
     #[test]
     fn new_artifact_and_config_change() {
-        let repo = team_repo();
+        let repo = farm_repo();
         put(&repo, ".yaks/yak/yaks/yak-0002/b.txt", "b\n");
         put(&repo, ".yaks/config.yaml", "herd: other\n");
         let r = report(&repo);
@@ -522,7 +524,7 @@ mod tests {
 
     #[test]
     fn staged_versus_unstaged() {
-        let repo = team_repo();
+        let repo = farm_repo();
         append(&repo, ".yaks/yak/yaks/yak-0001.md", &note("n"));
         put(&repo, ".yaks/yak/yaks/yak-0003.md", "three\n");
         git(&repo, &["add", ".yaks/yak/yaks/yak-0003.md"]);
@@ -536,7 +538,7 @@ mod tests {
 
     #[test]
     fn several_kinds_of_change_share_one_line() {
-        let repo = team_repo();
+        let repo = farm_repo();
         put(
             &repo,
             ".yaks/yak/yaks/yak-0002.md",
@@ -560,7 +562,7 @@ mod tests {
 
     #[test]
     fn flat_status_change_reads_as_a_move() {
-        let repo = team_repo();
+        let repo = farm_repo();
         put(
             &repo,
             ".yaks/yak/yaks/yak-0001.md",
@@ -576,7 +578,7 @@ mod tests {
 
     #[test]
     fn flat_status_change_plus_note_reports_both() {
-        let repo = team_repo();
+        let repo = farm_repo();
         put(
             &repo,
             ".yaks/yak/yaks/yak-0002.md",
@@ -598,7 +600,7 @@ mod tests {
 
     #[test]
     fn flat_edit_without_a_status_change_is_not_a_move() {
-        let repo = team_repo();
+        let repo = farm_repo();
         append(&repo, ".yaks/yak/yaks/yak-0001.md", &note("just a note"));
         let r = report(&repo);
         assert_eq!(lines(&r), [("yak-0001".into(), "notes +1".into())]);
@@ -607,7 +609,7 @@ mod tests {
 
     #[test]
     fn flat_attachment_reports_artifacts() {
-        let repo = team_repo();
+        let repo = farm_repo();
         put(&repo, ".yaks/yak/yaks/yak-0001/frame.svg", "<svg/>\n");
         let r = report(&repo);
         assert_eq!(lines(&r), [("yak-0001".into(), "artifacts".into())]);
@@ -616,7 +618,7 @@ mod tests {
 
     #[test]
     fn a_staged_status_change_reads_as_a_staged_move() {
-        let repo = team_repo();
+        let repo = farm_repo();
         put(
             &repo,
             ".yaks/yak/yaks/yak-0001.md",
@@ -632,22 +634,22 @@ mod tests {
     }
 
     #[test]
-    fn private_farm() {
-        let repo = team_repo();
+    fn an_untracked_farm() {
+        let repo = farm_repo();
         git(&repo, &["rm", "-rq", "--cached", ".yaks"]);
         put(&repo, ".gitignore", ".yaks/\n");
         put(&repo, ".yaks/yak/yaks/yak-0009.md", "nine\n");
         let r = report(&repo);
-        assert!(r.private && r.clean());
+        assert!(r.untracked && r.clean());
         assert_eq!(
             render(&r),
-            "private farm: not tracked by git, nothing to commit\n"
+            "farm not in git (not a farm branch): nothing to commit\n"
         );
     }
 
     #[test]
     fn merge_in_progress_says_commit_will_refuse() {
-        let repo = team_repo();
+        let repo = farm_repo();
         git(&repo, &["checkout", "-q", "-b", "side"]);
         put(&repo, "side.txt", "s\n");
         git(&repo, &["add", "."]);
@@ -665,7 +667,7 @@ mod tests {
 
     #[test]
     fn code_changes_are_counted_not_listed() {
-        let repo = team_repo();
+        let repo = farm_repo();
         put(&repo, "src/code.rs", "dirty\n");
         put(&repo, "src/new.rs", "\n");
         let r = report(&repo);
@@ -681,7 +683,7 @@ mod tests {
 
     #[test]
     fn json_shape() {
-        let repo = team_repo();
+        let repo = farm_repo();
         append(&repo, ".yaks/yak/yaks/yak-0001.md", &note("n"));
         put(&repo, ".yaks/config.yaml", "herd: other\n");
         let v = to_json(&report(&repo));
@@ -691,14 +693,14 @@ mod tests {
         assert_eq!(v["yaks"][0]["changes"][0], "notes +1");
         assert_eq!(v["yaks"][0]["staged"], false);
         assert_eq!(v["other"][0]["path"], "config");
-        let clean = to_json(&report(&team_repo()));
+        let clean = to_json(&report(&farm_repo()));
         assert_eq!(clean["clean"], true);
         assert_eq!(clean["yaks"].as_array().unwrap().len(), 0);
     }
 
     #[test]
     fn status_writes_nothing() {
-        let repo = team_repo();
+        let repo = farm_repo();
         append(&repo, ".yaks/yak/yaks/yak-0001.md", &note("n"));
         put(&repo, ".yaks/yak/yaks/yak-0003.md", "three\n");
         let before = git(&repo, &["status", "--porcelain"]);
@@ -854,7 +856,7 @@ mod tests {
 
     #[test]
     fn an_in_tree_farm_has_no_sync_state() {
-        let repo = team_repo();
+        let repo = farm_repo();
         assert_eq!(sync_state(&farm(&repo)), None);
         let r = report(&repo);
         assert!(r.sync.is_none() && !render(&r).contains("farm branch"));
@@ -889,7 +891,7 @@ mod tests {
     /// yaks under the same verbs, on a fixture with every kind of change.
     #[test]
     fn status_agrees_with_the_commit_message() {
-        let repo = team_repo();
+        let repo = farm_repo();
         put(&repo, ".yaks/yak/yaks/yak-0003.md", "three\n"); // created
         put(&repo, ".yaks/yak/yaks/yak-0004.md", "four\n");
         append(&repo, ".yaks/yak/yaks/yak-0001.md", &note("n")); // notes

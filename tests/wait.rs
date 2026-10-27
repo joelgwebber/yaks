@@ -2,6 +2,7 @@
 //! prints for the same flags and exits 0; a timeout exits 2 with nothing on
 //! stdout; a background answer wakes a waiting process.
 
+mod common;
 use assert_cmd::Command;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -13,10 +14,10 @@ struct Farm {
 impl Farm {
     fn new(tag: &str) -> Farm {
         let dir = std::env::temp_dir().join(format!("yaks-wait-{tag}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
+        common::cleanup(&dir);
+        common::git_init(&dir);
         let f = Farm { dir };
-        f.run("tester", &["init"]);
+        f.run("tester", &["init", "--skills", "none"]);
         f
     }
 
@@ -24,6 +25,7 @@ impl Farm {
         Command::cargo_bin("yaks")
             .unwrap()
             .current_dir(&self.dir)
+            .env("XDG_DATA_HOME", common::data_home(&self.dir))
             .env("YAKS_SKILLS_AUTOSYNC", "0")
             .env("YAKS_ACTOR", actor)
             .args(args)
@@ -50,7 +52,7 @@ impl Farm {
 
 impl Drop for Farm {
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.dir);
+        common::cleanup(&self.dir);
     }
 }
 
@@ -104,6 +106,7 @@ fn a_background_answer_wakes_the_waiter() {
     let start = Instant::now();
     let waiter = std::process::Command::new(bin)
         .current_dir(&f.dir)
+        .env("XDG_DATA_HOME", common::data_home(&f.dir))
         .env("YAKS_SKILLS_AUTOSYNC", "0")
         .env("YAKS_ACTOR", "agt")
         .args([

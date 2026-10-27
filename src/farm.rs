@@ -125,18 +125,18 @@ pub enum OpenError {
 /// (leaves room for a future stat-validated index without changing callers).
 pub struct Farm {
     root: PathBuf,
-    /// This repo's default herd (id prefix), when discovery followed a `.yaks`
-    /// pointer file carrying `prefix:`. Used by `create` below an explicit
-    /// `--prefix` and above the farm's config default.
-    pointer_prefix: Option<String>,
+    /// This repo's default herd (id prefix): `git config yaks.herd`, if set.
+    /// Used by `create` below an explicit `--herd` and above the farm's
+    /// config default.
+    repo_herd: Option<String>,
 }
 
 /// Fields for a new task (defaults resolved from config inside `create`).
 #[derive(Default)]
 pub struct NewTask {
     pub title: String,
-    /// Which herd (id prefix) the new yak joins. `None` uses the repo's pointer
-    /// herd, else the farm's configured default herd; with neither, `create`
+    /// Which herd (id prefix) the new yak joins. `None` uses the repo's
+    /// `yaks.herd`, else the farm's configured default herd; with neither, `create`
     /// errors rather than guess. One farm can hold several herds.
     pub prefix: Option<String>,
     pub kind: Option<String>,
@@ -696,7 +696,28 @@ impl Farm {
 
     fn open_inner(cwd: &Path, allow_unmigrated: bool) -> std::result::Result<Farm, OpenError> {
         let found = store::discover(cwd).map_err(|e| OpenError::NoFarm(e.to_string()))?;
-        let root = found.root;
+        Self::open_root(found.root, found.prefix, allow_unmigrated)
+    }
+
+    /// Open the farm root `root` (a `.yaks/` directory) directly, with the same
+    /// schema gate as [`Farm::open`] but no discovery: what `YAKS_DIR` does.
+    /// Tests use it for a scratch farm outside any repository.
+    #[cfg(test)]
+    pub(crate) fn at(root: &Path) -> std::result::Result<Farm, OpenError> {
+        Self::open_root(root.to_path_buf(), None, false)
+    }
+
+    /// [`Farm::at`] for a farm behind the current schema (what `migrate` opens).
+    #[cfg(test)]
+    pub(crate) fn at_for_migration(root: &Path) -> std::result::Result<Farm, OpenError> {
+        Self::open_root(root.to_path_buf(), None, true)
+    }
+
+    fn open_root(
+        root: PathBuf,
+        repo_herd: Option<String>,
+        allow_unmigrated: bool,
+    ) -> std::result::Result<Farm, OpenError> {
         if let store::SchemaStatus::Newer(found) = store::schema_status(&root) {
             return Err(OpenError::SchemaTooNew {
                 found,
@@ -711,10 +732,7 @@ impl Farm {
                 return Err(OpenError::NeedsMigration(why));
             }
         }
-        Ok(Farm {
-            root,
-            pointer_prefix: found.prefix,
-        })
+        Ok(Farm { root, repo_herd })
     }
 
     /// The effective per-farm config (prefix, defaults, editor mode).
@@ -1489,14 +1507,14 @@ impl Farm {
                 return Ok(CreateOutcome::ParentNotFound(p.clone()));
             }
         }
-        // Route to a specific herd (id prefix): an explicit `--prefix` wins,
-        // else this repo's pointer-file herd, else the farm's config default
+        // Route to a specific herd (id prefix): an explicit `--herd` wins,
+        // else this repo's `git config yaks.herd`, else the farm's config default
         // (erroring if there is none). A chosen prefix is validated via the
         // reference grammar so we never mint an un-referenceable id.
         let prefix = match new
             .prefix
             .as_deref()
-            .or(self.pointer_prefix.as_deref())
+            .or(self.repo_herd.as_deref())
             .filter(|p| !p.is_empty())
         {
             Some(p)
@@ -1506,14 +1524,14 @@ impl Farm {
                 p.to_string()
             }
             Some(p) => return Ok(CreateOutcome::InvalidPrefix(p.to_string())),
-            // No `--herd`, no pointer herd: only a herd the farm's config
+            // No `--herd`, no repo herd: only a herd the farm's config
             // actually declares is a default. `cfg.prefix` alone isn't enough:
             // it is seeded with the built-in "yak" when config is silent, which
             // would silently mint an unintended `yak-` herd (yaks-b47b).
             None if cfg.prefix_declared => cfg.prefix.clone(),
             None => bail!(
                 "no herd to create the yak in: pass `--herd <prefix>` or set a default herd \
-                 (`herd: <prefix>` in .yaks/config.yaml, or `herd:` in the `.yaks` pointer file)"
+                 (`herd: <prefix>` in .yaks/config.yaml, or `git config yaks.herd <prefix>`)"
             ),
         };
         let id = store::generate_id(&self.root, &prefix)?;
@@ -1618,7 +1636,7 @@ impl Farm {
     /// ([`store::attachment_link`]: `![stem]({id}/{name})` for an image,
     /// `[stem]({id}/{name})` for any other file) (relative to the yak's own file, so it resolves in any
     /// markdown viewer). `name` should be a bare filename. The directory lives
-    /// inside the farm and, in team mode, commits alongside `.yaks/`, so an
+    /// inside the farm and is committed with it (`yaks commit`), so an
     /// attachment is shareable evidence, not just local scratch.
     pub fn attach(&self, id: &str, name: &str, data: &[u8]) -> Result<AttachOutcome> {
         let _lock = store::lock(&self.root)?;
@@ -2117,14 +2135,14 @@ mod tests {
     fn open_refuses_an_old_layout_farm() {
         let (root, _farm) = temp_farm();
         let parent = root.parent().unwrap().to_path_buf();
-        assert!(Farm::open(&parent).is_ok());
+        assert!(Farm::at(&parent.join(".yaks")).is_ok());
         std::fs::create_dir_all(root.join("hairy")).unwrap();
         std::fs::write(
             root.join("hairy/yak-0001.md"),
             store::write::render(&task("yak-0001", Status::Hairy)),
         )
         .unwrap();
-        match Farm::open(&parent) {
+        match Farm::at(&parent.join(".yaks")) {
             Err(OpenError::OldLayout(why)) => {
                 assert!(why.contains("npx -y @j15r/yaks@0.0.16 migrate"), "{why}")
             }
@@ -2132,7 +2150,10 @@ mod tests {
         }
         std::fs::remove_dir_all(root.join("hairy")).unwrap();
         std::fs::write(root.join("schema"), "3\n").unwrap();
-        assert!(matches!(Farm::open(&parent), Err(OpenError::OldLayout(_))));
+        assert!(matches!(
+            Farm::at(&parent.join(".yaks")),
+            Err(OpenError::OldLayout(_))
+        ));
     }
 
     /// A well-formed farm (resolvable parent + dep, one status per id) is clean.
@@ -2143,7 +2164,7 @@ mod tests {
         let root = parent.join(".yaks");
         std::fs::create_dir_all(&root).unwrap();
         std::fs::write(root.join("schema"), format!("{}\n", store::SCHEMA)).unwrap();
-        let farm = match Farm::open(&parent) {
+        let farm = match Farm::at(&parent.join(".yaks")) {
             Ok(h) => h,
             Err(_) => panic!("failed to open temp farm at {parent:?}"),
         };
@@ -2587,7 +2608,7 @@ mod tests {
 
     #[test]
     fn create_with_no_explicit_or_default_herd_errors() {
-        // Regression (yaks-b47b): with no `--herd`, no pointer herd and no
+        // Regression (yaks-b47b): with no `--herd`, no repo herd and no
         // `herd:` in config, `create` used to silently mint a `yak-` id (and so
         // an accidental new herd). It must fail and write nothing.
         let (root, farm) = temp_farm();
@@ -2768,37 +2789,15 @@ mod tests {
         assert!(list_attachments(&root, "y-404").is_empty());
     }
 
+    /// The repo's herd (`git config yaks.herd`, through discovery) routes a
+    /// new yak below an explicit `--herd`.
     #[test]
-    fn discover_follows_a_pointer_file_with_prefix() {
+    fn create_routes_via_repo_herd_and_explicit_wins() {
         let (farm_root, _f) = temp_farm();
-        let repo = temp_dir_named("repo");
-        std::fs::write(
-            repo.join(".yaks"),
-            format!("path: {}\nprefix: web\n", farm_root.display()),
-        )
-        .unwrap();
-        let d = store::discover(&repo).unwrap();
-        assert_eq!(d.root, farm_root);
-        assert_eq!(d.prefix.as_deref(), Some("web"));
-    }
-
-    #[test]
-    fn create_routes_via_pointer_prefix_and_explicit_wins() {
-        let (farm_root, _f) = temp_farm();
-        let repo = temp_dir_named("repo");
-        std::fs::write(
-            repo.join(".yaks"),
-            format!("path: {}\nprefix: web\n", farm_root.display()),
-        )
-        .unwrap();
-        let farm = match Farm::open(&repo) {
-            Ok(f) => f,
-            Err(_) => panic!("open via pointer failed"),
-        };
-        // No --prefix: the pointer's herd (web) routes the new yak.
-        let a = created_id(farm.create(new_task("via pointer", None)).unwrap());
+        let farm = Farm::open_root(farm_root.clone(), Some("web".into()), false)
+            .unwrap_or_else(|_| panic!("open"));
+        let a = created_id(farm.create(new_task("via repo herd", None)).unwrap());
         assert!(a.starts_with("web-"), "expected web- id, got {a}");
-        // An explicit --prefix beats the pointer.
         let b = created_id(farm.create(new_task("explicit", Some("core"))).unwrap());
         assert!(b.starts_with("core-"), "expected core- id, got {b}");
         let ids = store::all_ids(&farm_root);
@@ -3411,11 +3410,11 @@ mod tests {
         std::fs::write(root.join("schema"), "4\n").unwrap();
         let before = std::fs::read(root.join("yak-0001.md")).unwrap();
 
-        match Farm::open(&parent) {
+        match Farm::at(&parent.join(".yaks")) {
             Err(OpenError::NeedsMigration(why)) => assert!(why.contains("yaks migrate"), "{why}"),
             _ => panic!("a schema-4 farm must refuse every command but migrate"),
         }
-        let Ok(farm) = Farm::open_for_migration(&parent) else {
+        let Ok(farm) = Farm::at_for_migration(&parent.join(".yaks")) else {
             panic!("migrate must open a schema-4 farm");
         };
 
@@ -3470,7 +3469,7 @@ mod tests {
         assert_eq!(front(&after), front(&String::from_utf8(before).unwrap()));
 
         // Now an ordinary farm, and a second run is a no-op.
-        assert!(Farm::open(&parent).is_ok());
+        assert!(Farm::at(&parent.join(".yaks")).is_ok());
         let bytes = std::fs::read(store::task_path(&root, "yak-0001")).unwrap();
         let again = farm.migrate(false).unwrap();
         assert!(again.is_noop() && again.files == 0 && again.layout.is_empty());

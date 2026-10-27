@@ -11,13 +11,12 @@ You are the **yakherd**: the one agent that claims yaks, briefs workers, lands t
 
 ## 1. The farm everyone shares
 
-`yaks path` (no arguments) prints the farm. In the recommended setup it is a **branch farm**: one worktree per machine that every checkout (yours, the human's, each worker's) reads and writes live. So:
+`yaks path` (no arguments) prints the farm: its branch's worktree, one per machine, which every checkout (yours, the human's, each worker's) reads and writes live. So:
 
 - Claims, notes, shears and asks are visible to everyone the moment they are written. There is no yak state to merge and nothing under `.yaks/` in any code commit.
 - **You commit the farm** (`yaks commit`), at least at every landing. **You sync it** (`yaks sync`) at session start, after landings and before a machine switch. Until the human has published the farm (`yaks status` shows no upstream), use `yaks sync --no-push`: the first push creates the remote branch.
-- Yak ids are fine in commit messages once the farm is published; on a `yaks private` farm treat it as private (below).
-
-**A private farm** (`yaks private`, `.yaks/` excluded, or a `.yaks` pointer file) is also live and shared. An excluded or pointer farm is not found from a worker's checkout (its own git top-level): every worker command needs `YAKS_DIR=<abs farm path>` (`yaks brief` adds it). Keep yak ids out of commits, code, comments and PRs (`yaks scan-ids` checks text), and after landing note the landed SHA on the yak, since git cannot link it.
+- Workers find the farm by themselves: from a git worktree or a Delta clone, discovery reads the host repo's farm branch (and its `yaks.farm`, when the repo shares another's farm). No `YAKS_DIR` needed.
+- Yak ids are fine in commit messages. On a **private farm** (`yaks private`) keep yak ids out of commits, code, comments and PRs (`yaks scan-ids` checks text; `yaks brief` says so), and after landing note the landed SHA on the yak, since git cannot link it.
 
 ## 2. The shape: claim, fan out, land, reconcile
 
@@ -40,7 +39,7 @@ The claim note says what counts as done and who decides, and the judge shears: a
 
 ## 5. The brief
 
-`yaks brief <id> --as <name>` prints everything the yak, config and farm determine: the yak and that it is shaving, the `YAKS_ACTOR=<name>` prefix (and `YAKS_DIR`), the binary, the gate, forbidden moves, how to finish for this farm, how to ask and pick up, the `Decision:` rule and the final-message format. It warns if the yak is not claimed. Add only what a yak cannot know:
+`yaks brief <id> --as <name>` prints everything the yak, config and farm determine: the yak and that it is shaving, the `YAKS_ACTOR=<name>` prefix (and `YAKS_DIR` if you pass `--yaks-dir`), the binary, the gate, forbidden moves, how to finish for this farm, how to ask and pick up, the `Decision:` rule and the final-message format. It warns if the yak is not claimed. Add only what a yak cannot know:
 
 ```
 <output of `yaks brief <id> --as <name>`>

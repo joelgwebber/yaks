@@ -175,11 +175,10 @@ The load-bearing ideas, all validated by dogfooding:
 
 - **Solo:** `create` → `next` → `shave` → `update --note` → `shorn`. The farm is
   durable memory; notes are how you (or an agent) remember across sessions.
-- **Across machines or a team:** keep the farm on its own branch (`yaks init
-  --mode branch`, or `yaks migrate --to-branch`) and `yaks sync` at session
-  start, after landings and before switching machines. `yaks private` keeps it on
-  one machine. Ids may appear in commit messages but never in PR titles or
-  external trackers (`scan-ids` guards that).
+- **Across machines or a team:** `yaks sync` at session start, after landings
+  and before switching machines; `yaks private` keeps the farm on one machine.
+  Ids may appear in commit messages (not after `yaks private`) but never in PR
+  titles or external trackers (`scan-ids` guards that).
 - **Parallel agents:** the yakherd drives the claim → fan-out → land →
   reconcile shape above, with `ask`/`answer`/`pickup` for decisions and `doctor`
   for integrity.

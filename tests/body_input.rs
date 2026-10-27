@@ -3,6 +3,7 @@
 //! The text must land byte-for-byte (trailing newline trimmed), and every
 //! misuse must fail loudly rather than store an empty or partial note.
 
+mod common;
 use assert_cmd::Command;
 use std::path::{Path, PathBuf};
 
@@ -17,16 +18,17 @@ struct Farm {
 impl Farm {
     fn new(tag: &str) -> Farm {
         let dir = std::env::temp_dir().join(format!("yaks-body-{tag}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
+        common::cleanup(&dir);
+        common::git_init(&dir);
         let farm = Farm { dir };
-        farm.ok(&["init"], None);
+        farm.ok(&["init", "--skills", "none"], None);
         farm
     }
 
     fn cmd(&self, args: &[&str]) -> Command {
         let mut cmd = Command::cargo_bin("yaks").unwrap();
         cmd.current_dir(&self.dir)
+            .env("XDG_DATA_HOME", common::data_home(&self.dir))
             .env("YAKS_SKILLS_AUTOSYNC", "0")
             .env("YAKS_ACTOR", "tester")
             .args(args);
@@ -75,7 +77,7 @@ impl Farm {
 
 impl Drop for Farm {
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.dir);
+        common::cleanup(&self.dir);
     }
 }
 

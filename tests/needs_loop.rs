@@ -2,6 +2,7 @@
 //! `needs: agent` state, the two-section `inbox` (and `--for`, `--json`), `next`
 //! marking, and the derived `replied` flag.
 
+mod common;
 use assert_cmd::Command;
 use std::path::PathBuf;
 
@@ -12,10 +13,10 @@ struct Farm {
 impl Farm {
     fn new(tag: &str) -> Farm {
         let dir = std::env::temp_dir().join(format!("yaks-needs-{tag}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
+        common::cleanup(&dir);
+        common::git_init(&dir);
         let f = Farm { dir };
-        f.run("tester", &["init"]);
+        f.run("tester", &["init", "--skills", "none"]);
         f
     }
 
@@ -23,6 +24,7 @@ impl Farm {
         Command::cargo_bin("yaks")
             .unwrap()
             .current_dir(&self.dir)
+            .env("XDG_DATA_HOME", common::data_home(&self.dir))
             .env("YAKS_SKILLS_AUTOSYNC", "0")
             .env("YAKS_ACTOR", actor)
             .args(args)
@@ -67,7 +69,7 @@ impl Farm {
 
 impl Drop for Farm {
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.dir);
+        common::cleanup(&self.dir);
     }
 }
 

@@ -6,6 +6,9 @@
 use assert_cmd::Command;
 use std::path::{Path, PathBuf};
 
+/// The farm schema this yaks writes (`store::SCHEMA`).
+const SCHEMA: u32 = 6;
+
 fn tmp(tag: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("yaks-mdriver-{tag}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
@@ -33,11 +36,14 @@ fn git(dir: &Path, args: &[&str]) -> String {
     String::from_utf8(out.stdout).unwrap()
 }
 
+/// Run yaks on the farm committed in the repo at `cwd` (`<cwd>/.yaks`). The
+/// driver merges yak files on the farm branch; here each repo's tree IS that
+/// branch's tree, so the farm is named with YAKS_DIR rather than discovered.
 fn yaks_out(cwd: &Path, args: &[&str]) -> std::process::Output {
     Command::cargo_bin("yaks")
         .unwrap()
         .current_dir(cwd)
-        .env_remove("YAKS_DIR")
+        .env("YAKS_DIR", cwd.join(".yaks"))
         .env("YAKS_SKILLS_AUTOSYNC", "0")
         .env("YAKS_ACTOR", "tester")
         .args(args)
@@ -78,7 +84,9 @@ fn diverged(tag: &str) -> (PathBuf, PathBuf, String, String) {
     let a = root.join("a");
     std::fs::create_dir_all(&a).unwrap();
     git(&a, &["init", "-q"]);
-    yaks(&a, &["init"]);
+    std::fs::create_dir_all(a.join(".yaks")).unwrap();
+    std::fs::write(a.join(".yaks/config.yaml"), "herd: yak\n").unwrap();
+    std::fs::write(a.join(".yaks/schema"), format!("{}\n", SCHEMA)).unwrap();
     let created = yaks(&a, &["create", "concurrent yak"]);
     let id = created.split([' ', ':']).nth(1).unwrap().to_string();
     git(&a, &["add", "."]);

@@ -12,8 +12,8 @@ use crate::status::SyncState;
 use crate::{changes, commit, status, sync};
 
 /// What the chip shows: the farm's uncommitted yak count and, for a farm that
-/// is a branch, its standing against the upstream. An in-tree or private farm
-/// has no `sync` part.
+/// is a branch, its standing against the upstream. A farm that is not a farm
+/// branch has no `sync` part.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct FarmSync {
     /// Yaks plus other farm files (config, ...) git does not have yet.
@@ -22,7 +22,7 @@ pub(crate) struct FarmSync {
 }
 
 impl FarmSync {
-    /// Read the farm at `root` (local git only). `None` for a private farm
+    /// Read the farm at `root` (local git only). `None` for a farm outside git
     /// (nothing is tracked) or when git cannot say: no chip then.
     ///
     /// Counts the changes the way `yaks status` does ([`status::collect`]:

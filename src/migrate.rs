@@ -236,7 +236,7 @@ pub struct Report {
     /// Yak files rewritten (or that would be): the union over the fixups.
     pub files: usize,
     /// Whether anything under the farm is tracked by git (so the result
-    /// should be committed); false for a private or pointer farm.
+    /// should be committed with `yaks commit`); false for a farm outside git.
     pub git_tracked: bool,
 }
 
@@ -352,8 +352,8 @@ pub fn run(root: &Path, dry_run: bool) -> Result<Report> {
     Ok(report)
 }
 
-/// Whether git tracks anything under the farm at `root` (a team farm). False
-/// for a private or pointer farm, or one outside a repository.
+/// Whether git tracks anything under the farm at `root` (a farm branch).
+/// False for a farm outside git.
 fn tracked_by_git(root: &Path) -> bool {
     std::process::Command::new("git")
         .arg("-C")

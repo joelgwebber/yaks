@@ -3,6 +3,7 @@
 //! the resolved actor, so a yak file alone says who moved it and when. One test
 //! per actor-resolution path, plus the shave+shorn pair and `yaks log`.
 
+mod common;
 use assert_cmd::Command;
 use std::path::{Path, PathBuf};
 
@@ -16,17 +17,18 @@ struct Farm {
 impl Farm {
     fn new(tag: &str) -> Farm {
         let dir = std::env::temp_dir().join(format!("yaks-attr-{tag}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
+        common::cleanup(&dir);
+        common::git_init(&dir);
         std::fs::write(dir.join("gitconfig"), "[user]\n\tname = Git Human\n").unwrap();
         let farm = Farm { dir };
-        farm.run(&[], &["init"]);
+        farm.run(&[], &["init", "--skills", "none"]);
         farm
     }
 
     fn run(&self, env: &[(&str, &str)], args: &[&str]) -> String {
         let mut cmd = Command::cargo_bin("yaks").unwrap();
         cmd.current_dir(&self.dir)
+            .env("XDG_DATA_HOME", common::data_home(&self.dir))
             .env("YAKS_SKILLS_AUTOSYNC", "0")
             .env("GIT_CONFIG_GLOBAL", self.dir.join("gitconfig"))
             .env("GIT_CONFIG_NOSYSTEM", "1")
@@ -60,7 +62,7 @@ impl Farm {
 
 impl Drop for Farm {
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.dir);
+        common::cleanup(&self.dir);
     }
 }
 

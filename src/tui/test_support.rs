@@ -126,7 +126,7 @@ pub(crate) fn temp_farm(tasks: &[Task]) -> (PathBuf, Farm) {
     for t in tasks {
         store::write::save(&root, t).unwrap();
     }
-    let farm = match Farm::open(&proj) {
+    let farm = match Farm::at(&root) {
         Ok(h) => h,
         Err(_) => panic!("failed to open temp farm"),
     };

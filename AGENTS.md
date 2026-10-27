@@ -31,14 +31,14 @@ they live in the code.
   (`store::Config::{default_type_for, default_priority_for, resolve_verify}`,
   `known_herds`). Add new per-herd settings through that cascade. A **family**
   is `view::FamilyScope`.
-- **Discovery** (`store::discover`): `$YAKS_DIR`, else walk up to the git
-  top-level for a `.yaks` entry (directory, symlink, or pointer file with `path:`
-  and optional `herd:`), else the farm branch's worktree
-  (`store::farm_branch_worktree`; `store::farm_branch(root)` says whether a root
-  is one). `create` routes a herd as `--herd` > pointer `herd:` > config. A
-  committed `.yaks/` beside a farm-branch worktree is a stale copy that
-  `store::redirect_live` redirects with a warning. Tests use `discover_with`,
-  never `set_var`.
+- **Discovery** (`store::discover`): `$YAKS_DIR` (a farm dir), else `git config
+  yaks.farm` (another repo's farm branch, `store::farm_repo`), else this repo's
+  farm branch (`store::farm_branch_worktree`; `store::farm_branch(root)` says
+  whether a root is one). Nothing in a checkout's tree is read: in-tree `.yaks/`
+  and `.yaks` pointer files were removed (yaks-a99f). Repo settings are git
+  config read through the host repo (`store::repo_config`), so Delta clones see
+  them. `create` routes a herd as `--herd` > `yaks.herd` > config. Tests use
+  `discover_with` (or `Farm::at` for a scratch farm dir), never `set_var`.
 - **This repo's farm is the branch `yaks`**, checked out at `yaks path`; `main`
   has no `.yaks/`, and no code commit ever contains it.
 

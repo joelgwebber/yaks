@@ -32,11 +32,8 @@ interchangeable.
   `● 3 uncommitted` (yaks and other farm files git lacks), `not published`
   (the farm branch has no upstream), `↑2` (commits to push), and `↓1` (commits
   to pull: the one warning colour). Nothing is shown when the farm is clean and
-  up to date or for a private farm. When the full text does not fit beside the
-  tabs it shortens to `●3` and `unpub`, and is hidden if even that does not
-  fit. An
-  in-tree farm (`.yaks/` committed beside the code) has no branch of its own, so
-  only the uncommitted count. It is re-read whenever the farm is (re)loaded: at
+  up to date. When the full text does not fit beside the tabs it shortens to
+  `●3` and `unpub`, and is hidden if even that does not fit. It is re-read whenever the farm is (re)loaded: at
   startup, after every TUI change, and when files under `.yaks/` change; it
   does not notice a commit or push made elsewhere until then. The family label
   and notifications sit just left of it.

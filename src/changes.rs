@@ -65,7 +65,8 @@ impl Change {
 }
 
 /// The farm's changes at `root` (paths relative to the repository top), or
-/// `None` for a private farm: nothing under it is tracked by git.
+/// `None` when nothing under it is tracked by git (a `YAKS_DIR` farm that is
+/// not a farm branch).
 pub fn read(root: &Path) -> Result<Option<Vec<Change>>> {
     let tracked = git(root, &["ls-files", "--", "."])?;
     if !tracked.status.success() {
@@ -74,9 +75,9 @@ pub fn read(root: &Path) -> Result<Option<Vec<Change>>> {
             root.display()
         );
     }
-    // Nothing tracked means a private (untracked) farm, unless the farm is a
-    // farm branch's worktree: that branch IS the farm, tracked or not yet
-    // (a fresh orphan branch has no commit before the first `yaks commit`).
+    // Nothing tracked means a farm outside git, unless the farm is a farm
+    // branch's worktree: that branch IS the farm, tracked or not yet (a fresh
+    // orphan branch has no commit before the first `yaks commit`).
     if tracked.stdout.is_empty() && crate::store::farm_branch(root).is_none() {
         return Ok(None);
     }

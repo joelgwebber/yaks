@@ -19,12 +19,11 @@ a **one-way projection, not synchronization**:
   import instead.
 
 **Keep the farm private when a tracker is in play.** The tracker is the shared,
-coarse layer; yaks are the private layer beneath it. Publishing the farm (or
-committing `.yaks/` with the code) on a repo that *also* has an external tracker
-means two competing shared layers — discouraged. Use a private branch farm
-(`yaks private`) or an excluded `.yaks/` (see the `yaks` skill, "Where the farm
-lives"), and keep yak ids out of commit messages. The shared link is then
-PR↔issue via `rollup --keys`, and the yak's own notes carry the rest.
+coarse layer; yaks are the private layer beneath it. Publishing the farm on a
+repo that *also* has an external tracker means two competing shared layers —
+discouraged. Run `yaks private` (see the `yaks` skill, "Where the farm lives"),
+and keep yak ids out of commit messages. The shared link is then PR↔issue via
+`rollup --keys`, and the yak's own notes carry the rest.
 
 **Consolidated farms (multiple herds).** A single private farm can hold several
 herds (id prefixes), one per project (see the `yaks` skill). Herds commonly map

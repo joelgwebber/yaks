@@ -221,10 +221,10 @@ fn editor_from_env() -> Option<String> {
         .find(|v| !v.trim().is_empty())
 }
 
-/// The checkout a source link (`../src/foo.rs`) is resolved in. For a farm in
-/// its own checkout that is the farm's parent, as the link's `../` says. A
-/// LIVE farm (`live_branch:`, yaks-6a34) lives in a worktree that holds only
-/// `.yaks/`, so there it is the code checkout instead: the git top-level of
+/// The checkout a source link (`../src/foo.rs`) is resolved in. For a farm
+/// reached through `YAKS_DIR` that is the farm's parent, as the link's `../`
+/// says. A farm branch lives in a worktree that holds only `.yaks/`, so there
+/// it is the code checkout instead: the git top-level of
 /// `cwd` (where the TUI was started) unless that is the farm worktree itself,
 /// else the repository's main checkout (yaks-6c4f). `None` when nothing fits.
 pub(crate) fn source_base(farm_root: &Path, cwd: Option<&Path>) -> Option<PathBuf> {

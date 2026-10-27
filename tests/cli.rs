@@ -3,14 +3,18 @@
 //! Regenerate with: INSTA_UPDATE=always cargo test.
 //! These double as assert_cmd smoke tests (yaksrs-c725).
 
+mod common;
 use assert_cmd::Command;
 use std::path::PathBuf;
 
 fn run(args: &[&str]) -> String {
     let farm = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/farm");
+    // The fixture is a plain farm directory, not a farm branch: reach it the
+    // way any non-branch farm is reached, through YAKS_DIR.
     let out = Command::cargo_bin("yaks")
         .unwrap()
-        .current_dir(farm)
+        .current_dir(&farm)
+        .env("YAKS_DIR", farm.join(".yaks"))
         // Ordinary commands top up the user's skills on startup. A test run
         // must never touch the developer's real ~/.agents/skills (it did:
         // `cargo test` was silently re-stamping them, and through a symlink,
@@ -51,6 +55,7 @@ fn run_headless(args: &[&str], stdin: &str) -> String {
     let out = Command::cargo_bin("yaks")
         .unwrap()
         .current_dir(&farm)
+        .env("YAKS_DIR", farm.join(".yaks"))
         .env("XDG_CONFIG_HOME", &xdg)
         .env("XDG_CACHE_HOME", &xdg)
         .env("YAKS_SKILLS_AUTOSYNC", "0")
@@ -201,13 +206,15 @@ fn rollup_keys() {
 #[test]
 fn list_needs_filters_to_blocked() {
     let dir = std::env::temp_dir().join(format!("yaks-needs-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
+    common::cleanup(&dir);
+    common::git_init(&dir);
 
     let cli = |args: &[&str]| -> String {
         let out = Command::cargo_bin("yaks")
             .unwrap()
             .current_dir(&dir)
+            .env("XDG_DATA_HOME", common::data_home(&dir))
+            .env("YAKS_SKILLS_AUTOSYNC", "0")
             .args(args)
             .output()
             .unwrap();
@@ -229,7 +236,7 @@ fn list_needs_filters_to_blocked() {
             .to_string()
     };
 
-    cli(&["init"]);
+    cli(&["init", "--skills", "none"]);
     let blocked = created_id(&cli(&["create", "--title", "needs a decision"]));
     let free = created_id(&cli(&["create", "--title", "just work"]));
 
@@ -260,13 +267,15 @@ fn list_needs_filters_to_blocked() {
 #[test]
 fn create_positional_title_and_json() {
     let dir = std::env::temp_dir().join(format!("yaks-create-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
+    common::cleanup(&dir);
+    common::git_init(&dir);
 
     let cli = |args: &[&str]| -> String {
         let out = Command::cargo_bin("yaks")
             .unwrap()
             .current_dir(&dir)
+            .env("XDG_DATA_HOME", common::data_home(&dir))
+            .env("YAKS_SKILLS_AUTOSYNC", "0")
             .args(args)
             .output()
             .unwrap();
@@ -278,7 +287,7 @@ fn create_positional_title_and_json() {
         String::from_utf8(out.stdout).unwrap()
     };
 
-    cli(&["init"]);
+    cli(&["init", "--skills", "none"]);
 
     // Bare positional title works (the stumble yaks-2120 fixes).
     let out = cli(&["create", "positional wins"]);
@@ -325,6 +334,7 @@ fn scan_ids_flags_real_ids_and_is_clean_otherwise() {
         let out = Command::cargo_bin("yaks")
             .unwrap()
             .current_dir(&farm)
+            .env("YAKS_DIR", farm.join(".yaks"))
             .arg("scan-ids")
             .write_stdin(stdin)
             .output()
@@ -359,6 +369,7 @@ fn scan_ids_flags_real_ids_and_is_clean_otherwise() {
     let out = Command::cargo_bin("yaks")
         .unwrap()
         .current_dir(&farm)
+        .env("YAKS_DIR", farm.join(".yaks"))
         .args(["scan-ids", "--json"])
         .write_stdin("see fix-0002 here\n")
         .output()
@@ -389,14 +400,16 @@ fn show_labels_line_has(show_out: &str, label: &str) -> bool {
 #[test]
 fn update_bulk_and_partial_failure() {
     let dir = std::env::temp_dir().join(format!("yaks-bulkupdate-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
+    common::cleanup(&dir);
+    common::git_init(&dir);
 
     // Raw runner: (success, stdout, stderr) so we can assert on the failure case.
     let raw = |args: &[&str]| -> (bool, String, String) {
         let out = Command::cargo_bin("yaks")
             .unwrap()
             .current_dir(&dir)
+            .env("XDG_DATA_HOME", common::data_home(&dir))
+            .env("YAKS_SKILLS_AUTOSYNC", "0")
             .args(args)
             .output()
             .unwrap();
@@ -420,7 +433,7 @@ fn update_bulk_and_partial_failure() {
             .to_string()
     };
 
-    cli(&["init"]);
+    cli(&["init", "--skills", "none"]);
     let a = created_id(&cli(&["create", "--title", "alpha"]));
     let b = created_id(&cli(&["create", "--title", "beta"]));
 
@@ -474,13 +487,15 @@ fn update_bulk_and_partial_failure() {
 #[test]
 fn bulk_dry_run_commit_and_refusals() {
     let dir = std::env::temp_dir().join(format!("yaks-bulk-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
+    common::cleanup(&dir);
+    common::git_init(&dir);
 
     let raw = |args: &[&str]| -> (bool, String, String) {
         let out = Command::cargo_bin("yaks")
             .unwrap()
             .current_dir(&dir)
+            .env("XDG_DATA_HOME", common::data_home(&dir))
+            .env("YAKS_SKILLS_AUTOSYNC", "0")
             .args(args)
             .output()
             .unwrap();
@@ -511,7 +526,7 @@ fn bulk_dry_run_commit_and_refusals() {
             .unwrap_or_default()
     };
 
-    cli(&["init"]);
+    cli(&["init", "--skills", "none"]);
     // Two yaks carry label `pick`; one does not (the control that must never move).
     let a = created_id(&cli(&["create", "--title", "alpha", "--labels", "pick"]));
     let b = created_id(&cli(&["create", "--title", "beta", "--labels", "pick"]));
@@ -603,12 +618,13 @@ fn bulk_dry_run_commit_and_refusals() {
 #[test]
 fn slaughter_guard_and_family() {
     let dir = std::env::temp_dir().join(format!("yaks-slaughter-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
+    common::cleanup(&dir);
+    common::git_init(&dir);
     let raw = |args: &[&str]| -> (bool, String, String) {
         let out = Command::cargo_bin("yaks")
             .unwrap()
             .current_dir(&dir)
+            .env("XDG_DATA_HOME", common::data_home(&dir))
             .env("YAKS_SKILLS_AUTOSYNC", "0")
             .args(args)
             .output()
@@ -633,7 +649,7 @@ fn slaughter_guard_and_family() {
             .to_string()
     };
 
-    cli(&["init"]);
+    cli(&["init", "--skills", "none"]);
     let p = created_id(&cli(&["create", "--title", "parent"]));
     let c = created_id(&cli(&["create", "--title", "child", "--parent", &p]));
     let g = created_id(&cli(&["create", "--title", "grandchild", "--parent", &c]));
@@ -668,12 +684,13 @@ fn slaughter_guard_and_family() {
 #[test]
 fn attach_name_and_rename_attachment() {
     let dir = std::env::temp_dir().join(format!("yaks-attach-rename-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
+    common::cleanup(&dir);
+    common::git_init(&dir);
     let cli = |args: &[&str]| {
         Command::cargo_bin("yaks")
             .unwrap()
             .current_dir(&dir)
+            .env("XDG_DATA_HOME", common::data_home(&dir))
             .env("YAKS_SKILLS_AUTOSYNC", "0")
             .args(args)
             .output()
@@ -688,7 +705,7 @@ fn attach_name_and_rename_attachment() {
         );
         String::from_utf8(out.stdout).unwrap()
     };
-    ok(&["init"]);
+    ok(&["init", "--skills", "none"]);
     let out = ok(&["create", "shots", "--json"]);
     let v: serde_json::Value = serde_json::from_str(&out).unwrap();
     let id = v["id"].as_str().unwrap().to_string();
@@ -707,8 +724,8 @@ fn attach_name_and_rename_attachment() {
         "dashboard",
     ]);
     assert!(out.contains("-> dashboard.png"), "{out}");
-    let arts = dir
-        .join(".yaks")
+    let farm_root = std::path::PathBuf::from(ok(&["path"]).trim());
+    let arts = farm_root
         .join(id.split_once('-').unwrap().0)
         .join("yaks")
         .join(&id);
@@ -743,12 +760,14 @@ fn attach_name_and_rename_attachment() {
 #[test]
 fn labels_normalized_on_create_update_bulk_and_doctor() {
     let dir = std::env::temp_dir().join(format!("yaks-labelnorm-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
+    common::cleanup(&dir);
+    common::git_init(&dir);
     let raw = |args: &[&str]| -> (bool, String) {
         let out = Command::cargo_bin("yaks")
             .unwrap()
             .current_dir(&dir)
+            .env("XDG_DATA_HOME", common::data_home(&dir))
+            .env("YAKS_SKILLS_AUTOSYNC", "0")
             .args(args)
             .output()
             .unwrap();
@@ -767,7 +786,7 @@ fn labels_normalized_on_create_update_bulk_and_doctor() {
             .unwrap_or_default()
     };
 
-    cli(&["init"]);
+    cli(&["init", "--skills", "none"]);
     let created: serde_json::Value = serde_json::from_str(&cli(&[
         "create", "alpha", "--labels", "foo, bar", "baz,foo", "--json",
     ]))
@@ -790,10 +809,7 @@ fn labels_normalized_on_create_update_bulk_and_doctor() {
     assert!(dry.contains("add labels [p, q]"), "{dry}");
 
     // A legacy on-disk comma label: doctor flags it (non-zero exit)...
-    let path = dir.join(format!(
-        ".yaks/{}/yaks/{a}.md",
-        a.split_once('-').unwrap().0
-    ));
+    let path = std::path::PathBuf::from(cli(&["path", &a]).trim());
     let text = std::fs::read_to_string(&path).unwrap();
     std::fs::write(&path, text.replacen("- bar\n", "- ui,docs\n", 1)).unwrap();
     let (ok, out) = raw(&["doctor"]);
@@ -824,7 +840,7 @@ fn a_schema_3_farm_refuses_to_open_and_names_the_release_that_migrates_it() {
             .unwrap()
             .current_dir(&dir)
             .env("YAKS_SKILLS_AUTOSYNC", "0")
-            .env_remove("YAKS_DIR")
+            .env("YAKS_DIR", dir.join(".yaks"))
             .args(args)
             .output()
             .unwrap()

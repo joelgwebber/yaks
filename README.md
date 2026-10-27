@@ -1,20 +1,15 @@
 # yaks
 
-A filesystem-native task tracker. Tasks are plain markdown files with YAML
-frontmatter, kept in a `.yaks/` directory inside your project — no database, no
-daemon, no server. A task's status is implicit in *which folder it lives in*, so
-your task list is just files you can read, grep, edit, and commit alongside your
-code.
-
-yaks ships as a single self-contained binary. Startup is effectively instant,
-which matters because the workflow is lots of small command invocations.
+A task tracker made of markdown files. Each task (a **yak**) is one file with
+YAML frontmatter. The files live on their own git branch, so every checkout of
+your repo shares one live task list and your code branches carry no task churn.
+No database, no daemon, no server: one self-contained binary.
 
 ```text
-.yaks/
+yaks branch  ->  ~/.local/share/yaks/farms/<repo>-<hash>/.yaks/
   config.yaml
-  yaks-1a2b.md     one file per yak; `status: hairy|shaving|shorn|dead` in its frontmatter
-  yaks-1a2b/       that yak's attachments (screenshots, frames), beside it
-  yaks-3c4d.md
+  yaks/yaks/yaks-1a2b.md     one file per yak; `status: hairy|shaving|shorn|dead`
+  yaks/yaks/yaks-1a2b/       its attachments
 ```
 
 ## Install
@@ -43,26 +38,20 @@ inner loop (`./target/debug/yaks`).
 
 ## Quick start
 
-A farm is just a `.yaks/` directory. `yaks init` creates one at your project
-root (plain `yaks init` makes a committed farm and tells you how to add the agent
-skills; `--mode private|pointer|branch` and `--skills default` do the whole setup in one
-idempotent step, see [docs/cli.md](docs/cli.md)). Then start tracking:
-
-Within a farm, yaks group into **herds** by id prefix — a farm can hold several
-(`yaks create --herd <herd>`), so one (typically private) farm can track
-several projects at once — and a parent yak with its descendants forms a
-**family**.
-
 ```sh
-yaks init --skills default   # the farm + the agent skills (add --mode private to keep both out of git)
-yaks create --title "Wire up the login form" --type feature --priority 2
+cd my-repo
+yaks init                  # farm on the `yaks` branch + the agent skills
+yaks create "Wire up the login form" --type feature --priority 2
 yaks list
-yaks shave <id>     # start work  (hairy -> shaving)
-yaks shorn <id>     # finish      (shaving -> shorn)
+yaks shave <id>            # start work  (hairy -> shaving)
+yaks shorn <id>            # finish      (shaving -> shorn)
+yaks commit                # commit the farm on its branch
+yaks sync                  # pull + push it (or `yaks private` to keep it local)
 ```
 
-That's the whole loop: **shave** a yak before you work on it, **shear** it
-(`shorn`) when it's done.
+**Shave** a yak before you work on it, **shear** it (`shorn`) when it's done.
+A farm groups yaks into **herds** by id prefix (`yaks create --herd web`); a
+parent with its descendants is a **family**.
 
 ## Concepts
 
@@ -104,9 +93,9 @@ in `<path>`.
 |---------|--------------|
 | `yaks create` | Create a task; the title is positional (`yaks create "Fix login"`). Flags: `--type`, `--priority`, `--parent`, `--labels` (comma- or space-separated), `--depends-on`, `--source`, `--description` (`-` reads stdin; `--description-file PATH`), `--json` (emit the new id + file path) |
 | `yaks list` | List tasks; filter by `--status/--type/--priority/--label/--search`, `--ready`, `--tangled`, `--parent-of`, `--all` |
-| `yaks show <id>` | Full detail for one task, with parent + children; `--sheds` adds how each other shed (git worktree / Delta clone) has it where that differs: status, `needs:`, new notes |
+| `yaks show <id>` | Full detail for one task, with parent + children |
 | `yaks refs <id>` | List what a task points at (parent, deps, id mentions in its text), flagging any that dangle; `--incoming` lists what points AT it instead (children, dependents, mentions in titles/descriptions/notes, each saying how; `--json`) |
-| `yaks commits <id>` | Show the git commits linked to a yak — those naming its id and those that touched its file across status moves |
+| `yaks commits <id>` | the git commits naming a yak or touching its file |
 | `yaks update <id>` | Change fields/labels, set `--description`, or append a `--note` (`-` reads stdin; `--note-file PATH`: multi-line markdown without shell quoting) |
 | `yaks ask <id>` / `answer <id>` | Block a yak on a human (sets `needs: human`, drops it from `next`) / answer it (sets `needs: agent`, so the answer cannot get lost; `--done` clears instead), each recording a `--note` |
 | `yaks request <id>` | Hand a yak to an agent with no prior question (sets `needs: agent`, recording the `--note`, or a canned `--kind tidy\|summarize` instruction); refuses a yak awaiting a human |
@@ -129,12 +118,13 @@ in `<path>`.
 | `yaks stats` | task statistics |
 | `yaks doctor` | read-only farm-integrity check (an invalid `status:` value, one id in two yak files, dangling parent/dep refs); exits non-zero on problems, so it's CI-usable. `--json` for machine output |
 | `yaks doctor --strict` | also flags shorn yaks with no recorded note — a shear without evidence (the evidence-before-shear rule) |
-| `yaks preflight [<id>...]` | read-only landing-readiness check for a team farm: nothing under `.yaks/` untracked or unstaged in git, the `verify:` of each shorn yak in the change last PASSed (`--all`: every shorn yak), no invalid `status:`, no id in two yak files; `--push-main` also checks that `local` is the human's checkout (not bare, has `main`, not dirty on `main`) before `git push local <branch>:main`; exits non-zero with one line per failure, else `preflight: ok`; on a farm that is a branch, uncommitted yak files are one warning (`run yaks commit`), not a failure |
-| `yaks brief <id> --as <name>` | print the worker brief for a yak, read-only: the actor prefix, the gate (`verify:`), how to finish in a team or a private farm, how to ask and pick up an answer. The coordinator adds scope, the spawn title and landing |
-| `yaks status [--check] [--json]` | what the farm has changed that git does not have yet, one line per yak (`created`, `moved hairy -> shaving`, `notes +2`, `edited`, `removed`, `artifacts`; `*` marks staged), ending with the message `yaks commit` would use; read-only; code elsewhere is only counted; `--check` exits 1 when dirty, `--json` for scripts; on a farm branch a last line says whether it is published, ahead or behind its upstream (as of the last fetch, never fetches), JSON `sync` |
-| `yaks sync [--no-commit] [--no-pull] [--no-push]` | for a farm on its own branch: commit, pull (rebasing with yaks's merge driver, so two machines' edits to one yak merge into a valid yak) and push it, creating the remote branch on first publish; never pushes a private farm (`yaks private`) |
-| `yaks private [--off]` | mark the farm private: `yaks sync` never pushes it, and a `pre-push` hook refuses a manual push of the farm branch |
-| `yaks commit [-m <msg>] [--dry-run]` | commit the farm's own changes (everything under `.yaks/`) and nothing else, with a generated message like `yaks: shorn yaks-abc1; updated yaks-def2`; code staged elsewhere stays staged and out of the commit; runs your git hooks, never pushes; errors in a private farm, no-op when clean |
+| `yaks preflight [<id>...]` | read-only landing check: each shorn yak's `verify:` last PASSed, no invalid `status:` or duplicate id, no merge conflict in the farm; `--push-main` also checks `local` is the human's checkout |
+| `yaks brief <id> --as <name>` | print the worker brief for a yak: the actor prefix, the gate (`verify:`), how to finish, how to ask |
+| `yaks status [--check] [--json]` | the farm's uncommitted changes, one line per yak, and whether its branch is published / ahead / behind |
+| `yaks sync` | commit, pull (a merge driver turns two machines' edits to one yak into a valid yak) and push the farm branch; never pushes a private farm |
+| `yaks private [--off]` | keep the farm on this machine: `sync` never pushes it, a `pre-push` hook refuses a manual push |
+| `yaks init [--farm <checkout>]` | start the farm branch (or share another repo's) and install the skills |
+| `yaks commit [-m <msg>]` | commit the farm on its branch with a generated message (`yaks: shorn yaks-abc1; updated yaks-def2`); never pushes |
 | `yaks scan-ids [file]` | flag real yak-ids in text (file and/or stdin) — a leak check for a pre-commit / PR gate; exits non-zero if any are found |
 | `yaks tui` | open the interactive terminal UI |
 
@@ -162,7 +152,7 @@ those). Example: `yaks bulk --label auth --set-priority 1 --commit`.
 
 `yaks tui` opens a full-screen browser over the farm — views by state, a detail
 pane, inline create/edit, dependency and reparent pickers, search, and an
-embedded modal editor (vim or emacs keybindings, per `.yaks/config.yaml`). It
+embedded modal editor (vim or emacs keybindings, per the farm's `config.yaml`). It
 auto-refreshes when the files change underneath it, so it stays in sync if you
 (or an agent) edit yaks from elsewhere. It takes the mouse too (wheel scroll,
 click to select / open / switch view). Mark rows with `m` for a bulk state
@@ -214,9 +204,8 @@ where skills live — there is no official installer.) **Claude Code is the
 exception**: it reads `~/.claude/skills` and does *not* scan `.agents`, so
 install there explicitly with `--dir`.
 
-It activates when a `.yaks/` directory is present, and shells out to the `yaks`
-binary (or `npx @j15r/yaks`), so make sure one of those is on the
-agent's `PATH`.
+It shells out to the `yaks` binary (or `npx @j15r/yaks`), so make sure one of
+those is on the agent's `PATH`.
 
 Prefer a universal, multi-agent skills manager? The skills are plain
 spec-compliant `SKILL.md` files, so [openskills](https://github.com/numman-ali/openskills)
@@ -227,90 +216,39 @@ mode, which is its own convention rather than the `.agents/` one above):
 npx openskills install joelgwebber/yaks
 ```
 
-## Public and private farms
+## Where the farm lives
 
-Because a farm is just a `.yaks/` directory, *you* decide whether it's shared or
-private by choosing whether git tracks it.
-
-**Public (team).** Commit `.yaks/` alongside the code. The task list travels with
-the repo, shows up in PRs and `git log`, and yak moves merge with the change that
-completed them. This project works this way — it tracks its own work in a
-committed farm.
-
-**Private (local-only).** Keep `.yaks/` out of the code repo and it becomes a
-personal scratchpad no one else sees. `yaks init --mode private` does it for you
-(the farm, a `/.yaks` line in `.git/info/exclude`, and the skills);
-`yaks init --mode pointer --path <dir>` points the repo at a farm kept elsewhere.
-By hand, hide it whichever way fits:
-
-- a `.yaks/` line in the root `.gitignore` — simplest, but the rule is committed;
-- a `.yaks/.gitignore` containing `*`, so the farm hides itself with no change to
-  the repo root — for a plain, non-nested farm only;
-- `.git/info/exclude`, which is per-repo and never committed;
-- a global `core.excludesFile`, to ignore `.yaks/` across every project at once.
-
-**Private across machines.** To carry a private farm between machines without
-committing it to the code repo, give `.yaks/` its own git repo on a private
-remote, nested inside the project:
+The farm is an orphan branch (`yaks`) holding only `.yaks/`, checked out once
+per machine under `~/.local/share/yaks/farms/`. Every checkout of the repo
+(the main one, git worktrees, agent clones) finds it, so edits are live
+everywhere and no code commit ever contains a yak.
 
 ```sh
-cd .yaks
-git init && git remote add origin <your-private-remote>
-# work from inside .yaks/ for farm git ops; pull before, push after
+yaks init                          # new repo: create the `yaks` branch + worktree
+git clone <repo> && yaks list      # a clone of a repo with `origin/yaks`: no setup
+yaks path                          # which farm am I on?
+yaks commit && yaks sync           # commit the farm, then pull + push it
+yaks private                       # never push it (a pre-push hook guards it)
+yaks init --branch yaks/team-a     # name the farm branch (saved as git config yaks.branch)
 ```
 
-Hide the nested repo from the outer repo with `.git/info/exclude` (not the `*`
-trick, which would also blind the farm's own repo). yaks needs no configuration —
-it discovers `.yaks/` exactly as before (from the repo, or any directory below it).
+**Several repos, one farm.** Point a repo at another repo's farm with git
+config; it travels with every clone and worktree of that repo, Delta clones
+included:
 
-**Several repos, one farm.** To track several projects in a single out-of-tree
-farm, put a `.yaks` *file* (not a directory) at each repo root pointing at the
-shared farm:
-
-```
-path: ~/work/shared-farm/.yaks
-herd: web
+```sh
+cd ~/src/web
+yaks init --farm ~/src/api --herd web    # sets yaks.farm + yaks.herd
+yaks create "Fix the header"             # -> web-xxxx, in ~/src/api's farm
 ```
 
-Discovery follows the pointer, so every command in that repo operates on the
-shared farm and `yaks create` routes new yaks into that repo's herd (`herd:`)
-with no flag. A `.yaks` symlink to the farm works too (but every repo then
-shares one herd). Keep the pointer/symlink out of the shared repo with
-`.git/info/exclude`, and use `yaks merge` to fold existing farms into the shared
-one.
-
-**Where discovery stops.** `yaks` walks up from the current directory but stops
-at the git top-level (the first directory with a `.git`) unless that directory
-has a `.yaks` entry. A checkout nested inside another repo's tree, such as a
-Delta checkout or an in-tree `git worktree` of a private farm, therefore does
-not find the outer repo's farm by accident; it fails with an error naming the
-fixes: `yaks init`, a `.yaks` pointer file, or `YAKS_DIR=<farm>` (the `.yaks/`
-dir, a directory containing it, or a pointer file). Outside a git repo the walk
-runs to the filesystem root.
-
-**The farm on its own branch.** A farm can live on an orphan branch (`yaks`,
-or the name in `git config yaks.branch`) whose tree is only `.yaks/`, checked
-out as its own `git worktree`: `git worktree add --orphan -b yaks ../<repo>-yaks`
-for a new farm (a clone of a repo whose `yaks` branch is on `origin` needs no
-setup: the first yaks command creates the worktree under
-`~/.local/share/yaks/farms/`, `YAKS_NO_BOOTSTRAP=1` to disable), and
-`yaks migrate --to-branch` to move a committed in-tree `.yaks/` there (history
-kept, `.yaks/` removed from the current branch in one commit, the worktree under
-`~/.local/share/yaks/farms/`, nothing pushed). A
-checkout with no `.yaks/` then finds it, so every shed on a machine (the primary,
-worktrees, Delta clones) reads and writes the same files with no merge step,
-`yaks commit` commits on that branch, and `main`, feature branches and PRs carry
-no yak churn. `yaks sync` commits, pulls and pushes the branch to share or back up the farm. `yaks path` with no
-arguments prints the farm a command resolved.
-
-> **Heads up:** `git clean -fdx` in the outer repo will delete an ignored or
-> excluded `.yaks/`, including a nested farm's history. Push a private farm
-> often, and remember a gitignored `.yaks/` won't appear in fresh clones or other
-> worktrees.
+`git config yaks.farm <checkout>` / `yaks.herd <prefix>` by hand does the same.
+`YAKS_DIR=<dir>` overrides everything for one command (a `.yaks/` directory, or
+a directory containing one). `yaks merge <farm>` folds another farm in.
 
 ## Configuration
 
-Optional per-project config lives in `.yaks/config.yaml`:
+The farm's settings live in its `config.yaml`:
 
 ```yaml
 herd: yak              # default herd / id prefix (`yaks init` writes it; `create` errors without one)
@@ -320,8 +258,9 @@ vim_mode: true         # TUI editor keybindings: vim (true) or emacs (false)
 inline_images: true    # TUI: draw an image alone in a body paragraph in place (false: a link row)
 ```
 
-A user-global `~/.config/yaks/config.yaml` is merged underneath per-project
-values.
+Repo settings are git config: `yaks.branch` (the farm branch, default
+`yaks`), `yaks.farm` and `yaks.herd` (share another repo's farm),
+`yaks.private` (set by `yaks private`).
 
 ## License
 

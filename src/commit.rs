@@ -1,11 +1,11 @@
 //! `yaks commit`: commit the farm's own changes, and nothing else, in one
 //! command.
 //!
-//! A team farm (`.yaks/` committed) drifts in the working tree whenever a yak
-//! is moved, noted, answered or given an artifact, and a dirty tree blocks a
-//! landing. This stages everything under the farm root and commits just those
-//! paths (`git commit --only`), so code the repo has staged or modified is
-//! never swept in: files staged elsewhere stay staged, exactly as they were.
+//! The farm (its branch's worktree) drifts whenever a yak is moved, noted,
+//! answered or given an artifact. This stages everything under the farm root
+//! and commits just those paths (`git commit --only`), so anything else staged
+//! or modified there is never swept in: files staged elsewhere stay staged,
+//! exactly as they were.
 //! It runs a normal `git commit` (the repo's hooks apply, their output shown
 //! only if the commit fails) and never pushes.
 
@@ -39,8 +39,8 @@ pub fn run(root: &Path, message: Option<&str>, dry_run: bool) -> Result<Outcome>
 
     let Some(changes) = changes::read(root)? else {
         bail!(
-            "this is a private farm (nothing under {} is tracked by git); there is nothing \
-             for `yaks commit` to commit",
+            "the farm at {} is not in git (not a farm branch); there is nothing for \
+             `yaks commit` to commit",
             root.display()
         );
     };
@@ -213,8 +213,9 @@ mod tests {
         format!("---\nid: {id}\ntitle: t\nstatus: {status}\n---\n\nbody\n")
     }
 
-    /// A temp repo with a committed farm (two yaks, an artifact, a source file).
-    fn team_repo() -> PathBuf {
+    /// A temp repo with a committed farm (two yaks, an artifact, a source
+    /// file): the shape of a farm branch's worktree, as far as git is concerned.
+    fn farm_repo() -> PathBuf {
         let repo = std::env::temp_dir().join(format!(
             "yaks-commit-{}-{}",
             std::process::id(),
@@ -268,7 +269,7 @@ mod tests {
 
     #[test]
     fn commits_farm_changes_and_leaves_code_alone() {
-        let repo = team_repo();
+        let repo = farm_repo();
         // A move, an edit, a new yak, a new artifact, plus dirty code.
         put(
             &repo,
@@ -305,7 +306,7 @@ mod tests {
 
     #[test]
     fn other_staged_files_stay_staged_and_out_of_the_commit() {
-        let repo = team_repo();
+        let repo = farm_repo();
         put(&repo, "src/code.rs", "fn main() { staged() }\n");
         put(&repo, "src/new.rs", "\n");
         git(&repo, &["add", "src"]);
@@ -325,7 +326,7 @@ mod tests {
 
     #[test]
     fn nothing_to_commit_when_the_farm_is_clean() {
-        let repo = team_repo();
+        let repo = farm_repo();
         put(&repo, "src/code.rs", "fn main() { dirty() }\n");
         let before = git(&repo, &["rev-parse", "HEAD"]);
         assert!(matches!(
@@ -336,18 +337,18 @@ mod tests {
     }
 
     #[test]
-    fn private_farm_fails_clearly() {
-        let repo = team_repo();
+    fn an_untracked_farm_fails_clearly() {
+        let repo = farm_repo();
         git(&repo, &["rm", "-rq", "--cached", ".yaks"]);
         put(&repo, ".gitignore", ".yaks/\n");
         put(&repo, ".yaks/yak/yaks/yak-0009.md", "nine\n");
         let err = run(&farm(&repo), None, false).err().unwrap().to_string();
-        assert!(err.contains("private farm"), "{err}");
+        assert!(err.contains("not in git"), "{err}");
     }
 
     #[test]
     fn dry_run_reports_without_staging_or_committing() {
-        let repo = team_repo();
+        let repo = farm_repo();
         put(&repo, ".yaks/yak/yaks/yak-0001.md", "one, edited\n");
         put(&repo, ".yaks/yak/yaks/yak-0003.md", "three\n");
         let before = git(&repo, &["rev-parse", "HEAD"]);
@@ -379,7 +380,7 @@ mod tests {
     /// corrupt the TUI), and a failing hook's output must reach the error.
     #[test]
     fn hook_output_is_captured_and_reported_on_failure() {
-        let repo = team_repo();
+        let repo = farm_repo();
         let hook = repo.join(".git/hooks/pre-commit");
         std::fs::write(&hook, "#!/bin/sh\necho spewed-by-hook\nexit 1\n").unwrap();
         #[cfg(unix)]
@@ -401,7 +402,7 @@ mod tests {
 
     #[test]
     fn refuses_during_a_merge_and_stages_nothing() {
-        let repo = team_repo();
+        let repo = farm_repo();
         git(&repo, &["checkout", "-q", "-b", "side"]);
         put(&repo, "side.txt", "s\n");
         git(&repo, &["add", "."]);

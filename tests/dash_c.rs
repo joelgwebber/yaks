@@ -1,6 +1,7 @@
 //! `yaks -C <path>`: run any command as if started in <path> (like `git -C`),
 //! through the real binary from an unrelated cwd.
 
+mod common;
 use assert_cmd::Command;
 use std::path::{Path, PathBuf};
 
@@ -27,6 +28,12 @@ fn run(cwd: &Path, args: &[&str]) -> std::process::Output {
         .unwrap()
         .current_dir(cwd)
         .env_remove("YAKS_DIR")
+        // One data dir for every repo of this test binary: farm homes are
+        // named per repository, so they never collide.
+        .env(
+            "XDG_DATA_HOME",
+            std::env::temp_dir().join(format!("yaks-dashc-data-{}", std::process::id())),
+        )
         .env("YAKS_SKILLS_AUTOSYNC", "0")
         .env("YAKS_ACTOR", "tester")
         .args(args)
@@ -44,16 +51,15 @@ fn yaks(cwd: &Path, args: &[&str]) -> String {
     String::from_utf8(out.stdout).unwrap()
 }
 
-/// A repo with a committed farm holding one yak, plus a sub-directory; returns
+/// A repo whose farm branch holds one yak, plus a sub-directory; returns
 /// (repo, sub-dir, yak id).
 fn repo(tag: &str) -> (PathBuf, PathBuf, String) {
     let dir = tmp(tag);
     git(&dir, &["init", "-q"]);
-    yaks(&dir, &["init"]);
+    git(&dir, &["commit", "-q", "--allow-empty", "-m", "init"]);
+    yaks(&dir, &["init", "--skills", "none"]);
     let created = yaks(&dir, &["create", "dash c yak"]);
     let id = created.split([' ', ':']).nth(1).unwrap().to_string();
-    git(&dir, &["add", "."]);
-    git(&dir, &["commit", "-q", "-m", "init"]);
     let sub = dir.join("sub/deeper");
     std::fs::create_dir_all(&sub).unwrap();
     (dir, sub, id)
@@ -82,7 +88,7 @@ fn show_from_a_sub_directory_of_the_repo() {
 #[test]
 fn sheds_json_matches_running_in_that_checkout() {
     let (repo, _, _) = repo("sheds");
-    // A linked worktree of the repo is a second checkout with its own farm.
+    // A linked worktree of the repo is a second checkout sharing the farm.
     let wt = repo
         .parent()
         .unwrap()
@@ -135,8 +141,13 @@ fn init_and_discover_honor_c() {
     let dir = tmp("init");
     git(&dir, &["init", "-q"]);
     let elsewhere = tmp("init-elsewhere");
-    yaks(&elsewhere, &["-C", dir.to_str().unwrap(), "init"]);
-    assert!(dir.join(".yaks/schema").is_file());
+    yaks(
+        &elsewhere,
+        &["-C", dir.to_str().unwrap(), "init", "--skills", "none"],
+    );
+    let farm = yaks(&elsewhere, &["-C", dir.to_str().unwrap(), "path"]);
+    assert!(std::path::Path::new(farm.trim()).join("schema").is_file());
+    assert!(!dir.join(".yaks").exists());
     assert!(!elsewhere.join(".yaks").exists());
     let out = yaks(
         &elsewhere,

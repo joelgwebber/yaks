@@ -1135,7 +1135,8 @@ mod tests {
 
     #[test]
     fn yak_files_land_when_head_tracks_a_yaks_directory() {
-        // An in-tree farm: HEAD already tracks `.yaks/`, so the worker's yak files are fine.
+        // A repo whose HEAD tracks `.yaks/` (a farm branch's own history, or a
+        // project that commits a fixture farm): the worker's yak files are fine.
         let d = temp("yakfiles-tracked");
         git(&d, &["init", "-q", "-b", "main"]);
         git(&d, &["config", "user.name", "t"]);

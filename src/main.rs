@@ -394,7 +394,7 @@ enum Command {
         #[arg(long)]
         parent: Option<String>,
         /// Which herd (id prefix) the new yak joins; defaults to this repo's
-        /// `.yaks` pointer herd, else the farm's configured `herd:`. Errors if
+        /// `git config yaks.herd`, else the farm's configured `herd:`. Errors if
         /// neither is set (no silent `yak-` fallback). Lets one farm hold
         /// several herds.
         #[arg(long = "herd")]
@@ -770,34 +770,10 @@ enum Command {
     /// migrate". Every other command refuses an older farm and names this one. Never commits: it prints the commit to make
     /// (a migration touches nearly every yak file, so land it on its own).
     /// Quit every running `yaks tui` first.
-    ///
-    /// With `--to-branch`, instead move a committed in-tree `.yaks/` farm onto
-    /// an orphan-tree farm branch in its own worktree: the branch starts at
-    /// HEAD (the farm's history stays reachable: `yaks commits`, `git log
-    /// --follow`) and its first commit keeps only `.yaks/`; the current branch
-    /// gets one commit removing `.yaks/`. Run it from the checkout whose farm
-    /// moves, with a clean tree. Refuses (changing nothing) on uncommitted
-    /// changes, a pending merge or cherry-pick, a private (untracked) farm, or
-    /// an existing branch or worktree path; a farm already on a branch says
-    /// so. Never pushes: it prints the pushes and the setup line for other
-    /// machines.
     Migrate {
         /// Print what would change; write nothing.
         #[arg(long)]
         dry_run: bool,
-        /// Move the committed in-tree farm onto a farm branch (see above).
-        #[arg(long)]
-        to_branch: bool,
-        /// With --to-branch: the branch name (default: `git config
-        /// yaks.branch`, else `yaks`). Any other name is recorded in `git
-        /// config yaks.branch` so discovery finds it.
-        #[arg(long, requires = "to_branch")]
-        branch: Option<String>,
-        /// With --to-branch: where the farm worktree goes (default
-        /// `$XDG_DATA_HOME/yaks/farms/<repo>-<hash>`, i.e.
-        /// `~/.local/share/yaks/farms/...`).
-        #[arg(long, requires = "to_branch")]
-        worktree: Option<PathBuf>,
     },
     /// Mark this repository's farm private: it never leaves the machine.
     ///
@@ -831,22 +807,23 @@ enum Command {
         #[arg(long)]
         dry_run: bool,
     },
-    /// Create a .yaks/ farm in the current directory.
+    /// Start a farm on its own branch, or join another repo's, and install the skills.
     ///
-    /// Writes config.yaml + schema (each yak is one file,
-    /// `.yaks/<herd>/yaks/<id>.md`, with a `status:` field). Works without an
-    /// existing farm.
+    /// Every farm is an orphan git branch (`yaks`, or --branch) holding only
+    /// `.yaks/`, checked out once per machine at
+    /// `~/.local/share/yaks/farms/<repo>-<hash>`. A branch that already exists
+    /// (locally or on origin) only gets its worktree. Nothing is committed or
+    /// pushed; `yaks sync` publishes the farm, `yaks private` keeps it local.
     ///
-    /// With no --mode/--skills/--path this only creates a committed (team) farm
-    /// and tells you how to install skills. Give --mode and/or --skills for the
-    /// full setup: the farm per mode, the git excludes it implies, and the
-    /// project-local skills (default set unless --skills none). Every step is
-    /// idempotent, so the same command can be re-run, and a re-run with more
-    /// flags adds only what is missing. A different --mode on an existing farm
-    /// is an error, never a silent conversion.
+    ///   yaks init                           # this repo's own farm + skills
+    ///   yaks init --farm ../api --herd web  # use ../api's farm, herd `web`
+    ///
+    /// Idempotent: re-run it to add what is missing. A setting that differs
+    /// from what is there is an error, never a silent change.
+    #[command(verbatim_doc_comment)]
     Init {
-        /// Default herd (id prefix) for new yaks (default: yak). With
-        /// --mode pointer it is also this repo's `herd:` in the pointer file.
+        /// Default herd (id prefix) for new yaks (default: yak). With --farm,
+        /// this repo's herd in the shared farm (`git config yaks.herd`).
         #[arg(long = "herd")]
         prefix: Option<String>,
         /// Default task type for new yaks (default: task).
@@ -858,31 +835,16 @@ enum Command {
         /// Use emacs keybindings in embedded editors instead of vim.
         #[arg(long)]
         emacs: bool,
-        /// Farm mode (a new farm is team when only --skills is given). team: the
-        /// farm in .yaks/, committed with the code. private: the farm in
-        /// .yaks/, listed in .git/info/exclude. pointer: a `.yaks` pointer file
-        /// to a farm at --path (created if absent), listed in
-        /// .git/info/exclude. branch: the farm on its own orphan branch
-        /// (--branch, default `yaks`) in a worktree outside every checkout
-        /// (the default `yaks migrate --to-branch` location); an existing
-        /// branch only gets its worktree; nothing is committed or pushed.
-        /// private, pointer and branch need a git repo.
-        #[arg(long, value_enum)]
-        mode: Option<init::Mode>,
-        /// For --mode pointer: the directory holding the farm (its `.yaks/`,
-        /// or the farm itself). Written to the pointer file as given.
-        #[arg(long, value_name = "DIR")]
-        path: Option<String>,
-        /// For --mode branch: the farm branch's name (default: `git config
-        /// yaks.branch`, else `yaks`). A non-default name is recorded with
-        /// `git config yaks.branch` so discovery finds it. Chosen once, at
-        /// creation.
+        /// The farm branch's name (default: `git config yaks.branch`, else
+        /// `yaks`). A non-default name is recorded in `git config yaks.branch`.
         #[arg(long, value_name = "NAME")]
         branch: Option<String>,
-        /// Skills to install project-local in the git top-level, through the
-        /// same install as `yaks skills install` (never overwrites an edited
-        /// skill). In private/pointer modes their directories go in
-        /// .git/info/exclude too. With --mode alone the default is `default`.
+        /// Use the farm of another repository (any checkout of it) instead of
+        /// starting one: sets `git config yaks.farm`. That repo needs a farm.
+        #[arg(long, value_name = "CHECKOUT")]
+        farm: Option<String>,
+        /// Skills to install project-local in the git top-level (default:
+        /// `default`), through the same install as `yaks skills install`.
         #[arg(long, value_enum)]
         skills: Option<init::SkillSet>,
     },
@@ -911,22 +873,19 @@ enum Command {
         #[arg(long)]
         strict: bool,
     },
-    /// Read-only landing-readiness check for a team farm.
+    /// Read-only landing-readiness check.
     ///
-    /// Read-only. Checks that nothing under
-    /// `.yaks/` is untracked or with unstaged changes in git, the verify command of
-    /// each shorn yak in the change last PASSed, no invalid `status:` value,
-    /// no id in two yak files. Prints
-    /// one line per failure and exits non-zero, else `preflight: ok`. A private
-    /// farm skips the git check (said so) and checks every shorn yak. With
-    /// `--push-main` also checks that the `local` remote is the human's checkout
-    /// (not bare, has `main`, not dirty on `main`) before `git push local
-    /// <branch>:main`; read-only, never pushes. On a farm that is a branch,
-    /// uncommitted yak files are one warning (`run yaks commit`), not a
-    /// failure.
+    /// Checks that the verify command of each shorn yak in the change last
+    /// PASSed, no yak file has an invalid `status:` or shares an id, and the
+    /// farm has no unresolved merge conflict. Prints one line per failure and
+    /// exits non-zero, else `preflight: ok`. Uncommitted farm changes are one
+    /// warning (`run yaks commit`), not a failure. With `--push-main` also
+    /// checks that the `local` remote is the human's checkout (not bare, has
+    /// `main`, not dirty on `main`) before `git push local <branch>:main`;
+    /// never pushes.
     Preflight {
-        /// Shorn yaks to check (default: the shorn yaks in the change in git,
-        /// i.e. staged, modified or new under `.yaks/`). Scopes the verify check
+        /// Shorn yaks to check (default: the shorn yaks with uncommitted farm
+        /// changes, i.e. modified or new). Scopes the verify check
         /// only; the git and integrity checks are farm-wide.
         ids: Vec<String>,
         /// Check the verify command of EVERY shorn yak, not only those in the
@@ -1028,8 +987,7 @@ enum Command {
     /// what is staged, ordered by id, then what `yaks commit` would do (and its
     /// message). Uses the same classification as `yaks commit`. Read-only. Code
     /// changed elsewhere in the repo is only counted, never listed. A clean farm
-    /// prints `farm clean: nothing to commit`; a private farm (nothing under
-    /// `.yaks/` tracked by git) says so; both exit 0. While a merge or
+    /// prints `farm clean: nothing to commit` and exits 0. While a merge or
     /// cherry-pick is in progress it says `yaks commit` will refuse. When the
     /// farm is a branch, a last line says whether that branch is published,
     /// ahead or behind its upstream, as of the last fetch (never fetches).
@@ -1038,7 +996,7 @@ enum Command {
         /// hooks); the output is the same. Without it the exit code is 0.
         #[arg(long)]
         check: bool,
-        /// Emit JSON: `clean`, `private`, `merge_in_progress`, `yaks` (array of
+        /// Emit JSON: `clean`, `untracked`, `merge_in_progress`, `yaks` (array of
         /// `{id, changes, staged}`), `other` (farm files that are not yaks, as
         /// `{path, staged}`), `outside_farm` (count), `message` and `sync`
         /// (`{branch, upstream, ahead, behind}` on a farm branch, else null).
@@ -1047,12 +1005,12 @@ enum Command {
     },
     /// Print the worker brief for one yak: what a cold worker needs to start.
     ///
-    /// Derived from the yak, the config and the farm mode. Names the yak and
-    /// that it is already `shaving`, the `YAKS_ACTOR=<name>` prefix for every
-    /// command (plus `YAKS_DIR` for a private or pointer farm, or with
-    /// `--yaks-dir`), this binary's path, the yak's `verify:` gate (else the
-    /// config default), the forbidden moves, how to finish (team: one commit
-    /// with the yak move; private: no yak ids in commits), how to ask, the
+    /// Derived from the yak, the config and the farm. Names the yak and that
+    /// it is already `shaving`, the `YAKS_ACTOR=<name>` prefix for every
+    /// command (plus `YAKS_DIR` with `--yaks-dir`, or for a farm that is not a
+    /// farm branch), this binary's path, the yak's `verify:` gate (else the
+    /// config default), the forbidden moves, how to finish (never stage
+    /// `.yaks/`; after `yaks private`, no yak ids in commits), how to ask, the
     /// `Decision:` note rule and the final-message format. Read-only. Claim the
     /// yak first (`yaks shave`): an unclaimed yak still prints, with a warning
     /// on stderr. An unknown id fails with nothing on stdout. The coordinator
@@ -1063,8 +1021,8 @@ enum Command {
         #[arg(long = "as", value_name = "NAME")]
         as_actor: String,
         /// Print `YAKS_DIR=<PATH>` on every command, for a worker whose checkout
-        /// does not hold the farm. Default: the farm in use for a private or
-        /// pointer farm, nothing for a team farm.
+        /// cannot discover the farm. Default: nothing for a farm branch (every
+        /// checkout finds it), the farm's path otherwise.
         #[arg(long, value_name = "PATH")]
         yaks_dir: Option<String>,
     },
@@ -1181,9 +1139,8 @@ fn main() -> Result<()> {
         kind,
         priority,
         emacs,
-        mode,
-        path,
         branch,
+        farm,
         skills,
     } = &cli.command
     {
@@ -1192,36 +1149,13 @@ fn main() -> Result<()> {
             kind: kind.clone(),
             priority: *priority,
             emacs: *emacs,
-            mode: *mode,
-            path: path.clone(),
             branch: branch.clone(),
+            farm: farm.clone(),
             skills: *skills,
         });
     }
     if let Command::Skills { action } = &cli.command {
         return run_skills(action);
-    }
-    // `migrate --to-branch` moves the farm rather than opening it.
-    if let Command::Migrate {
-        dry_run,
-        to_branch: true,
-        branch,
-        worktree,
-    } = &cli.command
-    {
-        let opts = branchfarm::Opts {
-            branch: branch.clone(),
-            worktree: worktree.clone(),
-            dry_run: *dry_run,
-        };
-        match branchfarm::run(&env::current_dir()?, &opts, store::farm_home) {
-            Ok(o) => print!("{}", branchfarm::render(&o)),
-            Err(e) => {
-                eprintln!("error: {e:#}");
-                std::process::exit(1);
-            }
-        }
-        return Ok(());
     }
     // `private` marks the repository, not a farm: it needs none.
     if let Command::Private { off } = &cli.command {
@@ -2808,7 +2742,7 @@ fn report_migrate(r: &migrate::Report) {
     );
     if r.applied && r.git_tracked {
         line.push_str(&format!(
-            "; commit with: git add -A .yaks && git commit -m \"yaks: migrate the farm to schema {}\"",
+            "; commit with: yaks commit -m \"yaks: migrate the farm to schema {}\"",
             store::SCHEMA
         ));
     } else if !r.applied {
@@ -3403,7 +3337,7 @@ mod tests {
             }
             store::write::save(&root, &t).unwrap();
         }
-        let farm = match Farm::open(&parent) {
+        let farm = match Farm::at(&root) {
             Ok(f) => f,
             Err(_) => panic!("failed to open temp farm"),
         };
