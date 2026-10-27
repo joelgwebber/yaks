@@ -5,14 +5,13 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-22T20:35:28Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:20:32Z'
 depends_on:
 - yaks-89fc
 labels:
 - tui
 - images
 - markdown
-needs: agent
 verify: cargo test --workspace
 ---
 
@@ -135,7 +134,9 @@ Evidence attached: two color frames (full and clipped), rasterized from the docs
 NOT verified, and the reason this is still open: any real graphics protocol. Kitty (Ghostty) scroll and redraw behavior is exactly what I cannot see: stale images when the pane scrolls, an overlay (`?`, a picker) opened over an image, a resize, and kitty re-transmitting on every frame. Also untested here: an image inside a comment (same `body_rows` path as the description, not separately tested) and several images in one yak.
 
 Decision (yakherd): the draw cell size comes from `Picker::font_size()`; the half-block picker's default 10x20 px is what tests and headless frames use, so row counts there differ from a real terminal's.
+
 Decision: `build_inline` stretches the decoded image to exactly cols x rows cells (`resize_exact`) before encoding. Rejected `Resize::Scale`: it left a padding strip where cell rounding did not divide evenly (seen in the first frame).
+
 Follow-up if wanted: images inside list items and quotes (need the container gutter as a draw offset).
 
 ---
@@ -172,12 +173,3 @@ moved: shaving -> shorn
 ▸ 2026-10-25T21:26:26Z [delta:Add basic image attachment rendering]
 
 Landed (yakherd): the thread's five commits fast-forwarded onto the user's checkout main (2b1f3ba..c4b0b9f: yaks-89fc 7462a6f, yaks-0bf0 ea538c8 and c4b0b9f, yaks-4e9c 67122a0 and e4e378d). Verified there: git log shows c4b0b9f, status clean, no MERGE_HEAD. The first push attempt printed nothing and did not land; the second did. origin not pushed. toque origin/main 240eb5f. Release build installed to ~/.cargo/bin/yaks and ~/go/bin/yaks from c4b0b9f.
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-0bf0` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-0bf0 --drop-request`, which removes this request note, so no new note is left behind.

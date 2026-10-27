@@ -5,14 +5,13 @@ status: shorn
 type: bug
 priority: 1
 created: '2026-10-05T22:10:36Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:20:37Z'
 parent: yaks-e9de
 depends_on:
 - yaks-649d
 labels:
 - markdown
 - skills
-needs: agent
 ---
 
 I keep seeing massive chunks of md pasted into a single-line description, making it nigh-unreadable. This may be a byproduct of agents working through the CLI. We should give explicit guidance on markdown formatting, and ensure that it follows the constructs we actually implement in markdown rendering.
@@ -26,6 +25,7 @@ Possibly related: yaks-c53a
 ▸ 2026-10-10T20:06:05Z [delta-lead]
 
 Concrete case for the guidance (2026-10-10, see the failure-mode note on yaks-c53a): the markdown-guidance work here should also say HOW to pass a body, not only how to format it. The one rule: never put a note or description body inside `$( )` or a double-quoted argument. Use `--note - <<'EOF'` (heredoc piped on stdin) or `--note-file PATH`. In a quoted argument or `$(cat <<EOF)`, backticks and `$` in the body can execute (a worker's note ran `top`, which hung its terminal for 10 minutes, and `yaks discover`, whose output ended up in the note).
+
 Where it must appear: the yaks skill (Writing notes and descriptions) already says to pass multi-line text on stdin or from a file; add the explicit "never `$( )`" line there, in `yaks brief`'s output (src/brief.rs, the multi-line notes sentence), and in the coordinating skill's worker brief template. Today the brief says "piped on stdin (`--note - <<'EOF'` ... `EOF`), never as one long argument", which a worker followed in letter and still wrapped in `$(cat ...)`.
 
 ---
@@ -58,12 +58,3 @@ verify: `cargo test -p yaks skills` -> PASS (exit 0)
 ▸ 2026-10-17T05:16:47Z [delta-lead]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-382b` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-382b --drop-request`, which removes this request note, so no new note is left behind.

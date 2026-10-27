@@ -5,11 +5,10 @@ status: shorn
 type: task
 priority: 2
 created: '2026-09-04T17:08:35Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T02:36:17Z'
 parent: yaks-2ebe
 labels:
 - cli
-needs: agent
 ---
 
 Explicit id-list bulk mutation (yaks update a b c --add-label X) is safe and is being built now. FILTER-driven mutation (apply to every yak matching a filter — bulk relabel/reparent/slaughter across a matching set) is the powerful-but-destructive-capable part that needs a human risk call before we build it.
@@ -18,9 +17,13 @@ Explicit id-list bulk mutation (yaks update a b c --add-label X) is safe and is 
 ▸ 2026-09-04T17:08:35Z [coordinator]
 
 Filter-driven bulk mutation is destructive-capable (a wrong filter could relabel or slaughter the whole herd). What safety model do you want for v1?
+
 (a) DRY-RUN BY DEFAULT: a filter mutation prints the affected set and does nothing unless you pass --commit (or --yes); id-list mutation applies directly.
+
 (b) ID-LIST ONLY for now: defer filter-driven mutation entirely until we've lived with the id-list version.
+
 (c) FILTER ALLOWED with a hard cap + confirmation above N matches (e.g. refuse >20 without --force).
+
 My lean: (a) dry-run-default + require --commit, and additionally never allow slaughter via filter without an explicit expected-count match. Which do you want? I'm building the safe id-list half now regardless.
 
 ---
@@ -32,12 +35,3 @@ Agreed on dry-run by default. This could be a pretty big foot-gun otherwise!
 ▸ 2026-09-05T03:26:26Z [coordinator]
 
 RESOLVED + IMPLEMENTED. Decision (dry-run-default) made by Joel; implemented as 'yaks bulk' (yaks-a11b): filter selects, dry-run by default, --commit to apply, refuses unfiltered/no-mutation, field-edits+reparent only (filter-slaughter still deferred as the scariest case). Verified the gates on the merged binary.
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-7cc8` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-7cc8 --drop-request`, which removes this request note, so no new note is left behind.

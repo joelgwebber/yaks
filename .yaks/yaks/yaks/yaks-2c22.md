@@ -5,13 +5,12 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-03T21:13:29Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:20:36Z'
 parent: yaks-b5a0
 labels:
 - cli
 - skills
 - agent
-needs: agent
 ---
 
 Prose rules in the skills have not kept agents on the rails (yaks-df61 O5, O6, O9). Candidate commands that take the checklist out of prose: (1) yaks brief <id> --as <actor>: print a worker brief from the yak itself (id, how to get a binary, actor, scope from notes, evidence contract = verify command or required attachments, forbidden moves, commit and return format); (2) yaks preflight [<id>...]: before landing, check each shorn yak has its verify last PASS, no untracked or unstaged files under .yaks/ (evidence not staged), the yak file and code are in the same commit, and the commit message names the id; exit non-zero with one actionable line per failure. Design test (yaks-coordinating): both are expressible as queries over files plus git status, so they may live in the tool; anything that assumes Delta or worktrees stays in the skill. Open: whether these generalise beyond Delta, and whether brief should be a template skill instead. Decide with Joel before building.
@@ -40,6 +39,7 @@ Today the fill-in worker brief is prose in `.agents/skills/yaks-coordinating-del
   - forbidden moves and how to finish, chosen by farm mode (team: stage `yaks path <id>` plus artifacts; private: no yak ids in commits)
   - the `Decision:` note rule, the multi-line markdown rule, and the final-message format
   - `--yaks-dir <path>` adds the `YAKS_DIR=` line for private/pointer farms
+
   The Delta skill's template shrinks to "run `yaks brief`, then add the spawn title and anything environment-specific", so the two cannot drift.
 - **B. The skill stays the only template**; `yaks brief` prints it from a copy embedded at build time (same text, generated). Single text, but it ties the binary to the optional coordination skills.
 - **C. Do not build it**; keep the template in the skill and rely on the cold-read gate.
@@ -85,6 +85,7 @@ Prints the worker brief to stdout (plain text, deterministic). It errors (non-ze
 8. Blocked or a decision needed: `yaks ask <id>`, leave edits in the working tree, never revert, never park in $TMPDIR, say which in the final message.
 9. Notes: record every choice a reviewer could argue about as a note starting `Decision:` naming the rejected alternatives; multi-line notes as markdown piped on stdin (`--note - <<'EOF'`), not one long argument (the same text as the yaks skill).
 10. The final-message format: commit SHA and `git show --stat`; gate command and last lines; start/finish `date -u`; the Decision notes in one line each; docs-parity grep; anything surprising.
+
 It must NOT contain orchestration the yak cannot know (spawn titles, Delta landing, which model); the coordinator adds those around it.
 
 ## Constraints
@@ -92,6 +93,7 @@ It must NOT contain orchestration the yak cannot know (spawn titles, Delta landi
 - `--json` is optional; if you add it, same sections as keys.
 - Docs parity: docs/cli.md, README.md, `.agents/skills/yaks/SKILL.md` command table, `--help`. Leave `.agents/skills/yaks-coordinating*` and `yaks-working` to the coordinator, but report which sentences of the brief template in the Delta skill the command now replaces.
 - Evidence: gate green; a real run of `yaks brief` for a shaving yak in a team farm and in a private farm (paste both); then check the output against the Delta skill's current template and list any clause present in one and missing in the other.
+
 Judge: coordinator re-runs the gate and gives the output to a fresh scout as a worker brief.
 
 ---
@@ -131,12 +133,3 @@ Clause comparison with the Delta skill's old fill-in template:
 ▸ 2026-10-06T20:00:42Z [delta-lead]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-2c22` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-2c22 --drop-request`, which removes this request note, so no new note is left behind.

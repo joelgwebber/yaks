@@ -5,12 +5,11 @@ status: shorn
 type: task
 priority: 4
 created: '2026-09-09T02:29:07Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:18:51Z'
 parent: yaks-89b9
 labels:
 - ui
 - docs
-needs: agent
 ---
 
 Spike under yaks-1a96 side-quest. Refactor svg_of in src/tui/docshots.rs to cut bloat: (1) <style> class block for palette+modifiers, (2) hoist font-family/size/lengthAdjust/xml:space to root via inheritance, (3) coalesce contiguous same-bg cells into one <rect> per run, (4) one <text> per row with <tspan> only on style change + explicit per-run x (keep column pinning; avoid risky row-level textLength given mid-row emoji). Goal: feel out byte savings + whether the SVG source reads row-by-row for direct LLM parsing. Verify by driving docshots and eyeballing rendered frame + diffing bytes/element counts.
@@ -37,6 +36,7 @@ Not landed: needs A-vs-C decision + docs/skills note if the format change ships 
 Switched tree to Option C (row <text> + per-run <tspan x>, wide-glyph split via unicode-width, white-space:pre, no textLength). tui-list -78%, detail -66%, drawer -67%, inbox -85%; columns hold; ~4% cosmetic intra-run drift (fine for a TUI per Joel). Suite green.
 
 Explored Joel's 3 Qs with probes:
+
 Q1 (drop repeated attrs via SVG abstraction): textLength/lengthAdjust are non-inheritable geometry attrs with no CSS-property form -> CANNOT be hoisted to <g>/<style>; only removable by not needing them (C already has none; remaining per-run attr is just x, irreducible position). Inheritable/CSS attrs (fill/font-*/opacity/text-decoration/white-space) already hoisted.
 
 Q2 (equal-length rows + whitespace, drop textLength entirely): built a pure-FLOW variant (one <text>/row, literal full-row text, color via in-flow <tspan class> with NO x/textLength). Leanest yet: tui-list 2545B (-80%) and source reads near-verbatim like the toque snapshot. BUT AE 5.8% and a real break: text rides the FONT grid while bg rects ride the PX grid (CW=8.4); they only stay together if font advance == 8.4px. Emoji (advance != 2 cells) detach the header highlight box from 'Shaving (3)'; an unknown viewer monospace would drift cumulatively. So flow alone is unreliable.
@@ -61,12 +61,3 @@ Reparented under umbrella yaks-89b9 as the RENDERER child. Scope extends from pr
 ▸ 2026-09-09T04:54:54Z [agent]
 
 Shorn. Promoted the Option C renderer into toque as public render_to_svg + buffer_to_svg (new crates/toque/src/svg.rs); the Tomorrow-Night palette + geometry moved with it. src/tui/docshots.rs is now a thin caller (toque::render_to_svg). Output byte-identical to the in-tree spike modulo one redundant root xml:space dropped (-21B/file; white-space:pre does the work). Added unicode-width dep to toque. Rendered tui-list via headless Chrome post-move — columns hold. Suite green.
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-dce6` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-dce6 --drop-request`, which removes this request note, so no new note is left behind.

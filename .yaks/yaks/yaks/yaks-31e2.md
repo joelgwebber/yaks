@@ -5,12 +5,11 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-10-17T13:21:35Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:20:36Z'
 labels:
 - sheds
 - tui
 - attach
-needs: agent
 ---
 
 When opening an attachment from the TUI, for a yak that exists on a different shed (or if only the _attachment_ exists on said shed), it fails. Because it always attempts to open attachments from the cwd.
@@ -19,6 +18,7 @@ When opening an attachment from the TUI, for a yak that exists on a different sh
 ▸ 2026-10-17T13:26:59Z [Joel Webber]
 
 Let's ensure that there's an equivalent CLI affordance so we make this easy for agents as well.
+
 Related: yaks-991c
 
 ---
@@ -76,12 +76,3 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 ▸ 2026-10-17T13:43:14Z [delta-attach]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-31e2` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-31e2 --drop-request`, which removes this request note, so no new note is left behind.

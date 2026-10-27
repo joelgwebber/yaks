@@ -5,14 +5,14 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-09-22T00:10:18Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:18:57Z'
 labels:
 - cli
 - ui
-needs: agent
 ---
 
 Pasted PNGs tend to have ugly names. It would be nice to be able to rename them in the UI. And, for that matter, from the CLI as an option to `yaks --attach`.
+
 Bonus points for an attach-time affordance in the "empty to paste PNG from clipboard" flow.
 
 ---
@@ -31,12 +31,3 @@ CLI evidence (scratch farm, cargo run): attach --name sanitizes 'login page (v2)
 ▸ 2026-09-23T21:44:50Z [lane-attach]
 
 Done. Core: Farm::rename_attachment(id, old, new) moves .yaks/artifacts/<id>/<old> and rewrites every artifacts/<id>/<old> path mention farm-wide (boundary-aware, so a.png.bak is untouched) plus the ![stem] alt text attach writes; refuses collision/missing/invalid; farm::attachment_name sanitizes (last path component, non [alnum._-+] -> '-', trims dots/dashes) and keeps the old extension when omitted. CLI: 'yaks attach --name <name>' + new 'yaks rename-attachment <id> <old> <new>' (mirrors rename / rename-prefix). TUI bonus: empty-path (clipboard PNG) attach now prompts 'Name pasted PNG (empty = paste-<ts>.png)'; refuses an existing name. Tests: farm unit x3, tests/cli.rs attach_name_and_rename_attachment, tui paste_attach_prompts_for_a_name. cargo test -p yaks --bins 284 ok, --test cli 26 ok. Docs: cli.md, tui.md, skills/yaks table, clap help.
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-fe19` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-fe19 --drop-request`, which removes this request note, so no new note is left behind.

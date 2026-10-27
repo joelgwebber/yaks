@@ -5,12 +5,11 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-10-06T22:19:03Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:20:34Z'
 parent: yaks-38dc
 labels:
 - cli
 - delta
-needs: agent
 ---
 
 Found by Joel (2026-10-06) reading `yaks sheds` from ~/src/yaks after yaks-37fa: the yakherd's own shed (xp49gyb9fg59) shows `who:` with eighteen actors and a farm delta of 21 new and 16 moved yaks, though the shed is only ONE commit ahead of his checkout (`+1 -0`). He asked whether that is a misfire.
@@ -40,6 +39,7 @@ Claim (coordinator delta-lead). Owner: worker nbr-1. Scope: `src/sheds.rs` (the 
 ▸ 2026-10-06T22:19:29Z [nbr-1]
 
 Start: Tue Oct  6 22:19:26 UTC 2026
+
 Path: /Users/joel/src/yaks/.delta/worktrees/qw0xx3s64g6e/yaks/.yaks/shaving/yaks-22f1.md
 
 [sheds-before](yaks-22f1/sheds-before.txt)
@@ -72,8 +72,11 @@ Decision: a test-setup point worth recording: "sync" means only commits that are
 Evidence: real `yaks sheds` from /Users/joel/src/yaks, before (copy of the coordinator's binary) and after (this change's release binary), attached in full as sheds-before.txt / sheds-after.txt. `diff before after` shows only two changes:
 - the yakherd's shed xp49gyb9fg59 (HEAD 93b3fb9, +3 -0): before `who:` 18 actors, `farm: 22 new, 16 moved, 94 new notes`; after `who: delta-lead · shaving: yaks-22f1, yaks-b5a0`, `farm: 1 new, 1 new notes` (yaks-b5a0 +1 notes). Baseline is the merge-base with the viewer.
 - my own shed's DIRTY count (1 -> 6, because I was editing).
+
 Every other shed's lines are byte-identical (worker sheds unchanged).
+
 Docs parity: updated the `sheds` row in docs/cli.md, README.md, .agents/skills/yaks/SKILL.md and the `Sheds` help in src/main.rs; grep -rnE "merge-base|forked|fork point|vs this checkout" over docs README.md .agents/skills/yaks .agents/skills/yaks-tracker src/main.rs src/tui src/skills.rs found no other description of the baseline (docs/research and tui snapshots excluded). The `?` help overlay does not mention sheds. Coordination skills' prose left alone (out of scope).
+
 Summary: `nearer_baseline` in src/sheds.rs picks M (new `BaseKind::Sync`) when M != F and F is an ancestor of M, else F; label and farm delta both use it; 3 new temp-repo tests + a strengthened squash test.
 
 ---
@@ -85,12 +88,3 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 ▸ 2026-10-06T22:23:22Z [nbr-1]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-22f1` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-22f1 --drop-request`, which removes this request note, so no new note is left behind.

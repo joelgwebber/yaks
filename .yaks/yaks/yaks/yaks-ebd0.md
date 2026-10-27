@@ -5,10 +5,9 @@ status: shorn
 type: task
 priority: 1
 created: '2026-10-02T05:05:36Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:18:54Z'
 labels:
 - linux
-needs: agent
 ---
 
 Not sure why, but copying to the clipboard doesn't seem to work on linux. It thinks it copied a value, but nothing ends up in the system clipboard.
@@ -25,14 +24,7 @@ Consider keeping `Clipboard` in more persistent state somewhere or keeping the c
 Root cause, two layers:
 1. src/clipboard.rs::copy_text created an arboard::Clipboard, set_text, and dropped it immediately. On Linux the owning process serves clipboard contents, so the copy died with the handle (set_text still returned Ok -> 'copied' notification; arboard's 'dropped very quickly' warning). Fix: one process-lifetime Clipboard in a static Mutex<Option<_>>, released explicitly at TUI teardown (runtime::run) so arboard can hand off to a clipboard manager.
 2. arboard was built without 'wayland-data-control', so it only used X11 (:0). On niri (xwayland-satellite) that never reached the Wayland clipboard: even with the persistent handle, wl-paste still returned the old contents. Enabled the feature in Cargo.toml; wl-clipboard-rs is target-gated to linux/bsd, so mac/windows release builds are unaffected.
+
 edtui's vim yank already held a persistent ArboardClipboard; it gets the Wayland feature through the shared arboard crate.
+
 Evidence (niri, Wayland): scratch test copy_text -> wl-paste: before = old contents, after = copied value. End-to-end: seeded wl-copy 'stale', ran target/debug/yaks tui in a pty, pressed y -> 'copied yaks-ebd0' notification, quit -> wl-paste = 'yaks-ebd0' (survives exit). cargo test: 319+28 pass. No docs/help change: behavior fix, no new keys/flags.
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-ebd0` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-ebd0 --drop-request`, which removes this request note, so no new note is left behind.

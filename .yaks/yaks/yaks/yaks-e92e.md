@@ -5,12 +5,11 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-10-16T19:53:16Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:18:52Z'
 parent: yaks-5662
 labels:
 - cli
 - delta
-needs: agent
 ---
 
 `landed_ids` / `outstanding_ids` (src/sheds.rs) compare the shed with the REFERENCE two ways: `yak_changes(reference, theirs)`. For notes and status that is directional (a shed that is merely behind is not outstanding), but `edited` is `store::edited(reference, theirs)`, a plain inequality. So when the reference edits a yak after a shed forked (re-parent, retitle, a field), every shed that touched that yak and is behind on it reads that yak as NOT landed, and all its lines show again (including notes the reference already has).
@@ -32,6 +31,7 @@ moved: hairy -> shaving
 Decision: field-wise three-way, with the reference settling any field it also changed. A field counts as the shed's outstanding edit only when the shed changed it (base -> theirs) AND the reference still holds the base value (`store::edits_landed`). Rejected:
 - `edited(base, theirs) && edited(reference, theirs)` (yak-level): still flags a yak when the reference edited a different field after the shed's edit landed.
 - "reference holds the shed's value" per field (my first draft): the real review shed failed it. It had dropped survey-209f's `parent: survey-e0c0`; that landed, then main re-parented to survey-3237, so the reference has neither the base nor the shed's value. When both sides changed a field, the reference is where that gets settled, the same way a status the reference moved further along already reads landed.
+
 A shed-created yak (no base) is unchanged: any difference is outstanding.
 
 ---
@@ -51,12 +51,3 @@ Scratch clone removed afterwards. Docs: the `landed` rule in docs/cli.md `sheds`
 ▸ 2026-10-16T20:00:10Z [delta]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-e92e` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-e92e --drop-request`, which removes this request note, so no new note is left behind.

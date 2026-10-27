@@ -5,8 +5,7 @@ status: shorn
 type: task
 priority: 3
 created: '2026-08-29T22:27:42Z'
-updated: '2026-10-27T01:10:50Z'
-needs: agent
+updated: '2026-10-27T01:20:39Z'
 ---
 
 The README just tells you to clone the yaks repo and manually copy the skills. Two paths:
@@ -21,13 +20,5 @@ Feel free to research the most up-to-date norms before committing to particular 
 SHORN. Two install paths, per the yak:
 1) Built-in `yaks skills install [--dir <PATH>] [--force]` — the yak+yak-tracker SKILL.md are embedded in the binary (include_str!, src/skills.rs) and written to ~/.agents/skills by default, or --dir for another agent (e.g. ~/.claude/skills); skips existing unless --force. Handled BEFORE Herd::open so it runs with no herd (installing the skill usually precedes any .yaks). Fits the self-contained-binary model: no clone needed.
 2) README: replaced the git clone + cp -r block with `yaks skills install`, and added openskills as the cross-agent option (npx openskills install joelgwebber/yaks) — researched: openskills is the popular universal Anthropic-format SKILL.md loader (~13k weekly dl).
+
 1 unit test (install writes both / skips / forces). 192 lib tests, warning-free.
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-45b2` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-45b2 --drop-request`, which removes this request note, so no new note is left behind.

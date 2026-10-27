@@ -5,17 +5,17 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-06T21:05:37Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:18:54Z'
 parent: yaks-b5a0
 labels:
 - cli
 - design
-needs: agent
 ---
 
 Joel (2026-10-06): start by working out the CLI affordances for sheds and threads, because an agent needs the same ones a human does, and use what that teaches to decide the TUI. His use cases, in his words: "what yaks has [thread] created or modified?", "are any threads waiting on answers from me?", "answer the question on [yak] from [thread]: ...". He also wants "dirty yaks" surfaced (he forgets to `git status` and so forgets to commit yaks), and notes that a yak seen in several sheds has N states, which matters for what you are looking at and what you are updating.
 
 ## Status (2026-10-10): the proposal is built and released in v0.0.14
+
 Each question below is answered by a shipped command; the decisions Joel made on the open questions are in the notes (a shed's copy is "not yet in the primary"; only `answer` and maybe `ask` write across sheds, enforced in the library; an answer stays uncommitted in the asking shed and its worker commits it; the vocabulary stops at "shed").
 - What sheds exist and what are they doing? `yaks sheds`.
 - What has shed S created or modified? `yaks changes <shed>`.
@@ -52,6 +52,7 @@ Decisions (Joel, 2026-10-06, from the abandoned-shed discussion):
 1. A shed's state is a small vocabulary (active, idle, landed, stale, orphan); "its claim disagrees with the primary" (its own copy of a yak is `shaving` while the viewer's is `shorn`) is a SIDE NOTE on the row, not a state of its own.
 2. The yaks tools never remove or clean up a shed: "there is enough complexity and inference that this could be unpredictable and dangerous". They name what is safe and may print the command; Delta owns its clones, and `git worktree remove` stays the user's call.
 3. Liveness starts as the simplest signal: no farm activity for N hours while its own yak is still `shaving`. Revisit only if it misleads.
+
 Context: the two dead workers' sheds (brf-1, brf-2) hold uncommitted drafts and 0 commits of their own while their yak (yaks-2c22) is shorn in the main checkout; a finished worker's shed (sta-1) is clean with its one commit landed.
 
 ---
@@ -141,12 +142,3 @@ Shorn in the 2026-10-19 herd pass: every question here shipped in v0.0.14 (sheds
 ▸ 2026-10-19T04:27:08Z [delta:herd-pass]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-ee0a` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-ee0a --drop-request`, which removes this request note, so no new note is left behind.

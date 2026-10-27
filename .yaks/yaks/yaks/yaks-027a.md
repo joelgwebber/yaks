@@ -5,13 +5,13 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-09-11T01:46:31Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:20:31Z'
 labels:
 - ui
-needs: agent
 ---
 
 The "answer" popup has no spacing between the instructions and beginning of text (starts with "Strong..." below):
+
 `Answer yaks-b1cc (clears the block) — Enter save · Ctrl-C cancelStrong agreement on aggressive checkpointing`
 
 ---
@@ -37,12 +37,3 @@ Same for the ask prompt.
 ▸ 2026-09-23T21:43:06Z [lane-polish]
 
 Shorn. The single-line ask/answer prompts rendered label then typed text with no separator. Relabelled them (src/tui/handlers.rs open_ask/open_answer) to 'Ask <id> — blocks on a human (Enter save · Ctrl-C cancel): ' / 'Answer <id> — clears the block (Enter save · Ctrl-C cancel): ', matching the ': ' convention of the other single-line prompts (Labels/Save view as/Rename view/Attach path). Comment is the multi-line right-pane editor with the label on its own header row — no issue there. Regression test: tui::tests::ask_and_answer_prompts_separate_label_from_typed_text. No key/behavior change, so no docs/help ripple (grep confirmed no docs quote the old label).
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-027a` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-027a --drop-request`, which removes this request note, so no new note is left behind.

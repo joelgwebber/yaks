@@ -5,12 +5,11 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-17T04:36:55Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:19:38Z'
 parent: yaks-e9de
 labels:
 - markdown
 - cli
-needs: agent
 ---
 
 Joel (2026-10-17, on yaks-2362 and yaks-3b8d): do these format changes as a real schema migration in the next release, and expect more fixups to join it.
@@ -86,7 +85,9 @@ Decision: `.yaks` fixtures migrated: tests/fixtures/farm now schema 5 with fix-0
 ▸ 2026-10-17T05:01:24Z [migrate-1]
 
 Evidence: dry-run/real run over a COPY of this repo's farm (target/farmcopy, not .yaks): attached migrate-dryrun-report (the `.yaks/yaks-a870/` file). Counts: comment-header-blank-line 1283 comments in 396 yaks; attachment-links 77 links in 51 yaks; 396 yak files rewritten. After: `doctor` All clear, second `migrate` = "nothing to migrate: the farm is on schema 5", schema file 5, 0 non-image `![` left, 12 image `![` kept, 77 plain `[stem](id/file)` links. A diff of the copy against the original shows only added blank lines and the 77 dropped `!` (154 diff lines).
+
 New tests (all fail before: no `migrate`, SCHEMA 4): migrate::tests (4: header fixup both shapes + idempotent, empty comments/prose rules untouched, link fixup unbangs non-images only, ignores foreign links + code fences); farm::tests::attach_links_images_with_a_bang_and_other_files_without (attach per extension, rename keeps/gains/loses the bang, rewrites a schema-4 `![..](x.txt)`); farm::tests::migrate_upgrades_a_schema_4_farm_once (open refuses, dry run writes nothing, frontmatter untouched, second run no-op); content::tests::parses_both_comment_shapes_to_the_same_blocks; store note_tests/schema_gate; merge_refuses_a_schema_4_source. Gates: `cargo test --release` and `cargo test -p yaks skills` ok (608 unit + all integration passed).
+
 Docs parity: docs/cli.md (migrate row, attach, rename-attachment, move-entry shape), docs/README.md (schema 5, note shape), bundled skill .agents/skills/yaks/SKILL.md (attach row, move entries, schema-4 note), RELEASING.md (landing order), clap help (Migrate, Attach, RenameAttachment in src/main.rs). README.md describes neither format: no change. Not done / for the coordinator: run the real migration on `.yaks/` after landing (per RELEASING.md), then the TUI detail pane etc. (other workers) should read the blank line fine (parse strips it; detail.rs block_index_per_line only looks at `---` + `▸`).
 
 ---
@@ -103,12 +104,3 @@ Correction to the evidence note: the new tests were written after the code, so I
 ▸ 2026-10-17T05:01:35Z [migrate-1]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-a870` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-a870 --drop-request`, which removes this request note, so no new note is left behind.

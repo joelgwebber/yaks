@@ -5,11 +5,10 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-09T20:23:49Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:20:39Z'
 parent: yaks-a3d2
 labels:
 - cli
-needs: agent
 ---
 
 ---
@@ -21,10 +20,15 @@ moved: hairy -> shaving
 ▸ 2026-10-09T20:24:48Z [delta:Delta :Yaks (cont'd)]
 
 Claim (coordinator). Owner: cflag-1.
+
 Goal: a global `-C <path>` on `yaks` (`yaks -C <path> <command> ...`), exactly like `git -C`: every command behaves as if started with cwd = <path>. That covers farm discovery (store::discover / Farm::open), `sheds`, `discover`, `status`, `commit`, `init`, `skills`, `tui`, the project-skills notice, and anything else that reads `env::current_dir()`. A relative <path> resolves against the real cwd. Repeated -C composes like git's (each later one relative to the previous). A missing path is an error naming the path. YAKS_DIR still wins over discovery, as it does today.
+
 Implementation lean (choose and record a Decision: note): add `#[arg(short = 'C', global = true)]` to `struct Cli` in src/main.rs, resolve it once at the top of `main`, then `std::env::set_current_dir` before anything reads the cwd. Rejected alternative to weigh: threading a `cwd` through every call site (many call sites, easy to miss one). If you choose set_current_dir, check that no code captured the cwd before that point.
+
 Scope: src/main.rs (struct Cli, main/run top) plus a new integration test file tests/dash_c.rs. Docs: docs/cli.md (a global-flags line near the top), README.md, the `yaks` skill (`.agents/skills/yaks/SKILL.md`, one line in "Running yaks" or the command table), and the clap help.
+
 Out of scope: --shed (later), any change to discovery semantics.
+
 Evidence: tests/dash_c.rs, written to FAIL before your change, covering: (1) `yaks -C <repo> list` from an unrelated cwd lists that farm; (2) `yaks -C <sub-dir-of-repo> show <id>` works; (3) `yaks -C <a-delta-shaped-or-worktree-checkout> sheds --json` equals running `sheds --json` with that cwd; (4) a missing path is an error that names it; (5) `-C` after the subcommand (`yaks list -C <repo>`) also works, since the flag is global. Judge: the coordinator, at landing.
 
 ---
@@ -51,6 +55,7 @@ Decision: `$YAKS_DIR` is untouched, so a relative value resolves against the new
 ▸ 2026-10-09T20:28:46Z [cflag-1]
 
 Evidence: tests/dash_c.rs, 7 tests (list from unrelated cwd; show via sub-dir; sheds --json equals direct run in a linked worktree; missing path names it; `list -C` after the subcommand; repeated -C composes; init + discover honour -C). With src/main.rs stashed (no change) all 7 FAIL ("unexpected argument '-C' found"); with the change all 7 pass.
+
 Note: `sheds` reports the primary checkout path even when run in a linked worktree, so the test asserts equality with the direct run rather than the worktree path. `cargo fmt -- src/main.rs` follows `mod` and reformats src/actor.rs, src/tui/docshots.rs, src/tui/tests.rs; reverted those, so only the intended hunks in main.rs remain.
 
 ---
@@ -77,12 +82,3 @@ Fix: field renamed `dir` -> `chdir`; clap used the field name as arg id and clas
 ▸ 2026-10-09T20:31:53Z [cflag-1]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-4e39` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-4e39 --drop-request`, which removes this request note, so no new note is left behind.

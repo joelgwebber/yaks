@@ -5,12 +5,11 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-17T16:54:33Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:19:39Z'
 parent: yaks-faf5
 labels:
 - tui
 - perf
-needs: agent
 ---
 
 Follow-up to yaks-48d6 (read its diagnosis note first: harness, numbers, call graph).
@@ -83,6 +82,7 @@ Not changed: output. No insta snapshot moved (`git status` shows none); the head
 Numbers (target/bench/run.sh, this repo's `.yaks/` copy, 120x50, yaks-a893 detail pane, 60×j, release; the machine was quieter than in the first note, which is why 'before' is lower than 4.8–7.1 s):
 - before: 0 keys 963 ms; 60 keys 2287, 2291, 2294, 2277 ms, so about 22 ms per key.
 - after: 0 keys 916, 910 ms; 60 keys 953, 957, 965, 964 ms, so about 0.7 ms per key.
+
 That is about 30× per key; startup dominates what is left.
 
 Gates: `cargo test --workspace` 825 passed 0 failed; `cargo test --release` 825 passed 0 failed.
@@ -91,12 +91,3 @@ Gates: `cargo test --workspace` 825 passed 0 failed; `cargo test --release` 825 
 ▸ 2026-10-17T18:47:02Z [cache-1]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-bc30` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-bc30 --drop-request`, which removes this request note, so no new note is left behind.

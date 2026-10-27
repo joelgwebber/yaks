@@ -5,11 +5,10 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-09-24T12:39:58Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:19:39Z'
 labels:
 - cli
 - ui
-needs: agent
 ---
 
 Coming back to a farm (a fresh agent context, or a human after a break), there's no reliable way to find **questions the human has answered that an agent now needs to pick up**. Found by accident on 2026-09-24 during the lightning-round wrap-up (yaks-77a5).
@@ -57,6 +56,7 @@ Joel also noted it is interesting that this, of all cases, did not arrive as a q
 5. `yaks inbox` shows two sections, "awaiting a human" (`needs: human`) and "answered, awaiting an agent" (`needs: agent`); `--for human|agent` narrows it; `--json` carries each yak's `needs`.
 6. Slice 1 (no format change): in `inbox`, a `needs: human` yak whose latest note after the ask is from a DIFFERENT actor than the asker is flagged `replied` (a plain-note reply that did not use `answer`), derived from the notes. This is the failure that started the yak.
 7. The TUI must not show `needs: agent` as awaiting a human (check where `needs` is read; keep TUI changes minimal and verify with a headless frame); a distinct badge is welcome but not required.
+
 Out of scope: cross-checkout visibility (yaks-7204), a waiting command (yaks-f313), coordination skills' prose (the coordinator updates them; the shipped `yaks` skill sections on asking/answering are yours).
 
 ---
@@ -120,6 +120,7 @@ Decision: TUI. Rows/detail: `needs: agent` gets a `✅` badge (no hourglass, no 
 ▸ 2026-10-06T04:08:28Z [agt-1]
 
 Evidence. Gate: `cargo test -p yaks` green (436 unit + integration incl. new tests/needs_loop.rs; new tests reference the new `ask`/`answer`/`pickup` API and `needs: agent` rules, so they cannot pass on the old code).
+
 Real run in a temp farm (own binary, actors coord/joel/agt):
 ```
 coord$ yaks ask yak-04d8 --note "Which way: A or B?"   -> Asked yak-04d8: needs human (dropped from next until answered)
@@ -144,12 +145,3 @@ agt$   yaks inbox               -> Inbox empty: nothing awaiting a human or an a
 ▸ 2026-10-06T04:08:28Z [agt-1]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-c061` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-c061 --drop-request`, which removes this request note, so no new note is left behind.

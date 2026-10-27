@@ -5,18 +5,18 @@ status: shorn
 type: task
 priority: 3
 created: '2026-10-05T22:15:30Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:18:53Z'
 parent: yaks-e9de
 labels:
 - markdown
 - rendering
 - tui
-needs: agent
 ---
 
 Our markdown rendering is often hard to read. We should aim for a more complete markdown->TUI (or console) implementation that takes into account all the common markdown idioms that apply to text rendering. A few examples:
 
 We could remove **markers** _like_ *these* in the rendering output.
+
 [Links](https://example.com/) could be rendered more simply.
 
 It also appears that _long styled strings don't get properly styled
@@ -58,12 +58,14 @@ HRs should really render as actual horizontal rules and not just three hyphens.
 ### of header
 
 It would also be nice if long lines rendered naturally as a paragraph when they wrap past the last column in the viewport.
+
 But it would also be nice if paragraphs
 that had been auto-wrapped by an editor
 or an agent that got overzealous about
 formatting everything fastidiously.
 
 I believe it's the markdown norm to only consider paragraph breaks with a newline.
+
 But that's also worth double-checking.
 
 ```java
@@ -117,12 +119,3 @@ Arc complete: every child shorn (or moved out / slaughtered), released in 0.0.20
 ▸ 2026-10-17T19:55:57Z [delta-lead]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-ea13` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-ea13 --drop-request`, which removes this request note, so no new note is left behind.

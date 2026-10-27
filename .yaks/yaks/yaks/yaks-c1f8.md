@@ -5,12 +5,11 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-13T19:46:42Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:19:39Z'
 parent: yaks-38dc
 labels:
 - ui
 - delta
-needs: agent
 ---
 
 Joel, 2026-10-13: the Sheds tab's detail mirrors `yaks changes` and lists every yak the shed touched since it forked; a coordinator's long-lived shed that is `landed (12 yaks)` still shows twelve bright-looking blocks. Lead with what is outstanding and fold the landed ones behind one line, as `yaks sheds` does.
@@ -32,6 +31,7 @@ Design (delta-lead, within Joel's ask; say so in a Decision note if something do
 4. A shed with nothing landed renders exactly as today; one with only landed yaks shows just the fold line under `Changes (N yaks)`.
 
 Scope: src/tui/sheds_tab.rs (the detail model: `selected_shed_yak`, `move_shed_yak`, `detail_lines`, `render_shed_detail`, `handle_shed_detail_key`, tests in its `mod tests`, insta snapshots), `help_content` / `help_hint` in src/tui/render.rs only for the Enter-on-fold line, docs/tui.md (the Sheds tab section and its key table).
+
 Out of scope: src/sheds.rs and src/main.rs (changes-1), the yak views and their overlay, regenerating docs/assets (do NOT run the docshots generator; the coordinator does it at landing).
 
 Evidence (fail first): tests that (i) outstanding blocks come first and one `▸ N landed` line follows; (ii) Enter on it expands and collapses; (iii) j/k reach the fold line and the landed yaks when expanded; (iv) a shed without landed yaks is byte-identical to before (insta); (v) selection survives a rescan as in 3. Insta snapshots of the collapsed and expanded detail (use the fixture; add landed yaks to a VARIANT in your tests, do not change `fixture::snapshot`). Real machine: `yaks tui --headless` from your checkout, the Sheds tab, the coordinator's shed `sheds-tui-thin-sheds-tab` (all landed) collapsed and expanded, pasted. Full `cargo test --release`. Judge: delta-lead at landing (renders and LOOKS at the frames).
@@ -40,7 +40,9 @@ Evidence (fail first): tests that (i) outstanding blocks come first and one `▸
 ▸ 2026-10-13T19:48:26Z [fold-1]
 
 Start: Tue Oct 13 19:47:53 UTC 2026 (worker fold-1)
+
 yaks path yaks-c1f8: /Users/joel/src/yaks/.delta/worktrees/p76ng8mfcj6a/yaks/.yaks/yaks-c1f8.md
+
 Plan: `ShedsTab.line` becomes an index into the detail's *stops*: outstanding yaks, then one fold stop (if any landed), then the landed yaks when `landed_open`. Tests first (frames of a perf-1 variant with landed yaks), seen failing, then the implementation.
 
 ---
@@ -128,12 +130,19 @@ h:list  j/k:yak  J/K:shed  Enter:open yak  a:answer  y:copy id  r:rescan  ?:help
 ▸ 2026-10-13T20:01:09Z [fold-1]
 
 Decision: the fold line joins the cursor model as a *stop*, not a separate cursor. `ShedsTab.line` is now an index into `detail_stops` (`Vec<Option<&YakChange>>`: outstanding yaks, then one `None` = the fold line when any yak landed, then the landed yaks when open). `selected_shed_yak` returns `None` on the fold line, so `a`, `y` (falls back to the shed path, as outside the detail) and Enter-open need no special case, and `j/k/g/G/d/u` clamp over the stops unchanged. Rejected: a second `fold_selected: bool` beside `line` (two cursors, every move/clamp/render path has to reconcile them) and making the fold a synthetic `YakChange` (would leak a fake yak into `a`/`y`/Enter).
+
 Decision: `landed_open` is one bool on `ShedsTab` (per App, not per shed, not persisted, as the claim said). Rejected per-shed state (a map keyed by shed path that has to survive rescans and drop gone sheds, for a view toggle). J/K to another shed keeps the flag.
+
 Decision: Enter on the fold line toggles and leaves the cursor on the fold line (the landed yaks are below it); Enter on any yak, outstanding or landed, still opens it. A collapse while the cursor is on a landed yak cannot happen from the keyboard (Enter there opens the yak), but a rescan that lands the selected yak while folded drops the cursor onto the fold line (`apply_sheds_snapshot`: by id if still a stop, else the fold line when the id is a landed yak, else 0). `on_fold` is remembered across a rescan too.
+
 Decision: the header count stays `Changes (N yaks)` with N = all yaks (outstanding + landed), as in `yaks changes`; the fold line carries the landed count (`▸ 14 landed`, dim; `▾ N landed` open). Landed yak blocks keep their dim title and `, landed` bracket as today.
+
 Decision: the block rendering moved into `push_yak_block` unchanged (so a shed with nothing landed is byte-identical: the existing `sheds_tab_detail` and `inbox_shed_ask_row` snapshots pass untouched). The detail's `starts` vector is now per stop, same indexing as `line`.
+
 Decision: help bar left as `Enter:open yak` (it already truncates on narrow terminals and the fold hint is in the `?` overlay and docs); `help_content` gets `Enter (on ▸ N landed)`. Rejected a longer bar string (would change the existing bar in every Sheds detail snapshot for a case most sheds never show).
+
 Surprise: `cargo test --release` failed once, `status::tests::status_agrees_with_the_commit_message`, in a full run while my yak file was being edited by notes (that test reads git state); it passes alone and in the second full run. Unrelated to this change, the test reads a temp repo.
+
 Summary: Sheds tab detail leads with outstanding yaks, folds landed ones behind one dim `▸ N landed` stop (Enter expands to `▾`, again collapses), via `sheds::split_landed`. Files: src/tui/sheds_tab.rs (model, render, 6 new tests + 3 insta snapshots: folded, expanded, all-landed), src/tui/render.rs (help_content), docs/tui.md (key table + Sheds tab section). docs/assets not regenerated (coordinator at landing; `tui-sheds-detail.svg` is unchanged in content since the fixture's perf/asker sheds have nothing landed).
 
 ---
@@ -145,12 +154,3 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 ▸ 2026-10-13T20:05:05Z [fold-1]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-c1f8` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-c1f8 --drop-request`, which removes this request note, so no new note is left behind.

@@ -5,11 +5,10 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-09-23T03:52:41Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:19:38Z'
 labels:
 - cli
 - herds
-needs: agent
 ---
 
 This can be quite a weird foot-gun, because you end up falling back to `yak-`, and can end up accidentally creating a new, unintended herd.
@@ -42,19 +41,12 @@ Scope extended to src/tui/test_support.rs by coordinator delta-lead (one-line te
 ▸ 2026-10-03T21:19:27Z [trial1-haiku]
 
 SUMMARY. Farm::create (src/farm.rs) now bails when there is no --herd, no .yaks pointer herd, and no non-empty top-level herd:/prefix: in config.yaml (private helper config_declares_default_herd, since store::read_config seeds "yak" and cannot distinguish). Clap help (main.rs create --herd) and docs/cli.md updated. Scope extended (coordinator-approved) to src/tui/test_support.rs: temp_farm now writes config.yaml 'herd: yak' since 6 TUI tests relied on the silent yak- fallback. The existing farm test create_without_a_prefix_uses_the_config_default now writes 'herd: core'.
+
 EVIDENCE. New test farm::tests::create_with_no_explicit_or_default_herd_errors, BEFORE fix: 'test farm::tests::create_with_no_explicit_or_default_herd_errors ... FAILED / panicked at src/farm.rs:1545:14: create with no herd must error / test result: FAILED. 0 passed; 1 failed'. AFTER fix: 'test farm::tests::create_with_no_explicit_or_default_herd_errors ... ok / test result: ok. 1 passed'. Gate cargo test -p yaks: exit 0; 'test result: ok. 322 passed; 0 failed; 3 ignored' (unit) and 'test result: ok. 28 passed; 0 failed' (cli). Without the test_support change the gate was 316 passed; 6 failed (tui::tests::live::create_* etc.). Binary transcript attached (transcript.txt): no-herd farm -> 'Error: no herd to create the yak in: pass `--herd <prefix>` or set a default herd (...)' exit=1 and .yaks/hairy stays empty; --herd proj works; init --herd core farm -> 'Created core-e741' exit=0; pointer herd -> 'Created ptr-e344'.
+
 LEARNED. The error surfaces via anyhow in main as 'Error: ...' exit 1 (not the 'error:' style of other outcomes); a CreateOutcome variant would be tidier for the CLI but touches tui/handlers.rs. A follow-up could expose 'herd explicitly configured' on store::Config instead of the farm.rs helper.
 
 ---
 ▸ 2026-10-03T21:21:41Z [delta-lead]
 
 COORDINATOR REVIEW (delta-lead). Re-ran in my own checkout: cargo test -p yaks 323 passed + 28 passed; built binary in a throwaway farm: no config -> 'Error: no herd to create the yak in...' rc=1 and nothing written; --herd proj and a config herd still create; after yaks init, create works. Review change, made as a follow-up commit so the worker's d2833d3 stays intact: replaced the worker's farm.rs helper that re-scanned config.yaml with a Config.prefix_declared flag set in store::read_config (one parser, so quoting and the legacy prefix: alias cannot drift; verified quoted herd and prefix: both still work). Also fixed README.md, which still said the herd defaulted to yak. Scope extension to src/tui/test_support.rs (one line) was my call as coordinator, not the human's; overrule if you disagree. Known rough edge: the error prints as 'Error: ...' (anyhow) and is ~150 chars in the TUI notification (handlers.rs surfaces Err as 'error: {e}').
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-b47b` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-b47b --drop-request`, which removes this request note, so no new note is left behind.

@@ -5,11 +5,10 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-22T20:35:28Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:20:40Z'
 labels:
 - tui
 - images
-needs: agent
 verify: cargo test --workspace
 ---
 
@@ -62,8 +61,11 @@ Start (svg-1) 2026-10-22T20:48:42Z. Farm file: /Users/joel/.local/share/yaks/far
 ▸ 2026-10-22T20:55:51Z [svg-1]
 
 Decision: rasterize svg with `resvg` (text + system-fonts + memmap-fonts only; default-features off). Rejected: default features (adds raster-images/svgz: +282 KB, +3 crates, and `image` already decodes embedded-raster formats we would never need); `usvg`+`tiny-skia` directly (same dep tree, more glue).
+
 Decision: load system fonts via `fontdb::Database::load_system_fonts` once per process in a `OnceLock` (14 ms, 838 faces here) rather than per open; rejected a lazy per-svg load (the scan, not the parse, dominates a small svg).
+
 Decision: a malformed or empty-pixmap svg returns None from `ImageView::open`, so it falls back to the OS opener like a corrupt png.
+
 Decision: `an_undecodable_image_attachment_falls_back_to_the_os_opener` now uses a corrupt `logo.png` (svg is decodable now, so it no longer meant "undecodable"); added `enter_on_an_svg_attachment_rasterizes_it_into_the_pane` and `a_malformed_svg_attachment_falls_back_to_the_os_opener`.
 
 ---
@@ -80,7 +82,9 @@ Spike summary (svg-1; branch svg-1-resvg-spike, one commit, not landed, yak NOT 
    - Other differences: Chrome draws list bg highlight bars slightly wider and bolds "Needs: human"; resvg lost the bold weight on "human" (Menlo bold selected only for some runs) and draws the row highlight identically. Small, but the Chrome render is the truthful one.
    - Default-features vs trimmed renders differ in 791 / 740 pixels out of ~314k / ~523k (antialiasing noise), so trimming costs no fidelity.
 4. Decode time, release, median of 10 after font load: tui-list.svg 175 ms, tui-detail.svg 153 ms (no font db: 0.26-0.44 ms, i.e. nearly all of it is text shaping/glyph outlining with fonts). One-time system font scan: 14 ms (838 faces). So Enter on an svg blocks the UI thread ~170-190 ms the first time; fine for evidence frames, would matter for a large svg (the 32 MiB cap is far too high for svg).
+
 Gate: `cargo test --workspace` green (710 lib + all integration tests, 0 failed), run on the final tree. `cargo fmt -- <files>` only; src/actor.rs restored.
+
 Recommendation: do not adopt as default; if the human wants svg in the viewer anyway, adopt behind a cargo feature (default off) with a fallback to the OS opener when no monospace face is found. Reasons: +2.8 MB (+45%) and +38 crates for a viewer whose main svg input (toque frames) renders worse than a browser (emoji, weight), silently loses all text without a font, and the existing lean (toque emits PNG / attach PNG next to SVG) gives a perfect image at zero binary cost.
 
 ---
@@ -154,15 +158,25 @@ Questions:
 ▸ 2026-10-22T21:57:09Z [svg-1]
 
 Follow-up spike (svg-1), commit 22b3849 on svg-1-resvg-spike (on top of a703b64); not landed, not shorn. Measured on the final tree; `cargo test --workspace` green (711 lib tests).
+
 Finding 1 (color emoji with system fonts): with `raster-images` on and system fonts only (A), emoji are STILL monochrome outlines; the fix is real: load /System/Library/Fonts/Apple Color Emoji.ttc into fontdb BEFORE load_system_fonts (B): emoji then render in color (sbix) and the whole-node-tofu from .LastResort does not occur. Side effect: with Apple Color Emoji in the db the render time drops from 162 ms to 13 ms (fewer fallback scans). Rendering is still a different artwork from Chrome (Apple's glyphs but placed on the text baseline slightly differently, bison/sheep drawn ~2 px higher). Attached: tui-{list,detail}-B-sys-appleemoji-first.png.
+
 Finding 2 (oddities are in the toque SVG, not resvg bugs): (a) `opacity:.6` as a CSS class on <tspan>: resvg honours only presentation attributes it understands on text spans; `fill-opacity:.6` in the same class works. (b) `Needs: human` x-position: the SVG sets `white-space:pre` in a <style> rule; resvg ignores that CSS property and collapses the run of spaces in `Needs:       human`. Adding `xml:space="preserve"` on <text> restores the column. Both fixed by a 2-line change in toque's SVG writer (emit `xml:space="preserve"` on <text>, and `fill-opacity` instead of `opacity` for dim) which Chrome also accepts. With those patched in a copy, the resvg render differs from Chrome by 0.5% mean gray difference on tui-detail (antialiasing, emoji artwork). Attached: tui-{list,detail}-F-final-patched.png.
+
 Finding 3 (embedded fonts, system fonts OFF, fontdb holds only what we embed): text, bold, box drawing, arrows and bullets all render; layout matches Chrome. Chosen: DejaVu Sans Mono (Bitstream Vera license + public-domain changes; permissive, needs the license text shipped: assets/fonts/DejaVu-LICENSE.txt). Alternatives checked against the glyphs the 22 docs/assets SVGs use: JetBrainsMono (OFL) lacks U+2610 U+2611 U+270E U+2726; Anonymous Pro lacks arrows and 16 others; Menlo/SF Mono are not redistributable. Subset (pyftsubset from fontTools 4.61.1 under pyenv 3.11.13, already installed, nothing installed by me): regular 9,872 B, bold 9,944 B, from 335,068 / 318,392 B raw. Emoji: Noto Color Emoji (OFL; 10.6 MB CBDT raw, 4.8 MB COLRv1 raw) subset to the 8 emoji: 15,916 B (CBDT) and 14,468 B (COLRv1); both render in color and differ from each other by <0.4% of pixels. Chose COLRv1 (smaller, vector: needs no `raster-images`, so no extra crates); attached C/D frames in /tmp only, final frames attached: tui-{list,detail}-F-final.png.
+
 Coverage: docs/assets/*.svg use 38 distinct non-ASCII codepoints (7 box/block: ─ │ ┃ ┼ ▀ ▄ ▎; 8 emoji: ⏳ ⭐ 🐑 🕒 🖼 🛖 🦬 🪒; 23 others: arrows, bullets, ✎ ☐ ☑ ✗ ✦ etc.), 120 distinct codepoints including ASCII. A subset covering exactly those is feasible and done.
+
 Binary (separate full release build each, fresh target dirs): system-fonts build 9,060,352 B; mono-only embedded 9,060,096 B (so embedding replaces fontdb's system scan at ~0 net: +~20 KB of font data offset by dropping fs/fontconfig deps, 262 crates); + COLRv1 emoji 9,076,608 B (+16,512 B vs mono-only); + CBDT emoji with raster-images 9,342,112 B (+282 KB, 265 crates). Baseline without resvg: 6,238,736 B. Clean build 20.8-21.2 s wall for each.
+
 Render time (release, median of 7, embedded fonts, no system scan): tui-list 3.0 ms, tui-detail 4.6 ms (was 160/140 ms with system fonts); first call incl. font db setup ~8 ms. So Enter on an svg is effectively instant and no longer needs caching for latency, only to avoid re-decoding on every open.
+
 Decision: embed fonts rather than load system fonts (rejected: system fonts as primary, because it renders blank on a font-less host, takes 160 ms, and picks a different face per machine; a system-font fallback is not needed since the subset covers every toque glyph).
+
 Decision: COLRv1 over CBDT for the emoji (rejected: CBDT, +282 KB of raster decoding crates for the same look).
+
 Decision: ship DejaVu (Bitstream) and Noto Emoji (OFL) license texts beside the fonts.
+
 Remaining differences from Chrome: emoji artwork is Noto not Apple (Chrome on macOS uses Apple's); glyphs are DejaVu Sans Mono not SF Mono/Menlo, so letterforms differ but advance width is the same cell grid; the `opacity`/`white-space:pre` issues above until toque's SVG writer is changed; any non-covered codepoint (e.g. CJK, a different emoji) renders blank, since the subset is exactly the docs' set, so a real build should subset from a wider range (all of Box Drawing, Arrows, Geometric Shapes, and the emoji a yak may attach) at some KB cost.
 
 ---
@@ -218,11 +232,17 @@ Start (toque-1) 2026-10-22T22:14:10Z. Farm file: /Users/joel/.local/share/yaks/f
 ▸ 2026-10-22T22:17:07Z [toque-1]
 
 Piece 1 (toque-1): toque commit 240eb5f on toque main (not pushed). `png` feature (default off): `rasterize_svg`, `svg_to_png`, `render_to_png`, `Raster`, in `src/raster.rs`; writer fixes always on in `src/svg.rs`.
+
 Chrome before/after of a throwaway toque frame (box drawing, `Needs:       human`, DIM row, bold, 🐑 on a blue bg): `magick compare -metric AE` = 383 px of 45,568; the diff box is 101x12 at the DIM row only, max per-channel difference 2/255 (`-fuzz 2%` gives 0). So Chrome renders the same, except `fill-opacity` blends the dim text a hair differently than `opacity`. Attached: chrome-before-writer-fix.png, chrome-after-writer-fix.png, resvg-after-writer-fix.png (the resvg render now keeps the `Needs:       human` column and the dim row; before the fix resvg collapsed the spaces and ignored dim).
+
 Updated tests: none existed that asserted the old strings (grep for `opacity`/`white-space` in src and README found only the new tests and doc comments), so only two tests were added: `text_rows_preserve_spaces_for_both_chrome_and_resvg`, `dim_uses_fill_opacity`. Both failed before the fix.
+
 Decision: PNG encoding via resvg's re-exported `tiny_skia::Pixmap::encode_png` (tiny-skia's `png-format` is a default feature and resvg keeps it on with default-features off; no extra feature needed, no `image` dep). Rejected: a hand-rolled encoder.
+
 Decision: the color-emoji test draws 🐑 and ⭐ and asserts a non-gray pixel. Noto's 🐑 is white/gray (max channel spread 4 over the glyph), so 🐑 alone cannot prove color; ⭐ (in the subset) does. The test also asserts the db holds exactly the 3 embedded faces.
+
 Decision: the test frame uses ─│─ not ┌┐: the subset has U+2500/2502/2503/253c only, no corners, so toque frames with box corners (┌ └ ┐ ┘, rounded) render those blank today (visible as missing corners in resvg-after-writer-fix.png). This is for yaks-4f4d (wider subset) and is the one surprising thing: the claim said the subset covers the docs' glyphs, but Chrome-vs-resvg of my frame shows missing corners; the docs/assets svgs use only lines. 
+
 Decision: `rasterize_svg` returns `Raster` with `take_demultiplied` straight RGBA; `render_pixmap` is shared by it and `svg_to_png`, fontdb built once in a `OnceLock`.
 
 ![chrome-before-writer-fix](yaks-4e9c/chrome-before-writer-fix.png)
@@ -270,7 +290,9 @@ Piece 2 done (yakherd): committed in the thread clone as 67122a0 (on ea538c8); n
 What changed: `ImageView` and `build_inline` decode through `decode_attachment`, which sends `.svg` (up to 4 MiB) through `toque::svg_to_png` and a content-addressed PNG cache (`cache::svg_png_path_in`, `SVG_RENDER_GEN` bumped when toque's output changes); a malformed svg falls back to the OS opener. The cache is off under `cargo test`. Docs: `docs/tui.md` (a new "Svg attachments" paragraph; the Chrome recipe is now "the faithful lever, not the only one"), `AGENTS.md`, the `?` help line (snapshot unchanged).
 
 Decision (yakherd): the cache key is a hash of the svg's CONTENT only, plus a render generation constant, not the file path or mtime, so an edited svg is a new file and the same frame attached to two yaks shares one PNG. Rejected: keying on path+mtime (duplicates, and an in-place edit within one mtime tick is stale).
+
 Decision: no size limit on the cache directory (a PNG per distinct svg ever opened; a frame is ~70 KB). If it grows noticeably, prune by age: a follow-up, not now.
+
 Decision: svg inside an inline-image paragraph also works (same decoder), since `image_slot` reads dimensions with `image::ImageReader`, which cannot read an svg: so an svg stays a link row inline even though the viewer opens it. Not fixed here; noted for yaks-0bf0 follow-up.
 
 Not verified: that the shared cache behaves with two yaks processes writing the same file at once (a plain write: a torn file would fail decode and re-render next time; not exercised).
@@ -286,12 +308,3 @@ moved: shaving -> shorn
 picked up
 
 Already done: toque pushed (240eb5f), svg viewer committed in the thread clone. Clearing the stale flag.
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-4e9c` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-4e9c --drop-request`, which removes this request note, so no new note is left behind.

@@ -5,13 +5,12 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-04T16:47:57Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:19:37Z'
 parent: yaks-b5a0
 labels:
 - cli
 - delta
 - agent
-needs: agent
 ---
 
 Source: yaks-df61 O50. A Delta thread shared to another machine gets managed bare clones with 'local' = a Delta-managed bare repo (origin/main only, plus refs/delta pins), not the user's checkout. Findings and open questions are in O50. Questions: (1) how should yaks find sibling worktrees/checkouts when local is bare, absent, or at a different path per machine (candidates: refs/delta pins, git worktree list, the .delta/worktrees convention, YAKS_DIR)? (2) what do preflight/path/discover say there? (3) what do yaks-coordinating-delta and land.sh assume about 'local' (a real checkout that accepts pushes)? (4) what carries farm state and archive branches between machines (only origin crosses; never push origin without the human)? Relates to yaks-38dc (lanes view), yaks-70e5 (yaks diff), yaks-814a (init --mode). Principle: every facility exists as a CLI command, and every tool is worktree-aware in both senses (git worktrees, Delta clones). Next step: a short design discussion with Joel before coding; possibly a Delta-side feature request.
@@ -40,20 +39,14 @@ Design fork (coordinator delta-lead). Evidence: yaks-df61 O50-O53, probe yaks-f4
 ▸ 2026-10-09T20:12:18Z [delta:Delta :Yaks (cont'd)]
 
 Closing: every question is answered.
+
 (1) How to find sibling checkouts when `local` is bare, absent, or at a different path per machine: from inside any clone, follow `objects/info/alternates` to the host (the managed bare repo on a shared machine), read its refs/delta pins, and resolve each through the clone's git dir core.worktree. `local` is never consulted. Built as yaks-c635 and verified on a shared-layout machine's j15r clones and in synthetic layouts.
+
 (2) and (3) What preflight and land.sh assume about `local`: `yaks preflight --push-main` checks that `local` is a non-bare checkout before a push to main (yaks-d1bd), and the Delta skill uses it.
+
 (4) What carries state between machines: only origin (yaks-df61 O62). Not something yaks can change.
 
 ---
 ▸ 2026-10-09T20:12:18Z [delta:Delta :Yaks (cont'd)]
 
 moved: hairy -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-99ec` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-99ec --drop-request`, which removes this request note, so no new note is left behind.

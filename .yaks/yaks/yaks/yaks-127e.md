@@ -5,10 +5,9 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-08-25T02:44:04Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:20:32Z'
 labels:
 - ui
-needs: agent
 ---
 
 Currently the "description", whether viewing or editing, encompasses both the description and all the comments.
@@ -23,12 +22,3 @@ without being in conflict with line-selection and tabbing in view mode.
 ▸ 2026-08-26T12:17:13Z
 
 Implemented. New src/tui/content.rs: round-trip-safe body<->[Description, Comment*] parser (splits only on the exact ---/marker shape; a bare --- rule stays in the description; assemble drops empty comments = delete-on-empty). Form refactor: CreateForm now holds blocks: Vec<ContentBlock> (description + one per comment); Ctrl-N/P/Tab walk every row and the focused block expands to a live editor (accordion), unfocused blocks collapse to labeled separators (description shows a dimmed preview when a header field is focused). Save reassembles the body via content::assemble. E is now context-sensitive from the detail pane (open_edit_at_cursor -> edit_target_at maps the line cursor to Title/Type/Priority/Labels/Status or the specific content block; Status routes to its picker). View-mode Ctrl-N/P (jump_block) moves the line cursor among block starts via detail::block_index_per_line. Timestamps preserved on edit. Tests: 7 content parser + 3 view-side (E-on-comment/E-on-title/Ctrl-N-P nav) + 3 live commit (edit-in-place, no-op round-trip, delete-on-empty). Full workspace green (145 bin), 0 warnings.
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-127e` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-127e --drop-request`, which removes this request note, so no new note is left behind.

@@ -5,11 +5,10 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:18:53Z'
 labels:
 - markdown
 - tui
-needs: agent
 ---
 
 Umbrella for the markdown rendering, markdown editing and detail-pane QoL work planned in the Delta thread "Markdown rendering / editing QoL" (2026-10-17). Children carry the work; this yak carries the decisions every child must follow.
@@ -54,6 +53,7 @@ Batch 1 spawned 2026-10-17 from base ce4aeba, all on claude-sonnet-5-5 (worker p
 - links-1 → yaks-f67e, thread ksQQqt3mx3gRRTWsmE1GMTX1T5LOABiMf5IBxBCg_8DSgeNASrgoPHtnOl5O
 - dates-1 → yaks-ef82, thread ksQQqt3mx3gRRTWsmE1GMTX1T5LOABiOt5IBxBCg_8DSgeNASrgoPHtnOl5O
 - palette-1 → yaks-bc53, thread ksQQqt3mx3gRRTWsmE1GMTX1T5LOABiTKpIBxBCg_8DSgeNASrgoPHtnOl5O
+
 The lead (delta-lead) builds yaks-649d (renderer core) in parallel, in a new module.
 
 ---
@@ -70,6 +70,7 @@ Batch 1 landed 2026-10-17 by the yakherd (land.sh, merge by SHA, each identical 
 - hdr-1 2e9ba38 (yaks-66a3) → da1a2d2
 - bg-1 d9f3493 (yaks-5408) → bc1deaf
 - palette-1 2a6faf4 (yaks-bc53, sign-off ask open to Joel) → b7c9cea
+
 Checked on the real build: headless detail shows `Status: 🪒 shaving`, `Created: 19m ago`, the pinned header with its rule row. Lead's mdrender module (yaks-649d, not yet wired) committed 9e986e6.
 
 ---
@@ -192,12 +193,3 @@ Arc complete: every child shorn (or moved out / slaughtered), released in 0.0.20
 ▸ 2026-10-17T19:55:57Z [delta-lead]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-e9de` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-e9de --drop-request`, which removes this request note, so no new note is left behind.

@@ -5,11 +5,10 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-09-21T20:32:04Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T02:36:16Z'
 labels:
 - herds
 - tui
-needs: agent
 ---
 
 Otherwise you're forced to fall back to `yaks rename old-... new-...`. Ain't nobody want that.
@@ -28,6 +27,7 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 ▸ 2026-09-21T21:17:07Z [Joel Webber]
 
 We're still missing a 'herd' line in the edit UI, and the TUI help doesn't show this key anywhere that I can discern.
+
 When we fix this, we should also follow up with some AGENTS.md guidance on ensuring that all the docs / help / --help are updated.
 
 ---
@@ -49,12 +49,3 @@ Reopen #2 (the real gap): the 'edit affordance' is the E create/edit form, whose
 ▸ 2026-09-22T00:04:49Z [agent]
 
 verify: `cargo test --workspace` -> PASS (exit 0)
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-71d1` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-71d1 --drop-request`, which removes this request note, so no new note is left behind.

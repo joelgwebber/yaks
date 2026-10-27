@@ -5,8 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-09-23T02:39:52Z'
-updated: '2026-10-27T01:10:50Z'
-needs: agent
+updated: '2026-10-27T01:20:33Z'
 ---
 
 Make skill installation braindead simple and hard to screw up.
@@ -25,18 +24,30 @@ KEY RESEARCH FINDINGS
 4. Wild west is real: ~/.agents/skills (yaks default, Zed), ~/.claude/skills + ./.claude/skills (Claude Code), ./.agent/skills + ~/.agent/skills (openskills 'universal'), ~/.codex/skills. Note openskills uses .agent (singular), yaks defaults to .agents (plural). openskills does track install source for update, but only for git-sourced skills.
 
 PROPOSAL
+
 A. Stamp provenance at INSTALL time into the installed copy's frontmatter (never the repo source):
+
+```yaml
      metadata:
        yaks-version: 0.0.9
        yaks-source-sha256: <hash of the embedded content as written>
+```
+
    Repo sources stay unstamped, which is exactly why they read as 'unmanaged' and get protected.
+
 B. Derive four states by comparing the installed body (minus stamp) against the stamp + the binary's embedded copy -- dpkg/ucf conffile semantics:
+
+```text
      current   = hash matches embedded          -> nothing to do
      stale     = body matches its stamp, version differs -> SAFE to auto-upgrade
      modified  = body does NOT match its stamp  -> NEVER silently clobber; show diff, require explicit --force
      unmanaged = no stamp                       -> treat as modified (conservative); this alone would have prevented d8e9
+```
+
 C. yaks skills status / yaks skills upgrade (bd9a): scan the known dirs above, report per-skill state+version, upgrade only stale-clean ones, skip modified loudly.
+
 D. Clobber guard (d8e9): B already prevents it, plus refuse outright when the target resolves inside the yaks source checkout (ancestor Cargo.toml name=yaks + path under skills/). Note --force is what CAUSED d8e9, so the guard must not be bypassed by plain --force.
+
 E. Staleness surfacing without agent cooperation: fold a skills-staleness check into yaks doctor rather than inventing a hash-passing protocol. Agents already run doctor; bd9a's 'bonus points' protocol needs no new contract.
 
 OPEN FORKS for the human: (i) should upgrade be opt-in or should doctor auto-nag? (ii) adopt-on-first-upgrade for unmanaged files, or always require --force? (iii) do we stamp yaks-tracker too, or only yaks?
@@ -72,6 +83,7 @@ installed yaks-tracker -> /Users/joel/.agents/skills/yaks-tracker/SKILL.md
 The skill activates when a .yaks/ directory is present. For another agent, re-run with --dir pointing at its skills directory (e.g. --dir ~/.claude/skills)..
 
 REFINED AUTO-INSTALL RULES (for implementation):
+
   - absent -> install
   - stamped + clean (body hash == stamp) + embedded version > stamped -> upgrade
   - stamped + clean + embedded version <= stamped -> no-op (no churn, no downgrade)
@@ -103,12 +115,3 @@ Net effect against the original goal -- make skill installation braindead simple
 ▸ 2026-09-23T04:42:00Z [agent]
 
 verify: `cargo test --workspace` -> PASS (exit 0)
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-1d51` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-1d51 --drop-request`, which removes this request note, so no new note is left behind.

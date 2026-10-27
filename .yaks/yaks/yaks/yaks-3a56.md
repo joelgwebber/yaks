@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 1
 created: '2026-10-12T19:54:05Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:20:38Z'
 parent: yaks-8b7a
 depends_on:
 - yaks-86f4
@@ -15,7 +15,6 @@ labels:
 - cli
 - skills
 - release
-needs: agent
 ---
 
 Phase 3 of yaks-8b7a (coordinator; after all three phase-2 workers land): src/brief.rs (the finish step is `git add $(yaks path <id>)` alone), the skills sweep (.agents/skills: staging guidance, the glob pathspec, "a move relocates the file", status dirs in examples), docs/README.md and any remaining prose; then, at a quiet point with every `yaks tui` closed, `yaks migrate` this repo's own farm in one commit; real-machine checks: docshots unchanged, `yaks sheds` against a clone forked before the migration, `yaks migrate --dry-run` on ~/src/j15r; release 0.0.16.
@@ -44,11 +43,14 @@ Phase 3, part 1 (sweep) done:
 ▸ 2026-10-12T21:15:52Z [delta-lead]
 
 Phase 3, part 2: Joel ran the migration of this repo's farm himself (80c1923 "Flat-yaks migration.", after quitting the old TUI in this checkout) and pushed it to local and origin. Verified after: schema 4, 404 flat yak files + 52 attachment dirs, no status dirs or artifacts/, doctor clean, preflight ok, farm clean against git.
+
 Real-machine checks (the plan's list):
 - `yaks sheds` against clones forked BEFORE the migration: the phase-2 workers' clones read `landed (1 yak) (old layout)`, the stopped mig-1/git-1 clones `no changes of its own (old layout)`, main `no changes of its own (vs origin/main)`. Correct.
 - `yaks migrate --dry-run` on ~/src/j15r: would migrate 19 yaks (2 attachment dirs), wrote nothing (git status unchanged).
 - Docshots: unchanged by the flat work (the one differing frame was already stale before it; see part 1).
+
 Note: the 0.0.14 `yaks` on PATH now refuses this farm (SchemaTooNew), so until 0.0.16 is installed every yak command here needs the built binary.
+
 Left: release 0.0.16, then migrate ~/src/j15r (and any other farm), then phase 4 (yaks-bbda).
 
 ---
@@ -65,12 +67,3 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 ▸ 2026-10-12T21:35:44Z [delta-lead]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-3a56` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-3a56 --drop-request`, which removes this request note, so no new note is left behind.

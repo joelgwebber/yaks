@@ -5,12 +5,11 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-18T15:54:02Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:18:52Z'
 parent: yaks-6a34
 labels:
 - cli
 - git
-needs: agent
 ---
 
 Joel (2026-10-18): shell scripts for landing are stinky, especially across platforms. Move `.agents/skills/yaks-coordinating-delta/land.sh` into the binary as `yaks land <sha> [--dry-run] [--force-discard]`: pending-state report, ancestry check (shallow-aware), `merge-tree --write-tree`, the unexplained-changes refusal, clearing Delta's applied state, the squash commit (the linear landing from its sibling yak), the tree check, and, for a live farm, the farm landing (`yaks commit --land`) in the same command. git stays a subprocess (no libgit2 dependency); the selftest scenarios become Rust tests with real temp repos. Then land.sh is deleted from the skill and from `BUNDLED`, and the Delta/worktrees skills say `yaks land`. Feasible: every step is git plumbing the script already calls.
@@ -72,12 +71,19 @@ Decision: the farm landing (`yaks commit --land`) the yak description mentions i
 ▸ 2026-10-21T22:21:22Z [land-1]
 
 Decision: already-ancestor SHA that IS in HEAD stops after saying `landed: <HEAD oneline>` (no commit, no clearing of a pending merge; it notes the pending state is still set). Rejected: carrying on to the squash path (land.sh would have made an empty commit) and clearing Delta's applied state (destructive, nothing needs landing).
+
 Decision: landing a worker whose merged tree already equals HEAD's tree (a squash-landed worker landed twice) clears the applied state, then prints `HEAD's tree already equals the computed merge: nothing to commit` + `landed:`. land.sh made an empty duplicate commit. Rejected: erroring (idempotent re-run is harmless).
+
 Decision: clearing the applied state uses `git reset -q --hard HEAD` where land.sh used `git checkout -q -- .`. checkout restores from the index, so a staged copy of a worker file survives and then blocks the ff merge; reset --hard makes index and tree HEAD's, which is what the "tracked changes will be discarded" message promises. Untracked files are untouched either way (identical-to-worker ones removed, others exit 4, as before).
+
 Decision: everything runs from the checkout top-level (`rev-parse --show-toplevel`), so `yaks land` from a subdirectory works; land.sh's `git checkout -- .` only restored the cwd subtree. Test: runs_from_a_subdirectory_of_the_checkout.
+
 Decision: `git status` is read with `--porcelain=v1 -z` (renames count both names; no quoting problems), and the squash message trailer is added with `git interpret-trailers` (joins an existing trailer block), falling back to a plain appended paragraph.
+
 Decision: exit codes: land.sh's 3 (unexplained), 4 (untracked differs), 5 (commit/cherry-pick failed) kept; new 6 (ancestor but change missing/unconfirmable, yaks-3bcd), 7 (`.yaks/` files with no tracked `.yaks/` in HEAD, yaks-7bfd). Usage errors are clap's.
+
 Decision: skills.rs — no bundled skill has extra files after land.sh goes. The generic machinery (SkillFile, per-file stamp digests, executable bit, edited/stale extras) is still live code, so I kept its three tests, ported onto a test-only `FIXTURE_NEW` static skill with a `run.sh` (plus a new install/executable-bit test) instead of deleting them. Only `delta_land_script_selftest_passes` was deleted (its scenarios are in src/land.rs). `the_file_list_matches_the_source_directories` still guards BUNDLED.
+
 Decision: also touched `tests/skills_install.rs` and `tests/init_modes.rs` (one assertion each: `land.sh` is_file -> `SKILL.md` is_file) and `docs/skills.md` (the land.sh example text). Not touched, flagged for the yakherd: root `AGENTS.md` line ~157 still says "like `yaks-coordinating-delta` carries `land.sh`".
 
 ---
@@ -133,12 +139,3 @@ Landed (delta:herd-dirs): e99754d (squash by SHA of 6479e79, one docs/cli.md con
 ▸ 2026-10-21T22:49:47Z [delta:herd-dirs]
 
 Yakherd: accepted, the two test-assertion edits were forced by deleting land.sh.
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-e5fb` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-e5fb --drop-request`, which removes this request note, so no new note is left behind.

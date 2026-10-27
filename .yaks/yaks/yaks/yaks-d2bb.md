@@ -5,13 +5,12 @@ status: shorn
 type: task
 priority: 3
 created: '2026-10-17T02:41:42Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:16:24Z'
 parent: yaks-e9de
 labels:
 - markdown
 - rendering
 - tui
-needs: agent
 ---
 
 A few basic QoL improvements for markdown editing:
@@ -44,12 +43,3 @@ Arc complete: every child shorn (or moved out / slaughtered), released in 0.0.20
 ▸ 2026-10-17T19:55:57Z [delta-lead]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-d2bb` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-d2bb --drop-request`, which removes this request note, so no new note is left behind.

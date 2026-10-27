@@ -5,13 +5,12 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-06T21:31:42Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:18:51Z'
 parent: yaks-38dc
 labels:
 - cli
 - docs
 - skills
-needs: agent
 ---
 
 Decision (Joel, 2026-10-06, via the naming subthread): a lane is now called a SHED, everywhere, with no aliases. His words: "I love 'shed'. It reminds me of 'bike shed' ... Let's just bite the bullet and change everything comprehensively. No need for aliases -- I want to force anyone using these tools to deal with our wacky terminology, whether they like it or not."
@@ -26,6 +25,7 @@ Decided: lane becomes shed; `yaks lanes` becomes `yaks sheds`; `yaks lanes` is R
 - ONE glossary line where the yaks skill defines terms (its Terminology section) and one in docs/cli.md's `sheds` row: "shed (formerly lane)".
 
 ## What does NOT change (history)
+
 The observation log `.yaks/artifacts/yaks-df61/**`, every other yak file under `.yaks/` (titles, descriptions, notes), `.yaks/artifacts/**`, commit messages and the git history. Old text keeps "lane"; the glossary line keeps it readable. Do not edit any other yak.
 
 ## Rules
@@ -53,7 +53,9 @@ Claim (coordinator delta-lead). Owner: worker shd-1. Scope: the whole tree excep
 ▸ 2026-10-06T21:32:19Z [shd-1]
 
 Start: Tue Oct  6 21:32:15 UTC 2026
+
 Path: /Users/joel/src/yaks/.delta/worktrees/vk8z2vjzgdqh/yaks/.yaks/shaving/yaks-dfca.md
+
 Old binary copied to scratch (yaks-old) before any edit.
 
 ---
@@ -65,8 +67,11 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 ▸ 2026-10-06T21:34:35Z [shd-1]
 
 Decision: mechanical `Lane`->`Shed`, `lane`->`shed` (perl, case-preserving) over every non-history text file, then read every hunk. A token census first showed no false positives (no plane/planet/Elane), so the identifier case needed no word-boundary guard. Rejected: per-file hand edits (error-prone for ~800 hits); a blind replace without the diff review.
+
 Decision: no generic-prose sentence was kept as "lane": every one (one lane per worker, per-lane commits, a human-driven lane, ...) reads fine as "shed", so the exception list is empty.
+
 Decision: `rustfmt --edition 2024` on the five changed src files reordered `mod sheds;` after `mod rollup;` (alphabetical, as rustfmt does); its unrelated hunks in actor.rs, tui/docshots.rs, tui/tests.rs were reverted.
+
 Decision: glossary lines: yaks skill Terminology gets a fourth container bullet "a **shed** (formerly "lane") is one other checkout ..." and docs/cli.md's `sheds` row says "a shed (formerly lane) is one such checkout". The only two remaining "lane" hits in the tree.
 
 Evidence:
@@ -75,18 +80,10 @@ Evidence:
 - Straggler grep `grep -rIin lane . --exclude-dir={.git,target,.yaks,.edtui}` lists exactly: .agents/skills/yaks/SKILL.md:39 and docs/cli.md:42, the two glossary lines.
 - `.yaks/` (history) untouched except this yak.
 - Gate `cargo test -p yaks`: PASS (recorded above).
+
 Summary: src/lanes.rs -> src/sheds.rs (git mv), Command::Lanes -> Sheds, Farm::lanes -> sheds, all types/tests/strings renamed; README, docs/cli.md, docs/skills.md, .agents/skills/** and the Delta skill's example title (`sheds-1: build yaks sheds CLI`) updated; no behaviour change.
 
 ---
 ▸ 2026-10-06T21:34:35Z [shd-1]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-dfca` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-dfca --drop-request`, which removes this request note, so no new note is left behind.

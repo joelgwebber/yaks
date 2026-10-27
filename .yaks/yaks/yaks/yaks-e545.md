@@ -5,12 +5,11 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-04T20:52:28Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:18:52Z'
 parent: yaks-38dc
 labels:
 - cli
 - delta
-needs: agent
 ---
 
 Read-only CLI + data layer for yaks-38dc (the TUI lanes view is a separate, later yak that calls this). Design agreed with Joel in yaks-99ec / yaks-df61 O50-O53: no Delta database, no Delta CLI; plain git plus the filesystem.
@@ -25,8 +24,11 @@ Discovery (new module src/lanes.rs; Farm gets a thin method, the CLI and later t
 Per lane report: path; branch or detached; HEAD short sha; commits it has that this HEAD lacks (`git rev-list --count HEAD..<lane HEAD>`, 0 when the object is unknown); dirty file count; newest mtime under its `.yaks` (a liveness hint: finished threads' checkouts persist); and its FARM DELTA against this farm, computed by comparing the two `.yaks` directories on disk (no git needed): yaks only in the lane, yaks whose status directory differs (`hairy -> shaving`), yaks whose notes differ (count of new note entries), yaks with `needs:` set in the lane. Resolve the lane's farm with `store::discover_with(lane_path, None)` (NEVER the env var). If the lane has no farm of its own (private: discovery errors) say `no farm here (private? set YAKS_DIR)`; if it resolves to the SAME farm directory as this checkout say `shares this farm`.
 
 Hard rules: strictly read-only in other checkouts. Use `git --no-optional-locks -C <lane> ...` for status so no index refresh happens; no fetch, no checkout, no file writes there. A lane that cannot be read is listed with its error, never fatal. Exits 0 with an empty list when there are no siblings.
+
 Output: a compact human table by default; `--json` has the same fields. `yaks lanes` outside a git repo or farm fails like other commands.
+
 Evidence: unit/integration tests building temp repos for: a plain `git worktree add` lane; a fake managed-layout sibling (`<root>/<dir>/<name>` with an alternates file); a fake laptop-layout one under `T/.delta/worktrees`; a same-named but different repository that must be rejected; lane with an added yak, a moved yak, an added note, a `needs: human`; a private-farm lane; an unreadable lane; and a test that nothing in the lane changed (file mtimes and `git status` identical before and after). Plus a real run: in a Delta checkout, `yaks lanes` shows the coordinator's checkout as a lane carrying its uncommitted yak changes. Docs parity (docs/cli.md, README, --help, `.agents/skills/yaks/SKILL.md` command list if it has one). Leave the coordination skills (`.agents/skills/yaks-coordinating*`) to the coordinator; report what in them is now out of date.
+
 Out of scope: TUI, `yaks diff` (ref-generic, gated, yaks-70e5), pins/refs/delta, anything that talks to Delta, changes to discovery rules.
 
 ---
@@ -43,18 +45,14 @@ Start 2026-10-04T20:52:53Z (date -u). Yak file: .yaks/shaving/yaks-e545.md. Buil
 ▸ 2026-10-04T20:58:59Z [lanes-1]
 
 Done. Gate: cargo test -p yaks => 377 passed (9 new in lanes::tests) + 28 cli passed. New tests: plain git worktree lane (branch, ahead, dirty, added/moved/note/needs delta), detached + needs-already-ours not news, managed-layout alternates sibling + origin-url sibling accepted / same-name different repo, no-.git dir and differently named dir rejected, laptop-layout T/.delta/worktrees clone (+ repo checkout from the clone), found-by-both = one worktree lane, private farm (none) and shared farm (pointer), unreadable lane (corrupt .git) listed with error, and read-only (lane + its git admin dir mtimes/len + status identical before/after, index made stale first).
+
 Real run in own Delta checkout (./target/release/yaks lanes), 4 sibling lanes, kind delta, own checkout omitted:
+
+```text
  3d4gr26p09ng  main 6345ab0 +1 dirty 0  farm: 1 moved (yaks-7149 shaving -> hairy)
  kb369frnzkrr  main 4fc959e +0 dirty 0  farm: 1 moved (yaks-7149 shaving -> hairy)
  p4m7aet4wa31  main 2c28d23 +6 dirty 2  farm: 1 new (+ yaks-699b), 1 moved (yaks-7149 shaving -> shorn), 4 new notes
  vwe0avewf7p3  main 46f1abc +1 dirty 0  farm: 1 moved (yaks-7149 shaving -> shorn), 3 new notes
+```
+
 Output was captured live; --json has same fields (4 entries). Decision: `needs` is reported only when new or different vs this farm (3 pre-existing needs:human were in every lane's output as noise). Finding: inside Delta .git is a file -> <dir>/yaks.git with core.worktree, and `git worktree list` prints that gitdir as the worktree path; worktree entries without their own .git are skipped so it is not listed as a lane. Extra beyond brief: from a laptop-layout clone the repo checkout holding it is also a candidate. Docs parity: docs/cli.md, README.md, SKILL.md (command table + --json list), --help on the variant.
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-e545` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-e545 --drop-request`, which removes this request note, so no new note is left behind.

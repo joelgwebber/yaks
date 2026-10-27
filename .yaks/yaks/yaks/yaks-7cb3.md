@@ -5,16 +5,17 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-08-26T13:23:02Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T02:36:17Z'
 parent: yaks-f04d
 labels:
 - labels
 - tui
-needs: agent
 ---
 
 At present, it's possible to create labels with spaces in them. We should disallow this.
+
 Then we can enforce label structure at parse time (we should probably normalize them in the CLI tools as well).
+
 If the user types:
 - `foo, bar` -> `[foo bar]`
 - `foo bar`  -> `[foo bar]`
@@ -65,12 +66,3 @@ Yes, please fix these manually. I'm not getting anything from `yaks doctor`, and
 ▸ 2026-09-24T02:29:59Z [coordinator]
 
 Cleared on the human's behalf: they answered in the note above (2026-09-24T01:04Z) and confirmed in chat. Done: re-split all 13 malformed labels (yaks-139b 1a96 52eb 64c4 79a9 7d49 b716 c3b1 d4d2 d954 dce6 f433 f814) via update --add-label; the new 'yaks doctor' is all clear. Their 'nothing from doctor' was the installed v0.0.10 predating the check; the release fixes that.
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-7cb3` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-7cb3 --drop-request`, which removes this request note, so no new note is left behind.

@@ -5,11 +5,10 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-22T00:37:59Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:18:56Z'
 parent: yaks-b048
 labels:
 - docs
-needs: agent
 ---
 
 ---
@@ -36,21 +35,28 @@ Claim (yakherd delta:herd-dirs). Owner: `clidoc-1` (Sonnet worker).
 ▸ 2026-10-22T00:38:34Z [clidoc-1]
 
 Start: Thu Oct 22 00:38:29 UTC 2026
+
 Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-f800.md
 
 ---
 ▸ 2026-10-22T00:42:20Z [clidoc-1]
 
 Decision: sheds/changes/etc. details moved verbatim into new `### <command>` sections placed right after each table (split into paragraphs at sentence boundaries, no wording changed); the table row is a ≤40-word summary + `[Details](#cmd)` link. Rejected: leaving the long text in the row; rewriting/condensing the detail (out of scope: facts must not change).
+
 Decision: existing `### init: modes and skills...` section reused for `init` (its row links to it); the init row's long prose (modes pointer, old-layout refusal, flags) was prepended to that section.
+
 Decision: `migrate` and `migrate --to-branch` share one `### migrate` section, `skills install`/`skills status` one `### skills` section (each with the command signature as a code line), rather than four sections; both rows link to it.
+
 Decision: the "Default verify commands live in config.yaml..." prose + yaml blocks that sat between the Verification table and State transitions moved under `### verify` (it is that command's detail; the row's "(see below)" still holds). Rejected: leaving it as free text after the table (would now sit after the last `###` section of the table).
+
 Decision: `doctor`, `private`, `init` first paragraphs were merged into one paragraph where my split would have broken a sentence at a `;`/`(`.
+
 Evidence:
 - Longest table row before: 1945 words (`sheds`); after: 38 (`refs --incoming` / `sync`), by `python3` counting whitespace tokens of each `|` row.
 - Every in-file `](#x)` anchor (show, path, ..., multi-line-text, init-modes-and-skills-in-one-idempotent-step) matches a heading slug (script checked: all True). Only external anchor to cli.md is docs/README.md `#which-farm-a-command-uses`, still present.
 - Fact preservation: whitespace-token multiset diff old→new (after unescaping `\|`) loses nothing; only added tokens are the new short summaries, links and headings.
 - No src/ code reads cli.md (grep `cli\.md` in src: no matches).
+
 Suspected errors (not fixed): none found; `sheds` text still mentions "(formerly lane)", and the `commit` section says "(rule 4 above)" which still points at the farm-as-branch rule in "Which farm a command uses".
 
 ---
@@ -72,12 +78,3 @@ moved: shaving -> shorn
 ▸ 2026-10-22T00:59:43Z [delta:herd-dirs]
 
 Landed as 0739dcd (squash of efb20a7). Yakherd re-checked: longest docs/cli.md table row 41 words; every in-file anchor resolves; full gate green.
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-f800` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-f800 --drop-request`, which removes this request note, so no new note is left behind.

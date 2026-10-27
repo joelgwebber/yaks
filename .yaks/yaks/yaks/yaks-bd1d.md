@@ -5,12 +5,11 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-21T20:32:27Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:19:39Z'
 parent: yaks-472e
 labels:
 - git
 - cli
-needs: agent
 ---
 
 Shows whether the farm branch has unpublished commits or is behind its upstream as of the last fetch. A library function the TUI indicator (yaks-ce5d) reuses.
@@ -72,10 +71,15 @@ Before the change, preflight on a branch farm with a dirty yak failed with `.yak
 Decision: preflight's branch-farm line is a new `Report.warnings` (text `preflight: warning: ...`, JSON `warnings`), not `skipped` and not a failure.
 - Rejected: reusing `skipped` (it means "check could not apply", and the check did run); failing (the spec says it must not fail, and `ok` stays true).
 - Cost: a 4-line addition in the `Command::Preflight` arm of main.rs.
+
 Decision: on a branch farm every non-conflict git-status entry (staged, unstaged or untracked) counts toward N; N counts git-status entries (an untracked attachment dir is one entry), not yaks. Unresolved merge conflicts still FAIL (with their existing message, no "git add it") since `yaks commit` would refuse them.
+
 Decision: the sync state rides on `status::Report.sync` (filled in `collect`), so `render`/`to_json` keep their signatures and main.rs's Status arm is untouched; the TUI calls `status::sync_state(root)` directly.
+
 Decision: `sync_state` returns `Some{upstream: None, ahead 0, behind 0}` when the branch has no upstream OR the configured upstream ref is gone (both read "not published"); `None` when git cannot count (unparseable) so the TUI shows nothing rather than a wrong state. Rejected: a distinct "upstream gone" state (not in the spec).
+
 Decision: text wording when behind>0 says `yaks sync` reconciles (ahead only: publishes), since "publishes" is false when you are behind; the spec's example only showed the ahead case. `yaks sync` does not exist in this change; it is named per the spec.
+
 Decision: the sync line is the LAST line of `yaks status` (after the commit hint), and is absent for in-tree and private farms. `--check` unchanged.
 
 ---
@@ -102,12 +106,3 @@ moved: shaving -> shorn
 ▸ 2026-10-21T20:52:02Z [delta:herd-dirs]
 
 Landed (delta:herd-dirs): 8f77dde. Review: re-ran full cargo test --release with driver-1's work merged (767 unit, every suite ok); real `yaks status` on this machine's farm shows 'farm branch yaks: N ahead, 0 behind origin/yaks'. Accepted the warnings field and the publishes/reconciles wording.
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-bd1d` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-bd1d --drop-request`, which removes this request note, so no new note is left behind.

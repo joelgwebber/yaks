@@ -5,11 +5,10 @@ status: shorn
 type: task
 priority: 1
 created: '2026-10-12T16:05:28Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T02:36:18Z'
 labels:
 - design
 - cli
-needs: agent
 ---
 
 Joel (2026-10-12): revisit, hopefully for the last time, whether a yak's status should stay implicit in its directory (`.yaks/{hairy,shaving,shorn,dead}/<id>.md`) or move into the frontmatter with one stable path per yak. Decide before the yaks-38dc TUI work, because the cross-shed code (src/sheds.rs base_farm/yak_changes, src/changes.rs classify) would be rewritten by it.
@@ -33,7 +32,9 @@ Joel (2026-10-12): revisit, hopefully for the last time, whether a yak's status 
 
 ## Options
 A. Keep the directories; keep paying with tooling (path, doctor, preflight, commit).
+
 B. Flat: one directory, `status:` in the frontmatter, dead included (one rule).
+
 C. Hybrid: flat for hairy/shaving/shorn, keep `dead/` as the one subdirectory (slaughter/revive stay moves; dead stays out of the browse view).
 
 ---
@@ -113,7 +114,9 @@ Review of yaks-86f4 + yaks-9f91 together: yaks migrate on a COPY of this repo's 
 ▸ 2026-10-12T20:58:49Z [delta-lead]
 
 Landed yaks-86f4 (mig-2 76b2756b137644f6): e2edbd9, merge by SHA (main.rs auto-merged with git-2's change; one unexplained comment edit in src/tui/detail.rs from Delta's applied state discarded, it was not in the worker's commit). Gate on this machine after both landings: 16 suites, 670 passed, 0 failed, 3 ignored (pre-existing).
+
 Real-machine review (attached, migrate-real-farm-copy.txt): on a copy of this repo's farm, `migrate --dry-run` wrote nothing; `migrate` moved 404 yaks and 51 attachment dirs; `list --all` byte-identical before and after; `yaks status` one line `farm layout migrated: 404 yaks`; `doctor` clean; `yaks commit` made one commit of 485 renames (git detected them, `log --follow` crosses it); a write works afterwards. The one `](artifacts/` left is prose inside a note (backticked), correctly untouched.
+
 Found and fixed in review (preflight.rs, my commit): `preflight` on a STAGED migration put every yak in the verify scope, so all 263 never-verified shorn yaks failed and the migration commit could not pass preflight. Fix: a yak whose only change is the migration (changes::classify's `migrated`) is not in the change's scope; explicit ids are still checked. New test fails without the fix, passes with it; preflight on the staged real-farm copy now prints `preflight: ok`.
 
 ---
@@ -143,7 +146,9 @@ Phase 4 real-machine check (after landing yaks-bbda).
 ▸ 2026-10-12T23:01:15Z [delta-lead]
 
 Landed yaks-bbda (bye-1 8d2d630764264357): 42d209e, merge by SHA, clean; 22 files, +665 -1807. Gate on this machine: 17 suites, 667 passed, 0 failed, 3 ignored (fewer than before: the old-layout tests went with the code). Leftover grep (legacy::, lock_for_migration, Migrated, legacy_pair, yaks-bbda, is_old_layout, flat_attachment_links, Command::Migrate) over src/ and tests/: empty.
+
 Real machine (attached): this farm works and doctor is clean; a read-only `yaks list` in a pre-0.0.16 clone (git-2's) refuses with exit 1 and the message naming `npx -y @j15r/yaks@0.0.16 migrate`, writing nothing there; `yaks sheds` shows the six old-layout clones as `farm unreadable: old layout (pre-0.0.16 clone)`, never as empty farms.
+
 All phases done: 1 yaks-95be, 2 yaks-86f4/9f91/ca28, 3 yaks-3a56 (0.0.16 released), 4 yaks-bbda (ships as 0.0.17). Follow-ups filed along the way: yaks-8814 (landed vs a needs: the reference resolved), yaks-07fe (shed scan speed). Shearing the umbrella.
 
 ---
@@ -155,12 +160,3 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 ▸ 2026-10-12T23:01:57Z [delta-lead]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-8b7a` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-8b7a --drop-request`, which removes this request note, so no new note is left behind.

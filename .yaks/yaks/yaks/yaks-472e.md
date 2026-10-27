@@ -5,13 +5,12 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-21T19:54:29Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:20:39Z'
 parent: yaks-6a34
 labels:
 - git
 - cli
 - design
-needs: agent
 ---
 
 Joel (2026-10-21): with the farm always on its own branch and worktree, `yaks commit` commits there but nothing moves the branch between machines or teammates; today that means `git -C "$(dirname "$(yaks path)")" push` / `pull` by hand. Pieces of this were scattered: `yaks sync` is a one-line wrapper at the end of yaks-4a53 (merge driver), the first-publish scope note and the auto-commit question (from yaks-78ff) are notes there, and "is the farm pushed / behind" is half of yaks-b1e9's `yaks farm status`. This yak owns the lifecycle as a whole; yaks-4a53 stays the merge driver it depends on for same-yak concurrency.
@@ -70,6 +69,7 @@ Plan (baby yaks; 1-3 in parallel on cheaper workers, coordinator reviews and lan
 3. yaks sync.
 4. TUI: dirty/ahead indicator + commit/sync key (after 2 and 3).
 5. Private-farm pre-push guard.
+
 Skills guidance goes into yaks-b048.
 
 ---
@@ -101,12 +101,3 @@ All children landed (delta:herd-dirs): 8f77dde status, 0b114a4 driver, 0e1775b p
 ▸ 2026-10-21T21:44:08Z [delta:herd-dirs]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-472e` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-472e --drop-request`, which removes this request note, so no new note is left behind.

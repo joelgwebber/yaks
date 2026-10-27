@@ -5,14 +5,13 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-17T04:25:16Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:16:23Z'
 parent: yaks-ea13
 depends_on:
 - yaks-649d
 labels:
 - markdown
 - tui
-needs: agent
 ---
 
 On the renderer core.
@@ -78,6 +77,7 @@ Decision: clipping is in `render_dline` (new `clip_nowrap`), on the styled per-c
 ▸ 2026-10-17T05:13:27Z [hscroll-1]
 
 Evidence: 7 new tests (6 in tui/tests.rs: label+clip marker, `l` moves only the block under the cursor (label, prose, table unchanged), `h` back to 0 then list, h on prose/Esc, clamp + reset on leaving the block, yank of a scrolled row copies the full source line; 1 in mdrender.rs: label row/ids/gutter/table id). ea13 snapshot re-accepted: diff is exactly the two new label rows (`▎ python`, `java`). New SVG docs/assets/tui-md-render-scrolled.svg (attached; rasterized with firefox and read: label row, `‹` on every code row, the table's `›` markers elsewhere, nothing else moved). docshots_md_render also rewrote tui-md-render*.svg; I reverted those two (they would change only by the new label rows).
+
 Docs: docs/tui.md (key table prose, rendered-markdown paragraph, new section + embed), `help_content` in render.rs. help_hint left as is (bar is full).
 
 ---
@@ -94,12 +94,3 @@ Summary: code blocks/tables scroll sideways per block (h/l, ←/→ on a no-wrap
 ▸ 2026-10-17T05:14:19Z [hscroll-1]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-c733` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-c733 --drop-request`, which removes this request note, so no new note is left behind.

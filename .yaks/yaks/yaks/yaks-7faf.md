@@ -5,10 +5,9 @@ status: shorn
 type: task
 priority: 3
 created: '2026-10-12T01:54:23Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T02:36:17Z'
 labels:
 - release
-needs: agent
 ---
 
 ---
@@ -30,8 +29,11 @@ Dry run (workflow_dispatch, run 38193818126) green: tests, all 5 platform builds
 ▸ 2026-10-12T02:10:39Z [delta-lead]
 
 Partial publish, same failure family as v0.0.13 (yaks-3479) but a different symptom. Tag v0.0.15 pushed, workflow run 38194044421 (triggered by the tag) completed all green: tests, 5 builds, and the publish step itself showed no error for any of the 6 packages -- each printed a normal npm publish success sequence (tarball details, "Signed provenance statement", "Provenance statement published to transparency log", "Your package is being processed").
+
 Real check (not just the log): @j15r/yaks, @j15r/yaks-darwin-arm64, @j15r/yaks-linux-arm64, @j15r/yaks-linux-x64, @j15r/yaks-win32-x64 all verified via `npm pack <pkg>@0.0.15` (npm's real download path, not a guessed URL) -- all 5 downloaded successfully. `npx -y @j15r/yaks@0.0.15 --version` also printed `yaks 0.0.15` end to end.
+
 @j15r/yaks-darwin-x64@0.0.15 is broken: its packument (`registry.npmjs.org/@j15r/yaks-darwin-x64`) lists 0.0.15 in `versions` and as `dist-tags.latest`, but the tarball itself 404s (`npm pack @j15r/yaks-darwin-x64@0.0.15` fails with E404), confirmed three times over about 6 minutes (not propagation lag -- the other 5 packages, including ones that also lagged briefly, all resolved within that window). npm's own registry has recorded the metadata but never actually stored the blob.
+
 Not yet decided: whether to retry publishing just that one package (npm normally refuses "cannot publish over an existing version", and the version IS already recorded, even though the artifact is missing), unpublish it (72h window, risky, and may not even be the registry's problem to fix that way), or follow yaks-3479's precedent and bump to 0.0.16 for a full clean re-publish. Asking Joel before doing any of those -- each is its own irreversible, user-facing action.
 
 ---
@@ -57,12 +59,3 @@ moved: shaving -> shorn
 picked up
 
 Confirmed with Joel directly (chat) and verified myself: v0.0.15 is fully released, all 6 packages live. Closing out.
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-7faf` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-7faf --drop-request`, which removes this request note, so no new note is left behind.

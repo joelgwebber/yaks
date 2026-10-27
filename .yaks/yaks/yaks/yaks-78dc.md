@@ -5,10 +5,9 @@ status: shorn
 type: task
 priority: 2
 created: '2026-08-23T02:49:48Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T02:36:17Z'
 labels:
 - ui
-needs: agent
 ---
 
 I *think* the rules go something like this (but please double-check before diving in):
@@ -19,9 +18,13 @@ I *think* the rules go something like this (but please double-check before divin
 ▸ 2026-08-12T15:41:50Z
 
 Also consider that there may not be one "right" answer to how much detail to show for related parent/child yaks in a different state.
+
 Eg, I might want to show *all* children for currently-shaving yaks, so that I can see both sides of the completion state of its children.
+
 Or I could want to see *only* those parents strictly required to show the parent chain to root.
+
 Or at times it's only important to see the parent chain, and children remaining to be shorn.
+
 IOW, it's probably a view state affordance question.
 
 ---
@@ -42,6 +45,7 @@ Herd-scope modes:
 - remaining: descendants not yet shorn/dead, i.e. open work. Proposed global default.
 - all: every descendant, any status; shorn shown dim. Equals today behavior.
 - auto: inherit the global default; stored as the ABSENCE of an override.
+
 Applies identically with or without an active content filter (fixes the filtered-descendant asymmetry).
 
 Persistence: global default is a constant (remaining) for now, config-exposed later. Per-view overrides live in the per-user XDG cache keyed by view.key, next to collapsed-state. auto writes no entry, so changing the global moves every untouched view.
@@ -61,12 +65,3 @@ Filed separately: Dead dead-end bug; filtered-descendant asymmetry folded into t
 ▸ 2026-08-28T04:16:06Z
 
 Implemented. HerdScope enum (lone/remaining/all, plus auto=inherit) in view.rs; per-view overrides persisted in the UI-state cache (cache::UiState, keyed by view.key; auto = absent entry). tree::build unified: members = seeds + ancestors (always, walkable through Dead) + herd-scoped descendants. remaining keeps open work (hairy/shaving) plus completed connectors, dropping fully-shorn subtrees; applies in both the filtered and unfiltered paths. h in list focus cycles auto -> lone -> remaining -> all with a notification; right-aligned herd: indicator on the tab row (yields when the tab strip is too wide; ~ marks auto/inherit); h:herd advertised in the footer. Global default = remaining. Tests in tree.rs + cache.rs; bin + cli snapshots regenerated (shorn leaf drops from the default Hairy view; footer gains h:herd). Fixes yaks-3331 as a side effect. Deferred: yaks-fe00 (Dead dead-end).
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-78dc` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-78dc --drop-request`, which removes this request note, so no new note is left behind.

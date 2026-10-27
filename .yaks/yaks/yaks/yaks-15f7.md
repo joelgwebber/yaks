@@ -5,14 +5,15 @@ status: shorn
 type: idea
 priority: 3
 created: '2026-08-27T22:51:04Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:20:33Z'
 depends_on:
 - yaks-0187
-needs: agent
 ---
 
 This could be really useful when working across multiple project repos, especially if they have different upstream issue trackers.
+
 On the yaks side, we could use this unification to manage cross-cutting concerns, especially useful when a single agent needs to make changes to both projects.
+
 Each .yaks would still get its own config and yak prefix. We could also allow cross-references, though that might require an explicit "friend" relationship to be modeled in the config, so that the tools know where to find all the yak files.
 
 ---
@@ -53,12 +54,3 @@ PLAN SET (session with Joel): pivot from federation (multiple .yaks roots / frie
 ▸ 2026-09-21T19:30:58Z [agent]
 
 SHORN (umbrella). Multi-herd farms shipped end to end: one .yaks farm holds several herds (id prefixes), each a project, in one TUI, backed up as one private repo. Children: create --prefix routing (4154), terminology farm/herd/family sweep (92bf), yaks merge (7371), out-of-tree pointer/symlink discovery (1d98), per-herd config with a global-to-herd cascade (98d5), --herd filter plus TUI create herd-routing plus per-herd id colour (3290, a7eb), and docs/skills (eee7). Verified on scratch multi-herd farms throughout. Deferred and tracked (non-blocking): federation across separately-committed farms stays the fallback for repo-committed yaks in a unified view; an explicit in-form herd picker is a standalone follow-up. Ready to test and cut a release.
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-15f7` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-15f7 --drop-request`, which removes this request note, so no new note is left behind.

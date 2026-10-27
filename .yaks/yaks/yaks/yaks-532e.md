@@ -5,12 +5,11 @@ status: shorn
 type: chore
 priority: 1
 created: '2026-10-01T17:09:52Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T02:36:15Z'
 labels:
 - github
 - npm
 - infra
-needs: agent
 ---
 
 ---
@@ -23,14 +22,7 @@ Moved all three repos out of rocketsurgery-games:
 - npm scope renamed @rocketsurgery -> @j15r (user's existing npm identity; j15r is maintainer of the live @rocketsurgery/* packages, @joelgwebber would need a new npm org, unscoped yaks is taken).
 - Rewrote every rocketsurgery-games/@rocketsurgery reference repo-wide incl. historical .yaks/shorn notes (user's explicit call) and the include_str!-embedded skills/yaks/SKILL.md.
 - HAZARD CAUGHT: plain  after changing the git URLs re-resolved toque to the new repo's branch tip (cc5d911, 2 commits past what yaks was pinned to) since the old lock entry's source no longer matched the new Cargo.toml URL. Hand-pinned Cargo.lock back to the exact pre-existing commits (toque 792624f, edtui 9fbee79d) under the new URLs; cargo build --release --locked succeeded, proving those exact commits exist in the new repos' history.
+
 Evidence: cargo build --release --locked OK; cargo test --locked (YAKS_SKILLS_AUTOSYNC=0) -> 319+28 pass; docshots -- --ignored green; node npm/yaks/test-mapping.mjs -> ok; git grep rocketsurgery -> zero hits in all 3 repos; both joelgwebber/toque and joelgwebber/edtui confirmed public.
+
 NOT done (needs Joel, documented in RELEASING.md hand-off): create NPM_TOKEN secret on joelgwebber/yaks for the bootstrap publish of 6 new @j15r/* packages, then configure Trusted Publisher (owner joelgwebber) on each, delete the token. Also: npm deprecate the old @rocketsurgery/* packages, and delete the 3 rocketsurgery-games repos once stable.
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-532e` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-532e --drop-request`, which removes this request note, so no new note is left behind.

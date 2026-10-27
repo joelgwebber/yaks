@@ -5,12 +5,11 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-09T20:23:49Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:18:51Z'
 parent: yaks-a3d2
 labels:
 - cli
 - delta
-needs: agent
 ---
 
 ---
@@ -22,10 +21,15 @@ moved: hairy -> shaving
 ▸ 2026-10-09T20:24:48Z [delta:Delta :Yaks (cont'd)]
 
 Claim (coordinator). Owner: chg-1.
+
 Goal: `yaks changes <shed>` prints what ONE shed did to its farm since it forked, per yak, with actors: a created yak (title, status), a moved yak (from -> to), new note entries (timestamp, actor, the first line of the text), and `needs:` newly set. It is the per-yak expansion of what `yaks sheds` summarizes as "farm: 2 new, 1 moved, 3 new notes". The shed is resolved with `sheds::resolve(&sheds, query)` (already built: path, Delta dir id, branch, `main`, an actor, a unique substring); print its error as is and exit 1 on no or ambiguous match. Same baseline as `sheds` (fork / sync / merge-base / vs this checkout), and say which, as `sheds` does (`vs_marker`). `--json` with one object per changed yak. A Shared/None farm prints why there is nothing to show.
+
 Data: reuse what `sheds::inspect` already computes. `FarmDelta` has added/moved/needs and only COUNTS of notes, so you need the note entries themselves: extend `compare_farms`, or add a sibling function that returns the entries (reusing `store::parse_notes`), keeping `yaks sheds` output unchanged. Read-only in the other checkout.
+
 Scope: src/sheds.rs (a new pub fn plus data, beside `compare_farms`/`label`; do not change `discover`/`resolve`/`shed_paths`), src/main.rs (a `Changes { shed, json }` variant and its render). Docs: docs/cli.md (a `changes` row after `sheds`), README.md, `.agents/skills/yaks/SKILL.md` (a command-table row), clap help.
+
 Out of scope: `-C`, inbox, any write.
+
 Evidence: tests that FAIL before your change: a worktree shed that creates one yak, moves one, and adds two notes by two actors; `changes <branch>` lists exactly those with the actors; `changes main` from that shed shows the main checkout's own changes since the fork (or "no changes of its own"); an unknown name prints resolve's candidate list and exits 1. Judge: the coordinator, at landing.
 
 ---
@@ -47,11 +51,17 @@ Implemented `yaks changes SHED` (+ `--json`).
 ▸ 2026-10-09T20:34:58Z [chg-1]
 
 Decision: reuse the baseline `inspect` already chose (`Shed.farm_base`) and re-read the base farm with `base_farm`, rather than extend `FarmDelta`/`compare_farms` to carry entries. Rejected: widening `FarmDelta` (would change `Eq`/shape that `sheds` tests and JSON build on; risk to byte-identical `sheds` output).
+
 Decision: `changes` is a sibling pure fn `yak_changes` duplicating the four compare rules rather than refactoring `compare_farms` onto it. Rejected: reimplementing `compare_farms` as a count over `yak_changes` (touches the function whose output must stay identical; follow-up if wanted).
+
 Decision: notes of a CREATED yak are all listed in `changes`; `sheds` counts only notes on yaks that existed at the base (existing behavior, so "3 new notes" there vs 4 entries here). Rejected: changing `sheds`.
+
 Decision: `--json` on a shared/none/unreadable farm prints `[]` on stdout and a `note: nothing to show: <why>` on stderr; human output prints `nothing to show: <why>`. Rejected: an error exit (the shed resolved fine) and a non-array JSON object (spec says one object per changed yak).
+
 Decision: JSON per-yak objects repeat `vs`/`base` instead of a wrapper object, to keep the "array of one object per changed yak" shape.
+
 Decision: note text shown is the first non-empty trimmed line; JSON carries full `text`.
+
 Decision: `resolve` error goes to stderr as `error: <resolve's message>`, exit 1, nothing on stdout.
 
 ---
@@ -68,12 +78,3 @@ Summary: yaks changes SHED shipped (sheds.rs/farm.rs/main.rs, tests in sheds.rs 
 ▸ 2026-10-09T20:36:24Z [chg-1]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-e39c` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-e39c --drop-request`, which removes this request note, so no new note is left behind.

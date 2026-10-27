@@ -5,12 +5,11 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-10-04T21:00:46Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:18:50Z'
 parent: yaks-38dc
 labels:
 - cli
 - delta
-needs: agent
 ---
 
 Follow-up to yaks-e545 (landed ddb5a83). `yaks lanes` compares each lane's `.yaks` with THIS checkout's, so a lane that is merely behind shows spurious moves ("yaks-7149 shorn -> hairy" for a lane that never touched 7149; the direction reads backwards). Seen on the real thread: of four lanes, every one showed 2 phantom moves. What a coordinator wants: what did this lane CHANGE, and how far is it behind.
@@ -20,6 +19,7 @@ Change: compute the farm delta against the lane's MERGE-BASE with this checkout,
 - Add BEHIND next to AHEAD (`git rev-list --count <lane HEAD>..HEAD`): table shows `+N -M`; JSON gets `behind`. A lane that is behind with no changes of its own prints no farm lines (or `no changes of its own`).
 - Keep `needs:` semantics as lane-vs-base. Keep the `shares this farm` / `no farm here` states.
 - Still strictly read-only in lanes (`git --no-optional-locks`, nothing written there); the temp dir is ours.
+
 Evidence: tests with temp repos: a lane that is only behind (no farm lines, `-N`); a lane with its own added yak, moved yak, note, needs; a lane both behind and with own changes (only its own shown); the unknown-base fallback; read-only (mtimes unchanged). Real run: `yaks lanes` in the coordinator checkout on this thread must show NO phantom `shorn -> hairy` lines for the stale lanes (3d4gr26p09ng, kb369frnzkrr) and must still show a worker's real changes. Docs parity (docs/cli.md lanes row, README row, SKILL.md row, --help). Out of scope: TUI, discovery rules, other commands.
 
 ---
@@ -46,12 +46,3 @@ Done. src/lanes.rs: base_farm() = merge-base (git merge-base HEAD <lane HEAD> in
 ▸ 2026-10-04T21:04:11Z [lanes-2]
 
 moved: shaving -> shorn
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-d738` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-d738 --drop-request`, which removes this request note, so no new note is left behind.

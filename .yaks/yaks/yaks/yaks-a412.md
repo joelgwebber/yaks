@@ -5,25 +5,27 @@ status: shorn
 type: task
 priority: 2
 created: '2026-09-03T22:25:55Z'
-updated: '2026-10-27T01:10:50Z'
+updated: '2026-10-27T01:19:37Z'
 parent: yaks-3901
 labels:
 - skills
 - agent
-needs: agent
 ---
 
 Rolling capture of skill changes our decisions imply, plus the harder question Joel flagged: how do we know a skill is actually working?
 
 PENDING SKILL UPDATES:
+
 coordinating-yaks:
 - File-tool explicit-path SOP (PROMOTE from caveat to standard): edit worktree files via the full .worktrees/<name>/ path; after each edit check 'git -C <main> status'. Refinement from run 2: a linked worktree's .yaks/ is INVISIBLE to main status (git skips nested worktrees), so the guard reduces to 'no src/ in main'. Verified across two runs — the gotcha never bit when the SOP was followed.
 - Disjoint scoping is about TYPES, not just files: shared-type edits (FilterSpec, Task) collide even across disjoint files (exhaustive literal constructions). Rule: a shared-type change goes in a coordinator PREP COMMIT on main first, or stays within ONE lane — never split across parallel lanes.
 - HITL over worktrees routes through the COORDINATOR + fresh spawns; workers hand back (yaks ask on their leaf + return message), never block-and-wait; no per-yak cherry-picking. Live cross-worktree human->worker feedback is explicitly a non-goal.
 - Merge vs squash: id-in-message is the invariant; --no-ff preferred in team mode (see yaks-213b).
 - Attribution: --as / $YAKS_ACTOR on notes across agents; git author covers committed transitions.
+
 working-a-yak:
 - needs/ask/answer: on a human decision, 'yaks ask' + hand back; don't clear your own block.
+
 yak:
 - create requires --title (friction until yaks-2120); note it.
 
@@ -103,12 +105,3 @@ TENTH RUN (2 lanes, new claim-shape). doctor --strict refinement (1832: scoped t
 ▸ 2026-09-06T22:45:20Z [coordinator]
 
 MISSION ACCOMPLISHED. Skill updates: every decision folded into coordinating-yaks (wt/ file-tool SOP, disjoint-TYPE prep-commits, HITL-via-coordinator, claim run-shape, attribution, crash-recovery, human-drift) + working-a-yak (ask/answer) + the shipped yak skill (all new commands). Validation approach established and first predicates mechanized: yaks doctor (integrity) + doctor --strict (evidence-before-shear). Remaining predicates hoisted to yaks-eb5f in the new herd (yaks-10fb). The rolling run-log (runs 1-10) above is the durable record.
-
----
-▸ 2026-10-27T01:10:50Z [Joel Webber]
-
-requested: needs agent
-
-Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
-
-Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-a412` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-a412 --drop-request`, which removes this request note, so no new note is left behind.
