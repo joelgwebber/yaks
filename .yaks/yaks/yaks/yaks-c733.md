@@ -5,13 +5,14 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-17T04:25:16Z'
-updated: '2026-10-17T05:14:19Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-ea13
 depends_on:
 - yaks-649d
 labels:
 - markdown
 - tui
+needs: agent
 ---
 
 On the renderer core.
@@ -93,3 +94,12 @@ Summary: code blocks/tables scroll sideways per block (h/l, ←/→ on a no-wrap
 ▸ 2026-10-17T05:14:19Z [hscroll-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-c733` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-c733 --drop-request`, which removes this request note, so no new note is left behind.

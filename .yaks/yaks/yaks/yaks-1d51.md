@@ -5,7 +5,8 @@ status: shorn
 type: task
 priority: 2
 created: '2026-09-23T02:39:52Z'
-updated: '2026-09-23T04:42:00Z'
+updated: '2026-10-27T01:10:50Z'
+needs: agent
 ---
 
 Make skill installation braindead simple and hard to screw up.
@@ -102,3 +103,12 @@ Net effect against the original goal -- make skill installation braindead simple
 ▸ 2026-09-23T04:42:00Z [agent]
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-1d51` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-1d51 --drop-request`, which removes this request note, so no new note is left behind.

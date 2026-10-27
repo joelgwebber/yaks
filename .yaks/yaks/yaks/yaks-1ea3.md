@@ -5,11 +5,12 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-13T01:29:06Z'
-updated: '2026-10-13T01:48:05Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-7204
 labels:
 - ui
 - delta
+needs: agent
 ---
 
 Overlay part (d) + the arrival flash of yaks-7204: the Inbox view (and its tab count) also lists a yak of this farm whose copy in another shed is awaiting a human (the TUI form of `yaks inbox --sheds`); `a` on such a row answers it in that shed (`yaks answer <id>@<shed>`, as the Sheds tab's `a` does); and when a scan brings an ask that was not in the previous snapshot, a notification names it. Yaks that exist only in a shed are not rows here (design pending on yaks-7204); the flash and the Sheds tab still show them.
@@ -88,3 +89,12 @@ Summary: Inbox rows and tab count include a home yak whose shed copy asks (`App:
 ▸ 2026-10-13T01:48:05Z [inbox-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-1ea3` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-1ea3 --drop-request`, which removes this request note, so no new note is left behind.

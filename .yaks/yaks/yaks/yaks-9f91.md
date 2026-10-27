@@ -5,13 +5,14 @@ status: shorn
 type: task
 priority: 1
 created: '2026-10-12T19:53:57Z'
-updated: '2026-10-12T20:34:16Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-8b7a
 depends_on:
 - yaks-95be
 labels:
 - cli
 - git
+needs: agent
 ---
 
 Phase 2 of yaks-8b7a (plan note: D7; runs after phase 1, yaks-95be). Sonnet worker.
@@ -73,3 +74,12 @@ Done. `yaks status`/`yaks commit` now report an in-place `status:` change in a f
 ▸ 2026-10-12T20:34:16Z [git-2]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-9f91` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-9f91 --drop-request`, which removes this request note, so no new note is left behind.

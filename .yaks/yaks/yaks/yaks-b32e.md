@@ -5,8 +5,9 @@ status: shorn
 type: task
 priority: 1
 created: '2026-10-18T19:31:08Z'
-updated: '2026-10-18T21:15:00Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-73f4
+needs: agent
 ---
 
 Given that we've recently merged all yaks into a single directory, and that we're also in the process of reconsidering the way we handle branches and worktrees (ie, yaks-6a34), it seems like a good time to consider whether this is the right final directory structure state.
@@ -376,3 +377,12 @@ Decision (Joel, recorded by delta-farm, 2026-10-18): keep the flat `.yaks/` layo
 ▸ 2026-10-18T21:15:00Z [delta-farm]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-b32e` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-b32e --drop-request`, which removes this request note, so no new note is left behind.

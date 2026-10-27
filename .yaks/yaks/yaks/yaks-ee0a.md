@@ -5,11 +5,12 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-06T21:05:37Z'
-updated: '2026-10-19T04:27:08Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-b5a0
 labels:
 - cli
 - design
+needs: agent
 ---
 
 Joel (2026-10-06): start by working out the CLI affordances for sheds and threads, because an agent needs the same ones a human does, and use what that teaches to decide the TUI. His use cases, in his words: "what yaks has [thread] created or modified?", "are any threads waiting on answers from me?", "answer the question on [yak] from [thread]: ...". He also wants "dirty yaks" surfaced (he forgets to `git status` and so forgets to commit yaks), and notes that a yak seen in several sheds has N states, which matters for what you are looking at and what you are updating.
@@ -140,3 +141,12 @@ Shorn in the 2026-10-19 herd pass: every question here shipped in v0.0.14 (sheds
 ▸ 2026-10-19T04:27:08Z [delta:herd-pass]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-ee0a` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-ee0a --drop-request`, which removes this request note, so no new note is left behind.

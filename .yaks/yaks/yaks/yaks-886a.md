@@ -5,11 +5,12 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-09T22:35:46Z'
-updated: '2026-10-09T22:48:34Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-a3d2
 labels:
 - cli
 - delta
+needs: agent
 ---
 
 ---
@@ -73,3 +74,12 @@ Surprise: in this clone `git config --get yaks.shed.title` = "title-1: shed name
 ▸ 2026-10-09T22:48:34Z [title-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-886a` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-886a --drop-request`, which removes this request note, so no new note is left behind.

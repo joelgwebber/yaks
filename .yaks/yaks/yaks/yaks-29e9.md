@@ -5,12 +5,13 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-10-13T01:51:06Z'
-updated: '2026-10-13T02:11:19Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-38dc
 labels:
 - cli
 - delta
 - ui
+needs: agent
 ---
 
 Seen 2026-10-13 on yaks-7204: the coordinator asked in its shed, committed, and pushed main to Joel's checkout, so main's copy carried the same open ask. Joel answered it in main (plain `answer`, as the coordinator had told him): main's copy became `needs: agent` + his note, uncommitted. The asking shed's copy stayed `needs: human`, and every surface kept calling it open:
@@ -76,3 +77,12 @@ Summary: `needs_superseded` (src/sheds.rs) now also supersedes a shed's `needs: 
 ▸ 2026-10-13T02:11:19Z [fix-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-29e9` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-29e9 --drop-request`, which removes this request note, so no new note is left behind.

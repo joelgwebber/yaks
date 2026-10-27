@@ -5,10 +5,11 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-08-26T13:32:33Z'
-updated: '2026-08-30T01:40:43Z'
+updated: '2026-10-27T01:10:50Z'
 labels:
 - ui
 - links
+needs: agent
 ---
 
 While we have formal parentage and dependencies among yaks, sometimes it's useful just to be able to mention a yak in a desc/comment and link to it.
@@ -40,3 +41,12 @@ RESIDUAL not yet split out: the parent asks for follow + autocomplete (editing-t
 ▸ 2026-08-29T18:42:14Z
 
 DECISION (user): migrate yaksrs- -> yaks-. The yaksrs prefix was an accidental side-effect of the python->rust rewrite. We will DOGFOOD the rename tool (yaks-7a92) to perform the 160-file migration — that migration is its acceptance test. Autocomplete/follow stays folded into yaks-c2c5 for now (tracked in its scope note). Starting pen-to-paper on yaks-0187 (reference resolution core).
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-688d` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-688d --drop-request`, which removes this request note, so no new note is left behind.

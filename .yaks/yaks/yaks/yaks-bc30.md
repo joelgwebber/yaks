@@ -5,11 +5,12 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-17T16:54:33Z'
-updated: '2026-10-17T18:47:02Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-faf5
 labels:
 - tui
 - perf
+needs: agent
 ---
 
 Follow-up to yaks-48d6 (read its diagnosis note first: harness, numbers, call graph).
@@ -90,3 +91,12 @@ Gates: `cargo test --workspace` 825 passed 0 failed; `cargo test --release` 825 
 ▸ 2026-10-17T18:47:02Z [cache-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-bc30` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-bc30 --drop-request`, which removes this request note, so no new note is left behind.

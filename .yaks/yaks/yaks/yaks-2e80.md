@@ -5,12 +5,13 @@ status: shorn
 type: task
 priority: 3
 created: '2026-08-26T12:51:14Z'
-updated: '2026-08-26T13:47:49Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-fc85
 depends_on:
 - yaks-a031
 labels:
 - ui
+needs: agent
 ---
 
 Esc is canceling the entire yak edit by default, so if we *do* already support modal editing in single-line fields, it's getting lost in the process.
@@ -25,3 +26,12 @@ Fix site: in the edit form, handle_create_key treats Esc on any non-content row 
 ▸ 2026-08-26T13:47:49Z
 
 Implemented. In vim, single-line fields are now fully modal: a lone Esc only drops to Normal and never cancels; cancel is Ctrl-C or a rapid double-Esc (yaks-a031). Edit overlay: esc_cancels simplified to single_line && Esc && !vim (dropped the 'second Esc in Normal cancels' path). Create/edit form: the lone-Esc-cancels branch is now emacs-only (Esc && !vim && !is_content), so in vim Esc drops title/labels fields to Normal and is a no-op on chip rows. Footer hint is vim-aware (EscEsc/Ctrl-C cancel). Scope: yak-edit surfaces (Edit overlay + create/edit form); the transient pickers (filter drawer, inline search, fuzzy) keep single-Esc-to-close since that's standard even for vim users. Emacs unchanged. Tests updated (create/edit cancel now via double-Esc; single_line_vim_reaches_normal_mode cancels via Ctrl-C); 2 form snapshots regenerated (footer only). 148 bin green, 0 warnings.
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-2e80` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-2e80 --drop-request`, which removes this request note, so no new note is left behind.

@@ -5,10 +5,11 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-17T04:25:39Z'
-updated: '2026-10-17T04:39:47Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-faf5
 labels:
 - tui
+needs: agent
 ---
 
 Two small fixes in `render_detail` / `pinned_header_line` (src/tui/render.rs) and `detail::build`:
@@ -56,3 +57,12 @@ Summary: pinned header gets a dim rule row (content pushed down 2 rows, hits.det
 ▸ 2026-10-17T04:39:47Z [hdr-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-66a3` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-66a3 --drop-request`, which removes this request note, so no new note is left behind.

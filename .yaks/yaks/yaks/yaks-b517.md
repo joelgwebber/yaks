@@ -5,9 +5,10 @@ status: shorn
 type: idea
 priority: 3
 created: '2026-08-23T02:49:59Z'
-updated: '2026-09-03T17:59:54Z'
+updated: '2026-10-27T01:10:50Z'
 labels:
 - agent
+needs: agent
 ---
 
 Use user feedback to drive agent behavior. E.g., "look for any new comments I've added and follow up
@@ -40,3 +41,12 @@ FOLLOW-UPS: (1) TUI inbox filter + badge (CLI is the durable part; done here). (
 ▸ 2026-09-03T17:59:54Z [coordinator]
 
 Clearing the needs block Joel set while dogfooding ('yaks ask yaks-b517' on an already-SHORN yak). That probe revealed the inbox-visibility gap: ask set needs=human but inbox (hairy+shaving only) never surfaced it — a silent block. Captured as yaks-bc68 (inbox must show every needs-blocked yak, status-independent). Restoring b517 to a clean shorn state.
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-b517` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-b517 --drop-request`, which removes this request note, so no new note is left behind.

@@ -5,10 +5,11 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
-updated: '2026-10-17T19:55:57Z'
+updated: '2026-10-27T01:10:50Z'
 labels:
 - markdown
 - tui
+needs: agent
 ---
 
 Umbrella for the markdown rendering, markdown editing and detail-pane QoL work planned in the Delta thread "Markdown rendering / editing QoL" (2026-10-17). Children carry the work; this yak carries the decisions every child must follow.
@@ -191,3 +192,12 @@ Arc complete: every child shorn (or moved out / slaughtered), released in 0.0.20
 ▸ 2026-10-17T19:55:57Z [delta-lead]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-e9de` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-e9de --drop-request`, which removes this request note, so no new note is left behind.

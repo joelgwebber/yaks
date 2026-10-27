@@ -5,10 +5,11 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-08-23T03:43:29Z'
-updated: '2026-10-10T20:06:05Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-8d53
 labels:
 - cli
+needs: agent
 ---
 
 create and update accept --description-file PATH and --description - (read body from stdin), plus a yaks edit ID command that opens the yak (frontmatter + body) in EDITOR and validates on save. Motivation: rich markdown bodies with backticks, quotes and newlines are painful and unsafe as inline --description args, especially from an agent shell; this drove hand-edits of .yaks/*.md during the skills port and the description-restore pass.
@@ -91,3 +92,12 @@ moved: shaving -> shorn
 Failure mode seen 2026-10-10 (worker here-1 on yaks-ad6d, Delta, macOS): the input flags this yak shipped were not used. The worker wrote its note as `yaks update <id> --note "$(cat <<'EOF' ... EOF)"` and the body held backticked words and a `(...)`. The terminal call hung for 10+ minutes: the backticked words ran as commands (one was `top`, which opened a full-screen viewer on the tty and blocked; another was `yaks discover`, whose whole output was pasted into the note), so the note was both stuck and corrupted. A quoted heredoc delimiter was there and did not protect it; I did not pin down whether that is a shell quirk of the macOS `sh` or of how the tool wraps the command, so do not rely on `$( )` with a heredoc body at all.
 Safe forms, both already supported here: `yaks update <id> --note - <<'EOF' ... EOF` (heredoc straight to stdin, no `$( )`), or write the text to a file and pass `--note-file PATH`.
 Cost: a worker's final result was delayed by the hang until the coordinator found and killed the child; the corrupt text stays in the thread's transcript. See yaks-382b for the guidance side. Possible yaks-side mitigation, not decided: none that detects it (the text is already substituted before yaks runs).
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-c53a` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-c53a --drop-request`, which removes this request note, so no new note is left behind.

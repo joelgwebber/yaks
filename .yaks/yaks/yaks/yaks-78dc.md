@@ -5,9 +5,10 @@ status: shorn
 type: task
 priority: 2
 created: '2026-08-23T02:49:48Z'
-updated: '2026-08-28T04:16:07Z'
+updated: '2026-10-27T01:10:50Z'
 labels:
 - ui
+needs: agent
 ---
 
 I *think* the rules go something like this (but please double-check before diving in):
@@ -60,3 +61,12 @@ Filed separately: Dead dead-end bug; filtered-descendant asymmetry folded into t
 ▸ 2026-08-28T04:16:06Z
 
 Implemented. HerdScope enum (lone/remaining/all, plus auto=inherit) in view.rs; per-view overrides persisted in the UI-state cache (cache::UiState, keyed by view.key; auto = absent entry). tree::build unified: members = seeds + ancestors (always, walkable through Dead) + herd-scoped descendants. remaining keeps open work (hairy/shaving) plus completed connectors, dropping fully-shorn subtrees; applies in both the filtered and unfiltered paths. h in list focus cycles auto -> lone -> remaining -> all with a notification; right-aligned herd: indicator on the tab row (yields when the tab strip is too wide; ~ marks auto/inherit); h:herd advertised in the footer. Global default = remaining. Tests in tree.rs + cache.rs; bin + cli snapshots regenerated (shorn leaf drops from the default Hairy view; footer gains h:herd). Fixes yaks-3331 as a side effect. Deferred: yaks-fe00 (Dead dead-end).
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-78dc` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-78dc --drop-request`, which removes this request note, so no new note is left behind.

@@ -5,11 +5,12 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-13T01:29:06Z'
-updated: '2026-10-13T01:54:13Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-7204
 labels:
 - ui
 - delta
+needs: agent
 ---
 
 Overlay part (a)+(b) of yaks-7204, after the Sheds tab (yaks-98f1): on the yak views, a row whose yak another shed has changed (outstanding, not landed) carries a small shed badge, and the yak's detail pane gains a Sheds section listing each such shed's change (the TUI form of `yaks show <id> --sheds`). Annotations only: the copy in this checkout's farm decides where a row is and what it shows; yaks that exist only in a shed (ghost rows) are NOT in scope here (design pending on yaks-7204).
@@ -99,3 +100,12 @@ Summary: shed overlay on the yak views. Row badge `🛖N` (yellow when a copy is
 ▸ 2026-10-13T01:54:13Z [badge-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-ed6d` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-ed6d --drop-request`, which removes this request note, so no new note is left behind.

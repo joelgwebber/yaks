@@ -5,10 +5,11 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-22T20:35:28Z'
-updated: '2026-10-25T21:20:22Z'
+updated: '2026-10-27T01:10:50Z'
 labels:
 - tui
 - images
+needs: agent
 verify: cargo test --workspace
 ---
 
@@ -285,3 +286,12 @@ moved: shaving -> shorn
 picked up
 
 Already done: toque pushed (240eb5f), svg viewer committed in the thread clone. Clearing the stale flag.
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-4e9c` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-4e9c --drop-request`, which removes this request note, so no new note is left behind.

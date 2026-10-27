@@ -5,11 +5,12 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-09T20:44:57Z'
-updated: '2026-10-09T20:53:54Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-a3d2
 labels:
 - cli
 - delta
+needs: agent
 ---
 
 ---
@@ -53,3 +54,12 @@ Decision: sheds with a different-but-unreadable farm or Shared/None are not list
 ▸ 2026-10-09T20:53:54Z [show-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-e7ed` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-e7ed --drop-request`, which removes this request note, so no new note is left behind.

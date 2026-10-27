@@ -5,11 +5,12 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-10T13:40:07Z'
-updated: '2026-10-12T16:04:57Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-ee0a
 labels:
 - cli
 - delta
+needs: agent
 verify: cargo test --release
 ---
 
@@ -155,3 +156,12 @@ moved: shaving -> shorn
 picked up
 
 Root cause of this yak showing in Joel's inbox after it was shorn: the landed file (2b92139) still carried land-1's `needs: human` from its blocked ask, with no answer or pickup entry. My `yaks answer yaks-ed5e@land-1` wrote the answer into land-1's working tree, uncommitted, as designed; land-1 then synced with `git fetch local && git merge local/main` to get the missing spec, and the uncommitted answer did not survive that (the landed file has neither the answer note nor a pickup). Joel cleared it by hand (needs: agent); this pickup closes it. The hazard itself is filed separately.
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-ed5e` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-ed5e --drop-request`, which removes this request note, so no new note is left behind.

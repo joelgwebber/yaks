@@ -5,12 +5,13 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-08-25T03:35:02Z'
-updated: '2026-08-29T22:13:56Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-688d
 depends_on:
 - yaks-0187
 labels:
 - ui
+needs: agent
 ---
 
 Ensure that all references of the form `yaktype-1234` are treated as followable links, and propertly highlighted.
@@ -34,3 +35,12 @@ Covered by existing tests: detail.rs links_parent_deps_children_and_body_refs, b
 DECISION (dead/unresolved refs): a mention of a non-existent / not-loaded id renders as PLAIN text (no cue), by design — the validation-based model cannot distinguish an intended-but-dangling ref from ordinary prose without false positives, and dangling formal refs are surfaced by `yaks refs` instead.
 
 Autocomplete (the folded-in parent residual) SPLIT OUT to yaks-5656 — it needs overlay nesting, so it is a feature in its own right, not a fold-in. The skill nudge (full-form ids) lives in yaks-3563.
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-c2c5` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-c2c5 --drop-request`, which removes this request note, so no new note is left behind.

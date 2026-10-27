@@ -5,10 +5,11 @@ status: shorn
 type: task
 priority: 1
 created: '2026-10-12T19:53:34Z'
-updated: '2026-10-12T20:19:35Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-8b7a
 labels:
 - cli
+needs: agent
 ---
 
 Phase 1 of yaks-8b7a (see its plan note; D1-D4, D6). Coordinator-owned prep commit; the three phase-2 workers build on it.
@@ -55,3 +56,12 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 ▸ 2026-10-12T20:19:35Z [delta-lead]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-95be` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-95be --drop-request`, which removes this request note, so no new note is left behind.

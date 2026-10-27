@@ -5,10 +5,11 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-08-30T22:52:32Z'
-updated: '2026-09-03T16:28:56Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-3901
 labels:
 - agent
+needs: agent
 ---
 
 Attribution (who wrote a note / made a transition), NOT ownership. Committed transitions already carry attribution via the git commit author, so this is mainly for in-file visibility and local-only mode. Add optional --as <actor> on update/shave/shorn, stamped into the note; default from an env (YAKS_ACTOR) or git user. Open design question: naming for humans vs agents, and agents acting on behalf of a human (agent@human?). Do NOT introduce yak ownership. From the experiment where [wtA]/[wtB] tags were used by hand.
@@ -32,3 +33,12 @@ BUILT + verified. Actor attribution on notes.
 - TaskEdit.actor threads through herd.update. CLI: 'yaks update --as <actor>' + resolve_actor: --as > $YAKS_ACTOR > git user.name (best-effort, never fails). 'yaks log --by <actor>' filters; log + json show the actor.
 - Verified all three resolution paths on a throwaway: --as opus@joel -> [opus@joel]; YAKS_ACTOR=worker-b -> [worker-b]; default -> [Joel Webber] (git user.name). log --by filters correctly. 204 yaks + 20 CLI + 13 toque tests green. THIS NOTE is itself attributed via --as coordinator (dogfooded).
 FOLLOW-UP (out of scope here): TUI comment path (tui.rs EditAction::Comment) still writes actor=None -- wire it to resolve_actor/git identity so human TUI comments are attributed too. Transition attribution stays deferred (git author covers committed moves).
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-eb66` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-eb66 --drop-request`, which removes this request note, so no new note is left behind.

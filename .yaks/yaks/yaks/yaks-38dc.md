@@ -5,11 +5,12 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-19T04:27:08Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-b5a0
 labels:
 - cli
 - tui
+needs: agent
 ---
 
 Let `yaks tui` show yak state from the other checkouts of this repo (sheds), read-only; the main checkout stays authoritative.
@@ -112,3 +113,12 @@ Shorn in the 2026-10-19 herd pass: the Sheds tab and the CLI it drives shipped (
 ▸ 2026-10-19T04:27:08Z [delta:herd-pass]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-38dc` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-38dc --drop-request`, which removes this request note, so no new note is left behind.

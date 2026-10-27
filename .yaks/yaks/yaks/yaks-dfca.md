@@ -5,12 +5,13 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-06T21:31:42Z'
-updated: '2026-10-06T21:34:35Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-38dc
 labels:
 - cli
 - docs
 - skills
+needs: agent
 ---
 
 Decision (Joel, 2026-10-06, via the naming subthread): a lane is now called a SHED, everywhere, with no aliases. His words: "I love 'shed'. It reminds me of 'bike shed' ... Let's just bite the bullet and change everything comprehensively. No need for aliases -- I want to force anyone using these tools to deal with our wacky terminology, whether they like it or not."
@@ -80,3 +81,12 @@ Summary: src/lanes.rs -> src/sheds.rs (git mv), Command::Lanes -> Sheds, Farm::l
 ▸ 2026-10-06T21:34:35Z [shd-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-dfca` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-dfca --drop-request`, which removes this request note, so no new note is left behind.

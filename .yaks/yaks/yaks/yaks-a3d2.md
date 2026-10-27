@@ -5,13 +5,14 @@ status: shorn
 type: task
 priority: 3
 created: '2026-10-09T20:12:45Z'
-updated: '2026-10-09T23:01:30Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-ee0a
 labels:
 - cli
 - skills
 - delta
 - design
+needs: agent
 ---
 
 Joel (2026-10-09): before the UI, pause to work through the CLI and skill/workflow changes agents need to use shed discovery well. Inputs: yaks-ee0a (proposed per-shed commands: `yaks changes <shed>`, `yaks inbox --sheds`, `yaks show <id> --sheds`, `yaks answer <id>@<shed>`), yaks-7eea (names and the -C/--shed selector; visit vs full access), and the facts from yaks-c635 (from inside any checkout an agent sees every shed, including a worker that has not committed yet; a clone on a shared machine cannot see the human's checkout).
@@ -106,3 +107,12 @@ Open for later (not this yak): the TUI view of sheds (yaks-38dc / yaks-7204), an
 ▸ 2026-10-09T23:01:30Z [delta:Delta :Yaks (cont'd)]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-a3d2` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-a3d2 --drop-request`, which removes this request note, so no new note is left behind.

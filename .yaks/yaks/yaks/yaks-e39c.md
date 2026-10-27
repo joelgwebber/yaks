@@ -5,11 +5,12 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-09T20:23:49Z'
-updated: '2026-10-09T20:36:24Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-a3d2
 labels:
 - cli
 - delta
+needs: agent
 ---
 
 ---
@@ -67,3 +68,12 @@ Summary: yaks changes SHED shipped (sheds.rs/farm.rs/main.rs, tests in sheds.rs 
 ▸ 2026-10-09T20:36:24Z [chg-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-e39c` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-e39c --drop-request`, which removes this request note, so no new note is left behind.

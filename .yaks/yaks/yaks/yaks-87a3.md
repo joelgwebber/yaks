@@ -5,12 +5,13 @@ status: shorn
 type: task
 priority: 1
 created: '2026-10-18T21:15:00Z'
-updated: '2026-10-18T21:25:20Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-73f4
 labels:
 - git
 - cli
 - skills
+needs: agent
 ---
 
 The build-and-cutover half of yaks-73f4's design note. One arc, done by the yakherd while nothing is in flight:
@@ -39,3 +40,12 @@ Evidence: `yaks path` from ~/src/yaks (with the leftover), ~/src/yaks/src/tui, t
 ▸ 2026-10-18T21:25:20Z [delta-farm]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-87a3` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-87a3 --drop-request`, which removes this request note, so no new note is left behind.

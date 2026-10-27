@@ -5,12 +5,13 @@ status: shorn
 type: task
 priority: 1
 created: '2026-10-12T19:53:57Z'
-updated: '2026-10-12T20:52:47Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-8b7a
 depends_on:
 - yaks-95be
 labels:
 - cli
+needs: agent
 ---
 
 Phase 2 of yaks-8b7a (plan note: D5, D8; runs after phase 1, yaks-95be). Sonnet worker.
@@ -78,3 +79,12 @@ Gate: `cargo test --release`: 16 suites, 662 passed, 0 failed, 4 ignored (the sa
 ▸ 2026-10-12T20:52:47Z [mig-2]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-86f4` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-86f4 --drop-request`, which removes this request note, so no new note is left behind.

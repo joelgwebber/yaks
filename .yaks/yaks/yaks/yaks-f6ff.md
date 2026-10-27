@@ -5,10 +5,11 @@ status: shorn
 type: task
 priority: 3
 created: '2026-10-09T20:59:45Z'
-updated: '2026-10-09T21:05:39Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-a3d2
 labels:
 - skills
+needs: agent
 ---
 
 ---
@@ -50,3 +51,12 @@ Done: two cold reads (cold-read-3: 10 questions; cold-read-4: the 6 failed or ne
 ▸ 2026-10-09T21:05:39Z [delta:Delta :Yaks (cont'd)]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-f6ff` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-f6ff --drop-request`, which removes this request note, so no new note is left behind.

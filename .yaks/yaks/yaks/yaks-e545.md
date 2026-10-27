@@ -5,11 +5,12 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-04T20:52:28Z'
-updated: '2026-10-04T20:59:02Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-38dc
 labels:
 - cli
 - delta
+needs: agent
 ---
 
 Read-only CLI + data layer for yaks-38dc (the TUI lanes view is a separate, later yak that calls this). Design agreed with Joel in yaks-99ec / yaks-df61 O50-O53: no Delta database, no Delta CLI; plain git plus the filesystem.
@@ -48,3 +49,12 @@ Real run in own Delta checkout (./target/release/yaks lanes), 4 sibling lanes, k
  p4m7aet4wa31  main 2c28d23 +6 dirty 2  farm: 1 new (+ yaks-699b), 1 moved (yaks-7149 shaving -> shorn), 4 new notes
  vwe0avewf7p3  main 46f1abc +1 dirty 0  farm: 1 moved (yaks-7149 shaving -> shorn), 3 new notes
 Output was captured live; --json has same fields (4 entries). Decision: `needs` is reported only when new or different vs this farm (3 pre-existing needs:human were in every lane's output as noise). Finding: inside Delta .git is a file -> <dir>/yaks.git with core.worktree, and `git worktree list` prints that gitdir as the worktree path; worktree entries without their own .git are skipped so it is not listed as a lane. Extra beyond brief: from a laptop-layout clone the repo checkout holding it is also a candidate. Docs parity: docs/cli.md, README.md, SKILL.md (command table + --json list), --help on the variant.
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-e545` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-e545 --drop-request`, which removes this request note, so no new note is left behind.

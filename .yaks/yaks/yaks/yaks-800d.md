@@ -5,11 +5,12 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-10-03T22:24:19Z'
-updated: '2026-10-04T04:54:13Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-b5a0
 labels:
 - cli
 - agent
+needs: agent
 ---
 
 Measured 2026-10-03 (log yaks-df61 O26): N parallel 'yaks update <same id> --note' processes against one yak. 4 writers x 25 notes = 100/100 preserved; 16 parallel x 400 = 400/400; 32 parallel x 800 = 796/800 (4 notes silently lost, exit codes all 0, yaks doctor clean). atomic_write (tmp + rename) prevents torn files but update is a read-modify-write with no lock (no flock/lock file anywhere in src/), so two processes that read the same version drop one's edit. Writers on DIFFERENT yaks were safe (4 x 25 each = 25 each). Matters most where one yak has several writers: a coordinator and workers on a shared parent yak, and live-shared farms (private mode in git worktrees or Delta, log O11). Options: (a) advisory lock per yak file or per farm around read-modify-write (flock via std File::lock, stable since 1.89, or a .lock file), (b) compare updated: before rename and retry, (c) document one writer per yak as the rule and leave it. Evidence when done: the same stress script as a test or doctor-style check showing N/N.
@@ -57,3 +58,12 @@ Evidence: 32x800 stress before 25046/25600 (554 lost) vs after 25600/25600; sing
 ▸ 2026-10-04T04:54:13Z [t4-lock]
 
 Shorn. Farm-wide .yaks/.lock (store::lock, std File::lock) held across load->edit->save in every mutating Farm method; .yaks/.gitignore gets '.lock' (also at init); doctor unaffected. Evidence: artifacts/yaks-800d/stress-before-after.txt (32x800: 25046/25600 before, 25600/25600 after; single-writer unchanged); cargo test -p yaks green; unit test fails with the lock removed from update.
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-800d` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-800d --drop-request`, which removes this request note, so no new note is left behind.

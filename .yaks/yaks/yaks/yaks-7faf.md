@@ -5,9 +5,10 @@ status: shorn
 type: task
 priority: 3
 created: '2026-10-12T01:54:23Z'
-updated: '2026-10-12T02:20:13Z'
+updated: '2026-10-27T01:10:50Z'
 labels:
 - release
+needs: agent
 ---
 
 ---
@@ -56,3 +57,12 @@ moved: shaving -> shorn
 picked up
 
 Confirmed with Joel directly (chat) and verified myself: v0.0.15 is fully released, all 6 packages live. Closing out.
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-7faf` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-7faf --drop-request`, which removes this request note, so no new note is left behind.

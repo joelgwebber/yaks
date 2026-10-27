@@ -5,11 +5,12 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-10-06T22:19:03Z'
-updated: '2026-10-06T22:23:22Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-38dc
 labels:
 - cli
 - delta
+needs: agent
 ---
 
 Found by Joel (2026-10-06) reading `yaks sheds` from ~/src/yaks after yaks-37fa: the yakherd's own shed (xp49gyb9fg59) shows `who:` with eighteen actors and a farm delta of 21 new and 16 moved yaks, though the shed is only ONE commit ahead of his checkout (`+1 -0`). He asked whether that is a misfire.
@@ -84,3 +85,12 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 ▸ 2026-10-06T22:23:22Z [nbr-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-22f1` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-22f1 --drop-request`, which removes this request note, so no new note is left behind.

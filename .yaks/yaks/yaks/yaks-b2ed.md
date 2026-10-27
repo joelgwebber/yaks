@@ -5,9 +5,10 @@ status: hairy
 type: task
 priority: 3
 created: '2026-08-26T13:27:01Z'
-updated: '2026-10-18T05:46:07Z'
+updated: '2026-10-27T01:10:50Z'
 labels:
 - tui
+needs: agent
 ---
 
 We could use this when typing in both single-line fields, and text blocks.
@@ -30,3 +31,12 @@ Partly done, not fully: yaks-5656 shipped Tab-triggered yak-id completion inside
 ▸ 2026-10-03T20:31:56Z [Joel Webber]
 
 (a) SGTM
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-b2ed` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-b2ed --drop-request`, which removes this request note, so no new note is left behind.

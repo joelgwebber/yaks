@@ -5,10 +5,11 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-09-23T03:52:41Z'
-updated: '2026-10-03T21:21:41Z'
+updated: '2026-10-27T01:10:50Z'
 labels:
 - cli
 - herds
+needs: agent
 ---
 
 This can be quite a weird foot-gun, because you end up falling back to `yak-`, and can end up accidentally creating a new, unintended herd.
@@ -48,3 +49,12 @@ LEARNED. The error surfaces via anyhow in main as 'Error: ...' exit 1 (not the '
 ▸ 2026-10-03T21:21:41Z [delta-lead]
 
 COORDINATOR REVIEW (delta-lead). Re-ran in my own checkout: cargo test -p yaks 323 passed + 28 passed; built binary in a throwaway farm: no config -> 'Error: no herd to create the yak in...' rc=1 and nothing written; --herd proj and a config herd still create; after yaks init, create works. Review change, made as a follow-up commit so the worker's d2833d3 stays intact: replaced the worker's farm.rs helper that re-scanned config.yaml with a Config.prefix_declared flag set in store::read_config (one parser, so quoting and the legacy prefix: alias cannot drift; verified quoted herd and prefix: both still work). Also fixed README.md, which still said the herd defaulted to yak. Scope extension to src/tui/test_support.rs (one line) was my call as coordinator, not the human's; overrule if you disagree. Known rough edge: the error prints as 'Error: ...' (anyhow) and is ~150 chars in the TUI notification (handlers.rs surfaces Err as 'error: {e}').
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-b47b` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-b47b --drop-request`, which removes this request note, so no new note is left behind.

@@ -5,13 +5,14 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-22T20:35:28Z'
-updated: '2026-10-25T21:26:26Z'
+updated: '2026-10-27T01:10:50Z'
 depends_on:
 - yaks-89fc
 labels:
 - tui
 - images
 - markdown
+needs: agent
 verify: cargo test --workspace
 ---
 
@@ -171,3 +172,12 @@ moved: shaving -> shorn
 ▸ 2026-10-25T21:26:26Z [delta:Add basic image attachment rendering]
 
 Landed (yakherd): the thread's five commits fast-forwarded onto the user's checkout main (2b1f3ba..c4b0b9f: yaks-89fc 7462a6f, yaks-0bf0 ea538c8 and c4b0b9f, yaks-4e9c 67122a0 and e4e378d). Verified there: git log shows c4b0b9f, status clean, no MERGE_HEAD. The first push attempt printed nothing and did not land; the second did. origin not pushed. toque origin/main 240eb5f. Release build installed to ~/.cargo/bin/yaks and ~/go/bin/yaks from c4b0b9f.
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-0bf0` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-0bf0 --drop-request`, which removes this request note, so no new note is left behind.

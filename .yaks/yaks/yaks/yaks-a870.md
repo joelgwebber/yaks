@@ -5,11 +5,12 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-17T04:36:55Z'
-updated: '2026-10-17T05:01:35Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-e9de
 labels:
 - markdown
 - cli
+needs: agent
 ---
 
 Joel (2026-10-17, on yaks-2362 and yaks-3b8d): do these format changes as a real schema migration in the next release, and expect more fixups to join it.
@@ -102,3 +103,12 @@ Correction to the evidence note: the new tests were written after the code, so I
 ▸ 2026-10-17T05:01:35Z [migrate-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-a870` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-a870 --drop-request`, which removes this request note, so no new note is left behind.

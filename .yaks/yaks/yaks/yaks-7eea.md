@@ -5,12 +5,13 @@ status: shorn
 type: idea
 priority: 2
 created: '2026-10-07T01:00:44Z'
-updated: '2026-10-10T18:55:34Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-ee0a
 labels:
 - cli
 - ui
 - delta
+needs: agent
 ---
 
 Raised by Joel (2026-10-06): to look at a Delta thread's farm in `yaks tui` you must run it from that thread's worktree, and copying the path out of the Delta UI by hand is "kind of a PITA". How do we make opening the TUI on the right shed ergonomic?
@@ -79,3 +80,12 @@ Everything else is built: discovery (yaks-c635), names (yaks-886a), `-C` (yaks-4
 ▸ 2026-10-10T18:55:34Z [delta-lead]
 
 moved: hairy -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-7eea` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-7eea --drop-request`, which removes this request note, so no new note is left behind.

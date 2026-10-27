@@ -5,10 +5,11 @@ status: shorn
 type: task
 priority: 3
 created: '2026-10-03T20:14:31Z'
-updated: '2026-10-03T20:14:43Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-b5a0
 labels:
 - delta
+needs: agent
 ---
 
 What happened when we ran a yak through Delta for the first time, and what it taught us. Findings in the notes; lessons are the sibling yaks.
@@ -24,3 +25,12 @@ FINDINGS (2026-10-02/03, landed as c56861a + edtui yaks-integration 6ba0dbf).
 5. Landing from the subthread left the parent thread's clone stale (diverged at b14a9a3). Prefer a single landing point.
 6. Skills were not discoverable in Delta: yaks skills install targets ~/.agents/skills and omits the coordination skills; Delta loads project .agents/skills (worked around in 3a1e5ec with symlinks).
 Lessons are the sibling yaks: 80d5 (matrix), fe33 (trials), 5c9f (restructure), 2f9b (Delta skill), e87e (HitL spike), 38dc (lanes view), 3859 (skills install), 814a (init --mode).
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-5fe9` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-5fe9 --drop-request`, which removes this request note, so no new note is left behind.

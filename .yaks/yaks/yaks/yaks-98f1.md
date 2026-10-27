@@ -5,11 +5,12 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-12T23:58:55Z'
-updated: '2026-10-13T00:28:42Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-38dc
 labels:
 - ui
 - delta
+needs: agent
 ---
 
 Approach A of the 2026-10-12 brainstorm, agreed to come first (Joel, on yaks-8b7a: "then a thin Sheds tab first, then the overlay"). Joel's pain: he opens terminals in Delta worktrees by hand to check a thread's state. The tab puts `yaks sheds` and `yaks changes <shed>` on screen, live, from inside `yaks tui`; the yak tree stays home.
@@ -168,3 +169,12 @@ Follow-ups not done: mouse on the tab (clicks and wheel do nothing there; tab cl
 ▸ 2026-10-13T00:28:42Z [delta-lead]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-98f1` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-98f1 --drop-request`, which removes this request note, so no new note is left behind.

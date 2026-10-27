@@ -5,12 +5,13 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-12T20:00:38Z'
-updated: '2026-10-12T22:58:28Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-8b7a
 depends_on:
 - yaks-3a56
 labels:
 - cli
+needs: agent
 ---
 
 Phase 4 of yaks-8b7a (after phase 3's release and after Joel's farms are migrated: ~/src/yaks, ~/src/j15r, and any private/pointer farms). Remove the transition: `yaks migrate`, the dual-layout read in src/store.rs, the legacy deleted-plus-added classification in src/changes.rs, the both-layouts doctor/preflight check, and every transitional line in docs and skills. Keep: a schema-3 farm refuses to open with a message naming the last release that can migrate it; `yaks sheds` shows a schema-3 shed's farm as "old layout (pre-0.0.16 clone)", never as an empty farm. Release 0.0.17.
@@ -97,3 +98,12 @@ Summary (bye-1): removed the migration and the dual-layout read; added the perma
 ▸ 2026-10-12T22:58:28Z [bye-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-bbda` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-bbda --drop-request`, which removes this request note, so no new note is left behind.

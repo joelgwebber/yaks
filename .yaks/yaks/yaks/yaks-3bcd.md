@@ -5,11 +5,12 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-10-13T02:02:44Z'
-updated: '2026-10-21T22:31:01Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-e5fb
 labels:
 - skills
 - delta
+needs: agent
 ---
 
 Seen 2026-10-13 (see the incident note on yaks-38dc): a commit made while Delta held a pending merge became a merge commit with the worker's SHA as a parent but without its changes. `land.sh <sha>` then reported `landed: <HEAD>` because the SHA was an ancestor, so a silently dropped worker would have been pushed as landed.
@@ -34,3 +35,12 @@ Done in yaks-e5fb's change (`yaks land`, src/land.rs). Finding: the check as spe
 ▸ 2026-10-21T22:31:01Z [land-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-3bcd` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-3bcd --drop-request`, which removes this request note, so no new note is left behind.

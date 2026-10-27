@@ -5,13 +5,14 @@ status: shorn
 type: bug
 priority: 1
 created: '2026-10-05T22:10:36Z'
-updated: '2026-10-17T05:16:47Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-e9de
 depends_on:
 - yaks-649d
 labels:
 - markdown
 - skills
+needs: agent
 ---
 
 I keep seeing massive chunks of md pasted into a single-line description, making it nigh-unreadable. This may be a byproduct of agents working through the CLI. We should give explicit guidance on markdown formatting, and ensure that it follows the constructs we actually implement in markdown rendering.
@@ -57,3 +58,12 @@ verify: `cargo test -p yaks skills` -> PASS (exit 0)
 ▸ 2026-10-17T05:16:47Z [delta-lead]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-382b` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-382b --drop-request`, which removes this request note, so no new note is left behind.

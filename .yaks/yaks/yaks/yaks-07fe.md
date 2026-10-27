@@ -5,11 +5,12 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-12T16:04:57Z'
-updated: '2026-10-13T00:50:12Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-38dc
 labels:
 - cli
 - delta
+needs: agent
 ---
 
 `yaks sheds` takes ~1.2 s on this machine (4 live sheds plus 51 orphaned Delta pins, release build, measured 2026-10-12); `yaks inbox --sheds` about the same. Joel: worth finding out why before the TUI (yaks-38dc, approach B) builds on it with a background refresh.
@@ -84,3 +85,12 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 ▸ 2026-10-13T00:50:12Z [perf-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-07fe` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-07fe --drop-request`, which removes this request note, so no new note is left behind.

@@ -5,8 +5,9 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-08-27T16:15:00Z'
-updated: '2026-10-17T04:38:43Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-faf5
+needs: agent
 ---
 
 In header fields like created/updated; but especially comment timestamps, which are currently raw RFC/UTC.
@@ -58,3 +59,12 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 ▸ 2026-10-17T04:38:43Z [dates-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-ef82` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-ef82 --drop-request`, which removes this request note, so no new note is left behind.

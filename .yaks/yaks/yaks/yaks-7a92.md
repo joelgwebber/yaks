@@ -5,10 +5,11 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-08-29T17:26:50Z'
-updated: '2026-08-29T19:19:13Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-688d
 depends_on:
 - yaks-0af1
+needs: agent
 ---
 
 It should be practical to reliably rename all the yaks in a repo to reflect a change in the config's prefix.
@@ -33,3 +34,12 @@ DIRECTION SET: target prefix = yaks (migrate the 160 yaksrs- ids to yaks-). This
 ▸ 2026-08-29T19:19:13Z
 
 SHORN. Built `yaks rename-prefix <old> <new> [--dry-run]` over the shared rename engine (rename_many) + store::set_config_prefix (idempotent prefix-line rewrite). DOGFOODED the real migration: 160 yaksrs- -> yaks- ids, 164 files touched, config flipped to yaks, zero collisions. De-risked first in a temp copy (diff showed only id/ref lines change — no reformatting churn), then ran for real. The dogfood surfaced a tokenizer trailing-dot bug (fixed as yaks-9531) that had missed 6 sentence-ending refs. Post-migration: 0 yaksrs- files, 165 yaks-, dangling sweep across the herd clean. 2 herd tests (prefix migrate + config flip; dry-run safety).
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-7a92` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-7a92 --drop-request`, which removes this request note, so no new note is left behind.

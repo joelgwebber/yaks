@@ -5,10 +5,11 @@ status: shorn
 type: task
 priority: 3
 created: '2026-10-09T22:35:47Z'
-updated: '2026-10-09T22:45:17Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-a3d2
 labels:
 - cli
+needs: agent
 ---
 
 ---
@@ -71,3 +72,12 @@ Summary: `compare_farms` now counts a created yak's notes (independent `if`, no 
 ▸ 2026-10-09T22:45:17Z [notes-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-85d9` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-85d9 --drop-request`, which removes this request note, so no new note is left behind.

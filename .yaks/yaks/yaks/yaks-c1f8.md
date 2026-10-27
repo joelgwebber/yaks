@@ -5,11 +5,12 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-13T19:46:42Z'
-updated: '2026-10-13T20:05:05Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-38dc
 labels:
 - ui
 - delta
+needs: agent
 ---
 
 Joel, 2026-10-13: the Sheds tab's detail mirrors `yaks changes` and lists every yak the shed touched since it forked; a coordinator's long-lived shed that is `landed (12 yaks)` still shows twelve bright-looking blocks. Lead with what is outstanding and fold the landed ones behind one line, as `yaks sheds` does.
@@ -144,3 +145,12 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 ▸ 2026-10-13T20:05:05Z [fold-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-c1f8` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-c1f8 --drop-request`, which removes this request note, so no new note is left behind.

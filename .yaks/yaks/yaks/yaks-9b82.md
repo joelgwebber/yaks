@@ -5,10 +5,11 @@ status: shorn
 type: idea
 priority: 2
 created: '2026-08-20T19:29:03Z'
-updated: '2026-08-20T22:31:13Z'
+updated: '2026-10-27T01:10:50Z'
 labels:
 - rust
 - ui
+needs: agent
 ---
 
 Design goal (from owner, to discuss before TUI work): structure CLI operations so the UI layer stays thin on top of the CLI/library implementation.
@@ -22,3 +23,12 @@ Discuss scope/shape before starting Phase 2.
 ▸ 2026-08-20T22:31:13Z
 
 Discussion concluded. Decisions: (1) a print-free core ops facade (Herd) exposing each WHOLE operation as a typed method; CLI and TUI are thin layers over it. (2) Reuse target = editor/IDE plugins (nvim/VSCode/Cursor) that either shell out to yaks or talk to a long-lived LSP-like process over socket/pipe; expose via protocol/specialized CLI LATER — architecture must SUPPORT a persistent process, but defer that plumbing. (3) No composite/atomic ops beyond what the TUI needs; the facade exposes the whole operation for the atomic bits it does need. (4) TUI ships as a `yaks tui` subcommand. Keep core free of clap/rendering so it can later extract to a lib crate.
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-9b82` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-9b82 --drop-request`, which removes this request note, so no new note is left behind.

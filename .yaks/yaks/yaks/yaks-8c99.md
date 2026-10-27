@@ -5,11 +5,12 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-22T00:37:58Z'
-updated: '2026-10-22T00:59:43Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-b048
 labels:
 - cli
 - docs
+needs: agent
 ---
 
 ---
@@ -82,3 +83,12 @@ moved: shaving -> shorn
 ▸ 2026-10-22T00:59:43Z [delta:herd-dirs]
 
 Landed as 3b1e175 (squash of 110d658). Yakherd re-ran: longest yaks --help command line 95 chars over 50 lines; yaks sheds --help keeps its 22-line detail; full gate 20 suites green.
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-8c99` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-8c99 --drop-request`, which removes this request note, so no new note is left behind.

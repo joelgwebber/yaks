@@ -5,9 +5,10 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-09-07T02:38:01Z'
-updated: '2026-09-23T21:41:38Z'
+updated: '2026-10-27T01:10:50Z'
 labels:
 - ui
+needs: agent
 ---
 
 When navigating forward and backward through yak detail links, we lose the cursor/scroll position. We should preserve this as part of the stack.
@@ -29,3 +30,12 @@ Headless 80x16 text frames from nav_history_restores_cursor_and_scroll: a0 scrol
 ▸ 2026-09-23T21:41:38Z [lane-navpos]
 
 Done. o/i history entries are now a small NavEntry {id, line, scroll} (src/tui.rs) instead of a bare id; follow_link/nav_back/nav_forward snapshot the current detail cursor+scroll before pushing, and restore_nav_entry reopens the target and puts cursor/scroll back (clamped to the task's current line count). Local precursor to yaks-158d (global cross-view history) — NavEntry is the natural seed for that entry type. Test nav_history_restores_cursor_and_scroll; docs/tui.md updated. cargo test -p yaks --bins: 282 passed. Observation (not fixed): detail_page = h-3 counts the sticky title row, so a Tab-to-link at the bottom can land one row below the visible viewport (visible in the attached a0 frame: link line just off-screen).
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-28b4` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-28b4 --drop-request`, which removes this request note, so no new note is left behind.

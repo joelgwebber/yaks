@@ -5,11 +5,12 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-10-17T04:24:29Z'
-updated: '2026-10-17T04:37:51Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-ea13
 labels:
 - markdown
 - tui
+needs: agent
 ---
 
 `[Links](https://example.com/)` in a body yields a `Target::Url("https://example.com/)")`: `scan_body_links` (src/tui/detail.rs) reads a bare URL up to the next whitespace. Fix the scan to stop at an unbalanced `)` (and trailing `.,;:!?` punctuation), the GFM autolink rule. A test that fails first: the URL target for `[x](https://e.com/)` and for `see https://e.com/a).` .
@@ -52,3 +53,12 @@ Summary: fixed in src/tui/detail.rs only. Tests (failed first with the trim call
 ▸ 2026-10-17T04:37:51Z [links-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-f67e` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-f67e --drop-request`, which removes this request note, so no new note is left behind.

@@ -5,11 +5,12 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-18T15:54:02Z'
-updated: '2026-10-21T22:49:47Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-6a34
 labels:
 - cli
 - git
+needs: agent
 ---
 
 Joel (2026-10-18): shell scripts for landing are stinky, especially across platforms. Move `.agents/skills/yaks-coordinating-delta/land.sh` into the binary as `yaks land <sha> [--dry-run] [--force-discard]`: pending-state report, ancestry check (shallow-aware), `merge-tree --write-tree`, the unexplained-changes refusal, clearing Delta's applied state, the squash commit (the linear landing from its sibling yak), the tree check, and, for a live farm, the farm landing (`yaks commit --land`) in the same command. git stays a subprocess (no libgit2 dependency); the selftest scenarios become Rust tests with real temp repos. Then land.sh is deleted from the skill and from `BUNDLED`, and the Delta/worktrees skills say `yaks land`. Feasible: every step is git plumbing the script already calls.
@@ -132,3 +133,12 @@ Landed (delta:herd-dirs): e99754d (squash by SHA of 6479e79, one docs/cli.md con
 ▸ 2026-10-21T22:49:47Z [delta:herd-dirs]
 
 Yakherd: accepted, the two test-assertion edits were forced by deleting land.sh.
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-e5fb` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-e5fb --drop-request`, which removes this request note, so no new note is left behind.

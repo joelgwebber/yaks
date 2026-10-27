@@ -5,11 +5,12 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-10-13T00:25:06Z'
-updated: '2026-10-13T01:55:27Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-38dc
 labels:
 - cli
 - delta
+needs: agent
 ---
 
 Seen 2026-10-13 by delta-lead while checking the Sheds tab (yaks-98f1) on the real machine: `git worktree add --detach <scratch> HEAD` inside this thread's Delta clone (`.delta/worktrees/gcmb7srbmkvv/yaks`) made a shed that `yaks sheds` lists as
@@ -98,3 +99,12 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 ▸ 2026-10-13T01:55:27Z [disco-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-93fe` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-93fe --drop-request`, which removes this request note, so no new note is left behind.

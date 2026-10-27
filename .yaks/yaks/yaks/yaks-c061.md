@@ -5,10 +5,11 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-09-24T12:39:58Z'
-updated: '2026-10-06T04:08:28Z'
+updated: '2026-10-27T01:10:50Z'
 labels:
 - cli
 - ui
+needs: agent
 ---
 
 Coming back to a farm (a fresh agent context, or a human after a break), there's no reliable way to find **questions the human has answered that an agent now needs to pick up**. Found by accident on 2026-09-24 during the lightning-round wrap-up (yaks-77a5).
@@ -143,3 +144,12 @@ agt$   yaks inbox               -> Inbox empty: nothing awaiting a human or an a
 ▸ 2026-10-06T04:08:28Z [agt-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-c061` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-c061 --drop-request`, which removes this request note, so no new note is left behind.

@@ -5,11 +5,12 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-21T20:32:27Z'
-updated: '2026-10-21T20:52:02Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-472e
 labels:
 - git
 - cli
+needs: agent
 ---
 
 Shows whether the farm branch has unpublished commits or is behind its upstream as of the last fetch. A library function the TUI indicator (yaks-ce5d) reuses.
@@ -101,3 +102,12 @@ moved: shaving -> shorn
 ▸ 2026-10-21T20:52:02Z [delta:herd-dirs]
 
 Landed (delta:herd-dirs): 8f77dde. Review: re-ran full cargo test --release with driver-1's work merged (767 unit, every suite ok); real `yaks status` on this machine's farm shows 'farm branch yaks: N ahead, 0 behind origin/yaks'. Accepted the warnings field and the publishes/reconciles wording.
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-bd1d` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-bd1d --drop-request`, which removes this request note, so no new note is left behind.

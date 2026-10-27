@@ -5,11 +5,12 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-21T20:31:48Z'
-updated: '2026-10-21T20:58:21Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-472e
 labels:
 - git
 - cli
+needs: agent
 ---
 
 ---
@@ -75,3 +76,12 @@ moved: shaving -> shorn
 ▸ 2026-10-21T20:58:21Z [delta:herd-dirs]
 
 Landed (delta:herd-dirs): 0e1775b (single-parent, Squashed-from 5a7c0ae). Review with my build on a scratch repo + bare origin: `yaks private` -> `git push origin yaks` and `git push --all` refused, remote empty; `--off` removes the hook and the push goes through. Full gate green (19 suites). Sync will reword the 'once it exists' lines.
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-85bb` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-85bb --drop-request`, which removes this request note, so no new note is left behind.

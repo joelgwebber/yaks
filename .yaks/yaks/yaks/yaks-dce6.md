@@ -5,11 +5,12 @@ status: shorn
 type: task
 priority: 4
 created: '2026-09-09T02:29:07Z'
-updated: '2026-09-24T02:28:06Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-89b9
 labels:
 - ui
 - docs
+needs: agent
 ---
 
 Spike under yaks-1a96 side-quest. Refactor svg_of in src/tui/docshots.rs to cut bloat: (1) <style> class block for palette+modifiers, (2) hoist font-family/size/lengthAdjust/xml:space to root via inheritance, (3) coalesce contiguous same-bg cells into one <rect> per run, (4) one <text> per row with <tspan> only on style change + explicit per-run x (keep column pinning; avoid risky row-level textLength given mid-row emoji). Goal: feel out byte savings + whether the SVG source reads row-by-row for direct LLM parsing. Verify by driving docshots and eyeballing rendered frame + diffing bytes/element counts.
@@ -60,3 +61,12 @@ Reparented under umbrella yaks-89b9 as the RENDERER child. Scope extends from pr
 ▸ 2026-09-09T04:54:54Z [agent]
 
 Shorn. Promoted the Option C renderer into toque as public render_to_svg + buffer_to_svg (new crates/toque/src/svg.rs); the Tomorrow-Night palette + geometry moved with it. src/tui/docshots.rs is now a thin caller (toque::render_to_svg). Output byte-identical to the in-tree spike modulo one redundant root xml:space dropped (-21B/file; white-space:pre does the work). Added unicode-width dep to toque. Rendered tui-list via headless Chrome post-move — columns hold. Suite green.
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-dce6` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-dce6 --drop-request`, which removes this request note, so no new note is left behind.

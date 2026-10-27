@@ -5,10 +5,11 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-09T20:23:49Z'
-updated: '2026-10-09T20:31:53Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-a3d2
 labels:
 - cli
+needs: agent
 ---
 
 ---
@@ -76,3 +77,12 @@ Fix: field renamed `dir` -> `chdir`; clap used the field name as arg id and clas
 ▸ 2026-10-09T20:31:53Z [cflag-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-4e39` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-4e39 --drop-request`, which removes this request note, so no new note is left behind.

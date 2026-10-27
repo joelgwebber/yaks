@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 1
 created: '2026-10-12T19:54:05Z'
-updated: '2026-10-12T21:35:44Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-8b7a
 depends_on:
 - yaks-86f4
@@ -15,6 +15,7 @@ labels:
 - cli
 - skills
 - release
+needs: agent
 ---
 
 Phase 3 of yaks-8b7a (coordinator; after all three phase-2 workers land): src/brief.rs (the finish step is `git add $(yaks path <id>)` alone), the skills sweep (.agents/skills: staging guidance, the glob pathspec, "a move relocates the file", status dirs in examples), docs/README.md and any remaining prose; then, at a quiet point with every `yaks tui` closed, `yaks migrate` this repo's own farm in one commit; real-machine checks: docshots unchanged, `yaks sheds` against a clone forked before the migration, `yaks migrate --dry-run` on ~/src/j15r; release 0.0.16.
@@ -64,3 +65,12 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 ▸ 2026-10-12T21:35:44Z [delta-lead]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-3a56` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-3a56 --drop-request`, which removes this request note, so no new note is left behind.

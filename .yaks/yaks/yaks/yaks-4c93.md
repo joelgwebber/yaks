@@ -5,11 +5,12 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-21T22:59:46Z'
-updated: '2026-10-21T23:11:04Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-b048
 labels:
 - skills
 - cli
+needs: agent
 ---
 
 The skills rewrite (yaks-b048) folds `yaks-coordinating-team`, `-private`, `-worktrees` and `-delta` into `yaks-coordinating`. Dropping them from the binary is not enough: anyone who ran `yaks skills install --with coordination` keeps the old copies, which then teach the retired per-shed model forever (nothing upgrades a skill the binary no longer knows).
@@ -80,3 +81,12 @@ moved: shaving -> shorn
 ▸ 2026-10-21T23:11:04Z [delta:herd-dirs]
 
 Landed as 00fbc8c (yaks land, squash of 16edef2). Yakherd re-ran the full gate: 20 suites green (unit 808 passed). Reproduced: 0.0.21 coordination install in a temp dir, one companion edited; new binary removed the three untouched, kept the edited one with 'remove it by hand'.
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-4c93` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-4c93 --drop-request`, which removes this request note, so no new note is left behind.

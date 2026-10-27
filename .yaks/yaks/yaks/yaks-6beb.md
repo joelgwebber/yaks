@@ -5,10 +5,11 @@ status: hairy
 type: task
 priority: 4
 created: '2026-10-10T15:44:44Z'
-updated: '2026-10-10T18:55:33Z'
+updated: '2026-10-27T01:10:50Z'
 labels:
 - cli
 - delta
+needs: agent
 ---
 
 Found 2026-10-10 on Joel's machine with ~/src/j15r. `yaks sheds` there prints `No other checkouts found.`, and `yaks discover` shows 0 pinned dirs. The same command run from inside one of its Delta clones finds the other four (and reports one gone). Nothing is broken: this is a layout the git-only chain (yaks-c635) cannot see, and the evidence the earlier "no discovery from outside" decision asked for.
@@ -34,3 +35,12 @@ Check first: whether Delta can adopt ~/src/j15r as the project folder (then it b
 ▸ 2026-10-10T18:55:33Z [delta-lead]
 
 Decision (Joel, 2026-10-10): promote to a top-level, low-priority yak ("make this better in Delta"), out from under yaks-7eea. Today it may be unfixable from yaks alone: nothing in git links a plain primary checkout to Delta's managed bare host, and the Delta CLI has no thread-to-path map. What is workable now: `yaks -C <any clone> sheds` (option D), or naming the host once (option A, `yaks.host`), neither built. Joel is first finding out why ~/src/j15r came up managed at all (the thread was created on one machine, in the Delta UI, so a linked host was expected); if that is a Delta setup issue, this yak shrinks to documentation or disappears. Do not investigate further until he reports. A Delta-side request ("the folder is the host", or a way to ask Delta for a thread's checkout paths) belongs here.
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-6beb` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-6beb --drop-request`, which removes this request note, so no new note is left behind.

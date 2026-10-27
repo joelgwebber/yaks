@@ -5,11 +5,12 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-10-05T21:08:13Z'
-updated: '2026-10-09T20:12:18Z'
+updated: '2026-10-27T01:10:50Z'
 parent: yaks-b5a0
 labels:
 - skills
 - cli
+needs: agent
 ---
 
 From Joel (2026-10-05): it would be nice if installed skills auto-updated when there is a new yaks version. TODAY: user-level skills in ~/.agents/skills already do (docs/skills.md: ordinary yaks commands install what is absent and upgrade what is cleanly stale; never modified/unmanaged/held/source; YAKS_SKILLS_AUTOSYNC=0 disables). yaks-3859 (landed c568e09) deliberately left PROJECT-LOCAL installs (./.agents/skills, now the default) out, because they are tracked files in a working tree. This yak decides whether and how to extend it.
@@ -39,3 +40,12 @@ Closing: decided (C), notify rather than write (Joel, 2026-10-05). Shipped as ya
 ▸ 2026-10-09T20:12:18Z [delta:Delta :Yaks (cont'd)]
 
 moved: hairy -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-36b6` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-36b6 --drop-request`, which removes this request note, so no new note is left behind.

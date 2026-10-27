@@ -5,10 +5,11 @@ status: shorn
 type: task
 priority: 1
 created: '2026-10-12T16:05:28Z'
-updated: '2026-10-12T23:01:57Z'
+updated: '2026-10-27T01:10:50Z'
 labels:
 - design
 - cli
+needs: agent
 ---
 
 Joel (2026-10-12): revisit, hopefully for the last time, whether a yak's status should stay implicit in its directory (`.yaks/{hairy,shaving,shorn,dead}/<id>.md`) or move into the frontmatter with one stable path per yak. Decide before the yaks-38dc TUI work, because the cross-shed code (src/sheds.rs base_farm/yak_changes, src/changes.rs classify) would be rewritten by it.
@@ -154,3 +155,12 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 ▸ 2026-10-12T23:01:57Z [delta-lead]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-27T01:10:50Z [Joel Webber]
+
+requested: needs agent
+
+Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.
+
+Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-8b7a` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-8b7a --drop-request`, which removes this request note, so no new note is left behind.
