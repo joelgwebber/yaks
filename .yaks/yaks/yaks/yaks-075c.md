@@ -1,11 +1,11 @@
 ---
 id: yaks-075c
 title: Discourage inline enumerations in notes; let tidy requests make small connective edits
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-10-27T19:02:24Z'
-updated: '2026-10-27T19:04:46Z'
+updated: '2026-10-27T19:04:50Z'
 labels:
 - markdown
 - skills
@@ -38,3 +38,8 @@ Evidence:
 - Surfaces updated together: `.agents/skills/yaks/SKILL.md`, `src/brief.rs`, `src/store.rs` (instruction text), `src/main.rs` (`--kind` help), `docs/cli.md`.
 
 Existing queued tidy requests (yaks-8dbb's batch) still carry the old "never change a word" text; only new requests get the new one.
+
+---
+▸ 2026-10-27T19:04:50Z [delta:Check yaks-6beb comment list formatting]
+
+moved: shaving -> shorn
