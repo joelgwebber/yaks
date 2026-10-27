@@ -189,7 +189,7 @@ fn request_kind_writes_the_instruction_then_the_note() {
         &["request", &id, "--kind", "tidy", "--note", "esp. the plan"],
     );
     let body = f.body(&id);
-    let want = "requested: needs agent\n\nTidy request: change only the line structure";
+    let want = "requested: needs agent\n\nTidy request: reshape this yak's description";
     assert!(body.contains(want), "{body}");
     assert!(body.contains(&format!("`yaks path {id}`")), "{body}");
     assert!(body.contains("pickup"), "{body}");

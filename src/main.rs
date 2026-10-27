@@ -686,8 +686,9 @@ enum Command {
     Request {
         id: String,
         /// A canned request whose instruction text is written into the note:
-        /// `tidy` (fix only the body's line structure so it renders as
-        /// CommonMark) or `summarize` (append one summary note).
+        /// `tidy` (reshape the body so it renders as CommonMark and scans
+        /// easily, keeping what it says) or `summarize` (append one summary
+        /// note).
         #[arg(long, value_enum)]
         kind: Option<store::RequestKind>,
         /// What the agent should do (recorded as an attributed note; after

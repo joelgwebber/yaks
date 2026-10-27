@@ -216,7 +216,7 @@ fn notes(b: &Brief) -> String {
          - A note can carry fields: `--meta key=value` (repeatable, with a note), e.g. `--meta kind=checkpoint --meta commit=<sha>`.\n\
          - Record every choice a reviewer could argue about as its own note starting `Decision:`, naming the alternatives you rejected.\n\
          - Write a multi-line note as markdown with real line breaks, piped on stdin (`yaks update {id} --note - <<'EOF'` ... `EOF`, the quoted `'EOF'` keeps backticks and `$` literal), never as one long argument and never inside `$( )` or a double-quoted string, where backticks and `$` in the note run as commands.\n\
-         - Notes render as CommonMark: a single newline joins lines into one paragraph. Put a blank line between every block (paragraph, list, fence), and parallel facts on list lines (`- `)."
+         - Notes render as CommonMark: a single newline joins lines into one paragraph. Put a blank line between every block (paragraph, list, fence), and parallel facts on list lines (`- `), never enumerated inline (`(1) ... (2) ...`, or `X, or Y, or Z` across clauses)."
     )
 }
 

@@ -90,7 +90,7 @@ Bodies are GitHub-flavoured CommonMark. The TUI renders each note as its own doc
 **Shape.**
 
 - **A blank line between every block.** A single newline is only a space: lines with no blank line between them join into one paragraph. Separate each paragraph, list, heading, code fence and table from its neighbours by a blank line. Don't hard-wrap prose.
-- **Short blocks.** A paragraph makes one point in a few sentences. Parallel facts (results, files, per-case numbers, next steps) are a list, one item each. A long body with distinct parts gets `##` headings.
+- **Short blocks.** A paragraph makes one point in a few sentences. Parallel facts (results, files, per-case numbers, next steps, options) are a list, one item each, never enumerated inline (`(1) ... (2) ...`, or `X (option D), or Y (option A)` strung across clauses). A long body with distinct parts gets `##` headings.
 - Fence commands, code and pasted output, with a language (```` ```sh ````). Put ids, paths, flags and symbols in backticks.
 - Also rendered: tables, task lists (`- [ ]`), footnotes, strikethrough and alerts (`> [!NOTE]`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`). Not rendered: inline HTML (shows as literal text), math, emoji shortcodes; mermaid shows as a code block.
 - Keep a `Decision:` note (the choice and the alternatives rejected) separate from progress notes.

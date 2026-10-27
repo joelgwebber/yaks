@@ -1550,7 +1550,8 @@ pub fn request_text(request: Option<&str>) -> String {
 /// inbox needs no skill to know what to do. The texts live only here.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
 pub enum RequestKind {
-    /// Fix the line structure of the body so it renders as CommonMark.
+    /// Reshape the body so it renders as CommonMark and scans easily,
+    /// keeping what it says.
     Tidy,
     /// Append one summary note.
     Summarize,
@@ -1569,9 +1570,10 @@ impl RequestKind {
     pub fn instruction(self, id: &str) -> String {
         match self {
             RequestKind::Tidy => format!(
-                "Tidy request: change only the line structure of this yak's description and every note, so each renders as intended under CommonMark.\n\n\
+                "Tidy request: reshape this yak's description and every note so each renders as intended under CommonMark and scans easily, keeping what it says.\n\n\
                  Put a blank line between blocks, make run-on facts a list, and fence pasted output. \
-                 Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. \
+                 Where a paragraph enumerates inline (`(1) ... (2) ...`, or `X, or Y, or Z` strung across clauses) or packs several separate points, split it into a lead-in and a list. \
+                 Change only the connecting words that needs (a colon, a dropped `and`/`or`, a capital): never a fact, a name, a note header (`▸ <ts> [actor]`) or the frontmatter. \
                  Edit the file at `yaks path {id}` directly: `update --description` replaces the whole body, notes included. \
                  Then `yaks pickup {id} --drop-request`, which removes this request note, so no new note is left behind."
             ),
