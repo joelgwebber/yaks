@@ -5,7 +5,8 @@ status: hairy
 type: task
 priority: 3
 created: '2026-10-26T21:00:47Z'
-updated: '2026-10-26T21:00:47Z'
+updated: '2026-10-27T22:29:32Z'
+parent: yaks-a99f
 labels:
 - skills
 ---
@@ -17,3 +18,8 @@ Found by the cold-read for yaks-8aeb (2026-10-26), predates it:
 - The yaks skill says `--as <actor>` is a global flag usable on any write, but `yaks --as x create ...` and `yaks create --as x ...` both fail ("unexpected argument '--as'"); `update`/`shave` accept it. Fix the doc or the CLI.
 
 Pick one rule and state it once.
+
+---
+▸ 2026-10-27T22:29:32Z [delta:Check for `.yaks` file repo redirect sup]
+
+Folded into yaks-a99f (2026-10-27): pointer files and in-tree private farms are being removed, so the pointer-vs-private wording conflict goes away with them. The commit-id rule and the `--as` finding remain; handle them in that docs sweep.
