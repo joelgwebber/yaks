@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
-updated: '2026-10-18T05:45:58Z'
+updated: '2026-10-27T12:57:53Z'
 labels:
 - tui
 needs: human
@@ -28,4 +28,8 @@ Design proposal attached
 ---
 ▸ 2026-09-23T21:39:11Z [design-scout]
 
-Design attached (683f-design.md). Decisions: (1) Dirty cancel: replace 275f's y/N with 'k=keep draft (default) / d=discard / Esc=back', or drop the prompt and always keep silently? Lean: 3-way prompt, keep default. (2) Restore: auto-restore with a 'draft' badge + Ctrl-R to revert, vs a 'restore draft?' prompt? Lean: auto-restore. (3) Phase 1 saves on dismiss/quit only (autosave via the 250ms loop in P2), or autosave from day one? Lean: dismiss/quit first. (4) Mid-edit external changes clobbered on commit: in scope or separate yak? Lean: separate; 683f only warns on restore when base 'updated' differs. Drafts stored at ~/.config/yaks/<slug>/drafts/<key>.json, keys edit:<id>/comment:<id>/create:<parent|root>.
+Design attached (683f-design.md). Decisions:
+1. Dirty cancel: replace 275f's y/N with 'k=keep draft (default) / d=discard / Esc=back', or drop the prompt and always keep silently? Lean: 3-way prompt, keep default.
+2. Restore: auto-restore with a 'draft' badge + Ctrl-R to revert, vs a 'restore draft?' prompt? Lean: auto-restore.
+3. Phase 1 saves on dismiss/quit only (autosave via the 250ms loop in P2), or autosave from day one? Lean: dismiss/quit first.
+4. Mid-edit external changes clobbered on commit: in scope or separate yak? Lean: separate; 683f only warns on restore when base 'updated' differs. Drafts stored at `~/.config/yaks/<slug>/drafts/<key>.json`, keys `edit:<id>/comment:<id>/create:<parent|root>`.
