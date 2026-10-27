@@ -89,6 +89,9 @@ pub enum Pickup {
     NotFound,
     /// The yak was not `needs: agent`; carries what it was (`None` = no block).
     NotAwaitingAgent(Option<String>),
+    /// `drop_request` on a yak awaiting an agent because of an answer, not a
+    /// request: nothing was written (an answer is never deleted).
+    NotARequest,
     Picked,
 }
 
@@ -839,8 +842,18 @@ impl Farm {
     }
 
     /// Clear `needs: agent` with an attributed `picked up` note. The only thing
-    /// that clears it. Refuses any other state, naming it.
-    pub fn pickup(&self, id: &str, actor: Option<&str>, note: Option<&str>) -> Result<Pickup> {
+    /// that clears it. Refuses any other state, naming it. With `drop_request`,
+    /// the clean finish of a done request (yaks-092f): remove the latest request
+    /// note instead of appending a `picked up` one, so a tidy leaves only the
+    /// tidied body behind (git keeps the record). Refuses a yak awaiting an
+    /// agent because of an answer ([`Pickup::NotARequest`]).
+    pub fn pickup(
+        &self,
+        id: &str,
+        actor: Option<&str>,
+        note: Option<&str>,
+        drop_request: bool,
+    ) -> Result<Pickup> {
         let _lock = store::lock(&self.root)?;
         let Some(mut task) = store::load_task_by_id(&self.root, id)? else {
             return Ok(Pickup::NotFound);
@@ -848,8 +861,21 @@ impl Farm {
         if !task.awaiting_agent() {
             return Ok(Pickup::NotAwaitingAgent(task.needs));
         }
-        task.needs = None;
         let ts = store::now_iso();
+        if drop_request {
+            if store::agent_why(&task) != Some(store::AgentWhy::Requested) {
+                return Ok(Pickup::NotARequest);
+            }
+            let Some(body) = store::drop_latest_request(&task.body) else {
+                return Ok(Pickup::NotARequest);
+            };
+            task.needs = None;
+            task.body = body;
+            task.updated = Some(ts);
+            store::write::save(&self.root, &task)?;
+            return Ok(Pickup::Picked);
+        }
+        task.needs = None;
         task.body = store::append_note(&task.body, &ts, actor, &store::pickup_text(note));
         task.updated = Some(ts);
         store::write::save(&self.root, &task)?;
@@ -2222,7 +2248,8 @@ mod tests {
         assert_eq!(needs_of(&farm, "yak-0001").as_deref(), Some("agent"));
 
         assert!(matches!(
-            farm.pickup("yak-0001", Some("agt"), Some("on it")).unwrap(),
+            farm.pickup("yak-0001", Some("agt"), Some("on it"), false)
+                .unwrap(),
             Pickup::Picked
         ));
         assert_eq!(needs_of(&farm, "yak-0001"), None);
@@ -2276,16 +2303,57 @@ mod tests {
     /// `pickup` refuses anything that is not `needs: agent`, naming the state;
     /// `ask` on `needs: agent` is allowed and flips it back to human.
     #[test]
+    fn pickup_drop_request_removes_the_request_note_and_never_an_answer() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+        farm.ask("yak-0001", "human", Some("agt"), Some("which?"))
+            .unwrap();
+        farm.answer("yak-0001", Some("joel"), Some("that one"), false)
+            .unwrap();
+        // An answer is never dropped: refused, nothing written.
+        assert!(matches!(
+            farm.pickup("yak-0001", None, None, true).unwrap(),
+            Pickup::NotARequest
+        ));
+        assert_eq!(needs_of(&farm, "yak-0001").as_deref(), Some("agent"));
+        farm.pickup("yak-0001", Some("agt"), None, false).unwrap();
+        let before = note_texts(&farm, "yak-0001");
+
+        farm.request("yak-0001", Some("joel"), Some("tidy it"))
+            .unwrap();
+        farm.update(
+            "yak-0001",
+            TaskEdit {
+                note: Some("a later note".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert!(matches!(
+            farm.pickup("yak-0001", Some("agt"), None, true).unwrap(),
+            Pickup::Picked
+        ));
+        assert_eq!(needs_of(&farm, "yak-0001"), None);
+        let mut want = before;
+        want.push("a later note".into());
+        assert_eq!(
+            note_texts(&farm, "yak-0001"),
+            want,
+            "only the request note went; no picked-up note was added"
+        );
+    }
+
+    #[test]
     fn pickup_refuses_other_states_and_ask_flips_agent_back() {
         let (root, farm) = temp_farm();
         store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
         assert!(matches!(
-            farm.pickup("yak-0001", None, None).unwrap(),
+            farm.pickup("yak-0001", None, None, false).unwrap(),
             Pickup::NotAwaitingAgent(None)
         ));
         farm.ask("yak-0001", "human", Some("coord"), None).unwrap();
         assert!(matches!(
-            farm.pickup("yak-0001", None, None).unwrap(),
+            farm.pickup("yak-0001", None, None, false).unwrap(),
             Pickup::NotAwaitingAgent(Some(n)) if n == "human"
         ));
         assert_eq!(
@@ -2294,7 +2362,7 @@ mod tests {
             "refusal changed nothing"
         );
         assert!(matches!(
-            farm.pickup("nope", None, None).unwrap(),
+            farm.pickup("nope", None, None, false).unwrap(),
             Pickup::NotFound
         ));
 
@@ -2344,7 +2412,7 @@ mod tests {
         );
         assert_eq!(note_texts(&farm, "yak-0001").len(), 2);
         assert!(matches!(
-            farm.pickup("yak-0001", Some("agt"), None).unwrap(),
+            farm.pickup("yak-0001", Some("agt"), None, false).unwrap(),
             Pickup::Picked
         ));
         assert_eq!(needs_of(&farm, "yak-0001"), None);
@@ -2373,7 +2441,7 @@ mod tests {
         farm.ask("yak-0001", "human", Some("a"), Some("q")).unwrap();
         farm.answer("yak-0001", Some("b"), Some("r"), false)
             .unwrap();
-        farm.pickup("yak-0001", Some("a"), None).unwrap();
+        farm.pickup("yak-0001", Some("a"), None, false).unwrap();
         let t = store::load_task_by_id(&root, "yak-0001").unwrap().unwrap();
         assert_eq!(t.status, Status::Shaving);
         assert!(

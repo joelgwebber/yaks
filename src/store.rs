@@ -1564,12 +1564,12 @@ impl RequestKind {
                  Put a blank line between blocks, make run-on facts a list, and fence pasted output. \
                  Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. \
                  Edit the file at `yaks path {id}` directly: `update --description` replaces the whole body, notes included. \
-                 Then `yaks pickup {id} --note \"<one line>\"`."
+                 Then `yaks pickup {id} --drop-request`, which removes this request note, so no new note is left behind."
             ),
             RequestKind::Summarize => format!(
                 "Summarize request: append one note summarizing this yak: its current state, the decisions made, and what is left.\n\n\
                  Change nothing else. \
-                 Add it with `yaks update {id} --note -`, then `yaks pickup {id}`."
+                 Add it with `yaks update {id} --note -`, then `yaks pickup {id} --drop-request`, which removes this request note."
             ),
         }
     }
@@ -1640,6 +1640,28 @@ pub fn pickup_text(note: Option<&str>) -> String {
 
 fn is_pickup_text(text: &str) -> bool {
     text.lines().next() == Some(PICKUP_LINE)
+}
+
+/// `body` without its latest `request` note block (the `---` / marker header
+/// and its text), the rest unchanged; `None` if it has no request note. What
+/// `pickup --drop-request` writes once the request is done (yaks-092f).
+pub fn drop_latest_request(body: &str) -> Option<String> {
+    let lines: Vec<&str> = body.lines().collect();
+    let starts: Vec<usize> = (0..lines.len())
+        .filter(|&i| is_note_delim(&lines, i))
+        .collect();
+    let end_of = |k: usize| starts.get(k + 1).copied().unwrap_or(lines.len());
+    let k = (0..starts.len())
+        .rev()
+        .find(|&k| is_request_text(lines[starts[k] + 2..end_of(k)].join("\n").trim()))?;
+    let before = lines[..starts[k]].join("\n");
+    let before = before.trim_end();
+    let after = lines[end_of(k)..].join("\n");
+    Some(match (before.is_empty(), after.is_empty()) {
+        (_, true) => before.to_string(),
+        (true, false) => after,
+        (false, false) => format!("{before}\n\n{after}"),
+    })
 }
 
 /// Derived, never stored: has someone other than the asker written a plain
@@ -1873,6 +1895,31 @@ pub fn parse_duration(spec: &str) -> Option<Duration> {
 mod log_parse_tests {
     use super::*;
     use chrono::TimeZone;
+
+    /// `drop_latest_request` cuts only the latest request block, wherever it
+    /// sits, and leaves a body that re-parses to the same other notes.
+    #[test]
+    fn drop_latest_request_cuts_only_the_latest_request_block() {
+        let req = |t| request_text(Some(t));
+        let a = append_note("Desc.", "t1", Some("x"), &req("old"));
+        let b = append_note(&a, "t2", Some("x"), "middle");
+        let c = append_note(&b, "t3", Some("j"), &req("new"));
+        // Last block: back to `b`, the older request kept.
+        assert_eq!(drop_latest_request(&c).as_deref(), Some(b.as_str()));
+        // Not last: the following note keeps its header and text.
+        let d = append_note(&c, "t4", Some("x"), "after");
+        let out = drop_latest_request(&d).unwrap();
+        assert_eq!(out, append_note(&b, "t4", Some("x"), "after"));
+        // First note on an empty description: the rest stays parseable.
+        let e = append_note("", "t1", None, &req("only"));
+        let e = append_note(&e, "t2", None, "kept");
+        let out = drop_latest_request(&e).unwrap();
+        assert_eq!(description(&out), "");
+        assert_eq!(parse_notes(&out).len(), 1);
+        assert_eq!(parse_notes(&out)[0].text, "kept");
+        // No request: None.
+        assert_eq!(drop_latest_request(&b.replace("requested: ", "x")), None);
+    }
 
     #[test]
     fn parse_notes_splits_timestamped_blocks() {

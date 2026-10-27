@@ -311,7 +311,7 @@ no entry.
 | `ask <id> --note '<question>'` | Block a yak on a human: sets the `needs` field, dropping it out of `next`. Also `--note -` (stdin) / `--note-file PATH`. [Details](#ask) |
 | `answer <id> --note '<reply>'` | Answer a question (human-reserved): records the reply and sets `needs: agent`; `--done` clears `needs` instead. [Details](#answer) |
 | `request <id> [--kind tidy\|summarize] [--note '<what to do>']` | Hand a yak to an agent with no prior question: sets `needs: agent` and records a `requested: needs agent` note (a `--kind` writes its canned instruction). Refuses a yak awaiting a human (answer it instead). [Details](#request) |
-| `pickup <id> [--note '<text>']` | An agent takes on a yak awaiting it (answered or requested): clears `needs: agent` and records a `picked up` note (`--as`). Fails on a yak that is not `needs: agent`. [Details](#pickup) |
+| `pickup <id> [--note '<text>' \| --drop-request]` | An agent takes on a yak awaiting it (answered or requested): clears `needs: agent` and records a `picked up` note (`--as`); `--drop-request` removes a done request's note instead. Fails on a yak that is not `needs: agent`. [Details](#pickup) |
 | `inbox [--for human\|agent] [--json]` | Every yak with a `needs` value, across all statuses: **Awaiting a human** and **Awaiting an agent** (each marked `answered` or `requested`). `--for` shows one section; `--json`. [Details](#inbox) |
 | `wait [--for human\|agent] [--timeout DUR] [--new] [--json]` | Block until the inbox has something for that audience, then print it as `inbox` does (exit 0); a timeout exits 2 with nothing on stdout. [Details](#wait) |
 
@@ -339,16 +339,18 @@ A second request on a `needs: agent` yak keeps the state and appends the note. O
 
 `--kind` records a canned chore whose whole instruction is written into the note, so the agent needs no skill to know what to do. The note is the kind's instruction (its first line names the kind), then `--note` (if any) after a blank line. Give `--kind`, `--note`, or both.
 
-- `tidy` (`Tidy request: ...`): change only the line structure of the description and every note so they render as CommonMark (blank lines between blocks, lists for run-on facts, fences for pasted output); never words, note headers or frontmatter; edit the file at `yaks path <id>` directly; then `pickup` with a one-line note.
-- `summarize` (`Summarize request: ...`): append one summary note (current state, decisions made, what is left), change nothing else, then `pickup`.
+- `tidy` (`Tidy request: ...`): change only the line structure of the description and every note so they render as CommonMark (blank lines between blocks, lists for run-on facts, fences for pasted output); never words, note headers or frontmatter; edit the file at `yaks path <id>` directly; then `pickup --drop-request`, which removes the request note, so the yak shows only the tidied body.
+- `summarize` (`Summarize request: ...`): append one summary note (current state, decisions made, what is left), change nothing else, then `pickup --drop-request`.
 
 To queue a kind on many yaks at once, use [`bulk --request`](#bulk).
 
 ### `pickup`
 
-`pickup <id> [--note '<text>']`
+`pickup <id> [--note '<text>' | --drop-request]`
 
 An agent takes on a yak awaiting it, answered or requested: clears `needs: agent` and records a `picked up` note attributed to the actor (`--as`).
+
+`--drop-request` is the clean finish of a done request (what both canned kinds end with): it clears `needs: agent` and removes the latest `requested` note instead of adding a `picked up` one, so the yak shows only the result, and git keeps the record. It refuses a yak awaiting an agent because of an answer: an answer is never deleted.
 
 The only command that clears `needs: agent`; on a yak that is not `needs: agent` it fails, naming the state. A `needs` change is not a status move (no `moved:` entry).
 

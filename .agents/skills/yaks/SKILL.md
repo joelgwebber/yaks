@@ -64,7 +64,7 @@ A yak's `needs` field says who acts next, and `yaks inbox` lists every yak that 
 - `yaks inbox` marks a yak `replied` when the human answered with a plain note instead of `answer`.
 - Also ask to *record* a real design fork (behavior a user sees, a data format, a dependency) even when you have a lean: state the lean in the question.
 
-**Requests.** A human (or a yakherd) hands you work with `yaks request <id> --note "..."` (`a` in the TUI on a yak that isn't awaiting them): a chore on that yak, such as tidying its markdown, summarizing its notes or checking something. Treat it as an instruction from the human, scoped to that yak, and do it now unless it needs a decision (then `ask`). A canned one (`--kind tidy|summarize`) arrives as a `Tidy request:` / `Summarize request:` note carrying its whole instruction: follow it literally.
+**Requests.** A human (or a yakherd) hands you work with `yaks request <id> --note "..."` (`a` in the TUI on a yak that isn't awaiting them): a chore on that yak, such as tidying its markdown, summarizing its notes or checking something. Treat it as an instruction from the human, scoped to that yak, and do it now unless it needs a decision (then `ask`). A canned one (`--kind tidy|summarize`) arrives as a `Tidy request:` / `Summarize request:` note carrying its whole instruction: follow it literally. It ends with `yaks pickup <id> --drop-request`, which removes the request note so the yak shows only the result; use that for any request whose result speaks for itself.
 
 **Taking it on.** For either kind, `yaks pickup <id> --note "what I'll do"` is the only thing that clears `needs: agent`; then do the work and note the result. An inbox row you leave stays there for the next agent.
 

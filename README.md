@@ -110,7 +110,7 @@ in `<path>`.
 | `yaks update <id>` | Change fields/labels, set `--description`, or append a `--note` (`-` reads stdin; `--note-file PATH`: multi-line markdown without shell quoting) |
 | `yaks ask <id>` / `answer <id>` | Block a yak on a human (sets `needs: human`, drops it from `next`) / answer it (sets `needs: agent`, so the answer cannot get lost; `--done` clears instead), each recording a `--note` |
 | `yaks request <id>` | Hand a yak to an agent with no prior question (sets `needs: agent`, recording the `--note`, or a canned `--kind tidy\|summarize` instruction); refuses a yak awaiting a human |
-| `yaks pickup <id>` | An agent takes on a yak awaiting it (answered or requested): clears `needs: agent` with an attributed note. The only thing that clears it |
+| `yaks pickup <id>` | An agent takes on a yak awaiting it (answered or requested): clears `needs: agent` with an attributed note (`--drop-request`: removes a done request's note instead). The only thing that clears it |
 | `yaks inbox` | The `needs` queue, two sections: awaiting a human (`replied` marks a plain-note reply that skipped `answer`) and awaiting an agent (marked `answered` or `requested`); `--for human\|agent`, `--json` |
 | `yaks wait` | Block until the inbox has something (`--for human\|agent`, filters), then print it like `inbox`; `--timeout 10m` exits 2 when nothing came, `--new` ignores what was already there |
 | `yaks shave <id>` | hairy → shaving (alias: `work`) |

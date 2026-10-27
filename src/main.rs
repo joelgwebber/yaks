@@ -524,6 +524,12 @@ enum Command {
         /// Read the note from this file (`-` is stdin).
         #[arg(long = "note-file", value_name = "PATH")]
         note_file: Option<String>,
+        /// Finish a done request cleanly: remove its `requested` note instead
+        /// of adding a `picked up` one, so the yak shows only the result (git
+        /// keeps the record). Refuses a yak awaiting an agent because of an
+        /// answer.
+        #[arg(long = "drop-request", conflicts_with_all = ["note", "note_file"])]
+        drop_request: bool,
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
@@ -1816,11 +1822,21 @@ fn main() -> Result<()> {
             id,
             note,
             note_file,
+            drop_request,
             as_actor,
         } => {
             let note = resolve_text("--note", note, note_file, &mut StdinText::real())?;
             let actor = actor::resolve(as_actor.as_deref());
-            match farm.pickup(&id, actor.as_deref(), note.as_deref())? {
+            match farm.pickup(&id, actor.as_deref(), note.as_deref(), drop_request)? {
+                Pickup::NotARequest => {
+                    eprintln!(
+                        "error: {id} is awaiting an agent because of an answer, not a request; `--drop-request` never removes an answer (pick it up without it)"
+                    );
+                    std::process::exit(1);
+                }
+                Pickup::Picked if drop_request => {
+                    println!("Picked up {id}: needs cleared, request note removed")
+                }
                 Pickup::NotFound => {
                     eprintln!("error: task {id} not found");
                     std::process::exit(1);
