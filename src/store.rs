@@ -1571,7 +1571,8 @@ impl RequestKind {
         match self {
             RequestKind::Tidy => format!(
                 "Tidy request: reshape this yak's description and every note so each renders as intended under CommonMark and scans easily, keeping what it says.\n\n\
-                 Put a blank line between blocks, make run-on facts a list, and fence pasted output. \
+                 Put a blank line between blocks and make run-on facts a list. \
+                 Add missing code formatting: fence commands, code and pasted output as a block with a language (```` ```sh ````), and put inline commands, paths, flags, ids and symbols in backticks. \
                  Where a paragraph enumerates inline (`(1) ... (2) ...`, or `X, or Y, or Z` strung across clauses) or packs several separate points, split it into a lead-in and a list. \
                  Change only the connecting words that needs (a colon, a dropped `and`/`or`, a capital): never a fact, a name, a note header (`▸ <ts> [actor]`) or the frontmatter. \
                  Edit the file at `yaks path {id}` directly: `update --description` replaces the whole body, notes included. \

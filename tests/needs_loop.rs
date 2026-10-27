@@ -192,6 +192,7 @@ fn request_kind_writes_the_instruction_then_the_note() {
     let want = "requested: needs agent\n\nTidy request: reshape this yak's description";
     assert!(body.contains(want), "{body}");
     assert!(body.contains(&format!("`yaks path {id}`")), "{body}");
+    assert!(body.contains("Add missing code formatting"), "{body}");
     assert!(body.contains("pickup"), "{body}");
     assert!(body.trim_end().ends_with("\n\nesp. the plan"), "{body}");
     assert!(

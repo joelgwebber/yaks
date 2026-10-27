@@ -687,7 +687,7 @@ enum Command {
         id: String,
         /// A canned request whose instruction text is written into the note:
         /// `tidy` (reshape the body so it renders as CommonMark and scans
-        /// easily, keeping what it says) or `summarize` (append one summary
+        /// easily, adding missing code formatting, keeping what it says) or `summarize` (append one summary
         /// note).
         #[arg(long, value_enum)]
         kind: Option<store::RequestKind>,
