@@ -562,9 +562,28 @@ pub struct CommitRef {
     pub subject: String,
 }
 
-/// The git commits linked to a yak (`yaks commits`), from two places: commits
-/// in the code repository whose message names the id, and the yak file's own
-/// edit history on the farm.
+/// A commit recorded in a yak's own notes (a note with a `commit:` key,
+/// yaks-735a), with what the code repository says about it when it can.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordedCommit {
+    /// The note's `kind:` (`landed`, ...); `commit` when it has none.
+    pub kind: String,
+    /// The recorded sha, as written.
+    pub commit: String,
+    /// The worker's sha a landing came from, when the note has one.
+    pub source: Option<String>,
+    pub branch: Option<String>,
+    /// The note's timestamp and actor.
+    pub ts: String,
+    pub actor: Option<String>,
+    /// The commit as the code repository has it; `None` when there is no code
+    /// repository here or it does not have the commit.
+    pub found: Option<CommitRef>,
+}
+
+/// The git commits linked to a yak (`yaks commits`), from three places: shas
+/// recorded in its notes, commits in the code repository whose message names
+/// the id, and the yak file's own edit history on the farm.
 pub struct Commits {
     pub id: String,
     pub path: PathBuf,
@@ -572,10 +591,32 @@ pub struct Commits {
     /// started outside any code checkout (not in git, or in the farm's own
     /// worktree): then `by_message` is empty and says nothing.
     pub code_repo: Option<PathBuf>,
+    pub recorded: Vec<RecordedCommit>,
     /// Commits naming the id, across every branch but the farm's, newest first.
     pub by_message: Vec<CommitRef>,
     /// Farm history: the commits that edited the yak's file on the farm.
     pub by_file: Vec<CommitRef>,
+}
+
+/// What `yaks land` landed, for [`Farm::record_landed`].
+pub struct Landed {
+    /// The full sha of the commit now in the code history.
+    pub commit: String,
+    /// The worker's full sha the landing came from, when it is another commit.
+    pub source: Option<String>,
+    /// The branch it landed on, when HEAD is on one.
+    pub branch: Option<String>,
+    /// The note body (`landed: <short> <subject>`).
+    pub text: String,
+}
+
+/// What [`Farm::record_landed`] did (or, in a dry run, would do) for one yak.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LandedOutcome {
+    Recorded,
+    /// The yak already has a `landed` note for this commit.
+    AlreadyRecorded,
+    NotFound,
 }
 
 /// Outcome of a rename operation ([`Farm::rename_many`]).
@@ -1370,16 +1411,37 @@ impl Farm {
     }
 
     /// The git commits linked to `id` (`None` if the id is not a task):
-    /// commits naming the id in the code
+    /// shas recorded in its notes, then commits naming the id in the code
     /// repository of `cwd` (yaks-7a11: the farm's own worktree holds only farm
     /// commits, so the grep runs in the git top-level yaks was started from,
     /// over every branch but the farm's), then the yak file's own history on
     /// the farm (followed across its status moves).
     pub fn commits(&self, id: &str, cwd: &Path) -> Result<Option<Commits>> {
+        let Some(task) = store::load_task_by_id(&self.root, id)? else {
+            return Ok(None);
+        };
         let Some((_, path)) = store::find_task_file(&self.root, id) else {
             return Ok(None);
         };
         let code_repo = self.code_repo(cwd);
+        let recorded = store::parse_notes(&task.body)
+            .into_iter()
+            .filter_map(|n| {
+                let commit = n.get("commit")?.to_string();
+                let found = code_repo
+                    .as_deref()
+                    .and_then(|top| git_commit_ref(top, &commit));
+                Some(RecordedCommit {
+                    kind: n.kind().unwrap_or("commit").to_string(),
+                    source: n.get("source").map(str::to_string),
+                    branch: n.get("branch").map(str::to_string),
+                    commit,
+                    ts: n.ts,
+                    actor: n.actor,
+                    found,
+                })
+            })
+            .collect();
         let by_message = match &code_repo {
             Some(top) => {
                 // The farm branch holds `yaks: ...` commits naming the id; they
@@ -1411,6 +1473,7 @@ impl Farm {
             id: id.to_string(),
             path,
             code_repo,
+            recorded,
             by_message,
             by_file,
         }))
@@ -1433,6 +1496,52 @@ impl Farm {
         let is_farm_worktree = store::farm_branch(&self.root).is_some()
             && self.root.parent().and_then(|p| p.canonicalize().ok()) == top.canonicalize().ok();
         (!is_farm_worktree).then_some(top)
+    }
+
+    /// Record that `commit` landed on each of `ids` (yaks-735a): under the
+    /// farm lock, a note with metadata `kind: landed`, `commit`, `source` (the
+    /// worker's sha, when it differs) and `branch` (when given), and `text` as
+    /// its body. A yak that already has a `landed` note for `commit` is left
+    /// alone, so landing twice records once. With `dry_run` nothing is locked or
+    /// written and the outcomes say what would happen. Unknown ids are
+    /// reported, never fatal. Outcomes come back in `ids` order.
+    pub fn record_landed(
+        &self,
+        ids: &[String],
+        landed: &Landed,
+        actor: Option<&str>,
+        dry_run: bool,
+    ) -> Result<Vec<(String, LandedOutcome)>> {
+        let _lock = (!dry_run).then(|| store::lock(&self.root)).transpose()?;
+        let mut out = Vec::new();
+        for id in ids {
+            let Some(mut task) = store::load_task_by_id(&self.root, id)? else {
+                out.push((id.clone(), LandedOutcome::NotFound));
+                continue;
+            };
+            let already = store::parse_notes(&task.body)
+                .iter()
+                .any(|n| n.kind() == Some("landed") && n.get("commit") == Some(&landed.commit));
+            if already {
+                out.push((id.clone(), LandedOutcome::AlreadyRecorded));
+                continue;
+            }
+            if !dry_run {
+                let ts = store::now_iso();
+                let mut meta = vec![("kind", "landed"), ("commit", landed.commit.as_str())];
+                if let Some(s) = landed.source.as_deref() {
+                    meta.push(("source", s));
+                }
+                if let Some(b) = landed.branch.as_deref() {
+                    meta.push(("branch", b));
+                }
+                task.body = store::append_note_meta(&task.body, &ts, actor, &meta, &landed.text);
+                task.updated = Some(ts);
+                store::write::save(&self.root, &task)?;
+            }
+            out.push((id.clone(), LandedOutcome::Recorded));
+        }
+        Ok(out)
     }
 
     /// Rename one yak, a convenience over [`Farm::rename_many`].
@@ -2070,6 +2179,24 @@ fn parse_commit_line(line: &str) -> Option<CommitRef> {
         short: f.next()?.to_string(),
         subject: f.next().unwrap_or("").to_string(),
     })
+}
+
+/// `sha` as the repository at `top` has it, or `None` when it is not a hex
+/// sha or names no commit there.
+fn git_commit_ref(top: &Path, sha: &str) -> Option<CommitRef> {
+    if sha.len() < 4 || !sha.chars().all(|c| c.is_ascii_hexdigit()) {
+        return None;
+    }
+    let out = std::process::Command::new("git")
+        .arg("-C")
+        .arg(top)
+        .args(["log", "-1", COMMIT_FORMAT, &format!("{sha}^{{commit}}")])
+        .env_remove("GIT_DIR")
+        .env_remove("GIT_WORK_TREE")
+        .output()
+        .ok()
+        .filter(|o| o.status.success())?;
+    parse_commit_line(String::from_utf8_lossy(&out.stdout).lines().next()?)
 }
 
 fn rank(s: Status) -> u8 {

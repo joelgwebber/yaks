@@ -12,12 +12,20 @@ fn temp(tag: &str) -> PathBuf {
     d.canonicalize().unwrap()
 }
 
+/// `HOME` and the data dir, outside every checkout (a farm worktree inside the
+/// repo would show up in `git status`); farm homes are keyed by repository.
+fn home() -> PathBuf {
+    let h = std::env::temp_dir().join(format!("yaks-commits-home-{}", std::process::id()));
+    std::fs::create_dir_all(&h).unwrap();
+    h.canonicalize().unwrap()
+}
+
 fn yaks(cwd: &Path, args: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_yaks"))
         .args(args)
         .current_dir(cwd)
-        .env("HOME", cwd.join("__home"))
-        .env("XDG_DATA_HOME", cwd.join("__xdg"))
+        .env("HOME", home())
+        .env("XDG_DATA_HOME", home().join("xdg"))
         .env("YAKS_SKILLS_AUTOSYNC", "0")
         .env("YAKS_ACTOR", "tester")
         .env_remove("YAKS_DIR")
@@ -131,4 +139,132 @@ fn commits_greps_the_code_repo_not_the_farm_branch() {
         "{from_farm}"
     );
     assert!(!from_farm.contains(&on_main[..7]), "{from_farm}");
+}
+
+/// A worker branch off `main` with one commit (`msg`) adding `file`; back on
+/// `main`. Returns the worker's sha.
+fn worker_commit(r: &Path, file: &str, msg: &str) -> String {
+    git(r, &["checkout", "-q", "-b", "worker"]);
+    let sha = code_commit(r, file, msg);
+    git(r, &["checkout", "-q", "main"]);
+    sha
+}
+
+fn notes_of(farm: &Path, id: &str) -> String {
+    std::fs::read_to_string(farm.join(format!("t/yaks/{id}.md"))).unwrap()
+}
+
+#[test]
+fn land_records_the_landed_and_worker_shas_and_commits_reads_them() {
+    let (r, farm, id) = branch_farm("land");
+    let w = worker_commit(&r, "w.txt", &format!("{id}: the work"));
+    // Something else lands first, so the squash is a new commit, not the worker's.
+    code_commit(&r, "other.txt", "other");
+
+    let out = ok(&r, &["land", &w]);
+    assert!(
+        out.contains(&format!("recorded the landing on {id}")),
+        "{out}"
+    );
+    let landed = git(&r, &["rev-parse", "HEAD"]);
+    assert_ne!(landed, w);
+
+    let body = notes_of(&farm, &id);
+    assert!(body.contains("kind: landed"), "{body}");
+    assert!(body.contains(&format!("commit: {landed}")), "{body}");
+    assert!(body.contains(&format!("source: {w}")), "{body}");
+    assert!(body.contains("branch: main"), "{body}");
+    assert!(
+        body.contains(&format!("landed: {} {id}: the work", &landed[..7])),
+        "{body}"
+    );
+
+    // `yaks commits` reads them first, with the subject from the code repo.
+    let c = ok(&r, &["commits", &id]);
+    let (recorded, rest) = c.split_once("Commits naming").expect(&c);
+    assert!(recorded.contains("Recorded"), "{c}");
+    assert!(
+        recorded.contains(&format!("landed {} on main", &landed[..7])),
+        "{c}"
+    );
+    assert!(recorded.contains(&format!("{id}: the work")), "{c}");
+    assert!(recorded.contains("[tester]"), "{c}");
+    assert!(
+        rest.contains(&landed[..7]),
+        "the message grep still lists it: {c}"
+    );
+
+    // JSON carries the same three sections.
+    let j: serde_json::Value = serde_json::from_str(&ok(&r, &["commits", &id, "--json"])).unwrap();
+    assert_eq!(j["recorded"][0]["kind"], "landed");
+    assert_eq!(j["recorded"][0]["commit"], landed.as_str());
+    assert_eq!(j["recorded"][0]["source"], w.as_str());
+    assert_eq!(j["recorded"][0]["found"]["short"], &landed[..7]);
+    assert!(j["named"].as_array().unwrap().len() >= 1, "{j}");
+    assert!(j["farm_history"].as_array().unwrap().len() >= 1, "{j}");
+
+    // Landing the same worker again adds no commit and no second note.
+    let again = ok(&r, &["land", &w]);
+    assert!(again.contains("nothing to commit"), "{again}");
+    assert_eq!(notes_of(&farm, &id).matches("kind: landed").count(), 1);
+}
+
+#[test]
+fn land_yak_flag_names_yaks_a_private_farm_keeps_out_of_messages() {
+    let (r, farm, id) = branch_farm("land-yak");
+    let w = worker_commit(&r, "w.txt", "the work, with no id in the message");
+    let out = ok(&r, &["land", &w, "--yak", &id, "--yak", "t-nope"]);
+    assert!(
+        out.contains(&format!("recorded the landing on {id}")),
+        "{out}"
+    );
+    assert!(
+        out.contains("warning: no such yak t-nope"),
+        "unknown ids warn, never fail:\n{out}"
+    );
+    let body = notes_of(&farm, &id);
+    assert!(body.contains("kind: landed"), "{body}");
+    assert!(body.contains(&format!("commit: {}", git(&r, &["rev-parse", "HEAD"]))));
+}
+
+#[test]
+fn land_dry_run_says_what_it_would_record_and_writes_nothing() {
+    let (r, farm, id) = branch_farm("land-dry");
+    let w = worker_commit(&r, "w.txt", &format!("{id}: the work"));
+    let before = notes_of(&farm, &id);
+    let head = git(&r, &["rev-parse", "HEAD"]);
+    let out = ok(&r, &["land", &w, "--dry-run"]);
+    assert!(
+        out.contains(&format!(
+            "dry run: would record a `kind: landed` note on {id}"
+        )),
+        "{out}"
+    );
+    assert_eq!(notes_of(&farm, &id), before, "nothing written");
+    assert_eq!(git(&r, &["rev-parse", "HEAD"]), head);
+}
+
+#[test]
+fn commits_marks_a_recorded_sha_the_code_repo_lacks() {
+    let (r, farm, id) = branch_farm("absent");
+    ok(
+        &r,
+        &[
+            "update",
+            &id,
+            "--note",
+            "landed elsewhere\n\nnot a note with metadata",
+        ],
+    );
+    // A note with a commit this repository has never seen (a clone, a squash).
+    let path = farm.join(format!("t/yaks/{id}.md"));
+    let mut body = std::fs::read_to_string(&path).unwrap();
+    body.push_str(&format!(
+        "\n\n---\n\u{25b8} 2026-01-01T00:00:00Z [x]\nkind: landed\ncommit: {}\nbranch: other\n---\nlanded: dead gone\n",
+        "deadbeef".repeat(5)
+    ));
+    std::fs::write(&path, body).unwrap();
+    let c = ok(&r, &["commits", &id]);
+    assert!(c.contains("landed deadbee on other"), "{c}");
+    assert!(c.contains("(not in this repository)"), "{c}");
 }

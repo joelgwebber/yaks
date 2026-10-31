@@ -14,10 +14,14 @@
 //! pushes. git stays a subprocess; it needs git 2.38+ (2.40+ to verify a SHA
 //! that is already an ancestor).
 //!
-//! It runs in the code checkout the cwd is in and needs no farm. This is the
+//! It runs in the code checkout the cwd is in and needs no farm; when one
+//! resolves it also notes the landing on the yaks the commit names (yaks-735a).
+//! This is the
 //! Rust port of the retired `yaks-coordinating-delta/land.sh`, whose selftest
 //! scenarios are the tests below.
 
+use crate::farm::{Farm, Landed, LandedOutcome, OpenError};
+use crate::{refs, store};
 use anyhow::Context;
 use std::collections::BTreeSet;
 use std::io::Write;
@@ -43,6 +47,9 @@ pub struct Opts {
     pub dry_run: bool,
     /// Land even when the working tree holds changes the commit does not explain.
     pub force_discard: bool,
+    /// Yak ids to record the landing on besides those the commit message names
+    /// (a private farm keeps ids out of messages).
+    pub yaks: Vec<String>,
 }
 
 /// A refusal or failure: the message for stderr and the exit code.
@@ -441,6 +448,7 @@ pub fn run(dir: &Path, opts: &Opts, out: &mut dyn Write) -> R<Outcome> {
                 }
                 let head = g.must(&["log", "--oneline", "-1"])?;
                 s.say(format!("landed: {head}"));
+                record(&g, &top, opts, &mut s, &full, None)?;
                 return Ok(Outcome::Landed(top));
             }
             Presence::Missing => {
@@ -542,6 +550,7 @@ pub fn run(dir: &Path, opts: &Opts, out: &mut dyn Write) -> R<Outcome> {
         s.say(format!(
             "dry run: would clear the applied state and land {short} by {mode}"
         ));
+        record(&g, &top, opts, &mut s, &full, None)?;
         return Ok(Outcome::DryRun);
     }
 
@@ -582,6 +591,10 @@ pub fn run(dir: &Path, opts: &Opts, out: &mut dyn Write) -> R<Outcome> {
         // Landed before (a squash is a different commit, so the ancestor check above
         // cannot see it): an empty commit would only be noise.
         s.say("HEAD's tree already equals the computed merge: nothing to commit");
+        s.say("no new commit, so nothing is recorded on any yak");
+        let head = g.must(&["log", "--oneline", "-1"])?;
+        s.say(format!("landed: {head}"));
+        return Ok(Outcome::Landed(top));
     } else if squash {
         let message = squash_message(&g, &full)?;
         let author = g.must(&["log", "-1", "--format=%an%n%ae%n%aI", &full])?;
@@ -633,7 +646,89 @@ pub fn run(dir: &Path, opts: &Opts, out: &mut dyn Write) -> R<Outcome> {
     }
     let head = g.must(&["log", "--oneline", "-1"])?;
     s.say(format!("landed: {head}"));
+    let landed = g.must(&["rev-parse", "HEAD"])?;
+    record(&g, &top, opts, &mut s, &landed, Some(&full))?;
     Ok(Outcome::Landed(top))
+}
+
+/// Note the landing on the yaks it concerns (yaks-735a): those the landed
+/// commit's message names (the id scanner `yaks scan-ids` uses, against the
+/// farm's real ids) and every `--yak`. `landed` is the commit now in HEAD (the
+/// worker's own sha when it was already an ancestor, `source` then `None`);
+/// in a dry run it is the worker's sha and nothing is written, only said. A
+/// repository with no farm is silent unless `--yak` asked for one. Failures
+/// here only warn: the change is already landed.
+fn record(
+    g: &Git,
+    top: &Path,
+    opts: &Opts,
+    s: &mut Say,
+    landed: &str,
+    source: Option<&str>,
+) -> R<()> {
+    let farm = match Farm::open(top) {
+        Ok(f) => f,
+        Err(e) => {
+            let why = match e {
+                OpenError::NoFarm(m) | OpenError::OldLayout(m) | OpenError::NeedsMigration(m) => m,
+                OpenError::SchemaTooNew { .. } => "the farm is newer than this yaks".to_string(),
+            };
+            if !opts.yaks.is_empty() {
+                s.say(format!(
+                    "warning: nothing recorded on {}: {why}",
+                    opts.yaks.join(", ")
+                ));
+            }
+            return Ok(());
+        }
+    };
+    let message = g.must(&["log", "-1", "--format=%B", landed])?;
+    let subject = g.must(&["log", "-1", "--format=%s", landed])?;
+    let known = store::all_ids(farm.root());
+    let mut ids: Vec<String> = Vec::new();
+    for f in refs::scan_text(&message, |t| known.contains(t)) {
+        if !ids.contains(&f.id) {
+            ids.push(f.id);
+        }
+    }
+    for id in &opts.yaks {
+        if !ids.contains(id) {
+            ids.push(id.clone());
+        }
+    }
+    if ids.is_empty() {
+        return Ok(());
+    }
+    let short = g.must(&["rev-parse", "--short", landed])?;
+    let note = Landed {
+        commit: landed.to_string(),
+        source: source.map(str::to_string),
+        branch: g.text(&["symbolic-ref", "--short", "-q", "HEAD"]),
+        text: format!("landed: {short} {subject}"),
+    };
+    let actor = crate::actor::resolve(None);
+    match farm.record_landed(&ids, &note, actor.as_deref(), opts.dry_run) {
+        Ok(results) => {
+            for (id, outcome) in results {
+                s.say(match (outcome, opts.dry_run) {
+                    (LandedOutcome::NotFound, _) => {
+                        format!("warning: no such yak {id}: nothing recorded on it")
+                    }
+                    (LandedOutcome::AlreadyRecorded, _) => {
+                        format!("{id}: this landing is already recorded")
+                    }
+                    (LandedOutcome::Recorded, true) => {
+                        format!(
+                            "dry run: would record a `kind: landed` note on {id} for the landed commit (worker {short})"
+                        )
+                    }
+                    (LandedOutcome::Recorded, false) => format!("recorded the landing on {id}"),
+                });
+            }
+        }
+        Err(e) => s.say(format!("warning: could not record the landing: {e:#}")),
+    }
+    Ok(())
 }
 
 /// The worker's message with `Squashed-from: <full sha>` as a trailer.
@@ -765,6 +860,7 @@ mod tests {
                 sha: sha.to_string(),
                 dry_run,
                 force_discard,
+                yaks: Vec::new(),
             },
             &mut out,
         );

@@ -65,7 +65,7 @@ break, a list or a code fence is not run-on). They compose, and back `list`, `se
 | `log` | Timestamped notes and status moves (`moved: <from> -> <to>` entries) across a filtered set, oldest first (`--since <2h\|3d\|date>`, `--by <actor>`). |
 | `refs <id>` | The yaks a task points at (parent, deps, id mentions), flagging danglers. |
 | `refs <id> --incoming [--json]` | The reverse: every yak that points AT this one, one line per reference (`child`, `depends` or `mention`). Computed by scanning the farm on demand. `--json`. The TUI's `B` key opens the same list. [Details](#refs) |
-| `commits <id>` | Git commits linked to a yak — those naming its id in the code repository (all branches), then the yak file's own history on the farm. [Details](#commits) |
+| `commits <id> [--json]` | Git commits linked to a yak — shas recorded in its notes (`yaks land` writes them), those naming its id in the code repository (all branches), then the yak file's own history on the farm. [Details](#commits) |
 | `rollup` | Group yaks by the external issue they roll up to (`--keys` lists the external keys). |
 | `scan-ids [file]` | Scan text/stdin for real yak-ids; prints `line:col  id`, exits non-zero if any found — a leak check for a private farm's commits (pre-commit / PR hook). |
 
@@ -445,7 +445,7 @@ Rules, the same for all four commands:
 | `status [--check] [--json]` | What the farm has changed that git does not have yet, one line per yak, in yak terms. Read-only. `--check` exits 1 when the farm is dirty; `--json`. [Details](#status) |
 | `sync [--no-commit] [--no-pull] [--no-push] [-m <msg>]` | Commit, pull (rebasing with the yak merge driver) and push the farm branch. A private farm is never pushed. [Details](#sync) |
 | `commit [-m <msg>] [--dry-run]` | Commit the farm on its branch, from any checkout. `-m` overrides the generated message. Never pushes. [Details](#commit) |
-| `land <sha> [--dry-run] [--force-discard]` | Land a Delta worker's commit by SHA on the current branch of the code checkout (squash, else cherry-pick). Needs no farm; never pushes. `--dry-run` changes nothing; `--force-discard` drops unexplained working-tree changes. [Details](#land) |
+| `land <sha> [--dry-run] [--force-discard] [--yak <id>]...` | Land a Delta worker's commit by SHA on the current branch of the code checkout (squash, else cherry-pick), and note the landed sha on the yaks it names. Needs no farm; never pushes. `--dry-run` changes nothing; `--force-discard` drops unexplained working-tree changes; `--yak` names a yak explicitly. [Details](#land) |
 | `tui` | Open the interactive terminal UI (see [tui.md](tui.md)). |
 
 ### `migrate`
@@ -634,13 +634,19 @@ While a merge or cherry-pick is in progress in the farm worktree it refuses, sta
 
 ### `commits`
 
-`commits <id>`
+`commits <id> [--json]`
 
-Two lists. **Commits naming `<id>`** greps commit messages in the *code repository*: the git top-level of the directory yaks was started from (so `-C <path>` picks it), across every local branch, remote branch and tag except the farm branch, newest first. A branch farm lives on its own branch, so searching the farm's worktree would find only `yaks: ...` farm commits and never the code; when yaks is started outside any code checkout (not in git, or in the farm's own worktree) the section says so instead of listing farm commits. **Farm history** is the yak file's own edit history on the farm (`git log --follow`), labelled as such: it shows when the yak changed, not what code did.
+Three sections, in this order:
+
+1. **Recorded** lists every note on the yak with a `commit:` key (`yaks land` writes them, see below): the note's `kind`, the short sha, `on <branch>` when it has one, the subject as the code repository has it (`(not in this repository)` when the commit is not there: a clone that lacks it, a rewritten history), and the note's timestamp and actor. A recorded sha is the only link that works on a private farm, whose commits never name a yak.
+2. **Commits naming `<id>`** greps commit messages in the *code repository*: the git top-level of the directory yaks was started from (so `-C <path>` picks it), across every local branch, remote branch and tag except the farm branch, newest first. A branch farm lives on its own branch, so searching the farm's worktree would find only `yaks: ...` farm commits and never the code; when yaks is started outside any code checkout (not in git, or in the farm's own worktree) the section says so instead of listing farm commits.
+3. **Farm history** is the yak file's own edit history on the farm (`git log --follow`), labelled as such: it shows when the yak changed, not what code did.
+
+`--json` prints the same as `{id, code_repo, recorded, named, farm_history}`: `recorded` entries carry `kind`, `commit`, `source`, `branch`, `ts`, `actor` and `found` (`{sha, short, subject}` or `null`); `named` and `farm_history` are lists of `{sha, short, subject}`.
 
 ### `land`
 
-`land <sha> [--dry-run] [--force-discard]`
+`land <sha> [--dry-run] [--force-discard] [--yak <id>]...`
 
 Land a Delta worker's commit by SHA on the current branch of the code checkout you are in (needs no farm; never pushes; git 2.38+, 2.40+ for the already-landed check).
 
@@ -652,7 +658,9 @@ Refuses, changing nothing: working-tree changes the commit does not explain (exi
 
 A SHA already in HEAD with its change present, or a worker landed before (the merged tree equals HEAD's), says `landed:` and adds no commit.
 
-`--dry-run` reports every step and changes nothing.
+**Records the landing on the yak.** After a landing that made a commit, `land` opens the farm of the checkout (if one resolves) and appends a note to every yak id the landed commit's message names (the same scanner as `yaks scan-ids`, against the farm's real ids) and to each `--yak <id>` (repeatable; a private farm keeps ids out of messages, so name the yak explicitly). The note carries metadata `kind: landed`, `commit: <full landed sha>`, `source: <full worker sha>` and `branch: <branch HEAD is on>`, with the body `landed: <short sha> <subject>`, stamped with the usual actor, under the farm lock. Only the landed sha is durable (a worker's sha dies on squash or rebase), which is why both are kept. An id the farm does not have is warned about and skipped; landing is never undone by a recording problem. A SHA that was already in HEAD records itself (`commit` is that sha, no `source`); landing the same commit twice records once, and a run that adds no commit records nothing. `yaks commits <id>` reads these notes back first.
+
+`--dry-run` reports every step and changes nothing; it says which yaks it would record on.
 
 Ends with `landed: <oneline>` and `doctor: <last line of yaks doctor>` when a farm resolves.
 

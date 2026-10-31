@@ -188,13 +188,21 @@ enum Command {
     },
     /// Show the git commits linked to a yak.
     ///
-    /// Two lists. "Commits naming" greps commit messages for the id in the
-    /// code repository: the git top-level of the directory yaks was started
-    /// from (respecting `-C`), across every branch but the farm's, newest
-    /// first. Started outside any code checkout (not in git, or in the farm's
-    /// own worktree) it says so and lists nothing. "Farm history" is the yak
-    /// file's own edit history on the farm, followed across status moves.
-    Commits { id: String },
+    /// Three sections. "Recorded" lists the notes that carry a `commit:` key
+    /// (what `yaks land` writes): kind, short sha, branch, the subject from the
+    /// code repository (or "(not in this repository)"), and the note's time and
+    /// actor. "Commits naming" greps commit messages for the id in the code
+    /// repository: the git top-level of the directory yaks was started from
+    /// (respecting `-C`), across every branch but the farm's, newest first.
+    /// Started outside any code checkout (not in git, or in the farm's own
+    /// worktree) it says so and lists nothing. "Farm history" is the yak file's
+    /// own edit history on the farm, followed across status moves.
+    Commits {
+        id: String,
+        /// Machine output: `recorded`, `named` and `farm_history` arrays.
+        #[arg(long)]
+        json: bool,
+    },
     /// Run a yak's `verify:` command and record PASS/FAIL as a note.
     ///
     /// Runs the yak's recorded `verify:` command and records the PASS/FAIL as an
@@ -973,8 +981,13 @@ enum Command {
     /// refuses (exit 6) a SHA that is already an ancestor of HEAD but whose
     /// change is missing from HEAD's tree (a merge that dropped it); refuses (exit
     /// 7) a commit that touches `.yaks/` when HEAD tracks none (a branch farm).
-    /// Never pushes. Needs git 2.38+ (2.40+ to check an already-landed SHA) and
-    /// no farm.
+    /// After landing, a note `kind: landed` (`commit:` the landed sha, `source:`
+    /// the worker's sha, `branch:`) is appended to every yak the landed
+    /// commit's message names, and to each `--yak`; `yaks commits <id>` reads
+    /// them. An unknown id is warned about, not fatal; `--dry-run` says what it
+    /// would record and writes nothing. Never pushes. Needs git 2.38+ (2.40+ to
+    /// check an already-landed SHA); needs no farm, and records nothing without
+    /// one.
     Land {
         /// The worker's commit (a SHA or any rev that names a commit).
         sha: String,
@@ -986,6 +999,10 @@ enum Command {
         /// not explain (they are discarded).
         #[arg(long)]
         force_discard: bool,
+        /// Also record the landing on this yak (repeatable): a private farm
+        /// keeps ids out of commit messages, so name the yak here.
+        #[arg(long = "yak", value_name = "ID")]
+        yaks: Vec<String>,
     },
     /// Show what the farm has changed that git does not have yet.
     ///
@@ -1171,12 +1188,14 @@ fn main() -> Result<()> {
         sha,
         dry_run,
         force_discard,
+        yaks,
     } = &cli.command
     {
         std::process::exit(land::cli(&land::Opts {
             sha: sha.clone(),
             dry_run: *dry_run,
             force_discard: *force_discard,
+            yaks: yaks.clone(),
         }));
     }
     if let Command::Discover { path, json } = &cli.command {
@@ -1375,11 +1394,12 @@ fn main() -> Result<()> {
             }
             Some(r) => render_refs(&r),
         },
-        Command::Commits { id } => match farm.commits(&id, &env::current_dir()?)? {
+        Command::Commits { id, json } => match farm.commits(&id, &env::current_dir()?)? {
             None => {
                 eprintln!("no such task: {id}");
                 std::process::exit(1);
             }
+            Some(c) if json => json::print(&commits_json(&c))?,
             Some(c) => render_commits(&c),
         },
         Command::Verify { ids, as_actor } => {
@@ -3069,7 +3089,59 @@ fn backrefs_json(r: &TaskBackRefs) -> serde_json::Value {
     serde_json::json!({ "id": r.id, "title": r.title, "incoming": incoming })
 }
 
+fn commit_json(c: &farm::CommitRef) -> serde_json::Value {
+    serde_json::json!({ "sha": c.sha, "short": c.short, "subject": c.subject })
+}
+
+fn commits_json(c: &Commits) -> serde_json::Value {
+    let recorded: Vec<_> = c
+        .recorded
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "kind": r.kind,
+                "commit": r.commit,
+                "source": r.source,
+                "branch": r.branch,
+                "ts": r.ts,
+                "actor": r.actor,
+                "found": r.found.as_ref().map(commit_json),
+            })
+        })
+        .collect();
+    serde_json::json!({
+        "id": c.id,
+        "code_repo": c.code_repo.as_ref().map(|p| p.display().to_string()),
+        "recorded": recorded,
+        "named": c.by_message.iter().map(commit_json).collect::<Vec<_>>(),
+        "farm_history": c.by_file.iter().map(commit_json).collect::<Vec<_>>(),
+    })
+}
+
 fn render_commits(c: &Commits) {
+    println!("Recorded in {}'s notes:", c.id);
+    if c.recorded.is_empty() {
+        println!("  (none)");
+    }
+    for r in &c.recorded {
+        let short: String = r.commit.chars().take(7).collect();
+        let branch = r
+            .branch
+            .as_deref()
+            .map(|b| format!(" on {b}"))
+            .unwrap_or_default();
+        let what = match &r.found {
+            Some(f) => f.subject.clone(),
+            None => "(not in this repository)".to_string(),
+        };
+        let who = r
+            .actor
+            .as_deref()
+            .map(|a| format!(" [{a}]"))
+            .unwrap_or_default();
+        println!("  {} {short}{branch}  {what}  ({}{who})", r.kind, r.ts);
+    }
+    println!();
     match &c.code_repo {
         Some(top) => println!("Commits naming {} in {}:", c.id, top.display()),
         None => println!("Commits naming {}:", c.id),
