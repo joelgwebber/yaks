@@ -61,7 +61,7 @@ checkout's `main`.
   It records the landed SHA on each yak the message names (`--yak <id>` for a
   private farm, whose commits carry no ids).
 - **Already in the user's checkout on `main`:** the commit from step 2 is the landing.
-- Never push `origin` or open a PR without the user's say-so.
+- Never push `origin`'s `main` or open a PR without the user's say-so. A worker pushing its own work branch for visibility is fine when its brief allows it.
 - Verify in the **user's checkout**, not the clone: `git -C <path of local>
   log --oneline -1 main` shows the change and `git -C <path of local> status
   --short` shows no stray changes. A pending `MERGE_HEAD` that `yaks land`
