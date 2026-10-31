@@ -1,11 +1,11 @@
 ---
 id: yaks-4c2a
 title: 'Skills: capture design-phase questions and answers as yak asks, not only chat'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-10-31T15:57:06Z'
-updated: '2026-10-31T16:42:41Z'
+updated: '2026-10-31T16:45:29Z'
 parent: yaks-039b
 depends_on:
 - yaks-6a11
@@ -30,3 +30,18 @@ Depends on `yaks-6a11`: explicit `ask`/`answer` kinds and `reply_to` are what ma
 ▸ 2026-10-31T16:42:41Z [yakherd]
 
 moved: hairy -> shaving
+
+---
+▸ 2026-10-31T16:45:29Z [yakherd]
+
+Landed in `45bfc8b`:
+
+- `yaks` skill, inbox section: design questions go on the yak they concern as asks, with options and a lean; chat links them; the pickup records a `Decision:`; one open ask per yak at a time.
+- `yaks-coordinating` §7: the same rule for the yakherd's own design passes.
+
+Evidence: `cargo test --workspace` green (skills and brief tests included). `reply_to` (several open asks per yak) stays a follow-up of the metadata design. That needs note ids, so for now the skill says to number related questions in one ask.
+
+---
+▸ 2026-10-31T16:45:29Z [yakherd]
+
+moved: shaving -> shorn

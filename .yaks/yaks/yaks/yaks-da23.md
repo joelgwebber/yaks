@@ -1,11 +1,11 @@
 ---
 id: yaks-da23
 title: 'Rebuild yaks sheds from note attribution: one row per actor'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-10-31T15:17:35Z'
-updated: '2026-10-31T16:41:36Z'
+updated: '2026-10-31T16:44:01Z'
 parent: yaks-039b
 labels:
 - sheds
@@ -155,3 +155,30 @@ Decision: the first commit renames `src/sheds.rs` to `src/gitrepo.rs` as a whole
 ▸ 2026-10-31T16:41:36Z [sheds-1]
 
 verify: `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false cargo test --workspace` -> FAIL (exit 101)
+
+---
+▸ 2026-10-31T16:43:35Z [sheds-1]
+
+verify: `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-10-31T16:43:45Z [sheds-1]
+
+Summary (sheds-1): `yaks sheds` is rebuilt from note attribution, one row per actor.
+
+- `src/sheds.rs` (new): `build` over `store::parse_notes` (claimant rule, recent, asking, liveness, ordering), `collect` (+ `status::sync_state` for the farm header), `render(--all)`, `to_json`, `ago`; 12 unit tests on fixture farms with interleaved actors, a coordinator claim then worker writes, `for:`, a re-claim, asks, ordering, cap, JSON.
+- `src/main.rs`: `Sheds { json, all }` and its `--help`; the old checkout-discovery module is `git mv`ed to `src/gitrepo.rs` (callers in `store`, `branchfarm`, `init`, `privatefarm`, `tui/source`, `discover` updated); pruning it is yaks-d3ad.
+- TUI: `src/tui/sheds_tab.rs` reworked (list of actors, detail = shaving/asking/recent, Enter opens the yak, farm freshness footer); help overlay + hint text; 3 insta snapshots updated (sheds_tab_list/detail, help overlay), each reviewed.
+- Tests: `tests/sheds.rs` replaces `shed_activity.rs` and `shed_title.rs` (which tested the activity log and `yaks.shed.title`); `tests/dash_c.rs` sheds test now seeds a note.
+- Docs: `docs/cli.md`, `docs/tui.md`, `README.md`, the two `docs/assets/tui-sheds*.svg` regenerated (the other docshots SVGs were reverted: the renderer's output drifted, unrelated).
+- Evidence: `yaks verify` PASS (full workspace gate with the fsmonitor env); real-farm `yaks sheds` text, `--all`, `--json` and the TUI frames are attached.
+
+---
+▸ 2026-10-31T16:43:46Z [sheds-1]
+
+moved: shaving -> shorn
+
+---
+▸ 2026-10-31T16:44:01Z [sheds-1]
+
+Committed a60d67c (rebuild).
