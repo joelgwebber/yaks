@@ -5,7 +5,7 @@ status: hairy
 type: idea
 priority: 2
 created: '2026-10-31T15:18:16Z'
-updated: '2026-10-31T15:57:19Z'
+updated: '2026-10-31T15:58:01Z'
 parent: yaks-039b
 labels:
 - schema
@@ -58,12 +58,11 @@ Decision (Joel, 2026-10-31): do this design before `yaks-bdf9` and `yaks-a3fc`, 
 
 asked: needs human
 
-Which syntax for note metadata? Lean: (A), bare YAML lines directly under the marker.
+Which syntax for note metadata? Lean: (A), bare YAML lines directly under the marker. (The examples omit the `---` above each marker: inside a fence it would still be parsed as a real note boundary, see the note below.)
 
 ## (A) YAML lines under the marker, up to the first blank line
 
 ```markdown
----
 ▸ 2026-10-31T15:20:00Z [tex-1]
 kind: checkpoint
 branch: yaks/tex-1/textures
@@ -80,7 +79,6 @@ Atlas and UVs done; next, per-face texture choice.
 ## (B) A fenced YAML block right after the marker
 
 ````markdown
----
 ▸ 2026-10-31T15:20:00Z [tex-1]
 
 ```yaml yaks
@@ -102,3 +100,8 @@ None of them is a portable standard for metadata on a section:
 - **Obsidian/Dataview** has inline `key:: value` fields, which nothing else renders.
 
 So the choice is (A), consistent and terse, or (B), pretty on GitHub. Reserved keys and note ids (`reply_to` needs one) are separate follow-ups for this design.
+
+---
+▸ 2026-10-31T15:58:01Z [delta:Cloud Runners]
+
+Related bug found while writing the ask above: the note parser isn't fence-aware, so example notes inside code blocks split into fake notes. Filed as `yaks-4cd7`; fix it before this design ships examples in the docs.
