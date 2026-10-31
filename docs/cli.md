@@ -65,7 +65,7 @@ break, a list or a code fence is not run-on). They compose, and back `list`, `se
 | `log` | Timestamped notes and status moves (`moved: <from> -> <to>` entries) across a filtered set, oldest first (`--since <2h\|3d\|date>`, `--by <actor>`). |
 | `refs <id>` | The yaks a task points at (parent, deps, id mentions), flagging danglers. |
 | `refs <id> --incoming [--json]` | The reverse: every yak that points AT this one, one line per reference (`child`, `depends` or `mention`). Computed by scanning the farm on demand. `--json`. The TUI's `B` key opens the same list. [Details](#refs) |
-| `commits <id>` | Git commits linked to a yak — those naming its id, and those that touched its file across status moves. |
+| `commits <id>` | Git commits linked to a yak — those naming its id in the code repository (all branches), then the yak file's own history on the farm. [Details](#commits) |
 | `rollup` | Group yaks by the external issue they roll up to (`--keys` lists the external keys). |
 | `scan-ids [file]` | Scan text/stdin for real yak-ids; prints `line:col  id`, exits non-zero if any found — a leak check for a private farm's commits (pre-commit / PR hook). |
 
@@ -631,6 +631,12 @@ The message is generated from the changed files, one verb per yak (`created`, `s
 A normal `git commit`, so the repo's hooks run (and may fail it: the farm changes are then left staged and the hook's output is in the error); git's and the hooks' output is captured, so a successful commit prints only yaks' own summary (and never garbles the TUI); it never pushes. A clean farm prints `nothing to commit` and exits 0.
 
 While a merge or cherry-pick is in progress in the farm worktree it refuses, stages nothing and says why. A `YAKS_DIR` farm outside git is an error.
+
+### `commits`
+
+`commits <id>`
+
+Two lists. **Commits naming `<id>`** greps commit messages in the *code repository*: the git top-level of the directory yaks was started from (so `-C <path>` picks it), across every local branch, remote branch and tag except the farm branch, newest first. A branch farm lives on its own branch, so searching the farm's worktree would find only `yaks: ...` farm commits and never the code; when yaks is started outside any code checkout (not in git, or in the farm's own worktree) the section says so instead of listing farm commits. **Farm history** is the yak file's own edit history on the farm (`git log --follow`), labelled as such: it shows when the yak changed, not what code did.
 
 ### `land`
 

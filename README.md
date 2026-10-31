@@ -95,7 +95,7 @@ in `<path>`.
 | `yaks list` | List tasks; filter by `--status/--type/--priority/--label/--search`, `--ready`, `--tangled`, `--parent-of`, `--all` |
 | `yaks show <id>` | Full detail for one task, with parent + children |
 | `yaks refs <id>` | List what a task points at (parent, deps, id mentions in its text), flagging any that dangle; `--incoming` lists what points AT it instead (children, dependents, mentions in titles/descriptions/notes, each saying how; `--json`) |
-| `yaks commits <id>` | the git commits naming a yak or touching its file |
+| `yaks commits <id>` | Show the git commits linked to a yak — those naming its id in the code repository you run it from (all branches), then the yak file's own history on the farm |
 | `yaks update <id>` | Change fields/labels, set `--description`, or append a `--note` (`-` reads stdin; `--note-file PATH`: multi-line markdown without shell quoting) |
 | `yaks ask <id>` / `answer <id>` | Block a yak on a human (sets `needs: human`, drops it from `next`) / answer it (sets `needs: agent`, so the answer cannot get lost; `--done` clears instead), each recording a `--note` |
 | `yaks request <id>` | Hand a yak to an agent with no prior question (sets `needs: agent`, recording the `--note`, or a canned `--kind tidy\|summarize` instruction); refuses a yak awaiting a human |

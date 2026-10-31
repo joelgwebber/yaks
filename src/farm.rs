@@ -554,14 +554,28 @@ pub fn backrefs_in(all: &[Task], id: &str) -> Vec<BackRef> {
     out
 }
 
-/// The git commits linked to a yak, recovered from history rather than stored:
-/// those that name the id in a commit message, and those that touched the yak's
-/// own file as it moved across statuses.
+/// One git commit: full and short sha and the subject line.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CommitRef {
+    pub sha: String,
+    pub short: String,
+    pub subject: String,
+}
+
+/// The git commits linked to a yak (`yaks commits`), from two places: commits
+/// in the code repository whose message names the id, and the yak file's own
+/// edit history on the farm.
 pub struct Commits {
     pub id: String,
     pub path: PathBuf,
-    pub by_message: Vec<String>,
-    pub by_file: Vec<String>,
+    /// The code repository searched (a git top-level), or `None` when yaks was
+    /// started outside any code checkout (not in git, or in the farm's own
+    /// worktree): then `by_message` is empty and says nothing.
+    pub code_repo: Option<PathBuf>,
+    /// Commits naming the id, across every branch but the farm's, newest first.
+    pub by_message: Vec<CommitRef>,
+    /// Farm history: the commits that edited the yak's file on the farm.
+    pub by_file: Vec<CommitRef>,
 }
 
 /// Outcome of a rename operation ([`Farm::rename_many`]).
@@ -1355,24 +1369,70 @@ impl Farm {
         Ok(issues)
     }
 
-    /// Recover the git commits linked to `id` without any stored hash: commits
-    /// whose message names the id, and commits that touched the yak's own file
-    /// (followed across its status moves). `None` if the id is not a task.
-    pub fn commits(&self, id: &str) -> Result<Option<Commits>> {
+    /// The git commits linked to `id` (`None` if the id is not a task):
+    /// commits naming the id in the code
+    /// repository of `cwd` (yaks-7a11: the farm's own worktree holds only farm
+    /// commits, so the grep runs in the git top-level yaks was started from,
+    /// over every branch but the farm's), then the yak file's own history on
+    /// the farm (followed across its status moves).
+    pub fn commits(&self, id: &str, cwd: &Path) -> Result<Option<Commits>> {
         let Some((_, path)) = store::find_task_file(&self.root, id) else {
             return Ok(None);
         };
-        let by_message = git_log(&self.root, &["--oneline", &format!("--grep={id}")])?;
-        let by_file = git_log(
-            &self.root,
-            &["--oneline", "--follow", "--", &path.to_string_lossy()],
-        )?;
+        let code_repo = self.code_repo(cwd);
+        let by_message = match &code_repo {
+            Some(top) => {
+                // The farm branch holds `yaks: ...` commits naming the id; they
+                // are farm history, listed below, not code. `--all` would add
+                // the farm worktree's HEAD, which `--exclude` cannot remove, so
+                // name the refs: branches, remotes, tags and this checkout's
+                // HEAD (a `--exclude` applies to the one option after it, and for
+                // `--branches`/`--remotes` omits the `refs/heads/`/`refs/remotes/`
+                // prefix).
+                let branch = store::configured_farm_branch(top);
+                git_commits(
+                    top,
+                    &[
+                        &format!("--exclude={branch}"),
+                        "--branches",
+                        &format!("--exclude=*/{branch}"),
+                        "--remotes",
+                        "--tags",
+                        "HEAD",
+                        "--fixed-strings",
+                        &format!("--grep={id}"),
+                    ],
+                )?
+            }
+            None => Vec::new(),
+        };
+        let by_file = git_commits(&self.root, &["--follow", "--", &path.to_string_lossy()])?;
         Ok(Some(Commits {
             id: id.to_string(),
             path,
+            code_repo,
             by_message,
             by_file,
         }))
+    }
+
+    /// The code repository for a `yaks commits` run from `cwd`: its git
+    /// top-level, unless that is the farm's own worktree (a branch farm), which
+    /// holds no code, or `cwd` is not in git at all.
+    fn code_repo(&self, cwd: &Path) -> Option<PathBuf> {
+        let out = std::process::Command::new("git")
+            .arg("-C")
+            .arg(cwd)
+            .args(["rev-parse", "--show-toplevel"])
+            .env_remove("GIT_DIR")
+            .env_remove("GIT_WORK_TREE")
+            .output()
+            .ok()
+            .filter(|o| o.status.success())?;
+        let top = PathBuf::from(String::from_utf8_lossy(&out.stdout).trim());
+        let is_farm_worktree = store::farm_branch(&self.root).is_some()
+            && self.root.parent().and_then(|p| p.canonicalize().ok()) == top.canonicalize().ok();
+        (!is_farm_worktree).then_some(top)
     }
 
     /// Rename one yak, a convenience over [`Farm::rename_many`].
@@ -1978,12 +2038,15 @@ fn invalid_status_value(text: &str) -> Option<String> {
     None
 }
 
-fn git_log(root: &Path, args: &[&str]) -> Result<Vec<String>> {
+/// `git log <args>` in `dir` as commits (full sha, short sha, subject).
+fn git_commits(dir: &Path, args: &[&str]) -> Result<Vec<CommitRef>> {
     let out = std::process::Command::new("git")
         .arg("-C")
-        .arg(root)
-        .arg("log")
+        .arg(dir)
+        .args(["log", COMMIT_FORMAT])
         .args(args)
+        .env_remove("GIT_DIR")
+        .env_remove("GIT_WORK_TREE")
         .output()
         .context("running git log")?;
     if !out.status.success() {
@@ -1994,8 +2057,19 @@ fn git_log(root: &Path, args: &[&str]) -> Result<Vec<String>> {
     }
     Ok(String::from_utf8_lossy(&out.stdout)
         .lines()
-        .map(str::to_string)
+        .filter_map(parse_commit_line)
         .collect())
+}
+
+const COMMIT_FORMAT: &str = "--format=%H%x09%h%x09%s";
+
+fn parse_commit_line(line: &str) -> Option<CommitRef> {
+    let mut f = line.splitn(3, '\t');
+    Some(CommitRef {
+        sha: f.next()?.to_string(),
+        short: f.next()?.to_string(),
+        subject: f.next().unwrap_or("").to_string(),
+    })
 }
 
 fn rank(s: Status) -> u8 {

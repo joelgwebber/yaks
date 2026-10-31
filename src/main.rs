@@ -188,8 +188,12 @@ enum Command {
     },
     /// Show the git commits linked to a yak.
     ///
-    /// Lists the commits naming its id and those that touched its file across
-    /// status moves.
+    /// Two lists. "Commits naming" greps commit messages for the id in the
+    /// code repository: the git top-level of the directory yaks was started
+    /// from (respecting `-C`), across every branch but the farm's, newest
+    /// first. Started outside any code checkout (not in git, or in the farm's
+    /// own worktree) it says so and lists nothing. "Farm history" is the yak
+    /// file's own edit history on the farm, followed across status moves.
     Commits { id: String },
     /// Run a yak's `verify:` command and record PASS/FAIL as a note.
     ///
@@ -1371,7 +1375,7 @@ fn main() -> Result<()> {
             }
             Some(r) => render_refs(&r),
         },
-        Command::Commits { id } => match farm.commits(&id)? {
+        Command::Commits { id } => match farm.commits(&id, &env::current_dir()?)? {
             None => {
                 eprintln!("no such task: {id}");
                 std::process::exit(1);
@@ -3066,21 +3070,29 @@ fn backrefs_json(r: &TaskBackRefs) -> serde_json::Value {
 }
 
 fn render_commits(c: &Commits) {
-    println!("Commits mentioning {}:", c.id);
-    if c.by_message.is_empty() {
-        println!("  (none)");
-    } else {
-        for l in &c.by_message {
-            println!("  {l}");
-        }
+    match &c.code_repo {
+        Some(top) => println!("Commits naming {} in {}:", c.id, top.display()),
+        None => println!("Commits naming {}:", c.id),
     }
-    println!("\nCommits touching {}:", c.path.display());
+    if c.code_repo.is_none() {
+        println!(
+            "  (not run from a code checkout: only the farm is here, so nothing was searched; run yaks from the code repository or pass -C)"
+        );
+    } else if c.by_message.is_empty() {
+        println!("  (none)");
+    }
+    for l in &c.by_message {
+        println!("  {} {}", l.short, l.subject);
+    }
+    println!(
+        "\nFarm history of {} (edits to the yak file, not code):",
+        c.path.display()
+    );
     if c.by_file.is_empty() {
         println!("  (none)");
-    } else {
-        for l in &c.by_file {
-            println!("  {l}");
-        }
+    }
+    for l in &c.by_file {
+        println!("  {} {}", l.short, l.subject);
     }
 }
 
