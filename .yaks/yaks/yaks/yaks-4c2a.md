@@ -1,11 +1,11 @@
 ---
 id: yaks-4c2a
 title: 'Skills: capture design-phase questions and answers as yak asks, not only chat'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-10-31T15:57:06Z'
-updated: '2026-10-31T15:57:06Z'
+updated: '2026-10-31T16:42:41Z'
 parent: yaks-039b
 depends_on:
 - yaks-6a11
@@ -25,3 +25,8 @@ The `yaks` skill already says to "ask to record a real design fork", but in prac
 - Where this goes: `yaks` (Notes and descriptions, the inbox), `yaks-coordinating` (design passes), the `brief` text if relevant.
 
 Depends on `yaks-6a11`: explicit `ask`/`answer` kinds and `reply_to` are what make several questions per yak workable.
+
+---
+▸ 2026-10-31T16:42:41Z [yakherd]
+
+moved: hairy -> shaving

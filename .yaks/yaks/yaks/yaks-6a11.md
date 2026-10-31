@@ -1,11 +1,11 @@
 ---
 id: yaks-6a11
 title: 'Design: structured comment metadata (per-note frontmatter-like fields)'
-status: shaving
+status: shorn
 type: idea
 priority: 2
 created: '2026-10-31T15:18:16Z'
-updated: '2026-10-31T16:16:35Z'
+updated: '2026-10-31T16:42:41Z'
 parent: yaks-039b
 labels:
 - schema
@@ -152,3 +152,15 @@ moved: hairy -> shaving
 ▸ 2026-10-31T16:16:35Z [yakherd]
 
 Core landed in 7f78a28: `NoteEntry.meta` / `kind()` / `get()`, `append_note_meta`, `append_entry`, `meta_block`, `parse_meta`, the TUI comment block's `meta`, merge-driver preservation. The command and TUI surface follow from a worker.
+
+---
+▸ 2026-10-31T16:42:40Z [yakherd]
+
+Done. The format is in `7f78a28` (core: parse, write, fences, TUI round trip, merge driver); the surface is in `71ca61e` (`yaks-b8cd`): command kinds, `update --meta`, JSON, the TUI header, doctor `needs-drift`.
+
+Still open, as follow-ups rather than part of this yak: `reply_to` (needs note ids), and the skills text (`yaks-4c2a`, plus the notes section of the `yaks` skill, written by the yakherd next).
+
+---
+▸ 2026-10-31T16:42:41Z [yakherd]
+
+moved: shaving -> shorn

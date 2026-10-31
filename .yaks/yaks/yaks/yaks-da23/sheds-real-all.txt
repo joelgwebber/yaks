@@ -1,0 +1,400 @@
+farm: 4 ahead, 0 behind origin/yaks (as of the last fetch)
+
+Joel Webber                               active · 35m ago
+  asking   yaks-158d  hairy  Global back/forward navigation across view states  37d ago
+  recent   yaks-6a11  shaving  Design: structured comment metadata (per-note frontmatter-like fields)  35m ago
+  recent   yaks-139b  shorn  yaks-working: sharpen prove-it-works + ask-when-no-lever  4d ago
+  recent   yaks-33c8  shorn  Idea: model-driven reformat of legacy yak bodies for CommonMark  4d ago
+  recent   yaks-0bf0  shorn  Show images inline in yak bodies and comments  5d ago
+  recent   yaks-4e9c  shorn  Display svg attachments in the image viewer  8d ago
+  (+59 more; --json lists them all)
+design-scout                              idle · 37d ago
+  asking   yaks-953f  hairy  Global search context  37d ago
+  asking   yaks-158d  hairy  Global back/forward navigation across view states  37d ago
+  asking   yaks-683f  hairy  Save incomplete edits of yaks and descriptions/comments  37d ago
+  recent   yaks-1bbd  hairy  Carry search context through the UI globally  37d ago
+meta-1                                    active · just now
+  recent   yaks-b8cd  shorn  Note metadata surface: kinds from commands, update --meta, JSON, TUI header, doctor drift  just now
+sheds-1                                   active · 1m ago
+  shaving  yaks-da23  Rebuild yaks sheds from note attribution: one row per actor
+commits-1                                 active · 4m ago
+  recent   yaks-7a11  shorn  yaks commits on a branch farm searches the farm branch and misses the code commits  4m ago
+yakherd                                   active · 19m ago
+  shaving  yaks-0071  Skills: keep every machine visible (sync cadence, heartbeat notes, actor names, claim hygiene)
+  shaving  yaks-039b  Sheds from notes, remote work visibility, and structured comments
+  shaving  yaks-735a  yaks land records landed shas on the yak; yaks commits reads recorded shas
+  shaving  yaks-bdf9  Design: commit hashes in yaks, now that the farm has its own branch
+  shaving  yaks-d3ad  Remove git/Delta shed discovery: yaks discover, the activity log, yaks.shed.title
+  shaving  yaks-6a11  Design: structured comment metadata (per-note frontmatter-like fields)
+  recent   yaks-7a11  shorn  yaks commits on a branch farm searches the farm branch and misses the code commits  22m ago
+  recent   yaks-b8cd  shorn  Note metadata surface: kinds from commands, update --meta, JSON, TUI header, doctor drift  22m ago
+  recent   yaks-da23  shaving  Rebuild yaks sheds from note attribution: one row per actor  22m ago
+  recent   yaks-4cd7  shorn  Note parser splits on a --- / ▸ pair inside a fenced code block  23m ago
+delta:Cloud Runners                       active · 41m ago
+  recent   yaks-6a11  shaving  Design: structured comment metadata (per-note frontmatter-like fields)  41m ago
+  recent   yaks-0071  shaving  Skills: keep every machine visible (sync cadence, heartbeat notes, actor names, claim hygiene)  42m ago
+  recent   yaks-a3fc  hairy  Design: show a shed's commits so far (pushed branches plus a little yak data)  43m ago
+  recent   yaks-bdf9  shaving  Design: commit hashes in yaks, now that the farm has its own branch  43m ago
+  recent   yaks-19c3  hairy  TUI: an activity log view of the farm (yaks log, newest first, with the shed each entry came from)  43m ago
+  (+5 more; --json lists them all)
+delta:Plan highlight colors for light and dark  active · 1h ago
+  recent   yaks-48e9  shorn  Unreadable highlights on light themes  1h ago
+delta:Clean up skills install and mode remnant  active · 1h ago
+  recent   yaks-a99f  shorn  Branch farms only: drop in-tree .yaks/ and pointer files; yaks.farm git config points a repo at another repo's farm; docs to examples  1h ago
+  recent   yaks-e532  shorn  Unify skills install  1h ago
+delta:ksQQhJ4mOC_KTlKDZQwbRNBUD5LOADjEEpIBxBCA  active · 1h ago
+  recent   yaks-e532  shorn  Unify skills install  1h ago
+delta:ksQQZYjOB1HNS6uSBKT_aZjoz5LOADi4D5IBxBCA  idle · 2h ago
+  recent   yaks-48e9  shorn  Unreadable highlights on light themes  2h ago
+delta:Check for `.yaks` file repo redirect sup  idle · 3d ago
+  recent   yaks-a99f  shorn  Branch farms only: drop in-tree .yaks/ and pointer files; yaks.farm git config points a repo at another repo's farm; docs to examples  3d ago
+  recent   yaks-43dc  hairy  Skills: reconcile pointer-farm shared/private and commit-message id rules  3d ago
+  recent   yaks-64c4  hairy  Yak archaeology: fast retrieval of past reasoning & provenance stitching  3d ago
+delta:Check yaks-6beb comment list formatting  idle · 3d ago
+  recent   yaks-92c7  shorn  Tidy requests add missing inline code and code fences  3d ago
+  recent   yaks-075c  shorn  Discourage inline enumerations in notes; let tidy requests make small connective edits  3d ago
+delta-lead                                idle · 4d ago
+  recent   yaks-dcf7  shorn  Release v0.0.24  4d ago
+  recent   yaks-8dbb  shorn  Tidy batch 2026-10-27: work through Joel's 122 tidy requests  4d ago
+  recent   yaks-092f  shorn  Tidy requests clean up after themselves: pickup --drop-request removes the request note  4d ago
+  recent   yaks-139b  shorn  yaks-working: sharpen prove-it-works + ask-when-no-lever  4d ago
+  recent   yaks-db07  shorn  Canned requests (tidy/summarize), markdown lint for run-on bodies, bulk --request  4d ago
+  (+117 more; --json lists them all)
+kinds-1                                   idle · 4d ago
+  recent   yaks-f853  shorn  request --kind tidy|summarize and bulk --request  4d ago
+runon-1                                   idle · 4d ago
+  recent   yaks-ef3b  shorn  Run-on filter: yaks whose markdown has lines that join into one paragraph  4d ago
+request-1                                 idle · 4d ago
+  recent   yaks-b75b  shorn  request: hand a yak to an agent through the inbox (needs: agent without a prior ask)  4d ago
+wait-1                                    idle · 4d ago
+  recent   yaks-f313  shorn  Some way for agents to get notified of available answers  4d ago
+delta:Triage starred yaks and design yaks-33c8  idle · 4d ago
+  recent   yaks-be32  shorn  AGENTS.md/README/RELEASING: local builds via cargo install --path ., no personal env  4d ago
+answer-editor-1                           idle · 4d ago
+  recent   yaks-ce5e  shorn  Make answer comments use the full comment editor  4d ago
+delta:Add basic image attachment rendering  idle · 5d ago
+  recent   yaks-0bf0  shorn  Show images inline in yak bodies and comments  5d ago
+  recent   yaks-4e9c  shorn  Display svg attachments in the image viewer  5d ago
+  recent   yaks-89fc  shorn  Image size syntax and default fit in markdown  8d ago
+  recent   yaks-4305  shorn  Add ability to display image attachments  8d ago
+toque-1                                   idle · 8d ago
+  recent   yaks-4e9c  shorn  Display svg attachments in the image viewer  8d ago
+svg-1                                     idle · 8d ago
+  recent   yaks-4e9c  shorn  Display svg attachments in the image viewer  8d ago
+size-1                                    idle · 8d ago
+  recent   yaks-89fc  shorn  Image size syntax and default fit in markdown  8d ago
+delta:ksQQQTmKmfXeRfyO736_R3BpP5LOAClXIpIBxBCA  idle · 8d ago
+  recent   yaks-4305  shorn  Add ability to display image attachments  8d ago
+delta:Fix TUI log spam during sync        idle · 8d ago
+  recent   yaks-6a9b  shorn  Per-herd directories: <herd>/yaks/<id>.md (schema 6), room for per-herd and global docs  8d ago
+  recent   yaks-cff1  shorn  Guard: land skill is repo-local, never bundled  8d ago
+delta:Land commit output capture fix      idle · 8d ago
+  recent   yaks-5d5a  shorn  On-screen log spew when syncing  8d ago
+delta:ksQQxR6dwDfzTEa0Hjn76t535ZLOACjjyZIBxBCA  idle · 8d ago
+  recent   yaks-5d5a  shorn  On-screen log spew when syncing  8d ago
+delta:sheds-review                        idle · 9d ago
+  recent   yaks-0b8a  shorn  Release 0.0.23  9d ago
+  recent   yaks-9a06  shorn  Shed detail: yak changes seem to be arbitrarily ordered  9d ago
+  recent   yaks-0309  shorn  Prioritized shed-list ordering  9d ago
+  recent   yaks-9eaa  shorn  Sheds from a local per-shed activity log + git facts; delete the farm-diff half of sheds.rs  9d ago
+  recent   yaks-ded9  hairy  Human-created Delta threads get the creator as their name  9d ago
+delta:herd-dirs                           idle · 9d ago
+  recent   yaks-9bd1  shorn  Release 0.0.22: farm branch lifecycle, schema 6, skills 8 to 4  9d ago
+  recent   yaks-6a34  shorn  One farm per machine: the farm on its own branch, reached from every shed (umbrella)  9d ago
+  recent   yaks-73f4  shorn  The farm is a branch: an orphan yaks branch replaces committed .yaks/ on main (shared, personal or local)  9d ago
+  recent   yaks-8c99  shorn  Trim the clap help: one-line summaries in yaks --help, detail in the long help  9d ago
+  recent   yaks-8f2e  shorn  Docs/skills: large-farm command-line traps (xargs silent chunking, E2BIG on absolute globs)  9d ago
+  (+16 more; --json lists them all)
+help-1                                    idle · 9d ago
+  recent   yaks-8c99  shorn  Trim the clap help: one-line summaries in yaks --help, detail in the long help  9d ago
+clidoc-1                                  idle · 9d ago
+  recent   yaks-f800  shorn  Trim docs/cli.md: short table rows, detail in sections below  9d ago
+retire-1                                  idle · 9d ago
+  recent   yaks-4c93  shorn  Retire the four coordination companion skills: drop them from BUNDLED, remove untouched installed copies  9d ago
+land-1                                    idle · 9d ago
+  recent   yaks-3bcd  shorn  land.sh: when the worker SHA is already an ancestor, check HEAD's tree really contains its change  9d ago
+  recent   yaks-e5fb  shorn  Port worker landing (land.sh) into the binary: yaks land <sha>  9d ago
+  recent   yaks-ed5e  shorn  yaks sheds: show a shed as landed when its farm changes are all already in this checkout's farm  19d ago
+init-1                                    idle · 9d ago
+  recent   yaks-b1e9  shorn  yaks init --mode branch [--branch <name>]: start a new farm on an orphan branch at farm_home  9d ago
+tui-sync-1                                idle · 9d ago
+  recent   yaks-ce5d  shorn  TUI: farm dirty/ahead/behind indicator + commit and sync keys  9d ago
+private-1                                 idle · 9d ago
+  recent   yaks-85bb  shorn  Private farm guard: yaks.private refuses sync's push and a pre-push hook blocks a manual push of the farm branch  9d ago
+driver-1                                  idle · 9d ago
+  recent   yaks-4a53  shorn  Frontmatter-aware merge driver for farm files: concurrent edits always merge into a VALID yak  9d ago
+status-1                                  idle · 9d ago
+  recent   yaks-bd1d  shorn  yaks status: farm branch ahead/behind its upstream (no fetch), reusable sync-state for the TUI  9d ago
+  recent   yaks-d4a7  shorn  preflight git-state fails on a farm branch's normal uncommitted state; check the farm is committed (or skip) instead of asking to git add  9d ago
+delta:herd-pass                           idle · 10d ago
+  recent   yaks-9eaa  shorn  Sheds from a local per-shed activity log + git facts; delete the farm-diff half of sheds.rs  10d ago
+  recent   yaks-b048  shorn  Rewrite the skills for one farm per machine: collapse the farm-mode and environment layers  10d ago
+  recent   yaks-df02  shorn  Tighten skill guidance around completion notes & evidence  12d ago
+  recent   yaks-8f2e  shorn  Docs/skills: large-farm command-line traps (xargs silent chunking, E2BIG on absolute globs)  12d ago
+  recent   yaks-7cd1  hairy  Per-repo agent context for private herds (config + .yaks/ instructions file)  12d ago
+  (+32 more; --json lists them all)
+delta:farm-bootstrap                      idle · 12d ago
+  recent   yaks-dc63  shorn  Release 0.0.21  12d ago
+  recent   yaks-a260  shorn  Bootstrap the farm worktree on first use: a repo with a yaks branch (local or origin/) but no worktree gets one at farm_home  12d ago
+delta-farm                                idle · 12d ago
+  recent   yaks-4a53  shorn  Frontmatter-aware merge driver for farm files: concurrent edits always merge into a VALID yak  12d ago
+  recent   yaks-bd7e  shorn  yaks migrate --to-branch: move an in-tree committed farm onto an orphan yaks branch (the yaks-87a3 cutover as one command)  12d ago
+  recent   yaks-0ef9  hairy  Per-user yaks state: one home for TUI views, the stale-skills marker and a repo-to-farm registry (config vs data vs state dirs)  12d ago
+  recent   yaks-87a3  shorn  Migrate this repo: the farm moves to an orphan yaks branch; .yaks/ leaves main; live_branch, sync_live and --land retire  12d ago
+  recent   yaks-73f4  shorn  The farm is a branch: an orphan yaks branch replaces committed .yaks/ on main (shared, personal or local)  12d ago
+  (+12 more; --json lists them all)
+migrate-1                                 idle · 12d ago
+  recent   yaks-bd7e  shorn  yaks migrate --to-branch: move an in-tree committed farm onto an orphan yaks branch (the yaks-87a3 cutover as one command)  12d ago
+  recent   yaks-a870  shorn  Schema 5 migration: comment header blank line + non-image attachment links  14d ago
+scale-1                                   idle · 12d ago
+  recent   yaks-b32e  shorn  Consider optimizations of the merged yak directory structure  12d ago
+attach-edit-1                             idle · 12d ago
+  recent   yaks-56c1  shorn  Edit text attachments inside the TUI (follow-up to the viewer)  12d ago
+clobber-1                                 idle · 12d ago
+  recent   yaks-9f5c  shorn  Optimistic concurrency on whole-body edits: TUI description/block edit must not clobber a concurrent note  12d ago
+attach-view-1                             idle · 13d ago
+  recent   yaks-699b  shorn  Inline viewing and editing of txt/md attachments  13d ago
+backrefs-1                                idle · 13d ago
+  recent   yaks-7c76  shorn  Find-references affordance in CLI/TUI  13d ago
+shear-1                                   idle · 13d ago
+  recent   yaks-27c6  shorn  Shear-with-comment in TUI  13d ago
+cache-1                                   idle · 13d ago
+  recent   yaks-bc30  shorn  Perf: cache rows() and the detail lines between input changes  13d ago
+srclinks-1                                idle · 13d ago
+  recent   yaks-da5e  shorn  Allow markdown links to repo files / source  13d ago
+formtrim-1                                idle · 13d ago
+  recent   yaks-92e5  shorn  Edit form keeps only header fields (drop content blocks and the accordion)  13d ago
+inplace-1                                 idle · 13d ago
+  recent   yaks-597d  shorn  In-place block editing in the detail pane (E on body, M for new comment)  13d ago
+autocont-1                                idle · 13d ago
+  recent   yaks-1f84  shorn  Editor: auto-continue lists and quotes on Enter (edtui fork)  13d ago
+delta-perf                                idle · 13d ago
+  recent   yaks-48d6  shorn  Perf: cursor movement in some complex detail panes is slow  13d ago
+delta-attach                              idle · 14d ago
+  recent   yaks-31e2  shorn  Attachments attempt to open on wrong path across sheds  14d ago
+links-2                                   idle · 14d ago
+  recent   yaks-1bbb  shorn  GFM extras: task lists, alerts, footnotes  14d ago
+  recent   yaks-3b8d  shorn  Links and attachments: collapse to text, markdown-friendly attachment links  14d ago
+syntax-1                                  idle · 14d ago
+  recent   yaks-3020  shorn  Embedded language highlighting inside fenced code blocks  14d ago
+hscroll-1                                 idle · 14d ago
+  recent   yaks-c733  shorn  Code blocks and tables: no-wrap, horizontal scroll  14d ago
+edmarks-1                                 idle · 14d ago
+  recent   yaks-9425  shorn  Editor: dim markers, hide them off the cursor line  14d ago
+palette-1                                 idle · 14d ago
+  recent   yaks-bc53  shorn  Shared markdown style palette for read pane + editor  14d ago
+bg-1                                      idle · 14d ago
+  recent   yaks-5408  shorn  Editor background: match the pane, not pitch black  14d ago
+hdr-1                                     idle · 14d ago
+  recent   yaks-66a3  shorn  Pinned header: a rule under it, and the status icon in the full header  14d ago
+dates-1                                   idle · 14d ago
+  recent   yaks-ef82  shorn  Human-friendly timestamp rendering  14d ago
+links-1                                   idle · 14d ago
+  recent   yaks-f67e  shorn  Fix: markdown link URL target swallows the closing paren  14d ago
+delta                                     idle · 14d ago
+  recent   yaks-9974  shorn  Release v0.0.19  14d ago
+  recent   yaks-28dc  shorn  sheds: say when a shed is merged with nothing outstanding, and what keeps a dirty one alive  14d ago
+  recent   yaks-5662  shorn  yaks sheds: diffs mislead on a branch-based arc (surveyor audit)  14d ago
+  recent   yaks-6af1  shorn  sheds: a fork point that follows a branch switch (clone starts on main, then checks out the branch)  14d ago
+  recent   yaks-8309  shorn  sheds: measure the primary against its branch upstream, not always origin/main  14d ago
+  (+1 more; --json lists them all)
+delta:ksQQnuQD5YCiRZqkHA9KaCSpVpLOABD6mJIBxBCg  idle · 17d ago
+  recent   yaks-d64e  shorn  Release v0.0.18  17d ago
+changes-1                                 idle · 17d ago
+  recent   yaks-7422  shorn  yaks changes: outstanding yaks first, landed ones folded; --outstanding and --status to focus  17d ago
+fold-1                                    idle · 17d ago
+  recent   yaks-c1f8  shorn  Sheds tab: a shed's detail lists outstanding yaks first and folds the landed ones (Enter expands)  17d ago
+ghost-1                                   idle · 18d ago
+  recent   yaks-9631  shorn  TUI overlay: shed-only yaks as dim rows, a copies: any|home drawer chip, and a two-shed conflict marker  18d ago
+fix-1                                     idle · 18d ago
+  recent   yaks-29e9  shorn  An ask answered in the reference copy (needs: agent there) still reads open in the asking shed  18d ago
+disco-1                                   idle · 18d ago
+  recent   yaks-93fe  shorn  sheds: a plain git worktree of a Delta clone is taken for the primary (named main, measured vs origin/main)  18d ago
+badge-1                                   idle · 18d ago
+  recent   yaks-ed6d  shorn  TUI overlay: shed badges on yak rows and a Sheds section in the yak detail  18d ago
+inbox-1                                   idle · 18d ago
+  recent   yaks-1ea3  shorn  TUI overlay: the Inbox includes other sheds' open asks, a answers them in place, and a new ask flashes  18d ago
+  recent   yaks-2917  shorn  yaks inbox --sheds: open asks across every shed, with the shed's name and the question text  21d ago
+perf-1                                    idle · 18d ago
+  recent   yaks-07fe  shorn  yaks sheds is slow (~1.2 s for 4 sheds): profile it and make the common path cheap  18d ago
+needs-1                                   idle · 18d ago
+  recent   yaks-8814  shorn  landed: a shed's needs: that the reference already resolved is not outstanding  18d ago
+bye-1                                     idle · 18d ago
+  recent   yaks-bbda  shorn  Flat farm, phase 4: remove the migration and the dual-layout read once every farm is migrated  18d ago
+shed-2                                    idle · 18d ago
+  recent   yaks-ca28  shorn  Flat farm, phase 2: sheds read both layouts (base_farm, mixed-layout comparisons)  18d ago
+mig-2                                     idle · 18d ago
+  recent   yaks-86f4  shorn  Flat farm, phase 2: yaks migrate + doctor/preflight checks  18d ago
+git-2                                     idle · 18d ago
+  recent   yaks-9f91  shorn  Flat farm, phase 2: git reporting (yaks status, yaks commit, changes.rs) for in-place status changes  18d ago
+live-1                                    idle · 19d ago
+  recent   yaks-9277  shorn  Shed state vocabulary: active, idle, landed, stale, orphan in yaks sheds  19d ago
+here-1                                    idle · 20d ago
+  recent   yaks-ad6d  shorn  yaks sheds: list the current shed too (marked), and let changes/--shed/answer name it  20d ago
+edit-2                                    idle · 20d ago
+  recent   yaks-047a  shorn  yaks sheds and changes: count an edited yak (title, description, fields), as yaks status does  20d ago
+base-1                                    idle · 20d ago
+  recent   yaks-e9bb  shorn  Sheds: one baseline per shed, its fork point, from every viewer (drop the viewer-relative sync rule)  20d ago
+delta:Delta :Yaks (cont'd)                idle · 21d ago
+  recent   yaks-3479  shorn  Release v0.0.13  21d ago
+  recent   yaks-1af5  shorn  CI: tests assumed a global git identity; the release dry run failed on a runner without one  21d ago
+  recent   yaks-7eea  shorn  Open the TUI on another shed: a shed picker (the CLI selector, -C and --shed, shipped)  21d ago
+  recent   yaks-a3d2  shorn  Design pass: CLI affordances and skill/workflow changes for agents using shed discovery (before the UI)  21d ago
+  recent   yaks-440d  shorn  yaks --shed <name>: run any command in another shed (full access; -C by name)  21d ago
+  (+15 more; --json lists them all)
+shed-1                                    idle · 21d ago
+  recent   yaks-440d  shorn  yaks --shed <name>: run any command in another shed (full access; -C by name)  21d ago
+title-1                                   idle · 21d ago
+  recent   yaks-886a  shorn  Shed names from Delta thread titles, slugged like a git worktree name  21d ago
+notes-1                                   idle · 21d ago
+  recent   yaks-85d9  shorn  yaks sheds counts a created yak's notes too (matches yaks changes)  21d ago
+show-1                                    idle · 21d ago
+  recent   yaks-e7ed  shorn  yaks show <id> --sheds: this checkout's copy, then one line per shed whose copy differs  21d ago
+ans-1                                     idle · 21d ago
+  recent   yaks-f347  shorn  yaks answer <id>@<shed>: answer an ask in another shed's copy (the one cross-shed write)  21d ago
+dedupe-1                                  idle · 21d ago
+  recent   yaks-5138  shorn  sheds: compare_farms and yak_changes apply the same four rules twice; count over yak_changes  21d ago
+chg-1                                     idle · 21d ago
+  recent   yaks-e39c  shorn  yaks changes <shed>: what one shed created, moved and noted since it forked, per yak, with actors  21d ago
+cflag-1                                   idle · 21d ago
+  recent   yaks-4e39  shorn  yaks -C <path>: run any command as if started in <path> (global flag, like git -C)  21d ago
+delta:ksQQI7UGw66zRMm9tnfRIaYEapLOAAa8q5IBxBCA  idle · 22d ago
+  recent   yaks-2177  shorn  yaks discover: a diagnostic that shows every discovery source's finds for an anchor (git worktrees, Delta siblings, Delta roots)  22d ago
+nbr-1                                     idle · 24d ago
+  recent   yaks-22f1  shorn  yaks sheds: use the nearer of the fork point and the merge-base with the viewer as a shed's baseline  24d ago
+sta-1                                     idle · 24d ago
+  recent   yaks-b6a9  shorn  yaks status: what yak changes has git not got yet  24d ago
+bas-1                                     idle · 24d ago
+  recent   yaks-37fa  shorn  yaks lanes: measure a lane's own changes from where the lane forked, not from the viewer's merge-base  24d ago
+shd-1                                     idle · 24d ago
+  recent   yaks-dfca  shorn  Rename lane to shed everywhere (yaks lanes becomes yaks sheds, no alias)  24d ago
+brf-2                                     idle · 24d ago
+  recent   yaks-2c22  shorn  Process rails: yaks brief (worker brief from a yak) and yaks preflight (landing checks)  24d ago
+agt-1                                     idle · 25d ago
+  recent   yaks-c061  shorn  Answered questions are hard to find: no 'answered, pending agent pickup' surface  25d ago
+ntf-1                                     idle · 25d ago
+  recent   yaks-5c83  shorn  yaks: tell the user once per release when project-local skills are stale (decision C of yaks-36b6)  25d ago
+inp-1                                     idle · 25d ago
+  recent   yaks-c53a  shorn  Body content input beyond inline args: --description-file, stdin, and yaks edit  25d ago
+ini-1                                     idle · 25d ago
+  recent   yaks-814a  shorn  yaks init --mode: explicit farm mode and environment setup  25d ago
+ins-1                                     idle · 25d ago
+  recent   yaks-3859  shorn  yaks skills install: project-local by default, choose workflow skills  25d ago
+unk-1                                     idle · 25d ago
+  recent   yaks-1b39  shorn  yaks lanes: ahead/behind are unknown (?) when there is no merge-base  25d ago
+pre-1                                     idle · 25d ago
+  recent   yaks-d1bd  shorn  yaks preflight: check that 'local' is the human's checkout before a push to main  25d ago
+lbl-1                                     idle · 25d ago
+  recent   yaks-c29a  shorn  yaks lanes: label each lane with who is working in it and on which yaks  25d ago
+lanes-2                                   idle · 26d ago
+  recent   yaks-d738  shorn  yaks lanes: show what a lane changed (vs merge-base) and how far behind it is, not a diff against this checkout  26d ago
+lanes-1                                   idle · 26d ago
+  recent   yaks-e545  shorn  yaks lanes: CLI and data layer for sibling checkouts (git worktrees and Delta clones)  26d ago
+attr-1                                    idle · 26d ago
+  recent   yaks-7149  shorn  Attribution is unreliable in agent flows: silent human fallback, unattributed transitions, no way to pin in Delta  26d ago
+probe-1                                   idle · 26d ago
+  recent   yaks-f49c  shorn  Probe: a worker's clone, remotes and sibling visibility on a shared-thread machine  26d ago
+t6-commit                                 idle · 27d ago
+  recent   yaks-2cd4  shorn  yaks commit: commit the farm's own changes in one command (public mode)  27d ago
+t6-bound                                  idle · 27d ago
+  recent   yaks-b4dc  shorn  discover: walk-up crosses the git top-level and finds another checkout's farm (Delta private mode)  27d ago
+t4-lock                                   idle · 27d ago
+  recent   yaks-800d  shorn  Concurrent updates to one yak can silently drop a note (no locking on read-modify-write)  27d ago
+t5-preflight                              idle · 27d ago
+  recent   yaks-06be  shorn  yaks preflight: landing-readiness checks (evidence staged, verify passed, no duplicate status dirs)  27d ago
+t5-actor                                  idle · 27d ago
+  recent   yaks-12a0  shorn  Resolve the actor from Delta's environment when neither --as nor YAKS_ACTOR is set  27d ago
+t4-path                                   idle · 27d ago
+  recent   yaks-aa49  shorn  id to path resolution: yaks path  27d ago
+trial2-skills                             idle · 27d ago
+  recent   yaks-0576  shorn  Make .agents/skills the real, single source of this repo's skills (no symlinks); keep the embed list explicit  27d ago
+trial1-haiku                              idle · 27d ago
+  recent   yaks-b47b  shorn  No default or explicit herd should error in `yaks create`  27d ago
+trial1-sonnet                             idle · 27d ago
+  recent   yaks-cc52  shorn  Following a link to a yak outside any pinned view shows the previous yak  27d ago
+delta-agent                               idle · 27d ago
+  recent   yaks-5c9f  shorn  Restructure coordinator/worker skills by farm mode (public / private / out-of-tree)  27d ago
+  recent   yaks-b5a0  shorn  Parallel development: finish and harden coordinator/worker skills + tooling (git worktrees, Delta)  27d ago
+  recent   yaks-5fe9  shorn  Case study: first Delta run (yaks-7fa0 via a Haiku worker + a fix-up subthread)  27d ago
+  recent   yaks-7fa0  shorn  Line-join in vim mode should leave whitespace  28d ago
+claude                                    idle · 29d ago
+  recent   yaks-15c7  shorn  Scrolling in yak details doesn't show last line  29d ago
+  recent   yaks-a211  shorn  Detail page height counts the sticky title row, so Tab can put the cursor one row below the viewport  29d ago
+coordinator                               idle · 37d ago
+  recent   yaks-7cb3  shorn  Parse label edits with/without commas  37d ago
+  recent   yaks-97a2  shorn  Mouse support  37d ago
+  recent   yaks-77a5  hairy  Case study: reconstruct the 2026-09-23 UI lightning round (11 lanes + 3 scouts)  37d ago
+  recent   yaks-cc52  shorn  Following a link to a yak outside any pinned view shows the previous yak  37d ago
+  recent   yaks-b2ed  hairy  Autocompletion UI infrastructure  37d ago
+  (+85 more; --json lists them all)
+lane-labels                               idle · 37d ago
+  recent   yaks-7cb3  shorn  Parse label edits with/without commas  37d ago
+  recent   yaks-f04d  hairy  Known labels in configuration  37d ago
+lane-attach                               idle · 37d ago
+  recent   yaks-a09b  shorn  Rename attachment from TUI  37d ago
+  recent   yaks-fe19  shorn  Rename attachment  37d ago
+lane-paste                                idle · 37d ago
+  recent   yaks-f2aa  shorn  Pasting into description *very* slow  37d ago
+lane-mouse                                idle · 37d ago
+  recent   yaks-97a2  shorn  Mouse support  37d ago
+lane-slaughter                            idle · 37d ago
+  recent   yaks-05da  shorn  Slaughter family with confirmation  37d ago
+lane-polish                               idle · 37d ago
+  recent   yaks-027a  shorn  Answer mode needs a little spacing  37d ago
+  recent   yaks-2d17  shorn  Broken coloring in wrapping yak detail lines  37d ago
+lane-form                                 idle · 37d ago
+  recent   yaks-4da6  shorn  Text wrapping bugs on single-line inputs  37d ago
+  recent   yaks-b0b4  shorn  Edit source frontmatter in the create/edit form  37d ago
+lane-navpos                               idle · 37d ago
+  recent   yaks-28b4  shorn  Keep detail cursor/scroll position on back/forward nav  37d ago
+lane-width                                idle · 37d ago
+  recent   yaks-9e59  shorn  Max detail width affordance  37d ago
+lane-openid                               idle · 37d ago
+  recent   yaks-63f3  shorn  Open a yak by id (jump to its detail)  37d ago
+lane-scroll                               idle · 37d ago
+  recent   yaks-9009  shorn  List-view scrolling pins to bottom  37d ago
+agent                                     idle · 38d ago
+  recent   yaks-0ba6  shorn  Release v0.0.10  38d ago
+  recent   yaks-1d51  shorn  Improved skill installation and management  38d ago
+  recent   yaks-bd9a  shorn  Skill update and validation  38d ago
+  recent   yaks-d8e9  shorn  skills install --force can clobber the repo's own skills/ source  38d ago
+  recent   yaks-e233  shorn  Shipped skills use a non-spec frontmatter key (activation:), breaking portability  38d ago
+  (+27 more; --json lists them all)
+lane-c                                    idle · 50d ago
+  recent   yaks-f207  shorn  Changing priority (or anything that causes a list resort) in detail mode doesn't update selection  50d ago
+lane-a                                    idle · 50d ago
+  recent   yaks-7a1c  shorn  Move ephemeral yellow status line to second row  50d ago
+lane-b                                    idle · 50d ago
+  recent   yaks-26f0  shorn  Search in detail not sticky  50d ago
+worker-agents                             idle · 53d ago
+  recent   yaks-7d49  shorn  Dogfood: encode toque TUI-verification guidance in this repo  53d ago
+worker-skill                              idle · 53d ago
+  recent   yaks-139b  shorn  yaks-working: sharpen prove-it-works + ask-when-no-lever  53d ago
+worker                                    idle · 53d ago
+  recent   yaks-f4fa  dead  Team-mode PR-flow validation (yaks-213b)  53d ago
+wt-docref                                 idle · 55d ago
+  recent   yaks-1832  shorn  doctor --strict: scope evidence check to shorn; rank dead separately  55d ago
+wt-docs                                   idle · 55d ago
+  recent   yaks-7035  shorn  Document doctor + doctor --strict; audit command list  55d ago
+  recent   yaks-c411  shorn  Refresh yak skill + README for the current CLI surface  56d ago
+wt-doctor                                 idle · 55d ago
+  recent   yaks-d236  shorn  yaks doctor --strict: evidence-before-shear predicate  55d ago
+wt-bulkdocs                               idle · 55d ago
+  recent   yaks-91a8  shorn  Document yaks bulk (filter-mutation, dry-run-default) in README + yak skill  55d ago
+wt-cli                                    idle · 56d ago
+  recent   yaks-a11b  shorn  yaks bulk: filter-driven field mutation (dry-run-default)  56d ago
+  recent   yaks-d4d3  shorn  No-yak-ids validation tool  56d ago
+  recent   yaks-5fae  shorn  Bulk and filtered field updates & reparents  56d ago
+  recent   yaks-2120  shorn  Machine-readable create + positional title  57d ago
+  recent   yaks-f81a  shorn  a3a6 CLI: --needs filter flag; inbox = list --needs sugar  57d ago
+  (+2 more; --json lists them all)
+wt-tui                                    idle · 56d ago
+  recent   yaks-5c51  shorn  Apply the slaughter child-guard to bulk/multi-select slaughter  56d ago
+  recent   yaks-f433  shorn  Yak editing: Crash when shift-tab'ing from description back to labels  56d ago
+  recent   yaks-de85  shorn  Multi-select list items for bulk mutations  56d ago
+  recent   yaks-685e  shorn  TUI: accent styling for the needs block (detail line + badge)  57d ago
+  recent   yaks-11e9  shorn  a3a6 TUI: inbox as a filter/saved-view; remove the i toggle  57d ago
+  (+2 more; --json lists them all)
+wt-skill                                  idle · 57d ago
+  recent   yaks-766d  shorn  working-a-yak: add needs/ask-answer guidance (hand back, don't self-clear)  57d ago
+  recent   yaks-6f21  shorn  coordinating-yaks: file-tool fallback rung + coordinator pre-flight checklist  57d ago

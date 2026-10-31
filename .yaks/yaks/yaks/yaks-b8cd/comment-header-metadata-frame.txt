@@ -1,0 +1,34 @@
+---
+source: src/tui/tests.rs
+expression: frame
+---
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   🛖  Sheds
+
+◂ Task: t0
+│
+│ Title:       solo
+│ Status:      🦬  hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     -
+│ Updated:     -
+│ Labels:      -
+│
+│ The description.
+│
+│ Plan
+│
+│ • one
+│ • two
+│
+│ ▸ tex-1 · Jan 1, 2026 00:00 UTC · checkpoint · commit 47076b0 ─────────────────────────
+│ Atlas and UVs done.
+│
+│ ▸ joel · Jan 2, 2026 00:00 UTC ────────────────────────────────────────────────────────
+│ plain
+│
+│
+│
+│
+│
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state

@@ -1,0 +1,18 @@
+---
+source: src/tui/sheds_tab.rs
+expression: "draw(&app, 120, 14)"
+---
+ 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   🛖  Sheds (4)             scanned 4s ago
+
+⏳  tex-1                     active 14m ago      shaving: mem-7aba
+   walk-1                    active 9m ago       shaving: mem-f13a
+   delta:Set up remote yak   active 12m ago      shaving: mem-f434
+   perf-2                    stale  5h ago       shaving: mem-0a01
+   mig-2                     idle   1d ago       last: mem-0001 Migrate the save format
+   gone-1                    idle   30d ago      last: mem-0002 Old spike
+
+
+
+
+   farm: up to date with origin/yaks
+Tab:view  j/k:move  l:detail  y:copy name  r:rescan  v:views  ?:help  q:quit

@@ -1,0 +1,47 @@
+farm: 4 ahead, 0 behind origin/yaks (as of the last fetch)
+
+Joel Webber                               active · 35m ago
+  asking   yaks-158d  hairy  Global back/forward navigation across view states  37d ago
+  recent   yaks-6a11  shaving  Design: structured comment metadata (per-note frontmatter-like fields)  35m ago
+  recent   yaks-139b  shorn  yaks-working: sharpen prove-it-works + ask-when-no-lever  4d ago
+  recent   yaks-33c8  shorn  Idea: model-driven reformat of legacy yak bodies for CommonMark  4d ago
+  recent   yaks-0bf0  shorn  Show images inline in yak bodies and comments  5d ago
+  recent   yaks-4e9c  shorn  Display svg attachments in the image viewer  8d ago
+  (+59 more; --json lists them all)
+design-scout                              idle · 37d ago
+  asking   yaks-953f  hairy  Global search context  37d ago
+  asking   yaks-158d  hairy  Global back/forward navigation across view states  37d ago
+  asking   yaks-683f  hairy  Save incomplete edits of yaks and descriptions/comments  37d ago
+  recent   yaks-1bbd  hairy  Carry search context through the UI globally  37d ago
+meta-1                                    active · just now
+  recent   yaks-b8cd  shorn  Note metadata surface: kinds from commands, update --meta, JSON, TUI header, doctor drift  just now
+sheds-1                                   active · 1m ago
+  shaving  yaks-da23  Rebuild yaks sheds from note attribution: one row per actor
+commits-1                                 active · 4m ago
+  recent   yaks-7a11  shorn  yaks commits on a branch farm searches the farm branch and misses the code commits  4m ago
+yakherd                                   active · 19m ago
+  shaving  yaks-0071  Skills: keep every machine visible (sync cadence, heartbeat notes, actor names, claim hygiene)
+  shaving  yaks-039b  Sheds from notes, remote work visibility, and structured comments
+  shaving  yaks-735a  yaks land records landed shas on the yak; yaks commits reads recorded shas
+  shaving  yaks-bdf9  Design: commit hashes in yaks, now that the farm has its own branch
+  shaving  yaks-d3ad  Remove git/Delta shed discovery: yaks discover, the activity log, yaks.shed.title
+  shaving  yaks-6a11  Design: structured comment metadata (per-note frontmatter-like fields)
+  recent   yaks-7a11  shorn  yaks commits on a branch farm searches the farm branch and misses the code commits  22m ago
+  recent   yaks-b8cd  shorn  Note metadata surface: kinds from commands, update --meta, JSON, TUI header, doctor drift  22m ago
+  recent   yaks-da23  shaving  Rebuild yaks sheds from note attribution: one row per actor  22m ago
+  recent   yaks-4cd7  shorn  Note parser splits on a --- / ▸ pair inside a fenced code block  23m ago
+delta:Cloud Runners                       active · 41m ago
+  recent   yaks-6a11  shaving  Design: structured comment metadata (per-note frontmatter-like fields)  41m ago
+  recent   yaks-0071  shaving  Skills: keep every machine visible (sync cadence, heartbeat notes, actor names, claim hygiene)  42m ago
+  recent   yaks-a3fc  hairy  Design: show a shed's commits so far (pushed branches plus a little yak data)  43m ago
+  recent   yaks-bdf9  shaving  Design: commit hashes in yaks, now that the farm has its own branch  43m ago
+  recent   yaks-19c3  hairy  TUI: an activity log view of the farm (yaks log, newest first, with the shed each entry came from)  43m ago
+  (+5 more; --json lists them all)
+delta:Plan highlight colors for light and dark  active · 1h ago
+  recent   yaks-48e9  shorn  Unreadable highlights on light themes  1h ago
+delta:Clean up skills install and mode remnant  active · 1h ago
+  recent   yaks-a99f  shorn  Branch farms only: drop in-tree .yaks/ and pointer files; yaks.farm git config points a repo at another repo's farm; docs to examples  1h ago
+  recent   yaks-e532  shorn  Unify skills install  1h ago
+delta:ksQQhJ4mOC_KTlKDZQwbRNBUD5LOADjEEpIBxBCA  active · 1h ago
+  recent   yaks-e532  shorn  Unify skills install  1h ago
+(138 idle actors; --all lists them)

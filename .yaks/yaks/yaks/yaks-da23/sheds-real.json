@@ -1,0 +1,6245 @@
+{
+  "farm": {
+    "branch": "yaks",
+    "upstream": "origin/yaks",
+    "ahead": 4,
+    "behind": 0
+  },
+  "sheds": [
+    {
+      "name": "Joel Webber",
+      "liveness": "active",
+      "last_write": "2026-10-31T16:04:10Z",
+      "working": [],
+      "asking": [
+        "yaks-158d"
+      ],
+      "touched": [
+        {
+          "id": "yaks-6a11",
+          "title": "Design: structured comment metadata (per-note frontmatter-like fields)",
+          "status": "shaving",
+          "needs": null,
+          "last": "2026-10-31T16:04:10Z",
+          "working": false
+        },
+        {
+          "id": "yaks-139b",
+          "title": "yaks-working: sharpen prove-it-works + ask-when-no-lever",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T23:22:49Z",
+          "working": false
+        },
+        {
+          "id": "yaks-33c8",
+          "title": "Idea: model-driven reformat of legacy yak bodies for CommonMark",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T21:46:24Z",
+          "working": false
+        },
+        {
+          "id": "yaks-0bf0",
+          "title": "Show images inline in yak bodies and comments",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-25T21:07:19Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4e9c",
+          "title": "Display svg attachments in the image viewer",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T21:01:42Z",
+          "working": false
+        },
+        {
+          "id": "yaks-5d5a",
+          "title": "On-screen log spew when syncing",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T12:29:56Z",
+          "working": false
+        },
+        {
+          "id": "yaks-472e",
+          "title": "Farm branch sync lifecycle: commit, pull and push the farm (yaks sync), design first",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T20:12:06Z",
+          "working": false
+        },
+        {
+          "id": "yaks-78ff",
+          "title": "Think through yak shed commit/worktree flows",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-17T17:20:15Z",
+          "working": false
+        },
+        {
+          "id": "yaks-a893",
+          "title": "Design: unify view and edit for the description and comments",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T16:53:38Z",
+          "working": false
+        },
+        {
+          "id": "yaks-bc53",
+          "title": "Shared markdown style palette for read pane + editor",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T16:29:41Z",
+          "working": false
+        },
+        {
+          "id": "yaks-9a06",
+          "title": "Shed detail: yak changes seem to be arbitrarily ordered",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T14:44:16Z",
+          "working": false
+        },
+        {
+          "id": "yaks-31e2",
+          "title": "Attachments attempt to open on wrong path across sheds",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T13:26:59Z",
+          "working": false
+        },
+        {
+          "id": "yaks-1f84",
+          "title": "Editor: auto-continue lists and quotes on Enter (edtui fork)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T13:22:47Z",
+          "working": false
+        },
+        {
+          "id": "yaks-3b8d",
+          "title": "Links and attachments: collapse to text, markdown-friendly attachment links",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T04:35:54Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2362",
+          "title": "Markdown-friendly comment separator format",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T04:32:22Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8471",
+          "title": "Downward guidance: a note @shed, a second cross-shed write for steering a worker",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-17T03:17:08Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ea13",
+          "title": "Markdown rendering improvements",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T03:05:33Z",
+          "working": false
+        },
+        {
+          "id": "yaks-faf5",
+          "title": "Yak detail rendering / editing improvements",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T03:03:27Z",
+          "working": false
+        },
+        {
+          "id": "yaks-991c",
+          "title": "Ensure all agent-yak interactions route through the CLI",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-16T20:09:48Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7204",
+          "title": "Shed deltas as an overlay across the TUI and CLI, not just a shed picker",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T01:45:49Z",
+          "working": false
+        },
+        {
+          "id": "yaks-98f1",
+          "title": "TUI: a thin Sheds tab (shed list + a shed's changes), refreshed in the background",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T00:08:41Z",
+          "working": false
+        },
+        {
+          "id": "yaks-77a5",
+          "title": "Case study: reconstruct the 2026-09-23 UI lightning round (11 lanes + 3 scouts)",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-12T21:49:53Z",
+          "working": false
+        },
+        {
+          "id": "yaks-64c4",
+          "title": "Yak archaeology: fast retrieval of past reasoning & provenance stitching",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-12T21:49:52Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f04d",
+          "title": "Known labels in configuration",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-12T21:49:45Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8b7a",
+          "title": "Decision: status as a frontmatter field (one stable path per yak) vs status directories",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-12T19:44:39Z",
+          "working": false
+        },
+        {
+          "id": "yaks-9277",
+          "title": "Shed state vocabulary: active, idle, landed, stale, orphan in yaks sheds",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-11T21:30:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-3479",
+          "title": "Release v0.0.13",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-10T15:18:17Z",
+          "working": false
+        },
+        {
+          "id": "yaks-a3d2",
+          "title": "Design pass: CLI affordances and skill/workflow changes for agents using shed discovery (before the UI)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T22:13:17Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2c22",
+          "title": "Process rails: yaks brief (worker brief from a yak) and yaks preflight (landing checks)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-06T03:40:48Z",
+          "working": false
+        },
+        {
+          "id": "yaks-c061",
+          "title": "Answered questions are hard to find: no 'answered, pending agent pickup' surface",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T22:36:13Z",
+          "working": false
+        },
+        {
+          "id": "yaks-9a69",
+          "title": "Phase 4: distribution cutover",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-05T22:35:07Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2892",
+          "title": "Phase 3: demo + snapshot testing via rendered Buffer + avt",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-05T22:35:06Z",
+          "working": false
+        },
+        {
+          "id": "yaks-eb87",
+          "title": "Differential-testing tool: capture Python curses TUI via PTY+pyte",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-05T22:35:06Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f0c2",
+          "title": "Phase 3 slice: headless agent-driver harness (stdin actions -> text+style+state snapshots)",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-05T22:35:06Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2c16",
+          "title": "CLI/MCP affordance to attach to a running yaks tui",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-05T22:28:42Z",
+          "working": false
+        },
+        {
+          "id": "yaks-382b",
+          "title": "Give explicit markdown formatting guidance in skills",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T22:26:45Z",
+          "working": false
+        },
+        {
+          "id": "yaks-36b6",
+          "title": "Auto-update installed project-local skills when yaks is upgraded?",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T22:08:36Z",
+          "working": false
+        },
+        {
+          "id": "yaks-814a",
+          "title": "yaks init --mode: explicit farm mode and environment setup",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T20:51:41Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7149",
+          "title": "Attribution is unreliable in agent flows: silent human fallback, unattributed transitions, no way to pin in Delta",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T20:46:42Z",
+          "working": false
+        },
+        {
+          "id": "yaks-99ec",
+          "title": "Cross-machine Delta threads: worktree discovery when 'local' is a managed bare repo (or a different path per machine)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T20:44:44Z",
+          "working": false
+        },
+        {
+          "id": "yaks-800d",
+          "title": "Concurrent updates to one yak can silently drop a note (no locking on read-modify-write)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T04:40:17Z",
+          "working": false
+        },
+        {
+          "id": "yaks-5c9f",
+          "title": "Restructure coordinator/worker skills by farm mode (public / private / out-of-tree)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-03T23:14:04Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b2ed",
+          "title": "Autocompletion UI infrastructure",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-03T20:31:56Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7fa0",
+          "title": "Line-join in vim mode should leave whitespace",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-02T21:13:28Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ebd0",
+          "title": "Copying to clipboard fails silently on linux",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-02T05:09:00Z",
+          "working": false
+        },
+        {
+          "id": "yaks-10ce",
+          "title": "toque README: real agent-driven yaks session (protocol transcript + SVG frames); fix canon link",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-01T22:19:49Z",
+          "working": false
+        },
+        {
+          "id": "yaks-532e",
+          "title": "Move yaks + toque + edtui from rocketsurgery-games to joelgwebber (GitHub) and @j15r (npm)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-01T17:14:54Z",
+          "working": false
+        },
+        {
+          "id": "yaks-48f4",
+          "title": "Diagnose/fix local build failure after toque hoist (let-chains need rustc >= 1.88)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-01T13:52:20Z",
+          "working": false
+        },
+        {
+          "id": "yaks-e985",
+          "title": "Ignore stray root package.json/package-lock.json from a bare npm install",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-27T19:12:03Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2059",
+          "title": "Consume toque from its public repo (joelgwebber/toque) instead of crates/toque",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-27T19:07:41Z",
+          "working": false
+        },
+        {
+          "id": "yaks-137a",
+          "title": "Release v0.0.11",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-24T02:30:35Z",
+          "working": false
+        },
+        {
+          "id": "yaks-97a2",
+          "title": "Mouse support",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-24T01:06:07Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7cb3",
+          "title": "Parse label edits with/without commas",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-24T01:04:48Z",
+          "working": false
+        },
+        {
+          "id": "yaks-158d",
+          "title": "Global back/forward navigation across view states",
+          "status": "hairy",
+          "needs": "human",
+          "last": "2026-09-23T16:57:17Z",
+          "working": false
+        },
+        {
+          "id": "yaks-71d1",
+          "title": "Edit affordance for yak herd",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T21:17:07Z",
+          "working": false
+        },
+        {
+          "id": "yaks-92bf",
+          "title": "Terminology migration: herd->farm, HerdScope->family; herd now names a prefix-group (code+docs+skills)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T17:39:57Z",
+          "working": false
+        },
+        {
+          "id": "yaks-a0a8",
+          "title": "Cut v0.0.8 release (tui.rs split, detail sticky header, toque SVG frames)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-13T23:44:32Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2301",
+          "title": "b1cc/5 Extract render layer -> src/tui/render/",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-11T03:37:50Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b1cc",
+          "title": "Split src/tui.rs monolith into a render/ module tree",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-11T01:45:19Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7ba4",
+          "title": "yaks verify: optional cached last-green short-circuit",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-09-11T01:15:37Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7a1c",
+          "title": "Move ephemeral yellow status line to second row",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-11T00:15:50Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f207",
+          "title": "Changing priority (or anything that causes a list resort) in detail mode doesn't update selection",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-11T00:08:44Z",
+          "working": false
+        },
+        {
+          "id": "yaks-26f0",
+          "title": "Search in detail not sticky",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-10T23:54:55Z",
+          "working": false
+        },
+        {
+          "id": "yaks-d4d2",
+          "title": "yaks verify: per-yak verify command + runner (automated evidence)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-08T02:20:47Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7cc8",
+          "title": "DECIDE: safety model for filter-driven bulk mutations",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-04T18:04:44Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "design-scout",
+      "liveness": "idle",
+      "last_write": "2026-09-23T21:40:08Z",
+      "working": [],
+      "asking": [
+        "yaks-953f",
+        "yaks-158d",
+        "yaks-683f"
+      ],
+      "touched": [
+        {
+          "id": "yaks-1bbd",
+          "title": "Carry search context through the UI globally",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-09-23T21:40:08Z",
+          "working": false
+        },
+        {
+          "id": "yaks-953f",
+          "title": "Global search context",
+          "status": "hairy",
+          "needs": "human",
+          "last": "2026-09-23T21:40:08Z",
+          "working": false
+        },
+        {
+          "id": "yaks-158d",
+          "title": "Global back/forward navigation across view states",
+          "status": "hairy",
+          "needs": "human",
+          "last": "2026-09-23T21:39:42Z",
+          "working": false
+        },
+        {
+          "id": "yaks-683f",
+          "title": "Save incomplete edits of yaks and descriptions/comments",
+          "status": "hairy",
+          "needs": "human",
+          "last": "2026-09-23T21:39:11Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "meta-1",
+      "liveness": "active",
+      "last_write": "2026-10-31T16:38:49Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-b8cd",
+          "title": "Note metadata surface: kinds from commands, update --meta, JSON, TUI header, doctor drift",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-31T16:38:49Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "sheds-1",
+      "liveness": "active",
+      "last_write": "2026-10-31T16:38:39Z",
+      "working": [
+        "yaks-da23"
+      ],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-da23",
+          "title": "Rebuild yaks sheds from note attribution: one row per actor",
+          "status": "shaving",
+          "needs": null,
+          "last": "2026-10-31T16:38:39Z",
+          "working": true
+        }
+      ]
+    },
+    {
+      "name": "commits-1",
+      "liveness": "active",
+      "last_write": "2026-10-31T16:34:49Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-7a11",
+          "title": "yaks commits on a branch farm searches the farm branch and misses the code commits",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-31T16:34:49Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "yakherd",
+      "liveness": "active",
+      "last_write": "2026-10-31T16:20:14Z",
+      "working": [
+        "yaks-0071",
+        "yaks-039b",
+        "yaks-735a",
+        "yaks-bdf9",
+        "yaks-d3ad",
+        "yaks-6a11"
+      ],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-0071",
+          "title": "Skills: keep every machine visible (sync cadence, heartbeat notes, actor names, claim hygiene)",
+          "status": "shaving",
+          "needs": null,
+          "last": "2026-10-31T16:20:14Z",
+          "working": true
+        },
+        {
+          "id": "yaks-039b",
+          "title": "Sheds from notes, remote work visibility, and structured comments",
+          "status": "shaving",
+          "needs": null,
+          "last": "2026-10-31T16:19:03Z",
+          "working": true
+        },
+        {
+          "id": "yaks-735a",
+          "title": "yaks land records landed shas on the yak; yaks commits reads recorded shas",
+          "status": "shaving",
+          "needs": null,
+          "last": "2026-10-31T16:17:16Z",
+          "working": true
+        },
+        {
+          "id": "yaks-7a11",
+          "title": "yaks commits on a branch farm searches the farm branch and misses the code commits",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-31T16:17:16Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b8cd",
+          "title": "Note metadata surface: kinds from commands, update --meta, JSON, TUI header, doctor drift",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-31T16:17:15Z",
+          "working": false
+        },
+        {
+          "id": "yaks-bdf9",
+          "title": "Design: commit hashes in yaks, now that the farm has its own branch",
+          "status": "shaving",
+          "needs": null,
+          "last": "2026-10-31T16:17:15Z",
+          "working": true
+        },
+        {
+          "id": "yaks-d3ad",
+          "title": "Remove git/Delta shed discovery: yaks discover, the activity log, yaks.shed.title",
+          "status": "shaving",
+          "needs": null,
+          "last": "2026-10-31T16:17:15Z",
+          "working": true
+        },
+        {
+          "id": "yaks-da23",
+          "title": "Rebuild yaks sheds from note attribution: one row per actor",
+          "status": "shaving",
+          "needs": null,
+          "last": "2026-10-31T16:17:15Z",
+          "working": false
+        },
+        {
+          "id": "yaks-6a11",
+          "title": "Design: structured comment metadata (per-note frontmatter-like fields)",
+          "status": "shaving",
+          "needs": null,
+          "last": "2026-10-31T16:16:35Z",
+          "working": true
+        },
+        {
+          "id": "yaks-4cd7",
+          "title": "Note parser splits on a --- / ▸ pair inside a fenced code block",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-31T16:16:34Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:Cloud Runners",
+      "liveness": "active",
+      "last_write": "2026-10-31T15:58:01Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-6a11",
+          "title": "Design: structured comment metadata (per-note frontmatter-like fields)",
+          "status": "shaving",
+          "needs": null,
+          "last": "2026-10-31T15:58:01Z",
+          "working": false
+        },
+        {
+          "id": "yaks-0071",
+          "title": "Skills: keep every machine visible (sync cadence, heartbeat notes, actor names, claim hygiene)",
+          "status": "shaving",
+          "needs": null,
+          "last": "2026-10-31T15:57:07Z",
+          "working": false
+        },
+        {
+          "id": "yaks-a3fc",
+          "title": "Design: show a shed's commits so far (pushed branches plus a little yak data)",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-31T15:56:38Z",
+          "working": false
+        },
+        {
+          "id": "yaks-bdf9",
+          "title": "Design: commit hashes in yaks, now that the farm has its own branch",
+          "status": "shaving",
+          "needs": null,
+          "last": "2026-10-31T15:56:38Z",
+          "working": false
+        },
+        {
+          "id": "yaks-19c3",
+          "title": "TUI: an activity log view of the farm (yaks log, newest first, with the shed each entry came from)",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-31T15:56:26Z",
+          "working": false
+        },
+        {
+          "id": "yaks-d695",
+          "title": "Add pull-request(s) field to frontmatter",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-31T15:56:26Z",
+          "working": false
+        },
+        {
+          "id": "yaks-6beb",
+          "title": "Delta: yaks sheds from a primary that is not the Delta host (managed repos) finds no sheds",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-31T15:56:25Z",
+          "working": false
+        },
+        {
+          "id": "yaks-9b9f",
+          "title": "Flaky test: sheds inspecting_a_shed_changes_nothing_in_it fails under macOS fsmonitor",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-31T15:56:25Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ded9",
+          "title": "Human-created Delta threads get the creator as their name",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-31T15:56:25Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f1e6",
+          "title": "Sheds view: More like list/tree views",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-31T15:56:25Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:Plan highlight colors for light and dark",
+      "liveness": "active",
+      "last_write": "2026-10-31T15:30:43Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-48e9",
+          "title": "Unreadable highlights on light themes",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-31T15:30:43Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:Clean up skills install and mode remnant",
+      "liveness": "active",
+      "last_write": "2026-10-31T15:09:03Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-a99f",
+          "title": "Branch farms only: drop in-tree .yaks/ and pointer files; yaks.farm git config points a repo at another repo's farm; docs to examples",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-31T15:09:03Z",
+          "working": false
+        },
+        {
+          "id": "yaks-e532",
+          "title": "Unify skills install",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-31T15:07:21Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:ksQQhJ4mOC_KTlKDZQwbRNBUD5LOADjEEpIBxBCA",
+      "liveness": "active",
+      "last_write": "2026-10-31T14:54:57Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-e532",
+          "title": "Unify skills install",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-31T14:54:57Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:ksQQZYjOB1HNS6uSBKT_aZjoz5LOADi4D5IBxBCA",
+      "liveness": "idle",
+      "last_write": "2026-10-31T14:30:20Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-48e9",
+          "title": "Unreadable highlights on light themes",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-31T14:30:20Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:Check for `.yaks` file repo redirect sup",
+      "liveness": "idle",
+      "last_write": "2026-10-27T23:23:35Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-a99f",
+          "title": "Branch farms only: drop in-tree .yaks/ and pointer files; yaks.farm git config points a repo at another repo's farm; docs to examples",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-27T23:23:35Z",
+          "working": false
+        },
+        {
+          "id": "yaks-43dc",
+          "title": "Skills: reconcile pointer-farm shared/private and commit-message id rules",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-27T23:23:34Z",
+          "working": false
+        },
+        {
+          "id": "yaks-64c4",
+          "title": "Yak archaeology: fast retrieval of past reasoning & provenance stitching",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-27T22:29:32Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:Check yaks-6beb comment list formatting",
+      "liveness": "idle",
+      "last_write": "2026-10-27T19:16:11Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-92c7",
+          "title": "Tidy requests add missing inline code and code fences",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-27T19:16:11Z",
+          "working": false
+        },
+        {
+          "id": "yaks-075c",
+          "title": "Discourage inline enumerations in notes; let tidy requests make small connective edits",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-27T19:04:50Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta-lead",
+      "liveness": "idle",
+      "last_write": "2026-10-27T13:10:39Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-dcf7",
+          "title": "Release v0.0.24",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-27T13:10:39Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8dbb",
+          "title": "Tidy batch 2026-10-27: work through Joel's 122 tidy requests",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-27T02:37:29Z",
+          "working": false
+        },
+        {
+          "id": "yaks-092f",
+          "title": "Tidy requests clean up after themselves: pickup --drop-request removes the request note",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-27T00:50:59Z",
+          "working": false
+        },
+        {
+          "id": "yaks-139b",
+          "title": "yaks-working: sharpen prove-it-works + ask-when-no-lever",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T23:31:06Z",
+          "working": false
+        },
+        {
+          "id": "yaks-db07",
+          "title": "Canned requests (tidy/summarize), markdown lint for run-on bodies, bulk --request",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T23:19:10Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ef3b",
+          "title": "Run-on filter: yaks whose markdown has lines that join into one paragraph",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T23:19:10Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f853",
+          "title": "request --kind tidy|summarize and bulk --request",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T23:19:10Z",
+          "working": false
+        },
+        {
+          "id": "yaks-00c4",
+          "title": "Affordance for auto-creating a yak from an upstream issue",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-26T23:07:03Z",
+          "working": false
+        },
+        {
+          "id": "yaks-33c8",
+          "title": "Idea: model-driven reformat of legacy yak bodies for CommonMark",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T22:06:22Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b75b",
+          "title": "request: hand a yak to an agent through the inbox (needs: agent without a prior ask)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T22:06:21Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f313",
+          "title": "Some way for agents to get notified of available answers",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T22:01:42Z",
+          "working": false
+        },
+        {
+          "id": "yaks-be32",
+          "title": "AGENTS.md/README/RELEASING: local builds via cargo install --path ., no personal env",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T21:16:09Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ce5e",
+          "title": "Make answer comments use the full comment editor",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T21:08:02Z",
+          "working": false
+        },
+        {
+          "id": "yaks-248d",
+          "title": "Skill guidance for agents to link into yaks",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T21:00:47Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8aeb",
+          "title": "Tighten skill guidance for markdown formatting",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T21:00:47Z",
+          "working": false
+        },
+        {
+          "id": "yaks-df02",
+          "title": "Tighten skill guidance around completion notes & evidence",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T21:00:47Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ade2",
+          "title": "Release 0.0.20",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T19:55:57Z",
+          "working": false
+        },
+        {
+          "id": "yaks-d2bb",
+          "title": "Markdown editing improvements",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T19:55:57Z",
+          "working": false
+        },
+        {
+          "id": "yaks-e9de",
+          "title": "Readable markdown + detail/edit QoL",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T19:55:57Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ea13",
+          "title": "Markdown rendering improvements",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T19:55:57Z",
+          "working": false
+        },
+        {
+          "id": "yaks-faf5",
+          "title": "Yak detail rendering / editing improvements",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T19:55:57Z",
+          "working": false
+        },
+        {
+          "id": "yaks-62cf",
+          "title": "Consider allowing comment titles",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-17T19:55:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-bc30",
+          "title": "Perf: cache rows() and the detail lines between input changes",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T18:14:58Z",
+          "working": false
+        },
+        {
+          "id": "yaks-da5e",
+          "title": "Allow markdown links to repo files / source",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T18:14:58Z",
+          "working": false
+        },
+        {
+          "id": "yaks-c6f4",
+          "title": "Window/scroll the edit-form content accordion when blocks overflow",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-17T18:01:25Z",
+          "working": false
+        },
+        {
+          "id": "yaks-a893",
+          "title": "Design: unify view and edit for the description and comments",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T18:01:21Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4fa6",
+          "title": "E opens the editor at the exact source line",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T18:01:17Z",
+          "working": false
+        },
+        {
+          "id": "yaks-92e5",
+          "title": "Edit form keeps only header fields (drop content blocks and the accordion)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T17:52:40Z",
+          "working": false
+        },
+        {
+          "id": "yaks-1f84",
+          "title": "Editor: auto-continue lists and quotes on Enter (edtui fork)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T17:02:37Z",
+          "working": false
+        },
+        {
+          "id": "yaks-597d",
+          "title": "In-place block editing in the detail pane (E on body, M for new comment)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T17:02:15Z",
+          "working": false
+        },
+        {
+          "id": "yaks-bc53",
+          "title": "Shared markdown style palette for read pane + editor",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T17:01:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-1bbb",
+          "title": "GFM extras: task lists, alerts, footnotes",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T05:17:20Z",
+          "working": false
+        },
+        {
+          "id": "yaks-3020",
+          "title": "Embedded language highlighting inside fenced code blocks",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T05:17:20Z",
+          "working": false
+        },
+        {
+          "id": "yaks-3b8d",
+          "title": "Links and attachments: collapse to text, markdown-friendly attachment links",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T05:17:20Z",
+          "working": false
+        },
+        {
+          "id": "yaks-382b",
+          "title": "Give explicit markdown formatting guidance in skills",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T05:16:47Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2362",
+          "title": "Markdown-friendly comment separator format",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T05:16:01Z",
+          "working": false
+        },
+        {
+          "id": "yaks-9425",
+          "title": "Editor: dim markers, hide them off the cursor line",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T04:58:35Z",
+          "working": false
+        },
+        {
+          "id": "yaks-c733",
+          "title": "Code blocks and tables: no-wrap, horizontal scroll",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T04:58:35Z",
+          "working": false
+        },
+        {
+          "id": "yaks-93cd",
+          "title": "Comment headers in the detail pane, shared with the edit form",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T04:58:11Z",
+          "working": false
+        },
+        {
+          "id": "yaks-e30d",
+          "title": "Render headings, rules, emphasis and strikethrough",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T04:58:08Z",
+          "working": false
+        },
+        {
+          "id": "yaks-649d",
+          "title": "Renderer core: pulldown-cmark to a source-mapped row model",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T04:57:02Z",
+          "working": false
+        },
+        {
+          "id": "yaks-a870",
+          "title": "Schema 5 migration: comment header blank line + non-image attachment links",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T04:37:18Z",
+          "working": false
+        },
+        {
+          "id": "yaks-5408",
+          "title": "Editor background: match the pane, not pitch black",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T04:31:30Z",
+          "working": false
+        },
+        {
+          "id": "yaks-66a3",
+          "title": "Pinned header: a rule under it, and the status icon in the full header",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T04:31:30Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ef82",
+          "title": "Human-friendly timestamp rendering",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T04:31:30Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f67e",
+          "title": "Fix: markdown link URL target swallows the closing paren",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T04:31:30Z",
+          "working": false
+        },
+        {
+          "id": "yaks-d64e",
+          "title": "Release v0.0.18",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-14T03:08:18Z",
+          "working": false
+        },
+        {
+          "id": "yaks-38dc",
+          "title": "Sheds view: show in-flight yak state from other checkouts in the TUI",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T20:10:28Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7422",
+          "title": "yaks changes: outstanding yaks first, landed ones folded; --outstanding and --status to focus",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T19:46:42Z",
+          "working": false
+        },
+        {
+          "id": "yaks-c1f8",
+          "title": "Sheds tab: a shed's detail lists outstanding yaks first and folds the landed ones (Enter expands)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T19:46:42Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2883",
+          "title": "Sheds tab: Enter on a yak only that shed has opens its shed-only row, not a dead end",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T19:21:33Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7204",
+          "title": "Shed deltas as an overlay across the TUI and CLI, not just a shed picker",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T02:49:11Z",
+          "working": false
+        },
+        {
+          "id": "yaks-29e9",
+          "title": "An ask answered in the reference copy (needs: agent there) still reads open in the asking shed",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T02:04:03Z",
+          "working": false
+        },
+        {
+          "id": "yaks-9631",
+          "title": "TUI overlay: shed-only yaks as dim rows, a copies: any|home drawer chip, and a two-shed conflict marker",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T02:04:02Z",
+          "working": false
+        },
+        {
+          "id": "yaks-1ea3",
+          "title": "TUI overlay: the Inbox includes other sheds' open asks, a answers them in place, and a new ask flashes",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T01:29:44Z",
+          "working": false
+        },
+        {
+          "id": "yaks-93fe",
+          "title": "sheds: a plain git worktree of a Delta clone is taken for the primary (named main, measured vs origin/main)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T01:29:44Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ed6d",
+          "title": "TUI overlay: shed badges on yak rows and a Sheds section in the yak detail",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T01:29:44Z",
+          "working": false
+        },
+        {
+          "id": "yaks-98f1",
+          "title": "TUI: a thin Sheds tab (shed list + a shed's changes), refreshed in the background",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T00:28:42Z",
+          "working": false
+        },
+        {
+          "id": "yaks-07fe",
+          "title": "yaks sheds is slow (~1.2 s for 4 sheds): profile it and make the common path cheap",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T00:11:39Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8814",
+          "title": "landed: a shed's needs: that the reference already resolved is not outstanding",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T00:11:39Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4f6e",
+          "title": "Release v0.0.17",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-12T23:13:52Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8b7a",
+          "title": "Decision: status as a frontmatter field (one stable path per yak) vs status directories",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-12T23:01:57Z",
+          "working": false
+        },
+        {
+          "id": "yaks-bbda",
+          "title": "Flat farm, phase 4: remove the migration and the dual-layout read once every farm is migrated",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-12T22:29:49Z",
+          "working": false
+        },
+        {
+          "id": "yaks-3a56",
+          "title": "Flat farm, phase 3: brief + skills/docs sweep, migrate this farm, real-machine checks, release 0.0.16",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-12T21:35:44Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8577",
+          "title": "Release v0.0.16",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-12T21:35:07Z",
+          "working": false
+        },
+        {
+          "id": "yaks-86f4",
+          "title": "Flat farm, phase 2: yaks migrate + doctor/preflight checks",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-12T20:20:38Z",
+          "working": false
+        },
+        {
+          "id": "yaks-9f91",
+          "title": "Flat farm, phase 2: git reporting (yaks status, yaks commit, changes.rs) for in-place status changes",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-12T20:20:38Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ca28",
+          "title": "Flat farm, phase 2: sheds read both layouts (base_farm, mixed-layout comparisons)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-12T20:20:38Z",
+          "working": false
+        },
+        {
+          "id": "yaks-95be",
+          "title": "Flat farm, phase 1: store seam (flat paths, dual-layout reads, status field, schema 4)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-12T20:19:35Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ed5e",
+          "title": "yaks sheds: show a shed as landed when its farm changes are all already in this checkout's farm",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-12T16:04:57Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7faf",
+          "title": "Release v0.0.15",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-12T02:20:13Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ee0a",
+          "title": "CLI affordances for sheds and threads: what a human and an agent need to ask and do across checkouts",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-11T22:20:18Z",
+          "working": false
+        },
+        {
+          "id": "yaks-9277",
+          "title": "Shed state vocabulary: active, idle, landed, stale, orphan in yaks sheds",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-11T21:57:18Z",
+          "working": false
+        },
+        {
+          "id": "yaks-c53a",
+          "title": "Body content input beyond inline args: --description-file, stdin, and yaks edit",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-10T20:06:05Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ad6d",
+          "title": "yaks sheds: list the current shed too (marked), and let changes/--shed/answer name it",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-10T19:05:06Z",
+          "working": false
+        },
+        {
+          "id": "yaks-047a",
+          "title": "yaks sheds and changes: count an edited yak (title, description, fields), as yaks status does",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-10T18:57:42Z",
+          "working": false
+        },
+        {
+          "id": "yaks-e9bb",
+          "title": "Sheds: one baseline per shed, its fork point, from every viewer (drop the viewer-relative sync rule)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-10T18:56:19Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7eea",
+          "title": "Open the TUI on another shed: a shed picker (the CLI selector, -C and --shed, shipped)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-10T18:55:34Z",
+          "working": false
+        },
+        {
+          "id": "yaks-6beb",
+          "title": "Delta: yaks sheds from a primary that is not the Delta host (managed repos) finds no sheds",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-10T18:55:33Z",
+          "working": false
+        },
+        {
+          "id": "yaks-3344",
+          "title": "yaks changes main from the primary returns a clone's changes (resolve: main falls through to the branch rule)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-10T17:21:36Z",
+          "working": false
+        },
+        {
+          "id": "yaks-85d9",
+          "title": "yaks sheds counts a created yak's notes too (matches yaks changes)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T22:39:51Z",
+          "working": false
+        },
+        {
+          "id": "yaks-a3d2",
+          "title": "Design pass: CLI affordances and skill/workflow changes for agents using shed discovery (before the UI)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T22:29:19Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b5a0",
+          "title": "Parallel development: finish and harden coordinator/worker skills + tooling (git worktrees, Delta)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-06T22:24:59Z",
+          "working": false
+        },
+        {
+          "id": "yaks-22f1",
+          "title": "yaks sheds: use the nearer of the fork point and the merge-base with the viewer as a shed's baseline",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-06T22:19:09Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b6a9",
+          "title": "yaks status: what yak changes has git not got yet",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-06T21:48:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-37fa",
+          "title": "yaks lanes: measure a lane's own changes from where the lane forked, not from the viewer's merge-base",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-06T21:36:27Z",
+          "working": false
+        },
+        {
+          "id": "yaks-dfca",
+          "title": "Rename lane to shed everywhere (yaks lanes becomes yaks sheds, no alias)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-06T21:31:51Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2c22",
+          "title": "Process rails: yaks brief (worker brief from a yak) and yaks preflight (landing checks)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-06T20:00:42Z",
+          "working": false
+        },
+        {
+          "id": "yaks-5f12",
+          "title": "Decision: git-store vs Model 3 (coordinator-sole-writer on FS)",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-06T03:58:55Z",
+          "working": false
+        },
+        {
+          "id": "yaks-c061",
+          "title": "Answered questions are hard to find: no 'answered, pending agent pickup' surface",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-06T03:58:04Z",
+          "working": false
+        },
+        {
+          "id": "yaks-5c9f",
+          "title": "Restructure coordinator/worker skills by farm mode (public / private / out-of-tree)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T22:51:20Z",
+          "working": false
+        },
+        {
+          "id": "yaks-0a87",
+          "title": "Checkpoint footgun: commit human drift before squash-merge; never reset --hard before it succeeds",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T22:43:55Z",
+          "working": false
+        },
+        {
+          "id": "yaks-75cc",
+          "title": "Skill guidance: treat unexpected yak updates as useful signals from the user",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T22:43:55Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7acf",
+          "title": "We should call the coordinator the \"yakherd\"",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T22:43:08Z",
+          "working": false
+        },
+        {
+          "id": "yaks-a398",
+          "title": "land.sh and coordinators: say when the repo is shallow (ancestry and merge-base answers are then lower bounds)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T22:43:08Z",
+          "working": false
+        },
+        {
+          "id": "yaks-5c83",
+          "title": "yaks: tell the user once per release when project-local skills are stale (decision C of yaks-36b6)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T22:39:49Z",
+          "working": false
+        },
+        {
+          "id": "yaks-814a",
+          "title": "yaks init --mode: explicit farm mode and environment setup",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T21:08:36Z",
+          "working": false
+        },
+        {
+          "id": "yaks-36b6",
+          "title": "Auto-update installed project-local skills when yaks is upgraded?",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T21:08:13Z",
+          "working": false
+        },
+        {
+          "id": "yaks-3859",
+          "title": "yaks skills install: project-local by default, choose workflow skills",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T20:56:51Z",
+          "working": false
+        },
+        {
+          "id": "yaks-1b39",
+          "title": "yaks lanes: ahead/behind are unknown (?) when there is no merge-base",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T19:56:33Z",
+          "working": false
+        },
+        {
+          "id": "yaks-c29a",
+          "title": "yaks lanes: label each lane with who is working in it and on which yaks",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T19:49:09Z",
+          "working": false
+        },
+        {
+          "id": "yaks-d1bd",
+          "title": "yaks preflight: check that 'local' is the human's checkout before a push to main",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T19:49:09Z",
+          "working": false
+        },
+        {
+          "id": "yaks-d738",
+          "title": "yaks lanes: show what a lane changed (vs merge-base) and how far behind it is, not a diff against this checkout",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T21:00:51Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8265",
+          "title": "Record state-transition timestamps (transition log) for yaks log",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T20:59:14Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7149",
+          "title": "Attribution is unreliable in agent flows: silent human fallback, unattributed transitions, no way to pin in Delta",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T20:52:37Z",
+          "working": false
+        },
+        {
+          "id": "yaks-e545",
+          "title": "yaks lanes: CLI and data layer for sibling checkouts (git worktrees and Delta clones)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T20:52:37Z",
+          "working": false
+        },
+        {
+          "id": "yaks-99ec",
+          "title": "Cross-machine Delta threads: worktree discovery when 'local' is a managed bare repo (or a different path per machine)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T19:31:09Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f49c",
+          "title": "Probe: a worker's clone, remotes and sibling visibility on a shared-thread machine",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T19:28:39Z",
+          "working": false
+        },
+        {
+          "id": "yaks-fe33",
+          "title": "Repeatable parallel-run trials, one per environment",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-04T05:19:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-e87e",
+          "title": "Spike: human-in-the-loop questions from Delta workers",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T05:11:55Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2cd4",
+          "title": "yaks commit: commit the farm's own changes in one command (public mode)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T05:11:28Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b4dc",
+          "title": "discover: walk-up crosses the git top-level and finds another checkout's farm (Delta private mode)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T05:11:28Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2f9b",
+          "title": "Delta skill: layers on top of the farm-mode coordination skills",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T04:50:02Z",
+          "working": false
+        },
+        {
+          "id": "yaks-06be",
+          "title": "yaks preflight: landing-readiness checks (evidence staged, verify passed, no duplicate status dirs)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T04:49:19Z",
+          "working": false
+        },
+        {
+          "id": "yaks-12a0",
+          "title": "Resolve the actor from Delta's environment when neither --as nor YAKS_ACTOR is set",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T04:49:19Z",
+          "working": false
+        },
+        {
+          "id": "yaks-800d",
+          "title": "Concurrent updates to one yak can silently drop a note (no locking on read-modify-write)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-03T23:24:17Z",
+          "working": false
+        },
+        {
+          "id": "yaks-aa49",
+          "title": "id to path resolution: yaks path",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-03T23:24:17Z",
+          "working": false
+        },
+        {
+          "id": "yaks-df61",
+          "title": "Delta observation log: how threads, worktrees, clones and the farm interact",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-03T23:04:20Z",
+          "working": false
+        },
+        {
+          "id": "yaks-0576",
+          "title": "Make .agents/skills the real, single source of this repo's skills (no symlinks); keep the embed list explicit",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-03T22:17:00Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b47b",
+          "title": "No default or explicit herd should error in `yaks create`",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-03T21:21:41Z",
+          "working": false
+        },
+        {
+          "id": "yaks-cc52",
+          "title": "Following a link to a yak outside any pinned view shows the previous yak",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-03T21:14:11Z",
+          "working": false
+        },
+        {
+          "id": "yaks-80d5",
+          "title": "Map the coordination skills against an environment x farm-mode matrix",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-03T20:39:13Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "kinds-1",
+      "liveness": "idle",
+      "last_write": "2026-10-26T23:15:20Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-f853",
+          "title": "request --kind tidy|summarize and bulk --request",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T23:15:20Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "runon-1",
+      "liveness": "idle",
+      "last_write": "2026-10-26T23:15:03Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-ef3b",
+          "title": "Run-on filter: yaks whose markdown has lines that join into one paragraph",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T23:15:03Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "request-1",
+      "liveness": "idle",
+      "last_write": "2026-10-26T22:02:16Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-b75b",
+          "title": "request: hand a yak to an agent through the inbox (needs: agent without a prior ask)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T22:02:16Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "wait-1",
+      "liveness": "idle",
+      "last_write": "2026-10-26T21:59:32Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-f313",
+          "title": "Some way for agents to get notified of available answers",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T21:59:32Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:Triage starred yaks and design yaks-33c8",
+      "liveness": "idle",
+      "last_write": "2026-10-26T21:15:14Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-be32",
+          "title": "AGENTS.md/README/RELEASING: local builds via cargo install --path ., no personal env",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T21:15:14Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "answer-editor-1",
+      "liveness": "idle",
+      "last_write": "2026-10-26T21:04:05Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-ce5e",
+          "title": "Make answer comments use the full comment editor",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-26T21:04:05Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:Add basic image attachment rendering",
+      "liveness": "idle",
+      "last_write": "2026-10-25T21:26:26Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-0bf0",
+          "title": "Show images inline in yak bodies and comments",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-25T21:26:26Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4e9c",
+          "title": "Display svg attachments in the image viewer",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-25T21:20:22Z",
+          "working": false
+        },
+        {
+          "id": "yaks-89fc",
+          "title": "Image size syntax and default fit in markdown",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T21:03:12Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4305",
+          "title": "Add ability to display image attachments",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T20:36:41Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "toque-1",
+      "liveness": "idle",
+      "last_write": "2026-10-22T22:17:17Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-4e9c",
+          "title": "Display svg attachments in the image viewer",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T22:17:17Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "svg-1",
+      "liveness": "idle",
+      "last_write": "2026-10-22T21:57:09Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-4e9c",
+          "title": "Display svg attachments in the image viewer",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T21:57:09Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "size-1",
+      "liveness": "idle",
+      "last_write": "2026-10-22T21:00:36Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-89fc",
+          "title": "Image size syntax and default fit in markdown",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T21:00:36Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:ksQQQTmKmfXeRfyO736_R3BpP5LOAClXIpIBxBCA",
+      "liveness": "idle",
+      "last_write": "2026-10-22T20:02:49Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-4305",
+          "title": "Add ability to display image attachments",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T20:02:49Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:Fix TUI log spam during sync",
+      "liveness": "idle",
+      "last_write": "2026-10-22T19:40:12Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-6a9b",
+          "title": "Per-herd directories: <herd>/yaks/<id>.md (schema 6), room for per-herd and global docs",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T19:40:12Z",
+          "working": false
+        },
+        {
+          "id": "yaks-cff1",
+          "title": "Guard: land skill is repo-local, never bundled",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T19:40:12Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:Land commit output capture fix",
+      "liveness": "idle",
+      "last_write": "2026-10-22T19:18:30Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-5d5a",
+          "title": "On-screen log spew when syncing",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T19:18:30Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:ksQQxR6dwDfzTEa0Hjn76t535ZLOACjjyZIBxBCA",
+      "liveness": "idle",
+      "last_write": "2026-10-22T18:45:11Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-5d5a",
+          "title": "On-screen log spew when syncing",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T18:45:11Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:sheds-review",
+      "liveness": "idle",
+      "last_write": "2026-10-22T03:58:28Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-0b8a",
+          "title": "Release 0.0.23",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T03:58:28Z",
+          "working": false
+        },
+        {
+          "id": "yaks-9a06",
+          "title": "Shed detail: yak changes seem to be arbitrarily ordered",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T03:49:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-0309",
+          "title": "Prioritized shed-list ordering",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T03:48:58Z",
+          "working": false
+        },
+        {
+          "id": "yaks-9eaa",
+          "title": "Sheds from a local per-shed activity log + git facts; delete the farm-diff half of sheds.rs",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T03:26:28Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ded9",
+          "title": "Human-created Delta threads get the creator as their name",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-22T03:26:28Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:herd-dirs",
+      "liveness": "idle",
+      "last_write": "2026-10-22T01:54:26Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-9bd1",
+          "title": "Release 0.0.22: farm branch lifecycle, schema 6, skills 8 to 4",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T01:54:26Z",
+          "working": false
+        },
+        {
+          "id": "yaks-6a34",
+          "title": "One farm per machine: the farm on its own branch, reached from every shed (umbrella)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T00:59:55Z",
+          "working": false
+        },
+        {
+          "id": "yaks-73f4",
+          "title": "The farm is a branch: an orphan yaks branch replaces committed .yaks/ on main (shared, personal or local)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T00:59:55Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8c99",
+          "title": "Trim the clap help: one-line summaries in yaks --help, detail in the long help",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T00:59:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8f2e",
+          "title": "Docs/skills: large-farm command-line traps (xargs silent chunking, E2BIG on absolute globs)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T00:59:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b048",
+          "title": "Rewrite the skills for one farm per machine: collapse the farm-mode and environment layers",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T00:59:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f800",
+          "title": "Trim docs/cli.md: short table rows, detail in sections below",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T00:59:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4c93",
+          "title": "Retire the four coordination companion skills: drop them from BUNDLED, remove untouched installed copies",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T23:11:04Z",
+          "working": false
+        },
+        {
+          "id": "yaks-0ef9",
+          "title": "Per-user yaks state: one home for TUI views, the stale-skills marker and a repo-to-farm registry (config vs data vs state dirs)",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-21T22:54:32Z",
+          "working": false
+        },
+        {
+          "id": "yaks-e5fb",
+          "title": "Port worker landing (land.sh) into the binary: yaks land <sha>",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T22:49:47Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7bfd",
+          "title": "A committed in-tree .yaks/ in a repo that has a farm branch is a stale copy: redirect to the farm and warn",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T22:49:46Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b1e9",
+          "title": "yaks init --mode branch [--branch <name>]: start a new farm on an orphan branch at farm_home",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T22:49:46Z",
+          "working": false
+        },
+        {
+          "id": "yaks-3bcd",
+          "title": "land.sh: when the worker SHA is already an ancestor, check HEAD's tree really contains its change",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T22:10:10Z",
+          "working": false
+        },
+        {
+          "id": "yaks-472e",
+          "title": "Farm branch sync lifecycle: commit, pull and push the farm (yaks sync), design first",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T21:44:08Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ce5d",
+          "title": "TUI: farm dirty/ahead/behind indicator + commit and sync keys",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T21:44:08Z",
+          "working": false
+        },
+        {
+          "id": "yaks-e3b2",
+          "title": "yaks sync: commit, pull --rebase (with the merge driver), push the farm branch",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T21:11:20Z",
+          "working": false
+        },
+        {
+          "id": "yaks-85bb",
+          "title": "Private farm guard: yaks.private refuses sync's push and a pre-push hook blocks a manual push of the farm branch",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T20:58:21Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4a53",
+          "title": "Frontmatter-aware merge driver for farm files: concurrent edits always merge into a VALID yak",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T20:52:02Z",
+          "working": false
+        },
+        {
+          "id": "yaks-bd1d",
+          "title": "yaks status: farm branch ahead/behind its upstream (no fetch), reusable sync-state for the TUI",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T20:52:02Z",
+          "working": false
+        },
+        {
+          "id": "yaks-d4a7",
+          "title": "preflight git-state fails on a farm branch's normal uncommitted state; check the farm is committed (or skip) instead of asking to git add",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T20:33:01Z",
+          "working": false
+        },
+        {
+          "id": "yaks-6a9b",
+          "title": "Per-herd directories: <herd>/yaks/<id>.md (schema 6), room for per-herd and global docs",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T15:48:37Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "help-1",
+      "liveness": "idle",
+      "last_write": "2026-10-22T00:53:04Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-8c99",
+          "title": "Trim the clap help: one-line summaries in yaks --help, detail in the long help",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T00:53:04Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "clidoc-1",
+      "liveness": "idle",
+      "last_write": "2026-10-22T00:47:20Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-f800",
+          "title": "Trim docs/cli.md: short table rows, detail in sections below",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-22T00:47:20Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "retire-1",
+      "liveness": "idle",
+      "last_write": "2026-10-21T23:06:45Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-4c93",
+          "title": "Retire the four coordination companion skills: drop them from BUNDLED, remove untouched installed copies",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T23:06:45Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "land-1",
+      "liveness": "idle",
+      "last_write": "2026-10-21T22:31:01Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-3bcd",
+          "title": "land.sh: when the worker SHA is already an ancestor, check HEAD's tree really contains its change",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T22:31:01Z",
+          "working": false
+        },
+        {
+          "id": "yaks-e5fb",
+          "title": "Port worker landing (land.sh) into the binary: yaks land <sha>",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T22:31:01Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ed5e",
+          "title": "yaks sheds: show a shed as landed when its farm changes are all already in this checkout's farm",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-11T20:51:45Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "init-1",
+      "liveness": "idle",
+      "last_write": "2026-10-21T22:24:29Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-b1e9",
+          "title": "yaks init --mode branch [--branch <name>]: start a new farm on an orphan branch at farm_home",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T22:24:29Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "tui-sync-1",
+      "liveness": "idle",
+      "last_write": "2026-10-21T21:22:40Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-ce5d",
+          "title": "TUI: farm dirty/ahead/behind indicator + commit and sync keys",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T21:22:40Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "private-1",
+      "liveness": "idle",
+      "last_write": "2026-10-21T20:54:30Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-85bb",
+          "title": "Private farm guard: yaks.private refuses sync's push and a pre-push hook blocks a manual push of the farm branch",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T20:54:30Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "driver-1",
+      "liveness": "idle",
+      "last_write": "2026-10-21T20:46:57Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-4a53",
+          "title": "Frontmatter-aware merge driver for farm files: concurrent edits always merge into a VALID yak",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T20:46:57Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "status-1",
+      "liveness": "idle",
+      "last_write": "2026-10-21T20:46:54Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-bd1d",
+          "title": "yaks status: farm branch ahead/behind its upstream (no fetch), reusable sync-state for the TUI",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T20:46:54Z",
+          "working": false
+        },
+        {
+          "id": "yaks-d4a7",
+          "title": "preflight git-state fails on a farm branch's normal uncommitted state; check the farm is committed (or skip) instead of asking to git add",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T20:46:54Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:herd-pass",
+      "liveness": "idle",
+      "last_write": "2026-10-21T03:30:36Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-9eaa",
+          "title": "Sheds from a local per-shed activity log + git facts; delete the farm-diff half of sheds.rs",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T03:30:36Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b048",
+          "title": "Rewrite the skills for one farm per machine: collapse the farm-mode and environment layers",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-21T03:30:36Z",
+          "working": false
+        },
+        {
+          "id": "yaks-df02",
+          "title": "Tighten skill guidance around completion notes & evidence",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-19T04:30:38Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8f2e",
+          "title": "Docs/skills: large-farm command-line traps (xargs silent chunking, E2BIG on absolute globs)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-19T04:30:31Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7cd1",
+          "title": "Per-repo agent context for private herds (config + .yaks/ instructions file)",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-19T04:29:30Z",
+          "working": false
+        },
+        {
+          "id": "yaks-248d",
+          "title": "Skill guidance for agents to link into yaks",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-19T04:29:29Z",
+          "working": false
+        },
+        {
+          "id": "yaks-6a34",
+          "title": "One farm per machine: the farm on its own branch, reached from every shed (umbrella)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-19T04:29:29Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b1e9",
+          "title": "yaks init --mode branch [--branch <name>]: start a new farm on an orphan branch at farm_home",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-19T04:28:53Z",
+          "working": false
+        },
+        {
+          "id": "yaks-0309",
+          "title": "Prioritized shed-list ordering",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-19T04:28:52Z",
+          "working": false
+        },
+        {
+          "id": "yaks-9a06",
+          "title": "Shed detail: yak changes seem to be arbitrarily ordered",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-19T04:28:52Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b5a0",
+          "title": "Parallel development: finish and harden coordinator/worker skills + tooling (git worktrees, Delta)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-19T04:28:52Z",
+          "working": false
+        },
+        {
+          "id": "yaks-10fb",
+          "title": "Yaks coordination & tooling: follow-ups (post-3901)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-19T04:27:08Z",
+          "working": false
+        },
+        {
+          "id": "yaks-38dc",
+          "title": "Sheds view: show in-flight yak state from other checkouts in the TUI",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-19T04:27:08Z",
+          "working": false
+        },
+        {
+          "id": "yaks-df61",
+          "title": "Delta observation log: how threads, worktrees, clones and the farm interact",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-19T04:27:08Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ee0a",
+          "title": "CLI affordances for sheds and threads: what a human and an agent need to ask and do across checkouts",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-19T04:27:08Z",
+          "working": false
+        },
+        {
+          "id": "yaks-19c3",
+          "title": "TUI: an activity log view of the farm (yaks log, newest first, with the shed each entry came from)",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-19T04:27:07Z",
+          "working": false
+        },
+        {
+          "id": "yaks-0012",
+          "title": "Op model + compile: yak operations, Lamport clocks, snapshot",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-0caa",
+          "title": "Provenance rework under a ref store (no file-history join)",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4b52",
+          "title": "Branch/PR affordances in frontmatter",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4e15",
+          "title": "Human-editing UX + platform legibility tradeoff",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4e3c",
+          "title": "Modes + sync: solo (local refs) vs team (push/pull refs/yaks/*); refspec friction",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4fe6",
+          "title": "Research: git as a yak store (git-bug-style op-log in refs) vs filesystem",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-5f12",
+          "title": "Decision: git-store vs Model 3 (coordinator-sole-writer on FS)",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-64b3",
+          "title": "Incremental migration path (dual-write then flip authority)",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-70e5",
+          "title": "Candidate primitive: yaks diff <refA> <refB> (ref-generic herd diff)",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-78ff",
+          "title": "Think through yak shed commit/worktree flows",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-79a5",
+          "title": "Fewer yak-herding commits: ideas to bring them down to a dull roar",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-9208",
+          "title": "Landing worktree changes, without pulling on main, leaves main in dirty state",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-c41f",
+          "title": "Support multiple branches per shed",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ed03",
+          "title": "Cache = the current .yaks/ file layout, materialized (reuse read/TUI code)",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-51b3",
+          "title": "Parent/child references in yak details broken across sheds",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:22Z",
+          "working": false
+        },
+        {
+          "id": "yaks-5cea",
+          "title": "Lookup-by-id should find cross-shed yaks",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:22Z",
+          "working": false
+        },
+        {
+          "id": "yaks-683a",
+          "title": "Git LFS merge issues across shed boundaries",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:22Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8471",
+          "title": "Downward guidance: a note @shed, a second cross-shed write for steering a worker",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:22Z",
+          "working": false
+        },
+        {
+          "id": "yaks-991c",
+          "title": "Ensure all agent-yak interactions route through the CLI",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:22Z",
+          "working": false
+        },
+        {
+          "id": "yaks-e475",
+          "title": "answer <id>@<shed> can be lost when the worker syncs with git before committing it",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-10-19T04:26:22Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4a53",
+          "title": "Frontmatter-aware merge driver for farm files: concurrent edits always merge into a VALID yak",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-19T04:26:21Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:farm-bootstrap",
+      "liveness": "idle",
+      "last_write": "2026-10-19T03:20:50Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-dc63",
+          "title": "Release 0.0.21",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-19T03:20:50Z",
+          "working": false
+        },
+        {
+          "id": "yaks-a260",
+          "title": "Bootstrap the farm worktree on first use: a repo with a yaks branch (local or origin/) but no worktree gets one at farm_home",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-19T03:20:23Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta-farm",
+      "liveness": "idle",
+      "last_write": "2026-10-18T23:24:43Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-4a53",
+          "title": "Frontmatter-aware merge driver for farm files: concurrent edits always merge into a VALID yak",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T23:24:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-bd7e",
+          "title": "yaks migrate --to-branch: move an in-tree committed farm onto an orphan yaks branch (the yaks-87a3 cutover as one command)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T22:57:24Z",
+          "working": false
+        },
+        {
+          "id": "yaks-0ef9",
+          "title": "Per-user yaks state: one home for TUI views, the stale-skills marker and a repo-to-farm registry (config vs data vs state dirs)",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-10-18T22:32:58Z",
+          "working": false
+        },
+        {
+          "id": "yaks-87a3",
+          "title": "Migrate this repo: the farm moves to an orphan yaks branch; .yaks/ leaves main; live_branch, sync_live and --land retire",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T21:25:20Z",
+          "working": false
+        },
+        {
+          "id": "yaks-73f4",
+          "title": "The farm is a branch: an orphan yaks branch replaces committed .yaks/ on main (shared, personal or local)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T21:15:00Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b32e",
+          "title": "Consider optimizations of the merged yak directory structure",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T21:15:00Z",
+          "working": false
+        },
+        {
+          "id": "yaks-56c1",
+          "title": "Edit text attachments inside the TUI (follow-up to the viewer)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T20:13:09Z",
+          "working": false
+        },
+        {
+          "id": "yaks-6a34",
+          "title": "One farm per machine: the farm on its own branch, reached from every shed (umbrella)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T20:13:09Z",
+          "working": false
+        },
+        {
+          "id": "yaks-9f5c",
+          "title": "Optimistic concurrency on whole-body edits: TUI description/block edit must not clobber a concurrent note",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T20:10:11Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4809",
+          "title": "Farm branch discovery: a git checkout with no .yaks/ finds the worktree of the farm branch (yaks.branch, default yaks)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T20:04:23Z",
+          "working": false
+        },
+        {
+          "id": "yaks-6c4f",
+          "title": "Source links in yaks resolve against the farm's parent, which is the farm worktree under a live/branch farm",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T19:59:19Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2355",
+          "title": "Linear landing: squash worker commits onto HEAD; land the live farm by cherry-pick, then move farm onto main",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T16:00:06Z",
+          "working": false
+        },
+        {
+          "id": "yaks-699b",
+          "title": "Inline viewing and editing of txt/md attachments",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T06:15:31Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7c76",
+          "title": "Find-references affordance in CLI/TUI",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T06:10:55Z",
+          "working": false
+        },
+        {
+          "id": "yaks-5924",
+          "title": "preflight --push-main checks the farm's checkout, not the one pushing (breaks under a live farm)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T06:07:36Z",
+          "working": false
+        },
+        {
+          "id": "yaks-27c6",
+          "title": "Shear-with-comment in TUI",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T06:04:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-da69",
+          "title": "live_branch config: discovery resolves the live farm worktree; bare yaks path prints the farm root; brief Live mode",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T05:24:22Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "migrate-1",
+      "liveness": "idle",
+      "last_write": "2026-10-18T22:54:43Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-bd7e",
+          "title": "yaks migrate --to-branch: move an in-tree committed farm onto an orphan yaks branch (the yaks-87a3 cutover as one command)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T22:54:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-a870",
+          "title": "Schema 5 migration: comment header blank line + non-image attachment links",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T05:01:35Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "scale-1",
+      "liveness": "idle",
+      "last_write": "2026-10-18T21:07:28Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-b32e",
+          "title": "Consider optimizations of the merged yak directory structure",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T21:07:28Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "attach-edit-1",
+      "liveness": "idle",
+      "last_write": "2026-10-18T20:11:56Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-56c1",
+          "title": "Edit text attachments inside the TUI (follow-up to the viewer)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T20:11:56Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "clobber-1",
+      "liveness": "idle",
+      "last_write": "2026-10-18T20:08:09Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-9f5c",
+          "title": "Optimistic concurrency on whole-body edits: TUI description/block edit must not clobber a concurrent note",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T20:08:09Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "attach-view-1",
+      "liveness": "idle",
+      "last_write": "2026-10-18T06:14:02Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-699b",
+          "title": "Inline viewing and editing of txt/md attachments",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T06:14:02Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "backrefs-1",
+      "liveness": "idle",
+      "last_write": "2026-10-18T06:09:22Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-7c76",
+          "title": "Find-references affordance in CLI/TUI",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T06:09:22Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "shear-1",
+      "liveness": "idle",
+      "last_write": "2026-10-18T06:02:55Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-27c6",
+          "title": "Shear-with-comment in TUI",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-18T06:02:55Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "cache-1",
+      "liveness": "idle",
+      "last_write": "2026-10-17T18:47:02Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-bc30",
+          "title": "Perf: cache rows() and the detail lines between input changes",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T18:47:02Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "srclinks-1",
+      "liveness": "idle",
+      "last_write": "2026-10-17T18:28:57Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-da5e",
+          "title": "Allow markdown links to repo files / source",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T18:28:57Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "formtrim-1",
+      "liveness": "idle",
+      "last_write": "2026-10-17T17:59:57Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-92e5",
+          "title": "Edit form keeps only header fields (drop content blocks and the accordion)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T17:59:57Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "inplace-1",
+      "liveness": "idle",
+      "last_write": "2026-10-17T17:50:42Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-597d",
+          "title": "In-place block editing in the detail pane (E on body, M for new comment)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T17:50:42Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "autocont-1",
+      "liveness": "idle",
+      "last_write": "2026-10-17T17:09:39Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-1f84",
+          "title": "Editor: auto-continue lists and quotes on Enter (edtui fork)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T17:09:39Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta-perf",
+      "liveness": "idle",
+      "last_write": "2026-10-17T16:55:06Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-48d6",
+          "title": "Perf: cursor movement in some complex detail panes is slow",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T16:55:06Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta-attach",
+      "liveness": "idle",
+      "last_write": "2026-10-17T13:43:14Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-31e2",
+          "title": "Attachments attempt to open on wrong path across sheds",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T13:43:14Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "links-2",
+      "liveness": "idle",
+      "last_write": "2026-10-17T05:33:15Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-1bbb",
+          "title": "GFM extras: task lists, alerts, footnotes",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T05:33:15Z",
+          "working": false
+        },
+        {
+          "id": "yaks-3b8d",
+          "title": "Links and attachments: collapse to text, markdown-friendly attachment links",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T05:33:15Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "syntax-1",
+      "liveness": "idle",
+      "last_write": "2026-10-17T05:29:24Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-3020",
+          "title": "Embedded language highlighting inside fenced code blocks",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T05:29:24Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "hscroll-1",
+      "liveness": "idle",
+      "last_write": "2026-10-17T05:14:19Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-c733",
+          "title": "Code blocks and tables: no-wrap, horizontal scroll",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T05:14:19Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "edmarks-1",
+      "liveness": "idle",
+      "last_write": "2026-10-17T05:05:08Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-9425",
+          "title": "Editor: dim markers, hide them off the cursor line",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T05:05:08Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "palette-1",
+      "liveness": "idle",
+      "last_write": "2026-10-17T04:42:09Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-bc53",
+          "title": "Shared markdown style palette for read pane + editor",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T04:42:09Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "bg-1",
+      "liveness": "idle",
+      "last_write": "2026-10-17T04:40:58Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-5408",
+          "title": "Editor background: match the pane, not pitch black",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T04:40:58Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "hdr-1",
+      "liveness": "idle",
+      "last_write": "2026-10-17T04:39:47Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-66a3",
+          "title": "Pinned header: a rule under it, and the status icon in the full header",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T04:39:47Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "dates-1",
+      "liveness": "idle",
+      "last_write": "2026-10-17T04:38:43Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-ef82",
+          "title": "Human-friendly timestamp rendering",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T04:38:43Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "links-1",
+      "liveness": "idle",
+      "last_write": "2026-10-17T04:37:51Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-f67e",
+          "title": "Fix: markdown link URL target swallows the closing paren",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-17T04:37:51Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta",
+      "liveness": "idle",
+      "last_write": "2026-10-16T21:14:28Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-9974",
+          "title": "Release v0.0.19",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-16T21:14:28Z",
+          "working": false
+        },
+        {
+          "id": "yaks-28dc",
+          "title": "sheds: say when a shed is merged with nothing outstanding, and what keeps a dirty one alive",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-16T20:43:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-5662",
+          "title": "yaks sheds: diffs mislead on a branch-based arc (surveyor audit)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-16T20:43:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-6af1",
+          "title": "sheds: a fork point that follows a branch switch (clone starts on main, then checks out the branch)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-16T20:36:16Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8309",
+          "title": "sheds: measure the primary against its branch upstream, not always origin/main",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-16T20:31:14Z",
+          "working": false
+        },
+        {
+          "id": "yaks-e92e",
+          "title": "sheds landed: an edit the reference made after the fork is not the shed's unlanded edit (three-way)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-16T20:00:10Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:ksQQnuQD5YCiRZqkHA9KaCSpVpLOABD6mJIBxBCg",
+      "liveness": "idle",
+      "last_write": "2026-10-14T02:56:49Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-d64e",
+          "title": "Release v0.0.18",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-14T02:56:49Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "changes-1",
+      "liveness": "idle",
+      "last_write": "2026-10-13T20:05:07Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-7422",
+          "title": "yaks changes: outstanding yaks first, landed ones folded; --outstanding and --status to focus",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T20:05:07Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "fold-1",
+      "liveness": "idle",
+      "last_write": "2026-10-13T20:05:05Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-c1f8",
+          "title": "Sheds tab: a shed's detail lists outstanding yaks first and folds the landed ones (Enter expands)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T20:05:05Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "ghost-1",
+      "liveness": "idle",
+      "last_write": "2026-10-13T02:45:23Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-9631",
+          "title": "TUI overlay: shed-only yaks as dim rows, a copies: any|home drawer chip, and a two-shed conflict marker",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T02:45:23Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "fix-1",
+      "liveness": "idle",
+      "last_write": "2026-10-13T02:11:19Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-29e9",
+          "title": "An ask answered in the reference copy (needs: agent there) still reads open in the asking shed",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T02:11:19Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "disco-1",
+      "liveness": "idle",
+      "last_write": "2026-10-13T01:55:27Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-93fe",
+          "title": "sheds: a plain git worktree of a Delta clone is taken for the primary (named main, measured vs origin/main)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T01:55:27Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "badge-1",
+      "liveness": "idle",
+      "last_write": "2026-10-13T01:54:13Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-ed6d",
+          "title": "TUI overlay: shed badges on yak rows and a Sheds section in the yak detail",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T01:54:13Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "inbox-1",
+      "liveness": "idle",
+      "last_write": "2026-10-13T01:48:05Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-1ea3",
+          "title": "TUI overlay: the Inbox includes other sheds' open asks, a answers them in place, and a new ask flashes",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T01:48:05Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2917",
+          "title": "yaks inbox --sheds: open asks across every shed, with the shed's name and the question text",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:35:43Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "perf-1",
+      "liveness": "idle",
+      "last_write": "2026-10-13T00:50:12Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-07fe",
+          "title": "yaks sheds is slow (~1.2 s for 4 sheds): profile it and make the common path cheap",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T00:50:12Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "needs-1",
+      "liveness": "idle",
+      "last_write": "2026-10-13T00:20:09Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-8814",
+          "title": "landed: a shed's needs: that the reference already resolved is not outstanding",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-13T00:20:09Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "bye-1",
+      "liveness": "idle",
+      "last_write": "2026-10-12T22:58:28Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-bbda",
+          "title": "Flat farm, phase 4: remove the migration and the dual-layout read once every farm is migrated",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-12T22:58:28Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "shed-2",
+      "liveness": "idle",
+      "last_write": "2026-10-12T20:58:10Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-ca28",
+          "title": "Flat farm, phase 2: sheds read both layouts (base_farm, mixed-layout comparisons)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-12T20:58:10Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "mig-2",
+      "liveness": "idle",
+      "last_write": "2026-10-12T20:52:47Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-86f4",
+          "title": "Flat farm, phase 2: yaks migrate + doctor/preflight checks",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-12T20:52:47Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "git-2",
+      "liveness": "idle",
+      "last_write": "2026-10-12T20:34:16Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-9f91",
+          "title": "Flat farm, phase 2: git reporting (yaks status, yaks commit, changes.rs) for in-place status changes",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-12T20:34:16Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "live-1",
+      "liveness": "idle",
+      "last_write": "2026-10-11T22:18:07Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-9277",
+          "title": "Shed state vocabulary: active, idle, landed, stale, orphan in yaks sheds",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-11T22:18:07Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "here-1",
+      "liveness": "idle",
+      "last_write": "2026-10-10T19:43:03Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-ad6d",
+          "title": "yaks sheds: list the current shed too (marked), and let changes/--shed/answer name it",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-10T19:43:03Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "edit-2",
+      "liveness": "idle",
+      "last_write": "2026-10-10T19:06:58Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-047a",
+          "title": "yaks sheds and changes: count an edited yak (title, description, fields), as yaks status does",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-10T19:06:58Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "base-1",
+      "liveness": "idle",
+      "last_write": "2026-10-10T19:02:23Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-e9bb",
+          "title": "Sheds: one baseline per shed, its fork point, from every viewer (drop the viewer-relative sync rule)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-10T19:02:23Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:Delta :Yaks (cont'd)",
+      "liveness": "idle",
+      "last_write": "2026-10-10T15:00:50Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-3479",
+          "title": "Release v0.0.13",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-10T15:00:50Z",
+          "working": false
+        },
+        {
+          "id": "yaks-1af5",
+          "title": "CI: tests assumed a global git identity; the release dry run failed on a runner without one",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-10T13:59:36Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7eea",
+          "title": "Open the TUI on another shed: a shed picker (the CLI selector, -C and --shed, shipped)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-10T13:40:07Z",
+          "working": false
+        },
+        {
+          "id": "yaks-a3d2",
+          "title": "Design pass: CLI affordances and skill/workflow changes for agents using shed discovery (before the UI)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T23:01:30Z",
+          "working": false
+        },
+        {
+          "id": "yaks-440d",
+          "title": "yaks --shed <name>: run any command in another shed (full access; -C by name)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T22:51:35Z",
+          "working": false
+        },
+        {
+          "id": "yaks-85d9",
+          "title": "yaks sheds counts a created yak's notes too (matches yaks changes)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T22:35:48Z",
+          "working": false
+        },
+        {
+          "id": "yaks-886a",
+          "title": "Shed names from Delta thread titles, slugged like a git worktree name",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T22:35:48Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f6ff",
+          "title": "Skills pass: wire sheds/changes/inbox --sheds/show --sheds/answer @shed into the coordinating and working skills",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T21:05:39Z",
+          "working": false
+        },
+        {
+          "id": "yaks-5138",
+          "title": "sheds: compare_farms and yak_changes apply the same four rules twice; count over yak_changes",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:44:58Z",
+          "working": false
+        },
+        {
+          "id": "yaks-e7ed",
+          "title": "yaks show <id> --sheds: this checkout's copy, then one line per shed whose copy differs",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:44:58Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f347",
+          "title": "yaks answer <id>@<shed>: answer an ask in another shed's copy (the one cross-shed write)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:44:58Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2917",
+          "title": "yaks inbox --sheds: open asks across every shed, with the shed's name and the question text",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:24:48Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4e39",
+          "title": "yaks -C <path>: run any command as if started in <path> (global flag, like git -C)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:24:48Z",
+          "working": false
+        },
+        {
+          "id": "yaks-e39c",
+          "title": "yaks changes <shed>: what one shed created, moved and noted since it forked, per yak, with actors",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:24:48Z",
+          "working": false
+        },
+        {
+          "id": "yaks-c635",
+          "title": "yaks sheds: find Delta sheds from refs/delta pins (alternates -> host repo -> pins -> sibling git dir's core.worktree), plus the host's git worktrees; drop the directory scans",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:12:45Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2177",
+          "title": "yaks discover: a diagnostic that shows every discovery source's finds for an anchor (git worktrees, Delta siblings, Delta roots)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:12:18Z",
+          "working": false
+        },
+        {
+          "id": "yaks-36b6",
+          "title": "Auto-update installed project-local skills when yaks is upgraded?",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:12:18Z",
+          "working": false
+        },
+        {
+          "id": "yaks-38dc",
+          "title": "Sheds view: show in-flight yak state from other checkouts in the TUI",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:12:18Z",
+          "working": false
+        },
+        {
+          "id": "yaks-99ec",
+          "title": "Cross-machine Delta threads: worktree discovery when 'local' is a managed bare repo (or a different path per machine)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:12:18Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ee0a",
+          "title": "CLI affordances for sheds and threads: what a human and an agent need to ask and do across checkouts",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:12:18Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "shed-1",
+      "liveness": "idle",
+      "last_write": "2026-10-09T22:58:29Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-440d",
+          "title": "yaks --shed <name>: run any command in another shed (full access; -C by name)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T22:58:29Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "title-1",
+      "liveness": "idle",
+      "last_write": "2026-10-09T22:48:34Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-886a",
+          "title": "Shed names from Delta thread titles, slugged like a git worktree name",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T22:48:34Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "notes-1",
+      "liveness": "idle",
+      "last_write": "2026-10-09T22:45:17Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-85d9",
+          "title": "yaks sheds counts a created yak's notes too (matches yaks changes)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T22:45:17Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "show-1",
+      "liveness": "idle",
+      "last_write": "2026-10-09T20:53:54Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-e7ed",
+          "title": "yaks show <id> --sheds: this checkout's copy, then one line per shed whose copy differs",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:53:54Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "ans-1",
+      "liveness": "idle",
+      "last_write": "2026-10-09T20:52:42Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-f347",
+          "title": "yaks answer <id>@<shed>: answer an ask in another shed's copy (the one cross-shed write)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:52:42Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "dedupe-1",
+      "liveness": "idle",
+      "last_write": "2026-10-09T20:52:15Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-5138",
+          "title": "sheds: compare_farms and yak_changes apply the same four rules twice; count over yak_changes",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:52:15Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "chg-1",
+      "liveness": "idle",
+      "last_write": "2026-10-09T20:36:24Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-e39c",
+          "title": "yaks changes <shed>: what one shed created, moved and noted since it forked, per yak, with actors",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:36:24Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "cflag-1",
+      "liveness": "idle",
+      "last_write": "2026-10-09T20:31:53Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-4e39",
+          "title": "yaks -C <path>: run any command as if started in <path> (global flag, like git -C)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T20:31:53Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta:ksQQI7UGw66zRMm9tnfRIaYEapLOAAa8q5IBxBCA",
+      "liveness": "idle",
+      "last_write": "2026-10-09T03:48:59Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-2177",
+          "title": "yaks discover: a diagnostic that shows every discovery source's finds for an anchor (git worktrees, Delta siblings, Delta roots)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-09T03:48:59Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "nbr-1",
+      "liveness": "idle",
+      "last_write": "2026-10-06T22:23:22Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-22f1",
+          "title": "yaks sheds: use the nearer of the fork point and the merge-base with the viewer as a shed's baseline",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-06T22:23:22Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "sta-1",
+      "liveness": "idle",
+      "last_write": "2026-10-06T21:54:59Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-b6a9",
+          "title": "yaks status: what yak changes has git not got yet",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-06T21:54:59Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "bas-1",
+      "liveness": "idle",
+      "last_write": "2026-10-06T21:41:51Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-37fa",
+          "title": "yaks lanes: measure a lane's own changes from where the lane forked, not from the viewer's merge-base",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-06T21:41:51Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "shd-1",
+      "liveness": "idle",
+      "last_write": "2026-10-06T21:34:35Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-dfca",
+          "title": "Rename lane to shed everywhere (yaks lanes becomes yaks sheds, no alias)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-06T21:34:35Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "brf-2",
+      "liveness": "idle",
+      "last_write": "2026-10-06T19:52:06Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-2c22",
+          "title": "Process rails: yaks brief (worker brief from a yak) and yaks preflight (landing checks)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-06T19:52:06Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "agt-1",
+      "liveness": "idle",
+      "last_write": "2026-10-06T04:08:28Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-c061",
+          "title": "Answered questions are hard to find: no 'answered, pending agent pickup' surface",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-06T04:08:28Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "ntf-1",
+      "liveness": "idle",
+      "last_write": "2026-10-05T22:49:12Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-5c83",
+          "title": "yaks: tell the user once per release when project-local skills are stale (decision C of yaks-36b6)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T22:49:12Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "inp-1",
+      "liveness": "idle",
+      "last_write": "2026-10-05T22:44:20Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-c53a",
+          "title": "Body content input beyond inline args: --description-file, stdin, and yaks edit",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T22:44:20Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "ini-1",
+      "liveness": "idle",
+      "last_write": "2026-10-05T21:16:42Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-814a",
+          "title": "yaks init --mode: explicit farm mode and environment setup",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T21:16:42Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "ins-1",
+      "liveness": "idle",
+      "last_write": "2026-10-05T21:05:21Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-3859",
+          "title": "yaks skills install: project-local by default, choose workflow skills",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T21:05:21Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "unk-1",
+      "liveness": "idle",
+      "last_write": "2026-10-05T20:01:39Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-1b39",
+          "title": "yaks lanes: ahead/behind are unknown (?) when there is no merge-base",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T20:01:39Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "pre-1",
+      "liveness": "idle",
+      "last_write": "2026-10-05T19:54:10Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-d1bd",
+          "title": "yaks preflight: check that 'local' is the human's checkout before a push to main",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T19:54:10Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "lbl-1",
+      "liveness": "idle",
+      "last_write": "2026-10-05T19:53:50Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-c29a",
+          "title": "yaks lanes: label each lane with who is working in it and on which yaks",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-05T19:53:50Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "lanes-2",
+      "liveness": "idle",
+      "last_write": "2026-10-04T21:04:11Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-d738",
+          "title": "yaks lanes: show what a lane changed (vs merge-base) and how far behind it is, not a diff against this checkout",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T21:04:11Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "lanes-1",
+      "liveness": "idle",
+      "last_write": "2026-10-04T20:58:59Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-e545",
+          "title": "yaks lanes: CLI and data layer for sibling checkouts (git worktrees and Delta clones)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T20:58:59Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "attr-1",
+      "liveness": "idle",
+      "last_write": "2026-10-04T20:56:54Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-7149",
+          "title": "Attribution is unreliable in agent flows: silent human fallback, unattributed transitions, no way to pin in Delta",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T20:56:54Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "probe-1",
+      "liveness": "idle",
+      "last_write": "2026-10-04T19:29:35Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-f49c",
+          "title": "Probe: a worker's clone, remotes and sibling visibility on a shared-thread machine",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T19:29:35Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "t6-commit",
+      "liveness": "idle",
+      "last_write": "2026-10-04T05:16:45Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-2cd4",
+          "title": "yaks commit: commit the farm's own changes in one command (public mode)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T05:16:45Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "t6-bound",
+      "liveness": "idle",
+      "last_write": "2026-10-04T05:14:50Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-b4dc",
+          "title": "discover: walk-up crosses the git top-level and finds another checkout's farm (Delta private mode)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T05:14:50Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "t4-lock",
+      "liveness": "idle",
+      "last_write": "2026-10-04T04:54:13Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-800d",
+          "title": "Concurrent updates to one yak can silently drop a note (no locking on read-modify-write)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T04:54:13Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "t5-preflight",
+      "liveness": "idle",
+      "last_write": "2026-10-04T04:53:22Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-06be",
+          "title": "yaks preflight: landing-readiness checks (evidence staged, verify passed, no duplicate status dirs)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T04:53:22Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "t5-actor",
+      "liveness": "idle",
+      "last_write": "2026-10-04T04:51:13Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-12a0",
+          "title": "Resolve the actor from Delta's environment when neither --as nor YAKS_ACTOR is set",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-04T04:51:13Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "t4-path",
+      "liveness": "idle",
+      "last_write": "2026-10-03T23:27:39Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-aa49",
+          "title": "id to path resolution: yaks path",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-03T23:27:39Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "trial2-skills",
+      "liveness": "idle",
+      "last_write": "2026-10-03T22:20:36Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-0576",
+          "title": "Make .agents/skills the real, single source of this repo's skills (no symlinks); keep the embed list explicit",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-03T22:20:36Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "trial1-haiku",
+      "liveness": "idle",
+      "last_write": "2026-10-03T21:19:27Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-b47b",
+          "title": "No default or explicit herd should error in `yaks create`",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-03T21:19:27Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "trial1-sonnet",
+      "liveness": "idle",
+      "last_write": "2026-10-03T21:16:23Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-cc52",
+          "title": "Following a link to a yak outside any pinned view shows the previous yak",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-03T21:16:23Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "delta-agent",
+      "liveness": "idle",
+      "last_write": "2026-10-03T20:27:55Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-5c9f",
+          "title": "Restructure coordinator/worker skills by farm mode (public / private / out-of-tree)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-03T20:27:55Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b5a0",
+          "title": "Parallel development: finish and harden coordinator/worker skills + tooling (git worktrees, Delta)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-03T20:27:55Z",
+          "working": false
+        },
+        {
+          "id": "yaks-5fe9",
+          "title": "Case study: first Delta run (yaks-7fa0 via a Haiku worker + a fix-up subthread)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-03T20:14:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7fa0",
+          "title": "Line-join in vim mode should leave whitespace",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-03T14:44:19Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "claude",
+      "liveness": "idle",
+      "last_write": "2026-10-02T14:19:11Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-15c7",
+          "title": "Scrolling in yak details doesn't show last line",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-02T14:19:11Z",
+          "working": false
+        },
+        {
+          "id": "yaks-a211",
+          "title": "Detail page height counts the sticky title row, so Tab can put the cursor one row below the viewport",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-10-02T14:19:11Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "coordinator",
+      "liveness": "idle",
+      "last_write": "2026-09-24T02:29:59Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-7cb3",
+          "title": "Parse label edits with/without commas",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-24T02:29:59Z",
+          "working": false
+        },
+        {
+          "id": "yaks-97a2",
+          "title": "Mouse support",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-24T02:29:59Z",
+          "working": false
+        },
+        {
+          "id": "yaks-77a5",
+          "title": "Case study: reconstruct the 2026-09-23 UI lightning round (11 lanes + 3 scouts)",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-09-24T01:33:44Z",
+          "working": false
+        },
+        {
+          "id": "yaks-cc52",
+          "title": "Following a link to a yak outside any pinned view shows the previous yak",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:43:01Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b2ed",
+          "title": "Autocompletion UI infrastructure",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-09-23T21:38:18Z",
+          "working": false
+        },
+        {
+          "id": "yaks-28b4",
+          "title": "Keep detail cursor/scroll position on back/forward nav",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:35:38Z",
+          "working": false
+        },
+        {
+          "id": "yaks-a09b",
+          "title": "Rename attachment from TUI",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:35:38Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f04d",
+          "title": "Known labels in configuration",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-09-23T21:35:38Z",
+          "working": false
+        },
+        {
+          "id": "yaks-027a",
+          "title": "Answer mode needs a little spacing",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:35:37Z",
+          "working": false
+        },
+        {
+          "id": "yaks-05da",
+          "title": "Slaughter family with confirmation",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:35:37Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2d17",
+          "title": "Broken coloring in wrapping yak detail lines",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:35:37Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4da6",
+          "title": "Text wrapping bugs on single-line inputs",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:35:37Z",
+          "working": false
+        },
+        {
+          "id": "yaks-63f3",
+          "title": "Open a yak by id (jump to its detail)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:35:37Z",
+          "working": false
+        },
+        {
+          "id": "yaks-9009",
+          "title": "List-view scrolling pins to bottom",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:35:37Z",
+          "working": false
+        },
+        {
+          "id": "yaks-9e59",
+          "title": "Max detail width affordance",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:35:37Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b0b4",
+          "title": "Edit source frontmatter in the create/edit form",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:35:37Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f2aa",
+          "title": "Pasting into description *very* slow",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:35:37Z",
+          "working": false
+        },
+        {
+          "id": "yaks-fe19",
+          "title": "Rename attachment",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:35:37Z",
+          "working": false
+        },
+        {
+          "id": "yaks-0a87",
+          "title": "Checkpoint footgun: commit human drift before squash-merge; never reset --hard before it succeeds",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-13T21:18:58Z",
+          "working": false
+        },
+        {
+          "id": "yaks-20f9",
+          "title": "b1cc/8 Extract runtime + final reconcile (snapshots, slim tui.rs, docs)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-13T21:13:26Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b1cc",
+          "title": "Split src/tui.rs monolith into a render/ module tree",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-13T21:13:26Z",
+          "working": false
+        },
+        {
+          "id": "yaks-e1d1",
+          "title": "b1cc/7 Split impl App: key handlers + actions/commits",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-13T21:07:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-74be",
+          "title": "b1cc/6 Split impl App: view-model + detail navigation",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-13T20:56:40Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2301",
+          "title": "b1cc/5 Extract render layer -> src/tui/render/",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-11T03:45:06Z",
+          "working": false
+        },
+        {
+          "id": "yaks-3294",
+          "title": "b1cc/4 Extract fuzzy + search pickers -> src/tui/fuzzy.rs",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-11T03:15:13Z",
+          "working": false
+        },
+        {
+          "id": "yaks-96b6",
+          "title": "b1cc/3 Extract drawer + create/edit form -> src/tui/{drawer,create}.rs",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-11T03:04:36Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7483",
+          "title": "b1cc/2 Extract editor + edtui glue -> src/tui/editor.rs",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-11T02:18:36Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8ab9",
+          "title": "b1cc/1 Scaffolding + shared test_support",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-11T02:01:57Z",
+          "working": false
+        },
+        {
+          "id": "yaks-1a30",
+          "title": "Pattern: persistent worktree for a serial multi-phase arc",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-11T01:51:09Z",
+          "working": false
+        },
+        {
+          "id": "yaks-27f0",
+          "title": "Practice: run genuine design decisions through ask/answer for provenance",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-11T01:51:09Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7ba4",
+          "title": "yaks verify: optional cached last-green short-circuit",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-09-11T01:25:04Z",
+          "working": false
+        },
+        {
+          "id": "yaks-faf2",
+          "title": "Ease visual review of attached SVGs (SVG->PNG render helper)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-11T01:05:15Z",
+          "working": false
+        },
+        {
+          "id": "yaks-13f3",
+          "title": "Coordinating skill: scope by function/region when one file is unavoidable",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-11T01:01:55Z",
+          "working": false
+        },
+        {
+          "id": "yaks-e3aa",
+          "title": "Document insta snapshot authoring + attach side-effects in yaks-working",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-11T01:01:55Z",
+          "working": false
+        },
+        {
+          "id": "yaks-6c93",
+          "title": "Reconcile the ui verify lever: snapshot gate vs docshot generator",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-11T00:58:50Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7a1c",
+          "title": "Move ephemeral yellow status line to second row",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-11T00:55:29Z",
+          "working": false
+        },
+        {
+          "id": "yaks-26f0",
+          "title": "Search in detail not sticky",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-10T23:47:07Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f207",
+          "title": "Changing priority (or anything that causes a list resort) in detail mode doesn't update selection",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-10T23:47:07Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4d6d",
+          "title": "Cut v0.0.7 release (verify/attach/doctor --strict, coordination skills)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-09T01:00:11Z",
+          "working": false
+        },
+        {
+          "id": "yaks-10fb",
+          "title": "Yaks coordination & tooling: follow-ups (post-3901)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-09T00:39:20Z",
+          "working": false
+        },
+        {
+          "id": "yaks-a2ca",
+          "title": "Mine pstack for yaks eval/validation ideas",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-09T00:39:20Z",
+          "working": false
+        },
+        {
+          "id": "yaks-5d5c",
+          "title": "Human-driven interactive lane: kickoff/handoff guidance",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-09T00:24:40Z",
+          "working": false
+        },
+        {
+          "id": "yaks-70e5",
+          "title": "Candidate primitive: yaks diff <refA> <refB> (ref-generic herd diff)",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-09-08T23:12:05Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8265",
+          "title": "Record state-transition timestamps (transition log) for yaks log",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-08T23:12:05Z",
+          "working": false
+        },
+        {
+          "id": "yaks-eb5f",
+          "title": "Mechanize remaining validation predicates (commit-names-id, worker-scope-adherence)",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-09-08T23:12:05Z",
+          "working": false
+        },
+        {
+          "id": "yaks-fe5a",
+          "title": "yaks as substrate for blinded skill/prompt-change eval",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-09-08T23:12:05Z",
+          "working": false
+        },
+        {
+          "id": "yaks-52eb",
+          "title": "Bug: yaks attach writes to gitignored .yaks/artifacts -> team-mode attachments dangle",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-08T22:56:14Z",
+          "working": false
+        },
+        {
+          "id": "yaks-6624",
+          "title": "Verification-lever discipline: yaks makes agents build + keep using project eval tooling",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-08T22:24:17Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f814",
+          "title": "Evidence contract per yak: acceptance criteria set at claim",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-08T22:23:59Z",
+          "working": false
+        },
+        {
+          "id": "yaks-c3b1",
+          "title": "Per-repo context names the project's verification lever(s)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-08T22:13:47Z",
+          "working": false
+        },
+        {
+          "id": "yaks-79a9",
+          "title": "Evidence over assertion -> rerunnable artifact",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-08T03:33:56Z",
+          "working": false
+        },
+        {
+          "id": "yaks-d954",
+          "title": "Document yaks verify + docs-freshness rule in AGENTS.md",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-08T02:35:26Z",
+          "working": false
+        },
+        {
+          "id": "yaks-d4d2",
+          "title": "yaks verify: per-yak verify command + runner (automated evidence)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-08T02:17:09Z",
+          "working": false
+        },
+        {
+          "id": "yaks-139b",
+          "title": "yaks-working: sharpen prove-it-works + ask-when-no-lever",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-08T01:52:22Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7d49",
+          "title": "Dogfood: encode toque TUI-verification guidance in this repo",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-08T01:52:22Z",
+          "working": false
+        },
+        {
+          "id": "yaks-213b",
+          "title": "PR-driven integration: coordinator opens id-free PRs from worker branches",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-08T00:28:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f4fa",
+          "title": "Team-mode PR-flow validation (yaks-213b)",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-09-08T00:27:24Z",
+          "working": false
+        },
+        {
+          "id": "yaks-012b",
+          "title": "Docs + skill-name normalization + TUI doc screenshots",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T23:47:17Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f85f",
+          "title": "Final docs review pass",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T23:47:04Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8c46",
+          "title": "Consistency + error pass over all skills",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T23:44:37Z",
+          "working": false
+        },
+        {
+          "id": "yaks-3677",
+          "title": "TUI doc screenshots via headless buffer->SVG (color)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T23:41:26Z",
+          "working": false
+        },
+        {
+          "id": "yaks-d6d3",
+          "title": "Write docs/ (overview + CLI + TUI + skills/workflows)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T23:09:11Z",
+          "working": false
+        },
+        {
+          "id": "yaks-865d",
+          "title": "Normalize skill names to yaks[-*]",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T23:05:16Z",
+          "working": false
+        },
+        {
+          "id": "yaks-3901",
+          "title": "Yaks as a coordination substrate for agents and humans (design exploration)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T22:45:58Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2ebe",
+          "title": "Write side: bulk and filter-driven mutations",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T22:45:20Z",
+          "working": false
+        },
+        {
+          "id": "yaks-74f5",
+          "title": "Git merge driver for .yaks/: conflict-free herd merges across branches",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-09-06T22:45:20Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8f81",
+          "title": "Dogfooding harness: in-repo pstack-lite skills and worktree isolation",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T22:45:20Z",
+          "working": false
+        },
+        {
+          "id": "yaks-a412",
+          "title": "Skill updates from our decisions + how to VALIDATE skills",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T22:45:20Z",
+          "working": false
+        },
+        {
+          "id": "yaks-1832",
+          "title": "doctor --strict: scope evidence check to shorn; rank dead separately",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T16:29:00Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7035",
+          "title": "Document doctor + doctor --strict; audit command list",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T16:29:00Z",
+          "working": false
+        },
+        {
+          "id": "yaks-cada",
+          "title": "Flush un-applied SOPs into coordinating-yaks + reconcile a412",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T16:26:10Z",
+          "working": false
+        },
+        {
+          "id": "yaks-91a8",
+          "title": "Document yaks bulk (filter-mutation, dry-run-default) in README + yak skill",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T01:55:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-d236",
+          "title": "yaks doctor --strict: evidence-before-shear predicate",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T01:55:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2ab1",
+          "title": "Encode the coordinator-claim run shape in coordinating-yaks",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T01:54:49Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7cc8",
+          "title": "DECIDE: safety model for filter-driven bulk mutations",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-05T03:26:26Z",
+          "working": false
+        },
+        {
+          "id": "yaks-87ff",
+          "title": "Edit-tool refuses gitignored worktree paths: cause found + candidate fix",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-05T03:08:42Z",
+          "working": false
+        },
+        {
+          "id": "yaks-594b",
+          "title": "Surface needs + attribution across the TUI/CLI",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-04T17:07:48Z",
+          "working": false
+        },
+        {
+          "id": "yaks-a3a6",
+          "title": "Make inbox a filter/view, not a modal toggle (unify with --needs)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-04T17:07:48Z",
+          "working": false
+        },
+        {
+          "id": "yaks-39d4",
+          "title": "yaks doctor: herd integrity check (post-merge danglers, parent/child, dup-status)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-04T04:17:45Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f6f8",
+          "title": "a3a6 PREP: add needs predicate to FilterSpec + matches (coordinator prep commit)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-03T22:30:34Z",
+          "working": false
+        },
+        {
+          "id": "yaks-5ade",
+          "title": "Update coordinating-yaks skill with validated SOPs (file-tool, disjoint-type, HITL, merge)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-03T22:27:10Z",
+          "working": false
+        },
+        {
+          "id": "yaks-45c7",
+          "title": "CLI: --needs filter + a needs marker on list/next rows",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-03T19:58:25Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4e8a",
+          "title": "TUI detail view renders the needs field",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-03T18:28:07Z",
+          "working": false
+        },
+        {
+          "id": "yaks-ffa5",
+          "title": "TUI auto-attributes comments to the current actor",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-03T18:26:54Z",
+          "working": false
+        },
+        {
+          "id": "yaks-1edb",
+          "title": "TUI comment parser must understand the [actor] stamp (unify with store::parse_notes)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-03T18:25:09Z",
+          "working": false
+        },
+        {
+          "id": "yaks-1603",
+          "title": "Extract resolve_actor into a shared module (CLI + TUI)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-03T18:23:31Z",
+          "working": false
+        },
+        {
+          "id": "yaks-bc68",
+          "title": "inbox must show every needs-blocked yak (status-independent); ask should guard finished yaks",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-03T18:22:17Z",
+          "working": false
+        },
+        {
+          "id": "yaks-031d",
+          "title": "Preserve unknown/unmodeled frontmatter fields across a read->write round-trip",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-03T18:10:43Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b517",
+          "title": "User feedback comments the agent can find reliably",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-03T17:59:54Z",
+          "working": false
+        },
+        {
+          "id": "yaks-eb66",
+          "title": "Optional attribution on updates (--as actor), ownership-free",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-03T16:28:52Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "lane-labels",
+      "liveness": "idle",
+      "last_write": "2026-09-23T21:45:01Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-7cb3",
+          "title": "Parse label edits with/without commas",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:45:01Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f04d",
+          "title": "Known labels in configuration",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-09-23T21:45:01Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "lane-attach",
+      "liveness": "idle",
+      "last_write": "2026-09-23T21:44:50Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-a09b",
+          "title": "Rename attachment from TUI",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:44:50Z",
+          "working": false
+        },
+        {
+          "id": "yaks-fe19",
+          "title": "Rename attachment",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:44:50Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "lane-paste",
+      "liveness": "idle",
+      "last_write": "2026-09-23T21:43:54Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-f2aa",
+          "title": "Pasting into description *very* slow",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:43:54Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "lane-mouse",
+      "liveness": "idle",
+      "last_write": "2026-09-23T21:43:26Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-97a2",
+          "title": "Mouse support",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:43:26Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "lane-slaughter",
+      "liveness": "idle",
+      "last_write": "2026-09-23T21:43:13Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-05da",
+          "title": "Slaughter family with confirmation",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:43:13Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "lane-polish",
+      "liveness": "idle",
+      "last_write": "2026-09-23T21:43:06Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-027a",
+          "title": "Answer mode needs a little spacing",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:43:06Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2d17",
+          "title": "Broken coloring in wrapping yak detail lines",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:43:06Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "lane-form",
+      "liveness": "idle",
+      "last_write": "2026-09-23T21:42:56Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-4da6",
+          "title": "Text wrapping bugs on single-line inputs",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:42:56Z",
+          "working": false
+        },
+        {
+          "id": "yaks-b0b4",
+          "title": "Edit source frontmatter in the create/edit form",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:42:56Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "lane-navpos",
+      "liveness": "idle",
+      "last_write": "2026-09-23T21:41:38Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-28b4",
+          "title": "Keep detail cursor/scroll position on back/forward nav",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:41:38Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "lane-width",
+      "liveness": "idle",
+      "last_write": "2026-09-23T21:40:37Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-9e59",
+          "title": "Max detail width affordance",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:40:37Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "lane-openid",
+      "liveness": "idle",
+      "last_write": "2026-09-23T21:39:45Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-63f3",
+          "title": "Open a yak by id (jump to its detail)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:39:45Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "lane-scroll",
+      "liveness": "idle",
+      "last_write": "2026-09-23T21:37:30Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-9009",
+          "title": "List-view scrolling pins to bottom",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T21:37:30Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "agent",
+      "liveness": "idle",
+      "last_write": "2026-09-23T04:47:20Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-0ba6",
+          "title": "Release v0.0.10",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T04:47:20Z",
+          "working": false
+        },
+        {
+          "id": "yaks-1d51",
+          "title": "Improved skill installation and management",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T04:42:00Z",
+          "working": false
+        },
+        {
+          "id": "yaks-bd9a",
+          "title": "Skill update and validation",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T04:41:44Z",
+          "working": false
+        },
+        {
+          "id": "yaks-d8e9",
+          "title": "skills install --force can clobber the repo's own skills/ source",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T04:41:33Z",
+          "working": false
+        },
+        {
+          "id": "yaks-e233",
+          "title": "Shipped skills use a non-spec frontmatter key (activation:), breaking portability",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T04:25:31Z",
+          "working": false
+        },
+        {
+          "id": "yaks-095a",
+          "title": "`yaks merge` fails to update config for new herd",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-23T02:29:27Z",
+          "working": false
+        },
+        {
+          "id": "yaks-dd85",
+          "title": "Harden skills: require real-artifact validation + UI evidence before shear",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-22T00:42:42Z",
+          "working": false
+        },
+        {
+          "id": "yaks-156d",
+          "title": "Release v0.0.9",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-22T00:37:06Z",
+          "working": false
+        },
+        {
+          "id": "yaks-71d1",
+          "title": "Edit affordance for yak herd",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-22T00:04:49Z",
+          "working": false
+        },
+        {
+          "id": "yaks-9b21",
+          "title": "Config.yaml still has `prefix:`",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T21:02:13Z",
+          "working": false
+        },
+        {
+          "id": "yaks-6361",
+          "title": "Fix CLI naming to reflect farms/herds",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T21:02:11Z",
+          "working": false
+        },
+        {
+          "id": "yaks-451d",
+          "title": "read_config drops verify/herds entries after an inline comment",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T21:02:03Z",
+          "working": false
+        },
+        {
+          "id": "yaks-006e",
+          "title": "Herd filtering option for `yaks --search`",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T20:44:11Z",
+          "working": false
+        },
+        {
+          "id": "yaks-209a",
+          "title": "Add herd-filtering UI affordance",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T20:44:11Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f5e3",
+          "title": "Color yak herds differently so they stand out",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T20:44:11Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8f52",
+          "title": "TUI: explicit in-form herd picker (override the create target)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T19:42:04Z",
+          "working": false
+        },
+        {
+          "id": "yaks-15f7",
+          "title": "One farm, many herds: consolidate multiple prefixes in a single .yaks",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T19:30:58Z",
+          "working": false
+        },
+        {
+          "id": "yaks-a7eb",
+          "title": "TUI herd badge (per-herd id colour)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T19:30:58Z",
+          "working": false
+        },
+        {
+          "id": "yaks-eee7",
+          "title": "docs follow-ups: family-scope h key + herd/tracker mapping",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T19:30:58Z",
+          "working": false
+        },
+        {
+          "id": "yaks-3290",
+          "title": "slice the farm by herd (filter + TUI badge/current-herd)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T19:19:35Z",
+          "working": false
+        },
+        {
+          "id": "yaks-98d5",
+          "title": "Farm config: herds map + one-level global->herd cascade",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T18:57:49Z",
+          "working": false
+        },
+        {
+          "id": "yaks-640a",
+          "title": "Explicit label definitions in config.yaml",
+          "status": "hairy",
+          "needs": null,
+          "last": "2026-09-21T18:37:07Z",
+          "working": false
+        },
+        {
+          "id": "yaks-1d98",
+          "title": "discover an out-of-tree farm (symlink now, pointer file next)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T18:17:45Z",
+          "working": false
+        },
+        {
+          "id": "yaks-7371",
+          "title": "merge/import: jam two farms together safely",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T18:08:54Z",
+          "working": false
+        },
+        {
+          "id": "yaks-92bf",
+          "title": "Terminology migration: herd->farm, HerdScope->family; herd now names a prefix-group (code+docs+skills)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T17:57:04Z",
+          "working": false
+        },
+        {
+          "id": "yaks-4154",
+          "title": "create: choose the herd (id prefix) per yak",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-21T17:37:35Z",
+          "working": false
+        },
+        {
+          "id": "yaks-fd5e",
+          "title": "Pinned yak detail header",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-10T22:37:20Z",
+          "working": false
+        },
+        {
+          "id": "yaks-89b9",
+          "title": "Make plain-text + SVG the two TUI-evidence channels; retire toque's text style-encodings",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-09T04:55:01Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2ed9",
+          "title": "Docs/skills sweep: retire dual-plane style-snapshot references",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-09T04:54:55Z",
+          "working": false
+        },
+        {
+          "id": "yaks-8d58",
+          "title": "Remove toque text style-encodings + yaks --style flags + headless style tests",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-09T04:54:55Z",
+          "working": false
+        },
+        {
+          "id": "yaks-dce6",
+          "title": "Prototype: lean LLM-parseable SVG for TUI docshots (classes + inheritance + coalesced rects + per-row text)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-09T04:54:54Z",
+          "working": false
+        },
+        {
+          "id": "yaks-1a96",
+          "title": "TUI-snapshot evidence: emit toque LLM-text vs SVG?",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-09T04:12:43Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "lane-c",
+      "liveness": "idle",
+      "last_write": "2026-09-11T00:08:50Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-f207",
+          "title": "Changing priority (or anything that causes a list resort) in detail mode doesn't update selection",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-11T00:08:50Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "lane-a",
+      "liveness": "idle",
+      "last_write": "2026-09-10T23:58:56Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-7a1c",
+          "title": "Move ephemeral yellow status line to second row",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-10T23:58:56Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "lane-b",
+      "liveness": "idle",
+      "last_write": "2026-09-10T23:55:01Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-26f0",
+          "title": "Search in detail not sticky",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-10T23:55:01Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "worker-agents",
+      "liveness": "idle",
+      "last_write": "2026-09-08T01:55:22Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-7d49",
+          "title": "Dogfood: encode toque TUI-verification guidance in this repo",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-08T01:55:22Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "worker-skill",
+      "liveness": "idle",
+      "last_write": "2026-09-08T01:54:42Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-139b",
+          "title": "yaks-working: sharpen prove-it-works + ask-when-no-lever",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-08T01:54:42Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "worker",
+      "liveness": "idle",
+      "last_write": "2026-09-08T00:27:32Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-f4fa",
+          "title": "Team-mode PR-flow validation (yaks-213b)",
+          "status": "dead",
+          "needs": null,
+          "last": "2026-09-08T00:27:32Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "wt-docref",
+      "liveness": "idle",
+      "last_write": "2026-09-06T16:32:15Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-1832",
+          "title": "doctor --strict: scope evidence check to shorn; rank dead separately",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T16:32:15Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "wt-docs",
+      "liveness": "idle",
+      "last_write": "2026-09-06T16:32:10Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-7035",
+          "title": "Document doctor + doctor --strict; audit command list",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T16:32:10Z",
+          "working": false
+        },
+        {
+          "id": "yaks-c411",
+          "title": "Refresh yak skill + README for the current CLI surface",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-05T03:22:41Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "wt-doctor",
+      "liveness": "idle",
+      "last_write": "2026-09-06T01:59:25Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-d236",
+          "title": "yaks doctor --strict: evidence-before-shear predicate",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T01:59:25Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "wt-bulkdocs",
+      "liveness": "idle",
+      "last_write": "2026-09-06T01:58:03Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-91a8",
+          "title": "Document yaks bulk (filter-mutation, dry-run-default) in README + yak skill",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-06T01:58:03Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "wt-cli",
+      "liveness": "idle",
+      "last_write": "2026-09-05T03:23:42Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-a11b",
+          "title": "yaks bulk: filter-driven field mutation (dry-run-default)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-05T03:23:42Z",
+          "working": false
+        },
+        {
+          "id": "yaks-d4d3",
+          "title": "No-yak-ids validation tool",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-05T03:04:46Z",
+          "working": false
+        },
+        {
+          "id": "yaks-5fae",
+          "title": "Bulk and filtered field updates & reparents",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-04T17:17:52Z",
+          "working": false
+        },
+        {
+          "id": "yaks-2120",
+          "title": "Machine-readable create + positional title",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-04T04:27:52Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f81a",
+          "title": "a3a6 CLI: --needs filter flag; inbox = list --needs sugar",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-03T22:35:08Z",
+          "working": false
+        },
+        {
+          "id": "yaks-29a3",
+          "title": "Render preserved unknown frontmatter fields in CLI show",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-03T20:06:12Z",
+          "working": false
+        },
+        {
+          "id": "yaks-45c7",
+          "title": "CLI: --needs filter + a needs marker on list/next rows",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-03T20:04:43Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "wt-tui",
+      "liveness": "idle",
+      "last_write": "2026-09-05T03:23:19Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-5c51",
+          "title": "Apply the slaughter child-guard to bulk/multi-select slaughter",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-05T03:23:19Z",
+          "working": false
+        },
+        {
+          "id": "yaks-f433",
+          "title": "Yak editing: Crash when shift-tab'ing from description back to labels",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-05T03:06:05Z",
+          "working": false
+        },
+        {
+          "id": "yaks-de85",
+          "title": "Multi-select list items for bulk mutations",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-04T17:28:05Z",
+          "working": false
+        },
+        {
+          "id": "yaks-685e",
+          "title": "TUI: accent styling for the needs block (detail line + badge)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-04T04:27:34Z",
+          "working": false
+        },
+        {
+          "id": "yaks-11e9",
+          "title": "a3a6 TUI: inbox as a filter/saved-view; remove the i toggle",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-03T22:43:07Z",
+          "working": false
+        },
+        {
+          "id": "yaks-548b",
+          "title": "TUI needs affordances: list badge, inbox filter/view, ask/answer keybindings",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-03T20:10:42Z",
+          "working": false
+        },
+        {
+          "id": "yaks-eeba",
+          "title": "Render preserved unknown frontmatter fields in TUI detail",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-03T20:02:36Z",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "wt-skill",
+      "liveness": "idle",
+      "last_write": "2026-09-04T04:25:19Z",
+      "working": [],
+      "asking": [],
+      "touched": [
+        {
+          "id": "yaks-766d",
+          "title": "working-a-yak: add needs/ask-answer guidance (hand back, don't self-clear)",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-04T04:25:19Z",
+          "working": false
+        },
+        {
+          "id": "yaks-6f21",
+          "title": "coordinating-yaks: file-tool fallback rung + coordinator pre-flight checklist",
+          "status": "shorn",
+          "needs": null,
+          "last": "2026-09-04T04:03:54Z",
+          "working": false
+        }
+      ]
+    }
+  ]
+}

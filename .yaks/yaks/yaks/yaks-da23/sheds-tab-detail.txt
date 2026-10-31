@@ -1,0 +1,18 @@
+---
+source: src/tui/sheds_tab.rs
+expression: "draw(&app, 120, 14)"
+---
+ 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   🛖  Sheds (4)             scanned 4s ago
+
+◂ walk-1  active · 9m ago
+│
+│ shaving  mem-f13a  Add walk mode
+│ recent   mem-99d0  shorn  Left-button mouse lock  3d ago
+│
+│
+│
+│
+│
+│
+│
+h:list  j/k:yak  J/K:shed  Enter:open yak  y:copy id  r:rescan  ?:help
