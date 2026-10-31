@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-31T16:17:00Z'
-updated: '2026-10-31T16:42:39Z'
+updated: '2026-10-31T16:52:20Z'
 parent: yaks-6a11
 labels:
 - cli
@@ -88,3 +88,12 @@ moved: shaving -> shorn
 ▸ 2026-10-31T16:42:39Z [yakherd]
 
 Landed by the yakherd as `71ca61e` (squash of `1e6ce08`). Re-ran `cargo test --workspace` (all green with the fsmonitor workaround). Reproduced on a scratch farm with the landed build: moves, checkpoints, asks and answers carry `kind` metadata; `--meta` rejects a bad key and a missing note; `show --json` lists notes with `meta`; a hand-edited `needs:` that disagrees with the latest answer is reported by `doctor` as `needs-drift`.
+
+---
+▸ 2026-10-31T16:52:20Z [yakherd]
+kind: landed
+commit: 71ca61e943004f270ffdad04850e685f7a706e41
+branch: main
+---
+
+landed: 71ca61e yaks-b8cd: note metadata surface: kinds from commands, update --meta, JSON notes/meta, TUI header, doc (recorded by hand: landed with a yaks binary from before `yaks-735a`)

@@ -5,7 +5,7 @@ status: shorn
 type: idea
 priority: 2
 created: '2026-10-31T15:18:16Z'
-updated: '2026-10-31T16:42:41Z'
+updated: '2026-10-31T16:52:20Z'
 parent: yaks-039b
 labels:
 - schema
@@ -164,3 +164,12 @@ Still open, as follow-ups rather than part of this yak: `reply_to` (needs note i
 ▸ 2026-10-31T16:42:41Z [yakherd]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-31T16:52:20Z [yakherd]
+kind: landed
+commit: 7f78a28c82f9f04486208814cdbfacaf3d08d937
+branch: main
+---
+
+landed: 7f78a28 yaks-4cd7, yaks-6a11: fence-aware note boundaries; note metadata (key: value lines under the marker, c (recorded by hand: landed with a yaks binary from before `yaks-735a`)

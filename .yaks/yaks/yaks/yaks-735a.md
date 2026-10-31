@@ -1,11 +1,11 @@
 ---
 id: yaks-735a
 title: yaks land records landed shas on the yak; yaks commits reads recorded shas
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-10-31T16:17:01Z'
-updated: '2026-10-31T16:45:27Z'
+updated: '2026-10-31T16:52:20Z'
 parent: yaks-bdf9
 depends_on:
 - yaks-7a11
@@ -52,3 +52,34 @@ Decision: with no farm (or an unopenable one) `land` stays silent unless `--yak`
 Decision: `--dry-run` prints `dry run: would record a kind: landed note on <id> for the landed commit (worker <sha>)` and takes no farm lock.
 
 Decision: the `branch:` metadata is HEAD's branch (omitted when detached). It is optional in the design and costs nothing; `commits` shows it as `on <branch>`.
+
+---
+▸ 2026-10-31T16:47:06Z [commits-1]
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-10-31T16:47:07Z [commits-1]
+
+Summary (commits-1): `yaks land` records what it landed; `yaks commits` reads it first.
+
+- `Farm::record_landed` + `land::record`: a `kind: landed` note (`commit` = full landed sha, `source` = full worker sha, `branch`) on each yak the landed message names and each `--yak <id>`; unknown ids warn; `--dry-run` writes nothing and says what it would record; a re-land or a no-op land records nothing new.
+- `Farm::commits` gains `recorded: Vec<RecordedCommit>` (kind, sha, source, branch, ts, actor, `found` from `git log -1` in the code repo); `yaks commits` prints "Recorded", then "Commits naming", then "Farm history"; `--json` has `recorded`, `named`, `farm_history`.
+- Docs and help: `docs/cli.md` (`commits`, `land` and both table rows), `README.md`, clap help on `Commits` and `Land`/`--yak`. `.agents/skills/` untouched.
+- Tests in `tests/commits.rs`: land records landed + worker sha, `commits` reads them (text and JSON), re-land adds no second note, `--yak` with an unknown id warns, dry run writes nothing, a recorded sha the repo lacks shows `(not in this repository)`.
+- Real output: a demo repo `land` then `commits` printed `landed 33413da on main  t-09e7: the work  (2026-10-31T16:38:37Z [demo])`.
+- Gate: `cargo test --workspace` (fsmonitor env) green; `yaks verify` PASS.
+
+---
+▸ 2026-10-31T16:47:07Z [commits-1]
+
+moved: shaving -> shorn
+
+---
+▸ 2026-10-31T16:52:20Z [yakherd]
+kind: landed
+commit: 7e4a0147b919a5f23e743cfbee7c77f087aefdb3
+branch: main
+---
+
+landed: 7e4a014 yaks-735a: yaks land records landed shas on the yak; yaks commits reads them first (--yak, --json) (recorded by hand: landed with a yaks binary from before `yaks-735a`)

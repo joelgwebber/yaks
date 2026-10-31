@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-10-31T15:18:27Z'
-updated: '2026-10-31T16:34:49Z'
+updated: '2026-10-31T16:52:20Z'
 parent: yaks-039b
 labels:
 - git
@@ -84,3 +84,12 @@ Summary (commits-1): `yaks commits` now greps the code repository, not the farm 
 ▸ 2026-10-31T16:34:49Z [commits-1]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-31T16:52:20Z [yakherd]
+kind: landed
+commit: c4bde339f2ad7cda9531ca9d8c1d3cee8a13655b
+branch: main
+---
+
+landed: c4bde33 yaks-7a11: yaks commits greps the code repository (all branches), labels farm history (recorded by hand: landed with a yaks binary from before `yaks-735a`)

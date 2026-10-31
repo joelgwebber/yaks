@@ -1,11 +1,11 @@
 ---
 id: yaks-6beb
 title: 'Delta: yaks sheds from a primary that is not the Delta host (managed repos) finds no sheds'
-status: hairy
+status: dead
 type: task
 priority: 4
 created: '2026-10-10T15:44:44Z'
-updated: '2026-10-31T15:56:25Z'
+updated: '2026-10-31T16:52:21Z'
 parent: yaks-d3ad
 labels:
 - cli
@@ -43,3 +43,22 @@ Decision (Joel, 2026-10-10): promote to a top-level, low-priority yak ("make thi
 ▸ 2026-10-31T15:56:25Z [delta:Cloud Runners]
 
 Adopted into `yaks-039b` under `yaks-d3ad` (2026-10-31): the git/Delta shed discovery this concerns is being removed. Slaughter as obsolete when `yaks-d3ad` lands.
+
+---
+▸ 2026-10-31T16:47:43Z [sheds-1]
+
+Obsolete (sheds-1): yaks-d3ad removed git/Delta shed discovery (`yaks discover`, the pin walk), so `yaks sheds` no longer finds checkouts at all; it reads actors from the farm. Nothing is left to fix here. For the yakherd to slaughter.
+
+---
+▸ 2026-10-31T16:52:21Z [yakherd]
+
+Obsolete: the code this concerns was removed in `b2e4638` (`yaks-d3ad`). Slaughtered by the yakherd.
+
+---
+▸ 2026-10-31T16:52:21Z [yakherd]
+kind: move
+from: hairy
+to: dead
+---
+
+moved: hairy -> dead
