@@ -1,16 +1,15 @@
 ---
 id: yaks-6a11
 title: 'Design: structured comment metadata (per-note frontmatter-like fields)'
-status: hairy
+status: shaving
 type: idea
 priority: 2
 created: '2026-10-31T15:18:16Z'
-updated: '2026-10-31T15:58:01Z'
+updated: '2026-10-31T16:16:35Z'
 parent: yaks-039b
 labels:
 - schema
 - design
-needs: human
 ---
 
 Today a note is `---`, then `▸ <ts> [actor]`, then a body. Everything else is inferred from body conventions: `moved: a -> b`, `verify: … -> PASS`, `Decision:`, claim notes, `Tidy request:`, and which note is the ask and which the answer. Joel (2026-10-31): consider designing explicitly for note metadata, like the yak's own frontmatter.
@@ -105,3 +104,51 @@ So the choice is (A), consistent and terse, or (B), pretty on GitHub. Reserved k
 ▸ 2026-10-31T15:58:01Z [delta:Cloud Runners]
 
 Related bug found while writing the ask above: the note parser isn't fence-aware, so example notes inside code blocks split into fake notes. Filed as `yaks-4cd7`; fix it before this design ships examples in the docs.
+
+---
+▸ 2026-10-31T16:04:10Z [Joel Webber]
+
+What about (A), but with a `---` HR underneath, like in frontmatter? At least then it would render separated by the line.
+
+---
+▸ 2026-10-31T16:08:34Z [yakherd]
+
+picked up
+
+Picking up Joel's answer: (A) with a frontmatter-style `---` under the metadata. Decision recorded below; implementing now as the yakherd's prep commit (core parse/write), then the command and TUI surface via a worker.
+
+---
+▸ 2026-10-31T16:08:35Z [yakherd]
+
+Decision (Joel, 2026-10-31, answering the syntax ask): metadata is YAML `key: value` lines directly under the `▸` marker, closed by a `---` line, like the yak's own frontmatter.
+
+```text
+---
+▸ 2026-10-31T15:20:00Z [tex-1]
+kind: checkpoint
+commit: 47076b0
+---
+
+Atlas and UVs done.
+```
+
+## Rules
+
+- **Only when present.** A note with no metadata keeps today's shape (marker, blank line, text). No migration, no schema bump.
+- **Parse.** After the marker, a run of non-blank `key: value` lines ended by a `---` line, with no blank line in between, is metadata. Anything else (a blank line first, a line that isn't `key: value`, no closing `---`) leaves the note as plain text, exactly as today. Keys match `[A-Za-z_][A-Za-z0-9_-]*`; values are single-line scalars, unquoted like frontmatter values (`'…'` / `"…"`). Order is kept and unknown keys round-trip untouched.
+- **Reserved keys (v1):** `kind`, `for`, `commit`, `branch`, `remote`, `thread`. `reply_to` waits for note ids.
+- **Kinds (v1):** `move`, `ask`, `answer`, `request`, `pickup`, `verify`, `checkpoint`, `landed`. The commands that write these keep writing their existing body text too (`moved: a -> b`, `asked: …`), so older binaries and every text-based reader keep working.
+
+## Rendering trade-off, accepted
+
+On GitHub the metadata lines followed by `---` become a setext H2 heading, so a note with metadata shows its byline as a heading with GitHub's rule under it. It is visually separated, as Joel wanted, but larger than the byline of a note without metadata. The TUI parses notes itself and is unaffected. Putting a blank line before the `---` would make it a plain rule instead, but it would no longer look like frontmatter; revisit only if the heading reads badly in practice.
+
+---
+▸ 2026-10-31T16:08:35Z [yakherd]
+
+moved: hairy -> shaving
+
+---
+▸ 2026-10-31T16:16:35Z [yakherd]
+
+Core landed in 7f78a28: `NoteEntry.meta` / `kind()` / `get()`, `append_note_meta`, `append_entry`, `meta_block`, `parse_meta`, the TUI comment block's `meta`, merge-driver preservation. The command and TUI surface follow from a worker.

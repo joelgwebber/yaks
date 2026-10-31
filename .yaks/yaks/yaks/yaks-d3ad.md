@@ -1,11 +1,11 @@
 ---
 id: yaks-d3ad
 title: 'Remove git/Delta shed discovery: yaks discover, the activity log, yaks.shed.title'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-10-31T15:18:14Z'
-updated: '2026-10-31T15:18:16Z'
+updated: '2026-10-31T16:17:15Z'
 parent: yaks-039b
 depends_on:
 - yaks-da23
@@ -24,3 +24,13 @@ Once sheds read notes, delete the machinery that existed only for checkout disco
 Keep the git helpers that farm discovery uses (`host`, `host_checkout`, `canonical`, `worktree_of_branch`, `common_dir`; callers in `store.rs`, `branchfarm.rs`, `init.rs`, `privatefarm.rs`, `tui/source.rs`). Move them to a small `git` module rather than leaving them in `sheds.rs`.
 
 Then close the yaks this obsoletes (`yaks-6beb`, `yaks-9b9f`; check `yaks-2177`), with a note pointing here. Grep docs, skills, README and `--help` for `discover`, `activity` and `shed.title`.
+
+---
+▸ 2026-10-31T16:17:15Z [yakherd]
+
+moved: hairy -> shaving
+
+---
+▸ 2026-10-31T16:17:15Z [yakherd]
+
+Claim (yakherd): done by `sheds-1` after `yaks-da23`, in the same worker.

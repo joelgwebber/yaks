@@ -1,11 +1,11 @@
 ---
 id: yaks-039b
 title: Sheds from notes, remote work visibility, and structured comments
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-10-31T15:16:48Z'
-updated: '2026-10-31T15:16:48Z'
+updated: '2026-10-31T16:19:03Z'
 labels:
 - sheds
 - design
@@ -31,3 +31,21 @@ Drop git/Delta discovery from sheds; build them from note attribution. Keep the 
 - Likely obsoleted by the rebuild: `yaks-6beb` (managed-repo sheds), `yaks-9b9f` (flaky sheds mtime test), `yaks-2177` if still open. `yaks-ded9` (thread naming) becomes an actor-name question.
 - `yaks-f1e6` (sheds view like list/tree) and `yaks-19c3` (activity log view) fit the note-based model directly.
 - `yaks-2610` decided against storing hashes because it was circular with the farm on `main`; that premise is gone.
+
+---
+▸ 2026-10-31T16:08:35Z [yakherd]
+
+moved: hairy -> shaving
+
+---
+▸ 2026-10-31T16:19:03Z [yakherd]
+
+Fan-out 2026-10-31 (yakherd: the "Cloud Runners" Delta thread). Base `7f78a28` (the prep commit: fence-aware note boundaries plus the note metadata core; `yaks-4cd7` shorn).
+
+| Worker | Yaks | Model | Thread |
+|---|---|---|---|
+| `meta-1` | `yaks-b8cd` | LiteLLM `claude-sonnet-5-5` | `ksQQtfBVdv4DR2eA_txRWzEtg5LOADk87JIBxBCA0aLJyrhJPreUvVwLftHG` |
+| `sheds-1` | `yaks-da23` then `yaks-d3ad` | LiteLLM `claude-sonnet-5-5` | `ksQQtfBVdv4DR2eA_txRWzEtg5LOADlCv5IBxBCA0aLJyrhJPreUvVwLftHG` |
+| `commits-1` | `yaks-7a11` then `yaks-735a` | LiteLLM `claude-sonnet-5-5` | `ksQQtfBVdv4DR2eA_txRWzEtg5LOADlICZIBxBCA0aLJyrhJPreUvVwLftHG` |
+
+The yakherd keeps the skills (`yaks-0071`, then `yaks-4c2a` after the metadata surface), landing, and review. Wave 2 after these land: `yaks-a3fc` (commits so far from pushed branches) and `yaks-d695` (PR field).

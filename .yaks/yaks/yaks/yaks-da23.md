@@ -1,11 +1,11 @@
 ---
 id: yaks-da23
 title: 'Rebuild yaks sheds from note attribution: one row per actor'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-10-31T15:17:35Z'
-updated: '2026-10-31T15:17:35Z'
+updated: '2026-10-31T16:18:34Z'
 parent: yaks-039b
 labels:
 - sheds
@@ -45,3 +45,21 @@ delta:Set up remote yak workflow    active · 12m ago
 - Docs and help: `docs/cli.md`, `docs/tui.md`, the `yaks` skill vocabulary ("Shed" is redefined as a worker in the farm, not a checkout), `yaks-coordinating` "Watching workers".
 
 Lost on purpose: branch/HEAD/ahead/dirty/merged, unclaimed-checkout detection, orphan pins. Liveness instead rests on the heartbeat rule (sibling skills yak).
+
+---
+▸ 2026-10-31T16:17:15Z [yakherd]
+
+moved: hairy -> shaving
+
+---
+▸ 2026-10-31T16:17:15Z [yakherd]
+
+Claim (yakherd). Owner: worker `sheds-1`, together with `yaks-d3ad` as a serial arc (rebuild first, then removal). Owns `src/sheds.rs`, `src/activity.rs`, `src/discover.rs`, `src/tui/sheds_tab.rs`, plus the sheds pieces of the TUI inbox overlay and yak detail, and in `src/main.rs` the `Sheds`/`Discover` commands. Out of scope: note writing, `land`, `commits`, `.agents/skills/`. Evidence: fixture-farm tests (interleaved actors, a coordinator claim followed by a worker's writes, asks), `yaks sheds` text and JSON from the real yaks farm, a TUI Sheds tab frame attached, the full gate. Judge: yakherd at landing.
+
+---
+▸ 2026-10-31T16:18:34Z [sheds-1]
+
+Start (sheds-1).
+
+- date -u: Sat Oct 31 16:18:34 UTC 2026
+- yaks path yaks-da23: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-da23.md

@@ -1,11 +1,11 @@
 ---
 id: yaks-bdf9
 title: 'Design: commit hashes in yaks, now that the farm has its own branch'
-status: hairy
+status: shaving
 type: idea
 priority: 2
 created: '2026-10-31T15:18:15Z'
-updated: '2026-10-31T15:56:38Z'
+updated: '2026-10-31T16:17:15Z'
 parent: yaks-039b
 labels:
 - git
@@ -47,3 +47,8 @@ Decision (Joel, 2026-10-31): store commit shas in yaks.
 - Workers also leave their branch commits in comments as they go (the convention in `yaks-a3fc`).
 - For private farms the recorded sha is the only link from yak to code, and that's acceptable.
 - Where the fields live (frontmatter vs note metadata) follows `yaks-6a11`, settled first.
+
+---
+▸ 2026-10-31T16:17:15Z [yakherd]
+
+moved: hairy -> shaving

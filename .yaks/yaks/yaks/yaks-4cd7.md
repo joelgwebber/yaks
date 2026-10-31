@@ -1,11 +1,11 @@
 ---
 id: yaks-4cd7
 title: Note parser splits on a --- / ▸ pair inside a fenced code block
-status: hairy
+status: shorn
 type: bug
 priority: 2
 created: '2026-10-31T15:58:01Z'
-updated: '2026-10-31T15:58:01Z'
+updated: '2026-10-31T16:16:34Z'
 parent: yaks-039b
 labels:
 - store
@@ -23,3 +23,33 @@ Found 2026-10-31: an ask on `yaks-6a11` that included example notes was parsed a
 ## Fix shape
 
 Make `parse_notes`, `description` and the TUI comment parser skip fenced code blocks (backtick and tilde fences, any length) when looking for delimiters. The same goes for the merge driver if it splits on notes. Test with a note containing a fenced example of a note.
+
+---
+▸ 2026-10-31T16:08:35Z [yakherd]
+
+moved: hairy -> shaving
+
+---
+▸ 2026-10-31T16:16:34Z [yakherd]
+
+Fixed in the prep commit for the `yaks-039b` family: `store::note_starts` skips `---` / `▸` pairs inside closed code fences, and every body scanner uses it (`parse_notes`, `description`, `refs`, the TUI comment parser in `tui/content.rs`). A fence that never closes is ignored, so a broken note can't swallow the notes after it.
+
+## Evidence
+
+- Tests: `a_fenced_example_of_a_note_is_not_a_note`, `an_unclosed_fence_does_not_swallow_later_notes` (store) and `a_fenced_example_of_a_note_is_not_a_comment` (TUI content round trip). The full `cargo test --workspace` passes (761 + integration). The only failure without the fsmonitor workaround is `yaks-9b9f`.
+- On the real farm, `yaks log --since 400d` from the old and new binaries differs in exactly two places, both fake notes now read as part of their real note:
+
+```text
+< ▸ 2026-10-17T03:05:33Z  yaks-2362  …  [Joel Webber]   (an example inside a fence)
+< ▸ 2026-10-31T15:20:00Z  yaks-6a11  …  [tex-1]         (an example inside a fence)
+```
+
+---
+▸ 2026-10-31T16:16:34Z [yakherd]
+
+Landed in 7f78a28.
+
+---
+▸ 2026-10-31T16:16:34Z [yakherd]
+
+moved: shaving -> shorn
