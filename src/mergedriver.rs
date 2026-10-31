@@ -247,13 +247,14 @@ fn try_merge(base: &str, ours: &str, theirs: &str) -> Option<Merged> {
         notes.push(NoteEntry {
             ts,
             actor: Some(ACTOR.to_string()),
+            meta: Vec::new(),
             text: lines.join("\n"),
         });
     }
 
     let mut body = desc;
     for n in &notes {
-        body = store::append_note(&body, &n.ts, n.actor.as_deref(), &n.text);
+        body = store::append_entry(&body, n);
     }
     let merged = Task {
         id,

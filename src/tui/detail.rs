@@ -600,7 +600,9 @@ fn editor_rows(n: usize) -> impl Iterator<Item = DLine> {
 pub fn comment_label(kind: &content::BlockKind, clock: &Clock) -> String {
     match kind {
         content::BlockKind::Description => "description".into(),
-        content::BlockKind::Comment { timestamp, actor } => {
+        content::BlockKind::Comment {
+            timestamp, actor, ..
+        } => {
             let when = clock.format(timestamp);
             match actor {
                 Some(a) => format!("{a} · {when}"),

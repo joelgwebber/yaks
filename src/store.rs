@@ -742,7 +742,7 @@ pub mod write {
 
     /// Emit a scalar plain, or single-quoted (with '' escaping) when a plain
     /// token would be misread by YAML's implicit typing or its syntax.
-    fn scalar(s: &str) -> String {
+    pub(crate) fn scalar(s: &str) -> String {
         if needs_quotes(s) {
             format!("'{}'", s.replace('\'', "''"))
         } else {
@@ -1599,12 +1599,99 @@ pub fn load_task_by_id(root: &Path, id: &str) -> Result<Option<Task>> {
 /// an absent or empty actor writes the bare `\u{25b8} <ts>` form, so this is
 /// byte-for-byte compatible with pre-actor notes and needs no migration.
 pub fn append_note(body: &str, ts: &str, actor: Option<&str>, note: &str) -> String {
+    append_note_meta(body, ts, actor, &[], note)
+}
+
+/// [`append_note`] with note metadata (yaks-6a11): `key: value` lines under
+/// the marker, closed by `---`, like a yak's own frontmatter:
+///
+/// ```text
+/// ---
+/// ▸ <ts> [<actor>]
+/// kind: checkpoint
+/// commit: 47076b0
+/// ---
+///
+/// <note>
+/// ```
+///
+/// Empty `meta` writes exactly what [`append_note`] always wrote. Values are
+/// single-line scalars, quoted like frontmatter values when YAML would misread
+/// them; a line break in a value becomes a space.
+pub fn append_note_meta(
+    body: &str,
+    ts: &str,
+    actor: Option<&str>,
+    meta: &[(&str, &str)],
+    note: &str,
+) -> String {
     let desc = body.trim_end();
     let sep = if desc.is_empty() { "" } else { "\n\n" };
     format!(
-        "{desc}{sep}---\n\u{25b8} {}\n\n{note}",
-        note_head(ts, actor)
+        "{desc}{sep}---\n\u{25b8} {}\n{}\n{note}",
+        note_head(ts, actor),
+        meta_block(meta)
     )
+}
+
+/// Append a parsed note back onto a body, metadata included: the inverse of
+/// one [`parse_notes`] entry (the merge driver rebuilds bodies with it).
+pub fn append_entry(body: &str, n: &NoteEntry) -> String {
+    let meta: Vec<(&str, &str)> = n
+        .meta
+        .iter()
+        .map(|(k, v)| (k.as_str(), v.as_str()))
+        .collect();
+    append_note_meta(body, &n.ts, n.actor.as_deref(), &meta, &n.text)
+}
+
+/// The metadata lines plus their closing `---`, or `""` for no metadata.
+/// The single source of the shape, shared with the TUI's comment assembly.
+pub fn meta_block(meta: &[(&str, &str)]) -> String {
+    let mut out = String::new();
+    for (k, v) in meta {
+        let v = v.replace(['\r', '\n'], " ");
+        out.push_str(&format!("{k}: {}\n", write::scalar(&v)));
+    }
+    if !out.is_empty() {
+        out.push_str("---\n");
+    }
+    out
+}
+
+/// Whether `key` may name a metadata field: `[A-Za-z_][A-Za-z0-9_-]*`.
+pub fn is_meta_key(key: &str) -> bool {
+    let mut chars = key.chars();
+    chars
+        .next()
+        .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+        && chars.all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+}
+
+/// One metadata line, `key: value` (or `key:` with an empty value).
+fn meta_line(line: &str) -> Option<(String, String)> {
+    let (k, v) = match line.split_once(": ") {
+        Some((k, v)) => (k, v),
+        None => (line.strip_suffix(':')?, ""),
+    };
+    is_meta_key(k).then(|| (k.to_string(), unquote(v)))
+}
+
+/// The metadata under a note's marker line, which is `lines[marker]`: a run of
+/// `key: value` lines closed by a `---` line, with no blank line between.
+/// Returns the pairs and the index of the first line after the closing `---`;
+/// `None` (a plain note) when the lines there are anything else.
+pub fn parse_meta(lines: &[&str], marker: usize) -> Option<(Vec<(String, String)>, usize)> {
+    let mut meta = Vec::new();
+    let mut j = marker + 1;
+    while let Some(line) = lines.get(j) {
+        if line.trim_end() == "---" {
+            return (!meta.is_empty()).then_some((meta, j + 1));
+        }
+        meta.push(meta_line(line.trim_end())?);
+        j += 1;
+    }
+    None
 }
 
 /// File extensions (lowercase) that count as images: an attachment of one is
@@ -1649,7 +1736,27 @@ pub struct NoteEntry {
     /// The actor that wrote the note, if the marker line carried a `[actor]`
     /// suffix. `None` for bare (pre-actor) notes.
     pub actor: Option<String>,
+    /// The note's metadata (yaks-6a11), in file order; empty for a plain note.
+    /// Unknown keys are kept, so a rewrite never drops them.
+    pub meta: Vec<(String, String)>,
     pub text: String,
+}
+
+// Readers arrive with the metadata commands (yaks-6a11 surface, yaks-da23).
+#[allow(dead_code)]
+impl NoteEntry {
+    /// The value of metadata `key`, if the note has it.
+    pub fn get(&self, key: &str) -> Option<&str> {
+        self.meta
+            .iter()
+            .find(|(k, _)| k == key)
+            .map(|(_, v)| v.as_str())
+    }
+
+    /// The note's `kind:` metadata, if any.
+    pub fn kind(&self) -> Option<&str> {
+        self.get("kind")
+    }
 }
 
 /// Split a note marker line's payload into its timestamp and optional trailing
@@ -1673,39 +1780,91 @@ pub fn split_note_head(head: &str) -> (String, Option<String>) {
 /// description prose is skipped, so this is safe to run over a whole body.
 pub fn parse_notes(body: &str) -> Vec<NoteEntry> {
     let lines: Vec<&str> = body.lines().collect();
+    let starts = note_starts(&lines);
     let mut out = Vec::new();
-    let mut i = 0;
-    while i < lines.len() {
-        if is_note_delim(&lines, i) {
-            let (ts, actor) = split_note_head(lines[i + 1][NOTE_MARK.len()..].trim());
-            let mut j = i + 2;
-            while j < lines.len() && !is_note_delim(&lines, j) {
-                j += 1;
-            }
-            let text = lines[i + 2..j].join("\n").trim().to_string();
-            out.push(NoteEntry { ts, actor, text });
-            i = j;
-        } else {
-            i += 1;
-        }
+    for (n, &i) in starts.iter().enumerate() {
+        let end = starts.get(n + 1).copied().unwrap_or(lines.len());
+        let (ts, actor) = split_note_head(lines[i + 1][NOTE_MARK.len()..].trim());
+        let (meta, text_from) = match parse_meta(&lines[..end], i + 1) {
+            Some((meta, from)) => (meta, from),
+            None => (Vec::new(), i + 2),
+        };
+        let text = lines[text_from.min(end)..end].join("\n").trim().to_string();
+        out.push(NoteEntry {
+            ts,
+            actor,
+            meta,
+            text,
+        });
     }
     out
 }
 
 const NOTE_MARK: &str = "\u{25b8} ";
 
-/// Line `i` opens a note block: a `---` line followed by a marker line.
+/// Line `i` opens a note block: a `---` line followed by a marker line. The
+/// raw shape only: it does not know about code fences, so callers scanning a
+/// body use [`note_starts`].
 pub(crate) fn is_note_delim(lines: &[&str], i: usize) -> bool {
     lines[i].trim_end() == "---" && lines.get(i + 1).is_some_and(|l| l.starts_with(NOTE_MARK))
+}
+
+/// The indices of the lines that open a note block, skipping any inside a
+/// fenced code block (yaks-4cd7), so a note can show an example of the note
+/// format. A fence counts only once it closes: an unclosed fence in one note
+/// must not swallow every note after it.
+pub fn note_starts(lines: &[&str]) -> Vec<usize> {
+    let fenced = fenced_lines(lines);
+    (0..lines.len())
+        .filter(|&i| !fenced[i] && is_note_delim(lines, i))
+        .collect()
+}
+
+/// A CommonMark fence opener: up to three spaces, then three or more backticks
+/// or tildes (a backtick fence's info string may not contain a backtick).
+fn fence_open(line: &str) -> Option<(char, usize)> {
+    let t = line.trim_start_matches(' ');
+    if line.len() - t.len() > 3 {
+        return None;
+    }
+    let c = t.chars().next().filter(|c| *c == '`' || *c == '~')?;
+    let n = t.chars().take_while(|x| *x == c).count();
+    if n < 3 || (c == '`' && t[n..].contains('`')) {
+        return None;
+    }
+    Some((c, n))
+}
+
+/// Whether `line` closes a fence opened with `n` of `c`.
+fn fence_closes(line: &str, c: char, n: usize) -> bool {
+    let t = line.trim_start_matches(' ');
+    line.len() - t.len() <= 3
+        && t.chars().take_while(|x| *x == c).count() >= n
+        && t.trim_start_matches(c).trim().is_empty()
+}
+
+/// For each line, whether it is part of a closed fenced code block.
+fn fenced_lines(lines: &[&str]) -> Vec<bool> {
+    let mut out = vec![false; lines.len()];
+    let mut i = 0;
+    while i < lines.len() {
+        if let Some((c, n)) = fence_open(lines[i])
+            && let Some(end) = (i + 1..lines.len()).find(|&j| fence_closes(lines[j], c, n))
+        {
+            out[i..=end].iter_mut().for_each(|f| *f = true);
+            i = end + 1;
+            continue;
+        }
+        i += 1;
+    }
+    out
 }
 
 /// A body's description: the text before its first note block, trimmed (all of
 /// it for a body with no notes). What [`parse_notes`] skips.
 pub fn description(body: &str) -> String {
     let lines: Vec<&str> = body.lines().collect();
-    let end = (0..lines.len())
-        .find(|&i| is_note_delim(&lines, i))
-        .unwrap_or(lines.len());
+    let end = note_starts(&lines).first().copied().unwrap_or(lines.len());
     lines[..end].join("\n").trim().to_string()
 }
 
@@ -1848,6 +2007,86 @@ mod log_parse_tests {
         // An empty/whitespace actor writes the bare form (no empty `[]`).
         let blank = append_note("", "2026-01-03T00:00:00Z", Some("  "), "x");
         assert_eq!(parse_notes(&blank)[0].actor, None);
+    }
+
+    #[test]
+    fn note_metadata_round_trips_and_plain_notes_are_unchanged() {
+        let plain = append_note("D.", "2026-01-01T00:00:00Z", Some("a"), "hi");
+        assert_eq!(
+            append_note_meta("D.", "2026-01-01T00:00:00Z", Some("a"), &[], "hi"),
+            plain
+        );
+        let body = append_note_meta(
+            &plain,
+            "2026-01-02T00:00:00Z",
+            Some("tex-1"),
+            &[
+                ("kind", "checkpoint"),
+                ("commit", "47076b0"),
+                ("note", "a: b"),
+            ],
+            "Atlas done.\n\n---\n\nA rule inside the text.",
+        );
+        assert!(body.contains(
+            "\u{25b8} 2026-01-02T00:00:00Z [tex-1]\nkind: checkpoint\ncommit: 47076b0\nnote: 'a: b'\n---\n\nAtlas done."
+        ));
+        let notes = parse_notes(&body);
+        assert_eq!(notes.len(), 2);
+        assert!(notes[0].meta.is_empty());
+        assert_eq!(notes[0].text, "hi");
+        assert_eq!(notes[1].kind(), Some("checkpoint"));
+        assert_eq!(notes[1].get("commit"), Some("47076b0"));
+        assert_eq!(notes[1].get("note"), Some("a: b"));
+        assert_eq!(
+            notes[1].text,
+            "Atlas done.\n\n---\n\nA rule inside the text."
+        );
+        // append_entry is the inverse of one parsed entry.
+        let rebuilt = notes
+            .iter()
+            .fold("D.".to_string(), |b, n| append_entry(&b, n));
+        assert_eq!(rebuilt, body);
+    }
+
+    #[test]
+    fn lines_under_the_marker_that_are_not_metadata_stay_text() {
+        // Schema-4 shape (text right under the marker), no closing `---`.
+        let body = "---\n\u{25b8} 2026-01-01T00:00:00Z\nnote: no rule after\nmore";
+        let n = &parse_notes(body)[0];
+        assert!(n.meta.is_empty());
+        assert_eq!(n.text, "note: no rule after\nmore");
+        // Not `key: value` before the `---`: also text.
+        let body = "---\n\u{25b8} 2026-01-01T00:00:00Z\nnot a key line\n---\n\nx";
+        let n = &parse_notes(body)[0];
+        assert!(n.meta.is_empty());
+        assert!(n.text.starts_with("not a key line"));
+    }
+
+    #[test]
+    fn a_fenced_example_of_a_note_is_not_a_note() {
+        let text = "Example:\n\n```text\n---\n\u{25b8} 2026-01-09T00:00:00Z [fake]\n\nhi\n```\n\n~~~~\n---\n\u{25b8} 2026-01-09T00:00:00Z [fake2]\n~~~~\n\nend";
+        let body = append_note("Desc.", "2026-01-01T00:00:00Z", Some("a"), text);
+        let body = append_note(&body, "2026-01-02T00:00:00Z", Some("b"), "next");
+        let notes = parse_notes(&body);
+        assert_eq!(notes.len(), 2, "{notes:?}");
+        assert_eq!(notes[0].text, text);
+        assert_eq!(notes[1].actor.as_deref(), Some("b"));
+        // A fence in the description is skipped the same way.
+        let body = append_note(
+            "```\n---\n\u{25b8} 2026-01-09T00:00:00Z\n```",
+            "2026-01-01T00:00:00Z",
+            None,
+            "n",
+        );
+        assert!(description(&body).ends_with("```"));
+        assert_eq!(parse_notes(&body).len(), 1);
+    }
+
+    #[test]
+    fn an_unclosed_fence_does_not_swallow_later_notes() {
+        let body = append_note("D.", "2026-01-01T00:00:00Z", None, "```\nunclosed");
+        let body = append_note(&body, "2026-01-02T00:00:00Z", None, "second");
+        assert_eq!(parse_notes(&body).len(), 2);
     }
 
     #[test]

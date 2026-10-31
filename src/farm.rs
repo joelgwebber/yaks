@@ -530,10 +530,11 @@ pub fn backrefs_in(all: &[Task], id: &str) -> Vec<BackRef> {
             push(BackRefVia::Title);
         }
         let lines: Vec<&str> = t.body.lines().collect();
-        for (n, raw) in lines.iter().enumerate() {
-            if store::is_note_delim(&lines, n) {
-                break; // the description ends at the first note
-            }
+        let desc_end = store::note_starts(&lines)
+            .first()
+            .copied()
+            .unwrap_or(lines.len());
+        for (n, raw) in lines[..desc_end].iter().enumerate() {
             if mentions(raw) {
                 push(BackRefVia::Body { line: n + 1 });
             }
