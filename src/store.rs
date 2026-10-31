@@ -158,7 +158,7 @@ pub fn discover_with(start: &Path, yaks_dir: Option<&str>) -> Result<Discovered>
 /// A git config value for the repository containing `dir`: its host's
 /// (a Delta clone sees its human's setting), else its own.
 pub(crate) fn repo_config(dir: &Path, key: &str) -> Option<String> {
-    let host = crate::sheds::host(dir).map(|h| h.git_dir);
+    let host = crate::gitrepo::host(dir).map(|h| h.git_dir);
     host.as_deref()
         .and_then(|g| git_line(g, &["config", "--get", key]))
         .or_else(|| git_line(dir, &["config", "--get", key]))
@@ -209,7 +209,7 @@ pub const FARM_BRANCH: &str = "yaks";
 /// `%LOCALAPPDATA%\yaks\farms\...` when `HOME` is unset. `<repo>` is the
 /// directory name of the repository's main checkout (its host's, from a Delta
 /// clone) and the hex a stable hash of the host's canonical git dir
-/// ([`crate::sheds::host`]), so every checkout of one repository on a machine
+/// ([`crate::gitrepo::host`]), so every checkout of one repository on a machine
 /// agrees and two repos with the same name do not collide. `yaks migrate
 /// --to-branch` puts the worktree here unless told otherwise.
 pub fn farm_home(repo: &Path) -> PathBuf {
@@ -224,12 +224,12 @@ pub fn farm_home_with(repo: &Path, env: impl Fn(&str) -> Option<String>) -> Path
         .or_else(|| set("HOME").map(|h| h.join(".local").join("share")))
         .or_else(|| set("LOCALAPPDATA"))
         .unwrap_or_else(std::env::temp_dir);
-    let host = crate::sheds::host(repo);
+    let host = crate::gitrepo::host(repo);
     let git_dir = host.as_ref().map_or_else(
         || fs::canonicalize(repo).unwrap_or_else(|_| repo.to_path_buf()),
         |h| h.git_dir.clone(),
     );
-    let checkout = host.as_ref().and_then(crate::sheds::host_checkout);
+    let checkout = host.as_ref().and_then(crate::gitrepo::host_checkout);
     let name = checkout
         .as_deref()
         .and_then(Path::file_name)
@@ -288,7 +288,7 @@ fn farm_branch_worktree(dir: &Path) -> Result<Option<PathBuf>> {
     let branch = configured_farm_branch(dir);
     // A registered worktree whose directory is gone (deleted by hand) is no
     // worktree: bootstrap prunes the record and adds a fresh one.
-    if let Some(wt) = crate::sheds::worktree_of_branch(dir, &branch).filter(|w| w.is_dir()) {
+    if let Some(wt) = crate::gitrepo::worktree_of_branch(dir, &branch).filter(|w| w.is_dir()) {
         let root = wt.join(".yaks");
         if !root.is_dir() {
             anyhow::bail!(

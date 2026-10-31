@@ -5,7 +5,7 @@ Run `yaks <command> --help` for full flags. Most read commands accept the shared
 
 **Global flag: `-C <path>`** (like `git -C`; accepted before or after the
 subcommand). Every command runs as if started in `<path>`: farm discovery,
-`sheds`, `discover`, `status`, `commit`, `init`, `skills`, `tui`. A relative
+`discover`, `status`, `commit`, `init`, `skills`, `tui`. A relative
 `<path>` is resolved against the real cwd; repeated `-C` compose, each relative
 to the previous (`yaks -C a -C b list` runs in `a/b`). A missing path is an
 error naming it. `$YAKS_DIR` still wins over discovery (a relative one is read
@@ -60,7 +60,7 @@ break, a list or a code fence is not run-on). They compose, and back `list`, `se
 | `tangled` (alias `blocked`) | Hairy yaks with at least one unresolved dependency. |
 | `search <text>` | Substring search over id / title / description. |
 | `stats` | Counts by status, type, priority. |
-| `sheds` | EVERY checkout of this repo — plain `git worktree`s and Delta clones — with its git state and the yaks it has been writing to the shared farm (`--json` for scripts). Read-only. [Details](#sheds) |
+| `sheds [--all]` | Who is working on what: one row per actor (the stamp on notes and moves), read from the farm alone: what it is `shaving`, `asking`, and wrote `recent`ly, `active`/`stale`/`idle`, and how fresh the farm is (`--json` for scripts). Read-only. [Details](#sheds) |
 | `discover [PATH]` | Diagnostic: the chain `sheds` uses to find the other checkouts, step by step, from `PATH` (default the cwd). `--json`. Read-only; needs no farm. [Details](#discover) |
 | `log` | Timestamped notes and status moves (`moved: <from> -> <to>` entries) across a filtered set, oldest first (`--since <2h\|3d\|date>`, `--by <actor>`). |
 | `refs <id>` | The yaks a task points at (parent, deps, id mentions), flagging danglers. |
@@ -93,24 +93,20 @@ Hairy yaks whose dependencies are all resolved — the work queue. A yak awaitin
 
 ### `sheds`
 
-`sheds [--json]`
+`sheds [--json] [--all]`
 
-EVERY checkout of this repo — plain `git worktree`s and Delta clones — with its git state and the yaks it has been writing; a shed is one such checkout.
+Who is working on what, read from the farm alone. A **shed** is a worker in the farm: one row per **actor**, the `[actor]` stamp on notes and moves (`▸ <ts> [actor]`; set it with `YAKS_ACTOR` or `--as`). Nothing here looks at git checkouts, Delta or the machine, so a synced farm reads the same on every machine. Notes with no actor belong to no row.
 
-Every checkout on a machine shares ONE farm (the farm branch's worktree), so there is no per-shed copy of the farm to compare. What a shed has been doing comes from the farm's **activity log**: every write of a yak file (a note, a move, an ask, an answer, an attachment, an edit) records the checkout it ran in, one line per write, in `<farm>/.activity/<hash>.log` (the hash is of the checkout's path; the file's first line names it). The log is per-machine metadata: its directory ignores itself, so it is never committed, never merged, and invisible to `yaks status` and `yaks commit`. Who wrote a note stays the note's actor, in the yak file. `YAKS_NO_ACTIVITY=1` turns the logging off.
+Per actor, a header `<actor>  <liveness> · <last write>` and its yaks:
 
-The checkout you are in is listed too: a `*` in the first column and `(here)` on its `name:` line (JSON `current: true`, exactly one row). The farm branch's own worktree is not a shed (`yaks status` reports its state).
+- `shaving  <id>  <title>`: **working on**. The yak is `shaving` now and this actor holds the claim: the claimant of the latest move into `shaving` is the actor named by that move's `for:` metadata when it has one, else the actor of the most recent note since that move (move included). So a coordinator that moves a yak into `shaving` for a worker, and the worker's notes after it, put the yak under the worker. A yak is under exactly one actor's `shaving`. `asking you` ends the line when it also waits on a human.
+- `asking   <id>  <status>  <title>  <ago>`: the actor's other yaks with `needs: human`.
+- `recent   <id>  <status>  <title>  <ago>`: every other yak it wrote, newest first, with its status now (five, then `(+N more; --json lists them all)`).
+- Liveness: `active` (last write within 2 hours), `stale` (it holds a `shaving` claim but has not written for longer), else `idle`.
 
-Per shed: kind (`worktree`/`delta`), branch (or detached), short HEAD, `+N -M` (commits it has that this checkout's HEAD lacks / commits this HEAD has that it lacks; JSON `ahead`/`behind`), or `+? -?` (JSON `null`) when there is no merge-base here (shallow history, a commit unknown here; when this repo is shallow one line at the end says `git fetch --unshallow` fixes it), the dirty-file count, its LAST WRITE to the farm, and its path. Under the row:
+Order: an actor with an open ask first, then active, stale, idle, then the most recent writer. Idle actors with no claim and no ask are only counted (`(3 idle actors; --all lists them)`); `--all` lists them. A first line gives the farm's freshness, `farm: up to date with origin/yaks` or `farm: 2 ahead, 0 behind origin/yaks (as of the last fetch)`: the farm branch against its upstream from the refs as of the last fetch (never fetches; the same state `yaks status` reports). It is left out for a farm with no upstream.
 
-- `name:` (JSON `name`): `main` for the primary checkout, else the slug of the Delta thread title (lowercase, runs of other characters one `-`, at most 24 characters, cut at a `-`; two clones with one slug get their dir id's first 4 characters appended, e.g. `fix-it-q7zz`), else its Delta dir id, else its branch. The title is read from the clone's own git config `yaks.shed.title` (JSON `title`, also shown on the `name:` line), which ANY yaks command run inside a Delta clone with `DELTA_THREAD_TITLE` set records (with `yaks.shed.thread` from `DELTA_CURRENT_THREAD_ID`), only when the value changed, silently, never for `-C`, never in a plain git worktree; it is per-clone and never committed.
-- the activity label, each part only when it has something: `shaving: <ids>` (the yaks it wrote that are `shaving` now; JSON `in_progress`), `N asking` (those awaiting a human), how many yaks it wrote, and `active` (it wrote within the last 2 hours) or `stale` (it holds a shaving yak but has not written for longer); `idle` is silent. JSON `liveness`, always present.
-- `state:` (JSON `merged`, `untracked`): `merged, clean` when its HEAD is in the primary checkout's history and its tree is clean (safe to clean up); otherwise `merged` (when it is) and `uncommitted: N modified, M untracked`. Not shown for the primary, or for a shed that is not merged and clean.
-- its five most recently written yaks, newest first: `id  status  title  (last write)`, `⏳` first on one awaiting a human, `gone` for a yak no longer in the farm. JSON `touched` lists them all (`id`, `title`, `status`, `needs`, `last`), with `last_write`.
-
-A pinned Delta clone whose checkout cannot be resolved (most often a gone git dir: a finished thread) is not a row; the text table counts them in one `orphaned: N` line (`yaks discover` lists each).
-
-Discovery reads git data only, from inside any checkout of the repo (it never searches the filesystem): `git worktree list --porcelain` here; the HOST repo this checkout's `objects/info/alternates` names (the human's `.git` where the project was added from a folder, Delta's managed bare repo on a machine the thread was shared to; else this repo); every Delta clone pinned there as `refs/delta/<dir>/<name>/<sha>`, resolved to its checkout through the clone's git dir `<store>/<dir>/<name>.git` and its `core.worktree`; and, when the host is a checkout, that checkout and its own `git worktree list` (so a Delta clone sees the primary's git worktrees). A clone on a shared-thread machine cannot see the human's checkout. `yaks discover` shows each step. Strictly read-only in the other checkouts (`git --no-optional-locks`; no fetch, checkout or writes).
+`--json`: `{farm, sheds}`. `farm` is `{branch, upstream, ahead, behind}` or `null`. `sheds` lists EVERY actor in the same order, idle ones too: `{name, liveness, last_write, working: [ids], asking: [ids], touched: [{id, title, status, needs, last, working}]}` (`touched` is every yak it wrote, newest first). Read-only.
 
 ### `discover`
 
@@ -462,7 +458,7 @@ Then the named fixups over every yak file: **`comment-header-blank-line`** puts 
 
 Idempotent: a current farm says `nothing to migrate`.
 
-Every OTHER command refuses an older farm, naming `yaks migrate` (`yaks sheds` reports an unmigrated shed instead of reading it as empty).
+Every OTHER command refuses an older farm, naming `yaks migrate` (`yaks sheds` is no exception).
 
 Never commits: it prints the `yaks commit` to run. Quit every running `yaks tui` first.
 

@@ -19,7 +19,7 @@
 //! what is there is an error naming it.
 
 use crate::branchfarm::{self, git, ref_exists};
-use crate::{sheds, skills, store};
+use crate::{gitrepo, skills, store};
 use anyhow::{Context, Result, bail};
 use std::env;
 use std::fs;
@@ -149,8 +149,8 @@ fn ensure_shared(top: &Path, other: &str, herd: Option<&str>, rep: &mut Report) 
     let dir = store::expand_path(&env::current_dir()?, other);
     let other_top = skills::git_toplevel(&dir)
         .with_context(|| format!("--farm {other}: {} is not a git checkout", dir.display()))?;
-    let other_top = sheds::canonical(&other_top);
-    if sheds::host(&other_top).map(|h| h.git_dir) == sheds::host(top).map(|h| h.git_dir) {
+    let other_top = gitrepo::canonical(&other_top);
+    if gitrepo::host(&other_top).map(|h| h.git_dir) == gitrepo::host(top).map(|h| h.git_dir) {
         bail!("--farm {other} is this same repository; run `yaks init` without --farm");
     }
     // Resolving from the other checkout finds (or bootstraps) its farm.
@@ -161,7 +161,7 @@ fn ensure_shared(top: &Path, other: &str, herd: Option<&str>, rep: &mut Report) 
             })?
             .root;
     if let Some(have) = store::farm_repo(top)? {
-        if sheds::canonical(&have) != other_top {
+        if gitrepo::canonical(&have) != other_top {
             bail!(
                 "this repository already uses the farm of {} (`git config {}`); init will not \
                  repoint it. Change it with `git config {} <checkout>`",
@@ -293,7 +293,7 @@ fn ensure_branch_farm(top: &Path, args: &Args, rep: &mut Report) -> Result<PathB
     let cfg = args.farm_config();
     let local = ref_exists(top, &format!("refs/heads/{branch}"));
     let remote = ref_exists(top, &format!("refs/remotes/origin/{branch}"));
-    let existing_wt = sheds::worktree_of_branch(top, &branch).filter(|w| w.is_dir());
+    let existing_wt = gitrepo::worktree_of_branch(top, &branch).filter(|w| w.is_dir());
 
     let worktree = if let Some(wt) = existing_wt {
         rep.already(format!(
@@ -304,9 +304,9 @@ fn ensure_branch_farm(top: &Path, args: &Args, rep: &mut Report) -> Result<PathB
     } else {
         // Creating a worktree is refused where it would be invisible to the
         // other checkouts of the repository (a Delta or --shared clone).
-        let host = sheds::host(top).context("reading the repository")?;
+        let host = gitrepo::host(top).context("reading the repository")?;
         if host.via_alternates {
-            let main = sheds::host_checkout(&host).map_or_else(
+            let main = gitrepo::host_checkout(&host).map_or_else(
                 || host.git_dir.display().to_string(),
                 |p| p.display().to_string(),
             );
@@ -359,7 +359,7 @@ fn ensure_branch_farm(top: &Path, args: &Args, rep: &mut Report) -> Result<PathB
             .context(
                 "creating the orphan farm worktree (`git worktree add --orphan` needs git 2.42+)",
             )?;
-            let wt = sheds::canonical(&wt);
+            let wt = gitrepo::canonical(&wt);
             rep.done(format!(
                 "branch: created the orphan branch `{branch}` at {}",
                 wt.display()

@@ -11,7 +11,7 @@ interchangeable.
   include the default tree, **Recent**, **Inbox** (yaks with a `needs` value: awaiting a human, or answered or requested and
   awaiting an agent), and
   **Starred**; you can save the current filter as a named view. The
-  **Sheds** tab lists the repository's checkouts instead of yaks (see
+  **Sheds** tab lists the farm's workers (actors) instead of yaks (see
   [Sheds tab](#sheds-tab)).
 - **Detail pane** — the selected yak: fields, parent/deps/children, source, a
   `Needs:` line when blocked, and the body + timestamped notes. Task-id
@@ -217,13 +217,13 @@ active view.
 
 | Key | Action |
 |---|---|
-| `j` / `k`, `g` / `G`, `d` / `u` | Move between sheds |
-| `l` / `→` / `Enter` | Show the shed: its git state and the yaks it wrote |
+| `j` / `k`, `g` / `G`, `d` / `u` | Move between sheds (actors) |
+| `l` / `→` / `Enter` | Show the shed: what it is shaving, asking and wrote recently |
 | `h` / `←` / `Esc` | (detail) Back to the shed list |
 | `j` / `k` | (detail) Move between its yaks (newest write first) |
 | `J` / `K` | (detail) Next / previous shed |
 | `Enter` | (detail) Open the yak |
-| `y` | Copy the shed's path (detail: the yak id) |
+| `y` | Copy the shed's name (detail: the yak id) |
 | `r` | Rescan now |
 
 **General** — `y` copy yak id; `?` toggle help; `q` / `Ctrl-C` quit.
@@ -387,34 +387,33 @@ that herd (an id-prefix rename). `H` does the same move as a one-key picker.
 
 ## Sheds tab
 
-The **🛦 Sheds** tab is `yaks sheds` on screen: every checkout of the
-repository (the primary `main`, git worktrees, Delta clones), live, so you can
-see what each worker's thread is doing without opening a terminal in its
-checkout. Every checkout shares this one farm, and each write records the
-checkout it came from in the farm's local activity log, so a shed's activity is
-just the yaks it wrote. The text is the CLI's own (the same functions produce
-it).
+The **🛦 Sheds** tab is `yaks sheds` on screen: one row per **actor**, a worker
+in the farm (the `[actor]` stamp on notes and moves), live, so you can see
+what each worker is doing without opening a terminal. It is read from the farm
+alone (no git checkouts, no Delta), so it shows the same on every machine once
+the farm is synced. The text is the CLI's own (the same functions produce it).
 
-- **One row per shed**, attention first: `main`, then sheds with an open ask
-  (`⏳`), active ones (wrote within 2 hours), stale ones (hold a shaving yak but
-  went quiet), then idle ones, dimmed; within each, the most recent writer
-  first. `*` marks the checkout the TUI runs in. Each row shows its liveness,
-  `+ahead -behind` against this checkout, `✎` and its count of uncommitted
-  files, the yaks it is shaving (else the last yak it wrote), and its `state`
-  (`merged, clean`: safe to delete; or what uncommitted files keep it). A
-  footer counts orphaned Delta pins (finished threads; `yaks discover` lists
-  them). The farm branch's own worktree is not a row.
-- **The tab count** is the number of sheds busy right now (active, stale, or
-  asking).
-- **The detail pane** (`l`) shows the shed's path, git state, `state`, its
-  activity label, then every yak it wrote, newest first, with its status now
-  (`⏳` on one awaiting a human). `Enter` opens the yak; answer an ask with `a`
-  from any yak view, as for any other yak.
-- **Refresh**: the scan runs in the background (git in every checkout), when
-  the tab opens, every 10 seconds while it is shown, and on `r`. The tab row's
-  right edge says `scanning…` or `scanned 4s ago`. The UI never waits on it.
-- Nothing on the tab removes a shed; cleanup stays advisory (`y` copies the
-  path).
+- **One row per shed**, attention first: sheds with an open ask (`⏳`), active
+  ones (wrote within 2 hours), stale ones (hold a shaving yak but went quiet),
+  then idle ones, dimmed; within each, the most recent writer first. Each row
+  shows the actor, its liveness, when it last wrote, and the yaks it is
+  shaving (else the last yak it wrote). Unlike `yaks sheds`, the tab lists idle
+  actors too. A footer line says how fresh the farm is
+  (`farm: up to date with origin/yaks`, or how far ahead/behind as of the last
+  fetch), and is left out when the farm has no upstream.
+- **The tab count** is the number of sheds that want a look now (active, stale,
+  or asking).
+- **The detail pane** (`l`) lists the shed's yaks as `yaks sheds` does:
+  `shaving` (the ones it holds the claim on), `asking` (waiting on a human) and
+  `recent`, newest first, each with its status now (`⏳` on one awaiting a
+  human). `Enter` opens the yak; answer an ask with `a` from any yak view, as
+  for any other yak.
+- **Refresh**: the scan reads the farm in the background, when the tab opens,
+  every 10 seconds while it is shown, and on `r` (it never fetches). The tab
+  row's right edge says `scanning…` or `scanned 4s ago`. The UI never waits on
+  it.
+- `y` copies the shed's name (the `YAKS_ACTOR` to pass to a worker's commands);
+  in the detail, the yak id.
 
 ![yaks TUI Sheds tab](assets/tui-sheds.svg)
 

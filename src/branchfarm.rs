@@ -2,7 +2,7 @@
 //! repository whose farm branch has no worktree one at its farm home
 //! (yaks-a260). Starting a farm is `yaks init` (`crate::init`).
 
-use crate::sheds;
+use crate::gitrepo;
 #[cfg(test)]
 use crate::store;
 use anyhow::{Context, Result, bail};
@@ -48,9 +48,9 @@ pub(crate) fn ref_exists(dir: &Path, name: &str) -> bool {
 /// clone): a worktree made here would be invisible to that repository's other
 /// checkouts, the same refusal as `yaks init`.
 pub fn bootstrap(top: &Path, branch: &str, home: impl FnOnce(&Path) -> PathBuf) -> Result<PathBuf> {
-    let host = sheds::host(top).context("reading the repository")?;
+    let host = gitrepo::host(top).context("reading the repository")?;
     if host.via_alternates {
-        let main = sheds::host_checkout(&host).map_or_else(
+        let main = gitrepo::host_checkout(&host).map_or_else(
             || {
                 format!(
                     "{} (no checkout there: set YAKS_DIR to the farm)",
@@ -100,7 +100,7 @@ pub fn bootstrap(top: &Path, branch: &str, home: impl FnOnce(&Path) -> PathBuf) 
             ],
         )?;
     }
-    Ok(sheds::canonical(&wt))
+    Ok(gitrepo::canonical(&wt))
 }
 
 #[cfg(test)]
@@ -117,7 +117,7 @@ mod tests {
         ));
         let _ = fs::remove_dir_all(&p);
         fs::create_dir_all(&p).unwrap();
-        sheds::canonical(&p)
+        gitrepo::canonical(&p)
     }
 
     fn repo(b: &Path) -> PathBuf {

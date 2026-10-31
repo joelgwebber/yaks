@@ -232,7 +232,7 @@ pub(crate) fn source_base(farm_root: &Path, cwd: Option<&Path>) -> Option<PathBu
     if crate::store::farm_branch(farm_root).is_none() {
         return own;
     }
-    let farm_wt = own.as_deref().map(crate::sheds::canonical);
+    let farm_wt = own.as_deref().map(crate::gitrepo::canonical);
     let top = |dir: &Path| {
         Command::new("git")
             .arg("-C")
@@ -241,13 +241,13 @@ pub(crate) fn source_base(farm_root: &Path, cwd: Option<&Path>) -> Option<PathBu
             .output()
             .ok()
             .filter(|o| o.status.success())
-            .map(|o| crate::sheds::canonical(Path::new(String::from_utf8_lossy(&o.stdout).trim())))
+            .map(|o| crate::gitrepo::canonical(Path::new(String::from_utf8_lossy(&o.stdout).trim())))
     };
     if let Some(t) = cwd.and_then(top).filter(|t| Some(t) != farm_wt.as_ref()) {
         return Some(t);
     }
-    crate::sheds::host(farm_root)
-        .and_then(|h| crate::sheds::host_checkout(&h))
+    crate::gitrepo::host(farm_root)
+        .and_then(|h| crate::gitrepo::host_checkout(&h))
         .filter(|t| Some(t) != farm_wt.as_ref())
 }
 
@@ -502,7 +502,7 @@ mod tests {
         std::fs::create_dir_all(wt.join(".yaks")).unwrap();
         std::fs::write(wt.join(".yaks/config.yaml"), "herd: yak\n").unwrap();
         let root = wt.join(".yaks");
-        let code_c = crate::sheds::canonical(&code);
+        let code_c = crate::gitrepo::canonical(&code);
         // From the code checkout, and from the farm worktree (falls back to the
         // main checkout), the base is the code; never the sparse farm worktree.
         assert_eq!(

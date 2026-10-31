@@ -109,7 +109,7 @@ in `<path>`.
 | `yaks next` / `tangled` | ready tasks / dependency-blocked tasks |
 | `yaks path [<id>…]` / `path <filters>` | each yak's current absolute file path (for a precise `git add`); no arguments: the farm root in use |
 | `yaks search <q>` | substring search over id/title/description |
-| `yaks sheds` | every checkout of this repo (git worktrees, Delta clones), the one you are in marked (`*`, `(here)`, JSON `current`): its branch, HEAD, ahead/behind this checkout, dirty files, and what it has been doing: every checkout shares the one farm, and each write records the checkout it ran in in the farm's local activity log (`<farm>/.activity/`, per machine, never committed), so a row lists the yaks that checkout wrote (newest first, status now), which are `shaving`, open asks, and `active` (wrote within 2 hours) / `stale` (holds a shaving yak, quiet longer). A `state:` line says what keeps it (`merged, clean`, or `uncommitted: N modified, M untracked`). Names: `main`, else the Delta thread-title slug (recorded in the clone's git config), else the dir id or branch. The farm branch's own worktree is not a shed. Read-only; `--json` (`touched`, `in_progress`, `last_write`, `liveness`) |
+| `yaks sheds [--all]` | who is working on what, read from the farm alone: one row per actor (the `[actor]` stamp on notes and moves), so a synced farm reads the same on every machine. Per actor: `shaving` the yaks it holds the claim on (the most recent writer since the yak moved into `shaving`, or the `for:` of that move), `asking` its yaks with `needs: human`, `recent` the others it wrote (newest first, status now), and `active` (wrote within 2 hours) / `stale` (holds a shaving yak, quiet longer) / `idle`. A first line says how far the farm branch is ahead of or behind its upstream (as of the last fetch, never fetches). Idle actors with no claim and no ask are only counted unless `--all`. Read-only; `--json` (`farm`, `sheds[]` with `working`, `asking`, `touched`) |
 | `yaks discover [PATH]` | diagnostic: how `yaks sheds` finds the other checkouts, step by step, from inside any checkout: `git worktree list`, the host repo this checkout's alternates name, every Delta clone pinned there (`refs/delta/<dir>/<name>/*`, live or gone), and the host checkout's git worktrees. Git data only; read-only, no farm needed. `--json` |
 | `yaks log` | timestamped notes and status moves across a filtered set, oldest first (an activity log); `--since`/`--by` narrow it |
 | `yaks dep` / `reparent` | edit dependencies / move under a new parent |
@@ -159,8 +159,8 @@ click to select / open / switch view). Mark rows with `m` for a bulk state
 change over the selection; `a` answers a yak awaiting a human, or else requests agent work on it (both hand it to an agent: `needs: agent`), and `Q` asks a question;
 and an **Inbox** view lists every yak with a `needs` value, each flagged inline
 with a ⏳ badge and a warning accent (awaiting a human) or a ✅ badge (answered or
-requested, awaiting an agent). A **Sheds** tab shows every checkout of the repo and the
-yaks each one has been writing (`yaks sheds`, refreshed in the background).
+requested, awaiting an agent). A **Sheds** tab shows each worker (actor) in the farm and the
+yaks it has been writing (`yaks sheds`, refreshed in the background).
 
 ![The yaks TUI list view: a parent yak with children across statuses, labels, a dependency, and a ⏳ needs badge](docs/assets/tui-list.svg)
 

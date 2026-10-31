@@ -68,7 +68,7 @@ pub fn is_private(repo: &Path) -> bool {
     let flag =
         |dir: &Path| git_ok(dir, &["config", "--bool", "yaks.private"]).as_deref() == Some("true");
     flag(repo)
-        || crate::sheds::host(repo)
+        || crate::gitrepo::host(repo)
             .map(|h| flag(&h.git_dir))
             .unwrap_or(false)
 }
@@ -172,7 +172,7 @@ mod tests {
         ));
         let _ = fs::remove_dir_all(&p);
         fs::create_dir_all(&p).unwrap();
-        crate::sheds::canonical(&p)
+        crate::gitrepo::canonical(&p)
     }
 
     fn try_git(dir: &Path, args: &[&str]) -> std::process::Output {

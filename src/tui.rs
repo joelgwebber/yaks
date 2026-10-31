@@ -455,6 +455,7 @@ impl App {
         // One scan at startup feeds the Sheds tab's count; after that it
         // scans only while shown (yaks-98f1).
         app.sheds.cwd = std::env::current_dir().ok();
+        app.sheds.scan = true;
         app.request_sheds_scan();
         Ok(app)
     }

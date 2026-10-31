@@ -87,7 +87,11 @@ fn show_from_a_sub_directory_of_the_repo() {
 
 #[test]
 fn sheds_json_matches_running_in_that_checkout() {
-    let (repo, _, _) = repo("sheds");
+    let (repo, _, id) = repo("sheds");
+    // The farm names its actors by their notes: `tester` is the row.
+    yaks(&repo, &["update", &id, "--note", "a note"]);
+    git(&repo, &["add", "."]);
+    git(&repo, &["commit", "-q", "-m", "note"]);
     // A linked worktree of the repo is a second checkout sharing the farm.
     let wt = repo
         .parent()
@@ -103,7 +107,7 @@ fn sheds_json_matches_running_in_that_checkout() {
     let direct = yaks(&wt, &["sheds", "--json"]);
     let via_c = yaks(&elsewhere, &["-C", wt.to_str().unwrap(), "sheds", "--json"]);
     assert_eq!(direct, via_c);
-    assert!(via_c.contains(repo.to_str().unwrap()), "{via_c}");
+    assert!(via_c.contains("\"name\": \"tester\""), "{via_c}");
 }
 
 #[test]

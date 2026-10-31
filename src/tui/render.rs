@@ -319,19 +319,13 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
             "● N uncommitted, ↑ahead, ↓behind, not published; none when clean",
         ),
         blank(),
-        section("Sheds tab (every checkout: yaks sheds)"),
-        entry("j / k", "Move between sheds (attention first)"),
-        entry(
-            "l / Enter",
-            "Show the shed: git state and the yaks it wrote",
-        ),
-        entry(
-            "j / k (detail)",
-            "Move between its yaks (newest write first)",
-        ),
+        section("Sheds tab (who is working on what: yaks sheds)"),
+        entry("j / k", "Move between sheds (actors; attention first)"),
+        entry("l / Enter", "Show the shed: shaving, asking, recent yaks"),
+        entry("j / k (detail)", "Move between its yaks"),
         entry("J / K (detail)", "Next / previous shed"),
         entry("Enter (detail)", "Open the yak"),
-        entry("y", "Copy the shed's path (detail: the yak id)"),
+        entry("y", "Copy the shed's name (detail: the yak id)"),
         entry("r", "Rescan now (auto every 10 s)"),
         blank(),
         section("General"),
@@ -1599,7 +1593,7 @@ pub(crate) fn help_hint(app: &App) -> String {
     if app.on_sheds_tab() {
         return match app.focus {
             Focus::List => {
-                "Tab:view  j/k:move  l:detail  y:copy path  r:rescan  v:views  ?:help  q:quit"
+                "Tab:view  j/k:move  l:detail  y:copy name  r:rescan  v:views  ?:help  q:quit"
             }
             Focus::Detail => {
                 "h:list  j/k:yak  J/K:shed  Enter:open yak  y:copy id  r:rescan  ?:help"

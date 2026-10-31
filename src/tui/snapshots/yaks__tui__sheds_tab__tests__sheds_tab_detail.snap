@@ -1,18 +1,14 @@
 ---
 source: src/tui/sheds_tab.rs
-expression: "draw(&app, 120, 18)"
+expression: "draw(&app, 120, 14)"
 ---
- 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   🛖  Sheds (2)             scanned 4s ago
+ 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   🛖  Sheds (4)             scanned 4s ago
 
-◂ perf-1-profile  perf-1-profile: a worker
-│ path     /src/yaks/.delta/worktrees/53sm/yaks
-│ git      main@1a2b3c4 · +1 -0 vs here · 1 dirty
-│ state    uncommitted: 1 modified
-│ activity shaving: yaks-07fe · 2 yaks · active
+◂ walk-1  active · 9m ago
 │
-│ Yaks written here (2), newest first
-│ yaks-07fe  shaving yaks sheds is slow: profile it  2026-10-13T00:12:57Z
-│ yaks-bc30  shorn   Perf: cache rows()  2026-10-12T22:00:00Z
+│ shaving  mem-f13a  Add walk mode
+│ recent   mem-99d0  shorn  Left-button mouse lock  3d ago
+│
 │
 │
 │

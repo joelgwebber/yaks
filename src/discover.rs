@@ -9,7 +9,7 @@
 //! is searched for, so it must be run from inside a checkout of the repo.
 //! Read-only, and it needs no farm.
 
-use crate::sheds::{
+use crate::gitrepo::{
     Found, Host, Pinned, canonical, host, host_checkout, origin_url, pinned, shed_paths,
     worktree_entries,
 };
@@ -115,7 +115,7 @@ fn layout(top: &Path, host: Option<&Host>) -> String {
             "Delta clone; host is a checkout (the project was added from a folder)".into()
         };
     }
-    match crate::sheds::common_dir(top) {
+    match crate::gitrepo::common_dir(top) {
         Some(c) if c != h.own_git_dir => {
             format!("git worktree of {}", c.parent().unwrap_or(&c).display())
         }

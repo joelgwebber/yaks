@@ -14,6 +14,8 @@ mod commit;
 mod discover;
 mod farm;
 mod filter;
+#[allow(dead_code)] // pruned to the farm-discovery helpers by yaks-d3ad
+mod gitrepo;
 mod init;
 mod json;
 mod land;
@@ -56,7 +58,7 @@ use std::path::PathBuf;
 struct Cli {
     /// Run as if started in <PATH> (like `git -C`).
     ///
-    /// Farm discovery, `sheds`,
+    /// Farm discovery,
     /// `discover`, `commit`, `init`, `skills` and every other command see
     /// <PATH> as the current directory. A relative <PATH> is resolved against
     /// the real cwd; repeated `-C` compose, each relative to the previous.
@@ -316,36 +318,32 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// List every checkout of this repo, its git state and the yaks it wrote.
+    /// Who is working on what: one row per actor, read from the farm alone.
     ///
-    /// Covers EVERY checkout of this repo (git worktrees and Delta clones),
-    /// the one you are in included and marked (`*` in the first column,
-    /// `(here)` on its `name:` line, JSON `current`). Every checkout shares
-    /// one farm, so a row is that checkout's git state plus what the farm's
-    /// local activity log says it wrote: branch, HEAD, how far ahead/behind
-    /// this checkout's HEAD (`+? -?`, JSON null, with no merge-base here),
-    /// dirty files, and its LAST WRITE to the farm. Under each row: `name:`
-    /// (`main` for the primary checkout, else the slug of its Delta thread
-    /// title, at most 24 chars, recorded in the clone's own git config by any
-    /// yaks command run there with `DELTA_THREAD_TITLE` set; else its Delta
-    /// dir id or branch), a label (`shaving:` the yaks it wrote that are
-    /// shaving now; `N asking` for those awaiting a human; how many yaks it
-    /// wrote; `active` when it wrote within the last 2 hours, `stale` when it
-    /// holds a shaving yak but has not written for longer), a `state:` line
-    /// (`merged, clean`: its HEAD is in the primary's history and its tree is
-    /// clean, safe to clean up; else `uncommitted: N modified, M untracked`),
-    /// and its five most recently written yaks with their status now. The
-    /// farm branch's own worktree is not a shed (see `yaks status`). Pinned
-    /// Delta clones with no checkout left are counted in one `orphaned` line.
-    /// JSON: `touched` (every yak it wrote, newest first), `in_progress`,
-    /// `last_write`, `liveness`, `merged`, `untracked`. The activity log is
-    /// per-machine and never committed: a write from a checkout records it in
-    /// `<farm>/.activity/`. Read-only everywhere (apart from recording the
-    /// thread title in the clone you run yaks in).
+    /// A shed is a worker in the farm: an actor, the `[actor]` stamp on its
+    /// notes and moves. Nothing here looks at git checkouts, so the same
+    /// (synced) farm reads the same on every machine. Per actor: `shaving`
+    /// the yaks it is working on (`shaving` now, and it is the most recent
+    /// write since the yak moved into shaving, or the `for:` of that move;
+    /// `asking you` when one waits on a human), `asking` its other yaks with
+    /// `needs: human`, and `recent` the other yaks it wrote, newest first
+    /// with their status now (five, then `+N more`). The header is `active`
+    /// (wrote within 2 hours), `stale` (holds a shaving yak but has not
+    /// written for longer) or `idle`, and when it last wrote. Actors with an
+    /// open ask come first, then active, stale, idle, then the most recent
+    /// writer. Idle actors with no claim and no ask are only counted unless
+    /// `--all`. A first line says how far the farm branch is ahead of or
+    /// behind its upstream as of the last fetch (never fetches; omitted with
+    /// no upstream). JSON: `farm`, and `sheds` (every actor, idle too) with
+    /// `name`, `liveness`, `last_write`, `working`, `asking`, `touched`.
+    /// Read-only.
     Sheds {
-        /// Emit the sheds as JSON.
+        /// Emit the sheds as JSON (every actor, idle ones too).
         #[arg(long)]
         json: bool,
+        /// List idle actors with no claim and no ask too, not just count them.
+        #[arg(long)]
+        all: bool,
     },
     /// Diagnostic: show how `yaks sheds` finds the other checkouts.
     ///
@@ -1143,7 +1141,7 @@ fn main() -> Result<()> {
     // The title in the environment is the CALLER's thread, so a hop into
     // another checkout (`-C`) must not stamp it there.
     if cli.chdir.is_empty() {
-        sheds::record_thread(); // a Delta clone remembers its thread title
+        gitrepo::record_thread(); // a Delta clone remembers its thread title
     }
 
     // `init` creates a farm where none exists, and `skills` installs the skill
@@ -1610,14 +1608,12 @@ fn main() -> Result<()> {
                 }
             }
         }
-        Command::Sheds { json } => {
-            let cwd = env::current_dir()?;
-            // One pass: the sheds and the orphaned pins share the host read.
-            let (sheds, orphaned) = sheds::discover_all(&cwd, farm.root())?;
+        Command::Sheds { json, all } => {
+            let report = sheds::collect(farm.root())?;
             if json {
-                json::print(&sheds::to_json(&sheds))?;
+                json::print(&sheds::to_json(&report))?;
             } else {
-                print!("{}", sheds::render(&sheds, &orphaned));
+                print!("{}", sheds::render(&report, all));
             }
         }
         Command::Stats { json } => {
