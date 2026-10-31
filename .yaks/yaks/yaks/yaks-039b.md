@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-31T15:16:48Z'
-updated: '2026-10-31T16:19:03Z'
+updated: '2026-10-31T16:55:04Z'
 labels:
 - sheds
 - design
@@ -49,3 +49,31 @@ Fan-out 2026-10-31 (yakherd: the "Cloud Runners" Delta thread). Base `7f78a28` (
 | `commits-1` | `yaks-7a11` then `yaks-735a` | LiteLLM `claude-sonnet-5-5` | `ksQQtfBVdv4DR2eA_txRWzEtg5LOADlICZIBxBCA0aLJyrhJPreUvVwLftHG` |
 
 The yakherd keeps the skills (`yaks-0071`, then `yaks-4c2a` after the metadata surface), landing, and review. Wave 2 after these land: `yaks-a3fc` (commits so far from pushed branches) and `yaks-d695` (PR field).
+
+---
+▸ 2026-10-31T16:55:04Z [yakherd]
+
+Wave 1 landed on the yakherd's `main`:
+
+- `7f78a28` prep (`yaks-4cd7`, `yaks-6a11` core)
+- `71ca61e` `meta-1` (`yaks-b8cd`)
+- `c4bde33`, `7e4a014` `commits-1` (`yaks-7a11`, `yaks-735a`)
+- `7393e45`, `b2e4638` `sheds-1` (`yaks-da23`, `yaks-d3ad`)
+- skills: `c94b182`, `45bfc8b`, `575f347`
+
+The full gate is green after each landing. `yaks land` recorded its own landing note from `7393e45` on.
+
+Wave 2, on LiteLLM `claude-sonnet-5-5` unless noted:
+
+| Worker | Yak | Thread |
+|---|---|---|
+| `branches-1` | `yaks-4728` (under `yaks-a3fc`) | `ksQQtfBVdv4DR2eA_txRWzEtg5LOADmwaZIBxBCA0aLJyrhJPreUvVwLftHG` |
+| `prs-1` | `yaks-d695` | `ksQQtfBVdv4DR2eA_txRWzEtg5LOADmzgZIBxBCA0aLJyrhJPreUvVwLftHG` |
+| scout (LiteLLM `claude-haiku-5-5`) | cold read of the four changed skills, for `yaks-0071` | `ksQQtfBVdv4DR2eA_txRWzEtg5LOADm2eZIBxBCA0aLJyrhJPreUvVwLftHG` |
+
+Trial observations for `yaks-7d57` (wave 1, all local, same machine):
+
+- All three workers set `YAKS_ACTOR` correctly: one stable name each.
+- Notes came at milestones, not every 30 minutes; `commits-1` said so itself. The runs were 20–30 minutes long, so the cadence rule was barely tested.
+- Sync was not in play (same machine; the yakherd syncs).
+- The yakherd itself wrote its first notes as `delta:Cloud Runners` before setting `YAKS_ACTOR`, which is the split the rule exists for.

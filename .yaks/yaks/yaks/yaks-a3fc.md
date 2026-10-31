@@ -1,11 +1,11 @@
 ---
 id: yaks-a3fc
 title: 'Design: show a shed''s commits so far (pushed branches plus a little yak data)'
-status: hairy
+status: shaving
 type: idea
 priority: 2
 created: '2026-10-31T15:18:16Z'
-updated: '2026-10-31T15:56:38Z'
+updated: '2026-10-31T16:54:08Z'
 parent: yaks-039b
 depends_on:
 - yaks-bdf9
@@ -52,3 +52,8 @@ Decision (Joel, 2026-10-31): workers push their branches to `origin`.
 - **Tooling only when needed:** no `yaks checkpoint` helper yet. First run trials with workers on cheaper models following the convention by hand (`yaks-039b` child trial yak), and build the helper if they miss the push-then-record-then-sync order.
 
 Rejected: a separate remote for work in progress; one branch per yak.
+
+---
+▸ 2026-10-31T16:54:08Z [yakherd]
+
+moved: hairy -> shaving
