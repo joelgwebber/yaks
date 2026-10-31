@@ -160,7 +160,7 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 | `skills install` / `skills status` | Install or check these skills |
 | `tui` | The interactive UI (`?` lists its keys) |
 
-Coordinating several agents (`brief`, `land`, `sheds`) is the opt-in **yaks-coordinating** skill (`yaks skills install --with coordination`).
+Coordinating several agents (`brief`, `land`, `sheds`) is the **yaks-coordinating** skill.
 
 ## Filtering
 

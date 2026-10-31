@@ -84,7 +84,7 @@ fn make_stale(skill_md: &Path) {
 fn repo(tag: &str) -> PathBuf {
     let root = temp(tag);
     git(&root, &["init", "-q"]);
-    let o = yaks_env(&root, "0", &["init", "--skills", "none"]);
+    let o = yaks_env(&root, "0", &["init", "--no-skills"]);
     assert!(o.status.success(), "{}{}", out(&o), err(&o));
     let o = yaks_env(&root, "0", &["skills", "install"]);
     assert!(o.status.success(), "{}{}", out(&o), err(&o));
@@ -180,13 +180,10 @@ fn the_notice_is_silent_for_json_the_switch_and_the_skills_command() {
 }
 
 #[test]
-fn an_opt_in_stale_skill_names_with_coordination() {
+fn a_stale_coordination_skill_gets_the_same_advice() {
     let root = temp("optin");
     git(&root, &["init", "-q"]);
-    for args in [
-        &["init", "--skills", "none"][..],
-        &["skills", "install", "--with", "coordination"],
-    ] {
+    for args in [&["init", "--no-skills"][..], &["skills", "install"]] {
         let o = yaks_env(&root, "0", args);
         assert!(o.status.success(), "{}{}", out(&o), err(&o));
     }
@@ -195,7 +192,7 @@ fn an_opt_in_stale_skill_names_with_coordination() {
     let e = err(&yaks(&root, &["list"]));
     assert!(
         e.trim_end()
-            .ends_with("run `yaks skills install --with coordination` to update them"),
+            .ends_with("run `yaks skills install` to update them"),
         "{e:?}"
     );
     let _ = std::fs::remove_dir_all(&root);

@@ -30,7 +30,7 @@ fn text(o: &Output) -> String {
 }
 
 #[test]
-fn installs_project_local_by_default_and_opt_in_adds_the_coordination_group() {
+fn installs_every_skill_project_local_by_default() {
     let root = temp("project");
     let home = temp("project-home");
     std::fs::create_dir_all(root.join(".git")).unwrap();
@@ -41,22 +41,25 @@ fn installs_project_local_by_default_and_opt_in_adds_the_coordination_group() {
     assert!(text(&out).contains("project-local"), "{}", text(&out));
     assert!(root.join(".agents/skills/yaks/SKILL.md").is_file());
     assert!(root.join(".agents/skills/yaks-tracker/SKILL.md").is_file());
-    assert!(!root.join(".agents/skills/yaks-working").exists());
+    assert!(root.join(".agents/skills/yaks-working/SKILL.md").is_file());
     assert!(
         !home.join(".agents").exists(),
         "default must not touch $HOME"
     );
 
-    let out = yaks(
-        &root,
-        &home,
-        &["skills", "install", "--with", "coordination"],
-    );
-    assert!(out.status.success(), "{}", text(&out));
-    assert!(root.join(".agents/skills/yaks-working/SKILL.md").is_file());
     assert!(
         root.join(".agents/skills/yaks-coordinating/SKILL.md")
             .is_file()
+    );
+
+    assert!(
+        !yaks(
+            &root,
+            &home,
+            &["skills", "install", "--with", "coordination"]
+        )
+        .status
+        .success()
     );
 
     let out = yaks(&root, &home, &["skills", "status"]);

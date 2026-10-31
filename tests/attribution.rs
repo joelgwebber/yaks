@@ -21,7 +21,7 @@ impl Farm {
         common::git_init(&dir);
         std::fs::write(dir.join("gitconfig"), "[user]\n\tname = Git Human\n").unwrap();
         let farm = Farm { dir };
-        farm.run(&[], &["init", "--skills", "none"]);
+        farm.run(&[], &["init", "--no-skills"]);
         farm
     }
 

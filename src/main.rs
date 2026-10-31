@@ -253,7 +253,7 @@ enum Command {
     /// Scan text for real yak ids (a leak check for private farms).
     ///
     /// Finds tokens that are real yak-ids in this farm — a leak check
-    /// for private-mode farms (pre-commit / PR hook). Reads a FILE and/or
+    /// for private farms (pre-commit / PR hook). Reads a FILE and/or
     /// stdin, prints each found id as `line:col  id`, and EXITS NON-ZERO if
     /// any are found (clean text exits zero).
     ScanIds {
@@ -843,15 +843,15 @@ enum Command {
         /// starting one: sets `git config yaks.farm`. That repo needs a farm.
         #[arg(long, value_name = "CHECKOUT")]
         farm: Option<String>,
-        /// Skills to install project-local in the git top-level (default:
-        /// `default`), through the same install as `yaks skills install`.
-        #[arg(long, value_enum)]
-        skills: Option<init::SkillSet>,
+        /// Do not install the skills. By default they go project-local in the
+        /// git top-level, through the same install as `yaks skills install`.
+        #[arg(long)]
+        no_skills: bool,
     },
     /// Install or check the bundled agent skills.
     ///
-    /// Installs the bundled agent skills (yaks, yaks-tracker) into a skills
-    /// directory. Works anywhere — no farm required.
+    /// Installs the bundled agent skills (yaks, yaks-tracker, yaks-coordinating,
+    /// yaks-working) into a skills directory. Works anywhere — no farm required.
     Skills {
         #[command(subcommand)]
         action: SkillsAction,
@@ -1053,10 +1053,11 @@ enum DepAction {
 enum SkillsAction {
     /// Write the bundled agent skills into a skills directory.
     ///
-    /// The skills are yaks and yaks-tracker; --with adds more. By default that
-    /// is ./.agents/skills in the git top-level of the current directory, so
-    /// the skills travel with the project; outside a git repo it is ~/.agents/skills. Prints the
-    /// destination it chose. Works without a farm.
+    /// Always the whole set: yaks, yaks-tracker, yaks-coordinating and
+    /// yaks-working. By default they go to ./.agents/skills in the git
+    /// top-level of the current directory, so the skills travel with the
+    /// project; outside a git repo, to ~/.agents/skills. Prints the destination
+    /// it chose. Works without a farm.
     Install {
         /// Target skills directory (e.g. ~/.claude/skills). Wins over --user
         /// and the git-repo default.
@@ -1065,12 +1066,6 @@ enum SkillsAction {
         /// Install into the user directory, ~/.agents/skills, even inside a git repo.
         #[arg(long)]
         user: bool,
-        /// Also install an opt-in skill group. `coordination` adds
-        /// yaks-coordinating and yaks-working, for running several agents
-        /// over one farm.
-        #[arg(long, value_name = "GROUP", value_delimiter = ',',
-              value_parser = clap::builder::PossibleValuesParser::new(skills::GROUPS))]
-        with: Vec<String>,
         /// Overwrite skills that were edited after they were installed. (Never
         /// permits writing into yaks' own .agents/skills/ source.)
         #[arg(long)]
@@ -1088,11 +1083,6 @@ enum SkillsAction {
         /// Inspect the user directory, ~/.agents/skills.
         #[arg(long)]
         user: bool,
-        /// Also report on an opt-in skill group even if not installed yet
-        /// (installed ones are always reported).
-        #[arg(long, value_name = "GROUP", value_delimiter = ',',
-              value_parser = clap::builder::PossibleValuesParser::new(skills::GROUPS))]
-        with: Vec<String>,
     },
 }
 
@@ -1141,7 +1131,7 @@ fn main() -> Result<()> {
         emacs,
         branch,
         farm,
-        skills,
+        no_skills,
     } = &cli.command
     {
         return init::run(init::Args {
@@ -1151,7 +1141,7 @@ fn main() -> Result<()> {
             emacs: *emacs,
             branch: branch.clone(),
             farm: farm.clone(),
-            skills: *skills,
+            no_skills: *no_skills,
         });
     }
     if let Command::Skills { action } = &cli.command {
@@ -2780,7 +2770,7 @@ fn render_doctor(issues: &[Issue]) {
 /// asked, in the same words).
 fn render_skill_advisory() {
     let base = skills::default_dir();
-    let stuck: Vec<_> = skills::status(&base, &skills::select_for_status(&base, &[]))
+    let stuck: Vec<_> = skills::status(&base)
         .into_iter()
         .filter(|s| s.state.has_local_edits())
         .collect();
@@ -2845,16 +2835,11 @@ fn report_rename(out: RenameOutcome) {
 
 fn run_skills(action: &SkillsAction) -> Result<()> {
     match action {
-        SkillsAction::Install {
-            dir,
-            user,
-            with,
-            force,
-        } => {
+        SkillsAction::Install { dir, user, force } => {
             let target = skills::resolve_target(dir.as_deref(), *user, &env::current_dir()?);
             let base = target.dir.clone();
             println!("Installing skills into {}", target.describe());
-            let installed = skills::install(&base, *force, &skills::select(with))?;
+            let installed = skills::install(&base, *force)?;
             for i in &installed {
                 println!(
                     "{}",
@@ -2862,7 +2847,7 @@ fn run_skills(action: &SkillsAction) -> Result<()> {
                 );
             }
             println!(
-                "\nThe skill activates when a .yaks/ directory is present. For another agent, re-run with --dir pointing at its skills directory (e.g. --dir ~/.claude/skills)."
+                "\nFor another agent, re-run with --dir pointing at its skills directory (e.g. --dir ~/.claude/skills)."
             );
             if matches!(target.kind, skills::TargetKind::Project { .. }) {
                 println!(
@@ -2871,12 +2856,12 @@ fn run_skills(action: &SkillsAction) -> Result<()> {
             }
             Ok(())
         }
-        SkillsAction::Status { dir, user, with } => {
+        SkillsAction::Status { dir, user } => {
             let target = skills::resolve_target(dir.as_deref(), *user, &env::current_dir()?);
             let base = target.dir.clone();
             println!("{}", target.describe());
             let mut blocked = 0;
-            let statuses = skills::status(&base, &skills::select_for_status(&base, with));
+            let statuses = skills::status(&base);
             for s in &statuses {
                 let detail = match &s.state {
                     skills::SkillState::Upgradable { from } => {

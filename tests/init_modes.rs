@@ -117,7 +117,7 @@ fn entries(dir: &Path) -> Vec<String> {
 #[test]
 fn init_creates_an_orphan_farm_worktree_at_farm_home() {
     let r = repo("branch-fresh");
-    let out = okx(&r, &["init", "--skills", "none"]);
+    let out = okx(&r, &["init", "--no-skills"]);
     let wt = worktree_of(&r, "yaks").expect("the farm branch has a worktree");
     assert!(
         wt.starts_with(data(&r).canonicalize().unwrap().join("yaks/farms")),
@@ -158,29 +158,24 @@ fn init_creates_an_orphan_farm_worktree_at_farm_home() {
 #[test]
 fn init_rerun_is_a_no_op() {
     let r = repo("branch-rerun");
-    okx(&r, &["init", "--skills", "none"]);
+    okx(&r, &["init", "--no-skills"]);
     let wt = worktree_of(&r, "yaks").unwrap();
     okx(&r, &["create", "--title", "keep me"]);
     let before = git(&r, &["worktree", "list", "--porcelain"]);
-    let out = okx(&r, &["init", "--skills", "none"]);
+    let out = okx(&r, &["init", "--no-skills"]);
     assert!(out.contains("Nothing to change"), "{out}");
     assert!(out.contains("already"), "{out}");
     assert_eq!(git(&r, &["worktree", "list", "--porcelain"]), before);
     assert_eq!(worktree_of(&r, "yaks"), Some(wt));
     assert!(okx(&r, &["list"]).contains("keep me"));
     // A herd the farm does not have is a conflict, not a rewrite.
-    assert!(
-        errx(&r, &["init", "--skills", "none", "--herd", "other"]).contains("different settings")
-    );
+    assert!(errx(&r, &["init", "--no-skills", "--herd", "other"]).contains("different settings"));
 }
 
 #[test]
 fn init_records_a_chosen_branch_name() {
     let r = repo("branch-named");
-    okx(
-        &r,
-        &["init", "--branch", "personal-joel", "--skills", "none"],
-    );
+    okx(&r, &["init", "--branch", "personal-joel", "--no-skills"]);
     assert_eq!(
         git(&r, &["config", "--get", "yaks.branch"]).trim(),
         "personal-joel"
@@ -192,11 +187,11 @@ fn init_records_a_chosen_branch_name() {
         wt.join(".yaks").display().to_string()
     );
     // Re-running without --branch uses the recorded name: a no-op.
-    let out = okx(&r, &["init", "--skills", "none"]);
+    let out = okx(&r, &["init", "--no-skills"]);
     assert!(out.contains("Nothing to change"), "{out}");
     // The default name records nothing.
     let d = repo("branch-default-name");
-    okx(&d, &["init", "--skills", "none"]);
+    okx(&d, &["init", "--no-skills"]);
     let o = Command::new("git")
         .args(["config", "--get", "yaks.branch"])
         .current_dir(&d)
@@ -211,7 +206,7 @@ fn init_records_a_chosen_branch_name() {
 #[test]
 fn init_with_an_existing_origin_farm_only_adds_its_worktree() {
     let a = repo("branch-origin-a");
-    okx(&a, &["init", "--skills", "none"]);
+    okx(&a, &["init", "--no-skills"]);
     okx(&a, &["create", "--title", "from origin"]);
     let wa = worktree_of(&a, "yaks").unwrap();
     git(&wa, &["add", "-A"]);
@@ -227,14 +222,14 @@ fn init_with_an_existing_origin_farm_only_adds_its_worktree() {
         &["clone", "-q", origin.to_str().unwrap(), b.to_str().unwrap()],
     );
     assert!(worktree_of(&b, "yaks").is_none());
-    let out = okx(&b, &["init", "--skills", "none"]);
+    let out = okx(&b, &["init", "--no-skills"]);
     let wb = worktree_of(&b, "yaks").expect("worktree added for the existing branch");
     assert!(wb.join(".yaks/config.yaml").is_file(), "{out}");
     assert!(okx(&b, &["list"]).contains("from origin"));
     // Only the worktree was added: the history is the pushed commit, no more.
     assert_eq!(git(&wb, &["rev-list", "--count", "HEAD"]).trim(), "1");
     assert_eq!(status(&b), "");
-    assert!(okx(&b, &["init", "--skills", "none"]).contains("Nothing to change"));
+    assert!(okx(&b, &["init", "--no-skills"]).contains("Nothing to change"));
 }
 
 #[test]
@@ -243,7 +238,7 @@ fn init_ignores_an_in_tree_dot_yaks() {
     let r = repo("intree");
     std::fs::create_dir_all(r.join(".yaks")).unwrap();
     std::fs::write(r.join(".yaks/config.yaml"), "herd: old\n").unwrap();
-    okx(&r, &["init", "--skills", "none"]);
+    okx(&r, &["init", "--no-skills"]);
     let wt = worktree_of(&r, "yaks").expect("the farm branch has a worktree");
     assert_eq!(
         okx(&r, &["path"]).trim(),
@@ -266,7 +261,7 @@ fn init_refuses_a_shared_clone_and_changes_nothing() {
             clone.to_str().unwrap(),
         ],
     );
-    let e = errx(&clone, &["init", "--skills", "none"]);
+    let e = errx(&clone, &["init", "--no-skills"]);
     assert!(e.contains("borrows another repository's objects"), "{e}");
     assert!(!data(&clone).exists());
     assert!(worktree_of(&r, "yaks").is_none());
@@ -279,11 +274,11 @@ fn init_flag_misuse_is_refused_before_any_change() {
     for gone in [&["init", "--mode", "team"][..], &["init", "--path", "x"]] {
         assert!(errx(&r, gone).contains("unexpected argument"), "{gone:?}");
     }
-    let e = errx(&r, &["init", "--branch", "bad name", "--skills", "none"]);
+    let e = errx(&r, &["init", "--branch", "bad name", "--no-skills"]);
     assert!(e.contains("not a valid branch name"), "{e}");
     // The code branch is not a farm.
     let code = git(&r, &["symbolic-ref", "--short", "HEAD"]);
-    let e = errx(&r, &["init", "--branch", code.trim(), "--skills", "none"]);
+    let e = errx(&r, &["init", "--branch", code.trim(), "--no-skills"]);
     assert!(e.contains("the branch you are on"), "{e}");
     assert!(!data(&r).exists());
     let o = Command::new("git")
@@ -297,7 +292,7 @@ fn init_flag_misuse_is_refused_before_any_change() {
 #[test]
 fn init_skills_go_in_the_code_checkout_not_the_farm() {
     let r = repo("branch-skills");
-    let out = okx(&r, &["init", "--skills", "default"]);
+    let out = okx(&r, &["init"]);
     assert!(r.join(".agents/skills/yaks/SKILL.md").is_file(), "{out}");
     let wt = worktree_of(&r, "yaks").unwrap();
     assert!(!wt.join(".agents").exists());
@@ -305,7 +300,7 @@ fn init_skills_go_in_the_code_checkout_not_the_farm() {
         exclude(&r).lines().filter(|l| l.starts_with('/')).count(),
         0
     );
-    assert!(okx(&r, &["init", "--skills", "default"]).contains("Nothing to change"));
+    assert!(okx(&r, &["init"]).contains("Nothing to change"));
 }
 
 #[test]
@@ -317,16 +312,19 @@ fn init_outside_git_is_a_clear_error() {
 }
 
 #[test]
-fn a_plain_init_installs_the_default_skills() {
-    let r = repo("default-skills");
+fn init_installs_every_bundled_skill_unless_told_not_to() {
+    let r = repo("all-skills");
     okx(&r, &["init"]);
-    assert!(r.join(".agents/skills/yaks/SKILL.md").is_file());
-    assert!(!r.join(".agents/skills/yaks-coordinating").exists());
-    okx(&r, &["init", "--skills", "coordination"]);
-    assert!(
-        r.join(".agents/skills/yaks-coordinating/SKILL.md")
-            .is_file()
-    );
+    for n in ["yaks", "yaks-tracker", "yaks-coordinating", "yaks-working"] {
+        assert!(
+            r.join(".agents/skills").join(n).join("SKILL.md").is_file(),
+            "{n}"
+        );
+    }
+    let bare = repo("no-skills");
+    let out = okx(&bare, &["init", "--no-skills"]);
+    assert!(!bare.join(".agents").exists(), "{out}");
+    assert!(errx(&bare, &["init", "--skills", "none"]).contains("--skills"));
 }
 
 // -- --farm: share another repository's farm --------------------------------
@@ -334,7 +332,7 @@ fn a_plain_init_installs_the_default_skills() {
 #[test]
 fn farm_points_this_repo_at_another_repos_farm_branch() {
     let owner = repo("share-owner");
-    okx(&owner, &["init", "--skills", "none", "--herd", "api"]);
+    okx(&owner, &["init", "--no-skills", "--herd", "api"]);
     okx(&owner, &["create", "--title", "owner yak"]);
     let owner_farm = okx(&owner, &["path"]).trim().to_string();
 
@@ -347,8 +345,7 @@ fn farm_points_this_repo_at_another_repos_farm_branch() {
             owner.to_str().unwrap(),
             "--herd",
             "web",
-            "--skills",
-            "none",
+            "--no-skills",
         ],
     );
     assert!(out.contains("set yaks.farm"), "{out}");
@@ -375,22 +372,15 @@ fn farm_points_this_repo_at_another_repos_farm_branch() {
             owner.to_str().unwrap(),
             "--herd",
             "web",
-            "--skills",
-            "none",
+            "--no-skills",
         ],
     );
     assert!(again.contains("Nothing to change"), "{again}");
     let other = repo("share-other");
-    okx(&other, &["init", "--skills", "none"]);
+    okx(&other, &["init", "--no-skills"]);
     let e = errx(
         &web,
-        &[
-            "init",
-            "--farm",
-            other.to_str().unwrap(),
-            "--skills",
-            "none",
-        ],
+        &["init", "--farm", other.to_str().unwrap(), "--no-skills"],
     );
     assert!(e.contains("will not repoint"), "{e}");
     let e = errx(
@@ -401,31 +391,24 @@ fn farm_points_this_repo_at_another_repos_farm_branch() {
             owner.to_str().unwrap(),
             "--herd",
             "ops",
-            "--skills",
-            "none",
+            "--no-skills",
         ],
     );
     assert!(e.contains("already web"), "{e}");
     // A plain init in a repo that shares a farm does not start a second one.
-    let e = errx(&web, &["init", "--skills", "none"]);
+    let e = errx(&web, &["init", "--no-skills"]);
     assert!(e.contains("uses the farm of"), "{e}");
 }
 
 #[test]
 fn farm_works_from_a_git_worktree_and_a_shared_clone_of_the_sharing_repo() {
     let owner = repo("share2-owner");
-    okx(&owner, &["init", "--skills", "none"]);
+    okx(&owner, &["init", "--no-skills"]);
     let owner_farm = okx(&owner, &["path"]).trim().to_string();
     let web = repo("share2-web");
     okx(
         &web,
-        &[
-            "init",
-            "--farm",
-            owner.to_str().unwrap(),
-            "--skills",
-            "none",
-        ],
+        &["init", "--farm", owner.to_str().unwrap(), "--no-skills"],
     );
     let wt = web.with_file_name("share2-web-wt");
     git(
@@ -453,24 +436,15 @@ fn farm_refuses_a_repo_without_a_farm_or_this_same_repo_and_changes_nothing() {
     let web = repo("share3-web");
     let e = errx(
         &web,
-        &[
-            "init",
-            "--farm",
-            owner.to_str().unwrap(),
-            "--skills",
-            "none",
-        ],
+        &["init", "--farm", owner.to_str().unwrap(), "--no-skills"],
     );
     assert!(e.contains("has no farm") && e.contains("yaks init"), "{e}");
-    let e = errx(
-        &web,
-        &["init", "--farm", "/nowhere/at/all", "--skills", "none"],
-    );
+    let e = errx(&web, &["init", "--farm", "/nowhere/at/all", "--no-skills"]);
     assert!(e.contains("not a git checkout"), "{e}");
-    okx(&web, &["init", "--skills", "none"]);
+    okx(&web, &["init", "--no-skills"]);
     let e = errx(
         &web,
-        &["init", "--farm", web.to_str().unwrap(), "--skills", "none"],
+        &["init", "--farm", web.to_str().unwrap(), "--no-skills"],
     );
     assert!(e.contains("this same repository"), "{e}");
     let e = errx(
@@ -481,8 +455,7 @@ fn farm_refuses_a_repo_without_a_farm_or_this_same_repo_and_changes_nothing() {
             owner.to_str().unwrap(),
             "--branch",
             "x",
-            "--skills",
-            "none",
+            "--no-skills",
         ],
     );
     assert!(e.contains("does not go with --farm"), "{e}");

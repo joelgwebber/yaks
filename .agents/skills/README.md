@@ -6,16 +6,15 @@ symlinks. Agent harnesses (Delta, and anything else that scans
 shipped ones from here.
 
 - **Repo-local, never shipped:** `land` (see the warning below).
-- **Shipped by default:** `yaks` and `yaks-tracker`. The explicit `BUNDLED` list in
-  `src/skills.rs` — skills and, per skill, files; not the contents of this
-  directory — decides what is embedded in the binary and installed by
-  `yaks skills install`.
-- **Shipped, opt-in** (`yaks skills install --with coordination`): the workflow
-  skills below, which we also use to develop yaks itself. Nothing here that
-  isn't in `BUNDLED` is ever embedded or installed; the same goes for any other
-  project-local skill dropped into this directory. A skill's extra files (none
-  today; the landing script became `yaks land`) must be listed in `BUNDLED` too;
-  a test fails if one is missing.
+- **Shipped** (all installed together by `yaks skills install`): `yaks`,
+  `yaks-tracker`, and the workflow skills below, which we also use to develop
+  yaks itself. The explicit `BUNDLED` list in `src/skills.rs` — skills and, per
+  skill, files; not the contents of this directory — decides what is embedded
+  in the binary and installed. Nothing here that isn't in `BUNDLED` is ever
+  embedded or installed; the same goes for any other project-local skill
+  dropped into this directory. A skill's extra files (none today; the landing
+  script became `yaks land`) must be listed in `BUNDLED` too; a test fails if
+  one is missing.
   - `yaks-working` is for a worker taking ONE yak from hairy to shorn.
   - `yaks-coordinating` is for a yakherd handing yaks to other agents, with a
     section each for Delta threads and plain git worktrees. (It replaced four

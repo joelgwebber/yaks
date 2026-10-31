@@ -21,21 +21,9 @@
 use crate::branchfarm::{self, git, ref_exists};
 use crate::{sheds, skills, store};
 use anyhow::{Context, Result, bail};
-use clap::ValueEnum;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
-
-/// Which bundled skills `--skills` installs.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
-pub enum SkillSet {
-    /// No skills.
-    None,
-    /// yaks + yaks-tracker.
-    Default,
-    /// The default set plus the opt-in coordination group.
-    Coordination,
-}
 
 /// The parsed `yaks init` flags.
 pub struct Args {
@@ -46,7 +34,8 @@ pub struct Args {
     pub branch: Option<String>,
     /// `--farm <checkout>`: use that repository's farm instead of starting one.
     pub farm: Option<String>,
-    pub skills: Option<SkillSet>,
+    /// `--no-skills`: leave the skills out.
+    pub no_skills: bool,
 }
 
 impl Args {
@@ -124,24 +113,19 @@ pub fn run(args: Args) -> Result<()> {
         }
     };
 
-    match args.skills.unwrap_or(SkillSet::Default) {
-        SkillSet::None => println!("skills: none requested"),
-        set => {
-            let with: Vec<String> = match set {
-                SkillSet::Coordination => vec!["coordination".to_string()],
-                _ => Vec::new(),
-            };
-            let target = skills::resolve_target(None, false, &cwd);
-            println!("skills: into {}", target.describe());
-            for i in &skills::install(&target.dir, false, &skills::select(&with))? {
-                if i.changed() {
-                    rep.changed = true;
-                }
-                println!(
-                    "  {}",
-                    skills::render_installed(i, " (`yaks skills install --force` overwrites)")
-                );
+    if args.no_skills {
+        println!("skills: skipped (--no-skills)");
+    } else {
+        let target = skills::resolve_target(None, false, &cwd);
+        println!("skills: into {}", target.describe());
+        for i in &skills::install(&target.dir, false)? {
+            if i.changed() {
+                rep.changed = true;
             }
+            println!(
+                "  {}",
+                skills::render_installed(i, " (`yaks skills install --force` overwrites)")
+            );
         }
     }
 
@@ -284,7 +268,7 @@ fn ensure_farm(root: &Path, cfg: &store::InitConfig, args: &Args, rep: &mut Repo
     Ok(())
 }
 
-/// Branch mode: the farm on an orphan branch, in a worktree at
+/// This repository's own farm: on an orphan branch, in a worktree at
 /// [`store::farm_home`], found by discovery from every checkout of the
 /// repository. Reuses the branch when it exists (a worktree is added if none
 /// has it: [`branchfarm::bootstrap`]), else starts a new orphan branch holding

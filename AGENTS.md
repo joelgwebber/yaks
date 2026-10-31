@@ -123,8 +123,7 @@ a follow-up:
 
 - `docs/` (`docs/cli.md`, `docs/tui.md`, `docs/README.md`) and `README.md`.
 - the bundled skills (`.agents/skills/yaks`, `.agents/skills/yaks-tracker`) and
-  the opt-in `coordination` group beside them (`.agents/skills/yaks-working`,
-  `.agents/skills/yaks-coordinating`).
+  `.agents/skills/yaks-working` and `.agents/skills/yaks-coordinating`.
 - for a CLI change: the clap `--help` text — the `///` doc comments and
   `#[arg(...)]`/`#[command(...)]` help on the command/flag in `src/main.rs`.
 - for a markdown rendering change (what the TUI renders, a dialect choice, a

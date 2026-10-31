@@ -21,7 +21,7 @@ impl Farm {
         common::cleanup(&dir);
         common::git_init(&dir);
         let farm = Farm { dir };
-        farm.ok(&["init", "--skills", "none"], None);
+        farm.ok(&["init", "--no-skills"], None);
         farm
     }
 

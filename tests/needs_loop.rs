@@ -16,7 +16,7 @@ impl Farm {
         common::cleanup(&dir);
         common::git_init(&dir);
         let f = Farm { dir };
-        f.run("tester", &["init", "--skills", "none"]);
+        f.run("tester", &["init", "--no-skills"]);
         f
     }
 

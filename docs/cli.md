@@ -404,7 +404,7 @@ Rules, the same for all four commands:
 | `migrate [--dry-run]` | Bring a farm on an older schema up to this yaks' (schema 4 or 5 → 6), under the farm lock. `--dry-run` writes nothing. Idempotent; never commits. [Details](#migrate) |
 | `private [--off]` | Mark this repository's farm private so it never leaves the machine: sets `git config yaks.private true` and installs a `pre-push` hook that refuses pushes of the farm branch. `--off` undoes it. [Details](#private) |
 | `init [--farm <checkout>]` | Start this repo's farm branch, or share another repo's (`--farm`), and install the skills. Idempotent. [Details](#init) |
-| `skills install` | Install the bundled agent skills (`yaks`, `yaks-tracker`) to `--dir <path>`, `--user` or the project's `./.agents/skills`. `--with coordination` adds `yaks-coordinating` and `yaks-working`. Edited copies are left alone unless `--force`. [Details](#skills) |
+| `skills install` | Install all four bundled agent skills to `--dir <path>`, `--user` or the project's `./.agents/skills`. Edited copies are left alone unless `--force`. [Details](#skills) |
 | `skills status` | Per-skill verdict (`current`, `stale`, `adoptable`, `held`, `modified`, `unmanaged`, `source`, `retired`) from the provenance stamp. `--user` / `--dir` inspect another directory. See [skills.md](skills.md). [Details](#skills) |
 | `doctor` | Read-only integrity check: invalid status, duplicate id, misplaced file, dangling parent/deps, malformed labels. Exits non-zero on any issue. `--strict` also flags shorn yaks with no note or whose `verify:` did not last PASS. [Details](#doctor) |
 | `preflight [<id>...] [--all] [--push-main]` | Read-only landing check: shorn yaks' `verify:` last PASSed, farm integrity, no merge conflict in the farm. `--push-main` checks the `local` remote. [Details](#preflight) |
@@ -446,10 +446,10 @@ A `pre-push` hook that is not yaks's (no `# yaks-private-guard` marker) is left 
 ### `init`
 
 ```sh
-yaks init                                  # this repo's farm on the `yaks` branch + default skills
+yaks init                                  # this repo's farm on the `yaks` branch + the skills
 yaks init --herd api --type feature        # ...with the new farm's defaults
 yaks init --branch yaks/team-a             # ...on another branch name (saved as yaks.branch)
-yaks init --skills coordination            # add the multi-agent skills (re-run is fine)
+yaks init --no-skills                      # ...without installing the skills
 yaks init --farm ~/src/api --herd web      # share api's farm; new yaks here go in herd `web`
 ```
 
@@ -462,8 +462,9 @@ yaks init --farm ~/src/api --herd web      # share api's farm; new yaks here go 
   `--herd`, declaring that herd in the farm's config). The other repo must
   already have a farm. Nothing is written in this repo's tree, and it gets no
   farm branch of its own.
-- **Skills** go into the git top-level's `.agents/skills/` (`--skills
-  default|coordination|none`, default `default`), as ordinary project files.
+- **Skills**: all of them, into the git top-level's `.agents/skills/` as
+  ordinary project files, through the same install as `yaks skills install`.
+  `--no-skills` leaves them out.
 - **Idempotent.** One line per step, done or already-done; a re-run ends
   `Nothing to change`. A setting that contradicts what is there (another
   `--herd`, another `--farm`) is an error naming it; init never rewrites.
@@ -482,11 +483,11 @@ status directories) is refused by every command, naming
 
 `skills install`
 
-Install the bundled agent skills (`yaks`, `yaks-tracker`). Target: `--dir <path>` if given; else `--user` → `~/.agents/skills`; else `./.agents/skills` in the git top-level of the cwd when inside a git repo, and `~/.agents/skills` outside one.
+Install the bundled agent skills (`yaks`, `yaks-tracker`, `yaks-coordinating`, `yaks-working`): always the whole set. Target: `--dir <path>` if given; else `--user` → `~/.agents/skills`; else `./.agents/skills` in the git top-level of the cwd when inside a git repo, and `~/.agents/skills` outside one.
 
 Prints the destination it chose.
 
-`--with coordination` adds `yaks-coordinating` and `yaks-working`; untouched installed copies of the retired `yaks-coordinating-team`, `-private`, `-worktrees` and `-delta` are removed (an edited one is kept and reported). `skills status` lists any left as `retired`.
+Untouched installed copies of the retired `yaks-coordinating-team`, `-private`, `-worktrees` and `-delta` are removed (an edited one is kept and reported). `skills status` lists any left as `retired`.
 
 A skill is installed as a unit; an outdated untouched copy is upgraded, an edited one (including an edited script) is left alone unless `--force`.
 
@@ -496,9 +497,9 @@ Refuses to write onto yaks' own `.agents/skills/` source (even via a symlink, ev
 
 Per-skill verdict — `current` / `stale` / `adoptable` / `held` / `modified` / `unmanaged` / `source` / `retired` — from the provenance stamp (other files of a skill are compared by content).
 
-Same default directory as `install`; `--user` / `--dir` to inspect another; installed opt-in skills are always listed, `--with coordination` also lists absent ones.
+Same default directory as `install`; `--user` / `--dir` to inspect another. Every bundled skill is listed, absent ones included.
 
-When something is stale it ends with the command to run (`yaks skills install`, plus `--with coordination` if an opt-in skill is stale).
+When something is stale it ends with the command to run (`yaks skills install`, with the same `--user` / `--dir`).
 
 An ordinary command prints that advice itself as one stderr `note:` line, once per yaks version per checkout, for a stale project-local install (never with `--json`, nor for `skills`/`init`; `YAKS_SKILLS_AUTOSYNC=0` silences it); `doctor` repeats it in its skills advisory. See [skills.md](skills.md).
 

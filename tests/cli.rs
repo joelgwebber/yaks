@@ -236,7 +236,7 @@ fn list_needs_filters_to_blocked() {
             .to_string()
     };
 
-    cli(&["init", "--skills", "none"]);
+    cli(&["init", "--no-skills"]);
     let blocked = created_id(&cli(&["create", "--title", "needs a decision"]));
     let free = created_id(&cli(&["create", "--title", "just work"]));
 
@@ -287,7 +287,7 @@ fn create_positional_title_and_json() {
         String::from_utf8(out.stdout).unwrap()
     };
 
-    cli(&["init", "--skills", "none"]);
+    cli(&["init", "--no-skills"]);
 
     // Bare positional title works (the stumble yaks-2120 fixes).
     let out = cli(&["create", "positional wins"]);
@@ -323,7 +323,7 @@ fn create_positional_title_and_json() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-/// `scan-ids` is the private-mode leak check: text carrying a real farm id is
+/// `scan-ids` is the private-farm leak check: text carrying a real farm id is
 /// flagged and the command exits NON-ZERO (so a pre-commit hook fails), while
 /// text with only id-shaped-but-fake tokens is clean and exits zero. Runs
 /// against the shared fixture farm, whose ids are `fix-000N` (yaks-d4d3).
@@ -433,7 +433,7 @@ fn update_bulk_and_partial_failure() {
             .to_string()
     };
 
-    cli(&["init", "--skills", "none"]);
+    cli(&["init", "--no-skills"]);
     let a = created_id(&cli(&["create", "--title", "alpha"]));
     let b = created_id(&cli(&["create", "--title", "beta"]));
 
@@ -526,7 +526,7 @@ fn bulk_dry_run_commit_and_refusals() {
             .unwrap_or_default()
     };
 
-    cli(&["init", "--skills", "none"]);
+    cli(&["init", "--no-skills"]);
     // Two yaks carry label `pick`; one does not (the control that must never move).
     let a = created_id(&cli(&["create", "--title", "alpha", "--labels", "pick"]));
     let b = created_id(&cli(&["create", "--title", "beta", "--labels", "pick"]));
@@ -649,7 +649,7 @@ fn slaughter_guard_and_family() {
             .to_string()
     };
 
-    cli(&["init", "--skills", "none"]);
+    cli(&["init", "--no-skills"]);
     let p = created_id(&cli(&["create", "--title", "parent"]));
     let c = created_id(&cli(&["create", "--title", "child", "--parent", &p]));
     let g = created_id(&cli(&["create", "--title", "grandchild", "--parent", &c]));
@@ -705,7 +705,7 @@ fn attach_name_and_rename_attachment() {
         );
         String::from_utf8(out.stdout).unwrap()
     };
-    ok(&["init", "--skills", "none"]);
+    ok(&["init", "--no-skills"]);
     let out = ok(&["create", "shots", "--json"]);
     let v: serde_json::Value = serde_json::from_str(&out).unwrap();
     let id = v["id"].as_str().unwrap().to_string();
@@ -786,7 +786,7 @@ fn labels_normalized_on_create_update_bulk_and_doctor() {
             .unwrap_or_default()
     };
 
-    cli(&["init", "--skills", "none"]);
+    cli(&["init", "--no-skills"]);
     let created: serde_json::Value = serde_json::from_str(&cli(&[
         "create", "alpha", "--labels", "foo, bar", "baz,foo", "--json",
     ]))

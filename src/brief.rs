@@ -9,8 +9,8 @@
 //!
 //! The text is assembled from one small function per section, each taking the
 //! [`Brief`] facts, so the differences between a published and a private
-//! farm are explicit: [`Mode`] picks the finish steps (whether yak ids may go
-//! in commit messages), [`yaks_dir`] decides whether commands carry
+//! farm are explicit: [`Publication`] picks the finish steps (whether yak ids
+//! may go in commit messages), [`yaks_dir`] decides whether commands carry
 //! `YAKS_DIR`, and [`gate`] decides the evidence section. Read-only: the farm
 //! is never written.
 
@@ -21,14 +21,14 @@ use anyhow::{Result, bail};
 use std::io::Write;
 use std::path::Path;
 
-/// How the farm is shared, which decides how a worker finishes.
+/// Whether the farm's yak ids may reach git, which decides how a worker finishes.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Mode {
+pub enum Publication {
     /// The farm is a farm branch's worktree ([`store::farm_branch`], yaks-73f4):
     /// one farm per machine, which every checkout's discovery finds. The
     /// worker stages nothing of it; the yakherd commits it on the branch. Yak
     /// ids are fine in commit messages (the farm is in git, and may be shared).
-    Branch { branch: String },
+    Published { branch: String },
     /// A farm marked private (`yaks private`), or one reached only through
     /// `--yaks-dir`/`YAKS_DIR`: keep yak ids out of git.
     Private,
@@ -55,7 +55,7 @@ pub struct Brief<'a> {
     pub actor: &'a str,
     /// The binary to run, as an absolute path.
     pub binary: &'a Path,
-    pub mode: &'a Mode,
+    pub publication: &'a Publication,
     /// The farm every command must name with `YAKS_DIR`, when there is one.
     pub yaks_dir: Option<&'a str>,
     pub gate: Option<&'a Gate>,
@@ -78,15 +78,15 @@ pub fn gate(task: &Task, cfg: &Config) -> Option<Gate> {
     }
 }
 
-/// Detect the farm mode: a farm-branch worktree is [`Mode::Branch`] unless
-/// the repository marked it private (`yaks private`, so its yak ids never
+/// Detect whether the farm is published: a farm-branch worktree is
+/// [`Publication::Published`] unless the repository marked it private (`yaks private`, so its yak ids never
 /// reach a commit that could be pushed); anything else (a `YAKS_DIR` farm) is
 /// private.
-pub fn detect_mode(cwd: &Path, farm_root: &Path) -> Mode {
+pub fn detect_publication(cwd: &Path, farm_root: &Path) -> Publication {
     match store::farm_branch(farm_root) {
-        Some(_) if crate::privatefarm::is_private(cwd) => Mode::Private,
-        Some(branch) => Mode::Branch { branch },
-        None => Mode::Private,
+        Some(_) if crate::privatefarm::is_private(cwd) => Publication::Private,
+        Some(branch) => Publication::Published { branch },
+        None => Publication::Private,
     }
 }
 
@@ -217,7 +217,7 @@ fn notes(b: &Brief) -> String {
     )
 }
 
-/// The finish steps: the part that depends on the farm mode.
+/// The finish steps: the part that depends on whether the farm is published.
 fn finish(b: &Brief) -> String {
     let id = &b.task.id;
     let proof = if b.gate.is_some() {
@@ -229,14 +229,14 @@ fn finish(b: &Brief) -> String {
         "1. Finish only after the evidence exists: {proof}, and your summary is in a note (`yaks shorn` takes no note): short, the shape of the fix and the evidence (linked or attached), not a bare \"done\" and not a design doc.\n\
          2. `yaks shorn {id}` (there is no `shear` subcommand)."
     );
-    match b.mode {
-        Mode::Branch { branch } => format!(
+    match b.publication {
+        Publication::Published { branch } => format!(
             "Finish (the yakherd commits the farm on branch `{branch}`, never you)\n\
              {shear}\n\
              3. ONE commit of your own source files only: `git add -A -- <your files>`. Never stage anything under `.yaks/`. Message `{id}: <what changed>`.\n\
              4. `git show --stat` must list every file you expect and nothing under `.yaks/`."
         ),
-        Mode::Private => format!(
+        Publication::Private => format!(
             "Finish (private farm: yak ids stay out of git)\n\
              {shear}\n\
              3. ONE commit of your own source files only: `git add -A -- <your files>`. Never add anything from the farm. Write the message in plain English; no yak id and not the word \"yaks\" in it, in code or in comments.\n\
@@ -313,14 +313,14 @@ pub fn run(farm: &Farm, req: &Request, out: &mut impl Write, err: &mut impl Writ
         return Ok(1);
     };
     let task = &show.task;
-    let mode = detect_mode(req.cwd, farm.root());
+    let publication = detect_publication(req.cwd, farm.root());
     let dir = yaks_dir(req.explicit_dir, req.cwd, farm.root());
     let gate = gate(task, &farm.config());
     let text = render(&Brief {
         task,
         actor: req.actor,
         binary: req.binary,
-        mode: &mode,
+        publication: &publication,
         yaks_dir: dir.as_deref(),
         gate: gate.as_ref(),
     });
@@ -418,7 +418,7 @@ mod tests {
 
     fn facts<'a>(
         t: &'a Task,
-        mode: &'a Mode,
+        publication: &'a Publication,
         dir: Option<&'a str>,
         gate: Option<&'a Gate>,
     ) -> Brief<'a> {
@@ -426,7 +426,7 @@ mod tests {
             task: t,
             actor: "demo-1",
             binary: Path::new("/opt/yaks"),
-            mode,
+            publication,
             yaks_dir: dir,
             gate,
         }
@@ -454,8 +454,8 @@ mod tests {
         )
     }
 
-    fn mode_yaks() -> Mode {
-        Mode::Branch {
+    fn published_yaks() -> Publication {
+        Publication::Published {
             branch: "yaks".into(),
         }
     }
@@ -463,7 +463,7 @@ mod tests {
     #[test]
     fn every_brief_names_the_yak_the_actor_prefix_and_the_final_message() {
         let t = task("yak-0001", Status::Shaving);
-        let text = render(&facts(&t, &Mode::Private, None, None));
+        let text = render(&facts(&t, &Publication::Private, None, None));
         assert!(text.contains("You are worker `demo-1`"));
         assert!(text.contains("`yak-0001` - \"title yak-0001\". It is already `shaving`."));
         assert!(text.contains("YAKS_ACTOR=demo-1 /opt/yaks <args>"));
@@ -476,7 +476,7 @@ mod tests {
     #[test]
     fn a_private_brief_keeps_yak_ids_out_of_git() {
         let t = task("yak-0001", Status::Shaving);
-        let text = render(&facts(&t, &Mode::Private, Some("/farm/.yaks"), None));
+        let text = render(&facts(&t, &Publication::Private, Some("/farm/.yaks"), None));
         assert!(text.contains("Finish (private farm"));
         assert!(text.contains("no yak id and not the word \"yaks\""));
         assert!(!text.contains("Message `yak-0001"));
@@ -487,8 +487,8 @@ mod tests {
     #[test]
     fn a_branch_brief_never_stages_the_farm_and_keeps_ids_in_messages() {
         let t = task("yak-0001", Status::Shaving);
-        let mode = mode_yaks();
-        let text = render(&facts(&t, &mode, None, None));
+        let publication = published_yaks();
+        let text = render(&facts(&t, &publication, None, None));
         assert!(text.contains("Finish (the yakherd commits the farm on branch `yaks`"));
         assert!(text.contains("Never stage anything under `.yaks/`"));
         assert!(
@@ -503,7 +503,7 @@ mod tests {
     fn run_prints_a_branch_brief_with_no_yaks_dir() {
         let t = task("yak-0001", Status::Shaving);
         let (code, farm) = branch_repo("herd: yak\n", &t);
-        assert_eq!(detect_mode(&code, farm.root()), mode_yaks());
+        assert_eq!(detect_publication(&code, farm.root()), published_yaks());
         assert_eq!(yaks_dir(None, &code, farm.root()), None);
         let (rc, out, err) = run_brief(&farm, &code, "yak-0001", None);
         assert_eq!(rc, 0);
@@ -517,7 +517,7 @@ mod tests {
         let t = task("yak-0001", Status::Shaving);
         let (code, farm) = branch_repo("herd: yak\n", &t);
         git(&code, &["config", "yaks.private", "true"]);
-        assert_eq!(detect_mode(&code, farm.root()), Mode::Private);
+        assert_eq!(detect_publication(&code, farm.root()), Publication::Private);
         let (_, out, _) = run_brief(&farm, &code, "yak-0001", None);
         assert!(out.contains("Finish (private farm"), "{out}");
         assert!(!out.contains("YAKS_DIR"), "discovery finds a branch farm");
@@ -529,7 +529,7 @@ mod tests {
         let t = task("yak-0001", Status::Shaving);
         let root = dir.join(".yaks");
         make_farm(&root, "herd: yak\n", &t);
-        assert_eq!(detect_mode(&dir, &root), Mode::Private);
+        assert_eq!(detect_publication(&dir, &root), Publication::Private);
         assert_eq!(
             yaks_dir(None, &dir, &root),
             Some(root.display().to_string())
@@ -548,14 +548,14 @@ mod tests {
         );
         assert!(
             out.contains("Finish (the yakherd commits"),
-            "the mode is unchanged"
+            "the publication is unchanged"
         );
     }
 
     #[test]
     fn the_brief_says_how_an_answered_ask_is_picked_up() {
         let t = task("yak-0001", Status::Shaving);
-        let text = render(&facts(&t, &Mode::Private, None, None));
+        let text = render(&facts(&t, &Publication::Private, None, None));
         assert!(text.contains("`yaks ask yak-0001"));
         assert!(text.contains("Never answer your own ask."));
         assert!(text.contains("`yaks inbox --for agent`"));
@@ -569,12 +569,12 @@ mod tests {
             command: "cargo test".into(),
             source: GateSource::Yak,
         };
-        let with = render(&facts(&t, &Mode::Private, None, Some(&g)));
+        let with = render(&facts(&t, &Publication::Private, None, Some(&g)));
         assert!(with.contains("Gate: `cargo test` (the yak's `verify:`)"));
         assert!(with.contains("`yaks verify yak-0001` runs it"));
         assert!(with.contains("the gate command and its last 15 lines"));
         assert!(with.contains("`yaks verify yak-0001` has recorded a PASS"));
-        let none = render(&facts(&t, &Mode::Private, None, None));
+        let none = render(&facts(&t, &Publication::Private, None, None));
         assert!(none.contains("no `verify:` command"));
         assert!(none.contains("the evidence commands and their last 15 lines"));
         assert!(none.contains("the evidence the claim note names is in a note"));
@@ -584,7 +584,7 @@ mod tests {
             source: GateSource::Config,
         };
         assert!(
-            render(&facts(&t, &Mode::Private, None, Some(&cfg)))
+            render(&facts(&t, &Publication::Private, None, Some(&cfg)))
                 .contains("the config `verify:` default for this yak")
         );
     }

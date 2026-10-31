@@ -57,7 +57,7 @@ fn repo(tag: &str) -> (PathBuf, PathBuf, String) {
     let dir = tmp(tag);
     git(&dir, &["init", "-q"]);
     git(&dir, &["commit", "-q", "--allow-empty", "-m", "init"]);
-    yaks(&dir, &["init", "--skills", "none"]);
+    yaks(&dir, &["init", "--no-skills"]);
     let created = yaks(&dir, &["create", "dash c yak"]);
     let id = created.split([' ', ':']).nth(1).unwrap().to_string();
     let sub = dir.join("sub/deeper");
@@ -143,7 +143,7 @@ fn init_and_discover_honor_c() {
     let elsewhere = tmp("init-elsewhere");
     yaks(
         &elsewhere,
-        &["-C", dir.to_str().unwrap(), "init", "--skills", "none"],
+        &["-C", dir.to_str().unwrap(), "init", "--no-skills"],
     );
     let farm = yaks(&elsewhere, &["-C", dir.to_str().unwrap(), "path"]);
     assert!(std::path::Path::new(farm.trim()).join("schema").is_file());

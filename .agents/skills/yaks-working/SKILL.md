@@ -1,6 +1,6 @@
 ---
 name: yaks-working
-description: "Use when you are taking one yak from hairy to shorn, as a worker handed one by a yakherd or on your own: re-read it, claim it, keep notes, gather evidence, shear, commit. Minimal and harness-agnostic. Opt-in skill, installed by `yaks skills install --with coordination`."
+description: "Use when you are taking one yak from hairy to shorn, as a worker handed one by a yakherd or on your own: re-read it, claim it, keep notes, gather evidence, shear, commit. Minimal and harness-agnostic."
 ---
 
 # Working a yak

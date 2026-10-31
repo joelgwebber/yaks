@@ -16,7 +16,7 @@ fn repo(tag: &str) -> (PathBuf, String) {
     // farm worktree).
     git(&dir, &["config", "user.name", "t"]);
     git(&dir, &["config", "user.email", "t@t"]);
-    yaks(&dir, &["init", "--skills", "none"]);
+    yaks(&dir, &["init", "--no-skills"]);
     let created = yaks(&dir, &["create", "first"]);
     let id = created.split([' ', ':']).nth(1).unwrap().to_string();
     yaks(&dir, &["commit"]);

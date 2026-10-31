@@ -1,6 +1,6 @@
 ---
 name: yaks-coordinating
-description: "Use when you will hand yaks to other agents or land their work: coordinating several agents and a human over one yaks farm (claim, brief, fan out, land, reconcile), in Delta threads or plain git worktrees. Opt-in skill, installed by `yaks skills install --with coordination`."
+description: "Use when you will hand yaks to other agents or land their work: coordinating several agents and a human over one yaks farm (claim, brief, fan out, land, reconcile), in Delta threads or plain git worktrees."
 ---
 
 # Coordinating yaks

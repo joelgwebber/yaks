@@ -4,9 +4,9 @@ Skills are prose guidance that rides *on top of* the tools — the least directi
 that measurably changes an agent's behavior. yaks keeps the tools unopinionated
 and puts methodology in skills, so different working styles fit the same core.
 
-Two skills ship by default and install via `yaks skills install`; the workflow
-skills for running several agents over one farm ship as the opt-in
-`coordination` group (`yaks skills install --with coordination`).
+Four skills ship, and `yaks skills install` installs all of them: `yaks` and
+`yaks-tracker` for any project, `yaks-working` and `yaks-coordinating` for
+running several agents over one farm. There is no subset to choose.
 
 ## Where skills install
 
@@ -30,9 +30,7 @@ what sits in that directory. The list names each skill **and its files** (a skil
 may be more than a `SKILL.md`: an extra file is installed with mode 0755 when its
 entry says it is executable; none ships today, since the landing script became
 `yaks land`), and a test fails if a bundled skill's
-directory holds a file the list omits. The default set is `yaks` and
-`yaks-tracker`; the `coordination` group adds `yaks-coordinating` and
-`yaks-working`. (Four companion skills, `yaks-coordinating-team`, `-private`,
+directory holds a file the list omits. (Four companion skills, `yaks-coordinating-team`, `-private`,
 `-worktrees` and `-delta`, were folded into `yaks-coordinating`; `yaks skills
 install` removes an untouched installed copy of them and `skills status` reports
 any left as `retired`.)
@@ -78,8 +76,7 @@ installer, so a normal invocation installs what's absent and upgrades what's
 cleanly `stale`. It deliberately never touches `modified`, `unmanaged`, `held`,
 or `source`, only ever writes `~/.agents/skills` (never a project-local
 `.agents/skills`: those are files in your working tree, so they get a notice
-instead, below), only the default set (never the `coordination` group), and
-writes atomically so parallel agents can't tear a file. Set
+instead, below), and writes atomically so parallel agents can't tear a file. Set
 `YAKS_SKILLS_AUTOSYNC=0` to disable it, and the notice below, for CI or
 sandboxes. `yaks doctor` reports anything left needing a decision.
 
@@ -91,8 +88,7 @@ ordinary command runs inside a git repo whose `./.agents/skills` holds a
 note: the skills in .agents/skills are from yaks 0.0.12, this is 0.0.13: run `yaks skills install` to update them
 ```
 
-(`--with coordination` is added to the advice when an opt-in skill is among the
-stale ones; with several stale skills the version is the oldest.) `yaks skills
+(With several stale skills the version is the oldest.) `yaks skills
 install` upgrades a cleanly stale skill with no `--force`, so that is the whole
 fix. It is said **once per yaks version per checkout**: the version announced is
 remembered in `<git-dir>/yaks-skills-notified`, in the checkout's git dir, so
@@ -119,12 +115,12 @@ an install (that's the `held` rule). When iterating locally, use
 > older `yaks` on your `PATH` would silently revert your edits to its baked-in
 > copy, which looks exactly like an authored change in `git status`.
 
-| Skill | Installed by | Use it when… |
-|---|---|---|
-| **`yaks`** | default | Managing tasks in a `.yaks/` farm — the commands, the workflow, where the farm lives and when to sync. |
-| **`yaks-tracker`** | default | Relating yaks to external issue trackers (Jira/Linear/GitHub) as a one-way roll-up projection. |
-| **`yaks-working`** | `--with coordination` | Taking one yak from hairy to shorn with a legible trail. |
-| **`yaks-coordinating`** | `--with coordination` | Coordinating a shared farm across parallel agents and humans, in Delta threads or git worktrees. |
+| Skill | Use it when… |
+|---|---|
+| **`yaks`** | Managing tasks in a `.yaks/` farm — the commands, the workflow, where the farm lives and when to sync. |
+| **`yaks-tracker`** | Relating yaks to external issue trackers (Jira/Linear/GitHub) as a one-way roll-up projection. |
+| **`yaks-working`** | Taking one yak from hairy to shorn with a legible trail. |
+| **`yaks-coordinating`** | Coordinating a shared farm across parallel agents and humans, in Delta threads or git worktrees. |
 
 ## The design test (what is a tool vs a skill)
 

@@ -175,15 +175,15 @@ README walks through a short session). See [docs/tui.md](docs/tui.md) for the ke
 
 ## Use with an AI coding agent
 
-yaks includes an **agent skill** so assistants drive it correctly (shave before
-coding, shear when done, keep task state honest). It's a plain skill — it just
-shells out to the `yaks` CLI (or `npx`), so there's nothing to run as a plugin.
+yaks ships **agent skills** so assistants drive it correctly (shave before
+coding, shear when done, keep task state honest, coordinate parallel workers).
+They are plain skills — they just shell out to the `yaks` CLI (or `npx`), so
+there's nothing to run as a plugin.
 
-Install the skill straight from the binary — no clone required:
+Install the skills straight from the binary — no clone required:
 
 ```sh
-yaks skills install                          # -> ./.agents/skills in the git repo you're in (yaks + yaks-tracker)
-yaks skills install --with coordination      # + the multi-agent skills (yaks-coordinating, yaks-working)
+yaks skills install                          # -> ./.agents/skills in the git repo you're in (all four skills)
 yaks skills install --user                   # -> ~/.agents/skills (also the default outside a git repo)
 yaks skills install --dir ~/.claude/skills   # any agent's skills dir; --force to overwrite
 yaks skills status                           # current / stale / edited, same directory rules
