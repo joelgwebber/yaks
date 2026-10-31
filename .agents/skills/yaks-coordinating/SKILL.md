@@ -14,9 +14,10 @@ You are the **yakherd**: the one agent that claims yaks, briefs workers, lands t
 `yaks path` (no arguments) prints the farm: its branch's worktree, one per machine, which every checkout (yours, the human's, each worker's) reads and writes live. So:
 
 - Claims, notes, shears and asks are visible to everyone the moment they are written. There is no yak state to merge and nothing under `.yaks/` in any code commit.
-- **You commit the farm** (`yaks commit`), at least at every landing. **You sync it** (`yaks sync`) at session start, after landings and before a machine switch. Until the human has published the farm (`yaks status` shows no upstream), use `yaks sync --no-push`: the first push creates the remote branch.
+- **You commit the farm** (`yaks commit`), at least at every landing. **You sync it** (`yaks sync`) at session start, after landings and before a machine switch. On a machine nobody is sitting at (a cloud runner, a VM), also sync at every check-in on your workers: the human sees nothing until you do, and a reset of that machine deletes every unsynced write. Until the human has published the farm (`yaks status` shows no upstream), use `yaks sync --no-push`: the first push creates the remote branch.
+- **Names are identity.** Every worker writes under its own short `YAKS_ACTOR` (the brief sets it), and so should you: `yaks sheds` groups work by that name, and a name that changes mid-session splits one worker into two.
 - Workers find the farm by themselves: from a git worktree or a Delta clone, discovery reads the host repo's farm branch (and its `yaks.farm`, when the repo shares another's farm). No `YAKS_DIR` needed.
-- Yak ids are fine in commit messages. On a **private farm** (`yaks private`) keep yak ids out of commits, code, comments and PRs (`yaks scan-ids` checks text; `yaks brief` says so), and after landing note the landed SHA on the yak, since git cannot link it.
+- Yak ids are fine in commit messages. On a **private farm** (`yaks private`) keep yak ids out of commits, code, comments and PRs (`yaks scan-ids` checks text; `yaks brief` says so), and land with `yaks land <sha> --yak <id>` so the landed SHA is recorded on the yak: it is the only link from the yak to its code.
 
 ## 2. The shape: claim, fan out, land, reconcile
 
@@ -25,7 +26,7 @@ You are the **yakherd**: the one agent that claims yaks, briefs workers, lands t
 3. **Land.** Only you land, one worker at a time, by the SHA in its final message, then check it (section 6).
 4. **Reconcile.** A yak still `shaving` after the batch is stalled: `regrow` it or re-run it. `yaks doctor`, `yaks commit`.
 
-**Watching workers.** `yaks log --by <worker> --since 1h` and `yaks inbox` show their notes and asks live. `yaks sheds` lists every checkout with its git facts (branch, ahead/behind, dirty files, merged) and the yaks it wrote, newest first, with when it last wrote: that tells a slow worker from a dead one.
+**Watching workers.** `yaks log --by <worker> --since 1h` and `yaks inbox` show their notes and asks live. `yaks sheds` lists everyone writing to the farm, one row per actor name, on any machine once synced: what each is shaving, what it touched recently, its open asks, its latest checkpoint branch, and when it last wrote: `active` (wrote in the last 2 hours), `stale` (holds a claim but has written nothing for 2 hours), else `idle`. With heartbeat notes, that tells a slow worker from a dead one.
 
 ## 3. Scope work so it cannot collide
 
@@ -53,7 +54,7 @@ Pass `--yaks-dir <farm>` when the worker's checkout cannot find the farm. If the
 
 ## 6. Landing
 
-1. **Land by SHA:** `yaks land <sha> --dry-run`, then `yaks land <sha>`. It lands one single-parent squash commit (or a cherry-pick when the base moved), checks the result against `git merge-tree`, and never pushes. It refuses while your tree has changes the commit does not explain, a SHA whose change a merge dropped, and a commit that stages `.yaks/` beside a branch farm.
+1. **Land by SHA:** `yaks land <sha> --dry-run`, then `yaks land <sha>`. It lands one single-parent squash commit (or a cherry-pick when the base moved), checks the result against `git merge-tree`, and never pushes. It records a `kind: landed` note (the landed and worker SHAs) on each yak the commit message names, plus any `--yak <id>`; `yaks commits <id>` lists them. It refuses while your tree has changes the commit does not explain, a SHA whose change a merge dropped, and a commit that stages `.yaks/` beside a branch farm.
 2. **Re-run the gate yourself** and reproduce the key scenario with your own build. A claim you cannot reproduce is rejected, not annotated: `git revert` the landing and regrow the yak.
 3. **Read the diff** for quality and for every surface the change touches (docs, skills, README, `--help`, in-app help); make fixes as your own follow-up commits.
 4. `yaks doctor`, then `yaks commit`. Never write a claim into a yak that you did not observe.
@@ -76,18 +77,19 @@ Every note and move carries an actor: `--as <name>` or `YAKS_ACTOR=<name>` on ea
 
 Your thread is the yakherd; each worker is a subthread with its own clone, which starts from a snapshot of your working tree.
 
-- **Spawning.** Start each title with the worker's name (`sheds-1: build the sheds CLI`): Delta exports it, and yaks names the worker's notes and its row in `yaks sheds` after it. Record the worker's name, agent id, model and base commit on the umbrella yak or in your landing note, never on the worker's yak. Pass `model` only when the human asked for one.
+- **Spawning.** Start each title with the worker's name (`sheds-1: build the sheds CLI`), the same name the brief sets as `YAKS_ACTOR`: that name stamps the worker's notes and is its row in `yaks sheds`. Record the worker's name, agent id, model and base commit on the umbrella yak or in your landing note, never on the worker's yak. Pass `model` only when the human asked for one.
 - **What comes back is not trustworthy.** Delta merges a result against what it last applied to your tree, not your HEAD: expect a pending `MERGE_HEAD`, stray modified files, a worker's unfinished edits, even files reset to an old snapshot. Never `git add -A` after a worker returns and never hand-revert Delta's applied state; `yaks land <sha>` sorts it out. While any worker is running or parked, don't rewrite your branch (no `reset --hard`, no rebase): its old base turns the next landing into add/add conflicts.
 - **Waking a worker.** `send_agent_message` to its thread id; it resumes with its context. Tell it to `yaks pickup <id>` when an answer is waiting.
-- **A worker can die silently** (most often when the human moves the thread to another machine). Overdue with no new note and no growing dirty count in `yaks sheds`: presume it dead, have a replacement review its draft, and after two deaths finish the task yourself.
-- **Landing in the human's checkout.** Thread commits reach the human's repo on no branch; `main` moves only by your `git push local <branch>:main`. First run `yaks preflight --push-main` (on a shared machine `local` can be a bare repo the human never looks at; it then names the fallback). Never push `origin` or open a PR without the human's say-so.
+- **A worker can die silently** (most often when the human moves the thread to another machine). Overdue with no new note (its `yaks sheds` row goes `stale`): presume it dead, have a replacement review its draft, and after two deaths finish the task yourself.
+- **Landing in the human's checkout.** Thread commits reach the human's repo on no branch; `main` moves only by your `git push local <branch>:main`. First run `yaks preflight --push-main` (on a shared machine `local` can be a bare repo the human never looks at; it then names the fallback). Never push `origin`'s `main` or open a PR without the human's say-so.
+- **Workers on another machine than the human** (a cloud runner): one branch per worker. Have each push its own work branch to `origin` at checkpoints (any name the harness likes, but not under `yaks/`, which the farm branch blocks) and record it with a checkpoint note, so the work is visible before it lands (`yaks commits <id> --fetch` lists it). Say so in the brief, which otherwise forbids `git push`.
 - **On another machine,** `local` is that machine's checkout and may be behind: `git fetch origin`, check `yaks preflight --push-main`, and fast-forward it with `git push local origin/main:main`. Then `yaks sync`.
 - Project skills load only from real files in `.agents/skills/`; the `skill` tool needs the worktree argument. Still put the critical rules in the brief.
 
 ## 10. With git worktrees
 
-- **Cut a shed** from your freshest commit: `git worktree add wt/<name> -b <branch>`, in a directory that is not gitignored (some harnesses' file tools refuse ignored paths). Stage explicit paths; never `git add .`. `git worktree remove` it afterwards.
+- **Cut a worktree** for each worker from your freshest commit: `git worktree add wt/<name> -b <branch>`, in a directory that is not gitignored (some harnesses' file tools refuse ignored paths). Stage explicit paths; never `git add .`. `git worktree remove` it afterwards.
 - **File tools rooted at the main checkout:** always edit through the explicit worktree path (`wt/<name>/src/foo.rs`); a bare `src/foo.rs` silently edits the main tree. After edits, `git -C <main> status --short` must show no stray source changes.
-- **Each shed builds and tests its own binary.**
-- **Serial arc** (phases that edit the same files in order): keep one shed for the arc, land each phase to main as it completes, then `git merge main` back into the shed.
-- **Recovery:** a lost session is not lost work. `git -C wt/<name> status` and `diff`, build that shed, then finish it yourself or discard and re-run.
+- **Each worktree builds and tests its own binary.**
+- **Serial arc** (phases that edit the same files in order): keep one worktree for the arc, land each phase to main as it completes, then `git merge main` back into it.
+- **Recovery:** a lost session is not lost work. `git -C wt/<name> status` and `diff`, build that worktree, then finish it yourself or discard and re-run.
