@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-10-31T14:24:18Z'
-updated: '2026-10-31T15:17:43Z'
+updated: '2026-10-31T15:26:28Z'
 ---
 
 ![ugly](yaks-48e9/ugly.png)
@@ -47,3 +47,29 @@ C, with fallbacks, behind one module (e.g. `tui/surface.rs`) so the 12 sites cal
 ▸ 2026-10-31T15:17:43Z [delta:Plan highlight colors for light and dark]
 
 moved: hairy -> shaving
+
+![tui-surfaces](yaks-48e9/tui-surfaces.png)
+
+---
+▸ 2026-10-31T15:26:28Z [delta:Plan highlight colors for light and dark]
+
+Implemented option C: highlight bands derived from the terminal's own colours.
+
+- New [`src/tui/surface.rs`](../src/tui/surface.rs): `selected()` and `band()` blend the real background 18% / 12% toward the real foreground. It is truecolor if `COLORTERM` says so, else the nearest xterm-256 index.
+- Resolution order: `YAKS_THEME=dark|light`, then the OSC 10/11 query (`terminal-colorsaurus`), then `COLORFGBG`, then the old greys 237/236. `surface::init()` runs in `runtime::run` before the image-protocol query.
+- All 11 `Indexed(237|236)` sites in `render.rs`, `fuzzy.rs` and `sheds_tab.rs` now call it. The active tab and the editor block cursor became `REVERSED` instead of `Black`/`White`.
+- Docs: `docs/tui.md` ("Highlight bands"), the `palette.rs` header, and a new `docshots_surfaces` scene writing `docs/assets/tui-surfaces.svg`.
+
+## Evidence
+
+- ![dark and light terminal, same frame =60%](yaks-48e9/tui-surfaces.png)
+- `cargo test`: 758 pass, 1 fail: `sheds::tests::inspecting_a_shed_changes_nothing_in_it`, which fails identically with my changes stashed (an fsmonitor cookie mtime in the temp repo; unrelated). New `surface::tests` (4) pass.
+
+## Not verified
+
+The OSC 11 query itself, in a real terminal: the shots simulate the terminal via a test-only override, and this thread has no TTY. Needs a human try in a light terminal, and ideally tmux and ssh (where the fallbacks should apply).
+
+## Left alone
+
+- `DarkGray` as the "quiet" foreground is still invisible on Solarized Dark; separate yak.
+- `Black`-on-`Yellow` prompt bar kept: it is explicit on both of its colours, so it is legible on any theme.
