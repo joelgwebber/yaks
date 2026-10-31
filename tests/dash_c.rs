@@ -90,8 +90,6 @@ fn sheds_json_matches_running_in_that_checkout() {
     let (repo, _, id) = repo("sheds");
     // The farm names its actors by their notes: `tester` is the row.
     yaks(&repo, &["update", &id, "--note", "a note"]);
-    git(&repo, &["add", "."]);
-    git(&repo, &["commit", "-q", "-m", "note"]);
     // A linked worktree of the repo is a second checkout sharing the farm.
     let wt = repo
         .parent()

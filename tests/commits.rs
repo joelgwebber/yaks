@@ -72,9 +72,7 @@ fn branch_farm(tag: &str) -> (PathBuf, PathBuf, String) {
     git(&r, &["commit", "-qm", "init"]);
     ok(
         &r,
-        &[
-            "init", "--mode", "branch", "--skills", "none", "--herd", "t",
-        ],
+        &["init", "--no-skills", "--herd", "t"],
     );
     let farm = PathBuf::from(ok(&r, &["path"]).trim());
     let created = ok(&r, &["create", "a yak"]);

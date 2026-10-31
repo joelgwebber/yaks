@@ -2,6 +2,7 @@
 //! --meta`, the `kind` every conventional command writes, `show --json` /
 //! `log --json`, and `doctor`'s needs-drift check.
 
+mod common;
 use assert_cmd::Command;
 use serde_json::Value;
 use std::path::PathBuf;
@@ -13,10 +14,10 @@ struct Farm {
 impl Farm {
     fn new(tag: &str) -> Farm {
         let dir = std::env::temp_dir().join(format!("yaks-meta-{tag}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
+        common::cleanup(&dir);
+        common::git_init(&dir);
         let f = Farm { dir };
-        f.run(&["init"]);
+        f.run(&["init", "--no-skills"]);
         f
     }
 
@@ -24,6 +25,7 @@ impl Farm {
         Command::cargo_bin("yaks")
             .unwrap()
             .current_dir(&self.dir)
+            .env("XDG_DATA_HOME", common::data_home(&self.dir))
             .env("YAKS_SKILLS_AUTOSYNC", "0")
             .env("YAKS_ACTOR", "tester")
             .args(args)
@@ -64,7 +66,7 @@ impl Farm {
 
 impl Drop for Farm {
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.dir);
+        common::cleanup(&self.dir);
     }
 }
 
@@ -111,6 +113,7 @@ fn update_meta_writes_lines_under_the_marker_and_show_json_lists_them() {
     let out = Command::cargo_bin("yaks")
         .unwrap()
         .current_dir(&f.dir)
+        .env("XDG_DATA_HOME", common::data_home(&f.dir))
         .env("YAKS_SKILLS_AUTOSYNC", "0")
         .env("YAKS_ACTOR", "tester")
         .args(["update", &id, "--note", "-", "--meta", "kind=decision"])
