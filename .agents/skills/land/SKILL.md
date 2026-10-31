@@ -58,6 +58,8 @@ checkout's `main`.
   says so). Do not report landed until the verify step below passes.
 - **Landing a worker's commit into a checkout** (you are the coordinator in that
   checkout): `yaks land <sha> --dry-run`, then `yaks land <sha>`. It never pushes.
+  It records the landed SHA on each yak the message names (`--yak <id>` for a
+  private farm, whose commits carry no ids).
 - **Already in the user's checkout on `main`:** the commit from step 2 is the landing.
 - Never push `origin` or open a PR without the user's say-so.
 - Verify in the **user's checkout**, not the clone: `git -C <path of local>
