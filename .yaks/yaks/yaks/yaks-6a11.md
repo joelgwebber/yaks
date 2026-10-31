@@ -5,11 +5,12 @@ status: hairy
 type: idea
 priority: 2
 created: '2026-10-31T15:18:16Z'
-updated: '2026-10-31T15:18:16Z'
+updated: '2026-10-31T15:57:19Z'
 parent: yaks-039b
 labels:
 - schema
 - design
+needs: human
 ---
 
 Today a note is `---`, then `▸ <ts> [actor]`, then a body. Everything else is inferred from body conventions: `moved: a -> b`, `verify: … -> PASS`, `Decision:`, claim notes, `Tidy request:`, and which note is the ask and which the answer. Joel (2026-10-31): consider designing explicitly for note metadata, like the yak's own frontmatter.
@@ -40,3 +41,64 @@ Each must stay readable on GitHub and in the TUI, greppable and diffable.
 - Optional and additive, like the actor stamp was: a note without metadata stays valid, so no migration is forced.
 - The merge driver (`yaks-4a53`), `store::parse_notes` and `split_note_head`, the TUI comment parser and the schema-5 rendering rules all read this.
 - AGENTS.md: "don't change the on-disk format lightly". This yak should end in a recorded decision, backed by a spike on a copy of a real farm, before any code.
+
+---
+▸ 2026-10-31T15:56:39Z [delta:Cloud Runners]
+
+Decision (Joel, 2026-10-31): do this design before `yaks-bdf9` and `yaks-a3fc`, since it decides where their fields live.
+
+- **Shape:** simple, open-ended key/value metadata per note, with a handful of reserved keys (`kind`, `for`, `commit`, `branch`, `reply_to`, `thread`, …). Unknown keys round-trip untouched.
+- **Syntax instinct:** consistent with the yak's own YAML frontmatter, even if it renders oddly on GitHub; a fenced code block is also acceptable. Open as an ask on this yak.
+- **`needs:` stays** at the top of the yak, written with the note by the same command; `yaks doctor` catches drift between them.
+- **Doctor noise:** explicit `kind`s (a shear summary, an answer, a verify result) should let doctor check for the right note instead of heuristics, cutting false alarms like "shorn but has no recorded note" (five today under `doctor --strict`).
+- **Design Q&A in yaks:** the skills should push design-phase questions and answers into yak asks/answers rather than chat, for provenance. Tracked as its own skills yak, which depends on this one.
+
+---
+▸ 2026-10-31T15:57:19Z [delta:Cloud Runners]
+
+asked: needs human
+
+Which syntax for note metadata? Lean: (A), bare YAML lines directly under the marker.
+
+## (A) YAML lines under the marker, up to the first blank line
+
+```markdown
+---
+▸ 2026-10-31T15:20:00Z [tex-1]
+kind: checkpoint
+branch: yaks/tex-1/textures
+commit: 47076b0
+
+Atlas and UVs done; next, per-face texture choice.
+```
+
+- Same syntax as the yak's frontmatter, as you suggested.
+- Unambiguous with every existing note: since schema 5 the writer always leaves a blank line after the marker, so a legacy note has no lines there. The parser accepts only `key: value` YAML there; `yaks doctor` flags anything else.
+- GitHub renders the marker and the fields as one compact line ("▸ 2026-… [tex-1] kind: checkpoint branch: … commit: 47076b0"), which reads like a byline. Not pretty, not broken. The TUI renders them as chips.
+- It must not be closed with `---`: on GitHub that turns the last field into a heading.
+
+## (B) A fenced YAML block right after the marker
+
+````markdown
+---
+▸ 2026-10-31T15:20:00Z [tex-1]
+
+```yaml yaks
+kind: checkpoint
+commit: 47076b0
+```
+
+Atlas and UVs done.
+````
+
+- Renders cleanly everywhere, with YAML highlighting on GitHub (the first word of the info string is the language).
+- Heavier to write and read raw. The `yaks` tag is needed to tell it apart from a note that starts with an ordinary YAML snippet.
+
+## Other formats I checked
+
+None of them is a portable standard for metadata on a section:
+
+- **Pandoc** allows YAML metadata blocks anywhere, but they need `---` above and `---` or `...` below. That collides with our `---` separator and with GitHub's setext headings.
+- **Obsidian/Dataview** has inline `key:: value` fields, which nothing else renders.
+
+So the choice is (A), consistent and terse, or (B), pretty on GitHub. Reserved keys and note ids (`reply_to` needs one) are separate follow-ups for this design.

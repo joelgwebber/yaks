@@ -5,7 +5,8 @@ status: hairy
 type: bug
 priority: 3
 created: '2026-10-31T15:05:05Z'
-updated: '2026-10-31T15:05:05Z'
+updated: '2026-10-31T15:56:25Z'
+parent: yaks-d3ad
 labels:
 - sheds
 - test
@@ -20,3 +21,8 @@ GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false carg
 ```
 
 Fix: have the test repo set `core.fsmonitor=false` (or exclude `fsmonitor--daemon` from the snapshot).
+
+---
+▸ 2026-10-31T15:56:25Z [delta:Cloud Runners]
+
+Adopted into `yaks-039b` under `yaks-d3ad` (2026-10-31): the git/Delta shed discovery this concerns is being removed. Slaughter as obsolete when `yaks-d3ad` lands.

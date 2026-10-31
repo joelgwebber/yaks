@@ -5,7 +5,7 @@ status: hairy
 type: idea
 priority: 2
 created: '2026-10-31T15:18:15Z'
-updated: '2026-10-31T15:18:27Z'
+updated: '2026-10-31T15:56:38Z'
 parent: yaks-039b
 labels:
 - git
@@ -37,3 +37,13 @@ Example: `yaks commits yaks-e5fb` lists four farm commits, while the real code c
 ▸ 2026-10-31T15:18:27Z [delta:Cloud Runners]
 
 The `yaks commits` bug found here is filed separately as yaks-7a11, so it can be fixed now, independent of this design.
+
+---
+▸ 2026-10-31T15:56:38Z [delta:Cloud Runners]
+
+Decision (Joel, 2026-10-31): store commit shas in yaks.
+
+- `yaks land` records the landed sha (and the worker's sha) on the yak automatically.
+- Workers also leave their branch commits in comments as they go (the convention in `yaks-a3fc`).
+- For private farms the recorded sha is the only link from yak to code, and that's acceptable.
+- Where the fields live (frontmatter vs note metadata) follows `yaks-6a11`, settled first.

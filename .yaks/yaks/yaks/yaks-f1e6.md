@@ -5,7 +5,8 @@ status: hairy
 type: idea
 priority: 3
 created: '2026-10-26T16:15:27Z'
-updated: '2026-10-26T16:15:50Z'
+updated: '2026-10-31T15:56:25Z'
+parent: yaks-da23
 labels:
 - tui
 ---
@@ -16,3 +17,8 @@ The current sheds view implementation wastes a lot of space -- there are never m
 - Shed children become the yaks it's touching. Selecting them gives you the yak details.
 - Navigation within yak-details uses the same affordances as regular list/tree views, so you don't lose the shed context.
 - Have sheds assume the same place in the global navigation stack that other lists/details do (modulo the generalization to be done in yaks-158d).
+
+---
+▸ 2026-10-31T15:56:25Z [delta:Cloud Runners]
+
+Adopted into `yaks-039b` under `yaks-da23` (2026-10-31): the note-based sheds rebuild is the natural place for this view work.

@@ -5,7 +5,8 @@ status: hairy
 type: idea
 priority: 3
 created: '2026-10-12T16:04:57Z'
-updated: '2026-10-19T04:27:08Z'
+updated: '2026-10-31T15:56:26Z'
+parent: yaks-da23
 depends_on:
 - yaks-9eaa
 labels:
@@ -18,3 +19,8 @@ Follow-up to the yaks-38dc TUI plan (approach C in the 2026-10-12 brainstorm, de
 ▸ 2026-10-19T04:27:07Z [delta:herd-pass]
 
 Herd pass 2026-10-19: with one farm per machine this is just `yaks log` on screen; 'which shed' needs the stamps of yaks-9eaa.
+
+---
+▸ 2026-10-31T15:56:26Z [delta:Cloud Runners]
+
+Adopted into `yaks-039b` under `yaks-da23` (2026-10-31): the note-based sheds rebuild is the natural place for this view work.
