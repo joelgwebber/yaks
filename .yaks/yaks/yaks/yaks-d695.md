@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-08-26T12:58:19Z'
-updated: '2026-10-31T17:02:25Z'
+updated: '2026-10-31T17:24:17Z'
 parent: yaks-039b
 labels:
 - schema
@@ -82,3 +82,21 @@ landed: 601fa07 yaks-d695: add prs: pull-request list to frontmatter, update --p
 ▸ 2026-10-31T17:02:25Z [yakherd]
 
 Yakherd: landed as `601fa07` (recorded automatically by `yaks land`). Gate green; reproduced on a scratch farm: `create --pr`, `update --pr` de-duplicates, `--remove-pr`, and `show --json` lists `prs`. Skills lines added in 6cad621.
+
+---
+▸ 2026-10-31T17:24:16Z [yakherd]
+kind: landed
+commit: 7c749040037cdf390a62682799617113c862fd53
+branch: main
+---
+
+landed (rebased onto `c2b640f`, your checkout's `main`): 7c74904 yaks-d695: skills document prs: (--pr/--remove-pr), and update --meta in the command map (was `6cad621`)
+
+---
+▸ 2026-10-31T17:24:17Z [yakherd]
+kind: landed
+commit: d3910587d4b48ab8190ab8fed62b348f51a25320
+branch: main
+---
+
+landed (rebased onto `c2b640f`, your checkout's `main`): d391058 yaks-d695: add prs: pull-request list to frontmatter, update --pr/--remove-pr, create --pr (was `601fa07`)

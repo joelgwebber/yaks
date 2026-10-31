@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-10-31T15:18:27Z'
-updated: '2026-10-31T16:52:20Z'
+updated: '2026-10-31T17:24:18Z'
 parent: yaks-039b
 labels:
 - git
@@ -93,3 +93,12 @@ branch: main
 ---
 
 landed: c4bde33 yaks-7a11: yaks commits greps the code repository (all branches), labels farm history (recorded by hand: landed with a yaks binary from before `yaks-735a`)
+
+---
+▸ 2026-10-31T17:24:18Z [yakherd]
+kind: landed
+commit: ffe8a66146a81c4bbc01133788d3f15ba540b4b0
+branch: main
+---
+
+landed (rebased onto `c2b640f`, your checkout's `main`): ffe8a66 yaks-7a11: yaks commits greps the code repository (all branches), labels farm history (was `c4bde33`)

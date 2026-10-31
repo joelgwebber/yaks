@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-31T16:17:01Z'
-updated: '2026-10-31T16:52:20Z'
+updated: '2026-10-31T17:24:18Z'
 parent: yaks-bdf9
 depends_on:
 - yaks-7a11
@@ -83,3 +83,12 @@ branch: main
 ---
 
 landed: 7e4a014 yaks-735a: yaks land records landed shas on the yak; yaks commits reads them first (--yak, --json) (recorded by hand: landed with a yaks binary from before `yaks-735a`)
+
+---
+▸ 2026-10-31T17:24:18Z [yakherd]
+kind: landed
+commit: b5abcb7acdbf03265dd0bea50bd91fcfcd460281
+branch: main
+---
+
+landed (rebased onto `c2b640f`, your checkout's `main`): b5abcb7 yaks-735a: yaks land records landed shas on the yak; yaks commits reads them first (--yak, (was `7e4a014`)

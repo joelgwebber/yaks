@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-10-31T15:16:48Z'
-updated: '2026-10-31T16:55:04Z'
+updated: '2026-10-31T17:24:35Z'
 labels:
 - sheds
 - design
@@ -77,3 +77,37 @@ Trial observations for `yaks-7d57` (wave 1, all local, same machine):
 - Notes came at milestones, not every 30 minutes; `commits-1` said so itself. The runs were 20–30 minutes long, so the cadence rule was barely tested.
 - Sync was not in play (same machine; the yakherd syncs).
 - The yakherd itself wrote its first notes as `delta:Cloud Runners` before setting `YAKS_ACTOR`, which is the split the rule exists for.
+
+---
+▸ 2026-10-31T17:24:35Z [yakherd]
+
+## Status 2026-10-31: everything built, rebased onto the human's `main`, not yet pushed there
+
+The human's checkout had moved to `c2b640f` (`yaks-a99f` branch farms only, `yaks-e532` one skills install). The family's 17 commits are rebased on top of it; the pre-rebase tip is kept as branch `backup/pre-rebase-039b` in the yakherd's clone.
+
+Resolving the rebase took:
+
+- the new `sheds.rs`, with the farm-discovery helpers moved to `gitrepo.rs` and upstream's callers rewritten to use them;
+- the new integration tests moved onto upstream's branch-farm fixture (`tests/common`);
+- the skills changes re-applied by hand on upstream's rewritten skills (`931d4e4`).
+
+Each yak has a fresh `kind: landed` note with its rebased sha. `cargo test --workspace` is green, `yaks doctor` is clean, and `yaks preflight --push-main` says ok. The push is a fast-forward of the human's `main`.
+
+| Rebased | Was | Yaks |
+|---|---|---|
+| `1dfb324` | `7f78a28` | `yaks-4cd7`, `yaks-6a11` |
+| `5bb0b68` | `c94b182` | `yaks-0071` |
+| `920c436` | `71ca61e` | `yaks-b8cd` |
+| `ceb6d57` | `45bfc8b` | `yaks-4c2a`, `yaks-0071` |
+| `ffe8a66` | `c4bde33` | `yaks-7a11` |
+| `b5abcb7` | `7e4a014` | `yaks-735a` |
+| `0882751` | `7393e45` | `yaks-da23` |
+| `ec29bc2` | `b2e4638` | `yaks-d3ad` |
+| `9e37afc`, `c1f9b74` | `575f347`, `276c873` | `yaks-0071` |
+| `d391058`, `7c74904` | `601fa07`, `6cad621` | `yaks-d695` |
+| `8f1d145`, `a7bc953`, `365ab47` | `2a09f9e`, `4dda0fa`, `028a8e3` | `yaks-4728` |
+| `3ca87ad`, `931d4e4` | (new) | rebase test fixes; skills re-applied |
+
+Open in the family: `yaks-7d57` (a cloud-runner trial), `yaks-8003` and `yaks-ded9` (stable names), `yaks-59bf` (commits on an empty farm), and the TUI ideas `yaks-f1e6` and `yaks-19c3`. Outside it: `yaks-0cfb` (docshots drift).
+
+One more data point for `yaks-8003`: `yaks land` run without `YAKS_ACTOR` stamped its landed notes `delta:Cloud Runners` (the thread title), not `yakherd`.

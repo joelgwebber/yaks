@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-10-31T16:17:00Z'
-updated: '2026-10-31T16:52:20Z'
+updated: '2026-10-31T17:24:19Z'
 parent: yaks-6a11
 labels:
 - cli
@@ -97,3 +97,21 @@ branch: main
 ---
 
 landed: 71ca61e yaks-b8cd: note metadata surface: kinds from commands, update --meta, JSON notes/meta, TUI header, doc (recorded by hand: landed with a yaks binary from before `yaks-735a`)
+
+---
+▸ 2026-10-31T17:24:16Z [yakherd]
+kind: landed
+commit: a7bc9534cefc000f38f42cf9d8a6e0a35aae7bbc
+branch: main
+---
+
+landed (rebased onto `c2b640f`, your checkout's `main`): a7bc953 yaks-4728, yaks-b8cd: clippy tidy in the new tests (was `4dda0fa`)
+
+---
+▸ 2026-10-31T17:24:19Z [yakherd]
+kind: landed
+commit: 920c436af1f6130790f9d82ddaf0039cdcc49a15
+branch: main
+---
+
+landed (rebased onto `c2b640f`, your checkout's `main`): 920c436 yaks-b8cd: note metadata surface: kinds from commands, update --meta, JSON notes/meta, TUI (was `71ca61e`)

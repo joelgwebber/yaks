@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-31T15:57:06Z'
-updated: '2026-10-31T16:52:20Z'
+updated: '2026-10-31T17:24:19Z'
 parent: yaks-039b
 depends_on:
 - yaks-6a11
@@ -54,3 +54,21 @@ branch: main
 ---
 
 landed: 45bfc8b yaks-4c2a, yaks-0071: skills put design Q&A on yak asks; note metadata (--meta, reserved keys, checkpo (recorded by hand: landed with a yaks binary from before `yaks-735a`)
+
+---
+▸ 2026-10-31T17:24:15Z [yakherd]
+kind: landed
+commit: 931d4e4af524e4e2ca47ca160ec8916e8b2763ec
+branch: main
+---
+
+landed (rebased onto `c2b640f`, your checkout's `main`): 931d4e4 yaks-0071, yaks-4c2a, yaks-4728: re-apply this family's skills changes on top of the yaks-
+
+---
+▸ 2026-10-31T17:24:19Z [yakherd]
+kind: landed
+commit: ceb6d57c5e0c8ee7028111f4a19ab17abc194fca
+branch: main
+---
+
+landed (rebased onto `c2b640f`, your checkout's `main`): ceb6d57 yaks-4c2a, yaks-0071: skills put design Q&A on yak asks; note metadata (--meta, reserved k (was `45bfc8b`)

@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-31T15:17:35Z'
-updated: '2026-10-31T16:50:04Z'
+updated: '2026-10-31T17:24:18Z'
 parent: yaks-039b
 labels:
 - sheds
@@ -192,3 +192,12 @@ branch: main
 ---
 
 landed: 7393e45 yaks-da23: rebuild yaks sheds from note attribution, one row per actor
+
+---
+▸ 2026-10-31T17:24:18Z [yakherd]
+kind: landed
+commit: 088275173b8a23948526668392647c629b1cfa66
+branch: main
+---
+
+landed (rebased onto `c2b640f`, your checkout's `main`): 0882751 yaks-da23: rebuild yaks sheds from note attribution, one row per actor (was `7393e45`)

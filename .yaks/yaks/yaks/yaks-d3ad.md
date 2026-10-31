@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-31T15:18:14Z'
-updated: '2026-10-31T16:50:11Z'
+updated: '2026-10-31T17:24:17Z'
 parent: yaks-039b
 depends_on:
 - yaks-da23
@@ -84,3 +84,12 @@ branch: main
 ---
 
 landed: b2e4638 yaks-d3ad: remove git/Delta shed discovery: yaks discover, the activity log, yaks.shed.title
+
+---
+▸ 2026-10-31T17:24:17Z [yakherd]
+kind: landed
+commit: ec29bc2a0d8de21836be02838c849ab11bf8079f
+branch: main
+---
+
+landed (rebased onto `c2b640f`, your checkout's `main`): ec29bc2 yaks-d3ad: remove git/Delta shed discovery: yaks discover, the activity log, yaks.shed.tit (was `b2e4638`)
