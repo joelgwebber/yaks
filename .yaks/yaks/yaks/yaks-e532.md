@@ -5,10 +5,10 @@ status: shorn
 type: task
 priority: 1
 created: '2026-10-31T14:38:15Z'
-updated: '2026-10-31T15:05:04Z'
+updated: '2026-10-31T15:07:21Z'
 labels:
 - skills
-verify: cargo test --no-fail-fast
+verify: GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false cargo test --no-fail-fast
 ---
 
 Drop all the optionality in `yaks skills install` -- everyone gets all the tasks.
@@ -61,3 +61,8 @@ Landed on `main` as `c2b640f`, on top of `3bb5937` (yaks-a99f), via `git push lo
 - `cargo test --no-fail-fast` on that exact commit: all targets green, 734 unit tests. That run set `core.fsmonitor=false` for the process, because `sheds::tests::inspecting_a_shed_changes_nothing_in_it` fails under the macOS fsmonitor daemon (it moves a `cookies` mtime). It fails identically on the base without these changes. A follow-up yak tracks it.
 - `yaks preflight --push-main`: ok.
 - Verified in the user's checkout: `main` is at `c2b640f` and `git status --short` is empty.
+
+---
+▸ 2026-10-31T15:07:21Z [delta:Clean up skills install and mode remnant]
+
+verify: `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false cargo test --no-fail-fast` -> PASS (exit 0)

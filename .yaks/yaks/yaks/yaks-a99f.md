@@ -5,11 +5,12 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-27T22:29:18Z'
-updated: '2026-10-31T15:05:04Z'
+updated: '2026-10-31T15:09:03Z'
 labels:
 - cli
 - docs
 - git
+verify: GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false cargo test --no-fail-fast
 ---
 
 Joel (2026-10-27): the farm-on-a-branch model is the only model. Retire everything that exists only for in-tree farms, and replace the `.yaks` pointer file with git config. No users outside Joel yet, so no deprecation period.
@@ -95,3 +96,8 @@ moved: shaving -> shorn
 ▸ 2026-10-31T15:05:04Z [delta:Clean up skills install and mode remnant]
 
 Landed on `main` as `3bb5937`, together with yaks-e532's `c2b640f`. The checkout's `main` had not yet received it when it was shorn.
+
+---
+▸ 2026-10-31T15:09:03Z [delta:Clean up skills install and mode remnant]
+
+verify: `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false cargo test --no-fail-fast` -> PASS (exit 0)
