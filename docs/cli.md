@@ -5,7 +5,7 @@ Run `yaks <command> --help` for full flags. Most read commands accept the shared
 
 **Global flag: `-C <path>`** (like `git -C`; accepted before or after the
 subcommand). Every command runs as if started in `<path>`: farm discovery,
-`discover`, `status`, `commit`, `init`, `skills`, `tui`. A relative
+`status`, `commit`, `init`, `skills`, `tui`. A relative
 `<path>` is resolved against the real cwd; repeated `-C` compose, each relative
 to the previous (`yaks -C a -C b list` runs in `a/b`). A missing path is an
 error naming it. `$YAKS_DIR` still wins over discovery (a relative one is read
@@ -61,7 +61,6 @@ break, a list or a code fence is not run-on). They compose, and back `list`, `se
 | `search <text>` | Substring search over id / title / description. |
 | `stats` | Counts by status, type, priority. |
 | `sheds [--all]` | Who is working on what: one row per actor (the stamp on notes and moves), read from the farm alone: what it is `shaving`, `asking`, and wrote `recent`ly, `active`/`stale`/`idle`, and how fresh the farm is (`--json` for scripts). Read-only. [Details](#sheds) |
-| `discover [PATH]` | Diagnostic: the chain `sheds` uses to find the other checkouts, step by step, from `PATH` (default the cwd). `--json`. Read-only; needs no farm. [Details](#discover) |
 | `log` | Timestamped notes and status moves (`moved: <from> -> <to>` entries) across a filtered set, oldest first (`--since <2h\|3d\|date>`, `--by <actor>`). |
 | `refs <id>` | The yaks a task points at (parent, deps, id mentions), flagging danglers. |
 | `refs <id> --incoming [--json]` | The reverse: every yak that points AT this one, one line per reference (`child`, `depends` or `mention`). Computed by scanning the farm on demand. `--json`. The TUI's `B` key opens the same list. [Details](#refs) |
@@ -107,16 +106,6 @@ Per actor, a header `<actor>  <liveness> · <last write>` and its yaks:
 Order: an actor with an open ask first, then active, stale, idle, then the most recent writer. Idle actors with no claim and no ask are only counted (`(3 idle actors; --all lists them)`); `--all` lists them. A first line gives the farm's freshness, `farm: up to date with origin/yaks` or `farm: 2 ahead, 0 behind origin/yaks (as of the last fetch)`: the farm branch against its upstream from the refs as of the last fetch (never fetches; the same state `yaks status` reports). It is left out for a farm with no upstream.
 
 `--json`: `{farm, sheds}`. `farm` is `{branch, upstream, ahead, behind}` or `null`. `sheds` lists EVERY actor in the same order, idle ones too: `{name, liveness, last_write, working: [ids], asking: [ids], touched: [{id, title, status, needs, last, working}]}` (`touched` is every yak it wrote, newest first). Read-only.
-
-### `discover`
-
-`discover [PATH]`
-
-Diagnostic: the chain `sheds` uses to find the other checkouts, step by step, from `PATH` (default the cwd; any directory inside a primary checkout, a git worktree or a Delta clone; outside one it exits 1 and says so: nothing is searched for).
-
-Sections: the checkout (top-level, layout: primary checkout / git worktree of … / Delta clone whose host is a checkout or a bare repo; origin; `local` and whether it is a checkout or BARE; the farm discovery resolves); `1. GIT WORKTREE LIST (here)`; `2. HOST` (own git dir, the host git dir and how it was found, the clone store); `3. DELTA PINS in the host` (each `<dir>/<name>` pin group with its pin count and its checkout, or why not: `gone (its git dir no longer exists)`, `checkout missing`, `this checkout`); `4. GIT WORKTREE LIST (host checkout …)` when the host is a checkout reached through alternates; then `SHEDS`, what `sheds` lists besides this checkout, with kind `worktree`/`delta`.
-
-Read-only; needs no farm. `--json` (`host`, `worktrees_here`, `worktrees_host`, `pins[]` with `checkout`/`reason`, `sheds[]`). `scripts/discover-fixture.sh` builds Delta-shaped layouts (a linked machine, a shared machine, a gone pin, an unpinned look-alike) and runs it from each kind of checkout.
 
 ### `refs`
 

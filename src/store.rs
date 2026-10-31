@@ -68,8 +68,7 @@ pub const NO_BOOTSTRAP_ENV: &str = "YAKS_NO_BOOTSTRAP";
 /// one at `home(checkout)` ([`crate::branchfarm::bootstrap`], yaks-a260),
 /// reported through `say`, and discovery then runs again. Only the commands
 /// that open the farm for the checkout they run in come here: the read-only
-/// walks over OTHER checkouts ([`discover_with`], `yaks sheds`) never create
-/// anything.
+/// walks over OTHER checkouts ([`discover_with`]) never create anything.
 pub fn discover_bootstrapping(
     start: &Path,
     yaks_dir: Option<&str>,
@@ -188,7 +187,7 @@ pub(crate) fn farm_repo(top: &Path) -> Result<Option<PathBuf>> {
 }
 
 /// A stable 64-bit FNV-1a hash of `s`: the same on every run and platform
-/// (what names a farm home and a checkout's activity log).
+/// (what names a farm home).
 pub fn stable_hash(s: &str) -> u64 {
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
     for b in s.bytes() {
@@ -691,7 +690,6 @@ pub mod write {
         let dir = path.parent().unwrap_or(root);
         fs::create_dir_all(dir).with_context(|| format!("creating {}", dir.display()))?;
         atomic_write(&path, &render(t))?;
-        crate::activity::record(root, &t.id);
         Ok(path)
     }
 

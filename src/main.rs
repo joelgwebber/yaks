@@ -4,17 +4,14 @@
 //! facade): every command is parse args -> call one Farm op -> render (text or
 //! --json). Tasks live as markdown files under `.yaks/`; status is the folder.
 
-mod activity;
 mod actor;
 mod branchfarm;
 mod brief;
 mod changes;
 mod clipboard;
 mod commit;
-mod discover;
 mod farm;
 mod filter;
-#[allow(dead_code)] // pruned to the farm-discovery helpers by yaks-d3ad
 mod gitrepo;
 mod init;
 mod json;
@@ -59,7 +56,7 @@ struct Cli {
     /// Run as if started in <PATH> (like `git -C`).
     ///
     /// Farm discovery,
-    /// `discover`, `commit`, `init`, `skills` and every other command see
+    /// `commit`, `init`, `skills` and every other command see
     /// <PATH> as the current directory. A relative <PATH> is resolved against
     /// the real cwd; repeated `-C` compose, each relative to the previous.
     /// `$YAKS_DIR` still wins over discovery (a relative one is read from <PATH>).
@@ -344,25 +341,6 @@ enum Command {
         /// List idle actors with no claim and no ask too, not just count them.
         #[arg(long)]
         all: bool,
-    },
-    /// Diagnostic: show how `yaks sheds` finds the other checkouts.
-    ///
-    /// Shows the chain `yaks sheds` uses to find the other
-    /// checkouts of this repo, step by step, from inside any checkout of it:
-    /// `git worktree list` here; the HOST repo this checkout's
-    /// `objects/info/alternates` names (the human's checkout, or Delta's
-    /// managed bare repo on a machine the thread was shared to); every
-    /// `refs/delta/<dir>/<name>/*` pin group there, resolved to a live
-    /// checkout through the clone's git dir `core.worktree` (or reported
-    /// gone); and, when the host is a checkout, its own `git worktree list`.
-    /// Git data only: nothing is searched for. Read-only; needs no farm.
-    Discover {
-        /// Where to look from (default: the current directory): any directory
-        /// inside a primary checkout, a git worktree, or a Delta clone.
-        path: Option<PathBuf>,
-        /// Emit the report as JSON.
-        #[arg(long)]
-        json: bool,
     },
     /// Internal: git's merge driver for yak files.
     ///
@@ -1132,16 +1110,11 @@ fn main() -> Result<()> {
     }
 
     // `-C`: change directory once, before anything reads the cwd, so every
-    // `env::current_dir()` below (discovery, init, skills, sheds) agrees.
+    // `env::current_dir()` below (discovery, init, skills) agrees.
     // Each step is relative to the previous one, as in git.
     for dir in &cli.chdir {
         env::set_current_dir(dir)
             .with_context(|| format!("cannot change to directory '{}'", dir.display()))?;
-    }
-    // The title in the environment is the CALLER's thread, so a hop into
-    // another checkout (`-C`) must not stamp it there.
-    if cli.chdir.is_empty() {
-        gitrepo::record_thread(); // a Delta clone remembers its thread title
     }
 
     // `init` creates a farm where none exists, and `skills` installs the skill
@@ -1196,27 +1169,6 @@ fn main() -> Result<()> {
             yaks: yaks.clone(),
         }));
     }
-    if let Command::Discover { path, json } = &cli.command {
-        let anchor = match path {
-            Some(p) => p.clone(),
-            None => env::current_dir()?,
-        };
-        let yaks_dir = env::var("YAKS_DIR").ok();
-        let report = match discover::run(&anchor, yaks_dir.as_deref()) {
-            Ok(r) => r,
-            Err(e) => {
-                eprintln!("error: {e:#}");
-                std::process::exit(1);
-            }
-        };
-        if *json {
-            json::print(&discover::to_json(&report))?;
-        } else {
-            print!("{}", discover::render(&report));
-        }
-        return Ok(());
-    }
-
     // Keep the user-level skills current. The overwhelmingly common failure is
     // an agent running against a stale skill, and nobody remembers to re-run
     // the installer — so ordinary commands top it up. Strictly narrow: only an
@@ -1368,7 +1320,6 @@ fn main() -> Result<()> {
         Command::Init { .. } => unreachable!("init is handled before opening a farm"),
         Command::Skills { .. } => unreachable!("skills is handled before opening a farm"),
         Command::Private { .. } => unreachable!("private is handled before opening a farm"),
-        Command::Discover { .. } => unreachable!("discover is handled before opening a farm"),
         Command::Land { .. } => unreachable!("land is handled before opening a farm"),
         Command::MergeDriver { .. } => {
             unreachable!("merge-driver is handled before opening a farm")

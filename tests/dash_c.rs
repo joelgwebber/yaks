@@ -141,7 +141,7 @@ fn repeated_c_composes_relative_to_the_previous() {
 }
 
 #[test]
-fn init_and_discover_honor_c() {
+fn init_honors_c() {
     let dir = tmp("init");
     git(&dir, &["init", "-q"]);
     let elsewhere = tmp("init-elsewhere");
@@ -153,9 +153,6 @@ fn init_and_discover_honor_c() {
     assert!(std::path::Path::new(farm.trim()).join("schema").is_file());
     assert!(!dir.join(".yaks").exists());
     assert!(!elsewhere.join(".yaks").exists());
-    let out = yaks(
-        &elsewhere,
-        &["-C", dir.to_str().unwrap(), "discover", "--json"],
-    );
-    assert!(out.contains(dir.to_str().unwrap()), "{out}");
+    // And the new farm is found from there through `-C`.
+    yaks(&elsewhere, &["-C", dir.to_str().unwrap(), "list"]);
 }

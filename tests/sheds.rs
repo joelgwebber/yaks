@@ -147,4 +147,7 @@ fn each_actor_is_credited_with_its_own_writes_from_any_checkout() {
     );
     assert!(text.contains(&format!("shaving  {b}  own")), "{text}");
     assert!(!text.contains(&wt.display().to_string()), "{text}");
+
+    // Writes leave no machine-local log behind (the activity log is gone).
+    assert!(!farm.join(".yaks/.activity").exists());
 }
