@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 1
 created: '2026-10-31T14:38:15Z'
-updated: '2026-10-31T14:54:57Z'
+updated: '2026-10-31T15:05:04Z'
 labels:
 - skills
 verify: cargo test --no-fail-fast
@@ -52,3 +52,12 @@ Not done: a cold-read scout of the changed skill text, and `cargo install` (wait
 ▸ 2026-10-31T14:54:57Z [delta:ksQQhJ4mOC_KTlKDZQwbRNBUD5LOADjEEpIBxBCA]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-31T15:05:04Z [delta:Clean up skills install and mode remnant]
+
+Landed on `main` as `c2b640f`, on top of `3bb5937` (yaks-a99f), via `git push local main:main`.
+
+- `cargo test --no-fail-fast` on that exact commit: all targets green, 734 unit tests. That run set `core.fsmonitor=false` for the process, because `sheds::tests::inspecting_a_shed_changes_nothing_in_it` fails under the macOS fsmonitor daemon (it moves a `cookies` mtime). It fails identically on the base without these changes. A follow-up yak tracks it.
+- `yaks preflight --push-main`: ok.
+- Verified in the user's checkout: `main` is at `c2b640f` and `git status --short` is empty.

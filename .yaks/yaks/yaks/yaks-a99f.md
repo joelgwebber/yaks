@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-27T22:29:18Z'
-updated: '2026-10-27T23:23:35Z'
+updated: '2026-10-31T15:05:04Z'
 labels:
 - cli
 - docs
@@ -90,3 +90,8 @@ Not done: a cold-read scout of the skills (AGENTS.md suggests one, but delegatio
 ▸ 2026-10-27T23:23:35Z [delta:Check for `.yaks` file repo redirect sup]
 
 moved: shaving -> shorn
+
+---
+▸ 2026-10-31T15:05:04Z [delta:Clean up skills install and mode remnant]
+
+Landed on `main` as `3bb5937`, together with yaks-e532's `c2b640f`. The checkout's `main` had not yet received it when it was shorn.
