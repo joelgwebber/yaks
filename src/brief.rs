@@ -210,7 +210,8 @@ fn notes(b: &Brief) -> String {
     let id = &b.task.id;
     format!(
         "Notes\n\
-         - Append progress as you go: `yaks update {id} --note \"...\"`.\n\
+         - Append progress as you go: `yaks update {id} --note \"...\"`, at each milestone and at least every 30 minutes: your latest note is how the yakherd tells a busy worker from a dead one.\n\
+         - A note can carry fields: `--meta key=value` (repeatable, with a note), e.g. `--meta kind=checkpoint --meta commit=<sha>`.\n\
          - Record every choice a reviewer could argue about as its own note starting `Decision:`, naming the alternatives you rejected.\n\
          - Write a multi-line note as markdown with real line breaks, piped on stdin (`yaks update {id} --note - <<'EOF'` ... `EOF`, the quoted `'EOF'` keeps backticks and `$` literal), never as one long argument and never inside `$( )` or a double-quoted string, where backticks and `$` in the note run as commands.\n\
          - Notes render as CommonMark: a single newline joins lines into one paragraph. Put a blank line between every block (paragraph, list, fence), and parallel facts on list lines (`- `)."
