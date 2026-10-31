@@ -1,11 +1,11 @@
 ---
 id: yaks-d695
 title: Add pull-request(s) field to frontmatter
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-08-26T12:58:19Z'
-updated: '2026-10-31T16:54:51Z'
+updated: '2026-10-31T17:02:25Z'
 parent: yaks-039b
 labels:
 - schema
@@ -38,3 +38,47 @@ Claim: owner worker `prs-1`. Owns: `model::Task` (new `prs` field), `store` pars
 ▸ 2026-10-31T16:54:51Z [prs-1]
 
 Started 2026-10-31T16:54:47Z (date -u). Yak file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-d695.md
+
+[yaks__tui__tests__detail_header_lists_prs_as_links](yaks-d695/yaks__tui__tests__detail_header_lists_prs_as_links.snap)
+
+---
+▸ 2026-10-31T16:59:47Z [prs-1]
+
+verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-10-31T17:00:02Z [prs-1]
+
+Decision: `prs` is current state in frontmatter, a block list written right after `source:`, omitted when empty (per yakherd Decision); parsed as block or inline `[a, b]` like `labels`. Rejected: rendering inline (labels are block too).
+
+Decision: `--pr` / `--remove-pr` take ONE url per flag, repeated (`--pr A --pr B`), not `num_args = 1..`: URLs are not split on commas/whitespace like labels, and a greedy flag would swallow the positional id. Rejected: reusing the label normalizer (a URL can contain commas).
+
+Decision: PR URLs are trimmed, empties dropped and duplicates removed by one `farm::dedup_prs` (used by create and update); add of an existing URL / remove of a missing one leaves the file unmodified (no `updated:` bump), checked in tests/prs.rs.
+
+Decision: TUI detail shows `PRs:` rows (first row labelled, one URL per row) right under `Source:`, URLs as links via `Target::Url`, read-only. Not added to the edit form (`E` on a PR row does nothing) and `create` form passes no PRs; editing is CLI-only. Rejected: a form row (touches create.rs/handlers/snapshots beyond scope; list editing needs its own design). Follow-up if wanted.
+
+Decision: `store::edited` (used by `yaks status`) counts a `prs` change as an edit, like `source`. `list --json` does not include `source` today (task_value is shared by show/create/list JSON, so `prs` appears wherever `source` does, only when non-empty).
+
+Summary: model/store/json/mergedriver/farm/main/tui detail + docs (cli.md, tui.md) done. Tests: store round trips (block, inline, unknown-field preservation), merge-driver both-sides-add and add/remove, tests/prs.rs CLI (update/--remove-pr/idempotent re-add/create/show text+json absent-when-empty), TUI detail test + snapshot `detail_header_lists_prs_as_links` (attached). Gate `cargo test --workspace` green (759 unit + integration). README lists no fields so unchanged.
+
+For the yakherd, skills text (not edited by me): `yaks` skill task-format block should list `prs:` after `source:` ("prs: a list of pull-request URLs, the yak's current PRs; block list, omitted when empty"); the `update` row should add `--pr <url>` / `--remove-pr <url>` (repeatable, re-adding is a no-op) and `create` row `--pr <url>`; `show`/`--json` carry `prs` only when non-empty. yaks-tracker/yaks-coordinating may mention `--pr` where PRs are recorded.
+
+---
+▸ 2026-10-31T17:00:02Z [prs-1]
+
+moved: shaving -> shorn
+
+---
+▸ 2026-10-31T17:00:48Z [delta:Cloud Runners]
+kind: landed
+commit: 601fa0731ce628555b5a8004d3a03933ea99e271
+source: 5bddef7988c8688bfae719132c31e4267363e8c6
+branch: main
+---
+
+landed: 601fa07 yaks-d695: add prs: pull-request list to frontmatter, update --pr/--remove-pr, create --pr, show, TUI detail
+
+---
+▸ 2026-10-31T17:02:25Z [yakherd]
+
+Yakherd: landed as `601fa07` (recorded automatically by `yaks land`). Gate green; reproduced on a scratch farm: `create --pr`, `update --pr` de-duplicates, `--remove-pr`, and `show --json` lists `prs`. Skills lines added in 6cad621.
