@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-10-31T15:57:06Z'
-updated: '2026-10-31T15:57:06Z'
+updated: '2026-10-31T16:55:10Z'
 parent: yaks-039b
 depends_on:
 - yaks-0071
@@ -28,3 +28,8 @@ Joel (2026-10-31): before building tooling such as `yaks checkpoint`, run experi
 - At least one run on a Delta cloud runner and one local, a few workers each, on real yaks.
 - Score each convention per worker from the farm and the remote afterwards: `yaks log --by <worker>`, sync times against write times, branches on origin against the shas the notes name.
 - Record a `Decision:` per convention: rule is enough, or needs a tool.
+
+---
+▸ 2026-10-31T16:55:10Z [yakherd]
+
+First observations from the 2026-10-31 local run (three LiteLLM Sonnet workers) are on `yaks-039b`'s wave-2 note. Short version: stable `YAKS_ACTOR` names everywhere; notes at milestones rather than on a clock; sync untested (same machine). A cloud-runner run is still needed for the sync and checkpoint conventions.
