@@ -1,11 +1,11 @@
 ---
 id: yaks-48e9
 title: Unreadable highlights on light themes
-status: hairy
+status: shaving
 type: bug
 priority: 2
 created: '2026-10-31T14:24:18Z'
-updated: '2026-10-31T14:30:20Z'
+updated: '2026-10-31T15:17:43Z'
 ---
 
 ![ugly](yaks-48e9/ugly.png)
@@ -42,3 +42,8 @@ C, with fallbacks, behind one module (e.g. `tui/surface.rs`) so the 12 sites cal
 - Detection happens once, so a terminal that flips theme mid-session keeps the old band until restart. A refresh on focus-gained is a possible follow-up.
 - `DarkGray` (bright black) is used as the "quiet" colour all over, and it is *the background colour* in Solarized Dark. That is a separate legibility bug on one theme family, not part of this yak.
 - Docs touch: the `palette.rs` header ("no backgrounds, 16 ANSI only") should state the new rule, `docs/tui.md` should mention `YAKS_THEME`, and the `docshots` light-terminal scene (VS Code Light+) should gain a list-selection frame as evidence. It currently shows only markdown.
+
+---
+▸ 2026-10-31T15:17:43Z [delta:Plan highlight colors for light and dark]
+
+moved: hairy -> shaving
