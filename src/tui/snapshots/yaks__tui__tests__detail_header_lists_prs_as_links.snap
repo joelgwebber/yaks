@@ -1,0 +1,28 @@
+---
+source: src/tui/tests.rs
+expression: "draw(&app, 72, 24)"
+---
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starr
+
+◂ Task: c0
+│
+│ Title:       Commented
+│ Status:      🦬  hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     -
+│ Updated:     -
+│ Labels:      -
+│
+│ Source:      https://example.com/PROJ-9
+│ PRs:         https://github.com/o/r/pull/12
+│              https://github.com/o/r/pull/15
+│
+│ The description.
+│
+│ ▸ Jan 1, 2026 00:00 UTC ─────────────────────────────────────────────
+│ first note
+│
+│ ▸ Jan 2, 2026 00:00 UTC ─────────────────────────────────────────────
+│ second note
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:commen

@@ -75,6 +75,7 @@ parent: yak-c3d4       # optional; only on child tasks
 depends_on: [yak-e5f6] # optional
 labels: [auth]         # optional
 source: https://…      # optional external issue URL
+prs: [https://…]       # optional pull-request URLs (a list)
 ---
 
 Longer description goes here.
@@ -91,12 +92,12 @@ in `<path>`.
 
 | Command | What it does |
 |---------|--------------|
-| `yaks create` | Create a task; the title is positional (`yaks create "Fix login"`). Flags: `--type`, `--priority`, `--parent`, `--labels` (comma- or space-separated), `--depends-on`, `--source`, `--description` (`-` reads stdin; `--description-file PATH`), `--json` (emit the new id + file path) |
+| `yaks create` | Create a task; the title is positional (`yaks create "Fix login"`). Flags: `--type`, `--priority`, `--parent`, `--labels` (comma- or space-separated), `--depends-on`, `--source`, `--pr` (repeatable), `--description` (`-` reads stdin; `--description-file PATH`), `--json` (emit the new id + file path) |
 | `yaks list` | List tasks; filter by `--status/--type/--priority/--label/--search`, `--ready`, `--tangled`, `--parent-of`, `--all` |
 | `yaks show <id>` | Full detail for one task, with parent + children |
 | `yaks refs <id>` | List what a task points at (parent, deps, id mentions in its text), flagging any that dangle; `--incoming` lists what points AT it instead (children, dependents, mentions in titles/descriptions/notes, each saying how; `--json`) |
 | `yaks commits <id>` | Show the git commits linked to a yak — shas recorded in its notes (`yaks land` writes them), those naming its id in the code repository you run it from (all branches), then the yak file's own history on the farm; `--json` |
-| `yaks update <id>` | Change fields/labels, set `--description`, or append a `--note` (`-` reads stdin; `--note-file PATH`: multi-line markdown without shell quoting) |
+| `yaks update <id>` | Change fields/labels, add/remove pull requests (`--pr URL`, `--remove-pr URL`), set `--description`, or append a `--note` (`-` reads stdin; `--note-file PATH`: multi-line markdown without shell quoting) |
 | `yaks ask <id>` / `answer <id>` | Block a yak on a human (sets `needs: human`, drops it from `next`) / answer it (sets `needs: agent`, so the answer cannot get lost; `--done` clears instead), each recording a `--note` |
 | `yaks request <id>` | Hand a yak to an agent with no prior question (sets `needs: agent`, recording the `--note`, or a canned `--kind tidy\|summarize` instruction); refuses a yak awaiting a human |
 | `yaks pickup <id>` | An agent takes on a yak awaiting it (answered or requested): clears `needs: agent` with an attributed note (`--drop-request`: removes a done request's note instead). The only thing that clears it |

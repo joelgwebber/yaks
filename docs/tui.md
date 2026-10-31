@@ -13,9 +13,11 @@ interchangeable.
   **Starred**; you can save the current filter as a named view. The
   **Sheds** tab lists the farm's workers (actors) instead of yaks (see
   [Sheds tab](#sheds-tab)).
-- **Detail pane** — the selected yak: fields, parent/deps/children, source, a
+- **Detail pane** — the selected yak: fields, parent/deps/children, source and
+  pull requests (`PRs:`, one row per URL; set with `yaks update --pr`), a
   `Needs:` line when blocked, and the body + timestamped notes. Task-id
-  references and URLs in the body are followable links. It (and every
+  references and URLs in the body, the `Source:` URL and the `PRs:` URLs are
+  followable links. It (and every
   right-side overlay) takes ~⅔ of the width, clamped to 48–120 columns; the
   list gets the rest. When that would leave the list under 48 columns (a
   terminal narrower than ~140), the

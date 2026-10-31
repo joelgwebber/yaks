@@ -138,6 +138,7 @@ mod tests {
             labels: vec![],
             depends_on: vec![],
             source: None,
+            prs: Vec::new(),
             needs: needs.map(str::to_string),
             verify: None,
             extra: Vec::new(),

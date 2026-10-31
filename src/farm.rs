@@ -131,6 +131,20 @@ pub struct Farm {
     repo_herd: Option<String>,
 }
 
+/// Pull-request URLs as given: trimmed, empties dropped, duplicates removed
+/// (first occurrence wins). The one normalizer for `create --pr` and
+/// `update --pr` / `--remove-pr`.
+fn dedup_prs(raw: Vec<String>) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for p in raw {
+        let p = p.trim().to_string();
+        if !p.is_empty() && !out.contains(&p) {
+            out.push(p);
+        }
+    }
+    out
+}
+
 /// Fields for a new task (defaults resolved from config inside `create`).
 #[derive(Default)]
 pub struct NewTask {
@@ -145,6 +159,8 @@ pub struct NewTask {
     pub labels: Vec<String>,
     pub depends_on: Vec<String>,
     pub source: Option<String>,
+    /// Pull-request URLs for the new yak's `prs:` (duplicates dropped).
+    pub prs: Vec<String>,
     pub description: Option<String>,
     pub verify: Option<String>,
 }
@@ -167,6 +183,10 @@ pub struct TaskEdit {
     pub remove_labels: Vec<String>,
     /// Set the external `source:` URL; an empty string clears it.
     pub source: Option<String>,
+    /// Pull-request URLs to add to `prs:`; one already listed is a no-op.
+    pub add_prs: Vec<String>,
+    /// Pull-request URLs to remove from `prs:`; one not listed is a no-op.
+    pub remove_prs: Vec<String>,
     /// A rerunnable verification command to set on the yak (see `Task::verify`).
     pub verify: Option<String>,
     pub note: Option<String>,
@@ -1775,6 +1795,7 @@ impl Farm {
             labels: normalize_labels(&new.labels),
             depends_on: new.depends_on,
             source: new.source,
+            prs: dedup_prs(new.prs),
             needs: None,
             verify: new.verify,
             extra: Vec::new(),
@@ -1826,6 +1847,20 @@ impl Farm {
             let new = if s.is_empty() { None } else { Some(s) };
             if new != task.source {
                 task.source = new;
+                changed = true;
+            }
+        }
+        if !edit.add_prs.is_empty() || !edit.remove_prs.is_empty() {
+            let mut prs = task.prs.clone();
+            for p in dedup_prs(edit.add_prs) {
+                if !prs.contains(&p) {
+                    prs.push(p);
+                }
+            }
+            let remove = dedup_prs(edit.remove_prs);
+            prs.retain(|p| !remove.contains(p));
+            if prs != task.prs {
+                task.prs = prs;
                 changed = true;
             }
         }
@@ -2490,6 +2525,7 @@ mod tests {
             labels: vec![],
             depends_on: vec![],
             source: None,
+            prs: Vec::new(),
             needs: None,
             verify: None,
             extra: Vec::new(),
@@ -3072,6 +3108,7 @@ mod tests {
             labels: vec![],
             depends_on: vec![],
             source: None,
+            prs: vec![],
             description: None,
             verify: None,
         }

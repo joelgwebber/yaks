@@ -37,6 +37,7 @@ fn t(id: &str, title: &str, kind: &str, pri: u8, status: Status, parent: Option<
         labels: vec![],
         depends_on: vec![],
         source: None,
+        prs: Vec::new(),
         needs: None,
         verify: None,
         extra: Vec::new(),

@@ -526,6 +526,7 @@ pub fn parse_task(text: &str, status: Status) -> Option<Task> {
     let mut verify = None;
     let mut labels: Vec<String> = Vec::new();
     let mut depends_on: Vec<String> = Vec::new();
+    let mut prs: Vec<String> = Vec::new();
     // Frontmatter keys this binary does not model, kept verbatim to re-emit.
     let mut extra: Vec<String> = Vec::new();
 
@@ -541,6 +542,10 @@ pub fn parse_task(text: &str, status: Status) -> Option<Task> {
                 }
                 Some("depends_on") => {
                     depends_on.push(unquote(item.trim()));
+                    continue;
+                }
+                Some("prs") => {
+                    prs.push(unquote(item.trim()));
                     continue;
                 }
                 // Block-list items under an unknown key: keep verbatim.
@@ -584,6 +589,10 @@ pub fn parse_task(text: &str, status: Status) -> Option<Task> {
                 Some(list) => depends_on = list,
                 None => pending = Some("depends_on"),
             },
+            "prs" => match parse_inline_list(value) {
+                Some(list) => prs = list,
+                None => pending = Some("prs"),
+            },
             // Unknown key: preserve the raw line. If it's block-style (empty
             // value), its following `- ` items belong to it too (pending=extra).
             _ => {
@@ -610,6 +619,7 @@ pub fn parse_task(text: &str, status: Status) -> Option<Task> {
         labels,
         depends_on,
         source,
+        prs,
         needs,
         verify,
         extra,
@@ -723,6 +733,12 @@ pub mod write {
         }
         if let Some(s) = &t.source {
             out.push_str(&format!("source: {}\n", scalar(s)));
+        }
+        if !t.prs.is_empty() {
+            out.push_str("prs:\n");
+            for p in &t.prs {
+                out.push_str(&format!("- {}\n", scalar(p)));
+            }
         }
         if let Some(n) = &t.needs {
             out.push_str(&format!("needs: {}\n", scalar(n)));
@@ -1904,6 +1920,7 @@ pub fn edited(old: &Task, new: &Task) -> bool {
         || old.labels != new.labels
         || old.depends_on != new.depends_on
         || old.source != new.source
+        || old.prs != new.prs
         || old.verify != new.verify
         || old.extra != new.extra
         || description(&old.body) != description(&new.body)
@@ -2339,6 +2356,7 @@ mod tests {
             labels: vec!["rust".into()],
             depends_on: vec!["yaksrs-aaaa".into(), "yaksrs-bbbb".into()],
             source: None,
+            prs: Vec::new(),
             needs: None,
             verify: None,
             extra: Vec::new(),
@@ -2352,6 +2370,45 @@ mod tests {
         let text = write::render(&t);
         let parsed = parse_task(&text, Status::Shaving).expect("should parse");
         assert_eq!(parsed, t);
+    }
+
+    #[test]
+    fn prs_round_trip_as_a_block_list_after_source_and_parse_inline() {
+        let mut t = sample();
+        t.source = Some("https://example.com/PROJ-1".into());
+        t.prs = vec![
+            "https://github.com/o/r/pull/1".into(),
+            "https://github.com/o/r/pull/2".into(),
+        ];
+        let text = write::render(&t);
+        assert!(
+            text.contains(
+                "source: https://example.com/PROJ-1\nprs:\n- https://github.com/o/r/pull/1\n\
+                 - https://github.com/o/r/pull/2\n"
+            ),
+            "{text}"
+        );
+        assert_eq!(parse_task(&text, Status::Shaving).unwrap(), t);
+
+        // Inline form parses to the same list; an empty list is omitted.
+        let inline = text.replace(
+            "prs:\n- https://github.com/o/r/pull/1\n- https://github.com/o/r/pull/2\n",
+            "prs: [https://github.com/o/r/pull/1, 'https://github.com/o/r/pull/2']\n",
+        );
+        assert_eq!(parse_task(&inline, Status::Shaving).unwrap().prs, t.prs);
+        t.prs.clear();
+        assert!(!write::render(&t).contains("prs:"));
+    }
+
+    #[test]
+    fn prs_do_not_disturb_unknown_frontmatter() {
+        let text = "---\nid: t-1\ntitle: x\ntype: task\npriority: 3\nprs:\n- https://g/pull/1\n\
+            assignee: alice\nreviewers:\n- bob\n---\n\nbody\n";
+        let t = parse_task(text, Status::Hairy).unwrap();
+        assert_eq!(t.prs, ["https://g/pull/1"]);
+        assert_eq!(t.extra, ["assignee: alice", "reviewers:", "- bob"]);
+        let again = parse_task(&write::render(&t), Status::Hairy).unwrap();
+        assert_eq!(again, t);
     }
 
     #[test]
@@ -2466,6 +2523,7 @@ mod move_tests {
             labels: vec![],
             depends_on: vec![],
             source: None,
+            prs: Vec::new(),
             needs: None,
             verify: None,
             extra: Vec::new(),
@@ -2559,6 +2617,7 @@ mod move_tests {
                 labels: vec![],
                 depends_on: vec![],
                 source: None,
+                prs: Vec::new(),
                 needs: None,
                 verify: None,
                 extra: Vec::new(),
@@ -2775,6 +2834,7 @@ mod graph_tests {
             labels: vec![],
             depends_on: vec![],
             source: None,
+            prs: Vec::new(),
             needs: None,
             verify: None,
             extra: Vec::new(),
@@ -3417,6 +3477,7 @@ mod replied_tests {
             labels: vec![],
             depends_on: vec![],
             source: None,
+            prs: Vec::new(),
             needs: needs.map(String::from),
             verify: None,
             extra: Vec::new(),
@@ -3600,6 +3661,7 @@ mod layout_tests {
             labels: vec![],
             depends_on: vec![],
             source: None,
+            prs: Vec::new(),
             needs: None,
             verify: None,
             extra: vec![],

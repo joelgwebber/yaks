@@ -342,6 +342,7 @@ impl App {
                 labels: f.labels_vec(),
                 depends_on: vec![],
                 source: Some(f.source_text()).filter(|s| !s.is_empty()),
+                prs: vec![],
                 description: f.body_opt(),
                 verify: None,
             },

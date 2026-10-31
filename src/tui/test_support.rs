@@ -35,6 +35,7 @@ pub(crate) fn task(
         labels: vec![],
         depends_on: vec![],
         source: None,
+        prs: Vec::new(),
         needs: None,
         verify: None,
         extra: Vec::new(),

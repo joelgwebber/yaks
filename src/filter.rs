@@ -207,6 +207,7 @@ mod tests {
             labels: vec![],
             depends_on: deps.iter().map(|s| s.to_string()).collect(),
             source: None,
+            prs: Vec::new(),
             needs: None,
             verify: None,
             extra: Vec::new(),

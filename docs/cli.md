@@ -74,7 +74,7 @@ break, a list or a code fence is not run-on). They compose, and back `list`, `se
 
 Show one yak: fields, references, children, body + notes. An unknown id exits 1.
 
-`--json` is the task object plus, when the yak has notes, `notes: [{ts, actor, meta, text}]` in file order (`meta` is an object of the note's [metadata](#note-metadata), `{}` for a plain note; `actor` is null for a bare note). `description` still holds the whole body, notes included. `yaks log --json` entries carry the same `meta`.
+The text header lists `prs:` (comma-separated) after `source:`. `--json` is the task object (with `prs: [...]` when the yak has any, like `source`) plus, when the yak has notes, `notes: [{ts, actor, meta, text}]` in file order (`meta` is an object of the note's [metadata](#note-metadata), `{}` for a plain note; `actor` is null for a bare note). `description` still holds the whole body, notes included. `yaks log --json` entries carry the same `meta`.
 
 ### `path`
 
@@ -121,7 +121,7 @@ Mentions are whole real ids, matched exactly as `refs` and the TUI links do. Com
 
 | Command | What it does |
 |---|---|
-| `create '<title>'` | New hairy yak. Title is positional or `--title`; `--type`/`--priority`/`--parent`/`--herd`/`--labels`/`--depends-on`/`--source`/`--description`/`--description-file`/`--verify`; `--json` prints id + file path. `--description -` reads stdin (see [Multi-line text](#multi-line-text)). [Details](#create) |
+| `create '<title>'` | New hairy yak. Title is positional or `--title`; `--type`/`--priority`/`--parent`/`--herd`/`--labels`/`--depends-on`/`--source`/`--pr`/`--description`/`--description-file`/`--verify`; `--json` prints id + file path. `--description -` reads stdin (see [Multi-line text](#multi-line-text)). [Details](#create) |
 | `update <ids…>` | Update fields/labels, replace the body (`--description`/`--description-file`) or append a `--note`/`--note-file` (with `--meta key=value`, repeatable, for the note's [metadata](#note-metadata)); the same edit applies to every id. `--note -` reads stdin (see [Multi-line text](#multi-line-text)). [Details](#update) |
 | `dep add\|remove <id> <dep>` | Add / remove a dependency. |
 | `reparent <ids…> --parent <id>` | Move yaks under a new parent (or `--unparent` to top-level). |
@@ -135,9 +135,11 @@ Mentions are whole real ids, matched exactly as `refs` and the TUI links do. Com
 
 `create '<title>'`
 
-New hairy yak. Title is positional or `--title`; `--type`/`--priority`/`--parent`/`--herd`/`--labels`/`--depends-on`/`--source`/`--description`/`--description-file`/`--verify`; `--json` prints id + file path. `--description -` reads the body from stdin (see [Multi-line text](#multi-line-text)).
+New hairy yak. Title is positional or `--title`; `--type`/`--priority`/`--parent`/`--herd`/`--labels`/`--depends-on`/`--source`/`--pr`/`--description`/`--description-file`/`--verify`; `--json` prints id + file path. `--description -` reads the body from stdin (see [Multi-line text](#multi-line-text)).
 
 `--labels` (like `--add-label`/`--remove-label`/`--label` everywhere) splits on commas and whitespace — a label may contain neither, so `--labels ui,docs`, `--labels 'ui, docs'`, and `--labels ui docs` all give `[ui, docs]` (duplicates dropped).
+
+`--pr <url>` (repeatable) lists a pull request in the yak's `prs:` (see [`update`](#update)).
 
 `--herd` sets the new yak's herd (id prefix; default: `git config yaks.herd`, else the farm config's `herd:`), so one farm can hold several herds.
 
@@ -155,6 +157,8 @@ Update fields/labels, replace the body (`--description`/`--description-file`) or
 
 `--as <actor>` attributes the note. `--verify '<cmd>'` sets (or, empty, clears) the yak's verification command; `--source <url>` likewise sets (or, empty, clears) its external `source:`.
 
+`--pr <url>` adds a pull-request URL to the yak's `prs:` frontmatter list and `--remove-pr <url>` removes one; both repeat, and adding a URL already listed (or removing one that is not) changes nothing. `prs:` is the yak's current PRs, a list (one yak often has several), where `source:` is a single external issue; it is written as a block list after `source:` and omitted when empty. The merge driver merges it like `labels`.
+
 ### `merge`
 
 `merge <path> [--dry-run]`
@@ -169,7 +173,7 @@ Non-destructive (source left intact); refuses on id collisions — reconcile the
 
 **Internal** (hidden from `--help`): git's merge driver for yak files, run as `yaks merge-driver %O %A %B %P` (registered by `.gitattributes` `.yaks/**/*.md merge=yaks` + `git config merge.yaks.driver`).
 
-Merges the three versions of one yak into `<ours>` as a valid yak, never conflict markers: note entries unioned (deduped, ordered by timestamp), `updated` the later, `labels`/`depends_on` merged (base + additions − removals), the description and every other field taken from the side that changed it; a field both sides changed differently keeps `<ours>` and is recorded in one `merge-driver` note (`merge conflict: status was X here, Y on the other side; kept X`).
+Merges the three versions of one yak into `<ours>` as a valid yak, never conflict markers: note entries unioned (deduped, ordered by timestamp), `updated` the later, `labels`/`depends_on`/`prs` merged (base + additions − removals), the description and every other field taken from the side that changed it; a field both sides changed differently keeps `<ours>` and is recorded in one `merge-driver` note (`merge conflict: status was X here, Y on the other side; kept X`).
 
 Exits 0 on a merge (conflicts included), 1 and leaves `<ours>` untouched when an input is not a yak file (git then reports a conflict for the path), 2 on an I/O error. Needs no farm.
 

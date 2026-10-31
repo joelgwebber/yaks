@@ -90,7 +90,7 @@ fn show_opt(v: &Option<String>) -> String {
 ///   by timestamp (stable: ours first on a tie); an entry in `base` that either
 ///   side dropped stays dropped.
 /// - Description: the side that changed it; both differently: ours kept.
-/// - `updated`: the later of the two. `labels`, `depends_on`: `base` plus each
+/// - `updated`: the later of the two. `labels`, `depends_on`, `prs`: `base` plus each
 ///   side's additions minus each side's removals.
 /// - Every other field (title, status, type, priority, parent, source, needs,
 ///   verify, created, unknown keys): the side that changed it wins; both
@@ -129,6 +129,7 @@ fn try_merge(base: &str, ours: &str, theirs: &str) -> Option<Merged> {
             labels: Vec::new(),
             depends_on: Vec::new(),
             source: None,
+            prs: Vec::new(),
             needs: None,
             verify: None,
             extra: Vec::new(),
@@ -268,6 +269,7 @@ fn try_merge(base: &str, ours: &str, theirs: &str) -> Option<Merged> {
         labels: merge_list(&b.labels, &o.labels, &t.labels),
         depends_on: merge_list(&b.depends_on, &o.depends_on, &t.depends_on),
         source,
+        prs: merge_list(&b.prs, &o.prs, &t.prs),
         needs,
         verify,
         extra,
@@ -522,6 +524,24 @@ mod tests {
         let t = parsed(&merge(&base, &a, &b));
         assert_eq!(t.labels, ["y", "z"]);
         assert_eq!(t.depends_on, ["t-2222"]);
+    }
+
+    #[test]
+    fn prs_added_on_both_sides_both_survive() {
+        let a_url = "https://github.com/o/r/pull/1";
+        let b_url = "https://github.com/o/r/pull/2";
+        let base = yak("hairy", "", "Desc");
+        let a = yak("hairy", &format!("prs:\n- {a_url}\n"), "Desc");
+        let b = yak("hairy", &format!("prs: [{b_url}]\n"), "Desc");
+        let m = merge(&base, &a, &b);
+        assert!(m.conflicts.is_empty());
+        assert_eq!(parsed(&m).prs, [a_url, b_url]);
+
+        // A removal on one side and an unrelated add on the other combine.
+        let base = yak("hairy", &format!("prs: [{a_url}]\n"), "Desc");
+        let a = yak("hairy", "", "Desc"); // drops pull/1
+        let b = yak("hairy", &format!("prs: [{a_url}, {b_url}]\n"), "Desc");
+        assert_eq!(parsed(&merge(&base, &a, &b)).prs, [b_url]);
     }
 
     #[test]

@@ -556,6 +556,35 @@ fn e_on_title_line_opens_form_on_the_title_row() {
 }
 
 #[test]
+fn detail_header_lists_prs_as_links() {
+    let mut t = body_with_comments();
+    t.source = Some("https://example.com/PROJ-9".into());
+    t.prs = vec![
+        "https://github.com/o/r/pull/12".into(),
+        "https://github.com/o/r/pull/15".into(),
+    ];
+    let mut app = App::new(vec![t]);
+    handle_key(&mut app, key('l'));
+    let lines = app.detail_dlines();
+    let first = lines
+        .iter()
+        .position(|l| l.text.starts_with("PRs:"))
+        .unwrap();
+    assert_eq!(
+        lines[first].text,
+        "PRs:         https://github.com/o/r/pull/12"
+    );
+    assert_eq!(
+        lines[first + 1].text,
+        "             https://github.com/o/r/pull/15"
+    );
+    // Each URL is a link, like `Source:`.
+    assert_eq!(lines[first].links.len(), 1);
+    assert_eq!(lines[first + 1].links.len(), 1);
+    insta::assert_snapshot!(draw(&app, 72, 24));
+}
+
+#[test]
 fn e_on_source_line_opens_form_on_the_source_row() {
     // yaks-b0b4: `E` on the detail pane's `Source:` line focuses the form's
     // source row, seeded with the current URL.
@@ -2158,6 +2187,7 @@ mod live {
                 labels: vec![],
                 depends_on: vec![],
                 source: None,
+                prs: vec![],
                 description: None,
                 verify: None,
             })

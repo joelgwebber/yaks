@@ -47,6 +47,9 @@ pub fn task_value(t: &Task) -> Value {
     if let Some(s) = &t.source {
         m.insert("source".into(), json!(s));
     }
+    if !t.prs.is_empty() {
+        m.insert("prs".into(), json!(t.prs));
+    }
     if let Some(n) = &t.needs {
         m.insert("needs".into(), json!(n));
     }
@@ -221,6 +224,7 @@ mod tests {
             labels: vec![],
             depends_on: vec![],
             source: None,
+            prs: Vec::new(),
             needs: None,
             verify: None,
             extra: vec![],

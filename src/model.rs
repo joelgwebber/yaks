@@ -80,6 +80,9 @@ pub struct Task {
     pub labels: Vec<String>,
     pub depends_on: Vec<String>,
     pub source: Option<String>,
+    /// Pull-request URLs (the active PR or PRs for this yak's code); a list,
+    /// unlike `source`, because one yak routinely has several.
+    pub prs: Vec<String>,
     /// A soft, external hand-off, not ownership and not a status. `human` (or
     /// any value but `agent`) is a block: the yak is not ready in `next`;
     /// raised by `ask`. `agent` is the answered counterpart: `answer` sets it,

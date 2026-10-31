@@ -407,6 +407,34 @@ pub fn build_at(
         });
     }
 
+    // Pull requests (`prs:`): one row each under a `PRs:` label, directly
+    // below `Source:` when there is one. URLs are links, like `Source:`. Read
+    // only in the TUI: edit them with `yaks update --pr` / `--remove-pr`.
+    if !task.prs.is_empty() {
+        if task.source.is_none() {
+            out.push(empty());
+        }
+        for (i, p) in task.prs.iter().enumerate() {
+            let head = format!("{:<13}", if i == 0 { "PRs:" } else { "" });
+            let col = head.chars().count();
+            let links = if is_url(p) {
+                vec![(col, p.chars().count(), Target::Url(p.clone()))]
+            } else {
+                vec![]
+            };
+            out.push(DLine {
+                text: format!("{head}{p}"),
+                kind: Kind::Field,
+                links,
+                md: vec![],
+                cont: false,
+                src: None,
+                nowrap: None,
+                image: None,
+            });
+        }
+    }
+
     // Unmodeled frontmatter (`task.extra`) kept verbatim on parse. Surfaced
     // read-only so hand-added/newer keys are visible instead of silently
     // invisible; the raw lines are echoed as-is (they are not label/value
@@ -840,6 +868,7 @@ mod detail_tests {
             labels: vec![],
             depends_on: deps.iter().map(|s| s.to_string()).collect(),
             source: None,
+            prs: Vec::new(),
             needs: None,
             verify: None,
             extra: Vec::new(),
@@ -1054,6 +1083,7 @@ mod tests {
             labels: vec![],
             depends_on: deps.iter().map(|s| s.to_string()).collect(),
             source: None,
+            prs: Vec::new(),
             needs: None,
             verify: None,
             extra: Vec::new(),

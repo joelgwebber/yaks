@@ -396,6 +396,10 @@ enum Command {
         depends_on: Vec<String>,
         #[arg(long)]
         source: Option<String>,
+        /// A pull-request URL for the yak's `prs:` list. Repeat the flag for
+        /// several: `--pr URL1 --pr URL2`.
+        #[arg(long = "pr", value_name = "URL")]
+        prs: Vec<String>,
         /// The yak's body (markdown). `-` reads it from stdin, so a multi-line
         /// heredoc or pipe arrives intact: `yaks create "T" --description - <<'EOF'`.
         #[arg(long, conflicts_with = "description_file")]
@@ -437,6 +441,13 @@ enum Command {
         /// Set (or clear, with an empty string) this yak's `source:` URL.
         #[arg(long)]
         source: Option<String>,
+        /// Add a pull-request URL to this yak's `prs:` list (repeatable; a URL
+        /// already listed is a no-op).
+        #[arg(long = "pr", value_name = "URL")]
+        add_pr: Vec<String>,
+        /// Remove a pull-request URL from this yak's `prs:` list (repeatable).
+        #[arg(long = "remove-pr", value_name = "URL")]
+        remove_pr: Vec<String>,
         /// Set (or clear, with an empty string) this yak's `verify:` command.
         #[arg(long)]
         verify: Option<String>,
@@ -1585,6 +1596,7 @@ fn main() -> Result<()> {
             labels,
             depends_on,
             source,
+            prs,
             description,
             description_file,
             verify,
@@ -1612,6 +1624,7 @@ fn main() -> Result<()> {
                 labels,
                 depends_on,
                 source,
+                prs,
                 description,
                 verify,
             };
@@ -1644,6 +1657,8 @@ fn main() -> Result<()> {
             add_label,
             remove_label,
             source,
+            add_pr,
+            remove_pr,
             verify,
             note,
             note_file,
@@ -1668,6 +1683,8 @@ fn main() -> Result<()> {
                 add_labels: add_label,
                 remove_labels: remove_label,
                 source,
+                add_prs: add_pr,
+                remove_prs: remove_pr,
                 verify,
                 note,
                 meta,
@@ -2018,6 +2035,8 @@ fn main() -> Result<()> {
                     add_labels: add_label,
                     remove_labels: remove_label,
                     source: None,
+                    add_prs: Vec::new(),
+                    remove_prs: Vec::new(),
                     verify: None,
                     note: None,
                     meta: Vec::new(),
@@ -3251,6 +3270,9 @@ fn render_show(s: &Show) {
     if let Some(src) = &t.source {
         println!("source:   {src}");
     }
+    if !t.prs.is_empty() {
+        println!("prs:      {}", t.prs.join(", "));
+    }
     if let Some(n) = &t.needs {
         println!("needs:    {n}");
     }
@@ -3529,6 +3551,7 @@ mod tests {
             labels: vec![],
             depends_on: vec![],
             source: None,
+            prs: Vec::new(),
             needs: None,
             verify: None,
             extra: vec![],
