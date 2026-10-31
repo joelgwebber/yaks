@@ -79,7 +79,7 @@ fn branch_farm(tag: &str) -> (PathBuf, PathBuf, String) {
     let farm = PathBuf::from(ok(&r, &["path"]).trim());
     let created = ok(&r, &["create", "a yak"]);
     let id = created
-        .split(|c: char| c == ' ' || c == ':')
+        .split([' ', ':'])
         .find(|w| w.starts_with("t-"))
         .unwrap_or_else(|| panic!("no id in {created}"))
         .to_string();
@@ -200,8 +200,8 @@ fn land_records_the_landed_and_worker_shas_and_commits_reads_them() {
     assert_eq!(j["recorded"][0]["commit"], landed.as_str());
     assert_eq!(j["recorded"][0]["source"], w.as_str());
     assert_eq!(j["recorded"][0]["found"]["short"], &landed[..7]);
-    assert!(j["named"].as_array().unwrap().len() >= 1, "{j}");
-    assert!(j["farm_history"].as_array().unwrap().len() >= 1, "{j}");
+    assert!(!j["named"].as_array().unwrap().is_empty(), "{j}");
+    assert!(!j["farm_history"].as_array().unwrap().is_empty(), "{j}");
 
     // Landing the same worker again adds no commit and no second note.
     let again = ok(&r, &["land", &w]);

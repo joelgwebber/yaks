@@ -173,7 +173,7 @@ fn ask_and_answer_take_stdin_and_file() {
 
 /// The yak's frontmatter: the notes' own metadata lines also say `needs:`.
 fn frontmatter(file: &str) -> &str {
-    file.splitn(3, "---\n").nth(1).unwrap_or(file)
+    file.split("---\n").nth(1).unwrap_or(file)
 }
 
 #[test]
