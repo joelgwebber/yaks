@@ -935,7 +935,7 @@ boss    active · 30m ago
             &a.body,
             "2026-10-31T10:00:00Z",
             Some("w1"),
-            &meta("1111111aaaa", "yaks/w1/old"),
+            &meta("1111111aaaa", "work/w1/old"),
             "first",
         );
         let mut b = yak("y-b", Status::Hairy);
@@ -943,7 +943,7 @@ boss    active · 30m ago
             &b.body,
             "2026-10-31T14:00:00Z",
             Some("w1"),
-            &meta("2222222bbbb", "yaks/w1/work"),
+            &meta("2222222bbbb", "work/w1/work"),
             "later, on another yak",
         );
         // Another actor's, a landed note and a checkpoint with no branch do not count.
@@ -958,13 +958,13 @@ boss    active · 30m ago
             &b.body,
             "2026-10-31T15:30:00Z",
             Some("w2"),
-            &meta("4444444cccc", "yaks/w2/x"),
+            &meta("4444444cccc", "work/w2/x"),
             "theirs",
         );
         let sheds = build(&[a, b], now());
         let c = shed(&sheds, "w1").checkpoint.as_ref().unwrap();
-        assert_eq!(c.branch, "yaks/w1/work");
-        assert_eq!(c.line(now()), "branch yaks/w1/work @ 2222222 (2h ago)");
+        assert_eq!(c.branch, "work/w1/work");
+        assert_eq!(c.line(now()), "branch work/w1/work @ 2222222 (2h ago)");
         let r = Report {
             now: now(),
             farm: None,
@@ -972,7 +972,7 @@ boss    active · 30m ago
         };
         let text = render(&r, true);
         assert!(
-            text.contains("w1  active · 1h ago\n  branch yaks/w1/work @ 2222222 (2h ago)\n"),
+            text.contains("w1  active · 1h ago\n  branch work/w1/work @ 2222222 (2h ago)\n"),
             "{text}"
         );
         let v = to_json(&r);
@@ -982,7 +982,7 @@ boss    active · 30m ago
             .iter()
             .find(|s| s["name"] == "w1")
             .unwrap();
-        assert_eq!(w1["checkpoint"]["branch"], "yaks/w1/work");
+        assert_eq!(w1["checkpoint"]["branch"], "work/w1/work");
         assert_eq!(w1["checkpoint"]["commit"], "2222222bbbb");
         assert_eq!(w1["checkpoint"]["at"], "2026-10-31T14:00:00Z");
         // An actor with no checkpoint note gets a null and no row line.
@@ -992,7 +992,7 @@ boss    active · 30m ago
             .iter()
             .find(|s| s["name"] == "w2")
             .unwrap();
-        assert_eq!(w2["checkpoint"]["branch"], "yaks/w2/x");
+        assert_eq!(w2["checkpoint"]["branch"], "work/w2/x");
         let r = Report {
             now: now(),
             farm: None,

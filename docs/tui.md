@@ -406,7 +406,7 @@ the farm is synced. The text is the CLI's own (the same functions produce it).
 - **The tab count** is the number of sheds that want a look now (active, stale,
   or asking).
 - **The detail pane** (`l`) starts with where the shed's code is, when its
-  latest `checkpoint` note names a branch (`branch yaks/walk-1/mem-f13a @
+  latest `checkpoint` note names a branch (`branch work/walk-1 @
   47076b0 (9m ago)`, read from the note, never fetched; `yaks commits <id>
   --fetch` lists the branch's commits). Then it lists the shed's yaks as `yaks sheds` does:
   `shaving` (the ones it holds the claim on), `asking` (waiting on a human) and

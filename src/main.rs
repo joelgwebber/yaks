@@ -1691,6 +1691,7 @@ fn main() -> Result<()> {
                 resolve_text("--description", description, description_file, &mut stdin)?;
             let note = resolve_text("--note", note, note_file, &mut stdin)?;
             let meta = parse_meta_args(&meta, note.is_some())?;
+            warn_branch_under_farm(&meta, farm.root());
             let actor = note
                 .as_ref()
                 .and_then(|_| actor::resolve(as_actor.as_deref()));
@@ -2475,6 +2476,23 @@ fn run_verify_command(cmd: &str) -> std::io::Result<(bool, String)> {
 /// The `--meta key=value` arguments of `update`, split and checked: each needs
 /// a `=` and a key that is a valid metadata key, and any needs a note to
 /// attach to. Values may contain `=`.
+/// Warn when a recorded `branch:` sits under the farm branch's name (`yaks/...`
+/// beside a farm branch `yaks`): git cannot hold both refs, so that branch can
+/// never have been pushed, and nobody can fetch what the note names.
+fn warn_branch_under_farm(meta: &[(String, String)], root: &std::path::Path) {
+    let Some(farm) = store::farm_branch(root) else {
+        return;
+    };
+    let prefix = format!("{farm}/");
+    for (k, v) in meta {
+        if k == "branch" && v.starts_with(&prefix) {
+            eprintln!(
+                "warning: branch `{v}` is under `{prefix}`, which the farm branch `{farm}` blocks (git cannot have both refs), so it cannot be pushed; use another prefix, e.g. `work/...`"
+            );
+        }
+    }
+}
+
 fn parse_meta_args(args: &[String], has_note: bool) -> Result<Vec<(String, String)>> {
     if !args.is_empty() && !has_note {
         anyhow::bail!("--meta needs a note to attach to (give --note, --note-file or `--note -`)");
