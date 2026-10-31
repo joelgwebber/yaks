@@ -28,6 +28,12 @@ fn yaks(cwd: &Path, args: &[&str]) -> Output {
         .env("XDG_DATA_HOME", home().join("xdg"))
         .env("YAKS_SKILLS_AUTOSYNC", "0")
         .env("YAKS_ACTOR", "tester")
+        // CI runners have no global git identity (yaks-1af5): `yaks commit`
+        // and `yaks land` make commits, so give them one.
+        .env("GIT_AUTHOR_NAME", "t")
+        .env("GIT_AUTHOR_EMAIL", "t@t")
+        .env("GIT_COMMITTER_NAME", "t")
+        .env("GIT_COMMITTER_EMAIL", "t@t")
         .env_remove("YAKS_DIR")
         .env_remove("YAKS_NO_BOOTSTRAP")
         .output()
