@@ -31,6 +31,7 @@ mod render;
 mod runtime;
 mod sheds_tab;
 mod source;
+mod surface;
 mod syntax;
 #[cfg(test)]
 mod test_support;

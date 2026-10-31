@@ -198,7 +198,7 @@ pub(crate) fn render_view_picker(app: &App, sel: usize, frame: &mut Frame, area:
         state.select(Some(sel.min(app.views.len() - 1)));
     }
     frame.render_stateful_widget(
-        List::new(items).highlight_style(Style::new().bg(Color::Indexed(237))),
+        List::new(items).highlight_style(Style::new().bg(super::surface::selected())),
         body,
         &mut state,
     );
@@ -438,7 +438,9 @@ pub(crate) fn render_chip_row(
             Style::new().fg(Color::DarkGray)
         };
         if current_row && cursor_idx == j {
-            style = style.bg(Color::Indexed(237)).add_modifier(Modifier::BOLD);
+            style = style
+                .bg(super::surface::selected())
+                .add_modifier(Modifier::BOLD);
         }
         spans.push(Span::raw(" "));
         spans.push(Span::styled(disp.clone(), style));
@@ -588,10 +590,9 @@ pub(crate) fn render_tabs(app: &App, frame: &mut Frame, area: Rect) {
         };
         let text = format!(" {}{} ({count}) ", v.name, mark);
         let style = if i == app.view {
-            Style::new()
-                .fg(Color::Black)
-                .bg(Color::White)
-                .add_modifier(Modifier::BOLD)
+            // The terminal's own fg/bg swapped: ANSI Black/White are remapped
+            // by themes (a black slab on some light ones) (yaks-48e9).
+            Style::new().add_modifier(Modifier::REVERSED | Modifier::BOLD)
         } else {
             Style::new().add_modifier(Modifier::DIM)
         };
@@ -791,9 +792,9 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
     // (per-field colours like blue/blue-dim would be low-contrast on 237). The
     // unfocused list uses a slightly darker bg so focus is still clear.
     let hl = if focused {
-        Style::new().fg(Color::Reset).bg(Color::Indexed(237))
+        Style::new().fg(Color::Reset).bg(super::surface::selected())
     } else {
-        Style::new().fg(Color::Reset).bg(Color::Indexed(236))
+        Style::new().fg(Color::Reset).bg(super::surface::band())
     };
     frame.render_stateful_widget(List::new(items).highlight_style(hl), area, &mut state);
     app.list_offset.set(state.offset());
@@ -992,7 +993,7 @@ pub(crate) fn list_item<'a>(
 /// frontmatter, so you never lose track of which yak you're reading. Filled with
 /// a faint background band so it reads as a header rather than a content row.
 pub(crate) fn pinned_header_line(task: &Task, starred: bool, width: u16) -> Line<'static> {
-    let bg = Color::Indexed(236);
+    let bg = super::surface::band();
     let w = width as usize;
     let emoji = task.status.emoji(); // display width 2
     let type_s = format!("{:8}", task.kind);
@@ -1088,7 +1089,7 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
             // Subtle background for the line cursor and any visual selection.
             let in_sel = sel.is_some_and(|(lo, hi)| i >= lo && i <= hi);
             let line_bg = if focused && (i == app.detail_line || in_sel) {
-                Some(Color::Indexed(237))
+                Some(super::surface::selected())
             } else {
                 None
             };
@@ -1269,7 +1270,7 @@ pub(crate) fn render_dline<'a>(
             // Python C_LINK_SEL: blue on the subtle 237 background, emphasised.
             Style::new()
                 .fg(Color::Blue)
-                .bg(Color::Indexed(237))
+                .bg(super::surface::selected())
                 .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
         } else {
             Style::new()

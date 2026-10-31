@@ -586,6 +586,58 @@ fn docshots_md_palette() {
     eprintln!("wrote docs/assets/tui-md-palette.svg");
 }
 
+/// The list and the detail pane (line cursor, pinned header) on a dark and a
+/// light terminal, into `docs/assets/tui-surfaces.svg` (yaks-48e9): the
+/// highlight bands are derived from the terminal's own colours, so the same
+/// frame has a subtle selected row on both. Ignored by default; run explicitly:
+/// `cargo test -p yaks docshots_surfaces -- --ignored`.
+#[test]
+#[ignore = "asset generator; run with --ignored to refresh docs/assets/tui-surfaces.svg"]
+fn docshots_surfaces() {
+    use crate::tui::surface::with_terminal;
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+    use ratatui::buffer::Buffer;
+    use ratatui::layout::Rect;
+    use ratatui::style::Color;
+
+    let (w, h) = (96u16, 20u16);
+    let mut app = app_at(w, h);
+    view_to(&mut app, "status:shaving");
+    // One frame per terminal: the band comes from `surface`, the rest of the
+    // colours are re-mapped onto the light theme by `paint_theme` below.
+    let frame = |bg, fg| {
+        with_terminal(bg, fg, || {
+            let mut term = Terminal::new(TestBackend::new(w, h)).unwrap();
+            term.draw(|f| crate::tui::render::render(&app, f)).unwrap();
+            term.backend().buffer().clone()
+        })
+    };
+    let dark = frame((0x1e, 0x1e, 0x1e), (0xd4, 0xd4, 0xd4));
+    let light = frame((0xff, 0xff, 0xff), (0x33, 0x33, 0x33));
+
+    let mut buf = Buffer::empty(Rect::new(0, 0, w, h * 2));
+    for (i, src) in [dark, light].iter().enumerate() {
+        for y in 0..h {
+            for x in 0..w {
+                buf[(x, y + i as u16 * h)] = src[(x, y)].clone();
+            }
+        }
+    }
+    paint_theme(
+        &mut buf,
+        Rect::new(0, h, w, h),
+        &Theme {
+            bg: Color::Rgb(0xff, 0xff, 0xff),
+            fg: Color::Rgb(0x33, 0x33, 0x33),
+            ansi: light_ansi,
+        },
+    );
+    std::fs::create_dir_all("docs/assets").unwrap();
+    std::fs::write("docs/assets/tui-surfaces.svg", toque::buffer_to_svg(&buf)).unwrap();
+    eprintln!("wrote docs/assets/tui-surfaces.svg");
+}
+
 /// The markdown torture test (yaks-ea13's body plus a comment) in the detail
 /// pane, at the top and scrolled to its code/table/comment part, into
 /// `docs/assets/tui-md-render*.svg` (yaks-649d). Ignored by default; run

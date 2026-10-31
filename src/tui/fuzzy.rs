@@ -204,7 +204,7 @@ pub(crate) fn render_fuzzy_results(app: &App, fp: &FuzzyPick, frame: &mut Frame,
         state.select(Some(fp.sel.min(total - 1)));
     }
     frame.render_stateful_widget(
-        List::new(items).highlight_style(Style::new().bg(Color::Indexed(237))),
+        List::new(items).highlight_style(Style::new().bg(super::surface::selected())),
         body,
         &mut state,
     );

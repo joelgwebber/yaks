@@ -472,9 +472,9 @@ pub(crate) fn render_sheds_list(app: &App, frame: &mut Frame, area: Rect) {
         .clamp(4, 24);
     let focused = app.focus == Focus::List;
     let hl = if focused {
-        Style::new().bg(Color::Indexed(237))
+        Style::new().bg(super::surface::selected())
     } else {
-        Style::new().bg(Color::Indexed(236))
+        Style::new().bg(super::surface::band())
     };
     // A footer line for the orphaned pins, when there are any.
     let footer = snap.orphaned > 0;
@@ -645,7 +645,7 @@ pub(crate) fn render_shed_detail(app: &App, frame: &mut Frame, area: Rect) {
             offset = start + 1 - h;
         }
         if app.focus == Focus::Detail {
-            let hl = Style::new().bg(Color::Indexed(237));
+            let hl = Style::new().bg(super::surface::selected());
             let mut l = std::mem::take(&mut lines[start]);
             let w: usize = l.spans.iter().map(|s| disp_width(&s.content)).sum();
             l.spans.push(Span::raw(

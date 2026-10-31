@@ -313,7 +313,7 @@ pub(crate) fn set_md_highlights(state: &mut EditorState) {
 pub(crate) fn editor_theme(mode: EditorMode) -> EditorTheme<'static> {
     let cursor = match mode {
         EditorMode::Insert => Style::new().add_modifier(Modifier::UNDERLINED),
-        _ => Style::new().bg(Color::White).fg(Color::Black),
+        _ => Style::new().add_modifier(Modifier::REVERSED),
     };
     EditorTheme::default()
         .hide_status_line()

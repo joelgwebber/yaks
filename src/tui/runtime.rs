@@ -7,6 +7,9 @@ use super::*;
 use ratatui::crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 pub fn run(mut app: App) -> Result<()> {
     let (mut term, kitty) = setup()?;
+    // Learn the terminal's colours for the highlight bands (yaks-48e9); like the
+    // picker query below, it needs raw mode and runs before any event is read.
+    surface::init();
     // Ask the terminal which image protocol it speaks and its cell size. Needs
     // raw mode and must run before any event is read; a terminal that does not
     // answer keeps the half-block fallback (yaks-4305).

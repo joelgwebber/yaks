@@ -275,6 +275,20 @@ The swatch below shows every style on a dark and a light terminal.
 
 ![yaks markdown palette on a dark and a light terminal](assets/tui-md-palette.svg)
 
+**Highlight bands** — the subtle background behind the selected row, the detail
+line cursor and a visual selection is not a fixed grey: at startup the TUI asks
+the terminal for its background and foreground colours (OSC 10/11) and blends
+the background a little toward the foreground, so the band is subtle on any theme,
+dark or light. The active tab and the editor's block cursor are plain reverse
+video, which every theme resolves itself. If the terminal does not answer (some
+tmux and ssh setups), `COLORFGBG` is read, else the bands are the dark greys.
+Without `COLORTERM=truecolor` the blend is rounded to the nearest 256-colour
+index. Set `YAKS_THEME=dark` or `YAKS_THEME=light` to override detection. The
+colours are read once, so a terminal that switches theme mid-session needs a
+restart of `yaks tui`.
+
+![selection bands on a dark and a light terminal](assets/tui-surfaces.svg)
+
 **Code syntax colours** — a fenced block whose info string names a known
 language (`rust`/`rs`, `sh`/`bash`/`shell`/`console`, `json`, `toml`,
 `yaml`/`yml`, `python`/`py`, `js`/`ts`/`jsx`/`tsx`, `java`) is coloured token by
