@@ -3591,7 +3591,7 @@ checksum = "7008a9d8ba97a7e47d9b2df63fcdb8dade303010c5a7cd5bf2469d4da6eba673"
 
 [[package]]
 name = "yaks"
-version = "0.0.26"
+version = "0.0.27"
 dependencies = [
  "anyhow",
  "arboard",
