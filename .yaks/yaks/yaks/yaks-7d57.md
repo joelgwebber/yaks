@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-10-31T15:57:06Z'
-updated: '2026-10-31T16:55:10Z'
+updated: '2026-10-31T17:12:34Z'
 parent: yaks-039b
 depends_on:
 - yaks-0071
@@ -33,3 +33,8 @@ Joel (2026-10-31): before building tooling such as `yaks checkpoint`, run experi
 ▸ 2026-10-31T16:55:10Z [yakherd]
 
 First observations from the 2026-10-31 local run (three LiteLLM Sonnet workers) are on `yaks-039b`'s wave-2 note. Short version: stable `YAKS_ACTOR` names everywhere; notes at milestones rather than on a clock; sync untested (same machine). A cloud-runner run is still needed for the sync and checkpoint conventions.
+
+---
+▸ 2026-10-31T17:12:34Z [yakherd]
+
+Pre-trial finding (`yaks-4728` end-to-end check): the obvious branch naming `yaks/<worker>/...` fails outright beside a branch farm. The skills now warn and `update --meta branch=` warns, so the trial should check that workers pick a different prefix.

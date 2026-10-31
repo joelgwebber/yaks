@@ -1,11 +1,11 @@
 ---
 id: yaks-a3fc
 title: 'Design: show a shed''s commits so far (pushed branches plus a little yak data)'
-status: shaving
+status: shorn
 type: idea
 priority: 2
 created: '2026-10-31T15:18:16Z'
-updated: '2026-10-31T16:54:08Z'
+updated: '2026-10-31T17:12:33Z'
 parent: yaks-039b
 depends_on:
 - yaks-bdf9
@@ -57,3 +57,22 @@ Rejected: a separate remote for work in progress; one branch per yak.
 ▸ 2026-10-31T16:54:08Z [yakherd]
 
 moved: hairy -> shaving
+
+---
+▸ 2026-10-31T17:12:33Z [yakherd]
+
+Correction to the naming in the decision above: not `yaks/<actor>/<topic>`. A branch under `yaks/` cannot exist beside the farm branch `yaks` (found in the `yaks-4728` end-to-end check). Examples now use `work/<actor>`, and `update` warns.
+
+---
+▸ 2026-10-31T17:12:33Z [yakherd]
+
+Done: `yaks-4728` (commits --fetch, checkpoint branch on sheds rows) on top of `yaks-735a` (landed records) and the checkpoint convention in the skills. Still to learn from the cloud-runner trial (`yaks-7d57`): whether workers follow push, note, sync by hand, or need a `yaks checkpoint` helper.
+
+---
+▸ 2026-10-31T17:12:33Z [yakherd]
+kind: move
+from: shaving
+to: shorn
+---
+
+moved: shaving -> shorn

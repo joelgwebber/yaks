@@ -1,11 +1,11 @@
 ---
 id: yaks-bdf9
 title: 'Design: commit hashes in yaks, now that the farm has its own branch'
-status: shaving
+status: shorn
 type: idea
 priority: 2
 created: '2026-10-31T15:18:15Z'
-updated: '2026-10-31T16:17:15Z'
+updated: '2026-10-31T17:12:33Z'
 parent: yaks-039b
 labels:
 - git
@@ -52,3 +52,17 @@ Decision (Joel, 2026-10-31): store commit shas in yaks.
 ▸ 2026-10-31T16:17:15Z [yakherd]
 
 moved: hairy -> shaving
+
+---
+▸ 2026-10-31T17:12:33Z [yakherd]
+
+Done: `yaks-7a11` (commits greps the code repo), `yaks-735a` (land records `kind: landed` with commit and source; `--yak` for private farms; commits reads recorded shas first), `yaks-4728` (recorded branches). Dogfooded: every landing in the `yaks-039b` family has a landed note (by hand before `7e4a014`, automatic after).
+
+---
+▸ 2026-10-31T17:12:33Z [yakherd]
+kind: move
+from: shaving
+to: shorn
+---
+
+moved: shaving -> shorn
