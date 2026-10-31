@@ -137,11 +137,11 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 
 | Command | What it does |
 |---|---|
-| `create "title"` | New hairy yak: `--type --priority --parent --herd --labels --depends-on --source --verify --description` |
+| `create "title"` | New hairy yak: `--type --priority --parent --herd --labels --depends-on --source --pr --verify --description` |
 | `list` / `next` / `tangled` / `search` | Query (shared filters, below); `next` = hairy with deps met, `tangled` = blocked on deps |
 | `show <id>` | Full details, parent and children |
 | `path [<id>...]` | Absolute file path of yaks (by id or filters); no arguments: the farm in use |
-| `update <id>...` | Fields, `--add-label`/`--remove-label`, `--note`, `--verify`, `--source` |
+| `update <id>...` | Fields, `--add-label`/`--remove-label`, `--note` (with `--meta key=value`), `--verify`, `--source`, `--pr`/`--remove-pr` |
 | `shave` / `shorn` / `regrow` / `slaughter` / `revive` | State moves; several ids at once; each appends an attributed `moved:` entry. `slaughter --family` takes descendants too |
 | `ask` / `answer` / `request` / `pickup` / `inbox` / `wait` | The inbox (above); `inbox --for human\|agent`, `wait --timeout 10m` |
 | `verify <id>` | Run the yak's `verify:` (else the config default) and record PASS/FAIL |
@@ -191,6 +191,8 @@ parent: yak-c3d4          # optional; the only source of hierarchy
 depends_on: [yak-e5f6]
 labels: [auth]
 source: https://jira.example.com/browse/PROJ-123   # optional external issue
+prs:                      # optional: the yak's open pull requests
+- https://github.com/org/repo/pull/42
 ---
 
 Details go here.

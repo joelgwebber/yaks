@@ -72,6 +72,8 @@ When the user points at an external issue and wants a yak (or a group) for it:
 2. Create or update the yak(s), recording the issue URL as `source:`:
    `yaks create "…" --source <url>` (or `yaks update <id> --source <url>`).
    For a group, stamp `source:` on the umbrella yak; children inherit it.
+   The pull requests that implement it are a separate list, `prs:`
+   (`yaks update <id> --pr <url>`, repeatable; `--remove-pr` when one closes).
 3. **Label by tracker.** Add a label named for the tracker (`jira`, `github`,
    `linear`) so the upstreamed yaks are easy to find later
    (`yaks list --label jira`): `yaks create … --labels jira` /
