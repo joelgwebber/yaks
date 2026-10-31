@@ -1,11 +1,11 @@
 ---
 id: yaks-48e9
 title: Unreadable highlights on light themes
-status: shaving
+status: shorn
 type: bug
 priority: 2
 created: '2026-10-31T14:24:18Z'
-updated: '2026-10-31T15:26:28Z'
+updated: '2026-10-31T15:30:43Z'
 ---
 
 ![ugly](yaks-48e9/ugly.png)
@@ -73,3 +73,13 @@ The OSC 11 query itself, in a real terminal: the shots simulate the terminal via
 
 - `DarkGray` as the "quiet" foreground is still invisible on Solarized Dark; separate yak.
 - `Black`-on-`Yellow` prompt bar kept: it is explicit on both of its colours, so it is legible on any theme.
+
+---
+▸ 2026-10-31T15:30:43Z [delta:Plan highlight colors for light and dark]
+
+Landed on main as 2d8fbf9 (rebased over yaks-a99f and yaks-e532; same single pre-existing sheds test failure).
+
+---
+▸ 2026-10-31T15:30:43Z [delta:Plan highlight colors for light and dark]
+
+moved: shaving -> shorn
