@@ -268,3 +268,134 @@ fn commits_marks_a_recorded_sha_the_code_repo_lacks() {
     assert!(c.contains("landed deadbee on other"), "{c}");
     assert!(c.contains("(not in this repository)"), "{c}");
 }
+
+/// A bare `origin` for `r` (main pushed, `origin/HEAD` set), and a separate
+/// clone of it that pushes branch `yaks/w1/work` with two commits. Returns the
+/// two shas, oldest first.
+fn origin_with_worker_branch(r: &Path, tag: &str) -> (PathBuf, String, String) {
+    let bare = temp(&format!("{tag}-origin"));
+    git(&bare, &["init", "-q", "--bare", "-b", "main", "."]);
+    git(r, &["remote", "add", "origin", bare.to_str().unwrap()]);
+    git(r, &["push", "-q", "origin", "main"]);
+    git(r, &["fetch", "-q", "origin"]);
+    git(r, &["remote", "set-head", "origin", "main"]);
+    let w = temp(&format!("{tag}-worker"));
+    git(&w, &["clone", "-q", bare.to_str().unwrap(), "."]);
+    git(&w, &["checkout", "-q", "-b", "yaks/w1/work"]);
+    let first = code_commit(&w, "one.txt", "worker: first");
+    let second = code_commit(&w, "two.txt", "worker: second");
+    git(&w, &["push", "-q", "origin", "yaks/w1/work"]);
+    (bare, first, second)
+}
+
+fn checkpoint(r: &Path, id: &str, branch: &str, commit: &str) {
+    ok(
+        r,
+        &[
+            "update",
+            id,
+            "--note",
+            "checkpoint: pushed",
+            "--meta",
+            "kind=checkpoint",
+            "--meta",
+            &format!("branch={branch}"),
+            "--meta",
+            &format!("commit={commit}"),
+        ],
+    );
+}
+
+#[test]
+fn commits_fetch_lists_the_recorded_branch_and_marks_the_checkpoint() {
+    let (r, _farm, id) = branch_farm("fetch");
+    let (_bare, first, second) = origin_with_worker_branch(&r, "fetch");
+    checkpoint(&r, &id, "yaks/w1/work", &second);
+
+    // Without --fetch nothing touches the network: the branch was never
+    // fetched here, and it says so rather than guessing.
+    let stale = ok(&r, &["commits", &id]);
+    assert!(
+        stale.contains("no remote-tracking ref origin/yaks/w1/work here yet"),
+        "{stale}"
+    );
+    assert!(!stale.contains("worker: first"), "{stale}");
+
+    let out = ok(&r, &["commits", &id, "--fetch"]);
+    assert!(
+        out.contains("Branch origin/yaks/w1/work (since origin/main):"),
+        "{out}"
+    );
+    assert!(out.contains("fetched just now"), "{out}");
+    assert!(
+        out.contains(&format!("{} worker: first", &first[..7])),
+        "{out}"
+    );
+    let marked = format!("{} worker: second  \u{2190} checkpoint", &second[..7]);
+    assert!(out.contains(&marked), "the checkpoint is marked:\n{out}");
+    assert!(!out.contains("first  \u{2190}"), "{out}");
+    assert!(!out.contains("NOT on"), "{out}");
+
+    // Now the tracking ref is there: no --fetch reads it, as of the last fetch.
+    let again = ok(&r, &["commits", &id]);
+    assert!(again.contains("as of the last fetch of origin"), "{again}");
+    assert!(again.contains(&marked), "{again}");
+
+    let j: serde_json::Value =
+        serde_json::from_str(&ok(&r, &["commits", &id, "--fetch", "--json"])).unwrap();
+    let b = &j["branches"][0];
+    assert_eq!(b["tracking"], "origin/yaks/w1/work");
+    assert_eq!(b["fetched"], true);
+    assert_eq!(b["commits"].as_array().unwrap().len(), 2, "{j}");
+    assert_eq!(b["commits"][0]["sha"], second.as_str());
+    assert_eq!(b["commits"][0]["checkpoint"], true);
+    assert_eq!(b["commits"][1]["checkpoint"], false);
+    assert_eq!(b["checkpoints"][0]["state"], "on_branch");
+}
+
+#[test]
+fn commits_reports_a_checkpoint_sha_that_is_not_on_the_branch() {
+    let (r, _farm, id) = branch_farm("rewritten");
+    let (_bare, _first, second) = origin_with_worker_branch(&r, "rewritten");
+    // A sha the origin never had (a rewritten branch, or never pushed).
+    let ghost = "deadbeef".repeat(5);
+    checkpoint(&r, &id, "yaks/w1/work", &ghost);
+    let out = ok(&r, &["commits", &id, "--fetch"]);
+    assert!(out.contains(&second[..7]), "{out}");
+    assert!(
+        out.contains("checkpoint deadbee")
+            && out.contains("NOT on origin/yaks/w1/work: the branch was rewritten"),
+        "{out}"
+    );
+    assert!(!out.contains("\u{2190} checkpoint"), "{out}");
+    let j: serde_json::Value = serde_json::from_str(&ok(&r, &["commits", &id, "--json"])).unwrap();
+    assert_eq!(j["branches"][0]["checkpoints"][0]["state"], "not_on_branch");
+}
+
+#[test]
+fn a_failed_fetch_is_one_line_per_branch_and_the_exit_stays_zero() {
+    let (r, _farm, id) = branch_farm("fetch-fail");
+    let (_bare, _first, second) = origin_with_worker_branch(&r, "fetch-fail");
+    checkpoint(&r, &id, "yaks/w1/work", &second);
+    checkpoint(&r, &id, "yaks/w1/gone", &second);
+    // `ok` asserts the exit status.
+    let out = ok(&r, &["commits", &id, "--fetch"]);
+    assert!(out.contains("Branch origin/yaks/w1/gone"), "{out}");
+    assert!(out.contains("fetch failed:"), "{out}");
+    assert!(
+        out.contains("no remote-tracking ref origin/yaks/w1/gone"),
+        "{out}"
+    );
+    // The other branch is still listed.
+    assert!(out.contains("worker: second"), "{out}");
+
+    // Offline: the remote itself is unreachable.
+    git(
+        &r,
+        &["remote", "set-url", "origin", "/nonexistent/yaks-origin"],
+    );
+    let off = ok(&r, &["commits", &id, "--fetch"]);
+    assert_eq!(off.matches("fetch failed:").count(), 2, "{off}");
+    // The old tracking ref still answers for the branch that had one.
+    assert!(off.contains("worker: second"), "{off}");
+}

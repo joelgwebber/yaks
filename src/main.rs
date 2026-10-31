@@ -6,6 +6,7 @@
 
 mod actor;
 mod branchfarm;
+mod branchlog;
 mod brief;
 mod changes;
 mod clipboard;
@@ -187,7 +188,7 @@ enum Command {
     },
     /// Show the git commits linked to a yak.
     ///
-    /// Three sections. "Recorded" lists the notes that carry a `commit:` key
+    /// Sections. "Recorded" lists the notes that carry a `commit:` key
     /// (what `yaks land` writes): kind, short sha, branch, the subject from the
     /// code repository (or "(not in this repository)"), and the note's time and
     /// actor. "Commits naming" greps commit messages for the id in the code
@@ -196,9 +197,23 @@ enum Command {
     /// Started outside any code checkout (not in git, or in the farm's own
     /// worktree) it says so and lists nothing. "Farm history" is the yak file's
     /// own edit history on the farm, followed across status moves.
+    ///
+    /// "Branch <remote>/<branch>" (yaks-4728) lists, for each branch the yak's notes record
+    /// (`--meta branch=<b>`, as a checkpoint note does; optional `remote=`,
+    /// default `origin`, and `base=`, default the remote's default branch, else
+    /// `main`), the commits `git log <base>..<remote>/<branch>` shows, with the
+    /// recorded checkpoint commit marked, or a line saying it is not on the
+    /// branch (rewritten, or never pushed). It reads the remote-tracking ref
+    /// already here and says it is as of the last fetch; `--fetch` first runs
+    /// `git fetch <remote> +refs/heads/<branch>:refs/remotes/<remote>/<branch>` for each (the only thing here that uses the
+    /// network). A fetch that fails prints one line for that branch and goes on;
+    /// the exit status stays 0 when the yak exists.
     Commits {
         id: String,
-        /// Machine output: `recorded`, `named` and `farm_history` arrays.
+        /// Fetch each recorded branch from its remote first.
+        #[arg(long)]
+        fetch: bool,
+        /// Machine output: `recorded`, `branches`, `named` and `farm_history`.
         #[arg(long)]
         json: bool,
     },
@@ -329,10 +344,14 @@ enum Command {
     /// written for longer) or `idle`, and when it last wrote. Actors with an
     /// open ask come first, then active, stale, idle, then the most recent
     /// writer. Idle actors with no claim and no ask are only counted unless
-    /// `--all`. A first line says how far the farm branch is ahead of or
+    /// `--all`. An actor's latest `checkpoint` note naming a branch (on any
+    /// yak) shows as `branch <b> @ <short sha> (<ago>)` under its header: where
+    /// its code is, read from the note, never fetched (`yaks commits <id>
+    /// --fetch` lists the branch). A first line says how far the farm branch is ahead of or
     /// behind its upstream as of the last fetch (never fetches; omitted with
     /// no upstream). JSON: `farm`, and `sheds` (every actor, idle too) with
-    /// `name`, `liveness`, `last_write`, `working`, `asking`, `touched`.
+    /// `name`, `liveness`, `last_write`, `checkpoint` (`branch`, `commit`,
+    /// `at`, or null), `working`, `asking`, `touched`.
     /// Read-only.
     Sheds {
         /// Emit the sheds as JSON (every actor, idle ones too).
@@ -1354,14 +1373,16 @@ fn main() -> Result<()> {
             }
             Some(r) => render_refs(&r),
         },
-        Command::Commits { id, json } => match farm.commits(&id, &env::current_dir()?)? {
-            None => {
-                eprintln!("no such task: {id}");
-                std::process::exit(1);
+        Command::Commits { id, fetch, json } => {
+            match farm.commits(&id, &env::current_dir()?, fetch)? {
+                None => {
+                    eprintln!("no such task: {id}");
+                    std::process::exit(1);
+                }
+                Some(c) if json => json::print(&commits_json(&c))?,
+                Some(c) => render_commits(&c),
             }
-            Some(c) if json => json::print(&commits_json(&c))?,
-            Some(c) => render_commits(&c),
-        },
+        }
         Command::Verify { ids, as_actor } => {
             let actor = actor::resolve(as_actor.as_deref());
             let cfg = farm.config();
@@ -3059,6 +3080,84 @@ fn commit_json(c: &farm::CommitRef) -> serde_json::Value {
     serde_json::json!({ "sha": c.sha, "short": c.short, "subject": c.subject })
 }
 
+fn branch_json(b: &branchlog::BranchCommits) -> serde_json::Value {
+    serde_json::json!({
+        "branch": b.branch,
+        "remote": b.remote,
+        "tracking": b.tracking,
+        "base": b.base,
+        "fetched": b.fetched,
+        "fetch_error": b.fetch_error,
+        "error": b.error,
+        "commits": b.commits.iter().map(|c| {
+            let mut v = commit_json(c);
+            v["checkpoint"] = serde_json::json!(b.is_checkpoint(c));
+            v
+        }).collect::<Vec<_>>(),
+        "checkpoints": b.checkpoints.iter().map(|k| serde_json::json!({
+            "commit": k.commit,
+            "ts": k.ts,
+            "actor": k.actor,
+            "state": k.state.as_str(),
+        })).collect::<Vec<_>>(),
+    })
+}
+
+fn render_branches(c: &Commits) {
+    for b in &c.branches {
+        println!();
+        let base = b
+            .base
+            .as_deref()
+            .map(|x| format!(" (since {x})"))
+            .unwrap_or_default();
+        println!("Branch {}{base}:", b.tracking);
+        if let Some(e) = &b.fetch_error {
+            println!("  fetch failed: {e}");
+        }
+        match (&b.error, b.fetched) {
+            (Some(e), _) => println!("  {e}"),
+            (None, true) => println!("  fetched just now"),
+            (None, false) => println!(
+                "  as of the last fetch of {} (yaks commits --fetch refreshes it)",
+                b.remote
+            ),
+        }
+        if b.error.is_none() {
+            if b.commits.is_empty() {
+                println!("  (no commits beyond the base)");
+            }
+            for l in &b.commits {
+                let mark = if b.is_checkpoint(l) {
+                    "  \u{2190} checkpoint"
+                } else {
+                    ""
+                };
+                println!("  {} {}{mark}", l.short, l.subject);
+            }
+        }
+        for k in &b.checkpoints {
+            let short: String = k.commit.chars().take(7).collect();
+            let who = k
+                .actor
+                .as_deref()
+                .map(|a| format!(" [{a}]"))
+                .unwrap_or_default();
+            match k.state {
+                branchlog::CheckpointState::Listed => {}
+                branchlog::CheckpointState::InBase => println!(
+                    "  checkpoint {short} ({}{who}) is already in the base: landed or merged",
+                    k.ts
+                ),
+                branchlog::CheckpointState::NotOnBranch => println!(
+                    "  checkpoint {short} ({}{who}) is NOT on {}: the branch was rewritten, or the commit was never pushed",
+                    k.ts, b.tracking
+                ),
+            }
+        }
+    }
+}
+
 fn commits_json(c: &Commits) -> serde_json::Value {
     let recorded: Vec<_> = c
         .recorded
@@ -3079,6 +3178,8 @@ fn commits_json(c: &Commits) -> serde_json::Value {
         "id": c.id,
         "code_repo": c.code_repo.as_ref().map(|p| p.display().to_string()),
         "recorded": recorded,
+        "fetch": c.fetch,
+        "branches": c.branches.iter().map(branch_json).collect::<Vec<_>>(),
         "named": c.by_message.iter().map(commit_json).collect::<Vec<_>>(),
         "farm_history": c.by_file.iter().map(commit_json).collect::<Vec<_>>(),
     })
@@ -3107,6 +3208,7 @@ fn render_commits(c: &Commits) {
             .unwrap_or_default();
         println!("  {} {short}{branch}  {what}  ({}{who})", r.kind, r.ts);
     }
+    render_branches(c);
     println!();
     match &c.code_repo {
         Some(top) => println!("Commits naming {} in {}:", c.id, top.display()),

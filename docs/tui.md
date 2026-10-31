@@ -405,7 +405,10 @@ the farm is synced. The text is the CLI's own (the same functions produce it).
   fetch), and is left out when the farm has no upstream.
 - **The tab count** is the number of sheds that want a look now (active, stale,
   or asking).
-- **The detail pane** (`l`) lists the shed's yaks as `yaks sheds` does:
+- **The detail pane** (`l`) starts with where the shed's code is, when its
+  latest `checkpoint` note names a branch (`branch yaks/walk-1/mem-f13a @
+  47076b0 (9m ago)`, read from the note, never fetched; `yaks commits <id>
+  --fetch` lists the branch's commits). Then it lists the shed's yaks as `yaks sheds` does:
   `shaving` (the ones it holds the claim on), `asking` (waiting on a human) and
   `recent`, newest first, each with its status now (`⏳` on one awaiting a
   human). `Enter` opens the yak; answer an ask with `a` from any yak view, as

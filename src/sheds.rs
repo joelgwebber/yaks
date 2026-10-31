@@ -16,6 +16,10 @@
 //! - **Liveness**: `active` (wrote within [`ACTIVE_WITHIN`]), `stale` (holds a
 //!   claim but has not written for longer), else `idle`.
 //!
+//! - **Where its code is** (yaks-4728): the actor's latest `checkpoint` note on
+//!   ANY yak, when it names a branch: `branch <b> @ <short sha> (<ago>)`. Read
+//!   from the note alone; nothing is fetched.
+//!
 //! Notes with no actor belong to no row.
 
 use crate::model::{Status, Task};
@@ -103,6 +107,27 @@ impl Kind {
     }
 }
 
+/// The branch and commit an actor last recorded in a `checkpoint` note.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Checkpoint {
+    pub branch: String,
+    /// The recorded sha, as written; `None` when the note had no `commit`.
+    pub commit: Option<String>,
+    /// The note's timestamp.
+    pub at: String,
+}
+
+impl Checkpoint {
+    /// `branch <b> @ <short sha> (<ago>)`; no `@` without a commit.
+    pub fn line(&self, now: DateTime<Utc>) -> String {
+        let at = match &self.commit {
+            Some(c) => format!(" @ {}", c.chars().take(7).collect::<String>()),
+            None => String::new(),
+        };
+        format!("branch {}{at} ({})", self.branch, ago(&self.at, now))
+    }
+}
+
 /// One worker in the farm: an actor and what it wrote.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Shed {
@@ -113,6 +138,8 @@ pub struct Shed {
     /// Its newest write.
     pub last_write: String,
     pub liveness: Liveness,
+    /// Its latest checkpoint note naming a branch, on any yak.
+    pub checkpoint: Option<Checkpoint>,
 }
 
 impl Shed {
@@ -218,8 +245,32 @@ fn claimant(notes: &[store::NoteEntry]) -> Option<(String, String)> {
 /// The sheds of `tasks`, in display order, as of `now`. Pure.
 pub fn build(tasks: &[Task], now: DateTime<Utc>) -> Vec<Shed> {
     let mut by_actor: BTreeMap<String, Vec<Touched>> = BTreeMap::new();
+    let mut checkpoints: BTreeMap<String, Checkpoint> = BTreeMap::new();
     for t in tasks {
         let notes = store::parse_notes(&t.body);
+        for n in &notes {
+            let (Some(actor), Some("checkpoint"), Some(branch)) = (
+                n.actor.as_deref(),
+                n.kind(),
+                n.get("branch").map(str::trim).filter(|b| !b.is_empty()),
+            ) else {
+                continue;
+            };
+            if checkpoints.get(actor).is_none_or(|p| p.at <= n.ts) {
+                checkpoints.insert(
+                    actor.to_string(),
+                    Checkpoint {
+                        branch: branch.to_string(),
+                        commit: n
+                            .get("commit")
+                            .map(str::trim)
+                            .filter(|c| !c.is_empty())
+                            .map(str::to_string),
+                        at: n.ts.clone(),
+                    },
+                );
+            }
+        }
         let claim = (t.status == Status::Shaving)
             .then(|| claimant(&notes))
             .flatten();
@@ -267,6 +318,7 @@ pub fn build(tasks: &[Task], now: DateTime<Utc>) -> Vec<Shed> {
                 Liveness::Idle
             };
             Shed {
+                checkpoint: checkpoints.get(&name).cloned(),
                 name,
                 touched,
                 last_write,
@@ -362,6 +414,9 @@ pub fn render(r: &Report, all: bool) -> String {
         out.push_str(&format!("{:<width$}  {}\n", s.name, status_text(s, r.now)));
         let mut recent = 0;
         let mut more = 0;
+        if let Some(c) = &s.checkpoint {
+            out.push_str(&format!("  {}\n", c.line(r.now)));
+        }
         for (kind, t) in s.rows() {
             if kind == Kind::Recent {
                 recent += 1;
@@ -400,6 +455,12 @@ pub fn to_json(r: &Report) -> Value {
             "name": s.name,
             "liveness": s.liveness.as_str(),
             "last_write": s.last_write,
+            // Its latest checkpoint note naming a branch, on any yak.
+            "checkpoint": s.checkpoint.as_ref().map(|c| json!({
+                "branch": c.branch,
+                "commit": c.commit,
+                "at": c.at,
+            })),
             // Claimed yaks, and yaks waiting on a human, by id.
             "working": s.working().map(|t| &t.id).collect::<Vec<_>>(),
             "asking": s.asks().map(|t| &t.id).collect::<Vec<_>>(),
@@ -862,6 +923,83 @@ boss    active · 30m ago
         let r = Report { farm: None, ..r };
         assert!(to_json(&r)["farm"].is_null());
         assert!(!render(&r, false).contains("farm:"));
+    }
+
+    #[test]
+    fn a_sheds_row_shows_its_latest_checkpoint_from_any_yak() {
+        let mut a = yak("y-a", Status::Shaving);
+        let meta = |c: &'static str, b: &'static str| {
+            [("kind", "checkpoint"), ("branch", b), ("commit", c)]
+        };
+        a.body = store::append_note_meta(
+            &a.body,
+            "2026-10-31T10:00:00Z",
+            Some("w1"),
+            &meta("1111111aaaa", "yaks/w1/old"),
+            "first",
+        );
+        let mut b = yak("y-b", Status::Hairy);
+        b.body = store::append_note_meta(
+            &b.body,
+            "2026-10-31T14:00:00Z",
+            Some("w1"),
+            &meta("2222222bbbb", "yaks/w1/work"),
+            "later, on another yak",
+        );
+        // Another actor's, a landed note and a checkpoint with no branch do not count.
+        b.body = store::append_note_meta(
+            &b.body,
+            "2026-10-31T15:00:00Z",
+            Some("w1"),
+            &[("kind", "checkpoint"), ("commit", "3333333")],
+            "no branch",
+        );
+        b.body = store::append_note_meta(
+            &b.body,
+            "2026-10-31T15:30:00Z",
+            Some("w2"),
+            &meta("4444444cccc", "yaks/w2/x"),
+            "theirs",
+        );
+        let sheds = build(&[a, b], now());
+        let c = shed(&sheds, "w1").checkpoint.as_ref().unwrap();
+        assert_eq!(c.branch, "yaks/w1/work");
+        assert_eq!(c.line(now()), "branch yaks/w1/work @ 2222222 (2h ago)");
+        let r = Report {
+            now: now(),
+            farm: None,
+            sheds,
+        };
+        let text = render(&r, true);
+        assert!(
+            text.contains("w1  active · 1h ago\n  branch yaks/w1/work @ 2222222 (2h ago)\n"),
+            "{text}"
+        );
+        let v = to_json(&r);
+        let w1 = v["sheds"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|s| s["name"] == "w1")
+            .unwrap();
+        assert_eq!(w1["checkpoint"]["branch"], "yaks/w1/work");
+        assert_eq!(w1["checkpoint"]["commit"], "2222222bbbb");
+        assert_eq!(w1["checkpoint"]["at"], "2026-10-31T14:00:00Z");
+        // An actor with no checkpoint note gets a null and no row line.
+        let w2 = v["sheds"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|s| s["name"] == "w2")
+            .unwrap();
+        assert_eq!(w2["checkpoint"]["branch"], "yaks/w2/x");
+        let r = Report {
+            now: now(),
+            farm: None,
+            sheds: build(&farm(), now()),
+        };
+        assert!(to_json(&r)["sheds"][0]["checkpoint"].is_null());
+        assert!(!render(&r, true).contains("branch "));
     }
 
     #[test]

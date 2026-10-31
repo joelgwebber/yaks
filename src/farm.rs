@@ -612,6 +612,11 @@ pub struct Commits {
     /// worktree): then `by_message` is empty and says nothing.
     pub code_repo: Option<PathBuf>,
     pub recorded: Vec<RecordedCommit>,
+    /// `--fetch` was asked: the recorded branches were fetched first.
+    pub fetch: bool,
+    /// The branches the notes record (checkpoints), each with its commits
+    /// since the base (yaks-4728); empty when no note names a branch.
+    pub branches: Vec<crate::branchlog::BranchCommits>,
     /// Commits naming the id, across every branch but the farm's, newest first.
     pub by_message: Vec<CommitRef>,
     /// Farm history: the commits that edited the yak's file on the farm.
@@ -1435,8 +1440,10 @@ impl Farm {
     /// repository of `cwd` (yaks-7a11: the farm's own worktree holds only farm
     /// commits, so the grep runs in the git top-level yaks was started from,
     /// over every branch but the farm's), then the yak file's own history on
-    /// the farm (followed across its status moves).
-    pub fn commits(&self, id: &str, cwd: &Path) -> Result<Option<Commits>> {
+    /// the farm (followed across its status moves). The branches its notes
+    /// record are read from the code repository too; only `fetch` touches the
+    /// network (yaks-4728).
+    pub fn commits(&self, id: &str, cwd: &Path, fetch: bool) -> Result<Option<Commits>> {
         let Some(task) = store::load_task_by_id(&self.root, id)? else {
             return Ok(None);
         };
@@ -1444,7 +1451,12 @@ impl Farm {
             return Ok(None);
         };
         let code_repo = self.code_repo(cwd);
-        let recorded = store::parse_notes(&task.body)
+        let notes = store::parse_notes(&task.body);
+        let branches = match &code_repo {
+            Some(top) => crate::branchlog::gather(top, &notes, fetch),
+            None => Vec::new(),
+        };
+        let recorded = notes
             .into_iter()
             .filter_map(|n| {
                 let commit = n.get("commit")?.to_string();
@@ -1494,6 +1506,8 @@ impl Farm {
             path,
             code_repo,
             recorded,
+            fetch,
+            branches,
             by_message,
             by_file,
         }))
@@ -2183,7 +2197,7 @@ fn invalid_status_value(text: &str) -> Option<String> {
 }
 
 /// `git log <args>` in `dir` as commits (full sha, short sha, subject).
-fn git_commits(dir: &Path, args: &[&str]) -> Result<Vec<CommitRef>> {
+pub(crate) fn git_commits(dir: &Path, args: &[&str]) -> Result<Vec<CommitRef>> {
     let out = std::process::Command::new("git")
         .arg("-C")
         .arg(dir)
@@ -2218,7 +2232,7 @@ fn parse_commit_line(line: &str) -> Option<CommitRef> {
 
 /// `sha` as the repository at `top` has it, or `None` when it is not a hex
 /// sha or names no commit there.
-fn git_commit_ref(top: &Path, sha: &str) -> Option<CommitRef> {
+pub(crate) fn git_commit_ref(top: &Path, sha: &str) -> Option<CommitRef> {
     if sha.len() < 4 || !sha.chars().all(|c| c.is_ascii_hexdigit()) {
         return None;
     }

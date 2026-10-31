@@ -501,6 +501,9 @@ fn detail_lines(s: &Shed, now: chrono::DateTime<chrono::Utc>) -> (Vec<Line<'stat
         ),
         Span::raw(format!("  {}", sheds::status_text(s, now))),
     ])];
+    if let Some(c) = &s.checkpoint {
+        lines.push(Line::from(vec![Span::styled(c.line(now), dim())]));
+    }
     lines.push(Line::default());
     let mut starts = Vec::new();
     for (kind, y) in s.rows() {
@@ -597,6 +600,7 @@ pub(crate) mod fixture {
             last_write: touched[0].last.clone(),
             liveness,
             touched,
+            checkpoint: None,
         }
     }
 
@@ -630,6 +634,12 @@ pub(crate) mod fixture {
                 ),
             ],
         );
+        let mut walk = walk;
+        walk.checkpoint = Some(crate::sheds::Checkpoint {
+            branch: "yaks/walk-1/mem-f13a".into(),
+            commit: Some("47076b0e1c2d3f4a5b6c7d8e9f0a1b2c3d4e5f60".into()),
+            at: "2026-10-31T15:51:00Z".into(),
+        });
         let delta = shed(
             "delta:Set up remote yak workflow",
             Liveness::Active,

@@ -64,7 +64,7 @@ break, a list or a code fence is not run-on). They compose, and back `list`, `se
 | `log` | Timestamped notes and status moves (`moved: <from> -> <to>` entries) across a filtered set, oldest first (`--since <2h\|3d\|date>`, `--by <actor>`). |
 | `refs <id>` | The yaks a task points at (parent, deps, id mentions), flagging danglers. |
 | `refs <id> --incoming [--json]` | The reverse: every yak that points AT this one, one line per reference (`child`, `depends` or `mention`). Computed by scanning the farm on demand. `--json`. The TUI's `B` key opens the same list. [Details](#refs) |
-| `commits <id> [--json]` | Git commits linked to a yak — shas recorded in its notes (`yaks land` writes them), those naming its id in the code repository (all branches), then the yak file's own history on the farm. [Details](#commits) |
+| `commits <id> [--fetch] [--json]` | Git commits linked to a yak — shas recorded in its notes (`yaks land` writes them), the branches they record (`--fetch` fetches first), those naming its id in the code repository (all branches), then the yak file's own history on the farm. [Details](#commits) |
 | `rollup` | Group yaks by the external issue they roll up to (`--keys` lists the external keys). |
 | `scan-ids [file]` | Scan text/stdin for real yak-ids; prints `line:col  id`, exits non-zero if any found — a leak check for a private farm's commits (pre-commit / PR hook). |
 
@@ -96,7 +96,7 @@ Hairy yaks whose dependencies are all resolved — the work queue. A yak awaitin
 
 Who is working on what, read from the farm alone. A **shed** is a worker in the farm: one row per **actor**, the `[actor]` stamp on notes and moves (`▸ <ts> [actor]`; set it with `YAKS_ACTOR` or `--as`). Nothing here looks at git checkouts, Delta or the machine, so a synced farm reads the same on every machine. Notes with no actor belong to no row.
 
-Per actor, a header `<actor>  <liveness> · <last write>` and its yaks:
+Per actor, a header `<actor>  <liveness> · <last write>`, then, when the actor has one, `branch <b> @ <short sha> (<ago>)` (yaks-4728): where its code is, from the actor's latest `checkpoint` note naming a branch, on ANY yak (so one worker branch spanning several yaks shows once). It is read from the note alone, never fetched; `yaks commits <id> --fetch` is how to look at the branch. Then its yaks:
 
 - `shaving  <id>  <title>`: **working on**. The yak is `shaving` now and this actor holds the claim: the claimant of the latest move into `shaving` is the actor named by that move's `for:` metadata when it has one, else the actor of the most recent note since that move (move included). So a coordinator that moves a yak into `shaving` for a worker, and the worker's notes after it, put the yak under the worker. A yak is under exactly one actor's `shaving`. `asking you` ends the line when it also waits on a human.
 - `asking   <id>  <status>  <title>  <ago>`: the actor's other yaks with `needs: human`.
@@ -105,7 +105,7 @@ Per actor, a header `<actor>  <liveness> · <last write>` and its yaks:
 
 Order: an actor with an open ask first, then active, stale, idle, then the most recent writer. Idle actors with no claim and no ask are only counted (`(3 idle actors; --all lists them)`); `--all` lists them. A first line gives the farm's freshness, `farm: up to date with origin/yaks` or `farm: 2 ahead, 0 behind origin/yaks (as of the last fetch)`: the farm branch against its upstream from the refs as of the last fetch (never fetches; the same state `yaks status` reports). It is left out for a farm with no upstream.
 
-`--json`: `{farm, sheds}`. `farm` is `{branch, upstream, ahead, behind}` or `null`. `sheds` lists EVERY actor in the same order, idle ones too: `{name, liveness, last_write, working: [ids], asking: [ids], touched: [{id, title, status, needs, last, working}]}` (`touched` is every yak it wrote, newest first). Read-only.
+`--json`: `{farm, sheds}`. `farm` is `{branch, upstream, ahead, behind}` or `null`. `sheds` lists EVERY actor in the same order, idle ones too: `{name, liveness, last_write, checkpoint: {branch, commit, at} or null, working: [ids], asking: [ids], touched: [{id, title, status, needs, last, working}]}` (`touched` is every yak it wrote, newest first). Read-only.
 
 ### `refs`
 
@@ -623,15 +623,18 @@ While a merge or cherry-pick is in progress in the farm worktree it refuses, sta
 
 ### `commits`
 
-`commits <id> [--json]`
+`commits <id> [--fetch] [--json]`
 
-Three sections, in this order:
+Four sections, in this order (the second only when a note records a branch):
 
 1. **Recorded** lists every note on the yak with a `commit:` key (`yaks land` writes them, see below): the note's `kind`, the short sha, `on <branch>` when it has one, the subject as the code repository has it (`(not in this repository)` when the commit is not there: a clone that lacks it, a rewritten history), and the note's timestamp and actor. A recorded sha is the only link that works on a private farm, whose commits never name a yak.
-2. **Commits naming `<id>`** greps commit messages in the *code repository*: the git top-level of the directory yaks was started from (so `-C <path>` picks it), across every local branch, remote branch and tag except the farm branch, newest first. A branch farm lives on its own branch, so searching the farm's worktree would find only `yaks: ...` farm commits and never the code; when yaks is started outside any code checkout (not in git, or in the farm's own worktree) the section says so instead of listing farm commits.
-3. **Farm history** is the yak file's own edit history on the farm (`git log --follow`), labelled as such: it shows when the yak changed, not what code did.
+2. **Branch `<remote>/<branch>`** (yaks-4728), one per branch the yak's notes record with a `branch:` key (a `checkpoint` note: `--meta kind=checkpoint --meta branch=<b> --meta commit=<sha>`; `landed` notes do not count, their branch is where the work landed). Optional `remote:` (default `origin`) and `base:` (the newest one wins; default the remote's default branch, `origin/HEAD`, else a local `main`). It lists `git log --oneline <base>..<remote>/<branch>` from the code repository, newest first, and marks each recorded checkpoint commit with `← checkpoint`. A checkpoint sha that is not reachable from the branch gets a line saying so (`checkpoint abc1234 (…) is NOT on origin/<b>: the branch was rewritten, or the commit was never pushed`); one already in the base says it landed or merged.
 
-`--json` prints the same as `{id, code_repo, recorded, named, farm_history}`: `recorded` entries carry `kind`, `commit`, `source`, `branch`, `ts`, `actor` and `found` (`{sha, short, subject}` or `null`); `named` and `farm_history` are lists of `{sha, short, subject}`.
+   **Fetching is explicit.** Without `--fetch` nothing touches the network: it reads the remote-tracking ref already there and says `as of the last fetch of <remote>` (or that the branch has never been fetched here). `--fetch` first runs `git fetch <remote> +refs/heads/<branch>:refs/remotes/<remote>/<branch>` for each branch, with prompts off. A fetch that fails (no such remote branch, offline) prints `fetch failed: <git's message>` under that branch and goes on to the next, falling back to whatever tracking ref exists; the command still exits 0 when the yak exists.
+3. **Commits naming `<id>`** greps commit messages in the *code repository*: the git top-level of the directory yaks was started from (so `-C <path>` picks it), across every local branch, remote branch and tag except the farm branch, newest first. A branch farm lives on its own branch, so searching the farm's worktree would find only `yaks: ...` farm commits and never the code; when yaks is started outside any code checkout (not in git, or in the farm's own worktree) the section says so instead of listing farm commits.
+4. **Farm history** is the yak file's own edit history on the farm (`git log --follow`), labelled as such: it shows when the yak changed, not what code did.
+
+`--json` prints the same as `{id, code_repo, recorded, fetch, branches, named, farm_history}`: `branches` entries are `{branch, remote, tracking, base, fetched, fetch_error, error, commits: [{sha, short, subject, checkpoint}], checkpoints: [{commit, ts, actor, state}]}` with `state` one of `on_branch`, `in_base`, `not_on_branch` (`error` says why there is no log: no tracking ref, no base); `recorded` entries carry `kind`, `commit`, `source`, `branch`, `ts`, `actor` and `found` (`{sha, short, subject}` or `null`); `named` and `farm_history` are lists of `{sha, short, subject}`.
 
 ### `land`
 
