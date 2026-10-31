@@ -459,6 +459,10 @@ enum Command {
         /// Read the note from this file (`-` is stdin).
         #[arg(long = "note-file", value_name = "PATH")]
         note_file: Option<String>,
+        /// Metadata for the note, as `key=value` (repeatable): `key: value`
+        /// lines under its marker, like `kind=checkpoint`. Needs a note.
+        #[arg(long, value_name = "KEY=VALUE")]
+        meta: Vec<String>,
         /// Attribute the note to this actor (stamped as `[actor]`). Defaults to
         /// $YAKS_ACTOR, then the harness identity (`delta:<thread title>`, else
         /// `delta:<thread id>`, from Delta's environment), then the git user;
@@ -1408,6 +1412,10 @@ fn main() -> Result<()> {
                     id,
                     TaskEdit {
                         note: Some(format!("verify: `{cmd}` -> {verdict}")),
+                        meta: vec![
+                            ("kind".into(), "verify".into()),
+                            ("result".into(), if ok { "pass" } else { "fail" }.into()),
+                        ],
                         actor: actor.clone(),
                         ..Default::default()
                     },
@@ -1668,12 +1676,14 @@ fn main() -> Result<()> {
             verify,
             note,
             note_file,
+            meta,
             as_actor,
         } => {
             let mut stdin = StdinText::real();
             let description =
                 resolve_text("--description", description, description_file, &mut stdin)?;
             let note = resolve_text("--note", note, note_file, &mut stdin)?;
+            let meta = parse_meta_args(&meta, note.is_some())?;
             let actor = note
                 .as_ref()
                 .and_then(|_| actor::resolve(as_actor.as_deref()));
@@ -1689,6 +1699,7 @@ fn main() -> Result<()> {
                 source,
                 verify,
                 note,
+                meta,
                 actor,
             };
             update_many(&farm, &ids, edit)?;
@@ -2038,6 +2049,7 @@ fn main() -> Result<()> {
                     source: None,
                     verify: None,
                     note: None,
+                    meta: Vec::new(),
                     actor: None,
                 };
                 update_many(&farm, &ids, edit)?;
@@ -2447,6 +2459,26 @@ fn run_verify_command(cmd: &str) -> std::io::Result<(bool, String)> {
         None => "FAIL (terminated by signal)".to_string(),
     };
     Ok((status.success(), verdict))
+}
+
+/// The `--meta key=value` arguments of `update`, split and checked: each needs
+/// a `=` and a key that is a valid metadata key, and any needs a note to
+/// attach to. Values may contain `=`.
+fn parse_meta_args(args: &[String], has_note: bool) -> Result<Vec<(String, String)>> {
+    if !args.is_empty() && !has_note {
+        anyhow::bail!("--meta needs a note to attach to (give --note, --note-file or `--note -`)");
+    }
+    args.iter()
+        .map(|a| {
+            let Some((k, v)) = a.split_once('=') else {
+                anyhow::bail!("--meta {a:?}: expected key=value");
+            };
+            if !store::is_meta_key(k) {
+                anyhow::bail!("--meta {a:?}: {k:?} is not a valid key (letters, digits, `_` and `-`; not starting with a digit or `-`)");
+            }
+            Ok((k.to_string(), v.to_string()))
+        })
+        .collect()
 }
 
 fn update_many(farm: &Farm, ids: &[String], edit: TaskEdit) -> Result<()> {

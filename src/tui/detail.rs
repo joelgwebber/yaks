@@ -595,19 +595,34 @@ fn editor_rows(n: usize) -> impl Iterator<Item = DLine> {
     })
 }
 
-/// The label of a comment block: `actor · when` (or just `when`). One design
-/// for the detail pane's comment headers.
+/// The label of a comment block: `actor · when`, then its metadata compactly
+/// (`· checkpoint · commit 47076b0`: the `kind` first, bare, then each other
+/// key as `key value`), or just `when` without an actor. One design for the
+/// detail pane's comment headers.
 pub fn comment_label(kind: &content::BlockKind, clock: &Clock) -> String {
     match kind {
         content::BlockKind::Description => "description".into(),
         content::BlockKind::Comment {
-            timestamp, actor, ..
+            timestamp,
+            actor,
+            meta,
         } => {
             let when = clock.format(timestamp);
-            match actor {
+            let mut label = match actor {
                 Some(a) => format!("{a} · {when}"),
                 None => when,
+            };
+            let kind = meta.iter().find(|(k, _)| k == "kind");
+            let rest = meta.iter().filter(|(k, _)| k != "kind");
+            for part in kind
+                .map(|(_, v)| v.clone())
+                .into_iter()
+                .chain(rest.map(|(k, v)| format!("{k} {v}")))
+            {
+                label.push_str(" · ");
+                label.push_str(&part);
             }
+            label
         }
     }
 }
@@ -1087,6 +1102,34 @@ mod tests {
         let plain = body.iter().find(|l| l.text == "plain line").unwrap();
         assert!(plain.md.is_empty());
         assert_eq!(plain.src.unwrap().lines, Some((2, 2)));
+    }
+
+    #[test]
+    fn comment_label_lists_kind_first_then_the_other_keys() {
+        let clock = Clock::test_default();
+        let label = |actor: Option<&str>, meta: &[(&str, &str)]| {
+            comment_label(
+                &content::BlockKind::Comment {
+                    timestamp: "2026-09-10T11:00:00Z".into(),
+                    actor: actor.map(str::to_string),
+                    meta: meta
+                        .iter()
+                        .map(|(k, v)| (k.to_string(), v.to_string()))
+                        .collect(),
+                },
+                &clock,
+            )
+        };
+        let plain = label(Some("a"), &[]);
+        assert_eq!(
+            label(Some("a"), &[("commit", "47076b0"), ("kind", "checkpoint")]),
+            format!("{plain} \u{b7} checkpoint \u{b7} commit 47076b0")
+        );
+        assert_eq!(
+            label(Some("a"), &[("branch", "x")]),
+            format!("{plain} \u{b7} branch x")
+        );
+        assert!(label(None, &[("kind", "ask")]).ends_with(" \u{b7} ask"));
     }
 
     #[test]

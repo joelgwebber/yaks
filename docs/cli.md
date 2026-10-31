@@ -75,6 +75,8 @@ break, a list or a code fence is not run-on). They compose, and back `list`, `se
 
 Show one yak: fields, references, children, body + notes. An unknown id exits 1.
 
+`--json` is the task object plus, when the yak has notes, `notes: [{ts, actor, meta, text}]` in file order (`meta` is an object of the note's [metadata](#note-metadata), `{}` for a plain note; `actor` is null for a bare note). `description` still holds the whole body, notes included. `yaks log --json` entries carry the same `meta`.
+
 ### `path`
 
 `path [<id>...]` / `path <filters>`
@@ -135,7 +137,7 @@ Mentions are whole real ids, matched exactly as `refs` and the TUI links do. Com
 | Command | What it does |
 |---|---|
 | `create '<title>'` | New hairy yak. Title is positional or `--title`; `--type`/`--priority`/`--parent`/`--herd`/`--labels`/`--depends-on`/`--source`/`--description`/`--description-file`/`--verify`; `--json` prints id + file path. `--description -` reads stdin (see [Multi-line text](#multi-line-text)). [Details](#create) |
-| `update <ids…>` | Update fields/labels, replace the body (`--description`/`--description-file`) or append a `--note`/`--note-file`; the same edit applies to every id. `--note -` reads stdin (see [Multi-line text](#multi-line-text)). [Details](#update) |
+| `update <ids…>` | Update fields/labels, replace the body (`--description`/`--description-file`) or append a `--note`/`--note-file` (with `--meta key=value`, repeatable, for the note's [metadata](#note-metadata)); the same edit applies to every id. `--note -` reads stdin (see [Multi-line text](#multi-line-text)). [Details](#update) |
 | `dep add\|remove <id> <dep>` | Add / remove a dependency. |
 | `reparent <ids…> --parent <id>` | Move yaks under a new parent (or `--unparent` to top-level). |
 | `rename <old> <new>` | Rename a yak's id, updating every reference across the farm (its file, its `.yaks/<herd>/yaks/<id>/` attachment dir and the `](<old>/…)` links to it). |
@@ -163,6 +165,8 @@ With neither `--herd` nor a default herd, `create` fails (non-zero) rather than 
 Update fields/labels, replace the body (`--description`/`--description-file`) or append a `--note`/`--note-file`; the same edit (and the same text) applies to every id.
 
 `--note -` / `--description -` read stdin (see [Multi-line text](#multi-line-text)).
+
+`--meta key=value` (repeatable) puts `key: value` lines under the note's marker (see [Note metadata](#note-metadata)). It needs a note (`--note`, `--note-file` or `--note -`); a missing `=`, a key that is not `[A-Za-z_][A-Za-z0-9_-]*`, or no note is an error and nothing is written. The value is everything after the first `=`.
 
 `--as <actor>` attributes the note. `--verify '<cmd>'` sets (or, empty, clears) the yak's verification command; `--source <url>` likewise sets (or, empty, clears) its external `source:`.
 
@@ -276,11 +280,40 @@ takes the whole family instead: every live descendant, deepest first, then the
 yak itself.
 
 Every move appends an entry to the yak's body in the note shape,
-`▸ <ts> [<actor>]`, a blank line, then `moved: <from> -> <to>` (one per yak moved, so
+`▸ <ts> [<actor>]`, its `kind: move` / `from` / `to` [metadata](#note-metadata), a blank line, then `moved: <from> -> <to>` (one per yak moved, so
 `slaughter --family` writes one on each), and each verb takes `--as <actor>`
 like the note commands. The file alone says who moved the yak and when, and
 `yaks log` lists moves with the notes. A yak moved by an older binary simply has
 no entry.
+
+See [Note metadata](#note-metadata) for the `kind: move` fields each entry also carries.
+
+### Note metadata
+
+A note can carry `key: value` lines directly under its `▸ <ts> [actor]` marker, closed by a `---` line, like a yak's own frontmatter:
+
+```markdown
+---
+▸ 2026-10-31T15:20:00Z [tex-1]
+kind: checkpoint
+commit: 47076b0
+---
+
+Atlas and UVs done.
+```
+
+A note without them is still valid, and unknown keys are kept. The commands that write a conventional note stamp its `kind`, and keep the body text they always wrote (`moved: a -> b`, `asked: needs human`, …) so anything matching on text keeps working:
+
+| Command | `kind` | Other keys |
+|---|---|---|
+| a move (`shave`, `shear`, `regrow`, `slaughter`, the TUI) | `move` | `from`, `to` (statuses) |
+| `ask` | `ask` | `needs` (who it waits on) |
+| `answer --note` | `answer` | `needs` (what it leaves: `agent`, or `none` for `--done` or a yak with no `needs`) |
+| `request` | `request` | |
+| `pickup` | `pickup` | |
+| `verify` | `verify` | `result` (`pass` or `fail`) |
+
+Add your own with `update --meta` (`kind=checkpoint`, `commit=…`). The TUI shows a comment's metadata after `actor · when` in its header, `kind` first (`checkpoint · commit 47076b0`), and editing the comment keeps it. `doctor` checks the notes against `needs:` (see [`doctor`](#doctor)).
 
 ## Human-in-the-loop
 
@@ -406,7 +439,7 @@ Rules, the same for all four commands:
 | `init [--farm <checkout>]` | Start this repo's farm branch, or share another repo's (`--farm`), and install the skills. Idempotent. [Details](#init) |
 | `skills install` | Install all four bundled agent skills to `--dir <path>`, `--user` or the project's `./.agents/skills`. Edited copies are left alone unless `--force`. [Details](#skills) |
 | `skills status` | Per-skill verdict (`current`, `stale`, `adoptable`, `held`, `modified`, `unmanaged`, `source`, `retired`) from the provenance stamp. `--user` / `--dir` inspect another directory. See [skills.md](skills.md). [Details](#skills) |
-| `doctor` | Read-only integrity check: invalid status, duplicate id, misplaced file, dangling parent/deps, malformed labels. Exits non-zero on any issue. `--strict` also flags shorn yaks with no note or whose `verify:` did not last PASS. [Details](#doctor) |
+| `doctor` | Read-only integrity check: invalid status, duplicate id, misplaced file, dangling parent/deps, malformed labels, `needs:` that disagrees with the latest kinded ask/answer/request/pickup note. Exits non-zero on any issue. `--strict` also flags shorn yaks with no note or whose `verify:` did not last PASS. [Details](#doctor) |
 | `preflight [<id>...] [--all] [--push-main]` | Read-only landing check: shorn yaks' `verify:` last PASSed, farm integrity, no merge conflict in the farm. `--push-main` checks the `local` remote. [Details](#preflight) |
 | `brief <id> --as <name> [--yaks-dir <path>]` | Print the worker brief for one yak, read-only: the part a worker needs that the yak, the config and the farm determine. `--yaks-dir` names the farm. [Details](#brief) |
 | `status [--check] [--json]` | What the farm has changed that git does not have yet, one line per yak, in yak terms. Read-only. `--check` exits 1 when the farm is dirty; `--json`. [Details](#status) |
@@ -507,7 +540,7 @@ An ordinary command prints that advice itself as one stderr `note:` line, once p
 
 `doctor`
 
-Read-only integrity check: a `status:` value that is not hairy/shaving/shorn/dead (`invalid-status`), one `id:` in the frontmatter of two yak files (`duplicate-id`), a yak file away from its `<herd>/yaks/<id>.md` (in another herd's directory, under another name, or loose at the farm root; not loaded from there: `misplaced-file`), dangling parent/deps, malformed labels (a legacy label containing a comma or space, e.g. `ui,docs` — any label edit on that yak re-splits it).
+Read-only integrity check: a `status:` value that is not hairy/shaving/shorn/dead (`invalid-status`), one `id:` in the frontmatter of two yak files (`duplicate-id`), a yak file away from its `<herd>/yaks/<id>.md` (in another herd's directory, under another name, or loose at the farm root; not loaded from there: `misplaced-file`), dangling parent/deps, malformed labels (a legacy label containing a comma or space, e.g. `ui,docs` — any label edit on that yak re-splits it), and `needs-drift`: the latest `ask`, `answer`, `request` or `pickup` note *with* `kind` [metadata](#note-metadata) leaves a state that `needs:` disagrees with (`ask` leaves its `needs` key, default `human`; `answer`, its `needs` key, default `agent`; `request`, `agent`; `pickup`, none). A yak with no such note is never flagged. Two commands change `needs:` without writing a note, so the check allows what they leave: after an `ask` note, `agent` or no `needs` (an `answer` with no `--note`); after an `answer` note, no `needs` (`answer --done` with no note, or `pickup --drop-request`, which removes the request note).
 
 Exits non-zero on any issue (CI-usable).
 

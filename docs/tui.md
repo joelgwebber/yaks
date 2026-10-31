@@ -131,6 +131,8 @@ your edit, and if the yak changed any other way nothing is saved, the pane
 reloads, and the editor reopens with your text (`changed on disk; not saved:
 review and Ctrl-S again`).
 
+A comment's [metadata](cli.md#note-metadata) shows in its header after `actor · when`, `kind` first and the other keys as `key value` (`▸ tex-1 · 2h ago · checkpoint · commit 47076b0`); its `key: value` lines are not part of the editable text, and saving the comment keeps them.
+
 `a` opens this editor too, as a new note headed `Ask <id> · you · now` or
 `Answer <id> · you · now`, with a `Ctrl-S ask (needs: human)` or `Ctrl-S answer
 (needs: agent)` hint: saving sets `needs` (via the same path as `yaks ask` /

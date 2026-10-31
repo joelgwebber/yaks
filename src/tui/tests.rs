@@ -4471,6 +4471,44 @@ mod block_edit {
         assert_ne!(a[2], b[2]);
     }
 
+    /// yaks-b8cd: a comment's metadata shows compactly in its header
+    /// (`kind` first, then `key value`), and editing the comment keeps it.
+    #[test]
+    fn a_comment_header_shows_its_metadata_and_an_edit_keeps_it() {
+        let mut t = task("t0", "solo", Status::Hairy, 3, None);
+        let b = crate::store::append_note_meta(
+            DESC,
+            "2026-01-01T00:00:00Z",
+            Some("tex-1"),
+            &[("kind", "checkpoint"), ("commit", "47076b0")],
+            "Atlas and UVs done.",
+        );
+        t.body = crate::store::append_note(&b, "2026-01-02T00:00:00Z", Some("joel"), "plain");
+        let (_d, farm) = temp_farm(&[t]);
+        let mut app = App::with_farm(farm).unwrap();
+        app.detail_page = 27;
+        handle_key(&mut app, key('l'));
+        let frame = draw(&app, 90, 30);
+        assert!(
+            frame.contains("tex-1 \u{b7} ")
+                && frame.contains(" \u{b7} checkpoint \u{b7} commit 47076b0 "),
+            "{frame}"
+        );
+        assert!(
+            !frame.contains("kind:"),
+            "metadata lines must not leak: {frame}"
+        );
+        insta::assert_snapshot!("comment_header_with_metadata", frame);
+
+        let before = body(&app);
+        app.detail_line = dline_of(&app, "Atlas");
+        handle_key(&mut app, key('E'));
+        append(&mut app, "!");
+        ctrl(&mut app, 's');
+        assert_eq!(body(&app), before.replace("done.", "done.!"));
+        assert!(body(&app).contains("kind: checkpoint\ncommit: 47076b0\n---\n"));
+    }
+
     #[test]
     fn ctrl_s_without_edits_changes_nothing() {
         let (_d, mut app) = app_with_comments();

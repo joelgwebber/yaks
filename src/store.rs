@@ -1370,7 +1370,17 @@ pub fn move_task(root: &Path, id: &str, dest: Status, actor: Option<&str>) -> Re
     let mut task = parse_task(&text, status)
         .with_context(|| format!("parsing {} before move", path.display()))?;
     let now = now_iso();
-    task.body = append_note(&task.body, &now, actor, &transition_text(status, dest));
+    task.body = append_note_meta(
+        &task.body,
+        &now,
+        actor,
+        &[
+            ("kind", "move"),
+            ("from", status.as_str()),
+            ("to", dest.as_str()),
+        ],
+        &transition_text(status, dest),
+    );
     task.status = dest;
     task.updated = Some(now);
     write::save(root, &task)?;
@@ -1396,6 +1406,10 @@ pub fn is_transition_text(text: &str) -> bool {
     let status = |s: &str| matches!(s, "hairy" | "shaving" | "shorn" | "dead");
     status(from) && status(to)
 }
+
+/// The `needs` metadata value of an `answer` note that leaves the yak with no
+/// `needs` (`answer --done`, or a yak that had none).
+pub const NEEDS_NONE: &str = "none";
 
 /// Prefix of the first line of an `ask` note: `asked: needs <who>`. It marks
 /// which note raised the question, so the reply detection can tell the asker's
@@ -1547,9 +1561,17 @@ pub fn drop_latest_request(body: &str) -> Option<String> {
         .filter(|&i| is_note_delim(&lines, i))
         .collect();
     let end_of = |k: usize| starts.get(k + 1).copied().unwrap_or(lines.len());
-    let k = (0..starts.len())
-        .rev()
-        .find(|&k| is_request_text(lines[starts[k] + 2..end_of(k)].join("\n").trim()))?;
+    // The text starts after the marker, or after the metadata block under it.
+    let text_from = |k: usize| {
+        parse_meta(&lines[..end_of(k)], starts[k] + 1).map_or(starts[k] + 2, |(_, from)| from)
+    };
+    let k = (0..starts.len()).rev().find(|&k| {
+        is_request_text(
+            lines[text_from(k).min(end_of(k))..end_of(k)]
+                .join("\n")
+                .trim(),
+        )
+    })?;
     let before = lines[..starts[k]].join("\n");
     let before = before.trim_end();
     let after = lines[end_of(k)..].join("\n");
@@ -1598,6 +1620,7 @@ pub fn load_task_by_id(root: &Path, id: &str) -> Result<Option<Task>> {
 /// An optional actor is stamped onto the marker line as `\u{25b8} <ts> [<actor>]`;
 /// an absent or empty actor writes the bare `\u{25b8} <ts>` form, so this is
 /// byte-for-byte compatible with pre-actor notes and needs no migration.
+#[cfg_attr(not(test), allow(dead_code))] // the commands all write metadata now
 pub fn append_note(body: &str, ts: &str, actor: Option<&str>, note: &str) -> String {
     append_note_meta(body, ts, actor, &[], note)
 }
@@ -1966,6 +1989,14 @@ mod log_parse_tests {
         let out = drop_latest_request(&d).unwrap();
         assert_eq!(out, append_note(&b, "t4", Some("x"), "after"));
         // First note on an empty description: the rest stays parseable.
+        // A request note with metadata (what `request` writes now) drops too.
+        let m = append_note_meta("D.", "t1", Some("x"), &[("kind", "request")], &req("meta"));
+        let m = append_note(&m, "t2", Some("x"), "kept");
+        assert_eq!(
+            drop_latest_request(&m).unwrap(),
+            append_note("D.", "t2", Some("x"), "kept")
+        );
+
         let e = append_note("", "t1", None, &req("only"));
         let e = append_note(&e, "t2", None, "kept");
         let out = drop_latest_request(&e).unwrap();

@@ -94,12 +94,17 @@ pub fn create_value(t: &Task, path: &Path) -> Value {
     v
 }
 
+/// A note's metadata as a JSON object, in file order.
+fn meta_value(meta: &[(String, String)]) -> Value {
+    Value::Object(meta.iter().map(|(k, v)| (k.clone(), json!(v))).collect())
+}
+
 pub fn log_array(entries: &[crate::farm::LogEntry]) -> Value {
     Value::Array(
         entries
             .iter()
             .map(|e| {
-                json!({"timestamp": e.ts, "id": e.id, "title": e.title, "actor": e.actor, "note": e.note})
+                json!({"timestamp": e.ts, "id": e.id, "title": e.title, "actor": e.actor, "meta": meta_value(&e.meta), "note": e.note})
             })
             .collect(),
     )
@@ -123,6 +128,14 @@ pub fn tangled_array(items: &[(Task, Vec<String>)]) -> Value {
 pub fn show_value(t: &Task, children: &[Task]) -> Value {
     let mut v = task_value(t);
     if let Value::Object(m) = &mut v {
+        let notes = crate::store::parse_notes(&t.body);
+        if !notes.is_empty() {
+            let notes: Vec<Value> = notes
+                .iter()
+                .map(|n| json!({"ts": n.ts, "actor": n.actor, "meta": meta_value(&n.meta), "text": n.text}))
+                .collect();
+            m.insert("notes".into(), Value::Array(notes));
+        }
         if !children.is_empty() {
             let kids: Vec<Value> = children
                 .iter()

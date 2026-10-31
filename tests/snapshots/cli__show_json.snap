@@ -12,6 +12,14 @@ expression: "run(&[\"show\", \"fix-0003\", \"--json\"])"
   "updated": "2026-01-03T00:00:00Z",
   "source": "https://github.com/acme/widgets/issues/9",
   "description": "Wrapped up the gamma work.\n\n---\n▸ 2026-01-03T12:00:00Z\n\nVerified in staging.",
+  "notes": [
+    {
+      "ts": "2026-01-03T12:00:00Z",
+      "actor": null,
+      "meta": {},
+      "text": "Verified in staging."
+    }
+  ],
   "children": [
     {
       "id": "fix-0004",

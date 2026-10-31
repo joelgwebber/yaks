@@ -170,6 +170,9 @@ pub struct TaskEdit {
     /// A rerunnable verification command to set on the yak (see `Task::verify`).
     pub verify: Option<String>,
     pub note: Option<String>,
+    /// Metadata for the appended `note` (`key: value` lines under its marker;
+    /// keys per `store::is_meta_key`). Ignored without a `note`.
+    pub meta: Vec<(String, String)>,
     /// Actor to attribute an appended note to (stamped as `[actor]`). Only
     /// meaningful alongside `note`; ownership is never implied.
     pub actor: Option<String>,
@@ -603,6 +606,8 @@ pub struct LogEntry {
     pub ts: String,
     pub actor: Option<String>,
     pub note: String,
+    /// The note's metadata, in file order (empty for a plain note).
+    pub meta: Vec<(String, String)>,
 }
 
 /// One integrity problem found by [`Farm::doctor`]. Read-only: doctor never
@@ -646,6 +651,10 @@ pub enum IssueKind {
     /// another herd's directory, under the wrong name, or loose at the farm
     /// root). Not loaded from there; move it to where `yaks path <id>` says.
     MisplacedFile,
+    /// The yak's `needs:` disagrees with its latest kinded `ask`, `answer`,
+    /// `request` or `pickup` note (yaks-b8cd). A yak with no such note is never
+    /// flagged.
+    NeedsDrift,
 }
 
 impl IssueKind {
@@ -660,6 +669,7 @@ impl IssueKind {
             IssueKind::UnverifiedShear => "unverified-shear",
             IssueKind::MalformedLabel => "malformed-label",
             IssueKind::MisplacedFile => "misplaced-file",
+            IssueKind::NeedsDrift => "needs-drift",
         }
     }
 
@@ -678,6 +688,9 @@ impl IssueKind {
             }
             IssueKind::MalformedLabel => "Malformed label (contains a comma or whitespace)",
             IssueKind::MisplacedFile => "Misplaced yak file (not at <herd>/yaks/<id>.md)",
+            IssueKind::NeedsDrift => {
+                "Needs drift (needs: disagrees with the latest ask/answer/request/pickup note)"
+            }
         }
     }
 }
@@ -791,7 +804,13 @@ impl Farm {
         };
         let before = task.needs.replace(needs.to_string());
         let ts = store::now_iso();
-        task.body = store::append_note(&task.body, &ts, actor, &store::ask_text(needs, question));
+        task.body = store::append_note_meta(
+            &task.body,
+            &ts,
+            actor,
+            &[("kind", "ask"), ("needs", needs)],
+            &store::ask_text(needs, question),
+        );
         task.updated = Some(ts);
         store::write::save(&self.root, &task)?;
         Ok(Some(NeedsChange {
@@ -824,7 +843,17 @@ impl Farm {
         }
         let ts = store::now_iso();
         if let Some(n) = note {
-            task.body = store::append_note(&task.body, &ts, actor, n);
+            // `needs` records the state this answer leaves (`none` once
+            // cleared), so a done answer or one on a yak with no `needs` is
+            // not mistaken for a hand-off by `doctor`.
+            let after = task.needs.as_deref().unwrap_or(store::NEEDS_NONE);
+            task.body = store::append_note_meta(
+                &task.body,
+                &ts,
+                actor,
+                &[("kind", "answer"), ("needs", after)],
+                n,
+            );
         }
         task.updated = Some(ts);
         store::write::save(&self.root, &task)?;
@@ -850,7 +879,13 @@ impl Farm {
         }
         let before = task.needs.replace(NEEDS_AGENT.to_string());
         let ts = store::now_iso();
-        task.body = store::append_note(&task.body, &ts, actor, &store::request_text(note));
+        task.body = store::append_note_meta(
+            &task.body,
+            &ts,
+            actor,
+            &[("kind", "request")],
+            &store::request_text(note),
+        );
         task.updated = Some(ts);
         store::write::save(&self.root, &task)?;
         Ok(Request::Requested(NeedsChange {
@@ -895,7 +930,13 @@ impl Farm {
             return Ok(Pickup::Picked);
         }
         task.needs = None;
-        task.body = store::append_note(&task.body, &ts, actor, &store::pickup_text(note));
+        task.body = store::append_note_meta(
+            &task.body,
+            &ts,
+            actor,
+            &[("kind", "pickup")],
+            &store::pickup_text(note),
+        );
         task.updated = Some(ts);
         store::write::save(&self.root, &task)?;
         Ok(Pickup::Picked)
@@ -1024,6 +1065,7 @@ impl Farm {
                     ts: note.ts,
                     actor: note.actor,
                     note: note.text,
+                    meta: note.meta,
                 });
             }
         }
@@ -1285,6 +1327,19 @@ impl Farm {
                         ids: vec![t.id.clone()],
                     });
                 }
+            }
+        }
+
+        // `needs:` against the latest kinded note (yaks-b8cd). Only notes that
+        // carry `kind` metadata count, so a yak from before metadata is never
+        // flagged.
+        for t in &tasks {
+            if let Some(message) = needs_drift(t) {
+                issues.push(Issue {
+                    kind: IssueKind::NeedsDrift,
+                    message,
+                    ids: vec![t.id.clone()],
+                });
             }
         }
 
@@ -1611,7 +1666,12 @@ impl Farm {
         }
         if let Some(n) = edit.note {
             let ts = store::now_iso();
-            task.body = store::append_note(&task.body, &ts, edit.actor.as_deref(), &n);
+            let meta: Vec<(&str, &str)> = edit
+                .meta
+                .iter()
+                .map(|(k, v)| (k.as_str(), v.as_str()))
+                .collect();
+            task.body = store::append_note_meta(&task.body, &ts, edit.actor.as_deref(), &meta, &n);
             changed = true;
         }
         if changed {
@@ -1958,6 +2018,49 @@ pub(crate) fn last_verify_passed(body: &str) -> bool {
         .is_some_and(|n| n.text.contains(" -> PASS"))
 }
 
+/// What `needs:` the latest kinded ask/answer/request/pickup note of `t`
+/// leaves, when that disagrees with `t.needs`. `ask` and `answer` record the
+/// state they set in a `needs` field (`ask --needs <who>`; `answer` leaves
+/// `agent`, or `none` when done or when the yak had none), defaulting to
+/// `human` and `agent`; `request` leaves `agent`, `pickup` none.
+///
+/// Two commands change `needs:` without writing a note, so the check allows
+/// what they can leave behind instead of crying wolf: a note-less `answer`
+/// (or `--done`) after an `ask` or `answer` note (`agent` or none), and
+/// `pickup --drop-request`, which removes the request note and so leaves an
+/// earlier `answer` note over a cleared `needs:`.
+fn needs_drift(t: &Task) -> Option<String> {
+    let notes = store::parse_notes(&t.body);
+    let note = notes
+        .iter()
+        .rfind(|n| matches!(n.kind(), Some("ask" | "answer" | "request" | "pickup")))?;
+    let kind = note.kind()?;
+    let expected = match (kind, note.get("needs")) {
+        ("ask", got) => Some(got.unwrap_or("human")),
+        ("answer", got) => Some(got.unwrap_or(NEEDS_AGENT)),
+        ("request", _) => Some(NEEDS_AGENT),
+        _ => None,
+    }
+    .filter(|n| *n != store::NEEDS_NONE);
+    let have = t.needs.as_deref();
+    let note_less = match kind {
+        "ask" => matches!(have, None | Some(NEEDS_AGENT)),
+        "answer" => have.is_none(),
+        _ => false,
+    };
+    if have == expected || note_less {
+        return None;
+    }
+    let show = |n: Option<&str>| n.map_or("no needs".to_string(), |n| format!("needs: {n}"));
+    Some(format!(
+        "{} has {} but its latest {kind} note ({}) leaves {}",
+        t.id,
+        show(have),
+        note.ts,
+        show(expected)
+    ))
+}
+
 fn issue_rank(k: IssueKind) -> u8 {
     match k {
         IssueKind::InvalidStatus => 0,
@@ -1968,6 +2071,7 @@ fn issue_rank(k: IssueKind) -> u8 {
         IssueKind::UnverifiedShear => 5,
         IssueKind::MalformedLabel => 6,
         IssueKind::MisplacedFile => 7,
+        IssueKind::NeedsDrift => 8,
     }
 }
 
@@ -2320,6 +2424,187 @@ mod tests {
         assert_eq!(c.after.as_deref(), Some("agent"));
         assert_eq!(note_texts(&farm, "yak-0002"), vec!["also"]);
         assert!(farm.answer("nope", None, None, false).unwrap().is_none());
+    }
+
+    fn notes_of(farm: &Farm, id: &str) -> Vec<store::NoteEntry> {
+        let t = store::load_task_by_id(&farm.root, id).unwrap().unwrap();
+        store::parse_notes(&t.body)
+    }
+
+    /// Every command that writes a conventional note stamps its `kind` (and
+    /// the fields that go with it), and keeps the body text readers match on.
+    #[test]
+    fn commands_write_kind_metadata_and_keep_the_body_text() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+        farm.ask("yak-0001", "human", Some("a"), Some("which?"))
+            .unwrap();
+        farm.answer("yak-0001", Some("j"), Some("B"), false)
+            .unwrap();
+        farm.pickup("yak-0001", Some("a"), None, false).unwrap();
+        farm.request("yak-0001", Some("j"), Some("tidy")).unwrap();
+        farm.transition("yak-0001", Status::Shaving, Some("a"))
+            .unwrap();
+        let notes = notes_of(&farm, "yak-0001");
+        let got: Vec<(Option<&str>, &str)> =
+            notes.iter().map(|n| (n.kind(), n.text.as_str())).collect();
+        assert_eq!(
+            got,
+            vec![
+                (Some("ask"), "asked: needs human\n\nwhich?"),
+                (Some("answer"), "B"),
+                (Some("pickup"), "picked up"),
+                (Some("request"), "requested: needs agent\n\ntidy"),
+                (Some("move"), "moved: hairy -> shaving"),
+            ]
+        );
+        assert_eq!(notes[0].get("needs"), Some("human"));
+        assert_eq!(notes[1].get("needs"), Some("agent"));
+        let mv = &notes[4];
+        assert_eq!(
+            (mv.get("from"), mv.get("to")),
+            (Some("hairy"), Some("shaving"))
+        );
+    }
+
+    /// `update` appends the given metadata under the note; without a note it
+    /// has nothing to attach to and writes none.
+    #[test]
+    fn update_writes_the_edit_meta_under_the_note() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+        let meta = vec![
+            ("kind".to_string(), "checkpoint".to_string()),
+            ("commit".to_string(), "47076b0".to_string()),
+        ];
+        farm.update(
+            "yak-0001",
+            TaskEdit {
+                note: Some("saved".into()),
+                meta: meta.clone(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        farm.update(
+            "yak-0001",
+            TaskEdit {
+                title: Some("t".into()),
+                meta,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let notes = notes_of(&farm, "yak-0001");
+        assert_eq!(notes.len(), 1);
+        assert_eq!(
+            (notes[0].kind(), notes[0].get("commit")),
+            (Some("checkpoint"), Some("47076b0"))
+        );
+        assert_eq!(notes[0].text, "saved");
+    }
+
+    fn drift(farm: &Farm, id: &str) -> Vec<Issue> {
+        farm.doctor(false)
+            .unwrap()
+            .into_iter()
+            .filter(|i| i.kind == IssueKind::NeedsDrift && i.ids[0] == id)
+            .collect()
+    }
+
+    /// The commands keep `needs:` and the notes in step, so doctor is quiet
+    /// through a whole ask -> answer -> pickup loop, and for a yak whose notes
+    /// carry no `kind` at all (older notes, hand-set `needs:`).
+    #[test]
+    fn doctor_needs_drift_is_quiet_when_commands_wrote_both() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+        assert!(drift(&farm, "yak-0001").is_empty());
+        farm.ask("yak-0001", "human", Some("a"), Some("q")).unwrap();
+        assert!(drift(&farm, "yak-0001").is_empty());
+        farm.answer("yak-0001", Some("j"), Some("r"), false)
+            .unwrap();
+        assert!(drift(&farm, "yak-0001").is_empty());
+        farm.pickup("yak-0001", Some("a"), None, false).unwrap();
+        assert!(drift(&farm, "yak-0001").is_empty());
+        farm.request("yak-0001", Some("j"), None).unwrap();
+        assert!(drift(&farm, "yak-0001").is_empty());
+        farm.answer("yak-0001", Some("j"), Some("fyi"), true)
+            .unwrap();
+        assert!(
+            drift(&farm, "yak-0001").is_empty(),
+            "{:?}",
+            farm.doctor(false).unwrap()
+        );
+
+        // The two commands that change `needs:` with no note stay quiet: a
+        // note-less answer, and `pickup --drop-request` (which removes the
+        // request note, leaving the earlier answer over a cleared `needs:`).
+        store::write::save(&root, &task("yak-0003", Status::Hairy)).unwrap();
+        farm.ask("yak-0003", "human", Some("a"), Some("q")).unwrap();
+        farm.answer("yak-0003", Some("j"), None, false).unwrap();
+        assert!(drift(&farm, "yak-0003").is_empty());
+        farm.answer("yak-0003", Some("j"), None, true).unwrap();
+        assert!(drift(&farm, "yak-0003").is_empty());
+        store::write::save(&root, &task("yak-0004", Status::Hairy)).unwrap();
+        farm.ask("yak-0004", "human", Some("a"), Some("q")).unwrap();
+        farm.answer("yak-0004", Some("j"), Some("r"), false)
+            .unwrap();
+        farm.request("yak-0004", Some("j"), Some("tidy")).unwrap();
+        farm.pickup("yak-0004", Some("a"), None, true).unwrap();
+        assert_eq!(needs_of(&farm, "yak-0004"), None);
+        assert!(drift(&farm, "yak-0004").is_empty());
+
+        // No kinded notes: whatever `needs:` says, never flagged.
+        let mut old = task("yak-0002", Status::Hairy);
+        old.needs = Some("human".into());
+        old.body = store::append_note(
+            "",
+            "2026-01-01T00:00:00Z",
+            Some("a"),
+            "asked: needs agent\n\nq",
+        );
+        store::write::save(&root, &old).unwrap();
+        assert!(drift(&farm, "yak-0002").is_empty());
+    }
+
+    /// A hand edit of `needs:` that no longer matches the latest kinded note
+    /// is reported, naming both sides.
+    #[test]
+    fn doctor_flags_needs_that_disagrees_with_the_latest_kinded_note() {
+        let (root, farm) = temp_farm();
+        let note = |ts: &str, kind: &str, text: &str| {
+            store::append_note_meta("", ts, Some("a"), &[("kind", kind)], text)
+        };
+        let cases = [
+            ("ask", Some("other"), "asked: needs human"),
+            ("request", None, "requested: needs agent"),
+            ("request", Some("human"), "requested: needs agent"),
+            ("answer", Some("human"), "r"),
+            ("pickup", Some("agent"), "picked up"),
+        ];
+        for (i, (kind, needs, text)) in cases.iter().enumerate() {
+            let mut t = task(&format!("yak-{i:04}"), Status::Hairy);
+            t.needs = needs.map(str::to_string);
+            t.body = note("2026-01-01T00:00:00Z", kind, text);
+            store::write::save(&root, &t).unwrap();
+            let got = drift(&farm, &t.id);
+            assert_eq!(got.len(), 1, "{kind} with {needs:?}");
+            assert!(got[0].message.contains(kind), "{}", got[0].message);
+        }
+        // The latest kinded note decides, not an earlier one or a plain note.
+        let mut t = task("yak-9999", Status::Hairy);
+        t.body = note("2026-01-01T00:00:00Z", "ask", "asked: needs human");
+        t.body = store::append_note_meta(
+            &t.body,
+            "2026-01-02T00:00:00Z",
+            None,
+            &[("kind", "pickup")],
+            "picked up",
+        );
+        t.body = store::append_note(&t.body, "2026-01-03T00:00:00Z", None, "plain");
+        store::write::save(&root, &t).unwrap();
+        assert!(drift(&farm, "yak-9999").is_empty());
     }
 
     /// `pickup` refuses anything that is not `needs: agent`, naming the state;

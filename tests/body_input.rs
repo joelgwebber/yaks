@@ -156,19 +156,24 @@ fn ask_and_answer_take_stdin_and_file() {
     f.ok(&["ask", &id, "--note", "-"], Some(&format!("{TEXT}\n")));
     let file = f.file(&id);
     assert!(ends_with_text(&file), "{file}");
-    assert!(file.contains("needs: human"), "{file}");
+    assert!(frontmatter(&file).contains("needs: human"), "{file}");
 
     let path = f.write("a.md", &format!("{TEXT}\n"));
     f.ok(&["answer", &id, "--note-file", &path], None);
     let file = f.file(&id);
     assert!(ends_with_text(&file));
-    assert!(file.contains("needs: agent"), "{file}");
+    assert!(frontmatter(&file).contains("needs: agent"), "{file}");
 
     f.ok(&["ask", &id, "--note-file", &path], None);
     f.ok(&["answer", &id, "--done", "--note", "-"], Some(TEXT));
     let file = f.file(&id);
     assert!(ends_with_text(&file));
-    assert!(!file.contains("needs:"), "{file}");
+    assert!(!frontmatter(&file).contains("needs:"), "{file}");
+}
+
+/// The yak's frontmatter: the notes' own metadata lines also say `needs:`.
+fn frontmatter(file: &str) -> &str {
+    file.splitn(3, "---\n").nth(1).unwrap_or(file)
 }
 
 #[test]
