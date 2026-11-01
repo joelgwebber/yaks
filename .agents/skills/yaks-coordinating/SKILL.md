@@ -93,3 +93,13 @@ Your thread is the yakherd; each worker is a subthread with its own clone, which
 - **Each worktree builds and tests its own binary.**
 - **Serial arc** (phases that edit the same files in order): keep one worktree for the arc, land each phase to main as it completes, then `git merge main` back into it.
 - **Recovery:** a lost session is not lost work. `git -C wt/<name> status` and `diff`, build that worktree, then finish it yourself or discard and re-run.
+
+## 11. On a machine nobody is sitting at (a cloud runner, a VM)
+
+- **Expect wipes.** Often only the harness's worktree survives a reset: tools, caches, other checkouts and running workers are gone, with no final message. Keep a setup script in the repo that restores the toolchain in minutes, and run it detached. Sync the farm after every claim, landing and check-in, so a wipe loses no yak state.
+- **Dead workers.** A worker whose latest note is over an hour old, or older than the machine's last boot, is dead. Brief a replacement under a **new** name (`door-3`, not `door-2`), and have it start from the dead one's notes and pushed branch.
+- **Long jobs.** Launch a build as its own terminal command, detached (`setsid nohup sh job.sh > log 2>&1 < /dev/null &`), and poll its log in calls of at most about 10 minutes. Chained after other commands, a detached job sometimes never starts.
+- **Budget by disk and CPU, not by yak count.** One Rust checkout's build directory can be 10 GB. Count what fits before fanning out, and delete a landed worker's checkout and build directory.
+- **Re-verify when the machine is quiet.** Timing-sensitive evidence (browser checks, benchmarks) fails under load from other workers' builds. Re-run it after they finish, with the exact command and environment the worker recorded. Require that record in the brief.
+- **Name the off-limits paths.** Your own checkout is the obvious "repo" path on such a machine. The brief says which path is yours and never to edit it; the worker works only in its own `git rev-parse --show-toplevel`.
+- **No thread tools there.** Liveness may come from note age alone, so hold workers to the note cadence.
