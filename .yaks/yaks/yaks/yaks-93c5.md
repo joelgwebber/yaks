@@ -1,11 +1,11 @@
 ---
 id: yaks-93c5
 title: 'Skills: one Families section (the invariant, graduating a child, where a follow-up goes); retire the scattered lines'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-01T16:43:15Z'
-updated: '2026-11-01T17:30:52Z'
+updated: '2026-11-01T17:31:48Z'
 parent: yaks-9b41
 labels:
 - skills
@@ -34,3 +34,27 @@ thread: ksQQtfBVdv4DR2eA_txRWzEtg5LOADbbFpIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-01T17:31:47Z [yakherd]
+kind: landed
+sha: ea50761
+---
+
+Done in ea50761.
+
+- `yaks` skill: a **Families** section after Workflow: the invariant and which commands keep it, closing a family (one `yaks shorn` in any order; graduate unfinished children with a note), where a follow-up goes (your yak's child only if your yak isn't done without it; else the nearest open ancestor or top level), abandoning (`slaughter --family`, shorn stays shorn). Workflow 2 and 6 shrink to pointers; the commands table says "open descendants".
+- `yaks-working` 2 and 7, `yaks-coordinating` Reconcile, and the repo-only `land` skill drop their own family rules and point at the section.
+- Net: the step-6 converse added in yaks-62f2 and every "and its parent if hairy" are gone; the rule is stated once, and the tool enforces it.
+
+Evidence: `cargo test --bin yaks skills` (37 pass, BUNDLED guard); grep for "its parent if", "unfinished children", "graduat" across `.agents/skills`, README, docs/skills.md, src/brief.rs finds only the new section and pointers. Not done: the AGENTS.md cold read by a cheap scout (subagents are off unless asked); I re-read the three skills top to bottom myself.
+
+---
+▸ 2026-11-01T17:31:48Z [yakherd]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQtfBVdv4DR2eA_txRWzEtg5LOADbbFpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn

@@ -1,11 +1,11 @@
 ---
 id: yaks-9b41
 title: 'Families: a finished yak never has open descendants (moves enforce it, doctor checks it, skills say it once)'
-status: shaving
+status: shorn
 type: feature
 priority: 1
 created: '2026-10-13T18:04:15Z'
-updated: '2026-11-01T17:16:53Z'
+updated: '2026-11-01T17:31:48Z'
 labels:
 - doctor
 - skills
@@ -84,3 +84,26 @@ kind: pickup
 picked up
 
 Decision: both leans taken (Joel, answer above). slaughter blocks only on hairy/shaving children and --family leaves shorn descendants shorn (yaks-27c1); shave takes hairy ancestors along and the skills drop 'and its parent if hairy' (yaks-cfa6). Rejected: today's slaughter-kills-the-subtree, and a doctor error for shaving-under-hairy. Order: yaks-27c1, yaks-35a4, yaks-cfa6, then yaks-93c5 (skills), then cut 0.0.28.
+
+---
+▸ 2026-11-01T17:31:48Z [yakherd]
+
+Arc done: a finished yak never has open descendants, and the commands, the TUI, doctor and the skills agree.
+
+- yaks-62f2 (ac5c6e2): `shorn` refuses over open children; doctor `unfinished-children`.
+- yaks-27c1 (7a314e2): dead parents too; `slaughter` ignores shorn children and `--family` leaves them shorn; `list --all --parent-of` shows dead descendants.
+- yaks-35a4 (95fa1e2): nothing opens under a finished parent (create, reparent, regrow, revive, shave); `Farm::batch_order`; the TUI checks before writing a shear comment.
+- yaks-cfa6 (76aeae2): `shave` takes hairy ancestors along (`child:` on their entries).
+- yaks-93c5 (ea50761): one Families section in the skills.
+
+Evidence is on each child; the gate (`cargo test --workspace --locked`, CI-like env) was green after each commit.
+
+---
+▸ 2026-11-01T17:31:48Z [yakherd]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQtfBVdv4DR2eA_txRWzEtg5LOADbbFpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
