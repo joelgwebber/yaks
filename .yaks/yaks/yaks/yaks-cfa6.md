@@ -1,11 +1,11 @@
 ---
 id: yaks-cfa6
 title: shave takes hairy ancestors along (replacing the skills' 'and its parent if hairy')
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-01T16:43:15Z'
-updated: '2026-11-01T17:28:01Z'
+updated: '2026-11-01T17:30:52Z'
 parent: yaks-9b41
 labels:
 - cli
@@ -28,3 +28,28 @@ thread: ksQQtfBVdv4DR2eA_txRWzEtg5LOADbbFpIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-01T17:30:51Z [yakherd]
+kind: landed
+sha: 76aeae2
+---
+
+Done (see the landed sha).
+
+- `Farm::transition_lifting` (what `transition` now wraps): after the family check, a move to shaving also moves each hairy ancestor (`Farm::shave_lifts`: parent, grandparent, ... up to the first non-hairy one, cycle-safe), outermost first in the result. Each lifted entry carries `child: <id>` via the new `store::move_task_with(.., extra)`; it is stamped with the same actor.
+- CLI prints `Shaving <parent> (parent of <id>)` per lifted yak; the TUI's single move says `<id> → shaving (with <ids>)`. A bulk shave walks parents first (batch_order), so it lifts nothing it already moves.
+- No doctor check for shaving-under-hairy (Joel, yaks-9b41 ask, 2).
+- Help/docs: `shave --help`, docs/cli.md (Families section and the note-metadata `child` field), docs/tui.md state row. The skills' "and its parent if hairy" goes in yaks-93c5.
+
+Evidence: `cargo test --workspace --locked` green (CI-like env); `shave_lifts_hairy_ancestors` (two hairy ancestors lifted outermost first, stops at a shaving one, `child:` and actor on the entry, no-op lifts nothing). Real CLI: `yaks shave <leaf>` under hairy mid under hairy top printed `Shaving yak-ff1c`, `Shaving yak-0899 (parent of yak-ff1c)`, `Shaving yak-5b34 (parent of yak-ff1c)`; top's last entry shows `child: yak-ff1c` and the `thread:`.
+
+---
+▸ 2026-11-01T17:30:52Z [yakherd]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQtfBVdv4DR2eA_txRWzEtg5LOADbbFpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn

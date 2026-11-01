@@ -1,11 +1,11 @@
 ---
 id: yaks-93c5
 title: 'Skills: one Families section (the invariant, graduating a child, where a follow-up goes); retire the scattered lines'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-01T16:43:15Z'
-updated: '2026-11-01T16:43:15Z'
+updated: '2026-11-01T17:30:52Z'
 parent: yaks-9b41
 labels:
 - skills
@@ -24,3 +24,13 @@ A **Families** section in the `yaks` skill, after Workflow, short because the to
 - **Follow-ups found while working:** a child of your yak only if your yak is not done without it (then you finish it first). Otherwise file it under the nearest open ancestor it belongs to, or top-level, and name it in your summary note. If the parent's own description promises that work, it stays open.
 
 Then replace the Workflow lines, `yaks-working` 2 and 7 and coordinating Reconcile with short pointers, and check the result reads as one rule. Docs parity: README and docs if they restate it. Cold-read with a cheap scout afterwards (AGENTS.md).
+
+---
+▸ 2026-11-01T17:30:52Z [yakherd]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQtfBVdv4DR2eA_txRWzEtg5LOADbbFpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
