@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-10-31T15:57:06Z'
-updated: '2026-11-01T15:37:48Z'
+updated: '2026-11-01T15:37:57Z'
 parent: yaks-039b
 depends_on:
 - yaks-0071
@@ -72,3 +72,8 @@ Report from the runner yakherd (`herd`, later `delta:herd`), about 8 workers in:
 - **Landing:** `yaks land` worked, including conflict resolution and `--continue`.
 - **Thread tools:** unavailable on the runner, so liveness came from note age only.
 - **Possible Delta isolation leak:** an isolated worker's new file appeared as an external edit in the herd's worktree. The runner is investigating; that's a Delta question, not yaks.
+
+---
+▸ 2026-11-01T15:37:57Z [yakherd]
+
+Correction to the last note: not a Delta isolation leak. A worker edited the herd's checkout by absolute path (details on `yaks-6344`).
