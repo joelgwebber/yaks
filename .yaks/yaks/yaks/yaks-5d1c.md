@@ -5,12 +5,12 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-11-01T15:37:47Z'
-updated: '2026-11-01T15:37:47Z'
+updated: '2026-11-01T15:54:38Z'
 parent: yaks-039b
 labels:
 - cli
 - skills
-needs: human
+needs: agent
 ---
 
 Report from the memcraft cloud-runner yakherd (2026-11-01, about 8 workers on 0.0.27): one farm held `herd`, `door-1`/`tgt-1` (from `yaks brief --as`) and `delta:Web Deploy v0`. The last came from a single `yaks pickup` run in a fresh shell without `YAKS_ACTOR`, which fell back to the herd's thread title.
@@ -46,3 +46,11 @@ Should agent actor names carry a harness prefix by convention?
 2. **Prefix only derived names** (lean): explicit names stay as given (`herd`, `door-2`); only the fallback adds `delta:`. Combined with the persistent `yaks.actor` setting and the title-prefix fallback, a forgotten name still comes out as `delta:door-2`, never the herd's title. Less to teach; harness origin is visible only when it was derived.
 
 Either way: the persistent per-checkout actor, the title-prefix fallback, and the skills telling agents not to rely on `export`.
+
+---
+▸ 2026-11-01T15:54:38Z [Joel Webber]
+kind: answer
+needs: agent
+---
+
+Good catch on the stable thread id question fits into this. I'm not entirely certain I follow the fallback mechanism, but as long as we have something that works fairly consistently, I'm good with your lean. The main thing I care about is ensuring we don't get inscrutable overlap (eg, "herd") or otherwise ambiguous names. And that agents can use them to follow post facto behavior when trying to piece together past changes. Nice side-benefit -- the "sheds" UI gets more constrained, coherent swimlanes (apart from humans, who *should* get long-running yak-lists).
