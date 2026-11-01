@@ -1,11 +1,11 @@
 ---
 id: yaks-5d1c
 title: 'Actor names that survive fresh shells: persistent per-checkout actor, title-prefix fallback, a naming convention'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-01T15:37:47Z'
-updated: '2026-11-01T15:59:34Z'
+updated: '2026-11-01T16:08:19Z'
 parent: yaks-039b
 labels:
 - cli
@@ -76,3 +76,48 @@ to: shaving
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-01T16:08:18Z [yakherd]
+
+Landed in `906379f` (not released yet).
+
+## What changed
+
+- **`yaks whoami [--set <name>]`** shows the resolved actor and where it came from. `--set` stores `git config yaks.actor` for this checkout only: the repository's own config for a primary checkout or a Delta clone, the worktree's config for a linked `git worktree`.
+- **Precedence:** `--as`, then `$YAKS_ACTOR`, then `yaks.actor`, then the harness, then git `user.name`.
+- **Delta fallback:** a title's leading `<name>:` gives `delta:<name>`; otherwise it falls back to the whole title, as before. The CLI warns once on stderr when a write's actor was derived; the TUI never does.
+- **`thread: <id>` metadata** on every state move made inside a harness thread, so post-hoc traces can tell two threads with one name apart.
+- **Reuse warnings:** `whoami` warns when another thread's moves carry the same name; `brief --as` warns when the farm already has notes under the name.
+- **Brief:** a new first step, `git rev-parse --show-toplevel` (work only in your own checkout), then `yaks whoami --set <name>`. The first note also records the top-level.
+- **Skills:** `yaks` (session start), `yaks-working`, `yaks-coordinating` (specific, fresh names: `herd-<topic>`, a new number for a replacement worker). **Docs:** `docs/cli.md` (`whoami`, Attribution, `brief`, the metadata table), `README.md`.
+
+## Evidence
+
+- **Scratch farm** (outputs pasted in the yakherd thread):
+  - with `DELTA_THREAD_TITLE="w-1: thing"`, a write warns `stamping this as delta:w-1` and stamps `[delta:w-1]`;
+  - `whoami --set w-1` writes `git config yaks.actor`, and the next `shave` stamps `[w-1]` with `thread: T1`;
+  - `whoami` from thread `T2` warns: ``w-1` is also the name of another thread in this farm (T1)``;
+  - `brief --as w-1` warns about the existing notes;
+  - in a linked worktree, `--set w-2` stays local to it, and the main checkout still says `w-1`;
+  - with `YAKS_ACTOR=z`, `--set` notes that the env still overrides it.
+- **Tests:** new unit tests (`checkout_config_sits_between_env_and_the_harness`, `a_title_that_starts_with_a_worker_name_gives_just_the_name`); `tests/attribution.rs` asserts `thread:` on both moves.
+- **Gate:** `cargo test --workspace` green here, and green with the Delta env unset and no git identity (CI-like), apart from an unrelated pre-existing flake in `tests/init_modes.rs` (fixed temp path), filed separately.
+
+---
+▸ 2026-11-01T16:08:19Z [yakherd]
+kind: landed
+commit: 906379f2e3d24efa1b2ad9d83db9e7c6ec6fcd9e
+branch: main
+---
+
+landed: 906379f
+
+---
+▸ 2026-11-01T16:08:19Z [yakherd]
+kind: move
+from: shaving
+to: shorn
+---
+
+moved: shaving -> shorn
