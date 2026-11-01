@@ -78,6 +78,12 @@ fn has_move(file: &str, actor: &str, from: &str, to: &str) -> bool {
         String::new(),
         format!("moved: {from} -> {to}"),
     ];
+    // A move made inside a harness thread also records `thread: <id>`
+    // (yaks-5d1c), after `to:`; drop that line before comparing.
+    let lines: Vec<&str> = lines
+        .into_iter()
+        .filter(|l| !l.starts_with("thread: "))
+        .collect();
     lines.windows(1 + want.len()).any(|w| {
         w[0].starts_with("\u{25b8} ")
             && w[0].ends_with(&format!(" [{actor}]"))
@@ -127,6 +133,8 @@ fn move_actor_from_delta_thread_title_then_id() {
     ));
     f.run(&[("DELTA_CURRENT_THREAD_ID", "t-123")], &["shorn", &id]);
     assert!(has_move(&f.file(&id), "delta:t-123", "shaving", "shorn"));
+    // Both moves name the thread that made them.
+    assert_eq!(f.file(&id).matches("\nthread: t-123\n").count(), 2);
 }
 
 #[test]

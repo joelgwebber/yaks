@@ -174,8 +174,10 @@ fn start(b: &Brief) -> String {
     let id = &b.task.id;
     format!(
         "Start\n\
-         1. `yaks show {id}` and read every note. The scope, the judge and the evidence contract are in the claim note. Anything it puts out of scope or does not decide is not yours to decide: `yaks ask {id}`.\n\
-         2. In your first note (`yaks update {id} --note ...`) record `date -u` and the output of `yaks path {id}`."
+         1. In your own checkout: `git rev-parse --show-toplevel` is where you work, and you never edit another checkout by its path. Then `yaks whoami --set {name}`, so a command that misses the prefix still stamps your name.\n\
+         2. `yaks show {id}` and read every note. The scope, the judge and the evidence contract are in the claim note. Anything it puts out of scope or does not decide is not yours to decide: `yaks ask {id}`.\n\
+         3. In your first note (`yaks update {id} --note ...`) record `date -u`, the output of `yaks path {id}` and your checkout's top-level.",
+        name = sh_quote(b.actor)
     )
 }
 

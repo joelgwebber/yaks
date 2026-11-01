@@ -15,7 +15,7 @@ You are the **yakherd**: the one agent that claims yaks, briefs workers, lands t
 
 - Claims, notes, shears and asks are visible to everyone the moment they are written. There is no yak state to merge and nothing under `.yaks/` in any code commit.
 - **You commit the farm** (`yaks commit`), at least at every landing. **You sync it** (`yaks sync`) at session start, after landings and before a machine switch. On a machine nobody is sitting at (a cloud runner, a VM), also sync at every check-in on your workers: the human sees nothing until you do, and a reset of that machine deletes every unsynced write. Until the human has published the farm (`yaks status` shows no upstream), use `yaks sync --no-push`: the first push creates the remote branch.
-- **Names are identity.** Every worker writes under its own short `YAKS_ACTOR` (the brief sets it), and so should you: `yaks sheds` groups work by that name, and a name that changes mid-session splits one worker into two.
+- **Names are identity.** Every worker writes under its own name (the brief sets it, and tells the worker to `yaks whoami --set` it), and so should you, once, with `yaks whoami --set <name>`: `yaks sheds` groups work by that name, and later readers trace who did what by it. A name that changes mid-session splits one worker into two; one reused by two threads merges them. So make names specific and fresh: `herd-<topic>` for yourself, never a bare `herd`; a new number for a replacement worker (`door-3`, not the dead `door-2`). `yaks brief --as` warns when a name is already in the farm.
 - Workers find the farm by themselves: from a git worktree or a Delta clone, discovery reads the host repo's farm branch (and its `yaks.farm`, when the repo shares another's farm). No `YAKS_DIR` needed.
 - Yak ids are fine in commit messages. On a **private farm** (`yaks private`) keep yak ids out of commits, code, comments and PRs (`yaks scan-ids` checks text; `yaks brief` says so), and land with `yaks land <sha> --yak <id>` so the landed SHA is recorded on the yak: it is the only link from the yak to its code.
 
@@ -71,7 +71,7 @@ Pass `--yaks-dir <farm>` when the worker's checkout cannot find the farm. If the
 
 ## 8. Attribution and drift
 
-Every note and move carries an actor: `--as <name>` or `YAKS_ACTOR=<name>` on each command (else a Delta thread name, else the git user, which is the human). A move is not evidence; a shorn yak still needs a real note. The human edits yaks while you work: a yak that moved or gained a note is a person beside you, not an error; follow it if it changes your task.
+Every note and move carries an actor: `--as <name>` or `YAKS_ACTOR=<name>` on each command, else the checkout's `yaks whoami --set` name, else a name derived from the Delta thread title (its leading `<name>:` when it has one), else the git user, which is the human. Moves made in a harness thread also record its `thread:` id. A move is not evidence; a shorn yak still needs a real note. The human edits yaks while you work: a yak that moved or gained a note is a person beside you, not an error; follow it if it changes your task.
 
 ## 9. In Delta
 

@@ -217,6 +217,42 @@ pub fn collect(root: &Path) -> Result<Report> {
     })
 }
 
+/// Why `name` may already belong to someone else in the farm at `root`, or
+/// `None` (yaks-5d1c: names must not silently overlap). With `thread` (this
+/// harness's thread id) the test is precise: another thread id recorded on a
+/// note under `name`. Without one it is the weaker "the farm already has
+/// notes under this name", which is what a coordinator choosing a FRESH
+/// worker name (`yaks brief --as`) needs to hear. Read-only, best effort.
+pub fn reuse_warning(root: &Path, name: &str, thread: Option<&str>) -> Option<String> {
+    let tasks = store::load(root, &EVERY).ok()?;
+    let mut notes = 0usize;
+    let mut others: std::collections::BTreeSet<String> = Default::default();
+    for t in &tasks {
+        for n in store::parse_notes(&t.body) {
+            if n.actor.as_deref() != Some(name) {
+                continue;
+            }
+            notes += 1;
+            if let (Some(mine), Some(theirs)) = (thread, n.get("thread")) {
+                if mine != theirs {
+                    others.insert(theirs.to_string());
+                }
+            }
+        }
+    }
+    match thread {
+        Some(_) if !others.is_empty() => Some(format!(
+            "`{name}` is also the name of another thread in this farm ({}); pick a name nobody else uses",
+            others.into_iter().collect::<Vec<_>>().join(", ")
+        )),
+        Some(_) => None,
+        None if notes > 0 => Some(format!(
+            "the farm already has {notes} note(s) by `{name}`; if that wasn't you, pick a name nobody else uses"
+        )),
+        None => None,
+    }
+}
+
 /// The status a transition note (`moved: a -> b`) moves a yak into.
 fn moved_to(text: &str) -> Option<Status> {
     if !store::is_transition_text(text) {

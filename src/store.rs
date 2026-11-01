@@ -1384,15 +1384,22 @@ pub fn move_task(root: &Path, id: &str, dest: Status, actor: Option<&str>) -> Re
     let mut task = parse_task(&text, status)
         .with_context(|| format!("parsing {} before move", path.display()))?;
     let now = now_iso();
+    // The harness's thread id, when there is one, ties the move to the thread
+    // that made it, whatever name it used (yaks-5d1c).
+    let thread = crate::actor::harness_thread();
+    let mut meta = vec![
+        ("kind", "move"),
+        ("from", status.as_str()),
+        ("to", dest.as_str()),
+    ];
+    if let Some(t) = thread.as_deref() {
+        meta.push(("thread", t));
+    }
     task.body = append_note_meta(
         &task.body,
         &now,
         actor,
-        &[
-            ("kind", "move"),
-            ("from", status.as_str()),
-            ("to", dest.as_str()),
-        ],
+        &meta,
         &transition_text(status, dest),
     );
     task.status = dest;

@@ -361,6 +361,25 @@ enum Command {
         #[arg(long)]
         all: bool,
     },
+    /// Show (or set) the name this checkout's notes are stamped with.
+    ///
+    /// The actor is `--as`, else `$YAKS_ACTOR`, else this checkout's
+    /// `git config yaks.actor` (what `--set` writes), else a name derived from
+    /// the harness (a Delta thread title's leading `<name>:`, as `delta:<name>`,
+    /// else the whole title, else the thread id), else the git `user.name`.
+    /// Prints the name and where it came from.
+    ///
+    /// `--set <name>` stores the name in this checkout only (a linked `git
+    /// worktree` gets its own worktree config), so every later command, in
+    /// any fresh shell, uses it: the way for an agent to name itself once in a
+    /// harness whose terminal calls don't share an environment. Pick a
+    /// specific name nobody else in the farm uses (`door-2`, `herd-interact`,
+    /// not `herd`); it warns when the farm already has notes under that name.
+    Whoami {
+        /// Store this name as the checkout's actor (`git config yaks.actor`).
+        #[arg(long, value_name = "NAME")]
+        set: Option<String>,
+    },
     /// Internal: git's merge driver for yak files.
     ///
     /// Git's merge driver for yak files (`git config merge.yaks.driver
@@ -1173,6 +1192,14 @@ fn main() -> Result<()> {
     if let Command::Skills { action } = &cli.command {
         return run_skills(action);
     }
+    // `whoami` needs no farm (it only uses one, if found, to warn on reuse).
+    if let Command::Whoami { set } = &cli.command {
+        return run_whoami(set.as_deref());
+    }
+    // The CLI (never the TUI) says once when a write's actor was derived.
+    if !matches!(cli.command, Command::Tui { .. }) {
+        actor::warn_on_derived();
+    }
     // `private` marks the repository, not a farm: it needs none.
     if let Command::Private { off } = &cli.command {
         match privatefarm::run(&env::current_dir()?, *off) {
@@ -1349,6 +1376,7 @@ fn main() -> Result<()> {
         Command::Migrate { dry_run, .. } => report_migrate(&farm.migrate(dry_run)?),
         Command::Init { .. } => unreachable!("init is handled before opening a farm"),
         Command::Skills { .. } => unreachable!("skills is handled before opening a farm"),
+        Command::Whoami { .. } => unreachable!("whoami is handled before opening a farm"),
         Command::Private { .. } => unreachable!("private is handled before opening a farm"),
         Command::Land { .. } => unreachable!("land is handled before opening a farm"),
         Command::MergeDriver { .. } => {
@@ -2211,6 +2239,11 @@ fn main() -> Result<()> {
             as_actor,
             yaks_dir,
         } => {
+            // A worker's name must be fresh: notes under a reused name merge two
+            // workers into one sheds row (yaks-5d1c).
+            if let Some(w) = sheds::reuse_warning(farm.root(), as_actor.trim(), None) {
+                eprintln!("warning: {w}; brief a fresh worker name instead");
+            }
             let code = brief::run(
                 &farm,
                 &brief::Request {
@@ -2892,6 +2925,45 @@ fn report_rename(out: RenameOutcome) {
         RenameOutcome::NothingToRename => println!("Nothing to rename."),
         RenameOutcome::Done(plan) => render_rename(&plan),
     }
+}
+
+/// `yaks whoami [--set <name>]`.
+fn run_whoami(set: Option<&str>) -> Result<()> {
+    let cwd = env::current_dir()?;
+    if let Some(name) = set {
+        let wrote = actor::set_config(&cwd, name)?;
+        println!("actor: {} (set in {wrote})", name.trim());
+        if let Some((now, src @ (actor::Source::Env | actor::Source::Explicit))) =
+            actor::resolve_detail(None)
+        {
+            eprintln!(
+                "note: {} ({now}) still overrides it in this shell",
+                src.as_str()
+            );
+        }
+    }
+    match actor::resolve_detail(None) {
+        Some((name, source)) => {
+            if set.is_none() {
+                println!("actor: {name} (from {})", source.as_str());
+            }
+            if let Some(t) = actor::harness_thread() {
+                println!("thread: {t}");
+            }
+            if let Ok(found) = store::discover(&cwd) {
+                if let Some(w) =
+                    sheds::reuse_warning(&found.root, &name, actor::harness_thread().as_deref())
+                {
+                    eprintln!("warning: {w}");
+                }
+            }
+            if source == actor::Source::Harness {
+                eprintln!("hint: name yourself once with `yaks whoami --set <name>`");
+            }
+        }
+        None => println!("actor: none (notes are written unattributed)"),
+    }
+    Ok(())
 }
 
 fn run_skills(action: &SkillsAction) -> Result<()> {

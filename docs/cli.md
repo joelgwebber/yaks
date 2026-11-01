@@ -295,7 +295,7 @@ A note without them is still valid, and unknown keys are kept. The commands that
 
 | Command | `kind` | Other keys |
 |---|---|---|
-| a move (`shave`, `shear`, `regrow`, `slaughter`, the TUI) | `move` | `from`, `to` (statuses) |
+| a move (`shave`, `shear`, `regrow`, `slaughter`, the TUI) | `move` | `from`, `to` (statuses); `thread` (the harness thread id) when made inside one |
 | `ask` | `ask` | `needs` (who it waits on) |
 | `answer --note` | `answer` | `needs` (what it leaves: `agent`, or `none` for `--done` or a yak with no `needs`) |
 | `request` | `request` | |
@@ -430,6 +430,7 @@ Rules, the same for all four commands:
 | `skills status` | Per-skill verdict (`current`, `stale`, `adoptable`, `held`, `modified`, `unmanaged`, `source`, `retired`) from the provenance stamp. `--user` / `--dir` inspect another directory. See [skills.md](skills.md). [Details](#skills) |
 | `doctor` | Read-only integrity check: invalid status, duplicate id, misplaced file, dangling parent/deps, malformed labels, `needs:` that disagrees with the latest kinded ask/answer/request/pickup note. Exits non-zero on any issue. `--strict` also flags shorn yaks with no note or whose `verify:` did not last PASS. [Details](#doctor) |
 | `preflight [<id>...] [--all] [--push-main]` | Read-only landing check: shorn yaks' `verify:` last PASSed, farm integrity, no merge conflict in the farm. `--push-main` checks the `local` remote. [Details](#preflight) |
+| `whoami [--set <name>]` | Show the actor this checkout's writes are stamped with, and why; `--set` stores one for this checkout (`git config yaks.actor`), which outlasts fresh shells. Warns on a name another thread uses. [Details](#whoami) |
 | `brief <id> --as <name> [--yaks-dir <path>]` | Print the worker brief for one yak, read-only: the part a worker needs that the yak, the config and the farm determine. `--yaks-dir` names the farm. [Details](#brief) |
 | `status [--check] [--json]` | What the farm has changed that git does not have yet, one line per yak, in yak terms. Read-only. `--check` exits 1 when the farm is dirty; `--json`. [Details](#status) |
 | `sync [--no-commit] [--no-pull] [--no-push] [-m <msg>]` | Commit, pull (rebasing with the yak merge driver) and push the farm branch. A private farm is never pushed. [Details](#sync) |
@@ -559,15 +560,35 @@ Read-only (`remote get-url`, `ls-remote`, `rev-parse`, `status`); never pushes.
 
 `--json` emits `{ok, failures[{check, message, subjects}], skipped, warnings}`.
 
+### `whoami`
+
+`whoami [--set <name>]`
+
+Prints the actor this checkout's writes are stamped with and where it came from
+(`--as`, `$YAKS_ACTOR`, `git config yaks.actor`, the harness environment or git
+`user.name`; see [Attribution](#attribution)), plus `thread: <id>` inside a
+harness thread. Needs no farm.
+
+`--set <name>` stores the name as this checkout's `git config yaks.actor`: the
+repository's own config for a primary checkout or a Delta clone, the worktree's
+config (enabling `extensions.worktreeConfig`) for a linked `git worktree`, so it
+never leaks into the other checkouts. Every later command, in any shell, then
+uses it. It notes when `$YAKS_ACTOR` still overrides it.
+
+Names must not overlap: pick one nobody else in the farm uses (`door-2`,
+`herd-interact`, not `herd`). When a farm is found, `whoami` warns if another
+thread's moves are recorded under the same name (`thread:` metadata). `brief
+--as <name>` warns whenever the farm already has notes under that name.
+
 ### `brief`
 
 `brief <id> --as <name> [--yaks-dir <path>]`
 
 Print the worker brief for one yak, read-only: the part a worker needs that the yak, the config and the farm determine.
 
-It names the yak and that it is already `shaving`; the `YAKS_ACTOR=<name>` prefix for every command (plus `YAKS_DIR` from `--yaks-dir`, or for a farm that is not a farm branch); this binary's absolute path; the evidence (the yak's own `verify:`, else the config default for its labels and herd); the forbidden moves; how to finish (`yaks shorn`, ONE commit of the worker's own files, never `.yaks/`; message `<id>: ...`, or, after `yaks private`, no yak id or the word yaks); how to ask and what to do once the ask is answered (`inbox --for agent`, then `pickup`); the `Decision:` note rule; multi-line notes on stdin; and the final-message format.
+It names the yak and that it is already `shaving`; a first step that has the worker confirm its own checkout (`git rev-parse --show-toplevel`) and name itself with `yaks whoami --set <name>`; the `YAKS_ACTOR=<name>` prefix for every command (plus `YAKS_DIR` from `--yaks-dir`, or for a farm that is not a farm branch); this binary's absolute path; the evidence (the yak's own `verify:`, else the config default for its labels and herd); the forbidden moves; how to finish (`yaks shorn`, ONE commit of the worker's own files, never `.yaks/`; message `<id>: ...`, or, after `yaks private`, no yak id or the word yaks); how to ask and what to do once the ask is answered (`inbox --for agent`, then `pickup`); the `Decision:` note rule; multi-line notes on stdin; and the final-message format.
 
-An unclaimed yak still prints, with a warning on stderr; an unknown id fails with nothing on stdout; `--as` must be a shell-safe name.
+An unclaimed yak still prints, with a warning on stderr, as does a name the farm already has notes under (brief a fresh one); an unknown id fails with nothing on stdout; `--as` must be a shell-safe name.
 
 What a yak cannot know (spawn title, how work lands, the model, scope by symbol) stays with the coordinator, who adds it around this text.
 
@@ -661,12 +682,19 @@ Ends with `landed: <oneline>` and `doctor: <last line of yaks doctor>` when a fa
 `--as <actor>` on note-writing commands stamps the note `▸ <ts> [actor]`, and on
 the state-transition verbs stamps the `moved: <from> -> <to>` entry the same
 way. The
-actor resolves `--as` → `$YAKS_ACTOR` → the harness identity → git `user.name`.
-Under Delta the harness identity is derived from its terminal environment:
-`delta:<thread title>` (`$DELTA_THREAD_TITLE`, whitespace collapsed, cut to 40
-characters), else `delta:<thread id>` (`$DELTA_CURRENT_THREAD_ID`); the `delta:`
-prefix marks a derived, non-human actor. An explicit name (`--as` or
-`$YAKS_ACTOR`) is still preferred: it is stable and chosen, where a thread title
-can be renamed. (The git author, the human under Delta, is not what attributes
+actor resolves `--as` → `$YAKS_ACTOR` → this checkout's `git config yaks.actor`
+(set by [`whoami --set`](#whoami)) → the harness identity → git `user.name`.
+Under Delta the harness identity is derived from its terminal environment: a
+thread title that starts with a worker name (`door-2: add doors`: one token of
+letters, digits, `.`, `_`, `-`, then `: `) gives `delta:door-2`; any other title
+gives `delta:<thread title>` (`$DELTA_THREAD_TITLE`, whitespace collapsed, cut
+to 40 characters); with no title, `delta:<thread id>` (`$DELTA_CURRENT_THREAD_ID`).
+The `delta:` prefix marks a derived, non-human actor, and the CLI says so on
+stderr, once per command, when a write's actor was derived. A chosen name is
+still preferred: it is stable, where a thread title can be renamed. In a
+harness where every terminal call is a fresh shell, `export YAKS_ACTOR` does not
+last; `yaks whoami --set <name>` does. Inside a harness thread, every state move
+also records `thread: <id>` metadata, so a name can be traced back to the thread
+that used it. (The git author, the human under Delta, is not what attributes
 a move: the entry in the yak file is.) Attribution, never
 ownership — a yak belongs to no one.

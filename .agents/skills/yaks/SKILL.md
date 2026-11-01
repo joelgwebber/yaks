@@ -44,7 +44,7 @@ yaks sync                  # commit, pull (yak-aware merge), push
 
 ## Workflow
 
-1. **Session start:** name yourself: `export YAKS_ACTOR=<short stable name>` if you are an agent (else your notes carry a harness name that can change mid-session, or the human's git name). Then `yaks sync` (unless a yakherd coordinates); then `yaks inbox --for agent` (answers and requests nobody has acted on: handle these first); then `yaks next`.
+1. **Session start:** name yourself once, if you are an agent: `yaks whoami --set <name>` stores it for this checkout, so every later command uses it even in a fresh shell (`export YAKS_ACTOR` does not survive harnesses whose terminal calls are separate shells). Choose a name nobody else in the farm uses, specific to you (`door-2`, `herd-interact`, not `herd`): others will read your trail by it. Without one, your notes carry a name derived from the harness, or the human's git name. Then `yaks sync` (unless a yakherd coordinates); then `yaks inbox --for agent` (answers and requests nobody has acted on: handle these first); then `yaks next`.
 2. **Before code:** `yaks shave <id>`, and its parent if still hairy. Re-read it with `yaks show <id>`; the latest note is the freshest signal.
 3. **While working:** `yaks update <id> --note "..."`, one event per note, at each milestone and at least every 30 minutes of work: your latest note is how others tell a busy worker from a dead one.
 4. **Code others can't see** (you are on another machine, or in a clone nobody reads): at each checkpoint, commit, push your work branch to `origin` (any branch name, your harness's own pattern is fine, but never `main` and never under `yaks/`: the farm branch `yaks` blocks that prefix, so such a branch cannot be pushed), note it (`--meta kind=checkpoint --meta branch=<branch> --meta commit=$(git rev-parse HEAD)`), then sync. In that order, so the farm never names a commit nobody can fetch.
@@ -138,7 +138,7 @@ Few and broad (`ui`, `docs`, `cli`): reuse an existing label before inventing on
 
 ## Commands
 
-Every command has `--help`; this is the map. Global flags: `-C <path>` (run as if in `<path>`, like `git -C`), `--as <actor>` on any write (else `$YAKS_ACTOR`, else a Delta thread name, else the git user).
+Every command has `--help`; this is the map. Global flags: `-C <path>` (run as if in `<path>`, like `git -C`), `--as <actor>` on any write (else `$YAKS_ACTOR`, else the checkout's `yaks whoami --set` name, else a Delta thread name, else the git user).
 
 | Command | What it does |
 |---|---|
@@ -151,6 +151,7 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 | `ask` / `answer` / `request` / `pickup` / `inbox` / `wait` | The inbox (above); `inbox --for human\|agent`, `wait --timeout 10m` |
 | `verify <id>` | Run the yak's `verify:` (else the config default) and record PASS/FAIL |
 | `attach <id> <file>` | Store and link evidence; `rename-attachment` renames one |
+| `whoami [--set <name>]` | The name your writes are stamped with, and why; `--set` names this checkout once |
 | `log` | Notes and moves over a filtered set, oldest first; `--since 2h`, `--by <actor>` |
 | `refs <id>` | What it points at; `--incoming` for what points at it |
 | `commits <id>` | Commits recorded on the yak (`yaks land` writes them) and the branches its checkpoints name (`--fetch` fetches them), then those naming it in the code repo you run it from, then the yak file's farm history |
