@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 1
 created: '2026-11-01T18:52:36Z'
-updated: '2026-11-01T23:05:11Z'
+updated: '2026-11-01T23:21:10Z'
 labels:
 - wiki
 - design
@@ -80,3 +80,8 @@ Fan-out continued: `import-1` takes yaks-5550 (`yaks import-hearth`, then the jo
 ▸ 2026-11-01T23:05:11Z [delta:farm-wiki]
 
 Landed: yaks-c0ac (`yaks check`, 206f23d), yaks-f0db (TUI auto-sync, 6a22550), yaks-84e0 (shared `linenav` viewer, 268a0c5 + 20f6bc6). Gate 950. Fan-out: `wiki-1` takes the TUI arc (yaks-ebb2, then yaks-7395, then yaks-1532) serially, on claude-opus-5-5, from 20f6bc6 ([thread](delta://thread/ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD2ExZIBxBCA0aLJyrhJPreUvVwLftHG)). `import-1` is still running.
+
+---
+▸ 2026-11-01T23:21:10Z [delta:farm-wiki]
+
+Landed yaks-5550 (`yaks import-hearth`, 844bf53). I reproduced it on a scratch clone of `joel`: 31 pages, 37 sources, doctor and check clean. Gate 955. Fan-out: `find-1` takes yaks-bdcb (`yaks find`, plus reserving `sessions`), on claude-sonnet-5-5, from 844bf53 ([thread](delta://thread/ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD2d4ZIBxBCA0aLJyrhJPreUvVwLftHG)). `wiki-1` is still on the TUI arc.
