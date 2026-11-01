@@ -42,10 +42,14 @@ jobs:
             os: macos-15
             bin: yaks
           - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
+            # 22.04's glibc (2.35), not latest's: a binary built against a newer
+            # glibc warns on every run on older hosts such as cloud runners.
+            os: ubuntu-22.04
             bin: yaks
           - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
+            # 22.04's glibc (2.35), not latest's: a binary built against a newer
+            # glibc warns on every run on older hosts such as cloud runners.
+            os: ubuntu-22.04
             bin: yaks
           - target: x86_64-pc-windows-msvc
             os: windows-latest
