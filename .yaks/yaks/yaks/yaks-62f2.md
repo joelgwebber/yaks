@@ -5,7 +5,8 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-31T19:28:04Z'
-updated: '2026-11-01T16:31:37Z'
+updated: '2026-11-01T16:42:39Z'
+parent: yaks-9b41
 labels:
 - cli
 - skills
