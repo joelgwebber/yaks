@@ -106,7 +106,7 @@ in `<path>`.
 | `yaks shave <id>` | hairy → shaving (alias: `work`) |
 | `yaks shorn <id>` | shaving → shorn (alias: `close`) |
 | `yaks regrow <id>` | shorn → hairy (alias: `reopen`) |
-| `yaks slaughter <id>` / `revive <id>` | set the status to / from the hidden `dead` (`slaughter --family` also takes live descendants) |
+| `yaks slaughter <id>` / `revive <id>` | set the status to / from the hidden `dead` (`slaughter --family` also takes hairy and shaving descendants; shorn ones stay shorn) |
 | `yaks next` / `tangled` | ready tasks / dependency-blocked tasks |
 | `yaks path [<id>…]` / `path <filters>` | each yak's current absolute file path (for a precise `git add`); no arguments: the farm root in use |
 | `yaks search <q>` | substring search over id/title/description |

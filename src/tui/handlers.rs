@@ -1865,15 +1865,15 @@ impl App {
     /// Move every marked id to `dest` (recording `note` on each first when
     /// given), then clear the marks and report the count.
     pub(crate) fn bulk_transition(&mut self, ids: &[String], dest: Status, note: Option<&str>) {
-        // Slaughter must not orphan children: skip any marked id with
-        // live children and report the count (the single path,
+        // Slaughter must not leave open work under a dead yak: skip any marked
+        // id with open children and report the count (the single path,
         // open_slaughter_confirm, offers a family slaughter instead). Non-slaughter bulk
         // transitions are unaffected (yaks-5c51).
         let mut skipped = 0usize;
         let targets: Vec<&String> = if dest == Status::Dead {
             ids.iter()
                 .filter(|id| {
-                    let keep = self.live_child_count(id) == 0;
+                    let keep = self.open_child_count(id) == 0;
                     if !keep {
                         skipped += 1;
                     }

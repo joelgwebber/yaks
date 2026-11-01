@@ -326,14 +326,15 @@ impl App {
         };
     }
 
-    /// Count a yak's live (non-dead) children. Bulk slaughter
-    /// (`PickAction::BulkState` with `x`) refuses to orphan children, so it
-    /// skips any yak with live children (yaks-5c51); the single path
-    /// (`open_slaughter_confirm`) instead offers to take the family (yaks-05da).
-    pub(crate) fn live_child_count(&self, id: &str) -> usize {
+    /// Count a yak's open (hairy or shaving) children. Bulk slaughter
+    /// (`PickAction::BulkState` with `x`) never leaves open work under a dead
+    /// yak, so it skips any yak with open children (yaks-5c51, yaks-27c1); the
+    /// single path (`open_slaughter_confirm`) instead offers to take the family
+    /// (yaks-05da).
+    pub(crate) fn open_child_count(&self, id: &str) -> usize {
         self.all
             .iter()
-            .filter(|c| c.parent.as_deref() == Some(id) && c.status != Status::Dead)
+            .filter(|c| c.parent.as_deref() == Some(id) && c.status.is_open())
             .count()
     }
 
@@ -343,9 +344,9 @@ impl App {
             .task(&id)
             .map(|t| t.title.chars().take(40).collect())
             .unwrap_or_default();
-        // Slaughtering alone would orphan live descendants, so offer the whole
-        // family instead, naming how many go with it (yaks-05da).
-        let kin = crate::farm::live_descendants(&self.all, &id).len();
+        // Slaughtering alone would leave open descendants under a dead yak, so
+        // offer to take them too, naming how many go with it (yaks-05da).
+        let kin = crate::farm::open_descendants(&self.all, &id).len();
         if kin > 0 {
             let noun = if kin == 1 {
                 "descendant"
@@ -353,7 +354,9 @@ impl App {
                 "descendants"
             };
             self.overlay = Overlay::Confirm {
-                prompt: format!("Slaughter {id} ({title}) AND its {kin} live {noun}? (y/N): "),
+                prompt: format!(
+                    "Slaughter {id} ({title}) AND its {kin} unfinished {noun}? (y/N): "
+                ),
                 action: ConfirmAction::SlaughterFamily(id),
             };
             return;

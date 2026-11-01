@@ -284,19 +284,21 @@ pub enum SlaughterOutcome {
     NotFound,
     /// Already dead, and no live descendants left to take with it.
     AlreadyDead,
-    /// Refused: slaughtering would orphan these live (non-dead) descendants.
-    /// Pass `family = true` to slaughter them along with the yak.
-    HasLiveDescendants(Vec<String>),
-    /// Moved to dead: the live descendants (deepest first), then the yak itself
-    /// (omitted if it was already dead).
+    /// Refused: these open (hairy or shaving) descendants would be left under
+    /// a dead yak. Pass `family = true` to slaughter them along with it.
+    HasOpenDescendants(Vec<String>),
+    /// Moved to dead: the open descendants (deepest first), then the yak
+    /// itself (omitted if it was already dead). Shorn descendants stay shorn.
     Slaughtered(Vec<String>),
 }
 
-/// Every live (non-dead) descendant of `id` in `tasks`, found transitively via
-/// the `parent:` field and ordered deepest-first (children before their
-/// parents), so slaughtering in order never leaves a live yak under a dead one
-/// mid-sweep. Cycle-safe. Shared by the CLI and the TUI (yaks-05da).
-pub fn live_descendants(tasks: &[Task], id: &str) -> Vec<String> {
+/// Every open (hairy or shaving) descendant of `id` in `tasks`, found
+/// transitively via the `parent:` field and ordered deepest-first (children
+/// before their parents), so slaughtering in order never leaves an open yak
+/// under a dead one mid-sweep. Shorn descendants are finished work and are
+/// left alone (yaks-27c1). Cycle-safe. Shared by the CLI and the TUI
+/// (yaks-05da).
+pub fn open_descendants(tasks: &[Task], id: &str) -> Vec<String> {
     let mut seen: Vec<String> = vec![id.to_string()];
     let mut out: Vec<String> = Vec::new();
     let mut frontier: Vec<String> = vec![id.to_string()];
@@ -312,7 +314,7 @@ pub fn live_descendants(tasks: &[Task], id: &str) -> Vec<String> {
             for k in kids {
                 seen.push(k.id.clone());
                 next.push(k.id.clone());
-                if k.status != Status::Dead {
+                if k.status.is_open() {
                     out.push(k.id.clone());
                 }
             }
@@ -735,18 +737,22 @@ pub enum IssueKind {
     /// `request` or `pickup` note (yaks-b8cd). A yak with no such note is never
     /// flagged.
     NeedsDrift,
-    /// A shorn yak with a hairy or shaving child (yaks-62f2): the parent was
-    /// called done while part of it was not. `yaks shorn` refuses this now; a
-    /// farm from before, or a hand edit, can still hold it.
+    /// A shorn or dead yak with a hairy or shaving child (yaks-62f2,
+    /// yaks-27c1): the parent was called done, or abandoned, while part of it
+    /// was still open. The moves refuse this now; a farm from before, or a
+    /// hand edit, can still hold it.
     UnfinishedChildren,
 }
 
-/// Shearing a yak whose children are not all done (yaks-62f2): a shorn yak
-/// has no hairy or shaving children. Finish them first, or graduate them out
-/// of the family (`yaks reparent <child> --parent <other>` / `--unparent`).
+/// Finishing a yak whose children are not all finished (yaks-62f2,
+/// yaks-27c1): a shorn or dead yak has no hairy or shaving children. Finish
+/// them first, or graduate them out of the family (`yaks reparent <child>
+/// --parent <other>` / `--unparent`).
 #[derive(Debug)]
 pub struct UnfinishedChildren {
     pub id: String,
+    /// Where the refused move was going: shorn or dead.
+    pub dest: Status,
     pub children: Vec<(String, Status)>,
 }
 
@@ -757,11 +763,15 @@ impl std::fmt::Display for UnfinishedChildren {
             .iter()
             .map(|(c, s)| format!("{c} ({})", s.as_str()))
             .collect();
+        let first = if self.dest == Status::Dead {
+            "Slaughter them too (`yaks slaughter --family`)"
+        } else {
+            "Shear them first (or with it: one `yaks shorn` takes children before parents)"
+        };
         write!(
             f,
-            "{} has unfinished children: {}. Shear them first (or with it: one `yaks shorn` \
-             takes children before parents), or graduate them out of the family: `yaks \
-             reparent <child> --parent <other>` or `--unparent`",
+            "{} has unfinished children: {}. {first}, or graduate them out of the family: \
+             `yaks reparent <child> --parent <other>` or `--unparent`",
             self.id,
             list.join(", ")
         )
@@ -769,11 +779,6 @@ impl std::fmt::Display for UnfinishedChildren {
 }
 
 impl std::error::Error for UnfinishedChildren {}
-
-/// Not done yet: hairy or shaving (shorn and dead are both finished).
-fn unfinished(s: Status) -> bool {
-    matches!(s, Status::Hairy | Status::Shaving)
-}
 
 impl IssueKind {
     /// A short, stable machine label (used for `--json` and grouping).
@@ -811,7 +816,7 @@ impl IssueKind {
                 "Needs drift (needs: disagrees with the latest ask/answer/request/pickup note)"
             }
             IssueKind::UnfinishedChildren => {
-                "Shorn over unfinished children (a shorn yak with hairy or shaving children)"
+                "Finished over unfinished children (a shorn or dead yak with hairy or shaving children)"
             }
         }
     }
@@ -1465,11 +1470,12 @@ impl Farm {
             }
         }
 
-        // A shorn yak over hairy or shaving children (yaks-62f2).
-        for t in tasks.iter().filter(|t| t.status == Status::Shorn) {
+        // A finished (shorn or dead) yak over hairy or shaving children
+        // (yaks-62f2, yaks-27c1).
+        for t in tasks.iter().filter(|t| !t.status.is_open()) {
             let open: Vec<&Task> = tasks
                 .iter()
-                .filter(|c| c.parent.as_deref() == Some(t.id.as_str()) && unfinished(c.status))
+                .filter(|c| c.parent.as_deref() == Some(t.id.as_str()) && c.status.is_open())
                 .collect();
             if !open.is_empty() {
                 let list: Vec<String> = open
@@ -1481,9 +1487,11 @@ impl Farm {
                 issues.push(Issue {
                     kind: IssueKind::UnfinishedChildren,
                     message: format!(
-                        "{} is shorn but has unfinished children: {}; finish them, regrow {}, or graduate them (`yaks reparent <child> --parent <other>` / `--unparent`)",
+                        "{} is {} but has unfinished children: {}; finish them, {} {}, or graduate them (`yaks reparent <child> --parent <other>` / `--unparent`)",
                         t.id,
+                        t.status.as_str(),
                         list.join(", "),
+                        if t.status == Status::Dead { "revive" } else { "regrow" },
                         t.id
                     ),
                     ids,
@@ -2073,16 +2081,17 @@ impl Farm {
     /// to `actor` (see [`store::move_task`]).
     pub fn transition(&self, id: &str, dest: Status, actor: Option<&str>) -> Result<MoveOutcome> {
         let _lock = store::lock(&self.root)?;
-        if dest == Status::Shorn {
+        if !dest.is_open() {
             let all = store::load(&self.root, &EVERY)?;
             let children: Vec<(String, Status)> = all
                 .iter()
-                .filter(|t| t.parent.as_deref() == Some(id) && unfinished(t.status))
+                .filter(|t| t.parent.as_deref() == Some(id) && t.status.is_open())
                 .map(|t| (t.id.clone(), t.status))
                 .collect();
-            if !children.is_empty() && all.iter().any(|t| t.id == id && t.status != Status::Shorn) {
+            if !children.is_empty() && all.iter().any(|t| t.id == id && t.status != dest) {
                 return Err(UnfinishedChildren {
                     id: id.to_string(),
+                    dest,
                     children,
                 }
                 .into());
@@ -2119,9 +2128,10 @@ impl Farm {
     }
 
     /// Slaughter `id` (move to dead). Refuses with
-    /// [`SlaughterOutcome::HasLiveDescendants`] when that would orphan live
-    /// descendants, unless `family` is set, in which case the whole family
-    /// (every live descendant, deepest first, then `id`) goes (yaks-05da). Each
+    /// [`SlaughterOutcome::HasOpenDescendants`] when that would leave open
+    /// descendants under a dead yak, unless `family` is set, in which case
+    /// every open descendant (deepest first), then `id`, goes (yaks-05da);
+    /// shorn descendants stay shorn (yaks-27c1). Each
     /// yak moved gets a transition entry attributed to `actor`.
     pub fn slaughter(
         &self,
@@ -2134,9 +2144,9 @@ impl Farm {
         let Some(me) = all.iter().find(|t| t.id == id) else {
             return Ok(SlaughterOutcome::NotFound);
         };
-        let doomed = live_descendants(&all, id);
+        let doomed = open_descendants(&all, id);
         if !doomed.is_empty() && !family {
-            return Ok(SlaughterOutcome::HasLiveDescendants(doomed));
+            return Ok(SlaughterOutcome::HasOpenDescendants(doomed));
         }
         if me.status == Status::Dead && doomed.is_empty() {
             return Ok(SlaughterOutcome::AlreadyDead);
@@ -3592,9 +3602,10 @@ mod tests {
         assert!(at(&root, "yaksrs-0001", Status::Hairy));
     }
 
-    /// Slaughtering a parent with live descendants is refused (listing them)
-    /// unless `family` is set, which takes the whole live family, deepest
-    /// first; already-dead descendants are left alone (yaks-05da).
+    /// Slaughtering a parent with open descendants is refused (listing them)
+    /// unless `family` is set, which takes the open ones, deepest first;
+    /// already-dead descendants are left alone (yaks-05da), and a shorn one
+    /// neither blocks it nor dies: finished work stays shorn (yaks-27c1).
     #[test]
     fn slaughter_guards_and_family_sweeps() {
         let (root, farm) = temp_farm();
@@ -3611,21 +3622,43 @@ mod tests {
 
         assert_eq!(
             farm.slaughter("yak-0001", false, None).unwrap(),
-            SlaughterOutcome::HasLiveDescendants(vec!["yak-0003".into(), "yak-0002".into()])
+            SlaughterOutcome::HasOpenDescendants(vec!["yak-0002".into()])
         );
         assert!(at(&root, "yak-0001", Status::Hairy), "guard must not move");
 
         assert_eq!(
             farm.slaughter("yak-0001", true, None).unwrap(),
-            SlaughterOutcome::Slaughtered(vec![
-                "yak-0003".into(),
-                "yak-0002".into(),
-                "yak-0001".into()
-            ])
+            SlaughterOutcome::Slaughtered(vec!["yak-0002".into(), "yak-0001".into()])
         );
-        for id in ["yak-0001", "yak-0002", "yak-0003", "yak-0004"] {
+        for id in ["yak-0001", "yak-0002", "yak-0004"] {
             assert!(at(&root, id, Status::Dead), "{id} dead");
         }
+        assert!(
+            at(&root, "yak-0003", Status::Shorn),
+            "shorn work stays shorn"
+        );
+        assert!(farm.doctor(false).unwrap().is_empty());
+        // A shorn child alone never blocks a slaughter.
+        store::write::save(&root, &task("yak-0006", Status::Hairy)).unwrap();
+        store::write::save(&root, &kid("yak-0007", "yak-0006", Status::Shorn)).unwrap();
+        assert_eq!(
+            farm.slaughter("yak-0006", false, None).unwrap(),
+            SlaughterOutcome::Slaughtered(vec!["yak-0006".into()])
+        );
+        // A plain move to dead (the TUI's single slaughter) refuses open
+        // children like a shear, with the slaughter-specific fix.
+        store::write::save(&root, &task("yak-0008", Status::Hairy)).unwrap();
+        store::write::save(&root, &kid("yak-0009", "yak-0008", Status::Hairy)).unwrap();
+        let err = farm.transition("yak-0008", Status::Dead, None).unwrap_err();
+        assert!(err.to_string().contains("--family"), "{err}");
+        // doctor flags a dead parent over an open child from a hand edit.
+        store::write::save(&root, &task("yak-0008", Status::Dead)).unwrap();
+        assert!(
+            farm.doctor(false)
+                .unwrap()
+                .iter()
+                .any(|i| i.kind == IssueKind::UnfinishedChildren && i.ids[0] == "yak-0008")
+        );
         assert!(at(&root, "yak-0005", Status::Hairy), "non-family untouched");
 
         assert_eq!(

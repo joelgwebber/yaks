@@ -181,8 +181,8 @@ fn slaughter_confirm_overlay() {
 
 #[test]
 fn slaughter_family_confirm_overlay() {
-    // Root A has a live child (A1; A2 is shorn, also live), so X offers to
-    // slaughter the whole family, naming the count (yaks-05da).
+    // Root A has an open child (A1; A2 is shorn, which stays shorn), so X
+    // offers to slaughter A1 with it, naming the count (yaks-05da, yaks-27c1).
     let mut app = sample();
     handle_key(&mut app, key('X'));
     assert!(matches!(
@@ -2090,7 +2090,7 @@ mod live {
 
     #[test]
     fn slaughter_family_confirm_moves_family_to_dead() {
-        // A parent with a live child and grandchild: X raises the family
+        // A parent with an open child and grandchild: X raises the family
         // confirm; `y` slaughters all three, deepest first (yaks-05da).
         let (_dir, farm) = temp_farm(&[
             task("t0", "parent", Status::Hairy, 3, None),
@@ -2102,7 +2102,10 @@ mod live {
         press(&mut app, "X");
         match &app.overlay {
             Overlay::Confirm { prompt, .. } => {
-                assert!(prompt.contains("AND its 2 live descendants"), "{prompt}")
+                assert!(
+                    prompt.contains("AND its 2 unfinished descendants"),
+                    "{prompt}"
+                )
             }
             _ => panic!("expected the family confirm"),
         }

@@ -24,6 +24,13 @@ impl Status {
         }
     }
 
+    /// Not finished: hairy or shaving. Shorn and dead are both finished, and
+    /// a finished yak never has an open child (the family invariant,
+    /// yaks-9b41).
+    pub fn is_open(self) -> bool {
+        matches!(self, Status::Hairy | Status::Shaving)
+    }
+
     /// Parse a `status:` value (exactly one of the names [`Status::as_str`]
     /// returns). `None` for anything else.
     pub fn parse(s: &str) -> Option<Status> {

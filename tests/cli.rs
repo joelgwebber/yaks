@@ -611,8 +611,8 @@ fn bulk_dry_run_commit_and_refusals() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-/// `yaks slaughter` refuses a parent with live descendants (naming them and
-/// pointing at --family), and `--family` slaughters the whole live family
+/// `yaks slaughter` refuses a parent with open descendants (naming them and
+/// pointing at --family), and `--family` slaughters the open family
 /// (yaks-05da). Throwaway farm built via the CLI so it never touches the
 /// shared fixture.
 #[test]
@@ -657,7 +657,7 @@ fn slaughter_guard_and_family() {
     // Guard: refused, non-zero, names the descendants and the flag; nothing moves.
     let (ok, stdout, stderr) = raw(&["slaughter", &p]);
     assert!(!ok, "guarded slaughter should exit non-zero: {stdout}");
-    assert!(stderr.contains("2 live descendants"), "{stderr}");
+    assert!(stderr.contains("2 unfinished descendants"), "{stderr}");
     assert!(stderr.contains(&c) && stderr.contains(&g), "{stderr}");
     assert!(
         stderr.contains("--family"),

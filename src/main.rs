@@ -700,13 +700,16 @@ enum Command {
     },
     /// Slaughter one or more yaks (move to dead).
     ///
-    /// Refuses a yak that still has live (non-dead) descendants, since that
-    /// would orphan them; pass --family to slaughter the whole family instead.
+    /// Refuses a yak that still has hairy or shaving descendants, since a dead
+    /// yak never holds open work; pass --family to slaughter those along with
+    /// it, or graduate them first (`yaks reparent`). Shorn descendants are
+    /// finished work: they never block it and stay shorn.
     Slaughter {
         #[arg(required = true, num_args = 1..)]
         ids: Vec<String>,
-        /// Also slaughter every live descendant (children, grandchildren, ...)
-        /// of each id, instead of refusing.
+        /// Also slaughter every hairy or shaving descendant (children,
+        /// grandchildren, ...) of each id, instead of refusing. Shorn ones stay
+        /// shorn.
         #[arg(long)]
         family: bool,
         /// Attribute the move to this actor (stamped as `[actor]` on its
@@ -917,7 +920,7 @@ enum Command {
     ///
     /// Reports an invalid `status:` value, one
     /// id in two yak files, dangling parent/depends_on references, and a
-    /// shorn yak over hairy or shaving children, among others (see
+    /// shorn or dead yak over hairy or shaving children, among others (see
     /// docs/cli.md). Exits non-zero when any issue is found.
     Doctor {
         /// Emit the issues as JSON.
@@ -2461,7 +2464,7 @@ fn transition_many(
 
 /// Slaughter every id in `ids` (see [`Farm::slaughter`]). Like
 /// [`transition_many`], the whole batch is processed; a missing id or a yak
-/// refused for having live descendants exits non-zero afterwards (yaks-05da).
+/// refused for having open descendants exits non-zero afterwards (yaks-05da).
 fn slaughter_many(farm: &Farm, ids: &[String], family: bool, actor: Option<&str>) -> Result<()> {
     let mut any_failed = false;
     for id in ids {
@@ -2471,12 +2474,13 @@ fn slaughter_many(farm: &Farm, ids: &[String], family: bool, actor: Option<&str>
                 any_failed = true;
             }
             SlaughterOutcome::AlreadyDead => println!("{id} is already dead"),
-            SlaughterOutcome::HasLiveDescendants(kids) => {
+            SlaughterOutcome::HasOpenDescendants(kids) => {
                 let n = kids.len();
                 let noun = if n == 1 { "descendant" } else { "descendants" };
                 eprintln!(
-                    "error: {id} has {n} live {noun} ({}); slaughter them first, \
-                     or use --family to slaughter the whole family",
+                    "error: {id} has {n} unfinished {noun} ({}); finish or slaughter them \
+                     first, use --family to slaughter them with it, or graduate them out of \
+                     the family: `yaks reparent <child> --parent <other>` or `--unparent`",
                     kids.join(", ")
                 );
                 any_failed = true;

@@ -267,18 +267,21 @@ With no `<file>`, lists the absolute path of each of the yak's attachments (in `
 | `slaughter` | → dead (abandon) |
 | `revive` | dead → hairy |
 
-`shorn` refuses a yak with hairy or shaving children: a shorn yak's children
-are all shorn or dead. It names them and the fix, and the batch exits non-zero
-after the other ids. Shear the children in the same call (a batch takes
-children before their parents, whatever order the ids are given in), or
-graduate them out of the family first with `yaks reparent <child> --parent
-<other>` or `--unparent`. The TUI's shear (single or bulk on marked yaks)
-follows the same rule.
+### Families stay consistent
 
-`slaughter` refuses a yak that still has live (non-dead) descendants, since that
-would orphan them (it names them and exits non-zero). `slaughter <id> --family`
-takes the whole family instead: every live descendant, deepest first, then the
-yak itself.
+A finished yak (shorn or dead) never has an open (hairy or shaving) child.
+The moves keep it that way, in the CLI and the TUI alike, and `yaks doctor`
+flags a farm that holds it anyway (`unfinished-children`):
+
+- `shorn` refuses a yak with open children. It names them and the fix, and the
+  batch exits non-zero after the other ids. Shear the children in the same call
+  (a batch takes children before their parents, whatever order the ids are
+  given in), or graduate them out of the family first with `yaks reparent
+  <child> --parent <other>` or `--unparent`.
+- `slaughter` refuses a yak with open descendants the same way.
+  `slaughter <id> --family` takes them along instead: every open descendant,
+  deepest first, then the yak itself. Shorn descendants are finished work: they
+  never block a slaughter and stay shorn.
 
 Every move appends an entry to the yak's body in the note shape,
 `▸ <ts> [<actor>]`, its `kind: move` / `from` / `to` [metadata](#note-metadata), a blank line, then `moved: <from> -> <to>` (one per yak moved, so
@@ -440,7 +443,7 @@ Rules, the same for all four commands:
 | `init [--farm <checkout>]` | Start this repo's farm branch, or share another repo's (`--farm`), and install the skills. Idempotent. [Details](#init) |
 | `skills install` | Install all four bundled agent skills to `--dir <path>`, `--user` or the project's `./.agents/skills`. Edited copies are left alone unless `--force`. [Details](#skills) |
 | `skills status` | Per-skill verdict (`current`, `stale`, `adoptable`, `held`, `modified`, `unmanaged`, `source`, `retired`) from the provenance stamp. `--user` / `--dir` inspect another directory. See [skills.md](skills.md). [Details](#skills) |
-| `doctor` | Read-only integrity check: invalid status, duplicate id, misplaced file, dangling parent/deps, malformed labels, `needs:` that disagrees with the latest kinded ask/answer/request/pickup note, a shorn yak over unfinished children. Exits non-zero on any issue. `--strict` also flags shorn yaks with no note or whose `verify:` did not last PASS. [Details](#doctor) |
+| `doctor` | Read-only integrity check: invalid status, duplicate id, misplaced file, dangling parent/deps, malformed labels, `needs:` that disagrees with the latest kinded ask/answer/request/pickup note, a shorn or dead yak over unfinished children. Exits non-zero on any issue. `--strict` also flags shorn yaks with no note or whose `verify:` did not last PASS. [Details](#doctor) |
 | `preflight [<id>...] [--all] [--push-main]` | Read-only landing check: shorn yaks' `verify:` last PASSed, farm integrity, no merge conflict in the farm. `--push-main` checks the `local` remote. [Details](#preflight) |
 | `whoami [--set <name>]` | Show the actor this checkout's writes are stamped with, and why; `--set` stores one for this checkout (`git config yaks.actor`), which outlasts fresh shells. Warns on a name another thread uses. [Details](#whoami) |
 | `brief <id> --as <name> [--yaks-dir <path>]` | Print the worker brief for one yak, read-only: the part a worker needs that the yak, the config and the farm determine. `--yaks-dir` names the farm. [Details](#brief) |
@@ -542,7 +545,7 @@ An ordinary command prints that advice itself as one stderr `note:` line, once p
 
 `doctor`
 
-Read-only integrity check: a `status:` value that is not hairy/shaving/shorn/dead (`invalid-status`), one `id:` in the frontmatter of two yak files (`duplicate-id`), a yak file away from its `<herd>/yaks/<id>.md` (in another herd's directory, under another name, or loose at the farm root; not loaded from there: `misplaced-file`), dangling parent/deps, malformed labels (a legacy label containing a comma or space, e.g. `ui,docs` — any label edit on that yak re-splits it), and `needs-drift`: the latest `ask`, `answer`, `request` or `pickup` note *with* `kind` [metadata](#note-metadata) leaves a state that `needs:` disagrees with (`ask` leaves its `needs` key, default `human`; `answer`, its `needs` key, default `agent`; `request`, `agent`; `pickup`, none). A yak with no such note is never flagged. Two commands change `needs:` without writing a note, so the check allows what they leave: after an `ask` note, `agent` or no `needs` (an `answer` with no `--note`); after an `answer` note, no `needs` (`answer --done` with no note, or `pickup --drop-request`, which removes the request note). And `unfinished-children`: a shorn yak with hairy or shaving children, which `yaks shorn` refuses but an older farm or a hand edit can still hold; regrow the parent, finish the children, or graduate them.
+Read-only integrity check: a `status:` value that is not hairy/shaving/shorn/dead (`invalid-status`), one `id:` in the frontmatter of two yak files (`duplicate-id`), a yak file away from its `<herd>/yaks/<id>.md` (in another herd's directory, under another name, or loose at the farm root; not loaded from there: `misplaced-file`), dangling parent/deps, malformed labels (a legacy label containing a comma or space, e.g. `ui,docs` — any label edit on that yak re-splits it), and `needs-drift`: the latest `ask`, `answer`, `request` or `pickup` note *with* `kind` [metadata](#note-metadata) leaves a state that `needs:` disagrees with (`ask` leaves its `needs` key, default `human`; `answer`, its `needs` key, default `agent`; `request`, `agent`; `pickup`, none). A yak with no such note is never flagged. Two commands change `needs:` without writing a note, so the check allows what they leave: after an `ask` note, `agent` or no `needs` (an `answer` with no `--note`); after an `answer` note, no `needs` (`answer --done` with no note, or `pickup --drop-request`, which removes the request note). And `unfinished-children`: a shorn or dead yak with hairy or shaving children, which the moves refuse ([Families stay consistent](#families-stay-consistent)) but an older farm or a hand edit can still hold; finish the children, regrow (or revive) the parent, or graduate them.
 
 Exits non-zero on any issue (CI-usable).
 

@@ -165,10 +165,14 @@ pub fn depends_on_transitively(tasks: &[Task], start: &str, target: &str) -> boo
 /// default scope when `spec.statuses` is empty.
 pub fn apply<'a>(tasks: &'a [Task], spec: &FilterSpec, include_dead: bool) -> Vec<&'a Task> {
     let resolved = resolved_ids(tasks);
-    let scope = spec
-        .parent
-        .as_ref()
-        .map(|p| descendant_ids(tasks, p, spec.statuses.contains(&Status::Dead)));
+    let scope = spec.parent.as_ref().map(|p| {
+        let dead_rows = if spec.statuses.is_empty() {
+            include_dead
+        } else {
+            spec.statuses.contains(&Status::Dead)
+        };
+        descendant_ids(tasks, p, dead_rows)
+    });
 
     tasks
         .iter()
@@ -363,6 +367,25 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(ids(apply(&h, &spec, false)), vec!["k"]);
+    }
+
+    /// `--all --parent-of` lists dead descendants too, like `--status dead`
+    /// does: the scope follows the same dead rule as the rows (yaks-27c1).
+    #[test]
+    fn parent_of_with_all_includes_dead_descendants() {
+        let tasks = vec![
+            t("p", Status::Hairy, &[], None),
+            t("d", Status::Dead, &[], Some("p")),
+            t("g", Status::Shorn, &[], Some("d")),
+        ];
+        let spec = FilterSpec {
+            parent: Some("p".into()),
+            ..Default::default()
+        };
+        assert_eq!(ids(apply(&tasks, &spec, false)), Vec::<&str>::new());
+        let mut all = ids(apply(&tasks, &spec, true));
+        all.sort();
+        assert_eq!(all, vec!["d", "g"]);
     }
 
     #[test]
