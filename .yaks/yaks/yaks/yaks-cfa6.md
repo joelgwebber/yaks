@@ -1,11 +1,11 @@
 ---
 id: yaks-cfa6
 title: shave takes hairy ancestors along (replacing the skills' 'and its parent if hairy')
-status: hairy
+status: shaving
 type: task
 priority: 3
 created: '2026-11-01T16:43:15Z'
-updated: '2026-11-01T16:43:15Z'
+updated: '2026-11-01T17:28:01Z'
 parent: yaks-9b41
 labels:
 - cli
@@ -18,3 +18,13 @@ The `yaks` and `yaks-working` skills tell an agent to `yaks shave <id>`, "and it
 Lean: make it true by construction instead. `yaks shave <child>` also shaves each hairy ancestor (printing `Shaving <parent> (parent of <child>)`, its move note saying why), the TUI's shave does the same, and the skills drop the clause. No doctor check: a hairy parent over a shaving child is untidy, not wrong, and nothing reads it as a contradiction.
 
 The cost: the ancestor's move is stamped with the worker's name, so `yaks sheds` lists the umbrella under that worker (as it already does when the worker follows the skill). Design fork: see the ask on yaks-9b41.
+
+---
+▸ 2026-11-01T17:28:01Z [yakherd]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQtfBVdv4DR2eA_txRWzEtg5LOADbbFpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving

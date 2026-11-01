@@ -1,11 +1,11 @@
 ---
 id: yaks-35a4
 title: 'Refuse opening a yak under a finished parent: create/reparent --parent, regrow/revive/shave of a child of a shorn or dead yak'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-01T16:31:51Z'
-updated: '2026-11-01T17:22:27Z'
+updated: '2026-11-01T17:28:01Z'
 parent: yaks-9b41
 labels:
 - cli
@@ -35,3 +35,28 @@ thread: ksQQtfBVdv4DR2eA_txRWzEtg5LOADbbFpIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-01T17:28:01Z [yakherd]
+kind: landed
+sha: 95fa1e2
+---
+
+Done in the commit above (local main).
+
+- One refusal wording, `farm::finished_parent_refusal`, at the three choke points: `Farm::create` (`CreateOutcome::ParentFinished`), `Farm::reparent` (an open yak under a finished one; `bulk --reparent` and the TUI go through it) and `Farm::check_transition` (opening moves; typed `FinishedParent`). Finished yaks still reparent freely; no-op moves are never refused.
+- `Farm::check_transition` is now the whole family check (both directions), and `transition` calls it under the lock. `Farm::batch_order(ids, dest)` (was `children_first`): finishing moves deepest first, opening moves shallowest first; CLI `transition_many` and the TUI bulk use it for every dest.
+- TUI: checks before writing the note, so a refused shear leaves no comment (a gap from yaks-62f2); bulk reports `· N skipped: unfinished children` / `· N skipped: parent is finished` instead of "failed"; the old bulk-slaughter pre-skip (`live_child_count`) is gone, the farm enforces it.
+- Help/docs: `create --parent`, `shave`, `regrow`, `revive`, `reparent` --help; docs/cli.md "Families stay consistent".
+
+Evidence: `cargo test --workspace --locked` green (CI-like env). New `nothing_opens_under_a_finished_parent` (create under shorn/dead, reparent refused/allowed, regrow+shave refused, no-op allowed, batch_order parents first) and TUI `refused_shear_leaves_no_comment_and_regrow_takes_parents_first`, which fails with the pre-check removed (my first version passed regardless because the TUI rows were stale; it reloads now). Real CLI: `create late --parent <shorn>` and `regrow <child>` refused with the message (exit 1); `regrow <child> <parent>` regrew both, parent first; doctor clean.
+
+---
+▸ 2026-11-01T17:28:01Z [yakherd]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQtfBVdv4DR2eA_txRWzEtg5LOADbbFpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
