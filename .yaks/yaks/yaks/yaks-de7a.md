@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 1
 created: '2026-11-01T01:20:45Z'
-updated: '2026-11-01T16:13:32Z'
+updated: '2026-11-01T16:17:57Z'
 labels:
 - release
 ---
@@ -65,3 +65,12 @@ to: shorn
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-01T16:17:57Z [yakherd]
+kind: landed
+commit: 8d9a1b1274ff58ed9ba45ed66d17a4c270302a48
+branch: main
+---
+
+landed: 8d9a1b1
