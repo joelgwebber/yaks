@@ -1,11 +1,11 @@
 ---
 id: yaks-35a4
 title: 'Refuse opening a yak under a finished parent: create/reparent --parent, regrow/revive/shave of a child of a shorn or dead yak'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-01T16:31:51Z'
-updated: '2026-11-01T16:43:01Z'
+updated: '2026-11-01T17:22:27Z'
 parent: yaks-9b41
 labels:
 - cli
@@ -25,3 +25,13 @@ Found shearing yaks-62f2; widened under yaks-9b41. Every move that makes a yak h
 - Tests that fail first; `--help`, docs/cli.md.
 
 Decided: refuse rather than warn or auto-reopen the parent. A warning is how the state got here; auto-reopening changes someone else's yak silently.
+
+---
+▸ 2026-11-01T17:22:27Z [yakherd]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQtfBVdv4DR2eA_txRWzEtg5LOADbbFpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving

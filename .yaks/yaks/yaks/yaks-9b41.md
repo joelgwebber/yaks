@@ -5,11 +5,10 @@ status: shaving
 type: feature
 priority: 1
 created: '2026-10-13T18:04:15Z'
-updated: '2026-11-01T16:43:28Z'
+updated: '2026-11-01T17:16:53Z'
 labels:
 - doctor
 - skills
-needs: human
 ---
 
 Joel (2026-10-13): "It creates great confusion, and runs contrary to a sane workflow. We should probably also add more skill guidance on the subject -- my agents keep doing it!"
@@ -67,3 +66,21 @@ Two behavior changes in this arc need your call. Everything else (yaks-35a4, the
 2. **`shave` takes hairy ancestors along** (yaks-cfa6). Lean: yes, and drop "and its parent if hairy" from the skills, rather than the runner's proposed doctor error for a shaving child under a hairy parent. Cost: the umbrella's move carries the worker's name, so `yaks sheds` shows it under that worker (as today when the worker follows the skill). Alternative: leave it as skill guidance, with no check.
 
 Not doing, from the runner's list: `shorn --family` (shears unfinished work without evidence) and `shorn --force` (graduating the child with `yaks reparent` is the escape hatch; your lean on yaks-62f2 was `--force` only if a real need appears).
+
+---
+▸ 2026-11-01T17:16:17Z [Joel Webber]
+kind: answer
+needs: agent
+---
+
+1. That makes sense to me. I don't think it's necessary to slaughter all the children in this case.
+2. That also makes sense; it's a similarly weird case to say a child is shaving, but its parent hasn't started yet.
+
+---
+▸ 2026-11-01T17:16:53Z [yakherd]
+kind: pickup
+---
+
+picked up
+
+Decision: both leans taken (Joel, answer above). slaughter blocks only on hairy/shaving children and --family leaves shorn descendants shorn (yaks-27c1); shave takes hairy ancestors along and the skills drop 'and its parent if hairy' (yaks-cfa6). Rejected: today's slaughter-kills-the-subtree, and a doctor error for shaving-under-hairy. Order: yaks-27c1, yaks-35a4, yaks-cfa6, then yaks-93c5 (skills), then cut 0.0.28.
