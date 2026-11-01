@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 1
 created: '2026-11-01T18:52:36Z'
-updated: '2026-11-01T22:26:18Z'
+updated: '2026-11-01T22:30:56Z'
 labels:
 - wiki
 - design
@@ -70,3 +70,8 @@ Fan-out, 2026-11-01 (yakherd delta:farm-wiki), all from `wiki` at a150387:
 - `nav-1`: yaks-84e0, detail navigation in the text viewer, the TUI layer's prerequisite; claude-opus-5-5, because it is a shared-component design inside a big TUI; [thread](delta://thread/ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD0o8pIBxBCA0aLJyrhJPreUvVwLftHG).
 
 Landed by me since the last summary: yaks-8e75 (schemas), yaks-4c8c (merge driver plus `yaks conflicts`), yaks-fd7a (attach encoding), yaks-2b68 (`yaks weight`/`yaks lfs`). The core layer (yaks-f301) is now complete.
+
+---
+▸ 2026-11-01T22:30:56Z [delta:farm-wiki]
+
+Fan-out continued: `import-1` takes yaks-5550 (`yaks import-hearth`, then the joel migration rehearsed on a scratch clone), on claude-sonnet-5-5, from `wiki` at e2a9aa1 ([thread](delta://thread/ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD1BtZIBxBCA0aLJyrhJPreUvVwLftHG)). I wrote the research skill (yaks-577f) myself and revised it after a claude-haiku-5-5 cold read. yaks-9cc1 (recurring yaks) has a proposal and an ask for Joel.
