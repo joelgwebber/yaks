@@ -1,0 +1,46 @@
+# yaks weight on scratch clones of the two real farms (migrated to schema 7 in scratch only), 2026-11-01T22:19:20Z
+
+## yaks repo (farm branch yaks)
+farm branch yaks: 804 commits; a clone of this repository fetches 4.6 MiB for it (objects no other branch has)
+
+current tree:
+  yaks           591 files     1.9 MiB
+  attachments    188 files     6.2 MiB
+  other            4 files       622 B
+
+largest blobs only the farm branch holds:
+     1.2 MiB  .yaks/yaks/yaks/yaks-b608/too-many-yaks.png
+   663.8 KiB  .yaks/yaks/yaks/yaks-0bf0/tmp.png
+   368.0 KiB  .yaks/yaks/yaks/yaks-48e9/ugly.png
+   183.2 KiB  .yaks/yaks/yaks/yaks-da23/sheds-real.json
+   126.4 KiB  .yaks/yaks/yaks/yaks-4e9c/tui-detail-F-final.png
+   125.5 KiB  .yaks/yaks/yaks/yaks-4e9c/tui-detail-F-final-patched.png
+   125.0 KiB  .yaks/yaks/yaks/yaks-4e9c/tui-detail-B-sys-appleemoji-first.png
+   121.7 KiB  .yaks/yaks/yaks/yaks-4e9c/tui-detail-resvg-trimmed.png
+    97.9 KiB  .yaks/yaks/yaks/yaks-48e9/tui-surfaces.png
+    92.7 KiB  .yaks/yaks/yaks/yaks-ce5d/help-overlay.txt
+
+lfs: off; 5.3 MiB of binary files in the tree are plain git blobs (`yaks lfs` moves them to Git LFS)
+
+## joel repo (farm branch yaks)
+farm branch yaks: 533 commits; a clone of this repository fetches 840.4 KiB for it (objects no other branch has)
+(its history reaches 77.3 MiB in all: it shares commits with code branches)
+
+current tree:
+  yaks           574 files     1.3 MiB
+  attachments      9 files    34.7 KiB
+  other            6 files     7.8 KiB
+
+largest blobs only the farm branch holds:
+    18.7 KiB  .yaks/fullstory/yaks/fullstory-ff7a.md
+    17.1 KiB  .yaks/fullstory/yaks/fullstory-d3f7.5.md
+    16.3 KiB  .yaks/fullstory/yaks/fullstory-3704.6.md
+    15.8 KiB  .yaks/fullstory/yaks/fullstory-ac2b.md
+    15.8 KiB  .yaks/fullstory/yaks/fullstory-ac2b.md
+    15.7 KiB  .yaks/fullstory/yaks/fullstory-ac2b.md
+    15.1 KiB  .yaks/fullstory/yaks/fullstory-ac2b.md
+    14.7 KiB  .yaks/fullstory/yaks/fullstory-ac2b.md
+    13.8 KiB  .yaks/fullstory/yaks/fullstory-5ba5.4.md
+    13.7 KiB  .yaks/fullstory/yaks/fullstory-ac2b.md
+
+lfs: off; 0 B of binary files in the tree are plain git blobs
