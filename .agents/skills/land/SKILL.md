@@ -27,7 +27,7 @@ Delegating), `.yaks/config.yaml` on the farm branch (`yaks path`) for `verify:`,
 
 1. Load the `yaks` skill (pass the worktree argument). `yaks show` the yak for
    this change. If there is none, `yaks create` one (check `yaks search` first);
-   it must be `shaving` (`yaks shave <id>`, and its parent if still hairy).
+   it must be `shaving` (`yaks shave <id>`, which shaves hairy ancestors too).
    Never land code that has no yak.
 2. Record follow-ups you found as new yaks; note decisions as `Decision:` notes.
 3. Parity check, in this same change (`AGENTS.md`, Keeping docs current): `docs/`,
@@ -72,7 +72,7 @@ checkout's `main`.
 1. `yaks update <id> --note` with a short summary: what changed, the landed SHA,
    the evidence (the checks you actually ran), and any yaks spawned. Never claim
    what you did not observe.
-2. `yaks shorn <id>` (and its parent if this was the last open child).
+2. `yaks shorn <id>` (and its parent if this was the last open child; `yaks shorn` refuses a parent that still has one).
 3. `yaks doctor`, `yaks preflight`, then `yaks commit`. Leave `yaks sync`
    (publishing) to the user.
 

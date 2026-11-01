@@ -45,13 +45,21 @@ yaks sync                  # commit, pull (yak-aware merge), push
 ## Workflow
 
 1. **Session start:** name yourself once, if you are an agent: `yaks whoami --set <name>` stores it for this checkout, so every later command uses it even in a fresh shell (`export YAKS_ACTOR` does not survive harnesses whose terminal calls are separate shells). Choose a name nobody else in the farm uses, specific to you (`door-2`, `herd-interact`, not `herd`): others will read your trail by it. Without one, your notes carry a name derived from the harness, or the human's git name. Then `yaks sync` (unless a yakherd coordinates); then `yaks inbox --for agent` (answers and requests nobody has acted on: handle these first); then `yaks next`.
-2. **Before code:** `yaks shave <id>`, and its parent if still hairy. Re-read it with `yaks show <id>`; the latest note is the freshest signal.
+2. **Before code:** `yaks shave <id>` (it shaves hairy ancestors too). Re-read it with `yaks show <id>`; the latest note is the freshest signal.
 3. **While working:** `yaks update <id> --note "..."`, one event per note, at each milestone and at least every 30 minutes of work: your latest note is how others tell a busy worker from a dead one.
 4. **Code others can't see** (you are on another machine, or in a clone nobody reads): at each checkpoint, commit, push your work branch to `origin` (any branch name, your harness's own pattern is fine, but never `main` and never under `yaks/`: the farm branch `yaks` blocks that prefix, so such a branch cannot be pushed), note it (`--meta kind=checkpoint --meta branch=<branch> --meta commit=$(git rev-parse HEAD)`), then sync. In that order, so the farm never names a commit nobody can fetch.
 5. **Stopping without finishing:** to resume later, a note saying where you stopped and what's next (the claim stays yours and reads `stale` in `yaks sheds` after 2 hours); to give it up, that note and then `yaks regrow <id>`, so nobody mistakes it for live work.
-6. **Done:** gather evidence, add a short summary note (see "Evidence before you shear"), `yaks shorn <id>`. Shear the parent when its last child is shorn; never leave a hairy parent over shorn children. The converse is a hard rule: never shear a yak over hairy or shaving children (`yaks shorn` refuses it). If the parent is done enough, graduate the unfinished children first (`yaks reparent <child> --parent <other>` or `--unparent`); one `yaks shorn <parent> <children...>` takes children first.
+6. **Done:** gather evidence, add a short summary note (see "Evidence before you shear"), `yaks shorn <id>`. Then the family: shear the parent if that was its last open child, and file any follow-up where "Families" says.
 
 **You share the farm with a human.** They edit yaks in `yaks tui` while you work, so a yak may move, gain a note or appear without you. That is signal, not an error: don't revert, restage or report it; follow it if it redirects your work.
+
+## Families
+
+A parent is the sum of its children: open (hairy or shaving) while any child is, finished (shorn or dead) only when every child is. The commands keep it so: `shave` takes hairy ancestors along; `shorn` and `slaughter` refuse a yak with open children; `create --parent`, `reparent`, `regrow`, `revive` and `shave` refuse to open a yak under a finished one; `yaks doctor` flags a farm that breaks it anyway. When a command refuses, take the fix it names.
+
+- **Closing a family.** One `yaks shorn <parent> <children...>` shears a whole family, in any order. A parent that is done except for some children: graduate each first, under the nearest open ancestor it fits (`yaks reparent <child> --parent <id>`) or to the top level (`--unparent`), with a note on it saying where it came from; then shear.
+- **Follow-ups you find while working.** A child of your yak only if your yak isn't done without it, and then you finish it before you shear. Anything else goes under the nearest open ancestor it belongs to, or at the top level; name it in your summary note. If the parent's own description promises that work, the parent stays open until it is done.
+- **Abandoning.** `yaks slaughter --family <id>` takes the open descendants with it; shorn ones stay shorn, since that work was done.
 
 ## The inbox: work waiting on someone
 
@@ -147,7 +155,7 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 | `show <id>` | Full details, parent and children |
 | `path [<id>...]` | Absolute file path of yaks (by id or filters); no arguments: the farm in use |
 | `update <id>...` | Fields, `--add-label`/`--remove-label`, `--note` (with `--meta key=value`), `--verify`, `--source`, `--pr`/`--remove-pr` |
-| `shave` / `shorn` / `regrow` / `slaughter` / `revive` | State moves; several ids at once; each appends an attributed `moved:` entry. `slaughter --family` takes descendants too |
+| `shave` / `shorn` / `regrow` / `slaughter` / `revive` | State moves; several ids at once; each appends an attributed `moved:` entry. `slaughter --family` takes open descendants too |
 | `ask` / `answer` / `request` / `pickup` / `inbox` / `wait` | The inbox (above); `inbox --for human\|agent`, `wait --timeout 10m` |
 | `verify <id>` | Run the yak's `verify:` (else the config default) and record PASS/FAIL |
 | `attach <id> <file>` | Store and link evidence; `rename-attachment` renames one |

@@ -24,7 +24,7 @@ You are the **yakherd**: the one agent that claims yaks, briefs workers, lands t
 1. **Claim.** Create or pick the leaf yaks, `yaks shave` each, and write a claim note: owner name, scope by file and symbol, out of scope, evidence contract, judge (section 4).
 2. **Fan out.** One worker per yak, each from your freshest state, each with a brief (section 5).
 3. **Land.** Only you land, one worker at a time, by the SHA in its final message, then check it (section 6).
-4. **Reconcile.** A yak still `shaving` after the batch is stalled: `regrow` it or re-run it. Shear an umbrella only when every child is shorn or dead; a child that is not done graduates first (`yaks reparent <child> --parent <other>` or `--unparent`). `yaks doctor` (it flags a shorn yak over unfinished children), `yaks commit`.
+4. **Reconcile.** A yak still `shaving` after the batch is stalled: `regrow` it or re-run it. Shear the umbrella once every child is shorn or dead; a child that isn't done graduates out first (the `yaks` skill's "Families"). `yaks doctor`, `yaks commit`.
 
 **Watching workers.** `yaks log --by <worker> --since 1h` and `yaks inbox` show their notes and asks live. `yaks sheds` lists everyone writing to the farm, one row per actor name, on any machine once synced: what each is shaving, what it touched recently, its open asks, its latest checkpoint branch, and when it last wrote: `active` (wrote in the last 2 hours), `stale` (holds a claim but has written nothing for 2 hours), else `idle`. With heartbeat notes, that tells a slow worker from a dead one.
 
