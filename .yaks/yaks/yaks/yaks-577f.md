@@ -1,11 +1,11 @@
 ---
 id: yaks-577f
 title: 'Skill: research and knowledge in a farm (find, cite, save sources, promote, pages vs yaks vs docs/)'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-01T18:53:13Z'
-updated: '2026-11-01T22:30:33Z'
+updated: '2026-11-01T22:51:30Z'
 parent: yaks-d26a
 depends_on:
 - yaks-2c42
@@ -61,3 +61,21 @@ It is ported from `hearth-knowledge` where that applies. Hearth's MCP tools map 
 Not fixed: range queries ("renews next month") need comparisons in `page query --where`, as Hearth's `page_query` has. That is a follow-up candidate.
 
 `yaks check` is referenced but is being built by check-1 (yaks-c0ac) in this batch; this yak shears once that lands.
+
+---
+▸ 2026-11-01T22:51:30Z [delta:farm-wiki]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-01T22:51:30Z [delta:farm-wiki]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
