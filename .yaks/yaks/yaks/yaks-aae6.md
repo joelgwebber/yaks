@@ -1,16 +1,15 @@
 ---
 id: yaks-aae6
 title: 'Design: kinds of farm document, layout and addressing'
-status: hairy
+status: shorn
 type: idea
 priority: 1
 created: '2026-11-01T18:52:36Z'
-updated: '2026-11-01T18:53:39Z'
+updated: '2026-11-01T20:09:15Z'
 parent: yaks-7708
 labels:
 - wiki
 - design
-needs: human
 ---
 
 Kinds of document in a farm, where each lives, and how each is addressed. Parent: the farm wiki umbrella.
@@ -72,3 +71,36 @@ Three choices in the layout; I'm building on the leans unless you say otherwise.
 1. **Where pages live:** farm-wide `wiki/` plus optional `<herd>/wiki/`, with `wiki`, `sources`, `schemas` reserved herd names. Lean: yes. The alternative was `docs/` (already reserved), but "docs" is the name we just decided means product docs on `main`, so reusing it would blur the line.
 2. **Sources at the farm root** (`sources/<id>/`, shared by all herds, deduplicated farm-wide) rather than per herd. Lean: farm root. A paper cited by two herds is one source.
 3. **Two branches even for a knowledge-only repo** (`main` holds `AGENTS.md` and scaffolding, or experiment code as in `joel`). Lean: yes; one layout everywhere, and `joel` already wants code on `main`.
+
+---
+▸ 2026-11-01T20:02:20Z [Joel Webber]
+kind: answer
+needs: agent
+---
+
+1. Yup, I dig that. Wiki's a well-known concept, and we have a pretty good link syntax for covering all the cases, I think.
+2. Yes, exactly.
+3. Agreed; the degenerate case costs ~nothing, so let's keep it consistent.
+
+---
+▸ 2026-11-01T20:09:14Z [delta:farm-wiki]
+kind: pickup
+---
+
+picked up
+
+Decision (Joel, 2026-11-01): all three leans accepted.
+
+- Pages live in `wiki/` and optional `<herd>/wiki/`; `wiki`, `sources` and `schemas` are reserved herd names (`docs` stays reserved, unused).
+- Sources sit at the farm root, `sources/<id>/`, deduplicated farm-wide.
+- Every repo with a farm has two branches, including knowledge-only repos.
+
+---
+▸ 2026-11-01T20:09:15Z [delta:farm-wiki]
+kind: move
+from: hairy
+to: shorn
+thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shorn

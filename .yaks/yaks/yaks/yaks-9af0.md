@@ -5,10 +5,11 @@ status: hairy
 type: feature
 priority: 1
 created: '2026-11-01T18:53:10Z'
-updated: '2026-11-01T18:53:14Z'
+updated: '2026-11-01T20:09:16Z'
 parent: yaks-f301
 depends_on:
 - yaks-1f34
+- yaks-37da
 labels:
 - wiki
 - cli

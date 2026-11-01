@@ -1,16 +1,15 @@
 ---
 id: yaks-63c3
 title: 'Design: per-change farm commits, undo, and a merge driver for every farm document'
-status: hairy
+status: shorn
 type: idea
 priority: 1
 created: '2026-11-01T18:52:37Z'
-updated: '2026-11-01T18:53:39Z'
+updated: '2026-11-01T20:09:15Z'
 parent: yaks-7708
 labels:
 - wiki
 - git
-needs: human
 ---
 
 How farm writes become commits, and how concurrent writes merge, now that the farm holds pages an agent rewrites as well as yaks.
@@ -54,3 +53,37 @@ asked: needs human
 1. **Per-change commits by default on branch farms**, `commit: batch` in `config.yaml` to keep today's behaviour. Lean: yes, and convert this farm too.
 2. **Prose conflicts leave markers in the file** (the merge itself succeeds), listed by `yaks conflicts` and doctor. Lean: yes, for page bodies and yak descriptions; notes stay a union and fields follow their merge rule, so frontmatter is never left with markers.
 3. **TUI coalescing:** a burst of edits to one document within a few seconds becomes one commit. Lean: yes, about 5 seconds.
+
+---
+▸ 2026-11-01T20:07:39Z [Joel Webber]
+kind: answer
+needs: agent
+---
+
+1. I think that's fine, and keeps things nice and simple. Don't bother with the batch behavior -- if this becomes problematic, we can add it back in, and/or give the CLI flags to control batching when really needed for large changes.
+2. Exactly. I think this will be a very effective pattern, giving us the flexibility to always merge forward without creating metadata inconsistencies, allowing humans and agents to fix up semantic conflicts later.
+3. That's fine as well -- we can see where that gets us, and tweak as needed. It would also be good to auto-sync with some reasonable regularity, so upstream changes get reflected even in the absence of local ones.
+
+---
+▸ 2026-11-01T20:09:15Z [delta:farm-wiki]
+kind: pickup
+---
+
+picked up
+
+Decision (Joel, 2026-11-01):
+
+1. Per-change commits always, **no `commit: batch` mode**. If it hurts, add CLI flags for batching large changes later.
+2. Prose conflicts keep their markers; fields merge by rule, so frontmatter stays well formed. `yaks conflicts` and doctor list the files.
+3. TUI coalescing of a burst of edits (about 5 s) into one commit.
+4. **New:** the TUI auto-syncs on a regular interval, so upstream changes show up without local ones. Filed under yaks-a838's family.
+
+---
+▸ 2026-11-01T20:09:15Z [delta:farm-wiki]
+kind: move
+from: hairy
+to: shorn
+thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shorn

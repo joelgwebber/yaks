@@ -1,16 +1,15 @@
 ---
 id: yaks-ccb1
 title: 'Design: link grammar across farm, code and commits; yaks peek'
-status: hairy
+status: shorn
 type: idea
 priority: 1
 created: '2026-11-01T18:52:37Z'
-updated: '2026-11-01T18:53:39Z'
+updated: '2026-11-01T20:09:15Z'
 parent: yaks-7708
 labels:
 - wiki
 - links
-needs: human
 ---
 
 One link grammar for yaks and pages, covering farm documents, the code repo, commit pins and anchors, plus `yaks peek` to read just the span a link points at.
@@ -58,3 +57,36 @@ asked: needs human
 1. **Link forms:** `/wiki/x.md` (farm root, leading slash, as OKF recommends), relative paths for neighbours, `code:src/foo.rs#L12-L40` for the code repo, and `@<sha>` before the anchor to pin any path (`code:src/foo.rs@3f2a9c1#L12`, `/wiki/x.md@91be0d2#setup`). The existing `../src/...` and `../blob/<sha>/...` stay valid forever. Lean: this. The cost is that `code:` and `@sha` render as dead links on GitHub, but code links already don't work there on a farm branch.
 2. **Heading anchors** use GitHub's slug rule. Lean: yes.
 3. **`yaks peek` with no anchor** prints frontmatter plus the first paragraph (a page) or the description (a yak). Lean: yes.
+
+---
+▸ 2026-11-01T19:59:06Z [Joel Webber]
+kind: answer
+needs: agent
+---
+
+1. Agreed on these approaches as a whole. I'm less sure about the "nearby farm" case. If this is for wiki docs that aren't likely to change location, I suppose it's fine, but maybe it would still be better to have relative links be downward only, or rooted in /wiki, et al. ISTR this is common in systems like Obsidian? I'm assuming that attachment references can work across yaks, so that yak-1234 can reference yak-4567/attachment.png.
+2. Yup, that's pretty common parlance, I think.
+3. Sounds like as good a starting point as any. We can easily tweak this later if needed.
+
+---
+▸ 2026-11-01T20:09:15Z [delta:farm-wiki]
+kind: pickup
+---
+
+picked up
+
+Decision (Joel, 2026-11-01):
+
+1. Link forms accepted, with one change: **no upward relative links.** A farm document is linked from the farm root (`/wiki/topics/x.md`, as Obsidian's vault-absolute paths); a relative link only goes down (`setup/notes.md` from `wiki/topics/`, never `../`). Attachments resolve by yak id from anywhere: `yaks-4567/shot.png` in any yak, any herd, page or note names that yak's attachment. The legacy `../src/...` and `../blob/<sha>/...` code forms stay valid in yaks (they predate this and are not farm paths); doctor flags any other `../` link.
+2. GitHub heading slugs.
+3. Peek with no anchor prints frontmatter plus the first paragraph (page) or the description (yak).
+
+---
+▸ 2026-11-01T20:09:15Z [delta:farm-wiki]
+kind: move
+from: hairy
+to: shorn
+thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shorn
