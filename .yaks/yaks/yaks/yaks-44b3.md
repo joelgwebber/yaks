@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 1
 created: '2026-11-01T18:52:36Z'
-updated: '2026-11-01T22:30:56Z'
+updated: '2026-11-01T23:05:11Z'
 labels:
 - wiki
 - design
@@ -75,3 +75,8 @@ Landed by me since the last summary: yaks-8e75 (schemas), yaks-4c8c (merge drive
 ▸ 2026-11-01T22:30:56Z [delta:farm-wiki]
 
 Fan-out continued: `import-1` takes yaks-5550 (`yaks import-hearth`, then the joel migration rehearsed on a scratch clone), on claude-sonnet-5-5, from `wiki` at e2a9aa1 ([thread](delta://thread/ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD1BtZIBxBCA0aLJyrhJPreUvVwLftHG)). I wrote the research skill (yaks-577f) myself and revised it after a claude-haiku-5-5 cold read. yaks-9cc1 (recurring yaks) has a proposal and an ask for Joel.
+
+---
+▸ 2026-11-01T23:05:11Z [delta:farm-wiki]
+
+Landed: yaks-c0ac (`yaks check`, 206f23d), yaks-f0db (TUI auto-sync, 6a22550), yaks-84e0 (shared `linenav` viewer, 268a0c5 + 20f6bc6). Gate 950. Fan-out: `wiki-1` takes the TUI arc (yaks-ebb2, then yaks-7395, then yaks-1532) serially, on claude-opus-5-5, from 20f6bc6 ([thread](delta://thread/ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD2ExZIBxBCA0aLJyrhJPreUvVwLftHG)). `import-1` is still running.
