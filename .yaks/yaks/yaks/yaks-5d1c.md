@@ -1,16 +1,15 @@
 ---
 id: yaks-5d1c
 title: 'Actor names that survive fresh shells: persistent per-checkout actor, title-prefix fallback, a naming convention'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-01T15:37:47Z'
-updated: '2026-11-01T15:54:38Z'
+updated: '2026-11-01T15:59:34Z'
 parent: yaks-039b
 labels:
 - cli
 - skills
-needs: agent
 ---
 
 Report from the memcraft cloud-runner yakherd (2026-11-01, about 8 workers on 0.0.27): one farm held `herd`, `door-1`/`tgt-1` (from `yaks brief --as`) and `delta:Web Deploy v0`. The last came from a single `yaks pickup` run in a fresh shell without `YAKS_ACTOR`, which fell back to the herd's thread title.
@@ -54,3 +53,26 @@ needs: agent
 ---
 
 Good catch on the stable thread id question fits into this. I'm not entirely certain I follow the fallback mechanism, but as long as we have something that works fairly consistently, I'm good with your lean. The main thing I care about is ensuring we don't get inscrutable overlap (eg, "herd") or otherwise ambiguous names. And that agents can use them to follow post facto behavior when trying to piece together past changes. Nice side-benefit -- the "sheds" UI gets more constrained, coherent swimlanes (apart from humans, who *should* get long-running yak-lists).
+
+---
+▸ 2026-11-01T15:59:34Z [yakherd]
+kind: pickup
+---
+
+picked up
+
+Taking Joel's answer: my lean (prefix only derived names), plus his two requirements.
+
+- **No ambiguous overlap.** A generic `herd` reused by different coordinators reads as one actor. Seen live in memcraft: `herd` and `delta:herd` are one agent before and after renaming itself, and its old claims stay under `herd`.
+- **Traceable after the fact.** Agents must be able to map a name back to the thread that wrote it.
+
+Plan: a persistent per-checkout name (`yaks whoami --set`, stored as `git config yaks.actor`), the title-prefix fallback with a warning, `thread:` metadata on state moves when the harness exposes a thread id, `yaks brief --as` warning on a reused name, and skills that ask for a specific, unique name.
+
+---
+▸ 2026-11-01T15:59:34Z [yakherd]
+kind: move
+from: hairy
+to: shaving
+---
+
+moved: hairy -> shaving
