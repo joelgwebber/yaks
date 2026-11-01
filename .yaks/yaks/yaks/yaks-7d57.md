@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-10-31T15:57:06Z'
-updated: '2026-11-01T15:37:57Z'
+updated: '2026-11-01T15:38:30Z'
 parent: yaks-039b
 depends_on:
 - yaks-0071
@@ -77,3 +77,8 @@ Report from the runner yakherd (`herd`, later `delta:herd`), about 8 workers in:
 ▸ 2026-11-01T15:37:57Z [yakherd]
 
 Correction to the last note: not a Delta isolation leak. A worker edited the herd's checkout by absolute path (details on `yaks-6344`).
+
+---
+▸ 2026-11-01T15:38:30Z [yakherd]
+
+Resolved: Joel committed the 0.0.27 skills to memcraft as `48ed523` (on `origin/main`), so subthread workers get current skills too. The 0.0.24 copies I reported were from before that push.
