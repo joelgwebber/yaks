@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-10-31T15:57:06Z'
-updated: '2026-11-01T15:38:30Z'
+updated: '2026-11-01T22:53:27Z'
 parent: yaks-039b
 depends_on:
 - yaks-0071
@@ -82,3 +82,20 @@ Correction to the last note: not a Delta isolation leak. A worker edited the her
 ▸ 2026-11-01T15:38:30Z [yakherd]
 
 Resolved: Joel committed the 0.0.27 skills to memcraft as `48ed523` (on `origin/main`), so subthread workers get current skills too. The 0.0.24 copies I reported were from before that push.
+
+---
+▸ 2026-11-01T22:53:27Z [yakherd]
+
+Observed memcraft across a cloud → local → cloud runner switch (farm synced 2026-11-01 ~22:50Z; coordinator now `herd-memcraft`).
+
+## Worked
+
+- **Names:** the coordinator renamed itself `herd-memcraft` (specific, no overlap); dead workers came back under fresh names (`paint-3`, `menu-2`, not `paint-2` again). Moves carry `thread:`.
+- **Recovery:** the herd finished door-2's stopped worktree itself, landed `0a53ca6` with recorded evidence, and sheared mem-1457. Before respawning it noted what paint-2 had reached and that menu-1 was lost; each new worker's first note names its checkout and base commit.
+- **Farm:** synced within minutes of each change (`sheds`: origin/yaks changed 21m ago). `doctor` clean, no family violations, inbox empty. Project skills on `main` are 0.0.28 (`de1a0d8`).
+
+## Gaps
+
+1. **Checkpoints never pushed:** paint-2 and menu-1 left no `wip/` branch on origin, so their work was redone from scratch. paint-3 ("Checkpoint commit local") and menu-2 (`6762cae`, on no remote branch) repeat it. Filed yaks-ab81.
+2. **Stale claims not reconciled:** mem-dc6b (`delta:herd`, "worker not started yet", 6h), mem-4fcd and mem-c910 (old `herd`, 7h, "treating as dead pending Joel's go-ahead") are still `shaving`; mem-f5cf is a hairy parent over shaving mem-dc6b (pre-0.0.28; `shave` would now lift it). The old `herd` / `delta:herd` rows stay in `sheds` because of them.
+3. **No version reports:** no note records `yaks --version` or `skills status`, so the runners' binary version is still unconfirmed (yaks-ec00).
