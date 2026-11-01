@@ -1857,15 +1857,20 @@ impl App {
             return;
         }
         let Some(h) = &self.farm else { return };
-        match h.transition(id, dest, actor.as_deref()) {
-            Ok(MoveOutcome::Moved) => {
+        match h.transition_lifting(id, dest, actor.as_deref()) {
+            Ok((MoveOutcome::Moved, lifted)) => {
                 self.reload();
-                self.notification = Some(format!("{id} → {}", status_word(dest)));
+                let mut msg = format!("{id} → {}", status_word(dest));
+                if !lifted.is_empty() {
+                    // Shaving took hairy ancestors along (yaks-cfa6).
+                    msg.push_str(&format!(" (with {})", lifted.join(", ")));
+                }
+                self.notification = Some(msg);
             }
-            Ok(MoveOutcome::AlreadyThere) => {
+            Ok((MoveOutcome::AlreadyThere, _)) => {
                 self.notification = Some(format!("{id} already {}", status_word(dest)))
             }
-            Ok(MoveOutcome::NotFound) => self.notification = Some(format!("{id} not found")),
+            Ok((MoveOutcome::NotFound, _)) => self.notification = Some(format!("{id} not found")),
             Err(e) => self.notification = Some(format!("error: {e}")),
         }
     }

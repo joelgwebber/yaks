@@ -1389,6 +1389,18 @@ pub fn find_task_file(root: &Path, id: &str) -> Option<(Status, PathBuf)> {
 /// `actor` is resolved by the caller (see `actor::resolve`). The caller holds
 /// the farm lock.
 pub fn move_task(root: &Path, id: &str, dest: Status, actor: Option<&str>) -> Result<MoveOutcome> {
+    move_task_with(root, id, dest, actor, &[])
+}
+
+/// [`move_task`], with `extra` metadata on its entry after `kind`/`from`/`to`
+/// (`child: <id>` on a parent that `shave` moved for its child, yaks-cfa6).
+pub fn move_task_with(
+    root: &Path,
+    id: &str,
+    dest: Status,
+    actor: Option<&str>,
+    extra: &[(&str, &str)],
+) -> Result<MoveOutcome> {
     let Some((status, path)) = find_task_file(root, id) else {
         return Ok(MoveOutcome::NotFound);
     };
@@ -1407,6 +1419,7 @@ pub fn move_task(root: &Path, id: &str, dest: Status, actor: Option<&str>) -> Re
         ("from", status.as_str()),
         ("to", dest.as_str()),
     ];
+    meta.extend_from_slice(extra);
     if let Some(t) = thread.as_deref() {
         meta.push(("thread", t));
     }

@@ -2119,11 +2119,63 @@ impl Farm {
 
     /// Move `id` to `dest`, recording a `moved: <from> -> <to>` entry attributed
     /// to `actor` (see [`store::move_task`]). Refuses a move that would break
-    /// the family invariant ([`Farm::check_transition`]).
+    /// the family invariant ([`Farm::check_transition`]). Shaving a yak also
+    /// shaves its hairy ancestors ([`Farm::shave_lifts`]).
     pub fn transition(&self, id: &str, dest: Status, actor: Option<&str>) -> Result<MoveOutcome> {
+        Ok(self.transition_lifting(id, dest, actor)?.0)
+    }
+
+    /// [`Farm::transition`], also returning the hairy ancestors a shave moved
+    /// to shaving with it, outermost first (yaks-cfa6): a shaving yak's
+    /// parent is never hairy, since starting part of the work starts the
+    /// whole. Each ancestor's entry carries `child: <id>`, the yak it moved
+    /// for. Empty for every other move.
+    pub fn transition_lifting(
+        &self,
+        id: &str,
+        dest: Status,
+        actor: Option<&str>,
+    ) -> Result<(MoveOutcome, Vec<String>)> {
         let _lock = store::lock(&self.root)?;
         self.check_transition(id, dest)?;
-        store::move_task(&self.root, id, dest, actor)
+        let lifted = if dest == Status::Shaving {
+            self.shave_lifts(id)?
+        } else {
+            Vec::new()
+        };
+        let outcome = store::move_task(&self.root, id, dest, actor)?;
+        let mut moved = Vec::new();
+        if outcome == MoveOutcome::Moved {
+            for a in &lifted {
+                let extra = [("child", id)];
+                if store::move_task_with(&self.root, a, Status::Shaving, actor, &extra)?
+                    == MoveOutcome::Moved
+                {
+                    moved.push(a.clone());
+                }
+            }
+        }
+        Ok((outcome, moved))
+    }
+
+    /// The hairy ancestors shaving `id` takes along, outermost first: its
+    /// parent if hairy, that one's parent if hairy, and so on up to the first
+    /// ancestor that isn't (yaks-cfa6). Cycle-safe.
+    pub fn shave_lifts(&self, id: &str) -> Result<Vec<String>> {
+        let all = store::load(&self.root, &EVERY)?;
+        let by_id: std::collections::HashMap<&str, &Task> =
+            all.iter().map(|t| (t.id.as_str(), t)).collect();
+        let mut out = Vec::new();
+        let mut cur = by_id.get(id).and_then(|t| t.parent.as_deref());
+        while let Some(p) = cur.and_then(|p| by_id.get(p)) {
+            if p.status != Status::Hairy || out.contains(&p.id) || p.id == id {
+                break;
+            }
+            out.push(p.id.clone());
+            cur = p.parent.as_deref();
+        }
+        out.reverse();
+        Ok(out)
     }
 
     /// Whether moving `id` to `dest` keeps the family invariant (a shorn or
@@ -3831,6 +3883,52 @@ mod tests {
                     && i.ids == vec!["yak-0001".to_string(), "yak-0002".to_string()]),
             "{issues:?}"
         );
+    }
+
+    /// Shaving a yak shaves its hairy ancestors too, outermost first, up to
+    /// the first one that isn't hairy; each lifted entry names the child it
+    /// moved for. Other moves lift nothing (yaks-cfa6).
+    #[test]
+    fn shave_lifts_hairy_ancestors() {
+        let (root, farm) = temp_farm();
+        let kid = |id: &str, parent: &str, st: Status| {
+            let mut t = task(id, st);
+            t.parent = Some(parent.into());
+            t
+        };
+        store::write::save(&root, &task("yak-0001", Status::Shaving)).unwrap();
+        store::write::save(&root, &kid("yak-0002", "yak-0001", Status::Hairy)).unwrap();
+        store::write::save(&root, &kid("yak-0003", "yak-0002", Status::Hairy)).unwrap();
+        store::write::save(&root, &kid("yak-0004", "yak-0003", Status::Hairy)).unwrap();
+
+        let (out, lifted) = farm
+            .transition_lifting("yak-0004", Status::Shaving, Some("w"))
+            .unwrap();
+        assert_eq!(out, MoveOutcome::Moved);
+        assert_eq!(
+            lifted,
+            vec!["yak-0002", "yak-0003"],
+            "outermost first, stops at 0001"
+        );
+        for id in ["yak-0002", "yak-0003", "yak-0004"] {
+            assert!(at(&root, id, Status::Shaving), "{id}");
+        }
+        let body = store::load_task_by_id(&root, "yak-0002")
+            .unwrap()
+            .unwrap()
+            .body;
+        assert!(body.contains("child: yak-0004"), "{body}");
+        assert!(body.contains("[w]"), "{body}");
+
+        // Already shaving: a no-op lifts nothing; a regrow never lifts.
+        assert_eq!(
+            farm.transition_lifting("yak-0004", Status::Shaving, None)
+                .unwrap(),
+            (MoveOutcome::AlreadyThere, vec![])
+        );
+        farm.transition("yak-0004", Status::Hairy, None).unwrap();
+        farm.transition("yak-0003", Status::Hairy, None).unwrap();
+        assert!(at(&root, "yak-0002", Status::Shaving));
     }
 
     /// Nothing opens under a finished parent (yaks-35a4): create, reparent

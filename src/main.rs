@@ -661,6 +661,11 @@ enum Command {
     },
     /// Start shaving one or more yaks (move to shaving).
     ///
+    /// Also shaves each hairy ancestor (its parent if hairy, that one's parent
+    /// if hairy, ...): starting part of the work starts the whole. Each prints
+    /// as `Shaving <parent> (parent of <id>)`, and its move entry carries
+    /// `child: <id>`.
+    ///
     /// Refuses a yak whose parent is shorn or dead: reopen the parent first
     /// (`yaks regrow`/`revive`; one call with both takes parents first), or move
     /// the yak out of the family with `yaks reparent`.
@@ -2427,7 +2432,7 @@ fn transition(
     done: &str,
     actor: Option<&str>,
 ) -> Result<bool> {
-    let outcome = match farm.transition(id, dest, actor) {
+    let (outcome, lifted) = match farm.transition_lifting(id, dest, actor) {
         Ok(o) => o,
         Err(e)
             if e.downcast_ref::<farm::UnfinishedChildren>().is_some()
@@ -2449,6 +2454,9 @@ fn transition(
         }
         MoveOutcome::Moved => {
             println!("{done} {id}");
+            for a in lifted {
+                println!("{done} {a} (parent of {id})");
+            }
             Ok(true)
         }
     }

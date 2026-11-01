@@ -99,7 +99,7 @@ the pre-find scroll and cursor).
 |---|---|
 | `c` / `C` | New root / child yak |
 | `E` | Edit what the cursor is on: a body row (the description or a comment) turns that block into an editor **in place**; a header row (`Title:`, `Type:`, `Priority:`, `Labels:`, `Source:`, `Herd:`) opens the form on that field (`Status:` opens the state picker) |
-| `P` / `T` / `L` / `S` | Priority / type / labels / state |
+| `P` / `T` / `L` / `S` | Priority / type / labels / state. State moves keep families consistent like the CLI's ([Families stay consistent](cli.md#families-stay-consistent)): shaving also shaves hairy ancestors, and a move that would leave open work under a shorn or dead yak is refused |
 | `S` → `n` | Shear: a one-line prompt asks for an optional comment, recorded as a note on the yak before it moves to shorn (so `yaks doctor --strict` sees evidence). `Enter` on an empty line shears with no note; `Ctrl-C` (or `Esc` in emacs mode, a double-`Esc` in vim) cancels and leaves the yak as it was. With marks, the one comment goes on every yak that moves. |
 | `D` / `R` | Add dependency / reparent |
 | `H` | Move to another herd (multi-herd farms) |

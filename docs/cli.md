@@ -282,6 +282,10 @@ flags a farm that holds it anyway (`unfinished-children`):
   `slaughter <id> --family` takes them along instead: every open descendant,
   deepest first, then the yak itself. Shorn descendants are finished work: they
   never block a slaughter and stay shorn.
+- `shave` takes hairy ancestors along: shaving a yak also shaves its parent if
+  hairy, that one's parent if hairy, and so on (`Shaving <parent> (parent of
+  <id>)`; the parent's move entry carries `child: <id>`). Starting part of the
+  work starts the whole.
 - Nothing opens under a finished parent: `create --parent`, `reparent
   --parent` (and `bulk --reparent`) onto a shorn or dead yak refuse an open
   yak, and so do `regrow`, `revive` and `shave` of a child of one. The message
@@ -319,7 +323,7 @@ A note without them is still valid, and unknown keys are kept. The commands that
 
 | Command | `kind` | Other keys |
 |---|---|---|
-| a move (`shave`, `shear`, `regrow`, `slaughter`, the TUI) | `move` | `from`, `to` (statuses); `thread` (the harness thread id) when made inside one |
+| a move (`shave`, `shear`, `regrow`, `slaughter`, the TUI) | `move` | `from`, `to` (statuses); `thread` (the harness thread id) when made inside one; `child` (the yak it moved for) on an ancestor `shave` took along |
 | `ask` | `ask` | `needs` (who it waits on) |
 | `answer --note` | `answer` | `needs` (what it leaves: `agent`, or `none` for `--done` or a yak with no `needs`) |
 | `request` | `request` | |
