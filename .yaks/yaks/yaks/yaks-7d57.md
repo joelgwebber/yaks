@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-10-31T15:57:06Z'
-updated: '2026-11-01T01:10:23Z'
+updated: '2026-11-01T01:20:46Z'
 parent: yaks-039b
 depends_on:
 - yaks-0071
@@ -49,3 +49,15 @@ Confounds to read results against:
 - **Old skills.** memcraft commits its skills at 0.0.24 (`yaks skills status` there says stale). The runner loads skills from the repo, not the binary, so it is following the pre-`yaks-0071` rules: no `YAKS_ACTOR` rule, sheds described as checkouts, sync only at milestones. Project-local skills are never auto-synced. Its binary comes from `npm i -g @j15r/yaks`, so 0.0.27 after the wipe.
 - **The runner was wiped a third time** at the start of this run. Farm writes made before its next `yaks sync` are lost with each wipe.
 - **Bootstrap.** The farm worktree on the runner is made by hand in `scripts/runner-setup.sh`, because yaks refuses to on a bare host (filed separately).
+
+---
+▸ 2026-11-01T01:20:46Z [yakherd]
+
+Check at 2026-11-01 ~01:20Z, after Joel updated the runner's skills (`yaks skills install --user`, so `~/.agents/skills` is 0.0.27; the repo's `.agents/skills` is still 0.0.24) and told it to re-read them:
+
+- **Stable name:** it writes as `herd`, set by itself. No `delta:` stamps since. ✓
+- **Sync:** each batch reached `origin/yaks` within a minute (`7aa7ab7`, `c798dc6`, `8249341`, `25e3515`). ✓
+- **Design questions as asks:** one numbered ask each on `mem-4fcd`, `mem-f4c5` and `mem-f5cf` (`kind: ask` metadata), instead of chat. ✓
+- **Breakdown:** 14 child yaks, with dependencies; it claimed the two foundation yaks (`mem-56d9`, `mem-8d69`) itself as prep. `yaks sheds` on the laptop shows `herd active` with both claims and the three asks.
+- **Not yet observed:** workers (none spawned yet), checkpoint branches, landed notes, heartbeat cadence.
+- **Risk:** workers in subthreads that load skills with the `skill` tool get the repo's 0.0.24 copies, unless the repo is updated or the brief carries the rules.
