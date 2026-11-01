@@ -402,7 +402,9 @@ the farm is synced. The text is the CLI's own (the same functions produce it).
   shaving (else the last yak it wrote). Unlike `yaks sheds`, the tab lists idle
   actors too. A footer line says how fresh the farm is
   (`farm: up to date with origin/yaks`, or how far ahead/behind as of the last
-  fetch), and is left out when the farm has no upstream.
+  fetch, then when the upstream last changed and when this farm last fetched:
+  `· origin/yaks changed 37m ago · fetched just now`), and is left out when
+  the farm has no upstream.
 - **The tab count** is the number of sheds that want a look now (active, stale,
   or asking).
 - **The detail pane** (`l`) starts with where the shed's code is, when its

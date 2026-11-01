@@ -348,8 +348,9 @@ enum Command {
     /// yak) shows as `branch <b> @ <short sha> (<ago>)` under its header: where
     /// its code is, read from the note, never fetched (`yaks commits <id>
     /// --fetch` lists the branch). A first line says how far the farm branch is ahead of or
-    /// behind its upstream as of the last fetch (never fetches; omitted with
-    /// no upstream). JSON: `farm`, and `sheds` (every actor, idle too) with
+    /// behind its upstream as of the last fetch, when the upstream last changed
+    /// (any machine's last sync) and when this farm last fetched (never
+    /// fetches; omitted with no upstream). JSON: `farm`, and `sheds` (every actor, idle too) with
     /// `name`, `liveness`, `last_write`, `checkpoint` (`branch`, `commit`,
     /// `at`, or null), `working`, `asking`, `touched`.
     /// Read-only.

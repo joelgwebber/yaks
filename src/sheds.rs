@@ -204,16 +204,74 @@ pub struct Report {
     /// In display order: attention first (an open ask, active, stale, idle),
     /// then the most recent writer, then by name.
     pub sheds: Vec<Shed>,
+    /// How old the remote data is: what tells "nobody wrote" from "nobody
+    /// synced" when the writers are on another machine.
+    pub fresh: Freshness,
+}
+
+/// When the farm's upstream last changed, and when this machine last fetched
+/// it (ISO timestamps; `None` when git cannot say).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Freshness {
+    /// The committer time of the upstream's tip: the last time any machine
+    /// published farm changes.
+    pub upstream_changed: Option<String>,
+    /// The time of this repository's last fetch (`FETCH_HEAD`).
+    pub fetched: Option<String>,
+}
+
+impl Freshness {
+    /// Read from the farm worktree at `root` for its `upstream` ref.
+    /// Read-only; never fetches.
+    pub fn read(root: &Path, upstream: &str) -> Freshness {
+        let Some(top) = root.parent() else {
+            return Freshness::default();
+        };
+        let git = |args: &[&str]| -> Option<String> {
+            let out = std::process::Command::new("git")
+                .arg("-C")
+                .arg(top)
+                .args(args)
+                .output()
+                .ok()?;
+            let t = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            (out.status.success() && !t.is_empty()).then_some(t)
+        };
+        let upstream_changed = git(&["log", "-1", "--format=%cI", upstream])
+            .and_then(|t| store::parse_ts(&t))
+            .map(|t| t.to_rfc3339_opts(chrono::SecondsFormat::Secs, true));
+        // Per worktree: a fetch run in the farm worktree writes its own.
+        let fetched = git(&[
+            "rev-parse",
+            "--path-format=absolute",
+            "--git-path",
+            "FETCH_HEAD",
+        ])
+        .and_then(|f| std::fs::metadata(f).ok())
+        .and_then(|m| m.modified().ok())
+        .map(|t| DateTime::<Utc>::from(t).to_rfc3339_opts(chrono::SecondsFormat::Secs, true));
+        Freshness {
+            upstream_changed,
+            fetched,
+        }
+    }
 }
 
 /// Read the farm at `root`. Read-only; never fetches.
 pub fn collect(root: &Path) -> Result<Report> {
     let tasks = store::load(root, &EVERY)?;
     let now = Utc::now();
+    let farm = status::sync_state(root).filter(|s| s.upstream.is_some());
+    let fresh = farm
+        .as_ref()
+        .and_then(|s| s.upstream.as_deref())
+        .map(|up| Freshness::read(root, up))
+        .unwrap_or_default();
     Ok(Report {
         now,
-        farm: status::sync_state(root).filter(|s| s.upstream.is_some()),
+        farm,
         sheds: build(&tasks, now),
+        fresh,
     })
 }
 
@@ -399,6 +457,21 @@ pub fn farm_line(s: &SyncState) -> Option<String> {
     })
 }
 
+/// [`farm_line`] plus how old the remote data is: `farm: up to date with
+/// origin/yaks · origin/yaks changed 34m ago · fetched 2m ago`. The first
+/// line of `yaks sheds` and the TUI's Sheds footer.
+pub fn farm_header(r: &Report) -> Option<String> {
+    let mut line = farm_line(r.farm.as_ref()?)?;
+    let up = r.farm.as_ref().and_then(|s| s.upstream.as_deref())?;
+    if let Some(t) = &r.fresh.upstream_changed {
+        line.push_str(&format!(" \u{b7} {up} changed {}", ago(t, r.now)));
+    }
+    if let Some(t) = &r.fresh.fetched {
+        line.push_str(&format!(" \u{b7} fetched {}", ago(t, r.now)));
+    }
+    Some(line)
+}
+
 /// `<name>  <liveness> · <ago>`, the header of a shed (and the TUI's detail
 /// title), without the padding.
 pub fn status_text(s: &Shed, now: DateTime<Utc>) -> String {
@@ -431,7 +504,7 @@ pub fn yak_line(kind: Kind, t: &Touched, now: DateTime<Utc>) -> String {
 /// with no claim and no open ask are only counted unless `all`.
 pub fn render(r: &Report, all: bool) -> String {
     let mut out = String::new();
-    if let Some(line) = r.farm.as_ref().and_then(farm_line) {
+    if let Some(line) = farm_header(r) {
         out.push_str(&line);
         out.push_str("\n\n");
     }
@@ -486,6 +559,8 @@ pub fn to_json(r: &Report) -> Value {
             "upstream": s.upstream,
             "ahead": s.ahead,
             "behind": s.behind,
+            "upstream_changed": r.fresh.upstream_changed,
+            "fetched": r.fresh.fetched,
         })),
         "sheds": r.sheds.iter().map(|s| json!({
             "name": s.name,
@@ -871,6 +946,7 @@ mod tests {
                 behind: 0,
             }),
             sheds: build(&farm(), now()),
+            fresh: Default::default(),
         };
         let want = "\
 farm: up to date with origin/yaks
@@ -913,6 +989,7 @@ boss    active · 30m ago
             now: now(),
             farm: None,
             sheds: build(&tasks, now()),
+            fresh: Default::default(),
         };
         let text = render(&r, false);
         assert_eq!(text.matches("recent ").count(), 5, "{text}");
@@ -937,6 +1014,7 @@ boss    active · 30m ago
                 behind: 1,
             }),
             sheds: build(&farm(), now()),
+            fresh: Default::default(),
         };
         let v = to_json(&r);
         assert_eq!(v["farm"]["ahead"], 2);
@@ -955,6 +1033,26 @@ boss    active · 30m ago
             line,
             "farm: 2 ahead, 1 behind origin/yaks (as of the last fetch)"
         );
+        // The header says how old the remote data is (yaks-7d57 follow-up).
+        let fresh = Report {
+            fresh: Freshness {
+                upstream_changed: Some("2026-10-29T17:26:00Z".into()),
+                fetched: Some("2026-10-29T18:00:00Z".into()),
+            },
+            ..r.clone()
+        };
+        assert_eq!(
+            farm_header(&fresh).unwrap(),
+            format!(
+                "{line} \u{b7} origin/yaks changed {} \u{b7} fetched {}",
+                ago("2026-10-29T17:26:00Z", now()),
+                ago("2026-10-29T18:00:00Z", now())
+            )
+        );
+        let v = to_json(&fresh);
+        assert_eq!(v["farm"]["upstream_changed"], "2026-10-29T17:26:00Z");
+        assert_eq!(v["farm"]["fetched"], "2026-10-29T18:00:00Z");
+        assert!(render(&fresh, false).starts_with(&farm_header(&fresh).unwrap()));
         // No upstream: no farm entry and no line.
         let r = Report { farm: None, ..r };
         assert!(to_json(&r)["farm"].is_null());
@@ -1005,6 +1103,7 @@ boss    active · 30m ago
             now: now(),
             farm: None,
             sheds,
+            fresh: Default::default(),
         };
         let text = render(&r, true);
         assert!(
@@ -1033,6 +1132,7 @@ boss    active · 30m ago
             now: now(),
             farm: None,
             sheds: build(&farm(), now()),
+            fresh: Default::default(),
         };
         assert!(to_json(&r)["sheds"][0]["checkpoint"].is_null());
         assert!(!render(&r, true).contains("branch "));
@@ -1044,6 +1144,7 @@ boss    active · 30m ago
             now: now(),
             farm: None,
             sheds: build(&[yak("y-a", Status::Hairy)], now()),
+            fresh: Default::default(),
         };
         assert_eq!(
             render(&r, false),

@@ -51,6 +51,7 @@ impl Snapshot {
                     now: chrono::Utc::now(),
                     farm: None,
                     sheds: Vec::new(),
+                    fresh: Default::default(),
                 },
                 error: Some(format!("{e:#}")),
             },
@@ -437,7 +438,7 @@ pub(crate) fn render_sheds_list(app: &App, frame: &mut Frame, area: Rect) {
         Style::new().bg(super::surface::band())
     };
     // A footer line for the farm's freshness, when it has an upstream.
-    let farm = snap.report.farm.as_ref().and_then(sheds::farm_line);
+    let farm = sheds::farm_header(&snap.report);
     let rows_h = (area.height as usize).saturating_sub(farm.is_some() as usize * 2);
     let mut offset = app.sheds.list_offset.get();
     if app.sheds.cursor < offset {
@@ -695,6 +696,7 @@ pub(crate) mod fixture {
                 }),
                 // Display order, as `sheds::build` returns it.
                 sheds: vec![tex, walk, delta, stale, idle, gone],
+                fresh: Default::default(),
             },
             error: None,
         }
