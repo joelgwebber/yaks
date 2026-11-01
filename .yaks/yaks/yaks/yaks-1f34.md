@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 1
 created: '2026-11-01T18:53:10Z'
-updated: '2026-11-01T19:10:48Z'
+updated: '2026-11-01T19:13:42Z'
 parent: yaks-f301
 labels:
 - wiki
@@ -60,6 +60,53 @@ verify: `cargo test --workspace` -> FAIL (exit 101)
 
 ---
 ▸ 2026-11-01T19:10:48Z [delta:farm-wiki]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
+
+---
+▸ 2026-11-01T19:10:53Z [delta:farm-wiki]
+kind: move
+from: shorn
+to: hairy
+thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shorn -> hairy
+
+---
+▸ 2026-11-01T19:10:53Z [delta:farm-wiki]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
+
+---
+▸ 2026-11-01T19:13:38Z [delta:farm-wiki]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-01T19:13:42Z [delta:farm-wiki]
+kind: checkpoint
+branch: wiki
+commit: b1135f4
+---
+
+Correction: my earlier gate run had a compile error in the test-only `src/tui/docshots.rs` that my grep missed; the first `yaks verify` caught it. Fixed and amended: the commit is now `b1135f4` (not `8d3dd73`). `yaks verify` PASS: 872 tests, 0 failed.
+
+---
+▸ 2026-11-01T19:13:42Z [delta:farm-wiki]
 kind: move
 from: shaving
 to: shorn
