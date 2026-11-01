@@ -1882,13 +1882,56 @@ mod live {
         press(&mut app, "mSn");
         enter(&mut app);
         assert_eq!(app.task("a0").unwrap().status, Status::Hairy);
-        assert_eq!(app.notification.as_deref(), Some("0/1 → shorn (1 failed)"));
+        assert_eq!(
+            app.notification.as_deref(),
+            Some("0/1 → shorn · 1 skipped: unfinished children")
+        );
         // Parent and child marked: the family shears whole.
         press(&mut app, "mjmSn");
         enter(&mut app);
         assert_eq!(app.task("a0").unwrap().status, Status::Shorn);
         assert_eq!(app.task("z0").unwrap().status, Status::Shorn);
         assert_eq!(app.notification.as_deref(), Some("2/2 → shorn"));
+    }
+
+    #[test]
+    fn refused_shear_leaves_no_comment_and_regrow_takes_parents_first() {
+        // A shear the family invariant refuses must not leave its comment
+        // behind; a bulk regrow of a shorn family walks parents first
+        // (yaks-35a4).
+        let (_dir, farm) = temp_farm(&[
+            task("z0", "parent", Status::Shaving, 3, None),
+            task("a0", "child", Status::Hairy, 3, Some("z0")),
+        ]);
+        let mut app = App::with_farm(farm).unwrap();
+        app.select_id("z0");
+        app.open_shear_comment(ShearTarget::One("z0".into()));
+        if let Overlay::Edit(_) = app.overlay {
+        } else {
+            panic!("expected the shear prompt");
+        }
+        app.overlay = Overlay::None;
+        app.commit_shear(ShearTarget::One("z0".into()), "all done");
+        let notice = app.notification.clone();
+        app.reload(); // read what is on disk, not the cached rows
+        app.notification = notice;
+        assert_eq!(app.task("z0").unwrap().status, Status::Shaving);
+        assert!(!app.task("z0").unwrap().body.contains("all done"));
+        assert!(
+            app.notification
+                .as_deref()
+                .unwrap_or_default()
+                .contains("unfinished children"),
+            "{:?}",
+            app.notification
+        );
+        // Shear the family (child first), then regrow both: the child's id
+        // sorts first, so an id-ordered walk would hit the finished parent.
+        app.bulk_transition(&["z0".into(), "a0".into()], Status::Shorn, None);
+        assert_eq!(app.task("z0").unwrap().status, Status::Shorn);
+        app.bulk_transition(&["a0".into(), "z0".into()], Status::Hairy, None);
+        assert_eq!(app.notification.as_deref(), Some("2/2 → hairy"));
+        assert_eq!(app.task("a0").unwrap().status, Status::Hairy);
     }
 
     #[test]
@@ -1915,7 +1958,7 @@ mod live {
         assert!(app.selected.is_empty());
         assert_eq!(
             app.notification.as_deref(),
-            Some("1/2 → dead · 1 skipped: have children")
+            Some("1/2 → dead · 1 skipped: unfinished children")
         );
     }
 

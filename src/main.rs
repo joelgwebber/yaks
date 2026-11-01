@@ -418,6 +418,9 @@ enum Command {
         kind: Option<String>,
         #[arg(long)]
         priority: Option<u8>,
+        /// Create it as a child of this yak, which must be hairy or shaving: a
+        /// shorn or dead yak holds no open children (reopen it first, or file
+        /// the new yak under an open ancestor or at the top level).
         #[arg(long)]
         parent: Option<String>,
         /// Which herd (id prefix) the new yak joins; defaults to this repo's
@@ -657,6 +660,10 @@ enum Command {
         json: bool,
     },
     /// Start shaving one or more yaks (move to shaving).
+    ///
+    /// Refuses a yak whose parent is shorn or dead: reopen the parent first
+    /// (`yaks regrow`/`revive`; one call with both takes parents first), or move
+    /// the yak out of the family with `yaks reparent`.
     #[command(visible_alias = "work")]
     Shave {
         #[arg(required = true, num_args = 1..)]
@@ -687,6 +694,10 @@ enum Command {
         as_actor: Option<String>,
     },
     /// Regrow one or more shorn yaks (move back to hairy).
+    ///
+    /// Refuses a yak whose parent is shorn or dead: regrow the parent too (a
+    /// batch takes parents before children, in any order given), or move the
+    /// yak out of the family with `yaks reparent`.
     #[command(visible_alias = "reopen")]
     Regrow {
         #[arg(required = true, num_args = 1..)]
@@ -720,6 +731,9 @@ enum Command {
         as_actor: Option<String>,
     },
     /// Revive one or more dead yaks (move back to hairy).
+    ///
+    /// Refuses a yak whose parent is shorn or dead, like `regrow`: reopen the
+    /// parent too (parents go first), or move the yak with `yaks reparent`.
     Revive {
         #[arg(required = true, num_args = 1..)]
         ids: Vec<String>,
@@ -737,7 +751,10 @@ enum Command {
     },
     /// Move tasks under a new parent (--parent) or to top-level (--unparent).
     ///
-    /// Every id is reparented to the same destination.
+    /// Every id is reparented to the same destination. A hairy or shaving yak
+    /// never goes under a shorn or dead one (a finished yak holds no open
+    /// children); this is also how a parent that is done graduates its
+    /// unfinished children before it is shorn.
     Reparent {
         #[arg(required = true, num_args = 1..)]
         ids: Vec<String>,
@@ -1700,6 +1717,10 @@ fn main() -> Result<()> {
                     eprintln!("error: parent task {p} not found");
                     std::process::exit(1);
                 }
+                CreateOutcome::ParentFinished(msg) => {
+                    eprintln!("error: {msg}");
+                    std::process::exit(1);
+                }
                 CreateOutcome::InvalidPrefix(p) => {
                     eprintln!("error: invalid prefix {p:?} (use lowercase letters and digits)");
                     std::process::exit(1);
@@ -2396,7 +2417,7 @@ fn parse_status(s: &str) -> Option<Status> {
 
 /// Transition a single yak, printing a per-id result line. Returns `true` on
 /// success (moved or already there) and `false` on failure (not found, or a
-/// shear refused over unfinished children), so a batch caller can process
+/// move the family invariant refuses), so a batch caller can process
 /// every id and set the exit code once at the end.
 fn transition(
     farm: &Farm,
@@ -2408,7 +2429,10 @@ fn transition(
 ) -> Result<bool> {
     let outcome = match farm.transition(id, dest, actor) {
         Ok(o) => o,
-        Err(e) if e.downcast_ref::<farm::UnfinishedChildren>().is_some() => {
+        Err(e)
+            if e.downcast_ref::<farm::UnfinishedChildren>().is_some()
+                || e.downcast_ref::<farm::FinishedParent>().is_some() =>
+        {
             eprintln!("error: {e}");
             return Ok(false);
         }
@@ -2432,9 +2456,10 @@ fn transition(
 
 /// Transition every id in `ids`, one at a time. All ids are processed even if
 /// one fails (no abort-on-first-error); if any id was not found or refused,
-/// the process exits non-zero after the whole batch is handled. A shear
-/// takes children before their parents, whatever order they were given in
-/// (yaks-62f2).
+/// the process exits non-zero after the whole batch is handled. The ids go in
+/// [`Farm::batch_order`]: a shear takes children before their parents, a
+/// regrow or revive parents before their children, whatever order they were
+/// given in (yaks-62f2, yaks-35a4).
 fn transition_many(
     farm: &Farm,
     ids: &[String],
@@ -2443,15 +2468,9 @@ fn transition_many(
     done: &str,
     actor: Option<&str>,
 ) -> Result<()> {
-    let ordered;
-    let ids = if dest == Status::Shorn {
-        ordered = farm.children_first(ids)?;
-        &ordered[..]
-    } else {
-        ids
-    };
+    let ids = farm.batch_order(ids, dest)?;
     let mut any_failed = false;
-    for id in ids {
+    for id in &ids {
         if !transition(farm, id, dest, already, done, actor)? {
             any_failed = true;
         }

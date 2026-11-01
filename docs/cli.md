@@ -282,6 +282,15 @@ flags a farm that holds it anyway (`unfinished-children`):
   `slaughter <id> --family` takes them along instead: every open descendant,
   deepest first, then the yak itself. Shorn descendants are finished work: they
   never block a slaughter and stay shorn.
+- Nothing opens under a finished parent: `create --parent`, `reparent
+  --parent` (and `bulk --reparent`) onto a shorn or dead yak refuse an open
+  yak, and so do `regrow`, `revive` and `shave` of a child of one. The message
+  names the parent and the fixes: reopen it first (`yaks regrow` or `revive`;
+  a batch takes parents before children), or put the yak under an open
+  ancestor or at the top level.
+
+The TUI's moves refuse the same things (a bulk move of marked yaks reports
+them as skipped), and a refused shear leaves its comment unwritten.
 
 Every move appends an entry to the yak's body in the note shape,
 `▸ <ts> [<actor>]`, its `kind: move` / `from` / `to` [metadata](#note-metadata), a blank line, then `moved: <from> -> <to>` (one per yak moved, so

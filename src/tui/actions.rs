@@ -326,18 +326,6 @@ impl App {
         };
     }
 
-    /// Count a yak's open (hairy or shaving) children. Bulk slaughter
-    /// (`PickAction::BulkState` with `x`) never leaves open work under a dead
-    /// yak, so it skips any yak with open children (yaks-5c51, yaks-27c1); the
-    /// single path (`open_slaughter_confirm`) instead offers to take the family
-    /// (yaks-05da).
-    pub(crate) fn open_child_count(&self, id: &str) -> usize {
-        self.all
-            .iter()
-            .filter(|c| c.parent.as_deref() == Some(id) && c.status.is_open())
-            .count()
-    }
-
     pub(crate) fn open_slaughter_confirm(&mut self) {
         let Some(id) = self.selected_id() else { return };
         let title: String = self

@@ -362,6 +362,9 @@ impl App {
             Ok(CreateOutcome::ParentNotFound(p)) => {
                 self.notification = Some(format!("parent {p} not found"))
             }
+            Ok(CreateOutcome::ParentFinished(msg)) => {
+                self.notification = Some(format!("error: {msg}"))
+            }
             // The create form has no prefix field yet, so this is unreachable in
             // practice; surface it as a notification rather than panicking.
             Ok(CreateOutcome::InvalidPrefix(p)) => {
@@ -1844,6 +1847,11 @@ impl App {
     /// Move one yak to `dest`, first recording `note` on it when given.
     pub(crate) fn transition_one(&mut self, id: &str, dest: Status, note: Option<&str>) {
         let actor = crate::actor::resolve(None);
+        // A refused move must not leave its note behind (yaks-35a4).
+        if let Some(Err(e)) = self.farm.as_ref().map(|h| h.check_transition(id, dest)) {
+            self.notification = Some(format!("error: {e}"));
+            return;
+        }
         if let Err(e) = self.note_before_move(id, note, actor.as_deref()) {
             self.notification = Some(format!("error: {e}"));
             return;
@@ -1865,38 +1873,34 @@ impl App {
     /// Move every marked id to `dest` (recording `note` on each first when
     /// given), then clear the marks and report the count.
     pub(crate) fn bulk_transition(&mut self, ids: &[String], dest: Status, note: Option<&str>) {
-        // Slaughter must not leave open work under a dead yak: skip any marked
-        // id with open children and report the count (the single path,
-        // open_slaughter_confirm, offers a family slaughter instead). Non-slaughter bulk
-        // transitions are unaffected (yaks-5c51).
-        let mut skipped = 0usize;
-        let targets: Vec<&String> = if dest == Status::Dead {
-            ids.iter()
-                .filter(|id| {
-                    let keep = self.open_child_count(id) == 0;
-                    if !keep {
-                        skipped += 1;
-                    }
-                    keep
-                })
-                .collect()
-        } else {
-            ids.iter().collect()
-        };
+        // The family invariant (yaks-9b41) is the farm's to enforce: a
+        // finishing move refuses a yak with open children, an opening one a yak
+        // under a finished parent. Walk the marks in the farm's batch order, so
+        // a marked family moves whole, and report what was refused as skipped
+        // rather than failed (the single slaughter path, open_slaughter_confirm,
+        // offers to take the family instead; yaks-5c51).
         let Some(h) = &self.farm else { return };
-        // A shear takes children before their parents, so a marked family
-        // shears whole instead of refusing the parent (yaks-62f2).
-        let ordered: Vec<String> = if dest == Status::Shorn {
-            let owned: Vec<String> = targets.iter().map(|s| s.to_string()).collect();
-            h.children_first(&owned).unwrap_or(owned)
-        } else {
-            targets.iter().map(|s| s.to_string()).collect()
-        };
+        let ordered = h.batch_order(ids, dest).unwrap_or_else(|_| ids.to_vec());
+        let (mut skipped_kids, mut skipped_parent) = (0usize, 0usize);
         let actor = crate::actor::resolve(None);
         let (mut moved, mut failed) = (0usize, 0usize);
         for id in &ordered {
             // Never note a yak that is already there: the move would be a no-op.
             if self.task(id).map(|t| t.status) == Some(dest) {
+                continue;
+            }
+            let Some(h) = &self.farm else { return };
+            // Check first, so a refused move leaves no note behind.
+            if let Err(e) = h.check_transition(id, dest) {
+                if e.downcast_ref::<crate::farm::UnfinishedChildren>()
+                    .is_some()
+                {
+                    skipped_kids += 1;
+                } else if e.downcast_ref::<crate::farm::FinishedParent>().is_some() {
+                    skipped_parent += 1;
+                } else {
+                    failed += 1;
+                }
                 continue;
             }
             if self.note_before_move(id, note, actor.as_deref()).is_err() {
@@ -1918,8 +1922,11 @@ impl App {
         } else {
             format!("{moved}/{total} → {}", status_word(dest))
         };
-        if skipped > 0 {
-            msg.push_str(&format!(" · {skipped} skipped: have children"));
+        if skipped_kids > 0 {
+            msg.push_str(&format!(" · {skipped_kids} skipped: unfinished children"));
+        }
+        if skipped_parent > 0 {
+            msg.push_str(&format!(" · {skipped_parent} skipped: parent is finished"));
         }
         self.notification = Some(msg);
     }

@@ -201,6 +201,9 @@ pub struct TaskEdit {
 pub enum CreateOutcome {
     Created(Box<Task>),
     ParentNotFound(String),
+    /// The parent is shorn or dead (yaks-35a4): the message names it and the
+    /// fixes ([`finished_parent_refusal`]).
+    ParentFinished(String),
     /// An explicit `--prefix` that would mint an id outside the reference
     /// grammar (prefix must be `[a-z0-9]+`).
     InvalidPrefix(String),
@@ -779,6 +782,36 @@ impl std::fmt::Display for UnfinishedChildren {
 }
 
 impl std::error::Error for UnfinishedChildren {}
+
+/// Why a yak can't be opened (made hairy or shaving, created, or moved) under
+/// `parent`, which is `status` (shorn or dead), and the fixes: reopen the
+/// parent, or `elsewhere` (put the yak under an open yak or at the top
+/// level). One wording for create, reparent and the moves (yaks-35a4).
+pub fn finished_parent_refusal(parent: &str, status: Status, elsewhere: &str) -> String {
+    let reopen = if status == Status::Dead {
+        "revive"
+    } else {
+        "regrow"
+    };
+    format!(
+        "{parent} is {}, and a finished yak holds no hairy or shaving children: reopen it \
+         first (`yaks {reopen} {parent}`), or {elsewhere}",
+        status.as_str()
+    )
+}
+
+/// Opening a yak (regrow, revive, shave) whose parent is shorn or dead
+/// (yaks-35a4); its message comes from [`finished_parent_refusal`].
+#[derive(Debug)]
+pub struct FinishedParent(pub String);
+
+impl std::fmt::Display for FinishedParent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for FinishedParent {}
 
 impl IssueKind {
     /// A short, stable machine label (used for `--json` and grouping).
@@ -1838,8 +1871,15 @@ impl Farm {
         let _lock = store::lock(&self.root)?;
         let cfg = store::read_config(&self.root);
         if let Some(p) = &new.parent {
-            if !store::all_ids(&self.root).contains(p) {
+            let Some(parent) = store::load_task_by_id(&self.root, p)? else {
                 return Ok(CreateOutcome::ParentNotFound(p.clone()));
+            };
+            if !parent.status.is_open() {
+                return Ok(CreateOutcome::ParentFinished(finished_parent_refusal(
+                    p,
+                    parent.status,
+                    "create the yak under an open ancestor or at the top level",
+                )));
             }
         }
         // Route to a specific herd (id prefix): an explicit `--herd` wins,
@@ -2078,17 +2118,52 @@ impl Farm {
     }
 
     /// Move `id` to `dest`, recording a `moved: <from> -> <to>` entry attributed
-    /// to `actor` (see [`store::move_task`]).
+    /// to `actor` (see [`store::move_task`]). Refuses a move that would break
+    /// the family invariant ([`Farm::check_transition`]).
     pub fn transition(&self, id: &str, dest: Status, actor: Option<&str>) -> Result<MoveOutcome> {
         let _lock = store::lock(&self.root)?;
-        if !dest.is_open() {
-            let all = store::load(&self.root, &EVERY)?;
+        self.check_transition(id, dest)?;
+        store::move_task(&self.root, id, dest, actor)
+    }
+
+    /// Whether moving `id` to `dest` keeps the family invariant (a shorn or
+    /// dead yak has no hairy or shaving children, yaks-9b41), without moving
+    /// it. `Err` is the refusal [`Farm::transition`] would return: a finishing
+    /// move over open children ([`UnfinishedChildren`]), or an opening move
+    /// under a finished parent ([`FinishedParent`]). A move that is a no-op
+    /// (already there) is never refused. Read-only and lock-free, so a caller
+    /// can check before it writes a note that should only land with the move.
+    pub fn check_transition(&self, id: &str, dest: Status) -> Result<()> {
+        let all = store::load(&self.root, &EVERY)?;
+        let Some(me) = all.iter().find(|t| t.id == id) else {
+            return Ok(());
+        };
+        if me.status == dest {
+            return Ok(());
+        }
+        if dest.is_open() {
+            let parent = me
+                .parent
+                .as_deref()
+                .and_then(|p| all.iter().find(|t| t.id == p));
+            if let Some(p) = parent.filter(|p| !p.status.is_open()) {
+                return Err(FinishedParent(finished_parent_refusal(
+                    &p.id,
+                    p.status,
+                    &format!(
+                        "move {id} out of the family first (`yaks reparent {id} --parent \
+                         <other>` or `--unparent`)"
+                    ),
+                ))
+                .into());
+            }
+        } else {
             let children: Vec<(String, Status)> = all
                 .iter()
                 .filter(|t| t.parent.as_deref() == Some(id) && t.status.is_open())
                 .map(|t| (t.id.clone(), t.status))
                 .collect();
-            if !children.is_empty() && all.iter().any(|t| t.id == id && t.status != dest) {
+            if !children.is_empty() {
                 return Err(UnfinishedChildren {
                     id: id.to_string(),
                     dest,
@@ -2097,15 +2172,17 @@ impl Farm {
                 .into());
             }
         }
-        store::move_task(&self.root, id, dest, actor)
+        Ok(())
     }
 
-    /// `ids` reordered so every yak comes before its ancestors (deepest first,
-    /// otherwise in the given order). A batch shear walks this order, so
-    /// `yaks shorn <parent> <child>` and a TUI bulk shear of a marked family
-    /// clear the children before [`Farm::transition`] checks the parent
-    /// (yaks-62f2). Unknown ids keep their place among the shallowest.
-    pub fn children_first(&self, ids: &[String]) -> Result<Vec<String>> {
+    /// `ids` in the order a batch move to `dest` takes them, so
+    /// [`Farm::transition`]'s family checks pass whatever order they were
+    /// given in: a finishing move (shorn, dead) takes children before their
+    /// parents (deepest first), an opening one (hairy, shaving) parents before
+    /// their children; otherwise the given order. `yaks shorn <parent>
+    /// <child>`, `yaks regrow <child> <parent>` and the TUI's bulk moves walk
+    /// this order (yaks-62f2, yaks-35a4). Unknown ids count as top-level.
+    pub fn batch_order(&self, ids: &[String], dest: Status) -> Result<Vec<String>> {
         let all = store::load(&self.root, &EVERY)?;
         let parent: std::collections::HashMap<&str, &str> = all
             .iter()
@@ -2123,7 +2200,11 @@ impl Farm {
             d
         };
         let mut out = ids.to_vec();
-        out.sort_by_key(|id| std::cmp::Reverse(depth(id)));
+        if dest.is_open() {
+            out.sort_by_key(|id| depth(id));
+        } else {
+            out.sort_by_key(|id| std::cmp::Reverse(depth(id)));
+        }
         Ok(out)
     }
 
@@ -2170,8 +2251,22 @@ impl Farm {
         store::remove_dep(&self.root, id, dep)
     }
 
+    /// Move `id` under `new_parent` (or to the top level). Refuses to put an
+    /// open (hairy or shaving) yak under a shorn or dead one (yaks-35a4); the
+    /// other guards are [`store::reparent`]'s.
     pub fn reparent(&self, id: &str, new_parent: Option<String>) -> Result<Reparent> {
         let _lock = store::lock(&self.root)?;
+        if let (Some(np), Some(me)) = (&new_parent, store::load_task_by_id(&self.root, id)?) {
+            if let Some(p) = store::load_task_by_id(&self.root, np)? {
+                if me.status.is_open() && !p.status.is_open() {
+                    return Ok(Reparent::Error(finished_parent_refusal(
+                        np,
+                        p.status,
+                        &format!("reparent {id} under an open yak (or `--unparent`)"),
+                    )));
+                }
+            }
+        }
         store::reparent(&self.root, id, new_parent)
     }
 
@@ -3677,7 +3772,7 @@ mod tests {
 
     /// A shorn yak has no hairy or shaving children (yaks-62f2): shearing the
     /// parent first refuses and names the open child; dead and shorn children
-    /// don't count; `children_first` orders a batch so it shears whole; and
+    /// don't count; `batch_order` orders a batch so it shears whole; and
     /// doctor flags the state when a hand edit produces it anyway.
     #[test]
     fn shorn_refuses_a_parent_over_unfinished_children() {
@@ -3716,7 +3811,7 @@ mod tests {
         let ids: Vec<String> = ["yak-0001", "yak-0002", "yak-0004"]
             .map(String::from)
             .into();
-        let order = farm.children_first(&ids).unwrap();
+        let order = farm.batch_order(&ids, Status::Shorn).unwrap();
         assert_eq!(order, vec!["yak-0004", "yak-0002", "yak-0001"]);
         for id in &order {
             assert_eq!(
@@ -3736,6 +3831,76 @@ mod tests {
                     && i.ids == vec!["yak-0001".to_string(), "yak-0002".to_string()]),
             "{issues:?}"
         );
+    }
+
+    /// Nothing opens under a finished parent (yaks-35a4): create, reparent
+    /// and the opening moves refuse, naming the parent and both fixes; a
+    /// finished yak still reparents freely, a no-op move is never refused, and
+    /// `batch_order` takes parents first for an opening move.
+    #[test]
+    fn nothing_opens_under_a_finished_parent() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Shorn)).unwrap();
+        store::write::save(&root, &task("yak-0002", Status::Dead)).unwrap();
+        let mut kid = task("yak-0003", Status::Shorn);
+        kid.parent = Some("yak-0001".into());
+        store::write::save(&root, &kid).unwrap();
+        store::write::save(&root, &task("yak-0004", Status::Hairy)).unwrap();
+
+        // create --parent <shorn|dead>
+        let mut n = new_task("follow-up", Some("yak"));
+        n.parent = Some("yak-0001".into());
+        match farm.create(n).unwrap() {
+            CreateOutcome::ParentFinished(m) => {
+                assert!(
+                    m.contains("yak-0001 is shorn") && m.contains("yaks regrow yak-0001"),
+                    "{m}"
+                )
+            }
+            _ => panic!("expected ParentFinished"),
+        }
+        let mut n = new_task("follow-up", Some("yak"));
+        n.parent = Some("yak-0002".into());
+        match farm.create(n).unwrap() {
+            CreateOutcome::ParentFinished(m) => assert!(m.contains("yaks revive yak-0002"), "{m}"),
+            _ => panic!("expected ParentFinished"),
+        }
+
+        // reparent an open yak under a finished one: refused; a finished yak: fine.
+        match farm.reparent("yak-0004", Some("yak-0001".into())).unwrap() {
+            Reparent::Error(m) => assert!(m.contains("--unparent"), "{m}"),
+            other => panic!("expected a refusal, got {other:?}"),
+        }
+        assert!(matches!(
+            farm.reparent("yak-0003", Some("yak-0002".into())).unwrap(),
+            Reparent::Done { .. }
+        ));
+        farm.reparent("yak-0003", Some("yak-0001".into())).unwrap();
+
+        // regrow / shave a child of a shorn yak: refused, nothing moves.
+        for dest in [Status::Hairy, Status::Shaving] {
+            let err = farm.transition("yak-0003", dest, None).unwrap_err();
+            assert!(err.downcast_ref::<FinishedParent>().is_some(), "{err}");
+            assert!(err.to_string().contains("yaks reparent yak-0003"), "{err}");
+        }
+        assert!(at(&root, "yak-0003", Status::Shorn));
+        // A no-op move (already there) is never refused.
+        assert_eq!(
+            farm.transition("yak-0003", Status::Shorn, None).unwrap(),
+            MoveOutcome::AlreadyThere
+        );
+
+        // Child given first: an opening batch still takes the parent first.
+        let ids: Vec<String> = ["yak-0003", "yak-0001"].map(String::from).into();
+        let order = farm.batch_order(&ids, Status::Hairy).unwrap();
+        assert_eq!(order, vec!["yak-0001", "yak-0003"]);
+        for id in &order {
+            assert_eq!(
+                farm.transition(id, Status::Hairy, None).unwrap(),
+                MoveOutcome::Moved
+            );
+        }
+        assert!(farm.doctor(false).unwrap().is_empty());
     }
 
     /// The multi-id transition path (`yaks shorn a b c`) drives the CLI batch by
