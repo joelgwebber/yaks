@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-10-31T15:57:06Z'
-updated: '2026-11-01T01:20:46Z'
+updated: '2026-11-01T15:37:48Z'
 parent: yaks-039b
 depends_on:
 - yaks-0071
@@ -61,3 +61,14 @@ Check at 2026-11-01 ~01:20Z, after Joel updated the runner's skills (`yaks skill
 - **Breakdown:** 14 child yaks, with dependencies; it claimed the two foundation yaks (`mem-56d9`, `mem-8d69`) itself as prep. `yaks sheds` on the laptop shows `herd active` with both claims and the three asks.
 - **Not yet observed:** workers (none spawned yet), checkpoint branches, landed notes, heartbeat cadence.
 - **Risk:** workers in subthreads that load skills with the `skill` tool get the repo's 0.0.24 copies, unless the repo is updated or the brief carries the rules.
+
+---
+▸ 2026-11-01T15:37:48Z [yakherd]
+
+Report from the runner yakherd (`herd`, later `delta:herd`), about 8 workers in:
+
+- **Naming:** split three ways (`herd`, `door-1`/`tgt-1`, `delta:Web Deploy v0`) because `export YAKS_ACTOR` doesn't survive fresh shells. Filed with a design ask (`yaks-039b` child).
+- **Workers dying:** workers died silently with each runner wipe (4 wipes). The farm lost nothing, because it was synced after every batch.
+- **Landing:** `yaks land` worked, including conflict resolution and `--continue`.
+- **Thread tools:** unavailable on the runner, so liveness came from note age only.
+- **Possible Delta isolation leak:** an isolated worker's new file appeared as an external edit in the herd's worktree. The runner is investigating; that's a Delta question, not yaks.

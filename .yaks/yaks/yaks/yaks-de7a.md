@@ -3,9 +3,9 @@ id: yaks-de7a
 title: 'Linux release binaries require glibc 2.39: a warning on every command on older hosts (cloud runners)'
 status: hairy
 type: bug
-priority: 2
+priority: 1
 created: '2026-11-01T01:20:45Z'
-updated: '2026-11-01T01:20:45Z'
+updated: '2026-11-01T15:37:48Z'
 labels:
 - release
 ---
@@ -26,3 +26,8 @@ Cause: `.github/workflows/release.yml` builds `x86_64-unknown-linux-gnu` and `aa
 - Ship `*-unknown-linux-musl` binaries instead: fully static, no glibc dependency. Check that `arboard`'s x11rb and `ratatui-image` build and work on musl.
 
 Verify on a container with an older glibc (e.g. `debian:bookworm`, 2.36): no warning, and `yaks --version` runs.
+
+---
+▸ 2026-11-01T15:37:48Z [yakherd]
+
+Confirmed by the memcraft runner yakherd (2026-11-01): every worker brief has to tell workers to pipe yaks through `grep -v GLIBC`. Raising the priority: this costs every agent on such hosts.
