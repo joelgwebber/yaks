@@ -502,9 +502,11 @@ enum Command {
         #[arg(long, value_name = "KEY=VALUE")]
         meta: Vec<String>,
         /// Attribute the note to this actor (stamped as `[actor]`). Defaults to
-        /// $YAKS_ACTOR, then the harness identity (`delta:<thread title>`, else
-        /// `delta:<thread id>`, from Delta's environment), then the git user;
-        /// never implies ownership.
+        /// $YAKS_ACTOR, then this checkout's `git config yaks.actor` (`yaks
+        /// whoami --set`), then the harness identity (from Delta's environment:
+        /// `delta:<name>` for a thread title starting `<name>:`, else
+        /// `delta:<thread title>`, else `delta:<thread id>`), then the git user;
+        /// never implies ownership. `yaks whoami` shows which one applies.
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
@@ -661,18 +663,26 @@ enum Command {
         ids: Vec<String>,
         /// Attribute the move to this actor (stamped as `[actor]` on its
         /// `moved: <from> -> <to>` log entry). Resolved like `update --as`:
-        /// $YAKS_ACTOR, then the harness identity, then the git user.
+        /// $YAKS_ACTOR, then `git config yaks.actor`, then the harness
+        /// identity, then the git user (`yaks whoami` shows which).
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
     /// Mark one or more yaks shorn (move to shorn).
+    ///
+    /// Refuses a yak with hairy or shaving children: a shorn yak's children
+    /// are all shorn or dead. Shear them in the same call (children are taken
+    /// before their parents, in any order given), or graduate them out of the
+    /// family first with `yaks reparent <child> --parent <other>` or
+    /// `--unparent`. A refused id exits non-zero after the rest of the batch.
     #[command(visible_alias = "close")]
     Shorn {
         #[arg(required = true, num_args = 1..)]
         ids: Vec<String>,
         /// Attribute the move to this actor (stamped as `[actor]` on its
         /// `moved: <from> -> <to>` log entry). Resolved like `update --as`:
-        /// $YAKS_ACTOR, then the harness identity, then the git user.
+        /// $YAKS_ACTOR, then `git config yaks.actor`, then the harness
+        /// identity, then the git user (`yaks whoami` shows which).
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
@@ -683,7 +693,8 @@ enum Command {
         ids: Vec<String>,
         /// Attribute the move to this actor (stamped as `[actor]` on its
         /// `moved: <from> -> <to>` log entry). Resolved like `update --as`:
-        /// $YAKS_ACTOR, then the harness identity, then the git user.
+        /// $YAKS_ACTOR, then `git config yaks.actor`, then the harness
+        /// identity, then the git user (`yaks whoami` shows which).
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
@@ -700,7 +711,8 @@ enum Command {
         family: bool,
         /// Attribute the move to this actor (stamped as `[actor]` on its
         /// `moved: <from> -> <to>` log entry). Resolved like `update --as`:
-        /// $YAKS_ACTOR, then the harness identity, then the git user.
+        /// $YAKS_ACTOR, then `git config yaks.actor`, then the harness
+        /// identity, then the git user (`yaks whoami` shows which).
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
@@ -710,7 +722,8 @@ enum Command {
         ids: Vec<String>,
         /// Attribute the move to this actor (stamped as `[actor]` on its
         /// `moved: <from> -> <to>` log entry). Resolved like `update --as`:
-        /// $YAKS_ACTOR, then the harness identity, then the git user.
+        /// $YAKS_ACTOR, then `git config yaks.actor`, then the harness
+        /// identity, then the git user (`yaks whoami` shows which).
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
@@ -903,8 +916,9 @@ enum Command {
     /// Read-only farm-integrity check; exits non-zero on any issue.
     ///
     /// Reports an invalid `status:` value, one
-    /// id in two yak files, and dangling parent/depends_on references. Exits
-    /// non-zero when any issue is found.
+    /// id in two yak files, dangling parent/depends_on references, and a
+    /// shorn yak over hairy or shaving children, among others (see
+    /// docs/cli.md). Exits non-zero when any issue is found.
     Doctor {
         /// Emit the issues as JSON.
         #[arg(long)]
@@ -2378,8 +2392,9 @@ fn parse_status(s: &str) -> Option<Status> {
 // -- rendering ------------------------------------------------------------
 
 /// Transition a single yak, printing a per-id result line. Returns `true` on
-/// success (moved or already there) and `false` on failure (not found), so a
-/// batch caller can process every id and set the exit code once at the end.
+/// success (moved or already there) and `false` on failure (not found, or a
+/// shear refused over unfinished children), so a batch caller can process
+/// every id and set the exit code once at the end.
 fn transition(
     farm: &Farm,
     id: &str,
@@ -2388,7 +2403,15 @@ fn transition(
     done: &str,
     actor: Option<&str>,
 ) -> Result<bool> {
-    match farm.transition(id, dest, actor)? {
+    let outcome = match farm.transition(id, dest, actor) {
+        Ok(o) => o,
+        Err(e) if e.downcast_ref::<farm::UnfinishedChildren>().is_some() => {
+            eprintln!("error: {e}");
+            return Ok(false);
+        }
+        Err(e) => return Err(e),
+    };
+    match outcome {
         MoveOutcome::NotFound => {
             eprintln!("error: task {id} not found");
             Ok(false)
@@ -2405,8 +2428,10 @@ fn transition(
 }
 
 /// Transition every id in `ids`, one at a time. All ids are processed even if
-/// one fails (no abort-on-first-error); if any id was not found, the process
-/// exits non-zero after the whole batch is handled.
+/// one fails (no abort-on-first-error); if any id was not found or refused,
+/// the process exits non-zero after the whole batch is handled. A shear
+/// takes children before their parents, whatever order they were given in
+/// (yaks-62f2).
 fn transition_many(
     farm: &Farm,
     ids: &[String],
@@ -2415,6 +2440,13 @@ fn transition_many(
     done: &str,
     actor: Option<&str>,
 ) -> Result<()> {
+    let ordered;
+    let ids = if dest == Status::Shorn {
+        ordered = farm.children_first(ids)?;
+        &ordered[..]
+    } else {
+        ids
+    };
     let mut any_failed = false;
     for id in ids {
         if !transition(farm, id, dest, already, done, actor)? {

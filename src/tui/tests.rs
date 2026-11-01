@@ -1870,6 +1870,28 @@ mod live {
     }
 
     #[test]
+    fn bulk_shear_takes_children_before_their_parent() {
+        // The parent's id sorts before its child's, so an id-ordered walk would
+        // reach a0 while z0 is still hairy and be refused (yaks-62f2).
+        let (_dir, farm) = temp_farm(&[
+            task("a0", "parent", Status::Hairy, 3, None),
+            task("z0", "child", Status::Hairy, 3, Some("a0")),
+        ]);
+        let mut app = App::with_farm(farm).unwrap();
+        // Only the parent marked: refused, the count says so.
+        press(&mut app, "mSn");
+        enter(&mut app);
+        assert_eq!(app.task("a0").unwrap().status, Status::Hairy);
+        assert_eq!(app.notification.as_deref(), Some("0/1 → shorn (1 failed)"));
+        // Parent and child marked: the family shears whole.
+        press(&mut app, "mjmSn");
+        enter(&mut app);
+        assert_eq!(app.task("a0").unwrap().status, Status::Shorn);
+        assert_eq!(app.task("z0").unwrap().status, Status::Shorn);
+        assert_eq!(app.notification.as_deref(), Some("2/2 → shorn"));
+    }
+
+    #[test]
     fn bulk_slaughter_skips_yaks_with_children() {
         // p0 has a live child (c0); t0 is childless. Marking both and bulk-
         // slaughtering must skip the parent (would orphan c0) and only slay

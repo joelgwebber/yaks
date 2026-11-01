@@ -1883,12 +1883,18 @@ impl App {
         } else {
             ids.iter().collect()
         };
-        if self.farm.is_none() {
-            return;
-        }
+        let Some(h) = &self.farm else { return };
+        // A shear takes children before their parents, so a marked family
+        // shears whole instead of refusing the parent (yaks-62f2).
+        let ordered: Vec<String> = if dest == Status::Shorn {
+            let owned: Vec<String> = targets.iter().map(|s| s.to_string()).collect();
+            h.children_first(&owned).unwrap_or(owned)
+        } else {
+            targets.iter().map(|s| s.to_string()).collect()
+        };
         let actor = crate::actor::resolve(None);
         let (mut moved, mut failed) = (0usize, 0usize);
-        for id in &targets {
+        for id in &ordered {
             // Never note a yak that is already there: the move would be a no-op.
             if self.task(id).map(|t| t.status) == Some(dest) {
                 continue;

@@ -735,6 +735,44 @@ pub enum IssueKind {
     /// `request` or `pickup` note (yaks-b8cd). A yak with no such note is never
     /// flagged.
     NeedsDrift,
+    /// A shorn yak with a hairy or shaving child (yaks-62f2): the parent was
+    /// called done while part of it was not. `yaks shorn` refuses this now; a
+    /// farm from before, or a hand edit, can still hold it.
+    UnfinishedChildren,
+}
+
+/// Shearing a yak whose children are not all done (yaks-62f2): a shorn yak
+/// has no hairy or shaving children. Finish them first, or graduate them out
+/// of the family (`yaks reparent <child> --parent <other>` / `--unparent`).
+#[derive(Debug)]
+pub struct UnfinishedChildren {
+    pub id: String,
+    pub children: Vec<(String, Status)>,
+}
+
+impl std::fmt::Display for UnfinishedChildren {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let list: Vec<String> = self
+            .children
+            .iter()
+            .map(|(c, s)| format!("{c} ({})", s.as_str()))
+            .collect();
+        write!(
+            f,
+            "{} has unfinished children: {}. Shear them first (or with it: one `yaks shorn` \
+             takes children before parents), or graduate them out of the family: `yaks \
+             reparent <child> --parent <other>` or `--unparent`",
+            self.id,
+            list.join(", ")
+        )
+    }
+}
+
+impl std::error::Error for UnfinishedChildren {}
+
+/// Not done yet: hairy or shaving (shorn and dead are both finished).
+fn unfinished(s: Status) -> bool {
+    matches!(s, Status::Hairy | Status::Shaving)
 }
 
 impl IssueKind {
@@ -750,6 +788,7 @@ impl IssueKind {
             IssueKind::MalformedLabel => "malformed-label",
             IssueKind::MisplacedFile => "misplaced-file",
             IssueKind::NeedsDrift => "needs-drift",
+            IssueKind::UnfinishedChildren => "unfinished-children",
         }
     }
 
@@ -770,6 +809,9 @@ impl IssueKind {
             IssueKind::MisplacedFile => "Misplaced yak file (not at <herd>/yaks/<id>.md)",
             IssueKind::NeedsDrift => {
                 "Needs drift (needs: disagrees with the latest ask/answer/request/pickup note)"
+            }
+            IssueKind::UnfinishedChildren => {
+                "Shorn over unfinished children (a shorn yak with hairy or shaving children)"
             }
         }
     }
@@ -1423,6 +1465,32 @@ impl Farm {
             }
         }
 
+        // A shorn yak over hairy or shaving children (yaks-62f2).
+        for t in tasks.iter().filter(|t| t.status == Status::Shorn) {
+            let open: Vec<&Task> = tasks
+                .iter()
+                .filter(|c| c.parent.as_deref() == Some(t.id.as_str()) && unfinished(c.status))
+                .collect();
+            if !open.is_empty() {
+                let list: Vec<String> = open
+                    .iter()
+                    .map(|c| format!("{} ({})", c.id, c.status.as_str()))
+                    .collect();
+                let mut ids = vec![t.id.clone()];
+                ids.extend(open.iter().map(|c| c.id.clone()));
+                issues.push(Issue {
+                    kind: IssueKind::UnfinishedChildren,
+                    message: format!(
+                        "{} is shorn but has unfinished children: {}; finish them, regrow {}, or graduate them (`yaks reparent <child> --parent <other>` / `--unparent`)",
+                        t.id,
+                        list.join(", "),
+                        t.id
+                    ),
+                    ids,
+                });
+            }
+        }
+
         // Deterministic order: group by kind, then by the ids involved. Dedup
         // drops any identical issue a duplicated-on-disk task could produce.
         issues.sort_by(|a, b| {
@@ -2005,7 +2073,49 @@ impl Farm {
     /// to `actor` (see [`store::move_task`]).
     pub fn transition(&self, id: &str, dest: Status, actor: Option<&str>) -> Result<MoveOutcome> {
         let _lock = store::lock(&self.root)?;
+        if dest == Status::Shorn {
+            let all = store::load(&self.root, &EVERY)?;
+            let children: Vec<(String, Status)> = all
+                .iter()
+                .filter(|t| t.parent.as_deref() == Some(id) && unfinished(t.status))
+                .map(|t| (t.id.clone(), t.status))
+                .collect();
+            if !children.is_empty() && all.iter().any(|t| t.id == id && t.status != Status::Shorn) {
+                return Err(UnfinishedChildren {
+                    id: id.to_string(),
+                    children,
+                }
+                .into());
+            }
+        }
         store::move_task(&self.root, id, dest, actor)
+    }
+
+    /// `ids` reordered so every yak comes before its ancestors (deepest first,
+    /// otherwise in the given order). A batch shear walks this order, so
+    /// `yaks shorn <parent> <child>` and a TUI bulk shear of a marked family
+    /// clear the children before [`Farm::transition`] checks the parent
+    /// (yaks-62f2). Unknown ids keep their place among the shallowest.
+    pub fn children_first(&self, ids: &[String]) -> Result<Vec<String>> {
+        let all = store::load(&self.root, &EVERY)?;
+        let parent: std::collections::HashMap<&str, &str> = all
+            .iter()
+            .filter_map(|t| Some((t.id.as_str(), t.parent.as_deref()?)))
+            .collect();
+        let depth = |id: &str| {
+            let (mut d, mut cur, mut seen) = (0usize, id, std::collections::HashSet::new());
+            while let Some(&p) = parent.get(cur) {
+                if !seen.insert(p) {
+                    break; // a parent cycle: doctor's problem, not ours
+                }
+                d += 1;
+                cur = p;
+            }
+            d
+        };
+        let mut out = ids.to_vec();
+        out.sort_by_key(|id| std::cmp::Reverse(depth(id)));
+        Ok(out)
     }
 
     /// Slaughter `id` (move to dead). Refuses with
@@ -2322,6 +2432,7 @@ fn issue_rank(k: IssueKind) -> u8 {
         IssueKind::MalformedLabel => 6,
         IssueKind::MisplacedFile => 7,
         IssueKind::NeedsDrift => 8,
+        IssueKind::UnfinishedChildren => 9,
     }
 }
 
@@ -3531,6 +3642,69 @@ mod tests {
         );
     }
 
+    /// A shorn yak has no hairy or shaving children (yaks-62f2): shearing the
+    /// parent first refuses and names the open child; dead and shorn children
+    /// don't count; `children_first` orders a batch so it shears whole; and
+    /// doctor flags the state when a hand edit produces it anyway.
+    #[test]
+    fn shorn_refuses_a_parent_over_unfinished_children() {
+        let (root, farm) = temp_farm();
+        let child = |id: &str, s: Status| {
+            let mut t = task(id, s);
+            t.parent = Some("yak-0001".into());
+            t
+        };
+        store::write::save(&root, &task("yak-0001", Status::Shaving)).unwrap();
+        store::write::save(&root, &child("yak-0002", Status::Hairy)).unwrap();
+        store::write::save(&root, &child("yak-0003", Status::Dead)).unwrap();
+        let mut grand = task("yak-0004", Status::Shaving);
+        grand.parent = Some("yak-0002".into());
+        store::write::save(&root, &grand).unwrap();
+
+        let err = farm
+            .transition("yak-0001", Status::Shorn, None)
+            .unwrap_err();
+        let refused = err
+            .downcast_ref::<UnfinishedChildren>()
+            .expect("typed refusal");
+        assert_eq!(refused.children, vec![("yak-0002".into(), Status::Hairy)]);
+        assert!(err.to_string().contains("yaks reparent"), "{err}");
+        assert!(
+            at(&root, "yak-0001", Status::Shaving),
+            "refusal must not move it"
+        );
+        // Other moves of the parent are unaffected.
+        assert_eq!(
+            farm.transition("yak-0001", Status::Hairy, None).unwrap(),
+            MoveOutcome::Moved
+        );
+
+        // Parent given first, grandchild last: still shears whole.
+        let ids: Vec<String> = ["yak-0001", "yak-0002", "yak-0004"]
+            .map(String::from)
+            .into();
+        let order = farm.children_first(&ids).unwrap();
+        assert_eq!(order, vec!["yak-0004", "yak-0002", "yak-0001"]);
+        for id in &order {
+            assert_eq!(
+                farm.transition(id, Status::Shorn, None).unwrap(),
+                MoveOutcome::Moved
+            );
+        }
+        assert!(farm.doctor(false).unwrap().is_empty());
+
+        // A hand edit back to hairy under the shorn parent: doctor flags it.
+        store::write::save(&root, &child("yak-0002", Status::Hairy)).unwrap();
+        let issues = farm.doctor(false).unwrap();
+        assert!(
+            issues
+                .iter()
+                .any(|i| i.kind == IssueKind::UnfinishedChildren
+                    && i.ids == vec!["yak-0001".to_string(), "yak-0002".to_string()]),
+            "{issues:?}"
+        );
+    }
+
     /// The multi-id transition path (`yaks shorn a b c`) drives the CLI batch by
     /// calling [`Farm::transition`] once per id. A clean batch moves every id;
     /// a partial-failure batch (one good id + one nonexistent) still moves the
@@ -3658,7 +3832,9 @@ mod tests {
         a.parent = Some("yak-0002".into());
         a.depends_on = vec!["yak-0002".into()];
         store::write::save(&root, &a).unwrap();
-        store::write::save(&root, &task("yak-0002", Status::Shorn)).unwrap();
+        // Hairy, not shorn: a shorn parent over a hairy child is itself an
+        // issue (yaks-62f2).
+        store::write::save(&root, &task("yak-0002", Status::Hairy)).unwrap();
         assert!(farm.doctor(false).unwrap().is_empty());
     }
 
