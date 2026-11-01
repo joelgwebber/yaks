@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-01T18:53:13Z'
-updated: '2026-11-01T22:25:17Z'
+updated: '2026-11-01T22:26:18Z'
 parent: yaks-d26a
 depends_on:
 - yaks-101d
@@ -50,3 +50,8 @@ Claim (yakherd delta:farm-wiki): worker `check-1`, on branch `wiki`, base a15038
 **Evidence.** `tests/check.rs` fails before the change and passes after; the full gate passes. Paste a real `yaks check` run on a scratch farm with one finding of each kind into a note.
 
 **Judge.** The coordinator, at landing.
+
+---
+▸ 2026-11-01T22:26:18Z [check-1]
+
+Start Sun Nov  1 22:26:17 UTC 2026. Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-c0ac.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/rc7whrpk3kdg/yaks

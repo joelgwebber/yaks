@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 1
 created: '2026-11-01T18:52:36Z'
-updated: '2026-11-01T18:53:40Z'
+updated: '2026-11-01T22:26:18Z'
 labels:
 - wiki
 - design
@@ -59,3 +59,14 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-01T22:26:18Z [delta:farm-wiki]
+
+Fan-out, 2026-11-01 (yakherd delta:farm-wiki), all from `wiki` at a150387:
+
+- `check-1`: yaks-c0ac, `yaks check`; claude-sonnet-5-5; [thread](delta://thread/ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD0oa5IBxBCA0aLJyrhJPreUvVwLftHG).
+- `sync-1`: yaks-f0db, TUI auto-sync; claude-sonnet-5-5; [thread](delta://thread/ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD0otJIBxBCA0aLJyrhJPreUvVwLftHG).
+- `nav-1`: yaks-84e0, detail navigation in the text viewer, the TUI layer's prerequisite; claude-opus-5-5, because it is a shared-component design inside a big TUI; [thread](delta://thread/ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD0o8pIBxBCA0aLJyrhJPreUvVwLftHG).
+
+Landed by me since the last summary: yaks-8e75 (schemas), yaks-4c8c (merge driver plus `yaks conflicts`), yaks-fd7a (attach encoding), yaks-2b68 (`yaks weight`/`yaks lfs`). The core layer (yaks-f301) is now complete.

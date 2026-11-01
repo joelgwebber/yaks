@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-10-22T19:53:58Z'
-updated: '2026-11-01T22:25:17Z'
+updated: '2026-11-01T22:26:42Z'
 labels:
 - tui
 ---
@@ -56,3 +56,8 @@ Leave out edit mode and anything specific to yak details (notes, fields).
 - The full gate passes.
 
 **Judge.** The coordinator, at landing.
+
+---
+▸ 2026-11-01T22:26:42Z [nav-1]
+
+Start Sun Nov  1 22:26:41 UTC 2026. Path: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-84e0.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/j5qrbk8fnvyz/yaks (branch wiki, base a150387).

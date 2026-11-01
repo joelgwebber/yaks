@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-01T20:09:16Z'
-updated: '2026-11-01T22:25:17Z'
+updated: '2026-11-01T22:26:26Z'
 parent: yaks-200f
 labels:
 - wiki
@@ -54,3 +54,8 @@ Claim (yakherd delta:farm-wiki): worker `sync-1`, on branch `wiki`, base a150387
 - The full gate passes.
 
 **Judge.** The coordinator, at landing.
+
+---
+▸ 2026-11-01T22:26:26Z [sync-1]
+
+Started 2026-11-01T22:26Z. yak path: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-f0db.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/wwj5ev7qs72e/yaks (branch wiki).
