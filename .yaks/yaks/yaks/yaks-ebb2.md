@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-01T18:53:12Z'
-updated: '2026-11-01T23:04:46Z'
+updated: '2026-11-01T23:05:38Z'
 parent: yaks-200f
 depends_on:
 - yaks-9af0
@@ -42,3 +42,8 @@ Claim (yakherd delta:farm-wiki): worker `wiki-1`, on branch `wiki` at 20f6bc6. I
 - Sources open their `source.md` plus `extracted.md`.
 - `/` filtering works like the other tabs.
 - The tab count is the page count.
+
+---
+▸ 2026-11-01T23:05:38Z [wiki-1]
+
+Start (wiki-1): Sun Nov  1 23:05:30 UTC 2026. Path: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-ebb2.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/x3afjaetd9ve/yaks (branch wiki, base 20f6bc6).
