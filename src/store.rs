@@ -316,7 +316,22 @@ fn farm_branch_worktree(dir: &Path) -> Result<Option<PathBuf>> {
             &format!("refs/remotes/origin/{branch}"),
         ],
     );
-    if local.is_none() && remote.is_none() {
+    // A clone of a BARE host (a Delta cloud runner) may have no farm ref of
+    // its own while the host has one; bootstrap then works in the host.
+    let in_bare_host = || {
+        crate::gitrepo::host(dir)
+            .filter(|h| h.via_alternates && h.bare)
+            .is_some_and(|h| {
+                ["heads", "remotes/origin"].iter().any(|r| {
+                    git_line(
+                        &h.git_dir,
+                        &["rev-parse", "--verify", "-q", &format!("refs/{r}/{branch}")],
+                    )
+                    .is_some()
+                })
+            })
+    };
+    if local.is_none() && remote.is_none() && !in_bare_host() {
         return Ok(None);
     }
     Err(MissingFarmWorktree {

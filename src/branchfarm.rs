@@ -44,11 +44,17 @@ pub(crate) fn ref_exists(dir: &Path, name: &str) -> bool {
 /// fetches, and never touches the checkout's own branch or files. Returns the
 /// worktree.
 ///
-/// Refuses a checkout that borrows another repository's objects (a Delta
-/// clone): a worktree made here would be invisible to that repository's other
-/// checkouts, the same refusal as `yaks init`.
+/// A checkout that borrows another repository's objects (a Delta clone) must
+/// not add the worktree itself: it would be invisible to that repository's
+/// other checkouts. When that host is a checkout, it refuses and names it.
+/// When the host is BARE (a Delta cloud runner's managed repo, which nobody
+/// works in), it adds the worktree to the host instead, so every clone of it
+/// finds the farm (yaks-b46b); see [`bootstrap_in_bare_host`].
 pub fn bootstrap(top: &Path, branch: &str, home: impl FnOnce(&Path) -> PathBuf) -> Result<PathBuf> {
     let host = gitrepo::host(top).context("reading the repository")?;
+    if host.via_alternates && host.bare {
+        return bootstrap_in_bare_host(&host.git_dir, branch, home(top));
+    }
     if host.via_alternates {
         let main = gitrepo::host_checkout(&host).map_or_else(
             || {
@@ -100,6 +106,61 @@ pub fn bootstrap(top: &Path, branch: &str, home: impl FnOnce(&Path) -> PathBuf) 
             ],
         )?;
     }
+    Ok(gitrepo::canonical(&wt))
+}
+
+/// The farm worktree for a clone whose host is the bare repository
+/// `host_git`: `git worktree add` in the host, at `wt`. The host gets the
+/// branch first if it lacks it: from its own `origin/<branch>`, else by
+/// fetching `<branch>` from its `origin` remote (the one fetch bootstrap ever
+/// makes: a managed host starts with no branches, and the clone's own fetched
+/// objects are not visible to it). Read by every clone through the host's
+/// `git worktree list` ([`gitrepo::worktree_of_branch`]).
+fn bootstrap_in_bare_host(host_git: &Path, branch: &str, wt: PathBuf) -> Result<PathBuf> {
+    if fs::symlink_metadata(&wt).is_ok() {
+        bail!(
+            "the farm branch `{branch}` has no worktree, and the place for one, {}, already \
+             exists. Remove it, or add the worktree yourself: `git -C {} worktree add <path> \
+             {branch}`",
+            wt.display(),
+            host_git.display()
+        );
+    }
+    let local = format!("refs/heads/{branch}");
+    let tracking = format!("refs/remotes/origin/{branch}");
+    if !ref_exists(host_git, &local) {
+        if !ref_exists(host_git, &tracking) {
+            git(
+                host_git,
+                &["fetch", "-q", "origin", &format!("+{local}:{tracking}")],
+            )
+            .with_context(|| {
+                format!(
+                    "this checkout's repository is the bare repo {}, which has no farm branch \
+                     `{branch}`; fetching it from that repo's `origin` failed",
+                    host_git.display()
+                )
+            })?;
+        }
+        git(host_git, &["branch", "-q", branch, &tracking])?;
+        // Track origin, so `yaks sync` in the worktree pulls and pushes.
+        git(
+            host_git,
+            &["config", &format!("branch.{branch}.remote"), "origin"],
+        )?;
+        git(
+            host_git,
+            &["config", &format!("branch.{branch}.merge"), &local],
+        )?;
+    }
+    if let Some(parent) = wt.parent() {
+        fs::create_dir_all(parent).with_context(|| format!("creating {}", parent.display()))?;
+    }
+    git(host_git, &["worktree", "prune"])?;
+    git(
+        host_git,
+        &["worktree", "add", "-q", &wt.to_string_lossy(), branch],
+    )?;
     Ok(gitrepo::canonical(&wt))
 }
 

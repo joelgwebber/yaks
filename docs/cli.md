@@ -37,8 +37,12 @@ YAKS_DIR=~/scratch/.yaks yaks list     # one-off: any farm directory
 ```
 
 A clone whose `origin/yaks` exists but has no worktree gets one on the first
-command (one stderr line says where; never from a Delta clone, which names its
-main checkout instead). `YAKS_NO_BOOTSTRAP=1` turns that off.
+command (one stderr line says where). A Delta clone whose host is a checkout
+never makes one itself: it names that checkout instead. A Delta clone whose host
+is a BARE repo (a cloud runner's managed repo, which nobody works in) adds the
+worktree to the host, so every clone of it shares the farm; when the host lacks
+the farm branch it is fetched from the host's `origin` first. `YAKS_NO_BOOTSTRAP=1`
+turns all of that off.
 
 ## Filter flags (shared)
 
