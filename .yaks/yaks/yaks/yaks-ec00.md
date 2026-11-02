@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-01T16:44:44Z'
-updated: '2026-11-01T16:44:44Z'
+updated: '2026-11-02T17:44:34Z'
 tags:
 - skills
 - agent
@@ -49,3 +49,27 @@ Joel (2026-11-01): make sure cloud runners always get an up-to-date `yaks` CLI a
 - yaks-7d57 (trial notes: memcraft skills already bumped to 0.0.27 on origin)
 - yaks-fe33 (repeatable trials per environment: a runner trial is how to test this)
 - yaks-de7a (Linux release binaries for runners' glibc)
+
+---
+▸ 2026-11-02T17:44:34Z [delta:skills-upgrade-audit]
+
+Audit (2026-11-02, delta:skills-upgrade-audit): what the skills and the binary tell an agent about upgrading `yaks` and migrating a farm, on 0.0.30 / schema 7.
+
+## What the skills say
+
+- `yaks` skill, "Running yaks": `yaks`, else `npx @j15r/yaks`, else a local build. Nothing about which version, or how to upgrade.
+- Command table: `migrate` = "upgrade an old schema". Task format: "A farm on an older schema is refused by every command but `yaks migrate`."
+- `yaks-working`, `yaks-coordinating`: nothing on versions or migration.
+
+## What the binary says
+
+- Farm behind the binary: every command refuses with "run `yaks migrate` (`--dry-run` shows what changes), commit the result, then use this yaks again". Good, and enough for an agent to act on, but it never asks whether the agent *should* migrate a shared farm.
+- Farm ahead of the binary: "this farm uses schema vN, newer than this yaks supports (vM). Upgrade yaks." It gives no command and no version.
+- Nothing ever says a newer release exists. An agent only learns this when a schema refusal hits.
+
+## Gaps
+
+1. No upgrade recipe (`npm i -g @j15r/yaks@latest`, or `npx -y @j15r/yaks@latest`) in the skills or in the refusal.
+2. No rule on who migrates a shared farm. Migrating and syncing makes every other machine's older binary refuse, and a long-running TUI does worse (gap 3). This is the step Joel currently gates by hand.
+3. The schema gate only runs at `Farm::open`. A running `yaks tui` that auto-syncs (yaks-f0db) can pull a migrated farm and keep writing old-shape files into it. Filed separately as a bug.
+4. No session-start version check: `yaks --version` against the latest release and the farm's `schema` are not in the workflow.
