@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-01T18:53:12Z'
-updated: '2026-11-01T23:49:49Z'
+updated: '2026-11-02T00:35:37Z'
 parent: yaks-200f
 depends_on:
 - yaks-9af0
@@ -98,3 +98,28 @@ moved: shaving -> shorn
 ▸ 2026-11-01T23:49:49Z [wiki-1]
 
 Landed in two commits: 95b39e1 (all of it but src/tui.rs) and 06bb89d (src/tui.rs: the module and App.wiki field). My `git add src/tui` left out the sibling file. I did not squash, because history rewrites are not allowed; the coordinator can squash when landing.
+
+---
+▸ 2026-11-02T00:32:22Z [delta:farm-wiki]
+kind: landed
+commit: f23a924c8f9c540979e5382ddbc2f5541829d7eb
+source: 95b39e16f07c947e8f58e7d2e54479c80a3f5059
+branch: wiki
+---
+
+landed: f23a924 yaks-ebb2: TUI Wiki tab listing pages and sources, opened in the rendered viewer
+
+---
+▸ 2026-11-02T00:32:23Z [delta:farm-wiki]
+kind: landed
+commit: 9e59104913802912af12a8d319d770e9988b6e5d
+source: 06bb89dfba4b674a912ecde6996e347b0e8cdfac
+branch: wiki
+---
+
+landed: 9e59104 yaks-ebb2: register the wiki_tab module and App.wiki (missed from 95b39e1)
+
+---
+▸ 2026-11-02T00:35:37Z [delta:farm-wiki]
+
+Landed in order (yakherd): f23a924 + 9e59104 (yaks-ebb2), 8e42e47 (yaks-7395), f4c86b8 (yaks-1532). Gate: 995 passed with no `EMAIL` set; the attribution failures wiki-1 saw were fixed in 75d9ef2. I looked at the Wiki tab and peek frames myself. Only the four new `tui-wiki*.svg` docshots landed; the unrelated SVG churn was left out.

@@ -1,0 +1,32 @@
+# yaks-1532: the real binary, driven headless (yaks tui --headless) on a scratch farm-branch farm
+# keys: 5x ] (Wiki tab), Enter, E, j x5, o, type '...', Esc, C-s, Esc, N, type topics/pq, Enter, j x3, o, type '...', Esc, C-s, q
+
+## notifications seen
+created wiki/topics/pq.md
+saved wiki/topics/hnsw.md
+saved wiki/topics/pq.md
+
+## farm git log (newest first; the first two are yaks init and yaks page new)
+b5ef866 yaks: pages wiki/topics/pq.md  [Yaks-Actor: wiki-1]
+b14a49c yaks: pages wiki/topics/hnsw.md  [Yaks-Actor: wiki-1]
+89bb059 yaks: pages wiki/topics/hnsw.md  [Yaks-Actor: wiki-1]
+386da96 yaks: new farm  [Yaks-Actor: ]
+
+## the save of hnsw.md (one commit, one file)
+b14a49c yaks: pages wiki/topics/hnsw.md
+
+diff --git a/.yaks/wiki/topics/hnsw.md b/.yaks/wiki/topics/hnsw.md
+index 665f98f..3362508 100644
+--- a/.yaks/wiki/topics/hnsw.md
++++ b/.yaks/wiki/topics/hnsw.md
+@@ -4,3 +4,4 @@ title: HNSW tuning
+ ---
+ 
+ Raise ef_search for recall.
++ef_construction trades build time for quality.
+
+## N then save: page_new + body save coalesced into one commit
+b5ef866 yaks: pages wiki/topics/pq.md
+
+ .yaks/wiki/topics/pq.md | 6 ++++++
+ 1 file changed, 6 insertions(+)
