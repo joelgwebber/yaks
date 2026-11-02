@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 1
 created: '2026-11-01T18:52:36Z'
-updated: '2026-11-02T00:36:33Z'
+updated: '2026-11-02T01:56:37Z'
 tags:
 - wiki
 - design
@@ -91,3 +91,8 @@ Landed yaks-5550 (`yaks import-hearth`, 844bf53). I reproduced it on a scratch c
 ▸ 2026-11-02T00:36:33Z [delta:farm-wiki]
 
 Landed: yaks-bdcb (`yaks find`, be9d80b), an identity fix in `yaks commit` (75d9ef2), and wiki-1's TUI arc (f23a924, 9e59104, 8e42e47, f4c86b8). Layers 2–4 are complete; gate 995. Joel answered yaks-9cc1 (all three leans). Fan-out: `due-1` takes yaks-2fc5 (due dates and recurring yaks), on claude-sonnet-5-5, from f4c86b8 ([thread](delta://thread/ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD38RZIBxBCA0aLJyrhJPreUvVwLftHG)).
+
+---
+▸ 2026-11-02T01:56:37Z [delta:farm-wiki]
+
+Landed on `main` as de32523, a squash of `wiki` (Joel, 2026-11-02). Installed with `cargo install --path .`. Migrated this farm to schema 7 (3860490) and turned on LFS (08ad4ad, 44 binaries converted). The model is written up in [the farm as a knowledge store](/wiki/design/knowledge-store.md), and the migration steps in [migrate a farm](/wiki/howto/migrate-a-farm.md).
