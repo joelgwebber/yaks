@@ -474,7 +474,10 @@ fn commit_changes(snap: &Snapshot) -> Result<()> {
             "yaks: hand edits to {} (committed before a yaks change)",
             names.join(", ")
         );
-        if let Some(c) = commit_tree(snap, parent.as_deref(), &stage, &msg, &[])? {
+        // The git user's, as any hand edit; with no git identity (a CI runner,
+        // a fresh machine) it is `unattributed`, never the command's actor.
+        let hand_ident = identity_env(&snap.top, "unattributed");
+        if let Some(c) = commit_tree(snap, parent.as_deref(), &stage, &msg, &hand_ident)? {
             move_head(snap, &c, parent.as_deref())?;
             parent = Some(c);
         }
