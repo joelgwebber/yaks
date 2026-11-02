@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 1
 created: '2026-11-01T18:52:36Z'
-updated: '2026-11-01T23:21:10Z'
+updated: '2026-11-02T00:36:33Z'
 labels:
 - wiki
 - design
@@ -85,3 +85,8 @@ Landed: yaks-c0ac (`yaks check`, 206f23d), yaks-f0db (TUI auto-sync, 6a22550), y
 ▸ 2026-11-01T23:21:10Z [delta:farm-wiki]
 
 Landed yaks-5550 (`yaks import-hearth`, 844bf53). I reproduced it on a scratch clone of `joel`: 31 pages, 37 sources, doctor and check clean. Gate 955. Fan-out: `find-1` takes yaks-bdcb (`yaks find`, plus reserving `sessions`), on claude-sonnet-5-5, from 844bf53 ([thread](delta://thread/ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD2d4ZIBxBCA0aLJyrhJPreUvVwLftHG)). `wiki-1` is still on the TUI arc.
+
+---
+▸ 2026-11-02T00:36:33Z [delta:farm-wiki]
+
+Landed: yaks-bdcb (`yaks find`, be9d80b), an identity fix in `yaks commit` (75d9ef2), and wiki-1's TUI arc (f23a924, 9e59104, 8e42e47, f4c86b8). Layers 2–4 are complete; gate 995. Joel answered yaks-9cc1 (all three leans). Fan-out: `due-1` takes yaks-2fc5 (due dates and recurring yaks), on claude-sonnet-5-5, from f4c86b8 ([thread](delta://thread/ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD38RZIBxBCA0aLJyrhJPreUvVwLftHG)).
