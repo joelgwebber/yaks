@@ -1,11 +1,11 @@
 ---
 id: yaks-a5f8
 title: 'Release 0.0.29: the farm as a knowledge store (schema 7)'
-status: shaving
+status: shorn
 type: task
 priority: 1
 created: '2026-11-02T16:44:16Z'
-updated: '2026-11-02T17:10:42Z'
+updated: '2026-11-02T17:10:43Z'
 parent: yaks-44b3
 tags:
 - release
@@ -46,3 +46,13 @@ Released **0.0.30** (Joel, 2026-11-02).
 - `joel` main pushed to `origin` (cowpaths/joel) as 3688d71.
 
 Installed 0.0.30 to `~/.cargo/bin` (`cargo install --path .`). Since last night the binary there had gone missing, so `yaks` on PATH had been resolving to the pnpm 0.0.28.
+
+---
+▸ 2026-11-02T17:10:43Z [delta:farm-wiki]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
