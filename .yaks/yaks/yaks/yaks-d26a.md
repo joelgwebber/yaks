@@ -7,7 +7,7 @@ priority: 2
 created: '2026-11-01T18:53:13Z'
 updated: '2026-11-01T23:51:14Z'
 parent: yaks-44b3
-labels:
+tags:
 - wiki
 - skills
 ---
@@ -16,6 +16,7 @@ Layer 4.
 
 ---
 ▸ 2026-11-01T22:22:23Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -32,6 +33,7 @@ Workflow layer complete on `wiki`: `yaks check` (yaks-c0ac), the `yaks-research`
 
 ---
 ▸ 2026-11-01T23:51:14Z [delta:farm-wiki]
+
 kind: move
 from: shaving
 to: shorn

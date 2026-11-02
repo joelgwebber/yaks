@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-17T04:25:39Z'
 updated: '2026-10-27T02:36:16Z'
 parent: yaks-faf5
-labels:
+tags:
 - tui
 ---
 

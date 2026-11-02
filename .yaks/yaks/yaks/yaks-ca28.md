@@ -9,7 +9,7 @@ updated: '2026-10-27T01:16:24Z'
 parent: yaks-8b7a
 depends_on:
 - yaks-95be
-labels:
+tags:
 - cli
 - delta
 ---

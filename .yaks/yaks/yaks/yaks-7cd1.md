@@ -6,7 +6,7 @@ type: feature
 priority: 3
 created: '2026-08-23T02:09:20Z'
 updated: '2026-10-27T02:36:17Z'
-labels:
+tags:
 - agent
 - config
 ---

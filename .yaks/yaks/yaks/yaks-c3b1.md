@@ -7,7 +7,7 @@ priority: 2
 created: '2026-09-08T01:32:42Z'
 updated: '2026-09-24T02:28:06Z'
 parent: yaks-6624
-labels:
+tags:
 - agent
 - config
 - eval

@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-18T05:15:36Z'
 updated: '2026-10-18T20:10:11Z'
 parent: yaks-6a34
-labels:
+tags:
 - tui
 - cli
 ---

@@ -6,7 +6,7 @@ type: task
 priority: 2
 created: '2026-08-20T22:31:13Z'
 updated: '2026-08-20T22:37:42Z'
-labels:
+tags:
 - rust
 - ui
 ---

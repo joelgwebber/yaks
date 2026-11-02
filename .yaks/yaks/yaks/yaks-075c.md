@@ -6,7 +6,7 @@ type: task
 priority: 3
 created: '2026-10-27T19:02:24Z'
 updated: '2026-10-27T19:04:50Z'
-labels:
+tags:
 - markdown
 - skills
 ---

@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-17T04:36:55Z'
 updated: '2026-10-27T01:19:38Z'
 parent: yaks-e9de
-labels:
+tags:
 - markdown
 - cli
 ---

@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-18T19:35:20Z'
 updated: '2026-10-21T20:52:02Z'
 parent: yaks-472e
-labels:
+tags:
 - git
 - cli
 ---

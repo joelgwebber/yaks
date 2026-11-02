@@ -10,7 +10,7 @@ parent: yaks-594b
 depends_on:
 - yaks-4e8a
 - yaks-1edb
-labels:
+tags:
 - ui
 ---
 

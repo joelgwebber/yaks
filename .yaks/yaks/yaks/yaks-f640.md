@@ -9,7 +9,7 @@ updated: '2026-08-25T03:26:31Z'
 parent: yaks-6099
 depends_on:
 - yaks-d635
-labels:
+tags:
 - ui
 - edtui
 ---

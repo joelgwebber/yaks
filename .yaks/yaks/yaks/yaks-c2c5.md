@@ -9,7 +9,7 @@ updated: '2026-10-27T01:19:39Z'
 parent: yaks-688d
 depends_on:
 - yaks-0187
-labels:
+tags:
 - ui
 ---
 

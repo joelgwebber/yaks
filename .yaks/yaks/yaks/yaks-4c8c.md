@@ -10,7 +10,7 @@ parent: yaks-f301
 depends_on:
 - yaks-1f34
 - yaks-a838
-labels:
+tags:
 - wiki
 - git
 verify: cargo test --workspace
@@ -20,6 +20,7 @@ Implements yaks-63c3 (merge half) on yaks-1f34: per-field merge rules, `git merg
 
 ---
 ▸ 2026-11-01T21:40:37Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -30,6 +31,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T21:56:47Z [delta:farm-wiki]
+
 kind: checkpoint
 branch: wiki
 commit: c3cfecc
@@ -71,6 +73,7 @@ Tests: `tests/merge_driver.rs` gains a page case through a real `git merge`, and
 
 ---
 ▸ 2026-11-01T21:58:59Z [delta:farm-wiki]
+
 kind: verify
 result: pass
 ---
@@ -79,6 +82,7 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-11-01T21:58:59Z [delta:farm-wiki]
+
 kind: move
 from: shaving
 to: shorn

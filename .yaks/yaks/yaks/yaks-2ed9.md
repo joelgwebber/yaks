@@ -10,7 +10,7 @@ parent: yaks-89b9
 depends_on:
 - yaks-dce6
 - yaks-8d58
-labels:
+tags:
 - docs
 ---
 

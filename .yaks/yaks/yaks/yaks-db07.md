@@ -7,7 +7,7 @@ priority: 3
 created: '2026-10-26T21:51:28Z'
 updated: '2026-10-26T23:19:10Z'
 parent: yaks-33c8
-labels:
+tags:
 - cli
 - markdown
 ---

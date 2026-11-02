@@ -6,7 +6,7 @@ type: bug
 priority: 1
 created: '2026-10-18T20:27:09Z'
 updated: '2026-10-18T20:27:09Z'
-labels:
+tags:
 - tui
 - perf
 ---

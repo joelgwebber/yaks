@@ -9,7 +9,7 @@ updated: '2026-10-27T01:20:37Z'
 parent: yaks-e9de
 depends_on:
 - yaks-649d
-labels:
+tags:
 - markdown
 - skills
 ---

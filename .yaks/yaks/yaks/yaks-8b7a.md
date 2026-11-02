@@ -6,7 +6,7 @@ type: task
 priority: 1
 created: '2026-10-12T16:05:28Z'
 updated: '2026-10-27T02:36:18Z'
-labels:
+tags:
 - design
 - cli
 ---

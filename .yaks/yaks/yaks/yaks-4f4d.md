@@ -8,7 +8,7 @@ created: '2026-10-22T22:12:46Z'
 updated: '2026-10-22T22:12:53Z'
 depends_on:
 - yaks-4e9c
-labels:
+tags:
 - images
 - toque
 ---

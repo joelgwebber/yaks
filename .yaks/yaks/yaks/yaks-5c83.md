@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-05T22:39:41Z'
 updated: '2026-10-05T22:49:12Z'
 parent: yaks-36b6
-labels:
+tags:
 - skills
 - cli
 ---

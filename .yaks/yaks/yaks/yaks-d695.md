@@ -7,7 +7,7 @@ priority: 3
 created: '2026-08-26T12:58:19Z'
 updated: '2026-10-31T17:24:17Z'
 parent: yaks-039b
-labels:
+tags:
 - schema
 ---
 
@@ -70,6 +70,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-10-31T17:00:48Z [delta:Cloud Runners]
+
 kind: landed
 commit: 601fa0731ce628555b5a8004d3a03933ea99e271
 source: 5bddef7988c8688bfae719132c31e4267363e8c6
@@ -85,6 +86,7 @@ Yakherd: landed as `601fa07` (recorded automatically by `yaks land`). Gate green
 
 ---
 ▸ 2026-10-31T17:24:16Z [yakherd]
+
 kind: landed
 commit: 7c749040037cdf390a62682799617113c862fd53
 branch: main
@@ -94,6 +96,7 @@ landed (rebased onto `c2b640f`, your checkout's `main`): 7c74904 yaks-d695: skil
 
 ---
 ▸ 2026-10-31T17:24:17Z [yakherd]
+
 kind: landed
 commit: d3910587d4b48ab8190ab8fed62b348f51a25320
 branch: main

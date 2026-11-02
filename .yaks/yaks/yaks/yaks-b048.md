@@ -9,7 +9,7 @@ updated: '2026-10-22T00:59:43Z'
 parent: yaks-6a34
 depends_on:
 - yaks-7bfd
-labels:
+tags:
 - skills
 ---
 

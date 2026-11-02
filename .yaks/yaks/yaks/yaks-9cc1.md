@@ -9,7 +9,7 @@ updated: '2026-11-02T01:29:28Z'
 parent: yaks-44b3
 depends_on:
 - yaks-1f34
-labels:
+tags:
 - wiki
 - design
 ---
@@ -18,6 +18,7 @@ Layer 5. Joel (2026-11-01): reminders often want extra data (a link to the plumb
 
 ---
 ▸ 2026-11-01T22:26:46Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -59,6 +60,7 @@ Implementation would be one worker-sized yak once the ask below is answered: fie
 
 ---
 ▸ 2026-11-01T22:26:47Z [delta:farm-wiki]
+
 kind: ask
 needs: human
 ---
@@ -71,6 +73,7 @@ asked: needs human
 
 ---
 ▸ 2026-11-01T22:50:24Z [Joel Webber]
+
 kind: answer
 needs: agent
 ---
@@ -81,6 +84,7 @@ needs: agent
 
 ---
 ▸ 2026-11-02T00:36:10Z [delta:farm-wiki]
+
 kind: pickup
 ---
 
@@ -95,6 +99,7 @@ Implemented by yaks-2fc5 (landed 7560285).
 
 ---
 ▸ 2026-11-02T01:29:28Z [delta:farm-wiki]
+
 kind: move
 from: shaving
 to: shorn

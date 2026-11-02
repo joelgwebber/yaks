@@ -6,7 +6,7 @@ type: task
 priority: 1
 created: '2026-11-01T17:32:03Z'
 updated: '2026-11-01T17:41:13Z'
-labels:
+tags:
 - release
 ---
 
@@ -14,6 +14,7 @@ Joel (2026-11-01): land the families arc (yaks-9b41) and cut 0.0.28. Carries yak
 
 ---
 ▸ 2026-11-01T17:32:03Z [yakherd]
+
 kind: move
 from: hairy
 to: shaving
@@ -24,6 +25,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T17:41:13Z [yakherd]
+
 kind: landed
 sha: 6dae2b8
 ---
@@ -32,6 +34,7 @@ Released v0.0.28: main 8d9a1b1..6dae2b8 pushed to origin (and to the local check
 
 ---
 ▸ 2026-11-01T17:41:13Z [yakherd]
+
 kind: move
 from: shaving
 to: shorn

@@ -6,7 +6,7 @@ type: feature
 priority: 2
 created: '2026-10-31T15:16:48Z'
 updated: '2026-10-31T17:24:35Z'
-labels:
+tags:
 - sheds
 - design
 ---

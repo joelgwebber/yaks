@@ -7,7 +7,7 @@ priority: 2
 created: '2026-11-01T16:31:51Z'
 updated: '2026-11-01T17:28:01Z'
 parent: yaks-9b41
-labels:
+tags:
 - cli
 ---
 
@@ -28,6 +28,7 @@ Decided: refuse rather than warn or auto-reopen the parent. A warning is how the
 
 ---
 ▸ 2026-11-01T17:22:27Z [yakherd]
+
 kind: move
 from: hairy
 to: shaving
@@ -38,6 +39,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T17:28:01Z [yakherd]
+
 kind: landed
 sha: 95fa1e2
 ---
@@ -53,6 +55,7 @@ Evidence: `cargo test --workspace --locked` green (CI-like env). New `nothing_op
 
 ---
 ▸ 2026-11-01T17:28:01Z [yakherd]
+
 kind: move
 from: shaving
 to: shorn

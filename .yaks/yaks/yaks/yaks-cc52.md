@@ -6,7 +6,7 @@ type: bug
 priority: 3
 created: '2026-09-23T21:40:23Z'
 updated: '2026-10-03T21:16:23Z'
-labels:
+tags:
 - ui
 ---
 

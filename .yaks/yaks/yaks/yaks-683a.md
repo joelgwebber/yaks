@@ -6,7 +6,7 @@ type: bug
 priority: 3
 created: '2026-10-17T18:42:13Z'
 updated: '2026-10-19T04:26:22Z'
-labels:
+tags:
 - sheds
 - git
 ---

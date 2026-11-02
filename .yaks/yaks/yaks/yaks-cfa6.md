@@ -7,7 +7,7 @@ priority: 3
 created: '2026-11-01T16:43:15Z'
 updated: '2026-11-01T17:30:52Z'
 parent: yaks-9b41
-labels:
+tags:
 - cli
 ---
 
@@ -21,6 +21,7 @@ The cost: the ancestor's move is stamped with the worker's name, so `yaks sheds`
 
 ---
 ▸ 2026-11-01T17:28:01Z [yakherd]
+
 kind: move
 from: hairy
 to: shaving
@@ -31,6 +32,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T17:30:51Z [yakherd]
+
 kind: landed
 sha: 76aeae2
 ---
@@ -46,6 +48,7 @@ Evidence: `cargo test --workspace --locked` green (CI-like env); `shave_lifts_ha
 
 ---
 ▸ 2026-11-01T17:30:52Z [yakherd]
+
 kind: move
 from: shaving
 to: shorn

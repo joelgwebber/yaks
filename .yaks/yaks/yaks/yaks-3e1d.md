@@ -6,7 +6,7 @@ type: feature
 priority: 3
 created: '2026-10-04T21:06:26Z'
 updated: '2026-10-04T21:06:26Z'
-labels:
+tags:
 - web
 - markdown
 - images

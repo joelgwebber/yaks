@@ -7,7 +7,7 @@ priority: 3
 created: '2026-10-09T20:12:45Z'
 updated: '2026-10-27T01:19:37Z'
 parent: yaks-ee0a
-labels:
+tags:
 - cli
 - skills
 - delta

@@ -6,7 +6,7 @@ type: task
 priority: 2
 created: '2026-10-16T20:08:27Z'
 updated: '2026-10-19T04:26:22Z'
-labels:
+tags:
 - cli
 - agent
 - sheds

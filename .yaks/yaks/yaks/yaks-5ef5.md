@@ -11,7 +11,7 @@ depends_on:
 - yaks-a2a4
 - yaks-4e7f
 - yaks-b315
-labels:
+tags:
 - rust
 ---
 

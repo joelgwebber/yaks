@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-17T04:25:16Z'
 updated: '2026-10-17T04:57:02Z'
 parent: yaks-ea13
-labels:
+tags:
 - markdown
 - tui
 ---

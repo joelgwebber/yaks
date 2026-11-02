@@ -6,7 +6,7 @@ type: bug
 priority: 2
 created: '2026-09-08T22:46:23Z'
 updated: '2026-09-24T02:28:06Z'
-labels:
+tags:
 - cli
 - git
 verify: '! git check-ignore .yaks/artifacts/yaks-52eb/tui-list.svg'

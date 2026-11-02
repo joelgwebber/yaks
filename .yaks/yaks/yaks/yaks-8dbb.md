@@ -6,7 +6,7 @@ type: chore
 priority: 2
 created: '2026-10-27T01:14:29Z'
 updated: '2026-10-27T02:37:29Z'
-labels:
+tags:
 - markdown
 ---
 

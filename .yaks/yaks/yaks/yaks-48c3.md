@@ -7,7 +7,7 @@ priority: 3
 created: '2026-08-21T00:08:31Z'
 updated: '2026-08-21T00:57:55Z'
 parent: yaks-86a3
-labels:
+tags:
 - rust
 - phase2
 ---

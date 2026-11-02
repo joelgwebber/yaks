@@ -7,7 +7,7 @@ priority: 2
 created: '2026-08-30T22:52:32Z'
 updated: '2026-09-06T22:45:20Z'
 parent: yaks-3901
-labels:
+tags:
 - git
 ---
 

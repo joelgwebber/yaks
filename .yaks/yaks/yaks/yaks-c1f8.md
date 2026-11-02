@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-13T19:46:42Z'
 updated: '2026-10-27T01:19:39Z'
 parent: yaks-38dc
-labels:
+tags:
 - ui
 - delta
 ---

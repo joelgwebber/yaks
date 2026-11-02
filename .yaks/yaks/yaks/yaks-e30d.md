@@ -10,7 +10,7 @@ parent: yaks-ea13
 depends_on:
 - yaks-649d
 - yaks-bc53
-labels:
+tags:
 - markdown
 - tui
 ---

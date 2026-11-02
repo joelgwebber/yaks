@@ -6,7 +6,7 @@ type: feature
 priority: 3
 created: '2026-10-28T12:40:11Z'
 updated: '2026-10-28T12:40:11Z'
-labels:
+tags:
 - cli
 - tracker
 ---

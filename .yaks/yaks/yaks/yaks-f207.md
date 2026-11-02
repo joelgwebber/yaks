@@ -6,7 +6,7 @@ type: bug
 priority: 3
 created: '2026-08-23T18:26:53Z'
 updated: '2026-09-11T00:08:52Z'
-labels:
+tags:
 - ui
 verify: cargo test -p yaks
 ---

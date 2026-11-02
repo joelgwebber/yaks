@@ -7,7 +7,7 @@ priority: 3
 created: '2026-08-22T03:44:40Z'
 updated: '2026-08-22T04:03:29Z'
 parent: yaks-0a93
-labels:
+tags:
 - rust
 - tui
 - parity

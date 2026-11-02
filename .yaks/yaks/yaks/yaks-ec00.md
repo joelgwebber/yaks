@@ -6,7 +6,7 @@ type: task
 priority: 2
 created: '2026-11-01T16:44:44Z'
 updated: '2026-11-01T16:44:44Z'
-labels:
+tags:
 - skills
 - agent
 ---

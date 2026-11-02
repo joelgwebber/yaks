@@ -7,7 +7,7 @@ priority: 2
 created: '2026-09-05T02:59:27Z'
 updated: '2026-09-05T03:08:42Z'
 parent: yaks-8f81
-labels:
+tags:
 - agent
 ---
 

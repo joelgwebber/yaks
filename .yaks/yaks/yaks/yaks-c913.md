@@ -6,7 +6,7 @@ type: feature
 priority: 1
 created: '2026-08-23T14:17:24Z'
 updated: '2026-08-23T14:19:13Z'
-labels:
+tags:
 - dist
 - ci
 ---

@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-31T19:28:04Z'
 updated: '2026-11-01T16:42:39Z'
 parent: yaks-9b41
-labels:
+tags:
 - cli
 - skills
 ---
@@ -25,6 +25,7 @@ Found when `yaks-da23` was shorn while it still held `yaks-f1e6` and `yaks-19c3`
 
 ---
 ▸ 2026-11-01T16:23:55Z [yakherd]
+
 kind: move
 from: hairy
 to: shaving
@@ -34,6 +35,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T16:31:37Z [yakherd]
+
 kind: landed
 sha: ac5c6e2
 ---
@@ -56,6 +58,7 @@ Follow-up filed: create/reparent onto a shorn parent still produces the state (d
 
 ---
 ▸ 2026-11-01T16:31:37Z [yakherd]
+
 kind: move
 from: shaving
 to: shorn

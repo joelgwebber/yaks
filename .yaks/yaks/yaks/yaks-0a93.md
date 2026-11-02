@@ -6,7 +6,7 @@ type: task
 priority: 2
 created: '2026-08-22T03:44:28Z'
 updated: '2026-08-22T21:26:34Z'
-labels:
+tags:
 - rust
 - tui
 - parity

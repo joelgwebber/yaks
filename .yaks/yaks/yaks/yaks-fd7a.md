@@ -7,7 +7,7 @@ priority: 3
 created: '2026-11-01T21:28:56Z'
 updated: '2026-11-01T22:06:53Z'
 parent: yaks-f301
-labels:
+tags:
 - wiki
 - markdown
 verify: cargo test --workspace
@@ -19,6 +19,7 @@ Fix: write `<id>/my%20shot.png` (or `](<<id>/my shot.png>)`), and have `yaks mig
 
 ---
 ▸ 2026-11-01T22:01:18Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -29,6 +30,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T22:04:46Z [delta:farm-wiki]
+
 kind: checkpoint
 branch: wiki
 commit: 2a42222
@@ -38,6 +40,7 @@ Fixed on `wiki` (2a42222). `attach` now writes `![my shot](<id>/my%20shot.png)`,
 
 ---
 ▸ 2026-11-01T22:06:52Z [delta:farm-wiki]
+
 kind: verify
 result: pass
 ---
@@ -46,6 +49,7 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-11-01T22:06:53Z [delta:farm-wiki]
+
 kind: move
 from: shaving
 to: shorn

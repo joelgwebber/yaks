@@ -7,7 +7,7 @@ priority: 2
 created: '2026-11-01T16:23:47Z'
 updated: '2026-11-01T16:23:48Z'
 parent: yaks-039b
-labels:
+tags:
 - sheds
 - cli
 ---
@@ -24,6 +24,7 @@ That tells "nobody wrote" from "nobody synced". Skills say it too (coordinating 
 
 ---
 ▸ 2026-11-01T16:23:47Z [yakherd]
+
 kind: move
 from: hairy
 to: shaving
@@ -33,6 +34,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T16:23:47Z [yakherd]
+
 kind: landed
 commit: 9077f6c16120aec4b9089bce3f7359b620aec2a0
 branch: main
@@ -42,6 +44,7 @@ Landed `9077f6c`. Evidence: unit test `json_carries_everyone_and_the_farm_freshn
 
 ---
 ▸ 2026-11-01T16:23:48Z [yakherd]
+
 kind: move
 from: shaving
 to: shorn

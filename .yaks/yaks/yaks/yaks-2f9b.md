@@ -9,7 +9,7 @@ updated: '2026-10-04T04:50:02Z'
 parent: yaks-b5a0
 depends_on:
 - yaks-5c9f
-labels:
+tags:
 - skills
 - delta
 ---

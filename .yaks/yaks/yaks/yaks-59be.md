@@ -6,7 +6,7 @@ type: task
 priority: 3
 created: '2026-10-27T13:02:35Z'
 updated: '2026-10-27T13:02:35Z'
-labels:
+tags:
 - tui
 ---
 

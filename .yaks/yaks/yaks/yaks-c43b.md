@@ -6,7 +6,7 @@ type: feature
 priority: 3
 created: '2026-10-21T21:59:33Z'
 updated: '2026-10-21T21:59:33Z'
-labels:
+tags:
 - tui
 - git
 ---

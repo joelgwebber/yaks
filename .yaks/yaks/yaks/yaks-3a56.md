@@ -11,7 +11,7 @@ depends_on:
 - yaks-86f4
 - yaks-9f91
 - yaks-ca28
-labels:
+tags:
 - cli
 - skills
 - release

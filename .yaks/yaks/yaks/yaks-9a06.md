@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-16T20:44:03Z'
 updated: '2026-10-22T03:49:43Z'
 parent: yaks-9eaa
-labels:
+tags:
 - sheds
 ---
 

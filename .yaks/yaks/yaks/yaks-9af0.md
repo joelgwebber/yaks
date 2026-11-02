@@ -10,7 +10,7 @@ parent: yaks-f301
 depends_on:
 - yaks-1f34
 - yaks-37da
-labels:
+tags:
 - wiki
 - cli
 verify: cargo test --workspace
@@ -20,6 +20,7 @@ Implements yaks-aae6 on yaks-1f34. Reserved names `wiki`, `sources`, `schemas`; 
 
 ---
 ▸ 2026-11-01T20:26:23Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -30,6 +31,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T20:34:04Z [delta:farm-wiki]
+
 kind: checkpoint
 branch: wiki
 commit: 62f4475
@@ -55,6 +57,7 @@ Not here: schema checks for typed kinds (yaks-8e75), links and refs over pages (
 
 ---
 ▸ 2026-11-01T20:35:11Z [delta:farm-wiki]
+
 kind: verify
 result: pass
 ---
@@ -63,6 +66,7 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-11-01T20:35:12Z [delta:farm-wiki]
+
 kind: move
 from: shaving
 to: shorn

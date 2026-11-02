@@ -7,7 +7,7 @@ priority: 2
 created: '2026-09-03T18:02:05Z'
 updated: '2026-09-03T18:10:43Z'
 parent: yaks-3901
-labels:
+tags:
 - store
 - ui
 ---

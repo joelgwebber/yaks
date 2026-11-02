@@ -9,7 +9,7 @@ updated: '2026-10-21T21:11:20Z'
 parent: yaks-472e
 depends_on:
 - yaks-4a53
-labels:
+tags:
 - git
 - cli
 ---

@@ -7,7 +7,7 @@ priority: 1
 created: '2026-11-01T18:52:37Z'
 updated: '2026-11-01T20:09:15Z'
 parent: yaks-7708
-labels:
+tags:
 - wiki
 - links
 ---
@@ -48,6 +48,7 @@ One link grammar for yaks and pages, covering farm documents, the code repo, com
 
 ---
 ▸ 2026-11-01T18:53:39Z [delta:farm-wiki]
+
 kind: ask
 needs: human
 ---
@@ -60,6 +61,7 @@ asked: needs human
 
 ---
 ▸ 2026-11-01T19:59:06Z [Joel Webber]
+
 kind: answer
 needs: agent
 ---
@@ -70,6 +72,7 @@ needs: agent
 
 ---
 ▸ 2026-11-01T20:09:15Z [delta:farm-wiki]
+
 kind: pickup
 ---
 
@@ -83,6 +86,7 @@ Decision (Joel, 2026-11-01):
 
 ---
 ▸ 2026-11-01T20:09:15Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shorn

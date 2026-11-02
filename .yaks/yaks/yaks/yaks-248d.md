@@ -8,7 +8,7 @@ created: '2026-10-12T14:05:15Z'
 updated: '2026-10-26T21:00:47Z'
 depends_on:
 - yaks-b048
-labels:
+tags:
 - skills
 ---
 

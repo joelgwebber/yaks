@@ -7,7 +7,7 @@ priority: 2
 created: '2026-11-01T22:27:16Z'
 updated: '2026-11-01T23:51:09Z'
 parent: yaks-d26a
-labels:
+tags:
 - wiki
 - cli
 verify: cargo test --workspace
@@ -17,6 +17,7 @@ Hearth has wiki_search and source_search; yaks search only matches yak id/title/
 
 ---
 ▸ 2026-11-01T23:20:50Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -70,6 +71,7 @@ Started 2026-11-01T23:22:38Z. Checkout: /Users/joel/src/yaks/.delta/worktrees/59
 
 ---
 ▸ 2026-11-01T23:39:01Z [find-1]
+
 kind: verify
 result: fail
 ---
@@ -78,6 +80,7 @@ verify: `cd /Users/joel/src/yaks/.delta/worktrees/59zfz4ga383n/yaks && cargo tes
 
 ---
 ▸ 2026-11-01T23:39:36Z [find-1]
+
 kind: verify
 result: fail
 ---
@@ -86,6 +89,7 @@ verify: `cd /Users/joel/src/yaks/.delta/worktrees/59zfz4ga383n/yaks && cargo tes
 
 ---
 ▸ 2026-11-01T23:40:02Z [find-1]
+
 kind: verify
 result: pass
 ---
@@ -94,6 +98,7 @@ verify: `env | grep -E "^(GIT|HOME|XDG|USER)" > /tmp/find1-env.txt; git config u
 
 ---
 ▸ 2026-11-01T23:44:56Z [find-1]
+
 kind: verify
 result: pass
 ---
@@ -126,6 +131,7 @@ Gate note: in this shell git has no identity for test repos with HOME overridden
 
 ---
 ▸ 2026-11-01T23:45:17Z [find-1]
+
 kind: move
 from: shaving
 to: shorn
@@ -136,6 +142,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-11-01T23:45:48Z [delta:farm-wiki]
+
 kind: landed
 commit: be9d80b6c77cbf3fd90917ca4d619966aa4523b1
 source: 9e9eea76eeb63d04cf7121b9855cd919145d756c

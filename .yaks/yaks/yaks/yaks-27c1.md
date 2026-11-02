@@ -7,7 +7,7 @@ priority: 2
 created: '2026-11-01T16:43:15Z'
 updated: '2026-11-01T17:22:27Z'
 parent: yaks-9b41
-labels:
+tags:
 - cli
 ---
 
@@ -29,6 +29,7 @@ Design fork (behavior change): see the ask on yaks-9b41.
 
 ---
 ▸ 2026-11-01T17:16:54Z [yakherd]
+
 kind: move
 from: hairy
 to: shaving
@@ -39,6 +40,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T17:22:27Z [yakherd]
+
 kind: landed
 sha: 7a314e2
 ---
@@ -55,6 +57,7 @@ Evidence: `cargo test --workspace --locked` green in the CI-like env; updated `s
 
 ---
 ▸ 2026-11-01T17:22:27Z [yakherd]
+
 kind: move
 from: shaving
 to: shorn

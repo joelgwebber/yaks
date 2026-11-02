@@ -6,7 +6,7 @@ type: feature
 priority: 2
 created: '2026-10-17T04:23:51Z'
 updated: '2026-10-27T01:18:53Z'
-labels:
+tags:
 - markdown
 - tui
 ---

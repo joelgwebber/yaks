@@ -7,7 +7,7 @@ priority: 3
 created: '2026-10-03T23:32:45Z'
 updated: '2026-10-04T05:16:45Z'
 parent: yaks-b5a0
-labels:
+tags:
 - cli
 - agent
 ---

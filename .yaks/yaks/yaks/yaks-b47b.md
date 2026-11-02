@@ -6,7 +6,7 @@ type: bug
 priority: 3
 created: '2026-09-23T03:52:41Z'
 updated: '2026-10-27T01:19:38Z'
-labels:
+tags:
 - cli
 - herds
 ---

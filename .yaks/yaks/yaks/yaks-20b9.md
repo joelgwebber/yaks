@@ -6,7 +6,7 @@ type: task
 priority: 2
 created: '2026-08-22T21:58:56Z'
 updated: '2026-08-22T22:19:35Z'
-labels:
+tags:
 - rust
 - tui
 - crate

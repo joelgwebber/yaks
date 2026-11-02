@@ -7,7 +7,7 @@ priority: 2
 created: '2026-11-01T20:09:16Z'
 updated: '2026-11-01T22:51:31Z'
 parent: yaks-200f
-labels:
+tags:
 - wiki
 - tui
 ---
@@ -16,6 +16,7 @@ Decided on yaks-63c3: the TUI syncs the farm on a regular interval (fetch, merge
 
 ---
 ▸ 2026-11-01T22:25:16Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -73,6 +74,7 @@ Evidence: unit tests in src/tui/farmsync.rs (interval/skip rules, env switch, no
 
 ---
 ▸ 2026-11-01T22:45:05Z [sync-1]
+
 kind: verify
 result: pass
 ---
@@ -81,6 +83,7 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-11-01T22:45:09Z [sync-1]
+
 kind: move
 from: shaving
 to: shorn
@@ -91,6 +94,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-11-01T22:46:02Z [delta:farm-wiki]
+
 kind: landed
 commit: 6a225507d92e83e6390ee0859737771d03853f4a
 source: 44728a02d51491902a6144f740358a92fdcfadf9

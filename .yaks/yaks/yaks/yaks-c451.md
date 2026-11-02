@@ -6,7 +6,7 @@ type: idea
 priority: 4
 created: '2026-09-06T23:25:51Z'
 updated: '2026-10-18T05:46:39Z'
-labels:
+tags:
 - docs
 - tui
 ---

@@ -6,7 +6,7 @@ type: task
 priority: 2
 created: '2026-10-27T22:29:18Z'
 updated: '2026-10-31T15:09:03Z'
-labels:
+tags:
 - cli
 - docs
 - git

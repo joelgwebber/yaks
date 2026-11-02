@@ -14,7 +14,7 @@ depends_on:
 - yaks-2a15
 - yaks-d168
 - yaks-114a
-labels:
+tags:
 - edtui
 - upstream
 ---

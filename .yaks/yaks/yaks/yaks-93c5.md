@@ -7,7 +7,7 @@ priority: 2
 created: '2026-11-01T16:43:15Z'
 updated: '2026-11-01T17:31:48Z'
 parent: yaks-9b41
-labels:
+tags:
 - skills
 ---
 
@@ -27,6 +27,7 @@ Then replace the Workflow lines, `yaks-working` 2 and 7 and coordinating Reconci
 
 ---
 ▸ 2026-11-01T17:30:52Z [yakherd]
+
 kind: move
 from: hairy
 to: shaving
@@ -37,6 +38,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T17:31:47Z [yakherd]
+
 kind: landed
 sha: ea50761
 ---
@@ -51,6 +53,7 @@ Evidence: `cargo test --bin yaks skills` (37 pass, BUNDLED guard); grep for "its
 
 ---
 ▸ 2026-11-01T17:31:48Z [yakherd]
+
 kind: move
 from: shaving
 to: shorn

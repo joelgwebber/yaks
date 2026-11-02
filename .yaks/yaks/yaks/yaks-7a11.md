@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-31T15:18:27Z'
 updated: '2026-10-31T17:24:18Z'
 parent: yaks-039b
-labels:
+tags:
 - git
 - cli
 ---
@@ -87,6 +87,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-10-31T16:52:20Z [yakherd]
+
 kind: landed
 commit: c4bde339f2ad7cda9531ca9d8c1d3cee8a13655b
 branch: main
@@ -96,6 +97,7 @@ landed: c4bde33 yaks-7a11: yaks commits greps the code repository (all branches)
 
 ---
 ▸ 2026-10-31T17:24:18Z [yakherd]
+
 kind: landed
 commit: ffe8a66146a81c4bbc01133788d3f15ba540b4b0
 branch: main

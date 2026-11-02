@@ -7,7 +7,7 @@ priority: 2
 created: '2026-11-01T15:37:47Z'
 updated: '2026-11-01T16:08:19Z'
 parent: yaks-039b
-labels:
+tags:
 - cli
 - skills
 ---
@@ -33,6 +33,7 @@ Whether names carry a harness prefix (`delta:herd`, `delta:door-2`) by conventio
 
 ---
 ▸ 2026-11-01T15:37:47Z [yakherd]
+
 kind: ask
 needs: human
 ---
@@ -48,6 +49,7 @@ Either way: the persistent per-checkout actor, the title-prefix fallback, and th
 
 ---
 ▸ 2026-11-01T15:54:38Z [Joel Webber]
+
 kind: answer
 needs: agent
 ---
@@ -56,6 +58,7 @@ Good catch on the stable thread id question fits into this. I'm not entirely cer
 
 ---
 ▸ 2026-11-01T15:59:34Z [yakherd]
+
 kind: pickup
 ---
 
@@ -70,6 +73,7 @@ Plan: a persistent per-checkout name (`yaks whoami --set`, stored as `git config
 
 ---
 ▸ 2026-11-01T15:59:34Z [yakherd]
+
 kind: move
 from: hairy
 to: shaving
@@ -106,6 +110,7 @@ Landed in `906379f` (not released yet).
 
 ---
 ▸ 2026-11-01T16:08:19Z [yakherd]
+
 kind: landed
 commit: 906379f2e3d24efa1b2ad9d83db9e7c6ec6fcd9e
 branch: main
@@ -115,6 +120,7 @@ landed: 906379f
 
 ---
 ▸ 2026-11-01T16:08:19Z [yakherd]
+
 kind: move
 from: shaving
 to: shorn

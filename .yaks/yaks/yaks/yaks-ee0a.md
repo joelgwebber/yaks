@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-06T21:05:37Z'
 updated: '2026-10-27T01:18:54Z'
 parent: yaks-b5a0
-labels:
+tags:
 - cli
 - design
 ---

@@ -6,7 +6,7 @@ type: feature
 priority: 1
 created: '2026-11-01T18:52:36Z'
 updated: '2026-11-02T00:36:33Z'
-labels:
+tags:
 - wiki
 - design
 ---
@@ -52,6 +52,7 @@ Plan (delta:farm-wiki, 2026-11-01): the family is filed, layer by layer, with de
 
 ---
 ▸ 2026-11-01T18:53:40Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving

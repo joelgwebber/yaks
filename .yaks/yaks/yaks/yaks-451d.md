@@ -6,7 +6,7 @@ type: bug
 priority: 3
 created: '2026-09-21T21:01:13Z'
 updated: '2026-09-21T21:02:22Z'
-labels:
+tags:
 - config
 - cli
 ---

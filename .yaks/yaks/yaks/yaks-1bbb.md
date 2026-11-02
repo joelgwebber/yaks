@@ -9,7 +9,7 @@ updated: '2026-10-17T05:33:15Z'
 parent: yaks-ea13
 depends_on:
 - yaks-649d
-labels:
+tags:
 - markdown
 - tui
 ---

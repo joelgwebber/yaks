@@ -6,7 +6,7 @@ type: bug
 priority: 3
 created: '2026-08-23T14:38:59Z'
 updated: '2026-10-27T19:08:11Z'
-labels:
+tags:
 - search
 - tui
 needs: human

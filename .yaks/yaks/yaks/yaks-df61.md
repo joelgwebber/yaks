@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-03T20:35:54Z'
 updated: '2026-10-19T04:27:08Z'
 parent: yaks-b5a0
-labels:
+tags:
 - delta
 - agent
 ---

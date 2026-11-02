@@ -6,7 +6,7 @@ type: feature
 priority: 3
 created: '2026-10-04T20:50:20Z'
 updated: '2026-10-26T22:01:42Z'
-labels:
+tags:
 - cli
 - agent
 ---

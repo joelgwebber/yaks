@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-31T15:58:01Z'
 updated: '2026-10-31T17:24:20Z'
 parent: yaks-039b
-labels:
+tags:
 - store
 ---
 
@@ -56,6 +56,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-10-31T16:52:20Z [yakherd]
+
 kind: landed
 commit: 7f78a28c82f9f04486208814cdbfacaf3d08d937
 branch: main
@@ -65,6 +66,7 @@ landed: 7f78a28 yaks-4cd7, yaks-6a11: fence-aware note boundaries; note metadata
 
 ---
 ▸ 2026-10-31T17:24:20Z [yakherd]
+
 kind: landed
 commit: 1dfb324a06776fee6fa2aac4210e2da3a57d9f9c
 branch: main

@@ -9,7 +9,7 @@ updated: '2026-10-21T21:44:08Z'
 parent: yaks-472e
 depends_on:
 - yaks-e3b2
-labels:
+tags:
 - tui
 - git
 ---

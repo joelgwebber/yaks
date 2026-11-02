@@ -7,7 +7,7 @@ priority: 2
 created: '2026-09-03T17:58:45Z'
 updated: '2026-09-04T17:07:48Z'
 parent: yaks-3901
-labels:
+tags:
 - agent
 - ui
 ---

@@ -9,7 +9,7 @@ updated: '2026-10-17T17:59:57Z'
 parent: yaks-a893
 depends_on:
 - yaks-597d
-labels:
+tags:
 - tui
 ---
 

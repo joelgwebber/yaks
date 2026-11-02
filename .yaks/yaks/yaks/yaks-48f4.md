@@ -6,7 +6,7 @@ type: chore
 priority: 2
 created: '2026-10-01T13:51:14Z'
 updated: '2026-10-01T13:52:20Z'
-labels:
+tags:
 - build
 - toque
 ---

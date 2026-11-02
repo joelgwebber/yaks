@@ -7,7 +7,7 @@ priority: 1
 created: '2026-10-18T05:15:36Z'
 updated: '2026-10-18T05:24:22Z'
 parent: yaks-6a34
-labels:
+tags:
 - cli
 - sheds
 ---

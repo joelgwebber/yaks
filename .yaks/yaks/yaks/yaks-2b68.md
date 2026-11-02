@@ -7,7 +7,7 @@ priority: 2
 created: '2026-11-01T18:53:12Z'
 updated: '2026-11-01T22:21:39Z'
 parent: yaks-f301
-labels:
+tags:
 - wiki
 - git
 verify: cargo test --workspace
@@ -17,6 +17,7 @@ Implements yaks-9756. Measure first (pack size, commits, largest blobs) on this 
 
 ---
 ▸ 2026-11-01T22:12:17Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -29,6 +30,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T22:19:22Z [delta:farm-wiki]
+
 kind: checkpoint
 branch: wiki
 commit: a94991c
@@ -52,6 +54,7 @@ Tests: `tests/weight.rs` covers the report and LFS end to end, and skips when gi
 
 ---
 ▸ 2026-11-01T22:21:39Z [delta:farm-wiki]
+
 kind: verify
 result: pass
 ---
@@ -60,6 +63,7 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-11-01T22:21:39Z [delta:farm-wiki]
+
 kind: move
 from: shaving
 to: shorn

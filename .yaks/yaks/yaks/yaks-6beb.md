@@ -7,7 +7,7 @@ priority: 4
 created: '2026-10-10T15:44:44Z'
 updated: '2026-10-31T16:52:21Z'
 parent: yaks-d3ad
-labels:
+tags:
 - cli
 - delta
 ---
@@ -56,6 +56,7 @@ Obsolete: the code this concerns was removed in `b2e4638` (`yaks-d3ad`). Slaught
 
 ---
 ▸ 2026-10-31T16:52:21Z [yakherd]
+
 kind: move
 from: hairy
 to: dead

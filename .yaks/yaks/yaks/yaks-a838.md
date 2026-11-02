@@ -7,7 +7,7 @@ priority: 1
 created: '2026-11-01T18:53:11Z'
 updated: '2026-11-01T21:19:00Z'
 parent: yaks-f301
-labels:
+tags:
 - wiki
 - git
 verify: cargo test --workspace
@@ -17,6 +17,7 @@ Implements yaks-63c3 (commit half). Every mutating command commits exactly its o
 
 ---
 ▸ 2026-11-01T20:51:43Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -27,6 +28,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T21:17:07Z [delta:farm-wiki]
+
 kind: checkpoint
 branch: wiki
 commit: db3ad28
@@ -62,6 +64,7 @@ Done on the `wiki` branch.
 
 ---
 ▸ 2026-11-01T21:19:00Z [delta:farm-wiki]
+
 kind: verify
 result: pass
 ---
@@ -70,6 +73,7 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-11-01T21:19:00Z [delta:farm-wiki]
+
 kind: move
 from: shaving
 to: shorn

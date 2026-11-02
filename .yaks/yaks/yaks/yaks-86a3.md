@@ -6,7 +6,7 @@ type: task
 priority: 3
 created: '2026-08-20T03:25:50Z'
 updated: '2026-08-22T02:57:35Z'
-labels:
+tags:
 - rust
 - phase2
 ---

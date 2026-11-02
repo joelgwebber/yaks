@@ -7,7 +7,7 @@ priority: 2
 created: '2026-09-04T17:08:35Z'
 updated: '2026-10-27T02:36:17Z'
 parent: yaks-2ebe
-labels:
+tags:
 - cli
 ---
 

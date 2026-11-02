@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-31T15:17:35Z'
 updated: '2026-10-31T17:24:18Z'
 parent: yaks-039b
-labels:
+tags:
 - sheds
 - cli
 verify: GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false cargo test --workspace
@@ -185,6 +185,7 @@ Committed a60d67c (rebuild).
 
 ---
 ▸ 2026-10-31T16:50:04Z [delta:Cloud Runners]
+
 kind: landed
 commit: 7393e452d215d409cebfb1c721d62506e3bd6b54
 source: a60d67cf1ad2a15316b9202da8fff4c06966b25e
@@ -195,6 +196,7 @@ landed: 7393e45 yaks-da23: rebuild yaks sheds from note attribution, one row per
 
 ---
 ▸ 2026-10-31T17:24:18Z [yakherd]
+
 kind: landed
 commit: 088275173b8a23948526668392647c629b1cfa66
 branch: main

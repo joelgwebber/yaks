@@ -6,7 +6,7 @@ type: chore
 priority: 3
 created: '2026-10-22T19:40:02Z'
 updated: '2026-10-22T19:40:12Z'
-labels:
+tags:
 - docs
 verify: cargo test --bin yaks skills
 ---

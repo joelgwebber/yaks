@@ -6,7 +6,7 @@ type: feature
 priority: 3
 created: '2026-09-21T19:30:58Z'
 updated: '2026-09-21T19:42:04Z'
-labels:
+tags:
 - ui
 ---
 

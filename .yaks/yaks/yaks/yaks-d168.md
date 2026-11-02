@@ -7,7 +7,7 @@ priority: 2
 created: '2026-08-24T22:12:10Z'
 updated: '2026-08-25T03:52:21Z'
 parent: yaks-6099
-labels:
+tags:
 - ui
 - edtui
 - upstream

@@ -6,7 +6,7 @@ type: bug
 priority: 3
 created: '2026-09-21T20:15:03Z'
 updated: '2026-10-27T01:19:37Z'
-labels:
+tags:
 - herds
 ---
 

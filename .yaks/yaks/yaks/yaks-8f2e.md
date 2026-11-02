@@ -9,7 +9,7 @@ updated: '2026-10-22T00:59:43Z'
 parent: yaks-73f4
 depends_on:
 - yaks-b048
-labels:
+tags:
 - docs
 - skills
 ---

@@ -6,7 +6,7 @@ type: task
 priority: 2
 created: '2026-11-01T22:53:27Z'
 updated: '2026-11-01T22:53:27Z'
-labels:
+tags:
 - agent
 - cli
 ---

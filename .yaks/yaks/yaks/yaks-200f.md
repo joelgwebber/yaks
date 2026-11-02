@@ -7,7 +7,7 @@ priority: 2
 created: '2026-11-01T18:53:12Z'
 updated: '2026-11-02T00:35:38Z'
 parent: yaks-44b3
-labels:
+tags:
 - wiki
 - tui
 ---
@@ -16,6 +16,7 @@ Layer 3. Builds on yaks-84e0 (shared navigation in text and markdown views) and 
 
 ---
 ▸ 2026-11-01T22:25:16Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -32,6 +33,7 @@ TUI layer complete on `wiki`. Landed: the shared viewer navigation (yaks-84e0), 
 
 ---
 ▸ 2026-11-02T00:35:38Z [delta:farm-wiki]
+
 kind: move
 from: shaving
 to: shorn

@@ -9,7 +9,7 @@ updated: '2026-08-20T03:38:00Z'
 parent: yaks-6e21
 depends_on:
 - yaks-6b8c
-labels:
+tags:
 - rust
 ---
 

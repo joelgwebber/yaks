@@ -7,7 +7,7 @@ priority: 3
 created: '2026-09-06T23:02:22Z'
 updated: '2026-09-06T23:47:04Z'
 parent: yaks-012b
-labels:
+tags:
 - docs
 ---
 

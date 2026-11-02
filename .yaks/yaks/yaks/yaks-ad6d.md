@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-10T17:21:10Z'
 updated: '2026-10-27T01:19:38Z'
 parent: yaks-ee0a
-labels:
+tags:
 - cli
 - delta
 verify: cargo test --release

@@ -6,7 +6,7 @@ type: bug
 priority: 3
 created: '2026-10-10T13:59:36Z'
 updated: '2026-10-10T13:59:36Z'
-labels:
+tags:
 - ci
 - tests
 ---

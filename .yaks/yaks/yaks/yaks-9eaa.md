@@ -6,7 +6,7 @@ type: feature
 priority: 2
 created: '2026-10-18T05:15:36Z'
 updated: '2026-10-22T03:26:28Z'
-labels:
+tags:
 - sheds
 - cli
 - tui

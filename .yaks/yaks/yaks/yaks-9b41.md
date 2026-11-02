@@ -6,7 +6,7 @@ type: feature
 priority: 1
 created: '2026-10-13T18:04:15Z'
 updated: '2026-11-01T17:31:48Z'
-labels:
+tags:
 - doctor
 - skills
 ---
@@ -43,6 +43,7 @@ One "Families" section in the `yaks` skill (the invariant, graduating a child, w
 
 ---
 ▸ 2026-11-01T16:43:28Z [yakherd]
+
 kind: move
 from: hairy
 to: shaving
@@ -53,6 +54,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T16:43:28Z [yakherd]
+
 kind: ask
 needs: human
 ---
@@ -69,6 +71,7 @@ Not doing, from the runner's list: `shorn --family` (shears unfinished work with
 
 ---
 ▸ 2026-11-01T17:16:17Z [Joel Webber]
+
 kind: answer
 needs: agent
 ---
@@ -78,6 +81,7 @@ needs: agent
 
 ---
 ▸ 2026-11-01T17:16:53Z [yakherd]
+
 kind: pickup
 ---
 
@@ -100,6 +104,7 @@ Evidence is on each child; the gate (`cargo test --workspace --locked`, CI-like 
 
 ---
 ▸ 2026-11-01T17:31:48Z [yakherd]
+
 kind: move
 from: shaving
 to: shorn

@@ -9,7 +9,7 @@ updated: '2026-11-01T21:28:37Z'
 parent: yaks-f301
 depends_on:
 - yaks-9af0
-labels:
+tags:
 - wiki
 - cli
 verify: cargo test --workspace
@@ -19,6 +19,7 @@ Implements the sources half of yaks-aae6. Port of Hearth's local-file and direct
 
 ---
 ▸ 2026-11-01T21:19:21Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -29,6 +30,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T21:26:40Z [delta:farm-wiki]
+
 kind: checkpoint
 branch: wiki
 commit: 738326c
@@ -57,6 +59,7 @@ Done on the `wiki` branch.
 
 ---
 ▸ 2026-11-01T21:28:37Z [delta:farm-wiki]
+
 kind: verify
 result: pass
 ---
@@ -65,6 +68,7 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-11-01T21:28:37Z [delta:farm-wiki]
+
 kind: move
 from: shaving
 to: shorn

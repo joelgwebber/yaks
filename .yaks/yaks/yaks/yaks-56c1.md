@@ -7,7 +7,7 @@ priority: 3
 created: '2026-10-18T06:15:31Z'
 updated: '2026-10-18T20:13:09Z'
 parent: yaks-699b
-labels:
+tags:
 - tui
 - attach
 ---

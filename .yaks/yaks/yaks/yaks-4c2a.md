@@ -9,7 +9,7 @@ updated: '2026-10-31T17:24:19Z'
 parent: yaks-039b
 depends_on:
 - yaks-6a11
-labels:
+tags:
 - skills
 ---
 
@@ -48,6 +48,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-10-31T16:52:20Z [yakherd]
+
 kind: landed
 commit: 45bfc8b32107b8dd51485d6a3872e483f0b909cb
 branch: main
@@ -57,6 +58,7 @@ landed: 45bfc8b yaks-4c2a, yaks-0071: skills put design Q&A on yak asks; note me
 
 ---
 ▸ 2026-10-31T17:24:15Z [yakherd]
+
 kind: landed
 commit: 931d4e4af524e4e2ca47ca160ec8916e8b2763ec
 branch: main
@@ -66,6 +68,7 @@ landed (rebased onto `c2b640f`, your checkout's `main`): 931d4e4 yaks-0071, yaks
 
 ---
 ▸ 2026-10-31T17:24:19Z [yakherd]
+
 kind: landed
 commit: ceb6d57c5e0c8ee7028111f4a19ab17abc194fca
 branch: main

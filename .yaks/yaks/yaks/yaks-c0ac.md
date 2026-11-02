@@ -10,7 +10,7 @@ parent: yaks-d26a
 depends_on:
 - yaks-101d
 - yaks-2c42
-labels:
+tags:
 - wiki
 - cli
 verify: cargo test --workspace
@@ -20,6 +20,7 @@ Hearth's nightly check minus what needs a model: `stale_after` past, sources no 
 
 ---
 ▸ 2026-11-01T22:22:23Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -89,6 +90,7 @@ Decision: `check` prints no skills advisory (doctor's render_skill_advisory is e
 
 ---
 ▸ 2026-11-01T22:42:28Z [check-1]
+
 kind: verify
 result: pass
 ---
@@ -102,6 +104,7 @@ Summary: yaks check landed in src/check.rs (+Check in main.rs), tests/check.rs, 
 
 ---
 ▸ 2026-11-01T22:42:33Z [check-1]
+
 kind: move
 from: shaving
 to: shorn
@@ -112,6 +115,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-11-01T22:43:03Z [delta:farm-wiki]
+
 kind: landed
 commit: 206f23dda065c2a7e19a5cf0fb25dcac76cd6bad
 source: 47954199f5a8d471abb24888a1902ab56d589340

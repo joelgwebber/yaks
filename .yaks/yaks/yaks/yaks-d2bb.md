@@ -7,7 +7,7 @@ priority: 3
 created: '2026-10-17T02:41:42Z'
 updated: '2026-10-27T01:16:24Z'
 parent: yaks-e9de
-labels:
+tags:
 - markdown
 - rendering
 - tui

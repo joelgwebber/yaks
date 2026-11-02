@@ -6,7 +6,7 @@ type: idea
 priority: 5
 created: '2026-08-31T20:46:52Z'
 updated: '2026-10-19T04:26:23Z'
-labels:
+tags:
 - git
 ---
 

@@ -6,7 +6,7 @@ type: task
 priority: 1
 created: '2026-10-02T05:05:36Z'
 updated: '2026-10-27T01:18:54Z'
-labels:
+tags:
 - linux
 ---
 

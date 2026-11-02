@@ -7,7 +7,7 @@ priority: 2
 created: '2026-08-20T22:58:15Z'
 updated: '2026-08-21T01:24:30Z'
 parent: yaks-86a3
-labels:
+tags:
 - rust
 - ui
 ---

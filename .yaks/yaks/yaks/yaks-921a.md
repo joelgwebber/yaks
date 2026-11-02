@@ -9,7 +9,7 @@ updated: '2026-08-26T13:50:45Z'
 parent: yaks-fc85
 depends_on:
 - yaks-a031
-labels:
+tags:
 - ui
 ---
 

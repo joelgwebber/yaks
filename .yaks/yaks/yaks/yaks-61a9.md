@@ -6,7 +6,7 @@ type: bug
 priority: 1
 created: '2026-08-30T19:03:40Z'
 updated: '2026-09-23T01:46:33Z'
-labels:
+tags:
 - ui
 - crash
 ---

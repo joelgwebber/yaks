@@ -6,7 +6,7 @@ type: bug
 priority: 2
 created: '2026-10-17T13:21:35Z'
 updated: '2026-10-27T01:20:36Z'
-labels:
+tags:
 - sheds
 - tui
 - attach

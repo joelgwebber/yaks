@@ -6,7 +6,7 @@ type: feature
 priority: 3
 created: '2026-08-26T13:20:21Z'
 updated: '2026-10-27T01:18:55Z'
-labels:
+tags:
 - config
 - labels
 ---

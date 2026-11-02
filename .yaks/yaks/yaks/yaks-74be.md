@@ -9,7 +9,7 @@ updated: '2026-09-13T20:56:40Z'
 parent: yaks-b1cc
 depends_on:
 - yaks-2301
-labels:
+tags:
 - ui
 verify: cargo test -p yaks
 ---

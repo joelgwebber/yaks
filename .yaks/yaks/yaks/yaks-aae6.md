@@ -7,7 +7,7 @@ priority: 1
 created: '2026-11-01T18:52:36Z'
 updated: '2026-11-01T20:09:15Z'
 parent: yaks-7708
-labels:
+tags:
 - wiki
 - design
 ---
@@ -60,6 +60,7 @@ Hearth's `core/`, `instructions/`, `views/`, `schedules/` and protected paths ar
 
 ---
 ▸ 2026-11-01T18:53:39Z [delta:farm-wiki]
+
 kind: ask
 needs: human
 ---
@@ -74,6 +75,7 @@ Three choices in the layout; I'm building on the leans unless you say otherwise.
 
 ---
 ▸ 2026-11-01T20:02:20Z [Joel Webber]
+
 kind: answer
 needs: agent
 ---
@@ -84,6 +86,7 @@ needs: agent
 
 ---
 ▸ 2026-11-01T20:09:14Z [delta:farm-wiki]
+
 kind: pickup
 ---
 
@@ -97,6 +100,7 @@ Decision (Joel, 2026-11-01): all three leans accepted.
 
 ---
 ▸ 2026-11-01T20:09:15Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shorn

@@ -7,7 +7,7 @@ priority: 2
 created: '2026-09-08T02:07:57Z'
 updated: '2026-09-24T02:28:06Z'
 parent: yaks-6624
-labels:
+tags:
 - eval
 - cli
 verify: cargo test -p yaks verify

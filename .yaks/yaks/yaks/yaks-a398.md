@@ -7,7 +7,7 @@ priority: 3
 created: '2026-10-05T20:57:26Z'
 updated: '2026-10-05T22:43:08Z'
 parent: yaks-df61
-labels:
+tags:
 - delta
 - skills
 ---

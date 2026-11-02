@@ -9,7 +9,7 @@ updated: '2026-10-31T17:12:33Z'
 parent: yaks-039b
 depends_on:
 - yaks-bdf9
-labels:
+tags:
 - git
 - sheds
 - design
@@ -70,6 +70,7 @@ Done: `yaks-4728` (commits --fetch, checkpoint branch on sheds rows) on top of `
 
 ---
 ▸ 2026-10-31T17:12:33Z [yakherd]
+
 kind: move
 from: shaving
 to: shorn

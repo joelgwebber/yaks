@@ -6,7 +6,7 @@ type: task
 priority: 3
 created: '2026-10-22T00:42:06Z'
 updated: '2026-10-22T00:42:06Z'
-labels:
+tags:
 - cli
 - bug
 ---

@@ -6,7 +6,7 @@ type: idea
 priority: 3
 created: '2026-08-23T02:49:59Z'
 updated: '2026-10-27T01:19:38Z'
-labels:
+tags:
 - agent
 ---
 

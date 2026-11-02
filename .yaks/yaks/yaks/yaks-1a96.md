@@ -6,7 +6,7 @@ type: idea
 priority: 4
 created: '2026-09-08T22:56:46Z'
 updated: '2026-09-24T02:28:06Z'
-labels:
+tags:
 - ui
 - docs
 ---

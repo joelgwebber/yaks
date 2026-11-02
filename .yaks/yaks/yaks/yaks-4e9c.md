@@ -6,7 +6,7 @@ type: feature
 priority: 3
 created: '2026-10-22T20:35:28Z'
 updated: '2026-10-27T01:20:40Z'
-labels:
+tags:
 - tui
 - images
 verify: cargo test --workspace

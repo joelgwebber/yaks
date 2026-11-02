@@ -7,7 +7,7 @@ priority: 1
 created: '2026-11-01T18:53:10Z'
 updated: '2026-11-01T19:13:42Z'
 parent: yaks-f301
-labels:
+tags:
 - wiki
 - schema
 verify: cargo test --workspace
@@ -17,6 +17,7 @@ Implements yaks-8384. A `Doc { fields, body }` with an ordered key->Value map pa
 
 ---
 ▸ 2026-11-01T18:54:20Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -27,6 +28,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T19:10:46Z [delta:farm-wiki]
+
 kind: checkpoint
 branch: wiki
 commit: 8d3dd73
@@ -52,6 +54,7 @@ Not done here: field specs and merge rules per key (yaks-8e75 for schemas, yaks-
 
 ---
 ▸ 2026-11-01T19:10:48Z [delta:farm-wiki]
+
 kind: verify
 result: fail
 ---
@@ -60,6 +63,7 @@ verify: `cargo test --workspace` -> FAIL (exit 101)
 
 ---
 ▸ 2026-11-01T19:10:48Z [delta:farm-wiki]
+
 kind: move
 from: shaving
 to: shorn
@@ -70,6 +74,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-11-01T19:10:53Z [delta:farm-wiki]
+
 kind: move
 from: shorn
 to: hairy
@@ -80,6 +85,7 @@ moved: shorn -> hairy
 
 ---
 ▸ 2026-11-01T19:10:53Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -90,6 +96,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T19:13:38Z [delta:farm-wiki]
+
 kind: verify
 result: pass
 ---
@@ -98,6 +105,7 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-11-01T19:13:42Z [delta:farm-wiki]
+
 kind: checkpoint
 branch: wiki
 commit: b1135f4
@@ -107,6 +115,7 @@ Correction: my earlier gate run had a compile error in the test-only `src/tui/do
 
 ---
 ▸ 2026-11-01T19:13:42Z [delta:farm-wiki]
+
 kind: move
 from: shaving
 to: shorn

@@ -6,7 +6,7 @@ type: bug
 priority: 2
 created: '2026-11-01T01:10:22Z'
 updated: '2026-11-01T16:17:57Z'
-labels:
+tags:
 - delta
 - cli
 ---
@@ -32,6 +32,7 @@ That is exactly what yaks could do itself. A worktree added in the HOST repo is 
 
 ---
 ▸ 2026-11-01T16:17:55Z [yakherd]
+
 kind: move
 from: hairy
 to: shaving
@@ -62,6 +63,7 @@ Once released, memcraft's `scripts/runner-setup.sh` no longer needs its farm-wor
 
 ---
 ▸ 2026-11-01T16:17:56Z [yakherd]
+
 kind: landed
 commit: 5b00c04453f42139a6aec1d2b87ca153c37d719a
 branch: main
@@ -71,6 +73,7 @@ landed: 5b00c04
 
 ---
 ▸ 2026-11-01T16:17:57Z [yakherd]
+
 kind: move
 from: shaving
 to: shorn

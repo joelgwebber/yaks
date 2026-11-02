@@ -7,7 +7,7 @@ priority: 1
 created: '2026-11-01T20:09:15Z'
 updated: '2026-11-01T20:26:23Z'
 parent: yaks-f301
-labels:
+tags:
 - wiki
 - schema
 verify: cargo test --workspace
@@ -21,6 +21,7 @@ Implements the schema-7 format change decided on yaks-aae6 and yaks-8384, in one
 
 ---
 ▸ 2026-11-01T20:09:21Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -31,6 +32,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T20:25:12Z [delta:farm-wiki]
+
 kind: checkpoint
 branch: wiki
 commit: ba4245d
@@ -61,6 +63,7 @@ The shared `yaks` farm and the installed binary stay on schema 6 until the `wiki
 
 ---
 ▸ 2026-11-01T20:26:18Z [delta:farm-wiki]
+
 kind: verify
 result: pass
 ---
@@ -69,6 +72,7 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-11-01T20:26:23Z [delta:farm-wiki]
+
 kind: move
 from: shaving
 to: shorn

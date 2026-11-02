@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-04T04:49:19Z'
 updated: '2026-10-04T04:51:13Z'
 parent: yaks-7149
-labels:
+tags:
 - cli
 - agent
 - delta

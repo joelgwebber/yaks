@@ -8,7 +8,7 @@ created: '2026-10-22T20:35:28Z'
 updated: '2026-10-27T01:20:32Z'
 depends_on:
 - yaks-89fc
-labels:
+tags:
 - tui
 - images
 - markdown

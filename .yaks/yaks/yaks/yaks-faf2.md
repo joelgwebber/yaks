@@ -6,7 +6,7 @@ type: idea
 priority: 3
 created: '2026-09-10T23:45:35Z'
 updated: '2026-09-11T01:05:15Z'
-labels:
+tags:
 - meta
 ---
 

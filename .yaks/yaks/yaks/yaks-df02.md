@@ -6,7 +6,7 @@ type: task
 priority: 1
 created: '2026-10-17T13:57:13Z'
 updated: '2026-10-26T21:00:47Z'
-labels:
+tags:
 - skills
 ---
 

@@ -6,7 +6,7 @@ type: idea
 priority: 2
 created: '2026-08-20T19:29:03Z'
 updated: '2026-10-27T01:19:37Z'
-labels:
+tags:
 - rust
 - ui
 ---

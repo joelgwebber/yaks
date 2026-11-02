@@ -6,7 +6,7 @@ type: task
 priority: 2
 created: '2026-10-22T03:56:16Z'
 updated: '2026-10-22T03:58:28Z'
-labels:
+tags:
 - release
 verify: cargo test --release
 ---

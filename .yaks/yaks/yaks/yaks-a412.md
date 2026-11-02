@@ -7,7 +7,7 @@ priority: 2
 created: '2026-09-03T22:25:55Z'
 updated: '2026-10-27T01:19:37Z'
 parent: yaks-3901
-labels:
+tags:
 - skills
 - agent
 ---

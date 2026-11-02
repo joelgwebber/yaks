@@ -9,7 +9,7 @@ updated: '2026-10-31T19:28:04Z'
 parent: yaks-039b
 depends_on:
 - yaks-9eaa
-labels:
+tags:
 - tui
 ---
 

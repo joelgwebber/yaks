@@ -6,7 +6,7 @@ type: idea
 priority: 4
 created: '2026-10-17T04:25:58Z'
 updated: '2026-10-26T22:06:22Z'
-labels:
+tags:
 - markdown
 ---
 

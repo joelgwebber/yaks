@@ -6,7 +6,7 @@ type: task
 priority: 3
 created: '2026-10-22T19:53:58Z'
 updated: '2026-11-01T23:04:29Z'
-labels:
+tags:
 - tui
 ---
 
@@ -16,6 +16,7 @@ Hopefully this can share most of the code with the yak detail rendering, so that
 
 ---
 ▸ 2026-11-01T22:25:16Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -86,6 +87,7 @@ Decision: viewer Esc peels back selection, then find, then closes, like the deta
 
 ---
 ▸ 2026-11-01T23:00:21Z [nav-1]
+
 kind: verify
 result: pass
 ---
@@ -107,6 +109,7 @@ Summary (nav-1): the text/markdown viewer now navigates like the detail pane, us
 
 ---
 ▸ 2026-11-01T23:00:35Z [nav-1]
+
 kind: move
 from: shaving
 to: shorn
@@ -117,6 +120,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-11-01T23:01:18Z [delta:farm-wiki]
+
 kind: landed
 commit: 268a0c5208cbc6d0a0680c9e44310e76f25ecf80
 source: cef47ea2ee7021d97e38336b93210d9bccbbe5a0

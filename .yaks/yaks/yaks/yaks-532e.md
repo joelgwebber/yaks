@@ -6,7 +6,7 @@ type: chore
 priority: 1
 created: '2026-10-01T17:09:52Z'
 updated: '2026-10-27T02:36:15Z'
-labels:
+tags:
 - github
 - npm
 - infra

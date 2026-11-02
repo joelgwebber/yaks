@@ -7,7 +7,7 @@ priority: 3
 created: '2026-09-04T04:23:24Z'
 updated: '2026-09-04T04:25:22Z'
 parent: yaks-a412
-labels:
+tags:
 - skills
 ---
 

@@ -10,7 +10,7 @@ parent: yaks-200f
 depends_on:
 - yaks-9af0
 - yaks-84e0
-labels:
+tags:
 - wiki
 - tui
 ---
@@ -19,6 +19,7 @@ A view of `wiki/`, herd wikis and `sources/`, opening a page in the rendered mar
 
 ---
 ▸ 2026-11-01T23:04:46Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -65,6 +66,7 @@ Decision: `/` on the Wiki tab is the same inline search as the yak tabs (it edit
 
 ---
 ▸ 2026-11-01T23:49:11Z [wiki-1]
+
 kind: verify
 result: pass
 ---
@@ -86,6 +88,7 @@ Summary (wiki-1): the TUI has a Wiki tab (📖), after Starred and before Sheds.
 
 ---
 ▸ 2026-11-01T23:49:31Z [wiki-1]
+
 kind: move
 from: shaving
 to: shorn
@@ -101,6 +104,7 @@ Landed in two commits: 95b39e1 (all of it but src/tui.rs) and 06bb89d (src/tui.r
 
 ---
 ▸ 2026-11-02T00:32:22Z [delta:farm-wiki]
+
 kind: landed
 commit: f23a924c8f9c540979e5382ddbc2f5541829d7eb
 source: 95b39e16f07c947e8f58e7d2e54479c80a3f5059
@@ -111,6 +115,7 @@ landed: f23a924 yaks-ebb2: TUI Wiki tab listing pages and sources, opened in the
 
 ---
 ▸ 2026-11-02T00:32:23Z [delta:farm-wiki]
+
 kind: landed
 commit: 9e59104913802912af12a8d319d770e9988b6e5d
 source: 06bb89dfba4b674a912ecde6996e347b0e8cdfac

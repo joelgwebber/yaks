@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-04T04:49:19Z'
 updated: '2026-10-04T04:53:22Z'
 parent: yaks-2c22
-labels:
+tags:
 - cli
 - agent
 verify: cargo test -p yaks

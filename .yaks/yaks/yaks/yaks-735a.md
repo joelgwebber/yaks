@@ -9,7 +9,7 @@ updated: '2026-10-31T17:24:18Z'
 parent: yaks-bdf9
 depends_on:
 - yaks-7a11
-labels:
+tags:
 - git
 - cli
 ---
@@ -77,6 +77,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-10-31T16:52:20Z [yakherd]
+
 kind: landed
 commit: 7e4a0147b919a5f23e743cfbee7c77f087aefdb3
 branch: main
@@ -86,6 +87,7 @@ landed: 7e4a014 yaks-735a: yaks land records landed shas on the yak; yaks commit
 
 ---
 ▸ 2026-10-31T17:24:18Z [yakherd]
+
 kind: landed
 commit: b5abcb7acdbf03265dd0bea50bd91fcfcd460281
 branch: main

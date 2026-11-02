@@ -7,7 +7,7 @@ priority: 3
 created: '2026-10-17T04:25:39Z'
 updated: '2026-10-17T17:09:39Z'
 parent: yaks-d2bb
-labels:
+tags:
 - markdown
 - tui
 ---

@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-27T00:46:39Z'
 updated: '2026-10-27T00:50:59Z'
 parent: yaks-db07
-labels:
+tags:
 - cli
 ---
 

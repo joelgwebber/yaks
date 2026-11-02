@@ -6,7 +6,7 @@ type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
 updated: '2026-10-27T12:57:53Z'
-labels:
+tags:
 - tui
 needs: human
 ---

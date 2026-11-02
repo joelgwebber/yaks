@@ -6,7 +6,7 @@ type: feature
 priority: 3
 created: '2026-09-21T20:32:04Z'
 updated: '2026-10-27T19:36:12Z'
-labels:
+tags:
 - herds
 - tui
 ---

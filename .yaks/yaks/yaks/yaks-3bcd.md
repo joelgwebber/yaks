@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-13T02:02:44Z'
 updated: '2026-10-27T01:20:38Z'
 parent: yaks-e5fb
-labels:
+tags:
 - skills
 - delta
 ---

@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-31T16:17:00Z'
 updated: '2026-10-31T17:24:19Z'
 parent: yaks-6a11
-labels:
+tags:
 - cli
 - ui
 ---
@@ -91,6 +91,7 @@ Landed by the yakherd as `71ca61e` (squash of `1e6ce08`). Re-ran `cargo test --w
 
 ---
 ▸ 2026-10-31T16:52:20Z [yakherd]
+
 kind: landed
 commit: 71ca61e943004f270ffdad04850e685f7a706e41
 branch: main
@@ -100,6 +101,7 @@ landed: 71ca61e yaks-b8cd: note metadata surface: kinds from commands, update --
 
 ---
 ▸ 2026-10-31T17:24:16Z [yakherd]
+
 kind: landed
 commit: a7bc9534cefc000f38f42cf9d8a6e0a35aae7bbc
 branch: main
@@ -109,6 +111,7 @@ landed (rebased onto `c2b640f`, your checkout's `main`): a7bc953 yaks-4728, yaks
 
 ---
 ▸ 2026-10-31T17:24:19Z [yakherd]
+
 kind: landed
 commit: 920c436af1f6130790f9d82ddaf0039cdcc49a15
 branch: main

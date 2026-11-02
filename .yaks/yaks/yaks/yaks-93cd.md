@@ -9,7 +9,7 @@ updated: '2026-10-17T04:58:11Z'
 parent: yaks-faf5
 depends_on:
 - yaks-ef82
-labels:
+tags:
 - markdown
 - tui
 ---

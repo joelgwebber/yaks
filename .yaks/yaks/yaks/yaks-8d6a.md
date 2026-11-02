@@ -9,7 +9,7 @@ updated: '2026-10-18T05:46:23Z'
 parent: yaks-f04d
 depends_on:
 - yaks-b2ed
-labels:
+tags:
 - labels
 - tui
 ---

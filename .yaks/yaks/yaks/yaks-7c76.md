@@ -6,7 +6,7 @@ type: feature
 priority: 3
 created: '2026-10-17T14:22:08Z'
 updated: '2026-10-18T06:10:55Z'
-labels:
+tags:
 - cli
 - tui
 - links

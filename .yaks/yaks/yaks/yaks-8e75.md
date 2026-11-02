@@ -9,7 +9,7 @@ updated: '2026-11-01T21:36:47Z'
 parent: yaks-f301
 depends_on:
 - yaks-1f34
-labels:
+tags:
 - wiki
 - schema
 verify: cargo test --workspace
@@ -24,6 +24,7 @@ Joel (yaks-8384): `schemas/yak.md` should also carry known tags with description
 
 ---
 ▸ 2026-11-01T21:29:02Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -34,6 +35,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T21:34:45Z [delta:farm-wiki]
+
 kind: checkpoint
 branch: wiki
 commit: 21617d6
@@ -61,6 +63,7 @@ Done on the `wiki` branch.
 
 ---
 ▸ 2026-11-01T21:36:47Z [delta:farm-wiki]
+
 kind: verify
 result: pass
 ---
@@ -69,6 +72,7 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-11-01T21:36:47Z [delta:farm-wiki]
+
 kind: move
 from: shaving
 to: shorn

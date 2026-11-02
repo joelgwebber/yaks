@@ -7,7 +7,7 @@ priority: 3
 created: '2026-09-11T01:29:48Z'
 updated: '2026-09-11T02:01:57Z'
 parent: yaks-b1cc
-labels:
+tags:
 - ui
 verify: cargo test -p yaks
 ---

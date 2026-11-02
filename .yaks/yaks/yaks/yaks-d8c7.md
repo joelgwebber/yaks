@@ -7,7 +7,7 @@ priority: 2
 created: '2026-08-24T22:11:50Z'
 updated: '2026-08-24T22:19:37Z'
 parent: yaks-6099
-labels:
+tags:
 - ui
 - edtui
 ---

@@ -6,7 +6,7 @@ type: idea
 priority: 3
 created: '2026-09-08T00:50:39Z'
 updated: '2026-09-09T00:39:20Z'
-labels:
+tags:
 - eval
 ---
 

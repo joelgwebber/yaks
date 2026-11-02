@@ -7,7 +7,7 @@ priority: 3
 created: '2026-08-26T11:59:40Z'
 updated: '2026-08-26T13:55:32Z'
 parent: yaks-fc85
-labels:
+tags:
 - ui
 ---
 

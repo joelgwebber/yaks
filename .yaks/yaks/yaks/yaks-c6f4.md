@@ -9,7 +9,7 @@ updated: '2026-10-17T18:01:25Z'
 parent: yaks-faf5
 depends_on:
 - yaks-92e5
-labels:
+tags:
 - ui
 - editing
 ---

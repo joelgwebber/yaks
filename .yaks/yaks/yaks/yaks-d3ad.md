@@ -9,7 +9,7 @@ updated: '2026-10-31T17:24:17Z'
 parent: yaks-039b
 depends_on:
 - yaks-da23
-labels:
+tags:
 - sheds
 - cli
 verify: GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false cargo test --workspace
@@ -77,6 +77,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-10-31T16:50:11Z [delta:Cloud Runners]
+
 kind: landed
 commit: b2e4638ab5f8a8637551e01168be509ec833e4a3
 source: a37186b0d7ebcf21b8056d2a772fe311c7cec634
@@ -87,6 +88,7 @@ landed: b2e4638 yaks-d3ad: remove git/Delta shed discovery: yaks discover, the a
 
 ---
 ▸ 2026-10-31T17:24:17Z [yakherd]
+
 kind: landed
 commit: ec29bc2a0d8de21836be02838c849ab11bf8079f
 branch: main

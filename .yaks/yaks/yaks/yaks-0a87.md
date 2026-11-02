@@ -6,7 +6,7 @@ type: task
 priority: 2
 created: '2026-09-11T03:50:27Z'
 updated: '2026-10-05T22:43:55Z'
-labels:
+tags:
 - meta
 - skills
 ---

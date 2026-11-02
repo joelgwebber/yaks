@@ -9,7 +9,7 @@ updated: '2026-11-01T22:53:27Z'
 parent: yaks-039b
 depends_on:
 - yaks-0071
-labels:
+tags:
 - skills
 - agent
 ---

@@ -6,7 +6,7 @@ type: idea
 priority: 4
 created: '2026-09-09T00:38:19Z'
 updated: '2026-10-27T22:29:32Z'
-labels:
+tags:
 - cli
 - search
 ---

@@ -7,7 +7,7 @@ priority: 3
 created: '2026-10-03T20:14:31Z'
 updated: '2026-10-27T02:36:15Z'
 parent: yaks-b5a0
-labels:
+tags:
 - delta
 ---
 

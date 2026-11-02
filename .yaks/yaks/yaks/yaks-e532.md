@@ -6,7 +6,7 @@ type: task
 priority: 1
 created: '2026-10-31T14:38:15Z'
 updated: '2026-10-31T15:07:21Z'
-labels:
+tags:
 - skills
 verify: GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false cargo test --no-fail-fast
 ---

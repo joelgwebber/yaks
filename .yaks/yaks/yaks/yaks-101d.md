@@ -9,7 +9,7 @@ updated: '2026-11-01T20:51:28Z'
 parent: yaks-f301
 depends_on:
 - yaks-9af0
-labels:
+tags:
 - wiki
 - links
 verify: cargo test --workspace
@@ -19,6 +19,7 @@ Implements yaks-ccb1. A shared resolver used by refs, doctor, peek and the TUI; 
 
 ---
 ▸ 2026-11-01T20:35:16Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -29,6 +30,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T20:50:13Z [delta:farm-wiki]
+
 kind: checkpoint
 branch: wiki
 commit: 99416ed
@@ -66,6 +68,7 @@ Not here: the TUI following page links and a peek preview (yaks-7395), link chec
 
 ---
 ▸ 2026-11-01T20:51:28Z [delta:farm-wiki]
+
 kind: verify
 result: pass
 ---
@@ -74,6 +77,7 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-11-01T20:51:28Z [delta:farm-wiki]
+
 kind: move
 from: shaving
 to: shorn

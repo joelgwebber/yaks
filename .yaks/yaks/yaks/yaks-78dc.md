@@ -6,7 +6,7 @@ type: task
 priority: 2
 created: '2026-08-23T02:49:48Z'
 updated: '2026-10-27T02:36:17Z'
-labels:
+tags:
 - ui
 ---
 

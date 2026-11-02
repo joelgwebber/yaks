@@ -7,7 +7,7 @@ priority: 1
 created: '2026-08-22T13:29:05Z'
 updated: '2026-08-22T14:23:09Z'
 parent: yaks-9b8d
-labels:
+tags:
 - tui
 - eval
 ---

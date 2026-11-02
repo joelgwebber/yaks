@@ -7,7 +7,7 @@ priority: 1
 created: '2026-11-01T18:53:09Z'
 updated: '2026-11-01T22:26:31Z'
 parent: yaks-44b3
-labels:
+tags:
 - wiki
 ---
 
@@ -15,6 +15,7 @@ Layer 2 of the umbrella: the CLI and store for pages, sources, schemas, links an
 
 ---
 ▸ 2026-11-01T18:54:20Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -25,6 +26,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T22:26:26Z [delta:farm-wiki]
+
 kind: move
 from: shaving
 to: shorn

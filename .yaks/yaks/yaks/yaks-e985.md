@@ -6,7 +6,7 @@ type: chore
 priority: 3
 created: '2026-09-27T19:11:55Z'
 updated: '2026-09-27T19:12:03Z'
-labels:
+tags:
 - npm
 ---
 

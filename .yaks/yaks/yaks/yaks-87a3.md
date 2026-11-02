@@ -7,7 +7,7 @@ priority: 1
 created: '2026-10-18T21:15:00Z'
 updated: '2026-10-27T02:36:18Z'
 parent: yaks-73f4
-labels:
+tags:
 - git
 - cli
 - skills

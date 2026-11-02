@@ -6,7 +6,7 @@ type: task
 priority: 1
 created: '2026-10-18T05:15:02Z'
 updated: '2026-10-22T00:59:55Z'
-labels:
+tags:
 - sheds
 - git
 - design

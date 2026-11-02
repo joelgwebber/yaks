@@ -7,7 +7,7 @@ priority: 3
 created: '2026-08-20T03:37:25Z'
 updated: '2026-08-20T20:41:40Z'
 parent: yaks-5ef5
-labels:
+tags:
 - rust
 - test
 ---

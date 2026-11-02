@@ -6,7 +6,7 @@ type: bug
 priority: 2
 created: '2026-10-17T14:03:33Z'
 updated: '2026-10-19T04:26:22Z'
-labels:
+tags:
 - tui
 - sheds
 - cli

@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-06T21:31:42Z'
 updated: '2026-10-27T01:18:51Z'
 parent: yaks-38dc
-labels:
+tags:
 - cli
 - docs
 - skills

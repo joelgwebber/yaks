@@ -7,7 +7,7 @@ priority: 2
 created: '2026-10-31T15:18:15Z'
 updated: '2026-10-31T17:12:33Z'
 parent: yaks-039b
-labels:
+tags:
 - git
 - design
 ---
@@ -60,6 +60,7 @@ Done: `yaks-7a11` (commits greps the code repo), `yaks-735a` (land records `kind
 
 ---
 ▸ 2026-10-31T17:12:33Z [yakherd]
+
 kind: move
 from: shaving
 to: shorn

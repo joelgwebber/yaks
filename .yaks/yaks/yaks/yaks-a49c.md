@@ -7,7 +7,7 @@ priority: 4
 created: '2026-08-20T19:13:25Z'
 updated: '2026-08-22T20:53:22Z'
 parent: yaks-0a93
-labels:
+tags:
 - rust
 ---
 

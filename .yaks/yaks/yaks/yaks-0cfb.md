@@ -6,7 +6,7 @@ type: chore
 priority: 3
 created: '2026-10-31T17:12:34Z'
 updated: '2026-10-31T17:12:34Z'
-labels:
+tags:
 - docs
 - tui
 ---

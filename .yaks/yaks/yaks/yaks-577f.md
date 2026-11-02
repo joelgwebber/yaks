@@ -9,7 +9,7 @@ updated: '2026-11-01T22:51:30Z'
 parent: yaks-d26a
 depends_on:
 - yaks-2c42
-labels:
+tags:
 - wiki
 - skills
 verify: cargo test --workspace
@@ -19,6 +19,7 @@ A bundled skill (or a section of `yaks`) giving research yaks formal guidance: s
 
 ---
 ▸ 2026-11-01T22:27:16Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -29,6 +30,7 @@ moved: hairy -> shaving
 
 ---
 ▸ 2026-11-01T22:30:33Z [delta:farm-wiki]
+
 kind: checkpoint
 branch: wiki
 commit: e2a9aa1
@@ -64,6 +66,7 @@ Not fixed: range queries ("renews next month") need comparisons in `page query -
 
 ---
 ▸ 2026-11-01T22:51:30Z [delta:farm-wiki]
+
 kind: verify
 result: pass
 ---
@@ -72,6 +75,7 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-11-01T22:51:30Z [delta:farm-wiki]
+
 kind: move
 from: shaving
 to: shorn

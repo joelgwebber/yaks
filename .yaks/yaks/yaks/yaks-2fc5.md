@@ -7,7 +7,7 @@ priority: 2
 created: '2026-11-02T00:36:10Z'
 updated: '2026-11-02T01:29:27Z'
 parent: yaks-9cc1
-labels:
+tags:
 - wiki
 - cli
 verify: 'cd /Users/joel/src/yaks/.delta/worktrees/g5vagmccz0gg/yaks && cargo test --workspace > /tmp/due1-verify.txt 2>&1; rc=$?; grep "test result" /tmp/due1-verify.txt | awk "{p+=\$4; f+=\$6} END {print \"passed\", p, \"failed\", f}"; echo "error/FAILED lines: $(grep -c "FAILED\|^error" /tmp/due1-verify.txt)"; exit $rc'
@@ -17,6 +17,7 @@ Implements yaks-9cc1's proposal as Joel decided it; read that yak's proposal and
 
 ---
 ▸ 2026-11-02T00:36:10Z [delta:farm-wiki]
+
 kind: move
 from: hairy
 to: shaving
@@ -84,6 +85,7 @@ Decision: a recurring yak under a shorn parent reopens the parent first (child: 
 
 ---
 ▸ 2026-11-02T01:25:38Z [due-1]
+
 kind: verify
 result: pass
 ---
@@ -124,6 +126,7 @@ Not done / noted: not run in a live TUI session (covered by in-process tests and
 
 ---
 ▸ 2026-11-02T01:25:52Z [due-1]
+
 kind: move
 from: shaving
 to: shorn
@@ -134,6 +137,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-11-02T01:26:21Z [delta:farm-wiki]
+
 kind: landed
 commit: 7560285d96f72fc9bf16f20ae079228798dd79f7
 source: eeb48f4e33d07cccd8d043cbced596218cce97b4
