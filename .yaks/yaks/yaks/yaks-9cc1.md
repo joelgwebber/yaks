@@ -5,14 +5,13 @@ status: shaving
 type: idea
 priority: 3
 created: '2026-11-01T18:53:14Z'
-updated: '2026-11-01T22:50:24Z'
+updated: '2026-11-02T00:36:10Z'
 parent: yaks-44b3
 depends_on:
 - yaks-1f34
 labels:
 - wiki
 - design
-needs: agent
 ---
 
 Layer 5. Joel (2026-11-01): reminders often want extra data (a link to the plumber's page), and recurring yaks are useful beyond Hearth: maintenance, weekly metric checks. Starting idea: a yak that regrows on a schedule. Needs the field model (yaks-8384).
@@ -79,3 +78,12 @@ needs: agent
 1. Yes, exactly. Living yaks don't always stay shorn!
 2. That makes sense, and works well in either offline or agent-harness mode.
 3. Let's keep the schedule syntax simple and predictable. Agents will have no trouble with this, and we can layer on CLI/TUI convenience affordances later if needed.
+
+---
+▸ 2026-11-02T00:36:10Z [delta:farm-wiki]
+kind: pickup
+---
+
+picked up
+
+Decision (Joel, 2026-11-01): all three leans. One yak regrows (its history accumulates); the clock lives outside yaks (`yaks regrow-due` is idempotent and called by a harness, cron, or the TUI on load and each sync tick); schedules are ISO 8601 durations only. Implementation is yaks-9cc1's child, below.
