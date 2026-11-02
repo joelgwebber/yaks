@@ -1,11 +1,11 @@
 ---
 id: yaks-9cc1
 title: 'Design: recurring yaks (regrow on a schedule) and due dates'
-status: shaving
+status: shorn
 type: idea
 priority: 3
 created: '2026-11-01T18:53:14Z'
-updated: '2026-11-02T00:36:10Z'
+updated: '2026-11-02T01:29:28Z'
 parent: yaks-44b3
 depends_on:
 - yaks-1f34
@@ -87,3 +87,18 @@ kind: pickup
 picked up
 
 Decision (Joel, 2026-11-01): all three leans. One yak regrows (its history accumulates); the clock lives outside yaks (`yaks regrow-due` is idempotent and called by a harness, cron, or the TUI on load and each sync tick); schedules are ISO 8601 durations only. Implementation is yaks-9cc1's child, below.
+
+---
+▸ 2026-11-02T01:29:27Z [delta:farm-wiki]
+
+Implemented by yaks-2fc5 (landed 7560285).
+
+---
+▸ 2026-11-02T01:29:28Z [delta:farm-wiki]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
