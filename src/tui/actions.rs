@@ -186,6 +186,9 @@ impl App {
         if self.on_sheds_tab() {
             return format!("{base} · {}", self.sheds_state_header());
         }
+        if self.on_wiki_tab() {
+            return format!("{base} · {}", self.wiki_state_header());
+        }
         // In the detail pane, expose the scroll offset and whether the sticky
         // header is showing (the frontmatter top has scrolled off).
         if self.focus == Focus::Detail {
@@ -355,16 +358,16 @@ impl App {
         };
     }
 
-    pub(crate) fn open_labels(&mut self) {
+    pub(crate) fn open_tags(&mut self) {
         if let Some(id) = self.selected_id() {
             let initial = self
                 .task(&id)
-                .map(|t| t.labels.join(", "))
+                .map(|t| t.tags.join(", "))
                 .unwrap_or_default();
             self.overlay = Overlay::Edit(Editor::new(
                 self.editor_vim,
                 true,
-                format!("Labels for {id}: "),
+                format!("Tags for {id}: "),
                 &initial,
                 EditAction::Labels(id),
             ));
@@ -455,7 +458,7 @@ impl App {
                 ("Title:", EditTarget::Title),
                 ("Type:", EditTarget::Type),
                 ("Priority:", EditTarget::Priority),
-                ("Labels:", EditTarget::Labels),
+                ("Tags:", EditTarget::Labels),
                 ("Source:", EditTarget::Source),
                 ("Herd:", EditTarget::Herd),
                 ("Status:", EditTarget::Status),

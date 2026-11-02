@@ -6,6 +6,7 @@
 //! `tui.rs` (yaks-b1cc / b1cc/7). `use super::*` inherits `tui.rs`'s scope.
 
 use super::imageview::ImageView;
+use super::linenav::{LineNav, Viewport};
 use super::*;
 
 /// Largest attachment the in-TUI viewer shows; a bigger file opens externally.
@@ -14,16 +15,33 @@ const VIEW_MAX_BYTES: u64 = 1 << 20;
 /// A text attachment open in the viewer overlay (`Overlay::Attachment`,
 /// yaks-699b): read once on open, a `.md`/`.markdown` file rendered by the
 /// detail pane's markdown renderer and anything else shown verbatim, wrapped
-/// to the pane. `E` edits it in place (yaks-56c1: [`App::open_attachment_edit`],
-/// saved by [`App::commit_attachment_edit`]); `O` hands it to the OS opener.
+/// to the pane. It navigates like the detail pane, by the same code
+/// ([`LineNav`], yaks-84e0): line cursor, visual selection and yank, find,
+/// Tab among links and Enter to follow one. `E` edits it in place (yaks-56c1:
+/// [`App::open_attachment_edit`], saved by [`App::commit_attachment_edit`]);
+/// `O` hands it to the OS opener.
+///
+/// The Wiki tab (yaks-ebb2) opens farm pages and sources in the same viewer
+/// ([`DocKind`]): a page's frontmatter shows as field rows above its rendered
+/// body, and a source shows `source.md` then its `extracted.md`.
 pub(crate) struct AttachView {
-    /// The link target as written (`<id>/<file>`), shown as the header.
+    /// The link target as written (`<id>/<file>`), or a page's farm-relative
+    /// path, shown as the header.
     pub(crate) target: String,
     pub(crate) path: PathBuf,
+    /// The file's whole text as read (a page's frontmatter included).
     pub(crate) text: String,
     pub(crate) markdown: bool,
-    /// First visible content row.
-    pub(crate) scroll: u16,
+    /// What the file is: an attachment, a wiki page or a saved source.
+    pub(crate) doc: DocKind,
+    /// A farm file shown as it was at this farm commit (a pinned link,
+    /// yaks-7395): read-only, so `E` refuses.
+    pub(crate) rev: Option<String>,
+    /// The line cursor, scroll, selection and find state.
+    pub(crate) nav: LineNav,
+    /// The find box while `/` is typing a query (the viewer already holds
+    /// the overlay slot, so it owns its find box).
+    pub(crate) find_box: Option<SearchBox>,
     /// Content width at the last render, so key handling clamps the scroll
     /// to the rows actually on screen.
     pub(crate) width: Cell<u16>,
@@ -53,40 +71,213 @@ impl AttachView {
             path: found.path.clone(),
             text,
             markdown,
-            scroll: 0,
+            doc: DocKind::Attachment,
+            rev: None,
+            nav: LineNav::default(),
+            find_box: None,
             width: Cell::new(0),
         })
     }
 
+    /// The viewer for farm file `rel` holding `text` (read from `path`, or
+    /// from farm commit `rev`): a page (`wiki/...md`), a source's
+    /// `source.md` (with its `extracted.md`, when given), or any other farm
+    /// file, rendered when it is markdown.
+    pub(crate) fn farm_doc(
+        rel: &str,
+        path: PathBuf,
+        text: String,
+        rev: Option<String>,
+        extracted: Option<String>,
+    ) -> Self {
+        let is_source = rel.starts_with("sources/") && rel.ends_with("/source.md");
+        let doc = if crate::pages::is_page_path(rel) {
+            DocKind::Page
+        } else if is_source {
+            DocKind::Source { extracted }
+        } else {
+            DocKind::File
+        };
+        let markdown = Path::new(rel)
+            .extension()
+            .and_then(|e| e.to_str())
+            .is_some_and(|e| e.eq_ignore_ascii_case("md") || e.eq_ignore_ascii_case("markdown"));
+        AttachView {
+            target: rel.to_string(),
+            path,
+            text,
+            markdown,
+            doc,
+            rev,
+            nav: LineNav::default(),
+            find_box: None,
+            width: Cell::new(0),
+        }
+    }
+
+    /// The document links in it are written from: a yak (an attachment), or
+    /// the farm file at its path, so a relative link means what
+    /// [`crate::links::parse`] says it means there.
+    pub(crate) fn from(&self) -> crate::links::From<'_> {
+        match self.doc {
+            DocKind::Attachment => crate::links::From::Yak,
+            _ => crate::links::From::Page(&self.target),
+        }
+    }
+
+    /// The header's kind label: `markdown`/`text` for an attachment, the
+    /// page's kind (`topic`, ...), or `source`.
+    pub(crate) fn kind_label(&self) -> String {
+        match &self.doc {
+            DocKind::Attachment | DocKind::File if self.markdown => "markdown".into(),
+            DocKind::Attachment | DocKind::File => "text".into(),
+            DocKind::Page => crate::pages::Page::parse(&self.target, &self.text).kind(),
+            DocKind::Source { .. } => "source".into(),
+        }
+    }
+
+    /// The markdown each rendered block comes from, indexed like
+    /// [`detail::Src::block`]: the file (an attachment), the body below the
+    /// frontmatter (a page, a source's note), then a source's extracted text.
+    pub(crate) fn blocks(&self) -> Vec<&str> {
+        match &self.doc {
+            DocKind::Attachment | DocKind::File => vec![self.text.as_str()],
+            DocKind::Page => vec![self.body()],
+            DocKind::Source { extracted } => {
+                let mut v = vec![self.body()];
+                if let Some(x) = extracted {
+                    v.push(x.as_str());
+                }
+                v
+            }
+        }
+    }
+
+    /// The text below the frontmatter (all of it when there is none).
+    pub(crate) fn body(&self) -> &str {
+        crate::store::split_frontmatter(&self.text).map_or(self.text.as_str(), |(_, b)| b)
+    }
+
     /// The content laid out to `width` as detail rows: markdown through
     /// [`mdrender::render`] (so it looks as it would in a yak's body), plain
-    /// text one row per line, soft-wrapped by [`detail::wrap`].
+    /// text one row per line, soft-wrapped by [`detail::wrap`]. A markdown
+    /// row records its source lines (as block 0), so yank copies the source,
+    /// a footnote reference finds its definition, and a code block or table
+    /// scrolls sideways, as in the detail pane.
+    ///
+    /// A page or source starts with its frontmatter as `key  value` field
+    /// rows and a blank row; a source's extracted text follows its note
+    /// under an `extracted.md` section row.
     pub(crate) fn rows(&self, width: u16, known: &HashSet<&str>) -> Vec<detail::DLine> {
         let width = width.max(1) as usize;
-        let row = |text: String, md, links, nowrap| detail::DLine {
+        let row = |text: String, md, links, nowrap, src| detail::DLine {
             text,
             kind: detail::Kind::Body,
             links,
             md,
             cont: false,
-            src: None,
+            src,
             nowrap,
             image: None,
         };
-        if self.markdown {
-            mdrender::render(&self.text, width, known)
+        let md_rows = |text: &str, block: usize| -> Vec<detail::DLine> {
+            mdrender::render_in(text, width, known, self.from())
                 .into_iter()
-                .map(|r| row(r.text, r.spans, r.links, r.nowrap))
+                .map(|r| {
+                    let src = detail::Src {
+                        block,
+                        lines: Some(r.lines),
+                    };
+                    row(r.text, r.spans, r.links, r.nowrap, Some(src))
+                })
                 .collect()
+        };
+        if matches!(self.doc, DocKind::Page | DocKind::Source { .. }) {
+            let blocks = self.blocks();
+            let mut out = frontmatter_rows(&self.text);
+            if !out.is_empty() {
+                out.push(plain_row(String::new(), detail::Kind::Empty));
+            }
+            out = detail::wrap(out, width);
+            out.extend(md_rows(blocks[0], 0));
+            if let Some(x) = blocks.get(1) {
+                out.push(plain_row(String::new(), detail::Kind::Empty));
+                out.push(plain_row(
+                    "\u{2500}\u{2500} extracted.md \u{2500}\u{2500}".into(),
+                    detail::Kind::Section,
+                ));
+                out.extend(md_rows(x, 1));
+            }
+            out
+        } else if self.markdown {
+            md_rows(&self.text, 0)
         } else {
             let lines = self
                 .text
                 .lines()
-                .map(|l| row(l.replace('\t', "    "), vec![], vec![], None))
+                .map(|l| row(l.replace('\t', "    "), vec![], vec![], None, None))
                 .collect();
             detail::wrap(lines, width)
         }
     }
+}
+
+/// What a viewer shows: a yak attachment, a wiki page, a saved source with
+/// its extracted text (`None` when it has none), or another farm file (a
+/// link to `/sources/<id>/extracted.md`, an image's sibling note, ...).
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum DocKind {
+    Attachment,
+    Page,
+    Source { extracted: Option<String> },
+    File,
+}
+
+fn plain_row(text: String, kind: detail::Kind) -> detail::DLine {
+    detail::DLine {
+        text,
+        kind,
+        links: vec![],
+        md: vec![],
+        cont: false,
+        src: None,
+        nowrap: None,
+        image: None,
+    }
+}
+
+/// A page's frontmatter as detail-style field rows: `key:` in the dim label
+/// column, then a scalar, or a list of scalars joined with `, `. A value the
+/// row can't flatten (a list of maps, a block) shows its YAML lines as
+/// written, indented under the key.
+fn frontmatter_rows(text: &str) -> Vec<detail::DLine> {
+    let Some((front, _)) = crate::store::split_frontmatter(text) else {
+        return Vec::new();
+    };
+    let fields = crate::fields::Fields::parse(front);
+    let mut out = Vec::new();
+    for (key, value) in fields.iter() {
+        let label = format!("{key}:");
+        let flat = value.as_ref().and_then(|v| match v {
+            crate::fields::Value::Null => Some(String::new()),
+            crate::fields::Value::List(items) => items
+                .iter()
+                .map(|i| i.as_str().map(String::from))
+                .collect::<Option<Vec<_>>>()
+                .map(|v| v.join(", ")),
+            crate::fields::Value::Map(_) => None,
+            other => other.as_str().map(String::from),
+        });
+        match flat {
+            Some(v) => out.push(plain_row(format!("{label:<13}{v}"), detail::Kind::Field)),
+            None => {
+                for l in fields.raw(key).unwrap_or(&[]) {
+                    out.push(plain_row(l.trim_end().to_string(), detail::Kind::Field));
+                }
+            }
+        }
+    }
+    out
 }
 
 /// Whether cancelling editor `ed` would lose work: an attachment edit when its
@@ -304,7 +495,7 @@ impl App {
                 if let Overlay::Create(f) = &mut self.overlay {
                     match f.row {
                         0 => f.handler.on_key_event(k, &mut f.title.borrow_mut()),
-                        3 => f.handler.on_key_event(k, &mut f.labels.borrow_mut()),
+                        3 => f.handler.on_key_event(k, &mut f.tags.borrow_mut()),
                         4 => f.handler.on_key_event(k, &mut f.source.borrow_mut()),
                         _ => {}
                     }
@@ -339,12 +530,13 @@ impl App {
                 kind: Some(TYPE_CHOICES[f.kind_idx].to_string()),
                 priority: Some(PRI_CHOICES[f.pri_idx]),
                 parent: f.parent.clone(),
-                labels: f.labels_vec(),
+                tags: f.tags_vec(),
                 depends_on: vec![],
                 source: Some(f.source_text()).filter(|s| !s.is_empty()),
                 prs: vec![],
                 description: f.body_opt(),
                 verify: None,
+                fields: vec![],
             },
             other => {
                 self.overlay = other;
@@ -388,7 +580,7 @@ impl App {
         let title = f.title_text();
         let kind = TYPE_CHOICES[f.kind_idx].to_string();
         let priority = PRI_CHOICES[f.pri_idx];
-        let new_labels = f.labels_vec();
+        let new_tags = f.tags_vec();
         let mut edit = TaskEdit::default();
         if title != cur.title {
             edit.title = Some(title);
@@ -404,9 +596,9 @@ impl App {
         if source != cur.source.clone().unwrap_or_default() {
             edit.source = Some(source);
         }
-        if let Some((add, remove)) = crate::model::label_edit(&cur.labels, &new_labels) {
-            edit.add_labels = add;
-            edit.remove_labels = remove;
+        if let Some((add, remove)) = crate::model::tag_edit(&cur.tags, &new_tags) {
+            edit.add_tags = add;
+            edit.remove_tags = remove;
         }
         // A herd change from the edit form's chip row is an id-prefix rename
         // (tail preserved), folded into this same commit (yaks-71d1). Detect it
@@ -659,7 +851,8 @@ impl App {
             // `<id>/<file>`, relative to the farm root (the yak's own directory).
             let rest = p.strip_prefix(".yaks/").unwrap_or(p);
             let (id, name) = rest.split_once('/')?;
-            (!name.contains('/')).then(|| (id.to_string(), name.to_string()))
+            let name = crate::links::percent_decode(name);
+            (!name.contains('/')).then(|| (id.to_string(), name))
         });
         let Some((id, old)) = parsed else {
             self.notification = Some("no attachment on this line (Tab to an image link)".into());
@@ -727,6 +920,12 @@ impl App {
         self.os_open(target, &arg);
     }
 
+    /// Close the text viewer and forget its history of followed documents.
+    pub(crate) fn close_viewer(&mut self) {
+        self.overlay = Overlay::None;
+        self.clear_viewer_history();
+    }
+
     /// Hand `arg` (a URL or file path) to the OS opener, reporting it as
     /// `target`. Under `cargo test` nothing is launched (a test must never
     /// pop up an image viewer); the notification is the same.
@@ -744,54 +943,211 @@ impl App {
         });
     }
 
-    /// Keys in the attachment viewer: scroll like the help reference, `E`
-    /// edits the file in place, `O` hands it to the OS opener,
-    /// `Esc`/`q`/`h`/`←` close it.
-    pub(crate) fn handle_attachment_key(&mut self, k: KeyEvent) {
+    /// The open viewer's rows at the width last rendered, and its viewport
+    /// (the pane less the header row).
+    pub(crate) fn attachment_rows(&self) -> Option<(Vec<detail::DLine>, Viewport)> {
         let Overlay::Attachment(v) = &self.overlay else {
+            return None;
+        };
+        let known: HashSet<&str> = self.all.iter().map(|t| t.id.as_str()).collect();
+        let rows = v.rows(v.width.get(), &known);
+        // The header row, and the peek pane when it is shown (yaks-7395).
+        let peek = if self.viewer_has_peek(&rows) {
+            super::follow::PEEK_ROWS
+        } else {
+            0
+        };
+        let vp = Viewport {
+            page: self.detail_page.saturating_sub(1 + peek).max(1) as usize,
+            pinned: 0,
+        };
+        Some((rows, vp))
+    }
+
+    /// Keys in the attachment viewer: the detail pane's navigation, by the
+    /// same [`LineNav`] (yaks-84e0). `j`/`k`/`d`/`u`/`g`/`G` move the line
+    /// cursor, `Tab`/`[`/`]` cycle links, `Enter` follows one (or yanks a
+    /// selection), `v`/Shift-↑↓ select, `y` yanks, `/` `n` `N` find, `o`/`i`
+    /// go back / forward over a footnote jump, `h`/`l` scroll a code block
+    /// or table sideways. `E` edits the file, `O` hands it to the OS opener;
+    /// `Esc` peels back selection, then find, then closes, as do `q` and
+    /// `h`/`←` (off a scrolled block).
+    pub(crate) fn handle_attachment_key(&mut self, k: KeyEvent, double_esc: bool) {
+        let Some((lines, vp)) = self.attachment_rows() else {
             return;
         };
-        match k.code {
-            KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('h') | KeyCode::Left => {
-                self.overlay = Overlay::None;
-                return;
-            }
-            KeyCode::Char('E') => {
-                self.open_attachment_edit();
-                return;
-            }
-            KeyCode::Char('O') => {
-                let (target, arg) = (v.target.clone(), v.path.display().to_string());
-                self.overlay = Overlay::None;
-                self.os_open(&target, &arg);
-                return;
-            }
-            _ => {}
-        }
-        let vh = self.detail_page.saturating_sub(1).max(1);
-        let known: HashSet<&str> = self.all.iter().map(|t| t.id.as_str()).collect();
-        let total = v.rows(v.width.get(), &known).len() as u16;
-        let max_scroll = total.saturating_sub(vh);
-        let half = (vh / 2).max(1);
+        let cancel = self.field_cancel(k, double_esc);
+        let vim = self.editor_vim;
         let Overlay::Attachment(v) = &mut self.overlay else {
             return;
         };
-        let s = &mut v.scroll;
+        let width = v.width.get() as usize;
+        if let Some(sb) = v.find_box.as_mut() {
+            if v.nav.find_key(sb, k, cancel, &lines) {
+                v.find_box = None;
+            }
+            return;
+        }
+        let nav = &mut v.nav;
+        let half = (vp.page / 2).max(1) as i32;
+        if k.modifiers.contains(KeyModifiers::SHIFT)
+            && matches!(k.code, KeyCode::Up | KeyCode::Down)
+        {
+            nav.extend_selection(&lines, vp, if k.code == KeyCode::Down { 1 } else { -1 });
+            return;
+        }
         match k.code {
-            KeyCode::Char('j') | KeyCode::Down => *s = (*s + 1).min(max_scroll),
-            KeyCode::Char('k') | KeyCode::Up => *s = s.saturating_sub(1),
-            KeyCode::Char('d') | KeyCode::PageDown => *s = (*s + half).min(max_scroll),
-            KeyCode::Char('u') | KeyCode::PageUp => *s = s.saturating_sub(half),
-            KeyCode::Char('g') | KeyCode::Home => *s = 0,
-            KeyCode::Char('G') | KeyCode::End => *s = max_scroll,
+            KeyCode::Esc => {
+                if nav.anchor.is_some() {
+                    nav.anchor = None;
+                } else if nav.find.is_some() {
+                    nav.find = None;
+                } else {
+                    self.close_viewer();
+                }
+            }
+            KeyCode::Char('q') => self.close_viewer(),
+            KeyCode::Char('h') | KeyCode::Left => {
+                if !nav.scroll_block(&lines, width, -1) {
+                    self.close_viewer();
+                }
+            }
+            KeyCode::Char('p') => {
+                self.peek_shown = !self.peek_shown;
+                self.notification = Some(
+                    if self.peek_shown {
+                        "peek shown"
+                    } else {
+                        "peek hidden"
+                    }
+                    .into(),
+                );
+            }
+            KeyCode::Char('l') | KeyCode::Right => {
+                nav.scroll_block(&lines, width, 1);
+            }
+            KeyCode::Char('j') | KeyCode::Down => nav.step(&lines, vp, 1),
+            KeyCode::Char('k') | KeyCode::Up => nav.step(&lines, vp, -1),
+            KeyCode::Char('d') | KeyCode::PageDown => nav.step(&lines, vp, half),
+            KeyCode::Char('u') | KeyCode::PageUp => nav.step(&lines, vp, -half),
+            KeyCode::Char('g') | KeyCode::Home => nav.to_end(&lines, vp, false),
+            KeyCode::Char('G') | KeyCode::End => nav.to_end(&lines, vp, true),
+            KeyCode::Tab | KeyCode::Char(']') => nav.jump_link(&lines, vp, 1),
+            KeyCode::BackTab | KeyCode::Char('[') => nav.jump_link(&lines, vp, -1),
+            KeyCode::Char('v') => nav.toggle_visual(),
+            KeyCode::Char('/') => v.find_box = Some(nav.open_find(vim)),
+            KeyCode::Char('n') => nav.find_jump(&lines, 1),
+            KeyCode::Char('N') => nav.find_jump(&lines, -1),
+            KeyCode::Char('o') | KeyCode::Char('i') => {
+                let forward = k.code == KeyCode::Char('i');
+                if !nav.go_back(&lines, forward) && !self.viewer_hop(forward) {
+                    self.notification = Some(
+                        if forward {
+                            "no later spot"
+                        } else {
+                            "no earlier spot"
+                        }
+                        .into(),
+                    );
+                }
+            }
+            KeyCode::Char('y') => self.yank_attachment(&lines),
+            KeyCode::Enter => {
+                if nav.anchor.is_some() {
+                    self.yank_attachment(&lines);
+                } else {
+                    self.follow_attachment_link(&lines, vp);
+                }
+            }
+            KeyCode::Char('E') => self.open_attachment_edit(),
+            KeyCode::Char('O') => {
+                let (target, arg) = (v.target.clone(), v.path.display().to_string());
+                self.close_viewer();
+                self.os_open(&target, &arg);
+            }
             _ => {}
+        }
+        if let Overlay::Attachment(v) = &mut self.overlay {
+            v.nav.drop_stale_hscroll(&lines);
+        }
+    }
+
+    /// y / Enter with a selection (viewer) — copy the selected rows (source
+    /// markdown for a `.md` file) and clear the selection.
+    fn yank_attachment(&mut self, lines: &[detail::DLine]) {
+        let Overlay::Attachment(v) = &mut self.overlay else {
+            return;
+        };
+        let (lo, hi) = v.nav.selection().unwrap_or((v.nav.line, v.nav.line));
+        v.nav.anchor = None;
+        let Some(text) = super::linenav::yank_text(lines, lo, hi, &v.blocks()) else {
+            return;
+        };
+        let n = hi.min(lines.len().saturating_sub(1)) + 1 - lo;
+        self.notification = Some(if crate::clipboard::copy_text(&text) {
+            format!("copied {n} line(s)")
+        } else {
+            "clipboard unavailable".into()
+        });
+    }
+
+    /// Enter (viewer) — follow the link on the cursor's row with the detail
+    /// pane's rules: a footnote or `#heading` moves within the file (`o`
+    /// returns); a yak closes the viewer and opens it in the detail pane; a
+    /// farm document opens in the viewer at its anchor (yaks-7395, `o` comes
+    /// back); an attachment, URL or source file opens as from the detail pane.
+    fn follow_attachment_link(&mut self, lines: &[detail::DLine], vp: Viewport) {
+        let Overlay::Attachment(v) = &mut self.overlay else {
+            return;
+        };
+        let Some(j) = v.nav.link_at(lines) else {
+            return;
+        };
+        match j.target {
+            detail::Target::Footnote(n) => match detail::footnote_line(lines, v.nav.line, &n) {
+                Some(to) => {
+                    v.nav.jump_to(lines, vp, to);
+                    self.notification = Some(format!("→ [{n}] (o to go back)"));
+                }
+                None => self.notification = Some(format!("no definition for [{n}]")),
+            },
+            detail::Target::Task(id) => {
+                self.close_viewer();
+                self.goto_task(&id);
+            }
+            detail::Target::Url(u) | detail::Target::Artifact(u) => {
+                self.open_external_from_viewer(&u)
+            }
+            detail::Target::Source { path, lines, rev } => {
+                self.open_source(&path, lines, rev.as_deref())
+            }
+            detail::Target::Farm { path, rev, anchor } => {
+                self.open_farm_doc(&path, rev.as_deref(), anchor.as_ref())
+            }
+            detail::Target::Local(a) => self.follow_local_anchor(lines, vp, &a),
         }
     }
 
     /// E (attachment viewer) — edit the viewed text file in the multi-line
     /// editor (yaks-56c1).
     pub(crate) fn open_attachment_edit(&mut self) {
-        if !matches!(self.overlay, Overlay::Attachment(_)) {
+        let Overlay::Attachment(v) = &self.overlay else {
+            return;
+        };
+        if let Some(rev) = &v.rev {
+            self.notification = Some(format!(
+                "{}@{}: a past version is read-only",
+                v.target,
+                &rev[..rev.len().min(7)]
+            ));
+            return;
+        }
+        // A source is a snapshot, written once (yaks-1532).
+        if matches!(v.doc, DocKind::Source { .. }) {
+            self.notification = Some(format!(
+                "{}: a source is a snapshot, written once; cite it from a page",
+                v.target
+            ));
             return;
         }
         let Overlay::Attachment(v) = std::mem::replace(&mut self.overlay, Overlay::None) else {
@@ -808,10 +1164,13 @@ impl App {
         ));
     }
 
-    /// Save an attachment edit: write `text` to the viewed file under the farm
-    /// lock, then reopen the viewer on it (markdown re-rendered). If the file
-    /// changed on disk since the edit began, nothing is written and the editor
-    /// stays open with the typed text; a second Ctrl-S overwrites.
+    /// Save an attachment or page edit: write `text` to the viewed file under
+    /// the farm lock (so a farm-branch farm commits it as one change,
+    /// yaks-a838), then reopen the viewer on it (markdown re-rendered). A page
+    /// (yaks-1532) is parsed and written by `pages::save`, frontmatter and
+    /// body, and must keep its `---` frontmatter block. If the file changed on
+    /// disk since the edit began, nothing is written and the editor stays open
+    /// with the typed text; a second Ctrl-S overwrites.
     pub(crate) fn commit_attachment_edit(&mut self, mut v: AttachView, text: String) {
         if text == v.text {
             self.notification = Some(format!("{}: unchanged", v.target));
@@ -821,22 +1180,47 @@ impl App {
         let Some(root) = self.farm.as_ref().map(|h| h.root().to_path_buf()) else {
             return;
         };
-        let saved = (|| -> anyhow::Result<Option<String>> {
+        let page = v.doc == DocKind::Page;
+        if page && crate::store::split_frontmatter(&text).is_none() {
+            self.notification = Some(format!(
+                "{}: not saved: a page starts with a --- frontmatter block closed by ---",
+                v.target
+            ));
+            self.reopen_attachment_edit(v, &text);
+            return;
+        }
+        let saved = (|| -> anyhow::Result<Result<String, String>> {
             let _lock = crate::store::lock(&root)?;
             let on_disk = std::fs::read_to_string(&v.path)?;
             if on_disk != v.text {
-                return Ok(Some(on_disk));
+                return Ok(Err(on_disk));
             }
-            crate::store::write::atomic_write(&v.path, &text)?;
-            Ok(None)
+            if page {
+                crate::pages::save(&root, &crate::pages::Page::parse(&v.target, &text))?;
+            } else {
+                crate::store::write::atomic_write(&v.path, &text)?;
+            }
+            // What is on disk now (a page is written in its normal form).
+            Ok(Ok(std::fs::read_to_string(&v.path)?))
         })();
         match saved {
-            Ok(None) => {
+            Ok(Ok(written)) => {
                 self.notification = Some(format!("saved {}", v.target));
-                v.text = text;
+                v.text = written;
                 self.overlay = Overlay::Attachment(v);
+                if page {
+                    // Its title, kind or tags may have changed (the Wiki tab).
+                    self.reload_wiki();
+                    self.refresh_farm_sync();
+                }
+                // The file may have shrunk: keep the cursor on it.
+                if let Some((lines, vp)) = self.attachment_rows() {
+                    if let Overlay::Attachment(v) = &mut self.overlay {
+                        v.nav.clamp(lines.len(), vp);
+                    }
+                }
             }
-            Ok(Some(on_disk)) => {
+            Ok(Err(on_disk)) => {
                 self.notification = Some(format!(
                     "{} changed on disk: not saved (Ctrl-S again overwrites)",
                     v.target
@@ -869,7 +1253,11 @@ impl App {
     pub(crate) fn resolve_attachment(&self, target: &str) -> Option<crate::farm::FoundAttachment> {
         let rel = target.strip_prefix(".yaks/").unwrap_or(target);
         let (id, name) = rel.split_once('/')?;
-        crate::farm::locate_attachment(self.farm.as_ref()?.root(), id, name)
+        crate::farm::locate_attachment(
+            self.farm.as_ref()?.root(),
+            id,
+            &crate::links::percent_decode(name),
+        )
     }
 
     /// O — open the artifact/URL/source link on the current detail line (a
@@ -883,7 +1271,12 @@ impl App {
                 detail::Target::Source { path, lines, rev } => {
                     self.open_source(&path, lines, rev.as_deref())
                 }
-                detail::Target::Task(_) | detail::Target::Footnote(_) => {
+                detail::Target::Farm { path, rev, anchor } => {
+                    self.open_farm_doc(&path, rev.as_deref(), anchor.as_ref())
+                }
+                detail::Target::Task(_)
+                | detail::Target::Footnote(_)
+                | detail::Target::Local(_) => {
                     self.notification = Some("not an artifact/link".into())
                 }
             },
@@ -1075,7 +1468,7 @@ impl App {
         if is_text {
             if let Overlay::Drawer(d) = &mut self.overlay {
                 match row {
-                    3 => d.handler.on_key_event(k, &mut d.labels.borrow_mut()),
+                    3 => d.handler.on_key_event(k, &mut d.tags.borrow_mut()),
                     4 => d.handler.on_key_event(k, &mut d.search.borrow_mut()),
                     5 => d.handler.on_key_event(k, &mut d.parent.borrow_mut()),
                     _ => {}
@@ -1142,8 +1535,8 @@ impl App {
         match &f.edit_id {
             Some(id) => match self.task(id) {
                 Some(cur) => {
-                    let mut a = f.labels_vec();
-                    let mut b = crate::model::normalize_labels(&cur.labels);
+                    let mut a = f.tags_vec();
+                    let mut b = crate::model::normalize_tags(&cur.tags);
                     a.sort();
                     b.sort();
                     f.title_text() != cur.title
@@ -1156,7 +1549,7 @@ impl App {
             None => {
                 !f.title_text().is_empty()
                     || !f.description_text().trim().is_empty()
-                    || !f.labels_vec().is_empty()
+                    || !f.tags_vec().is_empty()
                     || f.kind_idx != 0
                     || f.pri_idx != pri_index(3)
             }
@@ -1283,7 +1676,7 @@ impl App {
             return;
         }
         if matches!(self.overlay, Overlay::Attachment(_)) {
-            self.handle_attachment_key(k);
+            self.handle_attachment_key(k, double_esc);
             return;
         }
         if matches!(self.overlay, Overlay::Image(_)) {
@@ -1388,40 +1781,16 @@ impl App {
         }
         // Detail-pane find: live-highlight matches; Enter keeps, Esc restores.
         if matches!(self.overlay, Overlay::DetailFind(_)) {
-            if self.field_cancel(k, double_esc) {
-                // Esc/Ctrl-C: drop the find and snap back to the pre-find
-                // scroll+cursor (vi restores the origin on cancel).
-                let (saved, origin) = match &self.overlay {
-                    Overlay::DetailFind(sb) => (sb.saved.clone(), sb.detail_origin),
-                    _ => (None, None),
-                };
-                self.detail_find = saved;
-                if let Some((scroll, line)) = origin {
-                    self.detail_scroll = scroll;
-                    self.detail_line = line;
-                }
-                self.overlay = Overlay::None;
-            } else if k.code == KeyCode::Enter {
-                // Commit: leave the detail cursor ON the current match, keeping
-                // the scroll where the incremental find placed it (vi-like).
-                if let Some(&(line, ..)) = self.detail_find_matches().get(self.detail_match) {
-                    self.detail_line = line;
-                }
-                self.overlay = Overlay::None;
-            } else {
-                if let Overlay::DetailFind(sb) = &mut self.overlay {
-                    sb.handler.on_key_event(k, &mut sb.query.borrow_mut());
-                }
-                let q = match &self.overlay {
-                    Overlay::DetailFind(sb) => sb.query_text(),
-                    _ => String::new(),
-                };
-                self.detail_find = if q.is_empty() { None } else { Some(q) };
-                self.detail_match = 0;
-                let m = self.detail_find_matches();
-                if let Some(first) = m.first() {
-                    self.detail_scroll = first.0 as u16;
-                }
+            // The shared find-box routing (yaks-84e0): live highlight,
+            // Enter keeps it with the cursor on the match, Esc restores.
+            let cancel = self.field_cancel(k, double_esc);
+            let lines = self.detail_dlines();
+            let Overlay::DetailFind(mut sb) = std::mem::replace(&mut self.overlay, Overlay::None)
+            else {
+                unreachable!()
+            };
+            if !self.with_detail_nav(|n| n.find_key(&mut sb, k, cancel, &lines)) {
+                self.overlay = Overlay::DetailFind(sb);
             }
             return;
         }
@@ -1505,10 +1874,10 @@ impl App {
         let cursor_row = ed.state.borrow().cursor.row;
         match ed.action {
             EditAction::Labels(id) => {
-                let new = crate::model::normalize_labels([&text]);
-                let cur = self.task(&id).map(|t| t.labels.clone()).unwrap_or_default();
-                let Some((add, remove)) = crate::model::label_edit(&cur, &new) else {
-                    self.notification = Some(format!("{id} labels unchanged"));
+                let new = crate::model::normalize_tags([&text]);
+                let cur = self.task(&id).map(|t| t.tags.clone()).unwrap_or_default();
+                let Some((add, remove)) = crate::model::tag_edit(&cur, &new) else {
+                    self.notification = Some(format!("{id} tags unchanged"));
                     return;
                 };
                 let shown = if new.is_empty() {
@@ -1519,11 +1888,11 @@ impl App {
                 self.apply_edit(
                     &id,
                     TaskEdit {
-                        add_labels: add,
-                        remove_labels: remove,
+                        add_tags: add,
+                        remove_tags: remove,
                         ..Default::default()
                     },
-                    format!("{id} labels: {shown}"),
+                    format!("{id} tags: {shown}"),
                 );
             }
             EditAction::Comment(id) => self.commit_comment(&id, text),
@@ -1552,6 +1921,7 @@ impl App {
                 self.commit_rename_attachment(id, old, text)
             }
             EditAction::EditAttachment(v) => self.commit_attachment_edit(v, text),
+            EditAction::NewPage => self.commit_new_page(&text),
             EditAction::Ask(id) => self.commit_needs(&id, NeedsVerb::Ask, &text),
             EditAction::Answer(id) => self.commit_needs(&id, NeedsVerb::Answer, &text),
             EditAction::Request(id) => self.commit_needs(&id, NeedsVerb::Request, &text),
@@ -2082,6 +2452,9 @@ pub(crate) fn handle_paste(app: &mut App, text: &str) {
             return;
         }
         Overlay::Search(sb) | Overlay::DetailFind(sb) => &sb.query,
+        Overlay::Attachment(AttachView {
+            find_box: Some(sb), ..
+        }) => &sb.query,
         Overlay::Fuzzy(fp) => &fp.query,
         Overlay::Drawer(d) => match d.text_editor() {
             Some(e) => e,
@@ -2131,6 +2504,11 @@ fn handle_key_inner(app: &mut App, k: KeyEvent) {
         app.handle_sheds_key(k);
         return;
     }
+    // So does the Wiki tab (yaks-ebb2).
+    if app.on_wiki_tab() {
+        app.handle_wiki_key(k);
+        return;
+    }
     let half = (app.page / 2).max(1) as i32;
     let full = app.page.max(1) as i32;
     match app.focus {
@@ -2161,7 +2539,7 @@ fn handle_key_inner(app: &mut App, k: KeyEvent) {
             KeyCode::Char('P') => app.open_priority_picker(),
             KeyCode::Char('T') => app.open_type_picker(),
             KeyCode::Char('X') => app.open_slaughter_confirm(),
-            KeyCode::Char('L') => app.open_labels(),
+            KeyCode::Char('L') => app.open_tags(),
             KeyCode::Char('c') => app.open_create(false),
             KeyCode::Char('C') => app.open_create(true),
             KeyCode::Char('E') => app.open_edit(),
@@ -2269,7 +2647,7 @@ fn handle_key_inner(app: &mut App, k: KeyEvent) {
                 KeyCode::Char('S') => app.open_state_picker(),
                 KeyCode::Char('P') => app.open_priority_picker(),
                 KeyCode::Char('T') => app.open_type_picker(),
-                KeyCode::Char('L') => app.open_labels(),
+                KeyCode::Char('L') => app.open_tags(),
                 KeyCode::Char('X') => app.open_slaughter_confirm(),
                 KeyCode::Char('E') => app.open_edit_at_cursor(),
                 KeyCode::Char('D') => app.open_dep_picker(),

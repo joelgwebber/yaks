@@ -2,7 +2,7 @@
 source: src/tui/sheds_tab.rs
 expression: "draw(&app, 120, 14)"
 ---
- 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   🛖  Sheds (4)             scanned 4s ago
+ 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   📖  Wiki (0)   🛖  Sheds (4)
 
 ◂ walk-1  active · 9m ago
 │ branch work/walk-1 @ 47076b0 (9m ago)

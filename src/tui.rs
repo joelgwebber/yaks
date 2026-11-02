@@ -17,11 +17,13 @@ mod docshots;
 mod drawer;
 mod editor;
 mod farmsync;
+mod follow;
 mod fuzzy;
 mod handlers;
 mod headless;
 mod imagesize;
 mod imageview;
+mod linenav;
 mod markdown;
 mod mdrender;
 mod memo;
@@ -42,6 +44,7 @@ mod view;
 mod viewmodel;
 mod views_store;
 mod when;
+mod wiki_tab;
 
 // `headless` holds the `toque::HeadlessApp` impl for `App`; nothing to re-export
 // (the headless driver lives in the `toque` crate, invoked from `main`).
@@ -83,7 +86,7 @@ use blockedit::BlockEdit;
 use create::*;
 use drawer::*;
 use editor::*;
-use farmsync::{FarmOp, FarmSync};
+use farmsync::{AutoSync, FarmOp, FarmSync};
 use fuzzy::*;
 #[cfg(test)]
 use handlers::{handle_event, handle_paste};
@@ -91,6 +94,7 @@ use handlers::{handle_key, pump_events};
 use render::*;
 pub use runtime::run;
 use sheds_tab::*;
+use wiki_tab::*;
 
 /// One o/i nav-history stop: a task plus the detail cursor/scroll it was left
 /// at, so back/forward return you to where you were (yaks-28b4). Deliberately
@@ -247,7 +251,7 @@ fn spec_eq(a: &FilterSpec, b: &FilterSpec) -> bool {
     same_set(&a.statuses, &b.statuses)
         && same_set(&a.types, &b.types)
         && same_set(&a.priorities, &b.priorities)
-        && same_set(&a.labels, &b.labels)
+        && same_set(&a.tags, &b.tags)
         && a.search == b.search
         && a.ready_only == b.ready_only
         && a.tangled_only == b.tangled_only
@@ -358,12 +362,24 @@ pub struct App {
     hits: RefCell<mouse::HitMap>,
     /// The Sheds tab's snapshot, cursors and background scan (yaks-98f1).
     sheds: ShedsTab,
+    /// The Wiki tab's pages and sources and its cursor (yaks-ebb2).
+    wiki: WikiTab,
+    /// The text viewer's history of followed documents (yaks-7395): `o`
+    /// goes back past in-page jumps to the previous one, `i` forward.
+    viewer_back: Vec<follow::ViewerStop>,
+    viewer_fwd: Vec<follow::ViewerStop>,
+    /// Peeks read for the preview pane, by link (see [`follow::PeekCache`]).
+    peeks: RefCell<follow::PeekCache>,
+    /// Whether the viewer shows its peek pane (`p` toggles).
+    peek_shown: bool,
     /// The farm's uncommitted count and sync standing, for the tab-row chip
     /// (`None`: no farm, a private farm, or git could not say). Re-read on
     /// every reload; see [`farmsync`].
     farm_sync: Option<FarmSync>,
     /// A `W`/`U` commit or sync waiting for the frame that announces it.
     pending_farm_op: Option<FarmOp>,
+    /// The interval sync (`sync_interval`, yaks-f0db).
+    auto_sync: AutoSync,
     quit: bool,
     /// Bumped by [`App::touch`] whenever `all` or the sheds snapshot is
     /// replaced; the memoized rows and detail lines are keyed on it.
@@ -417,8 +433,14 @@ impl App {
             selected: HashSet::new(),
             hits: RefCell::default(),
             sheds: ShedsTab::default(),
+            wiki: WikiTab::default(),
+            viewer_back: Vec::new(),
+            viewer_fwd: Vec::new(),
+            peeks: RefCell::default(),
+            peek_shown: true,
             farm_sync: None,
             pending_farm_op: None,
+            auto_sync: AutoSync::off(),
             quit: false,
             data_gen: 0,
             rows_cache: RefCell::new(None),
@@ -433,6 +455,15 @@ impl App {
         // each shows, but keeping dead in the model lets the ancestor walk root
         // a live yak beneath a slaughtered parent, lets a Dead filter surface
         // slaughtered yaks, and treats a dep on a dead yak as resolved (fe00).
+        // Recurring yaks whose time has come are hairy again before the first
+        // frame (yaks-2fc5).
+        let regrew = farm
+            .regrow_due(
+                chrono::Utc::now(),
+                false,
+                crate::actor::resolve(None).as_deref(),
+            )
+            .unwrap_or_default();
         let all = farm.list(FilterSpec::default(), true)?;
         let cfg = farm.config();
         let vim = cfg.vim_mode;
@@ -450,7 +481,16 @@ impl App {
         app.views = views;
         app.working_set = working_set;
         app.farm = Some(farm);
+        if !regrew.regrew.is_empty() {
+            app.notification = Some(farmsync::regrew_notice(&regrew));
+        }
+        app.auto_sync = AutoSync::new(
+            cfg.sync_interval,
+            farmsync::autosync_disabled_by_env(),
+            std::time::Instant::now(),
+        );
         app.refresh_farm_sync();
+        app.reload_wiki();
         app.clamp_cursor();
         // One scan at startup feeds the Sheds tab's count; after that it
         // scans only while shown (yaks-98f1).

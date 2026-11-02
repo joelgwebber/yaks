@@ -12,7 +12,7 @@ expression: "draw(&app, 72, 24)"
 │ Priority:    p3
 │ Created:     -
 │ Updated:     -
-│ Labels:      -
+│ Tags:        -
 │
 │ Source:      https://example.com/PROJ-9
 │ PRs:         https://github.com/o/r/pull/12

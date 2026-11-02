@@ -70,7 +70,7 @@ pub fn gate(task: &Task, cfg: &Config) -> Option<Gate> {
             source: GateSource::Yak,
         }),
         None => cfg
-            .resolve_verify(&task.labels, task.id.split('-').next())
+            .resolve_verify(&task.tags, task.id.split('-').next())
             .map(|command| Gate {
                 command,
                 source: GateSource::Config,
@@ -354,13 +354,13 @@ mod tests {
             created: Some("2026-01-01T00:00:00Z".into()),
             updated: Some("2026-01-01T00:00:00Z".into()),
             parent: None,
-            labels: vec![],
+            tags: vec![],
             depends_on: vec![],
             source: None,
             prs: Vec::new(),
             needs: None,
             verify: None,
-            extra: Vec::new(),
+            extra: Default::default(),
             body: String::new(),
         }
     }

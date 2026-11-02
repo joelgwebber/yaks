@@ -11,7 +11,7 @@ expression: "run(&[\"list\", \"--json\"])"
     "priority": 2,
     "created": "2026-01-01T00:00:00Z",
     "updated": "2026-01-01T00:00:00Z",
-    "labels": [
+    "tags": [
       "core"
     ]
   },
@@ -51,7 +51,7 @@ expression: "run(&[\"list\", \"--json\"])"
     "depends_on": [
       "fix-0001"
     ],
-    "labels": [
+    "tags": [
       "core",
       "ui"
     ]

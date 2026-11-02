@@ -272,11 +272,11 @@ mod tests {
         assert_eq!(app.detail_scroll, 3);
         // Click a detail line: the line cursor lands on the clicked line.
         let frame = draw(&app, 60, 12);
-        let y = row_of(&frame, "Labels:");
+        let y = row_of(&frame, "Tags:");
         click(&mut app, 40, y);
         assert_eq!(app.focus, Focus::Detail);
         let dl = app.detail_dlines();
-        assert!(dl[app.detail_line].text.contains("Labels:"));
+        assert!(dl[app.detail_line].text.contains("Tags:"));
     }
 
     #[test]

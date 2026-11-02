@@ -125,22 +125,20 @@ fn init_creates_an_orphan_farm_worktree_at_farm_home() {
         wt.display()
     );
     assert!(out.contains(&wt.display().to_string()), "{out}");
-    // Orphan: the worktree holds only the farm, and the branch has no commits,
-    // so it shares no history with the code branch. Nothing is committed.
+    // Orphan: the worktree holds only the farm, and the branch's one commit
+    // (the new farm's files, yaks-a838) shares no history with the code branch.
     assert_eq!(entries(&wt), vec![".git", ".yaks"]);
     assert!(wt.join(".yaks/config.yaml").is_file());
     let o = Command::new("git")
-        .args([
-            "-C",
-            wt.to_str().unwrap(),
-            "rev-parse",
-            "--verify",
-            "-q",
-            "HEAD",
-        ])
+        .args(["-C", wt.to_str().unwrap(), "log", "--format=%s"])
         .output()
         .unwrap();
-    assert!(!o.status.success(), "the new farm branch has no commit yet");
+    assert_eq!(String::from_utf8_lossy(&o.stdout), "yaks: new farm\n");
+    let clean = Command::new("git")
+        .args(["-C", wt.to_str().unwrap(), "status", "--porcelain"])
+        .output()
+        .unwrap();
+    assert!(clean.stdout.is_empty(), "the farm is committed");
     assert!(
         out.contains("yaks sync") && out.contains("yaks private"),
         "{out}"
@@ -208,9 +206,8 @@ fn init_with_an_existing_origin_farm_only_adds_its_worktree() {
     let a = repo("branch-origin-a");
     okx(&a, &["init", "--no-skills"]);
     okx(&a, &["create", "--title", "from origin"]);
+    // Init and create each committed on the farm branch (yaks-a838).
     let wa = worktree_of(&a, "yaks").unwrap();
-    git(&wa, &["add", "-A"]);
-    git(&wa, &["commit", "-qm", "the farm"]);
     let origin = temp("branch-origin-bare");
     git(&origin, &["init", "-q", "--bare", "."]);
     git(&a, &["remote", "add", "origin", origin.to_str().unwrap()]);
@@ -226,8 +223,9 @@ fn init_with_an_existing_origin_farm_only_adds_its_worktree() {
     let wb = worktree_of(&b, "yaks").expect("worktree added for the existing branch");
     assert!(wb.join(".yaks/config.yaml").is_file(), "{out}");
     assert!(okx(&b, &["list"]).contains("from origin"));
-    // Only the worktree was added: the history is the pushed commit, no more.
-    assert_eq!(git(&wb, &["rev-list", "--count", "HEAD"]).trim(), "1");
+    // Only the worktree was added: the history is the pushed one (the new
+    // farm, then the create), no more.
+    assert_eq!(git(&wb, &["rev-list", "--count", "HEAD"]).trim(), "2");
     assert_eq!(status(&b), "");
     assert!(okx(&b, &["init", "--no-skills"]).contains("Nothing to change"));
 }
@@ -315,7 +313,13 @@ fn init_outside_git_is_a_clear_error() {
 fn init_installs_every_bundled_skill_unless_told_not_to() {
     let r = repo("all-skills");
     okx(&r, &["init"]);
-    for n in ["yaks", "yaks-tracker", "yaks-coordinating", "yaks-working"] {
+    for n in [
+        "yaks",
+        "yaks-tracker",
+        "yaks-coordinating",
+        "yaks-working",
+        "yaks-research",
+    ] {
         assert!(
             r.join(".agents/skills").join(n).join("SKILL.md").is_file(),
             "{n}"

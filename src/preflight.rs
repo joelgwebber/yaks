@@ -216,7 +216,7 @@ fn verify(farm: &Farm, scope: &Scope, report: &mut Report) -> Result<()> {
         }
         let has_verify = t.verify.is_some()
             || cfg
-                .resolve_verify(&t.labels, t.id.split('-').next())
+                .resolve_verify(&t.tags, t.id.split('-').next())
                 .is_some();
         if has_verify && !crate::farm::last_verify_passed(&t.body) {
             report.failures.push(Failure {
@@ -447,13 +447,13 @@ mod tests {
             created: Some("2026-01-01T00:00:00Z".into()),
             updated: Some("2026-01-01T00:00:00Z".into()),
             parent: None,
-            labels: vec![],
+            tags: vec![],
             depends_on: vec![],
             source: None,
             prs: Vec::new(),
             needs: None,
             verify: None,
-            extra: Vec::new(),
+            extra: Default::default(),
             body: String::new(),
         }
     }
@@ -653,7 +653,7 @@ mod tests {
         )
         .unwrap();
         let mut labelled = task("yak-0001", Status::Shorn);
-        labelled.labels = vec!["cli".into()];
+        labelled.tags = vec!["cli".into()];
         labelled.body = note("did the work");
         let mut unlabelled = task("yak-0002", Status::Shorn);
         unlabelled.body = note("did the work");

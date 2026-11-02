@@ -1,5 +1,15 @@
-//! The farm's git merge driver (yaks-4a53): merges three versions of one yak
-//! file so the result is always a valid yak, never conflict markers.
+//! The farm's git merge driver (yaks-4a53, yaks-4c8c): merges three versions
+//! of one farm document so its fields always stay well formed.
+//!
+//! - A yak (a file under `<herd>/yaks/`) merges field by field ([`merge`]).
+//! - Any other farm markdown file (a page, a source's text) merges its
+//!   frontmatter by the same field rule and its body as text
+//!   ([`merge_document`]).
+//! - Prose (a yak's description, a page body) merges with `git merge-file`;
+//!   when both sides changed the same lines, the conflict markers stay in the
+//!   prose and the merge still succeeds, so the farm stays readable and a
+//!   human or agent resolves the text afterwards (`yaks conflicts` lists such
+//!   files, and doctor reports them).
 //!
 //! `merge=union` merges two concurrent notes on one yak without a conflict but
 //! leaves two `updated:` lines (an invalid file); a text merge of the
@@ -13,6 +23,7 @@
 //! plus `merge.yaks.driver` config) and invoked by git as
 //! `yaks merge-driver %O %A %B %P`, which is [`run`].
 
+use crate::fields::{Fields, Value};
 use crate::model::{Status, Task};
 use crate::store::{self, NoteEntry};
 use anyhow::{Context, Result, bail};
@@ -22,7 +33,7 @@ use std::process::Command;
 /// The actor of the note a merge conflict is recorded under.
 const ACTOR: &str = "merge-driver";
 
-/// The `.gitattributes` line routing yak files to the driver.
+/// The `.gitattributes` line routing farm markdown files to the driver.
 const ATTR_LINE: &str = ".yaks/**/*.md merge=yaks";
 
 /// The result of merging three versions of one yak file.
@@ -49,8 +60,8 @@ fn three<T: PartialEq + Clone>(base: &T, ours: &T, theirs: &T) -> (T, bool) {
 
 /// Items of `ours` and `theirs`, minus what either side removed from `base`:
 /// `base` ∪ each side's additions − each side's removals. Ours' order first.
-fn merge_list(base: &[String], ours: &[String], theirs: &[String]) -> Vec<String> {
-    let mut out: Vec<String> = ours
+fn merge_list<T: PartialEq + Clone>(base: &[T], ours: &[T], theirs: &[T]) -> Vec<T> {
+    let mut out: Vec<T> = ours
         .iter()
         .filter(|x| !(base.contains(x) && !theirs.contains(x)))
         .cloned()
@@ -63,25 +74,154 @@ fn merge_list(base: &[String], ours: &[String], theirs: &[String]) -> Vec<String
     out
 }
 
-/// A yak's unmodelled frontmatter lines grouped per key (`key: value` plus its
-/// block-list `- ` items), in file order.
-fn extra_groups(extra: &[String]) -> Vec<(String, Vec<String>)> {
-    let mut out: Vec<(String, Vec<String>)> = Vec::new();
-    for line in extra {
-        let starts_key = !line.starts_with([' ', '\t', '-']) && line.contains(':');
-        match out.last_mut() {
-            Some((_, lines)) if !starts_key => lines.push(line.clone()),
-            _ => {
-                let key = line.split(':').next().unwrap_or("").trim().to_string();
-                out.push((key, vec![line.clone()]));
+fn show_opt(v: &Option<String>) -> String {
+    v.clone().unwrap_or_else(|| "(none)".to_string())
+}
+
+/// One frontmatter key both sides changed differently: ours was kept.
+#[derive(Debug, Clone)]
+struct FieldClash {
+    key: String,
+    /// Each side's raw lines for the key (`None`: that side removed it).
+    ours: Option<Vec<String>>,
+    theirs: Option<Vec<String>>,
+}
+
+/// A key's raw lines shown as its value on one line, for a message.
+fn show_raw(v: &Option<Vec<String>>) -> String {
+    match v {
+        Some(l) => l
+            .iter()
+            .map(|s| s.trim())
+            .collect::<Vec<_>>()
+            .join(" ")
+            .splitn(2, ':')
+            .nth(1)
+            .unwrap_or("")
+            .trim()
+            .to_string(),
+        None => "(none)".to_string(),
+    }
+}
+
+/// The list a key's raw lines hold, when they hold one.
+fn as_list(key: &str, raw: &Option<Vec<String>>) -> Option<Vec<Value>> {
+    match Fields::from_lines(raw.as_ref()?).get(key)? {
+        Value::List(items) => Some(items),
+        _ => None,
+    }
+}
+
+/// Merge frontmatter fields, the one rule for a yak's extra fields and a
+/// page's frontmatter. Starts from ours (so its comments and order stay) and,
+/// key by key: the side that changed a key wins (a removal included); a list
+/// both sides changed merges as a set (`base` plus each side's additions minus
+/// each side's removals); any other value both sides changed differently keeps
+/// ours and is returned as a clash. Keys only theirs added go at the end.
+/// `skip` keys are left as ours has them (the caller merges them).
+fn merge_fields(b: &Fields, o: &Fields, t: &Fields, skip: &[&str]) -> (Fields, Vec<FieldClash>) {
+    let raw = |f: &Fields, k: &str| f.raw(k).map(<[String]>::to_vec);
+    let mut keys: Vec<String> = o.keys().map(String::from).collect();
+    for k in t.keys() {
+        if !keys.iter().any(|x| x == k) {
+            keys.push(k.to_string());
+        }
+    }
+    // A key both sides removed is gone from both; nothing to visit.
+    let mut out = o.clone();
+    let mut clashes = Vec::new();
+    for k in keys.iter().filter(|k| !skip.contains(&k.as_str())) {
+        let (bv, ov, tv) = (raw(b, k), raw(o, k), raw(t, k));
+        let (mut v, clash) = three(&bv, &ov, &tv);
+        if clash {
+            let (bl, ol, tl) = (as_list(k, &bv), as_list(k, &ov), as_list(k, &tv));
+            match (ol, tl) {
+                (Some(ol), Some(tl)) if bv.is_none() || bl.is_some() => {
+                    let merged = merge_list(&bl.unwrap_or_default(), &ol, &tl);
+                    let flow = ov.as_ref().is_some_and(|l| l.len() == 1);
+                    let mut f = Fields::default();
+                    if flow {
+                        f.set_flow(k, &Value::List(merged));
+                    } else {
+                        f.set(k, &Value::List(merged));
+                    }
+                    v = f.raw(k).map(<[String]>::to_vec);
+                }
+                _ => clashes.push(FieldClash {
+                    key: k.clone(),
+                    ours: ov.clone(),
+                    theirs: tv.clone(),
+                }),
+            }
+        }
+        match v {
+            Some(lines) => out.set_raw(k, lines),
+            None => {
+                out.remove(k);
             }
         }
     }
-    out
+    (out, clashes)
 }
 
-fn show_opt(v: &Option<String>) -> String {
-    v.clone().unwrap_or_else(|| "(none)".to_string())
+/// Labels on the conflict markers [`merge_text`] leaves.
+const HERE: &str = "here";
+const THERE: &str = "other side";
+
+/// Three-way merge of prose with `git merge-file`. Returns the merged text and
+/// whether it holds conflict markers (both sides changed the same lines; each
+/// side's version is kept between `<<<<<<< here` and `>>>>>>> other side`).
+/// `None` when git cannot merge them (binary content, git missing).
+pub fn merge_text(base: &str, ours: &str, theirs: &str) -> Option<(String, bool)> {
+    if ours == theirs || theirs == base {
+        return Some((ours.to_string(), false));
+    }
+    if ours == base {
+        return Some((theirs.to_string(), false));
+    }
+    static N: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let n = N.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let dir = std::env::temp_dir().join(format!("yaks-merge-{}-{n}", std::process::id()));
+    std::fs::create_dir_all(&dir).ok()?;
+    let write = |name: &str, text: &str| -> Option<std::path::PathBuf> {
+        let p = dir.join(name);
+        std::fs::write(&p, text).ok()?;
+        Some(p)
+    };
+    let result = (|| {
+        let (o, b, t) = (
+            write("ours", ours)?,
+            write("base", base)?,
+            write("theirs", theirs)?,
+        );
+        let out = Command::new("git")
+            .args(["merge-file", "-p", "-L", HERE, "-L", "base", "-L", THERE])
+            .args([&o, &b, &t])
+            .output()
+            .ok()?;
+        // Exit status: 0 clean, the number of conflicts (capped at 127), or
+        // negative (shown as 128 and up) on an error.
+        let code = out.status.code()?;
+        if !(0..128).contains(&code) {
+            return None;
+        }
+        Some((String::from_utf8(out.stdout).ok()?, code > 0))
+    })();
+    let _ = std::fs::remove_dir_all(&dir);
+    result
+}
+
+/// Merge two edits of a description (text with no trailing newline).
+fn merge_description(base: &str, ours: &str, theirs: &str) -> Option<(String, bool)> {
+    let nl = |s: &str| {
+        if s.is_empty() {
+            String::new()
+        } else {
+            format!("{s}\n")
+        }
+    };
+    let (text, conflict) = merge_text(&nl(base), &nl(ours), &nl(theirs))?;
+    Some((text.trim_end().to_string(), conflict))
 }
 
 /// Merge `ours` and `theirs`, two edits of `base`, into one valid yak file.
@@ -89,12 +229,13 @@ fn show_opt(v: &Option<String>) -> String {
 /// - Notes: the union of both sides' entries, deduped by exact entry, ordered
 ///   by timestamp (stable: ours first on a tie); an entry in `base` that either
 ///   side dropped stays dropped.
-/// - Description: the side that changed it; both differently: ours kept.
-/// - `updated`: the later of the two. `labels`, `depends_on`, `prs`: `base` plus each
+/// - Description: merged as text ([`merge_text`]); lines both sides changed
+///   are kept from each between conflict markers.
+/// - `updated`: the later of the two. `tags`, `depends_on`, `prs`: `base` plus each
 ///   side's additions minus each side's removals.
 /// - Every other field (title, status, type, priority, parent, source, needs,
-///   verify, created, unknown keys): the side that changed it wins; both
-///   differently: ours kept.
+///   verify, created, other keys): the side that changed it wins; both
+///   differently: ours kept. A list in another key merges like `tags`.
 ///
 /// Each conflict is one line of a single `merge-driver` note appended to the
 /// merged yak, so nothing is lost silently. An empty `base` (both sides added
@@ -126,13 +267,13 @@ fn try_merge(base: &str, ours: &str, theirs: &str) -> Option<Merged> {
             created: None,
             updated: None,
             parent: None,
-            labels: Vec::new(),
+            tags: Vec::new(),
             depends_on: Vec::new(),
             source: None,
             prs: Vec::new(),
             needs: None,
             verify: None,
-            extra: Vec::new(),
+            extra: Default::default(),
             body: String::new(),
         }
     } else {
@@ -161,42 +302,10 @@ fn try_merge(base: &str, ours: &str, theirs: &str) -> Option<Merged> {
     let needs = scalar!("needs", needs, show_opt);
     let verify = scalar!("verify", verify, show_opt);
 
-    // Unknown frontmatter keys, one scalar per key (a block list is one value).
-    let (bg, og, tg) = (
-        extra_groups(&b.extra),
-        extra_groups(&o.extra),
-        extra_groups(&t.extra),
-    );
-    let find = |g: &[(String, Vec<String>)], k: &str| -> Option<Vec<String>> {
-        g.iter().find(|(key, _)| key == k).map(|(_, l)| l.clone())
-    };
-    let mut keys: Vec<&String> = og.iter().map(|(k, _)| k).collect();
-    for (k, _) in &tg {
-        if !keys.contains(&k) {
-            keys.push(k);
-        }
-    }
-    let mut extra: Vec<String> = Vec::new();
-    for k in keys {
-        let (ov, tv) = (find(&og, k), find(&tg, k));
-        let (v, c) = three(&find(&bg, k), &ov, &tv);
-        if c {
-            let show = |v: &Option<Vec<String>>| match v {
-                Some(l) => l
-                    .iter()
-                    .map(|s| s.trim())
-                    .collect::<Vec<_>>()
-                    .join(" ")
-                    .splitn(2, ':')
-                    .nth(1)
-                    .unwrap_or("")
-                    .trim()
-                    .to_string(),
-                None => "(none)".to_string(),
-            };
-            clashes.push((k.clone(), show(&ov), show(&tv)));
-        }
-        extra.extend(v.into_iter().flatten());
+    // The other frontmatter keys, by the shared field rule.
+    let (extra, extra_clashes) = merge_fields(&b.extra, &o.extra, &t.extra, &[]);
+    for c in &extra_clashes {
+        clashes.push((c.key.clone(), show_raw(&c.ours), show_raw(&c.theirs)));
     }
 
     let updated = std::cmp::max(o.updated.clone(), t.updated.clone());
@@ -207,7 +316,15 @@ fn try_merge(base: &str, ours: &str, theirs: &str) -> Option<Merged> {
         store::description(&o.body),
         store::description(&t.body),
     );
-    let (desc, desc_clash) = three(&bd, &od, &td);
+    // Merged as text; if git cannot, ours is kept and theirs quoted in the note.
+    let (desc, desc_markers, desc_quote) = match merge_description(&bd, &od, &td) {
+        Some((d, markers)) => (d, markers, false),
+        None => {
+            let (d, clash) = three(&bd, &od, &td);
+            (d, false, clash)
+        }
+    };
+    let desc_clash = desc_markers || desc_quote;
 
     let (bn, on, tn) = (
         store::parse_notes(&b.body),
@@ -235,7 +352,14 @@ fn try_merge(base: &str, ours: &str, theirs: &str) -> Option<Merged> {
                 format!("merge conflict: {f} was {ov} here, {tv} on the other side; kept {ov}")
             })
             .collect();
-        if desc_clash {
+        if desc_markers {
+            lines.push(
+                "merge conflict: description was changed here and on the other side; \
+                 both versions are kept between conflict markers: edit it to resolve"
+                    .to_string(),
+            );
+        }
+        if desc_quote {
             let quoted: Vec<String> = td.lines().map(|l| format!("> {l}")).collect();
             lines.push(format!(
                 "merge conflict: description was changed here and on the other side; \
@@ -266,7 +390,7 @@ fn try_merge(base: &str, ours: &str, theirs: &str) -> Option<Merged> {
         created,
         updated,
         parent,
-        labels: merge_list(&b.labels, &o.labels, &t.labels),
+        tags: merge_list(&b.tags, &o.tags, &t.tags),
         depends_on: merge_list(&b.depends_on, &o.depends_on, &t.depends_on),
         source,
         prs: merge_list(&b.prs, &o.prs, &t.prs),
@@ -281,27 +405,161 @@ fn try_merge(base: &str, ours: &str, theirs: &str) -> Option<Merged> {
     })
 }
 
+/// The frontmatter key a page records field clashes under: a list of
+/// `{field, theirs}`, the other side's value of a field both sides set
+/// differently (ours was kept). Doctor and `yaks conflicts` report it;
+/// remove an entry once settled.
+pub const PAGE_CONFLICTS_KEY: &str = "merge_conflicts";
+
+/// Merge three versions of a farm document that is not a yak: a page, a
+/// source's text, any markdown file. With frontmatter on both sides, fields
+/// merge by the shared rule ([`merge_fields`]); a value both sides set
+/// differently keeps ours and adds `{field, theirs}` to `merge_conflicts:`.
+/// The body (or the whole file, without frontmatter) merges as text, keeping
+/// conflict markers where both sides changed the same lines. `conflicts`
+/// names the clashing fields, and `body` when markers were left. `None` when
+/// the text cannot be merged (binary content).
+pub fn merge_document(base: &str, ours: &str, theirs: &str) -> Option<Merged> {
+    use crate::pages::Page;
+    let (o, t) = (Page::parse("", ours), Page::parse("", theirs));
+    if !(o.has_frontmatter && t.has_frontmatter) {
+        let (text, markers) = merge_text(base, ours, theirs)?;
+        let conflicts = if markers {
+            vec!["body".to_string()]
+        } else {
+            Vec::new()
+        };
+        return Some(Merged { text, conflicts });
+    }
+    let b = if base.trim().is_empty() {
+        Page::parse("", "---\n---\n")
+    } else {
+        Page::parse("", base)
+    };
+    let (mut fields, clashes) =
+        merge_fields(&b.fields, &o.fields, &t.fields, &[PAGE_CONFLICTS_KEY]);
+
+    // Clash records: both sides' existing ones, then the new ones.
+    let records = |f: &Fields| -> Vec<Value> {
+        f.get(PAGE_CONFLICTS_KEY)
+            .map(|v| v.as_list().into_iter().cloned().collect())
+            .unwrap_or_default()
+    };
+    let mut list = merge_list(
+        &records(&b.fields),
+        &records(&o.fields),
+        &records(&t.fields),
+    );
+    for c in &clashes {
+        let theirs = match &c.theirs {
+            Some(lines) => Fields::from_lines(lines)
+                .get(&c.key)
+                .unwrap_or_else(|| Value::Str(show_raw(&c.theirs))),
+            None => Value::Plain("(none)".to_string()),
+        };
+        let rec = Value::Map(vec![
+            ("field".to_string(), Value::Plain(c.key.clone())),
+            ("theirs".to_string(), theirs),
+        ]);
+        if !list.contains(&rec) {
+            list.push(rec);
+        }
+    }
+    let same_as = |f: &Fields| records(f) == list;
+    if same_as(&o.fields) {
+        // Ours' lines, untouched.
+    } else if same_as(&t.fields) && !list.is_empty() {
+        fields.set_raw(
+            PAGE_CONFLICTS_KEY,
+            t.fields
+                .raw(PAGE_CONFLICTS_KEY)
+                .unwrap_or_default()
+                .to_vec(),
+        );
+    } else if list.is_empty() {
+        fields.remove(PAGE_CONFLICTS_KEY);
+    } else {
+        fields.set(PAGE_CONFLICTS_KEY, &Value::List(list));
+    }
+
+    let (body, markers) = merge_text(&b.body, &o.body, &t.body)?;
+    let page = Page {
+        path: String::new(),
+        fields,
+        body,
+        has_frontmatter: true,
+    };
+    let mut conflicts: Vec<String> = clashes.into_iter().map(|c| c.key).collect();
+    if markers {
+        conflicts.push("body".to_string());
+    }
+    Some(Merged {
+        text: page.render(),
+        conflicts,
+    })
+}
+
+/// Whether repository path `path` is where a yak lives (`…/<herd>/yaks/<id>.md`,
+/// not inside a wiki): such a file must merge as a yak or not at all.
+fn is_yak_path(path: &str) -> bool {
+    let parts: Vec<&str> = path.split('/').collect();
+    parts.len() >= 2 && parts[parts.len() - 2] == "yaks" && !parts.contains(&crate::pages::WIKI_DIR)
+}
+
 /// What `yaks merge-driver %O %A %B %P` does: merge the three files git hands
 /// over and write the result to `ours` (`%A`). Returns the process exit code:
-/// 0 for a merged yak, conflicts included (they are recorded in the file); 1
-/// when any of the three is not a yak, leaving `ours` untouched so git reports
-/// a conflict for that path. An I/O error is an `Err`.
+/// 0 for a merged file, conflicts included (recorded in the file: a note, a
+/// `merge_conflicts:` entry, or markers in the prose); 1 when it cannot be
+/// merged (a file in a yaks directory that is not a yak, binary content),
+/// leaving `ours` untouched so git reports a conflict for that path. An I/O
+/// error is an `Err`.
 pub fn run(base: &Path, ours: &Path, theirs: &Path, path: &str) -> Result<i32> {
-    let read = |p: &Path| -> Result<String> {
-        std::fs::read_to_string(p).with_context(|| format!("reading {}", p.display()))
+    let read = |p: &Path| -> Result<Option<String>> {
+        let bytes = std::fs::read(p).with_context(|| format!("reading {}", p.display()))?;
+        Ok(String::from_utf8(bytes).ok())
     };
-    let (b, o, t) = (read(base)?, read(ours)?, read(theirs)?);
-    let Some(m) = try_merge(&b, &o, &t) else {
-        eprintln!("yaks merge-driver: {path}: not a yak file, left for a manual merge");
+    let (Some(b), Some(o), Some(t)) = (read(base)?, read(ours)?, read(theirs)?) else {
+        eprintln!("yaks merge-driver: {path}: not text, left for a manual merge");
+        return Ok(1);
+    };
+    let yak = is_yak_path(path);
+    let merged = if yak {
+        try_merge(&b, &o, &t)
+    } else {
+        merge_document(&b, &o, &t)
+    };
+    let Some(m) = merged else {
+        let what = if yak {
+            "not a yak file"
+        } else {
+            "cannot be merged as text"
+        };
+        eprintln!("yaks merge-driver: {path}: {what}, left for a manual merge");
         return Ok(1);
     };
     std::fs::write(ours, &m.text).with_context(|| format!("writing {}", ours.display()))?;
     if !m.conflicts.is_empty() {
-        eprintln!(
-            "yaks merge-driver: {path}: both sides changed {}; kept this side, \
-             the other recorded in a note",
-            m.conflicts.join(", ")
-        );
+        let prose = ["description", "body"];
+        let fields: Vec<&str> = m
+            .conflicts
+            .iter()
+            .map(String::as_str)
+            .filter(|c| !prose.contains(c))
+            .collect();
+        if !fields.is_empty() {
+            let where_ = if yak { "a note" } else { "merge_conflicts:" };
+            eprintln!(
+                "yaks merge-driver: {path}: both sides changed {}; kept this side, \
+                 the other recorded in {where_}",
+                fields.join(", ")
+            );
+        }
+        if m.conflicts.iter().any(|c| prose.contains(&c.as_str())) {
+            eprintln!(
+                "yaks merge-driver: {path}: both sides changed the same lines; \
+                 conflict markers left in the text (`yaks conflicts` lists them)"
+            );
+        }
     }
     Ok(0)
 }
@@ -518,11 +776,11 @@ mod tests {
 
     #[test]
     fn labels_add_on_one_side_and_remove_on_the_other() {
-        let base = yak("hairy", "labels: [x, y]\n", "Desc");
-        let a = yak("hairy", "labels: [x, y, z]\n", "Desc"); // adds z
-        let b = yak("hairy", "labels: [y]\ndepends_on: [t-2222]\n", "Desc"); // drops x
+        let base = yak("hairy", "tags: [x, y]\n", "Desc");
+        let a = yak("hairy", "tags: [x, y, z]\n", "Desc"); // adds z
+        let b = yak("hairy", "tags: [y]\ndepends_on: [t-2222]\n", "Desc"); // drops x
         let t = parsed(&merge(&base, &a, &b));
-        assert_eq!(t.labels, ["y", "z"]);
+        assert_eq!(t.tags, ["y", "z"]);
         assert_eq!(t.depends_on, ["t-2222"]);
     }
 
@@ -556,13 +814,118 @@ mod tests {
     }
 
     #[test]
-    fn a_description_changed_both_ways_keeps_ours_and_quotes_theirs() {
+    fn a_description_changed_both_ways_keeps_both_between_markers() {
         let base = yak("hairy", "", "Old");
         let m = merge(&base, &yak("hairy", "", "Mine"), &yak("hairy", "", "Yours"));
         assert_eq!(m.conflicts, ["description"]);
+        let t = parse(&m.text).expect("still a yak");
+        assert_eq!(
+            store::description(&t.body),
+            "<<<<<<< here\nMine\n=======\nYours\n>>>>>>> other side"
+        );
+        let notes = store::parse_notes(&t.body);
+        assert_eq!(notes.len(), 1);
+        assert!(
+            notes[0].text.contains("conflict markers"),
+            "{}",
+            notes[0].text
+        );
+    }
+
+    #[test]
+    fn description_edits_to_different_lines_both_land() {
+        let base = yak("hairy", "", "one\n\ntwo\n\nthree");
+        let a = yak("hairy", "", "ONE\n\ntwo\n\nthree");
+        let b = yak("hairy", "", "one\n\ntwo\n\nTHREE");
+        let m = merge(&base, &a, &b);
+        assert!(m.conflicts.is_empty(), "{:?}", m.conflicts);
+        assert_eq!(store::description(&parsed(&m).body), "ONE\n\ntwo\n\nTHREE");
+    }
+
+    #[test]
+    fn an_extra_list_field_both_sides_changed_merges_as_a_set() {
+        let base = yak("hairy", "aliases: [a]\n", "Desc");
+        let a = yak("hairy", "aliases: [a, b]\n", "Desc");
+        let b = yak("hairy", "aliases: [c]\n", "Desc");
+        let m = merge(&base, &a, &b);
+        assert!(m.conflicts.is_empty(), "{:?}", m.conflicts);
         let t = parsed(&m);
-        assert_eq!(store::description(&t.body), "Mine");
-        assert!(store::parse_notes(&t.body)[0].text.contains("> Yours"));
+        assert_eq!(t.extra.lines().collect::<Vec<_>>(), ["aliases: [b, c]"]);
+    }
+
+    fn page(front: &str, body: &str) -> String {
+        format!("---\ntype: topic\ntitle: Page\n{front}---\n\n{body}\n")
+    }
+
+    #[test]
+    fn a_page_merges_fields_by_rule_and_body_as_text() {
+        let base = page("tags: [x]\nstatus: draft\n", "# P\n\none\n\ntwo\n");
+        let a = page("tags: [x, y]\nstatus: draft\n", "# P\n\nONE\n\ntwo\n");
+        let b = page("tags: [x, z]\nstatus: final\n", "# P\n\none\n\nTWO\n");
+        let m = merge_document(&base, &a, &b).unwrap();
+        assert!(m.conflicts.is_empty(), "{:?}", m.conflicts);
+        assert_eq!(
+            m.text,
+            "---\ntype: topic\ntitle: Page\ntags: [x, y, z]\nstatus: final\n---\n\n# P\n\nONE\n\nTWO\n\n"
+        );
+    }
+
+    #[test]
+    fn a_page_field_both_sides_set_keeps_ours_and_records_theirs() {
+        let base = page("status: draft\n", "Body");
+        let a = page("status: review\n", "Body");
+        let b = page("status: final\n", "Body");
+        let m = merge_document(&base, &a, &b).unwrap();
+        assert_eq!(m.conflicts, ["status"]);
+        assert_eq!(
+            m.text,
+            "---\ntype: topic\ntitle: Page\nstatus: review\nmerge_conflicts:\n  - {field: status, theirs: final}\n---\n\nBody\n"
+        );
+        // Merging the same again (a rebase replaying it) adds nothing.
+        let again = merge_document(&a, &m.text, &b).unwrap();
+        assert_eq!(
+            again.text.matches("field: status").count(),
+            1,
+            "{}",
+            again.text
+        );
+    }
+
+    #[test]
+    fn a_page_body_both_sides_changed_keeps_markers_and_valid_frontmatter() {
+        let base = page("", "line");
+        let m = merge_document(&base, &page("", "mine"), &page("", "yours")).unwrap();
+        assert_eq!(m.conflicts, ["body"]);
+        let p = crate::pages::Page::parse("wiki/p.md", &m.text);
+        assert_eq!(p.title(), "Page");
+        assert_eq!(
+            p.body,
+            "<<<<<<< here\nmine\n=======\nyours\n>>>>>>> other side\n"
+        );
+    }
+
+    #[test]
+    fn a_file_without_frontmatter_merges_as_text() {
+        let m = merge_document("a\nb\nc\n", "A\nb\nc\n", "a\nb\nC\n").unwrap();
+        assert_eq!(m.text, "A\nb\nC\n");
+        assert!(m.conflicts.is_empty());
+    }
+
+    #[test]
+    fn run_merges_a_page_by_its_path() {
+        let dir = std::env::temp_dir().join(format!("yaks-md-page-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let (b, o, t) = (dir.join("b"), dir.join("o"), dir.join("t"));
+        std::fs::write(&b, page("", "x")).unwrap();
+        std::fs::write(&o, page("", "mine")).unwrap();
+        std::fs::write(&t, page("", "yours")).unwrap();
+        assert_eq!(run(&b, &o, &t, ".yaks/wiki/topics/p.md").unwrap(), 0);
+        assert!(
+            std::fs::read_to_string(&o)
+                .unwrap()
+                .contains("<<<<<<< here")
+        );
     }
 
     #[test]
@@ -573,16 +936,19 @@ mod tests {
         let m = merge(&base, &a, &b);
         assert!(m.conflicts.is_empty());
         let t = parsed(&m);
-        assert_eq!(t.extra, ["foo: 2", "bar: 5", "baz: 7"]);
+        assert_eq!(
+            t.extra.lines().collect::<Vec<_>>(),
+            ["foo: 2", "bar: 5", "baz: 7"]
+        );
     }
 
     #[test]
     fn an_empty_base_merges_as_both_sides_adding_the_file() {
-        let a = yak("hairy", "labels: [a]\n", "Desc");
-        let b = yak("hairy", "labels: [b]\n", "Desc");
+        let a = yak("hairy", "tags: [a]\n", "Desc");
+        let b = yak("hairy", "tags: [b]\n", "Desc");
         let m = merge("", &a, &b);
         assert!(m.conflicts.is_empty(), "{:?}", m.conflicts);
-        assert_eq!(parsed(&m).labels, ["a", "b"]);
+        assert_eq!(parsed(&m).tags, ["a", "b"]);
     }
 
     #[test]
@@ -603,7 +969,7 @@ mod tests {
         std::fs::write(&b, "x: 1\n").unwrap();
         std::fs::write(&o, "x: 2\n").unwrap();
         std::fs::write(&t, "x: 3\n").unwrap();
-        assert_eq!(run(&b, &o, &t, ".yaks/config.yaml").unwrap(), 1);
+        assert_eq!(run(&b, &o, &t, ".yaks/h/yaks/notes.md").unwrap(), 1);
         assert_eq!(std::fs::read_to_string(&o).unwrap(), "x: 2\n");
         let base = yak("hairy", "", "Desc");
         std::fs::write(&b, &base).unwrap();

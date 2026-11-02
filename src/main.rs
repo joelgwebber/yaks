@@ -5,33 +5,45 @@
 //! --json). Tasks live as markdown files under `.yaks/`; status is the folder.
 
 mod actor;
+mod autocommit;
 mod branchfarm;
 mod branchlog;
 mod brief;
 mod changes;
+mod check;
 mod clipboard;
 mod commit;
+mod conflicts;
 mod farm;
+mod fields;
 mod filter;
+mod find;
 mod gitrepo;
+mod hearth_import;
 mod init;
 mod json;
 mod land;
+mod links;
 mod markdown_lint;
 mod mergedriver;
 mod migrate;
 mod model;
+mod pages;
 mod preflight;
 mod privatefarm;
+mod recur;
 mod refs;
 mod rollup;
+mod schemas;
 mod sheds;
 mod skills;
+mod sources;
 mod status;
 mod store;
 mod sync;
 mod tui;
 mod wait;
+mod weight;
 
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
@@ -44,7 +56,7 @@ use farm::{
     TaskRefs, UpdateOutcome,
 };
 use filter::FilterSpec;
-use model::{NEEDS_AGENT, Status, Task, normalize_labels};
+use model::{NEEDS_AGENT, Status, Task, normalize_tags};
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -76,10 +88,11 @@ struct FilterFlags {
     kind: Vec<String>,
     #[arg(long)]
     priority: Vec<u8>,
-    /// Keep only yaks with any of these labels. Repeatable; ORs. Comma- or
-    /// space-separated lists are split (`--label ui,docs`).
-    #[arg(long)]
-    label: Vec<String>,
+    /// Keep only yaks with any of these tags. Repeatable; ORs. Comma- or
+    /// space-separated lists are split (`--tag ui,docs`). `--label` is the
+    /// old spelling.
+    #[arg(long, alias = "label")]
+    tag: Vec<String>,
     /// Keep only yaks in these herds (id prefixes). Repeatable; ORs.
     #[arg(long)]
     herd: Vec<String>,
@@ -110,7 +123,7 @@ impl FilterFlags {
         !self.status.is_empty()
             || !self.kind.is_empty()
             || !self.priority.is_empty()
-            || !self.label.is_empty()
+            || !self.tag.is_empty()
             || !self.herd.is_empty()
             || self.search.is_some()
             || self.ready
@@ -140,6 +153,12 @@ enum Command {
         filter: FilterFlags,
         #[arg(long)]
         all: bool,
+        /// Only yaks with a `due:`, sorted by it (soonest first).
+        #[arg(long)]
+        due: bool,
+        /// With `--due`: only yaks due before this date or datetime.
+        #[arg(long, value_name = "DATE", requires = "due")]
+        before: Option<String>,
         #[arg(long)]
         json: bool,
     },
@@ -153,7 +172,7 @@ enum Command {
     ///
     /// One path per line: by id
     /// (`yaks path yaks-1a2b ...`) or by the shared filter flags
-    /// (`yaks path --status shorn --label cli`). Each yak's file is
+    /// (`yaks path --status shorn --tag cli`). Each yak's file is
     /// `.yaks/<herd>/yaks/<id>.md`, the same path for its whole life (a status move edits
     /// it in place), handy for `git add`. Paths are absolute. An unknown
     /// id is reported on stderr and the exit status is non-zero (known ids are
@@ -173,7 +192,9 @@ enum Command {
     ///
     /// Outgoing references are the parent, deps, and id mentions in its text;
     /// any formal reference that dangles is flagged. With --incoming, list the
-    /// yaks that point at it instead.
+    /// yaks that point at it instead. Given a page path (`wiki/x.md`) instead
+    /// of an id, `--incoming` lists the yaks and pages that link to it, and
+    /// plain `refs` the links the page holds.
     Refs {
         id: String,
         /// Incoming references: every yak whose `parent:` or `depends_on:` names
@@ -330,6 +351,43 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
+    /// Full-text search over the farm: yaks (notes included), pages, sources'
+    /// text and sessions.
+    ///
+    /// Reads the files directly (no index) and prints one line per match,
+    /// `path:line: text`, grouped by file under its title. The match ignores
+    /// case and is a literal substring unless `--regex`. Searches yak files
+    /// (title, description, notes), pages (frontmatter and body), a source's
+    /// `source.md` and `extracted.md` (never the original file), and
+    /// `sessions/**.md`. `--scope` keeps paths under a prefix (`wiki/topics/`,
+    /// `sources`, a herd such as `web`; repeatable), `--kind` keeps one of
+    /// yaks, pages, sources or sessions (repeatable). `--json` prints
+    /// `[{path, kind, title, line, text}]`. Exits 1 when nothing matches, like
+    /// `grep`. `yaks search` is the quick yak-only lookup with the shared
+    /// filters.
+    Find {
+        /// The text to find (a regular expression with `--regex`).
+        pattern: String,
+        /// Treat the pattern as a regular expression: `. [a-z] \d \w \s \b ^ $
+        /// ( ) | * + ? {n,m}`.
+        #[arg(long)]
+        regex: bool,
+        /// Only paths under this prefix of the farm (repeatable): `wiki/`,
+        /// `sources`, `wiki/topics/vec`, or a herd name for its yaks and wiki.
+        #[arg(long = "scope", value_name = "PREFIX")]
+        scopes: Vec<String>,
+        /// Only this kind of file (repeatable).
+        #[arg(long, value_parser = ["yaks", "pages", "sources", "sessions"])]
+        kind: Vec<String>,
+        /// Match case exactly (the default ignores case).
+        #[arg(long)]
+        case_sensitive: bool,
+        /// Ignore case. This is already the default; accepted like grep's `-i`.
+        #[arg(short = 'i', long, conflicts_with = "case_sensitive")]
+        ignore_case: bool,
+        #[arg(long)]
+        json: bool,
+    },
     /// Who is working on what: one row per actor, read from the farm alone.
     ///
     /// A shed is a worker in the farm: an actor, the `[actor]` stamp on its
@@ -387,7 +445,7 @@ enum Command {
     /// "yaks merge-driver %O %A %B %P"`, registered for the farm branch with
     /// `.yaks/**/*.md merge=yaks`). Merges the three versions of one yak into
     /// `<ours>` as a valid yak, never conflict markers: notes unioned by
-    /// timestamp, labels/deps merged, the later `updated`, and a field both
+    /// timestamp, tags/deps merged, the later `updated`, and a field both
     /// sides changed differently keeps this side and records the other in a
     /// `merge-driver` note. Exits 1, leaving `<ours>` alone, when an input is
     /// not a yak file. Needs no farm.
@@ -429,11 +487,12 @@ enum Command {
         /// several herds.
         #[arg(long = "herd")]
         prefix: Option<String>,
-        /// Labels for the new yak. Commas and spaces separate labels (a label
-        /// may contain neither): `--labels ui,docs`, `--labels 'ui docs'`, and
-        /// `--labels ui docs` are equivalent. Duplicates are dropped.
-        #[arg(long, num_args = 1..)]
-        labels: Vec<String>,
+        /// Tags for the new yak. Commas and spaces separate tags (a tag may
+        /// contain neither): `--tags ui,docs`, `--tags 'ui docs'`, and
+        /// `--tags ui docs` are equivalent. Duplicates are dropped. `--labels`
+        /// is the old spelling.
+        #[arg(long, alias = "labels", num_args = 1..)]
+        tags: Vec<String>,
         #[arg(long = "depends-on", num_args = 1..)]
         depends_on: Vec<String>,
         #[arg(long)]
@@ -452,11 +511,22 @@ enum Command {
         /// A rerunnable verification command for this yak (see `yaks verify`).
         #[arg(long)]
         verify: Option<String>,
+        /// When the yak should be done: a date (`2026-11-15`) or an RFC 3339
+        /// datetime. Sugar for `--set due=...`; a hairy or shaving yak past it
+        /// is listed as overdue.
+        #[arg(long, value_name = "DATE")]
+        due: Option<String>,
+        /// Make the yak recur: an ISO 8601 duration (`P1D`, `P2W`, `P1M`,
+        /// `P1Y`; a run of them in Y M W D order). Sugar for `--set every=...`;
+        /// `yaks regrow-due` reopens it once shorn and the next occurrence
+        /// has arrived.
+        #[arg(long, value_name = "DURATION")]
+        every: Option<String>,
         /// Print the created task's id, path, and basic fields as JSON.
         #[arg(long)]
         json: bool,
     },
-    /// Update fields, labels, or append a timestamped note.
+    /// Update fields, tags, or append a timestamped note.
     ///
     /// Accepts multiple ids; the same edit is applied to each.
     Update {
@@ -474,12 +544,14 @@ enum Command {
         /// Replace the body with this file's text (`-` is stdin).
         #[arg(long = "description-file", value_name = "PATH")]
         description_file: Option<String>,
-        /// Labels to add. Commas and spaces separate labels (`ui,docs`).
-        #[arg(long = "add-label", num_args = 1..)]
-        add_label: Vec<String>,
-        /// Labels to remove. Commas and spaces separate labels (`ui,docs`).
-        #[arg(long = "remove-label", num_args = 1..)]
-        remove_label: Vec<String>,
+        /// Tags to add. Commas and spaces separate tags (`ui,docs`).
+        /// `--add-label` is the old spelling.
+        #[arg(long = "add-tag", alias = "add-label", num_args = 1..)]
+        add_tag: Vec<String>,
+        /// Tags to remove. Commas and spaces separate tags (`ui,docs`).
+        /// `--remove-label` is the old spelling.
+        #[arg(long = "remove-tag", alias = "remove-label", num_args = 1..)]
+        remove_tag: Vec<String>,
         /// Set (or clear, with an empty string) this yak's `source:` URL.
         #[arg(long)]
         source: Option<String>,
@@ -493,6 +565,23 @@ enum Command {
         /// Set (or clear, with an empty string) this yak's `verify:` command.
         #[arg(long)]
         verify: Option<String>,
+        /// When the yak should be done: a date (`2026-11-15`) or an RFC 3339
+        /// datetime; an empty string clears it. Sugar for `--set due=...`.
+        #[arg(long, value_name = "DATE")]
+        due: Option<String>,
+        /// Make the yak recur: an ISO 8601 duration (`P1D`, `P2W`, `P1M`,
+        /// `P1Y`); an empty string clears it. Sugar for `--set every=...`.
+        #[arg(long, value_name = "DURATION")]
+        every: Option<String>,
+        /// Set any other frontmatter field, as `key=value` (repeatable):
+        /// `--set due=2026-11-05`, `--set commit=[3f2a9c1,e99754d]` (a list),
+        /// `--set 'owner={team: web}'` (a map). An empty value removes the
+        /// field. Built-in fields (title, tags, ...) have their own flags.
+        #[arg(long = "set", value_name = "KEY=VALUE")]
+        set: Vec<String>,
+        /// Remove a frontmatter field set with `--set` (repeatable).
+        #[arg(long = "unset", value_name = "KEY")]
+        unset: Vec<String>,
         /// Append a timestamped note (markdown). `-` reads it from stdin, so a
         /// multi-line heredoc or pipe arrives intact.
         #[arg(long, conflicts_with = "note_file")]
@@ -714,6 +803,26 @@ enum Command {
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
+    /// Reopen the recurring yaks whose next occurrence has arrived.
+    ///
+    /// A shorn yak with `every:` (an ISO 8601 duration) regrows once the
+    /// latest of `start + k * every` (k >= 1) is not in the future, counting
+    /// from its `regrown:` / `due:` / shear time: it goes back to hairy,
+    /// `due:` becomes that occurrence plus one period, `regrown:` the time
+    /// now, and a `kind: regrow` note says which occurrence and how many were
+    /// skipped. Idempotent, so cron, a harness or the TUI can call it as
+    /// often as they like. Dead yaks never regrow; a yak under a shorn parent
+    /// reopens the parent too. One commit per yak.
+    #[command(name = "regrow-due")]
+    RegrowDue {
+        /// List what would regrow without changing anything.
+        #[arg(long)]
+        dry_run: bool,
+        #[arg(long)]
+        json: bool,
+        #[arg(long = "as")]
+        as_actor: Option<String>,
+    },
     /// Slaughter one or more yaks (move to dead).
     ///
     /// Refuses a yak that still has hairy or shaving descendants, since a dead
@@ -754,6 +863,126 @@ enum Command {
         #[command(subcommand)]
         action: DepAction,
     },
+    /// Print only what a link names: a line range, a markdown section, or a
+    /// document's frontmatter and first paragraph.
+    ///
+    /// The link is written as in a yak or page: `/wiki/x.md#setup` (a page's
+    /// section), `code:src/foo.rs#L12-L40` (lines of a code file, from the
+    /// code checkout yaks was started in), `code:src/foo.rs@3f2a9c1#L12` (as
+    /// at a commit), `yaks-1a2b/log.txt#L5` (an attachment). Cheaper context
+    /// than reading the whole file.
+    Peek {
+        link: String,
+        /// Widen a line range by this many lines either side.
+        #[arg(long, default_value_t = 0)]
+        context: u32,
+    },
+    /// What the farm costs to clone: its commits, history size, the bytes a
+    /// clone of this repository fetches for it, the current tree by kind
+    /// (yaks, attachments, pages, sources), and the largest blobs ever
+    /// committed.
+    ///
+    /// Every branch comes with a plain `git clone`, so a code clone pays for
+    /// the farm branch's whole history. Read-only.
+    Weight {
+        /// Machine output.
+        #[arg(long)]
+        json: bool,
+    },
+    /// Store the farm's binary originals (images, PDFs, office files, audio,
+    /// video, archives under `.yaks/`) in Git LFS from now on.
+    ///
+    /// Writes the rules into the farm branch's `.gitattributes`, commits only
+    /// that file, and installs LFS's hooks for this repository (`git lfs
+    /// install --local`), so a clone of the repository fetches small pointers
+    /// and the bytes come down only where the farm is checked out. Binaries
+    /// already in the tree are converted in the same commit; older history
+    /// keeps their bytes. Needs `git-lfs` installed, and a remote that
+    /// accepts LFS (GitHub does). Idempotent.
+    Lfs,
+    /// List farm documents holding a merge conflict to settle.
+    ///
+    /// The merge driver never fails a merge on prose: where both sides changed
+    /// the same lines of a yak's description or a page body, both versions stay
+    /// in the text between `<<<<<<< here` and `>>>>>>> other side`. A page
+    /// field both sides set differently keeps this side's value and records
+    /// the other under `merge_conflicts:` (a yak gets a `merge-driver` note
+    /// instead). Edit the file to settle it; `doctor` reports the same list.
+    /// Exits 1 when there is anything to settle.
+    Conflicts {
+        /// Machine output: `[{path, marker_lines, fields}]`.
+        #[arg(long)]
+        json: bool,
+    },
+    /// Revert farm commits: the given ones, or every commit `--by` an actor
+    /// `--since` a time.
+    ///
+    /// Every write commits on the farm branch with a `Yaks-Actor` trailer,
+    /// so a session's changes can be found and undone together. The revert
+    /// is one new commit (nothing is rewritten), merged through the yak merge
+    /// driver. Refuses while the farm has uncommitted changes, or when a later
+    /// change touched the same lines. With no commits named, lists what it
+    /// would undo; `--yes` does it.
+    Undo {
+        /// Farm commits to revert (as `git log` shows them in the farm).
+        commits: Vec<String>,
+        /// Every commit whose `Yaks-Actor` is this name.
+        #[arg(long)]
+        by: Option<String>,
+        /// Only commits newer than this (`2h`, `1d`, an ISO date).
+        #[arg(long)]
+        since: Option<String>,
+        /// With --by/--since: revert them (without it, only list).
+        #[arg(long)]
+        yes: bool,
+    },
+    /// Move a page and rewrite every link to it, in yaks and pages.
+    ///
+    /// Links are rewritten to the farm-root form (`/wiki/new/path.md`),
+    /// keeping their `@rev` and `#anchor`. `--dry-run` lists what would
+    /// change.
+    Mv {
+        from: String,
+        to: String,
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Save outside material as a source, or list the farm's sources.
+    ///
+    /// A source is a write-once snapshot under `sources/<date>-<sha8>/`: the
+    /// original, `extracted.md` (its text, for text files), and `source.md`
+    /// saying what it is and where it came from. Cite its `source.md` from a
+    /// page's `sources:` or link it from a yak. yaks fetches nothing and
+    /// converts nothing: save a downloaded copy with `--url` naming the page.
+    Source {
+        #[command(subcommand)]
+        action: SourceAction,
+    },
+    /// Move a yak's attachment into the farm's knowledge: a source, or (a
+    /// markdown attachment, with `--page <path>`) a page. Every link to the
+    /// attachment is rewritten to the new place.
+    Promote {
+        /// The attachment, `<id>/<file>` (as the yak links it).
+        attachment: String,
+        /// Make it a page at this path (`wiki/topics/x.md`) instead of a source.
+        #[arg(long)]
+        page: Option<String>,
+        #[arg(long = "as")]
+        as_actor: Option<String>,
+    },
+    /// Work with the farm's pages: markdown documents that are not yaks.
+    ///
+    /// A page lives under `wiki/` (farm-wide) or `<herd>/wiki/` (one herd's),
+    /// at any depth, and is named by its path from the farm root
+    /// (`wiki/topics/vector-search.md`; a leading `/` is accepted). Its
+    /// frontmatter has `type:` (note, topic, howto, summary, or a typed kind),
+    /// `title:`, and any other fields (`description`, `tags`, `sources`, ...).
+    /// Pages are plain files: editing one by hand is fine, and `yaks doctor`
+    /// checks them.
+    Page {
+        #[command(subcommand)]
+        action: PageAction,
+    },
     /// Move tasks under a new parent (--parent) or to top-level (--unparent).
     ///
     /// Every id is reparented to the same destination. A hairy or shaving yak
@@ -783,13 +1012,14 @@ enum Command {
     Bulk {
         #[command(flatten)]
         filter: FilterFlags,
-        /// Labels to add to every matched yak. Commas and spaces separate labels.
-        #[arg(long = "add-label", num_args = 1..)]
-        add_label: Vec<String>,
-        /// Labels to remove from every matched yak. Commas and spaces separate
-        /// labels.
-        #[arg(long = "remove-label", num_args = 1..)]
-        remove_label: Vec<String>,
+        /// Tags to add to every matched yak. Commas and spaces separate tags.
+        /// `--add-label` is the old spelling.
+        #[arg(long = "add-tag", alias = "add-label", num_args = 1..)]
+        add_tag: Vec<String>,
+        /// Tags to remove from every matched yak. Commas and spaces separate
+        /// tags. `--remove-label` is the old spelling.
+        #[arg(long = "remove-tag", alias = "remove-label", num_args = 1..)]
+        remove_tag: Vec<String>,
         /// Set the priority of every matched yak.
         #[arg(long = "set-priority")]
         set_priority: Option<u8>,
@@ -887,6 +1117,22 @@ enum Command {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Copy a Hearth-layout repo's wiki, sources, schemas and sessions into this farm.
+    ///
+    /// `wiki/` -> `wiki/`, `raw/sources/<id>/` -> `sources/<id>/`, `schemas/`
+    /// -> `schemas/`, `raw/sessions/` -> `sessions/`. Links are rewritten to
+    /// farm paths (`../` links become `/wiki/...`, or `code:` links when they
+    /// point at the repo's own files). `schedules/`, `core/`, `instructions/`,
+    /// `views/` and `.agents/` are not imported. The repo is only read;
+    /// re-running skips identical files and refuses to overwrite a different
+    /// one. One commit on the farm branch.
+    ImportHearth {
+        /// The Hearth-layout repo (a checkout with `wiki/` or `raw/sources/`).
+        repo: String,
+        /// Print the report without writing anything.
+        #[arg(long)]
+        dry_run: bool,
+    },
     /// Start a farm on its own branch, or join another repo's, and install the skills.
     ///
     /// Every farm is an orphan git branch (`yaks`, or --branch) holding only
@@ -954,6 +1200,22 @@ enum Command {
         #[arg(long)]
         strict: bool,
     },
+    /// Read-only upkeep check on the farm's pages and sources.
+    ///
+    /// Reports what a person or agent should look at, and never edits: pages
+    /// past their `stale_after` (the page's own, else its type's schema; an
+    /// ISO 8601 duration such as `P6M` counted from `verified:`, else the
+    /// page's last commit on the farm branch, or a date), sources that no page
+    /// or yak cites (a `sources/<id>/` link or mention; set `superseded_by:`
+    /// or `uncited:` in its source.md to keep it on purpose), page kinds that
+    /// differ only by plural or hyphens, and `doctor`'s `broken-link`,
+    /// `schema-mismatch`, `merge-conflict` and `page-problem`. Exits 1 when
+    /// there is any finding.
+    Check {
+        /// Emit the findings as JSON: `[{kind, message, ids}]`.
+        #[arg(long)]
+        json: bool,
+    },
     /// Read-only landing-readiness check.
     ///
     /// Checks that the verify command of each shorn yak in the change last
@@ -996,7 +1258,8 @@ enum Command {
     /// the cwd. A private farm (`yaks private`) is never pushed. A rebase that
     /// stops on a conflict the driver cannot settle (a non-yak file such as
     /// `config.yaml`) is aborted, leaving the branch as it was, and names the
-    /// files. Nothing is ever synced automatically.
+    /// files. The CLI never syncs by itself; the TUI does, every `sync_interval`
+    /// in `config.yaml` (default 5m, `off` disables).
     Sync {
         /// Do not commit first (a dirty farm then skips the pull too).
         #[arg(long)]
@@ -1137,6 +1400,106 @@ enum DepAction {
     Add { id: String, dep_id: String },
     /// Remove DEP_ID as a dependency of ID.
     Remove { id: String, dep_id: String },
+}
+
+#[derive(Subcommand)]
+enum SourceAction {
+    /// Save a file or a small directory (at most 200 files, 5 MiB) as a
+    /// source. Saving the same content again reports the existing source.
+    Add {
+        path: PathBuf,
+        /// A title (default: the file name).
+        #[arg(long)]
+        title: Option<String>,
+        /// The web page this file is a saved copy of.
+        #[arg(long)]
+        url: Option<String>,
+        /// `sources/<id>/source.md` of the source this is a part of.
+        #[arg(long = "part-of")]
+        part_of: Option<String>,
+        #[arg(long = "as")]
+        as_actor: Option<String>,
+    },
+    /// List sources: id, media type, title and where each came from.
+    List {
+        #[arg(long)]
+        json: bool,
+    },
+}
+
+#[derive(Subcommand)]
+enum PageAction {
+    /// List pages: path, type and title, sorted by path.
+    List {
+        /// Only pages under this path (`wiki/topics`, `yaks/wiki`).
+        prefix: Option<String>,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Print one page: its file text, or `--json` with fields parsed.
+    Show {
+        path: String,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Create a page. Refuses a path that exists or is not
+    /// `wiki/<kebab-parts>.md` / `<herd>/wiki/<kebab-parts>.md`.
+    New {
+        path: String,
+        /// The page's kind (default `note`).
+        #[arg(long = "type")]
+        kind: Option<String>,
+        /// Its title (default: from the file name).
+        #[arg(long)]
+        title: Option<String>,
+        /// Any other field, `key=value` (repeatable): `--set 'tags=[a, b]'`.
+        #[arg(long = "set", value_name = "KEY=VALUE")]
+        set: Vec<String>,
+        /// The body (markdown). `-` reads it from stdin.
+        #[arg(long, conflicts_with = "body_file")]
+        body: Option<String>,
+        /// Read the body from this file (`-` is stdin).
+        #[arg(long = "body-file", value_name = "PATH")]
+        body_file: Option<String>,
+    },
+    /// Set or remove frontmatter fields of a page, or replace its body.
+    Set {
+        path: String,
+        /// `key=value` (repeatable); an empty value removes the field.
+        #[arg(long = "set", value_name = "KEY=VALUE")]
+        set: Vec<String>,
+        /// Remove a field (repeatable).
+        #[arg(long = "unset", value_name = "KEY")]
+        unset: Vec<String>,
+        /// Replace the body (markdown). `-` reads it from stdin.
+        #[arg(long, conflicts_with = "body_file")]
+        body: Option<String>,
+        /// Replace the body with this file's text (`-` is stdin).
+        #[arg(long = "body-file", value_name = "PATH")]
+        body_file: Option<String>,
+    },
+    /// The kinds of page: the untyped ones and every typed kind with a
+    /// schema (`schemas/<type>.md`), with its fields.
+    Types,
+    /// List pages whose fields match: `--type T`, `--where key=value`
+    /// (repeatable, ANDed; a list field matches when it holds the value).
+    /// `--rows` lists the rows of matching table pages instead (the first
+    /// markdown table in each, one row per line), filtered by the same
+    /// `--where` tests on the row's columns.
+    Query {
+        /// List table rows instead of pages.
+        #[arg(long)]
+        rows: bool,
+        #[arg(long = "type")]
+        kind: Option<String>,
+        #[arg(long = "where", value_name = "KEY=VALUE")]
+        where_: Vec<String>,
+        /// Only pages under this path.
+        #[arg(long)]
+        prefix: Option<String>,
+        #[arg(long)]
+        json: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -1312,8 +1675,27 @@ fn main() -> Result<()> {
     };
 
     match cli.command {
-        Command::List { filter, all, json } => {
-            let rows = farm.list(build_spec(filter), all)?;
+        Command::List {
+            filter,
+            all,
+            due,
+            before,
+            json,
+        } => {
+            let mut rows = farm.list(build_spec(filter), all)?;
+            if due {
+                let before = before
+                    .as_deref()
+                    .map(|b| {
+                        recur::When::parse(b).map(|w| w.at).ok_or_else(|| {
+                            anyhow::anyhow!(
+                                "--before {b:?}: expected a date (2026-11-15) or an RFC 3339 datetime"
+                            )
+                        })
+                    })
+                    .transpose()?;
+                rows = recur::due_rows(rows, before);
+            }
             render_rows(&rows, json, "No tasks found.")?;
         }
         Command::Search {
@@ -1325,6 +1707,48 @@ fn main() -> Result<()> {
             spec.search = Some(query);
             let rows = farm.list(spec, false)?;
             render_rows(&rows, json, "No tasks found.")?;
+        }
+        Command::Find {
+            pattern,
+            regex,
+            scopes,
+            kind,
+            case_sensitive,
+            ignore_case: _,
+            json,
+        } => {
+            let fold = !case_sensitive;
+            let pattern = if regex {
+                find::Pattern::regex(&pattern, fold)
+            } else {
+                find::Pattern::literal(&pattern, fold)
+            }
+            .map_err(|e| anyhow::anyhow!("invalid pattern: {e}"))?;
+            let kinds = kind
+                .iter()
+                .map(|k| match k.as_str() {
+                    "yaks" => find::Kind::Yaks,
+                    "pages" => find::Kind::Pages,
+                    "sources" => find::Kind::Sources,
+                    _ => find::Kind::Sessions,
+                })
+                .collect();
+            let hits = find::find(
+                farm.root(),
+                &find::Options {
+                    pattern,
+                    scopes,
+                    kinds,
+                },
+            );
+            if json {
+                json::print(&find::to_json(&hits))?;
+            } else {
+                print!("{}", find::render_text(&hits));
+            }
+            if hits.is_empty() {
+                std::process::exit(1);
+            }
         }
         Command::Log {
             filter,
@@ -1413,6 +1837,13 @@ fn main() -> Result<()> {
                 }
             }
         }
+        Command::ImportHearth { repo, dry_run } => {
+            let report = hearth_import::run(&farm, std::path::Path::new(&repo), dry_run)?;
+            print!("{}", report.render());
+            if !report.conflicts.is_empty() {
+                std::process::exit(1);
+            }
+        }
         Command::Migrate { dry_run, .. } => report_migrate(&farm.migrate(dry_run)?),
         Command::Init { .. } => unreachable!("init is handled before opening a farm"),
         Command::Skills { .. } => unreachable!("skills is handled before opening a farm"),
@@ -1421,6 +1852,124 @@ fn main() -> Result<()> {
         Command::Land { .. } => unreachable!("land is handled before opening a farm"),
         Command::MergeDriver { .. } => {
             unreachable!("merge-driver is handled before opening a farm")
+        }
+        Command::Refs { id, incoming, json } if pages::is_page_path(&pages::normalize(&id)) => {
+            run_page_refs(&farm, &id, incoming, json)?
+        }
+        Command::Peek { link, context } => {
+            let cwd = env::current_dir()?;
+            let code = links::code_base(farm.root(), Some(&cwd));
+            let ids = store::all_ids(farm.root());
+            let parsed = links::parse(&link, links::From::Cli, |s| ids.contains(s));
+            let bases = links::Bases {
+                farm: farm.root(),
+                code: code.as_deref(),
+            };
+            match links::peek(&parsed, &bases, context) {
+                Ok(p) => {
+                    println!("── {}", p.label);
+                    print!("{}", p.text);
+                }
+                Err(e) => {
+                    eprintln!("error: {e}");
+                    std::process::exit(1);
+                }
+            }
+        }
+        Command::Weight { json } => {
+            let r = weight::report(farm.root())?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&r.to_json())?);
+            } else {
+                print!("{}", r.render());
+            }
+        }
+        Command::Lfs => match weight::enable_lfs(farm.root())? {
+            weight::LfsOutcome::Enabled { commit, converted } => println!(
+                "lfs: binary originals under .yaks/ now go to Git LFS (commit {commit}: \
+                 .gitattributes, and {converted} file(s) already in the tree converted to pointers; \
+                 older history keeps their bytes)"
+            ),
+            weight::LfsOutcome::Already => println!("lfs: already on"),
+        },
+        Command::Conflicts { json } => {
+            let found = conflicts::scan(farm.root());
+            if json {
+                let out: Vec<serde_json::Value> = found
+                    .iter()
+                    .map(|c| {
+                        serde_json::json!({
+                            "path": c.path,
+                            "marker_lines": c.marker_lines,
+                            "fields": c.fields,
+                        })
+                    })
+                    .collect();
+                println!("{}", serde_json::to_string_pretty(&out)?);
+            } else if found.is_empty() {
+                println!("no merge conflicts");
+            } else {
+                for c in &found {
+                    println!("{}: {}", c.path, farm::conflict_summary(c));
+                }
+            }
+            if !found.is_empty() {
+                std::process::exit(1);
+            }
+        }
+        Command::Undo {
+            commits,
+            by,
+            since,
+            yes,
+        } => {
+            let shas = if commits.is_empty() {
+                if by.is_none() && since.is_none() {
+                    anyhow::bail!(
+                        "name the commits to undo, or select them with --by and/or --since"
+                    );
+                }
+                let since = since
+                    .as_deref()
+                    .map(|s| store::parse_since(s, chrono::Utc::now()).map(|t| t.timestamp()))
+                    .transpose()?;
+                let list = autocommit::farm_commits(farm.root(), by.as_deref(), since)?;
+                if list.is_empty() {
+                    println!("No farm commits match.");
+                    return Ok(());
+                }
+                for c in &list {
+                    println!(
+                        "  {}  {}  [{}]",
+                        &c.sha[..7],
+                        c.subject,
+                        c.actor.as_deref().unwrap_or("-")
+                    );
+                }
+                if !yes {
+                    println!("{} commit(s); add --yes to undo them.", list.len());
+                    return Ok(());
+                }
+                list.into_iter().map(|c| c.sha).collect()
+            } else {
+                commits
+            };
+            let _lock = store::lock_uncommitted(farm.root())?;
+            let new = autocommit::revert(farm.root(), &shas)?;
+            println!("Undid {} commit(s) as {new}", shas.len());
+        }
+        Command::Mv { from, to, dry_run } => {
+            let changed = farm.page_move(&from, &to, dry_run)?;
+            let verb = if dry_run { "Would move" } else { "Moved" };
+            println!(
+                "{verb} {} -> {}",
+                pages::normalize(&from),
+                pages::normalize(&to)
+            );
+            for (doc, n) in &changed {
+                let s = if *n == 1 { "" } else { "s" };
+                println!("  {doc}: {n} link{s}");
+            }
         }
         Command::Refs {
             id,
@@ -1464,19 +2013,19 @@ fn main() -> Result<()> {
                 // config `verify:` default resolved by the yak's labels.
                 let (cmd, source) = match show.task.verify.clone() {
                     Some(c) => (c, "yak".to_string()),
-                    None => match cfg
-                        .resolve_verify(&show.task.labels, show.task.id.split('-').next())
-                    {
-                        Some(c) => (c, "config".to_string()),
-                        None => {
-                            eprintln!(
-                                "error: {id} has no verify: command and no config default \
+                    None => {
+                        match cfg.resolve_verify(&show.task.tags, show.task.id.split('-').next()) {
+                            Some(c) => (c, "config".to_string()),
+                            None => {
+                                eprintln!(
+                                    "error: {id} has no verify: command and no config default \
                                  for its labels (set one with `yaks update {id} --verify \
                                  '<cmd>'`, or add a config `verify:` entry)"
-                            );
-                            std::process::exit(1);
+                                );
+                                std::process::exit(1);
+                            }
                         }
-                    },
+                    }
                 };
                 println!("verify {id} ({source}): {cmd}");
                 let (ok, verdict) = run_verify_command(&cmd)?;
@@ -1682,15 +2231,18 @@ fn main() -> Result<()> {
             priority,
             parent,
             prefix,
-            labels,
+            tags,
             depends_on,
             source,
             prs,
             description,
             description_file,
             verify,
+            due,
+            every,
             json,
         } => {
+            let fields = due_every_fields(due, every)?;
             let description = resolve_text(
                 "--description",
                 description,
@@ -1710,12 +2262,13 @@ fn main() -> Result<()> {
                 kind,
                 priority,
                 parent,
-                labels,
+                tags,
                 depends_on,
                 source,
                 prs,
                 description,
                 verify,
+                fields,
             };
             match farm.create(new)? {
                 CreateOutcome::ParentNotFound(p) => {
@@ -1747,17 +2300,24 @@ fn main() -> Result<()> {
             priority,
             description,
             description_file,
-            add_label,
-            remove_label,
+            add_tag,
+            remove_tag,
             source,
             add_pr,
             remove_pr,
             verify,
+            due,
+            every,
+            set,
+            unset,
             note,
             note_file,
             meta,
             as_actor,
         } => {
+            // The sugar flags go first, so a later `--set due=...` wins.
+            let mut fields = due_every_fields(due, every)?;
+            fields.extend(parse_field_args(&set, &unset)?);
             let mut stdin = StdinText::real();
             let description =
                 resolve_text("--description", description, description_file, &mut stdin)?;
@@ -1774,12 +2334,13 @@ fn main() -> Result<()> {
                 description,
                 // An explicit overwrite (yaks-9f5c): the CLI never rebases.
                 base: None,
-                add_labels: add_label,
-                remove_labels: remove_label,
+                add_tags: add_tag,
+                remove_tags: remove_tag,
                 source,
                 add_prs: add_pr,
                 remove_prs: remove_pr,
                 verify,
+                fields,
                 note,
                 meta,
                 actor,
@@ -1982,6 +2543,19 @@ fn main() -> Result<()> {
                 actor.as_deref(),
             )?
         }
+        Command::RegrowDue {
+            dry_run,
+            json,
+            as_actor,
+        } => {
+            let actor = actor::resolve(as_actor.as_deref());
+            let report = farm.regrow_due(chrono::Utc::now(), dry_run, actor.as_deref())?;
+            if json {
+                json::print(&json::regrow_due_value(&report, dry_run))?;
+            } else {
+                print!("{}", render_regrow_due(&report, dry_run));
+            }
+        }
         Command::Slaughter {
             ids,
             family,
@@ -2025,6 +2599,66 @@ fn main() -> Result<()> {
                 _ => {}
             },
         },
+        Command::Page { action } => run_page(&farm, action)?,
+        Command::Source { action } => match action {
+            SourceAction::Add {
+                path,
+                title,
+                url,
+                part_of,
+                as_actor,
+            } => {
+                let actor = actor::resolve(as_actor.as_deref()).unwrap_or_default();
+                let saved = farm.source_add(&sources::Request {
+                    path,
+                    title,
+                    url,
+                    part_of,
+                    actor,
+                    origin: None,
+                })?;
+                match &saved {
+                    sources::Saved::New(d) => println!("Saved {d}/source.md"),
+                    sources::Saved::Already(d) => println!("Already saved: {d}/source.md"),
+                }
+            }
+            SourceAction::List { json } => {
+                let all = sources::list(farm.root());
+                if json {
+                    json::print(&serde_json::Value::Array(
+                        all.iter()
+                            .map(|s| {
+                                serde_json::json!({
+                                    "dir": s.dir, "title": s.title, "media_type": s.media_type,
+                                    "resource": s.resource, "fields": s.fields.to_json(),
+                                })
+                            })
+                            .collect(),
+                    ))?;
+                } else if all.is_empty() {
+                    println!("No sources.");
+                } else {
+                    for s in &all {
+                        println!(
+                            "  {}  {:<16}  {}  ({})",
+                            s.dir, s.media_type, s.title, s.resource
+                        );
+                    }
+                }
+            }
+        },
+        Command::Promote {
+            attachment,
+            page,
+            as_actor,
+        } => {
+            let Some((id, name)) = attachment.split_once('/') else {
+                anyhow::bail!("{attachment}: give the attachment as <id>/<file>");
+            };
+            let actor = actor::resolve(as_actor.as_deref()).unwrap_or_default();
+            let to = farm.promote(id, name, page.as_deref(), &actor)?;
+            println!("Promoted {attachment} -> {to}; links to it now point there");
+        }
         Command::Reparent {
             ids,
             parent,
@@ -2042,8 +2676,8 @@ fn main() -> Result<()> {
         }
         Command::Bulk {
             filter,
-            add_label,
-            remove_label,
+            add_tag,
+            remove_tag,
             set_priority,
             set_type,
             reparent,
@@ -2055,7 +2689,7 @@ fn main() -> Result<()> {
             // Safety rule 1: never operate on the whole farm implicitly.
             if !filter.any_set() {
                 eprintln!(
-                    "error: bulk requires at least one filter flag (e.g. --label, --status, --priority); refusing to select the whole farm"
+                    "error: bulk requires at least one filter flag (e.g. --tag, --status, --priority); refusing to select the whole farm"
                 );
                 std::process::exit(1);
             }
@@ -2066,17 +2700,17 @@ fn main() -> Result<()> {
             }
             // Normalize up front so the dry-run preview shows the labels that
             // will actually be written (yaks-7cb3).
-            let add_label = normalize_labels(&add_label);
-            let remove_label = normalize_labels(&remove_label);
-            let does_field_edit = !add_label.is_empty()
-                || !remove_label.is_empty()
+            let add_tag = normalize_tags(&add_tag);
+            let remove_tag = normalize_tags(&remove_tag);
+            let does_field_edit = !add_tag.is_empty()
+                || !remove_tag.is_empty()
                 || set_priority.is_some()
                 || set_type.is_some();
             let does_reparent = unparent || reparent.is_some();
             // Safety rule 2: require at least one mutation flag.
             if !does_field_edit && !does_reparent && request.is_none() {
                 eprintln!(
-                    "error: bulk requires at least one mutation flag (--add-label/--remove-label/--set-priority/--set-type/--reparent/--unparent/--request)"
+                    "error: bulk requires at least one mutation flag (--add-tag/--remove-tag/--set-priority/--set-type/--reparent/--unparent/--request)"
                 );
                 std::process::exit(1);
             }
@@ -2089,8 +2723,8 @@ fn main() -> Result<()> {
             }
             let ids: Vec<String> = rows.iter().map(|t| t.id.clone()).collect();
             let mutation = describe_bulk_mutation(
-                &add_label,
-                &remove_label,
+                &add_tag,
+                &remove_tag,
                 set_priority,
                 set_type.as_deref(),
                 reparent.as_deref(),
@@ -2126,12 +2760,13 @@ fn main() -> Result<()> {
                     priority: set_priority,
                     description: None,
                     base: None,
-                    add_labels: add_label,
-                    remove_labels: remove_label,
+                    add_tags: add_tag,
+                    remove_tags: remove_tag,
                     source: None,
                     add_prs: Vec::new(),
                     remove_prs: Vec::new(),
                     verify: None,
+                    fields: Vec::new(),
                     note: None,
                     meta: Vec::new(),
                     actor: None,
@@ -2192,6 +2827,17 @@ fn main() -> Result<()> {
                 render_doctor(&issues);
             }
             if !issues.is_empty() {
+                std::process::exit(1);
+            }
+        }
+        Command::Check { json } => {
+            let found = check::run(&farm)?;
+            if json {
+                json::print(&check::to_json(&found))?;
+            } else {
+                print!("{}", check::render(&found));
+            }
+            if !found.is_empty() {
                 std::process::exit(1);
             }
         }
@@ -2309,6 +2955,8 @@ fn main() -> Result<()> {
             size,
             diff,
         } => {
+            // Each saved field is a write; fold a quick burst into one commit.
+            autocommit::set_coalesce(true);
             let app = tui::App::with_farm(farm)?;
             if headless {
                 let (w, h) = parse_size(size.as_deref());
@@ -2324,6 +2972,9 @@ fn main() -> Result<()> {
                 tui::run(app)?;
             }
         }
+    }
+    if let Some(e) = autocommit::take_error() {
+        eprintln!("yaks: {e}");
     }
     Ok(())
 }
@@ -2397,7 +3048,7 @@ fn build_spec(f: FilterFlags) -> FilterSpec {
         statuses: f.status.iter().filter_map(|s| parse_status(s)).collect(),
         types: f.kind,
         priorities: f.priority,
-        labels: normalize_labels(&f.label),
+        tags: normalize_tags(&f.tag),
         herds: f.herd,
         search: f.search,
         ready_only: f.ready,
@@ -2607,6 +3258,87 @@ fn parse_meta_args(args: &[String], has_note: bool) -> Result<Vec<(String, Strin
         .collect()
 }
 
+/// `--set key=value` and `--unset key` as field edits, in that order. A key
+/// must be a plain YAML key and not one [`model::BUILT_IN_KEYS`] names.
+fn parse_field_args(set: &[String], unset: &[String]) -> Result<Vec<(String, fields::Value)>> {
+    let check = |flag: &str, k: &str| -> Result<()> {
+        if !store::is_meta_key(k) {
+            anyhow::bail!(
+                "{flag} {k:?}: not a valid field name (letters, digits, `_` and `-`; not starting with a digit or `-`)"
+            );
+        }
+        if model::BUILT_IN_KEYS.contains(&k) {
+            anyhow::bail!(
+                "{flag} {k:?}: a built-in field; use its own flag (see `yaks update --help`)"
+            );
+        }
+        Ok(())
+    };
+    let mut out = Vec::new();
+    for a in set {
+        let Some((k, v)) = a.split_once('=') else {
+            anyhow::bail!("--set {a:?}: expected key=value");
+        };
+        check("--set", k)?;
+        out.push((k.to_string(), fields::Value::from_cli(v)));
+    }
+    for k in unset {
+        check("--unset", k)?;
+        out.push((k.clone(), fields::Value::Null));
+    }
+    Ok(out)
+}
+
+/// `--due` and `--every` as field edits; an empty string clears the field.
+/// An unreadable value is refused here, before anything is written.
+fn due_every_fields(
+    due: Option<String>,
+    every: Option<String>,
+) -> Result<Vec<(String, fields::Value)>> {
+    let mut out = Vec::new();
+    for (flag, key, text) in [("--due", recur::DUE, due), ("--every", recur::EVERY, every)] {
+        let Some(text) = text else { continue };
+        let value = fields::Value::from_cli(&text);
+        if let Some(why) = recur::field_problem(key, &value) {
+            anyhow::bail!("{flag} {text:?}: {why}");
+        }
+        out.push((key.to_string(), value));
+    }
+    Ok(out)
+}
+
+/// `regrow-due`'s report, one line per yak, and what it held back.
+fn render_regrow_due(r: &recur::Report, dry_run: bool) -> String {
+    let mut out = String::new();
+    if r.regrew.is_empty() && r.held.is_empty() {
+        return "Nothing to regrow.\n".into();
+    }
+    let verb = if dry_run { "Would regrow" } else { "Regrown" };
+    for g in &r.regrew {
+        for a in &g.reopened {
+            out.push_str(&format!("{verb}: {a} (parent of {})\n", g.id));
+        }
+        let skipped = match g.plan.skipped {
+            0 => String::new(),
+            n => format!(", {n} skipped"),
+        };
+        out.push_str(&format!(
+            "{verb}: {}  {} (for {}{skipped}; due {})\n",
+            g.id,
+            g.title,
+            g.plan.occurrence.render(),
+            g.plan.due.render()
+        ));
+    }
+    for (id, why) in &r.held {
+        out.push_str(&format!("Held: {id}: {why}\n"));
+    }
+    if dry_run && !r.regrew.is_empty() {
+        out.push_str("(dry run \u{2014} nothing written; re-run without --dry-run to apply)\n");
+    }
+    out
+}
+
 fn update_many(farm: &Farm, ids: &[String], edit: TaskEdit) -> Result<()> {
     let mut any_failed = false;
     for id in ids {
@@ -2702,8 +3434,8 @@ fn request_many(
 /// line.
 #[allow(clippy::too_many_arguments)]
 fn describe_bulk_mutation(
-    add_label: &[String],
-    remove_label: &[String],
+    add_tag: &[String],
+    remove_tag: &[String],
     set_priority: Option<u8>,
     set_type: Option<&str>,
     reparent: Option<&str>,
@@ -2712,11 +3444,11 @@ fn describe_bulk_mutation(
     note: Option<&str>,
 ) -> String {
     let mut parts: Vec<String> = Vec::new();
-    if !add_label.is_empty() {
-        parts.push(format!("add labels [{}]", add_label.join(", ")));
+    if !add_tag.is_empty() {
+        parts.push(format!("add tags [{}]", add_tag.join(", ")));
     }
-    if !remove_label.is_empty() {
-        parts.push(format!("remove labels [{}]", remove_label.join(", ")));
+    if !remove_tag.is_empty() {
+        parts.push(format!("remove tags [{}]", remove_tag.join(", ")));
     }
     if let Some(p) = set_priority {
         parts.push(format!("set priority {p}"));
@@ -2897,6 +3629,227 @@ fn report_migrate(r: &migrate::Report) {
         line.push_str(" (dry run: nothing written; re-run without --dry-run)");
     }
     println!("{line}");
+}
+
+/// `--set key=value` for a page: any key (pages have no built-in fields
+/// besides what OKF suggests), checked like note metadata keys.
+fn parse_page_fields(set: &[String], unset: &[String]) -> Result<Vec<(String, fields::Value)>> {
+    let mut out = Vec::new();
+    for a in set {
+        let Some((k, v)) = a.split_once('=') else {
+            anyhow::bail!("--set {a:?}: expected key=value");
+        };
+        if !store::is_meta_key(k) {
+            anyhow::bail!("--set {a:?}: {k:?} is not a valid field name");
+        }
+        out.push((k.to_string(), fields::Value::from_cli(v)));
+    }
+    for k in unset {
+        if !store::is_meta_key(k) {
+            anyhow::bail!("--unset {k:?}: not a valid field name");
+        }
+        out.push((k.clone(), fields::Value::Null));
+    }
+    Ok(out)
+}
+
+/// Schema warnings for the page at `path` after a write (advice; the write
+/// stands).
+fn print_schema_warnings(farm: &Farm, path: &str) -> Result<()> {
+    if let Some(p) = farm.page(path)? {
+        for w in schemas::check_page(farm.root(), &p) {
+            eprintln!("warning: {w}");
+        }
+    }
+    Ok(())
+}
+
+fn print_page_rows(pages: &[&pages::Page]) {
+    if pages.is_empty() {
+        println!("No pages found.");
+        return;
+    }
+    let w = pages.iter().map(|p| p.path.len()).max().unwrap_or(0);
+    let kw = pages.iter().map(|p| p.kind().len()).max().unwrap_or(0);
+    for p in pages {
+        println!("  {:w$}  {:kw$}  {}", p.path, p.kind(), p.title());
+    }
+}
+
+fn run_page(farm: &Farm, action: PageAction) -> Result<()> {
+    let under = |p: &pages::Page, prefix: &Option<String>| {
+        prefix.as_ref().is_none_or(|x| {
+            let x = pages::normalize(x);
+            let x = x.trim_end_matches('/');
+            p.path == x || p.path.starts_with(&format!("{x}/"))
+        })
+    };
+    match action {
+        PageAction::List { prefix, json } => {
+            let all = farm.pages()?;
+            let rows: Vec<&pages::Page> = all.iter().filter(|p| under(p, &prefix)).collect();
+            if json {
+                json::print(&serde_json::Value::Array(
+                    rows.iter().map(|p| json::page_value(p, false)).collect(),
+                ))?;
+            } else {
+                print_page_rows(&rows);
+            }
+        }
+        PageAction::Show { path, json } => {
+            let Some(p) = farm.page(&path)? else {
+                eprintln!(
+                    "error: no page {path} (pages live under wiki/ or <herd>/wiki/; `yaks page list`)"
+                );
+                std::process::exit(1);
+            };
+            if json {
+                json::print(&json::page_value(&p, true))?;
+            } else {
+                print!("{}", p.render());
+            }
+        }
+        PageAction::New {
+            path,
+            kind,
+            title,
+            set,
+            body,
+            body_file,
+        } => {
+            let fields = parse_page_fields(&set, &[])?;
+            let body = resolve_text("--body", body, body_file, &mut StdinText::real())?
+                .unwrap_or_default();
+            let file = farm.page_new(&path, kind.as_deref(), title.as_deref(), &fields, &body)?;
+            println!("Created {}", pages::normalize(&path));
+            println!("{}", file.display());
+            print_schema_warnings(&farm, &path)?;
+        }
+        PageAction::Set {
+            path,
+            set,
+            unset,
+            body,
+            body_file,
+        } => {
+            let fields = parse_page_fields(&set, &unset)?;
+            let body = resolve_text("--body", body, body_file, &mut StdinText::real())?;
+            if fields.is_empty() && body.is_none() {
+                anyhow::bail!("nothing to set: give --set, --unset, --body or --body-file");
+            }
+            match farm.page_set(&path, &fields, body.as_deref())? {
+                None => {
+                    eprintln!("error: no page {path}");
+                    std::process::exit(1);
+                }
+                Some(false) => println!("No changes to {}", pages::normalize(&path)),
+                Some(true) => println!("Updated {}", pages::normalize(&path)),
+            }
+            print_schema_warnings(&farm, &path)?;
+        }
+        PageAction::Types => {
+            println!(
+                "Untyped kinds (no schema): {} ({} is the default)",
+                pages::UNTYPED_KINDS.join(", "),
+                pages::DEFAULT_KIND
+            );
+            let all = schemas::load_all(farm.root());
+            if all.is_empty() {
+                println!("No typed kinds yet (add schemas/<type>.md).");
+            }
+            for s in &all {
+                println!("{}", schemas::describe(s));
+                for w in &s.warnings {
+                    println!("    warning: {w}");
+                }
+            }
+        }
+        PageAction::Query {
+            rows: true,
+            kind,
+            where_,
+            prefix,
+            json,
+        } => {
+            let mut tests: Vec<(String, String)> = Vec::new();
+            for w in &where_ {
+                let Some((k, v)) = w.split_once('=') else {
+                    anyhow::bail!("--where {w:?}: expected key=value");
+                };
+                tests.push((k.to_string(), v.to_string()));
+            }
+            let all = farm.pages()?;
+            let mut out: Vec<serde_json::Value> = Vec::new();
+            for p in all
+                .iter()
+                .filter(|p| under(p, &prefix) && kind.as_ref().is_none_or(|k| &p.kind() == k))
+            {
+                for row in schemas::table_rows(&p.body) {
+                    if tests
+                        .iter()
+                        .all(|(k, v)| row.iter().any(|(c, x)| c == k && x == v))
+                    {
+                        let mut m = serde_json::Map::new();
+                        m.insert("page".into(), p.path.clone().into());
+                        for (c, x) in row {
+                            m.insert(c, x.into());
+                        }
+                        out.push(serde_json::Value::Object(m));
+                    }
+                }
+            }
+            if json {
+                json::print(&serde_json::Value::Array(out))?;
+            } else if out.is_empty() {
+                println!("No rows found.");
+            } else {
+                for r in &out {
+                    let o = r.as_object().expect("row");
+                    let cells: Vec<String> = o
+                        .iter()
+                        .filter(|(k, _)| *k != "page")
+                        .map(|(k, v)| format!("{k}={}", v.as_str().unwrap_or("")))
+                        .collect();
+                    println!(
+                        "  {}  {}",
+                        o["page"].as_str().unwrap_or(""),
+                        cells.join("  ")
+                    );
+                }
+            }
+        }
+        PageAction::Query {
+            rows: false,
+            kind,
+            where_,
+            prefix,
+            json,
+        } => {
+            let mut tests: Vec<(String, String)> = Vec::new();
+            if let Some(k) = kind {
+                tests.push(("type".into(), k));
+            }
+            for w in &where_ {
+                let Some((k, v)) = w.split_once('=') else {
+                    anyhow::bail!("--where {w:?}: expected key=value");
+                };
+                tests.push((k.to_string(), v.to_string()));
+            }
+            let all = farm.pages()?;
+            let rows: Vec<&pages::Page> = all
+                .iter()
+                .filter(|p| under(p, &prefix) && tests.iter().all(|(k, v)| pages::matches(p, k, v)))
+                .collect();
+            if json {
+                json::print(&serde_json::Value::Array(
+                    rows.iter().map(|p| json::page_value(p, false)).collect(),
+                ))?;
+            } else {
+                print_page_rows(&rows);
+            }
+        }
+    }
+    Ok(())
 }
 
 fn render_doctor(issues: &[Issue]) {
@@ -3149,6 +4102,62 @@ fn render_rename(plan: &RenamePlan) {
         }
         println!("  {:<14} {}", e.id, parts.join(", "));
     }
+}
+
+/// `refs` for a page: its outgoing links, or with `incoming` the links to it.
+fn run_page_refs(farm: &Farm, path: &str, incoming: bool, json: bool) -> Result<()> {
+    let path = pages::normalize(path);
+    let Some(page) = farm.page(&path)? else {
+        eprintln!("error: no page {path}");
+        std::process::exit(1);
+    };
+    let edges: Vec<links::Edge> = if incoming {
+        farm.links_to(&path)?
+    } else {
+        let ids = store::all_ids(farm.root());
+        links::extract(&page.body)
+            .into_iter()
+            .map(|f| links::Edge {
+                from: path.clone(),
+                line: f.line,
+                link: links::parse(&f.dest, links::From::Page(&path), |s| ids.contains(s)),
+                dest: f.dest,
+            })
+            .collect()
+    };
+    if json {
+        let rows: Vec<serde_json::Value> = edges
+            .iter()
+            .map(|e| {
+                serde_json::json!({
+                    "from": e.from,
+                    "line": e.line,
+                    "dest": e.dest,
+                    "target": links::label(&e.link),
+                    "exists": links::exists(farm.root(), &e.link),
+                })
+            })
+            .collect();
+        let key = if incoming { "incoming" } else { "links" };
+        json::print(&serde_json::json!({ "path": path, "title": page.title(), key: rows }))?;
+        return Ok(());
+    }
+    println!("{path}  {}", page.title());
+    if edges.is_empty() {
+        println!("  (no {}links)", if incoming { "incoming " } else { "" });
+    }
+    for e in &edges {
+        if incoming {
+            println!("  {}  L{}  {}", e.from, e.line, e.dest);
+        } else {
+            let mark = match links::exists(farm.root(), &e.link) {
+                Some(false) => "  BROKEN",
+                _ => "",
+            };
+            println!("  L{:<4} {}{mark}", e.line, links::label(&e.link));
+        }
+    }
+    Ok(())
 }
 
 fn render_refs(r: &TaskRefs) {
@@ -3517,8 +4526,8 @@ fn render_show(s: &Show) {
     if let Some(p) = &t.parent {
         println!("parent:   {p}");
     }
-    if !t.labels.is_empty() {
-        println!("labels:   {}", t.labels.join(", "));
+    if !t.tags.is_empty() {
+        println!("tags:     {}", t.tags.join(", "));
     }
     if !t.depends_on.is_empty() {
         println!("depends:  {}", t.depends_on.join(", "));
@@ -3532,11 +4541,27 @@ fn render_show(s: &Show) {
     if let Some(n) = &t.needs {
         println!("needs:    {n}");
     }
+    for key in recur::KEYS {
+        if let Some(v) = t.extra.get(key).and_then(|v| v.as_str().map(String::from)) {
+            let late = if key == recur::DUE && recur::is_overdue(t, chrono::Utc::now()) {
+                " (overdue)"
+            } else {
+                ""
+            };
+            println!("{key:<9} {v}{late}");
+        }
+    }
     // Preserved but unmodeled frontmatter (Task.extra), surfaced read-only so a
     // hand-added/newer key is visible in `show` without this binary owning it.
-    if !t.extra.is_empty() {
+    let mut other = t.extra.clone();
+    for key in recur::KEYS {
+        if t.extra.get(key).is_some_and(|v| v.as_str().is_some()) {
+            other.remove(key);
+        }
+    }
+    if !other.is_empty() {
         println!("\nOther fields:");
-        for line in &t.extra {
+        for line in other.lines() {
             println!("  {line}");
         }
     }
@@ -3551,12 +4576,12 @@ fn render_show(s: &Show) {
     }
 }
 
-/// `  [X] id  pN type     title [labels] (deps: ...) ⚠ needs:<who>`
+/// `  [X] id  pN type     title [tags] (deps: ...) ⚠ needs:<who>`
 fn fmt_row(t: &Task) -> String {
-    let labels = if t.labels.is_empty() {
+    let tags = if t.tags.is_empty() {
         String::new()
     } else {
-        format!(" [{}]", t.labels.join(","))
+        format!(" [{}]", t.tags.join(","))
     };
     let deps = if t.depends_on.is_empty() {
         String::new()
@@ -3572,14 +4597,15 @@ fn fmt_row(t: &Task) -> String {
         (None, _) => String::new(),
     };
     format!(
-        "  [{}] {}  p{} {:8} {}{}{}{}",
+        "  [{}] {}  p{} {:8} {}{}{}{}{}",
         t.status.glyph(),
         t.id,
         t.priority,
         t.kind,
         t.title,
-        labels,
+        tags,
         deps,
+        recur::due_mark(t, chrono::Utc::now()),
         needs
     )
 }
@@ -3592,7 +4618,11 @@ fn fmt_plain_row(t: &Task) -> String {
         Some(why) => format!(" \u{2713} {}, awaiting pickup", why.as_str()),
         None => String::new(),
     };
-    format!("  {}  p{} {:8} {}{why}", t.id, t.priority, t.kind, t.title)
+    let due = recur::due_mark(t, chrono::Utc::now());
+    format!(
+        "  {}  p{} {:8} {}{due}{why}",
+        t.id, t.priority, t.kind, t.title
+    )
 }
 
 #[cfg(test)]
@@ -3659,7 +4689,7 @@ mod tests {
             t.id = format!("yak-000{n}");
             t.status = st;
             if n == 3 {
-                t.labels = vec!["cli".into()];
+                t.tags = vec!["cli".into()];
             }
             store::write::save(&root, &t).unwrap();
         }
@@ -3751,7 +4781,7 @@ mod tests {
         let (root, farm) = path_farm("filter");
         let by = |f: FilterFlags, all| path_cmd(&farm, &[], f, all);
         let label = FilterFlags {
-            label: vec!["cli".into()],
+            tag: vec!["cli".into()],
             ..Default::default()
         };
         let (code, out, _) = by(label, false);
@@ -3787,7 +4817,7 @@ mod tests {
         assert_eq!((code, out), (0, vec![root.display().to_string()]));
         assert!(err.is_empty(), "{err}");
         let label = FilterFlags {
-            label: vec!["cli".into()],
+            tag: vec!["cli".into()],
             ..Default::default()
         };
         let (code, out, _) = path_cmd(&farm, &["yak-0001"], label, false);
@@ -3804,13 +4834,13 @@ mod tests {
             created: None,
             updated: None,
             parent: None,
-            labels: vec![],
+            tags: vec![],
             depends_on: vec![],
             source: None,
             prs: Vec::new(),
             needs: None,
             verify: None,
-            extra: vec![],
+            extra: Default::default(),
             body: String::new(),
         }
     }

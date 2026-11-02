@@ -12,7 +12,7 @@ expression: "draw(&app, 72, 16)"
 │ Priority:    p2
 │ Created:     -
 │ Updated:     -
-│ Labels:      -
+│ Tags:        -
 │
 │ Children:
 │   🦬  a1  Child A1

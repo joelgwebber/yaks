@@ -143,6 +143,9 @@ struct List {
 struct Renderer<'k> {
     width: usize,
     known: &'k HashSet<&'k str>,
+    /// The document being rendered, which decides what a relative link means
+    /// ([`crate::links::parse`]).
+    from: crate::links::From<'k>,
     line_starts: Vec<usize>,
     rows: Vec<MdRow>,
     containers: Vec<Container>,
@@ -183,7 +186,19 @@ struct Renderer<'k> {
 
 /// Render one markdown document to rows wrapped at `width` display columns.
 /// `known` is the farm's yak ids, so mentions become [`Target::Task`] links.
+/// Links are read as written in a yak; [`render_in`] names the document.
 pub fn render(text: &str, width: usize, known: &HashSet<&str>) -> Vec<MdRow> {
+    render_in(text, width, known, crate::links::From::Yak)
+}
+
+/// [`render`] for a document `from` (a yak, or a page at its farm path), so a
+/// relative link resolves the way `links::parse` reads it there (yaks-7395).
+pub fn render_in<'k>(
+    text: &str,
+    width: usize,
+    known: &'k HashSet<&'k str>,
+    from: crate::links::From<'k>,
+) -> Vec<MdRow> {
     let events: Vec<(Event, Range<usize>)> = Parser::new_ext(text, crate::markdown_lint::options())
         .into_offset_iter()
         .collect();
@@ -192,6 +207,7 @@ pub fn render(text: &str, width: usize, known: &HashSet<&str>) -> Vec<MdRow> {
     let mut r = Renderer {
         width: width.max(1),
         known,
+        from,
         line_starts,
         rows: Vec::new(),
         containers: Vec::new(),
@@ -475,11 +491,13 @@ impl Renderer<'_> {
             Tag::Strikethrough => self.styles.push(palette::strikethrough()),
             Tag::Superscript | Tag::Subscript => self.styles.push(Style::new()),
             Tag::Link { dest_url, .. } => {
-                self.targets.push(link_target(dest_url));
+                let target = link_target(dest_url, self.from, self.known);
+                // An attachment (`<id>/<file>` of a known yak) is marked 📎.
+                let attachment = matches!(target, Target::Artifact(_));
+                self.targets.push(target);
                 self.link = Some(self.targets.len() - 1);
                 self.styles.push(link());
-                // An attachment (`<id>/<file>` of a known yak) is marked 📎.
-                if is_attachment(dest_url, self.known) {
+                if attachment {
                     let st = self.style();
                     self.push_plain("\u{1F4CE} ", line, st);
                 }
@@ -958,22 +976,30 @@ fn wrap_end(cells: &[Cell], width: usize) -> usize {
     }
 }
 
-/// Whether a link destination is a yak attachment: `<id>/<file>` with `<id>` a
-/// known yak id (what `yaks attach` writes).
-fn is_attachment(dest: &str, known: &HashSet<&str>) -> bool {
-    dest.split_once('/')
-        .is_some_and(|(id, file)| !file.is_empty() && known.contains(id))
-}
-
-/// Where a markdown link points: a web URL, a repo source file, or a
-/// farm-relative attachment.
-fn link_target(dest: &str) -> Target {
-    if dest.contains("://") || dest.starts_with("mailto:") {
-        Target::Url(dest.to_string())
-    } else if let Some(src) = super::source::parse_source(dest) {
-        src
-    } else {
-        Target::Artifact(dest.to_string())
+/// Where a markdown link written in document `from` points, by the link
+/// grammar ([`crate::links::parse`], yaks-7395): a URL, a code file, a yak's
+/// attachment (`<id>/<file>` of a known yak), a farm document, or an anchor
+/// in this document. A link the grammar refuses (`../` out of a page) stays
+/// an [`Target::Artifact`] of the text as written, which opens as "not in
+/// this farm".
+pub(crate) fn link_target(dest: &str, from: crate::links::From, known: &HashSet<&str>) -> Target {
+    use crate::links::{Anchor, Link};
+    match crate::links::parse(dest, from, |s| known.contains(s)) {
+        Link::Url(u) => Target::Url(u),
+        Link::Code { path, rev, anchor } => Target::Source {
+            path,
+            lines: match anchor {
+                Some(Anchor::Lines(a, b)) => Some((a, b)),
+                _ => None,
+            },
+            rev,
+        },
+        Link::Attachment { .. } => {
+            Target::Artifact(dest.split('#').next().unwrap_or(dest).to_string())
+        }
+        Link::Farm { path, rev, anchor } => Target::Farm { path, rev, anchor },
+        Link::Local(a) => Target::Local(a),
+        Link::Upward(_) => Target::Artifact(dest.to_string()),
     }
 }
 
@@ -1325,7 +1351,12 @@ mod tests {
                 Target::Artifact("yaks-0001/log.txt".into()),
                 Target::Artifact("yaks-0001/shot.png".into()),
                 Target::Url("https://x.io/a".into()),
-                Target::Artifact("other-9/f.txt".into()),
+                // Not a yak: a farm path (yaks-7395), with no paperclip.
+                Target::Farm {
+                    path: "other-9/f.txt".into(),
+                    rev: None,
+                    anchor: None,
+                },
             ]
         );
     }

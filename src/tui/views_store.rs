@@ -74,7 +74,7 @@ pub(crate) fn spec_to_json(s: &FilterSpec) -> Value {
         "statuses": statuses,
         "types": types,
         "priorities": priorities,
-        "labels": s.labels,
+        "tags": s.tags,
         "herds": s.herds,
         "search": s.search,
         "ready_only": s.ready_only,
@@ -122,7 +122,8 @@ pub(crate) fn spec_from_json(d: Option<&Value>) -> FilterSpec {
         statuses,
         types: str_vec(d.get("types")),
         priorities,
-        labels: str_vec(d.get("labels")),
+        // `labels` is the key views were saved under before schema 7.
+        tags: str_vec(d.get("tags").or_else(|| d.get("labels"))),
         herds: str_vec(d.get("herds")),
         search: opt_str("search"),
         ready_only: d
@@ -191,8 +192,10 @@ fn view_from_json(d: &Value) -> Option<View> {
 
 /// Merge a stored overlay with the code-defined default views: order follows
 /// the overlay; built-in structure comes from code (only name/pinned overlaid);
-/// omitted built-ins are appended; custom views are rebuilt; unknown built-in
-/// keys are dropped. Mirrors Python `reconcile`.
+/// an omitted built-in (one added since the overlay was saved, like the Wiki
+/// tab) goes just before the first built-in that follows it in the defaults
+/// and is present, else at the end; custom views are rebuilt; unknown
+/// built-in keys are dropped. Mirrors Python `reconcile`.
 pub fn reconcile(entries: &[Value], defaults: Vec<View>) -> Vec<View> {
     let mut out: Vec<View> = Vec::new();
     let mut seen: Vec<String> = Vec::new();
@@ -223,10 +226,15 @@ pub fn reconcile(entries: &[Value], defaults: Vec<View>) -> Vec<View> {
         }
         // else: a built-in key we no longer ship -> drop it.
     }
-    for v in defaults {
-        if !seen.iter().any(|k| *k == v.key) {
-            out.push(v);
+    for (i, v) in defaults.iter().enumerate() {
+        if seen.iter().any(|k| *k == v.key) {
+            continue;
         }
+        let at = defaults[i + 1..]
+            .iter()
+            .find_map(|n| out.iter().position(|o| o.key == n.key))
+            .unwrap_or(out.len());
+        out.insert(at, v.clone());
     }
     out
 }
@@ -355,6 +363,32 @@ mod tests {
         ] {
             assert!(out.iter().any(|v| v.key == key), "missing {key}");
         }
+    }
+
+    #[test]
+    fn a_new_builtin_lands_beside_its_neighbour_in_a_saved_order() {
+        // A views file saved before the Wiki tab existed, with Sheds moved
+        // first: Wiki goes just before Sheds, not to the end.
+        let entries: Vec<Value> = ["sheds", "status:hairy", "working-set"]
+            .iter()
+            .map(|k| json!({"key": k, "name": null, "pinned": true}))
+            .collect();
+        let out = reconcile(&entries, default_views());
+        let keys: Vec<&str> = out.iter().map(|v| v.key.as_str()).collect();
+        assert_eq!(
+            keys,
+            vec![
+                "wiki",
+                "sheds",
+                "status:hairy",
+                "status:shaving",
+                "status:shorn",
+                "recent",
+                "inbox",
+                "working-set",
+            ]
+        );
+        assert_eq!(out.len(), default_views().len());
     }
 
     #[test]

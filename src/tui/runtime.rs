@@ -34,11 +34,21 @@ fn event_loop(
     let (_watcher, rx) = setup_watcher(watch_path);
     let mut dirty = false;
     loop {
+        // The interval sync (yaks-f0db): collect a finished one (its pull
+        // rewrote yak files, so reload) and start a due one. Never blocks.
+        if app.tick_auto_sync(std::time::Instant::now()) {
+            dirty = true;
+        }
         // Apply external changes only while idle (no overlay), so we never yank
         // data out from under an open editor/picker mid-interaction.
         if dirty && matches!(app.overlay, Overlay::None) {
             app.reload_preserving_selection();
             dirty = false;
+        }
+        // A per-change commit that failed under the last write: say so (the
+        // file is written; `W` commits it).
+        if let Some(e) = crate::autocommit::take_error() {
+            app.notification = Some(e);
         }
         // The Sheds tab's background scan: pick up a finished one, start a
         // due one. Never blocks (yaks-98f1).

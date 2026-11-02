@@ -32,6 +32,49 @@ pub enum Target {
     /// A footnote reference `[n]` (the number it renders as): following it
     /// moves the line cursor to the definition at the end of the same block.
     Footnote(String),
+    /// A farm document by its farm-relative path (a page, a source, any farm
+    /// file; yaks-7395), optionally pinned to a farm commit and anchored at a
+    /// heading or lines. Opened in the text viewer.
+    Farm {
+        path: String,
+        rev: Option<String>,
+        anchor: Option<crate::links::Anchor>,
+    },
+    /// An anchor in the same document (`#section`, `#L12`).
+    Local(crate::links::Anchor),
+}
+
+impl Target {
+    /// The link as [`crate::links`] sees it, for `peek` (`None` for a yak id,
+    /// a URL, a footnote, or an in-document anchor, which needs its
+    /// document: see [`super::handlers::AttachView::peek_link`]).
+    pub fn as_link(&self) -> Option<crate::links::Link> {
+        use crate::links::{Anchor, Link};
+        Some(match self {
+            Target::Farm { path, rev, anchor } => Link::Farm {
+                path: path.clone(),
+                rev: rev.clone(),
+                anchor: anchor.clone(),
+            },
+            Target::Source { path, lines, rev } => Link::Code {
+                path: path.clone(),
+                rev: rev.clone(),
+                anchor: lines.map(|(a, b)| Anchor::Lines(a, b)),
+            },
+            Target::Artifact(p) => {
+                let rel = p.strip_prefix(".yaks/").unwrap_or(p);
+                let (id, name) = rel.split_once('/')?;
+                Link::Attachment {
+                    id: id.to_string(),
+                    name: crate::links::percent_decode(name),
+                    anchor: None,
+                }
+            }
+            Target::Task(_) | Target::Url(_) | Target::Footnote(_) | Target::Local(_) => {
+                return None;
+            }
+        })
+    }
 }
 
 /// Styling hint for a detail line.
@@ -271,10 +314,10 @@ pub fn build_at(
     let by_id: HashMap<&str, &Task> = all.iter().map(|t| (t.id.as_str(), t)).collect();
     let known: HashSet<&str> = by_id.keys().copied().collect();
 
-    let labels = if task.labels.is_empty() {
+    let labels = if task.tags.is_empty() {
         "-".to_string()
     } else {
-        task.labels.join(", ")
+        task.tags.join(", ")
     };
     // Whether the farm spans more than one herd (id prefix). Mirrors the
     // App-level `is_multi_herd` present-prefix rule (a herd is a dashed id
@@ -323,7 +366,27 @@ pub fn build_at(
     out.push(field("Priority:", &format!("p{}", task.priority)));
     out.push(field("Created:", &opt_date(&task.created, clock)));
     out.push(field("Updated:", &opt_date(&task.updated, clock)));
-    out.push(field("Labels:", &labels));
+    out.push(field("Tags:", &labels));
+    // Due date and recurrence (yaks-2fc5): the yak's own fields, so their own
+    // rows; an overdue open yak carries the warning accent.
+    let text = |key: &str| {
+        task.extra
+            .get(key)
+            .and_then(|v| v.as_str().map(String::from))
+    };
+    if let Some(due) = text(crate::recur::DUE) {
+        if crate::recur::is_overdue(task, clock.now()) {
+            out.push(warn_field("Due:", &format!("{due} (overdue)")));
+        } else {
+            out.push(field("Due:", &due));
+        }
+    }
+    if let Some(every) = text(crate::recur::EVERY) {
+        out.push(field("Every:", &every));
+    }
+    if let Some(regrown) = text(crate::recur::REGROWN) {
+        out.push(field("Regrown:", &opt_date(&Some(regrown), clock)));
+    }
 
     if !task.depends_on.is_empty() {
         out.push(empty());
@@ -439,10 +502,16 @@ pub fn build_at(
     // read-only so hand-added/newer keys are visible instead of silently
     // invisible; the raw lines are echoed as-is (they are not label/value
     // pairs we own the formatting of).
-    if !task.extra.is_empty() {
+    let mut other = task.extra.clone();
+    for key in crate::recur::KEYS {
+        if text(key).is_some() {
+            other.remove(key);
+        }
+    }
+    if !other.is_empty() {
         out.push(empty());
         out.push(section("Other fields:"));
-        for line in &task.extra {
+        for line in other.lines() {
             out.push(DLine {
                 text: format!("  {line}"),
                 kind: Kind::Field,
@@ -560,10 +629,11 @@ fn image_slot(env: &ImageEnv, img: &mdrender::MdImage, pane_cols: usize) -> Opti
     }
     let rel = img.target.strip_prefix(".yaks/").unwrap_or(&img.target);
     let (id, name) = rel.split_once('/')?;
-    if !crate::store::is_image_name(name) {
+    let name = crate::links::percent_decode(name);
+    if !crate::store::is_image_name(&name) {
         return None;
     }
-    let found = crate::farm::locate_attachment(env.root, id, name)?;
+    let found = crate::farm::locate_attachment(env.root, id, &name)?;
     let (w, h) = image::ImageReader::open(&found.path)
         .ok()?
         .with_guessed_format()
@@ -865,13 +935,13 @@ mod detail_tests {
             created: Some("2025-12-31T19:00:00Z".into()),
             updated: None,
             parent: parent.map(String::from),
-            labels: vec![],
+            tags: vec![],
             depends_on: deps.iter().map(|s| s.to_string()).collect(),
             source: None,
             prs: Vec::new(),
             needs: None,
             verify: None,
-            extra: Vec::new(),
+            extra: Default::default(),
             body: String::new(),
         }
     }
@@ -997,11 +1067,7 @@ mod detail_tests {
             .collect();
         assert!(!plain.iter().any(|l| l == "Other fields:"));
         // Non-empty: verbatim raw frontmatter lines under a section header.
-        task.extra = vec![
-            "assignee: alice".into(),
-            "reviewers:".into(),
-            "- bob".into(),
-        ];
+        task.extra = crate::fields::Fields::parse("assignee: alice\nreviewers:\n- bob");
         let lines = build(&task, &[task.clone()]);
         let text: Vec<String> = lines.iter().map(|l| l.text.clone()).collect();
         let sec = text
@@ -1080,13 +1146,13 @@ mod tests {
             created: None,
             updated: None,
             parent: parent.map(String::from),
-            labels: vec![],
+            tags: vec![],
             depends_on: deps.iter().map(|s| s.to_string()).collect(),
             source: None,
             prs: Vec::new(),
             needs: None,
             verify: None,
-            extra: Vec::new(),
+            extra: Default::default(),
             body: body.into(),
         }
     }

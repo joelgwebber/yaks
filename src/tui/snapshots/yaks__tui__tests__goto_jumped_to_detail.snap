@@ -12,7 +12,7 @@ expression: "draw(&app, 72, 14)"
 │ Priority:    p1
 │ Created:     -
 │ Updated:     -
-│ Labels:      -
+│ Tags:        -
 │
 │
 h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:commen

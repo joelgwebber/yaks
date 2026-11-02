@@ -135,13 +135,13 @@ mod tests {
             created: Some("2026-01-01T00:00:00Z".into()),
             updated: Some("2026-01-01T00:00:00Z".into()),
             parent: None,
-            labels: vec![],
+            tags: vec![],
             depends_on: vec![],
             source: None,
             prs: Vec::new(),
             needs: needs.map(str::to_string),
             verify: None,
-            extra: Vec::new(),
+            extra: Default::default(),
             body: String::new(),
         }
     }

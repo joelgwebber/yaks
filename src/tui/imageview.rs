@@ -142,8 +142,9 @@ impl App {
             return;
         };
         match k.code {
+            // Back to the text viewer it was followed from, if any (yaks-7395).
             KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('h') | KeyCode::Left => {
-                self.overlay = Overlay::None;
+                self.close_image();
             }
             KeyCode::Char('O') => {
                 let (target, arg) = (v.target.clone(), v.path.display().to_string());

@@ -11,11 +11,11 @@
 //!   (`<sha>` 7-40 hex digits). Elsewhere it is just a relative link that goes
 //!   nowhere; here it names the file as it was at that commit.
 //!
-//! [`parse_source`] is pure (no disk, no git): the renderer calls it for every
-//! link. The opening side ([`App::open_source`]) does the file and git work
-//! when a link is followed.
+//! `code:src/foo.rs` is the current form (yaks-101d); see [`crate::links`],
+//! which owns the grammar; the renderer classifies every link with it
+//! (`mdrender::link_target`, yaks-7395). The opening side
+//! ([`App::open_source`]) does the file and git work when a link is followed.
 
-use super::detail::Target;
 use super::*;
 use std::process::{Command, Stdio};
 
@@ -40,77 +40,6 @@ pub fn source_label(path: &str, lines: Option<(u32, u32)>, rev: Option<&str>) ->
         s.push_str(&r[..r.len().min(7)]);
     }
     s
-}
-
-/// Classify a link destination as a repo source file, or `None` (a URL, an
-/// attachment, anything that does not climb out of `.yaks/` into the repo).
-pub fn parse_source(dest: &str) -> Option<Target> {
-    if dest.contains("://") || dest.starts_with("mailto:") {
-        return None;
-    }
-    let (file, frag) = match dest.split_once('#') {
-        Some((p, f)) => (p, Some(f)),
-        None => (dest, None),
-    };
-    let rest = file.strip_prefix("../")?;
-    let (rev, path) = match rest.strip_prefix("blob/").and_then(|r| r.split_once('/')) {
-        Some((sha, path)) if is_rev(sha) => (Some(sha.to_string()), path),
-        _ => (None, rest),
-    };
-    let path = clean_path(&percent_decode(path))?;
-    Some(Target::Source {
-        path,
-        lines: frag.and_then(parse_lines),
-        rev,
-    })
-}
-
-fn is_rev(s: &str) -> bool {
-    (7..=40).contains(&s.len()) && s.bytes().all(|b| b.is_ascii_hexdigit())
-}
-
-/// `L12` or `L12-L40` (1-based, inclusive; a reversed range is reordered).
-fn parse_lines(frag: &str) -> Option<(u32, u32)> {
-    let r = frag.strip_prefix('L')?;
-    let (a, b) = r.split_once("-L").unwrap_or((r, r));
-    let (a, b): (u32, u32) = (a.parse().ok()?, b.parse().ok()?);
-    (a > 0 && b > 0).then(|| (a.min(b), a.max(b)))
-}
-
-/// Drop `.`/empty segments; refuse `..` (a link may not climb back out of the
-/// repo) and an empty or directory path.
-fn clean_path(p: &str) -> Option<String> {
-    if p.ends_with('/') {
-        return None;
-    }
-    let mut parts = Vec::new();
-    for seg in p.split('/') {
-        match seg {
-            "" | "." => {}
-            ".." => return None,
-            s => parts.push(s),
-        }
-    }
-    (!parts.is_empty()).then(|| parts.join("/"))
-}
-
-fn percent_decode(s: &str) -> String {
-    let b = s.as_bytes();
-    let mut out = Vec::with_capacity(b.len());
-    let mut i = 0;
-    while i < b.len() {
-        let hex = |c: u8| (c as char).to_digit(16);
-        if b[i] == b'%' && i + 2 < b.len() {
-            if let (Some(h), Some(l)) = (hex(b[i + 1]), hex(b[i + 2])) {
-                out.push((h * 16 + l) as u8);
-                i += 3;
-                continue;
-            }
-        }
-        out.push(b[i]);
-        i += 1;
-    }
-    String::from_utf8(out).unwrap_or_else(|_| s.to_string())
 }
 
 /// How to open `file` (at `line`) with `$VISUAL`/`$EDITOR` text `editor`
@@ -221,34 +150,9 @@ fn editor_from_env() -> Option<String> {
         .find(|v| !v.trim().is_empty())
 }
 
-/// The checkout a source link (`../src/foo.rs`) is resolved in. For a farm
-/// reached through `YAKS_DIR` that is the farm's parent, as the link's `../`
-/// says. A farm branch lives in a worktree that holds only `.yaks/`, so there
-/// it is the code checkout instead: the git top-level of
-/// `cwd` (where the TUI was started) unless that is the farm worktree itself,
-/// else the repository's main checkout (yaks-6c4f). `None` when nothing fits.
+/// The checkout a source link is resolved in: [`crate::links::code_base`].
 pub(crate) fn source_base(farm_root: &Path, cwd: Option<&Path>) -> Option<PathBuf> {
-    let own = farm_root.parent().map(Path::to_path_buf);
-    if crate::store::farm_branch(farm_root).is_none() {
-        return own;
-    }
-    let farm_wt = own.as_deref().map(crate::gitrepo::canonical);
-    let top = |dir: &Path| {
-        Command::new("git")
-            .arg("-C")
-            .arg(dir)
-            .args(["rev-parse", "--show-toplevel"])
-            .output()
-            .ok()
-            .filter(|o| o.status.success())
-            .map(|o| crate::gitrepo::canonical(Path::new(String::from_utf8_lossy(&o.stdout).trim())))
-    };
-    if let Some(t) = cwd.and_then(top).filter(|t| Some(t) != farm_wt.as_ref()) {
-        return Some(t);
-    }
-    crate::gitrepo::host(farm_root)
-        .and_then(|h| crate::gitrepo::host_checkout(&h))
-        .filter(|t| Some(t) != farm_wt.as_ref())
+    crate::links::code_base(farm_root, cwd)
 }
 
 impl App {
@@ -300,7 +204,21 @@ impl App {
 
 #[cfg(test)]
 mod tests {
+    use super::super::detail::Target;
     use super::*;
+
+    /// A destination as the renderer classifies it in a yak, when it is a
+    /// code file (`mdrender::link_target`, which delegates to `links::parse`).
+    fn parse_source(dest: &str) -> Option<Target> {
+        match super::super::mdrender::link_target(
+            dest,
+            crate::links::From::Yak,
+            &Default::default(),
+        ) {
+            t @ Target::Source { .. } => Some(t),
+            _ => None,
+        }
+    }
 
     fn src(path: &str, lines: Option<(u32, u32)>, rev: Option<&str>) -> Option<Target> {
         Some(Target::Source {

@@ -12,8 +12,9 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result, bail};
 use chrono::Utc;
 
+use crate::fields::{Fields, Value};
 use crate::filter::{self, FilterSpec};
-use crate::model::{NEEDS_AGENT, Status, Task, is_canonical_label, normalize_labels};
+use crate::model::{NEEDS_AGENT, Status, Task, is_canonical_tag, normalize_tags};
 use crate::refs;
 use crate::rollup;
 use crate::store;
@@ -156,13 +157,15 @@ pub struct NewTask {
     pub kind: Option<String>,
     pub priority: Option<u8>,
     pub parent: Option<String>,
-    pub labels: Vec<String>,
+    pub tags: Vec<String>,
     pub depends_on: Vec<String>,
     pub source: Option<String>,
     /// Pull-request URLs for the new yak's `prs:` (duplicates dropped).
     pub prs: Vec<String>,
     pub description: Option<String>,
     pub verify: Option<String>,
+    /// Extra frontmatter fields (`due`, `every`, ...), set as `update --set` does.
+    pub fields: Vec<(String, Value)>,
 }
 
 /// A set of edits to apply to a task in one operation.
@@ -179,8 +182,8 @@ pub struct TaskEdit {
     /// (a note, a move) they are kept after the new description; anything else
     /// writes nothing and returns [`UpdateOutcome::Conflict`].
     pub base: Option<String>,
-    pub add_labels: Vec<String>,
-    pub remove_labels: Vec<String>,
+    pub add_tags: Vec<String>,
+    pub remove_tags: Vec<String>,
     /// Set the external `source:` URL; an empty string clears it.
     pub source: Option<String>,
     /// Pull-request URLs to add to `prs:`; one already listed is a no-op.
@@ -189,6 +192,9 @@ pub struct TaskEdit {
     pub remove_prs: Vec<String>,
     /// A rerunnable verification command to set on the yak (see `Task::verify`).
     pub verify: Option<String>,
+    /// Other frontmatter fields to set (`commit`, `due`, anything but a
+    /// built-in key), in order; a [`Value::Null`] removes the field.
+    pub fields: Vec<(String, Value)>,
     pub note: Option<String>,
     /// Metadata for the appended `note` (`key: value` lines under its marker;
     /// keys per `store::is_meta_key`). Ignored without a `note`.
@@ -702,7 +708,8 @@ pub struct Issue {
     pub kind: IssueKind,
     pub message: String,
     /// The yak id(s) the issue concerns: the subject first, then any id it
-    /// points at (e.g. the missing parent for a dangling reference).
+    /// points at (e.g. the missing parent for a dangling reference). For a
+    /// page issue, the page's farm-relative path.
     pub ids: Vec<String>,
 }
 
@@ -731,7 +738,7 @@ pub enum IssueKind {
     /// A label containing a comma or whitespace (e.g. a legacy `ui,docs` from
     /// before labels were normalized; yaks-7cb3). Any label edit on the yak
     /// re-splits it.
-    MalformedLabel,
+    MalformedTag,
     /// A yak file that is not at its one path, `<herd>/yaks/<id>.md` (in
     /// another herd's directory, under the wrong name, or loose at the farm
     /// root). Not loaded from there; move it to where `yaks path <id>` says.
@@ -745,6 +752,22 @@ pub enum IssueKind {
     /// was still open. The moves refuse this now; a farm from before, or a
     /// hand edit, can still hold it.
     UnfinishedChildren,
+    /// A page (`wiki/**.md`, `<herd>/wiki/**.md`) with no frontmatter, no
+    /// `type:` or `title:`, a name that is not lowercase-kebab, or a value
+    /// yaks can't read (yaks-9af0).
+    PageProblem,
+    /// A markdown link in a yak or page that leads nowhere in the farm: a farm
+    /// path or attachment that does not exist, or a `../` link that climbs out
+    /// of its directory (link from the farm root instead) (yaks-101d).
+    BrokenLink,
+    /// A page or yak whose fields do not match its schema (`schemas/<type>.md`,
+    /// `schemas/yak.md`): a usually-set field missing, a value of the wrong
+    /// kind, a field the schema does not list (yaks-8e75). Advice only.
+    SchemaMismatch,
+    /// A farm document holding a merge conflict to settle: conflict markers
+    /// the merge driver left in its prose, or a `merge_conflicts:` list
+    /// (yaks-4c8c). `yaks conflicts` lists them.
+    MergeConflict,
 }
 
 /// Finishing a yak whose children are not all finished (yaks-62f2,
@@ -823,10 +846,14 @@ impl IssueKind {
             IssueKind::DanglingDependsOn => "dangling-depends-on",
             IssueKind::MissingEvidence => "missing-evidence",
             IssueKind::UnverifiedShear => "unverified-shear",
-            IssueKind::MalformedLabel => "malformed-label",
+            IssueKind::MalformedTag => "malformed-tag",
             IssueKind::MisplacedFile => "misplaced-file",
             IssueKind::NeedsDrift => "needs-drift",
             IssueKind::UnfinishedChildren => "unfinished-children",
+            IssueKind::PageProblem => "page-problem",
+            IssueKind::BrokenLink => "broken-link",
+            IssueKind::SchemaMismatch => "schema-mismatch",
+            IssueKind::MergeConflict => "merge-conflict",
         }
     }
 
@@ -843,13 +870,23 @@ impl IssueKind {
             IssueKind::UnverifiedShear => {
                 "Unverified shear (shorn yak whose verify: command did not last PASS)"
             }
-            IssueKind::MalformedLabel => "Malformed label (contains a comma or whitespace)",
+            IssueKind::MalformedTag => "Malformed tag (contains a comma or whitespace)",
             IssueKind::MisplacedFile => "Misplaced yak file (not at <herd>/yaks/<id>.md)",
             IssueKind::NeedsDrift => {
                 "Needs drift (needs: disagrees with the latest ask/answer/request/pickup note)"
             }
             IssueKind::UnfinishedChildren => {
                 "Finished over unfinished children (a shorn or dead yak with hairy or shaving children)"
+            }
+            IssueKind::PageProblem => "Page problem (wiki page frontmatter or name)",
+            IssueKind::BrokenLink => {
+                "Broken link (a farm path or attachment that does not exist, or a ../ link)"
+            }
+            IssueKind::SchemaMismatch => {
+                "Schema mismatch (fields that do not fit schemas/<type>.md)"
+            }
+            IssueKind::MergeConflict => {
+                "Merge conflict (conflict markers or merge_conflicts: to settle)"
             }
         }
     }
@@ -1433,13 +1470,13 @@ impl Farm {
         // Malformed labels: a comma or whitespace inside one label (legacy data
         // from before normalization). Fix by re-editing the yak's labels.
         for t in &tasks {
-            for l in t.labels.iter().filter(|l| !is_canonical_label(l)) {
-                let fixed = normalize_labels([l]);
+            for l in t.tags.iter().filter(|l| !is_canonical_tag(l)) {
+                let fixed = normalize_tags([l]);
                 issues.push(Issue {
-                    kind: IssueKind::MalformedLabel,
+                    kind: IssueKind::MalformedTag,
                     message: format!(
-                        "{} has label {:?}; labels may not contain commas or spaces \
-                         (would be [{}] — re-edit its labels to fix)",
+                        "{} has tag {:?}; tags may not contain commas or spaces \
+                         (would be [{}] — re-edit its tags to fix)",
                         t.id,
                         l,
                         fixed.join(", ")
@@ -1530,6 +1567,66 @@ impl Farm {
                     ids,
                 });
             }
+        }
+
+        for p in crate::pages::check(&self.root)? {
+            issues.push(Issue {
+                kind: IssueKind::PageProblem,
+                message: format!("{}: {}", p.path, p.message),
+                ids: vec![p.path],
+            });
+        }
+        for p in crate::pages::load_all(&self.root)? {
+            for w in crate::schemas::check_page(&self.root, &p) {
+                issues.push(Issue {
+                    kind: IssueKind::SchemaMismatch,
+                    message: format!("{}: {w}", p.path),
+                    ids: vec![p.path.clone()],
+                });
+            }
+        }
+        // `schemas/yak.md` describes the yak's extra fields; its built-in
+        // fields are the yak's own and never reported.
+        if let Some(s) = crate::schemas::load(&self.root, crate::schemas::YAK_TYPE) {
+            for t in &tasks {
+                // `due`, `every` and `regrown` are yaks' own (yaks-2fc5): a
+                // schema need not list them.
+                let known: Vec<&str> = crate::model::BUILT_IN_KEYS
+                    .iter()
+                    .chain(crate::recur::KEYS.iter())
+                    .copied()
+                    .collect();
+                for w in crate::schemas::check(&s, &t.extra, &known) {
+                    issues.push(Issue {
+                        kind: IssueKind::SchemaMismatch,
+                        message: format!("{}: {w}", t.id),
+                        ids: vec![t.id.clone()],
+                    });
+                }
+            }
+        }
+        for e in crate::links::edges(&self.root)? {
+            if crate::links::exists(&self.root, &e.link) == Some(false) {
+                let why = match &e.link {
+                    crate::links::Link::Upward(_) => {
+                        "climbs out with ../; link from the farm root (/wiki/...)"
+                    }
+                    _ => "no such file in the farm",
+                };
+                issues.push(Issue {
+                    kind: IssueKind::BrokenLink,
+                    message: format!("{}:L{}: ({}) {why}", e.from, e.line, e.dest),
+                    ids: vec![e.from],
+                });
+            }
+        }
+
+        for c in crate::conflicts::scan(&self.root) {
+            issues.push(Issue {
+                kind: IssueKind::MergeConflict,
+                message: format!("{}: {}", c.path, conflict_summary(&c)),
+                ids: vec![c.path],
+            });
         }
 
         // Deterministic order: group by kind, then by the ids involved. Dedup
@@ -1922,13 +2019,21 @@ impl Farm {
             created: Some(now.clone()),
             updated: Some(now),
             parent: new.parent,
-            labels: normalize_labels(&new.labels),
+            tags: normalize_tags(&new.tags),
             depends_on: new.depends_on,
             source: new.source,
             prs: dedup_prs(new.prs),
             needs: None,
             verify: new.verify,
-            extra: Vec::new(),
+            extra: {
+                let mut extra = Fields::default();
+                for (k, v) in &new.fields {
+                    if *v != Value::Null {
+                        extra.set(k, v);
+                    }
+                }
+                extra
+            },
             body: new.description.unwrap_or_default(),
         };
         store::write::save(&self.root, &task)?;
@@ -1966,10 +2071,10 @@ impl Farm {
         // Labels are normalized on the way in (split on commas/whitespace,
         // deduped; yaks-7cb3). Any label edit also re-splits the yak's existing
         // labels, so a legacy `ui,docs` label is canonicalized on first touch.
-        if !edit.add_labels.is_empty() || !edit.remove_labels.is_empty() {
-            let remove = normalize_labels(&edit.remove_labels);
-            task.labels = normalize_labels(task.labels.iter().chain(&edit.add_labels));
-            task.labels.retain(|l| !remove.contains(l));
+        if !edit.add_tags.is_empty() || !edit.remove_tags.is_empty() {
+            let remove = normalize_tags(&edit.remove_tags);
+            task.tags = normalize_tags(task.tags.iter().chain(&edit.add_tags));
+            task.tags.retain(|l| !remove.contains(l));
             changed = true;
         }
         if let Some(s) = edit.source {
@@ -1998,6 +2103,15 @@ impl Farm {
             task.verify = if v.is_empty() { None } else { Some(v) };
             changed = true;
         }
+        for (k, v) in &edit.fields {
+            let before = task.extra.raw(k).map(<[String]>::to_vec);
+            if *v == Value::Null {
+                task.extra.remove(k);
+            } else {
+                task.extra.set(k, v);
+            }
+            changed |= task.extra.raw(k).map(<[String]>::to_vec) != before;
+        }
         if let Some(n) = edit.note {
             let ts = store::now_iso();
             let meta: Vec<(&str, &str)> = edit
@@ -2015,6 +2129,310 @@ impl Farm {
         } else {
             Ok(UpdateOutcome::NoChanges)
         }
+    }
+
+    /// Every page of the farm (yaks-9af0), sorted by path.
+    pub fn pages(&self) -> Result<Vec<crate::pages::Page>> {
+        crate::pages::load_all(&self.root)
+    }
+
+    /// The page at farm-relative `path` (a leading `/` is the farm root).
+    pub fn page(&self, path: &str) -> Result<Option<crate::pages::Page>> {
+        crate::pages::load(&self.root, path)
+    }
+
+    /// Create the page at `path` (see [`crate::pages::new_page`]) under the
+    /// farm lock. Returns its file path.
+    pub fn page_new(
+        &self,
+        path: &str,
+        kind: Option<&str>,
+        title: Option<&str>,
+        fields: &[(String, Value)],
+        body: &str,
+    ) -> Result<std::path::PathBuf> {
+        let _lock = store::lock(&self.root)?;
+        // A schema's defaults fill fields the caller did not give.
+        let mut all: Vec<(String, Value)> =
+            crate::schemas::defaults(&self.root, kind.unwrap_or(crate::pages::DEFAULT_KIND))
+                .into_iter()
+                .filter(|(k, _)| !fields.iter().any(|(f, _)| f == k))
+                .collect();
+        all.extend(fields.iter().cloned());
+        let page = crate::pages::new_page(&self.root, path, kind, title, &all, body)?;
+        crate::pages::save(&self.root, &page)
+    }
+
+    /// Set (a [`Value::Null`] removes) frontmatter fields of the page at
+    /// `path`, and replace its body when `body` is given, under the farm lock.
+    /// `Ok(None)`: no such page; `Ok(Some(false))`: nothing changed.
+    pub fn page_set(
+        &self,
+        path: &str,
+        fields: &[(String, Value)],
+        body: Option<&str>,
+    ) -> Result<Option<bool>> {
+        let _lock = store::lock(&self.root)?;
+        let Some(mut page) = crate::pages::load(&self.root, path)? else {
+            return Ok(None);
+        };
+        let before = page.render();
+        for (k, v) in fields {
+            if *v == Value::Null {
+                page.fields.remove(k);
+            } else {
+                page.fields.set(k, v);
+            }
+        }
+        if let Some(b) = body {
+            page.body = b.to_string();
+        }
+        if page.render() == before {
+            return Ok(Some(false));
+        }
+        crate::pages::save(&self.root, &page)?;
+        Ok(Some(true))
+    }
+
+    /// Save a file or directory as a source (see [`crate::sources::add`]),
+    /// under the farm lock.
+    pub fn source_add(&self, req: &crate::sources::Request) -> Result<crate::sources::Saved> {
+        let _lock = store::lock(&self.root)?;
+        crate::sources::add(&self.root, req)
+    }
+
+    /// Move yak `id`'s attachment `name` out of the yak: into `sources/` as a
+    /// source (`to_page: None`), or to a page at `to_page` (a markdown
+    /// attachment, given frontmatter when it has none). Every link to the
+    /// attachment, in any yak or page, is rewritten to the new place. Under
+    /// the farm lock. Returns the new farm-relative path.
+    pub fn promote(
+        &self,
+        id: &str,
+        name: &str,
+        to_page: Option<&str>,
+        actor: &str,
+    ) -> Result<String> {
+        let _lock = store::lock(&self.root)?;
+        let Some(found) = locate_attachment(&self.root, id, name) else {
+            anyhow::bail!("{id}/{name}: no such attachment (`yaks attachment {id}` lists them)");
+        };
+        let new_path = match to_page {
+            None => {
+                // `add` refuses a path inside the farm (cite it instead), so
+                // save a copy taken out of it; the attachment is removed after.
+                let tmp = std::env::temp_dir().join(format!("yaks-promote-{}", std::process::id()));
+                std::fs::create_dir_all(&tmp)?;
+                let copy = tmp.join(name);
+                std::fs::copy(&found.path, &copy)?;
+                let saved = crate::sources::add(
+                    &self.root,
+                    &crate::sources::Request {
+                        path: copy,
+                        title: Some(name.to_string()),
+                        url: None,
+                        part_of: None,
+                        actor: actor.to_string(),
+                        origin: Some(format!("{id}/{name}")),
+                    },
+                );
+                let _ = std::fs::remove_dir_all(&tmp);
+                let saved = saved?;
+                let dir = saved.dir().to_string();
+                // The saved file's own name (made safe on the way in).
+                let file = std::fs::read_to_string(self.root.join(&dir).join("source.md"))
+                    .ok()
+                    .and_then(|t| crate::pages::Page::parse("x", &t).str_field("file"))
+                    .unwrap_or_else(|| name.to_string());
+                format!("{dir}/{file}")
+            }
+            Some(page) => {
+                let page = crate::pages::normalize(page);
+                if let Some(why) = crate::pages::path_problem(&page) {
+                    anyhow::bail!("{page}: {why}");
+                }
+                if self.root.join(&page).exists() {
+                    anyhow::bail!("{page} already exists");
+                }
+                if !name.ends_with(".md") {
+                    anyhow::bail!(
+                        "{name}: only a markdown attachment becomes a page; promote it as a source"
+                    );
+                }
+                let text = std::fs::read_to_string(&found.path)?;
+                let mut p = crate::pages::Page::parse(&page, &text);
+                if !p.has_frontmatter {
+                    p = crate::pages::new_page(&self.root, &page, None, None, &[], &text)?;
+                }
+                p.path = page.clone();
+                crate::pages::save(&self.root, &p)?;
+                page
+            }
+        };
+        std::fs::remove_file(&found.path)?;
+        // An attachment directory left empty goes too.
+        let adir = store::artifact_dir(&self.root, id);
+        if std::fs::read_dir(&adir).is_ok_and(|mut d| d.next().is_none()) {
+            let _ = std::fs::remove_dir(&adir);
+        }
+        self.rewrite_links_to(
+            &crate::links::Link::Attachment {
+                id: id.to_string(),
+                name: name.to_string(),
+                anchor: None,
+            },
+            &new_path,
+        )?;
+        Ok(new_path)
+    }
+
+    /// Rewrite every link that names `target` (an attachment or farm path,
+    /// any anchor) to `/<new_path>`, keeping the anchor. The caller holds the
+    /// lock.
+    fn rewrite_links_to(&self, target: &crate::links::Link, new_path: &str) -> Result<()> {
+        use crate::links::Link;
+        let same = |l: &Link| match (l, target) {
+            (Link::Attachment { id, name, .. }, Link::Attachment { id: i, name: n, .. }) => {
+                id == i && name == n
+            }
+            (Link::Farm { path, .. }, Link::Farm { path: p, .. }) => path == p,
+            _ => false,
+        };
+        let tasks = store::load(&self.root, &EVERY)?;
+        let ids: std::collections::HashSet<String> = tasks.iter().map(|t| t.id.clone()).collect();
+        let is_yak = |s: &str| ids.contains(s);
+        // `yaks attach` writes the file name as is, so a name with a space
+        // gives `](<id>/a b.png)`, which CommonMark does not read as a link:
+        // replace that literal form too.
+        let literal = match target {
+            Link::Attachment { id, name, .. } if name.contains(' ') => {
+                Some(format!("]({id}/{name}"))
+            }
+            _ => None,
+        };
+        let fix = |text: &str, doc: crate::links::From| {
+            let (mut text, mut n) = crate::links::rewrite(text, |dest| {
+                let l = crate::links::parse(dest, doc, is_yak);
+                same(&l).then(|| match dest.split_once('#') {
+                    Some((_, frag)) => format!("/{new_path}#{frag}"),
+                    None => format!("/{new_path}"),
+                })
+            });
+            if let Some(lit) = &literal {
+                let k = text.matches(lit.as_str()).count();
+                if k > 0 {
+                    text = text.replace(lit.as_str(), &format!("](/{new_path}"));
+                    n += k;
+                }
+            }
+            (text, n)
+        };
+        for mut t in tasks {
+            let (body, n) = fix(&t.body, crate::links::From::Yak);
+            if n > 0 {
+                t.body = body;
+                t.updated = Some(store::now_iso());
+                store::write::save(&self.root, &t)?;
+            }
+        }
+        for mut p in crate::pages::load_all(&self.root)? {
+            let path = p.path.clone();
+            let (body, n) = fix(&p.body, crate::links::From::Page(&path));
+            if n > 0 {
+                p.body = body;
+                crate::pages::save(&self.root, &p)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Every markdown link in the farm that names the page or file at
+    /// farm-relative `path` (any rev or anchor), with where it sits.
+    pub fn links_to(&self, path: &str) -> Result<Vec<crate::links::Edge>> {
+        let path = crate::pages::normalize(path);
+        Ok(crate::links::edges(&self.root)?
+            .into_iter()
+            .filter(|e| crate::links::farm_path(&e.link).as_deref() == Some(path.as_str()))
+            .collect())
+    }
+
+    /// Move the page at `from` to `to` and rewrite every link to it, in yaks
+    /// and pages, under the farm lock. A link keeps its rev and anchor and is
+    /// written in the farm-root form (`/wiki/...`). `dry_run` writes nothing.
+    /// Returns the documents changed (`(yak id or page path, links)`).
+    pub fn page_move(&self, from: &str, to: &str, dry_run: bool) -> Result<Vec<(String, usize)>> {
+        let _lock = (!dry_run).then(|| store::lock(&self.root)).transpose()?;
+        let from = crate::pages::normalize(from);
+        let to = crate::pages::normalize(to);
+        if crate::pages::load(&self.root, &from)?.is_none() {
+            anyhow::bail!("no page {from}");
+        }
+        if let Some(why) = crate::pages::path_problem(&to) {
+            anyhow::bail!("{to}: {why}");
+        }
+        if self.root.join(&to).exists() {
+            anyhow::bail!("{to} already exists");
+        }
+        let tasks = store::load(&self.root, &EVERY)?;
+        let ids: std::collections::HashSet<String> = tasks.iter().map(|t| t.id.clone()).collect();
+        let is_yak = |s: &str| ids.contains(s);
+        // Rewrite links in `text` (a document at `doc`) to the farm-root form
+        // `/<path>[@rev][#fragment as written]`: a link to `from` gets `to`;
+        // in the moved page itself, a relative link keeps naming what it
+        // named from the old directory.
+        let fix = |text: &str, doc: crate::links::From, moved_self: bool| {
+            crate::links::rewrite(text, |dest| {
+                let crate::links::Link::Farm { path, rev, .. } =
+                    crate::links::parse(dest, doc, is_yak)
+                else {
+                    return None;
+                };
+                let target = if path == from {
+                    to.clone()
+                } else if moved_self && !dest.starts_with('/') {
+                    path
+                } else {
+                    return None;
+                };
+                let mut s = format!("/{target}");
+                if let Some(r) = rev {
+                    s.push_str(&format!("@{r}"));
+                }
+                if let Some((_, frag)) = dest.split_once('#') {
+                    s.push_str(&format!("#{frag}"));
+                }
+                Some(s)
+            })
+        };
+        let mut changed = Vec::new();
+        for mut t in tasks {
+            let (body, n) = fix(&t.body, crate::links::From::Yak, false);
+            if n > 0 {
+                changed.push((t.id.clone(), n));
+                if !dry_run {
+                    t.body = body;
+                    store::write::save(&self.root, &t)?;
+                }
+            }
+        }
+        for mut p in crate::pages::load_all(&self.root)? {
+            let me = p.path == from;
+            let (body, n) = fix(&p.body, crate::links::From::Page(&p.path), me);
+            if n > 0 {
+                changed.push((p.path.clone(), n));
+                p.body = body;
+            }
+            if me {
+                p.path = to.clone();
+                if !dry_run {
+                    crate::pages::save(&self.root, &p)?;
+                    std::fs::remove_file(self.root.join(&from))?;
+                }
+            } else if n > 0 && !dry_run {
+                crate::pages::save(&self.root, &p)?;
+            }
+        }
+        Ok(changed)
     }
 
     /// Bring a schema-4 farm up to the current schema: every fixup in
@@ -2087,8 +2505,11 @@ impl Farm {
         }
         std::fs::rename(&src, dir.join(&name))?;
 
-        let old_path = format!("{id}/{old}");
-        let new_path = format!("{id}/{name}");
+        // Links hold the name percent-encoded (`a%20b.png`); older ones as is.
+        let enc = crate::links::percent_encode_path;
+        let old_path = format!("{id}/{}", enc(old));
+        let old_literal = format!("{id}/{old}");
+        let new_path = format!("{id}/{}", enc(&name));
         // The link text follows the stem, in either form (a rename can also
         // move the file across the image/non-image line, e.g. `.txt` -> `.png`).
         let stem = |n: &str| {
@@ -2102,10 +2523,15 @@ impl Farm {
         let new_link = store::attachment_link(id, &name);
         let mut rewritten = 0;
         for mut t in store::load(&self.root, &EVERY)? {
-            if !t.body.contains(&old_path) {
+            if !t.body.contains(&old_path) && !t.body.contains(&old_literal) {
                 continue;
             }
             let body = replace_path_token(&t.body, &old_path, &new_path);
+            let body = if old_literal != old_path {
+                body.replace(&format!("]({old_literal})"), &format!("]({new_path})"))
+            } else {
+                body
+            };
             let body = replace_link(&body, &old_text, &new_link);
             if body != t.body {
                 t.body = body;
@@ -2156,6 +2582,115 @@ impl Farm {
             }
         }
         Ok((outcome, moved))
+    }
+
+    /// Regrow every shorn yak with `every:` whose next occurrence has arrived
+    /// by `now` (see [`crate::recur::plan`]): back to hairy, `due:` set to the
+    /// next deadline, `regrown:` to `now`, and a `kind: regrow` note saying
+    /// which occurrence it is and how many were skipped. Idempotent: the new
+    /// `due:` is in the future, so a second run finds nothing. Dead yaks never
+    /// regrow.
+    ///
+    /// A yak under a shorn ancestor reopens that ancestor first (the family
+    /// rule: a hairy yak never sits under a finished one), each with a
+    /// `child:` on its move note like `shave`'s lifts; one under a dead
+    /// ancestor is held and reported, since reviving is not ours to decide.
+    ///
+    /// The scan is read-only; each yak is then re-planned and written under
+    /// its own farm lock, so it is one per-change commit per yak and a yak
+    /// someone shaved meanwhile is left alone. `dry_run` writes nothing.
+    pub fn regrow_due(
+        &self,
+        now: chrono::DateTime<chrono::Utc>,
+        dry_run: bool,
+        actor: Option<&str>,
+    ) -> Result<crate::recur::Report> {
+        use crate::recur::{self, Regrew, Verdict};
+        let mut report = recur::Report::default();
+        let mut candidates: Vec<String> = store::load(&self.root, &[Status::Shorn])?
+            .into_iter()
+            .filter(|t| t.extra.contains(recur::EVERY))
+            .map(|t| t.id)
+            .collect();
+        candidates.sort();
+        for id in candidates {
+            let _lock = if dry_run {
+                None
+            } else {
+                Some(store::lock(&self.root)?)
+            };
+            let all = store::load(&self.root, &EVERY)?;
+            let Some(task) = all.iter().find(|t| t.id == id) else {
+                continue;
+            };
+            let plan = match recur::plan(task, now) {
+                Verdict::Regrow(p) => p,
+                Verdict::Invalid(why) => {
+                    report.held.push((id, why));
+                    continue;
+                }
+                Verdict::NotRecurring | Verdict::Waiting => continue,
+            };
+            // Ancestors, nearest first, to the root (cycle-safe).
+            let mut ancestors: Vec<&Task> = Vec::new();
+            let mut cur = task.parent.as_deref();
+            while let Some(p) = cur.and_then(|p| all.iter().find(|t| t.id == p)) {
+                if p.id == id || ancestors.iter().any(|a| a.id == p.id) {
+                    break;
+                }
+                ancestors.push(p);
+                cur = p.parent.as_deref();
+            }
+            if let Some(dead) = ancestors.iter().find(|a| a.status == Status::Dead) {
+                report.held.push((
+                    id,
+                    format!(
+                        "its ancestor {} is dead: revive it (`yaks revive {}`) or reparent the yak",
+                        dead.id, dead.id
+                    ),
+                ));
+                continue;
+            }
+            let mut reopened: Vec<String> = ancestors
+                .iter()
+                .filter(|a| a.status == Status::Shorn)
+                .map(|a| a.id.clone())
+                .collect();
+            reopened.reverse();
+            if !dry_run {
+                for a in &reopened {
+                    store::move_task_with(&self.root, a, Status::Hairy, actor, &[("child", &id)])?;
+                }
+                store::move_task(&self.root, &id, Status::Hairy, actor)?;
+                let Some(mut t) = store::load_task_by_id(&self.root, &id)? else {
+                    continue;
+                };
+                let stamp = now.format("%Y-%m-%dT%H:%M:%SZ").to_string();
+                t.extra.set(recur::DUE, &Value::Plain(plan.due.render()));
+                t.extra.set(recur::REGROWN, &Value::Plain(stamp.clone()));
+                // Stamped when written, so the note follows the move note.
+                let written = store::now_iso();
+                t.body = store::append_note_meta(
+                    &t.body,
+                    &written,
+                    actor,
+                    &[
+                        ("kind", "regrow"),
+                        ("occurrence", &plan.occurrence.render()),
+                    ],
+                    &recur::regrow_note(&plan),
+                );
+                t.updated = Some(written);
+                store::write::save(&self.root, &t)?;
+            }
+            report.regrew.push(Regrew {
+                id: id.clone(),
+                title: task.title.clone(),
+                plan,
+                reopened,
+            });
+        }
+        Ok(report)
     }
 
     /// The hairy ancestors shaving `id` takes along, outermost first: its
@@ -2578,6 +3113,22 @@ fn needs_drift(t: &Task) -> Option<String> {
     ))
 }
 
+/// What a [`crate::conflicts::Conflict`] holds, in words.
+pub fn conflict_summary(c: &crate::conflicts::Conflict) -> String {
+    let mut parts = Vec::new();
+    if !c.marker_lines.is_empty() {
+        let at: Vec<String> = c.marker_lines.iter().map(|l| format!("L{l}")).collect();
+        parts.push(format!("conflict markers at {}", at.join(", ")));
+    }
+    if !c.fields.is_empty() {
+        parts.push(format!(
+            "merge_conflicts: {} (the other side's value is recorded there; remove the entry once settled)",
+            c.fields.join(", ")
+        ));
+    }
+    parts.join("; ")
+}
+
 fn issue_rank(k: IssueKind) -> u8 {
     match k {
         IssueKind::InvalidStatus => 0,
@@ -2586,10 +3137,14 @@ fn issue_rank(k: IssueKind) -> u8 {
         IssueKind::DanglingDependsOn => 3,
         IssueKind::MissingEvidence => 4,
         IssueKind::UnverifiedShear => 5,
-        IssueKind::MalformedLabel => 6,
+        IssueKind::MalformedTag => 6,
         IssueKind::MisplacedFile => 7,
         IssueKind::NeedsDrift => 8,
         IssueKind::UnfinishedChildren => 9,
+        IssueKind::PageProblem => 10,
+        IssueKind::BrokenLink => 11,
+        IssueKind::SchemaMismatch => 12,
+        IssueKind::MergeConflict => 13,
     }
 }
 
@@ -2804,13 +3359,13 @@ mod tests {
             created: Some("2026-01-01T00:00:00Z".into()),
             updated: Some("2026-01-01T00:00:00Z".into()),
             parent: None,
-            labels: vec![],
+            tags: vec![],
             depends_on: vec![],
             source: None,
             prs: Vec::new(),
             needs: None,
             verify: None,
-            extra: Vec::new(),
+            extra: Default::default(),
             body: String::new(),
         }
     }
@@ -3387,12 +3942,13 @@ mod tests {
             kind: None,
             priority: None,
             parent: None,
-            labels: vec![],
+            tags: vec![],
             depends_on: vec![],
             source: None,
             prs: vec![],
             description: None,
             verify: None,
+            fields: vec![],
         }
     }
 
@@ -4321,6 +4877,43 @@ mod tests {
         );
     }
 
+    /// A file name with a space is linked percent-encoded, so markdown reads
+    /// it as a link that resolves; renaming it follows either form (yaks-fd7a).
+    #[test]
+    fn attach_encodes_a_name_with_spaces_and_rename_follows_it() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+        let _ = farm.attach("yak-0001", "my shot.png", b"x").unwrap();
+        let body = |root: &Path| {
+            store::load_task_by_id(root, "yak-0001")
+                .unwrap()
+                .unwrap()
+                .body
+        };
+        assert!(
+            body(&root).ends_with("![my shot](yak-0001/my%20shot.png)"),
+            "{}",
+            body(&root)
+        );
+        let edges = crate::links::edges(&root).unwrap();
+        assert!(
+            edges
+                .iter()
+                .any(|e| crate::links::exists(&root, &e.link) == Some(true)),
+            "the encoded link resolves"
+        );
+        // An old literal link, as attach wrote before, is renamed too.
+        let mut t = store::load_task_by_id(&root, "yak-0001").unwrap().unwrap();
+        t.body.push_str("\n\n[old](yak-0001/my shot.png)");
+        store::write::save(&root, &t).unwrap();
+        farm.rename_attachment("yak-0001", "my shot.png", "final shot")
+            .unwrap();
+        let b = body(&root);
+        assert!(b.contains("![final-shot](yak-0001/final-shot.png)"), "{b}");
+        assert!(b.contains("[old](yak-0001/final-shot.png)"), "{b}");
+        assert!(!b.contains("my shot") && !b.contains("my%20shot"), "{b}");
+    }
+
     /// `attach` links an image as `![stem](..)` and any other file as
     /// `[stem](..)`; `rename-attachment` rewrites either form, and follows a
     /// rename across the image line (`.txt` -> `.png`) by gaining the `!`.
@@ -4412,6 +5005,7 @@ mod tests {
         }
         std::fs::create_dir_all(root.join("yak-0001")).unwrap();
         std::fs::write(root.join("yak-0001/log.txt"), "log").unwrap();
+        std::fs::write(root.join("yak-0001/s.png"), "png").unwrap();
         // Not yaks: a loose note without frontmatter, and a stray dir.
         std::fs::write(root.join("README.md"), "farm notes\n").unwrap();
         std::fs::create_dir_all(root.join("misc")).unwrap();
@@ -4460,7 +5054,11 @@ mod tests {
             .iter()
             .map(|f| f.yaks.iter().map(|(_, n)| n).sum())
             .collect();
-        assert_eq!(counts, [1, 1], "one old-shape comment, one non-image link");
+        assert_eq!(
+            counts,
+            [0, 1, 1, 0],
+            "no labels key, one old-shape comment, one non-image link, no spaced name"
+        );
         assert_eq!(
             std::fs::read_to_string(root.join("schema")).unwrap(),
             format!("{}\n", store::SCHEMA)

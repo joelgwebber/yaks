@@ -1,0 +1,32 @@
+---
+source: src/tui/follow.rs
+expression: "draw(&app, 120, 28)"
+---
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   📖  Wiki (5)   🛖  Sheds (…)
+viewing wiki/topics/hub.md
+◂ 📖  wiki/topics/hub.md  note
+│ title:       Hub
+│
+│ Hub
+│
+│ • See fts.
+│ • And indexes.
+│ • Jump below.
+│ • Read the source.
+│ • Lines two.
+│ • Yak yaks-0001.
+│ • Log 📎  run.
+│
+│ Later
+│
+│ The end.
+│
+│
+│ ── peek: wiki/topics/vector-search.md#indexes ───────────────────────────────────────────────────────────────────────
+│ ## Indexes
+│
+│ - HNSW: fast queries, slow builds.
+│ - IVFFlat: quick to build.
+│
+│ See [full-text search](full-text-search.md) and yaks-0001.
+→ wiki/topics/vector-search.md#indexes

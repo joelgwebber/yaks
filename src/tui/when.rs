@@ -40,6 +40,14 @@ impl Clock {
         )
     }
 
+    /// The instant this clock reads.
+    pub(crate) fn now(&self) -> DateTime<Utc> {
+        match *self {
+            Clock::System => Utc::now(),
+            Clock::Fixed(now, _) => now,
+        }
+    }
+
     /// The current minute (Unix minutes): what a memoized rendering of
     /// relative dates ("5m ago") is good for.
     pub(crate) fn minute(&self) -> i64 {

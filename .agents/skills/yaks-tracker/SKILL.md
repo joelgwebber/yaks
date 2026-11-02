@@ -57,7 +57,7 @@ yaks rollup --keys [filters] # just the distinct keys, for pasting into a PR bod
 
 A yak with no own `source:` inherits the nearest ancestor's, so stamping one
 `source:` on an umbrella yak covers its whole subtree. Scope with the usual
-filters (`--label github`, `--status shaving`, `--parent-of yak-abcd`).
+filters (`--tag github`, `--status shaving`, `--parent-of yak-abcd`).
 
 **PR-key helper:** before opening a PR, run `yaks rollup --keys` over the shipping
 set and paste the key(s) into the PR description. The forge (GitHub/Jira) makes
@@ -74,11 +74,11 @@ When the user points at an external issue and wants a yak (or a group) for it:
    For a group, stamp `source:` on the umbrella yak; children inherit it.
    The pull requests that implement it are a separate list, `prs:`
    (`yaks update <id> --pr <url>`, repeatable; `--remove-pr` when one closes).
-3. **Label by tracker.** Add a label named for the tracker (`jira`, `github`,
+3. **Tag by tracker.** Add a tag named for the tracker (`jira`, `github`,
    `linear`) so the upstreamed yaks are easy to find later
-   (`yaks list --label jira`): `yaks create … --labels jira` /
-   `yaks update <id> --add-label github`. Deriving the label from the tracker
-   name keeps the taxonomy small and predictable (see the `yaks` skill's label
+   (`yaks list --tag jira`): `yaks create … --tags jira` /
+   `yaks update <id> --add-tag github`. Deriving the tag from the tracker
+   name keeps the taxonomy small and predictable (see the `yaks` skill's tag
    guidance).
 4. **Stop tracking.** This is "import once, then diverge" — there is no
    watermark, no later drift check. Don't promise to keep them in sync.

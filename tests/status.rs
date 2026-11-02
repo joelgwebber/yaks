@@ -41,6 +41,8 @@ fn run(dir: &Path, args: &[&str]) -> std::process::Output {
         .env_remove("YAKS_DIR")
         .env("YAKS_SKILLS_AUTOSYNC", "0")
         .env("YAKS_ACTOR", "tester")
+        // These tests look at uncommitted changes: no per-change commits.
+        .env("YAKS_NO_AUTOCOMMIT", "1")
         .args(args)
         .output()
         .unwrap()

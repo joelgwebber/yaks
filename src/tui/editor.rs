@@ -60,6 +60,9 @@ pub(crate) enum EditAction {
     /// as opened: its path, and the text the edit started from (the dirty
     /// check, and the guard against a file changed on disk meanwhile).
     EditAttachment(super::handlers::AttachView),
+    /// Create a page at the typed farm path (`N` on the Wiki tab, yaks-1532),
+    /// then edit it.
+    NewPage,
     SaveView,
     RenameView {
         index: usize,

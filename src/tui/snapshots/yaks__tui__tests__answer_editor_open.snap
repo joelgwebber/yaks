@@ -2,7 +2,7 @@
 source: src/tui/tests.rs
 expression: "draw(&app, 100, 20)"
 ---
- 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   🛖  Sheds (…)
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   📖  Wiki (0)   🛖  Sh
 
 ◂ Task: t0
 │
@@ -13,7 +13,7 @@ expression: "draw(&app, 100, 20)"
 │ Priority:    p3
 │ Created:     -
 │ Updated:     -
-│ Labels:      -
+│ Tags:        -
 │
 │ Which cache should the index use?
 │

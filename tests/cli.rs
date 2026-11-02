@@ -383,12 +383,12 @@ fn scan_ids_flags_real_ids_and_is_clean_otherwise() {
     assert_eq!(v[0]["id"], "fix-0002");
 }
 
-/// Return true when the `labels:` line of `yaks show` output contains `label`
+/// Return true when the `tags:` line of `yaks show` output contains `label`
 /// as a whole word.
-fn show_labels_line_has(show_out: &str, label: &str) -> bool {
+fn show_tags_line_has(show_out: &str, label: &str) -> bool {
     show_out
         .lines()
-        .find(|l| l.starts_with("labels:"))
+        .find(|l| l.starts_with("tags:"))
         .map(|l| l.split_whitespace().any(|w| w == label))
         .unwrap_or(false)
 }
@@ -448,11 +448,11 @@ fn update_bulk_and_partial_failure() {
         "b not updated: {out}"
     );
     assert!(
-        show_labels_line_has(&cli(&["show", &a]), "x"),
+        show_tags_line_has(&cli(&["show", &a]), "x"),
         "a missing label x"
     );
     assert!(
-        show_labels_line_has(&cli(&["show", &b]), "x"),
+        show_tags_line_has(&cli(&["show", &b]), "x"),
         "b missing label x"
     );
 
@@ -473,7 +473,7 @@ fn update_bulk_and_partial_failure() {
         "missing id not reported: {stderr}"
     );
     assert!(
-        show_labels_line_has(&cli(&["show", &a]), "y"),
+        show_tags_line_has(&cli(&["show", &a]), "y"),
         "good id not updated after partial failure"
     );
 
@@ -528,13 +528,13 @@ fn bulk_dry_run_commit_and_refusals() {
 
     cli(&["init", "--no-skills"]);
     // Two yaks carry label `pick`; one does not (the control that must never move).
-    let a = created_id(&cli(&["create", "--title", "alpha", "--labels", "pick"]));
-    let b = created_id(&cli(&["create", "--title", "beta", "--labels", "pick"]));
-    let c = created_id(&cli(&["create", "--title", "gamma", "--labels", "other"]));
+    let a = created_id(&cli(&["create", "--title", "alpha", "--tags", "pick"]));
+    let b = created_id(&cli(&["create", "--title", "beta", "--tags", "pick"]));
+    let c = created_id(&cli(&["create", "--title", "gamma", "--tags", "other"]));
 
     // (a) Filtered DRY RUN: lists the matched set and the mutation, changes
     // nothing. Default (no --commit) must never write.
-    let (ok, stdout, _) = raw(&["bulk", "--label", "pick", "--add-label", "sprint"]);
+    let (ok, stdout, _) = raw(&["bulk", "--tag", "pick", "--add-tag", "sprint"]);
     assert!(ok, "dry run should exit 0: {stdout}");
     assert!(
         stdout.contains("would update 2 yaks:"),
@@ -550,16 +550,16 @@ fn bulk_dry_run_commit_and_refusals() {
     );
     // Verify a matched yak is genuinely unchanged after the dry run.
     assert!(
-        !show_labels_line_has(&cli(&["show", &a]), "sprint"),
+        !show_tags_line_has(&cli(&["show", &a]), "sprint"),
         "dry run must not apply the label"
     );
 
     // (b) --commit actually applies to the matched set, and only that set.
     let out = cli(&[
         "bulk",
-        "--label",
+        "--tag",
         "pick",
-        "--add-label",
+        "--add-tag",
         "sprint",
         "--set-priority",
         "1",
@@ -574,11 +574,11 @@ fn bulk_dry_run_commit_and_refusals() {
         "b not updated: {out}"
     );
     assert!(
-        show_labels_line_has(&cli(&["show", &a]), "sprint"),
+        show_tags_line_has(&cli(&["show", &a]), "sprint"),
         "a missing sprint"
     );
     assert!(
-        show_labels_line_has(&cli(&["show", &b]), "sprint"),
+        show_tags_line_has(&cli(&["show", &b]), "sprint"),
         "b missing sprint"
     );
     assert_eq!(
@@ -588,12 +588,12 @@ fn bulk_dry_run_commit_and_refusals() {
     );
     // The unmatched control yak is untouched.
     assert!(
-        !show_labels_line_has(&cli(&["show", &c]), "sprint"),
+        !show_tags_line_has(&cli(&["show", &c]), "sprint"),
         "unmatched yak must not be mutated"
     );
 
     // (c) No filter flag -> refuse (never operate on the whole farm).
-    let (ok, _stdout, stderr) = raw(&["bulk", "--add-label", "z"]);
+    let (ok, _stdout, stderr) = raw(&["bulk", "--add-tag", "z"]);
     assert!(!ok, "unfiltered bulk must exit non-zero");
     assert!(
         stderr.contains("filter flag"),
@@ -601,7 +601,7 @@ fn bulk_dry_run_commit_and_refusals() {
     );
 
     // (d) No mutation flag -> refuse.
-    let (ok, _stdout, stderr) = raw(&["bulk", "--label", "pick"]);
+    let (ok, _stdout, stderr) = raw(&["bulk", "--tag", "pick"]);
     assert!(!ok, "bulk with no mutation must exit non-zero");
     assert!(
         stderr.contains("mutation flag"),
@@ -755,8 +755,9 @@ fn attach_name_and_rename_attachment() {
 
 /// Labels are normalized at every CLI entry point (yaks-7cb3): commas and
 /// whitespace separate labels, empties drop, duplicates collapse in order. A
-/// legacy comma label on disk is flagged by `doctor` and re-split on the next
-/// label edit. Throwaway farm built via the CLI.
+/// legacy comma tag on disk is flagged by `doctor` and re-split on the next
+/// tag edit. Uses the old `--labels`/`--add-label` spellings on purpose: they
+/// stay as aliases of `--tags`/`--add-tag`. Throwaway farm built via the CLI.
 #[test]
 fn labels_normalized_on_create_update_bulk_and_doctor() {
     let dir = std::env::temp_dir().join(format!("yaks-labelnorm-{}", std::process::id()));
@@ -780,7 +781,7 @@ fn labels_normalized_on_create_update_bulk_and_doctor() {
     };
     let labels = |id: &str| -> Vec<String> {
         let v: serde_json::Value = serde_json::from_str(&cli(&["show", id, "--json"])).unwrap();
-        v["labels"]
+        v["tags"]
             .as_array()
             .map(|a| a.iter().map(|l| l.as_str().unwrap().to_string()).collect())
             .unwrap_or_default()
@@ -806,7 +807,7 @@ fn labels_normalized_on_create_update_bulk_and_doctor() {
 
     // Bulk: the dry-run preview shows the normalized labels.
     let dry = cli(&["bulk", "--label", "bar,nope", "--add-label", "p,q"]);
-    assert!(dry.contains("add labels [p, q]"), "{dry}");
+    assert!(dry.contains("add tags [p, q]"), "{dry}");
 
     // A legacy on-disk comma label: doctor flags it (non-zero exit)...
     let path = std::path::PathBuf::from(cli(&["path", &a]).trim());
@@ -875,7 +876,7 @@ fn a_schema_3_farm_refuses_to_open_and_names_the_release_that_migrates_it() {
     assert!(!farm.join("yak-0001.md").exists());
     assert!(!cli(&["migrate"]).status.success());
     // A current farm opens.
-    std::fs::write(farm.join("schema"), "6\n").unwrap();
+    std::fs::write(farm.join("schema"), "7\n").unwrap();
     assert!(cli(&["list"]).status.success());
     let _ = std::fs::remove_dir_all(&dir);
 }

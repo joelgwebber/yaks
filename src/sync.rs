@@ -337,7 +337,7 @@ fn pull(top: &Path, remote: &str, branch: &str, root: &Path, r: &mut Report) -> 
         return Ok(());
     }
     // Writers wait while the rebase rewrites the files under them.
-    let _lock = store::lock(root)?;
+    let _lock = store::lock_uncommitted(root)?;
     match rebase(top, remote, branch)? {
         0 => r.say(format!("up to date with {remote}/{branch}")),
         n => r.say(format!("pulled {n} commit(s) from {remote}/{branch}")),

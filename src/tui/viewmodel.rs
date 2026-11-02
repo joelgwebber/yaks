@@ -86,6 +86,7 @@ impl App {
             }
         }
         self.refresh_farm_sync();
+        self.reload_wiki();
         let len = self.row_count();
         self.cursor = if len == 0 {
             0
@@ -106,6 +107,7 @@ impl App {
             }
         }
         self.refresh_farm_sync();
+        self.reload_wiki();
         match sel.and_then(|id| self.rows().iter().position(|r| r.task.id == id)) {
             Some(pos) => self.cursor = pos,
             None => self.clamp_cursor(),
@@ -129,6 +131,10 @@ impl App {
         // The Sheds tab counts busy sheds, not yaks.
         if v.key == view::SHEDS_KEY {
             return self.sheds.snapshot.as_ref().map_or(0, |s| s.busy());
+        }
+        // The Wiki tab counts pages, not yaks.
+        if v.key == view::WIKI_KEY {
+            return self.wiki_count();
         }
         // Flat views (Recent/Inbox/custom sorted) count via the flat predicate
         // so facets the tree ignores for pruning — notably `needs_only` — are
@@ -238,8 +244,8 @@ impl App {
         if v.key == "working-set" {
             return self.working_set_rows();
         }
-        // The Sheds tab has no yak rows: every yak key finds no selection.
-        if v.key == view::SHEDS_KEY {
+        // The Sheds and Wiki tabs have no yak rows: every yak key finds no selection.
+        if v.key == view::SHEDS_KEY || v.key == view::WIKI_KEY {
             return Vec::new();
         }
         if v.is_flat() {
@@ -258,6 +264,8 @@ impl App {
         } else {
             self.cursor.min(len - 1)
         };
+        // The Wiki tab's list filters on the same live search.
+        self.clamp_wiki_cursor();
     }
 
     pub(crate) fn selected(&self) -> Option<&Task> {

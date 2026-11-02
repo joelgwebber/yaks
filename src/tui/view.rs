@@ -223,11 +223,33 @@ pub fn sheds_view() -> View {
     }
 }
 
+/// The key of the Wiki tab (yaks-ebb2): rows are the farm's pages and
+/// sources, not yaks, so the yak row/count paths branch on it.
+pub const WIKI_KEY: &str = "wiki";
+
+/// The Wiki tab: the farm's pages (`wiki/`, `<herd>/wiki/`) and saved
+/// sources (`sources/`), opened in the rendered viewer. Pinned by default;
+/// its spec is unused except the live filter's `search` (`/`).
+pub fn wiki_view() -> View {
+    View {
+        name: "\u{1f4d6} Wiki".into(),
+        key: WIKI_KEY.into(),
+        status: None,
+        builtin: true,
+        pinned: true,
+        spec: FilterSpec::default(),
+        sort_by: None,
+        sort_dir: SortDir::Desc,
+        limit: None,
+    }
+}
+
 pub fn default_views() -> Vec<View> {
     let mut v = builtin_status_views();
     v.push(recent_view());
     v.push(inbox_view());
     v.push(working_set_view());
+    v.push(wiki_view());
     v.push(sheds_view());
     v
 }

@@ -30,7 +30,7 @@ use crate::model::Task;
 /// (create or update), `Esc`/`Ctrl-C` cancels.
 pub(crate) struct CreateForm {
     pub(crate) title: RefCell<EditorState>,
-    pub(crate) labels: RefCell<EditorState>,
+    pub(crate) tags: RefCell<EditorState>,
     /// The `source:` external-issue URL (yaks-b0b4); empty = no source.
     pub(crate) source: RefCell<EditorState>,
     /// The description editor, the last row of a *create* form; `None` when
@@ -65,7 +65,7 @@ impl CreateForm {
     ) -> Self {
         CreateForm {
             title: text_field("", vim),
-            labels: text_field("", vim),
+            tags: text_field("", vim),
             source: text_field("", vim),
             description: Some(multiline_field("", vim)),
             kind_idx: 0,           // task
@@ -84,7 +84,7 @@ impl CreateForm {
     pub(crate) fn for_edit(vim: bool, task: &Task) -> Self {
         CreateForm {
             title: text_field(&task.title, vim),
-            labels: text_field(&task.labels.join(", "), vim),
+            tags: text_field(&task.tags.join(", "), vim),
             source: text_field(task.source.as_deref().unwrap_or(""), vim),
             description: None,
             kind_idx: kind_index(&task.kind),
@@ -144,7 +144,7 @@ impl CreateForm {
     pub(crate) fn line_editor(&self) -> Option<&RefCell<EditorState>> {
         match self.row {
             0 => Some(&self.title),
-            3 => Some(&self.labels),
+            3 => Some(&self.tags),
             4 => Some(&self.source),
             _ => None,
         }
@@ -179,8 +179,8 @@ impl CreateForm {
     }
 
     /// The labels field, normalized (commas/whitespace separate; yaks-7cb3).
-    pub(crate) fn labels_vec(&self) -> Vec<String> {
-        crate::model::normalize_labels([self.labels.borrow().lines.to_string()])
+    pub(crate) fn tags_vec(&self) -> Vec<String> {
+        crate::model::normalize_tags([self.tags.borrow().lines.to_string()])
     }
 
     /// The description of a *create* (empty → no body); trailing whitespace is
@@ -282,8 +282,8 @@ pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
     render_text_row(
         f.row == 3,
         CREATE_LABEL_W,
-        "labels",
-        &f.labels,
+        "tags",
+        &f.tags,
         "",
         frame,
         labels_r,

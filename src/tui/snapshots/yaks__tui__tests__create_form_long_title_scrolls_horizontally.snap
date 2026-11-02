@@ -8,7 +8,7 @@ expression: frame
 │ ▸ title       le that keeps going well past the edge of the form END
 │   type         task bug feature idea
 │   priority     p1 p2 p3 p4 p5
-│   labels
+│   tags
 │   source
 │   description ───────────────────────────────────────────────────────
 │ (no description)

@@ -160,7 +160,9 @@ fn first_sync_publishes_the_branch_with_the_driver_rule_and_sets_its_upstream() 
     let out = a.yaks(&["sync"]);
     assert!(out.contains("committed .gitattributes"), "{out}");
     assert!(out.contains("origin has no yaks branch yet"), "{out}");
-    assert!(out.contains("pushed 2 commit(s) to origin/yaks"), "{out}");
+    // The new farm, the create (each its own commit, yaks-a838) and the
+    // merge-driver rule.
+    assert!(out.contains("pushed 3 commit(s) to origin/yaks"), "{out}");
     assert!(out.contains("up to date with origin/yaks"), "{out}");
     assert!(remote_heads(&base).contains("refs/heads/yaks"));
     let farm = a.farm();
@@ -188,8 +190,9 @@ fn concurrent_edits_to_one_yak_converge_from_both_machines() {
     b.yaks(&["update", &id, "--add-label", "bee"]);
     a.yaks(&["sync"]);
     let out = b.yaks(&["sync"]);
-    assert!(out.contains("pulled 1 commit(s)"), "{out}");
-    assert!(out.contains("pushed 1 commit(s)"), "{out}");
+    // One commit per change (yaks-a838): A's note and shave, B's note and tag.
+    assert!(out.contains("pulled 2 commit(s)"), "{out}");
+    assert!(out.contains("pushed 2 commit(s)"), "{out}");
     a.yaks(&["sync"]);
     let file = |m: &Machine| {
         std::fs::read_to_string(m.farm().join(format!(".yaks/t/yaks/{id}.md"))).unwrap()
@@ -219,7 +222,10 @@ fn half_syncs_skip_their_step() {
     assert!(out.contains("push skipped (--no-push)"), "{out}");
     assert!(!remote_heads(&base).contains("refs/heads/yaks"));
     // --no-commit with a dirty farm: no commit, no pull, push what is committed.
-    a.yaks(&["update", &id, "--note", "local only"]);
+    // A yaks write commits itself (yaks-a838), so dirty it by hand.
+    let path = a.farm().join(format!(".yaks/t/yaks/{id}.md"));
+    let text = std::fs::read_to_string(&path).unwrap();
+    std::fs::write(&path, format!("{text}\nlocal only\n")).unwrap();
     let out = a.yaks(&["sync", "--no-commit"]);
     assert!(out.contains("commit skipped (--no-commit)"), "{out}");
     assert!(
@@ -293,7 +299,7 @@ fn a_yaks_dir_farm_is_refused() {
     let farm = base.join(".yaks");
     std::fs::create_dir_all(&farm).unwrap();
     std::fs::write(farm.join("config.yaml"), "herd: t\n").unwrap();
-    std::fs::write(farm.join("schema"), "6\n").unwrap();
+    std::fs::write(farm.join("schema"), "7\n").unwrap();
     git(&base, &["init", "-q", "-b", "main"]);
     let out = Command::cargo_bin("yaks")
         .unwrap()

@@ -11,7 +11,8 @@ interchangeable.
   include the default tree, **Recent**, **Inbox** (yaks with a `needs` value: awaiting a human, or answered or requested and
   awaiting an agent), and
   **Starred**; you can save the current filter as a named view. The
-  **Sheds** tab lists the farm's workers (actors) instead of yaks (see
+  **Wiki** tab lists the farm's pages and sources (see [Wiki tab](#wiki-tab)),
+  and the **Sheds** tab lists the farm's workers (actors) instead of yaks (see
   [Sheds tab](#sheds-tab)).
 - **Detail pane** — the selected yak: fields, parent/deps/children, source and
   pull requests (`PRs:`, one row per URL; set with `yaks update --pr`), a
@@ -23,22 +24,40 @@ interchangeable.
   terminal narrower than ~140), the
   pane covers the whole main area and its divider is tipped with `◂` — the
   list is behind it; `h`/`Esc` returns to it.
-- **Filter drawer** (`f`) — toggle status / type / priority chips, a label and
+- **Filter drawer** (`f`) — toggle status / type / priority chips, a tag and
   search box, a parent scope, and `ready` / `tangled` / `inbox` predicates. On a
   multi-herd farm it also grows a `herd` chip row to scope the list to one or
   more herds. The drawer composes into any view.
 - **Farm chip** — on the tab row's right edge, what the farm has that git does
   not, and where the farm branch stands against its upstream (the one
   `yaks status` prints, read from local git: it never fetches, and nothing is
-  ever committed or synced unless you press `W` / `U`). Dim text, in this order:
+  ever committed unless you press `W`; it is synced by `U` or by the interval
+  sync below). Dim text, in this order:
   `● 3 uncommitted` (yaks and other farm files git lacks), `not published`
   (the farm branch has no upstream), `↑2` (commits to push), and `↓1` (commits
   to pull: the one warning colour). Nothing is shown when the farm is clean and
   up to date. When the full text does not fit beside the tabs it shortens to
   `●3` and `unpub`, and is hidden if even that does not fit. It is re-read whenever the farm is (re)loaded: at
   startup, after every TUI change, and when files under `.yaks/` change; it
-  does not notice a commit or push made elsewhere until then. The family label
+  does not notice a commit or push made elsewhere until then (the interval sync
+  below is what brings it up to date). The family label
   and notifications sit just left of it.
+- **Recurring yaks** — on load and on each sync tick (`sync_interval`, also
+  when there is no remote to sync) the TUI runs `yaks regrow-due`: a shorn yak
+  with `every:` whose next occurrence has arrived is hairy again, with a
+  `regrew …` notice, and the list reloads. `YAKS_NO_AUTOSYNC` stops the ticks;
+  the load-time pass still runs.
+- **Interval sync** — every `sync_interval` (`.yaks/config.yaml`; seconds or
+  `30s` / `5m` / `2h`; default `5m`; `0` or `off` turns it off) the TUI runs the
+  same sync as `U` on a background thread, so the UI never waits for the
+  network, then reloads, and upstream changes appear with no key pressed. A
+  tick is skipped when the farm has no remote, a sync is still running, an
+  overlay or editor is open, or a `W`/`U` is queued (it is tried again one
+  interval later). A private farm only pulls, never pushes. A failure shows once
+  as `auto-sync failed: …` in the notification area, not on every tick; a
+  success is silent. `YAKS_NO_AUTOSYNC=1` turns it off for a run (tests,
+  headless). A value that does not parse keeps the default. It is farm-wide,
+  not per herd, and only the TUI does it: the CLI still syncs only when asked.
 - **Status bar** — the active farm, view, and cursor context.
 
 ## Signals
@@ -48,6 +67,11 @@ interchangeable.
   yak awaiting an agent (`needs: agent`), answered or requested: it blocks
   nothing, so the detail `Needs:` line is plain (`agent (answered, awaiting
   pickup)` or `agent (requested, …)`) and the row is never shown as awaiting a human.
+- A hairy or shaving yak with a `due:` shows the date at the right of its row,
+  dim, and **red once it is overdue**; the detail view shows `Due:` (in the
+  warning accent when overdue), `Every:` and `Regrown:` rows. A shorn yak is
+  never overdue. See [Due dates and recurring
+  yaks](cli.md#due-dates-and-recurring-yaks).
 - The dependency-blocked marker (`*`) and the multi-select marker (`●`) are
   distinct axes and can co-occur.
 - The tab row's right edge shows the active **family scope** for tree views
@@ -77,7 +101,7 @@ full-page; `g`/`G` top/bottom.
 | `v` / `V` | View picker / save filter as a view |
 | `*` | Star / unstar (Starred view) |
 | `W` | Commit the farm (`yaks commit`; also in the detail pane, not on the Sheds tab). The result is the notification: `committed <sha> <message>`, `nothing to commit`, or the error |
-| `U` | Sync the farm (`yaks sync`: commit, pull, push; also in the detail pane). Shows `syncing…` while it runs (it touches the network, so the TUI waits), then the sync report's last line, or the error |
+| `U` | Sync the farm (`yaks sync`: commit, pull, push; also in the detail pane). Shows `syncing…` while it runs (it touches the network, so the TUI waits; the interval sync does the same in the background), then the sync report's last line, or the error |
 
 **Detail pane** — `h`/`←`/`Esc` back (on a code block or table row `h`/`←`
 scroll it left first, and go back only at offset 0); `l`/`→` scroll the code
@@ -98,15 +122,15 @@ the pre-find scroll and cursor).
 | Key | Action |
 |---|---|
 | `c` / `C` | New root / child yak |
-| `E` | Edit what the cursor is on: a body row (the description or a comment) turns that block into an editor **in place**; a header row (`Title:`, `Type:`, `Priority:`, `Labels:`, `Source:`, `Herd:`) opens the form on that field (`Status:` opens the state picker) |
-| `P` / `T` / `L` / `S` | Priority / type / labels / state. State moves keep families consistent like the CLI's ([Families stay consistent](cli.md#families-stay-consistent)): shaving also shaves hairy ancestors, and a move that would leave open work under a shorn or dead yak is refused |
+| `E` | Edit what the cursor is on: a body row (the description or a comment) turns that block into an editor **in place**; a header row (`Title:`, `Type:`, `Priority:`, `Tags:`, `Source:`, `Herd:`) opens the form on that field (`Status:` opens the state picker) |
+| `P` / `T` / `L` / `S` | Priority / type / tags / state. State moves keep families consistent like the CLI's ([Families stay consistent](cli.md#families-stay-consistent)): shaving also shaves hairy ancestors, and a move that would leave open work under a shorn or dead yak is refused |
 | `S` → `n` | Shear: a one-line prompt asks for an optional comment, recorded as a note on the yak before it moves to shorn (so `yaks doctor --strict` sees evidence). `Enter` on an empty line shears with no note; `Ctrl-C` (or `Esc` in emacs mode, a double-`Esc` in vim) cancels and leaves the yak as it was. With marks, the one comment goes on every yak that moves. |
 | `D` / `R` | Add dependency / reparent |
 | `H` | Move to another herd (multi-herd farms) |
 | `M` | Add a comment (note): an empty editor under a `▸ you · now` header after the last comment, in place |
 | `a` | Hand the yak to an agent (`needs: agent`): on a yak awaiting a human, answer; otherwise request agent work (like `yaks request`; on a yak already awaiting an agent the request is appended). Opens the same multi-line editor as `M`, headed `Answer <id>` / `Request <id>`; `Ctrl-S` answers or requests with the text as the note (an empty one does so with no note), cancel changes nothing |
 | `Q` | Ask a question (`needs: human`, out of `next` until answered; on a yak awaiting an agent it flips back to a human). The same editor, headed `Ask <id>` |
-| `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped; `j`/`k`, `d`/`u`, `g`/`G` scroll, `E` edits it in place (the multi-line editor: `Ctrl-S` writes the file back under the farm lock and returns to the viewer, re-rendered; cancel returns unchanged, asking first if you typed anything; a file changed on disk meanwhile is not overwritten until a second `Ctrl-S`), `O` hands it to the OS opener, `Esc`/`q`/`h` close. An image (png, jpg, gif, webp up to 32 MiB; svg up to 4 MiB) opens **in the pane** too: drawn with the terminal's own graphics protocol (kitty, sixel, iTerm2) when it speaks one, else as half-block cells; shrunk to fit, never enlarged; `O` opens it externally, `Esc`/`q`/`h` close. An svg is rasterized first (see *Svg attachments* below); a corrupt or undecodable image and binary files open with the OS opener |
+| `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped. It navigates like the detail pane, by the same code: `j`/`k`, `d`/`u`, `g`/`G` move a line cursor, `Tab`/`[`/`]` cycle links and `Enter` follows one (the status bar shows a URL's destination; a footnote or `#section` jumps within the file and `o`/`i` go back/forward; a yak id opens that yak in the detail pane; a farm page or source opens in the viewer at its anchor, `o` coming back (see [Following links](#following-links-and-peek)); an attachment, URL or source file opens as from the detail pane; a pane under the page peeks the link under the cursor, `p` hides it), `/` finds with `n`/`N` cycling, `v`/Shift-↑↓ select and `y`/`Enter` copy (a `.md` file copies its source markdown), `h`/`l` scroll a code block or table sideways, `Esc` clears a selection, then a find, then closes. `E` edits it in place (the multi-line editor: `Ctrl-S` writes the file back under the farm lock and returns to the viewer, re-rendered; cancel returns unchanged, asking first if you typed anything; a file changed on disk meanwhile is not overwritten until a second `Ctrl-S`), `O` hands it to the OS opener, `q`/`h` close. An image (png, jpg, gif, webp up to 32 MiB; svg up to 4 MiB) opens **in the pane** too: drawn with the terminal's own graphics protocol (kitty, sixel, iTerm2) when it speaks one, else as half-block cells; shrunk to fit, never enlarged; `O` opens it externally, `Esc`/`q`/`h` close. An svg is rasterized first (see *Svg attachments* below); a corrupt or undecodable image and binary files open with the OS opener |
 | `r` | (detail) Rename the attachment whose link (📎 or 🖼) the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
 | `X` | Slaughter (delete, with confirm); on a yak with hairy or shaving descendants the confirm offers to take them too, naming how many go (shorn ones stay shorn) |
 | `:w` / `:q` / `:wq` | Save / cancel / save+close (editor Normal mode) |
@@ -215,6 +239,18 @@ title words, then `Enter` opens its detail, switching to its view and recording
 the jump so `o` comes back); `f` filter drawer; `Esc` revert filter to the
 active view.
 
+**Wiki tab** — its own keys (the yak keys do nothing there):
+
+| Key | Action |
+|---|---|
+| `j` / `k`, `g` / `G`, `d` / `u` | Move between pages (then sources) |
+| `l` / `→` / `Enter` | Open the page or source in the viewer (it navigates like the detail pane) |
+| `/` | Search titles, paths, kinds and tags; `Esc` clears it |
+| `E` | Edit the page in place (also `E` in its viewer): frontmatter and body in one editor, `Ctrl-S` saves |
+| `N` | New page: type its path, then write its body |
+| `y` | Copy the path |
+| `r` | Reread the pages now |
+
 **Sheds tab** — its own keys (the yak keys do nothing there):
 
 | Key | Action |
@@ -318,19 +354,24 @@ language shows as a dim label row above it; see below for scrolling), and
 the line cursor is on such a link the status bar shows its destination, dim and
 truncated, in place of the key hints). A link to a yak attachment
 (`<id>/<file>`) is marked `📎` and an image `🖼`; `Enter` opens a text
-attachment in the pane's viewer (below) and an image externally. A link to a **repo source file** is written as a path from the repo root
-behind one `../` (`[code](../src/foo.rs)`, the shape from when a yak file sat
-directly in `.yaks/`; yaks resolves it against the code checkout, so it keeps
-working, but under herd directories it no longer resolves as a plain relative
-link on GitHub); `#L12` or `#L12-L40` adds lines (GitHub's own fragment), and
-`[code](../blob/<sha>/src/foo.rs#L12)` pins it to a commit (`<sha>` is 7 to 40 hex
+attachment in the pane's viewer (below) and an image externally. A link to a **repo source file** is `code:` and a path from the repo root
+(`[code](code:src/foo.rs)`; the older `[code](../src/foo.rs)`, from when a yak
+file sat directly in `.yaks/`, still works in yaks); `#L12` or `#L12-L40` adds
+lines (GitHub's own fragment), and `@<sha>` before it (`code:src/foo.rs@3f2a9c1#L12`,
+or the older `../blob/<sha>/src/foo.rs#L12`) pins it to a commit (`<sha>` is 7 to 40 hex
 digits). It shows as plain link text; the status bar shows `src/foo.rs:L12-L40`
 (`@<sha7>` when pinned). `Enter`/`O` opens it in `$VISUAL`/`$EDITOR` at the line
 (the TUI suspends while it runs, so a full-screen editor works),
 else the OS opener. A pinned link whose file has changed since that commit opens
 a read-only copy of `git show <sha>:<path>` under the temp directory
 (`yaks-src/<sha>/…`); if the file is unchanged it opens the working copy. A link
-that climbs out of the repo (`../../x`) is not a source link. Task lists show `☐`/`☑` and GitHub alerts (`> [!NOTE]`, `TIP`,
+to a **farm document** (a page from the farm root, `[x](/wiki/topics/x.md#setup)`;
+in a page, a relative `notes.md` below it; a source's `/sources/<id>/source.md`;
+`@<sha>` pins it) opens in the text viewer at its `#heading` or `#L12` row (see
+[Following links](#following-links-and-peek)); in the detail pane the status bar
+also shows the first line of its peek. Every link is read by the farm's one link
+grammar (the one `yaks peek` and `yaks doctor` use), described in
+[cli.md](cli.md#links). Task lists show `☐`/`☑` and GitHub alerts (`> [!NOTE]`, `TIP`,
 `IMPORTANT`, `WARNING`, `CAUTION`) a coloured bar with a title row. A footnote
 reference shows as a dim `[n]` (numbered in order of first use) that `Enter`
 follows to its definition; definitions collect at the end of their block
@@ -362,18 +403,18 @@ the full source lines.
 
 ![yaks TUI inbox view](assets/tui-inbox.svg)
 
-**Filter drawer** (`f`) — status / type / priority chips plus label, search,
+**Filter drawer** (`f`) — status / type / priority chips plus tag, search,
 parent, and `ready`/`tangled`/`inbox` predicates, and — on a multi-herd farm —
 a `herd` chip row to scope to one or more herds. It composes into any view.
 
 ![yaks TUI filter drawer](assets/tui-drawer.svg)
 
-Label fields (the `L` editor, the create/edit form's `labels`, the drawer's
-label filter) take labels separated by commas and/or spaces — `ui, docs`,
-`ui docs`, and `ui,docs` all mean `[ui, docs]`; a label can contain neither.
+Tag fields (the `L` editor, the create/edit form's `tags`, the drawer's
+tag filter) take tags separated by commas and/or spaces — `ui, docs`,
+`ui docs`, and `ui,docs` all mean `[ui, docs]`; a tag can contain neither.
 
 **Edit form** (`E`) — the shared create/edit form. Editing it is header fields
-only: `title`, `type`, `priority`, `labels`, and `source` (the external-issue
+only: `title`, `type`, `priority`, `tags`, and `source` (the external-issue
 URL; empty = none, so clearing it removes `source:`). The body is never part of
 it: the description and comments are edited in place in the detail pane (see
 above), so saving the form leaves the body byte-identical. `E` from the list
@@ -386,6 +427,78 @@ yak's current herd) after `source`, so changing it and saving moves the yak to
 that herd (an id-prefix rename). `H` does the same move as a one-key picker.
 
 ![yaks TUI edit form with the herd chip row](assets/tui-edit-herd.svg)
+
+## Following links and peek
+
+The text viewer (an attachment, or a page from the [Wiki tab](#wiki-tab))
+follows links the way a browser does:
+
+- **`Enter` on a farm document** opens it in the viewer: a page (frontmatter
+  above the body), a source (with its `extracted.md`), or any other text file of
+  the farm; an image opens in the image viewer. A `#heading` lands the cursor on
+  that heading, at the top of the page; `#L12-L40` on line 12 of the file. A
+  pinned link (`/wiki/x.md@3f2a9c1`) shows the file as it was at that farm
+  commit, `@3f2a9c1` in the header; `E` refuses (a past version is read-only).
+  A link to a file the farm lacks says `not in this farm` and stays put.
+- **`#section`** (an anchor in the same page) moves the cursor to that heading.
+- **History**: `o` undoes in-page jumps (footnotes, `#section`) first, then goes
+  back to the previous document, where its cursor was; `i` goes forward. A
+  document you come back to is re-read from disk, so an edit made meanwhile
+  shows. An attachment followed from a page joins the same history; `Esc`
+  closes the viewer and forgets it.
+- **Peek**: while the cursor is on a link it can read (a farm document, an
+  in-page anchor, an attachment, a `code:` file), a pane under the page shows
+  `yaks peek` of it: the section a `#heading` names, the lines of a `#L12-L40`,
+  or a document's fields and first paragraph, cut to fit. The pane is there
+  whenever the page has such a link, so the page doesn't jump as the cursor
+  moves; `p` hides it (and shows it again).
+
+![The viewer on a page, its cursor on a link, the peek pane showing the linked section](assets/tui-wiki-peek.svg)
+
+## Wiki tab
+
+The **📖 Wiki** tab lists the farm's documents that are not yaks: every page
+under `wiki/` and each herd's `<herd>/wiki/`, then every saved source under
+`sources/` (the same files `yaks page list` and `yaks source list` read).
+
+- **One row per page**, sorted by path, then the sources: the title, the kind
+  (`note`, `topic`, `howto`, `summary` or a typed kind; `source` for a
+  source), the tags, then the path dimmed. The list is flat; the path shows
+  the folder.
+- **The tab count** is the number of pages (sources are not counted).
+- **`Enter` opens the page** in the text viewer, next to the list. Its
+  frontmatter shows as field rows (`type:`, `title:`, `tags:`, ...) above the
+  rendered markdown body. A field the viewer can't flatten to one line (a list
+  of maps) shows its YAML as written. A **source** opens its `source.md`, then
+  its `extracted.md` under an `── extracted.md ──` row. The viewer moves like
+  the detail pane: the line cursor, `Tab` among links, `/` find, `v`/`y`
+  select and copy; `Enter` follows a link (another page opens in its place,
+  `o` comes back: see [Following links](#following-links-and-peek)); `Esc`
+  closes it.
+- **`E` edits the page in place**, from the list or its viewer: the multi-line
+  editor opens on the whole file, the frontmatter as YAML between its `---`
+  lines and the body below, so every field (a typed kind's, a `sources:` list)
+  edits as written. `Ctrl-S` saves it and returns to the viewer, re-rendered;
+  on a farm branch the save is one commit (a quick re-save joins it). The page
+  must keep its `---` block; if the file changed on disk while you typed,
+  nothing is written until a second `Ctrl-S`. A source is a snapshot and a
+  pinned version a past one: `E` refuses both.
+- **`N` creates a page**: type its path (`wiki/topics/x.md`, or a herd's
+  `<herd>/wiki/...`; `.md` is added; parts are lowercase-kebab), and the page
+  is written as `yaks page new` would (kind `note`, a title from the file name,
+  a schema's defaults), then opened in the editor for its body. A bad or taken
+  path keeps the prompt open with the reason.
+
+![Editing a page in place: its frontmatter and body in the editor](assets/tui-wiki-edit.svg)
+
+- **`/` searches** the list the way it searches yaks on the other tabs (the
+  tab gets the `*` marker and the `filter:` chip; `Esc` clears it).
+- **Refresh**: the list is reread whenever the farm is (at startup, after a TUI
+  change, and when files under the farm change), and on `r`.
+
+![yaks TUI Wiki tab](assets/tui-wiki.svg)
+
+![yaks TUI Wiki tab with a page open](assets/tui-wiki-page.svg)
 
 ## Sheds tab
 

@@ -301,13 +301,13 @@ mod tests {
             created: None,
             updated: None,
             parent: parent.map(String::from),
-            labels: vec![],
+            tags: vec![],
             depends_on: vec![],
             source: None,
             prs: Vec::new(),
             needs: None,
             verify: None,
-            extra: Vec::new(),
+            extra: Default::default(),
             body: String::new(),
         }
     }

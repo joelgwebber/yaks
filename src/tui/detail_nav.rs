@@ -3,12 +3,53 @@
 //! nav history. Split out of `tui.rs` (yaks-b1cc / b1cc/6) as an `impl App`
 //! block. `use super::*` inherits `tui.rs`'s scope; methods are `pub(crate)`.
 
+use super::linenav::{self, LineNav, Viewport};
 use super::*;
 
-/// Columns a no-wrap block scrolls per `h`/`l`.
-const HSCROLL_STEP: usize = 8;
-
 impl App {
+    /// The detail pane's scroll geometry: its page, less the pinned header
+    /// once scrolled.
+    pub(crate) fn detail_viewport(&self) -> Viewport {
+        Viewport {
+            page: self.detail_page as usize,
+            pinned: PINNED_ROWS as usize,
+        }
+    }
+
+    /// Run a [`LineNav`] operation on the detail pane's cursor state. The
+    /// state lives in `App`'s `detail_*` fields; this lends it to the shared
+    /// navigation (yaks-84e0) and takes it back, so the detail pane and the
+    /// text viewer move, select, find and cycle links by the same code.
+    pub(crate) fn with_detail_nav<R>(&mut self, f: impl FnOnce(&mut LineNav) -> R) -> R {
+        let mut nav = LineNav {
+            line: self.detail_line,
+            scroll: self.detail_scroll,
+            anchor: self.detail_anchor,
+            find: self.detail_find.take(),
+            matched: self.detail_match,
+            ..LineNav::default()
+        };
+        let r = f(&mut nav);
+        self.detail_line = nav.line;
+        self.detail_scroll = nav.scroll;
+        self.detail_anchor = nav.anchor;
+        self.detail_find = nav.find;
+        self.detail_match = nav.matched;
+        r
+    }
+
+    /// The detail pane's state as a read-only [`LineNav`] (for queries).
+    pub(crate) fn detail_nav(&self) -> LineNav {
+        LineNav {
+            line: self.detail_line,
+            scroll: self.detail_scroll,
+            anchor: self.detail_anchor,
+            find: self.detail_find.clone(),
+            matched: self.detail_match,
+            ..LineNav::default()
+        }
+    }
+
     /// Select an existing task wherever it lives: switch to its status view (if
     /// one is pinned) and place the cursor on it, then focus the list.
     pub(crate) fn select_task(&mut self, id: &str) {
@@ -143,9 +184,9 @@ impl App {
         let Some(id) = self.selected().map(|t| t.id.clone()) else {
             return false;
         };
-        let max = extent.saturating_sub(self.detail_width.get() as usize);
+        let width = self.detail_width.get() as usize;
         let cur = self.block_hscroll(&id, key, extent);
-        let next = (cur as i32 + dir * HSCROLL_STEP as i32).clamp(0, max as i32) as usize;
+        let next = linenav::hscroll_step(cur, extent, width, dir);
         self.detail_hscroll = Some((id, key.0, key.1, next));
         next != cur
     }
@@ -186,147 +227,47 @@ impl App {
     /// [`detail::cursor_stops`]): one step crosses a whole image, as in edit
     /// mode.
     pub(crate) fn move_detail_line(&mut self, delta: i32) {
-        let lines = self.detail_dlines();
-        let stops = detail::cursor_stops(&lines);
-        if stops.is_empty() {
-            return;
-        }
-        // The current stop: the last one at or before the cursor. A cursor
-        // inside an image block (only a click or a reflow puts it there) is on
-        // that image's stop, its link row; a step up from inside it arrives
-        // there, so it costs one step less.
-        let at = stops
-            .partition_point(|&r| r <= self.detail_line)
-            .saturating_sub(1);
-        let inside = stops[at] != self.detail_line;
-        let delta = if inside && delta < 0 {
-            delta + 1
-        } else {
-            delta
-        };
-        let to = (at as i32 + delta).clamp(0, stops.len() as i32 - 1) as usize;
-        self.detail_line = stops[to];
-        self.scroll_line_into_view(self.detail_line as u16);
+        let (lines, vp) = (self.detail_dlines(), self.detail_viewport());
+        self.with_detail_nav(|n| n.step(&lines, vp, delta));
     }
 
     /// g / G — jump the line cursor to the top / bottom stop.
     pub(crate) fn detail_line_to(&mut self, end: bool) {
-        let lines = self.detail_dlines();
-        let stops = detail::cursor_stops(&lines);
-        self.detail_line = if end {
-            stops.last().copied().unwrap_or(0)
-        } else {
-            0
-        };
-        self.scroll_line_into_view(self.detail_line as u16);
+        let (lines, vp) = (self.detail_dlines(), self.detail_viewport());
+        self.with_detail_nav(|n| n.to_end(&lines, vp, end));
     }
 
     /// Tab / Shift-Tab — snap the line cursor to the next / prev line holding a
     /// link (wrapping), so Enter can follow it.
     pub(crate) fn jump_link(&mut self, delta: i32) {
-        let jumps = self.detail_jumps();
-        if jumps.is_empty() {
-            return;
-        }
-        let mut lines: Vec<usize> = jumps.iter().map(|j| j.line).collect();
-        lines.dedup();
-        let target = if delta >= 0 {
-            lines
-                .iter()
-                .find(|&&l| l > self.detail_line)
-                .copied()
-                .unwrap_or(lines[0])
-        } else {
-            lines
-                .iter()
-                .rev()
-                .find(|&&l| l < self.detail_line)
-                .copied()
-                .unwrap_or_else(|| *lines.last().unwrap())
-        };
-        self.detail_line = target;
-        self.scroll_line_into_view(self.detail_line as u16);
+        let (lines, vp) = (self.detail_dlines(), self.detail_viewport());
+        self.with_detail_nav(|n| n.jump_link(&lines, vp, delta));
     }
 
     /// v — toggle visual selection anchored at the current line.
     pub(crate) fn toggle_visual(&mut self) {
-        self.detail_anchor = if self.detail_anchor.is_some() {
-            None
-        } else {
-            Some(self.detail_line)
-        };
+        self.with_detail_nav(LineNav::toggle_visual);
     }
 
     /// Shift-↑↓ — start (if needed) and extend the visual selection.
     pub(crate) fn extend_selection(&mut self, delta: i32) {
-        if self.detail_anchor.is_none() {
-            self.detail_anchor = Some(self.detail_line);
-        }
-        self.move_detail_line(delta);
+        let (lines, vp) = (self.detail_dlines(), self.detail_viewport());
+        self.with_detail_nav(|n| n.extend_selection(&lines, vp, delta));
     }
 
     /// The inclusive [lo, hi] line range currently selected, if any.
     pub(crate) fn selection_range(&self) -> Option<(usize, usize)> {
-        self.detail_anchor
-            .map(|a| (a.min(self.detail_line), a.max(self.detail_line)))
+        self.detail_nav().selection()
     }
 
-    /// y / Enter (in visual mode) — copy the selected line block (dedented) to
-    /// the clipboard and clear the selection.
     /// The text a yank of detail rows `lo..=hi` copies: source markdown for
     /// rendered body rows, the displayed text (soft wraps rejoined) for the
-    /// rest, dedented.
+    /// rest, dedented ([`linenav::yank_text`]).
     pub(crate) fn selection_text(&self, lo: usize, hi: usize) -> Option<String> {
-        let lines = self.detail_dlines();
-        if lines.is_empty() {
-            return None;
-        }
-        let hi = hi.min(lines.len() - 1);
         let task = self.selected()?;
         let blocks = super::content::parse(&task.body);
-        // Rejoin soft-wrapped continuations into their logical line so a
-        // yanked paragraph doesn't carry hard breaks at wrap points.
-        // A rendered body row yanks its *source* markdown instead
-        // (yaks-649d): each source line once, in order.
-        let mut rejoined: Vec<String> = Vec::new();
-        let mut last_src: Option<(usize, usize)> = None;
-        for line in &lines[lo..=hi] {
-            if let Some(src) = line.src {
-                let Some((a, b)) = src.lines else {
-                    continue; // a comment header row
-                };
-                let Some(block) = blocks.get(src.block) else {
-                    continue;
-                };
-                let text: Vec<&str> = block.text.split('\n').collect();
-                // Within one block, include source lines between the last
-                // copied one and this row (the blank lines a paragraph gap
-                // renders as one row, a fence line, ...).
-                let from = match last_src {
-                    Some((lb, ln)) if lb == src.block && ln < a => ln + 1,
-                    _ => a,
-                };
-                for n in from..=b {
-                    if last_src.is_some_and(|(lb, ln)| lb == src.block && ln >= n) {
-                        continue;
-                    }
-                    if let Some(t) = text.get(n) {
-                        rejoined.push((*t).to_string());
-                    }
-                    last_src = Some((src.block, n));
-                }
-                continue;
-            }
-            if line.cont {
-                if let Some(last) = rejoined.last_mut() {
-                    last.push(' ');
-                    last.push_str(&line.text);
-                    continue;
-                }
-            }
-            rejoined.push(line.text.clone());
-        }
-        Some(dedent(&rejoined).join("\n"))
+        let texts: Vec<&str> = blocks.iter().map(|b| b.text.as_str()).collect();
+        linenav::yank_text(&self.detail_dlines(), lo, hi, &texts)
     }
 
     pub(crate) fn yank_selection(&mut self) {
@@ -350,23 +291,14 @@ impl App {
     /// Detail content rows visible at `scroll`: the whole pane at the top, one
     /// fewer once scrolled (the sticky header and its rule take the top rows).
     pub(crate) fn detail_rows_shown(&self, scroll: u16) -> usize {
-        let page = self.detail_page.max(1) as usize;
-        if scroll == 0 {
-            page
-        } else {
-            page.saturating_sub(PINNED_ROWS as usize).max(1)
-        }
+        self.detail_viewport().rows_shown(scroll as usize)
     }
 
     /// Furthest the detail can scroll: far enough that a blank row sits below
     /// the last line (so it never abuts the viewport edge). Content that fits
     /// the pane doesn't scroll at all.
     pub(crate) fn detail_max_scroll(&self) -> u16 {
-        let n = self.detail_line_count();
-        if n <= self.detail_page.max(1) as usize {
-            return 0;
-        }
-        (n + 1).saturating_sub(self.detail_rows_shown(1)) as u16
+        self.detail_viewport().max_scroll(self.detail_line_count()) as u16
     }
 
     /// Move `detail_scroll` the minimum needed so `line` sits inside the detail
@@ -374,50 +306,29 @@ impl App {
     /// line also keeps a blank row beneath it, and the viewport shrinks by one
     /// row once scrolled (sticky header), which this accounts for.
     pub(crate) fn scroll_line_into_view(&mut self, line: u16) {
-        let n = self.detail_line_count();
-        if n <= self.detail_page.max(1) as usize {
-            self.detail_scroll = 0;
-            return;
-        }
-        let line = line as usize;
-        let top = self.detail_scroll as usize;
-        // The last line wants the blank row under it on screen too.
-        let bottom = if line + 1 >= n { n } else { line };
-        if line < top {
-            self.detail_scroll = line as u16;
-        } else if bottom >= top + self.detail_rows_shown(self.detail_scroll) {
-            let vp = self.detail_rows_shown(1);
-            self.detail_scroll = (bottom + 1 - vp).min(self.detail_max_scroll() as usize) as u16;
-        }
+        let (n, scroll) = (self.detail_line_count(), self.detail_scroll as usize);
+        self.detail_scroll = self
+            .detail_viewport()
+            .scroll_into_view(n, scroll, line as usize) as u16;
     }
 
     pub(crate) fn open_detail_find(&mut self) {
-        let cur = self.detail_find.clone();
-        let mut sb = SearchBox::new(self.editor_vim, cur);
-        // Stash where the cursor/scroll sit now so Esc can restore them (vi-like).
-        sb.detail_origin = Some((self.detail_scroll, self.detail_line));
-        self.overlay = Overlay::DetailFind(sb);
+        self.overlay = Overlay::DetailFind(self.detail_nav().open_find(self.editor_vim));
     }
 
-    /// (line, col, len) of every detail-find match for the current selection.
+    /// (line, col, len) of every detail-find match for the current selection
+    /// (tests ask; the renderer and keys go through [`LineNav`]).
+    #[cfg(test)]
     pub(crate) fn detail_find_matches(&self) -> Vec<(usize, usize, usize)> {
-        let Some(q) = self.detail_find.as_deref().filter(|s| !s.is_empty()) else {
-            return vec![];
-        };
-        if self.selected().is_none() {
+        if self.detail_find.is_none() || self.selected().is_none() {
             return vec![];
         }
-        detail_scan(&self.detail_dlines(), q)
+        self.detail_nav().find_matches(&self.detail_dlines())
     }
 
     pub(crate) fn detail_find_jump(&mut self, delta: i32) {
-        let m = self.detail_find_matches();
-        if m.is_empty() {
-            return;
-        }
-        let n = m.len() as i32;
-        self.detail_match = (self.detail_match as i32 + delta).rem_euclid(n) as usize;
-        self.detail_scroll = m[self.detail_match].0 as u16;
+        let lines = self.detail_dlines();
+        self.with_detail_nav(|n| n.find_jump(&lines, delta));
     }
 
     /// Select `id` and show it in the detail pane, resetting the per-task detail
@@ -468,6 +379,13 @@ impl App {
                 self.open_source(&path, lines, rev.as_deref())
             }
             detail::Target::Footnote(n) => self.goto_footnote(&n),
+            // A farm document opens in the viewer (yaks-7395).
+            detail::Target::Farm { path, rev, anchor } => {
+                self.open_farm_doc(&path, rev.as_deref(), anchor.as_ref())
+            }
+            detail::Target::Local(_) => {
+                self.notification = Some("in-page anchors are followed in the viewer".into())
+            }
         }
     }
 

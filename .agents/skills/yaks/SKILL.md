@@ -18,8 +18,10 @@ The farm is an orphan branch (`yaks`) holding only `.yaks/`, checked out once pe
 ```sh
 yaks path                  # which farm am I on?
 yaks status                # what is uncommitted; is the branch ahead/behind?
-yaks commit                # commit the farm on its branch (from any cwd)
+yaks commit                # commit hand edits (every yaks write commits itself)
+yaks undo --by <actor>     # list (then --yes: revert) an actor's farm commits
 yaks sync                  # commit, pull (yak-aware merge), push
+yaks conflicts             # documents a merge left for you to settle
 ```
 
 - **Never stage `.yaks/` with your code.** Code commits never contain yaks.
@@ -27,6 +29,8 @@ yaks sync                  # commit, pull (yak-aware merge), push
 - **Starting one:** `yaks init` (the branch, its worktree and these skills; idempotent). A clone of a repo with `origin/yaks` needs no setup.
 - **Sharing another repo's farm:** `yaks init --farm <checkout> --herd <h>` sets `git config yaks.farm`/`yaks.herd`; this repo then uses that farm, and `yaks create` puts new yaks in herd `<h>`.
 - **`YAKS_DIR=<dir>`** overrides discovery for one command.
+
+**Checkout weight.** Every clone of the code repository fetches the farm branch too. `yaks weight` says what it costs; `yaks lfs` stores binary originals (images, PDFs, archives) in Git LFS from then on. A farm heavy with sources belongs in a repository of its own (`yaks init --farm <checkout>`).
 
 **Private farms.** `yaks private` keeps the farm on this machine: a `pre-push` hook refuses any push of the farm branch, and `yaks sync` never pushes. `git config yaks.private` says whether it is set.
 
@@ -115,7 +119,9 @@ Next: G3's question, which belongs with yak-7af5.
 **Links.**
 
 - Another yak: its **full id** (`yak-0af1`, never the bare `0af1`); the TUI makes it a link and `yaks refs <id> [--incoming]` lists the references.
-- Repo code, in a yak: a path from the repo root behind one `../`, with GitHub's line fragment: `[fn parse](../src/foo.rs#L12-L40)`; `../blob/<sha>/src/foo.rs#L12` pins it to a commit.
+- Repo code: `code:` and a path from the repo root, with GitHub's line fragment: `[fn parse](code:src/foo.rs#L12-L40)`; `@<sha>` before the fragment pins it to a commit (`code:src/foo.rs@3f2a9c1#L12`). The older `../src/foo.rs` and `../blob/<sha>/src/foo.rs` still work in yaks.
+- A page: from the farm root, `[link grammar](/wiki/design/link-grammar.md#heading)`; a relative link only goes down (`notes/detail.md`), never `../`. `@<sha>` pins a page too.
+- `yaks peek <link>` prints just what a link names (the lines, the section, or a page's frontmatter and first paragraph): read that rather than a whole file. `yaks doctor` reports links that lead nowhere.
 - Attachments: `yaks attach` writes the link (`[name](<id>/<file>)`, `![name](...)` for an image). Attach images and long output rather than pasting them.
 - Size an image with a trailing alt-text token: `![shot =50%](<id>/shot.png)`, `=300x200` or `=x120` (px, or `%` of width).
 - **A yak from your conversation with the human:** when your harness renders links to local files (Zed, Delta, most IDE chats), link the yak's file by its absolute path, as printed by `yaks path yak-0af1` (`[yak-0af1](/home/me/.local/share/yaks/farms/.../yak-0af1.md)`), so they can open it in one click. A yak's file never moves, so the link stays good. (Hard rule 3 still keeps ids out of PRs and trackers.)
@@ -129,7 +135,7 @@ Shear against evidence, not vibes: "it compiles" or a self-report is not enough.
 - **A command proves it:** store it with `yaks update <id> --verify '<cmd>'` and run `yaks verify <id>`, which records PASS/FAIL as a note anyone can re-run. `yaks doctor --strict` flags a shorn yak whose `verify:` did not last pass.
 - **A web UI change:** a screenshot of the changed state, attached. `sightmap browser`, when available, can find the component and capture just it.
 - **A TUI change:** a text frame of the changed state at least; a rendered screenshot if the TUI library can produce one.
-- **Code:** link the code that matters (`[fn parse](../src/foo.rs#L12-L40)`); a short snippet only when it is the point.
+- **Code:** link the code that matters (`[fn parse](code:src/foo.rs#L12-L40)`); a short snippet only when it is the point.
 - **Logs and long output:** the few lines that show the result, fenced; attach the rest.
 - Update every surface that describes a user-facing change (in-app help, `--help`, docs) in the same change.
 - **No way to verify it?** `yaks ask` whether to build one rather than shearing on faith.
@@ -140,9 +146,21 @@ Skip what makes no sense for the change; never skip it because it is effort.
 
 `yaks attach` stores the file beside the yak in `.yaks/<herd>/yaks/<id>/` and links it in the body.
 
-## Labels
+## Tags
 
-Few and broad (`ui`, `docs`, `cli`): reuse an existing label before inventing one (`yaks stats` lists them), at most two or three per yak, one word each (`--labels ui,docs` is two labels). A tracker label (`jira`, `github`) marks yaks that map to an external issue.
+Few and broad (`ui`, `docs`, `cli`): reuse an existing tag before inventing one (`yaks stats` lists them; `yaks page types` shows the farm's known tags and what each means, from `schemas/yak.md`), at most two or three per yak, one word each (`--tags ui,docs` is two tags). A tracker tag (`jira`, `github`) marks yaks that map to an external issue.
+
+## Pages
+
+A farm also holds **pages**: markdown documents that are not yaks, under `wiki/` (farm-wide) or `<herd>/wiki/` (one herd's), named by their path from the farm root (`wiki/topics/vector-search.md`). Use a page for working knowledge that should outlive the yak that found it: research findings, a decision record, a design note. Product docs that ship with the code stay in the code repo's `docs/`; findings scoped to one yak stay in its notes and attachments.
+
+- Search before creating (`yaks page list`, `yaks page query --where tags=<tag>`); extend an existing page rather than starting a second one.
+- Create with `yaks page new <path> --type topic --set 'tags=[a, b]' --body-file notes.md` (kinds: `note`, the default; `topic`; `howto`; `summary`). Lowercase-kebab paths.
+- Edit fields with `yaks page set <path> --set key=value`, or the body with your editor. `yaks doctor` checks pages.
+- Facts you would list, filter or sort (appliances, vendors, platforms compared) go in **typed pages**: `yaks page types` shows the kinds and their fields; give a page `type: <kind>` and the fields its `schemas/<kind>.md` lists, and add or extend the schema when a new kind earns one. Warnings are advice, never refusals. `schemas/yak.md` lists the farm's known tags: pick from it before inventing one.
+- Research yaks: the `yaks-research` skill says where each finding goes, and how to save, cite and split.
+- Link the page from the yak that produced it, so it stays in context. Move a page with `yaks mv <from> <to>`, which rewrites every link to it.
+- Outside material you rely on (a paper, a downloaded page, a screenshot, a small code directory) is a **source**: `yaks source add <file> [--url <page it came from>]` snapshots it once under `sources/<id>/`; cite its `source.md` in the page's `sources:` list. A finding first kept as a yak attachment moves with `yaks promote <id>/<file>` (a source) or `--page wiki/<path>.md` (a page); links to it follow.
 
 ## Commands
 
@@ -150,11 +168,12 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 
 | Command | What it does |
 |---|---|
-| `create "title"` | New hairy yak: `--type --priority --parent --herd --labels --depends-on --source --pr --verify --description` |
+| `create "title"` | New hairy yak: `--type --priority --parent --herd --tags --depends-on --source --pr --verify --description` |
 | `list` / `next` / `tangled` / `search` | Query (shared filters, below); `next` = hairy with deps met, `tangled` = blocked on deps |
+| `find <pattern>` | Full-text search over yak bodies and notes, pages, sources' text and sessions (`--scope <prefix>`, `--kind yaks\|pages\|sources\|sessions`, `--regex`, `-i`, `--json`); `path:line: text` per match, exit 1 when none. `search` is the yak-only id/title/description lookup |
 | `show <id>` | Full details, parent and children |
 | `path [<id>...]` | Absolute file path of yaks (by id or filters); no arguments: the farm in use |
-| `update <id>...` | Fields, `--add-label`/`--remove-label`, `--note` (with `--meta key=value`), `--verify`, `--source`, `--pr`/`--remove-pr` |
+| `update <id>...` | Fields, `--add-tag`/`--remove-tag`, `--note` (with `--meta key=value`), `--verify`, `--source`, `--pr`/`--remove-pr`, `--set key=value`/`--unset key` (any other field) |
 | `shave` / `shorn` / `regrow` / `slaughter` / `revive` | State moves; several ids at once; each appends an attributed `moved:` entry. `slaughter --family` takes open descendants too |
 | `ask` / `answer` / `request` / `pickup` / `inbox` / `wait` | The inbox (above); `inbox --for human\|agent`, `wait --timeout 10m` |
 | `verify <id>` | Run the yak's `verify:` (else the config default) and record PASS/FAIL |
@@ -163,13 +182,19 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 | `log` | Notes and moves over a filtered set, oldest first; `--since 2h`, `--by <actor>` |
 | `refs <id>` | What it points at; `--incoming` for what points at it |
 | `commits <id>` | Commits recorded on the yak (`yaks land` writes them) and the branches its checkpoints name (`--fetch` fetches them), then those naming it in the code repo you run it from, then the yak file's farm history |
+| `page list` / `show` / `new` / `set` / `query` / `types` | The farm's pages (`wiki/**.md`, `<herd>/wiki/**.md`): see "Pages" below |
 | `dep` / `reparent` | Add/remove a dependency; move under `--parent <id>` or `--unparent` |
 | `bulk` | One field edit or reparent over a filtered set; dry-run unless `--commit`; refuses without a filter |
 | `rename` / `rename-herd` | Rename a yak or a whole herd, rewriting every reference; `--dry-run` first |
+| `undo` | Revert farm commits: named, or `--by <actor> [--since 2h]` (lists; `--yes` reverts) |
 | `status` / `commit` / `sync` | The farm's uncommitted changes; commit them; commit, pull and push it |
+| `conflicts` | Files a merge left to settle: prose holding `<<<<<<< here` … `>>>>>>> other side` markers, or a page's `merge_conflicts:` list. Fields always merge on their own; edit the text to one version (and drop the settled `merge_conflicts:` entry) |
+| `weight` / `lfs` | What the farm costs a code clone; store binary originals in Git LFS |
 | `private [--off]` | Keep the farm on this machine |
+| `import-hearth <repo>` | Copy a Hearth-layout repo's wiki, sources, schemas and sessions into the farm (links rewritten, one commit; `--dry-run` first) |
 | `init` / `migrate` / `merge` | Start a farm (or `--farm` to share one); upgrade an old schema; consolidate another farm |
 | `doctor [--strict]` / `preflight` | Farm integrity; pre-landing check |
+| `check [--json]` | Upkeep of pages and sources: stale pages (`stale_after`), uncited sources, kinds that look alike, broken links; exits 1 on a finding |
 | `stats` / `rollup [--keys]` | Counts; yaks grouped by external issue |
 | `skills install` / `skills status` | Install or check these skills |
 | `tui` | The interactive UI (`?` lists its keys) |
@@ -178,12 +203,12 @@ Coordinating several agents (`brief`, `land`, `sheds`) is the **yaks-coordinatin
 
 ## Filtering
 
-`list`, `next`, `tangled`, `search`, `path`, `log` and `bulk` share filters: `--status`, `--type`, `--priority`, `--label`, `--herd` (each repeatable, OR within a flag), `--search Q`, `--ready`, `--tangled`, `--needs`, `--run-on` (a body whose lines join into one paragraph), `--parent-of <id>` (its descendants); AND across flags. `--all` includes dead yaks.
+`list`, `next`, `tangled`, `search`, `path`, `log` and `bulk` share filters: `--status`, `--type`, `--priority`, `--tag`, `--herd` (each repeatable, OR within a flag), `--search Q`, `--ready`, `--tangled`, `--needs`, `--run-on` (a body whose lines join into one paragraph), `--parent-of <id>` (its descendants); AND across flags. `--all` includes dead yaks.
 
 ```sh
 yaks list --type bug --priority 1
-yaks next --label auth
-yaks bulk --parent-of yak-c3d4 --add-label spike --commit
+yaks next --tag auth
+yaks bulk --parent-of yak-c3d4 --add-tag spike --commit
 ```
 
 **Large farms.** Don't summarize yak files through `ls .yaks/... | xargs`: past a few thousand paths `xargs` splits the list and a total like `xargs wc -l | tail -1` is silently wrong, and an absolute glob fails with "argument list too long". List with `yaks list --json` or `yaks path <filters>` (one path per line); to total, feed one stream to one counter (`yaks path --status shorn | xargs cat | wc -l`, never `xargs wc` or `find -exec wc {} +`, which print a total per batch).
@@ -203,7 +228,7 @@ created: "2026-02-16T10:00:00Z"
 updated: "2026-02-16T10:30:00Z"
 parent: yak-c3d4          # optional; the only source of hierarchy
 depends_on: [yak-e5f6]
-labels: [auth]
+tags: [auth]
 source: https://jira.example.com/browse/PROJ-123   # optional external issue
 prs:                      # optional: the yak's open pull requests
 - https://github.com/org/repo/pull/42
@@ -212,4 +237,19 @@ prs:                      # optional: the yak's open pull requests
 Details go here.
 ```
 
-Don't parse ids for hierarchy (old dotted ids like `yak-a1b2.1` are opaque). `.yaks/config.yaml` sets the default `herd`, `default_type`, `default_priority` and a `verify:` map (label → command, plus `default`); a `herds:` map overrides those per herd, one level deep. A farm on an older schema is refused by every command but `yaks migrate`.
+Other fields are allowed (`due:`, `every:`, `commit:`, ...): set them with `yaks update <id> --set key=value` rather than by hand; they round-trip untouched and appear under `extra` in `show --json`.
+
+### Due dates and recurring yaks
+
+`yaks create`/`update --due 2026-11-15` sets a deadline (a date or an RFC 3339
+datetime); a hairy or shaving yak past it shows `overdue` in `list`/`next`, and
+`yaks list --due [--before DATE]` lists the dated yaks soonest first. `--every
+P1W` (an ISO 8601 duration: `P1D`, `P2W`, `P1M`, `P1Y`; no words) makes a yak
+recur: shear it as usual, and `yaks regrow-due` reopens it (back to hairy, `due:`
+moved to the next deadline, a `kind: regrow` note, `regrown:` stamped) once the
+next occurrence has arrived, one regrow however many were missed. Nothing runs
+by itself: cron, an agent harness or the TUI calls `regrow-due`, which is
+idempotent. The yak stays one yak, so each round's shear note and links
+accumulate in it. Don't hand-edit `regrown:`.
+
+Don't parse ids for hierarchy (old dotted ids like `yak-a1b2.1` are opaque). `.yaks/config.yaml` sets the default `herd`, `default_type`, `default_priority` and a `verify:` map (tag → command, plus `default`); a `herds:` map overrides those per herd, one level deep. A farm on an older schema is refused by every command but `yaks migrate`.

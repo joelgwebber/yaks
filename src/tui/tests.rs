@@ -846,7 +846,7 @@ fn drawer_text_row_esc_enters_normal_in_vim() {
         "a lone Esc on a text row stays in the drawer"
     );
     if let Overlay::Drawer(d) = &app.overlay {
-        assert_eq!(d.labels.borrow().mode, EditorMode::Normal);
+        assert_eq!(d.tags.borrow().mode, EditorMode::Normal);
     }
 }
 
@@ -868,7 +868,7 @@ fn drawer_normal_jk_navigates_and_carries_mode() {
     handle_key(&mut app, key('k')); // back up to labels, still Normal
     if let Overlay::Drawer(d) = &app.overlay {
         assert_eq!(d.row, 3);
-        assert_eq!(d.labels.borrow().mode, EditorMode::Normal);
+        assert_eq!(d.tags.borrow().mode, EditorMode::Normal);
     }
 }
 
@@ -1275,7 +1275,7 @@ fn starred_marker_and_tab_bar() {
 #[test]
 fn default_views_and_tab_cycling() {
     let mut app = sample();
-    assert_eq!(app.views.len(), 7); // 3 status + Recent + Inbox + Starred + Sheds
+    assert_eq!(app.views.len(), 8); // 3 status + Recent + Inbox + Starred + Wiki + Sheds
     assert_eq!(app.view, 0);
     assert_eq!(app.filter.statuses, vec![Status::Hairy]);
     tab_key(&mut app); // -> Shaving
@@ -1320,8 +1320,8 @@ fn save_view_creates_and_activates_custom_view() {
     handle_key(&mut app, key('V')); // save view
     typ(&mut app, "kids");
     enter_key(&mut app); // commit name
-    assert_eq!(app.views.len(), 8);
-    assert_eq!(app.view, 7);
+    assert_eq!(app.views.len(), 9);
+    assert_eq!(app.view, 8);
     let v = app.active_view();
     assert_eq!(v.name, "kids");
     assert_eq!(v.spec.search.as_deref(), Some("child"));
@@ -1391,11 +1391,11 @@ fn picker_deletes_custom_but_not_builtin() {
     handle_key(&mut app, key('V'));
     typ(&mut app, "mine");
     enter_key(&mut app);
-    assert_eq!(app.views.len(), 8);
+    assert_eq!(app.views.len(), 9);
     // Delete it via the picker (active view is the custom one, last index).
     handle_key(&mut app, key('v'));
     handle_key(&mut app, key('d'));
-    assert_eq!(app.views.len(), 7);
+    assert_eq!(app.views.len(), 8);
     // Deleting a built-in is refused.
     handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
     handle_key(&mut app, key('v'));
@@ -2229,7 +2229,7 @@ mod live {
             .find(|t| t.title == "tuned")
             .expect("created");
         assert_eq!(created.priority, 2);
-        assert_eq!(created.labels, vec!["rust".to_string(), "tui".to_string()]);
+        assert_eq!(created.tags, vec!["rust".to_string(), "tui".to_string()]);
     }
 
     #[test]
@@ -2252,12 +2252,13 @@ mod live {
                 kind: Some("task".into()),
                 priority: Some(3),
                 parent: None,
-                labels: vec![],
+                tags: vec![],
                 depends_on: vec![],
                 source: None,
                 prs: vec![],
                 description: None,
                 verify: None,
+                fields: vec![],
             })
             .unwrap();
         app.reload_preserving_selection();
@@ -2422,7 +2423,7 @@ mod live {
         press(&mut app, "x, y");
         enter(&mut app);
         assert_eq!(
-            app.task("t0").unwrap().labels,
+            app.task("t0").unwrap().tags,
             vec!["x".to_string(), "y".to_string()]
         );
     }
@@ -2432,17 +2433,17 @@ mod live {
     #[test]
     fn labels_edit_normalizes_commas_and_spaces() {
         let mut legacy = task("t0", "legacy", Status::Hairy, 3, None);
-        legacy.labels = vec!["ui,docs".into()];
+        legacy.tags = vec!["ui,docs".into()];
         let (_dir, farm) = temp_farm(&[legacy, task("t1", "plain", Status::Hairy, 3, None)]);
         let mut app = App::with_farm(farm).unwrap();
         press(&mut app, "L"); // seeded "ui,docs"; accepting it re-splits
         enter(&mut app);
-        assert_eq!(app.task("t0").unwrap().labels, ["ui", "docs"]);
+        assert_eq!(app.task("t0").unwrap().tags, ["ui", "docs"]);
         press(&mut app, "j"); // -> t1 (no labels)
         press(&mut app, "L");
         press(&mut app, "rust tui, rust,,cli");
         enter(&mut app);
-        assert_eq!(app.task("t1").unwrap().labels, ["rust", "tui", "cli"]);
+        assert_eq!(app.task("t1").unwrap().tags, ["rust", "tui", "cli"]);
         // The create form's labels field splits on spaces too.
         press(&mut app, "c");
         press(&mut app, "fresh");
@@ -2452,7 +2453,7 @@ mod live {
         press(&mut app, "a b, c");
         ctrl_s(&mut app);
         let created = app.all.iter().find(|t| t.title == "fresh").unwrap();
-        assert_eq!(created.labels, ["a", "b", "c"]);
+        assert_eq!(created.tags, ["a", "b", "c"]);
     }
 
     #[test]
@@ -4352,6 +4353,111 @@ fn e_in_the_viewer_edits_the_attachment_and_saves_it_back() {
     assert!(frame.contains("E edit"), "{frame}");
 }
 
+/// A markdown attachment with links, a footnote and a repeated word, for the
+/// viewer's navigation (yaks-84e0).
+const LINKED_NOTES: &[u8] = b"# Findings\n\nThe cache is slow[^1].\n\nSee [the docs](https://example.com/docs) and t0.\n\nThe cache again.\n\n[^1]: Measured twice.\n";
+
+/// The viewer open on `notes.md` holding `LINKED_NOTES`, its pane measured.
+fn viewer_on_linked_notes() -> (PathBuf, App) {
+    let (dir, mut app) = app_on_attachment("notes.md", LINKED_NOTES);
+    enter_key(&mut app);
+    assert!(matches!(app.overlay, Overlay::Attachment(_)));
+    draw(&app, 100, 24); // measure the pane
+    (dir, app)
+}
+
+fn viewer_nav(app: &App) -> &super::linenav::LineNav {
+    match &app.overlay {
+        Overlay::Attachment(v) => &v.nav,
+        _ => panic!("the viewer should be open"),
+    }
+}
+
+#[test]
+fn the_viewer_moves_a_line_cursor_like_the_detail_pane() {
+    // yaks-84e0: j/k/G/g move a cursor, not just the scroll.
+    let (_dir, mut app) = viewer_on_linked_notes();
+    assert_eq!(viewer_nav(&app).line, 0);
+    press(&mut app, "jj");
+    assert_eq!(viewer_nav(&app).line, 2);
+    press(&mut app, "G");
+    let last = viewer_nav(&app).line;
+    assert!(last > 2);
+    press(&mut app, "k");
+    assert_eq!(viewer_nav(&app).line, last - 1);
+    press(&mut app, "g");
+    assert_eq!(viewer_nav(&app).line, 0);
+}
+
+#[test]
+fn tab_in_the_viewer_moves_to_the_next_link_and_enter_follows_it() {
+    let (_dir, mut app) = viewer_on_linked_notes();
+    tab_key(&mut app); // the footnote reference
+    let footnote_row = viewer_nav(&app).line;
+    tab_key(&mut app); // the URL and the yak id
+    let link_row = viewer_nav(&app).line;
+    assert!(link_row > footnote_row);
+    let frame = draw(&app, 100, 24);
+    // The status bar shows where the URL points, as in the detail pane.
+    assert_eq!(frame.lines().last().unwrap(), "→ https://example.com/docs");
+    // Shift-Tab goes back; a footnote is followed within the file, `o` returns.
+    handle_key(
+        &mut app,
+        KeyEvent::new(KeyCode::BackTab, KeyModifiers::NONE),
+    );
+    assert_eq!(viewer_nav(&app).line, footnote_row);
+    enter_key(&mut app);
+    assert!(viewer_nav(&app).line > link_row, "on the definition");
+    assert_eq!(app.notification.as_deref(), Some("→ [1] (o to go back)"));
+    press(&mut app, "o");
+    assert_eq!(viewer_nav(&app).line, footnote_row);
+    assert!(matches!(app.overlay, Overlay::Attachment(_)));
+}
+
+#[test]
+fn enter_on_a_yak_id_in_the_viewer_opens_that_yak() {
+    let (_dir, mut app) = app_on_attachment("notes.md", b"About t0.\n");
+    enter_key(&mut app);
+    draw(&app, 100, 24);
+    tab_key(&mut app);
+    enter_key(&mut app);
+    assert!(matches!(app.overlay, Overlay::None));
+    assert_eq!(app.focus, Focus::Detail);
+    assert_eq!(app.selected_id().as_deref(), Some("t0"));
+}
+
+#[test]
+fn find_in_the_viewer_highlights_matches_and_n_cycles_them() {
+    let (_dir, mut app) = viewer_on_linked_notes();
+    press(&mut app, "/cache");
+    let frame = draw(&app, 100, 24);
+    assert_eq!(frame.lines().last().unwrap().trim_end(), "find: cache");
+    enter_key(&mut app);
+    let nav = viewer_nav(&app);
+    assert_eq!(nav.find.as_deref(), Some("cache"));
+    let first = nav.line;
+    press(&mut app, "n");
+    let nav = viewer_nav(&app);
+    assert_eq!(nav.matched, 1);
+    assert!(nav.scroll as usize > first, "scrolled to the second match");
+    // Esc drops the find first, then closes the viewer.
+    esc_key(&mut app);
+    assert_eq!(viewer_nav(&app).find, None);
+    esc_key(&mut app);
+    assert!(matches!(app.overlay, Overlay::None));
+}
+
+#[test]
+fn the_viewer_with_its_cursor_on_a_link() {
+    // The frame attached to yaks-84e0 as evidence: the cursor row's
+    // background and the current link's emphasis are styles, so the text
+    // snapshot shows the layout and the status bar's link destination.
+    let (_dir, mut app) = viewer_on_linked_notes();
+    tab_key(&mut app);
+    tab_key(&mut app);
+    insta::assert_snapshot!(draw(&app, 100, 16));
+}
+
 #[test]
 fn cancelling_an_attachment_edit_leaves_the_file_unchanged() {
     let (dir, mut app) = app_on_attachment("run.log", b"line 1\n");
@@ -5171,4 +5277,120 @@ mod memo {
         handle_key(&mut app, key('U'));
         assert!(app.notification.is_none() && app.pending_farm_op.is_none());
     }
+}
+
+fn with_due(mut t: Task, due: &str) -> Task {
+    t.extra.set("due", &crate::fields::Value::Plain(due.into()));
+    t
+}
+
+#[test]
+fn an_overdue_date_shows_red_on_the_list_row_and_in_the_detail() {
+    // The test clock is 2026-09-10: one yak a day late, one not due yet, one
+    // shorn (never late), one with no date.
+    let app = App::new(vec![
+        with_due(task("t0", "late one", Status::Hairy, 2, None), "2026-09-09"),
+        with_due(task("t1", "not yet", Status::Hairy, 3, None), "2026-09-30"),
+        with_due(
+            task("t2", "done late", Status::Shorn, 3, None),
+            "2026-09-01",
+        ),
+        task("t3", "undated", Status::Hairy, 4, None),
+    ]);
+    insta::assert_snapshot!(draw(&app, 72, 10));
+
+    // The overdue date is red; the future one is dim. The cursor goes to the
+    // undated row: the selected row's style resets the foreground.
+    let mut app = app;
+    down_key(&mut app);
+    down_key(&mut app);
+    let mut term = Terminal::new(ratatui::backend::TestBackend::new(72, 10)).unwrap();
+    term.draw(|f| render(&app, f)).unwrap();
+    let buf = term.backend().buffer();
+    // Cell columns, not string offsets: the status emoji are two cells wide.
+    let date_fg = |row_text: &str, date: &str| {
+        let row =
+            |y: u16| -> Vec<&str> { (0..buf.area.width).map(|x| buf[(x, y)].symbol()).collect() };
+        let y = (0..buf.area.height)
+            .find(|&y| row(y).concat().contains(row_text))
+            .unwrap();
+        let first = &date[..1];
+        let x = (0..buf.area.width)
+            .find(|&x| {
+                let tail: String = row(y)[x as usize..].concat();
+                buf[(x, y)].symbol() == first && tail.starts_with(date)
+            })
+            .expect(date);
+        buf[(x, y)].fg
+    };
+    assert_eq!(date_fg("late one", "2026-09-09"), Color::Red);
+    assert_eq!(date_fg("not yet", "2026-09-30"), Color::DarkGray);
+
+    // The detail header carries the warning accent when overdue, and a plain
+    // row otherwise.
+    let rows = |t: &Task| detail::build(t, &app.all);
+    let late = rows(&app.all[0]);
+    let due = late.iter().find(|l| l.text.starts_with("Due:")).unwrap();
+    assert!(due.text.contains("2026-09-09 (overdue)"), "{}", due.text);
+    assert_eq!(due.kind, detail::Kind::Warn);
+    let fine = rows(&app.all[1]);
+    let due = fine.iter().find(|l| l.text.starts_with("Due:")).unwrap();
+    assert_eq!(due.kind, detail::Kind::Field);
+    assert!(!due.text.contains("overdue"));
+    // Shorn: the date shows, not as a warning.
+    let done = rows(&app.all[2]);
+    let due = done.iter().find(|l| l.text.starts_with("Due:")).unwrap();
+    assert_eq!(due.kind, detail::Kind::Field);
+}
+
+#[test]
+fn the_tui_regrows_a_recurring_yak_on_load_and_on_the_tick() {
+    let mut weekly = task("t0", "water the ferns", Status::Shorn, 3, None);
+    weekly
+        .extra
+        .set("every", &crate::fields::Value::Plain("P1W".into()));
+    weekly
+        .extra
+        .set("due", &crate::fields::Value::Plain("2020-01-01".into()));
+    let (_proj, farm) = temp_farm(&[weekly]);
+    // On load: it is hairy before the first frame, with a notice.
+    let mut app = App::with_farm(farm).unwrap();
+    let t = app.all.iter().find(|t| t.id == "t0").unwrap();
+    assert_eq!(t.status, Status::Hairy);
+    assert!(t.extra.get("regrown").is_some());
+    assert_eq!(
+        app.notification.as_deref(),
+        Some("regrew t0: water the ferns")
+    );
+
+    // On the tick: shear it again and give it a past due; the tick reopens it
+    // and says the farm moved (so the event loop reloads).
+    let farm = app.farm.as_ref().unwrap();
+    farm.transition("t0", Status::Shorn, None).unwrap();
+    farm.update(
+        "t0",
+        crate::farm::TaskEdit {
+            fields: vec![(
+                "due".into(),
+                crate::fields::Value::Plain("2020-01-01".into()),
+            )],
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    app.notification = None;
+    // Tests switch the interval sync off; turn it on, a second out.
+    let t0 = std::time::Instant::now();
+    let every = std::time::Duration::from_secs(1);
+    app.auto_sync = AutoSync::new(Some(every), false, t0);
+    assert!(!app.tick_auto_sync(t0), "not due yet: no tick");
+    assert!(app.tick_auto_sync(t0 + every));
+    app.reload_preserving_selection();
+    assert_eq!(
+        app.all.iter().find(|t| t.id == "t0").unwrap().status,
+        Status::Hairy
+    );
+    assert!(app.notification.is_some());
+    // And a tick with nothing to regrow says nothing.
+    assert!(!app.tick_auto_sync(t0 + every * 2));
 }

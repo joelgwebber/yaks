@@ -16,6 +16,8 @@ shipped ones from here.
   script became `yaks land`) must be listed in `BUNDLED` too; a test fails if
   one is missing.
   - `yaks-working` is for a worker taking ONE yak from hairy to shorn.
+  - `yaks-research` is for research yaks that leave knowledge behind: pages,
+    sources, citations, typed pages.
   - `yaks-coordinating` is for a yakherd handing yaks to other agents, with a
     section each for Delta threads and plain git worktrees. (It replaced four
     companion skills, `-team`, `-private`, `-worktrees` and `-delta`; `yaks skills

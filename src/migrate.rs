@@ -30,21 +30,104 @@ pub struct Fixup {
     /// What one counted edit is, for the report ("comment headers", ...).
     pub unit: &'static str,
     pub apply: fn(&Ctx, &str) -> (String, usize),
+    /// Whether `apply` rewrites the frontmatter text (between the `---`
+    /// lines) instead of the body.
+    pub front: bool,
 }
 
-/// The fixups of schema 5, in the order they run.
+/// The fixups of schemas 5 and 7, in the order they run.
 pub const FIXUPS: &[Fixup] = &[
+    Fixup {
+        name: "labels-become-tags",
+        unit: "key(s)",
+        apply: labels_become_tags,
+        front: true,
+    },
     Fixup {
         name: "comment-header-blank-line",
         unit: "comment(s)",
         apply: comment_header_blank_line,
+        front: false,
     },
     Fixup {
         name: "attachment-links",
         unit: "link(s)",
         apply: attachment_links,
+        front: false,
+    },
+    Fixup {
+        name: "attachment-link-encoding",
+        unit: "link(s)",
+        apply: attachment_link_encoding,
+        front: false,
     },
 ];
+
+/// Schema 7 (yaks-fd7a): `](<id>/my shot.png)`, an attachment link whose file
+/// name holds a space (which CommonMark does not read as a link), becomes
+/// `](<id>/my%20shot.png)`, for any `<id>` that is a yak of this farm.
+/// Fenced code blocks are skipped.
+pub fn attachment_link_encoding(ctx: &Ctx, body: &str) -> (String, usize) {
+    let mut edits = 0;
+    let mut in_fence = false;
+    let mut out: Vec<String> = Vec::new();
+    for line in body.split('\n') {
+        if line.trim_start().starts_with("```") || line.trim_start().starts_with("~~~") {
+            in_fence = !in_fence;
+            out.push(line.to_string());
+            continue;
+        }
+        if in_fence || !line.contains("](") {
+            out.push(line.to_string());
+            continue;
+        }
+        let mut fixed = String::with_capacity(line.len());
+        let mut rest = line;
+        while let Some(i) = rest.find("](") {
+            fixed.push_str(&rest[..i + 2]);
+            rest = &rest[i + 2..];
+            let Some(close) = rest.find(')') else {
+                continue;
+            };
+            let target = &rest[..close];
+            let fix = target.split_once('/').filter(|(id, file)| {
+                ctx.ids.contains(*id) && file.contains(' ') && !file.contains('/')
+            });
+            if let Some((id, file)) = fix {
+                fixed.push_str(&format!("{id}/{}", crate::links::percent_encode_path(file)));
+                rest = &rest[close..];
+                edits += 1;
+            }
+        }
+        fixed.push_str(rest);
+        out.push(fixed);
+    }
+    (out.join("\n"), edits)
+}
+
+/// Schema 7 (yaks-37da): the top-level `labels:` key becomes `tags:`, its
+/// value and every other line untouched. A file with both keeps both (doctor
+/// has nothing to say about it; the reader prefers whichever comes last).
+pub fn labels_become_tags(_: &Ctx, front: &str) -> (String, usize) {
+    let has_tags = front
+        .lines()
+        .any(|l| l == "tags:" || l.starts_with("tags: "));
+    if has_tags {
+        return (front.to_string(), 0);
+    }
+    let mut edits = 0;
+    let out: Vec<String> = front
+        .split('\n')
+        .map(|l| match l.strip_prefix("labels:") {
+            Some(rest) if rest.is_empty() || rest.starts_with([' ', '\t']) => {
+                edits += 1;
+                format!("tags:{rest}")
+            }
+            _ => l.to_string(),
+        })
+        .collect();
+    (out.join("\n"), edits)
+}
 
 /// `---` / `▸ <ts> [actor]` / text  ->  `---` / `▸ <ts> [actor]` / blank / text
 /// (yaks-2362): the header becomes a paragraph of its own in CommonMark. A
@@ -192,8 +275,18 @@ pub fn plan_layout(root: &Path) -> Result<Vec<Move>> {
         let herd = store::herd_of(id);
         if store::RESERVED_HERD_NAMES.contains(&herd) {
             anyhow::bail!(
-                "{id}'s herd `{herd}` is a reserved name (it would collide with the farm's docs \
-                 directory); rename the herd first (`yaks rename-herd {herd} <new>`) with yaks 0.0.21"
+                "{id}'s herd `{herd}` is a reserved name (it would collide with the farm's {herd} \
+                 directory); rename the herd first (`yaks rename-herd {herd} <new>`) with yaks 0.0.28"
+            );
+        }
+    }
+    // Schema 7 reserves more names: a herd directory already using one
+    // would become invisible, so refuse before touching anything.
+    for name in store::RESERVED_HERD_NAMES {
+        if root.join(name).join(store::YAKS_SUBDIR).is_dir() {
+            anyhow::bail!(
+                "herd `{name}` is now a reserved name (the farm's {name} directory); rename the herd \
+                 first (`yaks rename-herd {name} <new>`) with yaks 0.0.28"
             );
         }
     }
@@ -319,16 +412,19 @@ pub fn run(root: &Path, dry_run: bool) -> Result<Report> {
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or_default();
-        let front = &text[..text.len() - body.len()];
+        // `head` is everything before the body: `---`, the frontmatter lines,
+        // and the closing `---` with any blank lines after it.
+        let mut head = text[..text.len() - body.len()].to_string();
         let mut body = body.to_string();
         for (f, report) in FIXUPS.iter().zip(&mut fixups) {
-            let (next, edits) = (f.apply)(&ctx, &body);
+            let target = if f.front { &mut head } else { &mut body };
+            let (next, edits) = (f.apply)(&ctx, target);
             if edits > 0 {
                 report.yaks.push((id.to_string(), edits));
-                body = next;
+                *target = next;
             }
         }
-        let new = format!("{front}{body}");
+        let new = format!("{head}{body}");
         if new != text {
             writes.push((path, new));
         }
@@ -375,6 +471,43 @@ mod tests {
     const NEW: &str = "desc\n\n---\n\u{25b8} 2026-01-01T00:00:00Z [a]\n\nhello\nworld\n\n---\n\u{25b8} 2026-01-02T00:00:00Z\n\nsecond";
 
     #[test]
+    fn labels_become_tags_renames_only_the_top_level_key() {
+        let c = ctx(&[]);
+        let front = "---\nid: t-1\nlabels:\n- ui\nnotes:\n  labels: keep\n---\n\n";
+        let (out, n) = labels_become_tags(&Ctx { ids: &c }, front);
+        assert_eq!(n, 1);
+        assert_eq!(
+            out,
+            "---\nid: t-1\ntags:\n- ui\nnotes:\n  labels: keep\n---\n\n"
+        );
+        let (again, n) = labels_become_tags(&Ctx { ids: &c }, &out);
+        assert_eq!((again.as_str(), n), (out.as_str(), 0), "idempotent");
+        let inline = "---\nlabels: [a, b]\n---\n";
+        assert_eq!(
+            labels_become_tags(&Ctx { ids: &c }, inline).0,
+            "---\ntags: [a, b]\n---\n"
+        );
+        // A file that already has tags keeps both keys untouched.
+        let both = "---\ntags: [a]\nlabels: [b]\n---\n";
+        assert_eq!(
+            labels_become_tags(&Ctx { ids: &c }, both),
+            (both.to_string(), 0)
+        );
+    }
+
+    #[test]
+    fn a_herd_named_like_a_new_reserved_dir_refuses_the_migration() {
+        let root = std::env::temp_dir().join(format!("yaks-mig-reserved-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("wiki/yaks")).unwrap();
+        std::fs::write(root.join("schema"), "6\n").unwrap();
+        let err = run(&root, true).unwrap_err().to_string();
+        assert!(err.contains("herd `wiki` is now a reserved name"), "{err}");
+        assert_eq!(std::fs::read_to_string(root.join("schema")).unwrap(), "6\n");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn header_fixup_inserts_the_blank_line_once() {
         let ids = ctx(&[]);
         let c = Ctx { ids: &ids };
@@ -413,5 +546,15 @@ mod tests {
         let c = Ctx { ids: &ids };
         let body = "![x](other/log.txt) ![y](https://e.com/a.txt) ![z](yaks-a1b2/a/b.txt)\n```\n![c](yaks-a1b2/log.txt)\n```";
         assert_eq!(attachment_links(&c, body), (body.to_string(), 0));
+    }
+
+    #[test]
+    fn attachment_link_names_with_spaces_are_encoded() {
+        let ids: HashSet<String> = ["t-1".to_string()].into_iter().collect();
+        let c = Ctx { ids: &ids };
+        let old = "See ![my shot](t-1/my shot.png) and [a b](t-1/a b.txt).\n```\n[x](t-1/a b.txt)\n```\n[o](other/a b.txt)";
+        let new = "See ![my shot](t-1/my%20shot.png) and [a b](t-1/a%20b.txt).\n```\n[x](t-1/a b.txt)\n```\n[o](other/a b.txt)";
+        assert_eq!(attachment_link_encoding(&c, old), (new.to_string(), 2));
+        assert_eq!(attachment_link_encoding(&c, new), (new.to_string(), 0));
     }
 }

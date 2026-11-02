@@ -1,0 +1,30 @@
+---
+source: src/tui/wiki_tab.rs
+expression: "draw(&app, 150, 26)"
+---
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   📖  Wiki (4)   🛖  Sheds (…)
+
+ Cut a release         howto                 wiki/h│ 📖  wiki/topics/vector-search.md  topic
+ Full-text search      topic   #search       wiki/t│ type:        topic
+ Vector search in Pos  topic   #databases #  wiki/t│ title:       Vector search in Postgres
+ TUI layout            note    #tui          yaks/w│ description: pgvector, indexes and when to use them.
+ pgvector README       source                source│ tags:        databases, search
+                                                   │ sources:     sources/2026-10-22-1a2b3c4d/source.md
+                                                   │
+                                                   │ Vector search
+                                                   │
+                                                   │ Store embeddings in a vector column and index them with HNSW.
+                                                   │
+                                                   │ Indexes
+                                                   │
+                                                   │ • HNSW: fast queries, slow builds.
+                                                   │ • IVFFlat: quick to build.
+                                                   │
+                                                   │ ── peek ────────────────────────────────────────────────────────────────────────────────────────
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+j/k · Tab:link Enter:follow · o/i back/fwd · p peek · / find · v sel · E edit · O open externally · Esc/q close

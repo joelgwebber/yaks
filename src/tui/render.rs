@@ -21,7 +21,7 @@ use super::palette;
 use super::{
     App, Focus, Overlay, completion_context, detail, editor_theme, render_create, render_drawer,
     render_editor_panel, render_fuzzy_results, render_line_editor, render_query_line,
-    render_shed_detail, render_sheds_list, tree, view,
+    render_shed_detail, render_sheds_list, render_wiki_list, tree, view,
 };
 use crate::filter::FilterSpec;
 use crate::model::{Status, Task};
@@ -91,10 +91,13 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
     render_status(app, frame, bot);
 }
 
-/// The list pane: yak rows, or the Sheds tab's shed rows.
+/// The list pane: yak rows, the Sheds tab's shed rows, or the Wiki tab's
+/// pages.
 fn render_left(app: &App, frame: &mut Frame, area: Rect) {
     if app.on_sheds_tab() {
         render_sheds_list(app, frame, area);
+    } else if app.on_wiki_tab() {
+        render_wiki_list(app, frame, area);
     } else {
         render_list(app, frame, area);
     }
@@ -251,7 +254,7 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
         entry("Tab / [ / ]", "Cycle links"),
         entry(
             "Enter",
-            "Follow link / footnote / source file (status bar: URL)",
+            "Follow link / footnote / source file / farm page (status bar: URL, or a peek of the page)",
         ),
         entry("B", "Find references: yaks that point at this one"),
         entry("i / o", "Nav forward / back (restores position)"),
@@ -267,7 +270,7 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
             "E",
             "Edit under the cursor: body block in place; header row / list: form",
         ),
-        entry("P / T / L / S", "Priority / type / labels / state"),
+        entry("P / T / L / S", "Priority / type / tags / state"),
         entry("S → n", "Shear: prompts an optional comment (Enter shears)"),
         entry("D / R", "Add dependency / reparent"),
         entry("H", "Move to another herd (multi-herd farm)"),
@@ -295,6 +298,18 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
             "Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally",
         ),
         entry(
+            "  (in viewer)",
+            "Moves like the detail pane: j/k cursor, Tab/[ ] links, Enter follows, / n N find, v/y select+copy, o/i back/fwd, Esc/q close",
+        ),
+        entry(
+            "  (farm links)",
+            "/wiki/x.md#h, page-relative, /sources/..., @sha pins: open in the viewer at the anchor; o/i hop back/fwd between documents",
+        ),
+        entry(
+            "  (peek)",
+            "A pane under the page previews the link under the cursor (section, lines, page head); p hides it",
+        ),
+        entry(
             "  (image)",
             "Shown in the pane (png/jpg/gif/webp/svg); O opens externally, Esc/q closes",
         ),
@@ -315,9 +330,31 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
         entry("W", "Commit the farm (yaks commit)"),
         entry("U", "Sync the farm: commit, pull, push (yaks sync)"),
         entry(
+            "auto",
+            "Syncs itself every sync_interval (config.yaml, default 5m; off)",
+        ),
+        entry(
             "chip",
             "● N uncommitted, ↑ahead, ↓behind, not published; none when clean",
         ),
+        blank(),
+        section("Wiki tab (the farm's pages and sources)"),
+        entry("j / k", "Move between pages (then sources)"),
+        entry(
+            "Enter / l",
+            "Open in the viewer: frontmatter above the body; a source with its extracted text",
+        ),
+        entry("/", "Search titles, paths, kinds and tags (Esc clears)"),
+        entry(
+            "E",
+            "Edit the page: frontmatter (YAML) and body; Ctrl-S saves",
+        ),
+        entry(
+            "N",
+            "New page: type its path (wiki/... or <herd>/wiki/...), then its body",
+        ),
+        entry("y", "Copy the path"),
+        entry("r", "Reread the pages (also on any farm change)"),
         blank(),
         section("Sheds tab (who is working on what: yaks sheds)"),
         entry("j / k", "Move between sheds (actors; attention first)"),
@@ -358,8 +395,8 @@ pub(crate) fn render_help(scroll: u16, frame: &mut Frame, area: Rect) {
 }
 
 /// The attachment viewer (yaks-699b): a cyan header naming the file, then its
-/// rows from `scroll` down, styled like the
-/// detail pane's body.
+/// rows from the scroll down, painted with the detail pane's cursor, link,
+/// selection and find highlights ([`render_nav_rows`], yaks-84e0).
 pub(crate) fn render_attachment(
     app: &App,
     v: &super::handlers::AttachView,
@@ -367,11 +404,21 @@ pub(crate) fn render_attachment(
     area: Rect,
 ) {
     let [head, body] = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).areas(area);
-    let kind = if v.markdown { "markdown" } else { "text" };
+    let kind = v.kind_label();
+    let icon = match v.doc {
+        super::handlers::DocKind::Attachment => "📎",
+        _ => "📖",
+    };
+    // A pinned farm file says which commit it is shown at (yaks-7395).
+    let pin = v
+        .rev
+        .as_ref()
+        .map(|r| format!("@{}", &r[..r.len().min(7)]))
+        .unwrap_or_default();
     frame.render_widget(
         Paragraph::new(Line::from(vec![
             Span::styled(
-                format!("📎 {}", v.target),
+                format!("{icon} {}{pin}", v.target),
                 Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
             ),
             Span::styled(format!("  {kind}"), Style::new().fg(Color::DarkGray)),
@@ -381,15 +428,104 @@ pub(crate) fn render_attachment(
     v.width.set(body.width);
     let known: std::collections::HashSet<&str> = app.all.iter().map(|t| t.id.as_str()).collect();
     let rows = v.rows(body.width, &known);
+    // The peek pane under the page (yaks-7395): what the link under the
+    // cursor names, read by `links::peek`.
+    let body = if app.viewer_has_peek(&rows) && body.height > super::follow::PEEK_ROWS + 2 {
+        let [page, peek] = Layout::vertical([
+            Constraint::Min(0),
+            Constraint::Length(super::follow::PEEK_ROWS),
+        ])
+        .areas(body);
+        render_peek(app, v, &rows, frame, peek);
+        page
+    } else {
+        body
+    };
     let w = body.width as usize;
-    let lines: Vec<Line> = rows
-        .iter()
+    let extents = detail::nowrap_extents(&rows);
+    let hscroll = |dl: &detail::DLine| {
+        dl.nowrap_key()
+            .and_then(|k| extents.get(&k).map(|&e| v.nav.block_hscroll(k, e, w)))
+            .unwrap_or(0)
+    };
+    let lines = render_nav_rows(&rows, &v.nav, w, hscroll);
+    frame.render_widget(Paragraph::new(lines).scroll((v.nav.scroll, 0)), body);
+}
+
+/// The viewer's peek pane: a dim rule naming the link under the cursor, then
+/// the peek's lines (a section, a line range, a page head) cut to the pane,
+/// or why it can't be read. Blank but for the rule when the cursor is on no
+/// peekable link.
+fn render_peek(
+    app: &App,
+    v: &super::handlers::AttachView,
+    rows: &[detail::DLine],
+    frame: &mut Frame,
+    area: Rect,
+) {
+    let dim = Style::new().fg(Color::DarkGray);
+    let w = area.width as usize;
+    let peek = v
+        .nav
+        .link_at(rows)
+        .and_then(|j| app.peek_target(&j.target, Some(v)));
+    let title = match &peek {
+        Some((label, _)) => format!("\u{2500}\u{2500} peek: {label} "),
+        None => "\u{2500}\u{2500} peek ".into(),
+    };
+    let rule_fill = w.saturating_sub(disp_width(&title));
+    let mut lines = vec![Line::from(Span::styled(
+        truncate_disp(&format!("{title}{}", "\u{2500}".repeat(rule_fill)), w),
+        dim,
+    ))];
+    let room = (area.height as usize).saturating_sub(1);
+    match peek {
+        Some((_, Ok(text))) => {
+            let mut body = super::follow::peek_lines(&text);
+            if body.len() > room {
+                body.truncate(room.saturating_sub(1));
+                body.push("\u{2026}".into());
+            }
+            lines.extend(body.into_iter().map(|l| Line::from(truncate_disp(&l, w))));
+        }
+        Some((_, Err(e))) => lines.push(Line::from(Span::styled(
+            truncate_disp(&e, w),
+            Style::new().fg(Color::Yellow),
+        ))),
+        None => {}
+    }
+    frame.render_widget(Paragraph::new(lines), area);
+}
+
+/// Paint a page of rows with a [`LineNav`]'s state, the one painter the
+/// detail pane and the text viewer share (yaks-84e0): the line cursor and
+/// any visual selection on a subtle background, the link on the cursor's
+/// row emphasised, find matches highlighted (the current one green), and
+/// each no-wrap row scrolled `hscroll(row)` columns. Rows are returned in
+/// full; the caller scrolls the paragraph.
+pub(crate) fn render_nav_rows<'a>(
+    rows: &'a [detail::DLine],
+    nav: &super::linenav::LineNav,
+    width: usize,
+    hscroll: impl Fn(&detail::DLine) -> usize,
+) -> Vec<Line<'a>> {
+    let cur = nav.link_at(rows);
+    let sel = nav.selection();
+    let matches = nav.find_matches(rows);
+    rows.iter()
         .enumerate()
-        .skip(v.scroll as usize)
-        .take(body.height as usize)
-        .map(|(i, dl)| render_dline(dl, None, i, &[], None, 0, w))
-        .collect();
-    frame.render_widget(Paragraph::new(lines), body);
+        .map(|(i, dl)| {
+            let lm: Vec<(usize, usize, bool)> = matches
+                .iter()
+                .enumerate()
+                .filter(|(_, (ln, _, _))| *ln == i)
+                .map(|(mi, (_, col, len))| (*col, *len, mi == nav.matched))
+                .collect();
+            let in_sel = sel.is_some_and(|(lo, hi)| i >= lo && i <= hi);
+            let line_bg = (i == nav.line || in_sel).then(super::surface::selected);
+            render_dline(dl, cur.as_ref(), i, &lm, line_bg, hscroll(dl), width)
+        })
+        .collect()
 }
 
 /// The create/edit task form: header + title / type / priority / labels meta
@@ -680,7 +816,7 @@ pub(crate) fn render_tabs(app: &App, frame: &mut Frame, area: Rect) {
         }
     } else {
         let av = app.active_view();
-        if !(av.is_flat() || av.key == "working-set") {
+        if !(av.is_flat() || av.key == "working-set" || av.key == view::WIKI_KEY) {
             let (marker, val) = match app.family_scope.get(&av.key) {
                 Some(s) => ("", s.as_str()),
                 None => ("~", view::FamilyScope::DEFAULT.as_str()),
@@ -770,6 +906,7 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
                 app.is_starred(&r.task.id),
                 area.width,
                 app.is_multi_herd(),
+                due_chip(&r.task, app.clock.now()),
             )
         })
         .collect();
@@ -838,6 +975,13 @@ pub(crate) fn herd_color(prefix: &str) -> Color {
     PALETTE[(h as usize) % PALETTE.len()]
 }
 
+/// A hairy or shaving yak's due day and whether it is overdue, for the list
+/// row; `None` for a yak with no readable `due:` or a finished one.
+fn due_chip(t: &Task, now: chrono::DateTime<chrono::Utc>) -> Option<(String, bool)> {
+    let d = crate::recur::due(t).filter(|_| t.status.is_open())?;
+    Some((d.day(), crate::recur::is_overdue(t, now)))
+}
+
 pub(crate) fn list_item<'a>(
     r: &tree::Row<'a>,
     id_field_w: usize,
@@ -848,6 +992,7 @@ pub(crate) fn list_item<'a>(
     starred: bool,
     width: u16,
     multi_herd: bool,
+    due: Option<(String, bool)>,
 ) -> ListItem<'a> {
     let dim = |st: Style| {
         if r.ghost {
@@ -876,10 +1021,10 @@ pub(crate) fn list_item<'a>(
 
     // Right side: right-aligned labels, a star, and a collapse badge.
     let max_lw = (width / 4).clamp(8, 30);
-    let label_str = if r.task.labels.is_empty() {
+    let label_str = if r.task.tags.is_empty() {
         String::new()
     } else {
-        truncate_disp(&format!("[{}]", r.task.labels.join(", ")), max_lw)
+        truncate_disp(&format!("[{}]", r.task.tags.join(", ")), max_lw)
     };
     let badge = if r.collapsed && r.hidden > 0 {
         format!(" \u{25b6} {} ", r.hidden)
@@ -896,6 +1041,20 @@ pub(crate) fn list_item<'a>(
             label_str.clone(),
             dim(Style::new().fg(Color::Magenta).add_modifier(Modifier::DIM)),
         ));
+    }
+    // Due date of an open yak (yaks-2fc5): dim, and red once it is overdue.
+    if let Some((day, overdue)) = &due {
+        if !right_plain.is_empty() {
+            right_plain.push(' ');
+            right_spans.push(Span::raw(" "));
+        }
+        right_plain.push_str(day);
+        let style = if *overdue {
+            Style::new().fg(Color::Red).add_modifier(Modifier::BOLD)
+        } else {
+            Style::new().fg(Color::DarkGray)
+        };
+        right_spans.push(Span::styled(day.clone(), dim(style)));
     }
     // Needs badge (⏳): this yak is awaiting a human (an open `needs` question). A
     // distinct axis from the dependency-blocked `*` lead, so it can co-occur.
@@ -1055,49 +1214,30 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
     };
     app.hits.borrow_mut().detail = Some(content_area);
     let lines = app.detail_dlines();
-    let jumps = detail::jumplist(&lines);
-    // The "current" link is whichever link sits on the line cursor.
-    let cur = if focused {
-        jumps.iter().find(|j| j.line == app.detail_line)
-    } else {
-        None
-    };
-    let sel = if focused { app.selection_range() } else { None };
-    let matches = if focused {
-        app.detail_find_matches()
-    } else {
-        vec![]
-    };
     // Widest row of each no-wrap block, to clamp its sideways scroll.
     let extents = detail::nowrap_extents(&lines);
-    let rendered: Vec<Line> = lines
-        .iter()
-        .enumerate()
-        .map(|(i, dl)| {
-            let lm: Vec<(usize, usize, bool)> = matches
-                .iter()
-                .enumerate()
-                .filter(|(_, (ln, _, _))| *ln == i)
-                .map(|(mi, (_, col, len))| (*col, *len, mi == app.detail_match))
-                .collect();
-            // Subtle background for the line cursor and any visual selection.
-            let in_sel = sel.is_some_and(|(lo, hi)| i >= lo && i <= hi);
-            let line_bg = if focused && (i == app.detail_line || in_sel) {
-                Some(super::surface::selected())
-            } else {
-                None
-            };
-            let hscroll = dl
-                .nowrap_key()
-                .and_then(|k| extents.get(&k).map(|&e| app.block_hscroll(&task.id, k, e)))
-                .unwrap_or(0);
-            // The in-place editor draws over its rows below; they stay blank.
-            if dl.kind == detail::Kind::Editor {
-                return Line::default();
-            }
-            render_dline(dl, cur, i, &lm, line_bg, hscroll, area.width as usize)
-        })
-        .collect();
+    let hscroll = |dl: &detail::DLine| {
+        dl.nowrap_key()
+            .and_then(|k| extents.get(&k).map(|&e| app.block_hscroll(&task.id, k, e)))
+            .unwrap_or(0)
+    };
+    let width = area.width as usize;
+    let mut rendered = if focused {
+        render_nav_rows(&lines, &app.detail_nav(), width, hscroll)
+    } else {
+        // Unfocused: no cursor, selection, current link or find highlights.
+        lines
+            .iter()
+            .enumerate()
+            .map(|(i, dl)| render_dline(dl, None, i, &[], None, hscroll(dl), width))
+            .collect()
+    };
+    // The in-place editor draws over its rows below; they stay blank.
+    for (i, dl) in lines.iter().enumerate() {
+        if dl.kind == detail::Kind::Editor {
+            rendered[i] = Line::default();
+        }
+    }
     // No wrap: link/match highlight columns must stay valid. (Rows of a
     // no-wrap block are clipped to the pane by `render_dline`.)
     let p = Paragraph::new(rendered).scroll((app.detail_scroll, 0));
@@ -1386,8 +1526,12 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
         render_query_line("/", &sb.query, frame, area);
         return;
     }
-    // Detail-pane find field.
-    if let Overlay::DetailFind(sb) = &app.overlay {
+    // Detail-pane find field, or the text viewer's.
+    if let Overlay::DetailFind(sb)
+    | Overlay::Attachment(super::handlers::AttachView {
+        find_box: Some(sb), ..
+    }) = &app.overlay
+    {
         render_query_line("find: ", &sb.query, frame, area);
         return;
     }
@@ -1452,13 +1596,15 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
         );
         return;
     }
-    // Attachment viewer hint.
+    // Attachment viewer: the destination of the link under the cursor, else
+    // the key hints.
     if matches!(&app.overlay, Overlay::Attachment(_)) {
+        let text = link_hint(app, area.width as usize).unwrap_or_else(|| {
+            "j/k · Tab:link Enter:follow · o/i back/fwd · p peek · / find · v sel · E edit · O open externally · Esc/q close"
+                .into()
+        });
         frame.render_widget(
-            Paragraph::new(Span::styled(
-                "j/k scroll · d/u page · g/G top/bottom · E edit · O open externally · Esc/q close",
-                Style::new().fg(Color::DarkGray),
-            )),
+            Paragraph::new(Span::styled(text, Style::new().fg(Color::DarkGray))),
             area,
         );
         return;
@@ -1530,20 +1676,30 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
 /// attachments and source files (what opens externally); yak ids and footnotes speak for
 /// themselves.
 fn link_hint(app: &App, width: usize) -> Option<String> {
-    if app.focus != Focus::Detail || !matches!(app.overlay, Overlay::None) || app.on_sheds_tab() {
-        return None;
-    }
-    let jump = app
-        .detail_jumps()
-        .into_iter()
-        .find(|j| j.line == app.detail_line)?;
-    let dest = match jump.target {
-        detail::Target::Url(u) | detail::Target::Artifact(u) => u,
-        detail::Target::Source { path, lines, rev } => {
-            super::source::source_label(&path, lines, rev.as_deref())
+    let jump = if let Some((rows, _)) = app.attachment_rows() {
+        let Overlay::Attachment(v) = &app.overlay else {
+            return None;
+        };
+        v.nav.link_at(&rows)?
+    } else {
+        if app.focus != Focus::Detail || !matches!(app.overlay, Overlay::None) || app.on_sheds_tab()
+        {
+            return None;
         }
-        detail::Target::Task(_) | detail::Target::Footnote(_) => return None,
+        let jump = app
+            .detail_jumps()
+            .into_iter()
+            .find(|j| j.line == app.detail_line)?;
+        // A farm document: its peek's first line too (yaks-7395); the
+        // viewer has a peek pane instead.
+        if matches!(jump.target, detail::Target::Farm { .. }) {
+            if let Some(line) = app.detail_peek_line(&jump.target) {
+                return Some(truncate_disp(&line, width));
+            }
+        }
+        jump
     };
+    let dest = super::linenav::link_dest(jump.target)?;
     Some(truncate_disp(&format!("→ {dest}"), width))
 }
 
@@ -1565,8 +1721,8 @@ pub(crate) fn filter_summary(f: &FilterSpec) -> String {
                 .join("|"),
         );
     }
-    if !f.labels.is_empty() {
-        parts.push(f.labels.join(","));
+    if !f.tags.is_empty() {
+        parts.push(f.tags.join(","));
     }
     if f.ready_only {
         parts.push("ready".into());
@@ -1600,6 +1756,11 @@ pub(crate) fn help_hint(app: &App) -> String {
             }
         }
         .into();
+    }
+    if app.on_wiki_tab() {
+        return format!(
+            "Tab:view  j/k:move  Enter:open  E:edit  N:new page  /:search  y:copy path  r:reread  ?:help  q:quit"
+        );
     }
     match app.focus {
         Focus::List => format!(

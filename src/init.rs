@@ -130,8 +130,9 @@ pub fn run(args: Args) -> Result<()> {
     }
 
     println!(
-        "farm: {} (`yaks path` prints it from any checkout). Nothing is committed or pushed: \
-         `yaks sync` publishes the farm, `yaks private` keeps it on this machine.",
+        "farm: {} (`yaks path` prints it from any checkout). Every change commits on the farm \
+         branch; nothing is pushed: `yaks sync` publishes the farm, `yaks private` keeps it \
+         on this machine.",
         farm_root.display()
     );
     if rep.changed {
@@ -272,7 +273,8 @@ fn ensure_farm(root: &Path, cfg: &store::InitConfig, args: &Args, rep: &mut Repo
 /// [`store::farm_home`], found by discovery from every checkout of the
 /// repository. Reuses the branch when it exists (a worktree is added if none
 /// has it: [`branchfarm::bootstrap`]), else starts a new orphan branch holding
-/// only `.yaks/`. Nothing is committed or pushed. Returns the farm root.
+/// only `.yaks/`, committing the new farm files on it. Nothing is pushed.
+/// Returns the farm root.
 ///
 /// Every refusal is checked before the first change.
 fn ensure_branch_farm(top: &Path, args: &Args, rep: &mut Report) -> Result<PathBuf> {
@@ -377,5 +379,21 @@ fn ensure_branch_farm(top: &Path, args: &Args, rep: &mut Report) -> Result<PathB
 
     let root = worktree.join(".yaks");
     ensure_farm(&root, &cfg, args, rep)?;
+    // The farm's first commit: config, schema and .gitignore (a farm branch
+    // commits per change, yaks-a838). The lock's snapshot sees them as
+    // already dirty, so commit them here directly.
+    if crate::store::farm_branch(&root).is_some()
+        && crate::changes::read(&root)?.is_some_and(|c| !c.is_empty())
+    {
+        let _lock = crate::store::lock_uncommitted(&root)?;
+        if let crate::commit::Outcome::Done(p) =
+            crate::commit::run(&root, Some("yaks: new farm"), false)?
+        {
+            rep.done(format!(
+                "commit: {} on the farm branch",
+                p.commit.unwrap_or_default()
+            ));
+        }
+    }
     Ok(root)
 }

@@ -85,6 +85,10 @@ pub const BUNDLED: &[Skill] = &[
         name: "yaks-working",
         files: &[md(include_str!("../.agents/skills/yaks-working/SKILL.md"))],
     },
+    Skill {
+        name: "yaks-research",
+        files: &[md(include_str!("../.agents/skills/yaks-research/SKILL.md"))],
+    },
 ];
 
 /// Skills this yaks once bundled and no longer does. Nothing upgrades a skill
@@ -1402,7 +1406,13 @@ mod tests {
         let names: Vec<_> = BUNDLED.iter().map(|s| s.name).collect();
         assert_eq!(
             names,
-            ["yaks", "yaks-tracker", "yaks-coordinating", "yaks-working"]
+            [
+                "yaks",
+                "yaks-tracker",
+                "yaks-coordinating",
+                "yaks-working",
+                "yaks-research"
+            ]
         );
         let base = temp_base("all-skills");
         let res = install(&base, false).unwrap();
@@ -1662,7 +1672,13 @@ mod tests {
         let wrote = auto_sync_in(&user);
         assert_eq!(
             wrote,
-            ["yaks", "yaks-tracker", "yaks-coordinating", "yaks-working"]
+            [
+                "yaks",
+                "yaks-tracker",
+                "yaks-coordinating",
+                "yaks-working",
+                "yaks-research"
+            ]
         );
         assert_eq!(std::fs::read_to_string(&md).unwrap(), before);
         let st = status(&project);

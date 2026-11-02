@@ -8,7 +8,7 @@ expression: "draw(&app, 72, 14)"
 │   title       new idea
 │   type         task bug feature idea
 │ ▸ priority     p1 p2 p3 p4 p5
-│   labels
+│   tags
 │   source
 │   description ───────────────────────────────────────────────────────
 │ (no description)

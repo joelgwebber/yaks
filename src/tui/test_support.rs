@@ -32,13 +32,13 @@ pub(crate) fn task(
         created: None,
         updated: None,
         parent: parent.map(String::from),
-        labels: vec![],
+        tags: vec![],
         depends_on: vec![],
         source: None,
         prs: Vec::new(),
         needs: None,
         verify: None,
-        extra: Vec::new(),
+        extra: Default::default(),
         body: String::new(),
     }
 }
@@ -96,7 +96,7 @@ pub(crate) fn sample() -> App {
 
 pub(crate) fn editable() -> App {
     let mut t = task("e0", "Editable", Status::Hairy, 3, None);
-    t.labels = vec!["rust".into(), "tui".into()];
+    t.tags = vec!["rust".into(), "tui".into()];
     t.body = "First line.\nSecond line.".into();
     App::new(vec![t])
 }

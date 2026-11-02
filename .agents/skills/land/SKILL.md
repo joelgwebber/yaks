@@ -40,7 +40,7 @@ Delegating), `.yaks/config.yaml` on the farm branch (`yaks path`) for `verify:`,
    in the commit message: the farm is published.
 2. `cargo fmt -- <files you touched>`, then `git checkout src/actor.rs
    src/tui/docshots.rs src/tui/tests.rs` unless you changed them.
-3. Run the yak's `verify:` (`yaks verify <id>`; labels map to `cargo test -p yaks`
+3. Run the yak's `verify:` (`yaks verify <id>`; tags map to `cargo test -p yaks`
    or `cargo test -p yaks skills`; default `cargo test --workspace`) on the exact
    commit being landed. Failing, or not run, means not landed.
 4. TUI change: drive `toque` to the state, look at the frame, `yaks attach` it

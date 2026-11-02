@@ -44,7 +44,7 @@ pub(crate) struct Drawer {
     /// The inbox facet: keep only yaks carrying a `needs` block. Composes with
     /// the rest of the filter (replaces the old modal `i` toggle).
     pub(crate) needs: bool,
-    pub(crate) labels: RefCell<EditorState>,
+    pub(crate) tags: RefCell<EditorState>,
     pub(crate) search: RefCell<EditorState>,
     pub(crate) parent: RefCell<EditorState>,
     pub(crate) handler: EditorEventHandler,
@@ -64,7 +64,7 @@ impl Drawer {
             ready: f.ready_only,
             tangled: f.tangled_only,
             needs: f.needs_only,
-            labels: text_field(&f.labels.join(", "), vim),
+            tags: text_field(&f.tags.join(", "), vim),
             search: text_field(f.search.as_deref().unwrap_or(""), vim),
             parent: text_field(f.parent.as_deref().unwrap_or(""), vim),
             handler: make_handler(vim),
@@ -92,7 +92,7 @@ impl Drawer {
     /// The editor backing the current text row (labels/search/parent), if on one.
     pub(crate) fn text_editor(&self) -> Option<&RefCell<EditorState>> {
         match self.row {
-            3 => Some(&self.labels),
+            3 => Some(&self.tags),
             4 => Some(&self.search),
             5 => Some(&self.parent),
             _ => None,
@@ -133,7 +133,7 @@ impl Drawer {
         self.ready = false;
         self.tangled = false;
         self.needs = false;
-        *self.labels.borrow_mut() = {
+        *self.tags.borrow_mut() = {
             let mut s = EditorState::new(Lines::from(""));
             s.set_single_line(true);
             s.mode = EditorMode::Insert;
@@ -158,7 +158,7 @@ impl Drawer {
     }
 
     pub(crate) fn build_spec(&self) -> FilterSpec {
-        let labels = crate::model::normalize_labels([Self::text_of(&self.labels)]);
+        let tags = crate::model::normalize_tags([Self::text_of(&self.tags)]);
         let non_empty = |cell: &RefCell<EditorState>| {
             let s = Self::text_of(cell).trim().to_string();
             if s.is_empty() { None } else { Some(s) }
@@ -167,7 +167,7 @@ impl Drawer {
             statuses: self.statuses.clone(),
             types: self.types.clone(),
             priorities: self.priorities.clone(),
-            labels,
+            tags,
             search: non_empty(&self.search),
             ready_only: self.ready,
             tangled_only: self.tangled,
@@ -255,8 +255,8 @@ pub(crate) fn render_drawer(d: &Drawer, frame: &mut Frame, area: Rect) {
     render_text_row(
         d.row == 3,
         DRAWER_LABEL_W,
-        "labels",
-        &d.labels,
+        "tags",
+        &d.tags,
         "(any)",
         frame,
         rows[4],

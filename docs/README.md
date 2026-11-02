@@ -9,13 +9,16 @@ files live on the repo's **farm branch** (`yaks`, an orphan branch holding only
 ```sh
 .yaks/            # the farm branch's worktree: ~/.local/share/yaks/farms/<repo>-<hash>/
   config.yaml     # farm settings
-  schema          # the layout version (6; `yaks migrate` upgrades a 4 or 5)
+  schema          # the layout version (7; `yaks migrate` upgrades a 4, 5 or 6)
   yaks/           # one directory per herd (the id prefix)
     yaks/
       yaks-1a2b.md  # one file per yak; frontmatter status: hairy | shaving | shorn | dead
       yaks-1a2b/    # its attachments, beside it
-    docs/         # reserved for the herd's non-yak documents (not built yet)
-  docs/           # reserved for farm-wide documents (not built yet)
+    wiki/         # reserved: the herd's own pages (yaks-9af0)
+  wiki/           # reserved: farm-wide pages
+  sources/        # reserved: saved outside material
+  schemas/        # reserved: page and field types
+  sessions/       # reserved: imported session transcripts
 ```
 
 ## The model
@@ -23,7 +26,7 @@ files live on the repo's **farm branch** (`yaks`, an orphan branch holding only
 - **Files are authoritative; any index is derived.** Status is a frontmatter
   `status:` field, and a yak's file never moves. Hierarchy is a frontmatter `parent:` field. Ids are flat and stable.
 - **Tiny state machine.** Four statuses, five transitions (`shave`, `shorn`,
-  `regrow`, `slaughter`, `revive`). Everything else — priority, type, labels,
+  `regrow`, `slaughter`, `revive`). Everything else — priority, type, tags,
   dependencies, a `needs` block, notes — is metadata that pushes nuance out of
   the state machine and into fields you can filter on.
 - **Notes are the work-trail.** Each yak accumulates timestamped, optionally
@@ -40,7 +43,7 @@ yaks next                      # what's ready to work (deps met)
 yaks shave [id]                # start it (→ shaving)
 yaks update [id] --note '...'  # record progress
 yaks shorn [id]                # finish it (→ shorn)
-yaks commit                    # commit the farm on its branch
+yaks commit                    # commit hand edits (each yaks write commits itself)
 yaks sync                      # pull + push it
 yaks tui                       # or drive it all interactively
 ```

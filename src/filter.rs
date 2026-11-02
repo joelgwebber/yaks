@@ -17,7 +17,7 @@ pub struct FilterSpec {
     pub statuses: Vec<Status>,
     pub types: Vec<String>,
     pub priorities: Vec<u8>,
-    pub labels: Vec<String>,
+    pub tags: Vec<String>,
     pub search: Option<String>,
     pub ready_only: bool,
     pub tangled_only: bool,
@@ -41,7 +41,7 @@ impl FilterSpec {
     pub fn content_active(&self) -> bool {
         !self.types.is_empty()
             || !self.priorities.is_empty()
-            || !self.labels.is_empty()
+            || !self.tags.is_empty()
             || self.search.as_deref().is_some_and(|s| !s.is_empty())
             || self.ready_only
             || self.tangled_only
@@ -59,7 +59,7 @@ impl FilterSpec {
         if !self.priorities.is_empty() && !self.priorities.contains(&t.priority) {
             return false;
         }
-        if !self.labels.is_empty() && !t.labels.iter().any(|l| self.labels.contains(l)) {
+        if !self.tags.is_empty() && !t.tags.iter().any(|l| self.tags.contains(l)) {
             return false;
         }
         if !self.herds.is_empty() {
@@ -208,13 +208,13 @@ mod tests {
             created: None,
             updated: None,
             parent: parent.map(String::from),
-            labels: vec![],
+            tags: vec![],
             depends_on: deps.iter().map(|s| s.to_string()).collect(),
             source: None,
             prs: Vec::new(),
             needs: None,
             verify: None,
-            extra: Vec::new(),
+            extra: Default::default(),
             body: String::new(),
         }
     }

@@ -608,13 +608,13 @@ mod tests {
             created: None,
             updated: None,
             parent: None,
-            labels: vec![],
+            tags: vec![],
             depends_on: vec![],
             source: None,
             prs: Vec::new(),
             needs: None,
             verify: None,
-            extra: vec![],
+            extra: Default::default(),
             body: "A description.".into(),
         }
     }

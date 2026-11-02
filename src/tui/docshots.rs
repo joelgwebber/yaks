@@ -34,13 +34,13 @@ fn t(id: &str, title: &str, kind: &str, pri: u8, status: Status, parent: Option<
         created: Some("2026-09-01T10:00:00Z".into()),
         updated: Some("2026-09-06T12:00:00Z".into()),
         parent: parent.map(String::from),
-        labels: vec![],
+        tags: vec![],
         depends_on: vec![],
         source: None,
         prs: Vec::new(),
         needs: None,
         verify: None,
-        extra: Vec::new(),
+        extra: Default::default(),
         body: String::new(),
     }
 }
@@ -56,7 +56,7 @@ fn farm() -> Vec<Task> {
         Status::Shaving,
         None,
     );
-    coord.labels = vec!["coord".into(), "git".into()];
+    coord.tags = vec!["coord".into(), "git".into()];
 
     let mut inbox = t(
         "yaks-b517",
@@ -66,7 +66,7 @@ fn farm() -> Vec<Task> {
         Status::Shaving,
         Some("yaks-3901"),
     );
-    inbox.labels = vec!["cli".into(), "ui".into()];
+    inbox.tags = vec!["cli".into(), "ui".into()];
     inbox.needs = Some("human".into());
     inbox.body = "Add a `needs:` block agents raise via `ask` and a human clears via \
                   `answer`; surface blocked yaks in an Inbox view.\n\n\
@@ -83,7 +83,7 @@ fn farm() -> Vec<Task> {
         Status::Hairy,
         Some("yaks-3901"),
     );
-    diff.labels = vec!["cli".into()];
+    diff.tags = vec!["cli".into()];
     diff.depends_on = vec!["yaks-b517".into()];
 
     let mut shot = t(
@@ -94,7 +94,7 @@ fn farm() -> Vec<Task> {
         Status::Shaving,
         Some("yaks-3901"),
     );
-    shot.labels = vec!["ui".into(), "docs".into()];
+    shot.tags = vec!["ui".into(), "docs".into()];
     shot.body = "Walk the ratatui Buffer's per-cell symbol+fg/bg into an SVG grid so \
                  docs render in color."
         .into();
@@ -116,7 +116,7 @@ fn farm() -> Vec<Task> {
         Status::Hairy,
         None,
     );
-    solo.labels = vec!["agent".into()];
+    solo.tags = vec!["agent".into()];
 
     vec![coord, inbox, diff, shot, done, solo]
 }
@@ -140,7 +140,7 @@ fn multi_herd_farm() -> Vec<Task> {
         Status::Hairy,
         None,
     );
-    api.labels = vec!["backend".into()];
+    api.tags = vec!["backend".into()];
     let mut web = t(
         "web-0007",
         "Settings page: surface the active herd",
@@ -149,7 +149,7 @@ fn multi_herd_farm() -> Vec<Task> {
         Status::Hairy,
         None,
     );
-    web.labels = vec!["ui".into()];
+    web.tags = vec!["ui".into()];
     vec![api, web]
 }
 
@@ -262,6 +262,33 @@ fn docshots() {
     press(&mut app, 'j');
     press(&mut app, 'l');
     write_svg("tui-sheds-detail", &app, sw, sh);
+
+    // 9. Wiki tab (yaks-ebb2): the farm's pages then its sources, with kind
+    //    and tags; then a page open in the viewer, its frontmatter as field
+    //    rows above the rendered body. A scratch farm holds the fixture
+    //    wiki, since the viewer reads the page from disk.
+    let (ww, wh) = (150u16, 30u16);
+    let (proj, farm) = crate::tui::test_support::temp_farm(&farm());
+    crate::tui::wiki_tab::fixture::write(farm.root());
+    let mut app = App::with_farm(farm).unwrap();
+    app.apply_sheds_snapshot(crate::tui::sheds_tab::fixture::snapshot());
+    app.farm_sync = None;
+    HeadlessApp::on_resize(&mut app, ww, wh);
+    view_to(&mut app, crate::tui::view::WIKI_KEY);
+    write_svg("tui-wiki", &app, ww, wh);
+    press(&mut app, 'j');
+    press(&mut app, 'j');
+    press_key(&mut app, KeyCode::Enter);
+    write_svg("tui-wiki-page", &app, ww, wh);
+    // 10. Following links (yaks-7395): Tab to the page's link to another
+    //     page's section; the peek pane under it shows that section.
+    handle_key(&mut app, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
+    write_svg("tui-wiki-peek", &app, ww, wh);
+    // 11. Editing a page in place (yaks-1532): `E` opens the whole file,
+    //     frontmatter as raw YAML above the body, in the editor.
+    press(&mut app, 'E');
+    write_svg("tui-wiki-edit", &app, ww, wh);
+    let _ = std::fs::remove_dir_all(proj);
 }
 
 /// Regenerate the agent-session example used by toque's README: drive the real

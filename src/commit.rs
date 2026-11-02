@@ -10,10 +10,10 @@
 //! only if the commit fails) and never pushes.
 
 use crate::changes::{self, Change, Kind, check, classify, git as run_git, pending_operation};
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 use std::collections::BTreeSet;
 use std::path::Path;
-use std::process::Output;
+use std::process::{Command, Output};
 
 /// What `run` did (or, with `dry_run`, would do).
 pub enum Outcome {
@@ -97,7 +97,19 @@ pub fn run(root: &Path, message: Option<&str>, dry_run: bool) -> Result<Outcome>
     // under the TUI too, where stray output corrupts the screen. A failure
     // carries it in the error.
     check(git(&["add", "-A", "--", "."])?, "git add")?;
-    let committed = git(&["commit", "--only", "-m", &plan.message, "--", "."])?;
+    // A machine with no git identity (a CI runner, a fresh box) still
+    // commits, as the actor, the same way per-change commits do.
+    let actor = crate::actor::resolve_detail(None)
+        .map(|(n, _)| n)
+        .unwrap_or_default();
+    let ident = crate::autocommit::identity_env(root, &actor);
+    let committed = Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(["commit", "--only", "-m", &plan.message, "--", "."])
+        .envs(ident.iter().map(|(k, v)| (k.as_str(), v.as_str())))
+        .output()
+        .context("running git commit")?;
     if !committed.status.success() {
         let mut said = String::from_utf8_lossy(&committed.stdout).into_owned();
         said.push_str(&String::from_utf8_lossy(&committed.stderr));
@@ -166,7 +178,26 @@ pub(crate) fn generate_message(changes: &[Change]) -> String {
     phrase("updated", &updated);
     phrase("removed", &removed);
     phrase("artifacts for", &artifacts);
-    if !classified.other.is_empty() {
+    // Pages, sources and schemas by path; anything else is farm config.
+    let docs: BTreeSet<String> = classified
+        .other
+        .iter()
+        .filter_map(|c| {
+            let rel = c
+                .path
+                .split_once(".yaks/")
+                .map_or(c.path.as_str(), |(_, r)| r);
+            let is_doc = rel.starts_with("wiki/")
+                || rel.starts_with("sources/")
+                || rel.starts_with("schemas/")
+                || rel
+                    .split_once('/')
+                    .is_some_and(|(_, r)| r.starts_with("wiki/"));
+            is_doc.then(|| rel.to_string())
+        })
+        .collect();
+    phrase("pages", &docs);
+    if classified.other.len() > docs.len() {
         parts.push("farm config".to_string());
     }
     format!("yaks: {}", parts.join("; "))

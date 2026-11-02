@@ -3,6 +3,8 @@
 //! Status and parentage are frontmatter fields (`status:`, `parent:`); every
 //! yak is one file at a stable path, `.yaks/<id>.md` (flat, stable ids).
 
+use crate::fields::Fields;
+
 /// Lifecycle state, the frontmatter `status:` field.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Status {
@@ -84,7 +86,7 @@ pub struct Task {
     pub created: Option<String>,
     pub updated: Option<String>,
     pub parent: Option<String>,
-    pub labels: Vec<String>,
+    pub tags: Vec<String>,
     pub depends_on: Vec<String>,
     pub source: Option<String>,
     /// Pull-request URLs (the active PR or PRs for this yak's code); a list,
@@ -100,12 +102,36 @@ pub struct Task {
     /// yak's evidence contract). `yaks verify <id>` runs it and records the
     /// PASS/FAIL as an attributed note. Never auto-run — invoked explicitly.
     pub verify: Option<String>,
-    /// Verbatim frontmatter lines this binary does not model, captured on parse
-    /// and re-emitted on write so a round-trip never drops unknown/newer fields.
-    /// Keeps `.yaks/` authoritative across versions. Not rendered.
-    pub extra: Vec<String>,
+    /// Every frontmatter field beyond the built-in ones above (`commit:`,
+    /// `due:`, a hand-added key, a newer binary's field), in file order. Each
+    /// is re-emitted exactly as read unless set, so a round-trip never drops or
+    /// reformats it; values parse on demand (`extra.get("due")`). Keeps
+    /// `.yaks/` authoritative across versions (yaks-1f34).
+    pub extra: Fields,
     pub body: String,
 }
+
+/// The frontmatter keys [`Task`] models itself (each has its own field and
+/// command-line flag). Any other key lives in [`Task::extra`]; `update --set`
+/// refuses these.
+pub const BUILT_IN_KEYS: &[&str] = &[
+    "id",
+    "title",
+    "status",
+    "type",
+    "priority",
+    "created",
+    "updated",
+    "parent",
+    "depends_on",
+    "tags",
+    // The schema-6 name of `tags`, still read from an unmigrated file.
+    "labels",
+    "source",
+    "prs",
+    "needs",
+    "verify",
+];
 
 /// The `needs` value meaning "awaiting an agent to pick the work up" (a human
 /// answered a question, or requested work with `request`).
@@ -130,7 +156,7 @@ impl Task {
 /// a comma or whitespace, so each input string is split on both, trimmed,
 /// emptied pieces dropped, and duplicates removed (first occurrence wins).
 /// `foo, bar`, `foo bar`, and `foo,bar` all yield `[foo, bar]`. Idempotent.
-pub fn normalize_labels<I, S>(raw: I) -> Vec<String>
+pub fn normalize_tags<I, S>(raw: I) -> Vec<String>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
@@ -149,7 +175,7 @@ where
 /// Whether `label` is already canonical: non-empty, no comma, no whitespace.
 /// Legacy on-disk labels that fail this (e.g. `ui,docs`) are flagged by
 /// `doctor` and re-split the next time the yak's labels are edited.
-pub fn is_canonical_label(label: &str) -> bool {
+pub fn is_canonical_tag(label: &str) -> bool {
     !label.is_empty() && !label.contains(|c: char| c == ',' || c.is_whitespace())
 }
 
@@ -159,11 +185,11 @@ pub fn is_canonical_label(label: &str) -> bool {
 /// label reads as `ui` + `docs`. Returns `None` when nothing changes; when the
 /// only difference is legacy spelling, returns `new` as the add set so the
 /// edit re-writes the yak's labels canonically (see `Farm::update`).
-pub fn label_edit(cur: &[String], new: &[String]) -> Option<(Vec<String>, Vec<String>)> {
+pub fn tag_edit(cur: &[String], new: &[String]) -> Option<(Vec<String>, Vec<String>)> {
     if cur == new {
         return None;
     }
-    let cur_n = normalize_labels(cur);
+    let cur_n = normalize_tags(cur);
     let add: Vec<String> = new.iter().filter(|l| !cur_n.contains(l)).cloned().collect();
     let remove: Vec<String> = cur_n.iter().filter(|l| !new.contains(l)).cloned().collect();
     if add.is_empty() && remove.is_empty() {
@@ -194,47 +220,44 @@ mod label_tests {
             " foo ,, bar ,",
             "foo\tbar\n",
         ] {
-            assert_eq!(normalize_labels([raw]), v(&["foo", "bar"]), "input {raw:?}");
+            assert_eq!(normalize_tags([raw]), v(&["foo", "bar"]), "input {raw:?}");
         }
     }
 
     #[test]
     fn normalize_flattens_many_args_and_dedupes_in_order() {
-        assert_eq!(
-            normalize_labels(["b,a", "a", "c b", ""]),
-            v(&["b", "a", "c"])
-        );
-        assert!(normalize_labels(["", " , "]).is_empty());
+        assert_eq!(normalize_tags(["b,a", "a", "c b", ""]), v(&["b", "a", "c"]));
+        assert!(normalize_tags(["", " , "]).is_empty());
         // Idempotent.
-        let once = normalize_labels(["x, y z"]);
-        assert_eq!(normalize_labels(&once), once);
+        let once = normalize_tags(["x, y z"]);
+        assert_eq!(normalize_tags(&once), once);
     }
 
     #[test]
     fn canonical_label_rejects_commas_and_spaces() {
-        assert!(is_canonical_label("ui"));
-        assert!(is_canonical_label("needs-review"));
-        assert!(!is_canonical_label("ui,docs"));
-        assert!(!is_canonical_label("bug ui"));
-        assert!(!is_canonical_label(""));
+        assert!(is_canonical_tag("ui"));
+        assert!(is_canonical_tag("needs-review"));
+        assert!(!is_canonical_tag("ui,docs"));
+        assert!(!is_canonical_tag("bug ui"));
+        assert!(!is_canonical_tag(""));
     }
 
     #[test]
     fn label_edit_diffs_against_normalized_current() {
-        assert_eq!(label_edit(&v(&["a", "b"]), &v(&["a", "b"])), None);
-        assert_eq!(label_edit(&v(&["a", "b"]), &v(&["b", "a"])), None);
+        assert_eq!(tag_edit(&v(&["a", "b"]), &v(&["a", "b"])), None);
+        assert_eq!(tag_edit(&v(&["a", "b"]), &v(&["b", "a"])), None);
         assert_eq!(
-            label_edit(&v(&["a", "b"]), &v(&["a", "c"])),
+            tag_edit(&v(&["a", "b"]), &v(&["a", "c"])),
             Some((v(&["c"]), v(&["b"])))
         );
         // Legacy `ui,docs` with an unchanged set: re-assert to canonicalize.
         assert_eq!(
-            label_edit(&v(&["ui,docs"]), &v(&["ui", "docs"])),
+            tag_edit(&v(&["ui,docs"]), &v(&["ui", "docs"])),
             Some((v(&["ui", "docs"]), vec![]))
         );
         // Legacy label, dropping one half: remove the normalized piece.
         assert_eq!(
-            label_edit(&v(&["ui,docs"]), &v(&["ui"])),
+            tag_edit(&v(&["ui,docs"]), &v(&["ui"])),
             Some((vec![], v(&["docs"])))
         );
     }

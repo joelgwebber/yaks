@@ -41,8 +41,8 @@ pub fn task_value(t: &Task) -> Value {
     if !t.depends_on.is_empty() {
         m.insert("depends_on".into(), json!(t.depends_on));
     }
-    if !t.labels.is_empty() {
-        m.insert("labels".into(), json!(t.labels));
+    if !t.tags.is_empty() {
+        m.insert("tags".into(), json!(t.tags));
     }
     if let Some(s) = &t.source {
         m.insert("source".into(), json!(s));
@@ -53,15 +53,36 @@ pub fn task_value(t: &Task) -> Value {
     if let Some(n) = &t.needs {
         m.insert("needs".into(), json!(n));
     }
-    // Verbatim frontmatter lines this binary does not model, surfaced read-only.
+    // Every other frontmatter field, parsed (`commit:`, `due:`, a hand-added
+    // key). One the parser can't read is left out here; it still round-trips.
     if !t.extra.is_empty() {
-        m.insert("extra".into(), json!(t.extra));
+        m.insert("extra".into(), t.extra.to_json());
+    }
+    // Derived from `due` and the clock, so only present when true.
+    if crate::recur::is_overdue(t, chrono::Utc::now()) {
+        m.insert("overdue".into(), json!(true));
     }
     let body = t.body.trim();
     if !body.is_empty() {
         m.insert("description".into(), json!(body));
     }
     Value::Object(m)
+}
+
+/// `regrow-due --json`: what regrew (or would, on a dry run) and what was held.
+pub fn regrow_due_value(r: &crate::recur::Report, dry_run: bool) -> Value {
+    json!({
+        "dry_run": dry_run,
+        "regrew": r.regrew.iter().map(|g| json!({
+            "id": g.id,
+            "title": g.title,
+            "occurrence": g.plan.occurrence.render(),
+            "skipped": g.plan.skipped,
+            "due": g.plan.due.render(),
+            "reopened": g.reopened,
+        })).collect::<Vec<_>>(),
+        "held": r.held.iter().map(|(id, why)| json!({"id": id, "reason": why})).collect::<Vec<_>>(),
+    })
 }
 
 /// `inbox --json`: the canonical task objects plus the derived `replied` flag.
@@ -202,6 +223,21 @@ pub fn doctor_array(issues: &[crate::farm::Issue]) -> Value {
     )
 }
 
+/// A page for `--json`: path, kind, title, herd (or null), every frontmatter
+/// field parsed under `fields`, and with `body` its markdown body.
+pub fn page_value(p: &crate::pages::Page, body: bool) -> Value {
+    let mut m = Map::new();
+    m.insert("path".into(), json!(p.path));
+    m.insert("type".into(), json!(p.kind()));
+    m.insert("title".into(), json!(p.title()));
+    m.insert("herd".into(), json!(p.herd()));
+    m.insert("fields".into(), p.fields.to_json());
+    if body {
+        m.insert("body".into(), json!(p.body));
+    }
+    Value::Object(m)
+}
+
 pub fn print(v: &Value) -> anyhow::Result<()> {
     println!("{}", serde_json::to_string_pretty(v)?);
     Ok(())
@@ -221,13 +257,13 @@ mod tests {
             created: None,
             updated: None,
             parent: None,
-            labels: vec![],
+            tags: vec![],
             depends_on: vec![],
             source: None,
             prs: Vec::new(),
             needs: None,
             verify: None,
-            extra: vec![],
+            extra: Default::default(),
             body: String::new(),
         }
     }
@@ -235,9 +271,9 @@ mod tests {
     #[test]
     fn task_value_surfaces_extra_when_present() {
         let mut t = task();
-        t.extra = vec!["wat: foo".into()];
+        t.extra = crate::fields::Fields::parse("wat: foo\ncommit: [3f2a9c1]");
         let v = task_value(&t);
-        assert_eq!(v["extra"], json!(["wat: foo"]));
+        assert_eq!(v["extra"], json!({"wat": "foo", "commit": ["3f2a9c1"]}));
     }
 
     #[test]

@@ -11,7 +11,7 @@ expression: "run(&[\"next\", \"--json\"])"
     "priority": 2,
     "created": "2026-01-01T00:00:00Z",
     "updated": "2026-01-01T00:00:00Z",
-    "labels": [
+    "tags": [
       "core"
     ]
   },
