@@ -1,11 +1,11 @@
 ---
 id: yaks-947a
 title: Implement the unified TUI model (/wiki/design/tui-model.md)
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-03T03:46:30Z'
-updated: '2026-11-03T03:46:56Z'
+updated: '2026-11-03T03:47:40Z'
 tags:
 - tui
 ---
@@ -22,3 +22,14 @@ It implements these yaks, which are sheared as their phases land:
 - yaks-0ac1: phases 2 and 7.
 
 Coordinated by herd-tui on a Delta cloud runner; workers are Sonnet 5.5 subthreads.
+
+---
+▸ 2026-11-03T03:47:40Z [herd-tui]
+kind: move
+from: hairy
+to: shaving
+child: yaks-cc16
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
