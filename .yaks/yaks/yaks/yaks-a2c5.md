@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T05:46:42Z'
+updated: '2026-11-03T05:47:06Z'
 parent: yaks-947a
 depends_on:
 - yaks-aac1
@@ -119,3 +119,8 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-03T05:47:06Z [hist-1]
+
+Decision: a jump is wrapped, not pushed by hand. `App::jump(|app| ..)` snapshots the location before, runs the move, and pushes only if the location differs afterwards. That gives "skip a push identical to the current location" for free (a link to the yak already shown, a failed link, a missing page push nothing) and means no call site can forget the snapshot or push twice. Rejected: an explicit `push_location()` at each call site (the old `nav_back.push` pattern: three stacks, each with its own forgotten cases).
