@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T05:27:15Z'
+updated: '2026-11-03T05:27:16Z'
 parent: yaks-947a
 depends_on:
 - yaks-aac1
@@ -48,3 +48,57 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-03T05:27:16Z [herd-tui]
+
+Claim (yakherd herd-tui): worker `hist-1` (Sonnet 5.5), base main `acabcb7f` (phases 1–4 and 6 landed). The draft above is the spec, with these resolutions:
+
+**The pane's yak.** Today the yak detail reads `rows()[cursor]` (`detail_dlines`, `selected()`), so it cannot show a yak outside the list.
+
+- Add `App.pane_yak: Option<String>`, the id the pane shows when it differs from the selected row: `None` means "the selected row's yak", as today.
+- `selected()` (the yak commands' target) returns the pane's yak in pane focus when `pane_yak` is set, else the row's.
+- `detail_dlines` and the memo key read the same subject: `memo::DlinesKey.loc` already names a yak by `Loc::Home(index)`, so resolve `pane_yak` to its index.
+- `pane_yak` clears when the cursor moves (`j`/`k`, `J`/`K`, a click), on a view switch, and on `Esc`/`h` to the list.
+- The pane header shows a dim `not in this list` when `pane_yak` is set.
+
+**Link-follow** (`goto_task`, used by detail links, viewer yak links, `#`, `B`, a shed child):
+
+- if the current list has the yak, move the cursor to it (expanding ancestors), `pane_yak = None`;
+- otherwise set `pane_yak` and leave the list alone.
+
+`select_task`'s status-view switch goes. `select_id` (after create) keeps jumping to Hairy: that is a create, not a link.
+
+**History.** The draft's `Location` and `History`. `PaneAt` is one of:
+
+- `Yak { id, line, scroll }`;
+- `Doc { path, rev, from, line, scroll }`;
+- `Shed(name)`.
+
+It replaces `nav_back`/`nav_fwd`, `NavEntry`, `viewer_back`/`viewer_fwd` (`follow.rs`) and `LineNav.back`/`fwd` (in-page footnote and `#section` jumps push a Location whose pane differs only in line).
+
+**Keys.** Bind `o`/`i` in `Ctx::List` too (keymap: `NavBack`/`NavForward` already exist). `Esc` closing a doc no longer clears history.
+
+**Out of scope.**
+
+- Key changes beyond `o`/`i` in the list (phase 7).
+- Persisting history.
+- The search register (6b, landed).
+
+Anything else: `yaks ask yaks-a2c5`.
+
+**Evidence.**
+
+- Gate: `env -u YAKS_DIR -u YAKS_ACTOR cargo test --workspace`, fresh `TMPDIR`.
+- New tests:
+  - in Recent with a query, follow a yak link to a yak in another status, then `o`: back in Recent with the query, cursor and detail line restored;
+  - following a link to a dead yak shows it in the pane with `not in this list`;
+  - `o` from a page opened from a Wiki row returns to the list row and then the previous view;
+  - footnote jump then `o` returns to the reference;
+  - a view switch then `o` returns to the previous view;
+  - a restored yak that was slaughtered meanwhile says `gone`.
+- Existing nav tests: keep their assertions where behaviour is the same, rewrite where the old status-view switch was asserted (one `Decision:` note listing them).
+- Docs: `docs/tui.md` (`o`/`i` everywhere, link-follow keeps the list), `?` lines.
+- Headless frame: the Recent-with-query round trip.
+
+**Judge.** herd-tui at landing.
