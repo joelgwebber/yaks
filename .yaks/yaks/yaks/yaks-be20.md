@@ -1,11 +1,11 @@
 ---
 id: yaks-be20
 title: 'Links inside attachments: a sibling-relative link resolves to the yak''s own attachments; attach without linking'
-status: shaving
+status: shorn
 type: bug
 priority: 2
 created: '2026-11-03T23:07:23Z'
-updated: '2026-11-03T23:47:29Z'
+updated: '2026-11-03T23:47:30Z'
 tags:
 - links
 - cli
@@ -85,3 +85,13 @@ Landed as `522ff21` on `main`, pushed to `origin` and `local`. Docs and skill te
 Installed with `cargo install --path .` into `~/.cargo/bin`; a running `yaks tui` keeps the old binary until restarted.
 
 Joel is tidying the surveyor farm and its guidance himself, so `yaks-9173` is his.
+
+---
+▸ 2026-11-03T23:47:30Z [indent-links]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQNSYysfbwRGKL-KGL8e-aQpLOAEKHPJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
