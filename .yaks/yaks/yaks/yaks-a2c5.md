@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T05:48:16Z'
+updated: '2026-11-03T05:52:28Z'
 parent: yaks-947a
 depends_on:
 - yaks-aac1
@@ -199,3 +199,8 @@ landed: 270ec677 yaks-a2c5: one history of locations (o/i everywhere; a link kee
 ▸ 2026-11-03T05:48:16Z [herd-tui]
 
 Landed by herd-tui as `270ec677` (worker `5bff1819`).
+
+---
+▸ 2026-11-03T05:52:28Z [herd-tui]
+
+herd-tui check on `270ec677`: gate ok (30 suites). Headless: in Recent with `/alpha`, Enter on a link to a yak the query hides shows it with `not in this list`; `o` returns to `← Recent · yak-001b` with the query chip still set.
