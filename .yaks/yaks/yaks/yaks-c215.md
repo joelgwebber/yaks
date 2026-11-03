@@ -1,11 +1,11 @@
 ---
 id: yaks-c215
 title: 'TUI phase 6b: one search register for every text subject'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:32Z'
-updated: '2026-11-03T05:08:29Z'
+updated: '2026-11-03T05:14:49Z'
 parent: yaks-947a
 depends_on:
 - yaks-aac1
@@ -29,3 +29,13 @@ Claim draft (yakherd herd-tui), to start after phase 4b (yaks-9dec) lands: worke
 - In a list, `n`/`N` with an empty query re-apply the register as the query; with a query they do nothing (lean from the earlier design; record it).
 - The detail footer shows `match 2/5 "q"` while the register is set.
 - `Overlay::DetailFind` and the viewer's own `find_box` become one find box (`SearchBox`) that edits the register.
+
+---
+▸ 2026-11-03T05:14:49Z [herd-tui]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
