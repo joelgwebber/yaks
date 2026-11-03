@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T04:05:18Z'
+updated: '2026-11-03T04:05:47Z'
 parent: yaks-947a
 tags:
 - tui
@@ -153,3 +153,13 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD9wu5IBxBCtY3f3KUhDW5IL-PWT3Nbm
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-03T04:05:47Z [herd-tui]
+kind: landed
+commit: 642be42e60ada6b08c94c1de53cb59c24f92a88b
+source: 14245b9f4fa3470f9f4c54c3e4a5c4b9553e9012
+branch: main
+---
+
+landed: 642be42e yaks-fbb0: TUI command table (keymap.rs) for the non-modal keys; help and hint generated from it
