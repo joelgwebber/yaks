@@ -1,0 +1,144 @@
+=== frame 0 · 150x16 · focus=list · view=🦬 Hairy · cursor=0 · rows=1 · sel=t-194e · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)           family: ~remaining not published
+
+ t-194e p3 task     🦬 Solo yak
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help
+=== end ===
+=== frame 1 · 150x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=t-194e · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)           family: ~remaining not published
+
+ t-194e p3 task     🦬 Solo yak                    │ Task: t-194e
+                                                   │
+                                                   │ Title:       Solo yak
+                                                   │ Status:      🦬 hairy
+                                                   │ Type:        task
+                                                   │ Priority:    p3
+                                                   │ Created:     just now
+                                                   │ Updated:     just now
+                                                   │ Tags:        -
+                                                   │
+                                                   │ 📎 notes
+                                                   │
+                                                   │
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search  q:quit
+=== end ===
+=== frame 2 · 150x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=t-194e · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)           family: ~remaining not published
+
+ t-194e p3 task     🦬 Solo yak                    │ Task: t-194e
+                                                   │
+                                                   │ Title:       Solo yak
+                                                   │ Status:      🦬 hairy
+                                                   │ Type:        task
+                                                   │ Priority:    p3
+                                                   │ Created:     just now
+                                                   │ Updated:     just now
+                                                   │ Tags:        -
+                                                   │
+                                                   │ 📎 notes
+                                                   │
+                                                   │
+→ t-194e/notes.md
+=== end ===
+=== frame 3 · 150x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=t-194e · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)      viewing t-194e/notes.md not published
+
+ t-194e p3 task     🦬 Solo yak                    │ 📎 t-194e/notes.md  markdown
+                                                   │ Findings
+                                                   │
+                                                   │ The cache is slow, see the docs.
+                                                   │
+                                                   │ • one
+                                                   │ • two
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+j/k · Tab:link Enter:follow · o/i back/fwd · p peek · / find · v sel · E edit · O open externally · Esc/q close
+=== end ===
+=== frame 4 · 150x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=t-194e · blocked=- · collapsed=0 · filter=(all) · overlay=help · doc=text · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)           family: ~remaining not published
+
+ t-194e p3 task     🦬 Solo yak                    │ Help — keys
+                                                   │ List pane
+                                                   │   Tab / ]         Next view
+                                                   │   S-Tab / [       Previous view
+                                                   │   j / ↓           Move cursor down
+                                                   │   k / ↑           Move cursor up
+                                                   │   d               Half-page down
+                                                   │   u               Half-page up
+                                                   │   PgDn            Full-page down
+                                                   │   PgUp            Full-page up
+                                                   │   g / Home        Top
+                                                   │   G / End         Bottom
+                                                   │   l / → / Enter   Show detail pane
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 5 · 150x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=t-194e · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)           family: ~remaining not published
+
+ t-194e p3 task     🦬 Solo yak                    │ 📎 t-194e/notes.md  markdown
+                                                   │ Findings
+                                                   │
+                                                   │ The cache is slow, see the docs.
+                                                   │
+                                                   │ • one
+                                                   │ • two
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+j/k · Tab:link Enter:follow · o/i back/fwd · p peek · / find · v sel · E edit · O open externally · Esc/q close
+=== end ===
+=== frame 6 · 150x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=t-194e · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)                              not published
+farm branch yaks: not published (no upstream); `yaks sync` publishes it
+ t-194e p3 task     🦬 Solo yak                    │ 📎 t-194e/notes.md  markdown
+                                                   │ Findings
+                                                   │
+                                                   │ The cache is slow, see the docs.
+                                                   │
+                                                   │ • one
+                                                   │ • two
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+                                                   │
+j/k · Tab:link Enter:follow · o/i back/fwd · p peek · / find · v sel · E edit · O open externally · Esc/q close
+=== end ===
+=== frame 7 · 150x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=t-194e · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)           family: ~remaining not published
+
+ t-194e p3 task     🦬 Solo yak                    │ Task: t-194e
+                                                   │
+                                                   │ Title:       Solo yak
+                                                   │ Status:      🦬 hairy
+                                                   │ Type:        task
+                                                   │ Priority:    p3
+                                                   │ Created:     just now
+                                                   │ Updated:     just now
+                                                   │ Tags:        -
+                                                   │
+                                                   │ 📎 notes
+                                                   │
+                                                   │
+→ t-194e/notes.md
+=== end ===
