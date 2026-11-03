@@ -887,13 +887,10 @@ impl App {
     /// cursor sits on (Tab/[ ] cycle to one). Opens a one-line prompt; the
     /// rename moves the file and rewrites its links farm-wide (yaks-a09b).
     pub(crate) fn open_rename_attachment(&mut self) {
-        let target = self
-            .detail_jumps()
-            .into_iter()
-            .find_map(|j| match j.target {
-                detail::Target::Artifact(p) if j.line == self.detail.line => Some(p),
-                _ => None,
-            });
+        let target = self.detail_link().and_then(|j| match j.target {
+            detail::Target::Artifact(p) => Some(p),
+            _ => None,
+        });
         let parsed = target.as_deref().and_then(|p| {
             // `<id>/<file>`, relative to the farm root (the yak's own directory).
             let rest = p.strip_prefix(".yaks/").unwrap_or(p);
@@ -1360,8 +1357,7 @@ impl App {
     /// O — open the artifact/URL/source link on the current detail line (a
     /// text attachment in the viewer, anything else externally).
     pub(crate) fn open_current_external(&mut self) {
-        let jumps = self.detail_jumps();
-        match jumps.into_iter().find(|j| j.line == self.detail.line) {
+        match self.detail_link() {
             Some(j) => match j.target {
                 detail::Target::Artifact(p) => self.open_external(&p),
                 detail::Target::Url(u) => self.open_external(&u),

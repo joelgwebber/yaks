@@ -1680,10 +1680,7 @@ fn link_hint(app: &App, width: usize) -> Option<String> {
         {
             return None;
         }
-        let jump = app
-            .detail_jumps()
-            .into_iter()
-            .find(|j| j.line == app.detail.line)?;
+        let jump = app.detail_link()?;
         // A farm document: its peek's first line too (yaks-7395); the
         // viewer has a peek pane instead.
         if matches!(jump.target, detail::Target::Farm { .. }) {

@@ -118,8 +118,10 @@ the same way (they are rows of the same list).
 
 **Detail pane** — `h`/`←`/`Esc` back (on a code block or table row `h`/`←`
 scroll it left first, and go back only at offset 0); `l`/`→` scroll the code
-block or table under the cursor right (nowhere else); `j`/`k` scroll; `Tab`/`[`/`]` cycle links,
-`Enter` follow; `B` find references (also in the list pane): a picker over
+block or table under the cursor right (nowhere else); `j`/`k` scroll; `Tab`/`]` and `S-Tab`/`[`
+cycle links, every link a stop (several on one row each get one, the targeted one
+highlighted), `Enter` follows the targeted link; `/` and `n`/`N` put the line
+cursor on the match, as the view jumps to it; `B` find references (also in the list pane): a picker over
 the yaks that point *at* this one — its children, the yaks that depend on it, and
 those whose title, description or a note mentions its id — each row tagged with
 how (`[child]`, `[depends]`, `[title]`, `[body:L3]`, `[note:<ts> [actor]]`);

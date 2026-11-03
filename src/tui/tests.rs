@@ -1071,7 +1071,7 @@ fn detail_jumplist_follows_to_task() {
     enter_key(&mut app); // enter detail
     assert_eq!(app.focus, Focus::Detail);
     // Jumplist order for a0: child a1, child a2, body a1, body a2.
-    assert!(app.detail_jumps().len() >= 2);
+    assert!(detail::jumplist(&app.detail_dlines()).len() >= 2);
     tab_key(&mut app); // line cursor -> first link line (a1)
     enter_key(&mut app); // follow it -> a1
     // We stay in the detail pane, now showing the followed task (yaksrs-3f19).
@@ -1605,6 +1605,32 @@ fn detail_find_matches_and_cycles() {
     assert_eq!(app.detail.matched, Some(1));
     handle_key(&mut app, key('N'));
     assert_eq!(app.detail.matched, Some(0));
+}
+
+/// yaks-fc9e: the line cursor goes with the view to each match, while typing
+/// and on `n`/`N`, so the next `j` or Enter starts from the match.
+#[test]
+fn the_detail_cursor_follows_find_matches() {
+    let mut app = linked();
+    enter_key(&mut app);
+    let at = |app: &App, i: usize| app.detail_find_matches()[i].0;
+    handle_key(&mut app, key('/'));
+    typ(&mut app, "child");
+    assert_eq!(app.detail.line, at(&app, 0), "while typing");
+    enter_key(&mut app);
+    handle_key(&mut app, key('n'));
+    assert_eq!(app.detail.line, at(&app, 1), "on n");
+    handle_key(&mut app, key('N'));
+    assert_eq!(app.detail.line, at(&app, 0), "on N");
+    // Esc out of a fresh find puts the cursor back.
+    app.detail.line = 0;
+    handle_key(&mut app, key('/'));
+    typ(&mut app, "x");
+    handle_key(
+        &mut app,
+        KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
+    );
+    assert_eq!(app.detail.line, 0);
 }
 
 #[test]

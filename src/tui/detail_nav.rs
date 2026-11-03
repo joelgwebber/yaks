@@ -140,9 +140,10 @@ impl App {
         }
     }
 
-    /// Detail jumplist for the current selection (empty when nothing selected).
-    pub(crate) fn detail_jumps(&self) -> Vec<detail::Jump> {
-        detail::jumplist(&self.detail_dlines())
+    /// The link the detail cursor targets (`LineNav::link_at`): what Enter,
+    /// `O` and `r` act on and the status bar describes.
+    pub(crate) fn detail_link(&self) -> Option<detail::Jump> {
+        self.detail.link_at(&self.detail_dlines())
     }
 
     pub(crate) fn detail_line_count(&self) -> usize {
@@ -348,8 +349,7 @@ impl App {
     }
 
     pub(crate) fn follow_link(&mut self) {
-        let jumps = self.detail_jumps();
-        let Some(j) = jumps.into_iter().find(|j| j.line == self.detail.line) else {
+        let Some(j) = self.detail_link() else {
             return;
         };
         match j.target {

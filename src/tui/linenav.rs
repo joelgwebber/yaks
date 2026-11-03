@@ -90,6 +90,10 @@ pub(crate) struct LineNav {
     /// Sideways scroll of the no-wrap block under the cursor:
     /// `(DLine::nowrap_key, columns)`. Dropped once the cursor leaves it.
     pub(crate) hscroll: Option<((usize, usize), usize)>,
+    /// The link Tab/`]`/`[` targeted, as `(row, column)` (yaks-fc9e). Any
+    /// other cursor move (a step, `g`/`G`, a jump, a find) drops it, so back on
+    /// a row its first link is the target again; it is ignored off its row.
+    pub(crate) link: Option<(usize, usize)>,
 }
 
 impl LineNav {
@@ -118,6 +122,7 @@ impl LineNav {
         };
         let to = (at as i32 + delta).clamp(0, stops.len() as i32 - 1) as usize;
         self.line = stops[to];
+        self.link = None;
         self.reveal(lines.len(), vp);
     }
 
@@ -128,37 +133,55 @@ impl LineNav {
         } else {
             0
         };
+        self.link = None;
         self.reveal(lines.len(), vp);
     }
 
-    /// Tab / Shift-Tab: the cursor to the next / previous row holding a link
-    /// (wrapping), so Enter can follow it.
+    /// Tab / `]` and Shift-Tab / `[`: target the next / previous link
+    /// (wrapping), every link a stop, several on one row included (yaks-fc9e).
+    /// The cursor goes to its row, so Enter, `O` and the peek act on it.
     pub(crate) fn jump_link(&mut self, lines: &[DLine], vp: Viewport, delta: i32) {
-        let mut rows: Vec<usize> = detail::jumplist(lines).iter().map(|j| j.line).collect();
-        rows.dedup();
-        let (Some(&first), Some(&last)) = (rows.first(), rows.last()) else {
+        let stops: Vec<(usize, usize)> = detail::jumplist(lines)
+            .iter()
+            .map(|j| (j.line, j.col))
+            .collect();
+        let (Some(&first), Some(&last)) = (stops.first(), stops.last()) else {
             return;
         };
-        self.line = if delta >= 0 {
-            rows.iter()
-                .copied()
-                .find(|&l| l > self.line)
-                .unwrap_or(first)
+        // Where we are: the targeted link, else just before (after) the
+        // cursor's row, so the first Tab lands on its first link's successor
+        // only if the row's first link was already the target.
+        let here = self.link_at(lines).map(|j| (j.line, j.col));
+        let to = if delta >= 0 {
+            let after = |s: &&(usize, usize)| match here {
+                Some(h) => **s > h,
+                None => s.0 > self.line,
+            };
+            stops.iter().find(after).copied().unwrap_or(first)
         } else {
-            rows.iter()
-                .rev()
-                .copied()
-                .find(|&l| l < self.line)
-                .unwrap_or(last)
+            let before = |s: &&(usize, usize)| match here {
+                Some(h) => **s < h,
+                None => s.0 < self.line,
+            };
+            stops.iter().rev().find(before).copied().unwrap_or(last)
         };
+        self.line = to.0;
+        self.link = Some(to);
         self.reveal(lines.len(), vp);
     }
 
-    /// The first link on the cursor's row: what Enter follows.
+    /// The targeted link on the cursor's row (else its first): what Enter
+    /// follows, `O` opens, the peek reads and the row highlights.
     pub(crate) fn link_at(&self, lines: &[DLine]) -> Option<Jump> {
-        detail::jumplist(lines)
+        let on_row: Vec<Jump> = detail::jumplist(lines)
             .into_iter()
-            .find(|j| j.line == self.line)
+            .filter(|j| j.line == self.line)
+            .collect();
+        let picked = self
+            .link
+            .filter(|(l, _)| *l == self.line)
+            .and_then(|(_, c)| on_row.iter().position(|j| j.col == c));
+        on_row.into_iter().nth(picked.unwrap_or(0))
     }
 
     /// v: toggle a visual selection anchored at the cursor.
@@ -187,6 +210,7 @@ impl LineNav {
         self.scroll = 0;
         self.anchor = None;
         self.matched = None;
+        self.link = None;
     }
 
     /// n / N: land on the next / previous match of `find`, the cursor on its
@@ -216,6 +240,7 @@ impl LineNav {
         } as usize;
         self.matched = Some(to);
         self.line = m[to].0;
+        self.link = None;
         self.scroll = m[to].0 as u16;
         true
     }
@@ -264,7 +289,10 @@ impl LineNav {
         *register = if q.is_empty() { None } else { Some(q) };
         let first = find_matches(lines, register.as_deref()).first().copied();
         self.matched = first.map(|_| 0);
+        // The cursor follows the view to the match as you type, as `n` and
+        // Enter do (yaks-fc9e); Esc puts both back.
         if let Some((line, ..)) = first {
+            self.line = line;
             self.scroll = line as u16;
         }
         false
@@ -276,6 +304,7 @@ impl LineNav {
     /// cursor was; the page keeps no history of its own.
     pub(crate) fn goto(&mut self, lines: &[DLine], vp: Viewport, to: usize) {
         self.line = to;
+        self.link = None;
         self.reveal(lines.len(), vp);
     }
 
@@ -461,6 +490,44 @@ mod tests {
         nav.jump_link(&lines, VP, -1);
         assert_eq!(nav.line, 3, "and back to the last");
         assert!(nav.link_at(&lines).is_some());
+    }
+
+    /// yaks-fc9e: several links on one row are each a Tab stop, and the one
+    /// targeted is what `link_at` (Enter, `O`, the peek, the highlight)
+    /// names; moving the cursor off the row and back targets its first again.
+    #[test]
+    fn tab_visits_every_link_on_a_row_and_link_at_follows_it() {
+        let two = vec![
+            (0, 1, Target::Task("a".into())),
+            (4, 1, Target::Task("b".into())),
+        ];
+        let lines = vec![
+            row("a , b", two),
+            row("text", vec![]),
+            row("see c", vec![(4, 1, Target::Task("c".into()))]),
+        ];
+        let target = |nav: &LineNav| match nav.link_at(&lines).unwrap().target {
+            Target::Task(id) => id,
+            _ => unreachable!(),
+        };
+        let mut nav = LineNav::default();
+        // The cursor starts on row 0: its first link is the target already,
+        // so the first Tab goes to the second link of the same row.
+        assert_eq!(target(&nav), "a");
+        nav.jump_link(&lines, VP, 1);
+        assert_eq!((nav.line, target(&nav).as_str()), (0, "b"));
+        nav.jump_link(&lines, VP, 1);
+        assert_eq!((nav.line, target(&nav).as_str()), (2, "c"));
+        nav.jump_link(&lines, VP, 1);
+        assert_eq!(target(&nav), "a", "wraps");
+        nav.jump_link(&lines, VP, -1);
+        assert_eq!(target(&nav), "c", "and back");
+        nav.jump_link(&lines, VP, -1);
+        assert_eq!(target(&nav), "b");
+        // Off the row and back: the row's first link again.
+        nav.step(&lines, VP, 1);
+        nav.step(&lines, VP, -1);
+        assert_eq!(target(&nav), "a");
     }
 
     #[test]

@@ -10,7 +10,7 @@ expression: "draw(&app, 100, 20)"
 │   u               Half-page up
 │   g               Top
 │   G               Bottom
-│   Tab / ]         Next link
+│   Tab / ]         Next link (each link on a row is a stop)
 │   S-Tab / [       Previous link
 │   Enter           Yank the selection, else follow the link / footnote / source file / farm page (
 │   i               History forward: a jump you went back from (any pane)
