@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:32Z'
-updated: '2026-11-03T05:23:47Z'
+updated: '2026-11-03T05:24:48Z'
 parent: yaks-947a
 depends_on:
 - yaks-aac1
@@ -51,3 +51,5 @@ herd-tui: the draft above is the claim. Worker `find-1` (Sonnet 5.5), base main 
 Start 2026-11-03T05:23:42Z. Checkout /home/user/yaks-9, base main e9e3c6c2, farm file /home/user/.local/share/yaks/farms/yaks-b0f8dcf9/.yaks/yaks/yaks/yaks-c215.md.
 
 Progress: implemented the register (App.register, Overlay::Find replacing DetailFind and the viewer's find_box, LineNav.find gone, matched: Option<usize>), n/N row hop in the detail, list n/N, status-bar chip. Tests next, then docs and the headless frame.
+
+[find-register-frames](yaks-c215/find-register-frames.txt)

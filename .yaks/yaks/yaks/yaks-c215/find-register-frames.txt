@@ -1,0 +1,144 @@
+=== frame 0 · 110x16 · focus=list · view=🦬 Hairy · cursor=0 · rows=3 · sel=yak-6d5a · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+ yak-6d5a p3 task     🦬 Cache audit
+ yak-8270 p3 task     🦬 Cache follow-up
+ yak-9414 p3 task     🦬 Unrelated
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?
+=== end ===
+=== frame 1 · 110x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=3 · sel=yak-6d5a · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+◂ Task: yak-6d5a
+│
+│ Title:       Cache audit
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Tags:        -
+│
+│ $The cache is slow.\n\nA second cache note.
+│
+│
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search
+=== end ===
+=== frame 2 · 110x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=3 · sel=yak-6d5a · blocked=- · collapsed=0 · filter=(all) · overlay=find · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+◂ Task: yak-6d5a
+│
+│ Title:       Cache audit
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Tags:        -
+│
+│ $The cache is slow.\n\nA second cache note.
+│
+│
+find:
+=== end ===
+=== frame 3 · 110x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=3 · sel=yak-6d5a · blocked=- · collapsed=0 · filter=(all) · overlay=find · detail_scroll=2 · pinned=yes ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+◂  🦬 yak-6d5a  task     p3  Cache audit
+│ ───────────────────────────────────────────────────────────────────────────────────────────────────────────
+│ Title:       Cache audit
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Tags:        -
+│
+│ $The cache is slow.\n\nA second cache note.
+│
+│
+find: cache
+=== end ===
+=== frame 4 · 110x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=3 · sel=yak-6d5a · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=2 · pinned=yes ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+◂  🦬 yak-6d5a  task     p3  Cache audit
+│ ───────────────────────────────────────────────────────────────────────────────────────────────────────────
+│ Title:       Cache audit
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Tags:        -
+│
+│ $The cache is slow.\n\nA second cache note.
+│
+│
+match 1/3 "cache"  h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state
+=== end ===
+=== frame 5 · 110x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=3 · sel=yak-6d5a · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=10 · pinned=yes ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+◂  🦬 yak-6d5a  task     p3  Cache audit
+│ ───────────────────────────────────────────────────────────────────────────────────────────────────────────
+│ $The cache is slow.\n\nA second cache note.
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+match 2/3 "cache"  h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state
+=== end ===
+=== frame 6 · 110x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=3 · sel=yak-6d5a · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=10 · pinned=yes ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+◂  🦬 yak-6d5a  task     p3  Cache audit
+│ ───────────────────────────────────────────────────────────────────────────────────────────────────────────
+│ $The cache is slow.\n\nA second cache note.
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+match 3/3 "cache"  h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state
+=== end ===
+=== frame 7 · 110x16 · focus=detail · view=🦬 Hairy · cursor=1 · rows=3 · sel=yak-8270 · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=2 · pinned=yes ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+◂  🦬 yak-8270  task     p3  Cache follow-up
+│ ───────────────────────────────────────────────────────────────────────────────────────────────────────────
+│ Title:       Cache follow-up
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Tags:        -
+│
+│ more about the cache
+│
+│
+match 1/2 "cache"  h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state
+=== end ===
