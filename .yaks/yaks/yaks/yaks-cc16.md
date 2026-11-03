@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T03:58:07Z'
+updated: '2026-11-03T03:59:16Z'
 parent: yaks-947a
 tags:
 - tui
@@ -115,3 +115,13 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD9uc5IBxBCtY3f3KUhDW5IL-PWT3Nbm
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-03T03:59:16Z [herd-tui]
+kind: landed
+commit: f18b13db770c4631ed8a32d99a3390b6076e23e1
+source: c51051199ce08daf9e1181a75352169730ccd1d5
+branch: main
+---
+
+landed: f18b13db yaks-cc16: notifications clear on the next key or mouse event; a kept search no longer toasts filter: q
