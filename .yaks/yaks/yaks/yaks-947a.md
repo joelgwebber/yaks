@@ -1,11 +1,11 @@
 ---
 id: yaks-947a
 title: Implement the unified TUI model (/wiki/design/tui-model.md)
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-03T03:46:30Z'
-updated: '2026-11-03T06:11:22Z'
+updated: '2026-11-03T06:11:23Z'
 tags:
 - tui
 ---
@@ -85,3 +85,13 @@ Follow-ups:
 
 - yaks-7c6e: the holistic key rethink; the which-key ask on yaks-6919 is still open.
 - The viewer and image-viewer bottom lines are fixed text, not generated from the keymap, so they ignore overrides.
+
+---
+▸ 2026-11-03T06:11:23Z [herd-tui]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
