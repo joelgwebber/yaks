@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T04:10:57Z'
-updated: '2026-11-03T04:42:21Z'
+updated: '2026-11-03T04:43:01Z'
 parent: yaks-5d08
 depends_on:
 - yaks-be65
@@ -152,3 +152,13 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD_xRZIBxBCtY3f3KUhDW5IL-PWT3Nbm
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-03T04:43:01Z [herd-tui]
+kind: landed
+commit: 200d48faff9b6d8aa420c44b2a084e1b5465a752
+source: 074f09c250c63bd45a730848b1224712c03fd635
+branch: main
+---
+
+landed: 200d48fa yaks-c354: Sheds becomes a tree view (actor roots, touched yaks as yak rows)
