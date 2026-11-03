@@ -1,11 +1,11 @@
 ---
 id: yaks-c5d7
 title: Absolute document/image refs not resolving
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-03T04:06:14Z'
-updated: '2026-11-03T21:21:26Z'
+updated: '2026-11-03T21:21:27Z'
 parent: yaks-f677
 tags:
 - tui
@@ -32,3 +32,13 @@ Fixed with yaks-91d9: a markdown image is now classified by the link grammar lik
 In a yak a relative image is still an attachment path, as before.
 
 Evidence: the yaks-91d9 test covers `/sources/...`; the attached frame there is this exact image from the report.
+
+---
+▸ 2026-11-03T21:21:27Z [delta:starred-batch]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
