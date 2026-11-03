@@ -2,11 +2,11 @@
 source: src/tui/tests.rs
 expression: frame
 ---
- 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   📖  Wiki (0)   🛖  Sh
+ 🦬  Hairy (0)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (0)   ⭐  Starred (0)   📖  Wiki (0)   🛖  Sh
 
- b0   p1 task     🪒  Root B shaving
-
-
+No tasks.
 
 
-Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  E

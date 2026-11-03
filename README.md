@@ -163,6 +163,9 @@ auto-refreshes when the files change underneath it, so it stays in sync if you
 (or an agent) edit yaks from elsewhere. It takes the mouse too (wheel scroll,
 click to select / open / switch view). Mark rows with `m` for a bulk state
 change over the selection; `a` answers a yak awaiting a human, or else requests agent work on it (both hand it to an agent: `needs: agent`), and `Q` asks a question;
+`/` is one global query: it follows you from tab to tab, matches pages and
+sources by their text too, and shows on the tab row with its count in the
+**All** view (every yak, then every page and source);
 and an **Inbox** view lists every yak with a `needs` value, each flagged inline
 with a ⏳ badge and a warning accent (awaiting a human) or a ✅ badge (answered or
 requested, awaiting an agent). A **Wiki** tab lists the farm's pages and

@@ -373,7 +373,7 @@ static BINDINGS: &[Binding] = &[
     bind_row(Yak, &[c('m')], YakMark, "Mark / unmark row (multi-select)", NoHint),
     bind_row(Yak, &[c('v')], ViewPick, "View picker", hint("v:views")),
     bind_row(Yak, &[c('V')], ViewSave, "Save filter as view", NoHint),
-    bind(List, &[k(Esc)], ViewRevert, "Revert filter to the active view", NoHint),
+    bind(List, &[k(Esc)], ViewRevert, "Clear the search, then revert the filter to the active view", NoHint),
     bind_row(Yak, &[c('c')], YakNew, "New root yak", hint("c/C:new")),
     bind_row(Yak, &[c('C')], YakNewChild, "New child yak", NoHint),
     bind_row(Yak, &[c('E')], YakEdit, "Edit: the form", hint("E:edit")),
@@ -391,7 +391,7 @@ static BINDINGS: &[Binding] = &[
     bind_row(Yak, &[c('A')], YakAttach, "Attach artifact", NoHint),
     bind_row(Yak, &[c('*')], YakStar, "Star / unstar (Starred view)", NoHint),
     bind_row(Yak, &[c('y')], RowCopy, "Copy yak id to clipboard", NoHint),
-    bind_row(Yak, &[c('/')], SearchOpen, "Inline search", NoHint),
+    bind_row(Yak, &[c('/')], SearchOpen, "Search every view; Esc clears", NoHint),
     bind(List, &[c('#')], NavGoto, "Go to any yak by id / title", NoHint),
     bind_row(Yak, &[c('B')], YakBackrefs, "Find references: yaks that point at this one", NoHint),
     bind_row(Yak, &[c('f')], FilterDrawer, "Filter drawer", Hint::Filter),
@@ -492,7 +492,7 @@ static BINDINGS: &[Binding] = &[
     bind_row(Doc, &[c('l'), k(Right), k(Enter)], PaneOpen, "Open in the viewer: frontmatter above the body; a source with its extracted text", hint("Enter:open")),
     bind_row(Doc, &[c('E')], WikiEdit, "Edit the page: frontmatter (YAML) and body; Ctrl-S saves", hint("E:edit")),
     bind_row(Doc, &[c('N')], WikiNew, "New page: type its path (wiki/... or <herd>/wiki/...), then its body", hint("N:new page")),
-    bind_row(Doc, &[c('/')], SearchOpen, "Search titles, paths, kinds and tags (Esc clears)", hint("/:search")),
+    bind_row(Doc, &[c('/')], SearchOpen, "Search every view; Esc clears", hint("/:search")),
     bind_row(Doc, &[c('y')], RowCopy, "Copy the path", hint("y:copy path")),
     bind_row(Doc, &[c('r')], ListRefresh, "Reread the pages (also on any farm change)", hint("r:reread")),
     bind_row(Doc, &[c('v')], ViewPick, "", NoHint),
@@ -504,7 +504,7 @@ static BINDINGS: &[Binding] = &[
     // -- repeat theirs only so that the bottom hint is the Sheds' own.
     bind_row(Shed, &[c('l'), k(Right), k(Enter)], PaneOpen, "Show the shed: where its code is, its shaving, asking and recent yaks", hint("l:detail")),
     bind_row(Shed, &[c(' ')], TreeToggle, "Collapse / expand the shed's yaks", NoHint),
-    bind_row(Shed, &[c('/')], SearchOpen, "Search the sheds' names and yaks (Esc clears)", hint("/:search")),
+    bind_row(Shed, &[c('/')], SearchOpen, "Search every view; Esc clears", hint("/:search")),
     bind_row(Shed, &[c('y')], RowCopy, "Copy the shed's name", hint("y:copy name")),
     bind_row(Shed, &[c('r')], ListRefresh, "Rescan now (auto every 10 s)", hint("r:rescan")),
     bind_row(Shed, &[c('v')], ViewPick, "View picker", hint("v:views")),
@@ -564,7 +564,7 @@ fn hint_for(ctx: Ctx, kind: Option<RowKind>, filter_hint: &str) -> String {
 }
 
 pub(crate) fn help_hint(app: &App) -> String {
-    let filter_hint = if app.filter.content_active() {
+    let filter_hint = if app.filter.content_active() || app.query.is_some() {
         "f:filter  Esc:clear"
     } else {
         "f:filter  /:search"

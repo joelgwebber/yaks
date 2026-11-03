@@ -122,19 +122,28 @@ impl App {
         &self.views[self.view]
     }
 
+    /// Whether a yak passes the query (all of them without one).
+    pub(crate) fn query_keeps(&self, t: &Task) -> bool {
+        self.query
+            .as_deref()
+            .is_none_or(|q| tree::query_matches(tree::Item::Yak(t), q))
+    }
+
     /// Count for a view: non-ghost tree rows of its own spec, or working-set
-    /// membership. Independent of the live filter (a stable per-view size).
+    /// membership, of what the query keeps. Independent of the live facets (a
+    /// stable per-view size).
     pub(crate) fn view_count(&self, v: &view::View) -> usize {
         if v.key == "working-set" {
             return self
                 .working_set
                 .iter()
-                .filter(|id| self.task(id).is_some())
+                .filter_map(|id| self.task(id))
+                .filter(|t| self.query_keeps(t))
                 .count();
         }
         // The Sheds tab counts busy sheds, not yaks.
         if v.key == view::SHEDS_KEY {
-            return self.sheds.snapshot.as_ref().map_or(0, |s| s.busy());
+            return self.busy_sheds_count();
         }
         // The Wiki tab counts pages, not yaks.
         if v.key == view::WIKI_KEY {
@@ -151,14 +160,29 @@ impl App {
             let n = self
                 .all
                 .iter()
-                .filter(|t| (want_dead || t.status != Status::Dead) && v.spec.matches(t, &resolved))
+                .filter(|t| {
+                    (want_dead || t.status != Status::Dead)
+                        && v.spec.matches(t, &resolved)
+                        && self.query_keeps(t)
+                })
                 .count();
-            return v.limit.map_or(n, |l| n.min(l));
+            let n = v.limit.map_or(n, |l| n.min(l));
+            // The All view also holds every document.
+            return if v.key == view::ALL_KEY {
+                n + self.docs_matching_query().count()
+            } else {
+                n
+            };
         }
-        tree::build(&self.all, &v.spec, self.resolved_family_scope(v))
-            .iter()
-            .filter(|r| !r.ghost)
-            .count()
+        tree::build(
+            &self.all,
+            &v.spec,
+            self.query.as_deref(),
+            self.resolved_family_scope(v),
+        )
+        .iter()
+        .filter(|r| !r.ghost)
+        .count()
     }
 
     /// Hairy tasks with at least one unresolved dependency (the blocked set;
@@ -187,6 +211,7 @@ impl App {
         self.working_set
             .iter()
             .filter_map(|id| self.task(id))
+            .filter(|t| self.query_keeps(t))
             .map(tree::Row::leaf)
             .collect()
     }
@@ -203,7 +228,9 @@ impl App {
             .all
             .iter()
             .filter(|t| {
-                (want_dead || t.status != Status::Dead) && self.filter.matches(t, &resolved)
+                (want_dead || t.status != Status::Dead)
+                    && self.filter.matches(t, &resolved)
+                    && self.query_keeps(t)
             })
             .collect();
         let sort_by = v.sort_by.unwrap_or(view::SortField::Updated);
@@ -214,7 +241,26 @@ impl App {
         if let Some(lim) = v.limit {
             matched.truncate(lim);
         }
-        matched.into_iter().map(tree::Row::leaf).collect()
+        let mut rows: Vec<tree::Row<'_>> = matched.into_iter().map(tree::Row::leaf).collect();
+        // The All view lists the documents after the yaks, unless a facet was
+        // narrowed: a document has none of a yak's, so it would not match.
+        if v.key == view::ALL_KEY && self.facets_are_the_views() {
+            rows.extend(self.wiki_rows().into_iter().map(tree::Row::doc));
+        }
+        rows
+    }
+
+    /// Whether the live filter still has the active view's facets, apart from
+    /// its search (which documents match too). The All view shows documents
+    /// only then: a type, priority, status or readiness facet describes yaks.
+    fn facets_are_the_views(&self) -> bool {
+        let (mut live, mut saved) = (self.filter.clone(), self.active_view().spec.clone());
+        live.search = None;
+        saved.search = None;
+        spec_eq(&live, &saved)
+            && live.needs_only == saved.needs_only
+            && live.run_on == saved.run_on
+            && same_set(&live.herds, &saved.herds)
     }
 
     /// Visible rows for the active view (dispatch: working-set / flat / tree),
@@ -258,7 +304,7 @@ impl App {
             return self.flat_rows();
         }
         let scope = self.resolved_family_scope(v);
-        let flat = tree::build(&self.all, &self.filter, scope);
+        let flat = tree::build(&self.all, &self.filter, self.query.as_deref(), scope);
         tree::apply_collapse(flat, &self.collapsed)
     }
 

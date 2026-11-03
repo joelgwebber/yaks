@@ -386,6 +386,7 @@ mod tests {
                 "recent",
                 "inbox",
                 "working-set",
+                "all",
             ]
         );
         assert_eq!(out.len(), default_views().len());

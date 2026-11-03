@@ -167,24 +167,17 @@ impl App {
         let by_id: std::collections::HashMap<&str, &Task> =
             self.all.iter().map(|t| (t.id.as_str(), t)).collect();
         let resolved = filter::resolved_ids(&self.all);
-        let active = self.filter.content_active();
-        let search = self
-            .filter
-            .search
-            .as_deref()
-            .filter(|q| !q.is_empty())
-            .map(str::to_lowercase);
+        let active = self.filter.content_active() || self.query.is_some();
         let mut out = Vec::new();
         for shed in snap.sheds() {
             let kids: Vec<&Task> = shed
                 .rows()
                 .into_iter()
                 .filter_map(|(_, y)| by_id.get(y.id.as_str()).copied())
-                .filter(|t| !active || self.filter.matches(t, &resolved))
+                .filter(|t| !active || (self.filter.matches(t, &resolved) && self.query_keeps(t)))
                 .collect();
-            let named = search
-                .as_deref()
-                .is_some_and(|q| shed.name.to_lowercase().contains(q));
+            let named =
+                self.searches().next().is_some() && self.search_keeps(tree::Item::Shed(shed));
             if active && kids.is_empty() && !named {
                 continue;
             }
@@ -267,13 +260,35 @@ impl App {
         format!("sheds={n} \u{b7} shed={shed}")
     }
 
-    /// The tab's count: sheds wanting a look right now, `…` before the
-    /// first scan.
+    /// The tab's count: sheds wanting a look right now that the query keeps
+    /// (by name, or through a yak of theirs), `…` before the first scan.
     pub(crate) fn sheds_count_label(&self) -> String {
         match &self.sheds.snapshot {
-            Some(s) => format_count(s.busy()),
+            Some(_) => format_count(self.busy_sheds_count()),
             None => "\u{2026}".into(),
         }
+    }
+
+    /// Busy sheds (see [`Snapshot::busy`]) the query keeps: one stays when its
+    /// name matches or any yak it touched does (the tree rule of `shed_rows`).
+    pub(crate) fn busy_sheds_count(&self) -> usize {
+        let Some(snap) = &self.sheds.snapshot else {
+            return 0;
+        };
+        let Some(q) = self.query.as_deref() else {
+            return snap.busy();
+        };
+        snap.sheds()
+            .iter()
+            .filter(|s| !s.quiet())
+            .filter(|s| {
+                tree::query_matches(tree::Item::Shed(s), q)
+                    || s.rows().into_iter().any(|(_, y)| {
+                        self.task(&y.id)
+                            .is_some_and(|t| tree::query_matches(tree::Item::Yak(t), q))
+                    })
+            })
+            .count()
     }
 
     /// The tab row's right-hand slot on the Sheds tab.
@@ -883,6 +898,22 @@ mod tests {
         assert!(draw(&app, 120, 14).contains("No shed or yak matches"));
         app.filter.search = None;
         assert_eq!(row_names(&app).len(), 13);
+    }
+
+    #[test]
+    fn the_query_filters_the_rows_and_the_count_of_busy_sheds() {
+        let mut app = shed_farm();
+        app.query = Some("mouse".into());
+        assert_eq!(row_names(&app), ["shed:walk-1", "mem-99d0"]);
+        let v = app.active_view().clone();
+        // walk-1 is busy and has the matching yak; no other shed has one.
+        assert_eq!(app.view_count(&v), 1);
+        assert_eq!(app.sheds_count_label(), "1");
+        app.query = Some("no such thing".into());
+        assert_eq!(app.view_count(&v), 0);
+        // The name alone keeps a busy shed (and counts it).
+        app.query = Some("tex-1".into());
+        assert_eq!(app.view_count(&v), 1);
     }
 
     #[test]

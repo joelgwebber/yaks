@@ -137,7 +137,7 @@ pub(crate) enum Overlay {
     BlockEdit(BlockEdit),
     /// A filter-as-you-type task picker (dependencies, reparent).
     Fuzzy(FuzzyPick),
-    /// Inline incremental search: edits `App.filter.search` live.
+    /// Inline incremental search: edits `App.query` live.
     Search(SearchBox),
     /// The multi-row filter drawer (chips + text facets).
     Drawer(Drawer),
@@ -307,6 +307,11 @@ pub struct App {
     /// (yaks awaiting a human) is just `FilterSpec::needs_only` on this filter
     /// — surfaced via the Inbox view and the drawer's `inbox` chip, not a mode.
     filter: FilterSpec,
+    /// The global query `/` edits (design §4): what every view's rows and
+    /// counts also match ([`tree::query_matches`]), kept across view switches
+    /// and apart from the view's facets, so it never marks a tab modified.
+    /// `Esc` on a list clears it before it reverts the facets. Never `Some("")`.
+    query: Option<String>,
     /// Approx. list viewport height, refreshed each loop for paging math.
     page: u16,
     /// Approx. detail viewport height (mid area = terminal height - 3),
@@ -415,6 +420,7 @@ impl App {
             collapsed: HashSet::new(),
             family_scope: HashMap::new(),
             filter,
+            query: None,
             page: 10,
             detail_page: 10,
             detail_width: Cell::new(0),

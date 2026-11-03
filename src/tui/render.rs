@@ -555,6 +555,9 @@ pub(crate) fn render_tabs(app: &App, frame: &mut Frame, area: Rect) {
         spans.push(Span::styled(text, style));
         spans.push(Span::raw(" "));
     }
+    if let Some(chip) = query_chip(app) {
+        spans.push(Span::styled(chip, Style::new().fg(Color::Cyan)));
+    }
     if app.is_view_modified() {
         spans.push(Span::styled(
             format!(" filter: {}", filter_summary(&app.filter)),
@@ -1583,6 +1586,21 @@ fn link_hint(app: &App, width: usize) -> Option<String> {
     };
     let dest = super::linenav::link_dest(jump.target)?;
     Some(truncate_disp(&format!("→ {dest}"), width))
+}
+
+/// The tab row's query chip, apart from the facets' `filter:` chip:
+/// `/"widget" · 14 in All`, where 14 is what the All view holds that matches.
+/// `None` without a query.
+fn query_chip(app: &App) -> Option<String> {
+    let q = app.query.as_deref()?;
+    let shown = truncate_disp(q, 30);
+    let in_all = app
+        .views
+        .iter()
+        .find(|v| v.key == view::ALL_KEY)
+        .map(|v| format!(" \u{b7} {} in All", format_count(app.view_count(v))))
+        .unwrap_or_default();
+    Some(format!(" /\"{shown}\"{in_all} "))
 }
 
 /// One-line description of the active content facets (for the status line).

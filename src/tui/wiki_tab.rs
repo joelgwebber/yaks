@@ -12,8 +12,8 @@
 //! ([`tree::Item::Doc`], from [`App::build_rows`]): the list's own cursor,
 //! rendering and key dispatch serve it, and its keys are the `Doc` bindings of
 //! `keymap`. Yak keys find no yak there and do nothing. `/` is the yak tabs'
-//! inline search: it edits the live filter's `search`, which
-//! [`App::wiki_rows`] matches against a row's title, path, kind and tags.
+//! inline search: it edits the global query, which [`App::wiki_rows`] matches
+//! against a document's title, path, kind and tags and its text.
 
 #[cfg(test)]
 use super::handlers::DocKind;
@@ -34,6 +34,11 @@ pub(crate) struct WikiEntry {
     pub kind: String,
     pub tags: Vec<String>,
     pub source: bool,
+    /// What the query searches besides the fields above, lowercased once
+    /// here (matching is case-insensitive): a page's file (frontmatter and
+    /// body), a source's `source.md` and extracted text, as `yaks find` reads
+    /// them. Held in memory for every document, so a query costs no reads.
+    pub text: String,
 }
 
 impl WikiEntry {
@@ -44,14 +49,6 @@ impl WikiEntry {
         } else {
             &self.path
         }
-    }
-
-    fn matches(&self, q: &str) -> bool {
-        let q = q.to_lowercase();
-        [self.title.as_str(), self.path.as_str(), self.kind.as_str()]
-            .into_iter()
-            .chain(self.tags.iter().map(String::as_str))
-            .any(|s| s.to_lowercase().contains(&q))
     }
 }
 
@@ -74,16 +71,22 @@ pub(crate) fn read_entries(root: &Path) -> Result<Vec<WikiEntry>> {
             title: p.title(),
             kind: p.kind(),
             tags: p.tags(),
+            text: p.render().to_lowercase(),
             path: p.path,
             source: false,
         })
         .collect();
-    out.extend(sources::list(root).into_iter().map(|s| WikiEntry {
-        path: format!("{}/source.md", s.dir),
-        title: s.title,
-        kind: "source".into(),
-        tags: Vec::new(),
-        source: true,
+    out.extend(sources::list(root).into_iter().map(|s| {
+        let read =
+            |name: &str| std::fs::read_to_string(root.join(&s.dir).join(name)).unwrap_or_default();
+        WikiEntry {
+            text: format!("{}\n{}", read("source.md"), read("extracted.md")).to_lowercase(),
+            path: format!("{}/source.md", s.dir),
+            title: s.title,
+            kind: "source".into(),
+            tags: Vec::new(),
+            source: true,
+        }
     }));
     Ok(out)
 }
@@ -122,26 +125,46 @@ impl App {
         }
     }
 
-    /// The entries the live search keeps, in display order: the Wiki view's
+    /// The searches a row must match: the query, and the view's own search
+    /// when it has one (the drawer's search row, a saved view's). Documents and
+    /// sheds have no other content facet; a yak's own search is `filter.matches`.
+    pub(crate) fn searches(&self) -> impl Iterator<Item = &str> {
+        [self.query.as_deref(), self.filter.search.as_deref()]
+            .into_iter()
+            .flatten()
+            .filter(|q| !q.is_empty())
+    }
+
+    /// Whether `item` (a document or a shed) matches every active search.
+    pub(crate) fn search_keeps(&self, item: tree::Item<'_>) -> bool {
+        self.searches().all(|q| tree::query_matches(item, q))
+    }
+
+    /// The entries the live searches keep, in display order: the Wiki view's
     /// rows ([`App::build_rows`] wraps each in a [`tree::Row`]).
     pub(crate) fn wiki_rows(&self) -> Vec<&WikiEntry> {
-        let q = self.filter.search.as_deref().filter(|q| !q.is_empty());
         self.wiki
             .entries
             .iter()
             .flatten()
-            .filter(|e| q.is_none_or(|q| e.matches(q)))
+            .filter(|e| self.search_keeps(tree::Item::Doc(e)))
             .collect()
     }
 
-    /// The tab's count: every page (sources not counted), whatever the search.
-    pub(crate) fn wiki_count(&self) -> usize {
+    /// The documents the query keeps (all of them without one), pages first as
+    /// read: the part of the All view's count and rows that is not yaks.
+    pub(crate) fn docs_matching_query(&self) -> impl Iterator<Item = &WikiEntry> {
+        let q = self.query.as_deref();
         self.wiki
             .entries
             .iter()
             .flatten()
-            .filter(|e| !e.source)
-            .count()
+            .filter(move |e| q.is_none_or(|q| tree::query_matches(tree::Item::Doc(e), q)))
+    }
+
+    /// The tab's count: the pages (sources not counted) the query keeps.
+    pub(crate) fn wiki_count(&self) -> usize {
+        self.docs_matching_query().filter(|e| !e.source).count()
     }
 
     /// Enter / l: open the selected page or source in the viewer.
@@ -550,9 +573,18 @@ mod tests {
         let titles: Vec<&str> = app.wiki_rows().iter().map(|e| e.title.as_str()).collect();
         assert_eq!(
             titles,
-            vec!["Full-text search", "Vector search in Postgres"]
+            // The source's extracted text says "search" too.
+            vec![
+                "Full-text search",
+                "Vector search in Postgres",
+                "pgvector README"
+            ]
         );
-        assert_eq!(app.wiki_count(), 4, "the count stays the page count");
+        assert_eq!(
+            app.wiki_count(),
+            2,
+            "the count is the pages the query keeps"
+        );
         // A tag matches too (Esc first: `/` reopens seeded with the query).
         esc_key(&mut app);
         press(&mut app, "/tui");

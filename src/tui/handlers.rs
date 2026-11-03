@@ -762,7 +762,7 @@ impl App {
     }
 
     pub(crate) fn open_search(&mut self) {
-        let cur = self.filter.search.clone();
+        let cur = self.query.clone();
         self.overlay = Overlay::Search(SearchBox::new(self.editor_vim, cur));
     }
 
@@ -791,9 +791,13 @@ impl App {
         }
     }
 
-    /// Esc on the list: drop the edits to the active view's filter.
+    /// Esc on the list: clear the query first, then drop the edits to the
+    /// active view's facets.
     pub(crate) fn revert_list_view(&mut self) {
-        if self.is_view_modified() {
+        if self.query.take().is_some() {
+            self.clamp_cursor();
+            self.notification = Some("search cleared".into());
+        } else if self.is_view_modified() {
             self.revert_filter_to_view();
             self.notification = Some("reverted to view".into());
         }
@@ -1788,7 +1792,7 @@ impl App {
             }
             return;
         }
-        // Inline search: every keystroke edits the live filter for instant
+        // Inline search: every keystroke edits the global query for instant
         // preview; Enter keeps it, Esc restores the pre-search query.
         if matches!(self.overlay, Overlay::Search(_)) {
             if self.field_cancel(k, double_esc) {
@@ -1796,7 +1800,7 @@ impl App {
                     Overlay::Search(sb) => sb.saved.clone(),
                     _ => None,
                 };
-                self.filter.search = saved;
+                self.query = saved;
                 self.overlay = Overlay::None;
                 self.clamp_cursor();
                 self.notification = Some("search cleared".into());
@@ -1806,7 +1810,7 @@ impl App {
                     _ => String::new(),
                 };
                 self.overlay = Overlay::None;
-                // A kept query is already visible as the filter chip; only the
+                // A kept query is already visible as its chip; only the
                 // empty commit (which clears it) says anything.
                 if q.is_empty() {
                     self.notification = Some("search cleared".into());
@@ -1819,7 +1823,7 @@ impl App {
                     Overlay::Search(sb) => sb.query_text(),
                     _ => String::new(),
                 };
-                self.filter.search = if q.is_empty() { None } else { Some(q) };
+                self.query = if q.is_empty() { None } else { Some(q) };
                 self.clamp_cursor();
             }
             return;

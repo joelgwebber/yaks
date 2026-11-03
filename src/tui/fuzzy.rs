@@ -56,12 +56,12 @@ pub(crate) enum FuzzyAction {
     Goto,
 }
 
-/// Inline incremental search box. Editing it updates `App.filter.search` on
-/// every keystroke (live preview); Esc restores the pre-search query.
+/// Inline incremental search box. Editing it updates `App.query` on every
+/// keystroke (live preview); Esc restores the pre-search query.
 pub(crate) struct SearchBox {
     pub(crate) query: RefCell<EditorState>,
     pub(crate) handler: EditorEventHandler,
-    /// The `filter.search` value before opening, restored on cancel.
+    /// The `App.query` value before opening, restored on cancel.
     pub(crate) saved: Option<String>,
     /// Detail-find only: `(detail_scroll, detail_line)` captured when the find
     /// opened, restored on cancel so Esc returns to the pre-find position

@@ -45,6 +45,30 @@ impl Item<'_> {
     }
 }
 
+/// Whether `item` matches the query `q` (case-insensitive substring), the one
+/// rule every view applies (design decision 6: what `yaks find` searches):
+///
+/// - a yak: its id, title and body (the notes are in the body);
+/// - a document: its title, path, kind and tags, and its text (a page's file,
+///   a source's `source.md` and extracted text: [`WikiEntry::text`]);
+/// - a shed: its name. A shed also stays when a yak of it matches; that is the
+///   tree rule, applied where the shed's rows are built.
+pub fn query_matches(item: Item<'_>, q: &str) -> bool {
+    let q = q.to_lowercase();
+    let has = |s: &str| s.to_lowercase().contains(&q);
+    match item {
+        Item::Yak(t) => has(&t.id) || has(&t.title) || has(&t.body),
+        Item::Doc(e) => {
+            has(&e.title)
+                || has(&e.path)
+                || has(&e.kind)
+                || e.tags.iter().any(|t| has(t))
+                || e.text.contains(&q)
+        }
+        Item::Shed(s) => has(&s.name),
+    }
+}
+
 /// The key of a shed in the `collapsed` set: it cannot collide with a yak id
 /// (ids have no colon).
 pub fn shed_collapse_key(name: &str) -> String {
@@ -145,7 +169,14 @@ fn cmp_child(a: &Task, b: &Task) -> Ordering {
 /// their family is dimmed context. With a content filter, matches anywhere in
 /// that family become the focus and non-matching ancestors are dimmed to root
 /// them; everything else is pruned. Mirrors Python `tree.build_tree`.
-pub fn build<'a>(all: &'a [Task], spec: &FilterSpec, farm: FamilyScope) -> Vec<Row<'a>> {
+/// The global `query`, when set, is one more content filter: a yak must match
+/// it as well as the spec.
+pub fn build<'a>(
+    all: &'a [Task],
+    spec: &FilterSpec,
+    query: Option<&str>,
+    farm: FamilyScope,
+) -> Vec<Row<'a>> {
     let by_id: HashMap<&str, &Task> = all.iter().map(|t| (t.id.as_str(), t)).collect();
 
     let mut children_of: HashMap<&str, Vec<&str>> = HashMap::new();
@@ -209,12 +240,15 @@ pub fn build<'a>(all: &'a [Task], spec: &FilterSpec, farm: FamilyScope) -> Vec<R
 
     // Seeds (the bright focus): content matches anywhere in the family when a
     // filter is active, else the anchors themselves.
-    let focus: HashSet<&str> = if spec.content_active() {
+    let focus: HashSet<&str> = if spec.content_active() || query.is_some() {
         let resolved = filter::resolved_ids(all);
         universe
             .iter()
             .copied()
-            .filter(|&tid| spec.matches(by_id[tid], &resolved))
+            .filter(|&tid| {
+                spec.matches(by_id[tid], &resolved)
+                    && query.is_none_or(|q| query_matches(Item::Yak(by_id[tid]), q))
+            })
             .collect()
     } else {
         anchors.clone()
@@ -405,7 +439,7 @@ mod tests {
             statuses: vec![Status::Hairy],
             ..Default::default()
         };
-        let flat = build(&all, &spec, FamilyScope::All);
+        let flat = build(&all, &spec, None, FamilyScope::All);
         assert_eq!(flat.len(), 3);
         let collapsed: HashSet<String> = ["a".to_string()].into_iter().collect();
         let vis = apply_collapse(flat, &collapsed);
@@ -432,7 +466,7 @@ mod tests {
             search: Some("needle".into()),
             ..Default::default()
         };
-        let flat = build(&all, &spec, FamilyScope::All);
+        let flat = build(&all, &spec, None, FamilyScope::All);
         let ids: Vec<&str> = flat.iter().map(|r| r.yak().unwrap().id.as_str()).collect();
         assert_eq!(ids, vec!["a", "a1", "a2"]); // b pruned
         let ghost = |id: &str| {
@@ -459,7 +493,7 @@ mod tests {
             ..Default::default()
         };
         let ids = |scope| {
-            let mut v: Vec<String> = build(&all, &spec, scope)
+            let mut v: Vec<String> = build(&all, &spec, None, scope)
                 .iter()
                 .map(|r| r.yak().unwrap().id.clone())
                 .collect();
@@ -484,7 +518,7 @@ mod tests {
             statuses: vec![Status::Hairy],
             ..Default::default()
         };
-        let flat = build(&all, &spec, FamilyScope::Remaining);
+        let flat = build(&all, &spec, None, FamilyScope::Remaining);
         let mut ids: Vec<String> = flat.iter().map(|r| r.yak().unwrap().id.clone()).collect();
         ids.sort();
         assert_eq!(ids, vec!["a", "b", "c"]);
@@ -514,7 +548,7 @@ mod tests {
             search: Some("needle".into()),
             ..Default::default()
         };
-        let flat = build(&all, &spec, FamilyScope::Remaining);
+        let flat = build(&all, &spec, None, FamilyScope::Remaining);
         let ids: Vec<&str> = flat.iter().map(|r| r.yak().unwrap().id.as_str()).collect();
         assert_eq!(ids, vec!["a", "a1"]);
         let ghost = |id: &str| {

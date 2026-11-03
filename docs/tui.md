@@ -9,7 +9,8 @@ interchangeable.
 - **List pane** — the yaks in the active *view*, as a tree or flat list.
   Views are tabs across the top (`Tab`/`[`/`]` to switch). Built-in views
   include the default tree, **Recent**, **Inbox** (yaks with a `needs` value: awaiting a human, or answered or requested and
-  awaiting an agent), and
+  awaiting an agent), **All** (every yak, dead ones too, then every page and
+  source; unpinned, from `v`) and
   **Starred**; you can save the current filter as a named view. The
   **Wiki** tab lists the farm's pages and sources (see [Wiki tab](#wiki-tab)),
   and the **Sheds** tab is a tree of the farm's workers (actors) with the yaks
@@ -42,8 +43,11 @@ interchangeable.
   does not notice a commit or push made elsewhere until then (the interval sync
   below is what brings it up to date). The family label
   and notifications sit just left of it. A notification lasts until the next key
-  or mouse event; a search kept with `Enter` shows no notification (the filter is
+  or mouse event; a search kept with `Enter` shows no notification (its chip is
   its own indicator), only clearing it does (`search cleared`).
+- **Query chip** — while a `/` search is kept, the tab row shows it beside the
+  tabs, in cyan and apart from the facets' `filter:` chip:
+  `/"widget" · 14 in All`, where 14 is what the All view holds that matches.
 - **Recurring yaks** — on load and on each sync tick (`sync_interval`, also
   when there is no remote to sync) the TUI runs `yaks regrow-due`: a shorn yak
   with `every:` whose next occurrence has arrived is hairy again, with a
@@ -236,11 +240,20 @@ known follow-up). A malformed svg opens with the OS opener.
 never interpreted as vim Normal-mode commands, newlines flattened to spaces in
 single-line fields. A paste with no text field focused is ignored.
 
-**Search & filter** — `/` inline search; `#` go to any yak (list or detail pane:
+**Search & filter** — `/` searches every view: the **query** is global, not
+part of a view's filter. It stays when you switch tabs (it never puts the `*`
+on one), every tab's count and list apply it, and it is what a saved view's own
+search (the drawer's search row) must also match. It matches the way `yaks find`
+searches: a yak's id, title and description and notes; a page's file
+(frontmatter and body) and a source's `source.md` and extracted text, on top of
+its title, path, kind and tags; a shed's name, or one of its yaks (a tree keeps
+the ancestors of a match). `Esc` on a list clears the query first; the next `Esc`
+reverts the facets to the view. `V` saves the facets (the drawer's search row),
+not the query. `#` go to any yak (list or detail pane:
 a picker over every yak — type an id fragment like `a1b2`, the full id, or
 title words, then `Enter` opens its detail, switching to its view and recording
-the jump so `o` comes back); `f` filter drawer; `Esc` revert filter to the
-active view.
+the jump so `o` comes back); `f` filter drawer; `Esc` clear the query, then
+revert the filter to the active view.
 
 **Wiki tab** — its rows are documents, not yaks: the movement keys above work,
 and a document row has its own keys (the yak keys do nothing there):
@@ -248,7 +261,7 @@ and a document row has its own keys (the yak keys do nothing there):
 | Key | Action |
 |---|---|
 | `l` / `→` / `Enter` | Open the page or source in the viewer (it navigates like the detail pane) |
-| `/` | Search titles, paths, kinds and tags; `Esc` clears it |
+| `/` | Search every view (a page's body and a source's text too); `Esc` clears it |
 | `E` | Edit the page in place (also `E` in its viewer): frontmatter and body in one editor, `Ctrl-S` saves |
 | `N` | New page: type its path, then write its body |
 | `y` | Copy the path |
@@ -262,7 +275,7 @@ these:
 | `j` / `k`, `g` / `G`, `d` / `u` | Move over the rows (a shed, then its yaks) |
 | `l` / `→` / `Enter` | Show the shed: where its code is, what it is shaving, asking and wrote recently (on a yak row: the yak, as anywhere) |
 | `Space` | Collapse / expand the shed's yaks |
-| `/` | Search shed names and their yaks; `Esc` clears it |
+| `/` | Search every view (a shed by name or by a yak of it); `Esc` clears it |
 | `y` | Copy the shed's name (also in its pane) |
 | `r` | Rescan now (also in the shed's pane) |
 | `J` / `K` | (pane) Next / previous row, shed or yak |
@@ -406,6 +419,12 @@ the full source lines.
 
 ![yaks TUI inbox view](assets/tui-inbox.svg)
 
+**All** — a flat list of everything the farm holds: every yak (dead ones
+included), newest change first, then every page and source in the Wiki tab's
+order. It is unpinned too (reach it from `v`), and its count is the number in
+the query chip. Narrowing a yak facet in the drawer (a type, priority, status or
+readiness) drops the documents, which have none.
+
 **Filter drawer** (`f`) — status / type / priority chips plus tag, search,
 parent, and `ready`/`tangled`/`inbox` predicates, and — on a multi-herd farm —
 a `herd` chip row to scope to one or more herds. It composes into any view.
@@ -468,7 +487,8 @@ under `wiki/` and each herd's `<herd>/wiki/`, then every saved source under
   (`note`, `topic`, `howto`, `summary` or a typed kind; `source` for a
   source), the tags, then the path dimmed. The list is flat; the path shows
   the folder.
-- **The tab count** is the number of pages (sources are not counted).
+- **The tab count** is the number of pages (sources are not counted) the
+  query keeps.
 - **`Enter` opens the page** in the text viewer, next to the list. Its
   frontmatter shows as field rows (`type:`, `title:`, `tags:`, ...) above the
   rendered markdown body. A field the viewer can't flatten to one line (a list
@@ -494,8 +514,10 @@ under `wiki/` and each herd's `<herd>/wiki/`, then every saved source under
 
 ![Editing a page in place: its frontmatter and body in the editor](assets/tui-wiki-edit.svg)
 
-- **`/` searches** the list the way it searches yaks on the other tabs (the
-  tab gets the `*` marker and the `filter:` chip; `Esc` clears it).
+- **`/` searches** the list with the global query, the same one every tab
+  applies (its chip is on the tab row; `Esc` clears it). It matches a row's
+  title, path, kind and tags and the text behind it: a page's frontmatter and
+  body, a source's `source.md` and extracted text.
 - **Refresh**: the list is reread whenever the farm is (at startup, after a TUI
   change, and when files under the farm change), and on `r`.
 
@@ -534,7 +556,7 @@ functions produce it).
 - **Search**: `/` keeps the yaks that match and the sheds that have one, or
   whose name matches (then with no yaks below it unless some match).
 - **The tab count** is the number of sheds that want a look now (active, stale,
-  or asking), whatever the search.
+  or asking) that the query keeps.
 - **The shed's pane** (`l` on a shed row) starts with where the shed's code is,
   when its latest `checkpoint` note names a branch (`branch work/walk-1 @
   47076b0 (9m ago)`, read from the note, never fetched; `yaks commits <id>

@@ -795,7 +795,11 @@ fn inline_search_updates_filter_live() {
     let mut app = sample();
     handle_key(&mut app, key('/'));
     typ(&mut app, "child");
-    assert_eq!(app.filter.search.as_deref(), Some("child"));
+    assert_eq!(app.query.as_deref(), Some("child"));
+    assert!(
+        app.filter.search.is_none(),
+        "the view's own search is untouched"
+    );
     let ids: Vec<&str> = app
         .rows()
         .iter()
@@ -805,10 +809,10 @@ fn inline_search_updates_filter_live() {
     // Enter keeps the filter.
     handle_key(&mut app, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
     assert!(matches!(app.overlay, Overlay::None));
-    assert_eq!(app.filter.search.as_deref(), Some("child"));
-    // Esc in the list clears the active filter.
+    assert_eq!(app.query.as_deref(), Some("child"));
+    // Esc in the list clears the query.
     handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
-    assert!(!app.filter.content_active());
+    assert!(app.query.is_none());
 }
 
 #[test]
@@ -817,13 +821,13 @@ fn inline_search_ctrl_c_restores_previous() {
     let mut app = sample();
     handle_key(&mut app, key('/'));
     typ(&mut app, "zzz");
-    assert_eq!(app.filter.search.as_deref(), Some("zzz"));
+    assert_eq!(app.query.as_deref(), Some("zzz"));
     handle_key(
         &mut app,
         KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
     );
     assert!(matches!(app.overlay, Overlay::None));
-    assert!(app.filter.search.is_none());
+    assert!(app.query.is_none());
 }
 
 #[test]
@@ -837,7 +841,7 @@ fn inline_search_esc_enters_normal_in_vim() {
     if let Overlay::Search(sb) = &app.overlay {
         assert_eq!(sb.query.borrow().mode, EditorMode::Normal);
     }
-    assert_eq!(app.filter.search.as_deref(), Some("zz"));
+    assert_eq!(app.query.as_deref(), Some("zz"));
 }
 
 #[test]
@@ -1286,7 +1290,7 @@ fn starred_marker_and_tab_bar() {
 #[test]
 fn default_views_and_tab_cycling() {
     let mut app = sample();
-    assert_eq!(app.views.len(), 8); // 3 status + Recent + Inbox + Starred + Wiki + Sheds
+    assert_eq!(app.views.len(), 9); // 3 status + Recent + Inbox + Starred + Wiki + Sheds + All
     assert_eq!(app.view, 0);
     assert_eq!(app.filter.statuses, vec![Status::Hairy]);
     tab_key(&mut app); // -> Shaving
@@ -1328,15 +1332,15 @@ fn star_toggles_and_starred_view_lists_it() {
 
 #[test]
 fn save_view_creates_and_activates_custom_view() {
+    // `V` saves the facets, including the drawer's search row; the `/` query
+    // is the same for every view and is not part of one (yaks-a25c).
     let mut app = sample();
-    handle_key(&mut app, key('/')); // inline search
-    typ(&mut app, "child");
-    enter_key(&mut app); // keep filter (search=child)
+    set_drawer_search(&mut app, "child"); // the view's own search, not the query
     handle_key(&mut app, key('V')); // save view
     typ(&mut app, "kids");
     enter_key(&mut app); // commit name
-    assert_eq!(app.views.len(), 9);
-    assert_eq!(app.view, 8);
+    assert_eq!(app.views.len(), 10);
+    assert_eq!(app.view, 9);
     let v = app.active_view();
     assert_eq!(v.name, "kids");
     assert_eq!(v.spec.search.as_deref(), Some("child"));
@@ -1400,17 +1404,15 @@ fn picker_rename_returns_to_picker() {
 fn picker_deletes_custom_but_not_builtin() {
     let mut app = sample();
     // Create a custom view first.
-    handle_key(&mut app, key('/'));
-    typ(&mut app, "x");
-    enter_key(&mut app);
+    set_drawer_search(&mut app, "x");
     handle_key(&mut app, key('V'));
     typ(&mut app, "mine");
     enter_key(&mut app);
-    assert_eq!(app.views.len(), 9);
+    assert_eq!(app.views.len(), 10);
     // Delete it via the picker (active view is the custom one, last index).
     handle_key(&mut app, key('v'));
     handle_key(&mut app, key('d'));
-    assert_eq!(app.views.len(), 8);
+    assert_eq!(app.views.len(), 9);
     // Deleting a built-in is refused.
     handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
     handle_key(&mut app, key('v'));
@@ -1434,13 +1436,21 @@ fn picker_deletes_custom_but_not_builtin() {
 #[test]
 fn esc_reverts_modified_filter_to_view() {
     let mut app = sample();
-    handle_key(&mut app, key('/'));
-    typ(&mut app, "zzz");
-    enter_key(&mut app);
+    set_drawer_search(&mut app, "zzz");
     assert!(app.is_view_modified());
     handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
     assert!(!app.is_view_modified());
     assert_eq!(app.filter.statuses, vec![Status::Hairy]); // back to Hairy view spec
+}
+
+/// Open the filter drawer, type `text` into its search row and apply.
+fn set_drawer_search(app: &mut App, text: &str) {
+    handle_key(app, key('f'));
+    for _ in 0..4 {
+        down_key(app);
+    }
+    typ(app, text);
+    enter_key(app);
 }
 
 #[test]
@@ -3553,7 +3563,7 @@ fn paste_into_search_updates_the_live_filter() {
     let mut app = sample();
     handle_key(&mut app, key('/'));
     handle_paste(&mut app, "child\n");
-    assert_eq!(app.filter.search.as_deref(), Some("child "));
+    assert_eq!(app.query.as_deref(), Some("child "));
 }
 
 #[test]
@@ -5471,4 +5481,218 @@ fn empty_search_commit_still_says_cleared() {
     handle_key(&mut app, key('/'));
     enter_key(&mut app);
     assert_eq!(app.notification.as_deref(), Some("search cleared"));
+}
+
+/// The global query and the All view (yaks-a25c, design §4).
+mod query {
+    use super::*;
+    use crate::tui::wiki_tab::WikiEntry;
+
+    /// A farm with a dead yak and a body that only the query's body match
+    /// finds, plus a page and a source whose *text* says `widget`.
+    fn farm() -> App {
+        let mut shaving = task("w1", "Shave the widget", Status::Shaving, 2, None);
+        shaving.updated = Some("2026-01-03T00:00:00Z".into());
+        let mut hairy = task("w2", "Plain", Status::Hairy, 2, None);
+        hairy.body = "mentions the Widget in passing".into();
+        hairy.updated = Some("2026-01-02T00:00:00Z".into());
+        let mut dead = task("w3", "Dead widget", Status::Dead, 2, None);
+        dead.updated = Some("2026-01-01T00:00:00Z".into());
+        let other = task("w4", "Unrelated", Status::Shaving, 2, None);
+        let mut app = App::new(vec![shaving, hairy, dead, other]);
+        app.set_wiki_entries(vec![
+            WikiEntry {
+                path: "wiki/plan.md".into(),
+                title: "Plan".into(),
+                kind: "note".into(),
+                tags: vec![],
+                source: false,
+                text: "---\ntitle: plan\n---\n\nthe quarterly widget plan\n".into(),
+            },
+            WikiEntry {
+                path: "wiki/other.md".into(),
+                title: "Other".into(),
+                kind: "note".into(),
+                tags: vec![],
+                source: false,
+                text: "nothing here".into(),
+            },
+            WikiEntry {
+                path: "sources/2026-01-01-abcd/source.md".into(),
+                title: "A paper".into(),
+                kind: "source".into(),
+                tags: vec![],
+                source: true,
+                text: "the extracted widget text".into(),
+            },
+        ]);
+        app
+    }
+
+    fn go(app: &mut App, key: &str) {
+        let i = app.views.iter().position(|v| v.key == key).unwrap();
+        app.set_view(i);
+    }
+
+    /// `/q` Enter, replacing any query (`/` opens seeded with it).
+    fn search(app: &mut App, q: &str) {
+        app.query = None;
+        handle_key(app, key('/'));
+        typ(app, q);
+        enter_key(app);
+    }
+
+    fn ids(app: &App) -> Vec<String> {
+        app.rows()
+            .iter()
+            .map(|r| match r.item {
+                tree::Item::Yak(t) => t.id.clone(),
+                tree::Item::Doc(e) => e.path.clone(),
+                tree::Item::Shed(s) => format!("shed:{}", s.name),
+            })
+            .collect()
+    }
+
+    fn count(app: &App, key: &str) -> usize {
+        let v = app.views.iter().find(|v| v.key == key).unwrap();
+        app.view_count(v)
+    }
+
+    #[test]
+    fn the_query_survives_a_view_switch_and_does_not_mark_the_tab() {
+        let mut app = farm();
+        go(&mut app, "status:shaving");
+        search(&mut app, "widget");
+        assert_eq!(ids(&app), vec!["w1"]);
+        assert!(!app.is_view_modified(), "a query does not `*` the tab");
+        assert!(app.filter.search.is_none());
+        // Tab to the Hairy view: the query comes along and filters it.
+        handle_key(&mut app, key(']'));
+        assert_eq!(app.active_view().key, "status:shorn");
+        assert_eq!(app.query.as_deref(), Some("widget"));
+        go(&mut app, "status:hairy");
+        assert_eq!(ids(&app), vec!["w2"], "matched through the body");
+        // The query is opened again seeded with itself.
+        handle_key(&mut app, key('/'));
+        if let Overlay::Search(sb) = &app.overlay {
+            assert_eq!(sb.query_text(), "widget");
+        } else {
+            panic!("the search box should be open");
+        }
+    }
+
+    #[test]
+    fn tab_counts_apply_the_query() {
+        let mut app = farm();
+        assert_eq!(count(&app, "status:shaving"), 2);
+        assert_eq!(count(&app, "status:hairy"), 1);
+        search(&mut app, "widget");
+        assert_eq!(count(&app, "status:shaving"), 1, "w1 of w1, w4");
+        assert_eq!(count(&app, "status:hairy"), 1);
+        assert_eq!(count(&app, "recent"), 2, "Recent skips the dead yak");
+        assert_eq!(
+            count(&app, view::WIKI_KEY),
+            1,
+            "the page whose text matches"
+        );
+        let frame = draw(&app, 120, 8);
+        let tabs = frame.lines().next().unwrap();
+        assert!(tabs.contains("Shaving (1)"), "{tabs}");
+    }
+
+    #[test]
+    fn esc_clears_the_query_then_reverts_the_facets() {
+        let mut app = farm();
+        set_drawer_search(&mut app, "plain"); // the view's own facet
+        search(&mut app, "widget");
+        assert!(app.is_view_modified());
+        esc_key(&mut app);
+        assert!(app.query.is_none(), "the first Esc clears the query");
+        assert!(app.is_view_modified(), "...and leaves the facets");
+        esc_key(&mut app);
+        assert!(!app.is_view_modified(), "the second Esc reverts them");
+    }
+
+    #[test]
+    fn a_saved_views_own_search_ands_with_the_query() {
+        let mut app = farm();
+        go(&mut app, "status:hairy");
+        set_drawer_search(&mut app, "plain");
+        handle_key(&mut app, key('V'));
+        typ(&mut app, "mine");
+        enter_key(&mut app);
+        assert_eq!(app.active_view().spec.search.as_deref(), Some("plain"));
+        assert_eq!(ids(&app), vec!["w2"]);
+        search(&mut app, "zzz");
+        assert!(ids(&app).is_empty(), "both must match");
+        // w2's body has `widget`: it passes both.
+        search(&mut app, "widget");
+        assert_eq!(ids(&app), vec!["w2"]);
+        // w1 matches the query but not the view's own search.
+        search(&mut app, "shave");
+        assert!(ids(&app).is_empty());
+    }
+
+    #[test]
+    fn the_all_view_lists_dead_yaks_then_pages_and_sources() {
+        let mut app = farm();
+        go(&mut app, "all");
+        assert!(!app.active_view().pinned, "reached from `v`, not a tab");
+        assert!(app.active_view().is_flat());
+        // Yaks newest-updated first (w4 has no date: last), dead included;
+        // then every page and source in the Wiki's order.
+        assert_eq!(
+            ids(&app),
+            vec![
+                "w1",
+                "w2",
+                "w3",
+                "w4",
+                "wiki/plan.md",
+                "wiki/other.md",
+                "sources/2026-01-01-abcd/source.md"
+            ]
+        );
+        assert_eq!(count(&app, "all"), 7);
+        // Narrowing a yak facet drops the documents (a page has no priority).
+        app.filter.priorities = vec![2];
+        assert_eq!(ids(&app).len(), 4);
+    }
+
+    #[test]
+    fn a_query_matching_only_a_page_body_finds_it_on_wiki_and_all() {
+        let mut app = farm();
+        search(&mut app, "quarterly");
+        go(&mut app, view::WIKI_KEY);
+        assert_eq!(ids(&app), vec!["wiki/plan.md"]);
+        go(&mut app, "all");
+        assert_eq!(ids(&app), vec!["wiki/plan.md"]);
+        // A source is found through its extracted text.
+        search(&mut app, "extracted");
+        assert_eq!(ids(&app), vec!["sources/2026-01-01-abcd/source.md"]);
+    }
+
+    #[test]
+    fn the_chip_shows_the_query_and_the_all_count() {
+        let mut app = farm();
+        go(&mut app, "status:shaving");
+        let before = draw(&app, 130, 8);
+        assert!(!before.lines().next().unwrap().contains(" in All"));
+        search(&mut app, "widget");
+        // w1, w2 (body), w3 (dead), the page and the source.
+        assert_eq!(count(&app, "all"), 5);
+        let frame = draw(&app, 130, 8);
+        let tabs = frame.lines().next().unwrap();
+        assert!(tabs.contains("/\"widget\" \u{b7} 5 in All"), "{tabs}");
+        assert!(
+            !tabs.contains("filter:"),
+            "the facets' chip is separate: {tabs}"
+        );
+        // Facets get their own chip beside it.
+        set_drawer_search(&mut app, "shave");
+        let tabs = draw(&app, 160, 8);
+        let tabs = tabs.lines().next().unwrap();
+        assert!(tabs.contains("/\"widget\" \u{b7} 5 in All"), "{tabs}");
+        assert!(tabs.contains("filter: \u{201c}shave\u{201d}"), "{tabs}");
+    }
 }

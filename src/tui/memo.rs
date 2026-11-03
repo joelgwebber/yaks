@@ -53,6 +53,7 @@ pub(super) struct RowsKey {
     sort_dir: view::SortDir,
     limit: Option<usize>,
     filter: FilterSpec,
+    query: Option<String>,
     collapsed: HashSet<String>,
     family_scope: HashMap<String, view::FamilyScope>,
     working_set: Vec<String>,
@@ -68,6 +69,7 @@ impl RowsKey {
             sort_dir: v.sort_dir,
             limit: v.limit,
             filter: app.filter.clone(),
+            query: app.query.clone(),
             collapsed: app.collapsed.clone(),
             family_scope: app.family_scope.clone(),
             working_set: app.working_set.clone(),
@@ -83,6 +85,7 @@ impl RowsKey {
             && self.sort_dir == v.sort_dir
             && self.limit == v.limit
             && self.filter == app.filter
+            && self.query == app.query
             && self.collapsed == app.collapsed
             && self.family_scope == app.family_scope
             && self.working_set == app.working_set
