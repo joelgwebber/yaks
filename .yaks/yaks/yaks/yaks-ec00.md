@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-01T16:44:44Z'
-updated: '2026-11-03T14:21:59Z'
+updated: '2026-11-03T14:30:09Z'
 tags:
 - skills
 - agent
@@ -119,3 +119,8 @@ thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-03T14:30:09Z [delta:skills-upgrade-audit]
+
+First pass landed locally in 7ed9402 (yaks-c2fc, yaks-c69d, yaks-9786 shorn). Remaining from the original research questions: skills in two locations, version visibility in the farm, runner setup recipe, dev-build version stamps.
