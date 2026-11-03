@@ -9,7 +9,7 @@ tags:
 
 # Haks: an orchestration layer over yaks
 
-Read on 2026-11-03 by Joel and `delta:haks-review`, from `subtextdev/haks` at `8fbe3ec` (Go plus a React board, about 15k lines, 38 commits, all in one day) and Clint Ayres's own design sketch. The repo is private and early, so this page stays at design level: no code is copied, and neither the repo nor the sketch is saved as a source. Tracked in yaks-96d8.
+Read on 2026-11-03 by Joel and `delta:haks-review`, from `subtextdev/haks` at `8fbe3ec` (Go plus a React board, about 15k lines, 38 commits, all in one day), the repo's `yaks` farm branch at `e3a9145`, a design sketch passed on by Clint Ayres, and [a summary of the Indent thread that built it](/sources/2026-11-03-81364278/source.md). See [Provenance](#provenance) for how those fit together. The repo is private and early, so this page stays at design level: no code is copied, and neither the repo nor the sketch is saved as a source. Tracked in yaks-96d8.
 
 ## What it is
 
@@ -42,7 +42,7 @@ This is the first outside evidence for the line drawn in [the knowledge-store de
 
 ## Where Haks works around yaks
 
-Clint lists four of these himself as asks for upstream. The rest are visible in the code.
+The first four are the "Asks for Joel" in the repo's design doc, which the thread shows the agent wrote and marked unconfirmed, not Clint. The rest are visible in the code.
 
 | Workaround | What yaks lacks | Fits yaks? |
 |---|---|---|
@@ -52,6 +52,34 @@ Clint lists four of these himself as asks for upstream. The rest are visible in 
 | `run_seen` frontmatter field set with `--set` to keep a run alive without a note | A touch or heartbeat with an expiry | Probably a primitive (touch, no note, no activity line) in yaks, with the window left to Haks. Overlaps yaks-0071 and yaks-039b. |
 | Review options, lean, verdict and PR author parsed out of note and description text | Structured note fields | Partly. Better solved by Haks writing the structure itself (`--meta`) than by yaks parsing prose. |
 | First creation of a team farm's branch is not race-safe | Idempotent `yaks init` against a remote branch | Probably. Clint's workaround is "one person starts it and pushes". |
+
+## Provenance
+
+Haks was built in one day, 2026-11-03, almost entirely by agents under Clint's product direction. The Indent thread (37 turns, 12:03 to 19:20 UTC, Clint sent every message) is the only place the sequence of decisions survives. The summary is a model's reading of the transcript, saved as [a source](/sources/2026-11-03-81364278/source.md); it did not read tool calls or subagent internals.
+
+### How the design grew
+
+1. **12:03, restore.** An earlier Indent session had built a first Haks, and its sandbox was gone, so the first hour re-created it: the run registry, `haks stop`, opt-in reviews, a $10 daily budget. Spend control came first and was agent-proposed (`review.auto: false`, because Clint's running server would otherwise start reviews by itself).
+2. **12:14 to 12:44, ending work.** Clint was marking yaks shorn just to stop an agent that was asking a question. The agent's first answer was "Don't shear it" and pointed at `yaks answer --done`, which exists. Clint's own ask was simpler ("I just need a way to click on an agent and say - slaughter"), and that became Slaughter and Dismiss on every card.
+3. **13:34 to 15:00, review features, mostly by confusion.** Side panels replaced modals ("the modals are killing me"). Clint set the default: "if there is a finding to fix we'll fix it", which became `review.approach: fix`, a Changes panel and `fixes.patch`. At 14:15 he reported "I asked to make changes together and now I have no idea what's going on": the board only recognised options starting with "post" or "dismiss", and the reviewer misread the answer and ended with nothing posted.
+4. **15:13, the principle.** Clint: "if everything is a yak I can run the review anywhere and have it stay in sync. that's the design philosophy to follow." The agent wrote it into `AGENTS.md` and listed where Haks already broke it (run state in a local directory, details not on the yak, edits left in `/tmp`). That list drove the run start and end notes.
+5. **16:15, the plan.** Clint asked for a "lego brick" design: team farm plus personal farm, every assigned PR a yak, earlier yaks consulted, reviews tied to an agent session, UI as a thin slice of the CLI, no coordination beyond yaks. The agent wrote `docs/design.md`, including the build order, the 5 and 2 minute run windows, and the asks for upstream, then built steps 1 to 5 with three parallel worktree agents after "implement the design".
+6. **19:02, the sketch.** Clint asked for a lifecycle summary. The structure of the sketch Joel was given (the data and protocol, the orchestration layer, inbox, review lifecycle, "proven so far") matches that request. That is an inference, not something the thread states, but it means the sketch is the agent's summary of the work, not an independent design statement.
+
+### Who decided what
+
+- **Clint:** the product shape and the rules: Slaughter and Skip, side panels, fix-by-default, stack ordering, the to-do herd, "everything is a yak", the lego-brick and team-farm vision, no AI attribution.
+- **The agent:** most of the mechanism: Dismiss, the budget cap, the state machine and heartbeat model, `reconcile`, context assembly, run notes, build order, and every default for an open question (where the team farm lives, shared evidence, the 5 minute stale window). Those open questions were asked once and not clearly answered, so they are still defaults.
+
+## What the thread adds
+
+- **The farm does not record the build.** The `yaks` branch holds 8 yaks in the `haks` herd, all created at 10:03 or 11:29 UTC, before the thread; the only later notes are Clint's two answers at 13:10 and 13:12. The principle was stated at 15:13 and then none of steps 1 to 5, the three worktree agents or `docs/design.md` appear as yaks there. The design history lives in the thread and in git commits. Caveat: this is Clint's pushed branch; a local farm may hold more, and nothing says the thread's agents were told to file yaks for Haks itself. It is still the clearest case for yak archaeology (yaks-64c4): the reasoning sat in a chat transcript, and the farm that was meant to carry it had none.
+- **The reviewer runs PR code with the owner's credentials.** The thread records the allowlist being widened at 15:05 to `go`, `direnv`, `make` and `npm`, which the agent itself called "a real change in what a review can do". Running a PR's tests, makefile or install scripts is running its author's code on the owner's machine with `gh` and `git` access. This sharpens the earlier risk: the prompt rule not to post is one weakness, but the sandbox the reviewer runs in is a bigger one, and it needs a design, not a rule, before anyone else's PRs flow in.
+- **Free-text options are parsed by pattern.** The 14:15 confusion came from Haks guessing which ask options were first-pass buttons. The reviews package still derives options and the lean from the ask's prose. That is a concrete case for structured ask options in yaks, for example repeated `--option` flags stored as note metadata, so a UI renders what the agent offered instead of parsing it.
+- **A slaughtered review came back.** The 60 second GitHub sync recreated a yak Clint had slaughtered, so Haks now keeps dead review yaks suppressed. Same root as create-by-key: intake needs "find by source URL, including dead ones", which yaks cannot answer.
+- **`yaks answer --done` was found only when asked.** The feature Clint needed already existed, and the agent surfaced it only after he complained. Haks's Dismiss button is a thin wrapper over it. Worth checking whether the skills make that flag findable at the moment an agent or human is stuck on an unwanted question.
+- **Joel's own sessions were fed back in.** At 13:10 Clint's agent read a separate yaks/surveyor session and reported seven learnings: shorn parents keeping open children, a question on a shorn yak being lost, unreadable raw output, evidence recorded at shear time, agents merging on their own lean, binary version drift, and side tasks belonging in a sub-thread. It offered to add three of them to the `haks` skill and the thread shows no follow-up. Several are already yaks behaviour (shear and slaughter refuse open children), which suggests the same lessons are being relearned per project.
+- **What was never exercised.** Per the thread's own closing list: a fix-mode review on a real PR, a session on a real review, Skip on a live yak, and any real team farm. It also names Haks's gaps: racy first creation of a team branch, stack detection missing same-base siblings, non-Claude sessions resuming only on the originating machine.
 
 ## Observations and risks
 
@@ -81,6 +109,9 @@ Joel proposed calling wiki pages **doks** (yaks, haks, doks). Notes so far, not 
 
 ## Open questions
 
+- [ ] Should yaks take structured ask options (repeated `--option`, stored as note metadata) so UIs stop parsing prose?
+- [ ] Should a harness's design decisions be filed as yaks by default, so a build like this leaves its reasoning in the farm and not only in a chat transcript?
+- [ ] Is the reviewer's execution sandbox (PR code run with the owner's `gh` and `git` access) in scope for the first team trial, or does it block it?
 - [ ] Which of the four upstream asks should yaks take first? Create-by-key and note metadata queries are the cheapest and remove the most Haks code.
 - [ ] Does yaks want a touch or heartbeat primitive, and is the window (5 minutes live, 2 minutes quiet) Haks policy or a yaks default?
 - [ ] What should the real gate on posting to GitHub be: a prompt rule, a scoped token, or Haks doing the posting?
