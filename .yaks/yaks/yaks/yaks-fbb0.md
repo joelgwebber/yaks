@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T04:03:05Z'
+updated: '2026-11-03T04:03:12Z'
 parent: yaks-947a
 tags:
 - tui
@@ -102,3 +102,11 @@ Decision: the hint is a per-binding `Hint` (`None`, `Text`, `Filter`); `Filter` 
 Decision: `help_content` now has a section per ctx (every helped binding on its own line: more rows than before, the overlay scrolls) and static `EXTRAS` for rows that are not bindings (editor keys, files and links, farm chip, mouse). The old hand-written "Movement" and "Edit" sections are gone; the Detail section lists its own mirrors of the list's edit keys.
 
 Decision: the old unreachable-from-table viewer note "(in viewer)" row is dropped; the Viewer section generates it.
+
+---
+▸ 2026-11-03T04:03:12Z [keys-1]
+kind: verify
+result: fail
+---
+
+verify: `cargo test --workspace` -> FAIL (exit 101)
