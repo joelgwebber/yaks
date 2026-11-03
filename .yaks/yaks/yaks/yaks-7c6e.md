@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-03T21:13:54Z'
+updated: '2026-11-03T22:06:10Z'
 parent: yaks-f677
 depends_on:
 - yaks-6919
@@ -42,3 +42,13 @@ I have a bunch of other ill-formed thoughts I'd like to address before committin
 - J/K doesn't work in the wiki doc details, like it does in yaks.
 
 Probably lots more cases I'm not thinking of. Please explore the idea of organizing principles for the keyboard controls as a whole, so we can get a bit more consistency. We should probably think about yaks-000b in this context as well.
+
+---
+▸ 2026-11-03T22:06:10Z [delta:starred-batch]
+
+Design pass (delta:starred-batch): [TUI keys: organizing principles](/wiki/design/tui-keys.md) states six rules, measures today's table against them, and proposes the changes. Built so far, as uncontroversial bug fixes from your list:
+
+- `J`/`K` in a Wiki page open the next / previous row's page (`2ba1622`).
+- Related, under yaks-000b: the list wheel scrolls like the detail; sideways wheel scrolls tables.
+
+The rest waits on the ask below.
