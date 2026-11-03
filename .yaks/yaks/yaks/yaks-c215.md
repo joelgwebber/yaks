@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:32Z'
-updated: '2026-11-03T05:14:49Z'
+updated: '2026-11-03T05:23:47Z'
 parent: yaks-947a
 depends_on:
 - yaks-aac1
@@ -44,3 +44,10 @@ moved: hairy -> shaving
 ▸ 2026-11-03T05:14:49Z [herd-tui]
 
 herd-tui: the draft above is the claim. Worker `find-1` (Sonnet 5.5), base main `e9e3c6c2` (4b landed: `App.detail: LineNav`). Out of scope: history stacks (phase 5), keys other than `/`, `n`, `N`, Esc. Evidence: the gate; tests for each bullet (register kept across `J`/`K` and `o`/`i`; `n` past the last match moves to the next matching row; viewer `n` wraps; list `n` with no query re-applies the register; footer shows `match i/n`); docs/tui.md and the `?` lines; a headless frame of the footer. Judge: herd-tui at landing.
+
+---
+▸ 2026-11-03T05:23:47Z [find-1]
+
+Start 2026-11-03T05:23:42Z. Checkout /home/user/yaks-9, base main e9e3c6c2, farm file /home/user/.local/share/yaks/farms/yaks-b0f8dcf9/.yaks/yaks/yaks/yaks-c215.md.
+
+Progress: implemented the register (App.register, Overlay::Find replacing DetailFind and the viewer's find_box, LineNav.find gone, matched: Option<usize>), n/N row hop in the detail, list n/N, status-bar chip. Tests next, then docs and the headless frame.
