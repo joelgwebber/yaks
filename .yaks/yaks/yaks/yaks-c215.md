@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:32Z'
-updated: '2026-11-03T05:25:48Z'
+updated: '2026-11-03T05:26:14Z'
 parent: yaks-947a
 depends_on:
 - yaks-aac1
@@ -70,3 +70,11 @@ Decision: `n`/`N` past the matches of a yak go to the next/previous row whose ya
 Decision: `n`/`N` also put the line cursor on the match row (find_step sets `line` and `scroll`); before they scrolled only. Needed for "landing" on a match in the next yak and so Enter/Tab act on it.
 Decision: list `n`/`N` are `bind(List, ...)` for every row kind; on a Wiki page row `N` stays WikiNew (a kind binding beats the any-kind one), so only `n` re-applies there. With an empty register: notification `nothing to find: / sets the search`. With a query set: nothing, as drafted.
 Decision: the footer is the status bar: `match i/n "q"` is prefixed to the usual hint/link text (`match 0/n` before a match is current; `0/0` with none) in the yak detail and the viewer. Rejected: a new pane row, which would change the viewport arithmetic of both panes.
+
+---
+▸ 2026-11-03T05:26:14Z [find-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
