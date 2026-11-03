@@ -39,3 +39,8 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-03T05:14:49Z [herd-tui]
+
+herd-tui: the draft above is the claim. Worker `find-1` (Sonnet 5.5), base main `e9e3c6c2` (4b landed: `App.detail: LineNav`). Out of scope: history stacks (phase 5), keys other than `/`, `n`, `N`, Esc. Evidence: the gate; tests for each bullet (register kept across `J`/`K` and `o`/`i`; `n` past the last match moves to the next matching row; viewer `n` wraps; list `n` with no query re-applies the register; footer shows `match i/n`); docs/tui.md and the `?` lines; a headless frame of the footer. Judge: herd-tui at landing.
