@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:28:01Z'
-updated: '2026-11-03T05:13:39Z'
+updated: '2026-11-03T05:14:12Z'
 parent: yaks-aac1
 depends_on:
 - yaks-0906
@@ -66,3 +66,11 @@ Decision: kept the five-field resets elsewhere (J/K, mouse, open_detail_pane, bl
 Decision: App::scroll_block(dir) stays as a thin wrapper (builds lines + width for LineNav::scroll_block), like move_detail_line.
 
 Evidence grep (`grep -rn "detail_line\|detail_scroll\|detail_anchor\|detail_find\|detail_match\|detail_hscroll" src`): only unrelated names remain: methods open_detail_find, detail_find_jump, detail_find_matches, detail_line_count, detail_line_to, move_detail_line, click_detail_line, settle_detail_scroll; sheds_tab.rs detail_lines fn; test fn names detail_find_*; and the `detail_scroll=` state_header string. AGENTS.md never named the detail_* fields (only the `detail_nav` module); the linenav.rs module doc is updated.
+
+---
+▸ 2026-11-03T05:14:12Z [nav-2]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
