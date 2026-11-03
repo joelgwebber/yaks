@@ -5,11 +5,10 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
-updated: '2026-11-03T03:07:27Z'
+updated: '2026-11-03T03:07:28Z'
 tags:
 - search
 - tui
-needs: agent
 ---
 
 Generalize the (shorn) detail-scoped nav stack from yak-2d13 into a global back/forward history spanning ALL view/UI states, not just yak-detail drill-down. Today nav_history/nav_pos is reset on every _enter_detail and _detail_next_task, so it only tracks navigation within a single detail context.
@@ -62,3 +61,12 @@ needs: agent
 ---
 
 Answered by Joel in chat, 2026-11-02, relayed by tui-design: every question here is settled by the unified design's Decisions, [wiki/design/tui-model.md](/wiki/design/tui-model.md#decisions). Implementation follows that page's phases.
+
+---
+▸ 2026-11-03T03:07:28Z [tui-design]
+kind: pickup
+---
+
+picked up
+
+Nothing to do now: the answers live in the design page; this yak's work is a phase there.
