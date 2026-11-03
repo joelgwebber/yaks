@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
-updated: '2026-10-18T05:46:58Z'
+updated: '2026-11-03T02:19:20Z'
 tags:
 - search
 - tui
@@ -41,3 +41,16 @@ Design attached (158d-design.md). Root cause: every jump goes through select_tas
 2) Link follow to a yak outside the current list: lean: stay in the current list if the target is in it, else switch to its status view as today (now undoable with o). Also fixes a bug: following a link to a dead yak shows the previous yak.
 3) Keys: lean: o/i in list focus too (both free), and no Ctrl-O/Ctrl-I primaries (Ctrl-I = Tab without kitty).
 4) Persist across sessions? Lean: no for the stack; maybe later persist just the last position so the TUI reopens where you quit.
+
+---
+▸ 2026-11-03T02:19:20Z [tui-design]
+
+Folded into the unified TUI design, [docs/design/tui/model.md](code:docs/design/tui/model.md), tracked by yaks-9c3c. This yak's part is §3, "One history" (phase 5).
+
+Changes from the design attached here:
+
+- One stack replaces all three: this yak's `nav_back`/`nav_fwd`, the viewer's `viewer_back`/`viewer_fwd`, and `LineNav`'s footnote stack.
+- A location now holds a pane subject (yak, document or shed) instead of only a yak id.
+- Following a link no longer switches the list to the target's status view. The pane shows the target and the list stays put (§2, pending Joel's confirmation).
+
+The questions asked on this yak are answered or carried into the design's Decisions and Open questions.
