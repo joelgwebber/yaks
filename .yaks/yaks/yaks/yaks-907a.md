@@ -1,7 +1,7 @@
 ---
 id: yaks-907a
 title: ':wq pauses for ~500-1000ms, but ctrl-s finishes quickly'
-status: shaving
+status: hairy
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
@@ -80,3 +80,13 @@ Measured (release build, clone of this farm, `yaks update --note` from the CLI, 
 So the yak write and the TUI's refresh are cheap; ~450 ms of every *changing* write is the per-change farm commit (yaks-a838), whose ~49 git calls are mostly repeated discovery. That is yaks-7058. A no-op save skips the commit, which is why it is instant.
 
 Decision: fold this into yaks-7058 (now a dependency) rather than fix it twice. Two parts there would remove the pause: cache discovery for the process and build the commit from one `status` (yaks-7058's plan), and in the TUI, run the commit after the frame that shows the saved text is drawn, so even a slow git never blocks the redraw.
+
+---
+▸ 2026-11-03T22:10:05Z [delta:starred-batch]
+kind: move
+from: shaving
+to: hairy
+thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> hairy
