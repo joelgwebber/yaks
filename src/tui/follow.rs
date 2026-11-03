@@ -590,6 +590,32 @@ mod tests {
         let _ = std::fs::remove_dir_all(proj);
     }
 
+    /// yaks-0e15 / yaks-d0b0: a markdown link whose destination is a yak id,
+    /// in a page under `wiki/topics/`, opens the yak; it is not read as the
+    /// page-relative file `wiki/topics/yaks-0001`.
+    #[test]
+    fn a_markdown_link_to_a_yak_from_a_page_opens_the_yak() {
+        let (proj, mut app) = on_hub();
+        let root = app.farm.as_ref().unwrap().root().to_path_buf();
+        std::fs::write(
+            root.join("wiki/topics/hub.md"),
+            "---\ntitle: Hub\n---\n\n# Hub\n\nBuilt under [the search yak](yaks-0001).\n",
+        )
+        .unwrap();
+        app.close_doc();
+        app.open_farm_doc("wiki/topics/hub.md", None, None);
+        draw(&app, 150, 34);
+        tab_to(&mut app, "yaks-0001");
+        enter_key(&mut app);
+        assert_eq!(
+            app.selected_id().as_deref(),
+            Some("yaks-0001"),
+            "{:?}",
+            app.notification
+        );
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
     #[test]
     fn a_missing_page_says_so_and_stays_put() {
         let (proj, mut app) = on_hub();

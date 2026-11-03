@@ -220,29 +220,14 @@ pub fn build<'a>(
         out
     };
 
-    // universe = anchors + ancestors (up) + all descendants (down), any status.
-    // It's the search space for content matches; family scope then decides how
-    // much of it actually renders.
-    let mut universe: HashSet<&str> = anchors.clone();
-    for &a in &anchors {
-        universe.extend(ancestors_of(a));
-    }
-    let mut stack: Vec<&str> = anchors.iter().copied().collect();
-    while let Some(cur) = stack.pop() {
-        if let Some(kids) = children_of.get(cur) {
-            for &c in kids {
-                if universe.insert(c) {
-                    stack.push(c);
-                }
-            }
-        }
-    }
-
-    // Seeds (the bright focus): content matches anywhere in the family when a
-    // filter is active, else the anchors themselves.
+    // Seeds (the bright focus): the anchors, narrowed to the content matches
+    // (spec and global query) when a filter is active. A match must also be in
+    // the status scope: a herd or a search on the Hairy view must not bring
+    // shorn and dead descendants in bright (yaks-b608); family scope below
+    // decides which descendants come along, dimmed.
     let focus: HashSet<&str> = if spec.content_active() || query.is_some() {
         let resolved = filter::resolved_ids(all);
-        universe
+        anchors
             .iter()
             .copied()
             .filter(|&tid| {
@@ -533,6 +518,44 @@ mod tests {
             "connector + open descendant are dim"
         );
         assert!(!ghost("a"), "the anchor is bright");
+    }
+
+    /// yaks-b608: a content filter (a herd here) on the Hairy view keeps the
+    /// status axis. A shorn or dead child of a hairy match is not focus, and
+    /// `remaining` drops it as it does with no filter.
+    #[test]
+    fn a_content_filter_keeps_the_status_scope() {
+        let all = vec![
+            t("h-a", Status::Hairy, None),
+            t("h-b", Status::Shorn, Some("h-a")),
+            t("h-c", Status::Dead, Some("h-a")),
+            t("h-d", Status::Hairy, Some("h-a")),
+            t("h-e", Status::Shorn, None),
+        ];
+        let spec = FilterSpec {
+            statuses: vec![Status::Hairy],
+            herds: vec!["h".into()],
+            ..Default::default()
+        };
+        let flat = build(&all, &spec, None, FamilyScope::Remaining);
+        let mut ids: Vec<&str> = flat.iter().map(|r| r.yak().unwrap().id.as_str()).collect();
+        ids.sort();
+        assert_eq!(ids, vec!["h-a", "h-d"]);
+        // The global query is a content filter too: same rule.
+        let flat = build(
+            &all,
+            &FilterSpec {
+                statuses: vec![Status::Hairy],
+                ..Default::default()
+            },
+            Some("h-"),
+            FamilyScope::Remaining,
+        );
+        assert!(
+            flat.iter()
+                .all(|r| r.yak().unwrap().status == Status::Hairy)
+        );
+        assert!(flat.iter().all(|r| !r.ghost), "both are hairy matches");
     }
 
     #[test]

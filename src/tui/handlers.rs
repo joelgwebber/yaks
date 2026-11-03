@@ -153,7 +153,8 @@ impl AttachView {
     }
 
     /// The content laid out to `width` as detail rows: markdown through
-    /// [`mdrender::render`] (so it looks as it would in a yak's body), plain
+    /// [`detail::md_rows`] (so it looks as it would in a yak's body, inline
+    /// images included, yaks-91d9), plain
     /// text one row per line, soft-wrapped by [`detail::wrap`]. A markdown
     /// row records its source lines (as block 0), so yank copies the source,
     /// a footnote reference finds its definition, and a code block or table
@@ -162,7 +163,12 @@ impl AttachView {
     /// A page or source starts with its frontmatter as `key  value` field
     /// rows and a blank row; a source's extracted text follows its note
     /// under an `extracted.md` section row.
-    pub(crate) fn rows(&self, width: u16, known: &HashSet<&str>) -> Vec<detail::DLine> {
+    pub(crate) fn rows(
+        &self,
+        width: u16,
+        known: &HashSet<&str>,
+        images: Option<&detail::ImageEnv>,
+    ) -> Vec<detail::DLine> {
         let width = width.max(1) as usize;
         let row = |text: String, md, links, nowrap, src| detail::DLine {
             text,
@@ -174,17 +180,11 @@ impl AttachView {
             nowrap,
             image: None,
         };
+        // A pinned (`@<sha>`) document is not today's file: its images, read
+        // from disk, could be another version, so none is drawn in place.
+        let images = images.filter(|_| self.rev.is_none());
         let md_rows = |text: &str, block: usize| -> Vec<detail::DLine> {
-            mdrender::render_in(text, width, known, self.from())
-                .into_iter()
-                .map(|r| {
-                    let src = detail::Src {
-                        block,
-                        lines: Some(r.lines),
-                    };
-                    row(r.text, r.spans, r.links, r.nowrap, Some(src))
-                })
-                .collect()
+            detail::md_rows(text, width, known, self.from(), block, images)
         };
         if matches!(self.doc, DocKind::Page | DocKind::Source { .. }) {
             let blocks = self.blocks();
@@ -999,7 +999,7 @@ impl App {
     pub(crate) fn attachment_rows(&self) -> Option<(Vec<detail::DLine>, Viewport)> {
         let v = self.attach()?;
         let known: HashSet<&str> = self.all.iter().map(|t| t.id.as_str()).collect();
-        let rows = v.rows(v.width.get(), &known);
+        let rows = v.rows(v.width.get(), &known, self.image_env().as_ref());
         // The header row, and the peek pane when it is shown (yaks-7395).
         let peek = if self.viewer_has_peek(&rows) {
             super::follow::PEEK_ROWS

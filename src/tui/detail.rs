@@ -571,44 +571,14 @@ fn body_rows(
         if is_comment {
             out.push(comment_header(&block.kind, clock, width, bi));
         }
-        // An image that is a whole paragraph reserves rows after the
-        // paragraph's last row; `pending` holds it until that row has gone out.
-        let mut pending: Option<(Src, ImageSlot)> = None;
-        for row in mdrender::render(&block.text, width, known) {
-            // The blank row after the paragraph (a lone image has no container,
-            // so its rows are never blank) ends it: the image goes here.
-            if row.text.trim().is_empty() {
-                if let Some(p) = pending.take() {
-                    out.extend(image_rows(p));
-                }
-            }
-            let src = Src {
-                block: bi,
-                lines: Some(row.lines),
-            };
-            if pending.is_none() {
-                pending = images
-                    .and_then(|env| {
-                        row.images
-                            .iter()
-                            .find_map(|img| image_slot(env, img, width))
-                    })
-                    .map(|slot| (src, slot));
-            }
-            out.push(DLine {
-                text: row.text,
-                kind: Kind::Body,
-                links: row.links,
-                md: row.spans,
-                cont: false,
-                src: Some(src),
-                nowrap: row.nowrap,
-                image: None,
-            });
-        }
-        if let Some(p) = pending.take() {
-            out.extend(image_rows(p));
-        }
+        out.extend(md_rows(
+            &block.text,
+            width,
+            known,
+            crate::links::From::Yak,
+            bi,
+            images,
+        ));
     }
     // A new comment: a provisional header and the editor after the last block.
     if let Some(slot) = edit.filter(|e| e.block.is_none()) {
@@ -619,22 +589,85 @@ fn body_rows(
     out
 }
 
+/// One markdown document (`text`, block `block` of its view, its links read as
+/// written `from` there) as body rows wrapped to `width`, with the rows an
+/// inline image reserves after its paragraph when `images` is on. The one
+/// layout the detail pane and the document viewer share (yaks-91d9).
+pub(crate) fn md_rows<'k>(
+    text: &str,
+    width: usize,
+    known: &'k HashSet<&'k str>,
+    from: crate::links::From<'k>,
+    block: usize,
+    images: Option<&ImageEnv>,
+) -> Vec<DLine> {
+    let mut out = Vec::new();
+    // An image that is a whole paragraph reserves rows after the paragraph's
+    // last row; `pending` holds it until that row has gone out.
+    let mut pending: Option<(Src, ImageSlot)> = None;
+    for row in mdrender::render_in(text, width, known, from) {
+        // The blank row after the paragraph (a lone image has no container,
+        // so its rows are never blank) ends it: the image goes here.
+        if row.text.trim().is_empty() {
+            if let Some(p) = pending.take() {
+                out.extend(image_rows(p));
+            }
+        }
+        let src = Src {
+            block,
+            lines: Some(row.lines),
+        };
+        if pending.is_none() {
+            pending = images
+                .and_then(|env| {
+                    row.images
+                        .iter()
+                        .find_map(|img| image_slot(env, img, width))
+                })
+                .map(|slot| (src, slot));
+        }
+        out.push(DLine {
+            text: row.text,
+            kind: Kind::Body,
+            links: row.links,
+            md: row.spans,
+            cont: false,
+            src: Some(src),
+            nowrap: row.nowrap,
+            image: None,
+        });
+    }
+    if let Some(p) = pending.take() {
+        out.extend(image_rows(p));
+    }
+    out
+}
+
 /// The image of `img` if it is drawn in place: it is a whole top-level
-/// paragraph, a local attachment (`<id>/<file>`) whose header an image decoder
-/// can read, sized by [`imagesize::cells`] from that header alone (no decode,
-/// so laying out a yak never waits on its pictures). The slot is for row 0.
+/// paragraph, a local attachment (`<id>/<file>`) or a farm file from the root
+/// (`/sources/<id>/shot.png`, yaks-c5d7) whose header an image decoder can
+/// read, sized by [`imagesize::cells`] from that header alone (no decode, so
+/// laying out a yak never waits on its pictures). The slot is for row 0.
 fn image_slot(env: &ImageEnv, img: &mdrender::MdImage, pane_cols: usize) -> Option<ImageSlot> {
     if !img.alone || img.target.contains("://") {
         return None;
     }
-    let rel = img.target.strip_prefix(".yaks/").unwrap_or(&img.target);
-    let (id, name) = rel.split_once('/')?;
-    let name = crate::links::percent_decode(name);
-    if !crate::store::is_image_name(&name) {
-        return None;
-    }
-    let found = crate::farm::locate_attachment(env.root, id, &name)?;
-    let (w, h) = image::ImageReader::open(&found.path)
+    let path = if let Some(farm_rel) = img.target.strip_prefix('/') {
+        if !crate::store::is_image_name(farm_rel) {
+            return None;
+        }
+        let p = env.root.join(farm_rel);
+        p.is_file().then_some(p)?
+    } else {
+        let rel = img.target.strip_prefix(".yaks/").unwrap_or(&img.target);
+        let (id, name) = rel.split_once('/')?;
+        let name = crate::links::percent_decode(name);
+        if !crate::store::is_image_name(&name) {
+            return None;
+        }
+        crate::farm::locate_attachment(env.root, id, &name)?.path
+    };
+    let (w, h) = image::ImageReader::open(&path)
         .ok()?
         .with_guessed_format()
         .ok()?
@@ -643,7 +676,7 @@ fn image_slot(env: &ImageEnv, img: &mdrender::MdImage, pane_cols: usize) -> Opti
     let pane = pane_cols.min(u16::MAX as usize) as u16;
     let (cols, rows) = super::imagesize::cells(img.size, (w, h), env.cell_px, pane, env.max_rows);
     Some(ImageSlot {
-        path: found.path,
+        path,
         cols,
         rows,
         row: 0,

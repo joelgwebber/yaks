@@ -872,8 +872,9 @@ fn typ(app: &mut App, s: &str) {
 
 #[test]
 fn inline_search_field_and_recolor() {
-    // '/' then "child" focuses the two matching children; Root A dims as
-    // their ancestor, Root B is pruned.
+    // '/' then "child" focuses the hairy matching child; Root A dims as its
+    // ancestor, Root B is pruned, and the shorn A2 stays out of the Hairy
+    // view although its title matches (yaks-b608: status is a filter axis).
     let mut app = sample();
     handle_key(&mut app, key('/'));
     typ(&mut app, "child");
@@ -896,7 +897,7 @@ fn inline_search_updates_filter_live() {
         .iter()
         .map(|r| r.yak().unwrap().id.as_str())
         .collect();
-    assert_eq!(ids, vec!["a0", "a1", "a2"]); // b0 pruned; a0 dimmed ancestor
+    assert_eq!(ids, vec!["a0", "a1"]); // b0 and shorn a2 pruned; a0 dimmed ancestor
     // Enter keeps the filter.
     handle_key(&mut app, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
     assert!(matches!(app.overlay, Overlay::None));
@@ -4447,6 +4448,46 @@ fn an_inline_image_is_drawn_clipped_at_the_pane_edge_and_scrolls() {
     // Scrolled until it is off the top: nothing drawn.
     app.detail.scroll = (image_rows(&app)[5] + 1) as u16;
     assert_eq!(image_pixel_rows(&app, 100, 14), 0, "off the top: not drawn");
+}
+
+/// yaks-91d9 + yaks-c5d7: a page in the document viewer draws a lone image
+/// in place, whether it is a yak's attachment (`<id>/<file>`) or a farm file
+/// named from the root (`/sources/<id>/shot.png`, which used to be read as an
+/// attachment and fail with "no such attachment").
+#[test]
+fn a_page_in_the_viewer_draws_attachment_and_farm_root_images_in_place() {
+    for (dest, place) in [
+        ("t0/shot.png", None),
+        (
+            "/sources/2026-10-26-cc589301/shot.png",
+            Some("sources/2026-10-26-cc589301"),
+        ),
+    ] {
+        let (dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let png = two_tone_png(120, 120);
+        match place {
+            None => put_attachment(&farm, "t0", "shot.png", &png),
+            Some(d) => {
+                std::fs::create_dir_all(farm.root().join(d)).unwrap();
+                std::fs::write(farm.root().join(d).join("shot.png"), &png).unwrap();
+            }
+        }
+        std::fs::create_dir_all(farm.root().join("wiki")).unwrap();
+        std::fs::write(
+            farm.root().join("wiki/pics.md"),
+            format!("---\ntitle: Pics\n---\n\nBefore.\n\n![shot]({dest})\n\nAfter.\n"),
+        )
+        .unwrap();
+        let mut app = App::with_farm(farm).unwrap();
+        HeadlessApp::on_resize(&mut app, 100, 40);
+        app.open_farm_doc("wiki/pics.md", None, None);
+        draw(&app, 100, 40);
+        let (rows, _) = app.attachment_rows().unwrap();
+        let reserved = rows.iter().filter(|r| r.image.is_some()).count();
+        assert_eq!(reserved, 6, "{dest}: rows reserved for the image");
+        assert_eq!(image_pixel_rows(&app, 100, 40), 6, "{dest}: drawn");
+        let _ = std::fs::remove_dir_all(dir);
+    }
 }
 
 #[test]

@@ -187,6 +187,7 @@ struct Renderer<'k> {
 /// Render one markdown document to rows wrapped at `width` display columns.
 /// `known` is the farm's yak ids, so mentions become [`Target::Task`] links.
 /// Links are read as written in a yak; [`render_in`] names the document.
+#[cfg(test)]
 pub fn render(text: &str, width: usize, known: &HashSet<&str>) -> Vec<MdRow> {
     render_in(text, width, known, crate::links::From::Yak)
 }
@@ -503,7 +504,19 @@ impl Renderer<'_> {
                 }
             }
             Tag::Image { dest_url, .. } => {
-                self.targets.push(Target::Artifact(dest_url.to_string()));
+                // By the link grammar, like any link (yaks-c5d7): a farm file
+                // (`/sources/<id>/shot.png`, a page-relative `shot.png`) is a
+                // farm document; anything else (`<id>/<file>`, a URL) stays an
+                // artifact, opened as before.
+                // In a yak a relative image stays an attachment path as
+                // before (including the legacy `.yaks/<id>/x.png`).
+                let farm_ok =
+                    dest_url.starts_with('/') || matches!(self.from, crate::links::From::Page(_));
+                let target = match link_target(dest_url, self.from, self.known) {
+                    t @ Target::Farm { .. } if farm_ok => t,
+                    _ => Target::Artifact(dest_url.to_string()),
+                };
+                self.targets.push(target);
                 self.link = Some(self.targets.len() - 1);
                 self.styles.push(link());
                 let st = self.style();
@@ -616,10 +629,16 @@ impl Renderer<'_> {
         let (shown, size) = imagesize::split_alt(&alt);
         let alt = shown.to_string();
         self.buf.truncate(start + alt.chars().count());
-        let Target::Artifact(target) = &self.targets[link] else {
-            return;
+        // The target as the inline layout resolves it: an attachment as
+        // written, a farm file from the root (`/sources/...`). A pinned farm
+        // file is not drawn in place.
+        let target = match &self.targets[link] {
+            Target::Artifact(t) => t.clone(),
+            Target::Farm {
+                path, rev: None, ..
+            } => format!("/{path}"),
+            _ => return,
         };
-        let target = target.clone();
         self.images.insert(
             link,
             MdImage {
@@ -1000,6 +1019,7 @@ pub(crate) fn link_target(dest: &str, from: crate::links::From, known: &HashSet<
         Link::Farm { path, rev, anchor } => Target::Farm { path, rev, anchor },
         Link::Local(a) => Target::Local(a),
         Link::Upward(_) => Target::Artifact(dest.to_string()),
+        Link::Yak(id) => Target::Task(id),
     }
 }
 

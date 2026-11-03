@@ -207,19 +207,21 @@ fn build_inline(app: &App, path: &Path, cols: u16, rows: u16) -> Option<SlicedPr
     .ok()
 }
 
-/// Paint the inline images that intersect the visible rows of the detail pane
-/// over the blank rows the layout reserved for them. `area` is the content
-/// area (below any pinned header); `lines` are the pane's rows. An image
+/// Paint the inline images that intersect the visible rows of a pane (the
+/// detail pane, or the document viewer) over the blank rows the layout
+/// reserved for them. `area` is the content area (below any pinned header);
+/// `lines` are the pane's rows, scrolled `scroll` rows. An image
 /// partly scrolled out of view is clipped at the pane edge by `SlicedImage`
 /// (kitty and half-blocks skip rows, sixel drops bands, iTerm2 draws row
 /// slices). An image wholly out of view is neither decoded nor drawn.
 pub(crate) fn render_inline_images(
     app: &App,
     lines: &[detail::DLine],
+    scroll: u16,
     frame: &mut Frame,
     area: Rect,
 ) {
-    let scroll = app.detail.scroll as isize;
+    let scroll = scroll as isize;
     let mut i = 0;
     while i < lines.len() {
         let Some(slot) = lines[i].image.as_ref().filter(|s| s.row == 0) else {

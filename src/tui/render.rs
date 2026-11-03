@@ -286,7 +286,7 @@ pub(crate) fn render_attachment(
     );
     v.width.set(body.width);
     let known: std::collections::HashSet<&str> = app.all.iter().map(|t| t.id.as_str()).collect();
-    let rows = v.rows(body.width, &known);
+    let rows = v.rows(body.width, &known, app.image_env().as_ref());
     // The peek pane under the page (yaks-7395): what the link under the
     // cursor names, read by `links::peek`.
     let body = if app.viewer_has_peek(&rows) && body.height > super::follow::PEEK_ROWS + 2 {
@@ -309,6 +309,7 @@ pub(crate) fn render_attachment(
     };
     let lines = render_nav_rows(&rows, &v.nav, app.register.as_deref(), w, hscroll);
     frame.render_widget(Paragraph::new(lines).scroll((v.nav.scroll, 0)), body);
+    super::imageview::render_inline_images(app, &rows, v.nav.scroll, frame, body);
 }
 
 /// The viewer's peek pane: a dim rule naming the link under the cursor, then
@@ -1185,7 +1186,7 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
     // no-wrap block are clipped to the pane by `render_dline`.)
     let p = Paragraph::new(rendered).scroll((app.detail.scroll, 0));
     frame.render_widget(p, content_area);
-    super::imageview::render_inline_images(app, &lines, frame, content_area);
+    super::imageview::render_inline_images(app, &lines, app.detail.scroll, frame, content_area);
     if let Some(be) = app.block_edit() {
         blockedit::render_block_editor(be, &lines, app.detail.scroll, frame, content_area);
     }

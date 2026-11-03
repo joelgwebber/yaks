@@ -65,6 +65,9 @@ pub enum Link {
     Upward(String),
     /// An in-document anchor (`#section`).
     Local(Anchor),
+    /// A yak, by its id (`[yaks-1a2b](yaks-1a2b)`): absolute from anywhere,
+    /// never relative to the linking page (yaks-0e15).
+    Yak(String),
 }
 
 /// The document a link sits in, which decides what a relative link means.
@@ -120,6 +123,9 @@ pub fn parse(dest: &str, from: From, is_yak: impl Fn(&str) -> bool) -> Link {
         return Link::Upward(dest.to_string());
     }
     let (path, rev) = split_rev(&body);
+    if rev.is_none() && !path.contains('/') && is_yak(path) {
+        return Link::Yak(path.to_string());
+    }
     if let Some(rest) = path.strip_prefix('/') {
         return match clean(rest) {
             Some(path) => Link::Farm { path, rev, anchor },
@@ -282,6 +288,7 @@ pub fn label(link: &Link) -> String {
         } => format!("{id}/{name}{}", anchor(a)),
         Link::Upward(s) => s.clone(),
         Link::Local(a) => anchor(&Some(a.clone())),
+        Link::Yak(id) => id.clone(),
     }
 }
 
@@ -489,7 +496,7 @@ pub fn exists(root: &Path, link: &Link) -> Option<bool> {
             Some(crate::farm::locate_attachment(root, id, name).is_some())
         }
         Link::Upward(_) => Some(false),
-        Link::Url(_) | Link::Code { .. } | Link::Local(_) => None,
+        Link::Url(_) | Link::Code { .. } | Link::Local(_) | Link::Yak(_) => None,
     }
 }
 
@@ -635,6 +642,11 @@ pub fn peek(link: &Link, bases: &Bases, context: u32) -> Result<Peek> {
             bail!("{s}: a link may not climb out with ../; link from the farm root (/wiki/...)")
         }
         Link::Local(_) => bail!("an in-document anchor needs its document"),
+        Link::Yak(id) => {
+            let path = crate::store::task_path(bases.farm, id);
+            let text = std::fs::read_to_string(&path).map_err(|e| anyhow::anyhow!("{id}: {e}"))?;
+            summary("yak.md", &text)
+        }
         Link::Farm { path, rev, anchor } => {
             let text = match rev {
                 // A farm path at a commit: the farm root is `.yaks/` in its
@@ -755,6 +767,15 @@ mod tests {
         assert_eq!(
             parse("/wiki/a@b.md", pg, yak),
             farm("wiki/a@b.md", None, None)
+        );
+        // A yak id is a yak from anywhere, never a page-relative file
+        // (yaks-0e15); a non-yak bare word still is.
+        for from in [pg, From::Yak, From::Cli] {
+            assert_eq!(parse("yaks-44b3", from, yak), Link::Yak("yaks-44b3".into()));
+        }
+        assert_eq!(
+            parse("notes", pg, yak),
+            farm("wiki/topics/notes", None, None)
         );
     }
 
