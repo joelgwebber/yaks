@@ -1,11 +1,11 @@
 ---
 id: yaks-aec7
 title: Navigation back skips current list view
-status: shaving
+status: shorn
 type: bug
 priority: 3
 created: '2026-11-03T21:11:08Z'
-updated: '2026-11-03T21:47:57Z'
+updated: '2026-11-03T21:47:58Z'
 parent: yaks-f677
 tags:
 - tui
@@ -35,3 +35,13 @@ Fixed: opening a yak or shed row in the pane (`l`/`Enter`, or a click) is now a 
 - `docs/tui.md` (history section) and the `history.rs` module docs say so.
 
 Evidence: new test `backing_out_of_a_detail_returns_to_the_list_it_was_opened_from`; three existing tests counted the stops and were updated. Headless on this farm (attached): Recent, Enter, Tab+Enter onto a linked yak, then `o` `o` lands on Recent's list on the same row, and a third `o` says "no earlier location".
+
+---
+▸ 2026-11-03T21:47:58Z [delta:starred-batch]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
