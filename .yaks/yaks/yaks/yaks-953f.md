@@ -5,7 +5,7 @@ status: hairy
 type: bug
 priority: 3
 created: '2026-08-23T14:38:59Z'
-updated: '2026-10-27T19:08:11Z'
+updated: '2026-11-03T02:19:20Z'
 tags:
 - search
 - tui
@@ -31,3 +31,16 @@ Root cause found + reproduced headlessly: the persisting 'filter: q' is a toast 
 2. Should the / query persist across view switches as its own header chip, cleared by Esc [lean yes], or keep today's clear-on-switch?
 3. Detail /: update only a shared vim-style search register, not the list filter [lean], and should n past the last match roll into the next matching yak [lean yes]?
 4. List n/N with an active query: next/prev row [lean] or reserve n only for 're-apply last search' when the query is empty? Phase 1 can proceed immediately once Q1 is answered; Q2-4 gate phases 2-3.
+
+---
+▸ 2026-11-03T02:19:20Z [tui-design]
+
+Folded into the unified TUI design, [docs/design/tui/model.md](code:docs/design/tui/model.md), tracked by yaks-9c3c. This yak's part is §4, "Search": phase 1 (notifications clear on the next key) and phase 6 (the query and the register).
+
+Changes from the design attached here:
+
+- The query matches what `yaks find` searches, in every view, the Wiki included.
+- The query is part of a history location (Joel's decision 1).
+- The register replaces the viewer's find as well as the detail pane's.
+
+The questions asked on this yak are answered or carried into the design's Decisions and Open questions.
