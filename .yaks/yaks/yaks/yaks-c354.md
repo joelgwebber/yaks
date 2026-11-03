@@ -13,12 +13,4 @@ tags:
 - tui
 ---
 
----
-▸ 2026-11-03T04:24:10Z [herd-tui]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
----
-
-moved: hairy -> shaving
+Phase 3, second half, of [the design](/wiki/design/tui-model.md#1-rows-and-views); implements yaks-f1e6: the Sheds tab becomes an ordinary tree view. Each actor is a collapsible root row; its children are the yaks it touched (working, asking, then recent, as `Shed::rows` orders them). The tab's own cursors, key handlers and list renderer go.
