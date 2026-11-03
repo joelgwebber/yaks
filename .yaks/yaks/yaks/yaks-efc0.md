@@ -1,11 +1,11 @@
 ---
 id: yaks-efc0
 title: Indent shed contents a bit
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-03T14:25:00Z'
-updated: '2026-11-03T21:40:27Z'
+updated: '2026-11-03T21:40:29Z'
 parent: yaks-f677
 tags:
 - sheds
@@ -45,3 +45,13 @@ moved: hairy -> shaving
 ▸ 2026-11-03T21:40:27Z [delta:starred-batch]
 
 Done in d3aa34a: a shed's yak rows are depth 2 (`Row::shed_yak`), so their ids start two columns right of the shed names instead of level with them. Docshot `tui-sheds.svg` regenerated and rasterized (attached).
+
+---
+▸ 2026-11-03T21:40:29Z [delta:starred-batch]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
