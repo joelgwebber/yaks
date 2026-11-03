@@ -1,11 +1,11 @@
 ---
 id: yaks-fc9e
 title: Improved detail cursor/link handling
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-03T03:23:32Z'
-updated: '2026-11-03T21:13:49Z'
+updated: '2026-11-03T21:48:07Z'
 parent: yaks-f677
 tags:
 - tui
@@ -19,3 +19,13 @@ While I don't think we need a full row:col:range selection model for viewing mod
 ▸ 2026-11-03T12:17:37Z [Joel Webber]
 
 Also note: The cursor doesn't update when you search, then move to the [n]ext result. The view jumps, but the cursor stays where it was. We should try to make all scenarios like this consistent.
+
+---
+▸ 2026-11-03T21:48:07Z [delta:starred-batch]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
