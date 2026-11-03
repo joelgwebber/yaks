@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-03T20:58:23Z'
+updated: '2026-11-03T21:00:26Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
@@ -35,4 +35,5 @@ I have a bunch of other ill-formed thoughts I'd like to address before committin
 - Decide whether using std/emacs mode should turn _off_ the weird vim keys (eg, j/k, ctrl-n/p, et al) in most parts of the UI. Probably?
 - I'd like to carefully consider all the choices we've made, especially around mutative bindings (eg, (R)eparent, (X)slaughter, (L)abels, and so forth).
 - Do we allow keys to be rebound? That's a pretty deep rabbit hole, but TUI users can be persnickety (see also: vim users!)
-- The `?` which-key style affordance is
+- The `?` which-key style affordance is really useful. We should extend it to the editor (perhaps `?` in vim-normal mode, and always-available `F1`?). It would also be nice if pressing any of those keys from within the `?` menu immediately triggered the action (this is really helpful in which-key on vim).
+-
