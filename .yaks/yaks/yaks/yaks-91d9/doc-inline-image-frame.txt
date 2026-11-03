@@ -1,0 +1,47 @@
+=== frame 44 · 160x45 · focus=list · view=📖 Wiki · cursor=0 · rows=0 · sel=- · blocked=[fullstory-4b4c.2,fullstory-4b4c.5,fullstory-d227.2,sightkick-deeb,sightmap-34d9] · collapsed=1 · filter=(all) · overlay=attachment · wiki=72 · entry=wiki/topics/scribe-capture-and-mining.md ===
+ 🕒 Recent (50)   📥 Inbox (1)   ⭐ Starred (0)   🦬 Hairy (147)   🪒 Shaving (10)   📖 Wiki (33)   🛖 Sheds (7)
+
+ Fullstory MCP distrib  topic         #fullstory #m  w│ 📖 wiki/topics/scribe-capture-and-mining.md  topic
+ Sightmap for iOS       topic         #sightmap #io  w│ type:        topic
+ Vibium adopting the s  topic         #sightmap #vi  w│ title:       Scribe capture and workflow mining
+ Accessibility signals  topic         #subtext #sig  w│ description: What Scribe's capture agent records, how sensitive data and consent are handled, and what
+ Agent extensibility    topic         #agents #mcp   w│ is and isn't known about how Optimize mines workflows across apps.
+ Agent platforms        agent-platfo  #agents #mcp   w│ tags:        scribe, competitive-intel, workflow-mining, capture
+ Commerce signals       topic         #subtext #sig  w│ sources:     sources/2026-10-26-cc080939/source.md, sources/2026-10-26-e88086f0/source.md,
+ Content quality signa  topic         #subtext #sig  w│ sources/2026-10-26-c27296b6/source.md, sources/2026-10-26-07ded319/source.md,
+ Device and context si  topic         #subtext #sig  w│ sources/2026-10-26-7914d70b/source.md, sources/2026-10-26-3e7065bf/source.md,
+ Engagement signals     topic         #subtext #sig  w│ sources/2026-10-26-cc589301/source.md, sources/2026-10-26-5d24e5f3/source.md,
+ Error signals          topic         #subtext #sig  w│ sources/2026-10-26-f6715336/source.md
+ Form signals           topic         #subtext #sig  w│
+ Frustration signals    topic         #subtext #sig  w│ The technical side of Scribe Optimize. Most of it is unconfirmed: public material describes outcomes,
+ Interaction events     topic         #subtext #sig  w│ not mechanisms.
+ iOS simulator automat  topic         #ios #simulat  w│
+ iOS view trees, sight  topic         #sightmap #io  w│ The capture agent
+ Knowledge management   topic         #knowledge #h  w│
+ Log store design patt  topic         #observabilit  w│ A browser extension and a desktop app. Optimize's mining currently uses browser-based workflows only.
+ Navigation and lifecy  topic         #subtext #sig  w│
+ Performance signals    topic         #subtext #sig  w│ 🖼 Capture in progress
+ PostHog Logs architec  topic         #posthog #obs  w│    ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+ PostHog Logs MCP       topic         #posthog #mcp  w│   ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+ ScribeAgent            summary       #scribe #llm   w│ ▄▄▄▄▄▄▀▄▀▀▀▄▄▀▀▀▀▀▀▄▄▄▄▄▄▀▄▄▄▄▄▄▄▄▄▄▀▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▀▀▀▀▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+ Scribe capture and wo  topic         #scribe #comp  w│ ▄▄▄▄ ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▀▀▀▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▀▀▀▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+ Scribe Optimize data   topic         #scribe #comp  w│ ▄▄▄▄▀▄▀▀▀▀▀▀▀▀▀▀▀▀▀▀▄▄▄▀▀▄▄▄▄▄▄▄▄▀▀▀▀▀▄▄▄▄▀▀▀▄▄▄▄▄▄▄▄▄▄▄▄▄▄     ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀    ▄▄▄▄▄
+ Scribe Optimize UI wa  topic         #scribe #comp  w│ ▄▄▄▄▄▄ ▀▀▄▄▄▄▄▄▄▀▀▀▀▀▀▀▀▀▀▀▀▀▀  ▄▄▄▄▄▄ ▄▄▄▄▄▄ ▀▄▄▄ ▄▄▀▀▀▀▄▄▄▄▄▄▄▀▀▀▀▀▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄    ▄▄▄▄▄
+ Scribe Optimize        topic         #scribe #comp  w│ ▄▄▄▄▀ ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄ ▀▀▀▀    ▄▀▀▀▀▀▀▀▀▀▄▄▄▀▀▀ ▀▀▀▀▀▀▀▀▀▀▀▀▀▄▄▄▄▄ ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄       ▄▄▄▄▄
+ Security and fraud si  topic         #subtext #sig  w│ ▄▄▄▀▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▀▀▀▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▀ ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀ ▄▄▄▄▄
+ Sightmap CDP/BiDi Pag  topic         #sightmap #go  w│ ▄▄▄▄▄▄▄▀▀▀▄▄▄   ▄▄▀▀▀▄   ▄▄▄▀▀▀▄▀  ▄ ▄▄▀▀▀▄▄▄▄▄▄▀▀▄▀▄▀▀▀▄▄▄▄▄▄▀   ▀  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▄▄▄▄▄
+ Sightmap Go library c  topic         #sightmap #go  w│ ▄▄▄▄▀▄▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▄▀▀▀▀▀▀▀▀▄▄▄▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▄▄▄ ▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄ ▄▄▄▄▄
+ Sightmap               topic         #sightmap #hu  w│ ▄▄▄▀▀▀   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▄▀▀▄▄▀▀▀▀▄▀▀▀▄▄▄▀▀▀▄▄▄▄▄▄▄▄▀▀▀▀▀▀▀▀▀▀▀▀▀▀▄ ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+ Subtext signals        topic         #subtext #sig  w│ ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▄▄▄▄▄
+ Subtext                topic         #subtext #ful  w│ ▄▄▄▀▀ ▀▀▀▀▀▀▄▀▀▀▀▀▄▀▀▀▀▀▄▄▄▀▀▄▄▀▀▄▄▄▄▄▄▄▄▄▄▄▄▀▀▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄       ▄▄▄▄▄
+ Agent deployment test  source                       s│ ▄▄▄▄▄ ▄▄▄▄▄▄ ▄▄▄▄▄▄▄▄▄▄▄▄▀▀▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄ ▄ ▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+ Agent deployment test  source                       s│ ▄▄▄▄▄▄▀▀▀▀▀▀▀▀▀▀▄▄▄▄▄ ▄▄▀▄▄▄▄▄▄▄▄▄▄▄▀▀▀▀▀▀▀▀▀▀   ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▄▄▄▄▄
+ Agent deployment test  source                       s│ ── peek ───────────────────────────────────────────────────────────────────────────────────────────────
+ Agent deployment test  source                       s│
+ Agent deployment test  source                       s│
+ Agent deployment test  source                       s│
+ Agent deployment test  source                       s│
+ Signal idea exports:   source                       s│
+ Claude Code docs: Tes  source                       s│
+j/k · Tab:link Enter:follow · o/i back/fwd · p peek · / find · v sel · E edit · O open externally · Esc/q close
+=== end ===
