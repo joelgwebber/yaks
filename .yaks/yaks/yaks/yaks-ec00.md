@@ -5,11 +5,10 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-01T16:44:44Z'
-updated: '2026-11-03T02:38:56Z'
+updated: '2026-11-03T14:21:51Z'
 tags:
 - skills
 - agent
-needs: agent
 ---
 
 Joel (2026-11-01): make sure cloud runners always get an up-to-date `yaks` CLI and up-to-date installed skills. He has hit skills installed in a mix of `~/.agents/skills` and `./.agents/skills`, some not updated, "resulting in all manner of confusion". Runners make it worse: the home dir is ephemeral and environment setup is inconsistent, for both the home dir and the checkouts. This yak holds the research and ends in a plan; implementation goes in child yaks.
@@ -100,3 +99,12 @@ needs: agent
 2. Let's just always defer to a human; don't try and separate private from public herds for this.
 3. Agreed.
 4. :thumbs-up:
+
+---
+▸ 2026-11-03T14:21:51Z [delta:skills-upgrade-audit]
+kind: pickup
+---
+
+picked up
+
+First pass (Joel's answers): upgrade recipe in skill + newer-schema error; agents never migrate, always ask a human; farm min_version warning; schema-bump order in yaks-coordinating; TUI fix yaks-9786. Children below.
