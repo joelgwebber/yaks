@@ -1,0 +1,78 @@
+=== frame 0 · 110x24 · focus=list · view=🦬 Hairy · cursor=0 · rows=3 · sel=t-05dc · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+keys in config.yaml: view.nxt: no such command; move.up: no such key "Hyper"; +1 more (ignored)
+ t-05dc   p3 task     🦬 Root yak
+   t-61a0 p3 task     🦬 Child yak
+ t-1a11   p3 task     🦬 Other root
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Ctrl-N/]:view  j/k:move  l:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:sear
+=== end ===
+=== frame 1 · 110x24 · focus=list · view=🪒 Shaving · cursor=0 · rows=0 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+No tasks.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Ctrl-N/]:view  j/k:move  l:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:sear
+=== end ===
+=== frame 2 · 110x24 · focus=list · view=🪒 Shaving · cursor=0 · rows=0 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=keys ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+No tasks.
+
+
+
+
+
+
+
+
+
+ Keys · list · yak rows ──────────────────────────────────────────────────────────────────────────────────────
+ Ctrl-N/] view.next       l/→/Enter pane.open      E yak.edit       a yak.answer   o        nav.back
+ S-Tab/[  view.prev       h/←       tree.left      X yak.slaughter  Q yak.ask      B        yak.backrefs
+ j/↓      move.down       F         family.cycle   S yak.state      A yak.attach   f        filter.drawer
+ k/↑      move.up         Space     tree.toggle    P yak.priority   * yak.star     W        farm.commit
+ d        move.half_down  m         yak.mark       T yak.type       y row.copy     U        farm.sync
+ u        move.half_up    `         view.pick      L yak.tags       / search.open  ?        app.help
+ PgDn     move.page_down  V         view.save      D yak.dep        n find.next    q/Ctrl-C app.quit
+ PgUp     move.page_up    Esc       view.revert    R yak.reparent   N find.prev
+ g/Home   move.top        c         yak.new        H yak.herd       # nav.goto
+ G/End    move.bottom     C         yak.new_child  M yak.comment    i nav.forward
+? again: the full reference · any other key closes
+=== end ===
