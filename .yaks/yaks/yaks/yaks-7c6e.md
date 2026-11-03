@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-03T20:43:15Z'
+updated: '2026-11-03T20:58:23Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
@@ -30,3 +30,9 @@ Quoth yaks-6919:
 It looks like we went ahead and did the `?` affordance, which I think is a fine place to start.
 
 I have a bunch of other ill-formed thoughts I'd like to address before committing to a design:
+- We really need to test whether the emacs/vim keybinding rules are both equally comprehensive;
+  especially in the editor, but also throughout.
+- Decide whether using std/emacs mode should turn _off_ the weird vim keys (eg, j/k, ctrl-n/p, et al) in most parts of the UI. Probably?
+- I'd like to carefully consider all the choices we've made, especially around mutative bindings (eg, (R)eparent, (X)slaughter, (L)abels, and so forth).
+- Do we allow keys to be rebound? That's a pretty deep rabbit hole, but TUI users can be persnickety (see also: vim users!)
+- The `?` which-key style affordance is
