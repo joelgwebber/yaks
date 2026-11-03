@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T04:28:01Z'
-updated: '2026-11-03T05:14:17Z'
+updated: '2026-11-03T05:14:40Z'
 parent: yaks-aac1
 depends_on:
 - yaks-0906
@@ -84,3 +84,13 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAECAE5IBxBCtY3f3KUhDW5IL-PWT3Nbm
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-03T05:14:40Z [herd-tui]
+kind: landed
+commit: e9e3c6c2e6c2d390c64bc2c1cf60352b02871a6a
+source: 1d552b3edb969bae161092abfabffd1525706061
+branch: main
+---
+
+landed: e9e3c6c2 yaks-9dec: the detail pane's state is one LineNav (App.detail)
