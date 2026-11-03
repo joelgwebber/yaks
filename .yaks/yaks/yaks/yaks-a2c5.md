@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T05:47:06Z'
+updated: '2026-11-03T05:47:07Z'
 parent: yaks-947a
 depends_on:
 - yaks-aac1
@@ -154,3 +154,13 @@ Decision: the image viewer's `Esc`/`q`/`h` now closes the pane like the text vie
 ▸ 2026-11-03T05:47:06Z [hist-1]
 
 Decision: messages. Back/forward say `← Recent · yaks-1234` / `→ ...` with the tab name minus its icon; empty ends say `no earlier location` / `no later location` (replacing `no earlier yak`/`no earlier spot` etc.); a view that is gone adds `(view <key> is gone)`; when the view is gone the filter is not applied (the saved one belonged to the deleted view) but the query is.
+
+---
+▸ 2026-11-03T05:47:07Z [hist-1]
+
+Decision: existing tests changed (the rest keep their assertions, including the footnote `o`, viewer `o`/`i` and nav-position-restore tests):
+- `follow_link_to_yak_outside_any_view_says_so` -> `follow_link_to_a_dead_yak_shows_it_in_the_pane_and_leaves_the_list` (old assertion: "d0 isn't shown in any view" and no history; now the dead yak shows with `not in this list`).
+- `nav_history_back_and_forward`, `nav_back_on_empty_history_is_noop`: message text only.
+- `switching_view_or_moving_to_another_row_closes_the_page`: asserted `viewer_back/fwd` empty; now asserts J/K push nothing.
+- follow.rs `enter_opens_a_page_at_its_heading_and_o_comes_back`: `o` past the first page now returns to the list it was opened from (was "no earlier spot"), and `Esc` no longer forgets history.
+- keymap `each_contexts_hint_is_what_it_was` Shed detail hint, and three snapshots: `sheds_tab_detail` (hint), `goto_jumped_to_detail` (the `#` jump to a shaving yak from Hairy now keeps the list and says `not in this list`), `help_overlay_shows_the_farm_keys` (i/o help text, scroll).
