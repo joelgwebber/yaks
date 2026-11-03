@@ -98,3 +98,13 @@ Progress: implemented, gate green (`env -u YAKS_DIR -u YAKS_ACTOR cargo test --w
 - Gone: `Ctx::Sheds`, `Ctx::ShedDetail`, `ShedsTab.cursor/line/list_offset/offset`, `move_shed*`, `selected_shed_yak`, `open_shed(_yak)`, `copy_shed_thing`, `render_sheds_list`, the detail's yak cursor.
 - Headless on my build, scratch farm with two actors: tab to Sheds, `j` lands on alice's first yak, Enter shows the yak detail, `J` steps to the next yak, `J` again to bob's shed row and its pane (attached `sheds-tree-headless.txt`).
 - An earlier `yaks verify` FAIL in this thread was my own mistake (I exported `YAKS_DIR`/`YAKS_ACTOR` into the gate); the PASS note below is the correct run.
+
+---
+▸ 2026-11-03T04:41:56Z [sheds-2]
+
+Decision: snapshots changed, all Sheds, nothing else.
+- `sheds_tab_list` (insta): now the tree, from a fixture farm that has the fixture's yaks (`shed_farm()` in `sheds_tab.rs` tests; the old `sample()` farm has none of the `mem-*` yaks so no child could show), 120x22 (was 120x14, the tree is taller). Its hint is the shed-row hint, and the tab strip counts differ only because the farm differs.
+- `sheds_tab_detail` (insta): same walk-1 pane; only the hint changed, to `h:list  y:copy name  r:rescan  q:quit`, and the strip counts (new farm).
+- `sheds_tab_yak_detail` (insta, new): `J` from walk-1's pane to its first yak, the normal yak pane.
+- `docs/assets/tui-sheds.svg`, `tui-sheds-detail.svg` changed; `tui-sheds-yak.svg` is new. `docshots.rs` renames the fixture's yaks to this docshots farm's (`sheds_of_this_farm()`), because the farm's yaks are `yaks-*` and the shed rows need yaks below them.
+- No non-Sheds snapshot changed: `git status` after the full gate lists only the three sheds `.snap` files. I regenerated every docshot on this tree and on a clean `git worktree` of HEAD: only `tui-sheds*.svg` differ between the two. The committed non-Sheds SVGs differ from either regeneration (toque's SVG now writes `fill-opacity`, `xml:space`), so I `git checkout`ed them rather than commit unrelated churn. The two regenerated Sheds SVGs therefore use the newer toque style while their neighbours keep the older one.
