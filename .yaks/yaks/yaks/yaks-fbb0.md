@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T03:52:27Z'
+updated: '2026-11-03T04:03:05Z'
 parent: yaks-947a
 tags:
 - tui
@@ -77,3 +77,5 @@ Modifier arms (Shift-↑↓, Ctrl-N/P, Ctrl-C) are bindings with modifiers. Cond
 ▸ 2026-11-03T03:52:27Z [keys-1]
 
 Start: Tue Nov  3 03:52:26 UTC 2026. Farm path: /home/user/.local/share/yaks/farms/yaks-b0f8dcf9/.yaks/yaks/yaks/yaks-fbb0.md. Checkout: /home/user/yaks-3.
+
+[help-overlay-frame](yaks-fbb0/help-overlay-frame.txt)
