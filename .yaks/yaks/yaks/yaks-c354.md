@@ -67,3 +67,5 @@ Roots are collapsible with the existing `collapsed` set and `Space`, keyed by a 
 Start: Tue Nov  3 04:27:48 UTC 2026; yaks path: /home/user/.local/share/yaks/farms/yaks-b0f8dcf9/.yaks/yaks/yaks/yaks-c354.md; top-level /home/user/yaks-5; 50af0a9 yaks-be65: row kinds (yak, document); the Wiki becomes a flat view of document rows
 
 [sheds-tree-headless](yaks-c354/sheds-tree-headless.txt)
+
+[sheds-tree-yak-detail-fixture](yaks-c354/sheds-tree-yak-detail-fixture.txt)
