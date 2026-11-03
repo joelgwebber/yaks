@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T22:40:30Z'
-updated: '2026-11-03T22:42:09Z'
+updated: '2026-11-03T23:09:05Z'
 tags:
 - research
 - design
@@ -33,3 +33,12 @@ thread: ksQQ5qxMm5B_TcKPJ13IMRVoupLOAEJMk5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-03T23:09:05Z [delta:ksQQ5qxMm5B_TcKPJ13IMRVoupLOAEKh-5IBxBCA]
+
+Added provenance: a summary of Clint's Indent thread, plus his pushed `yaks` branch, folded into [the haks page](/wiki/research/haks-orchestration-layer.md) (new sections "Provenance" and "What the thread adds", three new open questions).
+
+- Source: [Indent thread summary](/sources/2026-11-03-81364278/source.md). Produced by a read-only Indent sandbox agent that read the conversation text only (no tool calls, no screenshots). A model's reading, not the transcript.
+- Farm finding: Clint's `haks` herd has 8 yaks, all from before the thread, and none of the build is filed there. The design history exists only in the thread and in git.
+- Corrected my first pass: the "asks for upstream" were written by the thread's agent, not Clint, and the sketch looks like that agent's lifecycle summary.
