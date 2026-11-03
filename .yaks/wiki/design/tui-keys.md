@@ -15,7 +15,7 @@ A proposal for yaks-7c6e, after the unified-model phases ([TUI design](/wiki/des
 1. **One key, one intent, everywhere.** A key means the same thing in every context; only *what* it acts on changes with focus (movement moves whatever has focus). Already the stated rule of the design page; this page applies it to the cases that still break it.
 2. **Case is a tier, not a coin toss.**
    - lowercase: look and move (navigate, open, find, copy). Safe to mash.
-   - Shift: change the yak (state, fields, structure, comments). Every Shift key mutates, and nothing else does.
+   - Shift: change an existing yak (state, fields, structure, comments). No lowercase key changes an existing yak. (Creating one, `c`/`C`, and answering, `a`, add rather than change, and stay lowercase; a few read-only commands sit on Shift for want of a letter, which is harmless.)
    - Ctrl: the app and the farm (quit, commit, sync, rescan), plus the editor's own keys.
    A reader can tell a key is safe from its case alone.
 3. **Destructive means confirmed, and hard to hit.** Slaughter, a bulk state change and discarding an edit always confirm. No destructive action sits on a key adjacent to a common navigation key.
@@ -28,7 +28,7 @@ A proposal for yaks-7c6e, after the unified-model phases ([TUI design](/wiki/des
 
 ## Today's table against the rules
 
-- **Rule 2 is mostly there.** Mutations already sit on Shift: `S` state, `P` priority, `T` type, `L` tags, `D` dependency, `R` reparent, `H` herd, `X` slaughter, `E` edit, `M` comment, `Q` ask, `A` attach, `C` child. Exceptions: `c` (new yak) and `a` (answer/request) mutate on lowercase; `m` (mark) and `*` (star) are view state, fine as lowercase. `F` (family scope) and `V` (save view) are Shift but do not touch a yak; `B` (backrefs) and `O` (open externally) are Shift but read-only.
+- **Rule 2 already holds.** Every change to an existing yak sits on Shift: `S` state, `P` priority, `T` type, `L` tags, `D` dependency, `R` reparent, `H` herd, `X` slaughter, `E` edit, `M` comment, `Q` ask, `A` attach. `c`/`C` (create), `a` (answer), `m` (mark) and `*` (star) are lowercase and add or mark rather than change. `F`, `V`, `B`, `O` are read-only on Shift. The one lowercase change is `r` in the detail (rename an attachment, which rewrites links farm-wide); it opens a prompt first.
 - **Rule 4 is not there.** `vim_mode` only switches the editor. The list, detail and viewer answer `hjkl`, `d`/`u`, `Ctrl-N`/`Ctrl-P` in both modes, and standard mode has no find-next key besides `n`.
 - **Rule 5 breaks on `h`.** In the detail and viewer, `h` scrolls a wide block left and, at offset 0, leaves the pane. Joel's report: scrolling left through a table shoots out of the pane.
 - **`J`/`K` were missing in a Wiki page;** fixed (`2ba1622`, a page's `J`/`K` open the next row's page).
@@ -39,8 +39,7 @@ A proposal for yaks-7c6e, after the unified-model phases ([TUI design](/wiki/des
 | Today | Proposed | Why |
 |---|---|---|
 | `h` at offset 0 leaves the pane | `h` only scrolls; leave with `Esc` (or `Backspace`) | rule 5; the table-scrolling report |
-| `c` new yak, `a` answer | `N` new yak (`C` child stays), `a` stays | rule 2 for creation; `a` is the inbox's one key and asks no confirmation of anything destructive. `N` is free in the list (only the Wiki's "new page" and find-previous use it, and find-previous moves to `Shift-n`'s other binding, see below) |
-| `F` family scope, `V` save view on Shift | lowercase: `F` stays (`f` is the filter drawer), so this one remains an exception; `V` stays | changing them costs muscle memory for no safety gain. Rule 2 is about *mutations* sitting on Shift; read-only Shift keys are tolerated |
+| `r` renames an attachment (lowercase) | `Shift-R` is taken (reparent), so keep `r` behind its prompt, and make the prompt the confirmation | rule 2, by the prompt rather than the case |
 | `vim_mode` editor-only | one `keys: vim` / `keys: standard` setting for the whole TUI (keep `vim_mode` as its alias) | rule 4 |
 | standard mode: `n`/`N` only | add `F3`/`Shift-F3` (both modes), `Ctrl-F` opens find in standard mode | rule 4 |
 | flat `?` popup | grouped: Move, Open and follow, Find, Change the yak (Shift), View and filter, Farm (Ctrl), App | rule 6 |
