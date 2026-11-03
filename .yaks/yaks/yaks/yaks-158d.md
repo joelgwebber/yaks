@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
-updated: '2026-11-03T03:07:28Z'
+updated: '2026-11-03T05:52:28Z'
 tags:
 - search
 - tui
@@ -70,3 +70,12 @@ kind: pickup
 picked up
 
 Nothing to do now: the answers live in the design page; this yak's work is a phase there.
+
+---
+▸ 2026-11-03T05:52:28Z [herd-tui]
+
+Done by herd-tui through phase 5 (yaks-a2c5), landed as `270ec677`.
+
+- One history of locations (view, filter, query, cursor, offset, focus, pane subject) replaces the three back stacks.
+- `o`/`i` work in every view and focus.
+- A link no longer switches the list to the target's status view: the pane shows the target, and the list (with its search) is what `o` brings back. That was the i/o complaint in this yak's note.
