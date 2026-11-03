@@ -1,0 +1,12 @@
+---
+source: src/tui/tests.rs
+expression: frame
+---
+ 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   📖  Wiki (0)   🛖  Sh
+
+ b0   p1 task     🪒  Root B shaving
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /

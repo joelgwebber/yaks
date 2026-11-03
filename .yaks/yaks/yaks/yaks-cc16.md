@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T03:55:33Z'
+updated: '2026-11-03T03:57:13Z'
 parent: yaks-947a
 tags:
 - tui
@@ -59,3 +59,5 @@ result: fail
 ---
 
 verify: `cargo test --workspace` -> FAIL (exit 101)
+
+[search-commit-tab-frame](yaks-cc16/search-commit-tab-frame.txt)
