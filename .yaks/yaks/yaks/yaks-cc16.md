@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T03:57:34Z'
+updated: '2026-11-03T03:58:03Z'
 parent: yaks-947a
 tags:
 - tui
@@ -97,3 +97,11 @@ verify: `cargo test --workspace` -> FAIL (exit 101)
 ▸ 2026-11-03T03:57:34Z [notify-1]
 
 Decision: set this yak's `verify:` to `env -u YAKS_DIR -u YAKS_ACTOR cargo test --workspace`, because the default gate fails under the `YAKS_DIR` this job must export (see the surprise note). Rejected: leaving it and recording FAIL, which says nothing about the change. The coordinator may reset it with `yaks update yaks-cc16 --verify ''`.
+
+---
+▸ 2026-11-03T03:58:03Z [notify-1]
+kind: verify
+result: pass
+---
+
+verify: `env -u YAKS_DIR -u YAKS_ACTOR cargo test --workspace` -> PASS (exit 0)
