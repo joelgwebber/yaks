@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T04:10:57Z'
-updated: '2026-11-03T04:43:01Z'
+updated: '2026-11-03T04:46:15Z'
 parent: yaks-5d08
 depends_on:
 - yaks-be65
@@ -162,3 +162,8 @@ branch: main
 ---
 
 landed: 200d48fa yaks-c354: Sheds becomes a tree view (actor roots, touched yaks as yak rows)
+
+---
+▸ 2026-11-03T04:46:15Z [herd-tui]
+
+Landed by herd-tui as `200d48fa` (worker `074f09c2`). Gate on it: 30 suites ok. Headless on my build with two actors: roots w1/w2 with their yaks as children, `Enter` on a yak shows its detail, `J` steps to the next row (the w2 shed pane).
