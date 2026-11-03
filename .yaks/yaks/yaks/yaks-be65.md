@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T04:10:57Z'
-updated: '2026-11-03T04:23:23Z'
+updated: '2026-11-03T04:23:46Z'
 parent: yaks-5d08
 tags:
 - tui
@@ -111,3 +111,13 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD_EipIBxBCtY3f3KUhDW5IL-PWT3Nbm
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-03T04:23:46Z [herd-tui]
+kind: landed
+commit: 50af0a9a3dc5be6ee8315a1a14c23311c3cc54fb
+source: 63fcca622d12599221b2a4920dada58ee0ffcf49
+branch: main
+---
+
+landed: 50af0a9a yaks-be65: row kinds (yak, document); the Wiki becomes a flat view of document rows
