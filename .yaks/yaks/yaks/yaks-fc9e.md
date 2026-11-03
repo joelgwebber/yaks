@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-03T03:23:32Z'
-updated: '2026-11-03T21:55:05Z'
+updated: '2026-11-03T21:55:06Z'
 parent: yaks-f677
 tags:
 - tui
@@ -31,3 +31,18 @@ thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
 moved: hairy -> shaving
 
 [fc9e-tabs](yaks-fc9e/fc9e-tabs.txt)
+
+---
+▸ 2026-11-03T21:55:06Z [delta:starred-batch]
+
+Done in the shape you described: rows stay the cursor model, plus a *targeted link* within the row.
+
+- `LineNav` gains `link: Option<(row, col)>`. Tab/`]` and Shift-Tab/`[` step through **every** link in document order, several on one row included; the cursor goes to the link's row ([fn jump_link](code:src/tui/linenav.rs)).
+- [fn link_at](code:src/tui/linenav.rs) returns the targeted link (else the row's first). It is the one rule now: Enter (detail and viewer), `O`, `r`, the peek pane, the status-bar destination and the highlight all go through it (`App::detail_link`). Four copies of "first link on the cursor row" are gone.
+- Any other cursor move (`j`/`k`, `g`/`G`, a jump, a find) drops the target, so returning to a row starts at its first link.
+- **Search:** `n`/`N` and Enter already moved the cursor after upstream's yaks-c215; typing in `/` now does too (the view jumped, the cursor stayed). Esc still restores both.
+- `?` help and `docs/tui.md` updated.
+
+Evidence: tests `tab_visits_every_link_on_a_row_and_link_at_follows_it` and `the_detail_cursor_follows_find_matches`; on this farm (attached), in yaks-f677's detail, Tab x14-17 follow `yaks-0e15`, `yaks-d0b0`, `yaks-c5d7`, `yaks-91d9`, the four links of one description row, in order.
+
+Not done: mouse click to target a specific link on a row (that is yaks-000b's territory).
