@@ -5,10 +5,11 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T03:57:19Z'
+updated: '2026-11-03T03:57:34Z'
 parent: yaks-947a
 tags:
 - tui
+verify: env -u YAKS_DIR -u YAKS_ACTOR cargo test --workspace
 ---
 
 Phase 1 of [the design](/wiki/design/tui-model.md#phases) (yaks-953f, its phase 1): a notification lasts until the next key, and the search commit stops writing a `filter: q` toast. Today `App.notification` is never cleared, so a stale `filter: widget` toast outlives the search it describes.
