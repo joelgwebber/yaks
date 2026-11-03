@@ -494,7 +494,7 @@ mod tests {
         assert!(app.selected_doc().is_some());
         assert!(matches!(app.selected_row(), Some(tree::Item::Doc(_))));
         for keys in [
-            "S", "P", "T", "L", "X", "D", "M", "a", "Q", "A", "*", "m", "c",
+            "S", "P", "T", "L", "X", "D", "M", "a", "Q", "A", "*", "m", "C",
         ] {
             press(&mut app, keys);
             assert!(
@@ -521,10 +521,10 @@ mod tests {
         let (proj, mut app) = on_wiki();
         app.filter.search = Some("no such page".into());
         assert_eq!(app.row_count(), 0);
-        press(&mut app, "N");
+        press(&mut app, "c");
         assert!(
             matches!(app.overlay, Overlay::Edit(_)),
-            "N: new page prompt"
+            "c: new page prompt"
         );
         let _ = std::fs::remove_dir_all(proj);
     }
@@ -552,7 +552,7 @@ mod tests {
     #[test]
     fn yak_keys_are_inert_on_the_wiki_tab() {
         let (proj, mut app) = on_wiki();
-        for c in ['S', 'X', 'c', 'D', 'M', 'f', '*', 'm', 'a'] {
+        for c in ['S', 'X', 'C', 'D', 'M', 'f', '*', 'm', 'a'] {
             press(&mut app, &c.to_string());
             assert!(
                 matches!(app.overlay, Overlay::None),
@@ -773,7 +773,7 @@ mod tests {
     fn n_creates_a_page_then_edits_it() {
         let (proj, mut app) = on_wiki();
         let root = app.farm.as_ref().unwrap().root().to_path_buf();
-        press(&mut app, "N");
+        press(&mut app, "c");
         let Overlay::Edit(ed) = &app.overlay else {
             panic!("the path prompt should be open")
         };
@@ -818,7 +818,7 @@ mod tests {
         );
         // A path that exists is refused.
         esc_key(&mut app);
-        press(&mut app, "N");
+        press(&mut app, "c");
         set_editor_text(&mut app, "wiki/topics/hnsw-tuning.md");
         enter_key(&mut app);
         assert!(

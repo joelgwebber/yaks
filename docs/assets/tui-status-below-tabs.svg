@@ -25,6 +25,6 @@ text{white-space:pre}
 <text y="59.5"><tspan x="18.4" class="s1">yaks-3901</tspan><tspan x="119.2" class="s3">p1</tspan><tspan x="144.4" class="s1">task     🪒</tspan><tspan x="236.8" class="s1"> Coordination substrate for parallel yak-shaving</tspan><tspan x="665.2" class="s1">[coord, git]</tspan></text>
 <text y="77.5"><tspan x="10.0" class="s4">*</tspan><tspan x="35.2" class="s5">yaks-70e5</tspan><tspan x="119.2" class="s6">p3</tspan><tspan x="144.4" class="s7">feature</tspan><tspan x="220.0">🦬</tspan><tspan x="245.2">yaks diff &lt;refA&gt; &lt;refB&gt;: ref-generic farm diff</tspan><tspan x="724.0" class="s8">[cli]</tspan></text>
 <text y="95.5"><tspan x="18.4" class="s5">yaks-10fb</tspan><tspan x="119.2" class="s6">p3</tspan><tspan x="144.4" class="s7">idea</tspan><tspan x="220.0">🦬</tspan><tspan x="245.2">Coordination follow-ups (post-3901)</tspan><tspan x="707.2" class="s8">[agent]</tspan></text>
-<text y="221.5"><tspan x="10.0" class="s9">Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f</tspan></text>
+<text y="221.5"><tspan x="10.0" class="s9">Tab:view  j/k:move  l:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f</tspan></text>
 </g>
 </svg>

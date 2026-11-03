@@ -30,7 +30,7 @@ impl App {
             .unwrap_or(view::FamilyScope::DEFAULT)
     }
 
-    /// Cycle the active view's family scope (the `h` key): auto -> lone ->
+    /// Cycle the active view's family scope (the `F` key): auto -> lone ->
     /// remaining -> all -> auto. Flat/working-set views have no tree, so it's a
     /// no-op there with a hint.
     pub(crate) fn cycle_family_scope(&mut self) {
@@ -361,7 +361,7 @@ impl App {
     }
 
     /// The kind of row keys act on: the selected row's, else what the active
-    /// view lists (so an empty Wiki still takes `N` and `r`, an empty Sheds `r`).
+    /// view lists (so an empty Wiki still takes `c` and `Ctrl-R`, an empty Sheds `Ctrl-R`).
     pub(crate) fn row_kind(&self) -> tree::RowKind {
         if self.pane_yak_id().is_some() {
             return tree::RowKind::Yak;

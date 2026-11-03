@@ -28,6 +28,6 @@ text{white-space:pre}
 <text y="77.5"><tspan x="35.2">yaks-b517 p2 feature  🪒</tspan><tspan x="245.2">HITL: needs-human frontmatter + inbox surfacing</tspan><tspan x="715.6" class="s0">[cli, ui]</tspan><tspan x="799.6" class="s6">⏳</tspan></text>
 <text y="95.5"><tspan x="35.2" class="s2">yaks-3677</tspan><tspan x="119.2" class="s7">p3</tspan><tspan x="144.4" class="s4">feature</tspan><tspan x="220.0">🪒</tspan><tspan x="245.2">TUI doc screenshots via headless buffer-&gt;SVG</tspan><tspan x="732.4" class="s5">[ui, docs]</tspan></text>
 <text y="113.5"><tspan x="10.0" class="s8">*</tspan><tspan x="18.4" class="s9">  yaks-70e5</tspan><tspan x="119.2" class="s10">p3</tspan><tspan x="144.4" class="s11">feature</tspan><tspan x="220.0" class="s0">🦬</tspan><tspan x="236.8" class="s0"> yaks diff &lt;refA&gt; &lt;refB&gt;: ref-generic farm diff</tspan><tspan x="774.4" class="s5">[cli]</tspan></text>
-<text y="581.5"><tspan x="10.0" class="s12">Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filte</tspan></text>
+<text y="581.5"><tspan x="10.0" class="s12">Tab:view  j/k:move  l:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filte</tspan></text>
 </g>
 </svg>

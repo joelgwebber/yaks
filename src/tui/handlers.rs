@@ -768,8 +768,27 @@ impl App {
         self.overlay = Overlay::Drawer(Drawer::from_filter(self.editor_vim, &self.filter, choices));
     }
 
+    /// `?`: the current context's keys in a popup.
+    pub(crate) fn open_keys_popup(&mut self) {
+        self.overlay = Overlay::Keys;
+    }
+
+    /// The full help reference, from the popup's second `?`.
     pub(crate) fn open_help(&mut self) {
         self.overlay = Overlay::Help(0);
+    }
+
+    /// A key in the `?` popup: the help key again opens the full reference,
+    /// any other closes the popup (and is not run).
+    fn handle_keys_popup_key(&mut self, k: KeyEvent) {
+        let help = self
+            .keymap
+            .lookup(self.surface_ctx(), self.surface_kind(), &k)
+            == Some(Cmd::AppHelp);
+        self.overlay = Overlay::None;
+        if help {
+            self.open_help();
+        }
     }
 
     /// `l` / `→` / Enter on the list: show the selected yak (or shed) in the
@@ -1026,8 +1045,8 @@ impl App {
     /// `v`/Shift-↑↓ select, `y` yanks, `/` `n` `N` find, `o`/`i` go back /
     /// forward in the history, `h`/`l` scroll a code block or table
     /// sideways. `E` edits the file, `O` hands it to the OS opener; `Esc`
-    /// peels back selection, then find, then closes, as do `q` and `h`/`←`
-    /// (off a scrolled block).
+    /// peels back selection, then find, then closes, as does `h`/`←` (off a
+    /// scrolled block); `q` quits, as everywhere.
     pub(super) fn run_viewer_cmd(&mut self, cmd: Cmd) {
         let Some((lines, vp)) = self.attachment_rows() else {
             return;
@@ -1422,16 +1441,22 @@ impl App {
     }
 
     pub(crate) fn handle_help_key(&mut self, k: KeyEvent) {
-        // Any of Esc/q/? dismisses the reference.
-        if matches!(
-            k.code,
-            KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('?')
-        ) {
+        // Any of Esc/q/? (or the help key in effect) dismisses the reference.
+        let help_key = self
+            .keymap
+            .lookup(self.surface_ctx(), self.surface_kind(), &k)
+            == Some(Cmd::AppHelp);
+        if help_key
+            || matches!(
+                k.code,
+                KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('?')
+            )
+        {
             self.overlay = Overlay::None;
             return;
         }
         let vh = self.detail_page.max(1);
-        let max_scroll = (help_content().len() as u16).saturating_sub(vh);
+        let max_scroll = (help_content(&self.keymap).len() as u16).saturating_sub(vh);
         let half = (vh / 2).max(1);
         if let Overlay::Help(scroll) = &mut self.overlay {
             match k.code {
@@ -1743,6 +1768,10 @@ impl App {
             self.handle_create_key(k, double_esc);
             return;
         }
+        if matches!(self.overlay, Overlay::Keys) {
+            self.handle_keys_popup_key(k);
+            return;
+        }
         if matches!(self.overlay, Overlay::Help(_)) {
             self.handle_help_key(k);
             return;
@@ -1889,6 +1918,7 @@ impl App {
             | Overlay::Create(_)
             | Overlay::Find(_)
             | Overlay::ViewPicker(_)
+            | Overlay::Keys
             | Overlay::Help(_) => {}
             Overlay::Pick {
                 prompt,
@@ -2557,7 +2587,7 @@ fn handle_key_inner(app: &mut App, k: KeyEvent) {
     // the detail pane or the open document, by the kind of row under the
     // cursor.
     let ctx = app.surface_ctx();
-    if let Some(cmd) = keymap::lookup(ctx, app.surface_kind(), &k) {
+    if let Some(cmd) = app.keymap.lookup(ctx, app.surface_kind(), &k) {
         app.run_cmd(ctx, cmd);
     }
 }

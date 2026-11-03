@@ -182,7 +182,10 @@ Open a yak (`l`) for its metadata, relations, description and attributed notes:
 These screenshots are rendered headlessly, and the same machinery lets an agent
 drive the TUI: `yaks tui --headless` reads one action per line on stdin and prints a
 text snapshot after each, via [toque](https://github.com/joelgwebber/toque) (its
-README walks through a short session). See [docs/tui.md](docs/tui.md) for the keys.
+README walks through a short session). `?` shows the keys of the current
+context in a popup (a second `?` opens the full reference), and a `keys:` map in
+your own `~/.config/yaks/config.yaml` rebinds them. See [docs/tui.md](docs/tui.md)
+for the keys and [Customising keys](docs/tui.md#customising-keys).
 
 ## Use with an AI coding agent
 

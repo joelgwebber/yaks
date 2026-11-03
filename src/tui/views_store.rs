@@ -27,7 +27,7 @@ fn slug(root: &Path) -> String {
     format!("{h:016x}")[..12].to_string()
 }
 
-fn config_home() -> PathBuf {
+pub(super) fn config_home() -> PathBuf {
     if let Ok(x) = std::env::var("XDG_CONFIG_HOME") {
         if !x.is_empty() {
             return PathBuf::from(x);

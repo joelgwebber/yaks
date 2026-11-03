@@ -1,0 +1,28 @@
+---
+source: src/tui/tests.rs
+expression: "draw(&app, 110, 24)"
+---
+ 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   📖  Wiki (0)   🛖  Sheds (…)
+
+ a0   p2 task     🦬  Root A
+   a1 p3 task     🦬  Child A1
+
+
+
+
+
+
+
+
+ Keys · list · yak rows ──────────────────────────────────────────────────────────────────────────────────────
+ Tab/]   view.next       l/→/Enter pane.open      E yak.edit       a yak.answer   o        nav.back
+ S-Tab/[ view.prev       h/←       tree.left      X yak.slaughter  Q yak.ask      B        yak.backrefs
+ j/↓     move.down       F         family.cycle   S yak.state      A yak.attach   f        filter.drawer
+ k/↑     move.up         Space     tree.toggle    P yak.priority   * yak.star     W        farm.commit
+ d       move.half_down  m         yak.mark       T yak.type       y row.copy     U        farm.sync
+ u       move.half_up    `         view.pick      L yak.tags       / search.open  ?        app.help
+ PgDn    move.page_down  V         view.save      D yak.dep        n find.next    q/Ctrl-C app.quit
+ PgUp    move.page_up    Esc       view.revert    R yak.reparent   N find.prev
+ g/Home  move.top        c         yak.new        H yak.herd       # nav.goto
+ G/End   move.bottom     C         yak.new_child  M yak.comment    i nav.forward
+? again: the full reference · any other key closes

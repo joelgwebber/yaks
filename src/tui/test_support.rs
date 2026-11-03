@@ -67,6 +67,14 @@ pub(crate) fn key(c: char) -> KeyEvent {
     KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)
 }
 
+/// Ctrl-R: refresh (the table's `list.refresh`).
+pub(crate) fn ctrl_r(app: &mut App) {
+    handle_key(
+        app,
+        KeyEvent::new(KeyCode::Char('r'), KeyModifiers::CONTROL),
+    );
+}
+
 pub(crate) fn enter_key(app: &mut App) {
     handle_key(app, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
 }

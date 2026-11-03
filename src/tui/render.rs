@@ -10,14 +10,14 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, List, ListItem, ListState, Padding, Paragraph};
+use ratatui::widgets::{Block, Borders, Clear, List, ListItem, ListState, Padding, Paragraph};
 
 use std::cell::RefCell;
 
 use edtui::{EditorState, EditorView};
 
 use super::blockedit;
-use super::keymap::{help_content, help_hint};
+use super::keymap::{help_content, help_hint, popup_lines};
 use super::palette;
 use super::{
     App, DocView, Focus, Overlay, completion_context, detail, editor_theme, render_create,
@@ -77,7 +77,7 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
             Overlay::Fuzzy(fp) => render_fuzzy_results(app, fp, frame, inner),
             Overlay::Drawer(d) => render_drawer(d, frame, inner),
             Overlay::Create(f) => render_create(f, frame, inner),
-            Overlay::Help(scroll) => render_help(*scroll, frame, inner),
+            Overlay::Help(scroll) => render_help(app, *scroll, frame, inner),
             Overlay::ViewPicker(sel) => render_view_picker(app, *sel, frame, inner),
             // The pane's subject: the open document, else the selected row's.
             _ if app.doc.is_some() => match app.doc.as_ref().map(|d| &d.view) {
@@ -91,7 +91,47 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
     } else {
         render_list(app, frame, mid);
     }
+    if matches!(app.overlay, Overlay::Keys) {
+        render_keys_popup(app, frame, mid);
+    }
     render_status(app, frame, bot);
+}
+
+/// The `?` popup (which-key): the current context's keys over the bottom of
+/// the main area, from the keymap in effect. It leaves a few rows of the
+/// screen behind it.
+fn render_keys_popup(app: &App, frame: &mut Frame, mid: Rect) {
+    let (ctx, kind) = (app.surface_ctx(), app.surface_kind());
+    let entries = app.keymap.popup_entries(ctx, kind);
+    let width = mid.width.saturating_sub(2) as usize;
+    let max_rows = (mid.height as usize).saturating_sub(5).max(1);
+    let lines = popup_lines(&entries, width, max_rows);
+    let height = (lines.len() as u16 + 1).min(mid.height);
+    let area = Rect {
+        y: mid.y + mid.height - height,
+        height,
+        ..mid
+    };
+    let rows = match (ctx, kind) {
+        (super::keymap::Ctx::List | super::keymap::Ctx::Detail, Some(kind)) => match kind {
+            tree::RowKind::Yak => " · yak rows",
+            tree::RowKind::Doc => " · document rows",
+            tree::RowKind::Shed => " · shed rows",
+        },
+        _ => "",
+    };
+    let block = Block::new()
+        .borders(Borders::TOP)
+        .border_style(Style::new().fg(Color::Cyan))
+        .padding(Padding::horizontal(1))
+        .title(Span::styled(
+            format!(" Keys · {}{rows} ", ctx.title()),
+            Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(Clear, area);
+    frame.render_widget(block, area);
+    frame.render_widget(Paragraph::new(lines), inner);
 }
 
 /// Right-pane (detail / overlay) share of the main area before clamping —
@@ -198,7 +238,7 @@ pub(crate) fn render_view_picker(app: &App, sel: usize, frame: &mut Frame, area:
     );
 }
 
-pub(crate) fn render_help(scroll: u16, frame: &mut Frame, area: Rect) {
+pub(crate) fn render_help(app: &App, scroll: u16, frame: &mut Frame, area: Rect) {
     let [head, body] = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).areas(area);
     frame.render_widget(
         Paragraph::new(Span::styled(
@@ -207,7 +247,10 @@ pub(crate) fn render_help(scroll: u16, frame: &mut Frame, area: Rect) {
         )),
         head,
     );
-    frame.render_widget(Paragraph::new(help_content()).scroll((scroll, 0)), body);
+    frame.render_widget(
+        Paragraph::new(help_content(&app.keymap)).scroll((scroll, 0)),
+        body,
+    );
 }
 
 /// The attachment viewer (yaks-699b): a cyan header naming the file, then its
@@ -465,6 +508,7 @@ pub(crate) fn overlay_name(o: &Overlay) -> &'static str {
         Overlay::Search(_) => "search",
         Overlay::Drawer(_) => "drawer",
         Overlay::Create(_) => "create",
+        Overlay::Keys => "keys",
         Overlay::Help(_) => "help",
         Overlay::Find(_) => "find",
         Overlay::ViewPicker(_) => "view-picker",
@@ -1483,6 +1527,20 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
         );
         return;
     }
+    // The `?` popup's hint: the help key again, else any key closes.
+    if matches!(&app.overlay, Overlay::Keys) {
+        let help = app
+            .keymap
+            .first_label(app.surface_ctx(), super::keymap::Cmd::AppHelp);
+        frame.render_widget(
+            Paragraph::new(Span::styled(
+                format!("{help} again: the full reference · any other key closes"),
+                Style::new().fg(Color::DarkGray),
+            )),
+            area,
+        );
+        return;
+    }
     // Help reference hint.
     if matches!(&app.overlay, Overlay::Help(_)) {
         frame.render_widget(
@@ -1498,7 +1556,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
     // the key hints.
     if app.attach().is_some() && matches!(app.overlay, Overlay::None) {
         let text = link_hint(app, area.width as usize).unwrap_or_else(|| {
-            "j/k · Tab:link Enter:follow · o/i back/fwd · p peek · / find · v sel · E edit · O open externally · Esc/q close"
+            "j/k · Tab:link Enter:follow · o/i back/fwd · p peek · / find · v sel · E edit · O open externally · Esc/h close · q quit"
                 .into()
         });
         let text = with_match_chip(app, text);
@@ -1512,7 +1570,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
     if app.image().is_some() && matches!(app.overlay, Overlay::None) {
         frame.render_widget(
             Paragraph::new(Span::styled(
-                "O open externally · Esc/q close",
+                "O open externally · Esc/h close · q quit",
                 Style::new().fg(Color::DarkGray),
             )),
             area,

@@ -488,6 +488,6 @@ text{white-space:pre}
 <text y="491.5"><tspan x="10.0" class="s3">│</tspan></text>
 <text y="509.5"><tspan x="10.0" class="s3">│</tspan></text>
 <text y="527.5"><tspan x="10.0" class="s3">│</tspan></text>
-<text y="545.5"><tspan x="10.0" class="s5">O open externally · Esc/q close</tspan></text>
+<text y="545.5"><tspan x="10.0" class="s5">O open externally · Esc/h close · q quit</tspan></text>
 </g>
 </svg>

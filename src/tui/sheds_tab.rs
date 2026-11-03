@@ -817,7 +817,7 @@ mod tests {
         let frame = draw(&app, 120, 14);
         assert!(frame.contains("work/walk-1"), "{frame}");
         // The pane's own keys: rescan, and copy the name.
-        press(&mut app, "r");
+        ctrl_r(&mut app);
         assert_eq!(app.notification.as_deref(), Some("rescanning sheds"));
         press(&mut app, "y");
         let note = app.notification.clone().unwrap();
@@ -938,14 +938,14 @@ mod tests {
             note == "copied tex-1" || note == "clipboard unavailable",
             "{note}"
         );
-        press(&mut app, "r");
+        ctrl_r(&mut app);
         assert_eq!(app.notification.as_deref(), Some("rescanning sheds"));
         // An empty tab (no actor yet) still rescans.
         let mut empty = on_sheds(App::new(vec![]));
         let mut snap = fixture::snapshot();
         snap.report.sheds.clear();
         empty.apply_sheds_snapshot(snap);
-        press(&mut empty, "r");
+        ctrl_r(&mut empty);
         assert_eq!(empty.notification.as_deref(), Some("rescanning sheds"));
     }
 

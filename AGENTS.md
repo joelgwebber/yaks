@@ -54,8 +54,11 @@ table only to exclude the local `.edtui` clone.
 - `src/tui/keymap.rs` — the TUI's command table: `Cmd` (dotted names), `Ctx` (a key's
   surface), the static `BINDINGS`, `lookup` and `App::run_cmd`. The non-modal surfaces'
   keys (list, detail, text/image viewers, Wiki and Sheds tabs) dispatch through it, and
-  the `?` overlay (`help_content`) and the bottom hint (`help_hint`) are generated
-  from it: a key change is one edit there. Modal overlays are not in it.
+  the `?` overlay (`help_content`), the `?` popup (`popup_entries`) and the bottom hint
+  (`help_hint`) are generated from it: a key change is one edit there. Modal overlays
+  are not in it. `Keymap` is the table with the user's `keys:` overrides applied
+  (`keymap/overrides.rs`; read from `$XDG_CONFIG_HOME/yaks/config.yaml` by
+  `App::with_farm`, never by `App::new`): every read of a key goes through it.
 - `src/tui/history.rs` — the TUI's one history of locations (`o`/`i`): `Location`,
   `History`, `App::jump` (wrap a jump in it and it pushes the place left),
   `history_back`/`history_forward` and `restore`. A new kind of jump goes through

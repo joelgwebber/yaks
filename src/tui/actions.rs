@@ -238,11 +238,35 @@ impl App {
         self.save_ui_state();
     }
 
+    /// `h` on a list row: collapse it when it is an expanded parent, else go to
+    /// its parent (the nearest row above it that is less indented). Nothing on
+    /// a root that has nothing to collapse, in a flat view, or on a document.
+    pub(crate) fn tree_left(&mut self) {
+        let rows = self.rows();
+        let Some(row) = rows.get(self.cursor) else {
+            return;
+        };
+        if row.has_children && !row.collapsed {
+            let Some(key) = row.collapse_key() else {
+                return;
+            };
+            drop(rows);
+            self.collapsed.insert(key);
+            self.save_ui_state();
+            return;
+        }
+        let depth = row.depth;
+        let parent = rows[..self.cursor].iter().rposition(|r| r.depth < depth);
+        drop(rows);
+        if let Some(parent) = parent {
+            self.cursor = parent;
+        }
+    }
+
     // -- overlay openers --------------------------------------------------
 
     /// Toggle the cursor's yak in the multi-select set. `m` is the toggle key:
-    /// the natural `Space` is already collapse/expand, and vi-style `v` collides
-    /// with the `[v]iew` picker (that v-vs-view rebinding is deferred; yaks-de85).
+    /// the natural `Space` is already collapse/expand (and `v` is visual select).
     pub(crate) fn toggle_selected(&mut self) {
         let Some(id) = self.selected_id() else { return };
         if self.selected.remove(&id) {

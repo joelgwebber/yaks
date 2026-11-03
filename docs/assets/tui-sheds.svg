@@ -37,6 +37,6 @@ text{white-space:pre}
 <text xml:space="preserve" y="239.5"><tspan x="35.2" class="s6">yaks-10fb</tspan><tspan x="119.2" class="s3">p3</tspan><tspan x="144.4" class="s8">idea</tspan><tspan x="220.0">🦬</tspan><tspan x="245.2">Coordination follow-ups (post-3901)</tspan><tspan x="1152.4" class="s0">recent</tspan><tspan x="1211.2" class="s9">[agent]</tspan></text>
 <text xml:space="preserve" y="257.5"><tspan x="35.2" class="s0">gone-1</tspan><tspan x="253.6" class="s0">idle   30d ago      last: mem-0002 Old spike</tspan></text>
 <text xml:space="preserve" y="311.5"><tspan x="10.0" class="s0">   farm: up to date with origin/yaks</tspan></text>
-<text xml:space="preserve" y="329.5"><tspan x="10.0" class="s2">Tab:view  j/k:move  l:detail  /:search  y:copy name  r:rescan  v:views  ?:help  q:quit</tspan></text>
+<text xml:space="preserve" y="329.5"><tspan x="10.0" class="s2">Tab:view  j/k:move  l:detail  /:search  y:copy name  `:views  ?:help  q:quit</tspan></text>
 </g>
 </svg>

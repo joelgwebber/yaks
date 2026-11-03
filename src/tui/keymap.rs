@@ -3,10 +3,12 @@
 //! names a [`Cmd`] (a stable dotted name), the [`Ctx`] it applies in, its
 //! keys, a help line for the `?` overlay and a label for the bottom hint.
 //!
-//! Dispatch is "work out the context, [`lookup`], [`App::run_cmd`]". The
-//! `?` overlay ([`help_content`]) and the bottom bar ([`help_hint`]) are
-//! generated from the same table, so a key cannot be bound without being
-//! listed, and the three cannot drift.
+//! Dispatch is "work out the context, [`Keymap::lookup`], [`App::run_cmd`]".
+//! The `?` popup ([`Keymap::popup_entries`]), the full `?` reference
+//! ([`help_content`]) and the bottom bar ([`help_hint`]) are generated from
+//! the same table, so a key cannot be bound without being listed, and the
+//! four cannot drift. The [`Keymap`] is the table with the user's `keys:`
+//! overrides applied ([`overrides`]); every read of a key goes through it.
 //!
 //! A [`Cmd`] is one intent, not one handler: `move.down` moves whichever
 //! surface has focus, and `run_cmd` picks the target from the context. A key
@@ -20,7 +22,7 @@
 //! then a binding for any kind. A yak command is bound for yak rows only, so on
 //! a document or shed row it finds nothing and does nothing, as on an empty
 //! list; with no row selected the view's own kind applies (an empty Wiki still
-//! takes `N` and `r`, an empty Sheds view `r`).
+//! takes `c` and `Ctrl-R`, an empty Sheds view `Ctrl-R`).
 //!
 //! An open document (the text and image viewers) is part of the right pane,
 //! not an overlay (yaks-0906): its keys are the `Viewer` and `Image` contexts,
@@ -33,23 +35,24 @@ use super::*;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 
+mod overrides;
+
 /// Declares [`Cmd`] with each variant's dotted name, and keeps `ALL` and
 /// `name` in step with it (a new variant cannot be left out of either).
 macro_rules! commands {
     ($($variant:ident => $name:literal,)*) => {
         /// One action a key can run.
-        #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+        #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
         pub(crate) enum Cmd {
             $($variant,)*
         }
 
         impl Cmd {
-            /// Every command, for tests.
-            #[cfg(test)]
+            /// Every command.
             pub(crate) const ALL: &'static [Cmd] = &[$(Cmd::$variant,)*];
 
-            /// The stable dotted name (what a future `keys:` override names).
-            #[cfg(test)]
+            /// The stable dotted name: what a `keys:` override in the user
+            /// config names, and what the `?` popup prints.
             pub(crate) fn name(self) -> &'static str {
                 match self {
                     $(Cmd::$variant => $name,)*
@@ -79,6 +82,7 @@ commands! {
     ViewRevert => "view.revert",
     FamilyCycle => "family.cycle",
     TreeToggle => "tree.toggle",
+    TreeLeft => "tree.left",
     PaneOpen => "pane.open",
     PaneEnter => "pane.enter",
     PaneBack => "pane.back",
@@ -132,6 +136,13 @@ commands! {
     WikiEdit => "wiki.edit",
 }
 
+impl Cmd {
+    /// The command a dotted name (`view.next`) stands for.
+    pub(crate) fn from_name(name: &str) -> Option<Cmd> {
+        Cmd::ALL.iter().copied().find(|c| c.name() == name)
+    }
+}
+
 /// A surface that takes keys when no modal overlay is up. These are today's
 /// surfaces as they are; later phases fold them together.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -147,8 +158,17 @@ pub(crate) enum Ctx {
 }
 
 impl Ctx {
-    #[cfg(test)]
     const ALL: [Ctx; 4] = [Ctx::List, Ctx::Detail, Ctx::Viewer, Ctx::Image];
+
+    /// What a message calls the surface.
+    pub(crate) fn title(self) -> &'static str {
+        match self {
+            Ctx::List => "list",
+            Ctx::Detail => "detail pane",
+            Ctx::Viewer => "text viewer",
+            Ctx::Image => "image viewer",
+        }
+    }
 }
 
 /// A section of the `?` overlay: the bindings of `ctx` whose kind is in
@@ -247,6 +267,52 @@ impl Key {
             label.push_str("Shift-");
         }
         label + &name
+    }
+
+    /// The inverse of [`Key::label`] (what a `keys:` override writes), with
+    /// `Up`/`Down`/`Left`/`Right` as ASCII spellings of the arrows. A `Ctrl-`
+    /// letter is read as the lower-case key, as the table spells it.
+    pub(crate) fn parse(s: &str) -> Option<Key> {
+        let mut rest = s;
+        let mut mods = KeyModifiers::NONE;
+        loop {
+            match (rest.strip_prefix("Ctrl-"), rest.strip_prefix("Shift-")) {
+                (Some(r), _) if !r.is_empty() => mods |= KeyModifiers::CONTROL,
+                (_, Some(r)) if !r.is_empty() => mods |= KeyModifiers::SHIFT,
+                _ => break,
+            }
+            rest = &rest[rest.find('-').map_or(0, |i| i + 1)..];
+        }
+        let mut chars = rest.chars();
+        let code = match rest {
+            "Space" => KeyCode::Char(' '),
+            "Tab" => KeyCode::Tab,
+            "S-Tab" => KeyCode::BackTab,
+            "Enter" => KeyCode::Enter,
+            "Esc" => KeyCode::Esc,
+            "\u{2191}" | "Up" => KeyCode::Up,
+            "\u{2193}" | "Down" => KeyCode::Down,
+            "\u{2190}" | "Left" => KeyCode::Left,
+            "\u{2192}" | "Right" => KeyCode::Right,
+            "PgUp" => KeyCode::PageUp,
+            "PgDn" => KeyCode::PageDown,
+            "Home" => KeyCode::Home,
+            "End" => KeyCode::End,
+            "Backspace" => KeyCode::Backspace,
+            "Delete" => KeyCode::Delete,
+            "Insert" => KeyCode::Insert,
+            _ => match (chars.next(), chars.next()) {
+                (Some(ch), None) if mods.contains(KeyModifiers::CONTROL) => {
+                    KeyCode::Char(ch.to_ascii_lowercase())
+                }
+                (Some(ch), None) => KeyCode::Char(ch),
+                _ => {
+                    let n = rest.strip_prefix("F(")?.strip_suffix(')')?;
+                    KeyCode::F(n.parse().ok()?)
+                }
+            },
+        };
+        Some(Key { code, mods })
     }
 }
 
@@ -372,10 +438,11 @@ static BINDINGS: &[Binding] = &[
     bind(List, &[c('g'), k(Home)], MoveTop, "Top", NoHint),
     bind(List, &[c('G'), k(End)], MoveBottom, "Bottom", NoHint),
     bind_row(Yak, &[c('l'), k(Right), k(Enter)], PaneOpen, "Show detail pane", hint("l:detail")),
-    bind_row(Yak, &[c('h')], FamilyCycle, "Cycle the family scope (tree views)", hint("h:family")),
+    bind_row(Yak, &[c('h'), k(Left)], TreeLeft, "Collapse the row, else go to its parent (tree views)", NoHint),
+    bind_row(Yak, &[c('F')], FamilyCycle, "Cycle the family scope (tree views)", hint("F:family")),
     bind_row(Yak, &[c(' ')], TreeToggle, "Collapse / expand subtree", NoHint),
     bind_row(Yak, &[c('m')], YakMark, "Mark / unmark row (multi-select)", NoHint),
-    bind_row(Yak, &[c('v')], ViewPick, "View picker", hint("v:views")),
+    bind_row(Yak, &[c('`')], ViewPick, "View picker", hint("`:views")),
     bind_row(Yak, &[c('V')], ViewSave, "Save filter as view", NoHint),
     bind(List, &[k(Esc)], ViewRevert, "Clear the search, then revert the filter to the active view", NoHint),
     bind_row(Yak, &[c('c')], YakNew, "New root yak", hint("c/C:new")),
@@ -397,7 +464,7 @@ static BINDINGS: &[Binding] = &[
     bind_row(Yak, &[c('y')], RowCopy, "Copy yak id to clipboard", NoHint),
     bind_row(Yak, &[c('/')], SearchOpen, "Search every view; Esc clears", NoHint),
     bind(List, &[c('n')], FindNext, "Search again: the pane's last find becomes the query (no query set)", NoHint),
-    bind(List, &[c('N')], FindPrev, "Search again, as n (on a page row, N is a new page)", NoHint),
+    bind(List, &[c('N')], FindPrev, "Search again, as n", NoHint),
     bind(List, &[c('#')], NavGoto, "Go to any yak by id / title", NoHint),
     bind(List, &[c('i')], NavForward, "History forward: a jump you went back from", NoHint),
     bind(List, &[c('o')], NavBack, "History back: where the last jump left (a link, a view switch, #), position restored", NoHint),
@@ -405,13 +472,13 @@ static BINDINGS: &[Binding] = &[
     bind_row(Yak, &[c('f')], FilterDrawer, "Filter drawer", Hint::Filter),
     bind(List, &[c('W')], FarmCommit, "Commit the farm (yaks commit)", NoHint),
     bind(List, &[c('U')], FarmSync, "Sync the farm: commit, pull, push (yaks sync)", NoHint),
-    bind(List, &[c('?')], AppHelp, "Toggle this help", hint("?:help")),
+    bind(List, &[c('?')], AppHelp, HELP_LINE, hint("?:help")),
     bind(List, &[c('q'), ctrl('c')], AppQuit, "Quit", NoHint),
 
     // -- the yak detail pane ---------------------------------------------------
     bind(Detail, &[c('h'), k(Left)], PaneBack, "Back to list (scrolls a code block or table left first)", hint("h:list")),
     bind_pane(Shed, &[c('y')], RowCopy, "Copy the shed's name", hint("y:copy name")),
-    bind_pane(Shed, &[c('r')], ListRefresh, "Rescan now (auto every 10 s)", hint("r:rescan")),
+    bind_pane(Shed, &[ctrl('r')], ListRefresh, "Rescan now (auto every 10 s)", NoHint),
     bind(Detail, &[k(Esc)], PanePeel, "Peel back: selection, then the search, then the list", NoHint),
     bind_pane(Yak, &[c('l'), k(Right)], PaneScrollRight, "Scroll the code block / table under the cursor right", NoHint),
     bind_pane(Yak, &[c('j'), k(Down)], MoveDown, "Move the line cursor down", hint("j/k:move")),
@@ -460,12 +527,12 @@ static BINDINGS: &[Binding] = &[
     bind_pane(Yak, &[c('f')], FilterDrawer, "Filter drawer", Hint::Filter),
     bind(Detail, &[c('W')], FarmCommit, "Commit the farm (yaks commit)", NoHint),
     bind(Detail, &[c('U')], FarmSync, "Sync the farm: commit, pull, push (yaks sync)", NoHint),
-    bind(Detail, &[c('?')], AppHelp, "Toggle this help", NoHint),
+    bind(Detail, &[c('?')], AppHelp, HELP_LINE, NoHint),
     bind(Detail, &[c('q'), ctrl('c')], AppQuit, "Quit", hint("q:quit")),
 
     // -- the text viewer -------------------------------------------------------
     bind(Viewer, &[k(Esc)], PanePeel, "Peel back: selection, then the search, then close", NoHint),
-    bind(Viewer, &[c('q')], PaneClose, "Close", NoHint),
+    bind(Viewer, &[c('q'), ctrl('c')], AppQuit, "Quit", NoHint),
     bind(Viewer, &[c('h'), k(Left)], PaneBack, "Close (scrolls a code block or table left first)", NoHint),
     bind(Viewer, &[c('l'), k(Right)], PaneScrollRight, "Scroll the code block / table under the cursor right", NoHint),
     bind(Viewer, &[c('j'), k(Down)], MoveDown, "Move the line cursor down", NoHint),
@@ -492,102 +559,250 @@ static BINDINGS: &[Binding] = &[
     bind(Viewer, &[c('#')], NavGoto, "Go to any yak by id / title (closes the page)", NoHint),
     bind(Viewer, &[c('W')], FarmCommit, "Commit the farm (yaks commit)", NoHint),
     bind(Viewer, &[c('U')], FarmSync, "Sync the farm: commit, pull, push (yaks sync)", NoHint),
-    bind(Viewer, &[c('?')], AppHelp, "Toggle this help", NoHint),
+    bind(Viewer, &[c('?')], AppHelp, HELP_LINE, NoHint),
 
     // -- the image viewer ------------------------------------------------------
-    bind(Image, &[k(Esc), c('q'), c('h'), k(Left)], PaneClose, "Close", NoHint),
+    bind(Image, &[k(Esc), c('h'), k(Left)], PaneClose, "Close", NoHint),
+    bind(Image, &[c('q'), ctrl('c')], AppQuit, "Quit", NoHint),
     bind(Image, &[c('o')], NavBack, "History back", NoHint),
     bind(Image, &[c('i')], NavForward, "History forward", NoHint),
     bind(Image, &[c('O')], FileOpenExternal, "Open the file externally", NoHint),
     bind(Image, &[c('#')], NavGoto, "Go to any yak by id / title (closes the image)", NoHint),
     bind(Image, &[c('W')], FarmCommit, "Commit the farm (yaks commit)", NoHint),
     bind(Image, &[c('U')], FarmSync, "Sync the farm: commit, pull, push (yaks sync)", NoHint),
-    bind(Image, &[c('?')], AppHelp, "Toggle this help", NoHint),
+    bind(Image, &[c('?')], AppHelp, HELP_LINE, NoHint),
 
     // -- the list: document rows (the Wiki view). Its movement, view and farm
-    // -- keys are the list's; `v`, `?` and `q` repeat theirs only so that the
+    // -- keys are the list's; `` ` ``, `?` and `q` repeat theirs only so that the
     // -- bottom hint is the Wiki's own, not the yak list's.
     bind_row(Doc, &[c('l'), k(Right), k(Enter)], PaneOpen, "Open in the viewer: frontmatter above the body; a source with its extracted text", hint("Enter:open")),
     bind_row(Doc, &[c('E')], WikiEdit, "Edit the page: frontmatter (YAML) and body; Ctrl-S saves", hint("E:edit")),
-    bind_row(Doc, &[c('N')], WikiNew, "New page: type its path (wiki/... or <herd>/wiki/...), then its body", hint("N:new page")),
+    bind_row(Doc, &[c('c')], WikiNew, "New page: type its path (wiki/... or <herd>/wiki/...), then its body", hint("c:new page")),
     bind_row(Doc, &[c('/')], SearchOpen, "Search every view; Esc clears", hint("/:search")),
     bind_row(Doc, &[c('y')], RowCopy, "Copy the path", hint("y:copy path")),
-    bind_row(Doc, &[c('r')], ListRefresh, "Reread the pages (also on any farm change)", hint("r:reread")),
-    bind_row(Doc, &[c('v')], ViewPick, "", NoHint),
+    bind_row(Doc, &[ctrl('r')], ListRefresh, "Reread the pages (also on any farm change)", NoHint),
+    bind_row(Doc, &[c('`')], ViewPick, "", NoHint),
     bind_row(Doc, &[c('?')], AppHelp, "", hint("?:help")),
     bind_row(Doc, &[c('q'), ctrl('c')], AppQuit, "", hint("q:quit")),
 
     // -- the list: shed rows (the Sheds view). A shed's yaks below it are yak
-    // -- rows. Its movement and farm keys are the list's; `v`, `?` and `q`
+    // -- rows. Its movement and farm keys are the list's; `` ` ``, `?` and `q`
     // -- repeat theirs only so that the bottom hint is the Sheds' own.
     bind_row(Shed, &[c('l'), k(Right), k(Enter)], PaneOpen, "Show the shed: where its code is, its shaving, asking and recent yaks", hint("l:detail")),
+    bind_row(Shed, &[c('h'), k(Left)], TreeLeft, "Collapse the shed's yaks", NoHint),
     bind_row(Shed, &[c(' ')], TreeToggle, "Collapse / expand the shed's yaks", NoHint),
     bind_row(Shed, &[c('/')], SearchOpen, "Search every view; Esc clears", hint("/:search")),
     bind_row(Shed, &[c('y')], RowCopy, "Copy the shed's name", hint("y:copy name")),
-    bind_row(Shed, &[c('r')], ListRefresh, "Rescan now (auto every 10 s)", hint("r:rescan")),
-    bind_row(Shed, &[c('v')], ViewPick, "View picker", hint("v:views")),
+    bind_row(Shed, &[ctrl('r')], ListRefresh, "Rescan now (auto every 10 s)", NoHint),
+    bind_row(Shed, &[c('`')], ViewPick, "View picker", hint("`:views")),
     bind_row(Shed, &[c('?')], AppHelp, "", hint("?:help")),
     bind_row(Shed, &[c('q'), ctrl('c')], AppQuit, "", hint("q:quit")),
 ];
 
-/// The command `k` runs in `ctx` on a row of `kind` (`None` outside the list):
-/// a binding that names modifiers first (Ctrl-C before `c`), else a plain one,
-/// ignoring any modifiers the terminal adds (an upper-case letter arrives with
-/// Shift). At each step a binding for the row's kind beats one for any kind.
-pub(crate) fn lookup(ctx: Ctx, kind: Option<RowKind>, k: &KeyEvent) -> Option<Cmd> {
-    let find = |modified: bool, kind: Option<RowKind>| {
-        BINDINGS
-            .iter()
-            .filter(|b| b.ctx == ctx && b.kind == kind)
-            .find(|b| {
-                b.keys
-                    .iter()
-                    .any(|key| key.mods.is_empty() != modified && key.matches(k))
-            })
-            .map(|b| b.cmd)
-    };
-    [true, false].into_iter().find_map(|modified| {
-        kind.and_then(|kind| find(modified, Some(kind)))
-            .or_else(|| find(modified, None))
-    })
+/// The `?` line of the help command: the popup first, the reference on a second press.
+const HELP_LINE: &str = "Keys of this context in a popup; ? again opens this full reference";
+
+/// The keys in effect: the table's, with the user's `keys:` overrides applied
+/// (see [`overrides`]). An override replaces a command's keys in every context
+/// it is bound in. Everything that reads keys (the lookup, the `?` popup and
+/// reference, the bottom hint) goes through it, so none can show a key the
+/// lookup does not take.
+#[derive(Clone, Default, Debug)]
+pub(crate) struct Keymap {
+    overrides: HashMap<Cmd, Vec<Key>>,
 }
 
-/// The bottom bar's key hints for `ctx` on a row of `kind`: each hinted
-/// binding's label, in table order, two spaces apart. A binding for any kind
-/// is left out where one for this kind takes its keys. `filter_hint` stands in
-/// for the drawer's.
-fn hint_for(ctx: Ctx, kind: Option<RowKind>, filter_hint: &str) -> String {
-    let shown = |b: &Binding| {
-        b.ctx == ctx
-            && match (b.kind, kind) {
-                (None, None) => true,
-                (None, Some(kind)) => !BINDINGS.iter().any(|o| {
-                    o.ctx == ctx
-                        && o.kind == Some(kind)
-                        && o.keys.iter().any(|k| b.keys.contains(k))
-                }),
-                (b_kind, kind) => b_kind == kind,
-            }
-    };
-    BINDINGS
-        .iter()
-        .filter(|b| shown(b))
-        .filter_map(|b| match b.hint {
-            Hint::None => None,
-            Hint::Text(t) => Some(t),
-            Hint::Filter => Some(filter_hint),
+impl Keymap {
+    /// The keys of `b` in effect.
+    fn keys<'a>(&'a self, b: &'a Binding) -> &'a [Key] {
+        self.overrides.get(&b.cmd).map_or(b.keys, Vec::as_slice)
+    }
+
+    /// `b`'s keys as `sep` joins their labels.
+    fn labels(&self, b: &Binding, sep: &str) -> String {
+        self.keys(b)
+            .iter()
+            .map(Key::label)
+            .collect::<Vec<_>>()
+            .join(sep)
+    }
+
+    /// The command `k` runs in `ctx` on a row of `kind` (`None` outside the
+    /// list): a binding that names modifiers first (Ctrl-C before `c`), else a
+    /// plain one, ignoring any modifiers the terminal adds (an upper-case
+    /// letter arrives with Shift). At each step a binding for the row's kind
+    /// beats one for any kind.
+    pub(crate) fn lookup(&self, ctx: Ctx, kind: Option<RowKind>, k: &KeyEvent) -> Option<Cmd> {
+        let find = |modified: bool, kind: Option<RowKind>| {
+            BINDINGS
+                .iter()
+                .filter(|b| b.ctx == ctx && b.kind == kind)
+                .find(|b| {
+                    self.keys(b)
+                        .iter()
+                        .any(|key| key.mods.is_empty() != modified && key.matches(k))
+                })
+                .map(|b| b.cmd)
+        };
+        [true, false].into_iter().find_map(|modified| {
+            kind.and_then(|kind| find(modified, Some(kind)))
+                .or_else(|| find(modified, None))
         })
-        .collect::<Vec<_>>()
-        .join("  ")
+    }
+
+    /// The bindings that act in `ctx` on a row of `kind`, in table order: those
+    /// for this kind, and those for any kind except where one for this kind
+    /// takes their keys (a document row's `q` stands in for the list's).
+    fn visible(&self, ctx: Ctx, kind: Option<RowKind>) -> impl Iterator<Item = &'static Binding> {
+        BINDINGS.iter().filter(move |b| {
+            b.ctx == ctx
+                && match (b.kind, kind) {
+                    (None, None) => true,
+                    (None, Some(kind)) => !BINDINGS.iter().any(|o| {
+                        o.ctx == ctx
+                            && o.kind == Some(kind)
+                            && self.keys(o).iter().any(|k| self.keys(b).contains(k))
+                    }),
+                    (b_kind, kind) => b_kind == kind,
+                }
+        })
+    }
+
+    /// The first key of `cmd` in `ctx`, as a hint writes it (`f`).
+    pub(crate) fn first_label(&self, ctx: Ctx, cmd: Cmd) -> String {
+        BINDINGS
+            .iter()
+            .find(|b| b.ctx == ctx && b.cmd == cmd)
+            .and_then(|b| self.keys(b).first())
+            .map_or_else(|| "?".into(), Key::label)
+    }
+
+    /// The bottom bar's key hints for `ctx` on a row of `kind`: each hinted
+    /// binding's label, in table order, two spaces apart. A command whose keys
+    /// are overridden shows them in place of the label's own (`Tab:view`
+    /// becomes `Ctrl-N:view`). `filter_active` is whether a filter or query is
+    /// set, which changes the drawer's label.
+    fn hint_for(&self, ctx: Ctx, kind: Option<RowKind>, filter_active: bool) -> String {
+        self.visible(ctx, kind)
+            .filter_map(|b| match b.hint {
+                Hint::None => None,
+                Hint::Text(t) => match self.overrides.contains_key(&b.cmd) {
+                    false => Some(t.to_string()),
+                    true => {
+                        let what = t.split_once(':').map_or(t, |(_, what)| what);
+                        let keys = self.labels(b, "/");
+                        (!keys.is_empty()).then(|| format!("{keys}:{what}"))
+                    }
+                },
+                Hint::Filter => {
+                    let (find, clear) = match ctx {
+                        Ctx::List => (SearchOpen, ViewRevert),
+                        _ => (FindOpen, PanePeel),
+                    };
+                    let then = if filter_active {
+                        format!("{}:clear", self.first_label(ctx, clear))
+                    } else {
+                        format!("{}:search", self.first_label(ctx, find))
+                    };
+                    Some(format!(
+                        "{}:filter  {then}",
+                        self.first_label(ctx, FilterDrawer)
+                    ))
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("  ")
+    }
+
+    /// The `?` popup's entries for `ctx` on a row of `kind`: each binding's
+    /// keys and its command's name (the name an override uses).
+    pub(crate) fn popup_entries(
+        &self,
+        ctx: Ctx,
+        kind: Option<RowKind>,
+    ) -> Vec<(String, &'static str)> {
+        self.visible(ctx, kind)
+            .filter(|b| !self.keys(b).is_empty())
+            .map(|b| (self.labels(b, "/"), b.cmd.name()))
+            .collect()
+    }
+}
+
+/// The `?` popup's rows: `entries` (keys, command name) laid out in columns
+/// of at most `max_rows` rows, as many as fit in `width`, filling down each
+/// column in turn. Entries that do not fit are counted on a last line.
+pub(crate) fn popup_lines(
+    entries: &[(String, &'static str)],
+    width: usize,
+    max_rows: usize,
+) -> Vec<Line<'static>> {
+    const GAP: usize = 2;
+    let len = |s: &str| s.chars().count();
+    // A column's key width and its whole width.
+    let widths = |col: &[(String, &'static str)]| {
+        let kw = col.iter().map(|(k, _)| len(k)).max().unwrap_or(0);
+        let nw = col.iter().map(|(_, n)| len(n)).max().unwrap_or(0);
+        (kw, kw + 1 + nw)
+    };
+    let total = |rows: usize| {
+        let cols: Vec<_> = entries.chunks(rows).map(|c| widths(c).1).collect();
+        cols.iter().sum::<usize>() + GAP * cols.len().saturating_sub(1)
+    };
+    if entries.is_empty() || max_rows == 0 {
+        return Vec::new();
+    }
+    let rows = (1..=max_rows)
+        .find(|&r| total(r) <= width)
+        .unwrap_or(max_rows);
+    let mut cols: Vec<&[(String, &'static str)]> = Vec::new();
+    let mut used = 0;
+    for col in entries.chunks(rows) {
+        let w = widths(col).1 + if cols.is_empty() { 0 } else { GAP };
+        if !cols.is_empty() && used + w > width {
+            break;
+        }
+        used += w;
+        cols.push(col);
+    }
+    let shown: usize = cols.iter().map(|c| c.len()).sum();
+    let mut lines: Vec<Line<'static>> = (0..rows.min(entries.len()))
+        .map(|r| {
+            let mut spans = Vec::new();
+            for (i, col) in cols.iter().enumerate() {
+                let (kw, w) = widths(col);
+                if i > 0 {
+                    spans.push(Span::raw(" ".repeat(GAP)));
+                }
+                match col.get(r) {
+                    Some((keys, name)) => {
+                        spans.push(Span::styled(
+                            format!("{keys:<kw$}"),
+                            Style::new().fg(Color::Yellow),
+                        ));
+                        spans.push(Span::raw(format!(" {name:<0$}", w - kw - 1)));
+                    }
+                    None => spans.push(Span::raw(" ".repeat(w))),
+                }
+            }
+            Line::from(spans)
+        })
+        .collect();
+    if shown < entries.len() {
+        lines.push(Line::from(Span::styled(
+            format!(
+                "… {} more: the full reference has them all",
+                entries.len() - shown
+            ),
+            Style::new().fg(Color::DarkGray),
+        )));
+    }
+    lines
 }
 
 pub(crate) fn help_hint(app: &App) -> String {
-    let filter_hint = if app.filter.content_active() || app.query.is_some() {
-        "f:filter  Esc:clear"
-    } else {
-        "f:filter  /:search"
-    };
-    hint_for(app.surface_ctx(), app.surface_kind(), filter_hint)
+    let filter_active = app.filter.content_active() || app.query.is_some();
+    app.keymap
+        .hint_for(app.surface_ctx(), app.surface_kind(), filter_active)
 }
 
 /// The `?` overlay's rows that are not key bindings: the editors' own keys
@@ -638,6 +853,13 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
         ],
     ),
     (
+        "Customising keys",
+        &[(
+            "keys:",
+            "Rebind a command in ~/.config/yaks/config.yaml (view.next: [\"Ctrl-N\"]); the names are in the ? popup",
+        )],
+    ),
+    (
         "Farm git state (the chip on the tab row)",
         &[
             (
@@ -669,7 +891,7 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
 /// headers, a yellow key column, then the description. A section per context
 /// from [`BINDINGS`], then the [`EXTRAS`]. Rebuilt on demand; also used to
 /// clamp help scroll.
-pub(crate) fn help_content() -> Vec<Line<'static>> {
+pub(crate) fn help_content(km: &Keymap) -> Vec<Line<'static>> {
     fn section(name: &str) -> Line<'static> {
         Line::from(Span::styled(
             name.to_string(),
@@ -686,7 +908,7 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
     for sect in &SECTIONS {
         lines.push(section(sect.title));
         for b in sect.bindings().filter(|b| !b.help.is_empty()) {
-            lines.push(entry(&b.key_label(), b.help));
+            lines.push(entry(&km.labels(b, " / "), b.help));
         }
         lines.push(Line::from(String::new()));
     }
@@ -697,17 +919,6 @@ pub(crate) fn help_content() -> Vec<Line<'static>> {
     }
     lines.pop();
     lines
-}
-
-impl Binding {
-    /// Its keys as the `?` overlay writes them: `j / ↓`.
-    fn key_label(&self) -> String {
-        self.keys
-            .iter()
-            .map(Key::label)
-            .collect::<Vec<_>>()
-            .join(" / ")
-    }
 }
 
 impl App {
@@ -745,7 +956,7 @@ impl App {
     /// picks the target from `ctx`; the viewers run theirs themselves.
     pub(crate) fn run_cmd(&mut self, ctx: Ctx, cmd: Cmd) {
         // The global commands run as anywhere; the rest of a viewer's are its own.
-        let global = matches!(cmd, AppHelp | NavGoto | FarmCommit | FarmSync);
+        let global = matches!(cmd, AppQuit | AppHelp | NavGoto | FarmCommit | FarmSync);
         match ctx {
             Ctx::Viewer if !global => return self.run_viewer_cmd(cmd),
             Ctx::Image if !global => return self.run_image_cmd(cmd),
@@ -753,7 +964,7 @@ impl App {
         }
         match cmd {
             AppQuit => self.quit = true,
-            AppHelp => self.open_help(),
+            AppHelp => self.open_keys_popup(),
             MoveDown | MoveUp | MoveTop | MoveBottom | MoveHalfDown | MoveHalfUp | MovePageDown
             | MovePageUp => self.run_move(ctx, cmd),
             ItemNext | ItemPrev => self.detail_next_task(if cmd == ItemNext { 1 } else { -1 }),
@@ -764,6 +975,7 @@ impl App {
             ViewRevert => self.revert_list_view(),
             FamilyCycle => self.cycle_family_scope(),
             TreeToggle => self.toggle_collapse(),
+            TreeLeft => self.tree_left(),
             PaneOpen => match ctx {
                 Ctx::List if self.selected_doc().is_some() => self.open_wiki_entry(),
                 _ => self.open_detail_pane(),
@@ -869,6 +1081,15 @@ impl App {
 mod tests {
     use super::*;
 
+    /// The table's own keys: no overrides.
+    fn lookup(ctx: Ctx, kind: Option<RowKind>, k: &KeyEvent) -> Option<Cmd> {
+        Keymap::default().lookup(ctx, kind, k)
+    }
+
+    fn hint_for(ctx: Ctx, kind: Option<RowKind>, filter_active: bool) -> String {
+        Keymap::default().hint_for(ctx, kind, filter_active)
+    }
+
     fn text(lines: &[Line<'_>]) -> String {
         lines
             .iter()
@@ -927,14 +1148,14 @@ mod tests {
 
     #[test]
     fn every_helped_binding_is_in_the_help_overlay() {
-        let all = text(&help_content());
+        let all = text(&help_content(&Keymap::default()));
         for section in &SECTIONS {
             let sect = all
                 .split("\n\n")
                 .find(|s| s.starts_with(section.title))
                 .unwrap_or_else(|| panic!("no section {}", section.title));
             for b in section.bindings().filter(|b| !b.help.is_empty()) {
-                let row = format!("  {:<16}{}", b.key_label(), b.help);
+                let row = format!("  {:<16}{}", Keymap::default().labels(b, " / "), b.help);
                 assert!(
                     sect.lines().any(|l| l == row),
                     "{}: no row {row:?}",
@@ -963,12 +1184,11 @@ mod tests {
     /// table: the table must reproduce it byte for byte.
     #[test]
     fn each_contexts_hint_is_what_it_was() {
-        let filter = "f:filter  /:search";
         let cases = [
             (
                 Ctx::List,
                 Some(RowKind::Yak),
-                "Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help",
+                "Tab:view  j/k:move  l:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help",
             ),
             (
                 Ctx::Detail,
@@ -978,32 +1198,32 @@ mod tests {
             (
                 Ctx::List,
                 Some(RowKind::Doc),
-                "Tab:view  j/k:move  Enter:open  E:edit  N:new page  /:search  y:copy path  r:reread  ?:help  q:quit",
+                "Tab:view  j/k:move  Enter:open  E:edit  c:new page  /:search  y:copy path  ?:help  q:quit",
             ),
             (
                 Ctx::List,
                 Some(RowKind::Shed),
-                "Tab:view  j/k:move  l:detail  /:search  y:copy name  r:rescan  v:views  ?:help  q:quit",
+                "Tab:view  j/k:move  l:detail  /:search  y:copy name  `:views  ?:help  q:quit",
             ),
             (
                 Ctx::Detail,
                 Some(RowKind::Shed),
-                "h:list  y:copy name  r:rescan  i/o:fwd/back  q:quit",
+                "h:list  y:copy name  i/o:fwd/back  q:quit",
             ),
             (Ctx::Viewer, None, ""),
             (Ctx::Image, None, ""),
         ];
         for (ctx, kind, want) in cases {
-            assert_eq!(hint_for(ctx, kind, filter), want, "{ctx:?} {kind:?}");
+            assert_eq!(hint_for(ctx, kind, false), want, "{ctx:?} {kind:?}");
         }
         // With a filter active the drawer's hint changes, nothing else.
         assert_eq!(
-            hint_for(Ctx::Detail, Some(RowKind::Yak), "f:filter  Esc:clear"),
+            hint_for(Ctx::Detail, Some(RowKind::Yak), true),
             "h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  Esc:clear  q:quit"
         );
         assert_eq!(
-            hint_for(Ctx::List, Some(RowKind::Yak), "f:filter  Esc:clear"),
-            "Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  Esc:clear  ?:help"
+            hint_for(Ctx::List, Some(RowKind::Yak), true),
+            "Tab:view  j/k:move  l:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  Esc:clear  ?:help"
         );
     }
 
@@ -1098,15 +1318,113 @@ mod tests {
         assert_eq!(lookup(Ctx::List, doc, &key('j')), Some(MoveDown));
         // A yak command is no document command.
         assert_eq!(lookup(Ctx::List, doc, &key('S')), None);
-        assert_eq!(lookup(Ctx::List, doc, &key('c')), None);
-        // `r` rescans on a shed row, rereads the wiki on a document row.
+        assert_eq!(lookup(Ctx::List, doc, &key('C')), None);
+        // Ctrl-R rescans on a shed row, rereads the wiki on a document row.
         let shed = Some(RowKind::Shed);
-        assert_eq!(lookup(Ctx::List, shed, &key('r')), Some(ListRefresh));
+        let ctrl_r = KeyEvent::new(KeyCode::Char('r'), KeyModifiers::CONTROL);
+        assert_eq!(lookup(Ctx::List, shed, &ctrl_r), Some(ListRefresh));
         assert_eq!(lookup(Ctx::List, shed, &key('S')), None);
         assert_eq!(lookup(Ctx::List, shed, &key('U')), Some(FarmSync));
         // Ctrl-C still quits where a kind binds plain `c`.
         let ctrl_c = KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL);
         assert_eq!(lookup(Ctx::List, yak, &ctrl_c), Some(AppQuit));
         assert_eq!(lookup(Ctx::List, doc, &ctrl_c), Some(AppQuit));
+    }
+
+    /// The key pass (yaks-6919): `h`, `v`, `N`, `r` and `q` each mean one
+    /// thing in every context that binds them.
+    #[test]
+    fn h_v_n_r_and_q_have_one_meaning_everywhere() {
+        let key = |ch| KeyEvent::new(KeyCode::Char(ch), KeyModifiers::NONE);
+        let ctrl_r = KeyEvent::new(KeyCode::Char('r'), KeyModifiers::CONTROL);
+        let (yak, doc, shed) = (Some(Yak), Some(Doc), Some(Shed));
+        let l = Ctx::List;
+        // `h` is back / left; the family scope is `F`.
+        assert_eq!(lookup(l, yak, &key('h')), Some(TreeLeft));
+        assert_eq!(lookup(l, shed, &key('h')), Some(TreeLeft));
+        assert_eq!(lookup(l, doc, &key('h')), None);
+        assert_eq!(lookup(Ctx::Detail, yak, &key('h')), Some(PaneBack));
+        assert_eq!(lookup(Ctx::Viewer, None, &key('h')), Some(PaneBack));
+        assert_eq!(lookup(Ctx::Image, None, &key('h')), Some(PaneClose));
+        assert_eq!(lookup(l, yak, &key('F')), Some(FamilyCycle));
+        // `v` is visual select; the view picker is the backtick on every row.
+        assert_eq!(lookup(Ctx::Detail, yak, &key('v')), Some(SelectVisual));
+        assert_eq!(lookup(Ctx::Viewer, None, &key('v')), Some(SelectVisual));
+        for kind in [yak, doc, shed] {
+            assert_eq!(lookup(l, kind, &key('v')), None, "{kind:?}");
+            assert_eq!(lookup(l, kind, &key('`')), Some(ViewPick), "{kind:?}");
+        }
+        // `N` is the previous match; a new page is `c` on a document row.
+        for (ctx, kind) in [
+            (l, yak),
+            (l, doc),
+            (l, shed),
+            (Ctx::Detail, yak),
+            (Ctx::Viewer, None),
+        ] {
+            assert_eq!(
+                lookup(ctx, kind, &key('N')),
+                Some(FindPrev),
+                "{ctx:?} {kind:?}"
+            );
+        }
+        assert_eq!(lookup(l, doc, &key('c')), Some(WikiNew));
+        assert_eq!(lookup(l, doc, &key('C')), None);
+        assert_eq!(lookup(l, yak, &key('c')), Some(YakNew));
+        // `r` renames an attachment; refresh is Ctrl-R.
+        assert_eq!(lookup(Ctx::Detail, yak, &key('r')), Some(AttachmentRename));
+        for (ctx, kind) in [(l, doc), (l, shed), (Ctx::Detail, shed)] {
+            assert_eq!(lookup(ctx, kind, &key('r')), None, "{ctx:?} {kind:?}");
+            assert_eq!(
+                lookup(ctx, kind, &ctrl_r),
+                Some(ListRefresh),
+                "{ctx:?} {kind:?}"
+            );
+        }
+        // `q` always quits, in the viewers too.
+        for (ctx, kind) in [
+            (l, yak),
+            (l, doc),
+            (l, shed),
+            (Ctx::Detail, yak),
+            (Ctx::Viewer, None),
+            (Ctx::Image, None),
+        ] {
+            assert_eq!(
+                lookup(ctx, kind, &key('q')),
+                Some(AppQuit),
+                "{ctx:?} {kind:?}"
+            );
+        }
+    }
+
+    /// The popup lists what the table binds in the context, with the command
+    /// names an override uses; nothing is listed that the lookup would not run.
+    #[test]
+    fn the_popup_lists_the_contexts_bound_keys() {
+        let km = Keymap::default();
+        let list = km.popup_entries(Ctx::List, Some(Yak));
+        assert!(list.contains(&("Tab/]".to_string(), "view.next")));
+        assert!(list.contains(&("F".to_string(), "family.cycle")));
+        assert!(!list.iter().any(|(_, name)| *name == "wiki.new"));
+        let docs = km.popup_entries(Ctx::List, Some(Doc));
+        assert!(docs.contains(&("c".to_string(), "wiki.new")));
+        // A document row's own `q` stands in for the list's: listed once.
+        assert_eq!(docs.iter().filter(|(_, n)| *n == "app.quit").count(), 1);
+        for ctx in Ctx::ALL {
+            for kind in [None, Some(Yak), Some(Doc), Some(Shed)] {
+                for (keys, name) in km.popup_entries(ctx, kind) {
+                    let cmd = Cmd::from_name(name).unwrap();
+                    let first = Key::parse(keys.split('/').next().unwrap_or(""));
+                    // `/` itself splits to nothing: check the plain keys only.
+                    if let Some(key) = first {
+                        let ev = KeyEvent::new(key.code, key.mods);
+                        let got = km.lookup(ctx, kind, &ev);
+                        assert!(got.is_some(), "{ctx:?} {kind:?} {keys} {name}");
+                        let _ = cmd;
+                    }
+                }
+            }
+        }
     }
 }

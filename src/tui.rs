@@ -93,7 +93,7 @@ use fuzzy::*;
 #[cfg(test)]
 use handlers::{handle_event, handle_paste};
 use handlers::{handle_key, pump_events};
-use keymap::{Cmd, help_content};
+use keymap::{Cmd, Keymap, help_content};
 use render::*;
 pub use runtime::run;
 use sheds_tab::*;
@@ -139,7 +139,11 @@ pub(crate) enum Overlay {
     Find(SearchBox),
     /// The view manager (`v`): carries the picker's selection index.
     ViewPicker(usize),
-    /// The keyboard-help reference (`?`): carries the scroll offset.
+    /// The keys of the current context in a compact popup (`?`); a second `?`
+    /// opens the full reference. The context is the surface's own, so it
+    /// carries nothing.
+    Keys,
+    /// The keyboard-help reference (`??`): carries the scroll offset.
     Help(u16),
 }
 
@@ -398,6 +402,8 @@ pub struct App {
     /// The interval sync (`sync_interval`, yaks-f0db).
     auto_sync: AutoSync,
     quit: bool,
+    /// The keys in effect: the table's, plus the user's overrides.
+    keymap: Keymap,
     /// Bumped by [`App::touch`] whenever `all` or the sheds snapshot is
     /// replaced; the memoized rows and detail lines are keyed on it.
     data_gen: u64,
@@ -455,6 +461,7 @@ impl App {
             pending_farm_op: None,
             auto_sync: AutoSync::off(),
             quit: false,
+            keymap: Keymap::default(),
             data_gen: 0,
             rows_cache: RefCell::new(None),
             dlines_cache: RefCell::new(None),
@@ -505,6 +512,13 @@ impl App {
         app.refresh_farm_sync();
         app.reload_wiki();
         app.clamp_cursor();
+        // The user's key overrides (`keys:` in their config.yaml). Read here,
+        // not in `new`, so a snapshot test never depends on the machine.
+        let (keymap, notice) = Keymap::load_user();
+        app.keymap = keymap;
+        if let Some(notice) = notice {
+            app.notification = Some(notice);
+        }
         // One scan at startup feeds the Sheds tab's count; after that it
         // scans only while shown (yaks-98f1).
         app.sheds.cwd = std::env::current_dir().ok();

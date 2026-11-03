@@ -13,4 +13,4 @@ expression: "draw(&app, 120, 12)"
 
 
 
-Tab:view  j/k:move  Enter:open  E:edit  N:new page  /:search  y:copy path  r:reread  ?:help  q:quit
+Tab:view  j/k:move  Enter:open  E:edit  c:new page  /:search  y:copy path  ?:help  q:quit

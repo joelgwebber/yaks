@@ -9,4 +9,4 @@ expression: "draw(&app, 140, 8)"
 
 
 
-Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help
+Tab:view  j/k:move  l:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help

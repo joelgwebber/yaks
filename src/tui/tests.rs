@@ -733,7 +733,94 @@ fn create_form_source_field() {
 fn help_overlay() {
     let mut app = sample();
     handle_key(&mut app, key('?'));
+    handle_key(&mut app, key('?'));
     insta::assert_snapshot!(draw(&app, 72, 16));
+}
+
+#[test]
+fn keys_popup() {
+    let mut app = sample();
+    handle_key(&mut app, key('?'));
+    insta::assert_snapshot!(draw(&app, 110, 24));
+    // Any other key closes it without running: `j` does not move the cursor.
+    let cursor = app.cursor;
+    handle_key(&mut app, key('j'));
+    assert!(matches!(app.overlay, Overlay::None));
+    assert_eq!(app.cursor, cursor);
+    // `?` from the pane shows the pane's keys.
+    enter_key(&mut app);
+    handle_key(&mut app, key('?'));
+    let frame = draw(&app, 110, 24);
+    assert!(frame.contains("Keys · detail pane · yak rows"), "{frame}");
+    assert!(frame.contains("pane.back"), "{frame}");
+}
+
+#[test]
+fn h_collapses_an_expanded_row_then_goes_to_the_parent() {
+    let mut app = sample(); // a0 with children a1 and a2 (ghost)
+    assert_eq!(app.row_count(), 2, "a0 and a1 (a2 is shorn)");
+    // On the root: collapse; again: nothing (no parent, nothing to collapse).
+    handle_key(&mut app, key('h'));
+    assert_eq!(app.row_count(), 1, "a0 collapsed over its children");
+    handle_key(&mut app, key('h'));
+    assert_eq!((app.cursor, app.row_count()), (0, 1));
+    // Expand, step to a child (no children of its own): h goes to the parent.
+    handle_key(&mut app, key(' '));
+    handle_key(&mut app, key('j'));
+    assert_eq!(app.selected_id().as_deref(), Some("a1"));
+    handle_key(&mut app, key('h'));
+    assert_eq!(app.selected_id().as_deref(), Some("a0"));
+    assert_eq!(
+        app.focus,
+        Focus::List,
+        "h on a list row never opens the pane"
+    );
+}
+
+#[test]
+fn q_quits_from_a_page_and_the_family_scope_is_f() {
+    let (_dir, mut app) = viewer_on_linked_notes();
+    press(&mut app, "q");
+    assert!(app.quit, "q quits with a page open, it does not close it");
+    let mut app = sample();
+    handle_key(&mut app, key('h')); // used to cycle the family scope
+    assert!(app.family_scope.is_empty());
+    handle_key(&mut app, key('F'));
+    assert_eq!(app.family_scope.len(), 1);
+}
+
+#[test]
+fn a_user_override_rebinds_a_command_and_the_popup_and_hint_show_it() {
+    let mut app = sample();
+    let (km, problems) = Keymap::from_config("keys:\n  view.next: [\"Ctrl-N\"]\n");
+    assert!(problems.is_empty());
+    app.keymap = km;
+    let ctrl_n = KeyEvent::new(KeyCode::Char('n'), KeyModifiers::CONTROL);
+    handle_key(&mut app, ctrl_n);
+    assert_eq!(
+        app.active_view().name.contains("Shaving"),
+        true,
+        "Ctrl-N is the next view"
+    );
+    handle_key(&mut app, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
+    assert!(
+        app.active_view().name.contains("Shaving"),
+        "Tab no longer switches"
+    );
+    let frame = draw(&app, 110, 24);
+    assert!(frame.contains("Ctrl-N:view"), "the hint shows it:\n{frame}");
+    handle_key(&mut app, key('?'));
+    let frame = draw(&app, 110, 24);
+    assert!(
+        frame.contains("Ctrl-N  view.next"),
+        "the popup shows it:\n{frame}"
+    );
+    handle_key(&mut app, key('?'));
+    let frame = draw(&app, 110, 40);
+    assert!(
+        frame.contains("Ctrl-N") && frame.contains("Next view"),
+        "the reference:\n{frame}"
+    );
 }
 
 #[test]
@@ -751,6 +838,10 @@ fn priority_palette_matches_python() {
 #[test]
 fn help_opens_and_closes() {
     let mut app = sample();
+    // `?` is the compact popup of this context's keys; a second `?` is the
+    // full reference.
+    handle_key(&mut app, key('?'));
+    assert!(matches!(app.overlay, Overlay::Keys));
     handle_key(&mut app, key('?'));
     assert!(matches!(app.overlay, Overlay::Help(_)));
     // Scroll down, then Esc closes.
@@ -1391,7 +1482,7 @@ fn save_view_creates_and_activates_custom_view() {
 #[test]
 fn view_picker_overlay() {
     let mut app = sample();
-    handle_key(&mut app, key('v'));
+    handle_key(&mut app, key('`'));
     assert!(matches!(app.overlay, Overlay::ViewPicker(_)));
     insta::assert_snapshot!(draw(&app, 72, 16));
 }
@@ -1399,7 +1490,7 @@ fn view_picker_overlay() {
 #[test]
 fn picker_activates_selected_view() {
     let mut app = sample();
-    handle_key(&mut app, key('v'));
+    handle_key(&mut app, key('`'));
     for _ in 0..3 {
         handle_key(&mut app, key('j'));
     }
@@ -1411,7 +1502,7 @@ fn picker_activates_selected_view() {
 #[test]
 fn picker_unpin_removes_from_tab_bar() {
     let mut app = sample();
-    handle_key(&mut app, key('v'));
+    handle_key(&mut app, key('`'));
     handle_key(&mut app, key('j')); // sel 1 = Shaving
     handle_key(&mut app, key('p')); // unpin
     assert!(!app.views[1].pinned);
@@ -1421,7 +1512,7 @@ fn picker_unpin_removes_from_tab_bar() {
 #[test]
 fn picker_move_keeps_active_view() {
     let mut app = sample(); // active = Hairy (0)
-    handle_key(&mut app, key('v'));
+    handle_key(&mut app, key('`'));
     handle_key(&mut app, key('J')); // move Hairy down
     assert_eq!(app.views[0].status, Some(Status::Shaving));
     assert_eq!(app.views[1].status, Some(Status::Hairy));
@@ -1431,7 +1522,7 @@ fn picker_move_keeps_active_view() {
 #[test]
 fn picker_rename_returns_to_picker() {
     let mut app = sample();
-    handle_key(&mut app, key('v'));
+    handle_key(&mut app, key('`'));
     handle_key(&mut app, key('r')); // seeded with the current name
     typ(&mut app, "Fuzz");
     enter_key(&mut app);
@@ -1449,12 +1540,12 @@ fn picker_deletes_custom_but_not_builtin() {
     enter_key(&mut app);
     assert_eq!(app.views.len(), 10);
     // Delete it via the picker (active view is the custom one, last index).
-    handle_key(&mut app, key('v'));
+    handle_key(&mut app, key('`'));
     handle_key(&mut app, key('d'));
     assert_eq!(app.views.len(), 9);
     // Deleting a built-in is refused.
     handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
-    handle_key(&mut app, key('v'));
+    handle_key(&mut app, key('`'));
     // selection is clamped to a built-in row; delete refuses.
     handle_key(&mut app, key('g')); // no-op; ensure sel 0 path
     let before = app.views.len();
@@ -4008,8 +4099,8 @@ fn enter_on_a_markdown_attachment_opens_the_viewer_rendered() {
     assert!(frame.contains("Some bold text that reflows."), "{frame}");
     assert!(frame.contains("• one"), "{frame}");
     assert!(frame.contains("O open externally"), "{frame}");
-    press(&mut app, "q");
-    assert!(matches!(app.overlay, Overlay::None));
+    esc_key(&mut app);
+    assert!(app.doc.is_none(), "Esc closes the viewer");
 }
 
 #[test]
@@ -4074,8 +4165,8 @@ fn enter_on_an_image_attachment_shows_it_in_the_pane() {
     let has = |rgb: Color| buf.content.iter().any(|c| c.fg == rgb || c.bg == rgb);
     assert!(has(Color::Rgb(255, 0, 0)), "no red cells:\n{text}");
     assert!(has(Color::Rgb(0, 0, 255)), "no blue cells:\n{text}");
-    press(&mut app, "q");
-    assert!(matches!(app.overlay, Overlay::None));
+    esc_key(&mut app);
+    assert!(app.doc.is_none(), "Esc closes the viewer");
 }
 
 #[test]
@@ -4551,6 +4642,8 @@ fn help_opens_over_a_page_and_closing_it_returns_to_the_page() {
     let (_dir, mut app) = viewer_on_linked_notes();
     tab_key(&mut app);
     let line = viewer_nav(&app).line;
+    press(&mut app, "?");
+    assert!(matches!(app.overlay, Overlay::Keys));
     press(&mut app, "?");
     assert!(matches!(app.overlay, Overlay::Help(_)));
     let frame = draw(&app, 120, 24);
@@ -5330,7 +5423,7 @@ mod memo {
 
     #[test]
     fn help_lists_the_commit_and_sync_keys() {
-        let text: String = help_content()
+        let text: String = help_content(&Keymap::default())
             .iter()
             .map(|l| {
                 l.spans
@@ -6043,12 +6136,14 @@ fn n_in_a_list_with_no_query_applies_the_register_as_the_query() {
 }
 
 #[test]
-fn n_and_n_on_a_page_row_keep_their_wiki_meanings() {
-    use keymap::{Cmd, Ctx, lookup};
+fn n_is_the_next_match_and_n_the_previous_on_every_row() {
+    use keymap::{Cmd, Ctx};
+    let lookup = |ctx, kind, k: &KeyEvent| Keymap::default().lookup(ctx, kind, k);
     let key = |ch| KeyEvent::new(KeyCode::Char(ch), KeyModifiers::NONE);
     let (yak, doc) = (Some(tree::RowKind::Yak), Some(tree::RowKind::Doc));
     assert_eq!(lookup(Ctx::List, yak, &key('n')), Some(Cmd::FindNext));
     assert_eq!(lookup(Ctx::List, yak, &key('N')), Some(Cmd::FindPrev));
     assert_eq!(lookup(Ctx::List, doc, &key('n')), Some(Cmd::FindNext));
-    assert_eq!(lookup(Ctx::List, doc, &key('N')), Some(Cmd::WikiNew));
+    assert_eq!(lookup(Ctx::List, doc, &key('N')), Some(Cmd::FindPrev));
+    assert_eq!(lookup(Ctx::List, doc, &key('c')), Some(Cmd::WikiNew));
 }
