@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T05:27:16Z'
+updated: '2026-11-03T05:38:23Z'
 parent: yaks-947a
 depends_on:
 - yaks-aac1
@@ -102,3 +102,10 @@ Anything else: `yaks ask yaks-a2c5`.
 - Headless frame: the Recent-with-query round trip.
 
 **Judge.** herd-tui at landing.
+
+---
+▸ 2026-11-03T05:38:23Z [hist-1]
+
+Start 2026-11-03T05:38:23Z. Setup: farm file /home/user/.local/share/yaks/farms/yaks-b0f8dcf9/.yaks/yaks/yaks/yaks-a2c5.md; checkout /home/user/yaks-10 (top-level); base `acabcb7f` (git log --oneline -1: "yaks-c215: one search register..."). Worker hist-1.
+
+Progress: core is implemented and `cargo build` passes: new `src/tui/history.rs` (Location/RowKey/PaneAt/History, `App::jump`, `history_back/forward`, `restore`), `App.pane_yak` with `selected()`/`detail_dlines` following it, `goto_task` rewritten, the viewer/nav stacks and `LineNav.back/fwd` removed, `o`/`i` bound in the List, Image and Shed pane. Next: fix the existing tests, write the new ones, docs, headless frame.
