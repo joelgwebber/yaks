@@ -1,7 +1,7 @@
 ---
 id: yaks-a25c
 title: 'TUI phase 6a: global query with its own chip, and the All view'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
@@ -140,3 +140,13 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 ▸ 2026-11-03T04:58:44Z [query-1]
 
 Done. `yaks verify yaks-a25c`: PASS. Gate `cargo test --workspace`: all green. Attached headless frames: `query-chip-on-shaving.txt` (Shaving tab, chip `/"widget" · 6 in All` beside the tabs, no `filter:` chip) and `query-on-all-view.txt` (All view: matching yaks, then the matching page). New tests (`tui::tests::query`, 7, plus a Sheds one) cover each bullet of the claim. Docs: `docs/tui.md` (Layout, query chip, Search & filter, All, Wiki, Sheds), `README.md`, `?` help lines in `keymap.rs`. docshots regenerated and discarded: none of the SVGs shows a query or the picker, and this machine's toque restyles every SVG.
+
+---
+▸ 2026-11-03T04:58:44Z [query-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAEAkGJIBxBCtY3f3KUhDW5IL-PWT3Nbm
+---
+
+moved: shaving -> shorn
