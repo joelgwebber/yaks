@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-10-27T13:23:15Z'
-updated: '2026-10-27T13:23:15Z'
+updated: '2026-11-03T02:19:22Z'
 tags:
 - tui
 ---
@@ -15,3 +15,12 @@ Pretty sure this is already supported in the CLI (but please double-check). But 
 We'll need to figure out what the right affordance is for this. `/` is already taken by the "quick" part of per-view filters, but maybe we should commandeer that.
 
 We also need to decide whether the search results fit naturally into views like any other, and whether they can be saved as filters. It *may* already be the case that "filtering" an existing view and removing its constraints does what we'd want, in which case this may be a very small lift.
+
+---
+▸ 2026-11-03T02:19:22Z [tui-design]
+
+Folded into the unified TUI design, [docs/design/tui/model.md](code:docs/design/tui/model.md), tracked by yaks-9c3c.
+
+Global search becomes a built-in, unpinned **All** view (every yak, dead included, plus pages and sources, with no limit) combined with the global `/` query. That is the same set `yaks find` searches, and the query chip shows the All count (§1 and §4, phase 6).
+
+For the record, Recent is not global: it stops at 50 rows (`RECENT_LIMIT`, applied after filtering) and hides dead yaks.
