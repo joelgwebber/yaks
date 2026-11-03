@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:10:57Z'
-updated: '2026-11-03T04:23:14Z'
+updated: '2026-11-03T04:23:23Z'
 parent: yaks-5d08
 tags:
 - tui
@@ -89,3 +89,15 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-03T04:23:23Z [rows-1]
+
+Summary: rows are now `Item::Yak | Item::Doc`; the Wiki view is a flat list of document rows served by the list's cursor, render and key dispatch; the keymap table takes an optional row kind.
+
+- Gate: `env -u YAKS_DIR -u YAKS_ACTOR cargo test --workspace` passed (874 bin tests + all integration tests); `yaks verify` recorded PASS.
+- New tests: j moves `App.cursor` and `selected_doc()` follows; `selected()` is None on a document row and yak keys open no overlay; Enter opens the viewer; an empty Wiki still takes N; lookup per kind; every binding is in a help section.
+- Snapshots: only `help_overlay` changed (Home/End, see Decision). The four Wiki docshot SVGs regenerate byte-identical to a baseline run.
+- Docs: docs/tui.md (movement line, Wiki tab key table); `?` and hint are generated.
+- Attached: `wiki-view-cursor-moved.txt` (headless frames, Wiki view, cursor 0 then 1, S inert).
+Finished Tue Nov  3 04:23:23 UTC 2026.
