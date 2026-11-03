@@ -9,7 +9,7 @@
 //! made elsewhere appears as soon as the watcher sees it.
 //!
 //! The tab is a built-in view (`view::wiki_view`) whose yak rows are empty,
-//! so every yak key is inert there; [`App::handle_wiki_key`] owns its keys.
+//! so every yak key is inert there; its keys are the `Wiki` context of `keymap`.
 //! `/` is the yak tabs' inline search: it edits the live filter's `search`,
 //! which [`App::wiki_rows`] matches against a row's title, path, kind and
 //! tags.
@@ -147,7 +147,7 @@ impl App {
             .count()
     }
 
-    fn move_wiki(&mut self, delta: i32) {
+    pub(crate) fn move_wiki(&mut self, delta: i32) {
         let n = self.wiki_rows().len();
         if n == 0 {
             return;
@@ -235,7 +235,7 @@ impl App {
     }
 
     /// E on the list: edit the selected page (open it, then the editor).
-    fn edit_wiki_entry(&mut self) {
+    pub(crate) fn edit_wiki_entry(&mut self) {
         self.open_wiki_entry();
         if matches!(self.overlay, Overlay::Attachment(_)) {
             self.open_attachment_edit();
@@ -243,7 +243,7 @@ impl App {
     }
 
     /// y: copy the selected entry's path.
-    fn copy_wiki_path(&mut self) {
+    pub(crate) fn copy_wiki_path(&mut self) {
         let Some(path) = self.selected_wiki().map(|e| e.shown_path().to_string()) else {
             return;
         };
@@ -262,42 +262,18 @@ impl App {
         format!("wiki={} \u{b7} entry={at}", self.wiki_rows().len())
     }
 
-    /// The Wiki tab's keys. Returns after handling every key, so yak keys
-    /// never reach a yak from here.
-    pub(crate) fn handle_wiki_key(&mut self, k: KeyEvent) {
-        let half = (self.page / 2).max(1) as i32;
-        match k.code {
-            KeyCode::Char('q') => self.quit = true,
-            KeyCode::Tab | KeyCode::Char(']') => self.switch_tab(1),
-            KeyCode::BackTab | KeyCode::Char('[') => self.switch_tab(-1),
-            KeyCode::Char('v') => self.open_view_picker(),
-            KeyCode::Char('?') => self.open_help(),
-            KeyCode::Char('#') => self.open_goto_picker(),
-            KeyCode::Char('/') => self.open_search(),
-            KeyCode::Char('y') => self.copy_wiki_path(),
-            KeyCode::Char('N') => self.open_new_page(),
-            KeyCode::Char('E') => self.edit_wiki_entry(),
-            KeyCode::Char('r') => {
-                self.reload_wiki();
-                self.notification = Some("reread the wiki".into());
-            }
-            KeyCode::Esc => {
-                if self.is_view_modified() {
-                    self.revert_filter_to_view();
-                    self.clamp_wiki_cursor();
-                    self.notification = Some("reverted to view".into());
-                }
-            }
-            KeyCode::Char('W') => self.request_farm_op(FarmOp::Commit),
-            KeyCode::Char('U') => self.request_farm_op(FarmOp::Sync),
-            KeyCode::Char('j') | KeyCode::Down => self.move_wiki(1),
-            KeyCode::Char('k') | KeyCode::Up => self.move_wiki(-1),
-            KeyCode::Char('g') | KeyCode::Home => self.move_wiki(i32::MIN / 4),
-            KeyCode::Char('G') | KeyCode::End => self.move_wiki(i32::MAX / 4),
-            KeyCode::Char('d') | KeyCode::PageDown => self.move_wiki(half),
-            KeyCode::Char('u') | KeyCode::PageUp => self.move_wiki(-half),
-            KeyCode::Char('l') | KeyCode::Right | KeyCode::Enter => self.open_wiki_entry(),
-            _ => {}
+    /// `r`: read the pages again.
+    pub(crate) fn reread_wiki(&mut self) {
+        self.reload_wiki();
+        self.notification = Some("reread the wiki".into());
+    }
+
+    /// Esc on the Wiki tab: drop the search's edits to the active view.
+    pub(crate) fn revert_wiki_view(&mut self) {
+        if self.is_view_modified() {
+            self.revert_filter_to_view();
+            self.clamp_wiki_cursor();
+            self.notification = Some("reverted to view".into());
         }
     }
 }

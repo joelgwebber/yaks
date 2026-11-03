@@ -775,6 +775,27 @@ impl App {
         self.overlay = Overlay::Help(0);
     }
 
+    /// `l` / `→` / Enter on the list: show the selected yak in the detail
+    /// pane, from its top.
+    pub(crate) fn open_detail_pane(&mut self) {
+        if self.selected().is_some() {
+            self.focus = Focus::Detail;
+            self.detail_scroll = 0;
+            self.detail_line = 0;
+            self.detail_anchor = None;
+            self.detail_find = None;
+            self.detail_match = 0;
+        }
+    }
+
+    /// Esc on the list: drop the edits to the active view's filter.
+    pub(crate) fn revert_list_view(&mut self) {
+        if self.is_view_modified() {
+            self.revert_filter_to_view();
+            self.notification = Some("reverted to view".into());
+        }
+    }
+
     /// A — attach an artifact (a file path, or the clipboard PNG when blank).
     pub(crate) fn open_attach(&mut self) {
         if let Some(id) = self.selected_id() {
@@ -965,39 +986,57 @@ impl App {
     }
 
     /// Keys in the attachment viewer: the detail pane's navigation, by the
-    /// same [`LineNav`] (yaks-84e0). `j`/`k`/`d`/`u`/`g`/`G` move the line
-    /// cursor, `Tab`/`[`/`]` cycle links, `Enter` follows one (or yanks a
-    /// selection), `v`/Shift-↑↓ select, `y` yanks, `/` `n` `N` find, `o`/`i`
-    /// go back / forward over a footnote jump, `h`/`l` scroll a code block
-    /// or table sideways. `E` edits the file, `O` hands it to the OS opener;
-    /// `Esc` peels back selection, then find, then closes, as do `q` and
-    /// `h`/`←` (off a scrolled block).
+    /// same [`LineNav`] (yaks-84e0). While its find box is open the box takes
+    /// the keys; otherwise they are the [`keymap::Ctx::Viewer`] commands.
     pub(crate) fn handle_attachment_key(&mut self, k: KeyEvent, double_esc: bool) {
-        let Some((lines, vp)) = self.attachment_rows() else {
+        if !matches!(&self.overlay, Overlay::Attachment(v) if v.find_box.is_some()) {
+            if let Some(cmd) = keymap::lookup(keymap::Ctx::Viewer, &k) {
+                self.run_cmd(keymap::Ctx::Viewer, cmd);
+            }
+            return;
+        }
+        let Some((lines, _)) = self.attachment_rows() else {
             return;
         };
         let cancel = self.field_cancel(k, double_esc);
+        let Overlay::Attachment(v) = &mut self.overlay else {
+            return;
+        };
+        if let Some(sb) = v.find_box.as_mut() {
+            if v.nav.find_key(sb, k, cancel, &lines) {
+                v.find_box = None;
+            }
+        }
+    }
+
+    /// Run a viewer command: `j`/`k`/`d`/`u`/`g`/`G` move the line cursor,
+    /// `Tab`/`[`/`]` cycle links, `Enter` follows one (or yanks a selection),
+    /// `v`/Shift-↑↓ select, `y` yanks, `/` `n` `N` find, `o`/`i` go back /
+    /// forward over a footnote jump, `h`/`l` scroll a code block or table
+    /// sideways. `E` edits the file, `O` hands it to the OS opener; `Esc`
+    /// peels back selection, then find, then closes, as do `q` and `h`/`←`
+    /// (off a scrolled block).
+    pub(super) fn run_viewer_cmd(&mut self, cmd: Cmd) {
+        let Some((lines, vp)) = self.attachment_rows() else {
+            return;
+        };
         let vim = self.editor_vim;
         let Overlay::Attachment(v) = &mut self.overlay else {
             return;
         };
         let width = v.width.get() as usize;
-        if let Some(sb) = v.find_box.as_mut() {
-            if v.nav.find_key(sb, k, cancel, &lines) {
-                v.find_box = None;
-            }
-            return;
-        }
         let nav = &mut v.nav;
         let half = (vp.page / 2).max(1) as i32;
-        if k.modifiers.contains(KeyModifiers::SHIFT)
-            && matches!(k.code, KeyCode::Up | KeyCode::Down)
-        {
-            nav.extend_selection(&lines, vp, if k.code == KeyCode::Down { 1 } else { -1 });
-            return;
-        }
-        match k.code {
-            KeyCode::Esc => {
+        match cmd {
+            Cmd::SelectExtendDown | Cmd::SelectExtendUp => {
+                nav.extend_selection(
+                    &lines,
+                    vp,
+                    if cmd == Cmd::SelectExtendDown { 1 } else { -1 },
+                );
+                return;
+            }
+            Cmd::PanePeel => {
                 if nav.anchor.is_some() {
                     nav.anchor = None;
                 } else if nav.find.is_some() {
@@ -1006,13 +1045,13 @@ impl App {
                     self.close_viewer();
                 }
             }
-            KeyCode::Char('q') => self.close_viewer(),
-            KeyCode::Char('h') | KeyCode::Left => {
+            Cmd::PaneClose => self.close_viewer(),
+            Cmd::PaneBack => {
                 if !nav.scroll_block(&lines, width, -1) {
                     self.close_viewer();
                 }
             }
-            KeyCode::Char('p') => {
+            Cmd::PeekToggle => {
                 self.peek_shown = !self.peek_shown;
                 self.notification = Some(
                     if self.peek_shown {
@@ -1023,23 +1062,23 @@ impl App {
                     .into(),
                 );
             }
-            KeyCode::Char('l') | KeyCode::Right => {
+            Cmd::PaneScrollRight => {
                 nav.scroll_block(&lines, width, 1);
             }
-            KeyCode::Char('j') | KeyCode::Down => nav.step(&lines, vp, 1),
-            KeyCode::Char('k') | KeyCode::Up => nav.step(&lines, vp, -1),
-            KeyCode::Char('d') | KeyCode::PageDown => nav.step(&lines, vp, half),
-            KeyCode::Char('u') | KeyCode::PageUp => nav.step(&lines, vp, -half),
-            KeyCode::Char('g') | KeyCode::Home => nav.to_end(&lines, vp, false),
-            KeyCode::Char('G') | KeyCode::End => nav.to_end(&lines, vp, true),
-            KeyCode::Tab | KeyCode::Char(']') => nav.jump_link(&lines, vp, 1),
-            KeyCode::BackTab | KeyCode::Char('[') => nav.jump_link(&lines, vp, -1),
-            KeyCode::Char('v') => nav.toggle_visual(),
-            KeyCode::Char('/') => v.find_box = Some(nav.open_find(vim)),
-            KeyCode::Char('n') => nav.find_jump(&lines, 1),
-            KeyCode::Char('N') => nav.find_jump(&lines, -1),
-            KeyCode::Char('o') | KeyCode::Char('i') => {
-                let forward = k.code == KeyCode::Char('i');
+            Cmd::MoveDown => nav.step(&lines, vp, 1),
+            Cmd::MoveUp => nav.step(&lines, vp, -1),
+            Cmd::MoveHalfDown => nav.step(&lines, vp, half),
+            Cmd::MoveHalfUp => nav.step(&lines, vp, -half),
+            Cmd::MoveTop => nav.to_end(&lines, vp, false),
+            Cmd::MoveBottom => nav.to_end(&lines, vp, true),
+            Cmd::LinkNext => nav.jump_link(&lines, vp, 1),
+            Cmd::LinkPrev => nav.jump_link(&lines, vp, -1),
+            Cmd::SelectVisual => nav.toggle_visual(),
+            Cmd::FindOpen => v.find_box = Some(nav.open_find(vim)),
+            Cmd::FindNext => nav.find_jump(&lines, 1),
+            Cmd::FindPrev => nav.find_jump(&lines, -1),
+            Cmd::NavBack | Cmd::NavForward => {
+                let forward = cmd == Cmd::NavForward;
                 if !nav.go_back(&lines, forward) && !self.viewer_hop(forward) {
                     self.notification = Some(
                         if forward {
@@ -1051,22 +1090,23 @@ impl App {
                     );
                 }
             }
-            KeyCode::Char('y') => self.yank_attachment(&lines),
-            KeyCode::Enter => {
+            Cmd::SelectYank => self.yank_attachment(&lines),
+            Cmd::PaneEnter => {
                 if nav.anchor.is_some() {
                     self.yank_attachment(&lines);
                 } else {
                     self.follow_attachment_link(&lines, vp);
                 }
             }
-            KeyCode::Char('E') => self.open_attachment_edit(),
-            KeyCode::Char('O') => {
+            Cmd::DocEdit => self.open_attachment_edit(),
+            Cmd::FileOpenExternal => {
                 let (target, arg) = (v.target.clone(), v.path.display().to_string());
                 self.close_viewer();
                 self.os_open(&target, &arg);
             }
             _ => {}
         }
+        // A no-wrap block's sideways scroll lives only while the cursor is on it.
         if let Overlay::Attachment(v) = &mut self.overlay {
             v.nav.drop_stale_hscroll(&lines);
         }
@@ -1680,7 +1720,9 @@ impl App {
             return;
         }
         if matches!(self.overlay, Overlay::Image(_)) {
-            self.handle_image_key(k);
+            if let Some(cmd) = keymap::lookup(keymap::Ctx::Image, &k) {
+                self.run_cmd(keymap::Ctx::Image, cmd);
+            }
             return;
         }
         if matches!(self.overlay, Overlay::ViewPicker(_)) {
@@ -2490,201 +2532,17 @@ pub(crate) fn handle_key(app: &mut App, k: KeyEvent) {
 }
 
 fn handle_key_inner(app: &mut App, k: KeyEvent) {
-    let ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
     // A modal prompt swallows all other input until resolved (including Ctrl-C,
     // which an editor treats as cancel rather than quitting the app).
     if !matches!(app.overlay, Overlay::None) {
         app.handle_overlay_key(k);
         return;
     }
-    if ctrl && k.code == KeyCode::Char('c') {
-        app.quit = true;
-        return;
-    }
-    // The Sheds tab owns its keys; no yak key reaches a yak from there.
-    if app.on_sheds_tab() {
-        app.handle_sheds_key(k);
-        return;
-    }
-    // So does the Wiki tab (yaks-ebb2).
-    if app.on_wiki_tab() {
-        app.handle_wiki_key(k);
-        return;
-    }
-    let half = (app.page / 2).max(1) as i32;
-    let full = app.page.max(1) as i32;
-    match app.focus {
-        Focus::List => match k.code {
-            KeyCode::Char('q') => app.quit = true,
-            KeyCode::Char('j') | KeyCode::Down => app.move_cursor(1),
-            KeyCode::Char('k') | KeyCode::Up => app.move_cursor(-1),
-            KeyCode::Char('g') => app.cursor = 0,
-            KeyCode::Char('G') => app.move_cursor(i32::MAX / 4),
-            KeyCode::Char('d') => app.move_cursor(half),
-            KeyCode::Char('u') => app.move_cursor(-half),
-            KeyCode::PageDown => app.move_cursor(full),
-            KeyCode::PageUp => app.move_cursor(-full),
-            KeyCode::Tab | KeyCode::Char(']') => app.switch_tab(1),
-            KeyCode::BackTab | KeyCode::Char('[') => app.switch_tab(-1),
-            KeyCode::Char(' ') => app.toggle_collapse(),
-            // Multi-select: mark/unmark the cursor's yak for a bulk action.
-            KeyCode::Char('m') => app.toggle_selected(),
-            // Mutations (single-key pickers + confirm). `S` is selection-aware:
-            // with marks it drives a bulk state transition, else the single pick.
-            KeyCode::Char('S') => {
-                if app.selected.is_empty() {
-                    app.open_state_picker()
-                } else {
-                    app.open_bulk_state_picker()
-                }
-            }
-            KeyCode::Char('P') => app.open_priority_picker(),
-            KeyCode::Char('T') => app.open_type_picker(),
-            KeyCode::Char('X') => app.open_slaughter_confirm(),
-            KeyCode::Char('L') => app.open_tags(),
-            KeyCode::Char('c') => app.open_create(false),
-            KeyCode::Char('C') => app.open_create(true),
-            KeyCode::Char('E') => app.open_edit(),
-            KeyCode::Char('D') => app.open_dep_picker(),
-            KeyCode::Char('R') => app.open_reparent_picker(),
-            KeyCode::Char('H') => app.open_herd_picker(),
-            KeyCode::Char('/') => app.open_search(),
-            KeyCode::Char('#') => app.open_goto_picker(),
-            KeyCode::Char('B') => app.open_backrefs_picker(),
-            KeyCode::Char('f') => app.open_drawer(),
-            KeyCode::Char('*') => app.toggle_star(),
-            KeyCode::Char('y') => app.copy_selected_id(),
-            KeyCode::Char('M') => app.open_comment(),
-            KeyCode::Char('A') => app.open_attach(),
-            KeyCode::Char('a') => app.open_answer_or_request(),
-            KeyCode::Char('Q') => app.open_ask(),
-            KeyCode::Char('v') => app.open_view_picker(),
-            KeyCode::Char('V') => app.open_save_view(),
-            KeyCode::Char('W') => app.request_farm_op(FarmOp::Commit),
-            KeyCode::Char('U') => app.request_farm_op(FarmOp::Sync),
-            KeyCode::Char('?') => app.open_help(),
-            KeyCode::Esc => {
-                if app.is_view_modified() {
-                    app.revert_filter_to_view();
-                    app.notification = Some("reverted to view".into());
-                }
-            }
-            KeyCode::Char('h') => app.cycle_family_scope(),
-            KeyCode::Char('l') | KeyCode::Right | KeyCode::Enter => {
-                if app.selected().is_some() {
-                    app.focus = Focus::Detail;
-                    app.detail_scroll = 0;
-                    app.detail_line = 0;
-                    app.detail_anchor = None;
-                    app.detail_find = None;
-                    app.detail_match = 0;
-                }
-            }
-            _ => {}
-        },
-        Focus::Detail => {
-            // Shift-↑↓ extend a visual selection (checked before the code match
-            // so the modifier isn't lost).
-            if k.modifiers.contains(KeyModifiers::SHIFT)
-                && matches!(k.code, KeyCode::Up | KeyCode::Down)
-            {
-                app.extend_selection(if k.code == KeyCode::Down { 1 } else { -1 });
-                return;
-            }
-            // Ctrl-N/P jump the line cursor between content blocks (description
-            // and each comment), mirroring the edit form's field navigation.
-            if ctrl && matches!(k.code, KeyCode::Char('n') | KeyCode::Char('p')) {
-                app.jump_block(if k.code == KeyCode::Char('n') { 1 } else { -1 });
-                return;
-            }
-            match k.code {
-                KeyCode::Char('q') => app.quit = true,
-                // On a no-wrap row (code, table) h/l and ←/→ scroll that block
-                // sideways (yaks-c733); h/← at offset 0 (or anywhere else)
-                // is "back to list".
-                KeyCode::Char('l') | KeyCode::Right => {
-                    app.scroll_block(1);
-                }
-                KeyCode::Char('h') | KeyCode::Left => {
-                    if !app.scroll_block(-1) {
-                        app.focus = Focus::List;
-                    }
-                }
-                // Esc peels back: selection → find → back to list (Python layering).
-                KeyCode::Esc => {
-                    if app.detail_anchor.is_some() {
-                        app.detail_anchor = None;
-                    } else if app.detail_find.is_some() {
-                        app.detail_find = None;
-                    } else {
-                        app.focus = Focus::List;
-                    }
-                }
-                KeyCode::Tab | KeyCode::Char(']') => app.jump_link(1),
-                KeyCode::BackTab | KeyCode::Char('[') => app.jump_link(-1),
-                KeyCode::Char('o') => app.nav_back(),
-                KeyCode::Char('i') => app.nav_forward(),
-                KeyCode::Char('/') => app.open_detail_find(),
-                KeyCode::Char('#') => app.open_goto_picker(),
-                KeyCode::Char('B') => app.open_backrefs_picker(),
-                KeyCode::Char('n') => app.detail_find_jump(1),
-                KeyCode::Char('N') => app.detail_find_jump(-1),
-                KeyCode::Char('?') => app.open_help(),
-                KeyCode::Char('W') => app.request_farm_op(FarmOp::Commit),
-                KeyCode::Char('U') => app.request_farm_op(FarmOp::Sync),
-                KeyCode::Char('v') => app.toggle_visual(),
-                // Enter yanks an active selection, else follows the link on the line.
-                KeyCode::Enter => {
-                    if app.detail_anchor.is_some() {
-                        app.yank_selection();
-                    } else {
-                        app.follow_link();
-                    }
-                }
-                // Mutating ops mirrored from the list pane (all act on selected()).
-                // Multi-select mark, mirrored from the list pane (yaks-5c51,
-                // deferred from yaks-de85); the mark set is shared, so a bulk
-                // `S` back on the list acts on marks made here too.
-                KeyCode::Char('m') => app.toggle_selected(),
-                KeyCode::Char('S') => app.open_state_picker(),
-                KeyCode::Char('P') => app.open_priority_picker(),
-                KeyCode::Char('T') => app.open_type_picker(),
-                KeyCode::Char('L') => app.open_tags(),
-                KeyCode::Char('X') => app.open_slaughter_confirm(),
-                KeyCode::Char('E') => app.open_edit_at_cursor(),
-                KeyCode::Char('D') => app.open_dep_picker(),
-                KeyCode::Char('R') => app.open_reparent_picker(),
-                KeyCode::Char('H') => app.open_herd_picker(),
-                KeyCode::Char('c') => app.open_create(false),
-                KeyCode::Char('C') => app.open_create(true),
-                KeyCode::Char('f') => app.open_drawer(),
-                KeyCode::Char('*') => app.toggle_star(),
-                // y yanks an active selection, else copies the task id.
-                KeyCode::Char('y') => {
-                    if app.detail_anchor.is_some() {
-                        app.yank_selection();
-                    } else {
-                        app.copy_selected_id();
-                    }
-                }
-                KeyCode::Char('M') => app.open_comment(),
-                KeyCode::Char('A') => app.open_attach(),
-                KeyCode::Char('r') => app.open_rename_attachment(),
-                KeyCode::Char('a') => app.open_answer_or_request(),
-                KeyCode::Char('Q') => app.open_ask(),
-                KeyCode::Char('O') => app.open_current_external(),
-                // Move between tasks without leaving the detail pane.
-                KeyCode::Char('J') => app.detail_next_task(1),
-                KeyCode::Char('K') => app.detail_next_task(-1),
-                // The line cursor (j/k/d/u/g/G); it auto-scrolls to stay in view.
-                KeyCode::Char('j') | KeyCode::Down => app.move_detail_line(1),
-                KeyCode::Char('k') | KeyCode::Up => app.move_detail_line(-1),
-                KeyCode::Char('d') => app.move_detail_line(half),
-                KeyCode::Char('u') => app.move_detail_line(-half),
-                KeyCode::Char('g') => app.detail_line_to(false),
-                KeyCode::Char('G') => app.detail_line_to(true),
-                _ => {}
-            }
-        }
+    // Every other surface is "which one, which command, run it": the Sheds and
+    // Wiki tabs own their keys (no yak key reaches a yak from there), else the
+    // list or the detail pane.
+    let ctx = app.surface_ctx();
+    if let Some(cmd) = keymap::lookup(ctx, &k) {
+        app.run_cmd(ctx, cmd);
     }
 }

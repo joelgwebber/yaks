@@ -23,6 +23,7 @@ mod handlers;
 mod headless;
 mod imagesize;
 mod imageview;
+mod keymap;
 mod linenav;
 mod markdown;
 mod mdrender;
@@ -91,6 +92,7 @@ use fuzzy::*;
 #[cfg(test)]
 use handlers::{handle_event, handle_paste};
 use handlers::{handle_key, pump_events};
+use keymap::{Cmd, help_content};
 use render::*;
 pub use runtime::run;
 use sheds_tab::*;

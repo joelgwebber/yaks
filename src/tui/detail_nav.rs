@@ -416,6 +416,46 @@ impl App {
         });
     }
 
+    /// h / ← in the detail pane. On a no-wrap row (code, table) h/← scroll that
+    /// block sideways (yaks-c733); at offset 0 (or anywhere else) it is "back
+    /// to list".
+    pub(crate) fn detail_back(&mut self) {
+        if !self.scroll_block(-1) {
+            self.focus = Focus::List;
+        }
+    }
+
+    /// Esc in the detail pane peels back: selection → find → back to list
+    /// (Python layering).
+    pub(crate) fn detail_peel(&mut self) {
+        if self.detail_anchor.is_some() {
+            self.detail_anchor = None;
+        } else if self.detail_find.is_some() {
+            self.detail_find = None;
+        } else {
+            self.focus = Focus::List;
+        }
+    }
+
+    /// Enter in the detail pane yanks an active selection, else follows the
+    /// link on the line.
+    pub(crate) fn detail_enter(&mut self) {
+        if self.detail_anchor.is_some() {
+            self.yank_selection();
+        } else {
+            self.follow_link();
+        }
+    }
+
+    /// y in the detail pane yanks an active selection, else copies the task id.
+    pub(crate) fn yank_selection_or_copy_id(&mut self) {
+        if self.detail_anchor.is_some() {
+            self.yank_selection();
+        } else {
+            self.copy_selected_id();
+        }
+    }
+
     /// J/K — move to the next/prev task in the list while staying in the detail
     /// pane, resetting the per-task detail view state.
     pub(crate) fn detail_next_task(&mut self, delta: i32) {

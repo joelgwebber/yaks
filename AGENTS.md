@@ -51,6 +51,11 @@ table only to exclude the local `.edtui` clone.
 - `src/store.rs` — `.yaks/` discovery + frontmatter parsing (hand-rolled fast path).
 - `src/main.rs` — clap CLI + command dispatch.
 - `src/farm.rs` — the core facade the CLI and TUI both call.
+- `src/tui/keymap.rs` — the TUI's command table: `Cmd` (dotted names), `Ctx` (a key's
+  surface), the static `BINDINGS`, `lookup` and `App::run_cmd`. The non-modal surfaces'
+  keys (list, detail, text/image viewers, Wiki and Sheds tabs) dispatch through it, and
+  the `?` overlay (`help_content`) and the bottom hint (`help_hint`) are generated
+  from it: a key change is one edit there. Modal overlays are not in it.
 - `src/tui.rs` (+ `src/tui/`) — the interactive TUI. `tui.rs` is a thin root (the
   `App` struct, the `Focus`/`Overlay`/`PickAction`/`ConfirmAction` enums, the
   constructors, and shared form helpers/consts); behavior lives in focused
@@ -131,11 +136,12 @@ a follow-up:
   link form): the `yaks` skill's "Notes and descriptions" section, which is
   how agents learn what to write, plus the notes line in `src/brief.rs`.
   Keep it to the rule an agent needs; the full behaviour lives in `docs/tui.md`.
-- for a TUI key/behavior: the `?` help overlay (`help_content` in
-  `src/tui/render.rs`) **and**, if the key is common enough to belong there, the
-  compact bottom help bar (`help_hint`). A new key that lands in the handler but
-  not in `help_content` is invisible to users (this is how yaks-71d1's `H`
-  shipped half-done).
+- for a TUI key/behavior: a binding in `src/tui/keymap.rs` (`BINDINGS`: its
+  `Cmd`, keys, help line and, for the common keys, hint label). The `?` overlay
+  (`help_content`) and the compact bottom help bar (`help_hint`) are generated from
+  the table, so a bound key with a help line is listed; the rows that are not
+  bindings (editor keys, files and links, mouse) are the `EXTRAS` there. A key in
+  a modal overlay's handler is not in the table: add its row to `EXTRAS` by hand.
 
 **Careful with the skills source.** `.agents/skills/` holds this repo's skills
 as real files, the only copy (no symlinks: Delta skips symlinked skill dirs).

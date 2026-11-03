@@ -5,16 +5,16 @@ expression: "draw(&app, 72, 16)"
  🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starr
 
 ◂ Help — keys
-│ Movement
-│   j / k  ↓ / ↑  Move cursor
-│   d / u         Half-page down / up
-│   PgDn / PgUp   Full-page down / up
-│   g / G         Top / bottom
-│
 │ List pane
-│   Tab / S-Tab   Next / previous view
-│   [ / ]         Previous / next view
-│   l / → / Enter Show detail pane
-│   Space         Collapse / expand subtree
-│   m             Mark / unmark row (multi-select)
+│   Tab / ]         Next view
+│   S-Tab / [       Previous view
+│   j / ↓           Move cursor down
+│   k / ↑           Move cursor up
+│   d               Half-page down
+│   u               Half-page up
+│   PgDn            Full-page down
+│   PgUp            Full-page up
+│   g               Top
+│   G               Bottom
+│   l / → / Enter   Show detail pane
 j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close

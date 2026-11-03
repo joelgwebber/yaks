@@ -31,8 +31,8 @@ Delegating), `.yaks/config.yaml` on the farm branch (`yaks path`) for `verify:`,
    Never land code that has no yak.
 2. Record follow-ups you found as new yaks; note decisions as `Decision:` notes.
 3. Parity check, in this same change (`AGENTS.md`, Keeping docs current): `docs/`,
-   `README.md`, the bundled skills, clap `--help` for CLI changes, `help_content`
-   / `help_hint` in `src/tui/render.rs` for TUI keys. Grep for old names/keys.
+   `README.md`, the bundled skills, clap `--help` for CLI changes, `BINDINGS`
+   in `src/tui/keymap.rs` (the `?` help and hint are generated from it) for TUI keys. Grep for old names/keys.
 
 ## 2. Gate
 

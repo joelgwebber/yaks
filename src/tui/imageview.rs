@@ -10,7 +10,6 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use ratatui::Frame;
-use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
@@ -20,6 +19,7 @@ use ratatui_image::protocol::StatefulProtocol;
 use ratatui_image::sliced::{SignedPosition, SlicedImage, SlicedProtocol};
 use ratatui_image::{FilterType, Resize, StatefulImage};
 
+use super::keymap::Cmd;
 use super::{App, Overlay, detail};
 
 /// Largest image file the viewer decodes; a bigger one opens externally.
@@ -135,18 +135,16 @@ pub(crate) fn render_image(v: &ImageView, frame: &mut Frame, area: Rect) {
 }
 
 impl App {
-    /// Keys in the image viewer: `O` hands the file to the OS opener,
+    /// Run an image viewer command: `O` hands the file to the OS opener,
     /// `Esc`/`q`/`h`/`←` close it.
-    pub(crate) fn handle_image_key(&mut self, k: KeyEvent) {
+    pub(super) fn run_image_cmd(&mut self, cmd: Cmd) {
         let Overlay::Image(v) = &self.overlay else {
             return;
         };
-        match k.code {
+        match cmd {
             // Back to the text viewer it was followed from, if any (yaks-7395).
-            KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('h') | KeyCode::Left => {
-                self.close_image();
-            }
-            KeyCode::Char('O') => {
+            Cmd::PaneClose => self.close_image(),
+            Cmd::FileOpenExternal => {
                 let (target, arg) = (v.target.clone(), v.path.display().to_string());
                 self.overlay = Overlay::None;
                 self.os_open(&target, &arg);

@@ -15,7 +15,7 @@
 //! on `r`; one at a time.
 //!
 //! The tab is a built-in view (`view::sheds_view`) whose yak rows are empty,
-//! so every yak key is inert there; [`App::handle_sheds_key`] owns its keys.
+//! so every yak key is inert there; its keys are the `Sheds` and `ShedDetail` contexts of `keymap`.
 //! A shed's yaks are yaks of this farm: Enter opens one, and `a` on the yak
 //! views answers it.
 
@@ -190,7 +190,7 @@ impl App {
         self.selected_shed()?.rows().get(self.sheds.line).copied()
     }
 
-    fn move_shed(&mut self, delta: i32) {
+    pub(crate) fn move_shed(&mut self, delta: i32) {
         let n = self.sheds.snapshot.as_ref().map_or(0, |s| s.sheds().len());
         if n == 0 {
             return;
@@ -203,7 +203,7 @@ impl App {
         }
     }
 
-    fn move_shed_yak(&mut self, delta: i32) {
+    pub(crate) fn move_shed_yak(&mut self, delta: i32) {
         let n = self.selected_shed().map_or(0, |s| s.touched.len());
         if n == 0 {
             return;
@@ -245,62 +245,24 @@ impl App {
         }
     }
 
-    /// The Sheds tab's keys. Returns after handling every key, so yak keys
-    /// never reach a yak from here.
-    pub(crate) fn handle_sheds_key(&mut self, k: KeyEvent) {
-        let half = (self.page / 2).max(1) as i32;
-        let detail = self.focus == Focus::Detail;
-        match k.code {
-            KeyCode::Char('q') => self.quit = true,
-            KeyCode::Tab | KeyCode::Char(']') => self.switch_tab(1),
-            KeyCode::BackTab | KeyCode::Char('[') => self.switch_tab(-1),
-            KeyCode::Char('v') => self.open_view_picker(),
-            KeyCode::Char('?') => self.open_help(),
-            KeyCode::Char('#') => self.open_goto_picker(),
-            KeyCode::Char('r') => {
-                self.request_sheds_scan();
-                self.notification = Some("rescanning sheds".into());
-            }
-            KeyCode::Char('y') => self.copy_shed_thing(),
-            _ if detail => self.handle_shed_detail_key(k, half),
-            KeyCode::Char('j') | KeyCode::Down => self.move_shed(1),
-            KeyCode::Char('k') | KeyCode::Up => self.move_shed(-1),
-            KeyCode::Char('g') => self.move_shed(i32::MIN / 4),
-            KeyCode::Char('G') => self.move_shed(i32::MAX / 4),
-            KeyCode::Char('d') | KeyCode::PageDown => self.move_shed(half),
-            KeyCode::Char('u') | KeyCode::PageUp => self.move_shed(-half),
-            KeyCode::Char('l') | KeyCode::Right | KeyCode::Enter => {
-                if self.selected_shed().is_some() {
-                    self.focus = Focus::Detail;
-                    self.sheds.line = 0;
-                    self.sheds.offset.set(0);
-                }
-            }
-            _ => {}
-        }
+    /// `r`: scan the sheds again now.
+    pub(crate) fn rescan_sheds(&mut self) {
+        self.request_sheds_scan();
+        self.notification = Some("rescanning sheds".into());
     }
 
-    fn handle_shed_detail_key(&mut self, k: KeyEvent, half: i32) {
-        match k.code {
-            KeyCode::Char('h') | KeyCode::Left | KeyCode::Esc => self.focus = Focus::List,
-            KeyCode::Char('j') | KeyCode::Down => self.move_shed_yak(1),
-            KeyCode::Char('k') | KeyCode::Up => self.move_shed_yak(-1),
-            KeyCode::Char('g') => self.move_shed_yak(i32::MIN / 4),
-            KeyCode::Char('G') => self.move_shed_yak(i32::MAX / 4),
-            KeyCode::Char('d') | KeyCode::PageDown => self.move_shed_yak(half),
-            KeyCode::Char('u') | KeyCode::PageUp => self.move_shed_yak(-half),
-            // Next / previous shed without leaving the detail (as J/K do
-            // for yaks).
-            KeyCode::Char('J') => self.move_shed(1),
-            KeyCode::Char('K') => self.move_shed(-1),
-            KeyCode::Enter => self.open_shed_yak(),
-            _ => {}
+    /// `l` / Enter on a shed: show it in the detail pane, from the top.
+    pub(crate) fn open_shed(&mut self) {
+        if self.selected_shed().is_some() {
+            self.focus = Focus::Detail;
+            self.sheds.line = 0;
+            self.sheds.offset.set(0);
         }
     }
 
     /// `y`: the yak id on a yak line of the detail, else the shed's name (the
     /// actor to pass as `YAKS_ACTOR`).
-    fn copy_shed_thing(&mut self) {
+    pub(crate) fn copy_shed_thing(&mut self) {
         let text = if self.focus == Focus::Detail {
             self.selected_shed_yak().map(|(_, y)| y.id.clone())
         } else {
@@ -317,7 +279,7 @@ impl App {
 
     /// Enter on a yak in a shed's detail: open it. A yak since removed from
     /// the farm says so.
-    fn open_shed_yak(&mut self) {
+    pub(crate) fn open_shed_yak(&mut self) {
         let Some(id) = self.selected_shed_yak().map(|(_, y)| y.id.clone()) else {
             return;
         };
