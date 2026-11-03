@@ -1,7 +1,7 @@
 ---
 id: yaks-c354
 title: 'TUI phase 3b: Sheds becomes a tree view (actor roots, touched yaks as children)'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-03T04:10:57Z'
@@ -142,3 +142,13 @@ Summary: the Sheds tab is an ordinary tree view. Shed roots (today's order and t
 - New tests (sheds_tab.rs): rows, a yak the farm lacks, `j` from a root, `Space` collapse + badge, shed vs yak pane and `J`, `Enter` on a yak child, yak keys on a yak not a shed, `U` requests a sync, `/` keeps only matching children (and typed through the box), `y`/`r`, cursor kept across a snapshot; keymap tests for the shed kind and hints.
 - Docs: `docs/tui.md` (intro, `W` row, Sheds key table, Sheds tab section, new screenshot), `README.md` line; `?` and the hint are generated.
 - Attached: headless frames on a real scratch farm, the fixture's yak-detail frame, and `tui-sheds-yak.svg`.
+
+---
+▸ 2026-11-03T04:42:21Z [sheds-2]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD_xRZIBxBCtY3f3KUhDW5IL-PWT3Nbm
+---
+
+moved: shaving -> shorn
