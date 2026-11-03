@@ -27,3 +27,13 @@ thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
 moved: hairy -> shaving
 
 [doc-inline-image-frame](yaks-91d9/doc-inline-image-frame.txt)
+
+---
+▸ 2026-11-03T21:21:25Z [delta:starred-batch]
+
+Fixed: the document viewer now lays out markdown through the same function as the detail pane, so a lone image is drawn in place there too.
+
+- [fn md_rows](code:src/tui/detail.rs) is the one layout both use (extracted from `body_rows`); `AttachView::rows` takes the image env and passes it on (none for a pinned `@sha` document, whose images on disk may be another version).
+- `render_inline_images` takes the pane's scroll, so the viewer paints with its own.
+
+Evidence: new test `a_page_in_the_viewer_draws_attachment_and_farm_root_images_in_place` (rows reserved and pixels drawn, for `<id>/shot.png` and `/sources/.../shot.png`); a headless frame of the real `wiki/topics/scribe-capture-and-mining.md` in the joel farm, with the image drawn under `🖼 Capture in progress` (attached).
