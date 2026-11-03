@@ -121,8 +121,10 @@ type to filter, `Enter` goes to one like `#` (it is `yaks refs <id>
 --incoming`); `i`/`o` nav forward/back (each yak reopens at the cursor and
 scroll you left it at); `J`/`K` next/prev task; `Ctrl-N`/`Ctrl-P`
 next/prev content block; `v` + `Shift-↑↓` visual-select lines, `y` copy;
-`/`, `n`/`N` find (`Enter` keeps the cursor on the current match, `Esc` restores
-the pre-find scroll and cursor).
+`/`, `n`/`N` find (see *The search register* below: `/` sets the one
+search register, `Enter` keeps the cursor on the current match, `Esc` restores
+the register and the scroll and cursor from before; the status bar shows
+`match 2/5 "text"` while it is set).
 
 **Edit**
 
@@ -137,7 +139,7 @@ the pre-find scroll and cursor).
 | `M` | Add a comment (note): an empty editor under a `▸ you · now` header after the last comment, in place |
 | `a` | Hand the yak to an agent (`needs: agent`): on a yak awaiting a human, answer; otherwise request agent work (like `yaks request`; on a yak already awaiting an agent the request is appended). Opens the same multi-line editor as `M`, headed `Answer <id>` / `Request <id>`; `Ctrl-S` answers or requests with the text as the note (an empty one does so with no note), cancel changes nothing |
 | `Q` | Ask a question (`needs: human`, out of `next` until answered; on a yak awaiting an agent it flips back to a human). The same editor, headed `Ask <id>` |
-| `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped. It navigates like the detail pane, by the same code: `j`/`k`, `d`/`u`, `g`/`G` move a line cursor, `Tab`/`[`/`]` cycle links and `Enter` follows one (the status bar shows a URL's destination; a footnote or `#section` jumps within the file and `o`/`i` go back/forward; a yak id opens that yak in the detail pane; a farm page or source opens in the viewer at its anchor, `o` coming back (see [Following links](#following-links-and-peek)); an attachment, URL or source file opens as from the detail pane; a pane under the page peeks the link under the cursor, `p` hides it), `/` finds with `n`/`N` cycling, `v`/Shift-↑↓ select and `y`/`Enter` copy (a `.md` file copies its source markdown), `h`/`l` scroll a code block or table sideways, `Esc` clears a selection, then a find, then closes. `E` edits it in place (the multi-line editor: `Ctrl-S` writes the file back under the farm lock and returns to the viewer, re-rendered; cancel returns unchanged, asking first if you typed anything; a file changed on disk meanwhile is not overwritten until a second `Ctrl-S`), `O` hands it to the OS opener, `q`/`h` close. An image (png, jpg, gif, webp up to 32 MiB; svg up to 4 MiB) opens **in the pane** too: drawn with the terminal's own graphics protocol (kitty, sixel, iTerm2) when it speaks one, else as half-block cells; shrunk to fit, never enlarged; `O` opens it externally, `Esc`/`q`/`h` close. An svg is rasterized first (see *Svg attachments* below); a corrupt or undecodable image and binary files open with the OS opener |
+| `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped. It navigates like the detail pane, by the same code: `j`/`k`, `d`/`u`, `g`/`G` move a line cursor, `Tab`/`[`/`]` cycle links and `Enter` follows one (the status bar shows a URL's destination; a footnote or `#section` jumps within the file and `o`/`i` go back/forward; a yak id opens that yak in the detail pane; a farm page or source opens in the viewer at its anchor, `o` coming back (see [Following links](#following-links-and-peek)); an attachment, URL or source file opens as from the detail pane; a pane under the page peeks the link under the cursor, `p` hides it), `/` finds (the same search register as the yak detail) with `n`/`N` cycling and wrapping, `v`/Shift-↑↓ select and `y`/`Enter` copy (a `.md` file copies its source markdown), `h`/`l` scroll a code block or table sideways, `Esc` clears a selection, then the search, then closes. `E` edits it in place (the multi-line editor: `Ctrl-S` writes the file back under the farm lock and returns to the viewer, re-rendered; cancel returns unchanged, asking first if you typed anything; a file changed on disk meanwhile is not overwritten until a second `Ctrl-S`), `O` hands it to the OS opener, `q`/`h` close. An image (png, jpg, gif, webp up to 32 MiB; svg up to 4 MiB) opens **in the pane** too: drawn with the terminal's own graphics protocol (kitty, sixel, iTerm2) when it speaks one, else as half-block cells; shrunk to fit, never enlarged; `O` opens it externally, `Esc`/`q`/`h` close. An svg is rasterized first (see *Svg attachments* below); a corrupt or undecodable image and binary files open with the OS opener |
 | `r` | (detail) Rename the attachment whose link (📎 or 🖼) the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
 | `X` | Slaughter (delete, with confirm); on a yak with hairy or shaving descendants the confirm offers to take them too, naming how many go (shorn ones stay shorn) |
 | `:w` / `:q` / `:wq` | Save / cancel / save+close (editor Normal mode) |
@@ -247,13 +249,30 @@ search (the drawer's search row) must also match. It matches the way `yaks find`
 searches: a yak's id, title and description and notes; a page's file
 (frontmatter and body) and a source's `source.md` and extracted text, on top of
 its title, path, kind and tags; a shed's name, or one of its yaks (a tree keeps
-the ancestors of a match). `Esc` on a list clears the query first; the next `Esc`
+the ancestors of a match). In a list, `n`/`N` with no query set make the last
+in-pane search the query (with one set they do nothing; on a Wiki page row `N`
+stays *new page*). `Esc` on a list clears the query first; the next `Esc`
 reverts the facets to the view. `V` saves the facets (the drawer's search row),
 not the query. `#` go to any yak (list or detail pane:
 a picker over every yak — type an id fragment like `a1b2`, the full id, or
 title words, then `Enter` opens its detail, switching to its view and recording
 the jump so `o` comes back); `f` filter drawer; `Esc` clear the query, then
 revert the filter to the active view.
+
+**The search register** — `/` in a yak's detail pane or in a page or attachment
+open in the viewer does not touch the list's query (so searching inside a yak
+can't filter it out of the list): it edits one **search register**, like vim's
+`@/`. Every text subject highlights the register's matches the moment it opens
+(the current match green), `n`/`N` step through them, and the status bar shows
+`match 2/5 "text"` (`match 0/5` before `n` has landed on one). `J`/`K`, following
+a link, `o`/`i` and opening a page keep the register and reset only which match
+is current. In a yak's detail `n` past the last match goes on to the next row
+whose yak matches the register (the list query's rule), landing on its first
+match, and `N` before the first goes back to the previous such yak's last match;
+at the last matching yak it stays and says so. In a viewer `n`/`N` wrap. The
+find box opens seeded with the register; `Enter` keeps it, `Esc` restores the
+register from before, an empty box clears it, and `Esc` in the pane (after a
+selection) clears it too.
 
 **Wiki tab** — its rows are documents, not yaks: the movement keys above work,
 and a document row has its own keys (the yak keys do nothing there):
@@ -503,7 +522,8 @@ under `wiki/` and each herd's `<herd>/wiki/`, then every saved source under
   rendered markdown body. A field the viewer can't flatten to one line (a list
   of maps) shows its YAML as written. A **source** opens its `source.md`, then
   its `extracted.md` under an `── extracted.md ──` row. The viewer moves like
-  the detail pane: the line cursor, `Tab` among links, `/` find, `v`/`y`
+  the detail pane: the line cursor, `Tab` among links, `/` find (the search
+  register, see *The search register* above), `v`/`y`
   select and copy; `Enter` follows a link (another page opens in its place,
   `o` comes back: see [Following links](#following-links-and-peek)); `Esc`
   closes it.

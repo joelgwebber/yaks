@@ -268,8 +268,7 @@ impl App {
             self.focus = Focus::Detail;
             self.detail.scroll = 0;
             self.detail.anchor = None;
-            self.detail.find = None;
-            self.detail.matched = 0;
+            self.detail.matched = None;
         }
         self.overlay = Overlay::BlockEdit(BlockEdit {
             editor,

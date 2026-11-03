@@ -143,8 +143,9 @@ pub(crate) enum Overlay {
     Drawer(Drawer),
     /// The create-task form (title/type/priority/labels/description).
     Create(CreateForm),
-    /// Detail-pane find: edits `App.detail.find` live.
-    DetailFind(SearchBox),
+    /// The pane's find (`/` in a yak's detail or a text viewer): edits
+    /// `App.register` live, for whichever text subject the pane shows.
+    Find(SearchBox),
     /// The view manager (`v`): carries the picker's selection index.
     ViewPicker(usize),
     /// The keyboard-help reference (`?`): carries the scroll offset.
@@ -297,7 +298,7 @@ pub struct App {
     /// The detail pane's navigation state, the same [`linenav::LineNav`] the
     /// text viewer owns: line cursor (j/k move it, Tab snaps it to link
     /// lines, Enter follows a link on it), scroll, visual selection, find
-    /// (n/N cycle) and the sideways scroll of the no-wrap block under the
+    /// match (n/N cycle) and the sideways scroll of the no-wrap block under the
     /// cursor (dropped when the cursor leaves it or the yak changes,
     /// `App::drop_stale_hscroll`, yaks-c733).
     detail: linenav::LineNav,
@@ -320,6 +321,13 @@ pub struct App {
     /// and apart from the view's facets, so it never marks a tab modified.
     /// `Esc` on a list clears it before it reverts the facets. Never `Some("")`.
     query: Option<String>,
+    /// The search register (vim's `@/`, design §4): what `/` in the pane
+    /// edits, highlighted in every text subject (a yak's detail, a page, a
+    /// source, an attachment) and stepped by `n`/`N`. It outlives the subject
+    /// (`J`/`K`, `o`/`i` and following a link keep it) and is apart from the
+    /// list's `query`, so searching inside a yak never filters the list. Never
+    /// `Some("")`.
+    register: Option<String>,
     /// Approx. list viewport height, refreshed each loop for paging math.
     page: u16,
     /// Approx. detail viewport height (mid area = terminal height - 3),
@@ -426,6 +434,7 @@ impl App {
             family_scope: HashMap::new(),
             filter,
             query: None,
+            register: None,
             page: 10,
             detail_page: 10,
             detail_width: Cell::new(0),

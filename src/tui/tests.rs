@@ -1459,16 +1459,16 @@ fn detail_find_matches_and_cycles() {
     enter_key(&mut app); // focus detail
     handle_key(&mut app, key('/')); // open detail find
     typ(&mut app, "child");
-    assert_eq!(app.detail.find.as_deref(), Some("child"));
+    assert_eq!(app.register.as_deref(), Some("child"));
     assert!(app.detail_find_matches().len() >= 2); // both child lines
     enter_key(&mut app); // keep the find
     assert!(matches!(app.overlay, Overlay::None));
     assert_eq!(app.focus, Focus::Detail);
-    assert_eq!(app.detail.matched, 0);
+    assert_eq!(app.detail.matched, Some(0));
     handle_key(&mut app, key('n'));
-    assert_eq!(app.detail.matched, 1);
+    assert_eq!(app.detail.matched, Some(1));
     handle_key(&mut app, key('N'));
-    assert_eq!(app.detail.matched, 0);
+    assert_eq!(app.detail.matched, Some(0));
 }
 
 #[test]
@@ -1500,13 +1500,13 @@ fn detail_find_ctrl_c_restores() {
     enter_key(&mut app);
     handle_key(&mut app, key('/'));
     typ(&mut app, "zzz");
-    assert_eq!(app.detail.find.as_deref(), Some("zzz"));
+    assert_eq!(app.register.as_deref(), Some("zzz"));
     handle_key(
         &mut app,
         KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
     );
     assert!(matches!(app.overlay, Overlay::None));
-    assert!(app.detail.find.is_none());
+    assert!(app.register.is_none());
 }
 
 #[test]
@@ -1516,8 +1516,8 @@ fn detail_find_esc_enters_normal_in_vim() {
     handle_key(&mut app, key('/'));
     typ(&mut app, "zz");
     handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
-    assert!(matches!(app.overlay, Overlay::DetailFind(_)));
-    if let Overlay::DetailFind(sb) = &app.overlay {
+    assert!(matches!(app.overlay, Overlay::Find(_)));
+    if let Overlay::Find(sb) = &app.overlay {
         assert_eq!(sb.query.borrow().mode, EditorMode::Normal);
     }
 }
@@ -1543,7 +1543,7 @@ fn detail_find_enter_lands_cursor_on_match() {
     typ(&mut app, "child"); // matches "Child A1" (line 2), "Child A2" (line 3)
     let m = app.detail_find_matches();
     assert!(m.len() >= 2);
-    let match_line = m[app.detail.matched].0;
+    let match_line = m[app.detail.matched.unwrap()].0;
     assert!(match_line > 0, "match should be below the pre-find cursor");
     assert_eq!(app.detail.scroll as usize, match_line); // find scrolled here
     enter_key(&mut app); // commit
@@ -1564,12 +1564,12 @@ fn detail_find_enter_commits_the_cycled_match() {
     typ(&mut app, "child");
     enter_key(&mut app); // commit on match 0
     handle_key(&mut app, key('n')); // advance to match 1
-    assert_eq!(app.detail.matched, 1);
+    assert_eq!(app.detail.matched, Some(1));
     let second = app.detail_find_matches()[1].0;
     handle_key(&mut app, key('/')); // reopen (query + match index persist)
     enter_key(&mut app); // commit on the current match (1)
     assert!(matches!(app.overlay, Overlay::None));
-    assert_eq!(app.detail.matched, 1);
+    assert_eq!(app.detail.matched, Some(1));
     assert_eq!(app.detail.line, second);
 }
 
@@ -1595,7 +1595,7 @@ fn detail_find_esc_restores_pre_find_position() {
     handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
     handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
     assert!(matches!(app.overlay, Overlay::None));
-    assert!(app.detail.find.is_none());
+    assert!(app.register.is_none());
     assert_eq!(app.detail.line, origin_line);
     assert_eq!(app.detail.scroll, origin_scroll);
 }
@@ -4468,15 +4468,15 @@ fn find_in_the_viewer_highlights_matches_and_n_cycles_them() {
     assert_eq!(frame.lines().last().unwrap().trim_end(), "find: cache");
     enter_key(&mut app);
     let nav = viewer_nav(&app);
-    assert_eq!(nav.find.as_deref(), Some("cache"));
+    assert_eq!(app.register.as_deref(), Some("cache"));
     let first = nav.line;
     press(&mut app, "n");
     let nav = viewer_nav(&app);
-    assert_eq!(nav.matched, 1);
+    assert_eq!(nav.matched, Some(1));
     assert!(nav.scroll as usize > first, "scrolled to the second match");
-    // Esc drops the find first, then closes the viewer.
+    // Esc drops the search first, then closes the viewer.
     esc_key(&mut app);
-    assert_eq!(viewer_nav(&app).find, None);
+    assert_eq!(app.register, None);
     esc_key(&mut app);
     assert!(matches!(app.overlay, Overlay::None));
 }
@@ -5780,4 +5780,235 @@ mod query {
         assert!(tabs.contains("/\"widget\" \u{b7} 5 in All"), "{tabs}");
         assert!(tabs.contains("filter: \u{201c}shave\u{201d}"), "{tabs}");
     }
+}
+
+// -- one search register for every text subject (yaks-c215) -----------------
+
+/// Three root yaks whose bodies hold "needle" in the first and the third (the
+/// first twice): a register hit moves between them, skipping the middle one.
+fn needles() -> App {
+    let mut a0 = task("a0", "Root A", Status::Hairy, 2, None);
+    a0.body = "needle one\n\nfiller\n\nneedle again\n\nsee a1".into();
+    let mut a1 = task("a1", "Root B", Status::Hairy, 2, None);
+    a1.body = "nothing here".into();
+    let mut a2 = task("a2", "Root C", Status::Hairy, 2, None);
+    a2.body = "a needle\n\nand a second needle".into();
+    let mut app = App::new(vec![a0, a1, a2]);
+    app.detail_page = 20;
+    app
+}
+
+/// The last line of a frame, trimmed: the status bar.
+fn status_line(app: &App) -> String {
+    draw(app, 110, 20).lines().last().unwrap().trim_end().into()
+}
+
+#[test]
+fn a_slash_in_the_pane_sets_the_register_and_not_the_list_query() {
+    let mut app = needles();
+    enter_key(&mut app);
+    press(&mut app, "/needle");
+    enter_key(&mut app);
+    assert_eq!(app.register.as_deref(), Some("needle"));
+    assert_eq!(app.query, None, "the list is not filtered");
+    assert_eq!(app.row_count(), 3);
+}
+
+#[test]
+fn esc_in_the_find_box_restores_the_previous_register() {
+    let mut app = needles();
+    app.register = Some("old".into());
+    enter_key(&mut app);
+    press(&mut app, "/x"); // the box is seeded with the register
+    // (The cursor starts at the front, as in the list's own search box.)
+    assert_eq!(app.register.as_deref(), Some("xold"));
+    esc_key(&mut app);
+    esc_key(&mut app);
+    assert!(matches!(app.overlay, Overlay::None));
+    assert_eq!(app.register.as_deref(), Some("old"));
+}
+
+#[test]
+fn the_register_survives_j_and_k_and_highlights_the_next_yak() {
+    let mut app = needles();
+    enter_key(&mut app);
+    press(&mut app, "/needle");
+    enter_key(&mut app);
+    assert_eq!(app.detail_find_matches().len(), 2);
+    press(&mut app, "J");
+    assert_eq!(app.selected_id().as_deref(), Some("a1"));
+    assert_eq!(app.register.as_deref(), Some("needle"));
+    assert_eq!(app.detail.matched, None, "only the match index resets");
+    assert!(app.detail_find_matches().is_empty());
+    press(&mut app, "J");
+    assert_eq!(app.register.as_deref(), Some("needle"));
+    assert_eq!(
+        app.detail_find_matches().len(),
+        2,
+        "highlighted as it opens"
+    );
+    press(&mut app, "K");
+    press(&mut app, "K");
+    assert_eq!(app.register.as_deref(), Some("needle"));
+    assert_eq!(app.detail_find_matches().len(), 2);
+}
+
+#[test]
+fn following_a_link_and_o_i_keep_the_register() {
+    let mut app = needles();
+    app.all[1].body = "needle in a1".into();
+    enter_key(&mut app);
+    press(&mut app, "/needle");
+    enter_key(&mut app);
+    draw(&app, 110, 20);
+    // Tab to the `a1` link on the last row of a0, and follow it.
+    tab_key(&mut app);
+    enter_key(&mut app);
+    assert_eq!(app.selected_id().as_deref(), Some("a1"));
+    assert_eq!(app.register.as_deref(), Some("needle"));
+    assert_eq!(app.detail_find_matches().len(), 1);
+    assert_eq!(app.detail.matched, None);
+    press(&mut app, "o");
+    assert_eq!(app.selected_id().as_deref(), Some("a0"));
+    assert_eq!(app.register.as_deref(), Some("needle"));
+    press(&mut app, "i");
+    assert_eq!(app.selected_id().as_deref(), Some("a1"));
+    assert_eq!(app.register.as_deref(), Some("needle"));
+}
+
+#[test]
+fn n_past_the_last_match_moves_to_the_next_matching_yak() {
+    let mut app = needles();
+    enter_key(&mut app);
+    draw(&app, 110, 20);
+    press(&mut app, "/needle");
+    enter_key(&mut app);
+    assert_eq!(app.detail.matched, Some(0));
+    press(&mut app, "n");
+    assert_eq!(app.detail.matched, Some(1));
+    assert_eq!(app.selected_id().as_deref(), Some("a0"));
+    // Past a0's last match: a1 does not match, so a2, on its first match.
+    press(&mut app, "n");
+    assert_eq!(app.selected_id().as_deref(), Some("a2"));
+    assert_eq!(app.detail.matched, Some(0));
+    let first = app.detail_find_matches()[0].0;
+    assert_eq!(
+        (app.detail.line, app.detail.scroll as usize),
+        (first, first)
+    );
+    assert_eq!(app.focus, Focus::Detail);
+    press(&mut app, "n");
+    assert_eq!(app.detail.matched, Some(1));
+    // Nothing further: it stays, and says so.
+    press(&mut app, "n");
+    assert_eq!(app.selected_id().as_deref(), Some("a2"));
+    assert_eq!(app.detail.matched, Some(1));
+    assert_eq!(
+        app.notification.as_deref(),
+        Some("no more matches for \"needle\"")
+    );
+    // N goes back the same way, onto the previous yak's last match.
+    press(&mut app, "N");
+    assert_eq!(app.detail.matched, Some(0));
+    press(&mut app, "N");
+    assert_eq!(app.selected_id().as_deref(), Some("a0"));
+    assert_eq!(app.detail.matched, Some(1));
+}
+
+#[test]
+fn the_viewers_n_wraps() {
+    let (_dir, mut app) = viewer_on_linked_notes();
+    press(&mut app, "/cache");
+    enter_key(&mut app);
+    assert_eq!(viewer_nav(&app).matched, Some(0));
+    press(&mut app, "n");
+    assert_eq!(viewer_nav(&app).matched, Some(1));
+    press(&mut app, "n");
+    assert_eq!(viewer_nav(&app).matched, Some(0), "wraps to the first");
+    press(&mut app, "N");
+    assert_eq!(viewer_nav(&app).matched, Some(1), "and back to the last");
+    assert!(app.attach().is_some());
+}
+
+#[test]
+fn a_viewer_opens_with_the_register_set_in_a_yak() {
+    let (_dir, mut app) = app_on_attachment("notes.md", LINKED_NOTES);
+    // Set before the page opens (from a yak's detail, say).
+    app.register = Some("cache".into());
+    enter_key(&mut app);
+    draw(&app, 100, 24);
+    assert!(app.attach().is_some());
+    assert_eq!(viewer_nav(&app).matched, None);
+    let status = status_line(&app);
+    assert!(
+        status.starts_with("match 0/2 \"cache\""),
+        "the page's matches are counted as it opens: {status}"
+    );
+    // The first `n` lands on the first match, not the second.
+    press(&mut app, "n");
+    assert_eq!(viewer_nav(&app).matched, Some(0));
+    // `/` in the viewer edits the same register.
+    press(&mut app, "/s");
+    assert_eq!(app.register.as_deref(), Some("scache"));
+    esc_key(&mut app);
+    esc_key(&mut app);
+    assert_eq!(app.register.as_deref(), Some("cache"));
+}
+
+#[test]
+fn the_detail_footer_shows_which_match_it_is_on() {
+    let mut app = needles();
+    enter_key(&mut app);
+    draw(&app, 110, 20);
+    assert!(
+        !status_line(&app).contains("match "),
+        "no register, no chip"
+    );
+    press(&mut app, "/needle");
+    enter_key(&mut app);
+    let status = status_line(&app);
+    assert!(status.starts_with("match 1/2 \"needle\"  "), "{status}");
+    press(&mut app, "n");
+    assert!(status_line(&app).starts_with("match 2/2 \"needle\""));
+    press(&mut app, "J");
+    assert!(status_line(&app).starts_with("match 0/0 \"needle\""));
+    // The list shows none of it.
+    esc_key(&mut app); // peels the register
+    assert_eq!(app.register, None);
+    assert!(!status_line(&app).contains("match "));
+}
+
+#[test]
+fn n_in_a_list_with_no_query_applies_the_register_as_the_query() {
+    let mut app = needles();
+    app.register = Some("second".into());
+    press(&mut app, "n");
+    assert_eq!(app.query.as_deref(), Some("second"));
+    assert_eq!(app.row_count(), 1, "only a2 mentions it");
+    // With a query set, n and N do nothing.
+    app.register = Some("again".into());
+    press(&mut app, "n");
+    press(&mut app, "N");
+    assert_eq!(app.query.as_deref(), Some("second"));
+    // Esc clears the query; with no register, n has nothing to apply.
+    esc_key(&mut app);
+    assert_eq!(app.query, None);
+    app.register = None;
+    press(&mut app, "N");
+    assert_eq!(app.query, None);
+    assert_eq!(
+        app.notification.as_deref(),
+        Some("nothing to find: / sets the search")
+    );
+}
+
+#[test]
+fn n_and_n_on_a_page_row_keep_their_wiki_meanings() {
+    use keymap::{Cmd, Ctx, lookup};
+    let key = |ch| KeyEvent::new(KeyCode::Char(ch), KeyModifiers::NONE);
+    let (yak, doc) = (Some(tree::RowKind::Yak), Some(tree::RowKind::Doc));
+    assert_eq!(lookup(Ctx::List, yak, &key('n')), Some(Cmd::FindNext));
+    assert_eq!(lookup(Ctx::List, yak, &key('N')), Some(Cmd::FindPrev));
+    assert_eq!(lookup(Ctx::List, doc, &key('n')), Some(Cmd::FindNext));
+    assert_eq!(lookup(Ctx::List, doc, &key('N')), Some(Cmd::WikiNew));
 }

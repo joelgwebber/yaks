@@ -38,9 +38,6 @@ pub(crate) struct AttachView {
     pub(crate) rev: Option<String>,
     /// The line cursor, scroll, selection and find state.
     pub(crate) nav: LineNav,
-    /// The find box while `/` is typing a query (the viewer is not an
-    /// overlay, so it owns its find box).
-    pub(crate) find_box: Option<SearchBox>,
     /// Content width at the last render, so key handling clamps the scroll
     /// to the rows actually on screen.
     pub(crate) width: Cell<u16>,
@@ -73,7 +70,6 @@ impl AttachView {
             doc: DocKind::Attachment,
             rev: None,
             nav: LineNav::default(),
-            find_box: None,
             width: Cell::new(0),
         })
     }
@@ -109,7 +105,6 @@ impl AttachView {
             doc,
             rev,
             nav: LineNav::default(),
-            find_box: None,
             width: Cell::new(0),
         }
     }
@@ -748,6 +743,21 @@ impl App {
         self.overlay = Overlay::Fuzzy(fp);
     }
 
+    /// n / N on a list: with no query, the search register becomes the query;
+    /// with one, nothing (the list has no matches to step through).
+    pub(crate) fn list_find(&mut self) {
+        if self.query.is_some() {
+            return;
+        }
+        match self.register.clone() {
+            Some(q) => {
+                self.query = Some(q);
+                self.clamp_cursor();
+            }
+            None => self.notification = Some("nothing to find: / sets the search".into()),
+        }
+    }
+
     pub(crate) fn open_search(&mut self) {
         let cur = self.query.clone();
         self.overlay = Overlay::Search(SearchBox::new(self.editor_vim, cur));
@@ -770,11 +780,7 @@ impl App {
             Some(tree::Item::Yak(_) | tree::Item::Shed(_))
         ) {
             self.focus = Focus::Detail;
-            self.detail.scroll = 0;
-            self.detail.line = 0;
-            self.detail.anchor = None;
-            self.detail.find = None;
-            self.detail.matched = 0;
+            self.detail.to_top();
         }
     }
 
@@ -987,26 +993,30 @@ impl App {
         Some((rows, vp))
     }
 
-    /// Whether the text viewer's find box is open (it takes the keys).
-    pub(crate) fn doc_find_open(&self) -> bool {
-        self.attach().is_some_and(|v| v.find_box.is_some())
-    }
-
-    /// Keys in the viewer's find box: the detail pane's find routing, by the
+    /// Keys in the pane's find box, which edits the search register for the
+    /// subject the pane shows: the open page, else the yak's detail, by the
     /// same [`LineNav`] (yaks-84e0). Other keys in the viewer are the
     /// [`keymap::Ctx::Viewer`] commands, dispatched like the list's.
-    pub(crate) fn handle_doc_find_key(&mut self, k: KeyEvent, double_esc: bool) {
-        let Some((lines, _)) = self.attachment_rows() else {
-            return;
-        };
+    fn handle_find_key(&mut self, k: KeyEvent, double_esc: bool) {
         let cancel = self.field_cancel(k, double_esc);
-        let Some(v) = self.attach_mut() else {
+        let Overlay::Find(mut sb) = std::mem::replace(&mut self.overlay, Overlay::None) else {
             return;
         };
-        if let Some(sb) = v.find_box.as_mut() {
-            if v.nav.find_key(sb, k, cancel, &lines) {
-                v.find_box = None;
+        let mut register = self.register.take();
+        let closed = match self.attachment_rows() {
+            Some((lines, _)) => match self.attach_mut() {
+                Some(v) => v.nav.find_key(&mut sb, k, cancel, &lines, &mut register),
+                None => true,
+            },
+            None => {
+                let lines = self.detail_dlines();
+                self.detail
+                    .find_key(&mut sb, k, cancel, &lines, &mut register)
             }
+        };
+        self.register = register;
+        if !closed {
+            self.overlay = Overlay::Find(sb);
         }
     }
 
@@ -1021,7 +1031,37 @@ impl App {
         let Some((lines, vp)) = self.attachment_rows() else {
             return;
         };
-        let vim = self.editor_vim;
+        // The search register is the app's, not the page's: these commands
+        // read or write it, so they run before the page's state is borrowed.
+        match cmd {
+            Cmd::FindOpen => return self.open_find(),
+            Cmd::FindNext | Cmd::FindPrev => {
+                let delta = if cmd == Cmd::FindNext { 1 } else { -1 };
+                let register = self.register.clone();
+                let found = self
+                    .attach_mut()
+                    .is_some_and(|v| v.nav.find_step(&lines, register.as_deref(), delta, true));
+                if !found {
+                    self.notification = Some(match register {
+                        Some(q) => format!("no match for \"{q}\""),
+                        None => "nothing to find: / sets the search".into(),
+                    });
+                }
+                return;
+            }
+            // Esc peels a selection first, then the register, then closes.
+            Cmd::PanePeel
+                if self.register.is_some()
+                    && self.attach().is_some_and(|v| v.nav.anchor.is_none()) =>
+            {
+                self.register = None;
+                if let Some(v) = self.attach_mut() {
+                    v.nav.matched = None;
+                }
+                return;
+            }
+            _ => {}
+        }
         let Some(v) = self.attach_mut() else {
             return;
         };
@@ -1040,8 +1080,6 @@ impl App {
             Cmd::PanePeel => {
                 if nav.anchor.is_some() {
                     nav.anchor = None;
-                } else if nav.find.is_some() {
-                    nav.find = None;
                 } else {
                     self.close_doc();
                 }
@@ -1075,9 +1113,6 @@ impl App {
             Cmd::LinkNext => nav.jump_link(&lines, vp, 1),
             Cmd::LinkPrev => nav.jump_link(&lines, vp, -1),
             Cmd::SelectVisual => nav.toggle_visual(),
-            Cmd::FindOpen => v.find_box = Some(nav.open_find(vim)),
-            Cmd::FindNext => nav.find_jump(&lines, 1),
-            Cmd::FindPrev => nav.find_jump(&lines, -1),
             Cmd::NavBack | Cmd::NavForward => {
                 let forward = cmd == Cmd::NavForward;
                 if !nav.go_back(&lines, forward) && !self.viewer_hop(forward) {
@@ -1820,19 +1855,10 @@ impl App {
             }
             return;
         }
-        // Detail-pane find: live-highlight matches; Enter keeps, Esc restores.
-        if matches!(self.overlay, Overlay::DetailFind(_)) {
-            // The shared find-box routing (yaks-84e0): live highlight,
-            // Enter keeps it with the cursor on the match, Esc restores.
-            let cancel = self.field_cancel(k, double_esc);
-            let lines = self.detail_dlines();
-            let Overlay::DetailFind(mut sb) = std::mem::replace(&mut self.overlay, Overlay::None)
-            else {
-                unreachable!()
-            };
-            if !self.detail.find_key(&mut sb, k, cancel, &lines) {
-                self.overlay = Overlay::DetailFind(sb);
-            }
+        // The pane's find edits the search register: live-highlight matches;
+        // Enter keeps, Esc restores (yaks-84e0, yaks-c215).
+        if matches!(self.overlay, Overlay::Find(_)) {
+            self.handle_find_key(k, double_esc);
             return;
         }
         // Editors are handled in place (most keys flow to edtui); only the
@@ -1873,7 +1899,7 @@ impl App {
             | Overlay::Search(_)
             | Overlay::Drawer(_)
             | Overlay::Create(_)
-            | Overlay::DetailFind(_)
+            | Overlay::Find(_)
             | Overlay::ViewPicker(_)
             | Overlay::Help(_) => {}
             Overlay::Pick {
@@ -2495,14 +2521,10 @@ pub(crate) fn handle_paste(app: &mut App, text: &str) {
             }
             return;
         }
-        Overlay::Search(sb) | Overlay::DetailFind(sb) => &sb.query,
+        Overlay::Search(sb) | Overlay::Find(sb) => &sb.query,
         Overlay::Fuzzy(fp) => &fp.query,
         Overlay::Drawer(d) => match d.text_editor() {
             Some(e) => e,
-            None => return,
-        },
-        Overlay::None => match app.attach().and_then(|v| v.find_box.as_ref()) {
-            Some(sb) => &sb.query,
             None => return,
         },
         _ => return,
@@ -2539,12 +2561,6 @@ fn handle_key_inner(app: &mut App, k: KeyEvent) {
     // which an editor treats as cancel rather than quitting the app).
     if !matches!(app.overlay, Overlay::None) {
         app.handle_overlay_key(k);
-        return;
-    }
-    // The viewer's find box takes its keys, as an overlay's field does.
-    if app.doc_find_open() {
-        let double_esc = k.code == KeyCode::Esc && app.register_double_esc();
-        app.handle_doc_find_key(k, double_esc);
         return;
     }
     // Every other surface is "which one, which command, run it": the list,

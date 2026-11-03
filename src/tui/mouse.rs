@@ -119,11 +119,7 @@ impl App {
             self.open_wiki_entry();
         } else if i == self.cursor {
             self.focus = Focus::Detail;
-            self.detail.scroll = 0;
-            self.detail.line = 0;
-            self.detail.anchor = None;
-            self.detail.find = None;
-            self.detail.matched = 0;
+            self.detail.to_top();
         } else {
             self.cursor = i;
         }

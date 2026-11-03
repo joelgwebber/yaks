@@ -56,17 +56,19 @@ pub(crate) enum FuzzyAction {
     Goto,
 }
 
-/// Inline incremental search box. Editing it updates `App.query` on every
-/// keystroke (live preview); Esc restores the pre-search query.
+/// Inline incremental search box. Editing it updates `App.query` (the list's
+/// `/`) or `App.register` (the pane's `/`, [`Overlay::Find`]) on every
+/// keystroke (live preview); Esc restores the value from before.
 pub(crate) struct SearchBox {
     pub(crate) query: RefCell<EditorState>,
     pub(crate) handler: EditorEventHandler,
-    /// The `App.query` value before opening, restored on cancel.
+    /// The `App.query` / `App.register` value before opening, restored on
+    /// cancel.
     pub(crate) saved: Option<String>,
-    /// Detail-find only: `(detail.scroll, detail.line)` captured when the find
-    /// opened, restored on cancel so Esc returns to the pre-find position
-    /// (vi-like). `None` for the list search box.
-    pub(crate) detail_origin: Option<(u16, usize)>,
+    /// Pane find only: `(scroll, line, matched)` of the page's `LineNav`
+    /// captured when the find opened, restored on cancel so Esc returns to the
+    /// pre-find position (vi-like). `None` for the list search box.
+    pub(crate) find_origin: Option<(u16, usize, Option<usize>)>,
 }
 
 impl SearchBox {
@@ -79,7 +81,7 @@ impl SearchBox {
             query: RefCell::new(st),
             handler: make_handler(vim),
             saved: initial,
-            detail_origin: None,
+            find_origin: None,
         }
     }
 

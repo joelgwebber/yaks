@@ -3,8 +3,10 @@
 //! shared by every pane that shows a page of [`detail::DLine`] rows.
 //!
 //! - [`LineNav`] is one page's navigation state (cursor, scroll, selection,
-//!   find query and match, sideways scroll, in-page jump history) and its
-//!   operations, each given the page's rows and [`Viewport`].
+//!   current find match, sideways scroll, in-page jump history) and its
+//!   operations, each given the page's rows and [`Viewport`]. What it finds
+//!   is not its own: the search register (`App::register`, yaks-c215) is
+//!   handed in, so every page searches the same text.
 //! - [`Viewport`] is the scroll geometry: the rows a page shows, and how many
 //!   of them a pinned header takes once scrolled.
 //! - The free functions ([`yank_text`], [`link_dest`], [`hscroll_step`]) are
@@ -82,9 +84,9 @@ pub(crate) struct LineNav {
     pub(crate) scroll: u16,
     /// Visual-selection anchor, while a selection is active.
     pub(crate) anchor: Option<usize>,
-    /// The find query, and which of its matches is current (`n`/`N`).
-    pub(crate) find: Option<String>,
-    pub(crate) matched: usize,
+    /// Which match of the search register is current (`n`/`N`); `None` until
+    /// one has been landed on, so the first `n` goes to the first match.
+    pub(crate) matched: Option<usize>,
     /// Sideways scroll of the no-wrap block under the cursor:
     /// `(DLine::nowrap_key, columns)`. Dropped once the cursor leaves it.
     pub(crate) hscroll: Option<((usize, usize), usize)>,
@@ -181,63 +183,92 @@ impl LineNav {
         self.anchor.map(|a| (a.min(self.line), a.max(self.line)))
     }
 
-    /// `(line, col, len)` of every match of the find query.
-    pub(crate) fn find_matches(&self, lines: &[DLine]) -> Vec<(usize, usize, usize)> {
-        match self.find.as_deref() {
-            Some(q) if !q.is_empty() => detail_scan(lines, q),
-            _ => vec![],
-        }
+    /// Back to the top of a page: the cursor, scroll, selection and current
+    /// match (a different subject, or the same one opened afresh).
+    pub(crate) fn to_top(&mut self) {
+        self.line = 0;
+        self.scroll = 0;
+        self.anchor = None;
+        self.matched = None;
     }
 
-    /// n / N: scroll to the next / previous match (wrapping).
-    pub(crate) fn find_jump(&mut self, lines: &[DLine], delta: i32) {
-        let m = self.find_matches(lines);
-        if m.is_empty() {
-            return;
-        }
-        self.matched = (self.matched as i32 + delta).rem_euclid(m.len() as i32) as usize;
-        self.scroll = m[self.matched].0 as u16;
+    /// n / N: land on the next / previous match of `find`, the cursor on its
+    /// row and the row at the top of the page. Returns whether it did: not
+    /// when there is no match, nor, without `wrap`, when the current one is
+    /// the last (first). From no current match `n` goes to the first match,
+    /// `N` to the last.
+    pub(crate) fn find_step(
+        &mut self,
+        lines: &[DLine],
+        find: Option<&str>,
+        delta: i32,
+        wrap: bool,
+    ) -> bool {
+        let m = find_matches(lines, find);
+        let n = m.len() as i32;
+        let to = match self.matched {
+            Some(i) => i as i32 + delta,
+            None if delta >= 0 => 0,
+            None => n - 1,
+        };
+        let to = match (n, wrap) {
+            (0, _) => return false,
+            (n, true) => to.rem_euclid(n),
+            (n, false) if (0..n).contains(&to) => to,
+            _ => return false,
+        } as usize;
+        self.matched = Some(to);
+        self.line = m[to].0;
+        self.scroll = m[to].0 as u16;
+        true
     }
 
-    /// /: a find box seeded with the current query, remembering where the
-    /// cursor and scroll sit so cancelling returns there (vi-like).
-    pub(crate) fn open_find(&self, vim: bool) -> SearchBox {
-        let mut sb = SearchBox::new(vim, self.find.clone());
-        sb.detail_origin = Some((self.scroll, self.line));
+    /// /: a find box seeded with the search register, remembering where the
+    /// cursor, scroll and current match are so cancelling returns there
+    /// (vi-like).
+    pub(crate) fn open_find(&self, vim: bool, register: Option<&str>) -> SearchBox {
+        let mut sb = SearchBox::new(vim, register.map(String::from));
+        sb.find_origin = Some((self.scroll, self.line, self.matched));
         sb
     }
 
-    /// One key typed into the open find box `sb`: matches highlight live,
-    /// Enter keeps the find and leaves the cursor on the current match,
-    /// `cancel` (Esc / Ctrl-C) restores the query and position from before.
-    /// Returns whether the box closed.
+    /// One key typed into the open find box `sb`, which edits `register`:
+    /// matches highlight live, Enter keeps the register and leaves the cursor
+    /// on the current match, `cancel` (Esc / Ctrl-C) restores the register and
+    /// position from before. Returns whether the box closed.
     pub(crate) fn find_key(
         &mut self,
         sb: &mut SearchBox,
         k: KeyEvent,
         cancel: bool,
         lines: &[DLine],
+        register: &mut Option<String>,
     ) -> bool {
         if cancel {
-            self.find = sb.saved.clone();
-            if let Some((scroll, line)) = sb.detail_origin {
+            *register = sb.saved.clone();
+            if let Some((scroll, line, matched)) = sb.find_origin {
                 self.scroll = scroll;
                 self.line = line;
+                self.matched = matched;
             }
             return true;
         }
         if k.code == KeyCode::Enter {
-            if let Some(&(line, ..)) = self.find_matches(lines).get(self.matched) {
+            let m = find_matches(lines, register.as_deref());
+            if let Some(&(line, ..)) = m.get(self.matched.unwrap_or(0)) {
+                self.matched = Some(self.matched.unwrap_or(0));
                 self.line = line;
+                self.scroll = line as u16;
             }
             return true;
         }
         sb.handler.on_key_event(k, &mut sb.query.borrow_mut());
         let q = sb.query_text();
-        self.find = if q.is_empty() { None } else { Some(q) };
-        self.matched = 0;
-        if let Some(first) = self.find_matches(lines).first() {
-            self.scroll = first.0 as u16;
+        *register = if q.is_empty() { None } else { Some(q) };
+        let first = find_matches(lines, register.as_deref()).first().copied();
+        self.matched = first.map(|_| 0);
+        if let Some((line, ..)) = first {
+            self.scroll = line as u16;
         }
         false
     }
@@ -307,6 +338,15 @@ impl LineNav {
         self.line = self.line.min(n.saturating_sub(1));
         self.anchor = None;
         self.scroll = (self.scroll as usize).min(vp.max_scroll(n)) as u16;
+    }
+}
+
+/// `(line, col, len)` of every match of `find` (the search register) in the
+/// rows.
+pub(crate) fn find_matches(lines: &[DLine], find: Option<&str>) -> Vec<(usize, usize, usize)> {
+    match find {
+        Some(q) if !q.is_empty() => detail_scan(lines, q),
+        _ => vec![],
     }
 }
 
@@ -447,15 +487,32 @@ mod tests {
     #[test]
     fn find_matches_cycle_and_selection_yanks_rejoined_text() {
         let lines = page();
-        let mut nav = LineNav {
-            find: Some("ALPHA".into()),
-            ..Default::default()
-        };
-        assert_eq!(nav.find_matches(&lines), vec![(0, 0, 5), (2, 5, 5)]);
-        nav.find_jump(&lines, 1);
-        assert_eq!((nav.matched, nav.scroll), (1, 2));
-        nav.find_jump(&lines, 1);
-        assert_eq!(nav.matched, 0, "wraps");
+        let mut nav = LineNav::default();
+        let find = Some("ALPHA");
+        assert_eq!(find_matches(&lines, find), vec![(0, 0, 5), (2, 5, 5)]);
+        assert!(nav.find_step(&lines, find, 1, true));
+        assert_eq!(
+            (nav.matched, nav.line),
+            (Some(0), 0),
+            "the first, from none"
+        );
+        assert!(nav.find_step(&lines, find, 1, true));
+        assert_eq!((nav.matched, nav.line, nav.scroll), (Some(1), 2, 2));
+        assert!(nav.find_step(&lines, find, 1, true));
+        assert_eq!(nav.matched, Some(0), "wraps");
+        assert!(nav.find_step(&lines, find, -1, true));
+        assert_eq!(nav.matched, Some(1), "and back");
+        assert!(
+            !nav.find_step(&lines, find, 1, false),
+            "no wrap past the last"
+        );
+        assert_eq!(nav.matched, Some(1));
+        assert!(!nav.find_step(&lines, Some("zzz"), 1, true), "no match");
+        nav.to_top();
+        assert!(nav.find_step(&lines, find, -1, false));
+        assert_eq!(nav.matched, Some(1), "N from none goes to the last");
+        nav.to_top();
+        assert_eq!((nav.line, nav.scroll, nav.matched), (0, 0, None));
         nav.toggle_visual();
         nav.extend_selection(&lines, VP, 1);
         assert_eq!(nav.selection(), Some((0, 1)));

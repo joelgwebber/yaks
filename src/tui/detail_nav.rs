@@ -251,23 +251,67 @@ impl App {
             .scroll_into_view(n, scroll, line as usize) as u16;
     }
 
-    pub(crate) fn open_detail_find(&mut self) {
-        self.overlay = Overlay::DetailFind(self.detail.open_find(self.editor_vim));
+    /// `/` in the pane (a yak's detail or the viewer): the find box, editing
+    /// the search register.
+    pub(crate) fn open_find(&mut self) {
+        let nav = match self.attach() {
+            Some(v) => &v.nav,
+            None => &self.detail,
+        };
+        self.overlay = Overlay::Find(nav.open_find(self.editor_vim, self.register.as_deref()));
     }
 
-    /// (line, col, len) of every detail-find match for the current selection
-    /// (tests ask; the renderer and keys go through [`LineNav`]).
+    /// (line, col, len) of every match of the register in the current yak's
+    /// detail (tests ask; the renderer and keys go through [`LineNav`]).
     #[cfg(test)]
     pub(crate) fn detail_find_matches(&self) -> Vec<(usize, usize, usize)> {
-        if self.detail.find.is_none() || self.selected().is_none() {
+        if self.selected().is_none() {
             return vec![];
         }
-        self.detail.find_matches(&self.detail_dlines())
+        linenav::find_matches(&self.detail_dlines(), self.register.as_deref())
     }
 
+    /// n / N in a yak's detail: the next / previous match of the register.
+    /// Past the last (first) one, to the next (previous) row whose yak
+    /// matches it, landing on that yak's first (last) match.
     pub(crate) fn detail_find_jump(&mut self, delta: i32) {
+        let Some(q) = self.register.clone() else {
+            self.notification = Some("nothing to find: / sets the search".into());
+            return;
+        };
         let lines = self.detail_dlines();
-        self.detail.find_jump(&lines, delta);
+        if self.detail.find_step(&lines, Some(&q), delta, false) {
+            return;
+        }
+        // The next row, in the direction of travel, whose yak matches the
+        // register by the list query's rule.
+        let to = {
+            let rows = self.rows();
+            let ahead: Box<dyn Iterator<Item = usize>> = if delta >= 0 {
+                Box::new(self.cursor + 1..rows.len())
+            } else {
+                Box::new((0..self.cursor).rev())
+            };
+            let mut ahead = ahead;
+            ahead.find(|&i| {
+                rows[i]
+                    .yak()
+                    .is_some_and(|t| tree::query_matches(tree::Item::Yak(t), &q))
+            })
+        };
+        let Some(to) = to else {
+            self.notification = Some(format!("no more matches for \"{q}\""));
+            return;
+        };
+        self.show_row(to);
+        let lines = self.detail_dlines();
+        self.detail.find_step(&lines, Some(&q), delta, false);
+    }
+
+    /// Put the detail pane on row `to` of the list, from its top.
+    fn show_row(&mut self, to: usize) {
+        self.cursor = to;
+        self.detail.to_top();
     }
 
     /// Select `id` and show it in the detail pane, resetting the per-task detail
@@ -276,7 +320,7 @@ impl App {
         self.select_task(id); // drops focus to the list; we re-raise it below
         self.focus = Focus::Detail;
         // A fresh state, also dropping the sideways scroll of the previous
-        // yak's blocks.
+        // yak's blocks (the search register is the app's, and stays).
         self.detail = LineNav::default();
     }
 
@@ -362,13 +406,13 @@ impl App {
         }
     }
 
-    /// Esc in the detail pane peels back: selection → find → back to list
-    /// (Python layering).
+    /// Esc in the detail pane peels back: selection → the search register →
+    /// back to list (Python layering).
     pub(crate) fn detail_peel(&mut self) {
         if self.detail.anchor.is_some() {
             self.detail.anchor = None;
-        } else if self.detail.find.is_some() {
-            self.detail.find = None;
+        } else if self.register.take().is_some() {
+            self.detail.matched = None;
         } else {
             self.focus = Focus::List;
         }
@@ -404,12 +448,7 @@ impl App {
         }
         let next = (self.cursor as i32 + delta).clamp(0, len as i32 - 1) as usize;
         if next != self.cursor {
-            self.cursor = next;
-            self.detail.scroll = 0;
-            self.detail.line = 0;
-            self.detail.anchor = None;
-            self.detail.find = None;
-            self.detail.matched = 0;
+            self.show_row(next);
         }
     }
 

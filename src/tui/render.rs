@@ -264,7 +264,7 @@ pub(crate) fn render_attachment(
             .and_then(|k| extents.get(&k).map(|&e| v.nav.block_hscroll(k, e, w)))
             .unwrap_or(0)
     };
-    let lines = render_nav_rows(&rows, &v.nav, w, hscroll);
+    let lines = render_nav_rows(&rows, &v.nav, app.register.as_deref(), w, hscroll);
     frame.render_widget(Paragraph::new(lines).scroll((v.nav.scroll, 0)), body);
 }
 
@@ -317,17 +317,18 @@ fn render_peek(
 /// detail pane and the text viewer share (yaks-84e0): the line cursor and
 /// any visual selection on a subtle background, the link on the cursor's
 /// row emphasised, find matches highlighted (the current one green), and
-/// each no-wrap row scrolled `hscroll(row)` columns. Rows are returned in
-/// full; the caller scrolls the paragraph.
+/// each no-wrap row scrolled `hscroll(row)` columns. `find` is the search
+/// register. Rows are returned in full; the caller scrolls the paragraph.
 pub(crate) fn render_nav_rows<'a>(
     rows: &'a [detail::DLine],
     nav: &super::linenav::LineNav,
+    find: Option<&str>,
     width: usize,
     hscroll: impl Fn(&detail::DLine) -> usize,
 ) -> Vec<Line<'a>> {
     let cur = nav.link_at(rows);
     let sel = nav.selection();
-    let matches = nav.find_matches(rows);
+    let matches = super::linenav::find_matches(rows, find);
     rows.iter()
         .enumerate()
         .map(|(i, dl)| {
@@ -335,7 +336,7 @@ pub(crate) fn render_nav_rows<'a>(
                 .iter()
                 .enumerate()
                 .filter(|(_, (ln, _, _))| *ln == i)
-                .map(|(mi, (_, col, len))| (*col, *len, mi == nav.matched))
+                .map(|(mi, (_, col, len))| (*col, *len, Some(mi) == nav.matched))
                 .collect();
             let in_sel = sel.is_some_and(|(lo, hi)| i >= lo && i <= hi);
             let line_bg = (i == nav.line || in_sel).then(super::surface::selected);
@@ -465,7 +466,7 @@ pub(crate) fn overlay_name(o: &Overlay) -> &'static str {
         Overlay::Drawer(_) => "drawer",
         Overlay::Create(_) => "create",
         Overlay::Help(_) => "help",
-        Overlay::DetailFind(_) => "detail-find",
+        Overlay::Find(_) => "find",
         Overlay::ViewPicker(_) => "view-picker",
     }
 }
@@ -1108,7 +1109,7 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
     };
     let width = area.width as usize;
     let mut rendered = if focused {
-        render_nav_rows(&lines, &app.detail, width, hscroll)
+        render_nav_rows(&lines, &app.detail, app.register.as_deref(), width, hscroll)
     } else {
         // Unfocused: no cursor, selection, current link or find highlights.
         lines
@@ -1411,13 +1412,8 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
         render_query_line("/", &sb.query, frame, area);
         return;
     }
-    // Detail-pane find field, or the text viewer's.
-    let doc_find = app.attach().and_then(|v| v.find_box.as_ref());
-    if let Overlay::DetailFind(sb) = &app.overlay {
-        render_query_line("find: ", &sb.query, frame, area);
-        return;
-    }
-    if let (Overlay::None, Some(sb)) = (&app.overlay, doc_find) {
+    // The pane's find field (a yak's detail, or a page in the viewer).
+    if let Overlay::Find(sb) = &app.overlay {
         render_query_line("find: ", &sb.query, frame, area);
         return;
     }
@@ -1489,6 +1485,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
             "j/k · Tab:link Enter:follow · o/i back/fwd · p peek · / find · v sel · E edit · O open externally · Esc/q close"
                 .into()
         });
+        let text = with_match_chip(app, text);
         frame.render_widget(
             Paragraph::new(Span::styled(text, Style::new().fg(Color::DarkGray))),
             area,
@@ -1549,11 +1546,49 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
                 .add_modifier(Modifier::BOLD),
         ),
         _ => (
-            link_hint(app, area.width as usize).unwrap_or_else(|| help_hint(app)),
+            with_match_chip(
+                app,
+                link_hint(app, area.width as usize).unwrap_or_else(|| help_hint(app)),
+            ),
             Style::new().fg(Color::DarkGray),
         ),
     };
     frame.render_widget(Paragraph::new(Span::styled(text, style)), area);
+}
+
+/// `match 2/5 "q"` while the search register is set and the pane shows a
+/// text subject (a yak's detail, or a page): which of its matches in this
+/// subject is current (0 before `n` lands on one), and of how many.
+fn match_chip(app: &App) -> Option<String> {
+    let q = app.register.as_deref()?;
+    let (current, total) = if let Some((rows, _)) = app.attachment_rows() {
+        let nav = &app.attach()?.nav;
+        (
+            nav.matched,
+            super::linenav::find_matches(&rows, Some(q)).len(),
+        )
+    } else if app.focus == Focus::Detail && app.selected().is_some() {
+        let rows = app.detail_dlines();
+        (
+            app.detail.matched,
+            super::linenav::find_matches(&rows, Some(q)).len(),
+        )
+    } else {
+        return None;
+    };
+    Some(format!(
+        "match {}/{total} \"{}\"",
+        current.map_or(0, |i| i + 1),
+        truncate_disp(q, 24)
+    ))
+}
+
+/// `text`, the status bar's usual hint, behind the [`match_chip`] if any.
+fn with_match_chip(app: &App, text: String) -> String {
+    match match_chip(app) {
+        Some(chip) => format!("{chip}  {text}"),
+        None => text,
+    }
 }
 
 /// Where the link Enter would follow on the detail cursor's row points, for
