@@ -5,11 +5,11 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
-updated: '2026-11-03T02:19:20Z'
+updated: '2026-11-03T02:49:14Z'
 tags:
 - search
 - tui
-needs: human
+needs: agent
 ---
 
 Generalize the (shorn) detail-scoped nav stack from yak-2d13 into a global back/forward history spanning ALL view/UI states, not just yak-detail drill-down. Today nav_history/nav_pos is reset on every _enter_detail and _detail_next_task, so it only tracks navigation within a single detail context.
