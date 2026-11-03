@@ -1,7 +1,7 @@
 ---
 id: yaks-c7ba
 title: Global search affordance
-status: hairy
+status: shorn
 type: feature
 priority: 2
 created: '2026-10-27T13:23:15Z'
@@ -29,3 +29,13 @@ For the record, Recent is not global: it stops at 50 rows (`RECENT_LIMIT`, appli
 ▸ 2026-11-03T05:30:02Z [herd-tui]
 
 Done by herd-tui through phase 6a (yaks-a25c), landed as `cd753ad8`: `/` is a global query matching what `yaks find` searches, with an unpinned All view (every yak incl. dead, pages, sources) and the All count on the query chip.
+
+---
+▸ 2026-11-03T05:30:02Z [herd-tui]
+kind: move
+from: hairy
+to: shorn
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shorn
