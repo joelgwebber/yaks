@@ -1,11 +1,11 @@
 ---
 id: yaks-a2c5
 title: 'TUI phase 5: one history of locations'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T05:09:17Z'
+updated: '2026-11-03T05:27:15Z'
 parent: yaks-947a
 depends_on:
 - yaks-aac1
@@ -38,3 +38,13 @@ Claim draft (yakherd herd-tui), to start after phase 6b (yaks-c215) lands: worke
 - **Restore**, in order: view by key (gone: the subject's status view, else the first view, with a notification), filter, query, cursor by key (gone or moved: clamp to `cursor_idx` with a notification, `<id> moved` / `<id> gone`), list offset, focus, pane (a doc re-read from disk; line and scroll clamped).
 - **Following a link to a yak** no longer switches the list to its status view (`select_task`'s view switch goes; decision 5). If the current list has the yak, the cursor moves to it; otherwise the pane shows it and the list stays. This needs the pane to show a yak that is not the selected row: `PaneSubject::Yak(id)` beside the doc. Check how 4a modelled the pane before choosing; ask if it needs a structural call.
 - Each jump's notification names the view and subject (`← Recent · yaks-1234`).
+
+---
+▸ 2026-11-03T05:27:15Z [herd-tui]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
