@@ -9,6 +9,7 @@ updated: '2026-11-03T22:04:36Z'
 parent: yaks-f677
 tags:
 - tui
+needs: human
 ---
 
 A few scrolling odds and ends:
@@ -35,3 +36,18 @@ Two of three done in dab80e4:
 - **List wheel:** now scrolls the list's viewport three rows a notch, like the detail; the cursor stays until it would leave the screen. With a yak's detail open, the list wheel still steps tasks (`J`/`K`), unchanged. An open page also scrolls on the wheel now (it had no hit rect, so the wheel did nothing over it).
 
 Evidence: tests `wheel_scrolls_the_list_and_drags_the_cursor`, `horizontal_wheel_scrolls_the_block_under_the_pointer`; `?` Mouse section and `docs/tui.md` updated. Not tried with a real trackpad.
+
+---
+▸ 2026-11-03T22:04:36Z [delta:starred-batch]
+kind: ask
+needs: human
+---
+
+asked: needs human
+
+One left: "detail fields click-selected in edit mode". Which edit mode do you mean?
+
+1. **The create/edit form** (`E` on a yak: title, type, priority, tags, description rows). Lean: clicking a row focuses it (and a chip toggles), the same as Tab-ing there. Small.
+2. **The in-place block editor** (editing a description or note in the pane). Lean: a click moves the editor's text cursor to that spot. This needs edtui to take a mouse position, which may mean a change in the edtui fork.
+
+Or both? I'd start with 1.
