@@ -1,7 +1,7 @@
 ---
 id: yaks-96d8
 title: 'Research: Clint''s haks, the orchestration layer over yaks'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-03T22:40:30Z'
@@ -23,3 +23,13 @@ Findings written to [the haks page](/wiki/research/haks-orchestration-layer.md):
 Source read: `subtextdev/haks` at `8fbe3ec`, via `gh repo clone`. Not saved as a source (private repo).
 
 Open questions are checkboxes on the page. Waiting on Joel for discussion.
+
+---
+▸ 2026-11-03T22:42:09Z [delta:haks-review]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQ5qxMm5B_TcKPJ13IMRVoupLOAEJMk5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
