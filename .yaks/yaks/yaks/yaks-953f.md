@@ -5,11 +5,10 @@ status: hairy
 type: bug
 priority: 3
 created: '2026-08-23T14:38:59Z'
-updated: '2026-11-03T03:07:29Z'
+updated: '2026-11-03T03:07:30Z'
 tags:
 - search
 - tui
-needs: agent
 ---
 
 When searching within a list, we get a "filter: ..." header, and it sticks within the current list. But when you change lists, the header persists, but the search context doesn't.
@@ -52,3 +51,12 @@ needs: agent
 ---
 
 Answered by Joel in chat, 2026-11-02, relayed by tui-design: every question here is settled by the unified design's Decisions, [wiki/design/tui-model.md](/wiki/design/tui-model.md#decisions). Implementation follows that page's phases.
+
+---
+▸ 2026-11-03T03:07:30Z [tui-design]
+kind: pickup
+---
+
+picked up
+
+Nothing to do now: the answers live in the design page; this yak's work is a phase there.
