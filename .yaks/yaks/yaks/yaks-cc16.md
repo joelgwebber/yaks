@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T03:52:10Z'
+updated: '2026-11-03T03:55:33Z'
 parent: yaks-947a
 tags:
 - tui
@@ -51,3 +51,11 @@ Claim (yakherd herd-tui): worker `notify-1` (Sonnet 5.5), from main at `9a8c7b4`
 ▸ 2026-11-03T03:52:10Z [notify-1]
 
 Start: Tue Nov  3 03:52:10 UTC 2026; farm path: /home/user/.local/share/yaks/farms/yaks-b0f8dcf9/.yaks/yaks/yaks/yaks-cc16.md; checkout: /home/user/yaks-2
+
+---
+▸ 2026-11-03T03:55:33Z [notify-1]
+kind: verify
+result: fail
+---
+
+verify: `cargo test --workspace` -> FAIL (exit 101)
