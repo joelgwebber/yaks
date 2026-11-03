@@ -5,7 +5,8 @@ status: hairy
 type: task
 priority: 3
 created: '2026-11-03T14:23:16Z'
-updated: '2026-11-03T14:23:16Z'
+updated: '2026-11-03T21:13:51Z'
+parent: yaks-f677
 tags:
 - tui
 - sheds
