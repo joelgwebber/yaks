@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T03:59:31Z'
+updated: '2026-11-03T04:04:13Z'
 parent: yaks-947a
 tags:
 - tui
@@ -124,3 +124,13 @@ branch: main
 ---
 
 landed: f18b13db yaks-cc16: notifications clear on the next key or mouse event; a kept search no longer toasts filter: q
+
+---
+▸ 2026-11-03T04:04:13Z [herd-tui]
+
+Landed by herd-tui: worker commit `c5105119` as `f18b13db`, plus my follow-up commit on top.
+
+- Review found that clearing on *every* mouse event wipes a toast as soon as the pointer moves: crossterm's mouse capture reports all motion. The follow-up keeps the notification on `MouseEventKind::Moved`; clicks and scrolls still clear it. The test now covers both.
+- Re-ran the gate on `f18b13db` (`env -u YAKS_DIR -u YAKS_ACTOR cargo test`, fresh `TMPDIR`): 30 suites ok.
+- Reproduced with my own build: `/widget` Enter Tab leaves no toast in the frame.
+- Reset this yak's `verify:` override; the default gate is right once `YAKS_DIR` is not exported (future briefs say so).
