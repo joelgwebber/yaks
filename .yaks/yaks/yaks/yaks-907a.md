@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
-updated: '2026-11-03T22:09:33Z'
+updated: '2026-11-03T22:10:03Z'
 parent: yaks-f677
 tags:
 - tui
@@ -65,3 +65,16 @@ kind: pickup
 picked up
 
 Measuring write cost: commit vs reload.
+
+---
+▸ 2026-11-03T22:10:03Z [delta:starred-batch]
+
+Measured (release build, clone of this farm, `yaks update --note` from the CLI, three runs each):
+
+- git farm: 494 / 479 / 501 ms
+- the same farm as a plain directory (no git): 47 / 44 / 46 ms
+- `yaks list` on the git farm: 35 ms
+
+So the yak write and the TUI's refresh are cheap; ~450 ms of every *changing* write is the per-change farm commit (yaks-a838), whose ~49 git calls are mostly repeated discovery. That is yaks-7058. A no-op save skips the commit, which is why it is instant.
+
+Decision: fold this into yaks-7058 (now a dependency) rather than fix it twice. Two parts there would remove the pause: cache discovery for the process and build the commit from one `status` (yaks-7058's plan), and in the TUI, run the commit after the frame that shows the saved text is drawn, so even a slow git never blocks the redraw.
