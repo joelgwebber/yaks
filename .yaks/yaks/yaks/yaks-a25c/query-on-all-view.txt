@@ -1,0 +1,16 @@
+=== frame 13 · 150x14 · focus=list · view=🧺 All · cursor=0 · rows=6 · sel=yaks-a25c · blocked=[yaks-6919,yaks-7c6e,yaks-8d6a,yaks-9dec,yaks-a2c5,yaks-c215] · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (0)   🪒 Shaving (2)   🐑 Shorn (4)   🕒 Recent (5)   ⭐ Starred (0)   📖 Wiki (1)   🛖 Sheds (3)   /"widget" · 6 in All                  ↑4
+
+ yaks-a25c p2 task     🪒 TUI phase 6a: global query with its own chip, and the All view                                                         [tui]
+ yaks-cc16 p2 task     🐑 TUI phase 1: notifications clear on the next key                                                                       [tui]
+ yaks-3b22 p3 task     🐑 Parity: E opens a full edit form (share the create-form widget)                                          [rust, tui, parity]
+ yaks-b1c7 p3 task     🐑 Encoding: delimited spans (word-preserving inline)                                                               [tui, eval]
+ yaks-1699 p3 task     🐑 TUI slice 3b: shared edtui editor overlay (labels L, create c/C, body edit E)                                 [rust, phase2]
+ TUI design: one model for views, panes, history, search and   topic  #tui #design   wiki/design/tui-model.md
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  Esc:clear  ?:help
+=== end ===

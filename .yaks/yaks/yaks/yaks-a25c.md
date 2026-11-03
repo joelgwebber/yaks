@@ -117,3 +117,5 @@ Decision: snapshots changed: `inline_search_field_and_recolor` (tab counts now a
 Decision: All uses the globe-free basket emoji (U+1F9FA). Rejected: U+1F5C3 (a narrow-width emoji: the picker column misaligned in the frame).
 
 [query-chip-on-shaving](yaks-a25c/query-chip-on-shaving.txt)
+
+[query-on-all-view](yaks-a25c/query-on-all-view.txt)
