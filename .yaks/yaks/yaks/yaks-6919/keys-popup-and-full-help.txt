@@ -1,0 +1,156 @@
+=== frame 0 · 110x24 · focus=list · view=🦬 Hairy · cursor=0 · rows=3 · sel=t-05dc · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+ t-05dc   p3 task     🦬 Root yak
+   t-61a0 p3 task     🦬 Child yak
+ t-1a11   p3 task     🦬 Other root
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?
+=== end ===
+=== frame 1 · 110x24 · focus=list · view=🦬 Hairy · cursor=0 · rows=3 · sel=t-05dc · blocked=- · collapsed=0 · filter=(all) · overlay=keys ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+ t-05dc   p3 task     🦬 Root yak
+   t-61a0 p3 task     🦬 Child yak
+ t-1a11   p3 task     🦬 Other root
+
+
+
+
+
+
+
+ Keys · list · yak rows ──────────────────────────────────────────────────────────────────────────────────────
+ Tab/]   view.next       l/→/Enter pane.open      E yak.edit       a yak.answer   o        nav.back
+ S-Tab/[ view.prev       h/←       tree.left      X yak.slaughter  Q yak.ask      B        yak.backrefs
+ j/↓     move.down       F         family.cycle   S yak.state      A yak.attach   f        filter.drawer
+ k/↑     move.up         Space     tree.toggle    P yak.priority   * yak.star     W        farm.commit
+ d       move.half_down  m         yak.mark       T yak.type       y row.copy     U        farm.sync
+ u       move.half_up    `         view.pick      L yak.tags       / search.open  ?        app.help
+ PgDn    move.page_down  V         view.save      D yak.dep        n find.next    q/Ctrl-C app.quit
+ PgUp    move.page_up    Esc       view.revert    R yak.reparent   N find.prev
+ g/Home  move.top        c         yak.new        H yak.herd       # nav.goto
+ G/End   move.bottom     C         yak.new_child  M yak.comment    i nav.forward
+? again: the full reference · any other key closes
+=== end ===
+=== frame 2 · 110x24 · focus=list · view=🦬 Hairy · cursor=0 · rows=3 · sel=t-05dc · blocked=- · collapsed=0 · filter=(all) · overlay=help ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+◂ Help — keys
+│ List pane
+│   Tab / ]         Next view
+│   S-Tab / [       Previous view
+│   j / ↓           Move cursor down
+│   k / ↑           Move cursor up
+│   d               Half-page down
+│   u               Half-page up
+│   PgDn            Full-page down
+│   PgUp            Full-page up
+│   g / Home        Top
+│   G / End         Bottom
+│   l / → / Enter   Show detail pane
+│   h / ←           Collapse the row, else go to its parent (tree views)
+│   F               Cycle the family scope (tree views)
+│   Space           Collapse / expand subtree
+│   m               Mark / unmark row (multi-select)
+│   `               View picker
+│   V               Save filter as view
+│   Esc             Clear the search, then revert the filter to the active view
+│   c               New root yak
+j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close
+=== end ===
+=== frame 3 · 110x24 · focus=list · view=🦬 Hairy · cursor=0 · rows=3 · sel=t-05dc · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+ t-05dc   p3 task     🦬 Root yak
+   t-61a0 p3 task     🦬 Child yak
+ t-1a11   p3 task     🦬 Other root
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?
+=== end ===
+=== frame 4 · 110x24 · focus=detail · view=🦬 Hairy · cursor=0 · rows=3 · sel=t-05dc · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+◂ Task: t-05dc
+│
+│ Title:       Root yak
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     4m ago
+│ Updated:     4m ago
+│ Tags:        -
+│
+│ Children:
+│   🦬 t-61a0  Child yak
+│
+│
+│
+│
+│
+│
+│
+│
+│
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search
+=== end ===
+=== frame 5 · 110x24 · focus=detail · view=🦬 Hairy · cursor=0 · rows=3 · sel=t-05dc · blocked=- · collapsed=0 · filter=(all) · overlay=keys · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (3)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+◂ Task: t-05dc
+│
+│ Title:       Root yak
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     4m ago
+ Keys · detail pane · yak rows ───────────────────────────────────────────────────────────────────────────────
+ h/←     pane.back          o       nav.back            B yak.backrefs   C        yak.new_child
+ Esc     pane.peel          J       item.next           E yak.edit       a        yak.answer
+ l/→     pane.scroll_right  K       item.prev           M yak.comment    Q        yak.ask
+ j/↓     move.down          Ctrl-N  block.next          D yak.dep        A        yak.attach
+ k/↑     move.up            Ctrl-P  block.prev          S yak.state      O        link.open_external
+ d       move.half_down     v       select.visual       m yak.mark       r        attachment.rename
+ u       move.half_up       Shift-↓ select.extend_down  P yak.priority   *        yak.star
+ g       move.top           Shift-↑ select.extend_up    T yak.type       f        filter.drawer
+ G       move.bottom        y       select.yank         L yak.tags       W        farm.commit
+ Tab/]   link.next          /       find.open           X yak.slaughter  U        farm.sync
+ S-Tab/[ link.prev          n       find.next           R yak.reparent   ?        app.help
+ Enter   pane.enter         N       find.prev           H yak.herd       q/Ctrl-C app.quit
+ i       nav.forward        #       nav.goto            c yak.new
+? again: the full reference · any other key closes
+=== end ===
