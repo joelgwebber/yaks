@@ -1,0 +1,23 @@
+ 🕒 Recent (50)   ⭐ Starred (13)   📥 Inbox (2)   🦬 Hairy (51)   🪒 Shaving (7)   📖 Wiki (4)   🛖 Sheds (6)                          s
+
+⏳ design-scout              idle   40d ago      last: yaks-1bbd Carry search context through the UI globally                                     ▶
+   delta:starred-batch       active 11m ago      shaving: yaks-cc2a, yaks-efc0, yaks-58f0, yaks-f677
+     yaks-cc2a p3 bug      🪒 Shed details renders read-only, unscrollable yaks list                                           shaving [tui, sheds] 
+     yaks-efc0 p3 task     🪒 Indent shed contents a bit                                                                       shaving [sheds, tui] 
+     yaks-58f0 p3 task     🪒 Collapse idle sheds by default                                                                   shaving [tui, sheds] 
+     yaks-f677 p2 task     🪒 Starred TUI batch (2026-11-03): doc links, cursor/nav, filters, sheds, keys                                shaving [tu
+     yaks-b608 p2 bug      🐑 Filtering showing all yak states when herd is selected                                                   recent [tui] 
+     yaks-91d9 p3 bug      🐑 Documents don't render inline images                                                                     recent [tui] 
+     yaks-c5d7 p3 task     🐑 Absolute document/image refs not resolving                                                               recent [tui] 
+     yaks-0e15 p3 task     🐑 Links from documents to yaks failing                                                                     recent [tui] 
+     yaks-d0b0 p3 bug      🐑 Yaks links from docs aren't followed                                                                     recent [tui] 
+   Joel Webber               active 52m ago      last: yaks-7c6e Holistic key-binding rethink, after the unified-model phases land               ▶ 7
+   delta:skills-upgrade-aud  stale  7h ago       shaving: yaks-ec00                                                                               ▶ 
+   yakherd                   stale  7h ago       shaving: yaks-039b                                                                              ▶ 3
+   delta:farm-wiki           stale  1d ago       shaving: yaks-44b3                                                                              ▶ 3
+   herd-tui                  idle   8h ago       last: yaks-947a Implement the unified TUI model (/wiki/design/tui-model.md)                     ▶ 1
+   keys-2                    idle   15h ago      last: yaks-6919 TUI phase 7: the key pass (collisions, which-key, overrides)                     ▶ 
+   hist-1                    idle   15h ago      last: yaks-a2c5 TUI phase 5: one history of locations                                            ▶ 
+   find-1                    idle   16h ago      last: yaks-c215 TUI phase 6b: one search register for every text subject                         ▶ 
+   nav-2                     idle   16h ago      last: yaks-9dec TUI phase 4b: the detail pane's detail_* fields fold into one LineNav            ▶ 
+   pane-1                    idle   16h ago      last: yaks-0906 TUI phase 4a: the pane holds a subject; the text and image viewers leave Overlay ▶ 
