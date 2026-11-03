@@ -11,12 +11,14 @@ tags:
 - design
 ---
 
----
-▸ 2026-11-03T02:17:31Z [tui-design]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
----
+One design that unifies five TUI yaks, so they land as one coherent model rather than five separate mechanisms:
 
-moved: hairy -> shaving
+- yaks-158d: global back/forward navigation.
+- yaks-953f: global search context (its design also covers yaks-1bbd).
+- yaks-c7ba: a global search affordance.
+- yaks-f1e6: the Sheds view made like the list and tree views.
+- yaks-0ac1: a rethink of the key bindings.
+
+It also takes in what landed since the first two designs were written: the Wiki tab, the text viewer with link following, peek and its own history, image viewing, and Sheds rebuilt as one row per actor.
+
+The design lives in the repo at [docs/design/tui/model.md](code:docs/design/tui/model.md). The earlier per-yak designs are its references.
