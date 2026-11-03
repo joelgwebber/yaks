@@ -28,6 +28,9 @@ pub(crate) struct HitMap {
     /// The detail content area (below any sticky header); row `y - detail.y`
     /// shows detail line `detail.scroll + ..`.
     pub(crate) detail: Option<Rect>,
+    /// The open document's page area (the text viewer, below its header and
+    /// above any peek pane); row `y - doc.y` shows row `nav.scroll + ..`.
+    pub(crate) doc: Option<Rect>,
     /// Each drawn tab's rect and the view index it activates.
     pub(crate) tabs: Vec<(Rect, usize)>,
 }
@@ -65,12 +68,47 @@ impl App {
                 };
                 if hit(hits.detail, col, row).is_some() {
                     self.scroll_detail(dir * WHEEL_LINES);
+                } else if hit(hits.doc, col, row).is_some() {
+                    self.scroll_doc(dir * WHEEL_LINES);
                 } else if hit(hits.list, col, row).is_some() {
-                    if self.focus == Focus::Detail {
-                        // Keep the detail pane open and step through tasks (J/K).
+                    // The wheel scrolls the list's viewport, as it scrolls the
+                    // detail; the cursor only follows to stay on screen
+                    // (yaks-000b). With the detail open it still steps yaks.
+                    if self.focus == Focus::Detail && self.doc.is_none() {
                         self.detail_next_task(dir);
                     } else {
-                        self.move_cursor(dir);
+                        self.scroll_list(dir * WHEEL_LINES, hits.list.map_or(1, |r| r.height));
+                    }
+                }
+            }
+            // A horizontal wheel (a trackpad swipe, a tilt wheel) scrolls the
+            // code block or table under the pointer sideways (yaks-000b): the
+            // line cursor goes to that row first, as a click would, since a
+            // block's offset belongs to the row the cursor is on.
+            MouseEventKind::ScrollLeft | MouseEventKind::ScrollRight => {
+                let dir = if m.kind == MouseEventKind::ScrollRight {
+                    1
+                } else {
+                    -1
+                };
+                if let Some(r) = hit(hits.detail, col, row) {
+                    let i = self.detail.scroll as usize + (row - r.y) as usize;
+                    if i < self.detail_line_count() {
+                        self.focus = Focus::Detail;
+                        self.detail.line = i;
+                        self.scroll_block(dir);
+                    }
+                } else if let Some(r) = hit(hits.doc, col, row) {
+                    let Some((lines, _)) = self.attachment_rows() else {
+                        return;
+                    };
+                    if let Some(v) = self.attach_mut() {
+                        let i = v.nav.scroll as usize + (row - r.y) as usize;
+                        if i < lines.len() {
+                            let width = v.width.get() as usize;
+                            v.nav.line = i;
+                            v.nav.scroll_block(&lines, width, dir);
+                        }
                     }
                 }
             }
@@ -142,6 +180,39 @@ impl App {
         } else {
             self.detail.line = i;
         }
+    }
+
+    /// Wheel over the list: scroll its viewport by `delta` rows (clamped so
+    /// the last row stays at the bottom of the `height`-row area), then drag
+    /// the cursor along so it stays on screen.
+    fn scroll_list(&mut self, delta: i32, height: u16) {
+        let n = self.row_count();
+        if n == 0 {
+            return;
+        }
+        let h = (height as usize).max(1);
+        let max = n.saturating_sub(h) as i32;
+        let top = (self.list_offset.get() as i32 + delta).clamp(0, max) as usize;
+        self.list_offset.set(top);
+        self.cursor = self.cursor.clamp(top, (top + h - 1).min(n - 1));
+    }
+
+    /// Wheel over an open document: scroll its viewport by `delta` rows and
+    /// drag its line cursor along, as [`App::scroll_detail`] does.
+    fn scroll_doc(&mut self, delta: i32) {
+        let Some((lines, vp)) = self.attachment_rows() else {
+            return;
+        };
+        let n = lines.len();
+        let Some(v) = self.attach_mut() else { return };
+        if n == 0 {
+            return;
+        }
+        let max = vp.max_scroll(n) as i32;
+        v.nav.scroll = (v.nav.scroll as i32 + delta).clamp(0, max) as u16;
+        let top = v.nav.scroll as usize;
+        let shown = vp.rows_shown(top);
+        v.nav.line = v.nav.line.clamp(top, (top + shown - 1).min(n - 1));
     }
 
     /// Wheel over the detail: scroll the viewport (not the cursor) by `delta`
@@ -247,22 +318,69 @@ mod tests {
         assert_eq!(app.selected_id().as_deref(), Some("t22"));
     }
 
+    /// yaks-000b: the wheel scrolls the list's viewport (3 rows a notch), like
+    /// the detail pane; the cursor stays put until it would leave the screen,
+    /// then is dragged along at the edge.
     #[test]
-    fn wheel_moves_list_selection() {
+    fn wheel_scrolls_the_list_and_drags_the_cursor() {
         let mut app = many(30);
-        let before = draw(&app, 60, 10);
-        for _ in 0..12 {
+        app.cursor = 4;
+        let frame = draw(&app, 60, 10);
+        let top = |app: &App| app.hits.borrow().list_offset;
+        assert_eq!(top(&app), 0);
+        mouse(&mut app, MouseEventKind::ScrollDown, 5, 4);
+        draw(&app, 60, 10);
+        assert_eq!(top(&app), 3, "the view moved");
+        assert_eq!(
+            app.selected_id().as_deref(),
+            Some("t04"),
+            "the cursor did not"
+        );
+        for _ in 0..3 {
             mouse(&mut app, MouseEventKind::ScrollDown, 5, 4);
             draw(&app, 60, 10);
         }
-        assert_eq!(app.selected_id().as_deref(), Some("t12"));
-        let after = draw(&app, 60, 10);
-        println!("--- before 12x wheel-down ---\n{before}--- after ---\n{after}");
-        mouse(&mut app, MouseEventKind::ScrollUp, 5, 4);
-        assert_eq!(app.selected_id().as_deref(), Some("t11"));
+        assert_eq!(top(&app), 12);
+        assert_eq!(
+            app.selected_id().as_deref(),
+            Some("t12"),
+            "dragged to the top row"
+        );
+        println!(
+            "--- before ---\n{frame}--- after 4 notches ---\n{}",
+            draw(&app, 60, 10)
+        );
+        // Far past the end: the last row stays at the bottom.
+        for _ in 0..20 {
+            mouse(&mut app, MouseEventKind::ScrollDown, 5, 4);
+            draw(&app, 60, 10);
+        }
+        let h = app.hits.borrow().list.unwrap().height as usize;
+        assert_eq!(top(&app), 30 - h);
         // Wheel outside any pane (the help bar) does nothing.
-        mouse(&mut app, MouseEventKind::ScrollDown, 5, 9);
-        assert_eq!(app.selected_id().as_deref(), Some("t11"));
+        let at = app.cursor;
+        mouse(&mut app, MouseEventKind::ScrollUp, 5, 9);
+        assert_eq!(app.cursor, at);
+    }
+
+    /// yaks-000b: a horizontal wheel over a table scrolls that block sideways,
+    /// with the line cursor moved to the row under the pointer.
+    #[test]
+    fn horizontal_wheel_scrolls_the_block_under_the_pointer() {
+        let mut t = task("w0", "Wide", Status::Hairy, 3, None);
+        let wide = "x".repeat(200);
+        t.body = format!("```\n{wide}\n```");
+        let mut app = App::new(vec![t]);
+        enter_key(&mut app);
+        let frame = draw(&app, 80, 20);
+        let y = row_of(&frame, "xxxxxxxx");
+        let rect = app.hits.borrow().detail.unwrap();
+        mouse(&mut app, MouseEventKind::ScrollRight, rect.x + 4, y);
+        let key = app.detail_dlines()[app.detail.line].nowrap_key();
+        assert!(key.is_some(), "the cursor is on the code row");
+        assert!(matches!(app.detail.hscroll, Some((k, off)) if Some(k) == key && off > 0));
+        mouse(&mut app, MouseEventKind::ScrollLeft, rect.x + 4, y);
+        assert!(matches!(app.detail.hscroll, Some((_, 0))));
     }
 
     #[test]

@@ -315,9 +315,13 @@ and the name of the command it runs), and a second `?` the full reference below
 it. Any other key closes the popup without running. See [Customising
 keys](#customising-keys) to rebind them.
 
-**Mouse** — the wheel scrolls the pane under the pointer (over the list it moves
-the selection; over the detail it scrolls, or with the detail open, the list
-wheel steps tasks like `J`/`K`). Left-click a row to select it (click it again to
+**Mouse** — the wheel scrolls the pane under the pointer, three rows a notch:
+the list, the detail or an open page scrolls its view and the cursor stays
+where it is until it would leave the screen (then it is carried along at the
+edge); with a yak's detail open, the wheel over the list steps tasks like
+`J`/`K` instead. A horizontal wheel (a trackpad swipe sideways, a tilt wheel)
+scrolls the code block or table under the pointer sideways, putting the line
+cursor on that row, in the detail and in an open page. Left-click a row to select it (click it again to
 open the detail; with the detail open, a click shows that row's yak and keeps it open), click a detail line to put the cursor there (click it again to
 follow its link), and click a tab to switch view. The mouse is ignored while an
 overlay (editor, picker, drawer, help) is open. Mouse back/forward buttons aren't

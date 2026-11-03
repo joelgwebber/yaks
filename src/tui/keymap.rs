@@ -877,7 +877,14 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
     (
         "Mouse",
         &[
-            ("Wheel", "Scroll the pane under the pointer"),
+            (
+                "Wheel",
+                "Scroll the pane under the pointer (the cursor follows at the edge)",
+            ),
+            (
+                "Sideways wheel",
+                "Scroll the code block or table under the pointer",
+            ),
             (
                 "Click row",
                 "Select (again: open detail; detail stays open); closes an open page",

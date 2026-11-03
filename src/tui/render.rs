@@ -310,6 +310,7 @@ pub(crate) fn render_attachment(
     let lines = render_nav_rows(&rows, &v.nav, app.register.as_deref(), w, hscroll);
     frame.render_widget(Paragraph::new(lines).scroll((v.nav.scroll, 0)), body);
     super::imageview::render_inline_images(app, &rows, v.nav.scroll, frame, body);
+    app.hits.borrow_mut().doc = Some(body);
 }
 
 /// The viewer's peek pane: a dim rule naming the link under the cursor, then
