@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-03T23:07:23Z'
-updated: '2026-11-03T23:22:53Z'
+updated: '2026-11-03T23:47:29Z'
 tags:
 - links
 - cli
@@ -76,3 +76,12 @@ Fixed in the working tree (not committed or landed: awaiting a go-ahead).
 
 - The seventeen existing surveyor yaks with an evidence bundle keep their per-image links in the body. They render now (the document's links work) but are noisy; tidying them is a separate decision.
 - `yaks find` and `yaks refs` do not read attachments (unchanged; `doctor` is the one place that needed to).
+
+---
+▸ 2026-11-03T23:47:29Z [indent-links]
+
+Landed as `522ff21` on `main`, pushed to `origin` and `local`. Docs and skill text keep to yaks vocabulary (no surveyor or other repo references), per Joel.
+
+Installed with `cargo install --path .` into `~/.cargo/bin`; a running `yaks tui` keeps the old binary until restarted.
+
+Joel is tidying the surveyor farm and its guidance himself, so `yaks-9173` is his.
