@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T04:59:35Z'
+updated: '2026-11-03T05:08:08Z'
 parent: yaks-947a
 depends_on:
 - yaks-5d08
@@ -160,3 +160,8 @@ branch: main
 ---
 
 landed: cd753ad8 yaks-a25c: global query with its own chip, and the All view
+
+---
+▸ 2026-11-03T05:08:08Z [herd-tui]
+
+Landed by herd-tui as `cd753ad8` (worker `5239e6a7`). Gate ok. Headless on my build: `/widget` Enter Tab keeps the query (chip `/"widget"`), and the view picker shows All (3) counting a dead widget yak and a page.
