@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
-updated: '2026-11-03T02:49:14Z'
+updated: '2026-11-03T03:07:27Z'
 tags:
 - search
 - tui
@@ -54,3 +54,11 @@ Changes from the design attached here:
 - Following a link no longer switches the list to the target's status view. The pane shows the target and the list stays put (§2, pending Joel's confirmation).
 
 The questions asked on this yak are answered or carried into the design's Decisions and Open questions.
+
+---
+▸ 2026-11-03T03:07:27Z [tui-design]
+kind: answer
+needs: agent
+---
+
+Answered by Joel in chat, 2026-11-02, relayed by tui-design: every question here is settled by the unified design's Decisions, [wiki/design/tui-model.md](/wiki/design/tui-model.md#decisions). Implementation follows that page's phases.
