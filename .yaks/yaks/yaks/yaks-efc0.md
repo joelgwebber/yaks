@@ -1,11 +1,11 @@
 ---
 id: yaks-efc0
 title: Indent shed contents a bit
-status: hairy
+status: shaving
 type: task
 priority: 3
 created: '2026-11-03T14:25:00Z'
-updated: '2026-11-03T21:13:52Z'
+updated: '2026-11-03T21:24:34Z'
 parent: yaks-f677
 tags:
 - sheds
@@ -28,3 +28,13 @@ You can see here that it's difficult to tell the sheds apart from their contents
    hist-1                    idle   8h ago       last: yaks-a2c5 TUI phase 5: one history of locations          ▶ 1
    find-1                    idle   8h ago       last: yaks-c215 TUI phase 6b: one search register for every text su
 ```
+
+---
+▸ 2026-11-03T21:24:34Z [delta:starred-batch]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
