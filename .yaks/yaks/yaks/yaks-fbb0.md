@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T04:05:47Z'
+updated: '2026-11-03T04:10:23Z'
 parent: yaks-947a
 tags:
 - tui
@@ -163,3 +163,14 @@ branch: main
 ---
 
 landed: 642be42e yaks-fbb0: TUI command table (keymap.rs) for the non-modal keys; help and hint generated from it
+
+---
+▸ 2026-11-03T04:10:23Z [herd-tui]
+
+Landed by herd-tui: worker commit `14245b9f` as `642be42e` (squash onto phase 1, clean merge).
+
+Checks I ran myself:
+
+- Gate on `642be42e` (`env -u YAKS_DIR -u YAKS_ACTOR cargo test`, fresh `TMPDIR`): 30 suites ok.
+- Headless with my own build on a scratch farm: list `j`/`l`/`h`, `S` opens the picker, `?` opens help, Wiki `Enter` opens the viewer and `q` closes it, `q` quits. Sheds `l` behaves as before (no sheds in a scratch farm, same as the 0.0.30 binary).
+- Read `keymap.rs`: one table, context-aware commands, generated help and hint; viewer and image keep their own runners for borrow reasons (fine until phase 4 folds them into the pane).
