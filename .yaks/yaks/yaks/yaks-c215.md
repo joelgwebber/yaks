@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:32Z'
-updated: '2026-11-03T05:24:48Z'
+updated: '2026-11-03T05:25:48Z'
 parent: yaks-947a
 depends_on:
 - yaks-aac1
@@ -58,3 +58,15 @@ Progress: implemented the register (App.register, Overlay::Find replacing Detail
 ▸ 2026-11-03T05:24:48Z [find-1]
 
 Headless frames (target/debug/yaks tui --headless --size 110x16 on a scratch farm: l, /cache, Enter, n, n, n). Frame 4: footer 'match 1/3 "cache"' after /cache Enter; 5 and 6: n steps to 2/3, 3/3; frame 7: the third n moves past the last match to the next matching yak (yak-8270), 'match 1/2'.
+
+---
+▸ 2026-11-03T05:25:48Z [find-1]
+
+Decision: `LineNav.matched` is `Option<usize>` (None until `n`/`/` lands on a match), not a bare index. Rejected: `usize` starting at 0, because a yak opened with the register already set would show match 1 as current and the first `n` would skip it; "from none, `n` = first match, `N` = last" is the vim behaviour.
+Decision: one find box is `Overlay::Find(SearchBox)`, used for both the yak detail and the open page (it picks the subject by `attach()`). Rejected: keeping the viewer's own `find_box` field next to an overlay; the two copies of the key routing were the duplication.
+Decision: Esc in the pane (after a selection) still peels the register (`register = None`), as it peeled the find before; Esc in the find box restores the previous register. Rejected: Esc never clearing it (vim `@/`), which would leave no way to drop highlights short of an empty `/` Enter, and changes the old peel order.
+Decision: `/` seeds the box with the register (cursor at the front, like the list's box), so `/` Enter keeps/re-lands on the current match as the old tests expect. Rejected: an empty box per `/` (vim), which breaks that and `Esc restores`.
+Decision: `n`/`N` past the matches of a yak go to the next/previous row whose yak passes `tree::query_matches` (the list query's rule); `N` lands on that yak's LAST match, `n` on its first. Rejected: `N` also landing on the first match. Past the last matching yak it stays and notifies `no more matches for "q"` (no wrap in the detail).
+Decision: `n`/`N` also put the line cursor on the match row (find_step sets `line` and `scroll`); before they scrolled only. Needed for "landing" on a match in the next yak and so Enter/Tab act on it.
+Decision: list `n`/`N` are `bind(List, ...)` for every row kind; on a Wiki page row `N` stays WikiNew (a kind binding beats the any-kind one), so only `n` re-applies there. With an empty register: notification `nothing to find: / sets the search`. With a query set: nothing, as drafted.
+Decision: the footer is the status bar: `match i/n "q"` is prefixed to the usual hint/link text (`match 0/n` before a match is current; `0/0` with none) in the yak detail and the viewer. Rejected: a new pane row, which would change the viewport arithmetic of both panes.
