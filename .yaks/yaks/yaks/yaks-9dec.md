@@ -7,6 +7,8 @@ priority: 2
 created: '2026-11-03T04:28:01Z'
 updated: '2026-11-03T04:28:01Z'
 parent: yaks-aac1
+depends_on:
+- yaks-0906
 tags:
 - tui
 ---
