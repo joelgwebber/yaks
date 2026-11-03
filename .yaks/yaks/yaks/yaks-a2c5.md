@@ -1,7 +1,7 @@
 ---
 id: yaks-a2c5
 title: 'TUI phase 5: one history of locations'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
@@ -174,3 +174,13 @@ Evidence ($(date -u +%FT%TZ)): gate `env -u YAKS_DIR -u YAKS_ACTOR cargo test --
 ▸ 2026-11-03T05:47:16Z [hist-1]
 
 Summary 2026-11-03T05:47:16Z: one history of locations landed in the working tree (src/tui/history.rs + pane_yak + keys + docs/tui.md History section + AGENTS.md layout line). Gate green (920 passed), verify PASS. The date in the Evidence note above is literal text, the gate ran just before this note.
+
+---
+▸ 2026-11-03T05:47:16Z [hist-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAECzPpIBxBCtY3f3KUhDW5IL-PWT3Nbm
+---
+
+moved: shaving -> shorn
