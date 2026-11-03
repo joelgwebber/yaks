@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-03T03:23:32Z'
-updated: '2026-11-03T21:48:07Z'
+updated: '2026-11-03T21:55:05Z'
 parent: yaks-f677
 tags:
 - tui
@@ -29,3 +29,5 @@ thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+[fc9e-tabs](yaks-fc9e/fc9e-tabs.txt)
