@@ -69,3 +69,5 @@ Start: Tue Nov  3 04:27:48 UTC 2026; yaks path: /home/user/.local/share/yaks/far
 [sheds-tree-headless](yaks-c354/sheds-tree-headless.txt)
 
 [sheds-tree-yak-detail-fixture](yaks-c354/sheds-tree-yak-detail-fixture.txt)
+
+![tui-sheds-yak](yaks-c354/tui-sheds-yak.svg)
