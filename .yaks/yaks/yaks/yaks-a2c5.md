@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T05:47:07Z'
+updated: '2026-11-03T05:47:16Z'
 parent: yaks-947a
 depends_on:
 - yaks-aac1
@@ -169,3 +169,8 @@ Decision: existing tests changed (the rest keep their assertions, including the 
 ▸ 2026-11-03T05:47:07Z [hist-1]
 
 Evidence ($(date -u +%FT%TZ)): gate `env -u YAKS_DIR -u YAKS_ACTOR cargo test --workspace` (fresh TMPDIR): exit 0, bin tests `920 passed; 0 failed; 12 ignored`, every integration binary ok. `env -u YAKS_DIR -u YAKS_ACTOR yaks verify yaks-a2c5`: PASS (exit 0). New tests in `src/tui/history.rs` (14 total in that module with the existing ones counted by filter `history`): Recent+query round trip (query, cursor, detail line and scroll restored; `i` forward; `no later location`), dead yak in the pane `not in this list` (tests.rs), `o`/`i` from the list, view-switch jumps and `no earlier location`, page from a Wiki row `o` -> row -> previous view, page re-read from disk with clamped cursor and a deleted page (`<path> gone`), a yak link from a page on the Wiki tab (pane yak, header, `o` back to the page), `a0 gone` (slaughtered) and `a0 moved` (state changed), deleted view fallback, cap of 100, no push for a link to the yak already shown. Footnote jump + `o` is covered by the existing `following_a_footnote_reference_jumps_to_its_definition_and_o_returns` and the viewer footnote test (both pass on the one history). Headless frame attached: `history-roundtrip-frames.txt` (Recent with query `cache`, follow a link to a yak the query hides: `not in this list`, `pane_yak=` in the state header; `o` returns with query, cursor and line: `← Recent · demo-98ac`).
+
+---
+▸ 2026-11-03T05:47:16Z [hist-1]
+
+Summary 2026-11-03T05:47:16Z: one history of locations landed in the working tree (src/tui/history.rs + pane_yak + keys + docs/tui.md History section + AGENTS.md layout line). Gate green (920 passed), verify PASS. The date in the Evidence note above is literal text, the gate ran just before this note.
