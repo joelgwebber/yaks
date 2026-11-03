@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T03:46:32Z'
-updated: '2026-11-03T05:26:50Z'
+updated: '2026-11-03T05:30:02Z'
 parent: yaks-947a
 depends_on:
 - yaks-aac1
@@ -105,3 +105,8 @@ branch: main
 ---
 
 landed: acabcb7f yaks-c215: one search register for every text subject (pane / sets App.register; n/N hop between matching yaks; list n/N re-apply it)
+
+---
+▸ 2026-11-03T05:30:02Z [herd-tui]
+
+Landed by herd-tui as `acabcb7f` (worker `57d4dfa8`). Gate ok. Headless on my build: in a yak detail `/cache` then `n` walks match 1/3 → 3/3, and the next `n` moves to the next matching yak at 1/3.
