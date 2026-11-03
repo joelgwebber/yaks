@@ -1,11 +1,11 @@
 ---
 id: yaks-a25c
 title: 'TUI phase 6a: global query with its own chip, and the All view'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T04:28:36Z'
+updated: '2026-11-03T04:43:08Z'
 parent: yaks-947a
 depends_on:
 - yaks-5d08
@@ -72,3 +72,13 @@ Anything else: `yaks ask yaks-a25c`.
 - Attach a headless frame with an active query on the Shaving tab showing the chip.
 
 **Judge.** herd-tui at landing.
+
+---
+▸ 2026-11-03T04:43:08Z [herd-tui]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
