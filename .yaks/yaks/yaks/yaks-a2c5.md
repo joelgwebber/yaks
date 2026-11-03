@@ -134,3 +134,8 @@ Decision: opening a page from a list row (Wiki `Enter`/`l`, a new page) is a jum
 ▸ 2026-11-03T05:47:06Z [hist-1]
 
 Decision: `moved` vs `gone` on restore. The cursor row is found by key (tried at its old index first, so a yak listed under two sheds keeps its place); found anywhere = silent, even if its index changed (Recent reorders constantly, a note per restore would be noise). Not found: the cursor clamps to the old index and the notification says `<id> moved` if the yak/page still exists and is listed somewhere (dead yaks count as gone), else `<id> gone`. Rejected: saying `moved` whenever the index differs; clamping to the index even when the row is found.
+
+---
+▸ 2026-11-03T05:47:06Z [hist-1]
+
+Decision: `pane_yak` only means something with the pane focused (`pane_yak_id()` filters on `focus == Detail`), and every place that returns focus to the list or moves the cursor clears it (`back_to_list`, `move_cursor`, `show_row`, `open_detail_pane`, `set_view`). Row-scoped lookups (`row_yak`, used by `reload_preserving_selection` and the sheds snapshot) ignore it so a reload does not drag the cursor to the pane's yak; `row_kind`/`selected_shed` answer for a yak while it shows. Rejected: clearing it centrally after each key (fails for a restore that sets both a new cursor and a pane yak).
