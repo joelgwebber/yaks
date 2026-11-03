@@ -1,11 +1,11 @@
 ---
 id: yaks-58f0
 title: Collapse idle sheds by default
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-03T14:23:16Z'
-updated: '2026-11-03T21:40:26Z'
+updated: '2026-11-03T21:40:28Z'
 parent: yaks-f677
 tags:
 - tui
@@ -35,3 +35,13 @@ Done in d3aa34a: a quiet shed (idle, no claim, no open ask: `Shed::quiet`, the s
 - `h` flips the key the same way, so it closes an opened idle shed.
 
 Evidence: test `idle_sheds_start_collapsed_and_space_opens_them`, updated list snapshot, and a headless frame of this farm's Sheds tab (attached): the eleven idle sheds are one line each.
+
+---
+▸ 2026-11-03T21:40:28Z [delta:starred-batch]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
