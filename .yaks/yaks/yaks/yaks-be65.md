@@ -11,12 +11,4 @@ tags:
 - tui
 ---
 
----
-▸ 2026-11-03T04:11:26Z [herd-tui]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
----
-
-moved: hairy -> shaving
+Phase 3, first half, of [the design](/wiki/design/tui-model.md#1-rows-and-views) (yaks-f1e6 is the second half's yak): a list row is a yak or a document, and the Wiki tab becomes an ordinary flat view of document rows, using the list's own cursor, rendering and key dispatch.
