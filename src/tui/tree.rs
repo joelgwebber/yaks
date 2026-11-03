@@ -75,6 +75,14 @@ pub fn shed_collapse_key(name: &str) -> String {
     format!("shed:{name}")
 }
 
+/// The key of a quiet shed (idle, nothing asked) in the `collapsed` set. A
+/// quiet shed starts collapsed (yaks-58f0), so for it the key in the set means
+/// *expanded*; a key of its own, so a saved choice keeps its meaning when the
+/// shed turns active or quiet again.
+pub fn shed_open_key(name: &str) -> String {
+    format!("shed-open:{name}")
+}
+
 pub struct Row<'a> {
     pub item: Item<'a>,
     pub depth: u16,
@@ -100,9 +108,16 @@ impl<'a> Row<'a> {
     pub fn collapse_key(&self) -> Option<String> {
         match self.item {
             Item::Yak(t) => Some(t.id.clone()),
+            Item::Shed(s) if s.quiet() => Some(shed_open_key(&s.name)),
             Item::Shed(s) => Some(shed_collapse_key(&s.name)),
             Item::Doc(_) => None,
         }
+    }
+
+    /// Whether this row is collapsed when its key is *not* in the set: a
+    /// quiet shed. Toggling flips the key's presence either way.
+    pub fn collapsed_by_default(&self) -> bool {
+        matches!(self.item, Item::Shed(s) if s.quiet())
     }
 
     /// A shed row, with `has_children` set when it has yaks below it.
@@ -113,10 +128,12 @@ impl<'a> Row<'a> {
         }
     }
 
-    /// A depth-1, non-ghost, childless yak row below a shed.
+    /// A non-ghost, childless yak row below a shed. Depth 2, not 1: a shed's
+    /// name starts three columns in (after its `⏳` mark), so one level of
+    /// indent would line its yaks' ids up under the names (yaks-efc0).
     pub fn shed_yak(task: &'a Task) -> Row<'a> {
         Row {
-            depth: 1,
+            depth: 2,
             ..Row::of(Item::Yak(task))
         }
     }
@@ -353,7 +370,7 @@ fn flatten<'a>(
 /// Drop descendants of collapsed ids; annotate collapsed parents with their
 /// hidden-row count. Empty `collapsed` returns the input unchanged.
 pub fn apply_collapse<'a>(flat: Vec<Row<'a>>, collapsed: &HashSet<String>) -> Vec<Row<'a>> {
-    if collapsed.is_empty() {
+    if collapsed.is_empty() && !flat.iter().any(|r| r.collapsed_by_default()) {
         return flat;
     }
     let mut counts: HashMap<String, usize> = HashMap::new();
@@ -363,7 +380,8 @@ pub fn apply_collapse<'a>(flat: Vec<Row<'a>>, collapsed: &HashSet<String>) -> Ve
         let depth = row.depth;
         // A row with no key (a document) never nests.
         let key = row.collapse_key();
-        let is_collapsed = row.has_children && key.as_ref().is_some_and(|k| collapsed.contains(k));
+        let in_set = key.as_ref().is_some_and(|k| collapsed.contains(k));
+        let is_collapsed = row.has_children && (in_set != row.collapsed_by_default());
         while hide_stack.last().is_some_and(|(_, d)| depth <= *d) {
             hide_stack.pop();
         }

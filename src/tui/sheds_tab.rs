@@ -22,7 +22,7 @@
 //! farm: one the farm no longer has is not listed.
 
 use super::*;
-use crate::sheds::{self, Kind, Liveness, Shed, Touched};
+use crate::sheds::{self, Kind, Liveness, Shed};
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
@@ -467,28 +467,10 @@ pub(crate) fn render_farm_footer(app: &App, frame: &mut Frame, area: Rect) -> Re
     }
 }
 
-/// One yak's line in a shed's detail: the shared text of `yaks sheds`, the
-/// label and id coloured, finished work dimmed.
-fn yak_line(kind: Kind, y: &Touched, now: chrono::DateTime<chrono::Utc>) -> Line<'static> {
-    let text = sheds::yak_line(kind, y, now);
-    let (label, rest) = text.split_at(8);
-    let rest = rest.trim_start();
-    let (id, rest) = rest.split_once("  ").unwrap_or((rest, ""));
-    let done = y.status.is_resolved();
-    let mut spans = vec![
-        Span::styled(label.to_string(), Style::new().fg(Color::Yellow)),
-        Span::raw(" "),
-        Span::styled(format!("{id}  "), Style::new().fg(Color::Blue)),
-        Span::styled(rest.to_string(), if done { dim() } else { Style::new() }),
-    ];
-    if y.asking() {
-        spans.insert(0, Span::raw("\u{23f3}"));
-    }
-    Line::from(spans)
-}
-
 /// The detail pane's lines for shed `s`: its status, where its code is, and
-/// its yaks.
+/// how many yaks it has in each part. The yaks themselves are the rows under
+/// the shed in the list, where every yak key works on them; the pane does not
+/// repeat them as a list it cannot act on (yaks-cc2a).
 fn detail_lines(s: &Shed, now: chrono::DateTime<chrono::Utc>) -> Vec<Line<'static>> {
     let mut lines: Vec<Line<'static>> = vec![Line::from(vec![
         Span::styled(
@@ -501,7 +483,24 @@ fn detail_lines(s: &Shed, now: chrono::DateTime<chrono::Utc>) -> Vec<Line<'stati
         lines.push(Line::from(vec![Span::styled(c.line(now), dim())]));
     }
     lines.push(Line::default());
-    lines.extend(s.rows().into_iter().map(|(kind, y)| yak_line(kind, y, now)));
+    let rows = s.rows();
+    let count = |k: Kind| rows.iter().filter(|(kind, _)| *kind == k).count();
+    let parts: Vec<String> = [Kind::Working, Kind::Asking, Kind::Recent]
+        .into_iter()
+        .filter_map(|k| {
+            let n = count(k);
+            (n > 0).then(|| format!("{n} {}", k.label()))
+        })
+        .collect();
+    if parts.is_empty() {
+        lines.push(Line::from(Span::styled("No yaks.", dim())));
+    } else {
+        lines.push(Line::from(format!("Yaks: {}", parts.join(" \u{b7} "))));
+        lines.push(Line::from(Span::styled(
+            "They are listed under the shed: j moves onto them, Space folds them.",
+            dim(),
+        )));
+    }
     lines
 }
 
@@ -747,15 +746,43 @@ mod tests {
                 "mem-f434",
                 "shed:perf-2",
                 "mem-0a01",
+                // Idle sheds start collapsed (yaks-58f0).
                 "shed:mig-2",
-                "mem-0001",
                 "shed:gone-1",
-                "mem-0002",
             ]
         );
         let rows = app.rows();
-        assert!(rows.iter().all(|r| r.depth == (r.yak().is_some() as u16)));
+        // A shed's yaks sit two levels in, clear of the shed names (yaks-efc0).
+        assert!(rows.iter().all(|r| r.depth == 2 * (r.yak().is_some() as u16)));
         assert!(rows[0].has_children && !rows[1].has_children);
+        let mig = rows.iter().find(|r| matches!(r.item, tree::Item::Shed(s) if s.name == "mig-2")).unwrap();
+        assert!(mig.collapsed && mig.hidden == 1, "shows its ▶ 1");
+    }
+
+    /// yaks-58f0: an idle shed starts collapsed; Space opens it (and `h`
+    /// closes it again), and the choice is remembered. A busy shed keeps the
+    /// old default, open.
+    #[test]
+    fn idle_sheds_start_collapsed_and_space_opens_them() {
+        let mut app = shed_farm();
+        let at = |app: &App, name: &str| {
+            app.rows()
+                .iter()
+                .position(|r| matches!(r.item, tree::Item::Shed(s) if s.name == name))
+                .unwrap()
+        };
+        app.cursor = at(&app, "mig-2");
+        press(&mut app, " ");
+        assert!(row_names(&app).contains(&"mem-0001".to_string()), "opened");
+        assert!(app.collapsed.contains(&tree::shed_open_key("mig-2")));
+        app.cursor = at(&app, "mig-2");
+        press(&mut app, "h");
+        assert!(!row_names(&app).contains(&"mem-0001".to_string()), "closed");
+        // A busy shed collapses with its own key, as before.
+        app.cursor = at(&app, "walk-1");
+        press(&mut app, " ");
+        assert!(app.collapsed.contains(&tree::shed_collapse_key("walk-1")));
+        assert!(!row_names(&app).contains(&"mem-f13a".to_string()));
     }
 
     #[test]
@@ -901,7 +928,7 @@ mod tests {
         assert!(row_names(&app).is_empty());
         assert!(draw(&app, 120, 14).contains("No shed or yak matches"));
         app.filter.search = None;
-        assert_eq!(row_names(&app).len(), 13);
+        assert_eq!(row_names(&app).len(), 11, "two idle sheds collapsed");
     }
 
     #[test]

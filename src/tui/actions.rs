@@ -251,7 +251,10 @@ impl App {
                 return;
             };
             drop(rows);
-            self.collapsed.insert(key);
+            // Flip, as Space does: for a quiet shed the key means expanded.
+            if !self.collapsed.remove(&key) {
+                self.collapsed.insert(key);
+            }
             self.save_ui_state();
             return;
         }

@@ -588,9 +588,9 @@ static BINDINGS: &[Binding] = &[
     // -- the list: shed rows (the Sheds view). A shed's yaks below it are yak
     // -- rows. Its movement and farm keys are the list's; `` ` ``, `?` and `q`
     // -- repeat theirs only so that the bottom hint is the Sheds' own.
-    bind_row(Shed, &[c('l'), k(Right), k(Enter)], PaneOpen, "Show the shed: where its code is, its shaving, asking and recent yaks", hint("l:detail")),
+    bind_row(Shed, &[c('l'), k(Right), k(Enter)], PaneOpen, "Show the shed: where its code is, and a count of its yaks", hint("l:detail")),
     bind_row(Shed, &[c('h'), k(Left)], TreeLeft, "Collapse the shed's yaks", NoHint),
-    bind_row(Shed, &[c(' ')], TreeToggle, "Collapse / expand the shed's yaks", NoHint),
+    bind_row(Shed, &[c(' ')], TreeToggle, "Collapse / expand the shed's yaks (idle sheds start collapsed)", NoHint),
     bind_row(Shed, &[c('/')], SearchOpen, "Search every view; Esc clears", hint("/:search")),
     bind_row(Shed, &[c('y')], RowCopy, "Copy the shed's name", hint("y:copy name")),
     bind_row(Shed, &[ctrl('r')], ListRefresh, "Rescan now (auto every 10 s)", NoHint),

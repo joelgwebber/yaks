@@ -298,8 +298,8 @@ these:
 | Key | Action |
 |---|---|
 | `j` / `k`, `g` / `G`, `d` / `u` | Move over the rows (a shed, then its yaks) |
-| `l` / `→` / `Enter` | Show the shed: where its code is, what it is shaving, asking and wrote recently (on a yak row: the yak, as anywhere) |
-| `Space` | Collapse / expand the shed's yaks |
+| `l` / `→` / `Enter` | Show the shed: where its code is, and how many yaks it is shaving, asking and wrote recently (on a yak row: the yak, as anywhere) |
+| `Space` | Collapse / expand the shed's yaks (an idle shed starts collapsed) |
 | `/` | Search every view (a shed by name or by a yak of it); `Esc` clears it |
 | `y` | Copy the shed's name (also in its pane) |
 | `h` / `←` | Collapse the shed's yaks (on a yak row: go to its shed) |
@@ -650,14 +650,17 @@ functions produce it).
   `· origin/yaks changed 37m ago · fetched just now`), and is left out when
   the farm has no upstream.
 - **Its yaks are the children**: every yak the shed wrote, as an ordinary yak
-  row, one level in: the ones it holds the claim on (`shaving`), those waiting
+  row, indented clear of the shed names: the ones it holds the claim on (`shaving`), those waiting
   on a human (`asking`), then the `recent` ones, newest first. That part is
   dimmed at the right edge of the row when the title leaves room. A yak the
   farm no longer has is not listed. Because they are yak rows, every yak key
   works on them, `U`, `W` and `J`/`K` included, and `l` / `Enter` shows the yak
   in the pane with the tree still beside it.
 - **Collapse**: `Space` folds a shed's yaks into a `▶ N` count on its row;
-  the state is remembered like a yak's (a shed is keyed `shed:<name>`).
+  the state is remembered like a yak's. An idle shed (no claim, no open ask)
+  starts folded, so old workers stay one line each; `Space` opens it, and that
+  is remembered too (a busy shed is keyed `shed:<name>` when folded, an idle
+  one `shed-open:<name>` when opened).
 - **Search**: `/` keeps the yaks that match and the sheds that have one, or
   whose name matches (then with no yaks below it unless some match).
 - **The tab count** is the number of sheds that want a look now (active, stale,
@@ -665,10 +668,10 @@ functions produce it).
 - **The shed's pane** (`l` on a shed row) starts with where the shed's code is,
   when its latest `checkpoint` note names a branch (`branch work/walk-1 @
   47076b0 (9m ago)`, read from the note, never fetched; `yaks commits <id>
-  --fetch` lists the branch's commits). Then it lists the shed's yaks as
-  `yaks sheds` does: `shaving`, `asking` and `recent`, newest first, each with
-  its status now (`⏳` on one awaiting a human). Step to a yak with `J` to see
-  it in the same pane; answer an ask with `a` on it, as for any other yak.
+  --fetch` lists the branch's commits). Then it counts the shed's yaks by part
+  (`Yaks: 1 shaving · 1 recent`); the yaks themselves are the rows under the
+  shed in the list, not repeated in the pane. Step to a yak with `J` to see it
+  in the same pane; answer an ask with `a` on it, as for any other yak.
 - **Refresh**: the scan reads the farm in the background, when the tab opens,
   every 10 seconds while it is shown, and on `Ctrl-R` (it never fetches). The tab
   row's right edge says `scanning…` or `scanned 4s ago`. The UI never waits on
