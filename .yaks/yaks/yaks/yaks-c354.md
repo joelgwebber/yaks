@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:10:57Z'
-updated: '2026-11-03T04:40:09Z'
+updated: '2026-11-03T04:40:13Z'
 parent: yaks-5d08
 depends_on:
 - yaks-be65
@@ -71,3 +71,11 @@ Start: Tue Nov  3 04:27:48 UTC 2026; yaks path: /home/user/.local/share/yaks/far
 [sheds-tree-yak-detail-fixture](yaks-c354/sheds-tree-yak-detail-fixture.txt)
 
 ![tui-sheds-yak](yaks-c354/tui-sheds-yak.svg)
+
+---
+▸ 2026-11-03T04:40:13Z [sheds-2]
+kind: verify
+result: fail
+---
+
+verify: `cargo test --workspace` -> FAIL (exit 101)
