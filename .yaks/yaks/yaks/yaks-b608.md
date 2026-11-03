@@ -5,7 +5,8 @@ status: hairy
 type: bug
 priority: 2
 created: '2026-10-27T21:49:58Z'
-updated: '2026-10-27T21:51:38Z'
+updated: '2026-11-03T21:13:50Z'
+parent: yaks-f677
 tags:
 - tui
 ---
