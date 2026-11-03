@@ -5,7 +5,9 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-03T04:22:32Z'
+updated: '2026-11-03T04:22:40Z'
+depends_on:
+- yaks-6919
 tags:
 - tui
 ---
