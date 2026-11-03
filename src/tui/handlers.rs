@@ -793,14 +793,20 @@ impl App {
 
     /// `l` / `→` / Enter on the list: show the selected yak (or shed) in the
     /// detail pane, from its top.
+    /// `l` / `Enter` on a yak or shed row: show it in the pane. A jump, like
+    /// opening a page from a Wiki row: `o` from the pane (or from anywhere a
+    /// link out of it led) comes back to this list with the cursor on the row,
+    /// not to the view before it (yaks-aec7).
     pub(crate) fn open_detail_pane(&mut self) {
         if matches!(
             self.selected_row(),
             Some(tree::Item::Yak(_) | tree::Item::Shed(_))
         ) {
-            self.focus = Focus::Detail;
-            self.pane_yak = None;
-            self.detail.to_top();
+            self.jump(|app| {
+                app.focus = Focus::Detail;
+                app.pane_yak = None;
+                app.detail.to_top();
+            });
         }
     }
 

@@ -524,10 +524,12 @@ every tab. `o` goes back and `i` forward, in any pane and in the list.
   again by what it is, a yak id or a page path, not by its place), the list's
   scroll, the focus, and the pane's subject with its line and scroll.
 - **Jumps push; movement doesn't.** A jump is following any link (a yak, a
-  page, a footnote, a `#section`), opening a page from a Wiki row, a view
-  switch (`Tab`, `[`/`]`, the picker, a click on a tab) and `#`. Moving the
-  cursor or a line, `J`/`K`, opening or closing the pane, `Esc` and
-  committing a search or the drawer are not jumps and push nothing. A new
+  page, a footnote, a `#section`), opening a row in the pane (`l`/`Enter` on
+  a yak, shed or page row, so backing out of a detail lands on the list it was
+  opened from, cursor on its row), a view switch (`Tab`, `[`/`]`, the picker,
+  a click on a tab) and `#`. Moving the cursor or a line, `J`/`K`, closing the
+  pane, `Esc` and committing a search or the drawer are not jumps and push
+  nothing; opening the same row again does not add a second stop. A new
   jump drops what was forward; the history keeps the last 100 locations and
   is not kept between sessions.
 - **Following a link to a yak leaves the list where it is.** If the current

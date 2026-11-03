@@ -1125,7 +1125,8 @@ fn follow_link_to_a_dead_yak_shows_it_in_the_pane_and_leaves_the_list() {
     assert!(frame.contains("Task: d0"), "{frame}");
     assert!(frame.contains("not in this list"), "{frame}");
     assert!(app.state_header().contains("pane_yak=d0"));
-    assert_eq!(app.history.back.len(), 1, "the jump is recorded");
+    // Two stops: the list before the pane opened (yaks-aec7), and a0.
+    assert_eq!(app.history.back.len(), 2, "the jump is recorded");
     // `J`/`K`, the list and Esc bring the row's own yak back.
     handle_key(&mut app, key('o'));
     assert_eq!(app.pane_yak, None);
@@ -1239,9 +1240,13 @@ fn nav_history_restores_cursor_and_scroll() {
 #[test]
 fn nav_back_on_empty_history_is_noop() {
     let mut app = linked();
-    enter_key(&mut app); // detail on a0, no history yet
+    // Opening the pane is a jump (yaks-aec7): `o` closes it, back on the list.
+    enter_key(&mut app);
     handle_key(&mut app, key('o'));
+    assert_eq!(app.focus, Focus::List);
     assert_eq!(app.selected_id().as_deref(), Some("a0"));
+    // From there, nothing earlier.
+    handle_key(&mut app, key('o'));
     assert_eq!(app.notification.as_deref(), Some("no earlier location"));
 }
 

@@ -753,9 +753,15 @@ mod tests {
         );
         let rows = app.rows();
         // A shed's yaks sit two levels in, clear of the shed names (yaks-efc0).
-        assert!(rows.iter().all(|r| r.depth == 2 * (r.yak().is_some() as u16)));
+        assert!(
+            rows.iter()
+                .all(|r| r.depth == 2 * (r.yak().is_some() as u16))
+        );
         assert!(rows[0].has_children && !rows[1].has_children);
-        let mig = rows.iter().find(|r| matches!(r.item, tree::Item::Shed(s) if s.name == "mig-2")).unwrap();
+        let mig = rows
+            .iter()
+            .find(|r| matches!(r.item, tree::Item::Shed(s) if s.name == "mig-2"))
+            .unwrap();
         assert!(mig.collapsed && mig.hidden == 1, "shows its ▶ 1");
     }
 

@@ -11,10 +11,11 @@
 //! - **Jumps push, movement doesn't.** A jump is run through [`App::jump`],
 //!   which snapshots the location it leaves and pushes it when the jump moved
 //!   somewhere else: following a link of any kind (a yak, a document, a
-//!   footnote, a `#section`), opening a page from a list row, a view switch
-//!   and `#`. Moving the cursor or a line, `J`/`K`, opening or closing the
-//!   pane and committing a search push nothing: the current location is read
-//!   off the live state when it is needed, so nothing has to be kept in step.
+//!   footnote, a `#section`), opening a row in the pane (a yak, a shed or a
+//!   page: yaks-aec7), a view switch and `#`. Moving the cursor or a line,
+//!   `J`/`K`, closing the pane and committing a search push nothing: the
+//!   current location is read off the live state when it is needed, so
+//!   nothing has to be kept in step.
 //! - **`o`/`i`** ([`App::history_back`], [`App::history_forward`]) move the
 //!   current location to the other stack and [restore](App::restore) the one
 //!   they pop, in every focus and view.
@@ -158,7 +159,10 @@ impl History {
     /// A jump left `from`: it is where `o` goes back to, and nothing is
     /// forward of the new place.
     fn push(&mut self, from: Location) {
-        push_capped(&mut self.back, from);
+        // `l`, `h`, `l` on one row leaves the same stop each time: keep one.
+        if self.back.last() != Some(&from) {
+            push_capped(&mut self.back, from);
+        }
         self.fwd.clear();
     }
 }
@@ -503,6 +507,39 @@ mod tests {
         assert_eq!(app.notification.as_deref(), Some("no later location"));
     }
 
+    /// yaks-aec7: open a yak from the Recent list, follow a link out of it,
+    /// and back out: `o` returns to the yak, then to Recent with the cursor on
+    /// its row and the pane closed, and only then to the view before.
+    #[test]
+    fn backing_out_of_a_detail_returns_to_the_list_it_was_opened_from() {
+        let mut app = linked_yaks();
+        goto_view(&mut app, "recent");
+        cursor_on(&mut app, "a0");
+        let row = app.cursor;
+        enter_key(&mut app); // open a0 in the pane
+        draw(&app, 100, 20);
+        tab_key(&mut app);
+        enter_key(&mut app); // follow to s1
+        assert_eq!(app.selected_id().as_deref(), Some("s1"));
+        press(&mut app, "o");
+        assert_eq!(app.selected_id().as_deref(), Some("a0"));
+        assert_eq!(app.focus, Focus::Detail);
+        press(&mut app, "o");
+        assert_eq!(app.active_view().key, "recent", "the list it came from");
+        assert_eq!(app.focus, Focus::List);
+        assert_eq!(app.cursor, row);
+        press(&mut app, "o");
+        assert_eq!(app.active_view().key, "status:hairy");
+        // Opening and closing the same row many times leaves one stop.
+        let mut app = linked_yaks();
+        let n = app.history.back.len();
+        for _ in 0..5 {
+            enter_key(&mut app);
+            press(&mut app, "h");
+        }
+        assert_eq!(app.history.back.len(), n + 1);
+    }
+
     #[test]
     fn o_and_i_work_from_the_list_too() {
         let mut app = linked_yaks();
@@ -711,11 +748,12 @@ mod tests {
     #[test]
     fn a_link_to_the_yak_already_shown_pushes_nothing() {
         let mut app = linked_yaks();
-        enter_key(&mut app);
+        enter_key(&mut app); // opening the pane is one stop (yaks-aec7)
+        let n = app.history.back.len();
         app.goto_task("a0");
-        assert!(app.history.back.is_empty());
+        assert_eq!(app.history.back.len(), n);
         app.goto_task("nope");
-        assert!(app.history.back.is_empty());
+        assert_eq!(app.history.back.len(), n);
         assert_eq!(app.notification.as_deref(), Some("nope not found"));
     }
 }
