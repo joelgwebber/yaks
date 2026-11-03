@@ -5,13 +5,14 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-03T22:06:10Z'
+updated: '2026-11-03T22:06:11Z'
 parent: yaks-f677
 depends_on:
 - yaks-6919
 - yaks-0ac1
 tags:
 - tui
+needs: human
 ---
 
 ---
@@ -52,3 +53,20 @@ Design pass (delta:starred-batch): [TUI keys: organizing principles](/wiki/desig
 - Related, under yaks-000b: the list wheel scrolls like the detail; sideways wheel scrolls tables.
 
 The rest waits on the ask below.
+
+---
+▸ 2026-11-03T22:06:11Z [delta:starred-batch]
+kind: ask
+needs: human
+---
+
+asked: needs human
+
+Questions from [the keys page](/wiki/design/tui-keys.md), with my lean on each:
+
+1. **`h` and leaving the pane.** Lean: `h` (and `←`) only scroll left and never leave the pane; leave with `Esc` (or `Backspace`). `l`/Enter still enter. This fixes the "shot out of the table" problem. OK to drop `h`-to-leave entirely, or keep it only when the row has nothing to scroll?
+2. **One family for the whole TUI.** Lean: `vim_mode: false` turns off `hjkl`, `d`/`u`, `g`/`G` and `Ctrl-N`/`Ctrl-P` outside the editor, leaving arrows/PgUp/PgDn/Home/End, and adds `Ctrl-F` find with `F3`/`Shift-F3` next/previous (F3 in both modes). Keep the setting's name (`vim_mode`) or rename it to `keys: vim|standard`?
+3. **The case rule** (lowercase looks, Shift changes an existing yak, Ctrl is the farm/app): today's table already obeys it. Lean: adopt it as a written rule plus a test over the table, with no key moves needed.
+4. **The `?` popup.** Lean: grouped (Move / Open and follow / Find / Change the yak / View and filter / Farm / App); pressing a listed key runs it; `F1` opens it everywhere, including the editors (where it lists the editor's keys for the active family), and `?` in vim Normal.
+5. **Rebinding.** Lean: keep the existing `keys:` overrides by command name and go no further (no editor rebinding; the family choice covers that).
+6. **Emacs parity in the editor.** edtui has 164 vim bindings and 46 emacs ones. Lean: a separate yak to audit and fill the emacs set (or the "standard" set, if 2 renames it); not part of this pass.
