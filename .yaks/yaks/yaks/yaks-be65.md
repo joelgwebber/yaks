@@ -58,3 +58,24 @@ Progress: implemented, gate not yet run.
 - Keymap: `Binding.kind`, `bind_row`, `lookup(ctx, kind, key)`, `hint_for(ctx, kind, ..)`, `SECTIONS` for `?`.
 - Headless: Wiki view with `j` moves `cursor` and `entry=`; `S` does nothing there.
 - Docshots: regenerated on this tree and on the baseline tree; the four Wiki SVGs are byte-identical.
+
+---
+▸ 2026-11-03T04:21:56Z [rows-1]
+
+Decision: yak commands are bound with `bind_row(Yak, ..)`, not left kind-less; a document row finds no binding for them and does nothing. Rejected: leaving them kind-less and making each handler check `selected()` (the bottom hint then shows `c/C:new`, `X:del`, `f:filter` on a document row and breaks the Wiki hint literal).
+
+Decision: with no row selected, the kind is the view's (`row_kind()`: Doc on the Wiki view, else Yak), so an empty or fully-filtered Wiki still takes `N`, `r`, `v`. Rejected: kind `None` on an empty list (then `c` on an empty yak list would stop working).
+
+Decision: `lookup` order is (modifier-named, kind) -> (modifier-named, any) -> (plain, kind) -> (plain, any), not the claim's literal (kind, any) with modifiers first inside each. Reason: a kind-bound plain `c` must not shadow any-kind Ctrl-C (quit). Test `lookup_prefers_a_binding_for_the_rows_kind`.
+
+Decision: the document-row hint is the Wiki literal, got by letting a kind binding shadow any-kind bindings that share a key in `hint_for`; `v`, `?` and `q` are repeated as Doc bindings (empty help, so not listed in `?`) only so the hint matches. Rejected: a per-binding "hide for kind" flag (more concepts for three keys).
+
+Decision: the Wiki's `d`/`PgDn`/`Home`/`End` are now the list's: `PgDn`/`PgUp` are full-page (were half-page on Wiki) and `g`/`G` gained `Home`/`End` in the yak list (so the Wiki keeps them). Visible change: `snapshots/yaks__tui__tests__help_overlay.snap` now shows `g / Home` and `G / End` (the only snapshot changed). Rejected: unlisted Home/End bindings (hidden keys), or Doc-only copies of d/u/PgDn/PgUp/g/G.
+
+Decision: `revert_wiki_view` is gone: `Esc` is `revert_list_view` for every row, since `set_view` already clamps the cursor (the only thing the Wiki copy added).
+
+Decision: the list highlight on a Doc row stays bg-only (spans keep their colours) and the list is drawn unfocused whenever any overlay is up, exactly as the old Wiki list; yak rows keep fg-reset and `focus == List`. Reason: otherwise four Wiki SVGs change. Slightly kind-specific; phase 4 (viewer overlay) should end it.
+
+Decision: `mouse.rs`: the second click on a document row opens it (like `Enter`) instead of focusing a detail pane that has nothing to show. The Wiki list now records hit rects, so clicks reach it for the first time.
+
+Decision: `set_wiki_entries` calls `touch()` (memo key), and re-seats `App.cursor` on the same path only when the Wiki view is active.
