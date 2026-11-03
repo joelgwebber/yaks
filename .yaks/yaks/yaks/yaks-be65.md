@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:10:57Z'
-updated: '2026-11-03T04:12:04Z'
+updated: '2026-11-03T04:21:56Z'
 parent: yaks-5d08
 tags:
 - tui
@@ -47,3 +47,14 @@ Claim (yakherd herd-tui): worker `rows-1` (Sonnet 5.5), from main at `642be42e` 
 
 Start Tue Nov  3 04:12:04 UTC 2026. Checkout /home/user/yaks-4, HEAD 642be42 yaks-fbb0: TUI command table (keymap.rs) for the non.
 Farm path: /home/user/.local/share/yaks/farms/yaks-b0f8dcf9/.yaks/yaks/yaks/yaks-be65.md
+
+---
+▸ 2026-11-03T04:21:56Z [rows-1]
+
+Progress: implemented, gate not yet run.
+
+- `tree::Item { Yak, Doc }`, `tree::RowKind`, `Row.item`, `Row::yak()`; `memo::Loc::Doc`; `selected_row()` / `selected_doc()` / `row_kind()`; `build_rows` returns document rows for the Wiki view; `render_list` draws them via `wiki_tab::DocCols`.
+- Removed: `WikiTab.cursor`/`list_offset`, `move_wiki`, `clamp_wiki_cursor`, `render_wiki_list`, `selected_wiki`, `revert_wiki_view`, `Ctx::Wiki`.
+- Keymap: `Binding.kind`, `bind_row`, `lookup(ctx, kind, key)`, `hint_for(ctx, kind, ..)`, `SECTIONS` for `?`.
+- Headless: Wiki view with `j` moves `cursor` and `entry=`; `S` does nothing there.
+- Docshots: regenerated on this tree and on the baseline tree; the four Wiki SVGs are byte-identical.
