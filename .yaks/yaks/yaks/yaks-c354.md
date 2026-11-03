@@ -133,3 +133,12 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-03T04:42:21Z [sheds-2]
+
+Summary: the Sheds tab is an ordinary tree view. Shed roots (today's order and text, collapsible, `shed:<name>`) with their touched yaks as depth-1 yak rows (kind tag dim at the right); `/` filters; a shed row's pane is the shed, a yak row's the yak (J/K, U/W, every yak key work). `Ctx::Sheds`/`ShedDetail` and the tab's cursors, key handlers and list renderer are deleted.
+- Gate: `env -u YAKS_DIR -u YAKS_ACTOR cargo test --workspace`: 30 suites ok; `yaks verify` PASS.
+- New tests (sheds_tab.rs): rows, a yak the farm lacks, `j` from a root, `Space` collapse + badge, shed vs yak pane and `J`, `Enter` on a yak child, yak keys on a yak not a shed, `U` requests a sync, `/` keeps only matching children (and typed through the box), `y`/`r`, cursor kept across a snapshot; keymap tests for the shed kind and hints.
+- Docs: `docs/tui.md` (intro, `W` row, Sheds key table, Sheds tab section, new screenshot), `README.md` line; `?` and the hint are generated.
+- Attached: headless frames on a real scratch farm, the fixture's yak-detail frame, and `tui-sheds-yak.svg`.
