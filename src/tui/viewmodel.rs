@@ -367,7 +367,7 @@ impl App {
         self.view = i;
         self.filter = clone_spec(&self.views[i].spec);
         self.cursor = 0;
-        self.detail_scroll = 0;
+        self.detail.scroll = 0;
         self.focus = Focus::List;
         self.clamp_cursor();
     }

@@ -770,11 +770,11 @@ impl App {
             Some(tree::Item::Yak(_) | tree::Item::Shed(_))
         ) {
             self.focus = Focus::Detail;
-            self.detail_scroll = 0;
-            self.detail_line = 0;
-            self.detail_anchor = None;
-            self.detail_find = None;
-            self.detail_match = 0;
+            self.detail.scroll = 0;
+            self.detail.line = 0;
+            self.detail.anchor = None;
+            self.detail.find = None;
+            self.detail.matched = 0;
         }
     }
 
@@ -859,7 +859,7 @@ impl App {
             .detail_jumps()
             .into_iter()
             .find_map(|j| match j.target {
-                detail::Target::Artifact(p) if j.line == self.detail_line => Some(p),
+                detail::Target::Artifact(p) if j.line == self.detail.line => Some(p),
                 _ => None,
             });
         let parsed = target.as_deref().and_then(|p| {
@@ -1313,7 +1313,7 @@ impl App {
     /// text attachment in the viewer, anything else externally).
     pub(crate) fn open_current_external(&mut self) {
         let jumps = self.detail_jumps();
-        match jumps.into_iter().find(|j| j.line == self.detail_line) {
+        match jumps.into_iter().find(|j| j.line == self.detail.line) {
             Some(j) => match j.target {
                 detail::Target::Artifact(p) => self.open_external(&p),
                 detail::Target::Url(u) => self.open_external(&u),
@@ -1830,7 +1830,7 @@ impl App {
             else {
                 unreachable!()
             };
-            if !self.with_detail_nav(|n| n.find_key(&mut sb, k, cancel, &lines)) {
+            if !self.detail.find_key(&mut sb, k, cancel, &lines) {
                 self.overlay = Overlay::DetailFind(sb);
             }
             return;

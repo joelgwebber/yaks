@@ -176,6 +176,6 @@ mod tests {
         // The header is absent before scrolling and present after: the state
         // header flips pinned=no -> pinned=yes, and the pin renders only then.
         assert!(out.contains("pinned=no"));
-        assert!(out.contains("pinned=yes")); // implies detail_scroll > 0
+        assert!(out.contains("pinned=yes")); // implies detail.scroll > 0
     }
 }

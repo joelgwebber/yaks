@@ -199,7 +199,7 @@ impl App {
                 let Some(blk) = blocks.get(b) else { return };
                 let row = self
                     .detail_dlines()
-                    .get(self.detail_line)
+                    .get(self.detail.line)
                     .and_then(|l| l.src)
                     .filter(|s| s.block == b)
                     .and_then(|s| s.lines)
@@ -266,10 +266,10 @@ impl App {
         editor.state.borrow_mut().cursor = edtui::Index2::new(row.min(last), 0);
         if self.focus == Focus::List {
             self.focus = Focus::Detail;
-            self.detail_scroll = 0;
-            self.detail_anchor = None;
-            self.detail_find = None;
-            self.detail_match = 0;
+            self.detail.scroll = 0;
+            self.detail.anchor = None;
+            self.detail.find = None;
+            self.detail.matched = 0;
         }
         self.overlay = Overlay::BlockEdit(BlockEdit {
             editor,
@@ -283,7 +283,7 @@ impl App {
             .iter()
             .position(|l| l.kind == detail::Kind::Editor);
         if let Some(first) = first {
-            self.detail_line = first.saturating_sub(1);
+            self.detail.line = first.saturating_sub(1);
         }
         self.show_block_editor();
     }
@@ -311,9 +311,9 @@ impl App {
     /// screen (the block's rows are back to their rendered height).
     pub(crate) fn settle_detail_scroll(&mut self) {
         let n = self.detail_line_count();
-        self.detail_line = self.detail_line.min(n.saturating_sub(1));
-        self.detail_scroll = self.detail_scroll.min(self.detail_max_scroll());
-        self.scroll_line_into_view(self.detail_line as u16);
+        self.detail.line = self.detail.line.min(n.saturating_sub(1));
+        self.detail.scroll = self.detail.scroll.min(self.detail_max_scroll());
+        self.scroll_line_into_view(self.detail.line as u16);
     }
 
     /// Save `text` as block `block` of `id`, leaving every other block as it
@@ -421,7 +421,7 @@ impl App {
             None => rows().find(|(_, s)| s.block == block && s.lines.is_none()),
         };
         if let Some((i, _)) = hit {
-            self.detail_line = i;
+            self.detail.line = i;
         }
     }
 

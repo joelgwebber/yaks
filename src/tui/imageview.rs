@@ -218,7 +218,7 @@ pub(crate) fn render_inline_images(
     frame: &mut Frame,
     area: Rect,
 ) {
-    let scroll = app.detail_scroll as isize;
+    let scroll = app.detail.scroll as isize;
     let mut i = 0;
     while i < lines.len() {
         let Some(slot) = lines[i].image.as_ref().filter(|s| s.row == 0) else {

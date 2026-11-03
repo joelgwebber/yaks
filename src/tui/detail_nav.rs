@@ -16,40 +16,6 @@ impl App {
         }
     }
 
-    /// Run a [`LineNav`] operation on the detail pane's cursor state. The
-    /// state lives in `App`'s `detail_*` fields; this lends it to the shared
-    /// navigation (yaks-84e0) and takes it back, so the detail pane and the
-    /// text viewer move, select, find and cycle links by the same code.
-    pub(crate) fn with_detail_nav<R>(&mut self, f: impl FnOnce(&mut LineNav) -> R) -> R {
-        let mut nav = LineNav {
-            line: self.detail_line,
-            scroll: self.detail_scroll,
-            anchor: self.detail_anchor,
-            find: self.detail_find.take(),
-            matched: self.detail_match,
-            ..LineNav::default()
-        };
-        let r = f(&mut nav);
-        self.detail_line = nav.line;
-        self.detail_scroll = nav.scroll;
-        self.detail_anchor = nav.anchor;
-        self.detail_find = nav.find;
-        self.detail_match = nav.matched;
-        r
-    }
-
-    /// The detail pane's state as a read-only [`LineNav`] (for queries).
-    pub(crate) fn detail_nav(&self) -> LineNav {
-        LineNav {
-            line: self.detail_line,
-            scroll: self.detail_scroll,
-            anchor: self.detail_anchor,
-            find: self.detail_find.clone(),
-            matched: self.detail_match,
-            ..LineNav::default()
-        }
-    }
-
     /// Select an existing task wherever it lives: switch to its status view (if
     /// one is pinned) and place the cursor on it, then focus the list.
     pub(crate) fn select_task(&mut self, id: &str) {
@@ -159,62 +125,30 @@ impl App {
         })
     }
 
-    /// The sideways scroll of no-wrap block `key` of yak `yak` (the selected
-    /// one): the scroll state if it is this block's, else 0; clamped so the
-    /// block never scrolls past its widest row (`extent`) at the current pane
-    /// width. The caller passes the id rather than this calling `selected()`:
-    /// the renderer asks once per no-wrap row, and `selected()` rebuilds the
-    /// whole view (yaks-48d6).
-    pub(crate) fn block_hscroll(&self, yak: &str, key: (usize, usize), extent: usize) -> usize {
-        match &self.detail_hscroll {
-            Some((id, b, n, off)) if id == yak && (*b, *n) == key => {
-                (*off).min(extent.saturating_sub(self.detail_width.get() as usize))
-            }
-            _ => 0,
-        }
-    }
-
     /// `h`/`l` on a no-wrap block under the line cursor: scroll that block
     /// `dir` steps sideways (clamped). Returns whether the offset changed, so
     /// `h` at offset 0 (or off a no-wrap row) can fall through to "back to
     /// list" (yaks-c733).
     pub(crate) fn scroll_block(&mut self, dir: i32) -> bool {
         let lines = self.detail_dlines();
-        let Some(key) = lines.get(self.detail_line).and_then(|l| l.nowrap_key()) else {
-            return false;
-        };
-        let Some(&extent) = detail::nowrap_extents(&lines).get(&key) else {
-            return false;
-        };
-        let Some(id) = self.selected().map(|t| t.id.clone()) else {
-            return false;
-        };
         let width = self.detail_width.get() as usize;
-        let cur = self.block_hscroll(&id, key, extent);
-        let next = linenav::hscroll_step(cur, extent, width, dir);
-        self.detail_hscroll = Some((id, key.0, key.1, next));
-        next != cur
+        self.detail.scroll_block(&lines, width, dir)
     }
 
     /// Forget the sideways scroll once the line cursor is no longer on the
-    /// scrolled block (or the yak changed): a block's offset lives only while
-    /// you are on it. Called after every key and click in the detail pane, so
+    /// scrolled block, or focus left the pane: a block's offset lives only
+    /// while you are on it. (A different yak resets the whole detail state,
+    /// [`App::open_task_in_detail`].) Called after every key and click, so
     /// the many ways the cursor can move need no bookkeeping of their own.
     pub(crate) fn drop_stale_hscroll(&mut self) {
-        let Some((id, block, n, _)) = &self.detail_hscroll else {
+        if self.detail.hscroll.is_none() {
             return;
-        };
-        let same_yak = self.selected().is_some_and(|t| t.id == *id);
-        let key = (*block, *n);
-        let on_block = same_yak
-            && self.focus == Focus::Detail
-            && self
-                .detail_dlines()
-                .get(self.detail_line)
-                .and_then(|l| l.nowrap_key())
-                == Some(key);
-        if !on_block {
-            self.detail_hscroll = None;
+        }
+        if self.focus == Focus::Detail {
+            let lines = self.detail_dlines();
+            self.detail.drop_stale_hscroll(&lines);
+        } else {
+            self.detail.hscroll = None;
         }
     }
 
@@ -233,36 +167,36 @@ impl App {
     /// mode.
     pub(crate) fn move_detail_line(&mut self, delta: i32) {
         let (lines, vp) = (self.detail_dlines(), self.detail_viewport());
-        self.with_detail_nav(|n| n.step(&lines, vp, delta));
+        self.detail.step(&lines, vp, delta);
     }
 
     /// g / G — jump the line cursor to the top / bottom stop.
     pub(crate) fn detail_line_to(&mut self, end: bool) {
         let (lines, vp) = (self.detail_dlines(), self.detail_viewport());
-        self.with_detail_nav(|n| n.to_end(&lines, vp, end));
+        self.detail.to_end(&lines, vp, end);
     }
 
     /// Tab / Shift-Tab — snap the line cursor to the next / prev line holding a
     /// link (wrapping), so Enter can follow it.
     pub(crate) fn jump_link(&mut self, delta: i32) {
         let (lines, vp) = (self.detail_dlines(), self.detail_viewport());
-        self.with_detail_nav(|n| n.jump_link(&lines, vp, delta));
+        self.detail.jump_link(&lines, vp, delta);
     }
 
     /// v — toggle visual selection anchored at the current line.
     pub(crate) fn toggle_visual(&mut self) {
-        self.with_detail_nav(LineNav::toggle_visual);
+        self.detail.toggle_visual();
     }
 
     /// Shift-↑↓ — start (if needed) and extend the visual selection.
     pub(crate) fn extend_selection(&mut self, delta: i32) {
         let (lines, vp) = (self.detail_dlines(), self.detail_viewport());
-        self.with_detail_nav(|n| n.extend_selection(&lines, vp, delta));
+        self.detail.extend_selection(&lines, vp, delta);
     }
 
     /// The inclusive [lo, hi] line range currently selected, if any.
     pub(crate) fn selection_range(&self) -> Option<(usize, usize)> {
-        self.detail_nav().selection()
+        self.detail.selection()
     }
 
     /// The text a yank of detail rows `lo..=hi` copies: source markdown for
@@ -283,7 +217,7 @@ impl App {
             return;
         };
         let ok = crate::clipboard::copy_text(&text);
-        self.detail_anchor = None;
+        self.detail.anchor = None;
         let hi = hi.min(self.detail_line_count().saturating_sub(1));
         let n = hi - lo + 1;
         self.notification = Some(if ok {
@@ -306,46 +240,44 @@ impl App {
         self.detail_viewport().max_scroll(self.detail_line_count()) as u16
     }
 
-    /// Move `detail_scroll` the minimum needed so `line` sits inside the detail
+    /// Move `detail.scroll` the minimum needed so `line` sits inside the detail
     /// viewport; leave it untouched when the line is already visible. The last
     /// line also keeps a blank row beneath it, and the viewport shrinks by one
     /// row once scrolled (sticky header), which this accounts for.
     pub(crate) fn scroll_line_into_view(&mut self, line: u16) {
-        let (n, scroll) = (self.detail_line_count(), self.detail_scroll as usize);
-        self.detail_scroll = self
+        let (n, scroll) = (self.detail_line_count(), self.detail.scroll as usize);
+        self.detail.scroll = self
             .detail_viewport()
             .scroll_into_view(n, scroll, line as usize) as u16;
     }
 
     pub(crate) fn open_detail_find(&mut self) {
-        self.overlay = Overlay::DetailFind(self.detail_nav().open_find(self.editor_vim));
+        self.overlay = Overlay::DetailFind(self.detail.open_find(self.editor_vim));
     }
 
     /// (line, col, len) of every detail-find match for the current selection
     /// (tests ask; the renderer and keys go through [`LineNav`]).
     #[cfg(test)]
     pub(crate) fn detail_find_matches(&self) -> Vec<(usize, usize, usize)> {
-        if self.detail_find.is_none() || self.selected().is_none() {
+        if self.detail.find.is_none() || self.selected().is_none() {
             return vec![];
         }
-        self.detail_nav().find_matches(&self.detail_dlines())
+        self.detail.find_matches(&self.detail_dlines())
     }
 
     pub(crate) fn detail_find_jump(&mut self, delta: i32) {
         let lines = self.detail_dlines();
-        self.with_detail_nav(|n| n.find_jump(&lines, delta));
+        self.detail.find_jump(&lines, delta);
     }
 
     /// Select `id` and show it in the detail pane, resetting the per-task detail
-    /// view state (scroll/link/find/match). Shared by link-follow and i/o nav.
+    /// view state (scroll/link/find/match/sideways scroll). Shared by link-follow and i/o nav.
     pub(crate) fn open_task_in_detail(&mut self, id: &str) {
         self.select_task(id); // drops focus to the list; we re-raise it below
         self.focus = Focus::Detail;
-        self.detail_scroll = 0;
-        self.detail_line = 0;
-        self.detail_anchor = None;
-        self.detail_find = None;
-        self.detail_match = 0;
+        // A fresh state, also dropping the sideways scroll of the previous
+        // yak's blocks.
+        self.detail = LineNav::default();
     }
 
     /// Jump to `id`'s detail, recording the jump for o/i history
@@ -373,7 +305,7 @@ impl App {
 
     pub(crate) fn follow_link(&mut self) {
         let jumps = self.detail_jumps();
-        let Some(j) = jumps.into_iter().find(|j| j.line == self.detail_line) else {
+        let Some(j) = jumps.into_iter().find(|j| j.line == self.detail.line) else {
             return;
         };
         match j.target {
@@ -398,7 +330,7 @@ impl App {
     /// cursor is in, recording the spot so `o` returns to the reference.
     fn goto_footnote(&mut self, n: &str) {
         let lines = self.detail_dlines();
-        let Some(to) = detail::footnote_line(&lines, self.detail_line, n) else {
+        let Some(to) = detail::footnote_line(&lines, self.detail.line, n) else {
             self.notification = Some(format!("no definition for [{n}]"));
             return;
         };
@@ -406,7 +338,7 @@ impl App {
             self.nav_back.push(cur);
             self.nav_fwd.clear();
         }
-        self.detail_line = to;
+        self.detail.line = to;
         self.scroll_line_into_view(to as u16);
         self.notification = Some(format!("→ [{n}] (o to go back)"));
     }
@@ -433,10 +365,10 @@ impl App {
     /// Esc in the detail pane peels back: selection → find → back to list
     /// (Python layering).
     pub(crate) fn detail_peel(&mut self) {
-        if self.detail_anchor.is_some() {
-            self.detail_anchor = None;
-        } else if self.detail_find.is_some() {
-            self.detail_find = None;
+        if self.detail.anchor.is_some() {
+            self.detail.anchor = None;
+        } else if self.detail.find.is_some() {
+            self.detail.find = None;
         } else {
             self.focus = Focus::List;
         }
@@ -445,7 +377,7 @@ impl App {
     /// Enter in the detail pane yanks an active selection, else follows the
     /// link on the line.
     pub(crate) fn detail_enter(&mut self) {
-        if self.detail_anchor.is_some() {
+        if self.detail.anchor.is_some() {
             self.yank_selection();
         } else {
             self.follow_link();
@@ -454,7 +386,7 @@ impl App {
 
     /// y in the detail pane yanks an active selection, else copies the task id.
     pub(crate) fn yank_selection_or_copy_id(&mut self) {
-        if self.detail_anchor.is_some() {
+        if self.detail.anchor.is_some() {
             self.yank_selection();
         } else {
             self.copy_selected_id();
@@ -473,11 +405,11 @@ impl App {
         let next = (self.cursor as i32 + delta).clamp(0, len as i32 - 1) as usize;
         if next != self.cursor {
             self.cursor = next;
-            self.detail_scroll = 0;
-            self.detail_line = 0;
-            self.detail_anchor = None;
-            self.detail_find = None;
-            self.detail_match = 0;
+            self.detail.scroll = 0;
+            self.detail.line = 0;
+            self.detail.anchor = None;
+            self.detail.find = None;
+            self.detail.matched = 0;
         }
     }
 
@@ -511,8 +443,8 @@ impl App {
     fn current_nav_entry(&self) -> Option<NavEntry> {
         Some(NavEntry {
             id: self.selected_id()?,
-            line: self.detail_line,
-            scroll: self.detail_scroll,
+            line: self.detail.line,
+            scroll: self.detail.scroll,
         })
     }
 
@@ -524,8 +456,8 @@ impl App {
             return; // target vanished/filtered out: stay at the top
         }
         let last = self.detail_dlines().len().saturating_sub(1);
-        self.detail_line = e.line.min(last);
-        self.detail_scroll = e.scroll.min(self.detail_max_scroll());
+        self.detail.line = e.line.min(last);
+        self.detail.scroll = e.scroll.min(self.detail_max_scroll());
     }
 
     /// Jump to the Hairy view (where new tasks land) and select `id`.

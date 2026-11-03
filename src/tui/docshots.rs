@@ -736,12 +736,12 @@ fn docshots_md_render() {
         .iter()
         .position(|l| l.text.contains("insanely verbose"))
         .expect("the fixture's long code line");
-    app.detail_line = row;
+    app.detail.line = row;
     app.scroll_line_into_view(row as u16);
     for _ in 0..6 {
         press(&mut app, 'l');
     }
-    app.detail_scroll = row.saturating_sub(6) as u16;
+    app.detail.scroll = row.saturating_sub(6) as u16;
     write_svg("tui-md-render-scrolled", &app, w, h);
 }
 
@@ -797,7 +797,7 @@ if cargo test --release; then echo "ok ${TARGET}"; fi
         .iter()
         .position(|l| l.text.contains("Fenced blocks"))
         .expect("description row");
-    app.detail_line = row;
+    app.detail.line = row;
     press(&mut app, 'E');
     write_svg("tui-md-syntax-edit", &app, w, h);
 }
@@ -850,7 +850,7 @@ fn docshots_edit_inplace() {
         .iter()
         .position(|l| l.text.contains("add a test"))
         .expect("the comment's list row");
-    app.detail_line = row;
+    app.detail.line = row;
     press(&mut app, 'E');
     write_svg("tui-edit-inplace", &app, w, h);
 
@@ -979,6 +979,6 @@ fn docshots_image_inline() {
     let (w, h) = (100u16, 24u16);
     HeadlessApp::on_resize(&mut app, w, h);
     let _ = toque::render_to_svg(&app, w, h);
-    app.detail_scroll = 6;
+    app.detail.scroll = 6;
     write_svg("tui-image-inline-clipped", &app, w, h);
 }

@@ -205,8 +205,8 @@ impl App {
         if self.focus == Focus::Detail {
             format!(
                 "{base} · detail_scroll={} · pinned={}",
-                self.detail_scroll,
-                if self.detail_scroll > 0 { "yes" } else { "no" }
+                self.detail.scroll,
+                if self.detail.scroll > 0 { "yes" } else { "no" }
             )
         } else {
             base
@@ -422,7 +422,7 @@ impl App {
     /// it; on a body row (description or a comment) edit that block in place;
     /// Status routes to its own picker (it isn't a form field).
     pub(crate) fn open_edit_at_cursor(&mut self) {
-        match self.edit_target_at(self.detail_line) {
+        match self.edit_target_at(self.detail.line) {
             Some(EditTarget::Status) => self.open_state_picker(),
             // A body row edits that block in place; header rows use the form.
             Some(EditTarget::Content(b)) => self.open_block_edit(Some(b)),
@@ -517,10 +517,10 @@ impl App {
         }
         let cur = starts
             .iter()
-            .rposition(|&s| s <= self.detail_line)
+            .rposition(|&s| s <= self.detail.line)
             .unwrap_or(0);
         let next = (cur as i32 + delta).clamp(0, starts.len() as i32 - 1) as usize;
-        self.detail_line = starts[next];
-        self.scroll_line_into_view(self.detail_line as u16);
+        self.detail.line = starts[next];
+        self.scroll_line_into_view(self.detail.line as u16);
     }
 }

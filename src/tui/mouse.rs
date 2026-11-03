@@ -26,7 +26,7 @@ pub(crate) struct HitMap {
     /// The list's scroll offset as ratatui resolved it this frame.
     pub(crate) list_offset: usize,
     /// The detail content area (below any sticky header); row `y - detail.y`
-    /// shows detail line `detail_scroll + ..`.
+    /// shows detail line `detail.scroll + ..`.
     pub(crate) detail: Option<Rect>,
     /// Each drawn tab's rect and the view index it activates.
     pub(crate) tabs: Vec<(Rect, usize)>,
@@ -86,7 +86,7 @@ impl App {
                 } else if let Some(r) = hit(hits.list, col, row) {
                     self.click_list_row(hits.list_offset + (row - r.y) as usize);
                 } else if let Some(r) = hit(hits.detail, col, row) {
-                    self.click_detail_line(self.detail_scroll as usize + (row - r.y) as usize);
+                    self.click_detail_line(self.detail.scroll as usize + (row - r.y) as usize);
                 }
             }
             _ => {}
@@ -119,11 +119,11 @@ impl App {
             self.open_wiki_entry();
         } else if i == self.cursor {
             self.focus = Focus::Detail;
-            self.detail_scroll = 0;
-            self.detail_line = 0;
-            self.detail_anchor = None;
-            self.detail_find = None;
-            self.detail_match = 0;
+            self.detail.scroll = 0;
+            self.detail.line = 0;
+            self.detail.anchor = None;
+            self.detail.find = None;
+            self.detail.matched = 0;
         } else {
             self.cursor = i;
         }
@@ -136,16 +136,16 @@ impl App {
             return;
         }
         self.focus = Focus::Detail;
-        self.detail_anchor = None;
+        self.detail.anchor = None;
         // A click on an inline image's picture lands on its link row, the
         // image's one cursor stop; a second click there follows the link.
         let lines = self.detail_dlines();
         let stops = detail::cursor_stops(&lines);
         let i = stops[stops.partition_point(|&r| r <= i).saturating_sub(1)];
-        if i == self.detail_line {
+        if i == self.detail.line {
             self.follow_link();
         } else {
-            self.detail_line = i;
+            self.detail.line = i;
         }
     }
 
@@ -157,10 +157,10 @@ impl App {
             return;
         }
         let max = self.detail_max_scroll() as i32;
-        self.detail_scroll = (self.detail_scroll as i32 + delta).clamp(0, max) as u16;
-        let top = self.detail_scroll as usize;
-        let shown = self.detail_rows_shown(self.detail_scroll);
-        self.detail_line = self.detail_line.clamp(top, (top + shown - 1).min(n - 1));
+        self.detail.scroll = (self.detail.scroll as i32 + delta).clamp(0, max) as u16;
+        let top = self.detail.scroll as usize;
+        let shown = self.detail_rows_shown(self.detail.scroll);
+        self.detail.line = self.detail.line.clamp(top, (top + shown - 1).min(n - 1));
     }
 }
 
@@ -284,19 +284,19 @@ mod tests {
         // Wheel over the detail pane (right side) scrolls it.
         mouse(&mut app, MouseEventKind::ScrollDown, 40, 4);
         mouse(&mut app, MouseEventKind::ScrollDown, 40, 4);
-        assert_eq!(app.detail_scroll, 6);
-        assert!(app.detail_line >= 6, "cursor dragged into view");
+        assert_eq!(app.detail.scroll, 6);
+        assert!(app.detail.line >= 6, "cursor dragged into view");
         let after = draw(&app, 60, 12);
         println!("--- detail before 2x wheel-down ---\n{before}--- after ---\n{after}");
         mouse(&mut app, MouseEventKind::ScrollUp, 40, 4);
-        assert_eq!(app.detail_scroll, 3);
+        assert_eq!(app.detail.scroll, 3);
         // Click a detail line: the line cursor lands on the clicked line.
         let frame = draw(&app, 60, 12);
         let y = row_of(&frame, "Tags:");
         click(&mut app, 40, y);
         assert_eq!(app.focus, Focus::Detail);
         let dl = app.detail_dlines();
-        assert!(dl[app.detail_line].text.contains("Tags:"));
+        assert!(dl[app.detail.line].text.contains("Tags:"));
     }
 
     #[test]

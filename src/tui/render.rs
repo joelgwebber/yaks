@@ -1081,7 +1081,7 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
     // header and a dim rule under it, and push the content down by both
     // (nothing is hidden — the pin adds rows rather than overlaying them).
     // `App::detail_rows_shown` mirrors this arithmetic (PINNED_ROWS).
-    let pinned = app.detail_scroll > 0 && area.height > PINNED_ROWS;
+    let pinned = app.detail.scroll > 0 && area.height > PINNED_ROWS;
     let content_area = if pinned {
         Rect {
             x: area.x,
@@ -1098,12 +1098,17 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
     let extents = detail::nowrap_extents(&lines);
     let hscroll = |dl: &detail::DLine| {
         dl.nowrap_key()
-            .and_then(|k| extents.get(&k).map(|&e| app.block_hscroll(&task.id, k, e)))
+            .and_then(|k| {
+                extents.get(&k).map(|&e| {
+                    app.detail
+                        .block_hscroll(k, e, app.detail_width.get() as usize)
+                })
+            })
             .unwrap_or(0)
     };
     let width = area.width as usize;
     let mut rendered = if focused {
-        render_nav_rows(&lines, &app.detail_nav(), width, hscroll)
+        render_nav_rows(&lines, &app.detail, width, hscroll)
     } else {
         // Unfocused: no cursor, selection, current link or find highlights.
         lines
@@ -1120,11 +1125,11 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
     }
     // No wrap: link/match highlight columns must stay valid. (Rows of a
     // no-wrap block are clipped to the pane by `render_dline`.)
-    let p = Paragraph::new(rendered).scroll((app.detail_scroll, 0));
+    let p = Paragraph::new(rendered).scroll((app.detail.scroll, 0));
     frame.render_widget(p, content_area);
     super::imageview::render_inline_images(app, &lines, frame, content_area);
     if let Some(be) = app.block_edit() {
-        blockedit::render_block_editor(be, &lines, app.detail_scroll, frame, content_area);
+        blockedit::render_block_editor(be, &lines, app.detail.scroll, frame, content_area);
     }
     if pinned {
         let header = pinned_header_line(task, app.is_starred(&task.id), area.width);
@@ -1568,7 +1573,7 @@ fn link_hint(app: &App, width: usize) -> Option<String> {
         let jump = app
             .detail_jumps()
             .into_iter()
-            .find(|j| j.line == app.detail_line)?;
+            .find(|j| j.line == app.detail.line)?;
         // A farm document: its peek's first line too (yaks-7395); the
         // viewer has a peek pane instead.
         if matches!(jump.target, detail::Target::Farm { .. }) {

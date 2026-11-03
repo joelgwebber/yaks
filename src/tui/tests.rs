@@ -548,7 +548,7 @@ fn e_on_title_line_opens_form_on_the_title_row() {
         .iter()
         .position(|l| l.text.starts_with("Title:"))
         .unwrap();
-    app.detail_line = ln;
+    app.detail.line = ln;
     handle_key(
         &mut app,
         KeyEvent::new(KeyCode::Char('E'), KeyModifiers::NONE),
@@ -601,7 +601,7 @@ fn e_on_source_line_opens_form_on_the_source_row() {
         .iter()
         .position(|l| l.text.starts_with("Source:"))
         .unwrap();
-    app.detail_line = ln;
+    app.detail.line = ln;
     handle_key(
         &mut app,
         KeyEvent::new(KeyCode::Char('E'), KeyModifiers::NONE),
@@ -623,11 +623,11 @@ fn ctrl_n_p_navigate_content_blocks_in_detail() {
     let cn = KeyEvent::new(KeyCode::Char('n'), KeyModifiers::CONTROL);
     let cp = KeyEvent::new(KeyCode::Char('p'), KeyModifiers::CONTROL);
     handle_key(&mut app, cn);
-    assert_eq!(app.detail_line, starts[1]); // first comment
+    assert_eq!(app.detail.line, starts[1]); // first comment
     handle_key(&mut app, cn);
-    assert_eq!(app.detail_line, starts[2]); // second comment
+    assert_eq!(app.detail.line, starts[2]); // second comment
     handle_key(&mut app, cp);
-    assert_eq!(app.detail_line, starts[1]); // back to first
+    assert_eq!(app.detail.line, starts[1]); // back to first
 }
 
 #[test]
@@ -1078,24 +1078,24 @@ fn nav_history_restores_cursor_and_scroll() {
     let mut app = linked_long();
     enter_key(&mut app); // detail on a0
     tab_key(&mut app); // -> the a1 link line, deep in the body (scrolls)
-    let (a0_line, a0_scroll) = (app.detail_line, app.detail_scroll);
+    let (a0_line, a0_scroll) = (app.detail.line, app.detail.scroll);
     assert!(a0_scroll > 0, "a0 scrolled down to its link");
     let frame_a0 = navpos_frame(&app);
     enter_key(&mut app); // follow -> a1, at the top
     assert_eq!(app.selected_id().as_deref(), Some("a1"));
-    assert_eq!((app.detail_line, app.detail_scroll), (0, 0));
+    assert_eq!((app.detail.line, app.detail.scroll), (0, 0));
     press(&mut app, &"j".repeat(20)); // move a1's cursor down (scrolls)
-    let (a1_line, a1_scroll) = (app.detail_line, app.detail_scroll);
+    let (a1_line, a1_scroll) = (app.detail.line, app.detail.scroll);
     assert!(a1_scroll > 0, "a1 scrolled");
     let frame_a1 = navpos_frame(&app);
     handle_key(&mut app, key('o')); // back -> a0 where we left it
     assert_eq!(app.selected_id().as_deref(), Some("a0"));
-    assert_eq!((app.detail_line, app.detail_scroll), (a0_line, a0_scroll));
+    assert_eq!((app.detail.line, app.detail.scroll), (a0_line, a0_scroll));
     let frame_back = navpos_frame(&app);
     assert_eq!(frame_back, frame_a0, "back renders a0 exactly as left");
     handle_key(&mut app, key('i')); // forward -> a1 where we left it
     assert_eq!(app.selected_id().as_deref(), Some("a1"));
-    assert_eq!((app.detail_line, app.detail_scroll), (a1_line, a1_scroll));
+    assert_eq!((app.detail.line, app.detail.scroll), (a1_line, a1_scroll));
     assert_eq!(navpos_frame(&app), frame_a1, "forward renders a1 as left");
     if let Ok(dir) = std::env::var("YAKS_NAVPOS_FRAMES") {
         let out = format!(
@@ -1119,31 +1119,31 @@ fn detail_tab_cycles_link_lines() {
     // Tab snaps the line cursor onto successive link lines; Shift-Tab back.
     let mut app = linked();
     enter_key(&mut app);
-    assert_eq!(app.detail_line, 0);
+    assert_eq!(app.detail.line, 0);
     tab_key(&mut app);
-    let first = app.detail_line;
+    let first = app.detail.line;
     assert!(first > 0, "moved onto a link line");
     tab_key(&mut app);
-    assert!(app.detail_line > first, "advanced to the next link line");
+    assert!(app.detail.line > first, "advanced to the next link line");
     handle_key(
         &mut app,
         KeyEvent::new(KeyCode::BackTab, KeyModifiers::NONE),
     );
-    assert_eq!(app.detail_line, first, "back to the first link line");
+    assert_eq!(app.detail.line, first, "back to the first link line");
 }
 
 #[test]
 fn detail_visual_selection_and_esc_clears() {
     let mut app = linked();
     enter_key(&mut app);
-    assert_eq!(app.detail_anchor, None);
+    assert_eq!(app.detail.anchor, None);
     handle_key(&mut app, key('v')); // anchor at the current line (0)
-    assert_eq!(app.detail_anchor, Some(0));
+    assert_eq!(app.detail.anchor, Some(0));
     handle_key(&mut app, key('j')); // cursor -> 1
     handle_key(&mut app, key('j')); // cursor -> 2
     assert_eq!(app.selection_range(), Some((0, 2)));
     esc_key(&mut app); // Esc peels back the selection first
-    assert_eq!(app.detail_anchor, None);
+    assert_eq!(app.detail.anchor, None);
     assert_eq!(
         app.focus,
         Focus::Detail,
@@ -1170,17 +1170,17 @@ fn scroll_into_view_is_stable_and_minimal() {
     let mut app = long_detail_app(60);
     draw(&app, 80, 13); // capture the detail width
     app.detail_page = 10; // viewport shows 10 rows (8 once the header + rule are pinned)
-    app.detail_scroll = 5; // currently rows 5..14
+    app.detail.scroll = 5; // currently rows 5..14
     app.scroll_line_into_view(8); // already visible -> unchanged
-    assert_eq!(app.detail_scroll, 5);
+    assert_eq!(app.detail.scroll, 5);
     app.scroll_line_into_view(2); // above -> scroll up to it
-    assert_eq!(app.detail_scroll, 2);
-    app.detail_scroll = 5;
+    assert_eq!(app.detail.scroll, 2);
+    app.detail.scroll = 5;
     // Below -> land it on the last row that is actually visible: the pinned
     // header and its rule cost two rows, so only 8 content rows show
     // (yaks-15c7, yaks-66a3).
     app.scroll_line_into_view(20);
-    assert_eq!(app.detail_scroll, 20 - (8 - 1));
+    assert_eq!(app.detail.scroll, 20 - (8 - 1));
 }
 
 #[test]
@@ -1218,16 +1218,16 @@ fn detail_last_line_is_visible_with_a_blank_row_below() {
     for _ in 0..80 {
         handle_key(&mut app, key('j'));
         let f = draw(&app, w, h);
-        let cursor_row = app.detail_line as isize - app.detail_scroll as isize;
-        let shown = app.detail_rows_shown(app.detail_scroll) as isize;
+        let cursor_row = app.detail.line as isize - app.detail.scroll as isize;
+        let shown = app.detail_rows_shown(app.detail.scroll) as isize;
         assert!(
             (0..shown).contains(&cursor_row),
             "cursor off-screen at line {} scroll {}:\n{f}",
-            app.detail_line,
-            app.detail_scroll
+            app.detail.line,
+            app.detail.scroll
         );
     }
-    assert_eq!(app.detail_scroll, app.detail_max_scroll());
+    assert_eq!(app.detail.scroll, app.detail_max_scroll());
 }
 
 #[test]
@@ -1253,11 +1253,11 @@ fn pinned_header_has_a_rule_under_it_and_pushes_content_down_two_rows() {
         "content should start right under the rule:\n{frame}"
     );
     assert_eq!(
-        app.detail_rows_shown(app.detail_scroll),
+        app.detail_rows_shown(app.detail.scroll),
         (h - 3 - 2) as usize
     );
     // The unpinned frame has no rule.
-    app.detail_scroll = 0;
+    app.detail.scroll = 0;
     let top = draw(&app, w, h);
     assert!(!top.contains(&"\u{2500}".repeat(20)), "{top}");
 }
@@ -1459,16 +1459,16 @@ fn detail_find_matches_and_cycles() {
     enter_key(&mut app); // focus detail
     handle_key(&mut app, key('/')); // open detail find
     typ(&mut app, "child");
-    assert_eq!(app.detail_find.as_deref(), Some("child"));
+    assert_eq!(app.detail.find.as_deref(), Some("child"));
     assert!(app.detail_find_matches().len() >= 2); // both child lines
     enter_key(&mut app); // keep the find
     assert!(matches!(app.overlay, Overlay::None));
     assert_eq!(app.focus, Focus::Detail);
-    assert_eq!(app.detail_match, 0);
+    assert_eq!(app.detail.matched, 0);
     handle_key(&mut app, key('n'));
-    assert_eq!(app.detail_match, 1);
+    assert_eq!(app.detail.matched, 1);
     handle_key(&mut app, key('N'));
-    assert_eq!(app.detail_match, 0);
+    assert_eq!(app.detail.matched, 0);
 }
 
 #[test]
@@ -1500,13 +1500,13 @@ fn detail_find_ctrl_c_restores() {
     enter_key(&mut app);
     handle_key(&mut app, key('/'));
     typ(&mut app, "zzz");
-    assert_eq!(app.detail_find.as_deref(), Some("zzz"));
+    assert_eq!(app.detail.find.as_deref(), Some("zzz"));
     handle_key(
         &mut app,
         KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
     );
     assert!(matches!(app.overlay, Overlay::None));
-    assert!(app.detail_find.is_none());
+    assert!(app.detail.find.is_none());
 }
 
 #[test]
@@ -1538,20 +1538,20 @@ fn detail_find_enter_lands_cursor_on_match() {
     // than snapping back to where the cursor was before the search.
     let mut app = linked();
     enter_key(&mut app); // focus detail; cursor + scroll at the top
-    assert_eq!(app.detail_line, 0);
+    assert_eq!(app.detail.line, 0);
     handle_key(&mut app, key('/'));
     typ(&mut app, "child"); // matches "Child A1" (line 2), "Child A2" (line 3)
     let m = app.detail_find_matches();
     assert!(m.len() >= 2);
-    let match_line = m[app.detail_match].0;
+    let match_line = m[app.detail.matched].0;
     assert!(match_line > 0, "match should be below the pre-find cursor");
-    assert_eq!(app.detail_scroll as usize, match_line); // find scrolled here
+    assert_eq!(app.detail.scroll as usize, match_line); // find scrolled here
     enter_key(&mut app); // commit
     assert!(matches!(app.overlay, Overlay::None));
     assert_eq!(app.focus, Focus::Detail);
     // Cursor sits ON the current match; the find's scroll is preserved.
-    assert_eq!(app.detail_line, match_line);
-    assert_eq!(app.detail_scroll as usize, match_line);
+    assert_eq!(app.detail.line, match_line);
+    assert_eq!(app.detail.scroll as usize, match_line);
 }
 
 #[test]
@@ -1564,13 +1564,13 @@ fn detail_find_enter_commits_the_cycled_match() {
     typ(&mut app, "child");
     enter_key(&mut app); // commit on match 0
     handle_key(&mut app, key('n')); // advance to match 1
-    assert_eq!(app.detail_match, 1);
+    assert_eq!(app.detail.matched, 1);
     let second = app.detail_find_matches()[1].0;
     handle_key(&mut app, key('/')); // reopen (query + match index persist)
     enter_key(&mut app); // commit on the current match (1)
     assert!(matches!(app.overlay, Overlay::None));
-    assert_eq!(app.detail_match, 1);
-    assert_eq!(app.detail_line, second);
+    assert_eq!(app.detail.matched, 1);
+    assert_eq!(app.detail.line, second);
 }
 
 #[test]
@@ -1580,14 +1580,14 @@ fn detail_find_esc_restores_pre_find_position() {
     let mut app = linked();
     enter_key(&mut app); // focus detail
     handle_key(&mut app, key('j')); // move the cursor off the top
-    let origin_line = app.detail_line;
-    let origin_scroll = app.detail_scroll;
+    let origin_line = app.detail.line;
+    let origin_scroll = app.detail.scroll;
     assert!(origin_line > 0);
     handle_key(&mut app, key('/'));
     typ(&mut app, "child"); // scrolls the pane to the first match
     assert!(app.detail_find_matches().len() >= 2);
     assert_ne!(
-        app.detail_scroll, origin_scroll,
+        app.detail.scroll, origin_scroll,
         "find should move the view"
     );
     // Vim single-line field: first Esc drops to Normal, the rapid second
@@ -1595,9 +1595,9 @@ fn detail_find_esc_restores_pre_find_position() {
     handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
     handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
     assert!(matches!(app.overlay, Overlay::None));
-    assert!(app.detail_find.is_none());
-    assert_eq!(app.detail_line, origin_line);
-    assert_eq!(app.detail_scroll, origin_scroll);
+    assert!(app.detail.find.is_none());
+    assert_eq!(app.detail.line, origin_line);
+    assert_eq!(app.detail.scroll, origin_scroll);
 }
 
 #[test]
@@ -3777,7 +3777,7 @@ fn l_scrolls_only_the_block_under_the_cursor_and_h_returns() {
     let mut app = hscroll_app();
     let code = dline_of(&app, "class Long");
     let table = dline_of(&app, "first column");
-    app.detail_line = code;
+    app.detail.line = code;
     let before = draw(&app, 30, 30);
     press_char(&mut app, 'l');
     let after = draw(&app, 30, 30);
@@ -3792,11 +3792,11 @@ fn l_scrolls_only_the_block_under_the_cursor_and_h_returns() {
     assert_eq!(row(&before, "first column"), row(&after, "first column"));
     assert_eq!(row(&before, "java"), row(&after, "java"));
     // `l` on prose scrolls nothing (and does not leave the pane).
-    app.detail_line = dline_of(&app, "Intro.");
+    app.detail.line = dline_of(&app, "Intro.");
     press_char(&mut app, 'l');
     assert_eq!(app.focus, Focus::Detail);
     // ...and scrolling is per block: the table starts at 0.
-    app.detail_line = table;
+    app.detail.line = table;
     let t = draw(&app, 30, 30);
     assert!(
         !pane_rows(&t).iter().any(|l| l.starts_with('‹')),
@@ -3807,7 +3807,7 @@ fn l_scrolls_only_the_block_under_the_cursor_and_h_returns() {
 #[test]
 fn h_scrolls_back_then_at_zero_returns_to_the_list() {
     let mut app = hscroll_app();
-    app.detail_line = dline_of(&app, "class Long");
+    app.detail.line = dline_of(&app, "class Long");
     press_char(&mut app, 'l');
     press_char(&mut app, 'l');
     press_char(&mut app, 'h');
@@ -3825,11 +3825,11 @@ fn h_scrolls_back_then_at_zero_returns_to_the_list() {
 #[test]
 fn h_on_prose_returns_to_the_list_and_esc_always_does() {
     let mut app = hscroll_app();
-    app.detail_line = dline_of(&app, "Intro.");
+    app.detail.line = dline_of(&app, "Intro.");
     press_char(&mut app, 'h');
     assert_eq!(app.focus, Focus::List);
     let mut app = hscroll_app();
-    app.detail_line = dline_of(&app, "class Long");
+    app.detail.line = dline_of(&app, "class Long");
     press_char(&mut app, 'l');
     esc_key(&mut app);
     assert_eq!(app.focus, Focus::List, "Esc leaves even a scrolled block");
@@ -3838,7 +3838,7 @@ fn h_on_prose_returns_to_the_list_and_esc_always_does() {
 #[test]
 fn scroll_clamps_at_the_widest_row_and_resets_when_the_cursor_leaves() {
     let mut app = hscroll_app();
-    app.detail_line = dline_of(&app, "class Long");
+    app.detail.line = dline_of(&app, "class Long");
     for _ in 0..40 {
         press_char(&mut app, 'l');
     }
@@ -3852,9 +3852,9 @@ fn scroll_clamps_at_the_widest_row_and_resets_when_the_cursor_leaves() {
         "no right marker at the end: {row:?}"
     );
     // Leaving the block (j onto the next row is still the block; go to prose).
-    app.detail_line = dline_of(&app, "Outro.");
+    app.detail.line = dline_of(&app, "Outro.");
     press_char(&mut app, 'j');
-    app.detail_line = dline_of(&app, "class Long");
+    app.detail.line = dline_of(&app, "class Long");
     let back = draw(&app, 30, 30);
     assert!(
         back.lines().any(|l| l.contains("class Long")),
@@ -3866,7 +3866,7 @@ fn scroll_clamps_at_the_widest_row_and_resets_when_the_cursor_leaves() {
 fn yank_of_a_scrolled_code_row_copies_the_full_source_line() {
     let mut app = hscroll_app();
     let code = dline_of(&app, "class Long");
-    app.detail_line = code;
+    app.detail.line = code;
     press_char(&mut app, 'l');
     assert_eq!(
         app.selection_text(code, code).unwrap(),
@@ -3889,14 +3889,14 @@ fn following_a_footnote_reference_jumps_to_its_definition_and_o_returns() {
     enter_key(&mut app);
     draw(&app, 80, 20); // measure the pane
     tab_key(&mut app);
-    let from = app.detail_line;
+    let from = app.detail.line;
     assert!(app.detail_dlines()[from].text.starts_with("Claim[1]"));
     enter_key(&mut app);
-    let to = app.detail_line;
+    let to = app.detail.line;
     assert!(to > from);
     assert_eq!(app.detail_dlines()[to].text, "[1] Because.");
     press(&mut app, "o");
-    assert_eq!(app.detail_line, from);
+    assert_eq!(app.detail.line, from);
 }
 
 #[test]
@@ -4207,22 +4207,22 @@ fn the_line_cursor_steps_over_an_inline_image_in_one_move() {
     let rows = image_rows(&app);
     assert_eq!(rows.len(), 6);
     let (link, after) = (rows[0] - 1, rows[5] + 1);
-    app.detail_line = link;
+    app.detail.line = link;
     press(&mut app, "j");
-    assert_eq!(app.detail_line, after, "one j crosses the whole image");
+    assert_eq!(app.detail.line, after, "one j crosses the whole image");
     press(&mut app, "k");
-    assert_eq!(app.detail_line, link, "one k comes back to its link row");
+    assert_eq!(app.detail.line, link, "one k comes back to its link row");
     // From above: the row before the link row steps onto it, then over.
-    app.detail_line = link - 1;
+    app.detail.line = link - 1;
     press(&mut app, "j");
-    assert_eq!(app.detail_line, link);
+    assert_eq!(app.detail.line, link);
     // A count of steps counts the image as one: three `j` from the row above
     // the link reach link, after, and the row after that.
-    app.detail_line = link - 1;
+    app.detail.line = link - 1;
     for _ in 0..3 {
         press(&mut app, "j");
     }
-    assert_eq!(app.detail_line, after + 1);
+    assert_eq!(app.detail.line, after + 1);
 }
 
 #[test]
@@ -4233,19 +4233,19 @@ fn paging_and_g_never_land_inside_an_inline_image() {
     let rows = image_rows(&app);
     let link = rows[0] - 1;
     press(&mut app, "G");
-    assert_eq!(app.detail_line, link, "G stops on the last non-image row");
-    app.detail_line = 0;
+    assert_eq!(app.detail.line, link, "G stops on the last non-image row");
+    app.detail.line = 0;
     app.move_detail_line(1000);
-    assert_eq!(app.detail_line, link, "a long move down too");
+    assert_eq!(app.detail.line, link, "a long move down too");
     // Moving up from the end of the image block skips to its link row.
-    app.detail_line = rows[5];
+    app.detail.line = rows[5];
     press(&mut app, "k");
-    assert_eq!(app.detail_line, link);
+    assert_eq!(app.detail.line, link);
     // And a cursor already inside the block (a click, a reflow) leaves it in
     // the direction of travel without stopping on a reserved row.
-    app.detail_line = rows[2];
+    app.detail.line = rows[2];
     press(&mut app, "k");
-    assert_eq!(app.detail_line, link);
+    assert_eq!(app.detail.line, link);
 }
 
 #[test]
@@ -4256,7 +4256,7 @@ fn clicking_an_inline_image_selects_its_link_row_and_a_second_click_opens_it() {
     let link = rows[0] - 1;
     let top = app.hits.borrow().detail.expect("detail rect").y;
     let click_row = |app: &mut App, line: usize| {
-        let y = top + (line as u16 - app.detail_scroll);
+        let y = top + (line as u16 - app.detail.scroll);
         app.handle_mouse(ratatui::crossterm::event::MouseEvent {
             kind: ratatui::crossterm::event::MouseEventKind::Down(
                 ratatui::crossterm::event::MouseButton::Left,
@@ -4268,7 +4268,7 @@ fn clicking_an_inline_image_selects_its_link_row_and_a_second_click_opens_it() {
     };
     click_row(&mut app, rows[3]);
     assert_eq!(
-        app.detail_line, link,
+        app.detail.line, link,
         "a click on the picture lands on its link row"
     );
     click_row(&mut app, rows[1]);
@@ -4308,14 +4308,14 @@ fn an_inline_image_is_drawn_clipped_at_the_pane_edge_and_scrolls() {
     // area (once scrolled, a pinned header takes two rows of the pane): two of
     // its six rows are visible, clipped, not hidden.
     let shown = app.detail_rows_shown(1);
-    app.detail_scroll = (first + 2 - shown) as u16;
+    app.detail.scroll = (first + 2 - shown) as u16;
     let n = image_pixel_rows(&app, 100, 14);
     assert_eq!(n, 2, "two rows visible, clipped at the pane edge");
     // Scrolled so the whole image is in view: every row drawn.
-    app.detail_scroll = first as u16 - 1;
+    app.detail.scroll = first as u16 - 1;
     assert_eq!(image_pixel_rows(&app, 100, 14), 6, "whole image drawn");
     // Scrolled until it is off the top: nothing drawn.
-    app.detail_scroll = (image_rows(&app)[5] + 1) as u16;
+    app.detail.scroll = (image_rows(&app)[5] + 1) as u16;
     assert_eq!(image_pixel_rows(&app, 100, 14), 0, "off the top: not drawn");
 }
 
@@ -4717,7 +4717,7 @@ mod block_edit {
     #[test]
     fn e_on_a_comment_row_opens_the_editor_on_the_source_line_under_the_cursor() {
         let (_d, mut app) = app_with_comments();
-        app.detail_line = dline_of(&app, "beta");
+        app.detail.line = dline_of(&app, "beta");
         handle_key(&mut app, key('E'));
         let be = block_edit(&app);
         assert!(matches!(
@@ -4746,7 +4746,7 @@ mod block_edit {
     #[test]
     fn e_on_the_description_edits_block_zero() {
         let (_d, mut app) = app_with_comments();
-        app.detail_line = dline_of(&app, "The description.");
+        app.detail.line = dline_of(&app, "The description.");
         handle_key(&mut app, key('E'));
         assert!(matches!(
             &block_edit(&app).editor.action,
@@ -4758,7 +4758,7 @@ mod block_edit {
     #[test]
     fn e_on_a_header_row_still_opens_the_form() {
         let (_d, mut app) = app_with_comments();
-        app.detail_line = dline_of(&app, "Title:");
+        app.detail.line = dline_of(&app, "Title:");
         handle_key(&mut app, key('E'));
         assert!(matches!(app.overlay, Overlay::Create(_)));
     }
@@ -4767,14 +4767,14 @@ mod block_edit {
     fn rows_above_the_editor_stay_put() {
         let (_d, mut app) = app_with_comments();
         let before = pane_rows(&draw(&app, 90, 30));
-        app.detail_line = dline_of(&app, "beta");
+        app.detail.line = dline_of(&app, "beta");
         handle_key(&mut app, key('E'));
         let after = pane_rows(&draw(&app, 90, 30));
         let header = after
             .iter()
             .position(|l| l.contains("agent-1 · "))
             .expect("the edited block's header");
-        assert_eq!(app.detail_scroll, 0, "no scroll needed: the editor fits");
+        assert_eq!(app.detail.scroll, 0, "no scroll needed: the editor fits");
         assert_eq!(&before[..header - 1], &after[..header - 1]);
     }
 
@@ -4782,7 +4782,7 @@ mod block_edit {
     fn ctrl_s_saves_only_that_block() {
         let (_d, mut app) = app_with_comments();
         let before = body(&app);
-        app.detail_line = dline_of(&app, "beta");
+        app.detail.line = dline_of(&app, "beta");
         handle_key(&mut app, key('E'));
         // Normal mode, cursor on `- beta`: append to the line.
         append(&mut app, "!");
@@ -4827,7 +4827,7 @@ mod block_edit {
         insta::assert_snapshot!("comment_header_with_metadata", frame);
 
         let before = body(&app);
-        app.detail_line = dline_of(&app, "Atlas");
+        app.detail.line = dline_of(&app, "Atlas");
         handle_key(&mut app, key('E'));
         append(&mut app, "!");
         ctrl(&mut app, 's');
@@ -4839,7 +4839,7 @@ mod block_edit {
     fn ctrl_s_without_edits_changes_nothing() {
         let (_d, mut app) = app_with_comments();
         let before = body(&app);
-        app.detail_line = dline_of(&app, "first note");
+        app.detail.line = dline_of(&app, "first note");
         handle_key(&mut app, key('E'));
         ctrl(&mut app, 's');
         assert_eq!(body(&app), before);
@@ -4850,7 +4850,7 @@ mod block_edit {
     fn saving_the_description_leaves_the_comments_alone() {
         let (_d, mut app) = app_with_comments();
         let before = body(&app);
-        app.detail_line = dline_of(&app, "The description.");
+        app.detail.line = dline_of(&app, "The description.");
         handle_key(&mut app, key('E'));
         append(&mut app, " edited");
         ctrl(&mut app, 's');
@@ -4865,7 +4865,7 @@ mod block_edit {
     #[test]
     fn saving_keeps_a_note_appended_meanwhile() {
         let (_d, mut app) = app_with_comments();
-        app.detail_line = dline_of(&app, "The description.");
+        app.detail.line = dline_of(&app, "The description.");
         handle_key(&mut app, key('E'));
         let other = crate::farm::TaskEdit {
             note: Some("written by another shed".into()),
@@ -4887,7 +4887,7 @@ mod block_edit {
     #[test]
     fn a_conflicting_save_writes_nothing_and_keeps_the_text() {
         let (_d, mut app) = app_with_comments();
-        app.detail_line = dline_of(&app, "beta");
+        app.detail.line = dline_of(&app, "beta");
         handle_key(&mut app, key('E'));
         let theirs = body(&app).replace("first note", "their rewrite");
         let other = crate::farm::TaskEdit {
@@ -4917,11 +4917,11 @@ mod block_edit {
     #[test]
     fn after_saving_the_line_cursor_stays_on_the_same_source_line() {
         let (_d, mut app) = app_with_comments();
-        app.detail_line = dline_of(&app, "beta");
+        app.detail.line = dline_of(&app, "beta");
         handle_key(&mut app, key('E'));
         append(&mut app, "!");
         ctrl(&mut app, 's');
-        assert_eq!(app.detail_line, dline_of(&app, "beta!"));
+        assert_eq!(app.detail.line, dline_of(&app, "beta!"));
     }
 
     #[test]
@@ -4949,7 +4949,7 @@ mod block_edit {
         assert_eq!(blocks.len(), 4);
         // The line cursor sits on the new comment's header.
         assert_eq!(
-            app.detail_dlines()[app.detail_line].src.map(|s| s.block),
+            app.detail_dlines()[app.detail.line].src.map(|s| s.block),
             Some(3)
         );
     }
@@ -4968,7 +4968,7 @@ mod block_edit {
     fn esc_esc_with_edits_asks_to_confirm_and_n_returns_to_the_editor() {
         let (_d, mut app) = app_with_comments();
         let before = body(&app);
-        app.detail_line = dline_of(&app, "beta");
+        app.detail.line = dline_of(&app, "beta");
         handle_key(&mut app, key('E'));
         append(&mut app, "!");
         esc_key(&mut app);
@@ -4989,7 +4989,7 @@ mod block_edit {
     #[test]
     fn ctrl_c_without_edits_cancels_at_once() {
         let (_d, mut app) = app_with_comments();
-        app.detail_line = dline_of(&app, "beta");
+        app.detail.line = dline_of(&app, "beta");
         handle_key(&mut app, key('E'));
         ctrl(&mut app, 'c');
         assert!(matches!(app.overlay, Overlay::None));
@@ -5006,7 +5006,7 @@ mod block_edit {
         app.detail_page = 27;
         handle_key(&mut app, key('l'));
         let _ = draw(&app, 90, 30);
-        app.detail_line = dline_of(&app, "item 40");
+        app.detail.line = dline_of(&app, "item 40");
         handle_key(&mut app, key('E'));
         let lines = app.detail_dlines();
         let rows = lines
@@ -5023,8 +5023,8 @@ mod block_edit {
             .position(|l| l.kind == detail::Kind::Editor)
             .unwrap();
         let (top, shown) = (
-            app.detail_scroll as usize,
-            app.detail_rows_shown(app.detail_scroll),
+            app.detail.scroll as usize,
+            app.detail_rows_shown(app.detail.scroll),
         );
         assert!(
             first > top && first + rows <= top + shown,

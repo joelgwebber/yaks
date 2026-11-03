@@ -10,11 +10,9 @@
 //! - The free functions ([`yank_text`], [`link_dest`], [`hscroll_step`]) are
 //!   the parts a host may use without the state.
 //!
-//! The text viewer ([`super::handlers::AttachView`]) owns a `LineNav`. The
-//! detail pane keeps its state in `App`'s `detail_*` fields (tests and many
-//! callers name them) and runs the same operations through
-//! `App::with_detail_nav`, so a fix here applies to both. A new page host
-//! (the wiki tab) owns a `LineNav` like the viewer, renders with
+//! The text viewer ([`super::handlers::AttachView`]) owns a `LineNav`, and so
+//! does the detail pane (`App::detail`), so a fix here applies to both. A new
+//! page host (the wiki tab) owns a `LineNav` like the viewer, renders with
 //! `render::render_nav_rows` and routes keys like `App::handle_attachment_key`.
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};

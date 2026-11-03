@@ -63,7 +63,7 @@ pub(crate) struct SearchBox {
     pub(crate) handler: EditorEventHandler,
     /// The `App.query` value before opening, restored on cancel.
     pub(crate) saved: Option<String>,
-    /// Detail-find only: `(detail_scroll, detail_line)` captured when the find
+    /// Detail-find only: `(detail.scroll, detail.line)` captured when the find
     /// opened, restored on cancel so Esc returns to the pre-find position
     /// (vi-like). `None` for the list search box.
     pub(crate) detail_origin: Option<(u16, usize)>,
