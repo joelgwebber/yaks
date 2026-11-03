@@ -1,11 +1,11 @@
 ---
 id: yaks-0e15
 title: Links from documents to yaks failing
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-03T04:11:38Z'
-updated: '2026-11-03T21:20:54Z'
+updated: '2026-11-03T21:20:56Z'
 parent: yaks-f677
 tags:
 - tui
@@ -35,3 +35,13 @@ Fixed (with yaks-d0b0, the same bug): the link grammar now reads a destination t
 - The TUI maps it to `Target::Task`, so Enter opens the yak.
 
 Evidence: `the_grammar` (all three `From`s), the new TUI test `a_markdown_link_to_a_yak_from_a_page_opens_the_yak`, and a headless run on the real farm (attached): Wiki tab, open `wiki/design/knowledge-store.md`, Tab to the link, Enter, and frame 8 shows `sel=yaks-44b3` / `→ yaks-44b3`.
+
+---
+▸ 2026-11-03T21:20:56Z [delta:starred-batch]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
