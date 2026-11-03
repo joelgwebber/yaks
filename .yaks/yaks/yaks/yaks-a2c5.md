@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T05:47:16Z'
+updated: '2026-11-03T05:48:02Z'
 parent: yaks-947a
 depends_on:
 - yaks-aac1
@@ -184,3 +184,13 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAECzPpIBxBCtY3f3KUhDW5IL-PWT3Nbm
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-03T05:48:02Z [herd-tui]
+kind: landed
+commit: 270ec67797123a5bfcc7503cb12677fc7a3037e4
+source: 5bff181953b418466aebf7ad172d993d36fd202e
+branch: main
+---
+
+landed: 270ec677 yaks-a2c5: one history of locations (o/i everywhere; a link keeps the list, the pane shows yaks outside it)
