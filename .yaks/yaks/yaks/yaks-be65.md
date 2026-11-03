@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T04:10:57Z'
-updated: '2026-11-03T04:23:46Z'
+updated: '2026-11-03T04:27:43Z'
 parent: yaks-5d08
 tags:
 - tui
@@ -121,3 +121,8 @@ branch: main
 ---
 
 landed: 50af0a9a yaks-be65: row kinds (yak, document); the Wiki becomes a flat view of document rows
+
+---
+▸ 2026-11-03T04:27:43Z [herd-tui]
+
+Landed by herd-tui as `50af0a9a` (worker `63fcca62`). Gate on it: 30 suites ok. Headless on my build: Wiki view `j` moves the shared cursor, `U` on a doc row is accepted, `Enter` opens the viewer.
