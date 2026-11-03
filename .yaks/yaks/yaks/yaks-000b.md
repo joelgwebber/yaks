@@ -5,11 +5,11 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-03T21:04:56Z'
-updated: '2026-11-03T22:05:10Z'
+updated: '2026-11-03T22:28:12Z'
 parent: yaks-f677
 tags:
 - tui
-needs: human
+needs: agent
 ---
 
 A few scrolling odds and ends:
@@ -56,3 +56,11 @@ Or both? I'd start with 1.
 ▸ 2026-11-03T22:05:10Z [delta:starred-batch]
 
 For option 2 of my ask: the edtui fork already has `events/mouse.rs` (`MouseEventHandler`, click-to-position and drag-select), so a click in the in-place editor may only need forwarding the event with the editor's rect. Smaller than I guessed.
+
+---
+▸ 2026-11-03T22:28:12Z [Joel Webber]
+kind: answer
+needs: agent
+---
+
+Oh, I totally missed the edtui case, but both of those would be useful. Feel free to add whatever you need to, to our edtui fork.
