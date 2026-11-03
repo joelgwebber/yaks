@@ -5,11 +5,12 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
-updated: '2026-11-03T21:42:04Z'
+updated: '2026-11-03T21:42:05Z'
 parent: yaks-f677
 tags:
 - tui
 - perf
+needs: human
 ---
 
 Feels like there might be an intentional delay for some reason?
@@ -33,3 +34,16 @@ Investigated (delta:starred-batch), not fixed.
 - Timed headlessly on a clone of this farm (adding a comment): Ctrl-S frame-to-frame 553 ms, `:wq` 587 ms. Both are the per-change farm commit plus reload after the save, i.e. yaks-7058 (49 git calls per write), not anything `:wq`-specific.
 
 So headless shows no difference; whatever Joel sees may be terminal-side.
+
+---
+▸ 2026-11-03T21:42:05Z [delta:starred-batch]
+kind: ask
+needs: human
+---
+
+asked: needs human
+
+I can't reproduce a `:wq`-only pause: headlessly both `:wq` and Ctrl-S take ~0.55-0.6 s, all of it the per-change farm commit after the save (yaks-7058). Two questions:
+
+1. In your terminal, does Ctrl-S really feel instant on the *same* kind of edit (a comment or description, not a single-line field)? If both pause, I'd fold this into yaks-7058 (make the commit cheaper, or run it after the frame is drawn).
+2. If only `:wq` pauses: which terminal, and is it inside tmux/zellij? An escape-time delay on the `Esc` you press before `:` is my next suspect.
