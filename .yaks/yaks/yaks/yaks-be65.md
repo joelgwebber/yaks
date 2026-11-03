@@ -1,7 +1,7 @@
 ---
 id: yaks-be65
 title: 'TUI phase 3a: row kinds (yak, document, shed); Wiki becomes a flat view of document rows'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-03T04:10:57Z'
@@ -101,3 +101,13 @@ Summary: rows are now `Item::Yak | Item::Doc`; the Wiki view is a flat list of d
 - Docs: docs/tui.md (movement line, Wiki tab key table); `?` and hint are generated.
 - Attached: `wiki-view-cursor-moved.txt` (headless frames, Wiki view, cursor 0 then 1, S inert).
 Finished Tue Nov  3 04:23:23 UTC 2026.
+
+---
+▸ 2026-11-03T04:23:23Z [rows-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD_EipIBxBCtY3f3KUhDW5IL-PWT3Nbm
+---
+
+moved: shaving -> shorn
