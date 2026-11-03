@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:10:57Z'
-updated: '2026-11-03T04:41:56Z'
+updated: '2026-11-03T04:42:21Z'
 parent: yaks-5d08
 depends_on:
 - yaks-be65
@@ -125,3 +125,11 @@ Decision: `Item::Yak` children carry no per-row Kind: `render_list` remembers th
 Decision: `Space` and the persisted `collapsed` set take `shed:<name>`; a collapsed shed shows the same `▶ N` badge as a yak. `h` (family scope) on the Sheds view says "family scope applies to tree views" instead of cycling a setting nothing reads.
 
 Decision: the shed pane keeps no scroll or cursor (it never has more than a screenful in practice, and its yaks are the rows beside it). `selected_shed_yak`'s duty is the cursor itself: `sheds_state_header` now reports the shed the cursor is in (`shed=`); the yak is the header's own `sel=`.
+
+---
+▸ 2026-11-03T04:42:21Z [sheds-2]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
