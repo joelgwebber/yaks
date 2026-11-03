@@ -1,7 +1,7 @@
 ---
 id: yaks-953f
 title: Global search context
-status: hairy
+status: shorn
 type: bug
 priority: 3
 created: '2026-08-23T14:38:59Z'
@@ -65,3 +65,13 @@ Nothing to do now: the answers live in the design page; this yak's work is a pha
 ▸ 2026-11-03T05:52:28Z [herd-tui]
 
 Done by herd-tui through phases 1 (yaks-cc16, notifications clear on the next key) and 6a (yaks-a25c, the `/` query is global with its own chip, persists across views and is part of each history location).
+
+---
+▸ 2026-11-03T05:52:28Z [herd-tui]
+kind: move
+from: hairy
+to: shorn
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shorn
