@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-03T20:46:20Z'
-updated: '2026-11-03T21:13:56Z'
+updated: '2026-11-03T21:20:55Z'
 parent: yaks-f677
 tags:
 - tui
@@ -23,3 +23,8 @@ thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-03T21:20:55Z [delta:starred-batch]
+
+Same bug as yaks-0e15, fixed there (yak ids in links are absolute; `Link::Yak`).
