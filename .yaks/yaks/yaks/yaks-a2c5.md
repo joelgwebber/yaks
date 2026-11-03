@@ -139,3 +139,8 @@ Decision: `moved` vs `gone` on restore. The cursor row is found by key (tried at
 ▸ 2026-11-03T05:47:06Z [hist-1]
 
 Decision: `pane_yak` only means something with the pane focused (`pane_yak_id()` filters on `focus == Detail`), and every place that returns focus to the list or moves the cursor clears it (`back_to_list`, `move_cursor`, `show_row`, `open_detail_pane`, `set_view`). Row-scoped lookups (`row_yak`, used by `reload_preserving_selection` and the sheds snapshot) ignore it so a reload does not drag the cursor to the pane's yak; `row_kind`/`selected_shed` answer for a yak while it shows. Rejected: clearing it centrally after each key (fails for a restore that sets both a new cursor and a pane yak).
+
+---
+▸ 2026-11-03T05:47:06Z [hist-1]
+
+Decision: `PaneAt::Doc` gains `under: Option<String>` beyond the claim's `{path, rev, from, line, scroll}`: the pane's own yak while the page covers it. Without it, restoring a page opened over a pane yak would make `Esc` land on the cursor row's yak instead of the yak the page was opened from. A page is re-opened by `read_doc(path, rev)`: a farm file when `rev` is set or the path exists under the farm root, else an attachment (`<id>/<file>` never exists under the root). Rejected: a `kind` field on `PaneAt::Doc`.
