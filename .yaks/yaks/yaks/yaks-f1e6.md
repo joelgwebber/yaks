@@ -1,7 +1,7 @@
 ---
 id: yaks-f1e6
 title: 'Sheds view: More like list/tree views'
-status: hairy
+status: shorn
 type: idea
 priority: 3
 created: '2026-10-26T16:15:27Z'
@@ -47,3 +47,13 @@ Done by herd-tui through the unified model's phase 3 (yaks-5d08): Sheds is now a
 - Each actor is a collapsible root; its children are the yaks it touched (working, asking, recent).
 - Selecting a yak shows the normal yak detail with the shed tree beside it; `J`/`K`, `U`, `W` and every yak key work there.
 - Its place in the global history comes with phase 5 (yaks-a2c5).
+
+---
+▸ 2026-11-03T04:46:15Z [herd-tui]
+kind: move
+from: hairy
+to: shorn
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shorn
