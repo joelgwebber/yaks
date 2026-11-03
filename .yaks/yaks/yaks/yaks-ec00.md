@@ -1,11 +1,11 @@
 ---
 id: yaks-ec00
 title: 'Research and plan: cloud runners always run a current yaks binary and current skills (one skills location, versions visible)'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-01T16:44:44Z'
-updated: '2026-11-03T14:21:51Z'
+updated: '2026-11-03T14:21:59Z'
 tags:
 - skills
 - agent
@@ -108,3 +108,14 @@ kind: pickup
 picked up
 
 First pass (Joel's answers): upgrade recipe in skill + newer-schema error; agents never migrate, always ask a human; farm min_version warning; schema-bump order in yaks-coordinating; TUI fix yaks-9786. Children below.
+
+---
+▸ 2026-11-03T14:21:59Z [delta:skills-upgrade-audit]
+kind: move
+from: hairy
+to: shaving
+child: yaks-c2fc
+thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
