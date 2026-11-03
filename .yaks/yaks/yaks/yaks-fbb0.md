@@ -79,3 +79,26 @@ Modifier arms (Shift-↑↓, Ctrl-N/P, Ctrl-C) are bindings with modifiers. Cond
 Start: Tue Nov  3 03:52:26 UTC 2026. Farm path: /home/user/.local/share/yaks/farms/yaks-b0f8dcf9/.yaks/yaks/yaks/yaks-fbb0.md. Checkout: /home/user/yaks-3.
 
 [help-overlay-frame](yaks-fbb0/help-overlay-frame.txt)
+
+---
+▸ 2026-11-03T04:03:05Z [keys-1]
+
+Milestone: the table, dispatch and generated help/hint are in; `cargo test --workspace` passed on the first full run except the two help-overlay snapshots (accepted; `git diff --stat -- src/tui/snapshots/` lists only those two). The hint fixtures pass unchanged, so the hint is byte-identical in all five contexts.
+
+Decision: `Cmd` is one intent, not one handler. `move.down`, `pane.back`, `pane.enter`, `pane.open`, `row.copy`, `list.refresh`, `item.next`, `view.revert`, `yak.state` and `yak.edit` are one command bound in several contexts, and the arm picks the target from the ctx. Rejected: one variant per surface and key (about 150 variants, and it loses the design's "movement keys move whatever has focus").
+
+Decision: `run_cmd(ctx, cmd)` instead of the spec's `run_cmd(cmd, key)`. Every arm that read the key (o/i, Shift-Up/Down, Ctrl-N/P, the pairs) became its own command, so `key` is never read; the ctx is needed for the ctx-picked targets. Callers already hold the ctx from `lookup`.
+
+Decision: the text viewer and the image viewer run their commands in their own methods (`run_viewer_cmd` in handlers.rs next to the `AttachView` code it borrows, `run_image_cmd` in imageview.rs), reusing the shared `Cmd` names. Rejected: one giant `run_cmd` match, because the viewer arms borrow `v.nav` and the rendered rows together. The viewer's find box path in `handle_attachment_key` is untouched.
+
+Decision: matching is by key code and the modifiers a binding names (all must be held); extra modifiers are ignored and a binding that names modifiers is tried first. That is what the old `match k.code` did (Ctrl-j still moves, upper-case letters arrive with Shift, Ctrl-C beats `c`). Rejected: exact modifier match, which would change what keys do.
+
+Decision: `ShedDetail` repeats the sheds' shared keys (q, Tab, v, #, ?) with no help line, rather than layering ShedDetail over Sheds. A layered lookup would let `l`/Right fall through to "show the shed" in the detail, which is a no-op today.
+
+Decision: `S` is one `yak.state` in the list and the detail (bulk only in the list when rows are marked), and `E` one `yak.edit` (at-cursor edit in the detail). Behaviour as before.
+
+Decision: the hint is a per-binding `Hint` (`None`, `Text`, `Filter`); `Filter` is the drawer binding's slot, filled by `help_hint` with the active-filter variant. Hint order is table order, so within a ctx the hinted bindings sit in hint order.
+
+Decision: `help_content` now has a section per ctx (every helped binding on its own line: more rows than before, the overlay scrolls) and static `EXTRAS` for rows that are not bindings (editor keys, files and links, farm chip, mouse). The old hand-written "Movement" and "Edit" sections are gone; the Detail section lists its own mirrors of the list's edit keys.
+
+Decision: the old unreachable-from-table viewer note "(in viewer)" row is dropped; the Viewer section generates it.
