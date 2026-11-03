@@ -1,0 +1,64 @@
+=== frame 7 · 140x30 · focus=list · view=📖 Wiki · cursor=0 · rows=0 · sel=- · blocked=[yaks-8d6a] · collapsed=12 · filter=(all) · overlay=attachment · wiki=4 · entry=wiki/design/knowledge-store.md ===
+ 🕒 Recent (50)   ⭐ Starred (13)   📥 Inbox (2)   🦬 Hairy (55)   🪒 Shaving (8)   📖 Wiki (4)   🛖 Sheds (6)                           ↑18
+
+ The farm as a knowl  topic  #wiki #desig  wiki/│ 📖 wiki/design/knowledge-store.md  topic
+ TUI design: one mod  topic  #tui #design  wiki/│ type:        topic
+ Migrate a farm to a  howto  #wiki         wiki/│ title:       The farm as a knowledge store
+ Encoding TUI snapsh  note   #tui #toque   wiki/│ description: How yaks, pages, sources and schemas fit together, and why
+                                                │ tags:        wiki, design
+                                                │
+                                                │ The farm as a knowledge store
+                                                │
+                                                │ A farm holds working knowledge next to the work: yaks (what to do), pages (what we know),
+                                                │ sources (what we read) and schemas (what shape typed facts take). It is all markdown with
+                                                │ frontmatter on the farm branch, and every write is its own commit. Built under yaks-44b3
+                                                │ in November 2026; this page records the model and why it is shaped this way.
+                                                │
+                                                │ The pieces
+                                                │
+                                                │ Piece    │ Where                             │ Written by                               ›
+                                                │ ─────────┼───────────────────────────────────┼──────────────────────────────────────────›
+                                                │ Yaks     │ <herd>/yaks/<id>.md               │ yaks create, update, the state moves     ›
+                                                │ Pages    │ wiki/**.md, <herd>/wiki/**.md     │ yaks page new, page set, the TUI's Wiki t›
+                                                │ Sources  │ sources/<date>-<sha8>/            │ yaks source add, yaks promote            ›
+                                                │ ── peek ─────────────────────────────────────────────────────────────────────────────────
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+j/k · Tab:link Enter:follow · o/i back/fwd · p peek · / find · v sel · E edit · O open externally · Esc/q close
+=== end ===
+=== frame 8 · 140x30 · focus=detail · view=🪒 Shaving · cursor=0 · rows=24 · sel=yaks-44b3 · blocked=[yaks-8d6a] · collapsed=12 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🕒 Recent (50)   ⭐ Starred (13)   📥 Inbox (2)   🦬 Hairy (55)   🪒 Shaving (8)   📖 Wiki (4)   🛖 Sheds (6)               → yaks-44b3 ↑18
+
+ yaks-44b3     p1 feature  🪒 Farm  [wiki, desig│ Task: yaks-44b3
+   yaks-9f5e   p2 bug      🦬 import [wiki, cli]│
+   yaks-7058   p3 task     🦬 Per-ch [wiki, git]│ Title:       Farm wiki: pages, sources and schemas beside yaks (the data layer under a
+ yaks-039b     p2 feature  🪒 Sheds [sheds, desi│ personal agent)
+   yaks-7d57   p2 task     🦬 Trial [skills, age│ Status:      🪒 shaving
+   yaks-19c3   p3 idea     🦬 TUI: an acti [tui]│ Type:        feature
+   yaks-8003   p3 idea     🦬 Idea: [sheds, sche│ Priority:    p1
+     yaks-ded9 p3 bug      🦬 Human-crea [sheds]│ Created:     Sunday 13:52 -05:00
+   yaks-59bf   p3 bug      🦬 yaks co [git, cli]│ Updated:     yesterday 12:10 -05:00
+ yaks-ec00     p2 task     🪒 Resea [skills, age│ Tags:        wiki, design
+ yaks-f677     p2 task     🪒 Starred TUI  [tui]│
+   yaks-91d9   p3 bug      🪒 Documents [tui] ⭐│ Children:
+   yaks-c5d7   p3 task     🪒 Absolute  [tui] ⭐│   🐑 yaks-200f  TUI: browse, follow and edit farm documents (layer 3)
+   yaks-0e15   p3 task     🪒 Links fro [tui] ⭐│   🦬 yaks-7058  Per-change commits: cut the git calls per write (49 vs 22; ~0.7 s vs
+   yaks-d0b0   p3 bug      🪒 Yaks link [tui] ⭐│ ~0.26 s here)
+   yaks-b608   p2 bug      🦬 Filtering [tui] ⭐│   🐑 yaks-7708  Design: the document model
+   yaks-fc9e   p2 feature  🦬 Improved  [tui] ⭐│   🐑 yaks-9cc1  Design: recurring yaks (regrow on a schedule) and due dates
+   yaks-7c6e   p2 task     🦬 Holistic  [tui] ⭐│   🦬 yaks-9f5e  import-hearth skips dot-files inside a directory source
+   yaks-907a   p3 bug      🦬 :wq [tui, perf] ⭐│   🐑 yaks-a5f8  Release 0.0.29: the farm as a knowledge store (schema 7)
+   yaks-58f0   p3 task     🦬 Co [tui, sheds] ⭐│   🐑 yaks-d26a  Workflow: research guidance, checks and the first real farm (layer 4)
+   yaks-efc0   p3 task     🦬 In [sheds, tui] ⭐│   🐑 yaks-f301  Core: the farm data layer (layer 2)
+   yaks-cc2a   p3 bug      🦬 Sh [tui, sheds] ⭐│
+   yaks-000b   p3 task     🦬 Mouse twe [tui] ⭐│ Grow the farm from a task tracker into the data layer for in-repo research, planning and
+   yaks-aec7   p3 bug      🦬 Navigatio [tui] ⭐│ documentation: pages, sources and schemas beside yaks, one link grammar across them, and
+                                                │ per-change commits. A personal agent (Hearth, later) then sits on top of a farm rather
+                                                │ than owning its own storage.
+                                                │
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search  q:quit
+=== end ===

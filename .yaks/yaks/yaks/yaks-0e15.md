@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-03T04:11:38Z'
-updated: '2026-11-03T21:13:55Z'
+updated: '2026-11-03T21:20:54Z'
 parent: yaks-f677
 tags:
 - tui
@@ -23,3 +23,5 @@ thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+[doclink-frames](yaks-0e15/doclink-frames.txt)
