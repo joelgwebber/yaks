@@ -1083,6 +1083,9 @@ impl App {
                 }
                 return;
             }
+            Cmd::ItemNext | Cmd::ItemPrev => {
+                return self.detail_next_task(if cmd == Cmd::ItemNext { 1 } else { -1 });
+            }
             _ => {}
         }
         let Some(v) = self.attach_mut() else {

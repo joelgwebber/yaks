@@ -608,6 +608,41 @@ mod tests {
         let _ = std::fs::remove_dir_all(proj);
     }
 
+    /// yaks-7c6e (Joel's note): `J`/`K` in a page opened from the Wiki open the
+    /// next / previous row's page in place, as they step yaks in a yak list;
+    /// they are not history jumps, and `h` still returns to the list.
+    #[test]
+    fn j_and_k_in_a_wiki_page_step_through_the_list() {
+        let (proj, farm) = temp_farm(&[task("yaks-0001", "Search", Status::Hairy, 2, None)]);
+        crate::tui::wiki_tab::fixture::write(farm.root());
+        let mut app = App::with_farm(farm).unwrap();
+        goto_view(&mut app, view::WIKI_KEY);
+        let paths: Vec<String> = app
+            .rows()
+            .iter()
+            .filter_map(|r| match r.item {
+                tree::Item::Doc(e) => Some(e.path.clone()),
+                _ => None,
+            })
+            .collect();
+        assert!(paths.len() >= 2);
+        enter_key(&mut app);
+        assert_eq!(app.attach().unwrap().target, paths[0]);
+        let stops = app.history.back.len();
+        press(&mut app, "J");
+        assert_eq!(app.attach().unwrap().target, paths[1]);
+        assert_eq!(app.cursor, 1, "the list cursor moves with it");
+        press(&mut app, "K");
+        assert_eq!(app.attach().unwrap().target, paths[0]);
+        assert_eq!(app.history.back.len(), stops, "not jumps");
+        press(&mut app, "K");
+        assert_eq!(app.attach().unwrap().target, paths[0], "clamped at the top");
+        press(&mut app, "h");
+        assert!(app.doc.is_none());
+        assert_eq!(app.focus, Focus::List);
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
     #[test]
     fn a_page_is_read_again_and_its_cursor_clamped_on_return() {
         let (proj, farm) = temp_farm(&[task("yaks-0001", "Search", Status::Hairy, 2, None)]);

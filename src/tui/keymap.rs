@@ -553,6 +553,8 @@ static BINDINGS: &[Binding] = &[
     bind(Viewer, &[c('/')], FindOpen, "Find in the file (the same search as the yak detail)", NoHint),
     bind(Viewer, &[c('n')], FindNext, "Next match (wraps)", NoHint),
     bind(Viewer, &[c('N')], FindPrev, "Previous match (wraps)", NoHint),
+    bind(Viewer, &[c('J')], ItemNext, "Next page of the Wiki list (opened in place)", NoHint),
+    bind(Viewer, &[c('K')], ItemPrev, "Previous page of the Wiki list", NoHint),
     bind(Viewer, &[c('p')], PeekToggle, "Show / hide the peek pane under the page", NoHint),
     bind(Viewer, &[c('E')], DocEdit, "Edit the file in place (Ctrl-S saves; a past version or a source is read-only)", NoHint),
     bind(Viewer, &[c('O')], FileOpenExternal, "Open the file externally", NoHint),

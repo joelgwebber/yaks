@@ -288,6 +288,7 @@ and a document row has its own keys (the yak keys do nothing there):
 | Key | Action |
 |---|---|
 | `l` / `→` / `Enter` | Open the page or source in the viewer (it navigates like the detail pane) |
+| `J` / `K` | (viewer) Open the next / previous row's page in place, as `J`/`K` step yaks |
 | `/` | Search every view (a page's body and a source's text too); `Esc` clears it |
 | `E` | Edit the page in place (also `E` in its viewer): frontmatter and body in one editor, `Ctrl-S` saves |
 | `c` | New page: type its path, then write its body (`C` does nothing here) |
