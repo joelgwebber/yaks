@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:10:57Z'
-updated: '2026-11-03T04:22:45Z'
+updated: '2026-11-03T04:23:14Z'
 parent: yaks-5d08
 tags:
 - tui
@@ -81,3 +81,11 @@ Decision: `mouse.rs`: the second click on a document row opens it (like `Enter`)
 Decision: `set_wiki_entries` calls `touch()` (memo key), and re-seats `App.cursor` on the same path only when the Wiki view is active.
 
 [wiki-view-cursor-moved](yaks-be65/wiki-view-cursor-moved.txt)
+
+---
+▸ 2026-11-03T04:23:14Z [rows-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
