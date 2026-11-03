@@ -183,6 +183,17 @@ impl App {
             self.collapsed.len(),
             overlay_name(&self.overlay),
         );
+        let base = match &self.doc {
+            Some(DocPane {
+                view: DocView::Text(_),
+                ..
+            }) => format!("{base} · doc=text"),
+            Some(DocPane {
+                view: DocView::Image(_),
+                ..
+            }) => format!("{base} · doc=image"),
+            None => base,
+        };
         if self.on_sheds_tab() {
             return format!("{base} · {}", self.sheds_state_header());
         }

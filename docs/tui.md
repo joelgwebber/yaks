@@ -453,7 +453,16 @@ that herd (an id-prefix rename). `H` does the same move as a one-key picker.
 ## Following links and peek
 
 The text viewer (an attachment, or a page from the [Wiki tab](#wiki-tab))
-follows links the way a browser does:
+follows links the way a browser does. The viewer, like the image viewer, is
+part of the right pane, not a modal overlay: the list stays drawn on its left
+(dimmed, as the list is while the detail has focus), and the farm keys work
+with a page open. `U` syncs and `W` commits (the page stays open), `?` opens
+the help over it (closing the help returns to the page), and `#` opens the
+yak picker (choosing a yak closes the page and shows it). `Esc`, `q` or `h`
+close the page and return to where it was opened from, the list or the yak's
+detail; switching view (`Tab`, a tab click), `J`/`K` and a click on a list
+row also close it (the click selects the row). `v` is visual select here,
+not the view picker.
 
 - **`Enter` on a farm document** opens it in the viewer: a page (frontmatter
   above the body), a source (with its `extracted.md`), or any other text file of

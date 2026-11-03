@@ -58,8 +58,10 @@ pub(crate) enum EditAction {
     /// Write the typed text back to the text attachment open in the viewer
     /// (`E` there, yaks-56c1), then reopen the viewer on it. Carries the view
     /// as opened: its path, and the text the edit started from (the dirty
-    /// check, and the guard against a file changed on disk meanwhile).
-    EditAttachment(super::handlers::AttachView),
+    /// check, and the guard against a file changed on disk meanwhile). The
+    /// pane is emptied while the editor is up: the view and its `from` ride
+    /// here and go back to `App.doc` on commit or cancel.
+    EditAttachment(super::handlers::AttachView, super::Focus),
     /// Create a page at the typed farm path (`N` on the Wiki tab, yaks-1532),
     /// then edit it.
     NewPage,

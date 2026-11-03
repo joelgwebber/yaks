@@ -1,4 +1,4 @@
-//! The image viewer overlay (`Overlay::Image`, yaks-4305): an image attachment
+//! The image viewer (`DocView::Image`, yaks-4305): an image attachment
 //! decoded once on open and drawn in the right pane by `ratatui-image`, over
 //! the terminal's own graphics protocol (kitty, sixel, iTerm2) when it speaks
 //! one, else as half-block cells. Headless frames (toque, tests) always take
@@ -20,7 +20,7 @@ use ratatui_image::sliced::{SignedPosition, SlicedImage, SlicedProtocol};
 use ratatui_image::{FilterType, Resize, StatefulImage};
 
 use super::keymap::Cmd;
-use super::{App, Overlay, detail};
+use super::{App, detail};
 
 /// Largest image file the viewer decodes; a bigger one opens externally.
 const IMAGE_MAX_BYTES: u64 = 32 << 20;
@@ -138,7 +138,7 @@ impl App {
     /// Run an image viewer command: `O` hands the file to the OS opener,
     /// `Esc`/`q`/`h`/`←` close it.
     pub(super) fn run_image_cmd(&mut self, cmd: Cmd) {
-        let Overlay::Image(v) = &self.overlay else {
+        let Some(v) = self.image() else {
             return;
         };
         match cmd {
@@ -146,7 +146,7 @@ impl App {
             Cmd::PaneClose => self.close_image(),
             Cmd::FileOpenExternal => {
                 let (target, arg) = (v.target.clone(), v.path.display().to_string());
-                self.overlay = Overlay::None;
+                self.close_doc();
                 self.os_open(&target, &arg);
             }
             _ => {}

@@ -22,6 +22,10 @@
 //! list; with no row selected the view's own kind applies (an empty Wiki still
 //! takes `N` and `r`, an empty Sheds view `r`).
 //!
+//! An open document (the text and image viewers) is part of the right pane,
+//! not an overlay (yaks-0906): its keys are the `Viewer` and `Image` contexts,
+//! and the global ones (`U`, `W`, `?`, `#`) are bound there too.
+//!
 //! Modal overlays (editors, pickers, the drawer, create, help, the command
 //! line, the search boxes) and the mouse are not in the table.
 
@@ -136,9 +140,9 @@ pub(crate) enum Ctx {
     List,
     /// The yak detail pane.
     Detail,
-    /// The text viewer overlay (attachments, wiki pages, sources).
+    /// The text viewer in the pane (attachments, wiki pages, sources).
     Viewer,
-    /// The image viewer overlay.
+    /// The image viewer in the pane.
     Image,
 }
 
@@ -481,10 +485,18 @@ static BINDINGS: &[Binding] = &[
     bind(Viewer, &[c('p')], PeekToggle, "Show / hide the peek pane under the page", NoHint),
     bind(Viewer, &[c('E')], DocEdit, "Edit the file in place (Ctrl-S saves; a past version or a source is read-only)", NoHint),
     bind(Viewer, &[c('O')], FileOpenExternal, "Open the file externally", NoHint),
+    bind(Viewer, &[c('#')], NavGoto, "Go to any yak by id / title (closes the page)", NoHint),
+    bind(Viewer, &[c('W')], FarmCommit, "Commit the farm (yaks commit)", NoHint),
+    bind(Viewer, &[c('U')], FarmSync, "Sync the farm: commit, pull, push (yaks sync)", NoHint),
+    bind(Viewer, &[c('?')], AppHelp, "Toggle this help", NoHint),
 
     // -- the image viewer ------------------------------------------------------
     bind(Image, &[k(Esc), c('q'), c('h'), k(Left)], PaneClose, "Close (back to the viewer it came from, if any)", NoHint),
     bind(Image, &[c('O')], FileOpenExternal, "Open the file externally", NoHint),
+    bind(Image, &[c('#')], NavGoto, "Go to any yak by id / title (closes the image)", NoHint),
+    bind(Image, &[c('W')], FarmCommit, "Commit the farm (yaks commit)", NoHint),
+    bind(Image, &[c('U')], FarmSync, "Sync the farm: commit, pull, push (yaks sync)", NoHint),
+    bind(Image, &[c('?')], AppHelp, "Toggle this help", NoHint),
 
     // -- the list: document rows (the Wiki view). Its movement, view and farm
     // -- keys are the list's; `v`, `?` and `q` repeat theirs only so that the
@@ -638,7 +650,7 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
             ("Wheel", "Scroll the pane under the pointer"),
             (
                 "Click row",
-                "Select (again: open detail; detail stays open)",
+                "Select (again: open detail; detail stays open); closes an open page",
             ),
             ("Click detail", "Move line cursor (again: follow link)"),
             ("Click tab", "Switch view"),
@@ -693,13 +705,26 @@ impl Binding {
 }
 
 impl App {
-    /// The surface that takes a key when no overlay is up: the list or its
-    /// detail pane. (The viewers are overlays; their handlers
-    /// pass their own context.)
+    /// The surface that takes a key when no overlay is up: the open document
+    /// (it is the pane's subject), else the list or its detail pane.
     pub(crate) fn surface_ctx(&self) -> Ctx {
-        match self.focus {
-            Focus::List => Ctx::List,
-            Focus::Detail => Ctx::Detail,
+        match (&self.doc, self.focus) {
+            (
+                Some(DocPane {
+                    view: DocView::Text(_),
+                    ..
+                }),
+                _,
+            ) => Ctx::Viewer,
+            (
+                Some(DocPane {
+                    view: DocView::Image(_),
+                    ..
+                }),
+                _,
+            ) => Ctx::Image,
+            (None, Focus::List) => Ctx::List,
+            (None, Focus::Detail) => Ctx::Detail,
         }
     }
 
@@ -713,9 +738,11 @@ impl App {
     /// where surfaces differ (what `move.down` moves, what Esc peels) the arm
     /// picks the target from `ctx`; the viewers run theirs themselves.
     pub(crate) fn run_cmd(&mut self, ctx: Ctx, cmd: Cmd) {
+        // The global commands run as anywhere; the rest of a viewer's are its own.
+        let global = matches!(cmd, AppHelp | NavGoto | FarmCommit | FarmSync);
         match ctx {
-            Ctx::Viewer => return self.run_viewer_cmd(cmd),
-            Ctx::Image => return self.run_image_cmd(cmd),
+            Ctx::Viewer if !global => return self.run_viewer_cmd(cmd),
+            Ctx::Image if !global => return self.run_image_cmd(cmd),
             _ => {}
         }
         match cmd {
@@ -1032,6 +1059,20 @@ mod tests {
             ),
             Some(FindNext)
         );
+    }
+
+    #[test]
+    fn the_viewers_take_the_global_keys_but_not_the_view_picker() {
+        let key = |ch| KeyEvent::new(KeyCode::Char(ch), KeyModifiers::NONE);
+        for ctx in [Ctx::Viewer, Ctx::Image] {
+            assert_eq!(lookup(ctx, None, &key('U')), Some(FarmSync), "{ctx:?}");
+            assert_eq!(lookup(ctx, None, &key('W')), Some(FarmCommit), "{ctx:?}");
+            assert_eq!(lookup(ctx, None, &key('?')), Some(AppHelp), "{ctx:?}");
+            assert_eq!(lookup(ctx, None, &key('#')), Some(NavGoto), "{ctx:?}");
+        }
+        // `v` is visual select in the text viewer, not the view picker.
+        assert_eq!(lookup(Ctx::Viewer, None, &key('v')), Some(SelectVisual));
+        assert_eq!(lookup(Ctx::Image, None, &key('v')), None);
     }
 
     #[test]

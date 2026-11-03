@@ -3957,7 +3957,7 @@ fn enter_on_a_markdown_attachment_opens_the_viewer_rendered() {
         b"# Findings\n\nSome **bold** text\nthat reflows.\n\n- one\n- two\n",
     );
     enter_key(&mut app);
-    assert!(matches!(app.overlay, Overlay::Attachment(_)));
+    assert!(app.attach().is_some());
     assert_eq!(app.notification.as_deref(), Some("viewing t0/notes.md"));
     let frame = draw(&app, 100, 24);
     assert!(frame.contains("t0/notes.md  markdown"), "{frame}");
@@ -4023,7 +4023,7 @@ fn enter_on_an_image_attachment_shows_it_in_the_pane() {
     // when the terminal speaks no graphics protocol (as under test).
     let (_dir, mut app) = app_on_attachment("shot.png", &two_tone_png(64, 64));
     enter_key(&mut app);
-    assert!(matches!(app.overlay, Overlay::Image(_)));
+    assert!(app.image().is_some());
     assert_eq!(app.notification.as_deref(), Some("viewing t0/shot.png"));
     let mut term = Terminal::new(ratatui::backend::TestBackend::new(100, 24)).unwrap();
     term.draw(|f| render(&app, f)).unwrap();
@@ -4066,7 +4066,7 @@ fn enter_on_an_svg_attachment_rasterizes_it_into_the_pane() {
         <rect y="60" width="120" height="60" fill="#0000ff"/></svg>"##;
     let (_dir, mut app) = app_on_attachment("diagram.svg", svg);
     enter_key(&mut app);
-    assert!(matches!(app.overlay, Overlay::Image(_)));
+    assert!(app.image().is_some());
     let mut term = Terminal::new(ratatui::backend::TestBackend::new(100, 24)).unwrap();
     term.draw(|f| render(&app, f)).unwrap();
     let buf = term.backend().buffer();
@@ -4272,10 +4272,7 @@ fn clicking_an_inline_image_selects_its_link_row_and_a_second_click_opens_it() {
         "a click on the picture lands on its link row"
     );
     click_row(&mut app, rows[1]);
-    assert!(
-        matches!(app.overlay, Overlay::Image(_)),
-        "the second click opens the viewer"
-    );
+    assert!(app.image().is_some(), "the second click opens the viewer");
 }
 
 /// Screen rows of a `w`x`h` frame that carry image pixels. The test image is
@@ -4346,7 +4343,7 @@ fn edit_attachment(app: &mut App) -> &Editor {
     press(app, "E");
     match &app.overlay {
         Overlay::Edit(ed) => {
-            assert!(matches!(ed.action, EditAction::EditAttachment(_)));
+            assert!(matches!(ed.action, EditAction::EditAttachment(..)));
             ed
         }
         _ => panic!("E in the viewer should open the editor"),
@@ -4377,7 +4374,7 @@ fn e_in_the_viewer_edits_the_attachment_and_saves_it_back() {
     );
     assert_eq!(app.notification.as_deref(), Some("saved t0/notes.md"));
     // Back in the viewer, the new text rendered as markdown.
-    assert!(matches!(app.overlay, Overlay::Attachment(_)));
+    assert!(app.attach().is_some());
     let frame = draw(&app, 100, 24);
     assert!(
         frame.contains("Findings") && !frame.contains("# Findings"),
@@ -4398,15 +4395,15 @@ const LINKED_NOTES: &[u8] = b"# Findings\n\nThe cache is slow[^1].\n\nSee [the d
 fn viewer_on_linked_notes() -> (PathBuf, App) {
     let (dir, mut app) = app_on_attachment("notes.md", LINKED_NOTES);
     enter_key(&mut app);
-    assert!(matches!(app.overlay, Overlay::Attachment(_)));
+    assert!(app.attach().is_some());
     draw(&app, 100, 24); // measure the pane
     (dir, app)
 }
 
 fn viewer_nav(app: &App) -> &super::linenav::LineNav {
-    match &app.overlay {
-        Overlay::Attachment(v) => &v.nav,
-        _ => panic!("the viewer should be open"),
+    match app.attach() {
+        Some(v) => &v.nav,
+        None => panic!("the viewer should be open"),
     }
 }
 
@@ -4448,7 +4445,7 @@ fn tab_in_the_viewer_moves_to_the_next_link_and_enter_follows_it() {
     assert_eq!(app.notification.as_deref(), Some("→ [1] (o to go back)"));
     press(&mut app, "o");
     assert_eq!(viewer_nav(&app).line, footnote_row);
-    assert!(matches!(app.overlay, Overlay::Attachment(_)));
+    assert!(app.attach().is_some());
 }
 
 #[test]
@@ -4495,6 +4492,97 @@ fn the_viewer_with_its_cursor_on_a_link() {
     insta::assert_snapshot!(draw(&app, 100, 16));
 }
 
+// -- the viewer is part of the pane, not an overlay (yaks-0906) ------------
+
+#[test]
+fn with_a_page_open_u_requests_a_sync_and_the_page_stays_open() {
+    let (_dir, mut app) = viewer_on_linked_notes();
+    assert!(matches!(app.overlay, Overlay::None));
+    press(&mut app, "U");
+    assert!(matches!(app.pending_farm_op, Some(FarmOp::Sync)));
+    assert!(app.attach().is_some(), "the page stays open");
+    app.pending_farm_op = None;
+    press(&mut app, "W");
+    assert!(matches!(app.pending_farm_op, Some(FarmOp::Commit)));
+    assert!(app.attach().is_some());
+}
+
+#[test]
+fn help_opens_over_a_page_and_closing_it_returns_to_the_page() {
+    let (_dir, mut app) = viewer_on_linked_notes();
+    tab_key(&mut app);
+    let line = viewer_nav(&app).line;
+    press(&mut app, "?");
+    assert!(matches!(app.overlay, Overlay::Help(_)));
+    let frame = draw(&app, 120, 24);
+    assert!(frame.contains("Help — keys"), "{frame}");
+    assert!(frame.contains("j/k scroll"), "the help hint: {frame}");
+    // `?` closes it again; so does Esc, and neither closes the page.
+    press(&mut app, "?");
+    assert!(matches!(app.overlay, Overlay::None));
+    assert!(app.attach().is_some());
+    press(&mut app, "?");
+    esc_key(&mut app);
+    assert!(matches!(app.overlay, Overlay::None));
+    assert_eq!(viewer_nav(&app).line, line, "the cursor is where it was");
+    let frame = draw(&app, 120, 24);
+    assert!(frame.contains("t0/notes.md  markdown"), "{frame}");
+}
+
+#[test]
+fn hash_in_a_page_opens_the_goto_picker_and_choosing_a_yak_closes_the_page() {
+    let (_dir, mut app) = viewer_on_linked_notes();
+    press(&mut app, "#");
+    assert!(matches!(app.overlay, Overlay::Fuzzy(_)));
+    // Cancelling leaves the page as it was.
+    esc_key(&mut app);
+    esc_key(&mut app);
+    assert!(matches!(app.overlay, Overlay::None));
+    assert!(app.attach().is_some());
+    press(&mut app, "#");
+    enter_key(&mut app);
+    assert!(app.doc.is_none(), "another subject replaces the page");
+    assert_eq!(app.focus, Focus::Detail);
+    assert_eq!(app.selected_id().as_deref(), Some("t0"));
+}
+
+#[test]
+fn esc_from_a_page_opened_from_a_yak_detail_returns_to_that_detail() {
+    let (_dir, mut app) = viewer_on_linked_notes();
+    assert_eq!(app.doc.as_ref().map(|d| d.from), Some(Focus::Detail));
+    assert_eq!(app.surface_ctx(), keymap::Ctx::Viewer);
+    esc_key(&mut app);
+    assert!(app.doc.is_none());
+    assert_eq!(app.focus, Focus::Detail);
+    assert_eq!(app.surface_ctx(), keymap::Ctx::Detail);
+    let frame = draw(&app, 100, 24);
+    assert!(frame.contains("solo"), "the yak's detail: {frame}");
+}
+
+#[test]
+fn switching_view_or_moving_to_another_row_closes_the_page() {
+    let (_dir, mut app) = viewer_on_linked_notes();
+    app.switch_tab(1);
+    assert!(app.doc.is_none(), "a view switch closes the page");
+    assert_eq!(app.focus, Focus::List);
+    let (_dir, mut app) = viewer_on_linked_notes();
+    app.detail_next_task(1);
+    assert!(app.doc.is_none(), "J/K close the page");
+    assert!(app.viewer_back.is_empty() && app.viewer_fwd.is_empty());
+}
+
+#[test]
+fn the_list_stays_drawn_beside_an_open_page() {
+    let (_dir, app) = viewer_on_linked_notes();
+    let frame = draw(&app, 140, 24);
+    let row = frame.lines().find(|l| l.contains("solo")).unwrap();
+    assert!(
+        row.contains("t0/notes.md"),
+        "list left, page right: {frame}"
+    );
+    assert!(app.doc.is_some() && app.focus == Focus::Detail);
+}
+
 #[test]
 fn cancelling_an_attachment_edit_leaves_the_file_unchanged() {
     let (dir, mut app) = app_on_attachment("run.log", b"line 1\n");
@@ -4509,15 +4597,12 @@ fn cancelling_an_attachment_edit_leaves_the_file_unchanged() {
     assert!(matches!(app.overlay, Overlay::Edit(_)));
     ctrl_key(&mut app, 'c');
     press(&mut app, "y");
-    assert!(
-        matches!(app.overlay, Overlay::Attachment(_)),
-        "back to the viewer"
-    );
+    assert!(app.attach().is_some(), "back to the viewer");
     assert_eq!(std::fs::read_to_string(&path).unwrap(), "line 1\n");
     // An untouched edit cancels straight back to the viewer.
     edit_attachment(&mut app);
     ctrl_key(&mut app, 'c');
-    assert!(matches!(app.overlay, Overlay::Attachment(_)));
+    assert!(app.attach().is_some());
     assert_eq!(std::fs::read_to_string(&path).unwrap(), "line 1\n");
 }
 
@@ -4538,7 +4623,7 @@ fn an_attachment_changed_on_disk_meanwhile_is_not_overwritten() {
     // A second save is a deliberate overwrite.
     ctrl_key(&mut app, 's');
     assert_eq!(std::fs::read_to_string(&path).unwrap(), "mineline 1\n");
-    assert!(matches!(app.overlay, Overlay::Attachment(_)));
+    assert!(app.attach().is_some());
 }
 
 #[test]
@@ -4551,7 +4636,7 @@ fn an_image_attachment_offers_no_edit() {
     assert!(!matches!(
         &app.overlay,
         Overlay::Edit(Editor {
-            action: EditAction::EditAttachment(_),
+            action: EditAction::EditAttachment(..),
             ..
         })
     ));

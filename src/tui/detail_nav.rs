@@ -53,6 +53,7 @@ impl App {
     /// Select an existing task wherever it lives: switch to its status view (if
     /// one is pinned) and place the cursor on it, then focus the list.
     pub(crate) fn select_task(&mut self, id: &str) {
+        self.close_doc();
         if let Some(st) = self.task(id).map(|t| t.status) {
             if let Some(i) = self.views.iter().position(|v| v.status == Some(st)) {
                 self.set_view(i);
@@ -463,6 +464,8 @@ impl App {
     /// J/K — move to the next/prev task in the list while staying in the detail
     /// pane, resetting the per-task detail view state.
     pub(crate) fn detail_next_task(&mut self, delta: i32) {
+        // Another row's subject replaces an open page.
+        self.close_doc();
         let len = self.row_count();
         if len == 0 {
             return;

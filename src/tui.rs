@@ -109,7 +109,7 @@ struct NavEntry {
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-enum Focus {
+pub(crate) enum Focus {
     List,
     Detail,
 }
@@ -149,9 +149,24 @@ pub(crate) enum Overlay {
     ViewPicker(usize),
     /// The keyboard-help reference (`?`): carries the scroll offset.
     Help(u16),
-    /// A text attachment open in the in-TUI viewer, or its editor (yaks-699b).
-    Attachment(handlers::AttachView),
-    /// An image attachment open in the in-TUI image viewer (yaks-4305).
+}
+
+/// A document open in the right pane (yaks-0906): the pane's subject while it
+/// is `Some`, else the selected row's. Not modal: the list stays on the left
+/// and the global keys (`U`, `W`, `?`, `#`) work with a page open.
+pub(crate) struct DocPane {
+    pub(crate) view: DocView,
+    /// Where focus goes back to when the document closes: the list, or the yak
+    /// detail it was opened from. Fixed when the first document opens; a link
+    /// followed from one document to the next keeps it.
+    pub(crate) from: Focus,
+}
+
+/// What a [`DocPane`] shows.
+pub(crate) enum DocView {
+    /// A text attachment, wiki page or source in the viewer (yaks-699b).
+    Text(handlers::AttachView),
+    /// An image attachment in the image viewer (yaks-4305).
     Image(imageview::ImageView),
 }
 
@@ -329,6 +344,8 @@ pub struct App {
     /// the selection to the bottom edge when scrolling up — yaks-9009).
     list_offset: Cell<usize>,
     overlay: Overlay,
+    /// The document open in the right pane, if any (see [`DocPane`]).
+    doc: Option<DocPane>,
     /// How this terminal draws images (kitty/sixel/iTerm2, else half-block
     /// cells). Halfblocks until [`runtime::run`] queries the real terminal, so
     /// headless frames and tests draw an image as colored cells.
@@ -427,6 +444,7 @@ impl App {
             clock: when::Clock::app_default(),
             list_offset: Cell::new(0),
             overlay: Overlay::None,
+            doc: None,
             picker: ratatui_image::picker::Picker::halfblocks(),
             inline_images: true,
             inline_cache: RefCell::default(),

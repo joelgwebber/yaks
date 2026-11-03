@@ -12,8 +12,7 @@ use super::*;
 /// Largest attachment the in-TUI viewer shows; a bigger file opens externally.
 const VIEW_MAX_BYTES: u64 = 1 << 20;
 
-/// A text attachment open in the viewer overlay (`Overlay::Attachment`,
-/// yaks-699b): read once on open, a `.md`/`.markdown` file rendered by the
+/// A text attachment open in the viewer (`DocView::Text`, yaks-699b): read once on open, a `.md`/`.markdown` file rendered by the
 /// detail pane's markdown renderer and anything else shown verbatim, wrapped
 /// to the pane. It navigates like the detail pane, by the same code
 /// ([`LineNav`], yaks-84e0): line cursor, visual selection and yank, find,
@@ -39,8 +38,8 @@ pub(crate) struct AttachView {
     pub(crate) rev: Option<String>,
     /// The line cursor, scroll, selection and find state.
     pub(crate) nav: LineNav,
-    /// The find box while `/` is typing a query (the viewer already holds
-    /// the overlay slot, so it owns its find box).
+    /// The find box while `/` is typing a query (the viewer is not an
+    /// overlay, so it owns its find box).
     pub(crate) find_box: Option<SearchBox>,
     /// Content width at the last render, so key handling clamps the scroll
     /// to the rows actually on screen.
@@ -285,20 +284,8 @@ fn frontmatter_rows(text: &str) -> Vec<detail::DLine> {
 /// editor (single-line fields never ask).
 fn edit_is_dirty(ed: &Editor) -> bool {
     match &ed.action {
-        EditAction::EditAttachment(v) => ed.text() != v.text,
+        EditAction::EditAttachment(v, _) => ed.text() != v.text,
         _ => !ed.single_line && !ed.text().trim().is_empty(),
-    }
-}
-
-/// The overlay left after cancelling `ov`: the viewer an attachment edit was
-/// opened from (the file unchanged), else nothing.
-fn viewer_behind(ov: Overlay) -> Overlay {
-    match ov {
-        Overlay::Edit(Editor {
-            action: EditAction::EditAttachment(v),
-            ..
-        }) => Overlay::Attachment(v),
-        _ => Overlay::None,
     }
 }
 
@@ -929,12 +916,12 @@ impl App {
                 Some(found) => {
                     if let Some(v) = ImageView::open(target, &found, &self.picker) {
                         self.notification = Some(format!("viewing {target}"));
-                        self.overlay = Overlay::Image(v);
+                        self.follow_to_doc(DocView::Image(v));
                         return;
                     }
                     if let Some(v) = AttachView::open(target, &found) {
                         self.notification = Some(format!("viewing {target}"));
-                        self.overlay = Overlay::Attachment(v);
+                        self.follow_to_doc(DocView::Text(v));
                         return;
                     }
                     found.path.display().to_string()
@@ -948,10 +935,20 @@ impl App {
         self.os_open(target, &arg);
     }
 
-    /// Close the text viewer and forget its history of followed documents.
-    pub(crate) fn close_viewer(&mut self) {
+    /// After cancelling editor `ov`: an attachment edit puts its viewer back
+    /// in the pane (the file unchanged); anything else just closes.
+    fn drop_editor(&mut self, ov: Overlay) {
         self.overlay = Overlay::None;
-        self.clear_viewer_history();
+        if let Overlay::Edit(Editor {
+            action: EditAction::EditAttachment(v, from),
+            ..
+        }) = ov
+        {
+            self.doc = Some(DocPane {
+                view: DocView::Text(v),
+                from,
+            });
+        }
     }
 
     /// Hand `arg` (a URL or file path) to the OS opener, reporting it as
@@ -974,9 +971,7 @@ impl App {
     /// The open viewer's rows at the width last rendered, and its viewport
     /// (the pane less the header row).
     pub(crate) fn attachment_rows(&self) -> Option<(Vec<detail::DLine>, Viewport)> {
-        let Overlay::Attachment(v) = &self.overlay else {
-            return None;
-        };
+        let v = self.attach()?;
         let known: HashSet<&str> = self.all.iter().map(|t| t.id.as_str()).collect();
         let rows = v.rows(v.width.get(), &known);
         // The header row, and the peek pane when it is shown (yaks-7395).
@@ -992,21 +987,20 @@ impl App {
         Some((rows, vp))
     }
 
-    /// Keys in the attachment viewer: the detail pane's navigation, by the
-    /// same [`LineNav`] (yaks-84e0). While its find box is open the box takes
-    /// the keys; otherwise they are the [`keymap::Ctx::Viewer`] commands.
-    pub(crate) fn handle_attachment_key(&mut self, k: KeyEvent, double_esc: bool) {
-        if !matches!(&self.overlay, Overlay::Attachment(v) if v.find_box.is_some()) {
-            if let Some(cmd) = keymap::lookup(keymap::Ctx::Viewer, None, &k) {
-                self.run_cmd(keymap::Ctx::Viewer, cmd);
-            }
-            return;
-        }
+    /// Whether the text viewer's find box is open (it takes the keys).
+    pub(crate) fn doc_find_open(&self) -> bool {
+        self.attach().is_some_and(|v| v.find_box.is_some())
+    }
+
+    /// Keys in the viewer's find box: the detail pane's find routing, by the
+    /// same [`LineNav`] (yaks-84e0). Other keys in the viewer are the
+    /// [`keymap::Ctx::Viewer`] commands, dispatched like the list's.
+    pub(crate) fn handle_doc_find_key(&mut self, k: KeyEvent, double_esc: bool) {
         let Some((lines, _)) = self.attachment_rows() else {
             return;
         };
         let cancel = self.field_cancel(k, double_esc);
-        let Overlay::Attachment(v) = &mut self.overlay else {
+        let Some(v) = self.attach_mut() else {
             return;
         };
         if let Some(sb) = v.find_box.as_mut() {
@@ -1028,7 +1022,7 @@ impl App {
             return;
         };
         let vim = self.editor_vim;
-        let Overlay::Attachment(v) = &mut self.overlay else {
+        let Some(v) = self.attach_mut() else {
             return;
         };
         let width = v.width.get() as usize;
@@ -1049,13 +1043,13 @@ impl App {
                 } else if nav.find.is_some() {
                     nav.find = None;
                 } else {
-                    self.close_viewer();
+                    self.close_doc();
                 }
             }
-            Cmd::PaneClose => self.close_viewer(),
+            Cmd::PaneClose => self.close_doc(),
             Cmd::PaneBack => {
                 if !nav.scroll_block(&lines, width, -1) {
-                    self.close_viewer();
+                    self.close_doc();
                 }
             }
             Cmd::PeekToggle => {
@@ -1108,13 +1102,13 @@ impl App {
             Cmd::DocEdit => self.open_attachment_edit(),
             Cmd::FileOpenExternal => {
                 let (target, arg) = (v.target.clone(), v.path.display().to_string());
-                self.close_viewer();
+                self.close_doc();
                 self.os_open(&target, &arg);
             }
             _ => {}
         }
         // A no-wrap block's sideways scroll lives only while the cursor is on it.
-        if let Overlay::Attachment(v) = &mut self.overlay {
+        if let Some(v) = self.attach_mut() {
             v.nav.drop_stale_hscroll(&lines);
         }
     }
@@ -1122,7 +1116,7 @@ impl App {
     /// y / Enter with a selection (viewer) — copy the selected rows (source
     /// markdown for a `.md` file) and clear the selection.
     fn yank_attachment(&mut self, lines: &[detail::DLine]) {
-        let Overlay::Attachment(v) = &mut self.overlay else {
+        let Some(v) = self.attach_mut() else {
             return;
         };
         let (lo, hi) = v.nav.selection().unwrap_or((v.nav.line, v.nav.line));
@@ -1144,7 +1138,7 @@ impl App {
     /// farm document opens in the viewer at its anchor (yaks-7395, `o` comes
     /// back); an attachment, URL or source file opens as from the detail pane.
     fn follow_attachment_link(&mut self, lines: &[detail::DLine], vp: Viewport) {
-        let Overlay::Attachment(v) = &mut self.overlay else {
+        let Some(v) = self.attach_mut() else {
             return;
         };
         let Some(j) = v.nav.link_at(lines) else {
@@ -1159,12 +1153,10 @@ impl App {
                 None => self.notification = Some(format!("no definition for [{n}]")),
             },
             detail::Target::Task(id) => {
-                self.close_viewer();
+                self.close_doc();
                 self.goto_task(&id);
             }
-            detail::Target::Url(u) | detail::Target::Artifact(u) => {
-                self.open_external_from_viewer(&u)
-            }
+            detail::Target::Url(u) | detail::Target::Artifact(u) => self.open_external(&u),
             detail::Target::Source { path, lines, rev } => {
                 self.open_source(&path, lines, rev.as_deref())
             }
@@ -1178,7 +1170,7 @@ impl App {
     /// E (attachment viewer) — edit the viewed text file in the multi-line
     /// editor (yaks-56c1).
     pub(crate) fn open_attachment_edit(&mut self) {
-        let Overlay::Attachment(v) = &self.overlay else {
+        let Some(v) = self.attach() else {
             return;
         };
         if let Some(rev) = &v.rev {
@@ -1197,7 +1189,11 @@ impl App {
             ));
             return;
         }
-        let Overlay::Attachment(v) = std::mem::replace(&mut self.overlay, Overlay::None) else {
+        let Some(DocPane {
+            view: DocView::Text(v),
+            from,
+        }) = self.doc.take()
+        else {
             unreachable!()
         };
         let label = format!("Edit {} (Ctrl-S save · Ctrl-C cancel)", v.target);
@@ -1207,7 +1203,7 @@ impl App {
             false,
             label,
             &text,
-            EditAction::EditAttachment(v),
+            EditAction::EditAttachment(v, from),
         ));
     }
 
@@ -1218,10 +1214,16 @@ impl App {
     /// body, and must keep its `---` frontmatter block. If the file changed on
     /// disk since the edit began, nothing is written and the editor stays open
     /// with the typed text; a second Ctrl-S overwrites.
-    pub(crate) fn commit_attachment_edit(&mut self, mut v: AttachView, text: String) {
+    pub(crate) fn commit_attachment_edit(&mut self, mut v: AttachView, from: Focus, text: String) {
+        let back = |v| {
+            Some(DocPane {
+                view: DocView::Text(v),
+                from,
+            })
+        };
         if text == v.text {
             self.notification = Some(format!("{}: unchanged", v.target));
-            self.overlay = Overlay::Attachment(v);
+            self.doc = back(v);
             return;
         }
         let Some(root) = self.farm.as_ref().map(|h| h.root().to_path_buf()) else {
@@ -1233,7 +1235,7 @@ impl App {
                 "{}: not saved: a page starts with a --- frontmatter block closed by ---",
                 v.target
             ));
-            self.reopen_attachment_edit(v, &text);
+            self.reopen_attachment_edit(v, from, &text);
             return;
         }
         let saved = (|| -> anyhow::Result<Result<String, String>> {
@@ -1254,7 +1256,7 @@ impl App {
             Ok(Ok(written)) => {
                 self.notification = Some(format!("saved {}", v.target));
                 v.text = written;
-                self.overlay = Overlay::Attachment(v);
+                self.doc = back(v);
                 if page {
                     // Its title, kind or tags may have changed (the Wiki tab).
                     self.reload_wiki();
@@ -1262,7 +1264,7 @@ impl App {
                 }
                 // The file may have shrunk: keep the cursor on it.
                 if let Some((lines, vp)) = self.attachment_rows() {
-                    if let Overlay::Attachment(v) = &mut self.overlay {
+                    if let Some(v) = self.attach_mut() {
                         v.nav.clamp(lines.len(), vp);
                     }
                 }
@@ -1273,25 +1275,25 @@ impl App {
                     v.target
                 ));
                 v.text = on_disk;
-                self.reopen_attachment_edit(v, &text);
+                self.reopen_attachment_edit(v, from, &text);
             }
             Err(e) => {
                 self.notification = Some(format!("save failed: {e}"));
-                self.reopen_attachment_edit(v, &text);
+                self.reopen_attachment_edit(v, from, &text);
             }
         }
     }
 
     /// Put the attachment editor back with the typed `text` after a save that
     /// did not write, so no edit is lost.
-    fn reopen_attachment_edit(&mut self, v: AttachView, text: &str) {
+    fn reopen_attachment_edit(&mut self, v: AttachView, from: Focus, text: &str) {
         let label = format!("Edit {} (Ctrl-S save · Ctrl-C cancel)", v.target);
         self.overlay = Overlay::Edit(Editor::new(
             self.editor_vim,
             false,
             label,
             text,
-            EditAction::EditAttachment(v),
+            EditAction::EditAttachment(v, from),
         ));
     }
 
@@ -1571,7 +1573,7 @@ impl App {
             };
         } else {
             let ov = std::mem::replace(&mut self.overlay, Overlay::None);
-            self.overlay = viewer_behind(ov);
+            self.drop_editor(ov);
             self.notification = Some(msg.to_string());
         }
     }
@@ -1670,7 +1672,7 @@ impl App {
     pub(crate) fn cmd_quit(&mut self, force: bool) {
         if force {
             let ov = std::mem::replace(&mut self.overlay, Overlay::None);
-            self.overlay = viewer_behind(ov);
+            self.drop_editor(ov);
             self.notification = Some("cancelled".into());
             return;
         }
@@ -1720,16 +1722,6 @@ impl App {
         }
         if matches!(self.overlay, Overlay::Help(_)) {
             self.handle_help_key(k);
-            return;
-        }
-        if matches!(self.overlay, Overlay::Attachment(_)) {
-            self.handle_attachment_key(k, double_esc);
-            return;
-        }
-        if matches!(self.overlay, Overlay::Image(_)) {
-            if let Some(cmd) = keymap::lookup(keymap::Ctx::Image, None, &k) {
-                self.run_cmd(keymap::Ctx::Image, cmd);
-            }
             return;
         }
         if matches!(self.overlay, Overlay::ViewPicker(_)) {
@@ -1883,9 +1875,7 @@ impl App {
             | Overlay::Create(_)
             | Overlay::DetailFind(_)
             | Overlay::ViewPicker(_)
-            | Overlay::Help(_)
-            | Overlay::Attachment(_)
-            | Overlay::Image(_) => {}
+            | Overlay::Help(_) => {}
             Overlay::Pick {
                 prompt,
                 keys,
@@ -1969,7 +1959,7 @@ impl App {
             EditAction::RenameAttachment { id, old } => {
                 self.commit_rename_attachment(id, old, text)
             }
-            EditAction::EditAttachment(v) => self.commit_attachment_edit(v, text),
+            EditAction::EditAttachment(v, from) => self.commit_attachment_edit(v, from, text),
             EditAction::NewPage => self.commit_new_page(&text),
             EditAction::Ask(id) => self.commit_needs(&id, NeedsVerb::Ask, &text),
             EditAction::Answer(id) => self.commit_needs(&id, NeedsVerb::Answer, &text),
@@ -2408,7 +2398,7 @@ impl App {
             ConfirmAction::DiscardEdit => {
                 // Drop the stashed editor (an attachment edit returns to its viewer).
                 if let Some(ov) = self.dirty_cancel.take() {
-                    self.overlay = viewer_behind(ov);
+                    self.drop_editor(ov);
                 }
                 self.notification = Some("changes discarded".into());
             }
@@ -2506,12 +2496,13 @@ pub(crate) fn handle_paste(app: &mut App, text: &str) {
             return;
         }
         Overlay::Search(sb) | Overlay::DetailFind(sb) => &sb.query,
-        Overlay::Attachment(AttachView {
-            find_box: Some(sb), ..
-        }) => &sb.query,
         Overlay::Fuzzy(fp) => &fp.query,
         Overlay::Drawer(d) => match d.text_editor() {
             Some(e) => e,
+            None => return,
+        },
+        Overlay::None => match app.attach().and_then(|v| v.find_box.as_ref()) {
+            Some(sb) => &sb.query,
             None => return,
         },
         _ => return,
@@ -2524,7 +2515,7 @@ pub(crate) fn handle_paste(app: &mut App, text: &str) {
             c
         };
         if !c.is_control() {
-            app.handle_overlay_key(KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE));
+            handle_key_inner(app, KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE));
         }
     }
 }
@@ -2550,8 +2541,15 @@ fn handle_key_inner(app: &mut App, k: KeyEvent) {
         app.handle_overlay_key(k);
         return;
     }
-    // Every other surface is "which one, which command, run it": the list or
-    // the detail pane, by the kind of row under the cursor.
+    // The viewer's find box takes its keys, as an overlay's field does.
+    if app.doc_find_open() {
+        let double_esc = k.code == KeyCode::Esc && app.register_double_esc();
+        app.handle_doc_find_key(k, double_esc);
+        return;
+    }
+    // Every other surface is "which one, which command, run it": the list,
+    // the detail pane or the open document, by the kind of row under the
+    // cursor.
     let ctx = app.surface_ctx();
     if let Some(cmd) = keymap::lookup(ctx, app.surface_kind(), &k) {
         app.run_cmd(ctx, cmd);

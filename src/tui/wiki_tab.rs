@@ -175,7 +175,7 @@ impl App {
         match self.read_farm_doc(&e.path, None) {
             Ok(v) => {
                 self.clear_viewer_history();
-                self.overlay = Overlay::Attachment(v);
+                self.show_doc(DocView::Text(v));
             }
             Err(msg) => self.notification = Some(msg),
         }
@@ -232,7 +232,7 @@ impl App {
         match self.read_farm_doc(&path, None) {
             Ok(v) => {
                 self.clear_viewer_history();
-                self.overlay = Overlay::Attachment(v);
+                self.show_doc(DocView::Text(v));
                 self.open_attachment_edit();
                 self.notification = Some(format!("created {path}"));
             }
@@ -243,7 +243,7 @@ impl App {
     /// E on the list: edit the selected page (open it, then the editor).
     pub(crate) fn edit_wiki_entry(&mut self) {
         self.open_wiki_entry();
-        if matches!(self.overlay, Overlay::Attachment(_)) {
+        if self.attach().is_some() {
             self.open_attachment_edit();
         }
     }
@@ -512,7 +512,7 @@ mod tests {
     fn enter_on_a_document_row_opens_the_viewer() {
         let (proj, mut app) = on_wiki();
         enter_key(&mut app);
-        let Overlay::Attachment(v) = &app.overlay else {
+        let Some(v) = app.attach() else {
             panic!("no viewer")
         };
         assert_eq!(v.target, "wiki/howto/release.md");
@@ -604,7 +604,7 @@ mod tests {
             "Vector search in Postgres"
         );
         enter_key(&mut app);
-        let Overlay::Attachment(v) = &app.overlay else {
+        let Some(v) = app.attach() else {
             panic!("the viewer should be open");
         };
         assert_eq!(v.doc, DocKind::Page);
@@ -625,9 +625,7 @@ mod tests {
         );
         // The detail pane's navigation: Tab finds the body's links.
         tab_key(&mut app);
-        let Overlay::Attachment(v) = &app.overlay else {
-            panic!()
-        };
+        let Some(v) = app.attach() else { panic!() };
         assert!(v.nav.line > 5, "past the frontmatter rows");
         // Esc closes back to the list.
         esc_key(&mut app);
@@ -706,10 +704,7 @@ mod tests {
             app.notification.as_deref(),
             Some("saved wiki/topics/full-text-search.md")
         );
-        assert!(
-            matches!(app.overlay, Overlay::Attachment(_)),
-            "back in the viewer"
-        );
+        assert!(app.attach().is_some(), "back in the viewer");
         let on_disk =
             std::fs::read_to_string(root.join("wiki/topics/full-text-search.md")).unwrap();
         assert_eq!(
@@ -767,7 +762,7 @@ mod tests {
         press(&mut app, "G");
         enter_key(&mut app);
         press(&mut app, "E");
-        assert!(matches!(app.overlay, Overlay::Attachment(_)));
+        assert!(app.attach().is_some());
         assert!(
             app.notification
                 .as_deref()

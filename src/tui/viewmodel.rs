@@ -362,6 +362,8 @@ impl App {
 
     /// Activate view `i`: load its saved spec into the live filter and reset.
     pub(crate) fn set_view(&mut self, i: usize) {
+        // A page open in the pane belongs to the view it was opened from.
+        self.close_doc();
         self.view = i;
         self.filter = clone_spec(&self.views[i].spec);
         self.cursor = 0;

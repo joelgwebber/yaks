@@ -20,9 +20,9 @@ use super::blockedit;
 use super::keymap::{help_content, help_hint};
 use super::palette;
 use super::{
-    App, Focus, Overlay, completion_context, detail, editor_theme, render_create, render_drawer,
-    render_editor_panel, render_fuzzy_results, render_line_editor, render_query_line,
-    render_shed_detail, tree, view,
+    App, DocView, Focus, Overlay, completion_context, detail, editor_theme, render_create,
+    render_drawer, render_editor_panel, render_fuzzy_results, render_line_editor,
+    render_query_line, render_shed_detail, tree, view,
 };
 use crate::filter::FilterSpec;
 use crate::model::{Status, Task};
@@ -39,8 +39,8 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
     // Fresh hit map each frame: only panes drawn below get recorded (yaks-97a2).
     app.hits.replace(Default::default());
     render_tabs(app, frame, top);
-    // The list is full-width until the detail pane or a right-pane overlay is
-    // shown. We intentionally keep the filter drawer / fuzzy picker / view
+    // The list is full-width until the detail pane, a document or a right-pane
+    // overlay is shown. We intentionally keep the filter drawer / fuzzy picker / view
     // picker on the RIGHT (diverging from Python's top drawer): in a wide, short
     // terminal a right-side drawer wastes no rows. Every right-pane surface gets
     // the same left divider (via right_divider) so it doesn't bleed into the list.
@@ -52,10 +52,8 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
                 | Overlay::Create(_)
                 | Overlay::ViewPicker(_)
                 | Overlay::Help(_)
-                | Overlay::Attachment(_)
-                | Overlay::Image(_)
         );
-    if app.focus == Focus::Detail || right_overlay {
+    if app.focus == Focus::Detail || app.doc.is_some() || right_overlay {
         let (left, right) = main_split(mid);
         let modal = left.width == 0;
         if !modal {
@@ -80,9 +78,13 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
             Overlay::Drawer(d) => render_drawer(d, frame, inner),
             Overlay::Create(f) => render_create(f, frame, inner),
             Overlay::Help(scroll) => render_help(*scroll, frame, inner),
-            Overlay::Attachment(v) => render_attachment(app, v, frame, inner),
-            Overlay::Image(v) => super::imageview::render_image(v, frame, inner),
             Overlay::ViewPicker(sel) => render_view_picker(app, *sel, frame, inner),
+            // The pane's subject: the open document, else the selected row's.
+            _ if app.doc.is_some() => match app.doc.as_ref().map(|d| &d.view) {
+                Some(DocView::Text(v)) => render_attachment(app, v, frame, inner),
+                Some(DocView::Image(v)) => super::imageview::render_image(v, frame, inner),
+                None => {}
+            },
             _ if app.selected_shed().is_some() => render_shed_detail(app, frame, inner),
             _ => render_detail(app, frame, inner),
         }
@@ -465,8 +467,6 @@ pub(crate) fn overlay_name(o: &Overlay) -> &'static str {
         Overlay::Help(_) => "help",
         Overlay::DetailFind(_) => "detail-find",
         Overlay::ViewPicker(_) => "view-picker",
-        Overlay::Attachment(_) => "attachment",
-        Overlay::Image(_) => "image",
     }
 }
 
@@ -723,14 +723,8 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
         rows.get(app.cursor).map(|r| r.item),
         Some(tree::Item::Doc(_) | tree::Item::Shed(_))
     );
-    // The Wiki's list stands down whenever an overlay (its viewer, help, a
-    // prompt) is up, as it always has; the yak list only when the detail pane
-    // has focus. (Phase 4 folds the viewer into the pane and ends the split.)
-    let on_doc = matches!(
-        rows.get(app.cursor).map(|r| r.item),
-        Some(tree::Item::Doc(_))
-    );
-    let focused = app.focus == Focus::List && (!on_doc || matches!(app.overlay, Overlay::None));
+    // The list reads as focused only while it has focus.
+    let focused = app.focus == Focus::List;
     // Dynamic id column: widest `id + 2*depth` across visible yak rows (min 4).
     let max_id_len = rows
         .iter()
@@ -1413,11 +1407,12 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
         return;
     }
     // Detail-pane find field, or the text viewer's.
-    if let Overlay::DetailFind(sb)
-    | Overlay::Attachment(super::handlers::AttachView {
-        find_box: Some(sb), ..
-    }) = &app.overlay
-    {
+    let doc_find = app.attach().and_then(|v| v.find_box.as_ref());
+    if let Overlay::DetailFind(sb) = &app.overlay {
+        render_query_line("find: ", &sb.query, frame, area);
+        return;
+    }
+    if let (Overlay::None, Some(sb)) = (&app.overlay, doc_find) {
         render_query_line("find: ", &sb.query, frame, area);
         return;
     }
@@ -1484,7 +1479,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
     }
     // Attachment viewer: the destination of the link under the cursor, else
     // the key hints.
-    if matches!(&app.overlay, Overlay::Attachment(_)) {
+    if app.attach().is_some() && matches!(app.overlay, Overlay::None) {
         let text = link_hint(app, area.width as usize).unwrap_or_else(|| {
             "j/k · Tab:link Enter:follow · o/i back/fwd · p peek · / find · v sel · E edit · O open externally · Esc/q close"
                 .into()
@@ -1496,7 +1491,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
         return;
     }
     // Image viewer hint.
-    if matches!(&app.overlay, Overlay::Image(_)) {
+    if app.image().is_some() && matches!(app.overlay, Overlay::None) {
         frame.render_widget(
             Paragraph::new(Span::styled(
                 "O open externally · Esc/q close",
@@ -1563,12 +1558,11 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
 /// themselves.
 fn link_hint(app: &App, width: usize) -> Option<String> {
     let jump = if let Some((rows, _)) = app.attachment_rows() {
-        let Overlay::Attachment(v) = &app.overlay else {
-            return None;
-        };
+        let v = app.attach()?;
         v.nav.link_at(&rows)?
     } else {
-        if app.focus != Focus::Detail || !matches!(app.overlay, Overlay::None) {
+        if app.doc.is_some() || app.focus != Focus::Detail || !matches!(app.overlay, Overlay::None)
+        {
             return None;
         }
         let jump = app

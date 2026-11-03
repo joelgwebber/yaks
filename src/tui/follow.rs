@@ -121,6 +121,69 @@ impl App {
         ))
     }
 
+    /// The text viewer's document, when the pane shows one.
+    pub(crate) fn attach(&self) -> Option<&AttachView> {
+        match &self.doc {
+            Some(DocPane {
+                view: DocView::Text(v),
+                ..
+            }) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn attach_mut(&mut self) -> Option<&mut AttachView> {
+        match &mut self.doc {
+            Some(DocPane {
+                view: DocView::Text(v),
+                ..
+            }) => Some(v),
+            _ => None,
+        }
+    }
+
+    /// The image viewer's picture, when the pane shows one.
+    pub(crate) fn image(&self) -> Option<&ImageView> {
+        match &self.doc {
+            Some(DocPane {
+                view: DocView::Image(v),
+                ..
+            }) => Some(v),
+            _ => None,
+        }
+    }
+
+    /// Show `view` in the pane and focus it. The pane closes back to where
+    /// the first document was opened from (the list, or a yak's detail); a
+    /// document replacing another keeps that. Returns the view it replaced.
+    pub(crate) fn show_doc(&mut self, view: DocView) -> Option<DocView> {
+        let (from, old) = match self.doc.take() {
+            Some(d) => (d.from, Some(d.view)),
+            None => (self.focus, None),
+        };
+        self.doc = Some(DocPane { view, from });
+        self.focus = Focus::Detail;
+        old
+    }
+
+    /// Show a document followed from the one open now (if any): that one goes
+    /// on the back stack, a new hop clearing the forward one.
+    pub(crate) fn follow_to_doc(&mut self, view: DocView) {
+        if let Some(DocView::Text(old)) = self.show_doc(view) {
+            self.viewer_back.push(ViewerStop { view: old });
+            self.viewer_fwd.clear();
+        }
+    }
+
+    /// Close the pane's document: focus goes back to where it was opened
+    /// from, and the history of followed documents is forgotten.
+    pub(crate) fn close_doc(&mut self) {
+        if let Some(d) = self.doc.take() {
+            self.focus = d.from;
+        }
+        self.clear_viewer_history();
+    }
+
     /// Open farm file `path` in the viewer at `anchor`, pushing the viewer
     /// that is open now (if any) onto the back stack. An image opens in the
     /// image viewer.
@@ -133,8 +196,7 @@ impl App {
                 };
                 if found.path.is_file() {
                     if let Some(v) = ImageView::open(path, &found, &self.picker) {
-                        self.push_viewer();
-                        self.overlay = Overlay::Image(v);
+                        self.follow_to_doc(DocView::Image(v));
                         self.notification = Some(format!("viewing {path}"));
                         return;
                     }
@@ -148,8 +210,8 @@ impl App {
                 return;
             }
         };
-        self.push_viewer();
-        self.show_viewer_at(v, anchor);
+        self.follow_to_doc(DocView::Text(v));
+        self.scroll_to_anchor(anchor);
         let label = links::label(&Link::Farm {
             path: path.to_string(),
             rev: rev.map(String::from),
@@ -158,15 +220,14 @@ impl App {
         self.notification = Some(format!("viewing {label}"));
     }
 
-    /// Put `v` in the viewer slot, its cursor on `anchor`'s row (when the
-    /// anchor is found; else a notification says so).
-    fn show_viewer_at(&mut self, v: AttachView, anchor: Option<&Anchor>) {
-        self.overlay = Overlay::Attachment(v);
+    /// Put the open viewer's cursor on `anchor`'s row (when the anchor is
+    /// found; else a notification says so).
+    fn scroll_to_anchor(&mut self, anchor: Option<&Anchor>) {
         let Some(anchor) = anchor else { return };
         let Some((rows, vp)) = self.attachment_rows() else {
             return;
         };
-        let Overlay::Attachment(v) = &mut self.overlay else {
+        let Some(v) = self.attach_mut() else {
             return;
         };
         match anchor_row(v, &rows, anchor) {
@@ -177,47 +238,18 @@ impl App {
             }
             None => {
                 let what = links::label(&Link::Local(anchor.clone()));
-                self.notification = Some(format!("{}: no {what}", v.target));
+                let note = format!("{}: no {what}", v.target);
+                self.notification = Some(note);
             }
-        }
-    }
-
-    /// Follow an attachment, URL or other link from the viewer by
-    /// [`App::open_external`]: when it opens in a viewer (text or image), the
-    /// viewer it was followed from goes on the back stack; when it opens
-    /// outside the TUI or fails, that viewer stays open.
-    pub(crate) fn open_external_from_viewer(&mut self, target: &str) {
-        let Overlay::Attachment(cur) = std::mem::replace(&mut self.overlay, Overlay::None) else {
-            self.open_external(target);
-            return;
-        };
-        self.open_external(target);
-        if matches!(self.overlay, Overlay::Attachment(_) | Overlay::Image(_)) {
-            self.viewer_back.push(ViewerStop { view: cur });
-            self.viewer_fwd.clear();
-        } else {
-            self.overlay = Overlay::Attachment(cur);
         }
     }
 
     /// Esc / q on the image viewer: back to the text viewer it was opened
     /// from, if any, else closed.
     pub(crate) fn close_image(&mut self) {
-        self.overlay = match self.viewer_back.pop() {
-            Some(ViewerStop { view }) => Overlay::Attachment(view),
-            None => Overlay::None,
-        };
-    }
-
-    /// Save the viewer that is open now (a text or image viewer) on the back
-    /// stack, clearing the forward one: a new hop.
-    fn push_viewer(&mut self) {
-        if let Overlay::Attachment(_) = &self.overlay {
-            let Overlay::Attachment(v) = std::mem::replace(&mut self.overlay, Overlay::None) else {
-                unreachable!()
-            };
-            self.viewer_back.push(ViewerStop { view: v });
-            self.viewer_fwd.clear();
+        match (self.viewer_back.pop(), &mut self.doc) {
+            (Some(ViewerStop { view }), Some(d)) => d.view = DocView::Text(view),
+            _ => self.close_doc(),
         }
     }
 
@@ -225,6 +257,9 @@ impl App {
     /// to) the previous document. The document is re-read from disk (an
     /// unpinned one), keeping its cursor. Returns whether there was one.
     pub(crate) fn viewer_hop(&mut self, forward: bool) -> bool {
+        if self.attach().is_none() {
+            return false;
+        }
         let stop = if forward {
             self.viewer_fwd.pop()
         } else {
@@ -233,14 +268,6 @@ impl App {
         let Some(ViewerStop { view: mut next }) = stop else {
             return false;
         };
-        let Overlay::Attachment(cur) = std::mem::replace(&mut self.overlay, Overlay::None) else {
-            return false;
-        };
-        if forward {
-            self.viewer_back.push(ViewerStop { view: cur });
-        } else {
-            self.viewer_fwd.push(ViewerStop { view: cur });
-        }
         // Re-read an unpinned farm document: it may have been edited since.
         if next.doc != DocKind::Attachment && next.rev.is_none() {
             if let Ok(fresh) = self.read_farm_doc(&next.target, None) {
@@ -249,9 +276,17 @@ impl App {
             }
         }
         let target = next.target.clone();
-        self.overlay = Overlay::Attachment(next);
+        let Some(slot) = self.attach_mut() else {
+            return false;
+        };
+        let cur = std::mem::replace(slot, next);
+        if forward {
+            self.viewer_back.push(ViewerStop { view: cur });
+        } else {
+            self.viewer_fwd.push(ViewerStop { view: cur });
+        }
         if let Some((rows, vp)) = self.attachment_rows() {
-            if let Overlay::Attachment(v) = &mut self.overlay {
+            if let Some(v) = self.attach_mut() {
                 let (line, scroll) = (v.nav.line, v.nav.scroll);
                 v.nav.clamp(rows.len(), vp);
                 v.nav.line = line.min(rows.len().saturating_sub(1));
@@ -275,7 +310,7 @@ impl App {
         vp: Viewport,
         anchor: &Anchor,
     ) {
-        let Overlay::Attachment(v) = &mut self.overlay else {
+        let Some(v) = self.attach_mut() else {
             return;
         };
         match anchor_row(v, rows, anchor) {
@@ -342,7 +377,7 @@ impl App {
     /// read. Reserved whenever such a link exists, so the page geometry does
     /// not jump as the cursor moves.
     pub(crate) fn viewer_has_peek(&self, rows: &[detail::DLine]) -> bool {
-        let Overlay::Attachment(v) = &self.overlay else {
+        let Some(v) = self.attach() else {
             return false;
         };
         self.peek_shown
@@ -416,13 +451,12 @@ mod tests {
     }
 
     fn viewer(app: &App) -> &AttachView {
-        match &app.overlay {
-            Overlay::Attachment(v) => v,
-            _ => panic!(
+        app.attach().unwrap_or_else(|| {
+            panic!(
                 "the viewer should be open, overlay={}",
                 super::super::render::overlay_name(&app.overlay)
-            ),
-        }
+            )
+        })
     }
 
     /// Tab until the cursor's link is `want` (by its status-bar label).
@@ -505,6 +539,21 @@ mod tests {
         esc_key(&mut app);
         assert!(matches!(app.overlay, Overlay::None));
         assert!(app.viewer_back.is_empty() && app.viewer_fwd.is_empty());
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn a_followed_page_closes_back_to_where_the_first_was_opened_from() {
+        let (proj, mut app) = on_hub();
+        // `on_hub` opened the hub from the list: that is where it closes to.
+        assert_eq!(app.doc.as_ref().map(|d| d.from), Some(Focus::List));
+        tab_to(&mut app, "wiki/topics/vector-search.md#indexes");
+        enter_key(&mut app);
+        assert_eq!(viewer(&app).target, "wiki/topics/vector-search.md");
+        assert_eq!(app.doc.as_ref().map(|d| d.from), Some(Focus::List));
+        esc_key(&mut app);
+        assert!(app.doc.is_none());
+        assert_eq!(app.focus, Focus::List);
         let _ = std::fs::remove_dir_all(proj);
     }
 
@@ -643,10 +692,7 @@ mod tests {
         assert!(frame.contains("Use tsvector and a GIN index."), "{frame}");
         assert!(!frame.contains("Rewritten."), "{frame}");
         press(&mut app, "E");
-        assert!(
-            matches!(app.overlay, Overlay::Attachment(_)),
-            "a past version is read-only"
-        );
+        assert!(app.attach().is_some(), "a past version is read-only");
         assert!(
             app.notification
                 .as_deref()

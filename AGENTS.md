@@ -58,6 +58,8 @@ table only to exclude the local `.edtui` clone.
   from it: a key change is one edit there. Modal overlays are not in it.
 - `src/tui.rs` (+ `src/tui/`) — the interactive TUI. `tui.rs` is a thin root (the
   `App` struct, the `Focus`/`Overlay`/`PickAction`/`ConfirmAction` enums, the
+  `DocPane` (the text or image viewer open in the right pane: `App.doc`, not an
+  `Overlay`, so the global keys work with a page open), the
   constructors, and shared form helpers/consts); behavior lives in focused
   submodules (split out under yaks-b1cc): `render` (all `render_*` + shared render
   helpers), `editor` (edtui glue), `drawer`/`create`/`fuzzy` (overlay forms +
