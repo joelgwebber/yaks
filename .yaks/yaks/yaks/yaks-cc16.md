@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T03:57:13Z'
+updated: '2026-11-03T03:57:19Z'
 parent: yaks-947a
 tags:
 - tui
@@ -83,3 +83,11 @@ Surprise: `YAKS_DIR` set in the shell leaks into `cargo test --workspace`. 17-22
 Regression check: with `handlers.rs` and `mouse.rs` reverted to HEAD, `search_commit_leaves_no_stale_filter_toast` fails (`left: Some("filter: widget")`) and `notification_clears_on_next_key_and_next_mouse_event` fails (`left: Some("sync finished")`). With the change both pass, and so does `empty_search_commit_still_says_cleared`.
 
 Summary: `handle_key` and `App::handle_mouse` clear `notification` first. The `Overlay::Search` commit no longer toasts `filter: q`. 3 new tests plus the snapshot `search_commit_then_tab_no_toast`, which is attached. `docs/tui.md` has one added sentence. Docs parity: grepped for `filter:` toast mentions in `docs`, `README.md`, `.agents/skills` and `src`, and found none to update.
+
+---
+▸ 2026-11-03T03:57:19Z [notify-1]
+kind: verify
+result: fail
+---
+
+verify: `cargo test --workspace` -> FAIL (exit 101)
