@@ -1,11 +1,11 @@
 ---
 id: yaks-000b
-title: Scroll-wheel tweaks
+title: Mouse tweaks
 status: hairy
 type: task
 priority: 3
 created: '2026-11-03T21:04:56Z'
-updated: '2026-11-03T21:06:08Z'
+updated: '2026-11-03T21:06:20Z'
 tags:
 - tui
 ---
