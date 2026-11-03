@@ -5,7 +5,7 @@ status: hairy
 type: bug
 priority: 3
 created: '2026-08-23T14:38:59Z'
-updated: '2026-11-03T02:54:36Z'
+updated: '2026-11-03T03:07:29Z'
 tags:
 - search
 - tui
@@ -44,3 +44,11 @@ Changes from the design attached here:
 - The register replaces the viewer's find as well as the detail pane's.
 
 The questions asked on this yak are answered or carried into the design's Decisions and Open questions.
+
+---
+▸ 2026-11-03T03:07:29Z [tui-design]
+kind: answer
+needs: agent
+---
+
+Answered by Joel in chat, 2026-11-02, relayed by tui-design: every question here is settled by the unified design's Decisions, [wiki/design/tui-model.md](/wiki/design/tui-model.md#decisions). Implementation follows that page's phases.
