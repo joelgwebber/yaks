@@ -1,11 +1,11 @@
 ---
 id: yaks-b608
 title: Filtering showing all yak states when herd is selected
-status: shaving
+status: shorn
 type: bug
 priority: 2
 created: '2026-10-27T21:49:58Z'
-updated: '2026-11-03T21:24:28Z'
+updated: '2026-11-03T21:24:29Z'
 parent: yaks-f677
 tags:
 - tui
@@ -42,3 +42,13 @@ Fixed: a content filter (herd, search, type, tags, ...) narrowed the view's *anc
 - One snapshot changed on purpose: `/child` on the Hairy view no longer lists the shorn "Child A2 done".
 
 Evidence: new test `a_content_filter_keeps_the_status_scope`; headless runs on the joel farm (Hairy view, filter drawer, herd `fullstory`), before and after attached: 59 rows with three shorn `🐑` rows -> 52 rows, none shorn. The one `💀` left is `fullstory-4b4c`, a dead parent rooting hairy children, dimmed as with no filter.
+
+---
+▸ 2026-11-03T21:24:29Z [delta:starred-batch]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
