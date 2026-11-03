@@ -1,11 +1,11 @@
 ---
 id: yaks-be20
 title: 'Links inside attachments: a sibling-relative link resolves to the yak''s own attachments; attach without linking'
-status: hairy
+status: shaving
 type: bug
 priority: 2
 created: '2026-11-03T23:07:23Z'
-updated: '2026-11-03T23:07:23Z'
+updated: '2026-11-03T23:08:12Z'
 tags:
 - links
 - cli
@@ -37,3 +37,13 @@ The CLI gave the agent no other way. `yaks attach` takes one file and always app
 3. `doctor` checks links inside markdown attachments; `rename-attachment` and `promote` rewrite the sibling references; `promote --page` rewrites sibling-relative links to the `<id>/<file>` form so the page keeps working.
 4. `yaks attach <id> <file>... --no-link`: store files without linking them in the body, several at once (one commit), so a bundle is its document plus its parts.
 5. Docs, `--help`, the `yaks` skill, and the surveyor's `AGENTS.md` / `arbiter` skill say which to use. A decision on tidying the existing seventeen surveyor yaks is a separate ask.
+
+---
+▸ 2026-11-03T23:08:12Z [indent-links]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQNSYysfbwRGKL-KGL8e-aQpLOAEKHPJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
