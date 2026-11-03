@@ -5,7 +5,7 @@ status: hairy
 type: bug
 priority: 3
 created: '2026-11-03T03:59:12Z'
-updated: '2026-11-03T04:00:13Z'
+updated: '2026-11-03T04:00:24Z'
 tags:
 - tui
 ---
@@ -14,4 +14,3 @@ Inline images render perfectly well in yak details, but not in documents. See th
 
 ---
 ![inline-images](yaks-91d9/inline-images.png)
----
