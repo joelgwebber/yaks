@@ -1,7 +1,7 @@
 ---
 id: yaks-fc9e
 title: Improved detail cursor/link handling
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-03T03:23:32Z'
@@ -46,3 +46,13 @@ Done in the shape you described: rows stay the cursor model, plus a *targeted li
 Evidence: tests `tab_visits_every_link_on_a_row_and_link_at_follows_it` and `the_detail_cursor_follows_find_matches`; on this farm (attached), in yaks-f677's detail, Tab x14-17 follow `yaks-0e15`, `yaks-d0b0`, `yaks-c5d7`, `yaks-91d9`, the four links of one description row, in order.
 
 Not done: mouse click to target a specific link on a row (that is yaks-000b's territory).
+
+---
+▸ 2026-11-03T21:55:06Z [delta:starred-batch]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
