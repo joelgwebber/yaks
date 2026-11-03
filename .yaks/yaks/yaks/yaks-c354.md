@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:10:57Z'
-updated: '2026-11-03T04:40:44Z'
+updated: '2026-11-03T04:41:56Z'
 parent: yaks-5d08
 depends_on:
 - yaks-be65
@@ -87,3 +87,14 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-03T04:41:56Z [sheds-2]
+
+Progress: implemented, gate green (`env -u YAKS_DIR -u YAKS_ACTOR cargo test --workspace`: 30 suites ok, 882 bin tests).
+
+- `tree::Item::Shed`, `RowKind::Shed`, `Row::collapse_key()` (yak id, or `shed:<name>`), `memo::Loc::Shed`; `App::shed_rows()` builds the view; `apply_collapse` keys by `collapse_key`.
+- `render_list` draws shed roots (`shed_item`, today's text plus a `▶ N` badge when collapsed), yak children with a dim `shaving`/`asking`/`recent` tag, the farm footer under the rows, and `sheds_notice` for no scan / failure / empty / no match.
+- Gone: `Ctx::Sheds`, `Ctx::ShedDetail`, `ShedsTab.cursor/line/list_offset/offset`, `move_shed*`, `selected_shed_yak`, `open_shed(_yak)`, `copy_shed_thing`, `render_sheds_list`, the detail's yak cursor.
+- Headless on my build, scratch farm with two actors: tab to Sheds, `j` lands on alice's first yak, Enter shows the yak detail, `J` steps to the next yak, `J` again to bob's shed row and its pane (attached `sheds-tree-headless.txt`).
+- An earlier `yaks verify` FAIL in this thread was my own mistake (I exported `YAKS_DIR`/`YAKS_ACTOR` into the gate); the PASS note below is the correct run.
