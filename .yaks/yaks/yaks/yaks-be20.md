@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-03T23:07:23Z'
-updated: '2026-11-03T23:22:52Z'
+updated: '2026-11-03T23:22:53Z'
 tags:
 - links
 - cli
@@ -49,3 +49,30 @@ thread: ksQQNSYysfbwRGKL-KGL8e-aQpLOAEKHPJIBxBCA0aLJyrhJPreUvVwLftHG
 moved: hairy -> shaving
 
 [survey-1633-evidence-frame](yaks-be20/survey-1633-evidence-frame.txt)
+
+---
+▸ 2026-11-03T23:22:53Z [indent-links]
+
+Fixed in the working tree (not committed or landed: awaiting a go-ahead).
+
+## What changed
+
+- **One rule:** a document read from a yak's attachment resolves a bare `name` as a sibling attachment of that yak (`From::Attachment`, [fn parse](code:src/links.rs#L88)); the `<id>/<file>`, `/farm/path`, `code:` and URL forms are unchanged, and a deeper relative path or a pinned name is not a sibling. In a yak or on the CLI a bare name still means the farm root.
+- **Viewer:** `AttachView::from` uses it, and an attachment link is always the canonical `<id>/<file>` target, so inline images, open and rename work from a bare link.
+- **`doctor`:** reads the links inside markdown attachments (it reported nothing about them before).
+- **`rename-attachment`:** rewrites markdown attachments too, keeping each link's form (bare stays bare).
+- **`promote --page`:** a promoted document's bare sibling links become `<id>/<file>`, so the page keeps working; `promote` and links to the moved file are rewritten in markdown attachments too.
+- **`yaks attach <id> <file>... [--no-link]`:** several files in one write (one farm commit); `--no-link` stores them and leaves the body alone. `--name` is for one file.
+- **Docs and help:** `docs/cli.md`, the `yaks` skill, `src/brief.rs` and the clap help for `attach`. In the surveyor tree: `AGENTS.md` and the `arbiter` skill now say `yaks attach ID DIR/* --no-link`.
+
+## Evidence
+
+- `cargo test`: 947 unit tests and every integration test pass; new ones: `a_bare_name_in_an_attachment_is_a_sibling`, `an_evidence_document_links_its_sibling_attachments_by_bare_name`, `attach_many_links_each_file_in_order`, `a_markdown_attachment_draws_its_sibling_images_in_place`.
+- My binary on the real surveyor farm: `yaks doctor` now checks `survey-1633`'s evidence document, its four `fullstory-FilterChip-*` links resolve, and the two findings left are unrelated (`survey-b436` and `survey-2c6d` link to repo paths as farm paths).
+- The headless TUI opens `survey-1633/fullstory-FilterChip-evidence.md` and draws its images in place: [frame](yaks-be20/survey-1633-evidence-frame.txt).
+- Scratch farm: `yaks attach t-xxxx e.md a.png --no-link` leaves the body untouched, and `doctor` flags only the missing `zz.png`, as `t-xxxx/e.md:L5`.
+
+## Not done
+
+- The seventeen existing surveyor yaks with an evidence bundle keep their per-image links in the body. They render now (the document's links work) but are noisy; tidying them is a separate decision.
+- `yaks find` and `yaks refs` do not read attachments (unchanged; `doctor` is the one place that needed to).
