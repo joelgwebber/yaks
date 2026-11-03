@@ -144,3 +144,8 @@ Decision: `pane_yak` only means something with the pane focused (`pane_yak_id()`
 ▸ 2026-11-03T05:47:06Z [hist-1]
 
 Decision: `PaneAt::Doc` gains `under: Option<String>` beyond the claim's `{path, rev, from, line, scroll}`: the pane's own yak while the page covers it. Without it, restoring a page opened over a pane yak would make `Esc` land on the cursor row's yak instead of the yak the page was opened from. A page is re-opened by `read_doc(path, rev)`: a farm file when `rev` is set or the path exists under the farm root, else an attachment (`<id>/<file>` never exists under the root). Rejected: a `kind` field on `PaneAt::Doc`.
+
+---
+▸ 2026-11-03T05:47:06Z [hist-1]
+
+Decision: the image viewer's `Esc`/`q`/`h` now closes the pane like the text viewer does; the old "back to the text viewer it was followed from" lived in `viewer_back`, which is gone, and `o` now does that. `o`/`i` are bound in the image viewer and the shed pane too ("everywhere"); the Detail `i/o` binding moved from `bind_pane(Yak)` to `bind(Detail)` so the shed pane takes it, which adds `i/o:fwd/back` to the Shed detail hint line (snapshot `sheds_tab_detail` and `docs/assets/tui-sheds-detail.svg` updated by hand; the other docshot SVGs regenerate with unrelated renderer drift, so none were committed). In the list `o`/`i` carry no hint (the list hint bars are unchanged).
