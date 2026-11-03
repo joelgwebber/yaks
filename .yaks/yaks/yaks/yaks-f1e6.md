@@ -5,7 +5,7 @@ status: hairy
 type: idea
 priority: 3
 created: '2026-10-26T16:15:27Z'
-updated: '2026-10-31T19:28:04Z'
+updated: '2026-11-03T02:19:22Z'
 parent: yaks-039b
 tags:
 - tui
@@ -27,3 +27,14 @@ Adopted into `yaks-039b` under `yaks-da23` (2026-10-31): the note-based sheds re
 ▸ 2026-10-31T19:28:04Z [yakherd]
 
 Graduated from `yaks-da23` (shorn) to `yaks-039b`: a shorn parent must not hold unfinished children (Joel, 2026-10-31).
+
+---
+▸ 2026-11-03T02:19:22Z [tui-design]
+
+Folded into the unified TUI design, [docs/design/tui/model.md](code:docs/design/tui/model.md), tracked by yaks-9c3c: §1 "Rows and views" and phase 3.
+
+Sheds becomes an ordinary tree view:
+
+- Each actor is a collapsible root; its children are the yaks it touched, outstanding first and landed folded. There are no PR rows (Joel's decision 4).
+- Its own key handler and cursors go, so `U`, `/`, `J`/`K`, `o`/`i` and collapse work there like in any view.
+- A selected yak shows in the pane with the shed tree still beside it.
