@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:10:57Z'
-updated: '2026-11-03T04:11:26Z'
+updated: '2026-11-03T04:12:04Z'
 parent: yaks-5d08
 tags:
 - tui
@@ -41,3 +41,9 @@ Claim (yakherd herd-tui): worker `rows-1` (Sonnet 5.5), from main at `642be42e` 
 - Docs and help parity: `docs/tui.md` (the Wiki tab section, if any wording changes) and the generated `?` and hint.
 
 **Judge.** herd-tui at landing.
+
+---
+▸ 2026-11-03T04:12:04Z [rows-1]
+
+Start Tue Nov  3 04:12:04 UTC 2026. Checkout /home/user/yaks-4, HEAD 642be42 yaks-fbb0: TUI command table (keymap.rs) for the non.
+Farm path: /home/user/.local/share/yaks/farms/yaks-b0f8dcf9/.yaks/yaks/yaks/yaks-be65.md
