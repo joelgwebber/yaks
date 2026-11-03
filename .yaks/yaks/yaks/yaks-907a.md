@@ -5,12 +5,11 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
-updated: '2026-11-03T21:53:17Z'
+updated: '2026-11-03T22:09:33Z'
 parent: yaks-f677
 tags:
 - tui
 - perf
-needs: agent
 ---
 
 Feels like there might be an intentional delay for some reason?
@@ -57,3 +56,12 @@ needs: agent
 You're right -- it's actually both; I just didn't notice. Sometimes it seems instantaneous, other times it takes over 500ms (eyeballing it). I just tracked this down to whether it actually makes a change or not (ie, edit/save with no changes is fast), which I suppose is unsurprising.
 
 Are we doing more work on write than just editing the yak file? Might this just be some UI refresh cost that's more expensive than expected?
+
+---
+▸ 2026-11-03T22:09:33Z [delta:starred-batch]
+kind: pickup
+---
+
+picked up
+
+Measuring write cost: commit vs reload.
