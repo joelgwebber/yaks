@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:32Z'
-updated: '2026-11-03T05:26:14Z'
+updated: '2026-11-03T05:26:23Z'
 parent: yaks-947a
 depends_on:
 - yaks-aac1
@@ -78,3 +78,10 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-03T05:26:23Z [find-1]
+
+Done: one search register (`App.register`) for the yak detail and the text viewer; `LineNav.find` gone (it keeps `matched: Option<usize>`); `Overlay::DetailFind` + the viewer's `find_box` are `Overlay::Find`; J/K, link-follow, o/i keep the register; detail `n`/`N` hop to the next/previous matching yak; viewer `n` wraps; list `n`/`N` with no query apply the register; status bar shows `match i/n "q"`.
+Evidence: `env -u YAKS_DIR -u YAKS_ACTOR cargo test --workspace` green (909 lib tests, all integration suites ok); `yaks verify yaks-c215` PASS; headless frames attached (find-register-frames.txt). New tests in src/tui/tests.rs (register_* / n_past_the_last... / viewers_n_wraps / detail_footer / list n) and linenav::find_matches_cycle. Docs: docs/tui.md (detail pane, viewer, Search & filter, new "The search register" paragraph), `?` lines in keymap.rs (one snapshot updated: help_overlay_shows_the_farm_keys).
+Docs-parity grep: `grep -rn "detail_find|DetailFind|find_box|doc_find|open_detail_find|detail\.find|nav\.find\b" src docs .agents README.md` shows only test names; the skills and README do not describe the pane find keys.
