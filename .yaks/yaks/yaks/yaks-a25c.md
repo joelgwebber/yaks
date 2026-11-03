@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T04:57:42Z'
+updated: '2026-11-03T04:57:43Z'
 parent: yaks-947a
 depends_on:
 - yaks-5d08
@@ -101,3 +101,17 @@ Progress: the code, docs and tests are in; full gate green (`cargo test --worksp
 - `tree::build` takes `query: Option<&str>` (focus needs spec AND query); flat, working set, Wiki, Sheds and `view_count` apply it; memo key has `query`.
 - `view::all_view()` (key `all`, unpinned, flat, updated desc, no limit), last in `default_views`.
 - Query chip in `render_tabs`; Esc: query first, then facets.
+
+---
+▸ 2026-11-03T04:57:43Z [query-1]
+
+Decision: the All view is appended LAST in `default_views` (after Sheds), not beside Inbox. Rejected: next to Inbox (shifts the Starred/Wiki/Sheds indices that ~dozens of tests and the saved-order reconcile rely on, and it is unpinned so tab order does not show). The `v` picker lists it at the bottom.
+Decision: All's spec lists all four statuses (so the flat path keeps dead yaks). Rejected: a special case on the view key in `flat_rows`, which would hide a second source of truth for "dead is wanted".
+Decision: in All, documents are listed only while the live facets equal the view's (search aside): a type/priority/status/ready facet describes yaks and documents have none. Rejected: always listing documents (a `p1` filter would still show pages), and hiding them whenever any search is set (the query must find pages there).
+Decision: `V` saves the facets (`filter.search` from the drawer), not the query, as the claim says ("V keep writing it"). So `/foo` then `V` saves a view with no search. Rejected: copying the query into the saved spec (it would undo "a query does not belong to a view" and double-apply).
+Decision: the query chip is Cyan, text `/"q" · N in All` with straight quotes as in the design, query truncated to 30 columns. Rejected: Yellow (the facets' `filter:` chip), Magenta (sources/blocked marks), DarkGray (reads as disabled). Without an All view in `views` the chip drops ` in All`.
+Decision: yak matching in `query_matches` is per field (id, title, body), not one joined blob as `FilterSpec::matches` does, so a query cannot match across the title/body seam. A saved view's own search still uses the blob, and both must pass.
+Decision: `WikiEntry.text` is lowercased once at load and holds a page's whole file (frontmatter + body, as `yaks find` reads it) and a source's `source.md` + `extracted.md`. Rejected: raw text lowercased per match (re-allocates per keystroke, per tab, per frame since every tab count applies the query).
+Decision: tab counts: Starred counts the starred yaks the query keeps; Wiki counts the pages (sources not) it keeps; Sheds counts the busy sheds it keeps (name or a yak of theirs); All = matching yaks + matching documents. The counts still ignore the live facets, as before.
+Decision: snapshots changed: `inline_search_field_and_recolor` (tab counts now apply the query: Shaving (0), Recent (2); the `Hairy*` marker is gone), `search_commit_then_tab_no_toast` (the query survives Tab, so the next view is filtered: `No tasks.`, all counts 0), and `view_picker_overlay` (the new All row, unavoidable once All exists). No others changed. Tests changed in step: `/` plus `V` tests now set the view's search through the drawer (`set_drawer_search`), view counts 8->9, `esc_reverts_modified_filter_to_view` uses a facet, the Wiki `/search` test now also finds the source whose extracted text says "search" and counts 2 pages.
+Decision: All uses the globe-free basket emoji (U+1F9FA). Rejected: U+1F5C3 (a narrow-width emoji: the picker column misaligned in the frame).
