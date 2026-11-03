@@ -1,11 +1,11 @@
 ---
 id: yaks-c2fc
 title: 'Upgrade/migrate guidance: upgrade recipe in skills and errors, agents ask before migrate, schema-bump order'
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-03T14:21:52Z'
-updated: '2026-11-03T14:30:06Z'
+updated: '2026-11-03T14:30:08Z'
 parent: yaks-ec00
 tags:
 - skills
@@ -40,3 +40,13 @@ error: this farm uses schema v8, newer than this yaks (0.0.30) supports (v7). Up
 ```
 
 Not done: a cold read of the skills by a cheap model.
+
+---
+▸ 2026-11-03T14:30:08Z [delta:skills-upgrade-audit]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
