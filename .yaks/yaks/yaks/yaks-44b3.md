@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 1
 created: '2026-11-01T18:52:36Z'
-updated: '2026-11-02T17:10:43Z'
+updated: '2026-11-03T21:50:45Z'
 tags:
 - wiki
 - design
@@ -101,3 +101,8 @@ Landed on `main` as de32523, a squash of `wiki` (Joel, 2026-11-02). Installed wi
 ▸ 2026-11-02T17:10:43Z [delta:farm-wiki]
 
 Shipped in 0.0.30 (npm `latest`). The yaks and joel farms are migrated to schema 7 and published, and joel's main has dropped the Hearth layout. Open follow-ups: yaks-9f5e (import-hearth skips dot-files) and yaks-7058 (git calls per write).
+
+---
+▸ 2026-11-03T21:50:45Z [Joel Webber]
+
+test comment
