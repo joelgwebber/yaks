@@ -53,3 +53,8 @@ Start 2026-11-03T05:23:42Z. Checkout /home/user/yaks-9, base main e9e3c6c2, farm
 Progress: implemented the register (App.register, Overlay::Find replacing DetailFind and the viewer's find_box, LineNav.find gone, matched: Option<usize>), n/N row hop in the detail, list n/N, status-bar chip. Tests next, then docs and the headless frame.
 
 [find-register-frames](yaks-c215/find-register-frames.txt)
+
+---
+▸ 2026-11-03T05:24:48Z [find-1]
+
+Headless frames (target/debug/yaks tui --headless --size 110x16 on a scratch farm: l, /cache, Enter, n, n, n). Frame 4: footer 'match 1/3 "cache"' after /cache Enter; 5 and 6: n steps to 2/3, 3/3; frame 7: the third n moves past the last match to the next matching yak (yak-8270), 'match 1/2'.
