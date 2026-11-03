@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-03T21:02:29Z'
+updated: '2026-11-03T21:08:36Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
@@ -37,3 +37,6 @@ I have a bunch of other ill-formed thoughts I'd like to address before committin
 - Do we allow keys to be rebound? That's a pretty deep rabbit hole, but TUI users can be persnickety (see also: vim users!)
 - The `?` which-key style affordance is really useful. We should extend it to the editor (perhaps `?` in vim-normal mode, and always-available `F1`?). It would also be nice if pressing any of those keys from within the `?` menu immediately triggered the action (this is really helpful in which-key on vim).
 - I'm no longer sure that h/l used for moving in/out of the detail panel is still paying its freight over enter/escape. It's particularly annoying when using `h` to scroll left in an overflowing table, and you shoot off the left end, escaping the detail view.
+- The `?` popup would be easier to parse if organized into groups. Open to ideas on good groupings.
+
+Probably lots more cases I'm not thinking of. Please explore the idea of organizing principles for the keyboard controls as a whole, so we can get a bit more consistency. We should probably think about yaks-000b in this context as well.
