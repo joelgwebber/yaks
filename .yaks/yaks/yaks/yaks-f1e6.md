@@ -5,7 +5,7 @@ status: hairy
 type: idea
 priority: 3
 created: '2026-10-26T16:15:27Z'
-updated: '2026-11-03T02:19:22Z'
+updated: '2026-11-03T04:46:15Z'
 parent: yaks-039b
 tags:
 - tui
@@ -38,3 +38,12 @@ Sheds becomes an ordinary tree view:
 - Each actor is a collapsible root; its children are the yaks it touched, outstanding first and landed folded. There are no PR rows (Joel's decision 4).
 - Its own key handler and cursors go, so `U`, `/`, `J`/`K`, `o`/`i` and collapse work there like in any view.
 - A selected yak shows in the pane with the shed tree still beside it.
+
+---
+▸ 2026-11-03T04:46:15Z [herd-tui]
+
+Done by herd-tui through the unified model's phase 3 (yaks-5d08): Sheds is now an ordinary tree view, landed as `200d48fa`.
+
+- Each actor is a collapsible root; its children are the yaks it touched (working, asking, recent).
+- Selecting a yak shows the normal yak detail with the shed tree beside it; `J`/`K`, `U`, `W` and every yak key work there.
+- Its place in the global history comes with phase 5 (yaks-a2c5).
