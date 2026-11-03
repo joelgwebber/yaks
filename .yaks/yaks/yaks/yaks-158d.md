@@ -1,7 +1,7 @@
 ---
 id: yaks-158d
 title: Global back/forward navigation across view states
-status: hairy
+status: shorn
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
@@ -79,3 +79,13 @@ Done by herd-tui through phase 5 (yaks-a2c5), landed as `270ec677`.
 - One history of locations (view, filter, query, cursor, offset, focus, pane subject) replaces the three back stacks.
 - `o`/`i` work in every view and focus.
 - A link no longer switches the list to the target's status view: the pane shows the target, and the list (with its search) is what `o` brings back. That was the i/o complaint in this yak's note.
+
+---
+▸ 2026-11-03T05:52:28Z [herd-tui]
+kind: move
+from: hairy
+to: shorn
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shorn
