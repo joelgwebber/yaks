@@ -5,12 +5,12 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
-updated: '2026-11-03T21:51:03Z'
+updated: '2026-11-03T21:53:17Z'
 parent: yaks-f677
 tags:
 - tui
 - perf
-needs: human
+needs: agent
 ---
 
 Feels like there might be an intentional delay for some reason?
@@ -47,3 +47,13 @@ I can't reproduce a `:wq`-only pause: headlessly both `:wq` and Ctrl-S take ~0.5
 
 1. In your terminal, does Ctrl-S really feel instant on the *same* kind of edit (a comment or description, not a single-line field)? If both pause, I'd fold this into yaks-7058 (make the commit cheaper, or run it after the frame is drawn).
 2. If only `:wq` pauses: which terminal, and is it inside tmux/zellij? An escape-time delay on the `Esc` you press before `:` is my next suspect.
+
+---
+▸ 2026-11-03T21:53:17Z [Joel Webber]
+kind: answer
+needs: agent
+---
+
+You're right -- it's actually both; I just didn't notice. Sometimes it seems instantaneous, other times it takes over 500ms (eyeballing it). I just tracked this down to whether it actually makes a change or not (ie, edit/save with no changes is fast), which I suppose is unsurprising.
+
+Are we doing more work on write than just editing the yak file? Might this just be some UI refresh cost that's more expensive than expected?
