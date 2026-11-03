@@ -1761,11 +1761,11 @@ impl App {
                     _ => String::new(),
                 };
                 self.overlay = Overlay::None;
-                self.notification = Some(if q.is_empty() {
-                    "search cleared".into()
-                } else {
-                    format!("filter: {q}")
-                });
+                // A kept query is already visible as the filter chip; only the
+                // empty commit (which clears it) says anything.
+                if q.is_empty() {
+                    self.notification = Some("search cleared".into());
+                }
             } else {
                 if let Overlay::Search(sb) = &mut self.overlay {
                     sb.handler.on_key_event(k, &mut sb.query.borrow_mut());
@@ -2476,6 +2476,8 @@ pub(crate) fn handle_paste(app: &mut App, text: &str) {
 }
 
 pub(crate) fn handle_key(app: &mut App, k: KeyEvent) {
+    // A notification lasts until the next key (or mouse event).
+    app.notification = None;
     let was_editing = app.block_edit().is_some();
     handle_key_inner(app, k);
     // The in-place editor closed (saved or cancelled): its rows give way to the

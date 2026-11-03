@@ -5394,3 +5394,48 @@ fn the_tui_regrows_a_recurring_yak_on_load_and_on_the_tick() {
     // And a tick with nothing to regrow says nothing.
     assert!(!app.tick_auto_sync(t0 + every * 2));
 }
+
+// -- notifications last until the next key ----------------------------
+
+#[test]
+fn search_commit_leaves_no_stale_filter_toast() {
+    // `/widget` Enter used to write `filter: widget`, which then outlived the
+    // search (the filter chip already says it). Now the commit is silent, and
+    // the next key clears whatever notification was showing.
+    let mut app = sample();
+    handle_key(&mut app, key('/'));
+    typ(&mut app, "widget");
+    enter_key(&mut app);
+    assert_eq!(app.notification, None, "a kept query is not toasted");
+    tab_key(&mut app);
+    assert_eq!(app.notification, None);
+    let frame = draw(&app, 100, 8);
+    let tab_row = frame.lines().next().unwrap_or_default();
+    assert!(!tab_row.contains("filter:"), "tab row: {tab_row}");
+    insta::assert_snapshot!("search_commit_then_tab_no_toast", frame);
+}
+
+#[test]
+fn notification_clears_on_next_key_and_next_mouse_event() {
+    let mut app = sample();
+    app.notification = Some("sync finished".into());
+    handle_key(&mut app, key('j'));
+    assert_eq!(app.notification, None, "the next key clears it");
+
+    app.notification = Some("sync finished".into());
+    app.handle_mouse(ratatui::crossterm::event::MouseEvent {
+        kind: ratatui::crossterm::event::MouseEventKind::Moved,
+        column: 0,
+        row: 0,
+        modifiers: KeyModifiers::NONE,
+    });
+    assert_eq!(app.notification, None, "the next mouse event clears it");
+}
+
+#[test]
+fn empty_search_commit_still_says_cleared() {
+    let mut app = sample();
+    handle_key(&mut app, key('/'));
+    enter_key(&mut app);
+    assert_eq!(app.notification.as_deref(), Some("search cleared"));
+}

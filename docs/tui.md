@@ -41,7 +41,9 @@ interchangeable.
   startup, after every TUI change, and when files under `.yaks/` change; it
   does not notice a commit or push made elsewhere until then (the interval sync
   below is what brings it up to date). The family label
-  and notifications sit just left of it.
+  and notifications sit just left of it. A notification lasts until the next key
+  or mouse event; a search kept with `Enter` shows no notification (the filter is
+  its own indicator), only clearing it does (`search cleared`).
 - **Recurring yaks** — on load and on each sync tick (`sync_interval`, also
   when there is no remote to sync) the TUI runs `yaks regrow-due`: a shorn yak
   with `every:` whose next occurrence has arrived is hairy again, with a
