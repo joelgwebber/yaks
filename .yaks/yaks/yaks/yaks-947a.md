@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-03T03:46:30Z'
-updated: '2026-11-03T03:52:22Z'
+updated: '2026-11-03T04:11:59Z'
 tags:
 - tui
 ---
@@ -43,3 +43,10 @@ Wave 1 started (herd-tui, base `9a8c7b4`, Sonnet 5.5 workers):
 - `keys-1` on yaks-fbb0 (phase 2), thread `ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD9wu5IBxBCtY3f3KUhDW5IL-PWT3Nbm`.
 
 Runner setup: rustup stable, and git 2.47.1 built into `~/.local` (the system git 2.39 lacks `worktree add --orphan` and `merge-tree --merge-base`, failing 22 tests and `yaks land`).
+
+---
+▸ 2026-11-03T04:11:59Z [herd-tui]
+
+Wave 1 landed: phase 1 as `f18b13db` plus herd follow-up `a22c9843`, phase 2 as `642be42e`. Gate green on each.
+
+Phase 3 is split into yaks-be65 (row kinds, Wiki as a view) and yaks-c354 (Sheds as a tree view), run back to back. Started `rows-1` (Sonnet 5.5) on yaks-be65 from `642be42e`, thread `ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD_EipIBxBCtY3f3KUhDW5IL-PWT3Nbm`.
