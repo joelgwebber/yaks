@@ -1,0 +1,176 @@
+=== frame 0 · 110x14 · focus=list · view=🦬 Hairy · cursor=0 · rows=1 · sel=t-e702 · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (2)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (2)
+
+ t-e702 p3 task     🦬 Mesher profile
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?
+=== end ===
+=== frame 1 · 110x14 · focus=list · view=🪒 Shaving · cursor=0 · rows=2 · sel=t-311b · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (2)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (2)
+
+ t-311b p3 task     🪒 Texture pack
+ t-61a5 p3 task     🪒 Walk mode
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?
+=== end ===
+=== frame 2 · 110x14 · focus=list · view=🐑 Shorn · cursor=0 · rows=0 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (2)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (2)
+
+No tasks.
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?
+=== end ===
+=== frame 3 · 110x14 · focus=list · view=🕒 Recent · cursor=0 · rows=3 · sel=t-61a5 · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (2)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (2)
+
+ t-61a5 p3 task     🪒 Walk mode
+ t-311b p3 task     🪒 Texture pack
+ t-e702 p3 task     🦬 Mesher profile
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?
+=== end ===
+=== frame 4 · 110x14 · focus=list · view=⭐ Starred · cursor=0 · rows=0 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (2)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (2)
+
+No tasks.
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?
+=== end ===
+=== frame 5 · 110x14 · focus=list · view=📖 Wiki · cursor=0 · rows=0 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none · wiki=0 · entry=- ===
+ 🦬 Hairy (1)   🪒 Shaving (2)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (2)
+
+No pages yet. `yaks page new wiki/<name>.md` writes one.
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:open  E:edit  N:new page  /:search  y:copy path  r:reread  ?:help  q:quit
+=== end ===
+=== frame 6 · 110x14 · focus=list · view=🛖 Sheds · cursor=0 · rows=5 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none · sheds=2 · shed=alice ===
+ 🦬 Hairy (1)   🪒 Shaving (2)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (2)
+
+   alice  active just now     shaving: t-61a5
+   t-61a5 p3 task     🪒 Walk mode                                                                     shaving
+   t-e702 p3 task     🦬 Mesher profile                                                                 recent
+   bob    active just now     shaving: t-311b
+   t-311b p3 task     🪒 Texture pack                                                                  shaving
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  /:search  y:copy name  r:rescan  v:views  ?:help  q:quit
+=== end ===
+=== frame 7 · 110x14 · focus=list · view=🛖 Sheds · cursor=1 · rows=5 · sel=t-61a5 · blocked=- · collapsed=0 · filter=(all) · overlay=none · sheds=2 · shed=alice ===
+ 🦬 Hairy (1)   🪒 Shaving (2)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (2)
+
+   alice  active just now     shaving: t-61a5
+   t-61a5 p3 task     🪒 Walk mode                                                                     shaving
+   t-e702 p3 task     🦬 Mesher profile                                                                 recent
+   bob    active just now     shaving: t-311b
+   t-311b p3 task     🪒 Texture pack                                                                  shaving
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?
+=== end ===
+=== frame 8 · 110x14 · focus=detail · view=🛖 Sheds · cursor=1 · rows=5 · sel=t-61a5 · blocked=- · collapsed=0 · filter=(all) · overlay=none · sheds=2 · shed=alice ===
+ 🦬 Hairy (1)   🪒 Shaving (2)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (2)
+
+◂ Task: t-61a5
+│
+│ Title:       Walk mode
+│ Status:      🪒 shaving
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Tags:        -
+│
+│ ▸ alice · just now · move · from hairy · to shaving · thread ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD_xRZIBxBCtY3f3KU
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search
+=== end ===
+=== frame 9 · 110x14 · focus=detail · view=🛖 Sheds · cursor=2 · rows=5 · sel=t-e702 · blocked=- · collapsed=0 · filter=(all) · overlay=none · sheds=2 · shed=alice ===
+ 🦬 Hairy (1)   🪒 Shaving (2)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (2)
+
+◂ Task: t-e702
+│
+│ Title:       Mesher profile
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Tags:        -
+│
+│ ▸ alice · just now ────────────────────────────────────────────────────────────────────────────────────────
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search
+=== end ===
+=== frame 10 · 110x14 · focus=detail · view=🛖 Sheds · cursor=3 · rows=5 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none · sheds=2 · shed=bob ===
+ 🦬 Hairy (1)   🪒 Shaving (2)   🐑 Shorn (0)   🕒 Recent (3)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (2)
+
+◂ bob  active · just now
+│
+│ shaving  t-311b  Texture pack
+│
+│
+│
+│
+│
+│
+│
+│
+h:list  y:copy name  r:rescan  q:quit
+=== end ===

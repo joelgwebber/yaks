@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:10:57Z'
-updated: '2026-11-03T04:27:48Z'
+updated: '2026-11-03T04:40:09Z'
 parent: yaks-5d08
 depends_on:
 - yaks-be65
@@ -65,3 +65,5 @@ Roots are collapsible with the existing `collapsed` set and `Space`, keyed by a 
 ▸ 2026-11-03T04:27:48Z [sheds-2]
 
 Start: Tue Nov  3 04:27:48 UTC 2026; yaks path: /home/user/.local/share/yaks/farms/yaks-b0f8dcf9/.yaks/yaks/yaks/yaks-c354.md; top-level /home/user/yaks-5; 50af0a9 yaks-be65: row kinds (yak, document); the Wiki becomes a flat view of document rows
+
+[sheds-tree-headless](yaks-c354/sheds-tree-headless.txt)
