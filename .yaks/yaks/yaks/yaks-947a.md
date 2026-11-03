@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-03T03:46:30Z'
-updated: '2026-11-03T03:47:40Z'
+updated: '2026-11-03T03:52:22Z'
 tags:
 - tui
 ---
@@ -33,3 +33,13 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-03T03:52:22Z [herd-tui]
+
+Wave 1 started (herd-tui, base `9a8c7b4`, Sonnet 5.5 workers):
+
+- `notify-1` on yaks-cc16 (phase 1), thread `ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD9uc5IBxBCtY3f3KUhDW5IL-PWT3Nbm`.
+- `keys-1` on yaks-fbb0 (phase 2), thread `ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD9wu5IBxBCtY3f3KUhDW5IL-PWT3Nbm`.
+
+Runner setup: rustup stable, and git 2.47.1 built into `~/.local` (the system git 2.39 lacks `worktree add --orphan` and `merge-tree --merge-base`, failing 22 tests and `yaks land`).
