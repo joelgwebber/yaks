@@ -8,7 +8,7 @@
 //! |---|---|
 //! | a farm document | `/wiki/topics/x.md`: from the farm root |
 //! | below the linking page | `setup/notes.md`: relative, downward only |
-//! | a yak's attachment | `yaks-1a2b/log.txt`, from anywhere |
+//! | a yak's attachment | `yaks-1a2b/log.txt`, from anywhere; in an attachment, a bare sibling `log.txt` |
 //! | the code repo | `code:src/foo.rs` |
 //! | a URL | `https://...` |
 //!
@@ -76,6 +76,14 @@ pub enum From<'a> {
     /// A yak: legacy `../` code links are valid; a relative link is
     /// relative to the farm root (an attachment `<id>/<file>`).
     Yak,
+    /// A file attached to yak `<id>`, which sits beside its siblings: a bare
+    /// `name` is another attachment of the same yak (so an evidence
+    /// document's `![x](shot.png)` resolves in any markdown viewer and here),
+    /// and the `<id>/<file>` form still works. Anything else reads as in a
+    /// yak (`/farm/path`, `code:`, URLs, the legacy `../` code forms; any
+    /// other relative path reads from the farm root). An attachment directory
+    /// is flat, so a sibling is always a bare file name.
+    Attachment(&'a str),
     /// A page at this farm-relative path: a relative link is relative to its
     /// directory, downward only.
     Page(&'a str),
@@ -110,7 +118,7 @@ pub fn parse(dest: &str, from: From, is_yak: impl Fn(&str) -> bool) -> Link {
         };
     }
     if let Some(rest) = body.strip_prefix("../") {
-        if matches!(from, From::Yak) {
+        if matches!(from, From::Yak | From::Attachment(_)) {
             // Legacy code links: `../path` and `../blob/<sha>/path`.
             let (rev, path) = match rest.strip_prefix("blob/").and_then(|r| r.split_once('/')) {
                 Some((sha, path)) if is_rev(sha) => (Some(sha.to_string()), path),
@@ -141,9 +149,19 @@ pub fn parse(dest: &str, from: From, is_yak: impl Fn(&str) -> bool) -> Link {
             };
         }
     }
+    if let From::Attachment(id) = from {
+        // A sibling: one plain file name, no directory part.
+        if let Some(name) = clean(path).filter(|n| rev.is_none() && !n.contains('/')) {
+            return Link::Attachment {
+                id: id.to_string(),
+                name,
+                anchor,
+            };
+        }
+    }
     let base = match from {
         From::Page(p) => p.rsplit_once('/').map_or("", |(d, _)| d),
-        From::Yak | From::Cli => "",
+        From::Yak | From::Attachment(_) | From::Cli => "",
     };
     let joined = if base.is_empty() {
         path.to_string()
@@ -438,9 +456,18 @@ pub struct Edge {
     pub link: Link,
 }
 
-/// Every markdown link in every yak (description and notes) and page of the
-/// farm at `root`, in document order. Yak ids are links too (mentions), but
-/// those are `refs`' business; this is the markdown-link half.
+/// Whether an attachment name is a markdown document, whose links are read.
+pub fn is_markdown_name(name: &str) -> bool {
+    Path::new(name)
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| e.eq_ignore_ascii_case("md") || e.eq_ignore_ascii_case("markdown"))
+}
+
+/// Every markdown link in every yak (description and notes), every markdown
+/// attachment (`from` is `<id>/<file>`) and every page of the farm at `root`,
+/// in document order. Yak ids are links too (mentions), but those are
+/// `refs`' business; this is the markdown-link half.
 pub fn edges(root: &Path) -> Result<Vec<Edge>> {
     let tasks = crate::store::load(
         root,
@@ -462,6 +489,24 @@ pub fn edges(root: &Path) -> Result<Vec<Edge>> {
                 link: parse(&f.dest, From::Yak, is_yak),
                 dest: f.dest,
             });
+        }
+    }
+    for t in &tasks {
+        for a in crate::farm::list_attachments(root, &t.id) {
+            if !is_markdown_name(&a.name) {
+                continue;
+            }
+            let Ok(text) = std::fs::read_to_string(&a.path) else {
+                continue;
+            };
+            for f in extract(&text) {
+                out.push(Edge {
+                    from: format!("{}/{}", t.id, a.name),
+                    line: f.line,
+                    link: parse(&f.dest, From::Attachment(&t.id), is_yak),
+                    dest: f.dest,
+                });
+            }
         }
     }
     for p in crate::pages::load_all(root)? {
@@ -813,6 +858,72 @@ mod tests {
                 anchor: None
             }
         );
+    }
+
+    /// In a file attached to a yak, a bare name is a sibling attachment of
+    /// that yak: what lets an evidence document's `![x](shot.png)` resolve in
+    /// any markdown viewer and here. The rest reads as in a yak.
+    #[test]
+    fn a_bare_name_in_an_attachment_is_a_sibling() {
+        let yak = |s: &str| s == "yaks-1a2b" || s == "yaks-3c4d";
+        let from = From::Attachment("yaks-1a2b");
+        let att = |id: &str, name: &str| Link::Attachment {
+            id: id.into(),
+            name: name.into(),
+            anchor: None,
+        };
+        assert_eq!(parse("shot.png", from, yak), att("yaks-1a2b", "shot.png"));
+        assert_eq!(parse("./shot.png", from, yak), att("yaks-1a2b", "shot.png"));
+        assert_eq!(
+            parse("my%20shot.png", from, yak),
+            att("yaks-1a2b", "my shot.png")
+        );
+        // The qualified form still works, for this yak and another.
+        assert_eq!(
+            parse("yaks-3c4d/x.png", from, yak),
+            att("yaks-3c4d", "x.png")
+        );
+        assert_eq!(
+            parse("yaks-1a2b/shot.png#top", from, yak),
+            Link::Attachment {
+                id: "yaks-1a2b".into(),
+                name: "shot.png".into(),
+                anchor: Some(Anchor::Heading("top".into()))
+            }
+        );
+        // A yak id is still a yak, a farm path a farm path.
+        assert_eq!(parse("yaks-3c4d", from, yak), Link::Yak("yaks-3c4d".into()));
+        assert_eq!(
+            parse("/wiki/a.md", from, yak),
+            Link::Farm {
+                path: "wiki/a.md".into(),
+                rev: None,
+                anchor: None
+            }
+        );
+        assert_eq!(
+            parse("https://a.test/x.png", from, yak),
+            Link::Url("https://a.test/x.png".into())
+        );
+        // An attachment directory is flat: a deeper relative path is not a
+        // sibling, and `../` climbs out (legacy code forms aside).
+        assert!(matches!(parse("sub/x.png", from, yak), Link::Farm { .. }));
+        assert_eq!(
+            parse("../../etc/x", from, yak),
+            Link::Upward("../../etc/x".into())
+        );
+        assert!(matches!(parse("../src/a.rs", from, yak), Link::Code { .. }));
+        // A pinned name is a farm path, not a sibling; an in-document anchor
+        // stays local.
+        assert!(matches!(
+            parse("a.md@91be0d2", from, yak),
+            Link::Farm { .. }
+        ));
+        assert!(matches!(parse("#top", from, yak), Link::Local(_)));
+        // In a yak or on the command line a bare name still means the farm root.
+        for from in [From::Yak, From::Cli] {
+            assert!(matches!(parse("shot.png", from, yak), Link::Farm { .. }));
+        }
     }
 
     #[test]

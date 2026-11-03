@@ -514,6 +514,7 @@ impl Renderer<'_> {
                     dest_url.starts_with('/') || matches!(self.from, crate::links::From::Page(_));
                 let target = match link_target(dest_url, self.from, self.known) {
                     t @ Target::Farm { .. } if farm_ok => t,
+                    t @ Target::Artifact(_) => t,
                     _ => Target::Artifact(dest_url.to_string()),
                 };
                 self.targets.push(target);
@@ -1013,8 +1014,11 @@ pub(crate) fn link_target(dest: &str, from: crate::links::From, known: &HashSet<
             },
             rev,
         },
-        Link::Attachment { .. } => {
-            Target::Artifact(dest.split('#').next().unwrap_or(dest).to_string())
+        // Always the canonical `<id>/<file>`, whichever form it was written
+        // in (a sibling's bare name in an attachment included), so open,
+        // rename and inline images need one reading.
+        Link::Attachment { id, name, .. } => {
+            Target::Artifact(format!("{id}/{}", crate::links::percent_encode_path(&name)))
         }
         Link::Farm { path, rev, anchor } => Target::Farm { path, rev, anchor },
         Link::Local(a) => Target::Local(a),

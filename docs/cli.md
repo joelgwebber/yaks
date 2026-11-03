@@ -286,7 +286,7 @@ A **source** is a snapshot of material from outside the farm, written once and c
 - `source add <path>` saves a file (up to 20 MiB) or a small directory (up to 200 files and 5 MiB; `.git`, `node_modules`, `target` and dot files are left out). Saving the same content again, on any day, reports `Already saved:` with the existing source. A path already inside the farm is refused: link it instead.
 - yaks fetches nothing and extracts nothing beyond text files. To save a web page, download it (or have your agent do so) and pass `--url` with the page: the URL becomes the resource and the file its `local_copy`. `--part-of` records which source a part (a screenshot of that page) belongs to.
 - `source list` prints id, media type, title and resource, oldest first.
-- `promote <id>/<file>` turns a yak's attachment into a source (resource `<id>/<file>`); `--page wiki/<path>.md` turns a markdown attachment into a page instead (given `type: note` and a title when it has no frontmatter). The attachment is removed and every link to it, in any yak or page, now points at the new place.
+- `promote <id>/<file>` turns a yak's attachment into a source (resource `<id>/<file>`); `--page wiki/<path>.md` turns a markdown attachment into a page instead (given `type: note` and a title when it has no frontmatter). The attachment is removed and every link to it, in any yak, page or markdown attachment, now points at the new place; a markdown attachment promoted to a page has its bare sibling links (`shot.png`) rewritten to `<id>/<file>` so they keep naming the yak's attachments.
 
 ### Links
 
@@ -297,12 +297,13 @@ Yaks and pages link with ordinary markdown links, in one grammar: `<target>[@<re
 | a yak | its full id, bare in prose | `yaks-1a2b` |
 | a farm document | path from the farm root, leading `/` | `/wiki/topics/x.md`, `/sources/<id>/source.md` |
 | below the linking page | relative, downward only | `notes/detail.md` (from `wiki/topics/x.md`) |
-| a yak's attachment | `<id>/<file>`, from anywhere | `yaks-1a2b/log.txt` |
+| a yak's attachment | `<id>/<file>`, from anywhere; inside an attachment, a bare sibling `<file>` | `yaks-1a2b/log.txt`, `shot.png` |
 | the code repository | `code:` and a path from the repo root | `code:src/foo.rs#L12-L40` |
 | a URL | as is | `https://...` |
 
 - `@<rev>` (7 to 40 hex digits) pins a path to a commit: a farm path to a farm-branch commit, a `code:` path to a code commit (`code:src/foo.rs@3f2a9c1#L12`, `/wiki/x.md@91be0d2#setup`).
 - `#L12` or `#L12-L40` names lines; any other `#anchor` a heading, by GitHub's slug rule (lowercase, spaces to `-`, punctuation dropped; a repeated heading gets `-1`, `-2`).
+- **In a file attached to a yak**, a bare file name is another attachment of the same yak (`![crop](shot.png)` in `yaks-1a2b/evidence.md` is `yaks-1a2b/shot.png`), because that is where any other markdown viewer looks for it too; an attachment directory is flat, so only a bare name counts, and `<id>/<file>`, `/farm/path`, `code:` and URLs mean what they do anywhere. `doctor` checks the links inside markdown attachments, and `rename-attachment` and `promote` keep them right.
 - A relative link never climbs with `../`: link from the farm root instead. In yaks the older code forms stay valid: `../src/foo.rs` and the pinned `../blob/<sha>/src/foo.rs`.
 - `code:` links resolve in the code checkout: the git top-level of the directory yaks runs in, else the repository's main checkout.
 
@@ -319,7 +320,7 @@ Yaks and pages link with ordinary markdown links, in one grammar: `<target>[@<re
 | Command | What it does |
 |---|---|
 | `verify <ids…>` | Run each yak's verification command with live output, and record `verify: <cmd> -> PASS/FAIL (exit N)` as an attributed note. Exits non-zero if any fails. Explicit only. [Details](#verify) |
-| `attach <id> <path>` | Copy a local file under `.yaks/<herd>/yaks/<id>/` and link it in the yak's body — artifact evidence a human can view. `--name` renames it; `--note`/`--as` record an attributed note. [Details](#attach) |
+| `attach <id> <path>...` | Copy local files under `.yaks/<herd>/yaks/<id>/` and link each in the yak's body — artifact evidence a human can view. `--no-link` stores them without a body link (the parts of a document that links them itself); `--name` renames a single file; `--note`/`--as` record an attributed note. [Details](#attach) |
 | `rename-attachment <id> <old> <new>` | Rename `.yaks/<herd>/yaks/<id>/<old>` and rewrite every link to it across the farm. Refuses to overwrite an existing attachment. [Details](#rename-attachment) |
 | `attachment <id> [<file>]` | Print the absolute path of a yak's attachments (all, or the one named). `--json`. Read-only. [Details](#attachment) |
 
@@ -360,11 +361,13 @@ A lever is the pass/fail **gate** for its tag — what `doctor --strict` enforce
 
 ### `attach`
 
-`attach <id> <path>`
+`attach <id> <path>...`
 
-Copy a local file under `.yaks/<herd>/yaks/<id>/` (beside the yak's file) and link it in the yak's body as `![name](<id>/<file>)` for an image (png, jpg, jpeg, gif, webp, svg) or `[name](<id>/<file>)` for any other file (what GitHub and every CommonMark viewer expect; a space or parenthesis in the file name is percent-encoded, `my%20shot.png`) — artifact evidence (screenshots, TUI frames) a human or yakherd can view.
+Copy local files (several attach in one write, one farm commit) under `.yaks/<herd>/yaks/<id>/` (beside the yak's file) and link each in the yak's body as `![name](<id>/<file>)` for an image (png, jpg, jpeg, gif, webp, svg) or `[name](<id>/<file>)` for any other file (what GitHub and every CommonMark viewer expect; a space or parenthesis in the file name is percent-encoded, `my%20shot.png`) — artifact evidence (screenshots, TUI frames) a human or yakherd can view.
 
-`--name <name>` stores it under a different filename (sanitized; the source's extension is kept if omitted). `--note`/`--as` record an attributed note.
+`--name <name>` stores a single file under a different filename (sanitized; the source's extension is kept if omitted). `--note`/`--as` record an attributed note.
+
+`--no-link` stores the files and leaves the yak's body alone. Use it for a **document and the images it embeds**: attach them all together with `--no-link`, then link only the document from the yak (`[evidence](<id>/evidence.md)`). Its `![crop](crop.png)` links resolve to the sibling attachments (see [Links](#links)), so the yak shows one link, not one per image. A file the yak itself shows (a screenshot, a log) is attached plainly.
 
 The non-scriptable, look-at-it form of evidence: an **external file** (committed with the farm by `yaks commit`), never inlined.
 
@@ -372,7 +375,7 @@ The non-scriptable, look-at-it form of evidence: an **external file** (committed
 
 `rename-attachment <id> <old> <new>`
 
-Rename `.yaks/<herd>/yaks/<id>/<old>` (e.g. an ugly `paste-….png`) and rewrite every link to it across the farm (the `![name]` / `[name]` text follows the new stem, and the link form follows the new extension). `<new>` is sanitized and keeps `<old>`'s extension if it omits one; refuses to overwrite an existing attachment.
+Rename `.yaks/<herd>/yaks/<id>/<old>` (e.g. an ugly `paste-….png`) and rewrite every link to it across the farm (the `![name]` / `[name]` text follows the new stem, and the link form follows the new extension). `<new>` is sanitized and keeps `<old>`'s extension if it omits one; refuses to overwrite an existing attachment. A markdown attachment of any yak that links the file (by bare name or `<id>/<file>`) is rewritten too, keeping the form it used.
 
 ### `attachment`
 

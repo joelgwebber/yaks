@@ -257,14 +257,25 @@ enum Command {
     /// `![name](<id>/<file>)` for an image (png, jpg, jpeg, gif, webp, svg)
     /// or `[name](<id>/<file>)` for any other file. Use for artifact
     /// evidence a human or coordinator can look at (screenshots, TUI frames).
+    ///
+    /// Several files attach in one write. For a markdown document and the
+    /// images it embeds, attach them together with `--no-link` and link only
+    /// the document from the yak: the document's own `![x](shot.png)` (the
+    /// bare file name) resolves to its sibling attachments, in `yaks tui` and
+    /// in any markdown viewer.
     Attach {
         id: String,
-        /// Path to the local file to attach.
-        path: PathBuf,
+        /// Paths of the local files to attach.
+        #[arg(required = true)]
+        paths: Vec<PathBuf>,
         /// Store the attachment under this filename instead of the source's
         /// (sanitized; the source's extension is kept if NAME omits one).
+        /// Only with a single file.
         #[arg(long)]
         name: Option<String>,
+        /// Store the files without adding a link to the yak's body.
+        #[arg(long)]
+        no_link: bool,
         /// An optional attributed note to record alongside the attachment.
         #[arg(long)]
         note: Option<String>,
@@ -2064,44 +2075,50 @@ fn main() -> Result<()> {
         }
         Command::Attach {
             id,
-            path,
+            paths,
             name,
+            no_link,
             note,
             as_actor,
         } => {
-            let data = match std::fs::read(&path) {
-                Ok(d) => d,
-                Err(e) => {
-                    eprintln!("error reading {}: {e}", path.display());
-                    std::process::exit(1);
-                }
-            };
-            let Some(src_name) = path.file_name().and_then(|s| s.to_str()) else {
-                eprintln!("error: attachment path has no filename: {}", path.display());
+            if name.is_some() && paths.len() > 1 {
+                eprintln!("error: --name names one file; attach several without it");
                 std::process::exit(1);
-            };
-            let name = match name {
-                None => src_name.to_string(),
-                Some(raw) => match farm::attachment_name(&raw, src_name) {
-                    Some(n) => n,
-                    None => {
-                        eprintln!("error: invalid attachment name: {raw:?}");
+            }
+            let mut files = Vec::new();
+            for path in &paths {
+                let data = match std::fs::read(path) {
+                    Ok(d) => d,
+                    Err(e) => {
+                        eprintln!("error reading {}: {e}", path.display());
                         std::process::exit(1);
                     }
-                },
-            };
-            match farm.attach(&id, &name, &data)? {
+                };
+                let Some(src_name) = path.file_name().and_then(|s| s.to_str()) else {
+                    eprintln!("error: attachment path has no filename: {}", path.display());
+                    std::process::exit(1);
+                };
+                let stored = match &name {
+                    None => src_name.to_string(),
+                    Some(raw) => match farm::attachment_name(raw, src_name) {
+                        Some(n) => n,
+                        None => {
+                            eprintln!("error: invalid attachment name: {raw:?}");
+                            std::process::exit(1);
+                        }
+                    },
+                };
+                files.push((stored, data));
+            }
+            match farm.attach_many(&id, &files, !no_link)? {
                 AttachOutcome::NotFound => {
                     eprintln!("no such task: {id}");
                     std::process::exit(1);
                 }
                 AttachOutcome::Attached(n) => {
-                    println!(
-                        "attached {n} to {id} ({})",
-                        store::artifact_dir(std::path::Path::new(".yaks"), &id)
-                            .join(&n)
-                            .display()
-                    );
+                    let dir = store::artifact_dir(std::path::Path::new(".yaks"), &id);
+                    let linked = if no_link { ", not linked" } else { "" };
+                    println!("attached {n} to {id} ({}{linked})", dir.display());
                     if let Some(text) = note {
                         let actor = actor::resolve(as_actor.as_deref());
                         farm.update(

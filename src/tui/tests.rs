@@ -4521,6 +4521,39 @@ fn a_page_in_the_viewer_draws_attachment_and_farm_root_images_in_place() {
     }
 }
 
+/// yaks-be20: an evidence document attached to a yak embeds its images by
+/// bare file name (`![x](shot.png)`, which any markdown viewer resolves
+/// beside the file). In the viewer they are the yak's own attachments: drawn
+/// in place, and the same link opens through its canonical `<id>/<file>`.
+#[test]
+fn a_markdown_attachment_draws_its_sibling_images_in_place() {
+    let (dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+    put_attachment(&farm, "t0", "shot.png", &two_tone_png(120, 120));
+    put_attachment(
+        &farm,
+        "t0",
+        "evidence.md",
+        b"# Evidence\n\nBefore.\n\n![shot](shot.png)\n\nAfter.\n",
+    );
+    let mut app = App::with_farm(farm).unwrap();
+    HeadlessApp::on_resize(&mut app, 100, 40);
+    app.open_external("t0/evidence.md");
+    assert!(app.attach().is_some(), "{:?}", app.notification);
+    draw(&app, 100, 40);
+    let (rows, _) = app.attachment_rows().unwrap();
+    assert_eq!(rows.iter().filter(|r| r.image.is_some()).count(), 6);
+    assert_eq!(image_pixel_rows(&app, 100, 40), 6, "drawn in place");
+    // The link under the cursor is the canonical attachment path, so Enter
+    // opens it like any attachment.
+    let target = rows
+        .iter()
+        .flat_map(|r| r.links.iter())
+        .find_map(|(_, _, t)| matches!(t, detail::Target::Artifact(_)).then(|| t.clone()))
+        .expect("an attachment link");
+    assert_eq!(target, detail::Target::Artifact("t0/shot.png".into()));
+    let _ = std::fs::remove_dir_all(dir);
+}
+
 #[test]
 fn a_broken_inline_image_is_not_retried_every_frame_and_draws_nothing() {
     let mut t0 = task("t0", "solo", Status::Hairy, 3, None);

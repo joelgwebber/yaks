@@ -199,7 +199,7 @@ fn evidence(b: &Brief) -> String {
     format!(
         "Evidence (the coordinator re-runs it and rejects what it cannot reproduce)\n\
          {gate}\n\
-         - A file someone should look at (screenshot, TUI frame, log): `yaks attach {id} <file>`.\n\
+         - A file someone should look at (screenshot, TUI frame, log): `yaks attach {id} <file>`. A markdown document with the images it embeds: `yaks attach {id} doc.md a.png --no-link`, then link only the document.\n\
          - Paste real output in notes; claim nothing unobserved."
     )
 }

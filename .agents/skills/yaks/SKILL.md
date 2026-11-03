@@ -127,6 +127,7 @@ Next: G3's question, which belongs with yak-7af5.
 - A page: from the farm root, `[link grammar](/wiki/design/link-grammar.md#heading)`; a relative link only goes down (`notes/detail.md`), never `../`. `@<sha>` pins a page too.
 - `yaks peek <link>` prints just what a link names (the lines, the section, or a page's frontmatter and first paragraph): read that rather than a whole file. `yaks doctor` reports links that lead nowhere.
 - Attachments: `yaks attach` writes the link (`[name](<id>/<file>)`, `![name](...)` for an image). Attach images and long output rather than pasting them.
+- A markdown document you attach that embeds images (an evidence write-up with screenshots): attach it and its images together with `--no-link` (`yaks attach <id> doc.md a.png b.png --no-link`), then link only the document in a note (`[evidence](<id>/doc.md)`). Inside an attachment, a bare file name (`![a](a.png)`) is a sibling attachment of the same yak, so keep the document's own links bare and don't put each image on the yak.
 - Size an image with a trailing alt-text token: `![shot =50%](<id>/shot.png)`, `=300x200` or `=x120` (px, or `%` of width).
 - **A yak from your conversation with the human:** when your harness renders links to local files (Zed, Delta, most IDE chats), link the yak's file by its absolute path, as printed by `yaks path yak-0af1` (`[yak-0af1](/home/me/.local/share/yaks/farms/.../yak-0af1.md)`), so they can open it in one click. A yak's file never moves, so the link stays good. (Hard rule 3 still keeps ids out of PRs and trackers.)
 
@@ -181,7 +182,7 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 | `shave` / `shorn` / `regrow` / `slaughter` / `revive` | State moves; several ids at once; each appends an attributed `moved:` entry. `slaughter --family` takes open descendants too |
 | `ask` / `answer` / `request` / `pickup` / `inbox` / `wait` | The inbox (above); `inbox --for human\|agent`, `wait --timeout 10m` |
 | `verify <id>` | Run the yak's `verify:` (else the config default) and record PASS/FAIL |
-| `attach <id> <file>` | Store and link evidence; `rename-attachment` renames one |
+| `attach <id> <file>...` | Store and link evidence (`--no-link`: store only, for the parts of a document that links them itself); `rename-attachment` renames one |
 | `whoami [--set <name>]` | The name your writes are stamped with, and why; `--set` names this checkout once |
 | `log` | Notes and moves over a filtered set, oldest first; `--since 2h`, `--by <actor>` |
 | `refs <id>` | What it points at; `--incoming` for what points at it |

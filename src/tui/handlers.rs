@@ -109,12 +109,20 @@ impl AttachView {
         }
     }
 
-    /// The document links in it are written from: a yak (an attachment), or
-    /// the farm file at its path, so a relative link means what
-    /// [`crate::links::parse`] says it means there.
+    /// The document links in it are written from: an attachment of its yak
+    /// (`target` is `<id>/<file>`), or the farm file at its path, so a
+    /// relative link means what [`crate::links::parse`] says it means there.
     pub(crate) fn from(&self) -> crate::links::From<'_> {
         match self.doc {
-            DocKind::Attachment => crate::links::From::Yak,
+            DocKind::Attachment => match self
+                .target
+                .strip_prefix(".yaks/")
+                .unwrap_or(&self.target)
+                .split_once('/')
+            {
+                Some((id, _)) => crate::links::From::Attachment(id),
+                None => crate::links::From::Yak,
+            },
             _ => crate::links::From::Page(&self.target),
         }
     }

@@ -282,6 +282,7 @@ fn rebase_description(base: &str, current: &str, new: String) -> Option<String> 
 }
 
 /// Result of attaching an artifact to a task.
+#[derive(Debug, PartialEq, Eq)]
 pub enum AttachOutcome {
     Attached(String),
     NotFound,
@@ -2260,6 +2261,19 @@ impl Farm {
                     );
                 }
                 let text = std::fs::read_to_string(&found.path)?;
+                // The page lives elsewhere: its bare sibling links (`shot.png`)
+                // keep naming the yak's attachments, as `<id>/<file>`.
+                let ids = store::all_ids(&self.root);
+                let (text, _) = crate::links::rewrite(&text, |dest| {
+                    match crate::links::parse(dest, crate::links::From::Attachment(id), |s| {
+                        ids.contains(s)
+                    }) {
+                        crate::links::Link::Attachment { name, .. } if !dest.contains('/') => {
+                            Some(format!("{id}/{}", crate::links::percent_encode_path(&name)))
+                        }
+                        _ => None,
+                    }
+                });
                 let mut p = crate::pages::Page::parse(&page, &text);
                 if !p.has_frontmatter {
                     p = crate::pages::new_page(&self.root, &page, None, None, &[], &text)?;
@@ -2341,6 +2355,22 @@ impl Farm {
             if n > 0 {
                 p.body = body;
                 crate::pages::save(&self.root, &p)?;
+            }
+        }
+        // The markdown attachments of every yak (an evidence document
+        // linking the file by its bare name).
+        for id in &ids {
+            for a in list_attachments(&self.root, id) {
+                if !crate::links::is_markdown_name(&a.name) {
+                    continue;
+                }
+                let Ok(text) = std::fs::read_to_string(&a.path) else {
+                    continue;
+                };
+                let (text, n) = fix(&text, crate::links::From::Attachment(id));
+                if n > 0 {
+                    std::fs::write(&a.path, text)?;
+                }
             }
         }
         Ok(())
@@ -2452,23 +2482,48 @@ impl Farm {
     /// inside the farm and is committed with it (`yaks commit`), so an
     /// attachment is shareable evidence, not just local scratch.
     pub fn attach(&self, id: &str, name: &str, data: &[u8]) -> Result<AttachOutcome> {
+        self.attach_many(id, &[(name.to_string(), data.to_vec())], true)
+    }
+
+    /// [`Farm::attach`] for several files in one write (one farm commit).
+    /// With `link` false the files are only stored beside the yak and its
+    /// body is untouched: for the parts of a document that links them itself
+    /// (an evidence page whose `![x](shot.png)` names its sibling
+    /// attachments, see [`crate::links::From::Attachment`]).
+    pub fn attach_many(
+        &self,
+        id: &str,
+        files: &[(String, Vec<u8>)],
+        link: bool,
+    ) -> Result<AttachOutcome> {
         let _lock = store::lock(&self.root)?;
         let Some(mut task) = store::load_task_by_id(&self.root, id)? else {
             return Ok(AttachOutcome::NotFound);
         };
         let dir = store::artifact_dir(&self.root, id);
         std::fs::create_dir_all(&dir)?;
-        std::fs::write(dir.join(name), data)?;
-        let link = store::attachment_link(id, name);
         let mut body = task.body.trim_end().to_string();
-        if !body.is_empty() {
-            body.push_str("\n\n");
+        for (name, data) in files {
+            std::fs::write(dir.join(name), data)?;
+            if link {
+                if !body.is_empty() {
+                    body.push_str("\n\n");
+                }
+                body.push_str(&store::attachment_link(id, name));
+            }
         }
-        body.push_str(&link);
-        task.body = body;
-        task.updated = Some(store::now_iso());
-        store::write::save(&self.root, &task)?;
-        Ok(AttachOutcome::Attached(name.to_string()))
+        if link {
+            task.body = body;
+            task.updated = Some(store::now_iso());
+            store::write::save(&self.root, &task)?;
+        }
+        Ok(AttachOutcome::Attached(
+            files
+                .iter()
+                .map(|(n, _)| n.as_str())
+                .collect::<Vec<_>>()
+                .join(", "),
+        ))
     }
 
     /// Rename `.yaks/{id}/{old}` to a sanitized `new` (see
@@ -2538,6 +2593,44 @@ impl Farm {
                 t.updated = Some(store::now_iso());
                 store::write::save(&self.root, &t)?;
                 rewritten += 1;
+            }
+        }
+        // Markdown attachments (of any yak) naming it: a sibling's bare
+        // `old` stays bare, `<id>/old` stays qualified.
+        let ids = store::all_ids(&self.root);
+        for owner in &ids {
+            for a in list_attachments(&self.root, owner) {
+                if !crate::links::is_markdown_name(&a.name) {
+                    continue;
+                }
+                let Ok(text) = std::fs::read_to_string(&a.path) else {
+                    continue;
+                };
+                let (text, n) = crate::links::rewrite(&text, |dest| {
+                    let link =
+                        crate::links::parse(dest, crate::links::From::Attachment(owner), |s| {
+                            ids.contains(s)
+                        });
+                    let crate::links::Link::Attachment { id: i, name: n, .. } = link else {
+                        return None;
+                    };
+                    if i != id || n != old {
+                        return None;
+                    }
+                    let frag = dest
+                        .split_once('#')
+                        .map_or(String::new(), |(_, f)| format!("#{f}"));
+                    let bare = crate::links::percent_encode_path(&name);
+                    Some(if dest.split('#').next().is_some_and(|d| d.contains('/')) {
+                        format!("{id}/{bare}{frag}")
+                    } else {
+                        format!("{bare}{frag}")
+                    })
+                });
+                if n > 0 {
+                    std::fs::write(&a.path, text)?;
+                    rewritten += 1;
+                }
             }
         }
         Ok(R::Renamed { name, rewritten })
@@ -4912,6 +5005,82 @@ mod tests {
         assert!(b.contains("![final-shot](yak-0001/final-shot.png)"), "{b}");
         assert!(b.contains("[old](yak-0001/final-shot.png)"), "{b}");
         assert!(!b.contains("my shot") && !b.contains("my%20shot"), "{b}");
+    }
+
+    /// An evidence document and the images it embeds are attached together
+    /// without links; the document's bare `![x](shot.png)` names its sibling
+    /// attachments, so `doctor` is clean, and renaming or promoting a part
+    /// keeps the document right (yaks-be20).
+    #[test]
+    fn an_evidence_document_links_its_sibling_attachments_by_bare_name() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+        let doc =
+            "# Evidence\n\n![crop](a.png) and [again](yak-0001/a.png#x) and ![gone](nope.png)\n";
+        let files = vec![
+            ("evidence.md".to_string(), doc.as_bytes().to_vec()),
+            ("a.png".to_string(), b"x".to_vec()),
+        ];
+        farm.attach_many("yak-0001", &files, false).unwrap();
+        let body = |root: &Path| {
+            store::load_task_by_id(root, "yak-0001")
+                .unwrap()
+                .unwrap()
+                .body
+        };
+        assert!(!body(&root).contains("a.png"), "no link added to the yak");
+        let broken = |root: &Path| -> Vec<String> {
+            crate::links::edges(root)
+                .unwrap()
+                .into_iter()
+                .filter(|e| crate::links::exists(root, &e.link) == Some(false))
+                .map(|e| e.dest)
+                .collect()
+        };
+        assert_eq!(
+            broken(&root),
+            ["nope.png"],
+            "only the missing part is broken"
+        );
+
+        // Renaming a part rewrites the document, keeping each link's form.
+        farm.rename_attachment("yak-0001", "a.png", "b").unwrap();
+        let text = |root: &Path| {
+            std::fs::read_to_string(store::artifact_dir(root, "yak-0001").join("evidence.md"))
+                .unwrap()
+        };
+        let t = text(&root);
+        assert!(t.contains("![crop](b.png)"), "{t}");
+        assert!(t.contains("[again](yak-0001/b.png#x)"), "{t}");
+
+        // Promoting the document to a page keeps its parts reachable.
+        farm.promote("yak-0001", "evidence.md", Some("wiki/ev.md"), "t")
+            .unwrap();
+        let page = std::fs::read_to_string(root.join("wiki/ev.md")).unwrap();
+        assert!(page.contains("![crop](yak-0001/b.png)"), "{page}");
+        assert_eq!(broken(&root), ["yak-0001/nope.png"], "{page}");
+    }
+
+    /// With links (the default) `attach_many` writes the same body as one
+    /// `attach` per file.
+    #[test]
+    fn attach_many_links_each_file_in_order() {
+        let (root, farm) = temp_farm();
+        store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+        let files = vec![
+            ("a.png".to_string(), b"x".to_vec()),
+            ("b.txt".to_string(), b"y".to_vec()),
+        ];
+        let out = farm.attach_many("yak-0001", &files, true).unwrap();
+        assert_eq!(out, AttachOutcome::Attached("a.png, b.txt".into()));
+        let b = store::load_task_by_id(&root, "yak-0001")
+            .unwrap()
+            .unwrap()
+            .body;
+        assert!(
+            b.ends_with("![a](yak-0001/a.png)\n\n[b](yak-0001/b.txt)"),
+            "{b}"
+        );
     }
 
     /// `attach` links an image as `![stem](..)` and any other file as
