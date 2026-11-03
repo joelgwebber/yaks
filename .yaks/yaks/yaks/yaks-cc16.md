@@ -1,11 +1,11 @@
 ---
 id: yaks-cc16
 title: 'TUI phase 1: notifications clear on the next key'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T03:58:03Z'
+updated: '2026-11-03T03:58:07Z'
 parent: yaks-947a
 tags:
 - tui
@@ -105,3 +105,13 @@ result: pass
 ---
 
 verify: `env -u YAKS_DIR -u YAKS_ACTOR cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-03T03:58:07Z [notify-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD9uc5IBxBCtY3f3KUhDW5IL-PWT3Nbm
+---
+
+moved: shaving -> shorn
