@@ -119,3 +119,11 @@ Decision: All uses the globe-free basket emoji (U+1F9FA). Rejected: U+1F5C3 (a n
 [query-chip-on-shaving](yaks-a25c/query-chip-on-shaving.txt)
 
 [query-on-all-view](yaks-a25c/query-on-all-view.txt)
+
+---
+▸ 2026-11-03T04:57:55Z [query-1]
+kind: verify
+result: fail
+---
+
+verify: `cargo test --workspace` -> FAIL (exit 127)
