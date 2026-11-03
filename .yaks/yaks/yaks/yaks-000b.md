@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-03T21:04:56Z'
-updated: '2026-11-03T22:04:36Z'
+updated: '2026-11-03T22:05:10Z'
 parent: yaks-f677
 tags:
 - tui
@@ -51,3 +51,8 @@ One left: "detail fields click-selected in edit mode". Which edit mode do you me
 2. **The in-place block editor** (editing a description or note in the pane). Lean: a click moves the editor's text cursor to that spot. This needs edtui to take a mouse position, which may mean a change in the edtui fork.
 
 Or both? I'd start with 1.
+
+---
+▸ 2026-11-03T22:05:10Z [delta:starred-batch]
+
+For option 2 of my ask: the edtui fork already has `events/mouse.rs` (`MouseEventHandler`, click-to-position and drag-select), so a click in the in-place editor may only need forwarding the event with the editor's rect. Smaller than I guessed.
