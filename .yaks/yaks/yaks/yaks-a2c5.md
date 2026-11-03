@@ -129,3 +129,8 @@ Decision: a jump is wrapped, not pushed by hand. `App::jump(|app| ..)` snapshots
 ▸ 2026-11-03T05:47:06Z [hist-1]
 
 Decision: opening a page from a list row (Wiki `Enter`/`l`, a new page) is a jump, though opening a yak's pane is not. The claim's test requires `o` from such a page to return to the list row, which only works if the open pushed the list location. `o` also skips stops identical to where you are, so `Enter`, `Esc`, `o` does not waste a step on the page just closed. Rejected: treating a page like a yak pane (no push), which makes `o` from a page skip the row and go to the previous view.
+
+---
+▸ 2026-11-03T05:47:06Z [hist-1]
+
+Decision: `moved` vs `gone` on restore. The cursor row is found by key (tried at its old index first, so a yak listed under two sheds keeps its place); found anywhere = silent, even if its index changed (Recent reorders constantly, a note per restore would be noise). Not found: the cursor clamps to the old index and the notification says `<id> moved` if the yak/page still exists and is listed somewhere (dead yaks count as gone), else `<id> gone`. Rejected: saying `moved` whenever the index differs; clamping to the index even when the row is found.
