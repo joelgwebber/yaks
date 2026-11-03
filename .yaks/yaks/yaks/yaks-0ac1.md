@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 3
 created: '2026-10-28T12:57:59Z'
-updated: '2026-11-03T02:19:23Z'
+updated: '2026-11-03T06:11:22Z'
 tags:
 - tui
 ---
@@ -32,3 +32,8 @@ Partly folded into the unified TUI design, [wiki/design/tui-model.md](/wiki/desi
 - **The key pass (phase 7).** Settling the collisions the design tabulates, then which-key, user overrides, and mouse bindings through the same table.
 
 Configurability, leader keys and which-key are still open here.
+
+---
+▸ 2026-11-03T06:11:22Z [herd-tui]
+
+The command table (phase 2, `642be42e`) and the key pass (phase 7, `c98d7e3c`: one meaning per key for h/v/N/r/q, a `?` keys popup, user `keys:` overrides by command name) landed under yaks-947a. Configurability depth, leader keys and a real which-key move to the holistic rethink, yaks-7c6e.
