@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T02:17:24Z'
-updated: '2026-11-03T02:17:31Z'
+updated: '2026-11-03T02:19:24Z'
 tags:
 - tui
 - design
@@ -22,3 +22,22 @@ One design that unifies five TUI yaks, so they land as one coherent model rather
 It also takes in what landed since the first two designs were written: the Wiki tab, the text viewer with link following, peek and its own history, image viewing, and Sheds rebuilt as one row per actor.
 
 The design lives in the repo at [docs/design/tui/model.md](code:docs/design/tui/model.md). The earlier per-yak designs are its references.
+
+---
+▸ 2026-11-03T02:19:24Z [tui-design]
+
+Drafted [docs/design/tui/model.md](code:docs/design/tui/model.md) and added a note to each folded yak (yaks-158d, yaks-953f, yaks-1bbd, yaks-c7ba, yaks-f1e6, yaks-0ac1) pointing back to it.
+
+Facts checked before writing:
+
+- A headless run of the current build shows the stale `filter:` toast.
+- The same run shows the text viewer swallowing `U` and `Tab`: the overlay stays open and nothing happens.
+- The code shows three back stacks: `nav_back`/`nav_fwd`, `viewer_back`/`viewer_fwd`, and `LineNav.back`/`fwd`.
+- The code shows that `/` matches different fields on the Wiki tab than on the yak tabs.
+
+Open for Joel:
+
+- the detached pane, which revisits decision 5;
+- the query matching rule;
+- pages in Starred and Recent;
+- putting the command table second.
