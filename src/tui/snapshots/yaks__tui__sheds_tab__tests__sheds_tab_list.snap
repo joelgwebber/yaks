@@ -1,18 +1,26 @@
 ---
 source: src/tui/sheds_tab.rs
-expression: "draw(&app, 120, 14)"
+expression: "draw(&app, 120, 22)"
 ---
- 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   📖  Wiki (0)   🛖  Sheds (4)
+ 🦬  Hairy (0)   🪒  Shaving (4)   🐑  Shorn (2)   🕒  Recent (6)   ⭐  Starred (0)   📖  Wiki (0)   🛖  Sheds (4)
 
 ⏳  tex-1                     active 14m ago      shaving: mem-7aba
+   mem-7aba p2 task     🪒  Add open-source textures                                                              shaving
    walk-1                    active 9m ago       shaving: mem-f13a
+   mem-f13a p2 task     🪒  Add walk mode                                                                         shaving
+   mem-99d0 p2 task     🐑  Left-button mouse lock                                                                 recent
    delta:Set up remote yak   active 12m ago      shaving: mem-f434
+   mem-f434 p2 task     🪒  Host the web build                                                                    shaving
    perf-2                    stale  5h ago       shaving: mem-0a01
+   mem-0a01 p2 task     🪒  Profile the chunk mesher                                                              shaving
    mig-2                     idle   1d ago       last: mem-0001 Migrate the save format
+   mem-0001 p2 task     🐑  Migrate the save format                                                                recent
    gone-1                    idle   30d ago      last: mem-0002 Old spike
+   mem-0002 p2 task     💀  Old spike                                                                              recent
+
 
 
 
 
    farm: up to date with origin/yaks
-Tab:view  j/k:move  l:detail  y:copy name  r:rescan  v:views  ?:help  q:quit
+Tab:view  j/k:move  l:detail  /:search  y:copy name  r:rescan  v:views  ?:help  q:quit

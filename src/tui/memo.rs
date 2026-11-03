@@ -24,12 +24,14 @@ use std::rc::Rc;
 
 use super::*;
 
-/// Where a cached row's item lives: a yak's index in this farm's tasks, or a
-/// document's index in `App.wiki.entries`.
+/// Where a cached row's item lives: a yak's index in this farm's tasks, a
+/// document's index in `App.wiki.entries`, or a shed's index in the sheds
+/// snapshot.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(super) enum Loc {
     Home(usize),
     Doc(usize),
+    Shed(usize),
 }
 
 /// A `tree::Row` with its `Item` replaced by a [`Loc`].
@@ -119,7 +121,7 @@ impl App {
         self.data_gen += 1;
     }
 
-    /// Index of `item` in `all` or the wiki entries: the inverse of
+    /// Index of `item` in `all`, the wiki entries or the sheds: the inverse of
     /// [`App::resolve_item`]. It must be borrowed from one of them.
     pub(super) fn locate(&self, item: tree::Item<'_>) -> Loc {
         fn within<T>(base: &[T], x: &T) -> Option<usize> {
@@ -138,6 +140,13 @@ impl App {
                     None => unreachable!("row document {} is not a wiki entry", e.path),
                 }
             }
+            tree::Item::Shed(s) => {
+                let sheds = self.sheds.snapshot.as_ref().map_or(&[][..], |n| n.sheds());
+                match within(sheds, s) {
+                    Some(i) => Loc::Shed(i),
+                    None => unreachable!("row shed {} is not in the snapshot", s.name),
+                }
+            }
         }
     }
 
@@ -146,6 +155,10 @@ impl App {
         match loc {
             Loc::Home(i) => tree::Item::Yak(&self.all[i]),
             Loc::Doc(i) => tree::Item::Doc(&self.wiki.entries.as_deref().unwrap_or_default()[i]),
+            Loc::Shed(i) => {
+                let snap = self.sheds.snapshot.as_ref();
+                tree::Item::Shed(&snap.expect("a shed row has a snapshot").sheds()[i])
+            }
         }
     }
 

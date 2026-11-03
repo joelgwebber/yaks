@@ -1,7 +1,9 @@
-//! The Sheds tab (yaks-98f1, yaks-da23): `yaks sheds` on screen, live. One row
-//! per actor (a worker in the farm), attention first, and a detail pane with
-//! the selected shed's yaks: what it is working on, what it is asking, and
-//! what else it wrote, newest first.
+//! The Sheds tab (yaks-98f1, yaks-da23): `yaks sheds` on screen, live. A tree
+//! view of the list (yaks-c354): one collapsible root per actor (a worker in
+//! the farm), attention first, and below it the yaks it touched as ordinary
+//! yak rows: what it is working on, what it is asking, and what else it
+//! wrote, newest first. A shed row's detail pane is the shed (where its code
+//! is, its yaks); a yak row's is the yak's.
 //!
 //! The data is exactly the CLI's: a scan calls `sheds::collect`, and every
 //! summary text the CLI also prints comes from the same `sheds` function
@@ -14,10 +16,10 @@
 //! Scans run at startup, every [`RESCAN_EVERY`] while the tab is shown, and
 //! on `r`; one at a time.
 //!
-//! The tab is a built-in view (`view::sheds_view`) whose yak rows are empty,
-//! so every yak key is inert there; its keys are the `Sheds` and `ShedDetail` contexts of `keymap`.
-//! A shed's yaks are yaks of this farm: Enter opens one, and `a` on the yak
-//! views answers it.
+//! The tab is a built-in view (`view::sheds_view`) whose rows `build_rows`
+//! takes from [`App::shed_rows`]; a yak row there takes every yak key, and a
+//! shed row the shed-kind bindings of `keymap`. A shed's yaks are yaks of this
+//! farm: one the farm no longer has is not listed.
 
 use super::*;
 use crate::sheds::{self, Kind, Liveness, Shed, Touched};
@@ -25,7 +27,7 @@ use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::Paragraph;
+use ratatui::widgets::{ListItem, Paragraph};
 use std::time::Instant;
 
 /// How often the sheds are rescanned while the tab is shown.
@@ -70,18 +72,11 @@ impl Snapshot {
     }
 }
 
-/// The tab's state: the latest snapshot, the cursors, and the scan plumbing.
+/// The tab's state: the latest snapshot and the scan plumbing (the cursor is
+/// the list's).
 #[derive(Default)]
 pub(crate) struct ShedsTab {
     pub snapshot: Option<Snapshot>,
-    /// Index into the snapshot's sheds (already in display order).
-    pub cursor: usize,
-    /// Detail pane: index into the selected shed's rows.
-    pub line: usize,
-    /// List: first visible row, kept across frames (yaks-9009).
-    pub list_offset: Cell<usize>,
-    /// Detail pane: first visible line, kept across frames.
-    pub offset: Cell<usize>,
     /// Seconds since the snapshot arrived, refreshed by `settle_sheds` (so
     /// `render` stays pure and tests can freeze it).
     pub age: Option<u64>,
@@ -161,67 +156,115 @@ impl App {
         self.sheds.age = self.sheds.scanned_at.map(|t| t.elapsed().as_secs());
     }
 
-    /// Swap in a new snapshot, keeping the cursor on the same shed (by name)
-    /// and the detail cursor on the same yak (by id).
+    /// The Sheds view's rows: a root per shed in display order, and under it
+    /// the yaks it touched that this farm still has, as `Shed::rows` orders
+    /// them. A live content filter (`/`, the drawer) keeps the yaks it matches
+    /// and a shed with any of them or a name the search matches.
+    pub(crate) fn shed_rows(&self) -> Vec<tree::Row<'_>> {
+        let Some(snap) = &self.sheds.snapshot else {
+            return Vec::new();
+        };
+        let by_id: std::collections::HashMap<&str, &Task> =
+            self.all.iter().map(|t| (t.id.as_str(), t)).collect();
+        let resolved = filter::resolved_ids(&self.all);
+        let active = self.filter.content_active();
+        let search = self
+            .filter
+            .search
+            .as_deref()
+            .filter(|q| !q.is_empty())
+            .map(str::to_lowercase);
+        let mut out = Vec::new();
+        for shed in snap.sheds() {
+            let kids: Vec<&Task> = shed
+                .rows()
+                .into_iter()
+                .filter_map(|(_, y)| by_id.get(y.id.as_str()).copied())
+                .filter(|t| !active || self.filter.matches(t, &resolved))
+                .collect();
+            let named = search
+                .as_deref()
+                .is_some_and(|q| shed.name.to_lowercase().contains(q));
+            if active && kids.is_empty() && !named {
+                continue;
+            }
+            out.push(tree::Row::shed(shed, !kids.is_empty()));
+            out.extend(kids.into_iter().map(tree::Row::shed_yak));
+        }
+        out
+    }
+
+    /// Swap in a new snapshot. On the Sheds tab the cursor stays on the same
+    /// yak under the same shed (by id and name), else on the shed.
     pub(crate) fn apply_sheds_snapshot(&mut self, snap: Snapshot) {
-        let shed = self.selected_shed().map(|s| s.name.clone());
-        let yak = self.selected_shed_yak().map(|(_, y)| y.id.clone());
+        let was = self.on_sheds_tab().then(|| {
+            (
+                self.cursor_shed().map(|s| s.name.clone()),
+                self.selected_id(),
+            )
+        });
         self.sheds.snapshot = Some(snap);
         self.touch();
-        let s = self.sheds.snapshot.as_ref().unwrap();
-        self.sheds.cursor = shed
-            .and_then(|n| s.sheds().iter().position(|x| x.name == n))
-            .unwrap_or(0)
-            .min(s.sheds().len().saturating_sub(1));
-        let rows = s.sheds().get(self.sheds.cursor).map(Shed::rows);
-        let rows = rows.as_deref().unwrap_or(&[]);
-        self.sheds.line = yak
-            .and_then(|id| rows.iter().position(|(_, y)| y.id == id))
-            .unwrap_or(0)
-            .min(rows.len().saturating_sub(1));
+        let Some((Some(shed), yak)) = was else {
+            return self.clamp_cursor();
+        };
+        let pos = {
+            let rows = self.rows();
+            let mut under = None;
+            let mut shed_at = None;
+            let mut yak_at = None;
+            for (i, r) in rows.iter().enumerate() {
+                match r.item {
+                    tree::Item::Shed(s) => {
+                        under = Some(&s.name);
+                        if s.name == shed {
+                            shed_at = Some(i);
+                        }
+                    }
+                    tree::Item::Yak(t) if yak.as_deref() == Some(t.id.as_str()) => {
+                        if under == Some(&shed) {
+                            yak_at = Some(i);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            yak_at.or(shed_at)
+        };
+        match pos {
+            Some(i) => self.cursor = i,
+            None => self.clamp_cursor(),
+        }
     }
 
+    /// The selected shed, when the cursor is on a shed row.
     pub(crate) fn selected_shed(&self) -> Option<&Shed> {
-        self.sheds.snapshot.as_ref()?.sheds().get(self.sheds.cursor)
-    }
-
-    /// The yak under the detail cursor, with the part of the shed it is in.
-    pub(crate) fn selected_shed_yak(&self) -> Option<(Kind, &Touched)> {
-        self.selected_shed()?.rows().get(self.sheds.line).copied()
-    }
-
-    pub(crate) fn move_shed(&mut self, delta: i32) {
-        let n = self.sheds.snapshot.as_ref().map_or(0, |s| s.sheds().len());
-        if n == 0 {
-            return;
-        }
-        let c = (self.sheds.cursor as i64 + delta as i64).clamp(0, n as i64 - 1);
-        if c as usize != self.sheds.cursor {
-            self.sheds.cursor = c as usize;
-            self.sheds.line = 0;
-            self.sheds.offset.set(0);
+        match self.selected_row()? {
+            tree::Item::Shed(s) => Some(s),
+            _ => None,
         }
     }
 
-    pub(crate) fn move_shed_yak(&mut self, delta: i32) {
-        let n = self.selected_shed().map_or(0, |s| s.touched.len());
-        if n == 0 {
-            return;
-        }
-        let l = (self.sheds.line as i64 + delta as i64).clamp(0, n as i64 - 1);
-        self.sheds.line = l as usize;
+    /// The shed the cursor is in: a shed row, or a yak row below one.
+    pub(crate) fn cursor_shed(&self) -> Option<&Shed> {
+        let rows = self.cached_rows();
+        let upto = self.cursor.min(rows.len().checked_sub(1)?);
+        rows[..=upto]
+            .iter()
+            .rev()
+            .find_map(|r| match self.resolve_item(r.loc) {
+                tree::Item::Shed(s) => Some(s),
+                _ => None,
+            })
     }
 
-    /// toque's state-header digest on the Sheds tab: the selected shed and yak.
+    /// toque's state-header digest on the Sheds tab: the shed the cursor is in.
     pub(crate) fn sheds_state_header(&self) -> String {
         let shed = self
-            .selected_shed()
+            .cursor_shed()
             .map_or_else(|| "-".into(), |s| s.name.clone());
-        let yak = self
-            .selected_shed_yak()
-            .map_or_else(|| "-".into(), |(_, y)| y.id.clone());
         let n = self.sheds.snapshot.as_ref().map_or(0, |s| s.sheds().len());
-        format!("sheds={n} \u{b7} shed={shed} \u{b7} shed_yak={yak}")
+        format!("sheds={n} \u{b7} shed={shed}")
     }
 
     /// The tab's count: sheds wanting a look right now, `…` before the
@@ -251,43 +294,16 @@ impl App {
         self.notification = Some("rescanning sheds".into());
     }
 
-    /// `l` / Enter on a shed: show it in the detail pane, from the top.
-    pub(crate) fn open_shed(&mut self) {
-        if self.selected_shed().is_some() {
-            self.focus = Focus::Detail;
-            self.sheds.line = 0;
-            self.sheds.offset.set(0);
-        }
-    }
-
-    /// `y`: the yak id on a yak line of the detail, else the shed's name (the
-    /// actor to pass as `YAKS_ACTOR`).
-    pub(crate) fn copy_shed_thing(&mut self) {
-        let text = if self.focus == Focus::Detail {
-            self.selected_shed_yak().map(|(_, y)| y.id.clone())
-        } else {
-            None
-        }
-        .or_else(|| self.selected_shed().map(|s| s.name.clone()));
-        let Some(text) = text else { return };
+    /// `y` on a shed row: copy its name (the actor to pass as `YAKS_ACTOR`).
+    pub(crate) fn copy_shed_name(&mut self) {
+        let Some(text) = self.selected_shed().map(|s| s.name.clone()) else {
+            return;
+        };
         self.notification = Some(if crate::clipboard::copy_text(&text) {
             format!("copied {text}")
         } else {
             "clipboard unavailable".into()
         });
-    }
-
-    /// Enter on a yak in a shed's detail: open it. A yak since removed from
-    /// the farm says so.
-    pub(crate) fn open_shed_yak(&mut self) {
-        let Some(id) = self.selected_shed_yak().map(|(_, y)| y.id.clone()) else {
-            return;
-        };
-        if self.task(&id).is_some() {
-            self.goto_task(&id);
-        } else {
-            self.notification = Some(format!("{id} is no longer in this farm"));
-        }
     }
 }
 
@@ -311,14 +327,28 @@ fn pad(s: &str, w: usize) -> String {
     format!("{t}{}", " ".repeat(fill))
 }
 
+/// The width of the name column: the widest shed name among `rows`.
+pub(crate) fn name_width(rows: &[tree::Row<'_>]) -> usize {
+    rows.iter()
+        .filter_map(|r| match r.item {
+            tree::Item::Shed(s) => Some(disp_width(&s.name)),
+            _ => None,
+        })
+        .max()
+        .unwrap_or(4)
+        .clamp(4, 24)
+}
+
 /// One list row for a shed: mark, name, liveness, when it last wrote, then
-/// what it is working on (else its newest yak).
-fn shed_row(
+/// what it is working on (else its newest yak), and the count of the yaks
+/// hidden below it when it is collapsed.
+pub(crate) fn shed_item(
+    row: &tree::Row<'_>,
     s: &Shed,
     now: chrono::DateTime<chrono::Utc>,
     name_w: usize,
     width: u16,
-) -> Line<'static> {
+) -> ListItem<'static> {
     let mark = if s.asks().next().is_some() {
         "\u{23f3}"
     } else {
@@ -349,89 +379,73 @@ fn shed_row(
             .map(|t| format!("last: {} {}", t.id, t.title))
             .unwrap_or_default()
     };
+    let badge = if row.collapsed && row.hidden > 0 {
+        format!(" \u{25b6} {} ", row.hidden)
+    } else {
+        String::new()
+    };
     let used: usize = spans.iter().map(|sp| disp_width(&sp.content)).sum();
-    let room = (width as usize).saturating_sub(used);
+    let room = (width as usize).saturating_sub(used + disp_width(&badge));
     // Padded to the full width so the cursor highlight spans the row.
     spans.push(Span::styled(pad(&tail, room), base));
-    Line::from(spans)
+    spans.push(Span::styled(badge, dim().fg(Color::DarkGray)));
+    ListItem::new(Line::from(spans))
 }
 
-pub(crate) fn render_sheds_list(app: &App, frame: &mut Frame, area: Rect) {
+/// What the Sheds view's list says instead of rows: that no scan has come
+/// back, why it failed, or that nothing is there or nothing matches. `None`
+/// when there are rows.
+pub(crate) fn sheds_notice(app: &App, no_rows: bool) -> Option<Paragraph<'static>> {
     let Some(snap) = &app.sheds.snapshot else {
         let msg = if app.sheds.scan {
             "scanning sheds\u{2026}"
         } else {
             "No shed scan in this view."
         };
-        frame.render_widget(Paragraph::new(Span::styled(msg, dim())), area);
-        return;
+        return Some(Paragraph::new(Span::styled(msg, dim())));
     };
     if let Some(e) = &snap.error {
-        frame.render_widget(
-            Paragraph::new(Span::styled(
-                format!("shed scan failed: {e}"),
-                Style::new().fg(Color::Red),
-            )),
-            area,
-        );
-        return;
+        return Some(Paragraph::new(Span::styled(
+            format!("shed scan failed: {e}"),
+            Style::new().fg(Color::Red),
+        )));
     }
-    if snap.sheds().is_empty() {
-        frame.render_widget(
-            Paragraph::new(Span::styled(
-                "No actor has written to this farm yet.",
-                dim(),
-            )),
-            area,
-        );
-        return;
-    }
-    let name_w = snap
-        .sheds()
-        .iter()
-        .map(|s| disp_width(&s.name))
-        .max()
-        .unwrap_or(4)
-        .clamp(4, 24);
-    let focused = app.focus == Focus::List;
-    let hl = if focused {
-        Style::new().bg(super::surface::selected())
-    } else {
-        Style::new().bg(super::surface::band())
+    no_rows.then(|| {
+        let msg = if snap.sheds().is_empty() {
+            "No actor has written to this farm yet."
+        } else {
+            "No shed or yak matches the filter."
+        };
+        Paragraph::new(Span::styled(msg, dim()))
+    })
+}
+
+/// Draw the farm's freshness (when it has an upstream) on the last line of
+/// `area`, and return the part above it for the rows.
+pub(crate) fn render_farm_footer(app: &App, frame: &mut Frame, area: Rect) -> Rect {
+    let Some(farm) = app
+        .sheds
+        .snapshot
+        .as_ref()
+        .and_then(|s| sheds::farm_header(&s.report))
+    else {
+        return area;
     };
-    // A footer line for the farm's freshness, when it has an upstream.
-    let farm = sheds::farm_header(&snap.report);
-    let rows_h = (area.height as usize).saturating_sub(farm.is_some() as usize * 2);
-    let mut offset = app.sheds.list_offset.get();
-    if app.sheds.cursor < offset {
-        offset = app.sheds.cursor;
-    } else if rows_h > 0 && app.sheds.cursor >= offset + rows_h {
-        offset = app.sheds.cursor + 1 - rows_h;
+    let footer_h = area.height.min(2);
+    let footer = Rect {
+        y: area.y + area.height - footer_h,
+        height: footer_h,
+        ..area
+    };
+    let mut lines = vec![Line::default(); footer_h as usize];
+    if let Some(last) = lines.last_mut() {
+        *last = Line::from(Span::styled(format!("   {farm}"), dim()));
     }
-    app.sheds.list_offset.set(offset);
-    let mut lines: Vec<Line> = snap
-        .sheds()
-        .iter()
-        .enumerate()
-        .skip(offset)
-        .take(rows_h)
-        .map(|(pos, s)| {
-            let row = shed_row(s, snap.report.now, name_w, area.width);
-            if pos == app.sheds.cursor {
-                row.style(hl)
-            } else {
-                row
-            }
-        })
-        .collect();
-    if let Some(farm) = farm {
-        while lines.len() < rows_h {
-            lines.push(Line::default());
-        }
-        lines.push(Line::default());
-        lines.push(Line::from(Span::styled(format!("   {farm}"), dim())));
+    frame.render_widget(Paragraph::new(lines), footer);
+    Rect {
+        height: area.height - footer_h,
+        ..area
     }
-    frame.render_widget(Paragraph::new(lines), area);
 }
 
 /// One yak's line in a shed's detail: the shared text of `yaks sheds`, the
@@ -454,9 +468,9 @@ fn yak_line(kind: Kind, y: &Touched, now: chrono::DateTime<chrono::Utc>) -> Line
     Line::from(spans)
 }
 
-/// The detail pane's lines for shed `s`, and the line each of its rows sits
-/// on, indexed like `ShedsTab::line`.
-fn detail_lines(s: &Shed, now: chrono::DateTime<chrono::Utc>) -> (Vec<Line<'static>>, Vec<usize>) {
+/// The detail pane's lines for shed `s`: its status, where its code is, and
+/// its yaks.
+fn detail_lines(s: &Shed, now: chrono::DateTime<chrono::Utc>) -> Vec<Line<'static>> {
     let mut lines: Vec<Line<'static>> = vec![Line::from(vec![
         Span::styled(
             s.name.clone(),
@@ -468,43 +482,18 @@ fn detail_lines(s: &Shed, now: chrono::DateTime<chrono::Utc>) -> (Vec<Line<'stat
         lines.push(Line::from(vec![Span::styled(c.line(now), dim())]));
     }
     lines.push(Line::default());
-    let mut starts = Vec::new();
-    for (kind, y) in s.rows() {
-        starts.push(lines.len());
-        lines.push(yak_line(kind, y, now));
-    }
-    (lines, starts)
+    lines.extend(s.rows().into_iter().map(|(kind, y)| yak_line(kind, y, now)));
+    lines
 }
 
+/// The pane of a shed row. (A yak row's is the yak's.)
 pub(crate) fn render_shed_detail(app: &App, frame: &mut Frame, area: Rect) {
     let (Some(snap), Some(s)) = (&app.sheds.snapshot, app.selected_shed()) else {
         return;
     };
-    let (mut lines, starts) = detail_lines(s, snap.report.now);
-    let h = area.height as usize;
-    // Keep the selected yak's line in view.
-    let mut offset = app.sheds.offset.get();
-    if let Some(&start) = starts.get(app.sheds.line) {
-        if start < offset {
-            offset = start;
-        } else if start + 1 > offset + h {
-            offset = start + 1 - h;
-        }
-        if app.focus == Focus::Detail {
-            let hl = Style::new().bg(super::surface::selected());
-            let mut l = std::mem::take(&mut lines[start]);
-            let w: usize = l.spans.iter().map(|s| disp_width(&s.content)).sum();
-            l.spans.push(Span::raw(
-                " ".repeat((area.width as usize).saturating_sub(w)),
-            ));
-            lines[start] = l.style(hl);
-        }
-    }
-    app.sheds.offset.set(offset);
-    let visible: Vec<Line> = lines
+    let visible: Vec<Line> = detail_lines(s, snap.report.now)
         .into_iter()
-        .skip(offset)
-        .take(h)
+        .take(area.height as usize)
         .map(|l| {
             let text: String = l.spans.iter().map(|s| s.content.as_ref()).collect();
             if disp_width(&text) <= area.width as usize {
@@ -692,76 +681,260 @@ mod tests {
         assert_eq!(app.view_count(&v), 4);
     }
 
-    #[test]
-    fn yak_keys_are_inert_on_the_sheds_tab() {
-        let mut app = on_sheds(sample());
-        for c in ['S', 'E', 'X', 'c', 'D', 'M', '/', 'f', '*', 'm', 'a'] {
-            press(&mut app, &c.to_string());
-            assert!(
-                matches!(app.overlay, Overlay::None),
-                "{c} opened an overlay on the Sheds tab"
-            );
-        }
-        assert!(app.selected.is_empty());
+    /// A farm that has every yak the fixture's sheds touched, on the Sheds tab.
+    fn shed_farm() -> App {
+        use crate::model::Status::*;
+        let tasks = [
+            ("mem-7aba", "Add open-source textures", Shaving),
+            ("mem-f13a", "Add walk mode", Shaving),
+            ("mem-99d0", "Left-button mouse lock", Shorn),
+            ("mem-f434", "Host the web build", Shaving),
+            ("mem-0a01", "Profile the chunk mesher", Shaving),
+            ("mem-0001", "Migrate the save format", Shorn),
+            ("mem-0002", "Old spike", Dead),
+        ];
+        on_sheds(App::new(
+            tasks
+                .iter()
+                .map(|(id, title, st)| task(id, title, *st, 2, None))
+                .collect(),
+        ))
+    }
+
+    /// The rows as `shed:<name>` / `<yak id>`, in order.
+    fn row_names(app: &App) -> Vec<String> {
+        app.rows()
+            .iter()
+            .map(|r| match r.item {
+                tree::Item::Shed(s) => format!("shed:{}", s.name),
+                tree::Item::Yak(t) => t.id.clone(),
+                tree::Item::Doc(e) => e.path.clone(),
+            })
+            .collect()
     }
 
     #[test]
-    fn detail_moves_over_yaks_and_sheds() {
-        let mut app = on_sheds(sample());
-        press(&mut app, "jl"); // walk-1's detail
-        assert_eq!(app.focus, Focus::Detail);
-        assert_eq!(app.selected_shed().unwrap().name, "walk-1");
-        assert_eq!(app.selected_shed_yak().unwrap().1.id, "mem-f13a");
-        press(&mut app, "j");
-        assert_eq!(app.selected_shed_yak().unwrap().1.id, "mem-99d0");
-        press(&mut app, "j"); // clamps
-        assert_eq!(app.selected_shed_yak().unwrap().1.id, "mem-99d0");
-        press(&mut app, "K"); // previous shed, still in the detail
-        assert_eq!(app.focus, Focus::Detail);
-        assert_eq!(app.selected_shed().unwrap().name, "tex-1");
-        assert_eq!(app.selected_shed_yak().unwrap().1.id, "mem-7aba");
-        press(&mut app, "h");
-        assert_eq!(app.focus, Focus::List);
+    fn rows_are_sheds_with_the_yaks_they_touched_below() {
+        let app = shed_farm();
+        assert_eq!(
+            row_names(&app),
+            [
+                "shed:tex-1",
+                "mem-7aba",
+                "shed:walk-1",
+                "mem-f13a", // shaving, then recent
+                "mem-99d0",
+                "shed:delta:Set up remote yak workflow",
+                "mem-f434",
+                "shed:perf-2",
+                "mem-0a01",
+                "shed:mig-2",
+                "mem-0001",
+                "shed:gone-1",
+                "mem-0002",
+            ]
+        );
+        let rows = app.rows();
+        assert!(rows.iter().all(|r| r.depth == (r.yak().is_some() as u16)));
+        assert!(rows[0].has_children && !rows[1].has_children);
     }
 
     #[test]
-    fn a_new_snapshot_keeps_the_selected_shed_and_yak() {
-        let mut app = on_sheds(sample());
-        press(&mut app, "jlj");
-        assert_eq!(app.selected_shed_yak().unwrap().1.id, "mem-99d0");
-        // The next scan finds the asker's ask answered and a new actor first:
-        // the cursor stays on walk-1 and its yak.
-        let mut snap = fixture::snapshot();
-        let mut newcomer = snap.report.sheds[1].clone();
-        newcomer.name = "aaa-new".into();
-        snap.report.sheds.insert(0, newcomer);
-        app.apply_sheds_snapshot(snap);
-        assert_eq!(app.selected_shed().unwrap().name, "walk-1");
-        assert_eq!(app.selected_shed_yak().unwrap().1.id, "mem-99d0");
-    }
-
-    #[test]
-    fn enter_opens_the_yak_or_says_it_is_gone() {
-        // Only mem-f13a is in this farm.
-        let mut app = on_sheds(App::new(vec![task(
+    fn a_yak_the_farm_lacks_is_not_listed() {
+        // Only mem-f13a is in this farm: tex-1 is a root with nothing below.
+        let app = on_sheds(App::new(vec![task(
             "mem-f13a",
             "walk mode",
             crate::model::Status::Shaving,
             2,
             None,
         )]));
-        press(&mut app, "l"); // tex-1: mem-7aba is not in this farm
-        enter_key(&mut app);
-        assert_eq!(
-            app.notification.as_deref(),
-            Some("mem-7aba is no longer in this farm")
+        let names = row_names(&app);
+        assert_eq!(names[0], "shed:tex-1");
+        assert_eq!(names[1], "shed:walk-1");
+        assert!(!names.contains(&"mem-7aba".to_string()));
+        assert!(names.contains(&"mem-f13a".to_string()));
+        assert!(!app.rows()[0].has_children);
+    }
+
+    #[test]
+    fn j_from_a_shed_root_lands_on_its_first_yak() {
+        let mut app = shed_farm();
+        assert!(app.selected_shed().is_some());
+        press(&mut app, "j");
+        assert_eq!(app.selected_id().as_deref(), Some("mem-7aba"));
+        assert!(app.selected_shed().is_none());
+        assert_eq!(app.cursor_shed().unwrap().name, "tex-1");
+        press(&mut app, "j");
+        assert_eq!(app.selected_shed().unwrap().name, "walk-1");
+    }
+
+    #[test]
+    fn space_collapses_a_shed_and_again_expands_it() {
+        let mut app = shed_farm();
+        press(&mut app, "jj"); // walk-1
+        assert_eq!(app.selected_shed().unwrap().name, "walk-1");
+        press(&mut app, " ");
+        assert!(app.collapsed.contains("shed:walk-1"));
+        let names = row_names(&app);
+        assert!(!names.contains(&"mem-f13a".to_string()));
+        assert!(!names.contains(&"mem-99d0".to_string()));
+        let walk = &app.rows()[2];
+        assert!(walk.collapsed && walk.hidden == 2);
+        assert!(draw(&app, 120, 14).contains("\u{25b6} 2"), "the badge");
+        press(&mut app, " ");
+        assert!(app.collapsed.is_empty());
+        assert!(row_names(&app).contains(&"mem-f13a".to_string()));
+        // A yak row below a shed has no children to collapse.
+        press(&mut app, "j ");
+        assert!(app.collapsed.is_empty());
+    }
+
+    #[test]
+    fn a_shed_row_shows_the_shed_and_a_yak_row_the_yak() {
+        let mut app = shed_farm();
+        press(&mut app, "jjl"); // walk-1
+        assert_eq!(app.focus, Focus::Detail);
+        let frame = draw(&app, 120, 14);
+        assert!(frame.contains("work/walk-1"), "{frame}");
+        // The pane's own keys: rescan, and copy the name.
+        press(&mut app, "r");
+        assert_eq!(app.notification.as_deref(), Some("rescanning sheds"));
+        press(&mut app, "y");
+        let note = app.notification.clone().unwrap();
+        assert!(
+            note == "copied walk-1" || note == "clipboard unavailable",
+            "{note}"
         );
-        assert!(app.on_sheds_tab());
-        press(&mut app, "J"); // walk-1: mem-f13a
-        enter_key(&mut app);
-        assert!(!app.on_sheds_tab());
+        press(&mut app, "J"); // its first yak, still in the pane
         assert_eq!(app.focus, Focus::Detail);
         assert_eq!(app.selected_id().as_deref(), Some("mem-f13a"));
+        let frame = draw(&app, 120, 14);
+        assert!(frame.contains("Add walk mode"), "{frame}");
+        assert!(!frame.contains("work/walk-1"), "{frame}");
+        press(&mut app, "J");
+        assert_eq!(app.selected_id().as_deref(), Some("mem-99d0"));
+        press(&mut app, "K");
+        press(&mut app, "K");
+        assert_eq!(app.selected_shed().unwrap().name, "walk-1");
+        press(&mut app, "h");
+        assert_eq!(app.focus, Focus::List);
+    }
+
+    #[test]
+    fn enter_on_a_yak_child_opens_the_yak_and_j_moves_on() {
+        let mut app = shed_farm();
+        press(&mut app, "j");
+        enter_key(&mut app);
+        assert!(app.on_sheds_tab());
+        assert_eq!(app.focus, Focus::Detail);
+        assert_eq!(app.selected_id().as_deref(), Some("mem-7aba"));
+        press(&mut app, "J");
+        assert_eq!(app.selected_shed().unwrap().name, "walk-1");
+        press(&mut app, "J");
+        assert_eq!(app.selected_id().as_deref(), Some("mem-f13a"));
+    }
+
+    #[test]
+    fn yak_keys_work_on_a_yak_child_and_not_on_a_shed() {
+        let mut app = shed_farm();
+        press(&mut app, "S");
+        assert!(matches!(app.overlay, Overlay::None), "S on a shed row");
+        press(&mut app, "j");
+        press(&mut app, "S");
+        assert!(
+            matches!(app.overlay, Overlay::Pick { .. }),
+            "S on a yak row"
+        );
+    }
+
+    #[test]
+    fn u_on_the_sheds_view_requests_a_sync() {
+        let (proj, farm) = temp_farm(&[task(
+            "mem-f13a",
+            "walk mode",
+            crate::model::Status::Shaving,
+            2,
+            None,
+        )]);
+        let mut app = on_sheds(App::with_farm(farm).unwrap());
+        assert!(app.on_sheds_tab());
+        press(&mut app, "U");
+        assert_eq!(app.notification.as_deref(), Some("syncing\u{2026}"));
+        assert!(app.pending_farm_op.is_some());
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn search_keeps_only_the_matching_yaks_and_their_sheds() {
+        let mut app = shed_farm();
+        app.filter.search = Some("walk".into());
+        // walk-1 (its name and a yak match), and no other shed.
+        assert_eq!(
+            row_names(&app),
+            ["shed:walk-1", "mem-f13a"],
+            "only the matching child, under its shed"
+        );
+        // A name alone keeps the shed, with no yaks below.
+        app.filter.search = Some("perf".into());
+        assert_eq!(row_names(&app), ["shed:perf-2"]);
+        app.filter.search = Some("no such thing".into());
+        assert!(row_names(&app).is_empty());
+        assert!(draw(&app, 120, 14).contains("No shed or yak matches"));
+        app.filter.search = None;
+        assert_eq!(row_names(&app).len(), 13);
+    }
+
+    #[test]
+    fn typing_a_search_filters_the_sheds_view() {
+        let mut app = shed_farm();
+        press(&mut app, "/");
+        press(&mut app, "mouse");
+        enter_key(&mut app);
+        assert_eq!(row_names(&app), ["shed:walk-1", "mem-99d0"]);
+    }
+
+    #[test]
+    fn y_copies_the_shed_name_and_r_rescans() {
+        let mut app = shed_farm();
+        press(&mut app, "y");
+        let note = app.notification.clone().unwrap();
+        assert!(
+            note == "copied tex-1" || note == "clipboard unavailable",
+            "{note}"
+        );
+        press(&mut app, "r");
+        assert_eq!(app.notification.as_deref(), Some("rescanning sheds"));
+        // An empty tab (no actor yet) still rescans.
+        let mut empty = on_sheds(App::new(vec![]));
+        let mut snap = fixture::snapshot();
+        snap.report.sheds.clear();
+        empty.apply_sheds_snapshot(snap);
+        press(&mut empty, "r");
+        assert_eq!(empty.notification.as_deref(), Some("rescanning sheds"));
+    }
+
+    #[test]
+    fn a_new_snapshot_keeps_the_cursor_on_the_same_yak_under_its_shed() {
+        let mut app = shed_farm();
+        press(&mut app, "jjjj"); // walk-1's recent yak
+        assert_eq!(app.selected_id().as_deref(), Some("mem-99d0"));
+        // The next scan finds a new actor first: the cursor stays put.
+        let mut snap = fixture::snapshot();
+        let mut newcomer = snap.report.sheds[1].clone();
+        newcomer.name = "aaa-new".into();
+        snap.report.sheds.insert(0, newcomer);
+        app.apply_sheds_snapshot(snap);
+        assert_eq!(app.selected_id().as_deref(), Some("mem-99d0"));
+        assert_eq!(app.cursor_shed().unwrap().name, "walk-1");
+        // The same yak under another shed is not the one the cursor was on.
+        press(&mut app, "k");
+        press(&mut app, "k");
+        assert_eq!(app.selected_shed().unwrap().name, "walk-1");
+        let mut snap = fixture::snapshot();
+        snap.report.sheds.retain(|s| s.name != "tex-1");
+        app.apply_sheds_snapshot(snap);
+        assert_eq!(app.selected_shed().unwrap().name, "walk-1");
     }
 
     #[test]
@@ -809,9 +982,11 @@ mod tests {
 
     #[test]
     fn sheds_tab_frames() {
-        let mut app = on_sheds(sample());
-        insta::assert_snapshot!("sheds_tab_list", draw(&app, 120, 14));
-        press(&mut app, "jl");
+        let mut app = shed_farm();
+        insta::assert_snapshot!("sheds_tab_list", draw(&app, 120, 22));
+        press(&mut app, "jjl"); // walk-1's detail
         insta::assert_snapshot!("sheds_tab_detail", draw(&app, 120, 14));
+        press(&mut app, "J"); // its first yak, in the same pane
+        insta::assert_snapshot!("sheds_tab_yak_detail", draw(&app, 120, 14));
     }
 }

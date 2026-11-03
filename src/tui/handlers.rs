@@ -775,10 +775,13 @@ impl App {
         self.overlay = Overlay::Help(0);
     }
 
-    /// `l` / `→` / Enter on the list: show the selected yak in the detail
-    /// pane, from its top.
+    /// `l` / `→` / Enter on the list: show the selected yak (or shed) in the
+    /// detail pane, from its top.
     pub(crate) fn open_detail_pane(&mut self) {
-        if self.selected().is_some() {
+        if matches!(
+            self.selected_row(),
+            Some(tree::Item::Yak(_) | tree::Item::Shed(_))
+        ) {
             self.focus = Focus::Detail;
             self.detail_scroll = 0;
             self.detail_line = 0;
@@ -2543,9 +2546,8 @@ fn handle_key_inner(app: &mut App, k: KeyEvent) {
         app.handle_overlay_key(k);
         return;
     }
-    // Every other surface is "which one, which command, run it": the Sheds tab
-    // owns its keys, else the list (by the kind of row under the cursor) or
-    // the detail pane.
+    // Every other surface is "which one, which command, run it": the list or
+    // the detail pane, by the kind of row under the cursor.
     let ctx = app.surface_ctx();
     if let Some(cmd) = keymap::lookup(ctx, app.surface_kind(), &k) {
         app.run_cmd(ctx, cmd);

@@ -1,0 +1,18 @@
+---
+source: src/tui/sheds_tab.rs
+expression: "draw(&app, 120, 14)"
+---
+ 🦬  Hairy (0)   🪒  Shaving (4)   🐑  Shorn (2)   🕒  Recent (6)   ⭐  Starred (0)   📖  Wiki (0)   🛖  Sheds (4)
+
+◂ Task: mem-f13a
+│
+│ Title:       Add walk mode
+│ Status:      🪒  shaving
+│ Type:        task
+│ Priority:    p2
+│ Created:     -
+│ Updated:     -
+│ Tags:        -
+│
+│
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search  q:quit

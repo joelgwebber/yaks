@@ -12,8 +12,8 @@ interchangeable.
   awaiting an agent), and
   **Starred**; you can save the current filter as a named view. The
   **Wiki** tab lists the farm's pages and sources (see [Wiki tab](#wiki-tab)),
-  and the **Sheds** tab lists the farm's workers (actors) instead of yaks (see
-  [Sheds tab](#sheds-tab)).
+  and the **Sheds** tab is a tree of the farm's workers (actors) with the yaks
+  each one touched (see [Sheds tab](#sheds-tab)).
 - **Detail pane** — the selected yak: fields, parent/deps/children, source and
   pull requests (`PRs:`, one row per URL; set with `yaks update --pr`), a
   `Needs:` line when blocked, and the body + timestamped notes. Task-id
@@ -103,7 +103,7 @@ the same way (they are rows of the same list).
 | `S` (with marks) | Bulk state transition over the marked set (shearing asks for one optional comment for the set) |
 | `v` / `V` | View picker / save filter as a view |
 | `*` | Star / unstar (Starred view) |
-| `W` | Commit the farm (`yaks commit`; also in the detail pane, not on the Sheds tab). The result is the notification: `committed <sha> <message>`, `nothing to commit`, or the error |
+| `W` | Commit the farm (`yaks commit`; also in the detail pane). The result is the notification: `committed <sha> <message>`, `nothing to commit`, or the error |
 | `U` | Sync the farm (`yaks sync`: commit, pull, push; also in the detail pane). Shows `syncing…` while it runs (it touches the network, so the TUI waits; the interval sync does the same in the background), then the sync report's last line, or the error |
 
 **Detail pane** — `h`/`←`/`Esc` back (on a code block or table row `h`/`←`
@@ -254,18 +254,18 @@ and a document row has its own keys (the yak keys do nothing there):
 | `y` | Copy the path |
 | `r` | Reread the pages now |
 
-**Sheds tab** — its own keys (the yak keys do nothing there):
+**Sheds tab** — the list's keys; a yak row takes every yak key, a shed row
+these:
 
 | Key | Action |
 |---|---|
-| `j` / `k`, `g` / `G`, `d` / `u` | Move between sheds (actors) |
-| `l` / `→` / `Enter` | Show the shed: what it is shaving, asking and wrote recently |
-| `h` / `←` / `Esc` | (detail) Back to the shed list |
-| `j` / `k` | (detail) Move between its yaks (newest write first) |
-| `J` / `K` | (detail) Next / previous shed |
-| `Enter` | (detail) Open the yak |
-| `y` | Copy the shed's name (detail: the yak id) |
-| `r` | Rescan now |
+| `j` / `k`, `g` / `G`, `d` / `u` | Move over the rows (a shed, then its yaks) |
+| `l` / `→` / `Enter` | Show the shed: where its code is, what it is shaving, asking and wrote recently (on a yak row: the yak, as anywhere) |
+| `Space` | Collapse / expand the shed's yaks |
+| `/` | Search shed names and their yaks; `Esc` clears it |
+| `y` | Copy the shed's name (also in its pane) |
+| `r` | Rescan now (also in the shed's pane) |
+| `J` / `K` | (pane) Next / previous row, shed or yak |
 
 **General** — `y` copy yak id; `?` toggle help; `q` / `Ctrl-C` quit.
 
@@ -505,13 +505,14 @@ under `wiki/` and each herd's `<herd>/wiki/`, then every saved source under
 
 ## Sheds tab
 
-The **🛦 Sheds** tab is `yaks sheds` on screen: one row per **actor**, a worker
-in the farm (the `[actor]` stamp on notes and moves), live, so you can see
-what each worker is doing without opening a terminal. It is read from the farm
-alone (no git checkouts, no Delta), so it shows the same on every machine once
-the farm is synced. The text is the CLI's own (the same functions produce it).
+The **🛦 Sheds** tab is `yaks sheds` on screen: a tree whose roots are the
+**actors**, the workers in the farm (the `[actor]` stamp on notes and moves),
+live, so you can see what each worker is doing without opening a terminal. It
+is read from the farm alone (no git checkouts, no Delta), so it shows the same
+on every machine once the farm is synced. The text is the CLI's own (the same
+functions produce it).
 
-- **One row per shed**, attention first: sheds with an open ask (`⏳`), active
+- **One root per shed**, attention first: sheds with an open ask (`⏳`), active
   ones (wrote within 2 hours), stale ones (hold a shaving yak but went quiet),
   then idle ones, dimmed; within each, the most recent writer first. Each row
   shows the actor, its liveness, when it last wrote, and the yaks it is
@@ -521,26 +522,37 @@ the farm is synced. The text is the CLI's own (the same functions produce it).
   fetch, then when the upstream last changed and when this farm last fetched:
   `· origin/yaks changed 37m ago · fetched just now`), and is left out when
   the farm has no upstream.
+- **Its yaks are the children**: every yak the shed wrote, as an ordinary yak
+  row, one level in: the ones it holds the claim on (`shaving`), those waiting
+  on a human (`asking`), then the `recent` ones, newest first. That part is
+  dimmed at the right edge of the row when the title leaves room. A yak the
+  farm no longer has is not listed. Because they are yak rows, every yak key
+  works on them, `U`, `W` and `J`/`K` included, and `l` / `Enter` shows the yak
+  in the pane with the tree still beside it.
+- **Collapse**: `Space` folds a shed's yaks into a `▶ N` count on its row;
+  the state is remembered like a yak's (a shed is keyed `shed:<name>`).
+- **Search**: `/` keeps the yaks that match and the sheds that have one, or
+  whose name matches (then with no yaks below it unless some match).
 - **The tab count** is the number of sheds that want a look now (active, stale,
-  or asking).
-- **The detail pane** (`l`) starts with where the shed's code is, when its
-  latest `checkpoint` note names a branch (`branch work/walk-1 @
+  or asking), whatever the search.
+- **The shed's pane** (`l` on a shed row) starts with where the shed's code is,
+  when its latest `checkpoint` note names a branch (`branch work/walk-1 @
   47076b0 (9m ago)`, read from the note, never fetched; `yaks commits <id>
-  --fetch` lists the branch's commits). Then it lists the shed's yaks as `yaks sheds` does:
-  `shaving` (the ones it holds the claim on), `asking` (waiting on a human) and
-  `recent`, newest first, each with its status now (`⏳` on one awaiting a
-  human). `Enter` opens the yak; answer an ask with `a` from any yak view, as
-  for any other yak.
+  --fetch` lists the branch's commits). Then it lists the shed's yaks as
+  `yaks sheds` does: `shaving`, `asking` and `recent`, newest first, each with
+  its status now (`⏳` on one awaiting a human). Step to a yak with `J` to see
+  it in the same pane; answer an ask with `a` on it, as for any other yak.
 - **Refresh**: the scan reads the farm in the background, when the tab opens,
   every 10 seconds while it is shown, and on `r` (it never fetches). The tab
   row's right edge says `scanning…` or `scanned 4s ago`. The UI never waits on
   it.
-- `y` copies the shed's name (the `YAKS_ACTOR` to pass to a worker's commands);
-  in the detail, the yak id.
+- `y` copies the shed's name (the `YAKS_ACTOR` to pass to a worker's commands).
 
 ![yaks TUI Sheds tab](assets/tui-sheds.svg)
 
 ![yaks TUI Sheds tab with a shed's detail](assets/tui-sheds-detail.svg)
+
+![yaks TUI Sheds tab with one of its yaks open](assets/tui-sheds-yak.svg)
 
 # Screenshots
 

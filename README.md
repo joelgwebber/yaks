@@ -167,8 +167,8 @@ and an **Inbox** view lists every yak with a `needs` value, each flagged inline
 with a ⏳ badge and a warning accent (awaiting a human) or a ✅ badge (answered or
 requested, awaiting an agent). A **Wiki** tab lists the farm's pages and
 sources, opens them rendered (links between pages followed, with a peek of the
-target), and edits or creates pages in place, and a **Sheds** tab shows each worker (actor) in the farm and the
-yaks it has been writing (`yaks sheds`, refreshed in the background).
+target), and edits or creates pages in place, and a **Sheds** tab is a tree of each worker (actor) in the farm with the
+yaks it has been writing below it (`yaks sheds`, refreshed in the background).
 
 ![The yaks TUI list view: a parent yak with children across statuses, tags, a dependency, and a ⏳ needs badge](docs/assets/tui-list.svg)
 

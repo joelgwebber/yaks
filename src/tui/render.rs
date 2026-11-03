@@ -22,7 +22,7 @@ use super::palette;
 use super::{
     App, Focus, Overlay, completion_context, detail, editor_theme, render_create, render_drawer,
     render_editor_panel, render_fuzzy_results, render_line_editor, render_query_line,
-    render_shed_detail, render_sheds_list, tree, view,
+    render_shed_detail, tree, view,
 };
 use crate::filter::FilterSpec;
 use crate::model::{Status, Task};
@@ -59,7 +59,7 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
         let (left, right) = main_split(mid);
         let modal = left.width == 0;
         if !modal {
-            render_left(app, frame, left);
+            render_list(app, frame, left);
         }
         let inner = right_divider(frame, right, true);
         if modal {
@@ -83,23 +83,13 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
             Overlay::Attachment(v) => render_attachment(app, v, frame, inner),
             Overlay::Image(v) => super::imageview::render_image(v, frame, inner),
             Overlay::ViewPicker(sel) => render_view_picker(app, *sel, frame, inner),
-            _ if app.on_sheds_tab() => render_shed_detail(app, frame, inner),
+            _ if app.selected_shed().is_some() => render_shed_detail(app, frame, inner),
             _ => render_detail(app, frame, inner),
         }
     } else {
-        render_left(app, frame, mid);
+        render_list(app, frame, mid);
     }
     render_status(app, frame, bot);
-}
-
-/// The list pane: the Sheds tab's shed rows, else the list's rows (yaks, or
-/// the Wiki view's documents).
-fn render_left(app: &App, frame: &mut Frame, area: Rect) {
-    if app.on_sheds_tab() {
-        render_sheds_list(app, frame, area);
-    } else {
-        render_list(app, frame, area);
-    }
 }
 
 /// Right-pane (detail / overlay) share of the main area before clamping —
@@ -697,12 +687,24 @@ fn farm_sync_chip(app: &App, room: usize) -> Option<(Line<'static>, usize)> {
 
 pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
     let rows = app.rows();
-    if app.on_wiki_tab() {
-        if let Some(notice) = super::wiki_tab::wiki_notice(app, rows.is_empty()) {
-            frame.render_widget(notice, area);
-            return;
-        }
-    } else if rows.is_empty() {
+    let notice = if app.on_wiki_tab() {
+        super::wiki_tab::wiki_notice(app, rows.is_empty())
+    } else if app.on_sheds_tab() {
+        super::sheds_tab::sheds_notice(app, rows.is_empty())
+    } else {
+        None
+    };
+    // The Sheds view's footer (the farm's freshness) sits under its rows.
+    let area = if notice.is_none() && app.on_sheds_tab() {
+        super::sheds_tab::render_farm_footer(app, frame, area)
+    } else {
+        area
+    };
+    if let Some(notice) = notice {
+        frame.render_widget(notice, area);
+        return;
+    }
+    if rows.is_empty() {
         frame.render_widget(
             Paragraph::new(Span::styled(
                 "No tasks.",
@@ -712,15 +714,19 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
         );
         return;
     }
-    // A document row keeps its own colours under the cursor; a yak row's are
-    // reset (below).
-    let on_doc = matches!(
+    // A document or shed row keeps its own colours under the cursor; a yak
+    // row's are reset (below).
+    let plain_row = matches!(
         rows.get(app.cursor).map(|r| r.item),
-        Some(tree::Item::Doc(_))
+        Some(tree::Item::Doc(_) | tree::Item::Shed(_))
     );
     // The Wiki's list stands down whenever an overlay (its viewer, help, a
     // prompt) is up, as it always has; the yak list only when the detail pane
     // has focus. (Phase 4 folds the viewer into the pane and ends the split.)
+    let on_doc = matches!(
+        rows.get(app.cursor).map(|r| r.item),
+        Some(tree::Item::Doc(_))
+    );
     let focused = app.focus == Focus::List && (!on_doc || matches!(app.overlay, Overlay::None));
     // Dynamic id column: widest `id + 2*depth` across visible yak rows (min 4).
     let max_id_len = rows
@@ -732,6 +738,11 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
     let id_field_w = max_id_len + 2;
     let blocked = app.blocked_ids();
     let doc_cols = super::wiki_tab::DocCols::of(&rows, area.width);
+    // The Sheds view: the part of its shed each yak row is in (shaving,
+    // asking, recent) labels the row.
+    let shed_now = app.sheds.snapshot.as_ref().map(|s| s.report.now);
+    let shed_name_w = super::sheds_tab::name_width(&rows);
+    let mut shed_kinds = Vec::new();
     let items: Vec<ListItem> = rows
         .iter()
         .map(|r| match r.item {
@@ -747,8 +758,17 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
                 area.width,
                 app.is_multi_herd(),
                 due_chip(t, app.clock.now()),
+                shed_kinds
+                    .iter()
+                    .find(|(_, y): &&(crate::sheds::Kind, &crate::sheds::Touched)| y.id == t.id)
+                    .map(|(k, _)| k.label()),
             ),
             tree::Item::Doc(e) => doc_cols.item(e, area.width),
+            tree::Item::Shed(s) => {
+                shed_kinds = s.rows();
+                let now = shed_now.unwrap_or_else(chrono::Utc::now);
+                super::sheds_tab::shed_item(r, s, now, shed_name_w, area.width)
+            }
         })
         .collect();
     // Carry the viewport offset across frames (yaks-9009): ratatui's List only
@@ -763,7 +783,7 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
     // black-on-cyan reverse. Resetting fg keeps the row legible on the dark bg
     // (per-field colours like blue/blue-dim would be low-contrast on 237). The
     // unfocused list uses a slightly darker bg so focus is still clear.
-    let fg = if on_doc {
+    let fg = if plain_row {
         Style::new()
     } else {
         Style::new().fg(Color::Reset)
@@ -840,6 +860,7 @@ pub(crate) fn list_item<'a>(
     width: u16,
     multi_herd: bool,
     due: Option<(String, bool)>,
+    tag: Option<&str>,
 ) -> ListItem<'a> {
     let dim = |st: Style| {
         if r.ghost {
@@ -941,9 +962,24 @@ pub(crate) fn list_item<'a>(
             dim(Style::new().fg(Color::DarkGray)),
         ));
     }
-    let rw = disp_width(&right_plain);
-
     let left_fixed = 1 + disp_width(&body_padded) + disp_width(&pri_s) + disp_width(&type_s);
+    // A dim tag (a yak's part of its shed), only where the whole title still
+    // fits beside it.
+    let title_full = disp_width(&format!("{} {}", task.status.emoji(), task.title));
+    if let Some(tag) = tag
+        .filter(|t| left_fixed + title_full + disp_width(&right_plain) + disp_width(t) + 2 <= width)
+    {
+        let gap = if right_plain.is_empty() { "" } else { " " };
+        right_plain.insert_str(0, &format!("{tag}{gap}"));
+        right_spans.insert(
+            0,
+            Span::styled(
+                format!("{tag}{gap}"),
+                dim(Style::new().add_modifier(Modifier::DIM)),
+            ),
+        );
+    }
+    let rw = disp_width(&right_plain);
     let title_avail = width.saturating_sub(left_fixed + rw + 1);
     let title = truncate_disp(
         &format!("{} {}", task.status.emoji(), task.title),
@@ -1529,8 +1565,7 @@ fn link_hint(app: &App, width: usize) -> Option<String> {
         };
         v.nav.link_at(&rows)?
     } else {
-        if app.focus != Focus::Detail || !matches!(app.overlay, Overlay::None) || app.on_sheds_tab()
-        {
+        if app.focus != Focus::Detail || !matches!(app.overlay, Overlay::None) {
             return None;
         }
         let jump = app

@@ -202,20 +202,22 @@ impl App {
         }
     }
 
+    /// `Space`: collapse or expand the row under the cursor (a yak's
+    /// children, a shed's yaks).
     pub(crate) fn toggle_collapse(&mut self) {
         let rows = self.rows();
-        if let Some((row, task)) = rows
+        let Some(key) = rows
             .get(self.cursor)
-            .and_then(|row| Some((row, row.yak()?)))
-        {
-            if row.has_children {
-                let id = task.id.clone();
-                if !self.collapsed.remove(&id) {
-                    self.collapsed.insert(id);
-                }
-                self.save_ui_state();
-            }
+            .filter(|row| row.has_children)
+            .and_then(|row| row.collapse_key())
+        else {
+            return;
+        };
+        drop(rows);
+        if !self.collapsed.remove(&key) {
+            self.collapsed.insert(key);
         }
+        self.save_ui_state();
     }
 
     // -- overlay openers --------------------------------------------------

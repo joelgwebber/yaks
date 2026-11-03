@@ -35,7 +35,7 @@ impl App {
     /// no-op there with a hint.
     pub(crate) fn cycle_family_scope(&mut self) {
         let v = self.active_view();
-        if v.is_flat() || v.key == "working-set" {
+        if v.is_flat() || v.key == "working-set" || v.key == view::SHEDS_KEY {
             self.notification = Some("family scope applies to tree views".into());
             return;
         }
@@ -248,9 +248,8 @@ impl App {
         if v.key == "working-set" {
             return self.working_set_rows();
         }
-        // The Sheds tab has no yak rows yet: every yak key finds no selection.
         if v.key == view::SHEDS_KEY {
-            return Vec::new();
+            return tree::apply_collapse(self.shed_rows(), &self.collapsed);
         }
         if v.key == view::WIKI_KEY {
             return self.wiki_rows().into_iter().map(tree::Row::doc).collect();
@@ -297,11 +296,12 @@ impl App {
     }
 
     /// The kind of row keys act on: the selected row's, else what the active
-    /// view lists (so an empty Wiki still takes `N` and `r`).
+    /// view lists (so an empty Wiki still takes `N` and `r`, an empty Sheds `r`).
     pub(crate) fn row_kind(&self) -> tree::RowKind {
         match self.selected_row() {
             Some(item) => item.kind(),
             None if self.on_wiki_tab() => tree::RowKind::Doc,
+            None if self.on_sheds_tab() => tree::RowKind::Shed,
             None => tree::RowKind::Yak,
         }
     }

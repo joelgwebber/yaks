@@ -15,11 +15,12 @@
 //! hand-written `match`es did, and a binding that names modifiers is tried
 //! first (so Ctrl-C is quit, not `c`).
 //!
-//! In the list a binding may name the [`RowKind`] it is for (yaks-be65): the
-//! lookup tries the selected row's kind first, then a binding for any kind. A
-//! yak command is bound for yak rows only, so on a document row it finds
-//! nothing and does nothing, as on an empty list; with no row selected the
-//! view's own kind applies (an empty Wiki still takes `N` and `r`).
+//! In the list and the detail pane a binding may name the [`RowKind`] it is
+//! for (yaks-be65, yaks-c354): the lookup tries the selected row's kind first,
+//! then a binding for any kind. A yak command is bound for yak rows only, so on
+//! a document or shed row it finds nothing and does nothing, as on an empty
+//! list; with no row selected the view's own kind applies (an empty Wiki still
+//! takes `N` and `r`, an empty Sheds view `r`).
 //!
 //! Modal overlays (editors, pickers, the drawer, create, help, the command
 //! line, the search boxes) and the mouse are not in the table.
@@ -139,22 +140,11 @@ pub(crate) enum Ctx {
     Viewer,
     /// The image viewer overlay.
     Image,
-    /// The Sheds tab's list.
-    Sheds,
-    /// The Sheds tab's detail pane.
-    ShedDetail,
 }
 
 impl Ctx {
     #[cfg(test)]
-    const ALL: [Ctx; 6] = [
-        Ctx::List,
-        Ctx::Detail,
-        Ctx::Viewer,
-        Ctx::Image,
-        Ctx::Sheds,
-        Ctx::ShedDetail,
-    ];
+    const ALL: [Ctx; 4] = [Ctx::List, Ctx::Detail, Ctx::Viewer, Ctx::Image];
 }
 
 /// A section of the `?` overlay: the bindings of `ctx` whose kind is in
@@ -174,7 +164,7 @@ const SECTIONS: [Section; 7] = [
     },
     Section {
         ctx: Ctx::Detail,
-        kinds: &[None],
+        kinds: &[None, Some(RowKind::Yak)],
         title: "Detail pane",
     },
     Section {
@@ -193,14 +183,14 @@ const SECTIONS: [Section; 7] = [
         title: "Document rows (the Wiki view: the farm's pages and sources)",
     },
     Section {
-        ctx: Ctx::Sheds,
-        kinds: &[None],
-        title: "Sheds tab (who is working on what: yaks sheds)",
+        ctx: Ctx::List,
+        kinds: &[Some(RowKind::Shed)],
+        title: "Shed rows (the Sheds view: actors, with the yaks they touched below)",
     },
     Section {
-        ctx: Ctx::ShedDetail,
-        kinds: &[None],
-        title: "Sheds tab, detail (l / Enter on a shed)",
+        ctx: Ctx::Detail,
+        kinds: &[Some(RowKind::Shed)],
+        title: "Shed detail (a shed's pane; its yaks' panes are the yak detail)",
     },
 ];
 
@@ -335,6 +325,21 @@ const fn bind_row(
     }
 }
 
+/// A detail-pane binding for the pane of one kind of row (a yak's keys act on
+/// its lines; a shed's pane has none of them).
+const fn bind_pane(
+    kind: RowKind,
+    keys: &'static [Key],
+    cmd: Cmd,
+    help: &'static str,
+    hint: Hint,
+) -> Binding {
+    Binding {
+        kind: Some(kind),
+        ..bind(Ctx::Detail, keys, cmd, help, hint)
+    }
+}
+
 const fn hint(label: &'static str) -> Hint {
     Hint::Text(label)
 }
@@ -345,7 +350,7 @@ use Cmd::FarmSync;
 use Ctx::*;
 use Hint::None as NoHint;
 use KeyCode::{BackTab, Down, End, Enter, Esc, Home, Left, PageDown, PageUp, Right, Tab, Up};
-use tree::RowKind::{self, Doc, Yak};
+use tree::RowKind::{self, Doc, Shed, Yak};
 
 /// The table. Within a context, the order is the order of the bottom hint
 /// and of the `?` overlay, so the hinted bindings keep their hint's order.
@@ -397,52 +402,54 @@ static BINDINGS: &[Binding] = &[
 
     // -- the yak detail pane ---------------------------------------------------
     bind(Detail, &[c('h'), k(Left)], PaneBack, "Back to list (scrolls a code block or table left first)", hint("h:list")),
+    bind_pane(Shed, &[c('y')], RowCopy, "Copy the shed's name", hint("y:copy name")),
+    bind_pane(Shed, &[c('r')], ListRefresh, "Rescan now (auto every 10 s)", hint("r:rescan")),
     bind(Detail, &[k(Esc)], PanePeel, "Peel back: selection, then find, then the list", NoHint),
-    bind(Detail, &[c('l'), k(Right)], PaneScrollRight, "Scroll the code block / table under the cursor right", NoHint),
-    bind(Detail, &[c('j'), k(Down)], MoveDown, "Move the line cursor down", hint("j/k:move")),
-    bind(Detail, &[c('k'), k(Up)], MoveUp, "Move the line cursor up", NoHint),
-    bind(Detail, &[c('d')], MoveHalfDown, "Half-page down", NoHint),
-    bind(Detail, &[c('u')], MoveHalfUp, "Half-page up", NoHint),
-    bind(Detail, &[c('g')], MoveTop, "Top", NoHint),
-    bind(Detail, &[c('G')], MoveBottom, "Bottom", NoHint),
-    bind(Detail, &[k(Tab), c(']')], LinkNext, "Next link", hint("Tab:link")),
-    bind(Detail, &[k(BackTab), c('[')], LinkPrev, "Previous link", NoHint),
-    bind(Detail, &[k(Enter)], PaneEnter, "Yank the selection, else follow the link / footnote / source file / farm page (status bar: URL, or a peek of the page)", hint("Enter:follow")),
-    bind(Detail, &[c('i')], NavForward, "Nav forward (restores position)", hint("i/o:fwd/back")),
-    bind(Detail, &[c('o')], NavBack, "Nav back (restores position)", NoHint),
+    bind_pane(Yak, &[c('l'), k(Right)], PaneScrollRight, "Scroll the code block / table under the cursor right", NoHint),
+    bind_pane(Yak, &[c('j'), k(Down)], MoveDown, "Move the line cursor down", hint("j/k:move")),
+    bind_pane(Yak, &[c('k'), k(Up)], MoveUp, "Move the line cursor up", NoHint),
+    bind_pane(Yak, &[c('d')], MoveHalfDown, "Half-page down", NoHint),
+    bind_pane(Yak, &[c('u')], MoveHalfUp, "Half-page up", NoHint),
+    bind_pane(Yak, &[c('g')], MoveTop, "Top", NoHint),
+    bind_pane(Yak, &[c('G')], MoveBottom, "Bottom", NoHint),
+    bind_pane(Yak, &[k(Tab), c(']')], LinkNext, "Next link", hint("Tab:link")),
+    bind_pane(Yak, &[k(BackTab), c('[')], LinkPrev, "Previous link", NoHint),
+    bind_pane(Yak, &[k(Enter)], PaneEnter, "Yank the selection, else follow the link / footnote / source file / farm page (status bar: URL, or a peek of the page)", hint("Enter:follow")),
+    bind_pane(Yak, &[c('i')], NavForward, "Nav forward (restores position)", hint("i/o:fwd/back")),
+    bind_pane(Yak, &[c('o')], NavBack, "Nav back (restores position)", NoHint),
     bind(Detail, &[c('J')], ItemNext, "Next task (stay in detail)", NoHint),
     bind(Detail, &[c('K')], ItemPrev, "Previous task (stay in detail)", NoHint),
-    bind(Detail, &[ctrl('n')], BlockNext, "Next content block", NoHint),
-    bind(Detail, &[ctrl('p')], BlockPrev, "Previous content block", NoHint),
-    bind(Detail, &[c('v')], SelectVisual, "Visual select lines", NoHint),
-    bind(Detail, &[shift(Down)], SelectExtendDown, "Extend the selection down", NoHint),
-    bind(Detail, &[shift(Up)], SelectExtendUp, "Extend the selection up", NoHint),
-    bind(Detail, &[c('y')], SelectYank, "Copy the selection, else the yak id", NoHint),
-    bind(Detail, &[c('/')], FindOpen, "Find in the pane", NoHint),
-    bind(Detail, &[c('n')], FindNext, "Next match", NoHint),
-    bind(Detail, &[c('N')], FindPrev, "Previous match", NoHint),
+    bind_pane(Yak, &[ctrl('n')], BlockNext, "Next content block", NoHint),
+    bind_pane(Yak, &[ctrl('p')], BlockPrev, "Previous content block", NoHint),
+    bind_pane(Yak, &[c('v')], SelectVisual, "Visual select lines", NoHint),
+    bind_pane(Yak, &[shift(Down)], SelectExtendDown, "Extend the selection down", NoHint),
+    bind_pane(Yak, &[shift(Up)], SelectExtendUp, "Extend the selection up", NoHint),
+    bind_pane(Yak, &[c('y')], SelectYank, "Copy the selection, else the yak id", NoHint),
+    bind_pane(Yak, &[c('/')], FindOpen, "Find in the pane", NoHint),
+    bind_pane(Yak, &[c('n')], FindNext, "Next match", NoHint),
+    bind_pane(Yak, &[c('N')], FindPrev, "Previous match", NoHint),
     bind(Detail, &[c('#')], NavGoto, "Go to any yak by id / title", NoHint),
-    bind(Detail, &[c('B')], YakBackrefs, "Find references: yaks that point at this one", NoHint),
-    bind(Detail, &[c('E')], YakEdit, "Edit under the cursor: body block in place; header row: form", hint("E:edit")),
-    bind(Detail, &[c('M')], YakComment, "Add a comment (in place, after the last one)", hint("M:comment")),
-    bind(Detail, &[c('D')], YakDep, "Add dependency", hint("D:dep")),
-    bind(Detail, &[c('S')], YakState, "State (S → n shears, with an optional comment)", hint("S:state")),
-    bind(Detail, &[c('m')], YakMark, "Mark / unmark the yak (multi-select)", NoHint),
-    bind(Detail, &[c('P')], YakPriority, "Priority", NoHint),
-    bind(Detail, &[c('T')], YakType, "Type", NoHint),
-    bind(Detail, &[c('L')], YakTags, "Tags", NoHint),
-    bind(Detail, &[c('X')], YakSlaughter, "Slaughter (confirm; offers whole family)", NoHint),
-    bind(Detail, &[c('R')], YakReparent, "Reparent", NoHint),
-    bind(Detail, &[c('H')], YakHerd, "Move to another herd (multi-herd farm)", NoHint),
-    bind(Detail, &[c('c')], YakNew, "New root yak", NoHint),
-    bind(Detail, &[c('C')], YakNewChild, "New child yak", NoHint),
-    bind(Detail, &[c('a')], YakAnswer, "Answer (awaiting a human) / request agent work (else): needs agent", NoHint),
-    bind(Detail, &[c('Q')], YakAsk, "Ask a question: needs human", NoHint),
-    bind(Detail, &[c('A')], YakAttach, "Attach artifact", NoHint),
-    bind(Detail, &[c('O')], LinkOpenExternal, "Open the artifact / URL / source link on the line (a text file in the viewer)", NoHint),
-    bind(Detail, &[c('r')], AttachmentRename, "Rename the attachment at the cursor", NoHint),
-    bind(Detail, &[c('*')], YakStar, "Star / unstar (Starred view)", NoHint),
-    bind(Detail, &[c('f')], FilterDrawer, "Filter drawer", Hint::Filter),
+    bind_pane(Yak, &[c('B')], YakBackrefs, "Find references: yaks that point at this one", NoHint),
+    bind_pane(Yak, &[c('E')], YakEdit, "Edit under the cursor: body block in place; header row: form", hint("E:edit")),
+    bind_pane(Yak, &[c('M')], YakComment, "Add a comment (in place, after the last one)", hint("M:comment")),
+    bind_pane(Yak, &[c('D')], YakDep, "Add dependency", hint("D:dep")),
+    bind_pane(Yak, &[c('S')], YakState, "State (S → n shears, with an optional comment)", hint("S:state")),
+    bind_pane(Yak, &[c('m')], YakMark, "Mark / unmark the yak (multi-select)", NoHint),
+    bind_pane(Yak, &[c('P')], YakPriority, "Priority", NoHint),
+    bind_pane(Yak, &[c('T')], YakType, "Type", NoHint),
+    bind_pane(Yak, &[c('L')], YakTags, "Tags", NoHint),
+    bind_pane(Yak, &[c('X')], YakSlaughter, "Slaughter (confirm; offers whole family)", NoHint),
+    bind_pane(Yak, &[c('R')], YakReparent, "Reparent", NoHint),
+    bind_pane(Yak, &[c('H')], YakHerd, "Move to another herd (multi-herd farm)", NoHint),
+    bind_pane(Yak, &[c('c')], YakNew, "New root yak", NoHint),
+    bind_pane(Yak, &[c('C')], YakNewChild, "New child yak", NoHint),
+    bind_pane(Yak, &[c('a')], YakAnswer, "Answer (awaiting a human) / request agent work (else): needs agent", NoHint),
+    bind_pane(Yak, &[c('Q')], YakAsk, "Ask a question: needs human", NoHint),
+    bind_pane(Yak, &[c('A')], YakAttach, "Attach artifact", NoHint),
+    bind_pane(Yak, &[c('O')], LinkOpenExternal, "Open the artifact / URL / source link on the line (a text file in the viewer)", NoHint),
+    bind_pane(Yak, &[c('r')], AttachmentRename, "Rename the attachment at the cursor", NoHint),
+    bind_pane(Yak, &[c('*')], YakStar, "Star / unstar (Starred view)", NoHint),
+    bind_pane(Yak, &[c('f')], FilterDrawer, "Filter drawer", Hint::Filter),
     bind(Detail, &[c('W')], FarmCommit, "Commit the farm (yaks commit)", NoHint),
     bind(Detail, &[c('U')], FarmSync, "Sync the farm: commit, pull, push (yaks sync)", NoHint),
     bind(Detail, &[c('?')], AppHelp, "Toggle this help", NoHint),
@@ -492,43 +499,17 @@ static BINDINGS: &[Binding] = &[
     bind_row(Doc, &[c('?')], AppHelp, "", hint("?:help")),
     bind_row(Doc, &[c('q'), ctrl('c')], AppQuit, "", hint("q:quit")),
 
-    // -- the Sheds tab ---------------------------------------------------------
-    bind(Sheds, &[k(Tab), c(']')], ViewNext, "Next view", hint("Tab:view")),
-    bind(Sheds, &[k(BackTab), c('[')], ViewPrev, "Previous view", NoHint),
-    bind(Sheds, &[c('j'), k(Down)], MoveDown, "Move between sheds (actors; attention first)", hint("j/k:move")),
-    bind(Sheds, &[c('k'), k(Up)], MoveUp, "Move up", NoHint),
-    bind(Sheds, &[c('d'), k(PageDown)], MoveHalfDown, "Half-page down", NoHint),
-    bind(Sheds, &[c('u'), k(PageUp)], MoveHalfUp, "Half-page up", NoHint),
-    bind(Sheds, &[c('g')], MoveTop, "Top", NoHint),
-    bind(Sheds, &[c('G')], MoveBottom, "Bottom", NoHint),
-    bind(Sheds, &[c('l'), k(Right), k(Enter)], PaneOpen, "Show the shed: shaving, asking, recent yaks", hint("l:detail")),
-    bind(Sheds, &[c('y')], RowCopy, "Copy the shed's name", hint("y:copy name")),
-    bind(Sheds, &[c('r')], ListRefresh, "Rescan now (auto every 10 s)", hint("r:rescan")),
-    bind(Sheds, &[c('v')], ViewPick, "View picker", hint("v:views")),
-    bind(Sheds, &[c('#')], NavGoto, "Go to any yak by id / title", NoHint),
-    bind(Sheds, &[c('?')], AppHelp, "Toggle this help", hint("?:help")),
-    bind(Sheds, &[c('q'), ctrl('c')], AppQuit, "Quit", hint("q:quit")),
-
-    // -- the Sheds tab's detail pane (its keys repeat the list's: no yak key
-    // -- and no other pane's key reaches it) ------------------------------------
-    bind(ShedDetail, &[c('h'), k(Left), k(Esc)], PaneBack, "Back to the sheds", hint("h:list")),
-    bind(ShedDetail, &[c('j'), k(Down)], MoveDown, "Move between its yaks", hint("j/k:yak")),
-    bind(ShedDetail, &[c('k'), k(Up)], MoveUp, "Move up", NoHint),
-    bind(ShedDetail, &[c('d'), k(PageDown)], MoveHalfDown, "Half-page down", NoHint),
-    bind(ShedDetail, &[c('u'), k(PageUp)], MoveHalfUp, "Half-page up", NoHint),
-    bind(ShedDetail, &[c('g')], MoveTop, "Top", NoHint),
-    bind(ShedDetail, &[c('G')], MoveBottom, "Bottom", NoHint),
-    bind(ShedDetail, &[c('J')], ItemNext, "Next shed", hint("J/K:shed")),
-    bind(ShedDetail, &[c('K')], ItemPrev, "Previous shed", NoHint),
-    bind(ShedDetail, &[k(Enter)], PaneEnter, "Open the yak", hint("Enter:open yak")),
-    bind(ShedDetail, &[c('y')], RowCopy, "Copy the yak id", hint("y:copy id")),
-    bind(ShedDetail, &[c('r')], ListRefresh, "Rescan now (auto every 10 s)", hint("r:rescan")),
-    bind(ShedDetail, &[c('?')], AppHelp, "", hint("?:help")),
-    bind(ShedDetail, &[k(Tab), c(']')], ViewNext, "", NoHint),
-    bind(ShedDetail, &[k(BackTab), c('[')], ViewPrev, "", NoHint),
-    bind(ShedDetail, &[c('v')], ViewPick, "", NoHint),
-    bind(ShedDetail, &[c('#')], NavGoto, "", NoHint),
-    bind(ShedDetail, &[c('q'), ctrl('c')], AppQuit, "", NoHint),
+    // -- the list: shed rows (the Sheds view). A shed's yaks below it are yak
+    // -- rows. Its movement and farm keys are the list's; `v`, `?` and `q`
+    // -- repeat theirs only so that the bottom hint is the Sheds' own.
+    bind_row(Shed, &[c('l'), k(Right), k(Enter)], PaneOpen, "Show the shed: where its code is, its shaving, asking and recent yaks", hint("l:detail")),
+    bind_row(Shed, &[c(' ')], TreeToggle, "Collapse / expand the shed's yaks", NoHint),
+    bind_row(Shed, &[c('/')], SearchOpen, "Search the sheds' names and yaks (Esc clears)", hint("/:search")),
+    bind_row(Shed, &[c('y')], RowCopy, "Copy the shed's name", hint("y:copy name")),
+    bind_row(Shed, &[c('r')], ListRefresh, "Rescan now (auto every 10 s)", hint("r:rescan")),
+    bind_row(Shed, &[c('v')], ViewPick, "View picker", hint("v:views")),
+    bind_row(Shed, &[c('?')], AppHelp, "", hint("?:help")),
+    bind_row(Shed, &[c('q'), ctrl('c')], AppQuit, "", hint("q:quit")),
 ];
 
 /// The command `k` runs in `ctx` on a row of `kind` (`None` outside the list):
@@ -712,22 +693,20 @@ impl Binding {
 }
 
 impl App {
-    /// The surface that takes a key when no overlay is up: the Sheds tab, else
-    /// the list or its detail pane. (The viewers are overlays; their handlers
+    /// The surface that takes a key when no overlay is up: the list or its
+    /// detail pane. (The viewers are overlays; their handlers
     /// pass their own context.)
     pub(crate) fn surface_ctx(&self) -> Ctx {
-        match (self.on_sheds_tab(), self.focus) {
-            (true, Focus::List) => Ctx::Sheds,
-            (true, Focus::Detail) => Ctx::ShedDetail,
-            (false, Focus::List) => Ctx::List,
-            (false, Focus::Detail) => Ctx::Detail,
+        match self.focus {
+            Focus::List => Ctx::List,
+            Focus::Detail => Ctx::Detail,
         }
     }
 
-    /// The kind of row the list's keys act on: the selected row's, else the
-    /// view's. `None` on every other surface.
+    /// The kind of row the list's and the pane's keys act on: the selected
+    /// row's, else the view's.
     pub(crate) fn surface_kind(&self) -> Option<RowKind> {
-        (self.surface_ctx() == Ctx::List).then(|| self.row_kind())
+        Some(self.row_kind())
     }
 
     /// Run `cmd` as the key bound to it in `ctx`. A command is an intent, so
@@ -744,13 +723,7 @@ impl App {
             AppHelp => self.open_help(),
             MoveDown | MoveUp | MoveTop | MoveBottom | MoveHalfDown | MoveHalfUp | MovePageDown
             | MovePageUp => self.run_move(ctx, cmd),
-            ItemNext | ItemPrev => {
-                let by = if cmd == ItemNext { 1 } else { -1 };
-                match ctx {
-                    Ctx::ShedDetail => self.move_shed(by),
-                    _ => self.detail_next_task(by),
-                }
-            }
+            ItemNext | ItemPrev => self.detail_next_task(if cmd == ItemNext { 1 } else { -1 }),
             ViewNext => self.switch_tab(1),
             ViewPrev => self.switch_tab(-1),
             ViewPick => self.open_view_picker(),
@@ -759,30 +732,23 @@ impl App {
             FamilyCycle => self.cycle_family_scope(),
             TreeToggle => self.toggle_collapse(),
             PaneOpen => match ctx {
-                Ctx::Sheds => self.open_shed(),
                 Ctx::List if self.selected_doc().is_some() => self.open_wiki_entry(),
                 _ => self.open_detail_pane(),
             },
-            PaneEnter => match ctx {
-                Ctx::ShedDetail => self.open_shed_yak(),
-                _ => self.detail_enter(),
-            },
-            PaneBack => match ctx {
-                Ctx::ShedDetail => self.focus = Focus::List,
-                _ => self.detail_back(),
-            },
+            PaneEnter => self.detail_enter(),
+            PaneBack => self.detail_back(),
             PanePeel => self.detail_peel(),
             PaneScrollRight => {
                 self.scroll_block(1);
             }
             RowCopy => match ctx {
                 Ctx::List if self.selected_doc().is_some() => self.copy_wiki_path(),
-                Ctx::Sheds | Ctx::ShedDetail => self.copy_shed_thing(),
+                _ if self.selected_shed().is_some() => self.copy_shed_name(),
                 _ => self.copy_selected_id(),
             },
-            ListRefresh => match ctx {
-                Ctx::List => self.reread_wiki(),
-                _ => self.rescan_sheds(),
+            ListRefresh => match self.row_kind() {
+                RowKind::Shed => self.rescan_sheds(),
+                _ => self.reread_wiki(),
             },
             SearchOpen => self.open_search(),
             FilterDrawer => self.open_drawer(),
@@ -856,8 +822,6 @@ impl App {
             Ctx::Detail if cmd == MoveTop => self.detail_line_to(false),
             Ctx::Detail if cmd == MoveBottom => self.detail_line_to(true),
             Ctx::Detail => self.move_detail_line(by),
-            Ctx::Sheds => self.move_shed(by),
-            Ctx::ShedDetail => self.move_shed_yak(by),
             Ctx::Viewer | Ctx::Image => {}
         }
     }
@@ -882,7 +846,12 @@ mod tests {
 
     #[test]
     fn no_two_bindings_in_a_context_and_kind_share_a_key() {
-        let kinds = [None, Some(RowKind::Yak), Some(RowKind::Doc)];
+        let kinds = [
+            None,
+            Some(RowKind::Yak),
+            Some(RowKind::Doc),
+            Some(RowKind::Shed),
+        ];
         for (ctx, kind) in Ctx::ALL.into_iter().flat_map(|c| kinds.map(|k| (c, k))) {
             let mut seen: Vec<(Key, Cmd)> = Vec::new();
             for b in BINDINGS.iter().filter(|b| b.ctx == ctx && b.kind == kind) {
@@ -965,7 +934,7 @@ mod tests {
             ),
             (
                 Ctx::Detail,
-                None,
+                Some(RowKind::Yak),
                 "h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search  q:quit",
             ),
             (
@@ -974,14 +943,14 @@ mod tests {
                 "Tab:view  j/k:move  Enter:open  E:edit  N:new page  /:search  y:copy path  r:reread  ?:help  q:quit",
             ),
             (
-                Ctx::Sheds,
-                None,
-                "Tab:view  j/k:move  l:detail  y:copy name  r:rescan  v:views  ?:help  q:quit",
+                Ctx::List,
+                Some(RowKind::Shed),
+                "Tab:view  j/k:move  l:detail  /:search  y:copy name  r:rescan  v:views  ?:help  q:quit",
             ),
             (
-                Ctx::ShedDetail,
-                None,
-                "h:list  j/k:yak  J/K:shed  Enter:open yak  y:copy id  r:rescan  ?:help",
+                Ctx::Detail,
+                Some(RowKind::Shed),
+                "h:list  y:copy name  r:rescan  q:quit",
             ),
             (Ctx::Viewer, None, ""),
             (Ctx::Image, None, ""),
@@ -991,7 +960,7 @@ mod tests {
         }
         // With a filter active the drawer's hint changes, nothing else.
         assert_eq!(
-            hint_for(Ctx::Detail, None, "f:filter  Esc:clear"),
+            hint_for(Ctx::Detail, Some(RowKind::Yak), "f:filter  Esc:clear"),
             "h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  Esc:clear  q:quit"
         );
         assert_eq!(
@@ -1031,7 +1000,11 @@ mod tests {
         );
         // Shift-↓ extends in the detail pane and is a plain ↓ in the list.
         assert_eq!(
-            lookup(Ctx::Detail, None, &key(KeyCode::Down, KeyModifiers::SHIFT)),
+            lookup(
+                Ctx::Detail,
+                Some(RowKind::Yak),
+                &key(KeyCode::Down, KeyModifiers::SHIFT)
+            ),
             Some(SelectExtendDown)
         );
         assert_eq!(
@@ -1046,7 +1019,7 @@ mod tests {
         assert_eq!(
             lookup(
                 Ctx::Detail,
-                None,
+                Some(RowKind::Yak),
                 &key(KeyCode::Char('n'), KeyModifiers::CONTROL)
             ),
             Some(BlockNext)
@@ -1074,6 +1047,11 @@ mod tests {
         // A yak command is no document command.
         assert_eq!(lookup(Ctx::List, doc, &key('S')), None);
         assert_eq!(lookup(Ctx::List, doc, &key('c')), None);
+        // `r` rescans on a shed row, rereads the wiki on a document row.
+        let shed = Some(RowKind::Shed);
+        assert_eq!(lookup(Ctx::List, shed, &key('r')), Some(ListRefresh));
+        assert_eq!(lookup(Ctx::List, shed, &key('S')), None);
+        assert_eq!(lookup(Ctx::List, shed, &key('U')), Some(FarmSync));
         // Ctrl-C still quits where a kind binds plain `c`.
         let ctrl_c = KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL);
         assert_eq!(lookup(Ctx::List, yak, &ctrl_c), Some(AppQuit));

@@ -121,6 +121,31 @@ fn farm() -> Vec<Task> {
     vec![coord, inbox, diff, shot, done, solo]
 }
 
+/// The Sheds fixture, its yaks renamed to this farm's, so the shed rows have
+/// yaks below them (the fixture's own `mem-*` yaks are not in this farm).
+fn sheds_of_this_farm() -> crate::tui::sheds_tab::Snapshot {
+    let farm = farm();
+    let mut snap = crate::tui::sheds_tab::fixture::snapshot();
+    let rename = [
+        ("mem-7aba", "yaks-b517"),
+        ("mem-f13a", "yaks-3677"),
+        ("mem-99d0", "yaks-865d"),
+        ("mem-f434", "yaks-3901"),
+        ("mem-0a01", "yaks-70e5"),
+        ("mem-0001", "yaks-10fb"),
+    ];
+    for shed in &mut snap.report.sheds {
+        for y in &mut shed.touched {
+            if let Some((_, new)) = rename.iter().find(|(old, _)| *old == y.id) {
+                let t = farm.iter().find(|t| t.id == *new).expect("a farm yak");
+                y.id = t.id.clone();
+                y.title = t.title.clone();
+            }
+        }
+    }
+    snap
+}
+
 fn app_at(w: u16, h: u16) -> App {
     let mut app = App::new(farm());
     // A settled Sheds tab, so the tab strip shows a real count, not `(…)`.
@@ -255,6 +280,7 @@ fn docshots() {
     //    beside the list.
     let (sw, sh) = (150u16, 18u16);
     let mut app = app_at(sw, sh);
+    app.apply_sheds_snapshot(sheds_of_this_farm());
     view_to(&mut app, crate::tui::view::SHEDS_KEY);
     app.sheds.age = Some(4);
     write_svg("tui-sheds", &app, sw, sh);
@@ -262,6 +288,9 @@ fn docshots() {
     press(&mut app, 'j');
     press(&mut app, 'l');
     write_svg("tui-sheds-detail", &app, sw, sh);
+    // A yak of a shed shows as in any view, the shed's tree still beside it.
+    press(&mut app, 'J');
+    write_svg("tui-sheds-yak", &app, sw, sh);
 
     // 9. Wiki tab (yaks-ebb2): the farm's pages then its sources, with kind
     //    and tags; then a page open in the viewer, its frontmatter as field

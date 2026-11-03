@@ -12,15 +12,18 @@ use std::collections::{HashMap, HashSet};
 
 use crate::filter::{self, FilterSpec};
 use crate::model::{Status, Task};
+use crate::sheds::Shed;
 use crate::tui::view::FamilyScope;
 use crate::tui::wiki_tab::WikiEntry;
 
 /// What a list row is (the design's "rows": /wiki/design/tui-model.md#1-rows-and-views).
-/// A yak, or a document (a wiki page or a saved source); phase 3b adds sheds.
+/// A yak, a document (a wiki page or a saved source) or a shed (an actor on
+/// the Sheds view, with the yaks it touched below it).
 #[derive(Clone, Copy)]
 pub enum Item<'a> {
     Yak(&'a Task),
     Doc(&'a WikiEntry),
+    Shed(&'a Shed),
 }
 
 /// An [`Item`]'s kind, without the data: what a key binding names to apply to
@@ -29,6 +32,7 @@ pub enum Item<'a> {
 pub enum RowKind {
     Yak,
     Doc,
+    Shed,
 }
 
 impl Item<'_> {
@@ -36,8 +40,15 @@ impl Item<'_> {
         match self {
             Item::Yak(_) => RowKind::Yak,
             Item::Doc(_) => RowKind::Doc,
+            Item::Shed(_) => RowKind::Shed,
         }
     }
+}
+
+/// The key of a shed in the `collapsed` set: it cannot collide with a yak id
+/// (ids have no colon).
+pub fn shed_collapse_key(name: &str) -> String {
+    format!("shed:{name}")
 }
 
 pub struct Row<'a> {
@@ -57,6 +68,32 @@ impl<'a> Row<'a> {
         match self.item {
             Item::Yak(t) => Some(t),
             _ => None,
+        }
+    }
+
+    /// What this row is called in the `collapsed` set, if it can collapse: a
+    /// yak by its id, a shed by [`shed_collapse_key`]; a document never does.
+    pub fn collapse_key(&self) -> Option<String> {
+        match self.item {
+            Item::Yak(t) => Some(t.id.clone()),
+            Item::Shed(s) => Some(shed_collapse_key(&s.name)),
+            Item::Doc(_) => None,
+        }
+    }
+
+    /// A shed row, with `has_children` set when it has yaks below it.
+    pub fn shed(shed: &'a Shed, has_children: bool) -> Row<'a> {
+        Row {
+            has_children,
+            ..Row::of(Item::Shed(shed))
+        }
+    }
+
+    /// A depth-1, non-ghost, childless yak row below a shed.
+    pub fn shed_yak(task: &'a Task) -> Row<'a> {
+        Row {
+            depth: 1,
+            ..Row::of(Item::Yak(task))
         }
     }
 
@@ -305,9 +342,9 @@ pub fn apply_collapse<'a>(flat: Vec<Row<'a>>, collapsed: &HashSet<String>) -> Ve
     let mut hide_stack: Vec<(String, u16)> = Vec::new();
     for mut row in flat {
         let depth = row.depth;
-        // Only yaks nest: any other row is never a parent, never hidden.
-        let id = row.yak().map(|t| t.id.clone()).unwrap_or_default();
-        let is_collapsed = row.has_children && collapsed.contains(id.as_str());
+        // A row with no key (a document) never nests.
+        let key = row.collapse_key();
+        let is_collapsed = row.has_children && key.as_ref().is_some_and(|k| collapsed.contains(k));
         while hide_stack.last().is_some_and(|(_, d)| depth <= *d) {
             hide_stack.pop();
         }
@@ -320,13 +357,13 @@ pub fn apply_collapse<'a>(flat: Vec<Row<'a>>, collapsed: &HashSet<String>) -> Ve
             }
         }
         if is_collapsed {
-            hide_stack.push((id, depth));
+            hide_stack.push((key.unwrap_or_default(), depth));
         }
     }
     for row in &mut visible {
         if row.collapsed {
-            let id = row.yak().map_or("", |t| t.id.as_str());
-            row.hidden = counts.get(id).copied().unwrap_or(0);
+            let key = row.collapse_key().unwrap_or_default();
+            row.hidden = counts.get(&key).copied().unwrap_or(0);
         }
     }
     visible
