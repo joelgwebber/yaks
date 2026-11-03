@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T04:11:26Z'
+updated: '2026-11-03T04:46:15Z'
 parent: yaks-947a
 depends_on:
 - yaks-fbb0
@@ -25,3 +25,8 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-03T04:46:15Z [herd-tui]
+
+Both halves landed: yaks-be65 (`50af0a9a`) and yaks-c354 (`200d48fa`).
