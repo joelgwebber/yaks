@@ -1,7 +1,7 @@
 ---
 id: yaks-9c3c
 title: 'Design: one TUI model for views, panes, history, search and keys'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-03T02:17:24Z'
@@ -48,3 +48,13 @@ Open for Joel:
 Design agreed by Joel, 2026-11-02: every open question resolved as leaned (decisions 5 to 8 on the page). The page is [wiki/design/tui-model.md](/wiki/design/tui-model.md). The questions on yaks-158d and yaks-953f are answered there and their `needs` cleared.
 
 Implementation is the page's seven phases, carried by the folded yaks (yaks-953f phase 1 first, then the command table under yaks-0ac1).
+
+---
+▸ 2026-11-03T03:17:06Z [tui-design]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
