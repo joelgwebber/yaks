@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
-updated: '2026-11-03T21:42:05Z'
+updated: '2026-11-03T21:50:57Z'
 parent: yaks-f677
 tags:
 - tui
@@ -47,3 +47,8 @@ I can't reproduce a `:wq`-only pause: headlessly both `:wq` and Ctrl-S take ~0.5
 
 1. In your terminal, does Ctrl-S really feel instant on the *same* kind of edit (a comment or description, not a single-line field)? If both pause, I'd fold this into yaks-7058 (make the commit cheaper, or run it after the frame is drawn).
 2. If only `:wq` pauses: which terminal, and is it inside tmux/zellij? An escape-time delay on the `Esc` you press before `:` is my next suspect.
+
+---
+▸ 2026-11-03T21:50:57Z [Joel Webber]
+
+test comment
