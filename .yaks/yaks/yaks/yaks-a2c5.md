@@ -124,3 +124,8 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 ▸ 2026-11-03T05:47:06Z [hist-1]
 
 Decision: a jump is wrapped, not pushed by hand. `App::jump(|app| ..)` snapshots the location before, runs the move, and pushes only if the location differs afterwards. That gives "skip a push identical to the current location" for free (a link to the yak already shown, a failed link, a missing page push nothing) and means no call site can forget the snapshot or push twice. Rejected: an explicit `push_location()` at each call site (the old `nav_back.push` pattern: three stacks, each with its own forgotten cases).
+
+---
+▸ 2026-11-03T05:47:06Z [hist-1]
+
+Decision: opening a page from a list row (Wiki `Enter`/`l`, a new page) is a jump, though opening a yak's pane is not. The claim's test requires `o` from such a page to return to the list row, which only works if the open pushed the list location. `o` also skips stops identical to where you are, so `Enter`, `Esc`, `o` does not waste a step on the page just closed. Rejected: treating a page like a yak pane (no push), which makes `o` from a page skip the row and go to the previous view.
