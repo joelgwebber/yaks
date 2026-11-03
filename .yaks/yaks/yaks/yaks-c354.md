@@ -108,3 +108,20 @@ Decision: snapshots changed, all Sheds, nothing else.
 - `sheds_tab_yak_detail` (insta, new): `J` from walk-1's pane to its first yak, the normal yak pane.
 - `docs/assets/tui-sheds.svg`, `tui-sheds-detail.svg` changed; `tui-sheds-yak.svg` is new. `docshots.rs` renames the fixture's yaks to this docshots farm's (`sheds_of_this_farm()`), because the farm's yaks are `yaks-*` and the shed rows need yaks below them.
 - No non-Sheds snapshot changed: `git status` after the full gate lists only the three sheds `.snap` files. I regenerated every docshot on this tree and on a clean `git worktree` of HEAD: only `tui-sheds*.svg` differ between the two. The committed non-Sheds SVGs differ from either regeneration (toque's SVG now writes `fill-opacity`, `xml:space`), so I `git checkout`ed them rather than commit unrelated churn. The two regenerated Sheds SVGs therefore use the newer toque style while their neighbours keep the older one.
+
+---
+▸ 2026-11-03T04:41:56Z [sheds-2]
+
+Decision: a shed's pane keys are `Ctx::Detail` bindings by kind, not a new surface. `surface_kind()` now also names the row kind in the pane; the yak-only pane bindings (line cursor, links, find, `E`, `S`...) became `bind_pane(Yak, ..)`, and a shed pane gets `h`/`Esc`/`J`/`K`/`#`/`W`/`U`/`?`/`q` (kind-less, as before) plus `y` (copy name) and `r` (rescan). Rejected: leaving the pane's keys kind-less (then the shed pane's bottom hint advertised `Tab:link  Enter:follow  E:edit`, all no-ops there).
+
+Decision: shed-row bindings beyond the claim's open/`y`/`r`: `Space` (collapse) and `/` (search) are required by the spec's rules; `v`, `?`, `q` are repeated for shed rows with the hint labels (as the document rows do) so the Sheds hint keeps `v:views` and `q:quit` and the old Sheds literal survives with `/:search` added. Rejected: dropping `v` on a shed row (the view picker would stop working with the cursor on a root).
+
+Decision: `/` rule. A shed is kept if any child matches or, when a search is set, its name contains it; only the matching children are shown (the claim's literal rule), so a name-only match is a root with no children. All content facets (drawer: type, priority, tags...) apply to the children via `FilterSpec::matches`, not just `search`. Rejected: showing all of a shed's yaks when its name matches (friendlier, but beyond the claim; a phase 6a question).
+
+Decision: the cursor survives a rescan by (shed name, yak id) pair: the same yak under the same shed, else its shed row, else a clamp. A yak touched by two sheds appears under both, and only the one under its own shed is "the same row". Rejected: by yak id alone (jumps to the first shed's copy).
+
+Decision: `Item::Yak` children carry no per-row Kind: `render_list` remembers the current shed's `Shed::rows()` as it walks the rows and looks the tag up there (shown only if the whole title still fits). Rejected: a Kind field on `tree::Row`/`CachedRow` for one view.
+
+Decision: `Space` and the persisted `collapsed` set take `shed:<name>`; a collapsed shed shows the same `▶ N` badge as a yak. `h` (family scope) on the Sheds view says "family scope applies to tree views" instead of cycling a setting nothing reads.
+
+Decision: the shed pane keeps no scroll or cursor (it never has more than a screenful in practice, and its yaks are the rows beside it). `selected_shed_yak`'s duty is the cursor itself: `sheds_state_header` now reports the shed the cursor is in (`shed=`); the yak is the header's own `sel=`.
