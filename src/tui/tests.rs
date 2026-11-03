@@ -5417,19 +5417,25 @@ fn search_commit_leaves_no_stale_filter_toast() {
 
 #[test]
 fn notification_clears_on_next_key_and_next_mouse_event() {
+    use ratatui::crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
+    let mouse = |kind| MouseEvent {
+        kind,
+        column: 0,
+        row: 0,
+        modifiers: KeyModifiers::NONE,
+    };
     let mut app = sample();
     app.notification = Some("sync finished".into());
     handle_key(&mut app, key('j'));
     assert_eq!(app.notification, None, "the next key clears it");
 
+    // Mouse capture reports every pointer motion: a bare move keeps it.
     app.notification = Some("sync finished".into());
-    app.handle_mouse(ratatui::crossterm::event::MouseEvent {
-        kind: ratatui::crossterm::event::MouseEventKind::Moved,
-        column: 0,
-        row: 0,
-        modifiers: KeyModifiers::NONE,
-    });
-    assert_eq!(app.notification, None, "the next mouse event clears it");
+    app.handle_mouse(mouse(MouseEventKind::Moved));
+    assert_eq!(app.notification.as_deref(), Some("sync finished"));
+
+    app.handle_mouse(mouse(MouseEventKind::Down(MouseButton::Left)));
+    assert_eq!(app.notification, None, "a click clears it");
 }
 
 #[test]

@@ -40,8 +40,12 @@ impl App {
     /// Dispatch one mouse event. Overlays (editors, pickers, drawer, help) own
     /// their input, so the mouse is ignored while one is open.
     pub(crate) fn handle_mouse(&mut self, m: MouseEvent) {
-        // A notification lasts until the next key or mouse event.
-        self.notification = None;
+        // A notification lasts until the next key, click or scroll. Not a
+        // bare pointer move: mouse capture reports every motion, which would
+        // wipe a toast before it could be read.
+        if !matches!(m.kind, MouseEventKind::Moved) {
+            self.notification = None;
+        }
         self.handle_mouse_inner(m);
         self.drop_stale_hscroll();
     }
