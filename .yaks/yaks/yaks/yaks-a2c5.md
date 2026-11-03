@@ -149,3 +149,8 @@ Decision: `PaneAt::Doc` gains `under: Option<String>` beyond the claim's `{path,
 ▸ 2026-11-03T05:47:06Z [hist-1]
 
 Decision: the image viewer's `Esc`/`q`/`h` now closes the pane like the text viewer does; the old "back to the text viewer it was followed from" lived in `viewer_back`, which is gone, and `o` now does that. `o`/`i` are bound in the image viewer and the shed pane too ("everywhere"); the Detail `i/o` binding moved from `bind_pane(Yak)` to `bind(Detail)` so the shed pane takes it, which adds `i/o:fwd/back` to the Shed detail hint line (snapshot `sheds_tab_detail` and `docs/assets/tui-sheds-detail.svg` updated by hand; the other docshot SVGs regenerate with unrelated renderer drift, so none were committed). In the list `o`/`i` carry no hint (the list hint bars are unchanged).
+
+---
+▸ 2026-11-03T05:47:06Z [hist-1]
+
+Decision: messages. Back/forward say `← Recent · yaks-1234` / `→ ...` with the tab name minus its icon; empty ends say `no earlier location` / `no later location` (replacing `no earlier yak`/`no earlier spot` etc.); a view that is gone adds `(view <key> is gone)`; when the view is gone the filter is not applied (the saved one belonged to the deleted view) but the query is.
