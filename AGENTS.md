@@ -69,8 +69,9 @@ table only to exclude the local `.edtui` clone.
   LLM-/test-legible plain-text snapshots, and render frames to SVG for visual
   inspection). Extracted from yaks; now lives at
   <https://github.com/joelgwebber/toque> and is a git dependency (fix it
-  there, then `cargo update -p toque`). `docs/research/tui-style-eval.md`
-  archives the now-retired text style-encoding research.
+  there, then `cargo update -p toque`). The farm page
+  `/wiki/research/tui-style-eval.md` archives the now-retired text
+  style-encoding research.
 
 ## Build
 
@@ -161,6 +162,12 @@ This project tracks its own work with yaks; the `yaks` skill is the workflow.
 Repo specifics: never code without a shaving yak; check existing yaks before
 creating one; run `yaks next` when unsure what's next. The coordinator commits
 the farm (`yaks commit`); publishing it (`yaks sync`) is the human's call.
+
+**Design docs and research go in the farm wiki, not `docs/`.** A design is a
+page under `wiki/design/`, research under `wiki/research/` (the `yaks-research`
+skill has the how), each linked from its yaks and linking back. Read them with
+`yaks page list` and `yaks peek`. `docs/` is the product's user documentation
+only; when a design ships, its user-facing behaviour goes there.
 
 ## Delegating to cheaper models
 
