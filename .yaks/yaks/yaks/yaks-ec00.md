@@ -5,11 +5,11 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-01T16:44:44Z'
-updated: '2026-11-02T17:44:54Z'
+updated: '2026-11-03T02:38:56Z'
 tags:
 - skills
 - agent
-needs: human
+needs: agent
 ---
 
 Joel (2026-11-01): make sure cloud runners always get an up-to-date `yaks` CLI and up-to-date installed skills. He has hit skills installed in a mix of `~/.agents/skills` and `./.agents/skills`, some not updated, "resulting in all manner of confusion". Runners make it worse: the home dir is ephemeral and environment setup is inconsistent, for both the home dir and the checkouts. This yak holds the research and ends in a plan; implementation goes in child yaks.
@@ -89,3 +89,14 @@ Upgrade and migrate guidance for agents, from the audit above. Four questions; m
 2. **Who migrates a shared farm.** Options: (a) any agent migrates when refused; (b) agents never migrate a farm with a remote, they `yaks ask` and stop; (c) agents migrate only on a machine nobody sits at, and only when a yakherd/brief says so. Lean: (b) for a shared farm and (a) for a private or unpublished one, because migrating and syncing breaks every other machine's binary at once. Migrating is a coordinator's or human's step, done once, with a `--dry-run` first and its own commit.
 3. **Make it automatic in the binary instead.** A cheap "a newer yaks is available" notice (once per day, cached, never on `--json`), and/or a farm `min_version` in `config.yaml` that warns an older binary before the schema bump hits. Lean: `min_version` first: it is local, needs no network, and the coordinator who migrates sets it. Leave the registry check for later.
 4. **Order of operations for a schema bump**, written into `yaks-coordinating`: upgrade every machine's binary, then migrate once, then sync, then restart TUIs. Lean: yes, plus the TUI fix in yaks-9786 so a stale TUI can't corrupt the farm meanwhile.
+
+---
+▸ 2026-11-03T02:38:56Z [Joel Webber]
+kind: answer
+needs: agent
+---
+
+1. SGTM.
+2. Let's just always defer to a human; don't try and separate private from public herds for this.
+3. Agreed.
+4. :thumbs-up:
