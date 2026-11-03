@@ -1,0 +1,7 @@
+frame 0 focus=list view=🕒 Recent  sel=yaks-aec7
+frame 1 focus=detail view=🕒 Recent  sel=yaks-aec7
+frame 2 focus=detail view=🕒 Recent  sel=yaks-aec7
+frame 3 focus=detail view=🕒 Recent  sel=yaks-f677
+frame 4 focus=detail view=🕒 Recent  sel=yaks-aec7
+frame 5 focus=list view=🕒 Recent  sel=yaks-aec7
+frame 6 focus=list view=🕒 Recent  sel=yaks-aec7

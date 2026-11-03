@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-03T21:11:08Z'
-updated: '2026-11-03T21:42:11Z'
+updated: '2026-11-03T21:47:56Z'
 parent: yaks-f677
 tags:
 - tui
@@ -22,3 +22,5 @@ thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+[aec7-frames](yaks-aec7/aec7-frames.txt)
