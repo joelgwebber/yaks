@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T04:43:08Z'
+updated: '2026-11-03T04:57:42Z'
 parent: yaks-947a
 depends_on:
 - yaks-5d08
@@ -87,3 +87,17 @@ moved: hairy -> shaving
 ▸ 2026-11-03T04:43:08Z [herd-tui]
 
 herd-tui: base is main at `200d48fa` (phase 3b landed).
+
+---
+▸ 2026-11-03T04:57:42Z [query-1]
+
+Start: 2026-11-03T04:43:52Z (date -u). Farm file `/home/user/.local/share/yaks/farms/yaks-b0f8dcf9/.yaks/yaks/yaks/yaks-a25c.md`; checkout `/home/user/yaks-7`; base `200d48f`.
+
+Progress: the code, docs and tests are in; full gate green (`cargo test --workspace`, 890 passed in the bin, 30 `test result: ok` lines, none failed). The disk filled once mid-run (other workers' temp dirs); I only deleted stale test binaries and `incremental/` in my own `target/`.
+
+- `App.query`; `/`, its live edit, Enter and Esc-cancel use it; `filter.search` stays the view's own search and ANDs.
+- `tree::query_matches(item, q)`: yak id/title/body; doc title/path/kind/tags/`text`; shed name. Shed child rule in `shed_rows`/`busy_sheds_count`.
+- `WikiEntry.text`: page file or `source.md` + `extracted.md`, lowercased once at load.
+- `tree::build` takes `query: Option<&str>` (focus needs spec AND query); flat, working set, Wiki, Sheds and `view_count` apply it; memo key has `query`.
+- `view::all_view()` (key `all`, unpinned, flat, updated desc, no limit), last in `default_views`.
+- Query chip in `render_tabs`; Esc: query first, then facets.
