@@ -12,9 +12,9 @@
 //! - **An in-document anchor** ([`Target::Local`], `#section`): moves the
 //!   viewer's cursor to that heading (`o` returns).
 //!
-//! **History.** Following a link from the viewer pushes the whole viewer
-//! ([`App::viewer_back`]); `o` first undoes in-page jumps, then goes back a
-//! document, re-reading it from disk; `i` goes forward.
+//! **History.** Following a link, to a document or within one, is a jump of
+//! the app's one history ([`super::history`]): `o` goes back, re-reading a
+//! document from disk ([`App::read_doc`]); `i` goes forward.
 //!
 //! **Peek.** While the viewer's cursor is on a link it can read, a pane at the
 //! bottom shows `links::peek` of it (the section, the line range, or the
@@ -41,11 +41,6 @@ pub(crate) const PEEK_ROWS: u16 = 7;
 pub(crate) struct PeekCache {
     at_gen: u64,
     map: HashMap<String, Result<String, String>>,
-}
-
-/// Where the viewer stands in its history (one per document visited).
-pub(crate) struct ViewerStop {
-    pub view: AttachView,
 }
 
 /// The row a heading or line anchor lands on in a viewer's rows: the first
@@ -166,41 +161,71 @@ impl App {
         old
     }
 
-    /// Show a document followed from the one open now (if any): that one goes
-    /// on the back stack, a new hop clearing the forward one.
+    /// Show a document followed from a link: a jump, so `o` comes back to
+    /// where the link was (the page open now, or the yak or list row under
+    /// it).
     pub(crate) fn follow_to_doc(&mut self, view: DocView) {
-        if let Some(DocView::Text(old)) = self.show_doc(view) {
-            self.viewer_back.push(ViewerStop { view: old });
-            self.viewer_fwd.clear();
-        }
+        self.jump(|app| {
+            app.show_doc(view);
+        });
     }
 
     /// Close the pane's document: focus goes back to where it was opened
-    /// from, and the history of followed documents is forgotten.
+    /// from. The history keeps the pages it passed through: `o` still goes
+    /// back to them.
     pub(crate) fn close_doc(&mut self) {
         if let Some(d) = self.doc.take() {
             self.focus = d.from;
         }
-        self.clear_viewer_history();
     }
 
-    /// Open farm file `path` in the viewer at `anchor`, pushing the viewer
-    /// that is open now (if any) onto the back stack. An image opens in the
-    /// image viewer.
-    pub(crate) fn open_farm_doc(&mut self, path: &str, rev: Option<&str>, anchor: Option<&Anchor>) {
-        if crate::store::is_image_name(path) && rev.is_none() {
-            if let Some(root) = self.farm_root() {
-                let found = crate::farm::FoundAttachment {
-                    name: path.rsplit('/').next().unwrap_or(path).to_string(),
-                    path: root.join(path),
-                };
-                if found.path.is_file() {
-                    if let Some(v) = ImageView::open(path, &found, &self.picker) {
-                        self.follow_to_doc(DocView::Image(v));
-                        self.notification = Some(format!("viewing {path}"));
-                        return;
-                    }
+    /// The picture at farm file `path`, in the image viewer's form (`None`
+    /// when it is not an image, not there, or cannot be decoded).
+    fn farm_image(&self, path: &str) -> Option<ImageView> {
+        let found = crate::farm::FoundAttachment {
+            name: path.rsplit('/').next().unwrap_or(path).to_string(),
+            path: self.farm_root()?.join(path),
+        };
+        if !crate::store::is_image_name(path) || !found.path.is_file() {
+            return None;
+        }
+        ImageView::open(path, &found, &self.picker)
+    }
+
+    /// A document as the pane showed it, read again from disk: `path` is its
+    /// name as the viewer gives it (`<id>/<file>` for an attachment, else a
+    /// farm path) and `rev` the farm commit of a pinned one. What
+    /// [`super::history`] restores a page by.
+    pub(crate) fn read_doc(&self, path: &str, rev: Option<&str>) -> Result<DocView, String> {
+        // A farm file is under the farm root; an attachment is not (it lives
+        // under its yak), so the path tells them apart.
+        if rev.is_some() || self.farm_root().is_some_and(|r| r.join(path).is_file()) {
+            if rev.is_none() {
+                if let Some(v) = self.farm_image(path) {
+                    return Ok(DocView::Image(v));
                 }
+            }
+            return self.read_farm_doc(path, rev).map(DocView::Text);
+        }
+        let found = self
+            .resolve_attachment(path)
+            .ok_or_else(|| format!("{path}: not in this farm"))?;
+        if let Some(v) = ImageView::open(path, &found, &self.picker) {
+            return Ok(DocView::Image(v));
+        }
+        AttachView::open(path, &found)
+            .map(DocView::Text)
+            .ok_or_else(|| format!("{path}: cannot be shown here"))
+    }
+
+    /// Open farm file `path` in the viewer at `anchor`, a jump. An image
+    /// opens in the image viewer.
+    pub(crate) fn open_farm_doc(&mut self, path: &str, rev: Option<&str>, anchor: Option<&Anchor>) {
+        if rev.is_none() {
+            if let Some(v) = self.farm_image(path) {
+                self.follow_to_doc(DocView::Image(v));
+                self.notification = Some(format!("viewing {path}"));
+                return;
             }
         }
         let v = match self.read_farm_doc(path, rev) {
@@ -244,86 +269,35 @@ impl App {
         }
     }
 
-    /// Esc / q on the image viewer: back to the text viewer it was opened
-    /// from, if any, else closed.
-    pub(crate) fn close_image(&mut self) {
-        match (self.viewer_back.pop(), &mut self.doc) {
-            (Some(ViewerStop { view }), Some(d)) => d.view = DocView::Text(view),
-            _ => self.close_doc(),
-        }
-    }
-
-    /// o / i in the viewer, past its in-page jumps: back to (forward again
-    /// to) the previous document. The document is re-read from disk (an
-    /// unpinned one), keeping its cursor. Returns whether there was one.
-    pub(crate) fn viewer_hop(&mut self, forward: bool) -> bool {
-        if self.attach().is_none() {
-            return false;
-        }
-        let stop = if forward {
-            self.viewer_fwd.pop()
-        } else {
-            self.viewer_back.pop()
-        };
-        let Some(ViewerStop { view: mut next }) = stop else {
-            return false;
-        };
-        // Re-read an unpinned farm document: it may have been edited since.
-        if next.doc != DocKind::Attachment && next.rev.is_none() {
-            if let Ok(fresh) = self.read_farm_doc(&next.target, None) {
-                next.text = fresh.text;
-                next.doc = fresh.doc;
-            }
-        }
-        let target = next.target.clone();
-        let Some(slot) = self.attach_mut() else {
-            return false;
-        };
-        let cur = std::mem::replace(slot, next);
-        if forward {
-            self.viewer_back.push(ViewerStop { view: cur });
-        } else {
-            self.viewer_fwd.push(ViewerStop { view: cur });
-        }
-        if let Some((rows, vp)) = self.attachment_rows() {
-            if let Some(v) = self.attach_mut() {
-                let (line, scroll) = (v.nav.line, v.nav.scroll);
-                v.nav.clamp(rows.len(), vp);
-                v.nav.line = line.min(rows.len().saturating_sub(1));
-                v.nav.scroll = scroll.min(vp.max_scroll(rows.len()) as u16);
-            }
-        }
-        self.notification = Some(format!("← {target}"));
-        true
-    }
-
-    /// Forget the viewer history (the viewer was closed).
-    pub(crate) fn clear_viewer_history(&mut self) {
-        self.viewer_back.clear();
-        self.viewer_fwd.clear();
-    }
-
-    /// Enter on an in-document anchor in the viewer: move to its heading.
+    /// Enter on an in-document anchor in the viewer: move to its heading, a
+    /// jump (`o` returns).
     pub(crate) fn follow_local_anchor(
         &mut self,
         rows: &[detail::DLine],
         vp: Viewport,
         anchor: &Anchor,
     ) {
-        let Some(v) = self.attach_mut() else {
+        let Some(v) = self.attach() else {
             return;
         };
+        let what = links::label(&Link::Local(anchor.clone()));
         match anchor_row(v, rows, anchor) {
             Some(to) => {
-                v.nav.jump_to(rows, vp, to);
-                let what = links::label(&Link::Local(anchor.clone()));
+                self.jump_in_page(rows, vp, to);
                 self.notification = Some(format!("→ {what} (o to go back)"));
             }
-            None => {
-                let what = links::label(&Link::Local(anchor.clone()));
-                self.notification = Some(format!("no {what} in {}", v.target));
-            }
+            None => self.notification = Some(format!("no {what} in {}", v.target)),
         }
+    }
+
+    /// Move the open page's cursor to row `to`: a jump (a footnote, a
+    /// `#section`), so `o` returns to where it was.
+    pub(crate) fn jump_in_page(&mut self, rows: &[detail::DLine], vp: Viewport, to: usize) {
+        self.jump(|app| {
+            if let Some(v) = app.attach_mut() {
+                v.nav.goto(rows, vp, to);
+            }
+        });
     }
 
     // -- peek ---------------------------------------------------------------
@@ -533,12 +507,20 @@ mod tests {
         assert_eq!(viewer(&app).target, "wiki/topics/full-text-search.md");
         press(&mut app, "oo");
         assert_eq!(viewer(&app).target, "wiki/topics/hub.md");
+        // One step further is where the hub was opened from: the list.
         press(&mut app, "o");
-        assert_eq!(app.notification.as_deref(), Some("no earlier spot"));
-        // Closing forgets the history.
+        assert!(app.doc.is_none(), "back out of the first page, to the list");
+        assert_eq!(app.focus, Focus::List);
+        press(&mut app, "o");
+        assert_eq!(app.notification.as_deref(), Some("no earlier location"));
+        // Closing a page does not forget the history: `i` reopens it.
+        press(&mut app, "i");
+        assert_eq!(viewer(&app).target, "wiki/topics/hub.md");
         esc_key(&mut app);
-        assert!(matches!(app.overlay, Overlay::None));
-        assert!(app.viewer_back.is_empty() && app.viewer_fwd.is_empty());
+        assert!(app.doc.is_none());
+        assert!(!app.history.fwd.is_empty() || !app.history.back.is_empty());
+        press(&mut app, "i");
+        assert_eq!(viewer(&app).target, "wiki/topics/vector-search.md");
         let _ = std::fs::remove_dir_all(proj);
     }
 

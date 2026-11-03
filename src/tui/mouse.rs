@@ -81,7 +81,7 @@ impl App {
                     .find(|(r, _)| r.contains(Position::new(col, row)))
                 {
                     if i != self.view {
-                        self.set_view(i);
+                        self.jump_view(i);
                     }
                 } else if let Some(r) = hit(hits.list, col, row) {
                     self.click_list_row(hits.list_offset + (row - r.y) as usize);
@@ -118,8 +118,7 @@ impl App {
             // A document has no detail pane: the second click opens it.
             self.open_wiki_entry();
         } else if i == self.cursor {
-            self.focus = Focus::Detail;
-            self.detail.to_top();
+            self.open_detail_pane();
         } else {
             self.cursor = i;
         }

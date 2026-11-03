@@ -3,9 +3,9 @@
 //! shared by every pane that shows a page of [`detail::DLine`] rows.
 //!
 //! - [`LineNav`] is one page's navigation state (cursor, scroll, selection,
-//!   current find match, sideways scroll, in-page jump history) and its
-//!   operations, each given the page's rows and [`Viewport`]. What it finds
-//!   is not its own: the search register (`App::register`, yaks-c215) is
+//!   current find match, sideways scroll) and its operations, each given
+//!   the page's rows and [`Viewport`]. Where it has been is not its own (the
+//!   app's one history, [`super::history`], holds that), nor is what it finds: the search register (`App::register`, yaks-c215) is
 //!   handed in, so every page searches the same text.
 //! - [`Viewport`] is the scroll geometry: the rows a page shows, and how many
 //!   of them a pinned header takes once scrolled.
@@ -90,9 +90,6 @@ pub(crate) struct LineNav {
     /// Sideways scroll of the no-wrap block under the cursor:
     /// `(DLine::nowrap_key, columns)`. Dropped once the cursor leaves it.
     pub(crate) hscroll: Option<((usize, usize), usize)>,
-    /// In-page jumps (a footnote): `(line, scroll)` to go back / forward to.
-    pub(crate) back: Vec<(usize, u16)>,
-    pub(crate) fwd: Vec<(usize, u16)>,
 }
 
 impl LineNav {
@@ -273,31 +270,13 @@ impl LineNav {
         false
     }
 
-    /// Jump the cursor to row `to` within the page, remembering where it was
-    /// so [`LineNav::go_back`] returns (a footnote reference to its text).
-    pub(crate) fn jump_to(&mut self, lines: &[DLine], vp: Viewport, to: usize) {
-        self.back.push((self.line, self.scroll));
-        self.fwd.clear();
+    /// Put the cursor on row `to` within the page, keeping it in view. An
+    /// in-page jump (a footnote, a `#section`) is a jump of the app's
+    /// history ([`App::jump`](super::App::jump)), which remembers where the
+    /// cursor was; the page keeps no history of its own.
+    pub(crate) fn goto(&mut self, lines: &[DLine], vp: Viewport, to: usize) {
         self.line = to;
         self.reveal(lines.len(), vp);
-    }
-
-    /// o / i: back to (forward again from) an in-page jump. Returns whether
-    /// there was one.
-    pub(crate) fn go_back(&mut self, lines: &[DLine], forward: bool) -> bool {
-        let (from, to) = if forward {
-            (&mut self.fwd, &mut self.back)
-        } else {
-            (&mut self.back, &mut self.fwd)
-        };
-        let Some((line, scroll)) = from.pop() else {
-            return false;
-        };
-        to.push((self.line, self.scroll));
-        let last = lines.len().saturating_sub(1);
-        self.line = line.min(last);
-        self.scroll = scroll;
-        true
     }
 
     /// The sideways scroll of no-wrap block `key`, whose widest row is
@@ -521,15 +500,10 @@ mod tests {
     }
 
     #[test]
-    fn an_in_page_jump_goes_back_and_forward() {
+    fn goto_puts_the_cursor_on_a_row_in_view() {
         let lines = page();
         let mut nav = LineNav::default();
-        nav.jump_to(&lines, VP, 4);
+        nav.goto(&lines, VP, 4);
         assert_eq!(nav.line, 4);
-        assert!(nav.go_back(&lines, false));
-        assert_eq!(nav.line, 0);
-        assert!(nav.go_back(&lines, true));
-        assert_eq!(nav.line, 4);
-        assert!(!nav.go_back(&lines, true), "nothing further forward");
     }
 }

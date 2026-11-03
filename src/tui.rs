@@ -21,6 +21,7 @@ mod follow;
 mod fuzzy;
 mod handlers;
 mod headless;
+mod history;
 mod imagesize;
 mod imageview;
 mod keymap;
@@ -97,16 +98,6 @@ use render::*;
 pub use runtime::run;
 use sheds_tab::*;
 use wiki_tab::*;
-
-/// One o/i nav-history stop: a task plus the detail cursor/scroll it was left
-/// at, so back/forward return you to where you were (yaks-28b4). Deliberately
-/// local to detail-link nav; a global cross-view history is yaks-158d.
-#[derive(Clone, PartialEq, Debug)]
-struct NavEntry {
-    id: String,
-    line: usize,
-    scroll: u16,
-}
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub(crate) enum Focus {
@@ -302,11 +293,16 @@ pub struct App {
     /// cursor (dropped when the cursor leaves it or the yak changes,
     /// `App::drop_stale_hscroll`, yaks-c733).
     detail: linenav::LineNav,
-    /// Browser-style navigation history of visited tasks (o = back, i =
-    /// forward), driven by following detail links. Each entry remembers the
-    /// detail cursor + scroll it was left at, restored on return (yaks-28b4).
-    nav_back: Vec<NavEntry>,
-    nav_fwd: Vec<NavEntry>,
+    /// The yak the pane shows when it is not the selected row's: a link
+    /// followed to a yak the current list does not have (another state, a
+    /// facet or the query keeps it out; the Wiki or Sheds view has no such
+    /// rows). `None`: the pane shows the selected row's yak. It means
+    /// something only with the pane focused ([`App::pane_yak_id`]), and goes
+    /// when the cursor moves, the view changes or focus returns to the list.
+    pane_yak: Option<String>,
+    /// The one history of locations (`o` back, `i` forward): see
+    /// [`history`].
+    history: history::History,
     collapsed: HashSet<String>,
     /// Per-view family-scope overrides, keyed by `View::key` (persisted in the
     /// UI-state cache). A missing entry means the view inherits the global
@@ -389,10 +385,6 @@ pub struct App {
     sheds: ShedsTab,
     /// The Wiki tab's pages and sources and its cursor (yaks-ebb2).
     wiki: WikiTab,
-    /// The text viewer's history of followed documents (yaks-7395): `o`
-    /// goes back past in-page jumps to the previous one, `i` forward.
-    viewer_back: Vec<follow::ViewerStop>,
-    viewer_fwd: Vec<follow::ViewerStop>,
     /// Peeks read for the preview pane, by link (see [`follow::PeekCache`]).
     peeks: RefCell<follow::PeekCache>,
     /// Whether the viewer shows its peek pane (`p` toggles).
@@ -428,8 +420,8 @@ impl App {
             cursor: 0,
             focus: Focus::List,
             detail: linenav::LineNav::default(),
-            nav_back: Vec::new(),
-            nav_fwd: Vec::new(),
+            pane_yak: None,
+            history: history::History::default(),
             collapsed: HashSet::new(),
             family_scope: HashMap::new(),
             filter,
@@ -457,8 +449,6 @@ impl App {
             hits: RefCell::default(),
             sheds: ShedsTab::default(),
             wiki: WikiTab::default(),
-            viewer_back: Vec::new(),
-            viewer_fwd: Vec::new(),
             peeks: RefCell::default(),
             peek_shown: true,
             farm_sync: None,

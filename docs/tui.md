@@ -118,8 +118,8 @@ the yaks that point *at* this one — its children, the yaks that depend on it, 
 those whose title, description or a note mentions its id — each row tagged with
 how (`[child]`, `[depends]`, `[title]`, `[body:L3]`, `[note:<ts> [actor]]`);
 type to filter, `Enter` goes to one like `#` (it is `yaks refs <id>
---incoming`); `i`/`o` nav forward/back (each yak reopens at the cursor and
-scroll you left it at); `J`/`K` next/prev task; `Ctrl-N`/`Ctrl-P`
+--incoming`); `i`/`o` history forward/back (see *History* below; `o`/`i` work in every
+pane and in the list); `J`/`K` next/prev task; `Ctrl-N`/`Ctrl-P`
 next/prev content block; `v` + `Shift-↑↓` visual-select lines, `y` copy;
 `/`, `n`/`N` find (see *The search register* below: `/` sets the one
 search register, `Enter` keeps the cursor on the current match, `Esc` restores
@@ -255,8 +255,8 @@ stays *new page*). `Esc` on a list clears the query first; the next `Esc`
 reverts the facets to the view. `V` saves the facets (the drawer's search row),
 not the query. `#` go to any yak (list or detail pane:
 a picker over every yak — type an id fragment like `a1b2`, the full id, or
-title words, then `Enter` opens its detail, switching to its view and recording
-the jump so `o` comes back); `f` filter drawer; `Esc` clear the query, then
+title words, then `Enter` opens its detail like following a link, the list
+staying where it is, and records the jump so `o` comes back); `f` filter drawer; `Esc` clear the query, then
 revert the filter to the active view.
 
 **The search register** — `/` in a yak's detail pane or in a page or attachment
@@ -469,6 +469,35 @@ that herd (an id-prefix rename). `H` does the same move as a one-key picker.
 
 ![yaks TUI edit form with the herd chip row](assets/tui-edit-herd.svg)
 
+## History
+
+One history of locations serves the list, the detail pane, the viewers and
+every tab. `o` goes back and `i` forward, in any pane and in the list.
+
+- **A location** is the view, its live filter and query, the cursor row (found
+  again by what it is, a yak id or a page path, not by its place), the list's
+  scroll, the focus, and the pane's subject with its line and scroll.
+- **Jumps push; movement doesn't.** A jump is following any link (a yak, a
+  page, a footnote, a `#section`), opening a page from a Wiki row, a view
+  switch (`Tab`, `[`/`]`, the picker, a click on a tab) and `#`. Moving the
+  cursor or a line, `J`/`K`, opening or closing the pane, `Esc` and
+  committing a search or the drawer are not jumps and push nothing. A new
+  jump drops what was forward; the history keeps the last 100 locations and
+  is not kept between sessions.
+- **Following a link to a yak leaves the list where it is.** If the current
+  list has the yak the cursor moves to it (collapsed ancestors expand);
+  otherwise the pane shows it from outside the list (another state, a facet
+  or the query hides it; a dead yak; any yak from the Wiki or Sheds view) and
+  its header says `not in this list`. Moving the cursor, `J`/`K`, `Esc`, `h`
+  and switching view show the list's own row again.
+- **`o`/`i` restore** the view (a view deleted meanwhile falls back to the
+  subject's status view, else the first), the filter and query, the cursor
+  row, the list's scroll and the pane. A row that left the list or a yak that
+  was slaughtered leaves the cursor at its old index and the notification says
+  `moved` or `gone` after its name; a page is read again from disk and its
+  cursor clamped. Each notification names the view and the subject:
+  `← Recent · yaks-1234`.
+
 ## Following links and peek
 
 The text viewer (an attachment, or a page from the [Wiki tab](#wiki-tab))
@@ -491,11 +520,11 @@ not the view picker.
   commit, `@3f2a9c1` in the header; `E` refuses (a past version is read-only).
   A link to a file the farm lacks says `not in this farm` and stays put.
 - **`#section`** (an anchor in the same page) moves the cursor to that heading.
-- **History**: `o` undoes in-page jumps (footnotes, `#section`) first, then goes
-  back to the previous document, where its cursor was; `i` goes forward. A
+- **History**: `o` goes back over in-page jumps (footnotes, `#section`), then
+  documents, to where the first page was opened from; `i` goes forward. A
   document you come back to is re-read from disk, so an edit made meanwhile
-  shows. An attachment followed from a page joins the same history; `Esc`
-  closes the viewer and forgets it.
+  shows. It is the one history of the TUI (see *History* below); `Esc` closes
+  the viewer and forgets nothing.
 - **Peek**: while the cursor is on a link it can read (a farm document, an
   in-page anchor, an attachment, a `code:` file), a pane under the page shows
   `yaks peek` of it: the section a `#heading` names, the lines of a `#L12-L40`,
@@ -517,7 +546,8 @@ under `wiki/` and each herd's `<herd>/wiki/`, then every saved source under
   the folder.
 - **The tab count** is the number of pages (sources are not counted) the
   query keeps.
-- **`Enter` opens the page** in the text viewer, next to the list. Its
+- **`Enter` opens the page** in the text viewer, next to the list (a jump:
+  `o` closes it again, back on its row). Its
   frontmatter shows as field rows (`type:`, `title:`, `tags:`, ...) above the
   rendered markdown body. A field the viewer can't flatten to one line (a list
   of maps) shows its YAML as written. A **source** opens its `source.md`, then

@@ -5,13 +5,15 @@ expression: "draw(&app, 100, 20)"
  🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   📖  Wiki (0)   🛖  Sh
 
 ◂ Help — keys
+│   d               Half-page down
+│   u               Half-page up
 │   g               Top
 │   G               Bottom
 │   Tab / ]         Next link
 │   S-Tab / [       Previous link
 │   Enter           Yank the selection, else follow the link / footnote / source file / farm page (
-│   i               Nav forward (restores position)
-│   o               Nav back (restores position)
+│   i               History forward: a jump you went back from (any pane)
+│   o               History back: where the last jump left (a link, a view switch, #), position res
 │   J               Next task (stay in detail)
 │   K               Previous task (stay in detail)
 │   Ctrl-N          Next content block
@@ -19,6 +21,4 @@ expression: "draw(&app, 100, 20)"
 │   v               Visual select lines
 │   Shift-↓         Extend the selection down
 │   Shift-↑         Extend the selection up
-│   y               Copy the selection, else the yak id
-│   /               Find in the pane (sets the search for every page and yak)
 j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close

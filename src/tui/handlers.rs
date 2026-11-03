@@ -780,6 +780,7 @@ impl App {
             Some(tree::Item::Yak(_) | tree::Item::Shed(_))
         ) {
             self.focus = Focus::Detail;
+            self.pane_yak = None;
             self.detail.to_top();
         }
     }
@@ -1023,7 +1024,7 @@ impl App {
     /// Run a viewer command: `j`/`k`/`d`/`u`/`g`/`G` move the line cursor,
     /// `Tab`/`[`/`]` cycle links, `Enter` follows one (or yanks a selection),
     /// `v`/Shift-↑↓ select, `y` yanks, `/` `n` `N` find, `o`/`i` go back /
-    /// forward over a footnote jump, `h`/`l` scroll a code block or table
+    /// forward in the history, `h`/`l` scroll a code block or table
     /// sideways. `E` edits the file, `O` hands it to the OS opener; `Esc`
     /// peels back selection, then find, then closes, as do `q` and `h`/`←`
     /// (off a scrolled block).
@@ -1113,19 +1114,8 @@ impl App {
             Cmd::LinkNext => nav.jump_link(&lines, vp, 1),
             Cmd::LinkPrev => nav.jump_link(&lines, vp, -1),
             Cmd::SelectVisual => nav.toggle_visual(),
-            Cmd::NavBack | Cmd::NavForward => {
-                let forward = cmd == Cmd::NavForward;
-                if !nav.go_back(&lines, forward) && !self.viewer_hop(forward) {
-                    self.notification = Some(
-                        if forward {
-                            "no later spot"
-                        } else {
-                            "no earlier spot"
-                        }
-                        .into(),
-                    );
-                }
-            }
+            Cmd::NavBack => return self.history_back(),
+            Cmd::NavForward => return self.history_forward(),
             Cmd::SelectYank => self.yank_attachment(&lines),
             Cmd::PaneEnter => {
                 if nav.anchor.is_some() {
@@ -1169,11 +1159,11 @@ impl App {
 
     /// Enter (viewer) — follow the link on the cursor's row with the detail
     /// pane's rules: a footnote or `#heading` moves within the file (`o`
-    /// returns); a yak closes the viewer and opens it in the detail pane; a
+    /// returns); a yak replaces the viewer in the detail pane; a
     /// farm document opens in the viewer at its anchor (yaks-7395, `o` comes
     /// back); an attachment, URL or source file opens as from the detail pane.
     fn follow_attachment_link(&mut self, lines: &[detail::DLine], vp: Viewport) {
-        let Some(v) = self.attach_mut() else {
+        let Some(v) = self.attach() else {
             return;
         };
         let Some(j) = v.nav.link_at(lines) else {
@@ -1182,15 +1172,13 @@ impl App {
         match j.target {
             detail::Target::Footnote(n) => match detail::footnote_line(lines, v.nav.line, &n) {
                 Some(to) => {
-                    v.nav.jump_to(lines, vp, to);
+                    self.jump_in_page(lines, vp, to);
                     self.notification = Some(format!("→ [{n}] (o to go back)"));
                 }
                 None => self.notification = Some(format!("no definition for [{n}]")),
             },
-            detail::Target::Task(id) => {
-                self.close_doc();
-                self.goto_task(&id);
-            }
+            // Closes the viewer (the yak replaces it) and opens the yak.
+            detail::Target::Task(id) => self.goto_task(&id),
             detail::Target::Url(u) | detail::Target::Artifact(u) => self.open_external(&u),
             detail::Target::Source { path, lines, rev } => {
                 self.open_source(&path, lines, rev.as_deref())
@@ -2394,7 +2382,9 @@ impl App {
                 // If the edit pushed the yak out of the current filtered/sorted
                 // list entirely, close the detail pane -- what you were looking
                 // at is no longer here (human-confirmed drop-out behavior).
+                // (A yak the pane shows from outside the list was never in it.)
                 if self.focus == Focus::Detail
+                    && self.pane_yak_id().is_none()
                     && edited.is_some_and(|id| {
                         !self
                             .rows()
@@ -2402,7 +2392,7 @@ impl App {
                             .any(|r| r.yak().is_some_and(|t| t.id == id))
                     })
                 {
-                    self.focus = Focus::List;
+                    self.back_to_list();
                 }
                 self.notification = Some(ok_msg);
             }

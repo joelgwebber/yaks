@@ -1124,6 +1124,19 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
             rendered[i] = Line::default();
         }
     }
+    // A yak the pane shows from outside the list says so on its header row
+    // (the pinned one, once the first has scrolled off).
+    let not_listed = || {
+        Span::styled(
+            "  not in this list",
+            Style::new().fg(Color::DarkGray).add_modifier(Modifier::DIM),
+        )
+    };
+    if app.pane_yak_id().is_some() && !pinned {
+        if let Some(first) = rendered.first_mut() {
+            first.spans.push(not_listed());
+        }
+    }
     // No wrap: link/match highlight columns must stay valid. (Rows of a
     // no-wrap block are clipped to the pane by `render_dline`.)
     let p = Paragraph::new(rendered).scroll((app.detail.scroll, 0));
@@ -1133,7 +1146,10 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
         blockedit::render_block_editor(be, &lines, app.detail.scroll, frame, content_area);
     }
     if pinned {
-        let header = pinned_header_line(task, app.is_starred(&task.id), area.width);
+        let mut header = pinned_header_line(task, app.is_starred(&task.id), area.width);
+        if app.pane_yak_id().is_some() {
+            header.spans.push(not_listed());
+        }
         frame.render_widget(Paragraph::new(header), Rect { height: 1, ..area });
         let rule = Line::from(Span::styled(
             "\u{2500}".repeat(area.width as usize),

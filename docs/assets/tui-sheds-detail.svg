@@ -39,6 +39,6 @@ text{white-space:pre}
 <text xml:space="preserve" y="275.5"><tspan x="438.4" class="s6">│</tspan></text>
 <text xml:space="preserve" y="293.5"><tspan x="438.4" class="s6">│</tspan></text>
 <text xml:space="preserve" y="311.5"><tspan x="10.0" class="s0">   farm: up to date with origin/yaks</tspan><tspan x="438.4" class="s6">│</tspan></text>
-<text xml:space="preserve" y="329.5"><tspan x="10.0" class="s2">h:list  y:copy name  r:rescan  q:quit</tspan></text>
+<text xml:space="preserve" y="329.5"><tspan x="10.0" class="s2">h:list  y:copy name  r:rescan  i/o:fwd/back  q:quit</tspan></text>
 </g>
 </svg>

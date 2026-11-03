@@ -1007,11 +1007,10 @@ fn follow_link_reveals_collapsed_target() {
 }
 
 #[test]
-fn follow_link_to_yak_outside_any_view_says_so() {
-    // yaks-cc52: d0 is Dead and no pinned view shows Dead, so the cursor can't
-    // land on it. Following the link must not leave the detail pane silently
-    // showing a0 under a "→ d0" notice: goto_task says d0 isn't shown, and
-    // records no nav history for the failed jump.
+fn follow_link_to_a_dead_yak_shows_it_in_the_pane_and_leaves_the_list() {
+    // yaks-cc52, then yaks-a2c5: d0 is Dead and no list shows Dead, so the
+    // cursor can't land on it. The pane shows it anyway, says it is not in
+    // this list, and the list stays on a0; `o` goes back to a0.
     let mut a0 = task("a0", "Root A", Status::Hairy, 2, None);
     a0.body = "see d0 for the old plan".into();
     let mut app = App::new(vec![a0, task("d0", "Dead plan", Status::Dead, 3, None)]);
@@ -1023,13 +1022,53 @@ fn follow_link_to_yak_outside_any_view_says_so() {
     tab_key(&mut app); // -> the d0 link line
     enter_key(&mut app); // follow it
     let frame = draw(&app, 72, 16);
+    assert_eq!(app.notification.as_deref(), Some("→ d0"));
+    assert_eq!(app.selected_id().as_deref(), Some("d0"));
+    assert_eq!(app.pane_yak.as_deref(), Some("d0"));
     assert_eq!(
-        app.notification.as_deref(),
-        Some("d0 isn't shown in any view")
+        app.row_yak().map(|t| t.id.as_str()),
+        Some("a0"),
+        "list stays"
     );
-    assert!(frame.contains("d0 isn't shown in any view"), "{frame}");
-    assert!(!frame.contains("→ d0"), "{frame}");
-    assert!(app.nav_back.is_empty(), "failed jump records no history");
+    assert!(frame.contains("Task: d0"), "{frame}");
+    assert!(frame.contains("not in this list"), "{frame}");
+    assert!(app.state_header().contains("pane_yak=d0"));
+    assert_eq!(app.history.back.len(), 1, "the jump is recorded");
+    // `J`/`K`, the list and Esc bring the row's own yak back.
+    handle_key(&mut app, key('o'));
+    assert_eq!(app.pane_yak, None);
+    assert_eq!(app.selected_id().as_deref(), Some("a0"));
+    handle_key(&mut app, key('i'));
+    assert_eq!(app.selected_id().as_deref(), Some("d0"));
+    esc_key(&mut app);
+    assert_eq!(app.focus, Focus::List);
+    assert_eq!(app.pane_yak, None);
+    assert_eq!(app.selected_id().as_deref(), Some("a0"));
+}
+
+#[test]
+fn a_link_to_a_yak_the_list_has_moves_the_cursor_and_keeps_the_view() {
+    // yaks-a2c5: following a link no longer switches to the target's status
+    // view. In Recent (flat, every status) the cursor moves to it; with a
+    // query that hides it, the pane shows it from outside the list.
+    let mut a0 = task("a0", "Root A", Status::Hairy, 2, None);
+    a0.body = "see s1 and then a1".into();
+    let s1 = task("s1", "Shaving one", Status::Shaving, 3, None);
+    let a1 = task("a1", "Other", Status::Hairy, 3, None);
+    let mut app = App::new(vec![a0, s1, a1]);
+    let recent = app.views.iter().position(|v| v.key == "recent").unwrap();
+    app.set_view(recent);
+    app.cursor = app
+        .rows()
+        .iter()
+        .position(|r| r.yak().is_some_and(|t| t.id == "a0"))
+        .unwrap();
+    enter_key(&mut app);
+    tab_key(&mut app); // the s1 link
+    enter_key(&mut app);
+    assert_eq!(app.active_view().key, "recent", "the view stays");
+    assert_eq!(app.selected_id().as_deref(), Some("s1"));
+    assert_eq!(app.pane_yak, None, "it is a row of this list");
 }
 
 #[test]
@@ -1046,7 +1085,7 @@ fn nav_history_back_and_forward() {
     handle_key(&mut app, key('i')); // forward -> a1
     assert_eq!(app.selected_id().as_deref(), Some("a1"));
     handle_key(&mut app, key('i')); // nothing further
-    assert_eq!(app.notification.as_deref(), Some("no later yak"));
+    assert_eq!(app.notification.as_deref(), Some("no later location"));
 }
 
 /// a0 and a1 are unrelated roots (so a0's only link is in its body) with long
@@ -1111,7 +1150,7 @@ fn nav_back_on_empty_history_is_noop() {
     enter_key(&mut app); // detail on a0, no history yet
     handle_key(&mut app, key('o'));
     assert_eq!(app.selected_id().as_deref(), Some("a0"));
-    assert_eq!(app.notification.as_deref(), Some("no earlier yak"));
+    assert_eq!(app.notification.as_deref(), Some("no earlier location"));
 }
 
 #[test]
@@ -4566,9 +4605,10 @@ fn switching_view_or_moving_to_another_row_closes_the_page() {
     assert!(app.doc.is_none(), "a view switch closes the page");
     assert_eq!(app.focus, Focus::List);
     let (_dir, mut app) = viewer_on_linked_notes();
+    let pushed = app.history.back.len();
     app.detail_next_task(1);
     assert!(app.doc.is_none(), "J/K close the page");
-    assert!(app.viewer_back.is_empty() && app.viewer_fwd.is_empty());
+    assert_eq!(app.history.back.len(), pushed, "moving is not a jump");
 }
 
 #[test]

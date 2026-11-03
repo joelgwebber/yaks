@@ -99,7 +99,7 @@ impl App {
     /// the same task by id. Silent: it must not clobber a mutation's own
     /// notification, and the event loop only calls it while idle (no overlay).
     pub(crate) fn reload_preserving_selection(&mut self) {
-        let sel = self.selected_id();
+        let sel = self.row_yak().map(|t| t.id.clone());
         if let Some(h) = &self.farm {
             if let Ok(all) = h.list(FilterSpec::default(), true) {
                 self.all = all;
@@ -324,12 +324,31 @@ impl App {
         Some(self.resolve_item(row.loc))
     }
 
-    /// The selected yak: `None` on an empty list and on any other kind of row,
-    /// so every yak command finds nothing there.
-    pub(crate) fn selected(&self) -> Option<&Task> {
+    /// The yak under the cursor: `None` on an empty list and on any other
+    /// kind of row.
+    pub(crate) fn row_yak(&self) -> Option<&Task> {
         match self.selected_row()? {
             tree::Item::Yak(t) => Some(t),
             _ => None,
+        }
+    }
+
+    /// The id of the yak the pane shows when it is not the cursor's row
+    /// ([`App::pane_yak`]); `None` unless the pane has the focus.
+    pub(crate) fn pane_yak_id(&self) -> Option<&str> {
+        self.pane_yak
+            .as_deref()
+            .filter(|_| self.focus == Focus::Detail)
+    }
+
+    /// The selected yak, the one every yak command acts on and the pane
+    /// shows: the pane's own yak when it shows one that is not in the list,
+    /// else the cursor's. `None` on an empty list and on any other kind of
+    /// row, so a yak command finds nothing there.
+    pub(crate) fn selected(&self) -> Option<&Task> {
+        match self.pane_yak_id() {
+            Some(id) => self.task(id),
+            None => self.row_yak(),
         }
     }
 
@@ -344,6 +363,9 @@ impl App {
     /// The kind of row keys act on: the selected row's, else what the active
     /// view lists (so an empty Wiki still takes `N` and `r`, an empty Sheds `r`).
     pub(crate) fn row_kind(&self) -> tree::RowKind {
+        if self.pane_yak_id().is_some() {
+            return tree::RowKind::Yak;
+        }
         match self.selected_row() {
             Some(item) => item.kind(),
             None if self.on_wiki_tab() => tree::RowKind::Doc,
@@ -368,11 +390,17 @@ impl App {
         self.filter = clone_spec(&self.views[i].spec);
         self.cursor = 0;
         self.detail.scroll = 0;
-        self.focus = Focus::List;
+        self.back_to_list();
         self.clamp_cursor();
     }
 
-    /// Cycle through the pinned views (the visible tabs) only.
+    /// Give the focus to the list: the pane's own yak, if it showed one, goes.
+    pub(crate) fn back_to_list(&mut self) {
+        self.focus = Focus::List;
+        self.pane_yak = None;
+    }
+
+    /// Cycle through the pinned views (the visible tabs) only: a jump.
     pub(crate) fn switch_tab(&mut self, delta: i32) {
         let pinned = self.pinned_indices();
         if pinned.is_empty() {
@@ -381,7 +409,7 @@ impl App {
         let cur = pinned.iter().position(|&i| i == self.view).unwrap_or(0);
         let n = pinned.len() as i32;
         let next = pinned[(((cur as i32 + delta) % n + n) % n) as usize];
-        self.set_view(next);
+        self.jump_view(next);
     }
 
     /// True when the live filter has been edited away from the active view spec.

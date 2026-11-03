@@ -167,16 +167,14 @@ impl App {
         self.docs_matching_query().filter(|e| !e.source).count()
     }
 
-    /// Enter / l: open the selected page or source in the viewer.
+    /// Enter / l: open the selected page or source in the viewer. A page has
+    /// no pane until it is opened, so this is a jump: `o` returns to the row.
     pub(crate) fn open_wiki_entry(&mut self) {
         let Some(e) = self.selected_doc().cloned() else {
             return;
         };
         match self.read_farm_doc(&e.path, None) {
-            Ok(v) => {
-                self.clear_viewer_history();
-                self.show_doc(DocView::Text(v));
-            }
+            Ok(v) => self.follow_to_doc(DocView::Text(v)),
             Err(msg) => self.notification = Some(msg),
         }
     }
@@ -231,8 +229,7 @@ impl App {
         }
         match self.read_farm_doc(&path, None) {
             Ok(v) => {
-                self.clear_viewer_history();
-                self.show_doc(DocView::Text(v));
+                self.follow_to_doc(DocView::Text(v));
                 self.open_attachment_edit();
                 self.notification = Some(format!("created {path}"));
             }

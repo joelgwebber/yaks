@@ -56,6 +56,10 @@ table only to exclude the local `.edtui` clone.
   keys (list, detail, text/image viewers, Wiki and Sheds tabs) dispatch through it, and
   the `?` overlay (`help_content`) and the bottom hint (`help_hint`) are generated
   from it: a key change is one edit there. Modal overlays are not in it.
+- `src/tui/history.rs` — the TUI's one history of locations (`o`/`i`): `Location`,
+  `History`, `App::jump` (wrap a jump in it and it pushes the place left),
+  `history_back`/`history_forward` and `restore`. A new kind of jump goes through
+  `App::jump`; nothing else keeps a back stack.
 - `src/tui.rs` (+ `src/tui/`) — the interactive TUI. `tui.rs` is a thin root (the
   `App` struct, the `Focus`/`Overlay`/`PickAction`/`ConfirmAction` enums, the
   `DocPane` (the text or image viewer open in the right pane: `App.doc`, not an

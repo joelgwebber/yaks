@@ -193,7 +193,7 @@ impl App {
         let was = self.on_sheds_tab().then(|| {
             (
                 self.cursor_shed().map(|s| s.name.clone()),
-                self.selected_id(),
+                self.row_yak().map(|t| t.id.clone()),
             )
         });
         self.sheds.snapshot = Some(snap);
@@ -230,8 +230,12 @@ impl App {
         }
     }
 
-    /// The selected shed, when the cursor is on a shed row.
+    /// The selected shed, when the cursor is on a shed row (and the pane is
+    /// not showing a yak from elsewhere).
     pub(crate) fn selected_shed(&self) -> Option<&Shed> {
+        if self.pane_yak_id().is_some() {
+            return None;
+        }
         match self.selected_row()? {
             tree::Item::Shed(s) => Some(s),
             _ => None,

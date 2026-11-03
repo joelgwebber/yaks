@@ -78,7 +78,7 @@ impl App {
                 self.overlay = Overlay::ViewPicker(sel.saturating_sub(1))
             }
             KeyCode::Enter => {
-                self.set_view(sel);
+                self.jump_view(sel);
                 self.overlay = Overlay::None;
             }
             KeyCode::Char('p') | KeyCode::Char(' ') => {
@@ -147,6 +147,7 @@ impl App {
 
     pub(crate) fn move_cursor(&mut self, delta: i32) {
         let len = self.rows().len() as i32;
+        self.pane_yak = None;
         if len == 0 {
             self.cursor = 0;
             return;
@@ -194,12 +195,18 @@ impl App {
             }) => format!("{base} · doc=image"),
             None => base,
         };
+        // A yak shown from outside the list: not the selected row's.
+        let base = match self.pane_yak_id() {
+            Some(id) => format!("{base} · pane_yak={id}"),
+            None => base,
+        };
         if self.on_sheds_tab() {
             return format!("{base} · {}", self.sheds_state_header());
         }
         if self.on_wiki_tab() {
             return format!("{base} · {}", self.wiki_state_header());
         }
+
         // In the detail pane, expose the scroll offset and whether the sticky
         // header is showing (the frontmatter top has scrolled off).
         if self.focus == Focus::Detail {

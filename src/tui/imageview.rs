@@ -136,14 +136,15 @@ pub(crate) fn render_image(v: &ImageView, frame: &mut Frame, area: Rect) {
 
 impl App {
     /// Run an image viewer command: `O` hands the file to the OS opener,
-    /// `Esc`/`q`/`h`/`←` close it.
+    /// `Esc`/`q`/`h`/`←` close it, `o`/`i` go back / forward in the history.
     pub(super) fn run_image_cmd(&mut self, cmd: Cmd) {
         let Some(v) = self.image() else {
             return;
         };
         match cmd {
-            // Back to the text viewer it was followed from, if any (yaks-7395).
-            Cmd::PaneClose => self.close_image(),
+            Cmd::PaneClose => self.close_doc(),
+            Cmd::NavBack => self.history_back(),
+            Cmd::NavForward => self.history_forward(),
             Cmd::FileOpenExternal => {
                 let (target, arg) = (v.target.clone(), v.path.display().to_string());
                 self.close_doc();

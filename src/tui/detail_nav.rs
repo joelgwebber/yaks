@@ -1,7 +1,7 @@
 //! `App`'s detail-pane navigation: building the detail line model, cursor/scroll
-//! movement, visual selection + yank, find, link-following, and browser-style
-//! nav history. Split out of `tui.rs` (yaks-b1cc / b1cc/6) as an `impl App`
-//! block. `use super::*` inherits `tui.rs`'s scope; methods are `pub(crate)`.
+//! movement, visual selection + yank, find and link-following (a jump of the
+//! one history, [`super::history`]). Split out of `tui.rs` (yaks-b1cc /
+//! b1cc/6) as an `impl App` block. `use super::*` inherits `tui.rs`'s scope; methods are `pub(crate)`.
 
 use super::linenav::{self, LineNav, Viewport};
 use super::*;
@@ -14,28 +14,6 @@ impl App {
             page: self.detail_page as usize,
             pinned: PINNED_ROWS as usize,
         }
-    }
-
-    /// Select an existing task wherever it lives: switch to its status view (if
-    /// one is pinned) and place the cursor on it, then focus the list.
-    pub(crate) fn select_task(&mut self, id: &str) {
-        self.close_doc();
-        if let Some(st) = self.task(id).map(|t| t.status) {
-            if let Some(i) = self.views.iter().position(|v| v.status == Some(st)) {
-                self.set_view(i);
-            }
-        }
-        // Expand any collapsed ancestors so the target row is actually visible;
-        // otherwise the cursor can't land on it and the jump silently no-ops.
-        self.expand_ancestors(id);
-        if let Some(pos) = self
-            .rows()
-            .iter()
-            .position(|r| r.yak().is_some_and(|t| t.id == id))
-        {
-            self.cursor = pos;
-        }
-        self.focus = Focus::List;
     }
 
     /// Remove every ancestor of `id` from the collapsed set (walking the parent
@@ -62,12 +40,22 @@ impl App {
     /// yak, farm data, width, in-place editor or clock minute, and shared by
     /// every caller of a keypress or frame.
     pub(crate) fn detail_dlines(&self) -> Rc<Vec<detail::DLine>> {
-        let Some(row) = self.cached_rows().get(self.cursor).copied() else {
+        // The pane's own yak (a followed link the list does not have), named
+        // by its index in the farm's yaks like a row's; else the cursor's row.
+        let loc = match self.pane_yak_id() {
+            Some(id) => self
+                .all
+                .iter()
+                .position(|t| t.id == id)
+                .map(memo::Loc::Home),
+            None => self.cached_rows().get(self.cursor).map(|r| r.loc),
+        };
+        let Some(loc) = loc else {
             return Rc::default();
         };
         let key = memo::DlinesKey {
             data_gen: self.data_gen,
-            loc: row.loc,
+            loc,
             width: self.detail_width.get() as usize,
             slot: self.edit_slot(),
             images: self.image_env().map(|e| (e.cell_px, e.max_rows)),
@@ -138,7 +126,7 @@ impl App {
     /// Forget the sideways scroll once the line cursor is no longer on the
     /// scrolled block, or focus left the pane: a block's offset lives only
     /// while you are on it. (A different yak resets the whole detail state,
-    /// [`App::open_task_in_detail`].) Called after every key and click, so
+    /// [`App::show_yak_at`].) Called after every key and click, so
     /// the many ways the cursor can move need no bookkeeping of their own.
     pub(crate) fn drop_stale_hscroll(&mut self) {
         if self.detail.hscroll.is_none() {
@@ -311,39 +299,51 @@ impl App {
     /// Put the detail pane on row `to` of the list, from its top.
     fn show_row(&mut self, to: usize) {
         self.cursor = to;
+        self.pane_yak = None;
         self.detail.to_top();
     }
 
-    /// Select `id` and show it in the detail pane, resetting the per-task detail
-    /// view state (scroll/link/find/match/sideways scroll). Shared by link-follow and i/o nav.
-    pub(crate) fn open_task_in_detail(&mut self, id: &str) {
-        self.select_task(id); // drops focus to the list; we re-raise it below
-        self.focus = Focus::Detail;
-        // A fresh state, also dropping the sideways scroll of the previous
-        // yak's blocks (the search register is the app's, and stays).
+    /// Show yak `id` in the pane (which has the focus), from its top: on its
+    /// row when the cursor is there, else as the pane's own yak
+    /// ([`App::pane_yak`]). A fresh detail state also drops the sideways
+    /// scroll of the previous yak's blocks (the search register is the app's,
+    /// and stays).
+    pub(crate) fn show_yak_at(&mut self, id: &str) {
+        let on_row = self.row_yak().is_some_and(|t| t.id == id);
+        self.pane_yak = (!on_row).then(|| id.to_string());
         self.detail = LineNav::default();
     }
 
-    /// Jump to `id`'s detail, recording the jump for o/i history
-    /// (browser-style: a new jump clears the forward stack). Shared by
-    /// link-follow and the `#` go-to-yak picker (yaks-63f3).
+    /// Follow a link to yak `id`, a jump (`o` comes back; also the `#`
+    /// go-to-yak picker, yaks-63f3). The list is left where it is: the cursor
+    /// moves to the yak when the list has it (its ancestors expanded), else
+    /// the pane shows it as its own yak, which it says is not in this list.
     pub(crate) fn goto_task(&mut self, id: &str) {
-        // Snapshot where we are (id + detail cursor/scroll) before moving, so
-        // o/i can restore it.
-        let from = self.current_nav_entry();
-        self.open_task_in_detail(id);
-        if self.selected_id().as_deref() != Some(id) {
-            // No view shows the target (e.g. no tab for its status), so the
-            // cursor couldn't land on it; say so rather than silently no-op.
-            self.notification = Some(format!("{id} isn't shown in any view"));
+        if self.task(id).is_none() {
+            self.notification = Some(format!("{id} not found"));
             return;
         }
-        if let Some(cur) = from {
-            if cur.id != id {
-                self.nav_back.push(cur);
-                self.nav_fwd.clear();
+        self.jump(|app| {
+            // The page it was followed from, if any, is replaced.
+            app.close_doc();
+            let at = |app: &App| {
+                app.rows()
+                    .iter()
+                    .position(|r| r.yak().is_some_and(|t| t.id == id))
+            };
+            let mut pos = at(app);
+            if pos.is_none() {
+                // A collapsed ancestor hides it: expand them so the cursor
+                // can land on it.
+                app.expand_ancestors(id);
+                pos = at(app);
             }
-        }
+            if let Some(pos) = pos {
+                app.cursor = pos;
+            }
+            app.focus = Focus::Detail;
+            app.show_yak_at(id);
+        });
         self.notification = Some(format!("→ {id}"));
     }
 
@@ -378,12 +378,10 @@ impl App {
             self.notification = Some(format!("no definition for [{n}]"));
             return;
         };
-        if let Some(cur) = self.current_nav_entry() {
-            self.nav_back.push(cur);
-            self.nav_fwd.clear();
-        }
-        self.detail.line = to;
-        self.scroll_line_into_view(to as u16);
+        self.jump(|app| {
+            app.detail.line = to;
+            app.scroll_line_into_view(to as u16);
+        });
         self.notification = Some(format!("→ [{n}] (o to go back)"));
     }
 
@@ -402,7 +400,7 @@ impl App {
     /// to list".
     pub(crate) fn detail_back(&mut self) {
         if !self.scroll_block(-1) {
-            self.focus = Focus::List;
+            self.back_to_list();
         }
     }
 
@@ -414,7 +412,7 @@ impl App {
         } else if self.register.take().is_some() {
             self.detail.matched = None;
         } else {
-            self.focus = Focus::List;
+            self.back_to_list();
         }
     }
 
@@ -447,56 +445,11 @@ impl App {
             return;
         }
         let next = (self.cursor as i32 + delta).clamp(0, len as i32 - 1) as usize;
-        if next != self.cursor {
+        // Also from the pane's own yak, which is not on the cursor's row: the
+        // row beside the cursor replaces it.
+        if next != self.cursor || self.pane_yak.is_some() {
             self.show_row(next);
         }
-    }
-
-    /// o — jump back to the previously visited task (browser back).
-    pub(crate) fn nav_back(&mut self) {
-        let Some(prev) = self.nav_back.pop() else {
-            self.notification = Some("no earlier yak".into());
-            return;
-        };
-        if let Some(cur) = self.current_nav_entry() {
-            self.nav_fwd.push(cur);
-        }
-        self.restore_nav_entry(&prev);
-        self.notification = Some(format!("← {}", prev.id));
-    }
-
-    /// i — jump forward again after going back (browser forward).
-    pub(crate) fn nav_forward(&mut self) {
-        let Some(next) = self.nav_fwd.pop() else {
-            self.notification = Some("no later yak".into());
-            return;
-        };
-        if let Some(cur) = self.current_nav_entry() {
-            self.nav_back.push(cur);
-        }
-        self.restore_nav_entry(&next);
-        self.notification = Some(format!("→ {}", next.id));
-    }
-
-    /// Snapshot the selected task + its detail cursor/scroll as a nav stop.
-    fn current_nav_entry(&self) -> Option<NavEntry> {
-        Some(NavEntry {
-            id: self.selected_id()?,
-            line: self.detail.line,
-            scroll: self.detail.scroll,
-        })
-    }
-
-    /// Reopen a nav stop and put its detail cursor/scroll back where it was
-    /// left, clamped in case the task's content shrank meanwhile.
-    fn restore_nav_entry(&mut self, e: &NavEntry) {
-        self.open_task_in_detail(&e.id);
-        if self.selected_id().as_deref() != Some(e.id.as_str()) {
-            return; // target vanished/filtered out: stay at the top
-        }
-        let last = self.detail_dlines().len().saturating_sub(1);
-        self.detail.line = e.line.min(last);
-        self.detail.scroll = e.scroll.min(self.detail_max_scroll());
     }
 
     /// Jump to the Hairy view (where new tasks land) and select `id`.
