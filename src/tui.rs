@@ -504,6 +504,13 @@ impl App {
         if !regrew.regrew.is_empty() {
             app.notification = Some(farmsync::regrew_notice(&regrew));
         }
+        if let Some(msg) = app
+            .farm
+            .as_ref()
+            .and_then(|f| crate::store::min_version_notice(f.root()))
+        {
+            app.notification = Some(msg);
+        }
         app.auto_sync = AutoSync::new(
             cfg.sync_interval,
             farmsync::autosync_disabled_by_env(),

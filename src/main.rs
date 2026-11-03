@@ -1071,16 +1071,20 @@ enum Command {
     },
     /// Bring an older-schema farm up to this yaks' schema, or move it to a branch.
     ///
-    /// Brings a farm on an older schema up to this yaks' (schema 4 or 5 -> 6):
+    /// Brings a farm on an older schema up to this yaks' (schema 4, 5 or 6 -> 7):
     /// moves every yak file and attachment dir from the farm root into its
-    /// herd's directory (`<herd>/yaks/<id>.md`, `<herd>/yaks/<id>/`), put the
-    /// blank line after every comment's `▸ <ts> [actor]` header, and link
-    /// non-image attachments as `[stem](<id>/<file>)` instead of
-    /// `![stem](<id>/<file>)`. Works under the farm lock, then sets
-    /// `.yaks/schema` to 6. Idempotent: a current farm reports "nothing to
-    /// migrate". Every other command refuses an older farm and names this one. Never commits: it prints the commit to make
-    /// (a migration touches nearly every yak file, so land it on its own).
-    /// Quit every running `yaks tui` first.
+    /// herd's directory (`<herd>/yaks/<id>.md`, `<herd>/yaks/<id>/`), renames
+    /// `labels:` to `tags:`, puts the blank line after every comment's
+    /// `▸ <ts> [actor]` header, and fixes attachment links. Works under the
+    /// farm lock, then sets `.yaks/schema` to 7. Idempotent: a current farm
+    /// reports "nothing to migrate". Every other command refuses an older farm
+    /// and names this one. Never commits: it prints the commit to make (a
+    /// migration touches nearly every yak file, so land it on its own).
+    ///
+    /// Once synced, every machine with an older yaks is refused the farm: a
+    /// human decides when to migrate (agents ask). Upgrade every machine
+    /// first (`min_version:` in config.yaml warns the stragglers), then
+    /// migrate once, sync, and restart every running `yaks tui`.
     Migrate {
         /// Print what would change; write nothing.
         #[arg(long)]
@@ -1661,7 +1665,9 @@ fn main() -> Result<()> {
         Ok(h) => h,
         Err(OpenError::SchemaTooNew { found, supported }) => {
             eprintln!(
-                "error: this farm uses schema v{found}, newer than this yaks supports (v{supported}). Upgrade yaks."
+                "error: this farm uses schema v{found}, newer than this yaks ({}) supports (v{supported}). Upgrade with: {}",
+                skills::version(),
+                store::UPGRADE_HINT
             );
             std::process::exit(1);
         }
@@ -1674,6 +1680,13 @@ fn main() -> Result<()> {
             std::process::exit(1);
         }
     };
+    // The farm's `min_version:` (set by whoever plans a schema bump): warn an
+    // older binary on every command, so it upgrades before the bump refuses it.
+    if !env::args_os().any(|a| a == "--json") {
+        if let Some(msg) = store::min_version_notice(farm.root()) {
+            eprintln!("warning: {msg}");
+        }
+    }
 
     match cli.command {
         Command::List {

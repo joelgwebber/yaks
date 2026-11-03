@@ -407,7 +407,7 @@ fn unquote(s: &str) -> String {
 
 /// Compare dotted numeric versions (`0.0.10` > `0.0.9`). Non-numeric or
 /// unparseable components compare as 0, so a weird version never wins.
-fn version_gt(a: &str, b: &str) -> bool {
+pub(crate) fn version_gt(a: &str, b: &str) -> bool {
     let parts = |v: &str| -> Vec<u64> {
         v.split(['.', '-', '+'])
             .map(|p| p.parse::<u64>().unwrap_or(0))

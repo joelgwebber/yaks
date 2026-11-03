@@ -190,7 +190,9 @@ impl App {
     pub(crate) fn tick_auto_sync(&mut self, now: Instant) -> bool {
         // A finished sync may have pulled others' shears: reopen what recurs.
         let finished = if self.collect_auto_sync(now, false) {
-            self.regrow_due();
+            if !self.warn_newer_schema() {
+                self.regrow_due();
+            }
             true
         } else {
             false
@@ -310,6 +312,24 @@ impl App {
             Ok(line) => one_line(&line),
             Err(e) => one_line(&format!("error: {e}")),
         });
+        self.warn_newer_schema();
+    }
+
+    /// After a pull: if it brought in a farm on a newer schema (another
+    /// machine ran `yaks migrate`), say so. Every write is already refused
+    /// under the farm lock ([`store::lock`]); this tells the user why, and
+    /// that this TUI needs an upgraded yaks and a restart (yaks-9786). True
+    /// when it warned.
+    pub(crate) fn warn_newer_schema(&mut self) -> bool {
+        let Some(why) = self
+            .farm
+            .as_ref()
+            .and_then(|f| store::newer_schema_refusal(f.root()))
+        else {
+            return false;
+        };
+        self.notification = Some(one_line(&format!("read-only: {why}")));
+        true
     }
 }
 
@@ -555,5 +575,53 @@ mod tests {
         app.tick_auto_sync(at);
         settle_auto_sync(&mut app, at);
         assert!(app.auto_sync.last_error.is_none());
+    }
+
+    /// yaks-9786: another machine migrates the farm to a newer schema and
+    /// pushes; after this TUI's interval sync pulls it, the TUI says it is
+    /// read-only and every write is refused, naming the upgrade.
+    #[test]
+    fn a_pulled_newer_schema_makes_the_tui_read_only() {
+        let (proj, mut app, origin) = published_farm("yaks-9786-newer");
+        let other = proj.with_file_name("yaks-9786-newer-other");
+        let _ = std::fs::remove_dir_all(&other);
+        git_in(
+            &proj,
+            &[
+                "clone",
+                "-q",
+                "-b",
+                "yaks",
+                origin.to_str().unwrap(),
+                other.to_str().unwrap(),
+            ],
+        );
+        git_in(&other, &["config", "user.name", "o"]);
+        git_in(&other, &["config", "user.email", "o@t"]);
+        std::fs::write(
+            other.join(".yaks/schema"),
+            format!("{}\n", store::SCHEMA + 1),
+        )
+        .unwrap();
+        git_in(&other, &["add", "."]);
+        git_in(&other, &["commit", "-q", "-m", "yaks: migrate"]);
+        git_in(&other, &["push", "-q", "origin", "yaks"]);
+
+        let t0 = Instant::now();
+        app.auto_sync = AutoSync::new(Some(Duration::from_millis(1)), false, t0);
+        let due = t0 + Duration::from_millis(1);
+        app.tick_auto_sync(due);
+        assert!(settle_auto_sync(&mut app, due));
+        let note = app.notification.clone().expect("the TUI says why");
+        assert!(note.starts_with("read-only: "), "{note}");
+        assert!(note.contains("npm i -g @j15r/yaks@latest"), "{note}");
+
+        let farm = app.farm.as_ref().unwrap();
+        let err = farm
+            .transition("t0", Status::Shaving, None)
+            .expect_err("a write into a newer-schema farm is refused");
+        assert!(err.to_string().contains("newer than this yaks"), "{err}");
+        let t0_file = std::fs::read_to_string(store::task_path(farm.root(), "t0")).unwrap();
+        assert!(t0_file.contains("status: hairy"), "nothing was written");
     }
 }

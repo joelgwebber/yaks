@@ -64,6 +64,11 @@ interchangeable.
   success is silent. `YAKS_NO_AUTOSYNC=1` turns it off for a run (tests,
   headless). A value that does not parse keeps the default. It is farm-wide,
   not per herd, and only the TUI does it: the CLI still syncs only when asked.
+  If a sync (interval or `U`) pulls a farm on a newer schema (another machine
+  ran `yaks migrate`), the notification says `read-only: …` with the upgrade
+  command, and every edit is refused until yaks is upgraded and the TUI
+  restarted. A farm `min_version:` newer than this yaks shows as a
+  notification at startup.
 - **Status bar** — the active farm, view, and cursor context.
 
 ## Signals

@@ -101,26 +101,22 @@ Not set up yet; run `dist init` if/when you want those installers.
 
 ## A release that bumps the farm schema
 
-A schema bump (4 -> 5: comment header blank line, non-image attachment links)
-ships with a `yaks migrate` fixup list (`src/migrate.rs`), and every command
-but `migrate` refuses a farm on the old schema. A migration commit touches
-nearly every yak file, so land it on its own and in this order:
+A schema bump ships with a `yaks migrate` fixup list (`src/migrate.rs`), and
+every command but `migrate` refuses a farm on the old schema. Once a migrated
+farm is synced, every machine still on an older yaks is refused it ("newer
+than this yaks supports"), and a running `yaks tui` that pulls it goes
+read-only. So a human picks the moment (agents never migrate; the skills say
+to ask), and it goes in this order:
 
-1. Land the code (the new binary reads BOTH shapes, so nothing breaks yet for
-   a checkout still on the old schema).
-2. In the primary checkout, with the new binary: `yaks migrate --dry-run`
-   (per-fixup counts), `yaks migrate`, `yaks doctor`, a second `yaks migrate`
-   (it must say `nothing to migrate`), then ONE commit of just `.yaks/`
-   (`git add -A .yaks && git commit -m "yaks: migrate the farm to schema <N>"`).
-   Quit every running `yaks tui` first.
-3. Every other checkout (sheds, Delta clones) rebases or merges that commit,
-   or runs `yaks migrate` itself (the fixups are deterministic and
-   idempotent, so both routes give the same bytes). Until then the new binary
-   refuses it, naming `yaks migrate`; an OLD binary reading a migrated farm
-   refuses it as too new (e.g. schema 6 > 5), never misreads it.
-4. Open sheds with in-flight work: migrate the shed BEFORE merging it back, or
-   the merge carries old-shape comments into a migrated farm (harmless to read,
-   fixed by the next `yaks migrate`).
+1. Release the new binary.
+2. Set `min_version: <that release>` in the farm's `config.yaml` and
+   `yaks sync`: every older yaks now warns, naming the upgrade command.
+3. Upgrade every machine (cloud runners' setup scripts included).
+4. From one machine: `yaks migrate --dry-run` (per-fixup counts),
+   `yaks migrate`, `yaks doctor`, a second `yaks migrate` (it must say
+   `nothing to migrate`), then one commit of just the migration
+   (`yaks commit -m "yaks: migrate the farm to schema <N>"`) and `yaks sync`.
+5. Restart every running `yaks tui`.
 
 ## Version bump
 

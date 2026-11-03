@@ -627,7 +627,11 @@ Idempotent: a current farm says `nothing to migrate`.
 
 Every OTHER command refuses an older farm, naming `yaks migrate` (`yaks sheds` is no exception).
 
-Never commits: it prints the `yaks commit` to run. Quit every running `yaks tui` first.
+Never commits: it prints the `yaks commit` to run.
+
+**Versions.** A farm on a newer schema than the binary is refused by every command, naming the upgrade (`npm i -g @j15r/yaks@latest`), and every write is refused too, so a long-running `yaks tui` that pulls a migrated farm goes read-only rather than writing the old shape into it. `min_version: 0.0.31` in `.yaks/config.yaml` makes an older yaks print `warning: this farm asks for yaks 0.0.31 or newer ...` on every command (not with `--json`) and in the TUI, but still run.
+
+Once synced, a migration locks out every older yaks, so the bundled skills tell agents never to run it: a human does, in this order. Set `min_version:` to the new release and sync; upgrade every machine; `yaks migrate --dry-run`, `yaks migrate`, commit and sync, once; restart every running `yaks tui`.
 
 ### `weight`
 

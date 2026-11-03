@@ -900,6 +900,11 @@ pub struct Config {
     /// How often the TUI syncs the farm in the background (`sync_interval:`);
     /// `None` when switched off (`0` / `off`). Farm-wide: not per herd.
     pub sync_interval: Option<std::time::Duration>,
+    /// The oldest yaks this farm asks for (`min_version:`, e.g. `0.0.31`); an
+    /// older binary warns on every command and in the TUI, but still runs
+    /// ([`min_version_notice`]). Set before a schema bump, so every machine
+    /// upgrades before `yaks migrate` makes old binaries refuse the farm.
+    pub min_version: Option<String>,
 }
 
 /// The TUI's background sync interval when `config.yaml` is silent.
@@ -987,6 +992,7 @@ pub fn read_config(root: &Path) -> Config {
         verify: std::collections::HashMap::new(),
         herds: std::collections::HashMap::new(),
         sync_interval: Some(DEFAULT_SYNC_INTERVAL),
+        min_version: None,
     };
     if let Ok(text) = fs::read_to_string(root.join("config.yaml")) {
         // A tiny indent-aware pass over the small YAML subset we emit: top-level
@@ -1085,6 +1091,9 @@ pub fn read_config(root: &Path) -> Config {
                     if let Some(i) = parse_sync_interval(&val) {
                         c.sync_interval = i;
                     }
+                }
+                "min_version" if !val.is_empty() => {
+                    c.min_version = Some(val.trim_start_matches('v').to_string())
                 }
                 "verify" if val.is_empty() => sec = Sec::GlobalVerify,
                 "herds" if val.is_empty() => sec = Sec::Herds,
@@ -1359,6 +1368,11 @@ impl Drop for FarmLock {
 /// that locks twice deadlocks itself, so take it once per outermost operation.
 pub fn lock(root: &Path) -> Result<FarmLock> {
     let mut l = lock_uncommitted(root)?;
+    // Checked under the lock, per write: a long-lived process (the TUI) opened
+    // the farm before a pull could bring in a newer schema (yaks-9786).
+    if let Some(why) = newer_schema_refusal(root) {
+        anyhow::bail!(why);
+    }
     l.snap = crate::autocommit::snapshot(root);
     // Under the lock, so concurrent first writers can't interleave the
     // append; after the snapshot, so a new `.gitignore` line is committed
@@ -2407,6 +2421,39 @@ pub fn migration_refusal(root: &Path) -> Option<String> {
     })
 }
 
+/// How to get the current yaks: named by every message that says to upgrade.
+pub const UPGRADE_HINT: &str =
+    "npm i -g @j15r/yaks@latest (or run it as npx -y @j15r/yaks@latest <cmd>)";
+
+/// The refusal for a farm at `root` on a NEWER schema than this yaks writes,
+/// `None` for any other farm. [`Farm::open`](crate::farm::Farm::open) stops
+/// here, and so does every write ([`lock`]): a long-running `yaks tui` can pull
+/// a farm another machine migrated, and must not keep writing the old shape
+/// into it.
+pub fn newer_schema_refusal(root: &Path) -> Option<String> {
+    let SchemaStatus::Newer(v) = schema_status(root) else {
+        return None;
+    };
+    Some(format!(
+        "{} is on schema {v}, newer than this yaks ({}, schema {SCHEMA}) supports: \
+         upgrade yaks with {UPGRADE_HINT}, then restart any running yaks tui",
+        root.display(),
+        crate::skills::version()
+    ))
+}
+
+/// The warning for a farm whose `config.yaml` names a `min_version:` newer than
+/// this yaks, `None` otherwise. Advice only: the command still runs.
+pub fn min_version_notice(root: &Path) -> Option<String> {
+    let min = read_config(root).min_version?;
+    let have = crate::skills::version();
+    crate::skills::version_gt(&min, have).then(|| {
+        format!(
+            "this farm asks for yaks {min} or newer (this is {have}): upgrade with {UPGRADE_HINT}"
+        )
+    })
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SchemaStatus {
     Compatible,
@@ -2434,6 +2481,27 @@ pub fn schema_status(root: &Path) -> SchemaStatus {
 
 #[cfg(test)]
 mod tests {
+    /// yaks-c69d: `min_version:` warns an older binary (and only an older one).
+    #[test]
+    fn min_version_warns_only_an_older_yaks() {
+        use super::{min_version_notice, read_config};
+        let dir = std::env::temp_dir().join(format!("yaks-minver-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let with = |text: &str| {
+            std::fs::write(dir.join("config.yaml"), text).unwrap();
+            min_version_notice(&dir)
+        };
+        assert_eq!(with("herd: t\n"), None, "no floor, no warning");
+        assert_eq!(with("min_version: 0.0.1\n"), None, "older floor");
+        let have = crate::skills::version();
+        assert_eq!(with(&format!("min_version: {have}\n")), None, "equal floor");
+        let msg = with("min_version: \"v999.0.0\"\n").expect("a newer floor warns");
+        assert!(msg.contains("999.0.0 or newer"), "{msg}");
+        assert!(msg.contains(&format!("(this is {have})")), "{msg}");
+        assert!(msg.contains("npm i -g @j15r/yaks@latest"), "{msg}");
+        assert_eq!(read_config(&dir).min_version.as_deref(), Some("999.0.0"));
+    }
+
     #[test]
     fn sync_interval_parses_seconds_and_units_and_off() {
         use super::{DEFAULT_SYNC_INTERVAL, parse_sync_interval, read_config};

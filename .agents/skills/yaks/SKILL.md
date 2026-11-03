@@ -11,6 +11,10 @@ This project tracks work with yaks: each task (a **yak**) is a markdown file wit
 
 A plain CLI, run from the shell (no slash commands, nothing to keep running): `yaks <cmd>` if it is on `PATH`, else `npx @j15r/yaks <cmd>`, else `./target/release/yaks <cmd>` in a checkout you built. Add `--json` to any query command for machine-readable output; `yaks create --json` also prints the new id and path.
 
+**Keeping yaks current.** Run the latest release: compare `yaks --version` with `npm view @j15r/yaks version`, and when it is behind, or a command says to upgrade (`warning: this farm asks for yaks ...`, or `newer than this yaks supports`), upgrade with `npm i -g @j15r/yaks@latest` (or run every command as `npx -y @j15r/yaks@latest <cmd>` where a global install isn't possible), then carry on. A binary built from a yaks checkout is the exception: rebuild it instead.
+
+**Never migrate a farm yourself.** When a command says the farm is on an older schema and to run `yaks migrate`, stop and ask a human (`yaks ask` on the yak you were on, or say so in chat): once a migrated farm is synced, every machine still on an older yaks is refused it, so a human picks the moment. Don't work around the refusal with an older binary either.
+
 ## Where the farm lives
 
 The farm is an orphan branch (`yaks`) holding only `.yaks/`, checked out once per machine under `~/.local/share/yaks/farms/`. Every checkout of the repo (yours, the human's, each agent clone) reads and writes that one farm, so yak edits are live everywhere.
@@ -48,7 +52,7 @@ yaks conflicts             # documents a merge left for you to settle
 
 ## Workflow
 
-1. **Session start:** name yourself once, if you are an agent: `yaks whoami --set <name>` stores it for this checkout, so every later command uses it even in a fresh shell (`export YAKS_ACTOR` does not survive harnesses whose terminal calls are separate shells). Choose a name nobody else in the farm uses, specific to you (`door-2`, `herd-interact`, not `herd`): others will read your trail by it. Without one, your notes carry a name derived from the harness, or the human's git name. Then `yaks sync` (unless a yakherd coordinates); then `yaks inbox --for agent` (answers and requests nobody has acted on: handle these first); then `yaks next`.
+1. **Session start:** check yaks is current ("Keeping yaks current", above). Name yourself once, if you are an agent: `yaks whoami --set <name>` stores it for this checkout, so every later command uses it even in a fresh shell (`export YAKS_ACTOR` does not survive harnesses whose terminal calls are separate shells). Choose a name nobody else in the farm uses, specific to you (`door-2`, `herd-interact`, not `herd`): others will read your trail by it. Without one, your notes carry a name derived from the harness, or the human's git name. Then `yaks sync` (unless a yakherd coordinates); then `yaks inbox --for agent` (answers and requests nobody has acted on: handle these first); then `yaks next`.
 2. **Before code:** `yaks shave <id>` (it shaves hairy ancestors too). Re-read it with `yaks show <id>`; the latest note is the freshest signal.
 3. **While working:** `yaks update <id> --note "..."`, one event per note, at each milestone and at least every 30 minutes of work: your latest note is how others tell a busy worker from a dead one.
 4. **Code others can't see** (you are on another machine, or in a clone nobody reads): at each checkpoint, commit, push your work branch to `origin` (any branch name, your harness's own pattern is fine, but never `main` and never under `yaks/`: the farm branch `yaks` blocks that prefix, so such a branch cannot be pushed), note it (`--meta kind=checkpoint --meta branch=<branch> --meta commit=$(git rev-parse HEAD)`), then sync. In that order, so the farm never names a commit nobody can fetch.
@@ -192,7 +196,7 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 | `weight` / `lfs` | What the farm costs a code clone; store binary originals in Git LFS |
 | `private [--off]` | Keep the farm on this machine |
 | `import-hearth <repo>` | Copy a Hearth-layout repo's wiki, sources, schemas and sessions into the farm (links rewritten, one commit; `--dry-run` first) |
-| `init` / `migrate` / `merge` | Start a farm (or `--farm` to share one); upgrade an old schema; consolidate another farm |
+| `init` / `migrate` / `merge` | Start a farm (or `--farm` to share one); upgrade an old schema (a human's call, never an agent's); consolidate another farm |
 | `doctor [--strict]` / `preflight` | Farm integrity; pre-landing check |
 | `check [--json]` | Upkeep of pages and sources: stale pages (`stale_after`), uncited sources, kinds that look alike, broken links; exits 1 on a finding |
 | `stats` / `rollup [--keys]` | Counts; yaks grouped by external issue |
@@ -252,4 +256,4 @@ by itself: cron, an agent harness or the TUI calls `regrow-due`, which is
 idempotent. The yak stays one yak, so each round's shear note and links
 accumulate in it. Don't hand-edit `regrown:`.
 
-Don't parse ids for hierarchy (old dotted ids like `yak-a1b2.1` are opaque). `.yaks/config.yaml` sets the default `herd`, `default_type`, `default_priority` and a `verify:` map (tag → command, plus `default`); a `herds:` map overrides those per herd, one level deep. A farm on an older schema is refused by every command but `yaks migrate`.
+Don't parse ids for hierarchy (old dotted ids like `yak-a1b2.1` are opaque). `.yaks/config.yaml` sets the default `herd`, `default_type`, `default_priority` and a `verify:` map (tag → command, plus `default`); a `herds:` map overrides those per herd, one level deep; `min_version:` makes an older yaks warn that it should upgrade. A farm on an older schema is refused by every command but `yaks migrate`, and one on a newer schema by every command.
