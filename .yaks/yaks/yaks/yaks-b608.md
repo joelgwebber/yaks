@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-10-27T21:49:58Z'
-updated: '2026-11-03T21:21:32Z'
+updated: '2026-11-03T21:24:27Z'
 parent: yaks-f677
 tags:
 - tui
@@ -28,3 +28,5 @@ thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+[b608-before-hairy-herd-fullstory](yaks-b608/b608-before-hairy-herd-fullstory.txt)
