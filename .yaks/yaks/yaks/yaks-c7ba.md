@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-10-27T13:23:15Z'
-updated: '2026-11-03T02:19:22Z'
+updated: '2026-11-03T05:30:02Z'
 tags:
 - tui
 ---
@@ -24,3 +24,8 @@ Folded into the unified TUI design, [wiki/design/tui-model.md](/wiki/design/tui-
 Global search becomes a built-in, unpinned **All** view (every yak, dead included, plus pages and sources, with no limit) combined with the global `/` query. That is the same set `yaks find` searches, and the query chip shows the All count (§1 and §4, phase 6).
 
 For the record, Recent is not global: it stops at 50 rows (`RECENT_LIMIT`, applied after filtering) and hides dead yaks.
+
+---
+▸ 2026-11-03T05:30:02Z [herd-tui]
+
+Done by herd-tui through phase 6a (yaks-a25c), landed as `cd753ad8`: `/` is a global query matching what `yaks find` searches, with an unpinned All view (every yak incl. dead, pages, sources) and the All count on the query chip.
