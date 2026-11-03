@@ -13,9 +13,35 @@ use std::collections::{HashMap, HashSet};
 use crate::filter::{self, FilterSpec};
 use crate::model::{Status, Task};
 use crate::tui::view::FamilyScope;
+use crate::tui::wiki_tab::WikiEntry;
+
+/// What a list row is (the design's "rows": /wiki/design/tui-model.md#1-rows-and-views).
+/// A yak, or a document (a wiki page or a saved source); phase 3b adds sheds.
+#[derive(Clone, Copy)]
+pub enum Item<'a> {
+    Yak(&'a Task),
+    Doc(&'a WikiEntry),
+}
+
+/// An [`Item`]'s kind, without the data: what a key binding names to apply to
+/// one kind of row (`keymap::Binding::kind`).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum RowKind {
+    Yak,
+    Doc,
+}
+
+impl Item<'_> {
+    pub fn kind(&self) -> RowKind {
+        match self {
+            Item::Yak(_) => RowKind::Yak,
+            Item::Doc(_) => RowKind::Doc,
+        }
+    }
+}
 
 pub struct Row<'a> {
-    pub task: &'a Task,
+    pub item: Item<'a>,
     pub depth: u16,
     pub ghost: bool,
     pub has_children: bool,
@@ -26,10 +52,27 @@ pub struct Row<'a> {
 }
 
 impl<'a> Row<'a> {
+    /// The yak this row is, or `None` for any other kind of row.
+    pub fn yak(&self) -> Option<&'a Task> {
+        match self.item {
+            Item::Yak(t) => Some(t),
+            _ => None,
+        }
+    }
+
     /// A depth-0, non-ghost, childless row (for flat / working-set views).
     pub fn leaf(task: &'a Task) -> Row<'a> {
+        Row::of(Item::Yak(task))
+    }
+
+    /// A depth-0, non-ghost, childless row for a document.
+    pub fn doc(entry: &'a WikiEntry) -> Row<'a> {
+        Row::of(Item::Doc(entry))
+    }
+
+    fn of(item: Item<'a>) -> Row<'a> {
         Row {
-            task,
+            item,
             depth: 0,
             ghost: false,
             has_children: false,
@@ -239,7 +282,7 @@ fn flatten<'a>(
         .unwrap_or_default();
     kids.sort_by(|&a, &b| cmp_child(by_id[a], by_id[b]));
     out.push(Row {
-        task: by_id[id],
+        item: Item::Yak(by_id[id]),
         depth,
         ghost: !focus.contains(id),
         has_children: !kids.is_empty(),
@@ -262,7 +305,8 @@ pub fn apply_collapse<'a>(flat: Vec<Row<'a>>, collapsed: &HashSet<String>) -> Ve
     let mut hide_stack: Vec<(String, u16)> = Vec::new();
     for mut row in flat {
         let depth = row.depth;
-        let id = row.task.id.clone();
+        // Only yaks nest: any other row is never a parent, never hidden.
+        let id = row.yak().map(|t| t.id.clone()).unwrap_or_default();
         let is_collapsed = row.has_children && collapsed.contains(id.as_str());
         while hide_stack.last().is_some_and(|(_, d)| depth <= *d) {
             hide_stack.pop();
@@ -281,7 +325,8 @@ pub fn apply_collapse<'a>(flat: Vec<Row<'a>>, collapsed: &HashSet<String>) -> Ve
     }
     for row in &mut visible {
         if row.collapsed {
-            row.hidden = counts.get(row.task.id.as_str()).copied().unwrap_or(0);
+            let id = row.yak().map_or("", |t| t.id.as_str());
+            row.hidden = counts.get(id).copied().unwrap_or(0);
         }
     }
     visible
@@ -351,9 +396,14 @@ mod tests {
             ..Default::default()
         };
         let flat = build(&all, &spec, FamilyScope::All);
-        let ids: Vec<&str> = flat.iter().map(|r| r.task.id.as_str()).collect();
+        let ids: Vec<&str> = flat.iter().map(|r| r.yak().unwrap().id.as_str()).collect();
         assert_eq!(ids, vec!["a", "a1", "a2"]); // b pruned
-        let ghost = |id: &str| flat.iter().find(|r| r.task.id == id).unwrap().ghost;
+        let ghost = |id: &str| {
+            flat.iter()
+                .find(|r| r.yak().unwrap().id == id)
+                .unwrap()
+                .ghost
+        };
         assert!(ghost("a") && ghost("a1"), "non-matching ancestors dim");
         assert!(!ghost("a2"), "the match is the focus");
     }
@@ -374,7 +424,7 @@ mod tests {
         let ids = |scope| {
             let mut v: Vec<String> = build(&all, &spec, scope)
                 .iter()
-                .map(|r| r.task.id.clone())
+                .map(|r| r.yak().unwrap().id.clone())
                 .collect();
             v.sort();
             v
@@ -398,10 +448,15 @@ mod tests {
             ..Default::default()
         };
         let flat = build(&all, &spec, FamilyScope::Remaining);
-        let mut ids: Vec<String> = flat.iter().map(|r| r.task.id.clone()).collect();
+        let mut ids: Vec<String> = flat.iter().map(|r| r.yak().unwrap().id.clone()).collect();
         ids.sort();
         assert_eq!(ids, vec!["a", "b", "c"]);
-        let ghost = |id: &str| flat.iter().find(|r| r.task.id == id).unwrap().ghost;
+        let ghost = |id: &str| {
+            flat.iter()
+                .find(|r| r.yak().unwrap().id == id)
+                .unwrap()
+                .ghost
+        };
         assert!(
             ghost("b") && ghost("c"),
             "connector + open descendant are dim"
@@ -423,9 +478,14 @@ mod tests {
             ..Default::default()
         };
         let flat = build(&all, &spec, FamilyScope::Remaining);
-        let ids: Vec<&str> = flat.iter().map(|r| r.task.id.as_str()).collect();
+        let ids: Vec<&str> = flat.iter().map(|r| r.yak().unwrap().id.as_str()).collect();
         assert_eq!(ids, vec!["a", "a1"]);
-        let ghost = |id: &str| flat.iter().find(|r| r.task.id == id).unwrap().ghost;
+        let ghost = |id: &str| {
+            flat.iter()
+                .find(|r| r.yak().unwrap().id == id)
+                .unwrap()
+                .ghost
+        };
         assert!(!ghost("a"), "the match is bright");
         assert!(ghost("a1"), "its descendant is dim context");
     }

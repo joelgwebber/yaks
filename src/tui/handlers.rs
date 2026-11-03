@@ -990,7 +990,7 @@ impl App {
     /// the keys; otherwise they are the [`keymap::Ctx::Viewer`] commands.
     pub(crate) fn handle_attachment_key(&mut self, k: KeyEvent, double_esc: bool) {
         if !matches!(&self.overlay, Overlay::Attachment(v) if v.find_box.is_some()) {
-            if let Some(cmd) = keymap::lookup(keymap::Ctx::Viewer, &k) {
+            if let Some(cmd) = keymap::lookup(keymap::Ctx::Viewer, None, &k) {
                 self.run_cmd(keymap::Ctx::Viewer, cmd);
             }
             return;
@@ -1720,7 +1720,7 @@ impl App {
             return;
         }
         if matches!(self.overlay, Overlay::Image(_)) {
-            if let Some(cmd) = keymap::lookup(keymap::Ctx::Image, &k) {
+            if let Some(cmd) = keymap::lookup(keymap::Ctx::Image, None, &k) {
                 self.run_cmd(keymap::Ctx::Image, cmd);
             }
             return;
@@ -2372,7 +2372,12 @@ impl App {
                 // list entirely, close the detail pane -- what you were looking
                 // at is no longer here (human-confirmed drop-out behavior).
                 if self.focus == Focus::Detail
-                    && edited.is_some_and(|id| !self.rows().iter().any(|r| r.task.id == id))
+                    && edited.is_some_and(|id| {
+                        !self
+                            .rows()
+                            .iter()
+                            .any(|r| r.yak().is_some_and(|t| t.id == id))
+                    })
                 {
                     self.focus = Focus::List;
                 }
@@ -2538,11 +2543,11 @@ fn handle_key_inner(app: &mut App, k: KeyEvent) {
         app.handle_overlay_key(k);
         return;
     }
-    // Every other surface is "which one, which command, run it": the Sheds and
-    // Wiki tabs own their keys (no yak key reaches a yak from there), else the
-    // list or the detail pane.
+    // Every other surface is "which one, which command, run it": the Sheds tab
+    // owns its keys, else the list (by the kind of row under the cursor) or
+    // the detail pane.
     let ctx = app.surface_ctx();
-    if let Some(cmd) = keymap::lookup(ctx, &k) {
+    if let Some(cmd) = keymap::lookup(ctx, app.surface_kind(), &k) {
         app.run_cmd(ctx, cmd);
     }
 }

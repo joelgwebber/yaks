@@ -103,6 +103,9 @@ impl App {
         }
         if self.focus == Focus::Detail {
             self.detail_next_task(i as i32 - self.cursor as i32);
+        } else if i == self.cursor && self.selected_doc().is_some() {
+            // A document has no detail pane: the second click opens it.
+            self.open_wiki_entry();
         } else if i == self.cursor {
             self.focus = Focus::Detail;
             self.detail_scroll = 0;

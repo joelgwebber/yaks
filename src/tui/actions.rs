@@ -204,9 +204,12 @@ impl App {
 
     pub(crate) fn toggle_collapse(&mut self) {
         let rows = self.rows();
-        if let Some(row) = rows.get(self.cursor) {
+        if let Some((row, task)) = rows
+            .get(self.cursor)
+            .and_then(|row| Some((row, row.yak()?)))
+        {
             if row.has_children {
-                let id = row.task.id.clone();
+                let id = task.id.clone();
                 if !self.collapsed.remove(&id) {
                     self.collapsed.insert(id);
                 }

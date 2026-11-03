@@ -61,7 +61,11 @@ impl App {
         // Expand any collapsed ancestors so the target row is actually visible;
         // otherwise the cursor can't land on it and the jump silently no-ops.
         self.expand_ancestors(id);
-        if let Some(pos) = self.rows().iter().position(|r| r.task.id == id) {
+        if let Some(pos) = self
+            .rows()
+            .iter()
+            .position(|r| r.yak().is_some_and(|t| t.id == id))
+        {
             self.cursor = pos;
         }
         self.focus = Focus::List;
@@ -530,7 +534,11 @@ impl App {
         {
             self.set_view(i);
         }
-        if let Some(pos) = self.rows().iter().position(|r| r.task.id == id) {
+        if let Some(pos) = self
+            .rows()
+            .iter()
+            .position(|r| r.yak().is_some_and(|t| t.id == id))
+        {
             self.cursor = pos;
         }
     }

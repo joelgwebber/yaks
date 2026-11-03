@@ -24,13 +24,15 @@ use std::rc::Rc;
 
 use super::*;
 
-/// Where a cached row's yak lives: its index in this farm's tasks.
+/// Where a cached row's item lives: a yak's index in this farm's tasks, or a
+/// document's index in `App.wiki.entries`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(super) enum Loc {
     Home(usize),
+    Doc(usize),
 }
 
-/// A `tree::Row` with its `&Task` replaced by a [`Loc`].
+/// A `tree::Row` with its `Item` replaced by a [`Loc`].
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub(super) struct CachedRow {
     pub loc: Loc,
@@ -111,30 +113,39 @@ pub(super) struct DlinesCache {
 }
 
 impl App {
-    /// Record that `all` (or the sheds snapshot) was replaced, so the memoized
+    /// Record that `all`, the wiki entries (or the sheds snapshot) were replaced, so the memoized
     /// rows and detail lines are rebuilt. See the module docs.
     pub(crate) fn touch(&mut self) {
         self.data_gen += 1;
     }
 
-    /// Index of `t` in `all`: the inverse of [`App::resolve`]. `t` must be
-    /// borrowed from `all`.
-    pub(super) fn locate(&self, t: &Task) -> Loc {
-        let size = std::mem::size_of::<Task>();
-        let addr = t as *const Task as usize;
-        let within = |base: &[Task]| {
-            let start = base.as_ptr() as usize;
+    /// Index of `item` in `all` or the wiki entries: the inverse of
+    /// [`App::resolve_item`]. It must be borrowed from one of them.
+    pub(super) fn locate(&self, item: tree::Item<'_>) -> Loc {
+        fn within<T>(base: &[T], x: &T) -> Option<usize> {
+            let size = std::mem::size_of::<T>();
+            let (addr, start) = (x as *const T as usize, base.as_ptr() as usize);
             (addr >= start && addr < start + base.len() * size).then(|| (addr - start) / size)
-        };
-        match within(&self.all) {
-            Some(i) => Loc::Home(i),
-            None => unreachable!("row task {} is not a task of this farm", t.id),
+        }
+        match item {
+            tree::Item::Yak(t) => match within(&self.all, t) {
+                Some(i) => Loc::Home(i),
+                None => unreachable!("row task {} is not a task of this farm", t.id),
+            },
+            tree::Item::Doc(e) => {
+                match within(self.wiki.entries.as_deref().unwrap_or_default(), e) {
+                    Some(i) => Loc::Doc(i),
+                    None => unreachable!("row document {} is not a wiki entry", e.path),
+                }
+            }
         }
     }
 
-    pub(super) fn resolve(&self, loc: Loc) -> &Task {
+    /// The item at `loc`: the inverse of [`App::locate`].
+    pub(super) fn resolve_item(&self, loc: Loc) -> tree::Item<'_> {
         match loc {
-            Loc::Home(i) => &self.all[i],
+            Loc::Home(i) => tree::Item::Yak(&self.all[i]),
+            Loc::Doc(i) => tree::Item::Doc(&self.wiki.entries.as_deref().unwrap_or_default()[i]),
         }
     }
 
@@ -161,7 +172,7 @@ impl App {
         self.build_rows()
             .into_iter()
             .map(|r| CachedRow {
-                loc: self.locate(r.task),
+                loc: self.locate(r.item),
                 depth: r.depth,
                 ghost: r.ghost,
                 has_children: r.has_children,

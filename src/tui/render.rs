@@ -22,7 +22,7 @@ use super::palette;
 use super::{
     App, Focus, Overlay, completion_context, detail, editor_theme, render_create, render_drawer,
     render_editor_panel, render_fuzzy_results, render_line_editor, render_query_line,
-    render_shed_detail, render_sheds_list, render_wiki_list, tree, view,
+    render_shed_detail, render_sheds_list, tree, view,
 };
 use crate::filter::FilterSpec;
 use crate::model::{Status, Task};
@@ -92,13 +92,11 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
     render_status(app, frame, bot);
 }
 
-/// The list pane: yak rows, the Sheds tab's shed rows, or the Wiki tab's
-/// pages.
+/// The list pane: the Sheds tab's shed rows, else the list's rows (yaks, or
+/// the Wiki view's documents).
 fn render_left(app: &App, frame: &mut Frame, area: Rect) {
     if app.on_sheds_tab() {
         render_sheds_list(app, frame, area);
-    } else if app.on_wiki_tab() {
-        render_wiki_list(app, frame, area);
     } else {
         render_list(app, frame, area);
     }
@@ -698,9 +696,13 @@ fn farm_sync_chip(app: &App, room: usize) -> Option<(Line<'static>, usize)> {
 }
 
 pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
-    let focused = app.focus == Focus::List;
     let rows = app.rows();
-    if rows.is_empty() {
+    if app.on_wiki_tab() {
+        if let Some(notice) = super::wiki_tab::wiki_notice(app, rows.is_empty()) {
+            frame.render_widget(notice, area);
+            return;
+        }
+    } else if rows.is_empty() {
         frame.render_widget(
             Paragraph::new(Span::styled(
                 "No tasks.",
@@ -710,30 +712,43 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
         );
         return;
     }
-    // Dynamic id column: widest `id + 2*depth` across visible rows (min 4).
+    // A document row keeps its own colours under the cursor; a yak row's are
+    // reset (below).
+    let on_doc = matches!(
+        rows.get(app.cursor).map(|r| r.item),
+        Some(tree::Item::Doc(_))
+    );
+    // The Wiki's list stands down whenever an overlay (its viewer, help, a
+    // prompt) is up, as it always has; the yak list only when the detail pane
+    // has focus. (Phase 4 folds the viewer into the pane and ends the split.)
+    let focused = app.focus == Focus::List && (!on_doc || matches!(app.overlay, Overlay::None));
+    // Dynamic id column: widest `id + 2*depth` across visible yak rows (min 4).
     let max_id_len = rows
         .iter()
-        .map(|r| r.task.id.chars().count() + 2 * r.depth as usize)
+        .filter_map(|r| Some(r.yak()?.id.chars().count() + 2 * r.depth as usize))
         .max()
         .unwrap_or(4)
         .max(4);
     let id_field_w = max_id_len + 2;
     let blocked = app.blocked_ids();
+    let doc_cols = super::wiki_tab::DocCols::of(&rows, area.width);
     let items: Vec<ListItem> = rows
         .iter()
-        .map(|r| {
-            list_item(
+        .map(|r| match r.item {
+            tree::Item::Yak(t) => list_item(
                 r,
+                t,
                 id_field_w,
-                blocked.contains(&r.task.id),
-                app.selected.contains(&r.task.id),
-                r.task.awaiting_human(),
-                r.task.awaiting_agent(),
-                app.is_starred(&r.task.id),
+                blocked.contains(&t.id),
+                app.selected.contains(&t.id),
+                t.awaiting_human(),
+                t.awaiting_agent(),
+                app.is_starred(&t.id),
                 area.width,
                 app.is_multi_herd(),
-                due_chip(&r.task, app.clock.now()),
-            )
+                due_chip(t, app.clock.now()),
+            ),
+            tree::Item::Doc(e) => doc_cols.item(e, area.width),
         })
         .collect();
     // Carry the viewport offset across frames (yaks-9009): ratatui's List only
@@ -748,10 +763,15 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
     // black-on-cyan reverse. Resetting fg keeps the row legible on the dark bg
     // (per-field colours like blue/blue-dim would be low-contrast on 237). The
     // unfocused list uses a slightly darker bg so focus is still clear.
-    let hl = if focused {
-        Style::new().fg(Color::Reset).bg(super::surface::selected())
+    let fg = if on_doc {
+        Style::new()
     } else {
-        Style::new().fg(Color::Reset).bg(super::surface::band())
+        Style::new().fg(Color::Reset)
+    };
+    let hl = if focused {
+        fg.bg(super::surface::selected())
+    } else {
+        fg.bg(super::surface::band())
     };
     frame.render_stateful_widget(List::new(items).highlight_style(hl), area, &mut state);
     app.list_offset.set(state.offset());
@@ -810,6 +830,7 @@ fn due_chip(t: &Task, now: chrono::DateTime<chrono::Utc>) -> Option<(String, boo
 
 pub(crate) fn list_item<'a>(
     r: &tree::Row<'a>,
+    task: &Task,
     id_field_w: usize,
     blocked: bool,
     selected: bool,
@@ -839,18 +860,18 @@ pub(crate) fn list_item<'a>(
     } else {
         " "
     };
-    let body = format!("{indent}{}", r.task.id);
+    let body = format!("{indent}{}", task.id);
     let body_w = id_field_w.saturating_sub(1);
     let body_padded = format!("{body:<body_w$}");
-    let pri_s = format!("p{} ", r.task.priority);
-    let type_s = format!("{:8} ", r.task.kind);
+    let pri_s = format!("p{} ", task.priority);
+    let type_s = format!("{:8} ", task.kind);
 
     // Right side: right-aligned labels, a star, and a collapse badge.
     let max_lw = (width / 4).clamp(8, 30);
-    let label_str = if r.task.tags.is_empty() {
+    let label_str = if task.tags.is_empty() {
         String::new()
     } else {
-        truncate_disp(&format!("[{}]", r.task.tags.join(", ")), max_lw)
+        truncate_disp(&format!("[{}]", task.tags.join(", ")), max_lw)
     };
     let badge = if r.collapsed && r.hidden > 0 {
         format!(" \u{25b6} {} ", r.hidden)
@@ -925,7 +946,7 @@ pub(crate) fn list_item<'a>(
     let left_fixed = 1 + disp_width(&body_padded) + disp_width(&pri_s) + disp_width(&type_s);
     let title_avail = width.saturating_sub(left_fixed + rw + 1);
     let title = truncate_disp(
-        &format!("{} {}", r.task.status.emoji(), r.task.title),
+        &format!("{} {}", task.status.emoji(), task.title),
         title_avail,
     );
     let used = left_fixed + disp_width(&title);
@@ -941,11 +962,11 @@ pub(crate) fn list_item<'a>(
     // In a multi-herd farm, tint the id's herd prefix so herds are scannable at
     // a glance (the tail stays blue); a single-herd farm renders the id plain.
     let id_spans = if multi_herd {
-        let (prefix, rest) = match r.task.id.split_once('-') {
+        let (prefix, rest) = match task.id.split_once('-') {
             Some((p, tail)) => (p.to_string(), format!("-{tail}")),
-            None => (r.task.id.clone(), String::new()),
+            None => (task.id.clone(), String::new()),
         };
-        let plain_w = disp_width(&indent) + r.task.id.chars().count();
+        let plain_w = disp_width(&indent) + task.id.chars().count();
         let pad = " ".repeat(body_w.saturating_sub(plain_w));
         vec![
             Span::styled(indent.clone(), dim(Style::new().fg(Color::Blue))),
@@ -957,7 +978,7 @@ pub(crate) fn list_item<'a>(
     };
     let mut spans = vec![Span::styled(lead.to_string(), lead_style)];
     spans.extend(id_spans);
-    spans.push(Span::styled(pri_s, dim(priority_style(r.task.priority))));
+    spans.push(Span::styled(pri_s, dim(priority_style(task.priority))));
     spans.push(Span::styled(type_s, dim(Style::new().fg(Color::Cyan))));
     spans.push(Span::styled(title, dim(Style::new())));
     if pad > 0 {

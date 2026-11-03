@@ -52,11 +52,11 @@ fn build_universe_pulls_ghost_descendants() {
     app.family_scope
         .insert("status:hairy".into(), view::FamilyScope::All);
     let rows = app.rows();
-    let ids: Vec<&str> = rows.iter().map(|r| r.task.id.as_str()).collect();
+    let ids: Vec<&str> = rows.iter().map(|r| r.yak().unwrap().id.as_str()).collect();
     assert_eq!(ids, vec!["a0", "a1", "a2"]); // b0 (shaving) excluded from Hairy tab
-    let a2 = rows.iter().find(|r| r.task.id == "a2").unwrap();
+    let a2 = rows.iter().find(|r| r.yak().unwrap().id == "a2").unwrap();
     assert!(a2.ghost, "shorn child should be a ghost in the Hairy tab");
-    let a0 = rows.iter().find(|r| r.task.id == "a0").unwrap();
+    let a0 = rows.iter().find(|r| r.yak().unwrap().id == "a0").unwrap();
     assert!(a0.has_children && !a0.ghost);
 }
 
@@ -64,7 +64,11 @@ fn build_universe_pulls_ghost_descendants() {
 fn family_remaining_default_hides_completed_leaf() {
     // The default scope (remaining) drops the shorn leaf a2; open a1 stays.
     let app = sample();
-    let ids: Vec<&str> = app.rows().iter().map(|r| r.task.id.as_str()).collect();
+    let ids: Vec<&str> = app
+        .rows()
+        .iter()
+        .map(|r| r.yak().unwrap().id.as_str())
+        .collect();
     assert_eq!(ids, vec!["a0", "a1"]);
 }
 
@@ -792,7 +796,11 @@ fn inline_search_updates_filter_live() {
     handle_key(&mut app, key('/'));
     typ(&mut app, "child");
     assert_eq!(app.filter.search.as_deref(), Some("child"));
-    let ids: Vec<&str> = app.rows().iter().map(|r| r.task.id.as_str()).collect();
+    let ids: Vec<&str> = app
+        .rows()
+        .iter()
+        .map(|r| r.yak().unwrap().id.as_str())
+        .collect();
     assert_eq!(ids, vec!["a0", "a1", "a2"]); // b0 pruned; a0 dimmed ancestor
     // Enter keeps the filter.
     handle_key(&mut app, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
@@ -982,7 +990,10 @@ fn follow_link_reveals_collapsed_target() {
     // select a1, and stay in the detail pane (yaksrs-3f19).
     let mut app = linked();
     app.collapsed.insert("a0".to_string());
-    assert!(app.rows().iter().all(|r| r.task.id != "a1"), "a1 hidden");
+    assert!(
+        app.rows().iter().all(|r| r.yak().unwrap().id != "a1"),
+        "a1 hidden"
+    );
     enter_key(&mut app); // focus detail on a0
     tab_key(&mut app); // -> first link line (a1)
     enter_key(&mut app); // follow it -> a1
@@ -1303,7 +1314,11 @@ fn star_toggles_and_starred_view_lists_it() {
     // Starred view (index 5) lists the starred task.
     app.set_view(5);
     assert_eq!(app.active_view().key, "working-set");
-    let ids: Vec<&str> = app.rows().iter().map(|r| r.task.id.as_str()).collect();
+    let ids: Vec<&str> = app
+        .rows()
+        .iter()
+        .map(|r| r.yak().unwrap().id.as_str())
+        .collect();
     assert_eq!(ids, vec!["a0"]);
     // Unstar removes it.
     app.set_view(0);
@@ -1642,7 +1657,11 @@ fn inbox_view_lists_needs_blocked_across_statuses() {
         .expect("inbox view present in defaults");
     app.set_view(idx);
     assert!(app.active_view().is_flat());
-    let mut ids: Vec<String> = app.rows().iter().map(|r| r.task.id.clone()).collect();
+    let mut ids: Vec<String> = app
+        .rows()
+        .iter()
+        .map(|r| r.yak().unwrap().id.clone())
+        .collect();
     ids.sort();
     assert_eq!(ids, vec!["t0".to_string(), "t1".to_string()]);
     // The free (unblocked) yak never appears in the inbox.
@@ -1652,7 +1671,11 @@ fn inbox_view_lists_needs_blocked_across_statuses() {
     // Switching to the Hairy view drops the shorn yak again — inbox is a
     // view/filter, not a persistent override.
     app.set_view(0);
-    let ids: Vec<String> = app.rows().iter().map(|r| r.task.id.clone()).collect();
+    let ids: Vec<String> = app
+        .rows()
+        .iter()
+        .map(|r| r.yak().unwrap().id.clone())
+        .collect();
     assert!(ids.contains(&"t0".to_string()) && ids.contains(&"t2".to_string()));
     assert!(
         !ids.contains(&"t1".to_string()),
@@ -2058,7 +2081,7 @@ mod live {
         // Dead stays in the model (so deps/ancestors still resolve) but is
         // hidden from the default Hairy view.
         assert_eq!(app.task("t0").unwrap().status, Status::Dead);
-        assert!(app.rows().iter().all(|r| r.task.id != "t0"));
+        assert!(app.rows().iter().all(|r| r.yak().unwrap().id != "t0"));
         assert_eq!(app.notification.as_deref(), Some("slaughtered t0"));
     }
 
@@ -2071,15 +2094,19 @@ mod live {
         let mut app = App::with_farm(farm).unwrap();
         // Loaded into the model, but not shown on the default Hairy view.
         assert_eq!(app.task("t1").unwrap().status, Status::Dead);
-        assert!(app.rows().iter().all(|r| r.task.id != "t1"));
+        assert!(app.rows().iter().all(|r| r.yak().unwrap().id != "t1"));
         // Filtering to Dead surfaces it in the tree.
         app.filter.statuses = vec![Status::Dead];
-        let ids: Vec<&str> = app.rows().iter().map(|r| r.task.id.as_str()).collect();
+        let ids: Vec<&str> = app
+            .rows()
+            .iter()
+            .map(|r| r.yak().unwrap().id.as_str())
+            .collect();
         assert_eq!(ids, vec!["t1"]);
         // Recent (flat) also hides dead by default.
         app.set_view(3);
         assert_eq!(app.active_view().key, "recent");
-        assert!(app.rows().iter().all(|r| r.task.id != "t1"));
+        assert!(app.rows().iter().all(|r| r.yak().unwrap().id != "t1"));
     }
 
     #[test]
@@ -2312,7 +2339,7 @@ mod live {
         press(&mut app, "P5"); // t0 -> p5, dropping it out of the p1 view
         assert_eq!(app.task("t0").unwrap().priority, 5);
         assert!(
-            app.rows().iter().all(|r| r.task.id != "t0"),
+            app.rows().iter().all(|r| r.yak().unwrap().id != "t0"),
             "t0 filtered out of the view"
         );
         // Detail closed: focus is back on the list.

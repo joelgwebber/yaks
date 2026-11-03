@@ -108,7 +108,11 @@ impl App {
         }
         self.refresh_farm_sync();
         self.reload_wiki();
-        match sel.and_then(|id| self.rows().iter().position(|r| r.task.id == id)) {
+        match sel.and_then(|id| {
+            self.rows()
+                .iter()
+                .position(|r| r.yak().is_some_and(|t| t.id == id))
+        }) {
             Some(pos) => self.cursor = pos,
             None => self.clamp_cursor(),
         }
@@ -223,7 +227,7 @@ impl App {
         self.cached_rows()
             .iter()
             .map(|c| tree::Row {
-                task: self.resolve(c.loc),
+                item: self.resolve_item(c.loc),
                 depth: c.depth,
                 ghost: c.ghost,
                 has_children: c.has_children,
@@ -244,9 +248,12 @@ impl App {
         if v.key == "working-set" {
             return self.working_set_rows();
         }
-        // The Sheds and Wiki tabs have no yak rows: every yak key finds no selection.
-        if v.key == view::SHEDS_KEY || v.key == view::WIKI_KEY {
+        // The Sheds tab has no yak rows yet: every yak key finds no selection.
+        if v.key == view::SHEDS_KEY {
             return Vec::new();
+        }
+        if v.key == view::WIKI_KEY {
+            return self.wiki_rows().into_iter().map(tree::Row::doc).collect();
         }
         if v.is_flat() {
             return self.flat_rows();
@@ -264,13 +271,39 @@ impl App {
         } else {
             self.cursor.min(len - 1)
         };
-        // The Wiki tab's list filters on the same live search.
-        self.clamp_wiki_cursor();
     }
 
-    pub(crate) fn selected(&self) -> Option<&Task> {
+    /// The row under the cursor, whatever it is.
+    pub(crate) fn selected_row(&self) -> Option<tree::Item<'_>> {
         let row = *self.cached_rows().get(self.cursor)?;
-        Some(self.resolve(row.loc))
+        Some(self.resolve_item(row.loc))
+    }
+
+    /// The selected yak: `None` on an empty list and on any other kind of row,
+    /// so every yak command finds nothing there.
+    pub(crate) fn selected(&self) -> Option<&Task> {
+        match self.selected_row()? {
+            tree::Item::Yak(t) => Some(t),
+            _ => None,
+        }
+    }
+
+    /// The selected document (a wiki page or source), if the row is one.
+    pub(crate) fn selected_doc(&self) -> Option<&wiki_tab::WikiEntry> {
+        match self.selected_row()? {
+            tree::Item::Doc(e) => Some(e),
+            _ => None,
+        }
+    }
+
+    /// The kind of row keys act on: the selected row's, else what the active
+    /// view lists (so an empty Wiki still takes `N` and `r`).
+    pub(crate) fn row_kind(&self) -> tree::RowKind {
+        match self.selected_row() {
+            Some(item) => item.kind(),
+            None if self.on_wiki_tab() => tree::RowKind::Doc,
+            None => tree::RowKind::Yak,
+        }
     }
 
     pub(crate) fn selected_id(&self) -> Option<String> {

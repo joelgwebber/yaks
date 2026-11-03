@@ -8,21 +8,20 @@
 //! read when the tab is shown and again on every farm reload, so an edit
 //! made elsewhere appears as soon as the watcher sees it.
 //!
-//! The tab is a built-in view (`view::wiki_view`) whose yak rows are empty,
-//! so every yak key is inert there; its keys are the `Wiki` context of `keymap`.
-//! `/` is the yak tabs' inline search: it edits the live filter's `search`,
-//! which [`App::wiki_rows`] matches against a row's title, path, kind and
-//! tags.
+//! The tab is a built-in view (`view::wiki_view`) whose rows are documents
+//! ([`tree::Item::Doc`], from [`App::build_rows`]): the list's own cursor,
+//! rendering and key dispatch serve it, and its keys are the `Doc` bindings of
+//! `keymap`. Yak keys find no yak there and do nothing. `/` is the yak tabs'
+//! inline search: it edits the live filter's `search`, which
+//! [`App::wiki_rows`] matches against a row's title, path, kind and tags.
 
 #[cfg(test)]
 use super::handlers::DocKind;
 use super::*;
 use crate::{pages, sources};
-use ratatui::Frame;
-use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::Paragraph;
+use ratatui::widgets::{ListItem, Paragraph};
 
 /// One row of the list: a page or a source.
 #[derive(Clone, Debug, PartialEq)]
@@ -56,16 +55,12 @@ impl WikiEntry {
     }
 }
 
-/// The tab's state: the entries last read and the list cursor.
+/// The tab's state: the entries last read (the list's rows index them).
 #[derive(Default)]
 pub(crate) struct WikiTab {
     /// `None` until first read (the tab has not been shown, or there is no
     /// farm: read-only and test constructors fill it directly).
     pub entries: Option<Vec<WikiEntry>>,
-    /// Index into [`App::wiki_rows`] (the filtered list).
-    pub cursor: usize,
-    /// First visible row, kept across frames (yaks-9009).
-    pub list_offset: Cell<usize>,
     /// The read failed: why.
     pub error: Option<String>,
 }
@@ -112,17 +107,23 @@ impl App {
 
     /// Swap in a new list of entries, keeping the cursor on the same path.
     pub(crate) fn set_wiki_entries(&mut self, entries: Vec<WikiEntry>) {
-        let at = self.selected_wiki().map(|e| e.path.clone());
+        let at = self.selected_doc().map(|e| e.path.clone());
         self.wiki.entries = Some(entries);
         self.wiki.error = None;
-        let rows = self.wiki_rows();
-        self.wiki.cursor = at
-            .and_then(|p| rows.iter().position(|e| e.path == p))
-            .unwrap_or(self.wiki.cursor)
-            .min(rows.len().saturating_sub(1));
+        // The rows index the entries: rebuild them.
+        self.touch();
+        // Only the Wiki view's cursor means a document.
+        if self.on_wiki_tab() {
+            let rows = self.wiki_rows();
+            self.cursor = at
+                .and_then(|p| rows.iter().position(|e| e.path == p))
+                .unwrap_or(self.cursor)
+                .min(rows.len().saturating_sub(1));
+        }
     }
 
-    /// The entries the live search keeps, in display order.
+    /// The entries the live search keeps, in display order: the Wiki view's
+    /// rows ([`App::build_rows`] wraps each in a [`tree::Row`]).
     pub(crate) fn wiki_rows(&self) -> Vec<&WikiEntry> {
         let q = self.filter.search.as_deref().filter(|q| !q.is_empty());
         self.wiki
@@ -131,10 +132,6 @@ impl App {
             .flatten()
             .filter(|e| q.is_none_or(|q| e.matches(q)))
             .collect()
-    }
-
-    pub(crate) fn selected_wiki(&self) -> Option<&WikiEntry> {
-        self.wiki_rows().get(self.wiki.cursor).copied()
     }
 
     /// The tab's count: every page (sources not counted), whatever the search.
@@ -147,23 +144,9 @@ impl App {
             .count()
     }
 
-    pub(crate) fn move_wiki(&mut self, delta: i32) {
-        let n = self.wiki_rows().len();
-        if n == 0 {
-            return;
-        }
-        self.wiki.cursor = (self.wiki.cursor as i64 + delta as i64).clamp(0, n as i64 - 1) as usize;
-    }
-
-    /// Keep the cursor inside the filtered list (after the search changed).
-    pub(crate) fn clamp_wiki_cursor(&mut self) {
-        let n = self.wiki_rows().len();
-        self.wiki.cursor = self.wiki.cursor.min(n.saturating_sub(1));
-    }
-
     /// Enter / l: open the selected page or source in the viewer.
     pub(crate) fn open_wiki_entry(&mut self) {
-        let Some(e) = self.selected_wiki().cloned() else {
+        let Some(e) = self.selected_doc().cloned() else {
             return;
         };
         match self.read_farm_doc(&e.path, None) {
@@ -221,7 +204,7 @@ impl App {
         self.reload_wiki();
         self.refresh_farm_sync();
         if let Some(i) = self.wiki_rows().iter().position(|e| e.path == path) {
-            self.wiki.cursor = i;
+            self.cursor = i;
         }
         match self.read_farm_doc(&path, None) {
             Ok(v) => {
@@ -244,7 +227,7 @@ impl App {
 
     /// y: copy the selected entry's path.
     pub(crate) fn copy_wiki_path(&mut self) {
-        let Some(path) = self.selected_wiki().map(|e| e.shown_path().to_string()) else {
+        let Some(path) = self.selected_doc().map(|e| e.shown_path().to_string()) else {
             return;
         };
         self.notification = Some(if crate::clipboard::copy_text(&path) {
@@ -257,7 +240,7 @@ impl App {
     /// toque's state-header digest on the Wiki tab.
     pub(crate) fn wiki_state_header(&self) -> String {
         let at = self
-            .selected_wiki()
+            .selected_doc()
             .map_or_else(|| "-".into(), |e| e.path.clone());
         format!("wiki={} \u{b7} entry={at}", self.wiki_rows().len())
     }
@@ -266,15 +249,6 @@ impl App {
     pub(crate) fn reread_wiki(&mut self) {
         self.reload_wiki();
         self.notification = Some("reread the wiki".into());
-    }
-
-    /// Esc on the Wiki tab: drop the search's edits to the active view.
-    pub(crate) fn revert_wiki_view(&mut self) {
-        if self.is_view_modified() {
-            self.revert_filter_to_view();
-            self.clamp_wiki_cursor();
-            self.notification = Some("reverted to view".into());
-        }
     }
 }
 
@@ -333,76 +307,69 @@ fn entry_row(
     Line::from(spans)
 }
 
-pub(crate) fn render_wiki_list(app: &App, frame: &mut Frame, area: Rect) {
+/// What the Wiki view's list says instead of rows: why the read failed, or
+/// that nothing is there or nothing matches. `None` when there are rows.
+pub(crate) fn wiki_notice(app: &App, no_rows: bool) -> Option<Paragraph<'static>> {
     if let Some(e) = &app.wiki.error {
-        frame.render_widget(
-            Paragraph::new(Span::styled(
-                format!("reading the wiki failed: {e}"),
-                Style::new().fg(Color::Red),
-            )),
-            area,
-        );
-        return;
+        return Some(Paragraph::new(Span::styled(
+            format!("reading the wiki failed: {e}"),
+            Style::new().fg(Color::Red),
+        )));
     }
-    let rows = app.wiki_rows();
-    if rows.is_empty() {
+    no_rows.then(|| {
         let msg = if app.wiki.entries.as_ref().is_some_and(|e| !e.is_empty()) {
             "No page matches the search."
         } else {
             "No pages yet. `yaks page new wiki/<name>.md` writes one."
         };
-        frame.render_widget(Paragraph::new(Span::styled(msg, dim())), area);
-        return;
+        Paragraph::new(Span::styled(msg, dim()))
+    })
+}
+
+/// The column widths of the document rows among `rows`, sized from them and
+/// capped so the path keeps some room.
+pub(crate) struct DocCols {
+    title: usize,
+    kind: usize,
+    tags: usize,
+}
+
+impl DocCols {
+    pub(crate) fn of(rows: &[tree::Row<'_>], width: u16) -> DocCols {
+        let docs: Vec<&WikiEntry> = rows
+            .iter()
+            .filter_map(|r| match r.item {
+                tree::Item::Doc(e) => Some(e),
+                _ => None,
+            })
+            .collect();
+        let w = width as usize;
+        DocCols {
+            title: docs
+                .iter()
+                .map(|e| disp_width(&e.title))
+                .max()
+                .unwrap_or(5)
+                .clamp(5, (w * 2 / 5).max(5)),
+            kind: docs
+                .iter()
+                .map(|e| disp_width(&e.kind))
+                .max()
+                .unwrap_or(4)
+                .clamp(4, 12),
+            tags: docs
+                .iter()
+                .map(|e| e.tags.iter().map(|t| disp_width(t) + 2).sum::<usize>())
+                .max()
+                .unwrap_or(0)
+                .min(w / 4),
+        }
     }
-    // Column widths from the rows, capped so the path keeps some room.
-    let w = area.width as usize;
-    let title_w = rows
-        .iter()
-        .map(|e| disp_width(&e.title))
-        .max()
-        .unwrap_or(5)
-        .clamp(5, (w * 2 / 5).max(5));
-    let kind_w = rows
-        .iter()
-        .map(|e| disp_width(&e.kind))
-        .max()
-        .unwrap_or(4)
-        .clamp(4, 12);
-    let tags_w = rows
-        .iter()
-        .map(|e| e.tags.iter().map(|t| disp_width(t) + 2).sum::<usize>())
-        .max()
-        .unwrap_or(0)
-        .min(w / 4);
-    let focused = app.focus == Focus::List && matches!(app.overlay, Overlay::None);
-    let hl = if focused {
-        Style::new().bg(super::surface::selected())
-    } else {
-        Style::new().bg(super::surface::band())
-    };
-    let h = area.height as usize;
-    let mut offset = app.wiki.list_offset.get();
-    if app.wiki.cursor < offset {
-        offset = app.wiki.cursor;
-    } else if h > 0 && app.wiki.cursor >= offset + h {
-        offset = app.wiki.cursor + 1 - h;
+
+    /// The list item of a document row.
+    pub(crate) fn item(&self, e: &WikiEntry, width: u16) -> ListItem<'static> {
+        ListItem::new(entry_row(e, self.title, self.kind, self.tags, width))
     }
-    app.wiki.list_offset.set(offset);
-    let lines: Vec<Line> = rows
-        .iter()
-        .enumerate()
-        .skip(offset)
-        .take(h)
-        .map(|(i, e)| {
-            let row = entry_row(e, title_w, kind_w, tags_w, area.width);
-            if i == app.wiki.cursor {
-                row.style(hl)
-            } else {
-                row
-            }
-        })
-        .collect();
-    frame.render_widget(Paragraph::new(lines), area);
 }
 
 /// A small wiki for tests and doc shots: two farm-wide pages in folders,
@@ -482,6 +449,67 @@ mod tests {
     }
 
     #[test]
+    fn j_moves_the_lists_cursor_and_the_selected_document_follows() {
+        let (proj, mut app) = on_wiki();
+        assert_eq!(app.cursor, 0);
+        assert_eq!(app.selected_doc().unwrap().path, "wiki/howto/release.md");
+        press(&mut app, "j");
+        assert_eq!(app.cursor, 1);
+        assert_eq!(
+            app.selected_doc().unwrap().path,
+            "wiki/topics/full-text-search.md"
+        );
+        press(&mut app, "G");
+        assert_eq!(app.cursor, 4);
+        assert!(app.selected_doc().unwrap().source);
+        press(&mut app, "g");
+        assert_eq!(app.cursor, 0);
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn a_document_row_is_no_yak_and_yak_keys_do_nothing_on_it() {
+        let (proj, mut app) = on_wiki();
+        assert!(app.selected().is_none());
+        assert!(app.selected_doc().is_some());
+        assert!(matches!(app.selected_row(), Some(tree::Item::Doc(_))));
+        for keys in [
+            "S", "P", "T", "L", "X", "D", "M", "a", "Q", "A", "*", "m", "c",
+        ] {
+            press(&mut app, keys);
+            assert!(
+                matches!(app.overlay, Overlay::None),
+                "{keys} opened an overlay on a document row"
+            );
+        }
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn enter_on_a_document_row_opens_the_viewer() {
+        let (proj, mut app) = on_wiki();
+        enter_key(&mut app);
+        let Overlay::Attachment(v) = &app.overlay else {
+            panic!("no viewer")
+        };
+        assert_eq!(v.target, "wiki/howto/release.md");
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn an_empty_wiki_view_still_takes_the_document_keys() {
+        let (proj, mut app) = on_wiki();
+        app.filter.search = Some("no such page".into());
+        assert_eq!(app.row_count(), 0);
+        press(&mut app, "N");
+        assert!(
+            matches!(app.overlay, Overlay::Edit(_)),
+            "N: new page prompt"
+        );
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
     fn it_lists_pages_then_sources_and_counts_pages() {
         let (proj, app) = on_wiki();
         let paths: Vec<&str> = app.wiki_rows().iter().map(|e| e.path.as_str()).collect();
@@ -540,7 +568,7 @@ mod tests {
         let (proj, mut app) = on_wiki();
         press(&mut app, "jj");
         assert_eq!(
-            app.selected_wiki().unwrap().title,
+            app.selected_doc().unwrap().title,
             "Vector search in Postgres"
         );
         enter_key(&mut app);
@@ -751,7 +779,7 @@ mod tests {
             "---\ntype: note\ntitle: Hnsw tuning\n---\n"
         );
         assert_eq!(
-            app.selected_wiki().unwrap().path,
+            app.selected_doc().unwrap().path,
             "wiki/topics/hnsw-tuning.md"
         );
         assert_eq!(app.wiki_count(), 5);

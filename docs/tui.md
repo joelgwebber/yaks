@@ -88,7 +88,8 @@ interchangeable.
 ## Keys
 
 **Movement** — `j`/`k` or `↓`/`↑` move; `d`/`u` half-page; `PgDn`/`PgUp`
-full-page; `g`/`G` top/bottom.
+full-page; `g`/`G` (or `Home`/`End`) top/bottom. The Wiki tab's rows move
+the same way (they are rows of the same list).
 
 **List pane**
 
@@ -241,11 +242,11 @@ title words, then `Enter` opens its detail, switching to its view and recording
 the jump so `o` comes back); `f` filter drawer; `Esc` revert filter to the
 active view.
 
-**Wiki tab** — its own keys (the yak keys do nothing there):
+**Wiki tab** — its rows are documents, not yaks: the movement keys above work,
+and a document row has its own keys (the yak keys do nothing there):
 
 | Key | Action |
 |---|---|
-| `j` / `k`, `g` / `G`, `d` / `u` | Move between pages (then sources) |
 | `l` / `→` / `Enter` | Open the page or source in the viewer (it navigates like the detail pane) |
 | `/` | Search titles, paths, kinds and tags; `Esc` clears it |
 | `E` | Edit the page in place (also `E` in its viewer): frontmatter and body in one editor, `Ctrl-S` saves |
