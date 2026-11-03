@@ -1,7 +1,7 @@
 ---
 id: yaks-0ac1
 title: Have a big rethink about keyboard bindings
-status: hairy
+status: shorn
 type: task
 priority: 3
 created: '2026-10-28T12:57:59Z'
@@ -37,3 +37,13 @@ Configurability, leader keys and which-key are still open here.
 ▸ 2026-11-03T06:11:22Z [herd-tui]
 
 The command table (phase 2, `642be42e`) and the key pass (phase 7, `c98d7e3c`: one meaning per key for h/v/N/r/q, a `?` keys popup, user `keys:` overrides by command name) landed under yaks-947a. Configurability depth, leader keys and a real which-key move to the holistic rethink, yaks-7c6e.
+
+---
+▸ 2026-11-03T06:11:22Z [herd-tui]
+kind: move
+from: hairy
+to: shorn
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shorn
