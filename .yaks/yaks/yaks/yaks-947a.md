@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-03T03:46:30Z'
-updated: '2026-11-03T06:11:23Z'
+updated: '2026-11-03T13:02:24Z'
 tags:
 - tui
 ---
@@ -95,3 +95,8 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-03T13:02:24Z [herd-tui]
+
+Landed on origin/main by herd-tui at Joel's request: fast-forward 9a8c7b4..c98d7e3c (11 commits, gate green on the tip). Joel tests locally before tweaks and a release.
