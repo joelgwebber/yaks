@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T02:17:24Z'
-updated: '2026-11-03T02:19:24Z'
+updated: '2026-11-03T03:17:06Z'
 tags:
 - tui
 - design
@@ -41,3 +41,10 @@ Open for Joel:
 - the query matching rule;
 - pages in Starred and Recent;
 - putting the command table second.
+
+---
+▸ 2026-11-03T03:17:06Z [tui-design]
+
+Design agreed by Joel, 2026-11-02: every open question resolved as leaned (decisions 5 to 8 on the page). The page is [wiki/design/tui-model.md](/wiki/design/tui-model.md). The questions on yaks-158d and yaks-953f are answered there and their `needs` cleared.
+
+Implementation is the page's seven phases, carried by the folded yaks (yaks-953f phase 1 first, then the command table under yaks-0ac1).
