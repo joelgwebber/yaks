@@ -45,7 +45,7 @@ Design attached (158d-design.md). Root cause: every jump goes through select_tas
 ---
 ▸ 2026-11-03T02:19:20Z [tui-design]
 
-Folded into the unified TUI design, [docs/design/tui/model.md](code:docs/design/tui/model.md), tracked by yaks-9c3c. This yak's part is §3, "One history" (phase 5).
+Folded into the unified TUI design, [wiki/design/tui-model.md](/wiki/design/tui-model.md), tracked by yaks-9c3c. This yak's part is §3, "One history" (phase 5).
 
 Changes from the design attached here:
 
