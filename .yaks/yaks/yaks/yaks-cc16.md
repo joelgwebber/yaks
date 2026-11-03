@@ -61,3 +61,25 @@ result: fail
 verify: `cargo test --workspace` -> FAIL (exit 101)
 
 [search-commit-tab-frame](yaks-cc16/search-commit-tab-frame.txt)
+
+---
+▸ 2026-11-03T03:57:13Z [notify-1]
+
+Decision: the mouse clear sits in `App::handle_mouse` (`src/tui/mouse.rs`), the wrapper over `handle_mouse_inner`, which is the single mouse entry (`handle_event` calls it). It clears even when an overlay is open and the mouse is otherwise ignored, since "next mouse event" is the rule. Rejected: clearing in `handle_event`, which would miss tests and callers that call `handle_mouse` directly.
+
+Decision: a kept search (`Enter` with a non-empty query) writes no notification at all, and the empty commit keeps `search cleared`. Rejected: keeping `filter: q` and relying on the new clear. The yak says to drop it, and a toast that repeats the filter is noise.
+
+Decision: three existing snapshots encoded a stale toast that an earlier key had left on screen and a later key never cleared. Only the toast row changed, to blank, in each:
+- `backrefs_picker` (`→ a1`)
+- `the_viewer_with_its_cursor_on_a_link` (`viewing t0/notes.md`)
+- `the_viewer_following_a_page_link_with_a_peek` (`viewing wiki/topics/hub.md`)
+
+Rejected: changing the tests to hold the toast, since the stale toast is the bug.
+
+Decision: Tab after a committed search resets the filter (a view switch resets it), so the regression frame shows the Shaving tab, not a filtered one. That is existing behaviour and unrelated to this yak.
+
+Surprise: `YAKS_DIR` set in the shell leaks into `cargo test --workspace`. 17-22 preflight tests fail under it (`preflight::tests::*`), because they discover the real farm. So `yaks verify yaks-cc16`, which needs `YAKS_DIR`, records FAIL (exit 101) through no fault of the change. Re-run with `env -u YAKS_DIR -u YAKS_ACTOR cargo test --workspace`: exit 0, 30 `test result: ok` lines, none FAILED. A second leak: a reused `$TMPDIR` makes `tests/init_modes.rs` fail ("share2-web-wt already exists"), so each gate run needs a fresh one.
+
+Regression check: with `handlers.rs` and `mouse.rs` reverted to HEAD, `search_commit_leaves_no_stale_filter_toast` fails (`left: Some("filter: widget")`) and `notification_clears_on_next_key_and_next_mouse_event` fails (`left: Some("sync finished")`). With the change both pass, and so does `empty_search_commit_still_says_cleared`.
+
+Summary: `handle_key` and `App::handle_mouse` clear `notification` first. The `Overlay::Search` commit no longer toasts `filter: q`. 3 new tests plus the snapshot `search_commit_then_tab_no_toast`, which is attached. `docs/tui.md` has one added sentence. Docs parity: grepped for `filter:` toast mentions in `docs`, `README.md`, `.agents/skills` and `src`, and found none to update.
