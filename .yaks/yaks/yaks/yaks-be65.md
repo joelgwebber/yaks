@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:10:57Z'
-updated: '2026-11-03T04:21:56Z'
+updated: '2026-11-03T04:22:45Z'
 parent: yaks-5d08
 tags:
 - tui
@@ -79,3 +79,5 @@ Decision: the list highlight on a Doc row stays bg-only (spans keep their colour
 Decision: `mouse.rs`: the second click on a document row opens it (like `Enter`) instead of focusing a detail pane that has nothing to show. The Wiki list now records hit rects, so clicks reach it for the first time.
 
 Decision: `set_wiki_entries` calls `touch()` (memo key), and re-seats `App.cursor` on the same path only when the Wiki view is active.
+
+[wiki-view-cursor-moved](yaks-be65/wiki-view-cursor-moved.txt)

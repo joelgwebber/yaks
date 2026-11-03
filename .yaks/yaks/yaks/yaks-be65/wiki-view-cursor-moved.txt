@@ -1,0 +1,29 @@
+=== frame 5 · 110x12 · focus=list · view=📖 Wiki · cursor=0 · rows=3 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none · wiki=3 · entry=wiki/howto/release.md ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Wiki (3)   🛖 Sheds (0)
+
+ Cut a release     howto                       wiki/howto/release.md
+ Full-text search  topic  #search              wiki/topics/full-text-search.md
+ Vector search     note   #databases #search   wiki/topics/vector-search.md
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:open  E:edit  N:new page  /:search  y:copy path  r:reread  ?:help  q:quit
+=== end ===
+=== frame 6 · 110x12 · focus=list · view=📖 Wiki · cursor=1 · rows=3 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none · wiki=3 · entry=wiki/topics/full-text-search.md ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Wiki (3)   🛖 Sheds (0)
+
+ Cut a release     howto                       wiki/howto/release.md
+ Full-text search  topic  #search              wiki/topics/full-text-search.md
+ Vector search     note   #databases #search   wiki/topics/vector-search.md
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:open  E:edit  N:new page  /:search  y:copy path  r:reread  ?:help  q:quit
+=== end ===
+=== frame 7 · 110x12 · focus=list · view=📖 Wiki · cursor=1 · rows=3 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none · wiki=3 · entry=wiki/topics/full-text-search.md ===
