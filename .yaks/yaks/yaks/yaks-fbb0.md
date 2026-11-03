@@ -1,7 +1,7 @@
 ---
 id: yaks-fbb0
 title: 'TUI phase 2: a command table for keys; help and hint generated from it'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
@@ -143,3 +143,13 @@ Evidence:
 Docs: AGENTS.md (Layout adds keymap.rs; the "TUI key" bullet now points at `BINDINGS`/`EXTRAS`), `.agents/skills/land/SKILL.md` (stale `render.rs` pointer). No key changed, so docs/tui.md, README and the other skills are untouched.
 
 Merge note for the yakherd: phase 1 touched `handle_key`, the search toast and `handle_mouse`; my diff to handlers.rs is in `handle_attachment_key`, `handle_key_inner` (tail of the file), `handle_overlay_key` (Image arm), plus two small methods next to `open_help`.
+
+---
+▸ 2026-11-03T04:05:18Z [keys-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD9wu5IBxBCtY3f3KUhDW5IL-PWT3Nbm
+---
+
+moved: shaving -> shorn
