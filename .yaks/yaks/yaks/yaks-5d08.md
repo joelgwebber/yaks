@@ -1,7 +1,7 @@
 ---
 id: yaks-5d08
 title: 'TUI phase 3: rows can be documents and sheds; Wiki and Sheds become ordinary views'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
@@ -30,3 +30,13 @@ moved: hairy -> shaving
 ▸ 2026-11-03T04:46:15Z [herd-tui]
 
 Both halves landed: yaks-be65 (`50af0a9a`) and yaks-c354 (`200d48fa`).
+
+---
+▸ 2026-11-03T04:46:15Z [herd-tui]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
