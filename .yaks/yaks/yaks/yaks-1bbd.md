@@ -1,7 +1,7 @@
 ---
 id: yaks-1bbd
 title: Carry search context through the UI globally
-status: hairy
+status: shorn
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
@@ -27,3 +27,13 @@ Folded into the unified TUI design, [wiki/design/tui-model.md](/wiki/design/tui-
 ▸ 2026-11-03T05:30:02Z [herd-tui]
 
 Done by herd-tui through phase 6b (yaks-c215), landed as `acabcb7f`: one search register for every text subject, kept across `J`/`K` and `o`/`i`; `n` past the last match continues in the next matching yak.
+
+---
+▸ 2026-11-03T05:30:02Z [herd-tui]
+kind: move
+from: hairy
+to: shorn
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shorn
