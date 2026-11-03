@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-03T23:07:23Z'
-updated: '2026-11-03T23:08:12Z'
+updated: '2026-11-03T23:22:52Z'
 tags:
 - links
 - cli
@@ -47,3 +47,5 @@ thread: ksQQNSYysfbwRGKL-KGL8e-aQpLOAEKHPJIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+[survey-1633-evidence-frame](yaks-be20/survey-1633-evidence-frame.txt)

@@ -1,0 +1,42 @@
+=== frame 4 · 100x40 · focus=detail · view=🕒 Recent · cursor=0 · rows=50 · sel=survey-1633 · blocked=- · collapsed=69 · filter=(all) · overlay=none · doc=text · detail_scroll=128 · pinned=yes ===
+ 🕒 Recent (50)   📥 Inbox (4)   ⭐ Starred (0)   🦬 Hairy (90)   🪒 Shaving (6)   📖 Wiki (0)   🛖
+viewing survey-1633/fullstory-FilterChip-evidence.md
+◂ 📎 survey-1633/fullstory-FilterChip-evidence.md  markdown
+│ Evidence: component FilterChip
+│
+│ Site fullstory. A = sites/fullstory/.sightmap. Crops: the element in red, labelled with its name;
+│ the enclosing component used for context in grey; components inside it in blue, green, orange by
+│ depth. Page thumbnails mark the crop in blue; the strip on the right is the whole page.
+│
+│ • FilterChip : 576 element(s) on these captures (576 visible), 2 shown
+│
+│ Counts are of what the corpus names, which can differ from the members of the kind status counts.
+│
+│ 1. FilterChip
+│
+│ capture 20261020T122712Z, view dir home, https://app.fullstory.com/ui/o-240V3V-na1/home
+│
+│ element <div data-testid="tooltip" class="_9PNYdW__topAncestorFlexChild" role="button"
+│ tabindex="0">, text "Everyone", box 68,586 216×28
+│
+│ Page (crop in blue): 🖼 page 20261020T122712Z
+│
+│ A crop:
+│
+│ 🖼 A crop 20261020T122712Z
+│                                                                   ▄▄▄▄▄▄
+│    ▀▀▀▀▀▀▀▀▀▀▀                                 ▀▀▀▀▀▀            ▀▀▀▀▀▀            ▀▀▀▀▀▀
+│    ▄▄▄▄▄▄▄▄▄▄▄                                  ▄▄▄▄              ▄▄▄▄              ▄▄▄▄
+│    ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀             ▄▄▄▄              ▄▄▄▄              ▄▄▄▄
+│  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄ ▀          ▀▀▀               ▀▀▀               ▀▀▀▀▀▀▀▀
+│  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▀         ▄▄▄               ▄▄▄               ▄▄▄▄▄▄▄▄
+│    ▀▀▀▀▀▀▀▀▀▀▀
+│ ── peek ─────────────────────────────────────────────────────────────────────────────────────────
+│
+│
+│
+│
+│
+│
+j/k · Tab:link Enter:follow · o/i back/fwd · p peek · / find · v sel · E edit · O open externally ·
+=== end ===
