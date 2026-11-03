@@ -5,6 +5,8 @@ tags:
 - research
 - design
 - agent
+sources:
+- sources/2026-11-03-81364278/source.md
 ---
 
 # Haks: an orchestration layer over yaks
