@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T04:57:43Z'
+updated: '2026-11-03T04:57:55Z'
 parent: yaks-947a
 depends_on:
 - yaks-5d08
@@ -115,3 +115,5 @@ Decision: `WikiEntry.text` is lowercased once at load and holds a page's whole f
 Decision: tab counts: Starred counts the starred yaks the query keeps; Wiki counts the pages (sources not) it keeps; Sheds counts the busy sheds it keeps (name or a yak of theirs); All = matching yaks + matching documents. The counts still ignore the live facets, as before.
 Decision: snapshots changed: `inline_search_field_and_recolor` (tab counts now apply the query: Shaving (0), Recent (2); the `Hairy*` marker is gone), `search_commit_then_tab_no_toast` (the query survives Tab, so the next view is filtered: `No tasks.`, all counts 0), and `view_picker_overlay` (the new All row, unavoidable once All exists). No others changed. Tests changed in step: `/` plus `V` tests now set the view's search through the drawer (`set_drawer_search`), view counts 8->9, `esc_reverts_modified_filter_to_view` uses a facet, the Wiki `/search` test now also finds the source whose extracted text says "search" and counts 2 pages.
 Decision: All uses the globe-free basket emoji (U+1F9FA). Rejected: U+1F5C3 (a narrow-width emoji: the picker column misaligned in the frame).
+
+[query-chip-on-shaving](yaks-a25c/query-chip-on-shaving.txt)

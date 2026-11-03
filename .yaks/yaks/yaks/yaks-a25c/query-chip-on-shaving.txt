@@ -1,0 +1,16 @@
+=== frame 4 · 150x14 · focus=list · view=🪒 Shaving · cursor=0 · rows=3 · sel=yaks-947a · blocked=[yaks-6919,yaks-7c6e,yaks-8d6a,yaks-9dec,yaks-a2c5,yaks-c215] · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (0)   🪒 Shaving (2)   🐑 Shorn (4)   🕒 Recent (5)   ⭐ Starred (0)   📖 Wiki (1)   🛖 Sheds (3)   /"widget" · 6 in All                  ↑4
+
+ yaks-947a   p2 feature  🪒 Implement the unified TUI model (/wiki/design/tui-model.md)                                                          [tui]
+   yaks-a25c p2 task     🪒 TUI phase 6a: global query with its own chip, and the All view                                                       [tui]
+   yaks-cc16 p2 task     🐑 TUI phase 1: notifications clear on the next key                                                                     [tui]
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  Esc:clear  ?:help
+=== end ===
