@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T03:46:32Z'
-updated: '2026-11-03T05:26:23Z'
+updated: '2026-11-03T05:26:50Z'
 parent: yaks-947a
 depends_on:
 - yaks-aac1
@@ -95,3 +95,13 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAECO6JIBxBCtY3f3KUhDW5IL-PWT3Nbm
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-03T05:26:50Z [herd-tui]
+kind: landed
+commit: acabcb7f75cb56a02fdbb014451c788977cac6d1
+source: 57d4dfa8f740b4b1a5d3673154f7bdc04960c481
+branch: main
+---
+
+landed: acabcb7f yaks-c215: one search register for every text subject (pane / sets App.register; n/N hop between matching yaks; list n/N re-apply it)
