@@ -1,11 +1,11 @@
 ---
 id: yaks-9dec
 title: 'TUI phase 4b: the detail pane''s detail_* fields fold into one LineNav'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-03T04:28:01Z'
-updated: '2026-11-03T05:14:12Z'
+updated: '2026-11-03T05:14:17Z'
 parent: yaks-aac1
 depends_on:
 - yaks-0906
@@ -74,3 +74,13 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-03T05:14:17Z [nav-2]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAECAE5IBxBCtY3f3KUhDW5IL-PWT3Nbm
+---
+
+moved: shaving -> shorn
