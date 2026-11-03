@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T03:46:31Z'
-updated: '2026-11-03T04:58:44Z'
+updated: '2026-11-03T04:59:35Z'
 parent: yaks-947a
 depends_on:
 - yaks-5d08
@@ -150,3 +150,13 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAEAkGJIBxBCtY3f3KUhDW5IL-PWT3Nbm
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-03T04:59:35Z [herd-tui]
+kind: landed
+commit: cd753ad896fc9ce1262d49f4bc81d2e8f3ac027c
+source: 5239e6a7c6fea9d6ffd82fd08cadc3c8b1f21464
+branch: main
+---
+
+landed: cd753ad8 yaks-a25c: global query with its own chip, and the All view
