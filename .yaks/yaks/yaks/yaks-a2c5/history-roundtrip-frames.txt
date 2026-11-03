@@ -1,0 +1,114 @@
+Headless frames (target/debug/yaks tui --headless --size 110x20), yaks-a2c5: Recent with the query `cache`; Enter opens demo-98ac; Tab then Enter follow its link to demo-d073 (shaving, hidden by the query: pane_yak, `not in this list`, list unchanged); `o` returns to demo-98ac in Recent with the query and the line.
+Keys: key Tab x3, key /, type cache, key Enter x2, key Tab, key Enter, key o.
+Frames 6-10 follow (6 = query committed, 7 = detail, 8 = Tab on link, 9 = followed, 10 = after o).
+
+=== frame 6 · 110x20 · focus=list · view=🕒 Recent · cursor=0 · rows=1 · sel=demo-98ac · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+ demo-98ac p3 task     🦬 Fix the cache
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  Esc:clear
+=== end ===
+=== frame 7 · 110x20 · focus=detail · view=🕒 Recent · cursor=0 · rows=1 · sel=demo-98ac · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+◂ Task: demo-98ac
+│
+│ Title:       Fix the cache
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Tags:        -
+│
+│ The cache is slow. The old plan is in demo-d073, see it before changing anything.
+│
+│
+│
+│
+│
+│
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  Esc:clear
+=== end ===
+=== frame 8 · 110x20 · focus=detail · view=🕒 Recent · cursor=0 · rows=1 · sel=demo-98ac · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+
+◂ Task: demo-98ac
+│
+│ Title:       Fix the cache
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Tags:        -
+│
+│ The cache is slow. The old plan is in demo-d073, see it before changing anything.
+│
+│
+│
+│
+│
+│
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  Esc:clear
+=== end ===
+=== frame 9 · 110x20 · focus=detail · view=🕒 Recent · cursor=0 · rows=1 · sel=demo-d073 · blocked=- · collapsed=0 · filter=(all) · overlay=none · pane_yak=demo-d073 · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+→ demo-d073
+◂ Task: demo-d073  not in this list
+│
+│ Title:       Old plan
+│ Status:      🪒 shaving
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Tags:        -
+│
+│ ▸ delta:hist-1 · just now · move · from hairy · to shaving · thread ksQQAxHGlH5JRk2_BHzLBG1rrJLOAECzPpIBxBC
+│ moved: hairy -> shaving
+│
+│
+│
+│
+│
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  Esc:clear
+=== end ===
+=== frame 10 · 110x20 · focus=detail · view=🕒 Recent · cursor=0 · rows=1 · sel=demo-98ac · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Wiki (0)   🛖 Sheds (0)
+← Recent · demo-98ac
+◂ Task: demo-98ac
+│
+│ Title:       Fix the cache
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Tags:        -
+│
+│ The cache is slow. The old plan is in demo-d073, see it before changing anything.
+│
+│
+│
+│
+│
+│
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  Esc:clear
+=== end ===
