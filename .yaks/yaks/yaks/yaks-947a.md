@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-03T03:46:30Z'
-updated: '2026-11-03T04:27:44Z'
+updated: '2026-11-03T05:08:57Z'
 tags:
 - tui
 ---
@@ -55,3 +55,13 @@ Phase 3 is split into yaks-be65 (row kinds, Wiki as a view) and yaks-c354 (Sheds
 ▸ 2026-11-03T04:27:44Z [herd-tui]
 
 Phase 3a landed as `50af0a9a`. Started `sheds-2` on yaks-c354 (phase 3b) from it, thread `ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD_xRZIBxBCtY3f3KUhDW5IL-PWT3Nbm`.
+
+---
+▸ 2026-11-03T05:08:57Z [herd-tui]
+
+Progress (herd-tui):
+
+- Phase 3 done: 3a `50af0a9a`, 3b `200d48fa` (yaks-5d08, yaks-f1e6 shorn).
+- Phase 6a landed as `cd753ad8`, phase 4a as `a6634e38` (run in parallel, clean merge). Gate green on the combined tree.
+- Started `nav-2` on yaks-9dec (phase 4b, the `LineNav` fold), thread `ksQQAxHGlH5JRk2_BHzLBG1rrJLOAECAE5IBxBCtY3f3KUhDW5IL-PWT3Nbm`. Next: 6b (yaks-c215), then 5 (yaks-a2c5), then 7 (yaks-6919).
+- Disk: worker `target/` dirs are about 3.3 GB each on a 32 GB disk; landed workers' targets are deleted after landing.
