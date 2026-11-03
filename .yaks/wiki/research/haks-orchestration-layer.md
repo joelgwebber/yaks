@@ -87,7 +87,8 @@ Haks was built in one day, 2026-11-03, almost entirely by agents under Clint's p
 
 - **The "nothing posts before you answer" gate is a prompt rule.** The reviewer run is a headless agent with `gh`, `git` and `yaks` shell access and file writes, told by a skill not to post or push before the owner's answer. Nothing mechanical stops it, and the PR it reads is untrusted input. Fine for a first try on your own machine. For team use it deserves a real gate (a token without write scope until the answer lands, or posting done by Haks rather than by the agent).
 - **Authority is split between skills.** The `haks` skill says "where they differ, this one wins" over the `yaks` skill (sync after every write, shear only after merge, no self-created streams). That is reasonable, but it is a fork of policy that drifts as upstream skills change. The daily job copies upstream's skills into the repo, which helps; the override list should stay short and explicit.
-- **Team path is simulated.** The two-machine test is a good harness, but real use has not happened. Same for fix-mode reviews and sessions (per Clint's sketch).
+- **Team path is simulated.** The two-machine test is a good harness, but real use has not happened. Same for fix-mode reviews and sessions: the thread's own closing list agrees with the sketch.
+- **The gate is weaker than a prompt rule.** See "What the thread adds": the reviewer's allowlist now includes `go`, `make`, `npm` and `direnv`, so it runs the PR author's code with the owner's credentials.
 - **Tags carry meaning.** `reviewer:<login>` and friends make the farm greppable, but they overload tags, which the yaks skill wants few and broad. Worth deciding whether per-actor state needs a first-class form.
 - **Dependence on `main`.** Following upstream `main` daily is cheap for Haks but makes every `--json` change a breaking change. If Haks is the first of several consumers, the JSON shapes want a stated stability promise.
 
