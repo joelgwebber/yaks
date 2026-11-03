@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T04:28:01Z'
-updated: '2026-11-03T05:14:40Z'
+updated: '2026-11-03T05:14:49Z'
 parent: yaks-aac1
 depends_on:
 - yaks-0906
@@ -94,3 +94,8 @@ branch: main
 ---
 
 landed: e9e3c6c2 yaks-9dec: the detail pane's state is one LineNav (App.detail)
+
+---
+▸ 2026-11-03T05:14:49Z [herd-tui]
+
+Landed by herd-tui as `e9e3c6c2` (worker `1d552b3e`).
