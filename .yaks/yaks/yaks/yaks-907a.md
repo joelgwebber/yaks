@@ -5,8 +5,10 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
-updated: '2026-11-03T22:10:03Z'
+updated: '2026-11-03T22:10:05Z'
 parent: yaks-f677
+depends_on:
+- yaks-7058
 tags:
 - tui
 - perf
