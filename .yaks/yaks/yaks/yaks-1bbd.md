@@ -21,4 +21,4 @@ Design folded into yaks-953f's proposal attachment
 ---
 ▸ 2026-11-03T02:19:21Z [tui-design]
 
-Folded into the unified TUI design, [docs/design/tui/model.md](code:docs/design/tui/model.md), tracked by yaks-9c3c: §4, the search register, in phase 6.
+Folded into the unified TUI design, [wiki/design/tui-model.md](/wiki/design/tui-model.md), tracked by yaks-9c3c: §4, the search register, in phase 6.

@@ -26,7 +26,7 @@ I don't want to go _crazy_ with configurable key bindings, but I'm pretty sure o
 ---
 ▸ 2026-11-03T02:19:23Z [tui-design]
 
-Partly folded into the unified TUI design, [docs/design/tui/model.md](code:docs/design/tui/model.md), tracked by yaks-9c3c: §5 "Keys".
+Partly folded into the unified TUI design, [wiki/design/tui-model.md](/wiki/design/tui-model.md), tracked by yaks-9c3c: §5 "Keys".
 
 - **Command table (phase 2).** A pure refactor that the other phases need: named commands with a context, default keys and a help line. The `?` overlay and the bottom hint are generated from it.
 - **The key pass (phase 7).** Settling the collisions the design tabulates, then which-key, user overrides, and mouse bindings through the same table.

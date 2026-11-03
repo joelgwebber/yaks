@@ -21,12 +21,12 @@ One design that unifies five TUI yaks, so they land as one coherent model rather
 
 It also takes in what landed since the first two designs were written: the Wiki tab, the text viewer with link following, peek and its own history, image viewing, and Sheds rebuilt as one row per actor.
 
-The design lives in the repo at [docs/design/tui/model.md](code:docs/design/tui/model.md). The earlier per-yak designs are its references.
+The design is the farm page [wiki/design/tui-model.md](/wiki/design/tui-model.md). The earlier per-yak designs are its references.
 
 ---
 ▸ 2026-11-03T02:19:24Z [tui-design]
 
-Drafted [docs/design/tui/model.md](code:docs/design/tui/model.md) and added a note to each folded yak (yaks-158d, yaks-953f, yaks-1bbd, yaks-c7ba, yaks-f1e6, yaks-0ac1) pointing back to it.
+Drafted [wiki/design/tui-model.md](/wiki/design/tui-model.md) and added a note to each folded yak (yaks-158d, yaks-953f, yaks-1bbd, yaks-c7ba, yaks-f1e6, yaks-0ac1) pointing back to it.
 
 Facts checked before writing:
 

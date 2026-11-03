@@ -31,7 +31,7 @@ Graduated from `yaks-da23` (shorn) to `yaks-039b`: a shorn parent must not hold 
 ---
 ▸ 2026-11-03T02:19:22Z [tui-design]
 
-Folded into the unified TUI design, [docs/design/tui/model.md](code:docs/design/tui/model.md), tracked by yaks-9c3c: §1 "Rows and views" and phase 3.
+Folded into the unified TUI design, [wiki/design/tui-model.md](/wiki/design/tui-model.md), tracked by yaks-9c3c: §1 "Rows and views" and phase 3.
 
 Sheds becomes an ordinary tree view:
 

@@ -19,7 +19,7 @@ We also need to decide whether the search results fit naturally into views like 
 ---
 ▸ 2026-11-03T02:19:22Z [tui-design]
 
-Folded into the unified TUI design, [docs/design/tui/model.md](code:docs/design/tui/model.md), tracked by yaks-9c3c.
+Folded into the unified TUI design, [wiki/design/tui-model.md](/wiki/design/tui-model.md), tracked by yaks-9c3c.
 
 Global search becomes a built-in, unpinned **All** view (every yak, dead included, plus pages and sources, with no limit) combined with the global `/` query. That is the same set `yaks find` searches, and the query chip shows the All count (§1 and §4, phase 6).
 
