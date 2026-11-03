@@ -1,0 +1,62 @@
+=== frame 14 · 160x60 · focus=list · view=🦬 Hairy · cursor=0 · rows=52 · sel=fullstory-3704 · blocked=[fullstory-4b4c.2,fullstory-4b4c.5,fullstory-d227.2,sightkick-deeb,sightmap-34d9] · collapsed=1 · filter=(all) · overlay=none ===
+ 🕒 Recent (50)   📥 Inbox (1)   ⭐ Starred (0)   🦬 Hairy (147)   🪒 Shaving (10)   📖 Wiki (33)   🛖 Sheds (7)                                  filter applied
+
+ fullstory-3704       p1 feature  🪒 Sightmap → signal-stream enrichment                                                              [subtext, lidar, sightmap]
+   fullstory-ac2b     p1 task     🪒 Sightmap component properties on both review surfaces (signals + snapshots)                  [subtext, lidar, sightmap, cla
+     fullstory-6da2   p2 task     🦬 Report sightmap properties the signal path skips to the caller, not only server logs             [subtext, lidar, sightmap]
+     fullstory-4a13   p3 task     🦬 Raise the dom.text and component-path-step divergences with sightmap spec                               [subtext, sightmap]
+   fullstory-3524     p2 chore    🦬 Retire the legacy flat sightmap wire (upload body, review-open inline arg, Redis dual-read)      [subtext, lidar, sightmap]
+ fullstory-4415       p1 task     🦬 Update lidar/agent and subtext tools to use the new mn agent framework
+ fullstory-1de0       p2 feature  🦬 Half-pipe follow-ups (post-parity)                                                              [subtext, lidar, half-pipe]
+   fullstory-1de0.10  p3 bug      🦬 prep vs legacy disagree on click text extraction (• • -> 7 7)                                              [subtext, lidar]
+   fullstory-1de0.4   p3 chore    🦬 Refactor datamarking into a generic text-transform stage in the encoder                          [subtext, lidar, refactor]
+   fullstory-1de0.6   p3 feature  🦬 Add INP to page perf summary (port InteractionToNextPaint chef)                              [subtext, lidar, pr-context-su
+   fullstory-1de0.9   p3 spike    🦬 Model cloned tabs (shared TabId, distinct PageID) in tab sectioning                                  [subtext, lidar, tabs]
+   fullstory-1de0.12  p3 task     🦬 zoom: refreshed map with in-slice vs whole counts                                            [subtext, lidar, mcp, review-t
+ fullstory-36e5       p2 task     🦬 Lens semantics cleanup: drop TagNarrow bool for a conjunctive facet waterfall                [subtext, lidar, signal, zoom,
+ fullstory-4b4c       p2 feature  💀 AV1 live mode streaming                                                                      [live-mode, av1, viewer, strea
+   fullstory-4b4c.1   p5 task     🦬 AV1 encoder package                                                                                     [av1, encoder, cgo]
+*  fullstory-4b4c.2   p5 task     🦬 Server AV1 capture loop                                                                            [av1, live-mode, server]
+   fullstory-4b4c.4   p5 task     🦬 Viewer VideoDecoder                                                                                 [av1, viewer, frontend]
+*  fullstory-4b4c.5   p5 task     🦬 Encoder tuning + benchmarks                                                                      [av1, performance, tuning]
+   fullstory-4b4c.6   p5 feature  🦬 Live-mode debug panel: bandwidth graph + tuning controls                                     [live-mode, av1, viewer, debug
+ fullstory-750e       p2 feature  🦬 Sightmap-driven tags + signal generation                                                     [subtext, lidar, sightmap, cla
+   fullstory-750e.1   p2 task     🦬 Authored (sightmap-driven) tags: the enrichment classification layer                         [subtext, lidar, sightmap, cla
+   fullstory-750e.2   p2 task     🦬 Classify buried signals by generating a new signal via the sightmap layer                    [subtext, lidar, sightmap, cla
+   fullstory-5e6e     p2 idea     🦬 Sightmap enrichment for console/exception signals (no natural join)                          [subtext, lidar, sightmap, cla
+   fullstory-3704.6.6 p2 task     🦬 Union message-def authored tags into Signal.Tags (once sightmap adds message                 [subtext, lidar, sightmap, cla
+ fullstory-e6ae       p2 task     🦬 Signals
+   fullstory-e6ae.4   p2 feature  🦬 Page refresh signal
+   fullstory-e6ae.9   p2 task     🦬 Exception signals: carry full message at the detail grain                                    [subtext, lidar, signal, excep
+   fullstory-e6ae.10  p2 feature  🦬 Watched component signal
+   fullstory-e6ae.2   p3 feature  🦬 Rotate / viewport change signals
+   fullstory-e6ae.3   p3 feature  🦬 Form signals
+   fullstory-e6ae.5   p3 feature  🦬 Media signals
+   fullstory-e6ae.6   p3 feature  🦬 Native mobile signals
+   fullstory-e6ae.7   p4 feature  🦬 Modal dialog signal
+   fullstory-e6ae.8   p4 feature  🦬 Page translation signal
+ fullstory-ff7a       p2 task     🦬 Bring FSTA sightmap up to date                                                                                   [sightmap]
+   fullstory-c292     p1 task     🦬 Property model reconsideration: viewer-legible + targetable properties                                    [sightmap,skills]
+   fullstory-113c     p2 task     🦬 Running notes: FSTA changes to ease mapping                                                                 [sightmap,fsta]
+   fullstory-625e     p2 task     🦬 Running notes: evolve sightmap/subtext skills for live-browser + session-review together                  [skills,sightmap]
+   fullstory-8128     p2 task     🦬 Running notes: sightmap tooling improvement ideas                                                                [sightmap]
+   fullstory-e9dc     p2 task     🦬 Clean up sightmap view-name/route collisions (13 validate warnings)                                              [sightmap]
+   fullstory-64e5     p2 task     🦬 Theme 4 deep-dive: unhandled-chat-errors session report                                                          [sightmap]
+   fullstory-facd     p3 task     🦬 answers-ui follow-ups: value cards, working-steps-expanded, A2UIRenderer/table, CopyMessageButton, remove stale  [sightmap]
+ fullstory-093f       p3 idea     🦬 Explicit wire filtering for sightmap upload (data governance)                                [subtext, sightmap, governance
+ fullstory-1202       p3 idea     🦬 Cache prepped/projected records across review tool calls (avoid re-prep)                     [subtext, lidar, half-pipe, pe
+ fullstory-ac53       p3 task     🦬 Unify component-tree pipelines: live overlay, live MCP snapshot, review overlay              [jira, viewer, overlay, live-m
+ fullstory-adfd       p3 idea     🦬 'sightmap CLI: generic ''extract + upload to URL'' subcommand (retire the bundled                                   [lidar]
+ fullstory-d227       p3 feature  🦬 Sightmap persistence → ASR UI                                                                [subtext, lidar, sightmap, sto
+   fullstory-d227.1   p2 feature  🦬 Server-side sightmap storage (content-hash keyed)                                            [subtext, lidar, sightmap, sto
+*  fullstory-d227.2   p3 task     🦬 Carry sightmap names to the UI: structured names on the proto Signal + display               [subtext, lidar, sightmap, ui,
+ fullstory-e8f6       p3 task     🦬 'BugReportForm.toSubtextUrl: address Franklin''s review feedback (tests + drop               [app-ui,subtext,review-followu
+ fullstory-ea73       p3 idea     🦬 Add data-position / data-state to leaf selector for sightmap code-first view                 [subtext, lidar, pr-text-quali
+ fullstory-fb83       p3 spike    🦬 Recover redirect visibility after navigated-section churn collapse                           [subtext, lidar, tabs, navigat
+
+
+
+
+
+Tab:view  j/k:move  l:detail  h:family  v:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  Esc:clear  ?:help
+=== end ===

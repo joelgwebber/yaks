@@ -30,3 +30,5 @@ thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
 moved: hairy -> shaving
 
 [b608-before-hairy-herd-fullstory](yaks-b608/b608-before-hairy-herd-fullstory.txt)
+
+[b608-after-hairy-herd-fullstory](yaks-b608/b608-after-hairy-herd-fullstory.txt)
