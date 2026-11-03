@@ -5,7 +5,8 @@ status: hairy
 type: task
 priority: 3
 created: '2026-11-03T21:04:56Z'
-updated: '2026-11-03T21:06:20Z'
+updated: '2026-11-03T21:13:54Z'
+parent: yaks-f677
 tags:
 - tui
 ---
