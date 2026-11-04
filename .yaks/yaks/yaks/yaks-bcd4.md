@@ -1,11 +1,11 @@
 ---
 id: yaks-bcd4
 title: TUI reload spends ~130 ms in git to refresh the farm chip (10 spawns per reload)
-status: shaving
+status: shorn
 type: bug
 priority: 3
 created: '2026-11-04T21:35:10Z'
-updated: '2026-11-04T23:14:41Z'
+updated: '2026-11-04T23:14:42Z'
 parent: yaks-907a
 tags:
 - tui
@@ -48,3 +48,13 @@ Parity: `the_one_call_standing_matches_sync_state` compares it with `status::syn
 `yaks status`, `sync` and `sheds` still call `sync_state` (the same answer, a few more calls): they are per-command, not per-keystroke.
 
 Measured, TUI `:wq` save on a clone of this farm, first output: ~312 ms (700-760 ms before yaks-7058). The tail of the git log still shows two reloads back to back: that is yaks-1ebf.
+
+---
+▸ 2026-11-04T23:14:42Z [perf-907a]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQstI5T-eCRACxAjKJdNo3oJLOAEQG4JIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
