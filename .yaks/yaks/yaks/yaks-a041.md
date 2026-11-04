@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-04T22:31:54Z'
-updated: '2026-11-04T22:51:16Z'
+updated: '2026-11-04T23:00:22Z'
 parent: yaks-7fa6
 tags:
 - cli
@@ -59,3 +59,16 @@ thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-04T23:00:22Z [sched-1]
+
+Done on branch `scheduling`.
+
+- New field `wake: agent|human` (`--wake` on `create`/`update`, empty clears; checked like `every:`). `regrow-due` sets `needs:` from it and writes the note the inbox reads: a `requested: needs agent` note (kind `request`, what `yaks request` writes) or an `asked: needs human` one (kind `ask`), saying the description is the standing instruction. No new queue; `inbox`, `wait`, the TUI Inbox and `doctor` need no change.
+- An earlier round's uncleared question or request is kept, not stacked: the yak keeps its `needs:`, gets no second note, and the report says `already awaiting`. A bad `wake:` holds the yak, like a bad `every:`.
+- `regrow-due` text and `--json` (`wake`, `awaiting.who|already`) say who was woken; the TUI's regrow notice adds `(awaiting agent|human)` and the detail pane shows `Wakes:`. The TUI shares `Farm::regrow_due`, so it routes the same way.
+- Evidence: five new `tests/recur.rs` tests (failed first): agent round-trip across two rounds with `doctor --strict` clean, human `ask` cleared by `answer --done`, no `wake:` and open-question cases, bad value, dry run writes nothing. Full `cargo test` green. By hand with the real binary on a scratch farm: `create --every P1D --wake agent`, shear, `regrow-due` printed `awaiting agent`, `inbox --for agent` listed it as `requested`, `pickup` cleared it, `doctor --strict` clean.
+- Docs and help: `docs/cli.md` (field list, "Waking someone" paragraph), `docs/tui.md`, the `yaks` skill's recurring paragraph, clap help for `--wake` and `regrow-due`.
+
+Decision (Joel's, recorded on the ask): a field `wake:`, not a tag or the last note. Decision: `needs: human` is written as an `ask` note, not a `request` note, because `request` refuses a yak awaiting a human and `doctor` reads the marker.
