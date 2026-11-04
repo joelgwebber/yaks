@@ -5,11 +5,11 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-01T22:27:16Z'
-updated: '2026-11-01T23:51:09Z'
+updated: '2026-11-04T20:03:43Z'
 parent: yaks-d26a
 tags:
-- wiki
 - cli
+- doks
 verify: cargo test --workspace
 ---
 
