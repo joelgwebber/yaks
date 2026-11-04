@@ -66,7 +66,11 @@ impl Farm {
             .env_remove("GIT_WORK_TREE")
             .output()
             .unwrap();
-        String::from_utf8(out.stdout).unwrap().trim().parse().unwrap()
+        String::from_utf8(out.stdout)
+            .unwrap()
+            .trim()
+            .parse()
+            .unwrap()
     }
 }
 
@@ -102,7 +106,10 @@ fn an_empty_farm_says_nothing_needs_you() {
 #[test]
 fn tick_regrows_then_reports_and_a_second_tick_regrows_nothing() {
     let f = Farm::new("round");
-    let weekly = f.create("Sweep the queue", &["--every", "P1W", "--wake", "agent", "--due", &day(-9)]);
+    let weekly = f.create(
+        "Sweep the queue",
+        &["--every", "P1W", "--wake", "agent", "--due", &day(-9)],
+    );
     f.run(&["shorn", &weekly]);
     let late = f.create("Late one", &["--due", &day(-2)]);
     let soon = f.create("Soon one", &["--due", &day(2)]);
@@ -111,7 +118,18 @@ fn tick_regrows_then_reports_and_a_second_tick_regrows_nothing() {
     f.run(&["ask", &asked, "--note", "which one?"]);
 
     let text = f.run(&["tick"]);
-    assert!(text.starts_with("tick: 1 regrew, 1 overdue, 1 due soon, 1 awaiting you, 1 awaiting an agent."), "{text}");
+    // The woken yak is due tomorrow but is listed once, under the inbox.
+    assert!(
+        text.starts_with(
+            "tick: 1 regrew, 1 overdue, 1 due soon, 1 awaiting you, 1 awaiting an agent."
+        ),
+        "{text}"
+    );
+    assert_eq!(
+        text.matches(&weekly).count(),
+        2,
+        "regrew + awaiting agent only:\n{text}"
+    );
     for needle in [
         "Regrew:",
         &weekly,
@@ -126,7 +144,10 @@ fn tick_regrows_then_reports_and_a_second_tick_regrows_nothing() {
     ] {
         assert!(text.contains(needle), "{needle} missing from:\n{text}");
     }
-    assert!(!text.contains(&far), "a yak due in a month is not due soon:\n{text}");
+    assert!(
+        !text.contains(&far),
+        "a yak due in a month is not due soon:\n{text}"
+    );
 
     // Idempotent: the regrown yak is hairy and waiting now, so nothing regrows again.
     let before = f.commits();
@@ -142,18 +163,27 @@ fn tick_regrows_then_reports_and_a_second_tick_regrows_nothing() {
 #[test]
 fn dry_run_reports_what_would_regrow_and_writes_nothing() {
     let f = Farm::new("dry");
-    let id = f.create("Weekly", &["--every", "P1W", "--wake", "human", "--due", &day(-9)]);
+    let id = f.create(
+        "Weekly",
+        &["--every", "P1W", "--wake", "human", "--due", &day(-9)],
+    );
     f.run(&["shorn", &id]);
     let before = f.commits();
 
     let text = f.run(&["tick", "--dry-run"]);
     assert!(text.starts_with("tick: 1 would regrow."), "{text}");
-    assert!(text.contains("Would regrow:") && text.contains("(dry run"), "{text}");
+    assert!(
+        text.contains("Would regrow:") && text.contains("(dry run"),
+        "{text}"
+    );
     let v = f.tick_json(&["--dry-run"]);
     assert_eq!(v["dry_run"], true);
     assert_eq!(v["regrew"][0]["id"], id.as_str());
     assert_eq!(f.commits(), before);
-    assert_eq!(f.run(&["show", &id, "--json"]).contains("\"status\": \"shorn\""), true);
+    assert!(
+        f.run(&["show", &id, "--json"])
+            .contains("\"status\": \"shorn\"")
+    );
 
     // The real tick then does what the dry run said.
     f.run(&["tick"]);
@@ -172,12 +202,21 @@ fn a_held_yak_is_reported_and_within_widens_the_window() {
 
     let text = f.run(&["tick"]);
     assert!(text.contains("1 held"), "{text}");
-    assert!(text.contains("Held (could not regrow):") && text.contains(&bad), "{text}");
+    assert!(
+        text.contains("Held (could not regrow):") && text.contains(&bad),
+        "{text}"
+    );
     assert!(!text.contains(&later), "{text}");
 
     let wide = f.run(&["tick", "--within", "1w"]);
-    assert!(wide.contains("Due within 1w:") && wide.contains(&later), "{wide}");
-    assert_eq!(ids(&f.tick_json(&["--within", "1w"])["due_soon"]), vec![later]);
+    assert!(
+        wide.contains("Due within 1w:") && wide.contains(&later),
+        "{wide}"
+    );
+    assert_eq!(
+        ids(&f.tick_json(&["--within", "1w"])["due_soon"]),
+        vec![later]
+    );
 }
 
 #[test]
@@ -190,7 +229,10 @@ fn a_bad_within_is_refused_before_anything_is_written() {
         let flag = format!("--within={bad}");
         let out = f.cmd(&["tick", &flag]);
         assert!(!out.status.success(), "{bad}");
-        assert!(String::from_utf8_lossy(&out.stderr).contains("--within"), "{bad}");
+        assert!(
+            String::from_utf8_lossy(&out.stderr).contains("--within"),
+            "{bad}"
+        );
     }
     assert_eq!(f.commits(), before);
 }
@@ -202,10 +244,21 @@ fn findings_are_counted_not_listed() {
     f.run(&["shave", &done]);
     f.run(&["shorn", &done]);
     // A page nobody cites is a `check` finding but not a doctor one.
-    f.run(&["dok", "new", "doks/lonely.md", "--set", "stale_after=P1D", "--set", "verified=2020-01-01"]);
+    f.run(&[
+        "dok",
+        "new",
+        "doks/lonely.md",
+        "--set",
+        "stale_after=P1D",
+        "--set",
+        "verified=2020-01-01",
+    ]);
     let v = f.tick_json(&[]);
     let n = v["findings"].as_u64().unwrap();
     assert!(n >= 1, "{v}");
     let text = f.run(&["tick"]);
-    assert!(text.contains("check finding") && text.contains("run `yaks check`"), "{text}");
+    assert!(
+        text.contains("check finding") && text.contains("run `yaks check`"),
+        "{text}"
+    );
 }

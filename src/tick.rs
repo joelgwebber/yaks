@@ -34,7 +34,8 @@ pub struct Digest {
     pub regrow: recur::Report,
     /// Open yaks past their `due:`, most overdue first.
     pub overdue: Vec<Task>,
-    /// Open yaks due within `within` and not yet overdue, soonest first.
+    /// Open yaks due within `within`, not yet overdue and not already in the
+    /// inbox (they are listed there, with their due date), soonest first.
     pub due_soon: Vec<Task>,
     pub awaiting_human: Vec<Task>,
     pub awaiting_agent: Vec<Task>,
@@ -80,7 +81,7 @@ pub fn build(
     overdue.sort_by(by_due);
     let mut due_soon: Vec<Task> = tasks
         .iter()
-        .filter(|t| t.status.is_open() && !recur::is_overdue(t, now))
+        .filter(|t| t.status.is_open() && !recur::is_overdue(t, now) && t.needs.is_none())
         .filter(|t| recur::due(t).is_some_and(|d| d.at <= now + within))
         .cloned()
         .collect();
@@ -108,8 +109,16 @@ pub fn build(
         regrow,
         overdue,
         due_soon,
-        awaiting_human: inbox.iter().filter(|t| t.awaiting_human()).cloned().collect(),
-        awaiting_agent: inbox.iter().filter(|t| t.awaiting_agent()).cloned().collect(),
+        awaiting_human: inbox
+            .iter()
+            .filter(|t| t.awaiting_human())
+            .cloned()
+            .collect(),
+        awaiting_agent: inbox
+            .iter()
+            .filter(|t| t.awaiting_agent())
+            .cloned()
+            .collect(),
         stale,
         findings,
     }
@@ -277,9 +286,9 @@ pub fn to_json(d: &Digest) -> Value {
             Value::Array(
                 d.stale
                     .iter()
-                    .map(|s| {
-                        json!({"actor": s.actor, "id": s.id, "title": s.title, "last": s.last})
-                    })
+                    .map(
+                        |s| json!({"actor": s.actor, "id": s.id, "title": s.title, "last": s.last}),
+                    )
                     .collect(),
             ),
         );
@@ -356,6 +365,17 @@ mod tests {
     }
 
     #[test]
+    fn a_yak_already_in_the_inbox_is_not_also_due_soon() {
+        let mut asked = yak("a-0001", Status::Hairy, Some("2026-11-05"));
+        asked.needs = Some("agent".into());
+        let plain = yak("a-0002", Status::Hairy, Some("2026-11-05"));
+        let d = digest(&[asked.clone(), plain], vec![asked]);
+        assert_eq!(d.due_soon.len(), 1);
+        assert_eq!(d.due_soon[0].id, "a-0002");
+        assert_eq!(d.awaiting_agent[0].id, "a-0001");
+    }
+
+    #[test]
     fn the_inbox_splits_by_who_is_awaited() {
         let mut h = yak("a-0001", Status::Hairy, None);
         h.needs = Some("human".into());
@@ -378,9 +398,15 @@ mod tests {
         );
         let d = digest(&[t.clone()], vec![]);
         assert_eq!(d.stale.len(), 1);
-        assert_eq!((d.stale[0].actor.as_str(), d.stale[0].id.as_str()), ("worker-1", "a-0001"));
+        assert_eq!(
+            (d.stale[0].actor.as_str(), d.stale[0].id.as_str()),
+            ("worker-1", "a-0001")
+        );
         let text = render(&d, |t| t.id.clone());
-        assert!(text.contains("Stale claims") && text.contains("worker-1"), "{text}");
+        assert!(
+            text.contains("Stale claims") && text.contains("worker-1"),
+            "{text}"
+        );
 
         // Written to within the active window: not stale.
         let fresh = build(
@@ -399,7 +425,10 @@ mod tests {
     fn a_quiet_farm_says_so_and_a_busy_one_leads_with_counts() {
         let quiet = digest(&[], vec![]);
         assert!(quiet.quiet());
-        assert_eq!(render(&quiet, |t| t.id.clone()), "tick: nothing needs you.\n");
+        assert_eq!(
+            render(&quiet, |t| t.id.clone()),
+            "tick: nothing needs you.\n"
+        );
 
         let tasks = vec![
             yak("a-0001", Status::Hairy, Some("2026-11-01")),
@@ -417,7 +446,10 @@ mod tests {
         d.findings = Some(2);
         d.dry_run = true;
         let text = render(&d, |t| t.id.clone());
-        assert!(text.starts_with("tick: 2 check findings.\n(dry run"), "{text}");
+        assert!(
+            text.starts_with("tick: 2 check findings.\n(dry run"),
+            "{text}"
+        );
         assert!(text.contains("2 finding(s): run `yaks check`"), "{text}");
         assert!(!d.quiet());
     }

@@ -181,6 +181,7 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 | `path [<id>...]` | Absolute file path of yaks (by id or filters); no arguments: the farm in use |
 | `update <id>...` | Fields, `--add-tag`/`--remove-tag`, `--note` (with `--meta key=value`), `--verify`, `--source`, `--pr`/`--remove-pr`, `--set key=value`/`--unset key` (any other field) |
 | `shave` / `shorn` / `regrow` / `slaughter` / `revive` | State moves; several ids at once; each appends an attributed `moved:` entry. `slaughter --family` takes open descendants too |
+| `tick` | Kick off a scheduling round by hand: `regrow-due`, then one report of what is overdue, due soon, awaiting a human or an agent, stale, plus a `check` count (`--dry-run`, `--within 3d`, `--json`). Never syncs or notifies |
 | `ask` / `answer` / `request` / `pickup` / `inbox` / `wait` | The inbox (above); `inbox --for human\|agent`, `wait --timeout 10m` |
 | `verify <id>` | Run the yak's `verify:` (else the config default) and record PASS/FAIL |
 | `attach <id> <file>...` | Store and link evidence (`--caption`: the image's caption; `--no-link`: store only, for the parts of a document that links them itself); `rename-attachment` renames one |

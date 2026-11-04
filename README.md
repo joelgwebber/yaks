@@ -107,6 +107,7 @@ in `<path>`.
 | `yaks shorn <id>` | shaving → shorn (alias: `close`) |
 | `yaks regrow <id>` | shorn → hairy (alias: `reopen`) |
 | `yaks snooze <id>… [--to +2d]` | move an open yak's `due:` (`+Nd`, `+Nw` from today, or a date; default `+1d`), leaving a note |
+| `yaks tick [--dry-run] [--within 3d] [--json]` | the scheduling round you kick off by hand: `regrow-due`, then one report: what regrew or was held, overdue and due-soon yaks, the inbox (human and agent), stale claims, a `check` count. Never syncs, runs commands or notifies |
 | `yaks regrow-due` | reopen every shorn yak with `every:` (an ISO 8601 duration, e.g. `P1W`) whose next occurrence has arrived; sets the next `due:`; idempotent (`--dry-run`, `--json`). With `create`/`update --due DATE --every DURATION` and `list --due [--before DATE]`; an open yak past its `due:` is `overdue` |
 | `yaks slaughter <id>` / `revive <id>` | set the status to / from the hidden `dead` (`slaughter --family` also takes hairy and shaving descendants; shorn ones stay shorn) |
 | `yaks next` / `tangled` | ready tasks / dependency-blocked tasks |
