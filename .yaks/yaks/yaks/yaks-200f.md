@@ -5,11 +5,11 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-01T18:53:12Z'
-updated: '2026-11-02T00:35:38Z'
+updated: '2026-11-04T20:03:32Z'
 parent: yaks-44b3
 tags:
-- wiki
 - tui
+- doks
 ---
 
 Layer 3. Builds on yaks-84e0 (shared navigation in text and markdown views) and yaks-158d (global back/forward).
