@@ -1,11 +1,11 @@
 ---
 id: yaks-1ebf
 title: TUI reloads twice per own save (apply_edit, then the watcher)
-status: hairy
+status: shaving
 type: bug
 priority: 3
 created: '2026-11-04T21:35:11Z'
-updated: '2026-11-04T21:35:34Z'
+updated: '2026-11-04T23:14:56Z'
 parent: yaks-907a
 tags:
 - tui
@@ -22,3 +22,13 @@ Fix to consider: ignore watcher events caused by our own write (compare the farm
 ▸ 2026-11-04T21:35:34Z [perf-907a]
 
 Correction to the description: in my traced run the save went through `needs_edit` (the `M` I scripted turned out to be a request note), not `apply_edit`, so no `apply_edit` trace printed; that path reloads on its own too. The two back-to-back reload chains in the git log and the one traced `watcher reload` still stand. Check which save paths reload themselves before choosing the fix.
+
+---
+▸ 2026-11-04T23:14:56Z [perf-907a]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQstI5T-eCRACxAjKJdNo3oJLOAEQG4JIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
