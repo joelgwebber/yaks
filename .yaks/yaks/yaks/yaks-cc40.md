@@ -5,11 +5,11 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-04T17:18:16Z'
-updated: '2026-11-04T17:23:25Z'
+updated: '2026-11-04T20:03:28Z'
 tags:
-- wiki
 - cli
 - tui
+- doks
 ---
 
 Joel's call (2026-11-03): rename what the farm calls its **wiki** and **pages** to **doks** (yaks, haks, doks), completely and at once. No aliases, no deprecation period, no old spelling left in the product: nobody but Joel uses these docs yet, so this is the cheap moment. Origin: [the haks research page](/doks/research/haks-orchestration-layer.md#naming-dok).
