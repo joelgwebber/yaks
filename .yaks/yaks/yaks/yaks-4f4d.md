@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 4
 created: '2026-10-22T22:12:46Z'
-updated: '2026-11-04T01:07:38Z'
+updated: '2026-11-04T01:14:32Z'
 depends_on:
 - yaks-4e9c
 tags:
@@ -26,3 +26,19 @@ Decide and do:
 - A fallback story for an unsubsetted codepoint: blank is silent; consider drawing U+FFFD or a visible box so a missing glyph is noticeable in a frame.
 
 Lives in toque with the rasterizer (see the toque yak under yaks-4e9c); yaks only consumes it.
+
+---
+▸ 2026-11-04T01:14:32Z [indent-links]
+
+Findings from rasterizing a real docshot with the embedded fonts (`docs/assets/tui-image-caption.svg`, landed with yaks-0370), next to the same SVG in headless Chrome:
+
+- **Layout matches Chrome**: text, column widths, the half-block picture and the captions all land in the same places.
+- **A missing emoji is blank, not tofu**: the `📖` in the `Wiki (0)` tab is not in the 38-codepoint subset, so that tab shows no icon. Silent, as this yak already predicts. The fallback-glyph bullet below is the fix for it.
+- **No italic**: the fonts are DejaVu Sans Mono regular and bold only. Our dim italic caption (and any `Modifier::ITALIC`, which includes block quotes and `*emphasis*`) draws upright. This is not in the scope above, so add it:
+  - Embed an oblique face (DejaVu Sans Mono Oblique, same licence, same subsetting), or
+  - say plainly that the rasterizer drops italic, so a frame is not trusted for it.
+- **Box-drawing corners** still render blank (already in the list above; `docs/tui.md` names it as the known follow-up).
+
+Why it matters beyond looks: yaks-8fd1 (a `yaks render` command) depends on this. Until the subset and a visible fallback land, a rendered frame has holes the browser version does not, so it cannot yet stand in for the Chrome recipe.
+
+Not started; lives in toque with the rasterizer.
