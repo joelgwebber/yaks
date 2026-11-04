@@ -1,11 +1,11 @@
 ---
 id: yaks-b569
 title: Skill yaks-scheduling and the edits to yaks, yaks-working, yaks-coordinating
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-04T22:31:57Z'
-updated: '2026-11-04T22:31:57Z'
+updated: '2026-11-04T23:41:39Z'
 parent: yaks-7fa6
 depends_on:
 - yaks-5e8d
@@ -19,3 +19,13 @@ Part of the scheduling arc ([design](/doks/design/scheduling.md)). Prose and ski
 - `yaks` skill: replace "Nothing runs by itself: cron, an agent harness or the TUI" with the blessed answer; add `yaks tick` to session start and the command table. One line each in `yaks-working` and `yaks-coordinating`.
 - Cold-read the new skill with a cheap model, as AGENTS.md prescribes (only if Joel asks for subagents).
 - Grep `docs/`, `README.md`, `.agents/skills/` and `src/` for the old wording.
+
+---
+▸ 2026-11-04T23:41:39Z [sched-1]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
