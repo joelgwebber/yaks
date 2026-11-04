@@ -12,7 +12,6 @@ depends_on:
 tags:
 - tui
 - perf
-needs: agent
 ---
 
 Feels like there might be an intentional delay for some reason?
@@ -167,3 +166,12 @@ needs: agent
 ▸ 2026-11-04T22:31:41Z [perf-907a]
 
 Decision (Joel, 2026-11-04): do yaks-7058, yaks-bcd4 and yaks-1ebf, with a cache for the git discovery. The deferred commit is filed as its own yak and waits for a re-measure after those three.
+
+---
+▸ 2026-11-04T22:31:41Z [perf-907a]
+kind: pickup
+---
+
+picked up
+
+Decision recorded; checking open questions before starting
