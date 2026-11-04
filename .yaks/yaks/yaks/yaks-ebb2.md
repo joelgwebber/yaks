@@ -5,14 +5,14 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-01T18:53:12Z'
-updated: '2026-11-02T00:35:37Z'
+updated: '2026-11-04T20:03:48Z'
 parent: yaks-200f
 depends_on:
 - yaks-9af0
 - yaks-84e0
 tags:
-- wiki
 - tui
+- doks
 ---
 
 A view of `wiki/`, herd wikis and `sources/`, opening a page in the rendered markdown view with the detail pane's navigation (yaks-84e0).
