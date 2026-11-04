@@ -1,11 +1,11 @@
 ---
 id: yaks-f561
 title: 'TUI: a Due tab and an overdue chip'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-04T22:31:56Z'
-updated: '2026-11-04T23:41:32Z'
+updated: '2026-11-04T23:41:33Z'
 parent: yaks-7fa6
 tags:
 - tui
@@ -44,3 +44,13 @@ Done on branch `scheduling`.
 Decision: unpinned (above). Decision: the chip counts the whole farm, not the active view, so it does not change under you when you switch tabs.
 
 Not done: the notice that a woken recurring yak is in the Inbox was already added with yaks-a041 (`regrew X (awaiting agent)`), so there is nothing more to do for that bullet.
+
+---
+▸ 2026-11-04T23:41:33Z [sched-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
