@@ -5,11 +5,10 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-11-04T22:31:54Z'
-updated: '2026-11-04T22:34:49Z'
+updated: '2026-11-04T22:36:18Z'
 parent: yaks-7fa6
 tags:
 - cli
-needs: agent
 ---
 
 Part of the scheduling arc ([design](/doks/design/scheduling.md)). Today `regrow-due` only makes the yak hairy; nothing tells anyone it has work.
@@ -41,3 +40,12 @@ needs: agent
 ---
 
 Ah, I get it. That works for me. Just wanted to be sure I'm following the logic.
+
+---
+▸ 2026-11-04T22:36:18Z [sched-1]
+kind: pickup
+---
+
+picked up
+
+Decision (Joel, 2026-11-04): option 1. A recurring yak carries `wake: agent|human`; on regrow it sets `needs:` to that value (the same field `ask`/`request` use). Absent means the yak just goes hairy, as today. Rejected: a tag that carries behavior, and inferring the target from the last ask/request note.
