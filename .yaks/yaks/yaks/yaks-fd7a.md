@@ -5,11 +5,11 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-11-01T21:28:56Z'
-updated: '2026-11-01T22:06:53Z'
+updated: '2026-11-04T20:03:50Z'
 parent: yaks-f301
 tags:
-- wiki
 - markdown
+- doks
 verify: cargo test --workspace
 ---
 
