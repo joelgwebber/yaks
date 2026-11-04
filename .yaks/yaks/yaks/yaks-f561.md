@@ -1,11 +1,11 @@
 ---
 id: yaks-f561
 title: 'TUI: a Due tab and an overdue chip'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-04T22:31:56Z'
-updated: '2026-11-04T22:31:56Z'
+updated: '2026-11-04T23:27:45Z'
 parent: yaks-7fa6
 tags:
 - tui
@@ -18,3 +18,13 @@ Part of the scheduling arc ([design](/doks/design/scheduling.md)).
 - Once the routing yak lands, check that a yak regrown by the TUI's tick shows in the Inbox with its badge.
 
 Done when: snapshots, `docs/tui.md`, and the `?` help generated from the table.
+
+---
+▸ 2026-11-04T23:27:45Z [sched-1]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
