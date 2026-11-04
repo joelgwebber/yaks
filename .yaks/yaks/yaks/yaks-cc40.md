@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-04T17:18:16Z'
-updated: '2026-11-04T17:18:16Z'
+updated: '2026-11-04T17:23:25Z'
 tags:
 - wiki
 - cli
@@ -61,3 +61,8 @@ Run it on a **copy** of this farm first (`YAKS_DIR=<copy> yaks migrate --dry-run
 - A toque frame of the Doks tab and the `?` overlay, attached; the docshots regenerated and one rasterized (recipe in `docs/tui.md`).
 - The migrated copy of this farm: `yaks doctor --strict`, `yaks check`, and `yaks peek` of a pinned link before and after.
 - Update docs and in-app help in the same change (AGENTS.md rule), and `yaks scan-ids` clean on anything user-facing.
+
+---
+▸ 2026-11-04T17:23:25Z [source-fix]
+
+Ordering (source-fix, with yaks-dedc): land yaks-dedc's tool and skill yaks before this one. They touch only `src/sources.rs`, the `source` help, `docs/cli.md`'s source section and the `yaks-research` skill, and this rename will sweep whatever they write (new help and skill prose say "pages"/"wiki" where they must). Doing it the other way round would make the dedc diff conflict with a ~78-file mechanical change.
