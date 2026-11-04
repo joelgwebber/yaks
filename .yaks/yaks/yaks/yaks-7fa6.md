@@ -5,7 +5,7 @@ status: shaving
 type: epic
 priority: 2
 created: '2026-11-04T22:30:49Z'
-updated: '2026-11-04T22:36:22Z'
+updated: '2026-11-04T23:51:12Z'
 tags:
 - design
 - cli
@@ -47,3 +47,12 @@ thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-04T23:51:12Z [sched-1]
+
+Seven of eight children are shorn, all on branch `scheduling` (6 commits on top of `origin/main` at 0.0.32, rebased once for the doks rename). Not merged to `main`, not installed, not released: waiting on Joel.
+
+Left: `yaks-79a6`, the acceptance test (shrink `review-watch` onto `yaks-scheduling`). That skill lives uncommitted in Joel's `joel` repo, so it needs Joel's go-ahead and a decision on where the work happens.
+
+Follow-ups not filed as yaks: `yaks tick --sync` (needs a two-machine duplicate-regrow test first); a docshots scene for the new form rows and Due view (text frames are attached to `yaks-2986` and `yaks-f561` instead); the cold-read scout check on the new skill.
