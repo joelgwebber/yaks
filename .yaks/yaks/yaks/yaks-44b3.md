@@ -1,11 +1,11 @@
 ---
 id: yaks-44b3
-title: 'Farm wiki: pages, sources and schemas beside yaks (the data layer under a personal agent)'
+title: 'Doks: pages, sources and schemas beside yaks (the data layer under a personal agent)'
 status: shaving
 type: feature
-priority: 1
+priority: 2
 created: '2026-11-01T18:52:36Z'
-updated: '2026-11-04T20:03:29Z'
+updated: '2026-11-04T21:17:32Z'
 tags:
 - design
 - doks
