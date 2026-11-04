@@ -5,12 +5,12 @@ status: shorn
 type: chore
 priority: 4
 created: '2026-11-04T17:23:24Z'
-updated: '2026-11-04T17:29:23Z'
+updated: '2026-11-04T20:03:45Z'
 parent: yaks-dedc
 depends_on:
 - yaks-d19c
 tags:
-- wiki
+- doks
 ---
 
 In the `joel` farm, `sources/2026-11-03-bea6d0de` (Confluence HTML) and `sources/2026-11-03-14a63718` (its markdown conversion, hand-fixed in `extracted.md`) are the case that started yaks-dedc.
