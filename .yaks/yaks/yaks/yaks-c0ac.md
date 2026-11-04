@@ -5,14 +5,14 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-01T18:53:13Z'
-updated: '2026-11-01T22:51:31Z'
+updated: '2026-11-04T20:03:44Z'
 parent: yaks-d26a
 depends_on:
 - yaks-101d
 - yaks-2c42
 tags:
-- wiki
 - cli
+- doks
 verify: cargo test --workspace
 ---
 
