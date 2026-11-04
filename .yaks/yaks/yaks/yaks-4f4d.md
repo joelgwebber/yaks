@@ -5,12 +5,13 @@ status: hairy
 type: task
 priority: 4
 created: '2026-10-22T22:12:46Z'
-updated: '2026-10-22T22:12:53Z'
+updated: '2026-11-04T01:07:38Z'
 depends_on:
 - yaks-4e9c
 tags:
 - images
 - toque
+- tui
 ---
 
 Follow-up to yaks-4e9c. The svg spike embedded DejaVu Sans Mono (regular + bold) and Noto Color Emoji (COLRv1), each subset by `pyftsubset` to exactly the 38 non-ASCII codepoints in today's `docs/assets/*.svg`, about 10 KB, 10 KB and 14.5 KB. Any other codepoint renders blank, and toque draws arbitrary apps, so the subset must grow.
