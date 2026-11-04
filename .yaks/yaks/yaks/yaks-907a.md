@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
-updated: '2026-11-04T22:31:41Z'
+updated: '2026-11-04T23:24:32Z'
 parent: yaks-f677
 depends_on:
 - yaks-7058
@@ -175,3 +175,17 @@ kind: pickup
 picked up
 
 Decision recorded; checking open questions before starting
+
+---
+▸ 2026-11-04T23:24:32Z [perf-907a]
+
+Status after yaks-7058 (dd61f317) and yaks-bcd4 (f62e889c), local `main`, installed with `cargo install --path .` (restart a running `yaks tui`).
+
+Changing save in the TUI, time to first output, clone of this farm, real pty:
+
+- before: 700-760 ms
+- after: ~290-400 ms (typically ~330)
+
+What is left of it is the per-change commit itself, ~280 ms: 13 git spawns at 25-35 ms each on this Mac, two of them `status` (before and after the write, to find what the command changed). That is the floor for building the commit with git plumbing; going lower means the commit moves off the critical path (yaks-d262, which you deferred pending this re-measure) or fewer spawns (for example one `status` and `git commit-tree` fed from it).
+
+yaks-1ebf no longer matters (its reload is 44 ms, after the saved frame): recommending it is shorn as not needed.
