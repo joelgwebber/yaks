@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-03T23:50:22Z'
-updated: '2026-11-04T17:23:26Z'
+updated: '2026-11-04T17:29:24Z'
 tags:
 - wiki
 ---
@@ -67,3 +67,8 @@ thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-04T17:29:24Z [source-fix]
+
+All three children shorn; code and skill changes are on `yaks-dedc-sources` in the yaks checkout (two commits), awaiting Joel's go to land. After landing: `cargo install --path .` (per AGENTS.md), then yaks-cc40 can proceed. Existing sources in `joel` that say "Snapshot of the local file /tmp/..." (about 30) are left as written: sources are write-once.
