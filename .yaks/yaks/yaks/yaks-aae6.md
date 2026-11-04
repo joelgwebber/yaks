@@ -5,11 +5,11 @@ status: shorn
 type: idea
 priority: 1
 created: '2026-11-01T18:52:36Z'
-updated: '2026-11-01T20:09:15Z'
+updated: '2026-11-04T20:03:43Z'
 parent: yaks-7708
 tags:
-- wiki
 - design
+- doks
 ---
 
 Kinds of document in a farm, where each lives, and how each is addressed. Parent: the farm wiki umbrella.
