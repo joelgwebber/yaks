@@ -1,7 +1,7 @@
 ---
 id: yaks-bdae
 title: 'create --key <source-url> and list --source: find or create by source'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-04T22:31:54Z'
@@ -40,3 +40,13 @@ Done on branch `scheduling`.
 - Docs and help: `docs/cli.md` (filter flags, `create`), README, the `yaks` skill (command table and filters), and the `yaks-tracker` skill's import-once step; clap help on `--key` and `--source`.
 
 Decisions: `--key` conflicts with `--source` (the key is the source) and an empty key is refused; a dead or shorn match is never revived, since the watcher contract says the caller decides. The TUI create form and saved views never carry a key or source filter.
+
+---
+▸ 2026-11-04T22:51:08Z [sched-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
