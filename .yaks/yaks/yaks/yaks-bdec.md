@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 1
 created: '2026-11-04T01:29:03Z'
-updated: '2026-11-04T01:29:09Z'
+updated: '2026-11-04T01:49:21Z'
 tags:
 - release
 ---
@@ -25,3 +25,16 @@ thread: ksQQNSYysfbwRGKL-KGL8e-aQpLOAEKHPJIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-04T01:49:21Z [delta:Fix relative image links in yak attachme]
+
+Released **0.0.31** (Joel, 2026-11-04: "cut a release once everything's in").
+
+- Bump: `2ef040e` (Cargo.toml, Cargo.lock, npm/yaks/package.json in lockstep), tag `v0.0.31`, pushed to `origin` and `local`.
+- Contents since v0.0.30: yaks-be20, yaks-0370, yaks-000b, yaks-7c6e. No schema change (`src/migrate.rs` untouched), so no `min_version` step.
+- Gate before tagging: `cargo test --workspace --locked` with an empty HOME and its own TMPDIR passed (1107 tests). One earlier run failed `tests/init_modes.rs` on a leftover `/tmp/share2-web-wt` from a previous run (a fixed temp path, already filed as yaks-50b7), not a code problem.
+- Dry run of the `release` workflow on `2ef040e` first: green on all five platforms.
+- Tag push: the workflow succeeded, `@j15r/yaks` and the five platform packages are at 0.0.31, `latest` points at it. The registry showed 0.0.30 for about a minute after the run, then caught up.
+
+Installed locally with `cargo install --path .` from the same tree. `yaks tui` sessions started before need a restart.
