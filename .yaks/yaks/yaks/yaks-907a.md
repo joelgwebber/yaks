@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
-updated: '2026-11-04T22:25:22Z'
+updated: '2026-11-04T22:31:41Z'
 parent: yaks-f677
 depends_on:
 - yaks-7058
@@ -162,3 +162,8 @@ needs: agent
 
 1, 2: Yes, absolutely. We have a place for caches in ~/.local for exactly this sort of thing.
 3. I'm reading this as optimistic concurrency in the TUI. Let's file a yak and defer for re-measurement.
+
+---
+▸ 2026-11-04T22:31:41Z [perf-907a]
+
+Decision (Joel, 2026-11-04): do yaks-7058, yaks-bcd4 and yaks-1ebf, with a cache for the git discovery. The deferred commit is filed as its own yak and waits for a re-measure after those three.
