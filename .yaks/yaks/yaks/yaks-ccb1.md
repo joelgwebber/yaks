@@ -5,11 +5,11 @@ status: shorn
 type: idea
 priority: 1
 created: '2026-11-01T18:52:37Z'
-updated: '2026-11-01T20:09:15Z'
+updated: '2026-11-04T20:03:45Z'
 parent: yaks-7708
 tags:
-- wiki
 - links
+- doks
 ---
 
 One link grammar for yaks and pages, covering farm documents, the code repo, commit pins and anchors, plus `yaks peek` to read just the span a link points at.
