@@ -854,6 +854,91 @@ mod tests {
         assert_eq!(sync(&wt), state(Some("origin/yaks"), 0, 1));
     }
 
+    /// `changes::read_with_sync` (the TUI chip's one `git status`) says what
+    /// `sync_state` (a handful of calls) says, in every state a farm branch can
+    /// be in: never published, a deleted upstream, up to date, ahead, behind,
+    /// both (yaks-bcd4).
+    #[test]
+    fn the_one_call_standing_matches_sync_state() {
+        let (_code, wt, origin) = branch_farm();
+        let root = wt.join(".yaks");
+        let one = || {
+            let (changes, sync) = crate::changes::read_with_sync(&root).unwrap().unwrap();
+            assert_eq!(
+                changes.len(),
+                crate::changes::read(&root).unwrap().unwrap().len()
+            );
+            sync
+        };
+        let agree = |what: &str| {
+            assert_eq!(one(), sync_state(&root), "{what}");
+        };
+        agree("never published");
+        assert_eq!(one(), Some(state(None, 0, 0)));
+        git(&wt, &["push", "-q", "-u", "origin", "yaks"]);
+        agree("up to date");
+        put(
+            &wt,
+            ".yaks/yak/yaks/yak-0003.md",
+            &flat("yak-0003", "hairy"),
+        );
+        git(&wt, &["add", "."]);
+        git(&wt, &["commit", "-q", "-m", "local"]);
+        agree("ahead");
+        assert_eq!(one(), Some(state(Some("origin/yaks"), 1, 0)));
+        push_from_a_second_clone(&origin);
+        git(&wt, &["fetch", "-q", "origin"]);
+        agree("ahead and behind");
+        assert_eq!(one(), Some(state(Some("origin/yaks"), 1, 1)));
+        // A dirty file does not disturb the header.
+        append(&wt, ".yaks/yak/yaks/yak-0001.md", &note("n"));
+        agree("dirty");
+        // The upstream deleted on the remote: no upstream, as `sync_state` says.
+        git(&origin, &["update-ref", "-d", "refs/heads/yaks"]);
+        git(&wt, &["fetch", "-q", "--prune", "origin"]);
+        agree("upstream gone");
+        assert_eq!(one().map(|s| s.upstream), Some(None));
+    }
+
+    #[test]
+    fn a_branch_header_is_read_as_a_standing() {
+        use crate::changes::{parse_branch_header as p, split_branch_header as split};
+        let s = |u: Option<&str>, a, b| Some(state(u, a, b));
+        assert_eq!(p("yaks"), s(None, 0, 0));
+        assert_eq!(p("yaks...origin/yaks"), s(Some("origin/yaks"), 0, 0));
+        assert_eq!(
+            p("yaks...origin/yaks [ahead 2]"),
+            s(Some("origin/yaks"), 2, 0)
+        );
+        assert_eq!(
+            p("yaks...origin/yaks [behind 3]"),
+            s(Some("origin/yaks"), 0, 3)
+        );
+        assert_eq!(
+            p("yaks...origin/yaks [ahead 1, behind 12]"),
+            s(Some("origin/yaks"), 1, 12)
+        );
+        assert_eq!(p("yaks...origin/yaks [gone]"), s(None, 0, 0));
+        assert_eq!(p("No commits yet on yaks"), s(None, 0, 0));
+        assert_eq!(p("HEAD (no branch)"), None);
+        // A branch with a slash, and the entries that follow the header.
+        assert_eq!(
+            p("yaks/team-a...origin/yaks/team-a [ahead 1]"),
+            Some(SyncState {
+                branch: "yaks/team-a".into(),
+                upstream: Some("origin/yaks/team-a".into()),
+                ahead: 1,
+                behind: 0
+            })
+        );
+        assert_eq!(
+            split("## yaks...origin/yaks\0 M a\0?? b\0"),
+            (Some("yaks...origin/yaks"), " M a\0?? b\0")
+        );
+        assert_eq!(split("## yaks\0"), (Some("yaks"), ""));
+        assert_eq!(split(" M a\0"), (None, " M a\0"));
+    }
+
     #[test]
     fn an_in_tree_farm_has_no_sync_state() {
         let repo = farm_repo();

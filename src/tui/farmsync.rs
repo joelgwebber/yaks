@@ -12,7 +12,7 @@
 
 use super::*;
 use crate::status::SyncState;
-use crate::{changes, commit, privatefarm, status, store, sync};
+use crate::{changes, commit, privatefarm, store, sync};
 use std::sync::mpsc::TryRecvError;
 use std::time::Instant;
 
@@ -35,11 +35,12 @@ impl FarmSync {
     /// against HEAD, which would cost a `git show` per dirty yak on every
     /// reload.
     pub(crate) fn read(root: &Path) -> Option<FarmSync> {
-        let changes = changes::read(root).ok()??;
+        // One `git status` for both: its branch header carries the standing.
+        let (changes, sync) = changes::read_with_sync(root).ok()??;
         let classified = changes::classify(&changes);
         Some(FarmSync {
             dirty: classified.yaks.len() + classified.other.len(),
-            sync: status::sync_state(root),
+            sync,
         })
     }
 
