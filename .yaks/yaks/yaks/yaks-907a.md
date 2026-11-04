@@ -12,6 +12,7 @@ depends_on:
 tags:
 - tui
 - perf
+needs: human
 ---
 
 Feels like there might be an intentional delay for some reason?
@@ -189,3 +190,16 @@ Changing save in the TUI, time to first output, clone of this farm, real pty:
 What is left of it is the per-change commit itself, ~280 ms: 13 git spawns at 25-35 ms each on this Mac, two of them `status` (before and after the write, to find what the command changed). That is the floor for building the commit with git plumbing; going lower means the commit moves off the critical path (yaks-d262, which you deferred pending this re-measure) or fewer spawns (for example one `status` and `git commit-tree` fed from it).
 
 yaks-1ebf no longer matters (its reload is 44 ms, after the saved frame): recommending it is shorn as not needed.
+
+---
+▸ 2026-11-04T23:24:32Z [perf-907a]
+kind: ask
+needs: human
+---
+
+asked: needs human
+
+Re-measured: a changing save is ~330 ms now (was ~730 ms); ~280 ms of that is the per-change commit's 13 git spawns, which a TUI cannot shorten without a different mechanism. Two questions:
+
+1. yaks-1ebf (second reload after our own save): it is now 44 ms and happens after the saved frame is drawn, so it no longer causes the pause. Lean: shear it as not needed rather than build the own-write skip. OK?
+2. Is ~330 ms good enough to shear this yak, or do you want the last step? Options: (a) shear yaks-907a now and leave yaks-d262 (commit after the saved frame) open; (b) do yaks-d262 now; (c) try to cut the commit to fewer spawns first (drop the second `status` by diffing the paths the command wrote against the snapshot; lean: only if you still feel it, since it would save ~60 ms). Lean: (a), after you try the installed build and say whether it still feels slow.
