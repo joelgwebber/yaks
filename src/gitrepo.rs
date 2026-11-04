@@ -66,8 +66,8 @@ pub(crate) fn canonical(p: &Path) -> PathBuf {
 /// when nothing has the branch checked out (a bare host lists only its own
 /// worktrees). Read-only.
 pub(crate) fn worktree_of_branch(from: &Path, branch: &str) -> Option<PathBuf> {
-    let h = host(from)?;
-    let text = git_raw(&h.git_dir, &["worktree", "list", "--porcelain"]).ok()?;
+    let git_dir = host_git_dir(from)?;
+    let text = git_raw(&git_dir, &["worktree", "list", "--porcelain"]).ok()?;
     let want = format!("branch refs/heads/{branch}");
     for block in text.split("\n\n") {
         let mut path: Option<&str> = None;
@@ -119,16 +119,28 @@ fn worktree_entries(top: &Path) -> Vec<(PathBuf, Result<(), String>)> {
     out
 }
 
-/// Find the host of the checkout at `top`.
-pub fn host(top: &Path) -> Option<Host> {
+/// The host's git dir and whether it was found through `alternates`: a host
+/// without the `bare` probe ([`host`]), for callers that only read its config.
+pub(crate) fn host_dir(top: &Path) -> Option<(PathBuf, bool)> {
     let common = common_dir(top)?;
-    let (git_dir, via_alternates) = match alternates(&common) {
+    Some(match alternates(&common) {
         // `<host>/objects`; a host with no `objects` dir is not one we read.
         Some(objects) if objects.ends_with("objects") && objects.is_dir() => {
             (canonical(objects.parent()?), true)
         }
         _ => (common, false),
-    };
+    })
+}
+
+/// The git dir of the host of the checkout at `top` ([`Host::git_dir`]), one
+/// git call cheaper than [`host`] (no `bare` probe).
+pub(crate) fn host_git_dir(top: &Path) -> Option<PathBuf> {
+    host_dir(top).map(|(d, _)| d)
+}
+
+/// Find the host of the checkout at `top`.
+pub fn host(top: &Path) -> Option<Host> {
+    let (git_dir, via_alternates) = host_dir(top)?;
     let bare = git(&git_dir, &["rev-parse", "--is-bare-repository"]).is_ok_and(|b| b == "true");
     Some(Host {
         git_dir,
@@ -152,13 +164,26 @@ pub(crate) fn host_checkout(host: &Host) -> Option<PathBuf> {
 }
 
 /// The shared (common) git dir of the checkout at `checkout`.
+///
+/// Asked once per checkout per process: discovery and the farm's git facts
+/// ask it from several places, and a checkout's common dir does not move.
 pub(crate) fn common_dir(checkout: &Path) -> Option<PathBuf> {
+    static KNOWN: std::sync::Mutex<Option<std::collections::HashMap<PathBuf, PathBuf>>> =
+        std::sync::Mutex::new(None);
+    if let Some(d) = KNOWN
+        .lock()
+        .ok()
+        .and_then(|k| k.as_ref().and_then(|m| m.get(checkout).cloned()))
+    {
+        return Some(d);
+    }
     let d = PathBuf::from(git(checkout, &["rev-parse", "--git-common-dir"]).ok()?);
-    Some(canonical(&if d.is_absolute() {
-        d
-    } else {
-        checkout.join(d)
-    }))
+    let d = canonical(&if d.is_absolute() { d } else { checkout.join(d) });
+    if let Ok(mut k) = KNOWN.lock() {
+        k.get_or_insert_with(Default::default)
+            .insert(checkout.to_path_buf(), d.clone());
+    }
+    Some(d)
 }
 
 /// The first line of `<common>/objects/info/alternates`: the object store a

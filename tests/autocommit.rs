@@ -200,3 +200,75 @@ fn the_opt_out_leaves_writes_uncommitted() {
     assert_eq!(f.subjects(), ["yaks: new farm"]);
     assert!(!f.git(&["status", "--porcelain"]).is_empty());
 }
+
+/// A `git` on `PATH` that counts how many times it is run, then runs the real
+/// one. Each spawn costs 10-30 ms, so a write's count is its latency (yaks-7058).
+#[cfg(unix)]
+fn count_git_spawns(f: &Farm, args: &[&str]) -> usize {
+    use std::os::unix::fs::PermissionsExt;
+    let real = String::from_utf8(
+        std::process::Command::new("sh")
+            .args(["-c", "command -v git"])
+            .output()
+            .unwrap()
+            .stdout,
+    )
+    .unwrap();
+    let shim = f.dir.with_file_name(format!(
+        "{}-shim",
+        f.dir.file_name().unwrap().to_string_lossy()
+    ));
+    let _ = std::fs::remove_dir_all(&shim);
+    std::fs::create_dir_all(&shim).unwrap();
+    let count = shim.join("count");
+    let script = shim.join("git");
+    std::fs::write(
+        &script,
+        format!(
+            "#!/bin/sh\necho x >> '{}'\nexec '{}' \"$@\"\n",
+            count.display(),
+            real.trim()
+        ),
+    )
+    .unwrap();
+    std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let path = format!(
+        "{}:{}",
+        shim.display(),
+        std::env::var("PATH").unwrap_or_default()
+    );
+    let o = Command::cargo_bin("yaks")
+        .unwrap()
+        .current_dir(&f.dir)
+        .env("PATH", path)
+        .env("XDG_DATA_HOME", common::data_home(&f.dir))
+        .env("YAKS_SKILLS_AUTOSYNC", "0")
+        .env_remove("YAKS_NO_AUTOCOMMIT")
+        .env("YAKS_ACTOR", "me")
+        .args(args)
+        .output()
+        .unwrap();
+    assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stderr));
+    let n = std::fs::read_to_string(&count).map_or(0, |t| t.lines().count());
+    let _ = std::fs::remove_dir_all(&shim);
+    n
+}
+
+/// A write with its per-change commit is a handful of git calls, not dozens:
+/// the farm's top level, git dir and branch are found once, and the commit is
+/// built from one `status` (yaks-7058). This was 30 before; a few more is
+/// fine, a return to discovery per step is not.
+#[cfg(unix)]
+#[test]
+fn a_write_spawns_few_git_processes() {
+    let f = Farm::new("spawns");
+    let a = f.create("me", "Count me");
+    let n = count_git_spawns(&f, &["update", &a, "--note", "n"]);
+    assert!(n <= 24, "an update spawned git {n} times");
+    // A command that writes nothing (the yak is already being shaved) pays for
+    // discovery and the snapshot only. (Not `update --title <same>`: that
+    // rewrites `updated:`, so whether it commits depends on the clock.)
+    f.run("me", &["shave", &a]);
+    let none = count_git_spawns(&f, &["shave", &a]);
+    assert!(none <= 12, "a write-less command spawned git {none} times");
+}

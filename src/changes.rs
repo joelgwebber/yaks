@@ -68,18 +68,22 @@ impl Change {
 /// `None` when nothing under it is tracked by git (a `YAKS_DIR` farm that is
 /// not a farm branch).
 pub fn read(root: &Path) -> Result<Option<Vec<Change>>> {
-    let tracked = git(root, &["ls-files", "--", "."])?;
-    if !tracked.status.success() {
-        bail!(
-            "the farm at {} is not inside a git repository",
-            root.display()
-        );
-    }
-    // Nothing tracked means a farm outside git, unless the farm is a farm
-    // branch's worktree: that branch IS the farm, tracked or not yet (a fresh
-    // orphan branch has no commit before the first `yaks commit`).
-    if tracked.stdout.is_empty() && crate::store::farm_branch(root).is_none() {
-        return Ok(None);
+    // A farm branch's worktree IS the farm, tracked or not yet (a fresh orphan
+    // branch has no commit before the first `yaks commit`), so it needs no
+    // look at what git tracks. Any other farm with nothing tracked is outside
+    // git.
+    let farm = crate::store::farm_git(root);
+    if farm.is_none() {
+        let tracked = git(root, &["ls-files", "--", "."])?;
+        if !tracked.status.success() {
+            bail!(
+                "the farm at {} is not inside a git repository",
+                root.display()
+            );
+        }
+        if tracked.stdout.is_empty() {
+            return Ok(None);
+        }
     }
     let status = check(
         git(
@@ -97,11 +101,16 @@ pub fn read(root: &Path) -> Result<Option<Vec<Change>>> {
     )?;
     let mut changes = parse_status(&String::from_utf8_lossy(&status));
     if changes.iter().any(|c| is_flat_yak_file(&c.path)) {
-        let top = check(
-            git(root, &["rev-parse", "--show-toplevel"])?,
-            "git rev-parse",
-        )?;
-        let top = PathBuf::from(String::from_utf8_lossy(&top).trim());
+        let top = match farm {
+            Some(f) => f.top,
+            None => {
+                let top = check(
+                    git(root, &["rev-parse", "--show-toplevel"])?,
+                    "git rev-parse",
+                )?;
+                PathBuf::from(String::from_utf8_lossy(&top).trim())
+            }
+        };
         for c in changes.iter_mut().filter(|c| is_flat_yak_file(&c.path)) {
             read_statuses(root, &top, c);
         }
@@ -160,11 +169,17 @@ pub fn outside(root: &Path) -> Result<Vec<String>> {
 /// A merge or cherry-pick in progress: `(the ref git sets, what it is)`. Git
 /// refuses a partial commit during one, which `yaks commit` relies on.
 pub fn pending_operation(root: &Path) -> Result<Option<(&'static str, &'static str)>> {
+    // The ref git sets is a file in the worktree's own git dir: look there
+    // when the farm is a farm branch, and ask git for any other.
+    let farm = crate::store::farm_git(root);
     for (head, what) in [("MERGE_HEAD", "merge"), ("CHERRY_PICK_HEAD", "cherry-pick")] {
-        if git(root, &["rev-parse", "-q", "--verify", head])?
-            .status
-            .success()
-        {
+        let set = match &farm {
+            Some(f) => f.git_dir.join(head).is_file(),
+            None => git(root, &["rev-parse", "-q", "--verify", head])?
+                .status
+                .success(),
+        };
+        if set {
             return Ok(Some((head, what)));
         }
     }

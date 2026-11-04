@@ -109,12 +109,9 @@ pub fn snapshot(root: &Path) -> Option<Snapshot> {
     if std::env::var("YAKS_NO_AUTOCOMMIT").is_ok_and(|v| !v.is_empty() && v != "0") {
         return None;
     }
-    crate::store::farm_branch(root)?;
+    let farm = crate::store::farm_git(root)?;
     let run = || -> Result<Snapshot> {
-        let top = PathBuf::from(ok(
-            git_in(root, &["rev-parse", "--show-toplevel"], &[])?,
-            "git rev-parse",
-        )?);
+        let top = farm.top.clone();
         let dirty: Vec<String> = changes::read(root)?
             .unwrap_or_default()
             .into_iter()
@@ -151,13 +148,32 @@ fn head(top: &Path) -> Option<String> {
         .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
 }
 
-/// Who commits: the repository's git identity, else the actor (an address
-/// that never resolves), so a machine with no git identity still commits.
-pub(crate) fn identity_env(top: &Path, actor: &str) -> Vec<(String, String)> {
+/// Whether git has an identity to commit as in `top`. Asked once per
+/// repository per process: a TUI save commits again and again, and nobody
+/// configures a git identity under it.
+fn has_identity(top: &Path) -> bool {
+    static KNOWN: Mutex<Option<BTreeMap<PathBuf, bool>>> = Mutex::new(None);
+    if let Some(known) = KNOWN
+        .lock()
+        .ok()
+        .and_then(|k| k.as_ref().and_then(|m| m.get(top).copied()))
+    {
+        return known;
+    }
     let has = git_in(top, &["var", "GIT_COMMITTER_IDENT"], &[])
         .map(|o| o.status.success())
         .unwrap_or(false);
-    if has {
+    if let Ok(mut k) = KNOWN.lock() {
+        k.get_or_insert_with(Default::default)
+            .insert(top.to_path_buf(), has);
+    }
+    has
+}
+
+/// Who commits: the repository's git identity, else the actor (an address
+/// that never resolves), so a machine with no git identity still commits.
+pub(crate) fn identity_env(top: &Path, actor: &str) -> Vec<(String, String)> {
+    if has_identity(top) {
         return Vec::new();
     }
     let name = if actor.is_empty() { "yaks" } else { actor };

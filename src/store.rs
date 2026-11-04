@@ -158,10 +158,14 @@ pub fn discover_with(start: &Path, yaks_dir: Option<&str>) -> Result<Discovered>
 /// A git config value for the repository containing `dir`: its host's
 /// (a Delta clone sees its human's setting), else its own.
 pub(crate) fn repo_config(dir: &Path, key: &str) -> Option<String> {
-    let host = crate::gitrepo::host(dir).map(|h| h.git_dir);
-    host.as_deref()
-        .and_then(|g| git_line(g, &["config", "--get", key]))
-        .or_else(|| git_line(dir, &["config", "--get", key]))
+    // A host that is not another repository (no `alternates`) is the
+    // checkout's own: one lookup there is the whole answer, and it also sees
+    // a linked worktree's own config, which the host's git dir does not.
+    match crate::gitrepo::host_dir(dir) {
+        Some((g, true)) => git_line(&g, &["config", "--get", key])
+            .or_else(|| git_line(dir, &["config", "--get", key])),
+        _ => git_line(dir, &["config", "--get", key]),
+    }
 }
 
 /// The git config key naming another repository whose farm this one uses.
@@ -347,11 +351,107 @@ fn farm_branch_worktree(dir: &Path) -> Result<Option<PathBuf>> {
 /// a farm reached only through `$YAKS_DIR`. `brief`, `commit` and source
 /// links use this to know the farm is not where the code is.
 pub fn farm_branch(root: &Path) -> Option<String> {
-    let top = root.parent()?;
-    let head = git_line(top, &["symbolic-ref", "--short", "-q", "HEAD"])?;
-    let toplevel = git_line(top, &["rev-parse", "--show-toplevel"])?;
-    let same = Path::new(&toplevel).canonicalize().ok() == top.canonicalize().ok();
-    (same && head == configured_farm_branch(top)).then_some(head)
+    farm_git(root).map(|g| g.branch)
+}
+
+/// What git says about a farm that is a farm branch's worktree (see
+/// [`farm_git`]).
+#[derive(Debug, Clone)]
+pub(crate) struct FarmGit {
+    /// The farm branch checked out in the worktree.
+    pub branch: String,
+    /// The worktree's top level (canonical): the root of every path git reports.
+    pub top: PathBuf,
+    /// The worktree's own git dir: where `HEAD`, `MERGE_HEAD` and the like live.
+    pub git_dir: PathBuf,
+}
+
+/// The facts git gives about a worktree that never change under a running
+/// process: its top level, its git dir and the configured farm branch. Found
+/// once per root (three git calls) and kept, so a TUI save does not ask again
+/// on every reload and write. Only a positive answer is kept. `HEAD` is not:
+/// [`farm_git`] reads it from the file each time.
+struct WorktreeFacts {
+    top: PathBuf,
+    git_dir: PathBuf,
+    configured: String,
+}
+
+static WORKTREE_FACTS: std::sync::Mutex<Option<std::collections::HashMap<PathBuf, WorktreeFacts>>> =
+    std::sync::Mutex::new(None);
+
+/// Forget what [`farm_git`] kept: for a test that changes `yaks.branch`
+/// under a running process.
+#[cfg(test)]
+pub(crate) fn forget_worktree_facts() {
+    if let Ok(mut m) = WORKTREE_FACTS.lock() {
+        *m = None;
+    }
+}
+
+fn worktree_facts(dir: &Path) -> Option<(PathBuf, PathBuf, String)> {
+    if let Some(f) = WORKTREE_FACTS
+        .lock()
+        .ok()?
+        .as_ref()
+        .and_then(|m| m.get(dir))
+    {
+        return Some((f.top.clone(), f.git_dir.clone(), f.configured.clone()));
+    }
+    // One call for both paths, absolute whatever the cwd, so a linked
+    // worktree's `.git` file needs no reading.
+    let out = git_line(
+        dir,
+        &[
+            "rev-parse",
+            "--path-format=absolute",
+            "--show-toplevel",
+            "--git-dir",
+        ],
+    )?;
+    let mut lines = out.lines();
+    let top = PathBuf::from(lines.next()?);
+    let git_dir = PathBuf::from(lines.next()?);
+    let configured = configured_farm_branch(dir);
+    let facts = (top.clone(), git_dir.clone(), configured.clone());
+    WORKTREE_FACTS
+        .lock()
+        .ok()?
+        .get_or_insert_with(Default::default)
+        .insert(
+            dir.to_path_buf(),
+            WorktreeFacts {
+                top,
+                git_dir,
+                configured,
+            },
+        );
+    Some(facts)
+}
+
+/// The farm branch `root` is a dedicated worktree of ([`farm_branch`]) with
+/// the git facts a per-change commit needs, or `None`. The checked-out branch
+/// is read from the worktree's `HEAD` file on every call, so a farm moved to
+/// another branch under a running TUI stops being a farm at once.
+pub(crate) fn farm_git(root: &Path) -> Option<FarmGit> {
+    let dir = root.parent()?;
+    let (top, git_dir, configured) = worktree_facts(dir)?;
+    // A `HEAD` file that is not a plain branch ref (a detached HEAD; the
+    // reftable format's placeholder) is for git to say.
+    let branch = match fs::read_to_string(git_dir.join("HEAD"))
+        .ok()
+        .and_then(|h| h.trim().strip_prefix("ref: refs/heads/").map(String::from))
+        .filter(|b| b != ".invalid")
+    {
+        Some(b) => b,
+        None => git_line(dir, &["symbolic-ref", "--short", "-q", "HEAD"])?,
+    };
+    let same = top.canonicalize().ok() == dir.canonicalize().ok();
+    (same && branch == configured).then_some(FarmGit {
+        branch,
+        top,
+        git_dir,
+    })
 }
 
 /// Resolve `$YAKS_DIR`: a farm dir, or a directory containing `.yaks`.
@@ -3539,6 +3639,8 @@ mod discover_tests {
         // A configured name wins over the default.
         git(&code, &["branch", "-q", "-m", "yaks", "yaks/team-a"]);
         git(&code, &["config", "yaks.branch", "yaks/team-a"]);
+        // The configured name is read once per process (`farm_git`).
+        forget_worktree_facts();
         assert_eq!(canon(&discover_with(&code, None).unwrap().root), farm);
         assert_eq!(farm_branch(&farm).as_deref(), Some("yaks/team-a"));
         let _ = fs::remove_dir_all(&base);
