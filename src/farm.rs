@@ -244,6 +244,12 @@ pub struct MergePlan {
     pub herds: Vec<String>,
 }
 
+pub enum SnoozeOutcome {
+    Snoozed,
+    NotFound,
+    Finished(Status),
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UpdateOutcome {
     Updated,
@@ -2130,6 +2136,32 @@ impl Farm {
         } else {
             Ok(UpdateOutcome::NoChanges)
         }
+    }
+
+    /// Move an open yak's `due:` to `due` (already resolved, see
+    /// [`crate::recur::resolve_due`]) and say so in a `kind: snooze` note, so
+    /// the history shows who put it off and from when. A finished yak has
+    /// nothing to put off: refused with [`SnoozeOutcome::Finished`].
+    pub fn snooze(&self, id: &str, due: &str, actor: Option<&str>) -> Result<SnoozeOutcome> {
+        let _lock = store::lock(&self.root)?;
+        let Some(mut task) = store::load_task_by_id(&self.root, id)? else {
+            return Ok(SnoozeOutcome::NotFound);
+        };
+        if !task.status.is_open() {
+            return Ok(SnoozeOutcome::Finished(task.status));
+        }
+        let was = crate::recur::due(&task).map(crate::recur::When::render);
+        task.extra
+            .set(crate::recur::DUE, &Value::Plain(due.to_string()));
+        let text = match &was {
+            Some(w) => format!("snoozed until {due} (was due {w})"),
+            None => format!("snoozed until {due} (had no due date)"),
+        };
+        let ts = store::now_iso();
+        task.body = store::append_note_meta(&task.body, &ts, actor, &[("kind", "snooze")], &text);
+        task.updated = Some(ts);
+        store::write::save(&self.root, &task)?;
+        Ok(SnoozeOutcome::Snoozed)
     }
 
     /// Every dok of the farm (yaks-9af0), sorted by path.

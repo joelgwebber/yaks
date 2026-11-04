@@ -201,3 +201,84 @@ fn dead_yaks_never_regrow_and_a_shorn_parent_reopens_with_its_child() {
     assert_eq!(f.show(&parent)["status"], "hairy");
     assert_eq!(f.show(&dead)["status"], "dead");
 }
+
+/// Today as `--due +Nd` resolves it: the local calendar day.
+fn local_days_ahead(n: i64) -> String {
+    (chrono::Local::now() + Duration::days(n))
+        .format("%Y-%m-%d")
+        .to_string()
+}
+
+#[test]
+fn due_takes_relative_days_and_weeks_and_stores_a_date() {
+    let f = Farm::new("relative");
+    let id = f.create(&["--due", "+2d"]);
+    assert_eq!(f.show(&id)["extra"]["due"], local_days_ahead(2));
+    f.run(&["update", &id, "--due", "+1w"]);
+    assert_eq!(f.show(&id)["extra"]["due"], local_days_ahead(7));
+    f.run(&["update", &id, "--due", "+0d"]);
+    assert_eq!(f.show(&id)["extra"]["due"], local_days_ahead(0));
+
+    for bad in ["+d", "+2", "+2m", "-2d", "+2d3", "monday", "+1.5w"] {
+        let flag = format!("--due={bad}");
+        let out = f.cmd(&["update", &id, &flag]);
+        assert!(!out.status.success(), "{bad} should be refused");
+        let err = String::from_utf8_lossy(&out.stderr);
+        assert!(
+            err.contains("+2d"),
+            "{bad}: the error names the form: {err}"
+        );
+    }
+    assert_eq!(f.show(&id)["extra"]["due"], local_days_ahead(0));
+}
+
+#[test]
+fn snooze_moves_due_from_today_and_leaves_a_note() {
+    let f = Farm::new("snooze");
+    let a = f.create(&["--due", &days_ago(3)]);
+    let b = f.create(&["--due", &days_ahead(1)]);
+    assert!(f.run(&["list", "--due"]).contains("overdue"));
+
+    f.run(&["snooze", &a, &b, "--to", "+1w"]);
+    for id in [&a, &b] {
+        let v = f.show(id);
+        assert_eq!(v["extra"]["due"], local_days_ahead(7), "{id}");
+        let note = v["notes"].as_array().unwrap().last().unwrap().clone();
+        assert_eq!(note["meta"]["kind"], "snooze", "{note}");
+        assert!(
+            note["text"]
+                .as_str()
+                .unwrap()
+                .contains(&format!("snoozed until {}", local_days_ahead(7))),
+            "{note}"
+        );
+    }
+    assert!(!f.run(&["list", "--due"]).contains("overdue"));
+
+    // No `--to`: a day from today. An absolute date works too.
+    f.run(&["snooze", &a]);
+    assert_eq!(f.show(&a)["extra"]["due"], local_days_ahead(1));
+    f.run(&["snooze", &a, "--to", "2031-01-02"]);
+    assert_eq!(f.show(&a)["extra"]["due"], "2031-01-02");
+}
+
+#[test]
+fn snooze_refuses_finished_yaks_and_bad_dates_and_does_the_rest() {
+    let f = Farm::new("snooze-refuse");
+    let open = f.create(&["--due", &days_ago(1)]);
+    let done = f.create(&["--due", &days_ago(1)]);
+    f.run(&["shorn", &done]);
+
+    let out = f.cmd(&["snooze", &done, &open, "--to", "+2d"]);
+    assert!(!out.status.success());
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(err.contains(&done) && err.contains("shorn"), "{err}");
+    assert_eq!(f.show(&open)["extra"]["due"], local_days_ahead(2));
+    assert_eq!(f.show(&done)["extra"]["due"], days_ago(1));
+
+    let out = f.cmd(&["snooze", &open, "--to", "tomorrow"]);
+    assert!(!out.status.success());
+    assert_eq!(f.show(&open)["extra"]["due"], local_days_ahead(2));
+    let out = f.cmd(&["snooze", "nope-0000"]);
+    assert!(!out.status.success());
+}

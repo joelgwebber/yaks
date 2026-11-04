@@ -80,6 +80,33 @@ impl When {
         })
     }
 
+    /// What a person may type for a deadline: what [`When::parse`] reads, or
+    /// `+Nd` / `+Nw` (N days or weeks after `today`), which resolves to a whole
+    /// day. Nothing else: no weekday words, no `-`, no months (a month has no
+    /// fixed length; use a date).
+    pub fn parse_input(s: &str, today: NaiveDate) -> Option<When> {
+        let s = s.trim();
+        let Some(rest) = s.strip_prefix('+') else {
+            return When::parse(s);
+        };
+        let (digits, per) = match (rest.strip_suffix('d'), rest.strip_suffix('w')) {
+            (Some(n), _) => (n, 1),
+            (_, Some(n)) => (n, 7),
+            _ => return None,
+        };
+        if digits.is_empty() || !digits.bytes().all(|b| b.is_ascii_digit()) {
+            return None;
+        }
+        let days = digits.parse::<u64>().ok()?.checked_mul(per)?;
+        Some(When {
+            at: today
+                .checked_add_days(Days::new(days))?
+                .and_time(NaiveTime::MIN)
+                .and_utc(),
+            date_only: true,
+        })
+    }
+
     /// How it is written back: `2026-11-15`, or `2026-11-15T08:00:00Z`.
     pub fn render(self) -> String {
         let fmt = if self.date_only {
@@ -141,15 +168,30 @@ pub fn due_mark(t: &Task, now: DateTime<Utc>) -> String {
 
 /// The problem with `value` as the field `key`, when `key` is one of ours and
 /// the value does not read; `None` otherwise (including for a cleared field).
+/// What `--due`, `snooze --to` and the TUI accept, said once.
+pub const DUE_INPUT_HELP: &str =
+    "a date (2026-11-15), an RFC 3339 datetime (2026-11-15T09:00:00Z), or +2d / +1w from today";
+
+/// A typed deadline as `due:` stores it, or why it is refused. The one door
+/// for `--due`, `snooze --to` and the TUI.
+pub fn resolve_due(text: &str, today: NaiveDate) -> Result<String, String> {
+    When::parse_input(text, today)
+        .map(When::render)
+        .ok_or_else(|| format!("{text:?} is not {DUE_INPUT_HELP}"))
+}
+
+/// Today on the calendar a person reads, which is what `+2d` counts from.
+pub fn today() -> NaiveDate {
+    chrono::Local::now().date_naive()
+}
+
 pub fn field_problem(key: &str, value: &Value) -> Option<String> {
     let text = match value {
         Value::Null => return None,
         v => v.as_str().unwrap_or_default(),
     };
     match key {
-        DUE if When::parse(text).is_none() => Some(format!(
-            "{text:?} is not a date (2026-11-15) or an RFC 3339 datetime (2026-11-15T09:00:00Z)"
-        )),
+        DUE if When::parse(text).is_none() => Some(format!("{text:?} is not {DUE_INPUT_HELP}")),
         EVERY if Every::parse(text).is_none() => Some(format!(
             "{text:?} is not an ISO 8601 duration (P1D, P2W, P1M, P1Y; a run of them in Y M W D order, not zero)"
         )),
@@ -431,6 +473,27 @@ mod tests {
         assert_eq!(t.render(), "2026-11-15T07:30:00Z");
         for bad in ["", "soon", "2026-13-01", "11/15/2026", "2026-11-15 09:00"] {
             assert!(When::parse(bad).is_none(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn input_reads_relative_days_and_weeks_from_today() {
+        let today = NaiveDate::from_ymd_opt(2026, 11, 4).unwrap();
+        let day = |s: &str| When::parse_input(s, today).map(|w| (w.render(), w.date_only));
+        assert_eq!(day("+0d"), Some(("2026-11-04".into(), true)));
+        assert_eq!(day("+2d"), Some(("2026-11-06".into(), true)));
+        assert_eq!(day(" +1w "), Some(("2026-11-11".into(), true)));
+        assert_eq!(day("+30d"), Some(("2026-12-04".into(), true)));
+        // Absolute forms pass through unchanged.
+        assert_eq!(day("2026-11-15"), Some(("2026-11-15".into(), true)));
+        assert_eq!(
+            day("2026-11-15T09:00:00Z"),
+            Some(("2026-11-15T09:00:00Z".into(), false))
+        );
+        for bad in [
+            "+", "+d", "+2", "+2m", "-2d", "+2d3", "+ 2d", "+1.5w", "+-1d", "monday", "",
+        ] {
+            assert!(day(bad).is_none(), "{bad}");
         }
     }
 

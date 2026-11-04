@@ -396,17 +396,20 @@ With no `<file>`, lists the absolute path of each of the yak's attachments (in `
 | `regrow` (alias `reopen`) | shorn → hairy |
 | `slaughter` | → dead (abandon) |
 | `revive` | dead → hairy |
+| `snooze` | move an open yak's `due:` (`--to +2d`, `+1w`, a date; default `+1d`), with a note ([below](#due-dates-and-recurring-yaks)) |
 | `regrow-due` | every shorn yak with `every:` whose next occurrence has arrived → hairy ([below](#due-dates-and-recurring-yaks)) |
 
 ### Due dates and recurring yaks
 
 Three extra yak fields, no new file format (they are written like any `--set` field and listed under `extra` in `show --json`):
 
-- `due:` — a date (`2026-11-15`) or an RFC 3339 datetime: when the yak should be done. `--due <date>` sets it. A **hairy or shaving** yak past it is **overdue**: `list` and `next` print ` due 2026-11-15 overdue`, `show` prints `due ... (overdue)`, `--json` adds `"overdue": true`, and the TUI shows the date in red. A date is overdue once its day has passed; a datetime the moment it does. A shorn or dead yak is never overdue.
+- `due:` — a date (`2026-11-15`) or an RFC 3339 datetime: when the yak should be done. `--due <when>` sets it; besides a date or datetime it takes `+Nd` or `+Nw` (N days or weeks from today, stored as that date; no months, no `-`, no weekday words). A **hairy or shaving** yak past it is **overdue**: `list` and `next` print ` due 2026-11-15 overdue`, `show` prints `due ... (overdue)`, `--json` adds `"overdue": true`, and the TUI shows the date in red. A date is overdue once its day has passed; a datetime the moment it does. A shorn or dead yak is never overdue.
 - `every:` — an ISO 8601 duration only: `P1D`, `P2W`, `P1M`, `P3M`, `P1Y`, or a run of them in Y M W D order (`P1Y2M`). `--every <duration>` sets it; zero (`P0D`) and words (`monday`) are refused. It makes the yak recur.
 - `regrown:` — a datetime yaks writes when `regrow-due` reopens the yak. Not for hand editing.
 
 `list --due [--before <date>]` keeps the yaks that have a `due:` (before the date, exclusive, when given), sorted by it, then by id.
+
+`snooze <id>... [--to <when>] [--as <actor>]` puts off open yaks: it moves `due:` to `<when>` (a date, a datetime, or `+Nd`/`+Nw` from today; default `+1d`) and appends a `kind: snooze` note (`snoozed until 2026-11-11 (was due 2026-11-06)`), so the history shows each put-off. A shorn or dead yak is refused (nothing to put off; `regrow` it first). Every id is tried; the exit is non-zero if any was refused or missing.
 
 `regrow-due [--dry-run] [--json] [--as <actor>]` — the clock lives outside yaks; a harness, cron or the TUI (on load and each sync tick) calls this. For each **shorn** yak with `every:` it finds the schedule's latest occurrence that is not in the future. If there is one it moves the yak to hairy (like `regrow`), sets `due:` to that occurrence plus one period (the next deadline) and `regrown:` to now, and adds a `kind: regrow` note (`regrew for the 2026-11-15 occurrence (1 skipped)`, with `occurrence` in its metadata). Occurrences are `start + k × every`, counted from the start so a month-end keeps its day (Jan 31 + `P1M` is Feb 28, then Mar 31). The start is `due:` (k from 1) for a yak never regrown, else its shear time. A regrown yak already carries `due:` = its next occurrence, so that is the start and k counts from 0: a late run never pushes the schedule later. Occurrences missed while the yak stayed shorn don't pile up: one regrow covers them all, and the note counts the skipped. It is idempotent (the new `due:` is in the future, and a hairy yak is not a candidate), so a second run does nothing.
 
@@ -476,6 +479,7 @@ A note without them is still valid, and unknown keys are kept. The commands that
 | `ask` | `ask` | `needs` (who it waits on) |
 | `answer --note` | `answer` | `needs` (what it leaves: `agent`, or `none` for `--done` or a yak with no `needs`) |
 | `request` | `request` | |
+| `snooze` | `snooze` | |
 | `pickup` | `pickup` | |
 | `verify` | `verify` | `result` (`pass` or `fail`) |
 

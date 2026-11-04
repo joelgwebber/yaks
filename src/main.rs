@@ -52,8 +52,8 @@ use std::env;
 use farm::{
     AttachOutcome, Commits, CreateOutcome, DepOutcome, Farm, Issue, IssueKind, LogEntry,
     MergeOutcome, MoveOutcome, NewTask, OpenError, Pickup, RefKind, RenameAttachmentOutcome,
-    RenameOutcome, RenamePlan, Reparent, Show, SlaughterOutcome, Stats, TaskBackRefs, TaskEdit,
-    TaskRefs, UpdateOutcome,
+    RenameOutcome, RenamePlan, Reparent, Show, SlaughterOutcome, SnoozeOutcome, Stats,
+    TaskBackRefs, TaskEdit, TaskRefs, UpdateOutcome,
 };
 use filter::FilterSpec;
 use model::{NEEDS_AGENT, Status, Task, normalize_tags};
@@ -531,10 +531,11 @@ enum Command {
         /// A rerunnable verification command for this yak (see `yaks verify`).
         #[arg(long)]
         verify: Option<String>,
-        /// When the yak should be done: a date (`2026-11-15`) or an RFC 3339
-        /// datetime. Sugar for `--set due=...`; a hairy or shaving yak past it
-        /// is listed as overdue.
-        #[arg(long, value_name = "DATE")]
+        /// When the yak should be done: a date (`2026-11-15`), an RFC 3339
+        /// datetime, or `+2d` / `+1w` from today (stored as that date). Sugar
+        /// for `--set due=...`; a hairy or shaving yak past it is listed as
+        /// overdue.
+        #[arg(long, value_name = "WHEN")]
         due: Option<String>,
         /// Make the yak recur: an ISO 8601 duration (`P1D`, `P2W`, `P1M`,
         /// `P1Y`; a run of them in Y M W D order). Sugar for `--set every=...`;
@@ -585,9 +586,10 @@ enum Command {
         /// Set (or clear, with an empty string) this yak's `verify:` command.
         #[arg(long)]
         verify: Option<String>,
-        /// When the yak should be done: a date (`2026-11-15`) or an RFC 3339
-        /// datetime; an empty string clears it. Sugar for `--set due=...`.
-        #[arg(long, value_name = "DATE")]
+        /// When the yak should be done: a date (`2026-11-15`), an RFC 3339
+        /// datetime, or `+2d` / `+1w` from today; an empty string clears it.
+        /// Sugar for `--set due=...`.
+        #[arg(long, value_name = "WHEN")]
         due: Option<String>,
         /// Make the yak recur: an ISO 8601 duration (`P1D`, `P2W`, `P1M`,
         /// `P1Y`); an empty string clears it. Sugar for `--set every=...`.
@@ -821,6 +823,22 @@ enum Command {
         /// `moved: <from> -> <to>` log entry). Resolved like `update --as`:
         /// $YAKS_ACTOR, then `git config yaks.actor`, then the harness
         /// identity, then the git user (`yaks whoami` shows which).
+        #[arg(long = "as")]
+        as_actor: Option<String>,
+    },
+    /// Put off one or more open yaks: move `due:` and leave a note saying so.
+    ///
+    /// `--to` takes a date (`2026-11-15`), an RFC 3339 datetime, or `+2d` /
+    /// `+1w` counted from today; without it, a day from today. A shorn or dead
+    /// yak has nothing to put off and is refused. Every id is tried; the exit
+    /// is non-zero if any was refused or missing.
+    Snooze {
+        #[arg(required = true, num_args = 1..)]
+        ids: Vec<String>,
+        /// The new deadline: a date, an RFC 3339 datetime, or `+Nd` / `+Nw`
+        /// from today (default `+1d`).
+        #[arg(long, value_name = "WHEN", default_value = "+1d")]
+        to: String,
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
@@ -2608,6 +2626,31 @@ fn main() -> Result<()> {
                 actor.as_deref(),
             )?
         }
+        Command::Snooze { ids, to, as_actor } => {
+            let due = recur::resolve_due(&to, recur::today())
+                .map_err(|why| anyhow::anyhow!("--to: {why}"))?;
+            let actor = actor::resolve(as_actor.as_deref());
+            let mut any_failed = false;
+            for id in &ids {
+                match farm.snooze(id, &due, actor.as_deref())? {
+                    SnoozeOutcome::Snoozed => println!("Snoozed {id} until {due}"),
+                    SnoozeOutcome::NotFound => {
+                        eprintln!("error: task {id} not found");
+                        any_failed = true;
+                    }
+                    SnoozeOutcome::Finished(st) => {
+                        eprintln!(
+                            "error: {id} is {} and has nothing to put off; `yaks regrow {id}` reopens it",
+                            st.as_str()
+                        );
+                        any_failed = true;
+                    }
+                }
+            }
+            if any_failed {
+                std::process::exit(1);
+            }
+        }
         Command::RegrowDue {
             dry_run,
             json,
@@ -3368,6 +3411,12 @@ fn due_every_fields(
     let mut out = Vec::new();
     for (flag, key, text) in [("--due", recur::DUE, due), ("--every", recur::EVERY, every)] {
         let Some(text) = text else { continue };
+        // A deadline may be typed relative (`+2d`); it is stored as a date.
+        let text = match key {
+            recur::DUE if !text.trim().is_empty() => recur::resolve_due(&text, recur::today())
+                .map_err(|why| anyhow::anyhow!("{flag}: {why}"))?,
+            _ => text,
+        };
         let value = fields::Value::from_cli(&text);
         if let Some(why) = recur::field_problem(key, &value) {
             anyhow::bail!("{flag} {text:?}: {why}");
