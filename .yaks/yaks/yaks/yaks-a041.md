@@ -1,7 +1,7 @@
 ---
 id: yaks-a041
 title: 'Regrow routes a recurring yak to the inbox (needs: agent|human)'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-04T22:31:54Z'
@@ -72,3 +72,13 @@ Done on branch `scheduling`.
 - Docs and help: `docs/cli.md` (field list, "Waking someone" paragraph), `docs/tui.md`, the `yaks` skill's recurring paragraph, clap help for `--wake` and `regrow-due`.
 
 Decision (Joel's, recorded on the ask): a field `wake:`, not a tag or the last note. Decision: `needs: human` is written as an `ask` note, not a `request` note, because `request` refuses a yak awaiting a human and `doctor` reads the marker.
+
+---
+▸ 2026-11-04T23:00:22Z [sched-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
