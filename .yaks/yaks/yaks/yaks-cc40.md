@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-04T17:18:16Z'
-updated: '2026-11-04T20:03:28Z'
+updated: '2026-11-04T20:04:07Z'
 tags:
 - cli
 - tui
@@ -66,3 +66,36 @@ Run it on a **copy** of this farm first (`YAKS_DIR=<copy> yaks migrate --dry-run
 ▸ 2026-11-04T17:23:25Z [source-fix]
 
 Ordering (source-fix, with yaks-dedc): land yaks-dedc's tool and skill yaks before this one. They touch only `src/sources.rs`, the `source` help, `docs/cli.md`'s source section and the `yaks-research` skill, and this rename will sweep whatever they write (new help and skill prose say "pages"/"wiki" where they must). Doing it the other way round would make the dedc diff conflict with a ~78-file mechanical change.
+
+---
+▸ 2026-11-04T20:04:07Z [source-fix]
+
+Landed on `main` (5cf7686, released as v0.0.32); both real farms migrated.
+
+## What shipped
+
+- `wiki/` and `<herd>/wiki/` are `doks/` and `<herd>/doks/`; `yaks page` is `yaks dok`; `find --kind doks`; `promote --dok`; `Page Type` is `Dok Type`; the Wiki tab is the Doks tab; `Cmd::WikiNew`/`WikiEdit` are `dok.new`/`dok.edit`. `DocPane` was left alone.
+- Hearth import still reads Hearth's `wiki/` and writes `doks/`.
+- A saved TUI views file that names the `wiki` tab keeps its place as `doks`.
+- **Schema 8, not 7**: 7 shipped in 0.0.29, so this description's number was stale.
+
+## Migration
+
+`yaks migrate` has a `doks-directories` layout step and a `wiki-links-become-doks-links` fixup. Farm-root `/wiki/...` links become `/doks/...` in yaks, doks, schemas and sessions; `type: Page Type` becomes `Dok Type`; sources are never touched (a source is a snapshot). It refuses, moving nothing, when `doks/` already exists, and a second run says `nothing to migrate`.
+
+**Pinned links.** Decision: rewrite them (as the lean said) and teach the reader one rule: a `doks/` path missing at the pinned rev is read from `wiki/` at that rev (`links::read_at`). Tested with a real `git mv` commit pair; verified by hand on a copy of this farm (`yaks peek /doks/design/knowledge-store.md@<pre-migration sha>` reads the old file).
+
+## Evidence
+
+- `cargo test`: 1116 passed, 0 failed. No new clippy warnings.
+- Migrated this farm and `joel`: both on schema 8, `yaks migrate` a no-op after, `doctor --strict` and `check` unchanged apart from `wiki`/`page` becoming `doks`/`dok` in their wording.
+- Snapshot diffs were wording only (`Wiki` to `Doks`, one help line). Docshots regenerated (`tui-doks*.svg`).
+
+## Incident
+
+Rehearsing the migration on copies under `/private/tmp` wrote two stray commits to the real farm branches (`0f67b22` in yaks, `cded80a` in joel) and both reached GitHub: each copy's `.git` still pointed at the real worktree gitdir, so the per-change autocommit committed into it. Reverted with `yaks undo` (`95fba654`, `f1f6125`), then migrated for real. Lesson, for anyone rehearsing a farm change: `cp -R` of a farm checkout is not a copy; clone it (`git clone`) or `git worktree`, or the copy writes through.
+
+## Left
+
+- Told Clint: haks writes `doks/digest/<date>.md` now and must call `yaks dok new` (Joel is telling him).
+- `yaks sync` has not been run on either farm; the farm commits are local, apart from the two stray ones and their reverts.
