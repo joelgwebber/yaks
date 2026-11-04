@@ -5,11 +5,11 @@ status: shorn
 type: task
 priority: 3
 created: '2026-11-04T17:23:10Z'
-updated: '2026-11-04T17:29:21Z'
+updated: '2026-11-04T20:03:46Z'
 parent: yaks-dedc
 tags:
-- wiki
 - cli
+- doks
 ---
 
 The tool half of yaks-dedc (diagnosis in its notes). In `src/sources.rs` (`add`, `is_text_name`, `Request`) and the `source add` arm of `src/main.rs`.
