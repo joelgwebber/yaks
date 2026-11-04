@@ -128,20 +128,20 @@ Mentions are whole real ids, matched exactly as `refs` and the TUI links do. Com
 | `create '<title>'` | New hairy yak. Title is positional or `--title`; `--type`/`--priority`/`--parent`/`--herd`/`--tags`/`--depends-on`/`--source`/`--pr`/`--description`/`--description-file`/`--verify`; `--json` prints id + file path. `--description -` reads stdin (see [Multi-line text](#multi-line-text)). [Details](#create) |
 | `update <ids…>` | Update fields/tags, replace the body (`--description`/`--description-file`) or append a `--note`/`--note-file` (with `--meta key=value`, repeatable, for the note's [metadata](#note-metadata)); `--set key=value` / `--unset key` for any other frontmatter field; the same edit applies to every id. `--note -` reads stdin (see [Multi-line text](#multi-line-text)). [Details](#update) |
 | `dep add\|remove <id> <dep>` | Add / remove a dependency. |
-| `peek <link>` | Print only what a link names: lines, a section, a page's head. [Details](#links) |
-| `conflicts [--json]` | List farm documents holding a merge conflict to settle: conflict markers in prose, or a page's `merge_conflicts:`. [Details](#merge-driver) |
+| `peek <link>` | Print only what a link names: lines, a section, a dok's head. [Details](#links) |
+| `conflicts [--json]` | List farm documents holding a merge conflict to settle: conflict markers in prose, or a dok's `merge_conflicts:`. [Details](#merge-driver) |
 | `undo <commit>... \| --by <actor> [--since <when>]` | Revert farm commits as one new commit. [Details](#undo) |
-| `mv <from> <to>` | Move a page and rewrite every link to it. [Details](#links) |
-| `find <pattern> [--scope P] [--kind K] [--regex] [--json]` | Full-text search over yaks, pages, sources' text and sessions. [Details](#find) |
+| `mv <from> <to>` | Move a dok and rewrite every link to it. [Details](#links) |
+| `find <pattern> [--scope P] [--kind K] [--regex] [--json]` | Full-text search over yaks, doks, sources' text and sessions. [Details](#find) |
 | `source add <path> \| list` | Save outside material as a write-once source; list them. [Details](#source) |
-| `promote <id>/<file> [--page <path>]` | Move a yak's attachment into a source or a page, rewriting links. [Details](#source) |
-| `import-hearth <repo>` | Copy a Hearth-layout repo's `wiki/`, `raw/sources/`, `schemas/` and `raw/sessions/` into the farm, links rewritten; `--dry-run` first. [Details](#import-hearth) |
-| `page list\|show\|new\|set\|query\|types` | The farm's pages: markdown documents under `wiki/` or `<herd>/wiki/` that are not yaks. [Details](#page) |
+| `promote <id>/<file> [--dok <path>]` | Move a yak's attachment into a source or a dok, rewriting links. [Details](#source) |
+| `import-hearth <repo>` | Copy a Hearth-layout repo's `doks/`, `raw/sources/`, `schemas/` and `raw/sessions/` into the farm, links rewritten; `--dry-run` first. [Details](#import-hearth) |
+| `dok list\|show\|new\|set\|query\|types` | The farm's doks: markdown documents under `doks/` or `<herd>/doks/` that are not yaks. [Details](#dok) |
 | `reparent <ids…> --parent <id>` | Move yaks under a new parent (or `--unparent` to top-level). |
 | `rename <old> <new>` | Rename a yak's id, updating every reference across the farm (its file, its `.yaks/<herd>/yaks/<id>/` attachment dir and the `](<old>/…)` links to it). |
 | `rename-herd <old> <new>` | Rename a whole herd: migrate every id from one prefix to another (e.g. `yaksrs` → `yaks`). (`rename-prefix` still works as an alias.) |
 | `merge <path> [--dry-run]` | Merge another farm's yaks (all statuses + attachments, byte for byte) into this one, preserving ids and status. Non-destructive; refuses on id collisions. [Details](#merge) |
-| `merge-driver <base> <ours> <theirs> <path>` | **Internal** (hidden from `--help`): git's merge driver for farm documents. Merges the three versions of a yak or page into `<ours>` with fields merged by rule, never conflict markers in frontmatter. Needs no farm. [Details](#merge-driver) |
+| `merge-driver <base> <ours> <theirs> <path>` | **Internal** (hidden from `--help`): git's merge driver for farm documents. Merges the three versions of a yak or dok into `<ours>` with fields merged by rule, never conflict markers in frontmatter. Needs no farm. [Details](#merge-driver) |
 | `bulk <filter> <mutation>` | Filter-driven field edit. **Dry-run by default**: changes nothing without `--commit`. Requires ≥1 filter flag and ≥1 mutation flag. Field edits, reparent, and `--request <kind>` only. [Details](#bulk) |
 
 ### `create`
@@ -190,19 +190,19 @@ Non-destructive (source left intact); refuses on id collisions — reconcile the
 
 `import-hearth <repo> [--dry-run]`
 
-Copy a [Hearth](https://github.com/joelgwebber/hearth)-layout repo's knowledge into this farm. Hearth's pages and sources are the formats yaks reads, so files move as they are; only the folders and the links change:
+Copy a [Hearth](https://github.com/joelgwebber/hearth)-layout repo's knowledge into this farm. Hearth's doks and sources are the formats yaks reads, so files move as they are; only the folders and the links change:
 
 | In the repo | In the farm |
 |---|---|
-| `wiki/**` | `wiki/**` (same paths) |
+| `doks/**` | `doks/**` (same paths) |
 | `raw/sources/<id>/` | `sources/<id>/`, byte for byte |
 | `schemas/*.md` | `schemas/` |
 | `raw/sessions/**` | `sessions/**` (a top-level directory is a herd only when it holds `yaks/`, so this is not one) |
 
-- **Links** are rewritten by byte range and nothing else in a file changes. A `../` link (the [link grammar](#links) refuses it) becomes a farm-root link, `../../raw/sources/<id>/x.png` -> `/sources/<id>/x.png`, `../projects/x.md` -> `/wiki/projects/x.md`; one that points at a file of the repo that is not imported (`notes/`, `projects/`) becomes a `code:` link (`code:notes/x.md`). Links that stay below the page, URLs and code spans are left alone. `raw/sources/<id>/...` paths in frontmatter (`sources:` of a page, `part_of` and `superseded_by` of a `source.md`) become `sources/<id>/...`, keeping the entry's formatting.
+- **Links** are rewritten by byte range and nothing else in a file changes. A `../` link (the [link grammar](#links) refuses it) becomes a farm-root link, `../../raw/sources/<id>/x.png` -> `/sources/<id>/x.png`, `../projects/x.md` -> `/doks/projects/x.md`; one that points at a file of the repo that is not imported (`notes/`, `projects/`) becomes a `code:` link (`code:notes/x.md`). Links that stay below the dok, URLs and code spans are left alone. `raw/sources/<id>/...` paths in frontmatter (`sources:` of a dok, `part_of` and `superseded_by` of a `source.md`) become `sources/<id>/...`, keeping the entry's formatting.
 - **Not imported:** `schedules/`, `core/`, `instructions/`, `views/`, `.agents/`, `AGENTS.md` (Hearth's harness side), and anything else at the top level (`notes/`, `projects/`), which stays in the repo. The report lists them.
 - The repo is only read. A file the farm already holds is skipped when identical; if any differs, the command prints `REFUSED` with the paths, writes nothing and exits 1. Re-running is therefore a no-op.
-- One commit on the farm branch, `yaks: import N pages, M sources, ... from <repo> @ <HEAD>`, holding only the files the import wrote.
+- One commit on the farm branch, `yaks: import N doks, M sources, ... from <repo> @ <HEAD>`, holding only the files the import wrote.
 - The report counts what moved, links rewritten, `code:` links (and whether the target exists), prose that still names a `raw/` path (not a link: left as written), files that are git-lfs pointers rather than content (run `git lfs pull` in the repo, then import again), and `doctor`'s findings afterwards. `--dry-run` prints the same report and writes nothing.
 
 ### `merge-driver`
@@ -212,8 +212,8 @@ Copy a [Hearth](https://github.com/joelgwebber/hearth)-layout repo's knowledge i
 **Internal** (hidden from `--help`): git's merge driver for farm documents, run as `yaks merge-driver %O %A %B %P` (registered by `.gitattributes` `.yaks/**/*.md merge=yaks` + `git config merge.yaks.driver`). The rule: **fields merge by rule and never get conflict markers; prose may keep them** for a person or agent to resolve.
 
 - **A yak** (a file under `<herd>/yaks/`): note entries unioned (deduped, ordered by timestamp), `updated` the later, `tags`/`depends_on`/`prs` and any other list merged (base + additions − removals), every other field taken from the side that changed it. A field both sides changed differently keeps `<ours>` and is recorded in one `merge-driver` note (`merge conflict: status was X here, Y on the other side; kept X`).
-- **A page or any other markdown file:** frontmatter merged by the same field rule; a field both sides set differently keeps `<ours>` and adds `{field, theirs}` to a `merge_conflicts:` list in the frontmatter (a page has no notes log). Remove the entry once settled.
-- **Prose** (a yak's description, a page body, a file without frontmatter) merges line by line with `git merge-file`. Edits to different lines both land; where both sides changed the same lines, both versions stay in the text between `<<<<<<< here`, `=======` and `>>>>>>> other side`, and the merge still succeeds (a yak also gets a `merge-driver` note saying so). During `yaks sync`, which rebases, git's "ours" is the remote's version: `here` and a kept field are then what was already pushed, and `other side` is your own commit being replayed.
+- **A dok or any other markdown file:** frontmatter merged by the same field rule; a field both sides set differently keeps `<ours>` and adds `{field, theirs}` to a `merge_conflicts:` list in the frontmatter (a dok has no notes log). Remove the entry once settled.
+- **Prose** (a yak's description, a dok body, a file without frontmatter) merges line by line with `git merge-file`. Edits to different lines both land; where both sides changed the same lines, both versions stay in the text between `<<<<<<< here`, `=======` and `>>>>>>> other side`, and the merge still succeeds (a yak also gets a `merge-driver` note saying so). During `yaks sync`, which rebases, git's "ours" is the remote's version: `here` and a kept field are then what was already pushed, and `other side` is your own commit being replayed.
 
 `yaks conflicts` lists every farm markdown file holding conflict markers (outside code fences) or a `merge_conflicts:` list, with the marker lines, and exits 1 when there is any; `--json` gives `[{path, marker_lines, fields}]`. `doctor` reports the same as `merge-conflict`. Edit the file to settle it.
 
@@ -229,27 +229,27 @@ Requires ≥1 filter flag (never the whole farm) and ≥1 mutation flag (`--add-
 
 `--request tidy|summarize [--note '<extra>']` queues that canned request on every matched yak, exactly as [`request --kind`](#request) does (one `request` per yak). It combines with the field edits or stands alone. A yak awaiting a human is skipped and listed as skipped (answer it instead); the dry run marks it `(awaiting a human: request skipped)`. Example: `yaks bulk --tag docs --request tidy --commit`.
 
-### `page`
+### `dok`
 
-`page list [<prefix>]` · `page show <path>` · `page new <path>` · `page set <path>` · `page query`
+`dok list [<prefix>]` · `dok show <path>` · `dok new <path>` · `dok set <path>` · `dok query`
 
-Pages are the farm's other documents: research, decision records, design notes, anything that should outlive one yak and stay beside the work. A page lives under `wiki/` (farm-wide) or `<herd>/wiki/` (one herd's), at any depth, and is named by its path from the farm root: `wiki/topics/vector-search.md`. A leading `/` is accepted (`/wiki/x.md`, the form links use). Product docs that ship with the code stay in the code repo's `docs/`.
+Doks are the farm's other documents: research, decision records, design notes, anything that should outlive one yak and stay beside the work. A dok lives under `doks/` (farm-wide) or `<herd>/doks/` (one herd's), at any depth, and is named by its path from the farm root: `doks/topics/vector-search.md`. A leading `/` is accepted (`/doks/x.md`, the form links use). Product docs that ship with the code stay in the code repo's `docs/`.
 
-A page is markdown with YAML frontmatter in OKF's shape: `type:` (`note`, the default; `topic`, a living page about one subject; `howto`; `summary`, a digest of one source; or a typed kind), `title:`, and any other field (`description`, `tags`, `sources`, `status`, `stale_after`, ...). Every field round-trips exactly as written. Pages have no notes log and no `updated:` field: git says when one changed.
+A dok is markdown with YAML frontmatter in OKF's shape: `type:` (`note`, the default; `topic`, a living dok about one subject; `howto`; `summary`, a digest of one source; or a typed kind), `title:`, and any other field (`description`, `tags`, `sources`, `status`, `stale_after`, ...). Every field round-trips exactly as written. Doks have no notes log and no `updated:` field: git says when one changed.
 
-- `page list [<prefix>]` prints path, type and title, sorted by path; `<prefix>` narrows it (`wiki/topics`, `yaks/wiki`).
-- `page show <path>` prints the file; `--json` gives `path`, `type`, `title`, `herd` (null for the farm-wide wiki), `fields` parsed, and `body`.
-- `page new <path> [--type T] [--title T] [--set key=value ...] [--body TEXT | --body-file PATH]` creates a page. The path must be `wiki/<parts>.md` or `<herd>/wiki/<parts>.md`, every part lowercase-kebab (`a-z`, `0-9`, `-`); an existing file is refused. The title defaults to the file name (`heat-pump.md` → `Heat pump`).
-- `page set <path> [--set key=value ...] [--unset key ...] [--body ... | --body-file ...]` edits fields (rewriting only those keys) or replaces the body. An empty value removes a field.
-- `page query [--type T] [--where key=value ...] [--prefix P]` lists pages whose fields match, all tests ANDed; a list field (`tags`) matches when it holds the value.
+- `dok list [<prefix>]` prints path, type and title, sorted by path; `<prefix>` narrows it (`doks/topics`, `yaks/doks`).
+- `dok show <path>` prints the file; `--json` gives `path`, `type`, `title`, `herd` (null for the farm-wide doks), `fields` parsed, and `body`.
+- `dok new <path> [--type T] [--title T] [--set key=value ...] [--body TEXT | --body-file PATH]` creates a dok. The path must be `doks/<parts>.md` or `<herd>/doks/<parts>.md`, every part lowercase-kebab (`a-z`, `0-9`, `-`); an existing file is refused. The title defaults to the file name (`heat-pump.md` → `Heat pump`).
+- `dok set <path> [--set key=value ...] [--unset key ...] [--body ... | --body-file ...]` edits fields (rewriting only those keys) or replaces the body. An empty value removes a field.
+- `dok query [--type T] [--where key=value ...] [--prefix P]` lists doks whose fields match, all tests ANDed; a list field (`tags`) matches when it holds the value.
 
-`--set` values parse like `update --set`: `[a, b]` is a list, `{a: b}` a map. `--body -` reads stdin. Editing a page by hand is fine; `yaks doctor` checks pages (below). `list` and `query` take `--json`.
+`--set` values parse like `update --set`: `[a, b]` is a list, `{a: b}` a map. `--body -` reads stdin. Editing a dok by hand is fine; `yaks doctor` checks doks (below). `list` and `query` take `--json`.
 
-**Typed pages.** A kind other than the untyped four can have a schema, `schemas/<type>.md`, saying which fields its pages have, in Hearth's format:
+**Typed doks.** A kind other than the untyped four can have a schema, `schemas/<type>.md`, saying which fields its doks have, in Hearth's format:
 
 ```markdown
 ---
-type: Page Type
+type: Dok Type
 title: Appliance
 fields:
   name: {type: text, required: true}
@@ -258,20 +258,20 @@ fields:
 ---
 ```
 
-A field is `{type, required, default, description}` or the shorthand `name: <type>`; types are `text`, `number`, `bool`, `date`, `datetime`, `money` (`649.00 USD`), `link`, `list` (anything else reads as text, with a warning). Schemas only advise: `page new` fills in defaults, `page new`/`page set` print warnings (a usually-set field missing, a value of the wrong type, a field the schema does not list), and `doctor` reports them as `schema-mismatch`. No write is ever refused. `page types` lists the untyped kinds and every schema with its fields. A small list whose rows aren't pages of their own is a **table page**: a page of that type whose body holds a markdown table; `page query --rows [--type T] [--where column=value]` lists its rows.
+A field is `{type, required, default, description}` or the shorthand `name: <type>`; types are `text`, `number`, `bool`, `date`, `datetime`, `money` (`649.00 USD`), `link`, `list` (anything else reads as text, with a warning). Schemas only advise: `dok new` fills in defaults, `dok new`/`dok set` print warnings (a usually-set field missing, a value of the wrong type, a field the schema does not list), and `doctor` reports them as `schema-mismatch`. No write is ever refused. `dok types` lists the untyped kinds and every schema with its fields. A small list whose rows aren't doks of their own is a **table dok**: a dok of that type whose body holds a markdown table; `dok query --rows [--type T] [--where column=value]` lists its rows.
 
-`schemas/yak.md` extends yaks the same way: its `fields:` describe extra yak fields (`due: date`), checked by `doctor` (the built-in fields are never reported), and its `tags:` map lists the farm's known tags with a description each (`ui: The TUI`), shown by `page types`.
+`schemas/yak.md` extends yaks the same way: its `fields:` describe extra yak fields (`due: date`), checked by `doctor` (the built-in fields are never reported), and its `tags:` map lists the farm's known tags with a description each (`ui: The TUI`), shown by `dok types`.
 
 ### `find`
 
-`find <pattern> [--regex] [--scope <prefix>]... [--kind yaks|pages|sources|sessions]... [--case-sensitive] [--json]`
+`find <pattern> [--regex] [--scope <prefix>]... [--kind yaks|doks|sources|sessions]... [--case-sensitive] [--json]`
 
-One search over the farm's prose. It reads yak files (title, description and notes: the whole file), pages (frontmatter and body), each source's `source.md` and `extracted.md` (never the original file) and `sessions/**.md`. Binary files and files that are not UTF-8 are skipped. It scans the files each time, with no index: on this farm's ~700 yaks (about 10 MB) a search takes about 0.2 s, and on a 160-file Hearth import (1.5 MB of sources) about the same.
+One search over the farm's prose. It reads yak files (title, description and notes: the whole file), doks (frontmatter and body), each source's `source.md` and `extracted.md` (never the original file) and `sessions/**.md`. Binary files and files that are not UTF-8 are skipped. It scans the files each time, with no index: on this farm's ~700 yaks (about 10 MB) a search takes about 0.2 s, and on a 160-file Hearth import (1.5 MB of sources) about the same.
 
 - The match ignores case (`--case-sensitive` turns that off; `-i` is accepted and changes nothing). The pattern is a literal substring; `--regex` makes it a regular expression: `. [a-z] [^x] \d \w \s \b ^ $ ( ) (?: ) | * + ? {n,m}`. A pattern with a lookaround, backreference or inline flag is refused. Matching is linear in the line, so a pattern cannot hang.
-- `--scope` keeps paths under a prefix of the farm, repeatable: `wiki`, `sources`, a herd name (its yaks and its wiki), or a longer prefix such as `wiki/topics/vec`. A name without a `/` means that directory (`web` does not match `webby/`).
+- `--scope` keeps paths under a prefix of the farm, repeatable: `doks`, `sources`, a herd name (its yaks and its doks), or a longer prefix such as `doks/topics/vec`. A name without a `/` means that directory (`web` does not match `webby/`).
 - `--kind` keeps one kind of file, repeatable.
-- Output is a header per file, `path  title` (the yak's, page's or source's title), then `path:line: text` per matching line (`line` counts the file's own lines, frontmatter included), text trimmed to about 160 characters around the match. Files come yaks, pages, sources, sessions, each sorted by path.
+- Output is a header per file, `path  title` (the yak's, dok's or source's title), then `path:line: text` per matching line (`line` counts the file's own lines, frontmatter included), text trimmed to about 160 characters around the match. Files come yaks, doks, sources, sessions, each sorted by path.
 - `--json` gives `[{path, kind, title, line, text}]`, `kind` being a `--kind` value; `[]` when nothing matched.
 - Exit 1 when nothing matches, like `grep`; 1 with `error: invalid pattern: ...` when a regex does not parse.
 
@@ -279,40 +279,40 @@ One search over the farm's prose. It reads yak files (title, description and not
 
 ### `source`
 
-`source add <path> [--title T] [--url URL] [--text FILE] [--part-of sources/<id>/source.md]` · `source list [--json]` · `promote <id>/<file> [--page <path>]`
+`source add <path> [--title T] [--url URL] [--text FILE] [--part-of sources/<id>/source.md]` · `source list [--json]` · `promote <id>/<file> [--dok <path>]`
 
-A **source** is a snapshot of material from outside the farm, written once and cited from pages (`sources:`) and yaks (a link). It lives in `sources/<YYYY-MM-DD>-<first 8 hex of its sha256>/`: the original file (a directory's files under `files/`, its layout kept), `extracted.md` with its text: a copy of a markdown, plain-text or code original (a directory's text files joined under `## <path>` headings), or your own conversion passed with `--text` (HTML and PDF are not text: yaks never treats markup as extracted), and `source.md`: frontmatter with `type: source`, `title`, `description`, `file` (or `files:`), `media_type`, `size`, `sha256`, `part_of`, a `sources:` entry saying where it came from (`resource`, `host`, `last_modified`, `retrieved`; a file saved from a temp directory records its name, not the scratch path) and `generated: {by, at}`. That is Hearth's format, so a Hearth repo's `raw/sources/` moves over as is.
+A **source** is a snapshot of material from outside the farm, written once and cited from doks (`sources:`) and yaks (a link). It lives in `sources/<YYYY-MM-DD>-<first 8 hex of its sha256>/`: the original file (a directory's files under `files/`, its layout kept), `extracted.md` with its text: a copy of a markdown, plain-text or code original (a directory's text files joined under `## <path>` headings), or your own conversion passed with `--text` (HTML and PDF are not text: yaks never treats markup as extracted), and `source.md`: frontmatter with `type: source`, `title`, `description`, `file` (or `files:`), `media_type`, `size`, `sha256`, `part_of`, a `sources:` entry saying where it came from (`resource`, `host`, `last_modified`, `retrieved`; a file saved from a temp directory records its name, not the scratch path) and `generated: {by, at}`. That is Hearth's format, so a Hearth repo's `raw/sources/` moves over as is.
 
 - `source add <path>` saves a file (up to 20 MiB) or a small directory (up to 200 files and 5 MiB; `.git`, `node_modules`, `target` and dot files are left out). Saving the same content again, on any day, reports `Already saved:` with the existing source. A path already inside the farm is refused: link it instead.
 - yaks fetches nothing and converts nothing. To save a web page, download it (or have your agent do so), convert it to markdown, and save it **once**: `source add page.html --url <page> --title "<what it is>" --text page.md`. The URL becomes the resource, the original sits beside `extracted.md`, which is your conversion. `--text` takes a file and is refused for a directory or a file that is not UTF-8. `--part-of` records which source a part (a screenshot of that page) belongs to, never a conversion of the same thing.
 - The description is built from the URL or the file's name, never from a path on your machine.
 - `source list` prints id, media type, title and resource, oldest first.
-- `promote <id>/<file>` turns a yak's attachment into a source (resource `<id>/<file>`); `--page wiki/<path>.md` turns a markdown attachment into a page instead (given `type: note` and a title when it has no frontmatter). The attachment is removed and every link to it, in any yak, page or markdown attachment, now points at the new place; a markdown attachment promoted to a page has its bare sibling links (`shot.png`) rewritten to `<id>/<file>` so they keep naming the yak's attachments.
+- `promote <id>/<file>` turns a yak's attachment into a source (resource `<id>/<file>`); `--dok doks/<path>.md` turns a markdown attachment into a dok instead (given `type: note` and a title when it has no frontmatter). The attachment is removed and every link to it, in any yak, dok or markdown attachment, now points at the new place; a markdown attachment promoted to a dok has its bare sibling links (`shot.png`) rewritten to `<id>/<file>` so they keep naming the yak's attachments.
 
 ### Links
 
-Yaks and pages link with ordinary markdown links, in one grammar: `<target>[@<rev>][#<anchor>]`.
+Yaks and doks link with ordinary markdown links, in one grammar: `<target>[@<rev>][#<anchor>]`.
 
 | Target | Form | Example |
 |---|---|---|
 | a yak | its full id, bare in prose | `yaks-1a2b` |
-| a farm document | path from the farm root, leading `/` | `/wiki/topics/x.md`, `/sources/<id>/source.md` |
-| below the linking page | relative, downward only | `notes/detail.md` (from `wiki/topics/x.md`) |
+| a farm document | path from the farm root, leading `/` | `/doks/topics/x.md`, `/sources/<id>/source.md` |
+| below the linking dok | relative, downward only | `notes/detail.md` (from `doks/topics/x.md`) |
 | a yak's attachment | `<id>/<file>`, from anywhere; inside an attachment, a bare sibling `<file>` | `yaks-1a2b/log.txt`, `shot.png` |
 | the code repository | `code:` and a path from the repo root | `code:src/foo.rs#L12-L40` |
 | a URL | as is | `https://...` |
 
-- `@<rev>` (7 to 40 hex digits) pins a path to a commit: a farm path to a farm-branch commit, a `code:` path to a code commit (`code:src/foo.rs@3f2a9c1#L12`, `/wiki/x.md@91be0d2#setup`).
+- `@<rev>` (7 to 40 hex digits) pins a path to a commit: a farm path to a farm-branch commit, a `code:` path to a code commit (`code:src/foo.rs@3f2a9c1#L12`, `/doks/x.md@91be0d2#setup`).
 - `#L12` or `#L12-L40` names lines; any other `#anchor` a heading, by GitHub's slug rule (lowercase, spaces to `-`, punctuation dropped; a repeated heading gets `-1`, `-2`).
 - **In a file attached to a yak**, a bare file name is another attachment of the same yak (`![crop](shot.png)` in `yaks-1a2b/evidence.md` is `yaks-1a2b/shot.png`), because that is where any other markdown viewer looks for it too; an attachment directory is flat, so only a bare name counts, and `<id>/<file>`, `/farm/path`, `code:` and URLs mean what they do anywhere. `doctor` checks the links inside markdown attachments, and `rename-attachment` and `promote` keep them right.
 - A relative link never climbs with `../`: link from the farm root instead. In yaks the older code forms stay valid: `../src/foo.rs` and the pinned `../blob/<sha>/src/foo.rs`.
 - `code:` links resolve in the code checkout: the git top-level of the directory yaks runs in, else the repository's main checkout.
 
-`peek <link> [--context N]` prints only what a link names: the lines (numbered; `--context` widens them), the section under a heading (up to the next heading of the same or a higher level), or with no anchor a page's frontmatter and first paragraph (the first 20 lines of anything else). A pinned link reads the file as it was at that commit. Exits non-zero, saying why, for a missing file, heading or line.
+`peek <link> [--context N]` prints only what a link names: the lines (numbered; `--context` widens them), the section under a heading (up to the next heading of the same or a higher level), or with no anchor a dok's frontmatter and first paragraph (the first 20 lines of anything else). A pinned link reads the file as it was at that commit. Exits non-zero, saying why, for a missing file, heading or line.
 
-`refs <page path> [--incoming] [--json]` lists the links a page holds (marking any that lead nowhere), or with `--incoming` every yak and page that links to it, with the line.
+`refs <dok path> [--incoming] [--json]` lists the links a dok holds (marking any that lead nowhere), or with `--incoming` every yak and dok that links to it, with the line.
 
-`mv <from> <to> [--dry-run]` moves a page and rewrites every link to it, in yaks and pages, in the farm-root form, keeping each link's `@rev` and `#anchor`; the moved page's own relative links are rewritten to keep their targets. The destination follows `page new`'s naming rule.
+`mv <from> <to> [--dry-run]` moves a dok and rewrites every link to it, in yaks and doks, in the farm-root form, keeping each link's `@rev` and `#anchor`; the moved dok's own relative links are rewritten to keep their targets. The destination follows `dok new`'s naming rule.
 
 `doctor` reports `broken-link`: a farm path or attachment that does not exist, or a `../` link outside the legacy code forms. Placeholder links in prose (`[x](path)`, `[x](<id>/<file>)`) are not checked.
 
@@ -599,7 +599,7 @@ Rules, the same for all four commands:
 
 | Command | What it does |
 |---|---|
-| `migrate [--dry-run]` | Bring a farm on an older schema up to this yaks' (schema 4 or 5 → 6), under the farm lock. `--dry-run` writes nothing. Idempotent; never commits. [Details](#migrate) |
+| `migrate [--dry-run]` | Bring a farm on an older schema up to this yaks' (schema 4 to 7 → 8), under the farm lock. `--dry-run` writes nothing. Idempotent; never commits. [Details](#migrate) |
 | `weight [--json]` | What the farm costs a clone of this repository: commits, farm-only bytes, the tree by kind, the largest blobs. [Details](#weight) |
 | `lfs` | Store the farm's binary originals in Git LFS from now on. [Details](#weight) |
 | `private [--off]` | Mark this repository's farm private so it never leaves the machine: sets `git config yaks.private true` and installs a `pre-push` hook that refuses pushes of the farm branch. `--off` undoes it. [Details](#private) |
@@ -607,7 +607,7 @@ Rules, the same for all four commands:
 | `skills install` | Install all four bundled agent skills to `--dir <path>`, `--user` or the project's `./.agents/skills`. Edited copies are left alone unless `--force`. [Details](#skills) |
 | `skills status` | Per-skill verdict (`current`, `stale`, `adoptable`, `held`, `modified`, `unmanaged`, `source`, `retired`) from the provenance stamp. `--user` / `--dir` inspect another directory. See [skills.md](skills.md). [Details](#skills) |
 | `doctor` | Read-only integrity check: invalid status, duplicate id, misplaced file, dangling parent/deps, malformed tags, `needs:` that disagrees with the latest kinded ask/answer/request/pickup note, a shorn or dead yak over unfinished children. Exits non-zero on any issue. `--strict` also flags shorn yaks with no note or whose `verify:` did not last PASS. [Details](#doctor) |
-| `check [--json]` | Read-only upkeep check on pages and sources: pages past their `stale_after`, sources no page or yak cites, page kinds that differ only by plural or hyphens, plus `doctor`'s broken links, schema mismatches, merge conflicts and page problems. Exits 1 on any finding. [Details](#check) |
+| `check [--json]` | Read-only upkeep check on doks and sources: doks past their `stale_after`, sources no dok or yak cites, dok kinds that differ only by plural or hyphens, plus `doctor`'s broken links, schema mismatches, merge conflicts and dok problems. Exits 1 on any finding. [Details](#check) |
 | `preflight [<id>...] [--all] [--push-main]` | Read-only landing check: shorn yaks' `verify:` last PASSed, farm integrity, no merge conflict in the farm. `--push-main` checks the `local` remote. [Details](#preflight) |
 | `whoami [--set <name>]` | Show the actor this checkout's writes are stamped with, and why; `--set` stores one for this checkout (`git config yaks.actor`), which outlasts fresh shells. Warns on a name another thread uses. [Details](#whoami) |
 | `brief <id> --as <name> [--yaks-dir <path>]` | Print the worker brief for one yak, read-only: the part a worker needs that the yak, the config and the farm determine. `--yaks-dir` names the farm. [Details](#brief) |
@@ -621,9 +621,11 @@ Rules, the same for all four commands:
 
 `migrate [--dry-run]`
 
-Bring a farm on an older schema up to this yaks' (schema 4, 5 or 6 → 7), under the farm lock, writing `.yaks/schema` last.
+Bring a farm on an older schema up to this yaks' (schema 4, 5, 6 or 7 → 8), under the farm lock, writing `.yaks/schema` last.
 
-First the **`herd-directories`** layout step: every yak file (`<id>.md` at the farm root whose `id:` is its name) and its attachment dir (`<id>/`) moves to `<herd>/yaks/` (plain renames: git sees 100% renames and `git log --follow` keeps working; bodies are untouched, since attachment links are relative to the yak file); other root files stay; refuses, moving nothing, if a destination exists or a herd is named like a reserved directory (`docs`, `wiki`, `sources`, `schemas`, `sessions`).
+First the **`herd-directories`** layout step: every yak file (`<id>.md` at the farm root whose `id:` is its name) and its attachment dir (`<id>/`) moves to `<herd>/yaks/` (plain renames: git sees 100% renames and `git log --follow` keeps working; bodies are untouched, since attachment links are relative to the yak file); other root files stay; refuses, moving nothing, if a destination exists or a herd is named like a reserved directory (`docs`, `doks`, `sources`, `schemas`, `sessions`).
+
+Schema 8 renamed the wiki to **doks** (yaks-cc40), with two more steps. The **`doks-directories`** layout step moves `wiki/` to `doks/` and each herd's `<herd>/wiki/` to `<herd>/doks/` (plain renames, so `git log --follow` keeps working); it refuses, moving nothing, if `doks/` already exists. **`wiki-links-in-doks`** rewrites farm-root `/wiki/...` links to `/doks/...`, keeping any `@rev` and `#anchor`, in doks, schemas and sessions, and `type: Page Type` in a schema to `Dok Type`; the **`wiki-links-become-doks-links`** fixup does the same for the links in yak files. Sources are never rewritten (a source is a snapshot), and a link pinned to a commit from before the migration still reads the dok at its old `wiki/` path. `code:` links and relative links are untouched.
 
 Then the named fixups over every yak file: **`labels-become-tags`** (schema 7) renames the top-level `labels:` frontmatter key to `tags:`, value untouched; **`comment-header-blank-line`** puts a blank line after every comment's `▸ <ts> [actor]` header (so the header is a paragraph of its own in any CommonMark viewer) and **`attachment-links`** relinks non-image attachments as `[stem](<id>/<file>)` instead of `![stem](<id>/<file>)` (images keep the `!`); **`attachment-link-encoding`** (schema 7) percent-encodes an attachment link whose file name holds a space (`](<id>/my%20shot.png)`), which markdown does not read as a link otherwise. Apart from that one key, only the body shape changes: other frontmatter, `updated:` and attachments are untouched.
 
@@ -641,7 +643,7 @@ Once synced, a migration locks out every older yaks, so the bundled skills tell 
 
 ### `weight`
 
-`weight [--json]` measures what the farm costs: a plain `git clone` of a code repository fetches every branch, so each code clone pays for the farm branch's whole history (every attachment, source and per-change commit). It prints the farm branch's commit count, the bytes a clone fetches for it (objects no other branch has), the current tree by kind (yaks, attachments, pages, sources, other), the ten largest blobs only the farm branch holds, and whether LFS is on. Read-only.
+`weight [--json]` measures what the farm costs: a plain `git clone` of a code repository fetches every branch, so each code clone pays for the farm branch's whole history (every attachment, source and per-change commit). It prints the farm branch's commit count, the bytes a clone fetches for it (objects no other branch has), the current tree by kind (yaks, attachments, doks, sources, other), the ten largest blobs only the farm branch holds, and whether LFS is on. Read-only.
 
 `lfs` stores the farm's binary originals in Git LFS: images, PDFs, office documents, audio, video and archives under `.yaks/` (any case of the extension). It installs LFS's hooks for this repository (`git lfs install --local`), writes the rules into the farm branch's `.gitattributes` (other lines kept), and commits them together with the binaries already in the tree, converted to pointers; that commit holds only those paths. Older history keeps the plain bytes. Afterwards a clone fetches small pointers, and the bytes come down only where the farm is checked out. Markdown, `source.md` and `extracted.md` stay plain text, so search, diffs and merges work without the originals. Needs `git-lfs` installed and a remote that accepts LFS (GitHub does). Idempotent.
 
@@ -689,7 +691,7 @@ yaks init --farm ~/src/api --herd web      # share api's farm; new yaks here go 
 
 The farm layout: `config.yaml`, `schema`, and one file per yak at
 `<herd>/yaks/<id>.md` with a `status:` field (`docs/` and `<herd>/docs/` are
-reserved, and so are the farm-root `wiki`, `sources`, `schemas` and `sessions`
+reserved, and so are the farm-root `doks`, `sources`, `schemas` and `sessions`
 directories: none of those is a valid herd name). A farm on the old layout (schema 3,
 status directories) is refused by every command, naming
 `npx -y @j15r/yaks@0.0.16 migrate`.
@@ -722,7 +724,7 @@ An ordinary command prints that advice itself as one stderr `note:` line, once p
 
 `doctor`
 
-Read-only integrity check: a `status:` value that is not hairy/shaving/shorn/dead (`invalid-status`), one `id:` in the frontmatter of two yak files (`duplicate-id`), a yak file away from its `<herd>/yaks/<id>.md` (in another herd's directory, under another name, or loose at the farm root; not loaded from there: `misplaced-file`), dangling parent/deps, malformed tags (a legacy tag containing a comma or space, e.g. `ui,docs` — any tag edit on that yak re-splits it), and `needs-drift`: the latest `ask`, `answer`, `request` or `pickup` note *with* `kind` [metadata](#note-metadata) leaves a state that `needs:` disagrees with (`ask` leaves its `needs` key, default `human`; `answer`, its `needs` key, default `agent`; `request`, `agent`; `pickup`, none). A yak with no such note is never flagged. Two commands change `needs:` without writing a note, so the check allows what they leave: after an `ask` note, `agent` or no `needs` (an `answer` with no `--note`); after an `answer` note, no `needs` (`answer --done` with no note, or `pickup --drop-request`, which removes the request note). And `unfinished-children`: a shorn or dead yak with hairy or shaving children, which the moves refuse ([Families stay consistent](#families-stay-consistent)) but an older farm or a hand edit can still hold; finish the children, regrow (or revive) the parent, or graduate them. And `page-problem`: a page with no frontmatter, no `type:` or `title:`, a name that is not lowercase-kebab, or a field value in YAML yaks does not read; the issue's `ids` holds the page's path. And `broken-link` ([Links](#links)), `schema-mismatch` ([typed pages](#page)), and `merge-conflict` ([merge driver](#merge-driver)).
+Read-only integrity check: a `status:` value that is not hairy/shaving/shorn/dead (`invalid-status`), one `id:` in the frontmatter of two yak files (`duplicate-id`), a yak file away from its `<herd>/yaks/<id>.md` (in another herd's directory, under another name, or loose at the farm root; not loaded from there: `misplaced-file`), dangling parent/deps, malformed tags (a legacy tag containing a comma or space, e.g. `ui,docs` — any tag edit on that yak re-splits it), and `needs-drift`: the latest `ask`, `answer`, `request` or `pickup` note *with* `kind` [metadata](#note-metadata) leaves a state that `needs:` disagrees with (`ask` leaves its `needs` key, default `human`; `answer`, its `needs` key, default `agent`; `request`, `agent`; `pickup`, none). A yak with no such note is never flagged. Two commands change `needs:` without writing a note, so the check allows what they leave: after an `ask` note, `agent` or no `needs` (an `answer` with no `--note`); after an `answer` note, no `needs` (`answer --done` with no note, or `pickup --drop-request`, which removes the request note). And `unfinished-children`: a shorn or dead yak with hairy or shaving children, which the moves refuse ([Families stay consistent](#families-stay-consistent)) but an older farm or a hand edit can still hold; finish the children, regrow (or revive) the parent, or graduate them. And `dok-problem`: a dok with no frontmatter, no `type:` or `title:`, a name that is not lowercase-kebab, or a field value in YAML yaks does not read; the issue's `ids` holds the dok's path. And `broken-link` ([Links](#links)), `schema-mismatch` ([typed doks](#dok)), and `merge-conflict` ([merge driver](#merge-driver)).
 
 Exits non-zero on any issue (CI-usable).
 
@@ -732,12 +734,12 @@ Exits non-zero on any issue (CI-usable).
 
 `check [--json]`
 
-Hearth's nightly check minus what needs a model: what a person or an agent should look at in the farm's pages and sources. Read-only, never edits; exits 0 when clean and 1 when there is any finding. Each finding is `{kind, message, ids}` (`--json` gives the array; the text report groups by kind). Seven kinds:
+Hearth's nightly check minus what needs a model: what a person or an agent should look at in the farm's doks and sources. Read-only, never edits; exits 0 when clean and 1 when there is any finding. Each finding is `{kind, message, ids}` (`--json` gives the array; the text report groups by kind). Seven kinds:
 
-- `stale`: a page past its `stale_after`, the page's own else its `schemas/<type>.md`'s. The value is an ISO 8601 duration (`P1Y`, `P6M`, `P2W`, `P30D`, or a run of them in that order) or a date (`2026-12-01`: stale once that day has passed). A duration counts from the page's `verified:` date, else from the page file's last commit on the farm branch; a page with neither is skipped, and so is a value that is neither a duration nor a date. `wiki/x.md was verified 2026-01-02; its type asks for a re-check by 2026-07-02`. To clear it, check the facts again and set `verified:` (`yaks page set <path> --set verified=<date>`).
-- `uncited`: a source under `sources/<id>/` that no page or yak cites. A citation is a link or mention of `sources/<id>/` anywhere in a yak or page, frontmatter `sources:` included; the source's own files do not count. A source and the sources saved with `--part-of` it count as one: cite any, and none is listed. A source whose `source.md` has `superseded_by:` or `uncited:` (any text) counts as cited: that is how to keep one on purpose. Sources are written once, so this is a list to look at, not something to delete.
-- `similar-kinds`: page kinds, among the `type:` values in use and the names of `schemas/*.md`, that differ only by case, hyphens or a plural (`project`, `projects`, `work-project`). Pick one and `page set` the others.
-- `broken-link`, `schema-mismatch`, `merge-conflict` and `page-problem`: the same issues, in the same words, as [`doctor`](#doctor) reports them; `check` does not check anything about yaks themselves.
+- `stale`: a dok past its `stale_after`, the dok's own else its `schemas/<type>.md`'s. The value is an ISO 8601 duration (`P1Y`, `P6M`, `P2W`, `P30D`, or a run of them in that order) or a date (`2026-12-01`: stale once that day has passed). A duration counts from the dok's `verified:` date, else from the dok file's last commit on the farm branch; a dok with neither is skipped, and so is a value that is neither a duration nor a date. `doks/x.md was verified 2026-01-02; its type asks for a re-check by 2026-07-02`. To clear it, check the facts again and set `verified:` (`yaks dok set <path> --set verified=<date>`).
+- `uncited`: a source under `sources/<id>/` that no dok or yak cites. A citation is a link or mention of `sources/<id>/` anywhere in a yak or dok, frontmatter `sources:` included; the source's own files do not count. A source and the sources saved with `--part-of` it count as one: cite any, and none is listed. A source whose `source.md` has `superseded_by:` or `uncited:` (any text) counts as cited: that is how to keep one on purpose. Sources are written once, so this is a list to look at, not something to delete.
+- `similar-kinds`: dok kinds, among the `type:` values in use and the names of `schemas/*.md`, that differ only by case, hyphens or a plural (`project`, `projects`, `work-project`). Pick one and `dok set` the others.
+- `broken-link`, `schema-mismatch`, `merge-conflict` and `dok-problem`: the same issues, in the same words, as [`doctor`](#doctor) reports them; `check` does not check anything about yaks themselves.
 
 ### `preflight`
 
@@ -837,13 +839,13 @@ The CLI never syncs by itself (only `yaks tui` does, every `sync_interval` in `.
 
 On a farm branch, every command that writes the farm commits what it wrote as one commit on that branch, with a `Yaks-Actor: <actor>` trailer naming who made it (yaks-a838). Nothing is pushed: `yaks sync` publishes.
 
-- The commit holds only the paths the command wrote. Anything else dirty in the farm (a page you are editing by hand, a scratch file) is left exactly as it was, staged or not.
+- The commit holds only the paths the command wrote. Anything else dirty in the farm (a dok you are editing by hand, a scratch file) is left exactly as it was, staged or not.
 - If the command rewrites a file that held an uncommitted hand edit, that edit is committed first, by itself (`yaks: hand edits to ...`), so undoing the command never takes the hand edit with it.
 - In `yaks tui`, a quick burst of saves to the same files by the same actor (within 5 seconds, not yet pushed) folds into one commit.
 - A commit that fails never fails the command: the change is written, the reason is printed (in the TUI, the status line), and `yaks commit` commits it later. Nothing is committed while a merge or cherry-pick is in progress in the farm worktree.
 - `YAKS_NO_AUTOCOMMIT=1` turns it off for one command. A `YAKS_DIR` farm outside git never commits.
 
-`yaks commit` remains for hand edits (a page edited in your editor) and anything else left dirty.
+`yaks commit` remains for hand edits (a dok edited in your editor) and anything else left dirty.
 
 ### `undo`
 
@@ -855,9 +857,9 @@ Revert farm commits as one new commit (nothing is rewritten), merged through the
 
 `commit [-m <msg>] [--dry-run]`
 
-Commit the farm's uncommitted changes (yak files, attachments, pages, config) on its branch, in the farm worktree, from any cwd: hand edits, mostly, since every yaks write commits itself ([above](#every-change-commits)). Stages the farm and runs `git commit --only -- .yaks`.
+Commit the farm's uncommitted changes (yak files, attachments, doks, config) on its branch, in the farm worktree, from any cwd: hand edits, mostly, since every yaks write commits itself ([above](#every-change-commits)). Stages the farm and runs `git commit --only -- .yaks`.
 
-The message is generated from the changed files, one verb per yak (`created`, `shaving`/`shorn`/`dead`/`regrown` for a move, `updated`, `removed`, `artifacts for`), then `pages <paths>` for pages, sources and schemas, then `farm config`, e.g. `yaks: created yaks-8c08; shaving yaks-c968`; `-m` overrides it. `--dry-run` lists the files and message without staging or committing.
+The message is generated from the changed files, one verb per yak (`created`, `shaving`/`shorn`/`dead`/`regrown` for a move, `updated`, `removed`, `artifacts for`), then `doks <paths>` for doks, sources and schemas, then `farm config`, e.g. `yaks: created yaks-8c08; shaving yaks-c968`; `-m` overrides it. `--dry-run` lists the files and message without staging or committing.
 
 A normal `git commit`, so the repo's hooks run (and may fail it: the farm changes are then left staged and the hook's output is in the error); git's and the hooks' output is captured, so a successful commit prints only yaks' own summary (and never garbles the TUI); it never pushes. A clean farm prints `nothing to commit` and exits 0.
 

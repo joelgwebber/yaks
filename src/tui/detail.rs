@@ -32,7 +32,7 @@ pub enum Target {
     /// A footnote reference `[n]` (the number it renders as): following it
     /// moves the line cursor to the definition at the end of the same block.
     Footnote(String),
-    /// A farm document by its farm-relative path (a page, a source, any farm
+    /// A farm document by its farm-relative path (a dok, a source, any farm
     /// file; yaks-7395), optionally pinned to a farm commit and anchored at a
     /// heading or lines. Opened in the text viewer.
     Farm {

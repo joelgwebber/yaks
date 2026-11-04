@@ -303,7 +303,7 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
         }
     }
     if let Some(p) = &req.part_of {
-        let p = crate::pages::normalize(p);
+        let p = crate::doks::normalize(p);
         if !root.join(&p).is_file() {
             bail!(
                 "--part-of {p}: no such file in the farm (give a source's sources/<id>/source.md)"
@@ -442,7 +442,7 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
     f.set("size", &Value::Plain(size.to_string()));
     f.set("sha256", &Value::Plain(sha.clone()));
     if let Some(p) = &req.part_of {
-        f.set("part_of", &Value::Str(crate::pages::normalize(p)));
+        f.set("part_of", &Value::Str(crate::doks::normalize(p)));
     }
     let now = store::now_iso();
     let mut entry = vec![];
@@ -484,7 +484,7 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
     } else {
         "Its text is in [extracted.md](extracted.md).\n".to_string()
     };
-    let page = crate::pages::Page {
+    let page = crate::doks::Dok {
         path: format!("{rel}/source.md"),
         fields: f,
         body: note,
@@ -519,7 +519,7 @@ pub fn list(root: &Path) -> Vec<Source> {
         let Ok(text) = std::fs::read_to_string(root.join(&dir).join("source.md")) else {
             continue;
         };
-        let p = crate::pages::Page::parse(&format!("{dir}/source.md"), &text);
+        let p = crate::doks::Dok::parse(&format!("{dir}/source.md"), &text);
         let resource = p
             .fields
             .get("sources")

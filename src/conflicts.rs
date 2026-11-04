@@ -1,11 +1,11 @@
 //! Merge conflicts left for a person or agent to settle (yaks-4c8c): the merge
 //! driver ([`crate::mergedriver`]) never fails a merge on prose, so where both
 //! sides changed the same lines it leaves conflict markers in the text, and a
-//! page field both sides set differently is kept from this side with the other
+//! dok field both sides set differently is kept from this side with the other
 //! recorded under `merge_conflicts:`. This finds both, for `yaks conflicts`
 //! and `yaks doctor`.
 
-use crate::mergedriver::PAGE_CONFLICTS_KEY;
+use crate::mergedriver::DOK_CONFLICTS_KEY;
 use std::path::Path;
 
 /// One file holding something to settle.
@@ -22,7 +22,7 @@ pub struct Conflict {
 
 /// The 1-based lines of `text` that open a conflict region: a `<<<<<<<` line
 /// later closed by a `>>>>>>>` line, neither inside a fenced code block (so a
-/// page can show an example of markers).
+/// dok can show an example of markers).
 pub fn marker_lines(text: &str) -> Vec<usize> {
     if !text.contains("<<<<<<<") {
         return Vec::new();
@@ -53,11 +53,11 @@ fn recorded_fields(text: &str) -> Vec<String> {
     let Some((front, _)) = crate::store::split_frontmatter(text) else {
         return Vec::new();
     };
-    if !front.contains(PAGE_CONFLICTS_KEY) {
+    if !front.contains(DOK_CONFLICTS_KEY) {
         return Vec::new();
     }
     crate::fields::Fields::parse(front)
-        .get(PAGE_CONFLICTS_KEY)
+        .get(DOK_CONFLICTS_KEY)
         .map(|v| {
             v.as_list()
                 .into_iter()

@@ -223,9 +223,9 @@ pub fn doctor_array(issues: &[crate::farm::Issue]) -> Value {
     )
 }
 
-/// A page for `--json`: path, kind, title, herd (or null), every frontmatter
+/// A dok for `--json`: path, kind, title, herd (or null), every frontmatter
 /// field parsed under `fields`, and with `body` its markdown body.
-pub fn page_value(p: &crate::pages::Page, body: bool) -> Value {
+pub fn dok_value(p: &crate::doks::Dok, body: bool) -> Value {
     let mut m = Map::new();
     m.insert("path".into(), json!(p.path));
     m.insert("type".into(), json!(p.kind()));

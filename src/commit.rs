@@ -178,7 +178,7 @@ pub(crate) fn generate_message(changes: &[Change]) -> String {
     phrase("updated", &updated);
     phrase("removed", &removed);
     phrase("artifacts for", &artifacts);
-    // Pages, sources and schemas by path; anything else is farm config.
+    // Doks, sources and schemas by path; anything else is farm config.
     let docs: BTreeSet<String> = classified
         .other
         .iter()
@@ -187,16 +187,16 @@ pub(crate) fn generate_message(changes: &[Change]) -> String {
                 .path
                 .split_once(".yaks/")
                 .map_or(c.path.as_str(), |(_, r)| r);
-            let is_doc = rel.starts_with("wiki/")
+            let is_doc = rel.starts_with("doks/")
                 || rel.starts_with("sources/")
                 || rel.starts_with("schemas/")
                 || rel
                     .split_once('/')
-                    .is_some_and(|(_, r)| r.starts_with("wiki/"));
+                    .is_some_and(|(_, r)| r.starts_with("doks/"));
             is_doc.then(|| rel.to_string())
         })
         .collect();
-    phrase("pages", &docs);
+    phrase("doks", &docs);
     if classified.other.len() > docs.len() {
         parts.push("farm config".to_string());
     }

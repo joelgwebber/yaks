@@ -1,4 +1,4 @@
-//! Links through the real binary (yaks-101d): `peek`, `refs` on a page,
+//! Links through the real binary (yaks-101d): `peek`, `refs` on a dok,
 //! `mv` rewriting links, and doctor's broken-link check.
 
 mod common;
@@ -87,29 +87,29 @@ fn peek_refs_and_mv() {
     let f = Farm::new("flow");
     let id = f.create(&[]);
     f.run(&[
-        "page",
+        "dok",
         "new",
-        "wiki/topics/a.md",
+        "doks/topics/a.md",
         "--body",
         "Intro.\n\n## Setup\n\nSee [b](sub/b.md).\n",
     ]);
     f.run(&[
-        "page",
+        "dok",
         "new",
-        "wiki/topics/sub/b.md",
+        "doks/topics/sub/b.md",
         "--body",
-        "Back to [a](/wiki/topics/a.md#setup).",
+        "Back to [a](/doks/topics/a.md#setup).",
     ]);
-    f.run(&["update", &id, "--note", "Notes in [a](/wiki/topics/a.md)."]);
+    f.run(&["update", &id, "--note", "Notes in [a](/doks/topics/a.md)."]);
 
-    let peek = f.run(&["peek", "/wiki/topics/a.md#setup"]);
+    let peek = f.run(&["peek", "/doks/topics/a.md#setup"]);
     assert_eq!(
         peek,
-        "── wiki/topics/a.md#setup\n## Setup\n\nSee [b](sub/b.md).\n"
+        "── doks/topics/a.md#setup\n## Setup\n\nSee [b](sub/b.md).\n"
     );
 
     let inc: Value =
-        serde_json::from_str(&f.run(&["refs", "wiki/topics/a.md", "--incoming", "--json"]))
+        serde_json::from_str(&f.run(&["refs", "doks/topics/a.md", "--incoming", "--json"]))
             .unwrap();
     let from: Vec<&str> = inc["incoming"]
         .as_array()
@@ -117,23 +117,23 @@ fn peek_refs_and_mv() {
         .iter()
         .map(|e| e["from"].as_str().unwrap())
         .collect();
-    assert_eq!(from, [id.as_str(), "wiki/topics/sub/b.md"]);
+    assert_eq!(from, [id.as_str(), "doks/topics/sub/b.md"]);
 
-    let out = f.run(&["mv", "wiki/topics/a.md", "wiki/design/a.md"]);
+    let out = f.run(&["mv", "doks/topics/a.md", "doks/design/a.md"]);
     assert!(
-        out.contains("Moved wiki/topics/a.md -> wiki/design/a.md"),
+        out.contains("Moved doks/topics/a.md -> doks/design/a.md"),
         "{out}"
     );
     let root = f.root();
-    assert!(!root.join("wiki/topics/a.md").exists());
-    let moved = std::fs::read_to_string(root.join("wiki/design/a.md")).unwrap();
+    assert!(!root.join("doks/topics/a.md").exists());
+    let moved = std::fs::read_to_string(root.join("doks/design/a.md")).unwrap();
     assert!(
-        moved.contains("[b](/wiki/topics/sub/b.md)"),
+        moved.contains("[b](/doks/topics/sub/b.md)"),
         "its own relative link keeps its target: {moved}"
     );
-    let b = std::fs::read_to_string(root.join("wiki/topics/sub/b.md")).unwrap();
-    assert!(b.contains("[a](/wiki/design/a.md#setup)"), "{b}");
-    assert!(f.file(&id).contains("[a](/wiki/design/a.md)"));
+    let b = std::fs::read_to_string(root.join("doks/topics/sub/b.md")).unwrap();
+    assert!(b.contains("[a](/doks/design/a.md#setup)"), "{b}");
+    assert!(f.file(&id).contains("[a](/doks/design/a.md)"));
     f.run(&["doctor"]);
 }
 
@@ -141,11 +141,11 @@ fn peek_refs_and_mv() {
 fn doctor_reports_broken_and_upward_links() {
     let f = Farm::new("broken");
     f.run(&[
-        "page",
+        "dok",
         "new",
-        "wiki/a.md",
+        "doks/a.md",
         "--body",
-        "[gone](/wiki/none.md) and [up](../x.md) and [example](path)",
+        "[gone](/doks/none.md) and [up](../x.md) and [example](path)",
     ]);
     let out = Command::cargo_bin("yaks")
         .unwrap()
@@ -166,7 +166,7 @@ fn doctor_reports_broken_and_upward_links() {
         .collect();
     assert_eq!(msgs.len(), 2, "{msgs:?}");
     assert!(
-        msgs[0].contains("/wiki/none.md") && msgs[1].contains("../x.md"),
+        msgs[0].contains("/doks/none.md") && msgs[1].contains("../x.md"),
         "{msgs:?}"
     );
 }

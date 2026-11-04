@@ -138,14 +138,14 @@ fn promote_moves_an_attachment_and_rewrites_its_links() {
     let out = f.run(&[
         "promote",
         &format!("{id}/finding.md"),
-        "--page",
-        "wiki/topics/finding.md",
+        "--dok",
+        "doks/topics/finding.md",
     ]);
-    assert!(out.contains("-> wiki/topics/finding.md"), "{out}");
-    let page = std::fs::read_to_string(f.root().join("wiki/topics/finding.md")).unwrap();
+    assert!(out.contains("-> doks/topics/finding.md"), "{out}");
+    let dok = std::fs::read_to_string(f.root().join("doks/topics/finding.md")).unwrap();
     assert!(
-        page.starts_with("---\ntype: note\ntitle: Finding\n---\n"),
-        "{page}"
+        dok.starts_with("---\ntype: note\ntitle: Finding\n---\n"),
+        "{dok}"
     );
     let out = f.run(&["promote", &format!("{id}/my shot.png")]);
     assert!(
@@ -154,8 +154,8 @@ fn promote_moves_an_attachment_and_rewrites_its_links() {
     );
 
     let yak = f.file(&id);
-    assert!(yak.contains("[it](/wiki/topics/finding.md)"), "{yak}");
-    assert!(yak.contains("[finding](/wiki/topics/finding.md)"), "{yak}");
+    assert!(yak.contains("[it](/doks/topics/finding.md)"), "{yak}");
+    assert!(yak.contains("[finding](/doks/topics/finding.md)"), "{yak}");
     assert!(
         yak.contains("](/sources/") && !yak.contains(&format!("{id}/my shot.png")),
         "{yak}"

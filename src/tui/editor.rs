@@ -62,9 +62,9 @@ pub(crate) enum EditAction {
     /// pane is emptied while the editor is up: the view and its `from` ride
     /// here and go back to `App.doc` on commit or cancel.
     EditAttachment(super::handlers::AttachView, super::Focus),
-    /// Create a page at the typed farm path (`N` on the Wiki tab, yaks-1532),
+    /// Create a dok at the typed farm path (`N` on the Doks tab, yaks-1532),
     /// then edit it.
-    NewPage,
+    NewDok,
     SaveView,
     RenameView {
         index: usize,

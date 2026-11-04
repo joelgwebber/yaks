@@ -13,16 +13,16 @@ use std::collections::{HashMap, HashSet};
 use crate::filter::{self, FilterSpec};
 use crate::model::{Status, Task};
 use crate::sheds::Shed;
+use crate::tui::doks_tab::DoksEntry;
 use crate::tui::view::FamilyScope;
-use crate::tui::wiki_tab::WikiEntry;
 
-/// What a list row is (the design's "rows": /wiki/design/tui-model.md#1-rows-and-views).
-/// A yak, a document (a wiki page or a saved source) or a shed (an actor on
+/// What a list row is (the design's "rows": /doks/design/tui-model.md#1-rows-and-views).
+/// A yak, a document (a dok or a saved source) or a shed (an actor on
 /// the Sheds view, with the yaks it touched below it).
 #[derive(Clone, Copy)]
 pub enum Item<'a> {
     Yak(&'a Task),
-    Doc(&'a WikiEntry),
+    Doc(&'a DoksEntry),
     Shed(&'a Shed),
 }
 
@@ -49,8 +49,8 @@ impl Item<'_> {
 /// rule every view applies (design decision 6: what `yaks find` searches):
 ///
 /// - a yak: its id, title and body (the notes are in the body);
-/// - a document: its title, path, kind and tags, and its text (a page's file,
-///   a source's `source.md` and extracted text: [`WikiEntry::text`]);
+/// - a document: its title, path, kind and tags, and its text (a dok's file,
+///   a source's `source.md` and extracted text: [`DoksEntry::text`]);
 /// - a shed: its name. A shed also stays when a yak of it matches; that is the
 ///   tree rule, applied where the shed's rows are built.
 pub fn query_matches(item: Item<'_>, q: &str) -> bool {
@@ -144,7 +144,7 @@ impl<'a> Row<'a> {
     }
 
     /// A depth-0, non-ghost, childless row for a document.
-    pub fn doc(entry: &'a WikiEntry) -> Row<'a> {
+    pub fn doc(entry: &'a DoksEntry) -> Row<'a> {
         Row::of(Item::Doc(entry))
     }
 

@@ -710,7 +710,7 @@ pub struct Issue {
     pub message: String,
     /// The yak id(s) the issue concerns: the subject first, then any id it
     /// points at (e.g. the missing parent for a dangling reference). For a
-    /// page issue, the page's farm-relative path.
+    /// dok issue, the dok's farm-relative path.
     pub ids: Vec<String>,
 }
 
@@ -753,15 +753,15 @@ pub enum IssueKind {
     /// was still open. The moves refuse this now; a farm from before, or a
     /// hand edit, can still hold it.
     UnfinishedChildren,
-    /// A page (`wiki/**.md`, `<herd>/wiki/**.md`) with no frontmatter, no
+    /// A dok (`doks/**.md`, `<herd>/doks/**.md`) with no frontmatter, no
     /// `type:` or `title:`, a name that is not lowercase-kebab, or a value
     /// yaks can't read (yaks-9af0).
-    PageProblem,
-    /// A markdown link in a yak or page that leads nowhere in the farm: a farm
+    DokProblem,
+    /// A markdown link in a yak or dok that leads nowhere in the farm: a farm
     /// path or attachment that does not exist, or a `../` link that climbs out
     /// of its directory (link from the farm root instead) (yaks-101d).
     BrokenLink,
-    /// A page or yak whose fields do not match its schema (`schemas/<type>.md`,
+    /// A dok or yak whose fields do not match its schema (`schemas/<type>.md`,
     /// `schemas/yak.md`): a usually-set field missing, a value of the wrong
     /// kind, a field the schema does not list (yaks-8e75). Advice only.
     SchemaMismatch,
@@ -851,7 +851,7 @@ impl IssueKind {
             IssueKind::MisplacedFile => "misplaced-file",
             IssueKind::NeedsDrift => "needs-drift",
             IssueKind::UnfinishedChildren => "unfinished-children",
-            IssueKind::PageProblem => "page-problem",
+            IssueKind::DokProblem => "dok-problem",
             IssueKind::BrokenLink => "broken-link",
             IssueKind::SchemaMismatch => "schema-mismatch",
             IssueKind::MergeConflict => "merge-conflict",
@@ -879,7 +879,7 @@ impl IssueKind {
             IssueKind::UnfinishedChildren => {
                 "Finished over unfinished children (a shorn or dead yak with hairy or shaving children)"
             }
-            IssueKind::PageProblem => "Page problem (wiki page frontmatter or name)",
+            IssueKind::DokProblem => "Dok problem (dok frontmatter or name)",
             IssueKind::BrokenLink => {
                 "Broken link (a farm path or attachment that does not exist, or a ../ link)"
             }
@@ -1570,15 +1570,15 @@ impl Farm {
             }
         }
 
-        for p in crate::pages::check(&self.root)? {
+        for p in crate::doks::check(&self.root)? {
             issues.push(Issue {
-                kind: IssueKind::PageProblem,
+                kind: IssueKind::DokProblem,
                 message: format!("{}: {}", p.path, p.message),
                 ids: vec![p.path],
             });
         }
-        for p in crate::pages::load_all(&self.root)? {
-            for w in crate::schemas::check_page(&self.root, &p) {
+        for p in crate::doks::load_all(&self.root)? {
+            for w in crate::schemas::check_dok(&self.root, &p) {
                 issues.push(Issue {
                     kind: IssueKind::SchemaMismatch,
                     message: format!("{}: {w}", p.path),
@@ -1610,7 +1610,7 @@ impl Farm {
             if crate::links::exists(&self.root, &e.link) == Some(false) {
                 let why = match &e.link {
                     crate::links::Link::Upward(_) => {
-                        "climbs out with ../; link from the farm root (/wiki/...)"
+                        "climbs out with ../; link from the farm root (/doks/...)"
                     }
                     _ => "no such file in the farm",
                 };
@@ -2132,19 +2132,19 @@ impl Farm {
         }
     }
 
-    /// Every page of the farm (yaks-9af0), sorted by path.
-    pub fn pages(&self) -> Result<Vec<crate::pages::Page>> {
-        crate::pages::load_all(&self.root)
+    /// Every dok of the farm (yaks-9af0), sorted by path.
+    pub fn doks(&self) -> Result<Vec<crate::doks::Dok>> {
+        crate::doks::load_all(&self.root)
     }
 
-    /// The page at farm-relative `path` (a leading `/` is the farm root).
-    pub fn page(&self, path: &str) -> Result<Option<crate::pages::Page>> {
-        crate::pages::load(&self.root, path)
+    /// The dok at farm-relative `path` (a leading `/` is the farm root).
+    pub fn dok(&self, path: &str) -> Result<Option<crate::doks::Dok>> {
+        crate::doks::load(&self.root, path)
     }
 
-    /// Create the page at `path` (see [`crate::pages::new_page`]) under the
+    /// Create the dok at `path` (see [`crate::doks::new_dok`]) under the
     /// farm lock. Returns its file path.
-    pub fn page_new(
+    pub fn dok_new(
         &self,
         path: &str,
         kind: Option<&str>,
@@ -2155,43 +2155,43 @@ impl Farm {
         let _lock = store::lock(&self.root)?;
         // A schema's defaults fill fields the caller did not give.
         let mut all: Vec<(String, Value)> =
-            crate::schemas::defaults(&self.root, kind.unwrap_or(crate::pages::DEFAULT_KIND))
+            crate::schemas::defaults(&self.root, kind.unwrap_or(crate::doks::DEFAULT_KIND))
                 .into_iter()
                 .filter(|(k, _)| !fields.iter().any(|(f, _)| f == k))
                 .collect();
         all.extend(fields.iter().cloned());
-        let page = crate::pages::new_page(&self.root, path, kind, title, &all, body)?;
-        crate::pages::save(&self.root, &page)
+        let dok = crate::doks::new_dok(&self.root, path, kind, title, &all, body)?;
+        crate::doks::save(&self.root, &dok)
     }
 
-    /// Set (a [`Value::Null`] removes) frontmatter fields of the page at
+    /// Set (a [`Value::Null`] removes) frontmatter fields of the dok at
     /// `path`, and replace its body when `body` is given, under the farm lock.
-    /// `Ok(None)`: no such page; `Ok(Some(false))`: nothing changed.
-    pub fn page_set(
+    /// `Ok(None)`: no such dok; `Ok(Some(false))`: nothing changed.
+    pub fn dok_set(
         &self,
         path: &str,
         fields: &[(String, Value)],
         body: Option<&str>,
     ) -> Result<Option<bool>> {
         let _lock = store::lock(&self.root)?;
-        let Some(mut page) = crate::pages::load(&self.root, path)? else {
+        let Some(mut dok) = crate::doks::load(&self.root, path)? else {
             return Ok(None);
         };
-        let before = page.render();
+        let before = dok.render();
         for (k, v) in fields {
             if *v == Value::Null {
-                page.fields.remove(k);
+                dok.fields.remove(k);
             } else {
-                page.fields.set(k, v);
+                dok.fields.set(k, v);
             }
         }
         if let Some(b) = body {
-            page.body = b.to_string();
+            dok.body = b.to_string();
         }
-        if page.render() == before {
+        if dok.render() == before {
             return Ok(Some(false));
         }
-        crate::pages::save(&self.root, &page)?;
+        crate::doks::save(&self.root, &dok)?;
         Ok(Some(true))
     }
 
@@ -2203,22 +2203,22 @@ impl Farm {
     }
 
     /// Move yak `id`'s attachment `name` out of the yak: into `sources/` as a
-    /// source (`to_page: None`), or to a page at `to_page` (a markdown
+    /// source (`to_dok: None`), or to a dok at `to_dok` (a markdown
     /// attachment, given frontmatter when it has none). Every link to the
-    /// attachment, in any yak or page, is rewritten to the new place. Under
+    /// attachment, in any yak or dok, is rewritten to the new place. Under
     /// the farm lock. Returns the new farm-relative path.
     pub fn promote(
         &self,
         id: &str,
         name: &str,
-        to_page: Option<&str>,
+        to_dok: Option<&str>,
         actor: &str,
     ) -> Result<String> {
         let _lock = store::lock(&self.root)?;
         let Some(found) = locate_attachment(&self.root, id, name) else {
             anyhow::bail!("{id}/{name}: no such attachment (`yaks attachment {id}` lists them)");
         };
-        let new_path = match to_page {
+        let new_path = match to_dok {
             None => {
                 // `add` refuses a path inside the farm (cite it instead), so
                 // save a copy taken out of it; the attachment is removed after.
@@ -2244,25 +2244,25 @@ impl Farm {
                 // The saved file's own name (made safe on the way in).
                 let file = std::fs::read_to_string(self.root.join(&dir).join("source.md"))
                     .ok()
-                    .and_then(|t| crate::pages::Page::parse("x", &t).str_field("file"))
+                    .and_then(|t| crate::doks::Dok::parse("x", &t).str_field("file"))
                     .unwrap_or_else(|| name.to_string());
                 format!("{dir}/{file}")
             }
-            Some(page) => {
-                let page = crate::pages::normalize(page);
-                if let Some(why) = crate::pages::path_problem(&page) {
-                    anyhow::bail!("{page}: {why}");
+            Some(dok) => {
+                let dok = crate::doks::normalize(dok);
+                if let Some(why) = crate::doks::path_problem(&dok) {
+                    anyhow::bail!("{dok}: {why}");
                 }
-                if self.root.join(&page).exists() {
-                    anyhow::bail!("{page} already exists");
+                if self.root.join(&dok).exists() {
+                    anyhow::bail!("{dok} already exists");
                 }
                 if !name.ends_with(".md") {
                     anyhow::bail!(
-                        "{name}: only a markdown attachment becomes a page; promote it as a source"
+                        "{name}: only a markdown attachment becomes a dok; promote it as a source"
                     );
                 }
                 let text = std::fs::read_to_string(&found.path)?;
-                // The page lives elsewhere: its bare sibling links (`shot.png`)
+                // The dok lives elsewhere: its bare sibling links (`shot.png`)
                 // keep naming the yak's attachments, as `<id>/<file>`.
                 let ids = store::all_ids(&self.root);
                 let (text, _) = crate::links::rewrite(&text, |dest| {
@@ -2275,13 +2275,13 @@ impl Farm {
                         _ => None,
                     }
                 });
-                let mut p = crate::pages::Page::parse(&page, &text);
+                let mut p = crate::doks::Dok::parse(&dok, &text);
                 if !p.has_frontmatter {
-                    p = crate::pages::new_page(&self.root, &page, None, None, &[], &text)?;
+                    p = crate::doks::new_dok(&self.root, &dok, None, None, &[], &text)?;
                 }
-                p.path = page.clone();
-                crate::pages::save(&self.root, &p)?;
-                page
+                p.path = dok.clone();
+                crate::doks::save(&self.root, &p)?;
+                dok
             }
         };
         std::fs::remove_file(&found.path)?;
@@ -2350,12 +2350,12 @@ impl Farm {
                 store::write::save(&self.root, &t)?;
             }
         }
-        for mut p in crate::pages::load_all(&self.root)? {
+        for mut p in crate::doks::load_all(&self.root)? {
             let path = p.path.clone();
-            let (body, n) = fix(&p.body, crate::links::From::Page(&path));
+            let (body, n) = fix(&p.body, crate::links::From::Dok(&path));
             if n > 0 {
                 p.body = body;
-                crate::pages::save(&self.root, &p)?;
+                crate::doks::save(&self.root, &p)?;
             }
         }
         // The markdown attachments of every yak (an evidence document
@@ -2377,28 +2377,28 @@ impl Farm {
         Ok(())
     }
 
-    /// Every markdown link in the farm that names the page or file at
+    /// Every markdown link in the farm that names the dok or file at
     /// farm-relative `path` (any rev or anchor), with where it sits.
     pub fn links_to(&self, path: &str) -> Result<Vec<crate::links::Edge>> {
-        let path = crate::pages::normalize(path);
+        let path = crate::doks::normalize(path);
         Ok(crate::links::edges(&self.root)?
             .into_iter()
             .filter(|e| crate::links::farm_path(&e.link).as_deref() == Some(path.as_str()))
             .collect())
     }
 
-    /// Move the page at `from` to `to` and rewrite every link to it, in yaks
-    /// and pages, under the farm lock. A link keeps its rev and anchor and is
-    /// written in the farm-root form (`/wiki/...`). `dry_run` writes nothing.
-    /// Returns the documents changed (`(yak id or page path, links)`).
-    pub fn page_move(&self, from: &str, to: &str, dry_run: bool) -> Result<Vec<(String, usize)>> {
+    /// Move the dok at `from` to `to` and rewrite every link to it, in yaks
+    /// and doks, under the farm lock. A link keeps its rev and anchor and is
+    /// written in the farm-root form (`/doks/...`). `dry_run` writes nothing.
+    /// Returns the documents changed (`(yak id or dok path, links)`).
+    pub fn dok_move(&self, from: &str, to: &str, dry_run: bool) -> Result<Vec<(String, usize)>> {
         let _lock = (!dry_run).then(|| store::lock(&self.root)).transpose()?;
-        let from = crate::pages::normalize(from);
-        let to = crate::pages::normalize(to);
-        if crate::pages::load(&self.root, &from)?.is_none() {
-            anyhow::bail!("no page {from}");
+        let from = crate::doks::normalize(from);
+        let to = crate::doks::normalize(to);
+        if crate::doks::load(&self.root, &from)?.is_none() {
+            anyhow::bail!("no dok {from}");
         }
-        if let Some(why) = crate::pages::path_problem(&to) {
+        if let Some(why) = crate::doks::path_problem(&to) {
             anyhow::bail!("{to}: {why}");
         }
         if self.root.join(&to).exists() {
@@ -2409,7 +2409,7 @@ impl Farm {
         let is_yak = |s: &str| ids.contains(s);
         // Rewrite links in `text` (a document at `doc`) to the farm-root form
         // `/<path>[@rev][#fragment as written]`: a link to `from` gets `to`;
-        // in the moved page itself, a relative link keeps naming what it
+        // in the moved dok itself, a relative link keeps naming what it
         // named from the old directory.
         let fix = |text: &str, doc: crate::links::From, moved_self: bool| {
             crate::links::rewrite(text, |dest| {
@@ -2446,9 +2446,9 @@ impl Farm {
                 }
             }
         }
-        for mut p in crate::pages::load_all(&self.root)? {
+        for mut p in crate::doks::load_all(&self.root)? {
             let me = p.path == from;
-            let (body, n) = fix(&p.body, crate::links::From::Page(&p.path), me);
+            let (body, n) = fix(&p.body, crate::links::From::Dok(&p.path), me);
             if n > 0 {
                 changed.push((p.path.clone(), n));
                 p.body = body;
@@ -2456,11 +2456,11 @@ impl Farm {
             if me {
                 p.path = to.clone();
                 if !dry_run {
-                    crate::pages::save(&self.root, &p)?;
+                    crate::doks::save(&self.root, &p)?;
                     std::fs::remove_file(self.root.join(&from))?;
                 }
             } else if n > 0 && !dry_run {
-                crate::pages::save(&self.root, &p)?;
+                crate::doks::save(&self.root, &p)?;
             }
         }
         Ok(changed)
@@ -2489,7 +2489,7 @@ impl Farm {
     /// [`Farm::attach`] for several files in one write (one farm commit).
     /// With `link` false the files are only stored beside the yak and its
     /// body is untouched: for the parts of a document that links them itself
-    /// (an evidence page whose `![x](shot.png)` names its sibling
+    /// (an evidence dok whose `![x](shot.png)` names its sibling
     /// attachments, see [`crate::links::From::Attachment`]). `caption` is
     /// written as the link's markdown title (see
     /// [`store::attachment_link_titled`]); it is part of the link, so it is
@@ -3239,7 +3239,7 @@ fn issue_rank(k: IssueKind) -> u8 {
         IssueKind::MisplacedFile => 7,
         IssueKind::NeedsDrift => 8,
         IssueKind::UnfinishedChildren => 9,
-        IssueKind::PageProblem => 10,
+        IssueKind::DokProblem => 10,
         IssueKind::BrokenLink => 11,
         IssueKind::SchemaMismatch => 12,
         IssueKind::MergeConflict => 13,
@@ -5058,12 +5058,12 @@ mod tests {
         assert!(t.contains("![crop](b.png)"), "{t}");
         assert!(t.contains("[again](yak-0001/b.png#x)"), "{t}");
 
-        // Promoting the document to a page keeps its parts reachable.
-        farm.promote("yak-0001", "evidence.md", Some("wiki/ev.md"), "t")
+        // Promoting the document to a dok keeps its parts reachable.
+        farm.promote("yak-0001", "evidence.md", Some("doks/ev.md"), "t")
             .unwrap();
-        let page = std::fs::read_to_string(root.join("wiki/ev.md")).unwrap();
-        assert!(page.contains("![crop](yak-0001/b.png)"), "{page}");
-        assert_eq!(broken(&root), ["yak-0001/nope.png"], "{page}");
+        let dok = std::fs::read_to_string(root.join("doks/ev.md")).unwrap();
+        assert!(dok.contains("![crop](yak-0001/b.png)"), "{dok}");
+        assert_eq!(broken(&root), ["yak-0001/nope.png"], "{dok}");
     }
 
     /// With links (the default) `attach_many` writes the same body as one
@@ -5230,8 +5230,8 @@ mod tests {
             .collect();
         assert_eq!(
             counts,
-            [0, 1, 1, 0],
-            "no labels key, one old-shape comment, one non-image link, no spaced name"
+            [0, 1, 1, 0, 0],
+            "no labels key, one old-shape comment, one non-image link, no spaced name, no wiki link"
         );
         assert_eq!(
             std::fs::read_to_string(root.join("schema")).unwrap(),

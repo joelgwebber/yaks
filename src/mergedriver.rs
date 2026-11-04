@@ -2,10 +2,10 @@
 //! of one farm document so its fields always stay well formed.
 //!
 //! - A yak (a file under `<herd>/yaks/`) merges field by field ([`merge`]).
-//! - Any other farm markdown file (a page, a source's text) merges its
+//! - Any other farm markdown file (a dok, a source's text) merges its
 //!   frontmatter by the same field rule and its body as text
 //!   ([`merge_document`]).
-//! - Prose (a yak's description, a page body) merges with `git merge-file`;
+//! - Prose (a yak's description, a dok body) merges with `git merge-file`;
 //!   when both sides changed the same lines, the conflict markers stay in the
 //!   prose and the merge still succeeds, so the farm stays readable and a
 //!   human or agent resolves the text afterwards (`yaks conflicts` lists such
@@ -113,7 +113,7 @@ fn as_list(key: &str, raw: &Option<Vec<String>>) -> Option<Vec<Value>> {
 }
 
 /// Merge frontmatter fields, the one rule for a yak's extra fields and a
-/// page's frontmatter. Starts from ours (so its comments and order stay) and,
+/// dok's frontmatter. Starts from ours (so its comments and order stay) and,
 /// key by key: the side that changed a key wins (a removal included); a list
 /// both sides changed merges as a set (`base` plus each side's additions minus
 /// each side's removals); any other value both sides changed differently keeps
@@ -405,13 +405,13 @@ fn try_merge(base: &str, ours: &str, theirs: &str) -> Option<Merged> {
     })
 }
 
-/// The frontmatter key a page records field clashes under: a list of
+/// The frontmatter key a dok records field clashes under: a list of
 /// `{field, theirs}`, the other side's value of a field both sides set
 /// differently (ours was kept). Doctor and `yaks conflicts` report it;
 /// remove an entry once settled.
-pub const PAGE_CONFLICTS_KEY: &str = "merge_conflicts";
+pub const DOK_CONFLICTS_KEY: &str = "merge_conflicts";
 
-/// Merge three versions of a farm document that is not a yak: a page, a
+/// Merge three versions of a farm document that is not a yak: a dok, a
 /// source's text, any markdown file. With frontmatter on both sides, fields
 /// merge by the shared rule ([`merge_fields`]); a value both sides set
 /// differently keeps ours and adds `{field, theirs}` to `merge_conflicts:`.
@@ -420,8 +420,8 @@ pub const PAGE_CONFLICTS_KEY: &str = "merge_conflicts";
 /// names the clashing fields, and `body` when markers were left. `None` when
 /// the text cannot be merged (binary content).
 pub fn merge_document(base: &str, ours: &str, theirs: &str) -> Option<Merged> {
-    use crate::pages::Page;
-    let (o, t) = (Page::parse("", ours), Page::parse("", theirs));
+    use crate::doks::Dok;
+    let (o, t) = (Dok::parse("", ours), Dok::parse("", theirs));
     if !(o.has_frontmatter && t.has_frontmatter) {
         let (text, markers) = merge_text(base, ours, theirs)?;
         let conflicts = if markers {
@@ -432,16 +432,15 @@ pub fn merge_document(base: &str, ours: &str, theirs: &str) -> Option<Merged> {
         return Some(Merged { text, conflicts });
     }
     let b = if base.trim().is_empty() {
-        Page::parse("", "---\n---\n")
+        Dok::parse("", "---\n---\n")
     } else {
-        Page::parse("", base)
+        Dok::parse("", base)
     };
-    let (mut fields, clashes) =
-        merge_fields(&b.fields, &o.fields, &t.fields, &[PAGE_CONFLICTS_KEY]);
+    let (mut fields, clashes) = merge_fields(&b.fields, &o.fields, &t.fields, &[DOK_CONFLICTS_KEY]);
 
     // Clash records: both sides' existing ones, then the new ones.
     let records = |f: &Fields| -> Vec<Value> {
-        f.get(PAGE_CONFLICTS_KEY)
+        f.get(DOK_CONFLICTS_KEY)
             .map(|v| v.as_list().into_iter().cloned().collect())
             .unwrap_or_default()
     };
@@ -470,20 +469,17 @@ pub fn merge_document(base: &str, ours: &str, theirs: &str) -> Option<Merged> {
         // Ours' lines, untouched.
     } else if same_as(&t.fields) && !list.is_empty() {
         fields.set_raw(
-            PAGE_CONFLICTS_KEY,
-            t.fields
-                .raw(PAGE_CONFLICTS_KEY)
-                .unwrap_or_default()
-                .to_vec(),
+            DOK_CONFLICTS_KEY,
+            t.fields.raw(DOK_CONFLICTS_KEY).unwrap_or_default().to_vec(),
         );
     } else if list.is_empty() {
-        fields.remove(PAGE_CONFLICTS_KEY);
+        fields.remove(DOK_CONFLICTS_KEY);
     } else {
-        fields.set(PAGE_CONFLICTS_KEY, &Value::List(list));
+        fields.set(DOK_CONFLICTS_KEY, &Value::List(list));
     }
 
     let (body, markers) = merge_text(&b.body, &o.body, &t.body)?;
-    let page = Page {
+    let dok = Dok {
         path: String::new(),
         fields,
         body,
@@ -494,16 +490,16 @@ pub fn merge_document(base: &str, ours: &str, theirs: &str) -> Option<Merged> {
         conflicts.push("body".to_string());
     }
     Some(Merged {
-        text: page.render(),
+        text: dok.render(),
         conflicts,
     })
 }
 
 /// Whether repository path `path` is where a yak lives (`…/<herd>/yaks/<id>.md`,
-/// not inside a wiki): such a file must merge as a yak or not at all.
+/// not inside doks/): such a file must merge as a yak or not at all.
 fn is_yak_path(path: &str) -> bool {
     let parts: Vec<&str> = path.split('/').collect();
-    parts.len() >= 2 && parts[parts.len() - 2] == "yaks" && !parts.contains(&crate::pages::WIKI_DIR)
+    parts.len() >= 2 && parts[parts.len() - 2] == "yaks" && !parts.contains(&crate::doks::DOKS_DIR)
 }
 
 /// What `yaks merge-driver %O %A %B %P` does: merge the three files git hands
@@ -853,33 +849,33 @@ mod tests {
         assert_eq!(t.extra.lines().collect::<Vec<_>>(), ["aliases: [b, c]"]);
     }
 
-    fn page(front: &str, body: &str) -> String {
-        format!("---\ntype: topic\ntitle: Page\n{front}---\n\n{body}\n")
+    fn dok(front: &str, body: &str) -> String {
+        format!("---\ntype: topic\ntitle: Dok\n{front}---\n\n{body}\n")
     }
 
     #[test]
-    fn a_page_merges_fields_by_rule_and_body_as_text() {
-        let base = page("tags: [x]\nstatus: draft\n", "# P\n\none\n\ntwo\n");
-        let a = page("tags: [x, y]\nstatus: draft\n", "# P\n\nONE\n\ntwo\n");
-        let b = page("tags: [x, z]\nstatus: final\n", "# P\n\none\n\nTWO\n");
+    fn a_dok_merges_fields_by_rule_and_body_as_text() {
+        let base = dok("tags: [x]\nstatus: draft\n", "# P\n\none\n\ntwo\n");
+        let a = dok("tags: [x, y]\nstatus: draft\n", "# P\n\nONE\n\ntwo\n");
+        let b = dok("tags: [x, z]\nstatus: final\n", "# P\n\none\n\nTWO\n");
         let m = merge_document(&base, &a, &b).unwrap();
         assert!(m.conflicts.is_empty(), "{:?}", m.conflicts);
         assert_eq!(
             m.text,
-            "---\ntype: topic\ntitle: Page\ntags: [x, y, z]\nstatus: final\n---\n\n# P\n\nONE\n\nTWO\n\n"
+            "---\ntype: topic\ntitle: Dok\ntags: [x, y, z]\nstatus: final\n---\n\n# P\n\nONE\n\nTWO\n\n"
         );
     }
 
     #[test]
-    fn a_page_field_both_sides_set_keeps_ours_and_records_theirs() {
-        let base = page("status: draft\n", "Body");
-        let a = page("status: review\n", "Body");
-        let b = page("status: final\n", "Body");
+    fn a_dok_field_both_sides_set_keeps_ours_and_records_theirs() {
+        let base = dok("status: draft\n", "Body");
+        let a = dok("status: review\n", "Body");
+        let b = dok("status: final\n", "Body");
         let m = merge_document(&base, &a, &b).unwrap();
         assert_eq!(m.conflicts, ["status"]);
         assert_eq!(
             m.text,
-            "---\ntype: topic\ntitle: Page\nstatus: review\nmerge_conflicts:\n  - {field: status, theirs: final}\n---\n\nBody\n"
+            "---\ntype: topic\ntitle: Dok\nstatus: review\nmerge_conflicts:\n  - {field: status, theirs: final}\n---\n\nBody\n"
         );
         // Merging the same again (a rebase replaying it) adds nothing.
         let again = merge_document(&a, &m.text, &b).unwrap();
@@ -892,12 +888,12 @@ mod tests {
     }
 
     #[test]
-    fn a_page_body_both_sides_changed_keeps_markers_and_valid_frontmatter() {
-        let base = page("", "line");
-        let m = merge_document(&base, &page("", "mine"), &page("", "yours")).unwrap();
+    fn a_dok_body_both_sides_changed_keeps_markers_and_valid_frontmatter() {
+        let base = dok("", "line");
+        let m = merge_document(&base, &dok("", "mine"), &dok("", "yours")).unwrap();
         assert_eq!(m.conflicts, ["body"]);
-        let p = crate::pages::Page::parse("wiki/p.md", &m.text);
-        assert_eq!(p.title(), "Page");
+        let p = crate::doks::Dok::parse("doks/p.md", &m.text);
+        assert_eq!(p.title(), "Dok");
         assert_eq!(
             p.body,
             "<<<<<<< here\nmine\n=======\nyours\n>>>>>>> other side\n"
@@ -912,15 +908,15 @@ mod tests {
     }
 
     #[test]
-    fn run_merges_a_page_by_its_path() {
-        let dir = std::env::temp_dir().join(format!("yaks-md-page-{}", std::process::id()));
+    fn run_merges_a_dok_by_its_path() {
+        let dir = std::env::temp_dir().join(format!("yaks-md-dok-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let (b, o, t) = (dir.join("b"), dir.join("o"), dir.join("t"));
-        std::fs::write(&b, page("", "x")).unwrap();
-        std::fs::write(&o, page("", "mine")).unwrap();
-        std::fs::write(&t, page("", "yours")).unwrap();
-        assert_eq!(run(&b, &o, &t, ".yaks/wiki/topics/p.md").unwrap(), 0);
+        std::fs::write(&b, dok("", "x")).unwrap();
+        std::fs::write(&o, dok("", "mine")).unwrap();
+        std::fs::write(&t, dok("", "yours")).unwrap();
+        assert_eq!(run(&b, &o, &t, ".yaks/doks/topics/p.md").unwrap(), 0);
         assert!(
             std::fs::read_to_string(&o)
                 .unwrap()

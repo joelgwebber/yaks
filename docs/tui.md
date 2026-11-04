@@ -9,10 +9,10 @@ interchangeable.
 - **List pane** — the yaks in the active *view*, as a tree or flat list.
   Views are tabs across the top (`Tab`/`[`/`]` to switch). Built-in views
   include the default tree, **Recent**, **Inbox** (yaks with a `needs` value: awaiting a human, or answered or requested and
-  awaiting an agent), **All** (every yak, dead ones too, then every page and
+  awaiting an agent), **All** (every yak, dead ones too, then every dok and
   source; unpinned, from the view picker, `` ` ``) and
   **Starred**; you can save the current filter as a named view. The
-  **Wiki** tab lists the farm's pages and sources (see [Wiki tab](#wiki-tab)),
+  **Doks** tab lists the farm's doks and sources (see [Doks tab](#doks-tab)),
   and the **Sheds** tab is a tree of the farm's workers (actors) with the yaks
   each one touched (see [Sheds tab](#sheds-tab)).
 - **Detail pane** — the selected yak: fields, parent/deps/children, source and
@@ -97,7 +97,7 @@ interchangeable.
 ## Keys
 
 **Movement** — `j`/`k` or `↓`/`↑` move; `d`/`u` half-page; `PgDn`/`PgUp`
-full-page; `g`/`G` (or `Home`/`End`) top/bottom. The Wiki tab's rows move
+full-page; `g`/`G` (or `Home`/`End`) top/bottom. The Doks tab's rows move
 the same way (they are rows of the same list).
 
 **List pane**
@@ -106,7 +106,7 @@ the same way (they are rows of the same list).
 |---|---|
 | `Tab` / `S-Tab`, `[` / `]` | Next / previous view |
 | `l` / `→` / `Enter` | Show detail pane |
-| `h` / `←` | Collapse the row if it is an expanded parent, else go to its parent row (nothing on a root, in a flat view or on a page row) |
+| `h` / `←` | Collapse the row if it is an expanded parent, else go to its parent row (nothing on a root, in a flat view or on a dok row) |
 | `F` | Cycle **family scope** — how much of each tree shows: auto → lone → remaining → all |
 | `Space` | Collapse / expand subtree |
 | `m` | Mark / unmark row (multi-select) |
@@ -147,7 +147,7 @@ the register and the scroll and cursor from before; the status bar shows
 | `M` | Add a comment (note): an empty editor under a `▸ you · now` header after the last comment, in place |
 | `a` | Hand the yak to an agent (`needs: agent`): on a yak awaiting a human, answer; otherwise request agent work (like `yaks request`; on a yak already awaiting an agent the request is appended). Opens the same multi-line editor as `M`, headed `Answer <id>` / `Request <id>`; `Ctrl-S` answers or requests with the text as the note (an empty one does so with no note), cancel changes nothing |
 | `Q` | Ask a question (`needs: human`, out of `next` until answered; on a yak awaiting an agent it flips back to a human). The same editor, headed `Ask <id>` |
-| `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped. It navigates like the detail pane, by the same code: `j`/`k`, `d`/`u`, `g`/`G` move a line cursor, `Tab`/`[`/`]` cycle links and `Enter` follows one (the status bar shows a URL's destination; a footnote or `#section` jumps within the file and `o`/`i` go back/forward; a yak id opens that yak in the detail pane; a farm page or source opens in the viewer at its anchor, `o` coming back (see [Following links](#following-links-and-peek)); an attachment, URL or source file opens as from the detail pane; a pane under the page peeks the link under the cursor, `p` hides it), `/` finds (the same search register as the yak detail) with `n`/`N` cycling and wrapping, `v`/Shift-↑↓ select and `y`/`Enter` copy (a `.md` file copies its source markdown), `h`/`l` scroll a code block or table sideways, `Esc` clears a selection, then the search, then closes. `E` edits it in place (the multi-line editor: `Ctrl-S` writes the file back under the farm lock and returns to the viewer, re-rendered; cancel returns unchanged, asking first if you typed anything; a file changed on disk meanwhile is not overwritten until a second `Ctrl-S`), `O` hands it to the OS opener, `h` closes. An image (png, jpg, gif, webp up to 32 MiB; svg up to 4 MiB) opens **in the pane** too: drawn with the terminal's own graphics protocol (kitty, sixel, iTerm2) when it speaks one, else as half-block cells; shrunk to fit, never enlarged; `O` opens it externally, `Esc`/`h` close. An svg is rasterized first (see *Svg attachments* below); a corrupt or undecodable image and binary files open with the OS opener |
+| `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped. It navigates like the detail pane, by the same code: `j`/`k`, `d`/`u`, `g`/`G` move a line cursor, `Tab`/`[`/`]` cycle links and `Enter` follows one (the status bar shows a URL's destination; a footnote or `#section` jumps within the file and `o`/`i` go back/forward; a yak id opens that yak in the detail pane; a farm dok or source opens in the viewer at its anchor, `o` coming back (see [Following links](#following-links-and-peek)); an attachment, URL or source file opens as from the detail pane; a pane under the dok peeks the link under the cursor, `p` hides it), `/` finds (the same search register as the yak detail) with `n`/`N` cycling and wrapping, `v`/Shift-↑↓ select and `y`/`Enter` copy (a `.md` file copies its source markdown), `h`/`l` scroll a code block or table sideways, `Esc` clears a selection, then the search, then closes. `E` edits it in place (the multi-line editor: `Ctrl-S` writes the file back under the farm lock and returns to the viewer, re-rendered; cancel returns unchanged, asking first if you typed anything; a file changed on disk meanwhile is not overwritten until a second `Ctrl-S`), `O` hands it to the OS opener, `h` closes. An image (png, jpg, gif, webp up to 32 MiB; svg up to 4 MiB) opens **in the pane** too: drawn with the terminal's own graphics protocol (kitty, sixel, iTerm2) when it speaks one, else as half-block cells; shrunk to fit, never enlarged; `O` opens it externally, `Esc`/`h` close. An svg is rasterized first (see *Svg attachments* below); a corrupt or undecodable image and binary files open with the OS opener |
 | `r` | (detail) Rename the attachment whose link (📎 or 🖼) the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
 | `X` | Slaughter (delete, with confirm); on a yak with hairy or shaving descendants the confirm offers to take them too, naming how many go (shorn ones stay shorn) |
 | `:w` / `:q` / `:wq` | Save / cancel / save+close (editor Normal mode) |
@@ -269,7 +269,7 @@ single-line fields. A paste with no text field focused is ignored.
 part of a view's filter. It stays when you switch tabs (it never puts the `*`
 on one), every tab's count and list apply it, and it is what a saved view's own
 search (the drawer's search row) must also match. It matches the way `yaks find`
-searches: a yak's id, title and description and notes; a page's file
+searches: a yak's id, title and description and notes; a dok's file
 (frontmatter and body) and a source's `source.md` and extracted text, on top of
 its title, path, kind and tags; a shed's name, or one of its yaks (a tree keeps
 the ancestors of a match). In a list, `n`/`N` with no query set make the last
@@ -282,13 +282,13 @@ title words, then `Enter` opens its detail like following a link, the list
 staying where it is, and records the jump so `o` comes back); `f` filter drawer; `Esc` clear the query, then
 revert the filter to the active view.
 
-**The search register** — `/` in a yak's detail pane or in a page or attachment
+**The search register** — `/` in a yak's detail pane or in a dok or attachment
 open in the viewer does not touch the list's query (so searching inside a yak
 can't filter it out of the list): it edits one **search register**, like vim's
 `@/`. Every text subject highlights the register's matches the moment it opens
 (the current match green), `n`/`N` step through them, and the status bar shows
 `match 2/5 "text"` (`match 0/5` before `n` has landed on one). `J`/`K`, following
-a link, `o`/`i` and opening a page keep the register and reset only which match
+a link, `o`/`i` and opening a dok keep the register and reset only which match
 is current. In a yak's detail `n` past the last match goes on to the next row
 whose yak matches the register (the list query's rule), landing on its first
 match, and `N` before the first goes back to the previous such yak's last match;
@@ -297,18 +297,18 @@ find box opens seeded with the register; `Enter` keeps it, `Esc` restores the
 register from before, an empty box clears it, and `Esc` in the pane (after a
 selection) clears it too.
 
-**Wiki tab** — its rows are documents, not yaks: the movement keys above work,
+**Doks tab** — its rows are documents, not yaks: the movement keys above work,
 and a document row has its own keys (the yak keys do nothing there):
 
 | Key | Action |
 |---|---|
-| `l` / `→` / `Enter` | Open the page or source in the viewer (it navigates like the detail pane) |
-| `J` / `K` | (viewer) Open the next / previous row's page in place, as `J`/`K` step yaks |
-| `/` | Search every view (a page's body and a source's text too); `Esc` clears it |
-| `E` | Edit the page in place (also `E` in its viewer): frontmatter and body in one editor, `Ctrl-S` saves |
-| `c` | New page: type its path, then write its body (`C` does nothing here) |
+| `l` / `→` / `Enter` | Open the dok or source in the viewer (it navigates like the detail pane) |
+| `J` / `K` | (viewer) Open the next / previous row's dok in place, as `J`/`K` step yaks |
+| `/` | Search every view (a dok's body and a source's text too); `Esc` clears it |
+| `E` | Edit the dok in place (also `E` in its viewer): frontmatter and body in one editor, `Ctrl-S` saves |
+| `c` | New dok: type its path, then write its body (`C` does nothing here) |
 | `y` | Copy the path |
-| `Ctrl-R` | Reread the pages now |
+| `Ctrl-R` | Reread the doks now |
 
 **Sheds tab** — the list's keys; a yak row takes every yak key, a shed row
 these:
@@ -324,19 +324,19 @@ these:
 | `Ctrl-R` | Rescan now (also in the shed's pane) |
 | `J` / `K` | (pane) Next / previous row, shed or yak |
 
-**General** — `y` copy yak id; `q` / `Ctrl-C` quit (everywhere, with a page or an
+**General** — `y` copy yak id; `q` / `Ctrl-C` quit (everywhere, with a dok or an
 image open too); `?` the keys of the current context in a compact popup (a key
 and the name of the command it runs), and a second `?` the full reference below
 it. Any other key closes the popup without running. See [Customising
 keys](#customising-keys) to rebind them.
 
 **Mouse** — the wheel scrolls the pane under the pointer, three rows a notch:
-the list, the detail or an open page scrolls its view and the cursor stays
+the list, the detail or an open dok scrolls its view and the cursor stays
 where it is until it would leave the screen (then it is carried along at the
 edge); with a yak's detail open, the wheel over the list steps tasks like
 `J`/`K` instead. A horizontal wheel (a trackpad swipe sideways, a tilt wheel)
 scrolls the code block or table under the pointer sideways, putting the line
-cursor on that row, in the detail and in an open page. Left-click a row to select it (click it again to
+cursor on that row, in the detail and in an open dok. Left-click a row to select it (click it again to
 open the detail; with the detail open, a click shows that row's yak and keeps it open), click a detail line to put the cursor there (click it again to
 follow its link), and click a tab to switch view. The mouse is ignored while an
 overlay (editor, picker, drawer, help) is open. Mouse back/forward buttons aren't
@@ -433,8 +433,8 @@ digits). It shows as plain link text; the status bar shows `src/foo.rs:L12-L40`
 else the OS opener. A pinned link whose file has changed since that commit opens
 a read-only copy of `git show <sha>:<path>` under the temp directory
 (`yaks-src/<sha>/…`); if the file is unchanged it opens the working copy. A link
-to a **farm document** (a page from the farm root, `[x](/wiki/topics/x.md#setup)`;
-in a page, a relative `notes.md` below it; a source's `/sources/<id>/source.md`;
+to a **farm document** (a dok from the farm root, `[x](/doks/topics/x.md#setup)`;
+in a dok, a relative `notes.md` below it; a source's `/sources/<id>/source.md`;
 `@<sha>` pins it) opens in the text viewer at its `#heading` or `#L12` row (see
 [Following links](#following-links-and-peek)); in the detail pane the status bar
 also shows the first line of its peek. Every link is read by the farm's one link
@@ -472,7 +472,7 @@ the full source lines.
 ![yaks TUI inbox view](assets/tui-inbox.svg)
 
 **All** — a flat list of everything the farm holds: every yak (dead ones
-included), newest change first, then every page and source in the Wiki tab's
+included), newest change first, then every dok and source in the Doks tab's
 order. It is unpinned too (reach it from `` ` ``), and its count is the number in
 the query chip. Narrowing a yak facet in the drawer (a type, priority, status or
 readiness) drops the documents, which have none.
@@ -521,6 +521,9 @@ keys:
   `farm.sync`, `yak.new`, ...). An override *replaces* that command's keys in
   every context it is bound in (the list, the detail pane, the viewers), so
   `view.next` above no longer answers to `Tab`.
+- **Renamed in 0.0.32:** `wiki.new` and `wiki.edit` are now `dok.new` and `dok.edit`.
+  There is no alias, so a `keys:` override of the old names is reported as an
+  unknown command at startup and left out: rename it.
 - **Keys** are written as `?` writes them: `j`, `G`, `Space`, `Enter`, `Esc`,
   `Tab`, `S-Tab`, `↑ ↓ ← →` (or `Up Down Left Right`), `PgUp`, `PgDn`,
   `Home`, `End`, `Backspace`, `Delete`, `F(1)`, and `Ctrl-N` / `Shift-↓`
@@ -543,11 +546,11 @@ One history of locations serves the list, the detail pane, the viewers and
 every tab. `o` goes back and `i` forward, in any pane and in the list.
 
 - **A location** is the view, its live filter and query, the cursor row (found
-  again by what it is, a yak id or a page path, not by its place), the list's
+  again by what it is, a yak id or a dok path, not by its place), the list's
   scroll, the focus, and the pane's subject with its line and scroll.
 - **Jumps push; movement doesn't.** A jump is following any link (a yak, a
-  page, a footnote, a `#section`), opening a row in the pane (`l`/`Enter` on
-  a yak, shed or page row, so backing out of a detail lands on the list it was
+  dok, a footnote, a `#section`), opening a row in the pane (`l`/`Enter` on
+  a yak, shed or dok row, so backing out of a detail lands on the list it was
   opened from, cursor on its row), a view switch (`Tab`, `[`/`]`, the picker,
   a click on a tab) and `#`. Moving the cursor or a line, `J`/`K`, closing the
   pane, `Esc` and committing a search or the drawer are not jumps and push
@@ -557,66 +560,66 @@ every tab. `o` goes back and `i` forward, in any pane and in the list.
 - **Following a link to a yak leaves the list where it is.** If the current
   list has the yak the cursor moves to it (collapsed ancestors expand);
   otherwise the pane shows it from outside the list (another state, a facet
-  or the query hides it; a dead yak; any yak from the Wiki or Sheds view) and
+  or the query hides it; a dead yak; any yak from the Doks or Sheds view) and
   its header says `not in this list`. Moving the cursor, `J`/`K`, `Esc`, `h`
   and switching view show the list's own row again.
 - **`o`/`i` restore** the view (a view deleted meanwhile falls back to the
   subject's status view, else the first), the filter and query, the cursor
   row, the list's scroll and the pane. A row that left the list or a yak that
   was slaughtered leaves the cursor at its old index and the notification says
-  `moved` or `gone` after its name; a page is read again from disk and its
+  `moved` or `gone` after its name; a dok is read again from disk and its
   cursor clamped. Each notification names the view and the subject:
   `← Recent · yaks-1234`.
 
 ## Following links and peek
 
-The text viewer (an attachment, or a page from the [Wiki tab](#wiki-tab))
+The text viewer (an attachment, or a dok from the [Doks tab](#doks-tab))
 follows links the way a browser does. The viewer, like the image viewer, is
 part of the right pane, not a modal overlay: the list stays drawn on its left
 (dimmed, as the list is while the detail has focus), and the farm keys work
-with a page open. `U` syncs and `W` commits (the page stays open), `?` opens
-the help over it (closing the help returns to the page), and `#` opens the
-yak picker (choosing a yak closes the page and shows it). `Esc` or `h`
-close the page and return to where it was opened from, the list or the yak's
+with a dok open. `U` syncs and `W` commits (the dok stays open), `?` opens
+the help over it (closing the help returns to the dok), and `#` opens the
+yak picker (choosing a yak closes the dok and shows it). `Esc` or `h`
+close the dok and return to where it was opened from, the list or the yak's
 detail; switching view (`Tab`, a tab click), `J`/`K` and a click on a list
 row also close it (the click selects the row). `q` quits, as everywhere, and
 `v` is visual select here (the view picker is `` ` `` on a list row).
 
-- **`Enter` on a farm document** opens it in the viewer: a page (frontmatter
+- **`Enter` on a farm document** opens it in the viewer: a dok (frontmatter
   above the body), a source (with its `extracted.md`), or any other text file of
   the farm; an image opens in the image viewer. A `#heading` lands the cursor on
-  that heading, at the top of the page; `#L12-L40` on line 12 of the file. A
-  pinned link (`/wiki/x.md@3f2a9c1`) shows the file as it was at that farm
+  that heading, at the top of the dok; `#L12-L40` on line 12 of the file. A
+  pinned link (`/doks/x.md@3f2a9c1`) shows the file as it was at that farm
   commit, `@3f2a9c1` in the header; `E` refuses (a past version is read-only).
   A link to a file the farm lacks says `not in this farm` and stays put.
-- **`#section`** (an anchor in the same page) moves the cursor to that heading.
+- **`#section`** (an anchor in the same dok) moves the cursor to that heading.
 - **History**: `o` goes back over in-page jumps (footnotes, `#section`), then
-  documents, to where the first page was opened from; `i` goes forward. A
+  documents, to where the first dok was opened from; `i` goes forward. A
   document you come back to is re-read from disk, so an edit made meanwhile
   shows. It is the one history of the TUI (see *History* below); `Esc` closes
   the viewer and forgets nothing.
 - **Peek**: while the cursor is on a link it can read (a farm document, an
-  in-page anchor, an attachment, a `code:` file), a pane under the page shows
+  in-page anchor, an attachment, a `code:` file), a pane under the dok shows
   `yaks peek` of it: the section a `#heading` names, the lines of a `#L12-L40`,
   or a document's fields and first paragraph, cut to fit. The pane is there
-  whenever the page has such a link, so the page doesn't jump as the cursor
+  whenever the dok has such a link, so the dok doesn't jump as the cursor
   moves; `p` hides it (and shows it again).
 
-![The viewer on a page, its cursor on a link, the peek pane showing the linked section](assets/tui-wiki-peek.svg)
+![The viewer on a dok, its cursor on a link, the peek pane showing the linked section](assets/tui-doks-peek.svg)
 
-## Wiki tab
+## Doks tab
 
-The **📖 Wiki** tab lists the farm's documents that are not yaks: every page
-under `wiki/` and each herd's `<herd>/wiki/`, then every saved source under
-`sources/` (the same files `yaks page list` and `yaks source list` read).
+The **📖 Doks** tab lists the farm's documents that are not yaks: every dok
+under `doks/` and each herd's `<herd>/doks/`, then every saved source under
+`sources/` (the same files `yaks dok list` and `yaks source list` read).
 
-- **One row per page**, sorted by path, then the sources: the title, the kind
+- **One row per dok**, sorted by path, then the sources: the title, the kind
   (`note`, `topic`, `howto`, `summary` or a typed kind; `source` for a
   source), the tags, then the path dimmed. The list is flat; the path shows
   the folder.
-- **The tab count** is the number of pages (sources are not counted) the
+- **The tab count** is the number of doks (sources are not counted) the
   query keeps.
-- **`Enter` opens the page** in the text viewer, next to the list (a jump:
+- **`Enter` opens the dok** in the text viewer, next to the list (a jump:
   `o` closes it again, back on its row). Its
   frontmatter shows as field rows (`type:`, `title:`, `tags:`, ...) above the
   rendered markdown body. A field the viewer can't flatten to one line (a list
@@ -624,35 +627,35 @@ under `wiki/` and each herd's `<herd>/wiki/`, then every saved source under
   its `extracted.md` under an `── extracted.md ──` row. The viewer moves like
   the detail pane: the line cursor, `Tab` among links, `/` find (the search
   register, see *The search register* above), `v`/`y`
-  select and copy; `Enter` follows a link (another page opens in its place,
+  select and copy; `Enter` follows a link (another dok opens in its place,
   `o` comes back: see [Following links](#following-links-and-peek)); `Esc`
   closes it.
-- **`E` edits the page in place**, from the list or its viewer: the multi-line
+- **`E` edits the dok in place**, from the list or its viewer: the multi-line
   editor opens on the whole file, the frontmatter as YAML between its `---`
   lines and the body below, so every field (a typed kind's, a `sources:` list)
   edits as written. `Ctrl-S` saves it and returns to the viewer, re-rendered;
-  on a farm branch the save is one commit (a quick re-save joins it). The page
+  on a farm branch the save is one commit (a quick re-save joins it). The dok
   must keep its `---` block; if the file changed on disk while you typed,
   nothing is written until a second `Ctrl-S`. A source is a snapshot and a
   pinned version a past one: `E` refuses both.
-- **`c` creates a page**: type its path (`wiki/topics/x.md`, or a herd's
-  `<herd>/wiki/...`; `.md` is added; parts are lowercase-kebab), and the page
-  is written as `yaks page new` would (kind `note`, a title from the file name,
+- **`c` creates a dok**: type its path (`doks/topics/x.md`, or a herd's
+  `<herd>/doks/...`; `.md` is added; parts are lowercase-kebab), and the dok
+  is written as `yaks dok new` would (kind `note`, a title from the file name,
   a schema's defaults), then opened in the editor for its body. A bad or taken
   path keeps the prompt open with the reason.
 
-![Editing a page in place: its frontmatter and body in the editor](assets/tui-wiki-edit.svg)
+![Editing a dok in place: its frontmatter and body in the editor](assets/tui-doks-edit.svg)
 
 - **`/` searches** the list with the global query, the same one every tab
   applies (its chip is on the tab row; `Esc` clears it). It matches a row's
-  title, path, kind and tags and the text behind it: a page's frontmatter and
+  title, path, kind and tags and the text behind it: a dok's frontmatter and
   body, a source's `source.md` and extracted text.
 - **Refresh**: the list is reread whenever the farm is (at startup, after a TUI
   change, and when files under the farm change), and on `Ctrl-R`.
 
-![yaks TUI Wiki tab](assets/tui-wiki.svg)
+![yaks TUI Doks tab](assets/tui-doks.svg)
 
-![yaks TUI Wiki tab with a page open](assets/tui-wiki-page.svg)
+![yaks TUI Doks tab with a dok open](assets/tui-doks-dok.svg)
 
 ## Sheds tab
 

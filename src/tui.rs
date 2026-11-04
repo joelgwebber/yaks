@@ -14,6 +14,7 @@ mod detail;
 mod detail_nav;
 #[cfg(test)]
 mod docshots;
+mod doks_tab;
 mod drawer;
 mod editor;
 mod farmsync;
@@ -46,7 +47,6 @@ mod view;
 mod viewmodel;
 mod views_store;
 mod when;
-mod wiki_tab;
 
 // `headless` holds the `toque::HeadlessApp` impl for `App`; nothing to re-export
 // (the headless driver lives in the `toque` crate, invoked from `main`).
@@ -86,6 +86,7 @@ use crate::model::{Status, Task};
 
 use blockedit::BlockEdit;
 use create::*;
+use doks_tab::*;
 use drawer::*;
 use editor::*;
 use farmsync::{AutoSync, FarmOp, FarmSync};
@@ -97,7 +98,6 @@ use keymap::{Cmd, Keymap, help_content};
 use render::*;
 pub use runtime::run;
 use sheds_tab::*;
-use wiki_tab::*;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub(crate) enum Focus {
@@ -149,7 +149,7 @@ pub(crate) enum Overlay {
 
 /// A document open in the right pane (yaks-0906): the pane's subject while it
 /// is `Some`, else the selected row's. Not modal: the list stays on the left
-/// and the global keys (`U`, `W`, `?`, `#`) work with a page open.
+/// and the global keys (`U`, `W`, `?`, `#`) work with a dok open.
 pub(crate) struct DocPane {
     pub(crate) view: DocView,
     /// Where focus goes back to when the document closes: the list, or the yak
@@ -160,7 +160,7 @@ pub(crate) struct DocPane {
 
 /// What a [`DocPane`] shows.
 pub(crate) enum DocView {
-    /// A text attachment, wiki page or source in the viewer (yaks-699b).
+    /// A text attachment, dok or source in the viewer (yaks-699b).
     Text(handlers::AttachView),
     /// An image attachment in the image viewer (yaks-4305).
     Image(imageview::ImageView),
@@ -299,7 +299,7 @@ pub struct App {
     detail: linenav::LineNav,
     /// The yak the pane shows when it is not the selected row's: a link
     /// followed to a yak the current list does not have (another state, a
-    /// facet or the query keeps it out; the Wiki or Sheds view has no such
+    /// facet or the query keeps it out; the Doks or Sheds view has no such
     /// rows). `None`: the pane shows the selected row's yak. It means
     /// something only with the pane focused ([`App::pane_yak_id`]), and goes
     /// when the cursor moves, the view changes or focus returns to the list.
@@ -322,7 +322,7 @@ pub struct App {
     /// `Esc` on a list clears it before it reverts the facets. Never `Some("")`.
     query: Option<String>,
     /// The search register (vim's `@/`, design §4): what `/` in the pane
-    /// edits, highlighted in every text subject (a yak's detail, a page, a
+    /// edits, highlighted in every text subject (a yak's detail, a dok, a
     /// source, an attachment) and stepped by `n`/`N`. It outlives the subject
     /// (`J`/`K`, `o`/`i` and following a link keep it) and is apart from the
     /// list's `query`, so searching inside a yak never filters the list. Never
@@ -387,8 +387,8 @@ pub struct App {
     hits: RefCell<mouse::HitMap>,
     /// The Sheds tab's snapshot, cursors and background scan (yaks-98f1).
     sheds: ShedsTab,
-    /// The Wiki tab's pages and sources and its cursor (yaks-ebb2).
-    wiki: WikiTab,
+    /// The Doks tab's doks and sources and its cursor (yaks-ebb2).
+    doks: DoksTab,
     /// Peeks read for the preview pane, by link (see [`follow::PeekCache`]).
     peeks: RefCell<follow::PeekCache>,
     /// Whether the viewer shows its peek pane (`p` toggles).
@@ -454,7 +454,7 @@ impl App {
             selected: HashSet::new(),
             hits: RefCell::default(),
             sheds: ShedsTab::default(),
-            wiki: WikiTab::default(),
+            doks: DoksTab::default(),
             peeks: RefCell::default(),
             peek_shown: true,
             farm_sync: None,
@@ -517,7 +517,7 @@ impl App {
             std::time::Instant::now(),
         );
         app.refresh_farm_sync();
-        app.reload_wiki();
+        app.reload_doks();
         app.clamp_cursor();
         // The user's key overrides (`keys:` in their config.yaml). Read here,
         // not in `new`, so a snapshot test never depends on the machine.

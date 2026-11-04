@@ -124,8 +124,8 @@ Next: G3's question, which belongs with yak-7af5.
 
 - Another yak: its **full id** (`yak-0af1`, never the bare `0af1`); the TUI makes it a link and `yaks refs <id> [--incoming]` lists the references.
 - Repo code: `code:` and a path from the repo root, with GitHub's line fragment: `[fn parse](code:src/foo.rs#L12-L40)`; `@<sha>` before the fragment pins it to a commit (`code:src/foo.rs@3f2a9c1#L12`). The older `../src/foo.rs` and `../blob/<sha>/src/foo.rs` still work in yaks.
-- A page: from the farm root, `[link grammar](/wiki/design/link-grammar.md#heading)`; a relative link only goes down (`notes/detail.md`), never `../`. `@<sha>` pins a page too.
-- `yaks peek <link>` prints just what a link names (the lines, the section, or a page's frontmatter and first paragraph): read that rather than a whole file. `yaks doctor` reports links that lead nowhere.
+- A dok: from the farm root, `[link grammar](/doks/design/link-grammar.md#heading)`; a relative link only goes down (`notes/detail.md`), never `../`. `@<sha>` pins a dok too.
+- `yaks peek <link>` prints just what a link names (the lines, the section, or a dok's frontmatter and first paragraph): read that rather than a whole file. `yaks doctor` reports links that lead nowhere.
 - Attachments: `yaks attach` writes the link (`[name](<id>/<file>)`, `![name](...)` for an image). Attach images and long output rather than pasting them.
 - A markdown document you attach that embeds images (an evidence write-up with screenshots): attach it and its images together with `--no-link` (`yaks attach <id> doc.md a.png b.png --no-link`), then link only the document in a note (`[evidence](<id>/doc.md)`). Inside an attachment, a bare file name (`![a](a.png)`) is a sibling attachment of the same yak, so keep the document's own links bare and don't put each image on the yak.
 - Caption an image with the markdown title, `![alt](<id>/shot.png "What it shows")`, or `yaks attach <id> shot.png --caption "What it shows"`: the TUI shows it under the picture (and under the link row when it is not drawn). Use it instead of a `Context: ![..](..)` lead-in; keep alt short. Keep images local (attach them): a remote image is never drawn and can break later.
@@ -154,19 +154,19 @@ Skip what makes no sense for the change; never skip it because it is effort.
 
 ## Tags
 
-Few and broad (`ui`, `docs`, `cli`): reuse an existing tag before inventing one (`yaks stats` lists them; `yaks page types` shows the farm's known tags and what each means, from `schemas/yak.md`), at most two or three per yak, one word each (`--tags ui,docs` is two tags). A tracker tag (`jira`, `github`) marks yaks that map to an external issue.
+Few and broad (`ui`, `docs`, `cli`): reuse an existing tag before inventing one (`yaks stats` lists them; `yaks dok types` shows the farm's known tags and what each means, from `schemas/yak.md`), at most two or three per yak, one word each (`--tags ui,docs` is two tags). A tracker tag (`jira`, `github`) marks yaks that map to an external issue.
 
-## Pages
+## Doks
 
-A farm also holds **pages**: markdown documents that are not yaks, under `wiki/` (farm-wide) or `<herd>/wiki/` (one herd's), named by their path from the farm root (`wiki/topics/vector-search.md`). Use a page for working knowledge that should outlive the yak that found it: research findings, a decision record, a design note. Product docs that ship with the code stay in the code repo's `docs/`; findings scoped to one yak stay in its notes and attachments.
+A farm also holds **doks**: markdown documents that are not yaks, under `doks/` (farm-wide) or `<herd>/doks/` (one herd's), named by their path from the farm root (`doks/topics/vector-search.md`). Use a dok for working knowledge that should outlive the yak that found it: research findings, a decision record, a design note. Product docs that ship with the code stay in the code repo's `docs/`; findings scoped to one yak stay in its notes and attachments.
 
-- Search before creating (`yaks page list`, `yaks page query --where tags=<tag>`); extend an existing page rather than starting a second one.
-- Create with `yaks page new <path> --type topic --set 'tags=[a, b]' --body-file notes.md` (kinds: `note`, the default; `topic`; `howto`; `summary`). Lowercase-kebab paths.
-- Edit fields with `yaks page set <path> --set key=value`, or the body with your editor. `yaks doctor` checks pages.
-- Facts you would list, filter or sort (appliances, vendors, platforms compared) go in **typed pages**: `yaks page types` shows the kinds and their fields; give a page `type: <kind>` and the fields its `schemas/<kind>.md` lists, and add or extend the schema when a new kind earns one. Warnings are advice, never refusals. `schemas/yak.md` lists the farm's known tags: pick from it before inventing one.
+- Search before creating (`yaks dok list`, `yaks dok query --where tags=<tag>`); extend an existing dok rather than starting a second one.
+- Create with `yaks dok new <path> --type topic --set 'tags=[a, b]' --body-file notes.md` (kinds: `note`, the default; `topic`; `howto`; `summary`). Lowercase-kebab paths.
+- Edit fields with `yaks dok set <path> --set key=value`, or the body with your editor. `yaks doctor` checks doks.
+- Facts you would list, filter or sort (appliances, vendors, platforms compared) go in **typed doks**: `yaks dok types` shows the kinds and their fields; give a dok `type: <kind>` and the fields its `schemas/<kind>.md` lists, and add or extend the schema when a new kind earns one. Warnings are advice, never refusals. `schemas/yak.md` lists the farm's known tags: pick from it before inventing one.
 - Research yaks: the `yaks-research` skill says where each finding goes, and how to save, cite and split.
-- Link the page from the yak that produced it, so it stays in context. Move a page with `yaks mv <from> <to>`, which rewrites every link to it.
-- Outside material you rely on (a paper, a downloaded page, a screenshot, a small code directory) is a **source**: `yaks source add <file> --title "<what it is>" [--url <page it came from>] [--text <your markdown conversion>]` snapshots it once under `sources/<id>/`, one source per thing (never a second source for a conversion; the `yaks-research` skill has the rule); cite its `source.md` in the page's `sources:` list. A finding first kept as a yak attachment moves with `yaks promote <id>/<file>` (a source) or `--page wiki/<path>.md` (a page); links to it follow.
+- Link the dok from the yak that produced it, so it stays in context. Move a dok with `yaks mv <from> <to>`, which rewrites every link to it.
+- Outside material you rely on (a paper, a downloaded web page, a screenshot, a small code directory) is a **source**: `yaks source add <file> --title "<what it is>" [--url <dok it came from>] [--text <your markdown conversion>]` snapshots it once under `sources/<id>/`, one source per thing (never a second source for a conversion; the `yaks-research` skill has the rule); cite its `source.md` in the dok's `sources:` list. A finding first kept as a yak attachment moves with `yaks promote <id>/<file>` (a source) or `--dok doks/<path>.md` (a dok); links to it follow.
 
 ## Commands
 
@@ -176,7 +176,7 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 |---|---|
 | `create "title"` | New hairy yak: `--type --priority --parent --herd --tags --depends-on --source --pr --verify --description` |
 | `list` / `next` / `tangled` / `search` | Query (shared filters, below); `next` = hairy with deps met, `tangled` = blocked on deps |
-| `find <pattern>` | Full-text search over yak bodies and notes, pages, sources' text and sessions (`--scope <prefix>`, `--kind yaks\|pages\|sources\|sessions`, `--regex`, `-i`, `--json`); `path:line: text` per match, exit 1 when none. `search` is the yak-only id/title/description lookup |
+| `find <pattern>` | Full-text search over yak bodies and notes, doks, sources' text and sessions (`--scope <prefix>`, `--kind yaks\|doks\|sources\|sessions`, `--regex`, `-i`, `--json`); `path:line: text` per match, exit 1 when none. `search` is the yak-only id/title/description lookup |
 | `show <id>` | Full details, parent and children |
 | `path [<id>...]` | Absolute file path of yaks (by id or filters); no arguments: the farm in use |
 | `update <id>...` | Fields, `--add-tag`/`--remove-tag`, `--note` (with `--meta key=value`), `--verify`, `--source`, `--pr`/`--remove-pr`, `--set key=value`/`--unset key` (any other field) |
@@ -188,19 +188,19 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 | `log` | Notes and moves over a filtered set, oldest first; `--since 2h`, `--by <actor>` |
 | `refs <id>` | What it points at; `--incoming` for what points at it |
 | `commits <id>` | Commits recorded on the yak (`yaks land` writes them) and the branches its checkpoints name (`--fetch` fetches them), then those naming it in the code repo you run it from, then the yak file's farm history |
-| `page list` / `show` / `new` / `set` / `query` / `types` | The farm's pages (`wiki/**.md`, `<herd>/wiki/**.md`): see "Pages" below |
+| `dok list` / `show` / `new` / `set` / `query` / `types` | The farm's doks (`doks/**.md`, `<herd>/doks/**.md`): see "Doks" below |
 | `dep` / `reparent` | Add/remove a dependency; move under `--parent <id>` or `--unparent` |
 | `bulk` | One field edit or reparent over a filtered set; dry-run unless `--commit`; refuses without a filter |
 | `rename` / `rename-herd` | Rename a yak or a whole herd, rewriting every reference; `--dry-run` first |
 | `undo` | Revert farm commits: named, or `--by <actor> [--since 2h]` (lists; `--yes` reverts) |
 | `status` / `commit` / `sync` | The farm's uncommitted changes; commit them; commit, pull and push it |
-| `conflicts` | Files a merge left to settle: prose holding `<<<<<<< here` … `>>>>>>> other side` markers, or a page's `merge_conflicts:` list. Fields always merge on their own; edit the text to one version (and drop the settled `merge_conflicts:` entry) |
+| `conflicts` | Files a merge left to settle: prose holding `<<<<<<< here` … `>>>>>>> other side` markers, or a dok's `merge_conflicts:` list. Fields always merge on their own; edit the text to one version (and drop the settled `merge_conflicts:` entry) |
 | `weight` / `lfs` | What the farm costs a code clone; store binary originals in Git LFS |
 | `private [--off]` | Keep the farm on this machine |
-| `import-hearth <repo>` | Copy a Hearth-layout repo's wiki, sources, schemas and sessions into the farm (links rewritten, one commit; `--dry-run` first) |
+| `import-hearth <repo>` | Copy a Hearth-layout repo's doks, sources, schemas and sessions into the farm (links rewritten, one commit; `--dry-run` first) |
 | `init` / `migrate` / `merge` | Start a farm (or `--farm` to share one); upgrade an old schema (a human's call, never an agent's); consolidate another farm |
 | `doctor [--strict]` / `preflight` | Farm integrity; pre-landing check |
-| `check [--json]` | Upkeep of pages and sources: stale pages (`stale_after`), uncited sources, kinds that look alike, broken links; exits 1 on a finding |
+| `check [--json]` | Upkeep of doks and sources: stale doks (`stale_after`), uncited sources, kinds that look alike, broken links; exits 1 on a finding |
 | `stats` / `rollup [--keys]` | Counts; yaks grouped by external issue |
 | `skills install` / `skills status` | Install or check these skills |
 | `tui` | The interactive UI (`?` lists its keys) |

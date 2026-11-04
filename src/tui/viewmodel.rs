@@ -86,7 +86,7 @@ impl App {
             }
         }
         self.refresh_farm_sync();
-        self.reload_wiki();
+        self.reload_doks();
         let len = self.row_count();
         self.cursor = if len == 0 {
             0
@@ -107,7 +107,7 @@ impl App {
             }
         }
         self.refresh_farm_sync();
-        self.reload_wiki();
+        self.reload_doks();
         match sel.and_then(|id| {
             self.rows()
                 .iter()
@@ -145,9 +145,9 @@ impl App {
         if v.key == view::SHEDS_KEY {
             return self.busy_sheds_count();
         }
-        // The Wiki tab counts pages, not yaks.
-        if v.key == view::WIKI_KEY {
-            return self.wiki_count();
+        // The Doks tab counts doks, not yaks.
+        if v.key == view::DOKS_KEY {
+            return self.doks_count();
         }
         // Flat views (Recent/Inbox/custom sorted) count via the flat predicate
         // so facets the tree ignores for pruning — notably `needs_only` — are
@@ -245,7 +245,7 @@ impl App {
         // The All view lists the documents after the yaks, unless a facet was
         // narrowed: a document has none of a yak's, so it would not match.
         if v.key == view::ALL_KEY && self.facets_are_the_views() {
-            rows.extend(self.wiki_rows().into_iter().map(tree::Row::doc));
+            rows.extend(self.doks_rows().into_iter().map(tree::Row::doc));
         }
         rows
     }
@@ -297,8 +297,8 @@ impl App {
         if v.key == view::SHEDS_KEY {
             return tree::apply_collapse(self.shed_rows(), &self.collapsed);
         }
-        if v.key == view::WIKI_KEY {
-            return self.wiki_rows().into_iter().map(tree::Row::doc).collect();
+        if v.key == view::DOKS_KEY {
+            return self.doks_rows().into_iter().map(tree::Row::doc).collect();
         }
         if v.is_flat() {
             return self.flat_rows();
@@ -352,8 +352,8 @@ impl App {
         }
     }
 
-    /// The selected document (a wiki page or source), if the row is one.
-    pub(crate) fn selected_doc(&self) -> Option<&wiki_tab::WikiEntry> {
+    /// The selected document (a dok or source), if the row is one.
+    pub(crate) fn selected_doc(&self) -> Option<&doks_tab::DoksEntry> {
         match self.selected_row()? {
             tree::Item::Doc(e) => Some(e),
             _ => None,
@@ -361,14 +361,14 @@ impl App {
     }
 
     /// The kind of row keys act on: the selected row's, else what the active
-    /// view lists (so an empty Wiki still takes `c` and `Ctrl-R`, an empty Sheds `Ctrl-R`).
+    /// view lists (so an empty Doks still takes `c` and `Ctrl-R`, an empty Sheds `Ctrl-R`).
     pub(crate) fn row_kind(&self) -> tree::RowKind {
         if self.pane_yak_id().is_some() {
             return tree::RowKind::Yak;
         }
         match self.selected_row() {
             Some(item) => item.kind(),
-            None if self.on_wiki_tab() => tree::RowKind::Doc,
+            None if self.on_doks_tab() => tree::RowKind::Doc,
             None if self.on_sheds_tab() => tree::RowKind::Shed,
             None => tree::RowKind::Yak,
         }
@@ -384,7 +384,7 @@ impl App {
 
     /// Activate view `i`: load its saved spec into the live filter and reset.
     pub(crate) fn set_view(&mut self, i: usize) {
-        // A page open in the pane belongs to the view it was opened from.
+        // A dok open in the pane belongs to the view it was opened from.
         self.close_doc();
         self.view = i;
         self.filter = clone_spec(&self.views[i].spec);

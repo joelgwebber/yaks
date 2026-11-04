@@ -3,15 +3,15 @@
 //! and never edits.
 //!
 //! Seven kinds of finding. Four are `doctor`'s own issues, reused as they are
-//! (`page-problem`, `broken-link`, `schema-mismatch`, `merge-conflict`); three
+//! (`dok-problem`, `broken-link`, `schema-mismatch`, `merge-conflict`); three
 //! are ported from Hearth's `internal/check/scan.go`:
 //!
-//! - `stale`: a page past its `stale_after` (its own, else its schema's);
+//! - `stale`: a dok past its `stale_after` (its own, else its schema's);
 //! - `uncited`: a source nothing in the farm cites;
-//! - `similar-kinds`: page kinds that differ only by plural or hyphens.
+//! - `similar-kinds`: dok kinds that differ only by plural or hyphens.
 
 use crate::farm::{Farm, IssueKind};
-use crate::{pages, schemas, sources, store};
+use crate::{doks, schemas, sources, store};
 use anyhow::Result;
 use chrono::{DateTime, Days, Months, NaiveDate, Utc};
 use serde_json::{Value, json};
@@ -21,7 +21,7 @@ use std::path::Path;
 /// The classes of finding, in the order a report lists them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Kind {
-    PageProblem,
+    DokProblem,
     BrokenLink,
     SchemaMismatch,
     MergeConflict,
@@ -34,7 +34,7 @@ impl Kind {
     /// The stable machine label, the same as `doctor`'s for the kinds it owns.
     pub fn code(self) -> &'static str {
         match self {
-            Kind::PageProblem => IssueKind::PageProblem.code(),
+            Kind::DokProblem => IssueKind::DokProblem.code(),
             Kind::BrokenLink => IssueKind::BrokenLink.code(),
             Kind::SchemaMismatch => IssueKind::SchemaMismatch.code(),
             Kind::MergeConflict => IssueKind::MergeConflict.code(),
@@ -46,26 +46,26 @@ impl Kind {
 
     fn heading(self) -> &'static str {
         match self {
-            Kind::PageProblem => IssueKind::PageProblem.heading(),
+            Kind::DokProblem => IssueKind::DokProblem.heading(),
             Kind::BrokenLink => IssueKind::BrokenLink.heading(),
             Kind::SchemaMismatch => IssueKind::SchemaMismatch.heading(),
             Kind::MergeConflict => IssueKind::MergeConflict.heading(),
             Kind::Stale => {
-                "Stale page (past its stale_after: check the facts again, then set verified:)"
+                "Stale dok (past its stale_after: check the facts again, then set verified:)"
             }
             Kind::Uncited => {
-                "Uncited source (no page or yak mentions sources/<id>/: cite it, or set \
+                "Uncited source (no dok or yak mentions sources/<id>/: cite it, or set \
 superseded_by: or uncited: in its source.md)"
             }
             Kind::SimilarKinds => {
-                "Similar kinds (page types that differ only by plural or hyphens: pick one)"
+                "Similar kinds (dok types that differ only by plural or hyphens: pick one)"
             }
         }
     }
 
     fn from_issue(k: IssueKind) -> Option<Kind> {
         match k {
-            IssueKind::PageProblem => Some(Kind::PageProblem),
+            IssueKind::DokProblem => Some(Kind::DokProblem),
             IssueKind::BrokenLink => Some(Kind::BrokenLink),
             IssueKind::SchemaMismatch => Some(Kind::SchemaMismatch),
             IssueKind::MergeConflict => Some(Kind::MergeConflict),
@@ -79,7 +79,7 @@ superseded_by: or uncited: in its source.md)"
 pub struct Finding {
     pub kind: Kind,
     pub message: String,
-    /// What it concerns: page paths, source directories or kind names.
+    /// What it concerns: dok paths, source directories or kind names.
     pub ids: Vec<String>,
 }
 
@@ -103,11 +103,11 @@ pub fn run_at(farm: &Farm, now: DateTime<Utc>) -> Result<Vec<Finding>> {
             })
         })
         .collect();
-    let all_pages = pages::load_all(root)?;
+    let all_doks = doks::load_all(root)?;
     let all_schemas = schemas::load_all(root);
-    out.extend(stale(root, &all_pages, &all_schemas, now));
+    out.extend(stale(root, &all_doks, &all_schemas, now));
     out.extend(uncited(root)?);
-    out.extend(similar_kinds(&all_pages, &all_schemas));
+    out.extend(similar_kinds(&all_doks, &all_schemas));
     Ok(out)
 }
 
@@ -149,7 +149,7 @@ fn parse_date(s: &str) -> Option<NaiveDate> {
     NaiveDate::parse_from_str(s.trim(), "%Y-%m-%d").ok()
 }
 
-/// The day the page's file last changed on the farm branch.
+/// The day the dok's file last changed on the farm branch.
 fn last_change(root: &Path, rel: &str) -> Option<NaiveDate> {
     let out = std::process::Command::new("git")
         .arg("-C")
@@ -167,20 +167,20 @@ fn last_change(root: &Path, rel: &str) -> Option<NaiveDate> {
     Some(t.with_timezone(&Utc).date_naive())
 }
 
-/// Pages past their `stale_after`: the page's own, else its schema's. A date
-/// makes the page stale once that day has passed; a duration counts from the
-/// page's `verified:` date, else from its last commit on the farm branch (a
-/// page with neither is skipped). A value that is neither is ignored.
+/// Doks past their `stale_after`: the dok's own, else its schema's. A date
+/// makes the dok stale once that day has passed; a duration counts from the
+/// dok's `verified:` date, else from its last commit on the farm branch (a
+/// dok with neither is skipped). A value that is neither is ignored.
 fn stale(
     root: &Path,
-    all_pages: &[pages::Page],
+    all_doks: &[doks::Dok],
     all_schemas: &[schemas::Schema],
     now: DateTime<Utc>,
 ) -> Vec<Finding> {
     let today = now.date_naive();
     let git = store::farm_branch(root).is_some();
     let mut out = Vec::new();
-    for p in all_pages {
+    for p in all_doks {
         let kind = p.kind();
         let (after, who) = match p.str_field("stale_after").filter(|s| !s.is_empty()) {
             Some(a) => (a, "it"),
@@ -260,7 +260,7 @@ fn source_refs(text: &str) -> Vec<&str> {
     out
 }
 
-/// Sources that no page and no yak cites, as `sources/<id>`. A source and
+/// Sources that no dok and no yak cites, as `sources/<id>`. A source and
 /// its `part_of` children count as one: if any of them is cited, none is
 /// listed. One whose `source.md` has `superseded_by:` or `uncited:` counts
 /// as cited, with its parts.
@@ -308,10 +308,10 @@ fn uncited(root: &Path) -> Result<Vec<Finding>> {
         id
     };
 
-    // Every page and yak, whole (frontmatter, body and notes). The sources
+    // Every dok and yak, whole (frontmatter, body and notes). The sources
     // themselves are not read: a source citing itself is no citation.
     let mut cited: BTreeSet<String> = BTreeSet::new();
-    let mut files: Vec<std::path::PathBuf> = pages::page_paths(root)
+    let mut files: Vec<std::path::PathBuf> = doks::dok_paths(root)
         .iter()
         .map(|rel| root.join(rel))
         .collect();
@@ -337,7 +337,7 @@ fn uncited(root: &Path) -> Result<Vec<Finding>> {
             .keys()
             .filter(|c| *c != id && top((*c).clone()) == *id)
             .count();
-        let mut message = format!("{}/{id} is cited by no page or yak", sources::SOURCES_DIR);
+        let mut message = format!("{}/{id} is cited by no dok or yak", sources::SOURCES_DIR);
         if parts > 0 {
             let noun = if parts == 1 { "part" } else { "parts" };
             message.push_str(&format!(" (nor are its {parts} {noun} saved with part_of)"));
@@ -367,10 +367,10 @@ fn normalize_kind(t: &str) -> String {
 }
 
 /// Kinds in use (and kinds with a schema) that look like one kind written
-/// two ways. The yak schema is not a page kind.
-fn similar_kinds(all_pages: &[pages::Page], all_schemas: &[schemas::Schema]) -> Vec<Finding> {
+/// two ways. The yak schema is not a dok kind.
+fn similar_kinds(all_doks: &[doks::Dok], all_schemas: &[schemas::Schema]) -> Vec<Finding> {
     let mut count: BTreeMap<String, usize> = BTreeMap::new();
-    for p in all_pages {
+    for p in all_doks {
         *count.entry(p.kind()).or_default() += 1;
     }
     let with_schema: BTreeSet<&str> = all_schemas
@@ -393,20 +393,17 @@ fn similar_kinds(all_pages: &[pages::Page], all_schemas: &[schemas::Schema]) -> 
                 .iter()
                 .map(|k| {
                     let n = count[*k];
-                    let pages = format!("{n} {}", if n == 1 { "page" } else { "pages" });
+                    let doks = format!("{n} {}", if n == 1 { "dok" } else { "doks" });
                     if with_schema.contains(k.as_str()) {
-                        format!("`{k}` ({pages}, has a schema)")
+                        format!("`{k}` ({doks}, has a schema)")
                     } else {
-                        format!("`{k}` ({pages})")
+                        format!("`{k}` ({doks})")
                     }
                 })
                 .collect();
             Finding {
                 kind: Kind::SimilarKinds,
-                message: format!(
-                    "these look like the same kind of page: {}",
-                    parts.join(", ")
-                ),
+                message: format!("these look like the same kind of dok: {}", parts.join(", ")),
                 ids: g.into_iter().cloned().collect(),
             }
         })

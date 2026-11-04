@@ -2,11 +2,11 @@
 //! knowledge into this farm.
 //!
 //! A Hearth data repo keeps its notes where a farm keeps them, under another
-//! name, and speaks the same page and source format:
+//! name, and speaks the same dok and source format (Hearth says wiki page):
 //!
 //! | In the repo | In the farm |
 //! |---|---|
-//! | `wiki/**` | `wiki/**`, same paths |
+//! | `wiki/**` | `doks/**`, same paths |
 //! | `raw/sources/<id>/` | `sources/<id>/`, byte for byte (but `source.md`'s `part_of` / `superseded_by`) |
 //! | `schemas/*.md` | `schemas/` |
 //! | `raw/sessions/**` | `sessions/**` (a top-level directory is read as a herd only when it holds `yaks/`, so `sessions/` is not one) |
@@ -16,10 +16,10 @@
 //! `notes/` or `projects/` are code, which links reach as `code:` links.
 //!
 //! Links are rewritten by byte range ([`crate::links::rewrite`]), so nothing
-//! else in a page changes: a `../` link (which the link grammar refuses)
-//! becomes a farm-root link (`/wiki/topics/x.md`, `/sources/<id>/x.png`), or
+//! else in a dok changes: a `../` link (which the link grammar refuses)
+//! becomes a farm-root link (`/doks/topics/x.md`, `/sources/<id>/x.png`), or
 //! `code:<path>` when it points outside what is imported. Relative links
-//! that stay below the page, and every URL, are left as written. Frontmatter
+//! that stay below the dok, and every URL, are left as written. Frontmatter
 //! references to `raw/sources/` and `raw/sessions/` (`sources:`) are rewritten
 //! to the farm's names in place.
 //!
@@ -27,10 +27,10 @@
 //! identical and a refusal when it differs (nothing is written then), so a
 //! second run is a no-op. One commit holds the whole import.
 
+use crate::doks::Dok;
 use crate::farm::{Farm, Issue};
 use crate::fields::Fields;
 use crate::links::{self, Link};
-use crate::pages::Page;
 use crate::store;
 use anyhow::{Context, Result, bail};
 use std::cell::RefCell;
@@ -52,7 +52,8 @@ const HARNESS: &[&str] = &[
 
 /// Repo-relative prefixes of Hearth's folders and the farm folders they become.
 const MAP: &[(&str, &str)] = &[
-    ("wiki", "wiki"),
+    // Hearth calls them wiki pages; the farm calls them doks.
+    ("wiki", "doks"),
     ("raw/sources", "sources"),
     ("raw/sessions", "sessions"),
     ("schemas", "schemas"),
@@ -72,7 +73,7 @@ pub struct Report {
     pub dirty: bool,
     pub dry_run: bool,
     pub pages: usize,
-    /// Other files under `wiki/` (images a page links to).
+    /// Other files under Hearth's `wiki/` (images a dok links to).
     pub wiki_files: usize,
     pub sources: usize,
     pub source_files: usize,
@@ -85,7 +86,7 @@ pub struct Report {
     pub written: Vec<String>,
     /// Farm paths that exist and differ: the import refuses and writes nothing.
     pub conflicts: Vec<String>,
-    /// Links rewritten in page bodies.
+    /// Links rewritten in dok bodies.
     pub links_rewritten: usize,
     /// Frontmatter references rewritten.
     pub fields_rewritten: usize,
@@ -269,12 +270,12 @@ fn plan(repo: &Path, r: &mut Report, acc: &RefCell<Acc>) -> Result<Vec<Planned>>
             }
             let is_md = rel.ends_with(".md");
             let content = match *to {
-                "wiki" | "sessions" if is_md => {
-                    r.pages += usize::from(*to == "wiki");
+                "doks" | "sessions" if is_md => {
+                    r.pages += usize::from(*to == "doks");
                     r.sessions += usize::from(*to == "sessions");
-                    Content::Text(convert_page(repo, &src_rel, &farm_rel, &src, acc)?)
+                    Content::Text(convert_dok(repo, &src_rel, &farm_rel, &src, acc)?)
                 }
-                "wiki" => {
+                "doks" => {
                     r.wiki_files += 1;
                     Content::Copy(src)
                 }
@@ -393,8 +394,8 @@ fn skipped(repo: &Path) -> Vec<(String, String)> {
 
 // ------------------------------------------------------------ converting text
 
-/// A page or session review: body links and frontmatter references rewritten.
-fn convert_page(
+/// A dok or session review: body links and frontmatter references rewritten.
+fn convert_dok(
     repo: &Path,
     src_rel: &str,
     farm_rel: &str,
@@ -403,7 +404,7 @@ fn convert_page(
 ) -> Result<String> {
     let text =
         std::fs::read_to_string(src).with_context(|| format!("reading {}", src.display()))?;
-    let mut page = Page::parse(farm_rel, &text);
+    let mut page = Dok::parse(farm_rel, &text);
     let (body, links) = links::rewrite(&page.body, |dest| {
         map_link(repo, src_rel, farm_rel, dest, &mut acc.borrow_mut())
     });
@@ -434,7 +435,7 @@ fn convert_page(
 fn convert_source_md(farm_rel: &str, src: &Path, acc: &RefCell<Acc>) -> Result<String> {
     let text =
         std::fs::read_to_string(src).with_context(|| format!("reading {}", src.display()))?;
-    let mut page = Page::parse(farm_rel, &text);
+    let mut page = Dok::parse(farm_rel, &text);
     let n = rewrite_fields(&mut page.fields, |k| k == "part_of" || k == "superseded_by");
     if n == 0 {
         return Ok(text);
@@ -519,7 +520,7 @@ fn map_link(
     dest: &str,
     acc: &mut Acc,
 ) -> Option<String> {
-    let link = links::parse(dest, links::From::Page(farm_rel), |_| false);
+    let link = links::parse(dest, links::From::Dok(farm_rel), |_| false);
     if !matches!(link, Link::Upward(_)) {
         return None;
     }
@@ -615,7 +616,7 @@ fn commit(root: &Path, r: &Report) -> Result<CommitState> {
         .unwrap_or_else(|| "repo".to_string());
     let short = r.head.as_deref().map(|h| &h[..h.len().min(7)]);
     let mut msg = format!(
-        "yaks: import {} pages, {} sources, {} schemas, {} sessions from {name}{}",
+        "yaks: import {} doks, {} sources, {} schemas, {} sessions from {name}{}",
         r.pages,
         r.sources,
         r.schemas,
@@ -713,7 +714,7 @@ impl Report {
         let mib = self.bytes as f64 / (1024.0 * 1024.0);
         let _ = writeln!(
             s,
-            "  wiki/       {} pages, {} other files",
+            "  wiki/ -> doks/  {} doks, {} other files",
             self.pages, self.wiki_files
         );
         let _ = writeln!(
@@ -743,7 +744,7 @@ impl Report {
         }
         let _ = writeln!(
             s,
-            "\nlinks: {} rewritten in page bodies, {} frontmatter reference(s) renamed, {} now code: links",
+            "\nlinks: {} rewritten in dok bodies, {} frontmatter reference(s) renamed, {} now code: links",
             self.links_rewritten,
             self.fields_rewritten,
             self.to_code.len()
@@ -854,10 +855,10 @@ mod tests {
         let repo = repo_with(&["projects/app/README.md"]);
         let mut acc = Acc::default();
         let mut m = |doc: &str, farm: &str, dest: &str| map_link(&repo, doc, farm, dest, &mut acc);
-        let (d, f) = ("wiki/topics/a.md", "wiki/topics/a.md");
+        let (d, f) = ("wiki/topics/a.md", "doks/topics/a.md");
         assert_eq!(
             m(d, f, "../projects/b.md#intro").as_deref(),
-            Some("/wiki/projects/b.md#intro")
+            Some("/doks/projects/b.md#intro")
         );
         assert_eq!(
             m(d, f, "../../raw/sources/2026-01-01-abcd1234/shot%201.png").as_deref(),
@@ -872,7 +873,7 @@ mod tests {
             Some("code:projects/app/README.md")
         );
         assert_eq!(m(d, f, "../../../way/out.md"), None);
-        // Left as written: below the page, farm-root, URLs, anchors.
+        // Left as written: below the dok, farm-root, URLs, anchors.
         for keep in [
             "b.md",
             "sub/b.md#x",

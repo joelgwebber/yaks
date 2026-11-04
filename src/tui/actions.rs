@@ -203,8 +203,8 @@ impl App {
         if self.on_sheds_tab() {
             return format!("{base} · {}", self.sheds_state_header());
         }
-        if self.on_wiki_tab() {
-            return format!("{base} · {}", self.wiki_state_header());
+        if self.on_doks_tab() {
+            return format!("{base} · {}", self.doks_state_header());
         }
 
         // In the detail pane, expose the scroll offset and whether the sticky

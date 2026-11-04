@@ -75,7 +75,7 @@ pub struct Report {
     /// Of those, the bytes no other branch reaches: what a clone of the code
     /// repository fetches for the farm.
     pub farm_only_bytes: u64,
-    /// The current tree, by kind: yaks, attachments, pages, sources, other.
+    /// The current tree, by kind: yaks, attachments, doks, sources, other.
     pub tree: Vec<(&'static str, Bucket)>,
     /// The biggest blobs only the farm branch holds, largest first.
     pub largest: Vec<Blob>,
@@ -96,8 +96,8 @@ fn kind_of(path: &str) -> &'static str {
     if parts.first() == Some(&crate::sources::SOURCES_DIR) {
         return "sources";
     }
-    if parts.contains(&crate::pages::WIKI_DIR) {
-        return "pages";
+    if parts.contains(&crate::doks::DOKS_DIR) {
+        return "doks";
     }
     if parts.len() >= 3 && parts[1] == "yaks" {
         return if parts.len() == 3 {
@@ -146,11 +146,10 @@ pub fn report(root: &Path) -> Result<Report> {
     let farm_only_bytes = usage(&others)?;
 
     // The current tree: `<mode> <type> <sha> <size>\t<path>`.
-    let mut tree: Vec<(&'static str, Bucket)> =
-        ["yaks", "attachments", "pages", "sources", "other"]
-            .into_iter()
-            .map(|k| (k, Bucket::default()))
-            .collect();
+    let mut tree: Vec<(&'static str, Bucket)> = ["yaks", "attachments", "doks", "sources", "other"]
+        .into_iter()
+        .map(|k| (k, Bucket::default()))
+        .collect();
     let mut binary_in_git = 0u64;
     for line in git(&top, &["ls-tree", "-r", "-l", &branch])?.lines() {
         let Some((meta, path)) = line.split_once('\t') else {
@@ -443,8 +442,8 @@ mod tests {
     fn kinds_follow_the_farm_layout() {
         assert_eq!(kind_of(".yaks/yak/yaks/yak-1.md"), "yaks");
         assert_eq!(kind_of(".yaks/yak/yaks/yak-1/shot.png"), "attachments");
-        assert_eq!(kind_of(".yaks/wiki/topics/x.md"), "pages");
-        assert_eq!(kind_of(".yaks/yak/wiki/x.md"), "pages");
+        assert_eq!(kind_of(".yaks/doks/topics/x.md"), "doks");
+        assert_eq!(kind_of(".yaks/yak/doks/x.md"), "doks");
         assert_eq!(
             kind_of(".yaks/sources/2026-01-01-abcd1234/a.pdf"),
             "sources"

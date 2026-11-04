@@ -1,47 +1,47 @@
-//! The Wiki tab (yaks-ebb2): the farm's pages and saved sources, one flat list
-//! sorted by path (pages from `wiki/` and each `<herd>/wiki/`, then
+//! The Doks tab (yaks-ebb2): the farm's doks and saved sources, one flat list
+//! sorted by path (doks from `doks/` and each `<herd>/doks/`, then
 //! `sources/`), with title, kind and tags. Enter opens one in the text
-//! viewer ([`App::read_farm_doc`]): a page's frontmatter as field rows
+//! viewer ([`App::read_farm_doc`]): a dok's frontmatter as field rows
 //! above its rendered body, a source's `source.md` then its `extracted.md`.
 //!
-//! The data is the CLI's: [`pages::load_all`] and [`sources::list`]. It is
+//! The data is the CLI's: [`doks::load_all`] and [`sources::list`]. It is
 //! read when the tab is shown and again on every farm reload, so an edit
 //! made elsewhere appears as soon as the watcher sees it.
 //!
-//! The tab is a built-in view (`view::wiki_view`) whose rows are documents
+//! The tab is a built-in view (`view::doks_view`) whose rows are documents
 //! ([`tree::Item::Doc`], from [`App::build_rows`]): the list's own cursor,
 //! rendering and key dispatch serve it, and its keys are the `Doc` bindings of
 //! `keymap`. Yak keys find no yak there and do nothing. `/` is the yak tabs'
-//! inline search: it edits the global query, which [`App::wiki_rows`] matches
+//! inline search: it edits the global query, which [`App::doks_rows`] matches
 //! against a document's title, path, kind and tags and its text.
 
 #[cfg(test)]
 use super::handlers::DocKind;
 use super::*;
-use crate::{pages, sources};
+use crate::{doks, sources};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{ListItem, Paragraph};
 
-/// One row of the list: a page or a source.
+/// One row of the list: a dok or a source.
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) struct WikiEntry {
-    /// Farm-relative path of the file the viewer opens: the page, or a
+pub(crate) struct DoksEntry {
+    /// Farm-relative path of the file the viewer opens: the dok, or a
     /// source's `source.md`.
     pub path: String,
     pub title: String,
-    /// The page's kind (`note`, `topic`, a typed kind), or `source`.
+    /// The dok's kind (`note`, `topic`, a typed kind), or `source`.
     pub kind: String,
     pub tags: Vec<String>,
     pub source: bool,
     /// What the query searches besides the fields above, lowercased once
-    /// here (matching is case-insensitive): a page's file (frontmatter and
+    /// here (matching is case-insensitive): a dok's file (frontmatter and
     /// body), a source's `source.md` and extracted text, as `yaks find` reads
     /// them. Held in memory for every document, so a query costs no reads.
     pub text: String,
 }
 
-impl WikiEntry {
+impl DoksEntry {
     /// The path shown in the list: a source by its directory.
     pub(crate) fn shown_path(&self) -> &str {
         if self.source {
@@ -54,20 +54,20 @@ impl WikiEntry {
 
 /// The tab's state: the entries last read (the list's rows index them).
 #[derive(Default)]
-pub(crate) struct WikiTab {
+pub(crate) struct DoksTab {
     /// `None` until first read (the tab has not been shown, or there is no
     /// farm: read-only and test constructors fill it directly).
-    pub entries: Option<Vec<WikiEntry>>,
+    pub entries: Option<Vec<DoksEntry>>,
     /// The read failed: why.
     pub error: Option<String>,
 }
 
-/// Every page and source of the farm at `root`, pages first, each sorted by
+/// Every dok and source of the farm at `root`, doks first, each sorted by
 /// path.
-pub(crate) fn read_entries(root: &Path) -> Result<Vec<WikiEntry>> {
-    let mut out: Vec<WikiEntry> = pages::load_all(root)?
+pub(crate) fn read_entries(root: &Path) -> Result<Vec<DoksEntry>> {
+    let mut out: Vec<DoksEntry> = doks::load_all(root)?
         .into_iter()
-        .map(|p| WikiEntry {
+        .map(|p| DoksEntry {
             title: p.title(),
             kind: p.kind(),
             tags: p.tags(),
@@ -79,7 +79,7 @@ pub(crate) fn read_entries(root: &Path) -> Result<Vec<WikiEntry>> {
     out.extend(sources::list(root).into_iter().map(|s| {
         let read =
             |name: &str| std::fs::read_to_string(root.join(&s.dir).join(name)).unwrap_or_default();
-        WikiEntry {
+        DoksEntry {
             text: format!("{}\n{}", read("source.md"), read("extracted.md")).to_lowercase(),
             path: format!("{}/source.md", s.dir),
             title: s.title,
@@ -92,32 +92,32 @@ pub(crate) fn read_entries(root: &Path) -> Result<Vec<WikiEntry>> {
 }
 
 impl App {
-    pub(crate) fn on_wiki_tab(&self) -> bool {
-        self.active_view().key == view::WIKI_KEY
+    pub(crate) fn on_doks_tab(&self) -> bool {
+        self.active_view().key == view::DOKS_KEY
     }
 
-    /// Re-read the farm's pages and sources (a no-op without a farm), keeping
+    /// Re-read the farm's doks and sources (a no-op without a farm), keeping
     /// the cursor on the same path.
-    pub(crate) fn reload_wiki(&mut self) {
+    pub(crate) fn reload_doks(&mut self) {
         let Some(root) = self.farm.as_ref().map(|f| f.root().to_path_buf()) else {
             return;
         };
         match read_entries(&root) {
-            Ok(e) => self.set_wiki_entries(e),
-            Err(e) => self.wiki.error = Some(format!("{e:#}")),
+            Ok(e) => self.set_doks_entries(e),
+            Err(e) => self.doks.error = Some(format!("{e:#}")),
         }
     }
 
     /// Swap in a new list of entries, keeping the cursor on the same path.
-    pub(crate) fn set_wiki_entries(&mut self, entries: Vec<WikiEntry>) {
+    pub(crate) fn set_doks_entries(&mut self, entries: Vec<DoksEntry>) {
         let at = self.selected_doc().map(|e| e.path.clone());
-        self.wiki.entries = Some(entries);
-        self.wiki.error = None;
+        self.doks.entries = Some(entries);
+        self.doks.error = None;
         // The rows index the entries: rebuild them.
         self.touch();
-        // Only the Wiki view's cursor means a document.
-        if self.on_wiki_tab() {
-            let rows = self.wiki_rows();
+        // Only the Doks view's cursor means a document.
+        if self.on_doks_tab() {
+            let rows = self.doks_rows();
             self.cursor = at
                 .and_then(|p| rows.iter().position(|e| e.path == p))
                 .unwrap_or(self.cursor)
@@ -140,10 +140,10 @@ impl App {
         self.searches().all(|q| tree::query_matches(item, q))
     }
 
-    /// The entries the live searches keep, in display order: the Wiki view's
+    /// The entries the live searches keep, in display order: the Doks view's
     /// rows ([`App::build_rows`] wraps each in a [`tree::Row`]).
-    pub(crate) fn wiki_rows(&self) -> Vec<&WikiEntry> {
-        self.wiki
+    pub(crate) fn doks_rows(&self) -> Vec<&DoksEntry> {
+        self.doks
             .entries
             .iter()
             .flatten()
@@ -151,25 +151,25 @@ impl App {
             .collect()
     }
 
-    /// The documents the query keeps (all of them without one), pages first as
+    /// The documents the query keeps (all of them without one), doks first as
     /// read: the part of the All view's count and rows that is not yaks.
-    pub(crate) fn docs_matching_query(&self) -> impl Iterator<Item = &WikiEntry> {
+    pub(crate) fn docs_matching_query(&self) -> impl Iterator<Item = &DoksEntry> {
         let q = self.query.as_deref();
-        self.wiki
+        self.doks
             .entries
             .iter()
             .flatten()
             .filter(move |e| q.is_none_or(|q| tree::query_matches(tree::Item::Doc(e), q)))
     }
 
-    /// The tab's count: the pages (sources not counted) the query keeps.
-    pub(crate) fn wiki_count(&self) -> usize {
+    /// The tab's count: the doks (sources not counted) the query keeps.
+    pub(crate) fn doks_count(&self) -> usize {
         self.docs_matching_query().filter(|e| !e.source).count()
     }
 
-    /// Enter / l: open the selected page or source in the viewer. A page has
+    /// Enter / l: open the selected dok or source in the viewer. A dok has
     /// no pane until it is opened, so this is a jump: `o` returns to the row.
-    pub(crate) fn open_wiki_entry(&mut self) {
+    pub(crate) fn open_doks_entry(&mut self) {
         let Some(e) = self.selected_doc().cloned() else {
             return;
         };
@@ -179,21 +179,21 @@ impl App {
         }
     }
 
-    /// N: a one-line prompt for a new page's path, seeded with `wiki/`.
-    pub(crate) fn open_new_page(&mut self) {
+    /// N: a one-line prompt for a new dok's path, seeded with `doks/`.
+    pub(crate) fn open_new_dok(&mut self) {
         if self.farm.is_none() {
             return;
         }
-        self.new_page_prompt("wiki/");
+        self.new_dok_prompt("doks/");
     }
 
-    fn new_page_prompt(&mut self, seed: &str) {
+    fn new_dok_prompt(&mut self, seed: &str) {
         let ed = Editor::new(
             self.editor_vim,
             true,
-            "New page (wiki/<path>.md or <herd>/wiki/<path>.md): ".into(),
+            "New dok (doks/<path>.md or <herd>/doks/<path>.md): ".into(),
             seed,
-            EditAction::NewPage,
+            EditAction::NewDok,
         );
         // Typing goes straight on after the seed, in Insert.
         ed.state.borrow_mut().mode = EditorMode::Insert;
@@ -201,14 +201,14 @@ impl App {
         self.overlay = Overlay::Edit(ed);
     }
 
-    /// The new-page prompt's Enter: create the page (`Farm::page_new`: kind
+    /// The new-dok prompt's Enter: create the dok (`Farm::dok_new`: kind
     /// `note`, a title from the file name, any schema defaults; one commit),
     /// select it in the list and open it in the editor for its body. A bad
     /// or taken path keeps the prompt open with the reason.
-    pub(crate) fn commit_new_page(&mut self, text: &str) {
-        let mut path = pages::normalize(text.trim());
-        if path.is_empty() || path == "wiki/" {
-            self.notification = Some("no page created".into());
+    pub(crate) fn commit_new_dok(&mut self, text: &str) {
+        let mut path = doks::normalize(text.trim());
+        if path.is_empty() || path == "doks/" {
+            self.notification = Some("no dok created".into());
             return;
         }
         if !path.ends_with(".md") {
@@ -217,14 +217,14 @@ impl App {
         let Some(farm) = self.farm.as_ref() else {
             return;
         };
-        if let Err(e) = farm.page_new(&path, None, None, &[], "") {
+        if let Err(e) = farm.dok_new(&path, None, None, &[], "") {
             self.notification = Some(format!("{e:#}"));
-            self.new_page_prompt(&path);
+            self.new_dok_prompt(&path);
             return;
         }
-        self.reload_wiki();
+        self.reload_doks();
         self.refresh_farm_sync();
-        if let Some(i) = self.wiki_rows().iter().position(|e| e.path == path) {
+        if let Some(i) = self.doks_rows().iter().position(|e| e.path == path) {
             self.cursor = i;
         }
         match self.read_farm_doc(&path, None) {
@@ -237,16 +237,16 @@ impl App {
         }
     }
 
-    /// E on the list: edit the selected page (open it, then the editor).
-    pub(crate) fn edit_wiki_entry(&mut self) {
-        self.open_wiki_entry();
+    /// E on the list: edit the selected dok (open it, then the editor).
+    pub(crate) fn edit_doks_entry(&mut self) {
+        self.open_doks_entry();
         if self.attach().is_some() {
             self.open_attachment_edit();
         }
     }
 
     /// y: copy the selected entry's path.
-    pub(crate) fn copy_wiki_path(&mut self) {
+    pub(crate) fn copy_doks_path(&mut self) {
         let Some(path) = self.selected_doc().map(|e| e.shown_path().to_string()) else {
             return;
         };
@@ -257,18 +257,18 @@ impl App {
         });
     }
 
-    /// toque's state-header digest on the Wiki tab.
-    pub(crate) fn wiki_state_header(&self) -> String {
+    /// toque's state-header digest on the Doks tab.
+    pub(crate) fn doks_state_header(&self) -> String {
         let at = self
             .selected_doc()
             .map_or_else(|| "-".into(), |e| e.path.clone());
-        format!("wiki={} \u{b7} entry={at}", self.wiki_rows().len())
+        format!("doks={} \u{b7} entry={at}", self.doks_rows().len())
     }
 
-    /// `r`: read the pages again.
-    pub(crate) fn reread_wiki(&mut self) {
-        self.reload_wiki();
-        self.notification = Some("reread the wiki".into());
+    /// `r`: read the doks again.
+    pub(crate) fn reread_doks(&mut self) {
+        self.reload_doks();
+        self.notification = Some("reread the doks".into());
     }
 }
 
@@ -287,7 +287,7 @@ fn pad(s: &str, w: usize) -> String {
 /// One list row: title, kind, tags, then the path dimmed, padded to the
 /// full width so the cursor highlight spans the row.
 fn entry_row(
-    e: &WikiEntry,
+    e: &DoksEntry,
     title_w: usize,
     kind_w: usize,
     tags_w: usize,
@@ -327,20 +327,20 @@ fn entry_row(
     Line::from(spans)
 }
 
-/// What the Wiki view's list says instead of rows: why the read failed, or
+/// What the Doks view's list says instead of rows: why the read failed, or
 /// that nothing is there or nothing matches. `None` when there are rows.
-pub(crate) fn wiki_notice(app: &App, no_rows: bool) -> Option<Paragraph<'static>> {
-    if let Some(e) = &app.wiki.error {
+pub(crate) fn doks_notice(app: &App, no_rows: bool) -> Option<Paragraph<'static>> {
+    if let Some(e) = &app.doks.error {
         return Some(Paragraph::new(Span::styled(
-            format!("reading the wiki failed: {e}"),
+            format!("reading the doks failed: {e}"),
             Style::new().fg(Color::Red),
         )));
     }
     no_rows.then(|| {
-        let msg = if app.wiki.entries.as_ref().is_some_and(|e| !e.is_empty()) {
-            "No page matches the search."
+        let msg = if app.doks.entries.as_ref().is_some_and(|e| !e.is_empty()) {
+            "No dok matches the search."
         } else {
-            "No pages yet. `yaks page new wiki/<name>.md` writes one."
+            "No doks yet. `yaks dok new doks/<name>.md` writes one."
         };
         Paragraph::new(Span::styled(msg, dim()))
     })
@@ -356,7 +356,7 @@ pub(crate) struct DocCols {
 
 impl DocCols {
     pub(crate) fn of(rows: &[tree::Row<'_>], width: u16) -> DocCols {
-        let docs: Vec<&WikiEntry> = rows
+        let docs: Vec<&DoksEntry> = rows
             .iter()
             .filter_map(|r| match r.item {
                 tree::Item::Doc(e) => Some(e),
@@ -387,13 +387,13 @@ impl DocCols {
     }
 
     /// The list item of a document row.
-    pub(crate) fn item(&self, e: &WikiEntry, width: u16) -> ListItem<'static> {
+    pub(crate) fn item(&self, e: &DoksEntry, width: u16) -> ListItem<'static> {
         ListItem::new(entry_row(e, self.title, self.kind, self.tags, width))
     }
 }
 
-/// A small wiki for tests and doc shots: two farm-wide pages in folders,
-/// a herd page and a source.
+/// A small doks for tests and doc shots: two farm-wide doks in folders,
+/// a herd dok and a source.
 #[cfg(test)]
 pub(crate) mod fixture {
     use super::*;
@@ -402,19 +402,19 @@ pub(crate) mod fixture {
     pub(crate) fn write(root: &Path) {
         let files: &[(&str, &str)] = &[
             (
-                "wiki/topics/vector-search.md",
+                "doks/topics/vector-search.md",
                 "---\ntype: topic\ntitle: Vector search in Postgres\ndescription: pgvector, indexes and when to use them.\ntags: [databases, search]\nsources:\n  - sources/2026-10-22-1a2b3c4d/source.md\n---\n\n# Vector search\n\nStore embeddings in a `vector` column and index them with **HNSW**.\n\n## Indexes\n\n- HNSW: fast queries, slow builds.\n- IVFFlat: quick to build.\n\nSee [full-text search](full-text-search.md) and yaks-0001.\n",
             ),
             (
-                "wiki/topics/full-text-search.md",
+                "doks/topics/full-text-search.md",
                 "---\ntype: topic\ntitle: Full-text search\ntags: [search]\n---\n\nUse `tsvector` and a GIN index.\n",
             ),
             (
-                "wiki/howto/release.md",
+                "doks/howto/release.md",
                 "---\ntype: howto\ntitle: Cut a release\n---\n\n1. Tag `vX.Y.Z`.\n2. Watch the workflow.\n",
             ),
             (
-                "yaks/wiki/tui-layout.md",
+                "yaks/doks/tui-layout.md",
                 "---\ntitle: TUI layout\ntags: [tui]\n---\n\nThe list on the left, the detail on the right.\n",
             ),
             (
@@ -439,9 +439,9 @@ mod tests {
     use super::*;
     use crate::tui::test_support::*;
 
-    /// A live app on a temp farm holding the fixture wiki and one yak,
-    /// switched to the Wiki tab.
-    pub(crate) fn on_wiki() -> (PathBuf, App) {
+    /// A live app on a temp farm holding the fixture doks and one yak,
+    /// switched to the Doks tab.
+    pub(crate) fn on_doks() -> (PathBuf, App) {
         let (proj, farm) = temp_farm(&[task(
             "yaks-0001",
             "Search",
@@ -454,30 +454,30 @@ mod tests {
         let i = app
             .views
             .iter()
-            .position(|v| v.key == view::WIKI_KEY)
+            .position(|v| v.key == view::DOKS_KEY)
             .unwrap();
         app.set_view(i);
         (proj, app)
     }
 
     #[test]
-    fn the_wiki_tab_sits_after_starred_and_before_sheds() {
+    fn the_doks_tab_sits_after_starred_and_before_sheds() {
         let keys: Vec<String> = view::default_views().into_iter().map(|v| v.key).collect();
-        let wiki = keys.iter().position(|k| k == view::WIKI_KEY).unwrap();
-        assert_eq!(keys[wiki - 1], "working-set");
-        assert_eq!(keys[wiki + 1], view::SHEDS_KEY);
+        let doks = keys.iter().position(|k| k == view::DOKS_KEY).unwrap();
+        assert_eq!(keys[doks - 1], "working-set");
+        assert_eq!(keys[doks + 1], view::SHEDS_KEY);
     }
 
     #[test]
     fn j_moves_the_lists_cursor_and_the_selected_document_follows() {
-        let (proj, mut app) = on_wiki();
+        let (proj, mut app) = on_doks();
         assert_eq!(app.cursor, 0);
-        assert_eq!(app.selected_doc().unwrap().path, "wiki/howto/release.md");
+        assert_eq!(app.selected_doc().unwrap().path, "doks/howto/release.md");
         press(&mut app, "j");
         assert_eq!(app.cursor, 1);
         assert_eq!(
             app.selected_doc().unwrap().path,
-            "wiki/topics/full-text-search.md"
+            "doks/topics/full-text-search.md"
         );
         press(&mut app, "G");
         assert_eq!(app.cursor, 4);
@@ -489,7 +489,7 @@ mod tests {
 
     #[test]
     fn a_document_row_is_no_yak_and_yak_keys_do_nothing_on_it() {
-        let (proj, mut app) = on_wiki();
+        let (proj, mut app) = on_doks();
         assert!(app.selected().is_none());
         assert!(app.selected_doc().is_some());
         assert!(matches!(app.selected_row(), Some(tree::Item::Doc(_))));
@@ -507,56 +507,53 @@ mod tests {
 
     #[test]
     fn enter_on_a_document_row_opens_the_viewer() {
-        let (proj, mut app) = on_wiki();
+        let (proj, mut app) = on_doks();
         enter_key(&mut app);
         let Some(v) = app.attach() else {
             panic!("no viewer")
         };
-        assert_eq!(v.target, "wiki/howto/release.md");
+        assert_eq!(v.target, "doks/howto/release.md");
         let _ = std::fs::remove_dir_all(proj);
     }
 
     #[test]
-    fn an_empty_wiki_view_still_takes_the_document_keys() {
-        let (proj, mut app) = on_wiki();
-        app.filter.search = Some("no such page".into());
+    fn an_empty_doks_view_still_takes_the_document_keys() {
+        let (proj, mut app) = on_doks();
+        app.filter.search = Some("no such dok".into());
         assert_eq!(app.row_count(), 0);
         press(&mut app, "c");
-        assert!(
-            matches!(app.overlay, Overlay::Edit(_)),
-            "c: new page prompt"
-        );
+        assert!(matches!(app.overlay, Overlay::Edit(_)), "c: new dok prompt");
         let _ = std::fs::remove_dir_all(proj);
     }
 
     #[test]
-    fn it_lists_pages_then_sources_and_counts_pages() {
-        let (proj, app) = on_wiki();
-        let paths: Vec<&str> = app.wiki_rows().iter().map(|e| e.path.as_str()).collect();
+    fn it_lists_doks_then_sources_and_counts_doks() {
+        let (proj, app) = on_doks();
+        let paths: Vec<&str> = app.doks_rows().iter().map(|e| e.path.as_str()).collect();
         assert_eq!(
             paths,
             vec![
-                "wiki/howto/release.md",
-                "wiki/topics/full-text-search.md",
-                "wiki/topics/vector-search.md",
-                "yaks/wiki/tui-layout.md",
+                "doks/howto/release.md",
+                "doks/topics/full-text-search.md",
+                "doks/topics/vector-search.md",
+                "yaks/doks/tui-layout.md",
                 "sources/2026-10-22-1a2b3c4d/source.md",
             ]
         );
-        assert_eq!(app.wiki_count(), 4);
+        assert_eq!(app.doks_count(), 4);
         let v = app.active_view().clone();
         assert_eq!(app.view_count(&v), 4);
         let _ = std::fs::remove_dir_all(proj);
     }
 
     #[test]
-    fn yak_keys_are_inert_on_the_wiki_tab() {
-        let (proj, mut app) = on_wiki();
+    fn yak_keys_are_inert_on_the_doks_tab() {
+        let (proj, mut app) = on_doks();
         for c in ['S', 'X', 'C', 'D', 'M', 'f', '*', 'm', 'a'] {
             press(&mut app, &c.to_string());
             assert!(
                 matches!(app.overlay, Overlay::None),
-                "{c} opened an overlay on the Wiki tab"
+                "{c} opened an overlay on the Doks tab"
             );
         }
         let _ = std::fs::remove_dir_all(proj);
@@ -564,10 +561,10 @@ mod tests {
 
     #[test]
     fn slash_filters_the_list_and_esc_reverts() {
-        let (proj, mut app) = on_wiki();
+        let (proj, mut app) = on_doks();
         press(&mut app, "/search");
         enter_key(&mut app);
-        let titles: Vec<&str> = app.wiki_rows().iter().map(|e| e.title.as_str()).collect();
+        let titles: Vec<&str> = app.doks_rows().iter().map(|e| e.title.as_str()).collect();
         assert_eq!(
             titles,
             // The source's extracted text says "search" too.
@@ -577,24 +574,20 @@ mod tests {
                 "pgvector README"
             ]
         );
-        assert_eq!(
-            app.wiki_count(),
-            2,
-            "the count is the pages the query keeps"
-        );
+        assert_eq!(app.doks_count(), 2, "the count is the doks the query keeps");
         // A tag matches too (Esc first: `/` reopens seeded with the query).
         esc_key(&mut app);
         press(&mut app, "/tui");
         enter_key(&mut app);
-        assert_eq!(app.wiki_rows().len(), 1);
+        assert_eq!(app.doks_rows().len(), 1);
         esc_key(&mut app);
-        assert_eq!(app.wiki_rows().len(), 5);
+        assert_eq!(app.doks_rows().len(), 5);
         let _ = std::fs::remove_dir_all(proj);
     }
 
     #[test]
-    fn enter_opens_a_page_with_its_frontmatter_above_the_body() {
-        let (proj, mut app) = on_wiki();
+    fn enter_opens_a_dok_with_its_frontmatter_above_the_body() {
+        let (proj, mut app) = on_doks();
         press(&mut app, "jj");
         assert_eq!(
             app.selected_doc().unwrap().title,
@@ -604,10 +597,10 @@ mod tests {
         let Some(v) = app.attach() else {
             panic!("the viewer should be open");
         };
-        assert_eq!(v.doc, DocKind::Page);
+        assert_eq!(v.doc, DocKind::Dok);
         let frame = draw(&app, 140, 30);
         assert!(
-            frame.contains("wiki/topics/vector-search.md  topic"),
+            frame.contains("doks/topics/vector-search.md  topic"),
             "{frame}"
         );
         assert!(frame.contains("tags:        databases, search"), "{frame}");
@@ -627,13 +620,13 @@ mod tests {
         // Esc closes back to the list.
         esc_key(&mut app);
         assert!(matches!(app.overlay, Overlay::None));
-        assert!(app.on_wiki_tab());
+        assert!(app.on_doks_tab());
         let _ = std::fs::remove_dir_all(proj);
     }
 
     #[test]
     fn a_source_opens_with_its_extracted_text() {
-        let (proj, mut app) = on_wiki();
+        let (proj, mut app) = on_doks();
         press(&mut app, "G");
         enter_key(&mut app);
         let frame = draw(&app, 140, 30);
@@ -651,12 +644,12 @@ mod tests {
 
     #[test]
     fn an_edit_on_disk_shows_after_a_reload() {
-        let (proj, mut app) = on_wiki();
+        let (proj, mut app) = on_doks();
         let root = app.farm.as_ref().unwrap().root().to_path_buf();
-        std::fs::write(root.join("wiki/new.md"), "---\ntitle: Brand new\n---\n").unwrap();
+        std::fs::write(root.join("doks/new.md"), "---\ntitle: Brand new\n---\n").unwrap();
         app.reload_preserving_selection();
-        assert!(app.wiki_rows().iter().any(|e| e.title == "Brand new"));
-        assert_eq!(app.wiki_count(), 5);
+        assert!(app.doks_rows().iter().any(|e| e.title == "Brand new"));
+        assert_eq!(app.doks_count(), 5);
         let _ = std::fs::remove_dir_all(proj);
     }
 
@@ -681,8 +674,8 @@ mod tests {
     }
 
     #[test]
-    fn e_edits_a_page_as_raw_frontmatter_and_body_and_saves_it() {
-        let (proj, mut app) = on_wiki();
+    fn e_edits_a_dok_as_raw_frontmatter_and_body_and_saves_it() {
+        let (proj, mut app) = on_doks();
         let root = app.farm.as_ref().unwrap().root().to_path_buf();
         press(&mut app, "j"); // Full-text search
         enter_key(&mut app);
@@ -699,18 +692,18 @@ mod tests {
         ctrl(&mut app, 's');
         assert_eq!(
             app.notification.as_deref(),
-            Some("saved wiki/topics/full-text-search.md")
+            Some("saved doks/topics/full-text-search.md")
         );
         assert!(app.attach().is_some(), "back in the viewer");
         let on_disk =
-            std::fs::read_to_string(root.join("wiki/topics/full-text-search.md")).unwrap();
+            std::fs::read_to_string(root.join("doks/topics/full-text-search.md")).unwrap();
         assert_eq!(
             on_disk,
             "---\ntype: topic\ntitle: Full-text search in Postgres\ntags: [search, postgres]\n---\n\nUse `tsvector`.\n"
         );
         // The list shows the new title and tag.
         let e = app
-            .wiki_rows()
+            .doks_rows()
             .into_iter()
             .find(|e| e.path.ends_with("full-text-search.md"))
             .unwrap();
@@ -724,10 +717,10 @@ mod tests {
     }
 
     #[test]
-    fn a_page_without_frontmatter_or_changed_on_disk_is_not_saved() {
-        let (proj, mut app) = on_wiki();
+    fn a_dok_without_frontmatter_or_changed_on_disk_is_not_saved() {
+        let (proj, mut app) = on_doks();
         let root = app.farm.as_ref().unwrap().root().to_path_buf();
-        let file = root.join("wiki/howto/release.md");
+        let file = root.join("doks/howto/release.md");
         let before = std::fs::read_to_string(&file).unwrap();
         enter_key(&mut app); // Cut a release
         press(&mut app, "E");
@@ -736,7 +729,7 @@ mod tests {
         assert!(matches!(app.overlay, Overlay::Edit(_)), "still editing");
         assert!(app.notification.as_deref().unwrap().contains("frontmatter"));
         assert_eq!(std::fs::read_to_string(&file).unwrap(), before);
-        // Someone else writes the page meanwhile: the save stops; a second
+        // Someone else writes the dok meanwhile: the save stops; a second
         // Ctrl-S overwrites.
         std::fs::write(&file, "---\ntitle: Theirs\n---\n").unwrap();
         set_editor_text(&mut app, "---\ntitle: Mine\n---\n");
@@ -755,7 +748,7 @@ mod tests {
 
     #[test]
     fn a_source_is_read_only() {
-        let (proj, mut app) = on_wiki();
+        let (proj, mut app) = on_doks();
         press(&mut app, "G");
         enter_key(&mut app);
         press(&mut app, "E");
@@ -770,14 +763,14 @@ mod tests {
     }
 
     #[test]
-    fn n_creates_a_page_then_edits_it() {
-        let (proj, mut app) = on_wiki();
+    fn n_creates_a_dok_then_edits_it() {
+        let (proj, mut app) = on_doks();
         let root = app.farm.as_ref().unwrap().root().to_path_buf();
         press(&mut app, "c");
         let Overlay::Edit(ed) = &app.overlay else {
             panic!("the path prompt should be open")
         };
-        assert_eq!(ed.text(), "wiki/");
+        assert_eq!(ed.text(), "doks/");
         // A bad name keeps the prompt, with the reason.
         press(&mut app, "Bad Name");
         enter_key(&mut app);
@@ -789,24 +782,24 @@ mod tests {
             "{:?}",
             app.notification
         );
-        assert!(matches!(&app.overlay, Overlay::Edit(ed) if ed.text() == "wiki/Bad Name.md"));
+        assert!(matches!(&app.overlay, Overlay::Edit(ed) if ed.text() == "doks/Bad Name.md"));
         // Fix it: `.md` is added.
-        set_editor_text(&mut app, "wiki/topics/hnsw-tuning");
+        set_editor_text(&mut app, "doks/topics/hnsw-tuning");
         enter_key(&mut app);
         assert_eq!(
             app.notification.as_deref(),
-            Some("created wiki/topics/hnsw-tuning.md")
+            Some("created doks/topics/hnsw-tuning.md")
         );
-        let file = root.join("wiki/topics/hnsw-tuning.md");
+        let file = root.join("doks/topics/hnsw-tuning.md");
         assert_eq!(
             std::fs::read_to_string(&file).unwrap(),
             "---\ntype: note\ntitle: Hnsw tuning\n---\n"
         );
         assert_eq!(
             app.selected_doc().unwrap().path,
-            "wiki/topics/hnsw-tuning.md"
+            "doks/topics/hnsw-tuning.md"
         );
-        assert_eq!(app.wiki_count(), 5);
+        assert_eq!(app.doks_count(), 5);
         // The editor is open on it; type a body and save.
         let text = editor_text(&app);
         set_editor_text(&mut app, &format!("{text}\nRaise ef_search for recall.\n"));
@@ -819,7 +812,7 @@ mod tests {
         // A path that exists is refused.
         esc_key(&mut app);
         press(&mut app, "c");
-        set_editor_text(&mut app, "wiki/topics/hnsw-tuning.md");
+        set_editor_text(&mut app, "doks/topics/hnsw-tuning.md");
         enter_key(&mut app);
         assert!(
             app.notification
@@ -831,10 +824,10 @@ mod tests {
     }
 
     /// A farm on its own `yaks` branch (so writes commit, yaks-a838) holding
-    /// the fixture wiki, committed.
+    /// the fixture doks, committed.
     fn branch_farm() -> (PathBuf, PathBuf) {
         let base = std::env::temp_dir().join(format!(
-            "yaks-wiki-branch-{}-{}",
+            "yaks-doks-branch-{}-{}",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -882,7 +875,7 @@ mod tests {
     }
 
     #[test]
-    fn a_page_save_is_one_commit_on_the_farm_branch() {
+    fn a_dok_save_is_one_commit_on_the_farm_branch() {
         let (base, root) = branch_farm();
         let Ok(farm) = crate::farm::Farm::at(&root) else {
             panic!("open the branch farm")
@@ -892,7 +885,7 @@ mod tests {
         let i = app
             .views
             .iter()
-            .position(|v| v.key == view::WIKI_KEY)
+            .position(|v| v.key == view::DOKS_KEY)
             .unwrap();
         app.set_view(i);
         let count = || {
@@ -917,7 +910,7 @@ mod tests {
         ctrl(&mut app, 's');
         assert_eq!(
             app.notification.as_deref(),
-            Some("saved wiki/topics/full-text-search.md")
+            Some("saved doks/topics/full-text-search.md")
         );
         assert_eq!(count(), before + 1, "one commit for the save");
         let out = std::process::Command::new("git")
@@ -927,18 +920,18 @@ mod tests {
             .output()
             .unwrap();
         let show = String::from_utf8_lossy(&out.stdout);
-        assert!(show.contains("wiki/topics/full-text-search.md"), "{show}");
-        assert_eq!(show.matches(" | ").count(), 1, "only the page: {show}");
+        assert!(show.contains("doks/topics/full-text-search.md"), "{show}");
+        assert_eq!(show.matches(" | ").count(), 1, "only the dok: {show}");
         let _ = std::fs::remove_dir_all(base);
     }
 
     #[test]
-    fn wiki_tab_frames() {
-        let (proj, mut app) = on_wiki();
-        insta::assert_snapshot!("wiki_tab_list", draw(&app, 120, 12));
+    fn doks_tab_frames() {
+        let (proj, mut app) = on_doks();
+        insta::assert_snapshot!("doks_tab_list", draw(&app, 120, 12));
         press(&mut app, "jj");
         enter_key(&mut app);
-        insta::assert_snapshot!("wiki_tab_page", draw(&app, 150, 26));
+        insta::assert_snapshot!("doks_tab_dok", draw(&app, 150, 26));
         let _ = std::fs::remove_dir_all(proj);
     }
 }

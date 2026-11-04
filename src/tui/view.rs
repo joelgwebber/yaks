@@ -223,17 +223,17 @@ pub fn sheds_view() -> View {
     }
 }
 
-/// The key of the Wiki tab (yaks-ebb2): rows are the farm's pages and
+/// The key of the Doks tab (yaks-ebb2): rows are the farm's doks and
 /// sources, not yaks, so the yak row/count paths branch on it.
-pub const WIKI_KEY: &str = "wiki";
+pub const DOKS_KEY: &str = "doks";
 
-/// The Wiki tab: the farm's pages (`wiki/`, `<herd>/wiki/`) and saved
+/// The Doks tab: the farm's doks (`doks/`, `<herd>/doks/`) and saved
 /// sources (`sources/`), opened in the rendered viewer. Pinned by default;
 /// its spec is unused except the live filter's `search` (`/`).
-pub fn wiki_view() -> View {
+pub fn doks_view() -> View {
     View {
-        name: "\u{1f4d6} Wiki".into(),
-        key: WIKI_KEY.into(),
+        name: "\u{1f4d6} Doks".into(),
+        key: DOKS_KEY.into(),
         status: None,
         builtin: true,
         pinned: true,
@@ -244,14 +244,14 @@ pub fn wiki_view() -> View {
     }
 }
 
-/// The key of the All view (phase 6a of /wiki/design/tui-model.md): every
-/// yak (dead included), then every page and source, so a query's count and
+/// The key of the All view (phase 6a of /doks/design/tui-model.md): every
+/// yak (dead included), then every dok and source, so a query's count and
 /// the list behind it say what the farm holds. Rows are not only yaks, so the
 /// flat row/count paths branch on it.
 pub const ALL_KEY: &str = "all";
 
 /// The All view: everything, flat, newest change first (yaks), then the
-/// documents in the Wiki's order. Unpinned (Joel, decision 3 of the design):
+/// documents in the Doks's order. Unpinned (Joel, decision 3 of the design):
 /// reach it from `v`, or through the query chip's count; Recent stays the
 /// everyday list. Its spec lists every status, so a flat list keeps dead yaks.
 pub fn all_view() -> View {
@@ -276,7 +276,7 @@ pub fn default_views() -> Vec<View> {
     v.push(recent_view());
     v.push(inbox_view());
     v.push(working_set_view());
-    v.push(wiki_view());
+    v.push(doks_view());
     v.push(sheds_view());
     v.push(all_view());
     v

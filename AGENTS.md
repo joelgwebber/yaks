@@ -53,7 +53,7 @@ table only to exclude the local `.edtui` clone.
 - `src/farm.rs` — the core facade the CLI and TUI both call.
 - `src/tui/keymap.rs` — the TUI's command table: `Cmd` (dotted names), `Ctx` (a key's
   surface), the static `BINDINGS`, `lookup` and `App::run_cmd`. The non-modal surfaces'
-  keys (list, detail, text/image viewers, Wiki and Sheds tabs) dispatch through it, and
+  keys (list, detail, text/image viewers, Doks and Sheds tabs) dispatch through it, and
   the `?` overlay (`help_content`), the `?` popup (`popup_entries`) and the bottom hint
   (`help_hint`) are generated from it: a key change is one edit there. Modal overlays
   are not in it. `Keymap` is the table with the user's `keys:` overrides applied
@@ -66,7 +66,7 @@ table only to exclude the local `.edtui` clone.
 - `src/tui.rs` (+ `src/tui/`) — the interactive TUI. `tui.rs` is a thin root (the
   `App` struct, the `Focus`/`Overlay`/`PickAction`/`ConfirmAction` enums, the
   `DocPane` (the text or image viewer open in the right pane: `App.doc`, not an
-  `Overlay`, so the global keys work with a page open), the
+  `Overlay`, so the global keys work with a dok open), the
   constructors, and shared form helpers/consts); behavior lives in focused
   submodules (split out under yaks-b1cc): `render` (all `render_*` + shared render
   helpers), `editor` (edtui glue), `drawer`/`create`/`fuzzy` (overlay forms +
@@ -83,8 +83,8 @@ table only to exclude the local `.edtui` clone.
   LLM-/test-legible plain-text snapshots, and render frames to SVG for visual
   inspection). Extracted from yaks; now lives at
   <https://github.com/joelgwebber/toque> and is a git dependency (fix it
-  there, then `cargo update -p toque`). The farm page
-  `/wiki/research/tui-style-eval.md` archives the now-retired text
+  there, then `cargo update -p toque`). The farm dok
+  `/doks/research/tui-style-eval.md` archives the now-retired text
   style-encoding research.
 
 ## Build
@@ -178,10 +178,10 @@ Repo specifics: never code without a shaving yak; check existing yaks before
 creating one; run `yaks next` when unsure what's next. The coordinator commits
 the farm (`yaks commit`); publishing it (`yaks sync`) is the human's call.
 
-**Design docs and research go in the farm wiki, not `docs/`.** A design is a
-page under `wiki/design/`, research under `wiki/research/` (the `yaks-research`
+**Design docs and research go in the farm doks, not `docs/`.** A design is a
+dok under `doks/design/`, research under `doks/research/` (the `yaks-research`
 skill has the how), each linked from its yaks and linking back. Read them with
-`yaks page list` and `yaks peek`. `docs/` is the product's user documentation
+`yaks dok list` and `yaks peek`. `docs/` is the product's user documentation
 only; when a design ships, its user-facing behaviour goes there.
 
 ## Delegating to cheaper models

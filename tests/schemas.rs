@@ -1,5 +1,5 @@
-//! Schemas through the real binary (yaks-8e75): defaults on `page new`,
-//! warnings on writes and in doctor, `page types`, table rows, and
+//! Schemas through the real binary (yaks-8e75): defaults on `dok new`,
+//! warnings on writes and in doctor, `dok types`, table rows, and
 //! `schemas/yak.md` extending yaks.
 
 mod common;
@@ -95,20 +95,20 @@ fn defaults_warnings_types_rows_and_yak_fields() {
     write(
         &f,
         "schemas/appliance.md",
-        "---\ntype: Page Type\ntitle: Appliance\nfields:\n  name: {type: text, required: true}\n  purchased: date\n  warranty: {type: text, default: none}\n---\n",
+        "---\ntype: Dok Type\ntitle: Appliance\nfields:\n  name: {type: text, required: true}\n  purchased: date\n  warranty: {type: text, default: none}\n---\n",
     );
     write(
         &f,
         "schemas/yak.md",
-        "---\ntype: Page Type\nfields:\n  due: date\ntags:\n  ui: The TUI\n---\n",
+        "---\ntype: Dok Type\nfields:\n  due: date\ntags:\n  ui: The TUI\n---\n",
     );
     write(
         &f,
-        "wiki/platforms.md",
+        "doks/platforms.md",
         "---\ntype: platform\ntitle: Platforms\n---\n\n| platform | kind |\n| --- | --- |\n| cursor | coding |\n| glean | enterprise |\n",
     );
 
-    let types = f.run(&["page", "types"]);
+    let types = f.run(&["dok", "types"]);
     assert!(
         types.contains("appliance (Appliance)")
             && types.contains("name: text, usually set")
@@ -117,22 +117,22 @@ fn defaults_warnings_types_rows_and_yak_fields() {
     );
 
     f.run(&[
-        "page",
+        "dok",
         "new",
-        "wiki/home/dishwasher.md",
+        "doks/home/dishwasher.md",
         "--type",
         "appliance",
         "--set",
         "name=Dishwasher",
     ]);
-    let text = std::fs::read_to_string(f.root().join("wiki/home/dishwasher.md")).unwrap();
+    let text = std::fs::read_to_string(f.root().join("doks/home/dishwasher.md")).unwrap();
     assert!(
         text.contains("warranty: none\n") && text.contains("name: Dishwasher\n"),
         "{text}"
     );
 
     let rows: Value = serde_json::from_str(&f.run(&[
-        "page",
+        "dok",
         "query",
         "--rows",
         "--where",
@@ -142,15 +142,15 @@ fn defaults_warnings_types_rows_and_yak_fields() {
     .unwrap();
     assert_eq!(rows.as_array().unwrap().len(), 1);
     assert_eq!(rows[0]["platform"], "glean");
-    assert_eq!(rows[0]["page"], "wiki/platforms.md");
+    assert_eq!(rows[0]["dok"], "doks/platforms.md");
 
     f.run(&["doctor"]);
     let id = f.create(&[]);
     f.run(&["update", &id, "--set", "due=soon"]);
     f.run(&[
-        "page",
+        "dok",
         "set",
-        "wiki/home/dishwasher.md",
+        "doks/home/dishwasher.md",
         "--set",
         "purchased=spring",
     ]);
@@ -174,7 +174,7 @@ fn defaults_warnings_types_rows_and_yak_fields() {
     assert_eq!(
         msgs,
         [
-            "wiki/home/dishwasher.md: purchased: expected a date, YYYY-MM-DD",
+            "doks/home/dishwasher.md: purchased: expected a date, YYYY-MM-DD",
             format!("{id}: due: expected a date, YYYY-MM-DD").as_str()
         ]
     );

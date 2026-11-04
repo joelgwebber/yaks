@@ -139,8 +139,8 @@ impl App {
         if i >= self.rows().len() {
             return;
         }
-        // With a page open the row replaces it: select the row, close the
-        // page and land where it was opened from.
+        // With a dok open the row replaces it: select the row, close the
+        // dok and land where it was opened from.
         if self.doc.is_some() {
             self.close_doc();
             if self.focus == Focus::Detail {
@@ -154,7 +154,7 @@ impl App {
             self.detail_next_task(i as i32 - self.cursor as i32);
         } else if i == self.cursor && self.selected_doc().is_some() {
             // A document has no detail pane: the second click opens it.
-            self.open_wiki_entry();
+            self.open_doks_entry();
         } else if i == self.cursor {
             self.open_detail_pane();
         } else {
@@ -423,7 +423,7 @@ mod tests {
     }
 
     #[test]
-    fn a_click_in_the_list_closes_an_open_page_and_selects_the_row() {
+    fn a_click_in_the_list_closes_an_open_dok_and_selects_the_row() {
         let (proj, farm) = temp_farm(&[
             task("t0", "first", Status::Hairy, 3, None),
             task("t1", "second", Status::Hairy, 3, None),
@@ -437,7 +437,7 @@ mod tests {
         assert!(app.attach().is_some());
         let frame = draw(&app, 140, 20);
         click(&mut app, 3, row_of(&frame, "second"));
-        assert!(app.doc.is_none(), "the page closed");
+        assert!(app.doc.is_none(), "the dok closed");
         assert_eq!(app.selected_id().as_deref(), Some("t1"));
         // It was opened from the yak detail, so the detail shows the new row.
         assert_eq!(app.focus, Focus::Detail);

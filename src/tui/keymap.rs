@@ -1,4 +1,4 @@
-//! The command table (yaks-fbb0, phase 2 of /wiki/design/tui-model.md#5-keys):
+//! The command table (yaks-fbb0, phase 2 of /doks/design/tui-model.md#5-keys):
 //! every key binding of the non-modal surfaces in one place. A [`Binding`]
 //! names a [`Cmd`] (a stable dotted name), the [`Ctx`] it applies in, its
 //! keys, a help line for the `?` overlay and a label for the bottom hint.
@@ -21,7 +21,7 @@
 //! for (yaks-be65, yaks-c354): the lookup tries the selected row's kind first,
 //! then a binding for any kind. A yak command is bound for yak rows only, so on
 //! a document or shed row it finds nothing and does nothing, as on an empty
-//! list; with no row selected the view's own kind applies (an empty Wiki still
+//! list; with no row selected the view's own kind applies (an empty Doks still
 //! takes `c` and `Ctrl-R`, an empty Sheds view `Ctrl-R`).
 //!
 //! An open document (the text and image viewers) is part of the right pane,
@@ -132,8 +132,8 @@ commands! {
     YakAnswer => "yak.answer",
     YakAsk => "yak.ask",
     AttachmentRename => "attachment.rename",
-    WikiNew => "wiki.new",
-    WikiEdit => "wiki.edit",
+    DokNew => "dok.new",
+    DokEdit => "dok.edit",
 }
 
 impl Cmd {
@@ -151,7 +151,7 @@ pub(crate) enum Ctx {
     List,
     /// The yak detail pane.
     Detail,
-    /// The text viewer in the pane (attachments, wiki pages, sources).
+    /// The text viewer in the pane (attachments, doks, sources).
     Viewer,
     /// The image viewer in the pane.
     Image,
@@ -194,7 +194,7 @@ const SECTIONS: [Section; 7] = [
     Section {
         ctx: Ctx::Viewer,
         kinds: &[None],
-        title: "Text viewer (an attachment, page or source)",
+        title: "Text viewer (an attachment, dok or source)",
     },
     Section {
         ctx: Ctx::Image,
@@ -204,7 +204,7 @@ const SECTIONS: [Section; 7] = [
     Section {
         ctx: Ctx::List,
         kinds: &[Some(RowKind::Doc)],
-        title: "Document rows (the Wiki view: the farm's pages and sources)",
+        title: "Document rows (the Doks view: the farm's doks and sources)",
     },
     Section {
         ctx: Ctx::List,
@@ -357,7 +357,7 @@ pub(crate) enum Hint {
 }
 
 /// One row of the table: in `ctx`, any of `keys` runs `cmd`. A binding in the
-/// list may name the [`RowKind`] it is for (a document row's `E` edits a page,
+/// list may name the [`RowKind`] it is for (a document row's `E` edits a dok,
 /// a yak's edits the yak); one that names none is for every kind of row.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Binding {
@@ -489,7 +489,7 @@ static BINDINGS: &[Binding] = &[
     bind_pane(Yak, &[c('G')], MoveBottom, "Bottom", NoHint),
     bind_pane(Yak, &[k(Tab), c(']')], LinkNext, "Next link (each link on a row is a stop)", hint("Tab:link")),
     bind_pane(Yak, &[k(BackTab), c('[')], LinkPrev, "Previous link", NoHint),
-    bind_pane(Yak, &[k(Enter)], PaneEnter, "Yank the selection, else follow the link / footnote / source file / farm page (status bar: URL, or a peek of the page)", hint("Enter:follow")),
+    bind_pane(Yak, &[k(Enter)], PaneEnter, "Yank the selection, else follow the link / footnote / source file / farm dok (status bar: URL, or a peek of the dok)", hint("Enter:follow")),
     bind(Detail, &[c('i')], NavForward, "History forward: a jump you went back from (any pane)", hint("i/o:fwd/back")),
     bind(Detail, &[c('o')], NavBack, "History back: where the last jump left (a link, a view switch, #), position restored", NoHint),
     bind(Detail, &[c('J')], ItemNext, "Next task (stay in detail)", NoHint),
@@ -500,7 +500,7 @@ static BINDINGS: &[Binding] = &[
     bind_pane(Yak, &[shift(Down)], SelectExtendDown, "Extend the selection down", NoHint),
     bind_pane(Yak, &[shift(Up)], SelectExtendUp, "Extend the selection up", NoHint),
     bind_pane(Yak, &[c('y')], SelectYank, "Copy the selection, else the yak id", NoHint),
-    bind_pane(Yak, &[c('/')], FindOpen, "Find in the pane (sets the search for every page and yak)", NoHint),
+    bind_pane(Yak, &[c('/')], FindOpen, "Find in the pane (sets the search for every dok and yak)", NoHint),
     bind_pane(Yak, &[c('n')], FindNext, "Next match; past the last, the next matching yak", NoHint),
     bind_pane(Yak, &[c('N')], FindPrev, "Previous match; before the first, the previous yak", NoHint),
     bind(Detail, &[c('#')], NavGoto, "Go to any yak by id / title", NoHint),
@@ -544,7 +544,7 @@ static BINDINGS: &[Binding] = &[
     bind(Viewer, &[k(Tab), c(']')], LinkNext, "Next link (each link on a row is a stop)", NoHint),
     bind(Viewer, &[k(BackTab), c('[')], LinkPrev, "Previous link", NoHint),
     bind(Viewer, &[k(Enter)], PaneEnter, "Yank the selection, else follow the link (o / i come back)", NoHint),
-    bind(Viewer, &[c('o')], NavBack, "History back: over a footnote or page jump, then to where the page was opened from", NoHint),
+    bind(Viewer, &[c('o')], NavBack, "History back: over a footnote or dok jump, then to where the dok was opened from", NoHint),
     bind(Viewer, &[c('i')], NavForward, "History forward", NoHint),
     bind(Viewer, &[c('v')], SelectVisual, "Visual select lines", NoHint),
     bind(Viewer, &[shift(Down)], SelectExtendDown, "Extend the selection down", NoHint),
@@ -553,12 +553,12 @@ static BINDINGS: &[Binding] = &[
     bind(Viewer, &[c('/')], FindOpen, "Find in the file (the same search as the yak detail)", NoHint),
     bind(Viewer, &[c('n')], FindNext, "Next match (wraps)", NoHint),
     bind(Viewer, &[c('N')], FindPrev, "Previous match (wraps)", NoHint),
-    bind(Viewer, &[c('J')], ItemNext, "Next page of the Wiki list (opened in place)", NoHint),
-    bind(Viewer, &[c('K')], ItemPrev, "Previous page of the Wiki list", NoHint),
-    bind(Viewer, &[c('p')], PeekToggle, "Show / hide the peek pane under the page", NoHint),
+    bind(Viewer, &[c('J')], ItemNext, "Next dok of the Doks list (opened in place)", NoHint),
+    bind(Viewer, &[c('K')], ItemPrev, "Previous dok of the Doks list", NoHint),
+    bind(Viewer, &[c('p')], PeekToggle, "Show / hide the peek pane under the dok", NoHint),
     bind(Viewer, &[c('E')], DocEdit, "Edit the file in place (Ctrl-S saves; a past version or a source is read-only)", NoHint),
     bind(Viewer, &[c('O')], FileOpenExternal, "Open the file externally", NoHint),
-    bind(Viewer, &[c('#')], NavGoto, "Go to any yak by id / title (closes the page)", NoHint),
+    bind(Viewer, &[c('#')], NavGoto, "Go to any yak by id / title (closes the dok)", NoHint),
     bind(Viewer, &[c('W')], FarmCommit, "Commit the farm (yaks commit)", NoHint),
     bind(Viewer, &[c('U')], FarmSync, "Sync the farm: commit, pull, push (yaks sync)", NoHint),
     bind(Viewer, &[c('?')], AppHelp, HELP_LINE, NoHint),
@@ -574,15 +574,15 @@ static BINDINGS: &[Binding] = &[
     bind(Image, &[c('U')], FarmSync, "Sync the farm: commit, pull, push (yaks sync)", NoHint),
     bind(Image, &[c('?')], AppHelp, HELP_LINE, NoHint),
 
-    // -- the list: document rows (the Wiki view). Its movement, view and farm
+    // -- the list: document rows (the Doks view). Its movement, view and farm
     // -- keys are the list's; `` ` ``, `?` and `q` repeat theirs only so that the
-    // -- bottom hint is the Wiki's own, not the yak list's.
+    // -- bottom hint is the Doks's own, not the yak list's.
     bind_row(Doc, &[c('l'), k(Right), k(Enter)], PaneOpen, "Open in the viewer: frontmatter above the body; a source with its extracted text", hint("Enter:open")),
-    bind_row(Doc, &[c('E')], WikiEdit, "Edit the page: frontmatter (YAML) and body; Ctrl-S saves", hint("E:edit")),
-    bind_row(Doc, &[c('c')], WikiNew, "New page: type its path (wiki/... or <herd>/wiki/...), then its body", hint("c:new page")),
+    bind_row(Doc, &[c('E')], DokEdit, "Edit the dok: frontmatter (YAML) and body; Ctrl-S saves", hint("E:edit")),
+    bind_row(Doc, &[c('c')], DokNew, "New dok: type its path (doks/... or <herd>/doks/...), then its body", hint("c:new dok")),
     bind_row(Doc, &[c('/')], SearchOpen, "Search every view; Esc clears", hint("/:search")),
     bind_row(Doc, &[c('y')], RowCopy, "Copy the path", hint("y:copy path")),
-    bind_row(Doc, &[ctrl('r')], ListRefresh, "Reread the pages (also on any farm change)", NoHint),
+    bind_row(Doc, &[ctrl('r')], ListRefresh, "Reread the doks (also on any farm change)", NoHint),
     bind_row(Doc, &[c('`')], ViewPick, "", NoHint),
     bind_row(Doc, &[c('?')], AppHelp, "", hint("?:help")),
     bind_row(Doc, &[c('q'), ctrl('c')], AppQuit, "", hint("q:quit")),
@@ -838,11 +838,11 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
             ),
             (
                 "(farm links)",
-                "/wiki/x.md#h, page-relative, /sources/..., @sha pins: open in the viewer at the anchor; o/i go back/fwd",
+                "/doks/x.md#h, dok-relative, /sources/..., @sha pins: open in the viewer at the anchor; o/i go back/fwd",
             ),
             (
                 "(peek)",
-                "A pane under the page previews the link under the cursor (section, lines, page head); p hides it",
+                "A pane under the dok previews the link under the cursor (section, lines, dok head); p hides it",
             ),
             (
                 "(image)",
@@ -887,7 +887,7 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
             ),
             (
                 "Click row",
-                "Select (again: open detail; detail stays open); closes an open page",
+                "Select (again: open detail; detail stays open); closes an open dok",
             ),
             ("Click detail", "Move line cursor (again: follow link)"),
             ("Click tab", "Switch view"),
@@ -986,7 +986,7 @@ impl App {
             TreeToggle => self.toggle_collapse(),
             TreeLeft => self.tree_left(),
             PaneOpen => match ctx {
-                Ctx::List if self.selected_doc().is_some() => self.open_wiki_entry(),
+                Ctx::List if self.selected_doc().is_some() => self.open_doks_entry(),
                 _ => self.open_detail_pane(),
             },
             PaneEnter => self.detail_enter(),
@@ -996,13 +996,13 @@ impl App {
                 self.scroll_block(1);
             }
             RowCopy => match ctx {
-                Ctx::List if self.selected_doc().is_some() => self.copy_wiki_path(),
+                Ctx::List if self.selected_doc().is_some() => self.copy_doks_path(),
                 _ if self.selected_shed().is_some() => self.copy_shed_name(),
                 _ => self.copy_selected_id(),
             },
             ListRefresh => match self.row_kind() {
                 RowKind::Shed => self.rescan_sheds(),
-                _ => self.reread_wiki(),
+                _ => self.reread_doks(),
             },
             SearchOpen => self.open_search(),
             FilterDrawer => self.open_drawer(),
@@ -1053,15 +1053,15 @@ impl App {
             YakAnswer => self.open_answer_or_request(),
             YakAsk => self.open_ask(),
             AttachmentRename => self.open_rename_attachment(),
-            WikiNew => self.open_new_page(),
-            WikiEdit => self.edit_wiki_entry(),
+            DokNew => self.open_new_dok(),
+            DokEdit => self.edit_doks_entry(),
             // The viewers' own: `run_viewer_cmd` and `run_image_cmd`.
             PaneClose | PeekToggle | DocEdit | FileOpenExternal => {}
         }
     }
 
     /// A movement command on the surface `ctx`: by lines, a half or a full
-    /// page, or to either end.
+    /// dok, or to either end.
     fn run_move(&mut self, ctx: Ctx, cmd: Cmd) {
         let half = (self.page / 2).max(1) as i32;
         let full = self.page.max(1) as i32;
@@ -1207,7 +1207,7 @@ mod tests {
             (
                 Ctx::List,
                 Some(RowKind::Doc),
-                "Tab:view  j/k:move  Enter:open  E:edit  c:new page  /:search  y:copy path  ?:help  q:quit",
+                "Tab:view  j/k:move  Enter:open  E:edit  c:new dok  /:search  y:copy path  ?:help  q:quit",
             ),
             (
                 Ctx::List,
@@ -1319,16 +1319,16 @@ mod tests {
     fn lookup_prefers_a_binding_for_the_rows_kind() {
         let key = |ch| KeyEvent::new(KeyCode::Char(ch), KeyModifiers::NONE);
         let (yak, doc) = (Some(RowKind::Yak), Some(RowKind::Doc));
-        // The same key, per kind: E edits a yak by its form, a page in the editor.
+        // The same key, per kind: E edits a yak by its form, a dok in the editor.
         assert_eq!(lookup(Ctx::List, yak, &key('E')), Some(YakEdit));
-        assert_eq!(lookup(Ctx::List, doc, &key('E')), Some(WikiEdit));
+        assert_eq!(lookup(Ctx::List, doc, &key('E')), Some(DokEdit));
         // A key bound for any kind reaches every kind.
         assert_eq!(lookup(Ctx::List, yak, &key('j')), Some(MoveDown));
         assert_eq!(lookup(Ctx::List, doc, &key('j')), Some(MoveDown));
         // A yak command is no document command.
         assert_eq!(lookup(Ctx::List, doc, &key('S')), None);
         assert_eq!(lookup(Ctx::List, doc, &key('C')), None);
-        // Ctrl-R rescans on a shed row, rereads the wiki on a document row.
+        // Ctrl-R rescans on a shed row, rereads the doks on a document row.
         let shed = Some(RowKind::Shed);
         let ctrl_r = KeyEvent::new(KeyCode::Char('r'), KeyModifiers::CONTROL);
         assert_eq!(lookup(Ctx::List, shed, &ctrl_r), Some(ListRefresh));
@@ -1363,7 +1363,7 @@ mod tests {
             assert_eq!(lookup(l, kind, &key('v')), None, "{kind:?}");
             assert_eq!(lookup(l, kind, &key('`')), Some(ViewPick), "{kind:?}");
         }
-        // `N` is the previous match; a new page is `c` on a document row.
+        // `N` is the previous match; a new dok is `c` on a document row.
         for (ctx, kind) in [
             (l, yak),
             (l, doc),
@@ -1377,7 +1377,7 @@ mod tests {
                 "{ctx:?} {kind:?}"
             );
         }
-        assert_eq!(lookup(l, doc, &key('c')), Some(WikiNew));
+        assert_eq!(lookup(l, doc, &key('c')), Some(DokNew));
         assert_eq!(lookup(l, doc, &key('C')), None);
         assert_eq!(lookup(l, yak, &key('c')), Some(YakNew));
         // `r` renames an attachment; refresh is Ctrl-R.
@@ -1415,9 +1415,9 @@ mod tests {
         let list = km.popup_entries(Ctx::List, Some(Yak));
         assert!(list.contains(&("Tab/]".to_string(), "view.next")));
         assert!(list.contains(&("F".to_string(), "family.cycle")));
-        assert!(!list.iter().any(|(_, name)| *name == "wiki.new"));
+        assert!(!list.iter().any(|(_, name)| *name == "dok.new"));
         let docs = km.popup_entries(Ctx::List, Some(Doc));
-        assert!(docs.contains(&("c".to_string(), "wiki.new")));
+        assert!(docs.contains(&("c".to_string(), "dok.new")));
         // A document row's own `q` stands in for the list's: listed once.
         assert_eq!(docs.iter().filter(|(_, n)| *n == "app.quit").count(), 1);
         for ctx in Ctx::ALL {

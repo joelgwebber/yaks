@@ -14,6 +14,7 @@ mod check;
 mod clipboard;
 mod commit;
 mod conflicts;
+mod doks;
 mod farm;
 mod fields;
 mod filter;
@@ -28,7 +29,6 @@ mod markdown_lint;
 mod mergedriver;
 mod migrate;
 mod model;
-mod pages;
 mod preflight;
 mod privatefarm;
 mod recur;
@@ -192,9 +192,9 @@ enum Command {
     ///
     /// Outgoing references are the parent, deps, and id mentions in its text;
     /// any formal reference that dangles is flagged. With --incoming, list the
-    /// yaks that point at it instead. Given a page path (`wiki/x.md`) instead
-    /// of an id, `--incoming` lists the yaks and pages that link to it, and
-    /// plain `refs` the links the page holds.
+    /// yaks that point at it instead. Given a dok path (`doks/x.md`) instead
+    /// of an id, `--incoming` lists the yaks and doks that link to it, and
+    /// plain `refs` the links the dok holds.
     Refs {
         id: String,
         /// Incoming references: every yak whose `parent:` or `depends_on:` names
@@ -371,17 +371,17 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Full-text search over the farm: yaks (notes included), pages, sources'
+    /// Full-text search over the farm: yaks (notes included), doks, sources'
     /// text and sessions.
     ///
     /// Reads the files directly (no index) and prints one line per match,
     /// `path:line: text`, grouped by file under its title. The match ignores
     /// case and is a literal substring unless `--regex`. Searches yak files
-    /// (title, description, notes), pages (frontmatter and body), a source's
+    /// (title, description, notes), doks (frontmatter and body), a source's
     /// `source.md` and `extracted.md` (never the original file), and
-    /// `sessions/**.md`. `--scope` keeps paths under a prefix (`wiki/topics/`,
+    /// `sessions/**.md`. `--scope` keeps paths under a prefix (`doks/topics/`,
     /// `sources`, a herd such as `web`; repeatable), `--kind` keeps one of
-    /// yaks, pages, sources or sessions (repeatable). `--json` prints
+    /// yaks, doks, sources or sessions (repeatable). `--json` prints
     /// `[{path, kind, title, line, text}]`. Exits 1 when nothing matches, like
     /// `grep`. `yaks search` is the quick yak-only lookup with the shared
     /// filters.
@@ -392,12 +392,12 @@ enum Command {
         /// ( ) | * + ? {n,m}`.
         #[arg(long)]
         regex: bool,
-        /// Only paths under this prefix of the farm (repeatable): `wiki/`,
-        /// `sources`, `wiki/topics/vec`, or a herd name for its yaks and wiki.
+        /// Only paths under this prefix of the farm (repeatable): `doks/`,
+        /// `sources`, `doks/topics/vec`, or a herd name for its yaks and doks.
         #[arg(long = "scope", value_name = "PREFIX")]
         scopes: Vec<String>,
         /// Only this kind of file (repeatable).
-        #[arg(long, value_parser = ["yaks", "pages", "sources", "sessions"])]
+        #[arg(long, value_parser = ["yaks", "doks", "sources", "sessions"])]
         kind: Vec<String>,
         /// Match case exactly (the default ignores case).
         #[arg(long)]
@@ -887,7 +887,7 @@ enum Command {
     /// Print only what a link names: a line range, a markdown section, or a
     /// document's frontmatter and first paragraph.
     ///
-    /// The link is written as in a yak or page: `/wiki/x.md#setup` (a page's
+    /// The link is written as in a yak or dok: `/doks/x.md#setup` (a dok's
     /// section), `code:src/foo.rs#L12-L40` (lines of a code file, from the
     /// code checkout yaks was started in), `code:src/foo.rs@3f2a9c1#L12` (as
     /// at a commit), `yaks-1a2b/log.txt#L5` (an attachment). Cheaper context
@@ -900,7 +900,7 @@ enum Command {
     },
     /// What the farm costs to clone: its commits, history size, the bytes a
     /// clone of this repository fetches for it, the current tree by kind
-    /// (yaks, attachments, pages, sources), and the largest blobs ever
+    /// (yaks, attachments, doks, sources), and the largest blobs ever
     /// committed.
     ///
     /// Every branch comes with a plain `git clone`, so a code clone pays for
@@ -924,8 +924,8 @@ enum Command {
     /// List farm documents holding a merge conflict to settle.
     ///
     /// The merge driver never fails a merge on prose: where both sides changed
-    /// the same lines of a yak's description or a page body, both versions stay
-    /// in the text between `<<<<<<< here` and `>>>>>>> other side`. A page
+    /// the same lines of a yak's description or a dok body, both versions stay
+    /// in the text between `<<<<<<< here` and `>>>>>>> other side`. A dok
     /// field both sides set differently keeps this side's value and records
     /// the other under `merge_conflicts:` (a yak gets a `merge-driver` note
     /// instead). Edit the file to settle it; `doctor` reports the same list.
@@ -957,9 +957,9 @@ enum Command {
         #[arg(long)]
         yes: bool,
     },
-    /// Move a page and rewrite every link to it, in yaks and pages.
+    /// Move a dok and rewrite every link to it, in yaks and doks.
     ///
-    /// Links are rewritten to the farm-root form (`/wiki/new/path.md`),
+    /// Links are rewritten to the farm-root form (`/doks/new/path.md`),
     /// keeping their `@rev` and `#anchor`. `--dry-run` lists what would
     /// change.
     Mv {
@@ -973,37 +973,37 @@ enum Command {
     /// A source is a write-once snapshot under `sources/<date>-<sha8>/`: the
     /// original, `extracted.md` (its text, for text files), and `source.md`
     /// saying what it is and where it came from. Cite its `source.md` from a
-    /// page's `sources:` or link it from a yak. yaks fetches nothing and
-    /// converts nothing: save a downloaded copy with `--url` naming the page,
+    /// dok's `sources:` or link it from a yak. yaks fetches nothing and
+    /// converts nothing: save a downloaded copy with `--url` naming the dok,
     /// and your conversion of it with `--text`, as one source.
     Source {
         #[command(subcommand)]
         action: SourceAction,
     },
     /// Move a yak's attachment into the farm's knowledge: a source, or (a
-    /// markdown attachment, with `--page <path>`) a page. Every link to the
+    /// markdown attachment, with `--dok <path>`) a dok. Every link to the
     /// attachment is rewritten to the new place.
     Promote {
         /// The attachment, `<id>/<file>` (as the yak links it).
         attachment: String,
-        /// Make it a page at this path (`wiki/topics/x.md`) instead of a source.
+        /// Make it a dok at this path (`doks/topics/x.md`) instead of a source.
         #[arg(long)]
-        page: Option<String>,
+        dok: Option<String>,
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
-    /// Work with the farm's pages: markdown documents that are not yaks.
+    /// Work with the farm's doks: markdown documents that are not yaks.
     ///
-    /// A page lives under `wiki/` (farm-wide) or `<herd>/wiki/` (one herd's),
+    /// A dok lives under `doks/` (farm-wide) or `<herd>/doks/` (one herd's),
     /// at any depth, and is named by its path from the farm root
-    /// (`wiki/topics/vector-search.md`; a leading `/` is accepted). Its
+    /// (`doks/topics/vector-search.md`; a leading `/` is accepted). Its
     /// frontmatter has `type:` (note, topic, howto, summary, or a typed kind),
     /// `title:`, and any other fields (`description`, `tags`, `sources`, ...).
-    /// Pages are plain files: editing one by hand is fine, and `yaks doctor`
+    /// Doks are plain files: editing one by hand is fine, and `yaks doctor`
     /// checks them.
-    Page {
+    Dok {
         #[command(subcommand)]
-        action: PageAction,
+        action: DokAction,
     },
     /// Move tasks under a new parent (--parent) or to top-level (--unparent).
     ///
@@ -1092,12 +1092,15 @@ enum Command {
     },
     /// Bring an older-schema farm up to this yaks' schema, or move it to a branch.
     ///
-    /// Brings a farm on an older schema up to this yaks' (schema 4, 5 or 6 -> 7):
+    /// Brings a farm on an older schema up to this yaks' (schema 4, 5, 6 or 7 -> 8):
     /// moves every yak file and attachment dir from the farm root into its
     /// herd's directory (`<herd>/yaks/<id>.md`, `<herd>/yaks/<id>/`), renames
     /// `labels:` to `tags:`, puts the blank line after every comment's
-    /// `▸ <ts> [actor]` header, and fixes attachment links. Works under the
-    /// farm lock, then sets `.yaks/schema` to 7. Idempotent: a current farm
+    /// `▸ <ts> [actor]` header, fixes attachment links, and (schema 8) renames
+    /// the wiki to doks: `wiki/` and `<herd>/wiki/` become `doks/` and
+    /// `<herd>/doks/`, `/wiki/...` links become `/doks/...`, and a schema's
+    /// `type: Page Type` becomes `Dok Type`. Works under the
+    /// farm lock, then sets `.yaks/schema` to 8. Idempotent: a current farm
     /// reports "nothing to migrate". Every other command refuses an older farm
     /// and names this one. Never commits: it prints the commit to make (a
     /// migration touches nearly every yak file, so land it on its own).
@@ -1143,17 +1146,17 @@ enum Command {
         #[arg(long)]
         dry_run: bool,
     },
-    /// Copy a Hearth-layout repo's wiki, sources, schemas and sessions into this farm.
+    /// Copy a Hearth-layout repo's doks, sources, schemas and sessions into this farm.
     ///
-    /// `wiki/` -> `wiki/`, `raw/sources/<id>/` -> `sources/<id>/`, `schemas/`
+    /// `doks/` -> `doks/`, `raw/sources/<id>/` -> `sources/<id>/`, `schemas/`
     /// -> `schemas/`, `raw/sessions/` -> `sessions/`. Links are rewritten to
-    /// farm paths (`../` links become `/wiki/...`, or `code:` links when they
+    /// farm paths (`../` links become `/doks/...`, or `code:` links when they
     /// point at the repo's own files). `schedules/`, `core/`, `instructions/`,
     /// `views/` and `.agents/` are not imported. The repo is only read;
     /// re-running skips identical files and refuses to overwrite a different
     /// one. One commit on the farm branch.
     ImportHearth {
-        /// The Hearth-layout repo (a checkout with `wiki/` or `raw/sources/`).
+        /// The Hearth-layout repo (a checkout with `doks/` or `raw/sources/`).
         repo: String,
         /// Print the report without writing anything.
         #[arg(long)]
@@ -1226,16 +1229,16 @@ enum Command {
         #[arg(long)]
         strict: bool,
     },
-    /// Read-only upkeep check on the farm's pages and sources.
+    /// Read-only upkeep check on the farm's doks and sources.
     ///
-    /// Reports what a person or agent should look at, and never edits: pages
-    /// past their `stale_after` (the page's own, else its type's schema; an
+    /// Reports what a person or agent should look at, and never edits: doks
+    /// past their `stale_after` (the dok's own, else its type's schema; an
     /// ISO 8601 duration such as `P6M` counted from `verified:`, else the
-    /// page's last commit on the farm branch, or a date), sources that no page
+    /// dok's last commit on the farm branch, or a date), sources that no dok
     /// or yak cites (a `sources/<id>/` link or mention; set `superseded_by:`
-    /// or `uncited:` in its source.md to keep it on purpose), page kinds that
+    /// or `uncited:` in its source.md to keep it on purpose), dok kinds that
     /// differ only by plural or hyphens, and `doctor`'s `broken-link`,
-    /// `schema-mismatch`, `merge-conflict` and `page-problem`. Exits 1 when
+    /// `schema-mismatch`, `merge-conflict` and `dok-problem`. Exits 1 when
     /// there is any finding.
     Check {
         /// Emit the findings as JSON: `[{kind, message, ids}]`.
@@ -1441,7 +1444,7 @@ enum SourceAction {
         /// place of the path of your download.
         #[arg(long)]
         url: Option<String>,
-        /// Your conversion of the file to text (a page's HTML to markdown, a
+        /// Your conversion of the file to text (a dok's HTML to markdown, a
         /// PDF to text): it becomes `extracted.md`, so one source holds the
         /// original and the text you read. Not for a directory.
         #[arg(long)]
@@ -1460,25 +1463,25 @@ enum SourceAction {
 }
 
 #[derive(Subcommand)]
-enum PageAction {
-    /// List pages: path, type and title, sorted by path.
+enum DokAction {
+    /// List doks: path, type and title, sorted by path.
     List {
-        /// Only pages under this path (`wiki/topics`, `yaks/wiki`).
+        /// Only doks under this path (`doks/topics`, `yaks/doks`).
         prefix: Option<String>,
         #[arg(long)]
         json: bool,
     },
-    /// Print one page: its file text, or `--json` with fields parsed.
+    /// Print one dok: its file text, or `--json` with fields parsed.
     Show {
         path: String,
         #[arg(long)]
         json: bool,
     },
-    /// Create a page. Refuses a path that exists or is not
-    /// `wiki/<kebab-parts>.md` / `<herd>/wiki/<kebab-parts>.md`.
+    /// Create a dok. Refuses a path that exists or is not
+    /// `doks/<kebab-parts>.md` / `<herd>/doks/<kebab-parts>.md`.
     New {
         path: String,
-        /// The page's kind (default `note`).
+        /// The dok's kind (default `note`).
         #[arg(long = "type")]
         kind: Option<String>,
         /// Its title (default: from the file name).
@@ -1494,7 +1497,7 @@ enum PageAction {
         #[arg(long = "body-file", value_name = "PATH")]
         body_file: Option<String>,
     },
-    /// Set or remove frontmatter fields of a page, or replace its body.
+    /// Set or remove frontmatter fields of a dok, or replace its body.
     Set {
         path: String,
         /// `key=value` (repeatable); an empty value removes the field.
@@ -1510,23 +1513,23 @@ enum PageAction {
         #[arg(long = "body-file", value_name = "PATH")]
         body_file: Option<String>,
     },
-    /// The kinds of page: the untyped ones and every typed kind with a
+    /// The kinds of dok: the untyped ones and every typed kind with a
     /// schema (`schemas/<type>.md`), with its fields.
     Types,
-    /// List pages whose fields match: `--type T`, `--where key=value`
+    /// List doks whose fields match: `--type T`, `--where key=value`
     /// (repeatable, ANDed; a list field matches when it holds the value).
-    /// `--rows` lists the rows of matching table pages instead (the first
+    /// `--rows` lists the rows of matching table doks instead (the first
     /// markdown table in each, one row per line), filtered by the same
     /// `--where` tests on the row's columns.
     Query {
-        /// List table rows instead of pages.
+        /// List table rows instead of doks.
         #[arg(long)]
         rows: bool,
         #[arg(long = "type")]
         kind: Option<String>,
         #[arg(long = "where", value_name = "KEY=VALUE")]
         where_: Vec<String>,
-        /// Only pages under this path.
+        /// Only doks under this path.
         #[arg(long)]
         prefix: Option<String>,
         #[arg(long)]
@@ -1769,7 +1772,7 @@ fn main() -> Result<()> {
                 .iter()
                 .map(|k| match k.as_str() {
                     "yaks" => find::Kind::Yaks,
-                    "pages" => find::Kind::Pages,
+                    "doks" => find::Kind::Doks,
                     "sources" => find::Kind::Sources,
                     _ => find::Kind::Sessions,
                 })
@@ -1894,8 +1897,8 @@ fn main() -> Result<()> {
         Command::MergeDriver { .. } => {
             unreachable!("merge-driver is handled before opening a farm")
         }
-        Command::Refs { id, incoming, json } if pages::is_page_path(&pages::normalize(&id)) => {
-            run_page_refs(&farm, &id, incoming, json)?
+        Command::Refs { id, incoming, json } if doks::is_dok_path(&doks::normalize(&id)) => {
+            run_dok_refs(&farm, &id, incoming, json)?
         }
         Command::Peek { link, context } => {
             let cwd = env::current_dir()?;
@@ -2000,12 +2003,12 @@ fn main() -> Result<()> {
             println!("Undid {} commit(s) as {new}", shas.len());
         }
         Command::Mv { from, to, dry_run } => {
-            let changed = farm.page_move(&from, &to, dry_run)?;
+            let changed = farm.dok_move(&from, &to, dry_run)?;
             let verb = if dry_run { "Would move" } else { "Moved" };
             println!(
                 "{verb} {} -> {}",
-                pages::normalize(&from),
-                pages::normalize(&to)
+                doks::normalize(&from),
+                doks::normalize(&to)
             );
             for (doc, n) in &changed {
                 let s = if *n == 1 { "" } else { "s" };
@@ -2653,7 +2656,7 @@ fn main() -> Result<()> {
                 _ => {}
             },
         },
-        Command::Page { action } => run_page(&farm, action)?,
+        Command::Dok { action } => run_dok(&farm, action)?,
         Command::Source { action } => match action {
             SourceAction::Add {
                 path,
@@ -2705,14 +2708,14 @@ fn main() -> Result<()> {
         },
         Command::Promote {
             attachment,
-            page,
+            dok,
             as_actor,
         } => {
             let Some((id, name)) = attachment.split_once('/') else {
                 anyhow::bail!("{attachment}: give the attachment as <id>/<file>");
             };
             let actor = actor::resolve(as_actor.as_deref()).unwrap_or_default();
-            let to = farm.promote(id, name, page.as_deref(), &actor)?;
+            let to = farm.promote(id, name, dok.as_deref(), &actor)?;
             println!("Promoted {attachment} -> {to}; links to it now point there");
         }
         Command::Reparent {
@@ -3657,6 +3660,30 @@ fn report_migrate(r: &migrate::Report) {
             println!("    {herd}/yaks/: {f} yak(s), {d} attachment dir(s)");
         }
     }
+    if !r.doks_roots.is_empty() {
+        println!(
+            "  doks-directories: {} wiki director{} {} doks",
+            r.doks_roots.len(),
+            if r.doks_roots.len() == 1 { "y" } else { "ies" },
+            if r.applied { "moved to" } else { "to move to" }
+        );
+        for (from, to) in &r.doks_roots {
+            println!("    {from}/ -> {to}/");
+        }
+    }
+    if !r.docs.is_empty() {
+        let total: usize = r.docs.iter().map(|(_, n)| n).sum();
+        println!(
+            "  wiki-links-in-doks: {total} edit(s) in {} dok/schema/session file(s) \
+             (`/wiki/` links, `type: Page Type`)",
+            r.docs.len()
+        );
+        if !r.applied {
+            for (path, n) in &r.docs {
+                println!("    {path}: {n}");
+            }
+        }
+    }
     for f in &r.fixups {
         let total: usize = f.yaks.iter().map(|(_, n)| n).sum();
         println!(
@@ -3687,9 +3714,9 @@ fn report_migrate(r: &migrate::Report) {
     println!("{line}");
 }
 
-/// `--set key=value` for a page: any key (pages have no built-in fields
+/// `--set key=value` for a dok: any key (doks have no built-in fields
 /// besides what OKF suggests), checked like note metadata keys.
-fn parse_page_fields(set: &[String], unset: &[String]) -> Result<Vec<(String, fields::Value)>> {
+fn parse_dok_fields(set: &[String], unset: &[String]) -> Result<Vec<(String, fields::Value)>> {
     let mut out = Vec::new();
     for a in set {
         let Some((k, v)) = a.split_once('=') else {
@@ -3709,63 +3736,63 @@ fn parse_page_fields(set: &[String], unset: &[String]) -> Result<Vec<(String, fi
     Ok(out)
 }
 
-/// Schema warnings for the page at `path` after a write (advice; the write
+/// Schema warnings for the dok at `path` after a write (advice; the write
 /// stands).
 fn print_schema_warnings(farm: &Farm, path: &str) -> Result<()> {
-    if let Some(p) = farm.page(path)? {
-        for w in schemas::check_page(farm.root(), &p) {
+    if let Some(p) = farm.dok(path)? {
+        for w in schemas::check_dok(farm.root(), &p) {
             eprintln!("warning: {w}");
         }
     }
     Ok(())
 }
 
-fn print_page_rows(pages: &[&pages::Page]) {
-    if pages.is_empty() {
-        println!("No pages found.");
+fn print_dok_rows(doks: &[&doks::Dok]) {
+    if doks.is_empty() {
+        println!("No doks found.");
         return;
     }
-    let w = pages.iter().map(|p| p.path.len()).max().unwrap_or(0);
-    let kw = pages.iter().map(|p| p.kind().len()).max().unwrap_or(0);
-    for p in pages {
+    let w = doks.iter().map(|p| p.path.len()).max().unwrap_or(0);
+    let kw = doks.iter().map(|p| p.kind().len()).max().unwrap_or(0);
+    for p in doks {
         println!("  {:w$}  {:kw$}  {}", p.path, p.kind(), p.title());
     }
 }
 
-fn run_page(farm: &Farm, action: PageAction) -> Result<()> {
-    let under = |p: &pages::Page, prefix: &Option<String>| {
+fn run_dok(farm: &Farm, action: DokAction) -> Result<()> {
+    let under = |p: &doks::Dok, prefix: &Option<String>| {
         prefix.as_ref().is_none_or(|x| {
-            let x = pages::normalize(x);
+            let x = doks::normalize(x);
             let x = x.trim_end_matches('/');
             p.path == x || p.path.starts_with(&format!("{x}/"))
         })
     };
     match action {
-        PageAction::List { prefix, json } => {
-            let all = farm.pages()?;
-            let rows: Vec<&pages::Page> = all.iter().filter(|p| under(p, &prefix)).collect();
+        DokAction::List { prefix, json } => {
+            let all = farm.doks()?;
+            let rows: Vec<&doks::Dok> = all.iter().filter(|p| under(p, &prefix)).collect();
             if json {
                 json::print(&serde_json::Value::Array(
-                    rows.iter().map(|p| json::page_value(p, false)).collect(),
+                    rows.iter().map(|p| json::dok_value(p, false)).collect(),
                 ))?;
             } else {
-                print_page_rows(&rows);
+                print_dok_rows(&rows);
             }
         }
-        PageAction::Show { path, json } => {
-            let Some(p) = farm.page(&path)? else {
+        DokAction::Show { path, json } => {
+            let Some(p) = farm.dok(&path)? else {
                 eprintln!(
-                    "error: no page {path} (pages live under wiki/ or <herd>/wiki/; `yaks page list`)"
+                    "error: no dok {path} (doks live under doks/ or <herd>/doks/; `yaks dok list`)"
                 );
                 std::process::exit(1);
             };
             if json {
-                json::print(&json::page_value(&p, true))?;
+                json::print(&json::dok_value(&p, true))?;
             } else {
                 print!("{}", p.render());
             }
         }
-        PageAction::New {
+        DokAction::New {
             path,
             kind,
             title,
@@ -3773,41 +3800,41 @@ fn run_page(farm: &Farm, action: PageAction) -> Result<()> {
             body,
             body_file,
         } => {
-            let fields = parse_page_fields(&set, &[])?;
+            let fields = parse_dok_fields(&set, &[])?;
             let body = resolve_text("--body", body, body_file, &mut StdinText::real())?
                 .unwrap_or_default();
-            let file = farm.page_new(&path, kind.as_deref(), title.as_deref(), &fields, &body)?;
-            println!("Created {}", pages::normalize(&path));
+            let file = farm.dok_new(&path, kind.as_deref(), title.as_deref(), &fields, &body)?;
+            println!("Created {}", doks::normalize(&path));
             println!("{}", file.display());
             print_schema_warnings(&farm, &path)?;
         }
-        PageAction::Set {
+        DokAction::Set {
             path,
             set,
             unset,
             body,
             body_file,
         } => {
-            let fields = parse_page_fields(&set, &unset)?;
+            let fields = parse_dok_fields(&set, &unset)?;
             let body = resolve_text("--body", body, body_file, &mut StdinText::real())?;
             if fields.is_empty() && body.is_none() {
                 anyhow::bail!("nothing to set: give --set, --unset, --body or --body-file");
             }
-            match farm.page_set(&path, &fields, body.as_deref())? {
+            match farm.dok_set(&path, &fields, body.as_deref())? {
                 None => {
-                    eprintln!("error: no page {path}");
+                    eprintln!("error: no dok {path}");
                     std::process::exit(1);
                 }
-                Some(false) => println!("No changes to {}", pages::normalize(&path)),
-                Some(true) => println!("Updated {}", pages::normalize(&path)),
+                Some(false) => println!("No changes to {}", doks::normalize(&path)),
+                Some(true) => println!("Updated {}", doks::normalize(&path)),
             }
             print_schema_warnings(&farm, &path)?;
         }
-        PageAction::Types => {
+        DokAction::Types => {
             println!(
                 "Untyped kinds (no schema): {} ({} is the default)",
-                pages::UNTYPED_KINDS.join(", "),
-                pages::DEFAULT_KIND
+                doks::UNTYPED_KINDS.join(", "),
+                doks::DEFAULT_KIND
             );
             let all = schemas::load_all(farm.root());
             if all.is_empty() {
@@ -3820,7 +3847,7 @@ fn run_page(farm: &Farm, action: PageAction) -> Result<()> {
                 }
             }
         }
-        PageAction::Query {
+        DokAction::Query {
             rows: true,
             kind,
             where_,
@@ -3834,7 +3861,7 @@ fn run_page(farm: &Farm, action: PageAction) -> Result<()> {
                 };
                 tests.push((k.to_string(), v.to_string()));
             }
-            let all = farm.pages()?;
+            let all = farm.doks()?;
             let mut out: Vec<serde_json::Value> = Vec::new();
             for p in all
                 .iter()
@@ -3846,7 +3873,7 @@ fn run_page(farm: &Farm, action: PageAction) -> Result<()> {
                         .all(|(k, v)| row.iter().any(|(c, x)| c == k && x == v))
                     {
                         let mut m = serde_json::Map::new();
-                        m.insert("page".into(), p.path.clone().into());
+                        m.insert("dok".into(), p.path.clone().into());
                         for (c, x) in row {
                             m.insert(c, x.into());
                         }
@@ -3863,18 +3890,18 @@ fn run_page(farm: &Farm, action: PageAction) -> Result<()> {
                     let o = r.as_object().expect("row");
                     let cells: Vec<String> = o
                         .iter()
-                        .filter(|(k, _)| *k != "page")
+                        .filter(|(k, _)| *k != "dok")
                         .map(|(k, v)| format!("{k}={}", v.as_str().unwrap_or("")))
                         .collect();
                     println!(
                         "  {}  {}",
-                        o["page"].as_str().unwrap_or(""),
+                        o["dok"].as_str().unwrap_or(""),
                         cells.join("  ")
                     );
                 }
             }
         }
-        PageAction::Query {
+        DokAction::Query {
             rows: false,
             kind,
             where_,
@@ -3891,17 +3918,17 @@ fn run_page(farm: &Farm, action: PageAction) -> Result<()> {
                 };
                 tests.push((k.to_string(), v.to_string()));
             }
-            let all = farm.pages()?;
-            let rows: Vec<&pages::Page> = all
+            let all = farm.doks()?;
+            let rows: Vec<&doks::Dok> = all
                 .iter()
-                .filter(|p| under(p, &prefix) && tests.iter().all(|(k, v)| pages::matches(p, k, v)))
+                .filter(|p| under(p, &prefix) && tests.iter().all(|(k, v)| doks::matches(p, k, v)))
                 .collect();
             if json {
                 json::print(&serde_json::Value::Array(
-                    rows.iter().map(|p| json::page_value(p, false)).collect(),
+                    rows.iter().map(|p| json::dok_value(p, false)).collect(),
                 ))?;
             } else {
-                print_page_rows(&rows);
+                print_dok_rows(&rows);
             }
         }
     }
@@ -4160,23 +4187,23 @@ fn render_rename(plan: &RenamePlan) {
     }
 }
 
-/// `refs` for a page: its outgoing links, or with `incoming` the links to it.
-fn run_page_refs(farm: &Farm, path: &str, incoming: bool, json: bool) -> Result<()> {
-    let path = pages::normalize(path);
-    let Some(page) = farm.page(&path)? else {
-        eprintln!("error: no page {path}");
+/// `refs` for a dok: its outgoing links, or with `incoming` the links to it.
+fn run_dok_refs(farm: &Farm, path: &str, incoming: bool, json: bool) -> Result<()> {
+    let path = doks::normalize(path);
+    let Some(dok) = farm.dok(&path)? else {
+        eprintln!("error: no dok {path}");
         std::process::exit(1);
     };
     let edges: Vec<links::Edge> = if incoming {
         farm.links_to(&path)?
     } else {
         let ids = store::all_ids(farm.root());
-        links::extract(&page.body)
+        links::extract(&dok.body)
             .into_iter()
             .map(|f| links::Edge {
                 from: path.clone(),
                 line: f.line,
-                link: links::parse(&f.dest, links::From::Page(&path), |s| ids.contains(s)),
+                link: links::parse(&f.dest, links::From::Dok(&path), |s| ids.contains(s)),
                 dest: f.dest,
             })
             .collect()
@@ -4195,10 +4222,10 @@ fn run_page_refs(farm: &Farm, path: &str, incoming: bool, json: bool) -> Result<
             })
             .collect();
         let key = if incoming { "incoming" } else { "links" };
-        json::print(&serde_json::json!({ "path": path, "title": page.title(), key: rows }))?;
+        json::print(&serde_json::json!({ "path": path, "title": dok.title(), key: rows }))?;
         return Ok(());
     }
-    println!("{path}  {}", page.title());
+    println!("{path}  {}", dok.title());
     if edges.is_empty() {
         println!("  (no {}links)", if incoming { "incoming " } else { "" });
     }

@@ -292,31 +292,31 @@ fn docshots() {
     press(&mut app, 'J');
     write_svg("tui-sheds-yak", &app, sw, sh);
 
-    // 9. Wiki tab (yaks-ebb2): the farm's pages then its sources, with kind
-    //    and tags; then a page open in the viewer, its frontmatter as field
+    // 9. Doks tab (yaks-ebb2): the farm's doks then its sources, with kind
+    //    and tags; then a dok open in the viewer, its frontmatter as field
     //    rows above the rendered body. A scratch farm holds the fixture
-    //    wiki, since the viewer reads the page from disk.
+    //    doks, since the viewer reads the dok from disk.
     let (ww, wh) = (150u16, 30u16);
     let (proj, farm) = crate::tui::test_support::temp_farm(&farm());
-    crate::tui::wiki_tab::fixture::write(farm.root());
+    crate::tui::doks_tab::fixture::write(farm.root());
     let mut app = App::with_farm(farm).unwrap();
     app.apply_sheds_snapshot(crate::tui::sheds_tab::fixture::snapshot());
     app.farm_sync = None;
     HeadlessApp::on_resize(&mut app, ww, wh);
-    view_to(&mut app, crate::tui::view::WIKI_KEY);
-    write_svg("tui-wiki", &app, ww, wh);
+    view_to(&mut app, crate::tui::view::DOKS_KEY);
+    write_svg("tui-doks", &app, ww, wh);
     press(&mut app, 'j');
     press(&mut app, 'j');
     press_key(&mut app, KeyCode::Enter);
-    write_svg("tui-wiki-page", &app, ww, wh);
-    // 10. Following links (yaks-7395): Tab to the page's link to another
-    //     page's section; the peek pane under it shows that section.
+    write_svg("tui-doks-dok", &app, ww, wh);
+    // 10. Following links (yaks-7395): Tab to the dok's link to another
+    //     dok's section; the peek pane under it shows that section.
     handle_key(&mut app, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
-    write_svg("tui-wiki-peek", &app, ww, wh);
-    // 11. Editing a page in place (yaks-1532): `E` opens the whole file,
+    write_svg("tui-doks-peek", &app, ww, wh);
+    // 11. Editing a dok in place (yaks-1532): `E` opens the whole file,
     //     frontmatter as raw YAML above the body, in the editor.
     press(&mut app, 'E');
-    write_svg("tui-wiki-edit", &app, ww, wh);
+    write_svg("tui-doks-edit", &app, ww, wh);
     let _ = std::fs::remove_dir_all(proj);
 }
 

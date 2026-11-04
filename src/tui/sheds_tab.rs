@@ -615,7 +615,7 @@ pub(crate) mod fixture {
             Liveness::Active,
             vec![touched(
                 "mem-f434",
-                "Host memcraft-viewer web build on GitHub Pages",
+                "Host memcraft-viewer web build on GitHub Doks",
                 Status::Shaving,
                 "2026-10-31T15:48:00Z",
                 true,

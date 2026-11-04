@@ -192,7 +192,7 @@ fn view_from_json(d: &Value) -> Option<View> {
 
 /// Merge a stored overlay with the code-defined default views: order follows
 /// the overlay; built-in structure comes from code (only name/pinned overlaid);
-/// an omitted built-in (one added since the overlay was saved, like the Wiki
+/// an omitted built-in (one added since the overlay was saved, like the Doks
 /// tab) goes just before the first built-in that follows it in the defaults
 /// and is present, else at the end; custom views are rebuilt; unknown
 /// built-in keys are dropped. Mirrors Python `reconcile`.
@@ -203,6 +203,8 @@ pub fn reconcile(entries: &[Value], defaults: Vec<View>) -> Vec<View> {
         let Some(key) = e.get("key").and_then(|x| x.as_str()) else {
             continue;
         };
+        // The Wiki tab became the Doks tab (schema 8): keep its saved place.
+        let key = if key == "wiki" { view::DOKS_KEY } else { key };
         if key.is_empty() || seen.iter().any(|k| k == key) {
             continue;
         }
@@ -367,8 +369,8 @@ mod tests {
 
     #[test]
     fn a_new_builtin_lands_beside_its_neighbour_in_a_saved_order() {
-        // A views file saved before the Wiki tab existed, with Sheds moved
-        // first: Wiki goes just before Sheds, not to the end.
+        // A views file saved before the Doks tab existed, with Sheds moved
+        // first: Doks goes just before Sheds, not to the end.
         let entries: Vec<Value> = ["sheds", "status:hairy", "working-set"]
             .iter()
             .map(|k| json!({"key": k, "name": null, "pinned": true}))
@@ -378,7 +380,7 @@ mod tests {
         assert_eq!(
             keys,
             vec![
-                "wiki",
+                "doks",
                 "sheds",
                 "status:hairy",
                 "status:shaving",
@@ -390,6 +392,23 @@ mod tests {
             ]
         );
         assert_eq!(out.len(), default_views().len());
+    }
+
+    #[test]
+    fn a_saved_wiki_tab_keeps_its_place_as_the_doks_tab() {
+        // A views file written before schema 8 names the tab `wiki`, pinned
+        // or not, in the position the user gave it.
+        let entries: Vec<Value> = ["sheds", "wiki", "working-set"]
+            .iter()
+            .map(|k| json!({"key": k, "name": null, "pinned": *k != "wiki"}))
+            .collect();
+        let out = reconcile(&entries, default_views());
+        let keys: Vec<&str> = out.iter().map(|v| v.key.as_str()).collect();
+        // Built-ins the file never listed land before their neighbours, so
+        // the saved order is `sheds`, the Doks tab, then the rest.
+        assert_eq!(&keys[..2], ["sheds", "doks"], "{keys:?}");
+        assert!(!out[1].pinned, "its pin follows");
+        assert_eq!(out.iter().filter(|v| v.key == "doks").count(), 1);
     }
 
     #[test]

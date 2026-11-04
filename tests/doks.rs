@@ -1,5 +1,5 @@
-//! `yaks page` through the real binary (yaks-9af0): new, set, show, list,
-//! query, and doctor's page checks.
+//! `yaks dok` through the real binary (yaks-9af0): new, set, show, list,
+//! query, and doctor's dok checks.
 
 mod common;
 use assert_cmd::Command;
@@ -13,7 +13,7 @@ struct Farm {
 #[allow(dead_code)] // shared helpers; each test file uses some
 impl Farm {
     fn new(tag: &str) -> Farm {
-        let dir = std::env::temp_dir().join(format!("yaks-pages-{tag}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("yaks-doks-{tag}-{}", std::process::id()));
         common::cleanup(&dir);
         common::git_init(&dir);
         let f = Farm { dir };
@@ -86,9 +86,9 @@ impl Farm {
 fn new_set_show_list_and_query() {
     let f = Farm::new("crud");
     f.run(&[
-        "page",
+        "dok",
         "new",
-        "wiki/topics/heat-pump.md",
+        "doks/topics/heat-pump.md",
         "--type",
         "topic",
         "--set",
@@ -97,43 +97,43 @@ fn new_set_show_list_and_query() {
         "Notes.",
     ]);
     f.run(&[
-        "page",
+        "dok",
         "new",
-        "yaks/wiki/design/links.md",
+        "yaks/doks/design/links.md",
         "--title",
         "Link grammar",
     ]);
-    let text = std::fs::read_to_string(f.root().join("wiki/topics/heat-pump.md")).unwrap();
+    let text = std::fs::read_to_string(f.root().join("doks/topics/heat-pump.md")).unwrap();
     assert_eq!(
         text,
         "---\ntype: topic\ntitle: Heat pump\ntags:\n- home\n- hvac\n---\n\nNotes.\n"
     );
 
     f.run(&[
-        "page",
+        "dok",
         "set",
-        "/wiki/topics/heat-pump.md",
+        "/doks/topics/heat-pump.md",
         "--set",
         "description=One line.",
         "--unset",
         "tags",
     ]);
     let v: Value =
-        serde_json::from_str(&f.run(&["page", "show", "wiki/topics/heat-pump.md", "--json"]))
+        serde_json::from_str(&f.run(&["dok", "show", "doks/topics/heat-pump.md", "--json"]))
             .unwrap();
     assert_eq!(v["fields"]["description"], "One line.");
     assert!(v["fields"].get("tags").is_none());
     assert_eq!(v["body"], "Notes.\n");
 
-    let list = f.run(&["page", "list"]);
+    let list = f.run(&["dok", "list"]);
     assert!(
-        list.contains("wiki/topics/heat-pump.md") && list.contains("yaks/wiki/design/links.md"),
+        list.contains("doks/topics/heat-pump.md") && list.contains("yaks/doks/design/links.md"),
         "{list}"
     );
-    let herd_only = f.run(&["page", "list", "yaks/wiki"]);
+    let herd_only = f.run(&["dok", "list", "yaks/doks"]);
     assert!(!herd_only.contains("heat-pump"), "{herd_only}");
     let q: Value =
-        serde_json::from_str(&f.run(&["page", "query", "--type", "note", "--json"])).unwrap();
+        serde_json::from_str(&f.run(&["dok", "query", "--type", "note", "--json"])).unwrap();
     assert_eq!(q.as_array().unwrap().len(), 1);
     assert_eq!(q[0]["herd"], "yaks");
 }
@@ -142,18 +142,15 @@ fn new_set_show_list_and_query() {
 fn refusals_and_doctor() {
     let f = Farm::new("doctor");
     assert!(
-        f.fails(&["page", "new", "wiki/Bad.md"])
+        f.fails(&["dok", "new", "doks/Bad.md"])
             .contains("lowercase-kebab")
     );
-    assert!(f.fails(&["page", "new", "notes/x.md"]).contains("wiki/"));
-    assert!(
-        f.fails(&["page", "show", "wiki/none.md"])
-            .contains("no page")
-    );
+    assert!(f.fails(&["dok", "new", "notes/x.md"]).contains("doks/"));
+    assert!(f.fails(&["dok", "show", "doks/none.md"]).contains("no dok"));
     f.run(&["doctor"]);
     let root = f.root();
-    std::fs::create_dir_all(root.join("wiki")).unwrap();
-    std::fs::write(root.join("wiki/loose.md"), "just text\n").unwrap();
+    std::fs::create_dir_all(root.join("doks")).unwrap();
+    std::fs::write(root.join("doks/loose.md"), "just text\n").unwrap();
     let out = Command::cargo_bin("yaks")
         .unwrap()
         .current_dir(&f.dir)
@@ -164,6 +161,6 @@ fn refusals_and_doctor() {
         .unwrap();
     assert!(!out.status.success());
     let v: Value = serde_json::from_slice(&out.stdout).unwrap();
-    assert_eq!(v[0]["kind"], "page-problem");
-    assert_eq!(v[0]["ids"][0], "wiki/loose.md");
+    assert_eq!(v[0]["kind"], "dok-problem");
+    assert_eq!(v[0]["ids"][0], "doks/loose.md");
 }

@@ -399,7 +399,7 @@ pub const YAKS_SUBDIR: &str = "yaks";
 
 /// Names that can never be a herd: a top-level directory with one of these
 /// names is not a herd directory, and `create`/`rename-herd` refuse them.
-pub const RESERVED_HERD_NAMES: &[&str] = &["docs", "wiki", "sources", "schemas", "sessions"];
+pub const RESERVED_HERD_NAMES: &[&str] = &["docs", "doks", "sources", "schemas", "sessions"];
 
 /// The herd of yak `id`: the id up to its first `-` (the whole id if it has
 /// none). Ids are flat and stable; this is only where the file lives.
@@ -2382,8 +2382,10 @@ pub fn reparent(root: &Path, id: &str, new_parent: Option<String>) -> Result<Rep
 /// non-image attachments linked as `[stem](<id>/<file>)`. Schema 5 (the same,
 /// every yak at the farm root) and 4 (5 minus the last two) are read and
 /// migrated by `yaks migrate` (see [`migration_refusal`]); 3, the old layout,
-/// is refused outright (see [`old_layout`]).
-pub const SCHEMA: u32 = 7;
+/// is refused outright (see [`old_layout`]). Schema 8 renames the wiki to doks
+/// (`doks/`, `<herd>/doks/`, `/doks/...` links, `type: Dok Type`); schema 7 is
+/// read and migrated like the older ones.
+pub const SCHEMA: u32 = 8;
 
 /// The first schema with the flat layout. Older farms are the old layout.
 pub const FLAT_SCHEMA: u32 = 4;
@@ -3256,13 +3258,14 @@ mod schema_tests {
     #[test]
     fn schema_gate() {
         assert_eq!(
-            schema_status(&temp_root(Some("7"))),
+            schema_status(&temp_root(Some("8"))),
             SchemaStatus::Compatible
         );
         assert_eq!(
-            schema_status(&temp_root(Some("8\n"))),
-            SchemaStatus::Newer(8)
+            schema_status(&temp_root(Some("9\n"))),
+            SchemaStatus::Newer(9)
         );
+        assert_eq!(schema_status(&temp_root(Some("7"))), SchemaStatus::Older(7));
         assert_eq!(schema_status(&temp_root(Some("6"))), SchemaStatus::Older(6));
         assert_eq!(schema_status(&temp_root(Some("5"))), SchemaStatus::Older(5));
         assert_eq!(schema_status(&temp_root(Some("4"))), SchemaStatus::Older(4));
@@ -3287,7 +3290,12 @@ mod schema_tests {
                 .unwrap()
                 .contains("yaks migrate")
         );
-        assert!(migration_refusal(&temp_root(Some("7"))).is_none());
+        assert!(
+            migration_refusal(&temp_root(Some("7")))
+                .unwrap()
+                .contains("yaks migrate")
+        );
+        assert!(migration_refusal(&temp_root(Some("8"))).is_none());
         assert!(migration_refusal(&temp_root(None)).is_none());
         assert_eq!(schema_status(&temp_root(None)), SchemaStatus::Compatible);
         assert_eq!(
@@ -3330,7 +3338,7 @@ mod init_tests {
         for sub in ["hairy", "shaving", "shorn", "dead"] {
             assert!(!root.join(sub).exists(), "unexpected {sub}/");
         }
-        assert_eq!(fs::read_to_string(root.join("schema")).unwrap(), "7\n");
+        assert_eq!(fs::read_to_string(root.join("schema")).unwrap(), "8\n");
 
         // The seeded config round-trips through the reader.
         let read = read_config(&root);

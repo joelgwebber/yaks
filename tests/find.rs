@@ -106,16 +106,16 @@ fn stocked(tag: &str) -> (Farm, String) {
         .to_string();
     f.run(&["update", &id, "--note", "Saw a Quokka by the gate."]);
     f.put(
-        "wiki/topics/marsupials.md",
+        "doks/topics/marsupials.md",
         b"---\ntype: topic\ntitle: Marsupials\ntags: [quokka-facts]\n---\n\n# Marsupials\n\nThe quokka smiles.\n",
     );
     f.put(
-        "web/wiki/field-notes.md",
+        "web/doks/field-notes.md",
         b"---\ntitle: Field notes\n---\nNothing here but the QUOKKA.\n",
     );
     f.put(
         "sources/2026-01-01-aaaaaaaa/source.md",
-        b"---\ntitle: Animal almanac\nmedia_type: text/html\n---\nCaptured page.\n",
+        b"---\ntitle: Animal almanac\nmedia_type: text/html\n---\nCaptured dok.\n",
     );
     f.put(
         "sources/2026-01-01-aaaaaaaa/extracted.md",
@@ -142,19 +142,19 @@ fn finds_each_kind_with_path_line_and_title() {
     );
     assert!(out.contains("Saw a Quokka by the gate."), "{out}");
     assert!(
-        out.contains("wiki/topics/marsupials.md  Marsupials\n"),
+        out.contains("doks/topics/marsupials.md  Marsupials\n"),
         "{out}"
     );
     assert!(
-        out.contains("wiki/topics/marsupials.md:4: tags: [quokka-facts]"),
+        out.contains("doks/topics/marsupials.md:4: tags: [quokka-facts]"),
         "{out}"
     );
     assert!(
-        out.contains("wiki/topics/marsupials.md:9: The quokka smiles."),
+        out.contains("doks/topics/marsupials.md:9: The quokka smiles."),
         "{out}"
     );
     assert!(
-        out.contains("web/wiki/field-notes.md:4: Nothing here but the QUOKKA."),
+        out.contains("web/doks/field-notes.md:4: Nothing here but the QUOKKA."),
         "{out}"
     );
     assert!(
@@ -187,7 +187,7 @@ fn json_has_path_kind_title_line_text() {
     assert_eq!(h["line"], 4);
     assert_eq!(h["text"], "we talked about a quokka");
     let kinds: Vec<&str> = hits.iter().map(|h| h["kind"].as_str().unwrap()).collect();
-    for k in ["yaks", "pages", "sources", "sessions"] {
+    for k in ["yaks", "doks", "sources", "sessions"] {
         assert!(kinds.contains(&k), "{k} missing: {kinds:?}");
     }
     let y = hits.iter().find(|h| h["kind"] == "yaks").unwrap();
@@ -199,7 +199,7 @@ fn json_has_path_kind_title_line_text() {
 fn kind_flag_limits_what_is_searched() {
     let (f, _) = stocked("kindflag");
     for (kind, only) in [
-        ("pages", "pages"),
+        ("doks", "doks"),
         ("sources", "sources"),
         ("sessions", "sessions"),
         ("yaks", "yaks"),
@@ -208,14 +208,12 @@ fn kind_flag_limits_what_is_searched() {
         assert!(!hits.is_empty(), "{kind}");
         assert!(hits.iter().all(|h| h["kind"] == only), "{kind}: {hits:?}");
     }
-    let two = f.find_json(&["quokka", "--kind", "pages", "--kind", "sessions"]);
+    let two = f.find_json(&["quokka", "--kind", "doks", "--kind", "sessions"]);
     assert!(
         two.iter()
-            .all(|h| h["kind"] == "pages" || h["kind"] == "sessions")
+            .all(|h| h["kind"] == "doks" || h["kind"] == "sessions")
     );
-    assert!(
-        two.iter().any(|h| h["kind"] == "pages") && two.iter().any(|h| h["kind"] == "sessions")
-    );
+    assert!(two.iter().any(|h| h["kind"] == "doks") && two.iter().any(|h| h["kind"] == "sessions"));
     assert!(
         !f.cmd(&["find", "quokka", "--kind", "bogus"])
             .status
@@ -227,32 +225,32 @@ fn kind_flag_limits_what_is_searched() {
 fn scope_keeps_a_directory_or_a_path_prefix() {
     let (f, _) = stocked("scope");
     assert_eq!(
-        paths(&f.find_json(&["quokka", "--scope", "wiki"])),
-        ["wiki/topics/marsupials.md"]
+        paths(&f.find_json(&["quokka", "--scope", "doks"])),
+        ["doks/topics/marsupials.md"]
     );
     assert_eq!(
-        paths(&f.find_json(&["quokka", "--scope", "wiki/topics/marsu"])),
-        ["wiki/topics/marsupials.md"]
+        paths(&f.find_json(&["quokka", "--scope", "doks/topics/marsu"])),
+        ["doks/topics/marsupials.md"]
     );
     assert_eq!(
         paths(&f.find_json(&["quokka", "--scope", "web"])),
-        ["web/wiki/field-notes.md"]
+        ["web/doks/field-notes.md"]
     );
     // A directory name is not a bare string prefix: `we` is not `web`.
     assert_eq!(f.find(&["quokka", "--scope", "we"]).0, 1);
     let two = paths(&f.find_json(&["quokka", "--scope", "web", "--scope", "sessions"]));
-    assert_eq!(two, ["web/wiki/field-notes.md", "sessions/2026/chat.md"]);
+    assert_eq!(two, ["web/doks/field-notes.md", "sessions/2026/chat.md"]);
     assert_eq!(f.find(&["quokka", "--scope", "nothing/here"]).0, 1);
 }
 
 #[test]
 fn case_is_ignored_unless_asked() {
     let (f, _) = stocked("case");
-    let loose = f.find_json(&["QUOKKA", "--kind", "pages"]);
+    let loose = f.find_json(&["QUOKKA", "--kind", "doks"]);
     assert_eq!(loose.len(), 3);
-    let exact = f.find_json(&["QUOKKA", "--kind", "pages", "--case-sensitive"]);
-    assert_eq!(paths(&exact), ["web/wiki/field-notes.md"]);
-    assert_eq!(f.find(&["quokka", "-i", "--kind", "pages"]).0, 0);
+    let exact = f.find_json(&["QUOKKA", "--kind", "doks", "--case-sensitive"]);
+    assert_eq!(paths(&exact), ["web/doks/field-notes.md"]);
+    assert_eq!(f.find(&["quokka", "-i", "--kind", "doks"]).0, 0);
 }
 
 #[test]
@@ -261,7 +259,7 @@ fn regex_is_opt_in() {
     // Without --regex the pattern is literal text.
     assert_eq!(f.find(&["quokka.*smiles"]).0, 1);
     let hits = f.find_json(&["quokka.*smiles", "--regex"]);
-    assert_eq!(paths(&hits), ["wiki/topics/marsupials.md"]);
+    assert_eq!(paths(&hits), ["doks/topics/marsupials.md"]);
     let hits = f.find_json(&["^quokkas?\\b", "--regex", "--kind", "sources"]);
     assert_eq!(hits.len(), 1);
     assert_eq!(hits[0]["line"], 2);
@@ -295,7 +293,7 @@ fn binary_files_and_originals_are_skipped() {
         "sources/2026-01-01-bbbbbbbb/extracted.md",
         b"needle-in-original\0binary",
     );
-    f.put("wiki/blob.md", b"needle-in-original \xff\xfe not utf-8");
+    f.put("doks/blob.md", b"needle-in-original \xff\xfe not utf-8");
     f.put("sessions/raw.md", b"needle-in-original\0");
     assert_eq!(f.find(&["needle-in-original"]).0, 1);
 }

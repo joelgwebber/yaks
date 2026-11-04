@@ -197,7 +197,7 @@ pub fn render(text: &str, width: usize, known: &HashSet<&str>) -> Vec<MdRow> {
     render_in(text, width, known, crate::links::From::Yak)
 }
 
-/// [`render`] for a document `from` (a yak, or a page at its farm path), so a
+/// [`render`] for a document `from` (a yak, or a dok at its farm path), so a
 /// relative link resolves the way `links::parse` reads it there (yaks-7395).
 pub fn render_in<'k>(
     text: &str,
@@ -512,13 +512,13 @@ impl Renderer<'_> {
                 dest_url, title, ..
             } => {
                 // By the link grammar, like any link (yaks-c5d7): a farm file
-                // (`/sources/<id>/shot.png`, a page-relative `shot.png`) is a
+                // (`/sources/<id>/shot.png`, a dok-relative `shot.png`) is a
                 // farm document; anything else (`<id>/<file>`, a URL) stays an
                 // artifact, opened as before.
                 // In a yak a relative image stays an attachment path as
                 // before (including the legacy `.yaks/<id>/x.png`).
                 let farm_ok =
-                    dest_url.starts_with('/') || matches!(self.from, crate::links::From::Page(_));
+                    dest_url.starts_with('/') || matches!(self.from, crate::links::From::Dok(_));
                 let target = match link_target(dest_url, self.from, self.known) {
                     t @ Target::Farm { .. } if farm_ok => t,
                     t @ Target::Artifact(_) => t,
@@ -1006,7 +1006,7 @@ fn wrap_end(cells: &[Cell], width: usize) -> usize {
 /// Where a markdown link written in document `from` points, by the link
 /// grammar ([`crate::links::parse`], yaks-7395): a URL, a code file, a yak's
 /// attachment (`<id>/<file>` of a known yak), a farm document, or an anchor
-/// in this document. A link the grammar refuses (`../` out of a page) stays
+/// in this document. A link the grammar refuses (`../` out of a dok) stays
 /// an [`Target::Artifact`] of the text as written, which opens as "not in
 /// this farm".
 pub(crate) fn link_target(dest: &str, from: crate::links::From, known: &HashSet<&str>) -> Target {

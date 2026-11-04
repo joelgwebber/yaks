@@ -2,7 +2,7 @@
 source: src/tui/tests.rs
 expression: "draw(&app, 100, 20)"
 ---
- 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   📖  Wiki (0)   🛖  Sh
+ 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   📖  Doks (0)   🛖  Sh
 
 ◂ Help — keys
 │   k / ↑           Move the line cursor up
@@ -12,7 +12,7 @@ expression: "draw(&app, 100, 20)"
 │   G               Bottom
 │   Tab / ]         Next link (each link on a row is a stop)
 │   S-Tab / [       Previous link
-│   Enter           Yank the selection, else follow the link / footnote / source file / farm page (
+│   Enter           Yank the selection, else follow the link / footnote / source file / farm dok (s
 │   i               History forward: a jump you went back from (any pane)
 │   o               History back: where the last jump left (a link, a view switch, #), position res
 │   J               Next task (stay in detail)

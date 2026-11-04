@@ -20,18 +20,18 @@ const VIEW_MAX_BYTES: u64 = 1 << 20;
 /// [`App::open_attachment_edit`], saved by [`App::commit_attachment_edit`]);
 /// `O` hands it to the OS opener.
 ///
-/// The Wiki tab (yaks-ebb2) opens farm pages and sources in the same viewer
-/// ([`DocKind`]): a page's frontmatter shows as field rows above its rendered
+/// The Doks tab (yaks-ebb2) opens farm doks and sources in the same viewer
+/// ([`DocKind`]): a dok's frontmatter shows as field rows above its rendered
 /// body, and a source shows `source.md` then its `extracted.md`.
 pub(crate) struct AttachView {
-    /// The link target as written (`<id>/<file>`), or a page's farm-relative
+    /// The link target as written (`<id>/<file>`), or a dok's farm-relative
     /// path, shown as the header.
     pub(crate) target: String,
     pub(crate) path: PathBuf,
-    /// The file's whole text as read (a page's frontmatter included).
+    /// The file's whole text as read (a dok's frontmatter included).
     pub(crate) text: String,
     pub(crate) markdown: bool,
-    /// What the file is: an attachment, a wiki page or a saved source.
+    /// What the file is: an attachment, a dok or a saved source.
     pub(crate) doc: DocKind,
     /// A farm file shown as it was at this farm commit (a pinned link,
     /// yaks-7395): read-only, so `E` refuses.
@@ -75,7 +75,7 @@ impl AttachView {
     }
 
     /// The viewer for farm file `rel` holding `text` (read from `path`, or
-    /// from farm commit `rev`): a page (`wiki/...md`), a source's
+    /// from farm commit `rev`): a dok (`doks/...md`), a source's
     /// `source.md` (with its `extracted.md`, when given), or any other farm
     /// file, rendered when it is markdown.
     pub(crate) fn farm_doc(
@@ -86,8 +86,8 @@ impl AttachView {
         extracted: Option<String>,
     ) -> Self {
         let is_source = rel.starts_with("sources/") && rel.ends_with("/source.md");
-        let doc = if crate::pages::is_page_path(rel) {
-            DocKind::Page
+        let doc = if crate::doks::is_dok_path(rel) {
+            DocKind::Dok
         } else if is_source {
             DocKind::Source { extracted }
         } else {
@@ -123,28 +123,28 @@ impl AttachView {
                 Some((id, _)) => crate::links::From::Attachment(id),
                 None => crate::links::From::Yak,
             },
-            _ => crate::links::From::Page(&self.target),
+            _ => crate::links::From::Dok(&self.target),
         }
     }
 
     /// The header's kind label: `markdown`/`text` for an attachment, the
-    /// page's kind (`topic`, ...), or `source`.
+    /// dok's kind (`topic`, ...), or `source`.
     pub(crate) fn kind_label(&self) -> String {
         match &self.doc {
             DocKind::Attachment | DocKind::File if self.markdown => "markdown".into(),
             DocKind::Attachment | DocKind::File => "text".into(),
-            DocKind::Page => crate::pages::Page::parse(&self.target, &self.text).kind(),
+            DocKind::Dok => crate::doks::Dok::parse(&self.target, &self.text).kind(),
             DocKind::Source { .. } => "source".into(),
         }
     }
 
     /// The markdown each rendered block comes from, indexed like
     /// [`detail::Src::block`]: the file (an attachment), the body below the
-    /// frontmatter (a page, a source's note), then a source's extracted text.
+    /// frontmatter (a dok, a source's note), then a source's extracted text.
     pub(crate) fn blocks(&self) -> Vec<&str> {
         match &self.doc {
             DocKind::Attachment | DocKind::File => vec![self.text.as_str()],
-            DocKind::Page => vec![self.body()],
+            DocKind::Dok => vec![self.body()],
             DocKind::Source { extracted } => {
                 let mut v = vec![self.body()];
                 if let Some(x) = extracted {
@@ -168,7 +168,7 @@ impl AttachView {
     /// a footnote reference finds its definition, and a code block or table
     /// scrolls sideways, as in the detail pane.
     ///
-    /// A page or source starts with its frontmatter as `key  value` field
+    /// A dok or source starts with its frontmatter as `key  value` field
     /// rows and a blank row; a source's extracted text follows its note
     /// under an `extracted.md` section row.
     pub(crate) fn rows(
@@ -194,7 +194,7 @@ impl AttachView {
         let md_rows = |text: &str, block: usize| -> Vec<detail::DLine> {
             detail::md_rows(text, width, known, self.from(), block, images)
         };
-        if matches!(self.doc, DocKind::Page | DocKind::Source { .. }) {
+        if matches!(self.doc, DocKind::Dok | DocKind::Source { .. }) {
             let blocks = self.blocks();
             let mut out = frontmatter_rows(&self.text);
             if !out.is_empty() {
@@ -224,13 +224,13 @@ impl AttachView {
     }
 }
 
-/// What a viewer shows: a yak attachment, a wiki page, a saved source with
+/// What a viewer shows: a yak attachment, a dok, a saved source with
 /// its extracted text (`None` when it has none), or another farm file (a
 /// link to `/sources/<id>/extracted.md`, an image's sibling note, ...).
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum DocKind {
     Attachment,
-    Page,
+    Dok,
     Source { extracted: Option<String> },
     File,
 }
@@ -248,7 +248,7 @@ fn plain_row(text: String, kind: detail::Kind) -> detail::DLine {
     }
 }
 
-/// A page's frontmatter as detail-style field rows: `key:` in the dim label
+/// A dok's frontmatter as detail-style field rows: `key:` in the dim label
 /// column, then a scalar, or a list of scalars joined with `, `. A value the
 /// row can't flatten (a list of maps, a block) shows its YAML lines as
 /// written, indented under the key.
@@ -802,7 +802,7 @@ impl App {
     /// `l` / `→` / Enter on the list: show the selected yak (or shed) in the
     /// detail pane, from its top.
     /// `l` / `Enter` on a yak or shed row: show it in the pane. A jump, like
-    /// opening a page from a Wiki row: `o` from the pane (or from anywhere a
+    /// opening a dok from a Doks row: `o` from the pane (or from anywhere a
     /// link out of it led) comes back to this list with the cursor on the row,
     /// not to the view before it (yaks-aec7).
     pub(crate) fn open_detail_pane(&mut self) {
@@ -1025,7 +1025,7 @@ impl App {
     }
 
     /// Keys in the pane's find box, which edits the search register for the
-    /// subject the pane shows: the open page, else the yak's detail, by the
+    /// subject the pane shows: the open dok, else the yak's detail, by the
     /// same [`LineNav`] (yaks-84e0). Other keys in the viewer are the
     /// [`keymap::Ctx::Viewer`] commands, dispatched like the list's.
     fn handle_find_key(&mut self, k: KeyEvent, double_esc: bool) {
@@ -1062,8 +1062,8 @@ impl App {
         let Some((lines, vp)) = self.attachment_rows() else {
             return;
         };
-        // The search register is the app's, not the page's: these commands
-        // read or write it, so they run before the page's state is borrowed.
+        // The search register is the app's, not the dok's: these commands
+        // read or write it, so they run before the dok's state is borrowed.
         match cmd {
             Cmd::FindOpen => return self.open_find(),
             Cmd::FindNext | Cmd::FindPrev => {
@@ -1205,7 +1205,7 @@ impl App {
         match j.target {
             detail::Target::Footnote(n) => match detail::footnote_line(lines, v.nav.line, &n) {
                 Some(to) => {
-                    self.jump_in_page(lines, vp, to);
+                    self.jump_in_dok(lines, vp, to);
                     self.notification = Some(format!("→ [{n}] (o to go back)"));
                 }
                 None => self.notification = Some(format!("no definition for [{n}]")),
@@ -1240,7 +1240,7 @@ impl App {
         // A source is a snapshot, written once (yaks-1532).
         if matches!(v.doc, DocKind::Source { .. }) {
             self.notification = Some(format!(
-                "{}: a source is a snapshot, written once; cite it from a page",
+                "{}: a source is a snapshot, written once; cite it from a dok",
                 v.target
             ));
             return;
@@ -1263,10 +1263,10 @@ impl App {
         ));
     }
 
-    /// Save an attachment or page edit: write `text` to the viewed file under
+    /// Save an attachment or dok edit: write `text` to the viewed file under
     /// the farm lock (so a farm-branch farm commits it as one change,
-    /// yaks-a838), then reopen the viewer on it (markdown re-rendered). A page
-    /// (yaks-1532) is parsed and written by `pages::save`, frontmatter and
+    /// yaks-a838), then reopen the viewer on it (markdown re-rendered). A dok
+    /// (yaks-1532) is parsed and written by `doks::save`, frontmatter and
     /// body, and must keep its `---` frontmatter block. If the file changed on
     /// disk since the edit began, nothing is written and the editor stays open
     /// with the typed text; a second Ctrl-S overwrites.
@@ -1285,10 +1285,10 @@ impl App {
         let Some(root) = self.farm.as_ref().map(|h| h.root().to_path_buf()) else {
             return;
         };
-        let page = v.doc == DocKind::Page;
-        if page && crate::store::split_frontmatter(&text).is_none() {
+        let dok = v.doc == DocKind::Dok;
+        if dok && crate::store::split_frontmatter(&text).is_none() {
             self.notification = Some(format!(
-                "{}: not saved: a page starts with a --- frontmatter block closed by ---",
+                "{}: not saved: a dok starts with a --- frontmatter block closed by ---",
                 v.target
             ));
             self.reopen_attachment_edit(v, from, &text);
@@ -1300,12 +1300,12 @@ impl App {
             if on_disk != v.text {
                 return Ok(Err(on_disk));
             }
-            if page {
-                crate::pages::save(&root, &crate::pages::Page::parse(&v.target, &text))?;
+            if dok {
+                crate::doks::save(&root, &crate::doks::Dok::parse(&v.target, &text))?;
             } else {
                 crate::store::write::atomic_write(&v.path, &text)?;
             }
-            // What is on disk now (a page is written in its normal form).
+            // What is on disk now (a dok is written in its normal form).
             Ok(Ok(std::fs::read_to_string(&v.path)?))
         })();
         match saved {
@@ -1313,9 +1313,9 @@ impl App {
                 self.notification = Some(format!("saved {}", v.target));
                 v.text = written;
                 self.doc = back(v);
-                if page {
-                    // Its title, kind or tags may have changed (the Wiki tab).
-                    self.reload_wiki();
+                if dok {
+                    // Its title, kind or tags may have changed (the Doks tab).
+                    self.reload_doks();
                     self.refresh_farm_sync();
                 }
                 // The file may have shrunk: keep the cursor on it.
@@ -2017,7 +2017,7 @@ impl App {
                 self.commit_rename_attachment(id, old, text)
             }
             EditAction::EditAttachment(v, from) => self.commit_attachment_edit(v, from, text),
-            EditAction::NewPage => self.commit_new_page(&text),
+            EditAction::NewDok => self.commit_new_dok(&text),
             EditAction::Ask(id) => self.commit_needs(&id, NeedsVerb::Ask, &text),
             EditAction::Answer(id) => self.commit_needs(&id, NeedsVerb::Answer, &text),
             EditAction::Request(id) => self.commit_needs(&id, NeedsVerb::Request, &text),

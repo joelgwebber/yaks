@@ -8,14 +8,14 @@
 //! or removed. A value is parsed only when asked for ([`Fields::get`]), which
 //! keeps loading a large farm as cheap as before.
 //!
-//! The subset is what yaks, Hearth/OKF pages, sources and schemas actually
+//! The subset is what yaks, Hearth/OKF doks, sources and schemas actually
 //! use: plain, single- and double-quoted scalars; flow lists `[a, b]` and flow
 //! maps `{a: b}`, nested; block lists (of scalars or of maps) and block maps,
 //! nested by indentation; literal and folded block scalars (`|`, `>`); and
 //! `#` comments. Anchors, aliases, tags and multiple documents are not
 //! supported: such an entry still round-trips, it just has no parsed value.
 
-// Readers used by tests now and by pages and schemas next (yaks-9af0, yaks-8e75).
+// Readers used by tests now and by doks and schemas next (yaks-9af0, yaks-8e75).
 #![allow(dead_code)]
 
 use serde_json::{Map, Value as Json, json};
@@ -687,7 +687,7 @@ fn render_entry(key: &str, value: &Value) -> Vec<String> {
         Value::List(items) => {
             out.push(format!("{k}:"));
             // Scalars flush with the key (yaks' own style for `tags:` and
-            // `depends_on:`); a list holding maps indented two, as OKF pages
+            // `depends_on:`); a list holding maps indented two, as OKF doks
             // and Hearth's `source.md` write `sources:`.
             let indent = if items.iter().any(|i| matches!(i, Value::Map(_))) {
                 2

@@ -14,7 +14,7 @@
 //!
 //! The text viewer ([`super::handlers::AttachView`]) owns a `LineNav`, and so
 //! does the detail pane (`App::detail`), so a fix here applies to both. A new
-//! page host (the wiki tab) owns a `LineNav` like the viewer, renders with
+//! page host (the doks tab) owns a `LineNav` like the viewer, renders with
 //! `render::render_nav_rows` and routes keys like `App::handle_attachment_key`.
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};

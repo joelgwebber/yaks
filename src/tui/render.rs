@@ -314,7 +314,7 @@ pub(crate) fn render_attachment(
 }
 
 /// The viewer's peek pane: a dim rule naming the link under the cursor, then
-/// the peek's lines (a section, a line range, a page head) cut to the pane,
+/// the peek's lines (a section, a line range, a dok head) cut to the pane,
 /// or why it can't be read. Blank but for the rule when the cursor is on no
 /// peekable link.
 fn render_peek(
@@ -680,7 +680,7 @@ pub(crate) fn render_tabs(app: &App, frame: &mut Frame, area: Rect) {
         }
     } else {
         let av = app.active_view();
-        if !(av.is_flat() || av.key == "working-set" || av.key == view::WIKI_KEY) {
+        if !(av.is_flat() || av.key == "working-set" || av.key == view::DOKS_KEY) {
             let (marker, val) = match app.family_scope.get(&av.key) {
                 Some(s) => ("", s.as_str()),
                 None => ("~", view::FamilyScope::DEFAULT.as_str()),
@@ -737,8 +737,8 @@ fn farm_sync_chip(app: &App, room: usize) -> Option<(Line<'static>, usize)> {
 
 pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
     let rows = app.rows();
-    let notice = if app.on_wiki_tab() {
-        super::wiki_tab::wiki_notice(app, rows.is_empty())
+    let notice = if app.on_doks_tab() {
+        super::doks_tab::doks_notice(app, rows.is_empty())
     } else if app.on_sheds_tab() {
         super::sheds_tab::sheds_notice(app, rows.is_empty())
     } else {
@@ -781,7 +781,7 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
         .max(4);
     let id_field_w = max_id_len + 2;
     let blocked = app.blocked_ids();
-    let doc_cols = super::wiki_tab::DocCols::of(&rows, area.width);
+    let doc_cols = super::doks_tab::DocCols::of(&rows, area.width);
     // The Sheds view: the part of its shed each yak row is in (shaving,
     // asking, recent) labels the row.
     let shed_now = app.sheds.snapshot.as_ref().map(|s| s.report.now);
@@ -1474,7 +1474,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
         render_query_line("/", &sb.query, frame, area);
         return;
     }
-    // The pane's find field (a yak's detail, or a page in the viewer).
+    // The pane's find field (a yak's detail, or a dok in the viewer).
     if let Overlay::Find(sb) = &app.overlay {
         render_query_line("find: ", &sb.query, frame, area);
         return;
@@ -1633,7 +1633,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
 }
 
 /// `match 2/5 "q"` while the search register is set and the pane shows a
-/// text subject (a yak's detail, or a page): which of its matches in this
+/// text subject (a yak's detail, or a dok): which of its matches in this
 /// subject is current (0 before `n` lands on one), and of how many.
 fn match_chip(app: &App) -> Option<String> {
     let q = app.register.as_deref()?;

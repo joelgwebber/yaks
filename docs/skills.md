@@ -7,7 +7,7 @@ and puts methodology in skills, so different working styles fit the same core.
 Five skills ship, and `yaks skills install` installs all of them: `yaks` and
 `yaks-tracker` for any project, `yaks-working` and `yaks-coordinating` for
 running several agents over one farm, and `yaks-research` for research that
-leaves pages and sources behind. There is no subset to choose.
+leaves doks and sources behind. There is no subset to choose.
 
 ## Where skills install
 
@@ -122,7 +122,7 @@ an install (that's the `held` rule). When iterating locally, use
 | **`yaks-tracker`** | Relating yaks to external issue trackers (Jira/Linear/GitHub) as a one-way roll-up projection. |
 | **`yaks-working`** | Taking one yak from hairy to shorn with a legible trail. |
 | **`yaks-coordinating`** | Coordinating a shared farm across parallel agents and humans, in Delta threads or git worktrees. |
-| **`yaks-research`** | Research, comparison or planning yaks that should leave knowledge behind: finding what the farm knows, saving and citing sources, writing pages and typed pages, and what belongs in `docs/` instead. |
+| **`yaks-research`** | Research, comparison or planning yaks that should leave knowledge behind: finding what the farm knows, saving and citing sources, writing doks and typed doks, and what belongs in `docs/` instead. |
 
 ## The design test (what is a tool vs a skill)
 

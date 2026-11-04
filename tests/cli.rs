@@ -876,7 +876,7 @@ fn a_schema_3_farm_refuses_to_open_and_names_the_release_that_migrates_it() {
     assert!(!farm.join("yak-0001.md").exists());
     assert!(!cli(&["migrate"]).status.success());
     // A current farm opens.
-    std::fs::write(farm.join("schema"), "7\n").unwrap();
+    std::fs::write(farm.join("schema"), "8\n").unwrap();
     assert!(cli(&["list"]).status.success());
     let _ = std::fs::remove_dir_all(&dir);
 }

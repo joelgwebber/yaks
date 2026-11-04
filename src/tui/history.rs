@@ -1,5 +1,5 @@
 //! One history of locations (yaks-a2c5, phase 5 of
-//! /wiki/design/tui-model.md#3-one-history).
+//! /doks/design/tui-model.md#3-one-history).
 //!
 //! A [`Location`] is everything needed to be back where you were: the view,
 //! its live filter and query, the cursor row (by key, with its index as the
@@ -12,7 +12,7 @@
 //!   which snapshots the location it leaves and pushes it when the jump moved
 //!   somewhere else: following a link of any kind (a yak, a document, a
 //!   footnote, a `#section`), opening a row in the pane (a yak, a shed or a
-//!   page: yaks-aec7), a view switch and `#`. Moving the cursor or a line,
+//!   dok: yaks-aec7), a view switch and `#`. Moving the cursor or a line,
 //!   `J`/`K`, closing the pane and committing a search push nothing: the
 //!   current location is read off the live state when it is needed, so
 //!   nothing has to be kept in step.
@@ -39,7 +39,7 @@ pub(crate) const CAP: usize = 100;
 pub(crate) enum RowKey {
     /// A yak, by id.
     Yak(String),
-    /// A document (a page or source), by farm-relative path.
+    /// A document (a dok or source), by farm-relative path.
     Doc(String),
     /// A shed, by name.
     Shed(String),
@@ -71,7 +71,7 @@ pub(crate) enum PaneAt {
         line: usize,
         scroll: u16,
     },
-    /// A document open in the pane: an attachment, a page, a source or an
+    /// A document open in the pane: an attachment, a dok, a source or an
     /// image (whose line and scroll are 0).
     Doc {
         /// The document as the viewer names it: `<id>/<file>` for an
@@ -116,7 +116,7 @@ pub(crate) struct Location {
     pub(crate) cursor_idx: usize,
     pub(crate) list_offset: usize,
     pub(crate) focus: Focus,
-    /// `None` when the list has the focus and no page is open.
+    /// `None` when the list has the focus and no dok is open.
     pub(crate) pane: Option<PaneAt>,
 }
 
@@ -250,7 +250,7 @@ impl App {
 
     fn history_hop(&mut self, forward: bool) {
         let here = self.current_location();
-        // A stop that is where we already are (a page opened from a row,
+        // A stop that is where we already are (a dok opened from a row,
         // then closed) is no move: look past it.
         let to = loop {
             let from = if forward {
@@ -289,7 +289,7 @@ impl App {
     /// where that is: `Recent \u{b7} yaks-1234`, with ` moved` or ` gone` after
     /// a row that is no longer in the list. A view that is gone is named too.
     fn restore(&mut self, loc: &Location) -> String {
-        // The pane the page is in keeps its width through a re-read.
+        // The pane the dok is in keeps its width through a re-read.
         let doc_width = self.attach().map(|v| v.width.get());
         // What is no longer there: (row or subject, `moved` or `gone`).
         let mut missing: Vec<(String, &'static str)> = Vec::new();
@@ -329,10 +329,10 @@ impl App {
         self.cursor = on.unwrap_or(loc.cursor_idx.min(len.saturating_sub(1)));
         if let (None, Some(key)) = (on, &loc.cursor) {
             // Still a yak that is not shown here (another state, a facet, the
-            // query) or a page that is: moved. Else gone.
+            // query) or a dok that is: moved. Else gone.
             let there = match key {
                 RowKey::Yak(id) => self.task(id).is_some_and(|t| t.status != Status::Dead),
-                RowKey::Doc(path) => self.wiki.entries.iter().flatten().any(|e| e.path == *path),
+                RowKey::Doc(path) => self.doks.entries.iter().flatten().any(|e| e.path == *path),
                 RowKey::Shed(_) => false,
             };
             miss(key.label(), if there { "moved" } else { "gone" });
@@ -414,7 +414,7 @@ impl App {
         format!("{view}{subject}{others}{gone}")
     }
 
-    /// Put the open page's cursor and scroll at `line` and `scroll`, clamped
+    /// Put the open dok's cursor and scroll at `line` and `scroll`, clamped
     /// to the rows it has now (an image has none).
     fn set_doc_position(&mut self, line: usize, scroll: u16) {
         let Some((rows, vp)) = self.attachment_rows() else {
@@ -579,44 +579,44 @@ mod tests {
     }
 
     #[test]
-    fn o_from_a_page_opened_on_a_wiki_row_returns_to_the_row_then_the_view() {
+    fn o_from_a_dok_opened_on_a_doks_row_returns_to_the_row_then_the_view() {
         let (proj, farm) = temp_farm(&[task("yaks-0001", "Search", Status::Hairy, 2, None)]);
-        crate::tui::wiki_tab::fixture::write(farm.root());
+        crate::tui::doks_tab::fixture::write(farm.root());
         let mut app = App::with_farm(farm).unwrap();
-        goto_view(&mut app, view::WIKI_KEY);
+        goto_view(&mut app, view::DOKS_KEY);
         press(&mut app, "j");
         let row = app.cursor;
         enter_key(&mut app);
         assert!(app.attach().is_some());
         press(&mut app, "o");
-        assert!(app.doc.is_none(), "the page closes");
+        assert!(app.doc.is_none(), "the dok closes");
         assert_eq!(app.focus, Focus::List);
-        assert_eq!(app.active_view().key, view::WIKI_KEY);
+        assert_eq!(app.active_view().key, view::DOKS_KEY);
         assert_eq!(app.cursor, row, "on the row it was opened from");
         press(&mut app, "o");
         assert_eq!(app.active_view().key, "status:hairy");
-        // Esc closing the page forgets nothing: it is a stop `o` skips.
-        goto_view(&mut app, view::WIKI_KEY);
+        // Esc closing the dok forgets nothing: it is a stop `o` skips.
+        goto_view(&mut app, view::DOKS_KEY);
         enter_key(&mut app);
         esc_key(&mut app);
         press(&mut app, "o");
         assert_eq!(
             app.active_view().key,
             "status:hairy",
-            "past the page just closed"
+            "past the dok just closed"
         );
         let _ = std::fs::remove_dir_all(proj);
     }
 
-    /// yaks-7c6e (Joel's note): `J`/`K` in a page opened from the Wiki open the
-    /// next / previous row's page in place, as they step yaks in a yak list;
+    /// yaks-7c6e (Joel's note): `J`/`K` in a dok opened from the Doks open the
+    /// next / previous row's dok in place, as they step yaks in a yak list;
     /// they are not history jumps, and `h` still returns to the list.
     #[test]
-    fn j_and_k_in_a_wiki_page_step_through_the_list() {
+    fn j_and_k_in_a_doks_dok_step_through_the_list() {
         let (proj, farm) = temp_farm(&[task("yaks-0001", "Search", Status::Hairy, 2, None)]);
-        crate::tui::wiki_tab::fixture::write(farm.root());
+        crate::tui::doks_tab::fixture::write(farm.root());
         let mut app = App::with_farm(farm).unwrap();
-        goto_view(&mut app, view::WIKI_KEY);
+        goto_view(&mut app, view::DOKS_KEY);
         let paths: Vec<String> = app
             .rows()
             .iter()
@@ -644,11 +644,11 @@ mod tests {
     }
 
     #[test]
-    fn a_page_is_read_again_and_its_cursor_clamped_on_return() {
+    fn a_dok_is_read_again_and_its_cursor_clamped_on_return() {
         let (proj, farm) = temp_farm(&[task("yaks-0001", "Search", Status::Hairy, 2, None)]);
-        crate::tui::wiki_tab::fixture::write(farm.root());
+        crate::tui::doks_tab::fixture::write(farm.root());
         let mut app = App::with_farm(farm).unwrap();
-        goto_view(&mut app, view::WIKI_KEY);
+        goto_view(&mut app, view::DOKS_KEY);
         app.detail_page = 20;
         enter_key(&mut app);
         draw(&app, 120, 24);
@@ -658,12 +658,12 @@ mod tests {
         let file = app.farm.as_ref().unwrap().root().join(&path);
         std::fs::write(&file, "---\ntitle: T\n---\n\nShort.\n").unwrap();
         press(&mut app, "o");
-        let v = app.attach().expect("the page is back");
+        let v = app.attach().expect("the dok is back");
         assert_eq!(v.target, path);
         assert!(v.text.contains("Short."), "re-read from disk");
         let (rows, _) = app.attachment_rows().unwrap();
         assert!(app.attach().unwrap().nav.line < rows.len());
-        // A page deleted meanwhile is gone, and the list is what is left.
+        // A dok deleted meanwhile is gone, and the list is what is left.
         std::fs::remove_file(&file).unwrap();
         goto_view(&mut app, "status:hairy");
         app.history.back.push(Location {
@@ -691,16 +691,16 @@ mod tests {
     }
 
     #[test]
-    fn a_yak_link_from_a_page_on_the_wiki_tab_shows_the_yak_outside_the_list() {
+    fn a_yak_link_from_a_dok_on_the_doks_tab_shows_the_yak_outside_the_list() {
         let (proj, farm) = temp_farm(&[task("yaks-0001", "Search", Status::Hairy, 2, None)]);
-        crate::tui::wiki_tab::fixture::write(farm.root());
+        crate::tui::doks_tab::fixture::write(farm.root());
         let mut app = App::with_farm(farm).unwrap();
-        goto_view(&mut app, view::WIKI_KEY);
+        goto_view(&mut app, view::DOKS_KEY);
         enter_key(&mut app);
         draw(&app, 120, 24);
         app.goto_task("yaks-0001");
         assert!(app.doc.is_none());
-        assert_eq!(app.active_view().key, view::WIKI_KEY, "the list stays");
+        assert_eq!(app.active_view().key, view::DOKS_KEY, "the list stays");
         assert_eq!(app.pane_yak.as_deref(), Some("yaks-0001"));
         assert_eq!(app.selected_id().as_deref(), Some("yaks-0001"));
         assert_eq!(app.surface_ctx(), keymap::Ctx::Detail);
@@ -711,7 +711,7 @@ mod tests {
             "{frame}"
         );
         press(&mut app, "o");
-        assert!(app.attach().is_some(), "back to the page");
+        assert!(app.attach().is_some(), "back to the dok");
         assert_eq!(app.pane_yak, None);
         let _ = std::fs::remove_dir_all(proj);
     }

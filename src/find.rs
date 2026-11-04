@@ -1,5 +1,5 @@
 //! `yaks find`: one text search over everything in the farm that is prose
-//! (yak files, pages, sources' `source.md` and `extracted.md`, and
+//! (yak files, doks, sources' `source.md` and `extracted.md`, and
 //! `sessions/**.md`), yaks-bdcb.
 //!
 //! It reads the files directly each time; there is no index (a farm is small,
@@ -16,13 +16,13 @@ use anyhow::{Result, bail};
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 
-use crate::{model::Status, pages, sources, store};
+use crate::{doks, model::Status, sources, store};
 
 /// Where a match was found; also the values of `--kind`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Kind {
     Yaks,
-    Pages,
+    Doks,
     Sources,
     Sessions,
 }
@@ -31,7 +31,7 @@ impl Kind {
     pub fn name(self) -> &'static str {
         match self {
             Kind::Yaks => "yaks",
-            Kind::Pages => "pages",
+            Kind::Doks => "doks",
             Kind::Sources => "sources",
             Kind::Sessions => "sessions",
         }
@@ -50,7 +50,7 @@ pub struct Hit {
     /// Farm-relative, `/`-separated.
     pub path: String,
     pub kind: Kind,
-    /// The yak's, page's or source's title.
+    /// The yak's, dok's or source's title.
     pub title: String,
     /// 1-based line number in the file.
     pub line: usize,
@@ -66,7 +66,7 @@ pub struct Options {
     pub kinds: Vec<Kind>,
 }
 
-/// Every matching line of the farm at `root`, in kind order (yaks, pages,
+/// Every matching line of the farm at `root`, in kind order (yaks, doks,
 /// sources, sessions) and path order within a kind.
 pub fn find(root: &Path, opts: &Options) -> Vec<Hit> {
     let mut hits = Vec::new();
@@ -91,10 +91,10 @@ fn candidates(root: &Path, opts: &Options) -> Vec<(Kind, String, PathBuf)> {
             out.push((Kind::Yaks, rel_of(&p), p));
         }
     }
-    if wants(Kind::Pages) {
-        for rel in pages::page_paths(root) {
+    if wants(Kind::Doks) {
+        for rel in doks::dok_paths(root) {
             let abs = root.join(&rel);
-            out.push((Kind::Pages, rel, abs));
+            out.push((Kind::Doks, rel, abs));
         }
     }
     if wants(Kind::Sources) {
@@ -147,8 +147,8 @@ fn walk_md(dir: &Path, out: &mut Vec<PathBuf>) {
 }
 
 /// Whether farm-relative `rel` is inside any of `scopes`. A scope is a path
-/// prefix (`wiki/topics/vec` matches `wiki/topics/vector-search.md`); one
-/// with no `/` names a directory (a herd, `wiki`, `sources`), so `web` means
+/// prefix (`doks/topics/vec` matches `doks/topics/vector-search.md`); one
+/// with no `/` names a directory (a herd, `doks`, `sources`), so `web` means
 /// `web/` and never matches `webby/`. No scopes matches everything.
 pub fn scope_matches(scopes: &[String], rel: &str) -> bool {
     scopes.is_empty()
@@ -191,21 +191,21 @@ fn scan(root: &Path, kind: Kind, rel: &str, abs: &Path, pat: &Pattern, hits: &mu
     }
 }
 
-/// The title shown on a file's group: a yak's, a page's or session's, and for
+/// The title shown on a file's group: a yak's, a dok's or session's, and for
 /// a source (`source.md` or `extracted.md`) the title in its `source.md`.
 fn title_of(root: &Path, kind: Kind, rel: &str, text: &str) -> String {
     match kind {
         Kind::Yaks => store::parse_task(text, Status::Hairy)
             .map(|t| t.title)
             .unwrap_or_default(),
-        Kind::Pages | Kind::Sessions => pages::Page::parse(rel, text).title(),
+        Kind::Doks | Kind::Sessions => doks::Dok::parse(rel, text).title(),
         Kind::Sources => {
             let source_md = match rel.rsplit_once('/') {
                 Some((dir, _)) => format!("{dir}/source.md"),
                 None => rel.to_string(),
             };
             match std::fs::read_to_string(root.join(&source_md)) {
-                Ok(t) => pages::Page::parse(&source_md, &t).title(),
+                Ok(t) => doks::Dok::parse(&source_md, &t).title(),
                 Err(_) => String::new(),
             }
         }
@@ -896,10 +896,10 @@ mod tests {
         assert!(scope_matches(&s(&["web"]), "web/yaks/web-1.md"));
         assert!(!scope_matches(&s(&["web"]), "webby/yaks/x.md"));
         assert!(scope_matches(
-            &s(&["wiki/topics/vec"]),
-            "wiki/topics/vector.md"
+            &s(&["doks/topics/vec"]),
+            "doks/topics/vector.md"
         ));
-        assert!(scope_matches(&s(&["/wiki/"]), "wiki/a.md"));
+        assert!(scope_matches(&s(&["/doks/"]), "doks/a.md"));
         assert!(scope_matches(
             &s(&["nope", "sources"]),
             "sources/x/source.md"

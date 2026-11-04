@@ -111,7 +111,7 @@ in `<path>`.
 | `yaks next` / `tangled` | ready tasks / dependency-blocked tasks |
 | `yaks path [<id>…]` / `path <filters>` | each yak's current absolute file path (for a precise `git add`); no arguments: the farm root in use |
 | `yaks search <q>` | substring search over id/title/description |
-| `yaks find <pattern>` | full-text search over yak bodies and notes, pages, sources' text and sessions: `path:line: text` per match; `--scope`, `--kind`, `--regex`, `--json` (exit 1 when nothing matches) |
+| `yaks find <pattern>` | full-text search over yak bodies and notes, doks, sources' text and sessions: `path:line: text` per match; `--scope`, `--kind`, `--regex`, `--json` (exit 1 when nothing matches) |
 | `yaks sheds [--all]` | who is working on what, read from the farm alone: one row per actor (the `[actor]` stamp on notes and moves), so a synced farm reads the same on every machine. Per actor: `shaving` the yaks it holds the claim on (the most recent writer since the yak moved into `shaving`, or the `for:` of that move), `asking` its yaks with `needs: human`, `recent` the others it wrote (newest first, status now), and `active` (wrote within 2 hours) / `stale` (holds a shaving yak, quiet longer) / `idle`. Each actor's latest checkpoint branch shows as `branch <b> @ <sha> (<ago>)`. A first line says how far the farm branch is ahead of or behind its upstream, when the upstream last changed and when this farm last fetched (never fetches). Idle actors with no claim and no ask are only counted unless `--all`. Read-only; `--json` (`farm`, `sheds[]` with `checkpoint`, `working`, `asking`, `touched`) |
 | `yaks log` | timestamped notes and status moves across a filtered set, oldest first (an activity log); `--since`/`--by` narrow it |
 | `yaks dep` / `reparent` | edit dependencies / move under a new parent |
@@ -120,12 +120,12 @@ in `<path>`.
 | `yaks stats` | task statistics |
 | `yaks doctor` | read-only farm-integrity check (an invalid `status:` value, one id in two yak files, dangling parent/dep refs, `needs:` out of step with the latest ask/answer/request/pickup note); exits non-zero on problems, so it's CI-usable. `--json` for machine output |
 | `yaks doctor --strict` | also flags shorn yaks with no recorded note — a shear without evidence (the evidence-before-shear rule) |
-| `yaks check` | read-only upkeep check on pages and sources: pages past `stale_after`, sources no page or yak cites, page kinds that differ only by plural or hyphens, plus doctor's broken links, schema mismatches and merge conflicts; exits 1 on a finding. `--json` for machine output |
+| `yaks check` | read-only upkeep check on doks and sources: doks past `stale_after`, sources no dok or yak cites, dok kinds that differ only by plural or hyphens, plus doctor's broken links, schema mismatches and merge conflicts; exits 1 on a finding. `--json` for machine output |
 | `yaks preflight [<id>...]` | read-only landing check: each shorn yak's `verify:` last PASSed, no invalid `status:` or duplicate id, no merge conflict in the farm; `--push-main` also checks `local` is the human's checkout |
 | `yaks whoami [--set <name>]` | the actor this checkout's notes are stamped with, and why; `--set` stores one per checkout, so fresh shells keep it |
 | `yaks brief <id> --as <name>` | print the worker brief for a yak: the actor prefix, the gate (`verify:`), how to finish, how to ask |
 | `yaks status [--check] [--json]` | the farm's uncommitted changes, one line per yak, and whether its branch is published / ahead / behind |
-| `yaks sync` | commit, pull (a merge driver merges two machines' edits to one yak or page field by field; prose both changed keeps conflict markers, listed by `yaks conflicts`) and push the farm branch; never pushes a private farm |
+| `yaks sync` | commit, pull (a merge driver merges two machines' edits to one yak or dok field by field; prose both changed keeps conflict markers, listed by `yaks conflicts`) and push the farm branch; never pushes a private farm |
 | `yaks weight` / `yaks lfs` | what the farm costs each clone of the repository; store its images, PDFs and archives in Git LFS |
 | `yaks private [--off]` | keep the farm on this machine: `sync` never pushes it, a `pre-push` hook refuses a manual push |
 | `yaks init [--farm <checkout>]` | start the farm branch (or share another repo's) and install the skills |
@@ -163,14 +163,14 @@ auto-refreshes when the files change underneath it, so it stays in sync if you
 (or an agent) edit yaks from elsewhere. It takes the mouse too (wheel scroll,
 click to select / open / switch view). Mark rows with `m` for a bulk state
 change over the selection; `a` answers a yak awaiting a human, or else requests agent work on it (both hand it to an agent: `needs: agent`), and `Q` asks a question;
-`/` is one global query: it follows you from tab to tab, matches pages and
+`/` is one global query: it follows you from tab to tab, matches doks and
 sources by their text too, and shows on the tab row with its count in the
-**All** view (every yak, then every page and source);
+**All** view (every yak, then every dok and source);
 and an **Inbox** view lists every yak with a `needs` value, each flagged inline
 with a ⏳ badge and a warning accent (awaiting a human) or a ✅ badge (answered or
-requested, awaiting an agent). A **Wiki** tab lists the farm's pages and
-sources, opens them rendered (links between pages followed, with a peek of the
-target), and edits or creates pages in place, and a **Sheds** tab is a tree of each worker (actor) in the farm with the
+requested, awaiting an agent). A **Doks** tab lists the farm's doks and
+sources, opens them rendered (links between doks followed, with a peek of the
+target), and edits or creates doks in place, and a **Sheds** tab is a tree of each worker (actor) in the farm with the
 yaks it has been writing below it (`yaks sheds`, refreshed in the background).
 
 ![The yaks TUI list view: a parent yak with children across statuses, tags, a dependency, and a ⏳ needs badge](docs/assets/tui-list.svg)
@@ -259,7 +259,7 @@ yaks create "Fix the header"             # -> web-xxxx, in ~/src/api's farm
 `git config yaks.farm <checkout>` / `yaks.herd <prefix>` by hand does the same.
 `YAKS_DIR=<dir>` overrides everything for one command (a `.yaks/` directory, or
 a directory containing one). `yaks merge <farm>` folds another farm in, and
-`yaks import-hearth <repo>` copies a Hearth-layout repo's wiki, sources and schemas in.
+`yaks import-hearth <repo>` copies a Hearth-layout repo's doks, sources and schemas in.
 
 ## Configuration
 

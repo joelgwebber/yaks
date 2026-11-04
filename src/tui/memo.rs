@@ -25,7 +25,7 @@ use std::rc::Rc;
 use super::*;
 
 /// Where a cached row's item lives: a yak's index in this farm's tasks, a
-/// document's index in `App.wiki.entries`, or a shed's index in the sheds
+/// document's index in `App.doks.entries`, or a shed's index in the sheds
 /// snapshot.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(super) enum Loc {
@@ -118,13 +118,13 @@ pub(super) struct DlinesCache {
 }
 
 impl App {
-    /// Record that `all`, the wiki entries (or the sheds snapshot) were replaced, so the memoized
+    /// Record that `all`, the doks entries (or the sheds snapshot) were replaced, so the memoized
     /// rows and detail lines are rebuilt. See the module docs.
     pub(crate) fn touch(&mut self) {
         self.data_gen += 1;
     }
 
-    /// Index of `item` in `all`, the wiki entries or the sheds: the inverse of
+    /// Index of `item` in `all`, the doks entries or the sheds: the inverse of
     /// [`App::resolve_item`]. It must be borrowed from one of them.
     pub(super) fn locate(&self, item: tree::Item<'_>) -> Loc {
         fn within<T>(base: &[T], x: &T) -> Option<usize> {
@@ -138,9 +138,9 @@ impl App {
                 None => unreachable!("row task {} is not a task of this farm", t.id),
             },
             tree::Item::Doc(e) => {
-                match within(self.wiki.entries.as_deref().unwrap_or_default(), e) {
+                match within(self.doks.entries.as_deref().unwrap_or_default(), e) {
                     Some(i) => Loc::Doc(i),
-                    None => unreachable!("row document {} is not a wiki entry", e.path),
+                    None => unreachable!("row document {} is not a dok entry", e.path),
                 }
             }
             tree::Item::Shed(s) => {
@@ -157,7 +157,7 @@ impl App {
     pub(super) fn resolve_item(&self, loc: Loc) -> tree::Item<'_> {
         match loc {
             Loc::Home(i) => tree::Item::Yak(&self.all[i]),
-            Loc::Doc(i) => tree::Item::Doc(&self.wiki.entries.as_deref().unwrap_or_default()[i]),
+            Loc::Doc(i) => tree::Item::Doc(&self.doks.entries.as_deref().unwrap_or_default()[i]),
             Loc::Shed(i) => {
                 let snap = self.sheds.snapshot.as_ref();
                 tree::Item::Shed(&snap.expect("a shed row has a snapshot").sheds()[i])

@@ -1,10 +1,10 @@
 //! Schemas as data (yaks-8e75, design yaks-8384): `schemas/<type>.md` says
-//! which fields a typed page has, in Hearth's format, so the agent and the
+//! which fields a typed dok has, in Hearth's format, so the agent and the
 //! tools know what to expect. Checks only warn; a write never fails on them.
 //!
 //! ```markdown
 //! ---
-//! type: Page Type
+//! type: Dok Type
 //! title: Appliance
 //! fields:
 //!   name: {type: text, required: true}
@@ -34,7 +34,7 @@ const KINDS: &[&str] = &[
     "text", "number", "bool", "date", "datetime", "money", "link", "list",
 ];
 
-/// Keys any page may carry without its schema listing them (OKF's and
+/// Keys any dok may carry without its schema listing them (OKF's and
 /// Hearth's bookkeeping).
 const META: &[&str] = &[
     "type",
@@ -71,8 +71,8 @@ pub struct Schema {
     pub fields: Vec<Field>,
     /// `schemas/yak.md` only: known tag -> description.
     pub tags: Vec<(String, String)>,
-    /// How long a page of this type stays current (`P6M`, `P1Y`, `P2W`, or a
-    /// date); a page's own `stale_after` wins. `yaks check` reports pages past it.
+    /// How long a dok of this type stays current (`P6M`, `P1Y`, `P2W`, or a
+    /// date); a dok's own `stale_after` wins. `yaks check` reports doks past it.
     pub stale_after: Option<String>,
     /// Problems with the schema file itself.
     pub warnings: Vec<String>,
@@ -225,7 +225,7 @@ fn kind_problem(kind: &str, v: &Value) -> Option<String> {
 
 /// Warnings for a document's fields against `schema`. `extra_ok` names keys
 /// that may appear without the schema listing them (the yak's built-ins;
-/// for pages, OKF's bookkeeping keys).
+/// for doks, OKF's bookkeeping keys).
 pub fn check(schema: &Schema, fields: &Fields, extra_ok: &[&str]) -> Vec<String> {
     let mut out = Vec::new();
     for f in &schema.fields {
@@ -260,17 +260,17 @@ pub fn check(schema: &Schema, fields: &Fields, extra_ok: &[&str]) -> Vec<String>
     out
 }
 
-/// Warnings for a page against its type's schema (none for an untyped kind
+/// Warnings for a dok against its type's schema (none for an untyped kind
 /// or a type without a schema).
-pub fn check_page(root: &Path, page: &crate::pages::Page) -> Vec<String> {
-    let kind = page.kind();
+pub fn check_dok(root: &Path, dok: &crate::doks::Dok) -> Vec<String> {
+    let kind = dok.kind();
     match load(root, &kind) {
-        Some(s) => check(&s, &page.fields, META),
+        Some(s) => check(&s, &dok.fields, META),
         None => Vec::new(),
     }
 }
 
-/// The defaults a new page of `type_name` gets for fields not given.
+/// The defaults a new dok of `type_name` gets for fields not given.
 pub fn defaults(root: &Path, type_name: &str) -> Vec<(String, Value)> {
     load(root, type_name)
         .map(|s| {
@@ -282,8 +282,8 @@ pub fn defaults(root: &Path, type_name: &str) -> Vec<(String, Value)> {
         .unwrap_or_default()
 }
 
-/// Known kinds of untyped page and every typed kind with a schema, with its
-/// fields, for `yaks page types`.
+/// Known kinds of untyped dok and every typed kind with a schema, with its
+/// fields, for `yaks dok types`.
 pub fn describe(s: &Schema) -> String {
     let mut out = s.type_name.clone();
     if let Some(t) = s.title.as_ref().filter(|t| **t != s.type_name) {
@@ -310,8 +310,8 @@ pub fn describe(s: &Schema) -> String {
     out
 }
 
-/// Rows of a table page: the first markdown table in the body, one map per
-/// row keyed by the header, cells trimmed (Hearth's table pages).
+/// Rows of a table dok: the first markdown table in the body, one map per
+/// row keyed by the header, cells trimmed (Hearth's table doks).
 pub fn table_rows(body: &str) -> Vec<Vec<(String, String)>> {
     let lines: Vec<&str> = body.lines().map(str::trim).collect();
     let Some(start) = lines.iter().position(|l| l.starts_with('|')) else {
@@ -341,7 +341,7 @@ pub fn table_rows(body: &str) -> Vec<Vec<(String, String)>> {
 mod tests {
     use super::*;
 
-    const APPLIANCE: &str = "---\ntype: Page Type\ntitle: Appliance\nfields:\n  name: {type: text, required: true}\n  purchased: {type: date}\n  price: money\n  warranty: {type: text, default: none}\n  odd: {type: colour}\n---\n\nNotes.\n";
+    const APPLIANCE: &str = "---\ntype: Dok Type\ntitle: Appliance\nfields:\n  name: {type: text, required: true}\n  purchased: {type: date}\n  price: money\n  warranty: {type: text, default: none}\n  odd: {type: colour}\n---\n\nNotes.\n";
 
     #[test]
     fn parses_hearths_format() {
@@ -385,7 +385,7 @@ mod tests {
     fn yak_schema_carries_known_tags() {
         let s = parse(
             "yak",
-            "---\ntype: Page Type\nfields:\n  due: date\ntags:\n  ui: The TUI\n  cli: Commands and flags\n---\n",
+            "---\ntype: Dok Type\nfields:\n  due: date\ntags:\n  ui: The TUI\n  cli: Commands and flags\n---\n",
         );
         assert_eq!(
             s.tags,

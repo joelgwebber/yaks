@@ -778,10 +778,10 @@ fn h_collapses_an_expanded_row_then_goes_to_the_parent() {
 }
 
 #[test]
-fn q_quits_from_a_page_and_the_family_scope_is_f() {
+fn q_quits_from_a_dok_and_the_family_scope_is_f() {
     let (_dir, mut app) = viewer_on_linked_notes();
     press(&mut app, "q");
-    assert!(app.quit, "q quits with a page open, it does not close it");
+    assert!(app.quit, "q quits with a dok open, it does not close it");
     let mut app = sample();
     handle_key(&mut app, key('h')); // used to cycle the family scope
     assert!(app.family_scope.is_empty());
@@ -1426,7 +1426,7 @@ fn starred_marker_and_tab_bar() {
 #[test]
 fn default_views_and_tab_cycling() {
     let mut app = sample();
-    assert_eq!(app.views.len(), 9); // 3 status + Recent + Inbox + Starred + Wiki + Sheds + All
+    assert_eq!(app.views.len(), 9); // 3 status + Recent + Inbox + Starred + Doks + Sheds + All
     assert_eq!(app.view, 0);
     assert_eq!(app.filter.statuses, vec![Status::Hairy]);
     tab_key(&mut app); // -> Shaving
@@ -4614,12 +4614,12 @@ fn an_inline_image_is_drawn_clipped_at_the_pane_edge_and_scrolls() {
     assert_eq!(image_pixel_rows(&app, 100, 14), 0, "off the top: not drawn");
 }
 
-/// yaks-91d9 + yaks-c5d7: a page in the document viewer draws a lone image
+/// yaks-91d9 + yaks-c5d7: a dok in the document viewer draws a lone image
 /// in place, whether it is a yak's attachment (`<id>/<file>`) or a farm file
 /// named from the root (`/sources/<id>/shot.png`, which used to be read as an
 /// attachment and fail with "no such attachment").
 #[test]
-fn a_page_in_the_viewer_draws_attachment_and_farm_root_images_in_place() {
+fn a_dok_in_the_viewer_draws_attachment_and_farm_root_images_in_place() {
     for (dest, place) in [
         ("t0/shot.png", None),
         (
@@ -4636,15 +4636,15 @@ fn a_page_in_the_viewer_draws_attachment_and_farm_root_images_in_place() {
                 std::fs::write(farm.root().join(d).join("shot.png"), &png).unwrap();
             }
         }
-        std::fs::create_dir_all(farm.root().join("wiki")).unwrap();
+        std::fs::create_dir_all(farm.root().join("doks")).unwrap();
         std::fs::write(
-            farm.root().join("wiki/pics.md"),
+            farm.root().join("doks/pics.md"),
             format!("---\ntitle: Pics\n---\n\nBefore.\n\n![shot]({dest})\n\nAfter.\n"),
         )
         .unwrap();
         let mut app = App::with_farm(farm).unwrap();
         HeadlessApp::on_resize(&mut app, 100, 40);
-        app.open_farm_doc("wiki/pics.md", None, None);
+        app.open_farm_doc("doks/pics.md", None, None);
         draw(&app, 100, 40);
         let (rows, _) = app.attachment_rows().unwrap();
         let reserved = rows.iter().filter(|r| r.image.is_some()).count();
@@ -4863,12 +4863,12 @@ fn the_viewer_with_its_cursor_on_a_link() {
 // -- the viewer is part of the pane, not an overlay (yaks-0906) ------------
 
 #[test]
-fn with_a_page_open_u_requests_a_sync_and_the_page_stays_open() {
+fn with_a_dok_open_u_requests_a_sync_and_the_dok_stays_open() {
     let (_dir, mut app) = viewer_on_linked_notes();
     assert!(matches!(app.overlay, Overlay::None));
     press(&mut app, "U");
     assert!(matches!(app.pending_farm_op, Some(FarmOp::Sync)));
-    assert!(app.attach().is_some(), "the page stays open");
+    assert!(app.attach().is_some(), "the dok stays open");
     app.pending_farm_op = None;
     press(&mut app, "W");
     assert!(matches!(app.pending_farm_op, Some(FarmOp::Commit)));
@@ -4876,7 +4876,7 @@ fn with_a_page_open_u_requests_a_sync_and_the_page_stays_open() {
 }
 
 #[test]
-fn help_opens_over_a_page_and_closing_it_returns_to_the_page() {
+fn help_opens_over_a_dok_and_closing_it_returns_to_the_dok() {
     let (_dir, mut app) = viewer_on_linked_notes();
     tab_key(&mut app);
     let line = viewer_nav(&app).line;
@@ -4887,7 +4887,7 @@ fn help_opens_over_a_page_and_closing_it_returns_to_the_page() {
     let frame = draw(&app, 120, 24);
     assert!(frame.contains("Help — keys"), "{frame}");
     assert!(frame.contains("j/k scroll"), "the help hint: {frame}");
-    // `?` closes it again; so does Esc, and neither closes the page.
+    // `?` closes it again; so does Esc, and neither closes the dok.
     press(&mut app, "?");
     assert!(matches!(app.overlay, Overlay::None));
     assert!(app.attach().is_some());
@@ -4900,24 +4900,24 @@ fn help_opens_over_a_page_and_closing_it_returns_to_the_page() {
 }
 
 #[test]
-fn hash_in_a_page_opens_the_goto_picker_and_choosing_a_yak_closes_the_page() {
+fn hash_in_a_dok_opens_the_goto_picker_and_choosing_a_yak_closes_the_dok() {
     let (_dir, mut app) = viewer_on_linked_notes();
     press(&mut app, "#");
     assert!(matches!(app.overlay, Overlay::Fuzzy(_)));
-    // Cancelling leaves the page as it was.
+    // Cancelling leaves the dok as it was.
     esc_key(&mut app);
     esc_key(&mut app);
     assert!(matches!(app.overlay, Overlay::None));
     assert!(app.attach().is_some());
     press(&mut app, "#");
     enter_key(&mut app);
-    assert!(app.doc.is_none(), "another subject replaces the page");
+    assert!(app.doc.is_none(), "another subject replaces the dok");
     assert_eq!(app.focus, Focus::Detail);
     assert_eq!(app.selected_id().as_deref(), Some("t0"));
 }
 
 #[test]
-fn esc_from_a_page_opened_from_a_yak_detail_returns_to_that_detail() {
+fn esc_from_a_dok_opened_from_a_yak_detail_returns_to_that_detail() {
     let (_dir, mut app) = viewer_on_linked_notes();
     assert_eq!(app.doc.as_ref().map(|d| d.from), Some(Focus::Detail));
     assert_eq!(app.surface_ctx(), keymap::Ctx::Viewer);
@@ -4930,27 +4930,24 @@ fn esc_from_a_page_opened_from_a_yak_detail_returns_to_that_detail() {
 }
 
 #[test]
-fn switching_view_or_moving_to_another_row_closes_the_page() {
+fn switching_view_or_moving_to_another_row_closes_the_dok() {
     let (_dir, mut app) = viewer_on_linked_notes();
     app.switch_tab(1);
-    assert!(app.doc.is_none(), "a view switch closes the page");
+    assert!(app.doc.is_none(), "a view switch closes the dok");
     assert_eq!(app.focus, Focus::List);
     let (_dir, mut app) = viewer_on_linked_notes();
     let pushed = app.history.back.len();
     app.detail_next_task(1);
-    assert!(app.doc.is_none(), "J/K close the page");
+    assert!(app.doc.is_none(), "J/K close the dok");
     assert_eq!(app.history.back.len(), pushed, "moving is not a jump");
 }
 
 #[test]
-fn the_list_stays_drawn_beside_an_open_page() {
+fn the_list_stays_drawn_beside_an_open_dok() {
     let (_dir, app) = viewer_on_linked_notes();
     let frame = draw(&app, 140, 24);
     let row = frame.lines().find(|l| l.contains("solo")).unwrap();
-    assert!(
-        row.contains("t0/notes.md"),
-        "list left, page right: {frame}"
-    );
+    assert!(row.contains("t0/notes.md"), "list left, dok right: {frame}");
     assert!(app.doc.is_some() && app.focus == Focus::Detail);
 }
 
@@ -5942,10 +5939,10 @@ fn empty_search_commit_still_says_cleared() {
 /// The global query and the All view (yaks-a25c, design §4).
 mod query {
     use super::*;
-    use crate::tui::wiki_tab::WikiEntry;
+    use crate::tui::doks_tab::DoksEntry;
 
     /// A farm with a dead yak and a body that only the query's body match
-    /// finds, plus a page and a source whose *text* says `widget`.
+    /// finds, plus a dok and a source whose *text* says `widget`.
     fn farm() -> App {
         let mut shaving = task("w1", "Shave the widget", Status::Shaving, 2, None);
         shaving.updated = Some("2026-01-03T00:00:00Z".into());
@@ -5956,24 +5953,24 @@ mod query {
         dead.updated = Some("2026-01-01T00:00:00Z".into());
         let other = task("w4", "Unrelated", Status::Shaving, 2, None);
         let mut app = App::new(vec![shaving, hairy, dead, other]);
-        app.set_wiki_entries(vec![
-            WikiEntry {
-                path: "wiki/plan.md".into(),
+        app.set_doks_entries(vec![
+            DoksEntry {
+                path: "doks/plan.md".into(),
                 title: "Plan".into(),
                 kind: "note".into(),
                 tags: vec![],
                 source: false,
                 text: "---\ntitle: plan\n---\n\nthe quarterly widget plan\n".into(),
             },
-            WikiEntry {
-                path: "wiki/other.md".into(),
+            DoksEntry {
+                path: "doks/other.md".into(),
                 title: "Other".into(),
                 kind: "note".into(),
                 tags: vec![],
                 source: false,
                 text: "nothing here".into(),
             },
-            WikiEntry {
+            DoksEntry {
                 path: "sources/2026-01-01-abcd/source.md".into(),
                 title: "A paper".into(),
                 kind: "source".into(),
@@ -6046,11 +6043,7 @@ mod query {
         assert_eq!(count(&app, "status:shaving"), 1, "w1 of w1, w4");
         assert_eq!(count(&app, "status:hairy"), 1);
         assert_eq!(count(&app, "recent"), 2, "Recent skips the dead yak");
-        assert_eq!(
-            count(&app, view::WIKI_KEY),
-            1,
-            "the page whose text matches"
-        );
+        assert_eq!(count(&app, view::DOKS_KEY), 1, "the dok whose text matches");
         let frame = draw(&app, 120, 8);
         let tabs = frame.lines().next().unwrap();
         assert!(tabs.contains("Shaving (1)"), "{tabs}");
@@ -6090,13 +6083,13 @@ mod query {
     }
 
     #[test]
-    fn the_all_view_lists_dead_yaks_then_pages_and_sources() {
+    fn the_all_view_lists_dead_yaks_then_doks_and_sources() {
         let mut app = farm();
         go(&mut app, "all");
         assert!(!app.active_view().pinned, "reached from `v`, not a tab");
         assert!(app.active_view().is_flat());
         // Yaks newest-updated first (w4 has no date: last), dead included;
-        // then every page and source in the Wiki's order.
+        // then every dok and source in the Doks's order.
         assert_eq!(
             ids(&app),
             vec![
@@ -6104,25 +6097,25 @@ mod query {
                 "w2",
                 "w3",
                 "w4",
-                "wiki/plan.md",
-                "wiki/other.md",
+                "doks/plan.md",
+                "doks/other.md",
                 "sources/2026-01-01-abcd/source.md"
             ]
         );
         assert_eq!(count(&app, "all"), 7);
-        // Narrowing a yak facet drops the documents (a page has no priority).
+        // Narrowing a yak facet drops the documents (a dok has no priority).
         app.filter.priorities = vec![2];
         assert_eq!(ids(&app).len(), 4);
     }
 
     #[test]
-    fn a_query_matching_only_a_page_body_finds_it_on_wiki_and_all() {
+    fn a_query_matching_only_a_dok_body_finds_it_on_doks_and_all() {
         let mut app = farm();
         search(&mut app, "quarterly");
-        go(&mut app, view::WIKI_KEY);
-        assert_eq!(ids(&app), vec!["wiki/plan.md"]);
+        go(&mut app, view::DOKS_KEY);
+        assert_eq!(ids(&app), vec!["doks/plan.md"]);
         go(&mut app, "all");
-        assert_eq!(ids(&app), vec!["wiki/plan.md"]);
+        assert_eq!(ids(&app), vec!["doks/plan.md"]);
         // A source is found through its extracted text.
         search(&mut app, "extracted");
         assert_eq!(ids(&app), vec!["sources/2026-01-01-abcd/source.md"]);
@@ -6135,7 +6128,7 @@ mod query {
         let before = draw(&app, 130, 8);
         assert!(!before.lines().next().unwrap().contains(" in All"));
         search(&mut app, "widget");
-        // w1, w2 (body), w3 (dead), the page and the source.
+        // w1, w2 (body), w3 (dead), the dok and the source.
         assert_eq!(count(&app, "all"), 5);
         let frame = draw(&app, 130, 8);
         let tabs = frame.lines().next().unwrap();
@@ -6304,7 +6297,7 @@ fn the_viewers_n_wraps() {
 #[test]
 fn a_viewer_opens_with_the_register_set_in_a_yak() {
     let (_dir, mut app) = app_on_attachment("notes.md", LINKED_NOTES);
-    // Set before the page opens (from a yak's detail, say).
+    // Set before the dok opens (from a yak's detail, say).
     app.register = Some("cache".into());
     enter_key(&mut app);
     draw(&app, 100, 24);
@@ -6313,7 +6306,7 @@ fn a_viewer_opens_with_the_register_set_in_a_yak() {
     let status = status_line(&app);
     assert!(
         status.starts_with("match 0/2 \"cache\""),
-        "the page's matches are counted as it opens: {status}"
+        "the dok's matches are counted as it opens: {status}"
     );
     // The first `n` lands on the first match, not the second.
     press(&mut app, "n");
@@ -6383,5 +6376,5 @@ fn n_is_the_next_match_and_n_the_previous_on_every_row() {
     assert_eq!(lookup(Ctx::List, yak, &key('N')), Some(Cmd::FindPrev));
     assert_eq!(lookup(Ctx::List, doc, &key('n')), Some(Cmd::FindNext));
     assert_eq!(lookup(Ctx::List, doc, &key('N')), Some(Cmd::FindPrev));
-    assert_eq!(lookup(Ctx::List, doc, &key('c')), Some(Cmd::WikiNew));
+    assert_eq!(lookup(Ctx::List, doc, &key('c')), Some(Cmd::DokNew));
 }

@@ -14,10 +14,10 @@ files live on the repo's **farm branch** (`yaks`, an orphan branch holding only
     yaks/
       yaks-1a2b.md  # one file per yak; frontmatter status: hairy | shaving | shorn | dead
       yaks-1a2b/    # its attachments, beside it
-    wiki/         # reserved: the herd's own pages (yaks-9af0)
-  wiki/           # reserved: farm-wide pages
+    doks/         # reserved: the herd's own doks (yaks-9af0)
+  doks/           # reserved: farm-wide doks
   sources/        # reserved: saved outside material
-  schemas/        # reserved: page and field types
+  schemas/        # reserved: dok and field types
   sessions/       # reserved: imported session transcripts
 ```
 

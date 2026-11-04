@@ -1,6 +1,6 @@
-//! `yaks check` through the real binary (yaks-c0ac): stale pages, uncited
+//! `yaks check` through the real binary (yaks-c0ac): stale doks, uncited
 //! sources, kinds that look alike, and `doctor`'s link, schema, conflict and
-//! page findings, as text and JSON, with the exit code.
+//! dok findings, as text and JSON, with the exit code.
 
 mod common;
 use assert_cmd::Command;
@@ -100,7 +100,7 @@ fn finding<'a>(v: &'a Value, kind: &str) -> Vec<&'a Value> {
 #[test]
 fn a_clean_farm_exits_zero() {
     let f = Farm::new("clean");
-    f.write("wiki/a.md", "---\ntype: note\ntitle: A\n---\n\nFine.\n");
+    f.write("doks/a.md", "---\ntype: note\ntitle: A\n---\n\nFine.\n");
     let (code, out) = f.check(&[]);
     assert_eq!(
         (code, out.as_str()),
@@ -116,43 +116,43 @@ fn every_kind_of_finding_is_reported_with_exit_one() {
     // stale: a date in the past (its own), and a schema duration counted from
     // `verified:`.
     f.write(
-        "wiki/old.md",
+        "doks/old.md",
         "---\ntype: note\ntitle: Old\nstale_after: 2020-01-01\n---\n\nOld.\n",
     );
     f.write(
-        "wiki/fresh.md",
+        "doks/fresh.md",
         "---\ntype: note\ntitle: Fresh\nstale_after: 2999-01-01\n---\n\nFresh.\n",
     );
     f.write(
         "schemas/recipe.md",
-        "---\ntype: Page Type\ntitle: Recipe\nstale_after: P6M\n---\n",
+        "---\ntype: Dok Type\ntitle: Recipe\nstale_after: P6M\n---\n",
     );
     f.write(
-        "wiki/soup.md",
+        "doks/soup.md",
         "---\ntype: recipe\ntitle: Soup\nverified: 2020-03-01\n---\n\nSoup.\n",
     );
     f.write(
-        "wiki/stew.md",
+        "doks/stew.md",
         "---\ntype: recipe\ntitle: Stew\nverified: 2999-03-01\n---\n\nStew.\n",
     );
-    // uncited: one source with nothing citing it, one cited by a page.
+    // uncited: one source with nothing citing it, one cited by a dok.
     let lone = f.source("lone.md", "# Lone\n", &[]);
     let used = f.source("used.md", "# Used\n", &[]);
     f.write(
-        "wiki/cites.md",
+        "doks/cites.md",
         &format!("---\ntype: note\ntitle: Cites\nsources:\n  - {used}/source.md\n---\n\nSee it.\n"),
     );
     // similar kinds: `project` and `projects`.
-    f.write("wiki/p1.md", "---\ntype: project\ntitle: P1\n---\n");
-    f.write("wiki/p2.md", "---\ntype: projects\ntitle: P2\n---\n");
-    // doctor's: a broken link, a page without a title, a merge conflict.
+    f.write("doks/p1.md", "---\ntype: project\ntitle: P1\n---\n");
+    f.write("doks/p2.md", "---\ntype: projects\ntitle: P2\n---\n");
+    // doctor's: a broken link, a dok without a title, a merge conflict.
     f.write(
-        "wiki/links.md",
-        "---\ntype: note\ntitle: Links\n---\n\nSee [gone](/wiki/missing.md).\n",
+        "doks/links.md",
+        "---\ntype: note\ntitle: Links\n---\n\nSee [gone](/doks/missing.md).\n",
     );
-    f.write("wiki/untitled.md", "---\ntype: note\n---\n\nNo title.\n");
+    f.write("doks/untitled.md", "---\ntype: note\n---\n\nNo title.\n");
     f.write(
-        "wiki/clash.md",
+        "doks/clash.md",
         "---\ntype: note\ntitle: Clash\n---\n\n<<<<<<< here\nours\n=======\ntheirs\n>>>>>>> other side\n",
     );
 
@@ -161,7 +161,7 @@ fn every_kind_of_finding_is_reported_with_exit_one() {
     assert_eq!(
         kinds(&json),
         [
-            "page-problem",
+            "dok-problem",
             "broken-link",
             "merge-conflict",
             "stale",
@@ -172,19 +172,19 @@ fn every_kind_of_finding_is_reported_with_exit_one() {
         "{json}"
     );
     let v: Value = serde_json::from_str(&json).unwrap();
-    assert_eq!(finding(&v, "page-problem")[0]["ids"][0], "wiki/untitled.md");
-    assert_eq!(finding(&v, "broken-link")[0]["ids"][0], "wiki/links.md");
-    assert_eq!(finding(&v, "merge-conflict")[0]["ids"][0], "wiki/clash.md");
+    assert_eq!(finding(&v, "dok-problem")[0]["ids"][0], "doks/untitled.md");
+    assert_eq!(finding(&v, "broken-link")[0]["ids"][0], "doks/links.md");
+    assert_eq!(finding(&v, "merge-conflict")[0]["ids"][0], "doks/clash.md");
     let stale = finding(&v, "stale");
-    assert_eq!(stale[0]["ids"][0], "wiki/old.md");
+    assert_eq!(stale[0]["ids"][0], "doks/old.md");
     assert_eq!(
         stale[0]["message"],
-        "wiki/old.md was due to be checked by 2020-01-01"
+        "doks/old.md was due to be checked by 2020-01-01"
     );
-    assert_eq!(stale[1]["ids"][0], "wiki/soup.md");
+    assert_eq!(stale[1]["ids"][0], "doks/soup.md");
     assert_eq!(
         stale[1]["message"],
-        "wiki/soup.md was verified 2020-03-01; its type asks for a re-check by 2020-09-01"
+        "doks/soup.md was verified 2020-03-01; its type asks for a re-check by 2020-09-01"
     );
     let uncited = finding(&v, "uncited");
     assert_eq!(uncited[0]["ids"][0], lone.as_str());
@@ -196,7 +196,7 @@ fn every_kind_of_finding_is_reported_with_exit_one() {
     assert_eq!(similar["ids"], serde_json::json!(["project", "projects"]));
     assert_eq!(
         similar["message"],
-        "these look like the same kind of page: `project` (1 page), `projects` (1 page)"
+        "these look like the same kind of dok: `project` (1 dok), `projects` (1 dok)"
     );
 
     // The text report groups by kind and says how many.
@@ -204,13 +204,13 @@ fn every_kind_of_finding_is_reported_with_exit_one() {
     assert_eq!(code, 1);
     assert!(text.starts_with("Found 7 findings:\n"), "{text}");
     for needle in [
-        "Stale page",
+        "Stale dok",
         "Uncited source",
         "Similar kinds",
         "Broken link",
         "Merge conflict",
-        "Page problem",
-        "wiki/old.md was due to be checked by 2020-01-01",
+        "Dok problem",
+        "doks/old.md was due to be checked by 2020-01-01",
     ] {
         assert!(text.contains(needle), "{needle} missing from:\n{text}");
     }
@@ -234,7 +234,7 @@ fn a_source_and_its_parts_count_as_one_and_marks_keep_it_off_the_list() {
 
     // Citing only the part cites the whole.
     f.write(
-        "wiki/c.md",
+        "doks/c.md",
         &format!("---\ntype: note\ntitle: C\n---\n\n![shot](/{shot}/shot.md)\n"),
     );
     let (code, out) = f.check(&[]);
@@ -261,14 +261,14 @@ fn a_source_and_its_parts_count_as_one_and_marks_keep_it_off_the_list() {
 }
 
 #[test]
-fn a_page_with_no_verified_date_counts_from_its_last_commit() {
+fn a_dok_with_no_verified_date_counts_from_its_last_commit() {
     let f = Farm::new("commit");
     f.write(
         "schemas/howto.md",
-        "---\ntype: Page Type\ntitle: Howto\nstale_after: P1Y\n---\n",
+        "---\ntype: Dok Type\ntitle: Howto\nstale_after: P1Y\n---\n",
     );
-    f.write("wiki/h.md", "---\ntype: howto\ntitle: H\n---\n\nSteps.\n");
-    // Not committed yet: no history, so the page is skipped.
+    f.write("doks/h.md", "---\ntype: howto\ntitle: H\n---\n\nSteps.\n");
+    // Not committed yet: no history, so the dok is skipped.
     assert_eq!(f.check(&[]).0, 0);
     let out = f
         .cmd(&["commit", "-m", "old"])
@@ -285,7 +285,7 @@ fn a_page_with_no_verified_date_counts_from_its_last_commit() {
     assert_eq!(code, 1, "{out}");
     assert!(
         out.contains(
-            "wiki/h.md was last changed 2020-02-03; its type asks for a re-check by 2021-02-03"
+            "doks/h.md was last changed 2020-02-03; its type asks for a re-check by 2021-02-03"
         ),
         "{out}"
     );

@@ -170,10 +170,10 @@ fn imports_rewrites_links_commits_once_and_is_idempotent() {
     let dry = s.import(&["--dry-run"]);
     assert!(dry.contains("would import"), "{dry}");
     assert!(
-        dry.contains("3 pages") || dry.contains("wiki/       3 pages"),
+        dry.contains("3 doks") || dry.contains("wiki/ -> doks/  3 doks"),
         "{dry}"
     );
-    assert!(!root.join("wiki").exists() && !root.join("sources").exists());
+    assert!(!root.join("doks").exists() && !root.join("sources").exists());
     assert_eq!(s.farm_git(&["rev-list", "--count", "HEAD"]), commits_before);
 
     let report = s.import(&[]);
@@ -194,8 +194,8 @@ fn imports_rewrites_links_commits_once_and_is_idempotent() {
 
     // Layout.
     for rel in [
-        "wiki/topics/signals.md",
-        "wiki/projects/app.md",
+        "doks/topics/signals.md",
+        "doks/projects/app.md",
         &format!("sources/{SRC}/page.html"),
         &format!("sources/{SHOT}/shot 1.png"),
         "schemas/agent-platform.md",
@@ -206,10 +206,10 @@ fn imports_rewrites_links_commits_once_and_is_idempotent() {
     assert!(!root.join("schedules").exists() && !root.join("notes").exists());
 
     // Links are rewritten by byte range; everything else is as it was.
-    let page = std::fs::read_to_string(root.join("wiki/topics/signals.md")).unwrap();
+    let page = std::fs::read_to_string(root.join("doks/topics/signals.md")).unwrap();
     let want = format!(
         "---\ntype: topic\ntitle: Signals\nsources:\n  - sources/{SRC}/source.md\n---\n\n\
-         See [errors](errors.md) and [the project](/wiki/projects/app.md#plan).\n\n\
+         See [errors](errors.md) and [the project](/doks/projects/app.md#plan).\n\n\
          ![shot](/sources/{SHOT}/shot%201.png)\n\n\
          Notes live in [notes](code:notes/idea.md), code in [main](code:projects/app/main.rs).\n\n\
          Inline `[x](../nowhere.md)` stays, and so does [the web](https://example.org/a/../b).\n"
@@ -217,7 +217,7 @@ fn imports_rewrites_links_commits_once_and_is_idempotent() {
     assert_eq!(page, want);
     let session = std::fs::read_to_string(root.join("sessions/2026/10/s1.review.md")).unwrap();
     assert!(
-        session.contains("(/wiki/topics/errors.md)")
+        session.contains("(/doks/topics/errors.md)")
             && session.contains(&format!("(/sources/{SRC}/source.md)")),
         "{session}"
     );
@@ -261,8 +261,8 @@ fn imports_rewrites_links_commits_once_and_is_idempotent() {
     assert!(s.farm_git(&["status", "--porcelain"]).is_empty());
     assert!(report.contains(head.trim()), "{report}");
 
-    // The page, source and doctor commands read what moved.
-    assert_eq!(s.run(&["page", "list"]).lines().count(), 3);
+    // The dok, source and doctor commands read what moved.
+    assert_eq!(s.run(&["dok", "list"]).lines().count(), 3);
     assert_eq!(s.run(&["source", "list"]).lines().count(), 2);
     s.run(&["doctor"]);
 
@@ -288,7 +288,7 @@ fn refuses_to_overwrite_a_different_file_and_writes_nothing() {
     let root = s.root();
     // The farm's copy was edited; the repo's changed too.
     std::fs::write(
-        root.join("wiki/projects/app.md"),
+        root.join("doks/projects/app.md"),
         "---\ntype: note\ntitle: Mine\n---\n",
     )
     .unwrap();
@@ -301,14 +301,14 @@ fn refuses_to_overwrite_a_different_file_and_writes_nothing() {
     assert!(!out.status.success());
     let text = String::from_utf8_lossy(&out.stdout);
     assert!(
-        text.contains("REFUSED") && text.contains("wiki/projects/app.md"),
+        text.contains("REFUSED") && text.contains("doks/projects/app.md"),
         "{text}"
     );
     assert!(
-        !root.join("wiki/topics/new.md").exists(),
+        !root.join("doks/topics/new.md").exists(),
         "nothing is written on a refusal"
     );
-    let kept = std::fs::read_to_string(root.join("wiki/projects/app.md")).unwrap();
+    let kept = std::fs::read_to_string(root.join("doks/projects/app.md")).unwrap();
     assert!(kept.contains("Mine"));
 }
 

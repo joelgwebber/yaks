@@ -1,13 +1,13 @@
-//! Pages (yaks-9af0, design yaks-aae6): markdown documents in a farm that are
-//! not yaks. A page lives under a wiki root, the farm-wide `wiki/` or one
-//! herd's `<herd>/wiki/`, at any depth, and is addressed by its path from the
-//! farm root (`wiki/topics/vector-search.md`).
+//! Doks (yaks-9af0, design yaks-aae6): markdown documents in a farm that are
+//! not yaks. A dok lives under a doks root, the farm-wide `doks/` or one
+//! herd's `<herd>/doks/`, at any depth, and is addressed by its path from the
+//! farm root (`doks/topics/vector-search.md`).
 //!
-//! A page is frontmatter plus a markdown body, in OKF's shape (`type`,
+//! A dok is frontmatter plus a markdown body, in OKF's shape (`type`,
 //! `title`, `description`, `tags`, `sources`, `status`, `stale_after`, and
 //! anything else). Frontmatter is a [`Fields`], so every key round-trips as
-//! written and an edit rewrites only the key it sets. Pages have no notes log
-//! and no `updated:` field: git says when a page changed.
+//! written and an edit rewrites only the key it sets. Doks have no notes log
+//! and no `updated:` field: git says when a dok changed.
 //!
 //! Untyped kinds need no schema: `note` (the default), `topic`, `howto`,
 //! `summary`. Any other `type` is a typed kind, described by
@@ -18,20 +18,20 @@ use crate::store;
 use anyhow::{Context, Result, bail};
 use std::path::{Path, PathBuf};
 
-/// The directory name of a wiki root, farm-wide (`wiki/`) or per herd
-/// (`<herd>/wiki/`).
-pub const WIKI_DIR: &str = "wiki";
+/// The directory name of a doks root, farm-wide (`doks/`) or per herd
+/// (`<herd>/doks/`).
+pub const DOKS_DIR: &str = "doks";
 
-/// The kinds of page that need no schema.
+/// The kinds of dok that need no schema.
 pub const UNTYPED_KINDS: &[&str] = &["note", "topic", "howto", "summary"];
 
-/// The kind a page has when its frontmatter names none.
+/// The kind a dok has when its frontmatter names none.
 pub const DEFAULT_KIND: &str = "note";
 
-/// One page: its farm-relative path, frontmatter and body.
+/// One dok: its farm-relative path, frontmatter and body.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Page {
-    /// From the farm root, `/`-separated: `wiki/topics/x.md`.
+pub struct Dok {
+    /// From the farm root, `/`-separated: `doks/topics/x.md`.
     pub path: String,
     pub fields: Fields,
     pub body: String,
@@ -40,17 +40,17 @@ pub struct Page {
     pub has_frontmatter: bool,
 }
 
-impl Page {
-    /// Parse a page file's text.
-    pub fn parse(path: &str, text: &str) -> Page {
+impl Dok {
+    /// Parse a dok file's text.
+    pub fn parse(path: &str, text: &str) -> Dok {
         match store::split_frontmatter(text) {
-            Some((front, body)) => Page {
+            Some((front, body)) => Dok {
                 path: path.to_string(),
                 fields: Fields::parse(front),
                 body: body.to_string(),
                 has_frontmatter: true,
             },
-            None => Page {
+            None => Dok {
                 path: path.to_string(),
                 fields: Fields::default(),
                 body: text.to_string(),
@@ -82,7 +82,7 @@ impl Page {
         self.fields.get(key)?.as_str().map(String::from)
     }
 
-    /// The page's kind: its `type:`, else `note`.
+    /// The dok's kind: its `type:`, else `note`.
     pub fn kind(&self) -> String {
         self.str_field("type")
             .filter(|s| !s.is_empty())
@@ -118,34 +118,34 @@ impl Page {
             .unwrap_or_default()
     }
 
-    /// The herd whose wiki holds it (`None` for the farm-wide wiki).
+    /// The herd whose doks holds it (`None` for the farm-wide doks).
     pub fn herd(&self) -> Option<&str> {
         let (first, rest) = self.path.split_once('/')?;
-        (first != WIKI_DIR && rest.starts_with("wiki/")).then_some(first)
+        (first != DOKS_DIR && rest.starts_with("doks/")).then_some(first)
     }
 }
 
-/// Why `rel` (a farm-relative path) is not a valid place for a new page, or
-/// `None` when it is: `wiki/<parts>.md` or `<herd>/wiki/<parts>.md`, every
+/// Why `rel` (a farm-relative path) is not a valid place for a new dok, or
+/// `None` when it is: `doks/<parts>.md` or `<herd>/doks/<parts>.md`, every
 /// part lowercase letters, digits and `-` (a kebab name), at least one part
-/// below the wiki root, ending in `.md`.
+/// below the doks root, ending in `.md`.
 pub fn path_problem(rel: &str) -> Option<String> {
     let parts: Vec<&str> = rel.split('/').collect();
     let below = match parts.as_slice() {
-        [w, rest @ ..] if *w == WIKI_DIR => rest,
-        [herd, w, rest @ ..] if *w == WIKI_DIR && !herd.starts_with('.') => {
+        [w, rest @ ..] if *w == DOKS_DIR => rest,
+        [herd, w, rest @ ..] if *w == DOKS_DIR && !herd.starts_with('.') => {
             if store::RESERVED_HERD_NAMES.contains(herd) {
                 return Some(format!("`{herd}` is not a herd"));
             }
             rest
         }
-        _ => return Some("a page lives under wiki/ or <herd>/wiki/".to_string()),
+        _ => return Some("a dok lives under doks/ or <herd>/doks/".to_string()),
     };
     let Some((file, dirs)) = below.split_last() else {
-        return Some("name the page file below the wiki directory".to_string());
+        return Some("name the dok file below the doks directory".to_string());
     };
     let Some(stem) = file.strip_suffix(".md") else {
-        return Some("a page file ends in .md".to_string());
+        return Some("a dok file ends in .md".to_string());
     };
     let kebab = |s: &str| {
         !s.is_empty()
@@ -164,13 +164,13 @@ pub fn path_problem(rel: &str) -> Option<String> {
     None
 }
 
-/// Every wiki root of the farm at `root` that exists: `wiki/` and each
-/// `<herd>/wiki/`, as `(farm-relative dir, absolute dir)`.
-fn wiki_roots(root: &Path) -> Vec<(String, PathBuf)> {
+/// Every doks root of the farm at `root` that exists: `doks/` and each
+/// `<herd>/doks/`, as `(farm-relative dir, absolute dir)`.
+fn doks_roots(root: &Path) -> Vec<(String, PathBuf)> {
     let mut out = Vec::new();
-    let farm_wide = root.join(WIKI_DIR);
+    let farm_wide = root.join(DOKS_DIR);
     if farm_wide.is_dir() {
-        out.push((WIKI_DIR.to_string(), farm_wide));
+        out.push((DOKS_DIR.to_string(), farm_wide));
     }
     if let Ok(rd) = std::fs::read_dir(root) {
         let mut herds: Vec<String> = rd
@@ -180,21 +180,21 @@ fn wiki_roots(root: &Path) -> Vec<(String, PathBuf)> {
             .collect();
         herds.sort();
         for h in herds {
-            let dir = root.join(&h).join(WIKI_DIR);
+            let dir = root.join(&h).join(DOKS_DIR);
             if dir.is_dir() {
-                out.push((format!("{h}/{WIKI_DIR}"), dir));
+                out.push((format!("{h}/{DOKS_DIR}"), dir));
             }
         }
     }
     out
 }
 
-/// Every page file of the farm at `root`, as farm-relative paths, sorted. Dot
-/// files and directories are skipped; only `.md` files are pages (anything
-/// else under a wiki root, an image, is a file a page links to).
-pub fn page_paths(root: &Path) -> Vec<String> {
+/// Every dok file of the farm at `root`, as farm-relative paths, sorted. Dot
+/// files and directories are skipped; only `.md` files are doks (anything
+/// else under a doks root, an image, is a file a dok links to).
+pub fn dok_paths(root: &Path) -> Vec<String> {
     let mut out = Vec::new();
-    for (rel, dir) in wiki_roots(root) {
+    for (rel, dir) in doks_roots(root) {
         let mut stack = vec![(rel, dir)];
         while let Some((rel, dir)) = stack.pop() {
             let Ok(rd) = std::fs::read_dir(&dir) else {
@@ -221,28 +221,28 @@ pub fn page_paths(root: &Path) -> Vec<String> {
     out
 }
 
-/// Read the page at farm-relative `rel`; `Ok(None)` when there is no such
-/// page file.
-pub fn load(root: &Path, rel: &str) -> Result<Option<Page>> {
+/// Read the dok at farm-relative `rel`; `Ok(None)` when there is no such
+/// dok file.
+pub fn load(root: &Path, rel: &str) -> Result<Option<Dok>> {
     let rel = normalize(rel);
     let path = root.join(&rel);
-    if !path.is_file() || !is_page_path(&rel) {
+    if !path.is_file() || !is_dok_path(&rel) {
         return Ok(None);
     }
     let text =
         std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
-    Ok(Some(Page::parse(&rel, &text)))
+    Ok(Some(Dok::parse(&rel, &text)))
 }
 
-/// Whether farm-relative `rel` names a page file by its shape alone (the
-/// rule [`page_paths`] walks by): a `.md` file under `wiki/` or
-/// `<herd>/wiki/`, with no empty, `..` or dot segment. Unlike
-/// [`path_problem`] it accepts any file name, as existing pages may predate
+/// Whether farm-relative `rel` names a dok file by its shape alone (the
+/// rule [`dok_paths`] walks by): a `.md` file under `doks/` or
+/// `<herd>/doks/`, with no empty, `..` or dot segment. Unlike
+/// [`path_problem`] it accepts any file name, as existing doks may predate
 /// the naming rule.
-pub fn is_page_path(rel: &str) -> bool {
-    let under_root = rel.starts_with("wiki/")
+pub fn is_dok_path(rel: &str) -> bool {
+    let under_root = rel.starts_with("doks/")
         || rel.split_once('/').is_some_and(|(h, rest)| {
-            !store::RESERVED_HERD_NAMES.contains(&h) && rest.starts_with("wiki/")
+            !store::RESERVED_HERD_NAMES.contains(&h) && rest.starts_with("doks/")
         });
     rel.ends_with(".md")
         && under_root
@@ -251,15 +251,15 @@ pub fn is_page_path(rel: &str) -> bool {
             .any(|p| p.starts_with('.') || p.is_empty() || p == "..")
 }
 
-/// Every page, sorted by path.
-pub fn load_all(root: &Path) -> Result<Vec<Page>> {
-    page_paths(root)
+/// Every dok, sorted by path.
+pub fn load_all(root: &Path) -> Result<Vec<Dok>> {
+    dok_paths(root)
         .into_iter()
         .map(|rel| {
             let path = root.join(&rel);
             let text = std::fs::read_to_string(&path)
                 .with_context(|| format!("reading {}", path.display()))?;
-            Ok(Page::parse(&rel, &text))
+            Ok(Dok::parse(&rel, &text))
         })
         .collect()
 }
@@ -272,33 +272,33 @@ pub fn normalize(rel: &str) -> String {
     s.strip_prefix("./").unwrap_or(s).to_string()
 }
 
-/// Write `page` at its path (creating directories), atomically.
-pub fn save(root: &Path, page: &Page) -> Result<PathBuf> {
-    let path = root.join(&page.path);
+/// Write `dok` at its path (creating directories), atomically.
+pub fn save(root: &Path, dok: &Dok) -> Result<PathBuf> {
+    let path = root.join(&dok.path);
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir).with_context(|| format!("creating {}", dir.display()))?;
     }
-    store::write::atomic_write(&path, &page.render())?;
+    store::write::atomic_write(&path, &dok.render())?;
     Ok(path)
 }
 
-/// Build a new page at `rel`: `type` (default `note`), `title` (default from
+/// Build a new dok at `rel`: `type` (default `note`), `title` (default from
 /// the file name), any other `fields`, then `body`. Refuses a bad path or an
 /// existing file. Does not write.
-pub fn new_page(
+pub fn new_dok(
     root: &Path,
     rel: &str,
     kind: Option<&str>,
     title: Option<&str>,
     fields: &[(String, Value)],
     body: &str,
-) -> Result<Page> {
+) -> Result<Dok> {
     let rel = normalize(rel);
     if let Some(why) = path_problem(&rel) {
         bail!("{rel}: {why}");
     }
     if root.join(&rel).exists() {
-        bail!("{rel} already exists; edit it with `yaks page set` or your editor");
+        bail!("{rel} already exists; edit it with `yaks dok set` or your editor");
     }
     let mut f = Fields::default();
     f.set(
@@ -323,7 +323,7 @@ pub fn new_page(
             f.set(k, v);
         }
     }
-    Ok(Page {
+    Ok(Dok {
         path: rel,
         fields: f,
         body: body.to_string(),
@@ -331,21 +331,21 @@ pub fn new_page(
     })
 }
 
-/// One problem `doctor` finds with a page.
+/// One problem `doctor` finds with a dok.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PageIssue {
+pub struct DokIssue {
     pub path: String,
     pub message: String,
 }
 
-/// Integrity of every page: a file without frontmatter, frontmatter without a
-/// `type:` or a `title:`, a path that `new_page` would refuse, and a
+/// Integrity of every dok: a file without frontmatter, frontmatter without a
+/// `type:` or a `title:`, a path that `new_dok` would refuse, and a
 /// frontmatter key whose value doesn't parse.
-pub fn check(root: &Path) -> Result<Vec<PageIssue>> {
+pub fn check(root: &Path) -> Result<Vec<DokIssue>> {
     let mut out = Vec::new();
     for p in load_all(root)? {
         let mut push = |m: String| {
-            out.push(PageIssue {
+            out.push(DokIssue {
                 path: p.path.clone(),
                 message: m,
             })
@@ -376,14 +376,14 @@ pub fn check(root: &Path) -> Result<Vec<PageIssue>> {
     Ok(out)
 }
 
-/// A `--where key=value` test against one page: the field's scalar equals
-/// `value`, or its list holds it. `type` and `tags` read through the page's
+/// A `--where key=value` test against one dok: the field's scalar equals
+/// `value`, or its list holds it. `type` and `tags` read through the dok's
 /// defaults.
-pub fn matches(page: &Page, key: &str, value: &str) -> bool {
+pub fn matches(dok: &Dok, key: &str, value: &str) -> bool {
     match key {
-        "type" => page.kind() == value,
-        "tags" | "tag" => page.tags().iter().any(|t| t == value),
-        _ => match page.fields.get(key) {
+        "type" => dok.kind() == value,
+        "tags" | "tag" => dok.tags().iter().any(|t| t == value),
+        _ => match dok.fields.get(key) {
             Some(Value::List(items)) => items.iter().any(|i| i.as_str() == Some(value)),
             Some(v) => v.as_str() == Some(value),
             None => false,
@@ -396,47 +396,47 @@ mod tests {
     use super::*;
 
     fn farm(tag: &str) -> PathBuf {
-        let root = std::env::temp_dir().join(format!("yaks-pages-{tag}-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("yaks-doks-{tag}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         std::fs::create_dir_all(&root).unwrap();
         root
     }
 
     #[test]
-    fn paths_must_sit_under_a_wiki_root_in_kebab_case() {
-        assert_eq!(path_problem("wiki/topics/vector-search.md"), None);
-        assert_eq!(path_problem("yaks/wiki/design/links.md"), None);
-        assert_eq!(path_problem("wiki/a.md"), None);
+    fn paths_must_sit_under_a_doks_root_in_kebab_case() {
+        assert_eq!(path_problem("doks/topics/vector-search.md"), None);
+        assert_eq!(path_problem("yaks/doks/design/links.md"), None);
+        assert_eq!(path_problem("doks/a.md"), None);
         assert!(path_problem("notes/x.md").is_some());
-        assert!(path_problem("wiki/x.txt").is_some());
-        assert!(path_problem("wiki/Topics/x.md").is_some());
-        assert!(path_problem("wiki/x y.md").is_some());
-        assert!(path_problem("wiki/").is_some());
-        assert!(path_problem("sources/wiki/x.md").is_some());
+        assert!(path_problem("doks/x.txt").is_some());
+        assert!(path_problem("doks/Topics/x.md").is_some());
+        assert!(path_problem("doks/x y.md").is_some());
+        assert!(path_problem("doks/").is_some());
+        assert!(path_problem("sources/doks/x.md").is_some());
     }
 
     #[test]
-    fn discovery_finds_farm_and_herd_wikis_and_skips_the_rest() {
+    fn discovery_finds_farm_and_herd_doks_and_skips_the_rest() {
         let root = farm("disc");
         for (p, t) in [
             (
-                "wiki/topics/a.md",
+                "doks/topics/a.md",
                 "---\ntype: topic\ntitle: A\n---\n\nBody.\n",
             ),
-            ("wiki/b.md", "no frontmatter\n"),
-            ("wiki/img.png", "x"),
-            ("wiki/.hidden.md", "x"),
-            ("yaks/wiki/c.md", "---\ntitle: C\n---\n"),
+            ("doks/b.md", "no frontmatter\n"),
+            ("doks/img.png", "x"),
+            ("doks/.hidden.md", "x"),
+            ("yaks/doks/c.md", "---\ntitle: C\n---\n"),
             ("yaks/yaks/yaks-1a2b.md", "---\nid: yaks-1a2b\n---\n"),
-            ("sources/wiki/x.md", "x"),
+            ("sources/doks/x.md", "x"),
         ] {
             let f = root.join(p);
             std::fs::create_dir_all(f.parent().unwrap()).unwrap();
             std::fs::write(f, t).unwrap();
         }
         assert_eq!(
-            page_paths(&root),
-            ["wiki/b.md", "wiki/topics/a.md", "yaks/wiki/c.md"]
+            dok_paths(&root),
+            ["doks/b.md", "doks/topics/a.md", "yaks/doks/c.md"]
         );
         let all = load_all(&root).unwrap();
         assert_eq!(all[1].kind(), "topic");
@@ -451,27 +451,27 @@ mod tests {
         assert_eq!(
             msgs,
             [
-                "wiki/b.md: no frontmatter (start the file with a --- block holding type: and title:)",
-                "yaks/wiki/c.md: no type: (use note when unsure)",
+                "doks/b.md: no frontmatter (start the file with a --- block holding type: and title:)",
+                "yaks/doks/c.md: no type: (use note when unsure)",
             ]
         );
         assert!(
-            load(&root, "/wiki/topics/a.md").unwrap().is_some(),
+            load(&root, "/doks/topics/a.md").unwrap().is_some(),
             "leading / is the farm root"
         );
         assert!(
             load(&root, "yaks/yaks/yaks-1a2b.md").unwrap().is_none(),
-            "a yak is not a page"
+            "a yak is not a dok"
         );
         let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]
-    fn new_page_fills_type_and_title_and_refuses_existing_files() {
+    fn new_dok_fills_type_and_title_and_refuses_existing_files() {
         let root = farm("new");
-        let p = new_page(
+        let p = new_dok(
             &root,
-            "wiki/topics/heat-pump.md",
+            "doks/topics/heat-pump.md",
             None,
             None,
             &[("tags".into(), Value::from_cli("[home, hvac]"))],
@@ -483,9 +483,9 @@ mod tests {
             "---\ntype: note\ntitle: Heat pump\ntags:\n- home\n- hvac\n---\n\nNotes.\n"
         );
         save(&root, &p).unwrap();
-        assert!(new_page(&root, "wiki/topics/heat-pump.md", None, None, &[], "").is_err());
-        assert!(new_page(&root, "wiki/Bad.md", None, None, &[], "").is_err());
-        let back = load(&root, "wiki/topics/heat-pump.md").unwrap().unwrap();
+        assert!(new_dok(&root, "doks/topics/heat-pump.md", None, None, &[], "").is_err());
+        assert!(new_dok(&root, "doks/Bad.md", None, None, &[], "").is_err());
+        let back = load(&root, "doks/topics/heat-pump.md").unwrap().unwrap();
         assert_eq!(back.render(), p.render());
         assert_eq!(back.tags(), ["home", "hvac"]);
         assert!(
@@ -497,8 +497,8 @@ mod tests {
     }
 
     #[test]
-    fn an_untouched_page_round_trips_byte_for_byte() {
+    fn an_untouched_dok_round_trips_byte_for_byte() {
         let text = "---\ntype: topic\ntitle: Form signals\ndescription: Signals about forms.\ntags: [subtext, signals, forms]\nsources:\n  - raw/sources/a/source.md\n---\n\nPart of [x](x.md).\n";
-        assert_eq!(Page::parse("wiki/a.md", text).render(), text);
+        assert_eq!(Dok::parse("doks/a.md", text).render(), text);
     }
 }

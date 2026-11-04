@@ -65,7 +65,7 @@ pub(crate) struct SearchBox {
     /// The `App.query` / `App.register` value before opening, restored on
     /// cancel.
     pub(crate) saved: Option<String>,
-    /// Pane find only: `(scroll, line, matched)` of the page's `LineNav`
+    /// Pane find only: `(scroll, line, matched)` of the open dok's `LineNav`
     /// captured when the find opened, restored on cancel so Esc returns to the
     /// pre-find position (vi-like). `None` for the list search box.
     pub(crate) find_origin: Option<(u16, usize, Option<usize>)>,

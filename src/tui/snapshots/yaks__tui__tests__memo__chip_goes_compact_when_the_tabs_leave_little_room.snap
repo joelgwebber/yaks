@@ -2,7 +2,7 @@
 source: src/tui/tests.rs
 expression: "draw(&with_chip(1, Some((None, 0, 0))), 120, 8)"
 ---
- 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   📖  Wiki (0)   🛖  Sheds (…)     ●1 unpub
+ 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   📖  Doks (0)   🛖  Sheds (…)     ●1 unpub
 
  a0   p2 task     🦬  Root A
    a1 p3 task     🦬  Child A1

@@ -1,13 +1,13 @@
 //! The link grammar (yaks-101d, design yaks-ccb1): what a markdown link in a
-//! yak or a page points at, how it resolves, and how to read just the part it
+//! yak or a dok points at, how it resolves, and how to read just the part it
 //! names (`yaks peek`).
 //!
 //! A link is `<target>[@<rev>][#<anchor>]`:
 //!
 //! | Target | Form |
 //! |---|---|
-//! | a farm document | `/wiki/topics/x.md`: from the farm root |
-//! | below the linking page | `setup/notes.md`: relative, downward only |
+//! | a farm document | `/doks/topics/x.md`: from the farm root |
+//! | below the linking dok | `setup/notes.md`: relative, downward only |
 //! | a yak's attachment | `yaks-1a2b/log.txt`, from anywhere; in an attachment, a bare sibling `log.txt` |
 //! | the code repo | `code:src/foo.rs` |
 //! | a URL | `https://...` |
@@ -66,7 +66,7 @@ pub enum Link {
     /// An in-document anchor (`#section`).
     Local(Anchor),
     /// A yak, by its id (`[yaks-1a2b](yaks-1a2b)`): absolute from anywhere,
-    /// never relative to the linking page (yaks-0e15).
+    /// never relative to the linking dok (yaks-0e15).
     Yak(String),
 }
 
@@ -84,9 +84,9 @@ pub enum From<'a> {
     /// other relative path reads from the farm root). An attachment directory
     /// is flat, so a sibling is always a bare file name.
     Attachment(&'a str),
-    /// A page at this farm-relative path: a relative link is relative to its
+    /// A dok at this farm-relative path: a relative link is relative to its
     /// directory, downward only.
-    Page(&'a str),
+    Dok(&'a str),
     /// Typed on the command line: relative means from the farm root.
     Cli,
 }
@@ -160,7 +160,7 @@ pub fn parse(dest: &str, from: From, is_yak: impl Fn(&str) -> bool) -> Link {
         }
     }
     let base = match from {
-        From::Page(p) => p.rsplit_once('/').map_or("", |(d, _)| d),
+        From::Dok(p) => p.rsplit_once('/').map_or("", |(d, _)| d),
         From::Yak | From::Attachment(_) | From::Cli => "",
     };
     let joined = if base.is_empty() {
@@ -274,7 +274,7 @@ pub fn slug(heading: &str) -> String {
         .collect()
 }
 
-/// The link as one short label: `wiki/x.md#setup`, `code:src/a.rs:L3-L9@abc1234`.
+/// The link as one short label: `doks/x.md#setup`, `code:src/a.rs:L3-L9@abc1234`.
 pub fn label(link: &Link) -> String {
     let anchor = |a: &Option<Anchor>| match a {
         Some(Anchor::Lines(x, y)) if x == y => format!(":L{x}"),
@@ -446,7 +446,7 @@ pub fn sections(text: &str) -> Vec<(u32, String, std::ops::Range<usize>)> {
 
 // ------------------------------------------------------------- the farm graph
 
-/// One link from a farm document: who links (`from`, a yak id or a page
+/// One link from a farm document: who links (`from`, a yak id or a dok
 /// path), on which line of that document, to what.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Edge {
@@ -465,7 +465,7 @@ pub fn is_markdown_name(name: &str) -> bool {
 }
 
 /// Every markdown link in every yak (description and notes), every markdown
-/// attachment (`from` is `<id>/<file>`) and every page of the farm at `root`,
+/// attachment (`from` is `<id>/<file>`) and every dok of the farm at `root`,
 /// in document order. Yak ids are links too (mentions), but those are
 /// `refs`' business; this is the markdown-link half.
 pub fn edges(root: &Path) -> Result<Vec<Edge>> {
@@ -509,12 +509,12 @@ pub fn edges(root: &Path) -> Result<Vec<Edge>> {
             }
         }
     }
-    for p in crate::pages::load_all(root)? {
+    for p in crate::doks::load_all(root)? {
         for f in extract(&p.body) {
             out.push(Edge {
                 from: p.path.clone(),
                 line: f.line,
-                link: parse(&f.dest, From::Page(&p.path), is_yak),
+                link: parse(&f.dest, From::Dok(&p.path), is_yak),
                 dest: f.dest,
             });
         }
@@ -591,7 +591,17 @@ pub fn read_at(base: &Path, path: &str, rev: Option<&str>) -> Result<String> {
             Err(_) => bail!("{path}: no such file"),
         };
     };
-    let out = git(base, &["show", &format!("{rev}:./{path}")])?;
+    let mut out = git(base, &["show", &format!("{rev}:./{path}")])?;
+    // A pin from before schema 8 names a commit where the dok was still under
+    // `wiki/`: read it from there (only revs before the rename can miss).
+    if !out.status.success()
+        && let Some(old) = pre_doks_path(path)
+    {
+        let older = git(base, &["show", &format!("{rev}:./{old}")])?;
+        if older.status.success() {
+            out = older;
+        }
+    }
     if !out.status.success() {
         let err = String::from_utf8_lossy(&out.stderr);
         bail!(
@@ -601,6 +611,18 @@ pub fn read_at(base: &Path, path: &str, rev: Option<&str>) -> Result<String> {
         );
     }
     Ok(String::from_utf8_lossy(&out.stdout).into_owned())
+}
+
+/// The schema-7 spelling of a farm path under a doks root: `doks/x.md` was
+/// `wiki/x.md` and `<herd>/doks/x.md` was `<herd>/wiki/x.md`. `None` for any
+/// other path.
+fn pre_doks_path(path: &str) -> Option<String> {
+    if let Some(rest) = path.strip_prefix("doks/") {
+        return Some(format!("wiki/{rest}"));
+    }
+    let (herd, rest) = path.split_once('/')?;
+    let rest = rest.strip_prefix("doks/")?;
+    Some(format!("{herd}/wiki/{rest}"))
 }
 
 /// Lines `a..=b` of `text`, widened by `context` either side, each prefixed
@@ -684,7 +706,7 @@ pub fn peek(link: &Link, bases: &Bases, context: u32) -> Result<Peek> {
     let text = match link {
         Link::Url(u) => bail!("{u}: a URL; open it in a browser"),
         Link::Upward(s) => {
-            bail!("{s}: a link may not climb out with ../; link from the farm root (/wiki/...)")
+            bail!("{s}: a link may not climb out with ../; link from the farm root (/doks/...)")
         }
         Link::Local(_) => bail!("an in-document anchor needs its document"),
         Link::Yak(id) => {
@@ -764,25 +786,25 @@ mod tests {
 
     #[test]
     fn the_grammar() {
-        let pg = From::Page("wiki/topics/x.md");
+        let pg = From::Dok("doks/topics/x.md");
         assert_eq!(
             parse("https://a.test/b#c", pg, yak),
             Link::Url("https://a.test/b#c".into())
         );
-        assert_eq!(parse("/wiki/y.md", pg, yak), farm("wiki/y.md", None, None));
+        assert_eq!(parse("/doks/y.md", pg, yak), farm("doks/y.md", None, None));
         assert_eq!(
-            parse("/wiki/y.md@91be0d2#set-up", pg, yak),
+            parse("/doks/y.md@91be0d2#set-up", pg, yak),
             farm(
-                "wiki/y.md",
+                "doks/y.md",
                 Some("91be0d2"),
                 Some(Anchor::Heading("set-up".into()))
             )
         );
         assert_eq!(
             parse("sub/z.md", pg, yak),
-            farm("wiki/topics/sub/z.md", None, None)
+            farm("doks/topics/sub/z.md", None, None)
         );
-        assert_eq!(parse("z.md", pg, yak), farm("wiki/topics/z.md", None, None));
+        assert_eq!(parse("z.md", pg, yak), farm("doks/topics/z.md", None, None));
         assert_eq!(parse("../y.md", pg, yak), Link::Upward("../y.md".into()));
         assert_eq!(
             parse("../../raw/a.png", pg, yak),
@@ -810,17 +832,17 @@ mod tests {
         );
         // `@` that is not a sha is part of the path.
         assert_eq!(
-            parse("/wiki/a@b.md", pg, yak),
-            farm("wiki/a@b.md", None, None)
+            parse("/doks/a@b.md", pg, yak),
+            farm("doks/a@b.md", None, None)
         );
-        // A yak id is a yak from anywhere, never a page-relative file
+        // A yak id is a yak from anywhere, never a dok-relative file
         // (yaks-0e15); a non-yak bare word still is.
         for from in [pg, From::Yak, From::Cli] {
             assert_eq!(parse("yaks-44b3", from, yak), Link::Yak("yaks-44b3".into()));
         }
         assert_eq!(
             parse("notes", pg, yak),
-            farm("wiki/topics/notes", None, None)
+            farm("doks/topics/notes", None, None)
         );
     }
 
@@ -847,7 +869,7 @@ mod tests {
             Link::Upward("../../etc/x".into())
         );
         assert_eq!(
-            parse("../src/foo.rs", From::Page("wiki/a.md"), yak),
+            parse("../src/foo.rs", From::Dok("doks/a.md"), yak),
             Link::Upward("../src/foo.rs".into())
         );
         assert_eq!(
@@ -894,9 +916,9 @@ mod tests {
         // A yak id is still a yak, a farm path a farm path.
         assert_eq!(parse("yaks-3c4d", from, yak), Link::Yak("yaks-3c4d".into()));
         assert_eq!(
-            parse("/wiki/a.md", from, yak),
+            parse("/doks/a.md", from, yak),
             Link::Farm {
-                path: "wiki/a.md".into(),
+                path: "doks/a.md".into(),
                 rev: None,
                 anchor: None
             }
@@ -958,12 +980,12 @@ mod tests {
 
     #[test]
     fn extract_finds_links_with_lines_and_skips_code() {
-        let text = "See [a](/wiki/a.md).\n\n![shot](yaks-1a2b/s.png)\n\n`[not](x.md)`\n\n```\n[no](y.md)\n```\n";
+        let text = "See [a](/doks/a.md).\n\n![shot](yaks-1a2b/s.png)\n\n`[not](x.md)`\n\n```\n[no](y.md)\n```\n";
         assert_eq!(
             extract(text),
             [
                 Found {
-                    dest: "/wiki/a.md".into(),
+                    dest: "/doks/a.md".into(),
                     line: 1,
                     image: false
                 },
@@ -976,26 +998,85 @@ mod tests {
         );
     }
 
+    /// A link pinned before schema 8 (`@sha` of a commit where the dok was
+    /// under `wiki/`) still reads it through the `doks/` spelling the
+    /// migration wrote; a rev from after the rename reads `doks/` directly.
+    #[test]
+    fn a_pin_from_before_the_doks_rename_reads_the_old_wiki_path() {
+        let dir = std::env::temp_dir().join(format!("yaks-pin-doks-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("wiki/topics")).unwrap();
+        let run = |args: &[&str]| {
+            let o = Command::new("git")
+                .arg("-C")
+                .arg(&dir)
+                .args(args)
+                .output()
+                .unwrap();
+            assert!(
+                o.status.success(),
+                "{args:?}: {}",
+                String::from_utf8_lossy(&o.stderr)
+            );
+            String::from_utf8_lossy(&o.stdout).trim().to_string()
+        };
+        run(&["init", "-q"]);
+        run(&["config", "user.email", "t@t"]);
+        run(&["config", "user.name", "t"]);
+        std::fs::write(dir.join("wiki/topics/a.md"), "before the rename\n").unwrap();
+        run(&["add", "."]);
+        run(&["commit", "-qm", "wiki"]);
+        let old = run(&["rev-parse", "HEAD"]);
+        // The migration: a real `git mv` of the directory.
+        run(&["mv", "wiki", "doks"]);
+        std::fs::write(dir.join("doks/topics/a.md"), "after the rename\n").unwrap();
+        run(&["commit", "-qam", "doks"]);
+        let new = run(&["rev-parse", "HEAD"]);
+
+        assert_eq!(
+            read_at(&dir, "doks/topics/a.md", Some(&old)).unwrap(),
+            "before the rename\n"
+        );
+        assert_eq!(
+            read_at(&dir, "doks/topics/a.md", Some(&new)).unwrap(),
+            "after the rename\n"
+        );
+        assert_eq!(
+            read_at(&dir, "doks/topics/a.md", None).unwrap(),
+            "after the rename\n"
+        );
+        let err = read_at(&dir, "doks/topics/none.md", Some(&old))
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("none.md"), "{err}");
+        assert_eq!(
+            pre_doks_path("yak/doks/x.md").as_deref(),
+            Some("yak/wiki/x.md")
+        );
+        assert_eq!(pre_doks_path("sources/x.md"), None);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     #[test]
     fn peek_reads_lines_sections_and_summaries() {
         let root = std::env::temp_dir().join(format!("yaks-links-peek-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
-        std::fs::create_dir_all(root.join("wiki")).unwrap();
-        std::fs::write(root.join("wiki/a.md"), "---\ntype: topic\ntitle: A\n---\n\nFirst para\nstill.\n\nSecond.\n\n## Setup\n\nSteps.\n").unwrap();
+        std::fs::create_dir_all(root.join("doks")).unwrap();
+        std::fs::write(root.join("doks/a.md"), "---\ntype: topic\ntitle: A\n---\n\nFirst para\nstill.\n\nSecond.\n\n## Setup\n\nSteps.\n").unwrap();
         let b = Bases {
             farm: &root,
             code: Some(&root),
         };
-        let p = peek(&parse("/wiki/a.md", From::Cli, yak), &b, 0).unwrap();
+        let p = peek(&parse("/doks/a.md", From::Cli, yak), &b, 0).unwrap();
         assert_eq!(
             p.text,
             "---\ntype: topic\ntitle: A\n---\n\nFirst para\nstill.\n"
         );
-        let p = peek(&parse("/wiki/a.md#setup", From::Cli, yak), &b, 0).unwrap();
+        let p = peek(&parse("/doks/a.md#setup", From::Cli, yak), &b, 0).unwrap();
         assert_eq!(p.text, "## Setup\n\nSteps.\n");
-        let p = peek(&parse("code:wiki/a.md#L6-L7", From::Cli, yak), &b, 1).unwrap();
+        let p = peek(&parse("code:doks/a.md#L6-L7", From::Cli, yak), &b, 1).unwrap();
         assert_eq!(p.text, "5  \n6  First para\n7  still.\n8  \n");
-        assert!(peek(&parse("/wiki/none.md", From::Cli, yak), &b, 0).is_err());
+        assert!(peek(&parse("/doks/none.md", From::Cli, yak), &b, 0).is_err());
         let _ = std::fs::remove_dir_all(&root);
     }
 }

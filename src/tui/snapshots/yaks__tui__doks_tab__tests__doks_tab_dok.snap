@@ -1,13 +1,13 @@
 ---
-source: src/tui/wiki_tab.rs
+source: src/tui/doks_tab.rs
 expression: "draw(&app, 150, 26)"
 ---
- 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   📖  Wiki (4)   🛖  Sheds (…)
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   📖  Doks (4)   🛖  Sheds (…)
 
- Cut a release         howto                 wiki/h│ 📖  wiki/topics/vector-search.md  topic
- Full-text search      topic   #search       wiki/t│ type:        topic
- Vector search in Pos  topic   #databases #  wiki/t│ title:       Vector search in Postgres
- TUI layout            note    #tui          yaks/w│ description: pgvector, indexes and when to use them.
+ Cut a release         howto                 doks/h│ 📖  doks/topics/vector-search.md  topic
+ Full-text search      topic   #search       doks/t│ type:        topic
+ Vector search in Pos  topic   #databases #  doks/t│ title:       Vector search in Postgres
+ TUI layout            note    #tui          yaks/d│ description: pgvector, indexes and when to use them.
  pgvector README       source                source│ tags:        databases, search
                                                    │ sources:     sources/2026-10-22-1a2b3c4d/source.md
                                                    │

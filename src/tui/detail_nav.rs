@@ -325,7 +325,7 @@ impl App {
             return;
         }
         self.jump(|app| {
-            // The page it was followed from, if any, is replaced.
+            // The dok it was followed from, if any, is replaced.
             app.close_doc();
             let at = |app: &App| {
                 app.rows()
@@ -438,12 +438,12 @@ impl App {
     /// J/K — move to the next/prev task in the list while staying in the detail
     /// pane, resetting the per-task detail view state.
     pub(crate) fn detail_next_task(&mut self, delta: i32) {
-        // On a document list (the Wiki), the next row's page replaces the
+        // On a document list (the Doks), the next row's dok replaces the
         // open one, as `J`/`K` show the next yak in a yak list (yaks-7c6e).
-        if self.doc.is_some() && self.on_wiki_tab() {
+        if self.doc.is_some() && self.on_doks_tab() {
             return self.viewer_next_doc(delta);
         }
-        // Another row's subject replaces an open page.
+        // Another row's subject replaces an open dok.
         self.close_doc();
         let len = self.row_count();
         if len == 0 {
@@ -457,9 +457,9 @@ impl App {
         }
     }
 
-    /// `J`/`K` in the viewer on the Wiki: move the list cursor and open that
-    /// row's page in place. Not a history jump (as yak `J`/`K` is not); the
-    /// page keeps where focus returns to when it closes.
+    /// `J`/`K` in the viewer on the Doks: move the list cursor and open that
+    /// row's dok in place. Not a history jump (as yak `J`/`K` is not); the
+    /// dok keeps where focus returns to when it closes.
     fn viewer_next_doc(&mut self, delta: i32) {
         let len = self.row_count();
         let next = (self.cursor as i32 + delta).clamp(0, len.saturating_sub(1) as i32) as usize;

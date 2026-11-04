@@ -8,6 +8,12 @@
 //! current farm changes nothing. Readers accept the shapes every fixup
 //! rewrites *from*, so an un-migrated checkout or an old commit still parses.
 //!
+//! Schema 8 (the rename of wiki pages to doks) adds a second LAYOUT step,
+//! [`plan_doks`], and one fixup over yak bodies: `wiki/` and `<herd>/wiki/` move
+//! to `doks/` and `<herd>/doks/`, `/wiki/...` links become `/doks/...` (in yaks,
+//! doks, schemas and sessions; never in a source, which is a snapshot), and a
+//! schema's `type: Page Type` becomes `Dok Type`.
+//!
 //! Schema 6 adds one LAYOUT step that runs first ([`plan_layout`]): every yak
 //! file and attachment directory at the farm root moves into its herd's
 //! directory, `<herd>/yaks/` ([`store::task_path`]). Bodies are not touched by
@@ -35,7 +41,7 @@ pub struct Fixup {
     pub front: bool,
 }
 
-/// The fixups of schemas 5 and 7, in the order they run.
+/// The fixups of schemas 5, 7 and 8, in the order they run.
 pub const FIXUPS: &[Fixup] = &[
     Fixup {
         name: "labels-become-tags",
@@ -61,7 +67,35 @@ pub const FIXUPS: &[Fixup] = &[
         apply: attachment_link_encoding,
         front: false,
     },
+    Fixup {
+        name: "wiki-links-become-doks-links",
+        unit: "link(s)",
+        apply: wiki_links_become_doks_links,
+        front: false,
+    },
 ];
+
+/// The farm-root link `dest` with its `wiki` directory renamed: `/wiki/x.md`
+/// becomes `/doks/x.md` and `/<herd>/wiki/x.md` becomes `/<herd>/doks/x.md`,
+/// its `@rev` and `#anchor` as written. `None` for any other link (`code:`
+/// links, URLs, relative links, `/sources/wiki/...`).
+pub fn wiki_link_to_doks(dest: &str) -> Option<String> {
+    let rest = dest.strip_prefix('/')?;
+    let (first, tail) = rest.split_once('/')?;
+    if first == "wiki" {
+        return Some(format!("/doks/{tail}"));
+    }
+    let (second, tail) = tail.split_once('/')?;
+    (second == "wiki" && !store::RESERVED_HERD_NAMES.contains(&first))
+        .then(|| format!("/{first}/doks/{tail}"))
+}
+
+/// Schema 8: every `/wiki/...` link of a markdown body becomes `/doks/...`
+/// ([`wiki_link_to_doks`]). A pinned link keeps its `@rev`: the reader falls
+/// back to `wiki/` at a rev from before the rename ([`crate::links::read_at`]).
+pub fn wiki_links_become_doks_links(_: &Ctx, body: &str) -> (String, usize) {
+    crate::links::rewrite(body, wiki_link_to_doks)
+}
 
 /// Schema 7 (yaks-fd7a): `](<id>/my shot.png)`, an attachment link whose file
 /// name holds a space (which CommonMark does not read as a link), becomes
@@ -276,7 +310,7 @@ pub fn plan_layout(root: &Path) -> Result<Vec<Move>> {
         if store::RESERVED_HERD_NAMES.contains(&herd) {
             anyhow::bail!(
                 "{id}'s herd `{herd}` is a reserved name (it would collide with the farm's {herd} \
-                 directory); rename the herd first (`yaks rename-herd {herd} <new>`) with yaks 0.0.28"
+                 directory); rename the herd first (`yaks rename-herd {herd} <new>`) with yaks 0.0.31"
             );
         }
     }
@@ -286,7 +320,7 @@ pub fn plan_layout(root: &Path) -> Result<Vec<Move>> {
         if root.join(name).join(store::YAKS_SUBDIR).is_dir() {
             anyhow::bail!(
                 "herd `{name}` is now a reserved name (the farm's {name} directory); rename the herd \
-                 first (`yaks rename-herd {name} <new>`) with yaks 0.0.28"
+                 first (`yaks rename-herd {name} <new>`) with yaks 0.0.31"
             );
         }
     }
@@ -301,6 +335,112 @@ pub fn plan_layout(root: &Path) -> Result<Vec<Move>> {
         }
     }
     Ok(moves)
+}
+
+/// The schema-8 layout step: `wiki/` becomes `doks/`, and so does each herd's
+/// `<herd>/wiki/`. Refuses (before any move) when a destination already
+/// exists, or when a herd is literally named `doks`. Farm-relative
+/// `(from, to)` pairs, farm-wide first, then by herd.
+pub fn plan_doks(root: &Path) -> Result<Vec<(String, String)>> {
+    let Ok(rd) = std::fs::read_dir(root) else {
+        return Ok(Vec::new());
+    };
+    let mut herds: Vec<String> = rd
+        .flatten()
+        .filter(|e| e.path().is_dir())
+        .filter_map(|e| e.file_name().to_str().map(String::from))
+        .filter(|n| {
+            !n.starts_with('.') && n != "wiki" && !store::RESERVED_HERD_NAMES.contains(&n.as_str())
+        })
+        .collect();
+    herds.sort();
+    let mut moves = Vec::new();
+    let mut candidates = vec![String::new()];
+    candidates.extend(herds);
+    for h in candidates {
+        let (from, to) = if h.is_empty() {
+            ("wiki".to_string(), "doks".to_string())
+        } else {
+            (format!("{h}/wiki"), format!("{h}/doks"))
+        };
+        if root.join(&from).is_dir() {
+            if root.join(&to).exists() {
+                anyhow::bail!("cannot move {from} to {to}: {to} already exists");
+            }
+            moves.push((from, to));
+        }
+    }
+    Ok(moves)
+}
+
+/// Every markdown file of the non-yak documents the schema-8 link rewrite
+/// reads: each doks root (at `wiki/` when `moved` is false), `schemas/` and
+/// `sessions/`. Sources are not here: a source is a snapshot.
+fn document_files(root: &Path, moved: bool) -> Vec<std::path::PathBuf> {
+    let dir = if moved { "doks" } else { "wiki" };
+    let mut tops: Vec<std::path::PathBuf> =
+        vec![root.join(dir), root.join("schemas"), root.join("sessions")];
+    if let Ok(rd) = std::fs::read_dir(root) {
+        for e in rd.flatten() {
+            let n = e.file_name().to_string_lossy().into_owned();
+            if e.path().is_dir()
+                && !n.starts_with('.')
+                && n != "wiki"
+                && !store::RESERVED_HERD_NAMES.contains(&n.as_str())
+            {
+                tops.push(e.path().join(dir));
+            }
+        }
+    }
+    let mut out = Vec::new();
+    let mut stack = tops;
+    while let Some(d) = stack.pop() {
+        let Ok(rd) = std::fs::read_dir(&d) else {
+            continue;
+        };
+        for e in rd.flatten() {
+            let p = e.path();
+            if e.file_name().to_string_lossy().starts_with('.') {
+                continue;
+            }
+            if p.is_dir() {
+                stack.push(p);
+            } else if p.extension().and_then(|x| x.to_str()) == Some("md") {
+                out.push(p);
+            }
+        }
+    }
+    out.sort();
+    out
+}
+
+/// A document's schema-8 text and how many edits it took: its body's
+/// `/wiki/` links, and a schema's `type: Page Type` in its frontmatter.
+fn dok_text(text: &str) -> (String, usize) {
+    let Some((_, body)) = store::split_frontmatter(text) else {
+        return (text.to_string(), 0);
+    };
+    // `body` is the tail of `text`; everything before it is the frontmatter.
+    let head = &text[..text.len() - body.len()];
+    let (body, links) = wiki_links_become_doks_links(
+        &Ctx {
+            ids: &HashSet::new(),
+        },
+        body,
+    );
+    let mut types = 0;
+    let head = head
+        .split('\n')
+        .map(|l| match l.trim_end() {
+            "type: Page Type" | "type: \"Page Type\"" | "type: 'Page Type'" => {
+                types += 1;
+                l.replacen("Page Type", "Dok Type", 1)
+            }
+            _ => l.to_string(),
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    (format!("{head}{body}"), links + types)
 }
 
 fn apply_layout(moves: &[Move]) -> Result<()> {
@@ -326,6 +466,11 @@ pub struct Report {
     /// attachment dirs)`, sorted by herd.
     pub layout: Vec<(String, usize, usize)>,
     pub fixups: Vec<FixupReport>,
+    /// The schema-8 layout step: `(from, to)` for each `wiki` directory moved.
+    pub doks_roots: Vec<(String, String)>,
+    /// Non-yak documents (doks, schemas, sessions) the schema-8 step rewrites
+    /// (or would): `(farm-relative path, edits)`.
+    pub docs: Vec<(String, usize)>,
     /// Yak files rewritten (or that would be): the union over the fixups.
     pub files: usize,
     /// Whether anything under the farm is tracked by git (so the result
@@ -336,7 +481,11 @@ pub struct Report {
 impl Report {
     /// Nothing changed and nothing would: the farm is current.
     pub fn is_noop(&self) -> bool {
-        self.files == 0 && self.layout.is_empty() && self.from.is_none_or(|v| v == store::SCHEMA)
+        self.files == 0
+            && self.layout.is_empty()
+            && self.doks_roots.is_empty()
+            && self.docs.is_empty()
+            && self.from.is_none_or(|v| v == store::SCHEMA)
     }
 }
 
@@ -369,8 +518,13 @@ pub fn run(root: &Path, dry_run: bool) -> Result<Report> {
     }
     let layout: Vec<(String, usize, usize)> =
         layout.into_iter().map(|(h, (f, d))| (h, f, d)).collect();
+    let doks_roots = plan_doks(root)?;
     if !dry_run {
         apply_layout(&moves)?;
+        for (from, to) in &doks_roots {
+            std::fs::rename(root.join(from), root.join(to))
+                .with_context(|| format!("moving {from} to {to}"))?;
+        }
     }
     let mut paths: Vec<std::path::PathBuf> = if dry_run {
         let moved: HashSet<_> = moves.iter().map(|m| m.to.clone()).collect();
@@ -429,18 +583,37 @@ pub fn run(root: &Path, dry_run: bool) -> Result<Report> {
             writes.push((path, new));
         }
     }
+    // The non-yak documents: at `wiki/` on a dry run, at `doks/` once moved.
+    let mut docs: Vec<(String, usize)> = Vec::new();
+    let mut doc_writes: Vec<(std::path::PathBuf, String)> = Vec::new();
+    for path in document_files(root, !dry_run) {
+        let text = std::fs::read_to_string(&path)
+            .with_context(|| format!("reading {}", path.display()))?;
+        let (new, edits) = dok_text(&text);
+        if edits > 0 {
+            let rel = path
+                .strip_prefix(root)
+                .unwrap_or(&path)
+                .to_string_lossy()
+                .into_owned();
+            docs.push((rel, edits));
+            doc_writes.push((path, new));
+        }
+    }
     let report = Report {
         applied: !dry_run,
         from,
         layout,
         fixups,
+        doks_roots,
+        docs,
         files: writes.len(),
         git_tracked: tracked_by_git(root),
     };
     if dry_run || report.is_noop() {
         return Ok(report);
     }
-    for (path, text) in &writes {
+    for (path, text) in writes.iter().chain(&doc_writes) {
         store::write::atomic_write(path, text)?;
     }
     let schema = root.join("schema");
@@ -499,11 +672,133 @@ mod tests {
     fn a_herd_named_like_a_new_reserved_dir_refuses_the_migration() {
         let root = std::env::temp_dir().join(format!("yaks-mig-reserved-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
-        std::fs::create_dir_all(root.join("wiki/yaks")).unwrap();
+        std::fs::create_dir_all(root.join("doks/yaks")).unwrap();
         std::fs::write(root.join("schema"), "6\n").unwrap();
         let err = run(&root, true).unwrap_err().to_string();
-        assert!(err.contains("herd `wiki` is now a reserved name"), "{err}");
+        assert!(err.contains("herd `doks` is now a reserved name"), "{err}");
         assert_eq!(std::fs::read_to_string(root.join("schema")).unwrap(), "6\n");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    // -- schema 8: wiki -> doks --------------------------------------------
+
+    #[test]
+    fn wiki_links_become_doks_links_only_where_they_are_farm_links() {
+        let c = Ctx { ids: &ctx(&[]) };
+        let body = "[a](/wiki/topics/a.md#x) [b](/yaks/wiki/b.md@3f2a9c1) [c](/sources/wiki/c.md) \
+                    [d](code:wiki/d.md) [e](https://x.org/wiki/e) [f](wiki/f.md) [g](/doks/g.md)\n\n\
+                    `[h](/wiki/h.md)`\n";
+        let (out, n) = wiki_links_become_doks_links(&c, body);
+        assert_eq!(n, 2, "{out}");
+        assert!(out.contains("[a](/doks/topics/a.md#x)"), "{out}");
+        assert!(out.contains("[b](/yaks/doks/b.md@3f2a9c1)"), "{out}");
+        // Everything else is as written, code spans included.
+        for keep in [
+            "[c](/sources/wiki/c.md)",
+            "[d](code:wiki/d.md)",
+            "[e](https://x.org/wiki/e)",
+            "[f](wiki/f.md)",
+            "`[h](/wiki/h.md)`",
+        ] {
+            assert!(out.contains(keep), "{keep} in {out}");
+        }
+        assert_eq!(wiki_links_become_doks_links(&c, &out).1, 0, "idempotent");
+    }
+
+    /// A schema-7 farm with a farm-wide wiki, a herd wiki, links in a yak, a
+    /// dok, a schema and a session, and a source that mentions `/wiki/`.
+    fn schema_7_farm(tag: &str) -> std::path::PathBuf {
+        let root = std::env::temp_dir().join(format!("yaks-mig-doks-{tag}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let w = |rel: &str, text: &str| {
+            let p = root.join(rel);
+            std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+            std::fs::write(p, text).unwrap();
+        };
+        w("schema", "7\n");
+        w(
+            "yak/yaks/yak-0001.md",
+            "---\nid: yak-0001\ntitle: T\nstatus: hairy\ntype: task\npriority: 3\ncreated: \"2026-01-01T00:00:00Z\"\nupdated: \"2026-01-01T00:00:00Z\"\n---\n\nSee [a](/wiki/topics/a.md) and [b](/yak/wiki/b.md#h).\n",
+        );
+        w(
+            "wiki/topics/a.md",
+            "---\ntype: topic\ntitle: A\n---\n\nSee [b](/yak/wiki/b.md) and [local](b.md).\n",
+        );
+        w(
+            "yak/wiki/b.md",
+            "---\ntype: note\ntitle: B\n---\n\nBack to [a](/wiki/topics/a.md@3f2a9c1).\n",
+        );
+        w(
+            "schemas/thing.md",
+            "---\ntype: Page Type\ntitle: Thing\n---\n",
+        );
+        w(
+            "sessions/s.md",
+            "---\ntype: session-review\n---\n\n[a](/wiki/topics/a.md)\n",
+        );
+        w(
+            "sources/2026-01-01-abcd1234/extracted.md",
+            "A saved page that links [x](/wiki/x.md): a snapshot, never rewritten.\n",
+        );
+        root
+    }
+
+    #[test]
+    fn schema_8_moves_the_wikis_and_rewrites_links_once() {
+        let root = schema_7_farm("run");
+        let src_before =
+            std::fs::read(root.join("sources/2026-01-01-abcd1234/extracted.md")).unwrap();
+
+        // A dry run says what it would do and writes nothing.
+        let dry = run(&root, true).unwrap();
+        assert!(!dry.applied);
+        assert_eq!(
+            dry.doks_roots,
+            vec![
+                ("wiki".to_string(), "doks".to_string()),
+                ("yak/wiki".to_string(), "yak/doks".to_string())
+            ]
+        );
+        assert!(root.join("wiki").is_dir() && !root.join("doks").exists());
+        assert_eq!(std::fs::read_to_string(root.join("schema")).unwrap(), "7\n");
+
+        let r = run(&root, false).unwrap();
+        assert!(r.applied && !r.is_noop());
+        assert_eq!(std::fs::read_to_string(root.join("schema")).unwrap(), "8\n");
+        assert!(!root.join("wiki").exists() && !root.join("yak/wiki").exists());
+        let read = |rel: &str| std::fs::read_to_string(root.join(rel)).unwrap();
+        let yak = read("yak/yaks/yak-0001.md");
+        assert!(
+            yak.contains("[a](/doks/topics/a.md) and [b](/yak/doks/b.md#h)"),
+            "{yak}"
+        );
+        assert!(read("doks/topics/a.md").contains("[b](/yak/doks/b.md) and [local](b.md)"));
+        assert!(
+            read("yak/doks/b.md").contains("[a](/doks/topics/a.md@3f2a9c1)"),
+            "pins keep their rev"
+        );
+        assert!(read("schemas/thing.md").contains("type: Dok Type\n"));
+        assert!(read("sessions/s.md").contains("(/doks/topics/a.md)"));
+        // A source is a snapshot: byte for byte as it was.
+        assert_eq!(
+            std::fs::read(root.join("sources/2026-01-01-abcd1234/extracted.md")).unwrap(),
+            src_before
+        );
+
+        // Idempotent: a second run changes nothing.
+        let again = run(&root, false).unwrap();
+        assert!(again.is_noop(), "{again:?}");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn schema_8_refuses_before_moving_when_a_destination_exists() {
+        let root = schema_7_farm("clash");
+        std::fs::create_dir_all(root.join("doks")).unwrap();
+        let err = run(&root, false).unwrap_err().to_string();
+        assert!(err.contains("doks already exists"), "{err}");
+        assert!(root.join("wiki/topics/a.md").is_file(), "nothing moved");
+        assert_eq!(std::fs::read_to_string(root.join("schema")).unwrap(), "7\n");
         let _ = std::fs::remove_dir_all(&root);
     }
 

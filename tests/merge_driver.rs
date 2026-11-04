@@ -7,7 +7,7 @@ use assert_cmd::Command;
 use std::path::{Path, PathBuf};
 
 /// The farm schema this yaks writes (`store::SCHEMA`).
-const SCHEMA: u32 = 7;
+const SCHEMA: u32 = 8;
 
 fn tmp(tag: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("yaks-mdriver-{tag}-{}", std::process::id()));
@@ -193,20 +193,20 @@ fn a_non_yak_file_still_conflicts_in_git() {
     assert_eq!(text, "three\n", "ours left untouched for git to report");
 }
 
-/// Two clones edit one page: different fields, a tag each, and the same body
+/// Two clones edit one dok: different fields, a tag each, and the same body
 /// line. The driver merges the fields, keeps both body versions between
-/// markers, and `yaks conflicts` and doctor list the page (yaks-4c8c).
+/// markers, and `yaks conflicts` and doctor list the dok (yaks-4c8c).
 #[test]
-fn a_page_edited_on_both_sides_merges_and_is_listed_as_a_conflict() {
-    let root = tmp("page");
+fn a_dok_edited_on_both_sides_merges_and_is_listed_as_a_conflict() {
+    let root = tmp("dok");
     let a = root.join("a");
-    std::fs::create_dir_all(a.join(".yaks/wiki/topics")).unwrap();
+    std::fs::create_dir_all(a.join(".yaks/doks/topics")).unwrap();
     git(&a, &["init", "-q"]);
     std::fs::write(a.join(".yaks/config.yaml"), "herd: yak\n").unwrap();
     std::fs::write(a.join(".yaks/schema"), format!("{}\n", SCHEMA)).unwrap();
-    let page = ".yaks/wiki/topics/search.md";
+    let dok = ".yaks/doks/topics/search.md";
     let base = "---\ntype: topic\ntitle: Search\ntags: [db]\nstatus: draft\n---\n\n# Search\n\nIntro.\n\nThe plan is X.\n";
-    std::fs::write(a.join(page), base).unwrap();
+    std::fs::write(a.join(dok), base).unwrap();
     git(&a, &["add", "."]);
     git(&a, &["commit", "-q", "-m", "base"]);
     let branch = git(&a, &["branch", "--show-current"]).trim().to_string();
@@ -214,7 +214,7 @@ fn a_page_edited_on_both_sides_merges_and_is_listed_as_a_conflict() {
     let b = root.join("b");
 
     std::fs::write(
-        a.join(page),
+        a.join(dok),
         base.replace("tags: [db]", "tags: [db, pg]")
             .replace("status: draft", "status: review")
             .replace("The plan is X.", "The plan is Y."),
@@ -222,7 +222,7 @@ fn a_page_edited_on_both_sides_merges_and_is_listed_as_a_conflict() {
     .unwrap();
     git(&a, &["commit", "-qam", "a edits"]);
     std::fs::write(
-        b.join(page),
+        b.join(dok),
         base.replace("tags: [db]", "tags: [db, fts]")
             .replace("status: draft", "status: final")
             .replace("Intro.", "A better intro.")
@@ -239,7 +239,7 @@ fn a_page_edited_on_both_sides_merges_and_is_listed_as_a_conflict() {
         &b,
         &["merge", "-q", "-m", "merge", &format!("origin/{branch}")],
     );
-    let text = std::fs::read_to_string(b.join(page)).unwrap();
+    let text = std::fs::read_to_string(b.join(dok)).unwrap();
     assert_eq!(
         text,
         "---\ntype: topic\ntitle: Search\ntags: [db, fts, pg]\nstatus: final\n\
@@ -253,7 +253,7 @@ fn a_page_edited_on_both_sides_merges_and_is_listed_as_a_conflict() {
     assert_eq!(out.status.code(), Some(1));
     assert_eq!(
         String::from_utf8_lossy(&out.stdout),
-        "wiki/topics/search.md: conflict markers at L14; merge_conflicts: status \
+        "doks/topics/search.md: conflict markers at L14; merge_conflicts: status \
          (the other side's value is recorded there; remove the entry once settled)\n"
     );
     let doctor = String::from_utf8(yaks_out(&b, &["doctor", "--json"]).stdout).unwrap();
@@ -261,7 +261,7 @@ fn a_page_edited_on_both_sides_merges_and_is_listed_as_a_conflict() {
 
     // Settled by hand: nothing left to list.
     std::fs::write(
-        b.join(page),
+        b.join(dok),
         "---\ntype: topic\ntitle: Search\ntags: [db, fts, pg]\nstatus: final\n---\n\n# Search\n\nA better intro.\n\nThe plan is Y.\n",
     )
     .unwrap();

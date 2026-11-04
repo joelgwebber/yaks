@@ -98,11 +98,11 @@ fn each_write_is_one_commit_with_its_actor() {
     let f = Farm::new("each");
     let a = f.create("alice", "First");
     f.run("bob", &["shave", &a]);
-    f.run("bob", &["page", "new", "wiki/notes.md"]);
+    f.run("bob", &["dok", "new", "doks/notes.md"]);
     assert_eq!(
         f.subjects(),
         [
-            "yaks: pages wiki/notes.md".to_string(),
+            "yaks: doks doks/notes.md".to_string(),
             format!("yaks: shaving {a}"),
             format!("yaks: created {a}"),
             "yaks: new farm".into()

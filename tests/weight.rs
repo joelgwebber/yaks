@@ -78,14 +78,14 @@ fn weight_counts_commits_and_the_tree_by_kind() {
         serde_json::from_str(&f.run(&["create", "a yak", "--json"])).unwrap();
     let id = v["id"].as_str().unwrap().to_string();
     f.attach(&id, "shot.png", 4000);
-    f.run(&["page", "new", "wiki/topics/x.md", "--title", "X"]);
+    f.run(&["dok", "new", "doks/topics/x.md", "--title", "X"]);
     let r: serde_json::Value = serde_json::from_str(&f.run(&["weight", "--json"])).unwrap();
     assert_eq!(r["branch"], "yaks");
     assert!(r["commits"].as_u64().unwrap() >= 4, "{r}");
     assert_eq!(r["tree"]["yaks"]["files"], 1);
     assert_eq!(r["tree"]["attachments"]["files"], 1);
     assert_eq!(r["tree"]["attachments"]["bytes"], 4000);
-    assert_eq!(r["tree"]["pages"]["files"], 1);
+    assert_eq!(r["tree"]["doks"]["files"], 1);
     assert_eq!(r["largest"][0]["bytes"], 4000);
     assert!(
         r["largest"][0]["path"]

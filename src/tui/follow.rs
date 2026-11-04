@@ -5,7 +5,7 @@
 //! `yaks peek`/`doctor` agree on what a link means. This module is the
 //! TUI's opening side for the targets that grammar adds:
 //!
-//! - **A farm document** ([`Target::Farm`], `/wiki/x.md#setup`, a page-relative
+//! - **A farm document** ([`Target::Farm`], `/doks/x.md#setup`, a dok-relative
 //!   `notes.md`, `/sources/<id>/source.md`, a pinned `...@<sha>`): opens in
 //!   the text viewer ([`App::open_farm_doc`]) at its `#heading` or `#L12`
 //!   row. A pinned one shows the file as it was at that farm commit.
@@ -46,7 +46,7 @@ pub(crate) struct PeekCache {
 /// The row a heading or line anchor lands on in a viewer's rows: the first
 /// row whose source covers the heading's line (a heading in block `block`).
 fn anchor_row(v: &AttachView, rows: &[detail::DLine], anchor: &Anchor) -> Option<usize> {
-    // Within a page or source, block 0 is the body below the frontmatter;
+    // Within a dok or source, block 0 is the body below the frontmatter;
     // `#L12` counts lines of the whole file, so shift past the frontmatter.
     let body = v.blocks()[0];
     let front_lines = v.text[..v.text.len() - body.len()].lines().count();
@@ -162,7 +162,7 @@ impl App {
     }
 
     /// Show a document followed from a link: a jump, so `o` comes back to
-    /// where the link was (the page open now, or the yak or list row under
+    /// where the link was (the dok open now, or the yak or list row under
     /// it).
     pub(crate) fn follow_to_doc(&mut self, view: DocView) {
         self.jump(|app| {
@@ -171,7 +171,7 @@ impl App {
     }
 
     /// Close the pane's document: focus goes back to where it was opened
-    /// from. The history keeps the pages it passed through: `o` still goes
+    /// from. The history keeps the doks it passed through: `o` still goes
     /// back to them.
     pub(crate) fn close_doc(&mut self) {
         if let Some(d) = self.doc.take() {
@@ -195,7 +195,7 @@ impl App {
     /// A document as the pane showed it, read again from disk: `path` is its
     /// name as the viewer gives it (`<id>/<file>` for an attachment, else a
     /// farm path) and `rev` the farm commit of a pinned one. What
-    /// [`super::history`] restores a page by.
+    /// [`super::history`] restores a dok by.
     pub(crate) fn read_doc(&self, path: &str, rev: Option<&str>) -> Result<DocView, String> {
         // A farm file is under the farm root; an attachment is not (it lives
         // under its yak), so the path tells them apart.
@@ -257,7 +257,7 @@ impl App {
         };
         match anchor_row(v, &rows, anchor) {
             Some(to) => {
-                // The anchor's row at the top of the page, as a browser does.
+                // The anchor's row at the top of the dok, as a browser does.
                 v.nav.line = to;
                 v.nav.scroll = to.min(vp.max_scroll(rows.len())) as u16;
             }
@@ -283,16 +283,16 @@ impl App {
         let what = links::label(&Link::Local(anchor.clone()));
         match anchor_row(v, rows, anchor) {
             Some(to) => {
-                self.jump_in_page(rows, vp, to);
+                self.jump_in_dok(rows, vp, to);
                 self.notification = Some(format!("→ {what} (o to go back)"));
             }
             None => self.notification = Some(format!("no {what} in {}", v.target)),
         }
     }
 
-    /// Move the open page's cursor to row `to`: a jump (a footnote, a
+    /// Move the open dok's cursor to row `to`: a jump (a footnote, a
     /// `#section`), so `o` returns to where it was.
-    pub(crate) fn jump_in_page(&mut self, rows: &[detail::DLine], vp: Viewport, to: usize) {
+    pub(crate) fn jump_in_dok(&mut self, rows: &[detail::DLine], vp: Viewport, to: usize) {
         self.jump(|app| {
             if let Some(v) = app.attach_mut() {
                 v.nav.goto(rows, vp, to);
@@ -348,7 +348,7 @@ impl App {
 
     /// Whether the open viewer shows a peek pane: it is not hidden (`p`),
     /// there is a farm to read from, and the document has a link peek can
-    /// read. Reserved whenever such a link exists, so the page geometry does
+    /// read. Reserved whenever such a link exists, so the dok geometry does
     /// not jump as the cursor moves.
     pub(crate) fn viewer_has_peek(&self, rows: &[detail::DLine]) -> bool {
         let Some(v) = self.attach() else {
@@ -377,7 +377,7 @@ impl App {
 }
 
 /// A peek's text as display lines: the frontmatter fence and blank runs
-/// dropped, so a page head shows its fields and first paragraph.
+/// dropped, so a dok head shows its fields and first paragraph.
 pub(crate) fn peek_lines(text: &str) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for l in text.lines() {
@@ -398,12 +398,12 @@ mod tests {
     use super::*;
     use crate::tui::test_support::*;
 
-    /// A page linking every way the grammar allows: page-relative, from the
+    /// A dok linking every way the grammar allows: dok-relative, from the
     /// farm root at a heading, an in-page anchor, a source, a line range, a
     /// yak, and an attachment.
-    const HUB: &str = "---\ntitle: Hub\n---\n\n# Hub\n\n- See [fts](full-text-search.md).\n- And [indexes](/wiki/topics/vector-search.md#indexes).\n- Jump [below](#later).\n- Read [the source](/sources/2026-10-22-1a2b3c4d/source.md).\n- Lines [two](/wiki/howto/release.md#L6-L7).\n- Yak yaks-0001.\n- Log [run](yaks-0001/run.log).\n\n## Later\n\nThe end.\n";
+    const HUB: &str = "---\ntitle: Hub\n---\n\n# Hub\n\n- See [fts](full-text-search.md).\n- And [indexes](/doks/topics/vector-search.md#indexes).\n- Jump [below](#later).\n- Read [the source](/sources/2026-10-22-1a2b3c4d/source.md).\n- Lines [two](/doks/howto/release.md#L6-L7).\n- Yak yaks-0001.\n- Log [run](yaks-0001/run.log).\n\n## Later\n\nThe end.\n";
 
-    /// A live app on the fixture wiki plus `wiki/topics/hub.md`, with the hub
+    /// A live app on the fixture doks plus `doks/topics/hub.md`, with the hub
     /// open in the viewer and its pane measured.
     fn on_hub() -> (PathBuf, App) {
         let (proj, farm) = temp_farm(&[task(
@@ -413,13 +413,13 @@ mod tests {
             2,
             None,
         )]);
-        crate::tui::wiki_tab::fixture::write(farm.root());
-        std::fs::write(farm.root().join("wiki/topics/hub.md"), HUB).unwrap();
+        crate::tui::doks_tab::fixture::write(farm.root());
+        std::fs::write(farm.root().join("doks/topics/hub.md"), HUB).unwrap();
         farm.attach("yaks-0001", "run.log", b"step one\nstep two\n")
             .unwrap();
         let mut app = App::with_farm(farm).unwrap();
         app.detail_page = 30;
-        app.open_farm_doc("wiki/topics/hub.md", None, None);
+        app.open_farm_doc("doks/topics/hub.md", None, None);
         draw(&app, 150, 34);
         (proj, app)
     }
@@ -451,7 +451,7 @@ mod tests {
     }
 
     #[test]
-    fn links_in_a_page_resolve_by_the_link_grammar() {
+    fn links_in_a_dok_resolve_by_the_link_grammar() {
         let (proj, app) = on_hub();
         let (rows, _) = app.attachment_rows().unwrap();
         let targets: Vec<Target> = detail::jumplist(&rows)
@@ -466,14 +466,14 @@ mod tests {
         assert_eq!(
             targets,
             vec![
-                farm("wiki/topics/full-text-search.md", None),
+                farm("doks/topics/full-text-search.md", None),
                 farm(
-                    "wiki/topics/vector-search.md",
+                    "doks/topics/vector-search.md",
                     Some(Anchor::Heading("indexes".into()))
                 ),
                 Target::Local(Anchor::Heading("later".into())),
                 farm("sources/2026-10-22-1a2b3c4d/source.md", None),
-                farm("wiki/howto/release.md", Some(Anchor::Lines(6, 7))),
+                farm("doks/howto/release.md", Some(Anchor::Lines(6, 7))),
                 Target::Task("yaks-0001".into()),
                 Target::Artifact("yaks-0001/run.log".into()),
             ]
@@ -482,13 +482,13 @@ mod tests {
     }
 
     #[test]
-    fn enter_opens_a_page_at_its_heading_and_o_comes_back() {
+    fn enter_opens_a_dok_at_its_heading_and_o_comes_back() {
         let (proj, mut app) = on_hub();
-        tab_to(&mut app, "wiki/topics/vector-search.md#indexes");
+        tab_to(&mut app, "doks/topics/vector-search.md#indexes");
         let hub_line = viewer(&app).nav.line;
         enter_key(&mut app);
         let v = viewer(&app);
-        assert_eq!(v.target, "wiki/topics/vector-search.md");
+        assert_eq!(v.target, "doks/topics/vector-search.md");
         let (rows, _) = app.attachment_rows().unwrap();
         assert_eq!(
             rows[viewer(&app).nav.line].text,
@@ -497,41 +497,41 @@ mod tests {
         );
         // o goes back to the hub, cursor where it was; i forward again.
         press(&mut app, "o");
-        assert_eq!(viewer(&app).target, "wiki/topics/hub.md");
+        assert_eq!(viewer(&app).target, "doks/topics/hub.md");
         assert_eq!(viewer(&app).nav.line, hub_line);
         press(&mut app, "i");
-        assert_eq!(viewer(&app).target, "wiki/topics/vector-search.md");
-        // A page-relative link from there, then two hops back.
-        tab_to(&mut app, "wiki/topics/full-text-search.md");
+        assert_eq!(viewer(&app).target, "doks/topics/vector-search.md");
+        // A dok-relative link from there, then two hops back.
+        tab_to(&mut app, "doks/topics/full-text-search.md");
         enter_key(&mut app);
-        assert_eq!(viewer(&app).target, "wiki/topics/full-text-search.md");
+        assert_eq!(viewer(&app).target, "doks/topics/full-text-search.md");
         press(&mut app, "oo");
-        assert_eq!(viewer(&app).target, "wiki/topics/hub.md");
+        assert_eq!(viewer(&app).target, "doks/topics/hub.md");
         // One step further is where the hub was opened from: the list.
         press(&mut app, "o");
-        assert!(app.doc.is_none(), "back out of the first page, to the list");
+        assert!(app.doc.is_none(), "back out of the first dok, to the list");
         assert_eq!(app.focus, Focus::List);
         press(&mut app, "o");
         assert_eq!(app.notification.as_deref(), Some("no earlier location"));
-        // Closing a page does not forget the history: `i` reopens it.
+        // Closing a dok does not forget the history: `i` reopens it.
         press(&mut app, "i");
-        assert_eq!(viewer(&app).target, "wiki/topics/hub.md");
+        assert_eq!(viewer(&app).target, "doks/topics/hub.md");
         esc_key(&mut app);
         assert!(app.doc.is_none());
         assert!(!app.history.fwd.is_empty() || !app.history.back.is_empty());
         press(&mut app, "i");
-        assert_eq!(viewer(&app).target, "wiki/topics/vector-search.md");
+        assert_eq!(viewer(&app).target, "doks/topics/vector-search.md");
         let _ = std::fs::remove_dir_all(proj);
     }
 
     #[test]
-    fn a_followed_page_closes_back_to_where_the_first_was_opened_from() {
+    fn a_followed_dok_closes_back_to_where_the_first_was_opened_from() {
         let (proj, mut app) = on_hub();
         // `on_hub` opened the hub from the list: that is where it closes to.
         assert_eq!(app.doc.as_ref().map(|d| d.from), Some(Focus::List));
-        tab_to(&mut app, "wiki/topics/vector-search.md#indexes");
+        tab_to(&mut app, "doks/topics/vector-search.md#indexes");
         enter_key(&mut app);
-        assert_eq!(viewer(&app).target, "wiki/topics/vector-search.md");
+        assert_eq!(viewer(&app).target, "doks/topics/vector-search.md");
         assert_eq!(app.doc.as_ref().map(|d| d.from), Some(Focus::List));
         esc_key(&mut app);
         assert!(app.doc.is_none());
@@ -540,7 +540,7 @@ mod tests {
     }
 
     #[test]
-    fn an_in_page_anchor_and_a_line_range_land_on_their_rows() {
+    fn an_in_dok_anchor_and_a_line_range_land_on_their_rows() {
         let (proj, mut app) = on_hub();
         tab_to(&mut app, "#later");
         let from = viewer(&app).nav.line;
@@ -553,10 +553,10 @@ mod tests {
             from,
             "o undoes the in-page jump first"
         );
-        assert_eq!(viewer(&app).target, "wiki/topics/hub.md");
+        assert_eq!(viewer(&app).target, "doks/topics/hub.md");
         // `#L6-L7` counts file lines, frontmatter included: release.md's
         // line 6 is `1. Tag ...`.
-        tab_to(&mut app, "wiki/howto/release.md:L6-L7");
+        tab_to(&mut app, "doks/howto/release.md:L6-L7");
         enter_key(&mut app);
         let (rows, _) = app.attachment_rows().unwrap();
         assert!(
@@ -581,7 +581,7 @@ mod tests {
         enter_key(&mut app);
         assert_eq!(viewer(&app).target, "yaks-0001/run.log");
         press(&mut app, "o");
-        assert_eq!(viewer(&app).target, "wiki/topics/hub.md");
+        assert_eq!(viewer(&app).target, "doks/topics/hub.md");
         // A yak closes the viewer and opens the yak.
         tab_to(&mut app, "yaks-0001");
         enter_key(&mut app);
@@ -591,19 +591,19 @@ mod tests {
     }
 
     /// yaks-0e15 / yaks-d0b0: a markdown link whose destination is a yak id,
-    /// in a page under `wiki/topics/`, opens the yak; it is not read as the
-    /// page-relative file `wiki/topics/yaks-0001`.
+    /// in a dok under `doks/topics/`, opens the yak; it is not read as the
+    /// dok-relative file `doks/topics/yaks-0001`.
     #[test]
-    fn a_markdown_link_to_a_yak_from_a_page_opens_the_yak() {
+    fn a_markdown_link_to_a_yak_from_a_dok_opens_the_yak() {
         let (proj, mut app) = on_hub();
         let root = app.farm.as_ref().unwrap().root().to_path_buf();
         std::fs::write(
-            root.join("wiki/topics/hub.md"),
+            root.join("doks/topics/hub.md"),
             "---\ntitle: Hub\n---\n\n# Hub\n\nBuilt under [the search yak](yaks-0001).\n",
         )
         .unwrap();
         app.close_doc();
-        app.open_farm_doc("wiki/topics/hub.md", None, None);
+        app.open_farm_doc("doks/topics/hub.md", None, None);
         draw(&app, 150, 34);
         tab_to(&mut app, "yaks-0001");
         enter_key(&mut app);
@@ -617,22 +617,22 @@ mod tests {
     }
 
     #[test]
-    fn a_missing_page_says_so_and_stays_put() {
+    fn a_missing_dok_says_so_and_stays_put() {
         let (proj, mut app) = on_hub();
         std::fs::remove_file(
             app.farm
                 .as_ref()
                 .unwrap()
                 .root()
-                .join("wiki/topics/full-text-search.md"),
+                .join("doks/topics/full-text-search.md"),
         )
         .unwrap();
-        tab_to(&mut app, "wiki/topics/full-text-search.md");
+        tab_to(&mut app, "doks/topics/full-text-search.md");
         enter_key(&mut app);
-        assert_eq!(viewer(&app).target, "wiki/topics/hub.md");
+        assert_eq!(viewer(&app).target, "doks/topics/hub.md");
         assert_eq!(
             app.notification.as_deref(),
-            Some("wiki/topics/full-text-search.md: not in this farm")
+            Some("doks/topics/full-text-search.md: not in this farm")
         );
         let _ = std::fs::remove_dir_all(proj);
     }
@@ -640,26 +640,26 @@ mod tests {
     #[test]
     fn the_peek_pane_shows_the_section_under_the_cursor() {
         let (proj, mut app) = on_hub();
-        tab_to(&mut app, "wiki/topics/vector-search.md#indexes");
+        tab_to(&mut app, "doks/topics/vector-search.md#indexes");
         let frame = draw(&app, 150, 34);
         assert!(
-            frame.contains("── peek: wiki/topics/vector-search.md#indexes"),
+            frame.contains("── peek: doks/topics/vector-search.md#indexes"),
             "{frame}"
         );
         assert!(
             frame.contains("- HNSW: fast queries, slow builds."),
             "{frame}"
         );
-        // A page head: its fields and first paragraph.
-        tab_to(&mut app, "wiki/topics/full-text-search.md");
+        // A dok head: its fields and first paragraph.
+        tab_to(&mut app, "doks/topics/full-text-search.md");
         let frame = draw(&app, 150, 34);
         assert!(frame.contains("title: Full-text search"), "{frame}");
-        // An in-page anchor peeks this page's section.
+        // An in-page anchor peeks this dok's section.
         tab_to(&mut app, "#later");
         let frame = draw(&app, 150, 34);
-        assert!(frame.contains("peek: wiki/topics/hub.md#later"), "{frame}");
+        assert!(frame.contains("peek: doks/topics/hub.md#later"), "{frame}");
         assert!(frame.contains("The end."), "{frame}");
-        // `p` hides it, and the page gets the rows back.
+        // `p` hides it, and the dok gets the rows back.
         press(&mut app, "p");
         let frame = draw(&app, 150, 34);
         assert!(!frame.contains("── peek"), "{frame}");
@@ -667,7 +667,7 @@ mod tests {
     }
 
     #[test]
-    fn a_pinned_link_opens_the_page_as_it_was() {
+    fn a_pinned_link_opens_the_dok_as_it_was() {
         let (proj, mut app) = on_hub();
         let root = app.farm.as_ref().unwrap().root().to_path_buf();
         let git = |args: &[&str]| {
@@ -687,11 +687,11 @@ mod tests {
         };
         git(&["init", "-q"]);
         git(&["add", "-A"]);
-        git(&["commit", "-qm", "wiki"]);
+        git(&["commit", "-qm", "doks"]);
         let sha = git(&["rev-parse", "HEAD"]);
-        let page = root.join("wiki/topics/full-text-search.md");
-        std::fs::write(&page, "---\ntitle: Full-text search\n---\n\nRewritten.\n").unwrap();
-        app.open_farm_doc("wiki/topics/full-text-search.md", Some(&sha), None);
+        let dok = root.join("doks/topics/full-text-search.md");
+        std::fs::write(&dok, "---\ntitle: Full-text search\n---\n\nRewritten.\n").unwrap();
+        app.open_farm_doc("doks/topics/full-text-search.md", Some(&sha), None);
         let frame = draw(&app, 150, 34);
         assert!(
             frame.contains(&format!("full-text-search.md@{}", &sha[..7])),
@@ -713,9 +713,9 @@ mod tests {
     #[test]
     fn the_detail_pane_follows_a_farm_link_and_peeks_it_in_the_status_bar() {
         let mut t = task("yaks-0001", "Search", crate::model::Status::Hairy, 2, None);
-        t.body = "Background: [vector search](/wiki/topics/vector-search.md#indexes).".into();
+        t.body = "Background: [vector search](/doks/topics/vector-search.md#indexes).".into();
         let (proj, farm) = temp_farm(&[t]);
-        crate::tui::wiki_tab::fixture::write(farm.root());
+        crate::tui::doks_tab::fixture::write(farm.root());
         let mut app = App::with_farm(farm).unwrap();
         press(&mut app, "l");
         draw(&app, 120, 24);
@@ -723,18 +723,18 @@ mod tests {
         let frame = draw(&app, 120, 24);
         let status = frame.lines().last().unwrap();
         assert!(
-            status.starts_with("→ wiki/topics/vector-search.md#indexes · ## Indexes"),
+            status.starts_with("→ doks/topics/vector-search.md#indexes · ## Indexes"),
             "{status}"
         );
         enter_key(&mut app);
-        assert_eq!(viewer(&app).target, "wiki/topics/vector-search.md");
+        assert_eq!(viewer(&app).target, "doks/topics/vector-search.md");
         let _ = std::fs::remove_dir_all(proj);
     }
 
     #[test]
-    fn the_viewer_following_a_page_link_with_a_peek() {
+    fn the_viewer_following_a_dok_link_with_a_peek() {
         let (proj, mut app) = on_hub();
-        tab_to(&mut app, "wiki/topics/vector-search.md#indexes");
+        tab_to(&mut app, "doks/topics/vector-search.md#indexes");
         insta::assert_snapshot!(draw(&app, 120, 28));
         let _ = std::fs::remove_dir_all(proj);
     }
