@@ -5,13 +5,13 @@ status: shorn
 type: task
 priority: 3
 created: '2026-11-04T17:23:24Z'
-updated: '2026-11-04T17:29:22Z'
+updated: '2026-11-04T20:03:30Z'
 parent: yaks-dedc
 depends_on:
 - yaks-d19c
 tags:
-- wiki
 - docs
+- doks
 ---
 
 The skill half of yaks-dedc (diagnosis in its notes). Depends on the tool yak, since the skill must name `--text`.
