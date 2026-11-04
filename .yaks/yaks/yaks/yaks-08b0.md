@@ -1,11 +1,11 @@
 ---
 id: yaks-08b0
 title: 'Skills: one source per thing, with --url and --title; conversions are not sources'
-status: hairy
+status: shaving
 type: task
 priority: 3
 created: '2026-11-04T17:23:24Z'
-updated: '2026-11-04T17:23:24Z'
+updated: '2026-11-04T17:28:37Z'
 parent: yaks-dedc
 depends_on:
 - yaks-d19c
@@ -31,3 +31,13 @@ The skill half of yaks-dedc (diagnosis in its notes). Depends on the tool yak, s
 
 - `cargo test -p yaks skills`; grep for the old `--part-of ... when it is a separate file` wording across `docs/ .agents/ README.md src/`.
 - The scout's two answers, attached.
+
+---
+▸ 2026-11-04T17:28:37Z [source-fix]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
