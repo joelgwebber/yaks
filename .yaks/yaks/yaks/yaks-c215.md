@@ -13,14 +13,14 @@ tags:
 - tui
 ---
 
-Phase 6, the pane half, of [the design](/wiki/design/tui-model.md#4-search) (yaks-1bbd): `/` in the pane sets one search register (replacing `detail_find` and the viewer's find), highlighted in every text subject, kept across `J`/`K` and `o`/`i`; `n` past the last match moves to the next matching row; `n`/`N` in a list re-apply it as the query.
+Phase 6, the pane half, of [the design](/doks/design/tui-model.md#4-search) (yaks-1bbd): `/` in the pane sets one search register (replacing `detail_find` and the viewer's find), highlighted in every text subject, kept across `J`/`K` and `o`/`i`; `n` past the last match moves to the next matching row; `n`/`N` in a list re-apply it as the query.
 
 ---
 ▸ 2026-11-03T05:08:29Z [herd-tui]
 
 Claim draft (yakherd herd-tui), to start after phase 4b (yaks-9dec) lands: worker `find-1`.
 
-**Task.** One search register for every text subject ([design §4](/wiki/design/tui-model.md#4-search)).
+**Task.** One search register for every text subject ([design §4](/doks/design/tui-model.md#4-search)).
 
 - `App.register: Option<String>` (vim's `@/`). `/` in the yak detail or the text viewer edits it, not the list query; `Esc` restores the previous register.
 - `LineNav.find` stops being per-page state: every text subject reads `App.register` for highlights and `n`/`N`, and `LineNav` keeps only the current match index.
@@ -32,6 +32,7 @@ Claim draft (yakherd herd-tui), to start after phase 4b (yaks-9dec) lands: worke
 
 ---
 ▸ 2026-11-03T05:14:49Z [herd-tui]
+
 kind: move
 from: hairy
 to: shaving
@@ -73,6 +74,7 @@ Decision: the footer is the status bar: `match i/n "q"` is prefixed to the usual
 
 ---
 ▸ 2026-11-03T05:26:14Z [find-1]
+
 kind: verify
 result: pass
 ---
@@ -88,6 +90,7 @@ Docs-parity grep: `grep -rn "detail_find|DetailFind|find_box|doc_find|open_detai
 
 ---
 ▸ 2026-11-03T05:26:23Z [find-1]
+
 kind: move
 from: shaving
 to: shorn
@@ -98,6 +101,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-11-03T05:26:50Z [herd-tui]
+
 kind: landed
 commit: acabcb7f75cb56a02fdbb014451c788977cac6d1
 source: 57d4dfa8f740b4b1a5d3673154f7bdc04960c481

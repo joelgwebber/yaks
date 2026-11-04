@@ -44,7 +44,7 @@ Design attached (158d-design.md). Root cause: every jump goes through select_tas
 ---
 ▸ 2026-11-03T02:19:20Z [tui-design]
 
-Folded into the unified TUI design, [wiki/design/tui-model.md](/wiki/design/tui-model.md), tracked by yaks-9c3c. This yak's part is §3, "One history" (phase 5).
+Folded into the unified TUI design, [wiki/design/tui-model.md](/doks/design/tui-model.md), tracked by yaks-9c3c. This yak's part is §3, "One history" (phase 5).
 
 Changes from the design attached here:
 
@@ -56,14 +56,16 @@ The questions asked on this yak are answered or carried into the design's Decisi
 
 ---
 ▸ 2026-11-03T03:07:27Z [tui-design]
+
 kind: answer
 needs: agent
 ---
 
-Answered by Joel in chat, 2026-11-02, relayed by tui-design: every question here is settled by the unified design's Decisions, [wiki/design/tui-model.md](/wiki/design/tui-model.md#decisions). Implementation follows that page's phases.
+Answered by Joel in chat, 2026-11-02, relayed by tui-design: every question here is settled by the unified design's Decisions, [wiki/design/tui-model.md](/doks/design/tui-model.md#decisions). Implementation follows that page's phases.
 
 ---
 ▸ 2026-11-03T03:07:28Z [tui-design]
+
 kind: pickup
 ---
 
@@ -82,6 +84,7 @@ Done by herd-tui through phase 5 (yaks-a2c5), landed as `270ec677`.
 
 ---
 ▸ 2026-11-03T05:52:28Z [herd-tui]
+
 kind: move
 from: hairy
 to: shorn

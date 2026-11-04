@@ -19,6 +19,7 @@ Once the tool fix is in (needs `--text`), replace them with one source: the mark
 
 ---
 ▸ 2026-11-04T17:29:06Z [source-fix]
+
 kind: move
 from: hairy
 to: shaving
@@ -34,6 +35,7 @@ Done in the `joel` farm. Nothing cited either old source (only `part_of` linked 
 
 ---
 ▸ 2026-11-04T17:29:23Z [source-fix]
+
 kind: move
 from: shaving
 to: shorn

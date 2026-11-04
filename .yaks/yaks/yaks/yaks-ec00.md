@@ -76,6 +76,7 @@ Audit (2026-11-02, delta:skills-upgrade-audit): what the skills and the binary t
 
 ---
 ▸ 2026-11-02T17:44:54Z [delta:skills-upgrade-audit]
+
 kind: ask
 needs: human
 ---
@@ -91,6 +92,7 @@ Upgrade and migrate guidance for agents, from the audit above. Four questions; m
 
 ---
 ▸ 2026-11-03T02:38:56Z [Joel Webber]
+
 kind: answer
 needs: agent
 ---
@@ -102,6 +104,7 @@ needs: agent
 
 ---
 ▸ 2026-11-03T14:21:51Z [delta:skills-upgrade-audit]
+
 kind: pickup
 ---
 
@@ -111,6 +114,7 @@ First pass (Joel's answers): upgrade recipe in skill + newer-schema error; agent
 
 ---
 ▸ 2026-11-03T14:21:59Z [delta:skills-upgrade-audit]
+
 kind: move
 from: hairy
 to: shaving

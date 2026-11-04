@@ -16,6 +16,7 @@ Old ones can get pretty noisy after you've been working for a while.
 
 ---
 ▸ 2026-11-03T21:24:33Z [delta:starred-batch]
+
 kind: move
 from: hairy
 to: shaving
@@ -38,6 +39,7 @@ Evidence: test `idle_sheds_start_collapsed_and_space_opens_them`, updated list s
 
 ---
 ▸ 2026-11-03T21:40:28Z [delta:starred-batch]
+
 kind: move
 from: shaving
 to: shorn

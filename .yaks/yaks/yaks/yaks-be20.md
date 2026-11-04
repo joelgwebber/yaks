@@ -40,6 +40,7 @@ The CLI gave the agent no other way. `yaks attach` takes one file and always app
 
 ---
 ▸ 2026-11-03T23:08:12Z [indent-links]
+
 kind: move
 from: hairy
 to: shaving
@@ -88,6 +89,7 @@ Joel is tidying the surveyor farm and its guidance himself, so `yaks-9173` is hi
 
 ---
 ▸ 2026-11-03T23:47:30Z [indent-links]
+
 kind: move
 from: shaving
 to: shorn

@@ -12,7 +12,7 @@ tags:
 - tui
 ---
 
-Joel's call (2026-11-03): rename what the farm calls its **wiki** and **pages** to **doks** (yaks, haks, doks), completely and at once. No aliases, no deprecation period, no old spelling left in the product: nobody but Joel uses these docs yet, so this is the cheap moment. Origin: [the haks research page](/wiki/research/haks-orchestration-layer.md#naming-dok).
+Joel's call (2026-11-03): rename what the farm calls its **wiki** and **pages** to **doks** (yaks, haks, doks), completely and at once. No aliases, no deprecation period, no old spelling left in the product: nobody but Joel uses these docs yet, so this is the cheap moment. Origin: [the haks research page](/doks/research/haks-orchestration-layer.md#naming-dok).
 
 ## Decisions made here (so the implementer doesn't re-open them)
 

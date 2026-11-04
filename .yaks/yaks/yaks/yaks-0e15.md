@@ -16,6 +16,7 @@ Eg, `wiki/design/knowledge-store.md` links to `yaks-44b3`, but attempting to fol
 
 ---
 ▸ 2026-11-03T21:13:55Z [delta:starred-batch]
+
 kind: move
 from: hairy
 to: shaving
@@ -38,6 +39,7 @@ Evidence: `the_grammar` (all three `From`s), the new TUI test `a_markdown_link_t
 
 ---
 ▸ 2026-11-03T21:20:56Z [delta:starred-batch]
+
 kind: move
 from: shaving
 to: shorn

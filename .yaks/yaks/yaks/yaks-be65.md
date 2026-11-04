@@ -11,7 +11,7 @@ tags:
 - tui
 ---
 
-Phase 3, first half, of [the design](/wiki/design/tui-model.md#1-rows-and-views) (yaks-f1e6 is the second half's yak): a list row is a yak or a document, and the Wiki tab becomes an ordinary flat view of document rows, using the list's own cursor, rendering and key dispatch.
+Phase 3, first half, of [the design](/doks/design/tui-model.md#1-rows-and-views) (yaks-f1e6 is the second half's yak): a list row is a yak or a document, and the Wiki tab becomes an ordinary flat view of document rows, using the list's own cursor, rendering and key dispatch.
 
 ---
 ▸ 2026-11-03T04:11:26Z [herd-tui]
@@ -84,6 +84,7 @@ Decision: `set_wiki_entries` calls `touch()` (memo key), and re-seats `App.curso
 
 ---
 ▸ 2026-11-03T04:23:14Z [rows-1]
+
 kind: verify
 result: pass
 ---
@@ -104,6 +105,7 @@ Finished Tue Nov  3 04:23:23 UTC 2026.
 
 ---
 ▸ 2026-11-03T04:23:23Z [rows-1]
+
 kind: move
 from: shaving
 to: shorn
@@ -114,6 +116,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-11-03T04:23:46Z [herd-tui]
+
 kind: landed
 commit: 50af0a9a3dc5be6ee8315a1a14c23311c3cc54fb
 source: 63fcca622d12599221b2a4920dada58ee0ffcf49

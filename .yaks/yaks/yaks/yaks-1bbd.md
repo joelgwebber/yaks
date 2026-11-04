@@ -21,7 +21,7 @@ Design folded into yaks-953f's proposal attachment
 ---
 ▸ 2026-11-03T02:19:21Z [tui-design]
 
-Folded into the unified TUI design, [wiki/design/tui-model.md](/wiki/design/tui-model.md), tracked by yaks-9c3c: §4, the search register, in phase 6.
+Folded into the unified TUI design, [wiki/design/tui-model.md](/doks/design/tui-model.md), tracked by yaks-9c3c: §4, the search register, in phase 6.
 
 ---
 ▸ 2026-11-03T05:30:02Z [herd-tui]
@@ -30,6 +30,7 @@ Done by herd-tui through phase 6b (yaks-c215), landed as `acabcb7f`: one search 
 
 ---
 ▸ 2026-11-03T05:30:02Z [herd-tui]
+
 kind: move
 from: hairy
 to: shorn

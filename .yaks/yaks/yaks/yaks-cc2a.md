@@ -16,6 +16,7 @@ Not quite sure what we *should* show for these -- we don't have a lot of informa
 
 ---
 ▸ 2026-11-03T21:24:34Z [delta:starred-batch]
+
 kind: move
 from: hairy
 to: shaving
@@ -33,6 +34,7 @@ Evidence: `sheds_tab_detail` snapshot, docshot `tui-sheds-detail.svg`, and on th
 
 ---
 ▸ 2026-11-03T21:40:29Z [delta:starred-batch]
+
 kind: move
 from: shaving
 to: shorn

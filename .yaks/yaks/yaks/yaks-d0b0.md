@@ -16,6 +16,7 @@ Looks like it's trying to follow them as though they're relative resources, when
 
 ---
 ▸ 2026-11-03T21:13:56Z [delta:starred-batch]
+
 kind: move
 from: hairy
 to: shaving
@@ -31,6 +32,7 @@ Same bug as yaks-0e15, fixed there (yak ids in links are absolute; `Link::Yak`).
 
 ---
 ▸ 2026-11-03T21:20:56Z [delta:starred-batch]
+
 kind: move
 from: shaving
 to: shorn

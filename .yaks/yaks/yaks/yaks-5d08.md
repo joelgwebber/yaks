@@ -13,10 +13,11 @@ tags:
 - tui
 ---
 
-Phase 3 of [the design](/wiki/design/tui-model.md#1-rows-and-views) (yaks-f1e6): a row is a yak, a document or a shed. Wiki becomes a flat view of document rows and Sheds a tree view (actor roots, touched yaks as children, outstanding first). Their separate cursors and key handlers go.
+Phase 3 of [the design](/doks/design/tui-model.md#1-rows-and-views) (yaks-f1e6): a row is a yak, a document or a shed. Wiki becomes a flat view of document rows and Sheds a tree view (actor roots, touched yaks as children, outstanding first). Their separate cursors and key handlers go.
 
 ---
 ▸ 2026-11-03T04:11:26Z [herd-tui]
+
 kind: move
 from: hairy
 to: shaving
@@ -33,6 +34,7 @@ Both halves landed: yaks-be65 (`50af0a9a`) and yaks-c354 (`200d48fa`).
 
 ---
 ▸ 2026-11-03T04:46:15Z [herd-tui]
+
 kind: move
 from: shaving
 to: shorn

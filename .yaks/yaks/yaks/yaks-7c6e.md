@@ -47,7 +47,7 @@ Probably lots more cases I'm not thinking of. Please explore the idea of organiz
 ---
 ▸ 2026-11-03T22:06:10Z [delta:starred-batch]
 
-Design pass (delta:starred-batch): [TUI keys: organizing principles](/wiki/design/tui-keys.md) states six rules, measures today's table against them, and proposes the changes. Built so far, as uncontroversial bug fixes from your list:
+Design pass (delta:starred-batch): [TUI keys: organizing principles](/doks/design/tui-keys.md) states six rules, measures today's table against them, and proposes the changes. Built so far, as uncontroversial bug fixes from your list:
 
 - `J`/`K` in a Wiki page open the next / previous row's page (`2ba1622`).
 - Related, under yaks-000b: the list wheel scrolls like the detail; sideways wheel scrolls tables.
@@ -56,13 +56,14 @@ The rest waits on the ask below.
 
 ---
 ▸ 2026-11-03T22:06:11Z [delta:starred-batch]
+
 kind: ask
 needs: human
 ---
 
 asked: needs human
 
-Questions from [the keys page](/wiki/design/tui-keys.md), with my lean on each:
+Questions from [the keys page](/doks/design/tui-keys.md), with my lean on each:
 
 1. **`h` and leaving the pane.** Lean: `h` (and `←`) only scroll left and never leave the pane; leave with `Esc` (or `Backspace`). `l`/Enter still enter. This fixes the "shot out of the table" problem. OK to drop `h`-to-leave entirely, or keep it only when the row has nothing to scroll?
 2. **One family for the whole TUI.** Lean: `vim_mode: false` turns off `hjkl`, `d`/`u`, `g`/`G` and `Ctrl-N`/`Ctrl-P` outside the editor, leaving arrows/PgUp/PgDn/Home/End, and adds `Ctrl-F` find with `F3`/`Shift-F3` next/previous (F3 in both modes). Keep the setting's name (`vim_mode`) or rename it to `keys: vim|standard`?

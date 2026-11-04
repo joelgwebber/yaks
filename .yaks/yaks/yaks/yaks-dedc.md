@@ -59,6 +59,7 @@ Decision: a markdown original keeps its `extracted.md` (Joel agreed); a non-text
 
 ---
 ▸ 2026-11-04T17:23:26Z [source-fix]
+
 kind: move
 from: hairy
 to: shaving
@@ -75,6 +76,7 @@ All three children shorn; code and skill changes are on `yaks-dedc-sources` in t
 
 ---
 ▸ 2026-11-04T17:29:25Z [source-fix]
+
 kind: move
 from: shaving
 to: shorn

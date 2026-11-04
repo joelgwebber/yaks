@@ -21,6 +21,7 @@ But the filter shows only "hairy":
 
 ---
 ▸ 2026-11-03T21:21:32Z [delta:starred-batch]
+
 kind: move
 from: hairy
 to: shaving
@@ -45,6 +46,7 @@ Evidence: new test `a_content_filter_keeps_the_status_scope`; headless runs on t
 
 ---
 ▸ 2026-11-03T21:24:29Z [delta:starred-batch]
+
 kind: move
 from: shaving
 to: shorn

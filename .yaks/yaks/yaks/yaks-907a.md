@@ -18,6 +18,7 @@ Feels like there might be an intentional delay for some reason?
 
 ---
 ▸ 2026-11-03T21:40:35Z [delta:starred-batch]
+
 kind: move
 from: hairy
 to: shaving
@@ -38,6 +39,7 @@ So headless shows no difference; whatever Joel sees may be terminal-side.
 
 ---
 ▸ 2026-11-03T21:42:05Z [delta:starred-batch]
+
 kind: ask
 needs: human
 ---
@@ -51,6 +53,7 @@ I can't reproduce a `:wq`-only pause: headlessly both `:wq` and Ctrl-S take ~0.5
 
 ---
 ▸ 2026-11-03T21:53:17Z [Joel Webber]
+
 kind: answer
 needs: agent
 ---
@@ -61,6 +64,7 @@ Are we doing more work on write than just editing the yak file? Might this just 
 
 ---
 ▸ 2026-11-03T22:09:33Z [delta:starred-batch]
+
 kind: pickup
 ---
 
@@ -83,6 +87,7 @@ Decision: fold this into yaks-7058 (now a dependency) rather than fix it twice. 
 
 ---
 ▸ 2026-11-03T22:10:05Z [delta:starred-batch]
+
 kind: move
 from: shaving
 to: hairy

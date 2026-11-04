@@ -13,7 +13,7 @@ tags:
 - tui
 ---
 
-Phase 3, second half, of [the design](/wiki/design/tui-model.md#1-rows-and-views); implements yaks-f1e6: the Sheds tab becomes an ordinary tree view. Each actor is a collapsible root row; its children are the yaks it touched (working, asking, then recent, as `Shed::rows` orders them). The tab's own cursors, key handlers and list renderer go.
+Phase 3, second half, of [the design](/doks/design/tui-model.md#1-rows-and-views); implements yaks-f1e6: the Sheds tab becomes an ordinary tree view. Each actor is a collapsible root row; its children are the yaks it touched (working, asking, then recent, as `Shed::rows` orders them). The tab's own cursors, key handlers and list renderer go.
 
 ---
 ▸ 2026-11-03T04:24:11Z [herd-tui]
@@ -74,6 +74,7 @@ Start: Tue Nov  3 04:27:48 UTC 2026; yaks path: /home/user/.local/share/yaks/far
 
 ---
 ▸ 2026-11-03T04:40:13Z [sheds-2]
+
 kind: verify
 result: fail
 ---
@@ -82,6 +83,7 @@ verify: `cargo test --workspace` -> FAIL (exit 101)
 
 ---
 ▸ 2026-11-03T04:40:44Z [sheds-2]
+
 kind: verify
 result: pass
 ---
@@ -128,6 +130,7 @@ Decision: the shed pane keeps no scroll or cursor (it never has more than a scre
 
 ---
 ▸ 2026-11-03T04:42:21Z [sheds-2]
+
 kind: verify
 result: pass
 ---
@@ -145,6 +148,7 @@ Summary: the Sheds tab is an ordinary tree view. Shed roots (today's order and t
 
 ---
 ▸ 2026-11-03T04:42:21Z [sheds-2]
+
 kind: move
 from: shaving
 to: shorn
@@ -155,6 +159,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-11-03T04:43:01Z [herd-tui]
+
 kind: landed
 commit: 200d48faff9b6d8aa420c44b2a084e1b5465a752
 source: 074f09c250c63bd45a730848b1224712c03fd635

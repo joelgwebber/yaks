@@ -18,6 +18,7 @@ Gate before tagging, as in yaks-a5f8: the exact commit passes `cargo test --work
 
 ---
 ▸ 2026-11-04T01:29:09Z [delta:Fix relative image links in yak attachme]
+
 kind: move
 from: hairy
 to: shaving
@@ -41,6 +42,7 @@ Installed locally with `cargo install --path .` from the same tree. `yaks tui` s
 
 ---
 ▸ 2026-11-04T01:49:21Z [delta:Fix relative image links in yak attachme]
+
 kind: move
 from: shaving
 to: shorn

@@ -22,6 +22,7 @@ Also note: The cursor doesn't update when you search, then move to the [n]ext re
 
 ---
 ▸ 2026-11-03T21:48:07Z [delta:starred-batch]
+
 kind: move
 from: hairy
 to: shaving
@@ -49,6 +50,7 @@ Not done: mouse click to target a specific link on a row (that is yaks-000b's te
 
 ---
 ▸ 2026-11-03T21:55:06Z [delta:starred-batch]
+
 kind: move
 from: shaving
 to: shorn

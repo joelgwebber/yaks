@@ -18,7 +18,7 @@ Findings go in `/wiki/research/haks-orchestration-layer.md`. Also records the "d
 ---
 ▸ 2026-11-03T22:42:09Z [delta:haks-review]
 
-Findings written to [the haks page](/wiki/research/haks-orchestration-layer.md): the layering, patterns worth keeping, where Haks works around yaks, risks, general-vs-Clint split, and the "dok" naming question (open, no decision).
+Findings written to [the haks page](/doks/research/haks-orchestration-layer.md): the layering, patterns worth keeping, where Haks works around yaks, risks, general-vs-Clint split, and the "dok" naming question (open, no decision).
 
 Source read: `subtextdev/haks` at `8fbe3ec`, via `gh repo clone`. Not saved as a source (private repo).
 
@@ -26,6 +26,7 @@ Open questions are checkboxes on the page. Waiting on Joel for discussion.
 
 ---
 ▸ 2026-11-03T22:42:09Z [delta:haks-review]
+
 kind: move
 from: hairy
 to: shaving
@@ -37,7 +38,7 @@ moved: hairy -> shaving
 ---
 ▸ 2026-11-03T23:09:05Z [delta:ksQQ5qxMm5B_TcKPJ13IMRVoupLOAEKh-5IBxBCA]
 
-Added provenance: a summary of Clint's Indent thread, plus his pushed `yaks` branch, folded into [the haks page](/wiki/research/haks-orchestration-layer.md) (new sections "Provenance" and "What the thread adds", three new open questions).
+Added provenance: a summary of Clint's Indent thread, plus his pushed `yaks` branch, folded into [the haks page](/doks/research/haks-orchestration-layer.md) (new sections "Provenance" and "What the thread adds", three new open questions).
 
 - Source: [Indent thread summary](/sources/2026-11-03-81364278/source.md). Produced by a read-only Indent sandbox agent that read the conversation text only (no tool calls, no screenshots). A model's reading, not the transcript.
 - Farm finding: Clint's `haks` herd has 8 yaks, all from before the thread, and none of the build is filed there. The design history exists only in the thread and in git.

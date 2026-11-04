@@ -16,6 +16,7 @@ For example:
 
 ---
 ▸ 2026-11-03T21:17:23Z [delta:starred-batch]
+
 kind: move
 from: hairy
 to: shaving
@@ -35,6 +36,7 @@ Evidence: the yaks-91d9 test covers `/sources/...`; the attached frame there is 
 
 ---
 ▸ 2026-11-03T21:21:27Z [delta:starred-batch]
+
 kind: move
 from: shaving
 to: shorn

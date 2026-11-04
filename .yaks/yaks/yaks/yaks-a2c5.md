@@ -14,14 +14,14 @@ tags:
 - tui
 ---
 
-Phase 5 of [the design](/wiki/design/tui-model.md#3-one-history) (yaks-158d): one stack of locations replaces the three back stacks; jumps push, movement doesn't; `o`/`i` work everywhere; restore clamps.
+Phase 5 of [the design](/doks/design/tui-model.md#3-one-history) (yaks-158d): one stack of locations replaces the three back stacks; jumps push, movement doesn't; `o`/`i` work everywhere; restore clamps.
 
 ---
 ▸ 2026-11-03T05:09:17Z [herd-tui]
 
 Claim draft (yakherd herd-tui), to start after phase 6b (yaks-c215) lands: worker `hist-1`.
 
-**Task.** One history of locations replaces the three back stacks ([design §3](/wiki/design/tui-model.md#3-one-history); decision 1 puts the query in a location).
+**Task.** One history of locations replaces the three back stacks ([design §3](/doks/design/tui-model.md#3-one-history); decision 1 puts the query in a location).
 
 - `struct Location { view_key, filter, query, cursor: Option<RowKey>, cursor_idx, list_offset, focus, pane: Option<PaneAt> }`.
   - `RowKey` names a row by kind: a yak id, a doc path, `shed:<name>`.
@@ -41,6 +41,7 @@ Claim draft (yakherd herd-tui), to start after phase 6b (yaks-c215) lands: worke
 
 ---
 ▸ 2026-11-03T05:27:15Z [herd-tui]
+
 kind: move
 from: hairy
 to: shaving
@@ -114,6 +115,7 @@ Progress: core is implemented and `cargo build` passes: new `src/tui/history.rs`
 
 ---
 ▸ 2026-11-03T05:46:42Z [hist-1]
+
 kind: verify
 result: pass
 ---
@@ -177,6 +179,7 @@ Summary 2026-11-03T05:47:16Z: one history of locations landed in the working tre
 
 ---
 ▸ 2026-11-03T05:47:16Z [hist-1]
+
 kind: move
 from: shaving
 to: shorn
@@ -187,6 +190,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-11-03T05:48:02Z [herd-tui]
+
 kind: landed
 commit: 270ec67797123a5bfcc7503cb12677fc7a3037e4
 source: 5bff181953b418466aebf7ad172d993d36fd202e

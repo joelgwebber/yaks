@@ -11,10 +11,11 @@ tags:
 - tui
 ---
 
-Phase 2 of [the design](/wiki/design/tui-model.md#5-keys) (part of yaks-0ac1): every key binding moves into one command table (named commands, a context, default keys, a help line), dispatched in layers, with the `?` overlay and the bottom hint generated from it. A refactor: no key changes meaning.
+Phase 2 of [the design](/doks/design/tui-model.md#5-keys) (part of yaks-0ac1): every key binding moves into one command table (named commands, a context, default keys, a help line), dispatched in layers, with the `?` overlay and the bottom hint generated from it. A refactor: no key changes meaning.
 
 ---
 ▸ 2026-11-03T03:47:41Z [herd-tui]
+
 kind: move
 from: hairy
 to: shaving
@@ -105,6 +106,7 @@ Decision: the old unreachable-from-table viewer note "(in viewer)" row is droppe
 
 ---
 ▸ 2026-11-03T04:03:12Z [keys-1]
+
 kind: verify
 result: fail
 ---
@@ -113,6 +115,7 @@ verify: `cargo test --workspace` -> FAIL (exit 101)
 
 ---
 ▸ 2026-11-03T04:04:31Z [keys-1]
+
 kind: verify
 result: fail
 ---
@@ -121,6 +124,7 @@ verify: `cargo test --workspace` -> FAIL (exit 101)
 
 ---
 ▸ 2026-11-03T04:05:05Z [keys-1]
+
 kind: verify
 result: pass
 ---
@@ -146,6 +150,7 @@ Merge note for the yakherd: phase 1 touched `handle_key`, the search toast and `
 
 ---
 ▸ 2026-11-03T04:05:18Z [keys-1]
+
 kind: move
 from: shaving
 to: shorn
@@ -156,6 +161,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-11-03T04:05:47Z [herd-tui]
+
 kind: landed
 commit: 642be42e60ada6b08c94c1de53cb59c24f92a88b
 source: 14245b9f4fa3470f9f4c54c3e4a5c4b9553e9012

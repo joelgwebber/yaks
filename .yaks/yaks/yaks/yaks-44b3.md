@@ -95,7 +95,7 @@ Landed: yaks-bdcb (`yaks find`, be9d80b), an identity fix in `yaks commit` (75d9
 ---
 ▸ 2026-11-02T01:56:37Z [delta:farm-wiki]
 
-Landed on `main` as de32523, a squash of `wiki` (Joel, 2026-11-02). Installed with `cargo install --path .`. Migrated this farm to schema 7 (3860490) and turned on LFS (08ad4ad, 44 binaries converted). The model is written up in [the farm as a knowledge store](/wiki/design/knowledge-store.md), and the migration steps in [migrate a farm](/wiki/howto/migrate-a-farm.md).
+Landed on `main` as de32523, a squash of `wiki` (Joel, 2026-11-02). Installed with `cargo install --path .`. Migrated this farm to schema 7 (3860490) and turned on LFS (08ad4ad, 44 binaries converted). The model is written up in [the farm as a knowledge store](/doks/design/knowledge-store.md), and the migration steps in [migrate a farm](/doks/howto/migrate-a-farm.md).
 
 ---
 ▸ 2026-11-02T17:10:43Z [delta:farm-wiki]

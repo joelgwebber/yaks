@@ -19,6 +19,7 @@ A few scrolling odds and ends:
 
 ---
 ▸ 2026-11-03T21:59:28Z [delta:starred-batch]
+
 kind: move
 from: hairy
 to: shaving
@@ -39,6 +40,7 @@ Evidence: tests `wheel_scrolls_the_list_and_drags_the_cursor`, `horizontal_wheel
 
 ---
 ▸ 2026-11-03T22:04:36Z [delta:starred-batch]
+
 kind: ask
 needs: human
 ---
@@ -59,6 +61,7 @@ For option 2 of my ask: the edtui fork already has `events/mouse.rs` (`MouseEven
 
 ---
 ▸ 2026-11-03T22:28:12Z [Joel Webber]
+
 kind: answer
 needs: agent
 ---

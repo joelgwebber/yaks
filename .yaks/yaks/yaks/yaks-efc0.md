@@ -31,6 +31,7 @@ You can see here that it's difficult to tell the sheds apart from their contents
 
 ---
 ▸ 2026-11-03T21:24:34Z [delta:starred-batch]
+
 kind: move
 from: hairy
 to: shaving
@@ -48,6 +49,7 @@ Done in d3aa34a: a shed's yak rows are depth 2 (`Row::shed_yak`), so their ids s
 
 ---
 ▸ 2026-11-03T21:40:29Z [delta:starred-batch]
+
 kind: move
 from: shaving
 to: shorn

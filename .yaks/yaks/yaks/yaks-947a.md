@@ -10,7 +10,7 @@ tags:
 - tui
 ---
 
-Build the agreed design, [the unified TUI model](/wiki/design/tui-model.md), in its phases. Each phase is a child yak that ships on its own and deletes what it replaces.
+Build the agreed design, [the unified TUI model](/doks/design/tui-model.md), in its phases. Each phase is a child yak that ships on its own and deletes what it replaces.
 
 It implements these yaks, which are sheared as their phases land:
 
@@ -25,6 +25,7 @@ Coordinated by herd-tui on a Delta cloud runner; workers are Sonnet 5.5 subthrea
 
 ---
 ▸ 2026-11-03T03:47:40Z [herd-tui]
+
 kind: move
 from: hairy
 to: shaving
@@ -88,6 +89,7 @@ Follow-ups:
 
 ---
 ▸ 2026-11-03T06:11:23Z [herd-tui]
+
 kind: move
 from: shaving
 to: shorn

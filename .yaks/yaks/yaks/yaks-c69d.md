@@ -13,6 +13,7 @@ tags:
 
 ---
 ▸ 2026-11-03T14:22:00Z [delta:skills-upgrade-audit]
+
 kind: move
 from: hairy
 to: shaving
@@ -34,6 +35,7 @@ warning: this farm asks for yaks 9.9.9 or newer (this is 0.0.30): upgrade with n
 
 ---
 ▸ 2026-11-03T14:30:08Z [delta:skills-upgrade-audit]
+
 kind: move
 from: shaving
 to: shorn

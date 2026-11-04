@@ -34,6 +34,7 @@ The skill half of yaks-dedc (diagnosis in its notes). Depends on the tool yak, s
 
 ---
 ▸ 2026-11-04T17:28:37Z [source-fix]
+
 kind: move
 from: hairy
 to: shaving
@@ -55,6 +56,7 @@ Not run: the cold-read scout from the brief (subagents weren't asked for in this
 
 ---
 ▸ 2026-11-04T17:29:22Z [source-fix]
+
 kind: move
 from: shaving
 to: shorn

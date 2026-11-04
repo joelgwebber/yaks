@@ -18,6 +18,7 @@ Inline images render perfectly well in yak details, but not in documents. See th
 
 ---
 ▸ 2026-11-03T21:17:24Z [delta:starred-batch]
+
 kind: move
 from: hairy
 to: shaving
@@ -40,6 +41,7 @@ Evidence: new test `a_page_in_the_viewer_draws_attachment_and_farm_root_images_i
 
 ---
 ▸ 2026-11-03T21:21:27Z [delta:starred-batch]
+
 kind: move
 from: shaving
 to: shorn

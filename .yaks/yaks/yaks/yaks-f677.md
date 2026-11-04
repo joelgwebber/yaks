@@ -21,6 +21,7 @@ Joel starred 13 yaks on 2026-11-03 to address together. This yak groups them; ea
 
 ---
 ▸ 2026-11-03T21:13:55Z [delta:starred-batch]
+
 kind: move
 from: hairy
 to: shaving
@@ -37,7 +38,7 @@ Progress (delta:starred-batch), on local `main`, not pushed:
 
 - Shorn, with evidence on each: yaks-0e15, yaks-d0b0, yaks-91d9, yaks-c5d7, yaks-b608, yaks-58f0, yaks-efc0, yaks-cc2a, yaks-aec7, yaks-fc9e.
 - yaks-000b: wheel and sideways-wheel done; one question asked (click in edit mode).
-- yaks-7c6e: design page [TUI keys](/wiki/design/tui-keys.md) and a six-part ask; `J`/`K` in Wiki pages fixed.
+- yaks-7c6e: design page [TUI keys](/doks/design/tui-keys.md) and a six-part ask; `J`/`K` in Wiki pages fixed.
 - yaks-907a: the pause is the per-change commit; now waits on yaks-7058.
 
 Commits: 7e67170, d3aa34a, c83fdab, f9ea808, 2ba1622, dab80e4, on top of upstream `c98d7e3` (rebased; the earlier yaks-ec00 work is 2075608). Gate: 1098 tests pass. Installed with `cargo install --path .`.

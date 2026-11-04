@@ -15,6 +15,7 @@ tags:
 
 ---
 ▸ 2026-11-03T05:08:29Z [herd-tui]
+
 kind: move
 from: hairy
 to: shaving
@@ -28,7 +29,7 @@ moved: hairy -> shaving
 
 Claim (yakherd herd-tui): worker `nav-2` (Sonnet 5.5), from main at `a6634e38` (phases 4a and 6a landed).
 
-**Task.** The detail pane's state becomes one `LineNav`, like the text viewer's, so every text subject has the same navigation state ([design §2](/wiki/design/tui-model.md#2-the-pane-and-its-subjects)). A pure refactor: no behaviour or key changes.
+**Task.** The detail pane's state becomes one `LineNav`, like the text viewer's, so every text subject has the same navigation state ([design §2](/doks/design/tui-model.md#2-the-pane-and-its-subjects)). A pure refactor: no behaviour or key changes.
 
 **Scope.**
 
@@ -69,6 +70,7 @@ Evidence grep (`grep -rn "detail_line\|detail_scroll\|detail_anchor\|detail_find
 
 ---
 ▸ 2026-11-03T05:14:12Z [nav-2]
+
 kind: verify
 result: pass
 ---
@@ -77,6 +79,7 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-11-03T05:14:17Z [nav-2]
+
 kind: move
 from: shaving
 to: shorn
@@ -87,6 +90,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-11-03T05:14:40Z [herd-tui]
+
 kind: landed
 commit: e9e3c6c2e6c2d390c64bc2c1cf60352b02871a6a
 source: 1d552b3edb969bae161092abfabffd1525706061

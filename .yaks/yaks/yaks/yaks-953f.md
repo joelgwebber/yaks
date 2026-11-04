@@ -34,7 +34,7 @@ Root cause found + reproduced headlessly: the persisting 'filter: q' is a toast 
 ---
 ▸ 2026-11-03T02:19:20Z [tui-design]
 
-Folded into the unified TUI design, [wiki/design/tui-model.md](/wiki/design/tui-model.md), tracked by yaks-9c3c. This yak's part is §4, "Search": phase 1 (notifications clear on the next key) and phase 6 (the query and the register).
+Folded into the unified TUI design, [wiki/design/tui-model.md](/doks/design/tui-model.md), tracked by yaks-9c3c. This yak's part is §4, "Search": phase 1 (notifications clear on the next key) and phase 6 (the query and the register).
 
 Changes from the design attached here:
 
@@ -46,14 +46,16 @@ The questions asked on this yak are answered or carried into the design's Decisi
 
 ---
 ▸ 2026-11-03T03:07:29Z [tui-design]
+
 kind: answer
 needs: agent
 ---
 
-Answered by Joel in chat, 2026-11-02, relayed by tui-design: every question here is settled by the unified design's Decisions, [wiki/design/tui-model.md](/wiki/design/tui-model.md#decisions). Implementation follows that page's phases.
+Answered by Joel in chat, 2026-11-02, relayed by tui-design: every question here is settled by the unified design's Decisions, [wiki/design/tui-model.md](/doks/design/tui-model.md#decisions). Implementation follows that page's phases.
 
 ---
 ▸ 2026-11-03T03:07:30Z [tui-design]
+
 kind: pickup
 ---
 
@@ -68,6 +70,7 @@ Done by herd-tui through phases 1 (yaks-cc16, notifications clear on the next ke
 
 ---
 ▸ 2026-11-03T05:52:28Z [herd-tui]
+
 kind: move
 from: hairy
 to: shorn

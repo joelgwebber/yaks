@@ -26,7 +26,7 @@ Three kinds of farm: personal (your streams and to-dos), team (shared PR work, o
 
 ## What the layering confirms
 
-This is the first outside evidence for the line drawn in [the knowledge-store design](/wiki/design/knowledge-store.md): yaks owns what can be decided from the files alone; an agent layer owns what needs a clock, a network, a model or knowledge of who is asking.
+This is the first outside evidence for the line drawn in [the knowledge-store design](/doks/design/knowledge-store.md): yaks owns what can be decided from the files alone; an agent layer owns what needs a clock, a network, a model or knowledge of who is asking.
 
 - Everything Haks adds sits on the agent side of that line: GitHub intake, the review runner, sessions, budgets, the board, ordering.
 - It got by with yaks as a CLI and a data format, with no library access and no fork. The daily job that follows yaks `main` and records the tested commit in a lock file is a workable way to treat the `--json` shapes as an API.

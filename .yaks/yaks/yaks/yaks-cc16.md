@@ -11,10 +11,11 @@ tags:
 - tui
 ---
 
-Phase 1 of [the design](/wiki/design/tui-model.md#phases) (yaks-953f, its phase 1): a notification lasts until the next key, and the search commit stops writing a `filter: q` toast. Today `App.notification` is never cleared, so a stale `filter: widget` toast outlives the search it describes.
+Phase 1 of [the design](/doks/design/tui-model.md#phases) (yaks-953f, its phase 1): a notification lasts until the next key, and the search commit stops writing a `filter: q` toast. Today `App.notification` is never cleared, so a stale `filter: widget` toast outlives the search it describes.
 
 ---
 ▸ 2026-11-03T03:47:40Z [herd-tui]
+
 kind: move
 from: hairy
 to: shaving
@@ -54,6 +55,7 @@ Start: Tue Nov  3 03:52:10 UTC 2026; farm path: /home/user/.local/share/yaks/far
 
 ---
 ▸ 2026-11-03T03:55:33Z [notify-1]
+
 kind: verify
 result: fail
 ---
@@ -86,6 +88,7 @@ Summary: `handle_key` and `App::handle_mouse` clear `notification` first. The `O
 
 ---
 ▸ 2026-11-03T03:57:19Z [notify-1]
+
 kind: verify
 result: fail
 ---
@@ -99,6 +102,7 @@ Decision: set this yak's `verify:` to `env -u YAKS_DIR -u YAKS_ACTOR cargo test 
 
 ---
 ▸ 2026-11-03T03:58:03Z [notify-1]
+
 kind: verify
 result: pass
 ---
@@ -107,6 +111,7 @@ verify: `env -u YAKS_DIR -u YAKS_ACTOR cargo test --workspace` -> PASS (exit 0)
 
 ---
 ▸ 2026-11-03T03:58:07Z [notify-1]
+
 kind: move
 from: shaving
 to: shorn
@@ -117,6 +122,7 @@ moved: shaving -> shorn
 
 ---
 ▸ 2026-11-03T03:59:16Z [herd-tui]
+
 kind: landed
 commit: f18b13db770c4631ed8a32d99a3390b6076e23e1
 source: c51051199ce08daf9e1181a75352169730ccd1d5

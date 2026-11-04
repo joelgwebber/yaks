@@ -8,7 +8,7 @@ tags:
 
 # TUI keys: organizing principles
 
-A proposal for yaks-7c6e, after the unified-model phases ([TUI design](/wiki/design/tui-model.md)) landed the command table (`src/tui/keymap.rs`), the `?` popup and `keys:` overrides. It states the rules a binding must follow, measures today's table against them, and lists what would change. Decisions are asked on yaks-7c6e; nothing here is built yet.
+A proposal for yaks-7c6e, after the unified-model phases ([TUI design](/doks/design/tui-model.md)) landed the command table (`src/tui/keymap.rs`), the `?` popup and `keys:` overrides. It states the rules a binding must follow, measures today's table against them, and lists what would change. Decisions are asked on yaks-7c6e; nothing here is built yet.
 
 ## The rules
 

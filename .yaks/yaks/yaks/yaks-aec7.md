@@ -15,6 +15,7 @@ The navigation stack *does* support forward/back affordances across list views; 
 
 ---
 ▸ 2026-11-03T21:42:11Z [delta:starred-batch]
+
 kind: move
 from: hairy
 to: shaving
@@ -38,6 +39,7 @@ Evidence: new test `backing_out_of_a_detail_returns_to_the_list_it_was_opened_fr
 
 ---
 ▸ 2026-11-03T21:47:58Z [delta:starred-batch]
+
 kind: move
 from: shaving
 to: shorn

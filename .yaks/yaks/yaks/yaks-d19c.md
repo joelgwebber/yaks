@@ -33,6 +33,7 @@ The tool half of yaks-dedc (diagnosis in its notes). In `src/sources.rs` (`add`,
 
 ---
 ▸ 2026-11-04T17:23:26Z [source-fix]
+
 kind: move
 from: hairy
 to: shaving
@@ -56,6 +57,7 @@ Not done: `promote` still records `Promoted from the yak attachment <id>/<file>`
 
 ---
 ▸ 2026-11-04T17:29:21Z [source-fix]
+
 kind: move
 from: shaving
 to: shorn

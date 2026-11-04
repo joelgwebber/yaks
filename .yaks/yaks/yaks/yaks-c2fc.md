@@ -14,6 +14,7 @@ tags:
 
 ---
 ▸ 2026-11-03T14:21:59Z [delta:skills-upgrade-audit]
+
 kind: move
 from: hairy
 to: shaving
@@ -43,6 +44,7 @@ Not done: a cold read of the skills by a cheap model.
 
 ---
 ▸ 2026-11-03T14:30:08Z [delta:skills-upgrade-audit]
+
 kind: move
 from: shaving
 to: shorn
