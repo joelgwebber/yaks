@@ -38,14 +38,14 @@ Tracked in yaks-7fa6. Written after Joel's `review-watch` thread (2026-11-04), w
 
 | Piece | Yak |
 |---|---|
-| Relative `--due +2d`, and `yaks snooze` | child of yaks-7fa6 |
-| `create --key <source-url>`, `list --source` | child |
-| Regrow routes to the inbox | child (one open ask: how a yak remembers who to wake) |
-| `yaks tick` | child |
-| TUI: set `due`/`every`, snooze key | child |
-| TUI: Due tab and overdue chip | child |
-| Skill `yaks-scheduling`, plus the edits to `yaks`, `yaks-working`, `yaks-coordinating`, docs | child |
-| Acceptance: shrink `review-watch` onto it | child |
+| Relative `--due +2d`, and `yaks snooze` | yaks-0079 |
+| `create --key <source-url>`, `list --source` | yaks-bdae |
+| Regrow routes to the inbox | yaks-a041 (one open ask: how a yak remembers who to wake) |
+| `yaks tick` | yaks-5e8d |
+| TUI: set `due`/`every`, snooze key | yaks-2986 |
+| TUI: Due tab and overdue chip | yaks-f561 |
+| Skill `yaks-scheduling`, plus the edits to `yaks`, `yaks-working`, `yaks-coordinating`, docs | yaks-b569 |
+| Acceptance: shrink `review-watch` onto it | yaks-79a6 |
 
 ## `yaks tick`
 
@@ -72,5 +72,5 @@ A custom skill that mirrors an outside queue into yaks must:
 
 ## Open
 
-- How a recurring yak remembers who to wake: see the ask on the routing yak.
+- How a recurring yak remembers who to wake: see the ask on yaks-a041.
 - Persistent agents: later, outside yaks. They should need only `tick --json` on a clock and `wait --for agent`.
