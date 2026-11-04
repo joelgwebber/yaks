@@ -5,11 +5,11 @@ status: shorn
 type: feature
 priority: 1
 created: '2026-11-01T18:53:10Z'
-updated: '2026-11-01T19:13:42Z'
+updated: '2026-11-04T20:03:31Z'
 parent: yaks-f301
 tags:
-- wiki
 - schema
+- doks
 verify: cargo test --workspace
 ---
 
