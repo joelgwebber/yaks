@@ -5,13 +5,13 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-01T18:53:11Z'
-updated: '2026-11-01T21:28:37Z'
+updated: '2026-11-04T20:03:33Z'
 parent: yaks-f301
 depends_on:
 - yaks-9af0
 tags:
-- wiki
 - cli
+- doks
 verify: cargo test --workspace
 ---
 
