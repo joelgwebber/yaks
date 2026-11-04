@@ -174,6 +174,8 @@ impl Drawer {
             needs_only: self.needs,
             // CLI-only (yaks-ef3b): the drawer has no run-on chip.
             run_on: false,
+            // CLI-only (yaks-bdae): the drawer has no source chip.
+            source: None,
             parent: non_empty(&self.parent),
             // On multi-herd farms the herd chip row owns this scope; on
             // single-herd farms `herds` stays whatever the view carried in

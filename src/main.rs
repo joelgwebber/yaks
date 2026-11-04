@@ -98,6 +98,10 @@ struct FilterFlags {
     herd: Vec<String>,
     #[arg(long)]
     search: Option<String>,
+    /// Keep only yaks whose `source:` is exactly this URL (dead ones too with
+    /// `--all`): find the yak for an external issue or pull request.
+    #[arg(long, value_name = "URL")]
+    source: Option<String>,
     #[arg(long)]
     ready: bool,
     #[arg(long)]
@@ -126,6 +130,7 @@ impl FilterFlags {
             || !self.tag.is_empty()
             || !self.herd.is_empty()
             || self.search.is_some()
+            || self.source.is_some()
             || self.ready
             || self.tangled
             || self.needs
@@ -501,6 +506,13 @@ enum Command {
         /// the new yak under an open ancestor or at the top level).
         #[arg(long)]
         parent: Option<String>,
+        /// Find or create by external key: if any yak (any state, dead
+        /// included) already has this `source:` URL, print it and create
+        /// nothing (exit 0; a dead or shorn yak is left as it is); otherwise
+        /// create the yak with this as its `source:`. `--json` adds `created:
+        /// true|false`. Not with `--source`.
+        #[arg(long, value_name = "URL", conflicts_with = "source")]
+        key: Option<String>,
         /// Which herd (id prefix) the new yak joins; defaults to this repo's
         /// `git config yaks.herd`, else the farm's configured `herd:`. Errors if
         /// neither is set (no silent `yak-` fallback). Lets one farm hold
@@ -2317,6 +2329,7 @@ fn main() -> Result<()> {
             tags,
             depends_on,
             source,
+            key,
             prs,
             description,
             description_file,
@@ -2325,6 +2338,10 @@ fn main() -> Result<()> {
             every,
             json,
         } => {
+            if key.as_deref().is_some_and(|k| k.trim().is_empty()) {
+                anyhow::bail!("--key: the key is empty (it is the external issue or PR URL)");
+            }
+            let is_keyed = key.is_some();
             let fields = due_every_fields(due, every)?;
             let description = resolve_text(
                 "--description",
@@ -2348,6 +2365,7 @@ fn main() -> Result<()> {
                 tags,
                 depends_on,
                 source,
+                key: key.map(|k| k.trim().to_string()),
                 prs,
                 description,
                 verify,
@@ -2366,12 +2384,25 @@ fn main() -> Result<()> {
                     eprintln!("error: invalid prefix {p:?} (use lowercase letters and digits)");
                     std::process::exit(1);
                 }
-                CreateOutcome::Created(t) => {
+                outcome @ (CreateOutcome::Created(_) | CreateOutcome::Exists(_)) => {
+                    let (t, created) = match outcome {
+                        CreateOutcome::Created(t) => (t, true),
+                        CreateOutcome::Exists(t) => (t, false),
+                        _ => unreachable!(),
+                    };
                     if json {
                         let path = store::task_path(farm.root(), &t.id);
-                        json::print(&json::create_value(&t, &path))?;
-                    } else {
+                        let mut v = json::create_value(&t, &path);
+                        // `created` only where the caller could have asked for
+                        // either outcome, so plain `create --json` is unchanged.
+                        if !created || is_keyed {
+                            v["created"] = serde_json::json!(created);
+                        }
+                        json::print(&v)?;
+                    } else if created {
                         println!("Created {}: {}", t.id, t.title);
+                    } else {
+                        println!("Exists {}: {}", t.id, t.title);
                     }
                 }
             }
@@ -3164,6 +3195,7 @@ fn build_spec(f: FilterFlags) -> FilterSpec {
         tags: normalize_tags(&f.tag),
         herds: f.herd,
         search: f.search,
+        source: f.source,
         ready_only: f.ready,
         tangled_only: f.tangled,
         needs_only: f.needs,

@@ -2454,6 +2454,7 @@ mod live {
                 tags: vec![],
                 depends_on: vec![],
                 source: None,
+                key: None,
                 prs: vec![],
                 description: None,
                 verify: None,

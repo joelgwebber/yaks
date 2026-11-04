@@ -174,7 +174,7 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 
 | Command | What it does |
 |---|---|
-| `create "title"` | New hairy yak: `--type --priority --parent --herd --tags --depends-on --source --pr --verify --description` |
+| `create "title"` | New hairy yak: `--type --priority --parent --herd --tags --depends-on --source --key <url> --pr --verify --description`; `--key` returns the yak that already has that `source:` (any state) instead of creating a second |
 | `list` / `next` / `tangled` / `search` | Query (shared filters, below); `next` = hairy with deps met, `tangled` = blocked on deps |
 | `find <pattern>` | Full-text search over yak bodies and notes, doks, sources' text and sessions (`--scope <prefix>`, `--kind yaks\|doks\|sources\|sessions`, `--regex`, `-i`, `--json`); `path:line: text` per match, exit 1 when none. `search` is the yak-only id/title/description lookup |
 | `show <id>` | Full details, parent and children |
@@ -209,7 +209,7 @@ Coordinating several agents (`brief`, `land`, `sheds`) is the **yaks-coordinatin
 
 ## Filtering
 
-`list`, `next`, `tangled`, `search`, `path`, `log` and `bulk` share filters: `--status`, `--type`, `--priority`, `--tag`, `--herd` (each repeatable, OR within a flag), `--search Q`, `--ready`, `--tangled`, `--needs`, `--run-on` (a body whose lines join into one paragraph), `--parent-of <id>` (its descendants); AND across flags. `--all` includes dead yaks.
+`list`, `next`, `tangled`, `search`, `path`, `log` and `bulk` share filters: `--status`, `--type`, `--priority`, `--tag`, `--herd` (each repeatable, OR within a flag), `--search Q`, `--source <url>` (the yak for that external issue or PR), `--ready`, `--tangled`, `--needs`, `--run-on` (a body whose lines join into one paragraph), `--parent-of <id>` (its descendants); AND across flags. `--all` includes dead yaks.
 
 ```sh
 yaks list --type bug --priority 1

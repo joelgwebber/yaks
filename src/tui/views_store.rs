@@ -125,6 +125,8 @@ pub(crate) fn spec_from_json(d: Option<&Value>) -> FilterSpec {
         // `labels` is the key views were saved under before schema 7.
         tags: str_vec(d.get("tags").or_else(|| d.get("labels"))),
         herds: str_vec(d.get("herds")),
+        // CLI-only (yaks-bdae): saved views never carry it.
+        source: None,
         search: opt_str("search"),
         ready_only: d
             .get("ready_only")

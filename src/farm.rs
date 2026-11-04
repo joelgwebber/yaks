@@ -160,6 +160,11 @@ pub struct NewTask {
     pub tags: Vec<String>,
     pub depends_on: Vec<String>,
     pub source: Option<String>,
+    /// Find or create by `source:` (`create --key`): when any yak in any state,
+    /// dead included, already has this `source:`, nothing is created and
+    /// [`CreateOutcome::Exists`] names it. Otherwise the new yak gets it as its
+    /// `source:` (so `key` and `source` are not both set).
+    pub key: Option<String>,
     /// Pull-request URLs for the new yak's `prs:` (duplicates dropped).
     pub prs: Vec<String>,
     pub description: Option<String>,
@@ -206,6 +211,9 @@ pub struct TaskEdit {
 
 pub enum CreateOutcome {
     Created(Box<Task>),
+    /// `NewTask::key` matched a yak that already exists; it is left as it is
+    /// (a dead one stays dead).
+    Exists(Box<Task>),
     ParentNotFound(String),
     /// The parent is shorn or dead (yaks-35a4): the message names it and the
     /// fixes ([`finished_parent_refusal`]).
@@ -1973,6 +1981,16 @@ impl Farm {
 
     pub fn create(&self, new: NewTask) -> Result<CreateOutcome> {
         let _lock = store::lock(&self.root)?;
+        if let Some(key) = &new.key {
+            // Under the lock, so two callers cannot both create. Every state
+            // counts: a yak the human sheared or buried is the answer too.
+            if let Some(t) = store::load(&self.root, &EVERY)?
+                .into_iter()
+                .find(|t| t.source.as_deref() == Some(key.as_str()))
+            {
+                return Ok(CreateOutcome::Exists(Box::new(t)));
+            }
+        }
         let cfg = store::read_config(&self.root);
         if let Some(p) = &new.parent {
             let Some(parent) = store::load_task_by_id(&self.root, p)? else {
@@ -2028,7 +2046,7 @@ impl Farm {
             parent: new.parent,
             tags: normalize_tags(&new.tags),
             depends_on: new.depends_on,
-            source: new.source,
+            source: new.source.or(new.key),
             prs: dedup_prs(new.prs),
             needs: None,
             verify: new.verify,
@@ -4076,6 +4094,7 @@ mod tests {
             tags: vec![],
             depends_on: vec![],
             source: None,
+            key: None,
             prs: vec![],
             description: None,
             verify: None,

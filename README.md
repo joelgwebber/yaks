@@ -92,7 +92,7 @@ in `<path>`.
 
 | Command | What it does |
 |---------|--------------|
-| `yaks create` | Create a task; the title is positional (`yaks create "Fix login"`). Flags: `--type`, `--priority`, `--parent`, `--tags` (comma- or space-separated), `--depends-on`, `--source`, `--pr` (repeatable), `--description` (`-` reads stdin; `--description-file PATH`), `--json` (emit the new id + file path) |
+| `yaks create` | Create a task; the title is positional (`yaks create "Fix login"`). Flags: `--type`, `--priority`, `--parent`, `--tags` (comma- or space-separated), `--depends-on`, `--source`, `--key <url>` (find-or-create by `source:`: an existing yak in any state is returned, nothing is made), `--pr` (repeatable), `--description` (`-` reads stdin; `--description-file PATH`), `--json` (emit the new id + file path) |
 | `yaks list` | List tasks; filter by `--status/--type/--priority/--tag/--search`, `--ready`, `--tangled`, `--parent-of`, `--all` |
 | `yaks show <id>` | Full detail for one task, with parent + children |
 | `yaks refs <id>` | List what a task points at (parent, deps, id mentions in its text), flagging any that dangle; `--incoming` lists what points AT it instead (children, dependents, mentions in titles/descriptions/notes, each saying how; `--json`) |

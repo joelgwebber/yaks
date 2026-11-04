@@ -47,7 +47,7 @@ turns all of that off.
 ## Filter flags (shared)
 
 `--status <s>` · `--type <t>` · `--priority <n>` · `--tag <l>` · `--herd <h>`
-(id prefix) · `--search <text>` · `--parent-of <id>` (descendants at any depth) · `--ready` ·
+(id prefix) · `--search <text>` · `--source <url>` (the yak whose own `source:` is exactly that URL) · `--parent-of <id>` (descendants at any depth) · `--ready` ·
 `--tangled` · `--needs` (any `needs` value, `human` or `agent`) · `--run-on` (the description or a note has
 run-on lines: adjacent lines that markdown joins into one paragraph, which a tidy splits into blocks; a hard
 break, a list or a code fence is not run-on). They compose, and back `list`, `search`, `log`, and the
@@ -125,7 +125,7 @@ Mentions are whole real ids, matched exactly as `refs` and the TUI links do. Com
 
 | Command | What it does |
 |---|---|
-| `create '<title>'` | New hairy yak. Title is positional or `--title`; `--type`/`--priority`/`--parent`/`--herd`/`--tags`/`--depends-on`/`--source`/`--pr`/`--description`/`--description-file`/`--verify`; `--json` prints id + file path. `--description -` reads stdin (see [Multi-line text](#multi-line-text)). [Details](#create) |
+| `create '<title>'` | New hairy yak. Title is positional or `--title`; `--type`/`--priority`/`--parent`/`--herd`/`--tags`/`--depends-on`/`--source`/`--key`/`--pr`/`--description`/`--description-file`/`--verify`; `--json` prints id + file path. `--description -` reads stdin (see [Multi-line text](#multi-line-text)). [Details](#create) |
 | `update <ids…>` | Update fields/tags, replace the body (`--description`/`--description-file`) or append a `--note`/`--note-file` (with `--meta key=value`, repeatable, for the note's [metadata](#note-metadata)); `--set key=value` / `--unset key` for any other frontmatter field; the same edit applies to every id. `--note -` reads stdin (see [Multi-line text](#multi-line-text)). [Details](#update) |
 | `dep add\|remove <id> <dep>` | Add / remove a dependency. |
 | `peek <link>` | Print only what a link names: lines, a section, a dok's head. [Details](#links) |
@@ -149,6 +149,8 @@ Mentions are whole real ids, matched exactly as `refs` and the TUI links do. Com
 `create '<title>'`
 
 New hairy yak. Title is positional or `--title`; `--type`/`--priority`/`--parent`/`--herd`/`--tags`/`--depends-on`/`--source`/`--pr`/`--description`/`--description-file`/`--verify`; `--json` prints id + file path. `--description -` reads the body from stdin (see [Multi-line text](#multi-line-text)).
+
+`--key <url>` is find-or-create by external key, for a script that mirrors an outside queue (pull requests, issues) into yaks and must run twice safely. If any yak, in **any state, dead included**, already has that `source:`, nothing is created: it prints `Exists <id>: <title>` and exits 0, leaving the yak as it is (a dead one stays dead and a shorn one stays shorn, so the caller decides whether to revive or regrow). Otherwise it creates the yak with `--key` as its `source:` and prints `Created`. The check and the create happen under one farm lock, so concurrent callers make one yak. With `--json` the output gains `created: true|false`. Not with `--source` (the key is the source), and an empty key is refused. `list --source <url>` is the read side.
 
 `--tags` (like `--add-tag`/`--remove-tag`/`--tag` everywhere) splits on commas and whitespace — a tag may contain neither, so `--tags ui,docs`, `--tags 'ui, docs'`, and `--tags ui docs` all give `[ui, docs]` (duplicates dropped).
 

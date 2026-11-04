@@ -32,6 +32,9 @@ pub struct FilterSpec {
     /// Herd scope: keep only yaks whose id prefix is in this set. Empty =
     /// unconstrained; OR within, like the other multi-value fields.
     pub herds: Vec<String>,
+    /// Keep only yaks whose own `source:` is exactly this URL (a yak does not
+    /// inherit it for this filter, unlike `rollup`).
+    pub source: Option<String>,
 }
 
 impl FilterSpec {
@@ -47,6 +50,7 @@ impl FilterSpec {
             || self.tangled_only
             || self.run_on
             || !self.herds.is_empty()
+            || self.source.is_some()
     }
 
     /// Per-task content predicate (ignores status + parent scope), shared by
@@ -67,6 +71,9 @@ impl FilterSpec {
             if !self.herds.iter().any(|x| x == h) {
                 return false;
             }
+        }
+        if self.source.is_some() && t.source != self.source {
+            return false;
         }
         if let Some(q) = &self.search {
             let q = q.to_lowercase();

@@ -523,6 +523,7 @@ impl App {
                 tags: f.tags_vec(),
                 depends_on: vec![],
                 source: Some(f.source_text()).filter(|s| !s.is_empty()),
+                key: None,
                 prs: vec![],
                 description: f.body_opt(),
                 verify: None,
@@ -540,6 +541,10 @@ impl App {
                 self.reload();
                 self.select_id(&id);
                 self.notification = Some(format!("created {id}"));
+            }
+            // Only `NewTask::key` finds an existing yak, and the form sets none.
+            Ok(CreateOutcome::Exists(t)) => {
+                self.notification = Some(format!("{} already exists", t.id))
             }
             Ok(CreateOutcome::ParentNotFound(p)) => {
                 self.notification = Some(format!("parent {p} not found"))
