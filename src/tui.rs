@@ -256,6 +256,14 @@ fn sort_key(t: &Task, f: view::SortField) -> String {
         view::SortField::Updated => t.updated.clone().unwrap_or_default(),
         view::SortField::Created => t.created.clone().unwrap_or_default(),
         view::SortField::Id => t.id.clone(),
+        // The due instant, then the id, so equal deadlines keep a fixed order.
+        view::SortField::Due => format!(
+            "{} {}",
+            crate::recur::due(t)
+                .map(|d| d.at.to_rfc3339())
+                .unwrap_or_default(),
+            t.id
+        ),
     }
 }
 
@@ -272,6 +280,7 @@ fn spec_eq(a: &FilterSpec, b: &FilterSpec) -> bool {
         && a.search == b.search
         && a.ready_only == b.ready_only
         && a.tangled_only == b.tangled_only
+        && a.due_only == b.due_only
         && a.parent == b.parent
 }
 

@@ -199,6 +199,17 @@ impl App {
             .collect()
     }
 
+    /// How many open yaks are past their `due:` now: the tab row's `⏰N` chip
+    /// (yaks-f561). Counted over every yak, not the active view's rows, so it
+    /// says the same thing on every tab.
+    pub(crate) fn overdue_count(&self) -> usize {
+        let now = self.clock.now();
+        self.all
+            .iter()
+            .filter(|t| crate::recur::is_overdue(t, now))
+            .count()
+    }
+
     /// Indices of pinned views — exactly the tab strip, in order.
     pub(crate) fn pinned_indices(&self) -> Vec<usize> {
         (0..self.views.len())
@@ -259,6 +270,7 @@ impl App {
         saved.search = None;
         spec_eq(&live, &saved)
             && live.needs_only == saved.needs_only
+            && live.due_only == saved.due_only
             && live.run_on == saved.run_on
             && same_set(&live.herds, &saved.herds)
     }

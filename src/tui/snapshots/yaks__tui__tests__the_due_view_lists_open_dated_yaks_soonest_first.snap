@@ -1,0 +1,15 @@
+---
+source: src/tui/tests.rs
+assertion_line: 6085
+expression: "draw(&app, 72, 10)"
+---
+ 🦬  Hairy (4)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (6)   ⭐  Starr
+
+ t1   p3 task     🪒  late a week                              2026-09-03
+ t0   p2 task     🦬  late a day                               2026-09-09
+ t2   p3 task     🦬  due today                                2026-09-10
+ t3   p3 task     🦬  next month                               2026-10-10
+
+
+
+Tab:view  j/k:move  l:detail  F:family  `:views  c/C:new  E:edit  X:del

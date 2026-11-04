@@ -3258,6 +3258,7 @@ fn build_spec(f: FilterFlags) -> FilterSpec {
         herds: f.herd,
         search: f.search,
         source: f.source,
+        due_only: false,
         ready_only: f.ready,
         tangled_only: f.tangled,
         needs_only: f.needs,

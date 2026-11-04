@@ -80,6 +80,7 @@ pub(crate) fn spec_to_json(s: &FilterSpec) -> Value {
         "ready_only": s.ready_only,
         "tangled_only": s.tangled_only,
         "needs_only": s.needs_only,
+        "due_only": s.due_only,
         "parent": s.parent,
     });
     spec
@@ -140,6 +141,7 @@ pub(crate) fn spec_from_json(d: Option<&Value>) -> FilterSpec {
             .get("needs_only")
             .and_then(|x| x.as_bool())
             .unwrap_or(false),
+        due_only: d.get("due_only").and_then(|x| x.as_bool()).unwrap_or(false),
         // CLI-only (yaks-ef3b): saved views never carry it.
         run_on: false,
         parent: opt_str("parent"),
@@ -389,6 +391,7 @@ mod tests {
                 "status:shorn",
                 "recent",
                 "inbox",
+                "due",
                 "working-set",
                 "all",
             ]

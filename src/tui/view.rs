@@ -15,6 +15,8 @@ pub enum SortField {
     Priority,
     Title,
     Id,
+    /// The `due:` instant, soonest first (the Due view).
+    Due,
 }
 
 impl SortField {
@@ -25,6 +27,7 @@ impl SortField {
             SortField::Priority => "priority",
             SortField::Title => "title",
             SortField::Id => "id",
+            SortField::Due => "due",
         }
     }
 
@@ -35,6 +38,7 @@ impl SortField {
             "priority" => SortField::Priority,
             "title" => SortField::Title,
             "id" => SortField::Id,
+            "due" => SortField::Due,
             _ => return None,
         })
     }
@@ -188,6 +192,31 @@ pub fn inbox_view() -> View {
     }
 }
 
+/// The key of the Due view (yaks-f561).
+pub const DUE_KEY: &str = "due";
+
+/// Due: every open yak that has a `due:`, flat, soonest first, so the overdue
+/// ones lead. The predicate is `FilterSpec::due_only`; the sort is by the
+/// `due:` instant. Not pinned by default, like Inbox (the tab strip is
+/// narrow): reach it from the view picker (`\``) or pin it there; the red
+/// `\u{23f0}N overdue` chip on the tab row says when to.
+pub fn due_view() -> View {
+    View {
+        name: "\u{23f0} Due".into(),
+        key: DUE_KEY.into(),
+        status: None,
+        builtin: true,
+        pinned: false,
+        spec: FilterSpec {
+            due_only: true,
+            ..Default::default()
+        },
+        sort_by: Some(SortField::Due),
+        sort_dir: SortDir::Asc,
+        limit: None,
+    }
+}
+
 pub fn working_set_view() -> View {
     View {
         name: "\u{2b50} Starred".into(),
@@ -275,6 +304,7 @@ pub fn default_views() -> Vec<View> {
     let mut v = builtin_status_views();
     v.push(recent_view());
     v.push(inbox_view());
+    v.push(due_view());
     v.push(working_set_view());
     v.push(doks_view());
     v.push(sheds_view());

@@ -1,5 +1,6 @@
 ---
 source: src/tui/tests.rs
+assertion_line: 1493
 expression: "draw(&app, 72, 16)"
 ---
  🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starr
@@ -10,11 +11,11 @@ expression: "draw(&app, 72, 16)"
 │   📌  🐑  Shorn  (1)  🔒
 │   📌  🕒  Recent  (4)  🔒
 │      📥  Inbox  (0)  🔒
+│      ⏰  Due  (0)  🔒
 │   📌  ⭐  Starred  (0)  🔒
 │   📌  📖  Doks  (0)  🔒
 │   📌  🛖  Sheds  (0)  🔒
 │      🧺  All  (4)  🔒
-│
 │
 │
 Enter open · p pin · J/K move · r rename · d delete · Esc close

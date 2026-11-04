@@ -35,6 +35,9 @@ pub struct FilterSpec {
     /// Keep only yaks whose own `source:` is exactly this URL (a yak does not
     /// inherit it for this filter, unlike `rollup`).
     pub source: Option<String>,
+    /// Keep only open (hairy or shaving) yaks that have a readable `due:`:
+    /// the Due view's predicate (yaks-f561). A finished yak is never due.
+    pub due_only: bool,
 }
 
 impl FilterSpec {
@@ -87,6 +90,9 @@ impl FilterSpec {
         // dependency: it keeps a hairy yak out of `next` without being a status
         // of its own. `needs: agent` (answered) does not block.
         if self.ready_only && (has_unresolved || t.awaiting_human()) {
+            return false;
+        }
+        if self.due_only && !(t.status.is_open() && crate::recur::due(t).is_some()) {
             return false;
         }
         if self.needs_only && t.needs.is_none() {

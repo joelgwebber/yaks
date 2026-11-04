@@ -531,7 +531,13 @@ pub(crate) fn disp_width(s: &str) -> usize {
     s.chars()
         .map(|c| {
             let cp = c as u32;
-            if cp >= 0x1_F000 || cp == 0x2b50 || cp == 0x2764 || cp == 0x23f3 || cp == 0x2705 {
+            if cp >= 0x1_F000
+                || cp == 0x2b50
+                || cp == 0x2764
+                || cp == 0x23f3
+                || cp == 0x23f0
+                || cp == 0x2705
+            {
                 2
             } else {
                 1
@@ -707,27 +713,37 @@ pub(crate) fn render_tabs(app: &App, frame: &mut Frame, area: Rect) {
     }
 }
 
-/// The tab-row chip for the farm's git state ([`FarmSync`]) and its display
-/// width, for `room` free columns after the tabs: the full text if it fits,
-/// else the compact one, else `None` (also when there is nothing to say). Dim,
-/// except `↓behind`, which is the one warning (a sync would bring changes in).
+/// The tab-row chip and its display width, for `room` free columns after the
+/// tabs: the full text if it fits, else the compact one, else `None` (also
+/// when there is nothing to say). It holds the overdue count (`⏰ 2 overdue`,
+/// red, yaks-f561) and the farm's git state ([`FarmSync`]). The git segments
+/// are dim, except `↓behind`, the one warning (a sync would bring changes in).
 fn farm_sync_chip(app: &App, room: usize) -> Option<(Line<'static>, usize)> {
-    let farm_sync = app.farm_sync.as_ref()?;
+    let overdue = app.overdue_count();
+    let farm_sync = app.farm_sync.as_ref();
     [false, true].into_iter().find_map(|compact| {
-        let segments = farm_sync.segments(compact);
+        // (text, style) per segment, overdue first: it is the one to act on.
+        let mut segments: Vec<(String, Style)> = Vec::new();
+        if overdue > 0 {
+            let text = if compact {
+                format!("\u{23f0}{overdue}")
+            } else {
+                format!("\u{23f0} {overdue} overdue")
+            };
+            segments.push((text, Style::new().fg(Color::Red)));
+        }
+        for (text, warn) in farm_sync.map(|f| f.segments(compact)).unwrap_or_default() {
+            let color = if warn { Color::Yellow } else { Color::DarkGray };
+            segments.push((text, Style::new().fg(color)));
+        }
         if segments.is_empty() {
             return None;
         }
         let mut spans = Vec::new();
-        for (i, (text, warn)) in segments.into_iter().enumerate() {
+        for (i, (text, style)) in segments.into_iter().enumerate() {
             if i > 0 {
                 spans.push(Span::raw(" "));
             }
-            let style = if warn {
-                Style::new().fg(Color::Yellow)
-            } else {
-                Style::new().fg(Color::DarkGray)
-            };
             spans.push(Span::styled(text, style));
         }
         let w = disp_width(&spans.iter().map(|s| s.content.as_ref()).collect::<String>());

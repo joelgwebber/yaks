@@ -172,6 +172,9 @@ impl Drawer {
             ready_only: self.ready,
             tangled_only: self.tangled,
             needs_only: self.needs,
+            // The Due view's own; the drawer has no chip for it, so a view
+            // that carries it keeps it (`from_filter` seeds `saved`).
+            due_only: self.saved.due_only,
             // CLI-only (yaks-ef3b): the drawer has no run-on chip.
             run_on: false,
             // CLI-only (yaks-bdae): the drawer has no source chip.

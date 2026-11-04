@@ -1426,7 +1426,7 @@ fn starred_marker_and_tab_bar() {
 #[test]
 fn default_views_and_tab_cycling() {
     let mut app = sample();
-    assert_eq!(app.views.len(), 9); // 3 status + Recent + Inbox + Starred + Doks + Sheds + All
+    assert_eq!(app.views.len(), 10); // 3 status + Recent + Inbox + Due + Starred + Doks + Sheds + All
     assert_eq!(app.view, 0);
     assert_eq!(app.filter.statuses, vec![Status::Hairy]);
     tab_key(&mut app); // -> Shaving
@@ -1451,8 +1451,8 @@ fn star_toggles_and_starred_view_lists_it() {
     let mut app = sample(); // cursor on a0
     handle_key(&mut app, key('*'));
     assert!(app.is_starred("a0"));
-    // Starred view (index 5) lists the starred task.
-    app.set_view(5);
+    // Starred view (index 6, after Due) lists the starred task.
+    app.set_view(6);
     assert_eq!(app.active_view().key, "working-set");
     let ids: Vec<&str> = app
         .rows()
@@ -1475,8 +1475,8 @@ fn save_view_creates_and_activates_custom_view() {
     handle_key(&mut app, key('V')); // save view
     typ(&mut app, "kids");
     enter_key(&mut app); // commit name
-    assert_eq!(app.views.len(), 10);
-    assert_eq!(app.view, 9);
+    assert_eq!(app.views.len(), 11);
+    assert_eq!(app.view, 10);
     let v = app.active_view();
     assert_eq!(v.name, "kids");
     assert_eq!(v.spec.search.as_deref(), Some("child"));
@@ -1544,11 +1544,11 @@ fn picker_deletes_custom_but_not_builtin() {
     handle_key(&mut app, key('V'));
     typ(&mut app, "mine");
     enter_key(&mut app);
-    assert_eq!(app.views.len(), 10);
+    assert_eq!(app.views.len(), 11);
     // Delete it via the picker (active view is the custom one, last index).
     handle_key(&mut app, key('`'));
     handle_key(&mut app, key('d'));
-    assert_eq!(app.views.len(), 9);
+    assert_eq!(app.views.len(), 10);
     // Deleting a built-in is refused.
     handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
     handle_key(&mut app, key('`'));
@@ -6033,6 +6033,110 @@ mod memo {
 fn with_due(mut t: Task, due: &str) -> Task {
     t.extra.set("due", &crate::fields::Value::Plain(due.into()));
     t
+}
+
+/// The Due view and the overdue chip (yaks-f561). The test clock is 2026-09-10.
+fn due_sample() -> App {
+    App::new(vec![
+        with_due(
+            task("t0", "late a day", Status::Hairy, 2, None),
+            "2026-09-09",
+        ),
+        with_due(
+            task("t1", "late a week", Status::Shaving, 3, None),
+            "2026-09-03",
+        ),
+        with_due(
+            task("t2", "due today", Status::Hairy, 3, None),
+            "2026-09-10",
+        ),
+        with_due(
+            task("t3", "next month", Status::Hairy, 3, None),
+            "2026-10-10",
+        ),
+        with_due(
+            task("t4", "done late", Status::Shorn, 3, None),
+            "2026-09-01",
+        ),
+        with_due(task("t5", "dropped", Status::Dead, 3, None), "2026-09-01"),
+        task("t6", "undated", Status::Hairy, 4, None),
+    ])
+}
+
+#[test]
+fn the_due_view_lists_open_dated_yaks_soonest_first() {
+    let mut app = due_sample();
+    let i = app
+        .views
+        .iter()
+        .position(|v| v.key == "due")
+        .expect("a Due view");
+    assert!(!app.views[i].pinned, "like Inbox: reached from the picker");
+    app.set_view(i);
+    let ids: Vec<&str> = app
+        .rows()
+        .iter()
+        .map(|r| r.yak().unwrap().id.as_str())
+        .collect();
+    // Overdue first (oldest deadline first), then today, then later; a shorn,
+    // a dead and an undated yak are not due.
+    assert_eq!(ids, vec!["t1", "t0", "t2", "t3"]);
+    assert_eq!(app.view_count(&app.views[i]), 4);
+    insta::assert_snapshot!(draw(&app, 72, 10));
+}
+
+#[test]
+fn the_overdue_chip_counts_open_late_yaks_on_every_tab() {
+    let mut app = due_sample();
+    assert_eq!(
+        app.overdue_count(),
+        2,
+        "a day late and a week late; today is not late yet"
+    );
+    let chip = |app: &App, w: u16| draw(app, w, 6).lines().next().unwrap().to_string();
+    // (A width-2 glyph takes two cells in the frame, so the gap after it reads
+    // wider than the one space the chip writes.)
+    let wide = chip(&app, 130);
+    assert!(
+        wide.contains('\u{23f0}') && wide.contains("2 overdue"),
+        "{wide}"
+    );
+    // The same on another tab: it counts the farm, not the view's rows.
+    app.set_view(3);
+    assert!(chip(&app, 130).contains("2 overdue"));
+    // Too narrow for the words, it shortens like the git chip does (118
+    // columns here); with no room at all it is left out rather than cut.
+    let narrow = chip(&app, 118);
+    assert!(
+        narrow.contains('\u{23f0}') && !narrow.contains("overdue"),
+        "{narrow}"
+    );
+    assert!(!chip(&app, 100).contains('\u{23f0}'), "{}", chip(&app, 100));
+    // Nothing late, no chip.
+    let calm = App::new(vec![with_due(
+        task("c0", "later", Status::Hairy, 3, None),
+        "2026-12-01",
+    )]);
+    assert_eq!(calm.overdue_count(), 0);
+    assert!(!chip(&calm, 130).contains('\u{23f0}'));
+}
+
+#[test]
+fn the_due_view_survives_a_saved_views_file_that_predates_it() {
+    // A views file from before the Due tab: it lands next to Inbox, unpinned.
+    let entries: Vec<serde_json::Value> = ["status:hairy", "recent", "inbox", "working-set"]
+        .iter()
+        .map(|k| serde_json::json!({"key": k, "name": null, "pinned": true}))
+        .collect();
+    let out = views_store::reconcile(&entries, view::default_views());
+    let keys: Vec<&str> = out.iter().map(|v| v.key.as_str()).collect();
+    let at = keys
+        .iter()
+        .position(|k| *k == "due")
+        .expect("Due was added");
+    assert_eq!(keys[at - 1], "inbox", "{keys:?}");
+    assert!(!out[at].pinned);
+    assert!(out[at].spec.due_only && out[at].sort_by == Some(view::SortField::Due));
 }
 
 #[test]

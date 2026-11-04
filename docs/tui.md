@@ -9,7 +9,9 @@ interchangeable.
 - **List pane** — the yaks in the active *view*, as a tree or flat list.
   Views are tabs across the top (`Tab`/`[`/`]` to switch). Built-in views
   include the default tree, **Recent**, **Inbox** (yaks with a `needs` value: awaiting a human, or answered or requested and
-  awaiting an agent), **All** (every yak, dead ones too, then every dok and
+  awaiting an agent), **Due** (every open yak with a `due:`, soonest first, so
+  the overdue ones lead; unpinned, from the view picker, `` ` ``), **All**
+  (every yak, dead ones too, then every dok and
   source; unpinned, from the view picker, `` ` ``) and
   **Starred**; you can save the current filter as a named view. The
   **Doks** tab lists the farm's doks and sources (see [Doks tab](#doks-tab)),
@@ -33,12 +35,15 @@ interchangeable.
   not, and where the farm branch stands against its upstream (the one
   `yaks status` prints, read from local git: it never fetches, and nothing is
   ever committed unless you press `W`; it is synced by `U` or by the interval
-  sync below). Dim text, in this order:
+  sync below). In this order: `⏰ 2 overdue` (red: open yaks past their `due:`,
+  counted over the whole farm so it reads the same on every tab; open the
+  **Due** view to see them), then the dim git segments:
   `● 3 uncommitted` (yaks and other farm files git lacks), `not published`
   (the farm branch has no upstream), `↑2` (commits to push), and `↓1` (commits
   to pull: the one warning colour). Nothing is shown when the farm is clean and
-  up to date. When the full text does not fit beside the tabs it shortens to
-  `●3` and `unpub`, and is hidden if even that does not fit. It is re-read whenever the farm is (re)loaded: at
+  up to date and nothing is overdue. When the full text does not fit beside the
+  tabs it shortens to `⏰2`, `●3` and `unpub`, and is hidden if even that does
+  not fit. It is re-read whenever the farm is (re)loaded: at
   startup, after every TUI change, and when files under `.yaks/` change; it
   does not notice a commit or push made elsewhere until then (the interval sync
   below is what brings it up to date). The family label
