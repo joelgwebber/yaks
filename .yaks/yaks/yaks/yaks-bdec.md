@@ -1,7 +1,7 @@
 ---
 id: yaks-bdec
 title: 'Release 0.0.31: attachment-relative links, attach --no-link/--caption, inline images in text, svg inline'
-status: shaving
+status: shorn
 type: task
 priority: 1
 created: '2026-11-04T01:29:03Z'
@@ -38,3 +38,13 @@ Released **0.0.31** (Joel, 2026-11-04: "cut a release once everything's in").
 - Tag push: the workflow succeeded, `@j15r/yaks` and the five platform packages are at 0.0.31, `latest` points at it. The registry showed 0.0.30 for about a minute after the run, then caught up.
 
 Installed locally with `cargo install --path .` from the same tree. `yaks tui` sessions started before need a restart.
+
+---
+▸ 2026-11-04T01:49:21Z [delta:Fix relative image links in yak attachme]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQNSYysfbwRGKL-KGL8e-aQpLOAEKHPJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
