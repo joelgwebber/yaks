@@ -5,14 +5,14 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
-updated: '2026-11-04T21:35:35Z'
+updated: '2026-11-04T22:25:22Z'
 parent: yaks-f677
 depends_on:
 - yaks-7058
 tags:
 - tui
 - perf
-needs: human
+needs: agent
 ---
 
 Feels like there might be an intentional delay for some reason?
@@ -153,3 +153,12 @@ Three fixes would together take a changing save from ~0.7 s to about the no-git 
    Lean: (a), and only do (b) if the measurement after 1 and 2 still feels slow.
 
 Question: OK to do 1 and 2 now, with 3(a)? Should yaks-7058 be done first, as it carries most of the weight?
+
+---
+▸ 2026-11-04T22:25:22Z [Joel Webber]
+kind: answer
+needs: agent
+---
+
+1, 2: Yes, absolutely. We have a place for caches in ~/.local for exactly this sort of thing.
+3. I'm reading this as optimistic concurrency in the TUI. Let's file a yak and defer for re-measurement.
