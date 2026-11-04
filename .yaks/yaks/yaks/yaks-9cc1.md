@@ -5,13 +5,13 @@ status: shorn
 type: idea
 priority: 3
 created: '2026-11-01T18:53:14Z'
-updated: '2026-11-02T01:29:28Z'
+updated: '2026-11-04T20:03:41Z'
 parent: yaks-44b3
 depends_on:
 - yaks-1f34
 tags:
-- wiki
 - design
+- doks
 ---
 
 Layer 5. Joel (2026-11-01): reminders often want extra data (a link to the plumber's page), and recurring yaks are useful beyond Hearth: maintenance, weekly metric checks. Starting idea: a yak that regrows on a schedule. Needs the field model (yaks-8384).
