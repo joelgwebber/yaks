@@ -5,10 +5,10 @@ status: shaving
 type: feature
 priority: 1
 created: '2026-11-01T18:52:36Z'
-updated: '2026-11-03T21:50:51Z'
+updated: '2026-11-04T20:03:29Z'
 tags:
-- wiki
 - design
+- doks
 ---
 
 Grow the farm from a task tracker into the data layer for in-repo research, planning and documentation: **pages**, **sources** and **schemas** beside yaks, one link grammar across them, and per-change commits. A personal agent (Hearth, later) then sits on top of a farm rather than owning its own storage.
