@@ -1,11 +1,11 @@
 ---
 id: yaks-08b0
 title: 'Skills: one source per thing, with --url and --title; conversions are not sources'
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-04T17:23:24Z'
-updated: '2026-11-04T17:29:21Z'
+updated: '2026-11-04T17:29:22Z'
 parent: yaks-dedc
 depends_on:
 - yaks-d19c
@@ -52,3 +52,13 @@ Done on branch `yaks-dedc-sources` (ad0ee0d), not merged.
 - `cargo test skills` green; the old `--part-of ... when it is a separate file` wording is gone from `docs/ .agents/ README.md src/`.
 
 Not run: the cold-read scout from the brief (subagents weren't asked for in this thread). Worth doing after the branch lands, with the two scenario questions in the yak.
+
+---
+▸ 2026-11-04T17:29:22Z [source-fix]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
