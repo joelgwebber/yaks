@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-04T21:35:11Z'
-updated: '2026-11-04T23:14:56Z'
+updated: '2026-11-04T23:24:31Z'
 parent: yaks-907a
 tags:
 - tui
@@ -32,3 +32,13 @@ thread: ksQQstI5T-eCRACxAjKJdNo3oJLOAEQG4JIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-04T23:24:31Z [perf-907a]
+
+Re-measured after yaks-7058 and yaks-bcd4 (local `main`, f62e889c; temporary trace in the watcher branch of `runtime.rs`, reverted). Real pty, `:wq` on a comment in a clone of this farm (880 yaks):
+
+- The watcher's reload after our own save takes 42-44 ms (it was ~150 ms: it ran the whole chip chain).
+- It runs after the frame that shows the saved text is drawn: first output after the save at ~290-400 ms, the second repaint ~250 ms later. So it no longer delays the save the user waits for; it is a ~44 ms stall on the next key at worst.
+
+So this is no longer a cause of the pause. Skipping our own writes costs a rule that has to tell our write from an external one landing at the same moment, to save ~44 ms off the critical path. Recommend not doing it: shear as not needed unless the stall shows up on a bigger farm (the reload also re-reads every yak file, 13-15 ms here at 880 yaks; yaks-e61e is the farm-size scaling).
