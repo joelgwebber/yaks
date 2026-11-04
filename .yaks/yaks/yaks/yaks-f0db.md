@@ -5,11 +5,11 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-01T20:09:16Z'
-updated: '2026-11-01T22:51:31Z'
+updated: '2026-11-04T20:03:48Z'
 parent: yaks-200f
 tags:
-- wiki
 - tui
+- doks
 ---
 
 Decided on yaks-63c3: the TUI syncs the farm on a regular interval (fetch, merge with the driver, push) so upstream changes appear even with no local edits. Interval in config; off for a private farm (it never pushes, but still pulls when it has an upstream).
