@@ -5,7 +5,7 @@ status: shorn
 type: idea
 priority: 3
 created: '2026-09-10T23:45:35Z'
-updated: '2026-09-11T01:05:15Z'
+updated: '2026-11-04T01:14:33Z'
 tags:
 - meta
 ---
@@ -16,3 +16,13 @@ Coordinating the UI batch, the coordinator cannot cheaply eyeball an attached SV
 ▸ 2026-09-11T01:05:15Z [coordinator]
 
 Shorn: resolved as a documented RECIPE, not a 'yaks render' subcommand. Rationale: (1) yaks's hard invariant is a single self-contained binary -- shelling to Chrome breaks it; (2) the pure-Rust alternative (resvg) renders our color emoji as tofu, so a browser engine is needed for fidelity regardless -- rasterization isn't yaks's job. Added a 'Rasterizing an SVG to view it' recipe to docs/tui.md (headless Chrome -> PNG in a gitignored dir; window-size from the SVG header; magick compare for pixel-diffs) + a pointer from AGENTS.md 'Verifying changes'. Bonus: closed a docs->reality gap (AGENTS.md already pointed at a docs/tui.md recipe that did not exist). Deferred (not pursued): a pure-Rust 'yaks render' if emoji-capable rasterization ever lands.
+
+---
+▸ 2026-11-04T01:14:33Z [indent-links]
+
+Not reopened: the shear rationale was right when written, but two of its premises have since changed, so its deferred half is now its own yak, yaks-8fd1 (`yaks render`).
+
+- "A single self-contained binary": the rasterizer and its fonts are now embedded in it (yaks-4e9c), so there is nothing to shell out to.
+- "resvg draws our color emoji as tofu": the embedded subset draws the emoji in our frames and blanks the rest (yaks-4f4d widens it).
+
+The documented Chrome recipe in `docs/tui.md` is still the faithful browser view and stays.
