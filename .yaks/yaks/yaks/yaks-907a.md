@@ -5,13 +5,14 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
-updated: '2026-11-04T21:35:34Z'
+updated: '2026-11-04T21:35:35Z'
 parent: yaks-f677
 depends_on:
 - yaks-7058
 tags:
 - tui
 - perf
+needs: human
 ---
 
 Feels like there might be an intentional delay for some reason?
@@ -133,3 +134,22 @@ Filed from this:
 Not caused by git config: `core.fsmonitor=true` is set in `~/.gitconfig` and makes `status` ~2x slower than without it here (31 vs 16 ms), but that is the machine, not yaks.
 
 Not found: anything `:wq`-specific, a timer, or an `Esc` delay. `:wq` and Ctrl-S share `commit_edit`.
+
+---
+▸ 2026-11-04T21:35:35Z [perf-907a]
+kind: ask
+needs: human
+---
+
+asked: needs human
+
+Three fixes would together take a changing save from ~0.7 s to about the no-git ~0.05-0.1 s. One is a judgment call, so I'm asking before building.
+
+1. Cache git discovery for the process (branch, toplevel, `yaks.branch`, identity) and build the commit and snapshot from one `status` call. This is yaks-7058. No behavior change. Lean: do it.
+2. Fold the chip refresh into one `git status --porcelain=v2 --branch -z` (yaks-bcd4) and stop the double reload (yaks-1ebf). No behavior change. Lean: do it.
+3. Run the per-change commit after the frame that shows the saved text is drawn (the TUI only). This changes behavior: for a moment the file is written but not yet committed, so quitting right then, a crash, a `yaks sync` from another process, or the watcher seeing a dirty farm could catch it. The CLI path is unaffected.
+   - (a) Don't: do 1 and 2 first and re-measure; I expect ~200-250 ms with a cold-cache save, likely fine.
+   - (b) Deferred commit, flushed on quit and before any `W`/`U`.
+   Lean: (a), and only do (b) if the measurement after 1 and 2 still feels slow.
+
+Question: OK to do 1 and 2 now, with 3(a)? Should yaks-7058 be done first, as it carries most of the weight?
