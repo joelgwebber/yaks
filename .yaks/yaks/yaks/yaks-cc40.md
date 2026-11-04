@@ -1,7 +1,7 @@
 ---
 id: yaks-cc40
 title: 'Rename wiki pages to doks: the whole thing, one pass (schema 7)'
-status: hairy
+status: shorn
 type: task
 priority: 2
 created: '2026-11-04T17:18:16Z'
@@ -99,3 +99,13 @@ Rehearsing the migration on copies under `/private/tmp` wrote two stray commits 
 
 - Told Clint: haks writes `doks/digest/<date>.md` now and must call `yaks dok new` (Joel is telling him).
 - `yaks sync` has not been run on either farm; the farm commits are local, apart from the two stray ones and their reverts.
+
+---
+▸ 2026-11-04T20:04:07Z [source-fix]
+kind: move
+from: hairy
+to: shorn
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shorn
