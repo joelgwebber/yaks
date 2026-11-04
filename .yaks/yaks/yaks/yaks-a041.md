@@ -1,11 +1,11 @@
 ---
 id: yaks-a041
 title: 'Regrow routes a recurring yak to the inbox (needs: agent|human)'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-04T22:31:54Z'
-updated: '2026-11-04T22:36:18Z'
+updated: '2026-11-04T22:51:16Z'
 parent: yaks-7fa6
 tags:
 - cli
@@ -49,3 +49,13 @@ kind: pickup
 picked up
 
 Decision (Joel, 2026-11-04): option 1. A recurring yak carries `wake: agent|human`; on regrow it sets `needs:` to that value (the same field `ask`/`request` use). Absent means the yak just goes hairy, as today. Rejected: a tag that carries behavior, and inferring the target from the last ask/request note.
+
+---
+▸ 2026-11-04T22:51:16Z [sched-1]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
