@@ -4331,13 +4331,146 @@ fn an_image_alone_in_a_paragraph_reserves_rows_in_the_detail_pane() {
     );
 }
 
+/// yaks-0370: an image in the middle of a paragraph is drawn too, under the
+/// paragraph, in order; the paragraph's text is not split.
 #[test]
-fn an_image_in_text_a_list_or_with_inline_images_off_stays_a_link_row() {
+fn an_image_among_text_is_drawn_under_its_paragraph() {
     for body in [
-        "see ![shot](t0/shot.png) here",
-        "- ![shot](t0/shot.png)",
-        "> ![shot](t0/shot.png)",
+        "Here's an image: ![shot](t0/shot.png)\n\nAfter.",
+        "Before ![shot](t0/shot.png) after.\n\nAfter.",
+        "![shot](t0/shot.png) then text.\n\nAfter.",
     ] {
+        let (_dir, app) = app_with_inline_image(body, true);
+        let lines = app.detail_dlines();
+        let rows = image_rows(&app);
+        assert_eq!(rows.len(), 6, "{body:?}: {rows:?}");
+        assert!(rows.windows(2).all(|w| w[1] == w[0] + 1), "contiguous");
+        // The picture follows the paragraph's last text row; a blank row and
+        // then "After." come after it.
+        let after = lines
+            .iter()
+            .position(|l| l.text.starts_with("After."))
+            .unwrap();
+        assert_eq!(rows[5] + 2, after, "{body:?}");
+        assert!(!lines[rows[0] - 1].text.is_empty(), "{body:?}");
+        assert_eq!(image_pixel_rows(&app, 100, 40), 6, "{body:?}: drawn");
+    }
+    // Two images in one paragraph: both drawn, one after the other.
+    let (_dir, app) =
+        app_with_inline_image("One ![a](t0/shot.png) and two ![b](t0/shot.png).", true);
+    let rows = image_rows(&app);
+    assert_eq!(rows.len(), 12, "{rows:?}");
+    let lines = app.detail_dlines();
+    let first_rows: Vec<usize> = rows
+        .iter()
+        .copied()
+        .filter(|&i| lines[i].image.as_ref().unwrap().row == 0)
+        .collect();
+    assert_eq!(first_rows.len(), 2, "two pictures");
+}
+
+/// The text of every detail row, for a frame-free look at what is under what.
+fn detail_texts(app: &App) -> Vec<String> {
+    app.detail_dlines().iter().map(|l| l.text.clone()).collect()
+}
+
+/// yaks-0370: an image's markdown title is its caption, on the row after the
+/// picture (or after the link row when nothing is drawn): dim italic, wrapped
+/// to the pane, in the paragraph's own source block.
+#[test]
+fn an_image_title_is_a_caption_under_the_picture() {
+    let (_dir, app) = app_with_inline_image(
+        "Context: ![shot](t0/shot.png \"The login page on mobile\")\n\nAfter.",
+        true,
+    );
+    let lines = app.detail_dlines();
+    let rows = image_rows(&app);
+    assert_eq!(rows.len(), 6);
+    let cap = rows[5] + 1;
+    assert_eq!(lines[cap].text, "The login page on mobile");
+    assert_eq!(
+        lines[cap].image, None,
+        "a caption is text, not picture rows"
+    );
+    assert_eq!(lines[cap].md[0].style, crate::tui::palette::caption());
+    assert_eq!(lines[cap + 1].text, "", "the paragraph's blank row follows");
+    assert!(lines[cap + 2].text.starts_with("After."));
+    assert_eq!(
+        lines[cap].src.unwrap().block,
+        lines[rows[0] - 1].src.unwrap().block
+    );
+    // Not drawn: still a caption, under the link row.
+    for (body, inline) in [
+        ("![x](t0/shot.png \"No picture\")", false),
+        ("![x](https://example.com/a.png \"Remote\")", true),
+        ("![x](t0/missing.png \"Gone\")", true),
+    ] {
+        let (_dir, app) = app_with_inline_image(body, inline);
+        assert!(image_rows(&app).is_empty(), "{body:?}");
+        let texts = detail_texts(&app);
+        let at = texts.iter().position(|t| t.contains("🖼 x")).unwrap();
+        assert_eq!(
+            texts[at + 1],
+            body.split('"').nth(1).unwrap(),
+            "{body:?}: {texts:?}"
+        );
+    }
+    // A long caption wraps to the pane; one caption per image, in order.
+    let long = "word ".repeat(40);
+    let (_dir, app) = app_with_inline_image(
+        &format!(
+            "![a](t0/shot.png \"{}\") ![b](t0/shot.png \"second\")",
+            long.trim()
+        ),
+        true,
+    );
+    let texts = detail_texts(&app);
+    let first = texts.iter().position(|t| t.starts_with("word ")).unwrap();
+    let wraps = texts[first..]
+        .iter()
+        .take_while(|t| t.starts_with("word"))
+        .count();
+    assert!(wraps >= 2, "{texts:?}");
+    assert!(texts.iter().any(|t| t == "second"), "{texts:?}");
+    // A caption in a list or quote has no paragraph to sit under: unchanged.
+    let (_dir, app) = app_with_inline_image("- ![x](t0/shot.png \"Listed\")", true);
+    assert!(!detail_texts(&app).iter().any(|t| t == "Listed"));
+}
+
+/// yaks-0370: an svg is drawn in place like any other image; its size comes
+/// from rasterizing it (a header has none), cached by content.
+#[test]
+fn an_svg_attachment_is_drawn_in_place() {
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120">
+        <rect width="120" height="60" fill="#ff0000"/>
+        <rect y="60" width="120" height="60" fill="#0000ff"/></svg>"##;
+    let mut t0 = task("t0", "solo", Status::Hairy, 3, None);
+    t0.body = "Diagram: ![d](t0/diagram.svg \"An svg\")".into();
+    let (_dir, farm) = temp_farm(&[t0]);
+    put_attachment(&farm, "t0", "diagram.svg", svg);
+    let mut app = App::with_farm(farm).unwrap();
+    HeadlessApp::on_resize(&mut app, 100, 40);
+    press(&mut app, "l");
+    draw(&app, 100, 40);
+    let rows = image_rows(&app);
+    assert_eq!(rows.len(), 6, "a 120x120 svg takes 12x6 cells like a png");
+    assert_eq!(image_pixel_rows(&app, 100, 40), 6, "drawn");
+    assert_eq!(detail_texts(&app)[rows[5] + 1], "An svg");
+    // A malformed svg is no picture, and no crash.
+    let mut t1 = task("t1", "solo", Status::Hairy, 3, None);
+    t1.body = "![bad](t1/bad.svg)".into();
+    let (_dir, farm) = temp_farm(&[t1]);
+    put_attachment(&farm, "t1", "bad.svg", b"<svg");
+    let mut app = App::with_farm(farm).unwrap();
+    HeadlessApp::on_resize(&mut app, 100, 40);
+    press(&mut app, "l");
+    draw(&app, 100, 40);
+    assert!(image_rows(&app).is_empty());
+}
+
+#[test]
+fn an_image_in_a_list_or_with_inline_images_off_stays_a_link_row() {
+    for body in ["- ![shot](t0/shot.png)", "> ![shot](t0/shot.png)"] {
         let (_dir, app) = app_with_inline_image(body, true);
         assert!(image_rows(&app).is_empty(), "{body:?}");
     }

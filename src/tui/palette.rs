@@ -72,6 +72,12 @@ pub fn emphasis() -> Style {
     Style::new().add_modifier(Modifier::ITALIC)
 }
 
+/// An image's caption (its markdown title), shown under the picture: dim and
+/// italic, so it reads as a label, not as body text.
+pub fn caption() -> Style {
+    marker().add_modifier(Modifier::ITALIC)
+}
+
 pub fn strong() -> Style {
     Style::new().add_modifier(Modifier::BOLD)
 }

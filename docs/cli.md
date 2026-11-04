@@ -320,7 +320,7 @@ Yaks and pages link with ordinary markdown links, in one grammar: `<target>[@<re
 | Command | What it does |
 |---|---|
 | `verify <ids…>` | Run each yak's verification command with live output, and record `verify: <cmd> -> PASS/FAIL (exit N)` as an attributed note. Exits non-zero if any fails. Explicit only. [Details](#verify) |
-| `attach <id> <path>...` | Copy local files under `.yaks/<herd>/yaks/<id>/` and link each in the yak's body — artifact evidence a human can view. `--no-link` stores them without a body link (the parts of a document that links them itself); `--name` renames a single file; `--note`/`--as` record an attributed note. [Details](#attach) |
+| `attach <id> <path>...` | Copy local files under `.yaks/<herd>/yaks/<id>/` and link each in the yak's body — artifact evidence a human can view. `--no-link` stores them without a body link (the parts of a document that links them itself); `--caption` captions the image it links; `--name` renames a single file; `--note`/`--as` record an attributed note. [Details](#attach) |
 | `rename-attachment <id> <old> <new>` | Rename `.yaks/<herd>/yaks/<id>/<old>` and rewrite every link to it across the farm. Refuses to overwrite an existing attachment. [Details](#rename-attachment) |
 | `attachment <id> [<file>]` | Print the absolute path of a yak's attachments (all, or the one named). `--json`. Read-only. [Details](#attachment) |
 
@@ -364,6 +364,8 @@ A lever is the pass/fail **gate** for its tag — what `doctor --strict` enforce
 `attach <id> <path>...`
 
 Copy local files (several attach in one write, one farm commit) under `.yaks/<herd>/yaks/<id>/` (beside the yak's file) and link each in the yak's body as `![name](<id>/<file>)` for an image (png, jpg, jpeg, gif, webp, svg) or `[name](<id>/<file>)` for any other file (what GitHub and every CommonMark viewer expect; a space or parenthesis in the file name is percent-encoded, `my%20shot.png`) — artifact evidence (screenshots, TUI frames) a human or yakherd can view.
+
+`--caption <text>` writes the image's markdown title, `![name](<id>/<file> "text")`, which `yaks tui` shows as a caption under the picture (one file, with its link: not with `--no-link`).
 
 `--name <name>` stores a single file under a different filename (sanitized; the source's extension is kept if omitted). `--note`/`--as` record an attributed note.
 

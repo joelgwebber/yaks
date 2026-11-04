@@ -918,16 +918,9 @@ fn docshots_image_viewer() {
     write_svg("tui-image-viewer", &app, w, h);
 }
 
-/// Inline images (yaks-0bf0): an image that is a whole paragraph of a yak body
-/// is drawn in the detail pane, in a second shot clipped at the pane's bottom
-/// edge, into `docs/assets/tui-image-inline*.svg`. Ignored by default; run
-/// explicitly: `cargo test -p yaks docshots_image_inline -- --ignored`.
-#[test]
-#[ignore = "asset generator; run with --ignored to refresh docs/assets/tui-image-inline*.svg"]
-fn docshots_image_inline() {
-    use crate::tui::test_support::temp_farm;
-
-    // A 240x140 test card: a diagonal gradient with a white-ringed disc.
+/// A 240x140 test card: a diagonal gradient with a white-ringed disc, as PNG
+/// bytes (the picture the inline-image scenes draw).
+fn test_card_png() -> Vec<u8> {
     let (iw, ih) = (240u32, 140u32);
     let mut px = Vec::new();
     for y in 0..ih {
@@ -948,6 +941,19 @@ fn docshots_image_inline() {
     enc.set_color(png::ColorType::Rgb);
     enc.set_depth(png::BitDepth::Eight);
     enc.write_header().unwrap().write_image_data(&px).unwrap();
+    png_bytes
+}
+
+/// Inline images (yaks-0bf0): an image that is a whole paragraph of a yak body
+/// is drawn in the detail pane, in a second shot clipped at the pane's bottom
+/// edge, into `docs/assets/tui-image-inline*.svg`. Ignored by default; run
+/// explicitly: `cargo test -p yaks docshots_image_inline -- --ignored`.
+#[test]
+#[ignore = "asset generator; run with --ignored to refresh docs/assets/tui-image-inline*.svg"]
+fn docshots_image_inline() {
+    use crate::tui::test_support::temp_farm;
+
+    let png_bytes = test_card_png();
 
     let mut y = t(
         "yak-1a2b",
@@ -981,4 +987,40 @@ fn docshots_image_inline() {
     let _ = toque::render_to_svg(&app, w, h);
     app.detail.scroll = 6;
     write_svg("tui-image-inline-clipped", &app, w, h);
+}
+
+/// Image captions (yaks-0370): an image's markdown title is a dim italic line
+/// under the picture, and under the `🖼` link row when the picture is not
+/// drawn (here a remote image), into `docs/assets/tui-image-caption.svg`.
+/// Ignored by default; run explicitly:
+/// `cargo test -p yaks docshots_image_caption -- --ignored`.
+#[test]
+#[ignore = "asset generator; run with --ignored to refresh docs/assets/tui-image-caption.svg"]
+fn docshots_image_caption() {
+    use crate::tui::test_support::temp_farm;
+
+    let mut y = t(
+        "yak-1a2b",
+        "Login page looks wrong on mobile",
+        "bug",
+        2,
+        Status::Shaving,
+        None,
+    );
+    y.body = "Context: ![mobile login =50%](yak-1a2b/mobile-login.png \"The header wraps at 360px\")\n\n\
+              Compare the live site: ![live](https://example.com/live.png \"Not drawn: a remote image\")\n\n\
+              Everything below the fold is fine."
+        .into();
+    let (_dir, farm) = temp_farm(&[y]);
+    let dir = crate::store::artifact_dir(farm.root(), "yak-1a2b");
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("mobile-login.png"), test_card_png()).unwrap();
+
+    let (w, h) = (100u16, 34u16);
+    let mut app = App::with_farm(farm).unwrap();
+    HeadlessApp::on_resize(&mut app, w, h);
+    view_to(&mut app, "status:shaving");
+    press(&mut app, 'l'); // focus the detail pane
+    let _ = toque::render_to_svg(&app, w, h); // measure the pane width
+    write_svg("tui-image-caption", &app, w, h);
 }

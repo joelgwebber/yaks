@@ -66,9 +66,14 @@ pub struct MdImage {
     pub alt: String,
     /// The size the author asked for (`![alt =50%](p)`), if any.
     pub size: Option<ImageSize>,
-    /// The image is the whole of a top-level paragraph (not in a list, quote
-    /// or footnote, no other text): the only case drawn in place (yaks-0bf0).
-    pub alone: bool,
+    /// The image sits in a top-level paragraph (not in a list, quote, table
+    /// or footnote), with or without text around it: the only case drawn in
+    /// place, under that paragraph (yaks-0bf0, yaks-0370).
+    pub top_level: bool,
+    /// The image's markdown title (`![alt](src "Caption")`), if it has one: a
+    /// caption shown under the picture, or under the link row when the image
+    /// is not drawn (yaks-0370).
+    pub caption: Option<String>,
 }
 
 /// Which no-wrap block a row belongs to, and the part that stays put when the
@@ -176,9 +181,9 @@ struct Renderer<'k> {
     /// the definition's number, parked until it ends, so its rows are built
     /// on their own.
     parked: Option<(Vec<MdRow>, bool, usize)>,
-    /// The image being read: its link index and where its alt text starts in
-    /// `buf`.
-    open_image: Option<(usize, usize)>,
+    /// The image being read: its link index, where its alt text starts in
+    /// `buf` and its markdown title.
+    open_image: Option<(usize, usize, String)>,
     /// Finished images by link index, waiting for the row their marker lands
     /// on (see `emit`).
     images: HashMap<usize, MdImage>,
@@ -503,7 +508,9 @@ impl Renderer<'_> {
                     self.push_plain("\u{1F4CE} ", line, st);
                 }
             }
-            Tag::Image { dest_url, .. } => {
+            Tag::Image {
+                dest_url, title, ..
+            } => {
                 // By the link grammar, like any link (yaks-c5d7): a farm file
                 // (`/sources/<id>/shot.png`, a page-relative `shot.png`) is a
                 // farm document; anything else (`<id>/<file>`, a URL) stays an
@@ -522,7 +529,7 @@ impl Renderer<'_> {
                 self.styles.push(link());
                 let st = self.style();
                 self.push_plain("🖼 ", line, st);
-                self.open_image = Some((self.targets.len() - 1, self.buf.len()));
+                self.open_image = Some((self.targets.len() - 1, self.buf.len(), title.to_string()));
             }
             Tag::DefinitionList
             | Tag::DefinitionListTitle
@@ -534,7 +541,7 @@ impl Renderer<'_> {
     fn end(&mut self, tag: &TagEnd) {
         match tag {
             TagEnd::Paragraph => {
-                self.mark_lone_image();
+                self.mark_top_level_images();
                 self.block_end();
             }
             TagEnd::Heading(_) => {
@@ -603,18 +610,15 @@ impl Renderer<'_> {
         }
     }
 
-    /// A top-level paragraph whose every cell belongs to one image is that
-    /// image's whole paragraph: flag it so the detail layout may draw it.
-    fn mark_lone_image(&mut self) {
+    /// The images of a top-level paragraph, whatever else it holds: flag them
+    /// so the detail layout may draw each under the paragraph.
+    fn mark_top_level_images(&mut self) {
         if !self.containers.is_empty() || self.table.is_some() || self.parked.is_some() {
             return;
         }
-        let Some(li) = self.buf.first().and_then(|c| c.link) else {
-            return;
-        };
-        if self.buf.iter().all(|c| c.link == Some(li)) {
+        for li in self.buf.iter().filter_map(|c| c.link) {
             if let Some(img) = self.images.get_mut(&li) {
-                img.alone = true;
+                img.top_level = true;
             }
         }
     }
@@ -623,7 +627,7 @@ impl Renderer<'_> {
     /// of what is shown and keep it, with the alt and target, for the row the
     /// marker lands on.
     fn end_image(&mut self) {
-        let Some((link, start)) = self.open_image.take() else {
+        let Some((link, start, title)) = self.open_image.take() else {
             return;
         };
         let alt: String = self.buf[start..].iter().map(|c| c.ch).collect();
@@ -632,21 +636,24 @@ impl Renderer<'_> {
         self.buf.truncate(start + alt.chars().count());
         // The target as the inline layout resolves it: an attachment as
         // written, a farm file from the root (`/sources/...`). A pinned farm
-        // file is not drawn in place.
+        // file is not drawn in place (an empty target names nothing), but its
+        // caption still shows.
         let target = match &self.targets[link] {
             Target::Artifact(t) => t.clone(),
             Target::Farm {
                 path, rev: None, ..
             } => format!("/{path}"),
-            _ => return,
+            _ => String::new(),
         };
+        let caption = title.split_whitespace().collect::<Vec<_>>().join(" ");
         self.images.insert(
             link,
             MdImage {
                 target,
                 alt,
                 size,
-                alone: false,
+                top_level: false,
+                caption: (!caption.is_empty()).then_some(caption),
             },
         );
     }
@@ -1407,13 +1414,15 @@ mod tests {
                     target: "a/shot.png".into(),
                     alt: "shot".into(),
                     size: Some(want_size),
-                    alone: false,
+                    top_level: true,
+                    caption: None,
                 },
                 MdImage {
                     target: "b.png".into(),
                     alt: "plain".into(),
                     size: None,
-                    alone: false,
+                    top_level: true,
+                    caption: None,
                 },
             ]
         );
@@ -1428,22 +1437,48 @@ mod tests {
         assert_eq!(rows[0].images[1].size, None);
     }
 
-    // yaks-0bf0: only an image that is a whole top-level paragraph is `alone`.
+    // yaks-0370: the markdown title is the image's caption, whitespace
+    // collapsed; none when absent or blank, and it rides along even for an
+    // image that cannot be drawn (a remote one has no target to name).
     #[test]
-    fn an_image_alone_in_a_top_level_paragraph_is_flagged() {
+    fn an_image_title_is_its_caption() {
+        let cap = |md: &str| {
+            let rows = render(md, 80, &HashSet::new());
+            let imgs: Vec<_> = rows.iter().flat_map(|r| r.images.iter()).collect();
+            assert_eq!(imgs.len(), 1, "{md:?}");
+            imgs[0].caption.clone()
+        };
+        assert_eq!(cap("![a](p.png \"Login page\")"), Some("Login page".into()));
+        assert_eq!(cap("![a](p.png 'Two  words')"), Some("Two words".into()));
+        assert_eq!(
+            cap("![a](p.png \"say \\\"hi\\\"\")"),
+            Some("say \"hi\"".into())
+        );
+        assert_eq!(cap("![a](p.png)"), None);
+        assert_eq!(cap("![a](p.png \"  \")"), None);
+        assert_eq!(
+            cap("![a](https://x.test/a.png \"Remote\")"),
+            Some("Remote".into())
+        );
+    }
+
+    // yaks-0bf0, yaks-0370: an image in a top-level paragraph is flagged, with
+    // or without text around it; one in a list, quote or table is not.
+    #[test]
+    fn an_image_in_a_top_level_paragraph_is_flagged() {
         let alone = |md: &str| {
             let rows = render(md, 80, &HashSet::new());
             let flags: Vec<bool> = rows
                 .iter()
-                .flat_map(|r| r.images.iter().map(|i| i.alone))
+                .flat_map(|r| r.images.iter().map(|i| i.top_level))
                 .collect();
             assert_eq!(flags.len(), 1, "{md:?}");
             flags[0]
         };
         assert!(alone("![a](p.png)"));
         assert!(alone("Intro.\n\n![a =50%](p.png)\n\nOutro."));
-        assert!(!alone("see ![a](p.png)"));
-        assert!(!alone("![a](p.png) text"));
+        assert!(alone("see ![a](p.png)"));
+        assert!(alone("![a](p.png) text"));
         assert!(!alone("- ![a](p.png)"));
         assert!(!alone("> ![a](p.png)"));
         assert!(!alone("| h |\n|---|\n| ![a](p.png) |"));

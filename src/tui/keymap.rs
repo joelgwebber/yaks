@@ -849,8 +849,8 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
                 "Shown in the pane (png/jpg/gif/webp/svg); O opens externally, Esc/q closes",
             ),
             (
-                "(image alone)",
-                "A body image on its own line is drawn in place (config inline_images)",
+                "(body images)",
+                "A body paragraph's images are drawn under it, svg too, and their title is a caption (config inline_images)",
             ),
         ],
     ),

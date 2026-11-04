@@ -258,6 +258,10 @@ enum Command {
     /// or `[name](<id>/<file>)` for any other file. Use for artifact
     /// evidence a human or coordinator can look at (screenshots, TUI frames).
     ///
+    /// `--caption` writes the image's markdown title
+    /// (`![name](<id>/<file> "CAPTION")`), which `yaks tui` shows under the
+    /// picture; prefer it to a lead-in line such as `Context: ![..](..)`.
+    ///
     /// Several files attach in one write. For a markdown document and the
     /// images it embeds, attach them together with `--no-link` and link only
     /// the document from the yak: the document's own `![x](shot.png)` (the
@@ -276,6 +280,11 @@ enum Command {
         /// Store the files without adding a link to the yak's body.
         #[arg(long)]
         no_link: bool,
+        /// A caption for the image, written as the link's markdown title
+        /// (`![name](<id>/<file> "CAPTION")`): `yaks tui` shows it under the
+        /// picture. One file, and not with `--no-link`.
+        #[arg(long)]
+        caption: Option<String>,
         /// An optional attributed note to record alongside the attachment.
         #[arg(long)]
         note: Option<String>,
@@ -2078,11 +2087,18 @@ fn main() -> Result<()> {
             paths,
             name,
             no_link,
+            caption,
             note,
             as_actor,
         } => {
             if name.is_some() && paths.len() > 1 {
                 eprintln!("error: --name names one file; attach several without it");
+                std::process::exit(1);
+            }
+            if caption.is_some() && (paths.len() > 1 || no_link) {
+                eprintln!(
+                    "error: --caption captions the one image it links; use it with a single file, without --no-link"
+                );
                 std::process::exit(1);
             }
             let mut files = Vec::new();
@@ -2110,7 +2126,7 @@ fn main() -> Result<()> {
                 };
                 files.push((stored, data));
             }
-            match farm.attach_many(&id, &files, !no_link)? {
+            match farm.attach_many(&id, &files, !no_link, caption.as_deref())? {
                 AttachOutcome::NotFound => {
                     eprintln!("no such task: {id}");
                     std::process::exit(1);

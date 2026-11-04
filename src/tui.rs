@@ -351,8 +351,8 @@ pub struct App {
     /// cells). Halfblocks until [`runtime::run`] queries the real terminal, so
     /// headless frames and tests draw an image as colored cells.
     picker: ratatui_image::picker::Picker,
-    /// Draw an image that stands alone in a body paragraph in place
-    /// (`inline_images` in the farm config, default on; yaks-0bf0).
+    /// Draw the images of a top-level body paragraph in place
+    /// (`inline_images` in the farm config, default on; yaks-0bf0, yaks-0370).
     inline_images: bool,
     /// Decoded inline images, filled while drawing (see [`imageview`]).
     inline_cache: RefCell<imageview::InlineCache>,

@@ -884,8 +884,8 @@ pub struct Config {
     pub default_priority: u8,
     /// When true, embedded editors use vim keybindings; otherwise emacs.
     pub vim_mode: bool,
-    /// When true (the default), the TUI draws an image that stands alone in a
-    /// body paragraph in place (yaks-0bf0); false keeps it a `🖼 alt` link row.
+    /// When true (the default), the TUI draws the images of a top-level
+    /// body paragraph in place under it (yaks-0bf0, yaks-0370); false keeps it a `🖼 alt` link row.
     /// For a terminal whose image protocol misbehaves.
     pub inline_images: bool,
     /// Optional default verification commands, keyed by label (plus a `default`
@@ -1852,14 +1852,27 @@ pub fn is_image_name(name: &str) -> bool {
 /// source of the shape, shared by `attach`, `rename-attachment` and the
 /// schema-5 migration.
 pub fn attachment_link(id: &str, name: &str) -> String {
+    attachment_link_titled(id, name, None)
+}
+
+/// [`attachment_link`] with a markdown title, `![stem](<id>/<name> "Caption")`:
+/// what the TUI draws as the image's caption and other viewers show as a
+/// tooltip (yaks-0370). Backslashes and quotes in the caption are escaped and
+/// line breaks become spaces; an empty caption is none.
+pub fn attachment_link_titled(id: &str, name: &str, caption: Option<&str>) -> String {
     let stem = Path::new(name)
         .file_stem()
         .and_then(|s| s.to_str())
         .unwrap_or(name);
     let bang = if is_image_name(name) { "!" } else { "" };
     let stem = stem.replace(['[', ']'], "");
+    let title = caption
+        .map(|c| c.split_whitespace().collect::<Vec<_>>().join(" "))
+        .filter(|c| !c.is_empty())
+        .map(|c| format!(" \"{}\"", c.replace('\\', "\\\\").replace('"', "\\\"")))
+        .unwrap_or_default();
     format!(
-        "{bang}[{stem}]({id}/{})",
+        "{bang}[{stem}]({id}/{}{title})",
         crate::links::percent_encode_path(name)
     )
 }
@@ -2481,6 +2494,23 @@ pub fn schema_status(root: &Path) -> SchemaStatus {
 
 #[cfg(test)]
 mod tests {
+    /// yaks-0370: `attach --caption` writes the markdown title; a plain link
+    /// is unchanged, and a caption cannot break out of its quotes.
+    #[test]
+    fn attachment_link_titled_writes_an_escaped_title() {
+        use super::attachment_link_titled as link;
+        assert_eq!(link("y-1", "a.png", None), "![a](y-1/a.png)");
+        assert_eq!(link("y-1", "a.png", Some("  ")), "![a](y-1/a.png)");
+        assert_eq!(
+            link("y-1", "my shot.png", Some("The login page\non mobile")),
+            "![my shot](y-1/my%20shot.png \"The login page on mobile\")"
+        );
+        assert_eq!(
+            link("y-1", "log.txt", Some("say \"hi\" \\ now")),
+            "[log](y-1/log.txt \"say \\\"hi\\\" \\\\ now\")"
+        );
+    }
+
     /// yaks-c69d: `min_version:` warns an older binary (and only an older one).
     #[test]
     fn min_version_warns_only_an_older_yaks() {

@@ -602,30 +602,33 @@ pub(crate) fn md_rows<'k>(
     images: Option<&ImageEnv>,
 ) -> Vec<DLine> {
     let mut out = Vec::new();
-    // An image that is a whole paragraph reserves rows after the paragraph's
-    // last row; `pending` holds it until that row has gone out.
-    let mut pending: Option<(Src, ImageSlot)> = None;
+    // The images of a top-level paragraph reserve rows after the paragraph's
+    // last row, in order, each followed by its caption (yaks-0370); `pending`
+    // holds them until that row has gone out.
+    let mut pending: Vec<PendingImage> = Vec::new();
     for row in mdrender::render_in(text, width, known, from) {
-        // The blank row after the paragraph (a lone image has no container,
-        // so its rows are never blank) ends it: the image goes here.
+        // The blank row after the paragraph (a top-level paragraph has no
+        // container, so its rows are never blank) ends it: its images go here.
         if row.text.trim().is_empty() {
-            if let Some(p) = pending.take() {
-                out.extend(image_rows(p));
-            }
+            out.extend(pending.drain(..).flat_map(|p| image_block(p, width)));
         }
         let src = Src {
             block,
             lines: Some(row.lines),
         };
-        if pending.is_none() {
-            pending = images
-                .and_then(|env| {
-                    row.images
-                        .iter()
-                        .find_map(|img| image_slot(env, img, width))
-                })
-                .map(|slot| (src, slot));
-        }
+        pending.extend(
+            row.images
+                .iter()
+                .filter(|img| img.top_level)
+                .filter_map(|img| {
+                    let slot = images.and_then(|env| image_slot(env, img, width));
+                    (slot.is_some() || img.caption.is_some()).then(|| PendingImage {
+                        src,
+                        slot,
+                        caption: img.caption.clone(),
+                    })
+                }),
+        );
         out.push(DLine {
             text: row.text,
             kind: Kind::Body,
@@ -637,8 +640,45 @@ pub(crate) fn md_rows<'k>(
             image: None,
         });
     }
-    if let Some(p) = pending.take() {
-        out.extend(image_rows(p));
+    out.extend(pending.drain(..).flat_map(|p| image_block(p, width)));
+    out
+}
+
+/// An image of a paragraph, waiting for the paragraph's last row: the picture
+/// when it is drawn in place, and its caption (the markdown title) whether it
+/// is drawn or not.
+struct PendingImage {
+    src: Src,
+    slot: Option<ImageSlot>,
+    caption: Option<String>,
+}
+
+/// The rows under a paragraph for one of its images: the picture's reserved
+/// rows, then the caption wrapped to `width`, dim and italic.
+fn image_block(p: PendingImage, width: usize) -> Vec<DLine> {
+    let mut out: Vec<DLine> = p
+        .slot
+        .map(|s| image_rows((p.src, s)).collect())
+        .unwrap_or_default();
+    if let Some(caption) = p.caption {
+        let chars: Vec<char> = caption.chars().collect();
+        for (s, e) in wrap_ranges(&chars, width.max(1)) {
+            let text: String = chars[s..e].iter().collect();
+            out.push(DLine {
+                md: vec![MdSpan {
+                    start: 0,
+                    len: e - s,
+                    style: super::palette::caption(),
+                }],
+                text,
+                kind: Kind::Body,
+                links: vec![],
+                cont: false,
+                src: Some(p.src),
+                nowrap: None,
+                image: None,
+            });
+        }
     }
     out
 }
@@ -649,7 +689,7 @@ pub(crate) fn md_rows<'k>(
 /// read, sized by [`imagesize::cells`] from that header alone (no decode, so
 /// laying out a yak never waits on its pictures). The slot is for row 0.
 fn image_slot(env: &ImageEnv, img: &mdrender::MdImage, pane_cols: usize) -> Option<ImageSlot> {
-    if !img.alone || img.target.contains("://") {
+    if !img.top_level || img.target.contains("://") {
         return None;
     }
     let path = if let Some(farm_rel) = img.target.strip_prefix('/') {
@@ -667,12 +707,7 @@ fn image_slot(env: &ImageEnv, img: &mdrender::MdImage, pane_cols: usize) -> Opti
         }
         crate::farm::locate_attachment(env.root, id, &name)?.path
     };
-    let (w, h) = image::ImageReader::open(&path)
-        .ok()?
-        .with_guessed_format()
-        .ok()?
-        .into_dimensions()
-        .ok()?;
+    let (w, h) = image_dims(&path)?;
     let pane = pane_cols.min(u16::MAX as usize) as u16;
     let (cols, rows) = super::imagesize::cells(img.size, (w, h), env.cell_px, pane, env.max_rows);
     Some(ImageSlot {
@@ -681,6 +716,32 @@ fn image_slot(env: &ImageEnv, img: &mdrender::MdImage, pane_cols: usize) -> Opti
         rows,
         row: 0,
     })
+}
+
+/// The pixel size of the image at `path`: from its header for a raster image
+/// (no decode, so laying out a yak never waits on its pictures); for an svg,
+/// whose size is not in a header, from its rasterization
+/// ([`super::imageview::svg_png`], cached by content, so only the first sight
+/// of an svg pays for it).
+fn image_dims(path: &Path) -> Option<(u32, u32)> {
+    let is_svg = path
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("svg"));
+    if !is_svg {
+        return image::ImageReader::open(path)
+            .ok()?
+            .with_guessed_format()
+            .ok()?
+            .into_dimensions()
+            .ok();
+    }
+    let svg = super::imageview::read_svg(path)?;
+    let png = super::imageview::svg_png(&svg, super::cache::svg_cache_base().as_deref())?;
+    image::ImageReader::new(std::io::Cursor::new(png))
+        .with_guessed_format()
+        .ok()?
+        .into_dimensions()
+        .ok()
 }
 
 /// The rows the line cursor can rest on: every row except the blank rows an

@@ -48,6 +48,14 @@ pub(super) fn svg_png(svg: &[u8], cache_base: Option<&Path>) -> Option<Vec<u8>> 
     Some(png)
 }
 
+/// The text of the svg at `path`, or `None` for one over [`SVG_MAX_BYTES`].
+pub(super) fn read_svg(path: &Path) -> Option<Vec<u8>> {
+    if std::fs::metadata(path).ok()?.len() > SVG_MAX_BYTES {
+        return None;
+    }
+    std::fs::read(path).ok()
+}
+
 /// Decode an image attachment to pixels: an svg through toque's rasterizer (and
 /// the PNG cache), anything else through the `image` crate with the format
 /// guessed from the content.
@@ -56,13 +64,7 @@ fn decode_attachment(path: &Path, name: &str) -> Option<image::DynamicImage> {
         .extension()
         .is_some_and(|e| e.eq_ignore_ascii_case("svg"));
     if is_svg {
-        if std::fs::metadata(path).ok()?.len() > SVG_MAX_BYTES {
-            return None;
-        }
-        let png = svg_png(
-            &std::fs::read(path).ok()?,
-            super::cache::svg_cache_base().as_deref(),
-        )?;
+        let png = svg_png(&read_svg(path)?, super::cache::svg_cache_base().as_deref())?;
         return image::load_from_memory(&png).ok();
     }
     image::ImageReader::open(path)

@@ -2482,19 +2482,23 @@ impl Farm {
     /// inside the farm and is committed with it (`yaks commit`), so an
     /// attachment is shareable evidence, not just local scratch.
     pub fn attach(&self, id: &str, name: &str, data: &[u8]) -> Result<AttachOutcome> {
-        self.attach_many(id, &[(name.to_string(), data.to_vec())], true)
+        self.attach_many(id, &[(name.to_string(), data.to_vec())], true, None)
     }
 
     /// [`Farm::attach`] for several files in one write (one farm commit).
     /// With `link` false the files are only stored beside the yak and its
     /// body is untouched: for the parts of a document that links them itself
     /// (an evidence page whose `![x](shot.png)` names its sibling
-    /// attachments, see [`crate::links::From::Attachment`]).
+    /// attachments, see [`crate::links::From::Attachment`]). `caption` is
+    /// written as the link's markdown title (see
+    /// [`store::attachment_link_titled`]); it is part of the link, so it is
+    /// ignored without one.
     pub fn attach_many(
         &self,
         id: &str,
         files: &[(String, Vec<u8>)],
         link: bool,
+        caption: Option<&str>,
     ) -> Result<AttachOutcome> {
         let _lock = store::lock(&self.root)?;
         let Some(mut task) = store::load_task_by_id(&self.root, id)? else {
@@ -2509,7 +2513,7 @@ impl Farm {
                 if !body.is_empty() {
                     body.push_str("\n\n");
                 }
-                body.push_str(&store::attachment_link(id, name));
+                body.push_str(&store::attachment_link_titled(id, name, caption));
             }
         }
         if link {
@@ -5021,7 +5025,7 @@ mod tests {
             ("evidence.md".to_string(), doc.as_bytes().to_vec()),
             ("a.png".to_string(), b"x".to_vec()),
         ];
-        farm.attach_many("yak-0001", &files, false).unwrap();
+        farm.attach_many("yak-0001", &files, false, None).unwrap();
         let body = |root: &Path| {
             store::load_task_by_id(root, "yak-0001")
                 .unwrap()
@@ -5071,7 +5075,7 @@ mod tests {
             ("a.png".to_string(), b"x".to_vec()),
             ("b.txt".to_string(), b"y".to_vec()),
         ];
-        let out = farm.attach_many("yak-0001", &files, true).unwrap();
+        let out = farm.attach_many("yak-0001", &files, true, None).unwrap();
         assert_eq!(out, AttachOutcome::Attached("a.png, b.txt".into()));
         let b = store::load_task_by_id(&root, "yak-0001")
             .unwrap()

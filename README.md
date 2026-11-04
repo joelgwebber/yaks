@@ -270,7 +270,7 @@ herd: yak              # default herd / id prefix (`yaks init` writes it; `creat
 default_type: task     # default --type
 default_priority: 3    # default --priority
 vim_mode: true         # TUI editor keybindings: vim (true) or emacs (false)
-inline_images: true    # TUI: draw an image alone in a body paragraph in place (false: a link row)
+inline_images: true    # TUI: draw a body paragraph's images in place (false: a link row)
 sync_interval: 5m      # TUI: sync the farm in the background this often (30s, 5m, 2h; 0 or off: never)
 min_version: 0.0.31    # an older yaks warns (and names the upgrade) on every command
 ```

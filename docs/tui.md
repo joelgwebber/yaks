@@ -210,11 +210,12 @@ the pane width, the other side following the aspect ratio, and no row cap; with
 **both** it fits inside the `WxH` box, aspect kept. The viewer above still
 fits the whole pane; the size applies to the inline image below.
 
-**Inline images** — an image that is the whole of a top-level body paragraph
-(`![shot](<id>/shot.png)` on a line of its own, in a description or a comment) is
-drawn in the detail pane, under its `🖼 shot` link row, which stays followable
-(`Enter` opens the viewer). It is not drawn in place inside a sentence, a list, a
-quote or a table: those stay the link row. The layout reserves the image's rows
+**Inline images** — an image in a top-level body paragraph (`![shot](<id>/shot.png)`
+in a description or a comment, alone or among text: `Here is one: ![shot](...)`) is
+drawn in the detail pane, under the paragraph, which keeps its `🖼 shot` link row
+(followable: `Enter` opens the viewer). The text is not split around the picture;
+a paragraph with several images draws them one after another, in order. It is not
+drawn in place inside a list, a quote or a table: those stay the link row. The layout reserves the image's rows
 from its file header alone, so a yak never waits on its pictures; the image is
 decoded when it first scrolls into view and kept (a handful at a time). With no
 size an image shows at its natural size, shrunk to the pane width and two thirds
@@ -223,13 +224,27 @@ partly scrolled out of view is **clipped** at the pane edge on every protocol
 (kitty and half-block skip rows, sixel drops bands, iTerm2 draws row slices); one
 fully out of view is not decoded. The line cursor treats an image as one row, its
 link row: one `j` crosses the whole picture, as in edit mode, and a click on the
-picture selects that row (a second click opens the viewer). A remote (`http://`) image, an svg (its size
-is not in a file header; `Enter` still opens it in the viewer), a missing or
-undecodable file stays the link row. Set `inline_images: false` in
-`.yaks/config.yaml` to keep every image a link row (for a terminal whose image
-protocol misbehaves).
+picture selects that row (a second click opens the viewer). An svg is drawn like
+any other image (its size comes from rasterizing it, once per content, see *Svg
+attachments*). A remote (`http://`) image, which is not kept in the farm and so
+can break later, a missing or undecodable file stays the link row. Set
+`inline_images: false` in `.yaks/config.yaml` to keep every image a link row (for
+a terminal whose image protocol misbehaves).
 
-![An image alone in a paragraph, drawn in the pane at 60% width](assets/tui-image-inline.svg)
+**Image captions** — an image's markdown **title**, `![shot](<id>/shot.png "The
+login page, on mobile")`, is its caption: shown as a dim italic line under the
+picture, wrapped to the pane, and in a paragraph of several images under its own.
+It is standard markdown (other viewers show it as a tooltip), so the alt text
+stays short and keeps its `=50%` size token. A caption shows whether or not the
+picture is drawn: when the image is a remote, missing or undecodable one, or
+`inline_images` is off, it sits under the `🖼 shot` link row. Like the picture,
+it belongs to an image in a top-level paragraph: an image in a list, quote or
+table stays the link row, with no caption. `yaks attach <id> shot.png --caption
+"..."` writes it. Prefer it to a lead-in such as `Context: ![..](..)`.
+
+![A captioned image drawn in the pane, and a remote image's caption under its link row](assets/tui-image-caption.svg)
+
+![An image in a paragraph, drawn in the pane at 60% width](assets/tui-image-inline.svg)
 
 ![The same image clipped at the bottom edge of the pane](assets/tui-image-inline-clipped.svg)
 
