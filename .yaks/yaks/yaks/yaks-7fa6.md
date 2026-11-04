@@ -1,11 +1,11 @@
 ---
 id: yaks-7fa6
 title: 'Scheduling arc: ticks, recurring yaks that wake someone, and a skill for watchers'
-status: hairy
+status: shaving
 type: epic
 priority: 2
 created: '2026-11-04T22:30:49Z'
-updated: '2026-11-04T22:30:49Z'
+updated: '2026-11-04T22:36:22Z'
 tags:
 - design
 - cli
@@ -36,3 +36,14 @@ Persistent agents, launchd/cron integration and OS notifications. A persistent a
 - Relative dates (`+2d`, `+1w`) for `--due`; durations only, no weekday words.
 - `create --key` and `list --source` belong in this arc.
 - A new `yaks-scheduling` skill.
+
+---
+▸ 2026-11-04T22:36:22Z [sched-1]
+kind: move
+from: hairy
+to: shaving
+child: yaks-0079
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
