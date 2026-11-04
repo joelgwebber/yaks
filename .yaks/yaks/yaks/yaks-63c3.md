@@ -5,11 +5,11 @@ status: shorn
 type: idea
 priority: 1
 created: '2026-11-01T18:52:37Z'
-updated: '2026-11-01T20:09:15Z'
+updated: '2026-11-04T20:03:37Z'
 parent: yaks-7708
 tags:
-- wiki
 - git
+- doks
 ---
 
 How farm writes become commits, and how concurrent writes merge, now that the farm holds pages an agent rewrites as well as yaks.
