@@ -69,7 +69,7 @@ Pass `--yaks-dir <farm>` when the worker's checkout cannot find the farm. If the
 - **A design fork** (behavior a user sees, a data format, a dependency, a shipped surface, anything a reviewer would want a say in; if unsure, it is a fork): leave the ask open, and tell the human the yak id and your lean (record the lean on the parent yak, never the worker's). Wake the worker once `yaks inbox` shows it answered (`yaks wait --for agent --new --timeout <dur>` blocks until it is, if your harness can run it in the background).
 - **Waiting on workers' asks:** `yaks wait --for human --new --timeout <dur>` returns when a worker raises a new ask.
 - **Handing a chore to an agent** with no worker running (tidy a body, summarize a yak): `yaks request <id> --kind tidy|summarize` (or `--note "..."` for anything else) queues it in the agent inbox for whichever agent runs next. In bulk: `yaks bulk --run-on --request tidy` previews and `--commit` queues (a yak awaiting a human is skipped).
-- At session start and after each batch, run `yaks inbox`. A yak marked `replied` got a plain-note answer: record it with `yaks answer`, quoting the human and saying you read it from their note.
+- At session start and after each batch, run `yaks inbox`. A yak marked `replied` got a plain-note answer: record it with `yaks answer`, quoting the human and saying you read it from their note. Recurring yaks regrow when the human runs `yaks tick`; a worker is not the one to run it (the `yaks-scheduling` skill).
 
 ## 8. Attribution and drift
 

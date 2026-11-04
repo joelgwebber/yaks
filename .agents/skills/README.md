@@ -18,6 +18,9 @@ shipped ones from here.
   - `yaks-working` is for a worker taking ONE yak from hairy to shorn.
   - `yaks-research` is for research yaks that leave knowledge behind: doks,
     sources, citations, typed doks.
+  - `yaks-scheduling` is for recurring and due-dated yaks: running a round
+    (`yaks tick`), what a woken yak means, and the rules for a skill that
+    mirrors an outside queue into yaks.
   - `yaks-coordinating` is for a yakherd handing yaks to other agents, with a
     section each for Delta threads and plain git worktrees. (It replaced four
     companion skills, `-team`, `-private`, `-worktrees` and `-delta`; `yaks skills

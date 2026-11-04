@@ -256,11 +256,14 @@ P1W` (an ISO 8601 duration: `P1D`, `P2W`, `P1M`, `P1Y`; no words) makes a yak
 recur: shear it as usual, and `yaks regrow-due` reopens it (back to hairy, `due:`
 moved to the next deadline, a `kind: regrow` note, `regrown:` stamped) once the
 next occurrence has arrived, one regrow however many were missed. Nothing runs
-by itself: cron, an agent harness or the TUI calls `regrow-due`, which is
-idempotent. The yak stays one yak, so each round's shear note and links
-accumulate in it. Don't hand-edit `regrown:`. `--wake agent|human` says who a
+by itself: the person runs `yaks tick` (which calls `regrow-due`, then reports
+what is overdue, due soon, awaiting someone or stale), and the TUI also reopens
+due yaks while it is open. The yak stays one yak, so each round's shear note and
+links accumulate in it. Don't hand-edit `regrown:`. `--wake agent|human` says who a
 regrow goes to: `needs:` is set to it, with a request or ask note, so the yak
 lands in `yaks inbox` and its description is the instruction (an earlier
-round's uncleared one is kept, not stacked).
+round's uncleared one is kept, not stacked). The **yaks-scheduling** skill is
+the whole procedure: running a round, creating a recurring yak, and the rules for
+a skill that mirrors an outside queue into yaks.
 
 Don't parse ids for hierarchy (old dotted ids like `yak-a1b2.1` are opaque). `.yaks/config.yaml` sets the default `herd`, `default_type`, `default_priority` and a `verify:` map (tag → command, plus `default`); a `herds:` map overrides those per herd, one level deep; `min_version:` makes an older yaks warn that it should upgrade. A farm on an older schema is refused by every command but `yaks migrate`, and one on a newer schema by every command.

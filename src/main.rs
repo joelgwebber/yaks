@@ -893,7 +893,7 @@ enum Command {
     /// from its `regrown:` / `due:` / shear time: it goes back to hairy,
     /// `due:` becomes that occurrence plus one period, `regrown:` the time
     /// now, and a `kind: regrow` note says which occurrence and how many were
-    /// skipped. Idempotent, so cron, a harness or the TUI can call it as
+    /// skipped. Idempotent, so `yaks tick`, a harness or the TUI can call it as
     /// often as they like. Dead yaks never regrow; a yak under a shorn parent
     /// reopens the parent too. A yak with `wake: agent|human` also gets
     /// `needs:` set (and a request or ask note), so it lands in the inbox.
