@@ -1,11 +1,11 @@
 ---
 id: yaks-907a
 title: ':wq pauses for ~500-1000ms, but ctrl-s finishes quickly'
-status: hairy
+status: shaving
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
-updated: '2026-11-03T22:10:05Z'
+updated: '2026-11-04T21:28:12Z'
 parent: yaks-f677
 depends_on:
 - yaks-7058
@@ -95,3 +95,13 @@ thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> hairy
+
+---
+▸ 2026-11-04T21:28:12Z [perf-907a]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQstI5T-eCRACxAjKJdNo3oJLOAEQG4JIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
