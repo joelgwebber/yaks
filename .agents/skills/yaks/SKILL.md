@@ -166,7 +166,7 @@ A farm also holds **pages**: markdown documents that are not yaks, under `wiki/`
 - Facts you would list, filter or sort (appliances, vendors, platforms compared) go in **typed pages**: `yaks page types` shows the kinds and their fields; give a page `type: <kind>` and the fields its `schemas/<kind>.md` lists, and add or extend the schema when a new kind earns one. Warnings are advice, never refusals. `schemas/yak.md` lists the farm's known tags: pick from it before inventing one.
 - Research yaks: the `yaks-research` skill says where each finding goes, and how to save, cite and split.
 - Link the page from the yak that produced it, so it stays in context. Move a page with `yaks mv <from> <to>`, which rewrites every link to it.
-- Outside material you rely on (a paper, a downloaded page, a screenshot, a small code directory) is a **source**: `yaks source add <file> [--url <page it came from>]` snapshots it once under `sources/<id>/`; cite its `source.md` in the page's `sources:` list. A finding first kept as a yak attachment moves with `yaks promote <id>/<file>` (a source) or `--page wiki/<path>.md` (a page); links to it follow.
+- Outside material you rely on (a paper, a downloaded page, a screenshot, a small code directory) is a **source**: `yaks source add <file> --title "<what it is>" [--url <page it came from>] [--text <your markdown conversion>]` snapshots it once under `sources/<id>/`, one source per thing (never a second source for a conversion; the `yaks-research` skill has the rule); cite its `source.md` in the page's `sources:` list. A finding first kept as a yak attachment moves with `yaks promote <id>/<file>` (a source) or `--page wiki/<path>.md` (a page); links to it follow.
 
 ## Commands
 
