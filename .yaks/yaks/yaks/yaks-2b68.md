@@ -5,11 +5,11 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-01T18:53:12Z'
-updated: '2026-11-01T22:21:39Z'
+updated: '2026-11-04T20:03:33Z'
 parent: yaks-f301
 tags:
-- wiki
 - git
+- doks
 verify: cargo test --workspace
 ---
 
