@@ -1,11 +1,11 @@
 ---
 id: yaks-bdae
 title: 'create --key <source-url> and list --source: find or create by source'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-04T22:31:54Z'
-updated: '2026-11-04T22:31:54Z'
+updated: '2026-11-04T22:44:22Z'
 parent: yaks-7fa6
 tags:
 - cli
@@ -18,3 +18,13 @@ Part of the scheduling arc ([design](/doks/design/scheduling.md)). Also the chea
 - Takes the farm lock once, so two callers cannot both create.
 
 Done when: tests incl. a dead and a shorn match; `--help`, `docs/cli.md`, README, and the `yaks` and `yaks-tracker` skills updated.
+
+---
+▸ 2026-11-04T22:44:22Z [sched-1]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
