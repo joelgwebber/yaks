@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
-updated: '2026-11-04T21:28:12Z'
+updated: '2026-11-04T21:35:34Z'
 parent: yaks-f677
 depends_on:
 - yaks-7058
@@ -105,3 +105,31 @@ thread: ksQQstI5T-eCRACxAjKJdNo3oJLOAEQG4JIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-04T21:35:34Z [perf-907a]
+
+Where the ~0.5-0.9 s of a changing save goes. Release build, a clone of this farm (880 yaks), driven in a real pty (`yaks tui`, `:wq` then Enter, time to first output), plus a `git` shim logging every spawn with timestamps. No-op saves skip all of it.
+
+| Piece | Cost | Where |
+|---|---|---|
+| per-change commit | ~350 ms | `autocommit::snapshot` + `finish`, under the farm lock |
+| chip refresh in the reload after the save | ~130 ms | `refresh_farm_sync`, 10 git spawns |
+| the same reload again, from our own file watcher | ~150 ms | `runtime.rs` `dirty` path |
+| reading yak files, doks, drawing | 13-15 / 0 / 0-4 ms | not a factor |
+
+First output after the save: ~700-760 ms with commits, ~300-400 ms with `YAKS_NO_AUTOCOMMIT=1`, ~45 ms (headless) on a plain directory.
+
+Correction to the earlier note here: "the yak write and the TUI's refresh are cheap" was wrong. The reload is about 130-150 ms of git, not cheap, and it runs twice per save. The commit is ~350 ms, not ~450.
+
+Why every git call hurts: one spawn is 11-30 ms on this Mac (a bare `git rev-parse` is ~12 ms; `status` ~30 ms), and a save makes ~57 of them. The commit path alone (`snapshot` + `commit_changes`) runs `rev-parse --show-toplevel`, `config --get yaks.branch`, `symbolic-ref`, `rev-parse --git-common-dir`, `--is-bare-repository`, `ls-files`, `status` (twice), `show HEAD:path`, `hash-object`, `var GIT_COMMITTER_IDENT`, `read-tree`, `update-index`, `write-tree`, `rev-parse ^{tree}`, `commit-tree`, `update-ref`, `reset`.
+
+Filed from this:
+
+- yaks-bcd4: the chip refresh costs ~130 ms of git per reload.
+- yaks-1ebf: our own save triggers a second reload via the watcher.
+- yaks-7058 (existing): the per-write git calls in the commit itself. Its numbers hold.
+
+Not caused by git config: `core.fsmonitor=true` is set in `~/.gitconfig` and makes `status` ~2x slower than without it here (31 vs 16 ms), but that is the machine, not yaks.
+
+Not found: anything `:wq`-specific, a timer, or an `Esc` delay. `:wq` and Ctrl-S share `commit_edit`.
