@@ -1,11 +1,11 @@
 ---
 id: yaks-dedc
 title: Weird, duplicative structures in wiki sources
-status: hairy
+status: shaving
 type: task
 priority: 3
 created: '2026-11-03T23:50:22Z'
-updated: '2026-11-04T17:23:10Z'
+updated: '2026-11-04T17:23:26Z'
 tags:
 - wiki
 ---
@@ -56,3 +56,14 @@ Children:
 - tidy the two example sources in `joel` into the one they should have been
 
 Decision: a markdown original keeps its `extracted.md` (Joel agreed); a non-text original (HTML, PDF) gets one only when the saver supplies the text with `--text`.
+
+---
+▸ 2026-11-04T17:23:26Z [source-fix]
+kind: move
+from: hairy
+to: shaving
+child: yaks-d19c
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving

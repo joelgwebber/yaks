@@ -1,11 +1,11 @@
 ---
 id: yaks-d19c
 title: 'source add: --text for converted text; no temp paths in provenance; HTML is not text'
-status: hairy
+status: shaving
 type: task
 priority: 3
 created: '2026-11-04T17:23:10Z'
-updated: '2026-11-04T17:23:10Z'
+updated: '2026-11-04T17:23:26Z'
 parent: yaks-dedc
 tags:
 - wiki
@@ -30,3 +30,13 @@ The tool half of yaks-dedc (diagnosis in its notes). In `src/sources.rs` (`add`,
 - Unit tests in `src/sources.rs` that fail first: `--text` lands as `extracted.md` and is refused for a directory and for non-UTF-8; an `.html` original gets no `extracted.md`; no description or entry contains the temp path; a path outside temp still records its path.
 - Run my own binary on the real scenario: the Confluence HTML plus a converted `.md`, saved once with `--url --title --text`; show the resulting `source.md` and listing.
 - `cargo test`, `cargo fmt -- <my files>`, `cargo clippy` clean.
+
+---
+▸ 2026-11-04T17:23:26Z [source-fix]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
