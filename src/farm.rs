@@ -2233,6 +2233,7 @@ impl Farm {
                         title: Some(name.to_string()),
                         url: None,
                         part_of: None,
+                        text: None,
                         actor: actor.to_string(),
                         origin: Some(format!("{id}/{name}")),
                     },

@@ -5,9 +5,10 @@
 //! `<YYYY-MM-DD>-<first 8 hex of its sha256>`:
 //!
 //! - the original file (or, for a directory, its files under `files/`);
-//! - `extracted.md`, its text, when it is text (markdown or plain text is
-//!   copied; yaks extracts nothing else: fetching and conversion belong to
-//!   an agent or Hearth, which hand yaks the result);
+//! - `extracted.md`, its text: a markdown or plain-text original is copied,
+//!   and for anything else (HTML, a PDF) the saver's own conversion is passed
+//!   as `Request::text`. yaks extracts nothing itself: fetching and
+//!   conversion belong to an agent or Hearth, which hand yaks the result;
 //! - `source.md`: frontmatter saying what it is and where and when it came
 //!   from (Hearth's format, so a Hearth repo's `raw/sources/` migrates as is).
 //!
@@ -43,6 +44,10 @@ pub struct Request {
     /// `sources/<id>/source.md` of the source this one is a part of (a
     /// screenshot of a page).
     pub part_of: Option<String>,
+    /// A file on this machine holding the text of `path` as the saver
+    /// converted it (HTML to markdown, a PDF to text): it becomes
+    /// `extracted.md`. Not for a directory.
+    pub text: Option<PathBuf>,
     /// Who saved it (`generated.by`).
     pub actor: String,
     /// Where it really came from, when `path` is only a copy of it (a yak's
@@ -140,6 +145,8 @@ fn dir_sha(files: &[(String, Vec<u8>)]) -> String {
     h.finalize().iter().map(|b| format!("{b:02x}")).collect()
 }
 
+/// Text that is its own extraction. HTML is not: its markup is not what you
+/// read, so it is converted by the saver and passed as `Request::text`.
 fn is_text_name(name: &str) -> bool {
     let ext = name
         .rsplit_once('.')
@@ -165,7 +172,6 @@ fn is_text_name(name: &str) -> bool {
             | "jsx"
             | "sh"
             | "sql"
-            | "html"
             | "xml"
             | "log"
     )
@@ -274,6 +280,15 @@ fn mtime(p: &Path) -> String {
         .unwrap_or_default()
 }
 
+/// Whether `abs` is under a scratch directory (the system temp dir, `/tmp`,
+/// `/var/tmp`): such a path says nothing about where the material came from.
+fn in_scratch(abs: &Path) -> bool {
+    [std::env::temp_dir(), "/tmp".into(), "/var/tmp".into()]
+        .iter()
+        .filter_map(|d| std::fs::canonicalize(d).ok())
+        .any(|d| abs.starts_with(d))
+}
+
 /// Save `req.path` as a source of the farm at `root` (the caller holds the
 /// farm lock). A path inside the farm is refused: cite it directly.
 pub fn add(root: &Path, req: &Request) -> Result<Saved> {
@@ -296,6 +311,27 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
         }
     }
     let is_dir = abs.is_dir();
+    let supplied = match &req.text {
+        None => None,
+        Some(_) if is_dir => {
+            bail!("--text is for a file; a directory's text is joined from its own files")
+        }
+        Some(t) => {
+            let len = std::fs::metadata(t)
+                .with_context(|| format!("--text {}: no such file", t.display()))?
+                .len();
+            if len > MAX_FILE {
+                bail!(
+                    "--text {} is {len} bytes, over the {MAX_FILE}-byte limit",
+                    t.display()
+                );
+            }
+            Some(
+                std::fs::read_to_string(t)
+                    .with_context(|| format!("--text {}: not a UTF-8 text file", t.display()))?,
+            )
+        }
+    };
     let name = abs
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
@@ -334,7 +370,8 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
         }
         std::fs::write(&target, data).with_context(|| format!("writing {}", target.display()))?;
     }
-    // Text: markdown and plain text are kept as they are.
+    // Text: the saver's conversion when given; else markdown and plain text
+    // are kept as they are.
     let text: Vec<(String, String)> = files
         .iter()
         .filter(|(n, _)| is_text_name(n))
@@ -344,8 +381,11 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
                 .map(|s| (n.clone(), s.to_string()))
         })
         .collect();
-    if !text.is_empty() {
-        let body = if is_dir {
+    let has_text = supplied.is_some() || !text.is_empty();
+    if has_text {
+        let body = if let Some(t) = &supplied {
+            t.clone()
+        } else if is_dir {
             text.iter()
                 .map(|(n, t)| format!("## {n}\n\n{t}\n"))
                 .collect::<Vec<_>>()
@@ -364,14 +404,13 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
     let mut f = Fields::default();
     f.set("type", &Value::Plain("source".into()));
     f.set("title", &Value::Str(title));
+    // Provenance never carries a scratch path: `--url` and the title say
+    // where it came from, and the file's name is all a description needs.
     let desc = match (&req.url, is_dir) {
         _ if req.origin.is_some() => format!("Promoted from the yak attachment {local}"),
-        (Some(u), _) => format!("Saved copy of {u}, from the local file {local}"),
-        (None, true) => format!(
-            "Snapshot of the local directory {local} ({} files)",
-            files.len()
-        ),
-        (None, false) => format!("Snapshot of the local file {local}"),
+        (Some(u), _) => format!("Saved copy of {u}"),
+        (None, true) => format!("Snapshot of the directory {name} ({} files)", files.len()),
+        (None, false) => format!("Snapshot of {name}"),
     };
     f.set("description", &Value::Str(desc));
     if is_dir {
@@ -411,15 +450,19 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
         Some(u) => {
             entry.push(("id".to_string(), Value::Plain("web".into())));
             entry.push(("resource".to_string(), Value::Str(u.clone())));
-            entry.push(("local_copy".to_string(), Value::Str(local.clone())));
         }
         None if req.origin.is_some() => {
             entry.push(("id".to_string(), Value::Plain("attachment".into())));
             entry.push(("resource".to_string(), Value::Str(local.clone())));
         }
         None => {
+            let resource = if in_scratch(&abs) {
+                name.clone()
+            } else {
+                local.clone()
+            };
             entry.push(("id".to_string(), Value::Plain("file".into())));
-            entry.push(("resource".to_string(), Value::Str(local.clone())));
+            entry.push(("resource".to_string(), Value::Str(resource)));
         }
     }
     if req.origin.is_none() {
@@ -435,8 +478,9 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
             ("at".into(), Value::Plain(now)),
         ]),
     );
-    let note = if text.is_empty() {
-        "Text extraction isn't done for this type; only the original is saved.\n".to_string()
+    let note = if !has_text {
+        "yaks extracts no text from this type; only the original is saved. Convert it and save it again with `--text <file>`.\n"
+            .to_string()
     } else {
         "Its text is in [extracted.md](extracted.md).\n".to_string()
     };
@@ -599,6 +643,176 @@ mod tests {
         let note = std::fs::read_to_string(d.join("source.md")).unwrap();
         assert!(
             note.contains("  - id: web\n") && note.contains("resource: https://example.test/p"),
+            "{note}"
+        );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// A scratch dir that is not under the system temp dir, so a path in it
+    /// is recorded as the path it is.
+    fn home_tmp(tag: &str) -> PathBuf {
+        let d = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("target")
+            .join(format!("yaks-sources-{tag}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).unwrap();
+        d
+    }
+
+    #[test]
+    fn an_html_original_takes_the_savers_text_as_its_extraction() {
+        let base = tmp("text");
+        let root = base.join("farm");
+        std::fs::create_dir_all(&root).unwrap();
+        let (html, md) = (base.join("page.storage.html"), base.join("page.md"));
+        std::fs::write(&html, "<p>Hello &middot; world</p>").unwrap();
+        std::fs::write(&md, "Hello · world\n").unwrap();
+        let Saved::New(dir) = add(
+            &root,
+            &Request {
+                path: html.clone(),
+                title: Some("The page".into()),
+                url: Some("https://example.test/page".into()),
+                text: Some(md),
+                ..Default::default()
+            },
+        )
+        .unwrap() else {
+            panic!()
+        };
+        let d = root.join(&dir);
+        assert_eq!(
+            std::fs::read_to_string(d.join("extracted.md")).unwrap(),
+            "Hello · world\n"
+        );
+        assert!(d.join("page.storage.html").is_file());
+        let note = std::fs::read_to_string(d.join("source.md")).unwrap();
+        assert!(note.contains("Its text is in [extracted.md]"), "{note}");
+        assert!(
+            note.contains("description: Saved copy of https://example.test/page\n"),
+            "{note}"
+        );
+        assert!(!note.contains("local_copy"), "{note}");
+        assert!(
+            !note.contains(&base.display().to_string()),
+            "no scratch path in provenance: {note}"
+        );
+        // One source for the thing: saving the same original again finds it.
+        assert_eq!(
+            add(
+                &root,
+                &Request {
+                    path: html,
+                    ..Default::default()
+                }
+            )
+            .unwrap(),
+            Saved::Already(dir)
+        );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn html_alone_is_not_text_and_says_how_to_convert() {
+        let base = tmp("html");
+        let root = base.join("farm");
+        std::fs::create_dir_all(&root).unwrap();
+        let html = base.join("p.html");
+        std::fs::write(&html, "<p>x</p>").unwrap();
+        let Saved::New(dir) = add(
+            &root,
+            &Request {
+                path: html,
+                ..Default::default()
+            },
+        )
+        .unwrap() else {
+            panic!()
+        };
+        let d = root.join(&dir);
+        assert!(!d.join("extracted.md").exists());
+        let note = std::fs::read_to_string(d.join("source.md")).unwrap();
+        assert!(note.contains("--text"), "{note}");
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn text_is_refused_for_a_directory_and_for_binary() {
+        let base = tmp("textbad");
+        let root = base.join("farm");
+        std::fs::create_dir_all(&root).unwrap();
+        let (dir, file, bin) = (base.join("d"), base.join("f.pdf"), base.join("t.bin"));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("a.md"), "a").unwrap();
+        std::fs::write(&file, "pdf").unwrap();
+        std::fs::write(&bin, [0xff, 0xfe, 0x00]).unwrap();
+        let err = |path: &PathBuf, text: &PathBuf| {
+            add(
+                &root,
+                &Request {
+                    path: path.clone(),
+                    text: Some(text.clone()),
+                    ..Default::default()
+                },
+            )
+            .unwrap_err()
+            .to_string()
+        };
+        assert!(err(&dir, &bin).contains("--text is for a file"));
+        assert!(err(&file, &bin).contains("not a UTF-8 text file"));
+        assert!(err(&file, &base.join("missing.md")).contains("no such file"));
+        assert!(!root.join(SOURCES_DIR).exists(), "nothing saved on refusal");
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn a_scratch_path_is_not_provenance_but_another_path_is() {
+        let scratch = tmp("scratch");
+        let root = scratch.join("farm");
+        std::fs::create_dir_all(&root).unwrap();
+        let f = scratch.join("notes.md");
+        std::fs::write(&f, "x").unwrap();
+        let Saved::New(dir) = add(
+            &root,
+            &Request {
+                path: f,
+                ..Default::default()
+            },
+        )
+        .unwrap() else {
+            panic!()
+        };
+        let note = std::fs::read_to_string(root.join(&dir).join("source.md")).unwrap();
+        assert!(
+            note.contains("description: Snapshot of notes.md\n"),
+            "{note}"
+        );
+        assert!(note.contains("resource: notes.md\n"), "{note}");
+        let _ = std::fs::remove_dir_all(&scratch);
+
+        let base = home_tmp("kept");
+        let root = base.join("farm");
+        std::fs::create_dir_all(&root).unwrap();
+        let f = base.join("notes.md");
+        std::fs::write(&f, "y").unwrap();
+        let Saved::New(dir) = add(
+            &root,
+            &Request {
+                path: f.clone(),
+                ..Default::default()
+            },
+        )
+        .unwrap() else {
+            panic!()
+        };
+        let note = std::fs::read_to_string(root.join(&dir).join("source.md")).unwrap();
+        let want = std::fs::canonicalize(&f).unwrap();
+        assert!(
+            note.contains(&format!("resource: {}\n", want.display())),
+            "{note}"
+        );
+        assert!(
+            note.contains("description: Snapshot of notes.md\n"),
             "{note}"
         );
         let _ = std::fs::remove_dir_all(&base);

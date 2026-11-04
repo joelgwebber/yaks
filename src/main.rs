@@ -974,7 +974,8 @@ enum Command {
     /// original, `extracted.md` (its text, for text files), and `source.md`
     /// saying what it is and where it came from. Cite its `source.md` from a
     /// page's `sources:` or link it from a yak. yaks fetches nothing and
-    /// converts nothing: save a downloaded copy with `--url` naming the page.
+    /// converts nothing: save a downloaded copy with `--url` naming the page,
+    /// and your conversion of it with `--text`, as one source.
     Source {
         #[command(subcommand)]
         action: SourceAction,
@@ -1433,12 +1434,18 @@ enum SourceAction {
     /// source. Saving the same content again reports the existing source.
     Add {
         path: PathBuf,
-        /// A title (default: the file name).
+        /// A title naming the thing, not the file (default: the file name).
         #[arg(long)]
         title: Option<String>,
-        /// The web page this file is a saved copy of.
+        /// The web page this file is a saved copy of: where it came from, in
+        /// place of the path of your download.
         #[arg(long)]
         url: Option<String>,
+        /// Your conversion of the file to text (a page's HTML to markdown, a
+        /// PDF to text): it becomes `extracted.md`, so one source holds the
+        /// original and the text you read. Not for a directory.
+        #[arg(long)]
+        text: Option<PathBuf>,
         /// `sources/<id>/source.md` of the source this is a part of.
         #[arg(long = "part-of")]
         part_of: Option<String>,
@@ -2652,6 +2659,7 @@ fn main() -> Result<()> {
                 path,
                 title,
                 url,
+                text,
                 part_of,
                 as_actor,
             } => {
@@ -2661,6 +2669,7 @@ fn main() -> Result<()> {
                     title,
                     url,
                     part_of,
+                    text,
                     actor,
                     origin: None,
                 })?;
