@@ -82,6 +82,9 @@ pub(crate) enum EditAction {
     /// Shear the target, first recording the typed comment (if any) as an
     /// attributed note on each yak (yaks-27c6).
     Shear(ShearTarget),
+    /// Move the `due:` of these yaks to the typed date (`+1d`, `+1w`, a date;
+    /// empty is `+1d`), leaving a `kind: snooze` note on each (yaks-2986).
+    Snooze(Vec<String>),
 }
 
 /// Which `needs` verb a new-note editor performs on save: `Q` asks, `a`
@@ -110,6 +113,10 @@ pub(crate) enum EditTarget {
     Labels,
     /// The external `source:` URL row (yaks-b0b4).
     Source,
+    /// The `due:`, `every:` and `wake:` rows (yaks-2986).
+    Due,
+    Every,
+    Wake,
     /// The herd (id prefix) chip row — present in the edit form on a multi-herd
     /// farm; committing a change renames the yak's prefix (yaks-71d1).
     Herd,

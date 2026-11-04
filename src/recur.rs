@@ -197,6 +197,14 @@ pub fn resolve_due(text: &str, today: NaiveDate) -> Result<String, String> {
         .ok_or_else(|| format!("{text:?} is not {DUE_INPUT_HELP}"))
 }
 
+/// [`resolve_due`] for a one-line notification: the same refusal, short enough
+/// to read on a terminal's bottom line.
+pub fn resolve_due_short(text: &str, today: NaiveDate) -> Result<String, String> {
+    When::parse_input(text, today)
+        .map(When::render)
+        .ok_or_else(|| format!("{text:?} is not a date, a datetime or +2d / +1w"))
+}
+
 /// Today on the calendar a person reads, which is what `+2d` counts from.
 pub fn today() -> NaiveDate {
     chrono::Local::now().date_naive()

@@ -147,6 +147,7 @@ the register and the scroll and cursor from before; the status bar shows
 | `H` | Move to another herd (multi-herd farms) |
 | `M` | Add a comment (note): an empty editor under a `▸ you · now` header after the last comment, in place |
 | `a` | Hand the yak to an agent (`needs: agent`): on a yak awaiting a human, answer; otherwise request agent work (like `yaks request`; on a yak already awaiting an agent the request is appended). Opens the same multi-line editor as `M`, headed `Answer <id>` / `Request <id>`; `Ctrl-S` answers or requests with the text as the note (an empty one does so with no note), cancel changes nothing |
+| `Z` | Snooze: a one-line prompt for the new `due:` (`+1d`, `+1w`, a date; Enter alone is `+1d`) that moves it and leaves a `kind: snooze` note, like `yaks snooze`. With rows marked (`m`) it snoozes them all (a shorn or dead one is skipped and counted); a date that does not read keeps the prompt with what you typed |
 | `Q` | Ask a question (`needs: human`, out of `next` until answered; on a yak awaiting an agent it flips back to a human). The same editor, headed `Ask <id>` |
 | `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped. It navigates like the detail pane, by the same code: `j`/`k`, `d`/`u`, `g`/`G` move a line cursor, `Tab`/`[`/`]` cycle links and `Enter` follows one (the status bar shows a URL's destination; a footnote or `#section` jumps within the file and `o`/`i` go back/forward; a yak id opens that yak in the detail pane; a farm dok or source opens in the viewer at its anchor, `o` coming back (see [Following links](#following-links-and-peek)); an attachment, URL or source file opens as from the detail pane; a pane under the dok peeks the link under the cursor, `p` hides it), `/` finds (the same search register as the yak detail) with `n`/`N` cycling and wrapping, `v`/Shift-↑↓ select and `y`/`Enter` copy (a `.md` file copies its source markdown), `h`/`l` scroll a code block or table sideways, `Esc` clears a selection, then the search, then closes. `E` edits it in place (the multi-line editor: `Ctrl-S` writes the file back under the farm lock and returns to the viewer, re-rendered; cancel returns unchanged, asking first if you typed anything; a file changed on disk meanwhile is not overwritten until a second `Ctrl-S`), `O` hands it to the OS opener, `h` closes. An image (png, jpg, gif, webp up to 32 MiB; svg up to 4 MiB) opens **in the pane** too: drawn with the terminal's own graphics protocol (kitty, sixel, iTerm2) when it speaks one, else as half-block cells; shrunk to fit, never enlarged; `O` opens it externally, `Esc`/`h` close. An svg is rasterized first (see *Svg attachments* below); a corrupt or undecodable image and binary files open with the OS opener |
 | `r` | (detail) Rename the attachment whose link (📎 or 🖼) the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
@@ -489,16 +490,23 @@ tag filter) take tags separated by commas and/or spaces — `ui, docs`,
 `ui docs`, and `ui,docs` all mean `[ui, docs]`; a tag can contain neither.
 
 **Edit form** (`E`) — the shared create/edit form. Editing it is header fields
-only: `title`, `type`, `priority`, `tags`, and `source` (the external-issue
-URL; empty = none, so clearing it removes `source:`). The body is never part of
+only: `title`, `type`, `priority`, `tags`, `source` (the external-issue
+URL; empty = none, so clearing it removes `source:`), and the schedule:
+`due` (a date, an RFC 3339 datetime, or `+2d` / `+1w` from today, stored as a
+date), `every` (an ISO 8601 duration such as `P1W`, which makes the yak recur)
+and `wakes` (a chip row: `none`, `agent` or `human`, who a regrown recurring yak
+goes to: see [Due dates and recurring yaks](cli.md#due-dates-and-recurring-yaks)).
+A blank `due` or `every`, or `wakes` on `none`, clears that field; a value that
+does not read keeps the form open and says why, so nothing typed is lost; and a
+field left as it was is never rewritten. The body is never part of
 it: the description and comments are edited in place in the detail pane (see
 above), so saving the form leaves the body byte-identical. `E` from the list
 opens it with focus on `title`; `E` on a header line of the detail pane jumps to
-that row (`Source:` to `source`, and so on). Creating (`c`/`C`) uses the same
+that row (`Source:` to `source`, `Due:` to `due`, and so on). Creating (`c`/`C`) uses the same
 form plus a `description` editor below the header rows. Single-line rows scroll
 horizontally to keep the cursor in view rather than wrapping — a nudge to keep
 titles terse. On a multi-herd farm it grows a `herd` chip row (seeded to the
-yak's current herd) after `source`, so changing it and saving moves the yak to
+yak's current herd) after `wakes`, so changing it and saving moves the yak to
 that herd (an id-prefix rename). `H` does the same move as a one-key picker.
 
 ![yaks TUI edit form with the herd chip row](assets/tui-edit-herd.svg)

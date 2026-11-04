@@ -230,10 +230,14 @@ fn toggle<T: PartialEq>(v: &mut Vec<T>, val: T) {
 /// Max gap between two `Esc` presses for them to count as a double-tap cancel.
 const DOUBLE_ESC_MS: u64 = 300;
 
-// Task-form fixed rows: title, type, priority, labels, source. Content blocks (a
-// description, plus one per comment when editing) follow as rows `HEADER_ROWS +
-// block_index`, so the total row count is dynamic (`CreateForm::row_count`).
-const HEADER_ROWS: usize = 5;
+// Task-form fixed rows: title, type, priority, labels, source, due, every, wake.
+// Content blocks (a description, plus one per comment when editing) follow as rows
+// `HEADER_ROWS + block_index`, so the total row count is dynamic
+// (`CreateForm::row_count`).
+const HEADER_ROWS: usize = 8;
+/// The create form's `wake` chips: none (the yak only reopens), then who a
+/// regrown recurring yak goes to (`wake: agent|human`).
+const WAKE_CHOICES: [&str; 3] = ["none", "agent", "human"];
 
 fn kind_index(kind: &str) -> usize {
     TYPE_CHOICES.iter().position(|&k| k == kind).unwrap_or(0)

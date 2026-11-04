@@ -353,6 +353,22 @@ pub(crate) fn editor_key(
     }
 }
 
+/// The form's schedule edits as farm field edits: a set value, or a clear.
+fn schedule_fields(
+    edits: Vec<(&'static str, Option<String>)>,
+) -> Vec<(String, crate::fields::Value)> {
+    edits
+        .into_iter()
+        .map(|(k, v)| {
+            let v = match v {
+                Some(text) => crate::fields::Value::Plain(text),
+                None => crate::fields::Value::Null,
+            };
+            (k.to_string(), v)
+        })
+        .collect()
+}
+
 impl App {
     pub(crate) fn handle_create_key(&mut self, k: KeyEvent, double_esc: bool) {
         let ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
@@ -366,6 +382,16 @@ impl App {
         if ctrl && k.code == KeyCode::Char('s') {
             let has_title =
                 matches!(&self.overlay, Overlay::Create(f) if !f.title_text().is_empty());
+            // A schedule field that does not read keeps the form open and says
+            // why, rather than losing what was typed.
+            let problem = match &self.overlay {
+                Overlay::Create(f) => f.problem(),
+                _ => None,
+            };
+            if let Some(why) = problem {
+                self.notification = Some(why);
+                return;
+            }
             if has_title {
                 self.commit_form();
             }
@@ -487,6 +513,8 @@ impl App {
                         0 => f.handler.on_key_event(k, &mut f.title.borrow_mut()),
                         3 => f.handler.on_key_event(k, &mut f.tags.borrow_mut()),
                         4 => f.handler.on_key_event(k, &mut f.source.borrow_mut()),
+                        5 => f.handler.on_key_event(k, &mut f.due.borrow_mut()),
+                        6 => f.handler.on_key_event(k, &mut f.every.borrow_mut()),
                         _ => {}
                     }
                 }
@@ -527,7 +555,7 @@ impl App {
                 prs: vec![],
                 description: f.body_opt(),
                 verify: None,
-                fields: vec![],
+                fields: schedule_fields(f.schedule_edits(None)),
             },
             other => {
                 self.overlay = other;
@@ -595,6 +623,7 @@ impl App {
             edit.add_tags = add;
             edit.remove_tags = remove;
         }
+        edit.fields = schedule_fields(f.schedule_edits(Some(&cur)));
         // A herd change from the edit form's chip row is an id-prefix rename
         // (tail preserved), folded into this same commit (yaks-71d1). Detect it
         // against the yak's current prefix.
@@ -1658,6 +1687,7 @@ impl App {
                         || TYPE_CHOICES[f.kind_idx] != cur.kind
                         || PRI_CHOICES[f.pri_idx] != cur.priority
                         || a != b
+                        || !f.schedule_edits(Some(cur)).is_empty()
                 }
                 None => true,
             },
@@ -1667,6 +1697,7 @@ impl App {
                     || !f.tags_vec().is_empty()
                     || f.kind_idx != 0
                     || f.pri_idx != pri_index(3)
+                    || !f.schedule_edits(None).is_empty()
             }
         }
     }
@@ -2027,6 +2058,7 @@ impl App {
             EditAction::Answer(id) => self.commit_needs(&id, NeedsVerb::Answer, &text),
             EditAction::Request(id) => self.commit_needs(&id, NeedsVerb::Request, &text),
             EditAction::Shear(target) => self.commit_shear(target, &text),
+            EditAction::Snooze(ids) => self.commit_snooze(ids, &text),
             EditAction::SaveView => self.save_current_view(text),
             EditAction::RenameView { index } => {
                 let name = text.trim().to_string();
@@ -2267,6 +2299,81 @@ impl App {
                 }
             }
         }
+    }
+
+    /// `Z` — snooze the selected yak: a one-line prompt for the new due date.
+    pub(crate) fn open_snooze(&mut self) {
+        if let Some(id) = self.selected_id() {
+            self.open_snooze_prompt(vec![id]);
+        }
+    }
+
+    /// `Z` with rows marked: snooze them all.
+    pub(crate) fn open_snooze_marked(&mut self) {
+        let ids: Vec<String> = self.selected.iter().cloned().collect();
+        if !ids.is_empty() {
+            self.open_snooze_prompt(ids);
+        }
+    }
+
+    fn open_snooze_prompt(&mut self, ids: Vec<String>) {
+        self.open_snooze_prompt_with(ids, "");
+    }
+
+    fn open_snooze_prompt_with(&mut self, ids: Vec<String>, seed: &str) {
+        let what = match ids.as_slice() {
+            [one] => one.clone(),
+            many => format!("{} marked", many.len()),
+        };
+        self.overlay = Overlay::Edit(Editor::new(
+            self.editor_vim,
+            true,
+            format!("Snooze {what} until (Enter = +1d · +1w · 2026-11-15 · Ctrl-C cancel): "),
+            seed,
+            EditAction::Snooze(ids),
+        ));
+    }
+
+    /// Commit a snooze prompt: resolve the typed date like `--due` (so `+2d`
+    /// works), then `Farm::snooze` each yak. A date that does not read puts the
+    /// prompt back with what was typed and says why; finished yaks are skipped
+    /// and counted, as a bulk state move does.
+    pub(crate) fn commit_snooze(&mut self, ids: Vec<String>, text: &str) {
+        let typed = text.trim();
+        let due = match crate::recur::resolve_due_short(
+            if typed.is_empty() { "+1d" } else { typed },
+            crate::recur::today(),
+        ) {
+            Ok(d) => d,
+            Err(why) => {
+                self.open_snooze_prompt_with(ids, typed);
+                self.notification = Some(why);
+                return;
+            }
+        };
+        let actor = crate::actor::resolve(None);
+        let Some(h) = &self.farm else { return };
+        let (mut moved, mut finished, mut failed) = (0usize, 0usize, 0usize);
+        for id in &ids {
+            match h.snooze(id, &due, actor.as_deref()) {
+                Ok(crate::farm::SnoozeOutcome::Snoozed) => moved += 1,
+                Ok(crate::farm::SnoozeOutcome::Finished(_)) => finished += 1,
+                Ok(crate::farm::SnoozeOutcome::NotFound) | Err(_) => failed += 1,
+            }
+        }
+        self.selected.clear();
+        self.reload_preserving_selection();
+        let mut msg = match ids.as_slice() {
+            [one] if moved == 1 => format!("{one} snoozed until {due}"),
+            _ => format!("{moved}/{} snoozed until {due}", ids.len()),
+        };
+        if finished > 0 {
+            msg.push_str(&format!(" · {finished} skipped: already finished"));
+        }
+        if failed > 0 {
+            msg.push_str(&format!(" · {failed} failed"));
+        }
+        self.notification = Some(msg);
     }
 
     /// Shearing from a state picker first asks for an optional comment, so a

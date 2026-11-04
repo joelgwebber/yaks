@@ -2534,6 +2534,270 @@ mod live {
         assert_eq!(created.kind, "task");
     }
 
+    /// Walk the open create/edit form to row `n` with Tab.
+    fn tab_to(app: &mut App, n: usize) {
+        while !matches!(&app.overlay, Overlay::Create(f) if f.row == n) {
+            tab(app);
+        }
+    }
+
+    fn day_in(days: i64) -> String {
+        (chrono::Local::now() + chrono::Duration::days(days))
+            .format("%Y-%m-%d")
+            .to_string()
+    }
+
+    #[test]
+    fn the_create_form_sets_due_every_and_wake() {
+        let (_dir, farm) = temp_farm(&[]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "c");
+        press(&mut app, "weekly sweep");
+        tab_to(&mut app, 5);
+        press(&mut app, "+2d");
+        tab(&mut app);
+        press(&mut app, "P1W");
+        tab(&mut app);
+        arrow_right(&mut app); // wake: none -> agent
+        ctrl_s(&mut app);
+        let t = app
+            .all
+            .iter()
+            .find(|t| t.title == "weekly sweep")
+            .expect("created");
+        let field = |k: &str| t.extra.get(k).and_then(|v| v.as_str().map(String::from));
+        assert_eq!(field("due").as_deref(), Some(day_in(2).as_str()));
+        assert_eq!(field("every").as_deref(), Some("P1W"));
+        assert_eq!(field("wake").as_deref(), Some("agent"));
+    }
+
+    #[test]
+    fn the_edit_form_shows_changes_and_clears_the_schedule_fields() {
+        let mut t = task("s0", "recurring", Status::Hairy, 3, None);
+        t.extra
+            .set("due", &crate::fields::Value::Plain("2026-12-01".into()));
+        t.extra
+            .set("every", &crate::fields::Value::Plain("P1M".into()));
+        t.extra
+            .set("wake", &crate::fields::Value::Plain("human".into()));
+        let (_dir, farm) = temp_farm(&[t]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "E");
+        match &app.overlay {
+            Overlay::Create(f) => {
+                assert_eq!(f.due.borrow().lines.to_string(), "2026-12-01");
+                assert_eq!(f.every.borrow().lines.to_string(), "P1M");
+                assert_eq!(crate::tui::WAKE_CHOICES[f.wake_idx], "human");
+            }
+            _ => panic!("E opens the edit form"),
+        }
+        // Saved untouched: nothing is written, so `updated` does not move.
+        let before = app.task("s0").unwrap().updated.clone();
+        ctrl_s(&mut app);
+        assert_eq!(
+            app.task("s0").unwrap().updated,
+            before,
+            "an untouched form writes nothing"
+        );
+
+        // Change due to a relative date, clear every, clear wake.
+        press(&mut app, "E");
+        tab_to(&mut app, 5);
+        // The cursor starts at the front of a seeded field: go to the end, then
+        // erase what was there.
+        let end = |app: &mut App| handle_key(app, KeyEvent::new(KeyCode::End, KeyModifiers::NONE));
+        let erase = |app: &mut App, n: usize| {
+            for _ in 0..n {
+                handle_key(app, KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE));
+            }
+        };
+        end(&mut app);
+        erase(&mut app, "2026-12-01".len());
+        press(&mut app, "+1w");
+        tab(&mut app);
+        end(&mut app);
+        erase(&mut app, "P1M".len());
+        tab(&mut app);
+        arrow_left(&mut app); // human -> agent
+        arrow_left(&mut app); // agent -> none
+        ctrl_s(&mut app);
+        let t = app.task("s0").unwrap();
+        let field = |k: &str| t.extra.get(k).and_then(|v| v.as_str().map(String::from));
+        assert_eq!(field("due").as_deref(), Some(day_in(7).as_str()));
+        assert_eq!(field("every"), None, "a blank row clears the field");
+        assert_eq!(field("wake"), None, "none clears wake");
+    }
+
+    #[test]
+    fn a_due_that_does_not_read_keeps_the_form_open_and_says_why() {
+        let (_dir, farm) = temp_farm(&[]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "c");
+        press(&mut app, "bad due");
+        tab_to(&mut app, 5);
+        press(&mut app, "next week");
+        ctrl_s(&mut app);
+        assert!(
+            matches!(app.overlay, Overlay::Create(_)),
+            "the form stays open"
+        );
+        let note = app.notification.clone().unwrap_or_default();
+        assert!(note.starts_with("due:") && note.contains("+2d"), "{note}");
+        assert!(
+            app.all.iter().all(|t| t.title != "bad due"),
+            "nothing was created"
+        );
+
+        // Fix it: the cursor is after "next week", so erase it and retype.
+        for _ in 0.."next week".len() {
+            handle_key(
+                &mut app,
+                KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE),
+            );
+        }
+        press(&mut app, "2026-12-24");
+        tab(&mut app);
+        press(&mut app, "weekly");
+        ctrl_s(&mut app);
+        assert!(
+            matches!(app.overlay, Overlay::Create(_)),
+            "a bad every also holds it"
+        );
+        assert!(
+            app.notification
+                .clone()
+                .unwrap_or_default()
+                .starts_with("every:")
+        );
+    }
+
+    fn open_note_text(app: &App) -> Option<String> {
+        match &app.overlay {
+            Overlay::Edit(ed) => Some(ed.text()),
+            _ => None,
+        }
+    }
+
+    #[test]
+    fn z_snoozes_the_selected_yak_and_records_a_note() {
+        let mut t = task("z0", "put me off", Status::Hairy, 3, None);
+        t.extra
+            .set("due", &crate::fields::Value::Plain("2026-01-01".into()));
+        let (_dir, farm) = temp_farm(&[t]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "Z");
+        assert!(
+            matches!(&app.overlay, Overlay::Edit(ed) if matches!(ed.action, EditAction::Snooze(_)))
+        );
+        press(&mut app, "+1w");
+        handle_key(&mut app, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+        let t = app.task("z0").unwrap();
+        assert_eq!(
+            t.extra
+                .get("due")
+                .and_then(|v| v.as_str().map(String::from)),
+            Some(day_in(7))
+        );
+        let notes = crate::store::parse_notes(&t.body);
+        let n = notes.last().expect("a snooze note");
+        assert_eq!(n.kind(), Some("snooze"));
+        assert!(n.text.contains("was due 2026-01-01"), "{}", n.text);
+        assert_eq!(
+            app.notification.as_deref(),
+            Some(format!("z0 snoozed until {}", day_in(7)).as_str())
+        );
+    }
+
+    #[test]
+    fn z_with_nothing_typed_is_a_day_and_a_bad_date_keeps_the_prompt() {
+        let (_dir, farm) = temp_farm(&[task("z1", "tomorrow", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "Z");
+        press(&mut app, "next friday");
+        handle_key(&mut app, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+        assert_eq!(
+            open_note_text(&app).as_deref(),
+            Some("next friday"),
+            "typed text is kept"
+        );
+        assert!(app.notification.clone().unwrap_or_default().contains("+2d"));
+        assert!(
+            app.task("z1").unwrap().extra.get("due").is_none(),
+            "nothing written"
+        );
+
+        // The prompt came back seeded with what was typed, cursor at the front
+        // (as any seeded field): go to the end, clear it and take the default.
+        handle_key(&mut app, KeyEvent::new(KeyCode::End, KeyModifiers::NONE));
+        for _ in 0.."next friday".len() {
+            handle_key(
+                &mut app,
+                KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE),
+            );
+        }
+        assert_eq!(open_note_text(&app).as_deref(), Some(""));
+        handle_key(&mut app, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+        assert_eq!(
+            app.task("z1")
+                .unwrap()
+                .extra
+                .get("due")
+                .and_then(|v| v.as_str().map(String::from)),
+            Some(day_in(1))
+        );
+    }
+
+    #[test]
+    fn z_over_marked_rows_snoozes_the_open_ones_and_counts_the_finished() {
+        let a = task("z2", "open a", Status::Hairy, 3, None);
+        let b = task("z3", "open b", Status::Hairy, 3, None);
+        let (_dir, farm) = temp_farm(&[a, b]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "m");
+        press(&mut app, "j");
+        press(&mut app, "m");
+        press(&mut app, "Z");
+        match &app.overlay {
+            Overlay::Edit(ed) => assert!(ed.label.contains("2 marked"), "{}", ed.label),
+            _ => panic!("Z opens the prompt"),
+        }
+        press(&mut app, "+3d");
+        handle_key(&mut app, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+        for id in ["z2", "z3"] {
+            assert_eq!(
+                app.task(id)
+                    .unwrap()
+                    .extra
+                    .get("due")
+                    .and_then(|v| v.as_str().map(String::from)),
+                Some(day_in(3)),
+                "{id}"
+            );
+        }
+        assert!(app.selected.is_empty(), "the marks are spent");
+        assert_eq!(
+            app.notification.as_deref(),
+            Some(format!("2/2 snoozed until {}", day_in(3)).as_str())
+        );
+    }
+
+    #[test]
+    fn the_schedule_rows_make_a_form_dirty() {
+        let (_dir, farm) = temp_farm(&[]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "c");
+        tab_to(&mut app, 5);
+        press(&mut app, "+1d");
+        let dirty = match &app.overlay {
+            Overlay::Create(f) => app.form_is_dirty(f),
+            _ => panic!(),
+        };
+        assert!(
+            dirty,
+            "typing a due date is an edit worth confirming before it is lost"
+        );
+    }
+
     #[test]
     fn create_form_backtab_from_description_focuses_previous_field() {
         // Regression (yaks-f433): shift-tab (BackTab) while editing the
@@ -2543,21 +2807,19 @@ mod live {
         let (_dir, farm) = temp_farm(&[]);
         let mut app = App::with_farm(farm).unwrap();
         press(&mut app, "c"); // open the create form (title row)
-        tab(&mut app); // -> type
-        tab(&mut app); // -> priority
-        tab(&mut app); // -> labels
-        tab(&mut app); // -> source
-        tab(&mut app); // -> description (content block)
+        for _ in 0..HEADER_ROWS {
+            tab(&mut app); // -> type ... -> wake -> description (content block)
+        }
         match &app.overlay {
             Overlay::Create(f) => assert!(f.is_content_row(), "on the description block"),
             _ => panic!("create form open"),
         }
-        // Must not panic, and focus moves back to the labels row (3).
+        // Must not panic, and focus moves back to the row above it (wake).
         back_tab(&mut app);
         match &app.overlay {
             Overlay::Create(f) => {
-                assert_eq!(f.row, 4, "focus moved back a field");
-                assert!(f.is_line_text_row(), "back on the source row");
+                assert_eq!(f.row, HEADER_ROWS - 1, "focus moved back a field");
+                assert!(!f.is_line_text_row(), "back on the wake chip row");
             }
             _ => panic!("create form still open"),
         }
@@ -2572,11 +2834,9 @@ mod live {
         let mut app = App::with_farm(farm).unwrap();
         press(&mut app, "c"); // title row (single-line text)
         handle_key(&mut app, KeyEvent::new(KeyCode::Insert, KeyModifiers::NONE));
-        tab(&mut app); // -> type
-        tab(&mut app); // -> priority
-        tab(&mut app); // -> labels
-        tab(&mut app); // -> source
-        tab(&mut app); // -> description (content block)
+        for _ in 0..HEADER_ROWS {
+            tab(&mut app); // -> type ... -> wake -> description (content block)
+        }
         handle_key(&mut app, KeyEvent::new(KeyCode::Insert, KeyModifiers::NONE));
         match &app.overlay {
             Overlay::Create(f) => assert!(f.is_content_row(), "still on the description"),
@@ -3662,8 +3922,8 @@ fn wrapped_detail_field_continuation_is_not_label_coloured() {
 /// Open the create form on `app` and focus its description block.
 fn focus_description(app: &mut App) {
     app.open_create(false);
-    for _ in 0..5 {
-        tab(app); // title -> type -> priority -> labels -> source -> description
+    for _ in 0..HEADER_ROWS {
+        tab(app); // title -> type -> ... -> wake -> description
     }
     assert!(matches!(&app.overlay, Overlay::Create(f) if f.description_editor().is_some()));
 }

@@ -489,6 +489,9 @@ impl App {
                 EditTarget::Priority => 2,
                 EditTarget::Labels => 3,
                 EditTarget::Source => 4,
+                EditTarget::Due => 5,
+                EditTarget::Every => 6,
+                EditTarget::Wake => 7,
                 EditTarget::Herd => HEADER_ROWS,
                 // Status and body rows never reach the form: `open_edit_at_cursor`
                 // routes them to the picker / the in-place block editor.
@@ -510,6 +513,9 @@ impl App {
                 ("Priority:", EditTarget::Priority),
                 ("Tags:", EditTarget::Labels),
                 ("Source:", EditTarget::Source),
+                ("Due:", EditTarget::Due),
+                ("Every:", EditTarget::Every),
+                ("Wakes:", EditTarget::Wake),
                 ("Herd:", EditTarget::Herd),
                 ("Status:", EditTarget::Status),
             ] {

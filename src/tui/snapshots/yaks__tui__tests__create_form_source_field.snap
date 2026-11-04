@@ -1,5 +1,6 @@
 ---
 source: src/tui/tests.rs
+assertion_line: 729
 expression: "draw(&app, 72, 14)"
 ---
  🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starr
@@ -10,9 +11,9 @@ expression: "draw(&app, 72, 14)"
 │   priority     p1 p2 p3 p4 p5
 │   tags
 │ ▸ source      https://example.com/PROJ-1
+│   due         +2d, +1w or 2026-11-15
+│   every       P1W, P1D, P1M: makes it recur
+│   wakes        none agent human
 │   description ───────────────────────────────────────────────────────
 │ (no description)
-│
-│
-│
 Tab/↑↓ rows · ←→ chips · Ctrl-S create · EscEsc/Ctrl-C cancel

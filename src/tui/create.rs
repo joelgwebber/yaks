@@ -15,11 +15,13 @@ use ratatui::widgets::{Paragraph, Wrap};
 
 use super::palette;
 use super::{
-    CREATE_LABEL_W, HEADER_ROWS, PRI_CHOICES, TYPE_CHOICES, disp_width, editor_theme, kind_index,
-    make_handler, multiline_field, pri_index, render_chip_row, render_text_row, set_md_highlights,
-    text_field,
+    CREATE_LABEL_W, HEADER_ROWS, PRI_CHOICES, TYPE_CHOICES, WAKE_CHOICES, disp_width, editor_theme,
+    kind_index, make_handler, multiline_field, pri_index, render_chip_row, render_text_row,
+    set_md_highlights, text_field,
 };
+use crate::fields::Value;
 use crate::model::Task;
+use crate::recur;
 
 /// The create/edit task form: a right-pane form modeled on `Drawer`. Two chip
 /// rows (type/priority) are **single-select** — the cursor *is* the value —
@@ -33,6 +35,12 @@ pub(crate) struct CreateForm {
     pub(crate) tags: RefCell<EditorState>,
     /// The `source:` external-issue URL (yaks-b0b4); empty = no source.
     pub(crate) source: RefCell<EditorState>,
+    /// `due:` as typed: a date, a datetime or `+2d` / `+1w`; empty = none.
+    pub(crate) due: RefCell<EditorState>,
+    /// `every:` as typed: an ISO 8601 duration such as `P1W`; empty = none.
+    pub(crate) every: RefCell<EditorState>,
+    /// Index into `WAKE_CHOICES` (single-select cursor==value).
+    pub(crate) wake_idx: usize,
     /// The description editor, the last row of a *create* form; `None` when
     /// editing (the body is not part of the edit form).
     pub(crate) description: Option<RefCell<EditorState>>,
@@ -67,6 +75,9 @@ impl CreateForm {
             title: text_field("", vim),
             tags: text_field("", vim),
             source: text_field("", vim),
+            due: text_field("", vim),
+            every: text_field("", vim),
+            wake_idx: 0,
             description: Some(multiline_field("", vim)),
             kind_idx: 0,           // task
             pri_idx: pri_index(3), // p3
@@ -86,6 +97,12 @@ impl CreateForm {
             title: text_field(&task.title, vim),
             tags: text_field(&task.tags.join(", "), vim),
             source: text_field(task.source.as_deref().unwrap_or(""), vim),
+            due: text_field(&extra_text(task, recur::DUE), vim),
+            every: text_field(&extra_text(task, recur::EVERY), vim),
+            wake_idx: WAKE_CHOICES
+                .iter()
+                .position(|w| *w == extra_text(task, recur::WAKE))
+                .unwrap_or(0),
             description: None,
             kind_idx: kind_index(&task.kind),
             pri_idx: pri_index(task.priority),
@@ -137,7 +154,7 @@ impl CreateForm {
     /// Single-line text rows (title, labels, source); the description is
     /// multi-line and handled separately.
     pub(crate) fn is_line_text_row(&self) -> bool {
-        matches!(self.row, 0 | 3 | 4)
+        matches!(self.row, 0 | 3 | 4 | 5 | 6)
     }
 
     /// The editor backing the current single-line text row (title/labels/source).
@@ -146,6 +163,8 @@ impl CreateForm {
             0 => Some(&self.title),
             3 => Some(&self.tags),
             4 => Some(&self.source),
+            5 => Some(&self.due),
+            6 => Some(&self.every),
             _ => None,
         }
     }
@@ -160,6 +179,10 @@ impl CreateForm {
             2 => {
                 let n = PRI_CHOICES.len() as i32;
                 self.pri_idx = (self.pri_idx as i32 + delta).rem_euclid(n) as usize;
+            }
+            7 => {
+                let n = WAKE_CHOICES.len() as i32;
+                self.wake_idx = (self.wake_idx as i32 + delta).rem_euclid(n) as usize;
             }
             r if r == HEADER_ROWS && self.has_herd_row() => {
                 let n = self.herds.len() as i32;
@@ -176,6 +199,61 @@ impl CreateForm {
     /// The trimmed source URL; empty means "no source".
     pub(crate) fn source_text(&self) -> String {
         self.source.borrow().lines.to_string().trim().to_string()
+    }
+
+    /// What the form says about each schedule field, as the farm should hold
+    /// it: `(key, Some(value))` to set, `(key, None)` to clear. On a create
+    /// only the fields that are set; on an edit only those that differ from
+    /// `cur`, so an untouched field never rewrites the file. A due date is
+    /// resolved (`+2d` becomes a date); text that does not read is passed
+    /// through as typed (`problem` refuses it before anything is written).
+    pub(crate) fn schedule_edits(&self, cur: Option<&Task>) -> Vec<(&'static str, Option<String>)> {
+        let typed =
+            |cell: &RefCell<EditorState>| cell.borrow().lines.to_string().trim().to_string();
+        let due = typed(&self.due);
+        let every = typed(&self.every);
+        let wake = WAKE_CHOICES[self.wake_idx];
+        let wake = (wake != "none").then(|| wake.to_string());
+        // (key, the value to store, what the row shows). A set `due` is stored
+        // resolved; one that does not read goes through as typed, and
+        // `problem` refuses it before anything is written.
+        let stored_due = (!due.is_empty())
+            .then(|| recur::resolve_due(&due, recur::today()).unwrap_or_else(|_| due.clone()));
+        let stored_every = (!every.is_empty()).then(|| every.clone());
+        let mut out = Vec::new();
+        for (key, now, shown) in [
+            (recur::DUE, stored_due, due),
+            (recur::EVERY, stored_every, every),
+            (recur::WAKE, wake.clone(), wake.clone().unwrap_or_default()),
+        ] {
+            let was = cur.map(|t| extra_text(t, key)).unwrap_or_default();
+            // Unchanged text (what the form was seeded with) is never a change,
+            // even when resolving it would rewrite it (a `+02:00` datetime).
+            if shown == was || (cur.is_none() && now.is_none()) {
+                continue;
+            }
+            out.push((key, now));
+        }
+        out
+    }
+
+    /// The reason the schedule fields cannot be saved, in the CLI's words.
+    pub(crate) fn problem(&self) -> Option<String> {
+        let typed =
+            |cell: &RefCell<EditorState>| cell.borrow().lines.to_string().trim().to_string();
+        let due = typed(&self.due);
+        let bad_due = if due.is_empty() {
+            Ok(String::new())
+        } else {
+            recur::resolve_due_short(&due, recur::today())
+        };
+        if let Err(why) = bad_due {
+            return Some(format!("due: {why}"));
+        }
+        let every = typed(&self.every);
+        let bad_every = !every.is_empty()
+            && recur::field_problem(recur::EVERY, &Value::Plain(every.clone())).is_some();
+        bad_every.then(|| format!("every: {every:?} is not a duration like P1D, P2W or P1M"))
     }
 
     /// The labels field, normalized (commas/whitespace separate; yaks-7cb3).
@@ -204,6 +282,14 @@ impl CreateForm {
     }
 }
 
+/// A yak's extra field as text (`due`, `every`, `wake`); empty when absent.
+fn extra_text(t: &Task, key: &str) -> String {
+    t.extra
+        .get(key)
+        .and_then(|v| v.as_str().map(String::from))
+        .unwrap_or_default()
+}
+
 pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
     let has_herd = f.has_herd_row();
     let mut constraints = vec![
@@ -213,6 +299,9 @@ pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
         Constraint::Length(1), // priority chips
         Constraint::Length(1), // labels
         Constraint::Length(1), // source
+        Constraint::Length(1), // due
+        Constraint::Length(1), // every
+        Constraint::Length(1), // wake chips
     ];
     if has_herd {
         constraints.push(Constraint::Length(1)); // herd chips
@@ -225,10 +314,13 @@ pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
     let pri_r = rects[3];
     let labels_r = rects[4];
     let source_r = rects[5];
+    let due_r = rects[6];
+    let every_r = rects[7];
+    let wake_r = rects[8];
     let (herd_r, body_r) = if has_herd {
-        (Some(rects[6]), rects[7])
+        (Some(rects[9]), rects[10])
     } else {
-        (None, rects[6])
+        (None, rects[9])
     };
     let header = match (&f.edit_id, &f.parent) {
         (Some(id), _) => format!("Edit {id}"),
@@ -296,6 +388,38 @@ pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
         "",
         frame,
         source_r,
+    );
+    render_text_row(
+        f.row == 5,
+        CREATE_LABEL_W,
+        "due",
+        &f.due,
+        "+2d, +1w or 2026-11-15",
+        frame,
+        due_r,
+    );
+    render_text_row(
+        f.row == 6,
+        CREATE_LABEL_W,
+        "every",
+        &f.every,
+        "P1W, P1D, P1M: makes it recur",
+        frame,
+        every_r,
+    );
+    let wakes: Vec<(String, bool)> = WAKE_CHOICES
+        .iter()
+        .enumerate()
+        .map(|(i, w)| (w.to_string(), i == f.wake_idx))
+        .collect();
+    render_chip_row(
+        f.row == 7,
+        f.wake_idx,
+        CREATE_LABEL_W,
+        "wakes",
+        &wakes,
+        frame,
+        wake_r,
     );
     if let Some(hr) = herd_r {
         let herds: Vec<(String, bool)> = f
