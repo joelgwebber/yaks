@@ -1,11 +1,11 @@
 ---
 id: yaks-5e8d
 title: 'yaks tick: regrow what is due, then report what needs you'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-04T22:31:55Z'
-updated: '2026-11-04T23:09:40Z'
+updated: '2026-11-04T23:09:41Z'
 parent: yaks-7fa6
 depends_on:
 - yaks-0079,yaks-bdae,yaks-a041
@@ -44,3 +44,13 @@ Done on branch `scheduling`, rebased onto `origin/main` (0.0.32, after the doks 
 Not done, deliberately: `--sync`. The design said it needs a two-machine duplicate-regrow test first; a tick does not sync, and the skill will say to run `yaks sync` yourself. Filed as a follow-up below if wanted.
 
 Decision: stale claims come from the sheds' own `Stale` liveness (two hours), not a new threshold. Decision: a woken yak due soon appears once, in the inbox section.
+
+---
+▸ 2026-11-04T23:09:41Z [sched-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
