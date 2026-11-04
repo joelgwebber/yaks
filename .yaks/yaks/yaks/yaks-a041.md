@@ -5,11 +5,11 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-11-04T22:31:54Z'
-updated: '2026-11-04T22:31:55Z'
+updated: '2026-11-04T22:34:49Z'
 parent: yaks-7fa6
 tags:
 - cli
-needs: human
+needs: agent
 ---
 
 Part of the scheduling arc ([design](/doks/design/scheduling.md)). Today `regrow-due` only makes the yak hairy; nothing tells anyone it has work.
@@ -33,3 +33,11 @@ asked: needs human
 3. **No field: the last `request`/`ask` note decides.** Regrow repeats whoever last held it. Implicit, and a first round has nothing to repeat.
 
 Lean: 1, one field `wake: agent|human`; absent means just hairy, as today. It is the only way a first round knows, and the smallest explicit thing.
+
+---
+▸ 2026-11-04T22:34:49Z [Joel Webber]
+kind: answer
+needs: agent
+---
+
+Ah, I get it. That works for me. Just wanted to be sure I'm following the logic.
