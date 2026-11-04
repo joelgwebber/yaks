@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-04T22:31:56Z'
-updated: '2026-11-04T23:27:45Z'
+updated: '2026-11-04T23:38:01Z'
 parent: yaks-7fa6
 tags:
 - tui
@@ -28,3 +28,5 @@ thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+[yaks-f561-frames](yaks-f561/yaks-f561-frames.md)
