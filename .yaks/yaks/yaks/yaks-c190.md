@@ -5,7 +5,7 @@ status: shaving
 type: chore
 priority: 4
 created: '2026-11-04T17:23:24Z'
-updated: '2026-11-04T17:29:06Z'
+updated: '2026-11-04T17:29:23Z'
 parent: yaks-dedc
 depends_on:
 - yaks-d19c
@@ -26,3 +26,8 @@ thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-04T17:29:23Z [source-fix]
+
+Done in the `joel` farm. Nothing cited either old source (only `part_of` linked them to each other). Saved the hand-fixed markdown once with `--url` and the Confluence title as `sources/2026-11-04-491a47d1` (no HTML, no temp paths), then removed `2026-11-03-bea6d0de` and `2026-11-03-14a63718` (farm commit 36cc494; not synced). `yaks check` now reports the new source as uncited, as the old ones were.
