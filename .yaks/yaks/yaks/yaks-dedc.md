@@ -1,11 +1,11 @@
 ---
 id: yaks-dedc
 title: Weird, duplicative structures in wiki sources
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-03T23:50:22Z'
-updated: '2026-11-04T17:29:24Z'
+updated: '2026-11-04T17:29:25Z'
 tags:
 - wiki
 ---
@@ -72,3 +72,13 @@ moved: hairy -> shaving
 ▸ 2026-11-04T17:29:24Z [source-fix]
 
 All three children shorn; code and skill changes are on `yaks-dedc-sources` in the yaks checkout (two commits), awaiting Joel's go to land. After landing: `cargo install --path .` (per AGENTS.md), then yaks-cc40 can proceed. Existing sources in `joel` that say "Snapshot of the local file /tmp/..." (about 30) are left as written: sources are write-once.
+
+---
+▸ 2026-11-04T17:29:25Z [source-fix]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
