@@ -1,11 +1,11 @@
 ---
 id: yaks-b569
 title: Skill yaks-scheduling and the edits to yaks, yaks-working, yaks-coordinating
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-04T22:31:57Z'
-updated: '2026-11-04T23:51:03Z'
+updated: '2026-11-04T23:51:04Z'
 parent: yaks-7fa6
 depends_on:
 - yaks-5e8d
@@ -40,3 +40,13 @@ Done on branch `scheduling`.
 - Evidence: the skills guards pass (names and descriptions, quoted description, cross-references to real skills, the `BUNDLED` lists in `src/skills.rs` and `tests/init_modes.rs`); full `cargo test` green (979 + 31 suites). I checked the one subtle claim in the skill against the real binary: a yak due today with `P1D` does not regrow when sheared the same day, and one whose `due:` is two days back regrows once with `1 skipped` and `awaiting agent`.
 
 Not done: the cold-read scout check that AGENTS.md prescribes after a skills change. It needs a subagent and Joel has not asked for one; the acceptance yak (`yaks-79a6`) is the real cold read, by an agent that has to rewrite `review-watch` from this skill alone.
+
+---
+▸ 2026-11-04T23:51:04Z [sched-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
