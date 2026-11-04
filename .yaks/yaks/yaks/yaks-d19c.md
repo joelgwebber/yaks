@@ -1,11 +1,11 @@
 ---
 id: yaks-d19c
 title: 'source add: --text for converted text; no temp paths in provenance; HTML is not text'
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-04T17:23:10Z'
-updated: '2026-11-04T17:29:20Z'
+updated: '2026-11-04T17:29:21Z'
 parent: yaks-dedc
 tags:
 - wiki
@@ -53,3 +53,13 @@ Done on branch `yaks-dedc-sources` (1720ba8), not merged to `main`.
 Evidence: four new unit tests in `src/sources.rs` (text lands, html alone, refusals, scratch vs real path); `cargo test` all green; my own binary on the Confluence case (one `source add page.html --url --title --text page.md`) gave a single source with the URL as resource and the markdown as `extracted.md`.
 
 Not done: `promote` still records `Promoted from the yak attachment <id>/<file>` (a farm path, not a scratch path, so left alone).
+
+---
+▸ 2026-11-04T17:29:21Z [source-fix]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
