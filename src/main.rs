@@ -41,6 +41,7 @@ mod sources;
 mod status;
 mod store;
 mod sync;
+mod tick;
 mod tui;
 mod wait;
 mod weight;
@@ -844,6 +845,28 @@ enum Command {
         /// `moved: <from> -> <to>` log entry). Resolved like `update --as`:
         /// $YAKS_ACTOR, then `git config yaks.actor`, then the harness
         /// identity, then the git user (`yaks whoami` shows which).
+        #[arg(long = "as")]
+        as_actor: Option<String>,
+    },
+    /// Kick off a scheduling round: reopen what is due, then say what needs you.
+    ///
+    /// Runs `regrow-due` (a recurring yak whose next occurrence has arrived
+    /// goes back to hairy; one with `wake: agent|human` also lands in the
+    /// inbox), then prints one report: what regrew or was held, what is
+    /// overdue or due soon, what awaits a human or an agent, stale claims,
+    /// and how many findings `yaks check` has. Idempotent: a second tick
+    /// regrows nothing. It never syncs, runs no commands and posts no
+    /// notifications; `--dry-run` writes nothing and `--json` is the stable
+    /// shape for a harness. Exit 0 unless a write failed.
+    Tick {
+        /// Report what would regrow without changing anything.
+        #[arg(long)]
+        dry_run: bool,
+        /// How far ahead "due soon" looks: a number and `m`/`h`/`d`/`w`.
+        #[arg(long, value_name = "SPAN", default_value = tick::DEFAULT_WITHIN)]
+        within: String,
+        #[arg(long)]
+        json: bool,
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
@@ -2669,6 +2692,32 @@ fn main() -> Result<()> {
                 "Regrown:",
                 actor.as_deref(),
             )?
+        }
+        Command::Tick {
+            dry_run,
+            within,
+            json,
+            as_actor,
+        } => {
+            let within = store::parse_duration(&within)
+                .filter(|d| *d >= chrono::Duration::zero())
+                .with_context(|| {
+                    format!("could not parse --within '{within}'; use a span like 3d, 36h or 1w")
+                })?;
+            let actor = actor::resolve(as_actor.as_deref());
+            let now = chrono::Utc::now();
+            let regrow = farm.regrow_due(now, dry_run, actor.as_deref())?;
+            let tasks = tick::open_tasks(farm.root())?;
+            let inbox = farm.inbox(FilterSpec::default())?;
+            // `check` is the slowest part and only a count here; a farm it
+            // cannot read is said as "unknown", not a failed tick.
+            let findings = check::run(&farm).ok().map(|f| f.len());
+            let digest = tick::build(&tasks, inbox, regrow, findings, now, within, dry_run);
+            if json {
+                json::print(&tick::to_json(&digest))?;
+            } else {
+                print!("{}", tick::render(&digest, fmt_row));
+            }
         }
         Command::Snooze { ids, to, as_actor } => {
             let due = recur::resolve_due(&to, recur::today())
