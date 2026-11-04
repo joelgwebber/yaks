@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T22:40:30Z'
-updated: '2026-11-04T17:18:22Z'
+updated: '2026-11-04T21:18:37Z'
 tags:
 - research
 - design
@@ -48,3 +48,8 @@ Added provenance: a summary of Clint's Indent thread, plus his pushed `yaks` bra
 ▸ 2026-11-04T17:18:22Z [delta:ksQQ5qxMm5B_TcKPJ13IMRVoupLOAEMQgpIBxBCA]
 
 Naming question split out: the rename is filed as yaks-cc40 (full rename, no aliases, schema 7). The page's naming section stays as the rationale; the design questions on the page wait until that lands.
+
+---
+▸ 2026-11-04T21:18:37Z [Joel Webber]
+
+Note: We committed to the "doks" naming and changed it throughout the code.
