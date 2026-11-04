@@ -5,10 +5,10 @@ status: shorn
 type: task
 priority: 1
 created: '2026-11-01T18:53:09Z'
-updated: '2026-11-01T22:26:31Z'
+updated: '2026-11-04T20:03:49Z'
 parent: yaks-44b3
 tags:
-- wiki
+- doks
 ---
 
 Layer 2 of the umbrella: the CLI and store for pages, sources, schemas, links and commits. All code on the `wiki` branch.
