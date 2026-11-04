@@ -337,7 +337,15 @@ impl App {
 /// `regrew yaks-ab12: Check the salt`, or a count for several.
 pub(super) fn regrew_notice(r: &crate::recur::Report) -> String {
     match r.regrew.as_slice() {
-        [one] => one_line(&format!("regrew {}: {}", one.id, one.title)),
+        [one] => {
+            // A woken yak says who it now waits on, so the notice is not the
+            // only place that tells you it wants you.
+            let waits = match &one.awaiting {
+                Some(a) if !a.already => format!(" (awaiting {})", a.who),
+                _ => String::new(),
+            };
+            one_line(&format!("regrew {}: {}{waits}", one.id, one.title))
+        }
         many => format!("regrew {} recurring yaks", many.len()),
     }
 }

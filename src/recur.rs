@@ -20,11 +20,14 @@ use chrono::{DateTime, Days, Months, NaiveDate, NaiveTime, Utc};
 pub const DUE: &str = "due";
 pub const EVERY: &str = "every";
 pub const REGROWN: &str = "regrown";
+/// Who a recurring yak goes to when it regrows: `agent` or `human`, the two
+/// values of `needs:`. Absent: it only becomes hairy.
+pub const WAKE: &str = "wake";
 
 /// The extra fields yaks itself gives meaning to. `doctor` never reports them
 /// as missing from `schemas/yak.md`, and the detail view shows them in their
 /// own rows instead of under "Other fields".
-pub const KEYS: [&str; 3] = [DUE, EVERY, REGROWN];
+pub const KEYS: [&str; 4] = [DUE, EVERY, REGROWN, WAKE];
 
 /// An ISO 8601 duration as the schemas write them (`P1Y`, `P6M`, `P2W`,
 /// `P30D`, or a run of them in that order), as `(months, days)`.
@@ -172,6 +175,20 @@ pub fn due_mark(t: &Task, now: DateTime<Utc>) -> String {
 pub const DUE_INPUT_HELP: &str =
     "a date (2026-11-15), an RFC 3339 datetime (2026-11-15T09:00:00Z), or +2d / +1w from today";
 
+/// The text of a yak's `wake:`, if it has one.
+fn wake_text(t: &Task) -> Option<String> {
+    t.extra.get(WAKE)?.as_str().map(String::from)
+}
+
+/// Who `wake:` names, when it reads: the `needs:` value a regrow sets.
+pub fn wake_of(text: &str) -> Option<&'static str> {
+    match text.trim() {
+        "agent" => Some(crate::model::NEEDS_AGENT),
+        "human" => Some("human"),
+        _ => None,
+    }
+}
+
 /// A typed deadline as `due:` stores it, or why it is refused. The one door
 /// for `--due`, `snooze --to` and the TUI.
 pub fn resolve_due(text: &str, today: NaiveDate) -> Result<String, String> {
@@ -192,6 +209,9 @@ pub fn field_problem(key: &str, value: &Value) -> Option<String> {
     };
     match key {
         DUE if When::parse(text).is_none() => Some(format!("{text:?} is not {DUE_INPUT_HELP}")),
+        WAKE if wake_of(text).is_none() => {
+            Some(format!("{text:?} is not who to wake: `agent` or `human`"))
+        }
         EVERY if Every::parse(text).is_none() => Some(format!(
             "{text:?} is not an ISO 8601 duration (P1D, P2W, P1M, P1Y; a run of them in Y M W D order, not zero)"
         )),
@@ -269,6 +289,8 @@ pub struct Plan {
     pub skipped: u32,
     /// The next deadline: the occurrence plus one period.
     pub due: When,
+    /// Who the regrown yak goes to (`needs:`), from `wake:`.
+    pub wake: Option<&'static str>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -333,6 +355,10 @@ pub fn plan(t: &Task, now: DateTime<Utc>) -> Verdict {
     let Some(every) = Every::parse(text) else {
         return Verdict::Invalid(format!("every: {text:?} is not an ISO 8601 duration"));
     };
+    let wake = wake_text(t);
+    if let Some(w) = wake.as_deref().filter(|w| wake_of(w).is_none()) {
+        return Verdict::Invalid(format!("wake: {w:?} is not `agent` or `human`"));
+    }
     let (start, first) = match (date_field(t, REGROWN), date_field(t, DUE)) {
         (Date::Bad, _) => return Verdict::Invalid("regrown: does not read as a date".into()),
         (_, Date::Bad) => return Verdict::Invalid("due: does not read as a date".into()),
@@ -360,6 +386,7 @@ pub fn plan(t: &Task, now: DateTime<Utc>) -> Verdict {
         occurrence: when(at),
         skipped: k - first,
         due: when(next),
+        wake: wake.as_deref().and_then(wake_of),
     })
 }
 
@@ -380,6 +407,27 @@ pub struct Regrew {
     pub plan: Plan,
     /// Shorn ancestors reopened first, outermost first.
     pub reopened: Vec<String>,
+    /// Who the yak awaits after this regrow (`wake:`), and whether that was
+    /// already so: an earlier round's question or request nobody has cleared
+    /// is kept, not stacked.
+    pub awaiting: Option<Awaiting>,
+}
+
+/// The `needs:` a regrown yak ends up with.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Awaiting {
+    /// `agent` or `human`: the value of `needs:`.
+    pub who: String,
+    /// `needs:` was already set (so it was left as it was).
+    pub already: bool,
+}
+
+/// The text of the request or ask a woken yak carries, so the inbox says why.
+pub fn wake_note(p: &Plan) -> String {
+    format!(
+        "Recurring: regrew for the {} occurrence. Its description is the standing instruction.",
+        p.occurrence.render()
+    )
 }
 
 /// What `regrow-due` did, and what it left alone and why.

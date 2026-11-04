@@ -80,6 +80,8 @@ pub fn regrow_due_value(r: &crate::recur::Report, dry_run: bool) -> Value {
             "skipped": g.plan.skipped,
             "due": g.plan.due.render(),
             "reopened": g.reopened,
+            "wake": g.plan.wake,
+            "awaiting": g.awaiting.as_ref().map(|a| json!({"who": a.who, "already": a.already})),
         })).collect::<Vec<_>>(),
         "held": r.held.iter().map(|(id, why)| json!({"id": id, "reason": why})).collect::<Vec<_>>(),
     })

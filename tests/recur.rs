@@ -282,3 +282,118 @@ fn snooze_refuses_finished_yaks_and_bad_dates_and_does_the_rest() {
     let out = f.cmd(&["snooze", "nope-0000"]);
     assert!(!out.status.success());
 }
+
+fn needs_of(f: &Farm, id: &str) -> Option<String> {
+    f.show(id)["needs"].as_str().map(String::from)
+}
+
+fn inbox_ids(f: &Farm, who: &str) -> Vec<String> {
+    let v: Value = serde_json::from_str(&f.run(&["inbox", "--for", who, "--json"])).unwrap();
+    v.as_array()
+        .unwrap()
+        .iter()
+        .map(|y| y["id"].as_str().unwrap().to_string())
+        .collect()
+}
+
+#[test]
+fn wake_agent_puts_the_regrown_yak_in_the_agent_inbox_every_round() {
+    let f = Farm::new("wake-agent");
+    let id = f.create(&["--every", "P1D", "--wake", "agent", "--due", &days_ago(3)]);
+    f.run(&["shorn", &id]);
+    assert_eq!(needs_of(&f, &id), None);
+
+    let out = f.run(&["regrow-due"]);
+    assert!(out.contains("awaiting agent"), "{out}");
+    assert_eq!(f.show(&id)["status"], "hairy");
+    assert_eq!(needs_of(&f, &id).as_deref(), Some("agent"));
+    assert_eq!(inbox_ids(&f, "agent"), vec![id.clone()]);
+    let inbox: Value =
+        serde_json::from_str(&f.run(&["inbox", "--for", "agent", "--json"])).unwrap();
+    assert_eq!(inbox[0]["why"], "requested");
+    assert!(f.run(&["doctor"]).contains("clean") || f.cmd(&["doctor"]).status.success());
+
+    // The agent takes it on and does it; next round it wakes again.
+    f.run(&["pickup", &id, "--note", "on it"]);
+    assert_eq!(needs_of(&f, &id), None);
+    assert!(inbox_ids(&f, "agent").is_empty());
+    f.run(&["shave", &id]);
+    f.run(&["shorn", &id]);
+    f.run(&["update", &id, "--due", &days_ago(2), "--set", "regrown="]);
+    f.run(&["regrow-due"]);
+    assert_eq!(needs_of(&f, &id).as_deref(), Some("agent"));
+    assert_eq!(inbox_ids(&f, "agent"), vec![id.clone()]);
+    assert!(
+        f.cmd(&["doctor", "--strict"]).status.success(),
+        "no needs drift after a second round"
+    );
+}
+
+#[test]
+fn wake_human_asks_and_answer_done_clears_it() {
+    let f = Farm::new("wake-human");
+    let id = f.create(&["--every", "P1W", "--wake", "human", "--due", &days_ago(10)]);
+    f.run(&["shorn", &id]);
+    let out = f.run(&["regrow-due"]);
+    assert!(out.contains("awaiting human"), "{out}");
+    assert_eq!(needs_of(&f, &id).as_deref(), Some("human"));
+    assert_eq!(inbox_ids(&f, "human"), vec![id.clone()]);
+    assert!(f.cmd(&["doctor"]).status.success());
+
+    f.run(&["answer", &id, "--done", "--note", "looked, fine"]);
+    assert_eq!(needs_of(&f, &id), None);
+    assert!(inbox_ids(&f, "human").is_empty());
+}
+
+#[test]
+fn without_wake_regrow_only_reopens_and_an_open_question_is_left_alone() {
+    let f = Farm::new("wake-none");
+    let plain = f.create(&["--every", "P1D", "--due", &days_ago(3)]);
+    let asked = f.create(&["--every", "P1D", "--wake", "agent", "--due", &days_ago(3)]);
+    f.run(&["ask", &asked, "--note", "a question from last round"]);
+    f.run(&["shorn", &plain]);
+    f.run(&["shorn", &asked]);
+
+    f.run(&["regrow-due"]);
+    assert_eq!(needs_of(&f, &plain), None);
+    assert_eq!(
+        needs_of(&f, &asked).as_deref(),
+        Some("human"),
+        "an unanswered question is not clobbered"
+    );
+    let notes = f.show(&asked)["notes"].as_array().unwrap().clone();
+    assert!(
+        !notes.iter().any(|n| n["meta"]["kind"] == "request"),
+        "no request written over an open question"
+    );
+}
+
+#[test]
+fn wake_is_checked_and_a_bad_one_holds_the_yak() {
+    let f = Farm::new("wake-bad");
+    let id = f.create(&["--every", "P1D", "--due", &days_ago(3)]);
+    assert!(!f.cmd(&["update", &id, "--wake", "nobody"]).status.success());
+    f.run(&["update", &id, "--wake", "agent"]);
+    assert_eq!(f.show(&id)["extra"]["wake"], "agent");
+    f.run(&["update", &id, "--wake", ""]);
+    assert!(f.show(&id)["extra"].get("wake").is_none());
+
+    f.run(&["update", &id, "--set", "wake=robot"]);
+    f.run(&["shorn", &id]);
+    let out = f.run(&["regrow-due"]);
+    assert!(out.contains("Held") && out.contains("wake"), "{out}");
+    assert_eq!(f.show(&id)["status"], "shorn");
+}
+
+#[test]
+fn dry_run_says_who_would_be_woken_and_writes_nothing() {
+    let f = Farm::new("wake-dry");
+    let id = f.create(&["--every", "P1D", "--wake", "agent", "--due", &days_ago(3)]);
+    f.run(&["shorn", &id]);
+    let before = f.commits();
+    let out = f.run(&["regrow-due", "--dry-run", "--json"]);
+    let v: Value = serde_json::from_str(&out).unwrap();
+    assert_eq!(v["regrew"][0]["wake"], "agent");
+    assert_eq!(f.commits(), before);
+    assert_eq!(needs_of(&f, &id), None);
+}

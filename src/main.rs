@@ -555,6 +555,11 @@ enum Command {
         /// has arrived.
         #[arg(long, value_name = "DURATION")]
         every: Option<String>,
+        /// Who a recurring yak goes to when it regrows: `agent` (`needs:
+        /// agent`, in the agent inbox) or `human` (`needs: human`). Without
+        /// it the yak only becomes hairy. Sugar for `--set wake=...`.
+        #[arg(long, value_name = "WHO")]
+        wake: Option<String>,
         /// Print the created task's id, path, and basic fields as JSON.
         #[arg(long)]
         json: bool,
@@ -607,6 +612,10 @@ enum Command {
         /// `P1Y`); an empty string clears it. Sugar for `--set every=...`.
         #[arg(long, value_name = "DURATION")]
         every: Option<String>,
+        /// Who a recurring yak goes to when it regrows: `agent` or `human`;
+        /// an empty string clears it. Sugar for `--set wake=...`.
+        #[arg(long, value_name = "WHO")]
+        wake: Option<String>,
         /// Set any other frontmatter field, as `key=value` (repeatable):
         /// `--set due=2026-11-05`, `--set commit=[3f2a9c1,e99754d]` (a list),
         /// `--set 'owner={team: web}'` (a map). An empty value removes the
@@ -863,7 +872,9 @@ enum Command {
     /// now, and a `kind: regrow` note says which occurrence and how many were
     /// skipped. Idempotent, so cron, a harness or the TUI can call it as
     /// often as they like. Dead yaks never regrow; a yak under a shorn parent
-    /// reopens the parent too. One commit per yak.
+    /// reopens the parent too. A yak with `wake: agent|human` also gets
+    /// `needs:` set (and a request or ask note), so it lands in the inbox.
+    /// One commit per yak.
     #[command(name = "regrow-due")]
     RegrowDue {
         /// List what would regrow without changing anything.
@@ -2336,13 +2347,14 @@ fn main() -> Result<()> {
             verify,
             due,
             every,
+            wake,
             json,
         } => {
             if key.as_deref().is_some_and(|k| k.trim().is_empty()) {
                 anyhow::bail!("--key: the key is empty (it is the external issue or PR URL)");
             }
             let is_keyed = key.is_some();
-            let fields = due_every_fields(due, every)?;
+            let fields = due_every_fields(due, every, wake)?;
             let description = resolve_text(
                 "--description",
                 description,
@@ -2422,6 +2434,7 @@ fn main() -> Result<()> {
             verify,
             due,
             every,
+            wake,
             set,
             unset,
             note,
@@ -2430,7 +2443,7 @@ fn main() -> Result<()> {
             as_actor,
         } => {
             // The sugar flags go first, so a later `--set due=...` wins.
-            let mut fields = due_every_fields(due, every)?;
+            let mut fields = due_every_fields(due, every, wake)?;
             fields.extend(parse_field_args(&set, &unset)?);
             let mut stdin = StdinText::real();
             let description =
@@ -3434,14 +3447,19 @@ fn parse_field_args(set: &[String], unset: &[String]) -> Result<Vec<(String, fie
     Ok(out)
 }
 
-/// `--due` and `--every` as field edits; an empty string clears the field.
+/// `--due`, `--every` and `--wake` as field edits; an empty string clears the field.
 /// An unreadable value is refused here, before anything is written.
 fn due_every_fields(
     due: Option<String>,
     every: Option<String>,
+    wake: Option<String>,
 ) -> Result<Vec<(String, fields::Value)>> {
     let mut out = Vec::new();
-    for (flag, key, text) in [("--due", recur::DUE, due), ("--every", recur::EVERY, every)] {
+    for (flag, key, text) in [
+        ("--due", recur::DUE, due),
+        ("--every", recur::EVERY, every),
+        ("--wake", recur::WAKE, wake),
+    ] {
         let Some(text) = text else { continue };
         // A deadline may be typed relative (`+2d`); it is stored as a date.
         let text = match key {
@@ -3473,8 +3491,13 @@ fn render_regrow_due(r: &recur::Report, dry_run: bool) -> String {
             0 => String::new(),
             n => format!(", {n} skipped"),
         };
+        let waits = match &g.awaiting {
+            Some(a) if a.already => format!("; already awaiting {}", a.who),
+            Some(a) => format!("; awaiting {}", a.who),
+            None => String::new(),
+        };
         out.push_str(&format!(
-            "{verb}: {}  {} (for {}{skipped}; due {})\n",
+            "{verb}: {}  {} (for {}{skipped}; due {}{waits})\n",
             g.id,
             g.title,
             g.plan.occurrence.render(),

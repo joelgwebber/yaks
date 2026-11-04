@@ -51,7 +51,8 @@ interchangeable.
 - **Recurring yaks** — on load and on each sync tick (`sync_interval`, also
   when there is no remote to sync) the TUI runs `yaks regrow-due`: a shorn yak
   with `every:` whose next occurrence has arrived is hairy again, with a
-  `regrew …` notice, and the list reloads. `YAKS_NO_AUTOSYNC` stops the ticks;
+  `regrew …` notice (`(awaiting agent)` or `(awaiting human)` for a yak with
+  `wake:`, which then also shows in the Inbox), and the list reloads. `YAKS_NO_AUTOSYNC` stops the ticks;
   the load-time pass still runs.
 - **Interval sync** — every `sync_interval` (`.yaks/config.yaml`; seconds or
   `30s` / `5m` / `2h`; default `5m`; `0` or `off` turns it off) the TUI runs the
@@ -80,7 +81,7 @@ interchangeable.
   pickup)` or `agent (requested, …)`) and the row is never shown as awaiting a human.
 - A hairy or shaving yak with a `due:` shows the date at the right of its row,
   dim, and **red once it is overdue**; the detail view shows `Due:` (in the
-  warning accent when overdue), `Every:` and `Regrown:` rows. A shorn yak is
+  warning accent when overdue), `Every:`, `Wakes:` and `Regrown:` rows. A shorn yak is
   never overdue. See [Due dates and recurring
   yaks](cli.md#due-dates-and-recurring-yaks).
 - The dependency-blocked marker (`*`) and the multi-select marker (`●`) are

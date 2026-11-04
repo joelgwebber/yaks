@@ -407,6 +407,7 @@ Three extra yak fields, no new file format (they are written like any `--set` fi
 
 - `due:` — a date (`2026-11-15`) or an RFC 3339 datetime: when the yak should be done. `--due <when>` sets it; besides a date or datetime it takes `+Nd` or `+Nw` (N days or weeks from today, stored as that date; no months, no `-`, no weekday words). A **hairy or shaving** yak past it is **overdue**: `list` and `next` print ` due 2026-11-15 overdue`, `show` prints `due ... (overdue)`, `--json` adds `"overdue": true`, and the TUI shows the date in red. A date is overdue once its day has passed; a datetime the moment it does. A shorn or dead yak is never overdue.
 - `every:` — an ISO 8601 duration only: `P1D`, `P2W`, `P1M`, `P3M`, `P1Y`, or a run of them in Y M W D order (`P1Y2M`). `--every <duration>` sets it; zero (`P0D`) and words (`monday`) are refused. It makes the yak recur.
+- `wake:` — `agent` or `human`: who a recurring yak goes to when it regrows. `--wake <who>` sets it (an empty string clears it). Without it the yak only becomes hairy, as before. See [`regrow-due`](#due-dates-and-recurring-yaks) below.
 - `regrown:` — a datetime yaks writes when `regrow-due` reopens the yak. Not for hand editing.
 
 `list --due [--before <date>]` keeps the yaks that have a `due:` (before the date, exclusive, when given), sorted by it, then by id.
@@ -415,11 +416,13 @@ Three extra yak fields, no new file format (they are written like any `--set` fi
 
 `regrow-due [--dry-run] [--json] [--as <actor>]` — the clock lives outside yaks; a harness, cron or the TUI (on load and each sync tick) calls this. For each **shorn** yak with `every:` it finds the schedule's latest occurrence that is not in the future. If there is one it moves the yak to hairy (like `regrow`), sets `due:` to that occurrence plus one period (the next deadline) and `regrown:` to now, and adds a `kind: regrow` note (`regrew for the 2026-11-15 occurrence (1 skipped)`, with `occurrence` in its metadata). Occurrences are `start + k × every`, counted from the start so a month-end keeps its day (Jan 31 + `P1M` is Feb 28, then Mar 31). The start is `due:` (k from 1) for a yak never regrown, else its shear time. A regrown yak already carries `due:` = its next occurrence, so that is the start and k counts from 0: a late run never pushes the schedule later. Occurrences missed while the yak stayed shorn don't pile up: one regrow covers them all, and the note counts the skipped. It is idempotent (the new `due:` is in the future, and a hairy yak is not a candidate), so a second run does nothing.
 
+**Waking someone.** A yak with `wake: agent` or `wake: human` goes, when it regrows, to the inbox like any other work: `needs:` is set to that value and a note is written under the marker the same command uses (`requested: needs agent`, the one `request` writes, or `asked: needs human`, the one `ask` writes), so `yaks inbox --for agent|human`, `wait` and the TUI Inbox list it and say why, and `doctor` sees no drift. The note text says it is the recurring yak's standing instruction: **the yak's description is the task**. An agent runs `pickup` (a human, `answer --done`) to clear it, and shears the yak when done; the next round wakes it again, because `wake:` stays. A question or request from an earlier round that nobody has cleared is **kept, not stacked** (the yak keeps its `needs:` and gets no second note; the report says `already awaiting`). `wake:` is checked: anything but `agent` or `human` holds the yak, reported like an unreadable `every:`. `--json` adds `wake` and `awaiting` (`who`, `already`) to each `regrew` entry.
+
 A recurring yak under a shorn parent reopens the parent first (the move note carries `child:`, like `shave`'s lifts), so the family rule holds. One under a dead parent, or with an unreadable `every:`/`due:`/`regrown:`, is **held**: reported, left shorn. Dead yaks never regrow. Each yak is one commit. `--dry-run` writes nothing; `--json` gives `dry_run`, `regrew` (`id`, `title`, `occurrence`, `skipped`, `due`, `reopened`) and `held`. Word schedules (`monday`, `1st`) are not supported.
 
 The notes keep every round, so a recurring chore accumulates one shear note per occurrence, with its links.
 
-`yaks doctor` never reports `due`, `every` or `regrown` as missing from `schemas/yak.md`.
+`yaks doctor` never reports `due`, `every`, `wake` or `regrown` as missing from `schemas/yak.md`.
 
 ### Families stay consistent
 

@@ -2806,6 +2806,12 @@ impl Farm {
                 .map(|a| a.id.clone())
                 .collect();
             reopened.reverse();
+            // `wake:` sends the regrown yak to the inbox, unless an earlier
+            // round's question or request is still standing: that one is kept.
+            let awaiting = plan.wake.map(|who| recur::Awaiting {
+                who: task.needs.clone().unwrap_or_else(|| who.to_string()),
+                already: task.needs.is_some(),
+            });
             if !dry_run {
                 for a in &reopened {
                     store::move_task_with(&self.root, a, Status::Hairy, actor, &[("child", &id)])?;
@@ -2829,7 +2835,29 @@ impl Farm {
                     ],
                     &recur::regrow_note(&plan),
                 );
-                t.updated = Some(written);
+                if let Some(a) = awaiting.as_ref().filter(|a| !a.already) {
+                    // Its own note after the regrow note: the marker `inbox`
+                    // and `doctor` read, the same one `ask`/`request` write.
+                    let (kind, text) = if a.who == NEEDS_AGENT {
+                        (
+                            "request",
+                            store::request_text(Some(&recur::wake_note(&plan))),
+                        )
+                    } else {
+                        (
+                            "ask",
+                            store::ask_text(&a.who, Some(&recur::wake_note(&plan))),
+                        )
+                    };
+                    let mut meta = vec![("kind", kind)];
+                    if kind == "ask" {
+                        meta.push(("needs", a.who.as_str()));
+                    }
+                    t.needs = Some(a.who.clone());
+                    t.body =
+                        store::append_note_meta(&t.body, &store::now_iso(), actor, &meta, &text);
+                }
+                t.updated = Some(store::now_iso());
                 store::write::save(&self.root, &t)?;
             }
             report.regrew.push(Regrew {
@@ -2837,6 +2865,7 @@ impl Farm {
                 title: task.title.clone(),
                 plan,
                 reopened,
+                awaiting,
             });
         }
         Ok(report)

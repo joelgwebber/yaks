@@ -384,6 +384,9 @@ pub fn build_at(
     if let Some(every) = text(crate::recur::EVERY) {
         out.push(field("Every:", &every));
     }
+    if let Some(wake) = text(crate::recur::WAKE) {
+        out.push(field("Wakes:", &wake));
+    }
     if let Some(regrown) = text(crate::recur::REGROWN) {
         out.push(field("Regrown:", &opt_date(&Some(regrown), clock)));
     }
