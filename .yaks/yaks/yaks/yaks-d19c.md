@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-04T17:23:10Z'
-updated: '2026-11-04T17:23:26Z'
+updated: '2026-11-04T17:29:20Z'
 parent: yaks-dedc
 tags:
 - wiki
@@ -40,3 +40,16 @@ thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-04T17:29:20Z [source-fix]
+
+Done on branch `yaks-dedc-sources` (1720ba8), not merged to `main`.
+
+- `source add --text <file>`: the saver's conversion becomes `extracted.md`; refused for a directory, a missing file or non-UTF-8.
+- `html` is no longer "text", so an HTML original gets no `extracted.md`; its `source.md` says to convert and pass `--text`.
+- Provenance has no scratch paths: `description` is `Saved copy of <url>` / `Snapshot of <file name>`; `local_copy` is gone; a file from a temp dir records its name as `resource`.
+
+Evidence: four new unit tests in `src/sources.rs` (text lands, html alone, refusals, scratch vs real path); `cargo test` all green; my own binary on the Confluence case (one `source add page.html --url --title --text page.md`) gave a single source with the URL as resource and the markdown as `extracted.md`.
+
+Not done: `promote` still records `Promoted from the yak attachment <id>/<file>` (a farm path, not a scratch path, so left alone).
