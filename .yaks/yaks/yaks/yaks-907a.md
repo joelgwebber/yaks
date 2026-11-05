@@ -5,14 +5,14 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
-updated: '2026-11-04T23:24:32Z'
+updated: '2026-11-05T04:36:31Z'
 parent: yaks-f677
 depends_on:
 - yaks-7058
 tags:
 - tui
 - perf
-needs: human
+needs: agent
 ---
 
 Feels like there might be an intentional delay for some reason?
@@ -203,3 +203,12 @@ Re-measured: a changing save is ~330 ms now (was ~730 ms); ~280 ms of that is th
 
 1. yaks-1ebf (second reload after our own save): it is now 44 ms and happens after the saved frame is drawn, so it no longer causes the pause. Lean: shear it as not needed rather than build the own-write skip. OK?
 2. Is ~330 ms good enough to shear this yak, or do you want the last step? Options: (a) shear yaks-907a now and leave yaks-d262 (commit after the saved frame) open; (b) do yaks-d262 now; (c) try to cut the commit to fewer spawns first (drop the second `status` by diffing the paths the command wrote against the snapshot; lean: only if you still feel it, since it would save ~60 ms). Lean: (a), after you try the installed build and say whether it still feels slow.
+
+---
+▸ 2026-11-05T04:36:31Z [sched-1]
+kind: answer
+needs: agent
+---
+
+1. SGTM
+2.
