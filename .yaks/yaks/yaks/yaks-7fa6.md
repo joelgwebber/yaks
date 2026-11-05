@@ -1,11 +1,11 @@
 ---
 id: yaks-7fa6
 title: 'Scheduling arc: ticks, recurring yaks that wake someone, and a skill for watchers'
-status: shaving
+status: shorn
 type: epic
 priority: 2
 created: '2026-11-04T22:30:49Z'
-updated: '2026-11-04T23:51:12Z'
+updated: '2026-11-05T04:42:41Z'
 tags:
 - design
 - cli
@@ -56,3 +56,13 @@ Seven of eight children are shorn, all on branch `scheduling` (6 commits on top 
 Left: `yaks-79a6`, the acceptance test (shrink `review-watch` onto `yaks-scheduling`). That skill lives uncommitted in Joel's `joel` repo, so it needs Joel's go-ahead and a decision on where the work happens.
 
 Follow-ups not filed as yaks: `yaks tick --sync` (needs a two-machine duplicate-regrow test first); a docshots scene for the new form rows and Due view (text frames are attached to `yaks-2986` and `yaks-f561` instead); the cold-read scout check on the new skill.
+
+---
+▸ 2026-11-05T04:42:41Z [sched-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
