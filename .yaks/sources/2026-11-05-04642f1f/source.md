@@ -1,6 +1,6 @@
 ---
 type: source
-title: YASS (Yet Another Spec System) by Jaime Fournier? repo snapshot at 1516c8d
+title: "YASS (Yet Another Spec System), donjaime/yass repo snapshot at 1516c8d"
 description: Saved copy of https://github.com/donjaime/yass/tree/1516c8d6439bd663abaa9c2873394c968da5276f
 files:
   - {file: AGENTS.md, size: 2103}
