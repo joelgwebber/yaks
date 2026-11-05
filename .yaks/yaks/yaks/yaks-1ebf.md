@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-04T21:35:11Z'
-updated: '2026-11-04T23:24:31Z'
+updated: '2026-11-05T05:33:23Z'
 parent: yaks-907a
 tags:
 - tui
@@ -42,3 +42,8 @@ Re-measured after yaks-7058 and yaks-bcd4 (local `main`, f62e889c; temporary tra
 - It runs after the frame that shows the saved text is drawn: first output after the save at ~290-400 ms, the second repaint ~250 ms later. So it no longer delays the save the user waits for; it is a ~44 ms stall on the next key at worst.
 
 So this is no longer a cause of the pause. Skipping our own writes costs a rule that has to tell our write from an external one landing at the same moment, to save ~44 ms off the critical path. Recommend not doing it: shear as not needed unless the stall shows up on a bigger farm (the reload also re-reads every yak file, 13-15 ms here at 880 yaks; yaks-e61e is the farm-size scaling).
+
+---
+▸ 2026-11-05T05:33:23Z [perf-907a]
+
+Decision (Joel, 2026-11-04): not needed. The reload after our own save is 44 ms and runs after the saved frame; see the measurement above.
