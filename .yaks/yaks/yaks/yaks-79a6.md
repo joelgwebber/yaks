@@ -1,11 +1,11 @@
 ---
 id: yaks-79a6
 title: 'Acceptance: shrink review-watch onto the scheduling contract'
-status: hairy
+status: shorn
 type: task
 priority: 2
 created: '2026-11-04T22:31:57Z'
-updated: '2026-11-05T04:42:40Z'
+updated: '2026-11-05T04:42:41Z'
 parent: yaks-7fa6
 depends_on:
 - yaks-b569
@@ -29,3 +29,13 @@ Done. `review-watch` (Joel's `joel` repo, uncommitted in the Delta worktree) rew
 - Evidence: a stubbed `gh` on a scratch farm (not Joel's): scan 1 made one yak, scan 2 changed nothing, a hand-sheared yak stayed shorn while still requested, a merged PR cleared with a note, a re-request regrew it with a fresh `due:`, a dead yak was not recreated (one yak total throughout), and `yaks tick` printed one report. `scan --dry-run` against the real repos and farm listed 6 new, 1 cleared, 5 tracked, as expected. I did not run a real `scan`, and did not create the recurring yak, in Joel's farm.
 
 Not done: the skill can't be loaded through the `skill` tool this turn (the catalog is fixed at turn start), so I checked its frontmatter by script instead. The first real use is the cold read.
+
+---
+▸ 2026-11-05T04:42:41Z [sched-1]
+kind: move
+from: hairy
+to: shorn
+thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shorn
