@@ -1,0 +1,18 @@
+{
+  "id": "hy8UstR2NEg",
+  "title": "Full Course: Spec-Driven Development with Coding Agents",
+  "channel": "DeepLearningAI",
+  "uploader": "DeepLearningAI",
+  "upload_date": "20260922",
+  "duration": 3693,
+  "duration_string": "1:01:33",
+  "view_count": 388995,
+  "like_count": 4480,
+  "webpage_url": "https://www.youtube.com/watch?v=hy8UstR2NEg",
+  "description": "Vibe coding is fast, but it often produces code that doesn't match what you asked for. Spec-driven development is the disciplined alternative: write a clear markdown spec defining what to build, and let your coding agent implement it.\n\nEarn your certificate here: https://bit.ly/4hmJc2K\n\nYou'll learn to:\n- Write a project constitution defining mission, tech stack, and roadmap\n- Plan, implement, and validate features using a spec as the agent's guide\n- Introduce SDD to a legacy codebase\n- Package your workflow into an agent skill that's portable across agents and IDEs\n\nSpec-Driven Development with Coding Agents is built in partnership with JetBrains and taught by Paul Everitt, Developer Advocate at JetBrains.\n\nRecommended: basic familiarity with a programming language and experience with LLM-based coding tools.",
+  "tags": [],
+  "categories": [
+    "Education"
+  ],
+  "chapters": null
+}
