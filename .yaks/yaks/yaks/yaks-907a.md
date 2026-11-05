@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
-updated: '2026-11-05T04:36:31Z'
+updated: '2026-11-05T04:37:54Z'
 parent: yaks-f677
 depends_on:
 - yaks-7058
@@ -211,4 +211,4 @@ needs: agent
 ---
 
 1. SGTM
-2.
+2. Let's land what we have, then I'll test manually before doing yaks-d262.
