@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
-updated: '2026-11-05T04:37:54Z'
+updated: '2026-11-05T05:33:23Z'
 parent: yaks-f677
 depends_on:
 - yaks-7058
@@ -212,3 +212,12 @@ needs: agent
 
 1. SGTM
 2. Let's land what we have, then I'll test manually before doing yaks-d262.
+
+---
+▸ 2026-11-05T05:33:23Z [perf-907a]
+
+Decision (Joel, 2026-11-04, in the thread): close yaks-1ebf as not needed; close this yak with the changes on local `main` and keep yaks-d262 open; Joel will try the installed build for a while.
+
+Code: yaks-7058 (`dd61f317`) and yaks-bcd4 (`f62e889c`), on local `main`, not pushed. A changing save in the TUI went from ~700-760 ms to ~330 ms to first output; ~280 ms of that is the per-change commit's 13 git spawns.
+
+Follow-ups: yaks-d262 (commit after the saved frame is drawn; reopen the question if the build still feels slow), yaks-717b (a test that fails on a rerun).
