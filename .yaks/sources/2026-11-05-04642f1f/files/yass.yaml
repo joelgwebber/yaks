@@ -1,0 +1,6 @@
+# YASS settings. With no path:, this project's yass folder is yass/ next to this file.
+# Each example is a project of its own, so its yass/ folders aren't this project's work.
+# kit/ holds the playbooks and hook the binary carries; they stay unstamped, so yass upgrade leaves them alone.
+ignore:
+  - examples/*
+  - kit

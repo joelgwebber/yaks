@@ -1,0 +1,12 @@
+#!/bin/sh
+# YASS prepare-commit-msg hook: with plans kept apart from the code, adds a `yass:` trailer naming
+# the commit's change (from `yass use`, else the branch name, else earlier commits on the branch).
+# It never overwrites a trailer you wrote, skips merges, and does nothing when plans are in the repo.
+if ! command -v yass >/dev/null 2>&1; then
+  exit 0
+fi
+# A yass from before trailers doesn't know this hook: skip it rather than block the commit.
+if ! yass hook --help 2>&1 | grep -q -- '--prepare-msg'; then
+  exit 0
+fi
+exec yass hook --prepare-msg "$@"

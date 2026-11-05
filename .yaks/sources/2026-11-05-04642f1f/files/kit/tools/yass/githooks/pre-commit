@@ -1,0 +1,11 @@
+#!/bin/sh
+# YASS pre-commit hook (optional): progress travels with code; intent changes get their own commit.
+# It runs `yass hook`, so it needs the yass CLI on your PATH. It only warns, unless YASS_STRICT=1.
+#
+#   Turn it on:  git config core.hooksPath tools/yass/githooks   (or call this file from your hook manager)
+#   In CI:       yass hook --range origin/main..HEAD --strict
+if ! command -v yass >/dev/null 2>&1; then
+  echo "yass: the YASS hook needs the yass CLI on your PATH; skipping it (https://github.com/donjaime/yass#install)" >&2
+  exit 0
+fi
+exec yass hook "$@"
