@@ -5,14 +5,13 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
-updated: '2026-11-05T05:33:26Z'
+updated: '2026-11-05T05:33:38Z'
 parent: yaks-f677
 depends_on:
 - yaks-7058
 tags:
 - tui
 - perf
-needs: agent
 ---
 
 Feels like there might be an intentional delay for some reason?
@@ -231,3 +230,12 @@ thread: ksQQstI5T-eCRACxAjKJdNo3oJLOAEQG4JIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-05T05:33:38Z [perf-907a]
+kind: pickup
+---
+
+picked up
+
+Answer handled: closed per Joel's decision above
