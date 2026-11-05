@@ -1,11 +1,11 @@
 ---
 id: yaks-1ebf
 title: TUI reloads twice per own save (apply_edit, then the watcher)
-status: shaving
+status: shorn
 type: bug
 priority: 3
 created: '2026-11-04T21:35:11Z'
-updated: '2026-11-05T05:33:23Z'
+updated: '2026-11-05T05:33:26Z'
 parent: yaks-907a
 tags:
 - tui
@@ -47,3 +47,13 @@ So this is no longer a cause of the pause. Skipping our own writes costs a rule 
 ▸ 2026-11-05T05:33:23Z [perf-907a]
 
 Decision (Joel, 2026-11-04): not needed. The reload after our own save is 44 ms and runs after the saved frame; see the measurement above.
+
+---
+▸ 2026-11-05T05:33:26Z [perf-907a]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQstI5T-eCRACxAjKJdNo3oJLOAEQG4JIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
