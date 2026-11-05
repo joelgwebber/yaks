@@ -1,11 +1,11 @@
 ---
 id: yaks-907a
 title: ':wq pauses for ~500-1000ms, but ctrl-s finishes quickly'
-status: shaving
+status: shorn
 type: bug
 priority: 3
 created: '2026-11-03T12:22:51Z'
-updated: '2026-11-05T05:33:23Z'
+updated: '2026-11-05T05:33:26Z'
 parent: yaks-f677
 depends_on:
 - yaks-7058
@@ -221,3 +221,13 @@ Decision (Joel, 2026-11-04, in the thread): close yaks-1ebf as not needed; close
 Code: yaks-7058 (`dd61f317`) and yaks-bcd4 (`f62e889c`), on local `main`, not pushed. A changing save in the TUI went from ~700-760 ms to ~330 ms to first output; ~280 ms of that is the per-change commit's 13 git spawns.
 
 Follow-ups: yaks-d262 (commit after the saved frame is drawn; reopen the question if the build still feels slow), yaks-717b (a test that fails on a rerun).
+
+---
+▸ 2026-11-05T05:33:26Z [perf-907a]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQstI5T-eCRACxAjKJdNo3oJLOAEQG4JIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
