@@ -1,11 +1,11 @@
 ---
 id: yaks-3fa5
 title: 'Skill: yaks-upkeep (session notes, session review, housekeeping)'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-06T04:28:30Z'
-updated: '2026-11-06T04:58:07Z'
+updated: '2026-11-06T04:58:09Z'
 parent: yaks-1c89
 depends_on:
 - yaks-17f5
@@ -58,3 +58,13 @@ Done on branch `upkeep` (505d2058): the [yaks-upkeep skill](code:.agents/skills/
 Not done: a cold read by a cheap model (AGENTS.md suggests one) and a run of the review and housekeeping procedures on real farm data; Joel has examples to try.
 
 Evidence: `yaks verify` PASS (the skills guard tests, init installs it).
+
+---
+▸ 2026-11-06T04:58:09Z [herd-upkeep]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
