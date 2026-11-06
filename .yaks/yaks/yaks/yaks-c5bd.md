@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:28:29Z'
-updated: '2026-11-06T04:57:29Z'
+updated: '2026-11-06T04:58:06Z'
 parent: yaks-1c89
 depends_on:
 - yaks-bca6
@@ -39,3 +39,15 @@ result: pass
 verify: `cargo test --test links && cargo test --bin yaks a_note_link` -> PASS (exit 0)
 
 [note-links](yaks-c5bd/note-links.txt)
+
+---
+▸ 2026-11-06T04:58:06Z [herd-upkeep]
+
+Done on branch `upkeep` (505d2058): a link can name one note of a yak by its timestamp.
+
+- The form is `yaks-1a2b#2026-11-04T22:13:03Z`; later notes of the same second take `-1`, `-2` ([note_anchor](code:src/links.rs@505d2058#L211-L245)). `Link::Yak` now carries the note.
+- `yaks peek` prints just that note, `doctor` reports a note link that leads nowhere, and `yaks update --note` prints the new note's link (`Updated <id>: note <id>#<ts>`).
+- The TUI follows one to its yak but not yet to the note: yaks-b6a7.
+- Docs: `docs/cli.md` (Links), the `yaks` skill's Links, `peek` and `update --note` help.
+
+Evidence: `yaks verify` PASS (unit and CLI tests), and a run on this farm: [note-links](yaks-c5bd/note-links.txt).
