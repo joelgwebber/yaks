@@ -1,11 +1,11 @@
 ---
 id: yaks-80bd
 title: 'Small tool gaps: mark sources, write schemas, backdate imports'
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-06T04:28:32Z'
-updated: '2026-11-06T23:46:31Z'
+updated: '2026-11-06T23:46:32Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -107,3 +107,13 @@ Summary (tools-1): added `yaks source mark` and `yaks dok define`.
 - Tests: `tests/check.rs` (marked source drops out of `check`, clear brings it back, refusals leave the file alone), `tests/schemas.rs` (`define` shows in `dok types`; merge keeps field, comment and prose byte for byte; type change refused until `--replace`; bad input refused).
 - Docs: `docs/cli.md` (table rows, `### dok`, `### source`, check's uncited bullet), `README.md` rows, skills `yaks`, `yaks-research`, `yaks-upkeep`; `yaks check`'s uncited heading and `check --help` now name `yaks source mark`.
 - Gate: `yaks verify yaks-80bd` PASS. An earlier two runs failed only in `tui::farmsync::tests` (the 10 s "interval sync did not finish" wait, under load from parallel workers); those 8 tests pass alone and the full `cargo test` passed before and after.
+
+---
+▸ 2026-11-06T23:46:32Z [tools-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjWoJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
