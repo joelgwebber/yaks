@@ -1,11 +1,11 @@
 ---
 id: yaks-6cdd
 title: Write and delete table dok rows by key
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-06T04:28:31Z'
-updated: '2026-11-06T23:59:44Z'
+updated: '2026-11-06T23:59:45Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -67,3 +67,13 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 ▸ 2026-11-06T23:59:44Z [query-2]
 
 Summary: yaks dok row set|delete <dok>#<key> (src/rows.rs, Farm::dok_row_set/dok_row_delete, DokAction::Row); 11 unit tests + CLI round-trip with dok query --rows; docs/cli.md + yaks-research skill updated. Full 'cargo test --no-fail-fast' green (one earlier run hit the known init_modes flake).
+
+---
+▸ 2026-11-06T23:59:45Z [query-2]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjhJJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
