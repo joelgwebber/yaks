@@ -1,11 +1,11 @@
 ---
 id: yaks-0df0
 title: 'source add --text-only: save a markdown file as its extracted text alone'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-06T15:53:03Z'
-updated: '2026-11-06T16:03:26Z'
+updated: '2026-11-06T16:03:27Z'
 tags:
 - doks
 - cli
@@ -51,3 +51,13 @@ Done and tested.
 - Help, `docs/cli.md` and `yaks-research` updated in the same change.
 
 Evidence: four new unit tests (text-only saves one file, the refusals, text-only refresh, collapsing an existing two-file source), a scripted run of the built binary, and the full `cargo test` green (988 unit tests plus integration suites). The four saved Google Docs collapsed to `extracted.md` + `source.md` on refresh.
+
+---
+▸ 2026-11-06T16:03:27Z [source-refresh]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQcsYXd-T6RPSH25f_4VJRspLOAETlkJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
