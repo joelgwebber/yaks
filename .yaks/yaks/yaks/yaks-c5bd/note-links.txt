@@ -2,8 +2,27 @@ $ yaks update yaks-bca6 --note - ...
 Updated yaks-bca6: note yaks-bca6#2026-11-06T04:56:54Z
 
 $ yaks peek yaks-bca6#2026-11-06T04:31:03Z
+── yaks-bca6#2026-11-06T04:31:03Z
+▸ 2026-11-06T04:31:03Z [sched-1]
+kind: answer
+needs: agent
 
-$ yaks peek yaks-d26a#2026-11-01T23:51:14Z-1   # second note of that second
+1. I was thinking the same thing. They really shouldn't end up conflicting.
+2. SGTM
+3. Also SGTM.
+4. Also, also SGTM.
+
+$ yaks peek yaks-d26a#2026-11-01T23:51:14Z-1   # the second note of that second
+── yaks-d26a#2026-11-01T23:51:14Z-1
+▸ 2026-11-01T23:51:14Z [delta:farm-wiki]
+
+kind: move
+from: shaving
+to: shorn
+thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
 
 $ yaks peek yaks-bca6#2026-01-01T00:00:00Z
-error: /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-scratch-.delta-fs-l0K1TT is not inside a git repository. A yaks farm lives on a branch of one: run yaks from a checkout, or set YAKS_DIR to a farm
+error: yaks-bca6 has no note at 2026-01-01T00:00:00Z (`yaks show yaks-bca6` lists its notes; the link is the note's timestamp, `-1`, `-2` for later notes of the same second)
