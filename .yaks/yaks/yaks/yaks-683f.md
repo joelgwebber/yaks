@@ -5,10 +5,10 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
-updated: '2026-10-27T12:57:53Z'
+updated: '2026-11-06T04:58:33Z'
 tags:
 - tui
-needs: human
+needs: agent
 ---
 
 Preserve a draft when an edit form or comment is dismissed or interrupted, so in-progress text is not lost.
@@ -33,3 +33,14 @@ Design attached (683f-design.md). Decisions:
 2. Restore: auto-restore with a 'draft' badge + Ctrl-R to revert, vs a 'restore draft?' prompt? Lean: auto-restore.
 3. Phase 1 saves on dismiss/quit only (autosave via the 250ms loop in P2), or autosave from day one? Lean: dismiss/quit first.
 4. Mid-edit external changes clobbered on commit: in scope or separate yak? Lean: separate; 683f only warns on restore when base 'updated' differs. Drafts stored at `~/.config/yaks/<slug>/drafts/<key>.json`, keys `edit:<id>/comment:<id>/create:<parent|root>`.
+
+---
+▸ 2026-11-06T04:58:33Z [sched-1]
+kind: answer
+needs: agent
+---
+
+1. I like the three-way prompt idea.
+2. I'm good to start by trying auto-restore.
+3. Yeah, we can start there and see how it goes. I originally wanted this becauuse of crash bugs, but we haven't had that problem in a while.
+4. SGTM.
