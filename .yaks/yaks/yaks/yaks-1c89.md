@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:27:55Z'
-updated: '2026-11-06T05:10:09Z'
+updated: '2026-11-06T21:55:36Z'
 parent: yaks-44b3
 tags:
 - doks
@@ -68,3 +68,12 @@ Built the session-notes path on branch `upkeep` of the yaks repo (505d2058, 40de
 - New follow-ups: yaks-b6a7 (TUI lands on the note), yaks-2e00 (`refs --incoming` over doks and sessions), yaks-525b (actor on hand edits).
 
 Still open here: the agent-layer tools (yaks-fcdc) and the reflection design (yaks-7168). Next step is Joel trying the review and housekeeping procedures on real examples.
+
+---
+▸ 2026-11-06T21:55:36Z [herd-upkeep]
+
+Landed on `main` as d78b25a7 (Joel, 2026-11-06): note links, `yaks session`, and the `yaks-upkeep` skill. Installed from the main checkout with `cargo install --path .`.
+
+The flaky `tests/init_modes.rs` test (`farm_works_from_a_git_worktree_and_a_shared_clone_of_the_sharing_repo`) also fails on the previous `main` (08b86fca), 5 of 6 runs here: it predates this work.
+
+Still open in this family: yaks-fcdc (agent-layer tools), yaks-7168 (reflection), yaks-b6a7, yaks-2e00, yaks-525b.
