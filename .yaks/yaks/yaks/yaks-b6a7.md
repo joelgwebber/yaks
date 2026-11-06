@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T04:57:49Z'
-updated: '2026-11-06T23:27:36Z'
+updated: '2026-11-06T23:27:37Z'
 parent: yaks-1c89
 tags:
 - tui
@@ -68,3 +68,14 @@ Decision: `goto_task` and the new `goto_note` share one `goto_yak`, so the curso
 Decision: a missing note opens the yak at the top, notification `→ <id> (no note <anchor>)`; a landed one says `→ <id>#<anchor>`.
 
 - Rejected: refusing to open the yak, since the claim note says to open it.
+
+---
+▸ 2026-11-06T23:27:37Z [tui-1]
+
+Done: following a note link in the TUI lands the detail cursor on that note.
+
+- `Target::Note` (`src/tui/detail.rs`), produced by `mdrender::link_target`; `goto_note`/`goto_yak` in `src/tui/detail_nav.rs`; `link_dest` shows `id#anchor` for a collapsed link; handlers match arms.
+- Tests (`src/tui/tests.rs`): `following_a_note_link_lands_on_that_note_and_o_returns` (a `-1` suffixed note, asserts the cursor row is that note's header and `o` returns), `following_a_link_to_a_missing_note_opens_the_yak_at_the_top`.
+- Docs: `docs/tui.md` (history section, yak-link bullets), `docs/cli.md` (note-link line). No key changed, so no `keymap.rs` edit.
+- Evidence: frame attached (`b6a7-note-link-frame.txt`); `yaks verify` PASS (full `cargo test`).
+- No insta snapshot changed.
