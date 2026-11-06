@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T15:53:03Z'
-updated: '2026-11-06T15:53:08Z'
+updated: '2026-11-06T15:53:09Z'
 tags:
 - doks
 - cli
@@ -30,3 +30,13 @@ thread: ksQQcsYXd-T6RPSH25f_4VJRspLOAETlkJIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-06T15:53:09Z [source-refresh]
+
+Plan (test first, in [sources.rs](code:src/sources.rs)):
+
+- `Request.text_only: bool`; in `add`, a `text_only` file is written once, as `extracted.md`, and `source.md` gets `file: extracted.md`.
+- Errors, all before anything is written: a directory, non-UTF-8 content, `--text` given too, and a path whose type isn't text (an HTML original that has no text of its own, an image).
+- Refresh needs no new logic: it already clears everything but `source.md`; the test proves it.
+- Same change: `--help`, `docs/cli.md`, the `yaks` and `yaks-research` skills; then `gdoc_source.py` passes it (joel-5cee).
