@@ -5,7 +5,7 @@ status: hairy
 type: bug
 priority: 2
 created: '2026-11-06T21:37:13Z'
-updated: '2026-11-06T21:37:13Z'
+updated: '2026-11-06T22:09:26Z'
 tags:
 - cli
 - git
@@ -22,3 +22,8 @@ Before telling anyone to migrate, look at the farm branch's upstream (`origin/ya
 ## Also worth recording
 
 The skills say the farm is "checked out once per machine", but a Delta-managed repository and the user's checkout are two hosts, so two worktrees whose writes meet only through `yaks sync`. Either say so in the `yaks` skill, or make the two share one worktree (keyed by the origin URL rather than the git dir); yaks-9a13 (`repository-…`) touches the same code.
+
+---
+▸ 2026-11-06T22:09:26Z [schism-feedback]
+
+The two-worktrees half is yaks-35b5 (built, not landed). This yak keeps the migrate-message half: suggest fetching when `origin/<branch>` is already on the current schema.
