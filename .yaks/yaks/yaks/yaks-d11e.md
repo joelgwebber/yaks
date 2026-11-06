@@ -20,7 +20,7 @@ From yaks-3f35, item 8. When a note has no `## Saved`, `yaks session note` write
 ## Lean
 
 - When the session has a thread id (a Delta thread), select by it: every note and move already carries `thread:` metadata, so `touched` can take exactly this conversation's notes, with the window only as a fallback for harnesses without one.
-- A backdated note (the backdating sibling) never generates Saved.
+- A backdated note (yaks-0fa7) never generates Saved.
 - When the window is the fallback and there was no previous note, say what window was used in the command's output, so the agent can check it.
 
 ## Evidence

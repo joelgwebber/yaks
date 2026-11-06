@@ -21,4 +21,4 @@ Before telling anyone to migrate, look at the farm branch's upstream (`origin/ya
 
 ## Also worth recording
 
-The skills say the farm is "checked out once per machine", but a Delta-managed repository and the user's checkout are two hosts, so two worktrees whose writes meet only through `yaks sync`. Either say so in the `yaks` skill, or make the two share one worktree (keyed by the origin URL rather than the git dir); the naming sibling (`repository-…`) touches the same code.
+The skills say the farm is "checked out once per machine", but a Delta-managed repository and the user's checkout are two hosts, so two worktrees whose writes meet only through `yaks sync`. Either say so in the `yaks` skill, or make the two share one worktree (keyed by the origin URL rather than the git dir); yaks-9a13 (`repository-…`) touches the same code.
