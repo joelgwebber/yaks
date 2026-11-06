@@ -1,11 +1,11 @@
 ---
 id: yaks-f677
 title: 'Starred TUI batch (2026-11-03): doc links, cursor/nav, filters, sheds, keys'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-03T21:13:42Z'
-updated: '2026-11-03T22:10:12Z'
+updated: '2026-11-06T22:49:17Z'
 tags:
 - tui
 ---
@@ -42,3 +42,17 @@ Progress (delta:starred-batch), on local `main`, not pushed:
 - yaks-907a: the pause is the per-change commit; now waits on yaks-7058.
 
 Commits: 7e67170, d3aa34a, c83fdab, f9ea808, 2ba1622, dab80e4, on top of upstream `c98d7e3` (rebased; the earlier yaks-ec00 work is 2075608). Gate: 1098 tests pass. Installed with `cargo install --path .`.
+
+---
+▸ 2026-11-06T22:49:16Z [sched-1]
+
+Mostly done; hoisted a few stragglers out to the root.
+
+---
+▸ 2026-11-06T22:49:17Z [sched-1]
+kind: move
+from: shaving
+to: shorn
+---
+
+moved: shaving -> shorn
