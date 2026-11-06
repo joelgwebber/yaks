@@ -5,12 +5,12 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-11-06T21:37:11Z'
-updated: '2026-11-06T21:37:49Z'
+updated: '2026-11-06T21:48:01Z'
 parent: yaks-3f35
 tags:
 - doks
 - design
-needs: human
+needs: agent
 ---
 
 From yaks-3f35, item 4. Yaks have attachments (`yaks attach`, stored in `<herd>/yaks/<id>/`); doks and session notes have nothing. The schism import put each image in a directory named after its document, beside it:
@@ -46,3 +46,11 @@ asked: needs human
 Images and other files beside a dok or session note: bless the sibling directory (`doks/x.md` + `doks/x/`, as yaks have `<id>.md` + `<id>/`), with `yaks attach <dok-path>` writing into it and `yaks mv` moving it? Or route every image through `yaks source add`?
 
 Lean: bless the sibling directory for the farm's own artifacts (screenshots it made, diagrams), and keep sources for outside material.
+
+---
+▸ 2026-11-06T21:48:01Z [sched-1]
+kind: answer
+needs: agent
+---
+
+Agreed, I think that's a very easy pattern to follow, and also easy to browse on the filesystem.
