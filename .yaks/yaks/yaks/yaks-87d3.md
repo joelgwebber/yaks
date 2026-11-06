@@ -1,11 +1,11 @@
 ---
 id: yaks-87d3
 title: 'source add --refresh: update a source in place, keyed by its --url'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T01:23:16Z'
-updated: '2026-11-06T01:23:16Z'
+updated: '2026-11-06T01:23:39Z'
 tags:
 - doks
 - cli
@@ -23,3 +23,13 @@ Add an opt-in `yaks source add <path> --url <U> --refresh`: an upsert keyed on t
 yaks stays ignorant of what the URL is: fetching, converting and canonicalising belong to skills (the first is a Google Docs one via `gws`, fullstory-5cee).
 
 Without `--refresh` nothing changes: a saved web page you cited does not move under you.
+
+---
+▸ 2026-11-06T01:23:39Z [source-refresh]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQcsYXd-T6RPSH25f_4VJRspLOAETlkJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
