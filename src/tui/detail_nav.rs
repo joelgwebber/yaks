@@ -320,10 +320,27 @@ impl App {
     /// moves to the yak when the list has it (its ancestors expanded), else
     /// the pane shows it as its own yak, which it says is not in this list.
     pub(crate) fn goto_task(&mut self, id: &str) {
-        if self.task(id).is_none() {
+        self.goto_yak(id, None);
+    }
+
+    /// Follow a note link (`id#<timestamp>`, yaks-c5bd): [`App::goto_task`],
+    /// then the detail cursor on that note's header row, as a `#heading` link
+    /// lands on its heading in the viewer. A note the yak no longer has leaves
+    /// the cursor at the top and says so.
+    pub(crate) fn goto_note(&mut self, id: &str, anchor: &str) {
+        self.goto_yak(id, Some(anchor));
+    }
+
+    fn goto_yak(&mut self, id: &str, note: Option<&str>) {
+        let Some(task) = self.task(id) else {
             self.notification = Some(format!("{id} not found"));
             return;
-        }
+        };
+        // Comment `i` of the body is note `i`; block 0 is the description.
+        let block = note.and_then(|a| {
+            crate::links::find_note(&crate::store::parse_notes(&task.body), a).map(|i| i + 1)
+        });
+        let mut landed = false;
         self.jump(|app| {
             // The dok it was followed from, if any, is replaced.
             app.close_doc();
@@ -344,8 +361,23 @@ impl App {
             }
             app.focus = Focus::Detail;
             app.show_yak_at(id);
+            if let Some(block) = block {
+                let lines = app.detail_dlines();
+                let header = lines
+                    .iter()
+                    .position(|l| l.src.is_some_and(|s| s.block == block && s.lines.is_none()));
+                if let Some(row) = header {
+                    let vp = app.detail_viewport();
+                    app.detail.goto(&lines, vp, row);
+                    landed = true;
+                }
+            }
         });
-        self.notification = Some(format!("→ {id}"));
+        self.notification = Some(match note {
+            Some(a) if landed => format!("→ {id}#{a}"),
+            Some(a) => format!("→ {id} (no note {a})"),
+            None => format!("→ {id}"),
+        });
     }
 
     pub(crate) fn follow_link(&mut self) {
@@ -354,6 +386,7 @@ impl App {
         };
         match j.target {
             detail::Target::Task(id) => self.goto_task(&id),
+            detail::Target::Note { id, anchor } => self.goto_note(&id, &anchor),
             detail::Target::Url(u) => self.open_external(&u),
             detail::Target::Artifact(p) => self.open_external(&p),
             detail::Target::Source { path, lines, rev } => {

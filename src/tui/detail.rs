@@ -17,6 +17,13 @@ use ratatui::style::Modifier;
 #[derive(Clone, PartialEq, Debug)]
 pub enum Target {
     Task(String),
+    /// One note of a yak (`yaks-1a2b#2026-11-04T22:13:03Z`, yaks-c5bd): opens
+    /// the yak with the cursor on that note's header row. `anchor` is the
+    /// fragment as [`crate::links::note_anchor`] writes it.
+    Note {
+        id: String,
+        anchor: String,
+    },
     Url(String),
     /// A markdown image link `![alt](path)` — an attached artifact, opened
     /// externally (path is relative to the farm's `.yaks/` root).
@@ -70,7 +77,11 @@ impl Target {
                     anchor: None,
                 }
             }
-            Target::Task(_) | Target::Url(_) | Target::Footnote(_) | Target::Local(_) => {
+            Target::Task(_)
+            | Target::Note { .. }
+            | Target::Url(_)
+            | Target::Footnote(_)
+            | Target::Local(_) => {
                 return None;
             }
         })

@@ -1098,6 +1098,73 @@ fn follow_link_reveals_collapsed_target() {
     assert!(!app.collapsed.contains("a0"), "ancestor expanded");
 }
 
+/// `a0` links to notes of `a1`, which has three notes (two in one second).
+fn linked_notes() -> App {
+    let mut a0 = task("a0", "Root A", Status::Hairy, 2, None);
+    a0.body = "see [first](a1#2026-09-10T11:00:00Z), [second](a1#2026-09-10T12:00:00Z-1) \
+               and [gone](a1#2026-09-10T13:00:00Z)."
+        .into();
+    let mut a1 = task("a1", "Child A1", Status::Hairy, 3, Some("a0"));
+    a1.body = "Desc.".into();
+    for (ts, text) in [
+        ("2026-09-10T11:00:00Z", "one"),
+        ("2026-09-10T12:00:00Z", "two"),
+        ("2026-09-10T12:00:00Z", "three"),
+    ] {
+        a1.body = crate::store::append_note(&a1.body, ts, Some("joel"), text);
+    }
+    App::new(vec![a0, a1])
+}
+
+#[test]
+fn following_a_note_link_lands_on_that_note_and_o_returns() {
+    // yaks-b6a7
+    let mut app = linked_notes();
+    enter_key(&mut app); // focus detail on a0
+    draw(&app, 80, 20); // measure the pane
+    // The Children row for a1, the first note link, then the second:
+    // `12:00:00Z-1`, the later note of that second.
+    for _ in 0..3 {
+        tab_key(&mut app);
+    }
+    let from = app.detail.line;
+    enter_key(&mut app);
+    assert_eq!(app.selected_id().as_deref(), Some("a1"));
+    let lines = app.detail_dlines();
+    let at = &lines[app.detail.line];
+    assert!(at.text.starts_with("\u{25b8} joel"), "{}", at.text);
+    assert_eq!(
+        lines[app.detail.line + 1].text.trim(),
+        "three",
+        "the cursor is on the third note"
+    );
+    assert_eq!(
+        app.notification.as_deref(),
+        Some("→ a1#2026-09-10T12:00:00Z-1")
+    );
+    press(&mut app, "o");
+    assert_eq!(app.selected_id().as_deref(), Some("a0"));
+    assert_eq!(app.detail.line, from);
+}
+
+#[test]
+fn following_a_link_to_a_missing_note_opens_the_yak_at_the_top() {
+    let mut app = linked_notes();
+    enter_key(&mut app);
+    draw(&app, 80, 20);
+    // The row for a1 under Children, then the three note links.
+    for _ in 0..4 {
+        tab_key(&mut app);
+    }
+    enter_key(&mut app);
+    assert_eq!(app.selected_id().as_deref(), Some("a1"));
+    assert_eq!(app.detail.line, 0);
+    assert_eq!(
+        app.notification.as_deref(),
+        Some("→ a1 (no note 2026-09-10T13:00:00Z)")
+    );
+}
+
 #[test]
 fn follow_link_to_a_dead_yak_shows_it_in_the_pane_and_leaves_the_list() {
     // yaks-cc52, then yaks-a2c5: d0 is Dead and no list shows Dead, so the

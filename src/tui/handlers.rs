@@ -1246,6 +1246,7 @@ impl App {
             },
             // Closes the viewer (the yak replaces it) and opens the yak.
             detail::Target::Task(id) => self.goto_task(&id),
+            detail::Target::Note { id, anchor } => self.goto_note(&id, &anchor),
             detail::Target::Url(u) | detail::Target::Artifact(u) => self.open_external(&u),
             detail::Target::Source { path, lines, rev } => {
                 self.open_source(&path, lines, rev.as_deref())
@@ -1413,6 +1414,7 @@ impl App {
                     self.open_farm_doc(&path, rev.as_deref(), anchor.as_ref())
                 }
                 detail::Target::Task(_)
+                | detail::Target::Note { .. }
                 | detail::Target::Footnote(_)
                 | detail::Target::Local(_) => {
                     self.notification = Some("not an artifact/link".into())

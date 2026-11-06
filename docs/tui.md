@@ -577,6 +577,11 @@ every tab. `o` goes back and `i` forward, in any pane and in the list.
   or the query hides it; a dead yak; any yak from the Doks or Sheds view) and
   its header says `not in this list`. Moving the cursor, `J`/`K`, `Esc`, `h`
   and switching view show the list's own row again.
+- **A note link** (`yaks-1a2b#2026-11-04T22:13:03Z`, as `yaks update --note`
+  prints it) is a link to a yak that also puts the detail cursor on that
+  note's header row, scrolled into view, as a `#heading` lands on its heading
+  in the viewer. A note the yak no longer has opens the yak at the top and the
+  notification says `no note <timestamp>`. `o` comes back, as for any yak link.
 - **`o`/`i` restore** the view (a view deleted meanwhile falls back to the
   subject's status view, else the first), the filter and query, the cursor
   row, the list's scroll and the pane. A row that left the list or a yak that

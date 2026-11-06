@@ -418,8 +418,8 @@ pub(crate) fn yank_text(lines: &[DLine], lo: usize, hi: usize, blocks: &[&str]) 
 
 /// Where a link points, for the status bar: a collapsed `[text](url)` shows
 /// only its text, so its destination is shown there instead. URLs,
-/// attachments, source files, farm documents and in-page anchors; yak ids and
-/// footnotes speak for themselves.
+/// attachments, source files, farm documents, notes and in-page anchors; yak
+/// ids and footnotes speak for themselves.
 pub(crate) fn link_dest(target: Target) -> Option<String> {
     use crate::links::{Link, label};
     match target {
@@ -429,6 +429,10 @@ pub(crate) fn link_dest(target: Target) -> Option<String> {
         }
         Target::Farm { path, rev, anchor } => Some(label(&Link::Farm { path, rev, anchor })),
         Target::Local(a) => Some(label(&Link::Local(a))),
+        Target::Note { id, anchor } => Some(label(&Link::Yak {
+            id,
+            note: Some(anchor),
+        })),
         Target::Task(_) | Target::Footnote(_) => None,
     }
 }
