@@ -1,0 +1,9 @@
+$ yaks update yaks-bca6 --note - ...
+Updated yaks-bca6: note yaks-bca6#2026-11-06T04:56:54Z
+
+$ yaks peek yaks-bca6#2026-11-06T04:31:03Z
+
+$ yaks peek yaks-d26a#2026-11-01T23:51:14Z-1   # second note of that second
+
+$ yaks peek yaks-bca6#2026-01-01T00:00:00Z
+error: /private/var/folders/j3/ngc8z3h567v_l779rt0gtdlw0000gp/T/delta-scratch-.delta-fs-l0K1TT is not inside a git repository. A yaks farm lives on a branch of one: run yaks from a checkout, or set YAKS_DIR to a farm

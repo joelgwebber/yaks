@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:28:29Z'
-updated: '2026-11-06T04:57:07Z'
+updated: '2026-11-06T04:57:29Z'
 parent: yaks-1c89
 depends_on:
 - yaks-bca6
@@ -37,3 +37,5 @@ result: pass
 ---
 
 verify: `cargo test --test links && cargo test --bin yaks a_note_link` -> PASS (exit 0)
+
+[note-links](yaks-c5bd/note-links.txt)
