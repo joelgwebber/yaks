@@ -5,7 +5,8 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-06T21:28:20Z'
-updated: '2026-11-06T21:37:39Z'
+updated: '2026-11-06T22:52:23Z'
+parent: yaks-3f35
 tags:
 - tui
 ---
