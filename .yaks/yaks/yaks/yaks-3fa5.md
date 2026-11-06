@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-06T04:28:30Z'
-updated: '2026-11-06T04:57:04Z'
+updated: '2026-11-06T04:57:21Z'
 parent: yaks-1c89
 depends_on:
 - yaks-17f5
@@ -35,3 +35,11 @@ thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-06T04:57:21Z [herd-upkeep]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --bin yaks skills && cargo test --test init_modes` -> PASS (exit 0)
