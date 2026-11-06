@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 3
 created: '2026-11-06T04:28:32Z'
-updated: '2026-11-06T04:28:32Z'
+updated: '2026-11-06T23:12:41Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -19,3 +19,8 @@ Smaller gaps against Hearth's tools, each a hand edit today:
 - **Backdate an import** (`HEARTH_DATE` / `-date`): commits and saved sources dated to the day the imported notes describe.
 
 Split any that grows.
+
+---
+▸ 2026-11-06T23:12:41Z [herd-upkeep-2]
+
+Scope (herd-upkeep-2, 2026-11-06): the third bullet, backdating, is now yaks-0fa7 (under yaks-3f35, another thread's), which covers session notes and promotions. This yak keeps marking sources and writing schemas.
