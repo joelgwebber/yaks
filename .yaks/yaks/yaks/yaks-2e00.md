@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T04:57:49Z'
-updated: '2026-11-06T23:18:30Z'
+updated: '2026-11-06T23:38:37Z'
 parent: yaks-1c89
 tags:
 - cli
@@ -45,3 +45,11 @@ Progress: implemented. `Farm::backrefs` now also fills `TaskBackRefs.docs` (new 
 Decision: doks/session notes go in a separate `docs` list (JSON key `docs`, text lines after the yaks), not as a new `BackRefVia` variant or extra `incoming` objects. Rejected: a `BackRefVia` variant, since `BackRef` needs a yak id/title/status and the TUI picker (`backrefs_in`) consumes it; extra `incoming` objects without an `id` would break JSON consumers of the yak entries.
 
 Decision: only markdown links count (what `links::edges` reads, as the claim says), so a bare id in a dok's prose is not listed. `yaks find <id> --kind sessions` still finds those; the yaks-upkeep skill line says so. Rejected: also running `refs::scan` over dok bodies: a second scanner, and the claim named edges.
+
+---
+▸ 2026-11-06T23:38:37Z [refs-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
