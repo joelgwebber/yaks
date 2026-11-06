@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-11-06T04:57:49Z'
-updated: '2026-11-06T23:38:44Z'
+updated: '2026-11-06T23:54:20Z'
 parent: yaks-1c89
 tags:
 - cli
@@ -68,3 +68,13 @@ thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjn95IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-06T23:54:20Z [herd-upkeep-2]
+kind: landed
+commit: 487a2508fa5c3cdcf5702fbf6a5a56fc37553dc7
+source: a6985098e663bbcec22f0beab53f2f18aae3554a
+branch: main
+---
+
+landed: 487a2508 yaks-2e00: refs --incoming lists doks and session notes that link the yak
