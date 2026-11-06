@@ -5,13 +5,14 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:28:30Z'
-updated: '2026-11-06T04:57:02Z'
+updated: '2026-11-06T04:57:03Z'
 parent: yaks-1c89
 depends_on:
 - yaks-17f5
 tags:
 - cli
 - doks
+verify: cargo test --test sessions
 ---
 
 The mechanical half of Hearth's local `session-review` job (`hearth-d740`): find session notes nobody has reviewed yet, and mark one reviewed.
