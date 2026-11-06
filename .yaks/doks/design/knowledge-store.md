@@ -40,4 +40,4 @@ Every clone of a code repository fetches the farm branch too. `yaks weight` meas
 
 - [ ] Range comparisons in `page query --where` (dates, numbers), as Hearth's `page_query` has.
 - [ ] Fewer git calls per write: 49 against 22 without per-change commits ([yaks-7058](yaks-7058)).
-- [ ] When Hearth moves onto a yak herd, which of its jobs (nightly check, session review) become yaks commands and which stay in the harness.
+- [ ] When Hearth moves onto a yak herd, which of its jobs (nightly check, session review) become yaks commands and which stay in the harness. Being worked out under yaks-1c89.
