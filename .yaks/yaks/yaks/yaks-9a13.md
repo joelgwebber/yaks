@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-06T21:37:27Z'
-updated: '2026-11-06T22:00:50Z'
+updated: '2026-11-06T22:09:25Z'
 tags:
 - cli
 - delta
@@ -30,3 +30,8 @@ thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-06T22:09:25Z [schism-feedback]
+
+Fixed together with yaks-35b5 on branch `shared-farm-home` (fc891687): a repository with an `origin` is named after the URL's last segment, so Delta's `repository.git` gives `schism-<hash>`. Existing worktrees keep working because a registered worktree wins; see the evidence on yaks-35b5.
