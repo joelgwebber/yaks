@@ -1,11 +1,11 @@
 ---
 id: yaks-87d3
 title: 'source add --refresh: update a source in place, keyed by its --url'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-06T01:23:16Z'
-updated: '2026-11-06T01:32:34Z'
+updated: '2026-11-06T01:32:35Z'
 tags:
 - doks
 - cli
@@ -54,3 +54,13 @@ Done and tested.
 - Help text, `docs/cli.md`, the `yaks` and `yaks-research` skills updated in the same change.
 
 Evidence: four new unit tests (refresh in place, plain add never refreshes, `--refresh` needs `--url`, ambiguous URL), a scripted run of the built binary (Saved, Already saved, Refreshed, Already saved), and the full `cargo test` green (964 unit tests plus the integration suites).
+
+---
+▸ 2026-11-06T01:32:35Z [source-refresh]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQcsYXd-T6RPSH25f_4VJRspLOAETlkJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
