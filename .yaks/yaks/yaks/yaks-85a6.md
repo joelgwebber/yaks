@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T21:28:20Z'
-updated: '2026-11-06T23:09:18Z'
+updated: '2026-11-06T23:09:19Z'
 parent: yaks-3f35
 tags:
 - tui
@@ -32,3 +32,5 @@ thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
 moved: hairy -> shaving
 
 ![tui-doks](yaks-85a6/tui-doks.png "The Doks tab with the fixture's session note after the doks and the source")
+
+[session-frame](yaks-85a6/session-frame.txt)

@@ -1,0 +1,50 @@
+=== frame 30 · 150x48 · focus=detail · view=📖 Doks · cursor=24 · rows=42 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · doks=42 · entry=sessions/2025/03/claude-code-2025-03-31-1211-load-a-glb-table-model.md ===
+ 🦬 Hairy (2)   🪒 Shaving (0)   🐑 Shorn (100)   🕒 Recent (50)   ⭐ Starred (0)   📖 Doks (23)   🛖 Sheds (0)
+
+ BRP feedback loop     howto       #tooling #br  do│ 📖 sessions/2025/03/claude-code-2025-03-31-1211-load-a-glb-table-model.md  session-review
+ Development workflow  howto       #tooling      do│ type:        session-review
+ Composite blocked-ou  screenshot  #stacking     do│ title:       Load a GLB table model
+ First blocks demo     screenshot  #spaces       do│ source:      session-note
+ Boundary-centered fa  screenshot  #spaces       do│ actor:       claude-code
+ Coplanar walls witho  screenshot  #spaces       do│ person:      Joel Webber
+ Inter-block edges an  screenshot  #spaces       do│ host:        joel
+ Blocks demo at 1.5 m  screenshot  #spaces       do│ harness:     claude-code
+ Layer junctions fixe  screenshot  #spaces       do│ day:         2025-03-31
+ Layer-junction artif  screenshot  #spaces       do│ reviewed:    2025-03-31T16:11:00Z
+ Engine architecture   topic       #engine       do│ partial:     1
+ Bevy versions         topic       #engine #dep  do│ promoted:    2025-04-08
+ Cell units            topic       #engine #uni  do│
+ Fiction and puzzle d  topic       #design #fic  do│ Summary
+ Materials             topic       #design #ren  do│
+ Schism overview       topic       #index        do│ Swapped the scene's cube for the table model in assets/meshes/table.glb. It loads as a
+ Physics               topic       #engine #phy  do│ SceneBundle from meshes/table.glb#Scene0 through the AssetServer. The app started without
+ Primitives and meshe  topic       #engine #mes  do│ errors, but I never confirmed on screen that the model rendered or that the asset path resolved.
+ Spaces and blocks     topic       #engine #spa  do│ Joel stopped me while I was checking the project layout. The screenshot from the end of the
+ Stacking and placeme  topic       #engine #sta  do│ session shows that it did render.
+ Template parameters   topic       #engine #tem  do│
+ Entity templates      topic       #engine #tem  do│ 🖼 The GLB table standing on the green ground plane
+ Vision: the map is t  topic       #design       do│
+ Pick a Bevy version   session                   se│
+ Load a GLB table mod  session                   se│
+ Design entity templa  session                   se│                                                               ▄▄▄
+ Make physics a regul  session                   se│                                              ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+ Mesh and material fa  session                   se│                              ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄               ▄▄▄▄▄▄
+ On-demand loading an  session                   se│             ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄            ▄▄▄▄▄▄▄▄▄▄             ▄▄▄▄▄▄
+ Fix untagged RON par  session                   se│         ▄▄▄▄▄▄▄▄▄▄▄                     ▀▀▄▄▄▄▄▄▄▀▀▀▀▀▀▀▀▀▄▄               ▄▄▄▄▄▄
+ Template args and sc  session                   se│          ▄                              ▄▄▀▀▀▄▄▄▄▄▄▄▀▀▀▀▀▀▀▀                  ▄▄▄▄▄▄
+ Merge child and pend  session                   se│         ▄▄                             ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▄▄▄                       ▄▄▄▄▄▄
+ First Rapier physics  session                   se│         ▄▄                             ▄▄▄▄▄▄▀▀▄▄▄▄▄▄▄▄▄▀▀▀                           ▄▄▄▄▄▄
+ Decompose templates   session                   se│         ▄▄                               ▄▄▄▄▄▄▄▄▄      ▄▄▄▀                              ▄▄▄▄▄▄
+ Dev workflow tooling  session                   se│         ▄▄                                 ▄▄▀                                               ▄▄▄
+ Debug modes, overlay  session                   se│         ▄▄
+ Interactive pick and  session                   se│         ▄▄
+ Simplify stacking to  session                   se│         ▄▄
+ Composite objects an  session                   se│ ── peek ────────────────────────────────────────────────────────────────────────────────────────
+ Space and Block geom  session                   se│
+ Close out uniform 1.  session                   se│
+ Move devlog, design   session                   se│
+                                                   │
+                                                   │
+                                                   │
+j/k · Tab:link Enter:follow · o/i back/fwd · p peek · / find · v sel · E edit · O open externally · Esc/h close · q quit
+=== end ===
