@@ -1,11 +1,11 @@
 ---
 id: yaks-3fa5
 title: 'Skill: yaks-upkeep (session notes, session review, housekeeping)'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-06T04:28:30Z'
-updated: '2026-11-06T04:28:35Z'
+updated: '2026-11-06T04:57:02Z'
 parent: yaks-1c89
 depends_on:
 - yaks-17f5
@@ -24,3 +24,13 @@ Covers:
 - **Registering them:** each is a recurring yak with `--wake agent` (`yaks-scheduling`), created once per farm, whose description points at this skill. `yaks-research`'s "don't fix other people's doks unasked" needs a line saying a housekeeping pass is the asked-for case.
 
 Cold-read it with a cheap model after writing (AGENTS.md).
+
+---
+▸ 2026-11-06T04:57:02Z [herd-upkeep]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
