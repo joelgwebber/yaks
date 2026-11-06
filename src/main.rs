@@ -1709,7 +1709,15 @@ enum DokAction {
         replace: bool,
     },
     /// List doks whose fields match: `--type T`, `--where key=value`
-    /// (repeatable, ANDed; a list field matches when it holds the value).
+    /// (repeatable, ANDed).
+    ///
+    /// A plain value matches exactly; a list field matches when any item
+    /// does. Operators in front of the value: `key=~text` contains (ignoring
+    /// case), `key=<x` `key=<=x` `key=>x` `key=>=x` compare (numbers
+    /// numerically, otherwise as text, so YYYY-MM-DD dates order right),
+    /// `key=!x` does not equal x (a missing field matches), `key=` is
+    /// missing or empty.
+    ///
     /// `--rows` lists the rows of matching table doks instead (the first
     /// markdown table in each, one row per line), filtered by the same
     /// `--where` tests on the row's columns.
@@ -1719,7 +1727,7 @@ enum DokAction {
         rows: bool,
         #[arg(long = "type")]
         kind: Option<String>,
-        #[arg(long = "where", value_name = "KEY=VALUE")]
+        #[arg(long = "where", value_name = "KEY=[OP]VALUE")]
         where_: Vec<String>,
         /// Only doks under this path.
         #[arg(long)]
@@ -4409,10 +4417,14 @@ fn run_dok(farm: &Farm, action: DokAction) -> Result<()> {
                 .filter(|p| under(p, &prefix) && kind.as_ref().is_none_or(|k| &p.kind() == k))
             {
                 for row in schemas::table_rows(&p.body) {
-                    if tests
-                        .iter()
-                        .all(|(k, v)| row.iter().any(|(c, x)| c == k && x == v))
-                    {
+                    if tests.iter().all(|(k, v)| {
+                        let cells: Vec<String> = row
+                            .iter()
+                            .filter(|(c, _)| c == k)
+                            .map(|(_, x)| x.clone())
+                            .collect();
+                        doks::value_matches(&cells, v)
+                    }) {
                         let mut m = serde_json::Map::new();
                         m.insert("dok".into(), p.path.clone().into());
                         for (c, x) in row {

@@ -251,7 +251,7 @@ A dok is markdown with YAML frontmatter in OKF's shape: `type:` (`note`, the def
 - `dok show <path>` prints the file; `--json` gives `path`, `type`, `title`, `herd` (null for the farm-wide doks), `fields` parsed, and `body`.
 - `dok new <path> [--type T] [--title T] [--set key=value ...] [--body TEXT | --body-file PATH]` creates a dok. The path must be `doks/<parts>.md` or `<herd>/doks/<parts>.md`, every part lowercase-kebab (`a-z`, `0-9`, `-`); an existing file is refused. The title defaults to the file name (`heat-pump.md` → `Heat pump`).
 - `dok set <path> [--set key=value ...] [--unset key ...] [--body ... | --body-file ...]` edits fields (rewriting only those keys) or replaces the body. An empty value removes a field.
-- `dok query [--type T] [--where key=value ...] [--prefix P]` lists doks whose fields match, all tests ANDed; a list field (`tags`) matches when it holds the value.
+- `dok query [--type T] [--where key=value ...] [--prefix P]` lists doks whose fields match, all tests ANDed; a list field (`tags`) matches when any item does. A plain value matches exactly; an operator in front of it changes the test: `key=~text` contains (ignoring case), `key=<x` `<=x` `>x` `>=x` compare (numbers numerically, otherwise as text, so `YYYY-MM-DD` dates order correctly: `--where "renews=<2026-12-01"`), `key=!x` is not equal (a missing field, or a list without `x`, matches), and `key=` is missing or empty. The same tests filter `--rows` on a column.
 
 `--set` values parse like `update --set`: `[a, b]` is a list, `{a: b}` a map. `--body -` reads stdin. Editing a dok by hand is fine; `yaks doctor` checks doks (below). `list` and `query` take `--json`.
 

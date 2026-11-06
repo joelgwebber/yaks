@@ -164,3 +164,46 @@ fn refusals_and_doctor() {
     assert_eq!(v[0]["kind"], "dok-problem");
     assert_eq!(v[0]["ids"][0], "doks/loose.md");
 }
+
+#[test]
+fn query_where_compares_dates_and_finds_missing_fields() {
+    let f = Farm::new("ops");
+    for (name, renews) in [("a", "2026-11-30"), ("b", "2027-02-01")] {
+        f.run(&[
+            "dok",
+            "new",
+            &format!("doks/topics/{name}.md"),
+            "--set",
+            &format!("renews={renews}"),
+        ]);
+    }
+    f.run(&["dok", "new", "doks/topics/c.md"]);
+    let paths = |args: &[&str]| -> Vec<String> {
+        let mut a = vec!["dok", "query", "--json"];
+        a.extend_from_slice(args);
+        let v: Value = serde_json::from_str(&f.run(&a)).unwrap();
+        v.as_array()
+            .unwrap()
+            .iter()
+            .map(|d| d["path"].as_str().unwrap().to_string())
+            .collect()
+    };
+    assert_eq!(
+        paths(&["--where", "renews=<2026-12-01"]),
+        ["doks/topics/a.md"]
+    );
+    assert_eq!(
+        paths(&["--where", "renews=>=2026-12-01"]),
+        ["doks/topics/b.md"]
+    );
+    assert_eq!(paths(&["--where", "renews="]), ["doks/topics/c.md"]);
+    assert_eq!(
+        paths(&["--where", "renews=!2026-11-30"]),
+        ["doks/topics/b.md", "doks/topics/c.md"]
+    );
+    assert_eq!(paths(&["--where", "title=~B"]), ["doks/topics/b.md"]);
+    assert_eq!(
+        paths(&["--where", "renews=2026-11-30"]),
+        ["doks/topics/a.md"]
+    );
+}

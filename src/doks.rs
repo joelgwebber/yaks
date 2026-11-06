@@ -376,24 +376,141 @@ pub fn check(root: &Path) -> Result<Vec<DokIssue>> {
     Ok(out)
 }
 
-/// A `--where key=value` test against one dok: the field's scalar equals
-/// `value`, or its list holds it. `type` and `tags` read through the dok's
-/// defaults.
-pub fn matches(dok: &Dok, key: &str, value: &str) -> bool {
-    match key {
-        "type" => dok.kind() == value,
-        "tags" | "tag" => dok.tags().iter().any(|t| t == value),
+/// A `--where key=value` test against one dok: the values the field holds
+/// (a scalar is one value, a list its items; `type` and `tags` read through
+/// the dok's defaults) tested by [`value_matches`].
+pub fn matches(dok: &Dok, key: &str, expr: &str) -> bool {
+    let values: Vec<String> = match key {
+        "type" => vec![dok.kind()],
+        "tags" | "tag" => dok.tags(),
         _ => match dok.fields.get(key) {
-            Some(Value::List(items)) => items.iter().any(|i| i.as_str() == Some(value)),
-            Some(v) => v.as_str() == Some(value),
-            None => false,
+            Some(Value::List(items)) => items
+                .iter()
+                .filter_map(|i| i.as_str().map(String::from))
+                .collect(),
+            Some(v) => v.as_str().map(String::from).into_iter().collect(),
+            None => Vec::new(),
         },
+    };
+    value_matches(&values, expr)
+}
+
+/// One `key=<expr>` test against the values a field holds (none when it is
+/// missing). `expr` is a plain value (exact match), or starts with an
+/// operator:
+///
+/// - `~text`: contains `text`, ignoring case;
+/// - `<x`, `<=x`, `>x`, `>=x`: compares, numerically when both sides are
+///   numbers, otherwise as text (so `YYYY-MM-DD` dates order correctly);
+/// - `!x`: does not equal `x` (a missing field matches; a list matches when
+///   it holds no `x`);
+/// - empty: the field is missing or empty.
+///
+/// Every other form matches when any one value does.
+pub fn value_matches(values: &[String], expr: &str) -> bool {
+    use std::cmp::Ordering;
+    let any = |f: &dyn Fn(&str) -> bool| values.iter().any(|v| f(v));
+    if expr.is_empty() {
+        return values.iter().all(|v| v.trim().is_empty());
     }
+    if let Some(x) = expr.strip_prefix('!') {
+        return !any(&|v| v == x);
+    }
+    if let Some(x) = expr.strip_prefix('~') {
+        let x = x.to_lowercase();
+        return any(&|v| v.to_lowercase().contains(&x));
+    }
+    let compare = |x: &str, ok: fn(Ordering) -> bool| {
+        any(&|v| {
+            let ord = match (v.trim().parse::<f64>(), x.trim().parse::<f64>()) {
+                (Ok(a), Ok(b)) => a.partial_cmp(&b),
+                _ => Some(v.cmp(x)),
+            };
+            ord.is_some_and(ok)
+        })
+    };
+    if let Some(x) = expr.strip_prefix("<=") {
+        return compare(x, Ordering::is_le);
+    }
+    if let Some(x) = expr.strip_prefix(">=") {
+        return compare(x, Ordering::is_ge);
+    }
+    if let Some(x) = expr.strip_prefix('<') {
+        return compare(x, Ordering::is_lt);
+    }
+    if let Some(x) = expr.strip_prefix('>') {
+        return compare(x, Ordering::is_gt);
+    }
+    any(&|v| v == expr)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn vals(v: &[&str]) -> Vec<String> {
+        v.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn a_plain_value_is_an_exact_match_on_any_item() {
+        assert!(value_matches(&vals(&["a", "b"]), "b"));
+        assert!(!value_matches(&vals(&["ab"]), "b"));
+        assert!(!value_matches(&[], "b"));
+    }
+
+    #[test]
+    fn contains_ignores_case_and_reads_any_item() {
+        assert!(value_matches(&vals(&["Heat Pump"]), "~heat"));
+        assert!(value_matches(&vals(&["x", "Pump"]), "~PUMP"));
+        assert!(!value_matches(&vals(&["x"]), "~pump"));
+        assert!(!value_matches(&[], "~pump"));
+    }
+
+    #[test]
+    fn compare_is_numeric_for_numbers_and_textual_for_dates() {
+        assert!(value_matches(&vals(&["9"]), "<10"), "9 < 10 numerically");
+        assert!(!value_matches(&vals(&["9"]), ">10"));
+        assert!(value_matches(&vals(&["10.5"]), ">=10.5"));
+        assert!(value_matches(&vals(&["10.5"]), "<=10.50"));
+        assert!(value_matches(&vals(&["2026-11-30"]), "<2026-12-01"));
+        assert!(!value_matches(&vals(&["2026-12-01"]), "<2026-12-01"));
+        assert!(value_matches(&vals(&["2026-12-01"]), "<=2026-12-01"));
+        assert!(value_matches(&vals(&["2027-01-02"]), ">2026-12-31"));
+        assert!(value_matches(&vals(&["a", "2027-01-02"]), ">2026-12-31"));
+        assert!(!value_matches(&[], ">2026-12-31"), "missing never compares");
+    }
+
+    #[test]
+    fn not_equal_matches_a_missing_field_and_a_list_without_the_value() {
+        assert!(value_matches(&vals(&["no"]), "!yes"));
+        assert!(!value_matches(&vals(&["yes"]), "!yes"));
+        assert!(value_matches(&[], "!yes"));
+        assert!(!value_matches(&vals(&["a", "yes"]), "!yes"));
+    }
+
+    #[test]
+    fn empty_means_missing_or_empty() {
+        assert!(value_matches(&[], ""));
+        assert!(value_matches(&vals(&[""]), ""));
+        assert!(value_matches(&vals(&[" "]), ""));
+        assert!(!value_matches(&vals(&["x"]), ""));
+        assert!(!value_matches(&vals(&["", "x"]), ""));
+    }
+
+    #[test]
+    fn dok_fields_read_through_the_same_tests() {
+        let d = Dok::parse(
+            "doks/a.md",
+            "---\ntype: appliance\ntitle: A\nrenews: 2026-11-30\ntags: [home, hvac]\n---\n",
+        );
+        assert!(matches(&d, "renews", "<2026-12-01"));
+        assert!(matches(&d, "type", "~appl"));
+        assert!(matches(&d, "tags", "!old"));
+        assert!(matches(&d, "reviewed", ""));
+        assert!(!matches(&d, "renews", ""));
+        assert!(matches(&d, "title", "A"));
+    }
 
     fn farm(tag: &str) -> PathBuf {
         let root = std::env::temp_dir().join(format!("yaks-doks-{tag}-{}", std::process::id()));
