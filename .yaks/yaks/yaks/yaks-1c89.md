@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:27:55Z'
-updated: '2026-11-06T04:57:01Z'
+updated: '2026-11-06T05:10:09Z'
 parent: yaks-44b3
 tags:
 - doks
@@ -56,3 +56,15 @@ thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-06T05:10:09Z [herd-upkeep]
+
+Built the session-notes path on branch `upkeep` of the yaks repo (505d2058, 40dea8f0, d78b25a7), not yet landed on `main`:
+
+- yaks-c5bd note links, yaks-17f5 `yaks session note|touched`, yaks-e58f `session list --unreviewed|promote`, yaks-3fa5 the `yaks-upkeep` skill: all shorn, each with a `verify` PASS.
+- The first real session note: [/sessions/2026/11/herd-upkeep-2026-11-06-0008-upkeep-in-yaks-assessment-note-links-ses.md](/sessions/2026/11/herd-upkeep-2026-11-06-0008-upkeep-in-yaks-assessment-note-links-ses.md).
+- Installed with `cargo install --path .` from the branch, and `yaks skills install --user --force` so `~/.agents/skills` has the new skill text.
+- New follow-ups: yaks-b6a7 (TUI lands on the note), yaks-2e00 (`refs --incoming` over doks and sessions), yaks-525b (actor on hand edits).
+
+Still open here: the agent-layer tools (yaks-fcdc) and the reflection design (yaks-7168). Next step is Joel trying the review and housekeeping procedures on real examples.
