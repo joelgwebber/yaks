@@ -15,7 +15,8 @@ from `<path>`).
 
 Every farm is a **farm branch**: an orphan branch (`yaks`, or `git config
 yaks.branch`) whose tree is only `.yaks/`, checked out once per machine at
-`$XDG_DATA_HOME/yaks/farms/<repo>-<hash>` (`~/.local/share/...`). Every command
+`$XDG_DATA_HOME/yaks/farms/<repo>-<hash>` (`~/.local/share/...`; see "One
+worktree per repository" below). Every command
 except `init` uses the first of:
 
 1. **`$YAKS_DIR`**: a `.yaks/` directory, or a directory containing one
@@ -43,6 +44,32 @@ is a BARE repo (a cloud runner's managed repo, which nobody works in) adds the
 worktree to the host, so every clone of it shares the farm; when the host lacks
 the farm branch it is fetched from the host's `origin` first. `YAKS_NO_BOOTSTRAP=1`
 turns all of that off.
+
+**One worktree per repository.** The farm home is named after the
+repository's `origin` URL (`schism-<hash>` for
+`github.com/rocketsurgery-games/schism`, whatever the scheme or `.git`
+suffix), so separate git dirs holding one repository, such as your own
+checkout and the bare repository Delta manages for it, share one farm
+worktree: a repository with no worktree of its own uses the one at its farm
+home when that is on the farm branch and has the same `origin`. Writes from
+your checkout and from Delta's clones meet at once, with no `yaks sync` between
+them. A repository with no `origin` is named by its git dir, as before.
+
+A machine that already has two worktrees for one repository (made before
+this) keeps using both until you merge them. Get them in step first: `yaks
+sync` in each until both are committed and at the same commit (`git -C
+<worktree> log -1`). Then remove both worktrees (the `yaks` branch and its
+commits stay in each git dir) and run any yaks command in your checkout, which
+makes the one shared worktree at the new farm home; Delta's clones find it from
+then on:
+
+```sh
+git -C <other git dir> worktree remove <its farm worktree>
+git -C <checkout> worktree remove <its farm worktree>
+yaks -C <checkout> path   # prints "created the farm worktree ..."
+```
+
+Restart a running `yaks tui` afterwards.
 
 ## Filter flags (shared)
 

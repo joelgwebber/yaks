@@ -17,7 +17,7 @@ A plain CLI, run from the shell (no slash commands, nothing to keep running): `y
 
 ## Where the farm lives
 
-The farm is an orphan branch (`yaks`) holding only `.yaks/`, checked out once per machine under `~/.local/share/yaks/farms/`. Every checkout of the repo (yours, the human's, each agent clone) reads and writes that one farm, so yak edits are live everywhere.
+The farm is an orphan branch (`yaks`) holding only `.yaks/`, checked out once per machine under `~/.local/share/yaks/farms/`. Every checkout of the repo (yours, the human's, each agent clone, and any other copy of the repository with the same `origin` URL) reads and writes that one farm, so yak edits are live everywhere.
 
 ```sh
 yaks path                  # which farm am I on?

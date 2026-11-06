@@ -237,8 +237,9 @@ npx openskills install joelgwebber/yaks
 
 The farm is an orphan branch (`yaks`) holding only `.yaks/`, checked out once
 per machine under `~/.local/share/yaks/farms/`. Every checkout of the repo
-(the main one, git worktrees, agent clones) finds it, so edits are live
-everywhere and no code commit ever contains a yak.
+(the main one, git worktrees, agent clones, and Delta's own copy of the repo,
+which shares it by `origin` URL) finds it, so edits are live everywhere and no
+code commit ever contains a yak.
 
 ```sh
 yaks init                          # new repo: create the `yaks` branch + worktree

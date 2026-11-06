@@ -210,12 +210,17 @@ pub const FARM_BRANCH: &str = "yaks";
 /// `$XDG_DATA_HOME/yaks/farms/<repo>-<8 hex>`, else
 /// `$HOME/.local/share/yaks/farms/...` (on every platform, as the TUI's
 /// views pick `$XDG_CONFIG_HOME`/`~/.config`), else
-/// `%LOCALAPPDATA%\yaks\farms\...` when `HOME` is unset. `<repo>` is the
+/// `%LOCALAPPDATA%\yaks\farms\...` when `HOME` is unset.
+///
+/// A repository with an `origin` remote is named by it ([`origin_identity`]):
+/// `<repo>` is the URL's last segment and the hex a stable hash of the whole
+/// normalized URL, so unrelated git dirs holding one repository (the human's
+/// checkout and Delta's managed bare repo, yaks-35b5) agree on one home and
+/// share its worktree ([`farm_worktree`]). Without one, `<repo>` is the
 /// directory name of the repository's main checkout (its host's, from a Delta
 /// clone) and the hex a stable hash of the host's canonical git dir
-/// ([`crate::gitrepo::host`]), so every checkout of one repository on a machine
-/// agrees and two repos with the same name do not collide. `yaks migrate
-/// --to-branch` puts the worktree here unless told otherwise.
+/// ([`crate::gitrepo::host`]). Either way every checkout of one repository on
+/// a machine agrees and two repos with the same name do not collide.
 pub fn farm_home(repo: &Path) -> PathBuf {
     farm_home_with(repo, |k| std::env::var(k).ok())
 }
@@ -228,6 +233,15 @@ pub fn farm_home_with(repo: &Path, env: impl Fn(&str) -> Option<String>) -> Path
         .or_else(|| set("HOME").map(|h| h.join(".local").join("share")))
         .or_else(|| set("LOCALAPPDATA"))
         .unwrap_or_else(std::env::temp_dir);
+    let farms = base.join("yaks").join("farms");
+    let named = |name: &str, key: &str| {
+        let h = stable_hash(key);
+        farms.join(format!("{name}-{}", &format!("{h:016x}")[..8]))
+    };
+    if let Some(id) = origin_identity(repo) {
+        let name = id.rsplit(['/', ':']).next().unwrap_or("repo");
+        return named(if name.is_empty() { "repo" } else { name }, &id);
+    }
     let host = crate::gitrepo::host(repo);
     let git_dir = host.as_ref().map_or_else(
         || fs::canonicalize(repo).unwrap_or_else(|_| repo.to_path_buf()),
@@ -254,10 +268,82 @@ pub fn farm_home_with(repo: &Path, env: impl Fn(&str) -> Option<String>) -> Path
             }
         })
         .unwrap_or_else(|| "repo".to_string());
-    let h = stable_hash(&git_dir.to_string_lossy());
-    base.join("yaks")
-        .join("farms")
-        .join(format!("{name}-{}", &format!("{h:016x}")[..8]))
+    named(&name, &git_dir.to_string_lossy())
+}
+
+/// The repository at `dir` named the same way from every git dir that holds
+/// it: its `origin` URL (the host's, from a Delta clone), normalized by
+/// [`normalize_remote_url`]. `None` without an `origin`.
+pub(crate) fn origin_identity(dir: &Path) -> Option<String> {
+    normalize_remote_url(&repo_config(dir, "remote.origin.url")?)
+}
+
+/// A remote URL reduced to `host/path`, whatever its spelling: no scheme, no
+/// `user@`, no trailing `/` or `.git`, the host lowercased. The scp form
+/// (`git@github.com:org/repo.git`) and `https://github.com/org/repo` both
+/// give `github.com/org/repo`. A local path (`/src/repo/.git`,
+/// `file:///src/repo`) is kept as a path, without its `.git`.
+pub(crate) fn normalize_remote_url(url: &str) -> Option<String> {
+    let url = url.trim();
+    let (rest, scheme) = match url.split_once("://") {
+        Some((s, r)) => (r, Some(s)),
+        None => (url, None),
+    };
+    let local = scheme == Some("file")
+        || (scheme.is_none() && (rest.starts_with(['/', '.', '~']) || !rest.contains(':')));
+    let mut out = if local {
+        rest.to_string()
+    } else {
+        // `[user@]host[:port]/path` (a URL) or `[user@]host:path` (scp).
+        let (authority, path) = match scheme {
+            Some(_) => rest.split_once('/').unwrap_or((rest, "")),
+            None => rest.split_once(':').unwrap_or((rest, "")),
+        };
+        let host = authority.rsplit_once('@').map_or(authority, |(_, h)| h);
+        let host = host.split(':').next().unwrap_or(host);
+        format!("{}/{}", host.to_lowercase(), path.trim_start_matches('/'))
+    };
+    loop {
+        let before = out.len();
+        out = out.trim_end_matches('/').to_string();
+        if let Some(s) = out.strip_suffix(".git") {
+            out = s.to_string();
+        }
+        if out.len() == before {
+            break;
+        }
+    }
+    (!out.is_empty()).then_some(out)
+}
+
+/// The worktree where `branch` is checked out for the repository containing
+/// `dir`: one its host has registered ([`crate::gitrepo::worktree_of_branch`]),
+/// else the one another git dir holding the same repository made at the
+/// shared farm home ([`shared_farm_worktree`]). One worktree per repository on
+/// a machine, so writes from the human's checkout and from Delta's clones meet
+/// at once, with no `yaks sync` between them (yaks-35b5).
+pub(crate) fn farm_worktree(dir: &Path, branch: &str) -> Option<PathBuf> {
+    crate::gitrepo::worktree_of_branch(dir, branch)
+        .filter(|w| w.is_dir())
+        .or_else(|| shared_farm_worktree(dir, branch, &farm_home(dir)))
+}
+
+/// `home`, when it is a worktree with `branch` checked out and a `.yaks/`,
+/// belonging to a repository with the same [`origin_identity`] as `dir`'s.
+/// `None` for a repository without an `origin`: nothing names it across git
+/// dirs.
+pub(crate) fn shared_farm_worktree(dir: &Path, branch: &str, home: &Path) -> Option<PathBuf> {
+    let id = origin_identity(dir)?;
+    if !home.join(".yaks").is_dir() {
+        return None;
+    }
+    let home = crate::gitrepo::canonical(home);
+    let top = git_line(&home, &["rev-parse", "--show-toplevel"])?;
+    let on_branch = git_line(&home, &["symbolic-ref", "--short", "-q", "HEAD"]);
+    (crate::gitrepo::canonical(Path::new(&top)) == home
+        && on_branch.as_deref() == Some(branch)
+        && origin_identity(&home).as_deref() == Some(id.as_str()))
+    .then_some(home)
 }
 
 fn git_line(dir: &Path, args: &[&str]) -> Option<String> {
@@ -292,7 +378,7 @@ fn farm_branch_worktree(dir: &Path) -> Result<Option<PathBuf>> {
     let branch = configured_farm_branch(dir);
     // A registered worktree whose directory is gone (deleted by hand) is no
     // worktree: bootstrap prunes the record and adds a fresh one.
-    if let Some(wt) = crate::gitrepo::worktree_of_branch(dir, &branch).filter(|w| w.is_dir()) {
+    if let Some(wt) = farm_worktree(dir, &branch) {
         let root = wt.join(".yaks");
         if !root.is_dir() {
             anyhow::bail!(
@@ -3864,6 +3950,127 @@ mod discover_tests {
         );
         assert!(msg.contains("yaks init"), "{msg}");
         assert!(!base.join("data").exists());
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    // -- one farm worktree per repository (yaks-35b5) -------------------------
+
+    #[test]
+    fn remote_urls_normalize_to_host_and_path() {
+        for url in [
+            "https://github.com/Org/repo",
+            "https://github.com/Org/repo.git",
+            "https://GitHub.com/Org/repo/",
+            "https://user:token@github.com/Org/repo.git",
+            "ssh://git@github.com:22/Org/repo.git",
+            "git@github.com:Org/repo.git",
+            "github.com:Org/repo",
+        ] {
+            assert_eq!(
+                normalize_remote_url(url).as_deref(),
+                Some("github.com/Org/repo"),
+                "{url}"
+            );
+        }
+        assert_eq!(
+            normalize_remote_url("/src/repo/.git").as_deref(),
+            Some("/src/repo")
+        );
+        assert_eq!(
+            normalize_remote_url("file:///src/repo.git").as_deref(),
+            Some("/src/repo")
+        );
+        assert_eq!(normalize_remote_url("  "), None);
+    }
+
+    /// The human's checkout and Delta's managed bare repo are unrelated git
+    /// dirs holding one repository: with one `origin` they get one farm home,
+    /// named after the repository (not `repository`, the bare repo's name).
+    #[test]
+    fn git_dirs_with_one_origin_share_a_farm_home() {
+        let (base, code, _) = branch_repo(false);
+        let bare = base.join("repository.git");
+        git(
+            &base,
+            &[
+                "clone",
+                "-q",
+                "--bare",
+                &code.display().to_string(),
+                &bare.display().to_string(),
+            ],
+        );
+        let env = |k: &str| (k == "XDG_DATA_HOME").then(|| "/xdg".to_string());
+        // No origin: each git dir has its own home, named after its directory.
+        let own = farm_home_with(&code, env);
+        assert!(
+            own.file_name()
+                .unwrap()
+                .to_string_lossy()
+                .starts_with("code-")
+        );
+        git(
+            &code,
+            &["remote", "add", "origin", "https://github.com/o/schism.git"],
+        );
+        git(
+            &bare,
+            &["remote", "set-url", "origin", "git@github.com:o/schism"],
+        );
+        let a = farm_home_with(&code, env);
+        let b = farm_home_with(&bare, env);
+        assert_eq!(a, b);
+        assert!(
+            a.file_name()
+                .unwrap()
+                .to_string_lossy()
+                .starts_with("schism-"),
+            "{a:?}"
+        );
+        assert_ne!(a, own);
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    /// A git dir with no farm worktree of its own adopts the one another git
+    /// dir of the same repository made at the shared home, and nothing else.
+    #[test]
+    fn a_farm_worktree_at_the_shared_home_is_adopted_by_the_same_repository_only() {
+        let (base, code, wt) = branch_repo(true);
+        let wt = canon(&wt.unwrap());
+        let bare = base.join("repository.git");
+        git(
+            &base,
+            &[
+                "clone",
+                "-q",
+                "--bare",
+                &code.display().to_string(),
+                &bare.display().to_string(),
+            ],
+        );
+        // The checkout has no origin yet (the bare clone's is the checkout's
+        // path): nothing names them as one repository.
+        assert_eq!(shared_farm_worktree(&bare, "yaks", &wt), None);
+        git(
+            &code,
+            &["remote", "add", "origin", "https://github.com/o/schism.git"],
+        );
+        git(
+            &bare,
+            &["remote", "set-url", "origin", "git@github.com:o/schism"],
+        );
+        assert_eq!(shared_farm_worktree(&bare, "yaks", &wt), Some(wt.clone()));
+        // Another branch, another repository, or no farm there: not adopted.
+        assert_eq!(shared_farm_worktree(&bare, "other", &wt), None);
+        git(
+            &bare,
+            &["remote", "set-url", "origin", "git@github.com:o/elsewhere"],
+        );
+        assert_eq!(shared_farm_worktree(&bare, "yaks", &wt), None);
+        assert_eq!(
+            shared_farm_worktree(&bare, "yaks", &base.join("nope")),
+            None
+        );
         let _ = fs::remove_dir_all(&base);
     }
 }

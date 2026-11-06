@@ -1246,7 +1246,8 @@ enum Command {
     ///
     /// Every farm is an orphan git branch (`yaks`, or --branch) holding only
     /// `.yaks/`, checked out once per machine at
-    /// `~/.local/share/yaks/farms/<repo>-<hash>`. A branch that already exists
+    /// `~/.local/share/yaks/farms/<repo>-<hash>` (named by the `origin` URL, so
+    /// every copy of the repository shares it). A branch that already exists
     /// (locally or on origin) only gets its worktree. Nothing is committed or
     /// pushed; `yaks sync` publishes the farm, `yaks private` keeps it local.
     ///

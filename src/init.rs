@@ -295,7 +295,7 @@ fn ensure_branch_farm(top: &Path, args: &Args, rep: &mut Report) -> Result<PathB
     let cfg = args.farm_config();
     let local = ref_exists(top, &format!("refs/heads/{branch}"));
     let remote = ref_exists(top, &format!("refs/remotes/origin/{branch}"));
-    let existing_wt = gitrepo::worktree_of_branch(top, &branch).filter(|w| w.is_dir());
+    let existing_wt = store::farm_worktree(top, &branch);
 
     let worktree = if let Some(wt) = existing_wt {
         rep.already(format!(
