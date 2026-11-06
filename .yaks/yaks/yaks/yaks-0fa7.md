@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-11-06T21:36:36Z'
-updated: '2026-11-06T21:36:36Z'
+updated: '2026-11-06T21:37:28Z'
 parent: yaks-3f35
 tags:
 - cli
@@ -19,11 +19,11 @@ From yaks-3f35, item 1. Importing a devlog as session notes (schism-5b88) needed
 - `yaks session note --at <time>` (RFC 3339 or a date): the path, `day` and the note's write time come from it, not the clock.
 - `yaks session promote --on <day>`: stamps that day as `promoted:`.
 - The farm commit each one makes is dated to that time too (author and committer date), with a trailer saying it was backdated and when, so `git log` order matches the history and nobody mistakes it for live work.
-- A backdated note has no live session behind it: don't generate `## Saved` from `touched` (see the Saved-scope sibling); require the note to bring its own, or write `- nothing`.
+- A backdated note has no live session behind it: don't generate `## Saved` from `touched` (yaks-d11e); require the note to bring its own, or write `- nothing`.
 
 ## Related
 
-yaks-80bd's "Backdate an import" bullet is the same need for sources and doks (Hearth's `HEARTH_DATE`). Decide whether one global `--date`/`YAKS_DATE` serves every write, or the session flags stay separate; lean: one mechanism, with the session flags as its first users.
+yaks-80bd's "Backdate an import" bullet is the same need for sources and doks (Hearth's `HEARTH_DATE`). Decide whether one global `--date`/`YAKS_DATE` serves every write, or the session flags stay separate; lean: one mechanism, with the session flags as its first users. yaks-3b52 settles the name and zone of the time field this sets.
 
 ## Evidence
 
