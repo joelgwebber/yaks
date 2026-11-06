@@ -5,8 +5,10 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-06T04:28:30Z'
-updated: '2026-11-06T04:28:30Z'
+updated: '2026-11-06T04:28:34Z'
 parent: yaks-1c89
+depends_on:
+- yaks-17f5
 tags:
 - skills
 ---
