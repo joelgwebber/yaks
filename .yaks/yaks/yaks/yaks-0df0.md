@@ -1,11 +1,11 @@
 ---
 id: yaks-0df0
 title: 'source add --text-only: save a markdown file as its extracted text alone'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T15:53:03Z'
-updated: '2026-11-06T15:53:03Z'
+updated: '2026-11-06T15:53:08Z'
 tags:
 - doks
 - cli
@@ -20,3 +20,13 @@ Opt-in `--text-only` on a single file: save just `extracted.md`, and record `fil
 - Without it nothing changes. Existing sources keep both files; collapsing those is a separate format decision (not made here).
 
 Skills own the "when": `yaks-research` says when to use it, `gdoc-sources` always does.
+
+---
+▸ 2026-11-06T15:53:08Z [source-refresh]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQcsYXd-T6RPSH25f_4VJRspLOAETlkJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
