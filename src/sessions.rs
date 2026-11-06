@@ -217,7 +217,12 @@ fn slug(s: &str, max: usize) -> String {
     }
     let mut out = out.trim_matches('-').to_string();
     if out.len() > max {
-        out.truncate(max);
+        // Cut at a word boundary when there is one: `...-note-links`, not `...-ses`.
+        let cut = out[..=max]
+            .rfind('-')
+            .filter(|&i| i > max / 2)
+            .unwrap_or(max);
+        out.truncate(cut);
         out = out.trim_end_matches('-').to_string();
     }
     out
@@ -601,6 +606,15 @@ mod tests {
         assert!(check_body(&BODY.replace("## Lessons\n\n- none\n", "")).is_err());
         assert!(check_body(&BODY.replace("Tried the parser.", "")).is_err());
         assert!(check_body(&"x".repeat(MAX_CHARS + 1)).is_err());
+    }
+
+    #[test]
+    fn a_long_title_is_cut_at_a_word() {
+        assert_eq!(
+            slug("Upkeep in yaks: assessment, note links, session notes", 40),
+            "upkeep-in-yaks-assessment-note-links"
+        );
+        assert_eq!(slug("x".repeat(50).as_str(), 40).len(), 40);
     }
 
     #[test]
