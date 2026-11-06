@@ -1,11 +1,11 @@
 ---
 id: yaks-9a13
 title: Farm worktrees of Delta-managed repositories are named repository-…
-status: shaving
+status: shorn
 type: bug
 priority: 3
 created: '2026-11-06T21:37:27Z'
-updated: '2026-11-06T22:23:35Z'
+updated: '2026-11-06T22:23:37Z'
 tags:
 - cli
 - delta
@@ -40,3 +40,13 @@ Fixed together with yaks-35b5 on branch `shared-farm-home` (fc891687): a reposit
 ▸ 2026-11-06T22:23:35Z [schism-feedback]
 
 Landed in e52342db with yaks-35b5. schism's farm is now `schism-6afd61e7`, not `repository-c0e58d55`.
+
+---
+▸ 2026-11-06T22:23:37Z [schism-feedback]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
