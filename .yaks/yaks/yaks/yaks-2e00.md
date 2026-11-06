@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T04:57:49Z'
-updated: '2026-11-06T23:15:36Z'
+updated: '2026-11-06T23:18:30Z'
 parent: yaks-1c89
 tags:
 - cli
@@ -36,3 +36,12 @@ Claim (yakherd herd-upkeep-2, 2026-11-06): worker `refs-1`, then yaks-525b in th
 ▸ 2026-11-06T23:15:36Z [refs-1]
 
 Start Fri Nov  6 23:15:35 UTC 2026. Checkout: /Users/joel/src/yaks/.delta/worktrees/t269kax3x3s6/yaks. Yak path: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-2e00.md.
+
+---
+▸ 2026-11-06T23:18:30Z [refs-1]
+
+Progress: implemented. `Farm::backrefs` now also fills `TaskBackRefs.docs` (new `DocBackRef {path, line, note}`) from `links::edges`, filtered to dok paths and `sessions/`; `render_backrefs`/`backrefs_json` print/emit them. CLI test `refs_incoming_lists_doks_and_session_notes` in tests/links.rs passes. Docs/help/skills updated. Next: full gate.
+
+Decision: doks/session notes go in a separate `docs` list (JSON key `docs`, text lines after the yaks), not as a new `BackRefVia` variant or extra `incoming` objects. Rejected: a `BackRefVia` variant, since `BackRef` needs a yak id/title/status and the TUI picker (`backrefs_in`) consumes it; extra `incoming` objects without an `id` would break JSON consumers of the yak entries.
+
+Decision: only markdown links count (what `links::edges` reads, as the claim says), so a bare id in a dok's prose is not listed. `yaks find <id> --kind sessions` still finds those; the yaks-upkeep skill line says so. Rejected: also running `refs::scan` over dok bodies: a second scanner, and the claim named edges.
