@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-06T21:36:37Z'
-updated: '2026-11-06T21:47:25Z'
+updated: '2026-11-06T21:49:23Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -47,3 +47,12 @@ needs: agent
 
 1. Let's keep it simple, dropping anything hearth-import related (that was a very short-lived need). Cf yaks-ff4c.
 2. Let's do UTC everywhere -- we have a presentation layer to reflect local timezones.
+
+---
+▸ 2026-11-06T21:49:23Z [sched-1]
+kind: request
+---
+
+requested: needs agent
+
+Let's also go ahead and knock out ff4c while we're doing this, for simplicity and clarity.
