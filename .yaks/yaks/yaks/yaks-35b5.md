@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T22:00:49Z'
-updated: '2026-11-06T22:00:55Z'
+updated: '2026-11-06T22:09:25Z'
 tags:
 - cli
 - delta
@@ -30,3 +30,19 @@ thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-06T22:09:25Z [schism-feedback]
+
+Built on branch `shared-farm-home` (fc891687), not landed.
+
+- `store::farm_home` names the home by the normalized `origin` URL (`normalize_remote_url`: scheme, `user@`, port, `.git` and trailing `/` dropped, host lowercased), after its last segment; no origin keeps the git-dir key. [fn farm_home_with](code:src/store.rs@fc891687#L225)
+- `store::farm_worktree`: the host's registered worktree, else `shared_farm_worktree` adopts the worktree at the farm home when it is on the farm branch and its repository has the same origin identity. Discovery and `yaks init` both use it.
+- Docs: `docs/cli.md` "One worktree per repository" with the merge recipe for existing pairs; README, the `yaks` skill, `init --help`.
+
+## Evidence
+
+- Tests: `remote_urls_normalize_to_host_and_path`, `git_dirs_with_one_origin_share_a_farm_home`, `a_farm_worktree_at_the_shared_home_is_adopted_by_the_same_repository_only`; full `cargo test` green (991 + integration), clippy adds nothing in the touched code.
+- End to end with the release build and a scratch `XDG_DATA_HOME`: a checkout of schism (origin `https://github.com/rocketsurgery-games/schism.git`), a bare `repository.git` (origin without `.git`) and a `--shared` clone of it (Delta's shape). The clone bootstrapped `schism-6afd61e7`, the checkout resolved to the same `.yaks`, and a yak created through the clone was listed from the checkout with no sync.
+
+Still to do once installed: merge Joel's two schism worktrees (`schism-38838c3f`, `repository-c0e58d55`) per the recipe. Doing it before the new binary is installed would make an old binary re-bootstrap `repository-…`.
