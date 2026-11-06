@@ -5,11 +5,12 @@ status: hairy
 type: task
 priority: 3
 created: '2026-11-06T21:37:12Z'
-updated: '2026-11-06T21:37:12Z'
+updated: '2026-11-06T21:37:50Z'
 parent: yaks-3f35
 tags:
 - doks
 - design
+needs: human
 ---
 
 From yaks-3f35, items 6 and 7.
@@ -28,3 +29,16 @@ The `yaks-research` skill says "`doks/topics/`, `doks/projects/` and `doks/peopl
 ## Evidence
 
 The skill text (`yaks`, `yaks-research`) and, if `created:` is stamped, a test and `docs/`.
+
+---
+▸ 2026-11-06T21:37:50Z [schism-feedback]
+kind: ask
+needs: human
+---
+
+asked: needs human
+
+Two dok-format questions, my lean on each.
+
+1. **`created:` on doks.** Have `yaks dok new` stamp `created:` (not `updated:`, which hand edits would leave stale). Alternative: leave dates to git history.
+2. **Folders follow kinds, not subjects.** `doks/topics/` holds `topic` doks on any subject; a typed kind gets its own folder (`doks/screenshots/` for `type: screenshot`); subjects are tags, never folders. Alternative: leave layout to each farm, as the skill says now.
