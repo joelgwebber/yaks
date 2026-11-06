@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T04:57:49Z'
-updated: '2026-11-06T23:40:30Z'
+updated: '2026-11-06T23:52:01Z'
 parent: yaks-1c89
 tags:
 - cli
@@ -42,3 +42,11 @@ Decision: a new `run_as` beside `run` rather than a new parameter on `run`: five
 Decision: `--as` that cleans to empty (`--as " "`) is an error, not a fall back to $YAKS_ACTOR. Rejected: fallback, since stamping an unintended name is exactly what the explicit-only decision avoids.
 
 Decision: the trailer is a second `-m` paragraph, and a dry run prints `(as X)` after the unchanged subject; `plan.message` stays the subject only. Rejected: `git commit --trailer` (needs git 2.32).
+
+---
+▸ 2026-11-06T23:52:01Z [refs-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
