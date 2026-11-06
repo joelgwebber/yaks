@@ -1,11 +1,11 @@
 ---
 id: yaks-8a92
 title: A stale farm checkout says migrate when the remote is already migrated
-status: hairy
+status: shaving
 type: bug
 priority: 2
 created: '2026-11-06T21:37:13Z'
-updated: '2026-11-06T22:09:26Z'
+updated: '2026-11-06T22:18:25Z'
 tags:
 - cli
 - git
@@ -27,3 +27,13 @@ The skills say the farm is "checked out once per machine", but a Delta-managed r
 ▸ 2026-11-06T22:09:26Z [schism-feedback]
 
 The two-worktrees half is yaks-35b5 (built, not landed). This yak keeps the migrate-message half: suggest fetching when `origin/<branch>` is already on the current schema.
+
+---
+▸ 2026-11-06T22:18:25Z [schism-feedback]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
