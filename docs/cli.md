@@ -691,7 +691,7 @@ Then the named fixups over every yak file: **`labels-become-tags`** (schema 7) r
 
 Idempotent: a current farm says `nothing to migrate`.
 
-Every OTHER command refuses an older farm, naming `yaks migrate` (`yaks sheds` is no exception).
+Every OTHER command refuses an older farm, naming `yaks migrate` (`yaks sheds` is no exception). A farm branch's worktree whose upstream (as last fetched) is already on the newer schema is only behind, because another machine migrated it: the refusal then says so and names `git -C <farm worktree> pull --ff-only` instead of `yaks migrate`. Otherwise it reminds you to fetch before migrating, so a farm is never migrated twice.
 
 Never commits: it prints the `yaks commit` to run.
 

@@ -13,7 +13,7 @@ A plain CLI, run from the shell (no slash commands, nothing to keep running): `y
 
 **Keeping yaks current.** Run the latest release: compare `yaks --version` with `npm view @j15r/yaks version`, and when it is behind, or a command says to upgrade (`warning: this farm asks for yaks ...`, or `newer than this yaks supports`), upgrade with `npm i -g @j15r/yaks@latest` (or run every command as `npx -y @j15r/yaks@latest <cmd>` where a global install isn't possible), then carry on. A binary built from a yaks checkout is the exception: rebuild it instead.
 
-**Never migrate a farm yourself.** When a command says the farm is on an older schema and to run `yaks migrate`, stop and ask a human (`yaks ask` on the yak you were on, or say so in chat): once a migrated farm is synced, every machine still on an older yaks is refused it, so a human picks the moment. Don't work around the refusal with an older binary either.
+**Never migrate a farm yourself.** When a command says the farm is on an older schema and to run `yaks migrate`, stop and ask a human (`yaks ask` on the yak you were on, or say so in chat): once a migrated farm is synced, every machine still on an older yaks is refused it, so a human picks the moment. Don't work around the refusal with an older binary either. If the refusal says the farm's upstream is already on the newer schema, the farm is only behind: fast-forward it as the message says (`git -C <farm> pull --ff-only`); if that refuses, ask.
 
 ## Where the farm lives
 

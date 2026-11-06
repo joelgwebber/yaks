@@ -2609,16 +2609,45 @@ pub fn old_layout_refusal(root: &Path) -> Option<String> {
 /// The refusal for a flat farm at `root` that is behind [`SCHEMA`] (schema 4),
 /// `None` for any other farm. Every command but `yaks migrate` stops here, so
 /// a farm never ends up half old shape, half new.
+///
+/// A farm branch's worktree whose upstream (as last fetched) is already on a
+/// newer schema is only behind: another machine migrated it. The refusal then
+/// says to fast-forward, never to migrate a second time over stale history
+/// (yaks-8a92). Otherwise it adds a reminder to fetch before migrating.
 pub fn migration_refusal(root: &Path) -> Option<String> {
     let SchemaStatus::Older(v) = schema_status(root) else {
         return None;
     };
-    (v >= FLAT_SCHEMA && !old_layout(root)).then(|| {
-        format!(
-            "{} is on schema {v}, this yaks writes schema {SCHEMA}: run `yaks migrate` \
-             (`--dry-run` shows what changes), commit the result, then use this yaks again",
+    if v < FLAT_SCHEMA || old_layout(root) {
+        return None;
+    }
+    let migrate = format!(
+        "{} is on schema {v}, this yaks writes schema {SCHEMA}: run `yaks migrate` \
+         (`--dry-run` shows what changes), commit the result, then use this yaks again",
+        root.display()
+    );
+    let Some(fg) = farm_git(root) else {
+        return Some(migrate);
+    };
+    let top = fg.top.display();
+    let upstream = format!("{}@{{upstream}}", fg.branch);
+    let Some(name) = git_line(&fg.top, &["rev-parse", "--abbrev-ref", &upstream]) else {
+        return Some(migrate);
+    };
+    let theirs = git_line(&fg.top, &["show", &format!("{upstream}:.yaks/schema")])
+        .and_then(|s| s.trim().parse::<u32>().ok());
+    Some(match theirs {
+        Some(r) if r > v => format!(
+            "{} is on schema {v}, but `{name}` is already on schema {r}: this checkout of the \
+             farm is behind, not unmigrated, so don't migrate it. Fast-forward it: \
+             `git -C {top} pull --ff-only` (if that refuses, this checkout has commits of its \
+             own on the old schema: ask a human), then use this yaks again",
             root.display()
-        )
+        ),
+        _ => format!(
+            "{migrate}. Fetch first (`git -C {top} fetch`): if another machine already \
+             migrated the farm, this message then says to fast-forward instead"
+        ),
     })
 }
 
@@ -3950,6 +3979,46 @@ mod discover_tests {
         );
         assert!(msg.contains("yaks init"), "{msg}");
         assert!(!base.join("data").exists());
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    /// yaks-8a92: a farm branch worktree on an old schema whose upstream is
+    /// already migrated is behind, and is told to fast-forward, not migrate.
+    #[test]
+    fn a_stale_farm_whose_upstream_is_migrated_is_told_to_fast_forward() {
+        let (base, _code, wt) = branch_repo(true);
+        let wt = wt.unwrap();
+        let root = wt.join(".yaks");
+        fs::write(root.join("schema"), "7\n").unwrap();
+        git(&wt, &["add", ".yaks"]);
+        git(&wt, &["commit", "-q", "-m", "schema 7"]);
+        let remote = base.join("remote.git");
+        git(
+            &base,
+            &["init", "-q", "--bare", &remote.display().to_string()],
+        );
+        git(
+            &wt,
+            &["remote", "add", "origin", &remote.display().to_string()],
+        );
+        git(&wt, &["push", "-q", "-u", "origin", "yaks"]);
+        // Upstream on the same old schema: migrate, but fetch first.
+        let msg = migration_refusal(&root).unwrap();
+        assert!(
+            msg.contains("yaks migrate") && msg.contains("fetch"),
+            "{msg}"
+        );
+        // Another machine migrated and pushed; this checkout is behind.
+        fs::write(root.join("schema"), format!("{SCHEMA}\n")).unwrap();
+        git(&wt, &["commit", "-q", "-am", "migrated"]);
+        git(&wt, &["push", "-q", "origin", "yaks"]);
+        git(&wt, &["reset", "-q", "--hard", "HEAD~1"]);
+        let msg = migration_refusal(&root).unwrap();
+        assert!(
+            msg.contains("origin/yaks") && msg.contains("pull --ff-only"),
+            "{msg}"
+        );
+        assert!(msg.contains("don't migrate"), "{msg}");
         let _ = fs::remove_dir_all(&base);
     }
 
