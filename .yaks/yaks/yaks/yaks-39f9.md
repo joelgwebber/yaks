@@ -1,11 +1,11 @@
 ---
 id: yaks-39f9
 title: 'dok query: contains, compare, not-equal and missing'
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-06T04:28:32Z'
-updated: '2026-11-06T23:38:08Z'
+updated: '2026-11-06T23:38:09Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -71,3 +71,13 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 ▸ 2026-11-06T23:38:08Z [query-2]
 
 Summary: dok query --where / --rows take ~ < <= > >= ! and empty operators; first verify run FAILED once in a different integration test (8 passed, 1 failed; test binary not named in the tail; a rerun of the full gate PASSED), likely load flake.
+
+---
+▸ 2026-11-06T23:38:09Z [query-2]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjhJJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
