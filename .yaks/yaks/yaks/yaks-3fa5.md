@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-06T04:28:30Z'
-updated: '2026-11-06T04:58:09Z'
+updated: '2026-11-06T21:55:35Z'
 parent: yaks-1c89
 depends_on:
 - yaks-17f5
@@ -68,3 +68,11 @@ thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-06T21:55:35Z [herd-upkeep]
+kind: landed
+commit: d78b25a7
+---
+
+Landed on `main` as d78b25a7 (fast-forward of 505d2058, 40dea8f0, d78b25a7). Gate: full `cargo test` on that commit, 1169 passed, 0 failed; `yaks preflight --push-main` ok.
