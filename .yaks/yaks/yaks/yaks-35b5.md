@@ -1,11 +1,11 @@
 ---
 id: yaks-35b5
 title: One farm worktree per repository on a machine, shared by every checkout of it
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-06T22:00:49Z'
-updated: '2026-11-06T22:23:34Z'
+updated: '2026-11-06T22:23:36Z'
 tags:
 - cli
 - delta
@@ -59,3 +59,13 @@ Merged Joel's two schism farm worktrees, which were clean and both at b6f8cc3 = 
 - `yaks path` from the schism Delta clone and from `~/src/rs/schism` both print `/Users/joel/.local/share/yaks/farms/schism-6afd61e7/.yaks`; `yaks status` is clean and up to date with `origin/yaks`.
 
 The `yaks tui` running in `~/src/rs/schism` (pid 84648) still has the removed directory open and needs a restart.
+
+---
+▸ 2026-11-06T22:23:36Z [schism-feedback]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
