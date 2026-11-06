@@ -197,7 +197,19 @@ pub(crate) fn generate_message(changes: &[Change]) -> String {
         })
         .collect();
     phrase("doks", &docs);
-    if classified.other.len() > docs.len() {
+    let sessions: BTreeSet<String> = classified
+        .other
+        .iter()
+        .filter_map(|c| {
+            let rel = c
+                .path
+                .split_once(".yaks/")
+                .map_or(c.path.as_str(), |(_, r)| r);
+            rel.starts_with("sessions/").then(|| rel.to_string())
+        })
+        .collect();
+    phrase("sessions", &sessions);
+    if classified.other.len() > docs.len() + sessions.len() {
         parts.push("farm config".to_string());
     }
     format!("yaks: {}", parts.join("; "))

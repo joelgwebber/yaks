@@ -16,6 +16,7 @@ A farm holds more than yaks: **doks** under `doks/` and `<herd>/doks/`, **source
 | Facts you would list, filter or sort (vendors, platforms, appliances) | **Typed doks**, or rows of a table dok |
 | Outside material you relied on: a paper, a saved web page, a PDF, a screenshot | A **source**, cited by the dok |
 | Documentation that ships with the product (user docs, API reference) | The code repo's `docs/`, on `main`, not the farm |
+| How a working session went: what was asked, how it went, what to do differently | A **session note** at the session's end (the `yaks-upkeep` skill), citing the yak notes that hold the work |
 | Work still to do | A **yak** (`yaks create`, filed by the `yaks` skill's "Families") |
 
 A dok is the working knowledge behind the product, and `docs/` is the product's own documentation. When a dok settles into something users need, write the user-facing version in `docs/` and link the dok from the code change's yak.
@@ -100,5 +101,5 @@ When you'd list, filter or sort the subjects by their facts, give each dok a `ty
 
 - Link each dok you wrote from the yak, and say in the shear note what the research found and where it lives: "Findings in /doks/topics/x.md, three sources saved."
 - New work it uncovered becomes yaks. Questions for the human go to `yaks ask` with your lean.
-- Before shearing, run `yaks check` and `yaks doctor`. Fix the broken links and missing citations you introduced, and list the rest on the yak rather than fixing other people's doks unasked.
+- Before shearing, run `yaks check` and `yaks doctor`. Fix the broken links and missing citations you introduced, and list the rest on the yak rather than fixing other people's doks unasked. A housekeeping pass someone asked for is the exception, with its own rules: the `yaks-upkeep` skill.
 - Moving a dok is `yaks mv <from> <to>`, which rewrites every link to it.

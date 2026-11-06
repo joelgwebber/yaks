@@ -134,6 +134,7 @@ Mentions are whole real ids, matched exactly as `refs` and the TUI links do. Com
 | `mv <from> <to>` | Move a dok and rewrite every link to it. [Details](#links) |
 | `find <pattern> [--scope P] [--kind K] [--regex] [--json]` | Full-text search over yaks, doks, sources' text and sessions. [Details](#find) |
 | `source add <path> \| list` | Save outside material as a write-once source; list them. [Details](#source) |
+| `session note\|touched\|list\|promote` | Session notes: save one at the end of a working session, see what you wrote, list the unreviewed, mark them reviewed. [Details](#session) |
 | `promote <id>/<file> [--dok <path>]` | Move a yak's attachment into a source or a dok, rewriting links. [Details](#source) |
 | `import-hearth <repo>` | Copy a Hearth-layout repo's `doks/`, `raw/sources/`, `schemas/` and `raw/sessions/` into the farm, links rewritten; `--dry-run` first. [Details](#import-hearth) |
 | `dok list\|show\|new\|set\|query\|types` | The farm's doks: markdown documents under `doks/` or `<herd>/doks/` that are not yaks. [Details](#dok) |
@@ -293,6 +294,20 @@ A **source** is a snapshot of material from outside the farm, written once and c
 - `source list` prints id, media type, title and resource, oldest first.
 - `promote <id>/<file>` turns a yak's attachment into a source (resource `<id>/<file>`); `--dok doks/<path>.md` turns a markdown attachment into a dok instead (given `type: note` and a title when it has no frontmatter). The attachment is removed and every link to it, in any yak, dok or markdown attachment, now points at the new place; a markdown attachment promoted to a dok has its bare sibling links (`shot.png`) rewritten to `<id>/<file>` so they keep naming the yak's attachments.
 
+### `session`
+
+`session note --title T (--body - | --body-file F) [--since WHEN] [--harness H]` · `session touched [--since WHEN] [--by ACTOR] [--json]` · `session list [--unreviewed] [--json]` · `session promote <path>...`
+
+A **session note** is a short account of one working session, kept so a later review can move what it learned into doks and a weekly reflection can learn from how sessions go. The `yaks-upkeep` skill says when to write one and what goes in it; this is the mechanics.
+
+- `session note` saves `sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md` as one commit and prints its path. The body is markdown with `## Summary`, `## Turns` (one `- <verdict>: <reason>` per request; verdict `good`, `partial`, `failed` or `unclear`), `## Lessons` (`- none` when none), and optionally `## Discussion` and `## Saved`. A turn without a verdict, a missing section or a body over 12,000 characters is refused, and nothing is written.
+- yaks writes the frontmatter: `type: session-review`, `title`, `source: session-note`, `actor`, `person` (git `user.name`), `host`, `harness` (`--harness`, else `delta` or `claude-code` when the environment says so), `thread` (the Delta thread id, the way back to the transcript), `day`, `reviewed` (when it was saved) and a count of each verdict. It is the shape of Hearth's `session-review` files, so notes `import-hearth` brought in list alongside.
+- Without a `## Saved` section, yaks writes one before `## Lessons` from `session touched`.
+- `session touched` lists what an actor (you, else `--by`) wrote in the farm since `--since` (`2h`, a date or an RFC 3339 time; default: its latest session note, at most 12 hours back): each yak it created, moved or noted, with a [link to each note](#links), then the doks, sources and schemas its commits created or changed. A hand edit committed with `yaks commit` carries no actor, so it is not listed.
+- `session list` prints path, day, actor, verdict counts and title, oldest first; `--unreviewed` keeps the agents' own notes (`source: session-note`) without `promoted:`.
+- `session promote <path>...` stamps `promoted: <today>` on each, in one commit, once the review has kept what they learned; one already stamped is reported and left alone.
+- `doctor` checks the links in session notes, and `find --kind sessions` searches them.
+
 ### Links
 
 Yaks and doks link with ordinary markdown links, in one grammar: `<target>[@<rev>][#<anchor>]`.
@@ -300,6 +315,7 @@ Yaks and doks link with ordinary markdown links, in one grammar: `<target>[@<rev
 | Target | Form | Example |
 |---|---|---|
 | a yak | its full id, bare in prose | `yaks-1a2b` |
+| one note of a yak | the id, `#` and the note's timestamp | `[the answer](yaks-1a2b#2026-11-04T22:13:03Z)` |
 | a farm document | path from the farm root, leading `/` | `/doks/topics/x.md`, `/sources/<id>/source.md` |
 | below the linking dok | relative, downward only | `notes/detail.md` (from `doks/topics/x.md`) |
 | a yak's attachment | `<id>/<file>`, from anywhere; inside an attachment, a bare sibling `<file>` | `yaks-1a2b/log.txt`, `shot.png` |
@@ -308,6 +324,7 @@ Yaks and doks link with ordinary markdown links, in one grammar: `<target>[@<rev
 
 - `@<rev>` (7 to 40 hex digits) pins a path to a commit: a farm path to a farm-branch commit, a `code:` path to a code commit (`code:src/foo.rs@3f2a9c1#L12`, `/doks/x.md@91be0d2#setup`).
 - `#L12` or `#L12-L40` names lines; any other `#anchor` a heading, by GitHub's slug rule (lowercase, spaces to `-`, punctuation dropped; a repeated heading gets `-1`, `-2`).
+- **A note** is named by its timestamp, which it keeps for life (removing another note never shifts it). Notes written in the same second (a shear note and its move) share one: the first is the plain timestamp, later ones take `-1`, `-2`. `yaks update --note` prints the new note's link (`Updated yaks-1a2b: note yaks-1a2b#2026-11-04T22:13:03Z`), so copy it rather than building one; `peek` prints just that note and `doctor` reports a note link that leads nowhere. The TUI follows one to its yak.
 - **In a file attached to a yak**, a bare file name is another attachment of the same yak (`![crop](shot.png)` in `yaks-1a2b/evidence.md` is `yaks-1a2b/shot.png`), because that is where any other markdown viewer looks for it too; an attachment directory is flat, so only a bare name counts, and `<id>/<file>`, `/farm/path`, `code:` and URLs mean what they do anywhere. `doctor` checks the links inside markdown attachments, and `rename-attachment` and `promote` keep them right.
 - A relative link never climbs with `../`: link from the farm root instead. In yaks the older code forms stay valid: `../src/foo.rs` and the pinned `../blob/<sha>/src/foo.rs`.
 - `code:` links resolve in the code checkout: the git top-level of the directory yaks runs in, else the repository's main checkout.
@@ -714,7 +731,7 @@ status directories) is refused by every command, naming
 
 `skills install`
 
-Install the bundled agent skills (`yaks`, `yaks-tracker`, `yaks-coordinating`, `yaks-working`, `yaks-research`, `yaks-scheduling`): always the whole set. Target: `--dir <path>` if given; else `--user` → `~/.agents/skills`; else `./.agents/skills` in the git top-level of the cwd when inside a git repo, and `~/.agents/skills` outside one.
+Install the bundled agent skills (`yaks`, `yaks-tracker`, `yaks-coordinating`, `yaks-working`, `yaks-research`, `yaks-scheduling`, `yaks-upkeep`): always the whole set. Target: `--dir <path>` if given; else `--user` → `~/.agents/skills`; else `./.agents/skills` in the git top-level of the cwd when inside a git repo, and `~/.agents/skills` outside one.
 
 Prints the destination it chose.
 

@@ -1030,7 +1030,7 @@ pub(crate) fn link_target(dest: &str, from: crate::links::From, known: &HashSet<
         Link::Farm { path, rev, anchor } => Target::Farm { path, rev, anchor },
         Link::Local(a) => Target::Local(a),
         Link::Upward(_) => Target::Artifact(dest.to_string()),
-        Link::Yak(id) => Target::Task(id),
+        Link::Yak { id, .. } => Target::Task(id),
     }
 }
 

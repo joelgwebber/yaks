@@ -320,6 +320,7 @@ fn init_installs_every_bundled_skill_unless_told_not_to() {
         "yaks-working",
         "yaks-research",
         "yaks-scheduling",
+        "yaks-upkeep",
     ] {
         assert!(
             r.join(".agents/skills").join(n).join("SKILL.md").is_file(),

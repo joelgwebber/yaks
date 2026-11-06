@@ -267,7 +267,7 @@ pub fn find(root: &Path, sha: &str) -> Option<String> {
         .map(|n| format!("{SOURCES_DIR}/{n}"))
 }
 
-fn host() -> String {
+pub(crate) fn host() -> String {
     std::env::var("HOSTNAME")
         .ok()
         .filter(|h| !h.is_empty())

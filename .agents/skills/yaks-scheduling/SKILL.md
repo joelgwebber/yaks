@@ -34,6 +34,7 @@ EOF
 - `--wake agent|human` says who a regrow goes to: it sets `needs:` and writes a request (or ask) note, so the yak lands in `yaks inbox` with its description as the instruction. Without it the yak only becomes hairy and overdue. Use `agent` for work an agent can do, `human` for something only the person can look at.
 - **The description is the task**, written for whoever picks it up cold. It is also the whole registry: yaks runs no commands from a farm file, so a skill registers itself by creating one such yak, never by adding a hook.
 - It reopens once the next occurrence arrives, counted from `due:`: shear it on its due day and it waits for the next one. A tick that comes late regrows it once and notes how many rounds were skipped.
+- The farm's own upkeep (reviewing session notes, tidying the doks) is two such yaks; the `yaks-upkeep` skill has their descriptions.
 - To put one off: `yaks snooze <id> --to +3d` (a note records it). To stop it: `yaks update <id> --every ''`, or slaughter it.
 
 ## A watcher: mirroring an outside queue

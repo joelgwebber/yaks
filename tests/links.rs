@@ -170,3 +170,34 @@ fn doctor_reports_broken_and_upward_links() {
         "{msgs:?}"
     );
 }
+
+/// One note of a yak, by its timestamp (yaks-c5bd): `update --note` prints
+/// the link, `peek` reads just that note, and doctor reports one that leads
+/// nowhere.
+#[test]
+fn a_note_link_from_update_peeks_and_is_checked() {
+    let f = Farm::new("note");
+    let id = f.create(&[]);
+    let out = f.run(&["update", &id, "--note", "The finding."]);
+    let link = out
+        .trim()
+        .strip_prefix(&format!("Updated {id}: note "))
+        .unwrap_or_else(|| panic!("no note link in {out:?}"))
+        .to_string();
+    assert!(link.starts_with(&format!("{id}#20")), "{link}");
+    let peek = f.run(&["peek", &link]);
+    assert!(peek.ends_with("\n\nThe finding.\n"), "{peek}");
+    assert!(peek.starts_with(&format!("── {link}\n▸ ")), "{peek}");
+
+    let other = f.create(&[]);
+    f.run(&["update", &other, "--note", &format!("See [it]({link}).")]);
+    f.run(&["doctor"]);
+    f.run(&[
+        "update",
+        &other,
+        "--note",
+        &format!("And [nothing]({id}#2001-01-01T00:00:00Z)."),
+    ]);
+    f.fails(&["doctor"]);
+    f.fails(&["peek", &format!("{id}#2001-01-01T00:00:00Z")]);
+}

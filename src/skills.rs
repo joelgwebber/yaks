@@ -95,6 +95,10 @@ pub const BUNDLED: &[Skill] = &[
             "../.agents/skills/yaks-scheduling/SKILL.md"
         ))],
     },
+    Skill {
+        name: "yaks-upkeep",
+        files: &[md(include_str!("../.agents/skills/yaks-upkeep/SKILL.md"))],
+    },
 ];
 
 /// Skills this yaks once bundled and no longer does. Nothing upgrades a skill
@@ -1418,7 +1422,8 @@ mod tests {
                 "yaks-coordinating",
                 "yaks-working",
                 "yaks-research",
-                "yaks-scheduling"
+                "yaks-scheduling",
+                "yaks-upkeep"
             ]
         );
         let base = temp_base("all-skills");
@@ -1685,7 +1690,8 @@ mod tests {
                 "yaks-coordinating",
                 "yaks-working",
                 "yaks-research",
-                "yaks-scheduling"
+                "yaks-scheduling",
+                "yaks-upkeep"
             ]
         );
         assert_eq!(std::fs::read_to_string(&md).unwrap(), before);

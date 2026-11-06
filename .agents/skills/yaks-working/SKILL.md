@@ -17,4 +17,6 @@ The habits that leave a trail a human or another agent can trust. **If a yakherd
 6. **Shear against evidence, not "it compiles":** a recorded `yaks verify <id>` PASS, or what you saw attached with `yaks attach`. A user-facing change also updates its in-app help, `--help` and docs. Don't self-shear a subjective call: attach it and ask. No way to verify it? Ask whether to build one.
 7. **Finish:** a short summary note (what changed and the shape of the fix, the evidence linked or attached, any yaks spawned, filed where the `yaks` skill's "Families" says; a long write-up goes in an attachment), `yaks shorn <id>`, then one commit of your own files with explicit paths. Never stage `.yaks/`. Put the yak id in the message, unless the farm is private (`yaks private`): then keep yak ids and the word "yaks" out of the commit entirely.
 
+8. **Report friction.** Briefed by a yakherd: write no session note; your final message names the friction (commands that refused or surprised you, skill or doc text that was missing or wrong, what you had to guess), and the yakherd's session note carries it. Working alone with a person: a session note at the end (`yaks-upkeep`).
+
 Coordinating several workers is `yaks-coordinating`.

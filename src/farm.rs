@@ -22,7 +22,7 @@ use crate::store;
 pub use crate::store::{DepOutcome, MoveOutcome, Reparent};
 
 const NON_DEAD: [Status; 3] = [Status::Hairy, Status::Shaving, Status::Shorn];
-const EVERY: [Status; 4] = [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
+pub(crate) const EVERY: [Status; 4] = [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
 
 /// One attachment file of a yak: see [`list_attachments`].
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -2212,6 +2212,48 @@ impl Farm {
         all.extend(fields.iter().cloned());
         let dok = crate::doks::new_dok(&self.root, path, kind, title, &all, body)?;
         crate::doks::save(&self.root, &dok)
+    }
+
+    /// Save a session note (yaks-17f5): checks the body, fills `## Saved`
+    /// from `saved` when the body has none, and writes it under `sessions/`,
+    /// under the farm lock. Returns the note's farm-relative path.
+    pub fn session_note(
+        &self,
+        title: &str,
+        body: &str,
+        saved: Option<&str>,
+        origin: &crate::sessions::Origin,
+    ) -> Result<String> {
+        let info = crate::sessions::check_body(body)?;
+        let body = match saved {
+            Some(s) if !info.has_saved => crate::sessions::with_saved(body, s),
+            _ => body.to_string(),
+        };
+        let _lock = store::lock(&self.root)?;
+        let dok = crate::sessions::build(&self.root, title, &body, origin, chrono::Utc::now())?;
+        crate::doks::save(&self.root, &dok)?;
+        Ok(dok.path)
+    }
+
+    /// Stamp `promoted: <day>` on each session note in `paths` (one commit
+    /// for the lot), under the farm lock. Returns the paths it stamped; one
+    /// already stamped is skipped. Every path is checked before any is
+    /// written.
+    pub fn session_promote(&self, paths: &[String], day: &str) -> Result<Vec<String>> {
+        let _lock = store::lock(&self.root)?;
+        for p in paths {
+            let rel = crate::doks::normalize(p);
+            if !rel.starts_with("sessions/") || !self.root.join(&rel).is_file() {
+                anyhow::bail!("{rel}: no such session note (`yaks session list` shows them)");
+            }
+        }
+        let mut done = Vec::new();
+        for p in paths {
+            if crate::sessions::promote(&self.root, p, day)? {
+                done.push(crate::doks::normalize(p));
+            }
+        }
+        Ok(done)
     }
 
     /// Set (a [`Value::Null`] removes) frontmatter fields of the dok at

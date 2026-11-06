@@ -4,11 +4,12 @@ Skills are prose guidance that rides *on top of* the tools — the least directi
 that measurably changes an agent's behavior. yaks keeps the tools unopinionated
 and puts methodology in skills, so different working styles fit the same core.
 
-Six skills ship, and `yaks skills install` installs all of them: `yaks` and
+Seven skills ship, and `yaks skills install` installs all of them: `yaks` and
 `yaks-tracker` for any project, `yaks-working` and `yaks-coordinating` for
 running several agents over one farm, `yaks-research` for research that
-leaves doks and sources behind, and `yaks-scheduling` for recurring yaks and
-`yaks tick`. There is no subset to choose.
+leaves doks and sources behind, `yaks-scheduling` for recurring yaks and
+`yaks tick`, and `yaks-upkeep` for session notes, reviewing them and tidying
+the doks. There is no subset to choose.
 
 ## Where skills install
 
@@ -125,6 +126,7 @@ an install (that's the `held` rule). When iterating locally, use
 | **`yaks-coordinating`** | Coordinating a shared farm across parallel agents and humans, in Delta threads or git worktrees. |
 | **`yaks-scheduling`** | Work that should come back on a schedule: running a round (`yaks tick`), recurring and due-dated yaks, and the rules for a skill that mirrors an outside queue (pull requests, tickets) into yaks. |
 | **`yaks-research`** | Research, comparison or planning yaks that should leave knowledge behind: finding what the farm knows, saving and citing sources, writing doks and typed doks, and what belongs in `docs/` instead. |
+| **`yaks-upkeep`** | Keeping a farm's knowledge in shape: a session note at the end of each working session (`yaks session note`), reviewing those notes into doks (`yaks session promote`), and a housekeeping pass over `yaks check`'s findings, each brought back by a recurring yak. |
 
 ## The design test (what is a tool vs a skill)
 

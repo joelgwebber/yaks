@@ -58,6 +58,7 @@ yaks conflicts             # documents a merge left for you to settle
 4. **Code others can't see** (you are on another machine, or in a clone nobody reads): at each checkpoint, commit, push your work branch to `origin` (any branch name, your harness's own pattern is fine, but never `main` and never under `yaks/`: the farm branch `yaks` blocks that prefix, so such a branch cannot be pushed), note it (`--meta kind=checkpoint --meta branch=<branch> --meta commit=$(git rev-parse HEAD)`), then sync. In that order, so the farm never names a commit nobody can fetch.
 5. **Stopping without finishing:** to resume later, a note saying where you stopped and what's next (the claim stays yours and reads `stale` in `yaks sheds` after 2 hours); to give it up, that note and then `yaks regrow <id>`, so nobody mistakes it for live work.
 6. **Done:** gather evidence, add a short summary note (see "Evidence before you shear"), `yaks shorn <id>`. Then the family: shear the parent if that was its last open child, and file any follow-up where "Families" says.
+7. **Session end:** a session that did real work with the person leaves one session note (`yaks session note`; the **yaks-upkeep** skill). A worker briefed by a yakherd writes none and reports its friction in its final message instead.
 
 **You share the farm with a human.** They edit yaks in `yaks tui` while you work, so a yak may move, gain a note or appear without you. That is signal, not an error: don't revert, restage or report it; follow it if it redirects your work.
 
@@ -123,6 +124,7 @@ Next: G3's question, which belongs with yak-7af5.
 **Links.**
 
 - Another yak: its **full id** (`yak-0af1`, never the bare `0af1`); the TUI makes it a link and `yaks refs <id> [--incoming]` lists the references.
+- One note of a yak: `[the answer](yak-0af1#2026-11-04T22:13:03Z)`, the note's timestamp as the anchor (`-1`, `-2` for later notes of the same second). `yaks update --note` prints the new note's link: copy it rather than building one.
 - Repo code: `code:` and a path from the repo root, with GitHub's line fragment: `[fn parse](code:src/foo.rs#L12-L40)`; `@<sha>` before the fragment pins it to a commit (`code:src/foo.rs@3f2a9c1#L12`). The older `../src/foo.rs` and `../blob/<sha>/src/foo.rs` still work in yaks.
 - A dok: from the farm root, `[link grammar](/doks/design/link-grammar.md#heading)`; a relative link only goes down (`notes/detail.md`), never `../`. `@<sha>` pins a dok too.
 - `yaks peek <link>` prints just what a link names (the lines, the section, or a dok's frontmatter and first paragraph): read that rather than a whole file. `yaks doctor` reports links that lead nowhere.
@@ -164,6 +166,7 @@ A farm also holds **doks**: markdown documents that are not yaks, under `doks/` 
 - Create with `yaks dok new <path> --type topic --set 'tags=[a, b]' --body-file notes.md` (kinds: `note`, the default; `topic`; `howto`; `summary`). Lowercase-kebab paths.
 - Edit fields with `yaks dok set <path> --set key=value`, or the body with your editor. `yaks doctor` checks doks.
 - Facts you would list, filter or sort (appliances, vendors, platforms compared) go in **typed doks**: `yaks dok types` shows the kinds and their fields; give a dok `type: <kind>` and the fields its `schemas/<kind>.md` lists, and add or extend the schema when a new kind earns one. Warnings are advice, never refusals. `schemas/yak.md` lists the farm's known tags: pick from it before inventing one.
+- Keeping the doks in shape (session notes, reviewing them, a tidy after `yaks check`): the `yaks-upkeep` skill.
 - Research yaks: the `yaks-research` skill says where each finding goes, and how to save, cite and split.
 - Link the dok from the yak that produced it, so it stays in context. Move a dok with `yaks mv <from> <to>`, which rewrites every link to it.
 - Outside material you rely on (a paper, a downloaded web page, a screenshot, a small code directory) is a **source**: `yaks source add <file> --title "<what it is>" [--url <dok it came from>] [--text <your markdown conversion>]` snapshots it once under `sources/<id>/`, one source per thing (never a second source for a conversion; a document that changes under a stable `--url` is refreshed in place with `--refresh`; the `yaks-research` skill has the rule); cite its `source.md` in the dok's `sources:` list. A finding first kept as a yak attachment moves with `yaks promote <id>/<file>` (a source) or `--dok doks/<path>.md` (a dok); links to it follow.
@@ -189,6 +192,7 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 | `log` | Notes and moves over a filtered set, oldest first; `--since 2h`, `--by <actor>` |
 | `refs <id>` | What it points at; `--incoming` for what points at it |
 | `commits <id>` | Commits recorded on the yak (`yaks land` writes them) and the branches its checkpoints name (`--fetch` fetches them), then those naming it in the code repo you run it from, then the yak file's farm history |
+| `session note` / `touched` / `list` / `promote` | Session notes: one at the end of a working session (`--title`, `--body -`; `## Saved` is written from what you wrote), what you wrote since (`touched`), unreviewed ones (`list --unreviewed`), mark reviewed (`promote`): the **yaks-upkeep** skill |
 | `dok list` / `show` / `new` / `set` / `query` / `types` | The farm's doks (`doks/**.md`, `<herd>/doks/**.md`): see "Doks" below |
 | `dep` / `reparent` | Add/remove a dependency; move under `--parent <id>` or `--unparent` |
 | `bulk` | One field edit or reparent over a filtered set; dry-run unless `--commit`; refuses without a filter |

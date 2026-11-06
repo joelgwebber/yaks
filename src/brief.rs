@@ -269,7 +269,8 @@ fn final_message(b: &Brief) -> String {
          - start and finish `date -u`\n\
          - the `Decision:` notes, one line each\n\
          - the docs-parity grep you ran\n\
-         - anything surprising"
+         - friction: commands that refused or surprised you, skill or doc text that was missing \
+         or wrong, what you had to guess (write no session note: the coordinator's covers you)"
     )
 }
 

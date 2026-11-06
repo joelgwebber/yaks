@@ -123,6 +123,7 @@ in `<path>`.
 | `yaks doctor` | read-only farm-integrity check (an invalid `status:` value, one id in two yak files, dangling parent/dep refs, `needs:` out of step with the latest ask/answer/request/pickup note); exits non-zero on problems, so it's CI-usable. `--json` for machine output |
 | `yaks doctor --strict` | also flags shorn yaks with no recorded note — a shear without evidence (the evidence-before-shear rule) |
 | `yaks check` | read-only upkeep check on doks and sources: doks past `stale_after`, sources no dok or yak cites, dok kinds that differ only by plural or hyphens, plus doctor's broken links, schema mismatches and merge conflicts; exits 1 on a finding. `--json` for machine output |
+| `yaks session note\|touched\|list\|promote` | session notes: a short account of a working session under `sessions/`, its `## Saved` written from the yak notes and doks you wrote; list the unreviewed and mark them reviewed (the `yaks-upkeep` skill) |
 | `yaks preflight [<id>...]` | read-only landing check: each shorn yak's `verify:` last PASSed, no invalid `status:` or duplicate id, no merge conflict in the farm; `--push-main` also checks `local` is the human's checkout |
 | `yaks whoami [--set <name>]` | the actor this checkout's notes are stamped with, and why; `--set` stores one per checkout, so fresh shells keep it |
 | `yaks brief <id> --as <name>` | print the worker brief for a yak: the actor prefix, the gate (`verify:`), how to finish, how to ask |

@@ -11,6 +11,7 @@
 //! | a yak's attachment | `yaks-1a2b/log.txt`, from anywhere; in an attachment, a bare sibling `log.txt` |
 //! | the code repo | `code:src/foo.rs` |
 //! | a URL | `https://...` |
+//! | one note of a yak | `yaks-1a2b#2026-11-04T22:13:03Z`: the note's timestamp |
 //!
 //! `@<rev>` (7-40 hex digits) pins a path to a commit: a farm path to a
 //! farm-branch commit, a `code:` path to a code commit. `#L12` / `#L12-L40`
@@ -66,8 +67,13 @@ pub enum Link {
     /// An in-document anchor (`#section`).
     Local(Anchor),
     /// A yak, by its id (`[yaks-1a2b](yaks-1a2b)`): absolute from anywhere,
-    /// never relative to the linking dok (yaks-0e15).
-    Yak(String),
+    /// never relative to the linking dok (yaks-0e15). `note` names one of its
+    /// notes by timestamp (`yaks-1a2b#2026-11-04T22:13:03Z`, yaks-c5bd); see
+    /// [`note_anchor`].
+    Yak {
+        id: String,
+        note: Option<String>,
+    },
 }
 
 /// The document a link sits in, which decides what a relative link means.
@@ -132,7 +138,10 @@ pub fn parse(dest: &str, from: From, is_yak: impl Fn(&str) -> bool) -> Link {
     }
     let (path, rev) = split_rev(&body);
     if rev.is_none() && !path.contains('/') && is_yak(path) {
-        return Link::Yak(path.to_string());
+        return Link::Yak {
+            id: path.to_string(),
+            note: frag.filter(|f| is_note_anchor(f)).map(String::from),
+        };
     }
     if let Some(rest) = path.strip_prefix('/') {
         return match clean(rest) {
@@ -185,6 +194,63 @@ fn split_rev(s: &str) -> (&str, Option<String>) {
 
 fn is_rev(s: &str) -> bool {
     (7..=40).contains(&s.len()) && s.bytes().all(|b| b.is_ascii_hexdigit())
+}
+
+// ------------------------------------------------------------ note anchors
+//
+// A note is named by its timestamp, which a note keeps for life: removing
+// another note (`pickup --drop-request`) shifts indexes but never a
+// timestamp. Notes written in the same second (a shear note and its move)
+// share one, so the later ones take a `-1`, `-2` suffix in file order, as
+// GitHub numbers duplicate heading slugs. The first note of a second is the
+// plain timestamp.
+
+/// Whether a fragment names a note: an RFC 3339 timestamp, optionally with a
+/// `-<n>` suffix for the n-th later note of the same second.
+pub fn is_note_anchor(frag: &str) -> bool {
+    let (ts, _) = split_note_anchor(frag);
+    ts.contains('T') && chrono::DateTime::parse_from_rfc3339(ts).is_ok()
+}
+
+/// `2026-11-04T22:13:03Z-2` -> (`2026-11-04T22:13:03Z`, 2); no suffix is 0.
+fn split_note_anchor(frag: &str) -> (&str, usize) {
+    if let Some((ts, n)) = frag.rsplit_once('-')
+        && !n.is_empty()
+        && n.bytes().all(|b| b.is_ascii_digit())
+        && chrono::DateTime::parse_from_rfc3339(ts).is_ok()
+    {
+        return (ts, n.parse().unwrap_or(0));
+    }
+    (frag, 0)
+}
+
+/// The anchor naming `notes[i]`: its timestamp, suffixed `-<n>` when `n`
+/// earlier notes share it.
+pub fn note_anchor(notes: &[crate::store::NoteEntry], i: usize) -> String {
+    let ts = &notes[i].ts;
+    let n = notes[..i].iter().filter(|e| &e.ts == ts).count();
+    if n == 0 {
+        ts.clone()
+    } else {
+        format!("{ts}-{n}")
+    }
+}
+
+/// The index of the note an anchor names, if the yak has it.
+pub fn find_note(notes: &[crate::store::NoteEntry], anchor: &str) -> Option<usize> {
+    let (ts, n) = split_note_anchor(anchor);
+    notes
+        .iter()
+        .enumerate()
+        .filter(|(_, e)| e.ts == ts)
+        .nth(n)
+        .map(|(i, _)| i)
+}
+
+/// The link to a yak's latest note, `<id>#<anchor>`, or `None` without notes.
+pub fn latest_note_link(id: &str, body: &str) -> Option<String> {
+    let notes = crate::store::parse_notes(body);
+    (!notes.is_empty()).then(|| format!("{id}#{}", note_anchor(&notes, notes.len() - 1)))
 }
 
 /// `L12`, `L12-L40` (reordered if reversed), else a heading slug. Empty is none.
@@ -306,7 +372,8 @@ pub fn label(link: &Link) -> String {
         } => format!("{id}/{name}{}", anchor(a)),
         Link::Upward(s) => s.clone(),
         Link::Local(a) => anchor(&Some(a.clone())),
-        Link::Yak(id) => id.clone(),
+        Link::Yak { id, note: None } => id.clone(),
+        Link::Yak { id, note: Some(n) } => format!("{id}#{n}"),
     }
 }
 
@@ -465,7 +532,8 @@ pub fn is_markdown_name(name: &str) -> bool {
 }
 
 /// Every markdown link in every yak (description and notes), every markdown
-/// attachment (`from` is `<id>/<file>`) and every dok of the farm at `root`,
+/// attachment (`from` is `<id>/<file>`), every dok and every session note of
+/// the farm at `root`,
 /// in document order. Yak ids are links too (mentions), but those are
 /// `refs`' business; this is the markdown-link half.
 pub fn edges(root: &Path) -> Result<Vec<Edge>> {
@@ -509,7 +577,11 @@ pub fn edges(root: &Path) -> Result<Vec<Edge>> {
             }
         }
     }
-    for p in crate::doks::load_all(root)? {
+    // Session notes cite yak notes and doks (yaks-17f5): their links count too.
+    for p in crate::doks::load_all(root)?
+        .into_iter()
+        .chain(crate::sessions::load_all(root)?)
+    {
         for f in extract(&p.body) {
             out.push(Edge {
                 from: p.path.clone(),
@@ -541,7 +613,14 @@ pub fn exists(root: &Path, link: &Link) -> Option<bool> {
             Some(crate::farm::locate_attachment(root, id, name).is_some())
         }
         Link::Upward(_) => Some(false),
-        Link::Url(_) | Link::Code { .. } | Link::Local(_) | Link::Yak(_) => None,
+        // A note link is checked for its note; a plain yak id is `refs`' business.
+        Link::Yak { id, note: Some(n) } => Some(
+            crate::store::load_task_by_id(root, id)
+                .ok()
+                .flatten()
+                .is_some_and(|t| find_note(&crate::store::parse_notes(&t.body), n).is_some()),
+        ),
+        Link::Url(_) | Link::Code { .. } | Link::Local(_) | Link::Yak { .. } => None,
     }
 }
 
@@ -700,6 +779,31 @@ fn span(path: &str, text: &str, anchor: &Option<Anchor>, context: u32) -> Result
     }
 }
 
+/// One note of a yak's file `text`, as it reads in the file: its marker
+/// line, metadata and text.
+fn note_text(id: &str, text: &str, anchor: &str) -> Result<String> {
+    let body = crate::store::split_frontmatter(text).map_or(text, |(_, b)| b);
+    let notes = crate::store::parse_notes(body);
+    let Some(i) = find_note(&notes, anchor) else {
+        bail!(
+            "{id} has no note at {anchor} (`yaks show {id}` lists its notes; the link is the \
+             note's timestamp, `-1`, `-2` for later notes of the same second)"
+        );
+    };
+    let n = &notes[i];
+    let mut s = format!(
+        "\u{25b8} {}\n",
+        crate::store::note_head(&n.ts, n.actor.as_deref())
+    );
+    for (k, v) in &n.meta {
+        s.push_str(&format!("{k}: {v}\n"));
+    }
+    s.push('\n');
+    s.push_str(&n.text);
+    s.push('\n');
+    Ok(s)
+}
+
 /// Read what `link` names. `context` widens a line range.
 pub fn peek(link: &Link, bases: &Bases, context: u32) -> Result<Peek> {
     let label = label(link);
@@ -709,10 +813,13 @@ pub fn peek(link: &Link, bases: &Bases, context: u32) -> Result<Peek> {
             bail!("{s}: a link may not climb out with ../; link from the farm root (/doks/...)")
         }
         Link::Local(_) => bail!("an in-document anchor needs its document"),
-        Link::Yak(id) => {
+        Link::Yak { id, note } => {
             let path = crate::store::task_path(bases.farm, id);
             let text = std::fs::read_to_string(&path).map_err(|e| anyhow::anyhow!("{id}: {e}"))?;
-            summary("yak.md", &text)
+            match note {
+                None => summary("yak.md", &text),
+                Some(n) => note_text(id, &text, n)?,
+            }
         }
         Link::Farm { path, rev, anchor } => {
             let text = match rev {
@@ -838,7 +945,13 @@ mod tests {
         // A yak id is a yak from anywhere, never a dok-relative file
         // (yaks-0e15); a non-yak bare word still is.
         for from in [pg, From::Yak, From::Cli] {
-            assert_eq!(parse("yaks-44b3", from, yak), Link::Yak("yaks-44b3".into()));
+            assert_eq!(
+                parse("yaks-44b3", from, yak),
+                Link::Yak {
+                    id: "yaks-44b3".into(),
+                    note: None
+                }
+            );
         }
         assert_eq!(
             parse("notes", pg, yak),
@@ -914,7 +1027,13 @@ mod tests {
             }
         );
         // A yak id is still a yak, a farm path a farm path.
-        assert_eq!(parse("yaks-3c4d", from, yak), Link::Yak("yaks-3c4d".into()));
+        assert_eq!(
+            parse("yaks-3c4d", from, yak),
+            Link::Yak {
+                id: "yaks-3c4d".into(),
+                note: None
+            }
+        );
         assert_eq!(
             parse("/doks/a.md", from, yak),
             Link::Farm {
@@ -1077,6 +1196,69 @@ mod tests {
         let p = peek(&parse("code:doks/a.md#L6-L7", From::Cli, yak), &b, 1).unwrap();
         assert_eq!(p.text, "5  \n6  First para\n7  still.\n8  \n");
         assert!(peek(&parse("/doks/none.md", From::Cli, yak), &b, 0).is_err());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    /// A note is named by its timestamp; later notes of the same second take
+    /// `-1`, `-2` (yaks-c5bd). A heading-like fragment on a yak id is no note.
+    #[test]
+    fn a_note_link_names_one_note_by_its_timestamp() {
+        let ts = "2026-11-04T22:13:03Z";
+        assert_eq!(
+            parse(&format!("yaks-1a2b#{ts}"), From::Cli, yak),
+            Link::Yak {
+                id: "yaks-1a2b".into(),
+                note: Some(ts.into())
+            }
+        );
+        assert_eq!(
+            parse("yaks-1a2b#setup", From::Cli, yak),
+            Link::Yak {
+                id: "yaks-1a2b".into(),
+                note: None
+            }
+        );
+        assert!(is_note_anchor(&format!("{ts}-2")));
+        assert!(!is_note_anchor("2026-11-04"));
+
+        let root = std::env::temp_dir().join(format!("yaks-links-note-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let path = crate::store::task_path(&root, "yaks-1a2b");
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        let mut body = String::from("Desc.");
+        body = crate::store::append_note(&body, "2026-11-04T22:13:02Z", Some("a"), "first");
+        body = crate::store::append_note(&body, ts, Some("a"), "the shear note");
+        body = crate::store::append_note_meta(&body, ts, Some("a"), &[("kind", "move")], "moved");
+        std::fs::write(
+            &path,
+            format!("---\nid: yaks-1a2b\ntitle: T\nstatus: shorn\n---\n\n{body}\n"),
+        )
+        .unwrap();
+
+        let notes = crate::store::parse_notes(&body);
+        assert_eq!(note_anchor(&notes, 1), ts);
+        assert_eq!(note_anchor(&notes, 2), format!("{ts}-1"));
+        assert_eq!(find_note(&notes, &format!("{ts}-1")), Some(2));
+        assert_eq!(
+            latest_note_link("yaks-1a2b", &body).unwrap(),
+            format!("yaks-1a2b#{ts}-1")
+        );
+
+        let b = Bases {
+            farm: &root,
+            code: None,
+        };
+        let p = peek(&parse(&format!("yaks-1a2b#{ts}"), From::Cli, yak), &b, 0).unwrap();
+        assert_eq!(p.text, format!("\u{25b8} {ts} [a]\n\nthe shear note\n"));
+        let p = peek(&parse(&format!("yaks-1a2b#{ts}-1"), From::Cli, yak), &b, 0).unwrap();
+        assert_eq!(p.text, format!("\u{25b8} {ts} [a]\nkind: move\n\nmoved\n"));
+        let missing = parse("yaks-1a2b#2026-01-01T00:00:00Z", From::Cli, yak);
+        assert!(peek(&missing, &b, 0).is_err());
+        assert_eq!(exists(&root, &missing), Some(false));
+        assert_eq!(
+            exists(&root, &parse(&format!("yaks-1a2b#{ts}"), From::Cli, yak)),
+            Some(true)
+        );
         let _ = std::fs::remove_dir_all(&root);
     }
 }

@@ -35,6 +35,7 @@ mod recur;
 mod refs;
 mod rollup;
 mod schemas;
+mod sessions;
 mod sheds;
 mod skills;
 mod sources;
@@ -627,7 +628,8 @@ enum Command {
         #[arg(long = "unset", value_name = "KEY")]
         unset: Vec<String>,
         /// Append a timestamped note (markdown). `-` reads it from stdin, so a
-        /// multi-line heredoc or pipe arrives intact.
+        /// multi-line heredoc or pipe arrives intact. Prints the note's link
+        /// (`<id>#<timestamp>`), for citing it from elsewhere.
         #[arg(long, conflicts_with = "note_file")]
         note: Option<String>,
         /// Read the note from this file (`-` is stdin).
@@ -954,8 +956,10 @@ enum Command {
     /// The link is written as in a yak or dok: `/doks/x.md#setup` (a dok's
     /// section), `code:src/foo.rs#L12-L40` (lines of a code file, from the
     /// code checkout yaks was started in), `code:src/foo.rs@3f2a9c1#L12` (as
-    /// at a commit), `yaks-1a2b/log.txt#L5` (an attachment). Cheaper context
-    /// than reading the whole file.
+    /// at a commit), `yaks-1a2b/log.txt#L5` (an attachment),
+    /// `yaks-1a2b#2026-11-04T22:13:03Z` (one note of a yak, by its timestamp;
+    /// `-1`, `-2` for later notes of the same second). Cheaper context than
+    /// reading the whole file.
     Peek {
         link: String,
         /// Widen a line range by this many lines either side.
@@ -1044,6 +1048,17 @@ enum Command {
     Source {
         #[command(subcommand)]
         action: SourceAction,
+    },
+    /// Session notes: a short account of a working session, under
+    /// `sessions/`, for a later review and reflection to learn from.
+    ///
+    /// `note` saves one at the end of a session (the `yaks-upkeep` skill says
+    /// when and what goes in it); `touched` lists what you wrote in the farm
+    /// during the session, as links to your yak notes and doks; `list
+    /// --unreviewed` and `promote` are a review's two mechanical halves.
+    Session {
+        #[command(subcommand)]
+        action: SessionAction,
     },
     /// Move a yak's attachment into the farm's knowledge: a source, or (a
     /// markdown attachment, with `--dok <path>`) a dok. Every link to the
@@ -1494,6 +1509,66 @@ enum DepAction {
     Add { id: String, dep_id: String },
     /// Remove DEP_ID as a dependency of ID.
     Remove { id: String, dep_id: String },
+}
+
+#[derive(Subcommand)]
+enum SessionAction {
+    /// Save a session note: `sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md`.
+    ///
+    /// The body is markdown with `## Summary` (a short narrative tying the
+    /// work together), `## Turns` (one `- <verdict>: <reason>` per request,
+    /// verdict good, partial, failed or unclear), `## Lessons` (`- none` when
+    /// none) and optionally `## Discussion` (exposition no yak holds) and
+    /// `## Saved`. Without `## Saved`, yaks writes it from what you wrote in
+    /// the farm since `--since` (see `touched`). The frontmatter (actor,
+    /// person, host, harness, thread, day, time, verdict counts) is yaks'.
+    Note {
+        /// A few words naming the session.
+        #[arg(long)]
+        title: String,
+        /// The note's markdown. `-` reads it from stdin.
+        #[arg(long, conflicts_with = "body_file")]
+        body: Option<String>,
+        /// Read the body from this file (`-` is stdin).
+        #[arg(long = "body-file")]
+        body_file: Option<String>,
+        /// Start of the session, for a generated `## Saved` (`2h`, a date or
+        /// an RFC 3339 time). Default: your latest session note, at most 12
+        /// hours back.
+        #[arg(long)]
+        since: Option<String>,
+        /// The agent app (`delta`, `claude-code`, `pi`, ...). Default: the one
+        /// the environment names, if any.
+        #[arg(long)]
+        harness: Option<String>,
+    },
+    /// What you wrote in the farm since `--since`: each yak with links to
+    /// your notes on it, then the doks, sources and schemas you changed.
+    /// Markdown for a note's `## Saved`; `--json` for a harness.
+    Touched {
+        /// Default: your latest session note, at most 12 hours back.
+        #[arg(long)]
+        since: Option<String>,
+        /// Whose writes (default: you).
+        #[arg(long)]
+        by: Option<String>,
+        #[arg(long)]
+        json: bool,
+    },
+    /// List session notes, oldest first: path, day, actor, verdicts, title.
+    List {
+        /// Only agents' own notes nobody has reviewed yet (no `promoted:`).
+        #[arg(long)]
+        unreviewed: bool,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Mark session notes reviewed: stamp `promoted: <today>` once their
+    /// facts worth keeping are in doks. One commit for all of them.
+    Promote {
+        #[arg(required = true, num_args = 1..)]
+        paths: Vec<String>,
+    },
 }
 
 #[derive(Subcommand)]
@@ -2808,6 +2883,7 @@ fn main() -> Result<()> {
             },
         },
         Command::Dok { action } => run_dok(&farm, action)?,
+        Command::Session { action } => run_session(&farm, action)?,
         Command::Source { action } => match action {
             SourceAction::Add {
                 path,
@@ -3397,13 +3473,22 @@ fn slaughter_many(farm: &Farm, ids: &[String], family: bool, actor: Option<&str>
 /// when the id was not found or (never, without a `base`) conflicted, so the
 /// caller can exit non-zero.
 fn update_one(farm: &Farm, id: &str, edit: TaskEdit) -> Result<bool> {
+    let noted = edit.note.is_some();
     match farm.update(id, edit)? {
         UpdateOutcome::NotFound => {
             eprintln!("error: task {id} not found");
             Ok(false)
         }
         UpdateOutcome::Updated => {
-            println!("Updated {id}");
+            // A new note's link (yaks-c5bd), so nobody builds one by hand.
+            let link = noted
+                .then(|| store::load_task_by_id(farm.root(), id).ok().flatten())
+                .flatten()
+                .and_then(|t| links::latest_note_link(id, &t.body));
+            match link {
+                Some(l) => println!("Updated {id}: note {l}"),
+                None => println!("Updated {id}"),
+            }
             Ok(true)
         }
         UpdateOutcome::NoChanges => {
@@ -3931,6 +4016,172 @@ fn print_dok_rows(doks: &[&doks::Dok]) {
     for p in doks {
         println!("  {:w$}  {:kw$}  {}", p.path, p.kind(), p.title());
     }
+}
+
+/// The start of a session: `--since`, else the actor's latest session note,
+/// at most 12 hours back.
+fn session_since(
+    farm: &Farm,
+    actor: &str,
+    since: Option<&str>,
+) -> Result<chrono::DateTime<chrono::Utc>> {
+    let now = chrono::Utc::now();
+    match since {
+        Some(s) => store::parse_since(s, now),
+        None => Ok(sessions::default_since(
+            farm.root(),
+            actor,
+            now - chrono::Duration::hours(12),
+        )),
+    }
+}
+
+/// The agent app the environment names, if any.
+fn harness_from_env() -> Option<String> {
+    let set = |k: &str| env::var(k).is_ok_and(|v| !v.is_empty());
+    if set("DELTA_CURRENT_THREAD_ID") || set("DELTA_THREAD_TITLE") {
+        Some("delta".into())
+    } else if set("CLAUDECODE") {
+        Some("claude-code".into())
+    } else {
+        None
+    }
+}
+
+fn run_session(farm: &Farm, action: SessionAction) -> Result<()> {
+    let me = || {
+        actor::resolve(None).ok_or_else(|| {
+            anyhow::anyhow!("no actor name: name yourself once with `yaks whoami --set <name>`")
+        })
+    };
+    match action {
+        SessionAction::Note {
+            title,
+            body,
+            body_file,
+            since,
+            harness,
+        } => {
+            let Some(body) = resolve_text("--body", body, body_file, &mut StdinText::real())?
+            else {
+                anyhow::bail!(
+                    "give the note's markdown with --body or --body-file (`-` reads stdin)"
+                );
+            };
+            let actor = me()?;
+            let from = session_since(farm, &actor, since.as_deref())?;
+            let saved = sessions::render_saved(&sessions::touched(farm.root(), &actor, from)?);
+            let person = std::process::Command::new("git")
+                .arg("-C")
+                .arg(farm.root())
+                .args(["config", "user.name"])
+                .output()
+                .ok()
+                .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+                .filter(|s| !s.is_empty());
+            let origin = sessions::Origin {
+                actor,
+                person,
+                host: Some(sources::host()),
+                harness: harness.or_else(harness_from_env),
+                thread: actor::harness_thread(),
+            };
+            let path = farm.session_note(&title, &body, Some(&saved), &origin)?;
+            println!("Saved session note {path}");
+            println!("{}", farm.root().join(&path).display());
+        }
+        SessionAction::Touched { since, by, json } => {
+            let actor = match by {
+                Some(b) => b,
+                None => me()?,
+            };
+            let from = session_since(farm, &actor, since.as_deref())?;
+            let t = sessions::touched(farm.root(), &actor, from)?;
+            if json {
+                json::print(&serde_json::json!({
+                    "actor": actor,
+                    "since": from.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+                    "yaks": t.yaks.iter().map(|y| serde_json::json!({
+                        "id": y.id,
+                        "title": y.title,
+                        "created": y.created,
+                        "moves": y.moves.iter().map(|(a, b)| serde_json::json!({"from": a, "to": b})).collect::<Vec<_>>(),
+                        "notes": y.notes.iter().map(|n| serde_json::json!({
+                            "link": format!("{}#{}", y.id, n.anchor),
+                            "kind": n.kind,
+                            "gist": n.gist,
+                        })).collect::<Vec<_>>(),
+                    })).collect::<Vec<_>>(),
+                    "files": t.files.iter().map(|f| serde_json::json!({
+                        "path": f.path, "verb": f.verb, "title": f.title,
+                    })).collect::<Vec<_>>(),
+                }))?;
+            } else {
+                print!("{}", sessions::render_saved(&t));
+            }
+        }
+        SessionAction::List { unreviewed, json } => {
+            let all = sessions::load_all(farm.root())?;
+            let rows: Vec<&doks::Dok> = all
+                .iter()
+                .filter(|d| !unreviewed || sessions::is_unreviewed(d))
+                .collect();
+            let verdicts = |d: &doks::Dok| {
+                sessions::VERDICTS
+                    .iter()
+                    .filter_map(|v| d.str_field(v).map(|n| format!("{v} {n}")))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            };
+            let who = |d: &doks::Dok| {
+                d.str_field("actor")
+                    .or_else(|| d.str_field("person"))
+                    .unwrap_or_default()
+            };
+            if json {
+                json::print(&serde_json::Value::Array(
+                    rows.iter().map(|d| json::dok_value(d, false)).collect(),
+                ))?;
+            } else if rows.is_empty() {
+                println!(
+                    "{}",
+                    if unreviewed {
+                        "No unreviewed session notes."
+                    } else {
+                        "No session notes."
+                    }
+                );
+            } else {
+                for d in rows {
+                    let promoted = d
+                        .str_field(sessions::PROMOTED)
+                        .map(|p| format!("  promoted {p}"))
+                        .unwrap_or_default();
+                    println!(
+                        "{}  {}  {}  [{}]  {}{promoted}",
+                        d.path,
+                        d.str_field("day").unwrap_or_default(),
+                        who(d),
+                        verdicts(d),
+                        d.title()
+                    );
+                }
+            }
+        }
+        SessionAction::Promote { paths } => {
+            let day = chrono::Local::now().format("%Y-%m-%d").to_string();
+            let done = farm.session_promote(&paths, &day)?;
+            for p in &paths {
+                let p = doks::normalize(p);
+                if done.contains(&p) {
+                    println!("Promoted {p}");
+                } else {
+                    println!("{p} was already promoted");
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 fn run_dok(farm: &Farm, action: DokAction) -> Result<()> {
