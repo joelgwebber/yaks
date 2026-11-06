@@ -1,11 +1,11 @@
 ---
 name: yaks-upkeep
-description: "Use to keep a farm's knowledge in shape: at the end of a working session (leave a session note with `yaks session note`), when asked to review session notes (move what they learned into doks, then `yaks session promote`), when asked to tidy the doks after `yaks check` (housekeeping), or to set up the recurring yaks that bring the review and the tidy back."
+description: "Use to keep a farm's knowledge in shape: at the end of a working session (leave a session note with `yaks session note`), when asked to review session notes (move what they learned into doks, then `yaks session promote`), when asked to reflect on a run of sessions (keep the lessons dok, file friction, propose instruction changes), when asked to tidy the doks after `yaks check` (housekeeping), or to set up the recurring yaks that bring the review, the reflection and the tidy back."
 ---
 
-# Upkeep: session notes, review and housekeeping
+# Upkeep: session notes, review, reflection and housekeeping
 
-A farm's knowledge stays useful only if someone keeps it: sessions leave a short account of how they went, a review moves what they learned into doks, and a housekeeping pass tidies what `yaks check` finds. yaks does the mechanical parts (paths, links, what you wrote, what is unreviewed, what is broken); the judgement is yours, by the rules here. The `yaks` skill has the commands; `yaks-research` says where knowledge goes.
+A farm's knowledge stays useful only if someone keeps it: sessions leave a short account of how they went, a review moves what they learned into doks, a reflection keeps the lessons that recur across sessions, and a housekeeping pass tidies what `yaks check` finds. yaks does the mechanical parts (paths, links, what you wrote, what is unreviewed, what is broken); the judgement is yours, by the rules here. The `yaks` skill has the commands; `yaks-research` says where knowledge goes.
 
 ## Session notes
 
@@ -56,6 +56,19 @@ When a person asks, or a recurring yak wakes you for it:
 
 Never edit a session note's body: it is the record of what happened.
 
+## Reflecting on sessions
+
+Review reads one note at a time. Reflection reads the run of notes since the last round, reviewed or not, for what only shows across several: a lesson learned twice, turns going worse, friction that keeps coming back. When a person asks, or a recurring yak wakes you for it:
+
+1. Find the round's notes: `yaks session list --json`, keeping those whose `day` is after the last round's (the recurring yak's previous shear note says when; the first round takes the last month).
+2. Read their `## Turns` and `## Lessons`, and compare the verdict counts with the last round's.
+3. **Keep the lessons dok**, `/doks/lessons.md` (`type: topic`; create it the first time): short rules for how to work in this farm's project, grouped under `##` subjects, each citing the sessions that taught it (`[session](/sessions/2025/04/...md)`). A lesson goes in when two or more sessions taught it, or when a `failed` or `partial` turn did; a one-off stays in its note. Facts about the project's subject are review's, in subject doks; this dok is how to work. Extend and merge rather than repeat; remove a lesson only when a later session showed it wrong, and say so in the account.
+4. **Friction with yaks or its skills** becomes a yak where the person tracks yaks' own work, as in review.
+5. **Instruction files are never edited here.** A lesson that belongs in `AGENTS.md` or a skill becomes, at most one per round, a yak awaiting the person: `yaks create` it, then `yaks ask <id>` with the proposed text and where it goes. They decide; you don't.
+6. Account for it as the shear note: the window, the verdict counts against last round's, lessons added, merged or removed, yaks filed, the proposal if any.
+
+The design and why: [/doks/design/session-reflection.md](/doks/design/session-reflection.md).
+
 ## Housekeeping
 
 When a person asks for a tidy, or a recurring yak wakes you for one, run `yaks check` and fix what is clear-cut. This is the asked-for exception to `yaks-research`'s "don't fix other people's doks unasked", and its rules are narrow:
@@ -82,11 +95,14 @@ Don't delete doks, sources or rows, don't rewrite prose, and don't invent facts.
 
 ## Setting it up
 
-The review and the tidy each come back as **one recurring yak** per farm (the `yaks-scheduling` skill): create them once, when a person asks for upkeep, after checking they don't already exist (`yaks list --search "session notes"`). Session notes need no yak: they are written at the end of each session.
+The review, the reflection and the tidy each come back as **one recurring yak** per farm (the `yaks-scheduling` skill): create them once, when a person asks for upkeep, after checking they don't already exist (`yaks list --search "session notes"`). Session notes need no yak: they are written at the end of each session.
 
 ```sh
 yaks create "Review session notes" --every P1W --due +1w --wake agent --description - <<'EOF'
 Review the unreviewed session notes (the yaks-upkeep skill, "Reviewing session notes"): keep what they learned in doks, file the work they found, `yaks session promote` each, shear with an account per note.
+EOF
+yaks create "Reflect on the week's sessions" --every P1W --due +1w --wake agent --description - <<'EOF'
+Reflect on the sessions since the last round (the yaks-upkeep skill, "Reflecting on sessions"): keep /doks/lessons.md, file friction as yaks, at most one instruction-file proposal as an ask, shear with the account.
 EOF
 yaks create "Tidy the doks" --every P1W --due +1w --wake agent --description - <<'EOF'
 Run a housekeeping pass (the yaks-upkeep skill, "Housekeeping"): `yaks check`, fix what is clear-cut, shear with the Changed / Left alone account.

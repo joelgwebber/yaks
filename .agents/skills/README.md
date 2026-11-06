@@ -22,7 +22,8 @@ shipped ones from here.
     (`yaks tick`), what a woken yak means, and the rules for a skill that
     mirrors an outside queue into yaks.
   - `yaks-upkeep` is for keeping a farm's knowledge in shape: session notes at
-    the end of a session, reviewing them into doks, and a housekeeping pass over
+    the end of a session, reviewing them into doks, reflecting across them into
+    a lessons dok, and a housekeeping pass over
     `yaks check`.
   - `yaks-coordinating` is for a yakherd handing yaks to other agents, with a
     section each for Delta threads and plain git worktrees. (It replaced four
