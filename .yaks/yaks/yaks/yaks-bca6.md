@@ -10,6 +10,7 @@ parent: yaks-1c89
 tags:
 - design
 - doks
+needs: human
 ---
 
 Settle the shape of a session note in a farm before building the command (yaks-1c89).
@@ -28,3 +29,18 @@ Decision (Joel, 2026-11-05, in the assessment thread): a session note references
 - Pointing at specific notes needs a link form for one note: yaks-c5bd.
 
 Rejected: Hearth's four sections restated in full (duplicates yak notes); shrinking a note to verdicts, lessons and bare yak ids (loses the narrative and the discussion).
+
+---
+▸ 2026-11-06T04:28:54Z [herd-upkeep]
+kind: ask
+needs: human
+---
+
+asked: needs human
+
+Four details to settle before yaks-c5bd and yaks-17f5 are built; my lean on each.
+
+1. **Link form for one note.** Lean: a fragment with the note's timestamp, `yak-0af1#2026-11-04T22:13:03Z`, since timestamps are already in every note header and survive `--drop-request` (an index would shift). `doctor` flags the rare second shared by two notes, and `yaks update` prints the new note's link so agents never construct one by hand.
+2. **Sections.** Lean: keep Hearth's four (Summary, Turns, Saved, Lessons) so reflection reads farm and Hearth notes alike, but let Turns and Saved items be links (`- good: landed the parser, [note](yak-0af1#...)`), and allow an optional `## Discussion` for exposition no yak holds. Lessons stay in full: they are the part no yak note has.
+3. **Path.** Lean: `sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md`, `type: session-review`, Hearth's frontmatter fields (person, host, harness, day, saved time, verdict counts).
+4. **Back-links.** Lean: no note on each yak a session touched (noise); `yaks refs <id> --incoming` finds the session notes that cite it.
