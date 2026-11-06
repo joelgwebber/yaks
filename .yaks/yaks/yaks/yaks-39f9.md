@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T04:28:32Z'
-updated: '2026-11-06T23:23:54Z'
+updated: '2026-11-06T23:27:13Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -50,3 +50,11 @@ Decision: one shared `doks::value_matches(&[String], expr)` serves both doks and
 Decision: compare is numeric only when both sides parse as numbers, else plain string order (dates). No escape for a plain value that starts with `!~<>`: not asked for; follow-up if needed.
 
 Done: operators in src/doks.rs (value_matches, matches), --rows filter + clap help in src/main.rs, docs/cli.md, yaks-research skill (2 lines). README has no `dok query` row, so unchanged. Unit tests per operator + tests/doks.rs date CLI test.
+
+---
+▸ 2026-11-06T23:27:13Z [query-2]
+kind: verify
+result: fail
+---
+
+verify: `cargo test -p yaks` -> FAIL (exit 101)
