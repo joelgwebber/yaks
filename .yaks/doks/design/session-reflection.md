@@ -8,7 +8,7 @@ tags:
 
 # Reflecting on sessions
 
-A proposal for [yaks-7168](yaks-7168): the weekly reflection Hearth planned (hearth-3285, never built), split between yaks and an agent harness by the rule the family follows. What can be decided from the files is a command; judgement is the `yaks-upkeep` skill; putting text in front of a model is the harness's.
+Accepted by Joel (2026-11-06, [yaks-7168](yaks-7168)); the procedure is the `yaks-upkeep` skill's "Reflecting on sessions". Originally a proposal: the weekly reflection Hearth planned (hearth-3285, never built), split between yaks and an agent harness by the rule the family follows. What can be decided from the files is a command; judgement is the `yaks-upkeep` skill; putting text in front of a model is the harness's.
 
 ## What review leaves undone
 
