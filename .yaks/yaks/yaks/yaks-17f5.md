@@ -1,11 +1,11 @@
 ---
 id: yaks-17f5
 title: 'Command: write a session note into sessions/'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:28:30Z'
-updated: '2026-11-06T04:28:34Z'
+updated: '2026-11-06T04:57:02Z'
 parent: yaks-1c89
 depends_on:
 - yaks-bca6
@@ -22,3 +22,13 @@ Mechanical help worth having: list the yaks, notes and doks the actor wrote duri
 Keep the file shape compatible with Hearth's `session-review` notes, so the ones `import-hearth` brought in read the same.
 
 Docs and help in the same change: `docs/cli.md`, clap help, the `yaks` skill's command table.
+
+---
+▸ 2026-11-06T04:57:02Z [herd-upkeep]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
