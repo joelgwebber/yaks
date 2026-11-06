@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T04:57:49Z'
-updated: '2026-11-06T23:27:35Z'
+updated: '2026-11-06T23:27:36Z'
 parent: yaks-1c89
 tags:
 - tui
@@ -50,3 +50,21 @@ result: pass
 verify: `cargo test --workspace` -> PASS (exit 0)
 
 [b6a7-note-link-frame](yaks-b6a7/b6a7-note-link-frame.txt)
+
+---
+▸ 2026-11-06T23:27:36Z [tui-1]
+
+Decision: a new `Target::Note { id, anchor }` variant, not an `Option` note on `Target::Task`.
+
+- Rejected: widening `Task(String)`: it is matched in many places (autolinks, ref rows, history) that never carry a note.
+- Rejected: resolving the note in `mdrender::link_target` to a row: the row depends on the pane width, which only the detail model knows.
+
+Decision: the landing row is the note's header row, found in the built detail lines by `Src { block: i + 1, lines: None }` where `i = links::find_note(parse_notes(body), anchor)`.
+
+- Rejected: matching on the header text: it shows an actor and a relative time, not the timestamp.
+
+Decision: `goto_task` and the new `goto_note` share one `goto_yak`, so the cursor move happens inside the same `App::jump` closure and `o` returns to the linking row (also from a link in the text viewer).
+
+Decision: a missing note opens the yak at the top, notification `→ <id> (no note <anchor>)`; a landed one says `→ <id>#<anchor>`.
+
+- Rejected: refusing to open the yak, since the claim note says to open it.
