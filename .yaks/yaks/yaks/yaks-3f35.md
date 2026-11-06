@@ -1,11 +1,11 @@
 ---
 id: yaks-3f35
 title: 'Feedback from the schism import: session notes, doks and imports'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-06T21:36:14Z'
-updated: '2026-11-06T21:36:14Z'
+updated: '2026-11-06T22:50:58Z'
 parent: yaks-1c89
 tags:
 - doks
@@ -32,3 +32,12 @@ This yak groups the follow-ups. Each child names the item it came from.
 Also: Joel filed yaks-85a6 (sessions not visible in the TUI), and the 62 `[session](/sessions/...)` citations the review wrote into schism's doks read as a bare `(session)`: yaks-5f70.
 
 The code children change `src/sessions.rs` and `yaks session` in `src/main.rs`, which exist only on the `upkeep` work: land that first, or build on it.
+
+---
+▸ 2026-11-06T22:50:58Z [sched-1]
+kind: move
+from: hairy
+to: shaving
+---
+
+moved: hairy -> shaving
