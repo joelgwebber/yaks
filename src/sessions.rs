@@ -377,7 +377,7 @@ fn gist(text: &str) -> String {
             return stamp.to_string();
         }
     }
-    let line = lines.next().unwrap_or("");
+    let line = link_text(lines.next().unwrap_or(""));
     let line: String = line.chars().filter(|c| !matches!(c, '[' | ']')).collect();
     let line = line.trim_start_matches(['#', ' ']).to_string();
     if line.chars().count() > 80 {
@@ -386,6 +386,26 @@ fn gist(text: &str) -> String {
     } else {
         line
     }
+}
+
+/// Markdown links reduced to their text: `[x](dest)` -> `[x]` (the brackets
+/// go later), so a gist reads as prose.
+fn link_text(line: &str) -> String {
+    let mut out = String::new();
+    let mut rest = line;
+    while let Some(i) = rest.find("](") {
+        out.push_str(&rest[..=i]);
+        let after = &rest[i + 2..];
+        match after.find(')') {
+            Some(j) => rest = &after[j + 1..],
+            None => {
+                rest = after;
+                break;
+            }
+        }
+    }
+    out.push_str(rest);
+    out
 }
 
 /// The start of a session for `actor`, when none is given: its latest
@@ -399,7 +419,9 @@ pub fn default_since(root: &Path, actor: &str, fallback: DateTime<Utc>) -> DateT
         .max()
         // Times are whole seconds: start just after the note, so what the
         // last session wrote in its final second stays in that session.
-        .map_or(fallback, |t| (t + chrono::Duration::seconds(1)).max(fallback))
+        .map_or(fallback, |t| {
+            (t + chrono::Duration::seconds(1)).max(fallback)
+        })
 }
 
 /// What `actor` wrote in the farm at `root` since `since`: its notes on yaks
@@ -533,6 +555,8 @@ pub fn render_saved(t: &Touched) -> String {
         s.push('\n');
         for n in &y.notes {
             let label = match &n.kind {
+                // A verify note already reads `verify: ...`.
+                Some(k) if n.gist.starts_with(&format!("{k}:")) => n.gist.clone(),
                 Some(k) if !n.gist.is_empty() => format!("{k}: {}", n.gist),
                 Some(k) => k.clone(),
                 None if n.gist.is_empty() => "note".into(),
@@ -577,6 +601,16 @@ mod tests {
         assert!(check_body(&BODY.replace("## Lessons\n\n- none\n", "")).is_err());
         assert!(check_body(&BODY.replace("Tried the parser.", "")).is_err());
         assert!(check_body(&"x".repeat(MAX_CHARS + 1)).is_err());
+    }
+
+    #[test]
+    fn a_gist_reads_as_prose() {
+        assert_eq!(
+            gist("Done: the [skill](code:a/b.md@1#L2) and [x](y).\nmore"),
+            "Done: the skill and x."
+        );
+        assert_eq!(gist("asked: needs human\n\nWhich one?"), "Which one?");
+        assert_eq!(gist("picked up"), "picked up");
     }
 
     #[test]
