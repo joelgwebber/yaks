@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:28:30Z'
-updated: '2026-11-06T04:57:12Z'
+updated: '2026-11-06T04:58:06Z'
 parent: yaks-1c89
 depends_on:
 - yaks-bca6
@@ -41,3 +41,15 @@ result: pass
 ---
 
 verify: `cargo test --test sessions && cargo test --bin yaks sessions` -> PASS (exit 0)
+
+---
+▸ 2026-11-06T04:58:06Z [herd-upkeep]
+
+Done on branch `upkeep` (505d2058): `yaks session note|touched|list|promote` ([src/sessions.rs](code:src/sessions.rs@505d2058)).
+
+- `session note --title T --body -` checks the body (Summary, Turns with a verdict on every item, Lessons; optional Discussion and Saved; 12,000-character cap), writes `sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md` with Hearth's `session-review` frontmatter plus `actor`, `harness` and the Delta `thread`, and commits it.
+- Without `## Saved`, yaks writes it from `session touched`: each yak the actor created, moved or noted with a link to each note, then the doks, sources and schemas its commits wrote. The default window is since the actor's last session note, at most 12 hours.
+- `doctor` now checks links in `sessions/`, and the farm commit subject names session notes.
+- Follow-ups: yaks-2e00 (`refs --incoming` over doks and sessions), yaks-525b (hand edits committed with `yaks commit` carry no actor, so `touched` misses them).
+
+Evidence: `yaks verify` PASS; the first real note is this session's own, written with the installed build (linked from yaks-1c89).
