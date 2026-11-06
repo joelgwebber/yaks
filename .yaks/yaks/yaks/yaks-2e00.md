@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T04:57:49Z'
-updated: '2026-11-06T23:13:39Z'
+updated: '2026-11-06T23:15:36Z'
 parent: yaks-1c89
 tags:
 - cli
@@ -31,3 +31,8 @@ Claim (yakherd herd-upkeep-2, 2026-11-06): worker `refs-1`, then yaks-525b in th
 - **Scope:** `yaks refs <id> --incoming` (text and `--json`) also lists doks and session notes that link or mention the yak, each with its path and line, and for a note link the note it names (`<id>#<ts>`). Yak entries are unchanged.
 - **Files:** `backrefs_in` / `Farm::backrefs` in `src/farm.rs` (a new entry kind), `render_backrefs`/`backrefs_json` in `src/main.rs`; use `links::edges` (it already reads doks and `sessions/`) rather than a second scanner. Docs: `docs/cli.md` `### refs`, the `yaks` skill's Links bullet and the `yaks-upkeep` skill's line that says to use `yaks find <id> --kind sessions` instead.
 - **Judge:** `cargo test -p yaks` with a CLI test: a dok and a session note citing a yak note both show up.
+
+---
+▸ 2026-11-06T23:15:36Z [refs-1]
+
+Start Fri Nov  6 23:15:35 UTC 2026. Checkout: /Users/joel/src/yaks/.delta/worktrees/t269kax3x3s6/yaks. Yak path: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-2e00.md.
