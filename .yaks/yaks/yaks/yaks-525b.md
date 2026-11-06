@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-11-06T04:57:49Z'
-updated: '2026-11-06T23:52:13Z'
+updated: '2026-11-06T23:54:23Z'
 parent: yaks-1c89
 tags:
 - cli
@@ -65,3 +65,13 @@ thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjn95IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-06T23:54:23Z [herd-upkeep-2]
+kind: landed
+commit: 306531496388de3a9e04651d657f8560b28f627b
+source: c2a6a9acadbf46c682730db7d25e7665f3b61809
+branch: main
+---
+
+landed: 30653149 yaks-525b: yaks commit --as <actor> stamps hand edits with a Yaks-Actor trailer
