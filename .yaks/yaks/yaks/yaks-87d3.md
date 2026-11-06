@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T01:23:16Z'
-updated: '2026-11-06T01:23:39Z'
+updated: '2026-11-06T01:23:40Z'
 tags:
 - doks
 - cli
@@ -33,3 +33,13 @@ thread: ksQQcsYXd-T6RPSH25f_4VJRspLOAETlkJIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-06T01:23:40Z [source-refresh]
+
+Plan, from reading [sources.rs](code:src/sources.rs):
+
+- `Request` gains `refresh: bool`; `Saved` gains `Refreshed(dir)` (unchanged content is the existing `Already`).
+- `add` looks the source up by `resource == url` first when refreshing. Found and different: rewrite its payload, `extracted.md` and `source.md` in the same directory and keep id, title and `part_of`; record `previous_sha256`.
+- `find` (dedupe by sha) matched on the id's `-<sha8>` suffix, which a refreshed source no longer has. It now checks each `source.md`'s `sha256:`, so "saving the same content again returns the existing source" stays true after a refresh.
+- Tests first: refresh updates in place, unchanged is a no-op, no match creates, `--refresh` without `--url` is refused, a plain `add` of a refreshed source's current bytes finds it.
