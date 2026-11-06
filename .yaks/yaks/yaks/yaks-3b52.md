@@ -1,0 +1,26 @@
+---
+id: yaks-3b52
+title: 'Session note timestamps: name and time zone of reviewed:'
+status: hairy
+type: task
+priority: 2
+created: '2026-11-06T21:36:37Z'
+updated: '2026-11-06T21:36:37Z'
+parent: yaks-3f35
+tags:
+- doks
+- design
+---
+
+From yaks-3f35, item 2. A session note's `reviewed:` field holds the time the note was written (`sessions::build` in the `upkeep` work sets it to now), not when anyone reviewed it; the review stamps `promoted:`. And the note's path and `day:` use local time while `reviewed:` is UTC, so a note written at 23:30 in California sits under one day and claims another.
+
+The name came from Hearth's `session-review` files, where a server reviews a conversation after the fact; for a note an agent writes about its own session, it reads as the review time. `default_since` (the start of the next `touched` window) reads it.
+
+## To decide
+
+- The field's name: keep `reviewed:` (Hearth's notes and `import-hearth` read alike), or rename it (`written:` / `saved:`) and read `reviewed:` as a fallback for imported Hearth notes.
+- The time zone: write it with the local offset (`2026-11-06T13:30:00-08:00`), so it agrees with the path and `day:`, or keep UTC and derive the path from UTC too.
+
+## Evidence
+
+Tests for the chosen name and zone, the `yaks-upkeep` skill's description of the frontmatter, and `docs/`.
