@@ -5,8 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-03T21:04:56Z'
-updated: '2026-11-03T22:28:12Z'
-parent: yaks-f677
+updated: '2026-11-06T22:48:57Z'
 tags:
 - tui
 needs: agent
