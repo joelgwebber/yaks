@@ -1,11 +1,11 @@
 ---
 id: yaks-85a6
 title: Sessions not visible in doks
-status: hairy
+status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T21:28:20Z'
-updated: '2026-11-06T22:52:23Z'
+updated: '2026-11-06T22:55:18Z'
 parent: yaks-3f35
 tags:
 - tui
@@ -20,3 +20,13 @@ Context from yaks-3f35: the schism farm's doks cite session notes 62 times as `[
 
 - Opening `/sessions/...` links from a dok or yak belongs here, with the sessions list.
 - The citation's wording is yaks-5f70.
+
+---
+▸ 2026-11-06T22:55:18Z [schism-feedback]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
