@@ -1,11 +1,11 @@
 ---
 id: yaks-2e00
 title: 'refs --incoming on a yak: include doks and session notes'
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-06T04:57:49Z'
-updated: '2026-11-06T23:38:43Z'
+updated: '2026-11-06T23:38:44Z'
 parent: yaks-1c89
 tags:
 - cli
@@ -58,3 +58,13 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 ▸ 2026-11-06T23:38:43Z [refs-1]
 
 Summary: `yaks refs <id> --incoming` (text and `--json`) now also lists doks and session notes that link the yak or one of its notes: text lines `dok|session  <path>:L<n>  [<id>#<ts>]`, JSON `docs: [{path, kind, line, note}]`. Yak entries unchanged. Files: src/farm.rs, src/main.rs, tests/links.rs (new CLI test), tests/snapshots/cli__refs_incoming_json.snap (gains `"docs": []`), docs/cli.md, README.md, yaks and yaks-upkeep skills. Full `cargo test` green (the init_modes flake did not fire).
+
+---
+▸ 2026-11-06T23:38:44Z [refs-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjn95IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
