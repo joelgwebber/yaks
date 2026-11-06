@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-11-06T04:27:55Z'
-updated: '2026-11-06T04:27:55Z'
+updated: '2026-11-06T04:28:55Z'
 parent: yaks-44b3
 tags:
 - doks
@@ -30,3 +30,18 @@ As yaks-44b3 decided: what can be decided from the files alone is a command; jud
 - **Weekly reflection:** not built in Hearth either; decide the split.
 
 Stays in Hearth: `core/` memory injection, protected paths and trust, fetching (web, Drive, mail), the clock, transcripts, the morning summary.
+
+---
+▸ 2026-11-06T04:28:55Z [herd-upkeep]
+
+Filed the family (herd-upkeep, 2026-11-05):
+
+- yaks-bca6 design: session notes in a farm (Joel's direction recorded; four details in an open ask)
+- yaks-c5bd links to one note of a yak
+- yaks-17f5 command to write a session note
+- yaks-e58f session review mechanics
+- yaks-3fa5 the `yaks-upkeep` skill (session notes, review, housekeeping, registering recurring yaks)
+- yaks-fcdc tools an agent layer needs: yaks-252c hash-checked edits (p1), yaks-6cdd table row writes, yaks-39f9 query operators, yaks-80bd small gaps
+- yaks-7168 design: weekly reflection
+
+Order: design, then note links and the command, then review, then the skill. The tool gaps are independent.
