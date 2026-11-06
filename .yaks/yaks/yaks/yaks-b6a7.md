@@ -1,11 +1,11 @@
 ---
 id: yaks-b6a7
 title: 'TUI: following a note link lands on its note'
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-06T04:57:49Z'
-updated: '2026-11-06T23:27:37Z'
+updated: '2026-11-06T23:27:38Z'
 parent: yaks-1c89
 tags:
 - tui
@@ -79,3 +79,13 @@ Done: following a note link in the TUI lands the detail cursor on that note.
 - Docs: `docs/tui.md` (history section, yak-link bullets), `docs/cli.md` (note-link line). No key changed, so no `keymap.rs` edit.
 - Evidence: frame attached (`b6a7-note-link-frame.txt`); `yaks verify` PASS (full `cargo test`).
 - No insta snapshot changed.
+
+---
+▸ 2026-11-06T23:27:38Z [tui-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjb85IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
