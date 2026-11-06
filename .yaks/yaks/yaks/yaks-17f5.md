@@ -1,11 +1,11 @@
 ---
 id: yaks-17f5
 title: 'Command: write a session note into sessions/'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-06T04:28:30Z'
-updated: '2026-11-06T04:58:06Z'
+updated: '2026-11-06T04:58:08Z'
 parent: yaks-1c89
 depends_on:
 - yaks-bca6
@@ -53,3 +53,13 @@ Done on branch `upkeep` (505d2058): `yaks session note|touched|list|promote` ([s
 - Follow-ups: yaks-2e00 (`refs --incoming` over doks and sessions), yaks-525b (hand edits committed with `yaks commit` carry no actor, so `touched` misses them).
 
 Evidence: `yaks verify` PASS; the first real note is this session's own, written with the installed build (linked from yaks-1c89).
+
+---
+▸ 2026-11-06T04:58:08Z [herd-upkeep]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
