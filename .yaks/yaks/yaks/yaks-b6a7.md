@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-11-06T04:57:49Z'
-updated: '2026-11-06T23:27:38Z'
+updated: '2026-11-06T23:28:26Z'
 parent: yaks-1c89
 tags:
 - tui
@@ -89,3 +89,13 @@ thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjb85IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-06T23:28:26Z [herd-upkeep-2]
+kind: landed
+commit: 6006e665e18eada8f3e71526a8430003c9f78893
+source: fcce895f48fb36292df815df0104bc114f3b79cb
+branch: main
+---
+
+landed: 6006e665 yaks-b6a7: following a note link in the TUI lands on its note
