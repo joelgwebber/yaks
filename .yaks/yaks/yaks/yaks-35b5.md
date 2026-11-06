@@ -1,11 +1,11 @@
 ---
 id: yaks-35b5
 title: One farm worktree per repository on a machine, shared by every checkout of it
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T22:00:49Z'
-updated: '2026-11-06T22:00:49Z'
+updated: '2026-11-06T22:00:55Z'
 tags:
 - cli
 - delta
@@ -20,3 +20,13 @@ A farm worktree belongs to one host git dir (`store::farm_home` hashes it; disco
 - Key the farm home by the repository's normalized `origin` URL when it has one (`github.com/rocketsurgery-games/schism`, whatever the scheme or `.git` suffix), named after its last segment (also fixes yaks-9a13's `repository-…`). No origin: the git dir, as now.
 - Discovery: a host with no registered farm worktree adopts the one at its farm home when that worktree is on the farm branch and its repository has the same origin, instead of bootstrapping a second.
 - Existing duplicates: a recipe to merge them (move one to the shared home, remove the other), and do it for schism.
+
+---
+▸ 2026-11-06T22:00:55Z [schism-feedback]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
