@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T04:57:49Z'
-updated: '2026-11-06T23:52:01Z'
+updated: '2026-11-06T23:52:12Z'
 parent: yaks-1c89
 tags:
 - cli
@@ -50,3 +50,8 @@ result: pass
 ---
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-11-06T23:52:12Z [refs-1]
+
+Summary: `yaks commit --as <actor>` stamps a hand-edit commit with `Yaks-Actor: <actor>` (explicit only; plain commit unchanged). Files: src/commit.rs, src/main.rs, tests/autocommit.rs (CLI test), docs/cli.md, README.md, yaks and yaks-upkeep skills. Full `cargo test` green; `yaks verify` PASS.
