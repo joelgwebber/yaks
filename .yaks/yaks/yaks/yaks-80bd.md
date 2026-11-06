@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-06T04:28:32Z'
-updated: '2026-11-06T23:14:54Z'
+updated: '2026-11-06T23:29:57Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -52,3 +52,16 @@ Start: Fri Nov 6 23:14:51 UTC 2026
 
 - yak path: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-80bd.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/rxppcdpad50n/yaks
+
+---
+▸ 2026-11-06T23:29:57Z [tools-1]
+
+Decision: `source mark` keeps ONE mark: setting `--uncited` removes `superseded_by` and vice versa; `--clear` removes both. Rejected: allowing both fields at once (two reasons for one state, `check` treats them the same).
+
+Decision: `dok define` merges by field name. A field that exists with a different type OR required flag is refused (all conflicts listed, nothing written) unless `--replace`; `--replace` sets type and required and keeps `default`/`description`. Rejected: treating a missing `!` as "leave required alone" (ambiguous restating) and silently overwriting.
+
+Decision: merge preserves the file byte for byte except what changed: new fields are appended as lines under an existing block `fields:`; only a `--replace` change or a flow-style `fields: {..}` re-renders the whole `fields:` entry (comments inside the `fields:` block would then be lost). Title/description/stale_after are written only when given (given-and-different overwrites).
+
+Decision: `dok define` refuses the untyped kinds (note, topic, howto, summary), an invalid kind name, an unknown type, a duplicate `--field`, a bad `--stale-after` (must be a duration `recur::parse_duration` reads, or YYYY-MM-DD), and a call with nothing to define. `default:`/`description:` of a field have no flag (not in the claim); docs say edit by hand.
+
+Decision: `source mark` accepts the bare id, `sources/<id>` or `sources/<id>/source.md` (with optional leading `/`) for both the source and `--superseded-by`; stores `superseded_by: sources/<id>/source.md` (the form check and the skills use). `--superseded-by` naming the source itself is refused.
