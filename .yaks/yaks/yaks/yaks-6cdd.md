@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T04:28:31Z'
-updated: '2026-11-06T23:47:26Z'
+updated: '2026-11-06T23:59:44Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -62,3 +62,8 @@ result: pass
 ---
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-11-06T23:59:44Z [query-2]
+
+Summary: yaks dok row set|delete <dok>#<key> (src/rows.rs, Farm::dok_row_set/dok_row_delete, DokAction::Row); 11 unit tests + CLI round-trip with dok query --rows; docs/cli.md + yaks-research skill updated. Full 'cargo test --no-fail-fast' green (one earlier run hit the known init_modes flake).
