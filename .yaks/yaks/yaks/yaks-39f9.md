@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T04:28:32Z'
-updated: '2026-11-06T23:38:00Z'
+updated: '2026-11-06T23:38:08Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -66,3 +66,8 @@ result: pass
 ---
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-11-06T23:38:08Z [query-2]
+
+Summary: dok query --where / --rows take ~ < <= > >= ! and empty operators; first verify run FAILED once in a different integration test (8 passed, 1 failed; test binary not named in the tail; a rerun of the full gate PASSED), likely load flake.
