@@ -262,8 +262,7 @@ yaks create "Fix the header"             # -> web-xxxx, in ~/src/api's farm
 
 `git config yaks.farm <checkout>` / `yaks.herd <prefix>` by hand does the same.
 `YAKS_DIR=<dir>` overrides everything for one command (a `.yaks/` directory, or
-a directory containing one). `yaks merge <farm>` folds another farm in, and
-`yaks import-hearth <repo>` copies a Hearth-layout repo's doks, sources and schemas in.
+a directory containing one). `yaks merge <farm>` folds another farm in.
 
 ## Configuration
 

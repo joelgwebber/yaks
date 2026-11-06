@@ -202,7 +202,6 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 | `conflicts` | Files a merge left to settle: prose holding `<<<<<<< here` … `>>>>>>> other side` markers, or a dok's `merge_conflicts:` list. Fields always merge on their own; edit the text to one version (and drop the settled `merge_conflicts:` entry) |
 | `weight` / `lfs` | What the farm costs a code clone; store binary originals in Git LFS |
 | `private [--off]` | Keep the farm on this machine |
-| `import-hearth <repo>` | Copy a Hearth-layout repo's doks, sources, schemas and sessions into the farm (links rewritten, one commit; `--dry-run` first) |
 | `init` / `migrate` / `merge` | Start a farm (or `--farm` to share one); upgrade an old schema (a human's call, never an agent's); consolidate another farm |
 | `doctor [--strict]` / `preflight` | Farm integrity; pre-landing check |
 | `check [--json]` | Upkeep of doks and sources: stale doks (`stale_after`), uncited sources, kinds that look alike, broken links; exits 1 on a finding |

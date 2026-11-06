@@ -163,7 +163,6 @@ Mentions are whole real ids, matched exactly as `refs` and the TUI links do. Com
 | `source add <path> \| list` | Save outside material as a write-once source; list them. [Details](#source) |
 | `session note\|touched\|list\|promote` | Session notes: save one at the end of a working session, see what you wrote, list the unreviewed, mark them reviewed. [Details](#session) |
 | `promote <id>/<file> [--dok <path>]` | Move a yak's attachment into a source or a dok, rewriting links. [Details](#source) |
-| `import-hearth <repo>` | Copy a Hearth-layout repo's `doks/`, `raw/sources/`, `schemas/` and `raw/sessions/` into the farm, links rewritten; `--dry-run` first. [Details](#import-hearth) |
 | `dok list\|show\|new\|set\|query\|types` | The farm's doks: markdown documents under `doks/` or `<herd>/doks/` that are not yaks. [Details](#dok) |
 | `reparent <ids…> --parent <id>` | Move yaks under a new parent (or `--unparent` to top-level). |
 | `rename <old> <new>` | Rename a yak's id, updating every reference across the farm (its file, its `.yaks/<herd>/yaks/<id>/` attachment dir and the `](<old>/…)` links to it). |
@@ -215,25 +214,6 @@ Update fields/tags, replace the body (`--description`/`--description-file`) or a
 Merge another farm's yaks (all statuses + attachments, copied byte for byte; a source on the old layout is refused, see `init`) into this one, preserving ids and status, and declaring any incoming herd in this farm's `herds:` config so it shows up in the pickers.
 
 Non-destructive (source left intact); refuses on id collisions — reconcile the source's herd with `rename-herd` first.
-
-### `import-hearth`
-
-`import-hearth <repo> [--dry-run]`
-
-Copy a [Hearth](https://github.com/joelgwebber/hearth)-layout repo's knowledge into this farm. Hearth's doks and sources are the formats yaks reads, so files move as they are; only the folders and the links change:
-
-| In the repo | In the farm |
-|---|---|
-| `doks/**` | `doks/**` (same paths) |
-| `raw/sources/<id>/` | `sources/<id>/`, byte for byte |
-| `schemas/*.md` | `schemas/` |
-| `raw/sessions/**` | `sessions/**` (a top-level directory is a herd only when it holds `yaks/`, so this is not one) |
-
-- **Links** are rewritten by byte range and nothing else in a file changes. A `../` link (the [link grammar](#links) refuses it) becomes a farm-root link, `../../raw/sources/<id>/x.png` -> `/sources/<id>/x.png`, `../projects/x.md` -> `/doks/projects/x.md`; one that points at a file of the repo that is not imported (`notes/`, `projects/`) becomes a `code:` link (`code:notes/x.md`). Links that stay below the dok, URLs and code spans are left alone. `raw/sources/<id>/...` paths in frontmatter (`sources:` of a dok, `part_of` and `superseded_by` of a `source.md`) become `sources/<id>/...`, keeping the entry's formatting.
-- **Not imported:** `schedules/`, `core/`, `instructions/`, `views/`, `.agents/`, `AGENTS.md` (Hearth's harness side), and anything else at the top level (`notes/`, `projects/`), which stays in the repo. The report lists them.
-- The repo is only read. A file the farm already holds is skipped when identical; if any differs, the command prints `REFUSED` with the paths, writes nothing and exits 1. Re-running is therefore a no-op.
-- One commit on the farm branch, `yaks: import N doks, M sources, ... from <repo> @ <HEAD>`, holding only the files the import wrote.
-- The report counts what moved, links rewritten, `code:` links (and whether the target exists), prose that still names a `raw/` path (not a link: left as written), files that are git-lfs pointers rather than content (run `git lfs pull` in the repo, then import again), and `doctor`'s findings afterwards. `--dry-run` prints the same report and writes nothing.
 
 ### `merge-driver`
 
@@ -328,7 +308,7 @@ A **source** is a snapshot of material from outside the farm, written once and c
 A **session note** is a short account of one working session, kept so a later review can move what it learned into doks and a weekly reflection can learn from how sessions go. The `yaks-upkeep` skill says when to write one and what goes in it; this is the mechanics.
 
 - `session note` saves `sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md` as one commit and prints its path. The body is markdown with `## Summary`, `## Turns` (one `- <verdict>: <reason>` per request; verdict `good`, `partial`, `failed` or `unclear`), `## Lessons` (`- none` when none), and optionally `## Discussion` and `## Saved`. A turn without a verdict, a missing section or a body over 12,000 characters is refused, and nothing is written.
-- yaks writes the frontmatter: `type: session-review`, `title`, `source: session-note`, `actor`, `person` (git `user.name`), `host`, `harness` (`--harness`, else `delta` or `claude-code` when the environment says so), `thread` (the Delta thread id, the way back to the transcript), `day`, `reviewed` (when it was saved) and a count of each verdict. It is the shape of Hearth's `session-review` files, so notes `import-hearth` brought in list alongside.
+- yaks writes the frontmatter: `type: session-review`, `title`, `source: session-note`, `actor`, `person` (git `user.name`), `host`, `harness` (`--harness`, else `delta` or `claude-code` when the environment says so), `thread` (the Delta thread id, the way back to the transcript), `day`, `reviewed` (when it was saved) and a count of each verdict. It is the shape of Hearth's `session-review` files, so notes copied in from a Hearth repo list alongside.
 - Without a `## Saved` section, yaks writes one before `## Lessons` from `session touched`.
 - `session touched` lists what an actor (you, else `--by`) wrote in the farm since `--since` (`2h`, a date or an RFC 3339 time; default: its latest session note, at most 12 hours back): each yak it created, moved or noted, with a [link to each note](#links), then the doks, sources and schemas its commits created or changed. A hand edit committed with `yaks commit` carries no actor, so it is not listed.
 - `session list` prints path, day, actor, verdict counts and title, oldest first; `--unreviewed` keeps the agents' own notes (`source: session-note`) without `promoted:`.

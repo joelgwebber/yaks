@@ -20,7 +20,6 @@ mod fields;
 mod filter;
 mod find;
 mod gitrepo;
-mod hearth_import;
 mod init;
 mod json;
 mod land;
@@ -1226,22 +1225,6 @@ enum Command {
         #[arg(long)]
         dry_run: bool,
     },
-    /// Copy a Hearth-layout repo's doks, sources, schemas and sessions into this farm.
-    ///
-    /// `doks/` -> `doks/`, `raw/sources/<id>/` -> `sources/<id>/`, `schemas/`
-    /// -> `schemas/`, `raw/sessions/` -> `sessions/`. Links are rewritten to
-    /// farm paths (`../` links become `/doks/...`, or `code:` links when they
-    /// point at the repo's own files). `schedules/`, `core/`, `instructions/`,
-    /// `views/` and `.agents/` are not imported. The repo is only read;
-    /// re-running skips identical files and refuses to overwrite a different
-    /// one. One commit on the farm branch.
-    ImportHearth {
-        /// The Hearth-layout repo (a checkout with `doks/` or `raw/sources/`).
-        repo: String,
-        /// Print the report without writing anything.
-        #[arg(long)]
-        dry_run: bool,
-    },
     /// Start a farm on its own branch, or join another repo's, and install the skills.
     ///
     /// Every farm is an orphan git branch (`yaks`, or --branch) holding only
@@ -2034,13 +2017,6 @@ fn main() -> Result<()> {
                         println!("(dry run — nothing written; re-run without --dry-run to apply)");
                     }
                 }
-            }
-        }
-        Command::ImportHearth { repo, dry_run } => {
-            let report = hearth_import::run(&farm, std::path::Path::new(&repo), dry_run)?;
-            print!("{}", report.render());
-            if !report.conflicts.is_empty() {
-                std::process::exit(1);
             }
         }
         Command::Migrate { dry_run, .. } => report_migrate(&farm.migrate(dry_run)?),

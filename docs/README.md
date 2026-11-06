@@ -18,7 +18,7 @@ files live on the repo's **farm branch** (`yaks`, an orphan branch holding only
   doks/           # reserved: farm-wide doks
   sources/        # reserved: saved outside material
   schemas/        # reserved: dok and field types
-  sessions/       # session notes (`yaks session note`), and any imported from Hearth
+  sessions/       # session notes (`yaks session note`)
 ```
 
 ## The model
