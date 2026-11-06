@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 1
 created: '2026-11-06T04:28:31Z'
-updated: '2026-11-06T23:14:41Z'
+updated: '2026-11-06T23:27:34Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -43,3 +43,11 @@ Start: 2026-11-06T23:14:38Z
 
 - yaks path yaks-252c: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-252c.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/sr37a33ha7db/yaks
+
+---
+▸ 2026-11-06T23:27:34Z [doks-1]
+kind: verify
+result: fail
+---
+
+verify: `cargo test -p yaks` -> FAIL (exit 101)
