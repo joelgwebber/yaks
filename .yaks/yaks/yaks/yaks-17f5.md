@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:28:30Z'
-updated: '2026-11-06T04:57:02Z'
+updated: '2026-11-06T04:57:03Z'
 parent: yaks-1c89
 depends_on:
 - yaks-bca6
@@ -13,6 +13,7 @@ depends_on:
 tags:
 - cli
 - doks
+verify: cargo test --test sessions && cargo test --bin yaks sessions
 ---
 
 A command that writes a session note into the farm: one file under `sessions/YYYY/MM/`, `type: session-review`, in the shape settled on the design yak, committed under the actor's name like any other write. Model-free: the agent supplies the narrative, turns and lessons; yaks supplies the path, the frontmatter (actor, host, harness, day, time, verdict counts) and the commit, and prints the path.
