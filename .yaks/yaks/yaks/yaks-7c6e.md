@@ -5,8 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-06T22:46:52Z'
-parent: yaks-f677
+updated: '2026-11-06T22:48:01Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
