@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-06T04:28:29Z'
-updated: '2026-11-06T04:38:03Z'
+updated: '2026-11-06T04:56:54Z'
 parent: yaks-1c89
 tags:
 - design
@@ -63,3 +63,13 @@ kind: pickup
 picked up
 
 herd-upkeep: recording the answers and building on them (yaks-c5bd, yaks-17f5).
+
+---
+▸ 2026-11-06T04:56:54Z [herd-upkeep]
+
+Decision (Joel, 2026-11-06, answering the ask): all four leans, with one refinement to 1.
+
+- **Note links** are `<id>#<timestamp>`. Notes written in the same second (a shear note and its move, an ask and its decision) share a timestamp often, so the later ones take `-1`, `-2` in file order, as GitHub numbers duplicate headings; the first stays the plain timestamp. Built in yaks-c5bd.
+- **Sections:** Summary, Turns, Saved, Lessons, optional Discussion; Turns and Saved items may be links.
+- **Path:** `sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md`, `type: session-review`, `source: session-note`.
+- **Back-links:** none written; the session notes citing a yak are found with `yaks find <id> --kind sessions`.
