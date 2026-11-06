@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-06T04:28:32Z'
-updated: '2026-11-06T23:46:19Z'
+updated: '2026-11-06T23:46:31Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -97,3 +97,13 @@ result: pass
 ---
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-11-06T23:46:31Z [tools-1]
+
+Summary (tools-1): added `yaks source mark` and `yaks dok define`.
+
+- `src/sources.rs` `Mark`/`mark`, `src/schemas.rs` `FieldSpec`/`Define`/`define`, `Farm::source_mark`/`dok_define` (farm lock, so one autocommit each), clap `SourceAction::Mark` and `DokAction::Define` with help.
+- Tests: `tests/check.rs` (marked source drops out of `check`, clear brings it back, refusals leave the file alone), `tests/schemas.rs` (`define` shows in `dok types`; merge keeps field, comment and prose byte for byte; type change refused until `--replace`; bad input refused).
+- Docs: `docs/cli.md` (table rows, `### dok`, `### source`, check's uncited bullet), `README.md` rows, skills `yaks`, `yaks-research`, `yaks-upkeep`; `yaks check`'s uncited heading and `check --help` now name `yaks source mark`.
+- Gate: `yaks verify yaks-80bd` PASS. An earlier two runs failed only in `tui::farmsync::tests` (the 10 s "interval sync did not finish" wait, under load from parallel workers); those 8 tests pass alone and the full `cargo test` passed before and after.
