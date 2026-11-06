@@ -163,7 +163,7 @@ Mentions are whole real ids, matched exactly as `refs` and the TUI links do. Com
 | `source add <path> \| list \| mark <id>` | Save outside material as a write-once source; list them; mark one kept on purpose. [Details](#source) |
 | `session note\|touched\|list\|promote` | Session notes: save one at the end of a working session, see what you wrote, list the unreviewed, mark them reviewed. [Details](#session) |
 | `promote <id>/<file> [--dok <path>]` | Move a yak's attachment into a source or a dok, rewriting links. [Details](#source) |
-| `dok list\|show\|new\|set\|query\|types\|define` | The farm's doks: markdown documents under `doks/` or `<herd>/doks/` that are not yaks. [Details](#dok) |
+| `dok list\|show\|new\|set\|query\|row\|types\|define` | The farm's doks: markdown documents under `doks/` or `<herd>/doks/` that are not yaks. [Details](#dok) |
 | `reparent <ids…> --parent <id>` | Move yaks under a new parent (or `--unparent` to top-level). |
 | `rename <old> <new>` | Rename a yak's id, updating every reference across the farm (its file, its `.yaks/<herd>/yaks/<id>/` attachment dir and the `](<old>/…)` links to it). |
 | `rename-herd <old> <new>` | Rename a whole herd: migrate every id from one prefix to another (e.g. `yaksrs` → `yaks`). (`rename-prefix` still works as an alias.) |
@@ -241,7 +241,7 @@ Requires ≥1 filter flag (never the whole farm) and ≥1 mutation flag (`--add-
 
 ### `dok`
 
-`dok list [<prefix>]` · `dok show <path>` · `dok new <path>` · `dok set <path>` · `dok query` · `dok types` · `dok define <kind>`
+`dok list [<prefix>]` · `dok show <path>` · `dok new <path>` · `dok set <path>` · `dok query` · `dok row set|delete` · `dok types` · `dok define <kind>`
 
 Doks are the farm's other documents: research, decision records, design notes, anything that should outlive one yak and stay beside the work. A dok lives under `doks/` (farm-wide) or `<herd>/doks/` (one herd's), at any depth, and is named by its path from the farm root: `doks/topics/vector-search.md`. A leading `/` is accepted (`/doks/x.md`, the form links use). Product docs that ship with the code stay in the code repo's `docs/`.
 
@@ -252,6 +252,7 @@ A dok is markdown with YAML frontmatter in OKF's shape: `type:` (`note`, the def
 - `dok new <path> [--type T] [--title T] [--set key=value ...] [--body TEXT | --body-file PATH]` creates a dok. The path must be `doks/<parts>.md` or `<herd>/doks/<parts>.md`, every part lowercase-kebab (`a-z`, `0-9`, `-`); an existing file is refused. The title defaults to the file name (`heat-pump.md` → `Heat pump`).
 - `dok set <path> [--set key=value ...] [--unset key ...] [--body ... | --body-file ...]` edits fields (rewriting only those keys) or replaces the body. An empty value removes a field.
 - `dok query [--type T] [--where key=value ...] [--prefix P]` lists doks whose fields match, all tests ANDed; a list field (`tags`) matches when any item does. A plain value matches exactly; an operator in front of it changes the test: `key=~text` contains (ignoring case), `key=<x` `<=x` `>x` `>=x` compare (numbers numerically, otherwise as text, so `YYYY-MM-DD` dates order correctly: `--where "renews=<2026-12-01"`), `key=!x` is not equal (a missing field, or a list without `x`, matches), and `key=` is missing or empty. The same tests filter `--rows` on a column.
+- `dok row set <dok>#<key> [--set column=value ...]` creates or updates the row of a **table dok** whose first column is `<key>`; `dok row delete <dok>#<key>` removes it. Only the table's lines change: the rest of the dok is kept byte for byte, untouched rows keep their text, a `|` in a value is written `\|` (and read back), and a column the table lacks is appended to the header, the separator and every row (empty cells). A new row goes at the end, or in place when the rows are already sorted by key (ignoring case). Refused, with what to do, when the dok has no table (the first line starting with `|`, followed by a `| --- |` line) or two rows share the key; `--set` cannot change the key column (delete the row and set a new one); a value is one line.
 
 `--set` values parse like `update --set`: `[a, b]` is a list, `{a: b}` a map. `--body -` reads stdin. Editing a dok by hand is fine; `yaks doctor` checks doks (below). `list` and `query` take `--json`.
 
@@ -268,7 +269,7 @@ fields:
 ---
 ```
 
-A field is `{type, required, default, description}` or the shorthand `name: <type>`; types are `text`, `number`, `bool`, `date`, `datetime`, `money` (`649.00 USD`), `link`, `list` (anything else reads as text, with a warning). Schemas only advise: `dok new` fills in defaults, `dok new`/`dok set` print warnings (a usually-set field missing, a value of the wrong type, a field the schema does not list), and `doctor` reports them as `schema-mismatch`. No write is ever refused. `dok types` lists the untyped kinds and every schema with its fields. A small list whose rows aren't doks of their own is a **table dok**: a dok of that type whose body holds a markdown table; `dok query --rows [--type T] [--where column=value]` lists its rows.
+A field is `{type, required, default, description}` or the shorthand `name: <type>`; types are `text`, `number`, `bool`, `date`, `datetime`, `money` (`649.00 USD`), `link`, `list` (anything else reads as text, with a warning). Schemas only advise: `dok new` fills in defaults, `dok new`/`dok set` print warnings (a usually-set field missing, a value of the wrong type, a field the schema does not list), and `doctor` reports them as `schema-mismatch`. No write is ever refused. `dok types` lists the untyped kinds and every schema with its fields. A small list whose rows aren't doks of their own is a **table dok**: a dok of that type whose body holds a markdown table; `dok query --rows [--type T] [--where column=value]` lists its rows, and `dok row set|delete <dok>#<key>` writes one.
 
 `dok define <kind> --field name=type[!] ... [--title T] [--description D] [--stale-after P1Y] [--replace]` writes the schema, so you need not write it by hand:
 

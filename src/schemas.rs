@@ -312,30 +312,10 @@ pub fn describe(s: &Schema) -> String {
 }
 
 /// Rows of a table dok: the first markdown table in the body, one map per
-/// row keyed by the header, cells trimmed (Hearth's table doks).
+/// row keyed by the header, cells trimmed (Hearth's table doks). The rows
+/// are written by [`crate::rows`], which this reads through.
 pub fn table_rows(body: &str) -> Vec<Vec<(String, String)>> {
-    let lines: Vec<&str> = body.lines().map(str::trim).collect();
-    let Some(start) = lines.iter().position(|l| l.starts_with('|')) else {
-        return Vec::new();
-    };
-    let cells = |l: &str| -> Vec<String> {
-        l.trim_matches('|')
-            .split('|')
-            .map(|c| c.trim().to_string())
-            .collect()
-    };
-    let header = cells(lines[start]);
-    let sep = lines
-        .get(start + 1)
-        .is_some_and(|l| l.chars().all(|c| matches!(c, '|' | '-' | ':' | ' ')));
-    if !sep {
-        return Vec::new();
-    }
-    lines[start + 2..]
-        .iter()
-        .take_while(|l| l.starts_with('|'))
-        .map(|l| header.iter().cloned().zip(cells(l)).collect())
-        .collect()
+    crate::rows::table_rows(body)
 }
 
 /// One `--field name=type[!]` of `yaks dok define`.

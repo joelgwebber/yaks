@@ -2320,6 +2320,41 @@ impl Farm {
         Ok(Some(true))
     }
 
+    /// Create or update the row `key` of the table in the dok at `path`
+    /// (see [`crate::rows::set_row`]), under the farm lock. `Ok(None)`: no
+    /// such dok.
+    pub fn dok_row_set(
+        &self,
+        path: &str,
+        key: &str,
+        cells: &[(String, String)],
+    ) -> Result<Option<crate::rows::RowChange>> {
+        let _lock = store::lock(&self.root)?;
+        let Some(mut dok) = crate::doks::load(&self.root, path)? else {
+            return Ok(None);
+        };
+        let (body, change) = crate::rows::set_row(&dok.body, key, cells)
+            .with_context(|| format!("{}", crate::doks::normalize(path)))?;
+        if change != crate::rows::RowChange::Unchanged {
+            dok.body = body;
+            crate::doks::save(&self.root, &dok)?;
+        }
+        Ok(Some(change))
+    }
+
+    /// Remove the row `key` of the table in the dok at `path`, under the
+    /// farm lock. `Ok(false)`: no such dok.
+    pub fn dok_row_delete(&self, path: &str, key: &str) -> Result<bool> {
+        let _lock = store::lock(&self.root)?;
+        let Some(mut dok) = crate::doks::load(&self.root, path)? else {
+            return Ok(false);
+        };
+        dok.body = crate::rows::delete_row(&dok.body, key)
+            .with_context(|| format!("{}", crate::doks::normalize(path)))?;
+        crate::doks::save(&self.root, &dok)?;
+        Ok(true)
+    }
+
     /// Save a file or directory as a source (see [`crate::sources::add`]),
     /// under the farm lock.
     pub fn source_add(&self, req: &crate::sources::Request) -> Result<crate::sources::Saved> {

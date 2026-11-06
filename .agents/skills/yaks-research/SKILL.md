@@ -103,7 +103,7 @@ When you'd list, filter or sort the subjects by their facts, give each dok a `ty
   Run `define` again on an existing kind to add fields: it keeps every field, key and the schema's prose, and refuses to change a field's type or required flag unless you pass `--replace`. A field's `default:` or `description:` is not a flag: edit `schemas/<kind>.md` by hand for those.
 
   `dok query --where` takes operators, so "which renew before December" is `--where 'renews=<2026-12-01'` and "which are unreviewed" is `--where reviewed=` (missing or empty). Schemas advise and never refuse: `dok new` fills defaults, and `dok set` and `doctor` warn about what doesn't fit.
-- A small list whose items don't need doks (a glossary, a reading list) is a **table dok**: a dok of that type whose body is a markdown table. `yaks dok query --rows --type <kind> --where column=value` lists its rows.
+- A small list whose items don't need doks (a glossary, a reading list) is a **table dok**: a dok of that type whose body is a markdown table. `yaks dok query --rows --type <kind> --where column=value` lists its rows, and `yaks dok row set <dok>#<key> --set column=value` / `yaks dok row delete <dok>#<key>` write one row by its first column (never hand-edit the table: the command keeps the columns, escaping and order).
 
 ## Close the loop
 

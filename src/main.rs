@@ -33,6 +33,7 @@ mod privatefarm;
 mod recur;
 mod refs;
 mod rollup;
+mod rows;
 mod schemas;
 mod sessions;
 mod sheds;
@@ -1677,6 +1678,11 @@ enum DokAction {
         #[arg(long = "body-file", value_name = "PATH")]
         body_file: Option<String>,
     },
+    /// Write one row of a table dok, addressed as `<dok>#<key>`.
+    Row {
+        #[command(subcommand)]
+        action: RowAction,
+    },
     /// The kinds of dok: the untyped ones and every typed kind with a
     /// schema (`schemas/<type>.md`), with its fields.
     Types,
@@ -1734,6 +1740,34 @@ enum DokAction {
         prefix: Option<String>,
         #[arg(long)]
         json: bool,
+    },
+}
+
+/// `yaks dok row`: writes to the first markdown table in a dok. Its first
+/// column is the row's key; read the rows with `dok query --rows`.
+#[derive(Subcommand)]
+enum RowAction {
+    /// Create or update a row: `yaks dok row set doks/topics/reading.md#dune
+    /// --set author=Herbert`.
+    ///
+    /// The row is the one whose first column is the key; a new row goes at
+    /// the end, or in place when the rows are already sorted by key. A column
+    /// the table lacks is added to it (every row gets an empty cell). A `|` in
+    /// a value is escaped. Only the table's lines change; the rest of the dok
+    /// is kept byte for byte. Refused when the dok has no table, or two rows
+    /// share the key.
+    Set {
+        /// `<dok>#<key>`.
+        address: String,
+        /// `column=value` (repeatable); an empty value clears the cell.
+        #[arg(long = "set", value_name = "COLUMN=VALUE")]
+        set: Vec<String>,
+    },
+    /// Remove the row whose first column is the key: `yaks dok row delete
+    /// doks/topics/reading.md#dune`.
+    Delete {
+        /// `<dok>#<key>`.
+        address: String,
     },
 }
 
@@ -4377,6 +4411,38 @@ fn run_dok(farm: &Farm, action: DokAction) -> Result<()> {
                     what.push(format!("set {}", done.keys.join(", ")));
                 }
                 println!("Updated {}: {}", done.path, what.join("; "));
+            }
+        }
+        DokAction::Row { action } => {
+            let (RowAction::Set { address, .. } | RowAction::Delete { address }) = &action;
+            let (path, key) = rows::split_address(address)?;
+            let done = match &action {
+                RowAction::Set { set, .. } => {
+                    let mut cells = Vec::new();
+                    for a in set {
+                        let Some((c, v)) = a.split_once('=') else {
+                            anyhow::bail!("--set {a:?}: expected column=value");
+                        };
+                        cells.push((c.trim().to_string(), v.to_string()));
+                    }
+                    farm.dok_row_set(path, key, &cells)?.map(|c| match c {
+                        rows::RowChange::Created => format!("Created row {key:?} in"),
+                        rows::RowChange::Updated => format!("Updated row {key:?} in"),
+                        rows::RowChange::Unchanged => format!("No changes to row {key:?} in"),
+                    })
+                }
+                RowAction::Delete { .. } => farm
+                    .dok_row_delete(path, key)?
+                    .then(|| format!("Deleted row {key:?} from")),
+            };
+            match done {
+                Some(msg) => println!("{msg} {}", doks::normalize(path)),
+                None => {
+                    eprintln!(
+                        "error: no dok {path} (doks live under doks/ or <herd>/doks/; `yaks dok list`)"
+                    );
+                    std::process::exit(1);
+                }
             }
         }
         DokAction::Types => {

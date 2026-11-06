@@ -207,3 +207,80 @@ fn query_where_compares_dates_and_finds_missing_fields() {
         ["doks/topics/a.md"]
     );
 }
+
+#[test]
+fn row_set_and_delete_round_trip_through_query_rows() {
+    let f = Farm::new("rows");
+    let body = "Reading list.\n\n| name | author |\n| --- | --- |\n| dune | Herbert |\n| emma | Austen |\n\nAfter the table.\n";
+    f.run(&[
+        "dok",
+        "new",
+        "doks/topics/reading.md",
+        "--type",
+        "reading",
+        "--body",
+        body,
+    ]);
+    let file = f.root().join("doks/topics/reading.md");
+    let rows = |f: &Farm| -> Value {
+        serde_json::from_str(&f.run(&["dok", "query", "--rows", "--type", "reading", "--json"]))
+            .unwrap()
+    };
+
+    f.run(&[
+        "dok",
+        "row",
+        "set",
+        "doks/topics/reading.md#ana",
+        "--set",
+        "author=Pipe|Author",
+        "--set",
+        "year=2001",
+    ]);
+    let v = rows(&f);
+    let by = |v: &Value, name: &str| -> Value {
+        v.as_array()
+            .unwrap()
+            .iter()
+            .find(|r| r["name"] == name)
+            .cloned()
+            .unwrap_or(Value::Null)
+    };
+    assert_eq!(by(&v, "ana")["author"], "Pipe|Author");
+    assert_eq!(by(&v, "ana")["year"], "2001");
+    assert_eq!(by(&v, "dune")["year"], "");
+    assert_eq!(
+        v[0]["name"], "ana",
+        "sorted table: the new row goes in place"
+    );
+
+    let out = f.run(&[
+        "dok",
+        "row",
+        "set",
+        "/doks/topics/reading.md#dune",
+        "--set",
+        "author=F. Herbert",
+    ]);
+    assert!(out.starts_with("Updated row"), "{out}");
+    assert_eq!(by(&rows(&f), "dune")["author"], "F. Herbert");
+
+    f.run(&["dok", "row", "delete", "doks/topics/reading.md#emma"]);
+    assert_eq!(by(&rows(&f), "emma"), Value::Null);
+    let text = std::fs::read_to_string(&file).unwrap();
+    assert!(
+        text.contains("\n\nReading list.\n\n| name | author | year |\n")
+            && text.ends_with("|\n\nAfter the table.\n"),
+        "{text}"
+    );
+
+    assert!(
+        f.fails(&["dok", "row", "delete", "doks/topics/reading.md#emma"])
+            .contains("no row")
+    );
+    f.run(&["dok", "new", "doks/topics/plain.md", "--body", "No table."]);
+    assert!(
+        f.fails(&["dok", "row", "set", "doks/topics/plain.md#a"])
+            .contains("no markdown table")
+    );
+}
