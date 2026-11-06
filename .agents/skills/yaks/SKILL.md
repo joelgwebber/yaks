@@ -123,7 +123,7 @@ Next: G3's question, which belongs with yak-7af5.
 
 **Links.**
 
-- Another yak: its **full id** (`yak-0af1`, never the bare `0af1`); the TUI makes it a link and `yaks refs <id> [--incoming]` lists the references.
+- Another yak: its **full id** (`yak-0af1`, never the bare `0af1`); the TUI makes it a link and `yaks refs <id> [--incoming]` lists the references (`--incoming` includes the doks and session notes that link it).
 - One note of a yak: `[the answer](yak-0af1#2026-11-04T22:13:03Z)`, the note's timestamp as the anchor (`-1`, `-2` for later notes of the same second). `yaks update --note` prints the new note's link: copy it rather than building one.
 - Repo code: `code:` and a path from the repo root, with GitHub's line fragment: `[fn parse](code:src/foo.rs#L12-L40)`; `@<sha>` before the fragment pins it to a commit (`code:src/foo.rs@3f2a9c1#L12`). The older `../src/foo.rs` and `../blob/<sha>/src/foo.rs` still work in yaks.
 - A dok: from the farm root, `[link grammar](/doks/design/link-grammar.md#heading)`; a relative link only goes down (`notes/detail.md`), never `../`. `@<sha>` pins a dok too.
@@ -190,7 +190,7 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 | `attach <id> <file>...` | Store and link evidence (`--caption`: the image's caption; `--no-link`: store only, for the parts of a document that links them itself); `rename-attachment` renames one |
 | `whoami [--set <name>]` | The name your writes are stamped with, and why; `--set` names this checkout once |
 | `log` | Notes and moves over a filtered set, oldest first; `--since 2h`, `--by <actor>` |
-| `refs <id>` | What it points at; `--incoming` for what points at it |
+| `refs <id>` | What it points at; `--incoming` for the yaks, doks and session notes that point at it |
 | `commits <id>` | Commits recorded on the yak (`yaks land` writes them) and the branches its checkpoints name (`--fetch` fetches them), then those naming it in the code repo you run it from, then the yak file's farm history |
 | `session note` / `touched` / `list` / `promote` | Session notes: one at the end of a working session (`--title`, `--body -`; `## Saved` is written from what you wrote), what you wrote since (`touched`), unreviewed ones (`list --unreviewed`), mark reviewed (`promote`): the **yaks-upkeep** skill |
 | `dok list` / `show` / `new` / `set` / `query` / `types` / `define` | The farm's doks (`doks/**.md`, `<herd>/doks/**.md`): see "Doks" below; `define <kind> --field name=type[!]` writes or extends `schemas/<kind>.md` |

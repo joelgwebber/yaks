@@ -194,19 +194,20 @@ enum Command {
         #[arg(long)]
         all: bool,
     },
-    /// List the yaks a task points at, or (--incoming) the yaks pointing at it.
+    /// List the yaks a task points at, or (--incoming) what points at it.
     ///
     /// Outgoing references are the parent, deps, and id mentions in its text;
     /// any formal reference that dangles is flagged. With --incoming, list the
-    /// yaks that point at it instead. Given a dok path (`doks/x.md`) instead
-    /// of an id, `--incoming` lists the yaks and doks that link to it, and
+    /// yaks that point at it instead, then the doks and session notes that
+    /// link it (or one of its notes: `<id>#<ts>`), with path and line. Given
+    /// a dok path (`doks/x.md`) instead of an id, `--incoming` lists the yaks and doks that link to it, and
     /// plain `refs` the links the dok holds.
     Refs {
         id: String,
         /// Incoming references: every yak whose `parent:` or `depends_on:` names
         /// this one, or whose title, description or a note mentions its id (whole
-        /// real ids only), each labelled with how it refers. Computed by scanning
-        /// the farm; no index.
+        /// real ids only), each labelled with how it refers, then the doks and
+        /// session notes that link it. Computed by scanning the farm; no index.
         #[arg(long)]
         incoming: bool,
         /// Machine output (with --incoming).
@@ -4783,7 +4784,7 @@ fn render_refs(r: &TaskRefs) {
 
 fn render_backrefs(r: &TaskBackRefs) {
     println!("{}  {}", r.id, r.title);
-    if r.entries.is_empty() {
+    if r.entries.is_empty() && r.docs.is_empty() {
         println!("  (no incoming references)");
         return;
     }
@@ -4802,12 +4803,34 @@ fn render_backrefs(r: &TaskBackRefs) {
             e.title
         );
     }
+    // Doks and session notes follow the yaks: `dok` or `session`, the path,
+    // the line of the link, and the note it names when it names one.
+    for d in &r.docs {
+        let note = d
+            .note
+            .as_ref()
+            .map(|n| format!("  {}#{n}", r.id))
+            .unwrap_or_default();
+        println!("  {:<8} {}:L{}{note}", doc_kind(&d.path), d.path, d.line);
+    }
 }
 
-/// `refs --incoming --json`: `{id, title, incoming: [...]}`, one object per
-/// reference: the referring yak's `id`, `title`, `status`, `kind`
+/// `dok` or `session`: what kind of farm document a back-reference sits in.
+fn doc_kind(path: &str) -> &'static str {
+    if path.starts_with(&format!("{}/", sessions::DIR)) {
+        "session"
+    } else {
+        "dok"
+    }
+}
+
+/// `refs --incoming --json`: `{id, title, incoming: [...], docs: [...]}`. Each
+/// `incoming` object is a referring yak's `id`, `title`, `status`, `kind`
 /// (`child`/`depends`/`mention`), and for a mention `in` (`title`/`body`/
 /// `note`) plus `line` (body) or `ts` and `actor` (note, `actor` may be null).
+/// Each `docs` object is a dok or session note that links the yak: `path`,
+/// `kind` (`dok`/`session`), `line` and `note` (the yak note's timestamp, or
+/// null for a link to the yak itself).
 fn backrefs_json(r: &TaskBackRefs) -> serde_json::Value {
     use farm::BackRefVia;
     let incoming: Vec<serde_json::Value> = r
@@ -4839,7 +4862,19 @@ fn backrefs_json(r: &TaskBackRefs) -> serde_json::Value {
             v
         })
         .collect();
-    serde_json::json!({ "id": r.id, "title": r.title, "incoming": incoming })
+    let docs: Vec<serde_json::Value> = r
+        .docs
+        .iter()
+        .map(|d| {
+            serde_json::json!({
+                "path": d.path,
+                "kind": doc_kind(&d.path),
+                "line": d.line,
+                "note": d.note,
+            })
+        })
+        .collect();
+    serde_json::json!({ "id": r.id, "title": r.title, "incoming": incoming, "docs": docs })
 }
 
 fn commit_json(c: &farm::CommitRef) -> serde_json::Value {

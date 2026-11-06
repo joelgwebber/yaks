@@ -541,12 +541,25 @@ pub struct BackRef {
     pub via: BackRefVia,
 }
 
-/// Every yak that points at a task — the inverse of [`TaskRefs`], computed on
-/// demand by scanning the farm (there is no stored back-reference index).
+/// One dok or session note that links the subject of [`Farm::backrefs`]: the
+/// farm-relative `path` of the document, the 1-based `line` of the link and,
+/// when it names one of the subject's notes, that note's timestamp.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocBackRef {
+    pub path: String,
+    pub line: usize,
+    pub note: Option<String>,
+}
+
+/// Every yak, dok and session note that points at a task — the inverse of
+/// [`TaskRefs`], computed on demand by scanning the farm (there is no stored
+/// back-reference index).
 pub struct TaskBackRefs {
     pub id: String,
     pub title: String,
     pub entries: Vec<BackRef>,
+    /// Doks and session notes that link the yak, one per link.
+    pub docs: Vec<DocBackRef>,
 }
 
 /// The incoming references to `id` among `all`: children, dependents, and id
@@ -1341,17 +1354,37 @@ impl Farm {
 
     /// Every yak that points at this task (children, dependents, id mentions
     /// in titles, descriptions and notes), each saying how — see
-    /// [`backrefs_in`]. Computed on demand by scanning the farm; `None` when
+    /// [`backrefs_in`] — and every dok and session note that links it (or one
+    /// of its notes). Computed on demand by scanning the farm; `None` when
     /// no such task exists.
     pub fn backrefs(&self, id: &str) -> Result<Option<TaskBackRefs>> {
         let all = self.list(FilterSpec::default(), true)?;
         let Some(task) = all.iter().find(|t| t.id == id) else {
             return Ok(None);
         };
+        // Doks and session notes: the links `links::edges` already reads from
+        // them (a yak's own links are `entries`' business, and an attachment's
+        // `from` is `<id>/<file>`, which is neither).
+        let docs = crate::links::edges(&self.root)?
+            .into_iter()
+            .filter(|e| {
+                crate::doks::is_dok_path(&e.from)
+                    || e.from.starts_with(&format!("{}/", crate::sessions::DIR))
+            })
+            .filter_map(|e| match e.link {
+                crate::links::Link::Yak { id: to, note } if to == id => Some(DocBackRef {
+                    path: e.from,
+                    line: e.line,
+                    note,
+                }),
+                _ => None,
+            })
+            .collect();
         Ok(Some(TaskBackRefs {
             id: task.id.clone(),
             title: task.title.clone(),
             entries: backrefs_in(&all, id),
+            docs,
         }))
     }
 

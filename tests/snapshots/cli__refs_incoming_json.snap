@@ -18,5 +18,6 @@ expression: "run(&[\"refs\", \"fix-0003\", \"--incoming\", \"--json\"])"
       "status": "hairy",
       "kind": "depends"
     }
-  ]
+  ],
+  "docs": []
 }

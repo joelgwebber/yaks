@@ -94,7 +94,7 @@ break, a list or a code fence is not run-on). They compose, and back `list`, `se
 | `sheds [--all]` | Who is working on what: one row per actor (the stamp on notes and moves), read from the farm alone: what it is `shaving`, `asking`, and wrote `recent`ly, `active`/`stale`/`idle`, and how fresh the farm is (`--json` for scripts). Read-only. [Details](#sheds) |
 | `log` | Timestamped notes and status moves (`moved: <from> -> <to>` entries) across a filtered set, oldest first (`--since <2h\|3d\|date>`, `--by <actor>`). |
 | `refs <id>` | The yaks a task points at (parent, deps, id mentions), flagging danglers. |
-| `refs <id> --incoming [--json]` | The reverse: every yak that points AT this one, one line per reference (`child`, `depends` or `mention`). Computed by scanning the farm on demand. `--json`. The TUI's `B` key opens the same list. [Details](#refs) |
+| `refs <id> --incoming [--json]` | The reverse: every yak that points AT this one, one line per reference (`child`, `depends` or `mention`), then the doks and session notes that link it. Computed by scanning the farm on demand. `--json`. The TUI's `B` key opens the same list. [Details](#refs) |
 | `commits <id> [--fetch] [--json]` | Git commits linked to a yak — shas recorded in its notes (`yaks land` writes them), the branches they record (`--fetch` fetches first), those naming its id in the code repository (all branches), then the yak file's own history on the farm. [Details](#commits) |
 | `rollup` | Group yaks by the external issue they roll up to (`--keys` lists the external keys). |
 | `scan-ids [file]` | Scan text/stdin for real yak-ids; prints `line:col  id`, exits non-zero if any found — a leak check for a private farm's commits (pre-commit / PR hook). |
@@ -142,11 +142,11 @@ Order: an actor with an open ask first, then active, stale, idle, then the most 
 
 `refs <id> --incoming [--json]`
 
-The reverse: every yak that points AT this one, one line per reference saying how: `child` (its `parent:`), `depends` (its `depends_on:`), or `mention` with where (`title`, `body:L<n>` for a description line, `note:<ts> [actor]` for a note).
+The reverse: every yak that points AT this one, one line per reference saying how: `child` (its `parent:`), `depends` (its `depends_on:`), or `mention` with where (`title`, `body:L<n>` for a description line, `note:<ts> [actor]` for a note). Then the doks and session notes that link it, one line per link: `dok` or `session`, the path and `:L<line>`, and `<id>#<ts>` when the link names one of the yak's notes. Only markdown links count there (`[x](<id>)`, `[x](<id>#<ts>)`), not a bare id in a dok's prose.
 
 Mentions are whole real ids, matched exactly as `refs` and the TUI links do. Computed by scanning the farm on demand (no index).
 
-`--json` emits `{id, title, incoming: [{id, title, status, kind, in?, line?, ts?, actor?}]}`. The TUI's `B` key opens the same list as a picker.
+`--json` emits `{id, title, incoming: [{id, title, status, kind, in?, line?, ts?, actor?}], docs: [{path, kind, line, note}]}` (`docs` are the doks and session notes, `kind` `dok` or `session`, `note` the linked note's timestamp or null). The TUI's `B` key opens the same list as a picker.
 
 ## Create / edit
 

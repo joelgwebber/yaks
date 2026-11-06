@@ -41,7 +41,7 @@ Built the date parser ([the result](yaks-1a2b#2026-11-04T22:13:03Z)) and wrote u
 EOF
 ```
 
-The note lands at `sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md` as its own commit (`type: session-review`, with who, where and a count of each verdict). `touched` and the generated `## Saved` cover the time since your last session note, at most 12 hours back; pass `--since 3h` (or a time) when the session was longer or started elsewhere. `yaks find <yak-id> --kind sessions` finds the notes that cite a yak.
+The note lands at `sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md` as its own commit (`type: session-review`, with who, where and a count of each verdict). `touched` and the generated `## Saved` cover the time since your last session note, at most 12 hours back; pass `--since 3h` (or a time) when the session was longer or started elsewhere. `yaks refs <yak-id> --incoming` lists the session notes (and doks) that link a yak; `yaks find <yak-id> --kind sessions` also finds bare mentions.
 
 ## Reviewing session notes
 

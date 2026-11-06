@@ -201,3 +201,81 @@ fn a_note_link_from_update_peeks_and_is_checked() {
     f.fails(&["doctor"]);
     f.fails(&["peek", &format!("{id}#2001-01-01T00:00:00Z")]);
 }
+
+/// `refs <id> --incoming` also lists the doks and session notes that link the
+/// yak or one of its notes (yaks-2e00), with path and line; a dok that only
+/// links something else is left out, and the yak entries are unchanged.
+#[test]
+fn refs_incoming_lists_doks_and_session_notes() {
+    let f = Farm::new("incoming");
+    let id = f.create(&[]);
+    let out = f.run(&["update", &id, "--note", "The finding."]);
+    let link = out
+        .trim()
+        .strip_prefix(&format!("Updated {id}: note "))
+        .unwrap()
+        .to_string();
+    let ts = link.strip_prefix(&format!("{id}#")).unwrap().to_string();
+    let other = f.create(&["--parent", &id]);
+    f.run(&[
+        "dok",
+        "new",
+        "doks/topics/cites.md",
+        "--body",
+        &format!("Intro.\n\nSee [the yak]({id}).\n"),
+    ]);
+    f.run(&[
+        "dok",
+        "new",
+        "doks/topics/elsewhere.md",
+        "--body",
+        &format!("Only [another]({other})."),
+    ]);
+    let root = f.root();
+    std::fs::create_dir_all(root.join("sessions/2026")).unwrap();
+    std::fs::write(
+        root.join("sessions/2026/note.md"),
+        format!("---\ntitle: A session\n---\nFound [it]({link}) today.\n"),
+    )
+    .unwrap();
+
+    let v: Value = serde_json::from_str(&f.run(&["refs", &id, "--incoming", "--json"])).unwrap();
+    let yaks: Vec<&str> = v["incoming"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| e["id"].as_str().unwrap())
+        .collect();
+    assert_eq!(yaks, [other.as_str()], "yak entries are unchanged: {v}");
+    let docs = v["docs"].as_array().unwrap();
+    let got: Vec<(&str, &str, u64, Option<&str>)> = docs
+        .iter()
+        .map(|d| {
+            (
+                d["path"].as_str().unwrap(),
+                d["kind"].as_str().unwrap(),
+                d["line"].as_u64().unwrap(),
+                d["note"].as_str(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        got,
+        [
+            ("doks/topics/cites.md", "dok", 3, None),
+            ("sessions/2026/note.md", "session", 1, Some(ts.as_str())),
+        ],
+        "{v}"
+    );
+
+    let text = f.run(&["refs", &id, "--incoming"]);
+    assert!(
+        text.contains("dok      doks/topics/cites.md:L3\n"),
+        "{text}"
+    );
+    assert!(
+        text.contains(&format!("session  sessions/2026/note.md:L1  {id}#{ts}\n")),
+        "{text}"
+    );
+    assert!(!text.contains("elsewhere.md"), "{text}");
+}
