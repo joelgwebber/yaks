@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T01:23:16Z'
-updated: '2026-11-06T01:23:40Z'
+updated: '2026-11-06T01:32:34Z'
 tags:
 - doks
 - cli
@@ -43,3 +43,14 @@ Plan, from reading [sources.rs](code:src/sources.rs):
 - `add` looks the source up by `resource == url` first when refreshing. Found and different: rewrite its payload, `extracted.md` and `source.md` in the same directory and keep id, title and `part_of`; record `previous_sha256`.
 - `find` (dedupe by sha) matched on the id's `-<sha8>` suffix, which a refreshed source no longer has. It now checks each `source.md`'s `sha256:`, so "saving the same content again returns the existing source" stays true after a refresh.
 - Tests first: refresh updates in place, unchanged is a no-op, no match creates, `--refresh` without `--url` is refused, a plain `add` of a refreshed source's current bytes finds it.
+
+---
+▸ 2026-11-06T01:32:34Z [source-refresh]
+
+Done and tested.
+
+- [add](code:src/sources.rs): `refresh` on `Request`, `Saved::Refreshed`, URL lookup, `previous_sha256`, title and `part_of` kept; unchanged content is `Already`, no match is a new source, no `--url` or an ambiguous URL is refused.
+- [find](code:src/sources.rs): dedupe now reads `sha256:` from each `source.md` instead of trusting the id's suffix, which a refreshed source no longer matches.
+- Help text, `docs/cli.md`, the `yaks` and `yaks-research` skills updated in the same change.
+
+Evidence: four new unit tests (refresh in place, plain add never refreshes, `--refresh` needs `--url`, ambiguous URL), a scripted run of the built binary (Saved, Already saved, Refreshed, Already saved), and the full `cargo test` green (964 unit tests plus the integration suites).
