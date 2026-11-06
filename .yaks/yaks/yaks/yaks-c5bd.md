@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:28:29Z'
-updated: '2026-11-06T04:57:02Z'
+updated: '2026-11-06T04:57:07Z'
 parent: yaks-1c89
 depends_on:
 - yaks-bca6
@@ -29,3 +29,11 @@ thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-06T04:57:07Z [herd-upkeep]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --test links && cargo test --bin yaks a_note_link` -> PASS (exit 0)
