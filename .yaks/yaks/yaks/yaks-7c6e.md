@@ -5,14 +5,14 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-03T22:06:11Z'
+updated: '2026-11-06T04:50:23Z'
 parent: yaks-f677
 depends_on:
 - yaks-6919
 - yaks-0ac1
 tags:
 - tui
-needs: human
+needs: agent
 ---
 
 ---
@@ -71,3 +71,16 @@ Questions from [the keys page](/doks/design/tui-keys.md), with my lean on each:
 4. **The `?` popup.** Lean: grouped (Move / Open and follow / Find / Change the yak / View and filter / Farm / App); pressing a listed key runs it; `F1` opens it everywhere, including the editors (where it lists the editor's keys for the active family), and `?` in vim Normal.
 5. **Rebinding.** Lean: keep the existing `keys:` overrides by command name and go no further (no editor rebinding; the family choice covers that).
 6. **Emacs parity in the editor.** edtui has 164 vim bindings and 46 emacs ones. Lean: a separate yak to audit and fill the emacs set (or the "standard" set, if 2 renames it); not part of this pass.
+
+---
+▸ 2026-11-06T04:50:23Z [sched-1]
+kind: answer
+needs: agent
+---
+
+1. Let's drop both h/l for consistency. Enter/escape are perfectly good, and fit comfortably in either vim/emacs modes.
+2. Yes to all that. Agreed on `keys: vim|standard`; gives us more options in the future if we need them.
+3. I also really like this approach. It should significantly reduce the likelihood of mistakes.
+4. Exactly. This will help accessibility and legibility quite a bit.
+5. Agreed; let's keep it simple to start. And maybe indefinitely.
+6. Also agreed -- we want parity where appropriate, but that will require a careful evaluation, but we can file it for next steps. We should also add basic guidance on key-mappings in AGENTS.md or similar.
