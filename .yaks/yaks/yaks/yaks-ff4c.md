@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-04T22:13:03Z'
-updated: '2026-11-06T23:09:24Z'
+updated: '2026-11-06T23:12:41Z'
 parent: yaks-44b3
 tags:
 - doks
@@ -27,3 +27,8 @@ thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-06T23:12:41Z [herd-upkeep-2]
+
+Done in 671320f9: `src/hearth_import.rs`, its test, the clap command and every doc and skill mention removed. Full `cargo test`: 1172 passed, 0 failed. Lands with the rest of this batch.
