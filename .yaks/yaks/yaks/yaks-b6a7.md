@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T04:57:49Z'
-updated: '2026-11-06T23:13:40Z'
+updated: '2026-11-06T23:15:10Z'
 parent: yaks-1c89
 tags:
 - tui
@@ -32,3 +32,11 @@ Claim (yakherd herd-upkeep-2, 2026-11-06): worker `tui-1`.
 - **Files:** `src/tui/detail.rs` (`Target`), `src/tui/mdrender.rs`, `src/tui/detail_nav.rs`/`handlers.rs` where `Target::Task` is followed, the detail view's note rows. Anchor by symbol. Shared render paths can move insta snapshots: review every one you accept.
 - **Evidence:** a test driving the TUI (toque/headless) to follow a note link and asserting the selected row is that note, plus a text frame attached to the yak. `docs/tui.md` (links), if it describes what following a yak link does.
 - **Judge:** `cargo test -p yaks` and the attached frame; the yakherd looks at it at landing.
+
+---
+▸ 2026-11-06T23:15:10Z [tui-1]
+
+Start: Fri Nov  6 23:15 UTC 2026
+
+- farm: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-b6a7.md
+- checkout: /Users/joel/src/yaks/.delta/worktrees/371r3jvw781f/yaks
