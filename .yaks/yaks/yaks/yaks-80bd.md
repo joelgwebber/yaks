@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 3
 created: '2026-11-06T04:28:32Z'
-updated: '2026-11-06T23:46:32Z'
+updated: '2026-11-06T23:47:20Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -117,3 +117,13 @@ thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjWoJIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-06T23:47:20Z [herd-upkeep-2]
+kind: landed
+commit: 2207652579848c2fddf289dea4c4f26eba5b525e
+source: d70a6ebbdae68793346686ac399b00d9aaa4272f
+branch: main
+---
+
+landed: 22076525 yaks-80bd: add yaks source mark and yaks dok define
