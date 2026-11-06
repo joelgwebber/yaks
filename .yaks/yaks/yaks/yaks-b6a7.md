@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T04:57:49Z'
-updated: '2026-11-06T23:27:21Z'
+updated: '2026-11-06T23:27:35Z'
 parent: yaks-1c89
 tags:
 - tui
@@ -48,3 +48,5 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+[b6a7-note-link-frame](yaks-b6a7/b6a7-note-link-frame.txt)

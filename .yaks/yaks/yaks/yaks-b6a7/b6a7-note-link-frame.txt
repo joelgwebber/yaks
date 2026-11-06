@@ -1,0 +1,17 @@
+# Text frame after following a[second](a1#2026-09-10T12:00:00Z-1) from a0 (test following_a_note_link_lands_on_that_note_and_o_returns, 76x14).
+# The text frame carries no cursor highlight; the test asserts app.detail.line is the third note's header row (row 'three' is the next row).
+ 🦬  Hairy (2)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (2)   ⭐  Starred (
+→ a1#2026-09-10T12:00:00Z-1
+◂  🦬  a1  task     p3  Child A1
+│ ─────────────────────────────────────────────────────────────────────────
+│
+│ ▸ joel · 1h ago ─────────────────────────────────────────────────────────
+│ one
+│
+│ ▸ joel · just now ───────────────────────────────────────────────────────
+│ two
+│
+│ ▸ joel · just now ───────────────────────────────────────────────────────
+│ three
+h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D
+
