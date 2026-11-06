@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-06T04:50:23Z'
+updated: '2026-11-06T22:46:52Z'
 parent: yaks-f677
 depends_on:
 - yaks-6919
@@ -84,3 +84,8 @@ needs: agent
 4. Exactly. This will help accessibility and legibility quite a bit.
 5. Agreed; let's keep it simple to start. And maybe indefinitely.
 6. Also agreed -- we want parity where appropriate, but that will require a careful evaluation, but we can file it for next steps. We should also add basic guidance on key-mappings in AGENTS.md or similar.
+
+---
+▸ 2026-11-06T22:46:52Z [sched-1]
+
+One other idea: It would be really helpful to have something like {/} allow you to change tabs while in a detail. This arguably congruent with J/K.
