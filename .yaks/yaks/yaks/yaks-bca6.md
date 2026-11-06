@@ -5,12 +5,12 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-06T04:28:29Z'
-updated: '2026-11-06T04:28:54Z'
+updated: '2026-11-06T04:31:03Z'
 parent: yaks-1c89
 tags:
 - design
 - doks
-needs: human
+needs: agent
 ---
 
 Settle the shape of a session note in a farm before building the command (yaks-1c89).
@@ -44,3 +44,14 @@ Four details to settle before yaks-c5bd and yaks-17f5 are built; my lean on each
 2. **Sections.** Lean: keep Hearth's four (Summary, Turns, Saved, Lessons) so reflection reads farm and Hearth notes alike, but let Turns and Saved items be links (`- good: landed the parser, [note](yak-0af1#...)`), and allow an optional `## Discussion` for exposition no yak holds. Lessons stay in full: they are the part no yak note has.
 3. **Path.** Lean: `sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md`, `type: session-review`, Hearth's frontmatter fields (person, host, harness, day, saved time, verdict counts).
 4. **Back-links.** Lean: no note on each yak a session touched (noise); `yaks refs <id> --incoming` finds the session notes that cite it.
+
+---
+▸ 2026-11-06T04:31:03Z [sched-1]
+kind: answer
+needs: agent
+---
+
+1. I was thinking the same thing. They really shouldn't end up conflicting.
+2. SGTM
+3. Also SGTM.
+4. Also, also SGTM.
