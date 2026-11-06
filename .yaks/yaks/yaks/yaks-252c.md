@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 1
 created: '2026-11-06T04:28:31Z'
-updated: '2026-11-06T23:13:37Z'
+updated: '2026-11-06T23:14:41Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -35,3 +35,11 @@ Claim (yakherd herd-upkeep-2, 2026-11-06): worker `doks-1`.
 - **Files:** `src/doks.rs`, `Farm::dok_set` in `src/farm.rs`, `DokAction::Show`/`Set` in `src/main.rs`, `json::dok_value`; docs: `docs/cli.md` `### dok`, the `yaks` skill's Doks section and the `yaks-research` skill's "Edit an existing dok" line.
 - **Out of scope:** yak bodies (`update --description` already has its own base check), table rows (yaks-6cdd), query (yaks-39f9).
 - **Judge:** `cargo test -p yaks`, plus a CLI test in `tests/doks.rs` showing a stale `--if-hash` refused and an `--old/--new` edit chained by the printed hash. The yakherd re-runs it at landing.
+
+---
+▸ 2026-11-06T23:14:41Z [doks-1]
+
+Start: 2026-11-06T23:14:38Z
+
+- yaks path yaks-252c: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-252c.md
+- checkout: /Users/joel/src/yaks/.delta/worktrees/sr37a33ha7db/yaks
