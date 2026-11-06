@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T04:28:31Z'
-updated: '2026-11-06T23:41:58Z'
+updated: '2026-11-06T23:47:26Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -54,3 +54,11 @@ Decision: "already sorted" = keys non-decreasing ignoring case (one or zero rows
 Decision: `--set <key column>=v` is refused unless v equals the key (no rename); empty value clears a cell; values and keys must be one line. `row set` with no `--set` creates a key-only row. Rejected: rename-by-set (not in the claim; delete + set does it).
 
 Decision: no JSON output for row writes (not asked).
+
+---
+▸ 2026-11-06T23:47:26Z [query-2]
+kind: verify
+result: pass
+---
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
