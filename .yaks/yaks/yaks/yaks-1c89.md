@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:27:55Z'
-updated: '2026-11-06T21:55:36Z'
+updated: '2026-11-06T23:15:35Z'
 parent: yaks-44b3
 tags:
 - doks
@@ -77,3 +77,16 @@ Landed on `main` as d78b25a7 (Joel, 2026-11-06): note links, `yaks session`, and
 The flaky `tests/init_modes.rs` test (`farm_works_from_a_git_worktree_and_a_shared_clone_of_the_sharing_repo`) also fails on the previous `main` (08b86fca), 5 of 6 runs here: it predates this work.
 
 Still open in this family: yaks-fcdc (agent-layer tools), yaks-7168 (reflection), yaks-b6a7, yaks-2e00, yaks-525b.
+
+---
+▸ 2026-11-06T23:15:35Z [herd-upkeep-2]
+
+Fan-out, 2026-11-06 (yakherd `herd-upkeep-2`), all from `main` at 671320f9 (which removes import-hearth, yaks-ff4c), profile default model:
+
+- `doks-1`: yaks-252c, hash-checked dok edits ([thread](delta://thread/ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjUD5IBxBCA0aLJyrhJPreUvVwLftHG)).
+- `tools-1`: yaks-80bd, `source mark` and `dok define` ([thread](delta://thread/ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjWoJIBxBCA0aLJyrhJPreUvVwLftHG)).
+- `tui-1`: yaks-b6a7, note links land on their note ([thread](delta://thread/ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjb85IBxBCA0aLJyrhJPreUvVwLftHG)).
+- `query-2`: yaks-39f9 then yaks-6cdd ([thread](delta://thread/ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjhJJIBxBCA0aLJyrhJPreUvVwLftHG)).
+- `refs-1`: yaks-2e00 then yaks-525b ([thread](delta://thread/ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjn95IBxBCA0aLJyrhJPreUvVwLftHG)).
+
+I take yaks-7168 (reflection design). yaks-3f35 is another thread's; its children own `src/sessions.rs`.
