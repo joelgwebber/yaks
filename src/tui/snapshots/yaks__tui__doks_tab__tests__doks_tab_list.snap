@@ -4,12 +4,12 @@ expression: "draw(&app, 120, 12)"
 ---
  🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   📖  Doks (4)   🛖  Sheds (…)
 
- Cut a release              howto                        doks/howto/release.md
- Full-text search           topic   #search              doks/topics/full-text-search.md
- Vector search in Postgres  topic   #databases #search   doks/topics/vector-search.md
- TUI layout                 note    #tui                 yaks/doks/tui-layout.md
- pgvector README            source                       sources/2026-10-22-1a2b3c4d
-
+ Cut a release              howto                         doks/howto/release.md
+ Full-text search           topic    #search              doks/topics/full-text-search.md
+ Vector search in Postgres  topic    #databases #search   doks/topics/vector-search.md
+ TUI layout                 note     #tui                 yaks/doks/tui-layout.md
+ pgvector README            source                        sources/2026-10-22-1a2b3c4d
+ Pick an index              session                       sessions/2026/10/herd-2026-10-23-0915-pick-an-index.md
 
 
 

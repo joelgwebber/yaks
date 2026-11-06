@@ -6371,7 +6371,7 @@ fn empty_search_commit_still_says_cleared() {
 /// The global query and the All view (yaks-a25c, design §4).
 mod query {
     use super::*;
-    use crate::tui::doks_tab::DoksEntry;
+    use crate::tui::doks_tab::{DocGroup, DoksEntry};
 
     /// A farm with a dead yak and a body that only the query's body match
     /// finds, plus a dok and a source whose *text* says `widget`.
@@ -6391,7 +6391,7 @@ mod query {
                 title: "Plan".into(),
                 kind: "note".into(),
                 tags: vec![],
-                source: false,
+                group: DocGroup::Dok,
                 text: "---\ntitle: plan\n---\n\nthe quarterly widget plan\n".into(),
             },
             DoksEntry {
@@ -6399,7 +6399,7 @@ mod query {
                 title: "Other".into(),
                 kind: "note".into(),
                 tags: vec![],
-                source: false,
+                group: DocGroup::Dok,
                 text: "nothing here".into(),
             },
             DoksEntry {
@@ -6407,7 +6407,7 @@ mod query {
                 title: "A paper".into(),
                 kind: "source".into(),
                 tags: vec![],
-                source: true,
+                group: DocGroup::Source,
                 text: "the extracted widget text".into(),
             },
         ]);

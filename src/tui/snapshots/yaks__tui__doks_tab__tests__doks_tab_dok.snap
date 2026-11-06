@@ -4,12 +4,12 @@ expression: "draw(&app, 150, 26)"
 ---
  🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   📖  Doks (4)   🛖  Sheds (…)
 
- Cut a release         howto                 doks/h│ 📖  doks/topics/vector-search.md  topic
- Full-text search      topic   #search       doks/t│ type:        topic
- Vector search in Pos  topic   #databases #  doks/t│ title:       Vector search in Postgres
- TUI layout            note    #tui          yaks/d│ description: pgvector, indexes and when to use them.
- pgvector README       source                source│ tags:        databases, search
-                                                   │ sources:     sources/2026-10-22-1a2b3c4d/source.md
+ Cut a release         howto                  doks/│ 📖  doks/topics/vector-search.md  topic
+ Full-text search      topic    #search       doks/│ type:        topic
+ Vector search in Pos  topic    #databases #  doks/│ title:       Vector search in Postgres
+ TUI layout            note     #tui          yaks/│ description: pgvector, indexes and when to use them.
+ pgvector README       source                 sourc│ tags:        databases, search
+ Pick an index         session                sessi│ sources:     sources/2026-10-22-1a2b3c4d/source.md
                                                    │
                                                    │ Vector search
                                                    │

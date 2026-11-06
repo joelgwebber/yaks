@@ -86,7 +86,11 @@ impl AttachView {
         extracted: Option<String>,
     ) -> Self {
         let is_source = rel.starts_with("sources/") && rel.ends_with("/source.md");
-        let doc = if crate::doks::is_dok_path(rel) {
+        // A session note is a dok in all but its folder (yaks-85a6): it
+        // shows, and saves, the same way.
+        let is_session =
+            rel.starts_with(&format!("{}/", crate::sessions::DIR)) && rel.ends_with(".md");
+        let doc = if crate::doks::is_dok_path(rel) || is_session {
             DocKind::Dok
         } else if is_source {
             DocKind::Source { extracted }

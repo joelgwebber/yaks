@@ -11,10 +11,10 @@ interchangeable.
   include the default tree, **Recent**, **Inbox** (yaks with a `needs` value: awaiting a human, or answered or requested and
   awaiting an agent), **Due** (every open yak with a `due:`, soonest first, so
   the overdue ones lead; unpinned, from the view picker, `` ` ``), **All**
-  (every yak, dead ones too, then every dok and
-  source; unpinned, from the view picker, `` ` ``) and
+  (every yak, dead ones too, then every dok,
+  source and session note; unpinned, from the view picker, `` ` ``) and
   **Starred**; you can save the current filter as a named view. The
-  **Doks** tab lists the farm's doks and sources (see [Doks tab](#doks-tab)),
+  **Doks** tab lists the farm's doks, sources and session notes (see [Doks tab](#doks-tab)),
   and the **Sheds** tab is a tree of the farm's workers (actors) with the yaks
   each one touched (see [Sheds tab](#sheds-tab)).
 - **Detail pane** — the selected yak: fields, parent/deps/children, source and
@@ -442,6 +442,7 @@ a read-only copy of `git show <sha>:<path>` under the temp directory
 (`yaks-src/<sha>/…`); if the file is unchanged it opens the working copy. A link
 to a **farm document** (a dok from the farm root, `[x](/doks/topics/x.md#setup)`;
 in a dok, a relative `notes.md` below it; a source's `/sources/<id>/source.md`;
+a session note's `/sessions/YYYY/MM/<note>.md`;
 `@<sha>` pins it) opens in the text viewer at its `#heading` or `#L12` row (see
 [Following links](#following-links-and-peek)); in the detail pane the status bar
 also shows the first line of its peek. Every link is read by the farm's one link
@@ -479,7 +480,7 @@ the full source lines.
 ![yaks TUI inbox view](assets/tui-inbox.svg)
 
 **All** — a flat list of everything the farm holds: every yak (dead ones
-included), newest change first, then every dok and source in the Doks tab's
+included), newest change first, then every dok, source and session note in the Doks tab's
 order. It is unpinned too (reach it from `` ` ``), and its count is the number in
 the query chip. Narrowing a yak facet in the drawer (a type, priority, status or
 readiness) drops the documents, which have none.
@@ -630,20 +631,25 @@ row also close it (the click selects the row). `q` quits, as everywhere, and
 
 The **📖 Doks** tab lists the farm's documents that are not yaks: every dok
 under `doks/` and each herd's `<herd>/doks/`, then every saved source under
-`sources/` (the same files `yaks dok list` and `yaks source list` read).
+`sources/`, then every session note under `sessions/` (the same files `yaks
+dok list`, `yaks source list` and `yaks session list` read).
 
-- **One row per dok**, sorted by path, then the sources: the title, the kind
-  (`note`, `topic`, `howto`, `summary` or a typed kind; `source` for a
-  source), the tags, then the path dimmed. The list is flat; the path shows
-  the folder.
-- **The tab count** is the number of doks (sources are not counted) the
-  query keeps.
+- **One row per dok**, sorted by path, then the sources, then the session
+  notes (oldest first): the title, the kind (`note`, `topic`, `howto`,
+  `summary` or a typed kind; `source` for a source, `session` for a session
+  note), the tags, then the path dimmed. The list is flat; the path shows the
+  folder.
+- **The tab count** is the number of doks (sources and session notes are not
+  counted) the query keeps.
 - **`Enter` opens the dok** in the text viewer, next to the list (a jump:
   `o` closes it again, back on its row). Its
   frontmatter shows as field rows (`type:`, `title:`, `tags:`, ...) above the
   rendered markdown body. A field the viewer can't flatten to one line (a list
   of maps) shows its YAML as written. A **source** opens its `source.md`, then
-  its `extracted.md` under an `── extracted.md ──` row. The viewer moves like
+  its `extracted.md` under an `── extracted.md ──` row. A **session note**
+  opens like a dok: its frontmatter (who, when, the verdict counts,
+  `promoted:`) as field rows, then its sections, with the images beside it
+  drawn inline. The viewer moves like
   the detail pane: the line cursor, `Tab` among links, `/` find (the search
   register, see *The search register* above), `v`/`y`
   select and copy; `Enter` follows a link (another dok opens in its place,

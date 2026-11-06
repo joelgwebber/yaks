@@ -1,10 +1,12 @@
-//! The Doks tab (yaks-ebb2): the farm's doks and saved sources, one flat list
-//! sorted by path (doks from `doks/` and each `<herd>/doks/`, then
-//! `sources/`), with title, kind and tags. Enter opens one in the text
-//! viewer ([`App::read_farm_doc`]): a dok's frontmatter as field rows
-//! above its rendered body, a source's `source.md` then its `extracted.md`.
+//! The Doks tab (yaks-ebb2): the farm's doks, saved sources and session notes,
+//! one flat list (doks from `doks/` and each `<herd>/doks/`, then `sources/`,
+//! then `sessions/`, yaks-85a6), each group sorted by path, with title, kind
+//! and tags. Enter opens one in the text viewer ([`App::read_farm_doc`]): a
+//! dok's or session note's frontmatter as field rows above its rendered body,
+//! a source's `source.md` then its `extracted.md`.
 //!
-//! The data is the CLI's: [`doks::load_all`] and [`sources::list`]. It is
+//! The data is the CLI's: [`doks::load_all`], [`sources::list`] and
+//! [`sessions::load_all`]. It is
 //! read when the tab is shown and again on every farm reload, so an edit
 //! made elsewhere appears as soon as the watcher sees it.
 //!
@@ -18,22 +20,32 @@
 #[cfg(test)]
 use super::handlers::DocKind;
 use super::*;
-use crate::{doks, sources};
+use crate::{doks, sessions, sources};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{ListItem, Paragraph};
 
-/// One row of the list: a dok or a source.
+/// Which of the farm's document collections a row comes from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum DocGroup {
+    Dok,
+    /// A saved source (`sources/<id>/source.md`).
+    Source,
+    /// A session note (`sessions/YYYY/MM/...md`).
+    Session,
+}
+
+/// One row of the list: a dok, a source or a session note.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct DoksEntry {
-    /// Farm-relative path of the file the viewer opens: the dok, or a
-    /// source's `source.md`.
+    /// Farm-relative path of the file the viewer opens: the dok, a source's
+    /// `source.md`, or the session note.
     pub path: String,
     pub title: String,
-    /// The dok's kind (`note`, `topic`, a typed kind), or `source`.
+    /// The dok's kind (`note`, `topic`, a typed kind), `source` or `session`.
     pub kind: String,
     pub tags: Vec<String>,
-    pub source: bool,
+    pub group: DocGroup,
     /// What the query searches besides the fields above, lowercased once
     /// here (matching is case-insensitive): a dok's file (frontmatter and
     /// body), a source's `source.md` and extracted text, as `yaks find` reads
@@ -44,7 +56,7 @@ pub(crate) struct DoksEntry {
 impl DoksEntry {
     /// The path shown in the list: a source by its directory.
     pub(crate) fn shown_path(&self) -> &str {
-        if self.source {
+        if self.group == DocGroup::Source {
             self.path.strip_suffix("/source.md").unwrap_or(&self.path)
         } else {
             &self.path
@@ -62,8 +74,8 @@ pub(crate) struct DoksTab {
     pub error: Option<String>,
 }
 
-/// Every dok and source of the farm at `root`, doks first, each sorted by
-/// path.
+/// Every dok, source and session note of the farm at `root`, in that order,
+/// each group sorted by path (so session notes run oldest first).
 pub(crate) fn read_entries(root: &Path) -> Result<Vec<DoksEntry>> {
     let mut out: Vec<DoksEntry> = doks::load_all(root)?
         .into_iter()
@@ -73,7 +85,7 @@ pub(crate) fn read_entries(root: &Path) -> Result<Vec<DoksEntry>> {
             tags: p.tags(),
             text: p.render().to_lowercase(),
             path: p.path,
-            source: false,
+            group: DocGroup::Dok,
         })
         .collect();
     out.extend(sources::list(root).into_iter().map(|s| {
@@ -85,8 +97,16 @@ pub(crate) fn read_entries(root: &Path) -> Result<Vec<DoksEntry>> {
             title: s.title,
             kind: "source".into(),
             tags: Vec::new(),
-            source: true,
+            group: DocGroup::Source,
         }
+    }));
+    out.extend(sessions::load_all(root)?.into_iter().map(|s| DoksEntry {
+        title: s.title(),
+        kind: "session".into(),
+        tags: s.tags(),
+        text: s.render().to_lowercase(),
+        path: s.path,
+        group: DocGroup::Session,
     }));
     Ok(out)
 }
@@ -96,7 +116,8 @@ impl App {
         self.active_view().key == view::DOKS_KEY
     }
 
-    /// Re-read the farm's doks and sources (a no-op without a farm), keeping
+    /// Re-read the farm's doks, sources and session notes (a no-op without a
+    /// farm), keeping
     /// the cursor on the same path.
     pub(crate) fn reload_doks(&mut self) {
         let Some(root) = self.farm.as_ref().map(|f| f.root().to_path_buf()) else {
@@ -162,9 +183,12 @@ impl App {
             .filter(move |e| q.is_none_or(|q| tree::query_matches(tree::Item::Doc(e), q)))
     }
 
-    /// The tab's count: the doks (sources not counted) the query keeps.
+    /// The tab's count: the doks (not sources or session notes) the query
+    /// keeps.
     pub(crate) fn doks_count(&self) -> usize {
-        self.docs_matching_query().filter(|e| !e.source).count()
+        self.docs_matching_query()
+            .filter(|e| e.group == DocGroup::Dok)
+            .count()
     }
 
     /// Enter / l: open the selected dok or source in the viewer. A dok has
@@ -293,10 +317,10 @@ fn entry_row(
     tags_w: usize,
     width: u16,
 ) -> Line<'static> {
-    let kind_style = if e.source {
-        Style::new().fg(Color::Magenta)
-    } else {
-        Style::new().fg(Color::Cyan)
+    let kind_style = match e.group {
+        DocGroup::Dok => Style::new().fg(Color::Cyan),
+        DocGroup::Source => Style::new().fg(Color::Magenta),
+        DocGroup::Session => Style::new().fg(Color::Green),
     };
     let tags = e
         .tags
@@ -393,7 +417,7 @@ impl DocCols {
 }
 
 /// A small doks for tests and doc shots: two farm-wide doks in folders,
-/// a herd dok and a source.
+/// a herd dok, a source and a session note.
 #[cfg(test)]
 pub(crate) mod fixture {
     use super::*;
@@ -424,6 +448,10 @@ pub(crate) mod fixture {
             (
                 "sources/2026-10-22-1a2b3c4d/extracted.md",
                 "# pgvector\n\nOpen-source vector similarity search for Postgres.\n",
+            ),
+            (
+                "sessions/2026/10/herd-2026-10-23-0915-pick-an-index.md",
+                "---\ntype: session-review\ntitle: Pick an index\nsource: session-note\nactor: herd\nday: 2026-10-23\ngood: 1\n---\n\n## Summary\n\nChose HNSW for [vector search](/doks/topics/vector-search.md).\n\n## Turns\n\n- good: pick an index\n\n## Lessons\n\n- none\n",
             ),
         ];
         for (rel, text) in files {
@@ -480,8 +508,8 @@ mod tests {
             "doks/topics/full-text-search.md"
         );
         press(&mut app, "G");
-        assert_eq!(app.cursor, 4);
-        assert!(app.selected_doc().unwrap().source);
+        assert_eq!(app.cursor, 5);
+        assert_eq!(app.selected_doc().unwrap().group, DocGroup::Session);
         press(&mut app, "g");
         assert_eq!(app.cursor, 0);
         let _ = std::fs::remove_dir_all(proj);
@@ -527,7 +555,7 @@ mod tests {
     }
 
     #[test]
-    fn it_lists_doks_then_sources_and_counts_doks() {
+    fn it_lists_doks_then_sources_then_sessions_and_counts_doks() {
         let (proj, app) = on_doks();
         let paths: Vec<&str> = app.doks_rows().iter().map(|e| e.path.as_str()).collect();
         assert_eq!(
@@ -538,6 +566,7 @@ mod tests {
                 "doks/topics/vector-search.md",
                 "yaks/doks/tui-layout.md",
                 "sources/2026-10-22-1a2b3c4d/source.md",
+                "sessions/2026/10/herd-2026-10-23-0915-pick-an-index.md",
             ]
         );
         assert_eq!(app.doks_count(), 4);
@@ -567,11 +596,13 @@ mod tests {
         let titles: Vec<&str> = app.doks_rows().iter().map(|e| e.title.as_str()).collect();
         assert_eq!(
             titles,
-            // The source's extracted text says "search" too.
+            // The source's extracted text says "search" too, and so does the
+            // session note (its link to the vector-search dok).
             vec![
                 "Full-text search",
                 "Vector search in Postgres",
-                "pgvector README"
+                "pgvector README",
+                "Pick an index"
             ]
         );
         assert_eq!(app.doks_count(), 2, "the count is the doks the query keeps");
@@ -581,7 +612,7 @@ mod tests {
         enter_key(&mut app);
         assert_eq!(app.doks_rows().len(), 1);
         esc_key(&mut app);
-        assert_eq!(app.doks_rows().len(), 5);
+        assert_eq!(app.doks_rows().len(), 6);
         let _ = std::fs::remove_dir_all(proj);
     }
 
@@ -628,6 +659,7 @@ mod tests {
     fn a_source_opens_with_its_extracted_text() {
         let (proj, mut app) = on_doks();
         press(&mut app, "G");
+        press(&mut app, "k");
         enter_key(&mut app);
         let frame = draw(&app, 140, 30);
         assert!(
@@ -637,6 +669,30 @@ mod tests {
         assert!(frame.contains("── extracted.md ──"), "{frame}");
         assert!(
             frame.contains("Open-source vector similarity search"),
+            "{frame}"
+        );
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    /// yaks-85a6: a session note is a row of its own kind, opens like a dok
+    /// (frontmatter rows above the rendered body), and a dok's link to one
+    /// opens it.
+    #[test]
+    fn a_session_note_is_listed_and_opens_like_a_dok() {
+        let (proj, mut app) = on_doks();
+        let list = draw(&app, 140, 30);
+        assert!(list.contains("Pick an index"), "{list}");
+        assert!(list.contains("session"), "{list}");
+        press(&mut app, "G");
+        enter_key(&mut app);
+        let Some(v) = app.attach() else {
+            panic!("the viewer should be open");
+        };
+        assert_eq!(v.doc, DocKind::Dok);
+        let frame = draw(&app, 140, 30);
+        assert!(frame.contains("actor:"), "{frame}");
+        assert!(
+            frame.contains("Summary") && !frame.contains("## Summary"),
             "{frame}"
         );
         let _ = std::fs::remove_dir_all(proj);
@@ -750,6 +806,7 @@ mod tests {
     fn a_source_is_read_only() {
         let (proj, mut app) = on_doks();
         press(&mut app, "G");
+        press(&mut app, "k");
         enter_key(&mut app);
         press(&mut app, "E");
         assert!(app.attach().is_some());
