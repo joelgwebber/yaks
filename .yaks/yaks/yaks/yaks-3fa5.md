@@ -5,13 +5,14 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-06T04:28:30Z'
-updated: '2026-11-06T04:57:02Z'
+updated: '2026-11-06T04:57:04Z'
 parent: yaks-1c89
 depends_on:
 - yaks-17f5
 - yaks-e58f
 tags:
 - skills
+verify: cargo test --bin yaks skills && cargo test --test init_modes
 ---
 
 A skill for keeping a farm's knowledge in shape, in place of Hearth's `hearth-session-notes` and `hearth-housekeeping` skills and its `session-review` job procedure. Working name `yaks-upkeep`; add it to `BUNDLED` in `src/skills.rs`.
