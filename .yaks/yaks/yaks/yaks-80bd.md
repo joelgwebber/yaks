@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-06T04:28:32Z'
-updated: '2026-11-06T23:13:38Z'
+updated: '2026-11-06T23:14:54Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -44,3 +44,11 @@ Claim (yakherd herd-upkeep-2, 2026-11-06): worker `tools-1`.
 - **Files:** `src/sources.rs`, `src/schemas.rs`, `SourceAction`/`DokAction` in `src/main.rs`, `Farm` methods; docs: `docs/cli.md` `### source` and `### dok`, the `yaks-research` skill's typed-doks section (which says to write the schema by hand) and its source rules, and the `yaks-upkeep` skill's housekeeping bullets (marking a source, adding a field to a schema).
 - **Out of scope:** backdating (yaks-0fa7, another thread).
 - **Judge:** `cargo test -p yaks` with CLI tests: a marked source drops out of `yaks check`; a defined kind shows in `yaks dok types`; merging keeps an existing field and the schema's body.
+
+---
+▸ 2026-11-06T23:14:54Z [tools-1]
+
+Start: Fri Nov 6 23:14:51 UTC 2026
+
+- yak path: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-80bd.md
+- checkout: /Users/joel/src/yaks/.delta/worktrees/rxppcdpad50n/yaks
