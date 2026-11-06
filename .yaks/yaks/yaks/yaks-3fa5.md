@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-06T04:28:30Z'
-updated: '2026-11-06T04:57:21Z'
+updated: '2026-11-06T04:58:07Z'
 parent: yaks-1c89
 depends_on:
 - yaks-17f5
@@ -43,3 +43,18 @@ result: pass
 ---
 
 verify: `cargo test --bin yaks skills && cargo test --test init_modes` -> PASS (exit 0)
+
+---
+▸ 2026-11-06T04:58:07Z [herd-upkeep]
+
+Done on branch `upkeep` (505d2058): the [yaks-upkeep skill](code:.agents/skills/yaks-upkeep/SKILL.md@505d2058), bundled.
+
+- **Session notes:** when, the delegated-session rule (workers report friction instead), the sections, Saved from `touched`, note links.
+- **Reviewing session notes:** list, keep durable facts in doks citing the note, file work, promote every note, account per note.
+- **Housekeeping:** Hearth's rules over `yaks check` (one kind for look-alike kinds, fix only unambiguous formats, never choose a date or number, fix clearly renamed links, verify only what you checked, mark sources only with agreement), and the Changed / Left alone account.
+- **Setting it up:** two recurring yaks with `--wake agent`.
+- Pointers from `yaks`, `yaks-research` (the housekeeping exception), `yaks-working` (step 8), `yaks-coordinating` (close the session), `yaks-scheduling`, the worker brief's final message, and `docs/skills.md`.
+
+Not done: a cold read by a cheap model (AGENTS.md suggests one) and a run of the review and housekeeping procedures on real farm data; Joel has examples to try.
+
+Evidence: `yaks verify` PASS (the skills guard tests, init installs it).
