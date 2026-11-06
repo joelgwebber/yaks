@@ -58,6 +58,10 @@ pub struct Request {
     /// replace its content (same directory and id) instead of saving a second
     /// source. Needs `url`. Saves a new source when none has that URL.
     pub refresh: bool,
+    /// Keep one file, `extracted.md`: for a markdown or plain-text file that
+    /// is already the text to read, so no second copy is saved as "the
+    /// original". Not for a directory, a non-text file, or with `text`.
+    pub text_only: bool,
 }
 
 /// The result of a save.
@@ -321,6 +325,14 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
         }
     }
     let is_dir = abs.is_dir();
+    if req.text_only {
+        if is_dir {
+            bail!("--text-only is for a single file; a directory keeps its layout under files/");
+        }
+        if req.text.is_some() {
+            bail!("--text-only and --text together: the file is its own text, or give --text");
+        }
+    }
     let supplied = match &req.text {
         None => None,
         Some(_) if is_dir => {
@@ -359,7 +371,20 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
             );
         }
         let data = std::fs::read(&abs)?;
-        (sha_hex(&data), vec![(safe_name(&name), data)], len)
+        let saved_as = if req.text_only {
+            if !is_text_name(&name) {
+                bail!(
+                    "--text-only: {name} is not a markdown or text file; save it without --text-only (and give --text if it needs converting)"
+                );
+            }
+            if std::str::from_utf8(&data).is_err() {
+                bail!("--text-only: {name} is not UTF-8 text");
+            }
+            "extracted.md".to_string()
+        } else {
+            safe_name(&name)
+        };
+        (sha_hex(&data), vec![(saved_as, data)], len)
     };
     // `--refresh`: the source that already names this URL, if any.
     let mut prior: Option<Source> = None;
@@ -378,12 +403,21 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
             );
         }
         if let Some(s) = hits.pop() {
-            if s.fields
+            let same_content = s
+                .fields
                 .get("sha256")
                 .and_then(|v| v.as_str().map(String::from))
                 .as_deref()
-                == Some(sha.as_str())
-            {
+                == Some(sha.as_str());
+            // The same bytes saved under another name (`--text-only`, after a
+            // save without it) is still a change: the source is rewritten.
+            let same_file = is_dir
+                || s.fields
+                    .get("file")
+                    .and_then(|v| v.as_str().map(String::from))
+                    .as_deref()
+                    == Some(files[0].0.as_str());
+            if same_content && same_file {
                 return Ok(Saved::Already(s.dir));
             }
             prior = Some(s);
@@ -511,11 +545,15 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
     );
     f.set("size", &Value::Plain(size.to_string()));
     f.set("sha256", &Value::Plain(sha.clone()));
-    if let Some(old) = prior.as_ref().and_then(|s| {
-        s.fields
-            .get("sha256")
-            .and_then(|v| v.as_str().map(String::from))
-    }) {
+    if let Some(old) = prior
+        .as_ref()
+        .and_then(|s| {
+            s.fields
+                .get("sha256")
+                .and_then(|v| v.as_str().map(String::from))
+        })
+        .filter(|old| *old != sha)
+    {
         f.set("previous_sha256", &Value::Plain(old));
     }
     if let Some(p) = &part_of {
@@ -1026,6 +1064,165 @@ mod tests {
         std::fs::write(&f, "three\n").unwrap();
         let err = add(&root, &web(&f, true)).unwrap_err().to_string();
         assert!(err.contains("more than one source"), "{err}");
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    fn files_in(d: &Path) -> Vec<String> {
+        let mut v: Vec<String> = std::fs::read_dir(d)
+            .unwrap()
+            .flatten()
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .collect();
+        v.sort();
+        v
+    }
+
+    #[test]
+    fn text_only_keeps_the_text_once_and_nothing_else() {
+        let base = tmp("textonly");
+        let root = base.join("farm");
+        std::fs::create_dir_all(&root).unwrap();
+        let f = base.join("My Doc.md");
+        std::fs::write(&f, "# Doc\n\nbody\n").unwrap();
+        let req = Request {
+            text_only: true,
+            ..web(&f, false)
+        };
+        let Saved::New(dir) = add(&root, &req).unwrap() else {
+            panic!()
+        };
+        let d = root.join(&dir);
+        assert_eq!(files_in(&d), ["extracted.md", "source.md"]);
+        assert_eq!(
+            std::fs::read_to_string(d.join("extracted.md")).unwrap(),
+            "# Doc\n\nbody\n"
+        );
+        let note = std::fs::read_to_string(d.join("source.md")).unwrap();
+        for want in [
+            "file: extracted.md\n".to_string(),
+            "media_type: text/markdown\n".to_string(),
+            format!("sha256: {}\n", sha_hex(b"# Doc\n\nbody\n")),
+            "size: 12\n".to_string(),
+            "resource: https://docs.example.test/d/1\n".to_string(),
+        ] {
+            assert!(note.contains(&want), "{want}\n{note}");
+        }
+        assert_eq!(
+            add(&root, &req).unwrap(),
+            Saved::Already(dir.clone()),
+            "the same text again is the same source"
+        );
+        // Saved the usual way, the same bytes are found as well.
+        assert_eq!(
+            add(
+                &root,
+                &Request {
+                    path: f,
+                    ..Default::default()
+                }
+            )
+            .unwrap(),
+            Saved::Already(dir)
+        );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn text_only_is_refused_for_what_is_not_one_text_file() {
+        let base = tmp("textonlybad");
+        let root = base.join("farm");
+        std::fs::create_dir_all(&root).unwrap();
+        let (dir, md, html, bin, conv) = (
+            base.join("d"),
+            base.join("a.md"),
+            base.join("p.html"),
+            base.join("b.md"),
+            base.join("conv.md"),
+        );
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("a.md"), "a").unwrap();
+        std::fs::write(&md, "a").unwrap();
+        std::fs::write(&html, "<p>x</p>").unwrap();
+        std::fs::write(&bin, [0xff, 0xfe, 0x00]).unwrap();
+        std::fs::write(&conv, "c").unwrap();
+        let err = |path: &PathBuf, text: Option<PathBuf>| {
+            add(
+                &root,
+                &Request {
+                    path: path.clone(),
+                    text,
+                    text_only: true,
+                    ..Default::default()
+                },
+            )
+            .unwrap_err()
+            .to_string()
+        };
+        assert!(err(&dir, None).contains("--text-only is for a single file"));
+        assert!(err(&md, Some(conv)).contains("--text-only and --text"));
+        assert!(err(&html, None).contains("not a markdown or text file"));
+        assert!(err(&bin, None).contains("not UTF-8 text"));
+        assert!(!root.join(SOURCES_DIR).exists(), "nothing saved on refusal");
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn text_only_refreshes_in_place() {
+        let base = tmp("textonlyrefresh");
+        let root = base.join("farm");
+        std::fs::create_dir_all(&root).unwrap();
+        let f = base.join("page.md");
+        std::fs::write(&f, "one\n").unwrap();
+        let req = Request {
+            text_only: true,
+            ..web(&f, true)
+        };
+        let Saved::New(dir) = add(&root, &req).unwrap() else {
+            panic!()
+        };
+        std::fs::write(&f, "two\n").unwrap();
+        assert_eq!(add(&root, &req).unwrap(), Saved::Refreshed(dir.clone()));
+        let d = root.join(&dir);
+        assert_eq!(files_in(&d), ["extracted.md", "source.md"]);
+        assert_eq!(
+            std::fs::read_to_string(d.join("extracted.md")).unwrap(),
+            "two\n"
+        );
+        let note = std::fs::read_to_string(d.join("source.md")).unwrap();
+        assert!(
+            note.contains(&format!("previous_sha256: {}\n", sha_hex(b"one\n"))),
+            "{note}"
+        );
+        assert_eq!(list(&root).len(), 1);
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn refresh_with_text_only_collapses_an_existing_two_file_source() {
+        let base = tmp("collapse");
+        let root = base.join("farm");
+        std::fs::create_dir_all(&root).unwrap();
+        let f = base.join("page.md");
+        std::fs::write(&f, "same\n").unwrap();
+        let Saved::New(dir) = add(&root, &web(&f, false)).unwrap() else {
+            panic!()
+        };
+        let d = root.join(&dir);
+        assert_eq!(files_in(&d), ["extracted.md", "page.md", "source.md"]);
+        // Same bytes, but the layout changes: that is a refresh, not "already".
+        let req = Request {
+            text_only: true,
+            ..web(&f, true)
+        };
+        assert_eq!(add(&root, &req).unwrap(), Saved::Refreshed(dir.clone()));
+        assert_eq!(files_in(&d), ["extracted.md", "source.md"]);
+        let note = std::fs::read_to_string(d.join("source.md")).unwrap();
+        assert!(note.contains("file: extracted.md\n"), "{note}");
+        assert!(
+            !note.contains("previous_sha256"),
+            "the content did not change: {note}"
+        );
+        assert_eq!(add(&root, &req).unwrap(), Saved::Already(dir));
         let _ = std::fs::remove_dir_all(&base);
     }
 

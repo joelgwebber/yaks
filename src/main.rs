@@ -1500,7 +1500,8 @@ enum DepAction {
 enum SourceAction {
     /// Save a file or a small directory (at most 200 files, 5 MiB) as a
     /// source. Saving the same content again reports the existing source;
-    /// `--refresh` updates one in place.
+    /// `--refresh` updates one in place, `--text-only` keeps a markdown file as
+    /// its text alone.
     Add {
         path: PathBuf,
         /// A title naming the thing, not the file (default: the file name).
@@ -1524,6 +1525,12 @@ enum SourceAction {
         /// one. Saves a new source when none has the URL. Needs `--url`.
         #[arg(long)]
         refresh: bool,
+        /// Keep only `extracted.md`, with no separate copy of the original:
+        /// for a markdown or plain-text file that already is the text to
+        /// read (an exported document). The original's file name is not kept.
+        /// Not for a directory, a non-text file, or together with `--text`.
+        #[arg(long = "text-only")]
+        text_only: bool,
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
@@ -2809,6 +2816,7 @@ fn main() -> Result<()> {
                 text,
                 part_of,
                 refresh,
+                text_only,
                 as_actor,
             } => {
                 let actor = actor::resolve(as_actor.as_deref()).unwrap_or_default();
@@ -2821,6 +2829,7 @@ fn main() -> Result<()> {
                     actor,
                     origin: None,
                     refresh,
+                    text_only,
                 })?;
                 match &saved {
                     sources::Saved::New(d) => println!("Saved {d}/source.md"),

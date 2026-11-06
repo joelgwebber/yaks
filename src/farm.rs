@@ -2287,6 +2287,7 @@ impl Farm {
                         actor: actor.to_string(),
                         origin: Some(format!("{id}/{name}")),
                         refresh: false,
+                        text_only: false,
                     },
                 );
                 let _ = std::fs::remove_dir_all(&tmp);
