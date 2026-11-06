@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-06T04:28:32Z'
-updated: '2026-11-06T23:33:23Z'
+updated: '2026-11-06T23:39:50Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -81,3 +81,11 @@ result: fail
 ---
 
 verify: `cargo test -p yaks` -> FAIL (exit 101)
+
+---
+▸ 2026-11-06T23:39:50Z [tools-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
