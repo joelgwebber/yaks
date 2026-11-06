@@ -2294,6 +2294,21 @@ impl Farm {
         crate::sources::add(&self.root, req)
     }
 
+    /// Set or clear the mark `yaks check` honours in a source's `source.md`
+    /// (see [`crate::sources::mark`]), under the farm lock. Returns the
+    /// source's directory and whether the file changed.
+    pub fn source_mark(&self, source: &str, how: &crate::sources::Mark) -> Result<(String, bool)> {
+        let _lock = store::lock(&self.root)?;
+        crate::sources::mark(&self.root, source, how)
+    }
+
+    /// Write or merge `schemas/<kind>.md` (see [`crate::schemas::define`]),
+    /// under the farm lock.
+    pub fn dok_define(&self, def: &crate::schemas::Define) -> Result<crate::schemas::Defined> {
+        let _lock = store::lock(&self.root)?;
+        crate::schemas::define(&self.root, def)
+    }
+
     /// Move yak `id`'s attachment `name` out of the yak: into `sources/` as a
     /// source (`to_dok: None`), or to a dok at `to_dok` (a markdown
     /// attachment, given frontmatter when it has none). Every link to the

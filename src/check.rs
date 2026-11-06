@@ -54,8 +54,8 @@ impl Kind {
                 "Stale dok (past its stale_after: check the facts again, then set verified:)"
             }
             Kind::Uncited => {
-                "Uncited source (no dok or yak mentions sources/<id>/: cite it, or set \
-superseded_by: or uncited: in its source.md)"
+                "Uncited source (no dok or yak mentions sources/<id>/: cite it, or keep it \
+on purpose with `yaks source mark`)"
             }
             Kind::SimilarKinds => {
                 "Similar kinds (dok types that differ only by plural or hyphens: pick one)"

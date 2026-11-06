@@ -179,3 +179,117 @@ fn defaults_warnings_types_rows_and_yak_fields() {
         ]
     );
 }
+
+#[test]
+fn dok_define_writes_a_schema_dok_types_reads_and_merges_into_it() {
+    let f = Farm::new("define");
+    let out = f.run(&[
+        "dok",
+        "define",
+        "appliance",
+        "--field",
+        "name=text!",
+        "--field",
+        "purchased=date",
+        "--description",
+        "Things with plugs",
+        "--stale-after",
+        "P1Y",
+    ]);
+    assert!(
+        out.starts_with("Created schemas/appliance.md (2 fields)"),
+        "{out}"
+    );
+    let types = f.run(&["dok", "types"]);
+    assert!(
+        types.contains("appliance (Appliance): Things with plugs")
+            && types.contains("name: text, usually set")
+            && types.contains("purchased: date"),
+        "{types}"
+    );
+    // A hand-written schema with prose and a comment: merging keeps both,
+    // every field and its description, and only adds.
+    write(
+        &f,
+        "schemas/pet.md",
+        "---\ntype: Dok Type\ntitle: Pet\n# keep me\nfields:\n  name: {type: text, required: true}\n  born: {type: date, description: Day it arrived}\n---\n\nProse about pets.\n",
+    );
+    let out = f.run(&[
+        "dok",
+        "define",
+        "pet",
+        "--field",
+        "name=text!",
+        "--field",
+        "born=date",
+        "--field",
+        "weight=number",
+    ]);
+    assert!(
+        out.starts_with("Updated schemas/pet.md: added weight"),
+        "{out}"
+    );
+    let text = std::fs::read_to_string(f.root().join("schemas/pet.md")).unwrap();
+    assert_eq!(
+        text,
+        "---\ntype: Dok Type\ntitle: Pet\n# keep me\nfields:\n  name: {type: text, required: true}\n  born: {type: date, description: Day it arrived}\n  weight: number\n---\n\nProse about pets.\n"
+    );
+    assert!(
+        f.run(&["dok", "define", "pet", "--field", "weight=number"])
+            .starts_with("No changes")
+    );
+
+    // A different type is refused, with nothing written, until --replace; the
+    // field's description stays.
+    let err = f.fails(&[
+        "dok",
+        "define",
+        "pet",
+        "--field",
+        "born=text",
+        "--field",
+        "age=number",
+    ]);
+    assert!(
+        err.contains("born is date here, not text") && err.contains("--replace"),
+        "{err}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(f.root().join("schemas/pet.md")).unwrap(),
+        text
+    );
+    let out = f.run(&["dok", "define", "pet", "--field", "born=text", "--replace"]);
+    assert!(out.contains("changed born"), "{out}");
+    let now = std::fs::read_to_string(f.root().join("schemas/pet.md")).unwrap();
+    assert!(
+        now.contains("born: {type: text, description: Day it arrived}")
+            && now.ends_with("Prose about pets.\n"),
+        "{now}"
+    );
+
+    // Bad input is refused.
+    for (args, why) in [
+        (
+            vec!["dok", "define", "note", "--field", "a=text"],
+            "untyped",
+        ),
+        (
+            vec!["dok", "define", "Bad", "--field", "a=text"],
+            "not a kind name",
+        ),
+        (
+            vec!["dok", "define", "x", "--field", "a=colour"],
+            "not one yaks knows",
+        ),
+        (vec!["dok", "define", "x", "--field", "a"], "name=type"),
+        (
+            vec!["dok", "define", "x", "--stale-after", "soon"],
+            "--stale-after",
+        ),
+        (vec!["dok", "define", "x"], "nothing to define"),
+    ] {
+        let err = f.fails(&args);
+        assert!(err.contains(why), "{args:?}: {err}");
+    }
+    assert!(!f.root().join("schemas/x.md").exists());
+}

@@ -1299,8 +1299,8 @@ enum Command {
     /// past their `stale_after` (the dok's own, else its type's schema; an
     /// ISO 8601 duration such as `P6M` counted from `verified:`, else the
     /// dok's last commit on the farm branch, or a date), sources that no dok
-    /// or yak cites (a `sources/<id>/` link or mention; set `superseded_by:`
-    /// or `uncited:` in its source.md to keep it on purpose), dok kinds that
+    /// or yak cites (a `sources/<id>/` link or mention; keep one on
+    /// purpose with `yaks source mark`), dok kinds that
     /// differ only by plural or hyphens, and `doctor`'s `broken-link`,
     /// `schema-mismatch`, `merge-conflict` and `dok-problem`. Exits 1 when
     /// there is any finding.
@@ -1598,6 +1598,25 @@ enum SourceAction {
         #[arg(long)]
         json: bool,
     },
+    /// Mark a source on purpose for `yaks check`: kept without a citation
+    /// (`--uncited WHY`), replaced by a newer source (`--superseded-by`), or
+    /// `--clear` the mark. Sets the field `uncited:` / `superseded_by:` in
+    /// its `source.md` (one mark at a time) as one commit.
+    Mark {
+        /// The source: its id, `sources/<id>`, or `sources/<id>/source.md`.
+        source: String,
+        /// Keep it without a citation, and say why.
+        #[arg(long, value_name = "WHY", group = "how")]
+        uncited: Option<String>,
+        /// Replaced by this source (its id or `sources/<id>/source.md`);
+        /// it must exist.
+        #[arg(long = "superseded-by", value_name = "SOURCE", group = "how")]
+        superseded_by: Option<String>,
+        /// Remove the mark, so `yaks check` lists the source again when
+        /// nothing cites it.
+        #[arg(long, group = "how")]
+        clear: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -1654,6 +1673,34 @@ enum DokAction {
     /// The kinds of dok: the untyped ones and every typed kind with a
     /// schema (`schemas/<type>.md`), with its fields.
     Types,
+    /// Write or extend a typed kind's schema, `schemas/<kind>.md`, in the
+    /// shape `dok types` reads: `--field name=type` (repeatable; `name=type!`
+    /// is required; types text, number, bool, date, datetime, money, link,
+    /// list). An existing schema keeps every field, key and its prose: new
+    /// fields are added, and a field whose type or required flag differs is
+    /// refused unless `--replace`. One commit.
+    Define {
+        /// The kind's name: lowercase letters, digits and `-`.
+        kind: String,
+        /// A field, `name=type` or `name=type!` for a required one
+        /// (repeatable).
+        #[arg(long = "field", value_name = "NAME=TYPE[!]")]
+        field: Vec<String>,
+        /// The kind's title (a new schema defaults to the kind's name).
+        #[arg(long)]
+        title: Option<String>,
+        /// What the kind is for.
+        #[arg(long)]
+        description: Option<String>,
+        /// How long a dok of this kind stays current: `P6M`, `P1Y`, `P2W` or
+        /// a date. `yaks check` reports doks past it.
+        #[arg(long = "stale-after", value_name = "WHEN")]
+        stale_after: Option<String>,
+        /// Allow changing the type or required flag of a field the schema
+        /// already has (its default and description stay).
+        #[arg(long)]
+        replace: bool,
+    },
     /// List doks whose fields match: `--type T`, `--where key=value`
     /// (repeatable, ANDed; a list field matches when it holds the value).
     /// `--rows` lists the rows of matching table doks instead (the first
@@ -2888,6 +2935,32 @@ fn main() -> Result<()> {
                     sources::Saved::New(d) => println!("Saved {d}/source.md"),
                     sources::Saved::Already(d) => println!("Already saved: {d}/source.md"),
                     sources::Saved::Refreshed(d) => println!("Refreshed {d}/source.md"),
+                }
+            }
+            SourceAction::Mark {
+                source,
+                uncited,
+                superseded_by,
+                clear,
+            } => {
+                let how = match (uncited, superseded_by, clear) {
+                    (Some(why), None, false) => sources::Mark::Uncited(why),
+                    (None, Some(by), false) => sources::Mark::SupersededBy(by),
+                    (None, None, true) => sources::Mark::Clear,
+                    _ => anyhow::bail!(
+                        "give one of --uncited <why>, --superseded-by <source> or --clear"
+                    ),
+                };
+                let (dir, changed) = farm.source_mark(&source, &how)?;
+                match (&how, changed) {
+                    (_, false) => println!("No changes to {dir}/source.md"),
+                    (sources::Mark::Clear, true) => println!("Cleared the mark on {dir}/source.md"),
+                    (sources::Mark::Uncited(_), true) => {
+                        println!("Marked {dir}/source.md uncited on purpose")
+                    }
+                    (sources::Mark::SupersededBy(_), true) => {
+                        println!("Marked {dir}/source.md superseded")
+                    }
                 }
             }
             SourceAction::List { json } => {
@@ -4231,6 +4304,51 @@ fn run_dok(farm: &Farm, action: DokAction) -> Result<()> {
                 Some(true) => println!("Updated {}", doks::normalize(&path)),
             }
             print_schema_warnings(&farm, &path)?;
+        }
+        DokAction::Define {
+            kind,
+            field,
+            title,
+            description,
+            stale_after,
+            replace,
+        } => {
+            let fields = field
+                .iter()
+                .map(|f| schemas::FieldSpec::parse(f))
+                .collect::<Result<Vec<_>>>()?;
+            let done = farm.dok_define(&schemas::Define {
+                kind,
+                fields,
+                title,
+                description,
+                stale_after,
+                replace,
+            })?;
+            if done.is_noop() {
+                println!("No changes to {}", done.path);
+            } else if done.created {
+                println!(
+                    "Created {} ({})",
+                    done.path,
+                    match done.added.len() {
+                        1 => "1 field".to_string(),
+                        n => format!("{n} fields"),
+                    }
+                );
+            } else {
+                let mut what = Vec::new();
+                if !done.added.is_empty() {
+                    what.push(format!("added {}", done.added.join(", ")));
+                }
+                if !done.changed.is_empty() {
+                    what.push(format!("changed {}", done.changed.join(", ")));
+                }
+                if !done.keys.is_empty() {
+                    what.push(format!("set {}", done.keys.join(", ")));
+                }
+                println!("Updated {}: {}", done.path, what.join("; "));
+            }
         }
         DokAction::Types => {
             println!(

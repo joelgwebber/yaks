@@ -165,11 +165,11 @@ A farm also holds **doks**: markdown documents that are not yaks, under `doks/` 
 - Search before creating (`yaks dok list`, `yaks dok query --where tags=<tag>`); extend an existing dok rather than starting a second one.
 - Create with `yaks dok new <path> --type topic --set 'tags=[a, b]' --body-file notes.md` (kinds: `note`, the default; `topic`; `howto`; `summary`). Lowercase-kebab paths.
 - Edit fields with `yaks dok set <path> --set key=value`, or the body with your editor. `yaks doctor` checks doks.
-- Facts you would list, filter or sort (appliances, vendors, platforms compared) go in **typed doks**: `yaks dok types` shows the kinds and their fields; give a dok `type: <kind>` and the fields its `schemas/<kind>.md` lists, and add or extend the schema when a new kind earns one. Warnings are advice, never refusals. `schemas/yak.md` lists the farm's known tags: pick from it before inventing one.
+- Facts you would list, filter or sort (appliances, vendors, platforms compared) go in **typed doks**: `yaks dok types` shows the kinds and their fields; give a dok `type: <kind>` and the fields its `schemas/<kind>.md` lists, and add or extend the schema (`yaks dok define <kind> --field name=type`) when a new kind earns one. Warnings are advice, never refusals. `schemas/yak.md` lists the farm's known tags: pick from it before inventing one.
 - Keeping the doks in shape (session notes, reviewing them, a tidy after `yaks check`): the `yaks-upkeep` skill.
 - Research yaks: the `yaks-research` skill says where each finding goes, and how to save, cite and split.
 - Link the dok from the yak that produced it, so it stays in context. Move a dok with `yaks mv <from> <to>`, which rewrites every link to it.
-- Outside material you rely on (a paper, a downloaded web page, a screenshot, a small code directory) is a **source**: `yaks source add <file> --title "<what it is>" [--url <dok it came from>] [--text <your markdown conversion>]` snapshots it once under `sources/<id>/`, one source per thing (never a second source for a conversion; a document that changes under a stable `--url` is refreshed in place with `--refresh`; the `yaks-research` skill has the rule); cite its `source.md` in the dok's `sources:` list. A finding first kept as a yak attachment moves with `yaks promote <id>/<file>` (a source) or `--dok doks/<path>.md` (a dok); links to it follow.
+- Outside material you rely on (a paper, a downloaded web page, a screenshot, a small code directory) is a **source**: `yaks source add <file> --title "<what it is>" [--url <dok it came from>] [--text <your markdown conversion>]` snapshots it once under `sources/<id>/`, one source per thing (never a second source for a conversion; a document that changes under a stable `--url` is refreshed in place with `--refresh`; the `yaks-research` skill has the rule); cite its `source.md` in the dok's `sources:` list (one kept on purpose without a citation: `yaks source mark`). A finding first kept as a yak attachment moves with `yaks promote <id>/<file>` (a source) or `--dok doks/<path>.md` (a dok); links to it follow.
 
 ## Commands
 
@@ -193,7 +193,8 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 | `refs <id>` | What it points at; `--incoming` for what points at it |
 | `commits <id>` | Commits recorded on the yak (`yaks land` writes them) and the branches its checkpoints name (`--fetch` fetches them), then those naming it in the code repo you run it from, then the yak file's farm history |
 | `session note` / `touched` / `list` / `promote` | Session notes: one at the end of a working session (`--title`, `--body -`; `## Saved` is written from what you wrote), what you wrote since (`touched`), unreviewed ones (`list --unreviewed`), mark reviewed (`promote`): the **yaks-upkeep** skill |
-| `dok list` / `show` / `new` / `set` / `query` / `types` | The farm's doks (`doks/**.md`, `<herd>/doks/**.md`): see "Doks" below |
+| `dok list` / `show` / `new` / `set` / `query` / `types` / `define` | The farm's doks (`doks/**.md`, `<herd>/doks/**.md`): see "Doks" below; `define <kind> --field name=type[!]` writes or extends `schemas/<kind>.md` |
+| `source add` / `list` / `mark` | Outside material as write-once sources; `mark <id> --uncited "<why>"` or `--superseded-by <id>` keeps one off `yaks check`'s uncited list (`--clear` undoes it) |
 | `dep` / `reparent` | Add/remove a dependency; move under `--parent <id>` or `--unparent` |
 | `bulk` | One field edit or reparent over a filtered set; dry-run unless `--commit`; refuses without a filter |
 | `rename` / `rename-herd` | Rename a yak or a whole herd, rewriting every reference; `--dry-run` first |

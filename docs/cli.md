@@ -160,10 +160,10 @@ Mentions are whole real ids, matched exactly as `refs` and the TUI links do. Com
 | `undo <commit>... \| --by <actor> [--since <when>]` | Revert farm commits as one new commit. [Details](#undo) |
 | `mv <from> <to>` | Move a dok and rewrite every link to it. [Details](#links) |
 | `find <pattern> [--scope P] [--kind K] [--regex] [--json]` | Full-text search over yaks, doks, sources' text and sessions. [Details](#find) |
-| `source add <path> \| list` | Save outside material as a write-once source; list them. [Details](#source) |
+| `source add <path> \| list \| mark <id>` | Save outside material as a write-once source; list them; mark one kept on purpose. [Details](#source) |
 | `session note\|touched\|list\|promote` | Session notes: save one at the end of a working session, see what you wrote, list the unreviewed, mark them reviewed. [Details](#session) |
 | `promote <id>/<file> [--dok <path>]` | Move a yak's attachment into a source or a dok, rewriting links. [Details](#source) |
-| `dok list\|show\|new\|set\|query\|types` | The farm's doks: markdown documents under `doks/` or `<herd>/doks/` that are not yaks. [Details](#dok) |
+| `dok list\|show\|new\|set\|query\|types\|define` | The farm's doks: markdown documents under `doks/` or `<herd>/doks/` that are not yaks. [Details](#dok) |
 | `reparent <ids…> --parent <id>` | Move yaks under a new parent (or `--unparent` to top-level). |
 | `rename <old> <new>` | Rename a yak's id, updating every reference across the farm (its file, its `.yaks/<herd>/yaks/<id>/` attachment dir and the `](<old>/…)` links to it). |
 | `rename-herd <old> <new>` | Rename a whole herd: migrate every id from one prefix to another (e.g. `yaksrs` → `yaks`). (`rename-prefix` still works as an alias.) |
@@ -241,7 +241,7 @@ Requires ≥1 filter flag (never the whole farm) and ≥1 mutation flag (`--add-
 
 ### `dok`
 
-`dok list [<prefix>]` · `dok show <path>` · `dok new <path>` · `dok set <path>` · `dok query`
+`dok list [<prefix>]` · `dok show <path>` · `dok new <path>` · `dok set <path>` · `dok query` · `dok types` · `dok define <kind>`
 
 Doks are the farm's other documents: research, decision records, design notes, anything that should outlive one yak and stay beside the work. A dok lives under `doks/` (farm-wide) or `<herd>/doks/` (one herd's), at any depth, and is named by its path from the farm root: `doks/topics/vector-search.md`. A leading `/` is accepted (`/doks/x.md`, the form links use). Product docs that ship with the code stay in the code repo's `docs/`.
 
@@ -270,6 +270,16 @@ fields:
 
 A field is `{type, required, default, description}` or the shorthand `name: <type>`; types are `text`, `number`, `bool`, `date`, `datetime`, `money` (`649.00 USD`), `link`, `list` (anything else reads as text, with a warning). Schemas only advise: `dok new` fills in defaults, `dok new`/`dok set` print warnings (a usually-set field missing, a value of the wrong type, a field the schema does not list), and `doctor` reports them as `schema-mismatch`. No write is ever refused. `dok types` lists the untyped kinds and every schema with its fields. A small list whose rows aren't doks of their own is a **table dok**: a dok of that type whose body holds a markdown table; `dok query --rows [--type T] [--where column=value]` lists its rows.
 
+`dok define <kind> --field name=type[!] ... [--title T] [--description D] [--stale-after P1Y] [--replace]` writes the schema, so you need not write it by hand:
+
+```sh
+yaks dok define appliance --field name=text! --field purchased=date --stale-after P1Y
+```
+
+- `--field name=type` is repeatable; a trailing `!` (`name=text!`) marks the field required. The types are those above; any other type, a field name that is not letters, digits, `_` and `-`, or a field given twice is refused. A new file gets `type: Dok Type`, a `title` (`--title`, else the kind's name capitalised), and the fields in the shape `dok types` reads (`name: date`, or `{type: text, required: true}`).
+- **It merges into an existing schema.** Fields the file has are kept as written, and so is every other key (`tags:`, comments) and its prose; new fields are appended. `--title`, `--description` and `--stale-after` (a duration such as `P6M`, or a date) are written only when given. A field that already exists with a different type or required flag is refused, with nothing written, unless you pass `--replace`; its `default` and `description` then stay. A field's `default` and `description` have no flag: edit the file for those.
+- The kind is lowercase letters, digits and `-`. The untyped kinds (`note`, `topic`, `howto`, `summary`) are refused. Saying nothing to define (no field, title, description or `--stale-after`) is refused. It prints `Created`, `Updated` (what was added, changed or set) or `No changes to` the file. One commit.
+
 `schemas/yak.md` extends yaks the same way: its `fields:` describe extra yak fields (`due: date`), checked by `doctor` (the built-in fields are never reported), and its `tags:` map lists the farm's known tags with a description each (`ui: The TUI`), shown by `dok types`.
 
 ### `find`
@@ -289,7 +299,7 @@ One search over the farm's prose. It reads yak files (title, description and not
 
 ### `source`
 
-`source add <path> [--title T] [--url URL] [--text FILE] [--part-of sources/<id>/source.md] [--refresh] [--text-only]` · `source list [--json]` · `promote <id>/<file> [--dok <path>]`
+`source add <path> [--title T] [--url URL] [--text FILE] [--part-of sources/<id>/source.md] [--refresh] [--text-only]` · `source list [--json]` · `source mark <id> (--uncited WHY | --superseded-by <id> | --clear)` · `promote <id>/<file> [--dok <path>]`
 
 A **source** is a snapshot of material from outside the farm, written once and cited from doks (`sources:`) and yaks (a link). It lives in `sources/<YYYY-MM-DD>-<first 8 hex of its sha256>/`: the original file (a directory's files under `files/`, its layout kept), `extracted.md` with its text: a copy of a markdown, plain-text or code original (a directory's text files joined under `## <path>` headings), or your own conversion passed with `--text` (HTML and PDF are not text: yaks never treats markup as extracted), and `source.md`: frontmatter with `type: source`, `title`, `description`, `file` (or `files:`), `media_type`, `size`, `sha256`, `previous_sha256` (after a refresh), `part_of`, a `sources:` entry saying where it came from (`resource`, `host`, `last_modified`, `retrieved`; a file saved from a temp directory records its name, not the scratch path) and `generated: {by, at}`. That is Hearth's format, so a Hearth repo's `raw/sources/` moves over as is.
 
@@ -299,6 +309,7 @@ A **source** is a snapshot of material from outside the farm, written once and c
 - **One file for text.** A markdown or plain-text original is its own text, so by default it is saved twice: as itself and as `extracted.md` (git stores one blob, but the checkout shows two files). `--text-only` saves just `extracted.md`, and `source.md` says `file: extracted.md`; use it when the file you hold is already the text to read (a document exported as markdown) and its file name means nothing. The original's name is not kept. It is refused for a directory (which keeps its layout under `files/` so relative links work), for a file that is not markdown or text or not UTF-8, and together with `--text`; it works with `--refresh`. Sources saved without it keep both files.
 - **Living sources.** A source is a snapshot, so by default a changed page is a second source. For material that changes under a stable URL (a shared document, a wiki page), `source add <file> --url <URL> --refresh` updates in place: the source whose resource is `<URL>` keeps its directory and id, takes the new original, `extracted.md`, `sha256` and `size`, and records the hash it replaced as `previous_sha256`; its title and `part_of` are kept unless you give new ones. Unchanged content reports `Already saved:` and writes nothing; a new URL is saved as a new source (so one command creates and refreshes), and `--refresh` without `--url`, or with a URL that more than one source names, is refused. Citations of the source stay valid, and the farm's git history keeps the earlier versions. The id's `-<sha8>` is the hash it was first saved with, so saving the same content again finds a source by the `sha256:` in its `source.md`, not by its id. yaks still fetches and converts nothing: a skill (or you) fetches the document and hands yaks the file, and nothing refreshes by itself.
 - `source list` prints id, media type, title and resource, oldest first.
+- `source mark <id> (--uncited "<why>" | --superseded-by <id> | --clear)` keeps a source off `yaks check`'s list of uncited sources, by writing the field it honours in `source.md` (`uncited: <why>` or `superseded_by: sources/<id>/source.md`) as one commit. `<id>` is the source's id, `sources/<id>`, or its `source.md` path; `--superseded-by` takes the same forms for the newer source. One mark at a time: setting one replaces the other, and `--clear` removes either. A missing source, a `--superseded-by` that does not exist or names the source itself, and an empty reason are refused, with nothing written. Marking one source of a `--part-of` family keeps the whole family off the list, as a citation would. It is only a mark: the source stays, and so does its history.
 - `promote <id>/<file>` turns a yak's attachment into a source (resource `<id>/<file>`); `--dok doks/<path>.md` turns a markdown attachment into a dok instead (given `type: note` and a title when it has no frontmatter). The attachment is removed and every link to it, in any yak, dok or markdown attachment, now points at the new place; a markdown attachment promoted to a dok has its bare sibling links (`shot.png`) rewritten to `<id>/<file>` so they keep naming the yak's attachments.
 
 ### `session`
@@ -775,7 +786,7 @@ Exits non-zero on any issue (CI-usable).
 Hearth's nightly check minus what needs a model: what a person or an agent should look at in the farm's doks and sources. Read-only, never edits; exits 0 when clean and 1 when there is any finding. Each finding is `{kind, message, ids}` (`--json` gives the array; the text report groups by kind). Seven kinds:
 
 - `stale`: a dok past its `stale_after`, the dok's own else its `schemas/<type>.md`'s. The value is an ISO 8601 duration (`P1Y`, `P6M`, `P2W`, `P30D`, or a run of them in that order) or a date (`2026-12-01`: stale once that day has passed). A duration counts from the dok's `verified:` date, else from the dok file's last commit on the farm branch; a dok with neither is skipped, and so is a value that is neither a duration nor a date. `doks/x.md was verified 2026-01-02; its type asks for a re-check by 2026-07-02`. To clear it, check the facts again and set `verified:` (`yaks dok set <path> --set verified=<date>`).
-- `uncited`: a source under `sources/<id>/` that no dok or yak cites. A citation is a link or mention of `sources/<id>/` anywhere in a yak or dok, frontmatter `sources:` included; the source's own files do not count. A source and the sources saved with `--part-of` it count as one: cite any, and none is listed. A source whose `source.md` has `superseded_by:` or `uncited:` (any text) counts as cited: that is how to keep one on purpose. Sources are written once, so this is a list to look at, not something to delete.
+- `uncited`: a source under `sources/<id>/` that no dok or yak cites. A citation is a link or mention of `sources/<id>/` anywhere in a yak or dok, frontmatter `sources:` included; the source's own files do not count. A source and the sources saved with `--part-of` it count as one: cite any, and none is listed. A source whose `source.md` has `superseded_by:` or `uncited:` (any text) counts as cited: that is how to keep one on purpose, and [`source mark`](#source) sets it. Sources are written once, so this is a list to look at, not something to delete.
 - `similar-kinds`: dok kinds, among the `type:` values in use and the names of `schemas/*.md`, that differ only by case, hyphens or a plural (`project`, `projects`, `work-project`). Pick one and `dok set` the others.
 - `broken-link`, `schema-mismatch`, `merge-conflict` and `dok-problem`: the same issues, in the same words, as [`doctor`](#doctor) reports them; `check` does not check anything about yaks themselves.
 

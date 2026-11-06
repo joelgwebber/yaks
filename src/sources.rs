@@ -660,6 +660,83 @@ pub fn list(root: &Path) -> Vec<Source> {
     out
 }
 
+/// How `yaks check` should treat a source nothing cites.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Mark {
+    /// Kept on purpose: `uncited: <why>`.
+    Uncited(String),
+    /// Replaced by another source: `superseded_by: sources/<id>/source.md`.
+    SupersededBy(String),
+    /// Remove either mark.
+    Clear,
+}
+
+/// The farm-relative directory (`sources/<id>`) that `given` names: a bare
+/// id, `sources/<id>`, or `sources/<id>/source.md`, with or without a
+/// leading `/`. Refuses one that is not a saved source.
+fn resolve_dir(root: &Path, given: &str) -> Result<String> {
+    let rel = crate::doks::normalize(given);
+    let id = rel.strip_prefix("sources/").unwrap_or(&rel);
+    let id = id
+        .strip_suffix("/source.md")
+        .unwrap_or(id)
+        .trim_end_matches('/');
+    if id.is_empty() || id.contains('/') || id.starts_with('.') {
+        bail!(
+            "{given}: not a source (give its id or `sources/<id>/source.md`; `yaks source list` shows them)"
+        );
+    }
+    let dir = format!("{SOURCES_DIR}/{id}");
+    if !root.join(&dir).join("source.md").is_file() {
+        bail!("{given}: no such source (`yaks source list` shows them)");
+    }
+    Ok(dir)
+}
+
+/// Set or clear the mark `yaks check` honours in a source's `source.md`
+/// (the caller holds the farm lock). One mark at a time: setting one
+/// replaces the other. Returns the source's directory and whether the file
+/// changed.
+pub fn mark(root: &Path, source: &str, how: &Mark) -> Result<(String, bool)> {
+    let dir = resolve_dir(root, source)?;
+    let value = match how {
+        Mark::Uncited(why) => {
+            let why = why.trim();
+            if why.is_empty() {
+                bail!("--uncited needs a reason: say why this source is kept without a citation");
+            }
+            Some(("uncited", Value::Str(why.to_string())))
+        }
+        Mark::SupersededBy(by) => {
+            let by_dir =
+                resolve_dir(root, by).map_err(|e| anyhow::anyhow!("--superseded-by {e}"))?;
+            if by_dir == dir {
+                bail!("{dir} cannot supersede itself");
+            }
+            Some(("superseded_by", Value::Str(format!("{by_dir}/source.md"))))
+        }
+        Mark::Clear => None,
+    };
+    let path = root.join(&dir).join("source.md");
+    let text =
+        std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
+    let mut page = crate::doks::Dok::parse(&format!("{dir}/source.md"), &text);
+    for key in ["uncited", "superseded_by"] {
+        if value.as_ref().is_none_or(|(k, _)| *k != key) {
+            page.fields.remove(key);
+        }
+    }
+    if let Some((key, v)) = &value {
+        page.fields.set(key, v);
+    }
+    let new = page.render();
+    if new == text {
+        return Ok((dir, false));
+    }
+    store::write::atomic_write(&path, &new)?;
+    Ok((dir, true))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

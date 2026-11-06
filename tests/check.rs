@@ -290,3 +290,83 @@ fn a_dok_with_no_verified_date_counts_from_its_last_commit() {
         "{out}"
     );
 }
+
+#[test]
+fn source_mark_sets_and_clears_what_check_honours() {
+    let f = Farm::new("mark");
+    let kept = f.source("kept.md", "# Kept\n", &[]);
+    let old = f.source("old.md", "# Old\n", &[]);
+    let new = f.source("new.md", "# New\n", &[]);
+    let cite = format!("---\ntype: note\ntitle: C\n---\n\nSee /{new}/source.md.\n");
+    f.write("doks/c.md", &cite);
+    // `kept` and `old` are listed.
+    let v: Value = serde_json::from_str(&f.check(&["--json"]).1).unwrap();
+    assert_eq!(finding(&v, "uncited").len(), 2);
+
+    // `--uncited` takes the bare id, `--superseded-by` a path.
+    let id = kept.strip_prefix("sources/").unwrap();
+    let out = f.run(&["source", "mark", id, "--uncited", "kept: a reference"]);
+    assert!(out.contains(&format!("{kept}/source.md")), "{out}");
+    f.run(&[
+        "source",
+        "mark",
+        &old,
+        "--superseded-by",
+        &format!("{new}/source.md"),
+    ]);
+    assert_eq!(f.check(&[]).0, 0);
+    let text = std::fs::read_to_string(f.root().join(&kept).join("source.md")).unwrap();
+    assert!(text.contains("\nuncited: 'kept: a reference'\n"), "{text}");
+    let text = std::fs::read_to_string(f.root().join(&old).join("source.md")).unwrap();
+    assert!(
+        text.contains(&format!("superseded_by: {new}/source.md\n")),
+        "{text}"
+    );
+    // The rest of the file is as it was.
+    assert!(
+        text.contains("type: source\n") && text.contains("Its text is in"),
+        "{text}"
+    );
+
+    // One mark at a time: a new one replaces the old; marking again is a no-op.
+    f.run(&["source", "mark", &old, "--uncited", "no longer superseded"]);
+    let text = std::fs::read_to_string(f.root().join(&old).join("source.md")).unwrap();
+    assert!(!text.contains("superseded_by"), "{text}");
+    let out = f.run(&["source", "mark", &old, "--uncited", "no longer superseded"]);
+    assert!(out.starts_with("No changes"), "{out}");
+
+    // `--clear` brings both back onto the list.
+    f.run(&["source", "mark", &kept, "--clear"]);
+    f.run(&["source", "mark", &old, "--clear"]);
+    let v: Value = serde_json::from_str(&f.check(&["--json"]).1).unwrap();
+    assert_eq!(finding(&v, "uncited").len(), 2);
+}
+
+#[test]
+fn source_mark_refuses_what_it_cannot_honour() {
+    let f = Farm::new("markbad");
+    let a = f.source("a.md", "# A\n", &[]);
+    let before = std::fs::read_to_string(f.root().join(&a).join("source.md")).unwrap();
+    let fails = |args: &[&str]| {
+        let out = f.cmd(args).output().unwrap();
+        assert!(!out.status.success(), "{args:?} should fail");
+        String::from_utf8(out.stderr).unwrap()
+    };
+    assert!(fails(&["source", "mark", "sources/nope", "--clear"]).contains("no such source"));
+    assert!(
+        fails(&[
+            "source",
+            "mark",
+            &a,
+            "--superseded-by",
+            "sources/nope/source.md"
+        ])
+        .contains("--superseded-by")
+    );
+    assert!(fails(&["source", "mark", &a, "--superseded-by", &a]).contains("itself"));
+    assert!(fails(&["source", "mark", &a, "--uncited", "  "]).contains("reason"));
+    assert!(fails(&["source", "mark", &a]).contains("--uncited"));
+    assert!(fails(&["source", "mark", &a, "--clear", "--uncited", "x"]).contains("cannot be used"));
+    let after = std::fs::read_to_string(f.root().join(&a).join("source.md")).unwrap();
+    assert_eq!(before, after);
+}

@@ -22,6 +22,7 @@
 //! known tags with descriptions (yaks-640a, yaks-f04d).
 
 use crate::fields::{Fields, Value};
+use anyhow::{Context, Result, bail};
 use std::path::Path;
 
 /// The schemas directory at the farm root.
@@ -335,6 +336,344 @@ pub fn table_rows(body: &str) -> Vec<Vec<(String, String)>> {
         .take_while(|l| l.starts_with('|'))
         .map(|l| header.iter().cloned().zip(cells(l)).collect())
         .collect()
+}
+
+/// One `--field name=type[!]` of `yaks dok define`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FieldSpec {
+    pub name: String,
+    pub kind: String,
+    pub required: bool,
+}
+
+impl FieldSpec {
+    /// Parse `name=type` or `name=type!` (`!` marks the field required).
+    pub fn parse(text: &str) -> Result<FieldSpec> {
+        let Some((name, kind)) = text.split_once('=') else {
+            bail!("--field {text}: write it as name=type, or name=type! for a required field");
+        };
+        let (name, kind) = (name.trim(), kind.trim());
+        let (kind, required) = match kind.strip_suffix('!') {
+            Some(k) => (k.trim_end(), true),
+            None => (kind, false),
+        };
+        let name_ok = name.chars().next().is_some_and(|c| c.is_ascii_alphabetic())
+            && name
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-');
+        if !name_ok {
+            bail!(
+                "--field {text}: field name {name:?} should be letters, digits, `_` and `-`, starting with a letter"
+            );
+        }
+        if !KINDS.contains(&kind) {
+            bail!(
+                "--field {text}: type {kind:?} is not one yaks knows ({})",
+                KINDS.join(", ")
+            );
+        }
+        Ok(FieldSpec {
+            name: name.to_string(),
+            kind: kind.to_string(),
+            required,
+        })
+    }
+
+    fn describe(&self) -> String {
+        format!(
+            "{}{}",
+            self.kind,
+            if self.required { " (required)" } else { "" }
+        )
+    }
+
+    /// How a schema file writes this field: the bare type name, or a map
+    /// when required.
+    fn value(&self) -> Value {
+        if self.required {
+            Value::Map(vec![
+                ("type".into(), Value::Plain(self.kind.clone())),
+                ("required".into(), Value::Plain("true".into())),
+            ])
+        } else {
+            Value::Plain(self.kind.clone())
+        }
+    }
+}
+
+/// What `yaks dok define` was asked to write.
+#[derive(Debug, Clone, Default)]
+pub struct Define {
+    pub kind: String,
+    pub fields: Vec<FieldSpec>,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub stale_after: Option<String>,
+    /// Let a field's type or required flag change.
+    pub replace: bool,
+}
+
+/// What `define` did to `schemas/<kind>.md`.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Defined {
+    pub path: String,
+    pub created: bool,
+    pub added: Vec<String>,
+    pub changed: Vec<String>,
+    /// Top-level keys (`title`, `description`, `stale_after`) written.
+    pub keys: Vec<String>,
+}
+
+impl Defined {
+    pub fn is_noop(&self) -> bool {
+        !self.created && self.added.is_empty() && self.changed.is_empty() && self.keys.is_empty()
+    }
+}
+
+/// The type and required flag a field's value in a schema file states.
+fn spec_of(v: &Value) -> (String, bool) {
+    match v {
+        Value::Map(_) => (
+            v.get("type")
+                .and_then(Value::as_str)
+                .unwrap_or("text")
+                .to_string(),
+            v.get("required").and_then(Value::as_str) == Some("true"),
+        ),
+        Value::Plain(k) | Value::Str(k) => (k.clone(), false),
+        _ => ("text".into(), false),
+    }
+}
+
+/// `v` with its type and required flag set to `spec`'s, keeping any default
+/// and description.
+fn respec(v: &Value, spec: &FieldSpec) -> Value {
+    let Value::Map(entries) = v else {
+        return spec.value();
+    };
+    let mut out: Vec<(String, Value)> = Vec::new();
+    let mut had_type = false;
+    for (k, ev) in entries {
+        match k.as_str() {
+            "type" => {
+                had_type = true;
+                out.push((k.clone(), Value::Plain(spec.kind.clone())));
+            }
+            "required" if spec.required => {
+                out.push((k.clone(), Value::Plain("true".into())));
+            }
+            "required" => {}
+            _ => out.push((k.clone(), ev.clone())),
+        }
+    }
+    if !had_type {
+        out.insert(0, ("type".into(), Value::Plain(spec.kind.clone())));
+    }
+    if spec.required && !out.iter().any(|(k, _)| k == "required") {
+        let at = out
+            .iter()
+            .position(|(k, _)| k == "type")
+            .map_or(0, |i| i + 1);
+        out.insert(at, ("required".into(), Value::Plain("true".into())));
+    }
+    Value::Map(out)
+}
+
+/// Write or merge `schemas/<kind>.md` (the caller holds the farm lock).
+/// A new file gets `type: Dok Type`, a title and the fields. An existing one
+/// keeps every field, every other key and its prose: new fields are added,
+/// a field whose type or required flag differs is refused unless
+/// `def.replace` (its default and description stay), and `title`,
+/// `description` and `stale_after` are set only when given.
+pub fn define(root: &Path, def: &Define) -> Result<Defined> {
+    if !valid_type(&def.kind) {
+        bail!(
+            "{:?} is not a kind name: use lowercase letters, digits and `-`, starting with a letter",
+            def.kind
+        );
+    }
+    if crate::doks::UNTYPED_KINDS.contains(&def.kind.as_str()) {
+        bail!(
+            "{} is one of the untyped kinds ({}); define a kind of your own",
+            def.kind,
+            crate::doks::UNTYPED_KINDS.join(", ")
+        );
+    }
+    if let Some(a) = &def.stale_after {
+        let date = chrono::NaiveDate::parse_from_str(a.trim(), "%Y-%m-%d").is_ok();
+        if !date && crate::recur::parse_duration(a.trim()).is_none() {
+            bail!(
+                "--stale-after {a}: use a duration such as P6M, P1Y or P2W, or a date YYYY-MM-DD"
+            );
+        }
+    }
+    if def.fields.is_empty()
+        && def.title.is_none()
+        && def.description.is_none()
+        && def.stale_after.is_none()
+    {
+        bail!(
+            "nothing to define: give --field name=type (repeatable), --title, --description or --stale-after"
+        );
+    }
+    for (i, f) in def.fields.iter().enumerate() {
+        if def.fields[..i].iter().any(|g| g.name == f.name) {
+            bail!("--field {} is given twice", f.name);
+        }
+    }
+
+    let rel = format!("{SCHEMAS_DIR}/{}.md", def.kind);
+    let path = root.join(&rel);
+    let existing = match std::fs::read_to_string(&path) {
+        Ok(t) => Some(t),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+        Err(e) => return Err(e).with_context(|| format!("reading {rel}")),
+    };
+    let mut done = Defined {
+        path: rel.clone(),
+        created: existing.is_none(),
+        ..Defined::default()
+    };
+    let mut page = match &existing {
+        Some(t) => {
+            let p = crate::doks::Dok::parse(&rel, t);
+            if !p.has_frontmatter {
+                bail!("{rel} has no frontmatter; fix it by hand first");
+            }
+            p
+        }
+        None => {
+            let mut f = Fields::default();
+            f.set("type", &Value::Plain("Dok Type".into()));
+            let title = def.title.clone().unwrap_or_else(|| {
+                let mut t = def.kind.replace('-', " ");
+                if let Some(c) = t.get_mut(0..1) {
+                    c.make_ascii_uppercase();
+                }
+                t
+            });
+            f.set("title", &Value::Str(title));
+            crate::doks::Dok {
+                path: rel.clone(),
+                fields: f,
+                body: String::new(),
+                has_frontmatter: true,
+            }
+        }
+    };
+    for (key, given) in [
+        ("title", &def.title),
+        ("description", &def.description),
+        ("stale_after", &def.stale_after),
+    ] {
+        let Some(v) = given.as_deref().map(str::trim) else {
+            continue;
+        };
+        if page
+            .fields
+            .get(key)
+            .and_then(|c| c.as_str().map(String::from))
+            .as_deref()
+            == Some(v)
+        {
+            continue;
+        }
+        let value = if key == "stale_after" {
+            Value::Plain(v.to_string())
+        } else {
+            Value::Str(v.to_string())
+        };
+        page.fields.set(key, &value);
+        if existing.is_some() {
+            done.keys.push(key.to_string());
+        }
+    }
+
+    // The fields as the file has them now.
+    let mut current: Vec<(String, Value)> = if !page.fields.contains("fields") {
+        Vec::new()
+    } else {
+        match page.fields.get("fields") {
+            Some(Value::Null) => Vec::new(),
+            Some(Value::Map(m)) => m,
+            _ => bail!("{rel}: `fields:` is not a map of field name to type; fix it by hand first"),
+        }
+    };
+    let mut conflicts = Vec::new();
+    let mut fresh: Vec<(String, Value)> = Vec::new();
+    for spec in &def.fields {
+        match current.iter_mut().find(|(n, _)| *n == spec.name) {
+            None => {
+                fresh.push((spec.name.clone(), spec.value()));
+                done.added.push(spec.name.clone());
+            }
+            Some((_, v)) => {
+                let (kind, required) = spec_of(v);
+                if kind == spec.kind && required == spec.required {
+                    continue;
+                }
+                if def.replace {
+                    *v = respec(v, spec);
+                    done.changed.push(spec.name.clone());
+                } else {
+                    let was = FieldSpec {
+                        name: spec.name.clone(),
+                        kind,
+                        required,
+                    };
+                    conflicts.push(format!(
+                        "{} is {} here, not {}",
+                        spec.name,
+                        was.describe(),
+                        spec.describe()
+                    ));
+                }
+            }
+        }
+    }
+    if !conflicts.is_empty() {
+        bail!(
+            "{rel} already has: {}; nothing written. Pass --replace to change a field's type",
+            conflicts.join("; ")
+        );
+    }
+    if !done.changed.is_empty() || !page.fields.contains("fields") {
+        current.extend(fresh);
+        if !current.is_empty() {
+            page.fields.set("fields", &Value::Map(current));
+        }
+    } else if !fresh.is_empty() {
+        // Only additions: keep the existing lines as they are, append the new.
+        let raw: Vec<String> = page
+            .fields
+            .raw("fields")
+            .map(<[_]>::to_vec)
+            .unwrap_or_default();
+        let block = raw.first().is_some_and(|l| l.trim_end() == "fields:")
+            && raw[1..]
+                .iter()
+                .all(|l| l.starts_with(' ') || l.trim().is_empty());
+        if block {
+            let mut lines = raw;
+            for (name, v) in &fresh {
+                let mut one = Fields::default();
+                one.set(name, v);
+                lines.extend(one.lines().map(|l| format!("  {l}")));
+            }
+            page.fields.set_raw("fields", lines);
+        } else {
+            current.extend(fresh);
+            page.fields.set("fields", &Value::Map(current));
+        }
+    }
+
+    let new = page.render();
+    if existing.as_deref() != Some(new.as_str()) {
+        std::fs::create_dir_all(root.join(SCHEMAS_DIR))
+            .with_context(|| format!("creating {SCHEMAS_DIR}/"))?;
+        crate::store::write::atomic_write(&path, &new)?;
+    }
+    Ok(done)
 }
 
 #[cfg(test)]
