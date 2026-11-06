@@ -5,12 +5,13 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:28:29Z'
-updated: '2026-11-06T04:57:01Z'
+updated: '2026-11-06T04:57:02Z'
 parent: yaks-1c89
 depends_on:
 - yaks-bca6
 tags:
 - cli
+verify: cargo test --test links && cargo test --bin yaks a_note_link
 ---
 
 There is no way to link one note of a yak: a link names the yak (`yak-0af1`), a dok section, an attachment or code lines. Session notes (yaks-1c89) want to cite the specific notes a session wrote, and other notes would use it too ("as I said in ...").
