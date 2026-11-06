@@ -5,12 +5,11 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-06T04:28:29Z'
-updated: '2026-11-06T04:31:03Z'
+updated: '2026-11-06T04:38:03Z'
 parent: yaks-1c89
 tags:
 - design
 - doks
-needs: agent
 ---
 
 Settle the shape of a session note in a farm before building the command (yaks-1c89).
@@ -55,3 +54,12 @@ needs: agent
 2. SGTM
 3. Also SGTM.
 4. Also, also SGTM.
+
+---
+▸ 2026-11-06T04:38:03Z [herd-upkeep]
+kind: pickup
+---
+
+picked up
+
+herd-upkeep: recording the answers and building on them (yaks-c5bd, yaks-17f5).
