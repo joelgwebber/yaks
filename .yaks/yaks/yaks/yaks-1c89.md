@@ -1,11 +1,11 @@
 ---
 id: yaks-1c89
 title: 'Upkeep: session notes, session review and housekeeping (Hearth''s knowledge procedures in yaks)'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:27:55Z'
-updated: '2026-11-06T04:28:55Z'
+updated: '2026-11-06T04:57:01Z'
 parent: yaks-44b3
 tags:
 - doks
@@ -45,3 +45,14 @@ Filed the family (herd-upkeep, 2026-11-05):
 - yaks-7168 design: weekly reflection
 
 Order: design, then note links and the command, then review, then the skill. The tool gaps are independent.
+
+---
+▸ 2026-11-06T04:57:01Z [herd-upkeep]
+kind: move
+from: hairy
+to: shaving
+child: yaks-c5bd
+thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
