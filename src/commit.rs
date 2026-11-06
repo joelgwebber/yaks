@@ -31,10 +31,35 @@ pub struct Plan {
     pub left_staged: Vec<String>,
     /// The new commit's short hash; `None` on a dry run.
     pub commit: Option<String>,
+    /// The actor the commit is stamped as (`Yaks-Actor` trailer), with `--as`.
+    pub actor: Option<String>,
 }
 
 /// Commit the farm at `root`. `message` overrides the generated one.
 pub fn run(root: &Path, message: Option<&str>, dry_run: bool) -> Result<Outcome> {
+    run_as(root, message, dry_run, None)
+}
+
+/// [`run`], stamping the commit as `as_actor`'s (`yaks commit --as`): a
+/// `Yaks-Actor` trailer, and the git identity `identity_env` gives that actor
+/// on a machine with none. Without it a hand edit carries no trailer, so it is
+/// the person's: `yaks session touched` and `yaks undo --by` see only the
+/// commits an actor owns up to.
+pub fn run_as(
+    root: &Path,
+    message: Option<&str>,
+    dry_run: bool,
+    as_actor: Option<&str>,
+) -> Result<Outcome> {
+    let stamp = match as_actor {
+        None => None,
+        // An explicit name that cleans to nothing would fall back to the
+        // environment's, which is the stamping `--as` exists to avoid.
+        Some(a) => match crate::actor::resolve_detail(Some(a)) {
+            Some((name, crate::actor::Source::Explicit)) => Some(name),
+            _ => bail!("`--as` needs an actor name, not {a:?}"),
+        },
+    };
     let git = |args: &[&str]| -> Result<Output> { run_git(root, args) };
 
     let Some(changes) = changes::read(root)? else {
@@ -73,6 +98,7 @@ pub fn run(root: &Path, message: Option<&str>, dry_run: bool) -> Result<Outcome>
         files: changes.iter().map(|c| (c.state, c.path.clone())).collect(),
         left_staged,
         commit: None,
+        actor: stamp.clone(),
     };
     if dry_run {
         return Ok(Outcome::Done(plan));
@@ -99,14 +125,23 @@ pub fn run(root: &Path, message: Option<&str>, dry_run: bool) -> Result<Outcome>
     check(git(&["add", "-A", "--", "."])?, "git add")?;
     // A machine with no git identity (a CI runner, a fresh box) still
     // commits, as the actor, the same way per-change commits do.
-    let actor = crate::actor::resolve_detail(None)
-        .map(|(n, _)| n)
-        .unwrap_or_default();
+    let actor = stamp.clone().unwrap_or_else(|| {
+        crate::actor::resolve_detail(None)
+            .map(|(n, _)| n)
+            .unwrap_or_default()
+    });
     let ident = crate::autocommit::identity_env(root, &actor);
+    let trailer = format!("{}: {actor}", crate::autocommit::ACTOR_TRAILER);
+    let mut args = vec!["commit", "--only", "-m", plan.message.as_str()];
+    if stamp.is_some() {
+        // A paragraph of its own at the end: git reads it as a trailer.
+        args.extend(["-m", trailer.as_str()]);
+    }
     let committed = Command::new("git")
         .arg("-C")
         .arg(root)
-        .args(["commit", "--only", "-m", &plan.message, "--", "."])
+        .args(&args)
+        .args(["--", "."])
         .envs(ident.iter().map(|(k, v)| (k.as_str(), v.as_str())))
         .output()
         .context("running git commit")?;

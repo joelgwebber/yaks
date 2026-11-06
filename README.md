@@ -134,7 +134,7 @@ in `<path>`.
 | `yaks weight` / `yaks lfs` | what the farm costs each clone of the repository; store its images, PDFs and archives in Git LFS |
 | `yaks private [--off]` | keep the farm on this machine: `sync` never pushes it, a `pre-push` hook refuses a manual push |
 | `yaks init [--farm <checkout>]` | start the farm branch (or share another repo's) and install the skills |
-| `yaks commit [-m <msg>]` | commit the farm on its branch with a generated message (`yaks: shorn yaks-abc1; updated yaks-def2`); never pushes |
+| `yaks commit [-m <msg>] [--as <actor>]` | commit the farm on its branch with a generated message (`yaks: shorn yaks-abc1; updated yaks-def2`); `--as` stamps it with a `Yaks-Actor` trailer so an agent's hand edits are attributed to it; never pushes |
 | `yaks scan-ids [file]` | flag real yak-ids in text (file and/or stdin) — a leak check for a pre-commit / PR gate; exits non-zero if any are found |
 | `yaks tui` | open the interactive terminal UI |
 

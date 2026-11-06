@@ -321,7 +321,7 @@ A **session note** is a short account of one working session, kept so a later re
 - `session note` saves `sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md` as one commit and prints its path. The body is markdown with `## Summary`, `## Turns` (one `- <verdict>: <reason>` per request; verdict `good`, `partial`, `failed` or `unclear`), `## Lessons` (`- none` when none), and optionally `## Discussion` and `## Saved`. A turn without a verdict, a missing section or a body over 12,000 characters is refused, and nothing is written.
 - yaks writes the frontmatter: `type: session-review`, `title`, `source: session-note`, `actor`, `person` (git `user.name`), `host`, `harness` (`--harness`, else `delta` or `claude-code` when the environment says so), `thread` (the Delta thread id, the way back to the transcript), `day`, `reviewed` (when it was saved) and a count of each verdict. It is the shape of Hearth's `session-review` files, so notes copied in from a Hearth repo list alongside.
 - Without a `## Saved` section, yaks writes one before `## Lessons` from `session touched`.
-- `session touched` lists what an actor (you, else `--by`) wrote in the farm since `--since` (`2h`, a date or an RFC 3339 time; default: its latest session note, at most 12 hours back): each yak it created, moved or noted, with a [link to each note](#links), then the doks, sources and schemas its commits created or changed. A hand edit committed with `yaks commit` carries no actor, so it is not listed.
+- `session touched` lists what an actor (you, else `--by`) wrote in the farm since `--since` (`2h`, a date or an RFC 3339 time; default: its latest session note, at most 12 hours back): each yak it created, moved or noted, with a [link to each note](#links), then the doks, sources and schemas its commits created or changed. A hand edit committed with a plain `yaks commit` carries no actor, so it is not listed; `yaks commit --as <actor>` stamps it.
 - `session list` prints path, day, actor, verdict counts and title, oldest first; `--unreviewed` keeps the agents' own notes (`source: session-note`) without `promoted:`.
 - `session promote <path>...` stamps `promoted: <today>` on each, in one commit, once the review has kept what they learned; one already stamped is reported and left alone.
 - `doctor` checks the links in session notes, and `find --kind sessions` searches them.
@@ -894,7 +894,7 @@ On a farm branch, every command that writes the farm commits what it wrote as on
 - A commit that fails never fails the command: the change is written, the reason is printed (in the TUI, the status line), and `yaks commit` commits it later. Nothing is committed while a merge or cherry-pick is in progress in the farm worktree.
 - `YAKS_NO_AUTOCOMMIT=1` turns it off for one command. A `YAKS_DIR` farm outside git never commits.
 
-`yaks commit` remains for hand edits (a dok edited in your editor) and anything else left dirty.
+`yaks commit` remains for hand edits (a dok edited in your editor) and anything else left dirty. A hand edit is the person's by design, so that commit carries no `Yaks-Actor`; an agent that edited a dok by hand commits it with `yaks commit --as <actor>` to own it (see [`commit`](#commit)).
 
 ### `undo`
 
@@ -904,11 +904,13 @@ Revert farm commits as one new commit (nothing is rewritten), merged through the
 
 ### `commit`
 
-`commit [-m <msg>] [--dry-run]`
+`commit [-m <msg>] [--dry-run] [--as <actor>]`
 
 Commit the farm's uncommitted changes (yak files, attachments, doks, config) on its branch, in the farm worktree, from any cwd: hand edits, mostly, since every yaks write commits itself ([above](#every-change-commits)). Stages the farm and runs `git commit --only -- .yaks`.
 
 The message is generated from the changed files, one verb per yak (`created`, `shaving`/`shorn`/`dead`/`regrown` for a move, `updated`, `removed`, `artifacts for`), then `doks <paths>` for doks, sources and schemas, then `farm config`, e.g. `yaks: created yaks-8c08; shaving yaks-c968`; `-m` overrides it. `--dry-run` lists the files and message without staging or committing.
+
+`--as <actor>` stamps the commit as that actor's: a `Yaks-Actor: <actor>` trailer (and, on a machine with no git identity, that name as the committer), so the commit shows up in `yaks session touched --by <actor>` and `yaks undo --by <actor>` and in the actor's generated `## Saved`. Without `--as` nothing changes: a plain `yaks commit` stays unstamped, because the checkout's `whoami` name may be a person's and the commit would claim their edits for whoever ran it. The stamp covers everything the commit holds, so use it for edits that are yours. An empty `--as` is an error.
 
 A normal `git commit`, so the repo's hooks run (and may fail it: the farm changes are then left staged and the hook's output is in the error); git's and the hooks' output is captured, so a successful commit prints only yaks' own summary (and never garbles the TUI); it never pushes. A clean farm prints `nothing to commit` and exits 0.
 

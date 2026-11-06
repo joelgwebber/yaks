@@ -23,6 +23,7 @@ The farm is an orphan branch (`yaks`) holding only `.yaks/`, checked out once pe
 yaks path                  # which farm am I on?
 yaks status                # what is uncommitted; is the branch ahead/behind?
 yaks commit                # commit hand edits (every yaks write commits itself)
+yaks commit --as <you>     # an agent's own hand edits: stamped with your Yaks-Actor
 yaks undo --by <actor>     # list (then --yes: revert) an actor's farm commits
 yaks sync                  # commit, pull (yak-aware merge), push
 yaks conflicts             # documents a merge left for you to settle

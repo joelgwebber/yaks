@@ -272,3 +272,53 @@ fn a_write_spawns_few_git_processes() {
     let none = count_git_spawns(&f, &["shave", &a]);
     assert!(none <= 12, "a write-less command spawned git {none} times");
 }
+
+/// `yaks commit --as <actor>` (yaks-525b) stamps a hand edit with a
+/// `Yaks-Actor` trailer, so `session touched --by` and `undo --by` see it; a
+/// plain `yaks commit` stays unstamped (a hand edit is the person's).
+#[test]
+fn commit_as_stamps_a_hand_edit_for_touched_and_undo() {
+    let f = Farm::new("commit-as");
+    f.run(
+        "agent",
+        &["dok", "new", "doks/notes.md", "--title", "Notes"],
+    );
+    f.run(
+        "agent",
+        &["dok", "new", "doks/other.md", "--title", "Other"],
+    );
+    let notes = f.wt().join(".yaks/doks/notes.md");
+    let other = f.wt().join(".yaks/doks/other.md");
+
+    // A plain commit of a hand edit carries no trailer: nobody touched it.
+    append(&other, "\nby a person\n");
+    f.run("agent", &["commit"]);
+    let touched = f.run(
+        "me",
+        &["session", "touched", "--by", "tester", "--since", "1h"],
+    );
+    assert!(!touched.contains("other.md"), "{touched}");
+
+    append(&notes, "\nedited in an editor\n");
+    let out = f.run("me", &["commit", "--as", "tester"]);
+    assert!(out.contains("(as tester)"), "{out}");
+    let trailers = f.git(&["log", "-1", "--format=%(trailers:key=Yaks-Actor,valueonly)"]);
+    assert_eq!(trailers.trim(), "tester");
+    let touched = f.run(
+        "me",
+        &["session", "touched", "--by", "tester", "--since", "1h"],
+    );
+    assert!(touched.contains("doks/notes.md"), "{touched}");
+    assert!(!touched.contains("other.md"), "{touched}");
+
+    // `undo --by` finds it too (and only it).
+    let listed = f.run("me", &["undo", "--by", "tester"]);
+    assert!(listed.contains("1 commit(s); add --yes"), "{listed}");
+
+    // `--as` with no name is refused rather than falling back to $YAKS_ACTOR.
+    append(&notes, "\nmore\n");
+    let o = f.out("me", &["commit", "--as", " "]);
+    assert!(!o.status.success());
+    assert!(String::from_utf8_lossy(&o.stderr).contains("--as"), "{o:?}");
+    assert!(f.git(&["status", "--porcelain"]).contains("notes.md"));
+}

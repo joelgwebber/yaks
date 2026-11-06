@@ -1388,6 +1388,12 @@ enum Command {
         /// Print the files and message without staging or committing.
         #[arg(long)]
         dry_run: bool,
+        /// Stamp the commit as this actor's: a `Yaks-Actor: <name>` trailer, so
+        /// `yaks session touched --by` and `yaks undo --by` see hand edits
+        /// (a dok edited in an editor) that actor made. Without it hand edits
+        /// carry no trailer and stay the person's.
+        #[arg(long = "as", value_name = "ACTOR")]
+        as_actor: Option<String>,
     },
     /// Land a Delta worker's commit by SHA on the current branch.
     ///
@@ -3233,8 +3239,17 @@ fn main() -> Result<()> {
             };
             print!("{}", sync::run(farm.root(), &opts)?.render());
         }
-        Command::Commit { message, dry_run } => {
-            match commit::run(farm.root(), message.as_deref(), dry_run)? {
+        Command::Commit {
+            message,
+            dry_run,
+            as_actor,
+        } => {
+            match commit::run_as(
+                farm.root(),
+                message.as_deref(),
+                dry_run,
+                as_actor.as_deref(),
+            )? {
                 commit::Outcome::Nothing => println!("commit: nothing to commit under the farm"),
                 commit::Outcome::Done(plan) => {
                     let verb = if dry_run { "would commit" } else { "committed" };
@@ -3248,9 +3263,14 @@ fn main() -> Result<()> {
                             plan.left_staged.join(", ")
                         );
                     }
+                    let by = plan
+                        .actor
+                        .as_ref()
+                        .map(|a| format!(" (as {a})"))
+                        .unwrap_or_default();
                     match &plan.commit {
-                        Some(sha) => println!("commit: {verb} {sha} {}", plan.message),
-                        None => println!("commit: {verb}: {}", plan.message),
+                        Some(sha) => println!("commit: {verb} {sha} {}{by}", plan.message),
+                        None => println!("commit: {verb}: {}{by}", plan.message),
                     }
                 }
             }
