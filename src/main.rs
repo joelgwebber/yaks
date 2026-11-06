@@ -970,12 +970,13 @@ enum Command {
     },
     /// Save outside material as a source, or list the farm's sources.
     ///
-    /// A source is a write-once snapshot under `sources/<date>-<sha8>/`: the
+    /// A source is a snapshot under `sources/<date>-<sha8>/`: the
     /// original, `extracted.md` (its text, for text files), and `source.md`
     /// saying what it is and where it came from. Cite its `source.md` from a
     /// dok's `sources:` or link it from a yak. yaks fetches nothing and
     /// converts nothing: save a downloaded copy with `--url` naming the dok,
-    /// and your conversion of it with `--text`, as one source.
+    /// and your conversion of it with `--text`, as one source. Material that
+    /// changes under a stable URL is updated in place with `add --refresh`.
     Source {
         #[command(subcommand)]
         action: SourceAction,
@@ -1434,7 +1435,8 @@ enum DepAction {
 #[derive(Subcommand)]
 enum SourceAction {
     /// Save a file or a small directory (at most 200 files, 5 MiB) as a
-    /// source. Saving the same content again reports the existing source.
+    /// source. Saving the same content again reports the existing source;
+    /// `--refresh` updates one in place.
     Add {
         path: PathBuf,
         /// A title naming the thing, not the file (default: the file name).
@@ -1452,6 +1454,12 @@ enum SourceAction {
         /// `sources/<id>/source.md` of the source this is a part of.
         #[arg(long = "part-of")]
         part_of: Option<String>,
+        /// Update in place: when a source already names `--url` as its
+        /// resource, replace that source's content (same directory and id,
+        /// old hash kept as `previous_sha256`) instead of saving a second
+        /// one. Saves a new source when none has the URL. Needs `--url`.
+        #[arg(long)]
+        refresh: bool,
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
@@ -2664,6 +2672,7 @@ fn main() -> Result<()> {
                 url,
                 text,
                 part_of,
+                refresh,
                 as_actor,
             } => {
                 let actor = actor::resolve(as_actor.as_deref()).unwrap_or_default();
@@ -2675,10 +2684,12 @@ fn main() -> Result<()> {
                     text,
                     actor,
                     origin: None,
+                    refresh,
                 })?;
                 match &saved {
                     sources::Saved::New(d) => println!("Saved {d}/source.md"),
                     sources::Saved::Already(d) => println!("Already saved: {d}/source.md"),
+                    sources::Saved::Refreshed(d) => println!("Refreshed {d}/source.md"),
                 }
             }
             SourceAction::List { json } => {

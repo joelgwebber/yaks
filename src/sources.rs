@@ -54,6 +54,10 @@ pub struct Request {
     /// attachment being promoted: `<id>/<file>`). Recorded as the resource
     /// instead of `path`.
     pub origin: Option<String>,
+    /// Update in place: when a source already names `url` as its resource,
+    /// replace its content (same directory and id) instead of saving a second
+    /// source. Needs `url`. Saves a new source when none has that URL.
+    pub refresh: bool,
 }
 
 /// The result of a save.
@@ -63,12 +67,14 @@ pub enum Saved {
     New(String),
     /// The same content was already saved here.
     Already(String),
+    /// The source at this directory had its content replaced (`refresh`).
+    Refreshed(String),
 }
 
 impl Saved {
     pub fn dir(&self) -> &str {
         match self {
-            Saved::New(d) | Saved::Already(d) => d,
+            Saved::New(d) | Saved::Already(d) | Saved::Refreshed(d) => d,
         }
     }
 }
@@ -238,21 +244,22 @@ fn safe_name(name: &str) -> String {
 }
 
 /// The farm-relative directory of an already-saved source with this sha256,
-/// on any day (ids end in its first 8 hex digits).
+/// on any day. Its `source.md` says: a refreshed source keeps its id, so the
+/// id's `-<sha8>` suffix is only the hash it was first saved with.
 pub fn find(root: &Path, sha: &str) -> Option<String> {
     let dir = root.join(SOURCES_DIR);
+    let want = format!("\nsha256: {sha}\n");
     let mut hits: Vec<String> = std::fs::read_dir(&dir)
         .ok()?
         .flatten()
         .filter_map(|e| e.file_name().to_str().map(String::from))
-        .filter(|n| n.ends_with(&format!("-{}", &sha[..8])))
+        .filter(|n| {
+            std::fs::read_to_string(dir.join(n).join("source.md")).is_ok_and(|t| t.contains(&want))
+        })
         .collect();
     hits.sort();
     hits.into_iter()
-        .find(|n| {
-            std::fs::read_to_string(dir.join(n).join("source.md"))
-                .is_ok_and(|t| t.contains(&format!("\nsha256: {sha}\n")))
-        })
+        .next()
         .map(|n| format!("{SOURCES_DIR}/{n}"))
 }
 
@@ -292,6 +299,9 @@ fn in_scratch(abs: &Path) -> bool {
 /// Save `req.path` as a source of the farm at `root` (the caller holds the
 /// farm lock). A path inside the farm is refused: cite it directly.
 pub fn add(root: &Path, req: &Request) -> Result<Saved> {
+    if req.refresh && req.url.is_none() {
+        bail!("--refresh needs --url: the URL is what names the source to update");
+    }
     let abs = std::fs::canonicalize(&req.path)
         .with_context(|| format!("{}: no such file or directory", req.path.display()))?;
     if let Ok(farm) = std::fs::canonicalize(root) {
@@ -351,13 +361,61 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
         let data = std::fs::read(&abs)?;
         (sha_hex(&data), vec![(safe_name(&name), data)], len)
     };
-    if let Some(dir) = find(root, &sha) {
-        return Ok(Saved::Already(dir));
+    // `--refresh`: the source that already names this URL, if any.
+    let mut prior: Option<Source> = None;
+    if let Some(url) = req.url.as_deref().filter(|_| req.refresh) {
+        let mut hits: Vec<Source> = list(root)
+            .into_iter()
+            .filter(|s| s.resource == url)
+            .collect();
+        if hits.len() > 1 {
+            bail!(
+                "more than one source names {url} ({}): refresh needs exactly one",
+                hits.iter()
+                    .map(|s| s.dir.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
+        }
+        if let Some(s) = hits.pop() {
+            if s.fields
+                .get("sha256")
+                .and_then(|v| v.as_str().map(String::from))
+                .as_deref()
+                == Some(sha.as_str())
+            {
+                return Ok(Saved::Already(s.dir));
+            }
+            prior = Some(s);
+        }
     }
-    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
-    let id = format!("{today}-{}", &sha[..8]);
-    let rel = format!("{SOURCES_DIR}/{id}");
+    if prior.is_none() {
+        if let Some(dir) = find(root, &sha) {
+            return Ok(Saved::Already(dir));
+        }
+    }
+    let rel = match &prior {
+        Some(s) => s.dir.clone(),
+        None => {
+            let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+            format!("{SOURCES_DIR}/{today}-{}", &sha[..8])
+        }
+    };
     let dir = root.join(&rel);
+    if prior.is_some() {
+        // Everything but `source.md` (rewritten below) is the old content.
+        for e in std::fs::read_dir(&dir)?.flatten() {
+            if e.file_name() == "source.md" {
+                continue;
+            }
+            let p = e.path();
+            if p.is_dir() {
+                std::fs::remove_dir_all(&p)?;
+            } else {
+                std::fs::remove_file(&p)?;
+            }
+        }
+    }
     std::fs::create_dir_all(&dir).with_context(|| format!("creating {}", dir.display()))?;
     for (n, data) in &files {
         let target = if is_dir {
@@ -400,7 +458,19 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
         .origin
         .clone()
         .unwrap_or_else(|| abs.display().to_string());
-    let title = req.title.clone().unwrap_or_else(|| name.clone());
+    // A refresh keeps the title and `part_of` it had unless given new ones.
+    let title = req
+        .title
+        .clone()
+        .or_else(|| prior.as_ref().map(|s| s.title.clone()))
+        .unwrap_or_else(|| name.clone());
+    let part_of = req.part_of.clone().or_else(|| {
+        prior.as_ref().and_then(|s| {
+            s.fields
+                .get("part_of")
+                .and_then(|v| v.as_str().map(String::from))
+        })
+    });
     let mut f = Fields::default();
     f.set("type", &Value::Plain("source".into()));
     f.set("title", &Value::Str(title));
@@ -441,7 +511,14 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
     );
     f.set("size", &Value::Plain(size.to_string()));
     f.set("sha256", &Value::Plain(sha.clone()));
-    if let Some(p) = &req.part_of {
+    if let Some(old) = prior.as_ref().and_then(|s| {
+        s.fields
+            .get("sha256")
+            .and_then(|v| v.as_str().map(String::from))
+    }) {
+        f.set("previous_sha256", &Value::Plain(old));
+    }
+    if let Some(p) = &part_of {
         f.set("part_of", &Value::Str(crate::doks::normalize(p)));
     }
     let now = store::now_iso();
@@ -491,7 +568,11 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
         has_frontmatter: true,
     };
     store::write::atomic_write(&dir.join("source.md"), &page.render())?;
-    Ok(Saved::New(rel))
+    Ok(if prior.is_some() {
+        Saved::Refreshed(rel)
+    } else {
+        Saved::New(rel)
+    })
 }
 
 /// One saved source, for listing.
@@ -815,6 +896,136 @@ mod tests {
             note.contains("description: Snapshot of notes.md\n"),
             "{note}"
         );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    fn web(path: &Path, refresh: bool) -> Request {
+        Request {
+            path: path.to_path_buf(),
+            title: Some("A living page".into()),
+            url: Some("https://docs.example.test/d/1".into()),
+            refresh,
+            actor: "tester".into(),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn refresh_updates_a_source_in_place_keyed_by_its_url() {
+        let base = tmp("refresh");
+        let root = base.join("farm");
+        std::fs::create_dir_all(&root).unwrap();
+        let f = base.join("page.md");
+        std::fs::write(&f, "one\n").unwrap();
+        let Saved::New(dir) = add(&root, &web(&f, true)).unwrap() else {
+            panic!("no source with this url yet: saved as new")
+        };
+        let first_sha = sha_hex(b"one\n");
+
+        // Unchanged: nothing is written.
+        let note_before = std::fs::read_to_string(root.join(&dir).join("source.md")).unwrap();
+        assert_eq!(
+            add(&root, &web(&f, true)).unwrap(),
+            Saved::Already(dir.clone())
+        );
+        assert_eq!(
+            std::fs::read_to_string(root.join(&dir).join("source.md")).unwrap(),
+            note_before
+        );
+
+        // Changed: same directory and id, new content, old hash kept.
+        std::fs::write(&f, "two\n").unwrap();
+        let mut req = web(&f, true);
+        req.title = None;
+        assert_eq!(
+            add(&root, &req).unwrap(),
+            Saved::Refreshed(dir.clone()),
+            "same id after a refresh"
+        );
+        let d = root.join(&dir);
+        assert_eq!(std::fs::read_to_string(d.join("page.md")).unwrap(), "two\n");
+        assert_eq!(
+            std::fs::read_to_string(d.join("extracted.md")).unwrap(),
+            "two\n"
+        );
+        let note = std::fs::read_to_string(d.join("source.md")).unwrap();
+        for want in [
+            "title: A living page\n".to_string(),
+            format!("sha256: {}\n", sha_hex(b"two\n")),
+            format!("previous_sha256: {first_sha}\n"),
+            "resource: https://docs.example.test/d/1\n".to_string(),
+        ] {
+            assert!(note.contains(&want), "{want}\n{note}");
+        }
+        assert_eq!(list(&root).len(), 1, "no second source");
+
+        // The current bytes are found by a plain add, refresh or not.
+        assert_eq!(
+            add(
+                &root,
+                &Request {
+                    path: f.clone(),
+                    ..Default::default()
+                }
+            )
+            .unwrap(),
+            Saved::Already(dir.clone())
+        );
+
+        // A replaced file of another name leaves no stale original behind.
+        let g = base.join("renamed.md");
+        std::fs::write(&g, "three\n").unwrap();
+        assert!(matches!(
+            add(&root, &web(&g, true)).unwrap(),
+            Saved::Refreshed(_)
+        ));
+        assert!(!d.join("page.md").exists() && d.join("renamed.md").is_file());
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn plain_add_never_refreshes_and_refresh_needs_a_url() {
+        let base = tmp("norefresh");
+        let root = base.join("farm");
+        std::fs::create_dir_all(&root).unwrap();
+        let f = base.join("page.md");
+        std::fs::write(&f, "one\n").unwrap();
+        add(&root, &web(&f, false)).unwrap();
+        std::fs::write(&f, "two\n").unwrap();
+        assert!(matches!(
+            add(&root, &web(&f, false)).unwrap(),
+            Saved::New(_)
+        ));
+        assert_eq!(
+            list(&root).len(),
+            2,
+            "without --refresh a change is a new source"
+        );
+
+        let mut no_url = web(&f, true);
+        no_url.url = None;
+        assert!(
+            add(&root, &no_url)
+                .unwrap_err()
+                .to_string()
+                .contains("--refresh needs --url")
+        );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn refresh_refuses_an_ambiguous_url() {
+        let base = tmp("ambiguous");
+        let root = base.join("farm");
+        std::fs::create_dir_all(&root).unwrap();
+        let f = base.join("page.md");
+        for body in ["one\n", "two\n"] {
+            std::fs::write(&f, body).unwrap();
+            add(&root, &web(&f, false)).unwrap();
+        }
+        std::fs::write(&f, "three\n").unwrap();
+        let err = add(&root, &web(&f, true)).unwrap_err().to_string();
+        assert!(err.contains("more than one source"), "{err}");
         let _ = std::fs::remove_dir_all(&base);
     }
 
