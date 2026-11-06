@@ -1,11 +1,11 @@
 ---
 id: yaks-9a13
 title: Farm worktrees of Delta-managed repositories are named repository-…
-status: hairy
+status: shaving
 type: bug
 priority: 3
 created: '2026-11-06T21:37:27Z'
-updated: '2026-11-06T21:37:27Z'
+updated: '2026-11-06T22:00:50Z'
 tags:
 - cli
 - delta
@@ -20,3 +20,13 @@ For a bare host whose directory name says nothing (`repository`), take the name 
 ## Evidence
 
 A test on `farm_home_with` with a bare `repository.git` host that has an `origin`.
+
+---
+▸ 2026-11-06T22:00:50Z [schism-feedback]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
