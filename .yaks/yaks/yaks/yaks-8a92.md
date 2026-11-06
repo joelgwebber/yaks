@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-06T21:37:13Z'
-updated: '2026-11-06T22:18:25Z'
+updated: '2026-11-06T22:23:35Z'
 tags:
 - cli
 - git
@@ -37,3 +37,12 @@ thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-06T22:23:35Z [schism-feedback]
+
+Landed on `main` as 34ded4b5 and installed.
+
+`store::migration_refusal`, for a farm branch worktree: when `<branch>@{upstream}` (as last fetched) has a newer `.yaks/schema`, the refusal says the checkout is behind, not unmigrated, and names `git -C <worktree> pull --ff-only` (ask a human if it won't fast-forward). Otherwise it keeps the `yaks migrate` advice and adds "fetch first". `yaks sync` isn't suggested, because it opens the farm and is refused too.
+
+Evidence: the test `a_stale_farm_whose_upstream_is_migrated_is_told_to_fast_forward` (a pushed schema-7 farm, then a migrated upstream with the worktree reset behind it); full `cargo test` green. The `yaks` skill's "Never migrate" paragraph and `docs/cli.md` `migrate` say what to do with the new message.
