@@ -5,11 +5,12 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-06T21:36:37Z'
-updated: '2026-11-06T21:36:37Z'
+updated: '2026-11-06T21:37:48Z'
 parent: yaks-3f35
 tags:
 - doks
 - design
+needs: human
 ---
 
 From yaks-3f35, item 2. A session note's `reviewed:` field holds the time the note was written (`sessions::build` in the `upkeep` work sets it to now), not when anyone reviewed it; the review stamps `promoted:`. And the note's path and `day:` use local time while `reviewed:` is UTC, so a note written at 23:30 in California sits under one day and claims another.
@@ -24,3 +25,16 @@ The name came from Hearth's `session-review` files, where a server reviews a con
 ## Evidence
 
 Tests for the chosen name and zone, the `yaks-upkeep` skill's description of the frontmatter, and `docs/`.
+
+---
+▸ 2026-11-06T21:37:48Z [schism-feedback]
+kind: ask
+needs: human
+---
+
+asked: needs human
+
+Two details of the session note's time field, my lean on each.
+
+1. **Name.** Rename `reviewed:` to `written:` for notes `yaks session note` writes, and keep reading `reviewed:` for Hearth's imported notes (where a server did review the conversation). Alternative: keep `reviewed:` so every session file reads alike.
+2. **Zone.** Write it with the local offset (`2026-11-06T13:30:00-08:00`), so it agrees with the path and `day:`, which stay local (the day a person thinks the session was). Alternative: UTC everywhere, path included.
