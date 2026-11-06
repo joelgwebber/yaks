@@ -1,11 +1,11 @@
 ---
 id: yaks-bca6
 title: 'Design: session notes in a farm (narrative plus references to yak notes)'
-status: hairy
+status: shorn
 type: task
 priority: 2
 created: '2026-11-06T04:28:29Z'
-updated: '2026-11-06T04:56:54Z'
+updated: '2026-11-06T04:56:55Z'
 parent: yaks-1c89
 tags:
 - design
@@ -73,3 +73,13 @@ Decision (Joel, 2026-11-06, answering the ask): all four leans, with one refinem
 - **Sections:** Summary, Turns, Saved, Lessons, optional Discussion; Turns and Saved items may be links.
 - **Path:** `sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md`, `type: session-review`, `source: session-note`.
 - **Back-links:** none written; the session notes citing a yak are found with `yaks find <id> --kind sessions`.
+
+---
+▸ 2026-11-06T04:56:55Z [herd-upkeep]
+kind: move
+from: hairy
+to: shorn
+thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shorn
