@@ -1,11 +1,11 @@
 ---
 id: yaks-c5bd
 title: Links to one note of a yak
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-06T04:28:29Z'
-updated: '2026-11-06T04:58:06Z'
+updated: '2026-11-06T04:58:08Z'
 parent: yaks-1c89
 depends_on:
 - yaks-bca6
@@ -51,3 +51,13 @@ Done on branch `upkeep` (505d2058): a link can name one note of a yak by its tim
 - Docs: `docs/cli.md` (Links), the `yaks` skill's Links, `peek` and `update --note` help.
 
 Evidence: `yaks verify` PASS (unit and CLI tests), and a run on this farm: [note-links](yaks-c5bd/note-links.txt).
+
+---
+▸ 2026-11-06T04:58:08Z [herd-upkeep]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
