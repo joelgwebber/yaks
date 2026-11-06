@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T04:57:49Z'
-updated: '2026-11-06T23:15:10Z'
+updated: '2026-11-06T23:27:21Z'
 parent: yaks-1c89
 tags:
 - tui
@@ -40,3 +40,11 @@ Start: Fri Nov  6 23:15 UTC 2026
 
 - farm: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-b6a7.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/371r3jvw781f/yaks
+
+---
+▸ 2026-11-06T23:27:21Z [tui-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
