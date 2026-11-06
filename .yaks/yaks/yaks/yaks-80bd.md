@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-06T04:28:32Z'
-updated: '2026-11-06T23:29:57Z'
+updated: '2026-11-06T23:31:47Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -65,3 +65,11 @@ Decision: merge preserves the file byte for byte except what changed: new fields
 Decision: `dok define` refuses the untyped kinds (note, topic, howto, summary), an invalid kind name, an unknown type, a duplicate `--field`, a bad `--stale-after` (must be a duration `recur::parse_duration` reads, or YYYY-MM-DD), and a call with nothing to define. `default:`/`description:` of a field have no flag (not in the claim); docs say edit by hand.
 
 Decision: `source mark` accepts the bare id, `sources/<id>` or `sources/<id>/source.md` (with optional leading `/`) for both the source and `--superseded-by`; stores `superseded_by: sources/<id>/source.md` (the form check and the skills use). `--superseded-by` naming the source itself is refused.
+
+---
+▸ 2026-11-06T23:31:47Z [tools-1]
+kind: verify
+result: fail
+---
+
+verify: `cargo test -p yaks` -> FAIL (exit 101)
