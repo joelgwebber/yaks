@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-06T21:36:14Z'
-updated: '2026-11-07T15:43:43Z'
+updated: '2026-11-07T15:48:14Z'
 parent: yaks-1c89
 tags:
 - doks
@@ -53,3 +53,14 @@ For whoever is on this family (herd-upkeep-2, 2026-11-07): `main` moved to 38fc4
 - yaks-c316: `dok query --where` has `~`, `<`, `>=`, `!` and empty (yaks-39f9), so a `created:` field would be queryable by date.
 - `yaks-upkeep` gained "Reflecting on sessions" (yaks-7168); edit it on top of that.
 - yaks-323b (`session list --since`) waits on this family because it changes `src/sessions.rs`; take it with these if convenient.
+
+---
+▸ 2026-11-07T15:48:14Z [schism-feedback]
+
+Progress, 2026-11-06 (schism-feedback):
+
+- Landed: yaks-35b5 and yaks-9a13 (one farm worktree per repository, named by `origin`; Joel's two schism worktrees merged into `schism-6afd61e7`), yaks-8a92 (a stale farm says fast-forward, not migrate), yaks-85a6 (sessions in the Doks tab). All on `main`, installed; Joel cuts the release once the rest lands.
+- Ready to work, no decision needed: yaks-3fc6 (thread under another harness), yaks-d11e (scope `## Saved` to the session), yaks-0fa7 (backdating), yaks-5f70 (citation wording), yaks-a096 (import guide).
+- Waiting on Joel's answers: yaks-3b52, yaks-db66, yaks-c316.
+
+Order: 3fc6 and d11e first (small, both in `src/sessions.rs` and `yaks session note`), then 0fa7 (depends on d11e's rule that a backdated note never generates Saved), then the skill prose (5f70, a096, which cite the others).
