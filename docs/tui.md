@@ -360,8 +360,13 @@ edge); with a yak's detail open, the wheel over the list steps tasks like
 scrolls the code block or table under the pointer sideways, putting the line
 cursor on that row, in the detail and in an open dok. Left-click a row to select it (click it again to
 open the detail; with the detail open, a click shows that row's yak and keeps it open), click a detail line to put the cursor there (click it again to
-follow its link), and click a tab to switch view. The mouse is ignored while an
-overlay (editor, picker, drawer, help) is open. Mouse back/forward buttons aren't
+follow its link), and click a tab to switch view. In the create/edit form (`E`,
+`c`) a click on a row focuses it, as Tab-ing there does, and a click on a chip
+(type, priority, wakes, herd) selects it; once a text row or the description is
+focused, a click in it puts the text cursor there (the click that focuses a row
+only focuses it). In the in-place editor of a description or comment, a click
+puts the text cursor at that spot and a drag selects (the editor's visual
+mode). Every other overlay (picker, drawer, help) ignores the mouse. Mouse back/forward buttons aren't
 supported — the terminal library (crossterm) drops those buttons — so use `o`/`i`.
 Capturing the mouse turns off the terminal's own click-drag text selection; hold
 **Shift** while dragging (**Option/⌥** in some macOS terminals, e.g. iTerm2) to

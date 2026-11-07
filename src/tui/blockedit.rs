@@ -435,24 +435,23 @@ impl App {
 /// Draw the open editor over its `Kind::Editor` rows in the detail pane: a
 /// bar down the left, the edtui view beside it. The view is drawn at full
 /// size into a scratch buffer and the visible rows copied over, so an editor
-/// the wheel/cursor has half scrolled off still draws correctly.
+/// the wheel/cursor has half scrolled off still draws correctly. Returns where
+/// the scratch buffer sits on screen, for mouse hit-testing.
 pub(crate) fn render_block_editor(
     be: &BlockEdit,
     lines: &[detail::DLine],
     scroll: u16,
     frame: &mut Frame,
     area: Rect,
-) {
-    let Some(first) = lines.iter().position(|l| l.kind == detail::Kind::Editor) else {
-        return;
-    };
+) -> Option<super::mouse::EditorHit> {
+    let first = lines.iter().position(|l| l.kind == detail::Kind::Editor)?;
     let n = lines[first..]
         .iter()
         .take_while(|l| l.kind == detail::Kind::Editor)
         .count();
     let w = area.width as usize;
     if w <= GUTTER || n == 0 {
-        return;
+        return None;
     }
     let full = Rect::new(0, 0, area.width, n as u16);
     let mut buf = Buffer::empty(full);
@@ -485,4 +484,8 @@ pub(crate) fn render_block_editor(
             frame.buffer_mut()[(area.x + x, area.y + y as u16)] = buf[(x, r as u16)].clone();
         }
     }
+    Some(super::mouse::EditorHit {
+        clip: area,
+        top: area.y as i32 + first as i32 - scroll as i32,
+    })
 }

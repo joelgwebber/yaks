@@ -33,6 +33,37 @@ pub(crate) struct HitMap {
     pub(crate) doc: Option<Rect>,
     /// Each drawn tab's rect and the view index it activates.
     pub(crate) tabs: Vec<(Rect, usize)>,
+    /// The create/edit form's rows: each row's rect and its `CreateForm::row`.
+    pub(crate) form_rows: Vec<(Rect, usize)>,
+    /// The form's chips: each chip's rect, its row and its index in the row.
+    pub(crate) form_chips: Vec<(Rect, usize, usize)>,
+    /// Where the in-place block editor's text sits on screen.
+    pub(crate) block_editor: Option<EditorHit>,
+}
+
+/// The in-place block editor on screen. It is drawn into a scratch buffer
+/// (full height, left edge at the pane's) and its visible rows copied over,
+/// so edtui's idea of its own area is in scratch coordinates; a click is
+/// translated into them before it is forwarded.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct EditorHit {
+    /// The part of the screen the editor's rows may show in (the pane).
+    pub(crate) clip: Rect,
+    /// The screen row of the scratch buffer's row 0; negative when scrolled
+    /// partly off the top.
+    pub(crate) top: i32,
+}
+
+impl EditorHit {
+    /// Screen `(col, row)` in the editor's scratch coordinates, or `None`
+    /// outside the pane.
+    fn to_scratch(self, col: u16, row: u16) -> Option<(u16, u16)> {
+        if !self.clip.contains(Position::new(col, row)) {
+            return None;
+        }
+        let y = u16::try_from(row as i32 - self.top).ok()?;
+        Some((col - self.clip.x, y))
+    }
 }
 
 fn hit(r: Option<Rect>, col: u16, row: u16) -> Option<Rect> {
@@ -40,8 +71,9 @@ fn hit(r: Option<Rect>, col: u16, row: u16) -> Option<Rect> {
 }
 
 impl App {
-    /// Dispatch one mouse event. Overlays (editors, pickers, drawer, help) own
-    /// their input, so the mouse is ignored while one is open.
+    /// Dispatch one mouse event. The create/edit form and the in-place block
+    /// editor take the left button; the other overlays (pickers, drawer, help)
+    /// own their input, so the mouse is ignored while one is open.
     pub(crate) fn handle_mouse(&mut self, m: MouseEvent) {
         // A notification lasts until the next key, click or scroll. Not a
         // bare pointer move: mouse capture reports every motion, which would
@@ -54,8 +86,13 @@ impl App {
     }
 
     fn handle_mouse_inner(&mut self, m: MouseEvent) {
-        if !matches!(self.overlay, Overlay::None) {
-            return;
+        // The form and the in-place editor take the left button; every other
+        // overlay owns its input.
+        match &self.overlay {
+            Overlay::None => {}
+            Overlay::Create(_) => return self.mouse_form(m),
+            Overlay::BlockEdit(_) => return self.mouse_block_editor(m),
+            _ => return,
         }
         let hits = self.hits.borrow().clone();
         let (col, row) = (m.column, m.row);
@@ -128,6 +165,66 @@ impl App {
                 }
             }
             _ => {}
+        }
+    }
+
+    /// The create/edit form: a click on a row focuses it (as Tab-ing there
+    /// does); on a chip it also selects that chip. Once a text row is focused,
+    /// a click (or drag) inside its field is forwarded to the editor, which
+    /// puts the text cursor there: edtui learns where its field is from the
+    /// last render, so the click that focuses a row only focuses it.
+    fn mouse_form(&mut self, m: MouseEvent) {
+        let (pos, down) = match m.kind {
+            MouseEventKind::Down(MouseButton::Left) => (Position::new(m.column, m.row), true),
+            MouseEventKind::Up(MouseButton::Left) | MouseEventKind::Drag(MouseButton::Left) => {
+                (Position::new(m.column, m.row), false)
+            }
+            _ => return,
+        };
+        let hits = self.hits.borrow().clone();
+        let Overlay::Create(f) = &mut self.overlay else {
+            return;
+        };
+        if down {
+            if let Some(&(_, row, idx)) = hits.form_chips.iter().find(|(r, ..)| r.contains(pos)) {
+                f.row = row;
+                f.set_chip(idx);
+                return;
+            }
+            let Some(&(_, row)) = hits.form_rows.iter().find(|(r, _)| r.contains(pos)) else {
+                return;
+            };
+            if f.row != row {
+                f.row = row;
+                return;
+            }
+        }
+        if let Some(editor) = f.description_editor().or_else(|| f.line_editor()) {
+            edtui::events::MouseEventHandler::on_event(m, &mut editor.borrow_mut());
+        }
+    }
+
+    /// The in-place block editor: the left button goes to edtui's
+    /// `MouseEventHandler` (a click puts the text cursor there, a drag
+    /// selects), with the position translated into the editor's own area.
+    fn mouse_block_editor(&mut self, m: MouseEvent) {
+        if !matches!(
+            m.kind,
+            MouseEventKind::Down(MouseButton::Left)
+                | MouseEventKind::Up(MouseButton::Left)
+                | MouseEventKind::Drag(MouseButton::Left)
+        ) {
+            return;
+        }
+        let Some(at) = self.hits.borrow().block_editor else {
+            return;
+        };
+        let Some((column, row)) = at.to_scratch(m.column, m.row) else {
+            return;
+        };
+        if let Overlay::BlockEdit(be) = &self.overlay {
+            let m = MouseEvent { column, row, ..m };
+            edtui::events::MouseEventHandler::on_event(m, &mut be.editor.state.borrow_mut());
         }
     }
 
@@ -442,6 +539,173 @@ mod tests {
         // It was opened from the yak detail, so the detail shows the new row.
         assert_eq!(app.focus, Focus::Detail);
         let _ = std::fs::remove_dir_all(proj);
+    }
+
+    /// Screen `(x, y)` of the first occurrence of `needle` (x in columns).
+    fn find_text(frame: &str, needle: &str) -> (u16, u16) {
+        for (y, line) in frame.lines().enumerate() {
+            if let Some(b) = line.find(needle) {
+                return (line[..b].chars().count() as u16, y as u16);
+            }
+        }
+        panic!("{needle} not on screen:\n{frame}")
+    }
+
+    fn form_row(app: &App) -> usize {
+        match &app.overlay {
+            Overlay::Create(f) => f.row,
+            _ => panic!("expected the form"),
+        }
+    }
+
+    /// yaks-000b: a left click on a form row focuses it, as Tab-ing there does.
+    #[test]
+    fn a_click_on_a_form_row_focuses_it() {
+        let mut app = editable();
+        press(&mut app, "E");
+        assert_eq!(form_row(&app), 0);
+        let frame = draw(&app, 100, 24);
+        for (label, row) in [
+            ("tags", 3),
+            ("every", 6),
+            ("description", 8),
+            ("priority", 2),
+        ] {
+            let (x, y) = find_text(&frame, label);
+            click(&mut app, x, y);
+            assert_eq!(form_row(&app), row, "click on {label}\n{frame}");
+            draw(&app, 100, 24);
+        }
+        // A click outside the form's rows (the help bar) changes nothing.
+        click(&mut app, 3, 23);
+        assert_eq!(form_row(&app), 2);
+    }
+
+    /// A click on a chip selects it, as the keys do on that row.
+    #[test]
+    fn a_click_on_a_chip_selects_it() {
+        let mut app = editable();
+        press(&mut app, "E");
+        let frame = draw(&app, 100, 24);
+        let (x, y) = find_text(&frame, "bug");
+        click(&mut app, x + 1, y);
+        let Overlay::Create(f) = &app.overlay else {
+            panic!("form")
+        };
+        assert_eq!((f.row, f.kind_idx), (1, 1), "type: bug");
+        let frame = draw(&app, 100, 24);
+        let (x, y) = find_text(&frame, "p1");
+        click(&mut app, x, y);
+        let Overlay::Create(f) = &app.overlay else {
+            panic!("form")
+        };
+        assert_eq!((f.row, f.pri_idx), (2, 0), "priority: p1\n{frame}");
+        // The label is not a chip: the row is focused, the value kept.
+        let (x, y) = find_text(&frame, "wakes");
+        click(&mut app, x, y);
+        let Overlay::Create(f) = &app.overlay else {
+            panic!("form")
+        };
+        assert_eq!((f.row, f.wake_idx), (7, 0));
+        println!(
+            "--- after clicking bug, p1, wakes ---\n{}",
+            draw(&app, 100, 24)
+        );
+    }
+
+    /// Once a text row is focused, a click inside it puts the text cursor there.
+    #[test]
+    fn a_click_in_the_focused_form_field_moves_its_text_cursor() {
+        let mut app = editable();
+        press(&mut app, "E");
+        let frame = draw(&app, 100, 24);
+        let (x, y) = find_text(&frame, "Editable");
+        click(&mut app, x + 4, y);
+        let Overlay::Create(f) = &app.overlay else {
+            panic!("form")
+        };
+        assert_eq!(f.title.borrow().cursor, edtui::Index2::new(0, 4));
+        // The description: focus it, then click into its second line.
+        let (x, y) = find_text(&frame, "description");
+        click(&mut app, x, y);
+        let frame = draw(&app, 100, 24);
+        let (x, y) = find_text(&frame, "Second line.");
+        click(&mut app, x + 3, y);
+        let Overlay::Create(f) = &app.overlay else {
+            panic!("form")
+        };
+        assert_eq!(f.description.borrow().cursor, edtui::Index2::new(1, 3));
+    }
+
+    fn block_editor_app() -> App {
+        let mut t = task("b0", "Block", Status::Hairy, 3, None);
+        t.body = "alpha beta\ngamma delta\nepsilon".into();
+        let mut app = App::new(vec![t]);
+        enter_key(&mut app);
+        draw(&app, 100, 24);
+        app.open_block_edit(Some(0));
+        app
+    }
+
+    fn editor_cursor(app: &App) -> edtui::Index2 {
+        app.block_edit().unwrap().editor.state.borrow().cursor
+    }
+
+    /// yaks-000b: a click inside the in-place editor moves its text cursor to
+    /// that spot, by forwarding to edtui's `MouseEventHandler`.
+    #[test]
+    fn a_click_in_the_block_editor_moves_the_text_cursor() {
+        let mut app = block_editor_app();
+        let frame = draw(&app, 100, 24);
+        assert_eq!(editor_cursor(&app), edtui::Index2::new(0, 0));
+        let (x, y) = find_text(&frame, "gamma delta");
+        click(&mut app, x + 6, y);
+        assert_eq!(editor_cursor(&app), edtui::Index2::new(1, 6), "{frame}");
+        let (x, y) = find_text(&frame, "epsilon");
+        click(&mut app, x + 2, y);
+        assert_eq!(editor_cursor(&app), edtui::Index2::new(2, 2));
+        // Past the end of a line: the cursor lands on its last character.
+        let (x, y) = find_text(&frame, "alpha beta");
+        click(&mut app, x + 40, y);
+        assert_eq!(editor_cursor(&app).row, 0);
+        assert!(editor_cursor(&app).col >= 9);
+        // The editor stays open; the rest of the pane is not clicked through.
+        assert!(app.block_edit().is_some());
+        println!("--- block editor after clicks ---\n{}", draw(&app, 100, 24));
+    }
+
+    /// Dragging selects text (edtui's Visual mode), as far as edtui supports it.
+    #[test]
+    fn a_drag_in_the_block_editor_selects() {
+        let mut app = block_editor_app();
+        let frame = draw(&app, 100, 24);
+        let (x, y) = find_text(&frame, "gamma delta");
+        click(&mut app, x, y);
+        mouse(&mut app, MouseEventKind::Drag(MouseButton::Left), x + 4, y);
+        mouse(&mut app, MouseEventKind::Up(MouseButton::Left), x + 4, y);
+        let be = app.block_edit().unwrap();
+        let st = be.editor.state.borrow();
+        assert_eq!(st.mode, edtui::EditorMode::Visual);
+        assert_eq!(st.cursor, edtui::Index2::new(1, 4));
+        println!("--- dragged selection ---\n{}", {
+            drop(st);
+            draw(&app, 100, 24)
+        });
+    }
+
+    /// The gutter bar and the rows above the editor are not the editor.
+    #[test]
+    fn a_click_outside_the_block_editor_text_leaves_the_cursor() {
+        let mut app = block_editor_app();
+        let frame = draw(&app, 100, 24);
+        let (x, y) = find_text(&frame, "gamma delta");
+        click(&mut app, x + 3, y);
+        let before = editor_cursor(&app);
+        let rect = app.hits.borrow().detail.unwrap();
+        click(&mut app, rect.x, y); // the gutter bar
+        click(&mut app, x + 3, rect.y); // a row above the editor
+        click(&mut app, 3, 23); // the help bar
+        assert_eq!(editor_cursor(&app), before);
     }
 
     #[test]

@@ -913,6 +913,14 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
             ),
             ("Click detail", "Move line cursor (again: follow link)"),
             ("Click tab", "Switch view"),
+            (
+                "Click form",
+                "Focus a row; select a chip; in a focused field, move the text cursor",
+            ),
+            (
+                "Click editor",
+                "In-place editor: move the text cursor; drag selects",
+            ),
             ("Shift-drag", "Native text selection (terminal)"),
         ],
     ),

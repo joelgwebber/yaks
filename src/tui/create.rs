@@ -13,6 +13,7 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Wrap};
 
+use super::mouse::HitMap;
 use super::palette;
 use super::{
     CREATE_LABEL_W, HEADER_ROWS, PRI_CHOICES, TYPE_CHOICES, WAKE_CHOICES, disp_width, editor_theme,
@@ -198,6 +199,21 @@ impl CreateForm {
         }
     }
 
+    /// Select chip `idx` on the current chip row (a click; the keys use
+    /// [`CreateForm::move_chip`]). An index past the row's chips is ignored.
+    pub(crate) fn set_chip(&mut self, idx: usize) {
+        let (slot, n) = match self.row {
+            1 => (&mut self.kind_idx, TYPE_CHOICES.len()),
+            2 => (&mut self.pri_idx, PRI_CHOICES.len()),
+            7 => (&mut self.wake_idx, WAKE_CHOICES.len()),
+            r if r == HEADER_ROWS && self.has_herd_row() => (&mut self.herd_idx, self.herds.len()),
+            _ => return,
+        };
+        if idx < n {
+            *slot = idx;
+        }
+    }
+
     pub(crate) fn title_text(&self) -> String {
         self.title.borrow().lines.to_string().trim().to_string()
     }
@@ -309,7 +325,7 @@ fn extra_text(t: &Task, key: &str) -> String {
         .unwrap_or_default()
 }
 
-pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
+pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect, hits: &mut HitMap) {
     let has_herd = f.has_herd_row();
     let mut constraints = vec![
         Constraint::Length(1), // header
@@ -372,7 +388,7 @@ pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
         frame,
         title_r,
     );
-    render_chip_row(
+    let chips = render_chip_row(
         f.row == 1,
         f.kind_idx,
         CREATE_LABEL_W,
@@ -381,7 +397,8 @@ pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
         frame,
         type_r,
     );
-    render_chip_row(
+    hits.form_chips.extend(row_chips(1, chips));
+    let chips = render_chip_row(
         f.row == 2,
         f.pri_idx,
         CREATE_LABEL_W,
@@ -390,6 +407,7 @@ pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
         frame,
         pri_r,
     );
+    hits.form_chips.extend(row_chips(2, chips));
     render_text_row(
         f.row == 3,
         CREATE_LABEL_W,
@@ -431,7 +449,7 @@ pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
         .enumerate()
         .map(|(i, w)| (w.to_string(), i == f.wake_idx))
         .collect();
-    render_chip_row(
+    let chips = render_chip_row(
         f.row == 7,
         f.wake_idx,
         CREATE_LABEL_W,
@@ -440,6 +458,7 @@ pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
         frame,
         wake_r,
     );
+    hits.form_chips.extend(row_chips(7, chips));
     if let Some(hr) = herd_r {
         let herds: Vec<(String, bool)> = f
             .herds
@@ -447,7 +466,7 @@ pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
             .enumerate()
             .map(|(i, h)| (h.clone(), i == f.herd_idx))
             .collect();
-        render_chip_row(
+        let chips = render_chip_row(
             f.row == HEADER_ROWS,
             f.herd_idx,
             CREATE_LABEL_W,
@@ -456,8 +475,29 @@ pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
             frame,
             hr,
         );
+        hits.form_chips.extend(row_chips(HEADER_ROWS, chips));
     }
     render_description(&f.description, f.is_content_row(), frame, body_r);
+    // Every row's rect, for click-to-focus (the description's is its separator
+    // and editor together).
+    let mut rows = vec![
+        (title_r, 0),
+        (type_r, 1),
+        (pri_r, 2),
+        (labels_r, 3),
+        (source_r, 4),
+        (due_r, 5),
+        (every_r, 6),
+        (wake_r, 7),
+    ];
+    rows.extend(herd_r.map(|r| (r, HEADER_ROWS)));
+    rows.push((body_r, f.header_rows()));
+    hits.form_rows = rows;
+}
+
+/// A chip row's chip rects tagged with the form row and the chip's index.
+fn row_chips(row: usize, chips: Vec<Rect>) -> impl Iterator<Item = (Rect, usize, usize)> {
+    chips.into_iter().enumerate().map(move |(i, r)| (r, row, i))
 }
 
 /// The form's description: a `description` separator, then a live

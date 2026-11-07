@@ -76,7 +76,7 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
             Overlay::Edit(ed) if !ed.single_line => render_editor_panel(ed, frame, inner),
             Overlay::Fuzzy(fp) => render_fuzzy_results(app, fp, frame, inner),
             Overlay::Drawer(d) => render_drawer(d, frame, inner),
-            Overlay::Create(f) => render_create(f, frame, inner),
+            Overlay::Create(f) => render_create(f, frame, inner, &mut app.hits.borrow_mut()),
             Overlay::Help(scroll) => render_help(app, *scroll, frame, inner),
             Overlay::ViewPicker(sel) => render_view_picker(app, *sel, frame, inner),
             // The pane's subject: the open document, else the selected row's.
@@ -406,6 +406,7 @@ pub(crate) const CREATE_LABEL_W: usize = 12;
 /// chips. `current_row` highlights this row; `cursor_idx` is the chip the
 /// cursor sits on (drawn REVERSED); each choice's bool marks it selected
 /// (green bold). For single-select forms the cursor and the selection coincide.
+/// Returns each chip's screen rect, in order, for mouse hit-testing.
 pub(crate) fn render_chip_row(
     current_row: bool,
     cursor_idx: usize,
@@ -414,7 +415,7 @@ pub(crate) fn render_chip_row(
     choices: &[(String, bool)],
     frame: &mut Frame,
     area: Rect,
-) {
+) -> Vec<Rect> {
     let mut spans = vec![
         Span::styled(
             if current_row { "▸ " } else { "  " },
@@ -425,7 +426,19 @@ pub(crate) fn render_chip_row(
             Style::new().fg(Color::DarkGray),
         ),
     ];
+    let mut rects = Vec::with_capacity(choices.len());
+    let mut x = area.x.saturating_add(2 + label_w as u16);
     for (j, (disp, sel)) in choices.iter().enumerate() {
+        x = x.saturating_add(1); // the space before each chip
+        let w = disp_width(disp) as u16;
+        let right = area.x.saturating_add(area.width);
+        rects.push(Rect::new(
+            x.min(right),
+            area.y,
+            w.min(right.saturating_sub(x)),
+            1,
+        ));
+        x = x.saturating_add(w);
         let mut style = if *sel {
             Style::new().fg(Color::Green).add_modifier(Modifier::BOLD)
         } else {
@@ -440,6 +453,7 @@ pub(crate) fn render_chip_row(
         spans.push(Span::styled(disp.clone(), style));
     }
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
+    rects
 }
 
 /// Render one text-facet row: a `▸` gutter, a padded label, then either a live
@@ -1222,7 +1236,8 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
     frame.render_widget(p, content_area);
     super::imageview::render_inline_images(app, &lines, app.detail.scroll, frame, content_area);
     if let Some(be) = app.block_edit() {
-        blockedit::render_block_editor(be, &lines, app.detail.scroll, frame, content_area);
+        let at = blockedit::render_block_editor(be, &lines, app.detail.scroll, frame, content_area);
+        app.hits.borrow_mut().block_editor = at;
     }
     if pinned {
         let mut header = pinned_header_line(task, app.is_starred(&task.id), area.width);
