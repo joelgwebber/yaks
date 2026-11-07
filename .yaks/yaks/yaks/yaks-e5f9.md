@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-03T23:29:24Z'
-updated: '2026-11-07T17:28:10Z'
+updated: '2026-11-07T17:28:12Z'
 tags:
 - tui
 ---
@@ -92,3 +92,8 @@ Decision: zoom steps are a fixed ladder (5, 10, 12.5, 25, 33, 50, 67, 75, 100, 1
 ▸ 2026-11-07T17:28:10Z [stars-zoom]
 
 Decision: changing zoom keeps the middle of the window on the same part of the picture; so `0` from `fit` lands centred, not top-left. `f` returns to offset 0 (the picture fits). Rejected: always resetting the offset to the top-left.
+
+---
+▸ 2026-11-07T17:28:12Z [stars-zoom]
+
+Decision: `w` (fit width) may enlarge a narrow image; `f`/default `fit` still never enlarges. Rejected: capping fit width at 100%.
