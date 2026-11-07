@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-07T18:19:21Z'
+updated: '2026-11-07T18:24:44Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
@@ -268,3 +268,15 @@ branch: main
 ---
 
 landed: a29187b1 yaks-7c6e: docs: key families and rules, the grouped ? popup and F1, AGENTS.md key bindings, README vim_mode line
+
+---
+▸ 2026-11-07T18:24:44Z [herd-stars]
+
+herd-stars: landed `61cda058` (code, worker `4fc439e5`) and `a29187b1` (docs, worker `05a49af7`), both clean squashes. Gate `cargo test --workspace` green on the merged tree (run with `CARGO_PROFILE_DEV_DEBUG=0`: the disk is nearly full).
+
+Reproduced headless with my build:
+
+- `?` on the list: the grouped popup (Move, Open and follow, Find, Change the yak, View and filter, Farm, App), `n/F3`, `?/F1`, `Tab/]/}`.
+- `keys: standard` in the user config: `j` does nothing, `Enter` opens the pane, `h` stays in it (focus still `detail`), `}` changes view; hints read `↑/↓:move`, `Enter:detail`, `Esc:list`.
+
+Not tried in a real terminal (`F1`, `Shift-F3`, `Ctrl-↓` depend on what the terminal sends). The `docs/assets` SVGs still show the old hints: filed yaks-1c84 to regenerate them in one commit. Editor parity is yaks-4736.
