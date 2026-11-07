@@ -129,7 +129,7 @@ Next: G3's question, which belongs with yak-7af5.
 - Repo code: `code:` and a path from the repo root, with GitHub's line fragment: `[fn parse](code:src/foo.rs#L12-L40)`; `@<sha>` before the fragment pins it to a commit (`code:src/foo.rs@3f2a9c1#L12`). The older `../src/foo.rs` and `../blob/<sha>/src/foo.rs` still work in yaks.
 - A dok: from the farm root, `[link grammar](/doks/design/link-grammar.md#heading)`; a relative link only goes down (`notes/detail.md`), never `../`. `@<sha>` pins a dok too.
 - `yaks peek <link>` prints just what a link names (the lines, the section, or a dok's frontmatter and first paragraph): read that rather than a whole file. `yaks doctor` reports links that lead nowhere.
-- Attachments: `yaks attach` writes the link (`[name](<id>/<file>)`, `![name](...)` for an image). Attach images and long output rather than pasting them.
+- Attachments: `yaks attach` writes the link (`[name](<id>/<file>)`, `![name](...)` for an image). Attach images and long output rather than pasting them. A dok or session note has attachments too, in the directory named after it beside it (`doks/x.md` + `doks/x/`, as a yak has `<id>.md` + `<id>/`): `yaks attach doks/x.md shot.png` stores it there and links `x/shot.png`, and `yaks mv` moves the directory with the dok. Attach what the farm made itself (a screenshot, a diagram); outside material is a source (`yaks source add`).
 - A markdown document you attach that embeds images (an evidence write-up with screenshots): attach it and its images together with `--no-link` (`yaks attach <id> doc.md a.png b.png --no-link`), then link only the document in a note (`[evidence](<id>/doc.md)`). Inside an attachment, a bare file name (`![a](a.png)`) is a sibling attachment of the same yak, so keep the document's own links bare and don't put each image on the yak.
 - Caption an image with the markdown title, `![alt](<id>/shot.png "What it shows")`, or `yaks attach <id> shot.png --caption "What it shows"`: the TUI shows it under the picture (and under the link row when it is not drawn). Use it instead of a `Context: ![..](..)` lead-in; keep alt short. Keep images local (attach them): a remote image is never drawn and can break later.
 - Size an image with a trailing alt-text token: `![shot =50%](<id>/shot.png)`, `=300x200` or `=x120` (px, or `%` of width).
@@ -153,7 +153,7 @@ Skip what makes no sense for the change; never skip it because it is effort.
 
 **The summary note** is short: what changed and, unless that already says it all (a typo fix), the shape of the fix in a sentence or two; the evidence (linked or attached, per the list above), and any yaks spawned. Not a bare "done", and not a design doc: a long write-up goes in an attachment the note links to.
 
-`yaks attach` stores the file beside the yak in `.yaks/<herd>/yaks/<id>/` and links it in the body.
+`yaks attach` stores the file beside the yak in `.yaks/<herd>/yaks/<id>/` and links it in the body (given a dok or session note path instead of an id, beside that document).
 
 ## Tags
 
