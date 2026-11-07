@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:27:55Z'
-updated: '2026-11-07T00:04:36Z'
+updated: '2026-11-07T15:43:44Z'
 parent: yaks-44b3
 tags:
 - doks
@@ -122,3 +122,16 @@ The three cherry-picks conflicted only in prose (`docs/cli.md`, the `yaks` and `
 Left in this family: yaks-3f35 (another thread) and yaks-323b (`session list --since`, waits on it). This yak shears when those do.
 
 Worker friction, for the session note: `cargo test` stops at the first failing binary, so the load-sensitive `init_modes` and `sync` tests make `yaks verify` fail intermittently (`--no-fail-fast` helps); `cargo fmt -- <files>` still rewrites `src/actor.rs` and `tests/commits.rs`; claim notes named a worker (`query-1`) the brief then renamed.
+
+---
+▸ 2026-11-07T15:43:44Z [herd-upkeep-2]
+
+Pushed to `origin/main` at 38fc4358 (Joel, 2026-11-07); farm synced. Release notes, since 0.0.33:
+
+- Session notes: `yaks session note|touched|list|promote`, note links (`<id>#<timestamp>`, landing on the note in the TUI), the `yaks-upkeep` skill (session notes, review, reflection into `/doks/lessons.md`, housekeeping), and agents reading the lessons dok at session start.
+- Doks for agent layers: `dok show` hash and `dok set --if-hash` / `--old --new`; `dok query` operators; `dok row set|delete`; `dok define`; `source mark`.
+- `refs --incoming` over doks and session notes; `yaks commit --as`.
+- Removed: `yaks import-hearth`.
+- Also on main from other threads: `source add --text-only` (yaks-0df0), one farm worktree per repository (yaks-35b5, yaks-9a13), the stale-farm fast-forward message (yaks-8a92).
+
+Known: yaks-06cd (load-sensitive tests). No CI runs on push; the release workflow runs on the tag.
