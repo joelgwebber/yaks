@@ -5,13 +5,12 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-06T22:48:01Z'
+updated: '2026-11-07T17:04:27Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
 tags:
 - tui
-needs: agent
 ---
 
 ---
@@ -88,3 +87,12 @@ needs: agent
 ▸ 2026-11-06T22:46:52Z [sched-1]
 
 One other idea: It would be really helpful to have something like {/} allow you to change tabs while in a detail. This arguably congruent with J/K.
+
+---
+▸ 2026-11-07T17:04:27Z [herd-stars]
+kind: pickup
+---
+
+picked up
+
+herd-stars: implementing the six answered points plus the {/} tab idea, after the starred TUI batch lands (they all touch the keymap).
