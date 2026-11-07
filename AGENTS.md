@@ -59,6 +59,8 @@ table only to exclude the local `.edtui` clone.
   are not in it. `Keymap` is the table with the user's `keys:` overrides applied
   (`keymap/overrides.rs`; read from `$XDG_CONFIG_HOME/yaks/config.yaml` by
   `App::with_farm`, never by `App::new`): every read of a key goes through it.
+  It also holds the key `Family` (`App::editor_vim()` reads it; there is no other
+  copy), and the `?` popup keeps its state in `App::keys_popup`.
 - `src/tui/history.rs` — the TUI's one history of locations (`o`/`i`): `Location`,
   `History`, `App::jump` (wrap a jump in it and it pushes the place left),
   `history_back`/`history_forward` and `restore`. A new kind of jump goes through
@@ -151,6 +153,24 @@ a follow-up:
   the table, so a bound key with a help line is listed; the rows that are not
   bindings (editor keys, files and links, mouse) are the `EXTRAS` there. A key in
   a modal overlay's handler is not in the table: add its row to `EXTRAS` by hand.
+
+**Key bindings.** Every key is a row of `BINDINGS` in `src/tui/keymap.rs`, and
+these rules decide where a new one goes (the full text, with the reasons, is in
+`docs/tui.md`, "Key families and rules"):
+
+- *Case is a tier.* Lowercase looks and moves; `Shift` changes an existing yak
+  (or dok); `Ctrl` is the app and the farm. A command that writes must say so in
+  `Cmd::mutates` (an exhaustive `match`, so a new command is forced to choose);
+  `no_lowercase_key_changes_an_existing_yak` fails when one sits on a lowercase
+  key, bar its listed exceptions (`c`, `a`, `m`, `*` add or mark; `r` has a
+  prompt). A new exception is a decision: argue it in the test.
+- *Two families, chosen once* (`keys: vim|standard`, `Family`). A key that
+  belongs to one family goes in `VIM_ONLY` / `STANDARD_ONLY`; every command
+  keeps a key in both, which `every_command_stays_bound_in_standard_mode`
+  enforces. Give a vim-only key an arrow, `PgUp`/`PgDn` or `Home`/`End` beside it.
+- *Enter goes in, `Esc` comes out*; `h`/`l` never move between list and pane.
+- *One command per intent*, grouped for `?` by `Cmd::group`; the editors' own keys
+  are edtui's, listed by hand in `src/tui/keymap/editor.rs` for `F1`.
 
 **Careful with the skills source.** `.agents/skills/` holds this repo's skills
 as real files, the only copy (no symlinks: Delta skips symlinked skill dirs).

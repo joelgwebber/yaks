@@ -163,7 +163,7 @@ those). Example: `yaks bulk --tag auth --set-priority 1 --commit`.
 
 `yaks tui` opens a full-screen browser over the farm — views by state, a detail
 pane, inline create/edit, dependency and reparent pickers, search, and an
-embedded modal editor (vim or emacs keybindings, per the farm's `config.yaml`). It
+embedded modal editor (the `vim` or `standard` key family, per your `config.yaml` or the farm's). It
 auto-refreshes when the files change underneath it, so it stays in sync if you
 (or an agent) edit yaks from elsewhere. It takes the mouse too (wheel scroll,
 click to select / open / switch view). Mark rows with `m` for a bulk state
@@ -188,8 +188,11 @@ These screenshots are rendered headlessly, and the same machinery lets an agent
 drive the TUI: `yaks tui --headless` reads one action per line on stdin and prints a
 text snapshot after each, via [toque](https://github.com/joelgwebber/toque) (its
 README walks through a short session). `?` shows the keys of the current
-context in a popup (a second `?` opens the full reference), and a `keys:` map in
-your own `~/.config/yaks/config.yaml` rebinds them. See [docs/tui.md](docs/tui.md)
+context in a popup, grouped, where a key you press runs it (a second `?` opens
+the full reference; `F1` does the same in every editor, listing the editor's keys),
+and your own `~/.config/yaks/config.yaml` picks the key family (`keys: standard`
+for arrows instead of `hjkl`, emacs-style editors) and rebinds commands with a
+`keys:` map. See [docs/tui.md](docs/tui.md)
 for the keys and [Customising keys](docs/tui.md#customising-keys).
 
 ## Use with an AI coding agent
@@ -274,7 +277,7 @@ The farm's settings live in its `config.yaml`:
 herd: yak              # default herd / id prefix (`yaks init` writes it; `create` errors without one)
 default_type: task     # default --type
 default_priority: 3    # default --priority
-vim_mode: true         # TUI editor keybindings: vim (true) or emacs (false)
+vim_mode: true         # TUI keys: vim (true) or standard (false); a `keys:` family in your own config.yaml wins
 inline_images: true    # TUI: draw a body paragraph's images in place (false: a link row)
 sync_interval: 5m      # TUI: sync the farm in the background this often (30s, 5m, 2h; 0 or off: never)
 min_version: 0.0.31    # an older yaks warns (and names the upgrade) on every command

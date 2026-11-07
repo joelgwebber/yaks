@@ -102,17 +102,76 @@ interchangeable.
 
 ## Keys
 
-**Movement** — `j`/`k` or `↓`/`↑` move; `d`/`u` half-page; `PgDn`/`PgUp`
-full-page; `g`/`G` (or `Home`/`End`) top/bottom. The Doks tab's rows move
-the same way (they are rows of the same list).
+**Movement** — `j`/`k` or `↓`/`↑` move; `d`/`u` (or `Ctrl-D`/`Ctrl-U`)
+half-page; `PgDn`/`PgUp` full-page; `g`/`G` (or `Home`/`End`) top/bottom. The
+Doks tab's rows move the same way (they are rows of the same list). `h` and `l`
+(and `←`/`→`) never move between the list and the pane: in the list they walk
+the tree, in the pane they only scroll a wide block. **`Enter` goes in and
+`Esc` comes out.**
+
+### Key families and rules
+
+One setting picks the keys for the whole TUI, the list and panes as well as the
+editors: the **key family**, `vim` (the default) or `standard`. It is personal,
+so it lives in the per-user config (see [Customising keys](#customising-keys)),
+not the farm's:
+
+```yaml
+keys: standard
+```
+
+| | `vim` | `standard` |
+|---|---|---|
+| move | `j` `k` `h` `l`, `d` `u`, `g` `G`, `Ctrl-N` `Ctrl-P` (blocks) and the keys below | arrows, `PgUp`/`PgDn`, `Home`/`End`, `Ctrl-D`/`Ctrl-U`; `h` `j` `k` `l` `d` `u` `g` `G` and `Ctrl-N`/`Ctrl-P` are off |
+| find | `/`, `n`/`N` | `/` or `Ctrl-F`, `n`/`N` |
+| editors | edtui's vim mode (`Esc` for Normal, `:w`) | edtui's emacs-style keys |
+
+Both families: `F3` / `Shift-F3` next / previous match; `Ctrl-↓` / `Ctrl-↑` next /
+previous content block (beside `Ctrl-N` / `Ctrl-P` in vim); `Ctrl-D`/`Ctrl-U`
+half-page; `{` / `}` previous / next view; `F1` the keys of whatever is
+focused; the arrows, `Enter`, `Esc`, `Tab`, and every Shift key. The legacy
+`vim_mode: false` (farm or user config) is an alias for `keys: standard`; the
+order is the user's `keys` family, then their `vim_mode`, then the farm's
+`vim_mode`, then vim. The tables below list the vim keys, with the keys both
+families share beside them.
+
+The pickers, the filter drawer and the form's chip rows follow the family too
+(`j`/`k`/`h`/`l` on a chip row are vim's).
+
+The rules every key follows (and the tests that keep them):
+
+1. **Case is a tier.** Lowercase looks and moves (navigate, open, find, copy);
+   `Shift` changes an existing yak (state, fields, structure, comments, a dok);
+   `Ctrl` is the app and the farm, and the editors' own keys. Creating (`c`/`C`),
+   answering (`a`), marking (`m`, `*`) add or mark rather than change, and `r`
+   renames an attachment behind its own prompt: those stay lowercase. A test
+   over the key table fails if any other command that writes sits on a lowercase key.
+2. **Two families, chosen once.** A command has a key in each: a test fails if a
+   command loses its key in `standard` mode.
+3. **Enter goes in, `Esc` comes out.** `Esc` peels one layer (selection, then
+   the search, then the pane).
+4. **Discoverable by construction.** Every key is in the table, so in `?`, the
+   bottom hint and these docs.
+
+**The `?` popup** — `?` (or `F1`) lists the keys of what has the focus, in
+groups: *Move*, *Open and follow*, *Find*, *Change the yak*, *View and filter*,
+*Farm*, *App*. Press a key it lists and that command runs and the popup closes
+(`Esc` only closes it); `?` again opens the full reference; any other key
+closes it. `F1` works in every editor, form, picker query, the drawer and the
+find boxes too, where it lists **that editor's keys for the active family**
+(edtui owns them, so the popup is a hand-written table): a key it lists closes
+the popup and goes on to the editor, and `F1` again just closes it. In a vim
+editor's Normal mode `?` does the same (in Insert, and in standard mode, it is
+a character).
 
 **List pane**
 
 | Key | Action |
 |---|---|
-| `Tab` / `S-Tab`, `[` / `]` | Next / previous view |
-| `l` / `→` / `Enter` | Show detail pane |
+| `Tab` / `S-Tab`, `[` / `]`, `}` / `{` | Next / previous view (`}` / `{` work in the detail pane and the viewers too: the pane stays open, on the new view's first row; an empty view returns to the list) |
+| `Enter` | Show detail pane |
 | `h` / `←` | Collapse the row if it is an expanded parent, else go to its parent row (nothing on a root, in a flat view or on a dok row) |
+| `l` / `→` | Expand the row if it is a collapsed parent, else go to its first child (nothing on a leaf, in a flat view or on a dok row) |
 | `F` | Cycle **family scope** — how much of each tree shows: auto → lone → remaining → all |
 | `Space` | Collapse / expand subtree |
 | `m` | Mark / unmark row (multi-select) |
@@ -122,9 +181,9 @@ the same way (they are rows of the same list).
 | `W` | Commit the farm (`yaks commit`; also in the detail pane). The result is the notification: `committed <sha> <message>`, `nothing to commit`, or the error |
 | `U` | Sync the farm (`yaks sync`: commit, pull, push; also in the detail pane). Shows `syncing…` while it runs (it touches the network, so the TUI waits; the interval sync does the same in the background), then the sync report's last line, or the error |
 
-**Detail pane** — `h`/`←`/`Esc` back (on a code block or table row `h`/`←`
-scroll it left first, and go back only at offset 0); `l`/`→` scroll the code
-block or table under the cursor right (nowhere else); `j`/`k` scroll; `Tab`/`]` and `S-Tab`/`[`
+**Detail pane** — `Esc` back to the list (it peels a selection, then the search, first);
+`h`/`←` and `l`/`→` scroll the code block or table under the cursor left / right
+(nothing elsewhere, and never out of the pane); `j`/`k` scroll; `Tab`/`]` and `S-Tab`/`[`
 cycle links, every link a stop (several on one row each get one, the targeted one
 highlighted), `Enter` follows the targeted link, `p` shows / hides the [peek
 pane](#following-links-and-peek) under the lines; `/` and `n`/`N` put the line
@@ -134,9 +193,9 @@ those whose title, description or a note mentions its id — each row tagged wit
 how (`[child]`, `[depends]`, `[title]`, `[body:L3]`, `[note:<ts> [actor]]`);
 type to filter, `Enter` goes to one like `#` (it is `yaks refs <id>
 --incoming`); `i`/`o` history forward/back (see *History* below; `o`/`i` work in every
-pane and in the list); `J`/`K` next/prev task; `Ctrl-N`/`Ctrl-P`
-next/prev content block; `v` + `Shift-↑↓` visual-select lines, `y` copy;
-`/`, `n`/`N` find (see *The search register* below: `/` sets the one
+pane and in the list); `J`/`K` next/prev task; `}`/`{` next/prev view;
+`Ctrl-N`/`Ctrl-P` (or `Ctrl-↓`/`Ctrl-↑`) next/prev content block; `v` + `Shift-↑↓` visual-select lines, `y` copy;
+`/` (`Ctrl-F` in standard), `n`/`N` (`F3`/`Shift-F3`) find (see *The search register* below: `/` sets the one
 search register, `Enter` keeps the cursor on the current match, `Esc` restores
 the register and the scroll and cursor from before; the status bar shows
 `match 2/5 "text"` while it is set).
@@ -155,7 +214,7 @@ the register and the scroll and cursor from before; the status bar shows
 | `a` | Hand the yak to an agent (`needs: agent`): on a yak awaiting a human, answer; otherwise request agent work (like `yaks request`; on a yak already awaiting an agent the request is appended). Opens the same multi-line editor as `M`, headed `Answer <id>` / `Request <id>`; `Ctrl-S` answers or requests with the text as the note (an empty one does so with no note), cancel changes nothing |
 | `Z` | Snooze: a one-line prompt for the new `due:` (`+1d`, `+1w`, a date; Enter alone is `+1d`) that moves it and leaves a `kind: snooze` note, like `yaks snooze`. With rows marked (`m`) it snoozes them all (a shorn or dead one is skipped and counted); a date that does not read keeps the prompt with what you typed |
 | `Q` | Ask a question (`needs: human`, out of `next` until answered; on a yak awaiting an agent it flips back to a human). The same editor, headed `Ask <id>` |
-| `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped. It navigates like the detail pane, by the same code: `j`/`k`, `d`/`u`, `g`/`G` move a line cursor, `Tab`/`[`/`]` cycle links and `Enter` follows one (the status bar shows a URL's destination; a footnote or `#section` jumps within the file and `o`/`i` go back/forward; a yak id opens that yak in the detail pane; a farm dok or source opens in the viewer at its anchor, `o` coming back (see [Following links](#following-links-and-peek)); an attachment, URL or source file opens as from the detail pane; a pane under the dok peeks the link under the cursor, `p` hides it), `/` finds (the same search register as the yak detail) with `n`/`N` cycling and wrapping, `v`/Shift-↑↓ select and `y`/`Enter` copy (a `.md` file copies its source markdown; `y` with nothing selected copies the file's `<id>/<file>`), `h`/`l` scroll a code block or table sideways, `Esc` clears a selection, then the search, then closes. `E` edits it in place (the multi-line editor: `Ctrl-S` writes the file back under the farm lock and returns to the viewer, re-rendered; cancel returns unchanged, asking first if you typed anything; a file changed on disk meanwhile is not overwritten until a second `Ctrl-S`), `O` hands it to the OS opener, `h` closes. An image (png, jpg, gif, webp up to 32 MiB; svg up to 4 MiB) opens **in the pane** too: drawn with the terminal's own graphics protocol (kitty, sixel, iTerm2) when it speaks one, else as half-block cells; shrunk to fit at first, never enlarged, then zoomed and panned by key (see *Zooming and panning an image* below); `O` opens it externally, `Esc` closes. An svg is rasterized first (see *Svg attachments* below); a corrupt or undecodable image and binary files open with the OS opener |
+| `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped. It navigates like the detail pane, by the same code: `j`/`k`, `d`/`u`, `g`/`G` move a line cursor, `Tab`/`[`/`]` cycle links and `Enter` follows one (the status bar shows a URL's destination; a footnote or `#section` jumps within the file and `o`/`i` go back/forward; a yak id opens that yak in the detail pane; a farm dok or source opens in the viewer at its anchor, `o` coming back (see [Following links](#following-links-and-peek)); an attachment, URL or source file opens as from the detail pane; a pane under the dok peeks the link under the cursor, `p` hides it), `/` finds (the same search register as the yak detail) with `n`/`N` cycling and wrapping, `v`/Shift-↑↓ select and `y`/`Enter` copy (a `.md` file copies its source markdown; `y` with nothing selected copies the file's `<id>/<file>`), `h`/`l` scroll a code block or table sideways (they never close it), `Esc` clears a selection, then the search, then closes. `E` edits it in place (the multi-line editor: `Ctrl-S` writes the file back under the farm lock and returns to the viewer, re-rendered; cancel returns unchanged, asking first if you typed anything; a file changed on disk meanwhile is not overwritten until a second `Ctrl-S`), `O` hands it to the OS opener. An image (png, jpg, gif, webp up to 32 MiB; svg up to 4 MiB) opens **in the pane** too: drawn with the terminal's own graphics protocol (kitty, sixel, iTerm2) when it speaks one, else as half-block cells; shrunk to fit at first, never enlarged, then zoomed and panned by key (see *Zooming and panning an image* below); `O` opens it externally, `Esc` closes. An svg is rasterized first (see *Svg attachments* below); a corrupt or undecodable image and binary files open with the OS opener |
 | `r` | (detail) Rename the attachment whose link (📎 or 🖼) the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
 | `X` | Slaughter (delete, with confirm); on a yak with hairy or shaving descendants the confirm offers to take them too, naming how many go (shorn ones stay shorn) |
 | `:w` / `:q` / `:wq` | Save / cancel / save+close (editor Normal mode) |
@@ -170,8 +229,8 @@ cursor starts on the source line behind the row the line cursor was on. It is as
 tall as the block's source lines plus one spare row, grows as you type, and is
 capped so about four rows of context stay on screen (the editor scrolls inside
 beyond that); the pane scrolls only as far as needed to show all of it. Every
-key goes to the editor (vim or emacs, per `vim_mode`; `Tab` completes a yak
-reference, `:w` / `:q` work in vim Normal mode). `Ctrl-S` saves just that block
+key goes to the editor (vim or emacs-style, per the key family; `Tab` completes a yak
+reference, `:w` / `:q` work in vim Normal mode; `F1` lists the editor's keys). `Ctrl-S` saves just that block
 (the other blocks are rewritten in their canonical form, so they keep their
 text), `Ctrl-C` or a rapid `Esc Esc` cancels (asking first when you changed
 something), and an empty new comment is not saved. After a save the block
@@ -324,7 +383,7 @@ and a document row has its own keys (the yak keys do nothing there):
 
 | Key | Action |
 |---|---|
-| `l` / `→` / `Enter` | Open the dok or source in the viewer (it navigates like the detail pane) |
+| `Enter` | Open the dok or source in the viewer (it navigates like the detail pane; `l`/`→` do nothing on a document row) |
 | `J` / `K` | (viewer) Open the next / previous row's dok in place, as `J`/`K` step yaks |
 | `/` | Search every view (a dok's body and a source's text too); `Esc` clears it |
 | `E` | Edit the dok in place (also `E` in its viewer): frontmatter and body in one editor, `Ctrl-S` saves |
@@ -338,7 +397,8 @@ these:
 | Key | Action |
 |---|---|
 | `j` / `k`, `g` / `G`, `d` / `u` | Move over the rows (a shed, then its yaks) |
-| `l` / `→` / `Enter` | Show the shed: where its code is, and how many yaks it is shaving, asking and wrote recently (on a yak row: the yak, as anywhere) |
+| `Enter` | Show the shed: where its code is, and how many yaks it is shaving, asking and wrote recently (on a yak row: the yak, as anywhere) |
+| `l` / `→` | Expand the shed's yaks, else go to the first |
 | `Space` | Collapse / expand the shed's yaks (an idle shed starts collapsed) |
 | `/` | Search every view (a shed by name or by a yak of it); `Esc` clears it |
 | `y` | Copy the shed's name (also in its pane) |
@@ -552,23 +612,35 @@ entry names a command and gives its keys:
 
 ```yaml
 keys:
-  view.next: ["Ctrl-N", "]"]
+  view.next: ["Ctrl-L", "]"]
   farm.sync: Ctrl-U
   app.help:
-    - F1
+    - F2
+  family: standard
 ```
 
+- **The key family** is chosen in the same file: `keys: standard` (or `keys:
+  vim`) as a scalar, or `family: standard` inside the map as above (it is not a
+  command's name, so it cannot clash with one). The legacy `vim_mode: false` is
+  an alias. See [Key families and rules](#key-families-and-rules).
 - **Command names** are the ones `?` prints beside each key (`view.next`,
   `farm.sync`, `yak.new`, ...). An override *replaces* that command's keys in
   every context it is bound in (the list, the detail pane, the viewers), so
-  `view.next` above no longer answers to `Tab`.
+  `view.next` above no longer answers to `Tab`. (`view.next` and `view.prev`
+  are also bound in the pane and the viewers, to `}` and `{`: pick a key that
+  is free there too, or the override is reported and dropped.) A key you give a
+  command is yours: the family does not switch it off.
+- **Changed with the key family:** `pane.back` is gone: `h`/`←` in the pane are
+  `pane.scroll_left` and `Esc` is `pane.peel`; `l`/`→` in the list are `tree.right`
+  and only `Enter` is `pane.open`. A `keys:` override of `pane.back` is reported
+  as an unknown command at startup and left out.
 - **Renamed in 0.0.32:** `wiki.new` and `wiki.edit` are now `dok.new` and `dok.edit`.
   There is no alias, so a `keys:` override of the old names is reported as an
   unknown command at startup and left out: rename it.
 - **Keys** are written as `?` writes them: `j`, `G`, `Space`, `Enter`, `Esc`,
   `Tab`, `S-Tab`, `↑ ↓ ← →` (or `Up Down Left Right`), `PgUp`, `PgDn`,
-  `Home`, `End`, `Backspace`, `Delete`, `F(1)`, and `Ctrl-N` / `Shift-↓`
-  with a modifier. Quote punctuation that YAML or the list would swallow
+  `Home`, `End`, `Backspace`, `Delete`, `F1` (`F(1)` also reads), and `Ctrl-N` /
+  `Alt-F` / `Shift-↓` with a modifier. Quote punctuation that YAML or the list would swallow
   (`"]"`, `","`, `"#"`).
 - **What cannot be used** is left out and reported once, in a notification
   at startup (the first two reasons, then a count): an unknown command, a key
@@ -577,7 +649,8 @@ keys:
   The rest of the file still applies.
 - `?` and the bottom hint show the effective keys. The editors' own keys (vim
   and emacs modes), the pickers and the other modal prompts are not commands
-  and cannot be rebound; the viewers' bottom hint lines are fixed text.
+  and cannot be rebound (`F1` in an editor lists them for the active family);
+  the viewers' bottom hint lines are fixed text.
 - The file is read once, when the TUI starts, by a small reader of the YAML
   subset above (only whole-line `#` comments).
 
