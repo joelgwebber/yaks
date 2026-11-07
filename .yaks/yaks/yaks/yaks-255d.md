@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-04T00:00:46Z'
-updated: '2026-11-07T17:05:33Z'
+updated: '2026-11-07T17:07:48Z'
 tags:
 - tui
 ---
@@ -39,3 +39,11 @@ Claim (yakherd herd-stars): worker `stars-form`, who then takes yaks-000b in the
 **Evidence.** A test that fails first: a yak with an empty description, `E`, move to the description row, type, save; the file has the description and its notes intact. A headless frame of the edit form with the description row, attached. Gate `cargo test -p yaks`.
 
 **Judge.** herd-stars at landing.
+
+---
+▸ 2026-11-07T17:07:48Z [stars-form]
+
+Start: Sat Nov  7 17:07:47 UTC 2026
+
+- farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-255d.md
+- checkout: /Users/joel/src/yaks/.delta/worktrees/e3chjzn4e2pq/yaks
