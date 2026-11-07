@@ -167,3 +167,5 @@ Progress (17:47 start, now about 19:00 wall clock): items 1, 2, 4 (the popup and
 Friction: the machine's data volume was at 100% (137 MiB free) when I first built, from the other checkouts' `target/` dirs. I cleaned only my own `target/` and build with `CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0` (environment variables, no Cargo.toml edit); that is the only reason the gate fits.
 
 [popup-list-vim](yaks-7c6e/popup-list-vim.txt "The grouped ? popup on the list (vim family, 110x24): Move / Open and follow / Find / Change the yak / View and filter / Farm / App, a listed key runs it")
+
+[popup-editor-vim-normal](yaks-7c6e/popup-editor-vim-normal.txt "F1 over the in-place comment editor (vim Normal): the editor's own keys, grouped; a listed key goes on to the editor")

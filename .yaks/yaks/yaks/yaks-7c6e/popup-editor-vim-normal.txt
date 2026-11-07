@@ -1,0 +1,24 @@
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   📖  Doks (0)   🛖  Sheds (…)
+
+◂ Comment                                                                                              NORMAL
+│
+│
+│
+│
+│
+│
+ Keys · editor, vim Normal ───────────────────────────────────────────────────────────────────────────────────
+ Move                                    cw cc     Change a word, the line
+ h j k l       Left, down, up, right     yy p      Copy the line, paste
+ w b e         Word forward, back, end   u Ctrl-R  Undo, redo
+ 0 $           Start, end of the line    .         Repeat the last change
+ gg G          First, last line          v V       Select, select lines
+ Ctrl-D Ctrl-U Half a page down, up      Find
+ { }           Paragraph back, forward   /         Search the text
+ f t           To a character in line    n N       Next, previous match
+ Change the text                         Save and leave
+ i a           Insert before, after      Ctrl-S    Save
+ o O           Open a line below, above  :w :q :wq Save, cancel, save+close
+ x             Delete the character      Ctrl-C    Cancel (asks if changed)
+ dd dw         Delete the line, a word   Esc Esc   Cancel (quick second Esc)
+a listed key goes to the editor · any other key closes
