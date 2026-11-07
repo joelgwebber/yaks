@@ -1,0 +1,24 @@
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   📖  Doks (4)   🛖  Sh
+
+◂ Task: yaks-0001
+│
+│ Title:       Search
+│ Status:      🦬  hairy
+│ Type:        task
+│ Priority:    p2
+│ Created:     -
+│ Updated:     -
+│ Tags:        -
+│
+│ Background: vector search.
+│
+│ Plain line.
+│
+│ ── peek: doks/topics/vector-search.md#indexes ───────────────────────────────────────────────────
+│ ## Indexes
+│
+│ - HNSW: fast queries, slow builds.
+│ - IVFFlat: quick to build.
+│
+│ See [full-text search](full-text-search.md) and yaks-0001.
+→ doks/topics/vector-search.md#indexes
