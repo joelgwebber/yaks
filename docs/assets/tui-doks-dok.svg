@@ -51,6 +51,6 @@ text{white-space:pre}
 <text xml:space="preserve" y="491.5"><tspan x="438.4" class="s3">│</tspan></text>
 <text xml:space="preserve" y="509.5"><tspan x="438.4" class="s3">│</tspan></text>
 <text xml:space="preserve" y="527.5"><tspan x="438.4" class="s3">│</tspan></text>
-<text xml:space="preserve" y="545.5"><tspan x="10.0" class="s5">j/k · Tab:link Enter:follow · o/i back/fwd · p peek · / find · v sel · E edit · O open externally · Esc/h close · q quit</tspan></text>
+<text xml:space="preserve" y="545.5"><tspan x="10.0" class="s5">j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O open externally · Esc/h close · q quit</tspan></text>
 </g>
 </svg>

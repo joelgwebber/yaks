@@ -1,5 +1,6 @@
 ---
 source: src/tui/tests.rs
+assertion_line: 5526
 expression: frame
 ---
  🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   📖  Doks (
@@ -31,4 +32,4 @@ expression: frame
 │
 │
 │
-h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state
+h:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit  M:comment  D:dep

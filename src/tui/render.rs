@@ -295,7 +295,8 @@ pub(crate) fn render_attachment(
             Constraint::Length(super::follow::PEEK_ROWS),
         ])
         .areas(body);
-        render_peek(app, v, &rows, frame, peek);
+        let jump = v.nav.link_at(&rows);
+        render_peek(app, jump, Some(v), frame, peek);
         page
     } else {
         body
@@ -313,23 +314,24 @@ pub(crate) fn render_attachment(
     app.hits.borrow_mut().doc = Some(body);
 }
 
-/// The viewer's peek pane: a dim rule naming the link under the cursor, then
-/// the peek's lines (a section, a line range, a dok head) cut to the pane,
-/// or why it can't be read. Blank but for the rule when the cursor is on no
-/// peekable link.
+/// The peek pane, under the viewer's dok or a yak's detail: a dim rule naming
+/// the link under the cursor, then the peek's lines (a section, a line range,
+/// a dok head) cut to the pane, or why it can't be read. Blank but for the
+/// rule when the cursor is on no peekable link.
+///
+/// The one peek renderer: `jump` is the link under the cursor of the viewer
+/// (whose dok is `doc`, for an in-page anchor) or of a yak's detail pane
+/// (`doc` is `None`).
 fn render_peek(
     app: &App,
-    v: &super::handlers::AttachView,
-    rows: &[detail::DLine],
+    jump: Option<detail::Jump>,
+    doc: Option<&super::handlers::AttachView>,
     frame: &mut Frame,
     area: Rect,
 ) {
     let dim = Style::new().fg(Color::DarkGray);
     let w = area.width as usize;
-    let peek = v
-        .nav
-        .link_at(rows)
-        .and_then(|j| app.peek_target(&j.target, Some(v)));
+    let peek = jump.and_then(|j| app.peek_target(&j.target, doc));
     let title = match &peek {
         Some((label, _)) => format!("\u{2500}\u{2500} peek: {label} "),
         None => "\u{2500}\u{2500} peek ".into(),
@@ -1155,8 +1157,23 @@ pub(crate) fn render_detail(app: &App, frame: &mut Frame, area: Rect) {
     } else {
         area
     };
-    app.hits.borrow_mut().detail = Some(content_area);
     let lines = app.detail_dlines();
+    // The peek pane under the lines (yaks-a004), as under a dok: what the
+    // link under the cursor names, read by `links::peek`.
+    let (content_area, peek_area) = if app.detail_has_peek() {
+        let [page, peek] = Layout::vertical([
+            Constraint::Min(0),
+            Constraint::Length(super::follow::PEEK_ROWS),
+        ])
+        .areas(content_area);
+        (page, Some(peek))
+    } else {
+        (content_area, None)
+    };
+    app.hits.borrow_mut().detail = Some(content_area);
+    if let Some(peek) = peek_area {
+        render_peek(app, app.detail_link(), None, frame, peek);
+    }
     // Widest row of each no-wrap block, to clamp its sideways scroll.
     let extents = detail::nowrap_extents(&lines);
     let hscroll = |dl: &detail::DLine| {
@@ -1574,7 +1591,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
     // the key hints.
     if app.attach().is_some() && matches!(app.overlay, Overlay::None) {
         let text = link_hint(app, area.width as usize).unwrap_or_else(|| {
-            "j/k · Tab:link Enter:follow · o/i back/fwd · p peek · / find · v sel · E edit · O open externally · Esc/h close · q quit"
+            "j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O open externally · Esc/h close · q quit"
                 .into()
         });
         let text = with_match_chip(app, text);
@@ -1702,15 +1719,7 @@ fn link_hint(app: &App, width: usize) -> Option<String> {
         {
             return None;
         }
-        let jump = app.detail_link()?;
-        // A farm document: its peek's first line too (yaks-7395); the
-        // viewer has a peek pane instead.
-        if matches!(jump.target, detail::Target::Farm { .. }) {
-            if let Some(line) = app.detail_peek_line(&jump.target) {
-                return Some(truncate_disp(&line, width));
-            }
-        }
-        jump
+        app.detail_link()?
     };
     let dest = super::linenav::link_dest(jump.target)?;
     Some(truncate_disp(&format!("→ {dest}"), width))

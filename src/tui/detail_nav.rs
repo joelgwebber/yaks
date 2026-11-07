@@ -7,11 +7,16 @@ use super::linenav::{self, LineNav, Viewport};
 use super::*;
 
 impl App {
-    /// The detail pane's scroll geometry: its page, less the pinned header
-    /// once scrolled.
+    /// The detail pane's scroll geometry: its page (less the peek pane,
+    /// [`App::detail_has_peek`]), less the pinned header once scrolled.
     pub(crate) fn detail_viewport(&self) -> Viewport {
+        let peek = if self.detail_has_peek() {
+            super::follow::PEEK_ROWS
+        } else {
+            0
+        };
         Viewport {
-            page: self.detail_page as usize,
+            page: self.detail_page.saturating_sub(peek) as usize,
             pinned: PINNED_ROWS as usize,
         }
     }

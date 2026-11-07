@@ -16,11 +16,12 @@
 //! the app's one history ([`super::history`]): `o` goes back, re-reading a
 //! document from disk ([`App::read_doc`]); `i` goes forward.
 //!
-//! **Peek.** While the viewer's cursor is on a link it can read, a pane at the
-//! bottom shows `links::peek` of it (the section, the line range, or the
-//! document's head), cut to fit; `p` hides it. The detail pane shows a one-line
-//! peek in the status bar instead. Peeks are cached by link and farm
-//! generation ([`PeekCache`]), so a frame reads each target once.
+//! **Peek.** While the cursor of the viewer or of a yak's detail pane is on a
+//! link it can read, a pane at the bottom shows `links::peek` of it (the
+//! section, the line range, or the document's head), cut to fit; `p` hides and
+//! shows it, in both, by the one flag `App::peek_shown`. Peeks are cached by
+//! link and farm generation ([`PeekCache`]), so a frame reads each target
+//! once.
 
 use super::detail::{self, Target};
 use super::handlers::{AttachView, DocKind};
@@ -32,7 +33,8 @@ use crate::links::{self, Anchor, Link};
 /// Largest farm file the viewer reads (as for attachments).
 const VIEW_MAX_BYTES: u64 = 1 << 20;
 
-/// Rows the viewer's peek pane takes: a rule and the peek's text.
+/// Rows the peek pane takes, in the viewer and in the detail pane: a rule and
+/// the peek's text.
 pub(crate) const PEEK_ROWS: u16 = 7;
 
 /// Peeks already read, by link label, for the farm generation they were read
@@ -364,15 +366,50 @@ impl App {
             })
     }
 
-    /// The detail pane's one-line peek for the status bar: the label and the
-    /// first non-blank line of the text.
-    pub(crate) fn detail_peek_line(&self, target: &Target) -> Option<String> {
-        let (label, r) = self.peek_target(target, None)?;
-        let first = match r {
-            Ok(text) => peek_lines(&text).into_iter().next().unwrap_or_default(),
-            Err(e) => e,
-        };
-        Some(format!("→ {label} · {first}"))
+    /// Whether the yak detail pane, focused, shows a peek pane: the same
+    /// rule as [`App::viewer_has_peek`] (shown, a farm, a link peek can read
+    /// among the yak's rows), and the pane tall enough to spare
+    /// [`PEEK_ROWS`]. An unfocused pane has no cursor to peek from, and the
+    /// in-place editor wants the rows. The pane's page
+    /// ([`App::detail_viewport`]) is what is left. The cheap tests come
+    /// first: the editor's own slot asks for the viewport while the rows are
+    /// being built.
+    pub(crate) fn detail_has_peek(&self) -> bool {
+        self.peek_shown
+            && self.focus == Focus::Detail
+            && self.doc.is_none()
+            && self.farm.is_some()
+            && self.detail_page > PEEK_ROWS + 2
+            && self.block_edit().is_none()
+            && self
+                .detail_dlines()
+                .iter()
+                .any(|r| r.links.iter().any(|(_, _, t)| t.as_link().is_some()))
+    }
+
+    /// `p`: show or hide the peek pane, in the viewer and the yak detail
+    /// pane alike, then keep the cursor in view of the page the pane leaves.
+    pub(crate) fn toggle_peek(&mut self) {
+        self.peek_shown = !self.peek_shown;
+        self.notification = Some(
+            if self.peek_shown {
+                "peek shown"
+            } else {
+                "peek hidden"
+            }
+            .into(),
+        );
+        if let Some((rows, vp)) = self.attachment_rows() {
+            if let Some(v) = self.attach_mut() {
+                // `goto` forgets the targeted link; the cursor hasn't moved.
+                let link = v.nav.link;
+                let line = v.nav.line;
+                v.nav.goto(&rows, vp, line);
+                v.nav.link = link;
+            }
+        } else if self.focus == Focus::Detail {
+            self.scroll_line_into_view(self.detail.line as u16);
+        }
     }
 }
 
@@ -710,24 +747,176 @@ mod tests {
         let _ = std::fs::remove_dir_all(proj);
     }
 
-    #[test]
-    fn the_detail_pane_follows_a_farm_link_and_peeks_it_in_the_status_bar() {
+    /// A live app on a yak whose body links a dok section, a source, a code
+    /// range and a yak, with the detail pane open and measured.
+    fn on_yak_with_links() -> (PathBuf, App) {
         let mut t = task("yaks-0001", "Search", crate::model::Status::Hairy, 2, None);
-        t.body = "Background: [vector search](/doks/topics/vector-search.md#indexes).".into();
+        t.body = "Background: [vector search](/doks/topics/vector-search.md#indexes).\n\nPlain line.\n\nSee yaks-0002.".into();
         let (proj, farm) = temp_farm(&[t]);
         crate::tui::doks_tab::fixture::write(farm.root());
         let mut app = App::with_farm(farm).unwrap();
+        app.detail_page = 21;
         press(&mut app, "l");
         draw(&app, 120, 24);
+        (proj, app)
+    }
+
+    #[test]
+    fn the_detail_pane_follows_a_farm_link_and_peeks_it_in_a_pane() {
+        let (proj, mut app) = on_yak_with_links();
         tab_key(&mut app);
         let frame = draw(&app, 120, 24);
+        assert!(
+            frame.contains("── peek: doks/topics/vector-search.md#indexes"),
+            "{frame}"
+        );
+        assert!(
+            frame.contains("- HNSW: fast queries, slow builds."),
+            "{frame}"
+        );
+        // The status bar names the destination; the peek is in the pane.
         let status = frame.lines().last().unwrap();
         assert!(
-            status.starts_with("→ doks/topics/vector-search.md#indexes · ## Indexes"),
+            status.starts_with("→ doks/topics/vector-search.md#indexes"),
             "{status}"
         );
+        assert!(!status.contains("·"), "{status}");
         enter_key(&mut app);
         assert_eq!(viewer(&app).target, "doks/topics/vector-search.md");
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn p_hides_and_shows_the_peek_in_the_yak_pane_and_the_flag_is_the_viewers() {
+        let (proj, mut app) = on_yak_with_links();
+        tab_key(&mut app);
+        assert!(draw(&app, 120, 24).contains("── peek: "));
+        press(&mut app, "p");
+        let frame = draw(&app, 120, 24);
+        assert!(!frame.contains("── peek"), "{frame}");
+        assert!(!app.peek_shown);
+        // One flag: hidden here, hidden in a dok opened from the pane.
+        enter_key(&mut app);
+        tab_key(&mut app);
+        assert!(!draw(&app, 120, 24).contains("── peek"));
+        press(&mut app, "p");
+        assert!(app.peek_shown);
+        assert!(draw(&app, 120, 24).contains("── peek"));
+        // And shown again when back in the yak.
+        esc_key(&mut app);
+        assert!(app.attach().is_none());
+        tab_key(&mut app);
+        assert!(draw(&app, 120, 24).contains("── peek: "));
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn the_yak_pane_peek_is_only_for_a_focused_pane_and_gives_the_page_back() {
+        let (proj, mut app) = on_yak_with_links();
+        // On the list there is no cursor to peek from.
+        press(&mut app, "h");
+        assert!(!draw(&app, 120, 24).contains("── peek"));
+        press(&mut app, "l");
+        let page = app.detail_viewport().page;
+        assert!(draw(&app, 120, 24).contains("── peek"));
+        // Hiding gives the rows back to the page, showing takes them again.
+        press(&mut app, "p");
+        assert_eq!(app.detail_viewport().page, page + PEEK_ROWS as usize);
+        press(&mut app, "p");
+        assert_eq!(app.detail_viewport().page, page);
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn showing_the_peek_scrolls_a_cursor_it_would_cover_back_into_view() {
+        let mut t = task("yaks-0001", "Long", crate::model::Status::Hairy, 2, None);
+        t.body = format!(
+            "{}[vector search](/doks/topics/vector-search.md#indexes)\n",
+            "Line.\n\n".repeat(12)
+        );
+        let (proj, farm) = temp_farm(&[t]);
+        crate::tui::doks_tab::fixture::write(farm.root());
+        let mut app = App::with_farm(farm).unwrap();
+        app.detail_page = 21;
+        press(&mut app, "l");
+        draw(&app, 120, 24);
+        press(&mut app, "p"); // hidden: the page is the whole pane
+        press(&mut app, "G");
+        draw(&app, 120, 24);
+        press(&mut app, "p"); // shown: 7 rows fewer
+        let (line, scroll) = (app.detail.line, app.detail.scroll as usize);
+        let shown = app.detail_rows_shown(app.detail.scroll);
+        assert!(
+            (scroll..scroll + shown).contains(&line),
+            "cursor {line} outside {scroll}+{shown}"
+        );
+        let frame = draw(&app, 120, 24);
+        assert!(frame.contains("── peek: "), "{frame}");
+        assert!(frame.contains("[vector search]") || frame.contains("vector search"));
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    /// The viewer reached from the Doks tab (the hub's row, then Enter).
+    fn hub_from_the_doks_tab() -> (PathBuf, App) {
+        let (proj, farm) = temp_farm(&[task(
+            "yaks-0001",
+            "Search",
+            crate::model::Status::Hairy,
+            2,
+            None,
+        )]);
+        crate::tui::doks_tab::fixture::write(farm.root());
+        std::fs::write(farm.root().join("doks/topics/hub.md"), HUB).unwrap();
+        let mut app = App::with_farm(farm).unwrap();
+        let i = app
+            .views
+            .iter()
+            .position(|v| v.key == view::DOKS_KEY)
+            .unwrap();
+        app.set_view(i);
+        draw(&app, 150, 34);
+        while app.selected_doc().map(|d| d.path.as_str()) != Some("doks/topics/hub.md") {
+            press(&mut app, "j");
+        }
+        enter_key(&mut app);
+        draw(&app, 150, 34);
+        (proj, app)
+    }
+
+    #[test]
+    fn p_hides_and_shows_the_peek_in_a_dok_opened_from_the_doks_tab() {
+        let (proj, mut app) = hub_from_the_doks_tab();
+        tab_to(&mut app, "doks/topics/vector-search.md#indexes");
+        let frame = draw(&app, 150, 34);
+        assert!(frame.contains("── peek: "), "{frame}");
+        press(&mut app, "p");
+        let frame = draw(&app, 150, 34);
+        assert!(!frame.contains("── peek"), "{frame}");
+        press(&mut app, "p");
+        let frame = draw(&app, 150, 34);
+        assert!(frame.contains("── peek: "), "{frame}");
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn p_hides_and_shows_the_peek_in_a_dok_opened_from_a_yak_link() {
+        let mut t = task("yaks-0001", "Search", crate::model::Status::Hairy, 2, None);
+        t.body = "See [the hub](/doks/topics/hub.md).".into();
+        let (proj, farm) = temp_farm(&[t]);
+        crate::tui::doks_tab::fixture::write(farm.root());
+        std::fs::write(farm.root().join("doks/topics/hub.md"), HUB).unwrap();
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "l");
+        draw(&app, 150, 34);
+        tab_key(&mut app);
+        enter_key(&mut app);
+        draw(&app, 150, 34);
+        tab_to(&mut app, "doks/topics/vector-search.md#indexes");
+        assert!(draw(&app, 150, 34).contains("── peek: "));
+        press(&mut app, "p");
+        assert!(!draw(&app, 150, 34).contains("── peek"));
+        press(&mut app, "p");
+        assert!(draw(&app, 150, 34).contains("── peek: "));
         let _ = std::fs::remove_dir_all(proj);
     }
 

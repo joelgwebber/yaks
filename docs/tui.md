@@ -126,7 +126,8 @@ the same way (they are rows of the same list).
 scroll it left first, and go back only at offset 0); `l`/`→` scroll the code
 block or table under the cursor right (nowhere else); `j`/`k` scroll; `Tab`/`]` and `S-Tab`/`[`
 cycle links, every link a stop (several on one row each get one, the targeted one
-highlighted), `Enter` follows the targeted link; `/` and `n`/`N` put the line
+highlighted), `Enter` follows the targeted link, `p` shows / hides the [peek
+pane](#following-links-and-peek) under the lines; `/` and `n`/`N` put the line
 cursor on the match, as the view jumps to it; `B` find references (also in the list pane): a picker over
 the yaks that point *at* this one — its children, the yaks that depend on it, and
 those whose title, description or a note mentions its id — each row tagged with
@@ -458,8 +459,8 @@ to a **farm document** (a dok from the farm root, `[x](/doks/topics/x.md#setup)`
 in a dok, a relative `notes.md` below it; a source's `/sources/<id>/source.md`;
 a session note's `/sessions/YYYY/MM/<note>.md`;
 `@<sha>` pins it) opens in the text viewer at its `#heading` or `#L12` row (see
-[Following links](#following-links-and-peek)); in the detail pane the status bar
-also shows the first line of its peek. Every link is read by the farm's one link
+[Following links](#following-links-and-peek)); with the line cursor on one, the
+detail pane shows its peek in a pane under the lines. Every link is read by the farm's one link
 grammar (the one `yaks peek` and `yaks doctor` use), described in
 [cli.md](cli.md#links). Task lists show `☐`/`☑` and GitHub alerts (`> [!NOTE]`, `TIP`,
 `IMPORTANT`, `WARNING`, `CAUTION`) a coloured bar with a title row. A footnote
@@ -632,14 +633,19 @@ row also close it (the click selects the row). `q` quits, as everywhere, and
   document you come back to is re-read from disk, so an edit made meanwhile
   shows. It is the one history of the TUI (see *History* below); `Esc` closes
   the viewer and forgets nothing.
-- **Peek**: while the cursor is on a link it can read (a farm document, an
-  in-page anchor, an attachment, a `code:` file), a pane under the dok shows
-  `yaks peek` of it: the section a `#heading` names, the lines of a `#L12-L40`,
-  or a document's fields and first paragraph, cut to fit. The pane is there
-  whenever the dok has such a link, so the dok doesn't jump as the cursor
-  moves; `p` hides it (and shows it again).
+- **Peek**: while the line cursor is on a link it can read (a farm document, an
+  in-page anchor, an attachment, a source, a `code:` file), a pane at the bottom
+  shows `yaks peek` of it: the section a `#heading` names, the lines of a
+  `#L12-L40`, or a document's fields and first paragraph, cut to fit. It is the
+  same pane under a dok in the viewer and under a yak's lines in the detail
+  pane (while that has focus; the status bar shows the link's destination).
+  The pane is there whenever the dok or yak has such a link, so the page doesn't
+  jump as the cursor moves. `p` hides it (and shows it again), in either; it
+  is one setting for the session, and `p:peek` is in the bottom hint of both.
 
 ![The viewer on a dok, its cursor on a link, the peek pane showing the linked section](assets/tui-doks-peek.svg)
+
+![A yak's detail pane, its cursor on a link to a dok section, the same peek pane under the lines](assets/tui-yak-peek.svg)
 
 ## Doks tab
 

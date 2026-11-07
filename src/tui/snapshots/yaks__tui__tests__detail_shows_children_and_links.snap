@@ -1,5 +1,6 @@
 ---
 source: src/tui/tests.rs
+assertion_line: 1065
 expression: "draw(&app, 72, 16)"
 ---
  🦬  Hairy (3)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (3)   ⭐  Starr
@@ -17,4 +18,4 @@ expression: "draw(&app, 72, 16)"
 │ Children:
 │   🦬  a1  Child A1
 │   🦬  a2  Child A2
-h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:commen
+h:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit

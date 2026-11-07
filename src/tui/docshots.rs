@@ -1024,3 +1024,37 @@ fn docshots_image_caption() {
     let _ = toque::render_to_svg(&app, w, h); // measure the pane width
     write_svg("tui-image-caption", &app, w, h);
 }
+
+/// A yak's detail pane with its cursor on a link to a dok section: the peek
+/// pane under the lines shows that section (yaks-a004), the same pane as
+/// under a dok in the viewer. Regenerate with
+/// `cargo test -p yaks docshots_yak_peek -- --ignored`.
+#[test]
+#[ignore = "asset generator; run with --ignored to refresh docs/assets/tui-yak-peek.svg"]
+fn docshots_yak_peek() {
+    use crate::tui::test_support::temp_farm;
+
+    let mut y = t(
+        "yak-1a2b",
+        "Pick an index for the embeddings table",
+        "task",
+        2,
+        Status::Shaving,
+        None,
+    );
+    y.body = "HNSW or IVFFlat? The trade-offs are written up in \
+              [vector search](/doks/topics/vector-search.md#indexes).\n\n\
+              Whichever wins, build it after the bulk load."
+        .into();
+    let (_dir, farm) = temp_farm(&[y]);
+    crate::tui::doks_tab::fixture::write(farm.root());
+
+    let (w, h) = (100u16, 24u16);
+    let mut app = App::with_farm(farm).unwrap();
+    HeadlessApp::on_resize(&mut app, w, h);
+    view_to(&mut app, "status:shaving");
+    press(&mut app, 'l'); // focus the detail pane
+    let _ = toque::render_to_svg(&app, w, h); // measure the pane width
+    press_key(&mut app, KeyCode::Tab); // the cursor on the link
+    write_svg("tui-yak-peek", &app, w, h);
+}

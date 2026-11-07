@@ -500,7 +500,8 @@ static BINDINGS: &[Binding] = &[
     bind_pane(Yak, &[c('G')], MoveBottom, "Bottom", NoHint),
     bind_pane(Yak, &[k(Tab), c(']')], LinkNext, "Next link (each link on a row is a stop)", hint("Tab:link")),
     bind_pane(Yak, &[k(BackTab), c('[')], LinkPrev, "Previous link", NoHint),
-    bind_pane(Yak, &[k(Enter)], PaneEnter, "Yank the selection, else follow the link / footnote / source file / farm dok (status bar: URL, or a peek of the dok)", hint("Enter:follow")),
+    bind_pane(Yak, &[k(Enter)], PaneEnter, "Yank the selection, else follow the link / footnote / source file / farm dok (status bar: the destination; the peek pane shows what it names)", hint("Enter:follow")),
+    bind_pane(Yak, &[c('p')], PeekToggle, "Show / hide the peek pane under the lines (what the farm link, source or code range under the cursor names)", hint("p:peek")),
     bind(Detail, &[c('i')], NavForward, "History forward: a jump you went back from (any pane)", hint("i/o:fwd/back")),
     bind(Detail, &[c('o')], NavBack, "History back: where the last jump left (a link, a view switch, #), position restored", NoHint),
     bind(Detail, &[c('J')], ItemNext, "Next task (stay in detail)", NoHint),
@@ -567,7 +568,7 @@ static BINDINGS: &[Binding] = &[
     bind(Viewer, &[c('N')], FindPrev, "Previous match (wraps)", NoHint),
     bind(Viewer, &[c('J')], ItemNext, "Next dok of the Doks list (opened in place)", NoHint),
     bind(Viewer, &[c('K')], ItemPrev, "Previous dok of the Doks list", NoHint),
-    bind(Viewer, &[c('p')], PeekToggle, "Show / hide the peek pane under the dok", NoHint),
+    bind(Viewer, &[c('p')], PeekToggle, "Show / hide the peek pane under the dok (the same flag as the yak pane's)", NoHint),
     bind(Viewer, &[c('E')], DocEdit, "Edit the file in place (Ctrl-S saves; a past version or a source is read-only)", NoHint),
     bind(Viewer, &[c('O')], FileOpenExternal, "Open the file externally", NoHint),
     bind(Viewer, &[c('#')], NavGoto, "Go to any yak by id / title (closes the dok)", NoHint),
@@ -1080,10 +1081,11 @@ impl App {
             AttachmentRename => self.open_rename_attachment(),
             DokNew => self.open_new_dok(),
             DokEdit => self.edit_doks_entry(),
+            PeekToggle => self.toggle_peek(),
             // The viewers' own: `run_viewer_cmd` and `run_image_cmd`.
-            PaneClose | PeekToggle | DocEdit | FileOpenExternal | ImageZoomIn | ImageZoomOut
-            | ImageZoomActual | ImageFitWidth | ImageFit | ImagePanLeft | ImagePanRight
-            | ImagePanUp | ImagePanDown => {}
+            PaneClose | DocEdit | FileOpenExternal | ImageZoomIn | ImageZoomOut | ImageZoomActual
+            | ImageFitWidth | ImageFit | ImagePanLeft | ImagePanRight | ImagePanUp
+            | ImagePanDown => {}
         }
     }
 
@@ -1229,7 +1231,7 @@ mod tests {
             (
                 Ctx::Detail,
                 Some(RowKind::Yak),
-                "h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search  q:quit",
+                "h:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search  q:quit",
             ),
             (
                 Ctx::List,
@@ -1255,7 +1257,7 @@ mod tests {
         // With a filter active the drawer's hint changes, nothing else.
         assert_eq!(
             hint_for(Ctx::Detail, Some(RowKind::Yak), true),
-            "h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  Esc:clear  q:quit"
+            "h:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  Esc:clear  q:quit"
         );
         assert_eq!(
             hint_for(Ctx::List, Some(RowKind::Yak), true),

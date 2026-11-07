@@ -5103,6 +5103,9 @@ fn an_inline_image_is_drawn_clipped_at_the_pane_edge_and_scrolls() {
         "Line.\n\nMore.\n\n".repeat(3)
     );
     let (_dir, mut app) = app_with_inline_image(&body, true);
+    // The image is an attachment link, which the detail pane peeks in a pane
+    // of its own; this pane is too short to share, so the test hides it.
+    app.peek_shown = false;
     HeadlessApp::on_resize(&mut app, 100, 14);
     draw(&app, 100, 14);
     let first = image_rows(&app)[0];

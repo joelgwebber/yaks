@@ -1,5 +1,6 @@
 ---
 source: src/tui/sheds_tab.rs
+assertion_line: 1058
 expression: "draw(&app, 120, 14)"
 ---
  🦬  Hairy (0)   🪒  Shaving (4)   🐑  Shorn (2)   🕒  Recent (6)   ⭐  Starred (0)   📖  Doks (0)   🛖  Sheds (4)
@@ -15,4 +16,4 @@ expression: "draw(&app, 120, 14)"
 │ Tags:        -
 │
 │
-h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search  q:quit
+h:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search  q

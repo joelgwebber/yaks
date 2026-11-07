@@ -1118,6 +1118,7 @@ impl App {
         // read or write it, so they run before the dok's state is borrowed.
         match cmd {
             Cmd::FindOpen => return self.open_find(),
+            Cmd::PeekToggle => return self.toggle_peek(),
             Cmd::FindNext | Cmd::FindPrev => {
                 let delta = if cmd == Cmd::FindNext { 1 } else { -1 };
                 let register = self.register.clone();
@@ -1175,17 +1176,6 @@ impl App {
                 if !nav.scroll_block(&lines, width, -1) {
                     self.close_doc();
                 }
-            }
-            Cmd::PeekToggle => {
-                self.peek_shown = !self.peek_shown;
-                self.notification = Some(
-                    if self.peek_shown {
-                        "peek shown"
-                    } else {
-                        "peek hidden"
-                    }
-                    .into(),
-                );
             }
             Cmd::PaneScrollRight => {
                 nav.scroll_block(&lines, width, 1);
