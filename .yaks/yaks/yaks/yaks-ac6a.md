@@ -5,10 +5,11 @@ status: hairy
 type: bug
 priority: 2
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-07T16:57:32Z'
+updated: '2026-11-07T17:04:37Z'
 parent: yaks-44b3
 tags:
 - cli
+needs: human
 ---
 
 A recurring yak with a datetime `due:` drifts by an hour across a daylight-saving change, because `recur.rs` stores and adds in UTC (`Every::after` on `DateTime<Utc>`). Found while designing Hearth's reminders on a farm (hearth-1ed0, hearth-cfac in the Hearth repo's farm).
@@ -30,3 +31,22 @@ Proposal:
 - Tests: a daily and a weekly yak across both US transitions; a month-end monthly one still keeps its day.
 
 Needs a decision on the field name and whether the zone may be per herd (a family spread over zones). Lean: farm-wide only.
+
+---
+▸ 2026-11-07T17:04:37Z [herd-stars]
+kind: ask
+needs: human
+---
+
+asked: needs human
+
+Three calls before this is built (herd-stars), my lean on each:
+
+1. **Field name.** `timezone: America/New_York` in `.yaks/config.yaml` (IANA name). Alternative: `tz:`. Lean: `timezone`.
+2. **Per herd?** Lean: farm-wide only, no `herds:` override. A family spread over zones keeps working, since a datetime `due:` keeps the offset it was given; only "today", `+2d` and date-only dues use the zone.
+3. **Where the zone rules come from** (a new dependency either way, as plain `chrono` has no IANA database):
+   - **`chrono-tz`**, the tz database compiled into the binary (roughly +0.5–1 MB; works the same on every platform, Windows included). Lean.
+   - **The system's zoneinfo** (`/usr/share/zoneinfo`, via a small crate such as `tz-rs`): no size cost, but nothing on Windows and results vary with the OS's tzdata.
+   - **`jiff`**, a newer date crate that does both: a second date library beside `chrono`.
+
+Absent `timezone:`, the machine's zone, as today.
