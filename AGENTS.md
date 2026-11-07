@@ -202,5 +202,5 @@ found two bugs their tests missed: the review is part of the job.
   reads only the skill files and answers scenario questions finds the gaps.
   Trust it to find them, not to pick the fix.
 - **`cargo fmt` reformats files nobody touched** (`src/actor.rs`,
-  `src/tui/docshots.rs`, `src/tui/tests.rs`): run `cargo fmt -- <your files>`
-  and `git checkout` those three before committing.
+  `src/tui/docshots.rs`, `src/tui/tests.rs`, `tests/commits.rs`): run
+  `cargo fmt -- <your files>` and `git checkout` those before committing.
