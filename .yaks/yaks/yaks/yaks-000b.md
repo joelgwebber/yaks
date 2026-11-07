@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-03T21:04:56Z'
-updated: '2026-11-07T17:39:08Z'
+updated: '2026-11-07T17:41:53Z'
 tags:
 - tui
 ---
@@ -158,3 +158,11 @@ kind: pickup
 ---
 
 picked up
+
+---
+▸ 2026-11-07T17:41:53Z [stars-form]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
