@@ -1,0 +1,30 @@
+--- after clicking bug, p1, wakes ---
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   📖  Doks (0)   🛖  Sh
+
+◂ Edit e0
+│   title       Editable
+│   type         task bug feature idea
+│   priority     p1 p2 p3 p4 p5
+│   tags        rust, tui
+│   source
+│   due         +2d, +1w or 2026-11-15
+│   every       P1W, P1D, P1M: makes it recur
+│ ▸ wakes        none agent human
+│   description ───────────────────────────────────────────────────────────────────────────────────
+│ First line.
+│ Second line.
+│
+│
+│
+│
+│
+│
+│
+│
+│
+Tab/↑↓ rows · ←→ chips · Ctrl-S save · EscEsc/Ctrl-C cancel
+
+test tui::mouse::tests::a_click_on_a_chip_selects_it ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1039 filtered out; finished in 0.02s
+
