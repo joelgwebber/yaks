@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-03T23:29:24Z'
-updated: '2026-11-07T17:28:12Z'
+updated: '2026-11-07T17:28:14Z'
 tags:
 - tui
 ---
@@ -97,3 +97,8 @@ Decision: changing zoom keeps the middle of the window on the same part of the p
 ▸ 2026-11-07T17:28:12Z [stars-zoom]
 
 Decision: `w` (fit width) may enlarge a narrow image; `f`/default `fit` still never enlarges. Rejected: capping fit width at 100%.
+
+---
+▸ 2026-11-07T17:28:14Z [stars-zoom]
+
+Decision: pan keys move a quarter of the pane (at least one cell) per press, clamped to the picture's edge; with the picture no larger than the pane they do nothing. Pan is four new Cmds (`image.pan_left/right/up/down`), not the viewer's `move.*`/`pane.scroll_right`, so a `keys:` override can rebind them without touching the text viewer. The bottom line lists `h/j/k/l pan` only when the picture overflows.
