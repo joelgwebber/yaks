@@ -1586,9 +1586,14 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
     }
     // Image viewer hint.
     if app.image().is_some() && matches!(app.overlay, Overlay::None) {
+        let v = app.image().expect("checked above");
+        let pan = if v.pannable() { " · h/j/k/l pan" } else { "" };
         frame.render_widget(
             Paragraph::new(Span::styled(
-                "O open externally · Esc/h close · q quit",
+                format!(
+                    "zoom {} · +/- · 0 actual · w width · f fit{pan} · O open externally · Esc close · q quit",
+                    v.zoom_label()
+                ),
                 Style::new().fg(Color::DarkGray),
             )),
             area,

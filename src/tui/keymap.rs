@@ -100,6 +100,15 @@ commands! {
     LinkPrev => "link.prev",
     LinkOpenExternal => "link.open_external",
     FileOpenExternal => "file.open_external",
+    ImageZoomIn => "image.zoom_in",
+    ImageZoomOut => "image.zoom_out",
+    ImageZoomActual => "image.zoom_actual",
+    ImageFitWidth => "image.fit_width",
+    ImageFit => "image.fit",
+    ImagePanLeft => "image.pan_left",
+    ImagePanRight => "image.pan_right",
+    ImagePanUp => "image.pan_up",
+    ImagePanDown => "image.pan_down",
     FindOpen => "find.open",
     FindNext => "find.next",
     FindPrev => "find.prev",
@@ -567,7 +576,16 @@ static BINDINGS: &[Binding] = &[
     bind(Viewer, &[c('?')], AppHelp, HELP_LINE, NoHint),
 
     // -- the image viewer ------------------------------------------------------
-    bind(Image, &[k(Esc), c('h'), k(Left)], PaneClose, "Close", NoHint),
+    bind(Image, &[k(Esc)], PaneClose, "Close", NoHint),
+    bind(Image, &[c('+'), c('=')], ImageZoomIn, "Zoom in", NoHint),
+    bind(Image, &[c('-')], ImageZoomOut, "Zoom out", NoHint),
+    bind(Image, &[c('0')], ImageZoomActual, "Actual size: one image pixel per pixel of the cell grid", NoHint),
+    bind(Image, &[c('w')], ImageFitWidth, "Fit the pane's width (a taller image pans down)", NoHint),
+    bind(Image, &[c('f')], ImageFit, "Fit the pane: shrink to fit, never enlarge (the default)", NoHint),
+    bind(Image, &[c('h'), k(Left)], ImagePanLeft, "Pan left (an image larger than the pane)", NoHint),
+    bind(Image, &[c('l'), k(Right)], ImagePanRight, "Pan right", NoHint),
+    bind(Image, &[c('k'), k(Up)], ImagePanUp, "Pan up", NoHint),
+    bind(Image, &[c('j'), k(Down)], ImagePanDown, "Pan down", NoHint),
     bind(Image, &[c('q'), ctrl('c')], AppQuit, "Quit", NoHint),
     bind(Image, &[c('o')], NavBack, "History back", NoHint),
     bind(Image, &[c('i')], NavForward, "History forward", NoHint),
@@ -1063,7 +1081,9 @@ impl App {
             DokNew => self.open_new_dok(),
             DokEdit => self.edit_doks_entry(),
             // The viewers' own: `run_viewer_cmd` and `run_image_cmd`.
-            PaneClose | PeekToggle | DocEdit | FileOpenExternal => {}
+            PaneClose | PeekToggle | DocEdit | FileOpenExternal | ImageZoomIn | ImageZoomOut
+            | ImageZoomActual | ImageFitWidth | ImageFit | ImagePanLeft | ImagePanRight
+            | ImagePanUp | ImagePanDown => {}
         }
     }
 
@@ -1361,7 +1381,7 @@ mod tests {
         assert_eq!(lookup(l, doc, &key('h')), None);
         assert_eq!(lookup(Ctx::Detail, yak, &key('h')), Some(PaneBack));
         assert_eq!(lookup(Ctx::Viewer, None, &key('h')), Some(PaneBack));
-        assert_eq!(lookup(Ctx::Image, None, &key('h')), Some(PaneClose));
+        assert_eq!(lookup(Ctx::Image, None, &key('h')), Some(ImagePanLeft));
         assert_eq!(lookup(l, yak, &key('F')), Some(FamilyCycle));
         // `v` is visual select; the view picker is the backtick on every row.
         assert_eq!(lookup(Ctx::Detail, yak, &key('v')), Some(SelectVisual));

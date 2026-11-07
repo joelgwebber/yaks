@@ -4597,6 +4597,185 @@ fn o_in_the_image_viewer_opens_externally_and_closes_it() {
     assert_eq!(app.notification.as_deref(), Some("opened t0/shot.png"));
 }
 
+/// yaks-e5f9: a 400x300 two-tone PNG in the image viewer, drawn once so the
+/// pane is measured.
+fn image_viewer_on(w: u32, h: u32) -> (PathBuf, App) {
+    let (dir, mut app) = app_on_attachment("shot.png", &two_tone_png(w, h));
+    enter_key(&mut app);
+    assert!(app.image().is_some());
+    draw(&app, 100, 24);
+    (dir, app)
+}
+
+fn left_key(app: &mut App) {
+    handle_key(app, KeyEvent::new(KeyCode::Left, KeyModifiers::NONE));
+}
+
+/// Whether a `w`x`h` frame has any red / blue pixel cells.
+fn image_colors(app: &App, w: u16, h: u16) -> (bool, bool) {
+    let mut term = Terminal::new(ratatui::backend::TestBackend::new(w, h)).unwrap();
+    term.draw(|f| render(app, f)).unwrap();
+    let buf = term.backend().buffer();
+    let has = |rgb: Color| buf.content.iter().any(|c| c.fg == rgb || c.bg == rgb);
+    (has(Color::Rgb(255, 0, 0)), has(Color::Rgb(0, 0, 255)))
+}
+
+#[test]
+fn the_image_viewer_starts_fit_and_shows_it_in_the_status_line() {
+    let (_dir, app) = image_viewer_on(400, 300);
+    let v = app.image().unwrap();
+    assert_eq!(v.zoom(), imageview::Zoom::Fit);
+    assert_eq!(v.offset(), (0, 0));
+    assert!(v.scale() < 1.0, "a 400x300 image shrinks into the pane");
+    assert!(!v.pannable(), "fit never overflows the pane");
+    let text = draw(&app, 100, 24);
+    assert!(text.contains("zoom fit ·"), "{text}");
+    assert!(text.contains("w width"), "{text}");
+    assert!(!text.contains("pan"), "nothing to pan at fit: {text}");
+    let mut app = app;
+    press(&mut app, "0");
+    assert!(draw(&app, 100, 24).contains("h/j/k/l pan"));
+}
+
+#[test]
+fn plus_and_minus_zoom_by_steps_from_the_fit_size() {
+    let (_dir, mut app) = image_viewer_on(400, 300);
+    let fit = app.image().unwrap().scale();
+    press(&mut app, "+");
+    let v = app.image().unwrap();
+    let imageview::Zoom::Scale(up) = v.zoom() else {
+        panic!("+ leaves fit for a factor: {:?}", v.zoom());
+    };
+    assert!(up > fit, "{up} > {fit}");
+    press(&mut app, "=");
+    let imageview::Zoom::Scale(more) = app.image().unwrap().zoom() else {
+        panic!()
+    };
+    assert!(more > up, "= zooms in too: {more} > {up}");
+    press(&mut app, "-");
+    assert_eq!(app.image().unwrap().zoom(), imageview::Zoom::Scale(up));
+    assert!(draw(&app, 100, 24).contains(&format!("zoom {}%", (up * 100.0).round())));
+    // Out past the smallest step stops there.
+    for _ in 0..40 {
+        press(&mut app, "-");
+    }
+    assert_eq!(app.image().unwrap().zoom(), imageview::Zoom::Scale(0.05));
+}
+
+#[test]
+fn zero_is_actual_size_w_fits_the_width_and_f_fits_the_pane() {
+    let (_dir, mut app) = image_viewer_on(400, 300);
+    press(&mut app, "0");
+    let v = app.image().unwrap();
+    assert_eq!(v.zoom(), imageview::Zoom::Scale(1.0));
+    assert_eq!(v.zoom_label(), "100%");
+    assert!(draw(&app, 100, 24).contains("zoom 100% ·"));
+    press(&mut app, "w");
+    let v = app.image().unwrap();
+    assert_eq!(v.zoom(), imageview::Zoom::FitWidth);
+    assert!(draw(&app, 100, 24).contains("zoom fit width ·"));
+    let (pw, _) = v.pane_px();
+    assert_eq!(
+        v.scale(),
+        f64::from(pw) / 400.0,
+        "the picture spans the pane"
+    );
+    press(&mut app, "f");
+    let v = app.image().unwrap();
+    assert_eq!(v.zoom(), imageview::Zoom::Fit);
+    assert_eq!(v.offset(), (0, 0));
+    assert!(draw(&app, 100, 24).contains("zoom fit ·"));
+}
+
+#[test]
+fn hjkl_and_arrows_pan_a_zoomed_image_and_esc_closes_it() {
+    let (_dir, mut app) = image_viewer_on(400, 300);
+    // Fit: nothing to pan.
+    press(&mut app, "jl");
+    assert_eq!(app.image().unwrap().offset(), (0, 0));
+    press(&mut app, "0");
+    assert!(app.image().unwrap().pannable());
+    // Actual size zooms about the middle of the window; go to the corner.
+    let mid = app.image().unwrap().offset();
+    assert!(mid.0 > 0 && mid.1 > 0, "centered: {mid:?}");
+    for _ in 0..40 {
+        press(&mut app, "hk");
+    }
+    assert_eq!(app.image().unwrap().offset(), (0, 0));
+    press(&mut app, "l");
+    let (x1, y1) = app.image().unwrap().offset();
+    assert!(x1 > 0 && y1 == 0, "l pans right: {x1},{y1}");
+    press(&mut app, "j");
+    let (x2, y2) = app.image().unwrap().offset();
+    assert!(x2 == x1 && y2 > 0, "j pans down: {x2},{y2}");
+    // h pans back (it no longer closes), as does the left arrow.
+    press(&mut app, "h");
+    assert_eq!(app.image().unwrap().offset().0, 0, "h pans left");
+    press(&mut app, "l");
+    left_key(&mut app);
+    assert_eq!(app.image().unwrap().offset().0, 0, "← pans left");
+    press(&mut app, "k");
+    assert_eq!(app.image().unwrap().offset(), (0, 0), "k pans up");
+    assert!(app.doc.is_some(), "h/← never close the viewer");
+    // Panning stops at the picture's far edge.
+    for _ in 0..40 {
+        press(&mut app, "lj");
+    }
+    let v = app.image().unwrap();
+    let (pw, ph) = v.pane_px();
+    assert_eq!(v.offset(), (400 - pw, 300 - ph));
+    esc_key(&mut app);
+    assert!(app.doc.is_none(), "Esc closes the viewer");
+}
+
+#[test]
+fn zooming_keeps_the_middle_of_the_window_in_place() {
+    let (_dir, mut app) = image_viewer_on(400, 300);
+    press(&mut app, "0");
+    let before = app.image().unwrap().pane_px();
+    press(&mut app, "ll");
+    let v = app.image().unwrap();
+    let (ox, oy) = v.offset();
+    let mid = |o: u32, pane: u32| f64::from(o) + f64::from(pane) / 2.0;
+    let (cx, cy) = (mid(ox, before.0), mid(oy, before.1));
+    press(&mut app, "+");
+    let v = app.image().unwrap();
+    let s = v.scale();
+    let (ox, oy) = v.offset();
+    let (nx, ny) = (mid(ox, before.0) / s, mid(oy, before.1) / s);
+    assert!(
+        (nx - cx).abs() <= 1.0 && (ny - cy).abs() <= 1.0,
+        "{nx},{ny} vs {cx},{cy}"
+    );
+}
+
+#[test]
+fn half_block_frames_show_the_window_at_fit_and_zoomed_and_panned() {
+    let (_dir, mut app) = image_viewer_on(400, 300);
+    // Fit: the whole picture, both halves.
+    assert_eq!(image_colors(&app, 100, 24), (true, true));
+    // Actual size, top-left: the window is 100x44 pixels of the 300-pixel
+    // image, all of it the red upper half.
+    press(&mut app, "0");
+    for _ in 0..40 {
+        press(&mut app, "hk");
+    }
+    assert_eq!(
+        image_colors(&app, 100, 24),
+        (true, false),
+        "top is red only"
+    );
+    // Panned to the bottom: the blue lower half only.
+    for _ in 0..40 {
+        press(&mut app, "j");
+    }
+    assert_eq!(
+        image_colors(&app, 100, 24),
+        (false, true),
+        "bottom is blue only"
+    );
+}
+
 fn put_attachment(farm: &crate::farm::Farm, id: &str, name: &str, data: &[u8]) {
     let dir = crate::store::artifact_dir(farm.root(), id);
     std::fs::create_dir_all(&dir).unwrap();
