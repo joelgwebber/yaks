@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-07T18:18:45Z'
+updated: '2026-11-07T18:19:19Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
@@ -248,3 +248,13 @@ thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEuDHJIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-07T18:19:19Z [herd-stars]
+kind: landed
+commit: 61cda0583363e8aa9a2b5373bcbf077f59a2f657
+source: 4fc439e51d5ce31f9b67e1b35faa00f5b0cebf07
+branch: main
+---
+
+landed: 61cda058 yaks-7c6e: one key family, h/l never leave the pane, grouped ? popup and F1 editor keys, { } change views
