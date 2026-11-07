@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-06T21:37:11Z'
-updated: '2026-11-07T17:22:26Z'
+updated: '2026-11-07T17:28:41Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -173,3 +173,13 @@ thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpwipIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-07T17:28:41Z [herd-stars]
+kind: landed
+commit: 4def079b70fe06dc9f5cd67c7f3408080c20bb22
+source: e4c2dd0d4e14a09acbda6fc579f5147eeb645015
+branch: main
+---
+
+landed: 4def079b yaks-db66: attach to doks and session notes via a sibling directory; mv takes it along
