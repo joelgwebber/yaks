@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-07T17:05:35Z'
+updated: '2026-11-07T17:06:29Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -40,3 +40,11 @@ Claim (yakherd herd-stars): worker `stars-thread`.
 **Evidence.** A test per place it is read (fails first). `yaks whoami` output from your own build with `YAKS_THREAD` set, pasted. Gate `cargo test -p yaks`.
 
 **Judge.** herd-stars at landing.
+
+---
+▸ 2026-11-07T17:06:29Z [stars-thread]
+
+Start: Sat Nov  7 17:06:26 UTC 2026
+
+- yaks path yaks-f4ea: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-f4ea.md
+- checkout: /Users/joel/src/yaks/.delta/worktrees/sf3w4x0cnprb/yaks
