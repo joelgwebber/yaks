@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-07T17:04:27Z'
+updated: '2026-11-07T17:40:32Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
@@ -96,3 +96,43 @@ kind: pickup
 picked up
 
 herd-stars: implementing the six answered points plus the {/} tab idea, after the starred TUI batch lands (they all touch the keymap).
+
+---
+▸ 2026-11-07T17:40:32Z [herd-stars]
+
+Claim (yakherd herd-stars): worker `stars-keys`, to start once the starred TUI batch (yaks-a004, yaks-255d, yaks-000b, yaks-e5f9) has landed, since every one of them adds bindings. Spec from Joel's answers (2026-11-06) and [the keys page](/doks/design/tui-keys.md):
+
+## 1. `h`/`l` never move between list and pane
+
+- Detail pane and text viewer: `h`/`←` and `l`/`→` only scroll a code block or table sideways; at offset 0 `h` does nothing. `Esc` leaves (peel), `Enter` goes in.
+- List: `Enter` opens the pane. On tree rows (yaks, sheds) `h`/`←` stays `tree.left` and `l`/`→` becomes `tree.right` (expand a collapsed row, else move to its first child). On document rows `l`/`→` do nothing.
+- Hints: `l:detail` becomes `Enter:detail`; `h:list` becomes `Esc:list`.
+
+## 2. One key family for the whole TUI
+
+- The family is a personal setting, so it lives in the user config (`$XDG_CONFIG_HOME/yaks/config.yaml`), where `keys:` already holds overrides. `keys: vim` or `keys: standard` (a scalar) picks the family; the map form keeps the overrides and may hold `family: standard` (not a command name, so no clash). Legacy `vim_mode:` is an alias: user `keys` family, else user `vim_mode`, else farm `vim_mode`, else vim.
+- Standard: outside the editor, `h` `j` `k` `l`, `d`/`u`, `g`/`G` and `Ctrl-N`/`Ctrl-P` are off; arrows, PgUp/PgDn, Home/End do the work (add them wherever a context has only the vim key). `Ctrl-F` opens find. The editor runs edtui's emacs mode.
+- Both families: `F3`/`Shift-F3` find next/previous; `Ctrl-↓`/`Ctrl-↑` next/previous content block (beside `Ctrl-N`/`Ctrl-P`).
+- A test over the table: in standard mode every context still has a binding for every command it had in vim mode.
+
+## 3. The case rule, as a test
+
+Lowercase looks and moves; Shift changes an existing yak; Ctrl is the app and farm. A test over `BINDINGS` lists the commands that change an existing yak and fails if one is on a lowercase key, with the documented exceptions (`r` rename behind its prompt; `c`/`C`, `a`, `m`, `*` add or mark).
+
+## 4. The `?` popup
+
+- Grouped: Move, Open and follow, Find, Change the yak, View and filter, Farm, App (a group per `Cmd`, from the table).
+- A key pressed in the popup that is listed there runs it and closes the popup. `?` again still opens the full reference; any other key closes.
+- `F1` opens it everywhere, including every editor (the form, the in-place editor, the dok editor), where it lists the editor's keys for the active family (a hand table, as `EXTRAS`, since edtui owns them); `?` in vim Normal mode too. A listed key pressed there closes the popup and goes to the editor.
+
+## 5. `{` / `}` change views
+
+`}` next view and `{` previous everywhere (list, pane, viewer), as `J`/`K` step rows: in the pane, the pane stays open on the new view's selected row.
+
+## 6. Guidance and follow-up
+
+- `AGENTS.md`: a short "Key bindings" paragraph under the docs rule: the rules above, and that the tests enforce two of them.
+- `docs/tui.md` (keys section, every key table, Customising keys), `README.md` (its `vim_mode` line), the `?` help.
+- Emacs/standard parity in the editor is yaks-4736, not this.
+
+**Evidence.** The rule tests (fail first where a binding breaks them), a test per numbered item, the gate, headless frames of the grouped popup in the list and in an editor (`F1`), attached. **Judge:** herd-stars at landing; Joel for the feel.
