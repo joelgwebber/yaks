@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-03T21:04:56Z'
-updated: '2026-11-07T17:04:27Z'
+updated: '2026-11-07T17:05:33Z'
 tags:
 - tui
 ---
@@ -74,3 +74,21 @@ kind: pickup
 picked up
 
 herd-stars: both edit modes (form row click-focus, and click-to-position in the in-place editor) go to a worker.
+
+---
+▸ 2026-11-07T17:05:33Z [herd-stars]
+
+Claim (yakherd herd-stars): worker `stars-form`, after yaks-255d, in the same checkout, as a second commit.
+
+**Scope.** Both edit modes, per Joel's answer:
+
+1. **The create/edit form:** a left click on a row focuses it (as Tab-ing there); a click on a chip selects it.
+2. **The in-place block editor:** a click inside it moves the text cursor there, by forwarding the mouse event to edtui's `MouseEventHandler` with the editor's rect (drag-select too, if edtui already does it).
+
+- Files: `src/tui/mouse.rs`, `src/tui/create.rs`, `src/tui/editor.rs`, the `?` Mouse section (`EXTRAS` in `keymap.rs`), `docs/tui.md`.
+
+**Out of scope.** Any change to the edtui fork: if forwarding is not enough, `yaks ask` with what edtui lacks.
+
+**Evidence.** Tests driving mouse events at a form row and inside the editor (cursor position asserted). Frames attached. Gate `cargo test -p yaks`.
+
+**Judge.** herd-stars at landing.
