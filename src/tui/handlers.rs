@@ -131,6 +131,20 @@ impl AttachView {
         }
     }
 
+    /// What `y` copies with no selection (yaks-a036), as the yak pane copies
+    /// its yak's id: the attachment's `<id>/<file>` link, or the farm path the
+    /// Doks list copies for the same row (a source by its directory).
+    pub(crate) fn copy_path(&self) -> &str {
+        match self.doc {
+            DocKind::Attachment => self.target.strip_prefix(".yaks/").unwrap_or(&self.target),
+            DocKind::Source { .. } => self
+                .target
+                .strip_suffix("/source.md")
+                .unwrap_or(&self.target),
+            DocKind::Dok | DocKind::File => &self.target,
+        }
+    }
+
     /// The header's kind label: `markdown`/`text` for an attachment, the
     /// dok's kind (`topic`, ...), or `source`.
     pub(crate) fn kind_label(&self) -> String {
@@ -1215,7 +1229,16 @@ impl App {
         let Some(v) = self.attach_mut() else {
             return;
         };
-        let (lo, hi) = v.nav.selection().unwrap_or((v.nav.line, v.nav.line));
+        // No selection: the document itself, by its path (yaks-a036).
+        let Some((lo, hi)) = v.nav.selection() else {
+            let path = v.copy_path().to_string();
+            self.notification = Some(if crate::clipboard::copy_text(&path) {
+                format!("copied {path}")
+            } else {
+                "clipboard unavailable".into()
+            });
+            return;
+        };
         v.nav.anchor = None;
         let Some(text) = super::linenav::yank_text(lines, lo, hi, &v.blocks()) else {
             return;
@@ -2720,5 +2743,38 @@ fn handle_key_inner(app: &mut App, k: KeyEvent) {
     let ctx = app.surface_ctx();
     if let Some(cmd) = app.keymap.lookup(ctx, app.surface_kind(), &k) {
         app.run_cmd(ctx, cmd);
+    }
+}
+
+#[cfg(test)]
+mod copy_path_tests {
+    use super::*;
+
+    fn farm(rel: &str) -> AttachView {
+        AttachView::farm_doc(rel, PathBuf::from(rel), "# x\n".into(), None, None)
+    }
+
+    // yaks-a036: `y` with nothing selected copies what the Doks list's `y`
+    // copies for the same document, as a yak's pane copies its id.
+    #[test]
+    fn y_without_a_selection_copies_the_documents_path() {
+        assert_eq!(
+            farm("doks/design/keys.md").copy_path(),
+            "doks/design/keys.md"
+        );
+        assert_eq!(
+            farm("sources/s-1a2b/source.md").copy_path(),
+            "sources/s-1a2b"
+        );
+        assert_eq!(
+            farm("sessions/2026/11/n.md").copy_path(),
+            "sessions/2026/11/n.md"
+        );
+        let mut v = farm("x");
+        v.doc = DocKind::Attachment;
+        v.target = ".yaks/yaks-0af1/shot.md".into();
+        assert_eq!(v.copy_path(), "yaks-0af1/shot.md");
+        v.target = "yaks-0af1/shot.md".into();
+        assert_eq!(v.copy_path(), "yaks-0af1/shot.md");
     }
 }

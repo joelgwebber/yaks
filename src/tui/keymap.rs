@@ -552,7 +552,7 @@ static BINDINGS: &[Binding] = &[
     bind(Viewer, &[c('v')], SelectVisual, "Visual select lines", NoHint),
     bind(Viewer, &[shift(Down)], SelectExtendDown, "Extend the selection down", NoHint),
     bind(Viewer, &[shift(Up)], SelectExtendUp, "Extend the selection up", NoHint),
-    bind(Viewer, &[c('y')], SelectYank, "Copy the selection (a .md file: its source), else the line", NoHint),
+    bind(Viewer, &[c('y')], SelectYank, "Copy the selection (a .md file: its source), else the file's path", NoHint),
     bind(Viewer, &[c('/')], FindOpen, "Find in the file (the same search as the yak detail)", NoHint),
     bind(Viewer, &[c('n')], FindNext, "Next match (wraps)", NoHint),
     bind(Viewer, &[c('N')], FindPrev, "Previous match (wraps)", NoHint),
