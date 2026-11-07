@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 3
 created: '2026-11-03T21:04:56Z'
-updated: '2026-11-07T17:42:01Z'
+updated: '2026-11-07T17:43:50Z'
 tags:
 - tui
 ---
@@ -185,3 +185,13 @@ thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEqF7pIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-07T17:43:50Z [herd-stars]
+kind: landed
+commit: f0dafed7ca3644ad4c0601f0bfb7bb618c047453
+source: 5c377fe6c64b0f125bb576ac116acc6b9764355a
+branch: main
+---
+
+landed: f0dafed7 yaks-000b: click focuses form rows and chips, and places the cursor in the form and in-place editors
