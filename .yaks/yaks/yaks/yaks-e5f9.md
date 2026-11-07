@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-03T23:29:24Z'
-updated: '2026-11-07T17:28:07Z'
+updated: '2026-11-07T17:28:10Z'
 tags:
 - tui
 ---
@@ -87,3 +87,8 @@ Decision: for half-block cells the zoom grid is one column by half a row (the li
 ▸ 2026-11-07T17:28:07Z [stars-zoom]
 
 Decision: zoom steps are a fixed ladder (5, 10, 12.5, 25, 33, 50, 67, 75, 100, 150, 200, 300, 400, 600, 800, 1200, 1600, 2400, 3200 %) stepped from the factor on screen, so `+` from `fit` goes to the first rung above the fit size. Rejected: a x1.25 multiplier (ugly percentages in the status line).
+
+---
+▸ 2026-11-07T17:28:10Z [stars-zoom]
+
+Decision: changing zoom keeps the middle of the window on the same part of the picture; so `0` from `fit` lands centred, not top-left. `f` returns to offset 0 (the picture fits). Rejected: always resetting the offset to the top-left.
