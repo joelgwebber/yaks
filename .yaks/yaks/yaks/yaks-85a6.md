@@ -1,7 +1,7 @@
 ---
 id: yaks-85a6
 title: Sessions not visible in doks
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-06T21:28:20Z'
@@ -55,3 +55,13 @@ Built on branch `sessions-in-doks` (not landed yet).
 ▸ 2026-11-07T15:48:13Z [schism-feedback]
 
 Landed on `main` as e8bc2c4f (rebased onto 38fc4358, full `cargo test` green after the rebase), pushed, and installed with `cargo install --path .`. A running `yaks tui` needs a restart to show sessions.
+
+---
+▸ 2026-11-07T15:48:13Z [schism-feedback]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
