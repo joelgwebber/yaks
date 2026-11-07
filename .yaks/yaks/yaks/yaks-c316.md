@@ -1,11 +1,11 @@
 ---
 id: yaks-c316
 title: 'Dok conventions: dated doks, a created date, and folder layout'
-status: hairy
+status: shaving
 type: task
 priority: 3
 created: '2026-11-06T21:37:12Z'
-updated: '2026-11-07T17:04:28Z'
+updated: '2026-11-07T17:04:44Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -59,3 +59,13 @@ kind: pickup
 picked up
 
 herd-stars: doing it myself: dok new stamps created:, and the folders-follow-kinds and dated-dok rules in the skills.
+
+---
+▸ 2026-11-07T17:04:44Z [herd-stars]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
