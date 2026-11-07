@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-04T00:00:46Z'
-updated: '2026-11-07T17:29:10Z'
+updated: '2026-11-07T17:29:20Z'
 tags:
 - tui
 ---
@@ -88,3 +88,10 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-07T17:29:20Z [stars-form]
+
+Summary: `E` on a yak (list row, or a header row in the pane) now opens the create form's shape: the header rows plus the description editor seeded with the yak's description (never its comments). Ctrl-S writes the header fields and a changed description in one `Farm::update` (one lock) and leaves the comments byte for byte; an unchanged description is not rewritten; a stale save writes nothing and puts the text on the clipboard. In-place block editing is unchanged. Docs, `?` help lines and the multi-herd docs scene updated.
+
+Docs-parity grep (`header fields only|header rows only|header-only|Edit: the form|body is never part`) over `docs/`, `.agents/`, `README.md`, `src/`: the only hits left are the new text and `CreateForm::changed_body`'s comment ("header-only edit never rewrites the body"), which is still true.
