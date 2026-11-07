@@ -1263,7 +1263,8 @@ enum Command {
         /// Default priority for new yaks (default: 3).
         #[arg(long)]
         priority: Option<u8>,
-        /// Use emacs keybindings in embedded editors instead of vim.
+        /// Use the standard key family (arrows, emacs-style editors) instead of
+        /// vim in the TUI: writes `vim_mode: false`.
         #[arg(long)]
         emacs: bool,
         /// The farm branch's name (default: `git config yaks.branch`, else

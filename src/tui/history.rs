@@ -535,7 +535,7 @@ mod tests {
         let n = app.history.back.len();
         for _ in 0..5 {
             enter_key(&mut app);
-            press(&mut app, "h");
+            esc_key(&mut app);
         }
         assert_eq!(app.history.back.len(), n + 1);
     }
@@ -637,7 +637,7 @@ mod tests {
         assert_eq!(app.history.back.len(), stops, "not jumps");
         press(&mut app, "K");
         assert_eq!(app.attach().unwrap().target, paths[0], "clamped at the top");
-        press(&mut app, "h");
+        esc_key(&mut app);
         assert!(app.doc.is_none());
         assert_eq!(app.focus, Focus::List);
         let _ = std::fs::remove_dir_all(proj);

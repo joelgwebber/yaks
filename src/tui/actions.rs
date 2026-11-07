@@ -71,10 +71,12 @@ impl App {
         let n = self.views.len();
         match k.code {
             KeyCode::Esc | KeyCode::Char('q') => self.overlay = Overlay::None,
-            KeyCode::Down | KeyCode::Char('j') => {
+            KeyCode::Down => self.overlay = Overlay::ViewPicker((sel + 1).min(n - 1)),
+            KeyCode::Up => self.overlay = Overlay::ViewPicker(sel.saturating_sub(1)),
+            KeyCode::Char('j') if self.editor_vim() => {
                 self.overlay = Overlay::ViewPicker((sel + 1).min(n - 1))
             }
-            KeyCode::Up | KeyCode::Char('k') => {
+            KeyCode::Char('k') if self.editor_vim() => {
                 self.overlay = Overlay::ViewPicker(sel.saturating_sub(1))
             }
             KeyCode::Enter => {
@@ -94,7 +96,7 @@ impl App {
             KeyCode::Char('r') => {
                 let name = self.views[sel].name.clone();
                 self.overlay = Overlay::Edit(Editor::new(
-                    self.editor_vim,
+                    self.editor_vim(),
                     true,
                     "Rename view: ".into(),
                     &name,
@@ -184,6 +186,13 @@ impl App {
             self.collapsed.len(),
             overlay_name(&self.overlay),
         );
+        // The `?` popup is no overlay, so say when it is up (a headless driver
+        // has no frame to look at otherwise).
+        let base = if self.keys_popup {
+            format!("{base} · popup=keys")
+        } else {
+            base
+        };
         let base = match &self.doc {
             Some(DocPane {
                 view: DocView::Text(_),
@@ -263,6 +272,37 @@ impl App {
         drop(rows);
         if let Some(parent) = parent {
             self.cursor = parent;
+        }
+    }
+
+    /// `l` on a list row: expand it when it is a collapsed parent, else go to
+    /// its first child. Nothing on a row without children, in a flat view, or
+    /// on a document (yaks-7c6e).
+    pub(crate) fn tree_right(&mut self) {
+        let rows = self.rows();
+        let Some(row) = rows.get(self.cursor) else {
+            return;
+        };
+        if !row.has_children {
+            return;
+        }
+        if row.collapsed {
+            let Some(key) = row.collapse_key() else {
+                return;
+            };
+            drop(rows);
+            // Flip, as Space does: for a quiet shed the key means expanded.
+            if !self.collapsed.remove(&key) {
+                self.collapsed.insert(key);
+            }
+            self.save_ui_state();
+            return;
+        }
+        let depth = row.depth;
+        let child = rows.get(self.cursor + 1).is_some_and(|r| r.depth > depth);
+        drop(rows);
+        if child {
+            self.cursor += 1;
         }
     }
 
@@ -415,7 +455,7 @@ impl App {
                 .map(|t| t.tags.join(", "))
                 .unwrap_or_default();
             self.overlay = Overlay::Edit(Editor::new(
-                self.editor_vim,
+                self.editor_vim(),
                 true,
                 format!("Tags for {id}: "),
                 &initial,
@@ -444,7 +484,12 @@ impl App {
             .as_deref()
             .and_then(|p| choices.iter().position(|c| c == p))
             .unwrap_or(0);
-        self.overlay = Overlay::Create(CreateForm::new(self.editor_vim, parent, choices, herd_idx));
+        self.overlay = Overlay::Create(CreateForm::new(
+            self.editor_vim(),
+            parent,
+            choices,
+            herd_idx,
+        ));
     }
 
     /// Open the shared form seeded from the selected task, for editing (E).
@@ -468,7 +513,7 @@ impl App {
     pub(crate) fn open_edit_focus(&mut self, target: Option<EditTarget>) {
         let Some(id) = self.selected_id() else { return };
         let mut form = match self.task(&id) {
-            Some(task) => CreateForm::for_edit(self.editor_vim, task),
+            Some(task) => CreateForm::for_edit(self.editor_vim(), task),
             None => return,
         };
         // On a multi-herd farm, seed the herd chip row (like create) so the herd

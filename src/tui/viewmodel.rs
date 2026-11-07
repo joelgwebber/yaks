@@ -412,7 +412,10 @@ impl App {
         self.pane_yak = None;
     }
 
-    /// Cycle through the pinned views (the visible tabs) only: a jump.
+    /// Cycle through the pinned views (the visible tabs) only: a jump. With
+    /// the pane open (a yak's detail, a shed, a dok, an image) it stays open,
+    /// on the new view's selected row, as `J`/`K` step rows with it open
+    /// (yaks-7c6e); an empty new view leaves the list.
     pub(crate) fn switch_tab(&mut self, delta: i32) {
         let pinned = self.pinned_indices();
         if pinned.is_empty() {
@@ -421,7 +424,35 @@ impl App {
         let cur = pinned.iter().position(|&i| i == self.view).unwrap_or(0);
         let n = pinned.len() as i32;
         let next = pinned[(((cur as i32 + delta) % n + n) % n) as usize];
-        self.jump_view(next);
+        let pane_open = self.focus == Focus::Detail;
+        self.jump(|app| {
+            app.set_view(next);
+            if pane_open {
+                app.show_selected_row_in_pane();
+            }
+        });
+    }
+
+    /// Put the pane on the selected row, from its top: a yak's or a shed's
+    /// detail, or a dok in the viewer. Nothing on an empty list.
+    fn show_selected_row_in_pane(&mut self) {
+        match self.selected_row() {
+            Some(tree::Item::Yak(_) | tree::Item::Shed(_)) => {
+                self.focus = Focus::Detail;
+                self.pane_yak = None;
+                self.detail.to_top();
+            }
+            Some(tree::Item::Doc(e)) => {
+                let path = e.path.clone();
+                match self.read_farm_doc(&path, None) {
+                    Ok(v) => {
+                        self.show_doc(DocView::Text(v));
+                    }
+                    Err(msg) => self.notification = Some(msg),
+                }
+            }
+            None => {}
+        }
     }
 
     /// True when the live filter has been edited away from the active view spec.

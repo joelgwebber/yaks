@@ -94,7 +94,10 @@ fn headless_session() {
 
 #[test]
 fn headless_state_header_tracks_focus() {
-    let out = run_headless(&["tui", "--headless", "--size", "72x12"], "key l\nquit\n");
+    let out = run_headless(
+        &["tui", "--headless", "--size", "72x12"],
+        "key Enter\nquit\n",
+    );
     // Entering the detail pane flips the state header's focus field.
     assert!(out.contains("focus=list"));
     assert!(out.contains("focus=detail"));

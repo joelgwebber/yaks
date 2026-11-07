@@ -94,7 +94,7 @@ use fuzzy::*;
 #[cfg(test)]
 use handlers::{handle_event, handle_paste};
 use handlers::{handle_key, pump_events};
-use keymap::{Cmd, Keymap, help_content};
+use keymap::{Cmd, Family, Keymap, PopupSubject, help_content};
 use render::*;
 pub use runtime::run;
 use sheds_tab::*;
@@ -139,10 +139,6 @@ pub(crate) enum Overlay {
     Find(SearchBox),
     /// The view manager (`v`): carries the picker's selection index.
     ViewPicker(usize),
-    /// The keys of the current context in a compact popup (`?`); a second `?`
-    /// opens the full reference. The context is the surface's own, so it
-    /// carries nothing.
-    Keys,
     /// The keyboard-help reference (`??`): carries the scroll offset.
     Help(u16),
 }
@@ -374,8 +370,10 @@ pub struct App {
     /// An editor the event loop should run with the terminal suspended (set
     /// by following a source link; see [`source`]).
     pending_editor: Option<source::ExternalCmd>,
-    /// Editor keybinding profile (vim vs emacs), from farm config.
-    editor_vim: bool,
+    /// The `?` popup is up (yaks-7c6e): over the list or pane, or over the
+    /// editor overlay under it, whose keys it then lists. A flag, not an
+    /// [`Overlay`], so the editor stays in place and is back when it closes.
+    keys_popup: bool,
     /// The farm's configured id prefix (e.g. `yaks`), for autocomplete: typing
     /// `<ref_prefix>-` while editing opens the yak-ref picker.
     ref_prefix: String,
@@ -425,6 +423,13 @@ pub struct App {
 }
 
 impl App {
+    /// Whether the editors (and the rest of the TUI's keys) are the vim
+    /// family's, else the standard one: the keymap's family, the one place it
+    /// is kept.
+    pub(crate) fn editor_vim(&self) -> bool {
+        self.keymap.family.is_vim()
+    }
+
     /// Read-only constructor: renders `all` with no farm behind it. Mutating
     /// keys become no-ops. Used by snapshot tests and any preview caller.
     pub fn new(all: Vec<Task>) -> Self {
@@ -458,7 +463,7 @@ impl App {
             inline_cache: RefCell::default(),
             notification: None,
             pending_editor: None,
-            editor_vim: true,
+            keys_popup: false,
             ref_prefix: "yak".to_string(),
             config_herds: Vec::new(),
             last_esc: None,
@@ -499,12 +504,10 @@ impl App {
             .unwrap_or_default();
         let all = farm.list(FilterSpec::default(), true)?;
         let cfg = farm.config();
-        let vim = cfg.vim_mode;
         let ui = cache::load(farm.root());
         let views = views_store::load_views(farm.root());
         let working_set = views_store::load_working_set(farm.root());
         let mut app = App::new(all);
-        app.editor_vim = vim;
         app.inline_images = cfg.inline_images;
         app.config_herds = cfg.known_herds();
         app.ref_prefix = cfg.prefix;
@@ -534,7 +537,8 @@ impl App {
         app.clamp_cursor();
         // The user's key overrides (`keys:` in their config.yaml). Read here,
         // not in `new`, so a snapshot test never depends on the machine.
-        let (keymap, notice) = Keymap::load_user();
+        // The family is the user's (`keys:`, else `vim_mode:`), else the farm's.
+        let (keymap, notice) = Keymap::load_user(Family::from_vim_mode(cfg.vim_mode));
         app.keymap = keymap;
         if let Some(notice) = notice {
             app.notification = Some(notice);

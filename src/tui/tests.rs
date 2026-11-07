@@ -202,7 +202,7 @@ fn slaughter_family_confirm_overlay() {
 fn open_body_editor(app: &mut App) {
     // A multiline comment editor, empty -> opens in Insert mode.
     app.overlay = Overlay::Edit(Editor::new(
-        app.editor_vim,
+        app.editor_vim(),
         false,
         "Comment".into(),
         "",
@@ -423,7 +423,7 @@ fn single_line_vim_reaches_normal_mode() {
     // never cancels, so the normal-mode keymap is usable; cancel is Ctrl-C
     // (or a rapid double-Esc).
     let mut app = editable();
-    assert!(app.editor_vim);
+    assert!(app.editor_vim());
     handle_key(&mut app, key('L')); // single-line labels editor (starts Insert)
     typ(&mut app, "aaa bbb");
     handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
@@ -514,7 +514,7 @@ fn vim_seeded_content_opens_in_normal_mode() {
     // Editing existing description/comment content lands in Normal (the vi
     // expectation when reviewing text).
     let mut app = App::new(vec![body_with_comments()]);
-    assert!(app.editor_vim);
+    assert!(app.editor_vim());
     app.open_block_edit(Some(0));
     assert_eq!(editor_state(&app).0, EditorMode::Normal);
     app.overlay = Overlay::None;
@@ -539,7 +539,7 @@ fn vim_new_content_opens_in_insert_mode() {
 #[test]
 fn e_on_title_line_opens_form_on_the_title_row() {
     let mut app = App::new(vec![body_with_comments()]);
-    handle_key(&mut app, key('l'));
+    enter_key(&mut app);
     let lines = app.detail_dlines();
     let ln = lines
         .iter()
@@ -565,7 +565,7 @@ fn detail_header_lists_prs_as_links() {
         "https://github.com/o/r/pull/15".into(),
     ];
     let mut app = App::new(vec![t]);
-    handle_key(&mut app, key('l'));
+    enter_key(&mut app);
     let lines = app.detail_dlines();
     let first = lines
         .iter()
@@ -592,7 +592,7 @@ fn e_on_source_line_opens_form_on_the_source_row() {
     let mut t = body_with_comments();
     t.source = Some("https://example.com/PROJ-9".into());
     let mut app = App::new(vec![t]);
-    handle_key(&mut app, key('l'));
+    enter_key(&mut app);
     let lines = app.detail_dlines();
     let ln = lines
         .iter()
@@ -615,7 +615,7 @@ fn e_on_source_line_opens_form_on_the_source_row() {
 #[test]
 fn ctrl_n_p_navigate_content_blocks_in_detail() {
     let mut app = App::new(vec![body_with_comments()]);
-    handle_key(&mut app, key('l')); // detail; line cursor at top
+    enter_key(&mut app); // detail; line cursor at top
     let starts = app.block_starts();
     let cn = KeyEvent::new(KeyCode::Char('n'), KeyModifiers::CONTROL);
     let cp = KeyEvent::new(KeyCode::Char('p'), KeyModifiers::CONTROL);
@@ -635,7 +635,7 @@ fn unfocused_description_preview_wraps() {
     // its tail word stays visible.
     let mut app = App::new(vec![task("e0", "Editable", Status::Hairy, 3, None)]);
     app.open_create(false);
-    let vim = app.editor_vim;
+    let vim = app.editor_vim();
     match &mut app.overlay {
         Overlay::Create(f) => {
             f.description = multiline_field(
@@ -668,7 +668,7 @@ fn single_line_emacs_esc_cancels_immediately() {
     // With the emacs profile there is no Normal mode, so Esc must still
     // cancel a single-line field on the first press.
     let mut app = editable();
-    app.editor_vim = false;
+    app.keymap.family = Family::Standard;
     handle_key(&mut app, key('L'));
     assert!(matches!(app.overlay, Overlay::Edit(_)));
     handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
@@ -739,17 +739,22 @@ fn keys_popup() {
     let mut app = sample();
     handle_key(&mut app, key('?'));
     insta::assert_snapshot!(draw(&app, 110, 24));
-    // Any other key closes it without running: `j` does not move the cursor.
+    // A key it lists runs and closes it (yaks-7c6e): `j` moves the cursor.
     let cursor = app.cursor;
     handle_key(&mut app, key('j'));
-    assert!(matches!(app.overlay, Overlay::None));
-    assert_eq!(app.cursor, cursor);
+    assert!(!app.keys_popup);
+    assert_eq!(app.cursor, cursor + 1);
+    // Any other key only closes it.
+    handle_key(&mut app, key('?'));
+    handle_key(&mut app, key('z'));
+    assert!(!app.keys_popup);
+    assert_eq!(app.cursor, cursor + 1);
     // `?` from the pane shows the pane's keys.
     enter_key(&mut app);
     handle_key(&mut app, key('?'));
     let frame = draw(&app, 110, 24);
     assert!(frame.contains("Keys · detail pane · yak rows"), "{frame}");
-    assert!(frame.contains("pane.back"), "{frame}");
+    assert!(frame.contains("pane.scroll_left"), "{frame}");
 }
 
 #[test]
@@ -789,15 +794,15 @@ fn q_quits_from_a_dok_and_the_family_scope_is_f() {
 #[test]
 fn a_user_override_rebinds_a_command_and_the_popup_and_hint_show_it() {
     let mut app = sample();
-    let (km, problems) = Keymap::from_config("keys:\n  view.next: [\"Ctrl-N\"]\n");
+    let (km, problems) = Keymap::from_config("keys:\n  view.next: [\"Ctrl-L\"]\n", Family::Vim);
     assert!(problems.is_empty());
     app.keymap = km;
-    let ctrl_n = KeyEvent::new(KeyCode::Char('n'), KeyModifiers::CONTROL);
-    handle_key(&mut app, ctrl_n);
+    let ctrl_l = KeyEvent::new(KeyCode::Char('l'), KeyModifiers::CONTROL);
+    handle_key(&mut app, ctrl_l);
     assert_eq!(
         app.active_view().name.contains("Shaving"),
         true,
-        "Ctrl-N is the next view"
+        "Ctrl-L is the next view"
     );
     handle_key(&mut app, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
     assert!(
@@ -805,17 +810,17 @@ fn a_user_override_rebinds_a_command_and_the_popup_and_hint_show_it() {
         "Tab no longer switches"
     );
     let frame = draw(&app, 110, 24);
-    assert!(frame.contains("Ctrl-N:view"), "the hint shows it:\n{frame}");
+    assert!(frame.contains("Ctrl-L:view"), "the hint shows it:\n{frame}");
     handle_key(&mut app, key('?'));
     let frame = draw(&app, 110, 24);
     assert!(
-        frame.contains("Ctrl-N  view.next"),
+        frame.contains("Ctrl-L") && frame.contains("view.next"),
         "the popup shows it:\n{frame}"
     );
     handle_key(&mut app, key('?'));
     let frame = draw(&app, 110, 40);
     assert!(
-        frame.contains("Ctrl-N") && frame.contains("Next view"),
+        frame.contains("Ctrl-L") && frame.contains("Next view"),
         "the reference:\n{frame}"
     );
 }
@@ -838,7 +843,7 @@ fn help_opens_and_closes() {
     // `?` is the compact popup of this context's keys; a second `?` is the
     // full reference.
     handle_key(&mut app, key('?'));
-    assert!(matches!(app.overlay, Overlay::Keys));
+    assert!(app.keys_popup);
     handle_key(&mut app, key('?'));
     assert!(matches!(app.overlay, Overlay::Help(_)));
     // Scroll down, then Esc closes.
@@ -2227,8 +2232,9 @@ mod live {
         // the list pane; yaks-5c51). The mark set is shared with the list.
         let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
         let mut app = App::with_farm(farm).unwrap();
-        // `l` focuses the detail pane, then `m` marks t0.
-        press(&mut app, "lm");
+        // Enter focuses the detail pane, then `m` marks t0.
+        enter_key(&mut app);
+        press(&mut app, "m");
         assert!(matches!(app.focus, Focus::Detail));
         assert!(app.selected.contains("t0"));
         // `m` again unmarks it.
@@ -2543,7 +2549,7 @@ mod live {
         let mut app = App::with_farm(farm).unwrap();
         // Roots sort by priority ascending: t0, t1, t2. Cursor is on t0.
         assert_eq!(app.selected_id().as_deref(), Some("t0"));
-        press(&mut app, "l"); // open t0 in the detail pane
+        enter_key(&mut app); // open t0 in the detail pane
         assert!(matches!(app.focus, Focus::Detail));
         press(&mut app, "P5"); // t0 -> p5, resorting it last: t1, t2, t0
         assert_eq!(app.task("t0").unwrap().priority, 5);
@@ -2571,7 +2577,7 @@ mod live {
         // Constrain the live view to p1; both tasks match, cursor on t0.
         app.filter.priorities = vec![1];
         assert_eq!(app.selected_id().as_deref(), Some("t0"));
-        press(&mut app, "l"); // open t0 in the detail pane
+        enter_key(&mut app); // open t0 in the detail pane
         assert!(matches!(app.focus, Focus::Detail));
         press(&mut app, "P5"); // t0 -> p5, dropping it out of the p1 view
         assert_eq!(app.task("t0").unwrap().priority, 5);
@@ -3039,7 +3045,7 @@ mod live {
             .attach("t0", "paste-20260921-234927.png", b"png")
             .unwrap();
         let mut app = App::with_farm(farm).unwrap();
-        press(&mut app, "l"); // detail pane
+        enter_key(&mut app); // detail pane
         press(&mut app, "r"); // cursor not on the link yet
         assert!(
             matches!(app.overlay, Overlay::None),
@@ -3236,7 +3242,7 @@ mod live {
         for _ in 0..HEADER_ROWS {
             tab(&mut app);
         }
-        if app.editor_vim {
+        if app.editor_vim() {
             press(&mut app, "i"); // a seeded editor opens in Normal
         }
         press(&mut app, "!"); // at the cursor, the start of the description
@@ -3933,7 +3939,7 @@ fn main_split_clamps_detail_width_and_goes_modal_when_narrow() {
 #[test]
 fn modal_detail_shows_back_affordance_only_when_covering_the_list() {
     let mut app = sample();
-    handle_key(&mut app, key('l'));
+    enter_key(&mut app);
     assert_eq!(app.focus, Focus::Detail);
     let wide = draw(&app, 160, 12);
     assert!(
@@ -4380,29 +4386,31 @@ fn l_scrolls_only_the_block_under_the_cursor_and_h_returns() {
 }
 
 #[test]
-fn h_scrolls_back_then_at_zero_returns_to_the_list() {
+fn h_scrolls_back_and_at_zero_stays_in_the_pane() {
+    // yaks-7c6e: `h` and `l` only scroll, however far; Esc leaves.
     let mut app = hscroll_app();
     app.detail.line = dline_of(&app, "class Long");
     press_char(&mut app, 'l');
     press_char(&mut app, 'l');
     press_char(&mut app, 'h');
     assert_eq!(app.focus, Focus::Detail, "still scrolled: h scrolls back");
-    press_char(&mut app, 'h');
-    assert_eq!(app.focus, Focus::Detail, "now at 0, but that h scrolled");
-    press_char(&mut app, 'h');
-    assert_eq!(
-        app.focus,
-        Focus::List,
-        "at offset 0 h goes back to the list"
-    );
+    for _ in 0..5 {
+        press_char(&mut app, 'h');
+        assert_eq!(app.focus, Focus::Detail, "at 0, h does nothing");
+    }
+    assert_eq!(app.detail.hscroll.map(|(_, x)| x), Some(0));
 }
 
 #[test]
-fn h_on_prose_returns_to_the_list_and_esc_always_does() {
+fn h_and_the_left_arrow_never_leave_the_pane_and_esc_always_does() {
     let mut app = hscroll_app();
     app.detail.line = dline_of(&app, "Intro.");
     press_char(&mut app, 'h');
-    assert_eq!(app.focus, Focus::List);
+    left_key(&mut app);
+    press_char(&mut app, 'l');
+    assert_eq!(app.focus, Focus::Detail, "h and l on prose do nothing");
+    esc_key(&mut app);
+    assert_eq!(app.focus, Focus::List, "Esc leaves");
     let mut app = hscroll_app();
     app.detail.line = dline_of(&app, "class Long");
     press_char(&mut app, 'l');
@@ -4518,7 +4526,7 @@ fn app_on_attachment(name: &str, data: &[u8]) -> (PathBuf, App) {
     let (dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
     farm.attach("t0", name, data).unwrap();
     let mut app = App::with_farm(farm).unwrap();
-    press(&mut app, "l");
+    enter_key(&mut app);
     draw(&app, 100, 24); // measure the pane
     tab_key(&mut app);
     (dir, app)
@@ -4879,7 +4887,7 @@ fn app_with_inline_image(body: &str, inline: bool) -> (PathBuf, App) {
     let mut app = App::with_farm(farm).unwrap();
     app.inline_images = inline;
     HeadlessApp::on_resize(&mut app, 100, 40);
-    press(&mut app, "l");
+    enter_key(&mut app);
     draw(&app, 100, 40); // measure the pane
     (dir, app)
 }
@@ -5042,7 +5050,7 @@ fn an_svg_attachment_is_drawn_in_place() {
     put_attachment(&farm, "t0", "diagram.svg", svg);
     let mut app = App::with_farm(farm).unwrap();
     HeadlessApp::on_resize(&mut app, 100, 40);
-    press(&mut app, "l");
+    enter_key(&mut app);
     draw(&app, 100, 40);
     let rows = image_rows(&app);
     assert_eq!(rows.len(), 6, "a 120x120 svg takes 12x6 cells like a png");
@@ -5055,7 +5063,7 @@ fn an_svg_attachment_is_drawn_in_place() {
     put_attachment(&farm, "t1", "bad.svg", b"<svg");
     let mut app = App::with_farm(farm).unwrap();
     HeadlessApp::on_resize(&mut app, 100, 40);
-    press(&mut app, "l");
+    enter_key(&mut app);
     draw(&app, 100, 40);
     assert!(image_rows(&app).is_empty());
 }
@@ -5294,7 +5302,7 @@ fn a_broken_inline_image_is_not_retried_every_frame_and_draws_nothing() {
     put_attachment(&farm, "t0", "shot.png", &png);
     let mut app = App::with_farm(farm).unwrap();
     HeadlessApp::on_resize(&mut app, 100, 30);
-    press(&mut app, "l");
+    enter_key(&mut app);
     for _ in 0..3 {
         assert_eq!(image_pixel_rows(&app, 100, 30), 0);
     }
@@ -5476,7 +5484,7 @@ fn help_opens_over_a_dok_and_closing_it_returns_to_the_dok() {
     tab_key(&mut app);
     let line = viewer_nav(&app).line;
     press(&mut app, "?");
-    assert!(matches!(app.overlay, Overlay::Keys));
+    assert!(app.keys_popup);
     press(&mut app, "?");
     assert!(matches!(app.overlay, Overlay::Help(_)));
     let frame = draw(&app, 120, 24);
@@ -5650,7 +5658,7 @@ mod block_edit {
         let (dir, farm) = temp_farm(&[t]);
         let mut app = App::with_farm(farm).unwrap();
         app.detail_page = 27;
-        handle_key(&mut app, key('l'));
+        enter_key(&mut app);
         let _ = draw(&app, 90, 30); // measure the pane width
         (dir, app)
     }
@@ -5776,7 +5784,7 @@ mod block_edit {
         let (_d, farm) = temp_farm(&[t]);
         let mut app = App::with_farm(farm).unwrap();
         app.detail_page = 27;
-        handle_key(&mut app, key('l'));
+        enter_key(&mut app);
         let frame = draw(&app, 90, 30);
         assert!(
             frame.contains("tex-1 \u{b7} ")
@@ -5967,7 +5975,7 @@ mod block_edit {
         let (_d, farm) = temp_farm(&[t]);
         let mut app = App::with_farm(farm).unwrap();
         app.detail_page = 27;
-        handle_key(&mut app, key('l'));
+        enter_key(&mut app);
         let _ = draw(&app, 90, 30);
         app.detail.line = dline_of(&app, "item 40");
         handle_key(&mut app, key('E'));
@@ -7076,4 +7084,454 @@ fn n_is_the_next_match_and_n_the_previous_on_every_row() {
     assert_eq!(lookup(Ctx::List, doc, &key('n')), Some(Cmd::FindNext));
     assert_eq!(lookup(Ctx::List, doc, &key('N')), Some(Cmd::FindPrev));
     assert_eq!(lookup(Ctx::List, doc, &key('c')), Some(Cmd::DokNew));
+}
+
+/// The key rework (yaks-7c6e): the pane, the family, the popup, the views.
+mod keys {
+    use super::*;
+    use crate::tui::keymap::Family;
+    use edtui::EditorMode;
+
+    fn f1(app: &mut App) {
+        handle_key(app, KeyEvent::new(KeyCode::F(1), KeyModifiers::NONE));
+    }
+
+    fn standard(mut app: App) -> App {
+        app.keymap.family = Family::Standard;
+        app
+    }
+
+    fn mode(app: &App) -> EditorMode {
+        match &app.overlay {
+            Overlay::Edit(ed) => ed.state.borrow().mode,
+            Overlay::BlockEdit(be) => be.editor.state.borrow().mode,
+            _ => panic!("no editor is open"),
+        }
+    }
+
+    // -- item 1: h and l never move between the list and the pane -----------
+
+    #[test]
+    fn enter_goes_in_and_esc_comes_out_and_h_and_l_stay_where_they_are() {
+        let mut app = sample();
+        press(&mut app, "l");
+        assert_eq!(
+            app.focus,
+            Focus::List,
+            "l in the list does not open the pane"
+        );
+        enter_key(&mut app);
+        assert_eq!(app.focus, Focus::Detail);
+        press(&mut app, "hlhl");
+        assert_eq!(app.focus, Focus::Detail, "h and l only scroll a block");
+        esc_key(&mut app);
+        assert_eq!(app.focus, Focus::List);
+        // The arrows are the same keys.
+        handle_key(&mut app, KeyEvent::new(KeyCode::Right, KeyModifiers::NONE));
+        assert_eq!(app.focus, Focus::List, "→ does not open the pane either");
+    }
+
+    #[test]
+    fn l_expands_a_collapsed_row_then_steps_to_its_first_child_and_h_goes_back() {
+        let mut app = sample(); // a0 has the child a1 (and a ghost)
+        assert_eq!(app.selected_id().as_deref(), Some("a0"));
+        press(&mut app, "h"); // collapse a0
+        assert!(app.collapsed.contains("a0"));
+        assert_eq!(app.rows().len(), 1);
+        press(&mut app, "l"); // expand it
+        assert!(!app.collapsed.contains("a0"));
+        assert_eq!(app.cursor, 0);
+        press(&mut app, "l"); // expanded: the first child
+        assert_eq!(app.selected_id().as_deref(), Some("a1"));
+        press(&mut app, "l"); // a leaf: nothing
+        assert_eq!(app.selected_id().as_deref(), Some("a1"));
+        press(&mut app, "h"); // a child: its parent
+        assert_eq!(app.selected_id().as_deref(), Some("a0"));
+        assert_eq!(app.focus, Focus::List);
+        // → is the same as l.
+        handle_key(&mut app, KeyEvent::new(KeyCode::Right, KeyModifiers::NONE));
+        assert_eq!(app.selected_id().as_deref(), Some("a1"));
+    }
+
+    #[test]
+    fn the_hint_says_enter_and_esc_for_the_pane() {
+        let mut app = sample();
+        assert!(draw(&app, 120, 14).contains("Enter:detail"));
+        enter_key(&mut app);
+        assert!(draw(&app, 120, 14).contains("Esc:list"));
+    }
+
+    // -- item 2: one family for the whole TUI -------------------------------
+
+    #[test]
+    fn standard_mode_turns_the_vim_keys_off_in_the_list_and_the_pane() {
+        let mut app = standard(sample());
+        press(&mut app, "jjdG");
+        assert_eq!(app.cursor, 0, "j, d and G do nothing");
+        down_key(&mut app);
+        assert_eq!(app.cursor, 1, "the arrow moves");
+        handle_key(&mut app, KeyEvent::new(KeyCode::End, KeyModifiers::NONE));
+        assert_eq!(app.cursor, app.rows().len() - 1);
+        handle_key(&mut app, KeyEvent::new(KeyCode::Home, KeyModifiers::NONE));
+        assert_eq!(app.cursor, 0);
+        enter_key(&mut app);
+        let line = app.detail.line;
+        press(&mut app, "j");
+        assert_eq!(app.detail.line, line, "j does nothing in the pane");
+        down_key(&mut app);
+        assert!(app.detail.line > line);
+        let ctrl_n = KeyEvent::new(KeyCode::Char('n'), KeyModifiers::CONTROL);
+        let before = app.detail.line;
+        handle_key(&mut app, ctrl_n);
+        assert_eq!(
+            app.detail.line, before,
+            "Ctrl-N is off, and is not `n` either"
+        );
+    }
+
+    #[test]
+    fn standard_mode_uses_the_emacs_editor_and_ctrl_f_finds() {
+        let mut app = standard(editable());
+        assert!(!app.editor_vim());
+        handle_key(
+            &mut app,
+            KeyEvent::new(KeyCode::Char('f'), KeyModifiers::CONTROL),
+        );
+        assert!(
+            matches!(app.overlay, Overlay::Search(_)),
+            "Ctrl-F opens the search"
+        );
+        esc_key(&mut app);
+        press(&mut app, "L");
+        match &app.overlay {
+            Overlay::Edit(ed) => assert!(!ed.vim, "the labels editor is emacs-style"),
+            _ => panic!("no editor"),
+        }
+        // In vim mode Ctrl-F is nothing.
+        let mut vim = editable();
+        handle_key(
+            &mut vim,
+            KeyEvent::new(KeyCode::Char('f'), KeyModifiers::CONTROL),
+        );
+        assert!(matches!(vim.overlay, Overlay::None));
+    }
+
+    #[test]
+    fn f3_steps_the_pane_matches_in_both_families() {
+        for family in [Family::Vim, Family::Standard] {
+            let mut t = task("t0", "solo", Status::Hairy, 3, None);
+            t.body = "alpha\n\nbeta\n\nalpha again".into();
+            let mut app = App::new(vec![t]);
+            app.keymap.family = family;
+            enter_key(&mut app);
+            app.register = Some("alpha".into());
+            handle_key(&mut app, KeyEvent::new(KeyCode::F(3), KeyModifiers::NONE));
+            let first = app.detail.line;
+            handle_key(&mut app, KeyEvent::new(KeyCode::F(3), KeyModifiers::NONE));
+            assert!(app.detail.line > first, "{family:?}: F3 is the next match");
+            handle_key(&mut app, KeyEvent::new(KeyCode::F(3), KeyModifiers::SHIFT));
+            assert_eq!(
+                app.detail.line, first,
+                "{family:?}: Shift-F3 is the previous"
+            );
+        }
+    }
+
+    #[test]
+    fn ctrl_down_and_up_jump_content_blocks_in_both_families() {
+        for family in [Family::Vim, Family::Standard] {
+            let mut app = App::new(vec![body_with_comments()]);
+            app.keymap.family = family;
+            enter_key(&mut app);
+            let starts = app.block_starts();
+            handle_key(
+                &mut app,
+                KeyEvent::new(KeyCode::Down, KeyModifiers::CONTROL),
+            );
+            assert_eq!(app.detail.line, starts[1], "{family:?}");
+            handle_key(
+                &mut app,
+                KeyEvent::new(KeyCode::Down, KeyModifiers::CONTROL),
+            );
+            assert_eq!(app.detail.line, starts[2], "{family:?}");
+            handle_key(&mut app, KeyEvent::new(KeyCode::Up, KeyModifiers::CONTROL));
+            assert_eq!(app.detail.line, starts[1], "{family:?}");
+        }
+    }
+
+    #[test]
+    fn the_standard_list_hint_names_the_arrows() {
+        let app = standard(sample());
+        let frame = draw(&app, 120, 14);
+        assert!(frame.contains("↑/↓:move"), "{frame}");
+        assert!(!frame.contains("j/k:move"), "{frame}");
+    }
+
+    // -- item 4: the popup --------------------------------------------------
+
+    #[test]
+    fn a_listed_key_in_the_popup_runs_and_closes_it() {
+        let mut app = sample();
+        press(&mut app, "?");
+        assert!(app.keys_popup);
+        assert!(
+            app.state_header().contains("popup=keys"),
+            "headless drivers see it"
+        );
+        press(&mut app, "j");
+        assert!(!app.keys_popup);
+        assert!(!app.state_header().contains("popup="));
+        assert_eq!(app.cursor, 1, "j ran");
+        press(&mut app, "?");
+        press(&mut app, "S");
+        assert!(!app.keys_popup);
+        assert!(
+            matches!(app.overlay, Overlay::Pick { .. }),
+            "S opened the state picker"
+        );
+        esc_key(&mut app);
+    }
+
+    #[test]
+    fn esc_and_an_unlisted_key_only_close_the_popup() {
+        let mut app = sample();
+        app.query = Some("child".into());
+        press(&mut app, "?");
+        esc_key(&mut app);
+        assert!(!app.keys_popup);
+        assert_eq!(
+            app.query.as_deref(),
+            Some("child"),
+            "Esc did not clear the query"
+        );
+        press(&mut app, "?");
+        press(&mut app, "z");
+        assert!(!app.keys_popup);
+        assert!(matches!(app.overlay, Overlay::None));
+        // `?` again is the full reference.
+        press(&mut app, "??");
+        assert!(matches!(app.overlay, Overlay::Help(_)));
+    }
+
+    #[test]
+    fn the_popup_is_grouped_on_the_list() {
+        let mut app = sample();
+        press(&mut app, "?");
+        let frame = draw(&app, 110, 24);
+        for group in [
+            "Move",
+            "Open and follow",
+            "Find",
+            "Change the yak",
+            "View and filter",
+            "Farm",
+            "App",
+        ] {
+            assert!(frame.contains(group), "{group}:\n{frame}");
+        }
+        assert!(frame.contains("a listed key runs it"), "{frame}");
+    }
+
+    #[test]
+    fn f1_opens_the_popup_over_every_kind_of_editor_and_it_comes_back() {
+        // (how to open it, what the popup says about it)
+        type Opener = fn(&mut App);
+        let cases: Vec<(&str, Opener)> = vec![
+            ("comment editor", |a| open_body_editor(a)),
+            ("labels field", |a| press(a, "L")),
+            ("search", |a| press(a, "/")),
+            ("go to", |a| press(a, "#")),
+            ("filter drawer", |a| press(a, "f")),
+            ("edit form title", |a| press(a, "E")),
+            ("edit form chips", |a| {
+                press(a, "E");
+                tab_key(a);
+            }),
+            ("create form", |a| press(a, "c")),
+            ("pane find", |a| {
+                enter_key(a);
+                press(a, "/");
+            }),
+            ("in-place editor", |a| {
+                enter_key(a);
+                press(a, "E");
+            }),
+        ];
+        for family in [Family::Vim, Family::Standard] {
+            for (what, open) in &cases {
+                let mut app = editable();
+                app.keymap.family = family;
+                open(&mut app);
+                assert!(!matches!(app.overlay, Overlay::None), "{what} is open");
+                f1(&mut app);
+                assert!(app.keys_popup, "{family:?} {what}: F1 opens the popup");
+                let frame = draw(&app, 110, 24);
+                assert!(frame.contains("Keys ·"), "{family:?} {what}:\n{frame}");
+                assert!(
+                    frame.contains("Save and leave") || frame.contains("Rows"),
+                    "{family:?} {what}:\n{frame}"
+                );
+                // F1 again closes it, and the editor is still there.
+                f1(&mut app);
+                assert!(!app.keys_popup);
+                assert!(!matches!(app.overlay, Overlay::None), "{family:?} {what}");
+            }
+        }
+    }
+
+    #[test]
+    fn the_editor_popup_lists_the_active_familys_keys() {
+        let mut vim = editable();
+        open_body_editor(&mut vim);
+        esc_key(&mut vim); // Normal
+        f1(&mut vim);
+        let frame = draw(&vim, 120, 24);
+        assert!(frame.contains("vim Normal"), "{frame}");
+        assert!(frame.contains("dd dw") && frame.contains("yy p"), "{frame}");
+        let mut std = standard(editable());
+        open_body_editor(&mut std);
+        f1(&mut std);
+        let frame = draw(&std, 120, 24);
+        assert!(
+            frame.contains("Ctrl-K") && frame.contains("standard"),
+            "{frame}"
+        );
+        assert!(!frame.contains("dd dw"), "{frame}");
+    }
+
+    #[test]
+    fn a_listed_key_goes_to_the_editor_and_an_unlisted_one_is_dropped() {
+        let mut app = editable();
+        open_body_editor(&mut app);
+        esc_key(&mut app);
+        assert_eq!(mode(&app), EditorMode::Normal);
+        f1(&mut app);
+        press(&mut app, "i"); // listed: Insert before the cursor
+        assert!(!app.keys_popup);
+        assert_eq!(mode(&app), EditorMode::Insert, "i reached the editor");
+        // Unlisted: closes the popup, and is not typed. (A fresh editor: two
+        // quick Escs are the cancel gesture.)
+        let mut app = editable();
+        open_body_editor(&mut app);
+        esc_key(&mut app);
+        f1(&mut app);
+        press(&mut app, "Z");
+        assert!(!app.keys_popup);
+        assert_eq!(mode(&app), EditorMode::Normal);
+        match &app.overlay {
+            Overlay::Edit(ed) => assert_eq!(ed.text(), ""),
+            _ => panic!("no editor"),
+        }
+        // Ctrl-C is listed and cancels, through the popup too (the text
+        // typed asks before it is dropped).
+        press(&mut app, "i");
+        press(&mut app, "hi there");
+        f1(&mut app);
+        handle_key(
+            &mut app,
+            KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
+        );
+        assert!(!app.keys_popup);
+        assert!(
+            matches!(app.overlay, Overlay::Confirm { .. }),
+            "Ctrl-C reached the editor: {}",
+            overlay_name(&app.overlay)
+        );
+    }
+
+    #[test]
+    fn question_mark_opens_the_popup_in_vim_normal_only() {
+        let mut app = editable();
+        open_body_editor(&mut app); // starts in Insert
+        press(&mut app, "?");
+        assert!(!app.keys_popup, "in Insert, ? is a character");
+        match &app.overlay {
+            Overlay::Edit(ed) => assert_eq!(ed.text(), "?"),
+            _ => panic!("no editor"),
+        }
+        esc_key(&mut app);
+        press(&mut app, "?");
+        assert!(app.keys_popup, "in Normal, ? is the popup");
+        match &app.overlay {
+            Overlay::Edit(ed) => assert_eq!(ed.text(), "?", "and nothing was typed"),
+            _ => panic!("no editor"),
+        }
+        // Standard mode has no Normal mode: ? is always text.
+        let mut std = standard(editable());
+        open_body_editor(&mut std);
+        press(&mut std, "?");
+        assert!(!std.keys_popup);
+    }
+
+    #[test]
+    fn f1_in_the_list_is_the_popup_too_and_f1_in_a_prompt_does_nothing() {
+        let mut app = sample();
+        f1(&mut app);
+        assert!(app.keys_popup);
+        press(&mut app, "q"); // q is listed: it quits, as in the list
+        assert!(app.quit);
+        // A single-key prompt is no editor.
+        let mut app = sample();
+        press(&mut app, "S");
+        f1(&mut app);
+        assert!(!app.keys_popup);
+        assert!(matches!(app.overlay, Overlay::Pick { .. }));
+    }
+
+    // -- item 5: { and } change views ---------------------------------------
+
+    #[test]
+    fn braces_change_views_from_the_list() {
+        let mut app = sample();
+        assert!(app.active_view().name.contains("Hairy"));
+        press(&mut app, "}");
+        assert!(app.active_view().name.contains("Shaving"));
+        press(&mut app, "{");
+        assert!(app.active_view().name.contains("Hairy"));
+        assert_eq!(app.focus, Focus::List);
+    }
+
+    #[test]
+    fn in_the_pane_a_brace_keeps_it_open_on_the_new_views_selected_row() {
+        let mut app = sample();
+        enter_key(&mut app);
+        assert_eq!(app.selected_id().as_deref(), Some("a0"));
+        press(&mut app, "}");
+        assert!(app.active_view().name.contains("Shaving"));
+        assert_eq!(app.focus, Focus::Detail, "the pane stays open");
+        assert_eq!(
+            app.selected_id().as_deref(),
+            Some("b0"),
+            "on the new view's row"
+        );
+        assert!(draw(&app, 100, 14).contains("Root B shaving"));
+        // o goes back to where it was: one jump.
+        press(&mut app, "{");
+        assert_eq!(app.focus, Focus::Detail);
+        assert_eq!(app.selected_id().as_deref(), Some("a0"));
+        // An empty view has nothing to show: the focus returns to the list.
+        press(&mut app, "}}}}"); // Shaving, Shorn, Recent, Starred (empty)
+        assert!(
+            app.active_view().name.contains("Starred"),
+            "{}",
+            app.active_view().name
+        );
+        assert_eq!(app.focus, Focus::List);
+    }
+
+    #[test]
+    fn in_a_viewer_braces_close_it_and_open_the_new_views_row() {
+        let (_dir, mut app) = viewer_on_linked_notes();
+        assert!(app.attach().is_some());
+        press(&mut app, "}");
+        assert!(
+            app.attach().is_none(),
+            "the viewer's dok is not this view's"
+        );
+        assert!(app.active_view().name.contains("Shaving"));
+        let (_dir, mut app) = image_viewer_on(40, 30);
+        press(&mut app, "{");
+        assert!(app.image().is_none());
+        assert!(app.doc.is_none());
+    }
 }

@@ -756,7 +756,7 @@ mod tests {
         crate::tui::doks_tab::fixture::write(farm.root());
         let mut app = App::with_farm(farm).unwrap();
         app.detail_page = 21;
-        press(&mut app, "l");
+        enter_key(&mut app);
         draw(&app, 120, 24);
         (proj, app)
     }
@@ -814,9 +814,9 @@ mod tests {
     fn the_yak_pane_peek_is_only_for_a_focused_pane_and_gives_the_page_back() {
         let (proj, mut app) = on_yak_with_links();
         // On the list there is no cursor to peek from.
-        press(&mut app, "h");
+        esc_key(&mut app);
         assert!(!draw(&app, 120, 24).contains("── peek"));
-        press(&mut app, "l");
+        enter_key(&mut app);
         let page = app.detail_viewport().page;
         assert!(draw(&app, 120, 24).contains("── peek"));
         // Hiding gives the rows back to the page, showing takes them again.
@@ -838,7 +838,7 @@ mod tests {
         crate::tui::doks_tab::fixture::write(farm.root());
         let mut app = App::with_farm(farm).unwrap();
         app.detail_page = 21;
-        press(&mut app, "l");
+        enter_key(&mut app);
         draw(&app, 120, 24);
         press(&mut app, "p"); // hidden: the page is the whole pane
         press(&mut app, "G");
@@ -906,7 +906,7 @@ mod tests {
         crate::tui::doks_tab::fixture::write(farm.root());
         std::fs::write(farm.root().join("doks/topics/hub.md"), HUB).unwrap();
         let mut app = App::with_farm(farm).unwrap();
-        press(&mut app, "l");
+        enter_key(&mut app);
         draw(&app, 150, 34);
         tab_key(&mut app);
         enter_key(&mut app);

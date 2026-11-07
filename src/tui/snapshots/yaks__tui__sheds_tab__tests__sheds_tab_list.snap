@@ -23,4 +23,4 @@ expression: "draw(&app, 120, 22)"
 
 
    farm: up to date with origin/yaks
-Tab:view  j/k:move  l:detail  /:search  y:copy name  `:views  ?:help  q:quit
+Tab:view  j/k:move  Enter:detail  /:search  y:copy name  `:views  ?:help  q:quit

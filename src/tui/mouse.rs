@@ -86,6 +86,10 @@ impl App {
     }
 
     fn handle_mouse_inner(&mut self, m: MouseEvent) {
+        // The `?` popup owns the next key; the pointer waits.
+        if self.keys_popup {
+            return;
+        }
         // The form and the in-place editor take the left button; every other
         // overlay owns its input.
         match &self.overlay {
@@ -527,7 +531,7 @@ mod tests {
         ]);
         farm.attach("t0", "notes.md", b"# Notes\n").unwrap();
         let mut app = App::with_farm(farm).unwrap();
-        press(&mut app, "l");
+        enter_key(&mut app);
         draw(&app, 140, 20);
         tab_key(&mut app);
         enter_key(&mut app);

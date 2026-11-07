@@ -213,7 +213,7 @@ impl App {
 
     fn new_dok_prompt(&mut self, seed: &str) {
         let ed = Editor::new(
-            self.editor_vim,
+            self.editor_vim(),
             true,
             "New dok (doks/<path>.md or <herd>/doks/<path>.md): ".into(),
             seed,

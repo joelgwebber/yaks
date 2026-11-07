@@ -4,11 +4,18 @@
 //!
 //! ```yaml
 //! keys:
-//!   view.next: ["Ctrl-N", "]"]
+//!   view.next: ["Ctrl-L", "]"]
 //!   farm.sync: Ctrl-U
 //!   app.help:
-//!     - F1
+//!     - F2
 //! ```
+//!
+//! The same file picks the key family for the whole TUI (yaks-7c6e), `vim`
+//! (the default) or `standard`: `keys: standard` as a scalar, or `family:
+//! standard` inside the map above (it is not a command's name, so it cannot
+//! clash with one). The legacy `vim_mode: false` is an alias for
+//! `standard`. The user's `keys` family beats their `vim_mode`, which beats the
+//! farm's `vim_mode`, which beats vim ([`Keymap::load_user`]).
 //!
 //! A key is written as [`Key::label`] prints it. An override replaces the
 //! command's keys in every context it is bound in. Whatever cannot be used (an
@@ -64,6 +71,38 @@ fn parse_section(text: &str) -> Vec<Entry> {
         out.push((name, keys));
     }
     out
+}
+
+/// The family the config's top level names, and what it got wrong: the scalar
+/// `keys: <family>`, else the legacy `vim_mode:`. (`family:` inside the `keys`
+/// map is an [`Entry`], read by [`Keymap::from_config`].)
+fn top_level_family(text: &str) -> (Option<Family>, Option<Family>, Vec<String>) {
+    let (mut keys, mut vim_mode, mut problems) = (None, None, Vec::new());
+    for line in text.lines() {
+        let bare = line.trim();
+        if bare.is_empty() || bare.starts_with('#') || line.starts_with([' ', '\t']) {
+            continue;
+        }
+        let Some((name, value)) = bare.split_once(':') else {
+            continue;
+        };
+        let value = unquote(value.trim());
+        match name.trim() {
+            "keys" if !value.is_empty() => match Family::from_name(&value) {
+                Some(f) => keys = Some(f),
+                None => problems.push(format!("keys: no such family \"{value}\" (vim, standard)")),
+            },
+            // As the farm's own `vim_mode` reads it.
+            "vim_mode" => {
+                vim_mode = Some(Family::from_vim_mode(matches!(
+                    value.as_str(),
+                    "true" | "True" | "yes" | "1"
+                )))
+            }
+            _ => {}
+        }
+    }
+    (keys, vim_mode, problems)
 }
 
 /// A scalar without its YAML quotes (`"x"`, or `'x'` with `''` for a quote).
@@ -142,11 +181,25 @@ fn flow_list(s: &str) -> Result<Vec<String>, String> {
 }
 
 impl Keymap {
-    /// The overrides in the `keys:` section of `text`, and what was left out.
-    pub(crate) fn from_config(text: &str) -> (Keymap, Vec<String>) {
+    /// The overrides in the `keys:` section of `text`, and what was left out;
+    /// the family is the config's own, else `default` (the farm's).
+    pub(crate) fn from_config(text: &str, default: Family) -> (Keymap, Vec<String>) {
         let mut km = Keymap::default();
-        let mut problems = Vec::new();
+        let (scalar, vim_mode, mut problems) = top_level_family(text);
+        let mut family = scalar;
         for (name, raw) in parse_section(text) {
+            if name == "family" {
+                match raw.as_deref() {
+                    Ok([f]) => match Family::from_name(f) {
+                        Some(f) => family = Some(f),
+                        None => {
+                            problems.push(format!("family: no such family \"{f}\" (vim, standard)"))
+                        }
+                    },
+                    _ => problems.push("family: one of vim, standard".into()),
+                }
+                continue;
+            }
             let Some(cmd) = Cmd::from_name(&name) else {
                 problems.push(format!("{name}: no such command"));
                 continue;
@@ -174,18 +227,26 @@ impl Keymap {
                 km.overrides.insert(cmd, keys);
             }
         }
+        km.family = family.or(vim_mode).unwrap_or(default);
         problems.extend(km.drop_collisions());
         (km, problems)
     }
 
-    /// The user's keymap, from their config file; none (the table's keys) when
-    /// there is no file. The notice says what was left out, in one line.
-    pub(crate) fn load_user() -> (Keymap, Option<String>) {
+    /// The user's keymap, from their config file; the table's keys in the
+    /// `default` family (the farm's `vim_mode`) when there is no file. The
+    /// notice says what was left out, in one line.
+    pub(crate) fn load_user(default: Family) -> (Keymap, Option<String>) {
         let path = views_store::config_home().join("yaks").join("config.yaml");
         let Ok(text) = std::fs::read_to_string(&path) else {
-            return (Keymap::default(), None);
+            return (
+                Keymap {
+                    family: default,
+                    ..Keymap::default()
+                },
+                None,
+            );
         };
-        let (km, problems) = Keymap::from_config(&text);
+        let (km, problems) = Keymap::from_config(&text, default);
         // The notice is one line, so a long list says how many more.
         let more = problems.len().saturating_sub(2);
         let more = if more > 0 {
@@ -230,7 +291,7 @@ impl Keymap {
                     if a.cmd == b.cmd || !overlap {
                         continue;
                     }
-                    let Some(key) = self.keys(a).iter().find(|k| self.keys(b).contains(k)) else {
+                    let Some(key) = self.keys(a).find(|k| self.keys(b).any(|x| x == *k)) else {
                         continue;
                     };
                     let (victim, other) = if self.overrides.contains_key(&b.cmd) {
@@ -303,16 +364,18 @@ mod tests {
 
     #[test]
     fn an_override_replaces_the_commands_keys_in_every_context() {
-        let (km, problems) =
-            Keymap::from_config("keys:\n  view.next: [\"Ctrl-N\"]\n  move.down: [\"z\"]\n");
+        let (km, problems) = Keymap::from_config(
+            "keys:\n  view.next: [\"Ctrl-L\"]\n  move.down: [\"z\"]\n",
+            Family::Vim,
+        );
         assert!(problems.is_empty(), "{problems:?}");
         let yak = Some(Yak);
-        let ctrl_n = KeyEvent::new(KeyCode::Char('n'), KeyModifiers::CONTROL);
-        assert_eq!(km.lookup(Ctx::List, yak, &ctrl_n), Some(ViewNext));
+        let ctrl_l = KeyEvent::new(KeyCode::Char('l'), KeyModifiers::CONTROL);
+        assert_eq!(km.lookup(Ctx::List, yak, &ctrl_l), Some(ViewNext));
         // The table's keys for it are gone; the other commands are untouched.
         let tab = KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE);
         assert_eq!(km.lookup(Ctx::List, yak, &tab), None);
-        assert_eq!(km.lookup(Ctx::List, yak, &key('l')), Some(PaneOpen));
+        assert_eq!(km.lookup(Ctx::List, yak, &key('l')), Some(TreeRight));
         // move.down is bound in the list, the pane and the viewer.
         for ctx in [Ctx::List, Ctx::Detail, Ctx::Viewer] {
             assert_eq!(km.lookup(ctx, yak, &key('z')), Some(MoveDown), "{ctx:?}");
@@ -323,25 +386,30 @@ mod tests {
     #[test]
     fn the_reference_and_the_hint_show_the_effective_keys() {
         let (km, _) = Keymap::from_config(
-            "keys:\n  view.next: [\"Ctrl-N\"]\n  filter.drawer: [\"Ctrl-F\"]\n",
+            "keys:\n  view.next: [\"Ctrl-L\"]\n  filter.drawer: [\"Ctrl-F\"]\n",
+            Family::Vim,
         );
         let all = text(&help_content(&km));
-        assert!(all.contains("  Ctrl-N          Next view"), "{all}");
-        assert!(!all.contains("Tab / ]         Next view"));
+        assert!(all.contains("  Ctrl-L          Next view"), "{all}");
+        assert!(!all.contains("Tab / ] / }"));
         let hint = km.hint_for(Ctx::List, Some(Yak), false);
-        assert!(hint.starts_with("Ctrl-N:view  j/k:move"), "{hint}");
+        assert!(hint.starts_with("Ctrl-L:view  j/k:move"), "{hint}");
         assert!(hint.contains("Ctrl-F:filter  /:search"), "{hint}");
-        let popup = km.popup_entries(Ctx::List, Some(Yak));
+        let popup: Vec<_> = km
+            .popup_entries(Ctx::List, Some(Yak))
+            .into_iter()
+            .flat_map(|(_, e)| e)
+            .collect();
         assert!(
-            popup.contains(&("Ctrl-N".to_string(), "view.next")),
+            popup.contains(&("Ctrl-L".to_string(), "view.next")),
             "{popup:?}"
         );
     }
 
     #[test]
     fn what_cannot_be_used_is_reported_and_left_out() {
-        let text = "keys:\n  view.nxt: [x]\n  view.next: [\"Ctrl-\", \"Ctrl-N\"]\n  view.prev: [Hyper]\n  tree.toggle: []\n  move.up: [\"l\"]\n";
-        let (km, problems) = Keymap::from_config(text);
+        let text = "keys:\n  view.nxt: [x]\n  view.next: [\"Ctrl-\", \"Ctrl-L\"]\n  view.prev: [Hyper]\n  tree.toggle: []\n  move.up: [\"l\"]\n";
+        let (km, problems) = Keymap::from_config(text, Family::Vim);
         assert_eq!(
             problems,
             vec![
@@ -349,22 +417,118 @@ mod tests {
                 "view.next: no such key \"Ctrl-\"".to_string(),
                 "view.prev: no such key \"Hyper\"".to_string(),
                 "tree.toggle: no keys".to_string(),
-                "move.up: l is already pane.open's in the list".to_string(),
+                "move.up: l is already tree.right's in the list".to_string(),
             ]
         );
         // The good key of a partly bad list still applies; a clash drops the
         // whole override, leaving the table's keys.
-        let ctrl_n = KeyEvent::new(KeyCode::Char('n'), KeyModifiers::CONTROL);
-        assert_eq!(km.lookup(Ctx::List, Some(Yak), &ctrl_n), Some(ViewNext));
+        let ctrl_l = KeyEvent::new(KeyCode::Char('l'), KeyModifiers::CONTROL);
+        assert_eq!(km.lookup(Ctx::List, Some(Yak), &ctrl_l), Some(ViewNext));
         assert_eq!(km.lookup(Ctx::List, Some(Yak), &key('k')), Some(MoveUp));
-        assert_eq!(km.lookup(Ctx::List, Some(Yak), &key('l')), Some(PaneOpen));
+        assert_eq!(km.lookup(Ctx::List, Some(Yak), &key('l')), Some(TreeRight));
     }
 
     #[test]
     fn two_commands_may_trade_keys() {
-        let (km, problems) = Keymap::from_config("keys:\n  move.down: [k]\n  move.up: [j]\n");
+        let (km, problems) =
+            Keymap::from_config("keys:\n  move.down: [k]\n  move.up: [j]\n", Family::Vim);
         assert!(problems.is_empty(), "{problems:?}");
         assert_eq!(km.lookup(Ctx::List, Some(Yak), &key('k')), Some(MoveDown));
         assert_eq!(km.lookup(Ctx::List, Some(Yak), &key('j')), Some(MoveUp));
+    }
+    // -- the key family (yaks-7c6e) -----------------------------------------
+
+    fn family(text: &str, farm: Family) -> (Family, Vec<String>) {
+        let (km, problems) = Keymap::from_config(text, farm);
+        (km.family, problems)
+    }
+
+    #[test]
+    fn the_family_is_the_users_keys_scalar_else_their_vim_mode_else_the_farms() {
+        use Family::{Standard, Vim};
+        // No word from the user: the farm's `vim_mode` (the default is vim).
+        assert_eq!(family("", Vim).0, Vim);
+        assert_eq!(family("", Standard).0, Standard);
+        assert_eq!(family("sync_interval: 5m\n", Standard).0, Standard);
+        // `keys: <family>` as a scalar beats everything.
+        assert_eq!(family("keys: standard\n", Vim), (Standard, vec![]));
+        assert_eq!(family("keys: vim\n", Standard), (Vim, vec![]));
+        assert_eq!(
+            family("keys: \"standard\"\nvim_mode: true\n", Vim).0,
+            Standard
+        );
+        // The legacy `vim_mode:` is an alias, and beats the farm's.
+        assert_eq!(family("vim_mode: false\n", Vim).0, Standard);
+        assert_eq!(family("vim_mode: true\n", Standard).0, Vim);
+        // `family:` inside the overrides map, beside the overrides.
+        let (f, problems) = family(
+            "keys:\n  family: standard\n  view.next: [\"Ctrl-L\"]\n",
+            Vim,
+        );
+        assert_eq!((f, problems), (Standard, vec![]));
+        let (km, _) = Keymap::from_config(
+            "keys:\n  family: standard\n  view.next: [\"Ctrl-L\"]\n",
+            Vim,
+        );
+        let ctrl_l = KeyEvent::new(KeyCode::Char('l'), KeyModifiers::CONTROL);
+        assert_eq!(
+            km.lookup(Ctx::List, Some(Yak), &ctrl_l),
+            Some(ViewNext),
+            "the overrides kept"
+        );
+        assert_eq!(
+            km.lookup(Ctx::List, Some(Yak), &key('j')),
+            None,
+            "and the family applied"
+        );
+        assert_eq!(
+            family("keys:\n  family: standard\nvim_mode: true\n", Vim).0,
+            Standard,
+            "the keys family beats vim_mode"
+        );
+    }
+
+    #[test]
+    fn a_family_that_does_not_read_is_reported_and_the_next_source_wins() {
+        let (f, problems) = family("keys: emacs\nvim_mode: false\n", Family::Vim);
+        assert_eq!(f, Family::Standard, "vim_mode is next");
+        assert_eq!(
+            problems,
+            vec!["keys: no such family \"emacs\" (vim, standard)".to_string()]
+        );
+        let (f, problems) = family("keys:\n  family: [vim, standard]\n", Family::Standard);
+        assert_eq!(f, Family::Standard);
+        assert_eq!(problems, vec!["family: one of vim, standard".to_string()]);
+    }
+
+    #[test]
+    fn a_user_override_is_the_users_word_whatever_the_family() {
+        // A vim-only key given to a command in standard mode stays on.
+        let (km, problems) =
+            Keymap::from_config("keys:\n  family: standard\n  move.down: [j]\n", Family::Vim);
+        assert!(problems.is_empty(), "{problems:?}");
+        assert_eq!(km.family, Family::Standard);
+        assert_eq!(km.lookup(Ctx::List, Some(Yak), &key('j')), Some(MoveDown));
+    }
+
+    #[test]
+    fn function_keys_read_and_write_as_f_n() {
+        assert_eq!(Key::parse("F3"), Some(k(KeyCode::F(3))));
+        assert_eq!(Key::parse("F(3)"), Some(k(KeyCode::F(3))));
+        assert_eq!(Key::parse("Shift-F3"), Some(shift(KeyCode::F(3))));
+        assert_eq!(k(KeyCode::F(1)).label(), "F1");
+        // A plain `F` is still the key F.
+        assert_eq!(Key::parse("F"), Some(c('F')));
+        assert_eq!(
+            Key::parse("Alt-F"),
+            Some(Key {
+                code: KeyCode::Char('f'),
+                mods: KeyModifiers::ALT
+            })
+        );
+        assert_eq!(
+            Key::parse("Alt-F").map(|k| k.label()),
+            Some("Alt-F".to_string())
+        );
     }
 }

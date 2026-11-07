@@ -15,4 +15,4 @@ expression: "draw(&app, 120, 14)"
 │
 │
 │
-h:list  y:copy name  i/o:fwd/back  q:quit
+Esc:list  y:copy name  i/o:fwd/back  q:quit

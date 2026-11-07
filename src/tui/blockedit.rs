@@ -261,7 +261,7 @@ impl App {
         row: usize,
         action: EditAction,
     ) {
-        let editor = Editor::new(self.editor_vim, false, String::new(), &text, action);
+        let editor = Editor::new(self.editor_vim(), false, String::new(), &text, action);
         let last = text.split('\n').count() - 1;
         editor.state.borrow_mut().cursor = edtui::Index2::new(row.min(last), 0);
         if self.focus == Focus::List {
@@ -373,7 +373,7 @@ impl App {
             return;
         };
         let editor = Editor::new(
-            self.editor_vim,
+            self.editor_vim(),
             false,
             String::new(),
             &text,

@@ -16,4 +16,4 @@ expression: "draw(&app, 72, 14)"
 │ Tags:        -
 │
 │
-h:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit
+Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit

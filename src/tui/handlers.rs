@@ -390,7 +390,7 @@ fn schedule_fields(
 impl App {
     pub(crate) fn handle_create_key(&mut self, k: KeyEvent, double_esc: bool) {
         let ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
-        let vim = self.editor_vim;
+        let vim = self.editor_vim();
         let (is_content, is_line_text) = match &self.overlay {
             Overlay::Create(f) => (f.is_content_row(), f.is_line_text_row()),
             _ => return,
@@ -448,7 +448,7 @@ impl App {
             || (ctrl && k.code == KeyCode::Char('n'))
             || (is_line_text && k.code == KeyCode::Down)
             || (line_normal && k.code == KeyCode::Char('j'))
-            || (is_chip && matches!(k.code, KeyCode::Down | KeyCode::Char('j')));
+            || (is_chip && (k.code == KeyCode::Down || (vim && k.code == KeyCode::Char('j'))));
         // BackTab (shift-tab) focuses the previous field on *every* row —
         // including content blocks, where forwarding it to edtui would panic
         // (`KeyCode::from` is `unimplemented!` for BackTab). It mirrors Tab's
@@ -457,7 +457,7 @@ impl App {
             || (ctrl && k.code == KeyCode::Char('p'))
             || (is_line_text && k.code == KeyCode::Up)
             || (line_normal && k.code == KeyCode::Char('k'))
-            || (is_chip && matches!(k.code, KeyCode::Up | KeyCode::Char('k')));
+            || (is_chip && (k.code == KeyCode::Up || (vim && k.code == KeyCode::Char('k'))));
         if nav_down || nav_up {
             // Carry Normal across a j/k field-nav so it keeps moving instead of
             // dropping back to Insert (typing) on the next single-line row.
@@ -540,8 +540,10 @@ impl App {
         // Chip rows: left/right (h/l) move the single-select cursor = value.
         if let Overlay::Create(f) = &mut self.overlay {
             match k.code {
-                KeyCode::Left | KeyCode::Char('h') => f.move_chip(-1),
-                KeyCode::Right | KeyCode::Char('l') => f.move_chip(1),
+                KeyCode::Left => f.move_chip(-1),
+                KeyCode::Right => f.move_chip(1),
+                KeyCode::Char('h') if vim => f.move_chip(-1),
+                KeyCode::Char('l') if vim => f.move_chip(1),
                 _ => {}
             }
         }
@@ -742,7 +744,7 @@ impl App {
             }
         }
         self.overlay = Overlay::Fuzzy(FuzzyPick::new(
-            self.editor_vim,
+            self.editor_vim(),
             format!("Add dependency to {id}"),
             exclude,
             false,
@@ -754,7 +756,7 @@ impl App {
     /// Enter jumps to its detail with o/i history (yaks-63f3).
     pub(crate) fn open_goto_picker(&mut self) {
         self.overlay = Overlay::Fuzzy(FuzzyPick::new(
-            self.editor_vim,
+            self.editor_vim(),
             "Go to yak".into(),
             HashSet::new(),
             false,
@@ -781,7 +783,7 @@ impl App {
             return;
         }
         let mut fp = FuzzyPick::new(
-            self.editor_vim,
+            self.editor_vim(),
             format!("References to {id}"),
             HashSet::new(),
             false,
@@ -800,7 +802,7 @@ impl App {
             exclude.insert(cur);
         }
         self.overlay = Overlay::Fuzzy(FuzzyPick::new(
-            self.editor_vim,
+            self.editor_vim(),
             format!("Reparent {id}"),
             exclude,
             has_parent,
@@ -819,7 +821,7 @@ impl App {
     pub(crate) fn open_ref_picker(&mut self, replace_len: usize, seed: &str) {
         let back = std::mem::replace(&mut self.overlay, Overlay::None);
         let mut fp = FuzzyPick::new(
-            self.editor_vim,
+            self.editor_vim(),
             "Insert yak reference".into(),
             HashSet::new(),
             false,
@@ -851,17 +853,68 @@ impl App {
 
     pub(crate) fn open_search(&mut self) {
         let cur = self.query.clone();
-        self.overlay = Overlay::Search(SearchBox::new(self.editor_vim, cur));
+        self.overlay = Overlay::Search(SearchBox::new(self.editor_vim(), cur));
     }
 
     pub(crate) fn open_drawer(&mut self) {
         let choices = self.herd_choices();
-        self.overlay = Overlay::Drawer(Drawer::from_filter(self.editor_vim, &self.filter, choices));
+        self.overlay = Overlay::Drawer(Drawer::from_filter(
+            self.editor_vim(),
+            &self.filter,
+            choices,
+        ));
     }
 
-    /// `?`: the current context's keys in a popup.
+    /// `?` or `F1`: the current context's keys in a popup, over the list or
+    /// pane, or over the editor that has the focus (its own keys).
     pub(crate) fn open_keys_popup(&mut self) {
-        self.overlay = Overlay::Keys;
+        self.keys_popup = true;
+    }
+
+    /// What the popup would list while an overlay is up: the editor that has
+    /// the focus, the rows of a form or the drawer (no text under the
+    /// cursor), or nothing for a prompt or picker that is no editor (it names
+    /// its keys on the bottom line).
+    pub(crate) fn popup_subject(&self) -> Option<PopupSubject> {
+        let (state, single_line) = match &self.overlay {
+            Overlay::Edit(ed) => (&ed.state, ed.single_line),
+            Overlay::BlockEdit(be) => (&be.editor.state, false),
+            Overlay::Create(f) => {
+                if f.is_content_row() {
+                    (f.description_editor()?, false)
+                } else if f.is_line_text_row() {
+                    (f.line_editor()?, true)
+                } else {
+                    return Some(PopupSubject::Rows);
+                }
+            }
+            Overlay::Drawer(d) => match d.text_editor() {
+                Some(e) => (e, true),
+                None => return Some(PopupSubject::Rows),
+            },
+            Overlay::Search(sb) | Overlay::Find(sb) => (&sb.query, true),
+            Overlay::Fuzzy(fp) => (&fp.query, true),
+            _ => return None,
+        };
+        let mode = state.borrow().mode;
+        Some(PopupSubject::Editor(keymap::EditorAt { mode, single_line }))
+    }
+
+    /// Whether `k` opens the popup over the overlay that is up: `F1` over any
+    /// editor, form or drawer, and `?` in a vim editor's Normal mode (edtui
+    /// has no binding for it).
+    fn opens_keys_popup(&self, k: &KeyEvent) -> bool {
+        match self.popup_subject() {
+            None => false,
+            Some(_) if k.code == KeyCode::F(1) => true,
+            Some(PopupSubject::Editor(at)) => {
+                self.editor_vim()
+                    && at.mode == EditorMode::Normal
+                    && k.code == KeyCode::Char('?')
+                    && !k.modifiers.contains(KeyModifiers::CONTROL)
+            }
+            Some(PopupSubject::Rows) => false,
+        }
     }
 
     /// The full help reference, from the popup's second `?`.
@@ -869,22 +922,35 @@ impl App {
         self.overlay = Overlay::Help(0);
     }
 
-    /// A key in the `?` popup: the help key again opens the full reference,
-    /// any other closes the popup (and is not run).
-    fn handle_keys_popup_key(&mut self, k: KeyEvent) {
-        let help = self
-            .keymap
-            .lookup(self.surface_ctx(), self.surface_kind(), &k)
-            == Some(Cmd::AppHelp);
-        self.overlay = Overlay::None;
-        if help {
-            self.open_help();
+    /// A key in the popup closes it. Over the list or pane, a key listed in
+    /// it runs (`Esc` only closes), and the help key again opens the full
+    /// reference; any other key is not run. Over an editor, a key the popup
+    /// lists goes on to the editor, as if the popup had not been there (`F1`
+    /// again only closes: the reference replaces the overlay, and the editor
+    /// would go with it).
+    pub(crate) fn handle_keys_popup_key(&mut self, k: KeyEvent) {
+        self.keys_popup = false;
+        let family = self.keymap.family;
+        match self.popup_subject() {
+            None => {
+                let ctx = self.surface_ctx();
+                match self.keymap.lookup(ctx, self.surface_kind(), &k) {
+                    Some(Cmd::AppHelp) => self.open_help(),
+                    Some(_) if k.code == KeyCode::Esc => {}
+                    Some(cmd) => self.run_cmd(ctx, cmd),
+                    None => {}
+                }
+            }
+            Some(PopupSubject::Editor(at)) => {
+                if k.code != KeyCode::F(1) && keymap::editor_lists(family, at, &k) {
+                    self.handle_overlay_key(k);
+                }
+            }
+            Some(PopupSubject::Rows) => {}
         }
     }
 
-    /// `l` / `→` / Enter on the list: show the selected yak (or shed) in the
-    /// detail pane, from its top.
-    /// `l` / `Enter` on a yak or shed row: show it in the pane. A jump, like
+    /// `Enter` on a yak or shed row: show it in the pane, from its top. A jump, like
     /// opening a dok from a Doks row: `o` from the pane (or from anywhere a
     /// link out of it led) comes back to this list with the cursor on the row,
     /// not to the view before it (yaks-aec7).
@@ -917,7 +983,7 @@ impl App {
     pub(crate) fn open_attach(&mut self) {
         if let Some(id) = self.selected_id() {
             self.overlay = Overlay::Edit(Editor::new(
-                self.editor_vim,
+                self.editor_vim(),
                 true,
                 "Attach path (empty = clipboard PNG): ".into(),
                 "",
@@ -954,7 +1020,7 @@ impl App {
     pub(crate) fn open_paste_name(&mut self, id: String, data: Vec<u8>) {
         let default = format!("paste-{}.png", chrono::Utc::now().format("%Y%m%d-%H%M%S"));
         self.overlay = Overlay::Edit(Editor::new(
-            self.editor_vim,
+            self.editor_vim(),
             true,
             format!("Name pasted PNG (empty = {default}): "),
             "",
@@ -994,7 +1060,7 @@ impl App {
             return;
         };
         self.overlay = Overlay::Edit(Editor::new(
-            self.editor_vim,
+            self.editor_vim(),
             true,
             format!("Rename {old} to (ext kept if omitted): "),
             "",
@@ -1134,13 +1200,14 @@ impl App {
         }
     }
 
-    /// Run a viewer command: `j`/`k`/`d`/`u`/`g`/`G` move the line cursor,
+    /// Run a viewer command: `j`/`k`/`d`/`u`/`g`/`G` (and the arrows,
+    /// `PgUp`/`PgDn`, `Home`/`End`) move the line cursor,
     /// `Tab`/`[`/`]` cycle links, `Enter` follows one (or yanks a selection),
     /// `v`/Shift-↑↓ select, `y` yanks, `/` `n` `N` find, `o`/`i` go back /
     /// forward in the history, `h`/`l` scroll a code block or table
-    /// sideways. `E` edits the file, `O` hands it to the OS opener; `Esc`
-    /// peels back selection, then find, then closes, as does `h`/`←` (off a
-    /// scrolled block); `q` quits, as everywhere.
+    /// sideways (they never close it). `E` edits the file, `O` hands it to the
+    /// OS opener; `Esc` peels back selection, then find, then closes; `q`
+    /// quits, as everywhere.
     pub(super) fn run_viewer_cmd(&mut self, cmd: Cmd) {
         let Some((lines, vp)) = self.attachment_rows() else {
             return;
@@ -1203,10 +1270,8 @@ impl App {
                 }
             }
             Cmd::PaneClose => self.close_doc(),
-            Cmd::PaneBack => {
-                if !nav.scroll_block(&lines, width, -1) {
-                    self.close_doc();
-                }
+            Cmd::PaneScrollLeft => {
+                nav.scroll_block(&lines, width, -1);
             }
             Cmd::PaneScrollRight => {
                 nav.scroll_block(&lines, width, 1);
@@ -1215,6 +1280,8 @@ impl App {
             Cmd::MoveUp => nav.step(&lines, vp, -1),
             Cmd::MoveHalfDown => nav.step(&lines, vp, half),
             Cmd::MoveHalfUp => nav.step(&lines, vp, -half),
+            Cmd::MovePageDown => nav.step(&lines, vp, vp.page as i32),
+            Cmd::MovePageUp => nav.step(&lines, vp, -(vp.page as i32)),
             Cmd::MoveTop => nav.to_end(&lines, vp, false),
             Cmd::MoveBottom => nav.to_end(&lines, vp, true),
             Cmd::LinkNext => nav.jump_link(&lines, vp, 1),
@@ -1338,7 +1405,7 @@ impl App {
         let label = format!("Edit {} (Ctrl-S save · Ctrl-C cancel)", v.target);
         let text = v.text.clone();
         self.overlay = Overlay::Edit(Editor::new(
-            self.editor_vim,
+            self.editor_vim(),
             false,
             label,
             &text,
@@ -1428,7 +1495,7 @@ impl App {
     fn reopen_attachment_edit(&mut self, v: AttachView, from: Focus, text: &str) {
         let label = format!("Edit {} (Ctrl-S save · Ctrl-C cancel)", v.target);
         self.overlay = Overlay::Edit(Editor::new(
-            self.editor_vim,
+            self.editor_vim(),
             false,
             label,
             text,
@@ -1555,16 +1622,21 @@ impl App {
         let vh = self.detail_page.max(1);
         let max_scroll = (help_content(&self.keymap).len() as u16).saturating_sub(vh);
         let half = (vh / 2).max(1);
+        let vim = self.editor_vim();
         if let Overlay::Help(scroll) = &mut self.overlay {
             match k.code {
-                KeyCode::Char('j') | KeyCode::Down => *scroll = (*scroll + 1).min(max_scroll),
-                KeyCode::Char('k') | KeyCode::Up => *scroll = scroll.saturating_sub(1),
-                KeyCode::Char('d') | KeyCode::PageDown => {
-                    *scroll = (*scroll + half).min(max_scroll)
-                }
-                KeyCode::Char('u') | KeyCode::PageUp => *scroll = scroll.saturating_sub(half),
-                KeyCode::Char('g') => *scroll = 0,
-                KeyCode::Char('G') => *scroll = max_scroll,
+                KeyCode::Down => *scroll = (*scroll + 1).min(max_scroll),
+                KeyCode::Up => *scroll = scroll.saturating_sub(1),
+                KeyCode::PageDown => *scroll = (*scroll + half).min(max_scroll),
+                KeyCode::PageUp => *scroll = scroll.saturating_sub(half),
+                KeyCode::Home => *scroll = 0,
+                KeyCode::End => *scroll = max_scroll,
+                KeyCode::Char('j') if vim => *scroll = (*scroll + 1).min(max_scroll),
+                KeyCode::Char('k') if vim => *scroll = scroll.saturating_sub(1),
+                KeyCode::Char('d') if vim => *scroll = (*scroll + half).min(max_scroll),
+                KeyCode::Char('u') if vim => *scroll = scroll.saturating_sub(half),
+                KeyCode::Char('g') if vim => *scroll = 0,
+                KeyCode::Char('G') if vim => *scroll = max_scroll,
                 _ => {}
             }
         }
@@ -1572,7 +1644,7 @@ impl App {
 
     pub(crate) fn open_save_view(&mut self) {
         self.overlay = Overlay::Edit(Editor::new(
-            self.editor_vim,
+            self.editor_vim(),
             true,
             "Save view as: ".into(),
             "",
@@ -1605,6 +1677,7 @@ impl App {
 
     pub(crate) fn handle_drawer_key(&mut self, k: KeyEvent, double_esc: bool) {
         let ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
+        let vim = self.editor_vim();
         let (row, is_text) = match &self.overlay {
             Overlay::Drawer(d) => (d.row, d.is_text_row()),
             _ => return,
@@ -1614,7 +1687,7 @@ impl App {
         // Ctrl-C or a rapid double-Esc always closes.
         let close = (ctrl && k.code == KeyCode::Char('c'))
             || double_esc
-            || (k.code == KeyCode::Esc && !(self.editor_vim && is_text));
+            || (k.code == KeyCode::Esc && !(self.editor_vim() && is_text));
         if k.code == KeyCode::Enter {
             return self.close_drawer(true);
         }
@@ -1635,11 +1708,11 @@ impl App {
                 if d.text_editor().is_some_and(|e| e.borrow().mode == EditorMode::Normal));
         let nav_down = matches!(k.code, KeyCode::Down | KeyCode::Tab)
             || (ctrl && k.code == KeyCode::Char('n'))
-            || (!is_text && k.code == KeyCode::Char('j'))
+            || (!is_text && vim && k.code == KeyCode::Char('j'))
             || (text_normal && k.code == KeyCode::Char('j'));
         let nav_up = matches!(k.code, KeyCode::Up | KeyCode::BackTab)
             || (ctrl && k.code == KeyCode::Char('p'))
-            || (!is_text && k.code == KeyCode::Char('k'))
+            || (!is_text && vim && k.code == KeyCode::Char('k'))
             || (text_normal && k.code == KeyCode::Char('k'));
         if nav_down || nav_up {
             let carry = text_normal && matches!(k.code, KeyCode::Char('j') | KeyCode::Char('k'));
@@ -1675,10 +1748,10 @@ impl App {
         if let Overlay::Drawer(d) = &mut self.overlay {
             let n = d.chip_count();
             match k.code {
-                KeyCode::Left | KeyCode::Char('h') if n > 0 => {
-                    d.chip_idx = (d.chip_idx + n - 1) % n
-                }
-                KeyCode::Right | KeyCode::Char('l') if n > 0 => d.chip_idx = (d.chip_idx + 1) % n,
+                KeyCode::Left if n > 0 => d.chip_idx = (d.chip_idx + n - 1) % n,
+                KeyCode::Char('h') if vim && n > 0 => d.chip_idx = (d.chip_idx + n - 1) % n,
+                KeyCode::Right if n > 0 => d.chip_idx = (d.chip_idx + 1) % n,
+                KeyCode::Char('l') if vim && n > 0 => d.chip_idx = (d.chip_idx + 1) % n,
                 KeyCode::Char(' ') => {
                     d.toggle_chip();
                     changed = true;
@@ -1847,13 +1920,17 @@ impl App {
     pub(crate) fn field_cancel(&self, k: KeyEvent, double_esc: bool) -> bool {
         (k.modifiers.contains(KeyModifiers::CONTROL) && k.code == KeyCode::Char('c'))
             || double_esc
-            || (k.code == KeyCode::Esc && !self.editor_vim)
+            || (k.code == KeyCode::Esc && !self.editor_vim())
     }
 
     pub(crate) fn handle_overlay_key(&mut self, k: KeyEvent) {
         // An active `:` command line intercepts everything until it resolves.
         if self.cmdline.is_some() {
             self.handle_cmdline_key(k);
+            return;
+        }
+        if self.opens_keys_popup(&k) {
+            self.keys_popup = true;
             return;
         }
         let ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
@@ -1866,10 +1943,6 @@ impl App {
         }
         if matches!(self.overlay, Overlay::Create(_)) {
             self.handle_create_key(k, double_esc);
-            return;
-        }
-        if matches!(self.overlay, Overlay::Keys) {
-            self.handle_keys_popup_key(k);
             return;
         }
         if matches!(self.overlay, Overlay::Help(_)) {
@@ -2018,7 +2091,6 @@ impl App {
             | Overlay::Create(_)
             | Overlay::Find(_)
             | Overlay::ViewPicker(_)
-            | Overlay::Keys
             | Overlay::Help(_) => {}
             Overlay::Pick {
                 prompt,
@@ -2375,7 +2447,7 @@ impl App {
             many => format!("{} marked", many.len()),
         };
         self.overlay = Overlay::Edit(Editor::new(
-            self.editor_vim,
+            self.editor_vim(),
             true,
             format!("Snooze {what} until (Enter = +1d · +1w · 2026-11-15 · Ctrl-C cancel): "),
             seed,
@@ -2435,7 +2507,7 @@ impl App {
             ShearTarget::Bulk(ids) => format!("{} marked", ids.len()),
         };
         self.overlay = Overlay::Edit(Editor::new(
-            self.editor_vim,
+            self.editor_vim(),
             true,
             format!("Shear {what} — optional comment (Enter shears · Ctrl-C cancel): "),
             "",
@@ -2751,6 +2823,11 @@ pub(crate) fn handle_key(app: &mut App, k: KeyEvent) {
 }
 
 fn handle_key_inner(app: &mut App, k: KeyEvent) {
+    // The `?` popup takes the next key, over whatever is under it.
+    if app.keys_popup {
+        app.handle_keys_popup_key(k);
+        return;
+    }
     // A modal prompt swallows all other input until resolved (including Ctrl-C,
     // which an editor treats as cancel rather than quitting the app).
     if !matches!(app.overlay, Overlay::None) {

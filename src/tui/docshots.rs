@@ -285,7 +285,7 @@ fn docshots() {
     write_svg("tui-sheds", &app, sw, sh);
     press(&mut app, 'j');
     press(&mut app, 'j');
-    press(&mut app, 'l');
+    press_key(&mut app, KeyCode::Enter);
     write_svg("tui-sheds-detail", &app, sw, sh);
     // A yak of a shed shows as in any view, the shed's tree still beside it.
     press(&mut app, 'J');

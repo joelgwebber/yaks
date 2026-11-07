@@ -119,9 +119,8 @@ impl App {
     }
 
     /// `h`/`l` on a no-wrap block under the line cursor: scroll that block
-    /// `dir` steps sideways (clamped). Returns whether the offset changed, so
-    /// `h` at offset 0 (or off a no-wrap row) can fall through to "back to
-    /// list" (yaks-c733).
+    /// `dir` steps sideways (clamped). Returns whether the offset changed.
+    /// They never leave the pane (yaks-7c6e); `Esc` does.
     pub(crate) fn scroll_block(&mut self, dir: i32) -> bool {
         let lines = self.detail_dlines();
         let width = self.detail_width.get() as usize;
@@ -252,7 +251,7 @@ impl App {
             Some(v) => &v.nav,
             None => &self.detail,
         };
-        self.overlay = Overlay::Find(nav.open_find(self.editor_vim, self.register.as_deref()));
+        self.overlay = Overlay::Find(nav.open_find(self.editor_vim(), self.register.as_deref()));
     }
 
     /// (line, col, len) of every match of the register in the current yak's
@@ -431,15 +430,6 @@ impl App {
         } else {
             "clipboard unavailable".into()
         });
-    }
-
-    /// h / ← in the detail pane. On a no-wrap row (code, table) h/← scroll that
-    /// block sideways (yaks-c733); at offset 0 (or anywhere else) it is "back
-    /// to list".
-    pub(crate) fn detail_back(&mut self) {
-        if !self.scroll_block(-1) {
-            self.back_to_list();
-        }
     }
 
     /// Esc in the detail pane peels back: selection → the search register →

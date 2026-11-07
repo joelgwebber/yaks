@@ -7,4 +7,4 @@ expression: "draw(&with_chip(3, None), 30, 6)"
  a0   p2 task     🦬  Root A
    a1 p3 task     🦬  Child A1
 
-Tab:view  j/k:move  l:detail
+Tab:view  j/k:move  Enter:deta

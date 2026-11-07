@@ -10,20 +10,20 @@ expression: "draw(&app, 110, 24)"
 
 
 
-
-
-
-
-
  Keys · list · yak rows ──────────────────────────────────────────────────────────────────────────────────────
- Tab/]   view.next       l/→/Enter pane.open      E yak.edit       a yak.answer   i        nav.forward
- S-Tab/[ view.prev       h/←       tree.left      X yak.slaughter  Q yak.ask      o        nav.back
- j/↓     move.down       F         family.cycle   S yak.state      Z yak.snooze   B        yak.backrefs
- k/↑     move.up         Space     tree.toggle    P yak.priority   A yak.attach   f        filter.drawer
- d       move.half_down  m         yak.mark       T yak.type       * yak.star     W        farm.commit
- u       move.half_up    `         view.pick      L yak.tags       y row.copy     U        farm.sync
- PgDn    move.page_down  V         view.save      D yak.dep        / search.open  ?        app.help
- PgUp    move.page_up    Esc       view.revert    R yak.reparent   n find.next    q/Ctrl-C app.quit
- g/Home  move.top        c         yak.new        H yak.herd       N find.prev
- G/End   move.bottom     C         yak.new_child  M yak.comment    # nav.goto
-? again: the full reference · any other key closes
+ Move                     i          nav.forward    P         yak.priority  F        family.cycle
+ j/↓      move.down       o          nav.back       T         yak.type      `        view.pick
+ k/↑      move.up         Find                      L         yak.tags      V        view.save
+ d/Ctrl-D move.half_down  /          search.open    D         yak.dep       Esc      view.revert
+ u/Ctrl-U move.half_up    n/F3       find.next      R         yak.reparent  f        filter.drawer
+ PgDn     move.page_down  N/Shift-F3 find.prev      H         yak.herd      Farm
+ PgUp     move.page_up    #          nav.goto       M         yak.comment   W        farm.commit
+ g/Home   move.top        B          yak.backrefs   a         yak.answer    U        farm.sync
+ G/End    move.bottom     Change the yak            Q         yak.ask       App
+ h/←      tree.left       m          yak.mark       Z         yak.snooze    ?/F1     app.help
+ l/→      tree.right      c          yak.new        A         yak.attach    q/Ctrl-C app.quit
+ Space    tree.toggle     C          yak.new_child  *         yak.star
+ y        row.copy        E          yak.edit       View and filter
+ Open and follow          X          yak.slaughter  Tab/]/}   view.next
+ Enter    pane.open       S          yak.state      S-Tab/[/{ view.prev
+a listed key runs it · ? again: the full reference · any other key closes

@@ -17,7 +17,9 @@ use std::cell::RefCell;
 use edtui::{EditorState, EditorView};
 
 use super::blockedit;
-use super::keymap::{help_content, help_hint, popup_lines};
+use super::keymap::{
+    PopupSubject, editor_groups, editor_title, help_content, help_hint, popup_lines, rows_groups,
+};
 use super::palette;
 use super::{
     App, DocView, Focus, Overlay, completion_context, detail, editor_theme, render_create,
@@ -62,7 +64,7 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
         let inner = right_divider(frame, right, true);
         if modal {
             // Affordance: the pane covers the list, so tip its divider with a
-            // back-chevron — the list is behind it, `h`/`Esc` returns to it.
+            // back-chevron — the list is behind it, `Esc` returns to it.
             frame.render_widget(
                 Span::styled("\u{25c2}", Style::new().fg(Color::Cyan)),
                 Rect {
@@ -91,7 +93,7 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
     } else {
         render_list(app, frame, mid);
     }
-    if matches!(app.overlay, Overlay::Keys) {
+    if app.keys_popup {
         render_keys_popup(app, frame, mid);
     }
     render_status(app, frame, bot);
@@ -102,10 +104,21 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
 /// screen behind it.
 fn render_keys_popup(app: &App, frame: &mut Frame, mid: Rect) {
     let (ctx, kind) = (app.surface_ctx(), app.surface_kind());
-    let entries = app.keymap.popup_entries(ctx, kind);
+    // Over an overlay, the popup lists that editor's keys, not the surface's.
+    let (groups, title) = match app.popup_subject() {
+        Some(PopupSubject::Editor(at)) => (
+            editor_groups(app.keymap.family, at),
+            format!(" Keys · {} ", editor_title(app.keymap.family, at)),
+        ),
+        Some(PopupSubject::Rows) => (
+            rows_groups(app.keymap.family),
+            " Keys · form rows ".to_string(),
+        ),
+        None => (app.keymap.popup_entries(ctx, kind), String::new()),
+    };
     let width = mid.width.saturating_sub(2) as usize;
     let max_rows = (mid.height as usize).saturating_sub(5).max(1);
-    let lines = popup_lines(&entries, width, max_rows);
+    let lines = popup_lines(&groups, width, max_rows);
     let height = (lines.len() as u16 + 1).min(mid.height);
     let area = Rect {
         y: mid.y + mid.height - height,
@@ -125,7 +138,11 @@ fn render_keys_popup(app: &App, frame: &mut Frame, mid: Rect) {
         .border_style(Style::new().fg(Color::Cyan))
         .padding(Padding::horizontal(1))
         .title(Span::styled(
-            format!(" Keys · {}{rows} ", ctx.title()),
+            if title.is_empty() {
+                format!(" Keys · {}{rows} ", ctx.title())
+            } else {
+                title
+            },
             Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
         ));
     let inner = block.inner(area);
@@ -526,7 +543,6 @@ pub(crate) fn overlay_name(o: &Overlay) -> &'static str {
         Overlay::Search(_) => "search",
         Overlay::Drawer(_) => "drawer",
         Overlay::Create(_) => "create",
-        Overlay::Keys => "keys",
         Overlay::Help(_) => "help",
         Overlay::Find(_) => "find",
         Overlay::ViewPicker(_) => "view-picker",
@@ -1505,6 +1521,26 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
         );
         return;
     }
+    // The `?` popup's hint: the help key again (over the list or pane), a
+    // listed key runs it or goes to the editor, any other key closes.
+    if app.keys_popup {
+        let text = match app.popup_subject() {
+            None => {
+                let help = app
+                    .keymap
+                    .first_label(app.surface_ctx(), super::keymap::Cmd::AppHelp);
+                format!(
+                    "a listed key runs it · {help} again: the full reference · any other key closes"
+                )
+            }
+            Some(_) => "a listed key goes to the editor · any other key closes".to_string(),
+        };
+        frame.render_widget(
+            Paragraph::new(Span::styled(text, Style::new().fg(Color::DarkGray))),
+            area,
+        );
+        return;
+    }
     // A single-line editor field owns the status line while active.
     if let Overlay::Edit(ed) = &app.overlay {
         if ed.single_line {
@@ -1563,7 +1599,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
     // Drawer help hint. In vim a lone Esc on a text row drops it to Normal, so
     // cancel is a double-Esc or Ctrl-C; emacs cancels on a plain Esc.
     if matches!(&app.overlay, Overlay::Drawer(_)) {
-        let cancel = if app.editor_vim {
+        let cancel = if app.editor_vim() {
             "EscEsc/Ctrl-C cancel"
         } else {
             "Esc cancel"
@@ -1577,25 +1613,16 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
         );
         return;
     }
-    // The `?` popup's hint: the help key again, else any key closes.
-    if matches!(&app.overlay, Overlay::Keys) {
-        let help = app
-            .keymap
-            .first_label(app.surface_ctx(), super::keymap::Cmd::AppHelp);
-        frame.render_widget(
-            Paragraph::new(Span::styled(
-                format!("{help} again: the full reference · any other key closes"),
-                Style::new().fg(Color::DarkGray),
-            )),
-            area,
-        );
-        return;
-    }
     // Help reference hint.
     if matches!(&app.overlay, Overlay::Help(_)) {
+        let scroll = if app.editor_vim() {
+            "j/k scroll · d/u page · g/G top/bottom"
+        } else {
+            "↑/↓ scroll · PgUp/PgDn page · Home/End top/bottom"
+        };
         frame.render_widget(
             Paragraph::new(Span::styled(
-                "j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close",
+                format!("{scroll} · ?/q/Esc close"),
                 Style::new().fg(Color::DarkGray),
             )),
             area,
@@ -1606,8 +1633,8 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
     // the key hints.
     if app.attach().is_some() && matches!(app.overlay, Overlay::None) {
         let text = link_hint(app, area.width as usize).unwrap_or_else(|| {
-            "j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O open externally · Esc/h close · q quit"
-                .into()
+            let mv = if app.editor_vim() { "j/k" } else { "↑/↓" };
+            format!("{mv} · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O open externally · Esc close · q quit")
         });
         let text = with_match_chip(app, text);
         frame.render_widget(
@@ -1619,7 +1646,11 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
     // Image viewer hint.
     if app.image().is_some() && matches!(app.overlay, Overlay::None) {
         let v = app.image().expect("checked above");
-        let pan = if v.pannable() { " · h/j/k/l pan" } else { "" };
+        let pan = match (v.pannable(), app.editor_vim()) {
+            (false, _) => "",
+            (true, true) => " · h/j/k/l pan",
+            (true, false) => " · arrows pan",
+        };
         frame.render_widget(
             Paragraph::new(Span::styled(
                 format!(
@@ -1648,7 +1679,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
         };
         // In vim, Esc is modal (drops the field to Normal); cancel is a rapid
         // double-Esc or Ctrl-C. In emacs, Esc cancels directly.
-        let cancel = if app.editor_vim {
+        let cancel = if app.editor_vim() {
             "EscEsc/Ctrl-C cancel"
         } else {
             "Esc cancel"

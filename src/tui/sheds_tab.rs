@@ -845,7 +845,8 @@ mod tests {
     #[test]
     fn a_shed_row_shows_the_shed_and_a_yak_row_the_yak() {
         let mut app = shed_farm();
-        press(&mut app, "jjl"); // walk-1
+        press(&mut app, "jj"); // walk-1
+        enter_key(&mut app);
         assert_eq!(app.focus, Focus::Detail);
         let frame = draw(&app, 120, 14);
         assert!(frame.contains("work/walk-1"), "{frame}");
@@ -869,7 +870,9 @@ mod tests {
         press(&mut app, "K");
         press(&mut app, "K");
         assert_eq!(app.selected_shed().unwrap().name, "walk-1");
-        press(&mut app, "h");
+        press(&mut app, "h"); // scrolls only: the pane stays
+        assert_eq!(app.focus, Focus::Detail);
+        esc_key(&mut app);
         assert_eq!(app.focus, Focus::List);
     }
 
@@ -1052,7 +1055,8 @@ mod tests {
     fn sheds_tab_frames() {
         let mut app = shed_farm();
         insta::assert_snapshot!("sheds_tab_list", draw(&app, 120, 22));
-        press(&mut app, "jjl"); // walk-1's detail
+        press(&mut app, "jj");
+        enter_key(&mut app); // walk-1's detail
         insta::assert_snapshot!("sheds_tab_detail", draw(&app, 120, 14));
         press(&mut app, "J"); // its first yak, in the same pane
         insta::assert_snapshot!("sheds_tab_yak_detail", draw(&app, 120, 14));

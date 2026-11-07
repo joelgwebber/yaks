@@ -18,4 +18,4 @@ expression: "draw(&app, 72, 16)"
 │ Children:
 │   🦬  a1  Child A1
 │   🦬  a2  Child A2
-h:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit
+Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit
