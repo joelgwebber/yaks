@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-04T00:00:46Z'
-updated: '2026-11-07T17:24:24Z'
+updated: '2026-11-07T17:24:25Z'
 tags:
 - tui
 ---
@@ -51,3 +51,18 @@ Start: Sat Nov  7 17:07:47 UTC 2026
 [frame-255d-edit-form-description](yaks-255d/frame-255d-edit-form-description.txt "Headless frame: E on a yak with an empty description and one note, Tab to the description row, typed text; the note is not in the form")
 
 ![edit-herd](yaks-255d/edit-herd.svg "docs scene tui-edit-herd (regenerated): the multi-herd edit form now ends in the description editor")
+
+---
+▸ 2026-11-07T17:24:25Z [stars-form]
+
+Decision: the description is saved through the existing `Farm::update` (`TaskEdit::description` + `base`), not a new `Farm` setter. It already writes a description under the one farm lock together with the header fields, and its `base` keeps comments appended since the form opened. Rejected: a new `Farm::set_description` (a second lock or a duplicate of `update`'s fields), and `content::parse`/`assemble` (it rewrites the comments to the canonical shape, so they are not byte for byte).
+
+Decision: new pure helper `store::with_description(body, new)` beside `store::description`: the comments are the body's lines from the first note start on, verbatim, set off by one blank line. A description that was not changed is not sent at all (`CreateForm::changed_body` returns `None`), so a header-only edit leaves the file's body alone.
+
+Decision: seed with `content::parse(body)[0].text` (trailing whitespace trimmed, leading indentation kept), not `store::description` (which trims both ends and would strip the indent of a leading code block on save).
+
+Decision: a description conflict (the farm refuses: the body changed other than by appended comments) closes the form like any save, writes nothing (header fields too), and puts the typed description on the clipboard, as `reopen_after_conflict` does for a gone block. Rejected: reopening the form with a refreshed base (it would let a re-save overwrite text the user never saw).
+
+Decision: `CreateForm::description` is now a plain `RefCell<EditorState>` (was `Option`), as the form has one shape. `seed_body` holds the body at open time: the `base`, and what a changed description is compared with.
+
+Decision: regenerated only `docs/assets/tui-edit-herd.svg`, the one scene showing the form. The regeneration also changed its tab strip and opacity styling, because the renderer moved since it was last made (`Doks` tab, `fill-opacity`); the other 24 regenerated SVGs were discarded.
