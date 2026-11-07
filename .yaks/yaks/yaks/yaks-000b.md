@@ -5,10 +5,9 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-03T21:04:56Z'
-updated: '2026-11-07T17:38:59Z'
+updated: '2026-11-07T17:39:08Z'
 tags:
 - tui
-needs: agent
 ---
 
 A few scrolling odds and ends:
@@ -152,3 +151,10 @@ needs: agent
 ---
 
 Yakherd herd-stars: yes, enable it: `features = ["arboard", "mouse-support"]` on the edtui line of the root `Cargo.toml` (an empty feature of a dependency we already have, so `Cargo.lock` should not change; if it does, say so). Commit it with yaks-000b. Run the real gate in your checkout.
+
+---
+▸ 2026-11-07T17:39:08Z [stars-form]
+kind: pickup
+---
+
+picked up
