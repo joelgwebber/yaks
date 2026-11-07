@@ -2212,6 +2212,22 @@ pub fn description(body: &str) -> String {
     lines[..end].join("\n").trim().to_string()
 }
 
+/// `body` with its description (the text before the first note block, see
+/// [`description`]) replaced by `new`; the note blocks are carried over byte
+/// for byte, set off by one blank line. The body to hand [`TaskEdit::description`]
+/// to change a description and nothing else.
+///
+/// [`TaskEdit::description`]: crate::farm::TaskEdit::description
+pub fn with_description(body: &str, new: &str) -> String {
+    let lines: Vec<&str> = body.split('\n').collect();
+    let new = new.trim_end();
+    match note_starts(&lines).first() {
+        None => new.to_string(),
+        Some(&i) if new.is_empty() => lines[i..].join("\n"),
+        Some(&i) => format!("{new}\n\n{}", lines[i..].join("\n")),
+    }
+}
+
 /// Whether `new` is an edited version of `old`, the same yak: any frontmatter
 /// field changed, or its description. The one definition of "edited", used by
 /// `yaks status` (a file against its version at HEAD). Deliberately NOT edits:
@@ -3296,6 +3312,27 @@ mod move_tests {
 #[cfg(test)]
 mod note_tests {
     use super::append_note;
+
+    #[test]
+    fn with_description_replaces_the_description_and_keeps_the_notes_verbatim() {
+        let notes = "---\n\u{25b8} 2026-01-01T00:00:00Z [joel]\n\nfirst   \n\n\n---\n\u{25b8} 2026-01-02T00:00:00Z\n\nsecond";
+        // Empty description gains one; the notes are untouched.
+        assert_eq!(
+            crate::store::with_description(notes, "new"),
+            format!("new\n\n{notes}")
+        );
+        // A description is replaced, a bare `---` rule inside it is not a note.
+        let body = format!("old\n\n---\nrule\n\n{notes}");
+        assert_eq!(
+            crate::store::with_description(&body, "new\n"),
+            format!("new\n\n{notes}")
+        );
+        // Emptied: only the notes remain.
+        assert_eq!(crate::store::with_description(&body, "  \n"), notes);
+        // No notes: the new description is the whole body.
+        assert_eq!(crate::store::with_description("old", "new  "), "new");
+        assert_eq!(crate::store::with_description("", "new"), "new");
+    }
 
     #[test]
     fn append_note_on_empty_body_has_no_leading_blank() {

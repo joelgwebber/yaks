@@ -14,6 +14,6 @@ expression: "draw(&app, 72, 14)"
 │   due         +2d, +1w or 2026-11-15
 │   every       P1W, P1D, P1M: makes it recur
 │   wakes        none agent human
-│
-│
+│   description ───────────────────────────────────────────────────────
+│ First line.
 Tab/↑↓ rows · ←→ chips · Ctrl-S save · EscEsc/Ctrl-C cancel

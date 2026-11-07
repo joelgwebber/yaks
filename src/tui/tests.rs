@@ -529,10 +529,7 @@ fn vim_new_content_opens_in_insert_mode() {
     let mut app = App::new(vec![task("t0", "t", Status::Hairy, 3, None)]);
     app.open_create(false);
     match &app.overlay {
-        Overlay::Create(f) => assert_eq!(
-            f.description.as_ref().unwrap().borrow().mode,
-            EditorMode::Insert
-        ),
+        Overlay::Create(f) => assert_eq!(f.description.borrow().mode, EditorMode::Insert),
         _ => panic!("expected create form"),
     }
     app.open_comment();
@@ -641,10 +638,10 @@ fn unfocused_description_preview_wraps() {
     let vim = app.editor_vim;
     match &mut app.overlay {
         Overlay::Create(f) => {
-            f.description = Some(multiline_field(
+            f.description = multiline_field(
                 "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda",
                 vim,
-            ))
+            )
         }
         _ => panic!("create form should open"),
     }
@@ -3169,30 +3166,121 @@ mod live {
         (dir, app, before)
     }
 
+    /// The edit form has the create form's shape: the header rows, then the
+    /// description editor, seeded with the description and never the comments.
     #[test]
-    fn edit_form_has_header_rows_only() {
+    fn edit_form_has_the_description_row_seeded_without_the_comments() {
         let (_d, mut app, _) = untidy_body_app();
         app.focus = Focus::List;
         press(&mut app, "E");
         let Overlay::Create(f) = &app.overlay else {
             panic!("expected the edit form")
         };
-        assert!(f.description.is_none());
-        assert_eq!(f.row_count(), f.header_rows());
+        assert_eq!(f.row_count(), f.header_rows() + 1);
         assert_eq!(f.row, 0, "focus starts at the title");
+        assert_eq!(f.description_text(), "Desc");
         let out = draw(&app, 90, 24);
         assert!(out.contains("Edit t0") && out.contains("title"), "{out}");
-        assert!(!out.contains("description"), "no content rows: {out}");
-        assert!(!out.contains("───"), "no content separator: {out}");
-        // Ctrl-N walks only the header rows and wraps back to the title.
+        assert!(out.contains("description"), "description row: {out}");
+        assert!(out.contains("Desc"), "seeded: {out}");
+        assert!(!out.contains("note"), "never the comments: {out}");
+        // Ctrl-N walks the header rows, then the description, then wraps.
         let n = f.row_count();
-        for _ in 0..n {
+        let ctrl_n = |app: &mut App| {
             handle_key(
-                &mut app,
+                app,
                 KeyEvent::new(KeyCode::Char('n'), KeyModifiers::CONTROL),
-            );
+            )
+        };
+        for _ in 0..n - 1 {
+            ctrl_n(&mut app);
         }
+        assert!(matches!(&app.overlay, Overlay::Create(f) if f.is_content_row()));
+        ctrl_n(&mut app);
         assert!(matches!(&app.overlay, Overlay::Create(f) if f.row == 0));
+    }
+
+    /// A yak with comments and an empty description: `E`, Tab to the
+    /// description, type, save. The description lands and the comments are
+    /// byte for byte what they were (yaks-255d).
+    #[test]
+    fn edit_form_sets_an_empty_description_and_keeps_the_notes() {
+        let mut t = task("t0", "solo", Status::Hairy, 3, None);
+        let notes = "---\n\u{25b8} 2026-01-01T00:00:00Z [joel]\n\nfirst   \n\n\n\
+                     ---\n\u{25b8} 2026-01-02T00:00:00Z\n\nsecond";
+        t.body = notes.into();
+        let (proj, farm) = temp_farm(&[t]);
+        let mut app = App::with_farm(farm).unwrap();
+        app.focus = Focus::List;
+        press(&mut app, "E");
+        for _ in 0..HEADER_ROWS {
+            tab(&mut app); // title -> ... -> wake -> description
+        }
+        assert!(matches!(&app.overlay, Overlay::Create(f) if f.is_content_row()));
+        press(&mut app, "now described");
+        ctrl_s(&mut app);
+        assert!(matches!(app.overlay, Overlay::None));
+        let want = format!("now described\n\n{notes}");
+        assert_eq!(app.task("t0").unwrap().body, want);
+        let file = fs::read_to_string(proj.join(".yaks/t0/yaks/t0.md")).unwrap();
+        assert!(file.contains(&want), "on disk: {file}");
+    }
+
+    /// Header fields and the description are saved together.
+    #[test]
+    fn edit_form_saves_the_header_and_a_changed_description_together() {
+        let (_d, mut app, before) = untidy_body_app();
+        app.focus = Focus::List;
+        press(&mut app, "E");
+        press(&mut app, "Z"); // title
+        for _ in 0..HEADER_ROWS {
+            tab(&mut app);
+        }
+        if app.editor_vim {
+            press(&mut app, "i"); // a seeded editor opens in Normal
+        }
+        press(&mut app, "!"); // at the cursor, the start of the description
+        ctrl_s(&mut app);
+        let t = app.task("t0").unwrap();
+        assert!(t.title.contains('Z'), "{:?}", t.title);
+        // The comments are the loaded body's, from their first `---` on.
+        let notes = &before[before.find("---").unwrap()..];
+        assert_eq!(t.body, format!("!Desc\n\n{notes}"));
+    }
+
+    /// A description saved against a body that has since changed (not just a
+    /// comment appended) writes nothing, header fields included.
+    #[test]
+    fn edit_form_description_conflict_writes_nothing() {
+        let (_d, mut app, _) = untidy_body_app();
+        app.focus = Focus::List;
+        press(&mut app, "E");
+        press(&mut app, "Z"); // title
+        for _ in 0..HEADER_ROWS {
+            tab(&mut app);
+        }
+        press(&mut app, "mine ");
+        // Someone else rewrites the description while the form is open.
+        let farm = app.farm.as_ref().unwrap();
+        farm.update(
+            "t0",
+            crate::farm::TaskEdit {
+                description: Some("theirs".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        ctrl_s(&mut app);
+        let t = app.task("t0").unwrap();
+        assert_eq!(t.body, "theirs");
+        assert_eq!(t.title, "solo");
+        assert!(
+            app.notification
+                .as_deref()
+                .is_some_and(|n| n.contains("changed on disk")),
+            "{:?}",
+            app.notification
+        );
     }
 
     #[test]
@@ -3223,7 +3311,6 @@ mod live {
         let Overlay::Create(f) = &app.overlay else {
             panic!("expected the create form")
         };
-        assert!(f.description.is_some());
         assert_eq!(f.row_count(), f.header_rows() + 1);
         let out = draw(&app, 90, 24);
         assert!(out.contains("description"), "{out}");
@@ -4026,9 +4113,7 @@ fn vim_normal_mode_paste_inserts_literally_not_as_commands() {
     focus_description(&mut app);
     handle_paste(&mut app, "First line.\nSecond line.");
     match &app.overlay {
-        Overlay::Create(f) => {
-            f.description.as_ref().unwrap().borrow_mut().mode = EditorMode::Normal
-        }
+        Overlay::Create(f) => f.description.borrow_mut().mode = EditorMode::Normal,
         _ => panic!("expected the create form"),
     }
     handle_paste(&mut app, "dd");

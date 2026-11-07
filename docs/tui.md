@@ -510,8 +510,8 @@ Tag fields (the `L` editor, the create/edit form's `tags`, the drawer's
 tag filter) take tags separated by commas and/or spaces — `ui, docs`,
 `ui docs`, and `ui,docs` all mean `[ui, docs]`; a tag can contain neither.
 
-**Edit form** (`E`) — the shared create/edit form. Editing it is header fields
-only: `title`, `type`, `priority`, `tags`, `source` (the external-issue
+**Edit form** (`E`) — the shared create/edit form: the header fields, then a
+`description` editor, the same shape as creating. The header fields are `title`, `type`, `priority`, `tags`, `source` (the external-issue
 URL; empty = none, so clearing it removes `source:`), and the schedule:
 `due` (a date, an RFC 3339 datetime, or `+2d` / `+1w` from today, stored as a
 date), `every` (an ISO 8601 duration such as `P1W`, which makes the yak recur)
@@ -519,12 +519,18 @@ and `wakes` (a chip row: `none`, `agent` or `human`, who a regrown recurring yak
 goes to: see [Due dates and recurring yaks](cli.md#due-dates-and-recurring-yaks)).
 A blank `due` or `every`, or `wakes` on `none`, clears that field; a value that
 does not read keeps the form open and says why, so nothing typed is lost; and a
-field left as it was is never rewritten. The body is never part of
-it: the description and comments are edited in place in the detail pane (see
-above), so saving the form leaves the body byte-identical. `E` from the list
-opens it with focus on `title`; `E` on a header line of the detail pane jumps to
+field left as it was is never rewritten. The `description` editor (reached with
+`Tab` / `Ctrl-N` like any row) is seeded with the yak's description, never its
+comments, so a yak with an empty description can be given one here; saving
+writes the header fields and the description together and leaves the comments
+byte for byte as they were. A description you did not change is not rewritten,
+and one saved after the yak changed on disk (other than comments appended
+meanwhile) writes nothing and puts your text on the clipboard. Comments, and the
+description block when the cursor is on it, are still edited in place in the
+detail pane (see above). `E` from the list
+opens the form with focus on `title`; `E` on a header line of the detail pane jumps to
 that row (`Source:` to `source`, `Due:` to `due`, and so on). Creating (`c`/`C`) uses the same
-form plus a `description` editor below the header rows. Single-line rows scroll
+form. Single-line rows scroll
 horizontally to keep the cursor in view rather than wrapping — a nudge to keep
 titles terse. On a multi-herd farm it grows a `herd` chip row (seeded to the
 yak's current herd) after `wakes`, so changing it and saving moves the yak to

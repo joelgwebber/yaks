@@ -25,11 +25,12 @@ use crate::recur;
 
 /// The create/edit task form: a right-pane form modeled on `Drawer`. Two chip
 /// rows (type/priority) are **single-select** — the cursor *is* the value —
-/// plus single-line title/labels/source (and herd) rows. Create (`c`/`C`) adds
-/// one multi-line **description** editor below them; edit (`E`) is the header
-/// rows only — the description and comments are edited in place in the detail
-/// pane (`blockedit.rs`). `Ctrl-N/P`/Tab walk every row. `Ctrl-S` commits
-/// (create or update), `Esc`/`Ctrl-C` cancels.
+/// plus single-line title/labels/source (and herd) rows, then one multi-line
+/// **description** editor below them. Create (`c`/`C`) and edit (`E`) have the
+/// same shape (yaks-255d): an edit seeds the description from the yak and
+/// leaves its comments alone; a single comment, or the description block in
+/// place, is edited in the detail pane (`blockedit.rs`). `Ctrl-N/P`/Tab walk
+/// every row. `Ctrl-S` commits (create or update), `Esc`/`Ctrl-C` cancels.
 pub(crate) struct CreateForm {
     pub(crate) title: RefCell<EditorState>,
     pub(crate) tags: RefCell<EditorState>,
@@ -41,9 +42,14 @@ pub(crate) struct CreateForm {
     pub(crate) every: RefCell<EditorState>,
     /// Index into `WAKE_CHOICES` (single-select cursor==value).
     pub(crate) wake_idx: usize,
-    /// The description editor, the last row of a *create* form; `None` when
-    /// editing (the body is not part of the edit form).
-    pub(crate) description: Option<RefCell<EditorState>>,
+    /// The description editor, the last row. An edit seeds it from the yak's
+    /// description (never its comments).
+    pub(crate) description: RefCell<EditorState>,
+    /// An edit: the yak's whole body when the form opened. It is the `base` a
+    /// changed description is saved against (the farm keeps comments appended
+    /// since, and refuses anything else), and what tells a changed description
+    /// from an untouched one. Empty on a create.
+    pub(crate) seed_body: String,
     /// Index into `TYPE_CHOICES` (single-select cursor==value).
     pub(crate) kind_idx: usize,
     /// Index into `PRI_CHOICES` (single-select cursor==value; default → p3).
@@ -78,7 +84,8 @@ impl CreateForm {
             due: text_field("", vim),
             every: text_field("", vim),
             wake_idx: 0,
-            description: Some(multiline_field("", vim)),
+            description: multiline_field("", vim),
+            seed_body: String::new(),
             kind_idx: 0,           // task
             pri_idx: pri_index(3), // p3
             row: 0,
@@ -90,8 +97,8 @@ impl CreateForm {
         }
     }
 
-    /// Seed the form from an existing task for editing: header fields only; the
-    /// body is left untouched by this form.
+    /// Seed the form from an existing task for editing: the header fields and
+    /// the description; the comments are left untouched by this form.
     pub(crate) fn for_edit(vim: bool, task: &Task) -> Self {
         CreateForm {
             title: text_field(&task.title, vim),
@@ -103,7 +110,8 @@ impl CreateForm {
                 .iter()
                 .position(|w| *w == extra_text(task, recur::WAKE))
                 .unwrap_or(0),
-            description: None,
+            description: multiline_field(&seed_description(&task.body), vim),
+            seed_body: task.body.clone(),
             kind_idx: kind_index(&task.kind),
             pri_idx: pri_index(task.priority),
             row: 0,
@@ -137,18 +145,16 @@ impl CreateForm {
     }
 
     pub(crate) fn row_count(&self) -> usize {
-        self.header_rows() + self.description.is_some() as usize
+        self.header_rows() + 1
     }
 
     pub(crate) fn is_content_row(&self) -> bool {
         self.description_editor().is_some()
     }
 
-    /// The description editor, when the cursor is on it (create only).
+    /// The description editor, when the cursor is on it.
     pub(crate) fn description_editor(&self) -> Option<&RefCell<EditorState>> {
-        self.description
-            .as_ref()
-            .filter(|_| self.row == self.header_rows())
+        (self.row == self.header_rows()).then_some(&self.description)
     }
 
     /// Single-line text rows (title, labels, source); the description is
@@ -273,13 +279,26 @@ impl CreateForm {
         }
     }
 
-    /// The raw description text (empty when the form has none).
+    /// The raw description text.
     pub(crate) fn description_text(&self) -> String {
-        self.description
-            .as_ref()
-            .map(|d| d.borrow().lines.to_string())
-            .unwrap_or_default()
+        self.description.borrow().lines.to_string()
     }
+
+    /// An edit: the body to save when the description was changed, else `None`
+    /// (so a header-only edit never rewrites the body). The comments are the
+    /// seed body's, byte for byte ([`crate::store::with_description`]).
+    pub(crate) fn changed_body(&self) -> Option<String> {
+        let text = self.description_text();
+        let text = text.trim_end();
+        (text != seed_description(&self.seed_body))
+            .then(|| crate::store::with_description(&self.seed_body, text))
+    }
+}
+
+/// The description an edit form is seeded with: the body before its first
+/// comment, trailing whitespace trimmed (leading indentation is kept).
+fn seed_description(body: &str) -> String {
+    super::content::parse(body).swap_remove(0).text
 }
 
 /// A yak's extra field as text (`due`, `every`, `wake`); empty when absent.
@@ -306,7 +325,7 @@ pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
     if has_herd {
         constraints.push(Constraint::Length(1)); // herd chips
     }
-    constraints.push(Constraint::Min(0)); // description (create) / spare space
+    constraints.push(Constraint::Min(0)); // description
     let rects = Layout::vertical(constraints).split(area);
     let header_r = rects[0];
     let title_r = rects[1];
@@ -438,12 +457,10 @@ pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect) {
             hr,
         );
     }
-    if let Some(desc) = &f.description {
-        render_description(desc, f.is_content_row(), frame, body_r);
-    }
+    render_description(&f.description, f.is_content_row(), frame, body_r);
 }
 
-/// The create form's description: a `description` separator, then a live
+/// The form's description: a `description` separator, then a live
 /// editor while focused, else a dimmed wrapped preview of what is typed so far.
 fn render_description(desc: &RefCell<EditorState>, focused: bool, frame: &mut Frame, area: Rect) {
     let [sep, body] = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).areas(area);

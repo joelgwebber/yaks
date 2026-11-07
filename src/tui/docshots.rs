@@ -265,9 +265,8 @@ fn docshots() {
 
     // 7. Multi-herd edit form: on a two-herd farm (`web`/`api`), `E` opens the
     //    shared edit form, which grows a `herd` chip row (seeded to the yak's
-    //    current herd) after `source` (the form is header fields only; body
-    //    rows edit in place) — the editable herd
-    //    affordance (yaks-71d1).
+    //    current herd) after `source`, then the `description` editor (yaks-255d) —
+    //    the editable herd affordance (yaks-71d1).
     let mut app = multi_herd_app_at(w, h);
     app.select_id("web-0007");
     press(&mut app, 'E');

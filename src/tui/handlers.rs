@@ -516,9 +516,7 @@ impl App {
             // Never hand edtui a key it can't convert (it would panic).
             if edtui_can_handle(k.code) {
                 if let Overlay::Create(f) = &mut self.overlay {
-                    if let Some(e) = &f.description {
-                        f.handler.on_key_event(k, &mut e.borrow_mut());
-                    }
+                    f.handler.on_key_event(k, &mut f.description.borrow_mut());
                 }
             }
             return;
@@ -642,6 +640,14 @@ impl App {
             edit.remove_tags = remove;
         }
         edit.fields = schedule_fields(f.schedule_edits(Some(&cur)));
+        // A changed description goes in the same `update` as the header
+        // fields (one farm lock), written against the body the form was
+        // opened on: the farm keeps comments appended since and refuses
+        // anything else, so it never overwrites a description it has not shown.
+        if let Some(body) = f.changed_body() {
+            edit.description = Some(body);
+            edit.base = Some(f.seed_body.clone());
+        }
         // A herd change from the edit form's chip row is an id-prefix rename
         // (tail preserved), folded into this same commit (yaks-71d1). Detect it
         // against the yak's current prefix.
@@ -649,19 +655,29 @@ impl App {
             id.split_once('-')
                 .and_then(|(cur, tail)| (cur != nh).then(|| format!("{nh}-{tail}")))
         });
+        let typed = f.description_text();
         let Some(new_id) = new_id else {
-            self.apply_edit(&id, edit, format!("{id} updated"));
+            let outcome = self.apply_edit(&id, edit, format!("{id} updated"));
+            if outcome == Some(UpdateOutcome::Conflict) {
+                self.keep_unsaved_description(&id, &typed);
+            }
             return;
         };
         // Field edits land on the current id first, then the prefix rename moves
         // the (now-updated) file. Two farm calls, each in its own borrow scope.
         match &self.farm {
-            Some(h) => {
-                if let Err(e) = h.update(&id, edit) {
+            Some(h) => match h.update(&id, edit) {
+                Ok(UpdateOutcome::Conflict) => {
+                    self.reload_preserving_selection();
+                    self.keep_unsaved_description(&id, &typed);
+                    return;
+                }
+                Ok(_) => {}
+                Err(e) => {
                     self.notification = Some(format!("error: {e}"));
                     return;
                 }
-            }
+            },
             None => return,
         }
         let outcome = match &self.farm {
@@ -693,6 +709,21 @@ impl App {
             }
             Err(e) => self.notification = Some(format!("error: {e}")),
         }
+    }
+
+    /// A form save whose description conflicted wrote nothing (the form is
+    /// closed, as after any save): put the typed text on the clipboard so it
+    /// is not lost, and say so.
+    fn keep_unsaved_description(&mut self, id: &str, typed: &str) {
+        let copied = !typed.trim().is_empty() && crate::clipboard::copy_text(typed);
+        self.notification = Some(format!(
+            "{id} changed on disk; not saved{}",
+            if copied {
+                ", your description is on the clipboard"
+            } else {
+                ""
+            }
+        ));
     }
 
     pub(crate) fn open_dep_picker(&mut self) {
@@ -1707,6 +1738,7 @@ impl App {
                         || PRI_CHOICES[f.pri_idx] != cur.priority
                         || a != b
                         || !f.schedule_edits(Some(cur)).is_empty()
+                        || f.changed_body().is_some()
                 }
                 None => true,
             },
@@ -2154,10 +2186,8 @@ impl App {
                             insert_into(&mut ed.handler, &ed.state, id);
                         }
                         Overlay::Create(f) => {
-                            if let Some(e) = &f.description {
-                                delete_into(&mut f.handler, e, fp.replace_len);
-                                insert_into(&mut f.handler, e, id);
-                            }
+                            delete_into(&mut f.handler, &f.description, fp.replace_len);
+                            insert_into(&mut f.handler, &f.description, id);
                         }
                         _ => {}
                     }
