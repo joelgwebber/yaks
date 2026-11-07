@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-07T18:19:19Z'
+updated: '2026-11-07T18:19:21Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
@@ -258,3 +258,13 @@ branch: main
 ---
 
 landed: 61cda058 yaks-7c6e: one key family, h/l never leave the pane, grouped ? popup and F1 editor keys, { } change views
+
+---
+▸ 2026-11-07T18:19:21Z [herd-stars]
+kind: landed
+commit: a29187b1de3d733b778ddc7f9fcc55df29b01458
+source: 05a49af7657736cea498bb66f337061e4de36835
+branch: main
+---
+
+landed: a29187b1 yaks-7c6e: docs: key families and rules, the grouped ? popup and F1, AGENTS.md key bindings, README vim_mode line
