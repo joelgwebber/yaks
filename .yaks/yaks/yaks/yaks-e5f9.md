@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-03T23:29:24Z'
-updated: '2026-11-07T17:07:12Z'
+updated: '2026-11-07T17:21:23Z'
 tags:
 - tui
 ---
@@ -48,3 +48,11 @@ Start: Sat Nov  7 17:07:08 UTC 2026
 
 - yaks path yaks-e5f9: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-e5f9.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/kt9f4mff96hd/yaks
+
+---
+▸ 2026-11-07T17:21:23Z [stars-zoom]
+kind: verify
+result: fail
+---
+
+verify: `cargo test --workspace` -> FAIL (exit 101)
