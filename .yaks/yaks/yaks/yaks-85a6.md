@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T21:28:20Z'
-updated: '2026-11-06T23:09:20Z'
+updated: '2026-11-07T15:48:13Z'
 parent: yaks-3f35
 tags:
 - tui
@@ -50,3 +50,8 @@ Built on branch `sessions-in-doks` (not landed yet).
 
 - Tests: `a_session_note_is_listed_and_opens_like_a_dok`, plus the Doks tests and both insta frames updated for the new row; full `cargo test` green.
 - Headless release build on Joel's schism farm: 42 rows (23 doks, 19 session notes); `Load a GLB table model` opens with its frontmatter, Summary and screenshot ([frame](yaks-85a6/session-frame.txt)); Tab and Enter on the first `(session)` link in `doks/howto/dev-workflow.md` open `sessions/2025/08/...-dev-workflow-tooling-and-bevy-0-16-1.md`.
+
+---
+▸ 2026-11-07T15:48:13Z [schism-feedback]
+
+Landed on `main` as e8bc2c4f (rebased onto 38fc4358, full `cargo test` green after the rebase), pushed, and installed with `cargo install --path .`. A running `yaks tui` needs a restart to show sessions.
