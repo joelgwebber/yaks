@@ -1,0 +1,12 @@
+ 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   📖  Doks (0)   🛖  Sheds (…)
+
+ a0   p2 task     🦬  Root A
+   a1 p3 task     🦬  Child A1
+
+
+
+
+
+
+
+Tab:view  ↑/↓:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help
