@@ -68,6 +68,6 @@ Joel accepted all five reflection leans: one farm-wide `doks/lessons.md`, agents
 
 - Parallel workers that each update `docs/cli.md`, the `yaks` skill and `src/main.rs`'s dispatch conflict on landing even with symbol-scoped briefs; the conflicts were all adjacent additions. Landing the workers that share a doc section in one serial arc would avoid it.
 - `yaks land` stops a conflicting cherry-pick and leaves recording the landing to you: after `git cherry-pick --continue` it records nothing, so I added the `kind: landed` notes by hand.
-- Load-sensitive tests made `yaks verify` flaky for every worker (filed yaks-ad00-style bug above; `cargo test --no-fail-fast` gets past it).
+- Load-sensitive tests made `yaks verify` flaky for every worker (yaks-06cd; `cargo test --no-fail-fast` gets past it).
 - A brief generated before a rename kept the old worker name in the claim notes (`query-1` vs `query-2`); write claim notes after choosing names.
 - `cargo fmt -- <files>` still reformats `src/actor.rs` and `tests/commits.rs`; every worker reverted them by hand.
