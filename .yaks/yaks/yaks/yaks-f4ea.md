@@ -5,10 +5,11 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-07T16:57:32Z'
+updated: '2026-11-07T16:59:19Z'
 parent: yaks-44b3
 tags:
 - cli
+- doks
 ---
 
 yaks records `thread:` metadata on moves (and a `thread` field on session notes) only from Delta's `DELTA_CURRENT_THREAD_ID` (`src/actor.rs`). A harness that is not Delta, such as Hearth (hearth-1ed0 in the Hearth farm), cannot point its writes back at its own conversation.
