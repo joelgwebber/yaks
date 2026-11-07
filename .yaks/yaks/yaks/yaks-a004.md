@@ -1,11 +1,11 @@
 ---
 id: yaks-a004
 title: Unify "peek" across yaks + doks
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-06T21:26:35Z'
-updated: '2026-11-07T17:25:48Z'
+updated: '2026-11-07T17:25:49Z'
 tags:
 - tui
 ---
@@ -94,3 +94,13 @@ Decision: ran `cargo test -p yaks --bin yaks docshots -- --ignored`, which rewro
 Summary: the yak detail pane now shows the viewer's peek pane (one `render_peek`, called from `render_attachment` and `render_detail`, `PEEK_ROWS`) when focused with a peekable link in the yak; `p` toggles `peek_shown` in both contexts (`App::toggle_peek`, `Cmd::PeekToggle` in the Detail yak rows and the Viewer row); `p:peek` is in both bottom hints; docs/tui.md updated (detail key paragraph, links paragraph, Peek bullet, new figure). Tests added in `follow.rs`: the yak pane shows the pane on a dok link and the status bar has only the destination; `p` hides/shows it in the yak pane, in a dok opened from it (one flag) and back; the focused-only and page-size rules; showing the pane scrolls a covered cursor into view; `p` hides/shows in a dok opened from the Doks tab and from a yak link (the two entry points the yak named). Insta snapshots changed only by the hint (`p:peek` in six Detail frames, `p:peek` in the Doks viewer frame) and one new help-overlay row; I accepted those.
 
 Evidence not gathered: I did not run the new yak-pane tests against the unchanged tree (they cannot compile-pass without the new code: `p` was unbound in Detail and the status bar carried the peek); the viewer tests passed before and after, as found above.
+
+---
+▸ 2026-11-07T17:25:49Z [stars-peek]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEp9bZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
