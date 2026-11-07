@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:27:55Z'
-updated: '2026-11-06T23:15:35Z'
+updated: '2026-11-07T00:00:18Z'
 parent: yaks-44b3
 tags:
 - doks
@@ -90,3 +90,19 @@ Fan-out, 2026-11-06 (yakherd `herd-upkeep-2`), all from `main` at 671320f9 (whic
 - `refs-1`: yaks-2e00 then yaks-525b ([thread](delta://thread/ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjn95IBxBCA0aLJyrhJPreUvVwLftHG)).
 
 I take yaks-7168 (reflection design). yaks-3f35 is another thread's; its children own `src/sessions.rs`.
+
+---
+▸ 2026-11-07T00:00:18Z [herd-upkeep-2]
+
+Landed on `main` at 30653149 and installed (`cargo install --path .` from the main checkout; `yaks skills install --user --force`):
+
+- yaks-ff4c (671320f9) import-hearth removed.
+- yaks-b6a7 (6006e665, `tui-1`) note links land on their note in the TUI.
+- yaks-80bd (22076525, `tools-1`) `yaks source mark`, `yaks dok define`.
+- yaks-7168 (aad2377b, me) reflection in `yaks-upkeep`; agents read `/doks/lessons.md` at session start. Follow-up yaks-323b (`session list --since`).
+- yaks-2e00 (487a2508, `refs-1`) `refs --incoming` lists doks and session notes.
+- yaks-525b (30653149, `refs-1`) `yaks commit --as`.
+
+Gate on 30653149: full `cargo test`, 1179 passed, 0 failed. Under load from running workers, `tests/sync.rs` `a_private_farm_syncs_locally_but_never_pushes` failed once and passed 3 of 3 alone: load-sensitive, like the `init_modes` one.
+
+Still running: `doks-1` (yaks-252c), `query-2` (yaks-39f9, yaks-6cdd).
