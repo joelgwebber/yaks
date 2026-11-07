@@ -1,11 +1,11 @@
 ---
 id: yaks-7c6e
 title: Holistic key-binding rethink, after the unified-model phases land
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-07T17:40:32Z'
+updated: '2026-11-07T17:46:47Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
@@ -136,3 +136,13 @@ Lowercase looks and moves; Shift changes an existing yak; Ctrl is the app and fa
 - Emacs/standard parity in the editor is yaks-4736, not this.
 
 **Evidence.** The rule tests (fail first where a binding breaks them), a test per numbered item, the gate, headless frames of the grouped popup in the list and in an editor (`F1`), attached. **Judge:** herd-stars at landing; Joel for the feel.
+
+---
+▸ 2026-11-07T17:46:47Z [herd-stars]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
