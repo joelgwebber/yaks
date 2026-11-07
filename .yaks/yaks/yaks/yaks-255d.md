@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-11-04T00:00:46Z'
-updated: '2026-11-07T17:29:22Z'
+updated: '2026-11-07T17:43:44Z'
 tags:
 - tui
 ---
@@ -105,3 +105,13 @@ thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEqF7pIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-07T17:43:44Z [herd-stars]
+kind: landed
+commit: 108a5291559aa0244044bcd2cbbd37d37832f3a3
+source: 37965d2c0bfd5b666886b154c9df76afc6bd0f9f
+branch: main
+---
+
+landed: 108a5291 yaks-255d: the edit form has the description editor, like create
