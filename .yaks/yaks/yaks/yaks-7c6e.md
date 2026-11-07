@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-07T18:16:29Z'
+updated: '2026-11-07T18:16:44Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
@@ -212,3 +212,21 @@ Decision: `{`/`}` with the pane open is one jump (`switch_tab`): the new view's 
 Decision: the bottom-hint snapshot changes, all explained by items 1 and 2. List/Doks/Sheds hints `l:detail` is now `Enter:detail` (every `Tab:view ...` snapshot: tree_with_ghost_family, family_indicator_on_tab_row, starred_marker_and_tab_bar, collapsed_root_hides_children, list_scroll_up_moves_viewport_minimally, the memo chip_* and status_notification_* frames, search_commit_then_tab_no_toast, the_due_view..., an_overdue_date..., sheds_tab_list, tests/snapshots/cli__headless_session). Pane hints `h:list` is now `Esc:list` (detail_shows_children_and_links, detail_header_lists_prs_as_links, goto_jumped_to_detail, comment_header_with_metadata, sheds_tab_detail, sheds_tab_yak_detail). The viewer line loses `/h` (`Esc/h close` is `Esc close`: doks_tab_dok). The full reference (help_overlay, memo help_overlay_shows_the_farm_keys) gains the `}`/`{`, `Ctrl-D`, `Ctrl-↓` keys and the pane's `Home`/`End`/`PgDn`; `keys_popup` is the grouped popup. No frame changed in any other way (I read each diff).
 
 Decision: docs/assets SVGs are not regenerated. `cargo test -p yaks docshots -- --ignored` rewrites 30 files, mostly drift that was already there (the checked-in frames still show the pre-Doks tab strip and an older SVG opacity style); I reverted all of it rather than commit unrelated drift. Only the scene source changed: `tui-sheds-detail` pressed `l` to open the shed, which is `Enter` now. The hint text inside the committed SVGs (`l:detail`, `h:list`) is therefore still the old one until someone regenerates them in one commit.
+
+---
+▸ 2026-11-07T18:16:44Z [stars-keys]
+
+Summary (stars-keys). Items 1-6 of the claim are in; one gate run, `cargo test --workspace`, is green (1074 tests in the yaks bin, the integration tests, the doc tests).
+
+- **1. h/l.** `h`/`l` never move between the list and the pane: in the pane and the text viewer they are `pane.scroll_left`/`pane.scroll_right`; `Esc` leaves, `Enter` enters; in a tree list `l`/`→` are `tree.right` (expand, else first child; nothing on a leaf or a dok row). Hints are `Enter:detail`, `Esc:list`.
+- **2. Family.** `Family` (vim|standard) in the `Keymap`; `keys: vim|standard` scalar or `family:` in the map in the user config, `vim_mode` alias, precedence user keys > user vim_mode > farm vim_mode > vim. Standard turns off `hjkl`, `d`/`u`, `g`/`G`, `Ctrl-N`/`Ctrl-P` (they are dead, not their plain letters: see the first Decision); `Ctrl-F` finds in standard; `F3`/`Shift-F3` and `Ctrl-↓`/`Ctrl-↑` in both; standard runs edtui's emacs mode (`editor_vim()` reads the family).
+- **3. Case rule.** `no_lowercase_key_changes_an_existing_yak`, over `Cmd::mutates()`.
+- **4. Popup.** Grouped (Move, Open and follow, Find, Change the yak, View and filter, Farm, App from `Cmd::group()`); a listed key runs it and closes it; `F1` over every editor/form/drawer/find box lists that editor's keys for the family (hand table `keymap/editor.rs`), a listed key goes to the editor; `?` in vim Normal mode.
+- **5. Braces.** `}`/`{` change view in the list, pane, text and image viewers; with the pane open it stays open on the new view's first row.
+- **6. Docs.** `AGENTS.md` "Key bindings" paragraph (names the two enforcing tests), `docs/tui.md` (a new "Key families and rules" section, the list/pane/Doks/Sheds tables, Customising keys), `README.md` (the `vim_mode` line and the TUI paragraph), the `?` reference (`EXTRAS`), the `--emacs` clap help in `src/main.rs`.
+
+Tests that fail first (shown by mutating the table and running the test): putting `yak.priority` on `p` fails `no_lowercase_key_changes_an_existing_yak` with `yak.priority (Detail) is on the lowercase key p`; dropping `Home` from the pane's `move.top` fails `every_command_stays_bound_in_standard_mode` with `move.top (Detail, Some(Yak)) has no key in standard mode (it has g)`. The other new tests: `keymap::tests::{standard_mode_turns_the_vim_keys_off_and_the_arrows_do_the_work, find_and_block_keys_in_each_family, braces_change_views_everywhere, h_and_l_never_open_or_close_the_pane, the_popup_is_grouped_by_what_a_command_is_for, the_standard_hint_names_the_arrows, the_editor_tables_cover_both_families_and_every_key_parses}`, `keymap::overrides::tests::{the_family_is_..., a_family_that_does_not_read_..., a_user_override_is_the_users_word_..., function_keys_read_and_write_as_f_n}`, and `tui::tests::keys::*` (one per item: h/l, tree.right, family in the list and pane, Ctrl-F, F3, Ctrl-↓, popup run/Esc/unlisted, F1 over ten kinds of editor in both families, listed/unlisted keys to the editor, `?` in Normal only, braces in the list, the pane and the viewers).
+
+Frames attached (text, from the headless draw): the grouped popup on the list in vim and standard, `F1` over the in-place editor in vim Normal and in standard, the standard list hint, `}` with the pane open. Not run: the docshot SVGs (see the Decision), and no real terminal: F1 and Ctrl-↓ arrive as the crossterm events the tests send, and some terminals send Shift-F3 as F15 or swallow Ctrl-arrows; I did not check any.
+
+Follow-ups, not done: regenerate docs/assets in one commit; the emacs/standard editor parity audit is yaks-4736; `Ctrl-F`/`Ctrl-↓` may need a fallback on terminals that eat them; the single-key prompts (`Pick`, `Confirm`) have no `F1`.
