@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-07T18:16:44Z'
+updated: '2026-11-07T18:18:38Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
@@ -230,3 +230,11 @@ Tests that fail first (shown by mutating the table and running the test): puttin
 Frames attached (text, from the headless draw): the grouped popup on the list in vim and standard, `F1` over the in-place editor in vim Normal and in standard, the standard list hint, `}` with the pane open. Not run: the docshot SVGs (see the Decision), and no real terminal: F1 and Ctrl-↓ arrive as the crossterm events the tests send, and some terminals send Shift-F3 as F15 or swallow Ctrl-arrows; I did not check any.
 
 Follow-ups, not done: regenerate docs/assets in one commit; the emacs/standard editor parity audit is yaks-4736; `Ctrl-F`/`Ctrl-↓` may need a fallback on terminals that eat them; the single-key prompts (`Pick`, `Confirm`) have no `F1`.
+
+---
+▸ 2026-11-07T18:18:38Z [stars-keys]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
