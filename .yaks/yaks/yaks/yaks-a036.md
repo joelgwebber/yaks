@@ -1,11 +1,11 @@
 ---
 id: yaks-a036
 title: Consistent copy behavior across yaks/docs
-status: shaving
+status: shorn
 type: bug
 priority: 3
 created: '2026-11-04T00:06:56Z'
-updated: '2026-11-07T17:38:39Z'
+updated: '2026-11-07T17:38:41Z'
 tags:
 - tui
 ---
@@ -30,3 +30,13 @@ Done by herd-stars in `3e43d41e`: `y` in the text viewer with nothing selected c
 - What it copies is what the Doks list's `y` copies for the same row: a dok's or session note's farm path, a source by its directory, an attachment as `<id>/<file>` ([AttachView::copy_path](code:src/tui/handlers.rs@3e43d41e#L134-L146)).
 - Evidence: unit test `y_without_a_selection_copies_the_documents_path`; full gate green. Not driven headlessly, since that would write the real clipboard.
 - Help line (`?`) and `docs/tui.md` (the Doks table and the `A`/`O` row) updated.
+
+---
+▸ 2026-11-07T17:38:41Z [herd-stars]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
