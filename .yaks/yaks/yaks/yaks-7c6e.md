@@ -1,11 +1,11 @@
 ---
 id: yaks-7c6e
 title: Holistic key-binding rethink, after the unified-model phases land
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-07T18:18:38Z'
+updated: '2026-11-07T18:18:45Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
@@ -238,3 +238,13 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-07T18:18:45Z [stars-keys]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEuDHJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
