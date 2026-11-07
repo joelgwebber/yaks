@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-07T17:09:10Z'
+updated: '2026-11-07T17:09:59Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -79,3 +79,11 @@ Decision: an empty or blank `YAKS_THREAD` counts as unset and falls through to t
 Decision: the per-place tests are integration tests that spawn the binary with `.env(..)`, not unit tests with `set_var`. Added `env_remove("YAKS_THREAD")` to the env scrubbing in tests/attribution.rs, tests/sessions.rs (new `cmd_env` helper; `cmd` delegates) and tests/sheds.rs so a developer's shell can't leak it into existing tests.
 
 Decision: left `harness_actor` (`delta:<DELTA_CURRENT_THREAD_ID>` actor fallback) and `harness_from_env` (`--harness` default) alone: actor names and `--harness` are out of scope, so YAKS_THREAD does not derive an actor or a harness.
+
+---
+▸ 2026-11-07T17:09:59Z [stars-thread]
+kind: verify
+result: fail
+---
+
+verify: `cargo test -p yaks` -> FAIL (exit 101)
