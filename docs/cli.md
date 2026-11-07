@@ -354,7 +354,7 @@ Yaks and doks link with ordinary markdown links, in one grammar: `<target>[@<rev
 
 `refs <dok path> [--incoming] [--json]` lists the links a dok holds (marking any that lead nowhere), or with `--incoming` every yak and dok that links to it, with the line.
 
-`mv <from> <to> [--dry-run]` moves a dok and rewrites every link to it, in yaks and doks, in the farm-root form, keeping each link's `@rev` and `#anchor`; the moved dok's own relative links are rewritten to keep their targets. The destination follows `dok new`'s naming rule.
+`mv <from> <to> [--dry-run]` moves a dok and rewrites every link to it, in yaks and doks, in the farm-root form, keeping each link's `@rev` and `#anchor`; the moved dok's own relative links are rewritten to keep their targets. The destination follows `dok new`'s naming rule. The dok's attachment directory (its sibling `doks/x/`, see [`attach`](#attach)) moves with it, and links into it follow (the dok's own `x/shot.png` becomes `<new-name>/shot.png`, a link from elsewhere `/doks/new/<new-name>/shot.png`); `mv` refuses when that directory also holds doks, which would move without their links fixed. (Links from session notes are not rewritten.)
 
 `doctor` reports `broken-link`: a farm path or attachment that does not exist, or a `../` link outside the legacy code forms. Placeholder links in prose (`[x](path)`, `[x](<id>/<file>)`) are not checked.
 
@@ -363,7 +363,7 @@ Yaks and doks link with ordinary markdown links, in one grammar: `<target>[@<rev
 | Command | What it does |
 |---|---|
 | `verify <ids…>` | Run each yak's verification command with live output, and record `verify: <cmd> -> PASS/FAIL (exit N)` as an attributed note. Exits non-zero if any fails. Explicit only. [Details](#verify) |
-| `attach <id> <path>...` | Copy local files under `.yaks/<herd>/yaks/<id>/` and link each in the yak's body — artifact evidence a human can view. `--no-link` stores them without a body link (the parts of a document that links them itself); `--caption` captions the image it links; `--name` renames a single file; `--note`/`--as` record an attributed note. [Details](#attach) |
+| `attach <id-or-doc-path> <path>...` | Copy local files under `.yaks/<herd>/yaks/<id>/` and link each in the yak's body — artifact evidence a human can view; given a dok or session note path, into its sibling directory (`doks/x/`). `--no-link` stores them without a body link (the parts of a document that links them itself); `--caption` captions the image it links; `--name` renames a single file; `--note`/`--as` record an attributed note. [Details](#attach) |
 | `rename-attachment <id> <old> <new>` | Rename `.yaks/<herd>/yaks/<id>/<old>` and rewrite every link to it across the farm. Refuses to overwrite an existing attachment. [Details](#rename-attachment) |
 | `attachment <id> [<file>]` | Print the absolute path of a yak's attachments (all, or the one named). `--json`. Read-only. [Details](#attachment) |
 
@@ -404,7 +404,7 @@ A lever is the pass/fail **gate** for its tag — what `doctor --strict` enforce
 
 ### `attach`
 
-`attach <id> <path>...`
+`attach <id-or-doc-path> <path>...`
 
 Copy local files (several attach in one write, one farm commit) under `.yaks/<herd>/yaks/<id>/` (beside the yak's file) and link each in the yak's body as `![name](<id>/<file>)` for an image (png, jpg, jpeg, gif, webp, svg) or `[name](<id>/<file>)` for any other file (what GitHub and every CommonMark viewer expect; a space or parenthesis in the file name is percent-encoded, `my%20shot.png`) — artifact evidence (screenshots, TUI frames) a human or yakherd can view.
 
@@ -413,6 +413,8 @@ Copy local files (several attach in one write, one farm commit) under `.yaks/<he
 `--name <name>` stores a single file under a different filename (sanitized; the source's extension is kept if omitted). `--note`/`--as` record an attributed note.
 
 `--no-link` stores the files and leaves the yak's body alone. Use it for a **document and the images it embeds**: attach them all together with `--no-link`, then link only the document from the yak (`[evidence](<id>/evidence.md)`). Its `![crop](crop.png)` links resolve to the sibling attachments (see [Links](#links)), so the yak shows one link, not one per image. A file the yak itself shows (a screenshot, a log) is attached plainly.
+
+**A dok or a session note** takes attachments too: give its farm path instead of a yak id (`yaks attach doks/topics/x.md shot.png`, `yaks attach sessions/2026/11/me-1.md shot.png`). The files go in the sibling directory named like the document without `.md` (`doks/topics/x/`, as a yak's `<id>.md` has `<id>/`), and the link appended to the body goes down into it, `![shot](x/shot.png)`, so it resolves in any markdown viewer and survives `yaks mv`. `--caption`, `--no-link` and `--name` work as for a yak; `--note` does not (a dok has no notes log), and a `.md` file is refused (under `doks/` or `sessions/` it would read as another document: make it a dok and link it). `doctor` reports a dead link into the directory (`broken-link`), and `weight` and `lfs` count and route it with the rest of the farm. Attach the farm's own artifacts (a screenshot it made, a diagram) this way; outside material is a [source](#source).
 
 The non-scriptable, look-at-it form of evidence: an **external file** (committed with the farm by `yaks commit`), never inlined.
 

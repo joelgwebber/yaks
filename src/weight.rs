@@ -444,6 +444,11 @@ mod tests {
         assert_eq!(kind_of(".yaks/yak/yaks/yak-1/shot.png"), "attachments");
         assert_eq!(kind_of(".yaks/doks/topics/x.md"), "doks");
         assert_eq!(kind_of(".yaks/yak/doks/x.md"), "doks");
+        // A dok's attachment directory (yaks-db66) is counted with its doks;
+        // a session note's, like the notes themselves, under `other`.
+        assert_eq!(kind_of(".yaks/doks/topics/x/shot.png"), "doks");
+        assert_eq!(kind_of(".yaks/yak/doks/x/shot.png"), "doks");
+        assert_eq!(kind_of(".yaks/sessions/2026/11/n/shot.png"), "other");
         assert_eq!(
             kind_of(".yaks/sources/2026-01-01-abcd1234/a.pdf"),
             "sources"

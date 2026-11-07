@@ -381,6 +381,43 @@ pub enum RenameAttachmentOutcome {
     Unchanged,
 }
 
+/// Write `files` into `dir` (created) and return `body` with each file's
+/// markdown link appended when `link` (see [`store::attachment_link_titled`];
+/// `link_dir` is the directory's name as the document's own link spells it).
+/// The one place the yak, dok and session attach paths share.
+fn store_attachments(
+    dir: &Path,
+    link_dir: &str,
+    files: &[(String, Vec<u8>)],
+    link: bool,
+    caption: Option<&str>,
+    body: &str,
+) -> Result<String> {
+    std::fs::create_dir_all(dir)?;
+    let mut body = body.trim_end().to_string();
+    for (name, data) in files {
+        std::fs::write(dir.join(name), data)?;
+        if link {
+            if !body.is_empty() {
+                body.push_str("\n\n");
+            }
+            body.push_str(&store::attachment_link_titled(link_dir, name, caption));
+        }
+    }
+    Ok(body)
+}
+
+/// The outcome of attaching `files`: their names, comma-separated.
+fn attached(files: &[(String, Vec<u8>)]) -> AttachOutcome {
+    AttachOutcome::Attached(
+        files
+            .iter()
+            .map(|(n, _)| n.as_str())
+            .collect::<Vec<_>>()
+            .join(", "),
+    )
+}
+
 /// Sanitize a user-supplied attachment filename: keep only the final path
 /// component, turn anything but letters, digits, `.`, `_`, `-`, `+` into `-`
 /// (so the name is safe on disk and inside a markdown `![](...)` link),
@@ -2647,6 +2684,27 @@ impl Farm {
         if self.root.join(&to).exists() {
             anyhow::bail!("{to} already exists");
         }
+        // The dok's attachment directory (`doks/x/` beside `doks/x.md`) moves
+        // with it. If it also holds doks they would travel without their
+        // links being fixed: refuse, move those first.
+        let from_dir = from.strip_suffix(".md").unwrap_or(&from).to_string();
+        let to_dir = to.strip_suffix(".md").unwrap_or(&to).to_string();
+        let moves_dir = self.root.join(&from_dir).is_dir();
+        if moves_dir {
+            if self.root.join(&to_dir).exists() {
+                anyhow::bail!("{to_dir} already exists");
+            }
+            let prefix = format!("{from_dir}/");
+            if let Some(d) = crate::doks::dok_paths(&self.root)
+                .into_iter()
+                .find(|d| d.starts_with(&prefix))
+            {
+                anyhow::bail!(
+                    "{from_dir}/ is {from}'s attachment directory but also holds the dok {d}; \
+                     move that first"
+                );
+            }
+        }
         let tasks = store::load(&self.root, &EVERY)?;
         let ids: std::collections::HashSet<String> = tasks.iter().map(|t| t.id.clone()).collect();
         let is_yak = |s: &str| ids.contains(s);
@@ -2661,6 +2719,22 @@ impl Farm {
                 else {
                     return None;
                 };
+                // A link into the attachment directory follows the dok:
+                // relative (down from the dok) where it was, else from the
+                // farm root.
+                if let Some(rest) = path.strip_prefix(&format!("{from_dir}/")) {
+                    let rest = crate::links::percent_encode_path(rest);
+                    let mut s = if moved_self && !dest.starts_with('/') {
+                        let name = to_dir.rsplit('/').next().unwrap_or(&to_dir);
+                        format!("{}/{rest}", crate::links::percent_encode_path(name))
+                    } else {
+                        format!("/{}/{rest}", crate::links::percent_encode_path(&to_dir))
+                    };
+                    if let Some((_, frag)) = dest.split_once('#') {
+                        s.push_str(&format!("#{frag}"));
+                    }
+                    return (s != dest).then_some(s);
+                }
                 let target = if path == from {
                     to.clone()
                 } else if moved_self && !dest.starts_with('/') {
@@ -2701,6 +2775,9 @@ impl Farm {
                 if !dry_run {
                     crate::doks::save(&self.root, &p)?;
                     std::fs::remove_file(self.root.join(&from))?;
+                    if moves_dir {
+                        std::fs::rename(self.root.join(&from_dir), self.root.join(&to_dir))?;
+                    }
                 }
             } else if n > 0 && !dry_run {
                 crate::doks::save(&self.root, &p)?;
@@ -2749,29 +2826,60 @@ impl Farm {
             return Ok(AttachOutcome::NotFound);
         };
         let dir = store::artifact_dir(&self.root, id);
-        std::fs::create_dir_all(&dir)?;
-        let mut body = task.body.trim_end().to_string();
-        for (name, data) in files {
-            std::fs::write(dir.join(name), data)?;
-            if link {
-                if !body.is_empty() {
-                    body.push_str("\n\n");
-                }
-                body.push_str(&store::attachment_link_titled(id, name, caption));
-            }
-        }
+        let body = store_attachments(&dir, id, files, link, caption, &task.body)?;
         if link {
             task.body = body;
             task.updated = Some(store::now_iso());
             store::write::save(&self.root, &task)?;
         }
-        Ok(AttachOutcome::Attached(
-            files
-                .iter()
-                .map(|(n, _)| n.as_str())
-                .collect::<Vec<_>>()
-                .join(", "),
-        ))
+        Ok(attached(files))
+    }
+
+    /// [`Farm::attach_many`] for a farm document: a dok or a session note, by
+    /// its farm-relative path. Its attachment directory is the sibling named
+    /// like the file without `.md` (`doks/x.md` + `doks/x/`,
+    /// `sessions/2026/11/n.md` + `sessions/2026/11/n/`), and the link written
+    /// into its body goes down into it (`![shot](x/shot.png)`), which
+    /// resolves in any markdown viewer. The document's text is otherwise kept
+    /// byte for byte (a document has no `updated:`). Refuses a `.md` file:
+    /// under a doks root or `sessions/` that would read as another document.
+    pub fn attach_doc_many(
+        &self,
+        rel: &str,
+        files: &[(String, Vec<u8>)],
+        link: bool,
+        caption: Option<&str>,
+    ) -> Result<AttachOutcome> {
+        let rel = crate::doks::normalize(rel);
+        if !crate::doks::is_dok_path(&rel) && !crate::sessions::is_session_path(&rel) {
+            anyhow::bail!("{rel}: not a dok or a session note (a yak is attached by its id)");
+        }
+        if let Some((name, _)) = files.iter().find(|(n, _)| n.ends_with(".md")) {
+            anyhow::bail!(
+                "{name}: a .md file beside a dok or session note would read as another \
+                 document; make it a dok (`yaks dok new`) and link it"
+            );
+        }
+        let _lock = store::lock(&self.root)?;
+        let path = self.root.join(&rel);
+        let Ok(text) = std::fs::read_to_string(&path) else {
+            return Ok(AttachOutcome::NotFound);
+        };
+        let stem = rel.strip_suffix(".md").unwrap_or(&rel);
+        let name = stem.rsplit('/').next().unwrap_or(stem);
+        let link_dir = crate::links::percent_encode_path(name);
+        let body = store_attachments(
+            &self.root.join(stem),
+            &link_dir,
+            files,
+            link,
+            caption,
+            &text,
+        )?;
+        if link {
+            store::write::atomic_write(&path, &format!("{body}\n"))?;
+        }
+        Ok(attached(files))
     }
 
     /// Rename `.yaks/{id}/{old}` to a sanitized `new` (see

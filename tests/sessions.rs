@@ -198,3 +198,58 @@ fn a_session_note_cites_what_the_session_wrote_and_is_reviewed_once() {
             .success()
     );
 }
+
+/// A session note's attachment directory is its sibling (yaks-db66): `attach`
+/// stores into `sessions/.../<note>/` and links it, and doctor sees the link
+/// resolve.
+#[test]
+fn attach_to_a_session_note() {
+    let f = Farm::new("attach");
+    let out = f.run_in(
+        &[
+            "session",
+            "note",
+            "--title",
+            "Shots",
+            "--harness",
+            "test",
+            "--body",
+            "-",
+        ],
+        Some(BODY),
+    );
+    let rel = out
+        .lines()
+        .next()
+        .unwrap()
+        .strip_prefix("Saved session note ")
+        .unwrap()
+        .to_string();
+    let shot = f.dir.join("screenshot.png");
+    std::fs::write(&shot, b"png").unwrap();
+    let out = f.run(&["attach", &rel, shot.to_str().unwrap()]);
+    assert!(
+        out.contains(&format!("attached screenshot.png to {rel}")),
+        "{out}"
+    );
+    let root = f.root();
+    let stem = rel.strip_suffix(".md").unwrap();
+    assert_eq!(
+        std::fs::read(root.join(stem).join("screenshot.png")).unwrap(),
+        b"png"
+    );
+    let name = stem.rsplit('/').next().unwrap();
+    let text = std::fs::read_to_string(root.join(&rel)).unwrap();
+    assert!(
+        text.trim_end()
+            .ends_with(&format!("![screenshot]({name}/screenshot.png)")),
+        "{text}"
+    );
+    assert!(text.starts_with("---\n"), "frontmatter kept: {text}");
+    f.run(&["doctor"]);
+    // The directory is not read as session notes, and a dead link is found.
+    std::fs::remove_file(root.join(stem).join("screenshot.png")).unwrap();
+    let bad = f.cmd(&["doctor"], None);
+    assert!(!bad.status.success());
+    assert!(String::from_utf8_lossy(&bad.stdout).contains(&format!("{name}/screenshot.png")));
+}

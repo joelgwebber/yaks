@@ -65,6 +65,16 @@ pub fn paths(root: &Path) -> Vec<String> {
     out
 }
 
+/// Whether farm-relative `rel` names a session file by its shape: a `.md`
+/// file under `sessions/`, with no empty, `..` or dot segment.
+pub fn is_session_path(rel: &str) -> bool {
+    rel.starts_with("sessions/")
+        && rel.ends_with(".md")
+        && !rel
+            .split('/')
+            .any(|p| p.starts_with('.') || p.is_empty() || p == "..")
+}
+
 /// Every session file, parsed.
 pub fn load_all(root: &Path) -> Result<Vec<Dok>> {
     paths(root)

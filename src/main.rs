@@ -258,7 +258,7 @@ enum Command {
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
-    /// Attach a local file to a yak as evidence.
+    /// Attach a local file to a yak as evidence (or to a dok or session note).
     ///
     /// Copies the file under
     /// `.yaks/<herd>/yaks/<id>/` (beside the yak's file) and link it in the body as
@@ -275,7 +275,14 @@ enum Command {
     /// the document from the yak: the document's own `![x](shot.png)` (the
     /// bare file name) resolves to its sibling attachments, in `yaks tui` and
     /// in any markdown viewer.
+    ///
+    /// Give a dok's or session note's farm path instead of a yak id
+    /// (`doks/x.md`, `sessions/2026/11/n.md`) to attach to that document: the
+    /// files go in its sibling directory (`doks/x/`) and the link appended to
+    /// its body goes down into it (`![name](x/<file>)`). `--note` and `.md`
+    /// files are refused there; `yaks mv` takes the directory with its dok.
     Attach {
+        /// A yak id, or the farm path of a dok or session note.
         id: String,
         /// Paths of the local files to attach.
         #[arg(required = true)]
@@ -1029,8 +1036,10 @@ enum Command {
     /// Move a dok and rewrite every link to it, in yaks and doks.
     ///
     /// Links are rewritten to the farm-root form (`/doks/new/path.md`),
-    /// keeping their `@rev` and `#anchor`. `--dry-run` lists what would
-    /// change.
+    /// keeping their `@rev` and `#anchor`. The dok's attachment directory
+    /// (`doks/x/` beside `doks/x.md`) moves with it and links into it
+    /// follow; refused if that directory also holds doks. `--dry-run` lists
+    /// what would change.
     Mv {
         from: String,
         to: String,
@@ -2398,13 +2407,34 @@ fn main() -> Result<()> {
                 };
                 files.push((stored, data));
             }
-            match farm.attach_many(&id, &files, !no_link, caption.as_deref())? {
+            // A yak id is flat; a dok or session note is a farm path.
+            let is_doc = id.contains('/') || id.ends_with(".md");
+            if is_doc && note.is_some() {
+                eprintln!("error: a dok or session note has no notes log; --note is for a yak");
+                std::process::exit(1);
+            }
+            let outcome = if is_doc {
+                farm.attach_doc_many(&id, &files, !no_link, caption.as_deref())?
+            } else {
+                farm.attach_many(&id, &files, !no_link, caption.as_deref())?
+            };
+            match outcome {
                 AttachOutcome::NotFound => {
-                    eprintln!("no such task: {id}");
+                    let what = if is_doc {
+                        "no such dok or session note"
+                    } else {
+                        "no such task"
+                    };
+                    eprintln!("{what}: {id}");
                     std::process::exit(1);
                 }
                 AttachOutcome::Attached(n) => {
-                    let dir = store::artifact_dir(std::path::Path::new(".yaks"), &id);
+                    let dir = if is_doc {
+                        let rel = doks::normalize(&id);
+                        std::path::Path::new(".yaks").join(rel.strip_suffix(".md").unwrap_or(&rel))
+                    } else {
+                        store::artifact_dir(std::path::Path::new(".yaks"), &id)
+                    };
                     let linked = if no_link { ", not linked" } else { "" };
                     println!("attached {n} to {id} ({}{linked})", dir.display());
                     if let Some(text) = note {

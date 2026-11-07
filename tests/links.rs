@@ -279,3 +279,93 @@ fn refs_incoming_lists_doks_and_session_notes() {
     );
     assert!(!text.contains("elsewhere.md"), "{text}");
 }
+
+/// A dok's attachment directory is its sibling (`doks/x.md` + `doks/x/`,
+/// yaks-db66): `attach` stores into it and links it downward, `mv` takes the
+/// directory along and keeps the moved dok's relative link and any absolute
+/// link from elsewhere pointing at it, and doctor stays clean.
+#[test]
+fn attach_to_a_dok_and_mv_it() {
+    let f = Farm::new("dokattach");
+    f.run(&["dok", "new", "doks/topics/a.md", "--body", "Intro."]);
+    let shot = f.dir.join("my shot.png");
+    std::fs::write(&shot, b"png").unwrap();
+    let log = f.dir.join("build.log");
+    std::fs::write(&log, b"log").unwrap();
+
+    let out = f.run(&[
+        "attach",
+        "doks/topics/a.md",
+        shot.to_str().unwrap(),
+        "--caption",
+        "The shot",
+    ]);
+    assert!(
+        out.contains("attached my shot.png to doks/topics/a.md"),
+        "{out}"
+    );
+    f.run(&["attach", "/doks/topics/a.md", log.to_str().unwrap()]);
+    f.run(&[
+        "attach",
+        "doks/topics/a.md",
+        log.to_str().unwrap(),
+        "--name",
+        "other",
+        "--no-link",
+    ]);
+    let root = f.root();
+    assert_eq!(
+        std::fs::read(root.join("doks/topics/a/my shot.png")).unwrap(),
+        b"png"
+    );
+    assert!(root.join("doks/topics/a/other.log").is_file());
+    let text = std::fs::read_to_string(root.join("doks/topics/a.md")).unwrap();
+    assert!(
+        text.contains("Intro.\n\n![my shot](a/my%20shot.png \"The shot\")\n\n[build](a/build.log)"),
+        "{text}"
+    );
+    assert!(!text.contains("other"), "--no-link adds no link: {text}");
+    // The yak that cites an attachment by its farm-root path, and a dok that
+    // names the dok itself.
+    let id = f.create(&["--description", "See ![x](/doks/topics/a/build.log)."]);
+    f.run(&["doctor"]);
+
+    let out = f.run(&["mv", "doks/topics/a.md", "doks/design/renamed.md"]);
+    assert!(
+        out.contains("Moved doks/topics/a.md -> doks/design/renamed.md"),
+        "{out}"
+    );
+    assert!(!root.join("doks/topics/a").exists(), "the directory moved");
+    assert!(root.join("doks/design/renamed/my shot.png").is_file());
+    assert!(root.join("doks/design/renamed/other.log").is_file());
+    let moved = std::fs::read_to_string(root.join("doks/design/renamed.md")).unwrap();
+    assert!(
+        moved.contains("![my shot](renamed/my%20shot.png \"The shot\")")
+            && moved.contains("[build](renamed/build.log)"),
+        "{moved}"
+    );
+    assert!(f.file(&id).contains("(/doks/design/renamed/build.log)"));
+    // `doctor` exits non-zero on any issue: this is the dead-link check.
+    f.run(&["doctor"]);
+}
+
+/// `mv` will not drag other doks along with a sibling directory that is also
+/// a namespace of doks, nor attach a markdown file there (it would read as a
+/// dok).
+#[test]
+fn a_dok_directory_holding_doks_is_not_an_attachment_directory() {
+    let f = Farm::new("dokattach-md");
+    f.run(&["dok", "new", "doks/a.md", "--body", "A."]);
+    f.run(&["dok", "new", "doks/a/child.md", "--body", "Child."]);
+    let err = f.fails(&["mv", "doks/a.md", "doks/b.md"]);
+    assert!(err.contains("doks/a/child.md"), "{err}");
+    assert!(f.root().join("doks/a.md").is_file());
+
+    let md = f.dir.join("notes.md");
+    std::fs::write(&md, b"# n").unwrap();
+    let err = f.fails(&["attach", "doks/a.md", md.to_str().unwrap()]);
+    assert!(err.contains("dok"), "{err}");
+    assert!(!f.root().join("doks/a/notes.md").exists());
+    f.fails(&["attach", "doks/none.md", md.to_str().unwrap()]);
+    f.fails(&["attach", "doks/a.md", "--help-not-a-file"]);
+}
