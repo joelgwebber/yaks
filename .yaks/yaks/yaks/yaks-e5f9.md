@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-03T23:29:24Z'
-updated: '2026-11-07T17:28:15Z'
+updated: '2026-11-07T17:28:18Z'
 tags:
 - tui
 ---
@@ -107,3 +107,11 @@ Decision: pan keys move a quarter of the pane (at least one cell) per press, cla
 ▸ 2026-11-07T17:28:15Z [stars-zoom]
 
 Decision: the state (zoom, offset, measured pane) lives in `Cell`s on `ImageView`, because `render` takes `&App` and measures the pane while drawing; `follow.rs` (another worker's file) is untouched (no `image_mut`). `docs/assets/tui-image-viewer.svg` regenerated (`cargo test docshots_image_viewer -- --ignored`) since half-block fit now draws bigger; no new docshots scene (that file is out of my scope), the frames are attached instead.
+
+---
+▸ 2026-11-07T17:28:18Z [stars-zoom]
+
+Summary. In `src/tui/imageview.rs`: `Zoom` (Fit / FitWidth / Scale), pure helpers `scale_for` / `shown_size` / `clamp_offset` with unit tests, `ImageView::{set_zoom, zoom_step, pan, window, encode}`, `render_image` draws the window. `keymap.rs`: nine new `Cmd`s (`image.zoom_in/out/actual`, `image.fit_width`, `image.fit`, `image.pan_*`) and their `Image` bindings (`+`/`=`, `-`, `0`, `w`, `f`, `h`/`←`, `l`/`→`, `k`/`↑`, `j`/`↓`); `Esc` alone closes now; `h` no longer closes. `render.rs`: bottom line `zoom <fit|fit width|N%> · +/- · 0 actual · w width · f fit[ · h/j/k/l pan] · O open externally · Esc close · q quit`. `docs/tui.md`: the `A`/`O` row and a new "Zooming and panning an image" paragraph. Tests (src/tui/tests.rs): start-at-fit + status line, +/-/= steps and the 5% floor, 0 / w / f, hjkl and arrows pan + clamp at the edge + Esc closes + h never closes, centre-preserving zoom, half-block red/blue frames at fit / actual top-left / panned to the bottom. The tests were written after the code (they cannot compile without the new API, but I did not run them red first).
+Evidence attached: half-block SVG frames at fit, at 150% panned, at fit width, and a text serialisation. I rasterised the SVGs with headless Chrome and looked at them (the disc looks slightly tall: the SVG's cells are 8.6x18.7 px, so a half-block pixel is not square; real terminals are nearer 1:2).
+Not verified: a real kitty/sixel/iTerm2 terminal (only the half-block path runs headlessly); the protocol path shares the crop code and builds via `Picker::new_protocol`, but I have not seen it drawn.
+Friction: the first `yaks verify` failed in `tests/needs_loop.rs::pickup_errors_name_the_state` ("git status failed" inside `init`); passed alone and on the second full run, so flaky under parallel load.
