@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-04T00:00:46Z'
-updated: '2026-11-07T17:24:32Z'
+updated: '2026-11-07T17:29:10Z'
 tags:
 - tui
 ---
@@ -80,3 +80,11 @@ Fail-first: on the unchanged source (create.rs, handlers.rs, store.rs checked ou
 With the change they pass, plus `store::note_tests::with_description_replaces_the_description_and_keeps_the_notes_verbatim`. The existing `edit_form_title_edit_leaves_the_body_byte_identical` and `edit_form_without_edits_is_not_dirty_and_keeps_the_body` still pass. Snapshot `edit_form_panel` changed only by gaining the `description` rule and `First line.` row; accepted.
 
 Docs parity: `docs/tui.md` (Edit form paragraph), the two `E` help lines in `keymap.rs` (`bind_row` and `bind_pane`), the `docshots.rs` scene comment, the `CreateForm` doc comment.
+
+---
+▸ 2026-11-07T17:29:10Z [stars-form]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
