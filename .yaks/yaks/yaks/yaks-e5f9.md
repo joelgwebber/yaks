@@ -1,11 +1,11 @@
 ---
 id: yaks-e5f9
 title: Image zoom affordances
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-03T23:29:24Z'
-updated: '2026-11-07T17:28:18Z'
+updated: '2026-11-07T17:28:20Z'
 tags:
 - tui
 ---
@@ -115,3 +115,13 @@ Summary. In `src/tui/imageview.rs`: `Zoom` (Fit / FitWidth / Scale), pure helper
 Evidence attached: half-block SVG frames at fit, at 150% panned, at fit width, and a text serialisation. I rasterised the SVGs with headless Chrome and looked at them (the disc looks slightly tall: the SVG's cells are 8.6x18.7 px, so a half-block pixel is not square; real terminals are nearer 1:2).
 Not verified: a real kitty/sixel/iTerm2 terminal (only the half-block path runs headlessly); the protocol path shares the crop code and builds via `Picker::new_protocol`, but I have not seen it drawn.
 Friction: the first `yaks verify` failed in `tests/needs_loop.rs::pickup_errors_name_the_state` ("git status failed" inside `init`); passed alone and on the second full run, so flaky under parallel load.
+
+---
+▸ 2026-11-07T17:28:20Z [stars-zoom]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEp3x5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
