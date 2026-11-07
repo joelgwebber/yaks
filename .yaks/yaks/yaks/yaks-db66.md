@@ -5,12 +5,11 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-11-06T21:37:11Z'
-updated: '2026-11-06T21:48:01Z'
+updated: '2026-11-07T17:04:28Z'
 parent: yaks-3f35
 tags:
 - doks
 - design
-needs: agent
 ---
 
 From yaks-3f35, item 4. Yaks have attachments (`yaks attach`, stored in `<herd>/yaks/<id>/`); doks and session notes have nothing. The schism import put each image in a directory named after its document, beside it:
@@ -54,3 +53,12 @@ needs: agent
 ---
 
 Agreed, I think that's a very easy pattern to follow, and also easy to browse on the filesystem.
+
+---
+▸ 2026-11-07T17:04:28Z [herd-stars]
+kind: pickup
+---
+
+picked up
+
+herd-stars: blessed sibling directory; a worker builds attach/mv/doctor/weight for it, I write the skill text.
