@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-04T00:00:46Z'
-updated: '2026-11-07T17:24:23Z'
+updated: '2026-11-07T17:24:24Z'
 tags:
 - tui
 ---
@@ -49,3 +49,5 @@ Start: Sat Nov  7 17:07:47 UTC 2026
 - checkout: /Users/joel/src/yaks/.delta/worktrees/e3chjzn4e2pq/yaks
 
 [frame-255d-edit-form-description](yaks-255d/frame-255d-edit-form-description.txt "Headless frame: E on a yak with an empty description and one note, Tab to the description row, typed text; the note is not in the form")
+
+![edit-herd](yaks-255d/edit-herd.svg "docs scene tui-edit-herd (regenerated): the multi-herd edit form now ends in the description editor")
