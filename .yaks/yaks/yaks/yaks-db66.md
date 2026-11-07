@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T21:37:11Z'
-updated: '2026-11-07T17:06:47Z'
+updated: '2026-11-07T17:12:15Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -98,3 +98,15 @@ Start: 2026-11-07 17:06:44 UTC (`date -u`).
 
 - `yaks path yaks-db66`: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-db66.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/vqz90cnfqhr3/yaks
+
+---
+▸ 2026-11-07T17:12:15Z [stars-dokattach]
+
+What already held (checked, not changed):
+
+- `mv` today: moved only the `.md` file and rewrote links to it; the sibling directory was left behind, and a relative `x/shot.png` link in the moved dok was rewritten to the farm-root form `/doks/<old>/x/shot.png`, so it went dead. Fixed (below).
+- `doctor` already reports a dead link into a dok's or session's sibling directory: `links::edges` reads dok and session bodies, `parse(.., From::Dok)` resolves `x/shot.png` to `doks/.../x/shot.png`, and `exists` stats it. Test added (session test deletes the file and expects the broken-link line).
+- `weight`: `kind_of` counts anything under a path with a `doks` segment as `doks`, so a dok's directory already counts there; a session note's directory (like the notes themselves) falls under `other`. Counted, so left; asserted in the `kinds_follow_the_farm_layout` unit test. A `sessions` bucket would change the report's shape: follow-up if wanted.
+- `lfs`: rules are `.yaks/**/*.<ext>` globs, which already cover any depth, so the sibling directories are routed. No change.
+
+Not done: `rename-attachment` for doks (follow-up; it needs the same doc-path dispatch plus rewriting links in the doc and every doc that links it), and `mv` rewriting links held in session notes (`dok_move` scans yaks and doks only, as before).
