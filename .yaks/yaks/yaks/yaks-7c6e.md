@@ -279,4 +279,4 @@ Reproduced headless with my build:
 - `?` on the list: the grouped popup (Move, Open and follow, Find, Change the yak, View and filter, Farm, App), `n/F3`, `?/F1`, `Tab/]/}`.
 - `keys: standard` in the user config: `j` does nothing, `Enter` opens the pane, `h` stays in it (focus still `detail`), `}` changes view; hints read `↑/↓:move`, `Enter:detail`, `Esc:list`.
 
-Not tried in a real terminal (`F1`, `Shift-F3`, `Ctrl-↓` depend on what the terminal sends). The `docs/assets` SVGs still show the old hints: filed yaks-1c84 to regenerate them in one commit. Editor parity is yaks-4736.
+Not tried in a real terminal (`F1`, `Shift-F3`, `Ctrl-↓` depend on what the terminal sends). The `docs/assets` SVGs still show the old hints: filed yaks-1a5f to regenerate them in one commit. Editor parity is yaks-4736.

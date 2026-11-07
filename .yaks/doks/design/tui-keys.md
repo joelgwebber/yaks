@@ -53,3 +53,7 @@ A proposal for yaks-7c6e, after the unified-model phases ([TUI design](/doks/des
 ## A check that keeps it true
 
 A test over the table enforces rules 2 and 4: every command marked as a mutation is bound to a Shift key or confirms; no binding in standard mode uses a vim-only key. A new key that breaks a rule fails the build rather than waiting for a reader to notice.
+
+## Built
+
+yaks-7c6e built this page's proposal (2026-11-07), with Joel's answers: `h`/`l` never move between list and pane; `keys: vim|standard` in the user config picks the family for the whole TUI (`vim_mode` stays an alias); the case rule and "every command stays bound in standard mode" are tests over the table; the `?` popup is grouped, runs a listed key, and `F1` opens it everywhere, editors included; `{`/`}` change views. `AGENTS.md` has the key-binding rules for contributors; user-facing behaviour is in `docs/tui.md`. Editor parity across families is yaks-4736.
