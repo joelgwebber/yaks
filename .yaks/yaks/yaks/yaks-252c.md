@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 1
 created: '2026-11-06T04:28:31Z'
-updated: '2026-11-07T00:00:14Z'
+updated: '2026-11-07T00:00:23Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -91,3 +91,20 @@ result: pass
 ---
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-11-07T00:00:23Z [doks-1]
+
+Decision: `dok show` prints the hash on stderr (`hash: <h>`) in text mode, and as a `hash` field in `--json`. Rejected: a header line on stdout (breaks `dok show | ...` consumers that expect the file text).
+
+Decision: the hash is the sha256 of the file bytes as on disk (first 12 hex), read under the farm lock for `--if-hash`; the hash `dok set` prints is that of the text it wrote. Rejected: hashing `Dok::render()`, which differs from the file for a hand-written non-canonical dok.
+
+Decision: `dok set` always prints `hash: <h>` on stdout after `Updated`/`No changes to`, with or without the new flags. Rejected: only when `--if-hash` or `--old` was used (an inconsistent output shape).
+
+Decision: `--old`/`--new` take `-`/`--old-file`/`--new-file` through the existing `resolve_text`, so trailing newlines are dropped and an empty file or stdin is refused; an empty inline `--new ''` deletes. They match the body only (not frontmatter), conflict with `--body/--body-file`, must be given together, and combine with `--set/--unset/--if-hash`. Rejected: a separate edit command.
+
+Decision: `json::dok_value` is unchanged; a new `dok_value_hashed` adds `hash`, so `list`/`query` JSON is unchanged (the hash would cost a file read per row, and yaks-39f9 owns query). `dok new` does not print a hash (not in scope).
+
+Summary: `doks::text_hash`/`load_hashed`, `Farm::dok_hashed`, `Farm::dok_set` (+`DokEdit`, `DokSet`) refuse a stale `--if-hash` or an `--old` matching 0 or n times, writing nothing. CLI test `stale_if_hash_is_refused_and_old_new_edits_chain_by_hash` in tests/doks.rs. Docs: docs/cli.md `### dok`, `yaks` skill Doks section, `yaks-research` skill edit line, clap help. README has no dok rows (nothing to change).
+
+Evidence: `cargo test` all green except the known `init_modes` farm_works_from_a_git_worktree... flake (fails here intermittently, passes on rerun; also passed on baseline once). One `yaks verify` failed in the `--bin yaks` unit tests under load and did not reproduce in 4 reruns; the latest `yaks verify` is PASS.
