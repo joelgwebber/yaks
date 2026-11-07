@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T21:26:35Z'
-updated: '2026-11-07T17:07:28Z'
+updated: '2026-11-07T17:09:41Z'
 tags:
 - tui
 ---
@@ -50,3 +50,12 @@ Start: 2026-11-07T17:07Z (`date -u`).
 
 - `yaks path yaks-a004`: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-a004.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/brgsw94dabng/yaks
+
+---
+▸ 2026-11-07T17:09:41Z [stars-peek]
+
+Finding: `p` already works in the viewer from both entry points; I could not reproduce "can't hide".
+
+- Wrote two tests in `src/tui/follow.rs` that drive real keys: open the hub dok from the Doks tab (`set_view` Doks, `j` to the row, Enter) and from a link in a yak's body (`l`, Tab, Enter). In each, Tab to a dok link, assert the `── peek:` rule is drawn, `p` removes it, `p` again restores it. Both pass on the unchanged tree.
+- So the viewer's `p` (`Cmd::PeekToggle` -> `run_viewer_cmd`) is fine; what is missing is the toggle in the yak detail pane (whose one-line status-bar peek has no `p`), and discoverability (viewer `p` has `NoHint`; it is only in `?`). That matches the task's other items; keeping the two tests as regressions.
+- One wart noted, not changed: `p` in a viewer on a dok with no peekable link flips the flag with a notification but nothing visible changes.
