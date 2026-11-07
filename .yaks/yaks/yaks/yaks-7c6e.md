@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-07T18:09:32Z'
+updated: '2026-11-07T18:09:33Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
@@ -169,3 +169,5 @@ Friction: the machine's data volume was at 100% (137 MiB free) when I first buil
 [popup-list-vim](yaks-7c6e/popup-list-vim.txt "The grouped ? popup on the list (vim family, 110x24): Move / Open and follow / Find / Change the yak / View and filter / Farm / App, a listed key runs it")
 
 [popup-editor-vim-normal](yaks-7c6e/popup-editor-vim-normal.txt "F1 over the in-place comment editor (vim Normal): the editor's own keys, grouped; a listed key goes on to the editor")
+
+[popup-editor-standard](yaks-7c6e/popup-editor-standard.txt "F1 over the same editor in the standard family: the emacs-style keys")

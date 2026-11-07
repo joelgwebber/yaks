@@ -1,0 +1,24 @@
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   📖  Doks (0)   🛖  Sheds (…)
+
+◂ Comment
+│
+│
+│
+│
+│
+│
+│
+│
+│
+ Keys · editor, standard ─────────────────────────────────────────────────────────────────────────────────────
+ Move                                        Ctrl-K        Delete to end of line
+ ← ↓ ↑ →          Move the cursor            Alt-D         Delete the next word
+ Ctrl-F Ctrl-B    Char forward, back         Ctrl-U Ctrl-R Undo, redo
+ Alt-F Alt-B      Word forward, back         Ctrl-Y        Paste
+ Ctrl-A Ctrl-E    Start, end of the line     Tab           Complete a yak id, else tab
+ Home End         Start, end of the line     Save and leave
+ Ctrl-V Alt-V     Half a page down, up       Ctrl-S        Save
+ Change the text                             Ctrl-C        Cancel (asks if changed)
+ Enter            New line (lists continue)  Esc Esc       Cancel (quick second Esc)
+ Backspace Ctrl-D Delete before, after
+a listed key goes to the editor · any other key closes
