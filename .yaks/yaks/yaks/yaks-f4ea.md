@@ -1,11 +1,11 @@
 ---
 id: yaks-f4ea
 title: 'YAKS_THREAD: a harness-neutral thread id for moves and session notes'
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-07T17:23:43Z'
+updated: '2026-11-07T17:23:44Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -100,3 +100,13 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 ▸ 2026-11-07T17:23:43Z [stars-thread]
 
 Summary: `actor::harness_thread()` (the one reader behind move `thread:`, `session note`'s `thread:` and `whoami`) now reads `YAKS_THREAD`, then `DELTA_CURRENT_THREAD_ID`; blank counts as unset. Docs: `docs/cli.md` (session note frontmatter, whoami, Attribution), the `whoami` clap help, and the yaks-coordinating skill line. Tests: 3 integration tests (move, whoami, session note; each failed before the change) plus a unit test for the precedence. `yaks verify` PASS. One test assertion of mine was wrong at first (the `delta:t-123` actor stamp contains the id); fixed to assert on `thread: t-123`.
+
+---
+▸ 2026-11-07T17:23:44Z [stars-thread]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpr_pIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
