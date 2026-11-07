@@ -173,3 +173,5 @@ Friction: the machine's data volume was at 100% (137 MiB free) when I first buil
 [popup-editor-standard](yaks-7c6e/popup-editor-standard.txt "F1 over the same editor in the standard family: the emacs-style keys")
 
 [hint-list-standard](yaks-7c6e/hint-list-standard.txt "The list in standard mode: the bottom hint names the arrows (↑/↓:move), Enter:detail")
+
+[popup-list-standard](yaks-7c6e/popup-list-standard.txt "The ? popup on the list in standard mode: no h j k l, d/u, g/G; Ctrl-F find, Home/End, F3")

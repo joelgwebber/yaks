@@ -1,0 +1,24 @@
+ 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   📖  Doks (0)   🛖  Sheds (…)
+
+ a0   p2 task     🦬  Root A
+   a1 p3 task     🦬  Child A1
+
+
+
+
+
+ Keys · list · yak rows ──────────────────────────────────────────────────────────────────────────────────────
+ Move                   Open and follow          C yak.new_child  Z         yak.snooze     U        farm.sync
+ ↓      move.down       Enter      pane.open     E yak.edit       A         yak.attach     App
+ ↑      move.up         i          nav.forward   X yak.slaughter  *         yak.star       ?/F1     app.help
+ Ctrl-D move.half_down  o          nav.back      S yak.state      View and filter          q/Ctrl-C app.quit
+ Ctrl-U move.half_up    Find                     P yak.priority   Tab/]/}   view.next
+ PgDn   move.page_down  //Ctrl-F   search.open   T yak.type       S-Tab/[/{ view.prev
+ PgUp   move.page_up    n/F3       find.next     L yak.tags       F         family.cycle
+ Home   move.top        N/Shift-F3 find.prev     D yak.dep        `         view.pick
+ End    move.bottom     #          nav.goto      R yak.reparent   V         view.save
+ ←      tree.left       B          yak.backrefs  H yak.herd       Esc       view.revert
+ →      tree.right      Change the yak           M yak.comment    f         filter.drawer
+ Space  tree.toggle     m          yak.mark      a yak.answer     Farm
+ y      row.copy        c          yak.new       Q yak.ask        W         farm.commit
+a listed key runs it · ? again: the full reference · any other key closes
