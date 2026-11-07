@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-03T23:29:24Z'
-updated: '2026-11-07T17:27:05Z'
+updated: '2026-11-07T17:27:31Z'
 tags:
 - tui
 ---
@@ -64,3 +64,5 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+![zoom-1-fit](yaks-e5f9/zoom-1-fit.svg "Half-block frame at fit (default), status line: zoom fit")
