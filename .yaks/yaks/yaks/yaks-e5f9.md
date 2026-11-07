@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-03T23:29:24Z'
-updated: '2026-11-07T17:28:05Z'
+updated: '2026-11-07T17:28:07Z'
 tags:
 - tui
 ---
@@ -82,3 +82,8 @@ Decision: zoom and pan are done by cropping and scaling the decoded pixels mysel
 ▸ 2026-11-07T17:28:05Z [stars-zoom]
 
 Decision: for half-block cells the zoom grid is one column by half a row (the library draws two pixels per cell whatever the font), so `100%` is one image pixel per half-block. Rejected: the picker's 10x20 font grid, where `100%` would be one pixel per 10x20 cell and the library would resample twice. Consequence: half-block `fit` is no longer a tiny natural-size icon (64x64 used to take 7x4 cells); it fills up to the pane, never past 100%.
+
+---
+▸ 2026-11-07T17:28:07Z [stars-zoom]
+
+Decision: zoom steps are a fixed ladder (5, 10, 12.5, 25, 33, 50, 67, 75, 100, 150, 200, 300, 400, 600, 800, 1200, 1600, 2400, 3200 %) stepped from the factor on screen, so `+` from `fit` goes to the first rung above the fit size. Rejected: a x1.25 multiplier (ugly percentages in the status line).
