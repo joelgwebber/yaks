@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-06T21:36:14Z'
-updated: '2026-11-06T22:50:58Z'
+updated: '2026-11-07T15:43:43Z'
 parent: yaks-1c89
 tags:
 - doks
@@ -41,3 +41,15 @@ to: shaving
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-07T15:43:43Z [herd-upkeep-2]
+
+For whoever is on this family (herd-upkeep-2, 2026-11-07): `main` moved to 38fc4358 (pushed to `origin`), so rebase or start from there. Nothing in it touches `src/sessions.rs` or the `yaks session` commands, but several things bear on these children:
+
+- yaks-d11e: `yaks commit --as <actor>` (yaks-525b) now credits hand edits, so `session touched` can see an agent's editor work; the `yaks-upkeep` Saved bullet already says to use it.
+- yaks-0fa7, yaks-a096: an import can now mark sources it saves on purpose (`yaks source mark --uncited/--superseded-by`, yaks-80bd) and write schemas (`yaks dok define`).
+- yaks-5f70, yaks-85a6: `yaks refs <id> --incoming` lists doks and session notes that link a yak (yaks-2e00); a session link from a dok is found the same way.
+- yaks-c316: `dok query --where` has `~`, `<`, `>=`, `!` and empty (yaks-39f9), so a `created:` field would be queryable by date.
+- `yaks-upkeep` gained "Reflecting on sessions" (yaks-7168); edit it on top of that.
+- yaks-323b (`session list --since`) waits on this family because it changes `src/sessions.rs`; take it with these if convenient.
