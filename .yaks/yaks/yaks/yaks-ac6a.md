@@ -5,7 +5,7 @@ status: hairy
 type: bug
 priority: 2
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-07T16:57:34Z'
+updated: '2026-11-07T16:57:32Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -30,5 +30,3 @@ Proposal:
 - Tests: a daily and a weekly yak across both US transitions; a month-end monthly one still keeps its day.
 
 Needs a decision on the field name and whether the zone may be per herd (a family spread over zones). Lean: farm-wide only.
-
-[x](yaks-ac6a/x)
