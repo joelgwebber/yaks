@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T21:37:11Z'
-updated: '2026-11-07T17:04:44Z'
+updated: '2026-11-07T17:05:35Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -72,3 +72,21 @@ thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-07T17:05:35Z [herd-stars]
+
+Claim (yakherd herd-stars): worker `stars-dokattach` builds the commands; herd-stars writes the skill text after landing.
+
+**Scope.** The sibling directory is a farm document's attachment directory (`doks/x.md` + `doks/x/`, `sessions/.../n.md` + `sessions/.../n/`), as Joel answered:
+
+- `yaks attach <dok-or-session-path> <file>...` stores into it and appends the link to the document's body (a relative link going down, `x/file.png`), with `--caption` and `--no-link` as for yaks.
+- `yaks mv` moves the directory with its dok (check what it does today), and links into it follow.
+- `yaks doctor` reports a dead link into it; `yaks weight` and `yaks lfs` count it (check each; fix only what does not already hold).
+- `docs/cli.md`, `src/main.rs` help for `attach` and `mv`.
+
+**Out of scope.** The TUI; `rename-attachment` for doks (a follow-up if it is not trivial); skill files.
+
+**Evidence.** Tests: attach to a dok writes the file and link; `mv` of that dok moves the directory and the link still resolves (`doctor` clean); same for a session note. Gate `cargo test -p yaks`.
+
+**Judge.** herd-stars at landing.
