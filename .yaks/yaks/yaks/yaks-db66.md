@@ -1,11 +1,11 @@
 ---
 id: yaks-db66
 title: 'Images and files in doks and session notes: a sibling-directory convention'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T21:37:11Z'
-updated: '2026-11-07T17:04:28Z'
+updated: '2026-11-07T17:04:44Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -62,3 +62,13 @@ kind: pickup
 picked up
 
 herd-stars: blessed sibling directory; a worker builds attach/mv/doctor/weight for it, I write the skill text.
+
+---
+▸ 2026-11-07T17:04:44Z [herd-stars]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
