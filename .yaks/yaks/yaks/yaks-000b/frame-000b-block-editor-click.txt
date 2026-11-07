@@ -1,0 +1,27 @@
+test tui::mouse::tests::a_click_in_the_block_editor_moves_the_text_cursor ... --- block editor after clicks ---
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   📖  Doks (0)   🛖  Sh
+
+◂  🦬  b0  task     p3  Block
+│ ─────────────────────────────────────────────────────────────────────────────────────────────────
+│ Updated:     -
+│ Tags:        -
+│
+│ ▸ description ─────────────────────────────────────────── editing · Ctrl-S save · Ctrl-C cancel ─
+│ ┃alpha beta
+│ ┃gamma delta
+│ ┃epsilon
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+NORMAL  Ctrl-S save · Ctrl-C / Esc Esc cancel
+
+ok

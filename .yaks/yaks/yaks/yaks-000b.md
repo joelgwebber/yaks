@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-03T21:04:56Z'
-updated: '2026-11-07T17:32:29Z'
+updated: '2026-11-07T17:38:37Z'
 tags:
 - tui
 needs: human
@@ -118,3 +118,5 @@ Blocked on a one-line `Cargo.toml` change, which my brief forbids me to make. Qu
 - Not changing it means writing our own click-to-position against edtui's private `LineWrapper` and `ViewState::screen_area` (both `pub(crate)`), which is not possible from outside.
 
 Status: the form part (row focus, chip select, forwarding into a focused field) and the block-editor forwarding (position translated from the pane into the editor's scratch buffer) are written and uncommitted in my working tree; the tests are written and fail for the right reason on the old code. They cannot compile in this checkout until the feature is on. I will check the work in a scratch copy with the feature enabled (not committed, not a checkout of record) and report.
+
+[frame-000b-block-editor-click](yaks-000b/frame-000b-block-editor-click.txt "Headless frame of the in-place editor after clicks (state asserted in a_click_in_the_block_editor_moves_the_text_cursor; a text frame draws no cursor)")
