@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-11-03T23:29:24Z'
-updated: '2026-11-07T17:28:20Z'
+updated: '2026-11-07T17:37:45Z'
 tags:
 - tui
 ---
@@ -125,3 +125,11 @@ thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEp3x5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-07T17:37:45Z [herd-stars]
+kind: landed
+commit: 0490703606fd1fcbb2a34b844d639de96fc38d01
+---
+
+Landed by herd-stars as `04907036` (worker `c46e089a`), by cherry-pick: `docs/tui.md`'s `A`/`O` row conflicted with yaks-a036; kept both. Gate `cargo test --workspace` green. Not seen on a graphics-protocol terminal yet.
