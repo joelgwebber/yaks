@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T21:37:11Z'
-updated: '2026-11-07T17:22:08Z'
+updated: '2026-11-07T17:22:20Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -133,3 +133,33 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-07T17:22:20Z [stars-dokattach]
+
+Scratch-farm run with `./target/debug/yaks` (YAKS_DIR = a temp farm), output as observed:
+
+```
+$ yaks attach doks/topics/a.md shot.png --caption "The shot"
+attached shot.png to doks/topics/a.md (.yaks/doks/topics/a)
+$ cat doks/topics/a.md        -> ... Intro.\n\n![shot](a/shot.png "The shot")
+$ yaks doctor                 -> All clear: no farm-integrity issues found. (exit 0)
+$ yaks mv doks/topics/a.md doks/design/b.md
+Moved doks/topics/a.md -> doks/design/b.md
+  doks/topics/a.md: 1 link
+$ find . -name '*.png'        -> .../.yaks/doks/design/b/shot.png
+$ cat doks/design/b.md        -> ![shot](b/shot.png "The shot")
+$ yaks doctor                 -> All clear (exit 0)
+$ rm doks/design/b/shot.png; yaks doctor
+Broken link (a farm path or attachment that does not exist, or a ../ link):
+  doks/design/b.md:L3: (b/shot.png) no such file in the farm   (exit 1)
+$ yaks attach sessions/2026/11/scratch-2026-11-07-1212-shots.md shot.png
+attached shot.png to sessions/2026/11/scratch-2026-11-07-1212-shots.md (.yaks/sessions/2026/11/scratch-2026-11-07-1212-shots)
+  link appended: ![shot](scratch-2026-11-07-1212-shots/shot.png); doctor: All clear
+$ yaks attach doks/none.md shot.png   -> no such dok or session note: doks/none.md (exit 1)
+$ yaks attach <session> n.md          -> Error: n.md: a .md file beside a dok or session note would read as another document; ... (exit 1)
+```
+
+Tests (failed before the change: "no such task: doks/topics/a.md" and `mv` not refusing): `tests/links.rs::attach_to_a_dok_and_mv_it`, `a_dok_directory_holding_doks_is_not_an_attachment_directory`, `tests/sessions.rs::attach_to_a_session_note`, `src/weight.rs` `kinds_follow_the_farm_layout`.
+
+Summary: `yaks attach` takes a dok or session path (`Farm::attach_doc_many`, sharing `store_attachments` with the yak path); `mv` moves the directory and rewrites links into it; docs/cli.md and clap help for `attach` and `mv` updated. Gate `yaks verify yaks-db66`: PASS.
