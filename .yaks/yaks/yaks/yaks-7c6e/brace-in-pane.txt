@@ -1,0 +1,14 @@
+ 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   📖  Doks (0)   🛖  Sh
+
+◂ Task: b0
+│
+│ Title:       Root B shaving
+│ Status:      🪒  shaving
+│ Type:        task
+│ Priority:    p1
+│ Created:     -
+│ Updated:     -
+│ Tags:        -
+│
+│
+Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit  M:comment  D:dep  S:state
