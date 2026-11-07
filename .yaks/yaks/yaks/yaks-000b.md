@@ -5,9 +5,10 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-03T21:04:56Z'
-updated: '2026-11-07T17:07:50Z'
+updated: '2026-11-07T17:32:29Z'
 tags:
 - tui
+needs: human
 ---
 
 A few scrolling odds and ends:
@@ -100,3 +101,20 @@ Start: Sat Nov  7 17:07:49 UTC 2026
 
 - farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-000b.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/e3chjzn4e2pq/yaks
+
+---
+▸ 2026-11-07T17:32:29Z [stars-form]
+kind: ask
+needs: human
+---
+
+asked: needs human
+
+Blocked on a one-line `Cargo.toml` change, which my brief forbids me to make. Question for the yakherd: may the root `Cargo.toml` enable edtui's `mouse-support` feature?
+
+- edtui's `MouseEventHandler` (`src/events/mouse.rs`, checkout `c49afd9`) is behind `#[cfg(feature = "mouse-support")]` in `src/events/mod.rs`. The feature is in edtui's `default`, but our dependency line has `default-features = false, features = ["arboard"]`, so `edtui::events::MouseEventHandler` does not exist for us: `error[E0433]: cannot find MouseEventHandler in events ... gated behind the mouse-support feature`.
+- The fix is `features = ["arboard", "mouse-support"]` on the `edtui = { git = ..., branch = "yaks-integration", default-features = false, ... }` line (line 28). The feature is empty (`mouse-support = []`, no new dependencies), so `Cargo.lock` does not change.
+- Nothing is missing from edtui itself: its handler already does click-to-position (wrap-aware, tab-aware) and drag-select (Visual mode), so no edtui change is needed.
+- Not changing it means writing our own click-to-position against edtui's private `LineWrapper` and `ViewState::screen_area` (both `pub(crate)`), which is not possible from outside.
+
+Status: the form part (row focus, chip select, forwarding into a focused field) and the block-editor forwarding (position translated from the pane into the editor's scratch buffer) are written and uncommitted in my working tree; the tests are written and fail for the right reason on the old code. They cannot compile in this checkout until the feature is on. I will check the work in a scratch copy with the feature enabled (not committed, not a checkout of record) and report.
