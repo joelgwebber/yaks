@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T21:26:35Z'
-updated: '2026-11-07T17:04:42Z'
+updated: '2026-11-07T17:05:34Z'
 tags:
 - tui
 ---
@@ -23,3 +23,22 @@ thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-07T17:05:34Z [herd-stars]
+
+Claim (yakherd herd-stars): worker `stars-peek`.
+
+**Scope.** One peek, the same in the yak detail pane and the text viewer:
+
+- The yak detail pane gets the viewer's peek pane (`render_peek`, `PEEK_ROWS`) when its line cursor is on a peekable link, in place of today's one-line status-bar peek.
+- `p` (`peek.toggle`) shows and hides it in both, one flag (`peek_shown`) for the whole session.
+- Check that `p` works in the viewer as opened from the Doks tab; fix it if not (Joel says it could not be hidden).
+- `p:peek` in both contexts' bottom hint, so it is discoverable.
+- Files: `src/tui/follow.rs`, `src/tui/render.rs` (detail render, `render_peek`), the `Detail`/`Viewer` rows in `src/tui/keymap.rs`, `docs/tui.md`.
+
+**Out of scope.** What `links::peek` returns; the other keys.
+
+**Evidence.** Tests: the yak pane shows the peek pane on a dok link, `p` hides it there and in the viewer. Frames of the yak pane with the peek, attached. Gate `cargo test -p yaks`.
+
+**Judge.** herd-stars at landing.
