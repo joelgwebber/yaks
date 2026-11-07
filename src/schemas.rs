@@ -36,10 +36,11 @@ const KINDS: &[&str] = &[
 ];
 
 /// Keys any dok may carry without its schema listing them (OKF's and
-/// Hearth's bookkeeping).
+/// Hearth's bookkeeping, and the `created:` stamp of `yaks dok new`).
 const META: &[&str] = &[
     "type",
     "title",
+    "created",
     "description",
     "tags",
     "status",

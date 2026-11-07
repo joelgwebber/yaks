@@ -2246,7 +2246,9 @@ impl Farm {
     }
 
     /// Create the dok at `path` (see [`crate::doks::new_dok`]) under the
-    /// farm lock. Returns its file path.
+    /// farm lock, stamped `created:` now (UTC, as a yak's) unless `fields`
+    /// gives one (yaks-c316). Nothing stamps an `updated:`: hand edits would
+    /// leave it stale. Returns its file path.
     pub fn dok_new(
         &self,
         path: &str,
@@ -2263,6 +2265,10 @@ impl Farm {
                 .filter(|(k, _)| !fields.iter().any(|(f, _)| f == k))
                 .collect();
         all.extend(fields.iter().cloned());
+        if !all.iter().any(|(k, _)| k == "created") {
+            let now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
+            all.insert(0, ("created".into(), Value::Str(now)));
+        }
         let dok = crate::doks::new_dok(&self.root, path, kind, title, &all, body)?;
         crate::doks::save(&self.root, &dok)
     }

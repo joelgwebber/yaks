@@ -93,6 +93,8 @@ fn new_set_show_list_and_query() {
         "topic",
         "--set",
         "tags=[home, hvac]",
+        "--set",
+        "created=2026-01-02T03:04:05Z",
         "--body",
         "Notes.",
     ]);
@@ -106,7 +108,8 @@ fn new_set_show_list_and_query() {
     let text = std::fs::read_to_string(f.root().join("doks/topics/heat-pump.md")).unwrap();
     assert_eq!(
         text,
-        "---\ntype: topic\ntitle: Heat pump\ntags:\n- home\n- hvac\n---\n\nNotes.\n"
+        "---\ntype: topic\ntitle: Heat pump\ntags:\n- home\n- hvac\ncreated: 2026-01-02T03:04:05Z\n---\n\nNotes.\n",
+        "a created: the caller gives wins over the stamp (yaks-c316)"
     );
 
     f.run(&[

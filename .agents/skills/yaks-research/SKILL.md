@@ -51,7 +51,8 @@ Binary originals make every clone of the repository heavier. `yaks weight` shows
 ## Write the dok
 
 - `yaks dok new doks/topics/<kebab-name>.md --type topic --title "..." --set 'tags=[a, b]' --body-file draft.md`. Kinds without a schema: `note` (the default), `topic` (a living dok about one subject), `howto` (steps), `summary` (a digest of one source, citing it).
-- Folders: `doks/topics/`, `doks/projects/` and `doks/people/` are a good start; follow whatever the farm already uses. A herd's own knowledge goes in `<herd>/doks/`.
+- **Folders follow kinds, not subjects.** `doks/topics/` holds `topic` doks about any subject (`doks/projects/`, `doks/people/` likewise for those kinds); a typed kind gets its own folder (`doks/screenshots/` for `type: screenshot`); a subject never gets a folder of its own: give it a tag. A herd's own knowledge goes in `<herd>/doks/`, by the same rule.
+- **Dated doks.** A dok that is about one day (a screenshot, meeting notes, a test run) carries a `date:` field, typed `date` in its kind's schema so `dok query` sorts by it, and a date-prefixed name: `doks/screenshots/2026-03-08-composite-objects.md`. `yaks dok new` stamps every dok `created:` itself; `date:` is the day the dok is about, which can differ.
 - **Cite** every source you relied on in the frontmatter, as Hearth does:
 
   ```yaml
@@ -73,7 +74,7 @@ Binary originals make every clone of the repository heavier. `yaks weight` shows
   ```
 
   Check one off with the answer and where it came from; don't delete it.
-- Leave out fields that change on every edit (`updated:`, counters). Git records when a dok changed, and each write is its own commit.
+- Leave out fields that change on every edit (`updated:`, counters). Git records when a dok changed, and each write is its own commit. `created:` (stamped by `dok new`) never changes.
 - A fact that goes out of date gets `stale_after:` with an ISO 8601 duration (`P6M` is six months; `P1Y`, `P2W`, `P30D`) or a date. When someone re-checks it, set `verified: <date>`, a deliberate re-check rather than an edit counter. `yaks check` lists doks past due, counting from `verified:`, else from the dok's last commit. It reports what needs a person: stale doks, sources nobody cites, kinds of dok that look alike, and doctor's link and schema findings. Nothing runs it on a clock, so run it at the start of research in an area, and a harness or human may schedule it.
 
 ## Typed doks

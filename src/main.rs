@@ -1646,7 +1646,8 @@ enum DokAction {
         json: bool,
     },
     /// Create a dok. Refuses a path that exists or is not
-    /// `doks/<kebab-parts>.md` / `<herd>/doks/<kebab-parts>.md`.
+    /// `doks/<kebab-parts>.md` / `<herd>/doks/<kebab-parts>.md`. Stamps
+    /// `created:` now (UTC) unless `--set created=...` gives one.
     New {
         path: String,
         /// The dok's kind (default `note`).

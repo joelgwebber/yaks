@@ -848,8 +848,16 @@ mod tests {
             Some("created doks/topics/hnsw-tuning.md")
         );
         let file = root.join("doks/topics/hnsw-tuning.md");
+        // `created:` is now (yaks-c316); the rest is the template.
+        let text = std::fs::read_to_string(&file).unwrap();
+        let (head, rest) = text.split_once("created: '").unwrap();
+        let (stamp, tail) = rest.split_once("'\n").unwrap();
+        assert!(
+            chrono::DateTime::parse_from_rfc3339(stamp).is_ok(),
+            "{stamp}"
+        );
         assert_eq!(
-            std::fs::read_to_string(&file).unwrap(),
+            format!("{head}{tail}"),
             "---\ntype: note\ntitle: Hnsw tuning\n---\n"
         );
         assert_eq!(
