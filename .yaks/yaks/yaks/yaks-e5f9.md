@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-03T23:29:24Z'
-updated: '2026-11-07T17:05:34Z'
+updated: '2026-11-07T17:07:12Z'
 tags:
 - tui
 ---
@@ -40,3 +40,11 @@ Claim (yakherd herd-stars): worker `stars-zoom`.
 **Evidence.** Tests on the zoom state and the viewport offset (fit, zoom in, pan, `0`, `w`). Half-block headless frames at fit and zoomed, attached. Gate `cargo test -p yaks`.
 
 **Judge.** herd-stars at landing.
+
+---
+▸ 2026-11-07T17:07:12Z [stars-zoom]
+
+Start: Sat Nov  7 17:07:08 UTC 2026
+
+- yaks path yaks-e5f9: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-e5f9.md
+- checkout: /Users/joel/src/yaks/.delta/worktrees/kt9f4mff96hd/yaks
