@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-07T17:46:47Z'
+updated: '2026-11-07T17:51:18Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
@@ -146,3 +146,15 @@ thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-07T17:51:18Z [stars-keys]
+
+Started by worker `stars-keys`.
+
+- `date -u`: Sat Nov  7 17:47:16 UTC 2026
+- `yaks path yaks-7c6e`: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-7c6e.md
+- checkout top-level: /Users/joel/src/yaks/.delta/worktrees/y2d4pv9j3yrk/yaks
+- base commit: f0dafed7ca3644ad4c0601f0bfb7bb618c047453
+
+Read the claim note, Joel's answers and the design dok. Plan: one `Family` (vim|standard) in the `Keymap`, replacing the `App.editor_vim` field (it becomes a method over the keymap so there is a single source of truth); `h`/`l` leave only `←`/`→`-style scrolling and `tree.left`/`tree.right`; case-rule and family tests over `BINDINGS`; grouped `?` popup with run-on-press; `F1` popup over editors from a hand table; `{`/`}` views everywhere; docs.
