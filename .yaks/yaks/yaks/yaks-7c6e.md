@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-07T18:09:35Z'
+updated: '2026-11-07T18:15:10Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
@@ -177,3 +177,11 @@ Friction: the machine's data volume was at 100% (137 MiB free) when I first buil
 [popup-list-standard](yaks-7c6e/popup-list-standard.txt "The ? popup on the list in standard mode: no h j k l, d/u, g/G; Ctrl-F find, Home/End, F3")
 
 [brace-in-pane](yaks-7c6e/brace-in-pane.txt "} with the pane open: the pane stays open, on the new view's (Shaving) first row")
+
+---
+▸ 2026-11-07T18:15:10Z [stars-keys]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
