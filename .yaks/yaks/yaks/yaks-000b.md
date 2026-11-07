@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-03T21:04:56Z'
-updated: '2026-11-07T17:05:33Z'
+updated: '2026-11-07T17:07:50Z'
 tags:
 - tui
 ---
@@ -92,3 +92,11 @@ Claim (yakherd herd-stars): worker `stars-form`, after yaks-255d, in the same ch
 **Evidence.** Tests driving mouse events at a form row and inside the editor (cursor position asserted). Frames attached. Gate `cargo test -p yaks`.
 
 **Judge.** herd-stars at landing.
+
+---
+▸ 2026-11-07T17:07:50Z [stars-form]
+
+Start: Sat Nov  7 17:07:49 UTC 2026
+
+- farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-000b.md
+- checkout: /Users/joel/src/yaks/.delta/worktrees/e3chjzn4e2pq/yaks
