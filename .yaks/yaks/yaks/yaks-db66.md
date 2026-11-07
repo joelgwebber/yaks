@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T21:37:11Z'
-updated: '2026-11-07T17:12:15Z'
+updated: '2026-11-07T17:12:16Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -110,3 +110,18 @@ What already held (checked, not changed):
 - `lfs`: rules are `.yaks/**/*.<ext>` globs, which already cover any depth, so the sibling directories are routed. No change.
 
 Not done: `rename-attachment` for doks (follow-up; it needs the same doc-path dispatch plus rewriting links in the doc and every doc that links it), and `mv` rewriting links held in session notes (`dok_move` scans yaks and doks only, as before).
+
+---
+▸ 2026-11-07T17:12:16Z [stars-dokattach]
+
+Decision: a document path is told from a yak id by `id.contains('/') || id.ends_with(".md")` in `yaks attach` (yak ids are flat). Rejected: trying the yak id first and falling back (an unknown id would silently be searched as a path), or a new `--dok` flag (the task asks for the first argument to be the path).
+
+Decision: the doc attach shares `store_attachments` (write files, build body) with the yak path in `src/farm.rs`; the dok/session variant `Farm::attach_doc_many` edits the file text directly (trim, append link, newline) instead of parse+render, so a session note or dok keeps its frontmatter byte for byte, and there is no `updated:` to bump.
+
+Decision: `attach` of a `.md` file to a doc is refused. `dok_paths` and `sessions::paths` read every `.md` under a doks root or `sessions/` as a document, so an attached markdown file would turn into a dok. Rejected: allowing it (it would become a phantom dok with no frontmatter, flagged by `doctor`).
+
+Decision: `--note` with a doc path is refused (a dok has no notes log). Rejected: silently ignoring it.
+
+Decision: `mv` refuses when the dok's sibling directory also holds doks (`doks/a.md` + `doks/a/child.md`): moving the directory would drag them without fixing their links, and leaving it would split attachments from their dok. Rejected: moving only non-`.md` files (partial, surprising), moving everything.
+
+Decision: link rewrite in `mv`: a link into the sibling directory stays relative-down in the moved dok (`<new-stem>/file`), and becomes `/<new-dir>/file` from anywhere else (the farm-root form `mv` already uses). Rejected: rewriting the moved dok's own sibling links to the absolute form (that is what `mv` did for other relative links, but it makes a dok with attachments not viewable standalone).
