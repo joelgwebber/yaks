@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-07T17:06:29Z'
+updated: '2026-11-07T17:09:10Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -48,3 +48,34 @@ Start: Sat Nov  7 17:06:26 UTC 2026
 
 - yaks path yaks-f4ea: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-f4ea.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/sf3w4x0cnprb/yaks
+
+---
+▸ 2026-11-07T17:09:10Z [stars-thread]
+
+Red before green (src/actor.rs reverted via stash, new tests run): all three failed.
+
+- `move_thread_is_yaks_thread_over_the_delta_thread_id` (tests/attribution.rs): FAILED
+- `whoami_reports_yaks_thread_over_the_delta_thread_id` (tests/attribution.rs): FAILED
+- `a_session_note_records_yaks_thread_over_the_delta_thread_id` (tests/sessions.rs): FAILED
+
+Own build (`cargo build`, `./target/debug/yaks whoami`):
+
+```
+$ YAKS_THREAD=abc YAKS_ACTOR=w yaks whoami
+actor: w (from $YAKS_ACTOR)
+thread: abc
+$ DELTA_CURRENT_THREAD_ID=dd YAKS_THREAD=abc YAKS_ACTOR=w yaks whoami
+actor: w (from $YAKS_ACTOR)
+thread: abc
+$ DELTA_CURRENT_THREAD_ID=dd YAKS_ACTOR=w yaks whoami
+actor: w (from $YAKS_ACTOR)
+thread: dd
+```
+
+Decision: one reader. All three places (move metadata in store.rs, `session note`, `whoami`) already call `actor::harness_thread()`, so the change is that function, over a `THREAD_VARS` list and an injectable `thread_from` for a unit test. Rejected: per-caller lookups.
+
+Decision: an empty or blank `YAKS_THREAD` counts as unset and falls through to the Delta id (same as the existing Delta rule), rather than blanking the thread.
+
+Decision: the per-place tests are integration tests that spawn the binary with `.env(..)`, not unit tests with `set_var`. Added `env_remove("YAKS_THREAD")` to the env scrubbing in tests/attribution.rs, tests/sessions.rs (new `cmd_env` helper; `cmd` delegates) and tests/sheds.rs so a developer's shell can't leak it into existing tests.
+
+Decision: left `harness_actor` (`delta:<DELTA_CURRENT_THREAD_ID>` actor fallback) and `harness_from_env` (`--harness` default) alone: actor names and `--harness` are out of scope, so YAKS_THREAD does not derive an actor or a harness.
