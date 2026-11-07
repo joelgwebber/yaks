@@ -5,12 +5,11 @@ status: hairy
 type: task
 priority: 3
 created: '2026-11-06T21:37:12Z'
-updated: '2026-11-06T21:48:51Z'
+updated: '2026-11-07T17:04:28Z'
 parent: yaks-3f35
 tags:
 - doks
 - design
-needs: agent
 ---
 
 From yaks-3f35, items 6 and 7.
@@ -51,3 +50,12 @@ needs: agent
 
 1. Agreed.
 2. That also works for me.
+
+---
+▸ 2026-11-07T17:04:28Z [herd-stars]
+kind: pickup
+---
+
+picked up
+
+herd-stars: doing it myself: dok new stamps created:, and the folders-follow-kinds and dated-dok rules in the skills.
