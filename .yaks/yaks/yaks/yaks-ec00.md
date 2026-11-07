@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-01T16:44:44Z'
-updated: '2026-11-03T14:30:09Z'
+updated: '2026-11-07T16:03:47Z'
 tags:
 - skills
 - agent
@@ -128,3 +128,14 @@ moved: hairy -> shaving
 ▸ 2026-11-03T14:30:09Z [delta:skills-upgrade-audit]
 
 First pass landed locally in 7ed9402 (yaks-c2fc, yaks-c69d, yaks-9786 shorn). Remaining from the original research questions: skills in two locations, version visibility in the farm, runner setup recipe, dev-build version stamps.
+
+---
+▸ 2026-11-07T16:03:47Z [sources-intake]
+
+Evidence from the research intake (yaks-3610, 2026-11-07), for the "two yaks on PATH" and stale-skills questions.
+
+- Three `yaks` binaries are installed: `~/.cargo/bin` 0.0.33, `~/Library/pnpm/bin` 0.0.30, `/opt/homebrew/bin` 0.0.22. Only `PATH` order picked the right one.
+- The skills in this repo's checkout (HEAD at 0.0.31, 17 commits behind `origin/main`) still said `yaks page`; the binary and the installed `~/.agents/skills` said `yaks dok`. I read the checkout's copy first and reported a mismatch. Fetching `origin/main` showed the repo's skills had already been updated; the checkout was stale, not the skills.
+- A release build of that stale checkout (0.0.31) refused the farm as schema 8, with an upgrade message that did not say a checkout can be behind.
+
+So the failure was a checkout that nobody had pulled, which is the memcraft case in this yak's evidence again. Nothing new to build; it supports "versions visible" for the checkout as well as for installed skills.
