@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-11-06T21:26:35Z'
-updated: '2026-11-07T17:25:49Z'
+updated: '2026-11-07T17:43:43Z'
 tags:
 - tui
 ---
@@ -104,3 +104,11 @@ thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEp9bZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-07T17:43:43Z [herd-stars]
+kind: landed
+commit: e08cfa4f62b3f01007a7cb8a761db06c75926243
+---
+
+Landed by herd-stars as `e08cfa4f` (worker `9c9b9362`), by cherry-pick: `run_cmd`'s no-op arm in `keymap.rs` conflicted with yaks-e5f9's image commands; merged. Gate `cargo test --workspace` green.
