@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:27:55Z'
-updated: '2026-11-07T00:00:18Z'
+updated: '2026-11-07T00:04:36Z'
 parent: yaks-44b3
 tags:
 - doks
@@ -106,3 +106,19 @@ Landed on `main` at 30653149 and installed (`cargo install --path .` from the ma
 Gate on 30653149: full `cargo test`, 1179 passed, 0 failed. Under load from running workers, `tests/sync.rs` `a_private_farm_syncs_locally_but_never_pushes` failed once and passed 3 of 3 alone: load-sensitive, like the `init_modes` one.
 
 Still running: `doks-1` (yaks-252c), `query-2` (yaks-39f9, yaks-6cdd).
+
+---
+▸ 2026-11-07T00:04:36Z [herd-upkeep-2]
+
+Second batch landed on `main` at 38fc4358 and installed:
+
+- yaks-39f9 (7e8f0eb5, `query-2`) `dok query` operators; ticked the knowledge-store dok's open question.
+- yaks-6cdd (8988dcc9, `query-2`) `dok row set|delete`.
+- yaks-252c (38fc4358, `doks-1`) `dok show` hash, `dok set --if-hash`, `--old/--new`.
+- yaks-fcdc and yaks-ff4c shorn.
+
+The three cherry-picks conflicted only in prose (`docs/cli.md`, the `yaks` and `yaks-research` skills, `src/main.rs` dispatch arms and `tests/doks.rs`, all adjacent additions); resolved by keeping both sides. Gate on 38fc4358: `cargo test --no-fail-fast`, 1199 passed, 0 failed. Exercised by hand on a scratch farm: a date query, a row set, a stale `--if-hash` refused, `commit --as` showing in `session touched`.
+
+Left in this family: yaks-3f35 (another thread) and yaks-323b (`session list --since`, waits on it). This yak shears when those do.
+
+Worker friction, for the session note: `cargo test` stops at the first failing binary, so the load-sensitive `init_modes` and `sync` tests make `yaks verify` fail intermittently (`--no-fail-fast` helps); `cargo fmt -- <files>` still rewrites `src/actor.rs` and `tests/commits.rs`; claim notes named a worker (`query-1`) the brief then renamed.
