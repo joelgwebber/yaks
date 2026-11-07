@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-03T23:29:24Z'
-updated: '2026-11-07T17:27:34Z'
+updated: '2026-11-07T17:28:03Z'
 tags:
 - tui
 ---
@@ -72,3 +72,8 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 ![zoom-4-fit-width](yaks-e5f9/zoom-4-fit-width.svg "Half-block frame at fit width (w): picture spans the pane, taller than it, pans down")
 
 [zoom-3-zoomed-panned](yaks-e5f9/zoom-3-zoomed-panned.txt "Text serialization of the zoomed+panned frame")
+
+---
+▸ 2026-11-07T17:28:03Z [stars-zoom]
+
+Decision: zoom and pan are done by cropping and scaling the decoded pixels myself on each change, then handing `ratatui-image` a finished `Protocol` (`Image` widget). Rejected: `StatefulImage` with `Resize::Crop` (it can only clip the bottom/right or top/left, so no arbitrary pan offset), and per-protocol code. One path serves kitty, sixel, iTerm2 and half-blocks; the encoded protocol is cached by (scale, offset, pane cells).
