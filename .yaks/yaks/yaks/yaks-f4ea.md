@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-07T17:23:44Z'
+updated: '2026-11-07T17:33:01Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -110,3 +110,11 @@ thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpr_pIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-07T17:33:01Z [herd-stars]
+kind: landed
+commit: b7cebb1b4da01ef2c13afb4d5d1e504b552bd911
+---
+
+Landed by herd-stars as `b7cebb1b` (worker `797b367a`), by cherry-pick: a conflict in `tests/sessions.rs` with yaks-db66's new test, resolved by keeping both tests. Gate `cargo test --workspace` green on the merged tree.
