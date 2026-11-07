@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-06T21:37:11Z'
-updated: '2026-11-07T17:28:41Z'
+updated: '2026-11-07T17:38:38Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -183,3 +183,20 @@ branch: main
 ---
 
 landed: 4def079b yaks-db66: attach to doks and session notes via a sibling directory; mv takes it along
+
+---
+▸ 2026-11-07T17:38:38Z [herd-stars]
+
+herd-stars: landed `4def079b` (worker `e4c2dd0d`, clean squash) and the skill text as `88c36ed6`: the `yaks` skill's "Links" and attach lines and `yaks-research`'s image rule (the farm's own pictures are the dok's attachments; outside material is a source).
+
+Reproduced on a scratch farm with my build:
+
+```text
+attached shot.png to doks/topics/a.md (.yaks/doks/topics/a)
+Moved doks/topics/a.md -> doks/topics/b.md
+.../doks/topics/b/shot.png
+![shot](b/shot.png "A shot")
+All clear: no farm-integrity issues found.
+```
+
+Follow-ups the worker named, not filed: `rename-attachment` for doks; `mv` does not rewrite links held in session notes (already true before).
