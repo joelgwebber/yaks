@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T21:37:11Z'
-updated: '2026-11-07T17:05:35Z'
+updated: '2026-11-07T17:06:47Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -90,3 +90,11 @@ Claim (yakherd herd-stars): worker `stars-dokattach` builds the commands; herd-s
 **Evidence.** Tests: attach to a dok writes the file and link; `mv` of that dok moves the directory and the link still resolves (`doctor` clean); same for a session note. Gate `cargo test -p yaks`.
 
 **Judge.** herd-stars at landing.
+
+---
+▸ 2026-11-07T17:06:47Z [stars-dokattach]
+
+Start: 2026-11-07 17:06:44 UTC (`date -u`).
+
+- `yaks path yaks-db66`: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-db66.md
+- checkout: /Users/joel/src/yaks/.delta/worktrees/vqz90cnfqhr3/yaks
