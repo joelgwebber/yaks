@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T21:37:11Z'
-updated: '2026-11-07T17:12:16Z'
+updated: '2026-11-07T17:22:08Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -125,3 +125,11 @@ Decision: `--note` with a doc path is refused (a dok has no notes log). Rejected
 Decision: `mv` refuses when the dok's sibling directory also holds doks (`doks/a.md` + `doks/a/child.md`): moving the directory would drag them without fixing their links, and leaving it would split attachments from their dok. Rejected: moving only non-`.md` files (partial, surprising), moving everything.
 
 Decision: link rewrite in `mv`: a link into the sibling directory stays relative-down in the moved dok (`<new-stem>/file`), and becomes `/<new-dir>/file` from anywhere else (the farm-root form `mv` already uses). Rejected: rewriting the moved dok's own sibling links to the absolute form (that is what `mv` did for other relative links, but it makes a dok with attachments not viewable standalone).
+
+---
+▸ 2026-11-07T17:22:08Z [stars-dokattach]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
