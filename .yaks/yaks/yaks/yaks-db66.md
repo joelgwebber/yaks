@@ -1,11 +1,11 @@
 ---
 id: yaks-db66
 title: 'Images and files in doks and session notes: a sibling-directory convention'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-06T21:37:11Z'
-updated: '2026-11-07T17:22:20Z'
+updated: '2026-11-07T17:22:26Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -163,3 +163,13 @@ $ yaks attach <session> n.md          -> Error: n.md: a .md file beside a dok or
 Tests (failed before the change: "no such task: doks/topics/a.md" and `mv` not refusing): `tests/links.rs::attach_to_a_dok_and_mv_it`, `a_dok_directory_holding_doks_is_not_an_attachment_directory`, `tests/sessions.rs::attach_to_a_session_note`, `src/weight.rs` `kinds_follow_the_farm_layout`.
 
 Summary: `yaks attach` takes a dok or session path (`Farm::attach_doc_many`, sharing `store_attachments` with the yak path); `mv` moves the directory and rewrites links into it; docs/cli.md and clap help for `attach` and `mv` updated. Gate `yaks verify yaks-db66`: PASS.
+
+---
+▸ 2026-11-07T17:22:26Z [stars-dokattach]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpwipIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
