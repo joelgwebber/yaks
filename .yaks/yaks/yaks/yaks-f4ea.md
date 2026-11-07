@@ -1,11 +1,11 @@
 ---
 id: yaks-f4ea
 title: 'YAKS_THREAD: a harness-neutral thread id for moves and session notes'
-status: hairy
+status: shaving
 type: feature
 priority: 3
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-07T16:59:19Z'
+updated: '2026-11-07T17:04:43Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -17,3 +17,13 @@ yaks records `thread:` metadata on moves (and a `thread` field on session notes)
 Proposal: `YAKS_THREAD=<id>` wins over the Delta variable wherever yaks reads a thread id: move metadata, `session note`'s `thread:`, and the `whoami` report. Nothing else changes. Related: yaks-8003 (stable thread ids in actor stamps) and yaks-3fc6 (session note records the Delta thread under another `--harness`).
 
 Small; one test per place it is read.
+
+---
+▸ 2026-11-07T17:04:43Z [herd-stars]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
