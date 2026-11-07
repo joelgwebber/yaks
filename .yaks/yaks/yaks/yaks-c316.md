@@ -1,11 +1,11 @@
 ---
 id: yaks-c316
 title: 'Dok conventions: dated doks, a created date, and folder layout'
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-06T21:37:12Z'
-updated: '2026-11-07T17:38:40Z'
+updated: '2026-11-07T17:38:41Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -79,3 +79,13 @@ Done by herd-stars in `2206248e`, per Joel's two answers.
 - Skills: `yaks-research` states "folders follow kinds, not subjects" and the dated-dok rule (`date:` field typed `date`, date-prefixed name); the `yaks` skill's Doks line says both briefly.
 - `docs/cli.md` and `dok new --help` updated.
 - Evidence: `tests/doks.rs` (the caller's `created` wins), the TUI new-dok test (a parseable RFC 3339 stamp), and a scratch farm: `created: '2026-11-07T17:38:25Z'` on a new dok, `doctor` clean with a typed schema. Full gate green.
+
+---
+▸ 2026-11-07T17:38:41Z [herd-stars]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
