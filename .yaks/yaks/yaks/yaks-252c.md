@@ -1,11 +1,11 @@
 ---
 id: yaks-252c
 title: Hash-checked dok edits (no silent overwrite from a stale read)
-status: shaving
+status: shorn
 type: feature
 priority: 1
 created: '2026-11-06T04:28:31Z'
-updated: '2026-11-07T00:00:23Z'
+updated: '2026-11-07T00:00:24Z'
 parent: yaks-fcdc
 tags:
 - cli
@@ -108,3 +108,13 @@ Decision: `json::dok_value` is unchanged; a new `dok_value_hashed` adds `hash`, 
 Summary: `doks::text_hash`/`load_hashed`, `Farm::dok_hashed`, `Farm::dok_set` (+`DokEdit`, `DokSet`) refuse a stale `--if-hash` or an `--old` matching 0 or n times, writing nothing. CLI test `stale_if_hash_is_refused_and_old_new_edits_chain_by_hash` in tests/doks.rs. Docs: docs/cli.md `### dok`, `yaks` skill Doks section, `yaks-research` skill edit line, clap help. README has no dok rows (nothing to change).
 
 Evidence: `cargo test` all green except the known `init_modes` farm_works_from_a_git_worktree... flake (fails here intermittently, passes on rerun; also passed on baseline once). One `yaks verify` failed in the `--bin yaks` unit tests under load and did not reproduce in 4 reruns; the latest `yaks verify` is PASS.
+
+---
+▸ 2026-11-07T00:00:24Z [doks-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjUD5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
