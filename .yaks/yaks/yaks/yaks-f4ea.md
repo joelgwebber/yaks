@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-07T17:09:59Z'
+updated: '2026-11-07T17:14:53Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -87,3 +87,11 @@ result: fail
 ---
 
 verify: `cargo test -p yaks` -> FAIL (exit 101)
+
+---
+▸ 2026-11-07T17:14:53Z [stars-thread]
+kind: verify
+result: pass
+---
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
