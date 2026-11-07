@@ -5,10 +5,9 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-03T21:04:56Z'
-updated: '2026-11-06T22:48:57Z'
+updated: '2026-11-07T17:04:27Z'
 tags:
 - tui
-needs: agent
 ---
 
 A few scrolling odds and ends:
@@ -66,3 +65,12 @@ needs: agent
 ---
 
 Oh, I totally missed the edtui case, but both of those would be useful. Feel free to add whatever you need to, to our edtui fork.
+
+---
+▸ 2026-11-07T17:04:27Z [herd-stars]
+kind: pickup
+---
+
+picked up
+
+herd-stars: both edit modes (form row click-focus, and click-to-position in the in-place editor) go to a worker.
