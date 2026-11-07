@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-06T21:26:35Z'
-updated: '2026-11-07T17:05:34Z'
+updated: '2026-11-07T17:07:28Z'
 tags:
 - tui
 ---
@@ -42,3 +42,11 @@ Claim (yakherd herd-stars): worker `stars-peek`.
 **Evidence.** Tests: the yak pane shows the peek pane on a dok link, `p` hides it there and in the viewer. Frames of the yak pane with the peek, attached. Gate `cargo test -p yaks`.
 
 **Judge.** herd-stars at landing.
+
+---
+▸ 2026-11-07T17:07:28Z [stars-peek]
+
+Start: 2026-11-07T17:07Z (`date -u`).
+
+- `yaks path yaks-a004`: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-a004.md
+- checkout: /Users/joel/src/yaks/.delta/worktrees/brgsw94dabng/yaks
