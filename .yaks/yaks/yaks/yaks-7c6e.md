@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-07T17:51:18Z'
+updated: '2026-11-07T18:03:46Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
@@ -158,3 +158,10 @@ Started by worker `stars-keys`.
 - base commit: f0dafed7ca3644ad4c0601f0bfb7bb618c047453
 
 Read the claim note, Joel's answers and the design dok. Plan: one `Family` (vim|standard) in the `Keymap`, replacing the `App.editor_vim` field (it becomes a method over the keymap so there is a single source of truth); `h`/`l` leave only `←`/`→`-style scrolling and `tree.left`/`tree.right`; case-rule and family tests over `BINDINGS`; grouped `?` popup with run-on-press; `F1` popup over editors from a hand table; `{`/`}` views everywhere; docs.
+
+---
+▸ 2026-11-07T18:03:46Z [stars-keys]
+
+Progress (17:47 start, now about 19:00 wall clock): items 1, 2, 4 (the popup and run-on-press), 5 and the rules are in; the existing tests are migrated and the suite is green apart from snapshot acceptance, now done. Still to write: the rule tests, a test per item, the F1/editor popup tests, docs.
+
+Friction: the machine's data volume was at 100% (137 MiB free) when I first built, from the other checkouts' `target/` dirs. I cleaned only my own `target/` and build with `CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0` (environment variables, no Cargo.toml edit); that is the only reason the gate fits.
