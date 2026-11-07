@@ -228,8 +228,17 @@ pub fn doctor_array(issues: &[crate::farm::Issue]) -> Value {
 /// A dok for `--json`: path, kind, title, herd (or null), every frontmatter
 /// field parsed under `fields`, and with `body` its markdown body.
 pub fn dok_value(p: &crate::doks::Dok, body: bool) -> Value {
+    dok_value_hashed(p, body, None)
+}
+
+/// [`dok_value`] with, when `hash` is given, the file's `hash` (the one
+/// `dok set --if-hash` checks) after `path`.
+pub fn dok_value_hashed(p: &crate::doks::Dok, body: bool, hash: Option<&str>) -> Value {
     let mut m = Map::new();
     m.insert("path".into(), json!(p.path));
+    if let Some(h) = hash {
+        m.insert("hash".into(), json!(h));
+    }
     m.insert("type".into(), json!(p.kind()));
     m.insert("title".into(), json!(p.title()));
     m.insert("herd".into(), json!(p.herd()));

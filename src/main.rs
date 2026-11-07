@@ -1636,7 +1636,10 @@ enum DokAction {
         #[arg(long)]
         json: bool,
     },
-    /// Print one dok: its file text, or `--json` with fields parsed.
+    /// Print one dok: its file text, or `--json` with fields parsed. The
+    /// file's hash goes to stderr as `hash: <h>` (a `hash` field in
+    /// `--json`): pass it to `dok set --if-hash`. It is the first 12 hex
+    /// digits of the sha256 of the file's bytes.
     Show {
         path: String,
         #[arg(long)]
@@ -1662,7 +1665,11 @@ enum DokAction {
         #[arg(long = "body-file", value_name = "PATH")]
         body_file: Option<String>,
     },
-    /// Set or remove frontmatter fields of a dok, or replace its body.
+    /// Set or remove frontmatter fields of a dok, replace its body, or
+    /// replace one exact piece of it (`--old`/`--new`). Prints the file's
+    /// new hash (`hash: <h>`, as `dok show` reports it: the first 12 hex
+    /// digits of the sha256 of the file's bytes), so a second edit can
+    /// chain on it with `--if-hash`.
     Set {
         path: String,
         /// `key=value` (repeatable); an empty value removes the field.
@@ -1677,6 +1684,33 @@ enum DokAction {
         /// Replace the body with this file's text (`-` is stdin).
         #[arg(long = "body-file", value_name = "PATH")]
         body_file: Option<String>,
+        /// Refuse (exit 1, nothing written) unless the file's hash is this
+        /// one, as `dok show` or the last `dok set` reported it: an edit
+        /// built from a stale read is not written over a newer body.
+        #[arg(long = "if-hash", value_name = "HASH")]
+        if_hash: Option<String>,
+        /// Replace this exact text of the body (with `--new`). It must
+        /// match exactly once, else nothing is written. `-` reads stdin;
+        /// trailing newlines are dropped.
+        #[arg(long, conflicts_with_all = ["body", "body_file"])]
+        old: Option<String>,
+        /// Read the `--old` text from this file (`-` is stdin).
+        #[arg(
+            long = "old-file",
+            value_name = "PATH",
+            conflicts_with_all = ["old", "body", "body_file"]
+        )]
+        old_file: Option<String>,
+        /// What replaces the `--old` text (`''` deletes it). `-` reads stdin.
+        #[arg(long, conflicts_with_all = ["body", "body_file"])]
+        new: Option<String>,
+        /// Read the `--new` text from this file (`-` is stdin).
+        #[arg(
+            long = "new-file",
+            value_name = "PATH",
+            conflicts_with_all = ["new", "body", "body_file"]
+        )]
+        new_file: Option<String>,
     },
     /// Write one row of a table dok, addressed as `<dok>#<key>`.
     Row {
@@ -4318,16 +4352,17 @@ fn run_dok(farm: &Farm, action: DokAction) -> Result<()> {
             }
         }
         DokAction::Show { path, json } => {
-            let Some(p) = farm.dok(&path)? else {
+            let Some((p, hash)) = farm.dok_hashed(&path)? else {
                 eprintln!(
                     "error: no dok {path} (doks live under doks/ or <herd>/doks/; `yaks dok list`)"
                 );
                 std::process::exit(1);
             };
             if json {
-                json::print(&json::dok_value(&p, true))?;
+                json::print(&json::dok_value_hashed(&p, true, Some(&hash)))?;
             } else {
                 print!("{}", p.render());
+                eprintln!("hash: {hash}");
             }
         }
         DokAction::New {
@@ -4352,19 +4387,47 @@ fn run_dok(farm: &Farm, action: DokAction) -> Result<()> {
             unset,
             body,
             body_file,
+            if_hash,
+            old,
+            old_file,
+            new,
+            new_file,
         } => {
             let fields = parse_dok_fields(&set, &unset)?;
-            let body = resolve_text("--body", body, body_file, &mut StdinText::real())?;
-            if fields.is_empty() && body.is_none() {
-                anyhow::bail!("nothing to set: give --set, --unset, --body or --body-file");
+            let mut stdin = StdinText::real();
+            let body = resolve_text("--body", body, body_file, &mut stdin)?;
+            let old = resolve_text("--old", old, old_file, &mut stdin)?;
+            let new = resolve_text("--new", new, new_file, &mut stdin)?;
+            let edit = match (old, new) {
+                (Some(old), Some(new)) => Some(farm::DokEdit { old, new }),
+                (None, None) => None,
+                _ => anyhow::bail!("--old and --new go together: give both"),
+            };
+            if fields.is_empty() && body.is_none() && edit.is_none() {
+                anyhow::bail!(
+                    "nothing to set: give --set, --unset, --body, --body-file or --old/--new"
+                );
             }
-            match farm.dok_set(&path, &fields, body.as_deref())? {
+            match farm.dok_set(
+                &path,
+                &fields,
+                body.as_deref(),
+                edit.as_ref(),
+                if_hash.as_deref(),
+            )? {
                 None => {
                     eprintln!("error: no dok {path}");
                     std::process::exit(1);
                 }
-                Some(false) => println!("No changes to {}", doks::normalize(&path)),
-                Some(true) => println!("Updated {}", doks::normalize(&path)),
+                Some(done) => {
+                    let name = doks::normalize(&path);
+                    if done.changed {
+                        println!("Updated {name}");
+                    } else {
+                        println!("No changes to {name}");
+                    }
+                    println!("hash: {}", done.hash);
+                }
             }
             print_schema_warnings(&farm, &path)?;
         }

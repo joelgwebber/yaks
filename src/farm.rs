@@ -24,6 +24,21 @@ pub use crate::store::{DepOutcome, MoveOutcome, Reparent};
 const NON_DEAD: [Status; 3] = [Status::Hairy, Status::Shaving, Status::Shorn];
 pub(crate) const EVERY: [Status; 4] = [Status::Hairy, Status::Shaving, Status::Shorn, Status::Dead];
 
+/// An exact-text edit of a dok body: `old` must occur once (yaks-252c).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DokEdit {
+    pub old: String,
+    pub new: String,
+}
+
+/// The result of [`Farm::dok_set`]: whether the file changed, and its hash
+/// now (what the next `--if-hash` takes).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DokSet {
+    pub changed: bool,
+    pub hash: String,
+}
+
 /// One attachment file of a yak: see [`list_attachments`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FoundAttachment {
@@ -2225,6 +2240,11 @@ impl Farm {
         crate::doks::load(&self.root, path)
     }
 
+    /// The dok at `path` with its content hash ([`crate::doks::text_hash`]).
+    pub fn dok_hashed(&self, path: &str) -> Result<Option<(crate::doks::Dok, String)>> {
+        crate::doks::load_hashed(&self.root, path)
+    }
+
     /// Create the dok at `path` (see [`crate::doks::new_dok`]) under the
     /// farm lock. Returns its file path.
     pub fn dok_new(
@@ -2290,18 +2310,33 @@ impl Farm {
     }
 
     /// Set (a [`Value::Null`] removes) frontmatter fields of the dok at
-    /// `path`, and replace its body when `body` is given, under the farm lock.
-    /// `Ok(None)`: no such dok; `Ok(Some(false))`: nothing changed.
+    /// `path`, and replace its body when `body` is given or edit it in place
+    /// when `edit` is, under the farm lock. With `if_hash`, refuses (writing
+    /// nothing) unless the file still has that [`crate::doks::text_hash`]
+    /// (yaks-252c). `Ok(None)`: no such dok.
     pub fn dok_set(
         &self,
         path: &str,
         fields: &[(String, Value)],
         body: Option<&str>,
-    ) -> Result<Option<bool>> {
+        edit: Option<&DokEdit>,
+        if_hash: Option<&str>,
+    ) -> Result<Option<DokSet>> {
         let _lock = store::lock(&self.root)?;
-        let Some(mut dok) = crate::doks::load(&self.root, path)? else {
+        let Some((mut dok, current)) = crate::doks::load_hashed(&self.root, path)? else {
             return Ok(None);
         };
+        if let Some(want) = if_hash {
+            let want = want.trim();
+            if want != current {
+                anyhow::bail!(
+                    "{} changed since it was read: its hash is {current}, not {want}; \
+                     nothing was written (`yaks dok show` for the current text and hash, \
+                     then redo the edit)",
+                    dok.path
+                );
+            }
+        }
         let before = dok.render();
         for (k, v) in fields {
             if *v == Value::Null {
@@ -2313,11 +2348,36 @@ impl Farm {
         if let Some(b) = body {
             dok.body = b.to_string();
         }
-        if dok.render() == before {
-            return Ok(Some(false));
+        if let Some(e) = edit {
+            if e.old.is_empty() {
+                anyhow::bail!("--old is empty; give the exact text to replace");
+            }
+            match dok.body.matches(&e.old).count() {
+                1 => dok.body = dok.body.replacen(&e.old, &e.new, 1),
+                0 => anyhow::bail!(
+                    "{}: --old text matches 0 times in the body; nothing was written \
+                     (it must match exactly once: `yaks dok show` for the current text)",
+                    dok.path
+                ),
+                n => anyhow::bail!(
+                    "{}: --old text matches {n} times in the body; nothing was written \
+                     (add surrounding text so it matches exactly once)",
+                    dok.path
+                ),
+            }
+        }
+        let after = dok.render();
+        if after == before {
+            return Ok(Some(DokSet {
+                changed: false,
+                hash: current,
+            }));
         }
         crate::doks::save(&self.root, &dok)?;
-        Ok(Some(true))
+        Ok(Some(DokSet {
+            changed: true,
+            hash: crate::doks::text_hash(&after),
+        }))
     }
 
     /// Create or update the row `key` of the table in the dok at `path`

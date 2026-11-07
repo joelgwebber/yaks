@@ -234,6 +234,31 @@ pub fn load(root: &Path, rel: &str) -> Result<Option<Dok>> {
     Ok(Some(Dok::parse(&rel, &text)))
 }
 
+/// A dok file's content hash (yaks-252c): the first 12 hex digits of the
+/// sha256 of its bytes. `dok show` reports it and `dok set --if-hash` checks
+/// it, so an edit built from a stale read is refused, not written over a
+/// newer body.
+pub fn text_hash(text: &str) -> String {
+    use sha2::{Digest, Sha256};
+    Sha256::digest(text.as_bytes())
+        .iter()
+        .take(6)
+        .map(|b| format!("{b:02x}"))
+        .collect()
+}
+
+/// Like [`load`], with the [`text_hash`] of the file as it is on disk.
+pub fn load_hashed(root: &Path, rel: &str) -> Result<Option<(Dok, String)>> {
+    let rel = normalize(rel);
+    let path = root.join(&rel);
+    if !path.is_file() || !is_dok_path(&rel) {
+        return Ok(None);
+    }
+    let text =
+        std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
+    Ok(Some((Dok::parse(&rel, &text), text_hash(&text))))
+}
+
 /// Whether farm-relative `rel` names a dok file by its shape alone (the
 /// rule [`dok_paths`] walks by): a `.md` file under `doks/` or
 /// `<herd>/doks/`, with no empty, `..` or dot segment. Unlike

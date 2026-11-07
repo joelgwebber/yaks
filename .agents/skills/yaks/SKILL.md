@@ -165,7 +165,7 @@ A farm also holds **doks**: markdown documents that are not yaks, under `doks/` 
 
 - Search before creating (`yaks dok list`, `yaks dok query --where tags=<tag>`); extend an existing dok rather than starting a second one.
 - Create with `yaks dok new <path> --type topic --set 'tags=[a, b]' --body-file notes.md` (kinds: `note`, the default; `topic`; `howto`; `summary`). Lowercase-kebab paths.
-- Edit fields with `yaks dok set <path> --set key=value`, or the body with your editor. `yaks doctor` checks doks.
+- Edit fields with `yaks dok set <path> --set key=value`, or the body with your editor. When other sessions share the farm, edit through `yaks`: `dok show` reports the file's `hash:`; `dok set <path> --if-hash <h> --old <text> --new <text>` replaces one passage that must match exactly once and is refused, writing nothing, if the dok changed since your read. It prints the new hash to chain the next edit. `yaks doctor` checks doks.
 - Facts you would list, filter or sort (appliances, vendors, platforms compared) go in **typed doks**: `yaks dok types` shows the kinds and their fields; give a dok `type: <kind>` and the fields its `schemas/<kind>.md` lists, and add or extend the schema (`yaks dok define <kind> --field name=type`) when a new kind earns one. Warnings are advice, never refusals. `schemas/yak.md` lists the farm's known tags: pick from it before inventing one.
 - Keeping the doks in shape (session notes, reviewing them, reflecting on them into `/doks/lessons.md`, a tidy after `yaks check`): the `yaks-upkeep` skill.
 - Research yaks: the `yaks-research` skill says where each finding goes, and how to save, cite and split.

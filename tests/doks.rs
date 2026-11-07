@@ -284,3 +284,112 @@ fn row_set_and_delete_round_trip_through_query_rows() {
             .contains("no markdown table")
     );
 }
+
+#[test]
+fn stale_if_hash_is_refused_and_old_new_edits_chain_by_hash() {
+    let f = Farm::new("hash");
+    f.run(&[
+        "dok",
+        "new",
+        "doks/topics/hashed.md",
+        "--body",
+        "alpha\nbeta\nbeta\n",
+    ]);
+    let shown: Value =
+        serde_json::from_str(&f.run(&["dok", "show", "doks/topics/hashed.md", "--json"])).unwrap();
+    let h0 = shown["hash"].as_str().unwrap().to_string();
+    assert_eq!(h0.len(), 12);
+
+    // A first writer moves the file on; the second, holding h0, is refused.
+    f.run(&[
+        "dok",
+        "set",
+        "doks/topics/hashed.md",
+        "--if-hash",
+        &h0,
+        "--old",
+        "alpha",
+        "--new",
+        "ALPHA",
+    ]);
+    let err = f.fails(&[
+        "dok",
+        "set",
+        "doks/topics/hashed.md",
+        "--if-hash",
+        &h0,
+        "--body",
+        "stale overwrite",
+    ]);
+    assert!(
+        err.contains("changed since it was read") && err.contains(&h0),
+        "{err}"
+    );
+    let text = std::fs::read_to_string(f.root().join("doks/topics/hashed.md")).unwrap();
+    assert!(
+        text.contains("ALPHA") && !text.contains("stale overwrite"),
+        "{text}"
+    );
+
+    // The printed hash is the file's hash, so a second edit chains on it.
+    let out = f.run(&["dok", "show", "doks/topics/hashed.md"]);
+    assert!(out.contains("ALPHA"));
+    let printed = f.run(&[
+        "dok",
+        "set",
+        "doks/topics/hashed.md",
+        "--old",
+        "ALPHA",
+        "--new",
+        "one",
+    ]);
+    let h1 = printed
+        .lines()
+        .find_map(|l| l.strip_prefix("hash: "))
+        .unwrap()
+        .to_string();
+    let shown: Value =
+        serde_json::from_str(&f.run(&["dok", "show", "doks/topics/hashed.md", "--json"])).unwrap();
+    assert_eq!(shown["hash"], h1.as_str());
+    let printed = f.run(&[
+        "dok",
+        "set",
+        "doks/topics/hashed.md",
+        "--if-hash",
+        &h1,
+        "--old",
+        "one",
+        "--new",
+        "two",
+    ]);
+    assert!(
+        printed.contains("Updated") && printed.contains("hash: "),
+        "{printed}"
+    );
+
+    // --old must match exactly once; nothing is written otherwise.
+    let err = f.fails(&[
+        "dok",
+        "set",
+        "doks/topics/hashed.md",
+        "--old",
+        "beta",
+        "--new",
+        "x",
+    ]);
+    assert!(err.contains("matches 2 times"), "{err}");
+    let err = f.fails(&[
+        "dok",
+        "set",
+        "doks/topics/hashed.md",
+        "--old",
+        "gamma",
+        "--new",
+        "x",
+    ]);
+    assert!(err.contains("matches 0 times"), "{err}");
+    let err = f.fails(&["dok", "set", "doks/topics/hashed.md", "--old", "two"]);
+    assert!(err.contains("--old and --new go together"), "{err}");
+    let text = std::fs::read_to_string(f.root().join("doks/topics/hashed.md")).unwrap();
+    assert!(text.contains("two\nbeta\nbeta"), "{text}");
+}
