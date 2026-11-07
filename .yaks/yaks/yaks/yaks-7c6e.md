@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-03T04:22:32Z'
-updated: '2026-11-07T18:15:10Z'
+updated: '2026-11-07T18:16:29Z'
 depends_on:
 - yaks-6919
 - yaks-0ac1
@@ -185,3 +185,30 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-07T18:16:29Z [stars-keys]
+
+Decision: a Ctrl chord no longer falls through to the plain key it carries (`Key::matches`). Before, `Ctrl-N` in the viewer matched `n` (find next) and `Ctrl-P` in the pane matched `p` (peek), so "Ctrl-N is off in standard mode" could not be true. A plain binding now ignores Shift (an upper-case letter) and AltGr (Ctrl+Alt), but not a lone Ctrl. Rejected: leaving the quirk and special-casing the two keys. The old test that pinned the quirk (`Ctrl-N` in the viewer is `find.next`) now says `None`.
+
+Decision: half-page and page keys. `d`/`u` are vim-only and the test needs a standard key, so `Ctrl-D`/`Ctrl-U` are bound for `move.half_down`/`half_up` in the list, pane and viewer in BOTH families (they are `d`/`u` in real vim too). The pane gets `PgDn`/`PgUp` (`move.page_down/up`, full page) and `Home`/`End`; the viewer's `PgDn`/`PgUp` change from half-page to full-page, as in the list, so one key means one thing. Rejected: a standard-only pair (`Alt-V`/`Ctrl-V`) or letting half-page lapse in standard mode (the spec's test forbids it).
+
+Decision: `pane.back` is removed, with no alias. `h`/`←` in the pane and viewer are the new `pane.scroll_left` (pair of `pane.scroll_right`), `Esc` is `pane.peel`; in the list `l`/`→` are the new `tree.right` and only `Enter` is `pane.open`. A user `keys:` override of `pane.back` is reported as an unknown command at startup (documented in `docs/tui.md`), as the 0.0.32 wiki rename was.
+
+Decision: `view.next`/`view.prev` are now bound in the pane, the text viewer and the image viewer (`}`/`{`), as well as in the list (`Tab`/`]`/`}`). An override still replaces a command's keys in every context it is bound in, so `view.next: [Ctrl-N]` would now clash with `block.next` in the pane and be dropped; the doc example and tests use `Ctrl-L` instead. Rejected: a second command name for the pane (two names for one intent).
+
+Decision: the popup. A listed key in the list/pane popup runs and closes it, except `Esc`, which only closes it (it is bound to `view.revert`/`pane.peel`, and clearing a search because you dismissed a popup would surprise); `q` is listed, so it quits, as the spec reads. `?`/`F1` again opens the full reference. Over an editor, `F1` again only closes: the full reference is an `Overlay` and would replace the editor under it. The popup is the flag `App::keys_popup`, not an `Overlay` variant (`Overlay::Keys` is gone), so the editor stays in place and comes back untouched; it is shown in the headless state header as `popup=keys`.
+
+Decision: `F1` covers every overlay that has an edtui field or chip rows: the comment/in-place/dok editors, the create/edit form (text rows and chip rows), the drawer, the search and find boxes and the picker queries. Not the single-key prompts (`Pick`, `Confirm`), the view manager or the full reference: they name their keys on the bottom line and have no editor. The chip rows get a small `rows_groups` table. `?` opens it only in a vim editor's Normal mode (in Insert and in standard it is a character). The hand tables (`src/tui/keymap/editor.rs`) list edtui's common keys per family, mode and single-line-or-not, not every binding (emacs parity is yaks-4736); a test checks that every listed key parses.
+
+Decision: one source of truth for the family. `App.editor_vim: bool` is gone; `App::editor_vim()` reads `Keymap::family`, which `Keymap::load_user(farm_default)` resolves as user `keys` family > user `vim_mode` > farm `vim_mode` > vim. The modal overlays that are not in the table also follow the family where they used `hjkl`: the form's and drawer's chip rows, the view manager and the full reference. Rejected: keeping a second bool for the editors.
+
+Decision: a user override is the user's word, so the family does not filter it (`move.down: [j]` works in standard mode). `Ctrl-F` is standard-only (`STANDARD_ONLY`), so in vim `Ctrl-F` is nothing; in standard it opens search/find. Hint labels that name vim keys use `Hint::Family` (`j/k:move` becomes `↑/↓:move`); the viewer and image hint lines, which are fixed text, switch the same way.
+
+Decision: the case-rule test is driven by `Cmd::mutates()`, an exhaustive `match` (a new command cannot be added without choosing), not a hand list in the test. Exceptions are in the test with a reason each: `c` (new yak, new dok), `a`, `m`, `*`, `r`. A stale exception (no lowercase key any more) fails too. The popup's groups come the same way from the exhaustive `Cmd::group()`; where a command could sit in two groups I chose: select/copy under Move, links under Move, go-to and references under Find, quit/help under App, rescan under Farm.
+
+Decision: `{`/`}` with the pane open is one jump (`switch_tab`): the new view's first row is shown in the pane from its top (a yak or shed: the detail; a dok: the viewer; an empty view: back to the list, nothing to show). A dok or image open from a yak's detail is closed by the view switch, as any view switch does. Rejected: keeping a dok open across views (it belongs to the view it was opened from, `set_view` already says so).
+
+Decision: the bottom-hint snapshot changes, all explained by items 1 and 2. List/Doks/Sheds hints `l:detail` is now `Enter:detail` (every `Tab:view ...` snapshot: tree_with_ghost_family, family_indicator_on_tab_row, starred_marker_and_tab_bar, collapsed_root_hides_children, list_scroll_up_moves_viewport_minimally, the memo chip_* and status_notification_* frames, search_commit_then_tab_no_toast, the_due_view..., an_overdue_date..., sheds_tab_list, tests/snapshots/cli__headless_session). Pane hints `h:list` is now `Esc:list` (detail_shows_children_and_links, detail_header_lists_prs_as_links, goto_jumped_to_detail, comment_header_with_metadata, sheds_tab_detail, sheds_tab_yak_detail). The viewer line loses `/h` (`Esc/h close` is `Esc close`: doks_tab_dok). The full reference (help_overlay, memo help_overlay_shows_the_farm_keys) gains the `}`/`{`, `Ctrl-D`, `Ctrl-↓` keys and the pane's `Home`/`End`/`PgDn`; `keys_popup` is the grouped popup. No frame changed in any other way (I read each diff).
+
+Decision: docs/assets SVGs are not regenerated. `cargo test -p yaks docshots -- --ignored` rewrites 30 files, mostly drift that was already there (the checked-in frames still show the pre-Doks tab strip and an older SVG opacity style); I reverted all of it rather than commit unrelated drift. Only the scene source changed: `tui-sheds-detail` pressed `l` to open the shed, which is `Enter` now. The hint text inside the committed SVGs (`l:detail`, `h:list`) is therefore still the old one until someone regenerates them in one commit.
