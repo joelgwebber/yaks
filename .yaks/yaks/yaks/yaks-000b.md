@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-03T21:04:56Z'
-updated: '2026-11-07T17:38:38Z'
+updated: '2026-11-07T17:38:50Z'
 tags:
 - tui
 needs: human
@@ -122,3 +122,25 @@ Status: the form part (row focus, chip select, forwarding into a focused field) 
 [frame-000b-block-editor-click](yaks-000b/frame-000b-block-editor-click.txt "Headless frame of the in-place editor after clicks (state asserted in a_click_in_the_block_editor_moves_the_text_cursor; a text frame draws no cursor)")
 
 [frame-000b-form-chip-click](yaks-000b/frame-000b-form-chip-click.txt "Edit form after clicking the bug chip, p1 and the wakes label: focus is on the wakes row (the frame is plain text, chip selection is asserted in a_click_on_a_chip_selects_it)")
+
+---
+▸ 2026-11-07T17:38:50Z [stars-form]
+
+Status: implemented in the working tree, NOT committed, NOT shorn: it cannot compile in this checkout until the question above is answered (`Cargo.toml` must enable edtui's `mouse-support` feature; I may not edit it).
+
+Fail-first: the five new tests in `src/tui/mouse.rs` failed on the old code with the mouse ignored under an overlay: `a_click_on_a_form_row_focuses_it`, `a_click_on_a_chip_selects_it`, `a_click_in_the_focused_form_field_moves_its_text_cursor`, `a_click_in_the_block_editor_moves_the_text_cursor`, `a_drag_in_the_block_editor_selects` (the guard test `a_click_outside_the_block_editor_text_leaves_the_cursor` passes both ways, as it should).
+
+Evidence, with the feature enabled in a scratch copy of this checkout in `/tmp/sf/copy` (the copy's `Cargo.toml` has `features = ["arboard", "mouse-support"]`; nothing from it is committed):
+
+- `cargo test -p yaks mouse::tests`: 14 passed (all 7 new, 7 old).
+- `cargo test --workspace --no-fail-fast` there: lib 1026 passed, 1 failed (`sources::tests::a_scratch_path_is_not_provenance_but_another_path_is`, which reads the checkout's own path and fails under `/tmp`); the CLI integration tests fail there too because the copy has no `.git`/farm. Neither is about this change; the real gate has to be run in the checkout once the feature is on.
+
+Decision: the in-place editor is drawn into a scratch buffer, so edtui's `screen_area` is in scratch coordinates. The render records `EditorHit { clip, top }` (the pane rect and the screen row of the scratch buffer's row 0, negative when scrolled partly off) and the click is translated into scratch coordinates before it is forwarded to `MouseEventHandler`. Rejected: rendering the editor straight onto the frame (a half-scrolled-off editor would draw wrong; that is why it is a scratch buffer).
+
+Decision: only the left button goes to edtui in the editor (Down, Up, Drag); the wheel is left as it was (ignored under an overlay). A drag puts the editor in its visual mode: that is edtui's drag-select, taken as it is.
+
+Decision: in the form, the click that focuses a row only focuses it; a click in an already-focused text row or the description is forwarded and positions the text cursor. edtui learns where a field is from its last render, and only the focused row is rendered by edtui, so the first click has no screen area to resolve against. Rejected: an off-screen render pass of the clicked row's editor to place the cursor on the first click (a second code path for the view settings, for one click saved).
+
+Decision: chip rects come from `render_chip_row` itself (it now returns them), so the hit-test cannot drift from the drawing; the form's row rects are recorded by `render_create` into `HitMap`.
+
+Docs parity: `docs/tui.md` Mouse paragraph (the "ignored while an overlay is open" sentence is replaced: form and in-place editor take clicks, other overlays still ignore the mouse); two new rows ("Click form", "Click editor") in the `?` Mouse section (`EXTRAS`, `src/tui/keymap.rs`). No other file said the mouse is ignored under overlays.
