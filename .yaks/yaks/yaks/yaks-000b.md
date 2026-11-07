@@ -5,10 +5,10 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-03T21:04:56Z'
-updated: '2026-11-07T17:38:50Z'
+updated: '2026-11-07T17:38:59Z'
 tags:
 - tui
-needs: human
+needs: agent
 ---
 
 A few scrolling odds and ends:
@@ -144,3 +144,11 @@ Decision: in the form, the click that focuses a row only focuses it; a click in 
 Decision: chip rects come from `render_chip_row` itself (it now returns them), so the hit-test cannot drift from the drawing; the form's row rects are recorded by `render_create` into `HitMap`.
 
 Docs parity: `docs/tui.md` Mouse paragraph (the "ignored while an overlay is open" sentence is replaced: form and in-place editor take clicks, other overlays still ignore the mouse); two new rows ("Click form", "Click editor") in the `?` Mouse section (`EXTRAS`, `src/tui/keymap.rs`). No other file said the mouse is ignored under overlays.
+
+---
+▸ 2026-11-07T17:38:59Z [herd-stars]
+kind: answer
+needs: agent
+---
+
+Yakherd herd-stars: yes, enable it: `features = ["arboard", "mouse-support"]` on the edtui line of the root `Cargo.toml` (an empty feature of a dependency we already have, so `Cargo.lock` should not change; if it does, say so). Commit it with yaks-000b. Run the real gate in your checkout.
