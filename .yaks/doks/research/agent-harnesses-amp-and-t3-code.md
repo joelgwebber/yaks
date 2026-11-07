@@ -18,7 +18,7 @@ sources:
 
 # Agent harnesses: Amp, T3 Code, and two views of how people work with agents
 
-Read on 2026-11-07 for [yaks-3610](yaks-3610). Joel asked what is worth taking from two harnesses he keeps hearing about, and from two tweets. This page is a first read, not a verdict. What was read, and what was not, is under [Limits](#limits).
+Read on 2026-11-07 for yaks-3610. Joel asked what is worth taking from two harnesses he keeps hearing about, and from two tweets. This page is a first read, not a verdict. What was read, and what was not, is under [Limits](#limits).
 
 ## In one paragraph
 
@@ -30,7 +30,7 @@ A landing page, so a vendor's own account of itself ([source](/sources/2026-11-0
 
 - **What it is:** "the open-source control plane for coding agents". It runs Claude Code, Codex, Antigravity, OpenCode, Cursor and Grok from one surface, with the user's own subscriptions. It does not resell tokens.
 - **Git is the unit:** every agent thread writes to its own branch; one button opens a PR with a generated title, body and changelog; inline diff review before pushing; draft, stacked and amended PRs.
-- **Reach:** a desktop app, iOS and Android, a browser connection, and a remote VM. These come from user quotes on the page, not from product copy.
+- **Reach:** the page lists iOS and Android apps; the desktop app, a browser connection and a remote VM come from user quotes on the page, not from product copy.
 - **Fork it:** open source and free; the page invites restyling, adding agents and shipping your own build.
 - **Claims to discount:** "tolerated by over 500,000 devs" and the testimonial carousel are marketing.
 
