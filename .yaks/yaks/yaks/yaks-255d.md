@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-04T00:00:46Z'
-updated: '2026-11-07T17:24:25Z'
+updated: '2026-11-07T17:24:32Z'
 tags:
 - tui
 ---
@@ -66,3 +66,17 @@ Decision: a description conflict (the farm refuses: the body changed other than 
 Decision: `CreateForm::description` is now a plain `RefCell<EditorState>` (was `Option`), as the form has one shape. `seed_body` holds the body at open time: the `base`, and what a changed description is compared with.
 
 Decision: regenerated only `docs/assets/tui-edit-herd.svg`, the one scene showing the form. The regeneration also changed its tab strip and opacity styling, because the renderer moved since it was last made (`Doks` tab, `fill-opacity`); the other 24 regenerated SVGs were discarded.
+
+---
+▸ 2026-11-07T17:24:32Z [stars-form]
+
+Fail-first: on the unchanged source (create.rs, handlers.rs, store.rs checked out; tests.rs adapted to the old `Option`), the four new tests fail:
+
+- `edit_form_has_the_description_row_seeded_without_the_comments`: `left: 8, right: 9` (row count)
+- `edit_form_sets_an_empty_description_and_keeps_the_notes`: never reaches the description row
+- `edit_form_saves_the_header_and_a_changed_description_together`: body not rewritten
+- `edit_form_description_conflict_writes_nothing`: `left: "Zmine solo"`, `right: "solo"` (the header was saved, the description was not on the form at all)
+
+With the change they pass, plus `store::note_tests::with_description_replaces_the_description_and_keeps_the_notes_verbatim`. The existing `edit_form_title_edit_leaves_the_body_byte_identical` and `edit_form_without_edits_is_not_dirty_and_keeps_the_body` still pass. Snapshot `edit_form_panel` changed only by gaining the `description` rule and `First line.` row; accepted.
+
+Docs parity: `docs/tui.md` (Edit form paragraph), the two `E` help lines in `keymap.rs` (`bind_row` and `bind_pane`), the `docshots.rs` scene comment, the `CreateForm` doc comment.
