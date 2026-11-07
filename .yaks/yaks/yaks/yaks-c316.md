@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-06T21:37:12Z'
-updated: '2026-11-07T17:04:44Z'
+updated: '2026-11-07T17:38:40Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -69,3 +69,13 @@ thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-07T17:38:40Z [herd-stars]
+
+Done by herd-stars in `2206248e`, per Joel's two answers.
+
+- `yaks dok new` (and the TUI's new-dok) stamps `created:` with the time, UTC, as a yak's; a `--set created=...` wins. Nothing stamps `updated:`. `created` joins the schema META keys, so a typed kind's schema need not list it ([Farm::dok_new](code:src/farm.rs@2206248e#L2248-L2275)).
+- Skills: `yaks-research` states "folders follow kinds, not subjects" and the dated-dok rule (`date:` field typed `date`, date-prefixed name); the `yaks` skill's Doks line says both briefly.
+- `docs/cli.md` and `dok new --help` updated.
+- Evidence: `tests/doks.rs` (the caller's `created` wins), the TUI new-dok test (a parseable RFC 3339 stamp), and a scratch farm: `created: '2026-11-07T17:38:25Z'` on a new dok, `doctor` clean with a typed schema. Full gate green.
