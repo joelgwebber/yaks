@@ -461,7 +461,8 @@ enum Command {
     /// `git config yaks.actor` (what `--set` writes), else a name derived from
     /// the harness (a Delta thread title's leading `<name>:`, as `delta:<name>`,
     /// else the whole title, else the thread id), else the git `user.name`.
-    /// Prints the name and where it came from.
+    /// Prints the name and where it came from, and `thread: <id>` inside a
+    /// harness thread (`$YAKS_THREAD`, else Delta's `$DELTA_CURRENT_THREAD_ID`).
     ///
     /// `--set <name>` stores the name in this checkout only (a linked `git
     /// worktree` gets its own worktree config), so every later command, in

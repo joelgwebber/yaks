@@ -322,7 +322,7 @@ A **source** is a snapshot of material from outside the farm, written once and c
 A **session note** is a short account of one working session, kept so a later review can move what it learned into doks and a weekly reflection can learn from how sessions go. The `yaks-upkeep` skill says when to write one and what goes in it; this is the mechanics.
 
 - `session note` saves `sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md` as one commit and prints its path. The body is markdown with `## Summary`, `## Turns` (one `- <verdict>: <reason>` per request; verdict `good`, `partial`, `failed` or `unclear`), `## Lessons` (`- none` when none), and optionally `## Discussion` and `## Saved`. A turn without a verdict, a missing section or a body over 12,000 characters is refused, and nothing is written.
-- yaks writes the frontmatter: `type: session-review`, `title`, `source: session-note`, `actor`, `person` (git `user.name`), `host`, `harness` (`--harness`, else `delta` or `claude-code` when the environment says so), `thread` (the Delta thread id, the way back to the transcript), `day`, `reviewed` (when it was saved) and a count of each verdict. It is the shape of Hearth's `session-review` files, so notes copied in from a Hearth repo list alongside.
+- yaks writes the frontmatter: `type: session-review`, `title`, `source: session-note`, `actor`, `person` (git `user.name`), `host`, `harness` (`--harness`, else `delta` or `claude-code` when the environment says so), `thread` (`$YAKS_THREAD`, else the Delta thread id: the way back to the transcript), `day`, `reviewed` (when it was saved) and a count of each verdict. It is the shape of Hearth's `session-review` files, so notes copied in from a Hearth repo list alongside.
 - Without a `## Saved` section, yaks writes one before `## Lessons` from `session touched`.
 - `session touched` lists what an actor (you, else `--by`) wrote in the farm since `--since` (`2h`, a date or an RFC 3339 time; default: its latest session note, at most 12 hours back): each yak it created, moved or noted, with a [link to each note](#links), then the doks, sources and schemas its commits created or changed. A hand edit committed with a plain `yaks commit` carries no actor, so it is not listed; `yaks commit --as <actor>` stamps it.
 - `session list` prints path, day, actor, verdict counts and title, oldest first; `--unreviewed` keeps the agents' own notes (`source: session-note`) without `promoted:`.
@@ -826,7 +826,8 @@ Read-only (`remote get-url`, `ls-remote`, `rev-parse`, `status`); never pushes.
 Prints the actor this checkout's writes are stamped with and where it came from
 (`--as`, `$YAKS_ACTOR`, `git config yaks.actor`, the harness environment or git
 `user.name`; see [Attribution](#attribution)), plus `thread: <id>` inside a
-harness thread. Needs no farm.
+harness thread (`$YAKS_THREAD`, else Delta's `$DELTA_CURRENT_THREAD_ID`). Needs
+no farm.
 
 `--set <name>` stores the name as this checkout's `git config yaks.actor`: the
 repository's own config for a primary checkout or a Delta clone, the worktree's
@@ -973,7 +974,8 @@ stderr, once per command, when a write's actor was derived. A chosen name is
 still preferred: it is stable, where a thread title can be renamed. In a
 harness where every terminal call is a fresh shell, `export YAKS_ACTOR` does not
 last; `yaks whoami --set <name>` does. Inside a harness thread, every state move
-also records `thread: <id>` metadata, so a name can be traced back to the thread
-that used it. (The git author, the human under Delta, is not what attributes
+also records `thread: <id>` metadata (the id is `$YAKS_THREAD`, which any harness
+can set, else Delta's `$DELTA_CURRENT_THREAD_ID`), so a name can be traced back
+to the thread that used it. (The git author, the human under Delta, is not what attributes
 a move: the entry in the yak file is.) Attribution, never
 ownership — a yak belongs to no one.

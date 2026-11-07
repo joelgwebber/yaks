@@ -22,6 +22,16 @@ impl Farm {
     }
 
     fn cmd(&self, args: &[&str], stdin: Option<&str>) -> std::process::Output {
+        self.cmd_env(&[], args, stdin)
+    }
+
+    /// [`Farm::cmd`] with extra environment variables.
+    fn cmd_env(
+        &self,
+        env: &[(&str, &str)],
+        args: &[&str],
+        stdin: Option<&str>,
+    ) -> std::process::Output {
         let mut c = Command::cargo_bin("yaks").unwrap();
         c.current_dir(&self.dir)
             .env("XDG_DATA_HOME", common::data_home(&self.dir))
@@ -29,7 +39,11 @@ impl Farm {
             .env("YAKS_ACTOR", "tester")
             .env_remove("DELTA_CURRENT_THREAD_ID")
             .env_remove("DELTA_THREAD_TITLE")
+            .env_remove("YAKS_THREAD")
             .args(args);
+        for (k, v) in env {
+            c.env(k, v);
+        }
         if let Some(s) = stdin {
             c.write_stdin(s);
         }
@@ -252,4 +266,35 @@ fn attach_to_a_session_note() {
     let bad = f.cmd(&["doctor"], None);
     assert!(!bad.status.success());
     assert!(String::from_utf8_lossy(&bad.stdout).contains(&format!("{name}/screenshot.png")));
+}
+
+/// `$YAKS_THREAD` names the session note's `thread:` (yaks-f4ea), and wins over
+/// Delta's thread id.
+#[test]
+fn a_session_note_records_yaks_thread_over_the_delta_thread_id() {
+    let f = Farm::new("thread");
+    let env = [
+        ("YAKS_THREAD", "hearth-9"),
+        ("DELTA_CURRENT_THREAD_ID", "delta-1"),
+    ];
+    let out = f.cmd_env(
+        &env,
+        &["session", "note", "--title", "T", "--body", "-"],
+        Some(BODY),
+    );
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let stdout = String::from_utf8(out.stdout).unwrap();
+    let rel = stdout
+        .lines()
+        .next()
+        .unwrap()
+        .strip_prefix("Saved session note ")
+        .unwrap();
+    let text = std::fs::read_to_string(f.root().join(rel)).unwrap();
+    assert!(text.contains("\nthread: hearth-9\n"), "{text}");
+    assert!(!text.contains("delta-1"), "{text}");
 }

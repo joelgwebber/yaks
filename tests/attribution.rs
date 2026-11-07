@@ -34,7 +34,8 @@ impl Farm {
             .env("GIT_CONFIG_NOSYSTEM", "1")
             .env_remove("YAKS_ACTOR")
             .env_remove("DELTA_THREAD_TITLE")
-            .env_remove("DELTA_CURRENT_THREAD_ID");
+            .env_remove("DELTA_CURRENT_THREAD_ID")
+            .env_remove("YAKS_THREAD");
         for (k, v) in env {
             cmd.env(k, v);
         }
@@ -135,6 +136,44 @@ fn move_actor_from_delta_thread_title_then_id() {
     assert!(has_move(&f.file(&id), "delta:t-123", "shaving", "shorn"));
     // Both moves name the thread that made them.
     assert_eq!(f.file(&id).matches("\nthread: t-123\n").count(), 2);
+}
+
+/// `$YAKS_THREAD` names the thread a move records, and wins over Delta's id
+/// (yaks-f4ea); the actor is untouched by it.
+#[test]
+fn move_thread_is_yaks_thread_over_the_delta_thread_id() {
+    let f = Farm::new("yaks-thread");
+    let id = f.create("yaks-thread");
+    let env = [
+        ("YAKS_THREAD", "hearth-9"),
+        ("DELTA_CURRENT_THREAD_ID", "t-123"),
+    ];
+    f.run(&env, &["shave", &id]);
+    let file = f.file(&id);
+    assert_eq!(file.matches("\nthread: hearth-9\n").count(), 1, "{file}");
+    assert!(!file.contains("thread: t-123"), "{file}");
+    // Alone, outside Delta, it is the thread too.
+    f.run(&[("YAKS_THREAD", "solo-1")], &["shorn", &id]);
+    assert_eq!(f.file(&id).matches("\nthread: solo-1\n").count(), 1);
+}
+
+/// `yaks whoami` reports `$YAKS_THREAD` over Delta's thread id (yaks-f4ea).
+#[test]
+fn whoami_reports_yaks_thread_over_the_delta_thread_id() {
+    let f = Farm::new("whoami-thread");
+    let env = [
+        ("YAKS_ACTOR", "w"),
+        ("YAKS_THREAD", "hearth-9"),
+        ("DELTA_CURRENT_THREAD_ID", "t-123"),
+    ];
+    let out = f.run(&env, &["whoami"]);
+    assert!(out.contains("thread: hearth-9\n"), "{out}");
+    assert!(!out.contains("t-123"), "{out}");
+    let out = f.run(
+        &[("YAKS_ACTOR", "w"), ("DELTA_CURRENT_THREAD_ID", "t-123")],
+        &["whoami"],
+    );
+    assert!(out.contains("thread: t-123\n"), "{out}");
 }
 
 #[test]

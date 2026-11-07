@@ -74,7 +74,7 @@ Pass `--yaks-dir <farm>` when the worker's checkout cannot find the farm. If the
 
 ## 8. Attribution and drift
 
-Every note and move carries an actor: `--as <name>` or `YAKS_ACTOR=<name>` on each command, else the checkout's `yaks whoami --set` name, else a name derived from the Delta thread title (its leading `<name>:` when it has one), else the git user, which is the human. Moves made in a harness thread also record its `thread:` id. A move is not evidence; a shorn yak still needs a real note. The human edits yaks while you work: a yak that moved or gained a note is a person beside you, not an error; follow it if it changes your task.
+Every note and move carries an actor: `--as <name>` or `YAKS_ACTOR=<name>` on each command, else the checkout's `yaks whoami --set` name, else a name derived from the Delta thread title (its leading `<name>:` when it has one), else the git user, which is the human. Moves made in a harness thread also record its `thread:` id (`$YAKS_THREAD`, else Delta's). A move is not evidence; a shorn yak still needs a real note. The human edits yaks while you work: a yak that moved or gained a note is a person beside you, not an error; follow it if it changes your task.
 
 ## 9. In Delta
 

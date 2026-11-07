@@ -39,6 +39,7 @@ fn yaks_as(actor: &str, cwd: &Path, args: &[&str]) -> String {
         .env_remove("YAKS_DIR")
         .env_remove("DELTA_THREAD_TITLE")
         .env_remove("DELTA_CURRENT_THREAD_ID")
+        .env_remove("YAKS_THREAD")
         .env("YAKS_NO_BOOTSTRAP", "1")
         .env("YAKS_SKILLS_AUTOSYNC", "0")
         .env("YAKS_ACTOR", actor)

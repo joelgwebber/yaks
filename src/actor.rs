@@ -117,14 +117,25 @@ fn title_name(title: &str) -> Option<String> {
     ok.then(|| head.to_string())
 }
 
-/// The harness's stable id for this conversation, if it exposes one (Delta's
-/// thread id): recorded as `thread:` metadata on state moves, so a name can be
-/// traced back to the thread that wrote it (yaks-5d1c, yaks-8003).
+/// Thread-id variables, in priority order: `$YAKS_THREAD` (any harness can set
+/// it) wins over Delta's `$DELTA_CURRENT_THREAD_ID`.
+const THREAD_VARS: &[&str] = &["YAKS_THREAD", "DELTA_CURRENT_THREAD_ID"];
+
+/// The stable id of this conversation, if the harness exposes one (`$YAKS_THREAD`,
+/// else Delta's thread id): recorded as `thread:` metadata on state moves and
+/// session notes and shown by `yaks whoami`, so a name can be traced back to
+/// the thread that wrote it (yaks-5d1c, yaks-8003). An empty value is unset.
 pub fn harness_thread() -> Option<String> {
-    std::env::var("DELTA_CURRENT_THREAD_ID")
-        .ok()
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
+    thread_from(|var| std::env::var(var).ok())
+}
+
+/// [`harness_thread`] over an injectable environment.
+fn thread_from(get: impl Fn(&str) -> Option<String>) -> Option<String> {
+    THREAD_VARS.iter().find_map(|var| {
+        get(var)
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+    })
 }
 
 /// Resolve the actor: `--as`/explicit → `$YAKS_ACTOR` → harness identity
@@ -365,6 +376,23 @@ mod tests {
             harness_actor(vars(&[("DELTA_THREAD_TITLE", ""), id])),
             Some("delta:abc123".into())
         );
+    }
+
+    #[test]
+    fn yaks_thread_wins_over_the_delta_thread_id() {
+        let delta = ("DELTA_CURRENT_THREAD_ID", "abc123");
+        assert_eq!(thread_from(vars(&[delta])), Some("abc123".into()));
+        assert_eq!(
+            thread_from(vars(&[("YAKS_THREAD", " hearth-9 "), delta])),
+            Some("hearth-9".into())
+        );
+        // Empty or blank `$YAKS_THREAD` is unset: the Delta id still applies.
+        assert_eq!(
+            thread_from(vars(&[("YAKS_THREAD", "  "), delta])),
+            Some("abc123".into())
+        );
+        assert_eq!(thread_from(vars(&[("YAKS_THREAD", "x")])), Some("x".into()));
+        assert_eq!(thread_from(vars(&[])), None);
     }
 
     #[test]
