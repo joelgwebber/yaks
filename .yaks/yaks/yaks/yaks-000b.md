@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-03T21:04:56Z'
-updated: '2026-11-07T17:41:53Z'
+updated: '2026-11-07T17:42:01Z'
 tags:
 - tui
 ---
@@ -166,3 +166,12 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-07T17:42:01Z [stars-form]
+
+Cargo: enabled `mouse-support` on the edtui line in `Cargo.toml` as the yakherd answered; `Cargo.lock` did not change (`git status` shows only `Cargo.toml` among the Cargo files).
+
+The real gate now passes in the checkout (`yaks verify yaks-000b`: PASS, above); `mouse::tests` 14 passed there, including the 7 new tests.
+
+Summary: in the create/edit form a left click focuses a row (as Tab does), a click on a chip selects it, and a click in an already-focused text row or the description puts the text cursor there; in the in-place block editor a click puts the text cursor at that spot and a drag selects, both by forwarding to edtui's `MouseEventHandler` with the position translated into the editor's scratch buffer. The wheel and every other overlay are unchanged.
