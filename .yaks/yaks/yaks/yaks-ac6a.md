@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-08T00:49:17Z'
+updated: '2026-11-08T00:52:09Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -78,3 +78,20 @@ thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-08T00:52:09Z [herd-stars]
+
+Claim (yakherd herd-stars): worker `stars-tz`, per Joel's answers (2026-11-08): `timezone:` in `.yaks/config.yaml`, farm-wide only, the tz database embedded (`chrono-tz`).
+
+**Scope.**
+
+- `store::Config` reads `timezone:` (an IANA name). A name `chrono-tz` doesn't know: a warning (doctor, and once on load), then the machine's zone. Absent: the machine's zone, as today.
+- One farm clock (a small module or `recur.rs` functions) used everywhere yaks today uses `Local` for dates: `today`, `+2d`/`+1w`, date-only `due:`, session note day and file name, display of datetimes.
+- A datetime `due:` keeps the offset it was written with (no rewrite to `Z`); `every` steps on the wall clock in the farm zone (19:30 stays 19:30; `P1D` across a change is 23 or 25 hours), month-end clamping as today.
+- `Cargo.toml`/`Cargo.lock`: add `chrono-tz` (allowed for this yak only). Measure the release binary delta and note it.
+- Docs: `docs/cli.md` (config, due/every), `README.md` config block, the `yaks-scheduling` skill if it states the UTC behaviour.
+
+**Evidence.** Tests: the description's repro (19:30 New York across 2026-11-01) fails first; a daily and a weekly yak across both US transitions; a monthly one on the 31st keeps clamping; a bad zone warns. Gate `cargo test --workspace`.
+
+**Judge.** herd-stars at landing.
