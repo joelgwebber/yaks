@@ -1,11 +1,11 @@
 ---
 id: yaks-4f4d
 title: Wider embedded font subset for svg rendering
-status: shaving
+status: shorn
 type: task
 priority: 4
 created: '2026-10-22T22:12:46Z'
-updated: '2026-11-08T01:18:32Z'
+updated: '2026-11-08T01:18:33Z'
 depends_on:
 - yaks-4e9c
 tags:
@@ -138,3 +138,13 @@ Builds: `cargo build --release` in the yaks worktree with a temporary `[patch]` 
 - Box-drawing verticals in the showcase show 1px gaps between rows in italic/oblique? No: borders are continuous with 2.34 at 14px/18px. Other unexplored gaps: no Greek/Cyrillic/Latin Ext-B (DejaVu has them; cost not measured), no combining marks (no mark positioning), no flags/skin tones/ZWJ (draw as parts).
 - Oblique box/symbol glyphs are the upright ones (a terminal draws them upright too).
 - DejaVu 2.34 comes from SourceForge: if that URL rots, set `TOQUE_DEJAVU_DIR`.
+
+---
+▸ 2026-11-08T01:18:33Z [stars-fonts]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEy6vZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
