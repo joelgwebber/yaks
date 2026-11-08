@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 4
 created: '2026-10-22T22:12:46Z'
-updated: '2026-11-08T00:52:10Z'
+updated: '2026-11-08T00:53:00Z'
 depends_on:
 - yaks-4e9c
 tags:
@@ -71,3 +71,13 @@ Claim (yakherd herd-stars): worker `stars-fonts`, in the toque repo (attached by
 **Evidence.** Tests in `src/raster.rs`: box-drawing corners draw, italic differs from upright, a missing glyph draws something, scale 2 doubles the size. Rasterized PNG of a yaks docshot attached (before/after). Gate `cargo test --all-features` in toque.
 
 **Judge.** herd-stars at landing, which pushes toque `main` (Joel authorized landing, 2026-11-08) before yaks-8fd1 bumps the dependency.
+
+---
+▸ 2026-11-08T00:53:00Z [stars-fonts]
+
+Started: 2026-11-08T00:52:52Z (date -u)
+
+- farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-4f4d.md
+- toque top-level: /Users/joel/src/toque/.delta/worktrees/ggfpzzt7sf82/toque
+- toque HEAD: 240eb5f9fdc275d74504a7f6323ce04c2be2e581
+- note: yaks commands only find the farm from the yaks worktree (toque has none).
