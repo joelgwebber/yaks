@@ -1,11 +1,11 @@
 ---
 id: yaks-8fd1
 title: 'yaks render: rasterize an SVG to a PNG with the embedded fonts (no browser)'
-status: hairy
+status: shaving
 type: feature
 priority: 3
 created: '2026-11-04T01:14:21Z'
-updated: '2026-11-04T01:14:21Z'
+updated: '2026-11-08T00:49:17Z'
 depends_on:
 - yaks-4f4d
 tags:
@@ -36,3 +36,13 @@ yaks-4f4d: until the subset covers the emoji and box-drawing corners our frames 
 ## Done when
 
 An agent can go from a docshot or attachment to a PNG its file tools can open with one yaks command, and `docs/tui.md`'s recipe section, the `yaks` skill's evidence guidance and the pointer in `AGENTS.md` ("Verifying changes") say so.
+
+---
+▸ 2026-11-08T00:49:17Z [herd-stars]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
