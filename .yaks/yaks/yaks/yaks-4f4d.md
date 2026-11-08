@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 4
 created: '2026-10-22T22:12:46Z'
-updated: '2026-11-08T01:18:38Z'
+updated: '2026-11-08T01:19:39Z'
 depends_on:
 - yaks-4e9c
 tags:
@@ -153,3 +153,8 @@ moved: shaving -> shorn
 ▸ 2026-11-08T01:18:38Z [stars-fonts]
 
 Correction to the summary's first "Known limits" bullet (garbled): the box-drawing borders are continuous with DejaVu 2.34 at 14px font / 18px row (verified in the attached showcase). The real gaps are: no Greek/Cyrillic/Latin Extended-B (DejaVu has them; cost not measured), no combining marks, and no flags/skin tones/ZWJ (they draw as their parts).
+
+---
+▸ 2026-11-08T01:19:39Z [herd-stars]
+
+herd-stars: landed in toque as `f2100c5` + `4fdb374`, pushed to toque's `origin/main` (Joel authorized landing, 2026-11-08). Gate in toque: `cargo test --all-features` 21 passed, `cargo test` 13 passed. Looked at the showcase PNG: box corners, italic and bold italic, braille, Latin accents and emoji draw; Powerline and CJK draw as visible boxes. yaks picks it up with yaks-8fd1's `cargo update -p toque`.
