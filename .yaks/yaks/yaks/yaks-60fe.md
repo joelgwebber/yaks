@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-08T00:37:14Z'
-updated: '2026-11-08T01:32:32Z'
+updated: '2026-11-08T01:45:26Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -101,3 +101,12 @@ Landed on yaks main as a5461648 (herd-reshape); gate re-run by the coordinator: 
 ▸ 2026-11-08T01:32:32Z [herd-reshape]
 
 Rebased onto yaks main cddd0bc (which gained the farm time zone, yaks-ac6a) as dc70dcbb in the coordinator's yaks clone: one conflict in the create arm of src/main.rs (due_every_fields gained a zone argument), resolved by keeping both. Gate on dc70dcbb: cargo test -p yaks --no-fail-fast, 1285 passed, 0 failed. Not yet on Joel's yaks main: pushing there waits for Joel. ~/.cargo/bin/yaks is currently a build of cddd0bc without create --set; Hearth's dev instance points yaks_bin at the clone's target/release/yaks meanwhile.
+
+---
+▸ 2026-11-08T01:45:26Z [herd-reshape]
+kind: landed
+commit: dc70dcbbcfe75bb80d00970d13daa8d0da5ae449
+branch: main
+---
+
+Landed on Joel's yaks main as dc70dcbb (git push local HEAD:main, approved by Joel 2026-11-08), on top of cddd0bc. Installed with cargo install --path . from the coordinator's yaks clone.
