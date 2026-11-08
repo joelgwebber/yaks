@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-08T00:37:14Z'
-updated: '2026-11-08T00:49:18Z'
+updated: '2026-11-08T01:03:05Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -91,3 +91,8 @@ thread: ksQQBgNNWOHrR9mtaBzuvtn_eJLOAEyQopIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-08T01:03:05Z [herd-reshape]
+
+Landed on yaks main as a5461648 (herd-reshape); gate re-run by the coordinator: cargo test -p yaks --no-fail-fast, 1204 passed on the clean run (one earlier run hit the known flaky init_modes test). Reproduced on a scratch farm: create --set person=joel writes the field in the create's one commit; --set title=y exits 1. Installed with cargo install --path . from the yaks worktree.
