@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-08T00:37:14Z'
-updated: '2026-11-08T00:37:22Z'
+updated: '2026-11-08T00:42:53Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -31,3 +31,11 @@ moved: hairy -> shaving
 ▸ 2026-11-08T00:37:22Z [herd-reshape]
 
 Claim (herd-reshape): worker set-1, from yaks main e8bc2c4f.
+
+---
+▸ 2026-11-08T00:42:53Z [set-1]
+kind: verify
+result: fail
+---
+
+verify: `cargo test -p yaks` -> FAIL (exit 101)
