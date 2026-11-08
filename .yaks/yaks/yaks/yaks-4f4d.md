@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 4
 created: '2026-10-22T22:12:46Z'
-updated: '2026-11-08T01:13:09Z'
+updated: '2026-11-08T01:18:32Z'
 depends_on:
 - yaks-4e9c
 tags:
@@ -103,3 +103,38 @@ Findings so far:
 ![showcase-before](yaks-4f4d/showcase-before.png "BEFORE: showcase frame (box corners, italic, braille, arrows, latin, emoji, missing glyphs) with the old subset: mostly blank, no italic")
 
 ![showcase-after](yaks-4f4d/showcase-after.png "AFTER (3x via svg_to_png_scaled): box corners/borders, bold-italic, braille, arrows, accents, emoji; Powerline and CJK draw as boxes, not blank")
+
+---
+▸ 2026-11-08T01:18:32Z [stars-fonts]
+
+Summary (toque commits f2100c5 fonts+script, 4fdb374 API+tests+README; parent 240eb5f; not pushed):
+
+**What changed**
+
+- `scripts/subset_fonts.py`: reviewable range list, pinned sources (DejaVu 2.34 from SourceForge, Noto COLRv1 at noto-emoji commit 99701e0, Unicode 15 emoji-data), runs the `pyftsubset` subsetter in-process. Needs only `pip install fonttools`; no texlive. Output is byte-reproducible (ran twice, same sha).
+- Four DejaVu Sans Mono faces (regular, bold, oblique, bold oblique); resvg picks the oblique face for `font-style:italic` (toque's svg.rs writes it as a CSS class), asserted by a test.
+- Missing glyph = DejaVu `.notdef` box (`--notdef-outline`). Test uses U+E0B0.
+- `rasterize_svg_scaled` / `svg_to_png_scaled`, exported from lib.rs; the old two are scale 1 (identical output asserted). Bad scale (0, negative, NaN, inf) is `None`.
+- README png section and `assets/fonts/README.md` (provenance, licenses; the one DejaVu license covers all four faces).
+
+**Sizes (bytes)**
+
+| set | fonts | yaks release binary |
+| --- | --- | --- |
+| before (38 codepoints) | 34,284 | 11,114,464 |
+| now: 4 DejaVu faces + common emoji (252) | 882,212 (4 faces 633,812 + emoji 248,400) | 11,973,088 (+858,624, +7.7%) |
+| alternative: base Unicode 15 emoji (1200) | 2,469,368 (emoji 1,835,556) | 13,574,768 (+2,460,304, +22%) |
+
+Builds: `cargo build --release` in the yaks worktree with a temporary `[patch]` to a copy of toque, then `git checkout -- Cargo.toml Cargo.lock` (yaks tree is clean).
+
+**Evidence**
+
+- `cargo test` (13 + doc) and `cargo test --all-features` (21 + doc) pass; clippy `--all-features --all-targets` clean; `cargo fmt --check` clean.
+- Four PNGs attached (caption before/after, showcase before/after). Looked at them: Doks icon, italic captions, box corners/borders, braille, accents, emoji, boxes for Powerline/CJK.
+- Mutation check: building without the borrow step makes `a_wide_charset_keeps_bold_and_italic_after_symbols` fail.
+
+**Known limits (follow-ups, not done)**
+
+- Box-drawing verticals in the showcase show 1px gaps between rows in italic/oblique? No: borders are continuous with 2.34 at 14px/18px. Other unexplored gaps: no Greek/Cyrillic/Latin Ext-B (DejaVu has them; cost not measured), no combining marks (no mark positioning), no flags/skin tones/ZWJ (draw as parts).
+- Oblique box/symbol glyphs are the upright ones (a terminal draws them upright too).
+- DejaVu 2.34 comes from SourceForge: if that URL rots, set `TOQUE_DEJAVU_DIR`.
