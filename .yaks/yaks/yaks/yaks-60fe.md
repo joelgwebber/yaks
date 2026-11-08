@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-08T00:37:14Z'
-updated: '2026-11-08T00:37:21Z'
+updated: '2026-11-08T00:37:22Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -26,3 +26,8 @@ thread: ksQQBgNNWOHrR9mtaBzuvtn_eJLOADWrTJIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-08T00:37:22Z [herd-reshape]
+
+Claim (herd-reshape): worker set-1, from yaks main e8bc2c4f.
