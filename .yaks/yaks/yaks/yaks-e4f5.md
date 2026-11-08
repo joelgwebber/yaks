@@ -1,7 +1,7 @@
 ---
 id: yaks-e4f5
 title: 'Research: Anthropic''s agent-memory ''dreaming'' and what it means for doks and lessons'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-08T16:22:21Z'
@@ -39,3 +39,13 @@ What it found, in short:
 - The loop isn't running: three session notes, no `lessons.md`, no recurring upkeep yaks.
 
 Filed under yaks-1c89: [yaks-6cf2](yaks-6cf2) (check flags doks whose cited code changed), [yaks-464b](yaks-464b) (refresh knowledge-store), and [yaks-2b40](yaks-2b40) (the skill and convention changes, held on one ask to Joel).
+
+---
+▸ 2026-11-08T16:24:17Z [memory-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQobtw8z0aRtm7OxvMZr8p4JLOAE33iJIBxBCg_8DSgeNASrgoPHtnOl5O
+---
+
+moved: shaving -> shorn
