@@ -1,11 +1,11 @@
 ---
 id: yaks-4f4d
 title: Wider embedded font subset for svg rendering
-status: hairy
+status: shaving
 type: task
 priority: 4
 created: '2026-10-22T22:12:46Z'
-updated: '2026-11-04T01:14:32Z'
+updated: '2026-11-08T00:49:16Z'
 depends_on:
 - yaks-4e9c
 tags:
@@ -42,3 +42,13 @@ Findings from rasterizing a real docshot with the embedded fonts (`docs/assets/t
 Why it matters beyond looks: yaks-8fd1 (a `yaks render` command) depends on this. Until the subset and a visible fallback land, a rendered frame has holes the browser version does not, so it cannot yet stand in for the Chrome recipe.
 
 Not started; lives in toque with the rasterizer.
+
+---
+▸ 2026-11-08T00:49:16Z [herd-stars]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
