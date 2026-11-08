@@ -5,13 +5,33 @@ status: hairy
 type: task
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-08T16:24:07Z'
+updated: '2026-11-08T16:24:17Z'
 parent: yaks-1c89
 tags:
 - design
 - skills
+needs: human
 ---
 
 From [the agent-memory research](/doks/research/agent-memory-dreaming.md) (yaks-e4f5), sections 2, 4, 5, 8 and 9: changes to the `yaks-upkeep` reflection procedure and how doks are indexed. It edits a skill, so the proposals are one ask for Joel before anything is written.
 
 Related and not duplicated: [yaks-323b](yaks-323b) (`session list --since`) and the accepted design in [/doks/design/session-reflection.md](/doks/design/session-reflection.md).
+
+---
+▸ 2026-11-08T16:24:17Z [memory-1]
+kind: ask
+needs: human
+---
+
+asked: needs human
+
+Six points from [the research](/doks/research/agent-memory-dreaming.md), each with my lean. All of them change the `yaks-upkeep` reflection procedure or the dok conventions, so nothing is written until you answer.
+
+1. **A budget and an index shape for `lessons.md`:** a line cap (about 50) with a top section of one-line rules that link down to detail. Reflection reports lessons removed as well as added. Lean: yes. Today it is read in full at every session start and can only grow.
+2. **A second way out for a lesson, absorption:** when a lesson is now in a skill or `AGENTS.md`, or a yak fixed the friction, it leaves the dok with a link to where it went. Today a lesson leaves only when a later session showed it wrong. Lean: yes.
+3. **Each lesson carries how we know and a last-seen date**, so a lesson not seen for several rounds is a demotion candidate. Lean: yes.
+4. **A lesson that is already in context and still recurs gets a yak for the mechanism, not more text.** Example in hand: `cargo fmt` reformatting two files appears in all three session notes though `AGENTS.md` warns about it. Lean: yes, one line in the procedure.
+5. **Reflection checks last round's accepted promotions:** the account says "recurred" or "gone" for each. Lean: yes; it is anecdote at this volume but it is what makes point 4 work.
+6. **A `description:` on every dok as its index line** (when to read it), flagged by `yaks check` when missing. Whether to also list them at session start: lean no until point 1 lands, since that is more context.
+
+Separately, the loop isn't running: no recurring review, reflection or tidy yak exists and there is no `lessons.md`. Lean: run the first reflection round by hand over the three notes, then create the three recurring yaks. Say if you want that as its own yak.
