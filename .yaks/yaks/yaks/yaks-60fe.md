@@ -1,7 +1,7 @@
 ---
 id: yaks-60fe
 title: create --set key=value, as update has
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-08T00:37:14Z'
@@ -81,3 +81,13 @@ Error: --set "title": a built-in field; use its own flag (see `--help`)   (exit 
 Docs parity: docs/cli.md (create row and Details), clap help on the flag, .agents/skills/yaks/SKILL.md (create row, and the "Other fields" line). Grepped `--set` across docs/, .agents/skills/, README.md, src/: README has no create flags list; other skills only mention `update --set` or `dok --set`, left alone. The skill and cli.md create rows also now list --due/--every/--wake, which were missing.
 
 Gate: `cargo test -p yaks --no-fail-fast` green; `yaks verify yaks-60fe` PASS. Note: tests/init_modes.rs `farm_works_from_a_git_worktree_and_a_shared_clone...` failed intermittently in some runs ("share2-web-wt already exists" under the shared temp dir), also with my change stashed: not mine.
+
+---
+▸ 2026-11-08T00:49:18Z [set-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQBgNNWOHrR9mtaBzuvtn_eJLOAEyQopIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
