@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-08T01:10:37Z'
+updated: '2026-11-08T01:12:29Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -140,3 +140,11 @@ Decision notes (stars-tz):
 Size: release binary 11,114,464 -> 12,320,672 bytes (+1,206,208, about +1.15 MiB) with `chrono-tz` default tz database (`default-features = false`; pulls `phf 0.12` as a second phf version). Both built with `cargo build --release` (strip, thin LTO); the baseline from a `git archive` of HEAD in /tmp. Trimming needs chrono-tz's `filter-by-regex` (build-time), not done.
 
 Friction: none blocking; `yaks note` is `yaks update --note`.
+
+---
+▸ 2026-11-08T01:12:29Z [stars-tz]
+kind: verify
+result: pass
+---
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
