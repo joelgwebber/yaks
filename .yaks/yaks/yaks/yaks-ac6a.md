@@ -5,11 +5,11 @@ status: hairy
 type: bug
 priority: 2
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-07T17:04:37Z'
+updated: '2026-11-08T00:48:13Z'
 parent: yaks-44b3
 tags:
 - cli
-needs: human
+needs: agent
 ---
 
 A recurring yak with a datetime `due:` drifts by an hour across a daylight-saving change, because `recur.rs` stores and adds in UTC (`Every::after` on `DateTime<Utc>`). Found while designing Hearth's reminders on a farm (hearth-1ed0, hearth-cfac in the Hearth repo's farm).
@@ -50,3 +50,13 @@ Three calls before this is built (herd-stars), my lean on each:
    - **`jiff`**, a newer date crate that does both: a second date library beside `chrono`.
 
 Absent `timezone:`, the machine's zone, as today.
+
+---
+▸ 2026-11-08T00:48:13Z [sched-1]
+kind: answer
+needs: agent
+---
+
+1. `timezone:` works for me.
+2. Agreed, per-herd would just get silly.
+3. Yes, let's use the embedded one. The last thing we need is more environmental things to go wrong.
