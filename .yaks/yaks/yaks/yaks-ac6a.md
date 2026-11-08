@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-08T01:12:40Z'
+updated: '2026-11-08T01:13:19Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -163,3 +163,13 @@ thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEy3PZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-08T01:13:19Z [herd-stars]
+kind: landed
+commit: 913e4f4a8e9f28e0d5eae5aea363545604bdf633
+source: cd5faac7e788d9d9190bb5a4d1121466cbe00097
+branch: main
+---
+
+landed: 913e4f4a yaks-ac6a: farm time zone (timezone: + chrono-tz); recurring datetimes keep wall-clock time across DST
