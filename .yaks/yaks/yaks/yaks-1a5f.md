@@ -1,11 +1,11 @@
 ---
 id: yaks-1a5f
 title: Regenerate the docs/assets docshots in one commit
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-07T18:24:51Z'
-updated: '2026-11-08T00:55:25Z'
+updated: '2026-11-08T00:55:26Z'
 tags:
 - tui
 - docs
@@ -29,3 +29,13 @@ moved: hairy -> shaving
 ▸ 2026-11-08T00:55:25Z [herd-stars]
 
 Done by herd-stars in `5f923cb8`: all 32 docshots regenerated in one commit. Four scenes still pressed `l` to open the pane, which after yaks-7c6e is `tree.right`, so they shot an empty list (`tui-image-viewer` showed `No tasks.`); they now press `Enter`. Every frame rasterized with headless Chrome and looked at (montage of all 32); hints read `Enter:detail`, `Esc:list`, `Esc close`.
+
+---
+▸ 2026-11-08T00:55:26Z [herd-stars]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
