@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 4
 created: '2026-10-22T22:12:46Z'
-updated: '2026-11-08T01:12:59Z'
+updated: '2026-11-08T01:13:04Z'
 depends_on:
 - yaks-4e9c
 tags:
@@ -97,3 +97,5 @@ Findings so far:
 - Emoji subset sizes (Noto COLRv1, no layout tables): base Emoji_Presentation Unicode 15 without skin tones = 1200 emoji, 1.83 MB; common set ~250 emoji, 248 KB; emoticons alone (80) 69 KB.
 
 ![caption-before](yaks-4f4d/caption-before.png "BEFORE: tui-image-caption.svg rasterized with the 38-codepoint subset: blank icon on the Doks tab, upright captions")
+
+![caption-after](yaks-4f4d/caption-after.png "AFTER: same SVG, new subset: the book icon draws on Doks, captions are italic")
