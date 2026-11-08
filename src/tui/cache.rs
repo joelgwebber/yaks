@@ -50,7 +50,7 @@ fn cache_home() -> PathBuf {
 /// Bumped whenever the svg rasterizer's output changes for the same input (a
 /// toque bump that widens the embedded font subset, say), so a cached PNG from
 /// the old renderer is not served.
-const SVG_RENDER_GEN: u32 = 1;
+const SVG_RENDER_GEN: u32 = 2; // 2: yaks-4f4d widened the fonts
 
 /// Where the PNG of svg `bytes`, rasterized at its own size, is cached under
 /// `base`: `<base>/yaks/svg/<gen>-<hash of content>.png`. Content-addressed, so

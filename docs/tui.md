@@ -336,10 +336,12 @@ same on every machine and shows its text and color emoji even where no
 monospace font is installed. The PNG is cached by the svg's content under
 `$XDG_CACHE_HOME/yaks/svg/` (default `~/.cache/yaks/svg/`); it is rebuildable, a
 read-only cache only costs a re-render (a few ms), and it is never in the farm.
-The embedded fonts are DejaVu Sans Mono and a color emoji subset covering the
-glyphs in our own frames: a character outside that subset renders blank, most
-visibly the box-drawing corners of a bordered widget (the wider subset is a
-known follow-up). A malformed svg opens with the OS opener.
+The embedded fonts are DejaVu Sans Mono (regular, bold, oblique, bold oblique)
+subset to Latin, punctuation, arrows, math, box drawing, blocks, geometric
+shapes, symbols, dingbats and braille, plus about 250 common color emoji; a
+character outside them (CJK, flags, Powerline glyphs) draws as a box, so a
+missing glyph is visible. `yaks render` writes the same rasterization to a PNG.
+A malformed svg opens with the OS opener.
 
 **Pasting** — the TUI enables bracketed paste, so a terminal paste (`Cmd-V` /
 `Ctrl-Shift-V`) lands in the focused text field as one literal insert: fast,
@@ -860,12 +862,17 @@ there when the TUI's look changes.
 
 ## Rasterizing an SVG to view it
 
-The TUI's image viewer rasterizes an svg attachment itself (see *Svg
-attachments* above), so a frame attached with `yaks attach` can be looked at in
-`yaks tui`. For a file on disk, or a pixel-faithful look at the color emoji and
-the system's fonts, use a real **browser engine**: headless Chrome writes a PNG
-you — or an agent whose file tools only read in-project paths — can then open;
-keep it in a gitignored dir such as `target/`:
+`yaks render <svg>` writes a PNG with the fonts built into yaks, the same
+rasterizer as the TUI's image viewer (see *Svg attachments* above): one command,
+no browser, and the same pixels on every machine. It is the lever for an agent
+whose file tools only read image files: `yaks render docs/assets/tui-list.svg -o
+target/svgcmp/list.png` (2x by default; `--scale`), or an attachment by its link
+(`yaks render yaks-1a2b/frame.svg`). A character the fonts lack (CJK, Powerline)
+draws as a box.
+
+For a pixel-faithful look at what a browser shows with the system's fonts
+(GitHub's rendering of the docs), use a real **browser engine**: headless Chrome
+writes a PNG; keep it in a gitignored dir such as `target/`:
 
 ```sh
 mkdir -p target/svgcmp

@@ -155,6 +155,7 @@ Mentions are whole real ids, matched exactly as `refs` and the TUI links do. Com
 | `create '<title>'` | New hairy yak. Title is positional or `--title`; `--type`/`--priority`/`--parent`/`--herd`/`--tags`/`--depends-on`/`--source`/`--key`/`--pr`/`--description`/`--description-file`/`--verify`; `--json` prints id + file path. `--description -` reads stdin (see [Multi-line text](#multi-line-text)). [Details](#create) |
 | `update <ids…>` | Update fields/tags, replace the body (`--description`/`--description-file`) or append a `--note`/`--note-file` (with `--meta key=value`, repeatable, for the note's [metadata](#note-metadata)); `--set key=value` / `--unset key` for any other frontmatter field; the same edit applies to every id. `--note -` reads stdin (see [Multi-line text](#multi-line-text)). [Details](#update) |
 | `dep add\|remove <id> <dep>` | Add / remove a dependency. |
+| `render <svg> [-o PNG] [--scale N]` | Rasterize an SVG (a file, farm path or attachment) to a PNG with the built-in fonts. [Details](#links) |
 | `peek <link>` | Print only what a link names: lines, a section, a dok's head. [Details](#links) |
 | `conflicts [--json]` | List farm documents holding a merge conflict to settle: conflict markers in prose, or a dok's `merge_conflicts:`. [Details](#merge-driver) |
 | `undo <commit>... \| --by <actor> [--since <when>]` | Revert farm commits as one new commit. [Details](#undo) |
@@ -351,6 +352,8 @@ Yaks and doks link with ordinary markdown links, in one grammar: `<target>[@<rev
 - `code:` links resolve in the code checkout: the git top-level of the directory yaks runs in, else the repository's main checkout.
 
 `peek <link> [--context N]` prints only what a link names: the lines (numbered; `--context` widens them), the section under a heading (up to the next heading of the same or a higher level), or with no anchor a dok's frontmatter and first paragraph (the first 20 lines of anything else). A pinned link reads the file as it was at that commit. Exits non-zero, saying why, for a missing file, heading or line.
+
+`render <svg> [-o <png>] [--scale N]` rasterizes an SVG to a PNG with the fonts built into yaks, the same rasterizer and fonts as the TUI's image viewer, so the PNG is what `yaks tui` shows on any machine (no browser, no system fonts). `<svg>` is a file path, else a farm path (`/doks/x.svg`) or an attachment (`yaks-1a2b/frame.svg`). The PNG goes to `<stem>.png` in the current directory unless `-o` names a file (`-o -`: stdout); the path is printed. `--scale` is pixels per SVG pixel (default 2). Characters the fonts lack draw as a visible box; the fonts cover Latin, box drawing, blocks, braille, arrows, common symbols and about 250 common emoji (not CJK, flags or Powerline glyphs).
 
 `refs <dok path> [--incoming] [--json]` lists the links a dok holds (marking any that lead nowhere), or with `--incoming` every yak and dok that links to it, with the line.
 

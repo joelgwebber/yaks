@@ -32,6 +32,7 @@ mod preflight;
 mod privatefarm;
 mod recur;
 mod refs;
+mod render;
 mod rollup;
 mod rows;
 mod schemas;
@@ -963,6 +964,25 @@ enum Command {
     Dep {
         #[command(subcommand)]
         action: DepAction,
+    },
+    /// Rasterize an SVG to a PNG with the fonts built into yaks (no browser).
+    ///
+    /// The same rasterizer and fonts as the TUI's image viewer, so the PNG is
+    /// what `yaks tui` shows, on any machine: use it to look at a docshot or an
+    /// attached SVG with tools that only read image files. `<SVG>` is a file
+    /// path, else a farm path (`/doks/x.svg`) or an attachment
+    /// (`yaks-1a2b/frame.svg`). Prints the PNG's path. For a pixel-faithful
+    /// look at what a browser shows (system fonts), see the Chrome recipe in
+    /// docs/tui.md.
+    Render {
+        svg: String,
+        /// Where to write the PNG (`-` for stdout). Default: `<stem>.png` in
+        /// the current directory.
+        #[arg(short, long)]
+        output: Option<String>,
+        /// Pixels per SVG pixel: 2 (the default) doubles both dimensions.
+        #[arg(long, default_value_t = 2.0)]
+        scale: f32,
     },
     /// Print only what a link names: a line range, a markdown section, or a
     /// document's frontmatter and first paragraph.
@@ -1949,6 +1969,11 @@ fn main() -> Result<()> {
             yaks: yaks.clone(),
         }));
     }
+    // `render` reads a file; it uses a farm only to resolve a farm path or an
+    // attachment, so it works outside one too.
+    if let Command::Render { svg, output, scale } = &cli.command {
+        return run_render(svg, output.as_deref(), *scale);
+    }
     // Keep the user-level skills current. The overwhelmingly common failure is
     // an agent running against a stale skill, and nobody remembers to re-run
     // the installer — so ordinary commands top it up. Strictly narrow: only an
@@ -2176,6 +2201,7 @@ fn main() -> Result<()> {
         Command::Migrate { dry_run, .. } => report_migrate(&farm.migrate(dry_run)?),
         Command::Init { .. } => unreachable!("init is handled before opening a farm"),
         Command::Skills { .. } => unreachable!("skills is handled before opening a farm"),
+        Command::Render { .. } => unreachable!("render is handled before opening a farm"),
         Command::Whoami { .. } => unreachable!("whoami is handled before opening a farm"),
         Command::Private { .. } => unreachable!("private is handled before opening a farm"),
         Command::Land { .. } => unreachable!("land is handled before opening a farm"),
@@ -4762,6 +4788,31 @@ fn report_rename(out: RenameOutcome) {
 }
 
 /// `yaks whoami [--set <name>]`.
+/// `yaks render`: see [`render`].
+fn run_render(svg: &str, output: Option<&str>, scale: f32) -> Result<()> {
+    let cwd = env::current_dir()?;
+    let farm = Farm::open(&cwd).ok();
+    let fail = |e: anyhow::Error| -> ! {
+        eprintln!("error: {e:#}");
+        std::process::exit(1);
+    };
+    let path =
+        render::resolve(svg, &cwd, farm.as_ref().map(|f| f.root())).unwrap_or_else(|e| fail(e));
+    let png = render::png_of(&path, scale).unwrap_or_else(|e| fail(e));
+    if output == Some("-") {
+        use std::io::Write;
+        // A reader that stops early (`| head`) is not an error.
+        return match std::io::stdout().write_all(&png) {
+            Err(e) if e.kind() != std::io::ErrorKind::BrokenPipe => Err(e.into()),
+            _ => Ok(()),
+        };
+    }
+    let out = output.map_or_else(|| render::default_output(&path, &cwd), |o| cwd.join(o));
+    std::fs::write(&out, &png).with_context(|| format!("writing {}", out.display()))?;
+    println!("{}", out.display());
+    Ok(())
+}
+
 fn run_whoami(set: Option<&str>) -> Result<()> {
     let cwd = env::current_dir()?;
     if let Some(name) = set {

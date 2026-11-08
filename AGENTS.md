@@ -111,11 +111,10 @@ saw — the shipped `.agents/skills/yaks` "Evidence before you shear" rule, appl
 For a durable UI state, prefer a `docshots` scene + a `docs/` embed over a
 one-off frame.
 
-To actually *look* at an SVG frame, rasterize it to PNG with headless Chrome
-(recipe in `docs/tui.md`): that is the faithful lever. The TUI's image viewer
-also rasterizes an attached SVG itself (toque's `png` feature, embedded fonts,
-so no system fonts; box-drawing corners are blank until the font subset is
-widened), which is enough to check an attachment shows up.
+To actually *look* at an SVG frame, `yaks render <svg> -o target/svgcmp/x.png`
+rasterizes it with the embedded fonts (toque's `png` feature, the TUI image
+viewer's rasterizer), the same on every machine. Headless Chrome (recipe in
+`docs/tui.md`) remains the check for what a browser, and GitHub, shows.
 
 **Hand the human a build to try.** After landing any significant change, the
 main (coordinating) thread installs the landed tree with Cargo, which puts the
