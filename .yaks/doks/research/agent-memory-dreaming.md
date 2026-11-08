@@ -9,6 +9,7 @@ tags:
 stale_after: P6M
 sources:
 - sources/2026-11-08-f2310691/source.md
+description: What Anthropic's agent-memory article ("dreaming", the transcripts-notes-representations-context stack) suggests for how the farm keeps doks and lessons current; read before changing the upkeep procedures.
 ---
 
 # Agent memory and "dreaming": what to take for doks and lessons
