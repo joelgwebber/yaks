@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-04T01:14:21Z'
-updated: '2026-11-08T01:25:05Z'
+updated: '2026-11-08T01:25:06Z'
 depends_on:
 - yaks-4f4d
 tags:
@@ -56,3 +56,13 @@ Claim (yakherd herd-stars): worker after yaks-4f4d lands in toque. Open points d
 - **`--scale <n>`** (default 2, as the Chrome recipe uses, since a 1x frame is small for a vision model), via toque's new scaled rasterizer.
 
 ![peek-render](yaks-8fd1/peek-render.png "yaks render docs/assets/tui-yak-peek.svg: 2x, embedded fonts, no browser")
+
+---
+▸ 2026-11-08T01:25:06Z [herd-stars]
+
+Done by herd-stars in `cddd0bcd`: `yaks render <svg> [-o <png>] [--scale N]` ([src/render.rs](code:src/render.rs@cddd0bcd)), on toque `4fdb374` (yaks-4f4d's fonts).
+
+- `<svg>` is a file path, else a farm path or an attachment link; no farm needed for a plain file. Default output `<stem>.png` in the current directory, `-o -` stdout, `--scale` 2 by default (decisions in the claim note above).
+- The TUI's svg cache generation is bumped (`SVG_RENDER_GEN` 2), so PNGs cached with the old fonts are not served.
+- Docs: `docs/cli.md`, `docs/tui.md` (the rasterizing section and the svg fonts paragraph), the `yaks` skill's TUI evidence line, `AGENTS.md` "Verifying changes".
+- Evidence: unit tests for resolution and scale (IHDR 80×40 at 2x); `yaks render yaks-e5f9/zoom-3-zoomed-panned.svg` from the repo resolves the attachment; the attached PNG of `tui-yak-peek.svg`, looked at. Full gate `cargo test --workspace` green.
