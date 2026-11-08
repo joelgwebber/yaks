@@ -11,6 +11,7 @@ use serde_json::{Map, Value, json};
 use crate::farm::Stats;
 use crate::model::{Status, Task};
 use crate::rollup::Group;
+use crate::zone::Zone;
 
 fn status_str(s: Status) -> &'static str {
     match s {
@@ -22,7 +23,7 @@ fn status_str(s: Status) -> &'static str {
 }
 
 /// Canonical JSON object for a task.
-pub fn task_value(t: &Task) -> Value {
+pub fn task_value(t: &Task, zone: Zone) -> Value {
     let mut m = Map::new();
     m.insert("status".into(), json!(status_str(t.status)));
     m.insert("id".into(), json!(t.id));
@@ -59,7 +60,7 @@ pub fn task_value(t: &Task) -> Value {
         m.insert("extra".into(), t.extra.to_json());
     }
     // Derived from `due` and the clock, so only present when true.
-    if crate::recur::is_overdue(t, chrono::Utc::now()) {
+    if crate::recur::is_overdue(t, chrono::Utc::now(), zone) {
         m.insert("overdue".into(), json!(true));
     }
     let body = t.body.trim();
@@ -88,12 +89,12 @@ pub fn regrow_due_value(r: &crate::recur::Report, dry_run: bool) -> Value {
 }
 
 /// `inbox --json`: the canonical task objects plus the derived `replied` flag.
-pub fn inbox_array(tasks: &[&Task]) -> Value {
+pub fn inbox_array(tasks: &[&Task], zone: Zone) -> Value {
     Value::Array(
         tasks
             .iter()
             .map(|t| {
-                let mut v = task_value(t);
+                let mut v = task_value(t, zone);
                 if let Value::Object(m) = &mut v {
                     m.insert("replied".into(), json!(crate::store::is_replied(t)));
                     // Why it awaits an agent (`answered`|`requested`), else null.
@@ -106,14 +107,14 @@ pub fn inbox_array(tasks: &[&Task]) -> Value {
     )
 }
 
-pub fn tasks_array(tasks: &[Task]) -> Value {
-    Value::Array(tasks.iter().map(task_value).collect())
+pub fn tasks_array(tasks: &[Task], zone: Zone) -> Value {
+    Value::Array(tasks.iter().map(|t| task_value(t, zone)).collect())
 }
 
 /// JSON for a freshly created task: the canonical task object plus its
 /// on-disk file path, for scripting `create --json`.
-pub fn create_value(t: &Task, path: &Path) -> Value {
-    let mut v = task_value(t);
+pub fn create_value(t: &Task, path: &Path, zone: Zone) -> Value {
+    let mut v = task_value(t, zone);
     if let Value::Object(m) = &mut v {
         m.insert("path".into(), json!(path.display().to_string()));
     }
@@ -136,12 +137,12 @@ pub fn log_array(entries: &[crate::farm::LogEntry]) -> Value {
     )
 }
 
-pub fn tangled_array(items: &[(Task, Vec<String>)]) -> Value {
+pub fn tangled_array(items: &[(Task, Vec<String>)], zone: Zone) -> Value {
     Value::Array(
         items
             .iter()
             .map(|(t, un)| {
-                let mut v = task_value(t);
+                let mut v = task_value(t, zone);
                 if let Value::Object(m) = &mut v {
                     m.insert("unresolved_deps".into(), json!(un));
                 }
@@ -151,8 +152,8 @@ pub fn tangled_array(items: &[(Task, Vec<String>)]) -> Value {
     )
 }
 
-pub fn show_value(t: &Task, children: &[Task]) -> Value {
-    let mut v = task_value(t);
+pub fn show_value(t: &Task, children: &[Task], zone: Zone) -> Value {
+    let mut v = task_value(t, zone);
     if let Value::Object(m) = &mut v {
         let notes = crate::store::parse_notes(&t.body);
         if !notes.is_empty() {
@@ -283,14 +284,14 @@ mod tests {
     fn task_value_surfaces_extra_when_present() {
         let mut t = task();
         t.extra = crate::fields::Fields::parse("wat: foo\ncommit: [3f2a9c1]");
-        let v = task_value(&t);
+        let v = task_value(&t, Zone::Machine);
         assert_eq!(v["extra"], json!({"wat": "foo", "commit": ["3f2a9c1"]}));
     }
 
     #[test]
     fn task_value_omits_extra_when_empty() {
         // No unmodeled fields => no `extra` key at all (keeps existing goldens).
-        let v = task_value(&task());
+        let v = task_value(&task(), Zone::Machine);
         assert!(v.get("extra").is_none());
     }
 }

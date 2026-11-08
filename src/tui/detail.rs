@@ -386,7 +386,7 @@ pub fn build_at(
             .and_then(|v| v.as_str().map(String::from))
     };
     if let Some(due) = text(crate::recur::DUE) {
-        if crate::recur::is_overdue(task, clock.now()) {
+        if crate::recur::is_overdue(task, clock.now(), clock.zone()) {
             out.push(warn_field("Due:", &format!("{due} (overdue)")));
         } else {
             out.push(field("Due:", &due));

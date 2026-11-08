@@ -12,13 +12,29 @@ struct Farm {
 }
 
 impl Farm {
+    /// A farm whose calendar is UTC, so a date-only `due:` and `+2d` mean the
+    /// same day whatever zone the machine running the tests is in.
     fn new(tag: &str) -> Farm {
+        Farm::in_zone(tag, "UTC")
+    }
+
+    /// A farm with `timezone: <zone>` in its `config.yaml` (yaks-ac6a).
+    fn in_zone(tag: &str, zone: &str) -> Farm {
         let dir = std::env::temp_dir().join(format!("yaks-recur-{tag}-{}", std::process::id()));
         common::cleanup(&dir);
         common::git_init(&dir);
         let f = Farm { dir };
         f.run(&["init", "--no-skills"]);
+        f.config(&format!("timezone: {zone}\n"));
         f
+    }
+
+    /// Append to the farm's `config.yaml`.
+    fn config(&self, text: &str) {
+        let path = PathBuf::from(self.run(&["path"]).trim()).join("config.yaml");
+        let mut cur = std::fs::read_to_string(&path).unwrap_or_default();
+        cur.push_str(text);
+        std::fs::write(path, cur).unwrap();
     }
 
     fn cmd(&self, args: &[&str]) -> std::process::Output {
@@ -202,9 +218,9 @@ fn dead_yaks_never_regrow_and_a_shorn_parent_reopens_with_its_child() {
     assert_eq!(f.show(&dead)["status"], "dead");
 }
 
-/// Today as `--due +Nd` resolves it: the local calendar day.
+/// Today as `--due +Nd` resolves it on a UTC farm.
 fn local_days_ahead(n: i64) -> String {
-    (chrono::Local::now() + Duration::days(n))
+    (Utc::now() + Duration::days(n))
         .format("%Y-%m-%d")
         .to_string()
 }
@@ -396,4 +412,75 @@ fn dry_run_says_who_would_be_woken_and_writes_nothing() {
     assert_eq!(v["regrew"][0]["wake"], "agent");
     assert_eq!(f.commits(), before);
     assert_eq!(needs_of(&f, &id), None);
+}
+
+// ---- the farm's time zone (yaks-ac6a) --------------------------------------
+
+#[test]
+fn a_datetime_due_keeps_its_offset_and_a_daily_yak_keeps_its_wall_clock_across_dst() {
+    let f = Farm::in_zone("dst", "America/New_York");
+    // 19:30 New York on Oct 31 (EDT). Every day since then is 19:30 there, in
+    // EDT before Nov 1 and EST after: never 18:30.
+    let id = f.create(&["--every", "P1D", "--due", "2026-10-31T19:30:00-04:00"]);
+    assert_eq!(
+        f.show(&id)["extra"]["due"],
+        "2026-10-31T19:30:00-04:00",
+        "the offset it was given is kept, not rewritten to Z"
+    );
+    f.run(&["shorn", &id]);
+    let out = f.run(&["regrow-due"]);
+    assert!(out.contains(&format!("Regrown: {id}")), "{out}");
+    let v = f.show(&id);
+    let due = v["extra"]["due"].as_str().unwrap();
+    // The real clock decides the occurrence, so only the wall clock and an
+    // offset New York has are fixed.
+    assert!(
+        due.contains("T19:30:00-04:00") || due.contains("T19:30:00-05:00"),
+        "{due}"
+    );
+    let body = v["description"].as_str().unwrap();
+    assert!(body.contains("T19:30:00-0"), "{body}");
+}
+
+#[test]
+fn a_zone_decides_what_today_is_for_relative_and_date_only_dues() {
+    use chrono_tz::Pacific::Auckland;
+    use chrono_tz::Pacific::Honolulu;
+    // Auckland and Honolulu are 23 hours apart (22 in their summers), so their
+    // calendar days differ for most of any day: each farm gets its own date.
+    for (zone, tz) in [
+        ("Pacific/Auckland", Auckland),
+        ("Pacific/Honolulu", Honolulu),
+    ] {
+        let f = Farm::in_zone(&format!("today-{}", zone.replace('/', "-")), zone);
+        let today = Utc::now().with_timezone(&tz).date_naive();
+        let id = f.create(&["--due", "+2d"]);
+        let want = (today + Duration::days(2)).format("%Y-%m-%d").to_string();
+        assert_eq!(f.show(&id)["extra"]["due"], want, "{zone}");
+    }
+}
+
+#[test]
+fn an_unknown_zone_warns_once_and_doctor_reports_it_and_the_machine_zone_is_used() {
+    let f = Farm::in_zone("badzone", "Mars/Olympus");
+    let out = f.cmd(&["list"]);
+    assert!(out.status.success());
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert_eq!(err.matches("timezone:").count(), 1, "{err}");
+    assert!(
+        err.contains("warning:") && err.contains("Mars/Olympus"),
+        "{err}"
+    );
+    // Work goes on: a relative due still resolves (on the machine's zone).
+    let id = f.create(&["--due", "+1d"]);
+    assert!(f.show(&id)["extra"]["due"].as_str().is_some());
+    let doctor = f.cmd(&["doctor"]);
+    let text = String::from_utf8_lossy(&doctor.stdout);
+    assert!(
+        text.contains("Bad timezone") && text.contains("Mars/Olympus"),
+        "{text}"
+    );
+    // `--json` stays clean on stderr, as for the other warnings.
+    let json = f.cmd(&["list", "--json"]);
+    assert!(!String::from_utf8_lossy(&json.stderr).contains("timezone"));
 }

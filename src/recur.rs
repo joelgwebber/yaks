@@ -15,7 +15,8 @@
 
 use crate::fields::Value;
 use crate::model::{Status, Task};
-use chrono::{DateTime, Days, Months, NaiveDate, NaiveTime, Utc};
+use crate::zone::Zone;
+use chrono::{DateTime, Days, FixedOffset, Months, NaiveDate, NaiveTime, SecondsFormat, Utc};
 
 pub const DUE: &str = "due";
 pub const EVERY: &str = "every";
@@ -60,11 +61,14 @@ pub fn parse_duration(s: &str) -> Option<(u32, u32)> {
 }
 
 /// A moment as `due:` writes it: a whole day, or an instant.
+///
+/// A day has no zone of its own: it is the farm's day (yaks-ac6a), so what it
+/// means as an instant takes the farm's [`Zone`]. An instant keeps the offset
+/// it was written with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct When {
-    /// The instant; midnight UTC when `date_only`.
-    pub at: DateTime<Utc>,
-    pub date_only: bool,
+pub enum When {
+    Day(NaiveDate),
+    At(DateTime<FixedOffset>),
 }
 
 impl When {
@@ -72,15 +76,9 @@ impl When {
     pub fn parse(s: &str) -> Option<When> {
         let s = s.trim();
         if let Ok(d) = NaiveDate::parse_from_str(s, "%Y-%m-%d") {
-            return Some(When {
-                at: d.and_time(NaiveTime::MIN).and_utc(),
-                date_only: true,
-            });
+            return Some(When::Day(d));
         }
-        DateTime::parse_from_rfc3339(s).ok().map(|t| When {
-            at: t.with_timezone(&Utc),
-            date_only: false,
-        })
+        DateTime::parse_from_rfc3339(s).ok().map(When::At)
     }
 
     /// What a person may type for a deadline: what [`When::parse`] reads, or
@@ -101,37 +99,46 @@ impl When {
             return None;
         }
         let days = digits.parse::<u64>().ok()?.checked_mul(per)?;
-        Some(When {
-            at: today
-                .checked_add_days(Days::new(days))?
-                .and_time(NaiveTime::MIN)
-                .and_utc(),
-            date_only: true,
-        })
+        Some(When::Day(today.checked_add_days(Days::new(days))?))
     }
 
-    /// How it is written back: `2026-11-15`, or `2026-11-15T08:00:00Z`.
+    /// How it is written back: `2026-11-15`, or `2026-11-15T08:00:00-05:00`
+    /// (`Z` for a zero offset): the offset it was given, never rewritten.
     pub fn render(self) -> String {
-        let fmt = if self.date_only {
-            "%Y-%m-%d"
-        } else {
-            "%Y-%m-%dT%H:%M:%SZ"
-        };
-        self.at.format(fmt).to_string()
+        match self {
+            When::Day(d) => d.format("%Y-%m-%d").to_string(),
+            When::At(t) => t.to_rfc3339_opts(SecondsFormat::Secs, true),
+        }
     }
 
-    /// The day alone (`2026-11-15`): what a list row shows.
-    pub fn day(self) -> String {
-        self.at.format("%Y-%m-%d").to_string()
+    /// The day alone (`2026-11-15`): what a list row shows. An instant is
+    /// shown on the farm's calendar, whatever offset it was written with.
+    pub fn day(self, zone: Zone) -> String {
+        match self {
+            When::Day(d) => d.format("%Y-%m-%d").to_string(),
+            When::At(t) => zone.date_of(t.to_utc()).format("%Y-%m-%d").to_string(),
+        }
+    }
+
+    /// When it starts: a day's first moment in the farm's zone, an instant
+    /// itself.
+    pub fn instant(self, zone: Zone) -> DateTime<Utc> {
+        match self {
+            When::Day(d) => zone
+                .midnight(d)
+                .map_or_else(|| d.and_time(NaiveTime::MIN).and_utc(), |t| t.to_utc()),
+            When::At(t) => t.to_utc(),
+        }
     }
 
     /// The instant after which the yak is late: the end of the day for a
-    /// date, the instant itself for a datetime.
-    pub fn deadline(self) -> DateTime<Utc> {
-        if self.date_only {
-            self.at.checked_add_days(Days::new(1)).unwrap_or(self.at)
-        } else {
-            self.at
+    /// date (the farm's), the instant itself for a datetime.
+    pub fn deadline(self, zone: Zone) -> DateTime<Utc> {
+        match self {
+            When::Day(d) => d
+                .checked_add_days(Days::new(1))
+                .map_or_else(|| self.instant(zone), |next| When::Day(next).instant(zone)),
+            When::At(t) => t.to_utc(),
         }
     }
 }
@@ -143,16 +150,16 @@ pub fn due(t: &Task) -> Option<When> {
 
 /// Whether a hairy or shaving yak is past its `due:` at `now`. A shorn or dead
 /// yak is never overdue: its work is done (or dropped).
-pub fn is_overdue(t: &Task, now: DateTime<Utc>) -> bool {
-    t.status.is_open() && due(t).is_some_and(|d| now >= d.deadline())
+pub fn is_overdue(t: &Task, now: DateTime<Utc>, zone: Zone) -> bool {
+    t.status.is_open() && due(t).is_some_and(|d| now >= d.deadline(zone))
 }
 
 /// `list --due`: keep the yaks that have a `due:` (before `before`, when
 /// given), sorted by it, then by id.
-pub fn due_rows(rows: Vec<Task>, before: Option<DateTime<Utc>>) -> Vec<Task> {
+pub fn due_rows(rows: Vec<Task>, before: Option<DateTime<Utc>>, zone: Zone) -> Vec<Task> {
     let mut keyed: Vec<(DateTime<Utc>, Task)> = rows
         .into_iter()
-        .filter_map(|t| Some((due(&t)?.at, t)))
+        .filter_map(|t| Some((due(&t)?.instant(zone), t)))
         .filter(|(at, _)| before.is_none_or(|b| *at < b))
         .collect();
     keyed.sort_by(|(a, x), (b, y)| a.cmp(b).then_with(|| x.id.cmp(&y.id)));
@@ -161,12 +168,16 @@ pub fn due_rows(rows: Vec<Task>, before: Option<DateTime<Utc>>) -> Vec<Task> {
 
 /// What a CLI row says about the due date: ` due 2026-11-15`, with ` overdue`
 /// after it when the yak is late; empty without a readable `due:`.
-pub fn due_mark(t: &Task, now: DateTime<Utc>) -> String {
+pub fn due_mark(t: &Task, now: DateTime<Utc>, zone: Zone) -> String {
     let Some(d) = due(t) else {
         return String::new();
     };
-    let late = if is_overdue(t, now) { " overdue" } else { "" };
-    format!(" due {}{late}", d.day())
+    let late = if is_overdue(t, now, zone) {
+        " overdue"
+    } else {
+        ""
+    };
+    format!(" due {}{late}", d.day(zone))
 }
 
 /// The problem with `value` as the field `key`, when `key` is one of ours and
@@ -205,11 +216,6 @@ pub fn resolve_due_short(text: &str, today: NaiveDate) -> Result<String, String>
         .ok_or_else(|| format!("{text:?} is not a date, a datetime or +2d / +1w"))
 }
 
-/// Today on the calendar a person reads, which is what `+2d` counts from.
-pub fn today() -> NaiveDate {
-    chrono::Local::now().date_naive()
-}
-
 pub fn field_problem(key: &str, value: &Value) -> Option<String> {
     let text = match value {
         Value::Null => return None,
@@ -243,26 +249,38 @@ impl Every {
 
     /// `start` plus `k` periods, counted from `start` (not step by step), so a
     /// month-end start keeps its day: Jan 31 + 1 month is Feb 28, + 2 is Mar 31.
-    /// `None` when the date overflows.
-    pub fn after(self, start: DateTime<Utc>, k: u32) -> Option<DateTime<Utc>> {
-        let months = self.months.checked_mul(k)?;
-        let days = u64::from(self.days) * u64::from(k);
-        start
-            .checked_add_months(Months::new(months))?
-            .checked_add_days(Days::new(days))
+    /// A day steps on the calendar. An instant steps on the wall clock of the
+    /// farm's `zone`, so 19:30 stays 19:30 across a daylight-saving change (a
+    /// `P1D` is then 23 or 25 hours); the result carries the offset in force
+    /// then. `None` when the date overflows.
+    pub fn after(self, start: When, k: u32, zone: Zone) -> Option<When> {
+        let months = Months::new(self.months.checked_mul(k)?);
+        let days = Days::new(u64::from(self.days) * u64::from(k));
+        Some(match start {
+            When::Day(d) => When::Day(d.checked_add_months(months)?.checked_add_days(days)?),
+            When::At(t) => {
+                let wall = zone.at(t.to_utc()).naive_local();
+                let wall = wall.checked_add_months(months)?.checked_add_days(days)?;
+                When::At(zone.resolve(wall)?)
+            }
+        })
     }
 
     /// The largest `k >= first` with `start + k * every` not after `now`, and
-    /// that instant; `None` when even `first` is still in the future. Gallops
+    /// that moment; `None` when even `first` is still in the future. Gallops
     /// then bisects (`after` only grows with k), so a yak shorn years ago costs
     /// a handful of steps, not one per missed occurrence.
     pub fn latest(
         self,
-        start: DateTime<Utc>,
+        start: When,
         first: u32,
         now: DateTime<Utc>,
-    ) -> Option<(DateTime<Utc>, u32)> {
-        let reached = |k: u32| self.after(start, k).filter(|t| *t <= now);
+        zone: Zone,
+    ) -> Option<(When, u32)> {
+        let reached = |k: u32| {
+            self.after(start, k, zone)
+                .filter(|w| w.instant(zone) <= now)
+        };
         reached(first)?;
         let (mut lo, mut step) = (first, 1u32);
         let mut hi = loop {
@@ -352,7 +370,7 @@ fn date_field(t: &Task, key: &str) -> Date {
 /// - A yak never regrown counts from its `due:` (else the time it was shorn),
 ///   k starting at 1: the due date is the deadline of the round just shorn.
 /// - `regrown:` with no `due:` (someone cleared it) is the anchor, k from 1.
-pub fn plan(t: &Task, now: DateTime<Utc>) -> Verdict {
+pub fn plan(t: &Task, now: DateTime<Utc>, zone: Zone) -> Verdict {
     let Some(every) = t.extra.get(EVERY) else {
         return Verdict::NotRecurring;
     };
@@ -380,20 +398,16 @@ pub fn plan(t: &Task, now: DateTime<Utc>) -> Verdict {
             }
         },
     };
-    let Some((at, k)) = every.latest(start.at, first, now) else {
+    let Some((at, k)) = every.latest(start, first, now, zone) else {
         return Verdict::Waiting;
     };
-    let Some(next) = every.after(at, 1) else {
+    let Some(next) = every.after(at, 1, zone) else {
         return Verdict::Invalid("the next deadline is out of range".into());
     };
-    let when = |at| When {
-        at,
-        date_only: start.date_only,
-    };
     Verdict::Regrow(Plan {
-        occurrence: when(at),
+        occurrence: at,
         skipped: k - first,
-        due: when(next),
+        due: next,
         wake: wake.as_deref().and_then(wake_of),
     })
 }
@@ -480,8 +494,16 @@ mod tests {
         t
     }
 
+    fn utc() -> Zone {
+        Zone::Fixed(FixedOffset::east_opt(0).unwrap())
+    }
+
     fn regrow(t: &Task, now: DateTime<Utc>) -> Plan {
-        match plan(t, now) {
+        regrow_in(t, now, utc())
+    }
+
+    fn regrow_in(t: &Task, now: DateTime<Utc>, zone: Zone) -> Plan {
+        match plan(t, now, zone) {
             Verdict::Regrow(p) => p,
             other => panic!("expected a regrow, got {other:?}"),
         }
@@ -522,11 +544,16 @@ mod tests {
     #[test]
     fn when_reads_dates_and_datetimes_only() {
         let d = When::parse("2026-11-15").unwrap();
-        assert!(d.date_only);
+        assert!(matches!(d, When::Day(_)));
         assert_eq!(d.render(), "2026-11-15");
         let t = When::parse("2026-11-15T09:30:00+02:00").unwrap();
-        assert!(!t.date_only);
-        assert_eq!(t.render(), "2026-11-15T07:30:00Z");
+        assert!(matches!(t, When::At(_)));
+        // The offset it was given is kept, not rewritten to UTC.
+        assert_eq!(t.render(), "2026-11-15T09:30:00+02:00");
+        assert_eq!(
+            When::parse("2026-11-15T09:30:00+00:00").unwrap().render(),
+            "2026-11-15T09:30:00Z"
+        );
         for bad in ["", "soon", "2026-13-01", "11/15/2026", "2026-11-15 09:00"] {
             assert!(When::parse(bad).is_none(), "{bad}");
         }
@@ -535,7 +562,8 @@ mod tests {
     #[test]
     fn input_reads_relative_days_and_weeks_from_today() {
         let today = NaiveDate::from_ymd_opt(2026, 11, 4).unwrap();
-        let day = |s: &str| When::parse_input(s, today).map(|w| (w.render(), w.date_only));
+        let day =
+            |s: &str| When::parse_input(s, today).map(|w| (w.render(), matches!(w, When::Day(_))));
         assert_eq!(day("+0d"), Some(("2026-11-04".into(), true)));
         assert_eq!(day("+2d"), Some(("2026-11-06".into(), true)));
         assert_eq!(day(" +1w "), Some(("2026-11-11".into(), true)));
@@ -557,12 +585,13 @@ mod tests {
     fn a_date_is_overdue_once_its_day_has_passed() {
         let mut t = shorn(&[("due", "2026-11-15")]);
         t.status = Status::Hairy;
-        assert!(!is_overdue(&t, at(2026, 11, 15)));
+        assert!(!is_overdue(&t, at(2026, 11, 15), utc()));
         assert!(!is_overdue(
             &t,
-            at(2026, 11, 15) + chrono::Duration::hours(23)
+            at(2026, 11, 15) + chrono::Duration::hours(23),
+            utc(),
         ));
-        assert!(is_overdue(&t, at(2026, 11, 16)));
+        assert!(is_overdue(&t, at(2026, 11, 16), utc()));
         // A datetime is late the moment it passes.
         let t = Task {
             extra: shorn(&[("due", "2026-11-15T09:00:00Z")]).extra,
@@ -571,11 +600,13 @@ mod tests {
         };
         assert!(!is_overdue(
             &t,
-            at(2026, 11, 15) + chrono::Duration::hours(8)
+            at(2026, 11, 15) + chrono::Duration::hours(8),
+            utc(),
         ));
         assert!(is_overdue(
             &t,
-            at(2026, 11, 15) + chrono::Duration::hours(10)
+            at(2026, 11, 15) + chrono::Duration::hours(10),
+            utc(),
         ));
     }
 
@@ -584,7 +615,7 @@ mod tests {
         for status in [Status::Shorn, Status::Dead] {
             let mut t = shorn(&[("due", "2020-01-01")]);
             t.status = status;
-            assert!(!is_overdue(&t, at(2026, 1, 1)), "{status:?}");
+            assert!(!is_overdue(&t, at(2026, 1, 1), utc()), "{status:?}");
         }
     }
 
@@ -592,12 +623,15 @@ mod tests {
     fn rows_say_due_and_overdue() {
         let mut t = shorn(&[("due", "2026-11-15")]);
         t.status = Status::Hairy;
-        assert_eq!(due_mark(&t, at(2026, 11, 15)), " due 2026-11-15");
-        assert_eq!(due_mark(&t, at(2026, 11, 16)), " due 2026-11-15 overdue");
-        assert_eq!(due_mark(&shorn(&[]), at(2026, 11, 16)), "");
+        assert_eq!(due_mark(&t, at(2026, 11, 15), utc()), " due 2026-11-15");
+        assert_eq!(
+            due_mark(&t, at(2026, 11, 16), utc()),
+            " due 2026-11-15 overdue"
+        );
+        assert_eq!(due_mark(&shorn(&[]), at(2026, 11, 16), utc()), "");
         // A shorn yak keeps its date but is not late.
         t.status = Status::Shorn;
-        assert_eq!(due_mark(&t, at(2027, 1, 1)), " due 2026-11-15");
+        assert_eq!(due_mark(&t, at(2027, 1, 1), utc()), " due 2026-11-15");
     }
 
     #[test]
@@ -617,10 +651,16 @@ mod tests {
             mk("a", Some("2026-11-20")),
         ];
         let ids = |v: Vec<Task>| v.into_iter().map(|t| t.id).collect::<Vec<_>>();
-        assert_eq!(ids(due_rows(rows.clone(), None)), ["c", "a", "b"]);
+        assert_eq!(ids(due_rows(rows.clone(), None, utc())), ["c", "a", "b"]);
         // `before` is exclusive.
-        assert_eq!(ids(due_rows(rows.clone(), Some(at(2026, 11, 20)))), ["c"]);
-        assert_eq!(ids(due_rows(rows, Some(at(2026, 11, 21)))), ["c", "a", "b"]);
+        assert_eq!(
+            ids(due_rows(rows.clone(), Some(at(2026, 11, 20)), utc())),
+            ["c"]
+        );
+        assert_eq!(
+            ids(due_rows(rows, Some(at(2026, 11, 21)), utc())),
+            ["c", "a", "b"]
+        );
     }
 
     #[test]
@@ -643,9 +683,12 @@ mod tests {
         let t = shorn(&[("every", "P1W"), ("due", "2026-11-01")]);
         let p = regrow(&t, at(2026, 11, 9));
         assert_eq!((p.occurrence.render(), p.skipped), ("2026-11-08".into(), 0));
-        assert_eq!(plan(&t, at(2026, 11, 7)), Verdict::Waiting);
+        assert_eq!(plan(&t, at(2026, 11, 7), utc()), Verdict::Waiting);
         // The occurrence itself counts: it is not in the future.
-        assert!(matches!(plan(&t, at(2026, 11, 8)), Verdict::Regrow(_)));
+        assert!(matches!(
+            plan(&t, at(2026, 11, 8), utc()),
+            Verdict::Regrow(_)
+        ));
     }
 
     #[test]
@@ -677,7 +720,7 @@ mod tests {
             ("due", "2026-11-22"),
             ("regrown", "2026-11-16T14:03:00Z"),
         ]);
-        assert_eq!(plan(&t, at(2026, 11, 21)), Verdict::Waiting);
+        assert_eq!(plan(&t, at(2026, 11, 21), utc()), Verdict::Waiting);
         let p = regrow(&t, at(2026, 11, 22));
         assert_eq!(p.occurrence.render(), "2026-11-22");
         assert_eq!(p.skipped, 0);
@@ -689,7 +732,7 @@ mod tests {
     #[test]
     fn regrown_alone_is_an_anchor_counted_from_one() {
         let t = shorn(&[("every", "P1W"), ("regrown", "2026-11-10T08:00:00Z")]);
-        assert_eq!(plan(&t, at(2026, 11, 17)), Verdict::Waiting);
+        assert_eq!(plan(&t, at(2026, 11, 17), utc()), Verdict::Waiting);
         let p = regrow(&t, at(2026, 11, 18));
         assert_eq!(p.occurrence.render(), "2026-11-17T08:00:00Z");
         assert_eq!(p.due.render(), "2026-11-24T08:00:00Z");
@@ -711,13 +754,13 @@ mod tests {
     fn only_shorn_yaks_with_a_reading_every_are_candidates() {
         let mut t = shorn(&[("every", "P1W"), ("due", "2026-01-01")]);
         assert_eq!(
-            plan(&shorn(&[("due", "2026-01-01")]), at(2026, 11, 1)),
+            plan(&shorn(&[("due", "2026-01-01")]), at(2026, 11, 1), utc()),
             Verdict::NotRecurring
         );
         for status in [Status::Hairy, Status::Shaving, Status::Dead] {
             t.status = status;
             assert_eq!(
-                plan(&t, at(2026, 11, 1)),
+                plan(&t, at(2026, 11, 1), utc()),
                 Verdict::NotRecurring,
                 "{status:?}"
             );
@@ -725,12 +768,15 @@ mod tests {
         for bad in ["monday", "P0D", "1W"] {
             let t = shorn(&[("every", bad), ("due", "2026-01-01")]);
             assert!(
-                matches!(plan(&t, at(2026, 11, 1)), Verdict::Invalid(_)),
+                matches!(plan(&t, at(2026, 11, 1), utc()), Verdict::Invalid(_)),
                 "{bad}"
             );
         }
         let t = shorn(&[("every", "P1W"), ("due", "soon")]);
-        assert!(matches!(plan(&t, at(2026, 11, 1)), Verdict::Invalid(_)));
+        assert!(matches!(
+            plan(&t, at(2026, 11, 1), utc()),
+            Verdict::Invalid(_)
+        ));
     }
 
     #[test]
@@ -751,5 +797,147 @@ mod tests {
         // Clearing is always fine, and other keys are not ours.
         assert!(field_problem("due", &Value::Null).is_none());
         assert!(field_problem("owner", &v("anything")).is_none());
+    }
+
+    // ---- the farm's time zone (yaks-ac6a) --------------------------------
+
+    fn ny() -> Zone {
+        Zone::parse("America/New_York").unwrap()
+    }
+
+    fn instant(s: &str) -> DateTime<Utc> {
+        DateTime::parse_from_rfc3339(s).unwrap().to_utc()
+    }
+
+    /// The `k`-th occurrence of `start` every `every`, as written back.
+    fn nth(start: &str, every: &str, k: u32, zone: Zone) -> String {
+        Every::parse(every)
+            .unwrap()
+            .after(When::parse(start).unwrap(), k, zone)
+            .unwrap()
+            .render()
+    }
+
+    #[test]
+    fn a_daily_evening_reminder_stays_in_the_evening_after_the_clocks_go_back() {
+        // The bug (2026-11-07): a daily 19:30 due was written back in UTC, so
+        // after the Nov 1 change it fired at 18:30 local.
+        let t = shorn(&[("every", "P1D"), ("due", "2026-10-31T19:30:00-04:00")]);
+        let p = regrow_in(&t, instant("2026-11-07T12:00:00Z"), ny());
+        assert_eq!(p.occurrence.render(), "2026-11-06T19:30:00-05:00");
+        assert_eq!(p.due.render(), "2026-11-07T19:30:00-05:00");
+        assert_eq!(p.skipped, 5);
+        // The report's own repro wrote `2026-11-01T19:30:00-04:00`, but clocks
+        // went back at 02:00 that day: that instant is 18:30 EST, and 18:30
+        // is what it keeps. The instant given is the truth.
+        let t = shorn(&[("every", "P1D"), ("due", "2026-11-01T19:30:00-04:00")]);
+        let p = regrow_in(&t, instant("2026-11-07T12:00:00Z"), ny());
+        assert_eq!(p.due.render(), "2026-11-07T18:30:00-05:00");
+    }
+
+    #[test]
+    fn daily_across_both_2026_us_transitions() {
+        // Spring forward, Mar 8: Mar 7 19:30 EST to Mar 8 19:30 EDT is 23 hours.
+        assert_eq!(
+            nth("2026-03-06T19:30:00-05:00", "P1D", 1, ny()),
+            "2026-03-07T19:30:00-05:00"
+        );
+        assert_eq!(
+            nth("2026-03-06T19:30:00-05:00", "P1D", 2, ny()),
+            "2026-03-08T19:30:00-04:00"
+        );
+        assert_eq!(
+            nth("2026-03-06T19:30:00-05:00", "P1D", 3, ny()),
+            "2026-03-09T19:30:00-04:00"
+        );
+        // Fall back, Nov 1: Oct 31 19:30 EDT to Nov 1 19:30 EST is 25 hours.
+        assert_eq!(
+            nth("2026-10-30T19:30:00-04:00", "P1D", 1, ny()),
+            "2026-10-31T19:30:00-04:00"
+        );
+        assert_eq!(
+            nth("2026-10-30T19:30:00-04:00", "P1D", 2, ny()),
+            "2026-11-01T19:30:00-05:00"
+        );
+        let secs = |a: &str, b: &str| (instant(b) - instant(a)).num_hours();
+        assert_eq!(
+            secs("2026-03-07T19:30:00-05:00", "2026-03-08T19:30:00-04:00"),
+            23
+        );
+        assert_eq!(
+            secs("2026-10-31T19:30:00-04:00", "2026-11-01T19:30:00-05:00"),
+            25
+        );
+    }
+
+    #[test]
+    fn weekly_across_both_2026_us_transitions() {
+        assert_eq!(
+            nth("2026-03-02T19:30:00-05:00", "P1W", 1, ny()),
+            "2026-03-09T19:30:00-04:00"
+        );
+        assert_eq!(
+            nth("2026-10-26T19:30:00-04:00", "P1W", 1, ny()),
+            "2026-11-02T19:30:00-05:00"
+        );
+        // Through the plan: the regrow after Nov 1 keeps 19:30 and the new offset.
+        let t = shorn(&[("every", "P1W"), ("due", "2026-10-26T19:30:00-04:00")]);
+        let p = regrow_in(&t, instant("2026-11-03T12:00:00Z"), ny());
+        assert_eq!(p.occurrence.render(), "2026-11-02T19:30:00-05:00");
+        assert_eq!(p.due.render(), "2026-11-09T19:30:00-05:00");
+    }
+
+    #[test]
+    fn a_monthly_yak_on_the_31st_clamps_and_comes_back_through_a_dst_change() {
+        let start = "2026-01-31T19:30:00-05:00";
+        assert_eq!(nth(start, "P1M", 1, ny()), "2026-02-28T19:30:00-05:00");
+        // Counted from the start, so March is the 31st again, now in EDT.
+        assert_eq!(nth(start, "P1M", 2, ny()), "2026-03-31T19:30:00-04:00");
+        assert_eq!(nth(start, "P1M", 3, ny()), "2026-04-30T19:30:00-04:00");
+        assert_eq!(nth(start, "P1M", 5, ny()), "2026-06-30T19:30:00-04:00");
+    }
+
+    #[test]
+    fn a_time_that_does_not_exist_moves_on_and_then_comes_back() {
+        // 02:30 does not exist on Mar 8 in New York: 03:30 that day, and
+        // 02:30 again the next, because every step counts from the start.
+        let start = "2026-03-07T02:30:00-05:00";
+        assert_eq!(nth(start, "P1D", 1, ny()), "2026-03-08T03:30:00-04:00");
+        assert_eq!(nth(start, "P1D", 2, ny()), "2026-03-09T02:30:00-04:00");
+    }
+
+    #[test]
+    fn without_a_named_zone_steps_stay_where_utc_stepping_did() {
+        // A fixed zone has no daylight saving: the same wall clock is the same
+        // instant of day, as before this change.
+        assert_eq!(
+            nth("2026-11-01T19:30:00Z", "P1D", 3, utc()),
+            "2026-11-04T19:30:00Z"
+        );
+    }
+
+    #[test]
+    fn a_date_is_the_farms_day_not_utcs() {
+        // Due Nov 7: late from the start of Nov 8 in New York (05:00Z), not
+        // from midnight UTC.
+        let mut t = shorn(&[("due", "2026-11-07")]);
+        t.status = Status::Hairy;
+        assert!(!is_overdue(&t, instant("2026-11-08T04:59:00Z"), ny()));
+        assert!(is_overdue(&t, instant("2026-11-08T05:00:00Z"), ny()));
+        assert!(is_overdue(&t, instant("2026-11-08T00:00:00Z"), utc()));
+        // A datetime is shown on the farm's calendar, whatever offset it has.
+        let d = When::parse("2026-11-07T23:30:00-05:00").unwrap();
+        assert_eq!(d.day(ny()), "2026-11-07");
+        assert_eq!(d.day(utc()), "2026-11-08");
+    }
+
+    #[test]
+    fn relative_days_count_from_the_given_day() {
+        let today = ny().date_of(instant("2026-11-08T04:30:00Z"));
+        assert_eq!(today.to_string(), "2026-11-07");
+        assert_eq!(
+            When::parse_input("+2d", today).unwrap().render(),
+            "2026-11-09"
+        );
     }
 }

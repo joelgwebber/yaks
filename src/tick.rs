@@ -7,6 +7,7 @@
 //! digest is testable with a fixed clock ([`build`]).
 
 use crate::model::{Status, Task};
+use crate::zone::Zone;
 use crate::{json, recur, sheds, store};
 use chrono::{DateTime, Duration, Utc};
 use serde_json::{Value, json};
@@ -28,6 +29,8 @@ pub struct Stale {
 #[derive(Debug, Clone)]
 pub struct Digest {
     pub now: DateTime<Utc>,
+    /// The farm's clock: what a date-only `due:` and a day mean.
+    pub zone: Zone,
     pub within: Duration,
     pub dry_run: bool,
     /// What the regrow step reopened (or, on a dry run, would) and held.
@@ -66,23 +69,24 @@ pub fn build(
     regrow: recur::Report,
     findings: Option<usize>,
     now: DateTime<Utc>,
+    zone: Zone,
     within: Duration,
     dry_run: bool,
 ) -> Digest {
     let by_due = |a: &Task, b: &Task| {
-        let key = |t: &Task| recur::due(t).map(|d| d.at);
+        let key = |t: &Task| recur::due(t).map(|d| d.instant(zone));
         key(a).cmp(&key(b)).then_with(|| a.id.cmp(&b.id))
     };
     let mut overdue: Vec<Task> = tasks
         .iter()
-        .filter(|t| recur::is_overdue(t, now))
+        .filter(|t| recur::is_overdue(t, now, zone))
         .cloned()
         .collect();
     overdue.sort_by(by_due);
     let mut due_soon: Vec<Task> = tasks
         .iter()
-        .filter(|t| t.status.is_open() && !recur::is_overdue(t, now) && t.needs.is_none())
-        .filter(|t| recur::due(t).is_some_and(|d| d.at <= now + within))
+        .filter(|t| t.status.is_open() && !recur::is_overdue(t, now, zone) && t.needs.is_none())
+        .filter(|t| recur::due(t).is_some_and(|d| d.instant(zone) <= now + within))
         .cloned()
         .collect();
     due_soon.sort_by(by_due);
@@ -104,6 +108,7 @@ pub fn build(
         .collect();
     Digest {
         now,
+        zone,
         within,
         dry_run,
         regrow,
@@ -271,15 +276,15 @@ pub fn to_json(d: &Digest) -> Value {
     }
     if let Value::Object(m) = &mut v {
         m.insert("within".into(), json!(span(d.within)));
-        m.insert("overdue".into(), json::tasks_array(&d.overdue));
-        m.insert("due_soon".into(), json::tasks_array(&d.due_soon));
+        m.insert("overdue".into(), json::tasks_array(&d.overdue, d.zone));
+        m.insert("due_soon".into(), json::tasks_array(&d.due_soon, d.zone));
         m.insert(
             "awaiting_human".into(),
-            json::inbox_array(&kept(&d.awaiting_human)),
+            json::inbox_array(&kept(&d.awaiting_human), d.zone),
         );
         m.insert(
             "awaiting_agent".into(),
-            json::inbox_array(&kept(&d.awaiting_agent)),
+            json::inbox_array(&kept(&d.awaiting_agent), d.zone),
         );
         m.insert(
             "stale".into(),
@@ -340,6 +345,7 @@ mod tests {
             recur::Report::default(),
             None,
             now(),
+            Zone::Fixed(chrono::FixedOffset::east_opt(0).unwrap()),
             Duration::days(3),
             false,
         )
@@ -415,6 +421,7 @@ mod tests {
             recur::Report::default(),
             None,
             Utc.with_ymd_and_hms(2026, 11, 4, 2, 0, 0).unwrap(),
+            Zone::default(),
             Duration::days(3),
             false,
         );

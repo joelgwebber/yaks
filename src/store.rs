@@ -1091,6 +1091,9 @@ pub struct Config {
     /// ([`min_version_notice`]). Set before a schema bump, so every machine
     /// upgrades before `yaks migrate` makes old binaries refuse the farm.
     pub min_version: Option<String>,
+    /// The farm's time zone as `timezone:` names it (an IANA name, yaks-ac6a).
+    /// Farm-wide: not per herd. Read it through [`Config::zone`].
+    pub timezone: Option<String>,
 }
 
 /// The TUI's background sync interval when `config.yaml` is silent.
@@ -1131,6 +1134,27 @@ impl Config {
         let mut v: Vec<String> = self.herds.keys().cloned().collect();
         v.sort();
         v
+    }
+
+    /// The farm's clock for calendar dates: `timezone:`, else the machine's
+    /// zone. A name the tz database does not know also falls back to the
+    /// machine's zone; [`Config::timezone_problem`] says so.
+    pub fn zone(&self) -> crate::zone::Zone {
+        self.timezone
+            .as_deref()
+            .and_then(crate::zone::Zone::parse)
+            .unwrap_or_default()
+    }
+
+    /// Why `timezone:` is not in force, when it names a zone the tz database
+    /// does not know (the farm then keeps the machine's zone).
+    pub fn timezone_problem(&self) -> Option<String> {
+        let name = self.timezone.as_deref()?;
+        crate::zone::Zone::parse(name).is_none().then(|| {
+            format!(
+                "timezone: {name:?} in config.yaml is not an IANA zone name (like America/New_York); using this machine's zone"
+            )
+        })
     }
 
     /// Default type for a new yak in `herd`: the herd override, else the global.
@@ -1179,6 +1203,7 @@ pub fn read_config(root: &Path) -> Config {
         herds: std::collections::HashMap::new(),
         sync_interval: Some(DEFAULT_SYNC_INTERVAL),
         min_version: None,
+        timezone: None,
     };
     if let Ok(text) = fs::read_to_string(root.join("config.yaml")) {
         // A tiny indent-aware pass over the small YAML subset we emit: top-level
@@ -1278,6 +1303,7 @@ pub fn read_config(root: &Path) -> Config {
                         c.sync_interval = i;
                     }
                 }
+                "timezone" if !val.is_empty() => c.timezone = Some(val),
                 "min_version" if !val.is_empty() => {
                     c.min_version = Some(val.trim_start_matches('v').to_string())
                 }
@@ -2700,6 +2726,13 @@ pub fn min_version_notice(root: &Path) -> Option<String> {
     })
 }
 
+/// The warning for a farm whose `config.yaml` names a `timezone:` the tz
+/// database does not know, `None` otherwise. Advice only: the command still
+/// runs, on the machine's zone.
+pub fn timezone_notice(root: &Path) -> Option<String> {
+    read_config(root).timezone_problem()
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SchemaStatus {
     Compatible,
@@ -2797,6 +2830,38 @@ mod tests {
             Some(Duration::from_secs(300))
         );
         assert_eq!(read("sync_interval: soon\n"), Some(DEFAULT_SYNC_INTERVAL));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn timezone_is_a_farm_wide_iana_name_and_a_bad_one_falls_back_with_a_warning() {
+        use super::{read_config, timezone_notice};
+        use crate::zone::Zone;
+        let dir = std::env::temp_dir().join(format!("yaks-tz-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let read = |text: &str| {
+            std::fs::write(dir.join("config.yaml"), text).unwrap();
+            read_config(&dir)
+        };
+        // Absent: the machine's zone, no warning.
+        let c = read("herd: t\n");
+        assert_eq!((c.timezone.clone(), c.zone()), (None, Zone::Machine));
+        assert_eq!(timezone_notice(&dir), None);
+        // Named: the compiled-in database's zone; quotes are fine.
+        let c = read("timezone: \"America/New_York\"\n");
+        assert_eq!(c.zone(), Zone::parse("America/New_York").unwrap());
+        assert_eq!(timezone_notice(&dir), None);
+        // Farm-wide: a herd block's `timezone:` is not read.
+        let c = read("herds:\n  web:\n    timezone: Asia/Tokyo\n");
+        assert_eq!((c.timezone.clone(), c.zone()), (None, Zone::Machine));
+        // Unknown: the machine's zone, and a warning that names the value.
+        let c = read("timezone: Mars/Olympus\n");
+        assert_eq!(c.zone(), Zone::Machine);
+        let msg = timezone_notice(&dir).expect("an unknown zone warns");
+        assert!(
+            msg.contains("Mars/Olympus") && msg.contains("machine"),
+            "{msg}"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 

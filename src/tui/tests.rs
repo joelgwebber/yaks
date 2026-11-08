@@ -2611,8 +2611,10 @@ mod live {
         }
     }
 
+    /// The day `days` from today on the app's (pinned) clock: what `+Nd` counts
+    /// from in the form and the snooze prompt (the farm's clock, yaks-ac6a).
     fn day_in(days: i64) -> String {
-        (chrono::Local::now() + chrono::Duration::days(days))
+        (when::Clock::test_default().today() + chrono::Duration::days(days))
             .format("%Y-%m-%d")
             .to_string()
     }

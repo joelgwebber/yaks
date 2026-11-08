@@ -30,7 +30,8 @@ Run the review-watch scan, triage the yaks it made, shear with a note.
 EOF
 ```
 
-- `--every` is an ISO 8601 duration (`P1D`, `P2W`, `P1M`): no weekday words. `--due` takes a date or `+2d` / `+1w` from today.
+- `--every` is an ISO 8601 duration (`P1D`, `P2W`, `P1M`): no weekday words. `--due` takes a date, a datetime or `+2d` / `+1w` from today.
+- **Times are the farm's.** "Today" and a date-only `due:` use the farm's `timezone:` (an IANA name in `.yaks/config.yaml`; absent: this machine's zone). A datetime `due:` keeps the offset you write (`2026-11-15T19:30:00-05:00`), and `every` steps on the wall clock in the farm's zone: a 19:30 reminder stays 19:30 across a daylight-saving change (`P1D` is then 23 or 25 hours). Write a reminder's time with its real offset for that date.
 - `--wake agent|human` says who a regrow goes to: it sets `needs:` and writes a request (or ask) note, so the yak lands in `yaks inbox` with its description as the instruction. Without it the yak only becomes hairy and overdue. Use `agent` for work an agent can do, `human` for something only the person can look at.
 - **The description is the task**, written for whoever picks it up cold. It is also the whole registry: yaks runs no commands from a farm file, so a skill registers itself by creating one such yak, never by adding a hook.
 - It reopens once the next occurrence arrives, counted from `due:`: shear it on its due day and it waits for the next one. A tick that comes late regrows it once and notes how many rounds were skipped.

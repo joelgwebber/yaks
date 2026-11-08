@@ -280,6 +280,7 @@ default_priority: 3    # default --priority
 vim_mode: true         # TUI keys: vim (true) or standard (false); a `keys:` family in your own config.yaml wins
 inline_images: true    # TUI: draw a body paragraph's images in place (false: a link row)
 sync_interval: 5m      # TUI: sync the farm in the background this often (30s, 5m, 2h; 0 or off: never)
+timezone: America/New_York  # the farm's calendar: "today", `+2d`, date-only `due:` and what `every:` keeps (IANA name; absent: this machine's zone)
 min_version: 0.0.31    # an older yaks warns (and names the upgrade) on every command
 ```
 

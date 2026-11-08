@@ -229,7 +229,11 @@ impl CreateForm {
     /// `cur`, so an untouched field never rewrites the file. A due date is
     /// resolved (`+2d` becomes a date); text that does not read is passed
     /// through as typed (`problem` refuses it before anything is written).
-    pub(crate) fn schedule_edits(&self, cur: Option<&Task>) -> Vec<(&'static str, Option<String>)> {
+    pub(crate) fn schedule_edits(
+        &self,
+        cur: Option<&Task>,
+        today: chrono::NaiveDate,
+    ) -> Vec<(&'static str, Option<String>)> {
         let typed =
             |cell: &RefCell<EditorState>| cell.borrow().lines.to_string().trim().to_string();
         let due = typed(&self.due);
@@ -240,7 +244,7 @@ impl CreateForm {
         // resolved; one that does not read goes through as typed, and
         // `problem` refuses it before anything is written.
         let stored_due = (!due.is_empty())
-            .then(|| recur::resolve_due(&due, recur::today()).unwrap_or_else(|_| due.clone()));
+            .then(|| recur::resolve_due(&due, today).unwrap_or_else(|_| due.clone()));
         let stored_every = (!every.is_empty()).then(|| every.clone());
         let mut out = Vec::new();
         for (key, now, shown) in [
@@ -260,14 +264,14 @@ impl CreateForm {
     }
 
     /// The reason the schedule fields cannot be saved, in the CLI's words.
-    pub(crate) fn problem(&self) -> Option<String> {
+    pub(crate) fn problem(&self, today: chrono::NaiveDate) -> Option<String> {
         let typed =
             |cell: &RefCell<EditorState>| cell.borrow().lines.to_string().trim().to_string();
         let due = typed(&self.due);
         let bad_due = if due.is_empty() {
             Ok(String::new())
         } else {
-            recur::resolve_due_short(&due, recur::today())
+            recur::resolve_due_short(&due, today)
         };
         if let Err(why) = bad_due {
             return Some(format!("due: {why}"));

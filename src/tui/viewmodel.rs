@@ -204,9 +204,10 @@ impl App {
     /// says the same thing on every tab.
     pub(crate) fn overdue_count(&self) -> usize {
         let now = self.clock.now();
+        let zone = self.clock.zone();
         self.all
             .iter()
-            .filter(|t| crate::recur::is_overdue(t, now))
+            .filter(|t| crate::recur::is_overdue(t, now, zone))
             .count()
     }
 
@@ -245,7 +246,8 @@ impl App {
             })
             .collect();
         let sort_by = v.sort_by.unwrap_or(view::SortField::Updated);
-        matched.sort_by(|a, b| sort_key(a, sort_by).cmp(&sort_key(b, sort_by)));
+        let zone = self.clock.zone();
+        matched.sort_by(|a, b| sort_key(a, sort_by, zone).cmp(&sort_key(b, sort_by, zone)));
         if v.sort_dir == view::SortDir::Desc {
             matched.reverse();
         }

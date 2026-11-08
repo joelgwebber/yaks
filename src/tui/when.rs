@@ -4,14 +4,18 @@
 //! injectable source of both. Reused by the detail Created/Updated fields and
 //! (later) comment headers.
 
-use chrono::{DateTime, Datelike, FixedOffset, Local, Offset, TimeZone, Utc};
+use crate::zone::Zone;
+#[cfg(test)]
+use chrono::TimeZone;
+use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, Utc};
 
 /// Where "now" and the display timezone come from.
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum Clock {
-    /// The real clock and the machine's local timezone (read on each call, so
-    /// "5m ago" stays current and DST is honoured per timestamp).
-    System,
+    /// The real clock in the farm's zone (the machine's, until the farm names
+    /// one with `timezone:`). Read on each call, so "5m ago" stays current and
+    /// DST is honoured per timestamp.
+    System(Zone),
     /// A fixed instant and offset, for tests and docshots.
     #[cfg_attr(not(test), allow(dead_code))]
     Fixed(DateTime<Utc>, FixedOffset),
@@ -27,7 +31,7 @@ impl Clock {
         }
         #[cfg(not(test))]
         {
-            Clock::System
+            Clock::System(Zone::Machine)
         }
     }
 
@@ -40,10 +44,31 @@ impl Clock {
         )
     }
 
+    /// This clock with the farm's zone (a fixed test clock keeps its offset).
+    pub(crate) fn in_zone(self, zone: Zone) -> Clock {
+        match self {
+            Clock::System(_) => Clock::System(zone),
+            fixed => fixed,
+        }
+    }
+
+    /// The zone this clock shows dates in: the farm's.
+    pub(crate) fn zone(&self) -> Zone {
+        match *self {
+            Clock::System(zone) => zone,
+            Clock::Fixed(_, off) => Zone::Fixed(off),
+        }
+    }
+
+    /// Today in the farm's zone: what `+2d` counts from.
+    pub(crate) fn today(&self) -> NaiveDate {
+        self.zone().date_of(self.now())
+    }
+
     /// The instant this clock reads.
     pub(crate) fn now(&self) -> DateTime<Utc> {
         match *self {
-            Clock::System => Utc::now(),
+            Clock::System(_) => Utc::now(),
             Clock::Fixed(now, _) => now,
         }
     }
@@ -52,7 +77,7 @@ impl Clock {
     /// relative dates ("5m ago") is good for.
     pub(crate) fn minute(&self) -> i64 {
         match *self {
-            Clock::System => Utc::now().timestamp().div_euclid(60),
+            Clock::System(_) => Utc::now().timestamp().div_euclid(60),
             Clock::Fixed(now, _) => now.timestamp().div_euclid(60),
         }
     }
@@ -60,10 +85,7 @@ impl Clock {
     /// Render the RFC 3339 timestamp `iso` relative to this clock; input that
     /// does not parse passes through unchanged.
     pub(crate) fn format(&self, iso: &str) -> String {
-        match *self {
-            Clock::System => format_in(iso, Utc::now(), &Local),
-            Clock::Fixed(now, off) => format_in(iso, now, &off),
-        }
+        format_in(iso, self.now(), self.zone())
     }
 }
 
@@ -78,11 +100,8 @@ impl Clock {
 /// | 2–6 calendar days back | `Weekday HH:MM <zone>` |
 /// | anything older, or further in the future | `Oct 5, 2026 22:15 <zone>` |
 ///
-/// `<zone>` is `UTC` or a `+HH:MM` offset. Calendar days are those of `tz`.
-pub(crate) fn format_in<Tz: TimeZone>(iso: &str, now: DateTime<Utc>, tz: &Tz) -> String
-where
-    Tz::Offset: std::fmt::Display,
-{
+/// `<zone>` is `UTC` or a `+HH:MM` offset. Calendar days are those of `zone`.
+pub(crate) fn format_in(iso: &str, now: DateTime<Utc>, zone: Zone) -> String {
     let Ok(ts) = DateTime::parse_from_rfc3339(iso) else {
         return iso.to_string();
     };
@@ -97,20 +116,20 @@ where
     if (0..86_400).contains(&secs) {
         return format!("{}h ago", secs / 3600);
     }
-    let local = ts.with_timezone(tz);
-    let off = local.offset().fix();
-    let zone = if off.local_minus_utc() == 0 {
+    let local = zone.at(ts);
+    let off = *local.offset();
+    let label = if off.local_minus_utc() == 0 {
         "UTC".to_string()
     } else {
         off.to_string()
     };
-    let days_back = (now.with_timezone(tz).date_naive().num_days_from_ce()
-        - local.date_naive().num_days_from_ce()) as i64;
+    let days_back =
+        (zone.date_of(now).num_days_from_ce() - local.date_naive().num_days_from_ce()) as i64;
     let clock = local.format("%H:%M");
     match days_back {
-        1 if secs > 0 => format!("yesterday {clock} {zone}"),
-        2..=6 if secs > 0 => format!("{} {clock} {zone}", local.format("%A")),
-        _ => format!("{} {zone}", local.format("%b %-d, %Y %H:%M")),
+        1 if secs > 0 => format!("yesterday {clock} {label}"),
+        2..=6 if secs > 0 => format!("{} {clock} {label}", local.format("%A")),
+        _ => format!("{} {label}", local.format("%b %-d, %Y %H:%M")),
     }
 }
 
@@ -128,7 +147,7 @@ mod tests {
     }
 
     fn f(iso: &str) -> String {
-        format_in(iso, now(), &at(0))
+        format_in(iso, now(), Zone::Fixed(at(0)))
     }
 
     #[test]
@@ -161,17 +180,20 @@ mod tests {
     fn calendar_days_follow_the_offset() {
         // 23:30 UTC on the 14th is 01:30 on the 15th at +02:00: today, but
         // 12:00Z is 14:00 local, so 12h30 ago reads as relative anyway.
-        assert_eq!(format_in("2026-10-14T23:30:00Z", now(), &at(2)), "12h ago");
+        assert_eq!(
+            format_in("2026-10-14T23:30:00Z", now(), Zone::Fixed(at(2))),
+            "12h ago"
+        );
         // 2026-10-13T22:30Z is Oct 14 00:30 at +02:00: yesterday locally,
         // though only the 13th in UTC (Tuesday vs yesterday).
         assert_eq!(
-            format_in("2026-10-13T22:30:00Z", now(), &at(2)),
+            format_in("2026-10-13T22:30:00Z", now(), Zone::Fixed(at(2))),
             "yesterday 00:30 +02:00"
         );
         assert_eq!(f("2026-10-13T22:30:00Z"), "Tuesday 22:30 UTC");
         // Negative offsets label with their sign.
         assert_eq!(
-            format_in("2026-09-01T10:00:00Z", now(), &at(-5)),
+            format_in("2026-09-01T10:00:00Z", now(), Zone::Fixed(at(-5))),
             "Sep 1, 2026 05:00 -05:00"
         );
         // An offset in the input is honoured, not re-labelled.
@@ -184,6 +206,9 @@ mod tests {
         assert_eq!(c.format("2026-10-15T11:00:00Z"), "1h ago");
         assert_eq!(c.format("bogus"), "bogus");
         // The system clock is only smoke-tested: a timestamp from "now" is fresh.
-        assert_eq!(Clock::System.format(&Utc::now().to_rfc3339()), "just now");
+        assert_eq!(
+            Clock::System(Zone::Machine).format(&Utc::now().to_rfc3339()),
+            "just now"
+        );
     }
 }

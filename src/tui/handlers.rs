@@ -403,7 +403,7 @@ impl App {
             // A schedule field that does not read keeps the form open and says
             // why, rather than losing what was typed.
             let problem = match &self.overlay {
-                Overlay::Create(f) => f.problem(),
+                Overlay::Create(f) => f.problem(self.clock.today()),
                 _ => None,
             };
             if let Some(why) = problem {
@@ -573,7 +573,7 @@ impl App {
                 prs: vec![],
                 description: f.body_opt(),
                 verify: None,
-                fields: schedule_fields(f.schedule_edits(None)),
+                fields: schedule_fields(f.schedule_edits(None, self.clock.today())),
             },
             other => {
                 self.overlay = other;
@@ -641,7 +641,7 @@ impl App {
             edit.add_tags = add;
             edit.remove_tags = remove;
         }
-        edit.fields = schedule_fields(f.schedule_edits(Some(&cur)));
+        edit.fields = schedule_fields(f.schedule_edits(Some(&cur), self.clock.today()));
         // A changed description goes in the same `update` as the header
         // fields (one farm lock), written against the body the form was
         // opened on: the farm keeps comments appended since and refuses
@@ -1810,7 +1810,7 @@ impl App {
                         || TYPE_CHOICES[f.kind_idx] != cur.kind
                         || PRI_CHOICES[f.pri_idx] != cur.priority
                         || a != b
-                        || !f.schedule_edits(Some(cur)).is_empty()
+                        || !f.schedule_edits(Some(cur), self.clock.today()).is_empty()
                         || f.changed_body().is_some()
                 }
                 None => true,
@@ -1821,7 +1821,7 @@ impl App {
                     || !f.tags_vec().is_empty()
                     || f.kind_idx != 0
                     || f.pri_idx != pri_index(3)
-                    || !f.schedule_edits(None).is_empty()
+                    || !f.schedule_edits(None, self.clock.today()).is_empty()
             }
         }
     }
@@ -2463,7 +2463,7 @@ impl App {
         let typed = text.trim();
         let due = match crate::recur::resolve_due_short(
             if typed.is_empty() { "+1d" } else { typed },
-            crate::recur::today(),
+            self.clock.today(),
         ) {
             Ok(d) => d,
             Err(why) => {

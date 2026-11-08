@@ -46,6 +46,7 @@ mod tick;
 mod tui;
 mod wait;
 mod weight;
+mod zone;
 
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
@@ -555,15 +556,18 @@ enum Command {
         #[arg(long)]
         verify: Option<String>,
         /// When the yak should be done: a date (`2026-11-15`), an RFC 3339
-        /// datetime, or `+2d` / `+1w` from today (stored as that date). Sugar
-        /// for `--set due=...`; a hairy or shaving yak past it is listed as
-        /// overdue.
+        /// datetime (kept with the offset you give), or `+2d` / `+1w` from
+        /// today (stored as that date). "Today" and a date's day are the
+        /// farm's (`timezone:` in config.yaml, else this machine's zone).
+        /// Sugar for `--set due=...`; a hairy or shaving yak past it is
+        /// listed as overdue.
         #[arg(long, value_name = "WHEN")]
         due: Option<String>,
         /// Make the yak recur: an ISO 8601 duration (`P1D`, `P2W`, `P1M`,
-        /// `P1Y`; a run of them in Y M W D order). Sugar for `--set every=...`;
-        /// `yaks regrow-due` reopens it once shorn and the next occurrence
-        /// has arrived.
+        /// `P1Y`; a run of them in Y M W D order). Steps on the wall clock in
+        /// the farm's zone: a 19:30 due stays 19:30 across a daylight-saving
+        /// change. Sugar for `--set every=...`; `yaks regrow-due` reopens it
+        /// once shorn and the next occurrence has arrived.
         #[arg(long, value_name = "DURATION")]
         every: Option<String>,
         /// Who a recurring yak goes to when it regrows: `agent` (`needs:
@@ -615,8 +619,9 @@ enum Command {
         #[arg(long)]
         verify: Option<String>,
         /// When the yak should be done: a date (`2026-11-15`), an RFC 3339
-        /// datetime, or `+2d` / `+1w` from today; an empty string clears it.
-        /// Sugar for `--set due=...`.
+        /// datetime (kept with the offset you give), or `+2d` / `+1w` from
+        /// today on the farm's calendar (`timezone:` in config.yaml); an empty
+        /// string clears it. Sugar for `--set due=...`.
         #[arg(long, value_name = "WHEN")]
         due: Option<String>,
         /// Make the yak recur: an ISO 8601 duration (`P1D`, `P2W`, `P1M`,
@@ -1996,7 +2001,14 @@ fn main() -> Result<()> {
         if let Some(msg) = store::min_version_notice(farm.root()) {
             eprintln!("warning: {msg}");
         }
+        // An unknown `timezone:` falls back to the machine's zone, once per
+        // command, here (and in `doctor`).
+        if let Some(msg) = store::timezone_notice(farm.root()) {
+            eprintln!("warning: {msg}");
+        }
     }
+    // The farm's clock, for every calendar date this command reads or writes.
+    let zone = farm.zone();
 
     match cli.command {
         Command::List {
@@ -2011,16 +2023,16 @@ fn main() -> Result<()> {
                 let before = before
                     .as_deref()
                     .map(|b| {
-                        recur::When::parse(b).map(|w| w.at).ok_or_else(|| {
+                        recur::When::parse(b).map(|w| w.instant(zone)).ok_or_else(|| {
                             anyhow::anyhow!(
                                 "--before {b:?}: expected a date (2026-11-15) or an RFC 3339 datetime"
                             )
                         })
                     })
                     .transpose()?;
-                rows = recur::due_rows(rows, before);
+                rows = recur::due_rows(rows, before, zone);
             }
-            render_rows(&rows, json, "No tasks found.")?;
+            render_rows(&rows, json, "No tasks found.", zone)?;
         }
         Command::Search {
             query,
@@ -2030,7 +2042,7 @@ fn main() -> Result<()> {
             let mut spec = build_spec(filter);
             spec.search = Some(query);
             let rows = farm.list(spec, false)?;
-            render_rows(&rows, json, "No tasks found.")?;
+            render_rows(&rows, json, "No tasks found.", zone)?;
         }
         Command::Find {
             pattern,
@@ -2089,9 +2101,9 @@ fn main() -> Result<()> {
                 std::process::exit(1);
             };
             if json {
-                json::print(&json::show_value(&shown.task, &shown.children))?;
+                json::print(&json::show_value(&shown.task, &shown.children, zone))?;
             } else {
-                render_show(&shown);
+                render_show(&shown, zone);
             }
         }
         Command::Path { ids, filter, all } => {
@@ -2531,20 +2543,20 @@ fn main() -> Result<()> {
         Command::Next { filter, json } => {
             let rows = farm.next(build_spec(filter))?;
             if json {
-                json::print(&json::tasks_array(&rows))?;
+                json::print(&json::tasks_array(&rows, zone))?;
             } else if rows.is_empty() {
                 println!("No yaks ready to shave.");
             } else {
                 println!("Ready to shave (all dependencies met):");
                 for t in &rows {
-                    println!("{}", fmt_plain_row(t));
+                    println!("{}", fmt_plain_row(t, zone));
                 }
             }
         }
         Command::Tangled { filter, json } => {
             let rows = farm.tangled(build_spec(filter))?;
             if json {
-                json::print(&json::tangled_array(&rows))?;
+                json::print(&json::tangled_array(&rows, zone))?;
             } else if rows.is_empty() {
                 println!("No tangled yaks.");
             } else {
@@ -2599,7 +2611,7 @@ fn main() -> Result<()> {
                 anyhow::bail!("--key: the key is empty (it is the external issue or PR URL)");
             }
             let is_keyed = key.is_some();
-            let fields = due_every_fields(due, every, wake)?;
+            let fields = due_every_fields(due, every, wake, zone)?;
             let description = resolve_text(
                 "--description",
                 description,
@@ -2649,7 +2661,7 @@ fn main() -> Result<()> {
                     };
                     if json {
                         let path = store::task_path(farm.root(), &t.id);
-                        let mut v = json::create_value(&t, &path);
+                        let mut v = json::create_value(&t, &path, zone);
                         // `created` only where the caller could have asked for
                         // either outcome, so plain `create --json` is unchanged.
                         if !created || is_keyed {
@@ -2688,7 +2700,7 @@ fn main() -> Result<()> {
             as_actor,
         } => {
             // The sugar flags go first, so a later `--set due=...` wins.
-            let mut fields = due_every_fields(due, every, wake)?;
+            let mut fields = due_every_fields(due, every, wake, zone)?;
             fields.extend(parse_field_args(&set, &unset)?);
             let mut stdin = StdinText::real();
             let description =
@@ -2838,7 +2850,7 @@ fn main() -> Result<()> {
             json,
         } => {
             let rows = farm.inbox(build_spec(filter))?;
-            render_inbox(&rows, audience, json)?;
+            render_inbox(&rows, audience, json, zone)?;
         }
         Command::Wait {
             filter,
@@ -2866,7 +2878,7 @@ fn main() -> Result<()> {
                 None => t.needs.is_some(),
             };
             match wait::wait_for(|| farm.inbox(spec.clone()), keep, &opts, &wait::RealClock)? {
-                Some(rows) => render_inbox(&rows, audience, json)?,
+                Some(rows) => render_inbox(&rows, audience, json, zone)?,
                 None => {
                     let who = match audience {
                         Some(Audience::Human) => "awaiting a human",
@@ -2934,15 +2946,15 @@ fn main() -> Result<()> {
             // `check` is the slowest part and only a count here; a farm it
             // cannot read is said as "unknown", not a failed tick.
             let findings = check::run(&farm).ok().map(|f| f.len());
-            let digest = tick::build(&tasks, inbox, regrow, findings, now, within, dry_run);
+            let digest = tick::build(&tasks, inbox, regrow, findings, now, zone, within, dry_run);
             if json {
                 json::print(&tick::to_json(&digest))?;
             } else {
-                print!("{}", tick::render(&digest, fmt_row));
+                print!("{}", tick::render(&digest, |t| fmt_row(t, zone)));
             }
         }
         Command::Snooze { ids, to, as_actor } => {
-            let due = recur::resolve_due(&to, recur::today())
+            let due = recur::resolve_due(&to, zone.today())
                 .map_err(|why| anyhow::anyhow!("--to: {why}"))?;
             let actor = actor::resolve(as_actor.as_deref());
             let mut any_failed = false;
@@ -3262,7 +3274,7 @@ fn main() -> Result<()> {
                 for g in &groups {
                     println!("{}  ({})  {}", g.head(), g.tracker, g.source);
                     for y in &g.yaks {
-                        let mut row = fmt_row(&y.task);
+                        let mut row = fmt_row(&y.task, zone);
                         if let Some(from) = &y.inherited_from {
                             row.push_str(&format!("  (via {from})"));
                         }
@@ -3777,6 +3789,7 @@ fn due_every_fields(
     due: Option<String>,
     every: Option<String>,
     wake: Option<String>,
+    zone: zone::Zone,
 ) -> Result<Vec<(String, fields::Value)>> {
     let mut out = Vec::new();
     for (flag, key, text) in [
@@ -3785,9 +3798,10 @@ fn due_every_fields(
         ("--wake", recur::WAKE, wake),
     ] {
         let Some(text) = text else { continue };
-        // A deadline may be typed relative (`+2d`); it is stored as a date.
+        // A deadline may be typed relative (`+2d`, counted from today on the
+        // farm's calendar); it is stored as a date.
         let text = match key {
-            recur::DUE if !text.trim().is_empty() => recur::resolve_due(&text, recur::today())
+            recur::DUE if !text.trim().is_empty() => recur::resolve_due(&text, zone.today())
                 .map_err(|why| anyhow::anyhow!("{flag}: {why}"))?,
             _ => text,
         };
@@ -3980,7 +3994,12 @@ enum Audience {
 /// `inbox` output: a flat JSON array (each yak with `needs`, `replied` and
 /// `why`), or two text sections, "awaiting a human" and "awaiting an agent"
 /// (each agent row marked `answered` or `requested`).
-fn render_inbox(rows: &[Task], audience: Option<Audience>, json: bool) -> Result<()> {
+fn render_inbox(
+    rows: &[Task],
+    audience: Option<Audience>,
+    json: bool,
+    zone: zone::Zone,
+) -> Result<()> {
     let human: Vec<&Task> = rows
         .iter()
         .filter(|t| t.awaiting_human() && !matches!(audience, Some(Audience::Agent)))
@@ -3991,7 +4010,7 @@ fn render_inbox(rows: &[Task], audience: Option<Audience>, json: bool) -> Result
         .collect();
     if json {
         let kept: Vec<&Task> = human.iter().chain(agent.iter()).copied().collect();
-        json::print(&json::inbox_array(&kept))?;
+        json::print(&json::inbox_array(&kept, zone))?;
         return Ok(());
     }
     if human.is_empty() && agent.is_empty() {
@@ -4019,20 +4038,20 @@ fn render_inbox(rows: &[Task], audience: Option<Audience>, json: bool) -> Result
             } else {
                 ""
             };
-            println!("{}{replied}", fmt_row(t));
+            println!("{}{replied}", fmt_row(t, zone));
         }
     }
     Ok(())
 }
 
-fn render_rows(rows: &[Task], json: bool, empty_msg: &str) -> Result<()> {
+fn render_rows(rows: &[Task], json: bool, empty_msg: &str, zone: zone::Zone) -> Result<()> {
     if json {
-        json::print(&json::tasks_array(rows))?;
+        json::print(&json::tasks_array(rows, zone))?;
     } else if rows.is_empty() {
         println!("{empty_msg}");
     } else {
         for t in rows {
-            println!("{}", fmt_row(t));
+            println!("{}", fmt_row(t, zone));
         }
     }
     Ok(())
@@ -4349,7 +4368,7 @@ fn run_session(farm: &Farm, action: SessionAction) -> Result<()> {
             }
         }
         SessionAction::Promote { paths } => {
-            let day = chrono::Local::now().format("%Y-%m-%d").to_string();
+            let day = farm.zone().today().format("%Y-%m-%d").to_string();
             let done = farm.session_promote(&paths, &day)?;
             for p in &paths {
                 let p = doks::normalize(p);
@@ -5342,7 +5361,7 @@ fn render_scan_ids(found: &[refs::FoundRef], json: bool) -> Result<()> {
     Ok(())
 }
 
-fn render_show(s: &Show) {
+fn render_show(s: &Show, zone: zone::Zone) {
     let t = &s.task;
     println!("id:       {}", t.id);
     println!("title:    {}", t.title);
@@ -5375,7 +5394,7 @@ fn render_show(s: &Show) {
     }
     for key in recur::KEYS {
         if let Some(v) = t.extra.get(key).and_then(|v| v.as_str().map(String::from)) {
-            let late = if key == recur::DUE && recur::is_overdue(t, chrono::Utc::now()) {
+            let late = if key == recur::DUE && recur::is_overdue(t, chrono::Utc::now(), zone) {
                 " (overdue)"
             } else {
                 ""
@@ -5409,7 +5428,7 @@ fn render_show(s: &Show) {
 }
 
 /// `  [X] id  pN type     title [tags] (deps: ...) ⚠ needs:<who>`
-fn fmt_row(t: &Task) -> String {
+fn fmt_row(t: &Task, zone: zone::Zone) -> String {
     let tags = if t.tags.is_empty() {
         String::new()
     } else {
@@ -5437,7 +5456,7 @@ fn fmt_row(t: &Task) -> String {
         t.title,
         tags,
         deps,
-        recur::due_mark(t, chrono::Utc::now()),
+        recur::due_mark(t, chrono::Utc::now(), zone),
         needs
     )
 }
@@ -5445,12 +5464,12 @@ fn fmt_row(t: &Task) -> String {
 /// `  id  pN type     title` (no status glyph) — matches Python cmd_next;
 /// marks a yak awaiting an agent (`needs: agent`, answered or requested) that
 /// is ready but awaits pickup.
-fn fmt_plain_row(t: &Task) -> String {
+fn fmt_plain_row(t: &Task, zone: zone::Zone) -> String {
     let why = match store::agent_why(t) {
         Some(why) => format!(" \u{2713} {}, awaiting pickup", why.as_str()),
         None => String::new(),
     };
-    let due = recur::due_mark(t, chrono::Utc::now());
+    let due = recur::due_mark(t, chrono::Utc::now(), zone);
     format!(
         "  {}  p{} {:8} {}{due}{why}",
         t.id, t.priority, t.kind, t.title
@@ -5681,7 +5700,7 @@ mod tests {
     fn fmt_row_marks_needs_blocked() {
         let mut t = task();
         t.needs = Some("human".into());
-        let row = fmt_row(&t);
+        let row = fmt_row(&t, zone::Zone::Machine);
         // A blocked yak carries a visible, greppable marker naming who it needs.
         assert!(row.contains("\u{26a0} needs:human"), "row was: {row:?}");
     }
@@ -5689,7 +5708,7 @@ mod tests {
     #[test]
     fn fmt_row_ready_has_no_needs_marker() {
         // A ready yak (needs == None) must stay distinguishable: no marker at all.
-        let row = fmt_row(&task());
+        let row = fmt_row(&task(), zone::Zone::Machine);
         assert!(!row.contains("needs:"), "row was: {row:?}");
         assert!(!row.contains('\u{26a0}'), "row was: {row:?}");
     }

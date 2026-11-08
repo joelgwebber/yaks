@@ -254,7 +254,7 @@ Other fields are allowed (`due:`, `every:`, `commit:`, ...): set them with `yaks
 ### Due dates and recurring yaks
 
 `yaks create`/`update --due 2026-11-15` sets a deadline (a date, an RFC 3339
-datetime, or `+2d` / `+1w` from today); `yaks snooze <id> --to +1w` puts an open
+datetime, or `+2d` / `+1w` from today on the farm's `timezone:` calendar); `yaks snooze <id> --to +1w` puts an open
 yak off and notes it; a hairy or shaving yak past it shows `overdue` in `list`/`next`, and
 `yaks list --due [--before DATE]` lists the dated yaks soonest first. `--every
 P1W` (an ISO 8601 duration: `P1D`, `P2W`, `P1M`, `P1Y`; no words) makes a yak

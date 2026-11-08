@@ -19,8 +19,9 @@
 use crate::doks::Dok;
 use crate::fields::{Fields, Value};
 use crate::store;
+use crate::zone::Zone;
 use anyhow::{Context, Result, bail};
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Utc};
 use std::path::Path;
 
 /// The farm directory session notes live in.
@@ -239,20 +240,22 @@ fn slug(s: &str, max: usize) -> String {
 }
 
 /// Build the note (not written): its farm-relative path and the dok. `now`
-/// is when it is saved; the day and the file name use its local date.
+/// is when it is saved; the day and the file name use its date in the farm's
+/// `zone`.
 pub fn build(
     root: &Path,
     title: &str,
     body: &str,
     origin: &Origin,
     now: DateTime<Utc>,
+    zone: Zone,
 ) -> Result<Dok> {
     let title = title.split_whitespace().collect::<Vec<_>>().join(" ");
     if title.is_empty() {
         bail!("a session note needs a --title: a few words naming the session");
     }
     let info = check_body(body)?;
-    let local = now.with_timezone(&Local);
+    let local = zone.at(now);
     let day = local.format("%Y-%m-%d").to_string();
     let who = slug(&origin.actor, 40);
     let who = if who.is_empty() { "agent".into() } else { who };
@@ -659,8 +662,12 @@ mod tests {
             harness: Some("delta".into()),
             ..Default::default()
         };
-        let d = build(&root, "Parser: first pass!", BODY, &o, now).unwrap();
-        let local = now.with_timezone(&Local);
+        // +14:00 is already the next day when it is 12:34Z: the name follows
+        // the farm's zone, not UTC and not the machine.
+        let zone = Zone::Fixed(chrono::FixedOffset::east_opt(14 * 3600).unwrap());
+        let d = build(&root, "Parser: first pass!", BODY, &o, now, zone).unwrap();
+        let local = zone.at(now);
+        assert_eq!(local.format("%Y-%m-%d").to_string(), "2026-11-07");
         assert_eq!(
             d.path,
             format!(
@@ -675,7 +682,7 @@ mod tests {
         assert_eq!(d.str_field("failed"), None);
         assert!(is_unreviewed(&d));
         crate::doks::save(&root, &d).unwrap();
-        let again = build(&root, "Parser: first pass!", BODY, &o, now).unwrap();
+        let again = build(&root, "Parser: first pass!", BODY, &o, now, zone).unwrap();
         assert!(
             again.path.ends_with("-parser-first-pass-2.md"),
             "{}",

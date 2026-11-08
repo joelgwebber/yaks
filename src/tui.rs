@@ -245,7 +245,7 @@ fn pri_index(p: u8) -> usize {
 
 /// Sort key for a flat view field (ISO timestamps sort lexically; priority is
 /// zero-padded so it orders numerically as a string).
-fn sort_key(t: &Task, f: view::SortField) -> String {
+fn sort_key(t: &Task, f: view::SortField, zone: crate::zone::Zone) -> String {
     match f {
         view::SortField::Priority => format!("{:03}", t.priority),
         view::SortField::Title => t.title.to_lowercase(),
@@ -256,7 +256,7 @@ fn sort_key(t: &Task, f: view::SortField) -> String {
         view::SortField::Due => format!(
             "{} {}",
             crate::recur::due(t)
-                .map(|d| d.at.to_rfc3339())
+                .map(|d| d.instant(zone).to_rfc3339())
                 .unwrap_or_default(),
             t.id
         ),
@@ -509,6 +509,7 @@ impl App {
         let working_set = views_store::load_working_set(farm.root());
         let mut app = App::new(all);
         app.inline_images = cfg.inline_images;
+        app.clock = app.clock.in_zone(cfg.zone());
         app.config_herds = cfg.known_herds();
         app.ref_prefix = cfg.prefix;
         app.collapsed = ui.collapsed;

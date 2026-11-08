@@ -579,7 +579,8 @@ tag filter) take tags separated by commas and/or spaces — `ui, docs`,
 `description` editor, the same shape as creating. The header fields are `title`, `type`, `priority`, `tags`, `source` (the external-issue
 URL; empty = none, so clearing it removes `source:`), and the schedule:
 `due` (a date, an RFC 3339 datetime, or `+2d` / `+1w` from today, stored as a
-date), `every` (an ISO 8601 duration such as `P1W`, which makes the yak recur)
+date; "today" and the days the TUI shows are the farm's `timezone:` from
+`config.yaml`, else the machine's zone), `every` (an ISO 8601 duration such as `P1W`, which makes the yak recur)
 and `wakes` (a chip row: `none`, `agent` or `human`, who a regrown recurring yak
 goes to: see [Due dates and recurring yaks](cli.md#due-dates-and-recurring-yaks)).
 A blank `due` or `every`, or `wakes` on `none`, clears that field; a value that

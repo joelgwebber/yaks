@@ -848,6 +848,9 @@ pub enum IssueKind {
     /// the merge driver left in its prose, or a `merge_conflicts:` list
     /// (yaks-4c8c). `yaks conflicts` lists them.
     MergeConflict,
+    /// `timezone:` in `config.yaml` names a zone the tz database does not
+    /// know (yaks-ac6a); the farm keeps the machine's zone meanwhile.
+    BadTimezone,
 }
 
 /// Finishing a yak whose children are not all finished (yaks-62f2,
@@ -934,6 +937,7 @@ impl IssueKind {
             IssueKind::BrokenLink => "broken-link",
             IssueKind::SchemaMismatch => "schema-mismatch",
             IssueKind::MergeConflict => "merge-conflict",
+            IssueKind::BadTimezone => "bad-timezone",
         }
     }
 
@@ -967,6 +971,9 @@ impl IssueKind {
             }
             IssueKind::MergeConflict => {
                 "Merge conflict (conflict markers or merge_conflicts: to settle)"
+            }
+            IssueKind::BadTimezone => {
+                "Bad timezone (timezone: in config.yaml is not an IANA zone name)"
             }
         }
     }
@@ -1029,6 +1036,13 @@ impl Farm {
     /// The effective per-farm config (prefix, defaults, editor mode).
     pub fn config(&self) -> store::Config {
         store::read_config(&self.root)
+    }
+
+    /// The farm's clock for calendar dates (`timezone:` in `config.yaml`, else
+    /// the machine's zone): one answer for `today`, `+2d`, date-only `due:`,
+    /// `regrow-due` and session note names (yaks-ac6a).
+    pub fn zone(&self) -> crate::zone::Zone {
+        self.config().zone()
     }
 
     /// The farm's `.yaks/` root, e.g. for locating the per-user UI-state cache.
@@ -1721,6 +1735,14 @@ impl Farm {
             }
         }
 
+        if let Some(message) = self.config().timezone_problem() {
+            issues.push(Issue {
+                kind: IssueKind::BadTimezone,
+                message,
+                ids: vec!["config.yaml".into()],
+            });
+        }
+
         for c in crate::conflicts::scan(&self.root) {
             issues.push(Issue {
                 kind: IssueKind::MergeConflict,
@@ -2326,7 +2348,14 @@ impl Farm {
             _ => body.to_string(),
         };
         let _lock = store::lock(&self.root)?;
-        let dok = crate::sessions::build(&self.root, title, &body, origin, chrono::Utc::now())?;
+        let dok = crate::sessions::build(
+            &self.root,
+            title,
+            &body,
+            origin,
+            chrono::Utc::now(),
+            self.zone(),
+        )?;
         crate::doks::save(&self.root, &dok)?;
         Ok(dok.path)
     }
@@ -3056,6 +3085,7 @@ impl Farm {
     ) -> Result<crate::recur::Report> {
         use crate::recur::{self, Regrew, Verdict};
         let mut report = recur::Report::default();
+        let zone = self.zone();
         let mut candidates: Vec<String> = store::load(&self.root, &[Status::Shorn])?
             .into_iter()
             .filter(|t| t.extra.contains(recur::EVERY))
@@ -3072,7 +3102,7 @@ impl Farm {
             let Some(task) = all.iter().find(|t| t.id == id) else {
                 continue;
             };
-            let plan = match recur::plan(task, now) {
+            let plan = match recur::plan(task, now, zone) {
                 Verdict::Regrow(p) => p,
                 Verdict::Invalid(why) => {
                     report.held.push((id, why));
@@ -3623,6 +3653,7 @@ fn issue_rank(k: IssueKind) -> u8 {
         IssueKind::BrokenLink => 11,
         IssueKind::SchemaMismatch => 12,
         IssueKind::MergeConflict => 13,
+        IssueKind::BadTimezone => 14,
     }
 }
 

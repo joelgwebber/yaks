@@ -849,7 +849,7 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
                 app.is_starred(&t.id),
                 area.width,
                 app.is_multi_herd(),
-                due_chip(t, app.clock.now()),
+                due_chip(t, app.clock.now(), app.clock.zone()),
                 shed_kinds
                     .iter()
                     .find(|(_, y): &&(crate::sheds::Kind, &crate::sheds::Touched)| y.id == t.id)
@@ -935,9 +935,13 @@ pub(crate) fn herd_color(prefix: &str) -> Color {
 
 /// A hairy or shaving yak's due day and whether it is overdue, for the list
 /// row; `None` for a yak with no readable `due:` or a finished one.
-fn due_chip(t: &Task, now: chrono::DateTime<chrono::Utc>) -> Option<(String, bool)> {
+fn due_chip(
+    t: &Task,
+    now: chrono::DateTime<chrono::Utc>,
+    zone: crate::zone::Zone,
+) -> Option<(String, bool)> {
     let d = crate::recur::due(t).filter(|_| t.status.is_open())?;
-    Some((d.day(), crate::recur::is_overdue(t, now)))
+    Some((d.day(zone), crate::recur::is_overdue(t, now, zone)))
 }
 
 pub(crate) fn list_item<'a>(
