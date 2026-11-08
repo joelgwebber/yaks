@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-08T01:13:19Z'
+updated: '2026-11-08T01:16:19Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -173,3 +173,8 @@ branch: main
 ---
 
 landed: 913e4f4a yaks-ac6a: farm time zone (timezone: + chrono-tz); recurring datetimes keep wall-clock time across DST
+
+---
+▸ 2026-11-08T01:16:19Z [herd-stars]
+
+herd-stars: landed `913e4f4a` (worker `cd5faac7`, clean squash); gate `cargo test --workspace` green on the merged tree. Reproduced with my build on a scratch farm (`timezone: America/New_York`, daily from `2026-10-31T19:30:00-04:00`, shear, `regrow-due`): `due: 2026-11-08T19:30:00-05:00`. A bad zone (`Mars/Olympus`) warns once and uses the machine's. Binary +1.15 MiB (chrono-tz). Follow-ups the worker named (UTC by contract, not `Local`): `check` stale_after's today, source directory dates, `--since` dates.
