@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-04T01:14:21Z'
-updated: '2026-11-08T00:49:17Z'
+updated: '2026-11-08T00:52:11Z'
 depends_on:
 - yaks-4f4d
 tags:
@@ -46,3 +46,11 @@ thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-08T00:52:11Z [herd-stars]
+
+Claim (yakherd herd-stars): worker after yaks-4f4d lands in toque. Open points decided by the yakherd (reversible; Joel can overrule):
+
+- **Default output:** `<stem>.png` in the current directory (where an agent's file tools can read it), printed on stdout; `-o <png>` overrides; `-o -` writes to stdout. Rejected: beside the input (would write into the farm for an attachment) and a gitignored dir (needs a project to know about it).
+- **`--scale <n>`** (default 2, as the Chrome recipe uses, since a 1x frame is small for a vision model), via toque's new scaled rasterizer.
