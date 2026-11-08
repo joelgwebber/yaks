@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-08T01:10:23Z'
+updated: '2026-11-08T01:10:37Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -122,3 +122,21 @@ Local audit (`grep -rn Local src`): the only `chrono::Local` uses were `recur::t
 Left alone on purpose (UTC by their own contract, not `Local`; follow-up): `check.rs` stale_after `today` (UTC date), `sources.rs` source dir date (UTC), `store::parse_since` date = midnight UTC (documented), machine-written stamps (`regrown:`, `created:`, notes) stay `Z`.
 
 [ac6a-repro-and-size](yaks-ac6a/ac6a-repro-and-size.txt)
+
+---
+▸ 2026-11-08T01:10:37Z [stars-tz]
+
+Decision notes (stars-tz):
+
+- Decision: `When` is an enum `Day(NaiveDate) | At(DateTime<FixedOffset>)`, not a struct with a UTC instant. A day has no zone of its own, so its instant (`instant`, `deadline`) takes the farm zone at use; an instant keeps the offset it was written with. Rejected: resolving a day to a UTC instant at parse (needs the zone at every parse site) and a global "farm zone" static (not testable without ambient state).
+- Decision: the zone is passed explicitly (`Zone` is `Copy`): `recur::{plan,is_overdue,due_mark,due_rows}`, `sessions::build`, `tick::build` (`Digest.zone`), `json::*` task renderers, and the TUI `Clock` (`System(Zone)`). Rejected: `OnceLock`/env, which the brief rules out for tests.
+- Decision: `every` steps on the wall clock of the due instant viewed in the farm zone, counted from the anchor (not step by step), then resolved: a repeated hour takes the first, a skipped hour moves on by the gap; the next day returns to the original wall time because each step counts from the anchor. Rejected: chrono's `DateTime + Days`, which returns None in a gap/ambiguity.
+- Decision: the report's own repro (`--due 2026-11-01T19:30:00-04:00`) is an instant that is 18:30 EST (clocks went back at 02:00 on Nov 1), so it correctly keeps 18:30 local; the tests use `2026-10-31T19:30:00-04:00` for the 19:30 case and assert the as-typed one too. The instant given is the truth; yaks does not guess that a wrong offset was meant.
+- Decision: `timezone` is read as `Config.timezone: Option<String>` with `zone()`/`timezone_problem()`; an unknown name warns once per command on stderr (inside the existing no-`--json` block next to `min_version`), is a `doctor` issue `bad-timezone`, and the machine's zone is used. The TUI does not add a second warning. No `herds:` override.
+- Decision: machine-written stamps (`regrown:`, `created:`, note headers, `now_iso`) stay UTC `Z`; only calendar dates use the farm zone. `check`'s `stale_after` today, `sources` dir date and `parse_since` dates stay UTC (not `Local`; follow-up if wanted).
+- Decision: integration tests in `tests/recur.rs` now create their farms with `timezone: UTC` (`Farm::new`), because date-only dues and `+Nd` otherwise follow the machine's zone and the old UTC-date assertions were machine- and hour-dependent (they would fail right now, 00:xx UTC on a US machine). The TUI's `day_in` test helper uses the pinned test clock instead of `Local::now()`: forms now ask the app's clock for "today".
+- Decision: `Zone::Fixed(FixedOffset)` exists for tests and the TUI's fixed test clock (`Clock::Fixed` keeps its offset; `in_zone` only changes `System`).
+
+Size: release binary 11,114,464 -> 12,320,672 bytes (+1,206,208, about +1.15 MiB) with `chrono-tz` default tz database (`default-features = false`; pulls `phf 0.12` as a second phf version). Both built with `cargo build --release` (strip, thin LTO); the baseline from a `git archive` of HEAD in /tmp. Trimming needs chrono-tz's `filter-by-regex` (build-time), not done.
+
+Friction: none blocking; `yaks note` is `yaks update --note`.
