@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 4
 created: '2026-10-22T22:12:46Z'
-updated: '2026-11-08T01:18:33Z'
+updated: '2026-11-08T01:18:38Z'
 depends_on:
 - yaks-4e9c
 tags:
@@ -148,3 +148,8 @@ thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEy6vZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-08T01:18:38Z [stars-fonts]
+
+Correction to the summary's first "Known limits" bullet (garbled): the box-drawing borders are continuous with DejaVu 2.34 at 14px font / 18px row (verified in the attached showcase). The real gaps are: no Greek/Cyrillic/Latin Extended-B (DejaVu has them; cost not measured), no combining marks, and no flags/skin tones/ZWJ (they draw as their parts).
