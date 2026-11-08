@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-08T00:37:14Z'
-updated: '2026-11-08T00:49:06Z'
+updated: '2026-11-08T00:49:18Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -47,3 +47,37 @@ result: pass
 ---
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-11-08T00:49:18Z [set-1]
+
+Start 2026-11-08T00:37:42Z. Farm file /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-60fe.md. Checkout /Users/joel/src/yaks/.delta/worktrees/shtfs2rdmezg/yaks.
+
+Implemented: `create --set key=value` (repeatable) in src/main.rs, going through the same `parse_field_args` as `update --set`, into the existing `NewTask.fields`, so the fields are written by the create's one `save` (no farm change needed). Tests in tests/fields.rs: three fail before the change (one-commit write, `--set` beats `--due`, `--key` plus `--set`), pass after; the refusal test passes either way because clap already rejected the unknown flag before.
+
+Decision: no `--unset` on create (nothing to remove on a new yak); an empty value (`--set k=`) sets nothing, as `update` would remove. Rejected: accepting `--unset` and ignoring it.
+
+Decision: `--set` fields go after the sugar flags (`--due/--every/--wake`), so `--set due=...` wins, as on `update`.
+
+Decision: with `--key` on an existing yak, `--set` is validated (a bad key still errors) but not applied. Rejected: updating the existing yak's fields (the spec says leave them alone).
+
+Decision: reworded the shared built-in-field refusal to "(see `--help`)" since it now serves create and update.
+
+Scratch-farm output of ./target/debug/yaks:
+$ yaks create "Water plants" --due 2026-12-01 --set person=joel --set 'tags2=[a, b]'
+Created t-4e42: Water plants
+$ yaks show t-4e42   (tail)
+due       2026-12-01
+Other fields:
+  person: joel
+  tags2:
+  - a
+  - b
+$ git -C farm log -1 --stat
+yaks: created t-4e42 / Yaks-Actor: set-1 / .yaks/t/yaks/t-4e42.md | 14 ++++ (the one commit)
+$ yaks create x --set title=y
+Error: --set "title": a built-in field; use its own flag (see `--help`)   (exit 1, farm commit count unchanged)
+
+Docs parity: docs/cli.md (create row and Details), clap help on the flag, .agents/skills/yaks/SKILL.md (create row, and the "Other fields" line). Grepped `--set` across docs/, .agents/skills/, README.md, src/: README has no create flags list; other skills only mention `update --set` or `dok --set`, left alone. The skill and cli.md create rows also now list --due/--every/--wake, which were missing.
+
+Gate: `cargo test -p yaks --no-fail-fast` green; `yaks verify yaks-60fe` PASS. Note: tests/init_modes.rs `farm_works_from_a_git_worktree_and_a_shared_clone...` failed intermittently in some runs ("share2-web-wt already exists" under the shared temp dir), also with my change stashed: not mine.
