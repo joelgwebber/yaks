@@ -910,7 +910,7 @@ fn docshots_image_viewer() {
     let mut app = App::with_farm(farm).unwrap();
     HeadlessApp::on_resize(&mut app, w, h);
     view_to(&mut app, "status:shaving");
-    press(&mut app, 'l'); // focus the detail pane
+    press_key(&mut app, KeyCode::Enter); // focus the detail pane
     let _ = toque::render_to_svg(&app, w, h); // measure the pane width
     press_key(&mut app, KeyCode::Tab); // cursor onto the attachment link
     press_key(&mut app, KeyCode::Enter); // open it
@@ -975,7 +975,7 @@ fn docshots_image_inline() {
     let mut app = App::with_farm(farm).unwrap();
     HeadlessApp::on_resize(&mut app, w, h);
     view_to(&mut app, "status:shaving");
-    press(&mut app, 'l'); // focus the detail pane
+    press_key(&mut app, KeyCode::Enter); // focus the detail pane
     let _ = toque::render_to_svg(&app, w, h); // measure the pane width
     write_svg("tui-image-inline", &app, w, h);
 
@@ -1019,7 +1019,7 @@ fn docshots_image_caption() {
     let mut app = App::with_farm(farm).unwrap();
     HeadlessApp::on_resize(&mut app, w, h);
     view_to(&mut app, "status:shaving");
-    press(&mut app, 'l'); // focus the detail pane
+    press_key(&mut app, KeyCode::Enter); // focus the detail pane
     let _ = toque::render_to_svg(&app, w, h); // measure the pane width
     write_svg("tui-image-caption", &app, w, h);
 }
@@ -1052,7 +1052,7 @@ fn docshots_yak_peek() {
     let mut app = App::with_farm(farm).unwrap();
     HeadlessApp::on_resize(&mut app, w, h);
     view_to(&mut app, "status:shaving");
-    press(&mut app, 'l'); // focus the detail pane
+    press_key(&mut app, KeyCode::Enter); // focus the detail pane
     let _ = toque::render_to_svg(&app, w, h); // measure the pane width
     press_key(&mut app, KeyCode::Tab); // the cursor on the link
     write_svg("tui-yak-peek", &app, w, h);

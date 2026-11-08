@@ -44,6 +44,6 @@ text{white-space:pre}
 <text xml:space="preserve" y="275.5"><tspan x="438.4" class="s6">│</tspan></text>
 <text xml:space="preserve" y="293.5"><tspan x="438.4" class="s6">│</tspan><tspan x="455.2">Walk the ratatui Buffer's per-cell symbol+fg/bg into an SVG grid so docs render in color.</tspan></text>
 <text xml:space="preserve" y="311.5"><tspan x="10.0" class="s0">   farm: up to date with origin/yaks</tspan><tspan x="438.4" class="s6">│</tspan></text>
-<text xml:space="preserve" y="329.5"><tspan x="10.0" class="s2">h:list  j/k:move  Tab:link  Enter:follow  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search  q:quit</tspan></text>
+<text xml:space="preserve" y="329.5"><tspan x="10.0" class="s2">Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search  q:quit</tspan></text>
 </g>
 </svg>

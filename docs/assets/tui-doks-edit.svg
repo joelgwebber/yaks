@@ -52,6 +52,6 @@ text{white-space:pre}
 <text xml:space="preserve" y="491.5"><tspan x="438.4" class="s3">│</tspan></text>
 <text xml:space="preserve" y="509.5"><tspan x="438.4" class="s3">│</tspan></text>
 <text xml:space="preserve" y="527.5"><tspan x="438.4" class="s3">│</tspan></text>
-<text xml:space="preserve" y="545.5"><tspan x="10.0" class="s10">h:list  i/o:fwd/back  q:quit</tspan></text>
+<text xml:space="preserve" y="545.5"><tspan x="10.0" class="s10">Esc:list  i/o:fwd/back  q:quit</tspan></text>
 </g>
 </svg>
