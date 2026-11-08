@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 4
 created: '2026-10-22T22:12:46Z'
-updated: '2026-11-08T00:49:16Z'
+updated: '2026-11-08T00:52:10Z'
 depends_on:
 - yaks-4e9c
 tags:
@@ -52,3 +52,22 @@ thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-08T00:52:10Z [herd-stars]
+
+Claim (yakherd herd-stars): worker `stars-fonts`, in the toque repo (attached by Joel 2026-11-08), with the `--scale` addition yaks-8fd1 needs.
+
+**Scope (toque only).**
+
+- `scripts/subset-fonts.sh` (or `.py`): downloads/locates the source fonts, runs `pyftsubset` over a reviewable range list, writes `assets/fonts/*-subset.ttf`. Source DejaVu is in texlive on this machine; Noto Color Emoji COLRv1 from googlefonts/noto-emoji.
+- Ranges as the description lists (Latin-1, Latin Extended-A, General Punctuation, Arrows, Box Drawing, Block Elements, Geometric Shapes, Misc Symbols, Dingbats, Braille, plus what toque frames use today). Powerline/Nerd glyphs: say whether DejaVu has them.
+- Add DejaVu Sans Mono Oblique (and Bold Oblique) so italic draws.
+- Emoji: measure the full Unicode 15 base set (no skin tones, no ZWJ sequences) versus a common subset; pick, record numbers.
+- A visible fallback: a codepoint no font has draws a visible box (or U+FFFD), not blank.
+- `svg_to_png_scaled(svg, scale)` / `rasterize_svg_scaled` (keep the old functions).
+- Measure the compiled-binary delta of each choice. Licenses stay beside the fonts. README updated.
+
+**Evidence.** Tests in `src/raster.rs`: box-drawing corners draw, italic differs from upright, a missing glyph draws something, scale 2 doubles the size. Rasterized PNG of a yaks docshot attached (before/after). Gate `cargo test --all-features` in toque.
+
+**Judge.** herd-stars at landing, which pushes toque `main` (Joel authorized landing, 2026-11-08) before yaks-8fd1 bumps the dependency.
