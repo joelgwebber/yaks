@@ -1,0 +1,14 @@
+Repro, scratch farm with 'timezone: America/New_York', due 2026-10-31T19:30:00-04:00, every P1D, wake human, shorn, regrow-due (real clock 2026-11-08).
+OLD = release build of a29187b1 (HEAD before this change); NEW = this change.
+== OLD
+due       2026-10-31T23:30:00Z
+Regrown: yak-021c  Bins out (for 2026-11-07T23:30:00Z, 6 skipped; due 2026-11-08T23:30:00Z; awaiting human)
+due       2026-11-08T23:30:00Z
+== NEW
+due       2026-10-31T19:30:00-04:00
+Regrown: yak-c12c  Bins out (for 2026-11-07T19:30:00-05:00, 6 skipped; due 2026-11-08T19:30:00-05:00; awaiting human)
+due       2026-11-08T19:30:00-05:00
+
+release binary size (strip=true, lto=thin):
+12320672 /Users/joel/src/yaks/.delta/worktrees/ena37215nmvk/yaks/target/release/yaks
+11114464 /tmp/yaks-base.hE8b/target/release/yaks

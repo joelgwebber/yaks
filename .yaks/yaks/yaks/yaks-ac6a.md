@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-08T01:01:38Z'
+updated: '2026-11-08T01:10:23Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -120,3 +120,5 @@ Design as built:
 Local audit (`grep -rn Local src`): the only `chrono::Local` uses were `recur::today`, `sessions::build`, `main.rs` session-promote day and `tui/when.rs` (Clock::System format); all four moved to the farm zone. Every other grep hit is `Link::Local`/`Target::Local`/`Check::LocalCheckout`, unrelated. `Zone::Machine` itself is the one remaining `Local` (the fallback, by design).
 
 Left alone on purpose (UTC by their own contract, not `Local`; follow-up): `check.rs` stale_after `today` (UTC date), `sources.rs` source dir date (UTC), `store::parse_since` date = midnight UTC (documented), machine-written stamps (`regrown:`, `created:`, notes) stay `Z`.
+
+[ac6a-repro-and-size](yaks-ac6a/ac6a-repro-and-size.txt)
