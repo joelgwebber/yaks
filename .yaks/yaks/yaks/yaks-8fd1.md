@@ -1,11 +1,11 @@
 ---
 id: yaks-8fd1
 title: 'yaks render: rasterize an SVG to a PNG with the embedded fonts (no browser)'
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-04T01:14:21Z'
-updated: '2026-11-08T01:25:06Z'
+updated: '2026-11-08T01:25:07Z'
 depends_on:
 - yaks-4f4d
 tags:
@@ -66,3 +66,13 @@ Done by herd-stars in `cddd0bcd`: `yaks render <svg> [-o <png>] [--scale N]` ([s
 - The TUI's svg cache generation is bumped (`SVG_RENDER_GEN` 2), so PNGs cached with the old fonts are not served.
 - Docs: `docs/cli.md`, `docs/tui.md` (the rasterizing section and the svg fonts paragraph), the `yaks` skill's TUI evidence line, `AGENTS.md` "Verifying changes".
 - Evidence: unit tests for resolution and scale (IHDR 80×40 at 2x); `yaks render yaks-e5f9/zoom-3-zoomed-panned.svg` from the repo resolves the attachment; the attached PNG of `tui-yak-peek.svg`, looked at. Full gate `cargo test --workspace` green.
+
+---
+▸ 2026-11-08T01:25:07Z [herd-stars]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
