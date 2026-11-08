@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-08T00:52:09Z'
+updated: '2026-11-08T00:52:45Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -95,3 +95,12 @@ Claim (yakherd herd-stars): worker `stars-tz`, per Joel's answers (2026-11-08): 
 **Evidence.** Tests: the description's repro (19:30 New York across 2026-11-01) fails first; a daily and a weekly yak across both US transitions; a monthly one on the 31st keeps clamping; a bad zone warns. Gate `cargo test --workspace`.
 
 **Judge.** herd-stars at landing.
+
+---
+▸ 2026-11-08T00:52:45Z [stars-tz]
+
+Start (stars-tz): date -u Sun Nov  8 00:52:35 UTC 2026
+
+- farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-ac6a.md
+- top-level: /Users/joel/src/yaks/.delta/worktrees/ena37215nmvk/yaks
+- HEAD: a29187b1de3d733b778ddc7f9fcc55df29b01458
