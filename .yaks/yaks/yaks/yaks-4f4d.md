@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 4
 created: '2026-10-22T22:12:46Z'
-updated: '2026-11-08T00:53:00Z'
+updated: '2026-11-08T01:07:28Z'
 depends_on:
 - yaks-4e9c
 tags:
@@ -81,3 +81,17 @@ Started: 2026-11-08T00:52:52Z (date -u)
 - toque top-level: /Users/joel/src/toque/.delta/worktrees/ggfpzzt7sf82/toque
 - toque HEAD: 240eb5f9fdc275d74504a7f6323ce04c2be2e581
 - note: yaks commands only find the farm from the yaks worktree (toque has none).
+
+---
+▸ 2026-11-08T01:07:28Z [stars-fonts]
+
+Progress (about 1h in): fonts, script, API and tests are working in the toque worktree (uncommitted); measuring binary deltas and writing docs next.
+
+Findings so far:
+
+- **Powerline/Nerd glyphs:** not in DejaVu Sans Mono (no U+E0A0-E0D4; the only PUA glyph is U+F6C5). No other font added; they draw as the `.notdef` box.
+- **Braille:** also not in DejaVu Sans Mono (0/256), though the yak assumed it was. Borrowed from DejaVu Sans, shifted into the mono advance.
+- **Missing glyph:** resvg draws the primary font's `.notdef`, so `--notdef-outline` in the subsetter is the whole fix (DejaVu's box). Tested with U+E0B0.
+- **Gotcha (real bug found by looking at a frame):** when a run contains a char its face lacks, resvg switches to a fallback face and STAYS on it for the rest of the run, so a bold run with a `│` drew upright and light. DejaVu's bold and oblique mono lack Box Drawing and Misc Symbols. Fix in the script: every text face covers the same codepoints (missing ones copied from the regular face). Test fails without it (checked by building without the borrowing).
+- **DejaVu 2.34, not 2.37:** from 2.35 the vertical box strokes are 17% shorter (-512..1921 vs -618..1992 per 2048), so at toque's 14px font / 18px row the frame borders became dashes. The texlive copy (what the first subset used) is 2.34; it is downloadable from SourceForge.
+- Emoji subset sizes (Noto COLRv1, no layout tables): base Emoji_Presentation Unicode 15 without skin tones = 1200 emoji, 1.83 MB; common set ~250 emoji, 248 KB; emoticons alone (80) 69 KB.
