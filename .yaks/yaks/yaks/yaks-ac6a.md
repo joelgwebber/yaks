@@ -1,11 +1,11 @@
 ---
 id: yaks-ac6a
 title: Recurring datetimes keep their wall-clock time across DST; a farm time zone
-status: hairy
+status: shaving
 type: bug
 priority: 2
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-08T00:49:15Z'
+updated: '2026-11-08T00:49:17Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -68,3 +68,13 @@ kind: pickup
 picked up
 
 herd-stars: building it as answered: farm-wide `timezone:`, chrono-tz embedded.
+
+---
+▸ 2026-11-08T00:49:17Z [herd-stars]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
