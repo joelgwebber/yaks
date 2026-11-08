@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-08T01:12:29Z'
+updated: '2026-11-08T01:12:39Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -148,3 +148,8 @@ result: pass
 ---
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-11-08T01:12:39Z [stars-tz]
+
+Summary (stars-tz): farm-wide `timezone:` (IANA, embedded chrono-tz) is the one farm clock for today, `+Nd`, date-only `due:`, regrow-due/tick, session note day and name, and datetime display (CLI and TUI); datetime `due:` keeps its offset; `every` steps on the wall clock in the farm zone. Bad zone: stderr warning once per command + `doctor` `bad-timezone`, machine zone used. Docs/help updated (docs/cli.md, docs/tui.md, README config block, yaks and yaks-scheduling skills, `--due`/`--every` clap help). Gate `cargo test --workspace`: all green (1087 unit + integration); `yaks verify` PASS. Old-vs-new repro and size attached.
