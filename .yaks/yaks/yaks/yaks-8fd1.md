@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-04T01:14:21Z'
-updated: '2026-11-08T00:52:11Z'
+updated: '2026-11-08T01:25:05Z'
 depends_on:
 - yaks-4f4d
 tags:
@@ -54,3 +54,5 @@ Claim (yakherd herd-stars): worker after yaks-4f4d lands in toque. Open points d
 
 - **Default output:** `<stem>.png` in the current directory (where an agent's file tools can read it), printed on stdout; `-o <png>` overrides; `-o -` writes to stdout. Rejected: beside the input (would write into the farm for an attachment) and a gitignored dir (needs a project to know about it).
 - **`--scale <n>`** (default 2, as the Chrome recipe uses, since a 1x frame is small for a vision model), via toque's new scaled rasterizer.
+
+![peek-render](yaks-8fd1/peek-render.png "yaks render docs/assets/tui-yak-peek.svg: 2x, embedded fonts, no browser")
