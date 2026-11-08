@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 4
 created: '2026-10-22T22:12:46Z'
-updated: '2026-11-08T01:13:06Z'
+updated: '2026-11-08T01:13:09Z'
 depends_on:
 - yaks-4e9c
 tags:
@@ -101,3 +101,5 @@ Findings so far:
 ![caption-after](yaks-4f4d/caption-after.png "AFTER: same SVG, new subset: the book icon draws on Doks, captions are italic")
 
 ![showcase-before](yaks-4f4d/showcase-before.png "BEFORE: showcase frame (box corners, italic, braille, arrows, latin, emoji, missing glyphs) with the old subset: mostly blank, no italic")
+
+![showcase-after](yaks-4f4d/showcase-after.png "AFTER (3x via svg_to_png_scaled): box corners/borders, bold-italic, braille, arrows, accents, emoji; Powerline and CJK draw as boxes, not blank")
