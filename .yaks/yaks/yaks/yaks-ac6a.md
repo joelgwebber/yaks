@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-07T16:57:32Z'
-updated: '2026-11-08T00:52:45Z'
+updated: '2026-11-08T01:01:38Z'
 parent: yaks-44b3
 tags:
 - cli
@@ -104,3 +104,19 @@ Start (stars-tz): date -u Sun Nov  8 00:52:35 UTC 2026
 - farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-ac6a.md
 - top-level: /Users/joel/src/yaks/.delta/worktrees/ena37215nmvk/yaks
 - HEAD: a29187b1de3d733b778ddc7f9fcc55df29b01458
+
+---
+▸ 2026-11-08T01:01:38Z [stars-tz]
+
+Progress (stars-tz), 2026-11-08 ~01:40Z: code compiles and the existing suite compiles; writing the new tests next.
+
+Design as built:
+
+- `src/zone.rs`: `Zone` = `Machine` | `Named(chrono_tz::Tz)` | `Fixed(FixedOffset)` (Fixed for tests/docshots only). `at`, `resolve` (wall clock to instant: repeated hour takes the first, a skipped hour moves on by the gap), `date_of`, `today`, `midnight`.
+- `store::Config.timezone` (farm-wide, no `herds:` override), `Config::zone()`, `timezone_problem()`, `store::timezone_notice`; `Farm::zone()`.
+- `recur::When` is now `Day(NaiveDate) | At(DateTime<FixedOffset>)`: a datetime keeps its offset on write; `Every::after/latest`, `plan`, `is_overdue`, `due_mark`, `due_rows` take the zone. `recur::today()` is gone: `zone.today()`.
+- Zone passed to `sessions::build`, `tick::build` (Digest.zone), the `json::*` task renderers, `main` row renderers, and the TUI `Clock` (`System(Zone)`, `in_zone`, `zone`, `today`; `with_farm` sets it from config).
+
+Local audit (`grep -rn Local src`): the only `chrono::Local` uses were `recur::today`, `sessions::build`, `main.rs` session-promote day and `tui/when.rs` (Clock::System format); all four moved to the farm zone. Every other grep hit is `Link::Local`/`Target::Local`/`Check::LocalCheckout`, unrelated. `Zone::Machine` itself is the one remaining `Local` (the fallback, by design).
+
+Left alone on purpose (UTC by their own contract, not `Local`; follow-up): `check.rs` stale_after `today` (UTC date), `sources.rs` source dir date (UTC), `store::parse_since` date = midnight UTC (documented), machine-written stamps (`regrown:`, `created:`, notes) stay `Z`.
