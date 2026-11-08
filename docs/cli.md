@@ -152,7 +152,7 @@ Mentions are whole real ids, matched exactly as `refs` and the TUI links do. Com
 
 | Command | What it does |
 |---|---|
-| `create '<title>'` | New hairy yak. Title is positional or `--title`; `--type`/`--priority`/`--parent`/`--herd`/`--tags`/`--depends-on`/`--source`/`--key`/`--pr`/`--description`/`--description-file`/`--verify`; `--json` prints id + file path. `--description -` reads stdin (see [Multi-line text](#multi-line-text)). [Details](#create) |
+| `create '<title>'` | New hairy yak. Title is positional or `--title`; `--type`/`--priority`/`--parent`/`--herd`/`--tags`/`--depends-on`/`--source`/`--key`/`--pr`/`--description`/`--description-file`/`--verify`/`--due`/`--every`/`--wake`; `--set key=value` (repeatable) for any other frontmatter field; `--json` prints id + file path. `--description -` reads stdin (see [Multi-line text](#multi-line-text)). [Details](#create) |
 | `update <ids…>` | Update fields/tags, replace the body (`--description`/`--description-file`) or append a `--note`/`--note-file` (with `--meta key=value`, repeatable, for the note's [metadata](#note-metadata)); `--set key=value` / `--unset key` for any other frontmatter field; the same edit applies to every id. `--note -` reads stdin (see [Multi-line text](#multi-line-text)). [Details](#update) |
 | `dep add\|remove <id> <dep>` | Add / remove a dependency. |
 | `render <svg> [-o PNG] [--scale N]` | Rasterize an SVG (a file, farm path or attachment) to a PNG with the built-in fonts. [Details](#links) |
@@ -185,6 +185,8 @@ New hairy yak. Title is positional or `--title`; `--type`/`--priority`/`--parent
 `--pr <url>` (repeatable) lists a pull request in the yak's `prs:` (see [`update`](#update)).
 
 `--due <date>` and `--every <duration>` set the yak's `due:` and `every:` fields ([Due dates and recurring yaks](#due-dates-and-recurring-yaks)).
+
+`--set key=value` (repeatable) writes any other frontmatter field in the same commit as the create, with exactly [`update --set`](#update)'s rules: `--set person=joel`, `--set 'commit=[3f2a9c1, e99754d]'` (a list), `--set 'owner={team: web}'` (a map); an empty value sets nothing. Built-in fields (`title`, `tags`, `status`, ...) and malformed keys are refused before anything is written. A later `--set due=...` wins over `--due`. With `--key`, a yak that already exists keeps its fields: `--set` is not applied to it. A harness that tags new yaks with its own fields no longer needs a `create` then an `update`.
 
 `--herd` sets the new yak's herd (id prefix; default: `git config yaks.herd`, else the farm config's `herd:`), so one farm can hold several herds.
 

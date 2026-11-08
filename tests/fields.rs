@@ -142,3 +142,93 @@ fn set_refuses_built_in_and_malformed_keys_and_writes_nothing() {
     }
     assert_eq!(f.file(&id), before);
 }
+
+/// How many commits the farm branch has (the farm is where `path` says).
+fn farm_commits(f: &Farm) -> usize {
+    let farm = f.run(&["path"]);
+    let out = std::process::Command::new("git")
+        .args(["-C", farm.trim(), "rev-list", "--count", "HEAD"])
+        .output()
+        .unwrap();
+    String::from_utf8(out.stdout)
+        .unwrap()
+        .trim()
+        .parse()
+        .unwrap()
+}
+
+#[test]
+fn create_set_writes_fields_in_the_creates_one_commit() {
+    let f = Farm::new("create-set");
+    let before = farm_commits(&f);
+    let id = f.create(&["--set", "person=joel", "--set", "tags2=[a, b]"]);
+    assert_eq!(
+        farm_commits(&f),
+        before + 1,
+        "create plus fields: one commit"
+    );
+    let file = f.file(&id);
+    assert!(
+        file.contains("person: joel\ntags2:\n- a\n- b\n---"),
+        "{file}"
+    );
+    let v = f.show_json(&id);
+    assert_eq!(v["extra"]["person"], "joel");
+    assert_eq!(v["extra"]["tags2"], serde_json::json!(["a", "b"]));
+}
+
+#[test]
+fn create_set_wins_over_the_sugar_flags_and_an_empty_value_sets_nothing() {
+    let f = Farm::new("create-order");
+    let id = f.create(&[
+        "--due",
+        "2026-11-05",
+        "--set",
+        "due=2026-12-01",
+        "--set",
+        "gone=",
+    ]);
+    let file = f.file(&id);
+    assert!(file.contains("due: 2026-12-01\n"), "{file}");
+    assert!(!file.contains("gone"), "{file}");
+}
+
+#[test]
+fn create_set_refuses_built_in_and_malformed_keys_and_writes_nothing() {
+    let f = Farm::new("create-refuse");
+    let before = farm_commits(&f);
+    for bad in [
+        &["--set", "title=x"][..],
+        &["--set", "9x=1"],
+        &["--set", "noequals"],
+        &["--set", "labels=x"],
+    ] {
+        let mut a = vec!["create", "A yak"];
+        a.extend_from_slice(bad);
+        let out = Command::cargo_bin("yaks")
+            .unwrap()
+            .current_dir(&f.dir)
+            .env("XDG_DATA_HOME", common::data_home(&f.dir))
+            .env("YAKS_SKILLS_AUTOSYNC", "0")
+            .args(&a)
+            .output()
+            .unwrap();
+        assert!(!out.status.success(), "{bad:?} should fail");
+    }
+    assert_eq!(farm_commits(&f), before);
+    let listed: Value = serde_json::from_str(&f.run(&["list", "--all", "--json"])).unwrap();
+    assert!(listed.as_array().unwrap().is_empty(), "{listed}");
+}
+
+#[test]
+fn create_key_with_set_leaves_an_existing_yaks_fields_alone() {
+    let f = Farm::new("create-key");
+    let url = "https://github.com/o/r/pull/1";
+    let id = f.create(&["--key", url, "--set", "person=joel"]);
+    let before = f.file(&id);
+    let commits = farm_commits(&f);
+    let again = f.create(&["--key", url, "--set", "person=sam", "--set", "other=1"]);
+    assert_eq!(again, id);
+    assert_eq!(f.file(&id), before);
+    assert_eq!(farm_commits(&f), commits);
+}

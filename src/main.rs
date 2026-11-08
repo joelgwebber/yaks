@@ -576,6 +576,14 @@ enum Command {
         /// it the yak only becomes hairy. Sugar for `--set wake=...`.
         #[arg(long, value_name = "WHO")]
         wake: Option<String>,
+        /// Set any other frontmatter field, as `key=value` (repeatable), in
+        /// the same commit as the create: `--set person=joel`,
+        /// `--set 'commit=[3f2a9c1,e99754d]'` (a list), `--set 'owner={team:
+        /// web}'` (a map). Built-in fields (title, tags, ...) have their own
+        /// flags and are refused; an empty value sets nothing. With `--key`,
+        /// a yak that already exists keeps its fields.
+        #[arg(long = "set", value_name = "KEY=VALUE")]
+        set: Vec<String>,
         /// Print the created task's id, path, and basic fields as JSON.
         #[arg(long)]
         json: bool,
@@ -2631,13 +2639,16 @@ fn main() -> Result<()> {
             due,
             every,
             wake,
+            set,
             json,
         } => {
             if key.as_deref().is_some_and(|k| k.trim().is_empty()) {
                 anyhow::bail!("--key: the key is empty (it is the external issue or PR URL)");
             }
             let is_keyed = key.is_some();
-            let fields = due_every_fields(due, every, wake, zone)?;
+            // The sugar flags go first, so a later `--set due=...` wins.
+            let mut fields = due_every_fields(due, every, wake, zone)?;
+            fields.extend(parse_field_args(&set, &[])?);
             let description = resolve_text(
                 "--description",
                 description,
@@ -3788,9 +3799,7 @@ fn parse_field_args(set: &[String], unset: &[String]) -> Result<Vec<(String, fie
             );
         }
         if model::BUILT_IN_KEYS.contains(&k) {
-            anyhow::bail!(
-                "{flag} {k:?}: a built-in field; use its own flag (see `yaks update --help`)"
-            );
+            anyhow::bail!("{flag} {k:?}: a built-in field; use its own flag (see `--help`)");
         }
         Ok(())
     };

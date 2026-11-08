@@ -178,7 +178,7 @@ Every command has `--help`; this is the map. Global flags: `-C <path>` (run as i
 
 | Command | What it does |
 |---|---|
-| `create "title"` | New hairy yak: `--type --priority --parent --herd --tags --depends-on --source --key <url> --pr --verify --description`; `--key` returns the yak that already has that `source:` (any state) instead of creating a second |
+| `create "title"` | New hairy yak: `--type --priority --parent --herd --tags --depends-on --source --key <url> --pr --verify --due --every --wake --description`, `--set key=value` (any other field, written with the create); `--key` returns the yak that already has that `source:` (any state) instead of creating a second |
 | `list` / `next` / `tangled` / `search` | Query (shared filters, below); `next` = hairy with deps met, `tangled` = blocked on deps |
 | `find <pattern>` | Full-text search over yak bodies and notes, doks, sources' text and sessions (`--scope <prefix>`, `--kind yaks\|doks\|sources\|sessions`, `--regex`, `-i`, `--json`); `path:line: text` per match, exit 1 when none. `search` is the yak-only id/title/description lookup |
 | `show <id>` | Full details, parent and children |
@@ -249,7 +249,7 @@ prs:                      # optional: the yak's open pull requests
 Details go here.
 ```
 
-Other fields are allowed (`due:`, `every:`, `commit:`, ...): set them with `yaks update <id> --set key=value` rather than by hand; they round-trip untouched and appear under `extra` in `show --json`.
+Other fields are allowed (`due:`, `every:`, `commit:`, ...): set them with `yaks create ... --set key=value` (as it is made) or `yaks update <id> --set key=value` rather than by hand; they round-trip untouched and appear under `extra` in `show --json`.
 
 ### Due dates and recurring yaks
 
