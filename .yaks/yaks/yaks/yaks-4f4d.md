@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 4
 created: '2026-10-22T22:12:46Z'
-updated: '2026-11-08T01:07:28Z'
+updated: '2026-11-08T01:12:59Z'
 depends_on:
 - yaks-4e9c
 tags:
@@ -95,3 +95,5 @@ Findings so far:
 - **Gotcha (real bug found by looking at a frame):** when a run contains a char its face lacks, resvg switches to a fallback face and STAYS on it for the rest of the run, so a bold run with a `│` drew upright and light. DejaVu's bold and oblique mono lack Box Drawing and Misc Symbols. Fix in the script: every text face covers the same codepoints (missing ones copied from the regular face). Test fails without it (checked by building without the borrowing).
 - **DejaVu 2.34, not 2.37:** from 2.35 the vertical box strokes are 17% shorter (-512..1921 vs -618..1992 per 2048), so at toque's 14px font / 18px row the frame borders became dashes. The texlive copy (what the first subset used) is 2.34; it is downloadable from SourceForge.
 - Emoji subset sizes (Noto COLRv1, no layout tables): base Emoji_Presentation Unicode 15 without skin tones = 1200 emoji, 1.83 MB; common set ~250 emoji, 248 KB; emoticons alone (80) 69 KB.
+
+![caption-before](yaks-4f4d/caption-before.png "BEFORE: tui-image-caption.svg rasterized with the 38-codepoint subset: blank icon on the Doks tab, upright captions")
