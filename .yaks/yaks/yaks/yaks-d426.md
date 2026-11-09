@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 3
 created: '2026-11-09T15:37:41Z'
-updated: '2026-11-09T15:37:41Z'
+updated: '2026-11-09T19:23:26Z'
 tags:
 - skills
 ---
@@ -18,3 +18,16 @@ Two skill gaps:
 2. **Sync is contradictory.** The `yaks` skill says "Sync at session start, after landing work, and before switching machines", but yaks-scheduling says "It never syncs: `yaks sync` is the human's call" and watcher rule 6 says "Don't sync". Keep "tick and a watcher don't sync by themselves" (true of the commands), drop "the human's call", and point at the `yaks` skill's cadence: the agent running the round syncs after it.
 
 cowpaths/joel worked around both in its AGENTS.md (joel-0333 in that farm): every session that talks with Joel syncs, ticks and works the agent inbox first.
+
+---
+▸ 2026-11-09T19:23:26Z [review-watch-agent]
+
+Joel, 2026-11-09 (in the cowpaths/joel review-watch thread): the new design is meant to support aggressive syncing, so agents should be told to sync as often as they like, not to leave it to the human.
+
+Three places still say otherwise:
+
+- `AGENTS.md` ("Task tracking"): "publishing it (`yaks sync`) is the human's call"
+- `.agents/skills/land/SKILL.md` step 3: "Leave `yaks sync` (publishing) to the user"
+- `yaks-scheduling`, watcher rule 6 and "It never syncs": right for the `tick` command and a watcher script (neither should sync on its own), but it reads as a ban on the agent doing the round syncing afterward. Say so.
+
+The `yaks` skill ("Sync at session start, after landing work...") and `yaks-coordinating` already say to sync.
