@@ -1,11 +1,11 @@
 ---
 id: yaks-6a05
 title: TUI visibly slower when typing / navigating with many yaks visible
-status: shaving
+status: shorn
 type: bug
 priority: 3
 created: '2026-11-10T19:11:25Z'
-updated: '2026-11-10T21:45:03Z'
+updated: '2026-11-10T21:45:08Z'
 tags:
 - perf
 - tui
@@ -81,3 +81,13 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-10T21:45:08Z [perf-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVQdJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
