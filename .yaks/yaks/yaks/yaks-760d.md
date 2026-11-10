@@ -1,11 +1,11 @@
 ---
 id: yaks-760d
 title: 'yaks land: record the landing after a conflicting cherry-pick is resolved'
-status: shaving
+status: shorn
 type: bug
 priority: 3
 created: '2026-11-10T17:56:51Z'
-updated: '2026-11-10T21:43:19Z'
+updated: '2026-11-10T21:43:20Z'
 tags:
 - cli
 - git
@@ -70,3 +70,13 @@ Summary: `yaks land --continue` / `--abort` shipped.
 - Tests: `tests/land_continue.rs` (6, binary against temp repos with a branch farm: conflict, resolve, `--continue`, `yaks commits` shows the landed note; also `--yak` carry-over, unresolved retry, pick finished by git, `--abort`, flag exclusivity). Also exercised by hand in a scratch repo with `target/debug/yaks`.
 - Gate: `cargo test --workspace` green on the final run (one `init_modes` test failed once in a run alongside other workers, passed alone and in the rerun: not in this change); `cargo fmt --check` ok; clippy warning count unchanged at 104.
 - Docs: clap help, `docs/cli.md`, `yaks-coordinating` section 6. `.agents/skills/land/SKILL.md` says only "Conflicts: pause", unchanged.
+
+---
+▸ 2026-11-10T21:43:20Z [landcont-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVgG5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
