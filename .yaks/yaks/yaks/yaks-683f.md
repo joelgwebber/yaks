@@ -5,10 +5,9 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
-updated: '2026-11-10T17:49:46Z'
+updated: '2026-11-10T17:50:28Z'
 tags:
 - tui
-needs: agent
 ---
 
 Preserve a draft when an edit form or comment is dismissed or interrupted, so in-progress text is not lost.
@@ -54,3 +53,12 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-10T17:50:28Z [herd-unlock]
+kind: pickup
+---
+
+picked up
+
+herd-unlock: delegating phase 1 of the attached design to worker drafts-1 (Sonnet), with the four answers as decided.
