@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
-updated: '2026-11-10T19:04:03Z'
+updated: '2026-11-10T19:06:03Z'
 tags:
 - tui
 ---
@@ -103,3 +103,11 @@ Plan (before coding), read of the code:
 [prompt](yaks-683f/prompt.txt "toque-style text frame (TestBackend, 100x16): the three-way prompt after dismissing a dirty edit form")
 
 [restored](yaks-683f/restored.txt "text frame: edit form reopened, restored from the draft, with its 'draft (saved just now) · Ctrl-R original' badge")
+
+---
+▸ 2026-11-10T19:06:03Z [drafts-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
