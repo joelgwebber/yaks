@@ -1,11 +1,11 @@
 ---
 id: yaks-20fe
 title: 'Cross-farm feedback: other farms'' upkeep friction flows back to this one'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-10T17:59:19Z'
-updated: '2026-11-10T18:44:25Z'
+updated: '2026-11-10T18:44:27Z'
 parent: yaks-1c89
 tags:
 - skills
@@ -64,3 +64,13 @@ kind: pickup
 picked up
 
 herd-unlock: writing the feedback dok into yaks-upkeep's review and reflection steps, and creating the weekly collector yak here.
+
+---
+▸ 2026-11-10T18:44:27Z [herd-unlock]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
