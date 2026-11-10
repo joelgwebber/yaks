@@ -209,15 +209,13 @@ only; when a design ships, its user-facing behaviour goes there.
 
 ## Delegating to cheaper models
 
-Fan well-scoped yaks out to subagents on a cheaper model (e.g.
-`claude-sonnet-5-5`) and keep design, prose, review and every landing in the
-coordinating thread; the `yaks-coordinating` skill is the workflow. In yaks-a3d2
-six Sonnet workers landed cleanly, but the coordinator's own run of each command
-found two bugs their tests missed: the review is part of the job.
+This is the standing instruction: delegate well-scoped yaks to subagents on a
+cheaper model without being asked each time (here, `claude-sonnet-5-5`). The
+`yaks-coordinating` skill's "Choosing a model" is the rule (what to delegate,
+what to keep, why review is the cost). In yaks-a3d2 six Sonnet workers landed
+cleanly, but the coordinator's own run of each command found two bugs their
+tests missed: the review is part of the job.
 
-- **Delegate** a yak with one outcome, a file/function scope and a test that can
-  fail first. **Keep** design passes, skill and prose rewrites, and shared
-  helpers several workers build on (land those first as a prep commit).
 - **Brief extras** beyond `yaks brief`: build and use your own binary; the full
   gate; the docs-and-help rule; which `src/main.rs` regions each parallel worker
   owns.

@@ -55,6 +55,17 @@ Do not read, write or build in any other checkout.
 
 Pass `--yaks-dir <farm>` when the worker's checkout cannot find the farm. If the task changes yaks itself, tell the worker to build and use its own binary.
 
+### Choosing a model
+
+The worker's model is a cost decision, and the coordinator makes it per yak. The skill names tiers, since ids age: a provider's cheap tier (Haiku, a Flash), its mid tier (Sonnet), its top tier (Opus, a Pro). Pick the tier here, then pass your harness the current id in it (Delta lists them with `list_subagent_models`; a farm's `AGENTS.md` may name one).
+
+- **A delegable yak goes to the mid tier**: one outcome, a file/function scope, a test that can fail first. Most implementation, bug fixes and test repairs are this. Two batches here of four and seven such workers each landed with no rework.
+- **Keep on your own tier:** design passes, skill and prose rewrites, a shared prep commit others build on, and every landing. A yak that is half design (a key-binding rethink, a new data format) gets a design pass from you first, then delegates; or it goes to your tier whole.
+- **The cost is in review, not the brief.** Budget your own re-run of each change against the real artifact: a cheap worker's tests pass more often than its feature works.
+- **Record it:** the model per worker goes in the batch note on the umbrella yak (the one that lists each worker, its yak and its landed SHA), so a later reflection can compare outcomes by tier.
+- **The cheap tier** (Haiku-class) suits a read-only scout: a cold read of a skill, a search.
+- **Who decides:** the person, or the farm's `AGENTS.md`, sets the policy (a standing "delegate to cheaper models" counts as asking); with none, use this default and say which tier you chose. A harness setting that limits subagents still wins: then do the yak yourself.
+
 ## 6. Landing
 
 1. **Land by SHA:** `yaks land <sha> --dry-run`, then `yaks land <sha>`. It lands one single-parent squash commit (or a cherry-pick when the base moved), checks the result against `git merge-tree`, and never pushes. It records a `kind: landed` note (the landed and worker SHAs) on each yak the commit message names, plus any `--yak <id>`; `yaks commits <id>` lists them. It refuses while your tree has changes the commit does not explain, a SHA whose change a merge dropped, and a commit that stages `.yaks/` beside a branch farm. When the cherry-pick stops on conflicts, resolve and `git add` the files, then `yaks land --continue` (not `git cherry-pick --continue`: only it records the landing; `yaks land --abort` gives up).
@@ -80,7 +91,7 @@ Every note and move carries an actor: `--as <name>` or `YAKS_ACTOR=<name>` on ea
 
 Your thread is the yakherd; each worker is a subthread with its own clone, which starts from a snapshot of your working tree.
 
-- **Spawning.** Start each title with the worker's name (`sheds-1: build the sheds CLI`), the same name the brief sets as `YAKS_ACTOR`: that name stamps the worker's notes and is its row in `yaks sheds`. Record the worker's name, agent id, model and base commit on the umbrella yak or in your landing note, never on the worker's yak. Pass `model` only when the human asked for one.
+- **Spawning.** Start each title with the worker's name (`sheds-1: build the sheds CLI`), the same name the brief sets as `YAKS_ACTOR`: that name stamps the worker's notes and is its row in `yaks sheds`. Record the worker's name, agent id, model and base commit in the batch note on the umbrella yak, never on the worker's yak. Pass `model` by the tier "Choosing a model" (section 5) picks.
 - **What comes back is not trustworthy.** Delta merges a result against what it last applied to your tree, not your HEAD: expect a pending `MERGE_HEAD`, stray modified files, a worker's unfinished edits, even files reset to an old snapshot. Never `git add -A` after a worker returns and never hand-revert Delta's applied state; `yaks land <sha>` sorts it out. While any worker is running or parked, don't rewrite your branch (no `reset --hard`, no rebase): its old base turns the next landing into add/add conflicts.
 - **Waking a worker.** `send_agent_message` to its thread id; it resumes with its context. Tell it to `yaks pickup <id>` when an answer is waiting.
 - **A worker can die silently** (most often when the human moves the thread to another machine). Overdue with no new note (its `yaks sheds` row goes `stale`): presume it dead, have a replacement review its draft, and after two deaths finish the task yourself.
