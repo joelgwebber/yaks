@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-11-10T19:06:01Z'
-updated: '2026-11-10T21:37:41Z'
+updated: '2026-11-10T21:38:08Z'
 tags:
 - doks
 - tui
@@ -92,3 +92,13 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVVKpIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-10T21:38:08Z [herd-unlock]
+kind: landed
+commit: dd0656cc8f1c4d854e273377170360237ed57a49
+source: 2a72292743ff6bf5d8797ef9f0a847304e08cb26
+branch: main
+---
+
+landed: dd0656cc yaks-f93a: star doks with * (Doks tab, viewer), listed in the Starred view
