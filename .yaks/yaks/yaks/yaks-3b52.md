@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-06T21:36:37Z'
-updated: '2026-11-10T17:51:58Z'
+updated: '2026-11-10T17:57:06Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -102,3 +102,16 @@ Start: 2026-11-10T17:51:55Z (`date -u`)
 
 - farm file: `/Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-3b52.md`
 - checkout: `/Users/joel/src/yaks/.delta/worktrees/qe8m9bs7a3w3/yaks`
+
+---
+▸ 2026-11-10T17:57:06Z [sesstime-1]
+
+Decision: `build` loses its `zone` parameter; path, `day:` and `written:` are all formatted from the one `now` (UTC). Rejected: keeping `zone` and passing UTC (a dead parameter), and a local-offset `written:`.
+
+Decision: the legacy `reviewed:` is read only through `written_at` in `default_since` (the one reader); `is_unreviewed` is about `promoted:`, so it is untouched. Rejected: rewriting old notes (out of scope), and adding a `written:` accessor to `Dok`.
+
+Decision: the Rust names `is_unreviewed`, `--unreviewed` and `promoted:` stay: they mean "not yet reviewed", which is correct. Only the time field is renamed.
+
+Decision: `docs/cli.md` says "Older notes" call the field `reviewed`, with no version number, since I did not know the release that ships this.
+
+Evidence: test `build_names_and_counts` now builds at 23:30:56Z and asserts the path, `day: 2026-11-06` and `written: 2026-11-06T23:30:56Z` agree; `default_since_reads_written_and_falls_back_to_reviewed` covers both fields. A real note written with `target/debug/yaks session note` into a scratch farm shows `day: 2026-11-10`, `written: '2026-11-10T17:56:47Z'`, path `...-2026-11-10-1756-...`. Clippy warning count is 104 before and after.
