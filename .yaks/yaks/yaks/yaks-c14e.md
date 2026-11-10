@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-10T19:08:25Z'
-updated: '2026-11-10T21:12:23Z'
+updated: '2026-11-10T21:13:10Z'
 tags:
 - tui
 ---
@@ -40,3 +40,8 @@ Tree views, unless the same rule is broken there too (then say so in a note and 
 ## Evidence
 
 A test that fails first: All view, drawer toggles shorn off, no shorn row remains and the count matches. A `yaks tui --headless` frame of it, attached. Gate `cargo test --workspace`.
+
+---
+▸ 2026-11-10T21:13:10Z [shornfilter-1]
+
+Start 2026-11-10T21:13:10Z; checkout /Users/joel/src/yaks/.delta/worktrees/pfapv7at78cw/yaks, base 686d328a.
