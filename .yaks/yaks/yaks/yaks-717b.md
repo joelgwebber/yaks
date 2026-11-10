@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 4
 created: '2026-11-04T23:13:02Z'
-updated: '2026-11-10T22:00:22Z'
+updated: '2026-11-10T22:00:44Z'
 tags:
 - tests
 ---
@@ -52,3 +52,12 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-10T22:00:44Z [flaky-1]
+
+Decision: `init_modes` worktree test uses the file's own `temp()` for the `-wt` and `-clone` dirs (pid-suffixed, cleared first) plus an explicit cleanup at the end.
+
+- Rejected: only pid-suffixing the siblings (still leaves them behind).
+- Rejected: nesting them inside `web`'s dir (a worktree inside its own repo's tree dirties `git status`).
+- git accepts an existing empty directory for `worktree add` and `clone`, so `temp()` works as the target.
