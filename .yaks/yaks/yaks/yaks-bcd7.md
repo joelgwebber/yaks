@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T21:11:52Z'
-updated: '2026-11-10T21:30:26Z'
+updated: '2026-11-10T21:30:35Z'
 parent: yaks-f04d
 tags:
 - cli
@@ -69,3 +69,8 @@ result: pass
 ---
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-11-10T21:30:35Z [tagwarn-1]
+
+Summary: create --tags, update --add-tag and bulk --add-tag warn on stderr for a tag not in schemas/yak.md tags: (five nearest by edit distance); advice only, silent without known tags. verify PASS; evidence in the scratch-farm note above. Commit f06f67c5.
