@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-06T21:36:37Z'
-updated: '2026-11-10T17:57:06Z'
+updated: '2026-11-10T18:00:45Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -115,3 +115,11 @@ Decision: the Rust names `is_unreviewed`, `--unreviewed` and `promoted:` stay: t
 Decision: `docs/cli.md` says "Older notes" call the field `reviewed`, with no version number, since I did not know the release that ships this.
 
 Evidence: test `build_names_and_counts` now builds at 23:30:56Z and asserts the path, `day: 2026-11-06` and `written: 2026-11-06T23:30:56Z` agree; `default_since_reads_written_and_falls_back_to_reviewed` covers both fields. A real note written with `target/debug/yaks session note` into a scratch farm shows `day: 2026-11-10`, `written: '2026-11-10T17:56:47Z'`, path `...-2026-11-10-1756-...`. Clippy warning count is 104 before and after.
+
+---
+▸ 2026-11-10T18:00:45Z [sesstime-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
