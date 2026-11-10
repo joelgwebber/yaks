@@ -134,12 +134,7 @@ impl App {
     /// stable per-view size).
     pub(crate) fn view_count(&self, v: &view::View) -> usize {
         if v.key == "working-set" {
-            return self
-                .working_set
-                .iter()
-                .filter_map(|id| self.task(id))
-                .filter(|t| self.query_keeps(t))
-                .count();
+            return self.working_set_rows().len();
         }
         // The Sheds tab counts busy sheds, not yaks.
         if v.key == view::SHEDS_KEY {
@@ -218,14 +213,31 @@ impl App {
             .collect()
     }
 
-    /// Rows the starred working set resolves to, in star order (flat).
+    /// Rows the starred working set resolves to, flat: the starred yaks in
+    /// star order, then the starred doks in star order (as the All view lists
+    /// documents after yaks). An entry that is neither a yak nor a dok of
+    /// this farm any more (deleted, moved) is skipped.
     pub(crate) fn working_set_rows(&self) -> Vec<tree::Row<'_>> {
-        self.working_set
+        let q = self.query.as_deref();
+        let yaks = self
+            .working_set
             .iter()
             .filter_map(|id| self.task(id))
             .filter(|t| self.query_keeps(t))
-            .map(tree::Row::leaf)
-            .collect()
+            .map(tree::Row::leaf);
+        let docs = self
+            .working_set
+            .iter()
+            .filter_map(|path| {
+                self.doks
+                    .entries
+                    .iter()
+                    .flatten()
+                    .find(|e| e.group == DocGroup::Dok && e.path == *path)
+            })
+            .filter(|e| q.is_none_or(|q| tree::query_matches(tree::Item::Doc(e), q)))
+            .map(tree::Row::doc);
+        yaks.chain(docs).collect()
     }
 
     /// Flat, sorted rows for a sorted view (Recent / custom sorted).

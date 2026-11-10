@@ -13,7 +13,7 @@ interchangeable.
   the overdue ones lead; unpinned, from the view picker, `` ` ``), **All**
   (every yak, dead ones too, then every dok,
   source and session note; unpinned, from the view picker, `` ` ``) and
-  **Starred**; you can save the current filter as a named view. The
+  **Starred** (the yaks and doks you starred with `*`, yaks first); you can save the current filter as a named view. The
   **Doks** tab lists the farm's doks, sources and session notes (see [Doks tab](#doks-tab)),
   and the **Sheds** tab is a tree of the farm's workers (actors) with the yaks
   each one touched (see [Sheds tab](#sheds-tab)).
@@ -177,7 +177,7 @@ a character).
 | `m` | Mark / unmark row (multi-select) |
 | `S` (with marks) | Bulk state transition over the marked set (shearing asks for one optional comment for the set) |
 | `` ` `` / `V` | View picker / save filter as a view |
-| `*` | Star / unstar (Starred view) |
+| `*` | Star / unstar the yak, or the dok on a document row or open in the viewer (Starred view) |
 | `W` | Commit the farm (`yaks commit`; also in the detail pane). The result is the notification: `committed <sha> <message>`, `nothing to commit`, or the error |
 | `U` | Sync the farm (`yaks sync`: commit, pull, push; also in the detail pane). Shows `syncing…` while it runs (it touches the network, so the TUI waits; the interval sync does the same in the background), then the sync report's last line, or the error |
 
@@ -429,6 +429,7 @@ and a document row has its own keys (the yak keys do nothing there):
 | `/` | Search every view (a dok's body and a source's text too); `Esc` clears it |
 | `E` | Edit the dok in place (also `E` in its viewer): frontmatter and body in one editor, `Ctrl-S` saves |
 | `c` | New dok: type its path, then write its body (`C` does nothing here) |
+| `*` | Star / unstar the dok (also `*` in its viewer); a source or session note cannot be starred |
 | `y` | Copy the path (also `y` in its viewer with nothing selected, as a yak's pane copies its id; `v` then `y` copies lines) |
 | `Ctrl-R` | Reread the doks now |
 
@@ -796,6 +797,12 @@ dok list`, `yaks source list` and `yaks session list` read).
   folder.
 - **The tab count** is the number of doks (sources and session notes are not
   counted) the query keeps.
+- **`*` stars the dok** (also with it open in the viewer), as it stars a yak:
+  a ⭐ ends the row and shows in the viewer's header, and the **Starred** view
+  lists starred doks after starred yaks (`Enter` opens one). The star is kept
+  per user in the same file as a yak's, under the dok's farm path
+  (`doks/...`), which is never a yak id; a dok that moved or was deleted is
+  skipped.
 - **`Enter` opens the dok** in the text viewer, next to the list (a jump:
   `o` closes it again, back on its row). Its
   frontmatter shows as field rows (`type:`, `title:`, `tags:`, ...) above the

@@ -1266,6 +1266,7 @@ impl App {
         match cmd {
             Cmd::FindOpen => return self.open_find(),
             Cmd::PeekToggle => return self.toggle_peek(),
+            Cmd::YakStar => return self.toggle_star(),
             Cmd::FindNext | Cmd::FindPrev => {
                 let delta = if cmd == Cmd::FindNext { 1 } else { -1 };
                 let register = self.register.clone();

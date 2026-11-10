@@ -298,6 +298,11 @@ pub(crate) fn render_attachment(
                 Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
             ),
             Span::styled(format!("  {kind}"), Style::new().fg(Color::DarkGray)),
+            Span::raw(if app.is_starred(&v.target) {
+                " \u{2b50}"
+            } else {
+                ""
+            }),
         ])),
         head,
     );
@@ -855,7 +860,7 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
                     .find(|(_, y): &&(crate::sheds::Kind, &crate::sheds::Touched)| y.id == t.id)
                     .map(|(k, _)| k.label()),
             ),
-            tree::Item::Doc(e) => doc_cols.item(e, area.width),
+            tree::Item::Doc(e) => doc_cols.item(e, area.width, app.is_starred(&e.path)),
             tree::Item::Shed(s) => {
                 shed_kinds = s.rows();
                 let now = shed_now.unwrap_or_else(chrono::Utc::now);

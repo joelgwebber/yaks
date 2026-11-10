@@ -311,7 +311,17 @@ pub fn can_unpin(views: &[View], i: usize) -> bool {
 // -- working set -------------------------------------------------------------
 
 pub fn load_working_set(root: &Path) -> Vec<String> {
-    let Ok(text) = fs::read_to_string(working_set_path(root)) else {
+    load_working_set_at(&working_set_path(root))
+}
+
+pub fn save_working_set(root: &Path, ids: &[String]) {
+    save_working_set_at(&working_set_path(root), ids);
+}
+
+/// The working set's file holds yak ids and dok paths (`doks/...`) in one
+/// list: a path never collides with an id.
+fn load_working_set_at(path: &Path) -> Vec<String> {
+    let Ok(text) = fs::read_to_string(path) else {
         return vec![];
     };
     let Ok(data) = serde_json::from_str::<Value>(&text) else {
@@ -320,9 +330,8 @@ pub fn load_working_set(root: &Path) -> Vec<String> {
     str_vec(data.get("ids"))
 }
 
-pub fn save_working_set(root: &Path, ids: &[String]) {
+fn save_working_set_at(path: &Path, ids: &[String]) {
     let payload = json!({ "v": VERSION, "ids": ids });
-    let path = working_set_path(root);
     if let Some(dir) = path.parent() {
         let _ = fs::create_dir_all(dir);
     }
@@ -414,6 +423,23 @@ mod tests {
         assert_eq!(&keys[..2], ["sheds", "doks"], "{keys:?}");
         assert!(!out[1].pinned, "its pin follows");
         assert_eq!(out.iter().filter(|v| v.key == "doks").count(), 1);
+    }
+
+    #[test]
+    fn the_working_set_file_round_trips_yak_ids_and_dok_paths() {
+        let dir = std::env::temp_dir().join(format!("yaks-ws-{}", std::process::id()));
+        let file = dir.join("working_set.json");
+        let ids: Vec<String> = [
+            "yaks-0001",
+            "doks/topics/a.md",
+            "yaks-0002",
+            "yak/doks/b.md",
+        ]
+        .map(String::from)
+        .to_vec();
+        save_working_set_at(&file, &ids);
+        assert_eq!(load_working_set_at(&file), ids);
+        let _ = fs::remove_dir_all(dir);
     }
 
     #[test]

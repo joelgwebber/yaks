@@ -7,9 +7,44 @@
 use super::*;
 
 impl App {
+    /// What `*` stars: the open document (the viewer has the keys), else the
+    /// selected yak, else the selected dok row. `Err` says why there is
+    /// nothing to star: only a yak or a dok can be (not a source, a session
+    /// note, an attachment or a shed).
+    fn star_target(&self) -> Result<String, &'static str> {
+        if let Some(v) = self.attach() {
+            return if crate::doks::is_dok_path(&v.target) {
+                Ok(v.target.clone())
+            } else {
+                Err("only a yak or a dok can be starred")
+            };
+        }
+        if let Some(id) = self.selected_id() {
+            return Ok(id);
+        }
+        match self.selected_doc() {
+            Some(e) if e.group == DocGroup::Dok => Ok(e.path.clone()),
+            Some(_) => Err("only a yak or a dok can be starred"),
+            None => Err("nothing to star"),
+        }
+    }
+
+    /// `*`: star or unstar a yak (by id) or a dok (by its farm path, which
+    /// never collides with an id) in the one working set the Starred view
+    /// lists.
     pub(crate) fn toggle_star(&mut self) {
-        let Some(id) = self.selected_id() else { return };
-        let was = self.working_set.iter().any(|i| *i == id);
+        let id = match self.star_target() {
+            Ok(id) => id,
+            Err(why) => {
+                // A yak command with no yak under the cursor stays silent
+                // (the Doks tab's yak keys do nothing).
+                if why != "nothing to star" {
+                    self.notification = Some(why.into());
+                }
+                return;
+            }
+        };
+        let was = self.is_starred(&id);
         self.working_set = views_store::toggle_working_set(&self.working_set, &id);
         if let Some(h) = &self.farm {
             views_store::save_working_set(h.root(), &self.working_set);

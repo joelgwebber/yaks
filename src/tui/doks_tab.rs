@@ -316,6 +316,7 @@ fn entry_row(
     kind_w: usize,
     tags_w: usize,
     width: u16,
+    starred: bool,
 ) -> Line<'static> {
     let kind_style = match e.group {
         DocGroup::Dok => Style::new().fg(Color::Cyan),
@@ -346,8 +347,13 @@ fn entry_row(
         spans.push(Span::raw("  "));
     }
     let used: usize = spans.iter().map(|sp| disp_width(&sp.content)).sum();
-    let room = (width as usize).saturating_sub(used);
+    // A starred dok ends in the star the yak rows show (two cells and a space).
+    let star = if starred { " \u{2b50}" } else { "" };
+    let room = (width as usize).saturating_sub(used + disp_width(star));
     spans.push(Span::styled(pad(e.shown_path(), room), dim()));
+    if starred {
+        spans.push(Span::raw(star));
+    }
     Line::from(spans)
 }
 
@@ -411,8 +417,10 @@ impl DocCols {
     }
 
     /// The list item of a document row.
-    pub(crate) fn item(&self, e: &DoksEntry, width: u16) -> ListItem<'static> {
-        ListItem::new(entry_row(e, self.title, self.kind, self.tags, width))
+    pub(crate) fn item(&self, e: &DoksEntry, width: u16, starred: bool) -> ListItem<'static> {
+        ListItem::new(entry_row(
+            e, self.title, self.kind, self.tags, width, starred,
+        ))
     }
 }
 
@@ -988,6 +996,126 @@ mod tests {
         assert!(show.contains("doks/topics/full-text-search.md"), "{show}");
         assert_eq!(show.matches(" | ").count(), 1, "only the dok: {show}");
         let _ = std::fs::remove_dir_all(base);
+    }
+
+    /// An app with no farm (so a star is not persisted to the user's config)
+    /// holding one yak and the fixture's entries, on the Doks tab.
+    fn on_doks_unpersisted() -> App {
+        let mut app = App::new(vec![task(
+            "yaks-0001",
+            "Search",
+            crate::model::Status::Hairy,
+            2,
+            None,
+        )]);
+        let root = std::env::temp_dir().join(format!("yaks-star-{}", std::process::id()));
+        fixture::write(&root);
+        app.set_doks_entries(read_entries(&root).unwrap());
+        let _ = std::fs::remove_dir_all(root);
+        let i = app
+            .views
+            .iter()
+            .position(|v| v.key == view::DOKS_KEY)
+            .unwrap();
+        app.set_view(i);
+        app
+    }
+
+    fn starred_view_paths(app: &mut App) -> Vec<String> {
+        let i = app
+            .views
+            .iter()
+            .position(|v| v.key == "working-set")
+            .unwrap();
+        app.set_view(i);
+        app.rows()
+            .iter()
+            .map(|r| match r.item {
+                tree::Item::Yak(t) => t.id.clone(),
+                tree::Item::Doc(e) => e.path.clone(),
+                tree::Item::Shed(s) => s.name.clone(),
+            })
+            .collect()
+    }
+
+    #[test]
+    fn star_in_the_doks_tab_lists_the_dok_in_starred_and_again_removes_it() {
+        let mut app = on_doks_unpersisted();
+        assert_eq!(app.selected_doc().unwrap().path, "doks/howto/release.md");
+        press(&mut app, "*");
+        assert!(app.is_starred("doks/howto/release.md"));
+        assert_eq!(
+            app.notification.as_deref(),
+            Some("starred doks/howto/release.md")
+        );
+        // Yaks first, then doks: star the yak after the dok.
+        let doks = app.view;
+        let yaks = app.views.iter().position(|v| v.key == "recent").unwrap();
+        app.set_view(yaks);
+        press(&mut app, "*");
+        assert_eq!(
+            starred_view_paths(&mut app),
+            ["yaks-0001", "doks/howto/release.md"]
+        );
+        assert_eq!(app.view_count(&app.views[app.view].clone()), 2);
+        // Back on the Doks tab, `*` again removes the dok.
+        app.set_view(doks);
+        press(&mut app, "*");
+        assert!(!app.is_starred("doks/howto/release.md"));
+        assert_eq!(starred_view_paths(&mut app), ["yaks-0001"]);
+    }
+
+    #[test]
+    fn enter_on_a_starred_dok_opens_it() {
+        // `working_set` is set directly: a farm-backed app persists a star to
+        // the user's config, which a test must not write.
+        let (proj, mut app) = on_doks();
+        app.working_set = vec!["doks/howto/release.md".into()];
+        assert_eq!(starred_view_paths(&mut app), ["doks/howto/release.md"]);
+        enter_key(&mut app);
+        assert_eq!(
+            app.attach().map(|v| v.target.as_str()),
+            Some("doks/howto/release.md")
+        );
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn a_source_or_session_note_cannot_be_starred() {
+        let mut app = on_doks_unpersisted();
+        press(&mut app, "G"); // the session note
+        assert_eq!(app.selected_doc().unwrap().group, DocGroup::Session);
+        press(&mut app, "*");
+        assert!(app.working_set.is_empty());
+        assert_eq!(
+            app.notification.as_deref(),
+            Some("only a yak or a dok can be starred")
+        );
+    }
+
+    #[test]
+    fn a_stale_starred_dok_is_skipped() {
+        let mut app = on_doks_unpersisted();
+        app.working_set = vec!["doks/gone.md".into(), "doks/howto/release.md".into()];
+        assert_eq!(starred_view_paths(&mut app), ["doks/howto/release.md"]);
+    }
+
+    #[test]
+    fn star_with_a_dok_open_stars_that_dok() {
+        let mut app = on_doks_unpersisted();
+        let root = std::env::temp_dir().join(format!("yaks-star-open-{}", std::process::id()));
+        fixture::write(&root);
+        let rel = "doks/howto/release.md";
+        let text = std::fs::read_to_string(root.join(rel)).unwrap();
+        let v = handlers::AttachView::farm_doc(rel, root.join(rel), text, None, None);
+        app.follow_to_doc(DocView::Text(v));
+        let _ = std::fs::remove_dir_all(root);
+        assert_eq!(app.surface_ctx(), keymap::Ctx::Viewer);
+        press(&mut app, "*");
+        assert!(app.is_starred(rel));
+        assert!(app.attach().is_some(), "the dok stays open");
+        press(&mut app, "*");
+        assert!(!app.is_starred(rel));
     }
 
     #[test]
