@@ -1,11 +1,11 @@
 ---
 id: yaks-ecdf
 title: Summarize yak notes much like we do agent conversations
-status: hairy
+status: shaving
 type: feature
 priority: 3
 created: '2026-11-09T19:43:01Z'
-updated: '2026-11-10T18:44:25Z'
+updated: '2026-11-10T18:44:26Z'
 tags:
 - skills
 ---
@@ -43,3 +43,13 @@ kind: pickup
 picked up
 
 herd-unlock: folding yak notes into the review round in yaks-upkeep, option 1.
+
+---
+▸ 2026-11-10T18:44:26Z [herd-unlock]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
