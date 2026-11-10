@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T19:06:01Z'
-updated: '2026-11-10T21:29:46Z'
+updated: '2026-11-10T21:29:47Z'
 tags:
 - doks
 - tui
@@ -46,3 +46,5 @@ Tests: star a dok in the Doks tab, it appears in Starred, `*` again removes it; 
 Start 2026-11-10T21:13:29Z; checkout /Users/joel/src/yaks/.delta/worktrees/pcjanhhk4b1n/yaks
 
 [starred](yaks-f93a/starred.txt "Starred view with two starred doks (headless frame, scratch farm): ⭐ ends each row")
+
+[viewer](yaks-f93a/viewer.txt "A starred dok open in the viewer: ⭐ in the header")
