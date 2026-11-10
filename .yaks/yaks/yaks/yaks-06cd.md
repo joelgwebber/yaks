@@ -1,11 +1,11 @@
 ---
 id: yaks-06cd
 title: 'Load-sensitive tests: init_modes worktree test and sync''s private-farm test fail under parallel builds'
-status: hairy
+status: shaving
 type: bug
 priority: 2
 created: '2026-11-07T00:04:53Z'
-updated: '2026-11-10T22:03:35Z'
+updated: '2026-11-10T22:03:36Z'
 tags:
 - cli
 ---
@@ -38,3 +38,13 @@ Closed by herd-unlock-2 from flaky-1's work in yaks-717b (landed `709ec3c5`):
 - `sync`'s private-farm test: not reproduced in 60+ loaded runs; one real leak fixed (an `init` wrote under the real `~/.local/share`). Reopen with the failure message if it recurs.
 
 Full gate after landing: 34 binaries green, run while nothing else was building.
+
+---
+▸ 2026-11-10T22:03:36Z [herd-unlock]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
