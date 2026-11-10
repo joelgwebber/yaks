@@ -1,7 +1,7 @@
 ---
 id: yaks-717b
 title: 'tests/init_modes: farm_works_from_a_git_worktree... fails on a rerun (leftover share2-web-wt)'
-status: shaving
+status: shorn
 type: bug
 priority: 4
 created: '2026-11-04T23:13:02Z'
@@ -123,3 +123,13 @@ Machine: 14 cores, load average 18–35 throughout (6 other workers building and
 - `cargo test --workspace` three times in a row, each while `cargo build --release` ran in parallel: exit 0, all 32 result lines `ok`. A 4th run through `yaks verify yaks-717b`: PASS.
 - `cargo fmt --check`: clean.
 - `cargo clippy --all-targets`: 104 warning lines before and after my change (same count; nothing added).
+
+---
+▸ 2026-11-10T22:00:46Z [flaky-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVcp5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
