@@ -77,3 +77,11 @@ Decision: `settle_auto_sync` waits on a 120 s wall-clock deadline instead of 400
 - The old loop failed after ~10 s of sleeping, plus tick time. The sync is a thread running several git processes, so its duration scales with load; there is no fixed path, port or env var to fix there.
 - Rejected: only raising the iteration count (still a guess); a mutex over all tests (hides the cause and slows the suite).
 - No non-test code needed, so no `yaks ask`.
+
+---
+▸ 2026-11-10T22:00:45Z [flaky-1]
+
+Decision: `tests/sync.rs` `origin_and_a` now sets `XDG_DATA_HOME` (and removes `YAKS_DIR`) on the `yaks init` it runs, like `Machine::yaks_out` does.
+
+- Before, that one call wrote a farm home under the real `~/.local/share/yaks/farms` (not the temp root), which is a leak outside the test's temp root.
+- It is not a proven cause of the load failure. Stated honestly under the sync case below.
