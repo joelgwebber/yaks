@@ -7215,6 +7215,52 @@ mod query {
         assert_eq!(ids(&app).len(), 4);
     }
 
+    /// yaks-c14e: the status chips of the drawer scope a flat view like any
+    /// other facet; before, only `dead` did, so turning `shorn` off kept them.
+    #[test]
+    fn the_drawer_status_chips_scope_flat_views() {
+        let shorn = task("s1", "Done", Status::Shorn, 2, None);
+        let mut app = App::new(vec![
+            task("h1", "Open", Status::Hairy, 2, None),
+            task("w1", "Busy", Status::Shaving, 2, None),
+            shorn,
+            task("d1", "Gone", Status::Dead, 2, None),
+        ]);
+        go(&mut app, "all");
+        assert_eq!(ids(&app).len(), 4, "All lists every status");
+        // Shorn and dead off, as in the drawer's `hairy shaving` state.
+        app.filter.statuses = vec![Status::Hairy, Status::Shaving];
+        let mut shown = ids(&app);
+        shown.sort();
+        assert_eq!(shown, vec!["h1", "w1"], "no shorn row remains");
+        // Just shorn: the facet narrows a flat view to it.
+        app.filter.statuses = vec![Status::Shorn];
+        assert_eq!(ids(&app), vec!["s1"]);
+        // Recent has no status axis: everything but dead, until asked.
+        go(&mut app, "recent");
+        app.filter.statuses = vec![];
+        assert_eq!(ids(&app).len(), 3);
+        app.filter.statuses = vec![Status::Dead];
+        assert_eq!(ids(&app), vec!["d1"]);
+    }
+
+    /// A view's tab count follows the view's own statuses by the same rule.
+    #[test]
+    fn a_flat_views_count_follows_its_statuses() {
+        let mut app = App::new(vec![
+            task("h1", "Open", Status::Hairy, 2, None),
+            task("s1", "Done", Status::Shorn, 2, None),
+            task("d1", "Gone", Status::Dead, 2, None),
+        ]);
+        assert_eq!(count(&app, "all"), 3);
+        assert_eq!(count(&app, "recent"), 2);
+        let i = app.views.iter().position(|v| v.key == "recent").unwrap();
+        app.views[i].spec.statuses = vec![Status::Hairy];
+        assert_eq!(count(&app, "recent"), 1, "a spec's status is honored");
+        go(&mut app, "recent");
+        assert_eq!(app.row_count(), 1, "and its rows agree");
+    }
+
     #[test]
     fn a_query_matching_only_a_dok_body_finds_it_on_doks_and_all() {
         let mut app = farm();

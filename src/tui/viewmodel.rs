@@ -147,16 +147,15 @@ impl App {
         // Flat views (Recent/Inbox/custom sorted) count via the flat predicate
         // so facets the tree ignores for pruning — notably `needs_only` — are
         // honored (an Inbox tab shows the awaiting-a-human count, not the farm
-        // size). Mirrors `flat_rows`: exclude dead unless the spec asks, respect
-        // the row cap.
+        // size). Mirrors `flat_rows`: the spec's status scope, respect the row
+        // cap.
         if v.is_flat() {
             let resolved = filter::resolved_ids(&self.all);
-            let want_dead = v.spec.statuses.contains(&Status::Dead);
             let n = self
                 .all
                 .iter()
                 .filter(|t| {
-                    (want_dead || t.status != Status::Dead)
+                    v.spec.admits_status(t.status)
                         && v.spec.matches(t, &resolved)
                         && self.query_keeps(t)
                 })
@@ -244,15 +243,14 @@ impl App {
     pub(crate) fn flat_rows(&self) -> Vec<tree::Row<'_>> {
         let v = self.active_view();
         let resolved = filter::resolved_ids(&self.all);
-        // Flat views (Recent/custom) span all statuses, so exclude dead unless
-        // the live filter explicitly asks for it (fe00): the model now carries
-        // dead, but a working list shouldn't surface slaughtered yaks by default.
-        let want_dead = self.filter.statuses.contains(&Status::Dead);
+        // The live filter's status scope (the drawer's chips) decides which
+        // statuses a flat view lists; with none lit it is every status but
+        // dead (fe00): a working list doesn't surface slaughtered yaks unasked.
         let mut matched: Vec<&Task> = self
             .all
             .iter()
             .filter(|t| {
-                (want_dead || t.status != Status::Dead)
+                self.filter.admits_status(t.status)
                     && self.filter.matches(t, &resolved)
                     && self.query_keeps(t)
             })

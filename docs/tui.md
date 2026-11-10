@@ -610,6 +610,9 @@ readiness) drops the documents, which have none.
 **Filter drawer** (`f`) — status / type / priority chips plus tag, search,
 parent, and `ready`/`tangled`/`inbox` predicates, and — on a multi-herd farm —
 a `herd` chip row to scope to one or more herds. It composes into any view.
+On a flat view (All, Recent, a sorted view) the status chips are the scope
+of the list: switch `shorn` off and no shorn yak remains; with none lit, the
+list holds every status but dead.
 
 ![yaks TUI filter drawer](assets/tui-drawer.svg)
 

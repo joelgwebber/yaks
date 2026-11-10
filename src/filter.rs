@@ -56,6 +56,18 @@ impl FilterSpec {
             || self.source.is_some()
     }
 
+    /// Whether `status` is inside the status scope: the listed statuses, or
+    /// (none listed) every status but dead, which a list shows only when asked.
+    /// The flat views' rule, so their rows and counts agree with the drawer's
+    /// status chips.
+    pub fn admits_status(&self, status: Status) -> bool {
+        if self.statuses.is_empty() {
+            NON_DEAD.contains(&status)
+        } else {
+            self.statuses.contains(&status)
+        }
+    }
+
     /// Per-task content predicate (ignores status + parent scope), shared by
     /// `apply` and the tree's focus computation. Mirrors Python
     /// `FilterSpec.matches`.
