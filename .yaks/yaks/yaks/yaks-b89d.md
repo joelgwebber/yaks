@@ -1,11 +1,11 @@
 ---
 id: yaks-b89d
 title: Format src/actor.rs and tests/commits.rs once so cargo fmt stops rewriting them
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-10T17:53:07Z'
-updated: '2026-11-10T17:53:56Z'
+updated: '2026-11-10T17:53:57Z'
 tags:
 - meta
 verify: cargo fmt --check
@@ -38,3 +38,13 @@ Done in `53576880`: `cargo fmt` run once on `main` (it touched only `src/actor.r
 
 - `verify: cargo fmt --check` PASS.
 - This is the first lesson reflection would have caught as "already in context and still recurring"; the next round should report it `recurred` or `gone`.
+
+---
+▸ 2026-11-10T17:53:57Z [herd-unlock]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
