@@ -182,6 +182,8 @@ New hairy yak. Title is positional or `--title`; `--type`/`--priority`/`--parent
 
 `--tags` (like `--add-tag`/`--remove-tag`/`--tag` everywhere) splits on commas and whitespace — a tag may contain neither, so `--tags ui,docs`, `--tags 'ui, docs'`, and `--tags ui docs` all give `[ui, docs]` (duplicates dropped).
 
+A tag the farm does not list under `tags:` in `schemas/yak.md` (the known tags, shown by `yaks dok types`) is still written, but `create --tags`, `update --add-tag` and `bulk --add-tag` print `warning: tag "foo" is not among this farm's known tags (schemas/yak.md); known: a, b, c` on stderr, naming the five nearest known tags by edit distance. It is advice, never a refusal, and a farm with no known tags says nothing.
+
 `--pr <url>` (repeatable) lists a pull request in the yak's `prs:` (see [`update`](#update)).
 
 `--due <date>` and `--every <duration>` set the yak's `due:` and `every:` fields ([Due dates and recurring yaks](#due-dates-and-recurring-yaks)).

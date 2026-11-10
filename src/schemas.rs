@@ -174,6 +174,49 @@ pub fn load(root: &Path, type_name: &str) -> Option<Schema> {
     Some(parse(type_name, &text))
 }
 
+/// A warning for each of `tags` (already normalized) that the farm's known
+/// tags (`schemas/yak.md` `tags:`) do not list, each naming the five nearest
+/// known tags by edit distance (ties in the schema's order). Advice, never a
+/// refusal; empty when the farm lists no known tags (yaks-bcd7).
+pub fn unknown_tag_warnings(root: &Path, tags: &[String]) -> Vec<String> {
+    let known: Vec<String> = match load(root, YAK_TYPE) {
+        Some(s) => crate::model::normalize_tags(s.tags.iter().map(|(t, _)| t)),
+        None => return Vec::new(),
+    };
+    if known.is_empty() {
+        return Vec::new();
+    }
+    tags.iter()
+        .filter(|t| !known.contains(t))
+        .map(|t| {
+            let mut near: Vec<&String> = known.iter().collect();
+            near.sort_by_key(|k| edit_distance(t, k));
+            near.truncate(5);
+            let near: Vec<&str> = near.into_iter().map(String::as_str).collect();
+            format!(
+                "tag {t:?} is not among this farm's known tags (schemas/yak.md); known: {}",
+                near.join(", ")
+            )
+        })
+        .collect()
+}
+
+/// Levenshtein distance between two strings, in characters.
+fn edit_distance(a: &str, b: &str) -> usize {
+    let b: Vec<char> = b.chars().collect();
+    let mut row: Vec<usize> = (0..=b.len()).collect();
+    for (i, ca) in a.chars().enumerate() {
+        let mut diag = row[0];
+        row[0] = i + 1;
+        for (j, cb) in b.iter().enumerate() {
+            let up = row[j + 1];
+            row[j + 1] = (diag + usize::from(ca != *cb)).min(up + 1).min(row[j] + 1);
+            diag = up;
+        }
+    }
+    row[b.len()]
+}
+
 /// Every schema in the farm, sorted by type.
 pub fn load_all(root: &Path) -> Vec<Schema> {
     let mut out: Vec<Schema> = std::fs::read_dir(root.join(SCHEMAS_DIR))
@@ -715,6 +758,14 @@ mod tests {
             ]
         );
         assert_eq!(s.fields[0].kind, "date");
+    }
+
+    #[test]
+    fn edit_distance_counts_edits() {
+        assert_eq!(edit_distance("", "abc"), 3);
+        assert_eq!(edit_distance("docs", "doc"), 1);
+        assert_eq!(edit_distance("kitten", "sitting"), 3);
+        assert_eq!(edit_distance("same", "same"), 0);
     }
 
     #[test]

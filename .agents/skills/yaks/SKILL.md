@@ -157,7 +157,7 @@ Skip what makes no sense for the change; never skip it because it is effort.
 
 ## Tags
 
-Few and broad (`ui`, `docs`, `cli`): reuse an existing tag before inventing one (`yaks stats` lists them; `yaks dok types` shows the farm's known tags and what each means, from `schemas/yak.md`), at most two or three per yak, one word each (`--tags ui,docs` is two tags). A tracker tag (`jira`, `github`) marks yaks that map to an external issue.
+Few and broad (`ui`, `docs`, `cli`): reuse an existing tag before inventing one (`yaks stats` lists them; `yaks dok types` shows the farm's known tags and what each means, from `schemas/yak.md`), at most two or three per yak, one word each (`--tags ui,docs` is two tags). A tag the farm does not list still works, but `create`/`update`/`bulk` warn on stderr and name the nearest known ones: take the hint. A tracker tag (`jira`, `github`) marks yaks that map to an external issue.
 
 ## Doks
 

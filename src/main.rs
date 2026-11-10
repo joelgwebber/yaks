@@ -61,7 +61,7 @@ use farm::{
 };
 use filter::FilterSpec;
 use model::{NEEDS_AGENT, Status, Task, normalize_tags};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
 #[command(
@@ -534,8 +534,10 @@ enum Command {
         prefix: Option<String>,
         /// Tags for the new yak. Commas and spaces separate tags (a tag may
         /// contain neither): `--tags ui,docs`, `--tags 'ui docs'`, and
-        /// `--tags ui docs` are equivalent. Duplicates are dropped. `--labels`
-        /// is the old spelling.
+        /// `--tags ui docs` are equivalent. Duplicates are dropped. A tag the
+        /// farm does not list under `tags:` in `schemas/yak.md` still works but
+        /// prints a warning naming the nearest known tags. `--labels` is the
+        /// old spelling.
         #[arg(long, alias = "labels", num_args = 1..)]
         tags: Vec<String>,
         #[arg(long = "depends-on", num_args = 1..)]
@@ -606,8 +608,9 @@ enum Command {
         /// Replace the body with this file's text (`-` is stdin).
         #[arg(long = "description-file", value_name = "PATH")]
         description_file: Option<String>,
-        /// Tags to add. Commas and spaces separate tags (`ui,docs`).
-        /// `--add-label` is the old spelling.
+        /// Tags to add. Commas and spaces separate tags (`ui,docs`). A tag the
+        /// farm does not list under `tags:` in `schemas/yak.md` still works but
+        /// prints a warning. `--add-label` is the old spelling.
         #[arg(long = "add-tag", alias = "add-label", num_args = 1..)]
         add_tag: Vec<String>,
         /// Tags to remove. Commas and spaces separate tags (`ui,docs`).
@@ -1159,7 +1162,8 @@ enum Command {
         #[command(flatten)]
         filter: FilterFlags,
         /// Tags to add to every matched yak. Commas and spaces separate tags.
-        /// `--add-label` is the old spelling.
+        /// A tag the farm does not list under `tags:` in `schemas/yak.md`
+        /// still works but prints a warning. `--add-label` is the old spelling.
         #[arg(long = "add-tag", alias = "add-label", num_args = 1..)]
         add_tag: Vec<String>,
         /// Tags to remove from every matched yak. Commas and spaces separate
@@ -2650,6 +2654,7 @@ fn main() -> Result<()> {
                 anyhow::bail!("--key: the key is empty (it is the external issue or PR URL)");
             }
             let is_keyed = key.is_some();
+            warn_unknown_tags(farm.root(), &tags);
             // The sugar flags go first, so a later `--set due=...` wins.
             let mut fields = due_every_fields(due, every, wake, zone)?;
             fields.extend(parse_field_args(&set, &[])?);
@@ -2740,6 +2745,7 @@ fn main() -> Result<()> {
             meta,
             as_actor,
         } => {
+            warn_unknown_tags(farm.root(), &add_tag);
             // The sugar flags go first, so a later `--set due=...` wins.
             let mut fields = due_every_fields(due, every, wake, zone)?;
             fields.extend(parse_field_args(&set, &unset)?);
@@ -3212,6 +3218,7 @@ fn main() -> Result<()> {
             // will actually be written (yaks-7cb3).
             let add_tag = normalize_tags(&add_tag);
             let remove_tag = normalize_tags(&remove_tag);
+            warn_unknown_tags(farm.root(), &add_tag);
             let does_field_edit = !add_tag.is_empty()
                 || !remove_tag.is_empty()
                 || set_priority.is_some()
@@ -3888,6 +3895,15 @@ fn render_regrow_due(r: &recur::Report, dry_run: bool) -> String {
         out.push_str("(dry run \u{2014} nothing written; re-run without --dry-run to apply)\n");
     }
     out
+}
+
+/// Warn on stderr for each of `tags` (raw flag values) that the farm's known
+/// tags (`schemas/yak.md`) do not list. Advice only: the write goes ahead, and
+/// a farm with no known tags says nothing (yaks-bcd7).
+fn warn_unknown_tags(root: &Path, tags: &[String]) {
+    for w in schemas::unknown_tag_warnings(root, &normalize_tags(tags)) {
+        eprintln!("warning: {w}");
+    }
 }
 
 fn update_many(farm: &Farm, ids: &[String], edit: TaskEdit) -> Result<()> {
