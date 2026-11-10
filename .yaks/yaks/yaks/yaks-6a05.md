@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-10T19:11:25Z'
-updated: '2026-11-10T21:13:20Z'
+updated: '2026-11-10T21:38:08Z'
 tags:
 - perf
 - tui
@@ -44,3 +44,31 @@ Before/after timings per keystroke on the same fixture, in a note, with the comm
 ▸ 2026-11-10T21:13:20Z [perf-1]
 
 Start 2026-11-10T21:13:18Z; checkout /Users/joel/src/yaks/.delta/worktrees/73m8tackk228/yaks
+
+---
+▸ 2026-11-10T21:38:08Z [perf-1]
+
+Measured (release build, 800 synthetic yaks, 200x100, `handle_key` + `render` to a TestBackend):
+
+- Command: `cargo test --release --bin yaks keystroke_bench -- --ignored --nocapture` (new `#[ignore]` bench in `src/tui/memo.rs`).
+
+Before, mean per keystroke:
+
+- Hairy tab `j`: 7.2 ms (handle_key 0.35, render 6.9)
+- All tab `j`: 15.1 ms (handle_key 0.7, render 14.4)
+- All tab search typing: 13.0 ms
+- Detail open: 12.8 ms
+
+Cause: `render_list` called `app.is_multi_herd()` once per visible row. That walks every yak and builds a `BTreeSet` of herds (`herd_choices`), so a frame was visible rows x yaks. The All tab shows ~100 rows at 200x100, so it cost the most.
+
+Fix: hoist `is_multi_herd()` out of the per-row closure in `render_list` (`src/tui/render.rs`), one call per frame. Nothing cached, so no new derived state.
+
+After, mean per keystroke: Hairy `j` 2.5 ms, All `j` 3.4 ms, All typing 3.2 ms, detail open 3.0 ms (max 5.4 ms). Under the 16 ms target.
+
+Cross-check with the real binary on a copy of this farm (872 files): 200 `j` keys at 200x100 took 0.78 s after against 0.84 s before. That wall time includes ~0.35 s of startup and is noisy, so the bench is the better measure.
+
+Decision: hoist, not memoize. Rejected: caching `herd_choices` or `view_count` in `App`. The hoist fixes the only quadratic; what remains is about 2.5 ms per frame, linear in yaks.
+
+Decision: left `view_count`, `blocked_ids` and `resolved_ids` uncached. Each is O(n) once per frame (tab bar x ~7 tabs), and the shorn-filter worker is editing `flat_rows`/`view_count` in parallel.
+
+Decision: bench lives in `memo.rs` `#[cfg(test)]` next to the cache it exercises, `#[ignore]`d. Rejected: a headless shell script (the test harness gives the handle_key/render split).
