@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-10T17:56:51Z'
-updated: '2026-11-10T21:43:11Z'
+updated: '2026-11-10T21:43:19Z'
 tags:
 - cli
 - git
@@ -58,3 +58,15 @@ result: pass
 ---
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-11-10T21:43:19Z [landcont-1]
+
+Summary: `yaks land --continue` / `--abort` shipped.
+
+- First run that stops on a conflicting pick saves `yaks-land.json` (worker sha, `--yak` ids, HEAD) in the checkout's git dir; the stop message names `yaks land --continue`.
+- `--continue` runs `git cherry-pick --continue` with `GIT_EDITOR=true`, then records via the same `record` path as a clean landing; `--abort` aborts the pick and clears the state.
+- A second `yaks land <sha>` while the stop waits refuses with exit 8.
+- Tests: `tests/land_continue.rs` (6, binary against temp repos with a branch farm: conflict, resolve, `--continue`, `yaks commits` shows the landed note; also `--yak` carry-over, unresolved retry, pick finished by git, `--abort`, flag exclusivity). Also exercised by hand in a scratch repo with `target/debug/yaks`.
+- Gate: `cargo test --workspace` green on the final run (one `init_modes` test failed once in a run alongside other workers, passed alone and in the rerun: not in this change); `cargo fmt --check` ok; clippy warning count unchanged at 104.
+- Docs: clap help, `docs/cli.md`, `yaks-coordinating` section 6. `.agents/skills/land/SKILL.md` says only "Conflicts: pause", unchanged.
