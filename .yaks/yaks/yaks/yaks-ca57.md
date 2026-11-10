@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T17:37:34Z'
-updated: '2026-11-10T17:57:21Z'
+updated: '2026-11-10T17:57:22Z'
 tags:
 - doks
 - tui
@@ -54,3 +54,8 @@ Start: Tue Nov 10 17:51:39 UTC 2026
 ▸ 2026-11-10T17:57:21Z [doklink-1]
 
 Decision: reuse FuzzyPick (new optional `doks` field, `dok_candidates` ranking) and FuzzyAction::InsertRef rather than adding a FuzzyAction::InsertDok variant or a new overlay: the commit/return-to-editor path is identical, so one `finish_insert` serves both. Rejected: a second picker type.
+
+---
+▸ 2026-11-10T17:57:22Z [doklink-1]
+
+Decision: completion_context now returns a `Completion { len, seed, kind: Yak|Dok }` instead of a tuple; a dok link is tested first (its last segment may look like a yak ref), yak behaviour is unchanged.
