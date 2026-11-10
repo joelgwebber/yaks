@@ -416,13 +416,16 @@ fn farm_works_from_a_git_worktree_and_a_shared_clone_of_the_sharing_repo() {
         &web,
         &["init", "--farm", owner.to_str().unwrap(), "--no-skills"],
     );
-    let wt = web.with_file_name("share2-web-wt");
+    // `temp` gives the siblings the pid and clears a stale one (a fixed
+    // sibling name made a rerun fail with "already exists"); git accepts an
+    // existing empty directory for both `worktree add` and `clone`.
+    let wt = temp("share2-web-wt");
     git(
         &web,
         &["worktree", "add", "-q", "-b", "topic", wt.to_str().unwrap()],
     );
     assert_eq!(okx(&wt, &["path"]).trim(), owner_farm);
-    let clone = web.with_file_name("share2-web-clone");
+    let clone = temp("share2-web-clone");
     git(
         web.parent().unwrap(),
         &[
@@ -434,6 +437,10 @@ fn farm_works_from_a_git_worktree_and_a_shared_clone_of_the_sharing_repo() {
         ],
     );
     assert_eq!(okx(&clone, &["path"]).trim(), owner_farm);
+    for d in [&owner, &web, &wt, &clone] {
+        let _ = std::fs::remove_dir_all(d);
+        let _ = std::fs::remove_dir_all(data(d));
+    }
 }
 
 #[test]

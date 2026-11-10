@@ -373,13 +373,32 @@ mod tests {
         assert!(out.status.success(), "git {args:?}: {out:?}");
     }
 
+    /// A scratch directory next to `proj` for one thing a test makes beside it
+    /// (an origin, another clone). `temp_farm` names `proj` by pid and a
+    /// counter, so deriving the sibling from it is unique per run and per
+    /// test: a fixed name was shared by every concurrent `cargo test` on the
+    /// machine (yaks-06cd). Callers remove it when the test ends.
+    fn sibling(proj: &Path, what: &str) -> PathBuf {
+        let name = proj.file_name().unwrap().to_string_lossy().into_owned();
+        proj.with_file_name(format!("{name}-{what}"))
+    }
+
+    /// Remove what `published_farm` and the test made beside it.
+    fn cleanup(proj: &Path) {
+        for d in [
+            proj.to_path_buf(),
+            sibling(proj, "origin.git"),
+            sibling(proj, "other"),
+        ] {
+            let _ = std::fs::remove_dir_all(d);
+        }
+    }
+
     /// A farm that is the branch `yaks` of its own repo, published to a bare
-    /// origin; returns (project dir, the TUI on it, origin dir). `tmp` names
-    /// the scratch directory so tests do not collide.
-    fn published_farm(tmp: &str) -> (PathBuf, App, PathBuf) {
+    /// origin; returns (project dir, the TUI on it, origin dir).
+    fn published_farm() -> (PathBuf, App, PathBuf) {
         let (proj, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
-        let origin = proj.with_file_name(format!("{tmp}-origin.git"));
-        let _ = std::fs::remove_dir_all(&origin);
+        let origin = sibling(&proj, "origin.git");
         git_in(&proj, &["init", "-q", "-b", "yaks"]);
         git_in(&proj, &["config", "user.name", "t"]);
         git_in(&proj, &["config", "user.email", "t@t"]);
@@ -395,17 +414,24 @@ mod tests {
     }
 
     /// Tick until the background sync (if any) has finished; the final
-    /// `finished` result. Fails the test rather than hang.
+    /// `finished` result. The sync is a thread running several `git`
+    /// processes, so how long it takes depends on the machine's load: the
+    /// wait is a wall-clock deadline, generous enough for a loaded machine
+    /// (a count of 25 ms polls gave up after 10 s of sleeping and failed
+    /// under parallel builds, yaks-06cd), and fails the test rather than hang.
     fn settle_auto_sync(app: &mut App, start: Instant) -> bool {
-        for i in 0..400 {
+        let deadline = Instant::now() + Duration::from_secs(120);
+        let mut i = 0;
+        while Instant::now() < deadline {
             let now = start + Duration::from_millis(i);
             let finished = app.tick_auto_sync(now);
             if finished || app.auto_sync.running.is_none() {
                 return finished;
             }
             std::thread::sleep(Duration::from_millis(25));
+            i += 1;
         }
-        panic!("the interval sync did not finish");
+        panic!("the interval sync did not finish within 120 s");
     }
 
     #[test]
@@ -455,7 +481,7 @@ mod tests {
 
     #[test]
     fn an_open_overlay_or_queued_op_holds_the_sync_until_idle() {
-        let (_proj, mut app, _origin) = published_farm("yaks-f0db-idle");
+        let (proj, mut app, _origin) = published_farm();
         let t0 = Instant::now();
         app.auto_sync = AutoSync::new(Some(Duration::from_secs(1)), false, t0);
         let due = t0 + Duration::from_secs(1);
@@ -474,15 +500,16 @@ mod tests {
         app.tick_auto_sync(due);
         assert!(app.auto_sync.running.is_some(), "idle: it starts");
         settle_auto_sync(&mut app, due);
+        cleanup(&proj);
     }
 
     #[test]
     fn a_commit_pushed_from_another_clone_appears_after_a_tick() {
-        let (proj, mut app, origin) = published_farm("yaks-f0db-pull");
+        let (proj, mut app, origin) = published_farm();
         assert_eq!(app.all.len(), 1);
 
         // Another machine adds a yak and pushes it.
-        let other = proj.with_file_name("yaks-f0db-pull-other");
+        let other = sibling(&proj, "other");
         let _ = std::fs::remove_dir_all(&other);
         git_in(
             &proj,
@@ -532,11 +559,12 @@ mod tests {
                 .map(|s| s.behind),
             Some(0)
         );
+        cleanup(&proj);
     }
 
     #[test]
     fn a_private_farm_pulls_but_does_not_push() {
-        let (proj, mut app, origin) = published_farm("yaks-f0db-private");
+        let (proj, mut app, origin) = published_farm();
         git_in(&proj, &["config", "--bool", "yaks.private", "true"]);
         // A local commit the origin lacks: a private farm keeps it local.
         git_in(
@@ -555,11 +583,12 @@ mod tests {
             .output()
             .unwrap();
         assert!(!String::from_utf8_lossy(&ahead.stdout).contains("local only"));
+        cleanup(&proj);
     }
 
     #[test]
     fn a_failing_remote_says_so_once_not_every_tick() {
-        let (proj, mut app, origin) = published_farm("yaks-f0db-fail");
+        let (proj, mut app, origin) = published_farm();
         // The remote goes away.
         std::fs::remove_dir_all(&origin).unwrap();
         let every = Duration::from_millis(1);
@@ -584,6 +613,7 @@ mod tests {
         app.tick_auto_sync(at);
         settle_auto_sync(&mut app, at);
         assert!(app.auto_sync.last_error.is_none());
+        cleanup(&proj);
     }
 
     /// yaks-9786: another machine migrates the farm to a newer schema and
@@ -591,8 +621,8 @@ mod tests {
     /// read-only and every write is refused, naming the upgrade.
     #[test]
     fn a_pulled_newer_schema_makes_the_tui_read_only() {
-        let (proj, mut app, origin) = published_farm("yaks-9786-newer");
-        let other = proj.with_file_name("yaks-9786-newer-other");
+        let (proj, mut app, origin) = published_farm();
+        let other = sibling(&proj, "other");
         let _ = std::fs::remove_dir_all(&other);
         git_in(
             &proj,
@@ -632,5 +662,6 @@ mod tests {
         assert!(err.to_string().contains("newer than this yaks"), "{err}");
         let t0_file = std::fs::read_to_string(store::task_path(farm.root(), "t0")).unwrap();
         assert!(t0_file.contains("status: hairy"), "nothing was written");
+        cleanup(&proj);
     }
 }

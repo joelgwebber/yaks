@@ -112,6 +112,8 @@ fn origin_and_a(tag: &str) -> (PathBuf, Machine, String) {
     let init = Command::cargo_bin("yaks")
         .unwrap()
         .current_dir(&farm)
+        .env_remove("YAKS_DIR")
+        .env("XDG_DATA_HOME", &a.data)
         .env("YAKS_SKILLS_AUTOSYNC", "0")
         .args(["init", "--herd", "t"])
         .output()
