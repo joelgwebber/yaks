@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-08-26T13:24:15Z'
-updated: '2026-11-10T21:46:29Z'
+updated: '2026-11-10T21:46:47Z'
 parent: yaks-f04d
 depends_on:
 - yaks-b2ed
@@ -80,3 +80,13 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVYeZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-10T21:46:47Z [herd-unlock]
+kind: landed
+commit: ef5c259ebe7d8e9fce08180827810de1f2c537ba
+source: 9b28281d03d42fb3c98400a48e3e4cede6fa1a6e
+branch: main
+---
+
+landed: ef5c259e yaks-8d6a: complete tags with Tab in the form's tags field
