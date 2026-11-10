@@ -1,11 +1,11 @@
 ---
 id: yaks-ca57
 title: Auto-complete for dok-links
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-10T17:37:34Z'
-updated: '2026-11-10T18:01:05Z'
+updated: '2026-11-10T18:01:06Z'
 tags:
 - doks
 - tui
@@ -95,3 +95,13 @@ Summary: Tab after `/doks/…` or `/<herd>/doks/…` in any multi-line editor op
 - Docs: `docs/tui.md`, keymap `Tab` rows.
 - Tests: 3 new (`tab_after_a_dok_link_…`, `…herd_dok_link…`, `…non_dok_path_is_a_plain_tab`), new insta snapshot `dok_picker_over_editor` (attached); the existing yak-completion tests pass untouched, no existing snapshot changed.
 - Gate: `yaks verify` PASS; `cargo clippy --all-targets` warning count 104 before and after.
+
+---
+▸ 2026-11-10T18:01:06Z [doklink-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFRyApIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
