@@ -5,12 +5,12 @@ status: hairy
 type: task
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-08T16:24:17Z'
+updated: '2026-11-10T17:44:06Z'
 parent: yaks-1c89
 tags:
 - design
 - skills
-needs: human
+needs: agent
 ---
 
 From [the agent-memory research](/doks/research/agent-memory-dreaming.md) (yaks-e4f5), sections 2, 4, 5, 8 and 9: changes to the `yaks-upkeep` reflection procedure and how doks are indexed. It edits a skill, so the proposals are one ask for Joel before anything is written.
@@ -35,3 +35,18 @@ Six points from [the research](/doks/research/agent-memory-dreaming.md), each wi
 6. **A `description:` on every dok as its index line** (when to read it), flagged by `yaks check` when missing. Whether to also list them at session start: lean no until point 1 lands, since that is more context.
 
 Separately, the loop isn't running: no recurring review, reflection or tidy yak exists and there is no `lessons.md`. Lean: run the first reflection round by hand over the three notes, then create the three recurring yaks. Say if you want that as its own yak.
+
+---
+▸ 2026-11-10T17:44:06Z [sched-1]
+kind: answer
+needs: agent
+---
+
+1. SGTM. We can always see how it goes and iterate from there.
+2. SGTM. Seems like an important part of the process.
+3. Also agreeed. Tracking provenance for future reference is always a Good Thing.
+4. I'm assuming this yak would be a task to stop the recurrence, right?
+5. Yup.
+6. Agreed, that sounds like unnecessary summarization and repetition.
+
+Oh yeah, please do set that up. I never actually did the initialization step in this farm.
