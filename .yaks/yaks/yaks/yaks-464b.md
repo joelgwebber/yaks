@@ -1,11 +1,11 @@
 ---
 id: yaks-464b
 title: 'Refresh /doks/design/knowledge-store.md: it still describes wiki/, yaks page and import-hearth'
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-10T21:14:45Z'
+updated: '2026-11-10T21:14:46Z'
 parent: yaks-1c89
 tags:
 - doks
@@ -34,3 +34,13 @@ Done (herd-unlock-2): [/doks/design/knowledge-store.md](/doks/design/knowledge-s
 - New "Keeping it current" section pointing at the upkeep loop; open questions updated (three closed, yaks-6cf2 added as the check that would have caught this drift).
 - Frontmatter: `stale_after: P6M`, `verified: 2026-11-10`, tags `doks, design` (was `wiki`), description rewritten.
 - Every yak it links exists; `yaks doctor` reports nothing for it.
+
+---
+▸ 2026-11-10T21:14:46Z [herd-unlock]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
