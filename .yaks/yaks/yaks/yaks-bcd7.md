@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T21:11:52Z'
-updated: '2026-11-10T21:12:26Z'
+updated: '2026-11-10T21:14:15Z'
 parent: yaks-f04d
 tags:
 - cli
@@ -35,3 +35,8 @@ A tag not in the farm's known tags (`schemas/yak.md` `tags:`, via `src/schemas.r
 ## Evidence
 
 Integration tests: warning on an unknown tag, none on a known one, none when no schema. Gate `cargo test --workspace`.
+
+---
+▸ 2026-11-10T21:14:15Z [tagwarn-1]
+
+Start 2026-11-10T21:14:15Z; checkout /Users/joel/src/yaks/.delta/worktrees/jaghh9sj6kkr/yaks
