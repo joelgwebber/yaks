@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T17:37:34Z'
-updated: '2026-11-10T17:51:42Z'
+updated: '2026-11-10T17:57:12Z'
 tags:
 - doks
 - tui
@@ -47,3 +47,5 @@ Start: Tue Nov 10 17:51:39 UTC 2026
 
 - farm path: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-ca57.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/9qjdhqw40bqc/yaks
+
+[yaks__tui__tests__dok_picker_over_editor](yaks-ca57/yaks__tui__tests__dok_picker_over_editor.snap "Dok-link picker open over the comment editor after Tab on /doks/des (insta snapshot, 72x14)")
