@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-11-10T17:56:51Z'
-updated: '2026-11-10T21:43:20Z'
+updated: '2026-11-10T21:43:43Z'
 tags:
 - cli
 - git
@@ -80,3 +80,13 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVgG5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-10T21:43:43Z [herd-unlock]
+kind: landed
+commit: f67e29fd81cb80bb110f00a89c13620ba64f1e5b
+source: b035f37bfa376fca9615657fd8b44cbc48dbe4b0
+branch: main
+---
+
+landed: f67e29fd yaks-760d: yaks land --continue and --abort finish or give up a conflicting cherry-pick landing and record it
