@@ -216,10 +216,11 @@ found two bugs their tests missed: the review is part of the job.
   helpers several workers build on (land those first as a prep commit).
 - **Brief extras** beyond `yaks brief`: build and use your own binary; the full
   gate; the docs-and-help rule; which `src/main.rs` regions each parallel worker
-  owns; the `cargo fmt` caveat below.
+  owns.
 - **Cold-read prose with a cheap model** after a skills change: a scout that
   reads only the skill files and answers scenario questions finds the gaps.
   Trust it to find them, not to pick the fix.
-- **`cargo fmt` reformats files nobody touched** (`src/actor.rs`,
-  `src/tui/docshots.rs`, `src/tui/tests.rs`, `tests/commits.rs`): run
-  `cargo fmt -- <your files>` and `git checkout` those before committing.
+- **`main` is `cargo fmt` clean** (yaks-b89d): run `cargo fmt`, and
+  `cargo fmt --check` before landing. A file it rewrites that you never touched
+  means someone landed unformatted code: format it in its own commit rather
+  than reverting it.

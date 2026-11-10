@@ -38,8 +38,8 @@ Delegating), `.yaks/config.yaml` on the farm branch (`yaks path`) for `verify:`,
 
 1. Commit the code (never stage `.yaks/`; stage explicit paths). Put the yak id
    in the commit message: the farm is published.
-2. `cargo fmt -- <files you touched>`, then `git checkout src/actor.rs
-   src/tui/docshots.rs src/tui/tests.rs` unless you changed them.
+2. `cargo fmt`, then `cargo fmt --check` must pass: `main` is kept format-clean,
+   so it touches only your files.
 3. Run the yak's `verify:` (`yaks verify <id>`; tags map to `cargo test -p yaks`
    or `cargo test -p yaks skills`; default `cargo test --workspace`) on the exact
    commit being landed. Failing, or not run, means not landed.

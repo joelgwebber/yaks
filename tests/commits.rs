@@ -76,10 +76,7 @@ fn branch_farm(tag: &str) -> (PathBuf, PathBuf, String) {
     std::fs::write(r.join("README.md"), "x\n").unwrap();
     git(&r, &["add", "README.md"]);
     git(&r, &["commit", "-qm", "init"]);
-    ok(
-        &r,
-        &["init", "--no-skills", "--herd", "t"],
-    );
+    ok(&r, &["init", "--no-skills", "--herd", "t"]);
     let farm = PathBuf::from(ok(&r, &["path"]).trim());
     let created = ok(&r, &["create", "a yak"]);
     let id = created

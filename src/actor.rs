@@ -270,7 +270,11 @@ mod tests {
             let head = format!("2026-10-04T00:00:00Z [{actor}]");
             let (ts, parsed) = crate::store::split_note_head(&head);
             assert_eq!(ts, "2026-10-04T00:00:00Z");
-            assert_eq!(parsed.as_deref(), Some(actor.as_str()), "{actor:?} did not round-trip");
+            assert_eq!(
+                parsed.as_deref(),
+                Some(actor.as_str()),
+                "{actor:?} did not round-trip"
+            );
         }
     }
 
