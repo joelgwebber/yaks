@@ -1,11 +1,11 @@
 ---
 id: yaks-f93a
 title: Starred doks
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-10T19:06:01Z'
-updated: '2026-11-10T21:37:40Z'
+updated: '2026-11-10T21:37:41Z'
 tags:
 - doks
 - tui
@@ -82,3 +82,13 @@ Shape of the fix: `App::toggle_star` takes its target from `star_target` (open d
 Evidence: new tests in `src/tui/doks_tab.rs` (star in Doks tab shows in Starred and removes again; source/session note refuses; stale entry skipped; viewer star; Enter opens a starred dok) and `views_store.rs` (file round-trips ids and dok paths). Frames attached (Starred view with two doks, viewer header). `yaks verify` PASS. Note: `tui::farmsync::tests::*` flake under `cargo test --workspace` (also on the untouched base, with my change stashed): the flaky-tests worker's area.
 
 Docs grep for "Star": only `docs/tui.md` (3 places, updated) and `src/tui/keymap.rs` help lines; nothing in `README.md`, `docs/cli.md`, `docs/README.md` or `.agents/skills/`.
+
+---
+▸ 2026-11-10T21:37:41Z [dokstar-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVVKpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
