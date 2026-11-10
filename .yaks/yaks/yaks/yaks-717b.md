@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 4
 created: '2026-11-04T23:13:02Z'
-updated: '2026-11-10T22:00:46Z'
+updated: '2026-11-10T22:01:13Z'
 tags:
 - tests
 ---
@@ -133,3 +133,13 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVcp5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-10T22:01:13Z [herd-unlock]
+kind: landed
+commit: 709ec3c5aa6d5dd48f7100ef30fc8b284e19a741
+source: 669788f29fd83c6ffc350c83685bf0fa4852e31a
+branch: main
+---
+
+landed: 709ec3c5 yaks-717b: unique, cleaned-up temp dirs in init_modes and farmsync tests; wall-clock wait for the interval sync
