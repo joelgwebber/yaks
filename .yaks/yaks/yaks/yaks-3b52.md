@@ -5,12 +5,11 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-06T21:36:37Z'
-updated: '2026-11-10T17:49:48Z'
+updated: '2026-11-10T17:50:27Z'
 parent: yaks-3f35
 tags:
 - doks
 - design
-needs: agent
 ---
 
 From yaks-3f35, item 2. A session note's `reviewed:` field holds the time the note was written (`sessions::build` in the `upkeep` work sets it to now), not when anyone reviewed it; the review stamps `promoted:`. And the note's path and `day:` use local time while `reviewed:` is UTC, so a note written at 23:30 in California sits under one day and claims another.
@@ -66,3 +65,12 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-10T17:50:27Z [herd-unlock]
+kind: pickup
+---
+
+picked up
+
+herd-unlock: delegating to worker sesstime-1 (Sonnet): rename the field to written: (old reviewed: read as fallback for existing notes), UTC everywhere including path and day:.
