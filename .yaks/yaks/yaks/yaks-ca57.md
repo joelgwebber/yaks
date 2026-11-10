@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-11-10T17:37:34Z'
-updated: '2026-11-10T18:01:06Z'
+updated: '2026-11-10T18:01:52Z'
 tags:
 - doks
 - tui
@@ -105,3 +105,13 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFRyApIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-10T18:01:52Z [herd-unlock]
+kind: landed
+commit: 7b06f81674b897edf6f7109d1be2d1673b56a4cf
+source: fe2cec01e0be580d1571f451e1a8c2b64da963a2
+branch: main
+---
+
+landed: 7b06f816 yaks-ca57: Tab completes dok links (/doks/…, /<herd>/doks/…) in editors
