@@ -5,10 +5,10 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-09T19:43:01Z'
-updated: '2026-11-10T18:00:10Z'
+updated: '2026-11-10T18:37:30Z'
 tags:
 - skills
-needs: human
+needs: agent
 ---
 
 Yak notes are a rich source of information about what we've been up to. And often more focused than raw conversation threads. So we should summarize them on a regular cadence and ensure they feed into the overall km-flow.
@@ -27,3 +27,11 @@ This overlaps an open question in [the agent-memory research](/doks/research/age
 2. **A periodic digest dok** (`doks/digests/<week>.md`, `type: summary`): an agent writes a weekly summary of yak activity, which review and reflection then read. More context for a human skimming the week, but it is a second copy of what the notes say (the research's "map as large as the empire" warning).
 
 Lean: 1, and let the reflection round read the same window's `Decision:` notes for lessons sessions didn't report. Say if you want the weekly digest for your own reading anyway; that would be 2 as a human-facing extra.
+
+---
+▸ 2026-11-10T18:37:30Z [sched-1]
+kind: answer
+needs: agent
+---
+
+Yup, (1) makes perfect sense. We can fold this in however you see fit.
