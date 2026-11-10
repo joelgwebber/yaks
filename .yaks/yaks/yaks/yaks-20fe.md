@@ -1,11 +1,11 @@
 ---
 id: yaks-20fe
 title: 'Cross-farm feedback: other farms'' upkeep friction flows back to this one'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-10T17:59:19Z'
-updated: '2026-11-10T18:45:55Z'
+updated: '2026-11-10T18:45:56Z'
 parent: yaks-1c89
 tags:
 - skills
@@ -84,3 +84,13 @@ Done (herd-unlock), as answered, in `27c8b9eb`:
 - `AGENTS.md` says this farm is where yaks is tracked, so friction here becomes yaks directly.
 - The collector: yaks-feaf, weekly, `--wake agent`; reads every other farm on the machine read-only and files with `--key feedback-to-yaks:<farm>#<heading>` (checked on a scratch farm: a second create returns `Exists`).
 - Later, when it isn't just a couple of you: a way for other people to send theirs.
+
+---
+▸ 2026-11-10T18:45:56Z [herd-unlock]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
