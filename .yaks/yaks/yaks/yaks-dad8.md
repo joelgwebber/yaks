@@ -5,8 +5,7 @@ status: hairy
 type: task
 priority: 3
 created: '2026-11-10T17:57:09Z'
-updated: '2026-11-10T17:57:09Z'
-parent: yaks-1c89
+updated: '2026-11-10T17:57:24Z'
 tags:
 - meta
 due: 2026-11-11
