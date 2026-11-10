@@ -5,11 +5,11 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T17:36:26Z'
-updated: '2026-11-10T17:55:22Z'
+updated: '2026-11-10T18:36:28Z'
 tags:
 - doks
 - tui
-needs: human
+needs: agent
 ---
 
 Just like on yak list & details. At present, `y` just copies the current line of a dok. It should require that the line be selected first (like yaks) in order to copy it.
@@ -72,3 +72,11 @@ Questions:
 3. Or was the report about a different surface (e.g. a pane peeking a dok under the viewer, or an older installed binary)? Tell me where it happens.
 
 My recommendation: 1, adding the key-level test and a clarified help line only.
+
+---
+▸ 2026-11-10T18:36:28Z [sched-1]
+kind: answer
+needs: agent
+---
+
+Whoops, forgot to rebuild. Working fine.
