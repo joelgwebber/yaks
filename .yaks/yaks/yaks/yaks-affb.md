@@ -5,10 +5,11 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T17:36:26Z'
-updated: '2026-11-10T17:51:32Z'
+updated: '2026-11-10T17:55:22Z'
 tags:
 - doks
 - tui
+needs: human
 ---
 
 Just like on yak list & details. At present, `y` just copies the current line of a dok. It should require that the line be selected first (like yaks) in order to copy it.
@@ -47,3 +48,27 @@ Start: 2026-11-10T17:51:29Z
 
 - yaks path yaks-affb: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-affb.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/am99yre814ns/yaks
+
+---
+▸ 2026-11-10T17:55:22Z [dokcopy-1]
+kind: ask
+needs: human
+---
+
+asked: needs human
+
+Cannot reproduce the reported bug at base `1a3388a8` (v0.0.35), and the claim's path form differs from what ships. Need a decision before I change anything.
+
+Observed (a throwaway probe test driving the real `handle_key`, since removed; the tree is clean):
+
+- Doks tab, `Enter` on a dok, `y` with no selection: notification `copied doks/howto/release.md`, anchor `None`. It copies the path, not the current line.
+- `j j v v y` (select then unselect, then `y`): same, the path.
+- Cause of the shipped behaviour: yaks-a036 (commit `3e43d41e`, in v0.0.35) made `yank_attachment` (`src/tui/handlers.rs`) copy `AttachView::copy_path()` when `nav.selection()` is `None`; with a selection it copies the rows. The `SelectYank` route in `Viewer` already goes through `run_viewer_cmd`, so there is no "current line counts" rule left to fix. The help line already reads "Copy the selection ..., else the file's path".
+
+Questions:
+
+1. Is the yak stale (done by yaks-a036)? Then the remaining work is only a test pinning "no selection copies the path, `v` selection copies the selection" (no test exercises the key today, only `copy_path()`), plus any wording fix.
+2. Or do you want the path in farm-root form `/doks/...`, as the claim says? Today the viewer and the Doks list row both copy `doks/...` (no leading slash), and `copy_path_tests` pins that. Changing the viewer alone would make it differ from the list `y`, which is out of scope; changing both touches the Doks row `y`. Which do you want?
+3. Or was the report about a different surface (e.g. a pane peeking a dok under the viewer, or an older installed binary)? Tell me where it happens.
+
+My recommendation: 1, adding the key-level test and a clarified help line only.
