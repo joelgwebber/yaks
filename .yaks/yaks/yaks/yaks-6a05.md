@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-10T19:11:25Z'
-updated: '2026-11-10T21:12:24Z'
+updated: '2026-11-10T21:13:20Z'
 tags:
 - perf
 - tui
@@ -39,3 +39,8 @@ The on-disk format; the farm loading path (unless it runs per key).
 ## Evidence
 
 Before/after timings per keystroke on the same fixture, in a note, with the command that measures them (a `#[ignore]` bench test is fine). Target: under 16 ms per keystroke at 800 yaks in a debug-free (`--release`) build, or say what stands in the way. Gate `cargo test --workspace`; no snapshot changes.
+
+---
+▸ 2026-11-10T21:13:20Z [perf-1]
+
+Start 2026-11-10T21:13:18Z; checkout /Users/joel/src/yaks/.delta/worktrees/73m8tackk228/yaks
