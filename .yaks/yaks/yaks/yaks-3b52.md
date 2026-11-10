@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-06T21:36:37Z'
-updated: '2026-11-10T18:00:45Z'
+updated: '2026-11-10T18:00:50Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -123,3 +123,8 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-10T18:00:50Z [sesstime-1]
+
+Summary: session notes now write `written:` (was `reviewed:`), and the path, `day:` and `written:` all come from one UTC instant; `default_since` reads `written:` else `reviewed:`. Docs: cli.md, yaks-upkeep skill, session note --help. Verify PASS recorded.
