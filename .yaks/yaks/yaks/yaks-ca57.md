@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T17:37:34Z'
-updated: '2026-11-10T17:57:22Z'
+updated: '2026-11-10T17:57:23Z'
 tags:
 - doks
 - tui
@@ -64,3 +64,8 @@ Decision: completion_context now returns a `Completion { len, seed, kind: Yak|Do
 ▸ 2026-11-10T17:57:22Z [doklink-1]
 
 Decision: the dok token is its own scan (`path_before_cursor`: alnum, - _ . /) rather than widening `is_ref_char`, which other code uses for yak refs. The trigger is only `/doks/` or `/<herd>/doks/` with a non-reserved herd segment (`store::RESERVED_HERD_NAMES`); `#`, relative `../doks`, `/sources/...` do not trigger.
+
+---
+▸ 2026-11-10T17:57:23Z [doklink-1]
+
+Decision: the picker lists only DocGroup::Dok entries from `App.doks.entries` (reloaded via `reload_doks` if the Doks tab was never shown); ranking path-prefix < path-substring < title-substring, capped at 20 like the yak picker. Inserted text is `/<path>` including `.md`, no anchor.
