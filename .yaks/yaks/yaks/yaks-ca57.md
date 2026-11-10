@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T17:37:34Z'
-updated: '2026-11-10T17:57:24Z'
+updated: '2026-11-10T18:00:57Z'
 tags:
 - doks
 - tui
@@ -74,3 +74,11 @@ Decision: the picker lists only DocGroup::Dok entries from `App.doks.entries` (r
 ▸ 2026-11-10T17:57:24Z [doklink-1]
 
 Decision: the help-bar hint reads `Tab → complete dok link` in a dok context; yak hint unchanged. Docs: docs/tui.md (editor sentence + new bullet in Following links), keymap/editor.rs Tab rows (3). The yak skill and README do not mention Tab completion, so no change there (grep below).
+
+---
+▸ 2026-11-10T18:00:57Z [doklink-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
