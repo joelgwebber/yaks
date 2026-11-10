@@ -1,11 +1,11 @@
 ---
 id: yaks-ecdf
 title: Summarize yak notes much like we do agent conversations
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-09T19:43:01Z'
-updated: '2026-11-10T18:45:54Z'
+updated: '2026-11-10T18:45:55Z'
 tags:
 - skills
 ---
@@ -58,3 +58,13 @@ moved: hairy -> shaving
 ▸ 2026-11-10T18:45:54Z [herd-unlock]
 
 Done (herd-unlock), option 1, in `27c8b9eb`: the `yaks-upkeep` review round now reads the week's yak notes (`yaks log --since <last round>`: `Decision:` notes and shear notes of yaks shorn in the window) beside the session notes, keeps what outlives the yak in doks by citing the note, and accounts for the window. No digest dok. The recurring review yak (yaks-dad8, due tomorrow) carries it.
+
+---
+▸ 2026-11-10T18:45:55Z [herd-unlock]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
