@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T17:37:34Z'
-updated: '2026-11-10T18:00:57Z'
+updated: '2026-11-10T18:01:05Z'
 tags:
 - doks
 - tui
@@ -82,3 +82,16 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-10T18:01:05Z [doklink-1]
+
+Summary: Tab after `/doks/…` or `/<herd>/doks/…` in any multi-line editor opens the existing picker over the farm's doks (seeded with the tail; Enter replaces the token with the full `/path.md`). Yak completion unchanged.
+
+- `editor.rs`: `Completion`/`CompleteKind`, `completion_context` returns it; `path_before_cursor`, `dok_link_tail`.
+- `fuzzy.rs`: `FuzzyPick.doks`, `dok_candidates`, dok result rows.
+- `handlers.rs`: `open_ref_picker(&Completion)`, `finish_insert` shared by both kinds.
+- `render.rs`: hint `Tab → complete dok link`.
+- Docs: `docs/tui.md`, keymap `Tab` rows.
+- Tests: 3 new (`tab_after_a_dok_link_…`, `…herd_dok_link…`, `…non_dok_path_is_a_plain_tab`), new insta snapshot `dok_picker_over_editor` (attached); the existing yak-completion tests pass untouched, no existing snapshot changed.
+- Gate: `yaks verify` PASS; `cargo clippy --all-targets` warning count 104 before and after.
