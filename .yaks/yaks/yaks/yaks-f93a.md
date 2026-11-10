@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T19:06:01Z'
-updated: '2026-11-10T21:29:47Z'
+updated: '2026-11-10T21:37:14Z'
 tags:
 - doks
 - tui
@@ -48,3 +48,11 @@ Start 2026-11-10T21:13:29Z; checkout /Users/joel/src/yaks/.delta/worktrees/pcjan
 [starred](yaks-f93a/starred.txt "Starred view with two starred doks (headless frame, scratch farm): ⭐ ends each row")
 
 [viewer](yaks-f93a/viewer.txt "A starred dok open in the viewer: ⭐ in the header")
+
+---
+▸ 2026-11-10T21:37:14Z [dokstar-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
