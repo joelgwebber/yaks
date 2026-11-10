@@ -5,11 +5,10 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-11-10T17:36:26Z'
-updated: '2026-11-10T18:36:37Z'
+updated: '2026-11-10T18:44:24Z'
 tags:
 - doks
 - tui
-needs: agent
 ---
 
 Just like on yak list & details. At present, `y` just copies the current line of a dok. It should require that the line be selected first (like yaks) in order to copy it.
@@ -94,3 +93,12 @@ to: shorn
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-10T18:44:24Z [herd-unlock]
+kind: pickup
+---
+
+picked up
+
+herd-unlock: Joel confirmed it works after a rebuild (yaks-a036 already did it); nothing more to do. Worker dokcopy-1 made no commit.
