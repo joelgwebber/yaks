@@ -1,0 +1,64 @@
+=== frame 6 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-71ca · blocked=- · collapsed=0 · filter=(all) · overlay=fuzzy ===
+ 🦬 Hairy (2)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (2)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sheds (0)     ●1 unpub
+
+◂ Insert tag  (2 matches)
+│ rust  2 yaks
+│ tui  The terminal UI
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+search: r
+=== end ===
+=== frame 7 · 120x30 · focus=list · view=🦬 Hairy · cursor=0 · rows=2 · sel=yak-71ca · blocked=- · collapsed=0 · filter=(all) · overlay=create ===
+ 🦬 Hairy (2)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (2)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sheds (0)     ●1 unpub
+
+◂ New yak
+│   title
+│   type         task bug feature idea
+│   priority     p1 p2 p3 p4 p5
+│ ▸ tags        tui, rust
+│   source
+│   due         +2d, +1w or 2026-11-15
+│   every       P1W, P1D, P1M: makes it recur
+│   wakes        none agent human
+│   description ───────────────────────────────────────────────────────────────────────────────────────────────────────
+│ (no description)
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+Tab → complete tag · Esc dismiss
+=== end ===
