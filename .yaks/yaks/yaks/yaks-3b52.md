@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-06T21:36:37Z'
-updated: '2026-11-10T17:50:27Z'
+updated: '2026-11-10T17:50:29Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -74,3 +74,23 @@ kind: pickup
 picked up
 
 herd-unlock: delegating to worker sesstime-1 (Sonnet): rename the field to written: (old reviewed: read as fallback for existing notes), UTC everywhere including path and day:.
+
+---
+▸ 2026-11-10T17:50:29Z [herd-unlock]
+
+Claim (yakherd herd-unlock): worker `sesstime-1`, Sonnet 5.5.
+
+## Scope
+
+- `src/sessions.rs` (the session note's time field, `build`, `default_since`, path and `day:` derivation) and its tests; `src/main.rs` only for `session` help text if it names the field.
+- Rename `reviewed:` to `written:` on notes `yaks session note` writes. Read `reviewed:` as a fallback so the notes already in farms keep working (these are yaks' own older notes, not Hearth's; nothing Hearth-specific remains).
+- UTC everywhere: `written:`, the path's date and time and `day:` all derive from the same UTC instant.
+- Docs: the `yaks-upkeep` skill's frontmatter description, `docs/`, the `yaks` skill if it mentions the field.
+
+## Out of scope
+
+Rewriting existing notes in any farm; any other session field.
+
+## Evidence
+
+A test that fails before: a note built at a fixed instant near midnight UTC has a path, `day:` and `written:` that agree; `default_since` reads `written:` and falls back to `reviewed:`. Gate `cargo test --workspace`. Judge: the yakherd at landing.
