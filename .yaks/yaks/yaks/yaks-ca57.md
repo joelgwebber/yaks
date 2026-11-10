@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T17:37:34Z'
-updated: '2026-11-10T17:57:23Z'
+updated: '2026-11-10T17:57:24Z'
 tags:
 - doks
 - tui
@@ -69,3 +69,8 @@ Decision: the dok token is its own scan (`path_before_cursor`: alnum, - _ . /) r
 ▸ 2026-11-10T17:57:23Z [doklink-1]
 
 Decision: the picker lists only DocGroup::Dok entries from `App.doks.entries` (reloaded via `reload_doks` if the Doks tab was never shown); ranking path-prefix < path-substring < title-substring, capped at 20 like the yak picker. Inserted text is `/<path>` including `.md`, no anchor.
+
+---
+▸ 2026-11-10T17:57:24Z [doklink-1]
+
+Decision: the help-bar hint reads `Tab → complete dok link` in a dok context; yak hint unchanged. Docs: docs/tui.md (editor sentence + new bullet in Following links), keymap/editor.rs Tab rows (3). The yak skill and README do not mention Tab completion, so no change there (grep below).
