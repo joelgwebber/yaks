@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
-updated: '2026-11-10T19:04:02Z'
+updated: '2026-11-10T19:04:03Z'
 tags:
 - tui
 ---
@@ -101,3 +101,5 @@ Plan (before coding), read of the code:
 - `views_store::slug` becomes `pub(super)`; the drafts dir is `<config_home>/yaks/<slug>/drafts/`. Under `cfg(test)` the base is a pid-scoped dir in the OS temp dir, so no test touches the real `~/.config/yaks`.
 
 [prompt](yaks-683f/prompt.txt "toque-style text frame (TestBackend, 100x16): the three-way prompt after dismissing a dirty edit form")
+
+[restored](yaks-683f/restored.txt "text frame: edit form reopened, restored from the draft, with its 'draft (saved just now) · Ctrl-R original' badge")
