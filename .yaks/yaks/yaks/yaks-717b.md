@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 4
 created: '2026-11-04T23:13:02Z'
-updated: '2026-11-10T21:11:50Z'
+updated: '2026-11-10T21:12:25Z'
 tags:
 - tests
 ---
@@ -25,3 +25,17 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-10T21:12:25Z [herd-unlock]
+
+Claim (yakherd herd-unlock-2): worker `flaky-1`, Sonnet 5.5. Covers yaks-06cd's three cases too (record what you find there; the yakherd closes it).
+
+## Scope
+
+- `tests/init_modes.rs` `farm_works_from_a_git_worktree_and_a_shared_clone_of_the_sharing_repo`: siblings `share2-web-wt`/`-clone` with fixed names; put them under the test's own temp dir (or pid them) and clean up. Reproduce first: run the test twice.
+- `tests/sync.rs` `a_private_farm_syncs_locally_but_never_pushes` and `tui::farmsync::tests` (10 s wait): find what makes them load-sensitive (a timeout, a shared path, a fixed port, a global env) and fix the cause, not the timeout, where you can.
+
+## Evidence
+
+`cargo test --test init_modes` twice in a row passes; the whole gate run three times in a row passes while another `cargo build --release` runs in parallel (say so in the note). Gate `cargo test --workspace`. Test files only, plus test helpers.
