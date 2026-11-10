@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T17:37:34Z'
-updated: '2026-11-10T17:57:12Z'
+updated: '2026-11-10T17:57:21Z'
 tags:
 - doks
 - tui
@@ -49,3 +49,8 @@ Start: Tue Nov 10 17:51:39 UTC 2026
 - checkout: /Users/joel/src/yaks/.delta/worktrees/9qjdhqw40bqc/yaks
 
 [yaks__tui__tests__dok_picker_over_editor](yaks-ca57/yaks__tui__tests__dok_picker_over_editor.snap "Dok-link picker open over the comment editor after Tab on /doks/des (insta snapshot, 72x14)")
+
+---
+▸ 2026-11-10T17:57:21Z [doklink-1]
+
+Decision: reuse FuzzyPick (new optional `doks` field, `dok_candidates` ranking) and FuzzyAction::InsertRef rather than adding a FuzzyAction::InsertDok variant or a new overlay: the commit/return-to-editor path is identical, so one `finish_insert` serves both. Rejected: a second picker type.
