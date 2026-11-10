@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-06T21:36:37Z'
-updated: '2026-11-10T17:50:29Z'
+updated: '2026-11-10T17:51:58Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -94,3 +94,11 @@ Rewriting existing notes in any farm; any other session field.
 ## Evidence
 
 A test that fails before: a note built at a fixed instant near midnight UTC has a path, `day:` and `written:` that agree; `default_since` reads `written:` and falls back to `reviewed:`. Gate `cargo test --workspace`. Judge: the yakherd at landing.
+
+---
+▸ 2026-11-10T17:51:58Z [sesstime-1]
+
+Start: 2026-11-10T17:51:55Z (`date -u`)
+
+- farm file: `/Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-3b52.md`
+- checkout: `/Users/joel/src/yaks/.delta/worktrees/qe8m9bs7a3w3/yaks`
