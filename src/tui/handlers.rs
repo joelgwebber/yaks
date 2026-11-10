@@ -447,6 +447,18 @@ impl App {
         let line_normal = is_line_text
             && matches!(&self.overlay, Overlay::Create(f)
                 if f.line_editor().is_some_and(|e| e.borrow().mode == EditorMode::Normal));
+        // Tab on a partial tag in the tags field opens the tag picker; with
+        // nothing typed since the last comma or space it moves on as usual.
+        if k.code == KeyCode::Tab {
+            let complete = match &self.overlay {
+                Overlay::Create(f) if f.is_tags_row() => tag_completion(&f.tags),
+                _ => None,
+            };
+            if let Some(c) = complete {
+                self.open_ref_picker(&c);
+                return;
+            }
+        }
         // Tab/BackTab move fields on chip + single-line rows, but inside a
         // content block they're normal editor keys (Ctrl-N/P still navigate).
         let nav_down = (matches!(k.code, KeyCode::Tab) && !is_content)
@@ -846,8 +858,12 @@ impl App {
     /// (`<prefix>-…` or `/doks/…`) to drop before inserting the chosen id or
     /// dok path; a dok completion lists the farm's doks instead of the yaks.
     pub(crate) fn open_ref_picker(&mut self, c: &Completion) {
+        let tag_items = match c.kind {
+            CompleteKind::Tag => Some(self.tag_choices()),
+            _ => None,
+        };
         let dok_items = match c.kind {
-            CompleteKind::Yak => None,
+            CompleteKind::Yak | CompleteKind::Tag => None,
             CompleteKind::Dok => {
                 if self.doks.entries.is_none() {
                     self.reload_doks();
@@ -867,6 +883,7 @@ impl App {
         let (label, action) = match c.kind {
             CompleteKind::Yak => ("Insert yak reference", FuzzyAction::InsertRef),
             CompleteKind::Dok => ("Insert dok link", FuzzyAction::InsertRef),
+            CompleteKind::Tag => ("Insert tag", FuzzyAction::InsertRef),
         };
         let mut fp = FuzzyPick::new(
             self.editor_vim(),
@@ -878,11 +895,41 @@ impl App {
         fp.return_to = Some(Box::new(back));
         fp.replace_len = c.len;
         fp.doks = dok_items;
+        fp.tags = tag_items;
         // Pre-filter by whatever tail was already typed after the trigger.
         if !c.seed.is_empty() {
             insert_into(&mut fp.handler, &fp.query, &c.seed);
         }
         self.overlay = Overlay::Fuzzy(fp);
+    }
+
+    /// The rows of the tag picker, best first: the farm's known tags
+    /// (`schemas/yak.md` `tags:`, row text their description), then every other
+    /// tag in use, most used first (row text the yak count).
+    fn tag_choices(&self) -> Vec<(String, String)> {
+        let mut counts: std::collections::BTreeMap<&str, usize> = Default::default();
+        for t in &self.all {
+            for tag in &t.tags {
+                *counts.entry(tag).or_default() += 1;
+            }
+        }
+        let known = self
+            .farm
+            .as_ref()
+            .and_then(|f| crate::schemas::load(f.root(), crate::schemas::YAK_TYPE))
+            .map(|s| s.tags)
+            .unwrap_or_default();
+        let mut out: Vec<(String, String)> = known.clone();
+        let mut used: Vec<(&str, usize)> = counts
+            .into_iter()
+            .filter(|(tag, _)| !known.iter().any(|(k, _)| k == tag))
+            .collect();
+        used.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(b.0)));
+        out.extend(used.into_iter().map(|(tag, n)| {
+            let yaks = if n == 1 { "yak" } else { "yaks" };
+            (tag.to_string(), format!("{n} {yaks}"))
+        }));
+        out
     }
 
     /// n / N on a list: with no query, the search register becomes the query;
@@ -2327,8 +2374,15 @@ impl App {
                     insert_into(&mut ed.handler, &ed.state, id);
                 }
                 Overlay::Create(f) => {
-                    delete_into(&mut f.handler, &f.description, fp.replace_len);
-                    insert_into(&mut f.handler, &f.description, id);
+                    // A tag pick goes into the tags field, the rest into the
+                    // description.
+                    let field = if fp.tags.is_some() {
+                        &f.tags
+                    } else {
+                        &f.description
+                    };
+                    delete_into(&mut f.handler, field, fp.replace_len);
+                    insert_into(&mut f.handler, field, id);
                 }
                 _ => {}
             }
@@ -2342,6 +2396,12 @@ impl App {
             let picked = dok_candidates(&fp)
                 .get(fp.sel)
                 .map(|(p, _)| format!("/{p}"));
+            self.finish_insert(fp, picked);
+            return;
+        }
+        // A tag pick: the chosen tag replaces the partial one in the form.
+        if fp.tags.is_some() {
+            let picked = tag_candidates(&fp).get(fp.sel).map(|(t, _)| t.clone());
             self.finish_insert(fp, picked);
             return;
         }

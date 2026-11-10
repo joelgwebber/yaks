@@ -261,6 +261,8 @@ pub(crate) enum CompleteKind {
     Yak,
     /// A dok's farm-root link path, after `/doks/` or `/<herd>/doks/`.
     Dok,
+    /// A tag, in the form's `tags` field ([`tag_completion`]).
+    Tag,
 }
 
 /// A completion context at the cursor: the whole typed token to drop on
@@ -324,6 +326,25 @@ pub(crate) fn completion_context(state: &RefCell<EditorState>, prefix: &str) -> 
             seed: tail.to_string(),
             kind: CompleteKind::Yak,
         })
+}
+
+/// The tag completion at the cursor of the form's `tags` field: the run of
+/// non-space, non-comma chars before the cursor, seeding the picker. `None`
+/// right after a comma or space, or in an empty field (Tab then moves on).
+pub(crate) fn tag_completion(state: &RefCell<EditorState>) -> Option<Completion> {
+    let st = state.borrow();
+    let full = st.lines.to_string();
+    let line = full.split('\n').nth(st.cursor.row).unwrap_or("");
+    let before: Vec<char> = line.chars().take(st.cursor.col).collect();
+    let mut i = before.len();
+    while i > 0 && before[i - 1] != ',' && !before[i - 1].is_whitespace() {
+        i -= 1;
+    }
+    (i < before.len()).then(|| Completion {
+        len: before.len() - i,
+        seed: before[i..].iter().collect(),
+        kind: CompleteKind::Tag,
+    })
 }
 
 /// Short mode label shown next to a vim editor so the current mode is visible.

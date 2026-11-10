@@ -169,6 +169,11 @@ impl CreateForm {
         (self.row == self.header_rows()).then_some(&self.description)
     }
 
+    /// The `tags` row, the one that completes tags on Tab.
+    pub(crate) fn is_tags_row(&self) -> bool {
+        self.row == 3
+    }
+
     /// Single-line text rows (title, labels, source); the description is
     /// multi-line and handled separately.
     pub(crate) fn is_line_text_row(&self) -> bool {

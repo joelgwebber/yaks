@@ -785,6 +785,15 @@ row also close it (the click selects the row). `q` quits, as everywhere, and
   (`/doks/design/x.md`), `Ctrl-C` (or `Esc` out of Normal mode) leaves it as typed. It is the same
   picker as `Tab` after `<prefix>-` for a yak id; heading anchors (`#…`),
   relative links and sources are not completed.
+- **Completing a tag**: in the create/edit form's `Tags` field, `Tab` on a
+  partial tag (the text since the last comma or space) opens the same picker,
+  seeded with it, and the hint line says `Tab → complete tag`. Rows are the
+  farm's known tags first (`tags:` in `schemas/yak.md`, each with its
+  description), then every other tag in use, most used first (with its yak
+  count). `Enter` replaces just the partial tag; `Ctrl-C` leaves it as typed.
+  With nothing typed since a comma or space, or in an empty field, `Tab` moves
+  to the next field as before. Tags in the filter drawer and the single-line
+  `L` editor are not completed.
 
 ## Doks tab
 

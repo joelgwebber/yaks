@@ -7981,3 +7981,120 @@ mod keys {
         assert!(app.doc.is_none());
     }
 }
+
+// -- tag completion in the form's tags field (yaks-8d6a) ---------------
+
+/// An app over a scratch farm whose `schemas/yak.md` knows `tui` and `cli`,
+/// with yaks carrying `tui`, `rust` (x2) and `docs`, and the create form open
+/// on its tags row.
+fn tag_form_app() -> (std::path::PathBuf, App) {
+    let mut a = task("t1", "one", Status::Hairy, 3, None);
+    a.tags = vec!["rust".into(), "tui".into()];
+    let mut b = task("t2", "two", Status::Hairy, 3, None);
+    b.tags = vec!["rust".into(), "docs".into()];
+    let (dir, farm) = temp_farm(&[a, b]);
+    let schemas = farm.root().join("schemas");
+    std::fs::create_dir_all(&schemas).unwrap();
+    std::fs::write(
+        schemas.join("yak.md"),
+        "---\ntype: Dok Type\ntags:\n  tui: The terminal UI\n  cli: Commands and flags\n---\n",
+    )
+    .unwrap();
+    let mut app = App::with_farm(farm).unwrap();
+    app.open_create(false);
+    if let Overlay::Create(f) = &mut app.overlay {
+        f.row = 3;
+    }
+    (dir, app)
+}
+
+fn tags_text(app: &App) -> String {
+    match &app.overlay {
+        Overlay::Create(f) => f.tags.borrow().lines.to_string(),
+        _ => panic!("expected the form"),
+    }
+}
+
+#[test]
+fn tab_after_a_partial_tag_opens_the_picker_and_cancel_keeps_the_text() {
+    let (_dir, mut app) = tag_form_app();
+    typ(&mut app, "docs, ta");
+    tab(&mut app);
+    match &app.overlay {
+        Overlay::Fuzzy(fp) => {
+            assert_eq!(fp.query_text(), "ta");
+            assert!(fp.tags.is_some(), "a tag picker");
+        }
+        _ => panic!("expected the tag picker"),
+    }
+    // Ctrl-C cancels the picker: back in the form, the typed text intact.
+    handle_key(
+        &mut app,
+        KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
+    );
+    assert!(matches!(app.overlay, Overlay::Create(_)));
+    assert_eq!(tags_text(&app), "docs, ta");
+}
+
+#[test]
+fn tag_picker_replaces_only_the_partial_tag() {
+    let (_dir, mut app) = tag_form_app();
+    typ(&mut app, "docs, ru");
+    tab(&mut app);
+    assert!(matches!(&app.overlay, Overlay::Fuzzy(fp) if fp.query_text() == "ru"));
+    insta::assert_snapshot!("tag_picker_over_form", draw(&app, 72, 14));
+    enter_key(&mut app);
+    assert!(matches!(app.overlay, Overlay::Create(_)));
+    assert_eq!(tags_text(&app), "docs, rust");
+}
+
+#[test]
+fn known_tags_rank_before_tags_in_use() {
+    let (_dir, mut app) = tag_form_app();
+    typ(&mut app, "u");
+    tab(&mut app);
+    let Overlay::Fuzzy(fp) = &app.overlay else {
+        panic!("expected the tag picker");
+    };
+    // `tui` (known) and `rust` (in use, on 2 yaks) both contain `u`, neither
+    // starts with it: the known tag is listed first.
+    let rows: Vec<&str> = crate::tui::fuzzy::tag_candidates(fp)
+        .iter()
+        .map(|(t, _)| t.as_str())
+        .collect();
+    assert_eq!(rows, ["tui", "rust"]);
+}
+
+#[test]
+fn an_empty_query_lists_known_tags_first_then_by_count() {
+    let (_dir, mut app) = tag_form_app();
+    // Tab after a comma and a space is not a partial tag: open the picker
+    // directly to see the whole ranking.
+    app.open_ref_picker(&crate::tui::editor::Completion {
+        len: 0,
+        seed: String::new(),
+        kind: crate::tui::editor::CompleteKind::Tag,
+    });
+    let Overlay::Fuzzy(fp) = &app.overlay else {
+        panic!("expected the tag picker");
+    };
+    let rows = crate::tui::fuzzy::tag_candidates(fp);
+    let names: Vec<&str> = rows.iter().map(|(t, _)| t.as_str()).collect();
+    // Known (schema order) first, then the rest by count: rust (2), docs (1).
+    assert_eq!(names, ["tui", "cli", "rust", "docs"]);
+    assert_eq!(rows[0].1, "The terminal UI");
+    assert_eq!(rows[2].1, "2 yaks");
+}
+
+#[test]
+fn tab_on_an_empty_tags_field_or_after_a_comma_moves_to_the_next_field() {
+    for text in ["", "docs, ", "docs,"] {
+        let (_dir, mut app) = tag_form_app();
+        typ(&mut app, text);
+        tab(&mut app);
+        match &app.overlay {
+            Overlay::Create(f) => assert_eq!(f.row, 4, "Tab after {text:?} moves on"),
+            _ => panic!("expected the form"),
+        }
+    }
+}

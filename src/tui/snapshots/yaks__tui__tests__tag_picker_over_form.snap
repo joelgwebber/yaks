@@ -1,0 +1,18 @@
+---
+source: src/tui/tests.rs
+expression: "draw(&app, 72, 14)"
+---
+ 🦬  Hairy (2)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (2)   ⭐  Starr
+
+◂ Insert tag  (1 matches)
+│ rust  2 yaks
+│
+│
+│
+│
+│
+│
+│
+│
+│
+search: ru

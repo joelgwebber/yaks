@@ -24,7 +24,7 @@ use super::palette;
 use super::{
     App, CompleteKind, DocView, Focus, Overlay, completion_context, detail, editor_theme,
     render_create, render_drawer, render_editor_panel, render_fuzzy_results, render_line_editor,
-    render_query_line, render_shed_detail, tree, view,
+    render_query_line, render_shed_detail, tag_completion, tree, view,
 };
 use crate::filter::FilterSpec;
 use crate::model::{Status, Task};
@@ -1579,6 +1579,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
     let ref_context = match &app.overlay {
         Overlay::Edit(ed) if !ed.single_line => completion_context(&ed.state, &app.ref_prefix),
         Overlay::BlockEdit(be) => completion_context(&be.editor.state, &app.ref_prefix),
+        Overlay::Create(f) if f.is_tags_row() => tag_completion(&f.tags),
         Overlay::Create(f) => f
             .description_editor()
             .and_then(|e| completion_context(e, &app.ref_prefix)),
@@ -1588,6 +1589,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
         let what = match c.kind {
             CompleteKind::Yak => "yak",
             CompleteKind::Dok => "dok link",
+            CompleteKind::Tag => "tag",
         };
         frame.render_widget(
             Paragraph::new(Span::styled(

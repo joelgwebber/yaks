@@ -149,7 +149,11 @@ pub(super) const LINE: Table = &[(
     "The field",
     &[
         row("Enter", &["Enter"], "Accept the field"),
-        row("Tab", &["Tab"], "Next field, or complete id or dok link"),
+        row(
+            "Tab",
+            &["Tab"],
+            "Next field, or complete id, dok link or tag",
+        ),
     ],
 )];
 

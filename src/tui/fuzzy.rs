@@ -47,6 +47,10 @@ pub(crate) struct FuzzyPick {
     /// Dok-link completion: offer these `(farm-relative path, title)` doks
     /// instead of the task set ([`dok_candidates`]).
     pub(crate) doks: Option<Vec<(String, String)>>,
+    /// Tag completion in the form's `tags` field: offer these `(tag, row text)`
+    /// pairs, best first (the farm's known tags, then those in use by count),
+    /// instead of the task set ([`tag_candidates`]).
+    pub(crate) tags: Option<Vec<(String, String)>>,
 }
 
 pub(crate) enum FuzzyAction {
@@ -116,6 +120,7 @@ impl FuzzyPick {
             return_to: None,
             replace_len: 0,
             doks: None,
+            tags: None,
         }
     }
 
@@ -187,8 +192,34 @@ pub(crate) fn dok_candidates(fp: &FuzzyPick) -> Vec<&(String, String)> {
     scored.into_iter().take(20).map(|(_, d)| d).collect()
 }
 
+/// The tags of a tag completion matching the query: tag-prefix < tag-substring
+/// < text-substring, then the order given (known tags before tags in use).
+pub(crate) fn tag_candidates(fp: &FuzzyPick) -> Vec<&(String, String)> {
+    let q = fp.query_text().to_lowercase();
+    let mut scored: Vec<(u8, &(String, String))> = Vec::new();
+    for t in fp.tags.iter().flatten() {
+        let tag = t.0.to_lowercase();
+        let score = if q.is_empty() || tag.starts_with(&q) {
+            0
+        } else if tag.contains(&q) {
+            1
+        } else if t.1.to_lowercase().contains(&q) {
+            2
+        } else {
+            continue;
+        };
+        scored.push((score, t));
+    }
+    // Stable: equal scores keep the order the opener gave.
+    scored.sort_by_key(|(score, _)| *score);
+    scored.into_iter().take(20).map(|(_, t)| t).collect()
+}
+
 /// Number of selectable rows (candidates plus the optional clear-parent row).
 pub(crate) fn fuzzy_total(all: &[Task], fp: &FuzzyPick) -> usize {
+    if fp.tags.is_some() {
+        return tag_candidates(fp).len();
+    }
     if fp.doks.is_some() {
         return dok_candidates(fp).len();
     }
@@ -199,6 +230,9 @@ pub(crate) fn render_fuzzy_results(app: &App, fp: &FuzzyPick, frame: &mut Frame,
     let [head, body] = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).areas(area);
     if fp.doks.is_some() {
         return render_dok_results(fp, frame, area);
+    }
+    if fp.tags.is_some() {
+        return render_tag_results(fp, frame, area);
     }
     let cands = fuzzy_candidates(&app.all, fp);
     frame.render_widget(
@@ -261,6 +295,38 @@ fn render_dok_results(fp: &FuzzyPick, frame: &mut Frame, area: Rect) {
             ListItem::new(Line::from(vec![
                 Span::styled(format!("/{path} "), Style::new().fg(Color::DarkGray)),
                 Span::raw(title.clone()),
+            ]))
+        })
+        .collect();
+    let mut state = ListState::default();
+    if !cands.is_empty() {
+        state.select(Some(fp.sel.min(cands.len() - 1)));
+    }
+    frame.render_stateful_widget(
+        List::new(items).highlight_style(Style::new().bg(super::surface::selected())),
+        body,
+        &mut state,
+    );
+}
+
+/// The tag picker's rows: the tag, then its description (a known tag) or how
+/// many yaks carry it (a tag only in use).
+fn render_tag_results(fp: &FuzzyPick, frame: &mut Frame, area: Rect) {
+    let [head, body] = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).areas(area);
+    let cands = tag_candidates(fp);
+    frame.render_widget(
+        Paragraph::new(Span::styled(
+            format!("{}  ({} matches)", fp.label, cands.len()),
+            Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+        )),
+        head,
+    );
+    let items: Vec<ListItem> = cands
+        .iter()
+        .map(|(tag, text)| {
+            ListItem::new(Line::from(vec![
+                Span::raw(format!("{tag}  ")),
+                Span::styled(text.clone(), Style::new().fg(Color::DarkGray)),
             ]))
         })
         .collect();
