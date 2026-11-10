@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-10T17:53:07Z'
-updated: '2026-11-10T17:53:45Z'
+updated: '2026-11-10T17:53:47Z'
 tags:
 - meta
 verify: cargo fmt --check
@@ -22,3 +22,11 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-10T17:53:47Z [herd-unlock]
+kind: verify
+result: pass
+---
+
+verify: `cargo fmt --check` -> PASS (exit 0)
