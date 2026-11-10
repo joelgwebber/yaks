@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-10T17:56:51Z'
-updated: '2026-11-10T21:17:56Z'
+updated: '2026-11-10T21:43:11Z'
 tags:
 - cli
 - git
@@ -50,3 +50,11 @@ Decision: state lives in the checkout's own git dir (`rev-parse --absolute-git-d
 Decision: `yaks land <sha>` while a stopped landing's CHERRY_PICK_HEAD matches the saved sha refuses with exit 8 (dry run just says so). Rejected: the old behaviour (abort and reset), which would throw the user's resolution away.
 
 Decision: `--continue` also accepts a pick the user already finished with `git cherry-pick --continue` (HEAD moved on from the saved head) and only records. Rejected: refusing, which would force a hand-written note, the exact bug.
+
+---
+▸ 2026-11-10T21:43:11Z [landcont-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
