@@ -1,7 +1,7 @@
 ---
 id: yaks-8d6a
 title: Label auto-completion
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-08-26T13:24:15Z'
@@ -70,3 +70,13 @@ Decision: rows are known tags (schema order, description as text) then used tags
 Decision: the picker reads `schemas::load(root, YAK_TYPE).tags` itself in `App::tag_choices`; nothing added to `src/schemas.rs`.
 
 Shape: `tag_completion` (editor.rs), `is_tags_row` (create.rs), Tab hook in `handle_create_key`, `tag_choices`/`open_ref_picker`/`finish_insert`/`commit_fuzzy` (handlers.rs), `tag_candidates`/`render_tag_results` (fuzzy.rs), hint on the status line (render.rs). Help: keymap/editor.rs Tab row, docs/tui.md. Tests in src/tui/tests.rs (+ snapshot); headless frame attached. Gate: cargo test --workspace passes, fmt clean, clippy count unchanged (94/98 before and after).
+
+---
+▸ 2026-11-10T21:46:29Z [tagcomplete-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVYeZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
