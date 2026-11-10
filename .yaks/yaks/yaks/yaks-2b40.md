@@ -5,12 +5,11 @@ status: hairy
 type: task
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-10T17:44:06Z'
+updated: '2026-11-10T17:50:28Z'
 parent: yaks-1c89
 tags:
 - design
 - skills
-needs: agent
 ---
 
 From [the agent-memory research](/doks/research/agent-memory-dreaming.md) (yaks-e4f5), sections 2, 4, 5, 8 and 9: changes to the `yaks-upkeep` reflection procedure and how doks are indexed. It edits a skill, so the proposals are one ask for Joel before anything is written.
@@ -50,3 +49,12 @@ needs: agent
 6. Agreed, that sounds like unnecessary summarization and repetition.
 
 Oh yeah, please do set that up. I never actually did the initialization step in this farm.
+
+---
+▸ 2026-11-10T17:50:28Z [herd-unlock]
+kind: pickup
+---
+
+picked up
+
+herd-unlock: doing this myself (skill prose stays with the coordinator): the six points into yaks-upkeep, the first reflection round by hand, the three recurring yaks. Point 4: yes, the yak is a task for the mechanism that stops the recurrence.
