@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T21:11:52Z'
-updated: '2026-11-10T21:19:37Z'
+updated: '2026-11-10T21:30:26Z'
 parent: yaks-f04d
 tags:
 - cli
@@ -61,3 +61,11 @@ Scratch farm run (own binary):
 - no `schemas/yak.md` -> silent, exit 0
 
 Tests: `tests/tag_warn.rs` (5) + `schemas::edit_distance_counts_edits`. Docs: clap help (`--tags`, `update --add-tag`, `bulk --add-tag`), `docs/cli.md` create section, `yaks` skill Tags line. `cargo test -p yaks skills` passes; `cargo fmt --check` clean; clippy warning count unchanged (104 before and after).
+
+---
+▸ 2026-11-10T21:30:26Z [tagwarn-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
