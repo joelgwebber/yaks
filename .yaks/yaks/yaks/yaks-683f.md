@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
-updated: '2026-11-10T17:50:30Z'
+updated: '2026-11-10T17:52:18Z'
 tags:
 - tui
 ---
@@ -85,3 +85,8 @@ Autosave, ask/answer drafts, a drafts picker, the `✎` tree marker, clobber-on-
 ## Evidence
 
 Tests: dismiss-keep then reopen restores; `d` discards; commit clears; stale warning. A toque text frame of a restored form with its badge and of the three-way prompt, attached. Gate `cargo test --workspace`. Judge: the yakherd at landing.
+
+---
+▸ 2026-11-10T17:52:18Z [drafts-1]
+
+Start: Tue Nov 10 17:52:18 UTC 2026. Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-683f.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/v49c5a8gdr4r/yaks.
