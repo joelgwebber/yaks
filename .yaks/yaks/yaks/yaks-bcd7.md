@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-11-10T21:11:52Z'
-updated: '2026-11-10T21:30:37Z'
+updated: '2026-11-10T21:31:01Z'
 parent: yaks-f04d
 tags:
 - cli
@@ -84,3 +84,13 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFV6lZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-10T21:31:01Z [herd-unlock]
+kind: landed
+commit: de313d74c26780d69c44e7ae00c6daedd7c897f1
+source: f06f67c516bcea1ecec4e3e22035af2827675bc4
+branch: main
+---
+
+landed: de313d74 yaks-bcd7: warn when create/update/bulk write a tag not among the farm's known tags
