@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-10T17:53:07Z'
-updated: '2026-11-10T17:53:47Z'
+updated: '2026-11-10T17:53:56Z'
 tags:
 - meta
 verify: cargo fmt --check
@@ -30,3 +30,11 @@ result: pass
 ---
 
 verify: `cargo fmt --check` -> PASS (exit 0)
+
+---
+▸ 2026-11-10T17:53:56Z [herd-unlock]
+
+Done in `53576880`: `cargo fmt` run once on `main` (it touched only `src/actor.rs` and `tests/commits.rs`; `src/tui/docshots.rs` and `src/tui/tests.rs` were already clean). `AGENTS.md`'s "Delegating" section and the repo's `land` skill now say `main` is fmt-clean and to run `cargo fmt --check` before landing, instead of reverting files by hand.
+
+- `verify: cargo fmt --check` PASS.
+- This is the first lesson reflection would have caught as "already in context and still recurring"; the next round should report it `recurred` or `gone`.
