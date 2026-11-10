@@ -5,10 +5,11 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-10T19:11:25Z'
-updated: '2026-11-10T21:38:08Z'
+updated: '2026-11-10T21:38:09Z'
 tags:
 - perf
 - tui
+verify: cargo test --workspace
 ---
 
 Pretty clear on a TUI in a large-ish ~200x100 cell window, on the yaks-repo's "All" tab (~750 yaks). Every keystroke has a visible latency.
