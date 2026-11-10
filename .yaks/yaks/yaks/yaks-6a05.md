@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-10T19:11:25Z'
-updated: '2026-11-10T21:38:09Z'
+updated: '2026-11-10T21:45:03Z'
 tags:
 - perf
 - tui
@@ -73,3 +73,11 @@ Decision: hoist, not memoize. Rejected: caching `herd_choices` or `view_count` i
 Decision: left `view_count`, `blocked_ids` and `resolved_ids` uncached. Each is O(n) once per frame (tab bar x ~7 tabs), and the shorn-filter worker is editing `flat_rows`/`view_count` in parallel.
 
 Decision: bench lives in `memo.rs` `#[cfg(test)]` next to the cache it exercises, `#[ignore]`d. Rejected: a headless shell script (the test harness gives the handle_key/render split).
+
+---
+▸ 2026-11-10T21:45:03Z [perf-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
