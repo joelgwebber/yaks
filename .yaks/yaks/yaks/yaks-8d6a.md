@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-08-26T13:24:15Z'
-updated: '2026-11-10T21:46:21Z'
+updated: '2026-11-10T21:46:29Z'
 parent: yaks-f04d
 depends_on:
 - yaks-b2ed
@@ -57,3 +57,16 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-10T21:46:29Z [tagcomplete-1]
+
+Decision: reuse the one `FuzzyPick`/`InsertRef` picker (new `tags` rows field and `CompleteKind::Tag`) rather than a second picker type or an inline popup.
+
+Decision: partial tag = the run since the last comma or whitespace (not `is_ref_char`, which would split `c++` or `Foo`); none, so Tab moves on, when empty or right after a comma/space.
+
+Decision: rows are known tags (schema order, description as text) then used tags by count (then name), ranked by prefix < substring < text-substring with a stable sort, so known tags win ties; rejected: ranking by count only, which would bury described tags.
+
+Decision: the picker reads `schemas::load(root, YAK_TYPE).tags` itself in `App::tag_choices`; nothing added to `src/schemas.rs`.
+
+Shape: `tag_completion` (editor.rs), `is_tags_row` (create.rs), Tab hook in `handle_create_key`, `tag_choices`/`open_ref_picker`/`finish_insert`/`commit_fuzzy` (handlers.rs), `tag_candidates`/`render_tag_results` (fuzzy.rs), hint on the status line (render.rs). Help: keymap/editor.rs Tab row, docs/tui.md. Tests in src/tui/tests.rs (+ snapshot); headless frame attached. Gate: cargo test --workspace passes, fmt clean, clippy count unchanged (94/98 before and after).
