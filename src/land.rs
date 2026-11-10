@@ -38,6 +38,8 @@ const EXIT_COMMIT: i32 = 5;
 const EXIT_DROPPED: i32 = 6;
 /// Exit code: the worker's commit stages yak files under a branch farm.
 const EXIT_YAK_FILES: i32 = 7;
+/// Exit code: a landing stopped on conflicts is waiting for `--continue` or `--abort`.
+const EXIT_IN_PROGRESS: i32 = 8;
 
 /// What `yaks land` was asked.
 #[derive(Debug, Clone)]
@@ -50,6 +52,19 @@ pub struct Opts {
     /// Yak ids to record the landing on besides those the commit message names
     /// (a private farm keeps ids out of messages).
     pub yaks: Vec<String>,
+}
+
+/// What `yaks land` was asked to do.
+#[derive(Debug, Clone)]
+pub enum Action {
+    /// Land a commit.
+    Land(Opts),
+    /// Finish a landing that stopped on conflicts (yaks-760d): `git cherry-pick
+    /// --continue`, then record. `yaks` are extra ids to record on, beside those
+    /// the first run was given.
+    Continue { yaks: Vec<String> },
+    /// Give up a landing that stopped on conflicts.
+    Abort,
 }
 
 /// A refusal or failure: the message for stderr and the exit code.
@@ -84,10 +99,12 @@ pub enum Outcome {
     DryRun,
     /// The change is in HEAD (landed now, or already there), in this checkout.
     Landed(PathBuf),
+    /// `--abort` gave up the landing in progress.
+    Aborted,
 }
 
 /// The `yaks land` entry point: run in the cwd, print to stdout, return the exit code.
-pub fn cli(opts: &Opts) -> i32 {
+pub fn cli(action: &Action) -> i32 {
     let cwd = match std::env::current_dir() {
         Ok(c) => c,
         Err(e) => {
@@ -96,14 +113,19 @@ pub fn cli(opts: &Opts) -> i32 {
         }
     };
     let mut out = std::io::stdout().lock();
-    match run(&cwd, opts, &mut out) {
+    let result = match action {
+        Action::Land(opts) => run(&cwd, opts, &mut out),
+        Action::Continue { yaks } => cont(&cwd, yaks, &mut out),
+        Action::Abort => abort(&cwd, &mut out),
+    };
+    match result {
         Ok(Outcome::Landed(top)) => {
             if let Some(line) = doctor_line(&top) {
                 let _ = writeln!(out, "doctor: {line}");
             }
             0
         }
-        Ok(Outcome::DryRun) => 0,
+        Ok(Outcome::DryRun | Outcome::Aborted) => 0,
         Err(r) => {
             let _ = out.flush();
             eprintln!("land: {}", r.msg);
@@ -339,9 +361,9 @@ fn dirty_paths(g: &Git) -> R<BTreeSet<String>> {
     Ok(set)
 }
 
-/// Land `opts.sha` in the checkout containing `dir`, narrating to `out`.
-pub fn run(dir: &Path, opts: &Opts, out: &mut dyn Write) -> R<Outcome> {
-    let mut s = Say(out);
+/// The git handle for the checkout containing `dir`, and its root; everything
+/// `yaks land` does is relative to the root, wherever the cwd was.
+fn checkout(dir: &Path) -> R<(Git, PathBuf)> {
     let g = Git {
         dir: dir.to_path_buf(),
     };
@@ -351,9 +373,163 @@ pub fn run(dir: &Path, opts: &Opts, out: &mut dyn Write) -> R<Outcome> {
     let Some(top) = g.text(&["rev-parse", "--show-toplevel"]) else {
         return die(1, "not inside a git working tree");
     };
-    // Everything below is relative to the checkout's root, wherever the cwd was.
     let top = PathBuf::from(top);
-    let g = Git { dir: top.clone() };
+    Ok((Git { dir: top.clone() }, top))
+}
+
+/// What a landing that stopped on conflicts leaves behind for `--continue`
+/// (yaks-760d): the worker's full sha, the `--yak` ids, and HEAD before the
+/// pick. It lives in the checkout's own git dir (per worktree, like
+/// `CHERRY_PICK_HEAD`), never in the farm, and is gone once the landing is
+/// recorded or abandoned.
+struct Stopped {
+    sha: String,
+    yaks: Vec<String>,
+    head: String,
+}
+
+fn state_path(g: &Git) -> Option<PathBuf> {
+    Some(PathBuf::from(g.text(&["rev-parse", "--absolute-git-dir"])?).join("yaks-land.json"))
+}
+
+fn save_state(g: &Git, st: &Stopped) -> bool {
+    let doc = serde_json::json!({ "sha": st.sha, "yaks": st.yaks, "head": st.head });
+    state_path(g).is_some_and(|p| std::fs::write(p, format!("{doc:#}\n")).is_ok())
+}
+
+fn load_state(g: &Git) -> Option<Stopped> {
+    let v: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(state_path(g)?).ok()?).ok()?;
+    Some(Stopped {
+        sha: v["sha"].as_str()?.to_string(),
+        yaks: v["yaks"]
+            .as_array()?
+            .iter()
+            .filter_map(|y| y.as_str().map(str::to_string))
+            .collect(),
+        head: v["head"].as_str()?.to_string(),
+    })
+}
+
+fn clear_state(g: &Git) {
+    if let Some(p) = state_path(g) {
+        let _ = std::fs::remove_file(p);
+    }
+}
+
+/// The commit a cherry-pick in progress is applying, if any.
+fn picking(g: &Git) -> Option<String> {
+    g.text(&["rev-parse", "-q", "--verify", "CHERRY_PICK_HEAD"])
+}
+
+/// `yaks land --continue`: the conflicts of a stopped landing are resolved;
+/// finish the cherry-pick (no editor) and record the landing as a clean run
+/// does. A pick the user already finished with `git cherry-pick --continue` is
+/// recognised by HEAD having moved since, and only recorded.
+pub fn cont(dir: &Path, yaks: &[String], out: &mut dyn Write) -> R<Outcome> {
+    let mut s = Say(out);
+    let (g, top) = checkout(dir)?;
+    let Some(st) = load_state(&g) else {
+        return die(
+            1,
+            "no landing is waiting here: 'yaks land <sha>' stops on conflicts, then this continues it",
+        );
+    };
+    match picking(&g) {
+        Some(p) if p == st.sha => {
+            let o = g
+                .cmd(&["cherry-pick", "--continue"])
+                .env("GIT_EDITOR", "true")
+                .output()
+                .context("running git cherry-pick --continue")?;
+            if !o.status.success() {
+                return die(
+                    EXIT_COMMIT,
+                    format!(
+                        "git cherry-pick --continue: {}\nresolve the files and 'git add' them, then run 'yaks land --continue' again (or 'yaks land --abort')",
+                        String::from_utf8_lossy(&o.stderr).trim()
+                    ),
+                );
+            }
+        }
+        Some(_) => {
+            return die(
+                1,
+                "a different cherry-pick is in progress, not the one 'yaks land' stopped on; finish or abort it with git",
+            );
+        }
+        None => {
+            let moved = g.text(&["rev-parse", "HEAD"]).as_deref() != Some(st.head.as_str())
+                && g.success(&["merge-base", "--is-ancestor", &st.head, "HEAD"]);
+            if !moved {
+                return die(
+                    1,
+                    "the cherry-pick is no longer in progress and HEAD has not moved (aborted or skipped); 'yaks land --abort' clears what 'yaks land' saved",
+                );
+            }
+        }
+    }
+    let short = g.must(&["rev-parse", "--short", &st.sha])?;
+    s.say(format!("cherry-picked {short} onto HEAD"));
+    let head = g.must(&["log", "--oneline", "-1"])?;
+    s.say(format!("landed: {head}"));
+    let landed = g.must(&["rev-parse", "HEAD"])?;
+    let mut ids = st.yaks.clone();
+    for y in yaks {
+        if !ids.contains(y) {
+            ids.push(y.clone());
+        }
+    }
+    let opts = Opts {
+        sha: st.sha.clone(),
+        dry_run: false,
+        force_discard: false,
+        yaks: ids,
+    };
+    record(&g, &top, &opts, &mut s, &landed, Some(&st.sha))?;
+    clear_state(&g);
+    Ok(Outcome::Landed(top))
+}
+
+/// `yaks land --abort`: `git cherry-pick --abort` for the pick `yaks land`
+/// stopped on, and forget the saved state. A cherry-pick it did not start is
+/// left alone.
+pub fn abort(dir: &Path, out: &mut dyn Write) -> R<Outcome> {
+    let mut s = Say(out);
+    let (g, _top) = checkout(dir)?;
+    let Some(st) = load_state(&g) else {
+        return die(1, "no landing is waiting here: nothing to abort");
+    };
+    match picking(&g) {
+        Some(p) if p == st.sha => {
+            let o = g.raw(&["cherry-pick", "--abort"])?;
+            if !o.status.success() {
+                return die(
+                    1,
+                    format!(
+                        "git cherry-pick --abort: {}",
+                        String::from_utf8_lossy(&o.stderr).trim()
+                    ),
+                );
+            }
+            s.say("aborted the cherry-pick; the tree is back where it was");
+        }
+        Some(_) => {
+            return die(
+                1,
+                "a different cherry-pick is in progress, not the one 'yaks land' stopped on; abort it with git",
+            );
+        }
+        None => s.say("the cherry-pick is no longer in progress; cleared what 'yaks land' saved"),
+    }
+    clear_state(&g);
+    Ok(Outcome::Aborted)
+}
+
+/// Land `opts.sha` in the checkout containing `dir`, narrating to `out`.
+pub fn run(dir: &Path, opts: &Opts, out: &mut dyn Write) -> R<Outcome> {
+    let mut s = Say(out);
+    let (g, top) = checkout(dir)?;
 
     let Some(full) = g.text(&[
         "rev-parse",
@@ -377,6 +553,19 @@ pub fn run(dir: &Path, opts: &Opts, out: &mut dyn Write) -> R<Outcome> {
         pending.push("cherry-pick");
     }
     let had_pending = !pending.is_empty();
+    // A landing that stopped on conflicts is ours, not Delta's applied state:
+    // clearing it would throw the user's resolution away.
+    if let Some(st) = load_state(&g).filter(|st| picking(&g).as_deref() == Some(&st.sha)) {
+        let msg = format!(
+            "a landing of {} is waiting on its conflicts: 'yaks land --continue' once resolved, or 'yaks land --abort'",
+            &st.sha[..st.sha.len().min(12)]
+        );
+        if opts.dry_run {
+            s.say(&msg);
+            return Ok(Outcome::DryRun);
+        }
+        return die(EXIT_IN_PROGRESS, msg);
+    }
     s.say(format!("worker commit: {short} {subject}"));
     s.say(format!(
         "pending state: {}",
@@ -507,7 +696,7 @@ pub fn run(dir: &Path, opts: &Opts, out: &mut dyn Write) -> R<Outcome> {
                 ));
             }
             Some(1) => {
-                s.say("the merge would conflict, so landing by cherry-pick instead (you resolve the files named here, then 'git cherry-pick --continue'):");
+                s.say("the merge would conflict, so landing by cherry-pick instead (you resolve the files named here, then 'yaks land --continue'):");
                 for l in stdout.lines().filter(|l| l.starts_with("CONFLICT")) {
                     s.say(format!("  {l}"));
                 }
@@ -562,6 +751,8 @@ pub fn run(dir: &Path, opts: &Opts, out: &mut dyn Write) -> R<Outcome> {
     if !g.success(&["reset", "-q", "--hard", "HEAD"]) {
         return die(1, "could not restore tracked files");
     }
+    // Any saved stop is stale now (its pick was aborted just above, or never lived).
+    clear_state(&g);
     // Untracked leftovers of the applied state: remove only if identical to the worker's file.
     for p in &dirty {
         let path = top.join(p);
@@ -636,10 +827,23 @@ pub fn run(dir: &Path, opts: &Opts, out: &mut dyn Write) -> R<Outcome> {
             s.say("WARNING: result differs from the computed merge tree");
         }
     } else {
+        let head = g.must(&["rev-parse", "HEAD"])?;
         if !g.success(&["cherry-pick", &full]) {
+            let saved = save_state(
+                &g,
+                &Stopped {
+                    sha: full.clone(),
+                    yaks: opts.yaks.clone(),
+                    head,
+                },
+            );
             return die(
                 EXIT_COMMIT,
-                "cherry-pick stopped with conflicts; resolve, then 'git cherry-pick --continue', then run yaks doctor",
+                if saved {
+                    "cherry-pick stopped with conflicts; resolve the files and 'git add' them, then run 'yaks land --continue' (it finishes the pick and records the landing), or 'yaks land --abort'"
+                } else {
+                    "cherry-pick stopped with conflicts; resolve, then 'git cherry-pick --continue' (yaks could not save the landing, so record it by hand), then run yaks doctor"
+                },
             );
         }
         s.say(format!("cherry-picked {short} onto HEAD"));

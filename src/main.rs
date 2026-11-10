@@ -1466,9 +1466,27 @@ enum Command {
     /// would record and writes nothing. Never pushes. Needs git 2.38+ (2.40+ to
     /// check an already-landed SHA); needs no farm, and records nothing without
     /// one.
+    ///
+    /// When the cherry-pick stops on conflicts, resolve the files and `git add`
+    /// them, then `yaks land --continue`: it runs `git cherry-pick --continue`
+    /// (no editor) and records the landing on the same yaks the first run
+    /// would have (the worker's sha and the `--yak` ids are kept in the
+    /// checkout's git dir, never the farm). `yaks land --abort` gives the
+    /// pick up. While a stopped landing waits, `yaks land <sha>` refuses
+    /// (exit 8) rather than discard the resolution.
     Land {
-        /// The worker's commit (a SHA or any rev that names a commit).
-        sha: String,
+        /// The worker's commit (a SHA or any rev that names a commit);
+        /// omitted with `--continue` or `--abort`.
+        #[arg(required_unless_present_any = ["continue_", "abort"])]
+        sha: Option<String>,
+        /// Finish a landing that stopped on conflicts: `git cherry-pick
+        /// --continue`, then record the landing like a clean run.
+        #[arg(long = "continue", conflicts_with_all = ["sha", "abort", "dry_run", "force_discard"])]
+        continue_: bool,
+        /// Give up a landing that stopped on conflicts: `git cherry-pick
+        /// --abort`, and forget what `yaks land` saved.
+        #[arg(long, conflicts_with_all = ["sha", "dry_run", "force_discard", "yaks"])]
+        abort: bool,
         /// Report the pending state, the merged tree, what the working tree holds
         /// that the commit does not explain, and what would happen; change nothing.
         #[arg(long)]
@@ -1973,17 +1991,24 @@ fn main() -> Result<()> {
     // `land` runs in the code checkout and needs no farm.
     if let Command::Land {
         sha,
+        continue_,
+        abort,
         dry_run,
         force_discard,
         yaks,
     } = &cli.command
     {
-        std::process::exit(land::cli(&land::Opts {
-            sha: sha.clone(),
-            dry_run: *dry_run,
-            force_discard: *force_discard,
-            yaks: yaks.clone(),
-        }));
+        let action = match (sha, *continue_, *abort) {
+            (_, true, _) => land::Action::Continue { yaks: yaks.clone() },
+            (_, _, true) => land::Action::Abort,
+            (sha, _, _) => land::Action::Land(land::Opts {
+                sha: sha.clone().unwrap_or_default(),
+                dry_run: *dry_run,
+                force_discard: *force_discard,
+                yaks: yaks.clone(),
+            }),
+        };
+        std::process::exit(land::cli(&action));
     }
     // `render` reads a file; it uses a farm only to resolve a farm path or an
     // attachment, so it works outside one too.

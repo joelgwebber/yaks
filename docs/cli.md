@@ -679,7 +679,7 @@ Rules, the same for all four commands:
 | `status [--check] [--json]` | What the farm has changed that git does not have yet, one line per yak, in yak terms. Read-only. `--check` exits 1 when the farm is dirty; `--json`. [Details](#status) |
 | `sync [--no-commit] [--no-pull] [--no-push] [-m <msg>]` | Commit, pull (rebasing with the yak merge driver) and push the farm branch. A private farm is never pushed. [Details](#sync) |
 | `commit [-m <msg>] [--dry-run]` | Commit the farm on its branch, from any checkout. `-m` overrides the generated message. Never pushes. [Details](#commit) |
-| `land <sha> [--dry-run] [--force-discard] [--yak <id>]...` | Land a Delta worker's commit by SHA on the current branch of the code checkout (squash, else cherry-pick), and note the landed sha on the yaks it names. Needs no farm; never pushes. `--dry-run` changes nothing; `--force-discard` drops unexplained working-tree changes; `--yak` names a yak explicitly. [Details](#land) |
+| `land <sha> [--dry-run] [--force-discard] [--yak <id>]...` / `land --continue` / `land --abort` | Land a Delta worker's commit by SHA on the current branch of the code checkout (squash, else cherry-pick), and note the landed sha on the yaks it names. Needs no farm; never pushes. `--dry-run` changes nothing; `--force-discard` drops unexplained working-tree changes; `--yak` names a yak explicitly. A cherry-pick that stops on conflicts is finished with `--continue` (which records the landing) or given up with `--abort`. [Details](#land) |
 | `tui` | Open the interactive terminal UI (see [tui.md](tui.md)). |
 
 ### `migrate`
@@ -951,13 +951,15 @@ Four sections, in this order (the second only when a note records a branch):
 
 ### `land`
 
-`land <sha> [--dry-run] [--force-discard] [--yak <id>]...`
+`land <sha> [--dry-run] [--force-discard] [--yak <id>]...`, `land --continue [--yak <id>]...`, `land --abort`
 
 Land a Delta worker's commit by SHA on the current branch of the code checkout you are in (needs no farm; never pushes; git 2.38+, 2.40+ for the already-landed check).
 
 Delta's applied state (a pending `MERGE_HEAD`, the worker's files in the working tree) is not trusted: it is reported (`worker commit:`, `pending state:`, a shallow-repository note when ancestry answers are lower bounds), then cleared.
 
 When the worker's base is an ancestor of HEAD it computes the merged tree with `git merge-tree --write-tree` and lands it as ONE single-parent squash commit (the worker's message and author date + a `Squashed-from: <full sha>` trailer), then checks HEAD's tree equals the computed one; when the base was rewritten or the merge would conflict it says so (naming the `CONFLICT`s) and `git cherry-pick`s instead.
+
+**A cherry-pick that stops on conflicts** (exit 5) leaves the files conflicted for you and saves what it needs (the worker's full sha, the `--yak` ids and the HEAD it started from) in `yaks-land.json` in the checkout's git dir, never the farm. Resolve the files and `git add` them, then `yaks land --continue`: it runs `git cherry-pick --continue` without an editor (still conflicted: it says so, changes nothing and can be re-run), then ends like a clean landing, recording the `kind: landed` note on the yaks the commit message names plus the first run's `--yak`s (and any `--yak` given to `--continue`). A pick you already finished with `git cherry-pick --continue` is recognised (HEAD moved on) and only recorded. `yaks land --abort` runs `git cherry-pick --abort` and forgets the saved state; a cherry-pick `yaks land` did not start is left alone. While a stopped landing waits, `yaks land <sha>` refuses (exit 8) instead of clearing your resolution as it would Delta's applied state. `--continue` and `--abort` take no sha and exclude `--dry-run` and `--force-discard`.
 
 Refuses, changing nothing: working-tree changes the commit does not explain (exit 3; `--force-discard` drops them; an untracked file that differs from the worker's is always exit 4); a SHA that is already an ancestor of HEAD but whose change is missing or unconfirmable in HEAD's tree (exit 6, the evil merge: it names the first commit that lacks the change); a commit that touches `.yaks/` when HEAD tracks none (a worker staged yak files; exit 7).
 
