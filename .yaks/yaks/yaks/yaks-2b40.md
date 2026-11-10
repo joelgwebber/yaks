@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-10T17:53:15Z'
+updated: '2026-11-10T17:59:59Z'
 parent: yaks-1c89
 tags:
 - design
@@ -68,3 +68,26 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-10T17:59:59Z [herd-unlock]
+
+Done (herd-unlock), points 1–5 in `yaks-upkeep`, commit on `main` (see `yaks commits yaks-2b40`); point 6 is the child yaks-2755 (worker `dokdesc-1`, running).
+
+## What changed in "Reflecting on sessions"
+
+- Step 3 (new): check last round's fixes, `recurred` / `gone` (point 5).
+- Step 5 (new): three ways out for a lesson, *absorbed*, *wrong*, *faded* (points 2, 3).
+- Step 6 (new): a lesson already in context that still recurs gets a yak for the mechanism, not more text (point 4; Joel: "a task to stop the recurrence", yes).
+- Step 8: a proposal names the friction it targets, so step 3 can check it.
+- New "The lessons dok" subsection: ~50-line budget, `## Rules` index of one-liners linking to per-subject detail with *how we know* and *seen* (points 1, 3).
+- [/doks/design/session-reflection.md](/doks/design/session-reflection.md) gains "Budget and demotion" and a `description:`.
+
+## Loop started
+
+- First round by hand: [yaks-20ff](yaks-20ff) (shorn, recurs weekly), wrote [/doks/lessons.md](/doks/lessons.md) (27 lines).
+- Point 4's first instance: yaks-b89d (shorn): `main` formatted once, the `cargo fmt` caveat gone from `AGENTS.md` and the land skill.
+- Recurring: yaks-dad8 (review, due tomorrow), yaks-20ff (reflect), yaks-0686 (tidy), weekly, `--wake agent`.
+- Filed: yaks-760d (`land` after a resolved cherry-pick), yaks-2788 (cheaper-model guidance in `yaks-coordinating`), yaks-20fe (cross-farm feedback, asked).
+
+`cargo test skills` passes (37).
