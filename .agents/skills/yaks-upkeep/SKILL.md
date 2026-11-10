@@ -62,10 +62,34 @@ Review reads one note at a time. Reflection reads the run of notes since the las
 
 1. Find the round's notes: `yaks session list --json`, keeping those whose `day` is after the last round's (the recurring yak's previous shear note says when; the first round takes the last month).
 2. Read their `## Turns` and `## Lessons`, and compare the verdict counts with the last round's.
-3. **Keep the lessons dok**, `/doks/lessons.md` (`type: topic`; create it the first time): short rules for how to work in this farm's project, grouped under `##` subjects, each citing the sessions that taught it (`[session](/sessions/2025/04/...md)`). A lesson goes in when two or more sessions taught it, or when a `failed` or `partial` turn did; a one-off stays in its note. Facts about the project's subject are review's, in subject doks; this dok is how to work. Extend and merge rather than repeat; remove a lesson only when a later session showed it wrong, and say so in the account.
-4. **Friction with yaks or its skills** becomes a yak where the person tracks yaks' own work, as in review.
-5. **Instruction files are never edited here.** A lesson that belongs in `AGENTS.md` or a skill becomes, at most one per round, a yak awaiting the person: `yaks create` it, then `yaks ask <id>` with the proposed text and where it goes. They decide; you don't.
-6. Account for it as the shear note: the window, the verdict counts against last round's, lessons added, merged or removed, yaks filed, the proposal if any.
+3. **Check last round's fixes.** For each lesson the last round absorbed or escalated (its account lists them), look for that friction in this round's notes and record `recurred` or `gone`. A handful of notes is anecdote, not a score; it is still how you know a fix worked.
+4. **Keep the lessons dok**, `/doks/lessons.md` (below). A lesson goes in when two or more sessions taught it, or when a `failed` or `partial` turn did; a one-off stays in its note. Facts about the project's subject are review's, in subject doks; this dok is how to work. Extend and merge rather than repeat, and bump the `seen:` of a lesson this round saw again.
+5. **A lesson leaves the dok** in one of three ways, each named in the account:
+   - *absorbed*: it is now in a skill or `AGENTS.md`, or a yak fixed the friction; replace it with nothing but a line in the account linking where it went;
+   - *wrong*: a later session showed it was;
+   - *faded*: its `seen:` is three or more rounds old; drop it, or keep it and say why.
+6. **Already in context and still recurring?** When a lesson's friction recurs although the rule is already in `AGENTS.md`, a skill or the lessons dok, more text will not fix it: file a yak for the mechanism that would stop it (a command, a check, a one-time fix) instead of adding words, and name it in the account.
+7. **Friction with yaks or its skills** becomes a yak where the person tracks yaks' own work, as in review.
+8. **Instruction files are never edited here.** A lesson that belongs in `AGENTS.md` or a skill becomes, at most one per round, a yak awaiting the person: `yaks create` it, then `yaks ask <id>` with the proposed text and where it goes, and the friction it targets (so step 3 can check it next round). They decide; you don't.
+9. Account for it as the shear note: the window, the verdict counts against last round's, last round's fixes (`recurred` / `gone`), lessons added, merged and removed (and how each left), the dok's line count, yaks filed, the proposal if any.
+
+### The lessons dok
+
+`/doks/lessons.md` (`type: topic`, with a `description:`; create it the first time) is read in full at every session start, so it has a budget: **at most about 50 lines**. Over it, merge or retire lessons before you add one. Its shape:
+
+```markdown
+## Rules
+
+- One line per lesson, the rule itself, with a link to its detail below. ([detail](#landing-parallel-workers))
+
+## Landing parallel workers
+
+- **Rule:** land workers that share a doc section in one serial arc.
+- **How we know:** cherry-pick conflicts at every landing ([session](/sessions/2026/11/...md), [session](/sessions/2026/11/...md)).
+- **Seen:** 2026-11-07
+```
+
+The `## Rules` index is what a session needs; the subject sections carry each lesson's proof (*how we know*: the failure it came from, citing the sessions) and when it was last seen. Keep the detail short too: a lesson whose proof needs more than a few lines belongs in a subject dok, linked.
 
 The design and why: [/doks/design/session-reflection.md](/doks/design/session-reflection.md).
 
