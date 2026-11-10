@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-08-26T13:24:15Z'
-updated: '2026-11-10T21:12:25Z'
+updated: '2026-11-10T21:13:43Z'
 parent: yaks-f04d
 depends_on:
 - yaks-b2ed
@@ -42,3 +42,8 @@ Single-line inline popups; tags anywhere but the form.
 ## Evidence
 
 Tests: `Tab` after `ta` in tags opens the picker seeded `ta`, Enter inserts; `Tab` on an empty tags field still moves to the next field; known tags rank first. A `yaks tui --headless` frame, attached. Gate `cargo test --workspace`.
+
+---
+▸ 2026-11-10T21:13:43Z [tagcomplete-1]
+
+Start Tue Nov 10 21:13:43 UTC 2026; checkout /Users/joel/src/yaks/.delta/worktrees/sh9cspt26zn3/yaks
