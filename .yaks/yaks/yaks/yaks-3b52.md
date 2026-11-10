@@ -1,11 +1,11 @@
 ---
 id: yaks-3b52
 title: 'Session note timestamps: name and time zone of reviewed:'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-06T21:36:37Z'
-updated: '2026-11-06T21:49:23Z'
+updated: '2026-11-10T17:49:48Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -56,3 +56,13 @@ kind: request
 requested: needs agent
 
 Let's also go ahead and knock out ff4c while we're doing this, for simplicity and clarity.
+
+---
+▸ 2026-11-10T17:49:48Z [herd-unlock]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
