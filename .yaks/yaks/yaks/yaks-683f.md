@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
-updated: '2026-11-10T17:52:18Z'
+updated: '2026-11-10T18:27:52Z'
 tags:
 - tui
 ---
@@ -90,3 +90,12 @@ Tests: dismiss-keep then reopen restores; `d` discards; commit clears; stale war
 ▸ 2026-11-10T17:52:18Z [drafts-1]
 
 Start: Tue Nov 10 17:52:18 UTC 2026. Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-683f.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/v49c5a8gdr4r/yaks.
+
+---
+▸ 2026-11-10T18:27:52Z [drafts-1]
+
+Plan (before coding), read of the code:
+
+- New module `src/tui/drafts.rs`: the store (JSON file per draft, atomic write, GC) and the `impl App` pieces (keep/discard prompt key handler, restore on open, `Ctrl-R` revert, flush on exit).
+- Drafts exist for `Overlay::Create` (create and edit forms) and `BlockEdit` with `EditAction::Comment`. The other 275f-guarded editors (block edit, attachment edit, ask/answer/request) keep the old `y/N` confirm: there is no draft for them, so `k=keep` would be a lie.
+- `views_store::slug` becomes `pub(super)`; the drafts dir is `<config_home>/yaks/<slug>/drafts/`. Under `cfg(test)` the base is a pid-scoped dir in the OS temp dir, so no test touches the real `~/.config/yaks`.
