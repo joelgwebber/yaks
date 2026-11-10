@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-10T19:08:25Z'
-updated: '2026-11-10T21:35:05Z'
+updated: '2026-11-10T21:42:44Z'
 tags:
 - tui
 ---
@@ -62,3 +62,11 @@ Decision: put the rule on `FilterSpec` as `admits_status`, not inline in viewmod
 Decision: the tab count (`view_count`) uses the view's saved spec statuses, not the live filter, as before (documented "independent of the live facets"); only the rule changed. So the All tab count does not move when a chip is toggled, as for every other facet.
 
 Decision: docs: one sentence under Filter drawer in `docs/tui.md`. Grep for old wording ("dead ones included", "flat view", statuses) in docs/ .agents/skills/ README.md src/ found nothing contradicting it.
+
+---
+▸ 2026-11-10T21:42:44Z [shornfilter-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
