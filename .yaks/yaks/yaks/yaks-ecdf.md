@@ -5,10 +5,9 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-09T19:43:01Z'
-updated: '2026-11-10T18:37:30Z'
+updated: '2026-11-10T18:44:25Z'
 tags:
 - skills
-needs: agent
 ---
 
 Yak notes are a rich source of information about what we've been up to. And often more focused than raw conversation threads. So we should summarize them on a regular cadence and ensure they feed into the overall km-flow.
@@ -35,3 +34,12 @@ needs: agent
 ---
 
 Yup, (1) makes perfect sense. We can fold this in however you see fit.
+
+---
+▸ 2026-11-10T18:44:25Z [herd-unlock]
+kind: pickup
+---
+
+picked up
+
+herd-unlock: folding yak notes into the review round in yaks-upkeep, option 1.
