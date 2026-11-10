@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-06T21:36:37Z'
-updated: '2026-11-10T18:00:51Z'
+updated: '2026-11-10T18:01:18Z'
 parent: yaks-3f35
 tags:
 - doks
@@ -138,3 +138,13 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFR2NZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-10T18:01:18Z [herd-unlock]
+kind: landed
+commit: d9c59b543208e9612c49409eb10b9cd7aa9362bc
+source: f56257bbde3f457f459e1f92f40c2b3e95b814e2
+branch: main
+---
+
+landed: d9c59b54 yaks-3b52: session notes write written: (UTC), path and day in UTC, reviewed: read as fallback
