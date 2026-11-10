@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T21:11:52Z'
-updated: '2026-11-10T21:14:15Z'
+updated: '2026-11-10T21:19:37Z'
 parent: yaks-f04d
 tags:
 - cli
@@ -40,3 +40,24 @@ Integration tests: warning on an unknown tag, none on a known one, none when no 
 ▸ 2026-11-10T21:14:15Z [tagwarn-1]
 
 Start 2026-11-10T21:14:15Z; checkout /Users/joel/src/yaks/.delta/worktrees/jaghh9sj6kkr/yaks
+
+---
+▸ 2026-11-10T21:19:37Z [tagwarn-1]
+
+Decision: one helper, `schemas::unknown_tag_warnings(root, tags)`, called from the create, update and bulk arms in `src/main.rs` via `warn_unknown_tags`. Rejected: putting the warning in `Farm::create`/`update` (the TUI form would then warn too, which the claim puts out of scope, and the library would print).
+
+Decision: `update --tags` does not exist (only `--add-tag`/`--remove-tag`), so only added tags are checked; `--remove-tag` never warns. Rejected: warning on removal (removing an unknown tag is cleanup).
+
+Decision: nearest by Levenshtein distance, stable sort so ties keep the schema's order, at most five; hand-rolled 15-line `edit_distance` rather than a new dependency (Cargo.toml is off limits).
+
+Decision: bulk warns before the dry-run preview as well as on `--commit`, so the preview shows the problem before anyone commits.
+
+Scratch farm run (own binary):
+
+- `create x --tags dox,ui` -> `warning: tag "dox" is not among this farm's known tags (schemas/yak.md); known: docs, ui, cli`, then `Created`
+- `create y --tags ui docs` -> silent
+- `update --add-tag cly` -> warning, known: cli, ui, docs
+- `bulk --tag ui --add-tag wibble` -> warning, then the dry-run preview
+- no `schemas/yak.md` -> silent, exit 0
+
+Tests: `tests/tag_warn.rs` (5) + `schemas::edit_distance_counts_edits`. Docs: clap help (`--tags`, `update --add-tag`, `bulk --add-tag`), `docs/cli.md` create section, `yaks` skill Tags line. `cargo test -p yaks skills` passes; `cargo fmt --check` clean; clippy warning count unchanged (104 before and after).
