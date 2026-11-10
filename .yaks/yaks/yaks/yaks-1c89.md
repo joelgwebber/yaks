@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:27:55Z'
-updated: '2026-11-10T19:10:46Z'
+updated: '2026-11-10T22:03:47Z'
 parent: yaks-44b3
 tags:
 - doks
@@ -152,3 +152,22 @@ Batch by herd-unlock, 2026-11-10 (Joel: "PTAL at the answered and starred yaks")
 Coordinator's own: yaks-b89d `53576880`, yaks-2b40 `a411adb8` + `5b6e4c34`, yaks-ecdf/yaks-20fe `27c8b9eb`.
 
 Re-checked at landing: full `cargo test --workspace` green on `686d328a` (32 binaries, main 1114 passed); `cargo fmt --check` clean; own-build checks of the session note under `TZ=Pacific/Kiritimati` (path, `day:`, `written:` all UTC), `yaks check` on the real farm (6 doks flagged without a description), and the drafts flow headless (`E`, type, `Esc Esc`, `k` writes `drafts/edit-<id>.json`; reopening shows the `draft (saved just now) · Ctrl-R original` badge). Installed with `cargo install --path .`.
+
+---
+▸ 2026-11-10T22:03:47Z [herd-unlock]
+
+Batch 2 by herd-unlock-2, 2026-11-10 (Joel's second starred set plus three gate/landing fixes). All workers `claude-sonnet-5-5`, base `686d328a`:
+
+| Worker | Yak | Landed |
+|---|---|---|
+| tagwarn-1 | yaks-bcd7 | `de313d74` |
+| dokstar-1 | yaks-f93a | `dd0656cc` |
+| shornfilter-1 | yaks-c14e | `d147c2bc` |
+| landcont-1 | yaks-760d | `f67e29fd` |
+| perf-1 | yaks-6a05 | `e0005025` |
+| tagcomplete-1 | yaks-8d6a | `ef5c259e` |
+| flaky-1 | yaks-717b (+ yaks-06cd) | `709ec3c5` |
+
+Coordinator's own: yaks-464b (knowledge-store dok rewritten), `schemas/yak.md` known tags for yaks-f04d.
+
+Re-checked at landing with my build: unknown-tag warning on the real farm; dok star end to end headless (writes the dok path into `working_set.json`, listed in Starred); All view with shorn off on a copy of the real farm (129 rows, no shorn); keystroke bench ~3 ms (All, `j`); tag picker on a copy of the real farm (known tags first, with descriptions). Full `cargo test --workspace` green on `709ec3c5` (34 binaries); `cargo fmt --check` clean.
