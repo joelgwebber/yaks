@@ -1,0 +1,32 @@
+=== frame 9 · 120x30 · focus=list · view=⭐ Starred · cursor=0 · rows=2 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (2)   📖 Doks (2)   🛖 Sheds (0)        unpub
+
+ Release        note  doks/howto/release.md                                                                           ⭐
+ Vector search  note  doks/topics/vector-search.md                                                                    ⭐
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:open  E:edit  c:new dok  /:search  y:copy path  ?:help  q:quit
+=== end ===
