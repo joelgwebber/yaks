@@ -100,7 +100,7 @@ pub(super) const VIM_INSERT: Table = &[
             row("Enter", &["Enter"], "New line (lists continue)"),
             row("Backspace", &["Backspace"], "Delete before"),
             row("Delete", &["Delete"], "Delete after"),
-            row("Tab", &["Tab"], "Complete a yak id, else tab"),
+            row("Tab", &["Tab"], "Complete a yak id or dok link, else tab"),
             row("Esc", &["Esc"], "Back to Normal"),
         ],
     ),
@@ -139,7 +139,7 @@ pub(super) const STANDARD: Table = &[
             row("Alt-D", &["Alt-D"], "Delete the next word"),
             row("Ctrl-U Ctrl-R", &["Ctrl-U", "Ctrl-R"], "Undo, redo"),
             row("Ctrl-Y", &["Ctrl-Y"], "Paste"),
-            row("Tab", &["Tab"], "Complete a yak id, else tab"),
+            row("Tab", &["Tab"], "Complete a yak id or dok link, else tab"),
         ],
     ),
 ];
@@ -149,7 +149,7 @@ pub(super) const LINE: Table = &[(
     "The field",
     &[
         row("Enter", &["Enter"], "Accept the field"),
-        row("Tab", &["Tab"], "Next field, or complete id"),
+        row("Tab", &["Tab"], "Next field, or complete id or dok link"),
     ],
 )];
 

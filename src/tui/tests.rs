@@ -316,6 +316,83 @@ fn ref_picker_cancel_keeps_the_typed_prefix() {
     }
 }
 
+fn set_sample_doks(app: &mut App) {
+    use crate::tui::doks_tab::{DocGroup, DoksEntry};
+    let dok = |path: &str, title: &str| DoksEntry {
+        path: path.into(),
+        title: title.into(),
+        kind: "note".into(),
+        tags: vec![],
+        group: DocGroup::Dok,
+        text: String::new(),
+    };
+    app.set_doks_entries(vec![
+        dok("doks/design/layout.md", "Layout design"),
+        dok("doks/research/search.md", "Search research"),
+        dok("yaks/doks/notes/desk.md", "Desk notes"),
+        DoksEntry {
+            group: DocGroup::Source,
+            ..dok("sources/2026-01-01-abcd/source.md", "A paper")
+        },
+    ]);
+}
+
+#[test]
+fn tab_after_a_dok_link_opens_the_dok_picker_and_replaces_the_token() {
+    let mut app = sample();
+    set_sample_doks(&mut app);
+    open_body_editor(&mut app);
+    typ(&mut app, "see /doks/des");
+    tab(&mut app);
+    match &app.overlay {
+        Overlay::Fuzzy(fp) => {
+            assert_eq!(fp.query_text(), "des");
+            assert!(fp.doks.is_some(), "a dok picker, not the yak picker");
+            // Only doks, matching `des` by path: the design dok first.
+            let rows = crate::tui::fuzzy::dok_candidates(fp);
+            assert_eq!(rows[0].0, "doks/design/layout.md");
+            assert!(rows.iter().all(|(p, _)| !p.starts_with("sources/")));
+        }
+        _ => panic!("expected the dok picker"),
+    }
+    insta::assert_snapshot!("dok_picker_over_editor", draw(&app, 72, 14));
+    handle_key(&mut app, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+    match &app.overlay {
+        Overlay::Edit(ed) => assert_eq!(ed.text(), "see /doks/design/layout.md"),
+        _ => panic!("expected to return to the editor"),
+    }
+}
+
+#[test]
+fn tab_after_a_herd_dok_link_completes_with_the_herd_path() {
+    let mut app = sample();
+    set_sample_doks(&mut app);
+    open_body_editor(&mut app);
+    typ(&mut app, "[x](/yaks/doks/no");
+    tab(&mut app);
+    assert!(matches!(&app.overlay, Overlay::Fuzzy(fp) if fp.query_text() == "no"));
+    handle_key(&mut app, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+    match &app.overlay {
+        Overlay::Edit(ed) => assert_eq!(ed.text(), "[x](/yaks/doks/notes/desk.md"),
+        _ => panic!("expected to return to the editor"),
+    }
+}
+
+#[test]
+fn tab_after_a_non_dok_path_is_a_plain_tab() {
+    // A relative link, a heading anchor and a reserved "herd" are no dok link.
+    for text in ["../doks/x", "/doks", "/sources/doks/x", "/doks/x#top"] {
+        let mut app = sample();
+        open_body_editor(&mut app);
+        typ(&mut app, text);
+        tab(&mut app);
+        assert!(
+            matches!(app.overlay, Overlay::Edit(_)),
+            "Tab after {text:?} must not open a picker"
+        );
+    }
+}
+
 #[test]
 fn esc_cancels_picker() {
     let mut app = sample();

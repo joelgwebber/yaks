@@ -1,0 +1,18 @@
+---
+source: src/tui/tests.rs
+expression: "draw(&app, 72, 14)"
+---
+ 🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starr
+
+◂ Insert dok link  (2 matches)
+│ /doks/design/layout.md Layout design
+│ /yaks/doks/notes/desk.md Desk notes
+│
+│
+│
+│
+│
+│
+│
+│
+search: des

@@ -230,7 +230,7 @@ tall as the block's source lines plus one spare row, grows as you type, and is
 capped so about four rows of context stay on screen (the editor scrolls inside
 beyond that); the pane scrolls only as far as needed to show all of it. Every
 key goes to the editor (vim or emacs-style, per the key family; `Tab` completes a yak
-reference, `:w` / `:q` work in vim Normal mode; `F1` lists the editor's keys). `Ctrl-S` saves just that block
+reference or a dok link (see below), `:w` / `:q` work in vim Normal mode; `F1` lists the editor's keys). `Ctrl-S` saves just that block
 (the other blocks are rewritten in their canonical form, so they keep their
 text), `Ctrl-C` or a rapid `Esc Esc` cancels (asking first when you changed
 something), and an empty new comment is not saved. After a save the block
@@ -733,6 +733,15 @@ row also close it (the click selects the row). `q` quits, as everywhere, and
 ![The viewer on a dok, its cursor on a link, the peek pane showing the linked section](assets/tui-doks-peek.svg)
 
 ![A yak's detail pane, its cursor on a link to a dok section, the same peek pane under the lines](assets/tui-yak-peek.svg)
+
+- **Completing a dok link**: in any multi-line editor, `Tab` after `/doks/…`
+  or `/<herd>/doks/…` (the farm-root link form, typed as far as you like) opens
+  a picker over the farm's doks, seeded with what follows `doks/`, and the hint
+  line says `Tab → complete dok link`. Rows show the dok's `/path` and title;
+  `Enter` replaces the typed token with the full farm-root path
+  (`/doks/design/x.md`), `Ctrl-C` (or `Esc` out of Normal mode) leaves it as typed. It is the same
+  picker as `Tab` after `<prefix>-` for a yak id; heading anchors (`#…`),
+  relative links and sources are not completed.
 
 ## Doks tab
 

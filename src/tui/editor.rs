@@ -254,16 +254,76 @@ pub(crate) fn token_before_cursor(state: &RefCell<EditorState>) -> (String, usiz
     (tok, len)
 }
 
-/// If the ref-token just before the cursor is a `<prefix>-…` completion context,
-/// return `(chars_to_replace, tail)` — the whole `<prefix>-…` length to drop on
-/// commit, and the text typed after `<prefix>-` to seed the picker query with.
-pub(crate) fn completion_context(
-    state: &RefCell<EditorState>,
-    prefix: &str,
-) -> Option<(usize, String)> {
+/// What Tab completes at the cursor.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum CompleteKind {
+    /// A yak id, after `<prefix>-`.
+    Yak,
+    /// A dok's farm-root link path, after `/doks/` or `/<herd>/doks/`.
+    Dok,
+}
+
+/// A completion context at the cursor: the whole typed token to drop on
+/// commit, and the text after its trigger to seed the picker query with.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Completion {
+    /// Chars of the typed token to replace with the chosen one.
+    pub(crate) len: usize,
+    pub(crate) seed: String,
+    pub(crate) kind: CompleteKind,
+}
+
+/// The run of path chars ending at the cursor — a farm-root link being typed
+/// (`/doks/design/x`) — as `(token, char_len)`. Wider than a ref token: it
+/// takes `/`, `_` and uppercase too, and stops at `(`, `[` or `#`.
+fn path_before_cursor(state: &RefCell<EditorState>) -> (String, usize) {
+    let st = state.borrow();
+    let full = st.lines.to_string();
+    let line = full.split('\n').nth(st.cursor.row).unwrap_or("");
+    let before: Vec<char> = line.chars().take(st.cursor.col).collect();
+    let mut i = before.len();
+    while i > 0
+        && (before[i - 1].is_ascii_alphanumeric() || matches!(before[i - 1], '-' | '_' | '.' | '/'))
+    {
+        i -= 1;
+    }
+    let tok: String = before[i..].iter().collect();
+    (tok, before.len() - i)
+}
+
+/// The text after a dok-root start in `tok`: `/doks/…` or `/<herd>/doks/…`
+/// (the farm-root link form; the herd is one non-reserved path segment).
+fn dok_link_tail(tok: &str) -> Option<&str> {
+    let rest = tok.strip_prefix('/')?;
+    if let Some(tail) = rest.strip_prefix("doks/") {
+        return Some(tail);
+    }
+    let (herd, rest) = rest.split_once('/')?;
+    if herd.is_empty() || crate::store::RESERVED_HERD_NAMES.contains(&herd) {
+        return None;
+    }
+    rest.strip_prefix("doks/")
+}
+
+/// The completion context at the cursor, if any. A dok link (`/doks/…`,
+/// `/<herd>/doks/…`) is checked first, since its last segment can itself look
+/// like a yak ref; then a `<prefix>-…` yak ref token.
+pub(crate) fn completion_context(state: &RefCell<EditorState>, prefix: &str) -> Option<Completion> {
+    let (path, path_len) = path_before_cursor(state);
+    if let Some(tail) = dok_link_tail(&path) {
+        return Some(Completion {
+            len: path_len,
+            seed: tail.to_string(),
+            kind: CompleteKind::Dok,
+        });
+    }
     let (tok, len) = token_before_cursor(state);
     tok.strip_prefix(&format!("{prefix}-"))
-        .map(|tail| (len, tail.to_string()))
+        .map(|tail| Completion {
+            len,
+            seed: tail.to_string(),
+            kind: CompleteKind::Yak,
+        })
 }
 
 /// Short mode label shown next to a vim editor so the current mode is visible.

@@ -44,6 +44,9 @@ pub(crate) struct FuzzyPick {
     /// editor before inserting the chosen id, so autocomplete doesn't duplicate
     /// the prefix. Only meaningful for [`FuzzyAction::InsertRef`].
     pub(crate) replace_len: usize,
+    /// Dok-link completion: offer these `(farm-relative path, title)` doks
+    /// instead of the task set ([`dok_candidates`]).
+    pub(crate) doks: Option<Vec<(String, String)>>,
 }
 
 pub(crate) enum FuzzyAction {
@@ -112,6 +115,7 @@ impl FuzzyPick {
             action,
             return_to: None,
             replace_len: 0,
+            doks: None,
         }
     }
 
@@ -161,13 +165,41 @@ pub(crate) fn fuzzy_candidates<'a>(all: &'a [Task], fp: &FuzzyPick) -> Vec<&'a T
     scored.into_iter().take(cap).map(|(_, _, t)| t).collect()
 }
 
+/// The doks of a dok-link completion matching the query: path-prefix <
+/// path-substring < title-substring, then path (the list is path-sorted).
+pub(crate) fn dok_candidates(fp: &FuzzyPick) -> Vec<&(String, String)> {
+    let q = fp.query_text().to_lowercase();
+    let mut scored: Vec<(u8, &(String, String))> = Vec::new();
+    for d in fp.doks.iter().flatten() {
+        let path = d.0.to_lowercase();
+        let score = if q.is_empty() || path.starts_with(&q) {
+            0
+        } else if path.contains(&q) {
+            1
+        } else if d.1.to_lowercase().contains(&q) {
+            2
+        } else {
+            continue;
+        };
+        scored.push((score, d));
+    }
+    scored.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.0.cmp(&b.1.0)));
+    scored.into_iter().take(20).map(|(_, d)| d).collect()
+}
+
 /// Number of selectable rows (candidates plus the optional clear-parent row).
 pub(crate) fn fuzzy_total(all: &[Task], fp: &FuzzyPick) -> usize {
+    if fp.doks.is_some() {
+        return dok_candidates(fp).len();
+    }
     fuzzy_candidates(all, fp).len() + fp.allow_none as usize
 }
 
 pub(crate) fn render_fuzzy_results(app: &App, fp: &FuzzyPick, frame: &mut Frame, area: Rect) {
     let [head, body] = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).areas(area);
+    if fp.doks.is_some() {
+        return render_dok_results(fp, frame, area);
+    }
     let cands = fuzzy_candidates(&app.all, fp);
     frame.render_widget(
         Paragraph::new(Span::styled(
@@ -204,6 +236,37 @@ pub(crate) fn render_fuzzy_results(app: &App, fp: &FuzzyPick, frame: &mut Frame,
     let mut state = ListState::default();
     if total > 0 {
         state.select(Some(fp.sel.min(total - 1)));
+    }
+    frame.render_stateful_widget(
+        List::new(items).highlight_style(Style::new().bg(super::surface::selected())),
+        body,
+        &mut state,
+    );
+}
+
+/// The dok-link picker's rows: `/path` then the title.
+fn render_dok_results(fp: &FuzzyPick, frame: &mut Frame, area: Rect) {
+    let [head, body] = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).areas(area);
+    let cands = dok_candidates(fp);
+    frame.render_widget(
+        Paragraph::new(Span::styled(
+            format!("{}  ({} matches)", fp.label, cands.len()),
+            Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+        )),
+        head,
+    );
+    let items: Vec<ListItem> = cands
+        .iter()
+        .map(|(path, title)| {
+            ListItem::new(Line::from(vec![
+                Span::styled(format!("/{path} "), Style::new().fg(Color::DarkGray)),
+                Span::raw(title.clone()),
+            ]))
+        })
+        .collect();
+    let mut state = ListState::default();
+    if !cands.is_empty() {
+        state.select(Some(fp.sel.min(cands.len() - 1)));
     }
     frame.render_stateful_widget(
         List::new(items).highlight_style(Style::new().bg(super::surface::selected())),

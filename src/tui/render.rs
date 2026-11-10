@@ -22,8 +22,8 @@ use super::keymap::{
 };
 use super::palette;
 use super::{
-    App, DocView, Focus, Overlay, completion_context, detail, editor_theme, render_create,
-    render_drawer, render_editor_panel, render_fuzzy_results, render_line_editor,
+    App, CompleteKind, DocView, Focus, Overlay, completion_context, detail, editor_theme,
+    render_create, render_drawer, render_editor_panel, render_fuzzy_results, render_line_editor,
     render_query_line, render_shed_detail, tree, view,
 };
 use crate::filter::FilterSpec;
@@ -1570,19 +1570,21 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
     // While editing, a `<prefix>-…` ref context surfaces a Tab-to-complete hint
     // on the help bar (opt-in: nothing pops up until you press Tab).
     let ref_context = match &app.overlay {
-        Overlay::Edit(ed) if !ed.single_line => {
-            completion_context(&ed.state, &app.ref_prefix).is_some()
-        }
-        Overlay::BlockEdit(be) => completion_context(&be.editor.state, &app.ref_prefix).is_some(),
+        Overlay::Edit(ed) if !ed.single_line => completion_context(&ed.state, &app.ref_prefix),
+        Overlay::BlockEdit(be) => completion_context(&be.editor.state, &app.ref_prefix),
         Overlay::Create(f) => f
             .description_editor()
-            .is_some_and(|e| completion_context(e, &app.ref_prefix).is_some()),
-        _ => false,
+            .and_then(|e| completion_context(e, &app.ref_prefix)),
+        _ => None,
     };
-    if ref_context {
+    if let Some(c) = ref_context {
+        let what = match c.kind {
+            CompleteKind::Yak => "yak",
+            CompleteKind::Dok => "dok link",
+        };
         frame.render_widget(
             Paragraph::new(Span::styled(
-                "Tab → complete yak · Esc dismiss",
+                format!("Tab → complete {what} · Esc dismiss"),
                 Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
             )),
             area,

@@ -316,8 +316,8 @@ fn edit_is_dirty(ed: &Editor) -> bool {
 pub(crate) enum EditKey {
     Commit,
     Cancel,
-    /// Open the ref completer: `(chars to replace, seed)`.
-    Complete(usize, String),
+    /// Open the completer (a yak id or a dok link) for this context.
+    Complete(Completion),
     /// Vim `:` in Normal mode.
     Cmdline,
     /// Handed to edtui (or nothing to do).
@@ -359,8 +359,8 @@ pub(crate) fn editor_key(
     };
     if commit {
         EditKey::Commit
-    } else if let Some((len, seed)) = complete {
-        EditKey::Complete(len, seed)
+    } else if let Some(c) = complete {
+        EditKey::Complete(c)
     } else if open_cmd {
         EditKey::Cmdline
     } else if cancel {
@@ -509,8 +509,8 @@ impl App {
             } else {
                 None
             };
-            if let Some((replace_len, seed)) = complete {
-                self.open_ref_picker(replace_len, &seed);
+            if let Some(c) = complete {
+                self.open_ref_picker(&c);
                 return;
             }
             // Never hand edtui a key it can't convert (it would panic).
@@ -816,22 +816,45 @@ impl App {
     /// back to it with its content intact.
     /// Open the yak-ref picker over whatever editor overlay is active (the
     /// comment `Overlay::Edit` or the create/edit form `Overlay::Create`),
-    /// stashing it so commit/cancel return to it. `replace_len` is the typed
-    /// `<prefix>-` to drop before inserting the chosen id.
-    pub(crate) fn open_ref_picker(&mut self, replace_len: usize, seed: &str) {
+    /// stashing it so commit/cancel return to it. `c.len` is the typed token
+    /// (`<prefix>-…` or `/doks/…`) to drop before inserting the chosen id or
+    /// dok path; a dok completion lists the farm's doks instead of the yaks.
+    pub(crate) fn open_ref_picker(&mut self, c: &Completion) {
+        let dok_items = match c.kind {
+            CompleteKind::Yak => None,
+            CompleteKind::Dok => {
+                if self.doks.entries.is_none() {
+                    self.reload_doks();
+                }
+                Some(
+                    self.doks
+                        .entries
+                        .iter()
+                        .flatten()
+                        .filter(|e| e.group == DocGroup::Dok)
+                        .map(|e| (e.path.clone(), e.title.clone()))
+                        .collect::<Vec<_>>(),
+                )
+            }
+        };
         let back = std::mem::replace(&mut self.overlay, Overlay::None);
+        let (label, action) = match c.kind {
+            CompleteKind::Yak => ("Insert yak reference", FuzzyAction::InsertRef),
+            CompleteKind::Dok => ("Insert dok link", FuzzyAction::InsertRef),
+        };
         let mut fp = FuzzyPick::new(
             self.editor_vim(),
-            "Insert yak reference".into(),
+            label.into(),
             HashSet::new(),
             false,
-            FuzzyAction::InsertRef,
+            action,
         );
         fp.return_to = Some(Box::new(back));
-        fp.replace_len = replace_len;
-        // Pre-filter by whatever tail was already typed after `<prefix>-`.
-        if !seed.is_empty() {
-            insert_into(&mut fp.handler, &fp.query, seed);
+        fp.replace_len = c.len;
+        fp.doks = dok_items;
+        // Pre-filter by whatever tail was already typed after the trigger.
+        if !c.seed.is_empty() {
+            insert_into(&mut fp.handler, &fp.query, &c.seed);
         }
         self.overlay = Overlay::Fuzzy(fp);
     }
@@ -2072,7 +2095,7 @@ impl App {
                     Overlay::BlockEdit(be) => self.commit_edit(be.editor),
                     _ => {}
                 },
-                EditKey::Complete(replace_len, seed) => self.open_ref_picker(replace_len, &seed),
+                EditKey::Complete(c) => self.open_ref_picker(&c),
                 EditKey::Cmdline => self.cmdline = Some(String::new()),
                 EditKey::Cancel => self.request_cancel(dirty, "cancelled"),
                 EditKey::Handled => {}
@@ -2225,7 +2248,46 @@ impl App {
         self.focus_new_comment();
     }
 
-    pub(crate) fn commit_fuzzy(&mut self, mut fp: FuzzyPick) {
+    /// End a ref/dok completion: replace the typed token in the editor the
+    /// picker was opened over with `picked` (if any), and always return to
+    /// that editor — even on an empty pick, so it is never lost.
+    fn finish_insert(&mut self, mut fp: FuzzyPick, picked: Option<String>) {
+        let Some(back) = fp.return_to.take() else {
+            return;
+        };
+        let mut ov = *back;
+        if let Some(id) = &picked {
+            // Replace the typed token with the chosen id or path, in
+            // whichever editor the picker was opened over.
+            match &mut ov {
+                Overlay::Edit(ed) => {
+                    delete_into(&mut ed.handler, &ed.state, fp.replace_len);
+                    insert_into(&mut ed.handler, &ed.state, id);
+                }
+                Overlay::BlockEdit(be) => {
+                    let ed = &mut be.editor;
+                    delete_into(&mut ed.handler, &ed.state, fp.replace_len);
+                    insert_into(&mut ed.handler, &ed.state, id);
+                }
+                Overlay::Create(f) => {
+                    delete_into(&mut f.handler, &f.description, fp.replace_len);
+                    insert_into(&mut f.handler, &f.description, id);
+                }
+                _ => {}
+            }
+        }
+        self.overlay = ov;
+    }
+
+    pub(crate) fn commit_fuzzy(&mut self, fp: FuzzyPick) {
+        // A dok-link pick: the chosen farm-root path replaces the typed token.
+        if fp.doks.is_some() {
+            let picked = dok_candidates(&fp)
+                .get(fp.sel)
+                .map(|(p, _)| format!("/{p}"));
+            self.finish_insert(fp, picked);
+            return;
+        }
         let cands = fuzzy_candidates(&self.all, &fp);
         // Resolve the selection to a target: `None` = clear-parent row,
         // `Some(id)` = a task, or bail if the selection points at nothing.
@@ -2241,31 +2303,7 @@ impl App {
         // Ref autocomplete: insert the picked id (if any) and always return to
         // the stashed editor — even on an empty pick, so the editor is never lost.
         if let FuzzyAction::InsertRef = fp.action {
-            let picked = target.flatten();
-            if let Some(back) = fp.return_to.take() {
-                let mut ov = *back;
-                if let Some(id) = &picked {
-                    // Replace the typed `<prefix>-` with the chosen id, in
-                    // whichever editor the picker was opened over.
-                    match &mut ov {
-                        Overlay::Edit(ed) => {
-                            delete_into(&mut ed.handler, &ed.state, fp.replace_len);
-                            insert_into(&mut ed.handler, &ed.state, id);
-                        }
-                        Overlay::BlockEdit(be) => {
-                            let ed = &mut be.editor;
-                            delete_into(&mut ed.handler, &ed.state, fp.replace_len);
-                            insert_into(&mut ed.handler, &ed.state, id);
-                        }
-                        Overlay::Create(f) => {
-                            delete_into(&mut f.handler, &f.description, fp.replace_len);
-                            insert_into(&mut f.handler, &f.description, id);
-                        }
-                        _ => {}
-                    }
-                }
-                self.overlay = ov;
-            }
+            self.finish_insert(fp, target.flatten());
             return;
         }
         let Some(target) = target else {
