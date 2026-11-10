@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T19:06:01Z'
-updated: '2026-11-10T21:12:24Z'
+updated: '2026-11-10T21:13:32Z'
 tags:
 - doks
 - tui
@@ -39,3 +39,8 @@ Sources, session notes; a CLI for stars.
 ## Evidence
 
 Tests: star a dok in the Doks tab, it appears in Starred, `*` again removes it; the file round-trips both kinds. A `yaks tui --headless` frame of the Starred view with a dok, attached. Gate `cargo test --workspace`.
+
+---
+▸ 2026-11-10T21:13:32Z [dokstar-1]
+
+Start 2026-11-10T21:13:29Z; checkout /Users/joel/src/yaks/.delta/worktrees/pcjanhhk4b1n/yaks
