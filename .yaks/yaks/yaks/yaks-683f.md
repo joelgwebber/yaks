@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
-updated: '2026-11-10T17:50:28Z'
+updated: '2026-11-10T17:50:30Z'
 tags:
 - tui
 ---
@@ -62,3 +62,26 @@ kind: pickup
 picked up
 
 herd-unlock: delegating phase 1 of the attached design to worker drafts-1 (Sonnet), with the four answers as decided.
+
+---
+▸ 2026-11-10T17:50:30Z [herd-unlock]
+
+Claim (yakherd herd-unlock): worker `drafts-1`, Sonnet 5.5. Phase 1 of [the design](yaks-683f/683f-design.md), with the answers of 2026-11-06.
+
+## Scope
+
+- Surfaces: create form, edit form (`E`), comment (`M`): exactly the ones 275f guards.
+- Storage: `$XDG_CONFIG_HOME/yaks/<slug>/drafts/<key>.json`, via `views_store::config_dir`; atomic writes; best effort.
+- Save on dismiss (the dirty-cancel prompt's keep) and on quit with a dirty overlay open. No periodic autosave (P2).
+- The 275f `Discard changes? (y/N)` becomes `k`=keep draft (default, also Enter) / `d`=discard / `Esc`=back to editing.
+- Auto-restore on open, a `draft` badge, `Ctrl-R` reverts to the yak's current content. Warn (badge colour) when the yak's `updated` moved since the draft.
+- Clear on commit, on discard; GC at startup (30 days, or yak gone/dead).
+- Keys and help through `src/tui/keymap.rs` (modal keys: `EXTRAS`), `docs/tui.md`.
+
+## Out of scope
+
+Autosave, ask/answer drafts, a drafts picker, the `✎` tree marker, clobber-on-commit (design Q4: separate).
+
+## Evidence
+
+Tests: dismiss-keep then reopen restores; `d` discards; commit clears; stale warning. A toque text frame of a restored form with its badge and of the three-way prompt, attached. Gate `cargo test --workspace`. Judge: the yakherd at landing.
