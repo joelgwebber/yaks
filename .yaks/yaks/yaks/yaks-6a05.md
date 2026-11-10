@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-11-10T19:11:25Z'
-updated: '2026-11-10T21:45:08Z'
+updated: '2026-11-10T21:45:25Z'
 tags:
 - perf
 - tui
@@ -91,3 +91,13 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVQdJIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-10T21:45:25Z [herd-unlock]
+kind: landed
+commit: e000502520e7002c2656f594a5e03be37714690a
+source: 173c48833ea6f0c8fcadcbc4e09666d620256138
+branch: main
+---
+
+landed: e0005025 yaks-6a05: hoist is_multi_herd out of the per-row list render loop; add keystroke bench
