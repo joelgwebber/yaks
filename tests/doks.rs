@@ -133,6 +133,35 @@ fn new_set_show_list_and_query() {
         list.contains("doks/topics/heat-pump.md") && list.contains("yaks/doks/design/links.md"),
         "{list}"
     );
+    // yaks-2755: the description is the index line, under its dok; a dok
+    // with none gets no second line.
+    let lines: Vec<&str> = list.lines().collect();
+    let at = lines
+        .iter()
+        .position(|l| l.contains("doks/topics/heat-pump.md"))
+        .unwrap();
+    assert_eq!(lines[at + 1].trim(), "One line.", "{list}");
+    let at = lines
+        .iter()
+        .position(|l| l.contains("yaks/doks/design/links.md"))
+        .unwrap();
+    assert!(
+        lines.get(at + 1).is_none_or(|l| l.contains(".md")),
+        "{list}"
+    );
+    let jl: Value = serde_json::from_str(&f.run(&["dok", "list", "--json"])).unwrap();
+    let by_path = |p: &str| {
+        jl.as_array()
+            .unwrap()
+            .iter()
+            .find(|d| d["path"] == p)
+            .unwrap()
+    };
+    assert_eq!(
+        by_path("doks/topics/heat-pump.md")["description"],
+        "One line."
+    );
+    assert!(by_path("yaks/doks/design/links.md")["description"].is_null());
     let herd_only = f.run(&["dok", "list", "yaks/doks"]);
     assert!(!herd_only.contains("heat-pump"), "{herd_only}");
     let q: Value =

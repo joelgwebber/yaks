@@ -1347,7 +1347,8 @@ enum Command {
     /// dok's last commit on the farm branch, or a date), sources that no dok
     /// or yak cites (a `sources/<id>/` link or mention; keep one on
     /// purpose with `yaks source mark`), dok kinds that
-    /// differ only by plural or hyphens, and `doctor`'s `broken-link`,
+    /// differ only by plural or hyphens, doks with no `description:` (the
+    /// index line `yaks dok list` shows), and `doctor`'s `broken-link`,
     /// `schema-mismatch`, `merge-conflict` and `dok-problem`. Exits 1 when
     /// there is any finding.
     Check {
@@ -1674,7 +1675,9 @@ enum SourceAction {
 
 #[derive(Subcommand)]
 enum DokAction {
-    /// List doks: path, type and title, sorted by path.
+    /// List doks: path, type and title, sorted by path, each followed by its
+    /// `description:` (the index line: when to read it) on the next line when
+    /// it has one.
     List {
         /// Only doks under this path (`doks/topics`, `yaks/doks`).
         prefix: Option<String>,
@@ -4250,6 +4253,9 @@ fn print_dok_rows(doks: &[&doks::Dok]) {
     let kw = doks.iter().map(|p| p.kind().len()).max().unwrap_or(0);
     for p in doks {
         println!("  {:w$}  {:kw$}  {}", p.path, p.kind(), p.title());
+        if let Some(d) = p.description() {
+            println!("  {:w$}  {:kw$}  {d}", "", "");
+        }
     }
 }
 

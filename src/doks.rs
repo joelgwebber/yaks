@@ -105,6 +105,14 @@ impl Dok {
         stem.strip_suffix(".md").unwrap_or(stem).to_string()
     }
 
+    /// Its `description:` (the index line `dok list` shows: one sentence on
+    /// when to read it), trimmed; `None` when absent, empty or not a scalar.
+    pub fn description(&self) -> Option<String> {
+        self.str_field("description")
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+    }
+
     /// Its `tags:` (a list, or one scalar).
     pub fn tags(&self) -> Vec<String> {
         self.fields

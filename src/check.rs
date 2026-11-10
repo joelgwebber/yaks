@@ -2,13 +2,15 @@
 //! It reads the farm and reports what a person or an agent should look at,
 //! and never edits.
 //!
-//! Seven kinds of finding. Four are `doctor`'s own issues, reused as they are
+//! Eight kinds of finding. Four are `doctor`'s own issues, reused as they are
 //! (`dok-problem`, `broken-link`, `schema-mismatch`, `merge-conflict`); three
-//! are ported from Hearth's `internal/check/scan.go`:
+//! are ported from Hearth's `internal/check/scan.go`, and one is yaks's own:
 //!
 //! - `stale`: a dok past its `stale_after` (its own, else its schema's);
 //! - `uncited`: a source nothing in the farm cites;
-//! - `similar-kinds`: dok kinds that differ only by plural or hyphens.
+//! - `similar-kinds`: dok kinds that differ only by plural or hyphens;
+//! - `no-description` (yaks-2755): a dok with no `description:`, the index
+//!   line `dok list` shows. Only doks: session notes and schemas are not.
 
 use crate::farm::{Farm, IssueKind};
 use crate::{doks, schemas, sources, store};
@@ -28,6 +30,7 @@ pub enum Kind {
     Stale,
     Uncited,
     SimilarKinds,
+    NoDescription,
 }
 
 impl Kind {
@@ -41,6 +44,7 @@ impl Kind {
             Kind::Stale => "stale",
             Kind::Uncited => "uncited",
             Kind::SimilarKinds => "similar-kinds",
+            Kind::NoDescription => "no-description",
         }
     }
 
@@ -59,6 +63,10 @@ on purpose with `yaks source mark`)"
             }
             Kind::SimilarKinds => {
                 "Similar kinds (dok types that differ only by plural or hyphens: pick one)"
+            }
+            Kind::NoDescription => {
+                "Dok with no description (`description:` is the index line `yaks dok list` \
+shows: one sentence on when to read it)"
             }
         }
     }
@@ -108,6 +116,7 @@ pub fn run_at(farm: &Farm, now: DateTime<Utc>) -> Result<Vec<Finding>> {
     out.extend(stale(root, &all_doks, &all_schemas, now));
     out.extend(uncited(root)?);
     out.extend(similar_kinds(&all_doks, &all_schemas));
+    out.extend(no_description(&all_doks));
     Ok(out)
 }
 
@@ -412,9 +421,51 @@ fn similar_kinds(all_doks: &[doks::Dok], all_schemas: &[schemas::Schema]) -> Vec
     out
 }
 
+// ---- no description ------------------------------------------------------
+
+/// A dok with no `description:` (absent, empty or not a scalar), one finding
+/// per dok path. A file with no frontmatter at all is `doctor`'s `dok-problem`
+/// already, so it is not listed twice. Only doks are scanned: session notes
+/// and schemas live outside the doks roots.
+fn no_description(all_doks: &[doks::Dok]) -> Vec<Finding> {
+    all_doks
+        .iter()
+        .filter(|d| d.has_frontmatter && d.description().is_none())
+        .map(|d| Finding {
+            kind: Kind::NoDescription,
+            message: format!(
+                "{} has no description: (one sentence on when to read it)",
+                d.path
+            ),
+            ids: vec![d.path.clone()],
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_dok_without_a_usable_description_is_flagged_once_by_path() {
+        let dok = |path: &str, text: &str| doks::Dok::parse(path, text);
+        let all = [
+            dok(
+                "doks/ok.md",
+                "---\ntitle: A\ndescription: When to read A.\n---\n",
+            ),
+            dok("doks/none.md", "---\ntitle: B\n---\n"),
+            dok("doks/empty.md", "---\ntitle: C\ndescription: '  '\n---\n"),
+            dok("doks/list.md", "---\ntitle: D\ndescription: [a, b]\n---\n"),
+            // No frontmatter: `dok-problem` has it.
+            dok("doks/bare.md", "just text\n"),
+        ];
+        let found = no_description(&all);
+        let ids: Vec<&str> = found.iter().map(|f| f.ids[0].as_str()).collect();
+        assert_eq!(ids, ["doks/none.md", "doks/empty.md", "doks/list.md"]);
+        assert!(found.iter().all(|f| f.kind == Kind::NoDescription));
+        assert_eq!(Kind::NoDescription.code(), "no-description");
+    }
 
     #[test]
     fn kinds_normalize_by_plural_and_hyphen() {

@@ -1,5 +1,5 @@
 //! `yaks check` through the real binary (yaks-c0ac): stale doks, uncited
-//! sources, kinds that look alike, and `doctor`'s link, schema, conflict and
+//! sources, kinds that look alike, doks with no description (yaks-2755), and `doctor`'s link, schema, conflict and
 //! dok findings, as text and JSON, with the exit code.
 
 mod common;
@@ -100,7 +100,10 @@ fn finding<'a>(v: &'a Value, kind: &str) -> Vec<&'a Value> {
 #[test]
 fn a_clean_farm_exits_zero() {
     let f = Farm::new("clean");
-    f.write("doks/a.md", "---\ntype: note\ntitle: A\n---\n\nFine.\n");
+    f.write(
+        "doks/a.md",
+        "---\ntype: note\ntitle: A\ndescription: d.\n---\n\nFine.\n",
+    );
     let (code, out) = f.check(&[]);
     assert_eq!(
         (code, out.as_str()),
@@ -117,11 +120,11 @@ fn every_kind_of_finding_is_reported_with_exit_one() {
     // `verified:`.
     f.write(
         "doks/old.md",
-        "---\ntype: note\ntitle: Old\nstale_after: 2020-01-01\n---\n\nOld.\n",
+        "---\ntype: note\ntitle: Old\ndescription: d.\nstale_after: 2020-01-01\n---\n\nOld.\n",
     );
     f.write(
         "doks/fresh.md",
-        "---\ntype: note\ntitle: Fresh\nstale_after: 2999-01-01\n---\n\nFresh.\n",
+        "---\ntype: note\ntitle: Fresh\ndescription: d.\nstale_after: 2999-01-01\n---\n\nFresh.\n",
     );
     f.write(
         "schemas/recipe.md",
@@ -129,31 +132,51 @@ fn every_kind_of_finding_is_reported_with_exit_one() {
     );
     f.write(
         "doks/soup.md",
-        "---\ntype: recipe\ntitle: Soup\nverified: 2020-03-01\n---\n\nSoup.\n",
+        "---\ntype: recipe\ntitle: Soup\ndescription: d.\nverified: 2020-03-01\n---\n\nSoup.\n",
     );
     f.write(
         "doks/stew.md",
-        "---\ntype: recipe\ntitle: Stew\nverified: 2999-03-01\n---\n\nStew.\n",
+        "---\ntype: recipe\ntitle: Stew\ndescription: d.\nverified: 2999-03-01\n---\n\nStew.\n",
     );
     // uncited: one source with nothing citing it, one cited by a dok.
     let lone = f.source("lone.md", "# Lone\n", &[]);
     let used = f.source("used.md", "# Used\n", &[]);
     f.write(
         "doks/cites.md",
-        &format!("---\ntype: note\ntitle: Cites\nsources:\n  - {used}/source.md\n---\n\nSee it.\n"),
+        &format!("---\ntype: note\ntitle: Cites\ndescription: d.\nsources:\n  - {used}/source.md\n---\n\nSee it.\n"),
     );
     // similar kinds: `project` and `projects`.
-    f.write("doks/p1.md", "---\ntype: project\ntitle: P1\n---\n");
-    f.write("doks/p2.md", "---\ntype: projects\ntitle: P2\n---\n");
+    f.write(
+        "doks/p1.md",
+        "---\ntype: project\ntitle: P1\ndescription: d.\n---\n",
+    );
+    f.write(
+        "doks/p2.md",
+        "---\ntype: projects\ntitle: P2\ndescription: d.\n---\n",
+    );
+    // no description: a dok with none, one with an empty one; a session note
+    // and a schema, with none, are not doks and not listed.
+    f.write("doks/bare.md", "---\ntype: note\ntitle: Bare\n---\n");
+    f.write(
+        "doks/blank.md",
+        "---\ntype: note\ntitle: Blank\ndescription:\n---\n",
+    );
+    f.write(
+        "sessions/2026-01-01-x.md",
+        "---\ntype: session\ntitle: S\n---\n\nNo description.\n",
+    );
     // doctor's: a broken link, a dok without a title, a merge conflict.
     f.write(
         "doks/links.md",
-        "---\ntype: note\ntitle: Links\n---\n\nSee [gone](/doks/missing.md).\n",
+        "---\ntype: note\ntitle: Links\ndescription: d.\n---\n\nSee [gone](/doks/missing.md).\n",
     );
-    f.write("doks/untitled.md", "---\ntype: note\n---\n\nNo title.\n");
+    f.write(
+        "doks/untitled.md",
+        "---\ntype: note\ndescription: d.\n---\n\nNo title.\n",
+    );
     f.write(
         "doks/clash.md",
-        "---\ntype: note\ntitle: Clash\n---\n\n<<<<<<< here\nours\n=======\ntheirs\n>>>>>>> other side\n",
+        "---\ntype: note\ntitle: Clash\ndescription: d.\n---\n\n<<<<<<< here\nours\n=======\ntheirs\n>>>>>>> other side\n",
     );
 
     let (code, json) = f.check(&["--json"]);
@@ -167,7 +190,9 @@ fn every_kind_of_finding_is_reported_with_exit_one() {
             "stale",
             "stale",
             "uncited",
-            "similar-kinds"
+            "similar-kinds",
+            "no-description",
+            "no-description"
         ],
         "{json}"
     );
@@ -199,14 +224,23 @@ fn every_kind_of_finding_is_reported_with_exit_one() {
         "these look like the same kind of dok: `project` (1 dok), `projects` (1 dok)"
     );
 
+    let nodesc = finding(&v, "no-description");
+    assert_eq!(nodesc[0]["ids"], serde_json::json!(["doks/bare.md"]));
+    assert_eq!(nodesc[1]["ids"], serde_json::json!(["doks/blank.md"]));
+    assert_eq!(
+        nodesc[0]["message"],
+        "doks/bare.md has no description: (one sentence on when to read it)"
+    );
+
     // The text report groups by kind and says how many.
     let (code, text) = f.check(&[]);
     assert_eq!(code, 1);
-    assert!(text.starts_with("Found 7 findings:\n"), "{text}");
+    assert!(text.starts_with("Found 9 findings:\n"), "{text}");
     for needle in [
         "Stale dok",
         "Uncited source",
         "Similar kinds",
+        "Dok with no description",
         "Broken link",
         "Merge conflict",
         "Dok problem",
@@ -235,7 +269,7 @@ fn a_source_and_its_parts_count_as_one_and_marks_keep_it_off_the_list() {
     // Citing only the part cites the whole.
     f.write(
         "doks/c.md",
-        &format!("---\ntype: note\ntitle: C\n---\n\n![shot](/{shot}/shot.md)\n"),
+        &format!("---\ntype: note\ntitle: C\ndescription: d.\n---\n\n![shot](/{shot}/shot.md)\n"),
     );
     let (code, out) = f.check(&[]);
     assert_eq!(
@@ -267,7 +301,10 @@ fn a_dok_with_no_verified_date_counts_from_its_last_commit() {
         "schemas/howto.md",
         "---\ntype: Dok Type\ntitle: Howto\nstale_after: P1Y\n---\n",
     );
-    f.write("doks/h.md", "---\ntype: howto\ntitle: H\n---\n\nSteps.\n");
+    f.write(
+        "doks/h.md",
+        "---\ntype: howto\ntitle: H\ndescription: d.\n---\n\nSteps.\n",
+    );
     // Not committed yet: no history, so the dok is skipped.
     assert_eq!(f.check(&[]).0, 0);
     let out = f
@@ -297,7 +334,8 @@ fn source_mark_sets_and_clears_what_check_honours() {
     let kept = f.source("kept.md", "# Kept\n", &[]);
     let old = f.source("old.md", "# Old\n", &[]);
     let new = f.source("new.md", "# New\n", &[]);
-    let cite = format!("---\ntype: note\ntitle: C\n---\n\nSee /{new}/source.md.\n");
+    let cite =
+        format!("---\ntype: note\ntitle: C\ndescription: d.\n---\n\nSee /{new}/source.md.\n");
     f.write("doks/c.md", &cite);
     // `kept` and `old` are listed.
     let v: Value = serde_json::from_str(&f.check(&["--json"]).1).unwrap();

@@ -226,8 +226,9 @@ pub fn doctor_array(issues: &[crate::farm::Issue]) -> Value {
     )
 }
 
-/// A dok for `--json`: path, kind, title, herd (or null), every frontmatter
-/// field parsed under `fields`, and with `body` its markdown body.
+/// A dok for `--json`: path, kind, title, description (or null), herd (or
+/// null), every frontmatter field parsed under `fields`, and with `body` its
+/// markdown body.
 pub fn dok_value(p: &crate::doks::Dok, body: bool) -> Value {
     dok_value_hashed(p, body, None)
 }
@@ -242,6 +243,7 @@ pub fn dok_value_hashed(p: &crate::doks::Dok, body: bool, hash: Option<&str>) ->
     }
     m.insert("type".into(), json!(p.kind()));
     m.insert("title".into(), json!(p.title()));
+    m.insert("description".into(), json!(p.description()));
     m.insert("herd".into(), json!(p.herd()));
     m.insert("fields".into(), p.fields.to_json());
     if body {
