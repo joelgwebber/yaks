@@ -1,11 +1,11 @@
 ---
 id: yaks-bcd7
 title: 'Unknown tags: create and update say when a tag is not among the farm''s known tags'
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-10T21:11:52Z'
-updated: '2026-11-10T21:30:35Z'
+updated: '2026-11-10T21:30:37Z'
 parent: yaks-f04d
 tags:
 - cli
@@ -74,3 +74,13 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 ▸ 2026-11-10T21:30:35Z [tagwarn-1]
 
 Summary: create --tags, update --add-tag and bulk --add-tag warn on stderr for a tag not in schemas/yak.md tags: (five nearest by edit distance); advice only, silent without known tags. verify PASS; evidence in the scratch-farm note above. Commit f06f67c5.
+
+---
+▸ 2026-11-10T21:30:37Z [tagwarn-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFV6lZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
