@@ -5,12 +5,11 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-10T17:59:19Z'
-updated: '2026-11-10T18:43:49Z'
+updated: '2026-11-10T18:44:25Z'
 parent: yaks-1c89
 tags:
 - skills
 - design
-needs: agent
 ---
 
 Joel, 2026-11-10 (on yaks-2b40): "let's also discuss ideas around a process for getting feedback from other farms' experience with these memory consolidation processes. Maybe something as simple as having them keep a running log of friction points that we can copy over to this farm as feedback?"
@@ -56,3 +55,12 @@ needs: agent
 1. Ooh, clever idea. I like that, and it stays out of the repo proper, and can have a well-known location.
 2. Yeah, let's just start with the collector.
 3. SG. We might come back later and offer a way for others to take their feedback and send it, but that will matter more when it's not just a couple of us.
+
+---
+▸ 2026-11-10T18:44:25Z [herd-unlock]
+kind: pickup
+---
+
+picked up
+
+herd-unlock: writing the feedback dok into yaks-upkeep's review and reflection steps, and creating the weekly collector yak here.
