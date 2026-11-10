@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T17:37:34Z'
-updated: '2026-11-10T17:50:31Z'
+updated: '2026-11-10T17:51:42Z'
 tags:
 - doks
 - tui
@@ -39,3 +39,11 @@ Heading anchors (`#...`), relative links, sources.
 ## Evidence
 
 Tests: Tab after `/doks/des` opens the picker seeded `des` and inserting replaces the token; `yaks-` completion unchanged. A toque text frame of the picker open over an editor, attached. Gate `cargo test --workspace`. Judge: the yakherd.
+
+---
+▸ 2026-11-10T17:51:42Z [doklink-1]
+
+Start: Tue Nov 10 17:51:39 UTC 2026
+
+- farm path: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-ca57.md
+- checkout: /Users/joel/src/yaks/.delta/worktrees/9qjdhqw40bqc/yaks
