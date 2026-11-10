@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-08-26T13:24:15Z'
-updated: '2026-11-10T21:21:20Z'
+updated: '2026-11-10T21:46:21Z'
 parent: yaks-f04d
 depends_on:
 - yaks-b2ed
@@ -49,3 +49,11 @@ Tests: `Tab` after `ta` in tags opens the picker seeded `ta`, Enter inserts; `Ta
 Start Tue Nov 10 21:13:43 UTC 2026; checkout /Users/joel/src/yaks/.delta/worktrees/sh9cspt26zn3/yaks
 
 [tagframes](yaks-8d6a/tagframes.txt "Headless: Tab after 'tui, r' in the form's tags field opens the tag picker (known tag tui with description, then rust by use); Enter yields 'tui, rust'")
+
+---
+▸ 2026-11-10T21:46:21Z [tagcomplete-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
