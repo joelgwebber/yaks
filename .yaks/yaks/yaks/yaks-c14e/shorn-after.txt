@@ -1,0 +1,17 @@
+
+=== frame 16 · 120x14 · focus=list · view=🧺 All · cursor=0 · rows=3 · sel=yak-37ee · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (1)   🐑 Shorn (1)   🕒 Recent (3)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sheds (1)   filter: (a
+filter applied
+ yak-37ee p3 task     💀 gone yak
+ yak-1962 p3 task     🪒 busy yak
+ yak-5af6 p3 task     🦬 open yak
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help
+=== end ===

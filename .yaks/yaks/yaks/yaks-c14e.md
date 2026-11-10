@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-10T19:08:25Z'
-updated: '2026-11-10T21:13:10Z'
+updated: '2026-11-10T21:35:04Z'
 tags:
 - tui
 ---
@@ -45,3 +45,5 @@ A test that fails first: All view, drawer toggles shorn off, no shorn row remain
 ▸ 2026-11-10T21:13:10Z [shornfilter-1]
 
 Start 2026-11-10T21:13:10Z; checkout /Users/joel/src/yaks/.delta/worktrees/pfapv7at78cw/yaks, base 686d328a.
+
+[shorn-after](yaks-c14e/shorn-after.txt "After the fix: All view, drawer status chips hairy+shaving+dead lit (shorn off): 3 rows, no shorn yak (yak-1fc5), where before it stayed")
