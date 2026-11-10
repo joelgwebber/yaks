@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 4
 created: '2026-11-04T23:13:02Z'
-updated: '2026-11-10T22:00:44Z'
+updated: '2026-11-10T22:00:45Z'
 tags:
 - tests
 ---
@@ -68,3 +68,12 @@ Decision: `init_modes` worktree test uses the file's own `temp()` for the `-wt` 
 Decision: `tui::farmsync::tests` siblings (origin, other clone) are derived from `temp_farm`'s own pid+counter dir name, via a `sibling()` helper, and a `cleanup()` removes them. `published_farm` lost its `tmp` argument.
 
 - Rejected: keeping per-test fixed strings (`yaks-f0db-pull-origin.git`): those are shared by every `cargo test` on the machine.
+
+---
+▸ 2026-11-10T22:00:45Z [flaky-1]
+
+Decision: `settle_auto_sync` waits on a 120 s wall-clock deadline instead of 400 polls of 25 ms.
+
+- The old loop failed after ~10 s of sleeping, plus tick time. The sync is a thread running several git processes, so its duration scales with load; there is no fixed path, port or env var to fix there.
+- Rejected: only raising the iteration count (still a guess); a mutex over all tests (hides the cause and slows the suite).
+- No non-test code needed, so no `yaks ask`.
