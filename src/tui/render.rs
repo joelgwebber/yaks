@@ -834,6 +834,8 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
         .max(4);
     let id_field_w = max_id_len + 2;
     let blocked = app.blocked_ids();
+    // Hoisted: it walks every yak, so asked per row it is quadratic.
+    let multi_herd = app.is_multi_herd();
     let doc_cols = super::doks_tab::DocCols::of(&rows, area.width);
     // The Sheds view: the part of its shed each yak row is in (shaving,
     // asking, recent) labels the row.
@@ -853,7 +855,7 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
                 t.awaiting_agent(),
                 app.is_starred(&t.id),
                 area.width,
-                app.is_multi_herd(),
+                multi_herd,
                 due_chip(t, app.clock.now(), app.clock.zone()),
                 shed_kinds
                     .iter()

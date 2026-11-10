@@ -205,3 +205,105 @@ thread_local! {
     /// (cache misses), so tests can pin the rebuild count of a keypress.
     pub(crate) static DLINES_CALLS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
+
+/// Per-keystroke cost at farm scale (yaks-6a05). Run it with
+/// `cargo test --release -p yaks keystroke_bench -- --ignored --nocapture`.
+#[cfg(test)]
+mod bench {
+    use super::*;
+    use crate::tui::test_support::{draw, key};
+    use std::time::Instant;
+
+    const N: usize = 800;
+
+    /// ~`N` yaks: a forest with a few levels, mixed statuses, tags, deps and
+    /// a body each, like a real farm.
+    fn farm() -> Vec<Task> {
+        let statuses = [
+            Status::Hairy,
+            Status::Hairy,
+            Status::Shaving,
+            Status::Shorn,
+            Status::Shorn,
+            Status::Shorn,
+            Status::Shorn,
+            Status::Dead,
+        ];
+        (0..N)
+            .map(|i| {
+                let parent = (i % 5 != 0).then(|| format!("y-{:04}", i / 5));
+                let mut t = crate::tui::test_support::task(
+                    &format!("y-{i:04}"),
+                    &format!("Yak number {i} about widget {} and more words", i % 37),
+                    statuses[i % statuses.len()],
+                    (i % 4) as u8 + 1,
+                    parent.as_deref(),
+                );
+                t.tags = vec![format!("t{}", i % 7), "perf".into()];
+                if i % 9 == 0 && i > 0 {
+                    t.depends_on = vec![format!("y-{:04}", i - 1)];
+                }
+                t.updated = Some(format!("2026-11-{:02}T10:{:02}:00Z", i % 28 + 1, i % 60));
+                t.body = format!("Body of yak {i}.\n\n- one\n- two\n\nSee y-0001.\n");
+                t
+            })
+            .collect()
+    }
+
+    fn time(label: &str, app: &mut App, keys: &[char]) {
+        let mut ms: Vec<f64> = Vec::new();
+        let (mut key_ms, mut draw_ms) = (0.0, 0.0);
+        for &c in keys {
+            let t0 = Instant::now();
+            handle_key(app, key(c));
+            let t1 = Instant::now();
+            draw(app, 200, 100);
+            let t2 = Instant::now();
+            key_ms += (t1 - t0).as_secs_f64() * 1e3;
+            draw_ms += (t2 - t1).as_secs_f64() * 1e3;
+            ms.push((t2 - t0).as_secs_f64() * 1e3);
+        }
+        let n = keys.len() as f64;
+        println!(
+            "  handle_key {:.2} ms, render {:.2} ms (mean)",
+            key_ms / n,
+            draw_ms / n
+        );
+        ms.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let mean = ms.iter().sum::<f64>() / ms.len() as f64;
+        println!(
+            "{label:<28} n={:<3} mean {mean:6.2} ms  median {:6.2}  max {:6.2}",
+            ms.len(),
+            ms[ms.len() / 2],
+            ms[ms.len() - 1]
+        );
+    }
+
+    #[test]
+    #[ignore = "timing, not correctness"]
+    fn keystroke_bench() {
+        let mut app = App::new(farm());
+        let t0 = Instant::now();
+        draw(&app, 200, 100);
+        println!(
+            "first frame (Hairy)          {:.2} ms",
+            t0.elapsed().as_secs_f64() * 1e3
+        );
+        time("Hairy tab: j", &mut app, &['j'; 60]);
+        let all = app
+            .views
+            .iter()
+            .position(|v| v.key == view::ALL_KEY)
+            .unwrap();
+        app.set_view(all);
+        time("All tab: j", &mut app, &['j'; 60]);
+        time(
+            "All tab: /, then typing",
+            &mut app,
+            &['/', 'w', 'i', 'd', 'g', 'e', 't', ' ', '1', '2'],
+        );
+        handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
+        handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
+        time("All tab: Enter (detail)", &mut app, &['\n']);
+    }
+}
