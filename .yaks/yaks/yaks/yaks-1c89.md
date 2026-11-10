@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:27:55Z'
-updated: '2026-11-07T15:43:44Z'
+updated: '2026-11-10T19:10:46Z'
 parent: yaks-44b3
 tags:
 - doks
@@ -135,3 +135,20 @@ Pushed to `origin/main` at 38fc4358 (Joel, 2026-11-07); farm synced. Release not
 - Also on main from other threads: `source add --text-only` (yaks-0df0), one farm worktree per repository (yaks-35b5, yaks-9a13), the stale-farm fast-forward message (yaks-8a92).
 
 Known: yaks-06cd (load-sensitive tests). No CI runs on push; the release workflow runs on the tag.
+
+---
+▸ 2026-11-10T19:10:46Z [herd-unlock]
+
+Batch by herd-unlock, 2026-11-10 (Joel: "PTAL at the answered and starred yaks"). Workers, all `claude-sonnet-5-5`, base `1a3388a8` except dokdesc-1 (`53576880`):
+
+| Worker | Yak | Landed |
+|---|---|---|
+| sesstime-1 | yaks-3b52 | `d9c59b54` |
+| doklink-1 | yaks-ca57 | `7b06f816` |
+| dokdesc-1 | yaks-2755 | `0eb2ace4` |
+| drafts-1 | yaks-683f | `686d328a` |
+| dokcopy-1 | yaks-affb | none: already done by yaks-a036 |
+
+Coordinator's own: yaks-b89d `53576880`, yaks-2b40 `a411adb8` + `5b6e4c34`, yaks-ecdf/yaks-20fe `27c8b9eb`.
+
+Re-checked at landing: full `cargo test --workspace` green on `686d328a` (32 binaries, main 1114 passed); `cargo fmt --check` clean; own-build checks of the session note under `TZ=Pacific/Kiritimati` (path, `day:`, `written:` all UTC), `yaks check` on the real farm (6 doks flagged without a description), and the drafts flow headless (`E`, type, `Esc Esc`, `k` writes `drafts/edit-<id>.json`; reopening shows the `draft (saved just now) · Ctrl-R original` badge). Installed with `cargo install --path .`.
