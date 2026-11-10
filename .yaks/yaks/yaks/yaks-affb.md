@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T17:36:26Z'
-updated: '2026-11-10T17:50:30Z'
+updated: '2026-11-10T17:51:32Z'
 tags:
 - doks
 - tui
@@ -39,3 +39,11 @@ The Doks tab row `y` (already copies the path), other contexts.
 ## Evidence
 
 A test: viewer open, no selection, `y` puts the path on the (test) clipboard; with a `v` selection it copies the selection. Gate `cargo test --workspace`. Judge: the yakherd.
+
+---
+▸ 2026-11-10T17:51:32Z [dokcopy-1]
+
+Start: 2026-11-10T17:51:29Z
+
+- yaks path yaks-affb: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-affb.md
+- checkout: /Users/joel/src/yaks/.delta/worktrees/am99yre814ns/yaks
