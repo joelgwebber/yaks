@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-10T21:11:51Z'
+updated: '2026-11-10T21:14:45Z'
 parent: yaks-1c89
 tags:
 - doks
@@ -24,3 +24,13 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-10T21:14:45Z [herd-unlock]
+
+Done (herd-unlock-2): [/doks/design/knowledge-store.md](/doks/design/knowledge-store.md) rewritten to the current model.
+
+- Pages/`wiki/`/`yaks page`/Wiki tab became doks/`doks/`/`yaks dok`/Doks tab; sessions are `yaks session note`, import-hearth gone; a NOTE at the top says what changed and when, so the history stays legible.
+- New "Keeping it current" section pointing at the upkeep loop; open questions updated (three closed, yaks-6cf2 added as the check that would have caught this drift).
+- Frontmatter: `stale_after: P6M`, `verified: 2026-11-10`, tags `doks, design` (was `wiki`), description rewritten.
+- Every yak it links exists; `yaks doctor` reports nothing for it.
