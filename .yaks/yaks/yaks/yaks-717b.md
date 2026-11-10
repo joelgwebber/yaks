@@ -61,3 +61,10 @@ Decision: `init_modes` worktree test uses the file's own `temp()` for the `-wt` 
 - Rejected: only pid-suffixing the siblings (still leaves them behind).
 - Rejected: nesting them inside `web`'s dir (a worktree inside its own repo's tree dirties `git status`).
 - git accepts an existing empty directory for `worktree add` and `clone`, so `temp()` works as the target.
+
+---
+▸ 2026-11-10T22:00:44Z [flaky-1]
+
+Decision: `tui::farmsync::tests` siblings (origin, other clone) are derived from `temp_farm`'s own pid+counter dir name, via a `sibling()` helper, and a `cleanup()` removes them. `published_farm` lost its `tmp` argument.
+
+- Rejected: keeping per-test fixed strings (`yaks-f0db-pull-origin.git`): those are shared by every `cargo test` on the machine.
