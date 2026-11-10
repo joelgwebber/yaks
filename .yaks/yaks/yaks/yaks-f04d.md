@@ -1,11 +1,11 @@
 ---
 id: yaks-f04d
 title: Known labels in configuration
-status: hairy
+status: shaving
 type: feature
 priority: 3
 created: '2026-08-26T13:20:21Z'
-updated: '2026-10-27T01:18:55Z'
+updated: '2026-11-10T21:11:51Z'
 tags:
 - config
 - labels
@@ -29,3 +29,14 @@ yaks-7cb3 landed label normalization on lane-labels: model::normalize_labels is 
 ▸ 2026-10-12T21:49:45Z [Joel Webber]
 
 moved: shaving -> hairy
+
+---
+▸ 2026-11-10T21:11:51Z [herd-unlock]
+kind: move
+from: hairy
+to: shaving
+child: yaks-8d6a
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
