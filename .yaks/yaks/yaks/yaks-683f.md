@@ -1,11 +1,11 @@
 ---
 id: yaks-683f
 title: Save incomplete edits of yaks and descriptions/comments
-status: hairy
+status: shaving
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
-updated: '2026-11-06T04:58:33Z'
+updated: '2026-11-10T17:49:46Z'
 tags:
 - tui
 needs: agent
@@ -44,3 +44,13 @@ needs: agent
 2. I'm good to start by trying auto-restore.
 3. Yeah, we can start there and see how it goes. I originally wanted this becauuse of crash bugs, but we haven't had that problem in a while.
 4. SGTM.
+
+---
+▸ 2026-11-10T17:49:46Z [herd-unlock]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
