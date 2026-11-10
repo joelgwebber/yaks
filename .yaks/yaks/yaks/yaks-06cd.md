@@ -1,7 +1,7 @@
 ---
 id: yaks-06cd
 title: 'Load-sensitive tests: init_modes worktree test and sync''s private-farm test fail under parallel builds'
-status: shaving
+status: shorn
 type: bug
 priority: 2
 created: '2026-11-07T00:04:53Z'
@@ -48,3 +48,13 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-10T22:03:36Z [herd-unlock]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
