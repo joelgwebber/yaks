@@ -1,7 +1,7 @@
 ---
 id: yaks-683f
 title: Save incomplete edits of yaks and descriptions/comments
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
@@ -140,3 +140,13 @@ Clippy: `cargo clippy --all-targets` reports 104 warnings before and after my ch
 Docs parity: `docs/tui.md` "Drafts" section; `?` overlay rows in `EXTRAS` (k/Enter, d, Ctrl-R). Grep `Discard changes` over docs/ .agents/ README.md src/: remaining hits are docs/tui.md (says the other editors keep it), `handlers.rs` (the y/N prompt for non-draft editors), `drafts.rs` doc comment. skills/yaks do not mention cancel.
 
 Summary: dirty cancel of the create form, edit form and a new comment now offers keep/discard/back (keep default); keep saves a JSON draft under the farm's config dir; reopening restores it with a badge and Ctrl-R reverts; commit, discard and refused-save paths update the draft; startup GC. Gate: `yaks verify` PASS.
+
+---
+▸ 2026-11-10T19:06:37Z [drafts-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFR7IZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
