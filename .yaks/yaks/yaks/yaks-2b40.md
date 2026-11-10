@@ -1,11 +1,11 @@
 ---
 id: yaks-2b40
 title: 'Design: lessons dok budget and index, promotion measured, a dok index'
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-10T17:59:59Z'
+updated: '2026-11-10T18:02:45Z'
 parent: yaks-1c89
 tags:
 - design
@@ -91,3 +91,13 @@ Done (herd-unlock), points 1–5 in `yaks-upkeep`, commit on `main` (see `yaks c
 - Filed: yaks-760d (`land` after a resolved cherry-pick), yaks-2788 (cheaper-model guidance in `yaks-coordinating`), yaks-20fe (cross-farm feedback, asked).
 
 `cargo test skills` passes (37).
+
+---
+▸ 2026-11-10T18:02:45Z [herd-unlock]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
