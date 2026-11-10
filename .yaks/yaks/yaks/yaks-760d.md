@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-10T17:56:51Z'
-updated: '2026-11-10T21:12:25Z'
+updated: '2026-11-10T21:17:56Z'
 tags:
 - cli
 - git
@@ -37,3 +37,16 @@ Claim (yakherd herd-unlock-2): worker `landcont-1`, Sonnet 5.5.
 ## Evidence
 
 An integration test (like `tests/` ones for land, if any; else new) that builds a conflict, resolves it, runs `--continue`, and checks the landed note. Gate `cargo test --workspace`.
+
+---
+▸ 2026-11-10T21:17:56Z [landcont-1]
+
+Started 2026-11-10T21:14Z (`date -u`), checkout `/Users/joel/src/yaks/.delta/worktrees/a1y6t2gq6x45/yaks`.
+
+Built so far: `land::Action` (Land/Continue/Abort), state file `<git-dir>/yaks-land.json`, `--continue`/`--abort` clap args.
+
+Decision: state lives in the checkout's own git dir (`rev-parse --absolute-git-dir`, per worktree like `CHERRY_PICK_HEAD`), as `yaks-land.json` with `sha`, `yaks`, `head`. Rejected: the farm (forbidden; a commit-less state is not yak knowledge) and `.git/yaks-land.json` via common dir (a linked worktree's pick is per worktree).
+
+Decision: `yaks land <sha>` while a stopped landing's CHERRY_PICK_HEAD matches the saved sha refuses with exit 8 (dry run just says so). Rejected: the old behaviour (abort and reset), which would throw the user's resolution away.
+
+Decision: `--continue` also accepts a pick the user already finished with `git cherry-pick --continue` (HEAD moved on from the saved head) and only records. Rejected: refusing, which would force a hand-written note, the exact bug.
