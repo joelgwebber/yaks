@@ -59,3 +59,8 @@ Decision: reuse FuzzyPick (new optional `doks` field, `dok_candidates` ranking) 
 ▸ 2026-11-10T17:57:22Z [doklink-1]
 
 Decision: completion_context now returns a `Completion { len, seed, kind: Yak|Dok }` instead of a tuple; a dok link is tested first (its last segment may look like a yak ref), yak behaviour is unchanged.
+
+---
+▸ 2026-11-10T17:57:22Z [doklink-1]
+
+Decision: the dok token is its own scan (`path_before_cursor`: alnum, - _ . /) rather than widening `is_ref_char`, which other code uses for yak refs. The trigger is only `/doks/` or `/<herd>/doks/` with a non-reserved herd segment (`store::RESERVED_HERD_NAMES`); `#`, relative `../doks`, `/sources/...` do not trigger.
