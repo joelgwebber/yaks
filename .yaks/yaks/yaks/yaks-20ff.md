@@ -1,11 +1,11 @@
 ---
 id: yaks-20ff
 title: Reflect on the week's sessions
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-10T17:57:10Z'
-updated: '2026-11-10T17:57:28Z'
+updated: '2026-11-10T17:57:29Z'
 tags:
 - meta
 due: 2026-11-17
@@ -56,3 +56,13 @@ Left in their notes (one session each): disk before fan-out; never sync unasked 
 ## Proposal
 
 None as an ask this round; yaks-2788 (cheaper-model delegation in `yaks-coordinating`) came from Joel directly.
+
+---
+▸ 2026-11-10T17:57:29Z [herd-unlock]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
