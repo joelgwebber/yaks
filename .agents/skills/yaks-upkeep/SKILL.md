@@ -49,10 +49,25 @@ When a person asks, or a recurring yak wakes you for it:
 
 1. `yaks session list --unreviewed`: agents' notes nobody has reviewed, oldest first. Take a handful (eight at most) per round.
 2. Read each, and `yaks peek` the notes it links when you need the detail.
-3. Keep what outlives the session and isn't already kept: how something works, a decision and why, a fact about the person's setup or preferences. It goes where `yaks-research` says, usually by extending a dok; cite the session note in the body (`[session](/sessions/2026/11/...md)`). Work still to do becomes a yak. The yak work a note links is already recorded: don't copy it.
-4. Lessons about yaks itself or its skills: file a yak where the person tracks yaks' own work, or tell them. Don't edit a skill unasked.
-5. `yaks session promote <path>...` on every note you finished, including those with nothing worth keeping, so the next round skips them.
-6. Account for it (as the recurring yak's shear note, or your reply): per note, what moved where, or "nothing to keep".
+3. **Read the yak notes too.** Yak notes are the ground truth sessions summarize, and much work has no session note at all. `yaks log --since <last round>` (the recurring yak's previous shear note says when; the first round takes a week) lists what was written since: read the `Decision:` notes and the shear notes of yaks shorn in the window, skipping moves and heartbeats.
+4. Keep what outlives the session or the yak and isn't already kept: how something works, a decision and why, a fact about the person's setup or preferences. It goes where `yaks-research` says, usually by extending a dok; cite the session note or the yak note in the body (`[session](/sessions/2026/11/...md)`, `[the decision](yaks-1a2b#2026-11-04T22:13:03Z)`). Work still to do becomes a yak. Don't copy what a yak note says into a dok: state the finding and link the note.
+5. Lessons about yaks itself or its skills are **yaks feedback** (below). Don't edit a skill unasked.
+6. `yaks session promote <path>...` on every note you finished, including those with nothing worth keeping, so the next round skips them.
+7. Account for it (as the recurring yak's shear note, or your reply): per session note, what moved where, or "nothing to keep"; then the yak-note window and what it added.
+
+### Yaks feedback
+
+Friction with yaks itself or its skills (a command that refused or surprised, skill text that was missing or wrong) goes back to yaks' maintainers through one dok per farm, `/doks/feedback-to-yaks.md` (`type: topic`; create it the first time with `description: Friction with yaks and its skills, for its maintainers to collect`). Append one entry per item, newest last:
+
+```markdown
+## 2026-11-10: `dok set --old` takes no `-` on stdin
+
+- **What happened:** ... (one or two sentences)
+- **Where:** the command, or the skill and section
+- **Shows it:** [session](/sessions/2026/11/...md) or [the note](yaks-1a2b#2026-11-04T22:13:03Z)
+```
+
+The heading is the entry's key: never rename or delete an entry, since a collector in yaks' own farm reads these and dedupes by it. File a yak in this farm as well only when this farm wants a local workaround. In the farm where yaks itself is tracked (its `AGENTS.md` says so), skip the dok and file the yak.
 
 Never edit a session note's body: it is the record of what happened.
 
@@ -69,7 +84,7 @@ Review reads one note at a time. Reflection reads the run of notes since the las
    - *wrong*: a later session showed it was;
    - *faded*: its `seen:` is three or more rounds old; drop it, or keep it and say why.
 6. **Already in context and still recurring?** When a lesson's friction recurs although the rule is already in `AGENTS.md`, a skill or the lessons dok, more text will not fix it: file a yak for the mechanism that would stop it (a command, a check, a one-time fix) instead of adding words, and name it in the account.
-7. **Friction with yaks or its skills** becomes a yak where the person tracks yaks' own work, as in review.
+7. **Friction with yaks or its skills** goes to yaks feedback, as in review (one entry per item, not one per session that hit it: add a **Shows it** link to an existing entry).
 8. **Instruction files are never edited here.** A lesson that belongs in `AGENTS.md` or a skill becomes, at most one per round, a yak awaiting the person: `yaks create` it, then `yaks ask <id>` with the proposed text and where it goes, and the friction it targets (so step 3 can check it next round). They decide; you don't.
 9. Account for it as the shear note: the window, the verdict counts against last round's, last round's fixes (`recurred` / `gone`), lessons added, merged and removed (and how each left), the dok's line count, yaks filed, the proposal if any.
 
@@ -124,7 +139,7 @@ The review, the reflection and the tidy each come back as **one recurring yak** 
 
 ```sh
 yaks create "Review session notes" --every P1W --due +1w --wake agent --description - <<'EOF'
-Review the unreviewed session notes (the yaks-upkeep skill, "Reviewing session notes"): keep what they learned in doks, file the work they found, `yaks session promote` each, shear with an account per note.
+Review the unreviewed session notes and the week's yak notes (the yaks-upkeep skill, "Reviewing session notes"): keep what they learned in doks, file the work they found, yaks friction into /doks/feedback-to-yaks.md, `yaks session promote` each, shear with the account.
 EOF
 yaks create "Reflect on the week's sessions" --every P1W --due +1w --wake agent --description - <<'EOF'
 Reflect on the sessions since the last round (the yaks-upkeep skill, "Reflecting on sessions"): keep /doks/lessons.md, file friction as yaks, at most one instruction-file proposal as an ask, shear with the account.

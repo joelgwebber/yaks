@@ -197,6 +197,10 @@ Repo specifics: never code without a shaving yak; check existing yaks before
 creating one; run `yaks next` when unsure what's next. The coordinator commits
 the farm (`yaks commit`); publishing it (`yaks sync`) is the human's call.
 
+This is the farm where yaks itself is tracked: upkeep friction with yaks goes
+straight into yaks here, not into a `/doks/feedback-to-yaks.md`. Other farms'
+feedback doks are collected weekly by yaks-feaf (design: yaks-20fe).
+
 **Design docs and research go in the farm doks, not `docs/`.** A design is a
 dok under `doks/design/`, research under `doks/research/` (the `yaks-research`
 skill has the how), each linked from its yaks and linking back. Read them with
