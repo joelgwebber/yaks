@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 4
 created: '2026-11-04T23:13:02Z'
-updated: '2026-11-10T21:13:53Z'
+updated: '2026-11-10T22:00:22Z'
 tags:
 - tests
 ---
@@ -44,3 +44,11 @@ Claim (yakherd herd-unlock-2): worker `flaky-1`, Sonnet 5.5. Covers yaks-06cd's 
 ▸ 2026-11-10T21:13:53Z [flaky-1]
 
 Start Tue Nov 10 21:13:53 UTC 2026 ; checkout /Users/joel/src/yaks/.delta/worktrees/axjw1h424can/yaks
+
+---
+▸ 2026-11-10T22:00:22Z [flaky-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
