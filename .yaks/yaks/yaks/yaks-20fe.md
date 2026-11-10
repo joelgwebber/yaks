@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-10T17:59:19Z'
-updated: '2026-11-10T18:44:27Z'
+updated: '2026-11-10T18:45:55Z'
 parent: yaks-1c89
 tags:
 - skills
@@ -74,3 +74,13 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-10T18:45:55Z [herd-unlock]
+
+Done (herd-unlock), as answered, in `27c8b9eb`:
+
+- `yaks-upkeep` gains "Yaks feedback": every farm appends yaks friction to `/doks/feedback-to-yaks.md`, one `## <date>: <title>` entry per item (the heading is its key; never renamed). Review and reflection both write there. (Named `feedback-to-yaks`, not `yaks-feedback`: the skills test reads any `yaks-<word>` as a skill name.)
+- `AGENTS.md` says this farm is where yaks is tracked, so friction here becomes yaks directly.
+- The collector: yaks-feaf, weekly, `--wake agent`; reads every other farm on the machine read-only and files with `--key feedback-to-yaks:<farm>#<heading>` (checked on a scratch farm: a second create returns `Exists`).
+- Later, when it isn't just a couple of you: a way for other people to send theirs.
