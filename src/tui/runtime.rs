@@ -17,6 +17,8 @@ pub fn run(mut app: App) -> Result<()> {
         app.picker = picker;
     }
     let res = event_loop(&mut term, &mut app, kitty);
+    // An editor still open as the loop ends (it failed) keeps its text.
+    app.flush_open_draft();
     let _ = restore(kitty);
     crate::clipboard::release();
     res

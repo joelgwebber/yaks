@@ -39,7 +39,7 @@ pub(super) fn config_home() -> PathBuf {
     std::env::temp_dir()
 }
 
-fn config_dir(root: &Path) -> PathBuf {
+pub(super) fn config_dir(root: &Path) -> PathBuf {
     config_home().join("yaks").join(slug(root))
 }
 

@@ -469,6 +469,14 @@ impl App {
         if child && parent.is_none() {
             return;
         }
+        let mut form = self.create_form_for(parent);
+        self.restore_form_draft(&mut form);
+        self.overlay = Overlay::Create(form);
+    }
+
+    /// A fresh create form for a child of `parent` (or a root yak), without
+    /// any saved draft ([`App::restore_form_draft`] adds that).
+    pub(crate) fn create_form_for(&self, parent: Option<String>) -> CreateForm {
         // In a multi-herd farm, offer a herd picker seeded to the reference
         // yak's herd (the parent for a child create, else the selected row).
         let choices = if self.is_multi_herd() {
@@ -484,12 +492,7 @@ impl App {
             .as_deref()
             .and_then(|p| choices.iter().position(|c| c == p))
             .unwrap_or(0);
-        self.overlay = Overlay::Create(CreateForm::new(
-            self.editor_vim(),
-            parent,
-            choices,
-            herd_idx,
-        ));
+        CreateForm::new(self.editor_vim(), parent, choices, herd_idx)
     }
 
     /// Open the shared form seeded from the selected task, for editing (E).
@@ -512,21 +515,9 @@ impl App {
     /// Open the edit form, optionally pre-focusing a row derived from `target`.
     pub(crate) fn open_edit_focus(&mut self, target: Option<EditTarget>) {
         let Some(id) = self.selected_id() else { return };
-        let mut form = match self.task(&id) {
-            Some(task) => CreateForm::for_edit(self.editor_vim(), task),
-            None => return,
+        let Some(mut form) = self.edit_form_for(&id) else {
+            return;
         };
-        // On a multi-herd farm, seed the herd chip row (like create) so the herd
-        // is editable in the edit form too (yaks-71d1); committing a change
-        // renames the id prefix. The row shows only when there's >1 herd.
-        if self.is_multi_herd() {
-            let choices = self.herd_choices();
-            form.herd_idx = id
-                .split_once('-')
-                .and_then(|(cur, _)| choices.iter().position(|c| c == cur))
-                .unwrap_or(0);
-            form.herds = choices;
-        }
         if let Some(t) = target {
             form.row = match t {
                 EditTarget::Title => 0,
@@ -543,7 +534,25 @@ impl App {
                 EditTarget::Status | EditTarget::Content(_) => 0,
             };
         }
+        self.restore_form_draft(&mut form);
         self.overlay = Overlay::Create(form);
+    }
+
+    /// The edit form for `id`, seeded from the yak as it is on disk (no draft).
+    pub(crate) fn edit_form_for(&self, id: &str) -> Option<CreateForm> {
+        let mut form = CreateForm::for_edit(self.editor_vim(), self.task(id)?);
+        // On a multi-herd farm, seed the herd chip row (like create) so the herd
+        // is editable in the edit form too (yaks-71d1); committing a change
+        // renames the id prefix. The row shows only when there's >1 herd.
+        if self.is_multi_herd() {
+            let choices = self.herd_choices();
+            form.herd_idx = id
+                .split_once('-')
+                .and_then(|(cur, _)| choices.iter().position(|c| c == cur))
+                .unwrap_or(0);
+            form.herds = choices;
+        }
+        Some(form)
     }
 
     /// Map a detail line to what `E` should edit there.

@@ -241,6 +241,45 @@ your edit, and if the yak changed any other way nothing is saved, the pane
 reloads, and the editor reopens with your text (`changed on disk; not saved:
 review and Ctrl-S again`).
 
+**Drafts** — what you type into the create form (`c`/`C`), the edit form (`E`)
+or a new comment (`M`) is not lost when you dismiss it. Dismissing one that has
+changes (`Ctrl-C`, a rapid `Esc Esc`, or `:q`) asks `Unsaved changes: k keep
+draft (Enter) · d discard · Esc back to editing`:
+
+- `k` (or `Enter`, the default) saves a **draft**, closes the form and says
+  `draft saved`.
+- `d` discards the changes, deletes any draft of that form and closes it.
+- `Esc` returns to the editor with everything as you left it.
+- `:q!` discards with no prompt, and deletes the draft.
+
+The other editors that ask before they close (an in-place block edit, an
+attachment edit, ask/answer/request) have no draft, so they keep the plain
+`Discard changes? (y/N)`. If the TUI exits with a changed form or comment still open (it
+failed), the draft is saved too.
+
+A draft is one JSON file per form and yak, under the farm's per-user config
+dir next to `views.json` (`$XDG_CONFIG_HOME/yaks/<farm>/drafts/`, by default
+`~/.config/yaks/...`), never under `.yaks/`: it is yours, not the farm's. The
+keys are `edit:<id>`, `comment:<id>` and `create:<parent id or root>`, so a
+create under yak X offers X's draft, and a create at the root the root's. A
+newer draft replaces the older one.
+
+Opening the same form again **restores** the draft without asking: the fields
+come back as typed, the header shows `draft (saved 2h ago) · Ctrl-R original`
+(a comment's header says `draft · saved 2h ago`) and the status line says
+`restored draft — Ctrl-R for original`. `Ctrl-R` throws the draft away and
+reopens the form from the yak as it is now. If the yak changed since the draft
+began (its `updated` moved), the badge turns yellow, `draft (…, yak changed
+since)`: the draft's text is still restored, and saving it overwrites those
+changes, so look before you press `Ctrl-S`.
+
+A draft is deleted when its form is saved (a save that is refused, say a
+description that changed on disk, leaves what you typed as a draft), when you
+discard, and when you press `Ctrl-R`. At startup the TUI also deletes drafts
+older than 30 days and those of a yak that is gone or dead. Drafts are written
+when you dismiss or quit, not as you type, so a killed terminal still loses the
+text typed since the form opened.
+
 A comment's [metadata](cli.md#note-metadata) shows in its header after `actor · when`, `kind` first and the other keys as `key value` (`▸ tex-1 · 2h ago · checkpoint · commit 47076b0`); its `key: value` lines are not part of the editable text, and saving the comment keeps them.
 
 `a` opens this editor too, as a new note headed `Ask <id> · you · now` or

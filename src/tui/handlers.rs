@@ -395,6 +395,11 @@ impl App {
             Overlay::Create(f) => (f.is_content_row(), f.is_line_text_row()),
             _ => return,
         };
+        // Ctrl-R on a form restored from a draft: back to the yak as it is.
+        if self.is_draft_revert(&k) {
+            self.revert_form_draft();
+            return;
+        }
         // Commit (Ctrl-S) / cancel (Ctrl-C, or Esc outside a content block —
         // inside one Esc belongs to the editor, e.g. vim normal mode).
         if ctrl && k.code == KeyCode::Char('s') {
@@ -551,14 +556,24 @@ impl App {
 
     pub(crate) fn commit_form(&mut self) {
         let editing = matches!(&self.overlay, Overlay::Create(f) if f.is_editing());
-        if editing {
-            self.commit_edit_form();
+        let backup = self.draft_of(&self.overlay);
+        let saved = if editing {
+            self.commit_edit_form()
         } else {
-            self.commit_create();
+            self.commit_create()
+        };
+        // A saved form's draft is spent; a save that was refused closed the
+        // form all the same, so what was typed becomes the draft (yaks-683f).
+        let Some(d) = backup else { return };
+        if saved {
+            self.delete_draft(&d.key);
+        } else if !matches!(self.overlay, Overlay::Create(_)) {
+            self.save_draft(&d);
         }
     }
 
-    pub(crate) fn commit_create(&mut self) {
+    /// Create the yak from the form; whether it was created.
+    pub(crate) fn commit_create(&mut self) -> bool {
         let new = match std::mem::replace(&mut self.overlay, Overlay::None) {
             Overlay::Create(f) => NewTask {
                 title: f.title_text(),
@@ -577,16 +592,17 @@ impl App {
             },
             other => {
                 self.overlay = other;
-                return;
+                return false;
             }
         };
-        let Some(h) = &self.farm else { return };
+        let Some(h) = &self.farm else { return false };
         match h.create(new) {
             Ok(CreateOutcome::Created(t)) => {
                 let id = t.id.clone();
                 self.reload();
                 self.select_id(&id);
                 self.notification = Some(format!("created {id}"));
+                return true;
             }
             // Only `NewTask::key` finds an existing yak, and the form sets none.
             Ok(CreateOutcome::Exists(t)) => {
@@ -605,18 +621,22 @@ impl App {
             }
             Err(e) => self.notification = Some(format!("error: {e}")),
         }
+        false
     }
 
     /// Commit an edit: diff the form against the current task so unchanged
-    /// fields don't rewrite the file or bump `updated`.
-    pub(crate) fn commit_edit_form(&mut self) {
+    /// fields don't rewrite the file or bump `updated`. Whether the yak was
+    /// saved (no change to save counts).
+    pub(crate) fn commit_edit_form(&mut self) -> bool {
         let Overlay::Create(f) = std::mem::replace(&mut self.overlay, Overlay::None) else {
-            return;
+            return false;
         };
-        let Some(id) = f.edit_id.clone() else { return };
+        let Some(id) = f.edit_id.clone() else {
+            return false;
+        };
         let Some(cur) = self.task(&id).cloned() else {
             self.notification = Some(format!("{id} not found"));
-            return;
+            return false;
         };
         let title = f.title_text();
         let kind = TYPE_CHOICES[f.kind_idx].to_string();
@@ -663,7 +683,10 @@ impl App {
             if outcome == Some(UpdateOutcome::Conflict) {
                 self.keep_unsaved_description(&id, &typed);
             }
-            return;
+            return matches!(
+                outcome,
+                Some(UpdateOutcome::Updated | UpdateOutcome::NoChanges)
+            );
         };
         // Field edits land on the current id first, then the prefix rename moves
         // the (now-updated) file. Two farm calls, each in its own borrow scope.
@@ -672,19 +695,19 @@ impl App {
                 Ok(UpdateOutcome::Conflict) => {
                     self.reload_preserving_selection();
                     self.keep_unsaved_description(&id, &typed);
-                    return;
+                    return false;
                 }
                 Ok(_) => {}
                 Err(e) => {
                     self.notification = Some(format!("error: {e}"));
-                    return;
+                    return false;
                 }
             },
-            None => return,
+            None => return false,
         }
         let outcome = match &self.farm {
             Some(h) => h.rename(&id, &new_id, false),
-            None => return,
+            None => return false,
         };
         match outcome {
             Ok(RenameOutcome::Done(_)) => {
@@ -692,6 +715,7 @@ impl App {
                 self.select_id(&new_id);
                 let herd = new_id.split_once('-').map(|(p, _)| p).unwrap_or(&new_id);
                 self.notification = Some(format!("{id} updated, moved to {herd}"));
+                return true;
             }
             Ok(RenameOutcome::Collision(t)) => {
                 self.reload_preserving_selection();
@@ -708,9 +732,11 @@ impl App {
             Ok(RenameOutcome::NothingToRename) => {
                 self.reload_preserving_selection();
                 self.notification = Some(format!("{id} updated"));
+                return true;
             }
             Err(e) => self.notification = Some(format!("error: {e}")),
         }
+        false
     }
 
     /// A form save whose description conflicted wrote nothing (the form is
@@ -1146,7 +1172,7 @@ impl App {
 
     /// After cancelling editor `ov`: an attachment edit puts its viewer back
     /// in the pane (the file unchanged); anything else just closes.
-    fn drop_editor(&mut self, ov: Overlay) {
+    pub(crate) fn drop_editor(&mut self, ov: Overlay) {
         self.overlay = Overlay::None;
         if let Overlay::Edit(Editor {
             action: EditAction::EditAttachment(v, from),
@@ -1807,13 +1833,25 @@ impl App {
     pub(crate) fn request_cancel(&mut self, dirty: bool, msg: &str) {
         if dirty {
             let stashed = std::mem::replace(&mut self.overlay, Overlay::None);
-            self.dirty_cancel = Some(stashed);
-            self.overlay = Overlay::Confirm {
-                prompt: "Discard changes? (y/N): ".into(),
-                action: ConfirmAction::DiscardEdit,
+            // A form or a new comment can be kept as a draft (yaks-683f); the
+            // other editors keep the plain y/N.
+            self.overlay = if self.keeps_drafts(&stashed) {
+                Overlay::Confirm {
+                    prompt: drafts::KEEP_PROMPT.into(),
+                    action: ConfirmAction::KeepDraft,
+                }
+            } else {
+                Overlay::Confirm {
+                    prompt: "Discard changes? (y/N): ".into(),
+                    action: ConfirmAction::DiscardEdit,
+                }
             };
+            self.dirty_cancel = Some(stashed);
         } else {
             let ov = std::mem::replace(&mut self.overlay, Overlay::None);
+            // Nothing typed (or all of it deleted): a draft saved earlier is
+            // not wanted any more.
+            self.delete_draft_of(&ov);
             self.drop_editor(ov);
             self.notification = Some(msg.to_string());
         }
@@ -1916,6 +1954,7 @@ impl App {
     pub(crate) fn cmd_quit(&mut self, force: bool) {
         if force {
             let ov = std::mem::replace(&mut self.overlay, Overlay::None);
+            self.delete_draft_of(&ov);
             self.drop_editor(ov);
             self.notification = Some("cancelled".into());
             return;
@@ -2076,6 +2115,10 @@ impl App {
         }
         // Editors are handled in place (most keys flow to edtui); only the
         // Pick/Confirm variants move their action out on resolution.
+        if matches!(self.overlay, Overlay::BlockEdit(_)) && self.is_draft_revert(&k) {
+            self.revert_comment_draft();
+            return;
+        }
         if matches!(self.overlay, Overlay::Edit(_) | Overlay::BlockEdit(_)) {
             let ref_prefix = self.ref_prefix.clone();
             let (key, dirty) = match &mut self.overlay {
@@ -2130,6 +2173,10 @@ impl App {
                     }
                 }
             },
+            Overlay::Confirm {
+                prompt,
+                action: ConfirmAction::KeepDraft,
+            } => self.keep_draft_key(prompt, k.code),
             Overlay::Confirm { prompt, action } => match k.code {
                 KeyCode::Char('y') | KeyCode::Char('Y') => self.resolve_confirm(action),
                 KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc | KeyCode::Enter => {
@@ -2173,7 +2220,14 @@ impl App {
                     format!("{id} tags: {shown}"),
                 );
             }
-            EditAction::Comment(id) => self.commit_comment(&id, text),
+            EditAction::Comment(id) => {
+                let sent = self.commit_comment(&id, text.clone());
+                if sent {
+                    self.delete_draft(&DraftKey::Comment(id));
+                } else if !text.trim().is_empty() {
+                    self.save_comment_draft(&id, &text);
+                }
+            }
             EditAction::Block { id, block } => self.commit_block(&id, block, text, cursor_row),
             EditAction::Attach(id) => self.commit_attach(id, text),
             EditAction::AttachPaste { id, default, data } => {
@@ -2227,16 +2281,17 @@ impl App {
         self.focus_new_comment();
     }
 
-    /// Append `text` to `id` as a new comment (an empty one is a no-op).
-    pub(crate) fn commit_comment(&mut self, id: &str, text: String) {
+    /// Append `text` to `id` as a new comment (an empty one is a no-op);
+    /// whether it was written.
+    pub(crate) fn commit_comment(&mut self, id: &str, text: String) -> bool {
         if text.trim().is_empty() {
             self.notification = Some("comment cancelled".into());
-            return;
+            return true;
         }
         // Attribute TUI comments like CLI ones: $YAKS_ACTOR, else git
         // user (no --as in the TUI). Resolved lazily here so the
         // read-only/snapshot constructor stays pure (no git subprocess).
-        self.apply_edit(
+        let outcome = self.apply_edit(
             id,
             TaskEdit {
                 note: Some(text),
@@ -2246,6 +2301,7 @@ impl App {
             format!("comment added to {id}"),
         );
         self.focus_new_comment();
+        outcome == Some(UpdateOutcome::Updated)
     }
 
     /// End a ref/dok completion: replace the typed token in the editor the
@@ -2725,6 +2781,8 @@ impl App {
 
     pub(crate) fn resolve_confirm(&mut self, action: ConfirmAction) {
         match action {
+            // Resolved by `keep_draft_key`, never by a y/N.
+            ConfirmAction::KeepDraft => {}
             ConfirmAction::DiscardEdit => {
                 // Drop the stashed editor (an attachment edit returns to its viewer).
                 if let Some(ov) = self.dirty_cancel.take() {

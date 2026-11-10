@@ -2101,6 +2101,18 @@ mod live {
         handle_key(app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
     }
 
+    fn ctrl(app: &mut App, c: char) {
+        handle_key(app, KeyEvent::new(KeyCode::Char(c), KeyModifiers::CONTROL));
+    }
+
+    /// The text in the open in-place (comment) editor.
+    fn block_text(app: &App) -> String {
+        match &app.overlay {
+            Overlay::BlockEdit(be) => be.editor.text(),
+            _ => panic!("expected the comment editor"),
+        }
+    }
+
     #[test]
     fn state_pick_transitions_and_reloads() {
         let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
@@ -3018,7 +3030,7 @@ mod live {
         esc(&mut app); // rapid double-Esc requests cancel
         // Dirty (typed "foo"), so a discard confirmation appears first.
         assert!(matches!(app.overlay, Overlay::Confirm { .. }));
-        press(&mut app, "y"); // confirm discard
+        press(&mut app, "d"); // discard (not keep as a draft)
         assert!(matches!(app.overlay, Overlay::None));
         assert!(app.all.is_empty());
         assert_eq!(app.notification.as_deref(), Some("changes discarded"));
@@ -3234,7 +3246,7 @@ mod live {
             matches!(app.overlay, Overlay::Confirm { .. }),
             "dirty -> confirm"
         );
-        press(&mut app, "y"); // confirm discard
+        press(&mut app, "d"); // discard (not keep as a draft)
         assert!(matches!(app.overlay, Overlay::None));
         assert_eq!(app.task("t0").unwrap().title, "solo");
         assert_eq!(app.notification.as_deref(), Some("changes discarded"));
@@ -3443,7 +3455,7 @@ mod live {
         esc(&mut app); // rapid second Esc == Ctrl-C -> request cancel
         // The draft is dirty, so a discard confirmation appears first.
         assert!(matches!(app.overlay, Overlay::Confirm { .. }));
-        press(&mut app, "y"); // confirm discard
+        press(&mut app, "d"); // discard (not keep as a draft)
         assert!(matches!(app.overlay, Overlay::None));
         assert_eq!(app.notification.as_deref(), Some("changes discarded"));
         assert!(app.task("t0").unwrap().body.is_empty(), "comment not saved");
@@ -3494,6 +3506,315 @@ mod live {
             "clean cancel is immediate"
         );
         assert_eq!(app.notification.as_deref(), Some("edit cancelled"));
+    }
+
+    // -- drafts (yaks-683f) ---------------------------------------------------
+
+    /// Open the cancel prompt on a dirty form or comment: vim's double Esc.
+    fn dismiss(app: &mut App) {
+        esc(app);
+        esc(app);
+    }
+
+    fn form(app: &App) -> &CreateForm {
+        match &app.overlay {
+            Overlay::Create(f) => f,
+            _ => panic!("expected the form"),
+        }
+    }
+
+    #[test]
+    fn dismissing_a_dirty_form_asks_keep_discard_or_back() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "c");
+        press(&mut app, "foo");
+        dismiss(&mut app);
+        let frame = draw(&app, 100, 14);
+        assert!(
+            frame.contains(
+                "Unsaved changes: k keep draft (Enter) · d discard · Esc back to editing"
+            ),
+            "{frame}"
+        );
+        assert!(!frame.contains("Discard changes?"));
+    }
+
+    #[test]
+    fn keeping_a_create_draft_restores_it_on_the_next_c() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "c");
+        press(&mut app, "half a title");
+        dismiss(&mut app);
+        press(&mut app, "k");
+        assert!(matches!(app.overlay, Overlay::None));
+        assert_eq!(app.notification.as_deref(), Some("draft saved"));
+        assert!(app.all.iter().all(|t| t.title != "half a title"));
+        press(&mut app, "c");
+        assert_eq!(form(&app).title_text(), "half a title");
+        assert!(form(&app).draft.is_some());
+        let frame = draw(&app, 100, 20);
+        assert!(
+            frame.contains("New yak  draft (saved just now) · Ctrl-R original"),
+            "{frame}"
+        );
+        assert_eq!(
+            app.notification.as_deref(),
+            Some("restored draft — Ctrl-R for original")
+        );
+    }
+
+    #[test]
+    fn enter_at_the_prompt_keeps_the_draft_too() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "c");
+        press(&mut app, "x");
+        dismiss(&mut app);
+        enter(&mut app);
+        press(&mut app, "c");
+        assert_eq!(form(&app).title_text(), "x");
+    }
+
+    #[test]
+    fn a_create_draft_belongs_to_its_parent() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "C"); // a child of t0
+        press(&mut app, "kid");
+        dismiss(&mut app);
+        press(&mut app, "k");
+        press(&mut app, "c"); // a root yak: not the child's draft
+        assert_eq!(form(&app).title_text(), "");
+        assert!(form(&app).draft.is_none());
+    }
+
+    #[test]
+    fn keeping_an_edit_draft_restores_every_field() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "E");
+        press(&mut app, "zzz"); // the title
+        tab_to(&mut app, 1);
+        arrow_right(&mut app); // type: bug
+        tab_to(&mut app, 3);
+        press(&mut app, "red, blue");
+        dismiss(&mut app);
+        press(&mut app, "k");
+        assert_eq!(app.task("t0").unwrap().title, "solo", "nothing was saved");
+        press(&mut app, "E");
+        let f = form(&app);
+        assert_eq!(f.title_text(), "zzzsolo");
+        assert_eq!(f.tags_vec(), vec!["red".to_string(), "blue".to_string()]);
+        assert_eq!(TYPE_CHOICES[f.kind_idx], "bug");
+        assert!(f.draft.is_some());
+    }
+
+    #[test]
+    fn discarding_deletes_the_draft() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "E");
+        press(&mut app, "one");
+        dismiss(&mut app);
+        press(&mut app, "k"); // a draft exists...
+        press(&mut app, "E");
+        press(&mut app, "two");
+        dismiss(&mut app);
+        press(&mut app, "d"); // ...and discarding the restored form removes it
+        assert_eq!(app.notification.as_deref(), Some("changes discarded"));
+        press(&mut app, "E");
+        assert!(form(&app).draft.is_none(), "no draft after a discard");
+        assert_eq!(form(&app).title_text(), "solo");
+    }
+
+    #[test]
+    fn esc_at_the_prompt_goes_back_and_writes_nothing() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "c");
+        press(&mut app, "foo");
+        dismiss(&mut app);
+        esc(&mut app); // back to editing
+        assert_eq!(form(&app).title_text(), "foo");
+        // Nothing was kept: dismiss for real, discard, and `c` is blank.
+        ctrl(&mut app, 'c'); // (an Esc here would pair with the one above)
+        press(&mut app, "d");
+        press(&mut app, "c");
+        assert_eq!(form(&app).title_text(), "");
+    }
+
+    #[test]
+    fn committing_the_form_clears_its_draft() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "E");
+        press(&mut app, "zzz");
+        dismiss(&mut app);
+        press(&mut app, "k");
+        press(&mut app, "E"); // restored
+        assert!(form(&app).draft.is_some());
+        ctrl_s(&mut app);
+        assert_eq!(app.task("t0").unwrap().title, "zzzsolo");
+        press(&mut app, "E");
+        assert!(form(&app).draft.is_none(), "the commit spent the draft");
+        assert_eq!(form(&app).title_text(), "zzzsolo");
+    }
+
+    #[test]
+    fn creating_the_yak_clears_the_create_draft() {
+        let (_dir, farm) = temp_farm(&[]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "c");
+        press(&mut app, "new one");
+        dismiss(&mut app);
+        press(&mut app, "k");
+        press(&mut app, "c");
+        ctrl_s(&mut app);
+        assert!(app.all.iter().any(|t| t.title == "new one"));
+        press(&mut app, "c");
+        assert!(form(&app).draft.is_none());
+        assert_eq!(form(&app).title_text(), "");
+    }
+
+    #[test]
+    fn ctrl_r_reverts_a_restored_form_to_the_yak() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "E");
+        press(&mut app, "zzz");
+        dismiss(&mut app);
+        press(&mut app, "k");
+        press(&mut app, "E");
+        assert_eq!(form(&app).title_text(), "zzzsolo");
+        ctrl(&mut app, 'r');
+        assert_eq!(form(&app).title_text(), "solo");
+        assert!(form(&app).draft.is_none());
+        assert_eq!(app.notification.as_deref(), Some("draft reverted"));
+        // The draft is gone for good: close clean and reopen.
+        handle_key(
+            &mut app,
+            KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
+        );
+        press(&mut app, "E");
+        assert!(form(&app).draft.is_none());
+    }
+
+    #[test]
+    fn a_draft_of_a_yak_that_changed_since_warns() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "E");
+        press(&mut app, "zzz");
+        dismiss(&mut app);
+        press(&mut app, "k");
+        // Someone else edits the yak meanwhile (its `updated` moves).
+        app.farm
+            .as_ref()
+            .unwrap()
+            .update(
+                "t0",
+                TaskEdit {
+                    add_tags: vec!["other".into()],
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+        app.reload();
+        press(&mut app, "E");
+        assert!(form(&app).draft.as_ref().unwrap().stale);
+        let frame = draw(&app, 120, 20);
+        assert!(
+            frame.contains("yak changed since) · Ctrl-R original"),
+            "{frame}"
+        );
+        // Still the draft's text, not the yak's.
+        assert_eq!(form(&app).title_text(), "zzzsolo");
+    }
+
+    #[test]
+    fn keeping_a_comment_draft_restores_it_on_the_next_m() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "M");
+        press(&mut app, "half a thought");
+        dismiss(&mut app);
+        let frame = draw(&app, 100, 20);
+        assert!(frame.contains("Unsaved changes: k keep draft"), "{frame}");
+        press(&mut app, "k");
+        assert!(
+            app.task("t0").unwrap().body.is_empty(),
+            "not saved as a note"
+        );
+        press(&mut app, "M");
+        assert_eq!(block_text(&app), "half a thought");
+        let frame = draw(&app, 100, 20);
+        assert!(frame.contains("draft · saved just now"), "{frame}");
+        // Ctrl-R empties it and drops the draft.
+        ctrl(&mut app, 'r');
+        assert_eq!(block_text(&app), "");
+        handle_key(
+            &mut app,
+            KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
+        );
+        press(&mut app, "M");
+        assert_eq!(block_text(&app), "");
+    }
+
+    #[test]
+    fn sending_a_comment_clears_its_draft() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "M");
+        press(&mut app, "later");
+        dismiss(&mut app);
+        press(&mut app, "k");
+        press(&mut app, "M");
+        ctrl_s(&mut app);
+        assert!(app.task("t0").unwrap().body.contains("later"));
+        press(&mut app, "M");
+        assert_eq!(block_text(&app), "", "the sent comment's draft is gone");
+    }
+
+    #[test]
+    fn quitting_with_a_dirty_form_open_keeps_it() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "c");
+        press(&mut app, "mid-sentence");
+        app.flush_open_draft(); // what the event loop does as the app exits
+        let (_dir2, farm2) = (&_dir, app.farm.take().unwrap());
+        let mut again = App::with_farm(farm2).unwrap();
+        press(&mut again, "c");
+        assert_eq!(form(&again).title_text(), "mid-sentence");
+    }
+
+    #[test]
+    fn a_clean_form_flushes_nothing_and_clears_an_old_draft() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "E");
+        app.flush_open_draft();
+        let mut again = App::with_farm(app.farm.take().unwrap()).unwrap();
+        press(&mut again, "E");
+        assert!(form(&again).draft.is_none());
+    }
+
+    #[test]
+    fn colon_q_bang_deletes_a_kept_draft() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "M");
+        press(&mut app, "one");
+        dismiss(&mut app);
+        press(&mut app, "k");
+        press(&mut app, "M"); // restored
+        esc(&mut app);
+        press(&mut app, ":q!");
+        enter(&mut app);
+        press(&mut app, "M");
+        assert_eq!(block_text(&app), "");
     }
 
     #[test]

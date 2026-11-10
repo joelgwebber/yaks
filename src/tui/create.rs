@@ -13,6 +13,7 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Wrap};
 
+use super::drafts::DraftBadge;
 use super::mouse::HitMap;
 use super::palette;
 use super::{
@@ -68,6 +69,12 @@ pub(crate) struct CreateForm {
     pub(crate) herd_idx: usize,
     /// `Some(id)` when editing an existing task; `None` when creating.
     pub(crate) edit_id: Option<String>,
+    /// An edit: the yak's `updated` when the form (or the draft it was
+    /// restored from) began, to tell at the next restore whether the yak has
+    /// changed since (yaks-683f).
+    pub(crate) base_updated: Option<String>,
+    /// Set when the form was restored from a saved draft (yaks-683f).
+    pub(crate) draft: Option<DraftBadge>,
     pub(crate) handler: EditorEventHandler,
 }
 
@@ -94,6 +101,8 @@ impl CreateForm {
             herds,
             herd_idx,
             edit_id: None,
+            base_updated: None,
+            draft: None,
             handler: make_handler(vim),
         }
     }
@@ -120,6 +129,8 @@ impl CreateForm {
             herds: Vec::new(),
             herd_idx: 0,
             edit_id: Some(task.id.clone()),
+            base_updated: task.updated.clone(),
+            draft: None,
             handler: make_handler(vim),
         }
     }
@@ -366,13 +377,27 @@ pub(crate) fn render_create(f: &CreateForm, frame: &mut Frame, area: Rect, hits:
         (None, Some(p)) => format!("New task (child of {p})"),
         (None, None) => "New yak".to_string(),
     };
-    frame.render_widget(
-        Paragraph::new(Span::styled(
-            header,
-            Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
-        )),
-        header_r,
-    );
+    let mut head = vec![Span::styled(
+        header,
+        Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+    )];
+    // A form restored from a draft says so; yellow when the yak has changed
+    // since the draft began (yaks-683f).
+    if let Some(d) = &f.draft {
+        let (text, color) = if d.stale {
+            (
+                format!("  draft ({}, yak changed since) · Ctrl-R original", d.saved),
+                Color::Yellow,
+            )
+        } else {
+            (
+                format!("  draft ({}) · Ctrl-R original", d.saved),
+                Color::Magenta,
+            )
+        };
+        head.push(Span::styled(text, Style::new().fg(color)));
+    }
+    frame.render_widget(Paragraph::new(Line::from(head)), header_r);
     let types: Vec<(String, bool)> = TYPE_CHOICES
         .iter()
         .enumerate()

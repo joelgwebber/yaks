@@ -15,6 +15,7 @@ mod detail_nav;
 #[cfg(test)]
 mod docshots;
 mod doks_tab;
+mod drafts;
 mod drawer;
 mod editor;
 mod farmsync;
@@ -87,6 +88,7 @@ use crate::model::{Status, Task};
 use blockedit::BlockEdit;
 use create::*;
 use doks_tab::*;
+use drafts::DraftKey;
 use drawer::*;
 use editor::*;
 use farmsync::{AutoSync, FarmOp, FarmSync};
@@ -182,6 +184,10 @@ pub(crate) enum ConfirmAction {
     SlaughterFamily(String),
     /// Discard a dirty edit/create form or comment (stashed in `App.dirty_cancel`).
     DiscardEdit,
+    /// The three-way prompt for a surface that keeps drafts (yaks-683f): `k`
+    /// saves the stashed form or comment as a draft, `d` discards it, `Esc`
+    /// goes back to it.
+    KeepDraft,
 }
 
 // Filter-drawer layout: 7 rows, three of them free-text.
@@ -535,6 +541,7 @@ impl App {
         );
         app.refresh_farm_sync();
         app.reload_doks();
+        app.sweep_drafts();
         app.clamp_cursor();
         // The user's key overrides (`keys:` in their config.yaml). Read here,
         // not in `new`, so a snapshot test never depends on the machine.

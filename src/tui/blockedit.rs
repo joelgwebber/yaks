@@ -76,9 +76,21 @@ pub(crate) struct BlockEdit {
     original: String,
     /// The provisional header of a new comment (`you · now`).
     label: String,
+    /// Set when the text was restored from a saved draft: `draft · saved 2h
+    /// ago` (yaks-683f). Shown after the label; `Ctrl-R` clears it.
+    pub(crate) draft: Option<String>,
 }
 
 impl BlockEdit {
+    /// The header label: the provisional one, then the draft badge if any.
+    fn shown_label(&self) -> String {
+        match (&self.draft, self.label.is_empty()) {
+            (Some(d), true) => d.clone(),
+            (Some(d), false) => format!("{} · {d}", self.label),
+            (None, _) => self.label.clone(),
+        }
+    }
+
     /// Whether closing now would lose typing (a new comment: any text at all).
     pub(crate) fn is_dirty(&self) -> bool {
         let text = self.editor.text();
@@ -151,7 +163,7 @@ impl App {
         match &self.overlay {
             Overlay::BlockEdit(be) => Some(be),
             Overlay::Confirm {
-                action: ConfirmAction::DiscardEdit,
+                action: ConfirmAction::DiscardEdit | ConfirmAction::KeepDraft,
                 ..
             } => match &self.dirty_cancel {
                 Some(Overlay::BlockEdit(be)) => Some(be),
@@ -179,7 +191,7 @@ impl App {
         Some(detail::EditSlot {
             block: be.block,
             rows: (wrapped_rows(&text, width.saturating_sub(GUTTER)) + 1).min(cap),
-            label: be.label.clone(),
+            label: be.shown_label(),
             hints: hints_for(&be.editor.action)
                 .iter()
                 .map(|h| h.to_string())
@@ -214,14 +226,27 @@ impl App {
                     },
                 )
             }
-            None => (
-                String::new(),
-                format!("{} · now", self.note_author()),
-                0,
-                EditAction::Comment(id.clone()),
-            ),
+            // A new comment starts from its saved draft, if there is one.
+            None => {
+                let draft = self.comment_draft(&id);
+                let row = draft.as_ref().map_or(0, |(t, _)| t.split('\n').count() - 1);
+                (
+                    draft.as_ref().map(|(t, _)| t.clone()).unwrap_or_default(),
+                    format!("{} · now", self.note_author()),
+                    row,
+                    EditAction::Comment(id.clone()),
+                )
+            }
         };
-        self.open_slot_editor(id, block, text, label, row, action);
+        let restored = matches!(action, EditAction::Comment(_)) && !text.is_empty();
+        self.open_slot_editor(id.clone(), block, text, label, row, action);
+        if restored {
+            let badge = self.comment_draft(&id).map(|(_, badge)| badge);
+            if let Overlay::BlockEdit(be) = &mut self.overlay {
+                be.draft = badge;
+            }
+            self.notification = Some("restored draft — Ctrl-R for original".into());
+        }
     }
 
     /// `a` / `Q`: open the new-comment editor whose save asks (`needs:
@@ -276,6 +301,7 @@ impl App {
             block,
             original: text,
             label,
+            draft: None,
         });
         let first = self
             .detail_dlines()
@@ -390,6 +416,7 @@ impl App {
             block: Some(block),
             original,
             label: String::new(),
+            draft: None,
         });
         self.show_block_editor();
         self.notification = Some(format!(

@@ -1150,6 +1150,18 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
                 "Enter",
                 "(editor Insert) Continue a list / quote; on an empty item, end it",
             ),
+            (
+                "k / Enter",
+                "(Unsaved changes? prompt, on a form or new comment) Keep what you typed as a draft",
+            ),
+            (
+                "d",
+                "(Unsaved changes? prompt) Discard it and delete any draft; Esc goes back to editing",
+            ),
+            (
+                "Ctrl-R",
+                "(a form or comment restored from a draft) Revert to the yak's current content and delete the draft",
+            ),
         ],
     ),
     (
