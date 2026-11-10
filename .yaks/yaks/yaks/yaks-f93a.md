@@ -73,3 +73,12 @@ Decision: `view_count` for Starred now counts `working_set_rows().len()`, one ru
 Decision: `*` with a dok open stars that dok (viewer binding), found by `AttachView::target` when it is a dok path; an attachment or another farm file says it cannot be starred. Rejected: silent no-op.
 
 Decision: the star glyph ⭐ ends a dok row (path column shrinks by 3 cells) and follows the kind label in the viewer header, as on yak rows and the yak pane header.
+
+---
+▸ 2026-11-10T21:37:40Z [dokstar-1]
+
+Shape of the fix: `App::toggle_star` takes its target from `star_target` (open dok, else yak, else dok row); `working_set_rows` resolves yaks then doks (stale entries skipped); `YakStar` bound in `Doc` rows and the `Viewer` (run in `run_viewer_cmd`); row and header render the star; `docs/tui.md` updated (Starred line, `*` row, Doks tab key table and bullet).
+
+Evidence: new tests in `src/tui/doks_tab.rs` (star in Doks tab shows in Starred and removes again; source/session note refuses; stale entry skipped; viewer star; Enter opens a starred dok) and `views_store.rs` (file round-trips ids and dok paths). Frames attached (Starred view with two doks, viewer header). `yaks verify` PASS. Note: `tui::farmsync::tests::*` flake under `cargo test --workspace` (also on the untouched base, with my change stashed): the flaky-tests worker's area.
+
+Docs grep for "Star": only `docs/tui.md` (3 places, updated) and `src/tui/keymap.rs` help lines; nothing in `README.md`, `docs/cli.md`, `docs/README.md` or `.agents/skills/`.
