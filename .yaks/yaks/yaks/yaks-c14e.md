@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-11-10T19:08:25Z'
-updated: '2026-11-10T21:42:50Z'
+updated: '2026-11-10T21:43:15Z'
 tags:
 - tui
 ---
@@ -85,3 +85,13 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVPepIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-10T21:43:15Z [herd-unlock]
+kind: landed
+commit: d147c2bc8876a1ab29a8345d4fb04b91c2a8e2e4
+source: 1f23b31dbed4e9af0999a173a7b285932b33a2b9
+branch: main
+---
+
+landed: d147c2bc yaks-c14e: flat views honour the drawer's status chips (FilterSpec::admits_status)
