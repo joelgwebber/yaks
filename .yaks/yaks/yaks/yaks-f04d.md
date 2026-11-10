@@ -1,7 +1,7 @@
 ---
 id: yaks-f04d
 title: Known labels in configuration
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-08-26T13:20:21Z'
@@ -50,3 +50,13 @@ herd-unlock-2, 2026-11-10: the "predefined labels with descriptions" this asks f
 ▸ 2026-11-10T22:03:46Z [herd-unlock]
 
 Done (herd-unlock-2): known tags with descriptions live in schemas/yak.md (this farm now has 22); yaks-bcd7 warns on an unknown tag from the CLI, yaks-8d6a completes tags in the TUI form with known ones first. Both landed and checked on a copy of the real farm.
+
+---
+▸ 2026-11-10T22:03:46Z [herd-unlock]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
