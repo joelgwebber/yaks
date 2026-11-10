@@ -4,6 +4,7 @@ title: Reflecting on sessions
 tags:
 - design
 - doks
+description: 'Why and how the weekly reflection round keeps /doks/lessons.md: what it writes, its budget, how lessons leave.'
 ---
 
 # Reflecting on sessions
