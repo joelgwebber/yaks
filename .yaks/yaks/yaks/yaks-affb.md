@@ -1,11 +1,11 @@
 ---
 id: yaks-affb
 title: Copy dok path with `y`
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-10T17:36:26Z'
-updated: '2026-11-10T18:36:28Z'
+updated: '2026-11-10T18:36:37Z'
 tags:
 - doks
 - tui
@@ -80,3 +80,17 @@ needs: agent
 ---
 
 Whoops, forgot to rebuild. Working fine.
+
+---
+▸ 2026-11-10T18:36:37Z [sched-1]
+
+Already done.
+
+---
+▸ 2026-11-10T18:36:37Z [sched-1]
+kind: move
+from: shaving
+to: shorn
+---
+
+moved: shaving -> shorn
