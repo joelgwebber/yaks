@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-10T19:08:25Z'
-updated: '2026-11-10T21:35:04Z'
+updated: '2026-11-10T21:35:05Z'
 tags:
 - tui
 ---
@@ -47,3 +47,18 @@ A test that fails first: All view, drawer toggles shorn off, no shorn row remain
 Start 2026-11-10T21:13:10Z; checkout /Users/joel/src/yaks/.delta/worktrees/pfapv7at78cw/yaks, base 686d328a.
 
 [shorn-after](yaks-c14e/shorn-after.txt "After the fix: All view, drawer status chips hairy+shaving+dead lit (shorn off): 3 rows, no shorn yak (yak-1fc5), where before it stayed")
+
+---
+▸ 2026-11-10T21:35:05Z [shornfilter-1]
+
+Cause: `flat_rows` (and `view_count`) only read the status scope for `dead` (`want_dead = statuses.contains(Dead)`); every other status was ignored, so on All (a flat view whose spec lists every status) switching `shorn` off in the drawer changed nothing.
+
+Fix: one rule, `FilterSpec::admits_status` (`src/filter.rs`): the listed statuses, or with none listed every status but dead. `flat_rows` uses the live filter's, `view_count` the view spec's. Tree views were not broken (`tree::build` already honours `spec.statuses`).
+
+Tests (failed first, `cargo test --bin yaks`): `the_drawer_status_chips_scope_flat_views`, `a_flat_views_count_follows_its_statuses` in `tui/tests.rs`.
+
+Decision: put the rule on `FilterSpec` as `admits_status`, not inline in viewmodel. Rejected: patching both call sites inline (two copies of the rule, which is how they drifted); changing `filter::apply` (it already has the rule but also takes `include_dead` and parent scope, a heavier fit for the latency worker's `flat_rows`).
+
+Decision: the tab count (`view_count`) uses the view's saved spec statuses, not the live filter, as before (documented "independent of the live facets"); only the rule changed. So the All tab count does not move when a chip is toggled, as for every other facet.
+
+Decision: docs: one sentence under Filter drawer in `docs/tui.md`. Grep for old wording ("dead ones included", "flat view", statuses) in docs/ .agents/skills/ README.md src/ found nothing contradicting it.
