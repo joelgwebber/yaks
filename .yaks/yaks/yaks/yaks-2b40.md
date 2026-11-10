@@ -1,11 +1,11 @@
 ---
 id: yaks-2b40
 title: 'Design: lessons dok budget and index, promotion measured, a dok index'
-status: hairy
+status: shaving
 type: task
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-10T17:50:28Z'
+updated: '2026-11-10T17:53:15Z'
 parent: yaks-1c89
 tags:
 - design
@@ -58,3 +58,13 @@ kind: pickup
 picked up
 
 herd-unlock: doing this myself (skill prose stays with the coordinator): the six points into yaks-upkeep, the first reflection round by hand, the three recurring yaks. Point 4: yes, the yak is a task for the mechanism that stops the recurrence.
+
+---
+▸ 2026-11-10T17:53:15Z [herd-unlock]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
