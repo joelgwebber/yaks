@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T19:06:01Z'
-updated: '2026-11-10T21:37:14Z'
+updated: '2026-11-10T21:37:40Z'
 tags:
 - doks
 - tui
@@ -56,3 +56,20 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-10T21:37:40Z [dokstar-1]
+
+Decision: one `*` command (`yak.star`) with a `Doks` row binding and a `Viewer` binding, not a new `dok.star` command. Rejected: a separate `Cmd` (a second name for one intent; `?` groups and the exceptions test already cover `YakStar`).
+
+Decision: a dok is keyed by its farm path in the existing `working_set.json` `ids` list. Rejected: a second list or a file-format bump (a `doks/...` path never collides with a yak id, so the file stays as is).
+
+Decision: only doks (`DocGroup::Dok`) can be starred; a source or session note answers "only a yak or a dok can be starred". Rejected: starring all documents (out of scope per the claim; sources have no stable single path: `source.md`).
+
+Decision: in the Starred view yaks come first, then doks, each in star order. Rejected: one interleaved star order (the working set mixes both, but the All view's yaks-then-documents rule is the precedent, and the doks need the `Doc` row kind so keys dispatch right).
+
+Decision: `view_count` for Starred now counts `working_set_rows().len()`, one rule for count and rows.
+
+Decision: `*` with a dok open stars that dok (viewer binding), found by `AttachView::target` when it is a dok path; an attachment or another farm file says it cannot be starred. Rejected: silent no-op.
+
+Decision: the star glyph ⭐ ends a dok row (path column shrinks by 3 cells) and follows the kind label in the viewer header, as on yak rows and the yak pane header.
