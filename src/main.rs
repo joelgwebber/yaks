@@ -1557,7 +1557,8 @@ enum SessionAction {
     /// none) and optionally `## Discussion` (exposition no yak holds) and
     /// `## Saved`. Without `## Saved`, yaks writes it from what you wrote in
     /// the farm since `--since` (see `touched`). The frontmatter (actor,
-    /// person, host, harness, thread, day, time, verdict counts) is yaks'.
+    /// person, host, harness, thread, day, `written`, verdict counts) is
+    /// yaks'; the path's date and time, `day` and `written` are all UTC.
     Note {
         /// A few words naming the session.
         #[arg(long)]

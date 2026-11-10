@@ -2334,7 +2334,8 @@ impl Farm {
 
     /// Save a session note (yaks-17f5): checks the body, fills `## Saved`
     /// from `saved` when the body has none, and writes it under `sessions/`,
-    /// under the farm lock. Returns the note's farm-relative path.
+    /// under the farm lock. Its name, `day:` and `written:` are all UTC.
+    /// Returns the note's farm-relative path.
     pub fn session_note(
         &self,
         title: &str,
@@ -2348,14 +2349,7 @@ impl Farm {
             _ => body.to_string(),
         };
         let _lock = store::lock(&self.root)?;
-        let dok = crate::sessions::build(
-            &self.root,
-            title,
-            &body,
-            origin,
-            chrono::Utc::now(),
-            self.zone(),
-        )?;
+        let dok = crate::sessions::build(&self.root, title, &body, origin, chrono::Utc::now())?;
         crate::doks::save(&self.root, &dok)?;
         Ok(dok.path)
     }

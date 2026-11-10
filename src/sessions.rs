@@ -1,11 +1,12 @@
 //! Session notes (yaks-17f5, design yaks-bca6): a short account of one
 //! working session, left in the farm so a later review (yaks-e58f) and the
-//! weekly reflection can learn from it. The same shape as Hearth's
-//! `session-review` files, so the ones `import-hearth` brought in read alike.
+//! weekly reflection can learn from it.
 //!
-//! A note lives at `sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md`:
-//! frontmatter (`type: session-review`, `title`, `source: session-note`,
-//! who, where, when, and a count of each verdict), then four sections:
+//! A note lives at `sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md`, where
+//! the date and time are UTC, the same instant as the frontmatter's `written:`
+//! and `day:`. The frontmatter is `type: session-review`, `title`,
+//! `source: session-note`, who, where, when, and a count of each verdict;
+//! then four sections:
 //! `## Summary`, `## Turns` (one `- <verdict>: <reason>` per request),
 //! `## Saved` and `## Lessons`, plus an optional `## Discussion`. A session
 //! whose work is in yak notes cites those notes ([`touched`]) rather than
@@ -19,7 +20,6 @@
 use crate::doks::Dok;
 use crate::fields::{Fields, Value};
 use crate::store;
-use crate::zone::Zone;
 use anyhow::{Context, Result, bail};
 use chrono::{DateTime, Utc};
 use std::path::Path;
@@ -28,14 +28,17 @@ use std::path::Path;
 pub const DIR: &str = "sessions";
 /// A session note's `type:`.
 pub const KIND: &str = "session-review";
-/// The `source:` of a note an agent wrote about its own session (Hearth's
-/// server reviews of its conversations carry another, or none).
+/// The `source:` of a note an agent wrote about its own session.
 pub const SOURCE: &str = "session-note";
 /// The field a review stamps on a note once its facts are kept.
 pub const PROMOTED: &str = "promoted";
 /// How a turn went, in the order counts are written.
 pub const VERDICTS: [&str; 4] = ["good", "partial", "failed", "unclear"];
-/// A note is a summary, not a transcript (Hearth's cap).
+/// The field holding when a note was written (UTC, whole seconds).
+pub const WRITTEN: &str = "written";
+/// What `written` was called before yaks-3b52: notes saved then still carry it.
+pub const WRITTEN_LEGACY: &str = "reviewed";
+/// A note is a summary, not a transcript.
 pub const MAX_CHARS: usize = 12_000;
 
 /// Every markdown file under `sessions/`, farm-relative, sorted (so oldest
@@ -240,29 +243,27 @@ fn slug(s: &str, max: usize) -> String {
 }
 
 /// Build the note (not written): its farm-relative path and the dok. `now`
-/// is when it is saved; the day and the file name use its date in the farm's
-/// `zone`.
+/// is when it is saved; the file name, `day:` and `written:` all come from
+/// that one UTC instant.
 pub fn build(
     root: &Path,
     title: &str,
     body: &str,
     origin: &Origin,
     now: DateTime<Utc>,
-    zone: Zone,
 ) -> Result<Dok> {
     let title = title.split_whitespace().collect::<Vec<_>>().join(" ");
     if title.is_empty() {
         bail!("a session note needs a --title: a few words naming the session");
     }
     let info = check_body(body)?;
-    let local = zone.at(now);
-    let day = local.format("%Y-%m-%d").to_string();
+    let day = now.format("%Y-%m-%d").to_string();
     let who = slug(&origin.actor, 40);
     let who = if who.is_empty() { "agent".into() } else { who };
     let stem = format!(
         "{DIR}/{}/{who}-{day}-{}-{}",
-        local.format("%Y/%m"),
-        local.format("%H%M"),
+        now.format("%Y/%m"),
+        now.format("%H%M"),
         slug(&title, 40)
     );
     let mut rel = format!("{stem}.md");
@@ -287,7 +288,7 @@ pub fn build(
     opt(&mut f, "thread", &origin.thread);
     f.set("day", &Value::Plain(day));
     f.set(
-        "reviewed",
+        WRITTEN,
         &Value::Str(now.format("%Y-%m-%dT%H:%M:%SZ").to_string()),
     );
     for (i, v) in VERDICTS.iter().enumerate() {
@@ -426,6 +427,14 @@ fn link_text(line: &str) -> String {
     out
 }
 
+/// When the note was written: `written:`, else the `reviewed:` older notes
+/// carry.
+fn written_at(d: &Dok) -> Option<DateTime<Utc>> {
+    d.str_field(WRITTEN)
+        .and_then(|s| ts_of(&s))
+        .or_else(|| d.str_field(WRITTEN_LEGACY).and_then(|s| ts_of(&s)))
+}
+
 /// The start of a session for `actor`, when none is given: its latest
 /// session note, else `fallback` (and never before `fallback`).
 pub fn default_since(root: &Path, actor: &str, fallback: DateTime<Utc>) -> DateTime<Utc> {
@@ -433,7 +442,7 @@ pub fn default_since(root: &Path, actor: &str, fallback: DateTime<Utc>) -> DateT
         .unwrap_or_default()
         .iter()
         .filter(|d| is_note(d) && d.str_field("actor").as_deref() == Some(actor))
-        .filter_map(|d| d.str_field("reviewed").and_then(|s| ts_of(&s)))
+        .filter_map(written_at)
         .max()
         // Times are whole seconds: start just after the note, so what the
         // last session wrote in its final second stays in that session.
@@ -655,34 +664,32 @@ mod tests {
         let root = std::env::temp_dir().join(format!("yaks-sessions-build-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         std::fs::create_dir_all(&root).unwrap();
-        let now = ts_of("2026-11-06T12:34:56Z").unwrap();
+        let now = ts_of("2026-11-06T23:30:56Z").unwrap();
         let o = Origin {
             actor: "delta:Herd Upkeep".into(),
             person: Some("Joel".into()),
             harness: Some("delta".into()),
             ..Default::default()
         };
-        // +14:00 is already the next day when it is 12:34Z: the name follows
-        // the farm's zone, not UTC and not the machine.
-        let zone = Zone::Fixed(chrono::FixedOffset::east_opt(14 * 3600).unwrap());
-        let d = build(&root, "Parser: first pass!", BODY, &o, now, zone).unwrap();
-        let local = zone.at(now);
-        assert_eq!(local.format("%Y-%m-%d").to_string(), "2026-11-07");
+        // 23:30Z on the 6th: the path, `day:` and `written:` all say the 6th,
+        // whatever the farm's zone or the machine's.
+        let d = build(&root, "Parser: first pass!", BODY, &o, now).unwrap();
         assert_eq!(
             d.path,
-            format!(
-                "sessions/{}/delta-herd-upkeep-{}-{}-parser-first-pass.md",
-                local.format("%Y/%m"),
-                local.format("%Y-%m-%d"),
-                local.format("%H%M")
-            )
+            "sessions/2026/11/delta-herd-upkeep-2026-11-06-2330-parser-first-pass.md"
         );
+        assert_eq!(d.str_field("day").as_deref(), Some("2026-11-06"));
+        assert_eq!(
+            d.str_field(WRITTEN).as_deref(),
+            Some("2026-11-06T23:30:56Z")
+        );
+        assert_eq!(d.str_field(WRITTEN_LEGACY), None);
         assert_eq!(d.str_field("type").as_deref(), Some(KIND));
         assert_eq!(d.str_field("good").as_deref(), Some("1"));
         assert_eq!(d.str_field("failed"), None);
         assert!(is_unreviewed(&d));
         crate::doks::save(&root, &d).unwrap();
-        let again = build(&root, "Parser: first pass!", BODY, &o, now, zone).unwrap();
+        let again = build(&root, "Parser: first pass!", BODY, &o, now).unwrap();
         assert!(
             again.path.ends_with("-parser-first-pass-2.md"),
             "{}",
@@ -691,6 +698,45 @@ mod tests {
         assert!(promote(&root, &d.path, "2026-11-07").unwrap());
         assert!(!promote(&root, &d.path, "2026-11-08").unwrap());
         assert!(!is_unreviewed(&load(&root, &d.path).unwrap()));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn default_since_reads_written_and_falls_back_to_reviewed() {
+        let root = std::env::temp_dir().join(format!("yaks-sessions-since-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        let o = Origin {
+            actor: "a".into(),
+            ..Default::default()
+        };
+        let fallback = ts_of("2026-11-01T00:00:00Z").unwrap();
+        assert_eq!(default_since(&root, "a", fallback), fallback);
+        // A note saved before the rename carries `reviewed:` only.
+        let now = ts_of("2026-11-06T10:00:00Z").unwrap();
+        let mut old = build(&root, "Old", BODY, &o, now).unwrap();
+        old.fields
+            .set(WRITTEN_LEGACY, &Value::Str(old.str_field(WRITTEN).unwrap()));
+        old.fields.remove(WRITTEN);
+        crate::doks::save(&root, &old).unwrap();
+        assert_eq!(
+            default_since(&root, "a", fallback),
+            ts_of("2026-11-06T10:00:01Z").unwrap()
+        );
+        // A newer note carries `written:`.
+        let newer = build(
+            &root,
+            "New",
+            BODY,
+            &o,
+            ts_of("2026-11-06T11:00:00Z").unwrap(),
+        )
+        .unwrap();
+        crate::doks::save(&root, &newer).unwrap();
+        assert_eq!(
+            default_since(&root, "a", fallback),
+            ts_of("2026-11-06T11:00:01Z").unwrap()
+        );
         let _ = std::fs::remove_dir_all(&root);
     }
 
