@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-10T17:37:34Z'
-updated: '2026-11-10T17:49:47Z'
+updated: '2026-11-10T17:50:31Z'
 tags:
 - doks
 - tui
@@ -22,3 +22,20 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-10T17:50:31Z [herd-unlock]
+
+Claim (yakherd herd-unlock): worker `doklink-1`, Sonnet 5.5.
+
+## Scope
+
+In the TUI's multi-line editors, Tab after a dok-link token opens a picker over the farm's doks and inserts the chosen path, as Tab after `<prefix>-` does for yak ids (`completion_context` in `src/tui/editor.rs`, `open_ref_picker` and the `EditKey::Complete` paths in `src/tui/handlers.rs`). Trigger: a token starting `/doks/` or `/<herd>/doks/` (the farm-root link form), seed = what follows. Inserted text: the full farm-root path. Reuse the existing picker overlay; the yak completion must behave exactly as before. Docs: `docs/tui.md`, the keymap `EXTRAS` row for Tab completion.
+
+## Out of scope
+
+Heading anchors (`#...`), relative links, sources.
+
+## Evidence
+
+Tests: Tab after `/doks/des` opens the picker seeded `des` and inserting replaces the token; `yaks-` completion unchanged. A toque text frame of the picker open over an editor, attached. Gate `cargo test --workspace`. Judge: the yakherd.
