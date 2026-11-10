@@ -5,11 +5,12 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-10T17:59:19Z'
-updated: '2026-11-10T17:59:19Z'
+updated: '2026-11-10T17:59:27Z'
 parent: yaks-1c89
 tags:
 - skills
 - design
+needs: human
 ---
 
 Joel, 2026-11-10 (on yaks-2b40): "let's also discuss ideas around a process for getting feedback from other farms' experience with these memory consolidation processes. Maybe something as simple as having them keep a running log of friction points that we can copy over to this farm as feedback?"
@@ -31,3 +32,17 @@ Every farm's upkeep already produces the raw material: session notes carry `## L
 - **A shared upstream channel** (GitHub issues on yaks): right for other people's farms eventually; heavy for Joel's own, and it puts farm content outside the farm.
 
 Lean: the dok plus the recurring collector, with entries deduped by `--key` so the collector never has to write to another farm.
+
+---
+▸ 2026-11-10T17:59:27Z [herd-unlock]
+kind: ask
+needs: human
+---
+
+asked: needs human
+
+Three choices for the cross-farm feedback loop (the description has the detail and the alternatives). My lean on each:
+
+1. **Where other farms put yaks friction:** a `/doks/yaks-feedback.md` dok in each farm, appended by review and reflection, one dated entry each. Alternative: no dok; the collector greps every farm's session `## Lessons`. Lean: the dok, since lessons mix project friction with yaks friction.
+2. **Who carries it here:** a weekly recurring yak in this farm reads every farm on this machine (read-only) and files or extends yaks with `--key <farm>#<entry>`, so it never duplicates and never writes to another farm. Alternative: other farms create yaks here directly with `yaks -C`. Lean: the collector.
+3. **Scope now:** skill text plus the recurring yak, no new command until two rounds show it pays. Lean: yes.
