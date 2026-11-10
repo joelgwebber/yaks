@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-10T19:08:25Z'
-updated: '2026-11-10T21:42:44Z'
+updated: '2026-11-10T21:42:49Z'
 tags:
 - tui
 ---
@@ -70,3 +70,8 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-10T21:42:49Z [shornfilter-1]
+
+Summary: flat views now honour every status chip via FilterSpec::admits_status (src/filter.rs, used by flat_rows and view_count); docs/tui.md updated; verify PASS; headless frame attached.
