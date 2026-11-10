@@ -25,7 +25,15 @@ Reflection is that cross-note pass. It runs on a schedule, over the notes since 
 - **A lessons dok**, `doks/lessons.md` (`type: topic`): short rules for working in this farm's project, grouped by subject, each citing the sessions it came from. A lesson goes in when two or more sessions taught it, or when one `failed` or `partial` turn did. Lessons that are about the project's subject (how Bevy resolves asset paths) are facts, and review already put them in subject doks; this dok holds how to work. It is edited like any dok: extend, merge duplicates, drop a lesson only with a note saying why.
 - **Yaks for friction** with yaks or its skills, filed where the person tracks yaks' own work, as review already does.
 - **Proposals, not edits, for instruction files.** A lesson that belongs in `AGENTS.md` or a skill becomes a yak awaiting the human (`yaks ask`), with the proposed text in it. Reflection never edits those files; at most one such proposal per round. This is Hearth's "at most one skill diff per cycle to review".
-- **An account** as the recurring yak's shear note: the window, the verdict counts against last round's, lessons added or merged, yaks filed, the proposal if any.
+- **An account** as the recurring yak's shear note: the window, the verdict counts against last round's, last round's fixes (`recurred` / `gone`), lessons added, merged and removed, yaks filed, the proposal if any.
+
+## Budget and demotion
+
+Added 2026-11-10 ([yaks-2b40](yaks-2b40), from [the agent-memory research](/doks/research/agent-memory-dreaming.md), sections 2, 4, 5 and 9). The lessons dok is read in full at every session start, so it gets a budget (about 50 lines) and an index shape: a `## Rules` list of one-line rules linking to per-subject detail, each lesson with *how we know* and a *seen* date.
+
+- A lesson leaves three ways: *absorbed* (now in a skill or `AGENTS.md`, or a yak fixed it), *wrong*, or *faded* (not seen for three rounds).
+- A lesson already in context that still recurs gets a yak for a mechanism, not more text; the next round checks each such fix and says `recurred` or `gone`.
+- The first round ran by hand on 2026-11-10 ([yaks-20ff](yaks-20ff)).
 
 ## Closing the loop
 
