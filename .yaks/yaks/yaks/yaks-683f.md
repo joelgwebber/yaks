@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-08-23T02:49:48Z'
-updated: '2026-11-10T19:06:37Z'
+updated: '2026-11-10T19:07:03Z'
 tags:
 - tui
 ---
@@ -150,3 +150,13 @@ thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFR7IZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-10T19:07:03Z [herd-unlock]
+kind: landed
+commit: 686d328a0b281e8f6570ed738e7ea083e9a1037a
+source: 61db35cd36c66c65155390004b4f3e04acbff7e4
+branch: main
+---
+
+landed: 686d328a yaks-683f: keep unfinished form and comment edits as drafts (keep/discard/back prompt, auto-restore, Ctrl-R revert)
