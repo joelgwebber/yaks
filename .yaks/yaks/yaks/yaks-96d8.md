@@ -1,11 +1,11 @@
 ---
 id: yaks-96d8
 title: 'Research: Clint''s haks, the orchestration layer over yaks'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-03T22:40:30Z'
-updated: '2026-11-04T21:18:37Z'
+updated: '2026-11-11T20:00:41Z'
 tags:
 - research
 - design
@@ -53,3 +53,17 @@ Naming question split out: the rename is filed as yaks-cc40 (full rename, no ali
 ▸ 2026-11-04T21:18:37Z [Joel Webber]
 
 Note: We committed to the "doks" naming and changed it throughout the code.
+
+---
+▸ 2026-11-11T20:00:40Z [sched-1]
+
+Done
+
+---
+▸ 2026-11-11T20:00:41Z [sched-1]
+kind: move
+from: shaving
+to: shorn
+---
+
+moved: shaving -> shorn
