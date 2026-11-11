@@ -5,9 +5,9 @@ status: hairy
 type: bug
 priority: 3
 created: '2026-11-11T14:23:17Z'
-updated: '2026-11-11T14:23:17Z'
+updated: '2026-11-11T14:23:39Z'
 tags:
 - tui
 ---
 
-Eg, [link](/doks/
+Eg, [link](/doks/sessions/2026/11/herd-stars-2026-11-07-2025-starred-batch-13-yaks-shorn-with-sonnet.md)
