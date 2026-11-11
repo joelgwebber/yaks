@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 3
 created: '2026-08-26T13:27:01Z'
-updated: '2026-10-27T01:19:38Z'
+updated: '2026-11-11T20:35:35Z'
 tags:
 - tui
 ---
@@ -26,7 +26,9 @@ I *think* this one might already be done, with the inline yak tab-completion stu
 ---
 ▸ 2026-09-23T21:38:18Z [coordinator]
 
-Partly done, not fully: yaks-5656 shipped Tab-triggered yak-id completion inside editor blocks (desc/comment), reusing the fuzzy picker as the popup. Not yet built: completion in single-line fields (e.g. labels), which is blocked on predefined labels (yaks-f04d). No inline/ghost-text popup infra exists; completion is modal via the picker. Options: (a) shear b2ed as covered by yaks-5656 and file 'label completion' under yaks-f04d [my lean]; (b) keep b2ed open for single-line completion infra.
+Partly done, not fully: yaks-5656 shipped Tab-triggered yak-id completion inside editor blocks (desc/comment), reusing the fuzzy picker as the popup. Not yet built: completion in single-line fields (e.g. labels), which is blocked on predefined labels (yaks-f04d). No inline/ghost-text popup infra exists; completion is modal via the picker. Options:
+a. shear b2ed as covered by yaks-5656 and file 'label completion' under yaks-f04d [my lean];
+b. keep b2ed open for single-line completion infra.
 
 ---
 ▸ 2026-10-03T20:31:56Z [Joel Webber]
