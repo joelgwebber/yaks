@@ -1,11 +1,11 @@
 ---
 id: yaks-0a4d
 title: 'Census: link forms and layout in real farms, and what a migration would touch'
-status: hairy
+status: shorn
 type: task
 priority: 2
 created: '2026-11-11T21:53:57Z'
-updated: '2026-11-11T22:07:11Z'
+updated: '2026-11-11T22:39:28Z'
 parent: yaks-1151
 tags:
 - links
@@ -65,3 +65,13 @@ Census done (read-only). Full per-farm report: [report.md](yaks-0a4d/report.md);
 - (i) rewrites every farm-abs and every yak-id link. Each of those is mechanical whenever the target resolves today. The 88 unresolvable ones need a person: mostly hearth fixtures, pg `../`, and surveyor siblings that are missing.
 
 Caveats: links were extracted with a regex approximation of CommonMark (fences and code spans stripped), not pulldown-cmark. "GitHub resolves" is computed from the file tree, not checked against live GitHub. I did not check how the blob view renders frontmatter.
+
+---
+▸ 2026-11-11T22:39:28Z [triage-1]
+kind: move
+from: hairy
+to: shorn
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shorn
