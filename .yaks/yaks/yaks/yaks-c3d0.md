@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-11T21:09:28Z'
-updated: '2026-11-11T21:10:17Z'
+updated: '2026-11-11T21:46:11Z'
 tags:
 - tui
 ---
@@ -18,3 +18,8 @@ Once in that UI, a *second* affordance can open it with the system editor. Anoth
 ▸ 2026-11-11T21:10:17Z [sched-1]
 
 Come to think of it, the copy absolute path and open in system editor affordances would be useful for yaks, doks, sessions, and sources as well. Hopefully there's a clean way to generalize this so we don't end up with a bunch of weird special cases.
+
+---
+▸ 2026-11-11T21:46:11Z [sched-1]
+
+Related to the git-hash linking problem -- we should ensure that we can also link to Github, which should be easier to do for files "at the given hash". If that can be done locally as well, great, but if not at least we can fall back to the GHUI.
