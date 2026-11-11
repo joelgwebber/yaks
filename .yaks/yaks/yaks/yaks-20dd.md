@@ -1,11 +1,11 @@
 ---
 id: yaks-20dd
 title: 'Triage: the starred tag-completion and TUI yaks against the link work'
-status: hairy
+status: shorn
 type: task
 priority: 3
 created: '2026-11-11T21:53:57Z'
-updated: '2026-11-11T22:08:04Z'
+updated: '2026-11-11T22:39:29Z'
 parent: yaks-1151
 tags:
 - tui
@@ -77,3 +77,13 @@ Triage (triage-1), against main e4d0ff5a.
 - 8874 and c3d0 both edit keymap.rs and docs/tui.md: land 8874 first.
 - c3d0 and bede share follow.rs/links.rs with the 1151 layout work. Yak/dok link completion (`dok_link_tail` editor.rs:285, `/doks/` only) has to follow any change to link forms. Tag completion doesn't touch links.
 - Parallel today: (1a16+bf1b), df01, e853, plus 6cf2/5f70 once answered.
+
+---
+▸ 2026-11-11T22:39:29Z [triage-1]
+kind: move
+from: hairy
+to: shorn
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shorn
