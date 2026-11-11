@@ -3,9 +3,9 @@ id: yaks-039b
 title: Sheds from notes, remote work visibility, and structured comments
 status: shaving
 type: feature
-priority: 2
+priority: 3
 created: '2026-10-31T15:16:48Z'
-updated: '2026-10-31T17:24:35Z'
+updated: '2026-11-11T21:13:24Z'
 tags:
 - sheds
 - design
