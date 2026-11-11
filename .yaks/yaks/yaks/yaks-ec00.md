@@ -3,9 +3,9 @@ id: yaks-ec00
 title: 'Research and plan: cloud runners always run a current yaks binary and current skills (one skills location, versions visible)'
 status: shaving
 type: task
-priority: 2
+priority: 3
 created: '2026-11-01T16:44:44Z'
-updated: '2026-11-07T16:03:47Z'
+updated: '2026-11-11T21:13:36Z'
 tags:
 - skills
 - agent
