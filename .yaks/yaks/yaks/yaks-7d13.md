@@ -1,11 +1,11 @@
 ---
 id: yaks-7d13
 title: 'Research: how GitHub and other hosts resolve and render farm markdown links'
-status: hairy
+status: shorn
 type: task
 priority: 2
 created: '2026-11-11T21:53:55Z'
-updated: '2026-11-11T22:10:12Z'
+updated: '2026-11-11T22:39:28Z'
 parent: yaks-1151
 tags:
 - links
@@ -85,3 +85,13 @@ Parsing the remote: handle `git@{host}:{path}.git`, `ssh://[user@]{host}[:port]/
 - Whether the GitHub client-side anchor match is case-sensitive.
 - Obsidian and VS Code handling of `/` links.
 - Listing limits on hosts other than GitHub.
+
+---
+▸ 2026-11-11T22:39:28Z [triage-1]
+kind: move
+from: hairy
+to: shorn
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shorn
