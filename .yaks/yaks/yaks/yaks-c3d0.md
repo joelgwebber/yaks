@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-11T21:09:28Z'
-updated: '2026-11-11T21:09:28Z'
+updated: '2026-11-11T21:10:17Z'
 tags:
 - tui
 ---
@@ -13,3 +13,8 @@ tags:
 Currently selecting a source link immediately opens it in the default editor (or maybe the system open behavior?). This is useful, but it would be nice to at least see it (read-only) in the our existing markdown/text UI. I'm assuming we can mostly reuse what we already have, though it'll need to use whatever syntax highlighting we're embedding in the markdown renderers.
 
 Once in that UI, a *second* affordance can open it with the system editor. Another would be useful for copying the absolute path of the file, so the user can open it however they like. I'm not quite sure how/if to handle that case for source files pinned to specific git-hashes. We'll want to think through that before committing fully to a design.
+
+---
+▸ 2026-11-11T21:10:17Z [sched-1]
+
+Come to think of it, the copy absolute path and open in system editor affordances would be useful for yaks, doks, sessions, and sources as well. Hopefully there's a clean way to generalize this so we don't end up with a bunch of weird special cases.
