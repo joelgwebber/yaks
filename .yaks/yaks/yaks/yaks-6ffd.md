@@ -1,11 +1,11 @@
 ---
 id: yaks-6ffd
 title: 'Layout: drop the .yaks root (discovery, farm_git prefix, path classifiers)'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-14T12:33:16Z'
+updated: '2026-11-14T12:33:17Z'
 parent: yaks-1151
 tags:
 - git
@@ -141,3 +141,13 @@ Evidence:
 - Real farm (`.yaks`) still works with this binary: `status`, `weight`.
 
 Not done / for others: `.gitattributes` and LFS rules still say `.yaks/**` (migration yak); `yaks session touched` and `check` staleness across the move; the `.yaks` text in brief and other docs; known residual in the land guard (a code repo that legitimately tracks `*/yaks/*.md`).
+
+---
+▸ 2026-11-14T12:33:17Z [layout-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGEcKpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
