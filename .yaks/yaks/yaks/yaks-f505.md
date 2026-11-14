@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:01Z'
-updated: '2026-11-14T11:21:30Z'
+updated: '2026-11-14T11:22:00Z'
 parent: yaks-1151
 tags:
 - links
@@ -46,3 +46,8 @@ moved: hairy -> shaving
 ▸ 2026-11-14T11:21:30Z [linkplan-lead]
 
 Claim: worker `locate-1` (Sonnet tier, per AGENTS.md's standing delegation; the scope is one outcome with tests that fail first). Owner of the new `src/locate.rs`, `src/hosting.rs`, the `yaks url` command in `src/main.rs` (its own subcommand region only), `gitrepo.rs` (the remote rule), `links.rs` (`exists`, the `sources/<id>` resolution) and `src/tui/follow.rs` (the viewer's `sources/<id>` case). Out of scope: layout, stored link forms, the TUI menu, `store.rs`. Judge: the coordinator re-runs the evidence on its own build; the worker shears nothing.
+
+---
+▸ 2026-11-14T11:22:00Z [locate-1]
+
+Start Sat Nov 14 11:22:00 UTC 2026. yaks path yaks-f505: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-f505.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/tqdpn9meejzv/yaks
