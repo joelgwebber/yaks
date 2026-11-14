@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-11T15:55:50Z'
-updated: '2026-11-14T13:18:18Z'
+updated: '2026-11-14T13:18:20Z'
 tags:
 - tui
 ---
@@ -46,3 +46,5 @@ Milestone: code + docs done, tests passing (tag filter). Remaining: render toque
 - Hint: `Tab → complete tag` on the drawer's tags row and beside the `L` line.
 
 ![drawer-hint](yaks-bf1b/drawer-hint.png "Filter drawer, tags row on a partial tag 'ru': the hint line says Tab → complete tag")
+
+![drawer](yaks-bf1b/drawer.png "Tab in the drawer's tags row: the tag picker open over the filter drawer, seeded with 'ru'")
