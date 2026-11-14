@@ -50,7 +50,7 @@ When a person asks, or a recurring yak wakes you for it:
 1. `yaks session list --unreviewed`: agents' notes nobody has reviewed, oldest first. Take a handful (eight at most) per round.
 2. Read each, and `yaks peek` the notes it links when you need the detail.
 3. **Read the yak notes too.** Yak notes are the ground truth sessions summarize, and much work has no session note at all. `yaks log --since <last round>` (the recurring yak's previous shear note says when; the first round takes a week) lists what was written since: read the `Decision:` notes and the shear notes of yaks shorn in the window, skipping moves and heartbeats.
-4. Keep what outlives the session or the yak and isn't already kept: how something works, a decision and why, a fact about the person's setup or preferences. It goes where `yaks-research` says, usually by extending a dok; cite the session note or the yak note in the body (`[session](/sessions/2026/11/...md)`, `[the decision](yaks-1a2b#2026-11-04T22:13:03Z)`). Work still to do becomes a yak. Don't copy what a yak note says into a dok: state the finding and link the note.
+4. Keep what outlives the session or the yak and isn't already kept: how something works, a decision and why, a fact about the person's setup or preferences. It goes where `yaks-research` says, usually by extending a dok; cite the session note or the yak note in the body, with link words that carry meaning: the date the fact was settled, or the phrase the session established (`renamed to spawns on [2026-03-19](/sessions/2026/03/...md)`, `[the decision](yaks-1a2b#2026-11-04T22:13:03Z)`), never a bare "session" that reads as a stray word mid-sentence. Work still to do becomes a yak. Don't copy what a yak note says into a dok: state the finding and link the note.
 5. Lessons about yaks itself or its skills are **yaks feedback** (below). Don't edit a skill unasked.
 6. `yaks session promote <path>...` on every note you finished, including those with nothing worth keeping, so the next round skips them.
 7. Account for it (as the recurring yak's shear note, or your reply): per session note, what moved where, or "nothing to keep"; then the yak-note window and what it added.
@@ -64,7 +64,7 @@ Friction with yaks itself or its skills (a command that refused or surprised, sk
 
 - **What happened:** ... (one or two sentences)
 - **Where:** the command, or the skill and section
-- **Shows it:** [session](/sessions/2026/11/...md) or [the note](yaks-1a2b#2026-11-04T22:13:03Z)
+- **Shows it:** [the 2026-11-07 session](/sessions/2026/11/...md) or [the note](yaks-1a2b#2026-11-04T22:13:03Z)
 ```
 
 The heading is the entry's key: never rename or delete an entry, since a collector in yaks' own farm reads these and dedupes by it. File a yak in this farm as well only when this farm wants a local workaround. In the farm where yaks itself is tracked (its `AGENTS.md` says so), skip the dok and file the yak.
@@ -100,7 +100,7 @@ Review reads one note at a time. Reflection reads the run of notes since the las
 ## Landing parallel workers
 
 - **Rule:** land workers that share a doc section in one serial arc.
-- **How we know:** cherry-pick conflicts at every landing ([session](/sessions/2026/11/...md), [session](/sessions/2026/11/...md)).
+- **How we know:** cherry-pick conflicts at every landing ([2026-11-07](/sessions/2026/11/...md), [2026-11-09](/sessions/2026/11/...md)).
 - **Seen:** 2026-11-07
 ```
 
