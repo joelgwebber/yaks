@@ -5,11 +5,12 @@ status: shaving
 type: idea
 priority: 2
 created: '2026-11-14T11:21:01Z'
-updated: '2026-11-14T11:22:52Z'
+updated: '2026-11-14T11:22:53Z'
 parent: yaks-1151
 tags:
 - links
 - markdown
+needs: human
 ---
 
 Decision (yaks-1151, Joel, 2026-11-14): reconsider the note format now and ship it in the schema-9 migration.
@@ -42,3 +43,30 @@ moved: hairy -> shaving
 ▸ 2026-11-14T11:22:52Z [linkplan-lead]
 
 Design pass done: [/doks/design/note-format.md](/doks/design/note-format.md), with the GitHub renders attached as [render evidence](yaks-6c65/render-evidence.md). Recommendation is candidate B: `#### <timestamp>` heading, an italic `*actor · key: value*` line, no `---` separator. Asking Joel below; the parser, merge-driver and TUI impact are in the dok.
+
+---
+▸ 2026-11-14T11:22:53Z [linkplan-lead]
+kind: ask
+needs: human
+---
+
+asked: needs human
+
+Recommended note shape, rendered on GitHub in [the dok](/doks/design/note-format.md#candidates):
+
+```markdown
+#### 2026-11-04T22:13:03Z
+
+*linkplan-lead · kind: move · from: hairy · to: shaving*
+
+moved: hairy -> shaving
+```
+
+The anchor is the timestamp (`#2026-11-04t221303z`, `-1`, `-2` for the same second, which is the rule `links::note_anchor` already uses), so it works on GitHub, GitLab and Gitea and does not depend on the actor or the metadata. Today's header is a plain paragraph with no anchor, and a note with meta lines becomes a setext heading whose anchor is the whole header text.
+
+1. **Shape B as above** (heading plus italic actor and metadata line, no `---`). Lean: yes. Alternatives rejected in the dok: the actor in the heading (slug depends on the name), an `<a id>` (GitLab strips it), a metadata table (uneven, cannot hold every value).
+2. **Heading level `####`.** Lean: `####`. A one-line change; `###` renders larger.
+3. **Separator ` · ` in the metadata line**, versus an ASCII ` | `. Lean: ` · `.
+4. **Azure DevOps slugs headings differently and is untested.** Accept? Lean: yes.
+
+Answer "yes" to take all four, or say what to change. The schema-9 migration yak converts every yak's notes in one pass, so this has to settle before it starts.
