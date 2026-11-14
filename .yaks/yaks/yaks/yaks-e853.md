@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-09T23:51:02Z'
-updated: '2026-11-14T11:38:24Z'
+updated: '2026-11-14T11:41:34Z'
 tags:
 - tui
 ---
@@ -42,3 +42,5 @@ Decision: scroll as little as it takes (scroll right until the link end is just 
 Decision: the link span is measured in display columns (wide chars via `unicode_width`), with the gutter (quote bar, list marker) taken off, as `clip_nowrap` splits it. A link inside the gutter is ignored.
 
 Milestone: implemented `LineNav::reveal_link_sideways` called at the end of `jump_link` (new `width` arg, passed from `detail_nav.rs` via `detail_width` and from the viewer's `run_viewer_cmd` via `v.width`). Tests: detail pane + viewer. Docs line added in docs/tui.md. Rendered frames before/after looked at (46x12): before = Tab onto `one` left the offset 0 (link off screen); after = `one` visible after the `‹`, Tab -> `two` scrolls on, Shift-Tab scrolls back.
+
+![before](yaks-e853/before.png "BEFORE (main behaviour): Tab onto link 'one' in a wide table, offset 0, link off screen (46x12 toque frame)")
