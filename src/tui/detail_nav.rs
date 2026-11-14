@@ -173,7 +173,8 @@ impl App {
     /// link (wrapping), so Enter can follow it.
     pub(crate) fn jump_link(&mut self, delta: i32) {
         let (lines, vp) = (self.detail_dlines(), self.detail_viewport());
-        self.detail.jump_link(&lines, vp, delta);
+        let width = self.detail_width.get() as usize;
+        self.detail.jump_link(&lines, vp, width, delta);
     }
 
     /// v — toggle visual selection anchored at the current line.

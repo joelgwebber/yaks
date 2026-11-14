@@ -185,7 +185,8 @@ a character).
 `h`/`←` and `l`/`→` scroll the code block or table under the cursor left / right
 (nothing elsewhere, and never out of the pane); `j`/`k` scroll; `Tab`/`]` and `S-Tab`/`[`
 cycle links, every link a stop (several on one row each get one, the targeted one
-highlighted), `Enter` follows the targeted link, `p` shows / hides the [peek
+highlighted; a link in a code block or table wider than the pane scrolls that
+block sideways just far enough to show it), `Enter` follows the targeted link, `p` shows / hides the [peek
 pane](#following-links-and-peek) under the lines; `/` and `n`/`N` put the line
 cursor on the match, as the view jumps to it; `B` find references (also in the list pane): a picker over
 the yaks that point *at* this one — its children, the yaks that depend on it, and

@@ -140,7 +140,11 @@ impl LineNav {
     /// Tab / `]` and Shift-Tab / `[`: target the next / previous link
     /// (wrapping), every link a stop, several on one row included (yaks-fc9e).
     /// The cursor goes to its row, so Enter, `O` and the peek act on it.
-    pub(crate) fn jump_link(&mut self, lines: &[DLine], vp: Viewport, delta: i32) {
+    ///
+    /// When the link sits in a no-wrap block (a table, code) wider than the
+    /// `width`-column pane, the block scrolls sideways just far enough to put
+    /// it on screen (yaks-e853).
+    pub(crate) fn jump_link(&mut self, lines: &[DLine], vp: Viewport, width: usize, delta: i32) {
         let stops: Vec<(usize, usize)> = detail::jumplist(lines)
             .iter()
             .map(|j| (j.line, j.col))
@@ -168,6 +172,69 @@ impl LineNav {
         self.line = to.0;
         self.link = Some(to);
         self.reveal(lines.len(), vp);
+        self.reveal_link_sideways(lines, width, to);
+    }
+
+    /// Scroll the no-wrap block holding link `(row, col)` sideways, as little
+    /// as it takes, so the link is on screen. Rows that wrap, or a link in the
+    /// block's gutter, need nothing.
+    ///
+    /// `col` and the link's length are char columns of the row's *unscrolled*
+    /// text (what `DLine::links` holds; `render_dline` styles them before
+    /// `clip_nowrap` cuts the row), and the sideways offset counts display
+    /// columns of the text after the gutter. So the link's span is measured
+    /// from the row's text, the gutter taken off, and never from the current
+    /// offset. A clipped edge shows a `‹`/`›` marker over its cell, so a link
+    /// stops one column short of an edge that has one.
+    fn reveal_link_sideways(&mut self, lines: &[DLine], width: usize, (row, col): (usize, usize)) {
+        use unicode_width::UnicodeWidthChar;
+        let Some(line) = lines.get(row) else { return };
+        let (Some(key), Some(nw)) = (line.nowrap_key(), line.nowrap) else {
+            return;
+        };
+        let Some(&(_, len, _)) = line.links.iter().find(|(c, ..)| *c == col) else {
+            return;
+        };
+        let Some(&extent) = detail::nowrap_extents(lines).get(&key) else {
+            return;
+        };
+        let w = |c: char| c.width().unwrap_or(0);
+        let chars: Vec<char> = line.text.chars().collect();
+        // The gutter, as `clip_nowrap` splits it: chars until it is covered.
+        let (mut gutter_chars, mut gw) = (0, 0);
+        while gutter_chars < chars.len() && gw < nw.gutter {
+            gw += w(chars[gutter_chars]);
+            gutter_chars += 1;
+        }
+        if col < gutter_chars {
+            return;
+        }
+        let start: usize = chars[gutter_chars..col.min(chars.len())]
+            .iter()
+            .map(|&c| w(c))
+            .sum();
+        let end = start
+            + chars[col.min(chars.len())..(col + len).min(chars.len())]
+                .iter()
+                .map(|&c| w(c))
+                .sum::<usize>();
+        let avail = width.saturating_sub(gw);
+        let total = extent.saturating_sub(gw);
+        let max = extent.saturating_sub(width);
+        let off = self.block_hscroll(key, extent, width);
+        let left = usize::from(off > 0);
+        let right = usize::from(total > off + avail);
+        // The window the link may use: not under a marker cell.
+        let (lo, hi) = (off + left, off + avail - right.min(avail));
+        let next = if start >= lo && end <= hi {
+            return;
+        } else if start < lo || end - start + 2 > avail {
+            // Off the left edge, or too wide to fit: its start leads.
+            start.saturating_sub(1)
+        } else {
+            end + 1 - avail
+        };
+        self.hscroll = Some((key, next.min(max)));
     }
 
     /// The targeted link on the cursor's row (else its first): what Enter
@@ -485,13 +552,13 @@ mod tests {
     fn tab_cycles_link_rows_and_wraps() {
         let lines = page();
         let mut nav = LineNav::default();
-        nav.jump_link(&lines, VP, 1);
+        nav.jump_link(&lines, VP, 80, 1);
         assert_eq!(nav.line, 1);
-        nav.jump_link(&lines, VP, 1);
+        nav.jump_link(&lines, VP, 80, 1);
         assert_eq!(nav.line, 3);
-        nav.jump_link(&lines, VP, 1);
+        nav.jump_link(&lines, VP, 80, 1);
         assert_eq!(nav.line, 1, "wraps to the first link");
-        nav.jump_link(&lines, VP, -1);
+        nav.jump_link(&lines, VP, 80, -1);
         assert_eq!(nav.line, 3, "and back to the last");
         assert!(nav.link_at(&lines).is_some());
     }
@@ -518,15 +585,15 @@ mod tests {
         // The cursor starts on row 0: its first link is the target already,
         // so the first Tab goes to the second link of the same row.
         assert_eq!(target(&nav), "a");
-        nav.jump_link(&lines, VP, 1);
+        nav.jump_link(&lines, VP, 80, 1);
         assert_eq!((nav.line, target(&nav).as_str()), (0, "b"));
-        nav.jump_link(&lines, VP, 1);
+        nav.jump_link(&lines, VP, 80, 1);
         assert_eq!((nav.line, target(&nav).as_str()), (2, "c"));
-        nav.jump_link(&lines, VP, 1);
+        nav.jump_link(&lines, VP, 80, 1);
         assert_eq!(target(&nav), "a", "wraps");
-        nav.jump_link(&lines, VP, -1);
+        nav.jump_link(&lines, VP, 80, -1);
         assert_eq!(target(&nav), "c", "and back");
-        nav.jump_link(&lines, VP, -1);
+        nav.jump_link(&lines, VP, 80, -1);
         assert_eq!(target(&nav), "b");
         // Off the row and back: the row's first link again.
         nav.step(&lines, VP, 1);

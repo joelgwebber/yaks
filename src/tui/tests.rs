@@ -8098,3 +8098,69 @@ fn tab_on_an_empty_tags_field_or_after_a_comma_moves_to_the_next_field() {
         }
     }
 }
+
+// -- yaks-e853: Tab onto a link in a wide no-wrap block scrolls it into view --
+
+/// A yak whose body is a wide table with a link in each of its far columns
+/// (a third one sits in a short row), so the links start off screen.
+fn wide_table_app() -> App {
+    let mut t = task("w0", "Wide", Status::Hairy, 3, None);
+    t.body = "Intro.\n\n| name | notes | first | filler | second |\n|---|---|---|---|---|\n| alpha row | some padding text to push things right | [one](https://one.example.com/a) | filler text that is long enough to separate | tail |\n| beta row | more padding text to push things right | x | filler text that is long enough to separate | [two](https://two.example.com/b) |\n"
+        .into();
+    let mut app = App::new(vec![t]);
+    enter_key(&mut app);
+    let _ = draw(&app, 40, 30); // measure the pane width
+    app
+}
+
+fn shift_tab_key(app: &mut App) {
+    handle_key(app, KeyEvent::new(KeyCode::BackTab, KeyModifiers::SHIFT));
+}
+
+#[test]
+fn tab_onto_an_off_screen_table_link_scrolls_it_into_view_and_back() {
+    let mut app = wide_table_app();
+    let before = draw(&app, 40, 30);
+    assert!(
+        !before.contains("one"),
+        "the first link starts off screen:\n{before}"
+    );
+    tab_key(&mut app);
+    let first = draw(&app, 40, 30);
+    assert!(first.contains("one"), "Tab scrolled to link one:\n{first}");
+    assert!(
+        pane_rows(&first).iter().any(|l| l.contains("‹")),
+        "something is hidden on the left:\n{first}"
+    );
+    let off_one = app.detail.hscroll.unwrap().1;
+    // The second link is further right: the block scrolls on, as little as needed.
+    tab_key(&mut app);
+    let second = draw(&app, 40, 30);
+    assert!(
+        second.contains("two"),
+        "Tab scrolled to link two:\n{second}"
+    );
+    let off_two = app.detail.hscroll.unwrap().1;
+    assert!(off_two > off_one, "{off_two} > {off_one}");
+    // Shift-Tab goes back to link one: scrolls back left.
+    shift_tab_key(&mut app);
+    let back = draw(&app, 40, 30);
+    assert!(back.contains("one"), "Shift-Tab scrolled back:\n{back}");
+    assert!(app.detail.hscroll.unwrap().1 < off_two);
+    assert!(!back.contains("two"), "link two is hidden again:\n{back}");
+}
+
+#[test]
+fn tab_in_the_viewer_scrolls_a_wide_table_link_into_view() {
+    // yaks-e853: the viewer's link jump scrolls a no-wrap block too.
+    let md = "| name | notes | first | filler | second |\n|---|---|---|---|---|\n| alpha row | some padding text to push things right | [one](https://one.example.com/a) | filler text that is long enough to separate | tail |\n";
+    let (_dir, mut app) = app_on_attachment("wide.md", md.as_bytes());
+    enter_key(&mut app);
+    let before = draw(&app, 50, 24);
+    assert!(!before.contains("one"), "off screen at first:\n{before}");
+    tab_key(&mut app);
+    let after = draw(&app, 50, 24);
+    assert!(after.contains("one"), "Tab scrolled to the link:\n{after}");
+    shift_tab_key(&mut app);
+    assert!(draw(&app, 50, 24).contains("one"));
+}
