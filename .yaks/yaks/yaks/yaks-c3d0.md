@@ -5,12 +5,11 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-11T21:09:28Z'
-updated: '2026-11-14T12:49:40Z'
+updated: '2026-11-14T17:51:11Z'
 depends_on:
 - yaks-f505
 tags:
 - tui
-needs: agent
 ---
 
 Currently selecting a source link immediately opens it in the default editor (or maybe the system open behavior?). This is useful, but it would be nice to at least see it (read-only) in the our existing markdown/text UI. I'm assuming we can mostly reuse what we already have, though it'll need to use whatever syntax highlighting we're embedding in the markdown renderers.
@@ -58,3 +57,12 @@ needs: agent
 2. Sounds like a good unification. I dig it.
 3. I like it. I hadn't considered the possibility of just dropping a temp copy, but that seems useful. Note that there will also be occasional cases where we can't see the reference, because an agent on another machine decides to drop a local hash. Not an intended state, but one we should be resilient to.
 4. :thumbs-up:
+
+---
+▸ 2026-11-14T17:51:11Z [linkplan-lead]
+kind: pickup
+---
+
+picked up
+
+Decision (Joel): all four as proposed: Enter on a `code:` link opens the read-only viewer; `O` is the take-it-out menu everywhere (`e` editor, `o` system open, `p` absolute path, `r` farm or repo path, `g` host link); `p` on a pinned `code:` file is the working-tree path when unchanged since the pin, else a read-only temp copy; no recognised host says so and names `yaks.host`. Added by Joel: resilience when a referenced commit is not visible locally (an agent on another machine dropped or never pushed a hash): that must give a clear message and a fallback, never an error or a hang.
