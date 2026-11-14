@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-11T20:23:06Z'
-updated: '2026-11-14T11:32:22Z'
+updated: '2026-11-14T13:25:15Z'
 tags:
 - tui
 ---
@@ -23,3 +23,11 @@ thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-14T13:25:15Z [tags-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
