@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-14T22:42:07Z'
+updated: '2026-11-14T22:47:55Z'
 parent: yaks-1c89
 depends_on:
 - yaks-f505
@@ -119,3 +119,11 @@ To clear a code finding: read the dok against the code, fix what drifted, then `
 Confirmed by hand: `git log --format='%h %cI' --since=2026-11-02T00:00:00Z -- docs/README.md` lists 671320f9, 6352ec29, 5cf76867 (all 2026-11-04..06) and de32523e at 2026-11-01T20:50-05:00 = 2026-11-02T01:50Z, which is after the 2026-11-02T00:00Z `--since` but before the end of the verified day 2026-11-01 UTC... so git's `--since` shows 4, while the check's rule (a verified DATE covers its whole day in UTC, commits strictly after 2026-11-01T23:59:59Z) counts commits after it: de32523e is 2026-11-02T01:50Z, so it counts: 4 total. Matches.
 
 Tests: 13 `check::` unit tests with scratch code repos (pinned with later commits, pinned with none, pinned + verified before/after/exact, unpinned since verified, no verified and no farm commit skipped, frontmatter `sources:`/`code:` lists, no checkout = one note and no finding, removed file unpinned = gone and pinned = counted, unknown pin = note) and one `tests/check.rs` integration test (unpinned, falls back to the dok's last farm commit, `code-gone`, `--json` ids, exit 1, hint line, `verified:` clears to exit 0). `cargo fmt --check` clean, clippy has no warnings in check.rs.
+
+---
+▸ 2026-11-14T22:47:55Z [check-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
