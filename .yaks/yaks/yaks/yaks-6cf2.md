@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-14T17:54:27Z'
+updated: '2026-11-14T18:01:26Z'
 parent: yaks-1c89
 depends_on:
 - yaks-f505
@@ -83,3 +83,12 @@ Claim: worker `check-1` (Sonnet tier). Owns `src/check.rs` (the new finding and 
 ▸ 2026-11-14T17:54:27Z [check-1]
 
 Start: Sat Nov 14 17:54:19 UTC 2026. Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-6cf2.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/hrp40zefpg6c/yaks
+
+---
+▸ 2026-11-14T18:01:26Z [check-1]
+
+Read check.rs/locate.rs/links.rs. Plan: new kinds `code-moved` and `code-gone`; links read via `links::extract`+`links::parse`+`Space::resolve` (Place::CodeFile) from dok bodies, plus `code:` items in frontmatter `sources:`/`code:` lists; code repo from `links::code_base(farm, cwd)`; own git helpers in check.rs. `run()` keeps its signature (tick uses it); a new `run_report()` also returns info lines, which `Command::Check` prints (stdout in text mode, stderr with --json).
+
+Decision: a pinned link to a file deleted at HEAD is not `code-gone` (a pin legitimately names history): its deleting commit counts as a commit since the pin, cleared by `verified:`. `code-gone` is for unpinned links only.
+
+Decision: a `verified:` DATE covers that whole day (end of day UTC); a commit made on the verified day or before counts as checked. Rejected: start of day, which would keep a dok flagged all day after `dok set verified=<today>` (the exact fix the hint prescribes). A verified timestamp is exact.
