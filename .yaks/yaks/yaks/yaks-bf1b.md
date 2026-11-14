@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-11T15:55:50Z'
-updated: '2026-11-14T11:32:24Z'
+updated: '2026-11-14T11:32:53Z'
 tags:
 - tui
 ---
@@ -26,3 +26,11 @@ moved: hairy -> shaving
 ▸ 2026-11-14T11:32:24Z [linkplan-lead]
 
 Claim: worker `tags-1` (Sonnet tier), owning this yak and yaks-1a16 together (both touch `finish_insert`, `tag_completion`, `open_ref_picker` and `docs/tui.md`). Sketch is in the triage note ([yaks-20dd](yaks-20dd#2026-11-11T22:08:04Z)). Owns: `tui/handlers.rs` (`editor_key` for the `L` editor, the filter drawer's tags row, `finish_insert`), `tui/editor.rs` (`tag_completion`), the hint in `tui/render.rs`, `docs/tui.md`. Out of scope: any key binding change (yaks-8874 is awaiting a decision), `keymap.rs`, link code. Evidence: unit tests plus a toque frame of the picker open over the filter drawer, attached.
+
+---
+▸ 2026-11-14T11:32:53Z [tags-1]
+
+Start: Sat Nov 14 11:32:49 UTC 2026
+Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-bf1b.md
+Checkout: /Users/joel/src/yaks/.delta/worktrees/zkbr0g3vc11c/yaks
+Also owns yaks-1a16 (same code).
