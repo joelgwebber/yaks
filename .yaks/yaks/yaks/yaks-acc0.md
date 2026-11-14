@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-14T22:38:06Z'
+updated: '2026-11-14T23:35:38Z'
 parent: yaks-1151
 depends_on:
 - yaks-6ffd
@@ -48,3 +48,26 @@ Dependencies: layout [yaks-6ffd](yaks-6ffd), resolver [yaks-f505](yaks-f505), no
 ▸ 2026-11-14T22:38:06Z [linkplan-lead]
 
 New dependency: [yaks-7729](yaks-7729) (source directory slugs, decided on [yaks-49c5](yaks-49c5)). The migration also renames each `sources/<date>-<sha8>/` to the slugged name with `git mv` and rewrites links and `sources:` entries to it, using `sources::plan_slugs` and the link-rewrite function that yak ships. Source files are snapshots: link text inside a source's own `extracted.md` is never rewritten.
+
+---
+▸ 2026-11-14T23:35:38Z [linkplan-lead]
+
+Coordinator check after landing `7585597e`: I ran the worker's real-yak round trip over EVERY yak of four farms on this machine (`YAKS_NOTES_SAMPLE=<farm> YAKS_NOTES_LIMIT=100000`), not the first 200.
+
+| Farm | Yaks | Converted | Left alone | Notes |
+|---|---|---|---|---|
+| this one | 762 | 702 | 0 | 3315 |
+| hearth | 113 | 104 | 0 | 441 |
+| schism | 145 | 48 | 0 | 155 |
+| joel | 682 | 357 | 50 | 1051 |
+
+Every parse was identical before and after conversion, the conversion was idempotent, and the anchors resolved in both shapes.
+
+**The joel farm failed the worker's test, for a real reason.** 50 yaks (117 notes) there have hand-written note headers that are not timestamps (`▸ 2026-08-12 E2E VERIFIED (live headless Chrome...)`, `▸ 2026-08-13 SHORN — landed and released.`, in the `sightmap-*` yaks). The new heading is `#### <timestamp>` and cannot carry such a header, so `convert_notes` correctly returns those bodies unchanged. I fixed the test (commit after `7585597e`) to expect that and report the count; the other seven farms I scanned have none.
+
+**Consequence for the migration (yaks-acc0), a decision for Joel:** after a schema-9 migration those 50 yaks stay in the old shape, so their notes still have no anchor on GitHub and still render as before (the reader and the writer both keep a body in the shape it has). Options, for the migration yak to put to Joel:
+
+- Leave them. They are one farm's hand-written entries; the cost is that this farm's 50 yaks render the old way on GitHub.
+- Rewrite each such header into a timestamp with the date as written at 00:00:00Z and the rest of the line moved into the note's first line, so no text is lost. A mechanical, reviewable change, but it edits what a person wrote.
+
+Lean: leave them, and list them in the migration report so nobody is surprised.
