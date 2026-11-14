@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-11T20:46:10Z'
-updated: '2026-11-14T11:32:22Z'
+updated: '2026-11-14T11:32:24Z'
 tags:
 - tui
 ---
@@ -23,3 +23,8 @@ thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-14T11:32:24Z [linkplan-lead]
+
+Claim: worker `comments-1` (Sonnet tier). Owns `tui/actions.rs` (next/previous comment) and its tests. Out of scope: keymap, rendering, other files. Evidence: tests asserting the scroll offsets, and a toque frame before and after.
