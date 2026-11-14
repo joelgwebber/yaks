@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-11T15:55:50Z'
-updated: '2026-11-14T11:32:53Z'
+updated: '2026-11-14T13:17:18Z'
 tags:
 - tui
 ---
@@ -34,3 +34,13 @@ Start: Sat Nov 14 11:32:49 UTC 2026
 Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-bf1b.md
 Checkout: /Users/joel/src/yaks/.delta/worktrees/zkbr0g3vc11c/yaks
 Also owns yaks-1a16 (same code).
+
+---
+▸ 2026-11-14T13:17:18Z [tags-1]
+
+Milestone: code + docs done, tests passing (tag filter). Remaining: render toque frames, full gate, notes, commit.
+
+- `insert_tag` (editor.rs): a pick replaces the partial tag and leaves the cursor after `, ` (or steps over a following comma/space) — fixes yaks-1a16.
+- `editor_key`: the `L` editor (`EditAction::Labels`) uses `tag_completion` on Tab.
+- Drawer row 3: Tab on a partial tag opens the picker; `finish_insert` has a Drawer arm and re-runs `drawer_live_preview`.
+- Hint: `Tab → complete tag` on the drawer's tags row and beside the `L` line.
