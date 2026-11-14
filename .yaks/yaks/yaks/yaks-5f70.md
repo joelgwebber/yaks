@@ -5,12 +5,12 @@ status: hairy
 type: bug
 priority: 2
 created: '2026-11-06T21:37:13Z'
-updated: '2026-11-14T11:19:33Z'
+updated: '2026-11-14T17:48:25Z'
 parent: yaks-3f35
 tags:
 - skills
 - doks
-needs: human
+needs: agent
 ---
 
 From yaks-3f35 (Joel, reading schism's doks in the TUI). The schism review passes wrote 62 citations like `... ([session](/sessions/2025/08/claude-code-2025-08-04-1622-....md)).` into its doks (`doks/howto/dev-workflow.md` has five). In the TUI they render as a stray `(session)` mid-sentence, and following one goes nowhere (yaks-85a6: the TUI can't open sessions).
@@ -39,3 +39,11 @@ How should a session citation in a dok read? Today the `yaks-upkeep` skill says 
 3. **Frontmatter only**, no inline citations.
 
 Lean: 1 now; 2 as its own yak if you want citations queryable. One new fact since this was filed: the sessions and sources paths stay as they are (`/sessions/...`, `/sources/...`), per the decision on yaks-1151, so the example does not change with the layout work. Also: do you want a pass over schism's 62 existing citations once the form is settled (a schism-farm edit)?
+
+---
+▸ 2026-11-14T17:48:25Z [sched-1]
+kind: answer
+needs: agent
+---
+
+I'm good with (1) in general. While these repos are still all quite small, though, should we consider updating sessions to include simple slugs in their paths alongside the dates and hashes? They're produced by models in the first place, so that wouldn't be too much of a problem. For the existing ones, we could just leave them as-is, or do one-time surgery to update them in place. I'm pretty sure I'm the only one using them so far, so that shouldn't be much trouble.
