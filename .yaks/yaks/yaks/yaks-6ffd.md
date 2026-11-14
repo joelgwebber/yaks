@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-14T12:17:54Z'
+updated: '2026-11-14T12:17:55Z'
 parent: yaks-1151
 tags:
 - git
@@ -87,3 +87,8 @@ Next: TUI per-user state copy, then tests for both layouts, then the scratch-rep
 ▸ 2026-11-14T12:17:54Z [layout-1]
 
 Decision: layouts are told apart in one place, `store::farm_root_in(worktree)`: a `config.yaml` at the worktree top means the root layout and wins over a `.yaks/` beside it (the migration's stub `.yaks/schema`); else a `.yaks/` directory means the old layout; else a bare top-level `schema`. Rejected: probing `schema` first (the stub would then make a migrated farm read as old) and looking at `git ls-tree` (slower, needs a commit).
+
+---
+▸ 2026-11-14T12:17:55Z [layout-1]
+
+Decision: path-only classifiers (`preflight::yak_id_of`, `changes::farm_rel`, `commit::generate_message`, `weight::kind_of`, the land guard) share `store::farm_relative(repo_path)`: strip through the last `.yaks` component, else the path as is. Rejected: threading `FarmGit.prefix` into every signature (they see only a path, from git output that may be older than the farm's current layout, for example a pre-move commit). `FarmGit.prefix`/`repo_path` is used where a farm is at hand (`weight::enable_lfs`).
