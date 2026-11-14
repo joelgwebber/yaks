@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-14T17:52:43Z'
-updated: '2026-11-14T23:30:30Z'
+updated: '2026-11-14T23:31:03Z'
 parent: yaks-1151
 tags:
 - links
@@ -154,3 +154,13 @@ thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGKnNJIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-14T23:31:03Z [linkplan-lead]
+kind: landed
+commit: 7585597eb78ba8f0b77214e793e968f0beb3da48
+source: 2ab64a7ceddf62a6dda9d4a655b7459c35d8afce
+branch: main
+---
+
+landed: 7585597e yaks-9f00: new note format (#### heading, italic actor/meta line): reader, schema-gated writer, convert_notes, slug anchors
