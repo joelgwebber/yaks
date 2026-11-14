@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:01Z'
-updated: '2026-11-14T11:55:14Z'
+updated: '2026-11-14T11:57:13Z'
 parent: yaks-1151
 tags:
 - links
@@ -64,3 +64,11 @@ Decision: farm links use the remote of the farm worktree's branch (`gitrepo::rem
 Decision: without `--pin` a link names the branch (stable); `--pin` names HEAD when a remote branch contains it, else falls back to the branch URL and says so on stderr. A file not in the remote ref gets a stderr note rather than silence (link would 404).
 
 [yaks-f505-url-evidence](yaks-f505/yaks-f505-url-evidence.txt "yaks url against this farm: a yak, an attachment, a dok, a pinned code: path")
+
+---
+▸ 2026-11-14T11:57:13Z [locate-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
