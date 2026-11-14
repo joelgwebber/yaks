@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:01Z'
-updated: '2026-11-14T11:22:00Z'
+updated: '2026-11-14T11:44:53Z'
 parent: yaks-1151
 tags:
 - links
@@ -51,3 +51,14 @@ Claim: worker `locate-1` (Sonnet tier, per AGENTS.md's standing delegation; the 
 ▸ 2026-11-14T11:22:00Z [locate-1]
 
 Start Sat Nov 14 11:22:00 UTC 2026. yaks path yaks-f505: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-f505.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/tqdpn9meejzv/yaks
+
+---
+▸ 2026-11-14T11:44:53Z [locate-1]
+
+Milestone: hosting.rs (Forge/Repo/templates + tests), locate.rs (Space, Place, farm_file alias, pinned_file moved from tui/source.rs), gitrepo::remote_of (sync::remote_of is a thin caller), `yaks url` subcommand, links::exists/peek and follow.rs use the `sources/<id>` alias. Builds. Next: unit + integration tests, docs.
+
+Decision: a private farm (`yaks.private`) refuses `yaks url` for farm files (it never leaves the machine, so no host link exists); alternative was to link anyway.
+
+Decision: farm links use the remote of the farm worktree's branch (`gitrepo::remote_of`: `branch.<b>.remote`, else `origin`); a missing remote or an unrecognised host refuses with a message naming `yaks.host`. No guessing among several remotes.
+
+Decision: without `--pin` a link names the branch (stable); `--pin` names HEAD when a remote branch contains it, else falls back to the branch URL and says so on stderr. A file not in the remote ref gets a stderr note rather than silence (link would 404).
