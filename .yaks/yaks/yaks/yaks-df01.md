@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 3
 created: '2026-11-11T20:46:10Z'
-updated: '2026-11-14T11:45:10Z'
+updated: '2026-11-14T11:48:25Z'
 tags:
 - tui
 ---
@@ -91,3 +91,13 @@ thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGEgjpIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-14T11:48:25Z [linkplan-lead]
+kind: landed
+commit: 6445a2d4acf8920556154a48510a8863569f7a57
+source: 52e8a9190c059b88824b0aa57af7a1443c3fff70
+branch: main
+---
+
+landed: 6445a2d4 yaks-df01: Ctrl-N shows the whole next comment; Ctrl-P goes to the current comment's header first
