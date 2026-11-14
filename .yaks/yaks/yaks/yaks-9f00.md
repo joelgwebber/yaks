@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T17:52:43Z'
-updated: '2026-11-14T23:16:23Z'
+updated: '2026-11-14T23:27:56Z'
 parent: yaks-1151
 tags:
 - links
@@ -96,3 +96,12 @@ Checkpoint, ~23:50. Reader, writers, converter, anchors and the merge-driver sha
 - Anchors: `links::note_anchor(shape, notes, i)` writes the slug (`2026-11-04t221303z`, `-1`) for a new-shape body and the timestamp for an old one; `find_note` and `is_note_anchor` accept both. `peek` of a note prints it in the body's shape.
 - Round trip: `store::note_shape_tests::real_yak_bodies_convert_to_the_same_notes` reads yak files from the farm (read only, `YAKS_NOTES_SAMPLE=<dir>` overrides, `YAKS_NOTES_LIMIT` raises the 200): over this farm's first 200 yaks, 185 converted, 766 notes, identical `NoteEntry` lists, idempotent. With `YAKS_NOTES_LIMIT=5000`: 761 yaks, 3307 notes, all identical.
 - Left: merge-driver tests in the new shape, `tui/content.rs` round-trip tests, sheds/recur/lint checks, docs, GitHub render, verify.
+
+---
+▸ 2026-11-14T23:27:56Z [notefmt-1]
+
+Decision: the writer is gated on the farm's `schema` marker, read where the farm root is known.
+
+- `store::NoteShape::of_farm(root)` reads `<root>/schema` (`>= NEW_NOTES_SCHEMA = 9` is New; a missing or unreadable marker is Old). `Farm::shape()` wraps it; every `Farm` writer and `store::move_task_with` pass it to `append_note_meta_in`. Rejected: a global or env switch (AGENTS.md: no `set_var`, tests would race), and a `Farm` field cached at open (a farm migrated under a running TUI would keep writing the old shape; the marker read is one small file per write).
+- A body never mixes shapes: `append_note_meta_in` uses the shape of the notes the body already has, and falls back to the farm's only for a body with no notes. So a half-converted body, or a farm whose marker changed, stays consistent.
+- `store::SCHEMA` is still 8. The one-arg `append_note`/`append_note_meta`/`append_entry` stay as the old-shape helpers (the existing tests and fixtures use them).
