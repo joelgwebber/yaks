@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T17:52:43Z'
-updated: '2026-11-14T23:27:57Z'
+updated: '2026-11-14T23:30:20Z'
 parent: yaks-1151
 tags:
 - links
@@ -126,3 +126,11 @@ Evidence so far (before `verify`).
 - Schema gate: `store::note_shape_tests::a_farm_writes_the_shape_its_schema_says` (marker none/8 write the old shape, 9/10 the new, through `move_task`) and `farm::tests::a_farm_writes_the_note_shape_of_its_schema`. This build refuses a schema-9 farm as newer than `SCHEMA`, so the `Farm::update`/`ask` writers are exercised at schema 8 and the schema-9 half goes through `Farm::shape` and `move_task`; the other `Farm` writers share the same `self.shape()` argument. No schema-9 CLI run is possible until the migration yak bumps `SCHEMA`.
 - GitHub render: `converted.md` (yaks-6c65, 6 notes) and `rendered.html` are attached. `gh api markdown -f mode=gfm` returns `<h4 dir="auto">2026-11-14T11:22:51Z</h4>` and `<em>` lines, six `<h4>` and no `id=`: the API returns a fragment, and GitHub adds `user-content-` ids when it renders the page itself (the design dok's own evidence shows the same fragment form). So the `<h4 id="user-content-2026-11-04t221303z">` ids are NOT shown by this check; they remain assumed from GitHub's slug rule until a converted file is viewed on a pushed branch.
 - The on-disk shape changes only at schema 9: `store::SCHEMA` is untouched and nothing in this farm changes until the migration yak.
+
+---
+▸ 2026-11-14T23:30:20Z [notefmt-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
