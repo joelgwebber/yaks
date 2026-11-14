@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-09T23:51:02Z'
-updated: '2026-11-14T11:41:34Z'
+updated: '2026-11-14T11:41:35Z'
 tags:
 - tui
 ---
@@ -44,3 +44,5 @@ Decision: the link span is measured in display columns (wide chars via `unicode_
 Milestone: implemented `LineNav::reveal_link_sideways` called at the end of `jump_link` (new `width` arg, passed from `detail_nav.rs` via `detail_width` and from the viewer's `run_viewer_cmd` via `v.width`). Tests: detail pane + viewer. Docs line added in docs/tui.md. Rendered frames before/after looked at (46x12): before = Tab onto `one` left the offset 0 (link off screen); after = `one` visible after the `‹`, Tab -> `two` scrolls on, Shift-Tab scrolls back.
 
 ![before](yaks-e853/before.png "BEFORE (main behaviour): Tab onto link 'one' in a wide table, offset 0, link off screen (46x12 toque frame)")
+
+![after-tab1](yaks-e853/after-tab1.png "AFTER: Tab onto 'one' scrolls the table block so the link sits between the markers")
