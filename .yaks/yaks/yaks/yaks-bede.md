@@ -5,7 +5,7 @@ status: hairy
 type: bug
 priority: 3
 created: '2026-11-11T14:23:17Z'
-updated: '2026-11-11T22:39:29Z'
+updated: '2026-11-14T12:00:55Z'
 parent: yaks-1151
 tags:
 - tui
@@ -13,8 +13,8 @@ tags:
 
 Eg:
 - [dok](doks/design/knowledge-store.md) works.
-- [session](/doks/sessions/2026/11/herd-stars-2026-11-07-2025-starred-batch-13-yaks-shorn-with-sonnet.md) does not.
-- nor [source](/doks/sources/2026-11-03-81364278).
+- a session at `/doks/sessions/2026/11/herd-stars-...md` does not (the real path is `/sessions/2026/11/...`).
+- nor a source at `/doks/sources/2026-11-03-81364278` (the real path is `/sources/2026-11-03-81364278`, a directory that needs to open its `source.md`).
 
 Likely because the filesystem layout is:
 - .yaks/
