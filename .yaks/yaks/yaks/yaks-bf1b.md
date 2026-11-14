@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-11T15:55:50Z'
-updated: '2026-11-14T13:21:01Z'
+updated: '2026-11-14T13:25:25Z'
 tags:
 - tui
 ---
@@ -60,3 +60,18 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-14T13:25:25Z [tags-1]
+
+Decision: a pick always ends with the cursor past a separator. `insert_tag` adds `, ` after the tag, or steps over a comma/space that already follows. Rejected: adding only a space (the field would then hold `a b`, which splits fine but reads inconsistently with the `, ` the form writes) and a trailing comma without a space.
+
+Decision: in the `L` editor Tab with nothing to complete falls through to edtui as before; no "next field" exists there. Rejected: swallowing Tab.
+
+Decision: the `L` editor's Tab uses `tag_completion` instead of `completion_context`, so a `yaks-…` tag in `L` is a tag, not a yak ref (the field holds tags, not markdown).
+
+Decision: the `L` hint is drawn at the right edge of the status line beside the line editor (only when there is room), because the single-line editor owns the whole status line. Rejected: changing `render_line_editor`'s layout for every editor.
+
+Summary: tag completion now works in the `L` editor and the filter drawer's tags row, sharing `tag_completion`/the picker with the form. A pick goes through `insert_tag` (editor.rs), which leaves the cursor after `, ` so Tab moves on (yaks-1a16). `finish_insert` has `Overlay::Drawer` and tag `Overlay::Edit` arms; a drawer pick re-runs `drawer_live_preview`. Hint `Tab → complete tag` on the drawer's tags row and beside the `L` line. `docs/tui.md` updated (Completing a tag, tag fields paragraph).
+
+Evidence: unit tests `tab_after_a_picked_tag_moves_to_the_next_field`, `picking_a_tag_before_a_separator_steps_over_it_instead_of_adding_one`, `tab_in_the_l_editor_completes_a_tag_and_a_pick_moves_past_it`, `tab_in_the_drawer_tags_row_completes_and_the_pick_reruns_the_filter`, `tab_on_a_complete_drawer_tags_row_still_moves_to_the_next_row`; the existing partial-tag and replace tests updated for the trailing `, `. Frames attached (drawer and `L`, hint and picker). Gate: `cargo test -p yaks` green, `cargo fmt --check` clean, `yaks verify` PASS.
