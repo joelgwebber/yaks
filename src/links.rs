@@ -204,45 +204,83 @@ fn is_rev(s: &str) -> bool {
 // share one, so the later ones take a `-1`, `-2` suffix in file order, as
 // GitHub numbers duplicate heading slugs. The first note of a second is the
 // plain timestamp.
+//
+// The anchor written follows the body's note shape: the slug of the heading,
+// `2026-11-04t221303z`, for the new shape (`#### <ts>`, which GitHub gives
+// that id; a link with a `:` before any `/` is dropped as a URL scheme, so the
+// slug is the form that survives a markdown host), the timestamp itself,
+// `2026-11-04T22:13:03Z`, for the old one, which an older yaks can follow.
+// Both forms are accepted everywhere, so a link of either age resolves.
 
-/// Whether a fragment names a note: an RFC 3339 timestamp, optionally with a
-/// `-<n>` suffix for the n-th later note of the same second.
-pub fn is_note_anchor(frag: &str) -> bool {
-    let (ts, _) = split_note_anchor(frag);
-    ts.contains('T') && chrono::DateTime::parse_from_rfc3339(ts).is_ok()
+/// GitHub's slug of a note timestamp: lowercased, with everything but letters,
+/// digits, `-` and `_` dropped (`2026-11-04T22:13:03Z` -> `2026-11-04t221303z`).
+fn ts_slug(ts: &str) -> String {
+    ts.chars()
+        .filter(|c| c.is_alphanumeric() || matches!(c, '-' | '_'))
+        .flat_map(char::to_lowercase)
+        .collect()
 }
 
-/// `2026-11-04T22:13:03Z-2` -> (`2026-11-04T22:13:03Z`, 2); no suffix is 0.
+/// Whether `s` has the shape of a slugged timestamp: `yyyy-mm-ddt` and then
+/// at least the six digits of a time.
+fn is_slug_ts(s: &str) -> bool {
+    let b = s.as_bytes();
+    b.len() >= 17
+        && b[..4].iter().all(u8::is_ascii_digit)
+        && b[4] == b'-'
+        && b[5..7].iter().all(u8::is_ascii_digit)
+        && b[7] == b'-'
+        && b[8..10].iter().all(u8::is_ascii_digit)
+        && b[10] == b't'
+        && b[11..17].iter().all(u8::is_ascii_digit)
+        && b[17..].iter().all(|c| c.is_ascii_alphanumeric())
+}
+
+/// Whether a fragment names a note: an RFC 3339 timestamp or its slug,
+/// optionally with a `-<n>` suffix for the n-th later note of the same second.
+pub fn is_note_anchor(frag: &str) -> bool {
+    let (ts, _) = split_note_anchor(frag);
+    (ts.contains('T') && chrono::DateTime::parse_from_rfc3339(ts).is_ok()) || is_slug_ts(ts)
+}
+
+/// `2026-11-04T22:13:03Z-2` or `2026-11-04t221303z-2` -> (the timestamp or
+/// slug, 2); no suffix is 0.
 fn split_note_anchor(frag: &str) -> (&str, usize) {
     if let Some((ts, n)) = frag.rsplit_once('-')
         && !n.is_empty()
         && n.bytes().all(|b| b.is_ascii_digit())
-        && chrono::DateTime::parse_from_rfc3339(ts).is_ok()
+        && (chrono::DateTime::parse_from_rfc3339(ts).is_ok() || is_slug_ts(ts))
     {
         return (ts, n.parse().unwrap_or(0));
     }
     (frag, 0)
 }
 
-/// The anchor naming `notes[i]`: its timestamp, suffixed `-<n>` when `n`
+/// The anchor naming `notes[i]` in a body of note shape `shape`: the slug of
+/// its timestamp (new shape) or the timestamp (old), suffixed `-<n>` when `n`
 /// earlier notes share it.
-pub fn note_anchor(notes: &[crate::store::NoteEntry], i: usize) -> String {
+pub fn note_anchor(
+    shape: crate::store::NoteShape,
+    notes: &[crate::store::NoteEntry],
+    i: usize,
+) -> String {
     let ts = &notes[i].ts;
     let n = notes[..i].iter().filter(|e| &e.ts == ts).count();
-    if n == 0 {
-        ts.clone()
-    } else {
-        format!("{ts}-{n}")
-    }
+    let name = match shape {
+        crate::store::NoteShape::New => ts_slug(ts),
+        crate::store::NoteShape::Old => ts.clone(),
+    };
+    if n == 0 { name } else { format!("{name}-{n}") }
 }
 
-/// The index of the note an anchor names, if the yak has it.
+/// The index of the note an anchor names, if the yak has it, by either form.
 pub fn find_note(notes: &[crate::store::NoteEntry], anchor: &str) -> Option<usize> {
     let (ts, n) = split_note_anchor(anchor);
+    let want = ts_slug(ts);
     notes
         .iter()
         .enumerate()
-        .filter(|(_, e)| e.ts == ts)
+        .filter(|(_, e)| ts_slug(&e.ts) == want)
         .nth(n)
         .map(|(i, _)| i)
 }
@@ -250,7 +288,8 @@ pub fn find_note(notes: &[crate::store::NoteEntry], anchor: &str) -> Option<usiz
 /// The link to a yak's latest note, `<id>#<anchor>`, or `None` without notes.
 pub fn latest_note_link(id: &str, body: &str) -> Option<String> {
     let notes = crate::store::parse_notes(body);
-    (!notes.is_empty()).then(|| format!("{id}#{}", note_anchor(&notes, notes.len() - 1)))
+    let shape = crate::store::body_shape(body).unwrap_or_default();
+    (!notes.is_empty()).then(|| format!("{id}#{}", note_anchor(shape, &notes, notes.len() - 1)))
 }
 
 /// `L12`, `L12-L40` (reordered if reversed), else a heading slug. Empty is none.
@@ -806,10 +845,25 @@ fn note_text(id: &str, text: &str, anchor: &str) -> Result<String> {
     let Some(i) = find_note(&notes, anchor) else {
         bail!(
             "{id} has no note at {anchor} (`yaks show {id}` lists its notes; the link is the \
-             note's timestamp, `-1`, `-2` for later notes of the same second)"
+             note's timestamp or its slug, `-1`, `-2` for later notes of the same second)"
         );
     };
     let n = &notes[i];
+    if crate::store::body_shape(body) == Some(crate::store::NoteShape::New) {
+        let meta: Vec<(&str, &str)> = n
+            .meta
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect();
+        let note = crate::store::format_note(
+            crate::store::NoteShape::New,
+            &n.ts,
+            n.actor.as_deref(),
+            &meta,
+            &n.text,
+        );
+        return Ok(format!("{note}\n"));
+    }
     let mut s = format!(
         "\u{25b8} {}\n",
         crate::store::note_head(&n.ts, n.actor.as_deref())
@@ -1370,8 +1424,21 @@ mod tests {
         .unwrap();
 
         let notes = crate::store::parse_notes(&body);
-        assert_eq!(note_anchor(&notes, 1), ts);
-        assert_eq!(note_anchor(&notes, 2), format!("{ts}-1"));
+        use crate::store::NoteShape;
+        assert_eq!(note_anchor(NoteShape::Old, &notes, 1), ts);
+        assert_eq!(note_anchor(NoteShape::Old, &notes, 2), format!("{ts}-1"));
+        assert_eq!(note_anchor(NoteShape::New, &notes, 1), "2026-11-04t221303z");
+        assert_eq!(
+            note_anchor(NoteShape::New, &notes, 2),
+            "2026-11-04t221303z-1"
+        );
+        // Either form finds the note, in a body of either shape.
+        assert_eq!(find_note(&notes, "2026-11-04t221303z-1"), Some(2));
+        assert_eq!(find_note(&notes, "2026-11-04t221303z"), Some(1));
+        assert!(is_note_anchor("2026-11-04t221303z"));
+        assert!(is_note_anchor("2026-11-04t221303z-2"));
+        assert!(!is_note_anchor("2026-11-04t22"));
+        assert!(!is_note_anchor("setup"));
         assert_eq!(find_note(&notes, &format!("{ts}-1")), Some(2));
         assert_eq!(
             latest_note_link("yaks-1a2b", &body).unwrap(),

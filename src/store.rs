@@ -1729,7 +1729,7 @@ pub fn find_task_file(root: &Path, id: &str) -> Option<(Status, PathBuf)> {
 /// already at `dest`.
 ///
 /// Every real move also appends a transition entry to the body, in the note
-/// shape `▸ <ts> [<actor>]` + `moved: <from> -> <to>` (see
+/// shape (`▸ <ts> [<actor>]` or `#### <ts>`) + `moved: <from> -> <to>` (see
 /// [`transition_text`]), so the file alone says who moved the yak and when;
 /// `actor` is resolved by the caller (see `actor::resolve`). The caller holds
 /// the farm lock.
@@ -1768,7 +1768,8 @@ pub fn move_task_with(
     if let Some(t) = thread.as_deref() {
         meta.push(("thread", t));
     }
-    task.body = append_note_meta(
+    task.body = append_note_meta_in(
+        NoteShape::of_farm(root),
         &task.body,
         &now,
         actor,
@@ -1869,7 +1870,7 @@ impl RequestKind {
                  Put a blank line between blocks and make run-on facts a list. \
                  Add missing code formatting: fence commands, code and pasted output as a block with a language (```` ```sh ````), and put inline commands, paths, flags, ids and symbols in backticks. \
                  Where a paragraph enumerates inline (`(1) ... (2) ...`, or `X, or Y, or Z` strung across clauses) or packs several separate points, split it into a lead-in and a list. \
-                 Change only the connecting words that needs (a colon, a dropped `and`/`or`, a capital): never a fact, a name, a note header (`▸ <ts> [actor]`) or the frontmatter. \
+                 Change only the connecting words that needs (a colon, a dropped `and`/`or`, a capital): never a fact, a name, a note header (`#### <ts>` and the italic line under it, or `▸ <ts> [actor]` in an older farm) or the frontmatter. \
                  Edit the file at `yaks path {id}` directly: `update --description` replaces the whole body, notes included. \
                  Then `yaks pickup {id} --drop-request`, which removes this request note, so no new note is left behind."
             ),
@@ -1949,19 +1950,17 @@ fn is_pickup_text(text: &str) -> bool {
     text.lines().next() == Some(PICKUP_LINE)
 }
 
-/// `body` without its latest `request` note block (the `---` / marker header
-/// and its text), the rest unchanged; `None` if it has no request note. What
+/// `body` without its latest `request` note block (its header and text), the
+/// rest unchanged; `None` if it has no request note. What
 /// `pickup --drop-request` writes once the request is done (yaks-092f).
 pub fn drop_latest_request(body: &str) -> Option<String> {
     let lines: Vec<&str> = body.lines().collect();
-    let starts: Vec<usize> = (0..lines.len())
-        .filter(|&i| is_note_delim(&lines, i))
-        .collect();
+    let (shape, starts) = scan_notes(&lines);
+    let shape = shape?;
     let end_of = |k: usize| starts.get(k + 1).copied().unwrap_or(lines.len());
-    // The text starts after the marker, or after the metadata block under it.
-    let text_from = |k: usize| {
-        parse_meta(&lines[..end_of(k)], starts[k] + 1).map_or(starts[k] + 2, |(_, from)| from)
-    };
+    // The text starts after the header: the marker and its metadata block, or
+    // the heading and its italic line.
+    let text_from = |k: usize| parse_note_head(&lines, shape, starts[k], end_of(k)).after;
     let k = (0..starts.len()).rev().find(|&k| {
         is_request_text(
             lines[text_from(k).min(end_of(k))..end_of(k)]
@@ -2009,8 +2008,60 @@ pub fn load_task_by_id(root: &Path, id: &str) -> Result<Option<Task>> {
     Ok(parse_task(&text, status))
 }
 
-/// Append a timestamped note block to a body
-/// (`<body>\n\n---\n\u{25b8} <ts>\n\n<note>`; no leading blank line when empty).
+/// The two on-disk shapes of a note.
+///
+/// - [`NoteShape::Old`] (schema 8 and earlier): `---`, `▸ <ts> [<actor>]`,
+///   optional `key: value` lines closed by `---`, then the text.
+/// - [`NoteShape::New`] (schema 9, [`NEW_NOTES_SCHEMA`]): a `#### <ts>` heading
+///   (an anchor on GitHub: `2026-11-04t221303z`), an italic line
+///   `*actor · key: value*` when the note has an actor or metadata, then the
+///   text. See the design dok `/doks/design/note-format.md`.
+///
+/// Readers accept both, per body ([`scan_notes`]); writers write one, never
+/// mixing: the shape of the notes the body already has, else the farm's
+/// ([`NoteShape::of_farm`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum NoteShape {
+    #[default]
+    Old,
+    New,
+}
+
+/// The first schema whose notes are written in [`NoteShape::New`]. A farm
+/// below it must stay readable by the yaks that wrote it, so it keeps writing
+/// [`NoteShape::Old`] until `yaks migrate` converts it.
+pub const NEW_NOTES_SCHEMA: u32 = 9;
+
+impl NoteShape {
+    /// The shape a farm at schema `v` writes.
+    pub fn of_schema(v: u32) -> NoteShape {
+        if v >= NEW_NOTES_SCHEMA {
+            NoteShape::New
+        } else {
+            NoteShape::Old
+        }
+    }
+
+    /// The shape the farm at `root` writes, from its `schema` marker. A missing
+    /// or unreadable marker is the old shape, as it is for [`schema_status`].
+    pub fn of_farm(root: &Path) -> NoteShape {
+        fs::read_to_string(root.join("schema"))
+            .ok()
+            .and_then(|raw| raw.trim().parse::<u32>().ok())
+            .map_or(NoteShape::Old, NoteShape::of_schema)
+    }
+}
+
+/// The shape of the notes in `body`, `None` for a body with none.
+pub fn body_shape(body: &str) -> Option<NoteShape> {
+    scan_notes(&body.lines().collect::<Vec<_>>()).0
+}
+
+/// Append a timestamped note block to a body in the old shape
+/// (`<body>\n\n---\n\u{25b8} <ts>\n\n<note>`; no leading blank line when empty),
+/// or in the shape of the notes the body already has. Production code that
+/// knows its farm calls [`append_note_meta_in`] instead.
+///
 /// The blank line after the marker makes it a paragraph of its own in any
 /// CommonMark viewer (schema 5; schema 4 wrote the note right under it, and
 /// every reader still accepts that shape).
@@ -2022,8 +2073,22 @@ pub fn append_note(body: &str, ts: &str, actor: Option<&str>, note: &str) -> Str
     append_note_meta(body, ts, actor, &[], note)
 }
 
-/// [`append_note`] with note metadata (yaks-6a11): `key: value` lines under
-/// the marker, closed by `---`, like a yak's own frontmatter:
+/// [`append_note_meta_in`] for a farm that writes the old shape: what the
+/// tests and fixtures use. A command that knows its farm calls the `_in` form.
+#[cfg_attr(not(test), allow(dead_code))]
+pub fn append_note_meta(
+    body: &str,
+    ts: &str,
+    actor: Option<&str>,
+    meta: &[(&str, &str)],
+    note: &str,
+) -> String {
+    append_note_meta_in(NoteShape::Old, body, ts, actor, meta, note)
+}
+
+/// Append a note with note metadata (yaks-6a11). Written in the shape of the
+/// notes `body` already has, else in `shape` (the farm's, from
+/// [`NoteShape::of_farm`]), so a body never mixes shapes. Old shape:
 ///
 /// ```text
 /// ---
@@ -2035,38 +2100,132 @@ pub fn append_note(body: &str, ts: &str, actor: Option<&str>, note: &str) -> Str
 /// <note>
 /// ```
 ///
-/// Empty `meta` writes exactly what [`append_note`] always wrote. Values are
-/// single-line scalars, quoted like frontmatter values when YAML would misread
-/// them; a line break in a value becomes a space.
-pub fn append_note_meta(
+/// New shape:
+///
+/// ```text
+/// #### <ts>
+///
+/// *<actor> · kind: checkpoint · commit: 47076b0*
+///
+/// <note>
+/// ```
+///
+/// Empty `meta` and no actor writes exactly what [`append_note`] always wrote
+/// (old) or just the heading (new). Values are single-line scalars, quoted like
+/// frontmatter values when YAML would misread them; a line break in a value
+/// becomes a space.
+pub fn append_note_meta_in(
+    shape: NoteShape,
     body: &str,
     ts: &str,
     actor: Option<&str>,
     meta: &[(&str, &str)],
     note: &str,
 ) -> String {
+    let shape = body_shape(body).unwrap_or(shape);
     let desc = body.trim_end();
     let sep = if desc.is_empty() { "" } else { "\n\n" };
-    format!(
-        "{desc}{sep}---\n\u{25b8} {}\n{}\n{note}",
-        note_head(ts, actor),
-        meta_block(meta)
-    )
+    format!("{desc}{sep}{}", format_note(shape, ts, actor, meta, note))
+}
+
+/// One note block in `shape`, with no separator before it. The single source
+/// of both shapes, shared with the TUI's comment assembly and the converter.
+pub fn format_note(
+    shape: NoteShape,
+    ts: &str,
+    actor: Option<&str>,
+    meta: &[(&str, &str)],
+    note: &str,
+) -> String {
+    match shape {
+        NoteShape::Old => format!(
+            "---\n\u{25b8} {}\n{}\n{note}",
+            note_head(ts, actor),
+            meta_block(meta)
+        ),
+        NoteShape::New => {
+            // The heading and the italic line end the header; the text starts
+            // at its first non-blank line.
+            let note = note.trim_start_matches(['\n', '\r']).trim_end();
+            let line = match italic_line(actor, meta) {
+                Some(l) => format!("{l}\n\n"),
+                // No actor and no metadata means no line, unless the text's own
+                // first line would read as one (`*emphasis*`): then `*-*` says
+                // the line is there and empty.
+                None if note
+                    .lines()
+                    .next()
+                    .is_some_and(|l| parse_italic_line(l).is_some()) =>
+                {
+                    "*-*\n\n".to_string()
+                }
+                None => String::new(),
+            };
+            format!("#### {ts}\n\n{line}{note}")
+        }
+    }
+}
+
+/// The new shape's second line, `*actor · key: value*`; `None` for a note with
+/// neither actor nor metadata.
+fn italic_line(actor: Option<&str>, meta: &[(&str, &str)]) -> Option<String> {
+    let actor = actor.map(str::trim).filter(|a| !a.is_empty());
+    if actor.is_none() && meta.is_empty() {
+        return None;
+    }
+    let mut items: Vec<String> = Vec::new();
+    if let Some(a) = actor {
+        let q = item_scalar(a);
+        // `foo:` would read as a key with an empty value, `-` as no actor.
+        let q = if !q.starts_with('\'') && (meta_line(&q).is_some() || q == "-") {
+            format!("'{}'", q.replace('\'', "''"))
+        } else {
+            q
+        };
+        items.push(q);
+    }
+    for (k, v) in meta {
+        let v = v.replace(['\r', '\n'], " ");
+        items.push(format!("{k}: {}", item_scalar(&v)));
+    }
+    Some(format!("*{}*", items.join(ITEM_SEP)))
+}
+
+/// Separates the actor and the metadata items on the italic line.
+const ITEM_SEP: &str = " \u{b7} ";
+
+/// [`write::scalar`], and always quoted when the item holds the separator or
+/// touches a `·` at an end (`k: · x` would split after the colon).
+fn item_scalar(s: &str) -> String {
+    let q = write::scalar(s);
+    let edge = q.starts_with('\u{b7}') || q.ends_with('\u{b7}');
+    if q.starts_with('\'') || !(edge || q.contains(ITEM_SEP)) {
+        q
+    } else {
+        format!("'{}'", q.replace('\'', "''"))
+    }
 }
 
 /// Append a parsed note back onto a body, metadata included: the inverse of
-/// one [`parse_notes`] entry (the merge driver rebuilds bodies with it).
+/// one [`parse_notes`] entry. Old shape for a body with no notes yet.
+#[allow(dead_code)] // the tests; the merge driver calls `append_entry_in`
 pub fn append_entry(body: &str, n: &NoteEntry) -> String {
+    append_entry_in(NoteShape::Old, body, n)
+}
+
+/// [`append_entry`] in `shape` for a body with no notes yet (the merge driver
+/// rebuilds bodies with it).
+pub fn append_entry_in(shape: NoteShape, body: &str, n: &NoteEntry) -> String {
     let meta: Vec<(&str, &str)> = n
         .meta
         .iter()
         .map(|(k, v)| (k.as_str(), v.as_str()))
         .collect();
-    append_note_meta(body, &n.ts, n.actor.as_deref(), &meta, &n.text)
+    append_note_meta_in(shape, body, &n.ts, n.actor.as_deref(), &meta, &n.text)
 }
 
-/// The metadata lines plus their closing `---`, or `""` for no metadata.
-/// The single source of the shape, shared with the TUI's comment assembly.
+/// The old shape's metadata lines plus their closing `---`, or `""` for no
+/// metadata. The old shape's source, shared with [`format_note`].
 pub fn meta_block(meta: &[(&str, &str)]) -> String {
     let mut out = String::new();
     for (k, v) in meta {
@@ -2213,26 +2372,28 @@ pub fn split_note_head(head: &str) -> (String, Option<String>) {
     (head.to_string(), None)
 }
 
-/// Parse the timestamped note blocks written by `append_note` out of a body. A
-/// block begins at a line `---` immediately followed by a line starting with the
-/// note marker, and its text runs to the next such delimiter or the end. Plain
-/// description prose is skipped, so this is safe to run over a whole body.
+/// Parse the timestamped note blocks written by `append_note` out of a body,
+/// in either [`NoteShape`]. A block begins at a note start ([`scan_notes`]) and
+/// its text runs to the next one or the end. Plain description prose is
+/// skipped, so this is safe to run over a whole body.
 pub fn parse_notes(body: &str) -> Vec<NoteEntry> {
     let lines: Vec<&str> = body.lines().collect();
-    let starts = note_starts(&lines);
+    let (shape, starts) = scan_notes(&lines);
+    let Some(shape) = shape else {
+        return Vec::new();
+    };
     let mut out = Vec::new();
     for (n, &i) in starts.iter().enumerate() {
         let end = starts.get(n + 1).copied().unwrap_or(lines.len());
-        let (ts, actor) = split_note_head(lines[i + 1][NOTE_MARK.len()..].trim());
-        let (meta, text_from) = match parse_meta(&lines[..end], i + 1) {
-            Some((meta, from)) => (meta, from),
-            None => (Vec::new(), i + 2),
-        };
-        let text = lines[text_from.min(end)..end].join("\n").trim().to_string();
+        let head = parse_note_head(&lines, shape, i, end);
+        let text = lines[head.after.min(end)..end]
+            .join("\n")
+            .trim()
+            .to_string();
         out.push(NoteEntry {
-            ts,
-            actor,
-            meta,
+            ts: head.ts,
+            actor: head.actor,
+            meta: head.meta,
             text,
         });
     }
@@ -2241,22 +2402,209 @@ pub fn parse_notes(body: &str) -> Vec<NoteEntry> {
 
 const NOTE_MARK: &str = "\u{25b8} ";
 
-/// Line `i` opens a note block: a `---` line followed by a marker line. The
-/// raw shape only: it does not know about code fences, so callers scanning a
-/// body use [`note_starts`].
+/// A note's header, parsed: what comes before its text.
+pub(crate) struct NoteHead {
+    pub ts: String,
+    pub actor: Option<String>,
+    pub meta: Vec<(String, String)>,
+    /// The index of the first line after the header (a blank line may follow).
+    pub after: usize,
+}
+
+/// The header of the note that starts at `lines[i]` and ends before `lines[end]`.
+pub(crate) fn parse_note_head(lines: &[&str], shape: NoteShape, i: usize, end: usize) -> NoteHead {
+    match shape {
+        NoteShape::Old => {
+            let (ts, actor) = split_note_head(lines[i + 1][NOTE_MARK.len()..].trim());
+            let (meta, after) = parse_meta(&lines[..end], i + 1).unwrap_or((Vec::new(), i + 2));
+            NoteHead {
+                ts,
+                actor,
+                meta,
+                after,
+            }
+        }
+        NoteShape::New => {
+            let ts = heading_ts(lines[i]).unwrap_or_default().to_string();
+            let next = (i + 1..end).find(|&j| !lines[j].trim().is_empty());
+            match next.and_then(|j| Some((j, parse_italic_line(lines[j])?))) {
+                Some((j, (actor, meta))) => NoteHead {
+                    ts,
+                    actor,
+                    meta,
+                    after: j + 1,
+                },
+                None => NoteHead {
+                    ts,
+                    actor: None,
+                    meta: Vec::new(),
+                    after: i + 1,
+                },
+            }
+        }
+    }
+}
+
+/// The timestamp of a new-shape note heading `#### <RFC 3339 timestamp>`; a
+/// `####` line with any other text is an ordinary heading.
+pub(crate) fn heading_ts(line: &str) -> Option<&str> {
+    let ts = line.strip_prefix("#### ")?.trim_end();
+    chrono::DateTime::parse_from_rfc3339(ts).ok()?;
+    Some(ts)
+}
+
+/// Whether `text` (a note block as appended by [`append_note_meta_in`], any
+/// shape) opens with a note header.
+pub(crate) fn starts_with_note(text: &str) -> bool {
+    text.starts_with("---\n\u{25b8} ")
+        || text.lines().next().is_some_and(|l| heading_ts(l).is_some())
+}
+
+/// Split the italic line's inner text on ` · ` outside quotes. A quote opens
+/// at the start of an item or after a `: `, and closes at its twin (`''` is an
+/// escaped single quote).
+fn split_items(s: &str) -> Vec<&str> {
+    let mut items = Vec::new();
+    let (mut start, mut i) = (0, 0);
+    let mut quote: Option<char> = None;
+    while i < s.len() {
+        let c = s[i..].chars().next().unwrap_or(' ');
+        match quote {
+            Some(q) if c == q => {
+                if q == '\'' && s[i + 1..].starts_with('\'') {
+                    i += 1; // `''`
+                } else {
+                    quote = None;
+                }
+            }
+            Some(_) => {}
+            None if (c == '\'' || c == '"') && (i == start || s[..i].ends_with(": ")) => {
+                quote = Some(c);
+            }
+            None if s[i..].starts_with(ITEM_SEP) => {
+                items.push(&s[start..i]);
+                i += ITEM_SEP.len();
+                start = i;
+                continue;
+            }
+            None => {}
+        }
+        i += c.len_utf8();
+    }
+    items.push(&s[start..]);
+    items
+}
+
+/// A new-shape note's italic line, `*actor · key: value · ...*`, as actor and
+/// metadata; `None` when `line` is not one (every item after the actor must be
+/// `key: value`). A first item that is itself `key: value` is a note with no
+/// actor; an unquoted `-` is the written form of "no actor" for a note whose
+/// text starts with an italic line of its own.
+pub(crate) fn parse_italic_line(line: &str) -> Option<(Option<String>, Vec<(String, String)>)> {
+    let line = line.trim_end();
+    if line.len() < 3 {
+        return None;
+    }
+    let inner = line.strip_prefix('*')?.strip_suffix('*')?;
+    let mut items = split_items(inner).into_iter().peekable();
+    let first = *items.peek()?;
+    let actor = if first == "-" {
+        items.next();
+        None
+    } else if meta_line(first).is_some() {
+        None
+    } else {
+        items.next();
+        Some(unquote(first))
+    };
+    let meta = items.map(meta_line).collect::<Option<Vec<_>>>()?;
+    Some((actor, meta))
+}
+
+/// Line `i` opens an old-shape note block: a `---` line followed by a marker
+/// line. The raw shape only: it does not know about code fences, so callers
+/// scanning a body use [`note_starts`].
 pub(crate) fn is_note_delim(lines: &[&str], i: usize) -> bool {
     lines[i].trim_end() == "---" && lines.get(i + 1).is_some_and(|l| l.starts_with(NOTE_MARK))
 }
 
-/// The indices of the lines that open a note block, skipping any inside a
-/// fenced code block (yaks-4cd7), so a note can show an example of the note
-/// format. A fence counts only once it closes: an unclosed fence in one note
-/// must not swallow every note after it.
-pub fn note_starts(lines: &[&str]) -> Vec<usize> {
+/// The shape of a body and the indices of the lines that open its notes,
+/// skipping any inside a fenced code block (yaks-4cd7), so a note can show an
+/// example of the note format. A fence counts only once it closes: an unclosed
+/// fence in one note must not swallow every note after it.
+///
+/// A body is read in one shape: the old one when it has any old-shape note (a
+/// `#### <timestamp>` heading in one is then ordinary text), else the new one.
+/// `(None, [])` for a body with no notes.
+pub fn scan_notes(lines: &[&str]) -> (Option<NoteShape>, Vec<usize>) {
     let fenced = fenced_lines(lines);
-    (0..lines.len())
+    let old: Vec<usize> = (0..lines.len())
         .filter(|&i| !fenced[i] && is_note_delim(lines, i))
-        .collect()
+        .collect();
+    if !old.is_empty() {
+        return (Some(NoteShape::Old), old);
+    }
+    let new: Vec<usize> = (0..lines.len())
+        .filter(|&i| !fenced[i] && heading_ts(lines[i]).is_some())
+        .collect();
+    if new.is_empty() {
+        (None, new)
+    } else {
+        (Some(NoteShape::New), new)
+    }
+}
+
+/// The indices of the lines that open a note block, in either shape
+/// ([`scan_notes`]).
+pub fn note_starts(lines: &[&str]) -> Vec<usize> {
+    scan_notes(lines).1
+}
+
+/// Convert every note of an old-shape `body` to the new shape (the schema-9
+/// migration). Returns the body and the number of notes converted. Pure and
+/// idempotent: a body with no old-shape notes comes back unchanged with 0.
+///
+/// A body is also left alone (0) when converting would change what it parses
+/// to: a `#### <timestamp>` line outside a code fence (it would become a note
+/// of its own) or a note whose timestamp is not RFC 3339 (the new heading
+/// could not carry it). The reader still reads such a body in the old shape.
+/// Description and note texts are carried over byte for byte (a note's text
+/// trimmed, as [`parse_notes`] reads it).
+pub fn convert_notes(body: &str) -> (String, usize) {
+    let lines: Vec<&str> = body.split('\n').collect();
+    let (shape, starts) = scan_notes(&lines);
+    if shape != Some(NoteShape::Old) {
+        return (body.to_string(), 0);
+    }
+    let fenced = fenced_lines(&lines);
+    if (0..lines.len()).any(|i| !fenced[i] && heading_ts(lines[i]).is_some()) {
+        return (body.to_string(), 0);
+    }
+    let mut blocks = Vec::with_capacity(starts.len());
+    for (n, &i) in starts.iter().enumerate() {
+        let end = starts.get(n + 1).copied().unwrap_or(lines.len());
+        let head = parse_note_head(&lines, NoteShape::Old, i, end);
+        if chrono::DateTime::parse_from_rfc3339(&head.ts).is_err() {
+            return (body.to_string(), 0);
+        }
+        let text = lines[head.after.min(end)..end].join("\n");
+        let meta: Vec<(&str, &str)> = head
+            .meta
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect();
+        blocks.push(format_note(
+            NoteShape::New,
+            &head.ts,
+            head.actor.as_deref(),
+            &meta,
+            &text,
+        ));
+    }
+    let desc = lines[..starts[0]].join("\n");
+    let desc = desc.trim_end();
+    let sep = if desc.is_empty() { "" } else { "\n\n" };
+    (format!("{desc}{sep}{}", blocks.join("\n\n")), starts.len())
 }
 
 /// A CommonMark fence opener: up to three spaces, then three or more backticks
@@ -4862,5 +5210,448 @@ mod layout_tests {
         );
         assert_eq!(herd_of("web-1a2b"), "web");
         assert_eq!(herd_of("odd"), "odd");
+    }
+}
+
+/// The new note shape (`#### <ts>` heading, italic `*actor · key: value*`
+/// line, no `---`) beside the old one: the reader accepts both, the writer
+/// follows the farm's schema, and `convert_notes` is pure and idempotent.
+#[cfg(test)]
+mod note_shape_tests {
+    use super::*;
+
+    fn n(ts: &str, actor: Option<&str>, meta: &[(&str, &str)], text: &str) -> NoteEntry {
+        NoteEntry {
+            ts: ts.into(),
+            actor: actor.map(String::from),
+            meta: meta
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect(),
+            text: text.into(),
+        }
+    }
+
+    /// `notes` appended to `desc` in `shape`.
+    fn build(shape: NoteShape, desc: &str, notes: &[NoteEntry]) -> String {
+        notes
+            .iter()
+            .fold(desc.to_string(), |b, e| append_entry_in(shape, &b, e))
+    }
+
+    #[test]
+    fn the_new_shape_is_a_heading_an_italic_line_and_the_text() {
+        let body = append_note_meta_in(
+            NoteShape::New,
+            "Desc.",
+            "2026-11-04T22:13:03Z",
+            Some("linkplan-lead"),
+            &[("kind", "move"), ("from", "hairy"), ("to", "shaving")],
+            "moved: hairy -> shaving",
+        );
+        assert_eq!(
+            body,
+            "Desc.\n\n#### 2026-11-04T22:13:03Z\n\n\
+             *linkplan-lead · kind: move · from: hairy · to: shaving*\n\n\
+             moved: hairy -> shaving"
+        );
+        assert!(!body.contains("---"), "no separator");
+        // No actor, no metadata: no italic line at all.
+        assert_eq!(
+            append_note_meta_in(NoteShape::New, "", "2026-01-01T00:00:00Z", None, &[], "hi"),
+            "#### 2026-01-01T00:00:00Z\n\nhi"
+        );
+        // An actor with no metadata.
+        assert_eq!(
+            append_note_meta_in(
+                NoteShape::New,
+                "D",
+                "2026-01-01T00:00:00Z",
+                Some("a"),
+                &[],
+                "hi"
+            ),
+            "D\n\n#### 2026-01-01T00:00:00Z\n\n*a*\n\nhi"
+        );
+    }
+
+    #[test]
+    fn both_shapes_parse_to_the_same_entries() {
+        let notes = vec![
+            n(
+                "2026-11-04T22:13:03Z",
+                Some("a"),
+                &[("kind", "move")],
+                "one",
+            ),
+            n("2026-11-04T22:13:03Z", None, &[], "two\n\nparagraphs"),
+            n("2026-11-04T22:13:04Z", Some("opus@joel"), &[], "three"),
+            n("2026-11-04T22:13:05Z", None, &[("kind", "snooze")], "four"),
+        ];
+        let old = build(NoteShape::Old, "Desc.", &notes);
+        let new = build(NoteShape::New, "Desc.", &notes);
+        assert_ne!(old, new);
+        assert_eq!(parse_notes(&old), notes);
+        assert_eq!(parse_notes(&new), notes);
+        assert_eq!(body_shape(&old), Some(NoteShape::Old));
+        assert_eq!(body_shape(&new), Some(NoteShape::New));
+        assert_eq!(description(&new), "Desc.");
+        assert_eq!(description(&old), "Desc.");
+    }
+
+    #[test]
+    fn awkward_actors_and_values_round_trip() {
+        let notes = vec![
+            n(
+                "2026-01-01T00:00:00Z",
+                Some("a · b"),
+                &[("k", "x · y")],
+                "t",
+            ),
+            n(
+                "2026-01-01T00:00:01Z",
+                Some("'q"),
+                &[("k", "'quoted'")],
+                "t",
+            ),
+            n("2026-01-01T00:00:02Z", Some("\"dq"), &[("k", "\"dq")], "t"),
+            n(
+                "2026-01-01T00:00:03Z",
+                Some("o'brien"),
+                &[("k", "it's · fine")],
+                "t",
+            ),
+            n("2026-01-01T00:00:04Z", Some("foo:"), &[("k", "")], "t"),
+            n("2026-01-01T00:00:05Z", Some("-"), &[("k", "a: b")], "t"),
+            n("2026-01-01T00:00:06Z", Some("star*"), &[("k", "v*")], "t"),
+            n("2026-01-01T00:00:07Z", Some("*lead"), &[("k", "· x")], "t"),
+            n(
+                "2026-01-01T00:00:08Z",
+                Some("delta:Fix (bug) in x"),
+                &[],
+                "t",
+            ),
+            n("2026-01-01T00:00:09Z", Some("kind: x"), &[], "t"),
+        ];
+        for shape in [NoteShape::Old, NoteShape::New] {
+            let body = build(shape, "", &notes);
+            assert_eq!(parse_notes(&body), notes, "{shape:?}\n{body}");
+        }
+        // The same entries, old in, converted, new out.
+        let (new, count) = convert_notes(&build(NoteShape::Old, "D", &notes));
+        assert_eq!(count, notes.len());
+        assert_eq!(parse_notes(&new), notes, "{new}");
+    }
+
+    #[test]
+    fn a_text_that_opens_with_an_italic_line_is_not_taken_for_one() {
+        let notes = vec![
+            n("2026-01-01T00:00:00Z", None, &[], "*note: done*\n\nbody"),
+            n("2026-01-01T00:00:01Z", None, &[], "*emphasis*"),
+            n("2026-01-01T00:00:02Z", Some("a"), &[], "*note: done*"),
+        ];
+        let body = build(NoteShape::New, "", &notes);
+        assert_eq!(parse_notes(&body), notes, "{body}");
+    }
+
+    #[test]
+    fn a_heading_inside_a_fence_or_with_other_text_is_not_a_note() {
+        let text = "Like this:\n\n```text\n#### 2026-01-09T00:00:00Z\n\n*fake*\n\nhi\n```\n\n\
+                    #### Not a timestamp\n\n#### 2026-13-45\n\nend";
+        let body = build(
+            NoteShape::New,
+            "Desc.",
+            &[
+                n("2026-01-01T00:00:00Z", Some("a"), &[], text),
+                n("2026-01-02T00:00:00Z", Some("a"), &[], "next"),
+            ],
+        );
+        let notes = parse_notes(&body);
+        assert_eq!(notes.len(), 2, "{body}");
+        assert_eq!(notes[0].text, text);
+        assert_eq!(note_starts(&body.lines().collect::<Vec<_>>()).len(), 2);
+        // Unclosed fence in one note does not swallow the next.
+        let body = build(
+            NoteShape::New,
+            "",
+            &[
+                n("2026-01-01T00:00:00Z", None, &[], "```\nopen"),
+                n("2026-01-02T00:00:00Z", None, &[], "next"),
+            ],
+        );
+        assert_eq!(parse_notes(&body).len(), 2);
+    }
+
+    #[test]
+    fn a_note_whose_text_has_headings_parses_by_the_timestamp_heading_only() {
+        let text = "## Findings\n\n### Detail\n\n#### Sub\n\nbody";
+        let notes = vec![
+            n("2026-01-01T00:00:00Z", Some("a"), &[], text),
+            n("2026-01-02T00:00:00Z", Some("a"), &[], "after"),
+        ];
+        let body = build(NoteShape::New, "", &notes);
+        assert_eq!(parse_notes(&body), notes);
+    }
+
+    #[test]
+    fn convert_notes_converts_old_to_new_and_is_idempotent() {
+        let old = "Desc.\n\n---\n\n## kept rule above\n\n---\n\u{25b8} 2026-11-04T22:13:03Z [a]\nkind: move\nfrom: hairy\nto: shaving\n---\n\nmoved: hairy -> shaving\n\n---\n\u{25b8} 2026-11-04T22:13:03Z\nschema-4 text right under\n\n---\n\u{25b8} 2026-11-04T22:14:00Z [b]\n\n```text\n---\n\u{25b8} 2026-01-01T00:00:00Z [fake]\n```";
+        let (new, count) = convert_notes(old);
+        assert_eq!(count, 3);
+        assert_eq!(
+            new,
+            "Desc.\n\n---\n\n## kept rule above\n\n\
+             #### 2026-11-04T22:13:03Z\n\n*a · kind: move · from: hairy · to: shaving*\n\nmoved: hairy -> shaving\n\n\
+             #### 2026-11-04T22:13:03Z\n\nschema-4 text right under\n\n\
+             #### 2026-11-04T22:14:00Z\n\n*b*\n\n```text\n---\n\u{25b8} 2026-01-01T00:00:00Z [fake]\n```"
+        );
+        assert_eq!(parse_notes(&new), parse_notes(old));
+        assert_eq!(description(&new), description(old));
+        // Idempotent: a converted body, or one with no notes, is returned as is.
+        assert_eq!(convert_notes(&new), (new.clone(), 0));
+        assert_eq!(
+            convert_notes("just a description"),
+            ("just a description".into(), 0)
+        );
+        assert_eq!(convert_notes(""), (String::new(), 0));
+    }
+
+    #[test]
+    fn convert_notes_leaves_a_body_it_cannot_carry_alone() {
+        // A `#### <timestamp>` outside a fence would become a note of its own.
+        let old = "Desc\n\n#### 2026-01-01T00:00:00Z\n\n---\n\u{25b8} 2026-01-02T00:00:00Z\n\nx";
+        assert_eq!(convert_notes(old), (old.to_string(), 0));
+        // A timestamp the heading cannot carry.
+        let old = "---\n\u{25b8} t1 [a]\n\nx";
+        assert_eq!(convert_notes(old), (old.to_string(), 0));
+    }
+
+    #[test]
+    fn a_body_never_mixes_shapes_when_appended_to() {
+        let new = append_note_meta_in(NoteShape::New, "D", "2026-01-01T00:00:00Z", None, &[], "a");
+        // An old-shape farm shape asked for, a new-shape body: stays new.
+        let more =
+            append_note_meta_in(NoteShape::Old, &new, "2026-01-02T00:00:00Z", None, &[], "b");
+        assert_eq!(body_shape(&more), Some(NoteShape::New));
+        assert!(!more.contains('\u{25b8}'), "{more}");
+        let old = append_note("D", "2026-01-01T00:00:00Z", None, "a");
+        let more =
+            append_note_meta_in(NoteShape::New, &old, "2026-01-02T00:00:00Z", None, &[], "b");
+        assert_eq!(body_shape(&more), Some(NoteShape::Old));
+        assert!(!more.contains("####"), "{more}");
+        assert_eq!(parse_notes(&more).len(), 2);
+    }
+
+    #[test]
+    fn drop_latest_request_works_in_the_new_shape() {
+        let req = |t| request_text(Some(t));
+        let a = append_note_meta_in(
+            NoteShape::New,
+            "Desc.",
+            "2026-01-01T00:00:00Z",
+            Some("x"),
+            &[],
+            &req("old"),
+        );
+        let b = append_note_meta_in(
+            NoteShape::New,
+            &a,
+            "2026-01-02T00:00:00Z",
+            Some("x"),
+            &[],
+            "middle",
+        );
+        let c = append_note_meta_in(
+            NoteShape::New,
+            &b,
+            "2026-01-03T00:00:00Z",
+            Some("j"),
+            &[("kind", "request")],
+            &req("new"),
+        );
+        assert_eq!(drop_latest_request(&c).as_deref(), Some(b.as_str()));
+        let d = append_note_meta_in(
+            NoteShape::New,
+            &c,
+            "2026-01-04T00:00:00Z",
+            Some("x"),
+            &[],
+            "after",
+        );
+        let out = drop_latest_request(&d).unwrap();
+        assert_eq!(
+            parse_notes(&out)
+                .iter()
+                .map(|e| e.ts.as_str())
+                .collect::<Vec<_>>(),
+            [
+                "2026-01-01T00:00:00Z",
+                "2026-01-02T00:00:00Z",
+                "2026-01-04T00:00:00Z"
+            ]
+        );
+    }
+
+    #[test]
+    fn a_farm_writes_the_shape_its_schema_says() {
+        let dir = std::env::temp_dir().join(format!("yaks-noteshape-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        for (schema, shape) in [
+            (None, NoteShape::Old),
+            (Some("8"), NoteShape::Old),
+            (Some("9"), NoteShape::New),
+            (Some("10"), NoteShape::New),
+        ] {
+            let root = dir.join(format!("{}", schema.unwrap_or("none")));
+            fs::create_dir_all(root.join("h/yaks")).unwrap();
+            if let Some(v) = schema {
+                fs::write(root.join("schema"), format!("{v}\n")).unwrap();
+            }
+            assert_eq!(NoteShape::of_farm(&root), shape, "schema {schema:?}");
+            let t = Task {
+                id: "h-0001".into(),
+                title: "T".into(),
+                kind: "task".into(),
+                priority: 3,
+                status: Status::Hairy,
+                created: None,
+                updated: None,
+                parent: None,
+                tags: Vec::new(),
+                depends_on: Vec::new(),
+                source: None,
+                prs: Vec::new(),
+                needs: None,
+                verify: None,
+                extra: Default::default(),
+                body: "Desc.".into(),
+            };
+            write::save(&root, &t).unwrap();
+            // `move_task` writes its entry through the farm's shape.
+            move_task(&root, "h-0001", Status::Shaving, Some("w")).unwrap();
+            let text = fs::read_to_string(task_path(&root, "h-0001")).unwrap();
+            let loaded = parse_task(&text, Status::Shaving).unwrap();
+            assert_eq!(body_shape(&loaded.body), Some(shape), "{text}");
+            let notes = parse_notes(&loaded.body);
+            assert_eq!(notes.len(), 1);
+            assert_eq!(notes[0].actor.as_deref(), Some("w"));
+            assert_eq!(notes[0].get("to"), Some("shaving"));
+            match shape {
+                NoteShape::Old => assert!(text.contains("\n---\n\u{25b8} "), "{text}"),
+                NoteShape::New => {
+                    assert!(text.contains("\n#### "), "{text}");
+                    assert!(!text.contains('\u{25b8}'), "{text}");
+                }
+            }
+        }
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    /// Yak files to round-trip: a directory named by `YAKS_NOTES_SAMPLE`, else
+    /// the farm this checkout belongs to, else none (the test then only runs
+    /// the generated cases above). `YAKS_NOTES_LIMIT` raises the 200 files.
+    fn real_yak_files(limit: usize) -> Vec<PathBuf> {
+        let root = std::env::var_os("YAKS_NOTES_SAMPLE")
+            .map(PathBuf::from)
+            .or_else(|| {
+                let cwd = std::env::current_dir().ok()?;
+                discover(&cwd).ok().map(|d| d.root)
+            });
+        let Some(root) = root else { return Vec::new() };
+        let mut files: Vec<PathBuf> = Vec::new();
+        let mut stack = vec![root];
+        while let Some(dir) = stack.pop() {
+            let Ok(rd) = fs::read_dir(&dir) else { continue };
+            for e in rd.flatten() {
+                let p = e.path();
+                if p.is_dir() {
+                    stack.push(p);
+                } else if p.extension().is_some_and(|x| x == "md")
+                    && p.parent()
+                        .and_then(|d| d.file_name())
+                        .is_some_and(|d| d == "yaks")
+                {
+                    files.push(p);
+                }
+            }
+        }
+        files.sort();
+        files.truncate(limit);
+        files
+    }
+
+    /// Old shape in, converted, parsed: the same `NoteEntry` list (meta, actor,
+    /// text, order) over the real bodies of a farm, and the anchors of every
+    /// note resolve in both. Reads files only; writes nothing into the farm.
+    #[test]
+    fn real_yak_bodies_convert_to_the_same_notes() {
+        let limit = std::env::var("YAKS_NOTES_LIMIT")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(200);
+        let files = real_yak_files(limit);
+        let (mut notes_seen, mut converted) = (0, 0);
+        for f in &files {
+            let text = fs::read_to_string(f).unwrap();
+            let Some((_, body)) = split_frontmatter(&text) else {
+                continue;
+            };
+            let old = parse_notes(body);
+            let (new, count) = convert_notes(body);
+            let after = parse_notes(&new);
+            assert_eq!(old, after, "{}", f.display());
+            assert_eq!(description(body), description(&new), "{}", f.display());
+            // Idempotent.
+            assert_eq!(convert_notes(&new), (new.clone(), 0), "{}", f.display());
+            if count > 0 {
+                assert_eq!(count, old.len(), "{}", f.display());
+                assert_eq!(body_shape(&new), Some(NoteShape::New), "{}", f.display());
+                converted += 1;
+            }
+            // Anchors: both forms name each note, in either body.
+            for i in 0..old.len() {
+                for (shape, b) in [(NoteShape::Old, body), (NoteShape::New, new.as_str())] {
+                    let notes = parse_notes(b);
+                    let a = crate::links::note_anchor(shape, &notes, i);
+                    assert!(crate::links::is_note_anchor(&a), "{a}");
+                    assert_eq!(crate::links::find_note(&notes, &a), Some(i), "{a}");
+                    let other = crate::links::note_anchor(
+                        if shape == NoteShape::Old {
+                            NoteShape::New
+                        } else {
+                            NoteShape::Old
+                        },
+                        &notes,
+                        i,
+                    );
+                    assert_eq!(crate::links::find_note(&notes, &other), Some(i), "{other}");
+                }
+            }
+            notes_seen += old.len();
+        }
+        eprintln!(
+            "round trip: {} yaks, {converted} converted, {notes_seen} notes",
+            files.len()
+        );
+    }
+
+    /// Not a check: writes the converted body of one yak to a file, to render
+    /// it on a markdown host (`gh api markdown`). `YAKS_CONVERT_FROM` is a yak
+    /// file, `YAKS_CONVERT_TO` the output. `cargo test -p yaks convert_one_yak
+    /// -- --ignored`.
+    #[test]
+    #[ignore]
+    fn convert_one_yak_to_a_file() {
+        let (Some(from), Some(to)) = (
+            std::env::var_os("YAKS_CONVERT_FROM"),
+            std::env::var_os("YAKS_CONVERT_TO"),
+        ) else {
+            return;
+        };
+        let text = fs::read_to_string(from).unwrap();
+        let (_, body) = split_frontmatter(&text).unwrap();
+        let (new, count) = convert_notes(body);
+        eprintln!("converted {count} notes");
+        fs::write(to, format!("{new}\n")).unwrap();
     }
 }

@@ -352,7 +352,10 @@ impl App {
             return;
         };
         b.text = text;
-        let body = content::assemble(&blocks);
+        let body = content::assemble_in(
+            crate::store::body_shape(&task.body).unwrap_or_default(),
+            &blocks,
+        );
         if body == task.body {
             self.notification = Some(format!("{id} unchanged"));
         } else {

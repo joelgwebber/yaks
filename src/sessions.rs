@@ -459,6 +459,7 @@ pub fn touched(root: &Path, actor: &str, since: DateTime<Utc>) -> Result<Touched
     let mut out = Touched::default();
     for t in &tasks {
         let notes = store::parse_notes(&t.body);
+        let shape = store::body_shape(&t.body).unwrap_or_default();
         let mut y = TouchedYak {
             id: t.id.clone(),
             title: t.title.clone(),
@@ -477,7 +478,7 @@ pub fn touched(root: &Path, actor: &str, since: DateTime<Utc>) -> Result<Touched
                     }
                 }
                 kind => y.notes.push(TouchedNote {
-                    anchor: crate::links::note_anchor(&notes, i),
+                    anchor: crate::links::note_anchor(shape, &notes, i),
                     kind: kind.map(String::from),
                     gist: gist(&n.text),
                 }),

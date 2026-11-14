@@ -377,9 +377,19 @@ fn try_merge(base: &str, ours: &str, theirs: &str) -> Option<Merged> {
         });
     }
 
+    // One shape for the merged body: the new one when any side has it (the
+    // sides' notes are already in one list), else the old.
+    let shape = if [&o.body, &t.body, &b.body]
+        .iter()
+        .any(|body| store::body_shape(body) == Some(store::NoteShape::New))
+    {
+        store::NoteShape::New
+    } else {
+        store::NoteShape::Old
+    };
     let mut body = desc;
     for n in &notes {
-        body = store::append_entry(&body, n);
+        body = store::append_entry_in(shape, &body, n);
     }
     let merged = Task {
         id,
@@ -673,6 +683,11 @@ mod tests {
         format!("\n\n---\n\u{25b8} {ts} [{who}]\n\n{text}")
     }
 
+    /// [`note`] in the new shape (schema 9).
+    fn note_new(ts: &str, who: &str, text: &str) -> String {
+        format!("\n\n#### {ts}\n\n*{who}*\n\n{text}")
+    }
+
     fn parsed(m: &Merged) -> Task {
         assert!(!m.text.contains("<<<<<<<") && !m.text.contains(">>>>>>>"));
         assert_eq!(m.text.matches("\nupdated:").count(), 1, "{}", m.text);
@@ -708,6 +723,104 @@ mod tests {
             ["from b", "from a"]
         );
         assert_eq!(store::description(&t.body), "Desc");
+    }
+
+    /// The merge tests above, in the new note shape: the merged file keeps the
+    /// shape, holds each note once, in time order, and never mixes shapes.
+    #[test]
+    fn the_new_note_shape_merges_like_the_old() {
+        let base = yak("hairy", "", "Desc");
+        let a = with_updated(
+            &yak(
+                "hairy",
+                "",
+                &format!("Desc{}", note_new("2026-01-02T00:00:00Z", "a", "from a")),
+            ),
+            "2026-01-02T00:00:00Z",
+        );
+        let b = with_updated(
+            &yak(
+                "hairy",
+                "",
+                &format!("Desc{}", note_new("2026-01-01T12:00:00Z", "b", "from b")),
+            ),
+            "2026-01-01T12:00:00Z",
+        );
+        let m = merge(&base, &a, &b);
+        assert!(m.conflicts.is_empty());
+        let t = parsed(&m);
+        let notes = store::parse_notes(&t.body);
+        assert_eq!(
+            notes.iter().map(|n| n.text.as_str()).collect::<Vec<_>>(),
+            ["from b", "from a"]
+        );
+        assert_eq!(notes[0].actor.as_deref(), Some("b"));
+        assert_eq!(store::description(&t.body), "Desc");
+        assert_eq!(store::body_shape(&t.body), Some(store::NoteShape::New));
+        assert!(!t.body.contains('\u{25b8}'), "{}", t.body);
+
+        // A note both sides hold is kept once; a base note stays.
+        let shared = note_new("2026-01-01T01:00:00Z", "x", "shared");
+        let base = yak("hairy", "", &format!("Desc{shared}"));
+        let side = yak(
+            "hairy",
+            "",
+            &format!("Desc{shared}{}", note_new("2026-01-02T00:00:00Z", "a", "n")),
+        );
+        let t = parsed(&merge(&base, &side, &side));
+        assert_eq!(store::parse_notes(&t.body).len(), 2);
+
+        // A note dropped by one side stays dropped.
+        let dropped = yak("hairy", "", "Desc");
+        let t = parsed(&merge(&base, &dropped, &base));
+        assert_eq!(store::parse_notes(&t.body).len(), 0);
+
+        // A scalar clash records its note, in the shape of the body's notes.
+        let base = yak("hairy", "", &format!("Desc{shared}"));
+        let a = yak("shaving", "", &format!("Desc{shared}"));
+        let b = yak("shorn", "", &format!("Desc{shared}"));
+        let m = merge(&base, &a, &b);
+        assert_eq!(m.conflicts, ["status"]);
+        let t = parsed(&m);
+        let notes = store::parse_notes(&t.body);
+        assert_eq!(notes.len(), 2);
+        assert_eq!(notes[1].actor.as_deref(), Some("merge-driver"));
+        assert_eq!(store::body_shape(&t.body), Some(store::NoteShape::New));
+        assert!(!t.body.contains('\u{25b8}'), "{}", t.body);
+    }
+
+    /// Notes with metadata survive a merge in the new shape, and a merge of an
+    /// old-shape side with a new-shape one (a migrated clone) writes one shape.
+    #[test]
+    fn metadata_and_mixed_sides_merge_to_one_shape() {
+        let moved = "\n\n#### 2026-01-02T00:00:00Z\n\n*a · kind: move · from: hairy · to: shaving*\n\nmoved: hairy -> shaving";
+        let base = yak("hairy", "", "Desc");
+        let a = yak("shaving", "", &format!("Desc{moved}"));
+        let t = parsed(&merge(&base, &a, &base));
+        let notes = store::parse_notes(&t.body);
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0].get("to"), Some("shaving"));
+        assert_eq!(notes[0].actor.as_deref(), Some("a"));
+
+        let old_side = yak(
+            "hairy",
+            "",
+            &format!("Desc{}", note("2026-01-03T00:00:00Z", "o", "old side")),
+        );
+        let new_side = yak(
+            "hairy",
+            "",
+            &format!("Desc{}", note_new("2026-01-04T00:00:00Z", "n", "new side")),
+        );
+        for (ours, theirs) in [(&old_side, &new_side), (&new_side, &old_side)] {
+            let t = parsed(&merge(&base, ours, theirs));
+            let notes = store::parse_notes(&t.body);
+            assert_eq!(
+                notes.iter().map(|n| n.text.as_str()).collect::<Vec<_>>(),
+                ["old side", "new side"]
+            );
+            assert_eq!(store::body_shape(&t.body), Some(store::NoteShape::New));
+        }
     }
 
     #[test]

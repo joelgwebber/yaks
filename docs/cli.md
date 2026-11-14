@@ -125,7 +125,7 @@ Hairy yaks whose dependencies are all resolved — the work queue. A yak awaitin
 
 `sheds [--json] [--all]`
 
-Who is working on what, read from the farm alone. A **shed** is a worker in the farm: one row per **actor**, the `[actor]` stamp on notes and moves (`▸ <ts> [actor]`; set it with `YAKS_ACTOR` or `--as`). Nothing here looks at git checkouts, Delta or the machine, so a synced farm reads the same on every machine. Notes with no actor belong to no row.
+Who is working on what, read from the farm alone. A **shed** is a worker in the farm: one row per **actor**, the `[actor]` stamp on notes and moves (the actor on a note's italic line, or `▸ <ts> [actor]` in a farm below schema 9; set it with `YAKS_ACTOR` or `--as`). Nothing here looks at git checkouts, Delta or the machine, so a synced farm reads the same on every machine. Notes with no actor belong to no row.
 
 Per actor, a header `<actor>  <liveness> · <last write>`, then, when the actor has one, `branch <b> @ <short sha> (<ago>)` (yaks-4728): where its code is, from the actor's latest `checkpoint` note naming a branch, on ANY yak (so one worker branch spanning several yaks shows once). It is read from the note alone, never fetched; `yaks commits <id> --fetch` is how to look at the branch. Then its yaks:
 
@@ -515,7 +515,7 @@ The TUI's moves refuse the same things (a bulk move of marked yaks reports
 them as skipped), and a refused shear leaves its comment unwritten.
 
 Every move appends an entry to the yak's body in the note shape,
-`▸ <ts> [<actor>]`, its `kind: move` / `from` / `to` [metadata](#note-metadata), a blank line, then `moved: <from> -> <to>` (one per yak moved, so
+a heading `#### <ts>` and the `*actor · kind: move · from: … · to: …*` line ([metadata](#note-metadata)), a blank line, then `moved: <from> -> <to>` (one per yak moved, so
 `slaughter --family` writes one on each), and each verb takes `--as <actor>`
 like the note commands. The file alone says who moved the yak and when, and
 `yaks log` lists moves with the notes. A yak moved by an older binary simply has
@@ -525,17 +525,19 @@ See [Note metadata](#note-metadata) for the `kind: move` fields each entry also 
 
 ### Note metadata
 
-A note can carry `key: value` lines directly under its `▸ <ts> [actor]` marker, closed by a `---` line, like a yak's own frontmatter:
+A note has a `#### <timestamp>` heading, then an italic line `*actor · key: value · key: value*` (the actor and the metadata, split on ` · `, then on the first `: `), then the text:
 
 ```markdown
----
-▸ 2026-10-31T15:20:00Z [tex-1]
-kind: checkpoint
-commit: 47076b0
----
+#### 2026-10-31T15:20:00Z
+
+*tex-1 · kind: checkpoint · commit: 47076b0*
 
 Atlas and UVs done.
 ```
+
+A note with neither actor nor metadata has no italic line. A value that holds ` · ` or starts with a quote is quoted like a frontmatter value. The heading's slug (`2026-10-31t152000z`, `-1`, `-2` for notes of one second) is the note's anchor on GitHub and other markdown hosts, and `yaks update --note` prints the link built from it. A note text may hold its own headings; only a `####` line whose text is an RFC 3339 timestamp, outside a code fence, starts a note, so a description cannot hold one.
+
+**The file shape changes with the farm's schema.** A farm below schema 9 keeps the older shape, readable by every yaks that wrote it: `---`, `▸ <ts> [actor]`, the metadata as `key: value` lines closed by a second `---`, then the text. Migrating a farm to schema 9 converts every yak's notes to the new shape (a body that cannot be converted without changing what it parses to is left as it is). Every reader accepts both shapes (a body is read in the shape of its notes, and a body is never written in a mix), and note links take either form of anchor, the timestamp (`yaks-1a2b#2026-10-31T15:20:00Z`) or the slug (`yaks-1a2b#2026-10-31t152000z`).
 
 A note without them is still valid, and unknown keys are kept. The commands that write a conventional note stamp its `kind`, and keep the body text they always wrote (`moved: a -> b`, `asked: needs human`, …) so anything matching on text keeps working:
 
@@ -982,7 +984,7 @@ Ends with `landed: <oneline>` and `doctor: <last line of yaks doctor>` when a fa
 
 ## Attribution
 
-`--as <actor>` on note-writing commands stamps the note `▸ <ts> [actor]`, and on
+`--as <actor>` on note-writing commands stamps the note's actor (`*actor*` under its heading; `▸ <ts> [actor]` in a farm below schema 9), and on
 the state-transition verbs stamps the `moved: <from> -> <to>` entry the same
 way. The
 actor resolves `--as` → `$YAKS_ACTOR` → this checkout's `git config yaks.actor`

@@ -43,6 +43,25 @@ pub fn has_run_on(body: &str) -> bool {
             .any(|n| doc_has_run_on(&n.text))
 }
 
+/// True if a yak body's description holds a `#### <RFC 3339 timestamp>`
+/// heading outside a code fence: in the new note shape that line starts a note,
+/// so the description cannot keep it (the one new ambiguity of the format, see
+/// `/doks/design/note-format.md`). `convert_notes` leaves such a body in the
+/// old shape; the fix is to rewrite the heading (or fence it).
+#[allow(dead_code)] // for `doctor`, which check.rs owns (follow-up)
+pub fn note_heading_in_description(body: &str) -> bool {
+    let lines: Vec<&str> = body.lines().collect();
+    let (shape, starts) = store::scan_notes(&lines);
+    let end = match shape {
+        // New shape: the first heading is the first note, so the description
+        // before it holds none by construction.
+        Some(store::NoteShape::New) => return false,
+        _ => starts.first().copied().unwrap_or(lines.len()),
+    };
+    let fenced = store::fenced_lines(&lines);
+    (0..end).any(|i| !fenced[i] && store::heading_ts(lines[i]).is_some())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -103,5 +122,46 @@ mod tests {
         let b = body("Desc.", &["note one", "note two"]);
         assert!(b.contains("\n---\n"), "{b}");
         assert!(!has_run_on(&b), "{b}");
+    }
+
+    #[test]
+    fn note_headers_do_not_count_in_the_new_shape_either() {
+        let mut b = "Desc.".to_string();
+        for n in ["note one", "note two"] {
+            b = store::append_note_meta_in(
+                store::NoteShape::New,
+                &b,
+                "2026-10-26T00:00:00Z",
+                Some("t"),
+                &[("kind", "move")],
+                n,
+            );
+        }
+        assert!(b.contains("\n#### "), "{b}");
+        assert!(!has_run_on(&b), "{b}");
+        // The run-on in a note is still found, and the italic line is not text.
+        let b = store::append_note_meta_in(
+            store::NoteShape::New,
+            &b,
+            "2026-10-27T00:00:00Z",
+            Some("t"),
+            &[],
+            "one\ntwo",
+        );
+        assert!(has_run_on(&b), "{b}");
+    }
+
+    #[test]
+    fn a_note_heading_in_an_old_description_is_flagged() {
+        let old = body("Desc.", &["n"]);
+        assert!(!note_heading_in_description(&old));
+        let bad = format!(
+            "Intro\n\n#### 2026-01-01T00:00:00Z\n\nmore{}",
+            &old["Desc.".len()..]
+        );
+        assert!(note_heading_in_description(&bad));
+        let fenced = "Intro\n\n```\n#### 2026-01-01T00:00:00Z\n```\n".to_string();
+        assert!(!note_heading_in_description(&fenced));
+        assert!(!note_heading_in_description("#### Not a timestamp"));
     }
 }

@@ -1,32 +1,31 @@
 //! Split a task `body` into its description + comment blocks and stitch them
-//! back together. Round-trip-safe against the on-disk shape that
-//! [`crate::store::append_note`] writes:
+//! back together. Round-trip-safe against both on-disk shapes of a note
+//! ([`crate::store::NoteShape`]), the one the body already has:
 //!
 //! ```text
-//! <description>
+//! <description>                      <description>
 //!
-//! ---
-//! ▸ <timestamp>
-//!
+//! ---                                #### <timestamp>
+//! ▸ <timestamp> [actor]
+//!                                    *actor · kind: move*
 //! <comment text>
+//!                                    <comment text>
 //! ```
 //!
 //! (Schema 4 wrote the text right under the `▸` line, with no blank line;
 //! `parse` accepts both shapes and `assemble` writes the blank line, so a
 //! schema-4 body reads the same and is upgraded when a comment is saved.)
 //!
-//! A comment boundary is *only* a line that is exactly `---` immediately
-//! followed by a `▸ <timestamp>` line, outside a fenced code block
-//! ([`crate::store::note_starts`], the same scan the CLI uses), so a bare
-//! `---` horizontal rule inside prose stays part of the description. A
-//! comment's metadata (`key: value` lines under the `▸` line, closed by
-//! `---`; [`crate::store::parse_meta`]) is carried on the block and written
-//! back unchanged. `parse` then `assemble` reproduces an
+//! A comment boundary is a note start ([`crate::store::scan_notes`], the same
+//! scan the CLI uses): a `---` line followed by a `▸ <timestamp>` line, or a
+//! `#### <timestamp>` heading, outside a fenced code block, so a bare `---`
+//! horizontal rule inside prose stays part of the description. A comment's
+//! metadata ([`crate::store::parse_note_head`]) is carried on the block and
+//! written back unchanged. `parse` then `assemble` reproduces an
 //! `append_note`-built body byte-for-byte; `assemble` drops empty comments so
 //! saving an emptied comment deletes it.
 
-/// Marker glyph that opens a comment's timestamp line (`▸`).
-const MARK: char = '\u{25b8}';
+use crate::store::NoteShape;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BlockKind {
@@ -51,25 +50,23 @@ pub struct Block {
 /// block first (its text possibly empty), then one `Comment` per marker.
 pub fn parse(body: &str) -> Vec<Block> {
     let lines: Vec<&str> = body.split('\n').collect();
-    let starts = crate::store::note_starts(&lines);
+    let (shape, starts) = crate::store::scan_notes(&lines);
     let mut blocks = Vec::new();
 
-    // Description: everything before the first marker.
+    // Description: everything before the first note start.
     let first = starts.first().copied().unwrap_or(lines.len());
     blocks.push(Block {
         kind: BlockKind::Description,
         text: lines[..first].join("\n").trim_end().to_string(),
     });
 
-    // Comments: each spans its `▸` line's content until the next marker. Its
-    // metadata, then the one blank line after the `▸` line (or after the
-    // metadata's closing `---`), are not part of the text.
+    // Comments: each spans from its header until the next note start. Its
+    // metadata, then the one blank line after the header, are not part of the
+    // text.
     for (n, &j) in starts.iter().enumerate() {
         let k = starts.get(n + 1).copied().unwrap_or(lines.len());
-        let head = lines[j + 1].trim_start().trim_start_matches(MARK).trim();
-        let (timestamp, actor) = crate::store::split_note_head(head);
-        let (meta, after) =
-            crate::store::parse_meta(&lines[..k], j + 1).unwrap_or((Vec::new(), j + 2));
+        let head = crate::store::parse_note_head(&lines, shape.unwrap_or_default(), j, k);
+        let after = head.after;
         let start = if lines.get(after).is_some_and(|l| l.trim().is_empty()) {
             after + 1
         } else {
@@ -77,9 +74,9 @@ pub fn parse(body: &str) -> Vec<Block> {
         };
         blocks.push(Block {
             kind: BlockKind::Comment {
-                timestamp,
-                actor,
-                meta,
+                timestamp: head.ts,
+                actor: head.actor,
+                meta: head.meta,
             },
             text: lines[start.min(k)..k].join("\n").trim_end().to_string(),
         });
@@ -87,9 +84,15 @@ pub fn parse(body: &str) -> Vec<Block> {
     blocks
 }
 
-/// Reassemble blocks into a body, matching `append_note`'s shape. Comments with
-/// empty (whitespace-only) text are dropped.
+/// Reassemble blocks into a body in the old shape, matching `append_note`.
+/// Comments with empty (whitespace-only) text are dropped.
 pub fn assemble(blocks: &[Block]) -> String {
+    assemble_in(NoteShape::Old, blocks)
+}
+
+/// [`assemble`] in `shape`: the shape of the body the blocks were parsed from
+/// ([`crate::store::body_shape`]), so saving a comment never mixes shapes.
+pub fn assemble_in(shape: NoteShape, blocks: &[Block]) -> String {
     let mut out = String::new();
     let mut wrote = false;
     for b in blocks {
@@ -110,16 +113,15 @@ pub fn assemble(blocks: &[Block]) -> String {
                 if wrote {
                     out.push_str("\n\n");
                 }
-                out.push_str("---\n");
-                out.push(MARK);
-                out.push(' ');
-                out.push_str(&crate::store::note_head(timestamp, actor.as_deref()));
-                out.push('\n');
                 let pairs: Vec<(&str, &str)> =
                     meta.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
-                out.push_str(&crate::store::meta_block(&pairs));
-                out.push('\n');
-                out.push_str(text);
+                out.push_str(&crate::store::format_note(
+                    shape,
+                    timestamp,
+                    actor.as_deref(),
+                    &pairs,
+                    text,
+                ));
                 wrote = true;
             }
         }
@@ -297,5 +299,100 @@ mod tests {
             assemble(&blocks),
             "keep\n\n---\n\u{25b8} 2026-01-02T00:00:00Z\n\nstays"
         );
+    }
+
+    /// The same body in each shape (`parse`/`assemble_in` round trip).
+    fn both(desc: &str, notes: &[(&str, Option<&str>, &[(&str, &str)], &str)]) -> [String; 2] {
+        [NoteShape::Old, NoteShape::New].map(|shape| {
+            notes.iter().fold(desc.to_string(), |b, (ts, a, m, t)| {
+                crate::store::append_note_meta_in(shape, &b, ts, *a, m, t)
+            })
+        })
+    }
+
+    #[test]
+    fn both_shapes_parse_to_the_same_blocks_and_round_trip() {
+        let [old, new] = both(
+            "Desc.",
+            &[
+                (
+                    "2026-01-01T00:00:00Z",
+                    Some("a"),
+                    &[("kind", "move"), ("to", "shorn")],
+                    "moved",
+                ),
+                ("2026-01-01T00:00:00Z", None, &[], "two\n\nparas"),
+                (
+                    "2026-01-02T00:00:00Z",
+                    Some("o · b"),
+                    &[("note", "x · y")],
+                    "three",
+                ),
+            ],
+        );
+        assert_ne!(old, new);
+        assert_eq!(parse(&old), parse(&new));
+        assert_eq!(assemble_in(NoteShape::Old, &parse(&old)), old);
+        assert_eq!(assemble_in(NoteShape::New, &parse(&new)), new);
+        assert_eq!(crate::store::body_shape(&new), Some(NoteShape::New));
+    }
+
+    #[test]
+    fn editing_a_comment_in_place_keeps_the_shape_and_the_header() {
+        let [old, new] = both(
+            "Desc.",
+            &[
+                (
+                    "2026-01-01T00:00:00Z",
+                    Some("tex-1"),
+                    &[("kind", "checkpoint"), ("commit", "47076b0")],
+                    "first",
+                ),
+                ("2026-01-02T00:00:00Z", Some("b"), &[], "second"),
+            ],
+        );
+        for (shape, body) in [(NoteShape::Old, old), (NoteShape::New, new)] {
+            let mut blocks = parse(&body);
+            blocks[1].text = "first, edited\n\n- a\n- b".into();
+            let out = assemble_in(shape, &blocks);
+            let notes = crate::store::parse_notes(&out);
+            assert_eq!(notes.len(), 2, "{out}");
+            assert_eq!(notes[0].text, "first, edited\n\n- a\n- b");
+            assert_eq!(notes[0].actor.as_deref(), Some("tex-1"));
+            assert_eq!(notes[0].get("commit"), Some("47076b0"));
+            assert_eq!(notes[1].text, "second");
+            assert_eq!(crate::store::body_shape(&out), Some(shape));
+            // An emptied comment is deleted in either shape.
+            blocks[2].text = " ".into();
+            let out = assemble_in(shape, &blocks);
+            assert_eq!(crate::store::parse_notes(&out).len(), 1, "{out}");
+        }
+    }
+
+    #[test]
+    fn a_comment_that_opens_with_an_italic_line_survives_in_the_new_shape() {
+        let blocks = vec![
+            desc("D"),
+            comment("2026-01-01T00:00:00Z", "*note: done*\n\nbody"),
+            comment("2026-01-02T00:00:00Z", "*emphasis*"),
+        ];
+        let out = assemble_in(NoteShape::New, &blocks);
+        assert_eq!(parse(&out), blocks, "{out}");
+    }
+
+    #[test]
+    fn a_fenced_example_of_a_new_note_is_not_a_comment() {
+        let body = crate::store::append_note_meta_in(
+            NoteShape::New,
+            "Desc.",
+            "2026-01-01T00:00:00Z",
+            Some("a"),
+            &[],
+            "Like this:\n\n```text\n#### 2026-01-02T00:00:00Z\n\n*fake*\n\nhi\n```\n\nend",
+        );
+        let blocks = parse(&body);
+        assert_eq!(blocks.len(), 2, "{blocks:?}");
+        assert!(blocks[1].text.contains("*fake*"));
+        assert_eq!(assemble_in(NoteShape::New, &blocks), body);
     }
 }

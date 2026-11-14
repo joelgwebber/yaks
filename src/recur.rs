@@ -751,6 +751,14 @@ mod tests {
     }
 
     #[test]
+    fn the_new_note_shape_counts_from_the_shear_too() {
+        let mut t = shorn(&[("every", "P1W")]);
+        t.body = "#### 2026-10-20T10:00:00Z\n\n*a · kind: move · from: shaving · to: shorn*\n\nmoved: shaving -> shorn".into();
+        let p = regrow(&t, at(2026, 10, 28));
+        assert_eq!(p.occurrence.render(), "2026-10-27T10:00:00Z");
+    }
+
+    #[test]
     fn only_shorn_yaks_with_a_reading_every_are_candidates() {
         let mut t = shorn(&[("every", "P1W"), ("due", "2026-01-01")]);
         assert_eq!(

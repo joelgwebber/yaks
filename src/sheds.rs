@@ -1060,6 +1060,57 @@ boss    active · 30m ago
         assert!(!render(&r, false).contains("farm:"));
     }
 
+    /// Sheds read notes through `parse_notes`, so a farm in the new shape
+    /// (schema 9) shows the same claims, checkpoints and liveness.
+    #[test]
+    fn the_new_note_shape_reads_the_same_sheds() {
+        let new = |t: &mut Task, ts: &str, actor: &str, meta: &[(&str, &str)], text: &str| {
+            t.body = store::append_note_meta_in(
+                store::NoteShape::New,
+                &t.body,
+                ts,
+                Some(actor),
+                meta,
+                text,
+            );
+        };
+        let mut old = yak("y-a", Status::Shaving);
+        let mut fresh = yak("y-a", Status::Shaving);
+        let mv = [("kind", "move"), ("from", "hairy"), ("to", "shaving")];
+        let cp = [
+            ("kind", "checkpoint"),
+            ("branch", "work/w1/x"),
+            ("commit", "1111111aaaa"),
+        ];
+        moved(
+            &mut old,
+            "2026-10-31T09:00:00Z",
+            "w1",
+            Status::Hairy,
+            Status::Shaving,
+            &mv,
+        );
+        old.body =
+            store::append_note_meta(&old.body, "2026-10-31T10:00:00Z", Some("w1"), &cp, "cp");
+        new(
+            &mut fresh,
+            "2026-10-31T09:00:00Z",
+            "w1",
+            &mv,
+            &store::transition_text(Status::Hairy, Status::Shaving),
+        );
+        new(&mut fresh, "2026-10-31T10:00:00Z", "w1", &cp, "cp");
+        assert!(fresh.body.contains("#### "), "{}", fresh.body);
+        let (a, b) = (build(&[old], now()), build(&[fresh], now()));
+        let report = |sheds| Report {
+            now: now(),
+            farm: None,
+            sheds,
+            fresh: Default::default(),
+        };
+        assert_eq!(to_json(&report(a)), to_json(&report(b)));
+    }
+
     #[test]
     fn a_sheds_row_shows_its_latest_checkpoint_from_any_yak() {
         let mut a = yak("y-a", Status::Shaving);

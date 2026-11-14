@@ -299,7 +299,7 @@ fn rebase_description(base: &str, current: &str, new: String) -> Option<String> 
     } else {
         rest.strip_prefix("\n\n")?
     };
-    if !entry.starts_with("---\n\u{25b8} ") {
+    if !store::starts_with_note(entry) {
         return None;
     }
     let new = new.trim_end();
@@ -1050,6 +1050,12 @@ impl Farm {
         &self.root
     }
 
+    /// The shape this farm writes new notes in, from its schema marker
+    /// ([`store::NoteShape::of_farm`]): the old one below schema 9.
+    pub(crate) fn shape(&self) -> store::NoteShape {
+        store::NoteShape::of_farm(&self.root)
+    }
+
     // -- queries ----------------------------------------------------------
 
     /// Tasks matching `spec`, grouped by status then id (the `list`/`search` view).
@@ -1095,7 +1101,8 @@ impl Farm {
         };
         let before = task.needs.replace(needs.to_string());
         let ts = store::now_iso();
-        task.body = store::append_note_meta(
+        task.body = store::append_note_meta_in(
+            self.shape(),
             &task.body,
             &ts,
             actor,
@@ -1138,7 +1145,8 @@ impl Farm {
             // cleared), so a done answer or one on a yak with no `needs` is
             // not mistaken for a hand-off by `doctor`.
             let after = task.needs.as_deref().unwrap_or(store::NEEDS_NONE);
-            task.body = store::append_note_meta(
+            task.body = store::append_note_meta_in(
+                self.shape(),
                 &task.body,
                 &ts,
                 actor,
@@ -1170,7 +1178,8 @@ impl Farm {
         }
         let before = task.needs.replace(NEEDS_AGENT.to_string());
         let ts = store::now_iso();
-        task.body = store::append_note_meta(
+        task.body = store::append_note_meta_in(
+            self.shape(),
             &task.body,
             &ts,
             actor,
@@ -1221,7 +1230,8 @@ impl Farm {
             return Ok(Pickup::Picked);
         }
         task.needs = None;
-        task.body = store::append_note_meta(
+        task.body = store::append_note_meta_in(
+            self.shape(),
             &task.body,
             &ts,
             actor,
@@ -1897,7 +1907,14 @@ impl Farm {
                 if let Some(b) = landed.branch.as_deref() {
                     meta.push(("branch", b));
                 }
-                task.body = store::append_note_meta(&task.body, &ts, actor, &meta, &landed.text);
+                task.body = store::append_note_meta_in(
+                    self.shape(),
+                    &task.body,
+                    &ts,
+                    actor,
+                    &meta,
+                    &landed.text,
+                );
                 task.updated = Some(ts);
                 store::write::save(&self.root, &task)?;
             }
@@ -2251,7 +2268,14 @@ impl Farm {
                 .iter()
                 .map(|(k, v)| (k.as_str(), v.as_str()))
                 .collect();
-            task.body = store::append_note_meta(&task.body, &ts, edit.actor.as_deref(), &meta, &n);
+            task.body = store::append_note_meta_in(
+                self.shape(),
+                &task.body,
+                &ts,
+                edit.actor.as_deref(),
+                &meta,
+                &n,
+            );
             changed = true;
         }
         if changed {
@@ -2283,7 +2307,14 @@ impl Farm {
             None => format!("snoozed until {due} (had no due date)"),
         };
         let ts = store::now_iso();
-        task.body = store::append_note_meta(&task.body, &ts, actor, &[("kind", "snooze")], &text);
+        task.body = store::append_note_meta_in(
+            self.shape(),
+            &task.body,
+            &ts,
+            actor,
+            &[("kind", "snooze")],
+            &text,
+        );
         task.updated = Some(ts);
         store::write::save(&self.root, &task)?;
         Ok(SnoozeOutcome::Snoozed)
@@ -3149,7 +3180,8 @@ impl Farm {
                 t.extra.set(recur::REGROWN, &Value::Plain(stamp.clone()));
                 // Stamped when written, so the note follows the move note.
                 let written = store::now_iso();
-                t.body = store::append_note_meta(
+                t.body = store::append_note_meta_in(
+                    self.shape(),
                     &t.body,
                     &written,
                     actor,
@@ -3178,8 +3210,14 @@ impl Farm {
                         meta.push(("needs", a.who.as_str()));
                     }
                     t.needs = Some(a.who.clone());
-                    t.body =
-                        store::append_note_meta(&t.body, &store::now_iso(), actor, &meta, &text);
+                    t.body = store::append_note_meta_in(
+                        self.shape(),
+                        &t.body,
+                        &store::now_iso(),
+                        actor,
+                        &meta,
+                        &text,
+                    );
                 }
                 t.updated = Some(store::now_iso());
                 store::write::save(&self.root, &t)?;
@@ -4079,6 +4117,69 @@ mod tests {
             (Some("checkpoint"), Some("47076b0"))
         );
         assert_eq!(notes[0].text, "saved");
+    }
+
+    /// A farm writes notes in the shape its schema marker says: schema 8 the
+    /// old `---` / `▸` shape, schema 9 the `#### <ts>` shape, never mixing
+    /// shapes in a body. This build refuses a schema-9 farm (it is newer than
+    /// `store::SCHEMA`), so the `Farm` writers (`update --note`, `ask`) run at
+    /// schema 8 and a schema-9 farm is checked through `Farm::shape` and the
+    /// store's move writer, which the migration yak's farms will use.
+    #[test]
+    fn a_farm_writes_the_note_shape_of_its_schema() {
+        for (schema, new) in [("8", false), ("9", true)] {
+            let (root, farm) = temp_farm();
+            std::fs::write(root.join("schema"), format!("{schema}\n")).unwrap();
+            let want = if new {
+                store::NoteShape::New
+            } else {
+                store::NoteShape::Old
+            };
+            assert_eq!(farm.shape(), want, "schema {schema}");
+            store::write::save(&root, &task("yak-0001", Status::Hairy)).unwrap();
+            let mut expect = 1;
+            if !new {
+                let edit = |note: &str| TaskEdit {
+                    note: Some(note.into()),
+                    actor: Some("w".into()),
+                    meta: vec![("kind".to_string(), "checkpoint".to_string())],
+                    ..Default::default()
+                };
+                farm.update("yak-0001", edit("first")).unwrap();
+                farm.ask("yak-0001", "human", Some("w"), Some("why?"))
+                    .unwrap();
+                farm.update("yak-0001", edit("second")).unwrap();
+                expect = 4;
+            }
+            store::move_task(&root, "yak-0001", Status::Shaving, Some("w")).unwrap();
+            let t = store::load_task_by_id(&root, "yak-0001").unwrap().unwrap();
+            let notes = store::parse_notes(&t.body);
+            assert_eq!(notes.len(), expect, "{}", t.body);
+            let last = notes.last().unwrap();
+            assert_eq!(
+                (last.get("to"), last.actor.as_deref()),
+                (Some("shaving"), Some("w"))
+            );
+            let file = std::fs::read_to_string(store::task_path(&root, "yak-0001")).unwrap();
+            assert_eq!(
+                store::body_shape(&t.body),
+                Some(want),
+                "schema {schema}\n{file}"
+            );
+            if new {
+                assert!(file.contains("\n#### "), "{file}");
+                assert!(!file.contains('\u{25b8}'), "{file}");
+            } else {
+                assert!(file.contains("\n---\n\u{25b8} "), "{file}");
+                assert!(!file.contains("#### "), "{file}");
+            }
+            // The link `update --note` prints fits the shape: the timestamp for
+            // the old one, the heading's slug for the new one.
+            let link = crate::links::latest_note_link("yak-0001", &t.body).unwrap();
+            let frag = link.split_once('#').unwrap().1;
+            assert_eq!(frag.contains('T'), !new, "{link}");
+            assert!(crate::links::find_note(&notes, frag).is_some());
+        }
     }
 
     fn drift(farm: &Farm, id: &str) -> Vec<Issue> {
