@@ -5590,7 +5590,7 @@ mod note_shape_tests {
             .and_then(|v| v.parse().ok())
             .unwrap_or(200);
         let files = real_yak_files(limit);
-        let (mut notes_seen, mut converted) = (0, 0);
+        let (mut notes_seen, mut converted, mut left_alone) = (0, 0, 0);
         for f in &files {
             let text = fs::read_to_string(f).unwrap();
             let Some((_, body)) = split_frontmatter(&text) else {
@@ -5607,6 +5607,19 @@ mod note_shape_tests {
                 assert_eq!(count, old.len(), "{}", f.display());
                 assert_eq!(body_shape(&new), Some(NoteShape::New), "{}", f.display());
                 converted += 1;
+            }
+            // A body with a note header that is not an RFC 3339 timestamp (a
+            // hand-written `▸ 2026-08-12 E2E VERIFIED ...`) is never converted,
+            // since the new heading cannot carry it; it has no anchor either.
+            if old
+                .iter()
+                .any(|n| chrono::DateTime::parse_from_rfc3339(&n.ts).is_err())
+            {
+                assert_eq!(count, 0, "{}", f.display());
+                assert_eq!(new, body, "{}", f.display());
+                left_alone += 1;
+                notes_seen += old.len();
+                continue;
             }
             // Anchors: both forms name each note, in either body.
             for i in 0..old.len() {
@@ -5630,7 +5643,7 @@ mod note_shape_tests {
             notes_seen += old.len();
         }
         eprintln!(
-            "round trip: {} yaks, {converted} converted, {notes_seen} notes",
+            "round trip: {} yaks, {converted} converted, {left_alone} left alone (a note header that is not a timestamp), {notes_seen} notes",
             files.len()
         );
     }
