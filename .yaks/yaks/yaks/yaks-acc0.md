@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-14T11:21:17Z'
+updated: '2026-11-14T11:21:18Z'
 parent: yaks-1151
 depends_on:
 - yaks-6ffd
@@ -36,3 +36,8 @@ The layout yak, the resolver yak and the note-format design. Do not start before
 ## Evidence
 
 A rehearsal on this farm: `yaks doctor` clean before and after; the census's "resolves on GitHub" share before and after (script: `linkcensus.py` on yaks-0a4d); one real file checked on GitHub's rendering of a rehearsal branch pushed to a place the human names.
+
+---
+▸ 2026-11-14T11:21:18Z [linkplan-lead]
+
+Dependencies: layout [yaks-6ffd](yaks-6ffd), resolver [yaks-f505](yaks-f505), note format [yaks-6c65](yaks-6c65). Docs follow in [yaks-df4e](yaks-df4e).
