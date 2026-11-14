@@ -41,3 +41,8 @@ thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-14T11:21:30Z [linkplan-lead]
+
+Claim: worker `locate-1` (Sonnet tier, per AGENTS.md's standing delegation; the scope is one outcome with tests that fail first). Owner of the new `src/locate.rs`, `src/hosting.rs`, the `yaks url` command in `src/main.rs` (its own subcommand region only), `gitrepo.rs` (the remote rule), `links.rs` (`exists`, the `sources/<id>` resolution) and `src/tui/follow.rs` (the viewer's `sources/<id>` case). Out of scope: layout, stored link forms, the TUI menu, `store.rs`. Judge: the coordinator re-runs the evidence on its own build; the worker shears nothing.
