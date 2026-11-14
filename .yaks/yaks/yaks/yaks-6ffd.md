@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-14T12:03:01Z'
+updated: '2026-11-14T12:17:54Z'
 parent: yaks-1151
 tags:
 - git
@@ -80,3 +80,5 @@ Done so far:
 - `links::read_at`: `{rev}:.yaks/{path}` fallback (and `.yaks/wiki/...`).
 
 Next: TUI per-user state copy, then tests for both layouts, then the scratch-repo run.
+
+[layout1-evidence](yaks-6ffd/layout1-evidence.txt "Scratch repo, farm at the branch root: create/shave/note/shorn autocommits, status, commit, sync --no-push, weight, land guard exit 7")

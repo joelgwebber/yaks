@@ -1,0 +1,77 @@
+$ ls -A farm worktree
+.git
+.gitignore
+config.yaml
+schema
+yak
+$ yaks create
+Created yak-ab54: first yak
+Shaving yak-ab54
+Updated yak-ab54: note yak-ab54#2026-11-14T12:17:36Z-1
+Shorn! yak-ab54
+$ yaks status
+farm clean: nothing to commit
+farm branch yaks: not published (no upstream); `yaks sync` publishes it
+$ git log (farm branch, one autocommit per change)
+05a048a yaks: shorn yak-ab54
+
+ yak/yaks/yak-ab54.md | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+e118cf3 yaks: updated yak-ab54
+
+ yak/yaks/yak-ab54.md | 5 +++++
+ 1 file changed, 5 insertions(+)
+ba40f7d yaks: shaving yak-ab54
+
+ yak/yaks/yak-ab54.md | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
+6062c2b yaks: created yak-ab54
+
+ yak/yaks/yak-ab54.md | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+4cb0cbd yaks: new farm
+
+ .gitignore  | 1 +
+ config.yaml | 4 ++++
+ schema      | 1 +
+ 3 files changed, 6 insertions(+)
+$ yaks status (hand-made yak)
+farm changes git does not have yet (* = staged):
+  yak-ffff  created
+run `yaks commit` to commit these as: yaks: created yak-ffff
+farm branch yaks: not published (no upstream); `yaks sync` publishes it
+$ yaks commit
+  A yak/yaks/yak-ffff.md
+commit: committed a067f7d yaks: created yak-ffff
+$ yaks sync --no-push
+sync: committed .gitattributes (the yak merge-driver rule)
+sync: nothing to commit
+sync: origin has no yaks branch yet: nothing to pull
+sync: push skipped (--no-push)
+farm branch yaks: not published (no upstream); `yaks sync` publishes it
+$ yaks status
+farm clean: nothing to commit
+farm branch yaks: not published (no upstream); `yaks sync` publishes it
+$ git log
+5b865f3 yaks: merge yak files with the yaks merge driver
+a067f7d yaks: created yak-ffff
+05a048a yaks: shorn yak-ab54
+e118cf3 yaks: updated yak-ab54
+ba40f7d yaks: shaving yak-ab54
+6062c2b yaks: created yak-ab54
+4cb0cbd yaks: new farm
+$ yaks weight
+farm branch yaks: 7 commits; a clone of this repository fetches 3.7 KiB for it (objects no other branch has)
+
+current tree:
+  yaks             2 files       587 B
+  other            4 files        99 B
+
+largest blobs only the farm branch holds:
+       537 B  yak/yaks/yak-ab54.md
+--- land guard: a worker commit staging a farm file in code
+worker commit: 8430b7f worker staged a yak
+pending state: none
+land: the worker commit touches yak files, but HEAD tracks none (the farm lives on its own branch); a worker must never stage them under a branch farm:
+  yak/yaks/yak-9999.md
+exit=7
