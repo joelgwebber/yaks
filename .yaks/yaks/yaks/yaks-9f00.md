@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T17:52:43Z'
-updated: '2026-11-14T23:27:56Z'
+updated: '2026-11-14T23:27:57Z'
 parent: yaks-1151
 tags:
 - links
@@ -115,3 +115,14 @@ Decision: how a body is read when it holds both shapes, and how the converter re
 - `convert_notes` returns the body unchanged with 0 when converting would change what it parses to: a `#### <timestamp>` outside a fence anywhere in an old body, or a note whose timestamp is not RFC 3339 (the heading could not carry it). Over this farm's 761 yaks none hits this. `markdown_lint::note_heading_in_description` detects the first case; wiring it into `doctor` is `check.rs`, which I do not own, so it is a follow-up.
 - A note with no actor and no metadata whose text opens with an italic line (`*emphasis*`) is written with a `*-*` line so the text is not read as the metadata line; `-` alone as an actor is quoted. Same for an actor that reads as `key:`.
 - The anchor follows the body's shape: slug (`2026-11-04t221303z`, `-1`) for a new-shape body, the timestamp for an old one, so a schema-8 yaks keeps printing links an older yaks can follow. `find_note`/`is_note_anchor` accept both everywhere.
+
+---
+▸ 2026-11-14T23:27:57Z [notefmt-1]
+
+Evidence so far (before `verify`).
+
+- Round trip: `cargo test -p yaks --bins real_yak_bodies_convert_to_the_same_notes -- --nocapture` over the first 200 yak files of `yaks path`: `round trip: 200 yaks, 185 converted, 766 notes`, identical `NoteEntry` lists (meta, actor, text, order), same description, idempotent, and each note's anchor in both forms resolves to the same index in both bodies. With `YAKS_NOTES_LIMIT=5000`: `761 yaks, 702 converted, 3307 notes`. The test only reads the farm files.
+- Merge driver: `the_new_note_shape_merges_like_the_old`, `metadata_and_mixed_sides_merge_to_one_shape` beside the unchanged old-shape tests.
+- Schema gate: `store::note_shape_tests::a_farm_writes_the_shape_its_schema_says` (marker none/8 write the old shape, 9/10 the new, through `move_task`) and `farm::tests::a_farm_writes_the_note_shape_of_its_schema`. This build refuses a schema-9 farm as newer than `SCHEMA`, so the `Farm::update`/`ask` writers are exercised at schema 8 and the schema-9 half goes through `Farm::shape` and `move_task`; the other `Farm` writers share the same `self.shape()` argument. No schema-9 CLI run is possible until the migration yak bumps `SCHEMA`.
+- GitHub render: `converted.md` (yaks-6c65, 6 notes) and `rendered.html` are attached. `gh api markdown -f mode=gfm` returns `<h4 dir="auto">2026-11-14T11:22:51Z</h4>` and `<em>` lines, six `<h4>` and no `id=`: the API returns a fragment, and GitHub adds `user-content-` ids when it renders the page itself (the design dok's own evidence shows the same fragment form). So the `<h4 id="user-content-2026-11-04t221303z">` ids are NOT shown by this check; they remain assumed from GitHub's slug rule until a converted file is viewed on a pushed branch.
+- The on-disk shape changes only at schema 9: `store::SCHEMA` is untouched and nothing in this farm changes until the migration yak.
