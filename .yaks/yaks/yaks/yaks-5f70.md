@@ -5,12 +5,11 @@ status: hairy
 type: bug
 priority: 2
 created: '2026-11-06T21:37:13Z'
-updated: '2026-11-14T17:48:25Z'
+updated: '2026-11-14T17:51:06Z'
 parent: yaks-3f35
 tags:
 - skills
 - doks
-needs: agent
 ---
 
 From yaks-3f35 (Joel, reading schism's doks in the TUI). The schism review passes wrote 62 citations like `... ([session](/sessions/2025/08/claude-code-2025-08-04-1622-....md)).` into its doks (`doks/howto/dev-workflow.md` has five). In the TUI they render as a stray `(session)` mid-sentence, and following one goes nowhere (yaks-85a6: the TUI can't open sessions).
@@ -47,3 +46,12 @@ needs: agent
 ---
 
 I'm good with (1) in general. While these repos are still all quite small, though, should we consider updating sessions to include simple slugs in their paths alongside the dates and hashes? They're produced by models in the first place, so that wouldn't be too much of a problem. For the existing ones, we could just leave them as-is, or do one-time surgery to update them in place. I'm pretty sure I'm the only one using them so far, so that shouldn't be much trouble.
+
+---
+▸ 2026-11-14T17:51:06Z [linkplan-lead]
+kind: pickup
+---
+
+picked up
+
+Decision (Joel): option 1. Link words that carry meaning (the date a fact was settled, or the phrase the session established), no `sessions:` frontmatter for now. Existing citations are left as they are. Joel also asked whether session paths should carry a slug: they already do (`sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md`); the dated-and-hashed directories are sources (`sources/<date>-<sha8>/`), asked separately on the migration yak.
