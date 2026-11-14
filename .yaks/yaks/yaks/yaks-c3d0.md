@@ -5,12 +5,12 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-11T21:09:28Z'
-updated: '2026-11-14T11:21:18Z'
+updated: '2026-11-14T12:49:40Z'
 depends_on:
 - yaks-f505
 tags:
 - tui
-needs: human
+needs: agent
 ---
 
 Currently selecting a source link immediately opens it in the default editor (or maybe the system open behavior?). This is useful, but it would be nice to at least see it (read-only) in the our existing markdown/text UI. I'm assuming we can mostly reuse what we already have, though it'll need to use whatever syntax highlighting we're embedding in the markdown renderers.
@@ -47,3 +47,14 @@ Design for viewing and taking a link out (plan: [/doks/design/farm-layout-and-li
 
    Lean: (b). The `g` menu entry already gives the permalink, so `p` stays a local path.
 4. **When the farm has no recognised host** (no remote, or a custom domain): `g` says why and points at `git config yaks.host`. Lean: that.
+
+---
+▸ 2026-11-14T12:49:40Z [sched-1]
+kind: answer
+needs: agent
+---
+
+1. Perfect.
+2. Sounds like a good unification. I dig it.
+3. I like it. I hadn't considered the possibility of just dropping a temp copy, but that seems useful. Note that there will also be occasional cases where we can't see the reference, because an agent on another machine decides to drop a local hash. Not an intended state, but one we should be resilient to.
+4. :thumbs-up:
