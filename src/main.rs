@@ -1373,9 +1373,11 @@ enum Command {
     /// or yak cites (a `sources/<id>/` link or mention; keep one on
     /// purpose with `yaks source mark`), dok kinds that
     /// differ only by plural or hyphens, doks with no `description:` (the
-    /// index line `yaks dok list` shows), and `doctor`'s `broken-link`,
-    /// `schema-mismatch`, `merge-conflict` and `dok-problem`. Exits 1 when
-    /// there is any finding.
+    /// index line `yaks dok list` shows), doks citing `code:` paths with
+    /// commits since their pin or `verified:` date (or gone from the code
+    /// repo; skipped with one note when no code checkout is reachable), and
+    /// `doctor`'s `broken-link`, `schema-mismatch`, `merge-conflict` and
+    /// `dok-problem`. Exits 1 when there is any finding.
     Check {
         /// Emit the findings as JSON: `[{kind, message, ids}]`.
         #[arg(long)]
@@ -3411,13 +3413,20 @@ fn main() -> Result<()> {
             }
         }
         Command::Check { json } => {
-            let found = check::run(&farm)?;
+            let check::Report { findings, notes } = check::report(&farm)?;
             if json {
-                json::print(&check::to_json(&found))?;
+                json::print(&check::to_json(&findings))?;
+                // stdout stays the findings array; the info lines are not findings.
+                for n in &notes {
+                    eprintln!("note: {n}");
+                }
             } else {
-                print!("{}", check::render(&found));
+                print!("{}", check::render(&findings));
+                for n in &notes {
+                    println!("\nnote: {n}");
+                }
             }
-            if !found.is_empty() {
+            if !findings.is_empty() {
                 std::process::exit(1);
             }
         }

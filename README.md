@@ -122,7 +122,7 @@ in `<path>`.
 | `yaks stats` | task statistics |
 | `yaks doctor` | read-only farm-integrity check (an invalid `status:` value, one id in two yak files, dangling parent/dep refs, `needs:` out of step with the latest ask/answer/request/pickup note); exits non-zero on problems, so it's CI-usable. `--json` for machine output |
 | `yaks doctor --strict` | also flags shorn yaks with no recorded note — a shear without evidence (the evidence-before-shear rule) |
-| `yaks check` | read-only upkeep check on doks and sources: doks past `stale_after`, sources no dok or yak cites, dok kinds that differ only by plural or hyphens, plus doctor's broken links, schema mismatches and merge conflicts; exits 1 on a finding. `--json` for machine output |
+| `yaks check` | read-only upkeep check on doks and sources: doks past `stale_after`, sources no dok or yak cites, dok kinds that differ only by plural or hyphens, doks citing `code:` paths with commits since their pin or `verified:` date, plus doctor's broken links, schema mismatches and merge conflicts; exits 1 on a finding. `--json` for machine output |
 | `yaks source mark <id> (--uncited <why>\|--superseded-by <id>\|--clear)` | keep a source on purpose: sets the `uncited:` / `superseded_by:` mark in its `source.md` that `yaks check` honours |
 | `yaks dok define <kind> --field name=type[!]...` | write or extend a typed kind's `schemas/<kind>.md` (`!` = required; `--title`, `--description`, `--stale-after`; `--replace` to change an existing field's type) |
 | `yaks session note\|touched\|list\|promote` | session notes: a short account of a working session under `sessions/`, its `## Saved` written from the yak notes and doks you wrote; list the unreviewed and mark them reviewed (the `yaks-upkeep` skill) |

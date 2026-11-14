@@ -408,3 +408,74 @@ fn source_mark_refuses_what_it_cannot_honour() {
     let after = std::fs::read_to_string(f.root().join(&a).join("source.md")).unwrap();
     assert_eq!(before, after);
 }
+
+/// Commit `file` (new content each time) in the checkout at `dir` on `date`.
+fn code_commit(dir: &std::path::Path, file: &str, date: &str) {
+    let p = dir.join(file);
+    std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+    let mut text = std::fs::read_to_string(&p).unwrap_or_default();
+    text.push_str(date);
+    text.push('\n');
+    std::fs::write(&p, text).unwrap();
+    for args in [vec!["add", "-A"], vec!["commit", "-q", "-m", file]] {
+        let out = std::process::Command::new("git")
+            .current_dir(dir)
+            .args(["-c", "user.name=t", "-c", "user.email=t@t"])
+            .args(&args)
+            .env("GIT_COMMITTER_DATE", date)
+            .env("GIT_AUTHOR_DATE", date)
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "{args:?}: {out:?}");
+    }
+}
+
+#[test]
+fn a_dok_citing_code_that_moved_since_its_last_commit_is_a_finding() {
+    let f = Farm::new("code-moved");
+    code_commit(&f.dir, "src/a.rs", "2020-01-01T00:00:00Z");
+    f.write(
+        "doks/c.md",
+        "---\ntype: note\ntitle: C\ndescription: d.\n---\n\nSee [a](code:src/a.rs#L1) and [gone](code:src/none.rs).\n",
+    );
+    let out = f
+        .cmd(&["commit", "-m", "dok"])
+        .env("GIT_COMMITTER_DATE", "2020-02-01T12:00:00Z")
+        .env("GIT_AUTHOR_DATE", "2020-02-01T12:00:00Z")
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    // `none.rs` never existed: gone. `a.rs` has not moved since the dok.
+    let (code, text) = f.check(&["--json"]);
+    assert_eq!(code, 1, "{text}");
+    let v: Value = serde_json::from_str(&text).unwrap();
+    assert_eq!(kinds(&text), ["code-gone"], "{text}");
+    assert_eq!(
+        finding(&v, "code-gone")[0]["ids"],
+        serde_json::json!(["doks/c.md", "code:src/none.rs"])
+    );
+
+    code_commit(&f.dir, "src/a.rs", "2020-03-01T00:00:00Z");
+    code_commit(&f.dir, "src/a.rs", "2020-03-02T00:00:00Z");
+    let (code, text) = f.check(&[]);
+    assert_eq!(code, 1, "{text}");
+    assert!(
+        text.contains("doks/c.md cites code:src/a.rs: 2 commits to it since the dok's last commit on 2020-02-01"),
+        "{text}"
+    );
+    assert!(text.contains("verified=<date>"), "{text}");
+
+    // `verified:` after the code last moved clears it, and `check` is quiet.
+    f.run(&["dok", "set", "doks/c.md", "--set", "verified=2020-03-02"]);
+    f.write(
+        "doks/c.md",
+        &std::fs::read_to_string(f.root().join("doks/c.md"))
+            .unwrap()
+            .replace(" and [gone](code:src/none.rs)", ""),
+    );
+    let (code, text) = f.check(&[]);
+    assert_eq!(
+        (code, text.as_str()),
+        (0, "All clear: nothing to check up on.\n")
+    );
+}

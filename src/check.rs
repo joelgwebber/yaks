@@ -2,23 +2,30 @@
 //! It reads the farm and reports what a person or an agent should look at,
 //! and never edits.
 //!
-//! Eight kinds of finding. Four are `doctor`'s own issues, reused as they are
+//! Ten kinds of finding. Four are `doctor`'s own issues, reused as they are
 //! (`dok-problem`, `broken-link`, `schema-mismatch`, `merge-conflict`); three
-//! are ported from Hearth's `internal/check/scan.go`, and one is yaks's own:
+//! are ported from Hearth's `internal/check/scan.go`, and three are yaks's own:
 //!
 //! - `stale`: a dok past its `stale_after` (its own, else its schema's);
 //! - `uncited`: a source nothing in the farm cites;
 //! - `similar-kinds`: dok kinds that differ only by plural or hyphens;
 //! - `no-description` (yaks-2755): a dok with no `description:`, the index
 //!   line `dok list` shows. Only doks: session notes and schemas are not.
+//! - `code-moved` and `code-gone` (yaks-6cf2): a dok cites `code:<path>` and the
+//!   code repo has commits to that path since the dok was written, or the path
+//!   is gone. Evidence, not a verdict: an agent reads the dok against the code
+//!   and sets `verified:`. Needs a code checkout; without one the checks are
+//!   skipped with one note ([`Report::notes`]), which is not a finding.
 
 use crate::farm::{Farm, IssueKind};
-use crate::{doks, schemas, sources, store};
+use crate::links::{self, Link};
+use crate::locate::{Place, Space};
+use crate::{doks, gitrepo, schemas, sources, store};
 use anyhow::Result;
 use chrono::{DateTime, Days, Months, NaiveDate, Utc};
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// The classes of finding, in the order a report lists them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -31,6 +38,8 @@ pub enum Kind {
     Uncited,
     SimilarKinds,
     NoDescription,
+    CodeMoved,
+    CodeGone,
 }
 
 impl Kind {
@@ -45,6 +54,8 @@ impl Kind {
             Kind::Uncited => "uncited",
             Kind::SimilarKinds => "similar-kinds",
             Kind::NoDescription => "no-description",
+            Kind::CodeMoved => "code-moved",
+            Kind::CodeGone => "code-gone",
         }
     }
 
@@ -67,6 +78,13 @@ on purpose with `yaks source mark`)"
             Kind::NoDescription => {
                 "Dok with no description (`description:` is the index line `yaks dok list` \
 shows: one sentence on when to read it)"
+            }
+            Kind::CodeMoved => {
+                "Code has changed since the dok was written or last verified (commits to a \
+`code:` path it cites)"
+            }
+            Kind::CodeGone => {
+                "Cited code is gone (a `code:` path it cites is not in the code repo)"
             }
         }
     }
@@ -91,13 +109,30 @@ pub struct Finding {
     pub ids: Vec<String>,
 }
 
-/// Every finding of the farm, as of now.
-pub fn run(farm: &Farm) -> Result<Vec<Finding>> {
-    run_at(farm, Utc::now())
+/// What `check` found, and what it could not look at.
+#[derive(Debug, Default)]
+pub struct Report {
+    pub findings: Vec<Finding>,
+    /// Information lines: not findings, and they never change the exit code.
+    pub notes: Vec<String>,
 }
 
-/// Every finding of the farm, as of `now`.
-pub fn run_at(farm: &Farm, now: DateTime<Utc>) -> Result<Vec<Finding>> {
+/// Every finding of the farm, as of now. `code:` links resolve in the code
+/// checkout of the current directory (see [`links::code_base`]).
+pub fn run(farm: &Farm) -> Result<Vec<Finding>> {
+    Ok(report(farm)?.findings)
+}
+
+/// [`run`], and the information lines too.
+pub fn report(farm: &Farm) -> Result<Report> {
+    let cwd = std::env::current_dir().ok();
+    let code = links::code_base(farm.root(), cwd.as_deref());
+    run_at(farm, Utc::now(), code)
+}
+
+/// Every finding of the farm, as of `now`, with `code` as the code checkout
+/// (`None`: there is none to check `code:` links against).
+pub fn run_at(farm: &Farm, now: DateTime<Utc>, code: Option<PathBuf>) -> Result<Report> {
     let root = farm.root();
     // `doctor` already sorts by kind then id, so its issues come grouped.
     let mut out: Vec<Finding> = farm
@@ -117,7 +152,12 @@ pub fn run_at(farm: &Farm, now: DateTime<Utc>) -> Result<Vec<Finding>> {
     out.extend(uncited(root)?);
     out.extend(similar_kinds(&all_doks, &all_schemas));
     out.extend(no_description(&all_doks));
-    Ok(out)
+    let (moved, notes) = code_changes(&Space::new(root, code), &all_doks);
+    out.extend(moved);
+    Ok(Report {
+        findings: out,
+        notes,
+    })
 }
 
 /// `[{kind, message, ids}]`, the shape of `doctor --json`.
@@ -149,6 +189,15 @@ pub fn render(found: &[Finding]) -> String {
         }
         s.push_str(&format!("  {}\n", f.message));
     }
+    if found
+        .iter()
+        .any(|f| matches!(f.kind, Kind::CodeMoved | Kind::CodeGone))
+    {
+        s.push_str(
+            "\nTo clear a code finding: read the dok against the code, fix what drifted, then \
+`yaks dok set <path> --set verified=<date>`.\n",
+        );
+    }
     s
 }
 
@@ -158,8 +207,8 @@ fn parse_date(s: &str) -> Option<NaiveDate> {
     NaiveDate::parse_from_str(s.trim(), "%Y-%m-%d").ok()
 }
 
-/// The day the dok's file last changed on the farm branch.
-fn last_change(root: &Path, rel: &str) -> Option<NaiveDate> {
+/// When the dok's file last changed on the farm branch.
+fn last_commit(root: &Path, rel: &str) -> Option<DateTime<Utc>> {
     let out = std::process::Command::new("git")
         .arg("-C")
         .arg(root)
@@ -173,7 +222,26 @@ fn last_change(root: &Path, rel: &str) -> Option<NaiveDate> {
     }
     let text = String::from_utf8_lossy(&out.stdout);
     let t = DateTime::parse_from_rfc3339(text.trim()).ok()?;
-    Some(t.with_timezone(&Utc).date_naive())
+    Some(t.with_timezone(&Utc))
+}
+
+/// The day the dok's file last changed on the farm branch.
+fn last_change(root: &Path, rel: &str) -> Option<NaiveDate> {
+    Some(last_commit(root, rel)?.date_naive())
+}
+
+/// A dok's `verified:` as a date: a day, or the day of a timestamp.
+fn verified_at(p: &doks::Dok) -> Option<VerifiedAt> {
+    let v = p.str_field("verified")?;
+    parse_date(&v)
+        .map(VerifiedAt::Day)
+        .or_else(|| store::parse_ts(&v).map(VerifiedAt::At))
+}
+
+#[derive(Debug, Clone, Copy)]
+enum VerifiedAt {
+    Day(NaiveDate),
+    At(DateTime<Utc>),
 }
 
 /// Doks past their `stale_after`: the dok's own, else its schema's. A date
@@ -205,8 +273,9 @@ fn stale(
         let message = if let Some(date) = parse_date(&after) {
             (today > date).then(|| format!("{} was due to be checked by {after}", p.path))
         } else if let Some((months, days)) = crate::recur::parse_duration(&after) {
-            let verified = p.str_field("verified").and_then(|v| {
-                parse_date(&v).or_else(|| store::parse_ts(&v).map(|t| t.date_naive()))
+            let verified = verified_at(p).map(|v| match v {
+                VerifiedAt::Day(d) => d,
+                VerifiedAt::At(t) => t.date_naive(),
             });
             let from = match verified {
                 Some(d) => Some((d, "verified")),
@@ -442,6 +511,222 @@ fn no_description(all_doks: &[doks::Dok]) -> Vec<Finding> {
         .collect()
 }
 
+// ---- cited code ----------------------------------------------------------
+
+/// A `code:` link a dok makes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct CodeRef {
+    path: String,
+    rev: Option<String>,
+}
+
+/// The `code:<path>` links of a dok, once each: the inline links of its body
+/// and the `code:` entries of its frontmatter `sources:` and `code:` lists
+/// (an entry of `code:` may leave the `code:` prefix out). Read through the
+/// link grammar and [`Space::resolve`], as `peek` does.
+fn code_refs(space: &Space, dok: &doks::Dok) -> Vec<CodeRef> {
+    let mut dests: Vec<String> = links::extract(&dok.body)
+        .into_iter()
+        .map(|f| f.dest)
+        .collect();
+    for (key, bare) in [("sources", false), ("code", true)] {
+        let Some(v) = dok.fields.get(key) else {
+            continue;
+        };
+        for item in v.as_list() {
+            let Some(s) = item.as_str().map(str::trim) else {
+                continue;
+            };
+            if s.starts_with("code:") {
+                dests.push(s.to_string());
+            } else if bare && !s.is_empty() {
+                dests.push(format!("code:{s}"));
+            }
+        }
+    }
+    let mut out: Vec<CodeRef> = Vec::new();
+    for d in dests {
+        let link = links::parse(&d, links::From::Dok(&dok.path), |_| false);
+        if !matches!(link, Link::Code { .. }) {
+            continue;
+        }
+        if let Place::CodeFile { rel, rev, .. } = space.resolve(&link) {
+            let r = CodeRef { path: rel, rev };
+            if !out.contains(&r) {
+                out.push(r);
+            }
+        }
+    }
+    out
+}
+
+/// Commit times (unix seconds) of the commits touching `path` in `code`,
+/// all of history or just `<since>..HEAD`; `None` when git cannot say.
+fn commit_times(code: &Path, since: Option<&str>, path: &str) -> Option<Vec<i64>> {
+    let range = since.map(|s| format!("{s}..HEAD"));
+    let mut cmd = std::process::Command::new("git");
+    cmd.arg("--no-optional-locks")
+        .arg("-C")
+        .arg(code)
+        .args(["log", "--format=%ct"])
+        .args(range.as_deref())
+        .args(["--", path])
+        .env_remove("GIT_DIR")
+        .env_remove("GIT_WORK_TREE")
+        .env_remove("GIT_INDEX_FILE");
+    let out = cmd.output().ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    Some(
+        String::from_utf8_lossy(&out.stdout)
+            .lines()
+            .filter_map(|l| l.trim().parse().ok())
+            .collect(),
+    )
+}
+
+fn commits(n: usize) -> String {
+    format!("{n} commit{}", if n == 1 { "" } else { "s" })
+}
+
+/// Doks that cite `code:` paths the code repo has moved on from, and doks
+/// citing a path that is gone, with the information lines to print (not
+/// findings).
+///
+/// - A pinned link (`code:<path>@<sha>`): the commits to the path in
+///   `<sha>..HEAD`, all of them, unless the dok's `verified:` is no earlier
+///   than the newest (it was re-checked after the code last moved). A pin
+///   names history, so a file since deleted is not "gone": the deleting
+///   commit is one of the commits counted. A pin this checkout does not have
+///   is skipped, with a note.
+/// - An unpinned link: the commits to the path after the dok's `verified:`
+///   (a date covers its whole day, UTC), else after the dok's last commit on
+///   the farm branch; a dok with neither is skipped. A path that is not in
+///   the code checkout is `code-gone`, whatever `verified:` says.
+///
+/// Any count above zero is reported. With no code checkout (or one with no
+/// commit) nothing is checked and one note says so, if any dok cites code.
+fn code_changes(space: &Space, all_doks: &[doks::Dok]) -> (Vec<Finding>, Vec<String>) {
+    let cited: Vec<(&doks::Dok, Vec<CodeRef>)> = all_doks
+        .iter()
+        .map(|d| (d, code_refs(space, d)))
+        .filter(|(_, r)| !r.is_empty())
+        .collect();
+    if cited.is_empty() {
+        return (Vec::new(), Vec::new());
+    }
+    let code = space
+        .code
+        .as_deref()
+        .filter(|c| gitrepo::commit_of(c, "HEAD").is_some());
+    let Some(code) = code else {
+        let n = cited.len();
+        let note = format!(
+            "{n} dok{} cite{} `code:` paths, not checked: no code checkout is reachable (run \
+from one)",
+            if n == 1 { "" } else { "s" },
+            if n == 1 { "s" } else { "" },
+        );
+        return (Vec::new(), vec![note]);
+    };
+    let git = store::farm_branch(&space.farm).is_some();
+    let mut out = Vec::new();
+    let mut notes = Vec::new();
+    for (dok, refs) in cited {
+        let verified = verified_at(dok);
+        // The last second `verified:` covers.
+        let covers = verified.and_then(|v| match v {
+            VerifiedAt::Day(d) => {
+                Some(d.succ_opt()?.and_hms_opt(0, 0, 0)?.and_utc().timestamp() - 1)
+            }
+            VerifiedAt::At(t) => Some(t.timestamp()),
+        });
+        let mut dok_commit: Option<Option<DateTime<Utc>>> = None; // looked up once
+        for r in refs {
+            let code_path = format!("code:{}", r.path);
+            let ids = vec![dok.path.clone(), code_path.clone()];
+            let finding = |kind, message| Finding {
+                kind,
+                message,
+                ids: ids.clone(),
+            };
+            if let Some(rev) = &r.rev {
+                let Some(sha) = gitrepo::commit_of(code, rev) else {
+                    notes.push(format!(
+                        "{}: {code_path}@{rev} not checked: the code checkout has no commit {rev}",
+                        dok.path
+                    ));
+                    continue;
+                };
+                let Some(times) = commit_times(code, Some(&sha), &r.path) else {
+                    continue;
+                };
+                let newest = times.iter().max().copied();
+                if newest.is_none_or(|n| covers.is_some_and(|c| n <= c)) {
+                    continue;
+                }
+                out.push(finding(
+                    Kind::CodeMoved,
+                    format!(
+                        "{} cites {code_path}@{rev}: {} to it since the pin",
+                        dok.path,
+                        commits(times.len())
+                    ),
+                ));
+                continue;
+            }
+            if !code.join(&r.path).exists() {
+                out.push(finding(
+                    Kind::CodeGone,
+                    format!(
+                        "{} cites {code_path}, which is gone from the code repo",
+                        dok.path
+                    ),
+                ));
+                continue;
+            }
+            // The reference point: `verified:`, else the dok's last farm commit.
+            let (after, since) = match (covers, verified) {
+                (Some(c), Some(v)) => {
+                    let day = match v {
+                        VerifiedAt::Day(d) => d.to_string(),
+                        VerifiedAt::At(t) => t.to_rfc3339(),
+                    };
+                    (c, format!("it was verified {day}"))
+                }
+                _ => {
+                    let last = *dok_commit.get_or_insert_with(|| {
+                        git.then(|| last_commit(&space.farm, &dok.path)).flatten()
+                    });
+                    match last {
+                        Some(t) => (
+                            t.timestamp(),
+                            format!("the dok's last commit on {}", t.date_naive()),
+                        ),
+                        None => continue,
+                    }
+                }
+            };
+            let Some(times) = commit_times(code, None, &r.path) else {
+                continue;
+            };
+            let n = times.iter().filter(|t| **t > after).count();
+            if n > 0 {
+                out.push(finding(
+                    Kind::CodeMoved,
+                    format!(
+                        "{} cites {code_path}: {} to it since {since}",
+                        dok.path,
+                        commits(n)
+                    ),
+                ));
+            }
+        }
+    }
+    (out, notes)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -483,5 +768,242 @@ mod tests {
         let t = "see [x](../sources/2026-01-02-abcd1234/shot.png), sources/b-1/ and \
                  resources/nope/ and sources/no-slash and `sources/c.d_e/source.md`";
         assert_eq!(source_refs(t), ["2026-01-02-abcd1234", "b-1", "c.d_e"]);
+    }
+
+    // ---- cited code ----
+
+    /// A scratch code repo; `commit` makes one commit on `date` touching `file`.
+    struct Code {
+        dir: PathBuf,
+    }
+
+    impl Code {
+        fn new(tag: &str) -> Code {
+            let dir =
+                std::env::temp_dir().join(format!("yaks-check-code-{tag}-{}", std::process::id()));
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir_all(&dir).unwrap();
+            let c = Code { dir };
+            c.git(&["init", "-q", "-b", "main"], "2020-01-01T00:00:00Z");
+            c
+        }
+
+        fn git(&self, args: &[&str], date: &str) -> String {
+            let out = std::process::Command::new("git")
+                .arg("-C")
+                .arg(&self.dir)
+                .args(["-c", "user.name=t", "-c", "user.email=t@t"])
+                .args(args)
+                .env("GIT_COMMITTER_DATE", date)
+                .env("GIT_AUTHOR_DATE", date)
+                .output()
+                .unwrap();
+            assert!(out.status.success(), "git {args:?}: {out:?}");
+            String::from_utf8_lossy(&out.stdout).trim().to_string()
+        }
+
+        /// Write `file` (a new line each time) and commit it at `date`; returns the sha.
+        fn commit(&self, file: &str, date: &str) -> String {
+            let p = self.dir.join(file);
+            std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+            let mut text = std::fs::read_to_string(&p).unwrap_or_default();
+            text.push_str(date);
+            text.push('\n');
+            std::fs::write(&p, text).unwrap();
+            self.git(&["add", "-A"], date);
+            self.git(&["commit", "-q", "-m", file], date);
+            self.git(&["rev-parse", "HEAD"], date)
+        }
+    }
+
+    impl Drop for Code {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.dir);
+        }
+    }
+
+    /// What `code_changes` says about one dok, as `kind: message` lines.
+    fn moved(code: Option<&Code>, front: &str, body: &str) -> (Vec<String>, Vec<String>) {
+        // The farm has no git here, so the "last farm commit" fallback is
+        // exercised through the binary (tests/check.rs).
+        let space = Space::new(Path::new("/nonexistent-farm"), code.map(|c| c.dir.clone()));
+        let dok = doks::Dok::parse("doks/x.md", &format!("---\n{front}---\n\n{body}\n"));
+        let (f, n) = code_changes(&space, &[dok]);
+        (
+            f.iter()
+                .map(|f| format!("{}: {}", f.kind.code(), f.message))
+                .collect(),
+            n,
+        )
+    }
+
+    #[test]
+    fn a_pinned_link_counts_the_commits_to_its_path_since_the_pin() {
+        let c = Code::new("pinned");
+        let pin = c.commit("src/a.rs", "2020-02-01T00:00:00Z");
+        c.commit("src/b.rs", "2020-03-01T00:00:00Z"); // another path: not counted
+        c.commit("src/a.rs", "2020-04-01T00:00:00Z");
+        c.commit("src/a.rs", "2020-05-01T00:00:00Z");
+        let body = format!("See [a](code:src/a.rs@{}).", &pin[..9]);
+        let (found, notes) = moved(Some(&c), "title: X\n", &body);
+        assert_eq!(
+            found,
+            [format!(
+                "code-moved: doks/x.md cites code:src/a.rs@{}: 2 commits to it since the pin",
+                &pin[..9]
+            )]
+        );
+        assert!(notes.is_empty());
+    }
+
+    #[test]
+    fn a_pinned_link_with_no_later_commit_to_its_path_is_quiet() {
+        let c = Code::new("pinned-none");
+        let pin = c.commit("src/a.rs", "2020-02-01T00:00:00Z");
+        c.commit("src/b.rs", "2020-03-01T00:00:00Z");
+        let body = format!("See [a](code:src/a.rs@{}#L1).", &pin[..9]);
+        assert_eq!(moved(Some(&c), "title: X\n", &body), (vec![], vec![]));
+    }
+
+    #[test]
+    fn verified_after_the_newest_commit_clears_a_pinned_link_and_before_it_does_not() {
+        let c = Code::new("pinned-verified");
+        let pin = c.commit("src/a.rs", "2020-02-01T00:00:00Z");
+        c.commit("src/a.rs", "2020-04-01T12:00:00Z");
+        let body = format!("[a](code:src/a.rs@{})", &pin[..9]);
+        let found = |v: &str| moved(Some(&c), &format!("verified: {v}\n"), &body).0.len();
+        assert_eq!(found("2020-03-31"), 1);
+        // A day covers the whole day: a commit that day was seen.
+        assert_eq!(found("2020-04-01"), 0);
+        assert_eq!(found("2020-06-01"), 0);
+        assert_eq!(found("2020-04-01T11:00:00Z"), 1);
+        assert_eq!(found("2020-04-01T12:00:00Z"), 0);
+    }
+
+    #[test]
+    fn an_unpinned_link_counts_commits_since_verified() {
+        let c = Code::new("unpinned");
+        c.commit("src/a.rs", "2020-02-01T00:00:00Z");
+        c.commit("src/a.rs", "2020-04-01T00:00:00Z");
+        c.commit("src/a.rs", "2020-05-01T00:00:00Z");
+        c.commit("src/b.rs", "2020-05-02T00:00:00Z");
+        let (found, _) = moved(Some(&c), "verified: 2020-03-01\n", "[a](code:src/a.rs#L3)");
+        assert_eq!(
+            found,
+            [
+                "code-moved: doks/x.md cites code:src/a.rs: 2 commits to it since it was verified 2020-03-01"
+            ]
+        );
+        let (found, _) = moved(Some(&c), "verified: 2020-04-15\n", "[a](code:src/a.rs)");
+        assert_eq!(
+            found,
+            [
+                "code-moved: doks/x.md cites code:src/a.rs: 1 commit to it since it was verified 2020-04-15"
+            ]
+        );
+        // verified: newer than the code's last commit: no finding.
+        assert!(
+            moved(Some(&c), "verified: 2020-05-03\n", "[a](code:src/a.rs)")
+                .0
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn an_unpinned_link_with_neither_verified_nor_a_farm_commit_is_skipped() {
+        let c = Code::new("unpinned-none");
+        c.commit("src/a.rs", "2020-02-01T00:00:00Z");
+        assert_eq!(
+            moved(Some(&c), "title: X\n", "[a](code:src/a.rs)"),
+            (vec![], vec![])
+        );
+    }
+
+    #[test]
+    fn frontmatter_sources_and_code_lists_are_read_like_body_links() {
+        let c = Code::new("front");
+        c.commit("src/a.rs", "2020-02-01T00:00:00Z");
+        c.commit("src/b.rs", "2020-02-01T00:00:00Z");
+        c.commit("src/c.rs", "2020-02-01T00:00:00Z");
+        let front = "verified: 2020-01-01\nsources:\n  - code:src/a.rs\n  - sources/x/source.md\ncode:\n  - src/b.rs\n  - code:src/a.rs\n";
+        let (found, _) = moved(
+            Some(&c),
+            front,
+            "also [c](code:src/c.rs) and [a again](code:src/a.rs#L2)",
+        );
+        // Body links first, then the frontmatter's; each path once.
+        let mut paths: Vec<&str> = found
+            .iter()
+            .map(|f| f.split(' ').nth(3).unwrap().trim_end_matches(':'))
+            .collect();
+        paths.sort();
+        assert_eq!(
+            paths,
+            ["code:src/a.rs", "code:src/b.rs", "code:src/c.rs"],
+            "{found:?}"
+        );
+    }
+
+    #[test]
+    fn no_code_checkout_is_one_note_and_no_finding() {
+        let doks = [
+            doks::Dok::parse(
+                "doks/x.md",
+                "---\nverified: 2020-01-01\n---\n[a](code:src/a.rs)\n",
+            ),
+            doks::Dok::parse(
+                "doks/y.md",
+                "---\nverified: 2020-01-01\n---\n[b](code:src/b.rs)\n",
+            ),
+        ];
+        let (found, notes) = code_changes(&Space::new(Path::new("/nonexistent-farm"), None), &doks);
+        assert!(found.is_empty());
+        assert_eq!(notes.len(), 1, "{notes:?}");
+        assert!(
+            notes[0].contains("2 doks cite") && notes[0].contains("no code checkout"),
+            "{notes:?}"
+        );
+        // Nothing cites code: nothing to say.
+        let plain = [doks::Dok::parse(
+            "doks/z.md",
+            "---\ntitle: Z\n---\nno links\n",
+        )];
+        let sp = Space::new(Path::new("/nonexistent-farm"), None);
+        assert_eq!(code_changes(&sp, &plain), (vec![], vec![]));
+    }
+
+    #[test]
+    fn a_removed_file_is_gone_unpinned_and_history_when_pinned() {
+        let c = Code::new("gone");
+        let pin = c.commit("src/a.rs", "2020-02-01T00:00:00Z");
+        c.git(&["rm", "-q", "src/a.rs"], "2020-03-01T00:00:00Z");
+        c.git(&["commit", "-q", "-m", "rm"], "2020-03-01T00:00:00Z");
+        let (found, _) = moved(Some(&c), "verified: 2021-01-01\n", "[a](code:src/a.rs)");
+        assert_eq!(
+            found,
+            ["code-gone: doks/x.md cites code:src/a.rs, which is gone from the code repo"]
+        );
+        let body = format!("[a](code:src/a.rs@{})", &pin[..9]);
+        let (found, _) = moved(Some(&c), "title: X\n", &body);
+        assert_eq!(found.len(), 1);
+        assert!(
+            found[0].starts_with("code-moved:") && found[0].contains("1 commit to it"),
+            "{found:?}"
+        );
+    }
+
+    #[test]
+    fn a_pin_the_checkout_does_not_have_is_a_note() {
+        let c = Code::new("unknown-pin");
+        c.commit("src/a.rs", "2020-02-01T00:00:00Z");
+        let (found, notes) = moved(Some(&c), "title: X\n", "[a](code:src/a.rs@deadbeef)");
+        assert!(found.is_empty());
+        assert_eq!(notes.len(), 1, "{notes:?}");
+    }
+
+    #[test]
+    fn the_code_kinds_have_stable_labels() {
+        assert_eq!(Kind::CodeMoved.code(), "code-moved");
+        assert_eq!(Kind::CodeGone.code(), "code-gone");
     }
 }
