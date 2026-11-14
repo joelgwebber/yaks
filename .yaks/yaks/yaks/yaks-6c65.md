@@ -5,12 +5,11 @@ status: shaving
 type: idea
 priority: 2
 created: '2026-11-14T11:21:01Z'
-updated: '2026-11-14T17:34:51Z'
+updated: '2026-11-14T17:51:01Z'
 parent: yaks-1151
 tags:
 - links
 - markdown
-needs: agent
 ---
 
 Decision (yaks-1151, Joel, 2026-11-14): reconsider the note format now and ship it in the schema-9 migration.
@@ -81,3 +80,12 @@ needs: agent
 2. I assume's good. It might get a little weird when notes contain higher headings, but I don't see any obvious alternative.
 3. I'm good with that separator -- | / - would risk misparsing.
 4. That's fine.
+
+---
+▸ 2026-11-14T17:51:01Z [linkplan-lead]
+kind: pickup
+---
+
+picked up
+
+Decision (Joel, 2026-11-14): note format B as in [/doks/design/note-format.md](/doks/design/note-format.md): `#### <timestamp>` heading, an italic `*actor · key: value*` line, no `---` separator; separator ` · ` (a pipe or slash would risk misparsing); `####`; Azure DevOps slugs accepted. Joel's caveat: notes that contain their own higher headings read oddly in the outline; no better option found. Implemented under a new yak, shorn here as the design.
