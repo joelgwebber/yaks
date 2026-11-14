@@ -1,11 +1,11 @@
 ---
 id: yaks-6c65
 title: 'Design: new note format with anchors that render on GitHub'
-status: hairy
+status: shaving
 type: idea
 priority: 2
 created: '2026-11-14T11:21:01Z'
-updated: '2026-11-14T11:21:01Z'
+updated: '2026-11-14T11:22:51Z'
 parent: yaks-1151
 tags:
 - links
@@ -27,3 +27,13 @@ Today a note is `---`, then `▸ <ts> [actor]`, then optional `key: value` meta 
 ## Deliverable
 
 A short design dok (`doks/design/note-format.md`) with two or three candidate shapes rendered on GitHub with `gh api markdown` (attach the output), a recommendation, the parser and merge-driver impact, and a `yaks ask` on this yak for Joel. Do not implement.
+
+---
+▸ 2026-11-14T11:22:51Z [linkplan-lead]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
