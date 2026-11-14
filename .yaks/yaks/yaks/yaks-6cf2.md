@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-14T18:01:26Z'
+updated: '2026-11-14T22:38:26Z'
 parent: yaks-1c89
 depends_on:
 - yaks-f505
@@ -92,3 +92,8 @@ Read check.rs/locate.rs/links.rs. Plan: new kinds `code-moved` and `code-gone`; 
 Decision: a pinned link to a file deleted at HEAD is not `code-gone` (a pin legitimately names history): its deleting commit counts as a commit since the pin, cleared by `verified:`. `code-gone` is for unpinned links only.
 
 Decision: a `verified:` DATE covers that whole day (end of day UTC); a commit made on the verified day or before counts as checked. Rejected: start of day, which would keep a dok flagged all day after `dok set verified=<today>` (the exact fix the hint prescribes). A verified timestamp is exact.
+
+---
+▸ 2026-11-14T22:38:26Z [check-1]
+
+Resumed after the network drop (22:38Z). Working tree has: `src/check.rs` (new kinds `code-moved`/`code-gone`, `Report`, `code_changes`, 10 unit tests) and `src/main.rs` (`Command::Check` prints info lines, clap help). My base `dc8aaa92` already contains the landed resolver (298b91ac, 3c258a53); `local/main` in this clone is the older remote ref, nothing newer to rebase on. 12 of 13 unit tests pass; fixing one test assertion (path-extraction in the frontmatter test), then the integration test, docs, real run.
