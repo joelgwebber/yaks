@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-14T12:17:56Z'
+updated: '2026-11-14T12:17:57Z'
 parent: yaks-1151
 tags:
 - git
@@ -102,3 +102,8 @@ Decision: land guard rule. A worker commit is refused (exit 7) when it touches a
 ▸ 2026-11-14T12:17:56Z [layout-1]
 
 Decision: `sync` dirty check is `git status --porcelain -- . ':(exclude).agents'` from the top. The old `-- .yaks .gitattributes` matched nothing in the root layout (the farm then read clean and a rebase was attempted on a dirty tree). `.` alone broke two sync tests: `yaks init` run from inside the farm worktree installs untracked `.agents/skills`, which are no part of the farm; excluded. Rejected: listing farm top-level names (a new herd dir would be missed).
+
+---
+▸ 2026-11-14T12:17:57Z [layout-1]
+
+Decision: TUI per-user state. At `App::with_farm`, before anything loads, `views_store::adopt_legacy_state` copies the old key's files (`~/.config/yaks/<slug(<root>/.yaks)>/**` = views, working set, drafts, and the cache file `~/.cache/yaks/<slug>.json`) to the new key. Conflict rule: a file that already exists under the new key is kept, never overwritten; old files are never deleted (an older yaks keeps reading them). Run on every start but a no-op once the new files exist. Not run for a root that is itself `.yaks/` (key unchanged). Rejected: moving (breaks an older binary alongside) and keying by worktree (still changes the key once).
