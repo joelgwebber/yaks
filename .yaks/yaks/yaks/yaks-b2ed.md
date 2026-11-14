@@ -1,11 +1,11 @@
 ---
 id: yaks-b2ed
 title: Autocompletion UI infrastructure
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-08-26T13:27:01Z'
-updated: '2026-11-14T18:03:58Z'
+updated: '2026-11-14T18:04:06Z'
 tags:
 - tui
 ---
@@ -55,3 +55,13 @@ Shearing as covered, on the option Joel approved on 2026-10-03 (a: shear as cove
 - **Predefined labels, the blocker named on 2026-09-23:** [yaks-f04d](yaks-f04d) is shorn: known tags with descriptions live in `schemas/yak.md`.
 
 Not built, and not needed by anything open: inline or ghost-text completion. Completion is modal, through the picker, in every field. If that is wanted it is a new idea yak, not this one.
+
+---
+▸ 2026-11-14T18:04:06Z [linkplan-lead]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
