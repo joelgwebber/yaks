@@ -1,11 +1,11 @@
 ---
 id: yaks-df01
 title: Next/prev comment improvements
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-11T20:46:10Z'
-updated: '2026-11-14T11:45:09Z'
+updated: '2026-11-14T11:45:10Z'
 tags:
 - tui
 ---
@@ -81,3 +81,13 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 Summary: `App::jump_block` (src/tui/actions.rs) now implements both behaviours. Next goes to the next block header and scrolls minimally so the block's last row is visible; if the header would end up above the viewport (block taller than the page) scroll = header row. Previous goes to the current block's header when the cursor is below it, else the previous block's. Three tests in tests.rs (short comment: minimal scroll with whole block visible; 30-row comment: header at top; prev inside body then on header). docs/tui.md:197 updated.
 
 Evidence: before/after headless toque frames attached (scripts: Enter, Ctrl-N x4, Ctrl-P x2 on a 4/7/10/25-row comment yak). Gate `cargo test --workspace` via `yaks verify`: PASS. One earlier `yaks verify` run FAILED on a single test I could not identify (the output was paged away); the next run of the whole workspace twice passed with no changes to source in between (docs-only edit before it), so I treat it as a flake, unconfirmed.
+
+---
+▸ 2026-11-14T11:45:10Z [comments-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGEgjpIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
