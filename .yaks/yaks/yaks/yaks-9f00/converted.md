@@ -1,0 +1,75 @@
+Decision (yaks-1151, Joel, 2026-11-14): reconsider the note format now and ship it in the schema-9 migration.
+
+Today a note is `---`, then `▸ <ts> [actor]`, then optional `key: value` meta lines closed by `---`. On GitHub the header is a plain paragraph (no anchor), and a note with meta lines becomes a level-2 heading that swallows the meta, so its anchor is not the timestamp (census: 8,404 notes, 1,034 with meta; see yaks-0a4d). Nothing in the file gives a note a stable anchor, and GitHub drops `[x](yaks-1a2b#...T22:13:03Z)` entirely, because a `:` before any `/` reads as a URL scheme.
+
+## What to settle
+
+- A header that is a real heading, so the anchor exists on every host and the note renders as a titled block. Candidate: `#### 2026-11-04T22:13:03Z · actor` (the host research found `#### <ts>` slugs to `20261104t221303z` on GitHub, GitLab and Gitea, not on Azure DevOps). The other candidate is a visible `<a id>` target, which GitLab strips.
+- Where the metadata (`kind`, `commit`, `branch`, `thread`, ...) goes so it renders legibly and stays parseable: a small table, a definition line, a fenced block, or plain lines.
+- The link form for a note once there is an anchor, including the `-1` / `-2` suffix for notes in one second, and how a note link is written so GitHub keeps it as a link (path form plus the slug).
+- How every reader copes: `store::parse_notes`, `append_note_meta`, the merge driver's note-aware merge (`mergedriver.rs`), `tui/content.rs` (comments), `sheds.rs`, `links::note_anchor`, the markdown lint. The old shape must stay readable by new yaks until `yaks migrate`, as every earlier schema did.
+- Whether the file keeps the `---` separators (GitHub also renders a leading `---` block as the frontmatter table) or uses a plain rule.
+
+## Deliverable
+
+A short design dok (`doks/design/note-format.md`) with two or three candidate shapes rendered on GitHub with `gh api markdown` (attach the output), a recommendation, the parser and merge-driver impact, and a `yaks ask` on this yak for Joel. Do not implement.
+
+#### 2026-11-14T11:22:51Z
+
+*linkplan-lead · kind: move · from: hairy · to: shaving · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
+
+#### 2026-11-14T11:22:52Z
+
+*linkplan-lead*
+
+Design pass done: [/doks/design/note-format.md](/doks/design/note-format.md), with the GitHub renders attached as [render evidence](yaks-6c65/render-evidence.md). Recommendation is candidate B: `#### <timestamp>` heading, an italic `*actor · key: value*` line, no `---` separator. Asking Joel below; the parser, merge-driver and TUI impact are in the dok.
+
+#### 2026-11-14T11:22:53Z
+
+*linkplan-lead · kind: ask · needs: human*
+
+asked: needs human
+
+Recommended note shape, rendered on GitHub in [the dok](/doks/design/note-format.md#candidates):
+
+```markdown
+#### 2026-11-04T22:13:03Z
+
+*linkplan-lead · kind: move · from: hairy · to: shaving*
+
+moved: hairy -> shaving
+```
+
+The anchor is the timestamp (`#2026-11-04t221303z`, `-1`, `-2` for the same second, which is the rule `links::note_anchor` already uses), so it works on GitHub, GitLab and Gitea and does not depend on the actor or the metadata. Today's header is a plain paragraph with no anchor, and a note with meta lines becomes a setext heading whose anchor is the whole header text.
+
+1. **Shape B as above** (heading plus italic actor and metadata line, no `---`). Lean: yes. Alternatives rejected in the dok: the actor in the heading (slug depends on the name), an `<a id>` (GitLab strips it), a metadata table (uneven, cannot hold every value).
+2. **Heading level `####`.** Lean: `####`. A one-line change; `###` renders larger.
+3. **Separator ` · ` in the metadata line**, versus an ASCII ` | `. Lean: ` · `.
+4. **Azure DevOps slugs headings differently and is untested.** Accept? Lean: yes.
+
+Answer "yes" to take all four, or say what to change. The schema-9 migration yak converts every yak's notes in one pass, so this has to settle before it starts.
+
+#### 2026-11-14T17:34:51Z
+
+*sched-1 · kind: answer · needs: agent*
+
+1. I'm good with that, as long as it renders reasonably in GH and friends.
+2. I assume's good. It might get a little weird when notes contain higher headings, but I don't see any obvious alternative.
+3. I'm good with that separator -- | / - would risk misparsing.
+4. That's fine.
+
+#### 2026-11-14T17:51:01Z
+
+*linkplan-lead · kind: pickup*
+
+picked up
+
+Decision (Joel, 2026-11-14): note format B as in [/doks/design/note-format.md](/doks/design/note-format.md): `#### <timestamp>` heading, an italic `*actor · key: value*` line, no `---` separator; separator ` · ` (a pipe or slash would risk misparsing); `####`; Azure DevOps slugs accepted. Joel's caveat: notes that contain their own higher headings read oddly in the outline; no better option found. Implemented under a new yak, shorn here as the design.
+
+#### 2026-11-14T17:51:14Z
+
+*linkplan-lead · kind: move · from: shaving · to: shorn · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
