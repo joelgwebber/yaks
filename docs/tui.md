@@ -195,7 +195,7 @@ how (`[child]`, `[depends]`, `[title]`, `[body:L3]`, `[note:<ts> [actor]]`);
 type to filter, `Enter` goes to one like `#` (it is `yaks refs <id>
 --incoming`); `i`/`o` history forward/back (see *History* below; `o`/`i` work in every
 pane and in the list); `J`/`K` next/prev task; `}`/`{` next/prev view;
-`Ctrl-N`/`Ctrl-P` (or `Ctrl-↓`/`Ctrl-↑`) next/prev content block; `v` + `Shift-↑↓` visual-select lines, `y` copy;
+`Ctrl-N`/`Ctrl-P` (or `Ctrl-↓`/`Ctrl-↑`) next/prev content block (next scrolls the whole block into view, or puts its header at the top if it is taller than the pane; prev goes to the header of the block the cursor is in, or of the one before when already on it); `v` + `Shift-↑↓` visual-select lines, `y` copy;
 `/` (`Ctrl-F` in standard), `n`/`N` (`F3`/`Shift-F3`) find (see *The search register* below: `/` sets the one
 search register, `Enter` keeps the cursor on the current match, `Esc` restores
 the register and the scroll and cursor from before; the status bar shows

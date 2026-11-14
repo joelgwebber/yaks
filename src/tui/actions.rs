@@ -638,7 +638,12 @@ impl App {
         starts
     }
 
-    /// Move the line cursor to the next/prev content block start.
+    /// Ctrl-N/P: move the line cursor to a content block's header.
+    ///
+    /// Next goes to the next block's header and scrolls so the whole block is
+    /// visible; a block taller than the viewport puts its header at the top
+    /// instead. Previous goes to the header of the block the cursor is inside,
+    /// or, when the cursor is already on that header, of the one before it.
     pub(crate) fn jump_block(&mut self, delta: i32) {
         let starts = self.block_starts();
         if starts.is_empty() {
@@ -648,8 +653,33 @@ impl App {
             .iter()
             .rposition(|&s| s <= self.detail.line)
             .unwrap_or(0);
-        let next = (cur as i32 + delta).clamp(0, starts.len() as i32 - 1) as usize;
-        self.detail.line = starts[next];
-        self.scroll_line_into_view(self.detail.line as u16);
+        let next = if delta < 0 && self.detail.line > starts[cur] {
+            cur
+        } else {
+            (cur as i32 + delta).clamp(0, starts.len() as i32 - 1) as usize
+        };
+        let start = starts[next];
+        self.detail.line = start;
+        if delta < 0 {
+            self.scroll_line_into_view(start as u16);
+            return;
+        }
+        // The block's last row: its own rows run to the last one that belongs
+        // to it (a trailing blank separator is not part of the comment).
+        let end = detail::block_index_per_line(&self.detail_dlines())
+            .iter()
+            .rposition(|b| *b == Some(self.block_of_row(start)))
+            .unwrap_or(start);
+        self.scroll_line_into_view(end as u16);
+        if start < self.detail.scroll as usize {
+            // Too tall to show whole: header at the top.
+            self.detail.scroll = (start as u16).min(self.detail_max_scroll());
+        }
+    }
+
+    /// The content block (0 = description, 1.. = comments) the detail row
+    /// belongs to; the row must be a block row.
+    fn block_of_row(&self, row: usize) -> usize {
+        detail::block_index_per_line(&self.detail_dlines())[row].unwrap_or(0)
     }
 }

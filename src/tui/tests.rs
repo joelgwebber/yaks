@@ -704,6 +704,82 @@ fn ctrl_n_p_navigate_content_blocks_in_detail() {
     assert_eq!(app.detail.line, starts[1]); // back to first
 }
 
+/// A yak whose description is one line and whose comments are `lens` rows
+/// long (hard breaks keep each source line its own row), drawn once at 80x20
+/// with `page` content rows, detail focused, cursor at the top.
+fn comments_app(lens: &[usize], page: u16) -> App {
+    let mut t = task("c1", "Commented", Status::Hairy, 3, None);
+    let mut body = "The description.".to_string();
+    for (i, n) in lens.iter().enumerate() {
+        let text = (0..*n)
+            .map(|r| format!("c{i} row {r}"))
+            .collect::<Vec<_>>()
+            .join("\\\n");
+        body = crate::store::append_note(
+            &body,
+            &format!("2026-01-{:02}T00:00:00Z", i + 1),
+            None,
+            &text,
+        );
+    }
+    t.body = body;
+    let mut app = App::new(vec![t]);
+    enter_key(&mut app);
+    draw(&app, 80, 20);
+    app.detail_page = page;
+    app
+}
+
+fn ctrl(c: char) -> KeyEvent {
+    KeyEvent::new(KeyCode::Char(c), KeyModifiers::CONTROL)
+}
+
+#[test]
+fn next_comment_scrolls_a_short_comment_wholly_into_view() {
+    // Comments of 3, 3 and 4 rows in a viewport of 8: the second comment
+    // starts below the fold and its last row must land in view.
+    let mut app = comments_app(&[3, 3, 4], 8);
+    let starts = app.block_starts();
+    handle_key(&mut app, ctrl('n'));
+    handle_key(&mut app, ctrl('n'));
+    assert_eq!(app.detail.line, starts[2]);
+    let last = starts[3] - 2; // the row before the blank separator
+    let (scroll, shown) = (
+        app.detail.scroll as usize,
+        app.detail_rows_shown(app.detail.scroll),
+    );
+    assert!(scroll > 0, "had to scroll");
+    // Minimal: the comment's last row sits on the bottom visible row.
+    assert_eq!(scroll, last + 1 - shown, "{starts:?}");
+    assert!(
+        starts[2] >= scroll && last < scroll + shown,
+        "whole comment visible: {scroll} {starts:?}"
+    );
+}
+
+#[test]
+fn next_comment_longer_than_the_viewport_puts_its_header_at_the_top() {
+    let mut app = comments_app(&[2, 30], 8);
+    let starts = app.block_starts();
+    handle_key(&mut app, ctrl('n'));
+    handle_key(&mut app, ctrl('n'));
+    assert_eq!(app.detail.line, starts[2]);
+    assert_eq!(app.detail.scroll as usize, starts[2]);
+}
+
+#[test]
+fn previous_comment_goes_to_the_header_first_then_the_one_before() {
+    let mut app = comments_app(&[3, 5], 20);
+    let starts = app.block_starts();
+    // Inside the second comment's body: Ctrl-P lands on its header ...
+    app.detail.line = starts[2] + 2;
+    handle_key(&mut app, ctrl('p'));
+    assert_eq!(app.detail.line, starts[2]);
+    // ... and from the header, on the previous comment's.
+    handle_key(&mut app, ctrl('p'));
+    assert_eq!(app.detail.line, starts[1]);
+}
+
 #[test]
 fn unfocused_description_preview_wraps() {
     // The create form opens on the title row, so the description shows as the
