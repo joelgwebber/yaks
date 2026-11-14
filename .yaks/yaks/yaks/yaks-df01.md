@@ -40,3 +40,5 @@ Start: Sat Nov 14 11:32:56 UTC 2026. yaks path: /Users/joel/.local/share/yaks/fa
 Implemented jump_block change in actions.rs + 3 tests in tests.rs (short comment, too-long comment, previous header/inside); targeted tests pass. Next: toque before/after frames, gate.
 
 [df01-before](yaks-df01/df01-before.txt "BEFORE (main e4d0ff5a): headless toque frames, 70x16, Enter then Ctrl-N x4 then Ctrl-P x2 on a yak with comments of 4/7/10/25 rows. Frame 4 (Ctrl-N to comment 2): only 3 of its 7 rows show, the rest is below the fold.")
+
+[df01-after](yaks-df01/df01-after.txt "AFTER: same script. Frame 3 shows comment 2 whole (scroll 19); frame 5, the 25-row comment, has its header at the top (scroll 45, header pinned under the sticky rule); frame 6 Ctrl-P from comment 4's header goes to comment 3's header.")

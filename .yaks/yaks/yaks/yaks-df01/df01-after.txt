@@ -1,0 +1,144 @@
+=== frame 0 · 70x16 · focus=list · view=🦬 Hairy · cursor=0 · rows=1 · sel=demo-a5cd · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Sta
+
+ demo-a5cd p3 task     🦬 Long comments
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit
+=== end ===
+=== frame 1 · 70x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=demo-a5cd · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Sta
+
+◂ Task: demo-a5cd
+│
+│ Title:       Long comments
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Tags:        -
+│
+│ The description of this yak.
+│
+│ ▸ comments-1 · just now ───────────────────────────────────────────
+Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:ed
+=== end ===
+=== frame 2 · 70x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=demo-a5cd · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=8 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Sta
+
+◂  🦬 demo-a5cd  task     p3  Long comments
+│ ───────────────────────────────────────────────────────────────────
+│ Tags:        -
+│
+│ The description of this yak.
+│
+│ ▸ comments-1 · just now ───────────────────────────────────────────
+│ Comment 1, 4 rows.
+│
+│ row 1 of comment 1
+│ row 2 of comment 1
+│ row 3 of comment 1
+│ row 4 of comment 1\
+Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:ed
+=== end ===
+=== frame 3 · 70x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=demo-a5cd · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=19 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Sta
+
+◂  🦬 demo-a5cd  task     p3  Long comments
+│ ───────────────────────────────────────────────────────────────────
+│
+│ ▸ comments-1 · just now ───────────────────────────────────────────
+│ Comment 2, 7 rows.
+│
+│ row 1 of comment 2
+│ row 2 of comment 2
+│ row 3 of comment 2
+│ row 4 of comment 2
+│ row 5 of comment 2
+│ row 6 of comment 2
+│ row 7 of comment 2\
+Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:ed
+=== end ===
+=== frame 4 · 70x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=demo-a5cd · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=31 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Sta
+
+◂  🦬 demo-a5cd  task     p3  Long comments
+│ ───────────────────────────────────────────────────────────────────
+│ ▸ comments-1 · just now ───────────────────────────────────────────
+│ Comment 3, 10 rows.
+│
+│ row 1 of comment 3
+│ row 2 of comment 3
+│ row 3 of comment 3
+│ row 4 of comment 3
+│ row 5 of comment 3
+│ row 6 of comment 3
+│ row 7 of comment 3
+│ row 8 of comment 3
+Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:ed
+=== end ===
+=== frame 5 · 70x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=demo-a5cd · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=45 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Sta
+
+◂  🦬 demo-a5cd  task     p3  Long comments
+│ ───────────────────────────────────────────────────────────────────
+│ ▸ comments-1 · just now ───────────────────────────────────────────
+│ Comment 4, long.
+│
+│ long row 1
+│ long row 2
+│ long row 3
+│ long row 4
+│ long row 5
+│ long row 6
+│ long row 7
+│ long row 8
+Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:ed
+=== end ===
+=== frame 6 · 70x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=demo-a5cd · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=31 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Sta
+
+◂  🦬 demo-a5cd  task     p3  Long comments
+│ ───────────────────────────────────────────────────────────────────
+│ ▸ comments-1 · just now ───────────────────────────────────────────
+│ Comment 3, 10 rows.
+│
+│ row 1 of comment 3
+│ row 2 of comment 3
+│ row 3 of comment 3
+│ row 4 of comment 3
+│ row 5 of comment 3
+│ row 6 of comment 3
+│ row 7 of comment 3
+│ row 8 of comment 3
+Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:ed
+=== end ===
+=== frame 7 · 70x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=demo-a5cd · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=20 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Sta
+
+◂  🦬 demo-a5cd  task     p3  Long comments
+│ ───────────────────────────────────────────────────────────────────
+│ ▸ comments-1 · just now ───────────────────────────────────────────
+│ Comment 2, 7 rows.
+│
+│ row 1 of comment 2
+│ row 2 of comment 2
+│ row 3 of comment 2
+│ row 4 of comment 2
+│ row 5 of comment 2
+│ row 6 of comment 2
+│ row 7 of comment 2\
+│
+Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:ed
+=== end ===
