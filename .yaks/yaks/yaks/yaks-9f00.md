@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T17:52:43Z'
-updated: '2026-11-14T17:53:16Z'
+updated: '2026-11-14T22:37:53Z'
 parent: yaks-1151
 tags:
 - links
@@ -59,3 +59,14 @@ moved: hairy -> shaving
 ▸ 2026-11-14T17:53:16Z [linkplan-lead]
 
 Claim: worker `notefmt-1` (Sonnet tier, per AGENTS.md; the format is fully specified in the yak and the design dok, so this is implementation, with my review as the cost). Owns: `store.rs` note functions (`parse_notes`, `note_starts`, `append_note_meta`, `append_entry`, `note_head`, `meta_block`, `parse_meta`), a new `convert_notes`, `links.rs` note-anchor functions only, `mergedriver.rs` note merge, `tui/content.rs`, `sheds.rs`, `recur.rs`, `markdown_lint.rs`. Not `migrate.rs`: yaks-acc0 registers the converter. Other workers in flight: `keys-1` (`keymap.rs`, `docs/tui.md`), `check-1` (`check.rs`); `yaks-c3d0` follows and works in `handlers.rs`, `follow.rs`, `source.rs`, `detail_nav.rs`'s `follow_link`: if you must touch `detail_nav.rs`, keep to note-anchor lines. Judge: the coordinator re-runs the evidence and the round trip over this farm's real yaks.
+
+---
+▸ 2026-11-14T22:37:53Z [notefmt-1]
+
+Start of work (after an offline gap): the checkout is clean, nothing written yet, HEAD contains `local/main` (e4d0ff5a, v0.0.36).
+
+- date: 2026-11-14T22:37Z
+- farm file: `/Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-9f00.md`
+- checkout: `/Users/joel/src/yaks/.delta/worktrees/bzdf5a446bnv/yaks`
+
+Read so far: `store.rs` note functions, `tui/content.rs`, `mergedriver.rs` note merge, `links.rs` anchors. Plan: reader accepts both shapes; writers take a `new_shape: bool` threaded from the farm schema; `convert_notes` pure.
