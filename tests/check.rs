@@ -479,3 +479,28 @@ fn a_dok_citing_code_that_moved_since_its_last_commit_is_a_finding() {
         (0, "All clear: nothing to check up on.\n")
     );
 }
+
+/// A source directory carries a readable slug (yaks-7729): `uncited` keys a
+/// source by its `<date>-<sha8>` id, so a citation of the slugged path, of
+/// the bare id, and of a `part_of` parent all count.
+#[test]
+fn uncited_reads_a_slugged_source_by_its_id() {
+    let f = Farm::new("slugged");
+    let named = f.source("named.md", "# Named\n", &["--title", "A Named Page"]);
+    let bare = f.source("bare.md", "# Bare\n", &["--title", "Cited By Bare Id"]);
+    let lone = f.source("lone.md", "# Lone\n", &["--title", "Nobody Cites Me"]);
+    assert!(named.ends_with("-a-named-page"), "{named}");
+    assert!(lone.ends_with("-nobody-cites-me"), "{lone}");
+    let bare_id = &bare["sources/".len().."sources/".len() + 19];
+    f.write(
+        "doks/cites.md",
+        &format!(
+            "---\ntype: note\ntitle: Cites\ndescription: d.\nsources:\n  - {named}/source.md\n---\n\nAlso [it](/sources/{bare_id}/source.md).\n"
+        ),
+    );
+    let (_, json) = f.check(&["--json"]);
+    let v: Value = serde_json::from_str(&json).unwrap();
+    let uncited = finding(&v, "uncited");
+    assert_eq!(uncited.len(), 1, "{json}");
+    assert_eq!(uncited[0]["ids"][0], lone.as_str(), "{json}");
+}

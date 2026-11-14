@@ -347,7 +347,11 @@ fn uncited(root: &Path) -> Result<Vec<Finding>> {
     if all.is_empty() {
         return Ok(Vec::new());
     }
-    let id_of = |dir: &str| dir.rsplit('/').next().unwrap_or(dir).to_string();
+    // A source is its `<date>-<sha8>` id; its directory may carry a slug
+    // after it (yaks-7729), and a citation may name either, so everything
+    // below is keyed by the id and the directory name is kept for display.
+    let id_of = |dir: &str| sources::id_of(dir.rsplit('/').next().unwrap_or(dir)).to_string();
+    let mut dir_of: BTreeMap<String, String> = BTreeMap::new(); // id -> its directory name
     let mut parent: BTreeMap<String, String> = BTreeMap::new(); // id -> the id it is part_of
     let mut marked: BTreeSet<String> = BTreeSet::new();
     for s in &all {
@@ -356,8 +360,16 @@ fn uncited(root: &Path) -> Result<Vec<Finding>> {
             .fields
             .get("part_of")
             .and_then(|v| v.as_str().map(String::from))
-            .and_then(|t| source_refs(&t).first().map(|p| p.to_string()))
+            .and_then(|t| {
+                source_refs(&t)
+                    .first()
+                    .map(|p| sources::id_of(p).to_string())
+            })
             .filter(|p| *p != id);
+        dir_of.insert(
+            id.clone(),
+            s.dir.rsplit('/').next().unwrap_or(&s.dir).to_string(),
+        );
         parent.insert(id.clone(), part_of.unwrap_or_default());
         let set = |k: &str| {
             s.fields
@@ -399,7 +411,7 @@ fn uncited(root: &Path) -> Result<Vec<Finding>> {
             continue;
         };
         for id in source_refs(&text) {
-            cited.insert(top(id.to_string()));
+            cited.insert(top(sources::id_of(id).to_string()));
         }
     }
     for id in &marked {
@@ -415,7 +427,8 @@ fn uncited(root: &Path) -> Result<Vec<Finding>> {
             .keys()
             .filter(|c| *c != id && top((*c).clone()) == *id)
             .count();
-        let mut message = format!("{}/{id} is cited by no dok or yak", sources::SOURCES_DIR);
+        let name = dir_of.get(id).unwrap_or(id);
+        let mut message = format!("{}/{name} is cited by no dok or yak", sources::SOURCES_DIR);
         if parts > 0 {
             let noun = if parts == 1 { "part" } else { "parts" };
             message.push_str(&format!(" (nor are its {parts} {noun} saved with part_of)"));
@@ -423,7 +436,7 @@ fn uncited(root: &Path) -> Result<Vec<Finding>> {
         out.push(Finding {
             kind: Kind::Uncited,
             message,
-            ids: vec![format!("{}/{id}", sources::SOURCES_DIR)],
+            ids: vec![format!("{}/{name}", sources::SOURCES_DIR)],
         });
     }
     Ok(out)

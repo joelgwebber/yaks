@@ -860,7 +860,6 @@ pub struct Source {
 impl Source {
     /// The source's id, `<date>-<sha8>`, whether or not its directory has a
     /// slug.
-    #[allow(dead_code)] // `yaks check` and the migration are the callers (yaks-acc0)
     pub fn id(&self) -> &str {
         id_of(self.dir.strip_prefix("sources/").unwrap_or(&self.dir))
     }
