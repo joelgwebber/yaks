@@ -1,11 +1,11 @@
 ---
 id: yaks-6cf2
 title: 'check: flag doks whose cited code has changed since the pin or last verification'
-status: hairy
+status: shaving
 type: feature
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-14T17:52:06Z'
+updated: '2026-11-14T17:53:15Z'
 parent: yaks-1c89
 depends_on:
 - yaks-f505
@@ -63,3 +63,13 @@ Decision (Joel): accept all three (since `verified:` else the dok's last farm co
 Scope, restated from the yak (my pickup note above was muddled): a finding is a dok that cites `code:<path>` where the path has commits in the code repo since the pinned sha, or for an unpinned link since the dok's `verified:` date else its last farm commit. Joel's remark that pinned links "shouldn't drift" is about the link still meaning what it meant; the dok's claim can still be stale against the code today, which is what this finding is for. If that is not the intent, reply here.
 
 Decisions, per Joel: no count threshold; with no code checkout, skip with one info line. Read links through the resolver (`locate.rs`, landed with yaks-f505) so a host-URL code link (coming with the schema-9 migration) is read by the same code later; do not parse host URLs here.
+
+---
+▸ 2026-11-14T17:53:15Z [linkplan-lead]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
