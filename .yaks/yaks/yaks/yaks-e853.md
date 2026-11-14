@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-11-09T23:51:02Z'
-updated: '2026-11-14T11:44:35Z'
+updated: '2026-11-14T11:45:10Z'
 tags:
 - tui
 ---
@@ -73,3 +73,13 @@ thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGEii5IBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-14T11:45:10Z [linkplan-lead]
+kind: landed
+commit: d448058992b3bf53da51f8c425cc98582446715e
+source: b236717a143f9a007b7ebff55ac326133dd65edf
+branch: main
+---
+
+landed: d4480589 yaks-e853: Tab/Shift-Tab onto a link in a wide no-wrap block scrolls it into view
