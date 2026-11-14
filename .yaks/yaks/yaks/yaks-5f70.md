@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-06T21:37:13Z'
-updated: '2026-11-14T17:54:16Z'
+updated: '2026-11-14T17:55:43Z'
 parent: yaks-3f35
 tags:
 - skills
@@ -72,3 +72,8 @@ thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-14T17:55:43Z [linkplan-lead]
+
+Done in `yaks-upkeep` ("Reviewing session notes" step 4, the feedback entry template and the worked example): citations now link the date a fact was settled or the phrase a session established, never a bare "session". `cargo test -p yaks skills` passes (37). Left alone, per Joel: the existing citations in other farms, and no `sessions:` frontmatter. Session paths already carry a slug; the sources question is yaks-49c5.
