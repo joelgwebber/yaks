@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-11T15:55:50Z'
-updated: '2026-11-14T13:18:21Z'
+updated: '2026-11-14T13:18:23Z'
 tags:
 - tui
 ---
@@ -50,3 +50,5 @@ Milestone: code + docs done, tests passing (tag filter). Remaining: render toque
 ![drawer](yaks-bf1b/drawer.png "Tab in the drawer's tags row: the tag picker open over the filter drawer, seeded with 'ru'")
 
 ![l-hint](yaks-bf1b/l-hint.png "The L editor on a partial tag: 'Tab → complete tag' beside the line")
+
+![l-picker](yaks-bf1b/l-picker.png "Tab in the L editor: the tag picker open over it, seeded with 'ru'")
