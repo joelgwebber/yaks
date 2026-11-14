@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-11T20:46:10Z'
-updated: '2026-11-14T11:36:45Z'
+updated: '2026-11-14T11:39:32Z'
 tags:
 - tui
 ---
@@ -58,3 +58,11 @@ Decision: Next scrolls to the block's last row via `scroll_line_into_view` (exis
 Decision: the block's "end" is its last row carrying that block's `Src`, so the trailing blank separator is not required to be visible.
 
 Decision: Previous only scrolls minimally (header into view); no whole-comment visibility for Previous (not requested).
+
+---
+▸ 2026-11-14T11:39:32Z [comments-1]
+kind: verify
+result: fail
+---
+
+verify: `cargo test --workspace` -> FAIL (exit 101)
