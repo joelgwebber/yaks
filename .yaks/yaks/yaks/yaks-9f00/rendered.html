@@ -1,0 +1,50 @@
+<p dir="auto">Decision (yaks-1151, Joel, 2026-11-14): reconsider the note format now and ship it in the schema-9 migration.</p>
+<p dir="auto">Today a note is <code class="notranslate">---</code>, then <code class="notranslate">▸ &lt;ts&gt; [actor]</code>, then optional <code class="notranslate">key: value</code> meta lines closed by <code class="notranslate">---</code>. On GitHub the header is a plain paragraph (no anchor), and a note with meta lines becomes a level-2 heading that swallows the meta, so its anchor is not the timestamp (census: 8,404 notes, 1,034 with meta; see yaks-0a4d). Nothing in the file gives a note a stable anchor, and GitHub drops <code class="notranslate">[x](yaks-1a2b#...T22:13:03Z)</code> entirely, because a <code class="notranslate">:</code> before any <code class="notranslate">/</code> reads as a URL scheme.</p>
+<h2 dir="auto">What to settle</h2>
+<ul dir="auto">
+<li>A header that is a real heading, so the anchor exists on every host and the note renders as a titled block. Candidate: <code class="notranslate">#### 2026-11-04T22:13:03Z · actor</code> (the host research found <code class="notranslate">#### &lt;ts&gt;</code> slugs to <code class="notranslate">20261104t221303z</code> on GitHub, GitLab and Gitea, not on Azure DevOps). The other candidate is a visible <code class="notranslate">&lt;a id&gt;</code> target, which GitLab strips.</li>
+<li>Where the metadata (<code class="notranslate">kind</code>, <code class="notranslate">commit</code>, <code class="notranslate">branch</code>, <code class="notranslate">thread</code>, ...) goes so it renders legibly and stays parseable: a small table, a definition line, a fenced block, or plain lines.</li>
+<li>The link form for a note once there is an anchor, including the <code class="notranslate">-1</code> / <code class="notranslate">-2</code> suffix for notes in one second, and how a note link is written so GitHub keeps it as a link (path form plus the slug).</li>
+<li>How every reader copes: <code class="notranslate">store::parse_notes</code>, <code class="notranslate">append_note_meta</code>, the merge driver's note-aware merge (<code class="notranslate">mergedriver.rs</code>), <code class="notranslate">tui/content.rs</code> (comments), <code class="notranslate">sheds.rs</code>, <code class="notranslate">links::note_anchor</code>, the markdown lint. The old shape must stay readable by new yaks until <code class="notranslate">yaks migrate</code>, as every earlier schema did.</li>
+<li>Whether the file keeps the <code class="notranslate">---</code> separators (GitHub also renders a leading <code class="notranslate">---</code> block as the frontmatter table) or uses a plain rule.</li>
+</ul>
+<h2 dir="auto">Deliverable</h2>
+<p dir="auto">A short design dok (<code class="notranslate">doks/design/note-format.md</code>) with two or three candidate shapes rendered on GitHub with <code class="notranslate">gh api markdown</code> (attach the output), a recommendation, the parser and merge-driver impact, and a <code class="notranslate">yaks ask</code> on this yak for Joel. Do not implement.</p>
+<h4 dir="auto">2026-11-14T11:22:51Z</h4>
+<p dir="auto"><em>linkplan-lead · kind: move · from: hairy · to: shaving · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG</em></p>
+<p dir="auto">moved: hairy -&gt; shaving</p>
+<h4 dir="auto">2026-11-14T11:22:52Z</h4>
+<p dir="auto"><em>linkplan-lead</em></p>
+<p dir="auto">Design pass done: <a href="/doks/design/note-format.md">/doks/design/note-format.md</a>, with the GitHub renders attached as <a href="yaks-6c65/render-evidence.md">render evidence</a>. Recommendation is candidate B: <code class="notranslate">#### &lt;timestamp&gt;</code> heading, an italic <code class="notranslate">*actor · key: value*</code> line, no <code class="notranslate">---</code> separator. Asking Joel below; the parser, merge-driver and TUI impact are in the dok.</p>
+<h4 dir="auto">2026-11-14T11:22:53Z</h4>
+<p dir="auto"><em>linkplan-lead · kind: ask · needs: human</em></p>
+<p dir="auto">asked: needs human</p>
+<p dir="auto">Recommended note shape, rendered on GitHub in <a href="/doks/design/note-format.md#candidates">the dok</a>:</p>
+<div class="highlight highlight-text-md" dir="auto"><pre class="notranslate"><span class="pl-mh">#### <span class="pl-en">2026-11-04T22:13:03Z</span></span>
+
+<span class="pl-s">*</span>linkplan-lead · kind: move · from: hairy · to: shaving<span class="pl-s">*</span>
+
+moved: hairy -&gt; shaving</pre></div>
+<p dir="auto">The anchor is the timestamp (<code class="notranslate">#2026-11-04t221303z</code>, <code class="notranslate">-1</code>, <code class="notranslate">-2</code> for the same second, which is the rule <code class="notranslate">links::note_anchor</code> already uses), so it works on GitHub, GitLab and Gitea and does not depend on the actor or the metadata. Today's header is a plain paragraph with no anchor, and a note with meta lines becomes a setext heading whose anchor is the whole header text.</p>
+<ol dir="auto">
+<li><strong>Shape B as above</strong> (heading plus italic actor and metadata line, no <code class="notranslate">---</code>). Lean: yes. Alternatives rejected in the dok: the actor in the heading (slug depends on the name), an <code class="notranslate">&lt;a id&gt;</code> (GitLab strips it), a metadata table (uneven, cannot hold every value).</li>
+<li><strong>Heading level <code class="notranslate">####</code>.</strong> Lean: <code class="notranslate">####</code>. A one-line change; <code class="notranslate">###</code> renders larger.</li>
+<li><strong>Separator <code class="notranslate">·</code> in the metadata line</strong>, versus an ASCII <code class="notranslate">|</code>. Lean: <code class="notranslate">·</code>.</li>
+<li><strong>Azure DevOps slugs headings differently and is untested.</strong> Accept? Lean: yes.</li>
+</ol>
+<p dir="auto">Answer "yes" to take all four, or say what to change. The schema-9 migration yak converts every yak's notes in one pass, so this has to settle before it starts.</p>
+<h4 dir="auto">2026-11-14T17:34:51Z</h4>
+<p dir="auto"><em>sched-1 · kind: answer · needs: agent</em></p>
+<ol dir="auto">
+<li>I'm good with that, as long as it renders reasonably in GH and friends.</li>
+<li>I assume's good. It might get a little weird when notes contain higher headings, but I don't see any obvious alternative.</li>
+<li>I'm good with that separator -- | / - would risk misparsing.</li>
+<li>That's fine.</li>
+</ol>
+<h4 dir="auto">2026-11-14T17:51:01Z</h4>
+<p dir="auto"><em>linkplan-lead · kind: pickup</em></p>
+<p dir="auto">picked up</p>
+<p dir="auto">Decision (Joel, 2026-11-14): note format B as in <a href="/doks/design/note-format.md">/doks/design/note-format.md</a>: <code class="notranslate">#### &lt;timestamp&gt;</code> heading, an italic <code class="notranslate">*actor · key: value*</code> line, no <code class="notranslate">---</code> separator; separator <code class="notranslate">·</code> (a pipe or slash would risk misparsing); <code class="notranslate">####</code>; Azure DevOps slugs accepted. Joel's caveat: notes that contain their own higher headings read oddly in the outline; no better option found. Implemented under a new yak, shorn here as the design.</p>
+<h4 dir="auto">2026-11-14T17:51:14Z</h4>
+<p dir="auto"><em>linkplan-lead · kind: move · from: shaving · to: shorn · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG</em></p>
+<p dir="auto">moved: shaving -&gt; shorn</p>
