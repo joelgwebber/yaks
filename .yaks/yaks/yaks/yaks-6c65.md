@@ -5,12 +5,12 @@ status: shaving
 type: idea
 priority: 2
 created: '2026-11-14T11:21:01Z'
-updated: '2026-11-14T11:22:53Z'
+updated: '2026-11-14T17:34:51Z'
 parent: yaks-1151
 tags:
 - links
 - markdown
-needs: human
+needs: agent
 ---
 
 Decision (yaks-1151, Joel, 2026-11-14): reconsider the note format now and ship it in the schema-9 migration.
@@ -70,3 +70,14 @@ The anchor is the timestamp (`#2026-11-04t221303z`, `-1`, `-2` for the same seco
 4. **Azure DevOps slugs headings differently and is untested.** Accept? Lean: yes.
 
 Answer "yes" to take all four, or say what to change. The schema-9 migration yak converts every yak's notes in one pass, so this has to settle before it starts.
+
+---
+▸ 2026-11-14T17:34:51Z [sched-1]
+kind: answer
+needs: agent
+---
+
+1. I'm good with that, as long as it renders reasonably in GH and friends.
+2. I assume's good. It might get a little weird when notes contain higher headings, but I don't see any obvious alternative.
+3. I'm good with that separator -- | / - would risk misparsing.
+4. That's fine.
