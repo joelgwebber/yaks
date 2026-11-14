@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-14T12:33:17Z'
+updated: '2026-11-14T12:39:21Z'
 parent: yaks-1151
 tags:
 - git
@@ -151,3 +151,13 @@ thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGEcKpIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-14T12:39:21Z [linkplan-lead]
+kind: landed
+commit: 3c258a539df6cc53d34a89b237e44b26b04708e8
+source: afa422941afd90e255369ec67bf42c8dde32f8ee
+branch: main
+---
+
+landed: 3c258a53 yaks-6ffd: understand a farm branch whose root is the farm root (FarmGit.prefix, layout detection, path classifiers, land guard, sync dirty check, TUI state copy, read_at fallback)
