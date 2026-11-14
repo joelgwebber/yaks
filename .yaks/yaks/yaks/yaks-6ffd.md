@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-14T12:33:07Z'
+updated: '2026-11-14T12:33:16Z'
 parent: yaks-1151
 tags:
 - git
@@ -120,3 +120,24 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-14T12:33:16Z [layout-1]
+
+Summary: yaks now understands a farm branch whose root IS the farm root and still reads `.yaks/`; migrates nothing, `yaks init` still writes `.yaks/`.
+
+- `store::farm_root_in` decides the layout in one place; `FarmGit` gains `prefix` + `repo_path`; `farm_git` accepts `top == root` or `top == root.parent()`.
+- Silent failures fixed: `yak_id_of`, `kind_of`, `farm_rel`, `generate_message` (shared `store::farm_relative`); the land guard (`is_yak_path` + `tracks_farm`); sync's dirty pathspec; `store::init`; `init.rs`; `migration_refusal`; `shared_farm_worktree`; `farm_branch_worktree`.
+- `root.parent()` users now use `farm_git().top`: `status`, `sync`, `weight`, `sheds`, `tui/farmsync` (x2), `farm::code_repo`, `links::code_base`.
+- `links::read_at` falls back to `{rev}:.yaks/{path}` (and `.yaks/wiki/...`).
+- TUI per-user state is copied from the old key on first run (views, working set, drafts, cache).
+- Docs: `docs/cli.md` and the `main.rs` help line for land exit 7.
+
+Evidence:
+
+- Gate `cargo test -p yaks` all green (1143 unit + every integration binary), `cargo fmt --check` clean, no warnings. `yaks verify yaks-6ffd` PASS.
+- New tests: `store::discover_tests` (5, both layouts through `discover_with`/`farm_git`/`init`/`migration_refusal`), `tests/root_layout.rs` (2, real binary), land guard (2), plus classifier, `read_at`, `code_base`, and state-copy tests. Existing `.yaks` tests pass untouched.
+- Scratch repo output attached (`layout1-evidence.txt`): per-change autocommits in `git log`, `status`, `commit`, `sync --no-push`, `weight`, and `yaks land` exit 7 in the root layout.
+- Real farm (`.yaks`) still works with this binary: `status`, `weight`.
+
+Not done / for others: `.gitattributes` and LFS rules still say `.yaks/**` (migration yak); `yaks session touched` and `check` staleness across the move; the `.yaks` text in brief and other docs; known residual in the land guard (a code repo that legitimately tracks `*/yaks/*.md`).
