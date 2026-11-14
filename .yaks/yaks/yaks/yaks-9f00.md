@@ -105,3 +105,13 @@ Decision: the writer is gated on the farm's `schema` marker, read where the farm
 - `store::NoteShape::of_farm(root)` reads `<root>/schema` (`>= NEW_NOTES_SCHEMA = 9` is New; a missing or unreadable marker is Old). `Farm::shape()` wraps it; every `Farm` writer and `store::move_task_with` pass it to `append_note_meta_in`. Rejected: a global or env switch (AGENTS.md: no `set_var`, tests would race), and a `Farm` field cached at open (a farm migrated under a running TUI would keep writing the old shape; the marker read is one small file per write).
 - A body never mixes shapes: `append_note_meta_in` uses the shape of the notes the body already has, and falls back to the farm's only for a body with no notes. So a half-converted body, or a farm whose marker changed, stays consistent.
 - `store::SCHEMA` is still 8. The one-arg `append_note`/`append_note_meta`/`append_entry` stay as the old-shape helpers (the existing tests and fixtures use them).
+
+---
+▸ 2026-11-14T23:27:56Z [notefmt-1]
+
+Decision: how a body is read when it holds both shapes, and how the converter refuses.
+
+- `scan_notes` reads a body in one shape: Old if it has any `---` / `▸` note outside a fence, else New. In an old body a `#### <timestamp>` line is text, so a schema-8 yak with such a line in its description (nothing in this farm has one) is never mis-split. Rejected: scanning both and merging (a note's end would depend on which opener came next).
+- `convert_notes` returns the body unchanged with 0 when converting would change what it parses to: a `#### <timestamp>` outside a fence anywhere in an old body, or a note whose timestamp is not RFC 3339 (the heading could not carry it). Over this farm's 761 yaks none hits this. `markdown_lint::note_heading_in_description` detects the first case; wiring it into `doctor` is `check.rs`, which I do not own, so it is a follow-up.
+- A note with no actor and no metadata whose text opens with an italic line (`*emphasis*`) is written with a `*-*` line so the text is not read as the metadata line; `-` alone as an actor is quoted. Same for an actor that reads as `key:`.
+- The anchor follows the body's shape: slug (`2026-11-04t221303z`, `-1`) for a new-shape body, the timestamp for an old one, so a schema-8 yaks keeps printing links an older yaks can follow. `find_note`/`is_note_anchor` accept both everywhere.
