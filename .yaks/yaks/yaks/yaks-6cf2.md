@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-14T22:48:07Z'
+updated: '2026-11-14T22:52:21Z'
 parent: yaks-1c89
 depends_on:
 - yaks-f505
@@ -148,3 +148,13 @@ thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGKpipIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-14T22:52:21Z [linkplan-lead]
+kind: landed
+commit: f048cf19c0e973d0955de9d895e5995daf2e15e1
+source: 4623468dbec65564a960c62f9a0cd52147abfecb
+branch: main
+---
+
+landed: f048cf19 yaks-6cf2: check flags doks whose cited code: paths moved since the pin or verified date (code-moved, code-gone)
