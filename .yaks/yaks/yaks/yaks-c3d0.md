@@ -5,7 +5,9 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-11T21:09:28Z'
-updated: '2026-11-14T11:19:34Z'
+updated: '2026-11-14T11:21:18Z'
+depends_on:
+- yaks-f505
 tags:
 - tui
 needs: human
