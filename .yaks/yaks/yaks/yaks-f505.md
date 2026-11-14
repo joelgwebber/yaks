@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:01Z'
-updated: '2026-11-14T11:57:13Z'
+updated: '2026-11-14T11:57:20Z'
 parent: yaks-1151
 tags:
 - links
@@ -72,3 +72,17 @@ result: pass
 ---
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-11-14T11:57:20Z [locate-1]
+
+Shear summary.
+
+- `src/hosting.rs`: `Forge` (GitHub/GHES, GitLab, Gitea/Forgejo) and `Repo::from_remote` (via `store::normalize_remote_url`; `git config yaks.host` declares a custom domain; Bitbucket/Azure/local paths refused with a reason), URL templates, unit tests for every template and remote spelling (scp, `ssh://`, https, GHES, GitLab subgroups, Azure ssh).
+- `src/locate.rs`: `Space`, `Place`, `farm_file` (the `sources/<id>` alias, one place), `pinned_file` (moved from `tui/source.rs`), `web_url`, `parse_target`; `content` and `local_path` are in place for the TUI follow (yaks-c3d0).
+- `gitrepo::remote_of` holds the "which remote" rule; `sync::remote_of` is a thin caller.
+- `yaks url <link|id|path> [--pin]` (own clap variant and dispatch arm).
+- Bugs from yaks-bede: `links::exists` now checks extensionless paths in the `sources/`, `sessions/`, `schemas/` namespaces (and `doks/<ns>/`), `links::peek` and the TUI viewer (`follow.rs`, `read_doc` too) read `/sources/<id>` as `source.md`.
+- Docs: `docs/cli.md`, clap help, `yaks` skill Links section, README and cli config note for `yaks.host`.
+
+Evidence: `cargo test -p yaks` PASS (verify note above), `cargo fmt --check` clean, `tests/url.rs` (url flow, refusals, peek `/sources/<id>`, doctor flags `/sources/nope` and `/doks/sessions/...`), attached url output. Scratch-farm doctor run: `doks/t.md:L3: (/sources/nope) no such file in the farm`. Local-only: nothing pushed, nothing under `.yaks/` staged.
