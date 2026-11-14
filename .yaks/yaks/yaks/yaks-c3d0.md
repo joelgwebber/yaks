@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-11T21:09:28Z'
-updated: '2026-11-14T22:59:04Z'
+updated: '2026-11-14T22:59:05Z'
 depends_on:
 - yaks-f505
 tags:
@@ -76,3 +76,8 @@ thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-14T22:59:05Z [linkplan-lead]
+
+Claim: worker `viewer-1` (Sonnet tier; the design is settled by Joel's answers above, so this is implementation, and review is the cost). Owns: the TUI follow dispatch (`src/tui/follow.rs`, `src/tui/source.rs`, `follow_link` in `src/tui/detail_nav.rs`, the three open/follow sites in `src/tui/handlers.rs`: `LinkOpenExternal`, `FileOpenExternal` and the link-follow arm), a new read-only code viewer kind, the `O` menu overlay and its `EXTRAS` help rows, the `LinkOpenExternal` / `FileOpenExternal` rows in `src/tui/keymap.rs`, `Space::content` / `Space::local_path` / `Space::web_url` call sites in `locate.rs` (use them; remove the `#[allow(dead_code)]` that waits on this yak), `docs/tui.md`, tests and snapshots. Out of scope: note parsing and `tui/content.rs` (`notefmt-1`), `sources.rs` and `locate::farm_file` (`srcslug-1`), `check.rs`, the resolver's behaviour, any stored link form, `migrate.rs`. Where a file overlaps (`detail_nav.rs`: `notefmt-1` edits note-anchor lines only; `locate.rs`: `srcslug-1` edits `farm_file` only) keep to your own functions so the three merge cleanly. Judge: the coordinator re-runs the evidence in a real toque session on its own build.
