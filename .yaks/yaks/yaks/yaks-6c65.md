@@ -5,7 +5,7 @@ status: shaving
 type: idea
 priority: 2
 created: '2026-11-14T11:21:01Z'
-updated: '2026-11-14T11:22:51Z'
+updated: '2026-11-14T11:22:52Z'
 parent: yaks-1151
 tags:
 - links
@@ -37,3 +37,8 @@ thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-14T11:22:52Z [linkplan-lead]
+
+Design pass done: [/doks/design/note-format.md](/doks/design/note-format.md), with the GitHub renders attached as [render evidence](yaks-6c65/render-evidence.md). Recommendation is candidate B: `#### <timestamp>` heading, an italic `*actor · key: value*` line, no `---` separator. Asking Joel below; the parser, merge-driver and TUI impact are in the dok.
