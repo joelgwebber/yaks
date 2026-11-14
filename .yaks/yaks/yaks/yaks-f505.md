@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:01Z'
-updated: '2026-11-14T11:44:53Z'
+updated: '2026-11-14T11:55:14Z'
 parent: yaks-1151
 tags:
 - links
@@ -62,3 +62,5 @@ Decision: a private farm (`yaks.private`) refuses `yaks url` for farm files (it 
 Decision: farm links use the remote of the farm worktree's branch (`gitrepo::remote_of`: `branch.<b>.remote`, else `origin`); a missing remote or an unrecognised host refuses with a message naming `yaks.host`. No guessing among several remotes.
 
 Decision: without `--pin` a link names the branch (stable); `--pin` names HEAD when a remote branch contains it, else falls back to the branch URL and says so on stderr. A file not in the remote ref gets a stderr note rather than silence (link would 404).
+
+[yaks-f505-url-evidence](yaks-f505/yaks-f505-url-evidence.txt "yaks url against this farm: a yak, an attachment, a dok, a pinned code: path")

@@ -1,0 +1,10 @@
+$ yaks url yaks-f505
+https://github.com/joelgwebber/yaks/blob/yaks/.yaks/yaks/yaks/yaks-f505.md
+$ yaks url yaks-9714/audit.md
+https://github.com/joelgwebber/yaks/blob/yaks/.yaks/yaks/yaks/yaks-9714/audit.md
+$ yaks url /doks/design/farm-layout-and-links.md
+https://github.com/joelgwebber/yaks/blob/yaks/.yaks/doks/design/farm-layout-and-links.md
+$ yaks url code:src/links.rs@6352ec2957062c748c2fba8d00a19f7603d4e149#L100-L120
+https://github.com/joelgwebber/yaks/blob/6352ec2957062c748c2fba8d00a19f7603d4e149/src/links.rs#L100-L120
+$ yaks url --pin yaks-f505
+https://github.com/joelgwebber/yaks/blob/9eb65733dab0f5c79c58ba44e69c1df2e3374bad/.yaks/yaks/yaks/yaks-f505.md
