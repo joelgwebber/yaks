@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-11T20:46:10Z'
-updated: '2026-11-14T11:35:30Z'
+updated: '2026-11-14T11:36:33Z'
 tags:
 - tui
 ---
@@ -38,3 +38,5 @@ Start: Sat Nov 14 11:32:56 UTC 2026. yaks path: /Users/joel/.local/share/yaks/fa
 ▸ 2026-11-14T11:35:30Z [comments-1]
 
 Implemented jump_block change in actions.rs + 3 tests in tests.rs (short comment, too-long comment, previous header/inside); targeted tests pass. Next: toque before/after frames, gate.
+
+[df01-before](yaks-df01/df01-before.txt "BEFORE (main e4d0ff5a): headless toque frames, 70x16, Enter then Ctrl-N x4 then Ctrl-P x2 on a yak with comments of 4/7/10/25 rows. Frame 4 (Ctrl-N to comment 2): only 3 of its 7 rows show, the rest is below the fold.")
