@@ -1,11 +1,11 @@
 ---
 id: yaks-640a
 title: Explicit label definitions in config.yaml
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-08-23T02:49:59Z'
-updated: '2026-11-14T18:04:14Z'
+updated: '2026-11-14T18:04:34Z'
 tags:
 - config
 ---
@@ -39,3 +39,13 @@ Shearing as superseded. This asked for predefined tag definitions with descripti
 - **Agent use:** `unknown_tag_warnings` in `src/schemas.rs` ([yaks-bcd7](yaks-bcd7)) warns on `create`, `update` and `bulk` when a tag is not known and names the five nearest, which is the nudge this yak wanted.
 
 **One piece is not covered:** the 2026-09-21 note asked that definitions be overridable per herd, through the cascade from [yaks-98d5](yaks-98d5). `schemas::load` reads one farm-wide `schemas/yak.md`, so a consolidated farm with several herds shares one tag list. Filed as its own idea rather than left buried here.
+
+---
+▸ 2026-11-14T18:04:34Z [linkplan-lead]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
