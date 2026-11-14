@@ -614,7 +614,10 @@ pub fn exists(root: &Path, link: &Link) -> Option<bool> {
     match link {
         Link::Farm { path, .. } if !checkable(path) => None,
         Link::Attachment { name: path, .. } if path.contains(['{', '}', '<', '>']) => None,
-        Link::Farm { path, .. } => Some(root.join(&*crate::locate::farm_file(path)).exists()),
+        Link::Farm { path, .. } => Some(
+            root.join(&*crate::locate::farm_file_in(root, path))
+                .exists(),
+        ),
         Link::Attachment { id, name, .. } => {
             Some(crate::farm::locate_attachment(root, id, name).is_some())
         }
@@ -839,7 +842,7 @@ pub fn peek(link: &Link, bases: &Bases, context: u32) -> Result<Peek> {
         }
         Link::Farm { path, rev, anchor } => {
             // `/sources/<id>` names a directory: its `source.md` is the file.
-            let path = &*crate::locate::farm_file(path);
+            let path = &*crate::locate::farm_file_in(bases.farm, path);
             let text = match rev {
                 // A farm path at a commit: the farm root is `.yaks/` in its
                 // worktree, so read through git from there.

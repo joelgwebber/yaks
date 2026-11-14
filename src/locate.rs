@@ -23,13 +23,35 @@ use std::process::{Command, Stdio};
 
 /// A farm path as it reads: `sources/<id>`, which names a directory, is that
 /// source's `source.md` (a link such as `/sources/2026-11-03-81364278`). Every
-/// other path is as written. Lexical, so it holds for a pinned link too.
+/// other path is as written. Lexical, so it holds for a pinned link too; it
+/// cannot know a source directory's slug: [`farm_file_in`] does.
 pub fn farm_file(path: &str) -> Cow<'_, str> {
     match path.strip_prefix("sources/") {
         Some(id) if !id.is_empty() && !id.contains(['/', '.']) => {
             Cow::Owned(format!("sources/{id}/source.md"))
         }
         _ => Cow::Borrowed(path),
+    }
+}
+
+/// [`farm_file`] against the farm at `root`, where a source's directory may be
+/// named `<id>-<slug>` (yaks-7729): a path naming `sources/<id>` or
+/// `sources/<id>/<file>` by the bare `<date>-<sha8>` id finds the one
+/// directory that carries it, so a link written without the slug (all of
+/// today's) keeps resolving. A path that already exists is left as written.
+pub fn farm_file_in<'a>(root: &Path, path: &'a str) -> Cow<'a, str> {
+    let named = farm_file(path);
+    if root.join(&*named).exists() {
+        return named;
+    }
+    let Some(rest) = named.strip_prefix("sources/") else {
+        return named;
+    };
+    let (id, tail) = rest.split_once('/').unwrap_or((rest, ""));
+    match crate::sources::dir_for(root, id) {
+        Some(dir) if tail.is_empty() => Cow::Owned(format!("{dir}/source.md")),
+        Some(dir) => Cow::Owned(format!("{dir}/{tail}")),
+        None => named,
     }
 }
 

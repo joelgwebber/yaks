@@ -1106,7 +1106,9 @@ enum Command {
     },
     /// Save outside material as a source, or list the farm's sources.
     ///
-    /// A source is a snapshot under `sources/<date>-<sha8>/`: the
+    /// A source is a snapshot under `sources/<date>-<sha8>-<slug>/` (the
+    /// slug is from its title; the id is `<date>-<sha8>`, and any command that
+    /// takes an id takes it with or without the slug): the
     /// original, `extracted.md` (its text, for text files), and `source.md`
     /// saying what it is and where it came from. Cite its `source.md` from a
     /// dok's `sources:` or link it from a yak. yaks fetches nothing and
@@ -1657,12 +1659,14 @@ enum SessionAction {
 #[derive(Subcommand)]
 enum SourceAction {
     /// Save a file or a small directory (at most 200 files, 5 MiB) as a
-    /// source. Saving the same content again reports the existing source;
-    /// `--refresh` updates one in place, `--text-only` keeps a markdown file as
-    /// its text alone.
+    /// source. Saving the same content again reports the existing source,
+    /// whatever `--title` says (it never renames or adds a second one);
+    /// `--refresh` updates one in place and keeps its directory name, slug
+    /// included; `--text-only` keeps a markdown file as its text alone.
     Add {
         path: PathBuf,
         /// A title naming the thing, not the file (default: the file name).
+        /// Its slug ends the new directory's name (`sources/<id>-<slug>/`).
         #[arg(long)]
         title: Option<String>,
         /// The web page this file is a saved copy of: where it came from, in
@@ -1702,7 +1706,8 @@ enum SourceAction {
     /// `--clear` the mark. Sets the field `uncited:` / `superseded_by:` in
     /// its `source.md` (one mark at a time) as one commit.
     Mark {
-        /// The source: its id, `sources/<id>`, or `sources/<id>/source.md`.
+        /// The source: its id (`<date>-<sha8>`, slug or not), `sources/<id>`,
+        /// or `sources/<id>/source.md`.
         source: String,
         /// Keep it without a citation, and say why.
         #[arg(long, value_name = "WHY", group = "how")]
