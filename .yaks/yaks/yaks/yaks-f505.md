@@ -1,11 +1,11 @@
 ---
 id: yaks-f505
 title: 'Link resolver and hosting layer: locate.rs, hosting.rs, yaks url'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-14T11:21:01Z'
-updated: '2026-11-14T11:57:20Z'
+updated: '2026-11-14T11:57:21Z'
 parent: yaks-1151
 tags:
 - links
@@ -86,3 +86,13 @@ Shear summary.
 - Docs: `docs/cli.md`, clap help, `yaks` skill Links section, README and cli config note for `yaks.host`.
 
 Evidence: `cargo test -p yaks` PASS (verify note above), `cargo fmt --check` clean, `tests/url.rs` (url flow, refusals, peek `/sources/<id>`, doctor flags `/sources/nope` and `/doks/sessions/...`), attached url output. Scratch-farm doctor run: `doks/t.md:L3: (/sources/nope) no such file in the farm`. Local-only: nothing pushed, nothing under `.yaks/` staged.
+
+---
+▸ 2026-11-14T11:57:21Z [locate-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGEKLZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
