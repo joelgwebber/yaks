@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T17:52:43Z'
-updated: '2026-11-14T23:12:07Z'
+updated: '2026-11-14T23:16:23Z'
 parent: yaks-1151
 tags:
 - links
@@ -85,3 +85,14 @@ Done in the working tree:
 - `tui/content.rs`: `parse` through `parse_note_head`, `assemble_in(shape, ..)`; `blockedit.rs` passes the body's shape.
 
 Left: anchors in `links.rs` (rebase first, main moved), merge driver `append_entry_in`, sheds/recur/tick/markdown_lint, tests (round trip over 200 real yaks, merge driver both shapes, schema 8 vs 9 farm), docs and skill, GitHub render attachment, verify.
+
+---
+▸ 2026-11-14T23:16:23Z [notefmt-1]
+kind: checkpoint
+---
+
+Checkpoint, ~23:50. Reader, writers, converter, anchors and the merge-driver shape are in and the existing 1164 unit tests pass.
+
+- Anchors: `links::note_anchor(shape, notes, i)` writes the slug (`2026-11-04t221303z`, `-1`) for a new-shape body and the timestamp for an old one; `find_note` and `is_note_anchor` accept both. `peek` of a note prints it in the body's shape.
+- Round trip: `store::note_shape_tests::real_yak_bodies_convert_to_the_same_notes` reads yak files from the farm (read only, `YAKS_NOTES_SAMPLE=<dir>` overrides, `YAKS_NOTES_LIMIT` raises the 200): over this farm's first 200 yaks, 185 converted, 766 notes, identical `NoteEntry` lists, idempotent. With `YAKS_NOTES_LIMIT=5000`: 761 yaks, 3307 notes, all identical.
+- Left: merge-driver tests in the new shape, `tui/content.rs` round-trip tests, sheds/recur/lint checks, docs, GitHub render, verify.
