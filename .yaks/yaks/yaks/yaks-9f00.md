@@ -1,11 +1,11 @@
 ---
 id: yaks-9f00
 title: 'Implement the new note format: reader, writer, converter, anchors'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-14T17:52:43Z'
-updated: '2026-11-14T23:30:29Z'
+updated: '2026-11-14T23:30:30Z'
 parent: yaks-1151
 tags:
 - links
@@ -144,3 +144,13 @@ Summary. Notes can be read and written in the new shape (`#### <ts>` heading, it
 - `farm.rs`/`store::move_task_with` write through `Farm::shape()`; `links.rs` anchors accept timestamp and slug; `mergedriver.rs`, `tui/content.rs` (`assemble_in`), `blockedit.rs`, `sessions.rs` follow the body's shape; `markdown_lint::note_heading_in_description` added (not wired into `doctor`: `check.rs` is not mine).
 - Docs: `docs/cli.md`, `docs/README.md`, the `yaks` skill's Metadata paragraph, the tidy-request text.
 - Gate: `cargo test -p yaks` all green (1187 unit tests plus integration), `cargo fmt --check` clean; `yaks verify` PASS. The GitHub render shows `<h4>` headings but the markdown API gives no `id=` (see the evidence note).
+
+---
+▸ 2026-11-14T23:30:30Z [notefmt-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGKnNJIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
