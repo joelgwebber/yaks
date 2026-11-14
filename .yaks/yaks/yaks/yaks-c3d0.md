@@ -1,11 +1,11 @@
 ---
 id: yaks-c3d0
 title: Display links to source files directly in the TUI
-status: hairy
+status: shaving
 type: feature
 priority: 3
 created: '2026-11-11T21:09:28Z'
-updated: '2026-11-14T17:51:11Z'
+updated: '2026-11-14T22:59:04Z'
 depends_on:
 - yaks-f505
 tags:
@@ -66,3 +66,13 @@ kind: pickup
 picked up
 
 Decision (Joel): all four as proposed: Enter on a `code:` link opens the read-only viewer; `O` is the take-it-out menu everywhere (`e` editor, `o` system open, `p` absolute path, `r` farm or repo path, `g` host link); `p` on a pinned `code:` file is the working-tree path when unchanged since the pin, else a read-only temp copy; no recognised host says so and names `yaks.host`. Added by Joel: resilience when a referenced commit is not visible locally (an agent on another machine dropped or never pushed a hash): that must give a clear message and a fallback, never an error or a hang.
+
+---
+▸ 2026-11-14T22:59:04Z [linkplan-lead]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
