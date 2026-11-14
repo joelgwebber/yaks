@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-14T22:38:26Z'
+updated: '2026-11-14T22:42:07Z'
 parent: yaks-1c89
 depends_on:
 - yaks-f505
@@ -97,3 +97,25 @@ Decision: a `verified:` DATE covers that whole day (end of day UTC); a commit ma
 ▸ 2026-11-14T22:38:26Z [check-1]
 
 Resumed after the network drop (22:38Z). Working tree has: `src/check.rs` (new kinds `code-moved`/`code-gone`, `Report`, `code_changes`, 10 unit tests) and `src/main.rs` (`Command::Check` prints info lines, clap help). My base `dc8aaa92` already contains the landed resolver (298b91ac, 3c258a53); `local/main` in this clone is the older remote ref, nothing newer to rebase on. 12 of 13 unit tests pass; fixing one test assertion (path-extraction in the frontmatter test), then the integration test, docs, real run.
+
+---
+▸ 2026-11-14T22:42:07Z [check-1]
+
+Evidence, real runs with my binary (`target/debug/yaks`, base dc8aaa92).
+
+Against this farm as it is: `yaks check` reports no `code-moved`. `/doks/design/knowledge-store.md` cites `code:docs/README.md` unpinned and has `verified: 2026-11-10`; `git log --format='%h %cI' -- docs/README.md` shows its newest commit is 671320f9, 2026-11-06, so nothing moved since the verification: correct, no finding.
+
+Against a scratch copy of the farm (copied to /tmp, `YAKS_DIR` pointing at it, never touching the real farm) with that dok's `verified:` set to 2026-11-01:
+
+```
+Code has changed since the dok was written or last verified (commits to a `code:` path it cites):
+  doks/design/knowledge-store.md cites code:docs/README.md: 4 commits to it since it was verified 2026-11-01
+
+To clear a code finding: read the dok against the code, fix what drifted, then `yaks dok set <path> --set verified=<date>`.
+```
+
+`--json` gives `{"kind":"code-moved","message":...,"ids":["doks/design/knowledge-store.md","code:docs/README.md"]}`.
+
+Confirmed by hand: `git log --format='%h %cI' --since=2026-11-02T00:00:00Z -- docs/README.md` lists 671320f9, 6352ec29, 5cf76867 (all 2026-11-04..06) and de32523e at 2026-11-01T20:50-05:00 = 2026-11-02T01:50Z, which is after the 2026-11-02T00:00Z `--since` but before the end of the verified day 2026-11-01 UTC... so git's `--since` shows 4, while the check's rule (a verified DATE covers its whole day in UTC, commits strictly after 2026-11-01T23:59:59Z) counts commits after it: de32523e is 2026-11-02T01:50Z, so it counts: 4 total. Matches.
+
+Tests: 13 `check::` unit tests with scratch code repos (pinned with later commits, pinned with none, pinned + verified before/after/exact, unpinned since verified, no verified and no farm commit skipped, frontmatter `sources:`/`code:` lists, no checkout = one note and no finding, removed file unpinned = gone and pinned = counted, unknown pin = note) and one `tests/check.rs` integration test (unpinned, falls back to the dok's last farm commit, `code-gone`, `--json` ids, exit 1, hint line, `verified:` clears to exit 0). `cargo fmt --check` clean, clippy has no warnings in check.rs.
