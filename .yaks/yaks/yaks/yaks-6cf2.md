@@ -5,14 +5,13 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-14T17:42:32Z'
+updated: '2026-11-14T17:51:08Z'
 parent: yaks-1c89
 depends_on:
 - yaks-f505
 tags:
 - cli
 - doks
-needs: agent
 ---
 
 From [the agent-memory research](/doks/research/agent-memory-dreaming.md#3-let-evidence-not-only-the-clock-say-what-to-re-check) (yaks-e4f5): `yaks check` only knows clock staleness (`stale_after:`). A dok that describes code goes wrong when the code moves, and the farm already holds the evidence: `code:` links name the files, `@sha` pins what was read.
@@ -48,3 +47,12 @@ needs: agent
 Ooh, that's a great idea I hadn't even considered for updating doks. Makes perfect sense for unpinned code links, as they can drift (pinned ones _shouldn't_ in all normal cases that don't involve deep git surgery, right?).
 
 I'm good with all those design choices. On the last bit with pinned code links, see my earlier comment. If we *do* need to handle that parsing case for some reason, then yes -- let's defer it and leave a comment on yaks-1151 or another appropriate yak about unifying the resolution.
+
+---
+▸ 2026-11-14T17:51:08Z [linkplan-lead]
+kind: pickup
+---
+
+picked up
+
+Decision (Joel): accept all three (since `verified:` else the dok's last farm commit; no threshold; no code checkout means skip with an info line). Scope: `code:` links only. A pinned link should not drift in normal use, so only unpinned links count as findings (a pinned one still reports when its path has commits since the pin AND the dok has no `verified:` after them, per the original yak; keep it as the yak says). Host-URL code links are not read here: unifying their resolution is recorded on yaks-1151, and this is built through the resolver once that lands.
