@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-11T15:55:50Z'
-updated: '2026-11-14T13:17:18Z'
+updated: '2026-11-14T13:18:18Z'
 tags:
 - tui
 ---
@@ -44,3 +44,5 @@ Milestone: code + docs done, tests passing (tag filter). Remaining: render toque
 - `editor_key`: the `L` editor (`EditAction::Labels`) uses `tag_completion` on Tab.
 - Drawer row 3: Tab on a partial tag opens the picker; `finish_insert` has a Drawer arm and re-runs `drawer_live_preview`.
 - Hint: `Tab → complete tag` on the drawer's tags row and beside the `L` line.
+
+![drawer-hint](yaks-bf1b/drawer-hint.png "Filter drawer, tags row on a partial tag 'ru': the hint line says Tab → complete tag")
