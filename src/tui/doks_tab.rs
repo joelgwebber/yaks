@@ -530,7 +530,7 @@ mod tests {
         assert!(app.selected_doc().is_some());
         assert!(matches!(app.selected_row(), Some(tree::Item::Doc(_))));
         for keys in [
-            "S", "P", "T", "L", "X", "D", "M", "a", "Q", "A", "*", "m", "C",
+            "S", "P", "T", "Y", "X", "D", "M", "a", "Q", "A", "*", "m", "C",
         ] {
             press(&mut app, keys);
             assert!(

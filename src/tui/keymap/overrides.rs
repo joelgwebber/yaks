@@ -384,6 +384,24 @@ mod tests {
     }
 
     #[test]
+    fn overrides_of_tags_and_type_are_by_command_name_not_by_key() {
+        // yak.tags / yak.type moved from L / T to T / Y: an override names the
+        // command, so it replaces the new default and the new letters go dead.
+        let (km, problems) = Keymap::from_config(
+            "keys:\n  yak.tags: [\"I\"]\n  yak.type: [\"L\"]\n",
+            Family::Vim,
+        );
+        assert!(problems.is_empty(), "{problems:?}");
+        let yak = Some(Yak);
+        for ctx in [Ctx::List, Ctx::Detail] {
+            assert_eq!(km.lookup(ctx, yak, &key('I')), Some(YakTags), "{ctx:?}");
+            assert_eq!(km.lookup(ctx, yak, &key('L')), Some(YakType), "{ctx:?}");
+            assert_eq!(km.lookup(ctx, yak, &key('T')), None, "{ctx:?}");
+            assert_eq!(km.lookup(ctx, yak, &key('Y')), None, "{ctx:?}");
+        }
+    }
+
+    #[test]
     fn the_reference_and_the_hint_show_the_effective_keys() {
         let (km, _) = Keymap::from_config(
             "keys:\n  view.next: [\"Ctrl-L\"]\n  filter.drawer: [\"Ctrl-F\"]\n",

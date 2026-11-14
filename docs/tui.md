@@ -207,7 +207,7 @@ the register and the scroll and cursor from before; the status bar shows
 |---|---|
 | `c` / `C` | New root / child yak |
 | `E` | Edit what the cursor is on: a body row (the description or a comment) turns that block into an editor **in place**; a header row (`Title:`, `Type:`, `Priority:`, `Tags:`, `Source:`, `Herd:`) opens the form on that field (`Status:` opens the state picker) |
-| `P` / `T` / `L` / `S` | Priority / type / tags / state. State moves keep families consistent like the CLI's ([Families stay consistent](cli.md#families-stay-consistent)): shaving also shaves hairy ancestors, and a move that would leave open work under a shorn or dead yak is refused |
+| `P` / `Y` / `T` / `S` | Priority / type / tags / state. State moves keep families consistent like the CLI's ([Families stay consistent](cli.md#families-stay-consistent)): shaving also shaves hairy ancestors, and a move that would leave open work under a shorn or dead yak is refused |
 | `S` → `n` | Shear: a one-line prompt asks for an optional comment, recorded as a note on the yak before it moves to shorn (so `yaks doctor --strict` sees evidence). `Enter` on an empty line shears with no note; `Ctrl-C` (or `Esc` in emacs mode, a double-`Esc` in vim) cancels and leaves the yak as it was. With marks, the one comment goes on every yak that moves. |
 | `D` / `R` | Add dependency / reparent |
 | `H` | Move to another herd (multi-herd farms) |
@@ -617,7 +617,7 @@ list holds every status but dead.
 
 ![yaks TUI filter drawer](assets/tui-drawer.svg)
 
-Tag fields (the `L` editor, the create/edit form's `tags`, the drawer's
+Tag fields (the `T` editor, the create/edit form's `tags`, the drawer's
 tag filter) take tags separated by commas and/or spaces — `ui, docs`,
 `ui docs`, and `ui,docs` all mean `[ui, docs]`; a tag can contain neither.
 `Tab` on a partial tag completes it from the farm's tags (see
@@ -789,7 +789,7 @@ row also close it (the click selects the row). `q` quits, as everywhere, and
   picker as `Tab` after `<prefix>-` for a yak id; heading anchors (`#…`),
   relative links and sources are not completed.
 - **Completing a tag**: in any tags field (the create/edit form's `Tags`, the
-  `L` editor, and the filter drawer's tags row), `Tab` on a partial tag (the
+  `T` editor, and the filter drawer's tags row), `Tab` on a partial tag (the
   text since the last comma or space) opens the same picker, seeded with it,
   and the hint line says `Tab → complete tag`. Rows are the farm's known tags
   first (`tags:` in `schemas/yak.md`, each with its description), then every
@@ -798,7 +798,7 @@ row also close it (the click selects the row). `q` quits, as everywhere, and
   to the next field (in the drawer, to the next row) instead of reopening the
   picker; in the drawer the pick also re-runs the live filter. `Ctrl-C` leaves
   the text as typed. With nothing typed since a comma or space, or in an empty
-  field, `Tab` moves on as before (in the `L` editor, which has no next field,
+  field, `Tab` moves on as before (in the `T` editor, which has no next field,
   it does nothing). A `<prefix>-…` token in these fields is a tag, not a yak ref.
 
 ## Doks tab

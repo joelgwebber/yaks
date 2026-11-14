@@ -1,6 +1,6 @@
 ---
 source: src/tui/tests.rs
-assertion_line: 744
+assertion_line: 894
 expression: "draw(&app, 110, 24)"
 ---
  🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   📖  Doks (0)   🛖  Sheds (…)
@@ -12,8 +12,8 @@ expression: "draw(&app, 110, 24)"
 
  Keys · list · yak rows ──────────────────────────────────────────────────────────────────────────────────────
  Move                     i          nav.forward    P         yak.priority  F        family.cycle
- j/↓      move.down       o          nav.back       T         yak.type      `        view.pick
- k/↑      move.up         Find                      L         yak.tags      V        view.save
+ j/↓      move.down       o          nav.back       Y         yak.type      `        view.pick
+ k/↑      move.up         Find                      T         yak.tags      V        view.save
  d/Ctrl-D move.half_down  /          search.open    D         yak.dep       Esc      view.revert
  u/Ctrl-U move.half_up    n/F3       find.next      R         yak.reparent  f        filter.drawer
  PgDn     move.page_down  N/Shift-F3 find.prev      H         yak.herd      Farm

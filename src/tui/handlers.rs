@@ -351,11 +351,11 @@ pub(crate) fn editor_key(
     let esc_cancels = ed.single_line && k.code == KeyCode::Esc && !ed.vim;
     let cancel = (ctrl && k.code == KeyCode::Char('c')) || esc_cancels || double_esc;
     // Tab opens the completer when the cursor is in a `<prefix>-…` context (a
-    // partial tag in the `L` field); otherwise it falls through as a normal
+    // partial tag in the `T` field); otherwise it falls through as a normal
     // editor key.
     let complete = if k.code == KeyCode::Tab {
         if matches!(ed.action, EditAction::Labels(_)) {
-            // The `L` field holds tags, not markdown: a tag completes, and a
+            // The `T` field holds tags, not markdown: a tag completes, and a
             // `<prefix>-…` tag is a tag, not a yak ref.
             tag_completion(&ed.state)
         } else {

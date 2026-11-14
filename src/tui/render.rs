@@ -1555,7 +1555,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
     // A single-line editor field owns the status line while active.
     if let Overlay::Edit(ed) = &app.overlay {
         if ed.single_line {
-            // The `L` field completes tags on Tab: say so at the right edge,
+            // The `T` field completes tags on Tab: say so at the right edge,
             // beside the line (the line editor owns the rest of the bar).
             let hint = "  Tab → complete tag";
             let hint_w = hint.chars().count() as u16;

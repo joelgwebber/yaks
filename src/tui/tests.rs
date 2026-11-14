@@ -91,7 +91,7 @@ fn priority_picker_overlay() {
 #[test]
 fn type_picker_overlay() {
     let mut app = sample();
-    handle_key(&mut app, key('T'));
+    handle_key(&mut app, key('Y'));
     insta::assert_snapshot!(draw(&app, 72, 14));
 }
 
@@ -407,9 +407,9 @@ fn esc_cancels_picker() {
 
 #[test]
 fn label_editor_field() {
-    // L opens a single-line field on the status line, seeded with labels.
+    // T opens a single-line field on the status line, seeded with labels.
     let mut app = editable();
-    handle_key(&mut app, key('L'));
+    handle_key(&mut app, key('T'));
     assert!(matches!(app.overlay, Overlay::Edit(_)));
     insta::assert_snapshot!(draw(&app, 72, 14));
 }
@@ -488,7 +488,7 @@ fn enter_continues_lists_and_quotes_in_the_comment_editor() {
 fn enter_does_not_continue_in_a_single_line_field() {
     let enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
     let mut app = editable();
-    handle_key(&mut app, key('L')); // single-line labels editor
+    handle_key(&mut app, key('T')); // single-line labels editor
     typ(&mut app, "- a");
     handle_key(&mut app, enter); // saves and closes: no continuation
     assert!(matches!(app.overlay, Overlay::None));
@@ -501,7 +501,7 @@ fn single_line_vim_reaches_normal_mode() {
     // (or a rapid double-Esc).
     let mut app = editable();
     assert!(app.editor_vim());
-    handle_key(&mut app, key('L')); // single-line labels editor (starts Insert)
+    handle_key(&mut app, key('T')); // single-line labels editor (starts Insert)
     typ(&mut app, "aaa bbb");
     handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
     // First Esc: still editing, now in Normal mode.
@@ -822,7 +822,7 @@ fn single_line_emacs_esc_cancels_immediately() {
     // cancel a single-line field on the first press.
     let mut app = editable();
     app.keymap.family = Family::Standard;
-    handle_key(&mut app, key('L'));
+    handle_key(&mut app, key('T'));
     assert!(matches!(app.overlay, Overlay::Edit(_)));
     handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
     assert!(matches!(app.overlay, Overlay::None), "emacs Esc cancels");
@@ -2420,7 +2420,7 @@ mod live {
     fn type_pick_updates_and_reloads() {
         let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
         let mut app = App::with_farm(farm).unwrap();
-        press(&mut app, "Tb");
+        press(&mut app, "Yb");
         assert_eq!(app.task("t0").unwrap().kind, "bug");
         assert_eq!(app.notification.as_deref(), Some("t0 → bug"));
     }
@@ -3116,7 +3116,7 @@ mod live {
     fn labels_edit_commits() {
         let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
         let mut app = App::with_farm(farm).unwrap();
-        press(&mut app, "L"); // empty labels field
+        press(&mut app, "T"); // empty labels field
         press(&mut app, "x, y");
         enter(&mut app);
         assert_eq!(
@@ -3133,11 +3133,11 @@ mod live {
         legacy.tags = vec!["ui,docs".into()];
         let (_dir, farm) = temp_farm(&[legacy, task("t1", "plain", Status::Hairy, 3, None)]);
         let mut app = App::with_farm(farm).unwrap();
-        press(&mut app, "L"); // seeded "ui,docs"; accepting it re-splits
+        press(&mut app, "T"); // seeded "ui,docs"; accepting it re-splits
         enter(&mut app);
         assert_eq!(app.task("t0").unwrap().tags, ["ui", "docs"]);
         press(&mut app, "j"); // -> t1 (no labels)
-        press(&mut app, "L");
+        press(&mut app, "T");
         press(&mut app, "rust tui, rust,,cli");
         enter(&mut app);
         assert_eq!(app.task("t1").unwrap().tags, ["rust", "tui", "cli"]);
@@ -7724,7 +7724,7 @@ mod keys {
             "Ctrl-F opens the search"
         );
         esc_key(&mut app);
-        press(&mut app, "L");
+        press(&mut app, "T");
         match &app.overlay {
             Overlay::Edit(ed) => assert!(!ed.vim, "the labels editor is emacs-style"),
             _ => panic!("no editor"),
@@ -7860,7 +7860,7 @@ mod keys {
         type Opener = fn(&mut App);
         let cases: Vec<(&str, Opener)> = vec![
             ("comment editor", |a| open_body_editor(a)),
-            ("labels field", |a| press(a, "L")),
+            ("labels field", |a| press(a, "T")),
             ("search", |a| press(a, "/")),
             ("go to", |a| press(a, "#")),
             ("filter drawer", |a| press(a, "f")),
@@ -8155,12 +8155,12 @@ fn picking_a_tag_before_a_separator_steps_over_it_instead_of_adding_one() {
     assert!(matches!(&app.overlay, Overlay::Create(f) if f.row == 4));
 }
 
-/// The `L` editor on the first yak of the tag farm.
+/// The `T` editor on the first yak of the tag farm.
 fn labels_editor_app() -> (std::path::PathBuf, App) {
     let (dir, mut app) = tag_form_app();
     app.overlay = Overlay::None;
     app.cursor = 0;
-    handle_key(&mut app, key('L'));
+    handle_key(&mut app, key('T'));
     assert!(matches!(&app.overlay, Overlay::Edit(ed)
         if matches!(ed.action, crate::tui::EditAction::Labels(_))));
     (dir, app)
@@ -8169,12 +8169,12 @@ fn labels_editor_app() -> (std::path::PathBuf, App) {
 fn labels_text(app: &App) -> String {
     match &app.overlay {
         Overlay::Edit(ed) => ed.text(),
-        _ => panic!("expected the `L` editor"),
+        _ => panic!("expected the `T` editor"),
     }
 }
 
 #[test]
-fn tab_in_the_l_editor_completes_a_tag_and_a_pick_moves_past_it() {
+fn tab_in_the_t_editor_completes_a_tag_and_a_pick_moves_past_it() {
     let (_dir, mut app) = labels_editor_app();
     // Clear the existing tags, then type a partial one.
     if let Overlay::Edit(ed) = &mut app.overlay {

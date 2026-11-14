@@ -261,7 +261,7 @@ pub(crate) enum CompleteKind {
     Yak,
     /// A dok's farm-root link path, after `/doks/` or `/<herd>/doks/`.
     Dok,
-    /// A tag, in a tags field: the form's, the `L` editor's or the filter
+    /// A tag, in a tags field: the form's, the `T` editor's or the filter
     /// drawer's ([`tag_completion`]).
     Tag,
 }
@@ -329,7 +329,7 @@ pub(crate) fn completion_context(state: &RefCell<EditorState>, prefix: &str) -> 
         })
 }
 
-/// The tag completion at the cursor of a tags field (the form's, the `L`
+/// The tag completion at the cursor of a tags field (the form's, the `T`
 /// editor's, the filter drawer's): the run of
 /// non-space, non-comma chars before the cursor, seeding the picker. `None`
 /// right after a comma or space, or in an empty field (Tab then moves on).
