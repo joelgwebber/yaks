@@ -107,3 +107,8 @@ Decision: `sync` dirty check is `git status --porcelain -- . ':(exclude).agents'
 ▸ 2026-11-14T12:17:57Z [layout-1]
 
 Decision: TUI per-user state. At `App::with_farm`, before anything loads, `views_store::adopt_legacy_state` copies the old key's files (`~/.config/yaks/<slug(<root>/.yaks)>/**` = views, working set, drafts, and the cache file `~/.cache/yaks/<slug>.json`) to the new key. Conflict rule: a file that already exists under the new key is kept, never overwritten; old files are never deleted (an older yaks keeps reading them). Run on every start but a no-op once the new files exist. Not run for a root that is itself `.yaks/` (key unchanged). Rejected: moving (breaks an older binary alongside) and keying by worktree (still changes the key once).
+
+---
+▸ 2026-11-14T12:17:57Z [layout-1]
+
+Decision: `yaks init` is unchanged for a fresh farm (`.yaks/`), but on an existing branch `init.rs` now takes the root from `farm_root_in` and `branch_holds_farm` accepts `config.yaml`/`schema`/`.yaks` at the branch tip, so init no longer calls a root-layout branch "not a farm". `store::init` decides `AlreadyExists` by `config.yaml`/`schema`, or an existing `.yaks/` directory, not `root.exists()`.
