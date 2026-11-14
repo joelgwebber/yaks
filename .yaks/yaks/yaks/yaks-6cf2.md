@@ -5,14 +5,14 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-14T11:21:18Z'
+updated: '2026-11-14T17:42:32Z'
 parent: yaks-1c89
 depends_on:
 - yaks-f505
 tags:
 - cli
 - doks
-needs: human
+needs: agent
 ---
 
 From [the agent-memory research](/doks/research/agent-memory-dreaming.md#3-let-evidence-not-only-the-clock-say-what-to-re-check) (yaks-e4f5): `yaks check` only knows clock staleness (`stale_after:`). A dok that describes code goes wrong when the code moves, and the farm already holds the evidence: `code:` links name the files, `@sha` pins what was read.
@@ -38,3 +38,13 @@ Three design points this yak lists; answers I would build with unless you say ot
 One new interaction: yaks-1151 will store pinned code links as host URLs (`https://github.com/o/r/blob/<sha>/path#L12`) that yaks parses back into code links. `check` must read both forms, so it should go through the shared resolver (yaks-1151's resolver yak) rather than its own parse. Lean: build it after that yak lands, not before.
 
 Answer "go" to accept all three, or say what to change.
+
+---
+▸ 2026-11-14T17:42:32Z [sched-1]
+kind: answer
+needs: agent
+---
+
+Ooh, that's a great idea I hadn't even considered for updating doks. Makes perfect sense for unpinned code links, as they can drift (pinned ones _shouldn't_ in all normal cases that don't involve deep git surgery, right?).
+
+I'm good with all those design choices. On the last bit with pinned code links, see my earlier comment. If we *do* need to handle that parsing case for some reason, then yes -- let's defer it and leave a comment on yaks-1151 or another appropriate yak about unifying the resolution.
