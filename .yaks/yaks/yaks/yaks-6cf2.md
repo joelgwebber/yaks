@@ -1,11 +1,11 @@
 ---
 id: yaks-6cf2
 title: 'check: flag doks whose cited code has changed since the pin or last verification'
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-14T22:48:06Z'
+updated: '2026-11-14T22:48:07Z'
 parent: yaks-1c89
 depends_on:
 - yaks-f505
@@ -138,3 +138,13 @@ Summary. New `code-moved` and `code-gone` findings in `src/check.rs`; `Command::
 - Gate: `yaks verify yaks-6cf2` PASS (`cargo test -p yaks`); `cargo fmt --check` clean.
 
 Correction to my evidence note's hand check, plainly: the scratch dok was `verified: 2026-11-01`, which covers up to 2026-11-01T23:59:59Z. `git log --format='%h %cI' -- docs/README.md` has four commits after that (de32523e at 2026-11-02T01:50Z, 5cf76867, 6352ec29, 671320f9), so the reported 4 is right.
+
+---
+▸ 2026-11-14T22:48:07Z [check-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGKpipIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
