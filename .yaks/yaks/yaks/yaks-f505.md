@@ -1,11 +1,11 @@
 ---
 id: yaks-f505
 title: 'Link resolver and hosting layer: locate.rs, hosting.rs, yaks url'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:01Z'
-updated: '2026-11-14T11:21:01Z'
+updated: '2026-11-14T11:21:30Z'
 parent: yaks-1151
 tags:
 - links
@@ -31,3 +31,13 @@ The TUI menu (yaks-c3d0), any layout change, any change to what is stored. Do no
 Unit tests for every template and for remote-URL parsing (`git@host:o/r.git`, `ssh://`, `https`, GHES, GitLab subgroups, Azure DevOps ssh). A run of `yaks url` against this farm and a code file pinned at a sha, pasted in the shear note. `yaks peek /sources/<id>` working. `yaks doctor` flagging a broken `/sources/` link.
 
 Docs in the same change: `docs/cli.md`, the clap help, the `yaks` skill's Links section, `yaks.host` in the config docs.
+
+---
+▸ 2026-11-14T11:21:30Z [linkplan-lead]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
