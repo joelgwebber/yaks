@@ -5,7 +5,7 @@ status: hairy
 type: bug
 priority: 2
 created: '2026-11-06T21:37:13Z'
-updated: '2026-11-14T17:51:06Z'
+updated: '2026-11-14T17:52:05Z'
 parent: yaks-3f35
 tags:
 - skills
@@ -55,3 +55,10 @@ kind: pickup
 picked up
 
 Decision (Joel): option 1. Link words that carry meaning (the date a fact was settled, or the phrase the session established), no `sessions:` frontmatter for now. Existing citations are left as they are. Joel also asked whether session paths should carry a slug: they already do (`sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md`); the dated-and-hashed directories are sources (`sources/<date>-<sha8>/`), asked separately on the migration yak.
+
+---
+▸ 2026-11-14T17:52:05Z [linkplan-lead]
+
+Correction to my pickup note: I said the sources question was "asked separately on the migration yak". It was not; it is now its own yak under yaks-1151 (see the sources-slug idea there). Session paths already carry a slug, so only sources lack one.
+
+Work to do here (own tier, a prose change): in the `yaks-upkeep` skill, "Reviewing session notes" step 3 and the example near it, replace `[session](/sessions/...)` with a citation whose link words carry meaning (the date a fact was settled, or the phrase the session established). Existing citations in other farms stay as they are.
