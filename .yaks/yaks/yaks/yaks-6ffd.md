@@ -49,3 +49,8 @@ thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-14T11:32:23Z [linkplan-lead]
+
+Claim: worker `layout-1` (Sonnet tier, standing delegation). Owns, by symbol: `store::farm_git` / `FarmGit` and the `root.parent()` users in `status.rs`, `sync.rs`, `weight.rs`, `sheds.rs`, `farm.rs`, `tui/farmsync.rs`; `preflight::yak_id_of`; `weight::kind_of`; the land guard in `land.rs`; `store::init` and `init.rs`; `store::migration_refusal`; the TUI per-user state paths (`views_store.rs`, `cache.rs`, `drafts.rs`); and in `links.rs` only `read_at` and `code_base`. Out of scope: `.gitattributes` and LFS rules, moving files, link rewriting, any stored form. Another worker (`locate-1`, yaks-f505) owns `locate.rs`, `hosting.rs`, `gitrepo.rs`, `links::exists` and `tui/follow.rs`: do not edit those. Judge: the coordinator re-runs the evidence on its own build.
