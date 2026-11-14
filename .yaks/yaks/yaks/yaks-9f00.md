@@ -1,11 +1,11 @@
 ---
 id: yaks-9f00
 title: 'Implement the new note format: reader, writer, converter, anchors'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T17:52:43Z'
-updated: '2026-11-14T17:52:43Z'
+updated: '2026-11-14T17:53:12Z'
 parent: yaks-1151
 tags:
 - links
@@ -44,3 +44,13 @@ Migrating any farm, `store::SCHEMA` bump, link rewriting, the resolver, docs bey
 ## Evidence
 
 Round-trip tests (old to parse to new to parse to the same `NoteEntry`s, over the real notes in this farm: write a test that runs the converter over a sample of 200 real yak bodies copied into `tests/fixtures` or generated, then parses both and compares); merge-driver tests for both shapes; a test that a schema-8 farm still writes the old shape and a schema-9 scratch farm the new one; a `gh api -X POST markdown -f mode=gfm -f text=@file` render of one converted real yak, attached, showing headings with the expected ids.
+
+---
+▸ 2026-11-14T17:53:12Z [linkplan-lead]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
