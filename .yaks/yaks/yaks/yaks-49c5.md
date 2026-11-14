@@ -5,12 +5,11 @@ status: hairy
 type: idea
 priority: 4
 created: '2026-11-14T17:52:03Z'
-updated: '2026-11-14T17:59:07Z'
+updated: '2026-11-14T22:37:46Z'
 parent: yaks-1151
 tags:
 - links
 - doks
-needs: agent
 ---
 
 From Joel's answer on yaks-5f70: while the farms are small, should paths carry a readable slug as well as the date and hash? Session notes already do (`sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md`). Sources do not: `sources/<date>-<sha8>/` names a snapshot by date and content hash only, so a source link in prose or a GitHub tree listing says nothing about it.
@@ -45,3 +44,12 @@ needs: agent
 ---
 
 Whoops, my mistake. As long as we can implement the de-duping stuff reliably, let's add the slug. I find it very difficult to scan sources quickly otherwise.
+
+---
+▸ 2026-11-14T22:37:46Z [linkplan-lead]
+kind: pickup
+---
+
+picked up
+
+Decision (Joel, 2026-11-14): add the slug, `sources/<date>-<sha8>-<slug>/`, "as long as we can implement the de-duping stuff reliably": Joel finds sources hard to scan without it. It joins the schema-9 migration (yaks-acc0). The condition is the work: `source add` must still return the existing source for the same bytes whatever title is given (match on the `<date>-<sha8>` prefix, never on the slug), and `--refresh` must keep one id for a source whose title changes. Both get tests before the migration renames anything. Filed as its own implementation yak below.
