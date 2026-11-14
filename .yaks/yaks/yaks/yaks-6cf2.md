@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-14T17:53:19Z'
+updated: '2026-11-14T17:54:27Z'
 parent: yaks-1c89
 depends_on:
 - yaks-f505
@@ -78,3 +78,8 @@ moved: hairy -> shaving
 ▸ 2026-11-14T17:53:19Z [linkplan-lead]
 
 Claim: worker `check-1` (Sonnet tier). Owns `src/check.rs` (the new finding and its report/`--json` shape), its tests, the `yaks check` paragraph in `docs/cli.md` and in the `yaks-research` skill, and the clap help for `check` if it lists findings. Reads `code:` links through `locate.rs` / `links.rs` as landed (yaks-f505); do not edit those. Out of scope: host-URL code links, schemas, other check findings.
+
+---
+▸ 2026-11-14T17:54:27Z [check-1]
+
+Start: Sat Nov 14 17:54:19 UTC 2026. Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-6cf2.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/hrp40zefpg6c/yaks
