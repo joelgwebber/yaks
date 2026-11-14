@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-14T17:52:43Z'
-updated: '2026-11-14T23:31:03Z'
+updated: '2026-11-14T23:35:40Z'
 parent: yaks-1151
 tags:
 - links
@@ -164,3 +164,10 @@ branch: main
 ---
 
 landed: 7585597e yaks-9f00: new note format (#### heading, italic actor/meta line): reader, schema-gated writer, convert_notes, slug anchors
+
+---
+▸ 2026-11-14T23:35:40Z [linkplan-lead]
+
+Reviewed and landed (`7585597e`). Gate 1215 passed, `cargo fmt --check` clean. Full round trip over four farms is in the note on yaks-acc0 (762, 113, 145 and 682 yaks, all identical); it found 50 hand-headed yaks in the joel farm that the converter rightly leaves alone, which the worker's test did not allow for (fixed in a follow-up commit).
+
+Not verified by the worker, and not by me: the rendered `<h4 id="user-content-...">` ids. The markdown API returns a fragment without ids, so they are assumed from GitHub's slug rule. They will be seen on a real pushed branch during the migration rehearsal.
