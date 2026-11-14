@@ -1,11 +1,11 @@
 ---
 id: yaks-5f70
 title: Session citations in doks read as a bare (session)
-status: hairy
+status: shaving
 type: bug
 priority: 2
 created: '2026-11-06T21:37:13Z'
-updated: '2026-11-14T17:52:05Z'
+updated: '2026-11-14T17:54:16Z'
 parent: yaks-3f35
 tags:
 - skills
@@ -62,3 +62,13 @@ Decision (Joel): option 1. Link words that carry meaning (the date a fact was se
 Correction to my pickup note: I said the sources question was "asked separately on the migration yak". It was not; it is now its own yak under yaks-1151 (see the sources-slug idea there). Session paths already carry a slug, so only sources lack one.
 
 Work to do here (own tier, a prose change): in the `yaks-upkeep` skill, "Reviewing session notes" step 3 and the example near it, replace `[session](/sessions/...)` with a citation whose link words carry meaning (the date a fact was settled, or the phrase the session established). Existing citations in other farms stay as they are.
+
+---
+▸ 2026-11-14T17:54:16Z [linkplan-lead]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
