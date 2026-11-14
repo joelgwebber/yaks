@@ -1,11 +1,11 @@
 ---
 id: yaks-6c65
 title: 'Design: new note format with anchors that render on GitHub'
-status: shaving
+status: shorn
 type: idea
 priority: 2
 created: '2026-11-14T11:21:01Z'
-updated: '2026-11-14T17:51:01Z'
+updated: '2026-11-14T17:51:14Z'
 parent: yaks-1151
 tags:
 - links
@@ -89,3 +89,13 @@ kind: pickup
 picked up
 
 Decision (Joel, 2026-11-14): note format B as in [/doks/design/note-format.md](/doks/design/note-format.md): `#### <timestamp>` heading, an italic `*actor · key: value*` line, no `---` separator; separator ` · ` (a pipe or slash would risk misparsing); `####`; Azure DevOps slugs accepted. Joel's caveat: notes that contain their own higher headings read oddly in the outline; no better option found. Implemented under a new yak, shorn here as the design.
+
+---
+▸ 2026-11-14T17:51:14Z [linkplan-lead]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
