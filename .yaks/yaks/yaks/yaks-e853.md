@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-09T23:51:02Z'
-updated: '2026-11-14T11:41:35Z'
+updated: '2026-11-14T11:41:37Z'
 tags:
 - tui
 ---
@@ -46,3 +46,5 @@ Milestone: implemented `LineNav::reveal_link_sideways` called at the end of `jum
 ![before](yaks-e853/before.png "BEFORE (main behaviour): Tab onto link 'one' in a wide table, offset 0, link off screen (46x12 toque frame)")
 
 ![after-tab1](yaks-e853/after-tab1.png "AFTER: Tab onto 'one' scrolls the table block so the link sits between the markers")
+
+![after-tab2](yaks-e853/after-tab2.png "AFTER: Tab to 'two' scrolls on, minimal")
