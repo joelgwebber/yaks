@@ -49,3 +49,12 @@ Implemented jump_block change in actions.rs + 3 tests in tests.rs (short comment
 Evidence correction: the BEFORE caption cites the wrong frame. In the BEFORE file, frame 3 (Ctrl-N onto comment 2) is the one to read: the header is on the last visible row and all 7 body rows are below the fold (scroll 10). In the AFTER file the same keystroke (frame 3) shows comment 2 whole (scroll 19).
 
 The demo farm is /tmp/df01farm (`YAKS_DIR`), binaries /tmp/yaks-before (HEAD actions.rs) and /tmp/yaks-after.
+
+---
+▸ 2026-11-14T11:36:45Z [comments-1]
+
+Decision: Next scrolls to the block's last row via `scroll_line_into_view` (existing helper, minimal scroll), then, only if the header ended above the viewport (block taller than the page), sets scroll to the header row (clamped by `detail_max_scroll`). Rejected: a new Viewport helper (out of scope, no refactor).
+
+Decision: the block's "end" is its last row carrying that block's `Src`, so the trailing blank separator is not required to be visible.
+
+Decision: Previous only scrolls minimally (header into view); no whole-comment visibility for Previous (not requested).
