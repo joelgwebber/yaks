@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T17:52:43Z'
-updated: '2026-11-14T17:53:12Z'
+updated: '2026-11-14T17:53:16Z'
 parent: yaks-1151
 tags:
 - links
@@ -54,3 +54,8 @@ thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-14T17:53:16Z [linkplan-lead]
+
+Claim: worker `notefmt-1` (Sonnet tier, per AGENTS.md; the format is fully specified in the yak and the design dok, so this is implementation, with my review as the cost). Owns: `store.rs` note functions (`parse_notes`, `note_starts`, `append_note_meta`, `append_entry`, `note_head`, `meta_block`, `parse_meta`), a new `convert_notes`, `links.rs` note-anchor functions only, `mergedriver.rs` note merge, `tui/content.rs`, `sheds.rs`, `recur.rs`, `markdown_lint.rs`. Not `migrate.rs`: yaks-acc0 registers the converter. Other workers in flight: `keys-1` (`keymap.rs`, `docs/tui.md`), `check-1` (`check.rs`); `yaks-c3d0` follows and works in `handlers.rs`, `follow.rs`, `source.rs`, `detail_nav.rs`'s `follow_link`: if you must touch `detail_nav.rs`, keep to note-anchor lines. Judge: the coordinator re-runs the evidence and the round trip over this farm's real yaks.
