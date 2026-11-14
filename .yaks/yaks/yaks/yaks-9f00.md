@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T17:52:43Z'
-updated: '2026-11-14T22:37:53Z'
+updated: '2026-11-14T23:12:07Z'
 parent: yaks-1151
 tags:
 - links
@@ -70,3 +70,18 @@ Start of work (after an offline gap): the checkout is clean, nothing written yet
 - checkout: `/Users/joel/src/yaks/.delta/worktrees/bzdf5a446bnv/yaks`
 
 Read so far: `store.rs` note functions, `tui/content.rs`, `mergedriver.rs` note merge, `links.rs` anchors. Plan: reader accepts both shapes; writers take a `new_shape: bool` threaded from the farm schema; `convert_notes` pure.
+
+---
+▸ 2026-11-14T23:12:07Z [notefmt-1]
+kind: checkpoint
+---
+
+Checkpoint, 23:1x. Builds clean (`cargo build`), tests not run yet.
+
+Done in the working tree:
+
+- `store.rs`: `NoteShape` (Old/New), `NEW_NOTES_SCHEMA = 9`, `NoteShape::of_farm(root)` (reads the `schema` marker); writers `append_note_meta_in`, `append_entry_in`, `format_note` (single source of both shapes); readers `scan_notes` (per-body shape: old if any old note, else new), `parse_note_head`, `parse_italic_line`; `convert_notes`; `drop_latest_request` works on both.
+- `farm.rs`: every writer passes `self.shape()`; `move_task_with` passes `of_farm(root)`; `rebase_description` uses `store::starts_with_note`.
+- `tui/content.rs`: `parse` through `parse_note_head`, `assemble_in(shape, ..)`; `blockedit.rs` passes the body's shape.
+
+Left: anchors in `links.rs` (rebase first, main moved), merge driver `append_entry_in`, sheds/recur/tick/markdown_lint, tests (round trip over 200 real yaks, merge driver both shapes, schema 8 vs 9 farm), docs and skill, GitHub render attachment, verify.
